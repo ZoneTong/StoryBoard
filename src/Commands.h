@@ -6,6 +6,7 @@
 
 #include "BoardTypes.h"
 #include "ItemGeometry.h"
+#include "ShapeItem.h"
 #include "TextItem.h"
 
 class BoardItem;
@@ -68,14 +69,15 @@ private:
 class BoardSizeCommand : public QUndoCommand
 {
 public:
-    BoardSizeCommand(BoardScene* scene, const QSizeF& before, const QSizeF& after, const QString& text);
+    BoardSizeCommand(BoardScene* scene, const QRectF& before, const QRectF& after,
+                     const QString& text);
     void undo() override;
     void redo() override;
 
 private:
     BoardScene* m_scene = nullptr;
-    QSizeF m_before;
-    QSizeF m_after;
+    QRectF m_before;
+    QRectF m_after;
 };
 
 class ItemStackCommand : public QUndoCommand
@@ -105,6 +107,24 @@ private:
     QPointer<TextItem> m_item;
     TextItemState m_before;
     TextItemState m_after;
+};
+
+class ShapeStyleCommand : public QUndoCommand
+{
+public:
+    ShapeStyleCommand(BoardScene* scene, const QList<ShapeItem*>& items,
+                      const QList<ShapeItemState>& before,
+                      const QList<ShapeItemState>& after, const QString& text);
+    void undo() override;
+    void redo() override;
+
+private:
+    void apply(const QList<ShapeItemState>& states);
+
+    BoardScene* m_scene = nullptr;
+    QList<QPointer<ShapeItem>> m_items;
+    QList<ShapeItemState> m_before;
+    QList<ShapeItemState> m_after;
 };
 
 class LayerStateCommand : public QUndoCommand

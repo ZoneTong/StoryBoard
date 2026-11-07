@@ -3,6 +3,7 @@
 #include "BoardScene.h"
 #include "BoardTypes.h"
 #include "BoardView.h"
+#include "Commands.h"
 #include "ImageItem.h"
 #include "LayerPanel.h"
 #include "MainWindow.h"
@@ -15,6 +16,7 @@
 #include <QApplication>
 #include <QAction>
 #include <QBuffer>
+#include <QCheckBox>
 #include <QContextMenuEvent>
 #include <QCoreApplication>
 #include <QDir>
@@ -26,6 +28,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLabel>
 #include <QLineF>
 #include <QLinearGradient>
 #include <QListWidget>
@@ -554,56 +557,66 @@ int runSelfTest(const QString& reportPath)
     check(legacyHeights, QStringLiteral("旧版 z 顺序转换为唯一 height"));
 
     // ---------------------------------------------------------------
-    // Layer visibility and active-layer-only editing.
+    // Layer visibility, locking and per-layer editing permissions.
     // ---------------------------------------------------------------
     const int lowerLayerId = layerScene.layers().at(1).id;
     layerScene.setMode(ToolMode::Edit);
-    check(layerScene.isItemEditable(topLine)
-              && !layerScene.isItemEditable(lower)
-              && !layerScene.isItemEditable(upper),
-          QStringLiteral("编辑模式仅当前图层图元可编辑"));
+    check(layerScene.isItemEditable(topLine) && layerScene.isItemEditable(lower)
+              && layerScene.isItemEditable(upper),
+          QStringLiteral("编辑模式下可见且未锁定图层的图元都可编辑"));
     check((topLine->flags() & QGraphicsItem::ItemIsSelectable) != 0
-              && (lower->flags() & QGraphicsItem::ItemIsSelectable) == 0
-              && (upper->flags() & QGraphicsItem::ItemIsSelectable) == 0,
-          QStringLiteral("非当前图层图元不接收选择"));
+              && (lower->flags() & QGraphicsItem::ItemIsSelectable) != 0
+              && (upper->flags() & QGraphicsItem::ItemIsSelectable) != 0,
+          QStringLiteral("可见且未锁定图层的图元都可选中"));
 
     layerScene.selectAllItems();
-    check(topLine->isSelected() && !lower->isSelected() && !upper->isSelected(),
-          QStringLiteral("全选只选择当前图层图元"));
+    check(topLine->isSelected() && lower->isSelected() && upper->isSelected(),
+          QStringLiteral("全选包含所有可见且未锁定图层的图元"));
+    layerScene.clearSelection();
+
+    check(layerScene.setLayerLocked(lowerLayerId, true)
+              && layerScene.isLayerLocked(lowerLayerId),
+          QStringLiteral("锁定图层"));
+    check(!layerScene.isItemEditable(lower)
+              && (lower->flags() & QGraphicsItem::ItemIsSelectable) == 0,
+          QStringLiteral("锁定图层上的图元不可编辑也不可选中"));
+    check(layerScene.isItemEditable(topLine),
+          QStringLiteral("锁定一个图层不影响其他图层编辑"));
+    check(!layerScene.setLayerLocked(BoardScene::BackgroundLayerId, true),
+          QStringLiteral("背景层不支持锁定"));
+    check(layerScene.setLayerLocked(lowerLayerId, false) && layerScene.isItemEditable(lower),
+          QStringLiteral("解锁图层后图元恢复可编辑"));
 
     layerScene.setActiveLayer(lowerLayerId);
     check(layerScene.activeLayerId() == lowerLayerId
               && layerScene.isLayerVisible(lowerLayerId),
-          QStringLiteral("切换图层后当前图层可见"));
-    check(layerScene.isItemEditable(lower) && layerScene.isItemEditable(upper)
-              && !layerScene.isItemEditable(topLine),
-          QStringLiteral("切换图层后仅新图层图元可编辑"));
-    check(!topLine->isSelected(), QStringLiteral("切换图层清除旧图层选中状态"));
+          QStringLiteral("切换当前图层后该图层可见"));
+    check(layerScene.isItemEditable(topLine) && layerScene.isItemEditable(lower),
+          QStringLiteral("切换当前图层不改变其他可见图层的编辑权限"));
 
     check(layerScene.setLayerVisible(topLayerId, false),
           QStringLiteral("隐藏非当前图层"));
     check(!layerScene.isLayerVisible(topLayerId) && !topLine->isVisible(),
           QStringLiteral("隐藏图层后图元不可见"));
+    check(!layerScene.isItemEditable(topLine) && !topLine->isSelected(),
+          QStringLiteral("隐藏图层上的图元不可编辑"));
     check(layerScene.isItemEditable(lower),
           QStringLiteral("隐藏其他图层不影响当前图层编辑"));
 
     check(layerScene.setLayerVisible(topLayerId, true),
           QStringLiteral("显示非当前图层"));
-    check(topLine->isVisible() && !layerScene.isItemEditable(topLine),
-          QStringLiteral("显示非当前图层后仍不可编辑"));
+    check(topLine->isVisible() && layerScene.isItemEditable(topLine),
+          QStringLiteral("重新显示图层后图元恢复可编辑"));
 
     layerScene.setActiveLayer(topLayerId);
-    check(layerScene.isItemEditable(topLine) && !layerScene.isItemEditable(lower),
-          QStringLiteral("选中图层后仅该图层可编辑"));
-
     check(layerScene.setLayerVisible(topLayerId, false),
           QStringLiteral("隐藏当前图层"));
-    check(layerScene.activeLayerId() == lowerLayerId
+    check(layerScene.activeLayerId() != topLayerId
               && !layerScene.isLayerVisible(topLayerId)
-              && layerScene.isLayerVisible(lowerLayerId),
+              && layerScene.isLayerVisible(layerScene.activeLayerId()),
           QStringLiteral("隐藏当前图层自动切换到其他可见图层"));
-    check(layerScene.isItemEditable(lower) && !layerScene.isItemEditable(topLine),
-          QStringLiteral("隐藏当前图层后新图层接管编辑"));
+    check(!layerScene.isItemEditable(topLine),
+          QStringLiteral("隐藏后原当前图层图元不可编辑"));
 
     const QRectF hiddenContent = layerScene.contentRect();
     check(hiddenContent.right() < topLine->sceneContentRect().right() - 1.0,
@@ -719,13 +732,18 @@ int runSelfTest(const QString& reportPath)
     const QImage paintedShown = hiddenPaintScene.renderImage(hiddenPaintScene.boardRect(), 1.0);
     check(paintedShown.pixelColor(30, 30) == QColor(QStringLiteral("#2563EB")),
           QStringLiteral("显示图层后图元重新参与渲染"));
+    check(hiddenPaintScene.isItemEditable(blueImage)
+              && hiddenPaintScene.isItemEditable(redImage),
+          QStringLiteral("显示非当前图层后其图元同样可编辑"));
+    check(hiddenPaintScene.setLayerLocked(hiddenBlueLayerId, true),
+          QStringLiteral("锁定蓝色图层"));
     check(!hiddenPaintScene.isItemEditable(blueImage)
               && hiddenPaintScene.isItemEditable(redImage),
-          QStringLiteral("显示非当前图层后仍只有当前图层可编辑"));
-    hiddenPaintScene.setActiveLayer(hiddenBlueLayerId);
-    check(hiddenPaintScene.isItemEditable(blueImage)
-              && !hiddenPaintScene.isItemEditable(redImage),
-          QStringLiteral("选中蓝色图层后其图元可编辑"));
+          QStringLiteral("锁定蓝色图层后仅该层图元不可编辑"));
+    check(hiddenPaintScene.setLayerLocked(hiddenBlueLayerId, false),
+          QStringLiteral("解锁蓝色图层"));
+    check(hiddenPaintScene.isItemEditable(blueImage),
+          QStringLiteral("解锁后图元恢复可编辑"));
 
     BoardScene singleLayerScene;
     singleLayerScene.setMode(ToolMode::Edit);
@@ -1185,30 +1203,62 @@ int runSelfTest(const QString& reportPath)
             return nullptr;
         };
 
+        auto rowCheckBox = [visibilityList](int layerId) -> QCheckBox* {
+            if (!visibilityList)
+                return nullptr;
+            for (int row = 0; row < visibilityList->count(); ++row) {
+                QListWidgetItem* item = visibilityList->item(row);
+                if (item->data(Qt::UserRole).toInt() != layerId)
+                    continue;
+                QWidget* widget = visibilityList->itemWidget(item);
+                return widget ? widget->findChild<QCheckBox*>(QStringLiteral("LayerVisibleBox"))
+                              : nullptr;
+            }
+            return nullptr;
+        };
+        auto rowLockButton = [visibilityList](int layerId) -> QToolButton* {
+            if (!visibilityList)
+                return nullptr;
+            for (int row = 0; row < visibilityList->count(); ++row) {
+                QListWidgetItem* item = visibilityList->item(row);
+                if (item->data(Qt::UserRole).toInt() != layerId)
+                    continue;
+                QWidget* widget = visibilityList->itemWidget(item);
+                return widget ? widget->findChild<QToolButton*>(QStringLiteral("LayerLockButton"))
+                              : nullptr;
+            }
+            return nullptr;
+        };
+
         QListWidgetItem* lowerRow = findRow(lowerId);
-        check(lowerRow && lowerRow->checkState() == Qt::Checked,
+        QCheckBox* lowerBox = rowCheckBox(lowerId);
+        check(lowerRow && lowerBox && lowerBox->isChecked(),
               QStringLiteral("图层面板显示可见勾选状态"));
-        if (lowerRow) {
-            lowerRow->setCheckState(Qt::Unchecked);
+        if (lowerBox) {
+            lowerBox->setChecked(false);
             QApplication::processEvents();
             check(!visibilityPanelScene.isLayerVisible(lowerId),
                   QStringLiteral("图层面板取消勾选隐藏图层"));
-            QListWidgetItem* hiddenRow = findRow(lowerId);
-            check(hiddenRow && hiddenRow->checkState() == Qt::Unchecked
-                      && hiddenRow->text().contains(QStringLiteral("隐藏")),
+            QCheckBox* hiddenBox = rowCheckBox(lowerId);
+            QLabel* hiddenLabel = hiddenBox && hiddenBox->parentWidget()
+                ? hiddenBox->parentWidget()->findChild<QLabel*>(QStringLiteral("LayerRowLabel"))
+                : nullptr;
+            check(hiddenBox && !hiddenBox->isChecked() && hiddenLabel
+                      && hiddenLabel->text().contains(QStringLiteral("隐藏")),
                   QStringLiteral("图层面板标记隐藏图层"));
 
+            QListWidgetItem* hiddenRow = findRow(lowerId);
             if (hiddenRow) {
                 visibilityList->setCurrentItem(hiddenRow);
                 QApplication::processEvents();
                 check(visibilityPanelScene.activeLayerId() == lowerId
                           && visibilityPanelScene.isLayerVisible(lowerId),
                       QStringLiteral("选中隐藏图层自动显示"));
-                QListWidgetItem* shownRow = findRow(lowerId);
-                check(shownRow && shownRow->checkState() == Qt::Checked,
+                QCheckBox* shownBox = rowCheckBox(lowerId);
+                check(shownBox && shownBox->isChecked(),
                       QStringLiteral("自动显示后同步勾选状态"));
-                if (shownRow) {
-                    shownRow->setCheckState(Qt::Unchecked);
+                if (shownBox) {
+                    shownBox->setChecked(false);
                     QApplication::processEvents();
                     check(!visibilityPanelScene.isLayerVisible(lowerId)
                               && visibilityPanelScene.activeLayerId() == upperId,
@@ -1217,22 +1267,53 @@ int runSelfTest(const QString& reportPath)
             }
         }
 
-        QListWidgetItem* backgroundRow = findRow(BoardScene::BackgroundLayerId);
-        check(backgroundRow && backgroundRow->checkState() == Qt::Checked,
+        QCheckBox* backgroundBox = rowCheckBox(BoardScene::BackgroundLayerId);
+        check(backgroundBox && backgroundBox->isChecked(),
               QStringLiteral("图层面板显示背景层勾选"));
-        if (backgroundRow) {
-            backgroundRow->setCheckState(Qt::Unchecked);
+        if (backgroundBox) {
+            backgroundBox->setChecked(false);
             QApplication::processEvents();
             check(!visibilityPanelScene.isLayerVisible(BoardScene::BackgroundLayerId),
                   QStringLiteral("图层面板可隐藏背景层"));
-            QListWidgetItem* hiddenBackgroundRow = findRow(BoardScene::BackgroundLayerId);
-            if (hiddenBackgroundRow) {
-                hiddenBackgroundRow->setCheckState(Qt::Checked);
+            QCheckBox* hiddenBackgroundBox = rowCheckBox(BoardScene::BackgroundLayerId);
+            if (hiddenBackgroundBox) {
+                hiddenBackgroundBox->setChecked(true);
                 QApplication::processEvents();
             }
             check(visibilityPanelScene.isLayerVisible(BoardScene::BackgroundLayerId),
                   QStringLiteral("图层面板可重新显示背景层"));
         }
+
+        QToolButton* upperLock = rowLockButton(upperId);
+        check(upperLock != nullptr, QStringLiteral("图层面板提供图层锁定按钮"));
+        if (upperLock) {
+            upperLock->click();
+            QApplication::processEvents();
+            check(visibilityPanelScene.isLayerLocked(upperId)
+                      && !visibilityPanelScene.isItemEditable(upperItem),
+                  QStringLiteral("锁定按钮锁定图层并禁止编辑其图元"));
+            QToolButton* restoredLock = rowLockButton(upperId);
+            if (restoredLock)
+                restoredLock->click();
+            QApplication::processEvents();
+            check(!visibilityPanelScene.isLayerLocked(upperId),
+                  QStringLiteral("再次点击解锁图层"));
+        }
+
+        visibilityList->clearSelection();
+        for (int row = 0; row < visibilityList->count(); ++row) {
+            QListWidgetItem* item = visibilityList->item(row);
+            if (item->data(Qt::UserRole).toInt() == upperId)
+                item->setSelected(true);
+        }
+        check(visibilityPanel.selectedLayerIds().size() == 1
+                  && visibilityPanel.selectedLayerIds().first() == upperId,
+              QStringLiteral("图层面板可读取选中的图层集合"));
+
+        upperItem->setSelected(true);
+        QApplication::processEvents();
+        check(visibilityPanelScene.activeLayerId() == upperId,
+              QStringLiteral("选中图元时自动选中其所属图层"));
     }
 
     // Verify the actual paint order, not just the numeric z values.
@@ -1523,6 +1604,8 @@ int runSelfTest(const QString& reportPath)
                               lockedFont, QColor(QStringLiteral("#0F766E")));
     lockedText->setPos(QPointF(980, 600));
     viewScene.addItemsWithUndo({ lockedText }, QStringLiteral("添加锁定图层文字"));
+    check(viewScene.setLayerLocked(lockedLayerId, true),
+          QStringLiteral("锁定文字所在图层"));
     viewScene.setActiveLayer(baseLayerId);
     view.fitAll();
     QApplication::processEvents();
@@ -1530,9 +1613,9 @@ int runSelfTest(const QString& reportPath)
     check(lockedLayerId != baseLayerId
               && !lockedText->isEditable()
               && (lockedText->flags() & QGraphicsItem::ItemIsSelectable) == 0,
-          QStringLiteral("非当前图层文字不可编辑和选择"));
+          QStringLiteral("锁定图层上的文字不可编辑和选择"));
     viewScene.selectAllItems();
-    check(!lockedText->isSelected(), QStringLiteral("全选不包含非当前图层图元"));
+    check(!lockedText->isSelected(), QStringLiteral("全选不包含锁定图层图元"));
     viewScene.clearSelection();
 
     const int requestsBeforeLockedClick = textEditRequests;
@@ -1544,19 +1627,19 @@ int runSelfTest(const QString& reportPath)
     QApplication::sendEvent(view.viewport(), &lockedDoubleClick);
     QApplication::processEvents();
     check(textEditRequests == requestsBeforeLockedClick,
-          QStringLiteral("双击非当前图层文字不会进入编辑"));
+          QStringLiteral("双击锁定图层文字不会进入编辑"));
 
     sendMouseEvent(view.viewport(), QEvent::MouseButtonPress, lockedPoint,
                    Qt::LeftButton, Qt::LeftButton);
     sendMouseEvent(view.viewport(), QEvent::MouseButtonRelease, lockedPoint,
                    Qt::LeftButton, Qt::NoButton);
     QApplication::processEvents();
-    check(!lockedText->isSelected(), QStringLiteral("非当前图层图元不能被鼠标选中"));
+    check(!lockedText->isSelected(), QStringLiteral("锁定图层图元不能被鼠标选中"));
 
     int lockedLayerMessages = 0;
     QObject::connect(&view, &BoardView::statusMessage, &view,
                      [&lockedLayerMessages](const QString& message) {
-                         if (message.contains(QStringLiteral("图层")))
+                         if (message.contains(QStringLiteral("锁定")))
                              ++lockedLayerMessages;
                      });
     const QPoint lockedGlobal = view.viewport()->mapToGlobal(lockedPoint);
@@ -1564,7 +1647,10 @@ int runSelfTest(const QString& reportPath)
     QApplication::sendEvent(view.viewport(), &lockedContext);
     QApplication::processEvents();
     check(lockedLayerMessages > 0,
-          QStringLiteral("右键非当前图层图元提示先选择图层"));
+          QStringLiteral("右键锁定图层图元提示先解锁图层"));
+    check(viewScene.setLayerLocked(lockedLayerId, false),
+          QStringLiteral("解锁文字图层"));
+    check(lockedText->isEditable(), QStringLiteral("解锁后文字恢复可编辑"));
 
     view.close();
     QApplication::processEvents();
@@ -1775,6 +1861,151 @@ int runSelfTest(const QString& reportPath)
         check(dialog.settings().canvasColor == QColor(QStringLiteral("#102A43")),
               QStringLiteral("设置对话框保留画布外围颜色"));
     }
+    // ---------------------------------------------------------------
+    // 需求 10/11/12/13/14 回归：锁定、椭圆、填充样式、画板尺寸。
+    // ---------------------------------------------------------------
+    {
+        BoardScene reqScene;
+        reqScene.setMode(ToolMode::Edit);
+        reqScene.setShowGrid(false);
+        QUndoStack reqUndo;
+        reqScene.setUndoStack(&reqUndo);
+
+        // 需求 11：只保留椭圆，插入即标准圆形，可拉伸。
+        check(shapeTypeName(ShapeType::Ellipse) == QStringLiteral("椭圆"),
+              QStringLiteral("图形名称统一为椭圆"));
+        const QSizeF ellipseDefault = defaultShapeSize(ShapeType::Ellipse);
+        check(qFuzzyCompare(ellipseDefault.width(), ellipseDefault.height()),
+              QStringLiteral("椭圆默认插入为标准圆形"));
+        auto* circleItem = new ShapeItem(ShapeType::Ellipse);
+        circleItem->setContentSize(QSizeF(200, 200));
+        circleItem->setContentSize(QSizeF(260, 140));
+        check(circleItem->contentSize() == QSizeF(260, 140),
+              QStringLiteral("圆形可在编辑模式拉伸成椭圆"));
+        delete circleItem;
+
+        // 需求 14：填充样式（无/纯色/斜线/交叉线）。
+        check(fillStyleName(FillStyle::None) == QStringLiteral("无填充")
+                  && fillStyleName(FillStyle::Hachure) == QStringLiteral("斜线"),
+              QStringLiteral("填充样式名称齐全"));
+        check(fillStyleFromString(QStringLiteral("cross_hatch")) == FillStyle::CrossHatch,
+              QStringLiteral("交叉线填充样式可反序列化"));
+
+        auto* filledShape = new ShapeItem(ShapeType::Rectangle);
+        filledShape->setContentSize(QSizeF(120, 80));
+        filledShape->setPos(QPointF(30, 30));
+        filledShape->setFill(QColor(59, 130, 246, 160), FillStyle::Hachure);
+        check(filledShape->fillStyle() == FillStyle::Hachure
+                  && filledShape->fillColor().alpha() == 160,
+              QStringLiteral("图形可设置填充颜色与斜线填充"));
+        reqScene.attachItem(filledShape);
+
+        const QJsonObject filledRoot = reqScene.toJson();
+        BoardScene filledLoaded;
+        QString filledError;
+        check(filledLoaded.fromJson(filledRoot, &filledError),
+              QStringLiteral("填充样式模板反序列化"), filledError);
+        ShapeItem* loadedShape = nullptr;
+        for (BoardItem* item : filledLoaded.boardItems()) {
+            if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+                loadedShape = shape;
+                break;
+            }
+        }
+        check(loadedShape && loadedShape->fillStyle() == FillStyle::Hachure
+                  && loadedShape->fillColor().alpha() == 160,
+              QStringLiteral("填充样式随模板保存与恢复"));
+
+        QUndoStack styleUndo;
+        BoardScene styleScene;
+        styleScene.setUndoStack(&styleUndo);
+        auto* styleShape = new ShapeItem(ShapeType::Rectangle);
+        styleShape->setContentSize(QSizeF(100, 60));
+        styleScene.attachItem(styleShape);
+        const ShapeItemState styleBefore = styleShape->state();
+        styleShape->setFill(QColor(239, 68, 68, 120), FillStyle::CrossHatch);
+        const ShapeItemState styleAfter = styleShape->state();
+        styleUndo.push(new ShapeStyleCommand(&styleScene, { styleShape },
+                                            { styleBefore }, { styleAfter },
+                                            QStringLiteral("调整填充样式")));
+        check(styleShape->fillStyle() == FillStyle::CrossHatch,
+              QStringLiteral("填充样式命令立即生效"));
+        styleUndo.undo();
+        check(styleShape->fillStyle() == styleBefore.fillStyle
+                  && styleShape->fillColor() == styleBefore.fillColor,
+              QStringLiteral("填充样式可撤销"));
+        styleUndo.redo();
+        check(styleShape->fillStyle() == FillStyle::CrossHatch,
+              QStringLiteral("填充样式可重做"));
+
+        // 需求 13：画板通过拉伸边缘扩大或裁剪，并随模板保存原点。
+        QUndoStack boardUndo;
+        BoardScene boardScene;
+        boardScene.setUndoStack(&boardUndo);
+        const QRectF initialBoard = boardScene.boardRect();
+        const QRectF grownBoard = initialBoard.adjusted(-240, -160, 320, 260);
+        boardScene.setBoardRectWithUndo(grownBoard);
+        check(boardScene.boardRect() == grownBoard
+                  && boardScene.boardOrigin() == grownBoard.topLeft(),
+              QStringLiteral("画板可向四边拉伸扩大"));
+        const QRectF shrunkBoard(grownBoard.left() + 120, grownBoard.top() + 90,
+                                 grownBoard.width() - 240, grownBoard.height() - 180);
+        boardScene.setBoardRectWithUndo(shrunkBoard);
+        check(boardScene.boardRect() == shrunkBoard,
+              QStringLiteral("画板可裁剪缩小"));
+        boardUndo.undo();
+        check(boardScene.boardRect() == grownBoard,
+              QStringLiteral("画板尺寸调整可撤销"));
+
+        BoardView boardView(&boardScene);
+        boardView.resize(1200, 800);
+        boardView.setMode(ToolMode::Edit);
+        boardView.fitAll();
+        QApplication::processEvents();
+        const QRectF boardBeforeDrag = boardScene.boardRect();
+        const int commandsBeforeDrag = boardUndo.index();
+        const QPoint rightEdge = boardView.mapFromScene(
+            QPointF(boardBeforeDrag.right(), boardBeforeDrag.center().y()));
+        sendMouseEvent(boardView.viewport(), QEvent::MouseButtonPress, rightEdge,
+                       Qt::LeftButton, Qt::LeftButton);
+        sendMouseEvent(boardView.viewport(), QEvent::MouseMove, rightEdge + QPoint(12, 0),
+                       Qt::NoButton, Qt::LeftButton);
+        sendMouseEvent(boardView.viewport(), QEvent::MouseButtonRelease, rightEdge + QPoint(12, 0),
+                       Qt::LeftButton, Qt::NoButton);
+        QApplication::processEvents();
+        check(boardScene.boardRect().width() > boardBeforeDrag.width() + 5.0
+                  && qFuzzyCompare(boardScene.boardRect().left(), boardBeforeDrag.left()),
+              QStringLiteral("拖动右边缘手柄可扩大画板"),
+              QStringLiteral("before=%1x%2 after=%3x%4")
+                  .arg(boardBeforeDrag.width()).arg(boardBeforeDrag.height())
+                  .arg(boardScene.boardRect().width()).arg(boardScene.boardRect().height()));
+        check(boardUndo.index() == commandsBeforeDrag + 1
+                  && boardUndo.count() == commandsBeforeDrag + 1,
+              QStringLiteral("画板边缘拖动只生成一条撤销记录"),
+              QStringLiteral("index before=%1 after=%2")
+                  .arg(commandsBeforeDrag).arg(boardUndo.index()));
+
+        const QJsonObject boardRoot = boardScene.toJson();
+        BoardScene boardLoaded;
+        QString boardError;
+        check(boardLoaded.fromJson(boardRoot, &boardError)
+                  && boardLoaded.boardRect() == boardScene.boardRect(),
+              QStringLiteral("画板原点随模板保存"), boardError);
+
+        // 需求 10：锁定状态随模板保存。
+        BoardScene lockScene;
+        lockScene.setMode(ToolMode::Edit);
+        const int lockLayerId = lockScene.activeLayerId();
+        check(lockScene.setLayerLocked(lockLayerId, true),
+              QStringLiteral("锁定图层用于序列化测试"));
+        const QJsonObject lockRoot = lockScene.toJson();
+        BoardScene lockLoaded;
+        QString lockError;
+        check(lockLoaded.fromJson(lockRoot, &lockError)
+                  && lockLoaded.isLayerLocked(lockLoaded.activeLayerId()),
+              QStringLiteral("图层锁定状态随模板保存"), lockError);
+    }
+
     int passCount = 0;
     for (const QString& line : lines) {
         if (line.startsWith(QStringLiteral("PASS")))

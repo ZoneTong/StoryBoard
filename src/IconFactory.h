@@ -24,7 +24,8 @@ enum class IconId {
     Grid,
     Palette,
     Folder,
-    Shapes
+    Shapes,
+    Lock
 };
 
 QIcon makeIcon(IconId id, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);

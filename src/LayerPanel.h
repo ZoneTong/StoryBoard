@@ -1,11 +1,13 @@
 #pragma once
 
+#include <QList>
 #include <QWidget>
+
+#include "BoardTypes.h"
 
 class BoardScene;
 class QLabel;
 class QListWidget;
-class QListWidgetItem;
 class QToolButton;
 
 class LayerPanel : public QWidget
@@ -14,6 +16,8 @@ class LayerPanel : public QWidget
 public:
     explicit LayerPanel(BoardScene* scene, QWidget* parent = nullptr);
 
+    QList<int> selectedLayerIds() const;
+
 public slots:
     void refresh();
 
@@ -21,14 +25,19 @@ signals:
     void statusMessage(const QString& message);
 
 private:
-    int selectedLayerId() const;
+    QWidget* createLayerRow(const BoardLayer& layer, int index, int itemCount);
+    int currentLayerId() const;
+    void scheduleRefresh();
     void activateCurrentLayer();
     void syncActiveLayer();
+    void syncSceneSelection();
     void addLayer();
     void removeLayer();
     void moveLayer(int delta);
-    void toggleLayerVisibility(QListWidgetItem* item);
+    void setLayerVisible(int layerId, bool visible);
+    void setLayerLocked(int layerId, bool locked);
     void updateButtons();
+    void updateSummary();
 
     BoardScene* m_scene = nullptr;
     QListWidget* m_list = nullptr;
@@ -38,4 +47,6 @@ private:
     QToolButton* m_downButton = nullptr;
     QLabel* m_summaryLabel = nullptr;
     bool m_refreshing = false;
+    bool m_syncingScene = false;
+    bool m_refreshPending = false;
 };

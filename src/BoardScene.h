@@ -30,9 +30,15 @@ public:
     void setMode(ToolMode mode);
 
     QSizeF boardSize() const { return m_boardSize; }
+    QPointF boardOrigin() const { return m_boardOrigin; }
     QRectF boardRect() const;
     void applyBoardSize(const QSizeF& size);
     void setBoardSizeWithUndo(const QSizeF& size);
+    // Board geometry includes the origin so the canvas can be stretched from
+    // any edge; apply* is live (drag) and commit* pushes one undo step.
+    void applyBoardRect(const QRectF& rect);
+    void setBoardRectWithUndo(const QRectF& rect);
+    void commitBoardRect(const QRectF& before);
 
     BackgroundState background() const { return m_background; }
     void applyBackground(const BackgroundState& background);
@@ -46,6 +52,7 @@ public:
 
     QList<BoardItem*> boardItems() const;
     int boardItemCount() const;
+    QList<BoardItem*> selectedBoardItems() const;
 
     static constexpr int BackgroundLayerId = 0;
 
@@ -60,7 +67,11 @@ public:
     QList<BoardItem*> layerItems(int layerId) const;
     bool isLayerVisible(int layerId) const;
     bool setLayerVisible(int layerId, bool visible);
+    bool isLayerLocked(int layerId) const;
+    bool setLayerLocked(int layerId, bool locked);
     bool isItemEditable(const BoardItem* item) const;
+    // True when the active layer accepts new items (exists, visible, unlocked).
+    bool isActiveLayerWritable() const;
     int activeLayerId() const { return m_activeLayerId; }
     void setActiveLayer(int layerId);
 
@@ -117,7 +128,7 @@ private:
 
     void ensureLayerState();
     LayerStackState sanitizedLayerState(const LayerStackState& state) const;
-    void applyLayerStateInternal(const LayerStackState& state);
+    void applyLayerStateInternal(const LayerStackState& state, bool preserveLock = true);
     void assignNewItemPlacement(BoardItem* item);
     void applyItemStacking(BoardItem* item);
     void applyAllItemStacking();
@@ -130,6 +141,7 @@ private:
     QUndoStack* m_undoStack = nullptr;
     ToolMode m_mode = ToolMode::View;
     QSizeF m_boardSize { 1920.0, 1080.0 };
+    QPointF m_boardOrigin { 0.0, 0.0 };
     BackgroundState m_background;
     bool m_showGrid = true;
     bool m_exporting = false;

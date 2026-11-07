@@ -67,8 +67,8 @@ BoardScene::BoardScene(QObject* parent)
     : QGraphicsScene(parent)
 {
     m_layers = {
-        { BackgroundLayerId, kBackgroundLayerName },
-        { kFirstUserLayerId, QStringLiteral("图层 1") }
+        { BackgroundLayerId, kBackgroundLayerName, true, false },
+        { kFirstUserLayerId, QStringLiteral("图层 1"), true, false }
     };
     m_activeLayerId = kFirstUserLayerId;
     m_nextLayerId = kFirstUserLayerId + 1;
@@ -118,7 +118,7 @@ void BoardScene::applyItemInteraction(BoardItem* item)
     const bool layerVisible = isLayerVisible(item->layerId());
     const bool editable = m_mode == ToolMode::Edit
         && layerVisible
-        && item->layerId() == m_activeLayerId;
+        && !isLayerLocked(item->layerId());
 
     item->setVisible(layerVisible);
     item->setFlag(QGraphicsItem::ItemIsSelectable, editable);
@@ -129,38 +129,52 @@ void BoardScene::applyItemInteraction(BoardItem* item)
 
 QRectF BoardScene::boardRect() const
 {
-    return QRectF(QPointF(0.0, 0.0), m_boardSize);
+    return QRectF(m_boardOrigin, m_boardSize);
 }
 
-void BoardScene::applyBoardSize(const QSizeF& size)
+void BoardScene::applyBoardRect(const QRectF& rect)
 {
-    const QSizeF bounded(qBound(kMinBoardSide, size.width(), kMaxBoardSide),
-                         qBound(kMinBoardSide, size.height(), kMaxBoardSide));
+    const QRectF normalized = rect.normalized();
+    const QSizeF bounded(qBound(kMinBoardSide, normalized.width(), kMaxBoardSide),
+                         qBound(kMinBoardSide, normalized.height(), kMaxBoardSide));
+    const QPointF origin(normalized.left(), normalized.top());
     if (qFuzzyCompare(bounded.width(), m_boardSize.width())
-        && qFuzzyCompare(bounded.height(), m_boardSize.height())) {
+        && qFuzzyCompare(bounded.height(), m_boardSize.height())
+        && origin == m_boardOrigin) {
         return;
     }
+    m_boardOrigin = origin;
     m_boardSize = bounded;
     updateSceneExtent();
     update();
     emit boardSizeChanged(m_boardSize);
 }
 
+void BoardScene::applyBoardSize(const QSizeF& size)
+{
+    applyBoardRect(QRectF(m_boardOrigin, size));
+}
+
 void BoardScene::setBoardSizeWithUndo(const QSizeF& size)
 {
-    const QSizeF bounded(qBound(kMinBoardSide, size.width(), kMaxBoardSide),
-                         qBound(kMinBoardSide, size.height(), kMaxBoardSide));
-    if (qFuzzyCompare(bounded.width(), m_boardSize.width())
-        && qFuzzyCompare(bounded.height(), m_boardSize.height())) {
-        return;
-    }
+    setBoardRectWithUndo(QRectF(m_boardOrigin, size));
+}
 
-    if (m_undoStack) {
-        m_undoStack->push(new BoardSizeCommand(this, m_boardSize, bounded,
-                                               QStringLiteral("调整画板尺寸")));
-    } else {
-        applyBoardSize(bounded);
-    }
+void BoardScene::setBoardRectWithUndo(const QRectF& rect)
+{
+    const QRectF before = boardRect();
+    applyBoardRect(rect);
+    commitBoardRect(before);
+}
+
+void BoardScene::commitBoardRect(const QRectF& before)
+{
+    const QRectF after = boardRect();
+    if (before == after)
+        return;
+    if (m_undoStack)
+        m_undoStack->push(new BoardSizeCommand(this, before, after,
+                                              QStringLiteral("调整画板尺寸")));
 }
 
 void BoardScene::applyBackground(const BackgroundState& background)
@@ -238,6 +252,17 @@ QList<BoardItem*> BoardScene::boardItems() const
 int BoardScene::boardItemCount() const
 {
     return boardItems().size();
+}
+
+QList<BoardItem*> BoardScene::selectedBoardItems() const
+{
+    QList<BoardItem*> result;
+    const QList<QGraphicsItem*> graphicsItems = selectedItems();
+    for (QGraphicsItem* graphicsItem : graphicsItems) {
+        if (auto* item = qgraphicsitem_cast<BoardItem*>(graphicsItem))
+            result.append(item);
+    }
+    return result;
 }
 
 QList<BoardLayer> BoardScene::userLayers() const
@@ -343,13 +368,49 @@ bool BoardScene::setLayerVisible(int layerId, bool visible)
     return true;
 }
 
+bool BoardScene::isLayerLocked(int layerId) const
+{
+    return hasLayer(layerId) && layer(layerId).locked;
+}
+
+bool BoardScene::setLayerLocked(int layerId, bool locked)
+{
+    // 背景层不参与锁定：它没有图元，锁定它没有任何可观察的效果。
+    if (layerId == BackgroundLayerId)
+        return false;
+
+    const int index = layerIndex(layerId);
+    if (index < 0)
+        return false;
+    if (m_layers.at(index).locked == locked)
+        return true;
+
+    m_layers[index].locked = locked;
+    updateItemFlags();
+    updateSceneExtent();
+    update();
+    emit layersChanged();
+    emit contentChanged();
+    return true;
+}
+
+bool BoardScene::isActiveLayerWritable() const
+{
+    return m_activeLayerId != BackgroundLayerId
+        && hasLayer(m_activeLayerId)
+        && isLayerVisible(m_activeLayerId)
+        && !isLayerLocked(m_activeLayerId);
+}
+
 bool BoardScene::isItemEditable(const BoardItem* item) const
 {
+    // 需求变更后的口径：编辑模式下，只要图元所在图层可见且未锁定就能编辑，
+    // 与“当前图层”无关。
     return item
         && item->scene() == this
         && m_mode == ToolMode::Edit
-        && item->layerId() == m_activeLayerId
-        && isLayerVisible(item->layerId());
+        && isLayerVisible(item->layerId())
+        && !isLayerLocked(item->layerId());
 }
 
 void BoardScene::setActiveLayer(int layerId)
@@ -505,7 +566,7 @@ LayerStackState BoardScene::sanitizedLayerState(const LayerStackState& state) co
             break;
         }
     }
-    result.layers.append({ BackgroundLayerId, kBackgroundLayerName, backgroundVisible });
+    result.layers.append({ BackgroundLayerId, kBackgroundLayerName, backgroundVisible, false });
 
     QSet<int> used;
     used.insert(BackgroundLayerId);
@@ -523,7 +584,7 @@ LayerStackState BoardScene::sanitizedLayerState(const LayerStackState& state) co
         int fallbackId = kFirstUserLayerId;
         while (used.contains(fallbackId))
             ++fallbackId;
-        result.layers.append({ fallbackId, QStringLiteral("图层 %1").arg(fallbackId) });
+        result.layers.append({ fallbackId, QStringLiteral("图层 %1").arg(fallbackId), true, false });
     }
 
     result.activeLayerId = state.activeLayerId;
@@ -539,10 +600,25 @@ LayerStackState BoardScene::sanitizedLayerState(const LayerStackState& state) co
     return result;
 }
 
-void BoardScene::applyLayerStateInternal(const LayerStackState& state)
+void BoardScene::applyLayerStateInternal(const LayerStackState& state, bool preserveLock)
 {
+    const QList<BoardLayer> previousLayers = m_layers;
     m_layers = state.layers;
     m_activeLayerId = state.activeLayerId;
+
+    // 锁定状态刻意不进入撤销栈：撤销/重做图层操作（新建、删除、排序、显隐）
+    // 不应该顺带改变某一层的锁定。这里用同 id 的旧快照把 locked 覆盖回来；
+    // 但从模板载入时要保留文件里的锁定状态，因此传入 preserveLock=false。
+    if (preserveLock) {
+        for (BoardLayer& entry : m_layers) {
+            for (const BoardLayer& previous : previousLayers) {
+                if (previous.id == entry.id) {
+                    entry.locked = previous.locked;
+                    break;
+                }
+            }
+        }
+    }
 
     for (BoardLayer& entry : m_layers) {
         if (entry.id == m_activeLayerId && !entry.visible)
@@ -571,7 +647,7 @@ void BoardScene::ensureLayerState()
 {
     const LayerStackState fixed = sanitizedLayerState(layerState());
     if (fixed.layers != m_layers || fixed.activeLayerId != m_activeLayerId)
-        applyLayerStateInternal(fixed);
+        applyLayerStateInternal(fixed, false);
 }
 
 qreal BoardScene::layerBaseZ(int layerId) const
@@ -967,8 +1043,8 @@ void BoardScene::selectAllItems()
 {
     if (m_mode != ToolMode::Edit)
         return;
-    const QList<BoardItem*> items = layerItems(m_activeLayerId);
-    for (BoardItem* item : items) {
+    const QList<BoardItem*> allItems = boardItems();
+    for (BoardItem* item : allItems) {
         if (isItemEditable(item))
             item->setSelected(true);
     }
@@ -1015,11 +1091,12 @@ void BoardScene::resetDocument()
     clearOrphans();
     m_background = BackgroundState();
     m_layers = {
-        { BackgroundLayerId, kBackgroundLayerName },
-        { kFirstUserLayerId, QStringLiteral("图层 1") }
+        { BackgroundLayerId, kBackgroundLayerName, true, false },
+        { kFirstUserLayerId, QStringLiteral("图层 1"), true, false }
     };
     m_activeLayerId = kFirstUserLayerId;
     m_nextLayerId = kFirstUserLayerId + 1;
+    m_boardOrigin = QPointF(0.0, 0.0);
     m_exporting = false;
     updateSceneExtent();
     update();
@@ -1056,6 +1133,8 @@ QJsonObject BoardScene::toJson() const
     root.insert(QStringLiteral("generator"), QStringLiteral("StoryBoard 0.2"));
 
     QJsonObject board;
+    board.insert(QStringLiteral("x"), m_boardOrigin.x());
+    board.insert(QStringLiteral("y"), m_boardOrigin.y());
     board.insert(QStringLiteral("width"), m_boardSize.width());
     board.insert(QStringLiteral("height"), m_boardSize.height());
     root.insert(QStringLiteral("board"), board);
@@ -1083,6 +1162,7 @@ QJsonObject BoardScene::toJson() const
         layerJson.insert(QStringLiteral("id"), entry.id);
         layerJson.insert(QStringLiteral("name"), entry.name);
         layerJson.insert(QStringLiteral("visible"), entry.visible);
+        layerJson.insert(QStringLiteral("locked"), entry.locked);
         layerArray.append(layerJson);
     }
     root.insert(QStringLiteral("layers"), layerArray);
@@ -1109,13 +1189,16 @@ bool BoardScene::fromJson(const QJsonObject& root, QString* errorMessage)
         return fail(QStringLiteral("这不是有效的 StoryBoard 模板文件。"));
 
     const QJsonObject board = root.value(QStringLiteral("board")).toObject();
-    const int width = board.value(QStringLiteral("width")).toInt();
-    const int height = board.value(QStringLiteral("height")).toInt();
-    if (width <= 0 || height <= 0)
+    // 画板尺寸允许带小数（拖拽边缘时通常不是整数），这里不能用 toInt()。
+    const qreal width = board.value(QStringLiteral("width")).toDouble(0.0);
+    const qreal height = board.value(QStringLiteral("height")).toDouble(0.0);
+    if (width <= 0.0 || height <= 0.0)
         return fail(QStringLiteral("模板中的画板尺寸无效。"));
 
     resetDocument();
-    applyBoardSize(QSizeF(width, height));
+    applyBoardRect(QRectF(board.value(QStringLiteral("x")).toDouble(0.0),
+                          board.value(QStringLiteral("y")).toDouble(0.0),
+                          width, height));
 
     BackgroundState background;
     const QJsonObject backgroundJson = root.value(QStringLiteral("background")).toObject();
@@ -1178,6 +1261,7 @@ bool BoardScene::fromJson(const QJsonObject& root, QString* errorMessage)
             entry.id = id;
             entry.name = layerJson.value(QStringLiteral("name")).toString().trimmed();
             entry.visible = layerJson.value(QStringLiteral("visible")).toBool(true);
+            entry.locked = layerJson.value(QStringLiteral("locked")).toBool(false);
             if (entry.name.isEmpty())
                 entry.name = QStringLiteral("图层 %1").arg(id);
             state.layers.append(entry);
@@ -1202,7 +1286,7 @@ bool BoardScene::fromJson(const QJsonObject& root, QString* errorMessage)
         }
     }
 
-    applyLayerState(sanitizedLayerState(state));
+    applyLayerStateInternal(sanitizedLayerState(state), false);
 
     for (int i = 0; i < itemObjects.size(); ++i) {
         const QJsonObject itemJson = itemObjects.at(i);

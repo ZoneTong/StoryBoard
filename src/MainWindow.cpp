@@ -2,6 +2,7 @@
 
 #include "BoardScene.h"
 #include "BoardView.h"
+#include "Commands.h"
 #include "ExportDialog.h"
 #include "IconFactory.h"
 #include "ImageItem.h"
@@ -324,6 +325,26 @@ void MainWindow::createActions()
     connect(m_clearBgAct, &QAction::triggered, this, &MainWindow::clearBackground);
     connect(m_settingsAct, &QAction::triggered, this, &MainWindow::showSettings);
 
+    m_fillNoneAct = new QAction(QStringLiteral("无填充"), this);
+    m_fillSolidAct = new QAction(QStringLiteral("纯色填充"), this);
+    m_fillHachureAct = new QAction(QStringLiteral("斜线填充"), this);
+    m_fillCrossAct = new QAction(QStringLiteral("交叉线填充"), this);
+    for (QAction* action : { m_fillNoneAct, m_fillSolidAct, m_fillHachureAct, m_fillCrossAct })
+        action->setCheckable(true);
+    m_fillStyleGroup = new QActionGroup(this);
+    m_fillStyleGroup->setExclusive(true);
+    m_fillStyleGroup->addAction(m_fillNoneAct);
+    m_fillStyleGroup->addAction(m_fillSolidAct);
+    m_fillStyleGroup->addAction(m_fillHachureAct);
+    m_fillStyleGroup->addAction(m_fillCrossAct);
+    m_fillSolidAct->setChecked(true);
+    connect(m_fillNoneAct, &QAction::triggered, this, [this]() { setFillStyle(FillStyle::None); });
+    connect(m_fillSolidAct, &QAction::triggered, this, [this]() { setFillStyle(FillStyle::Solid); });
+    connect(m_fillHachureAct, &QAction::triggered, this, [this]() { setFillStyle(FillStyle::Hachure); });
+    connect(m_fillCrossAct, &QAction::triggered, this, [this]() { setFillStyle(FillStyle::CrossHatch); });
+    m_fillColorAct = new QAction(QStringLiteral("填充颜色…"), this);
+    connect(m_fillColorAct, &QAction::triggered, this, &MainWindow::chooseFillColor);
+
     auto applyBackgroundMode = [this](BackgroundMode mode) {
         BackgroundState background = m_scene->background();
         if (background.type != BackgroundType::Image)
@@ -434,6 +455,14 @@ void MainWindow::createMenus()
     canvasMenu->addSeparator();
     canvasMenu->addAction(m_settingsAct);
 
+    QMenu* styleMenu = menuBar()->addMenu(QStringLiteral("样式(&S)"));
+    styleMenu->addAction(m_fillNoneAct);
+    styleMenu->addAction(m_fillSolidAct);
+    styleMenu->addAction(m_fillHachureAct);
+    styleMenu->addAction(m_fillCrossAct);
+    styleMenu->addSeparator();
+    styleMenu->addAction(m_fillColorAct);
+
     m_templatesMenu = menuBar()->addMenu(QStringLiteral("模板(&T)"));
     connect(m_templatesMenu, &QMenu::aboutToShow, this, &MainWindow::updateTemplateMenu);
     updateTemplateMenu();
@@ -498,6 +527,21 @@ void MainWindow::createToolBars()
     m_colorButton->setMenu(colorMenu);
     connect(m_colorButton, &QToolButton::clicked, this, &MainWindow::chooseBrushColor);
     mainBar->addWidget(m_colorButton);
+
+    m_fillButton = new QToolButton(mainBar);
+    m_fillButton->setObjectName(QStringLiteral("FillButton"));
+    m_fillButton->setIconSize(QSize(20, 20));
+    m_fillButton->setPopupMode(QToolButton::InstantPopup);
+    auto* fillMenu = new QMenu(m_fillButton);
+    fillMenu->addAction(m_fillNoneAct);
+    fillMenu->addAction(m_fillSolidAct);
+    fillMenu->addAction(m_fillHachureAct);
+    fillMenu->addAction(m_fillCrossAct);
+    fillMenu->addSeparator();
+    fillMenu->addAction(m_fillColorAct);
+    m_fillButton->setMenu(fillMenu);
+    updateFillActions();
+    mainBar->addWidget(m_fillButton);
 
     m_widthCombo = new QComboBox(mainBar);
     m_widthCombo->setFixedWidth(88);
@@ -641,7 +685,7 @@ void MainWindow::updateModeUi()
             m_hintLabel->setText(QStringLiteral("画笔模式：左键自由绘制 · 滚轮缩放 · 空格 / 中键平移"));
             break;
         case ToolMode::Edit:
-            m_hintLabel->setText(QStringLiteral("编辑模式：仅当前图层可编辑 · 拖拽移动 · 控制点缩放 · 右键调整叠放/图层 · Delete 删除"));
+            m_hintLabel->setText(QStringLiteral("编辑模式：可见且未锁定图层的图元均可编辑 · 拖拽/框选 · 控制点缩放 · 拖动画板边缘调整画板 · Delete 删除"));
             break;
         case ToolMode::Text:
             m_hintLabel->setText(QStringLiteral("文字模式：点击画板放置文字 · 可设置字体、字号、颜色与粗斜体"));
@@ -1051,6 +1095,12 @@ void MainWindow::importImageFiles(const QStringList& files)
     if (m_view->mode() != ToolMode::Edit)
         setToolMode(ToolMode::Edit);
 
+    if (!m_scene->isActiveLayerWritable()) {
+        statusBar()->showMessage(QStringLiteral(
+            "当前图层已锁定或已隐藏，无法导入图片。请先在右侧图层面板解锁或切换图层。"), 5000);
+        return;
+    }
+
     const QPointF viewCenter = m_view->mapToScene(m_view->viewport()->rect().center());
     const QSizeF maxSize(m_scene->boardSize().width() * 0.6,
                          m_scene->boardSize().height() * 0.6);
@@ -1118,15 +1168,25 @@ void MainWindow::insertShape(ShapeType type)
     if (m_view->mode() != ToolMode::Edit)
         setToolMode(ToolMode::Edit);
 
+    if (!m_scene->isActiveLayerWritable()) {
+        statusBar()->showMessage(QStringLiteral(
+            "当前图层已锁定或已隐藏，无法插入图形。请先在右侧图层面板解锁或切换图层。"), 5000);
+        return;
+    }
+
     auto* item = new ShapeItem(type);
     const QColor stroke = m_brushColor.alpha() < 8
         ? QColor(QStringLiteral("#1E293B"))
         : m_brushColor;
     QColor fill = stroke;
     fill.setAlpha(36);
+    if (m_fillColor.isValid())
+        fill = m_fillColor;
+    const bool filled = shapeTypeIsFilled(type) && m_fillStyle != FillStyle::None;
     item->setStyle(stroke,
-                   shapeTypeIsFilled(type) ? fill : QColor(Qt::transparent),
+                   filled ? fill : QColor(Qt::transparent),
                    qBound<qreal>(2.5, m_brushWidth, 10.0));
+    item->setFillStyle(filled ? m_fillStyle : FillStyle::None);
 
     const QRectF board = m_scene->boardRect();
     QSizeF size = defaultShapeSize(type);
@@ -1152,10 +1212,117 @@ void MainWindow::insertShape(ShapeType type)
     m_scene->addItemsWithUndo({ item }, QStringLiteral("插入%1").arg(shapeTypeName(type)));
     item->setSelected(true);
     m_view->setFocus();
-    statusBar()->showMessage(
-        QStringLiteral("已插入%1；拖动可移动，拖动控制点可缩放，颜色跟随当前画笔")
-            .arg(shapeTypeName(type)),
-        5000);
+    if (type == ShapeType::Ellipse) {
+        statusBar()->showMessage(
+            QStringLiteral("已插入正圆；编辑模式下拖动控制点可把它拉伸成椭圆"), 5000);
+    } else {
+        statusBar()->showMessage(
+            QStringLiteral("已插入%1；拖动可移动，拖动控制点可缩放，颜色跟随当前画笔")
+                .arg(shapeTypeName(type)),
+            5000);
+    }
+}
+
+void MainWindow::setFillStyle(FillStyle style)
+{
+    m_fillStyle = style;
+    updateFillActions();
+    applyFillToSelection();
+}
+
+void MainWindow::chooseFillColor()
+{
+    const QColor initial = m_fillColor.isValid() ? m_fillColor
+                                                 : QColor(59, 130, 246, 96);
+    const QColor color = QColorDialog::getColor(initial, this,
+                                                QStringLiteral("选择填充颜色"),
+                                                QColorDialog::ShowAlphaChannel);
+    if (!color.isValid())
+        return;
+    m_fillColor = color;
+    updateFillActions();
+    applyFillToSelection();
+}
+
+void MainWindow::applyFillToSelection()
+{
+    if (!m_scene || !m_undo)
+        return;
+
+    QList<ShapeItem*> shapes;
+    int outlineOnlyCount = 0;
+    const QList<BoardItem*> selected = m_scene->selectedBoardItems();
+    for (BoardItem* item : selected) {
+        auto* shape = dynamic_cast<ShapeItem*>(item);
+        if (!shape)
+            continue;
+        if (shapeTypeIsFilled(shape->shapeType()))
+            shapes.append(shape);
+        else
+            ++outlineOnlyCount;
+    }
+
+    if (shapes.isEmpty()) {
+        if (outlineOnlyCount > 0) {
+            statusBar()->showMessage(
+                QStringLiteral("所选图形只有描边（直线、箭头、大括号等），暂不支持填充"), 4000);
+        } else {
+            statusBar()->showMessage(QStringLiteral("填充已设为「%1」，将用于新插入的图形")
+                                         .arg(fillStyleName(m_fillStyle)),
+                                     4000);
+        }
+        return;
+    }
+
+    QList<ShapeItemState> before;
+    QList<ShapeItemState> after;
+    before.reserve(shapes.size());
+    after.reserve(shapes.size());
+    for (ShapeItem* shape : shapes) {
+        before.append(shape->state());
+        QColor fill = m_fillColor.isValid() ? m_fillColor : shape->fillColor();
+        if (fill.alpha() == 0)
+            fill = shape->strokeColor();
+        shape->setFill(fill, m_fillStyle);
+        after.append(shape->state());
+    }
+
+    if (before == after) {
+        statusBar()->showMessage(QStringLiteral("填充样式没有变化"), 3000);
+        return;
+    }
+
+    m_undo->push(new ShapeStyleCommand(m_scene, shapes, before, after,
+                                       QStringLiteral("调整填充样式")));
+    statusBar()->showMessage(QStringLiteral("已对 %1 个图形应用「%2」")
+                                 .arg(shapes.size())
+                                 .arg(fillStyleName(m_fillStyle)),
+                             4000);
+}
+
+void MainWindow::updateFillActions()
+{
+    if (!m_fillButton)
+        return;
+
+    if (m_fillNoneAct)
+        m_fillNoneAct->setChecked(m_fillStyle == FillStyle::None);
+    if (m_fillSolidAct)
+        m_fillSolidAct->setChecked(m_fillStyle == FillStyle::Solid);
+    if (m_fillHachureAct)
+        m_fillHachureAct->setChecked(m_fillStyle == FillStyle::Hachure);
+    if (m_fillCrossAct)
+        m_fillCrossAct->setChecked(m_fillStyle == FillStyle::CrossHatch);
+
+    const QColor swatch = m_fillColor.isValid() ? m_fillColor : QColor(30, 41, 59, 36);
+    m_fillButton->setIcon(makeColorIcon(swatch, 20));
+    const QString colorText = m_fillColor.isValid()
+        ? m_fillColor.name(QColor::HexArgb).toUpper()
+        : QStringLiteral("跟随画笔色");
+    m_fillButton->setToolTip(QStringLiteral("填充：%1 · %2（点击选择）")
+                                 .arg(fillStyleName(m_fillStyle), colorText));
+    if (m_fillColorAct)
+        m_fillColorAct->setIcon(makeColorIcon(swatch, 16));
 }
 
 void MainWindow::insertTextAt(const QPointF& scenePos)
@@ -1353,9 +1520,9 @@ void MainWindow::showAbout()
             "<ul>"
             "<li><b>V</b> 查看模式：整体平移 / 缩放，自动全景</li>"
             "<li><b>B</b> 画笔模式：自由曲线，可选颜色与粗细</li>"
-            "<li><b>E</b> 编辑模式：仅当前图层可编辑，其他图层锁定；右键调整图层/高度</li>"
+            "<li><b>E</b> 编辑模式：显示且未锁定图层上的图元都能编辑；锁定图层不可编辑；右键调整图层/高度</li>"
             "<li><b>T</b> 文字模式：点击画板添加文字，双击文字可再次编辑</li>"
-            "<li><b>图层</b>：右侧面板勾选控制显示/隐藏；选中图层自动显示，隐藏当前图层会自动切换</li>"
+            "<li><b>图层</b>：右侧面板勾选框控制显示/隐藏、锁形按钮锁定图层；图层与图元都支持多选</li>"
             "<li><b>插入 → 常见图形</b>：快速插入矩形、圆形、箭头、大括号、对话气泡等</li>"
             "<li><b>Ctrl+0</b> 回到全景视图，<b>Ctrl+Z / Ctrl+Y</b> 撤销 / 重做</li>"
             "</ul>"

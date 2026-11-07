@@ -246,6 +246,24 @@ void drawIconShape(QPainter& painter, IconId id)
         painter.drawLine(QPointF(3.0, 10.0), QPointF(21.0, 10.0));
         break;
     }
+    case IconId::Lock: {
+        QPainterPath shackle;
+        shackle.moveTo(8.0, 12.5);
+        shackle.lineTo(8.0, 9.0);
+        shackle.cubicTo(8.0, 3.8, 16.0, 3.8, 16.0, 9.0);
+        shackle.lineTo(16.0, 12.5);
+        painter.drawPath(shackle);
+        const QColor lockColor = painter.pen().color();
+        painter.setBrush(lockColor);
+        painter.drawRoundedRect(QRectF(4.0, 12.5, 16.0, 9.0), 2.2, 2.2);
+        painter.setBrush(QColor(255, 255, 255));
+        painter.setPen(Qt::NoPen);
+        painter.drawEllipse(QPointF(12.0, 16.0), 1.6, 1.6);
+        painter.drawRect(QRectF(11.2, 16.0, 1.6, 3.2));
+        painter.setPen(QPen(lockColor, 1.6));
+        painter.setBrush(Qt::NoBrush);
+        break;
+    }
     case IconId::Shapes: {
         painter.drawRoundedRect(QRectF(3.0, 3.0, 11.0, 9.0), 1.8, 1.8);
         painter.drawEllipse(QPointF(15.5, 15.0), 5.5, 5.5);

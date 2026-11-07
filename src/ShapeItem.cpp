@@ -90,6 +90,33 @@ QPainterPath calloutPath(const QRectF& rect)
     return bodyPath.united(tail);
 }
 
+void paintHatchFill(QPainter* painter, const QPainterPath& clip, const QRectF& rect,
+                    const QColor& color, bool cross)
+{
+    QColor hatchColor = color;
+    if (hatchColor.alpha() < 120)
+        hatchColor.setAlpha(120);
+
+    const qreal spacing = qBound<qreal>(5.0,
+                                        qMax(rect.width(), rect.height()) * 0.03,
+                                        12.0);
+    const qreal w = rect.width();
+    const qreal h = rect.height();
+
+    painter->save();
+    painter->setClipPath(clip);
+    QPen pen(hatchColor, 1.6, Qt::SolidLine, Qt::FlatCap);
+    painter->setPen(pen);
+
+    for (qreal x = rect.left() - h; x < rect.right() + spacing; x += spacing)
+        painter->drawLine(QPointF(x, rect.bottom()), QPointF(x + h, rect.top()));
+    if (cross) {
+        for (qreal x = rect.left() - spacing; x < rect.right() + spacing; x += spacing)
+            painter->drawLine(QPointF(x, rect.top()), QPointF(x + h, rect.bottom()));
+    }
+    painter->restore();
+}
+
 } // namespace
 
 QList<ShapeType> allShapeTypes()
@@ -118,7 +145,7 @@ QString shapeTypeName(ShapeType type)
     case ShapeType::RoundedRectangle:
         return QStringLiteral("圆角矩形");
     case ShapeType::Ellipse:
-        return QStringLiteral("圆形 / 椭圆");
+        return QStringLiteral("椭圆");
     case ShapeType::Triangle:
         return QStringLiteral("三角形");
     case ShapeType::Diamond:
@@ -222,7 +249,8 @@ QSizeF defaultShapeSize(ShapeType type)
     case ShapeType::RoundedRectangle:
         return QSizeF(300.0, 190.0);
     case ShapeType::Ellipse:
-        return QSizeF(240.0, 180.0);
+        // 插入即为标准圆形；编辑模式下拖动控制点可拉伸成椭圆。
+        return QSizeF(200.0, 200.0);
     case ShapeType::Triangle:
         return QSizeF(260.0, 210.0);
     case ShapeType::Diamond:
@@ -271,6 +299,59 @@ bool shapeTypeIsStrokeOnly(ShapeType type)
         || type == ShapeType::BraceRight;
 }
 
+QList<FillStyle> allFillStyles()
+{
+    return { FillStyle::None, FillStyle::Solid, FillStyle::Hachure, FillStyle::CrossHatch };
+}
+
+QString fillStyleName(FillStyle style)
+{
+    switch (style) {
+    case FillStyle::None:
+        return QStringLiteral("无填充");
+    case FillStyle::Solid:
+        return QStringLiteral("纯色");
+    case FillStyle::Hachure:
+        return QStringLiteral("斜线");
+    case FillStyle::CrossHatch:
+        return QStringLiteral("交叉线");
+    }
+    return QStringLiteral("纯色");
+}
+
+QString fillStyleToString(FillStyle style)
+{
+    switch (style) {
+    case FillStyle::None:
+        return QStringLiteral("none");
+    case FillStyle::Solid:
+        return QStringLiteral("solid");
+    case FillStyle::Hachure:
+        return QStringLiteral("hachure");
+    case FillStyle::CrossHatch:
+        return QStringLiteral("cross_hatch");
+    }
+    return QStringLiteral("solid");
+}
+
+FillStyle fillStyleFromString(const QString& value)
+{
+    const QString normalized = value.trimmed().toLower();
+    if (normalized == QStringLiteral("none") || normalized == QStringLiteral("transparent"))
+        return FillStyle::None;
+    if (normalized == QStringLiteral("hachure") || normalized == QStringLiteral("hatch")
+        || normalized == QStringLiteral("diagonal")) {
+        return FillStyle::Hachure;
+    }
+    if (normalized == QStringLiteral("cross_hatch") || normalized == QStringLiteral("crosshatch")
+        || normalized == QStringLiteral("cross") || normalized == QStringLiteral("zigzag")) {
+        return FillStyle::CrossHatch;
+    }
+    if (normalized == QStringLiteral("solid") || normalized == QStringLiteral("color"))
+        return FillStyle::Solid;
+    return FillStyle::Solid;
+}
+
 QIcon makeShapeIcon(ShapeType type, const QColor& color, int logicalSize)
 {
     constexpr qreal scale = 2.0;
@@ -284,7 +365,9 @@ QIcon makeShapeIcon(ShapeType type, const QColor& color, int logicalSize)
     painter.scale(logicalSize / 24.0, logicalSize / 24.0);
 
     QRectF rect(3.0, 4.0, 18.0, 16.0);
-    if (type == ShapeType::BraceLeft || type == ShapeType::BraceRight)
+    if (type == ShapeType::Ellipse)
+        rect = QRectF(4.0, 4.0, 16.0, 16.0);
+    else if (type == ShapeType::BraceLeft || type == ShapeType::BraceRight)
         rect = QRectF(6.0, 2.0, 12.0, 20.0);
     else if (type == ShapeType::Arrow || type == ShapeType::DoubleArrow
              || type == ShapeType::Line) {
@@ -342,12 +425,28 @@ void ShapeItem::setStyle(const QColor& strokeColor, const QColor& fillColor, qre
     update();
 }
 
+void ShapeItem::setFill(const QColor& fillColor, FillStyle style)
+{
+    m_fillColor = fillColor.isValid() ? fillColor : QColor(Qt::transparent);
+    m_fillStyle = style;
+    update();
+}
+
+void ShapeItem::setFillStyle(FillStyle style)
+{
+    if (m_fillStyle == style)
+        return;
+    m_fillStyle = style;
+    update();
+}
+
 ShapeItemState ShapeItem::state() const
 {
     ShapeItemState result;
     result.type = m_type;
     result.strokeColor = m_strokeColor;
     result.fillColor = m_fillColor;
+    result.fillStyle = m_fillStyle;
     result.strokeWidth = m_strokeWidth;
     result.pos = pos();
     result.size = contentSize();
@@ -357,6 +456,7 @@ ShapeItemState ShapeItem::state() const
 void ShapeItem::applyState(const ShapeItemState& state)
 {
     m_type = state.type;
+    m_fillStyle = state.fillStyle;
     setStyle(state.strokeColor, state.fillColor, state.strokeWidth);
     setPos(state.pos);
     setContentSize(state.size.isEmpty() ? defaultShapeSize(state.type) : state.size);
@@ -513,10 +613,18 @@ void ShapeItem::paintContent(QPainter* painter)
         painter->setBrush(Qt::NoBrush);
         painter->drawPath(path);
     } else {
+        if (m_fillStyle == FillStyle::Hachure || m_fillStyle == FillStyle::CrossHatch) {
+            paintHatchFill(painter, path, rect, m_fillColor,
+                           m_fillStyle == FillStyle::CrossHatch);
+        }
+
         QPen pen(m_strokeColor, m_strokeWidth, Qt::SolidLine,
                  Qt::RoundCap, Qt::RoundJoin);
         painter->setPen(pen);
-        painter->setBrush(m_fillColor.alpha() > 0 ? QBrush(m_fillColor) : QBrush(Qt::NoBrush));
+        if (m_fillStyle == FillStyle::Solid && m_fillColor.alpha() > 0)
+            painter->setBrush(m_fillColor);
+        else
+            painter->setBrush(Qt::NoBrush);
         painter->drawPath(path);
     }
     painter->restore();
@@ -528,6 +636,7 @@ QJsonObject ShapeItem::toJson() const
     json.insert(QStringLiteral("shapeType"), shapeTypeToString(m_type));
     json.insert(QStringLiteral("strokeColor"), m_strokeColor.name(QColor::HexArgb));
     json.insert(QStringLiteral("fillColor"), m_fillColor.name(QColor::HexArgb));
+    json.insert(QStringLiteral("fillStyle"), fillStyleToString(m_fillStyle));
     json.insert(QStringLiteral("strokeWidth"), m_strokeWidth);
     return json;
 }
@@ -548,6 +657,12 @@ void ShapeItem::fromJson(const QJsonObject& json)
     } else {
         m_fillColor = m_strokeColor;
         m_fillColor.setAlpha(36);
+    }
+
+    if (json.contains(QStringLiteral("fillStyle"))) {
+        m_fillStyle = fillStyleFromString(json.value(QStringLiteral("fillStyle")).toString());
+    } else {
+        m_fillStyle = m_fillColor.alpha() > 0 ? FillStyle::Solid : FillStyle::None;
     }
 
     m_strokeWidth = qBound<qreal>(

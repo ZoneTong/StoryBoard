@@ -7,6 +7,7 @@
 
 #include "BoardTypes.h"
 #include "Settings.h"
+#include "ShapeItem.h"
 
 class BoardScene;
 class BoardView;
@@ -76,6 +77,10 @@ private:
     bool exportToFile(const QString& path, const QRectF& area, qreal scale, const QString& format);
     void importImageFiles(const QStringList& files);
     void insertShape(ShapeType type);
+    void setFillStyle(FillStyle style);
+    void chooseFillColor();
+    void applyFillToSelection();
+    void updateFillActions();
     void setBrushColor(const QColor& color, bool remember);
     void setBrushWidthUi(int width);
     void updateTemplateMenu();
@@ -88,6 +93,8 @@ private:
     AppSettings m_settings;
     QString m_filePath;
     QColor m_brushColor;
+    QColor m_fillColor;
+    FillStyle m_fillStyle = FillStyle::Solid;
     int m_brushWidth = 4;
 
     QAction* m_newAct = nullptr;
@@ -119,12 +126,18 @@ private:
     QAction* m_bgFitAct = nullptr;
     QAction* m_bgTileAct = nullptr;
     QAction* m_settingsAct = nullptr;
+    QAction* m_fillNoneAct = nullptr;
+    QAction* m_fillSolidAct = nullptr;
+    QAction* m_fillHachureAct = nullptr;
+    QAction* m_fillCrossAct = nullptr;
+    QAction* m_fillColorAct = nullptr;
 
     QAction* m_aboutAct = nullptr;
     QAction* m_aboutQtAct = nullptr;
 
     QActionGroup* m_modeGroup = nullptr;
     QActionGroup* m_backgroundModeGroup = nullptr;
+    QActionGroup* m_fillStyleGroup = nullptr;
     QMenu* m_templatesMenu = nullptr;
     QMenu* m_shapeMenu = nullptr;
 
@@ -132,6 +145,7 @@ private:
     LayerPanel* m_layerPanel = nullptr;
 
     QToolButton* m_colorButton = nullptr;
+    QToolButton* m_fillButton = nullptr;
     QComboBox* m_widthCombo = nullptr;
 
     QLabel* m_hintLabel = nullptr;

@@ -114,7 +114,7 @@ void BackgroundCommand::redo()
         m_scene->applyBackground(m_after);
 }
 
-BoardSizeCommand::BoardSizeCommand(BoardScene* scene, const QSizeF& before, const QSizeF& after,
+BoardSizeCommand::BoardSizeCommand(BoardScene* scene, const QRectF& before, const QRectF& after,
                                    const QString& text)
     : m_scene(scene)
     , m_before(before)
@@ -126,13 +126,13 @@ BoardSizeCommand::BoardSizeCommand(BoardScene* scene, const QSizeF& before, cons
 void BoardSizeCommand::undo()
 {
     if (m_scene)
-        m_scene->applyBoardSize(m_before);
+        m_scene->applyBoardRect(m_before);
 }
 
 void BoardSizeCommand::redo()
 {
     if (m_scene)
-        m_scene->applyBoardSize(m_after);
+        m_scene->applyBoardRect(m_after);
 }
 
 ItemStackCommand::ItemStackCommand(BoardScene* scene, const ItemStackList& before,
@@ -198,4 +198,40 @@ void LayerStateCommand::redo()
 {
     if (m_scene)
         m_scene->applyLayerState(m_after);
+}
+
+ShapeStyleCommand::ShapeStyleCommand(BoardScene* scene, const QList<ShapeItem*>& items,
+                                     const QList<ShapeItemState>& before,
+                                     const QList<ShapeItemState>& after,
+                                     const QString& text)
+    : m_scene(scene)
+    , m_before(before)
+    , m_after(after)
+{
+    setText(text);
+    for (ShapeItem* item : items)
+        m_items.append(QPointer<ShapeItem>(item));
+}
+
+void ShapeStyleCommand::undo()
+{
+    apply(m_before);
+}
+
+void ShapeStyleCommand::redo()
+{
+    apply(m_after);
+}
+
+void ShapeStyleCommand::apply(const QList<ShapeItemState>& states)
+{
+    for (int i = 0; i < m_items.size() && i < states.size(); ++i) {
+        if (!m_items.at(i))
+            continue;
+        m_items.at(i)->applyState(states.at(i));
+    }
+    if (m_scene) {
+        m_scene->updateSceneExtent();
+        m_scene->update();
+    }
 }

@@ -7,6 +7,9 @@
 
 #include <QAction>
 #include <QContextMenuEvent>
+#include <QCursor>
+#include <QPainter>
+#include <QPaintEvent>
 #include <QKeyEvent>
 #include <QMenu>
 #include <QMouseEvent>
@@ -248,7 +251,19 @@ void BoardView::mousePressEvent(QMouseEvent* event)
         return;
     }
 
+    if (m_mode == ToolMode::Edit && event->button() == Qt::LeftButton
+        && beginBoardResize(position)) {
+        event->accept();
+        return;
+    }
+
     if (event->button() == Qt::LeftButton && m_mode == ToolMode::Brush && !m_activeStroke) {
+        if (!m_scene->isActiveLayerWritable()) {
+            emit statusMessage(QStringLiteral(
+                "当前图层已锁定或已隐藏，无法在该图层绘制。请先在右侧图层面板解锁或切换图层。"));
+            event->accept();
+            return;
+        }
         auto* stroke = new StrokeItem();
         // Keep the in-progress stroke on top while drawing. The final layer
         // and height are assigned when the stroke is committed.
@@ -262,6 +277,12 @@ void BoardView::mousePressEvent(QMouseEvent* event)
     }
 
     if (event->button() == Qt::LeftButton && m_mode == ToolMode::Text) {
+        if (!m_scene->isActiveLayerWritable()) {
+            emit statusMessage(QStringLiteral(
+                "当前图层已锁定或已隐藏，无法在该图层放置文字。请先在右侧图层面板解锁或切换图层。"));
+            event->accept();
+            return;
+        }
         emit textPlacementRequested(mapToScene(position));
         event->accept();
         return;
@@ -281,6 +302,12 @@ void BoardView::mouseMoveEvent(QMouseEvent* event)
         return;
     }
 
+    if (m_resizingBoard) {
+        updateBoardResize(mapToScene(position));
+        event->accept();
+        return;
+    }
+
     if (m_activeStroke) {
         m_activeStroke->appendScenePoint(mapToScene(position));
         viewport()->update();
@@ -289,12 +316,19 @@ void BoardView::mouseMoveEvent(QMouseEvent* event)
     }
 
     QGraphicsView::mouseMoveEvent(event);
+    updateBoardHoverCursor(position);
 }
 
 void BoardView::mouseReleaseEvent(QMouseEvent* event)
 {
     if (m_panning) {
         endPan();
+        event->accept();
+        return;
+    }
+
+    if (m_resizingBoard && event->button() == Qt::LeftButton) {
+        endBoardResize();
         event->accept();
         return;
     }
@@ -311,15 +345,15 @@ void BoardView::mouseReleaseEvent(QMouseEvent* event)
 void BoardView::mouseDoubleClickEvent(QMouseEvent* event)
 {
     if (m_mode == ToolMode::Edit && event->button() == Qt::LeftButton) {
-        QGraphicsItem* graphicsItem = itemAt(event->position().toPoint());
-        auto* boardItem = qgraphicsitem_cast<BoardItem*>(graphicsItem);
-        if (boardItem && !boardItem->isVisible()) {
+        BoardItem* boardItem = editableItemAt(event->position().toPoint());
+        if (!boardItem) {
+            if (topBoardItemAt(event->position().toPoint())) {
+                emit statusMessage(QStringLiteral(
+                    "该图元所在图层已锁定或已隐藏，无法编辑。请先在右侧图层面板解锁或显示该图层。"));
+                event->accept();
+                return;
+            }
             QGraphicsView::mouseDoubleClickEvent(event);
-            return;
-        }
-        if (boardItem && !boardItem->isEditable()) {
-            emit statusMessage(QStringLiteral("该图元所在图层未选中或已隐藏，请先在右侧图层面板选择对应图层。"));
-            event->accept();
             return;
         }
         if (auto* textItem = dynamic_cast<TextItem*>(boardItem)) {
@@ -338,26 +372,15 @@ void BoardView::contextMenuEvent(QContextMenuEvent* event)
         return;
     }
 
-    const QPointF scenePosition = mapToScene(event->pos());
-    BoardItem* item = nullptr;
-    const QList<QGraphicsItem*> candidates = m_scene->items(scenePosition);
-    for (QGraphicsItem* graphicsItem : candidates) {
-        if (auto* boardItem = qgraphicsitem_cast<BoardItem*>(graphicsItem)) {
-            if (!boardItem->isVisible())
-                continue;
-            item = boardItem;
-            break;
-        }
-    }
-
+    BoardItem* item = editableItemAt(event->pos());
     if (!item) {
+        if (topBoardItemAt(event->pos())) {
+            emit statusMessage(QStringLiteral(
+                "该图元所在图层已锁定或已隐藏，无法编辑。请先在右侧图层面板解锁或显示该图层。"));
+            event->accept();
+            return;
+        }
         QGraphicsView::contextMenuEvent(event);
-        return;
-    }
-
-    if (!item->isEditable()) {
-        emit statusMessage(QStringLiteral("该图元所在图层未选中或已隐藏，请先在右侧图层面板选择对应图层。"));
-        event->accept();
         return;
     }
 
@@ -479,4 +502,235 @@ void BoardView::cancelCurrentStroke()
     m_scene->removeItem(stroke);
     delete stroke;
     updateCursor();
+}
+
+void BoardView::paintEvent(QPaintEvent* event)
+{
+    QGraphicsView::paintEvent(event);
+    if (m_mode != ToolMode::Edit)
+        return;
+    QPainter painter(viewport());
+    drawBoardHandles(&painter);
+}
+
+void BoardView::leaveEvent(QEvent* event)
+{
+    if (!m_resizingBoard) {
+        m_hoverHandle = BoardHandle::None;
+        updateCursor();
+    }
+    QGraphicsView::leaveEvent(event);
+}
+
+BoardItem* BoardView::topBoardItemAt(const QPoint& viewportPos) const
+{
+    const QList<QGraphicsItem*> candidates = m_scene->items(mapToScene(viewportPos));
+    for (QGraphicsItem* graphicsItem : candidates) {
+        auto* boardItem = qgraphicsitem_cast<BoardItem*>(graphicsItem);
+        if (boardItem && boardItem->isVisible())
+            return boardItem;
+    }
+    return nullptr;
+}
+
+BoardItem* BoardView::editableItemAt(const QPoint& viewportPos) const
+{
+    // 命中要“穿透”锁定或隐藏的图层：自上而下找第一个真正可编辑的图元，
+    // 这样锁定的顶层图元不会挡住下面未锁定图层上的图元。
+    const QList<QGraphicsItem*> candidates = m_scene->items(mapToScene(viewportPos));
+    for (QGraphicsItem* graphicsItem : candidates) {
+        auto* boardItem = qgraphicsitem_cast<BoardItem*>(graphicsItem);
+        if (!boardItem || !boardItem->isVisible())
+            continue;
+        if (m_scene->isItemEditable(boardItem))
+            return boardItem;
+    }
+    return nullptr;
+}
+
+Qt::CursorShape BoardView::boardHandleCursor(BoardHandle handle)
+{
+    switch (handle) {
+    case BoardHandle::Left:
+    case BoardHandle::Right:
+        return Qt::SizeHorCursor;
+    case BoardHandle::Top:
+    case BoardHandle::Bottom:
+        return Qt::SizeVerCursor;
+    case BoardHandle::TopLeft:
+    case BoardHandle::BottomRight:
+        return Qt::SizeFDiagCursor;
+    case BoardHandle::TopRight:
+    case BoardHandle::BottomLeft:
+        return Qt::SizeBDiagCursor;
+    case BoardHandle::None:
+        break;
+    }
+    return Qt::ArrowCursor;
+}
+
+BoardView::BoardHandle BoardView::boardHandleAt(const QPoint& viewportPos) const
+{
+    if (m_mode != ToolMode::Edit)
+        return BoardHandle::None;
+
+    const QRectF rect = mapFromScene(m_scene->boardRect()).boundingRect();
+    const QPointF point = viewportPos;
+    const qreal tolerance = 7.0;
+    const QRectF outer = rect.adjusted(-tolerance, -tolerance, tolerance, tolerance);
+    if (!outer.contains(point))
+        return BoardHandle::None;
+
+    const bool left = qAbs(point.x() - rect.left()) <= tolerance;
+    const bool right = qAbs(point.x() - rect.right()) <= tolerance;
+    const bool top = qAbs(point.y() - rect.top()) <= tolerance;
+    const bool bottom = qAbs(point.y() - rect.bottom()) <= tolerance;
+
+    if (left && top)
+        return BoardHandle::TopLeft;
+    if (right && top)
+        return BoardHandle::TopRight;
+    if (left && bottom)
+        return BoardHandle::BottomLeft;
+    if (right && bottom)
+        return BoardHandle::BottomRight;
+    if (left)
+        return BoardHandle::Left;
+    if (right)
+        return BoardHandle::Right;
+    if (top)
+        return BoardHandle::Top;
+    if (bottom)
+        return BoardHandle::Bottom;
+    return BoardHandle::None;
+}
+
+bool BoardView::beginBoardResize(const QPoint& viewportPos)
+{
+    const BoardHandle handle = boardHandleAt(viewportPos);
+    if (handle == BoardHandle::None)
+        return false;
+
+    m_boardHandle = handle;
+    m_resizingBoard = true;
+    m_resizeStartRect = m_scene->boardRect();
+    viewport()->setCursor(boardHandleCursor(handle));
+    return true;
+}
+
+QRectF BoardView::boardRectForDrag(const QPointF& scenePos) const
+{
+    QRectF rect = m_resizeStartRect;
+    switch (m_boardHandle) {
+    case BoardHandle::Left:
+        rect.setLeft(scenePos.x());
+        break;
+    case BoardHandle::Right:
+        rect.setRight(scenePos.x());
+        break;
+    case BoardHandle::Top:
+        rect.setTop(scenePos.y());
+        break;
+    case BoardHandle::Bottom:
+        rect.setBottom(scenePos.y());
+        break;
+    case BoardHandle::TopLeft:
+        rect.setTopLeft(scenePos);
+        break;
+    case BoardHandle::TopRight:
+        rect.setTopRight(scenePos);
+        break;
+    case BoardHandle::BottomLeft:
+        rect.setBottomLeft(scenePos);
+        break;
+    case BoardHandle::BottomRight:
+        rect.setBottomRight(scenePos);
+        break;
+    case BoardHandle::None:
+        return rect;
+    }
+
+    rect = rect.normalized();
+    constexpr qreal minimum = 200.0;
+    if (rect.width() < minimum) {
+        if (m_boardHandle == BoardHandle::Left || m_boardHandle == BoardHandle::TopLeft
+            || m_boardHandle == BoardHandle::BottomLeft) {
+            rect.setLeft(rect.right() - minimum);
+        } else {
+            rect.setRight(rect.left() + minimum);
+        }
+    }
+    if (rect.height() < minimum) {
+        if (m_boardHandle == BoardHandle::Top || m_boardHandle == BoardHandle::TopLeft
+            || m_boardHandle == BoardHandle::TopRight) {
+            rect.setTop(rect.bottom() - minimum);
+        } else {
+            rect.setBottom(rect.top() + minimum);
+        }
+    }
+    return rect;
+}
+
+void BoardView::updateBoardResize(const QPointF& scenePos)
+{
+    if (!m_resizingBoard)
+        return;
+    m_scene->applyBoardRect(boardRectForDrag(scenePos));
+}
+
+void BoardView::endBoardResize()
+{
+    if (!m_resizingBoard)
+        return;
+    m_resizingBoard = false;
+    m_boardHandle = BoardHandle::None;
+    m_scene->commitBoardRect(m_resizeStartRect);
+    const QSizeF size = m_scene->boardSize();
+    emit statusMessage(QStringLiteral("画板尺寸：%1 × %2（可撤销）")
+                           .arg(qRound(size.width()))
+                           .arg(qRound(size.height())));
+    updateCursor();
+}
+
+void BoardView::updateBoardHoverCursor(const QPoint& viewportPos)
+{
+    if (m_panning || m_activeStroke || m_resizingBoard)
+        return;
+    const BoardHandle handle = boardHandleAt(viewportPos);
+    if (handle == m_hoverHandle)
+        return;
+    m_hoverHandle = handle;
+    if (handle == BoardHandle::None)
+        updateCursor();
+    else
+        viewport()->setCursor(boardHandleCursor(handle));
+}
+
+void BoardView::drawBoardHandles(QPainter* painter)
+{
+    const QPolygon polygon = mapFromScene(m_scene->boardRect());
+    const QRectF rect = polygon.boundingRect();
+    if (rect.width() < 30.0 || rect.height() < 30.0)
+        return;
+
+    const QPointF handles[8] = {
+        rect.topLeft(),
+        QPointF(rect.center().x(), rect.top()),
+        rect.topRight(),
+        QPointF(rect.right(), rect.center().y()),
+        rect.bottomRight(),
+        QPointF(rect.center().x(), rect.bottom()),
+        rect.bottomLeft(),
+        QPointF(rect.left(), rect.center().y())
+    };
+
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->setPen(QPen(QColor(59, 130, 246), 1.2));
+    painter->setBrush(QColor(255, 255, 255));
+    for (const QPointF& point : handles) {
+        const QRectF knob(point.x() - 4.5, point.y() - 4.5, 9.0, 9.0);
+        painter->drawRoundedRect(knob, 2.0, 2.0);
+    }
+    painter->restore();
 }

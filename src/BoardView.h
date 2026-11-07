@@ -5,6 +5,7 @@
 
 #include "BoardTypes.h"
 
+class BoardItem;
 class BoardScene;
 class StrokeItem;
 class TextItem;
@@ -34,6 +35,9 @@ public:
     void cancelCurrentStroke();
     void finishCurrentStroke();
 
+    // 画板边缘拖动：扩大或裁剪画板。返回当前是否正在拖动边缘。
+    bool isResizingBoard() const { return m_resizingBoard; }
+
 signals:
     void zoomChanged(qreal zoom);
     void modeChanged(ToolMode mode);
@@ -42,6 +46,8 @@ signals:
     void editTextRequested(TextItem* item);
 
 protected:
+    void paintEvent(QPaintEvent* event) override;
+    void leaveEvent(QEvent* event) override;
     void drawBackground(QPainter* painter, const QRectF& rect) override;
     void wheelEvent(QWheelEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
@@ -59,6 +65,29 @@ private:
     void beginPan(const QPoint& position);
     void endPan();
 
+    enum class BoardHandle {
+        None,
+        TopLeft,
+        Top,
+        TopRight,
+        Right,
+        BottomRight,
+        Bottom,
+        BottomLeft,
+        Left
+    };
+
+    BoardItem* topBoardItemAt(const QPoint& viewportPos) const;
+    BoardItem* editableItemAt(const QPoint& viewportPos) const;
+    BoardHandle boardHandleAt(const QPoint& viewportPos) const;
+    bool beginBoardResize(const QPoint& viewportPos);
+    void updateBoardResize(const QPointF& scenePos);
+    void endBoardResize();
+    void updateBoardHoverCursor(const QPoint& viewportPos);
+    QRectF boardRectForDrag(const QPointF& scenePos) const;
+    void drawBoardHandles(QPainter* painter);
+    static Qt::CursorShape boardHandleCursor(BoardHandle handle);
+
     BoardScene* m_scene = nullptr;
     ToolMode m_mode = ToolMode::View;
     StrokeItem* m_activeStroke = nullptr;
@@ -70,4 +99,9 @@ private:
     QPoint m_panStart;
     QPointF m_panAnchorScene;
     QPointF m_panCenterScene;
+
+    bool m_resizingBoard = false;
+    BoardHandle m_boardHandle = BoardHandle::None;
+    BoardHandle m_hoverHandle = BoardHandle::None;
+    QRectF m_resizeStartRect;
 };

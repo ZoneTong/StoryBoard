@@ -53,10 +53,12 @@ struct BoardLayer {
     int id = 0;
     QString name;
     bool visible = true;
+    bool locked = false;
 
     bool operator==(const BoardLayer& other) const
     {
-        return id == other.id && name == other.name && visible == other.visible;
+        return id == other.id && name == other.name && visible == other.visible
+            && locked == other.locked;
     }
 
     bool operator!=(const BoardLayer& other) const { return !(*this == other); }
