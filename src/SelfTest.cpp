@@ -163,12 +163,6 @@ int runSelfTest(const QString& reportPath)
     int failures = 0;
 
     auto check = [&lines, &failures](bool condition, const QString& name, const QString& detail = QString()) {
-        static int checkCounter = 0;
-        static QFile progress(QStringLiteral("selftest-progress.txt"));
-        if (!progress.isOpen())
-            progress.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
-        progress.write(QByteArray::number(++checkCounter) + " " + name.toUtf8() + "\n");
-        progress.flush();
         if (condition) {
             lines.append(QStringLiteral("PASS  %1").arg(name));
         } else {
