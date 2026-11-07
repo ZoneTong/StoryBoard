@@ -34,6 +34,9 @@ public:
     BoardScene* scene() const { return m_scene; }
     BoardView* view() const { return m_view; }
 
+    // 按当前语言刷新整个界面文字（设置里切换语言时调用）。
+    void applyUiLanguage();
+
 protected:
     void closeEvent(QCloseEvent* event) override;
     void dragEnterEvent(QDragEnterEvent* event) override;

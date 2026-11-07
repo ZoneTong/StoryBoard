@@ -1,3 +1,5 @@
+#include "I18n.h"
+
 #include "TextDialog.h"
 
 #include "IconFactory.h"
@@ -20,7 +22,7 @@
 TextDialog::TextDialog(QWidget* parent)
     : QDialog(parent)
 {
-    setWindowTitle(QStringLiteral("文字"));
+    setWindowTitle(uiText(QStringLiteral("文字")));
     setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));
     setModal(true);
     setMinimumWidth(560);
@@ -29,18 +31,18 @@ TextDialog::TextDialog(QWidget* parent)
     rootLayout->setContentsMargins(22, 20, 22, 18);
     rootLayout->setSpacing(14);
 
-    m_heading = new QLabel(QStringLiteral("添加文字图元"), this);
+    m_heading = new QLabel(uiText(QStringLiteral("添加文字图元")), this);
     m_heading->setObjectName(QStringLiteral("DialogTitle"));
     rootLayout->addWidget(m_heading);
 
     auto* hint = new QLabel(
-        QStringLiteral("文字会作为独立图元加入当前图层，可移动、缩放，支持撤销与模板保存。"),
+        uiText(QStringLiteral("文字会作为独立图元加入当前图层，可移动、缩放，支持撤销与模板保存。")),
         this);
     hint->setObjectName(QStringLiteral("DialogHint"));
     hint->setWordWrap(true);
     rootLayout->addWidget(hint);
 
-    auto* group = new QGroupBox(QStringLiteral("文字内容与样式"), this);
+    auto* group = new QGroupBox(uiText(QStringLiteral("文字内容与样式")), this);
     auto* form = new QFormLayout(group);
     form->setContentsMargins(16, 18, 16, 16);
     form->setSpacing(10);
@@ -48,15 +50,15 @@ TextDialog::TextDialog(QWidget* parent)
 
     m_edit = new QPlainTextEdit(group);
     m_edit->setObjectName(QStringLiteral("TextInput"));
-    m_edit->setPlaceholderText(QStringLiteral("输入文字，按 Enter 换行…"));
+    m_edit->setPlaceholderText(uiText(QStringLiteral("输入文字，按 Enter 换行…")));
     m_edit->setMinimumHeight(130);
     m_edit->setTabChangesFocus(true);
-    form->addRow(QStringLiteral("文字内容"), m_edit);
+    form->addRow(uiText(QStringLiteral("文字内容")), m_edit);
 
     m_fontCombo = new QFontComboBox(group);
     m_fontCombo->setObjectName(QStringLiteral("TextFontCombo"));
     m_fontCombo->setMinimumHeight(30);
-    form->addRow(QStringLiteral("字体"), m_fontCombo);
+    form->addRow(uiText(QStringLiteral("字体")), m_fontCombo);
 
     m_sizeSpin = new QSpinBox(group);
     m_sizeSpin->setObjectName(QStringLiteral("TextFontSize"));
@@ -64,27 +66,27 @@ TextDialog::TextDialog(QWidget* parent)
     m_sizeSpin->setValue(32);
     m_sizeSpin->setSuffix(QStringLiteral(" pt"));
     m_sizeSpin->setFixedHeight(30);
-    form->addRow(QStringLiteral("字号"), m_sizeSpin);
+    form->addRow(uiText(QStringLiteral("字号")), m_sizeSpin);
 
     auto* styleRow = new QHBoxLayout();
     styleRow->setSpacing(12);
-    m_boldCheck = new QCheckBox(QStringLiteral("粗体"), group);
-    m_italicCheck = new QCheckBox(QStringLiteral("斜体"), group);
+    m_boldCheck = new QCheckBox(uiText(QStringLiteral("粗体")), group);
+    m_italicCheck = new QCheckBox(uiText(QStringLiteral("斜体")), group);
     styleRow->addWidget(m_boldCheck);
     styleRow->addWidget(m_italicCheck);
     styleRow->addStretch(1);
-    form->addRow(QStringLiteral("样式"), styleRow);
+    form->addRow(uiText(QStringLiteral("样式")), styleRow);
 
     m_colorButton = new QPushButton(group);
     m_colorButton->setObjectName(QStringLiteral("TextColorButton"));
     m_colorButton->setIconSize(QSize(18, 18));
-    form->addRow(QStringLiteral("颜色"), m_colorButton);
+    form->addRow(uiText(QStringLiteral("颜色")), m_colorButton);
 
     rootLayout->addWidget(group);
 
     m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
-    m_buttons->button(QDialogButtonBox::Ok)->setText(QStringLiteral("确定"));
-    m_buttons->button(QDialogButtonBox::Cancel)->setText(QStringLiteral("取消"));
+    m_buttons->button(QDialogButtonBox::Ok)->setText(uiText(QStringLiteral("确定")));
+    m_buttons->button(QDialogButtonBox::Cancel)->setText(uiText(QStringLiteral("取消")));
     rootLayout->addWidget(m_buttons);
 
     QFont initialFont = QApplication::font();
@@ -174,7 +176,7 @@ void TextDialog::updateAcceptState()
 void TextDialog::chooseColor()
 {
     const QColor color = QColorDialog::getColor(
-        m_color, this, QStringLiteral("选择文字颜色"), QColorDialog::ShowAlphaChannel);
+        m_color, this, uiText(QStringLiteral("选择文字颜色")), QColorDialog::ShowAlphaChannel);
     if (!color.isValid())
         return;
     m_color = color;

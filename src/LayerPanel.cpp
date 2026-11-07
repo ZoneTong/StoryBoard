@@ -1,3 +1,5 @@
+#include "I18n.h"
+
 #include "LayerPanel.h"
 
 #include "BoardItem.h"
@@ -42,7 +44,7 @@ LayerPanel::LayerPanel(BoardScene* scene, QWidget* parent)
     layout->setContentsMargins(10, 10, 10, 10);
     layout->setSpacing(7);
 
-    auto* caption = new QLabel(QStringLiteral("上层在前 · 可多选"), this);
+    auto* caption = new QLabel(uiText(QStringLiteral("上层在前 · 可多选")), this);
     caption->setObjectName(QStringLiteral("LayerCaption"));
     layout->addWidget(caption);
 
@@ -55,10 +57,10 @@ LayerPanel::LayerPanel(BoardScene* scene, QWidget* parent)
 
     auto* buttonRow = new QHBoxLayout;
     buttonRow->setSpacing(5);
-    m_addButton = makeLayerButton(this, QStringLiteral("+"), QStringLiteral("新建图层（放在最上层）"));
-    m_removeButton = makeLayerButton(this, QStringLiteral("−"), QStringLiteral("删除选中的空图层（可多选）"));
-    m_upButton = makeLayerButton(this, QStringLiteral("↑"), QStringLiteral("当前图层上移一层"));
-    m_downButton = makeLayerButton(this, QStringLiteral("↓"), QStringLiteral("当前图层下移一层"));
+    m_addButton = makeLayerButton(this, QStringLiteral("+"), uiText(QStringLiteral("新建图层（放在最上层）")));
+    m_removeButton = makeLayerButton(this, QStringLiteral("−"), uiText(QStringLiteral("删除选中的空图层（可多选）")));
+    m_upButton = makeLayerButton(this, QStringLiteral("↑"), uiText(QStringLiteral("当前图层上移一层")));
+    m_downButton = makeLayerButton(this, QStringLiteral("↓"), uiText(QStringLiteral("当前图层下移一层")));
     buttonRow->addWidget(m_addButton);
     buttonRow->addWidget(m_removeButton);
     buttonRow->addStretch(1);
@@ -100,18 +102,18 @@ QWidget* LayerPanel::createLayerRow(const BoardLayer& layer, int index, int item
     auto* visibleBox = new QCheckBox(row);
     visibleBox->setObjectName(QStringLiteral("LayerVisibleBox"));
     visibleBox->setFocusPolicy(Qt::NoFocus);
-    visibleBox->setToolTip(QStringLiteral("勾选显示该图层，取消勾选隐藏该图层"));
+    visibleBox->setToolTip(uiText(QStringLiteral("勾选显示该图层，取消勾选隐藏该图层")));
     visibleBox->setChecked(layer.visible);
 
     auto* nameLabel = new QLabel(row);
     nameLabel->setObjectName(QStringLiteral("LayerRowLabel"));
     QString text = (index == BoardScene::BackgroundLayerId)
-        ? QStringLiteral("背景    （第 0 层）")
-        : QStringLiteral("%1    %2 个图元").arg(layer.name).arg(itemCount);
+        ? uiText(QStringLiteral("背景    （第 0 层）"))
+        : uiText(QStringLiteral("%1    %2 个图元")).arg(layer.name).arg(itemCount);
     if (!layer.visible)
-        text += QStringLiteral("  · 隐藏");
+        text += uiText(QStringLiteral("  · 隐藏"));
     if (layer.locked)
-        text += QStringLiteral("  · 锁定");
+        text += uiText(QStringLiteral("  · 锁定"));
     nameLabel->setText(text);
     if (index == BoardScene::BackgroundLayerId)
         nameLabel->setStyleSheet(QStringLiteral("color: rgb(120, 128, 140);"));
@@ -133,7 +135,7 @@ QWidget* LayerPanel::createLayerRow(const BoardLayer& layer, int index, int item
         lockButton->setIcon(makeIcon(IconId::Lock,
                                      layer.locked ? QColor(37, 99, 235) : QColor(110, 118, 132), 18));
         lockButton->setIconSize(QSize(18, 18));
-        lockButton->setToolTip(QStringLiteral("锁定图层：锁定后该图层上的图元不可编辑"));
+        lockButton->setToolTip(uiText(QStringLiteral("锁定图层：锁定后该图层上的图元不可编辑")));
         layout->addWidget(lockButton);
         connect(lockButton, &QToolButton::toggled, this,
                 [this, layerId = layer.id](bool locked) { setLayerLocked(layerId, locked); });
@@ -197,12 +199,12 @@ void LayerPanel::refresh()
         row->setData(Qt::UserRole, layer.id);
         row->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
         row->setSizeHint(QSize(0, 30));
-        row->setToolTip(QStringLiteral("第 %1 层 · %2 个图元\n%3%4\n编辑模式下，显示且未锁定图层上的图元都可以编辑")
+        row->setToolTip(uiText(QStringLiteral("第 %1 层 · %2 个图元\n%3%4\n编辑模式下，显示且未锁定图层上的图元都可以编辑"))
                             .arg(i)
                             .arg(count)
-                            .arg(layer.visible ? QStringLiteral("当前显示")
-                                               : QStringLiteral("当前隐藏"),
-                                 layer.locked ? QStringLiteral(" · 锁定") : QString()));
+                            .arg(layer.visible ? uiText(QStringLiteral("当前显示"))
+                                               : uiText(QStringLiteral("当前隐藏")),
+                                 layer.locked ? uiText(QStringLiteral(" · 锁定")) : QString()));
         m_list->setItemWidget(row, createLayerRow(layer, i, count));
     }
 
@@ -210,7 +212,7 @@ void LayerPanel::refresh()
     backgroundRow->setData(Qt::UserRole, BoardScene::BackgroundLayerId);
     backgroundRow->setFlags(Qt::ItemIsEnabled);
     backgroundRow->setSizeHint(QSize(0, 30));
-    backgroundRow->setToolTip(QStringLiteral("背景始终是最低层，不能直接放置图元\n勾选控制背景显示/隐藏"));
+    backgroundRow->setToolTip(uiText(QStringLiteral("背景始终是最低层，不能直接放置图元\n勾选控制背景显示/隐藏")));
     m_list->setItemWidget(backgroundRow,
                           createLayerRow(m_scene->layer(BoardScene::BackgroundLayerId), 0, 0));
 
@@ -352,26 +354,26 @@ void LayerPanel::setLayerVisible(int layerId, bool visible)
         return;
 
     const QString layerName = (layerId == BoardScene::BackgroundLayerId)
-        ? QStringLiteral("背景层")
+        ? uiText(QStringLiteral("背景层"))
         : m_scene->layer(layerId).name;
     const int oldActive = m_scene->activeLayerId();
 
     if (!m_scene->setLayerVisible(layerId, visible)) {
-        emit statusMessage(QStringLiteral("无法隐藏最后一个可见图层，请先新建图层。"));
+        emit statusMessage(uiText(QStringLiteral("无法隐藏最后一个可见图层，请先新建图层。")));
         scheduleRefresh();
         return;
     }
 
     if (layerId == BoardScene::BackgroundLayerId) {
-        emit statusMessage(visible ? QStringLiteral("已显示背景层")
-                                   : QStringLiteral("已隐藏背景层"));
+        emit statusMessage(visible ? uiText(QStringLiteral("已显示背景层"))
+                                   : uiText(QStringLiteral("已隐藏背景层")));
     } else if (!visible && oldActive == layerId
                && m_scene->activeLayerId() != oldActive) {
-        emit statusMessage(QStringLiteral("已隐藏「%1」，当前图层自动切换到「%2」")
+        emit statusMessage(uiText(QStringLiteral("已隐藏「%1」，当前图层自动切换到「%2」"))
                                .arg(layerName, m_scene->layer(m_scene->activeLayerId()).name));
     } else {
-        emit statusMessage(visible ? QStringLiteral("已显示图层「%1」").arg(layerName)
-                                   : QStringLiteral("已隐藏图层「%1」").arg(layerName));
+        emit statusMessage(visible ? uiText(QStringLiteral("已显示图层「%1」")).arg(layerName)
+                                   : uiText(QStringLiteral("已隐藏图层「%1」")).arg(layerName));
     }
     scheduleRefresh();
 }
@@ -383,13 +385,13 @@ void LayerPanel::setLayerLocked(int layerId, bool locked)
 
     const QString layerName = m_scene->layer(layerId).name;
     if (!m_scene->setLayerLocked(layerId, locked)) {
-        emit statusMessage(QStringLiteral("背景层不支持锁定。"));
+        emit statusMessage(uiText(QStringLiteral("背景层不支持锁定。")));
         scheduleRefresh();
         return;
     }
 
-    emit statusMessage(locked ? QStringLiteral("已锁定图层「%1」，该层图元将不可编辑").arg(layerName)
-                              : QStringLiteral("已解锁图层「%1」").arg(layerName));
+    emit statusMessage(locked ? uiText(QStringLiteral("已锁定图层「%1」，该层图元将不可编辑")).arg(layerName)
+                              : uiText(QStringLiteral("已解锁图层「%1」")).arg(layerName));
     scheduleRefresh();
 }
 
@@ -398,7 +400,7 @@ void LayerPanel::addLayer()
     if (!m_scene)
         return;
     m_scene->addLayerWithUndo();
-    emit statusMessage(QStringLiteral("已新建图层"));
+    emit statusMessage(uiText(QStringLiteral("已新建图层")));
 }
 
 void LayerPanel::removeLayer()
@@ -418,22 +420,22 @@ void LayerPanel::removeLayer()
     for (int id : ids) {
         if (m_scene->layerItemCount(id) > 0) {
             QMessageBox::information(
-                this, QStringLiteral("删除图层"),
-                QStringLiteral("图层「%1」上还有图元，请先移走或删除这些图元。")
+                this, uiText(QStringLiteral("删除图层")),
+                uiText(QStringLiteral("图层「%1」上还有图元，请先移走或删除这些图元。"))
                     .arg(m_scene->layer(id).name));
             return;
         }
     }
     if (m_scene->userLayerCount() - ids.size() < 1) {
-        QMessageBox::information(this, QStringLiteral("删除图层"),
-                                 QStringLiteral("至少需要保留一个用户图层。"));
+        QMessageBox::information(this, uiText(QStringLiteral("删除图层")),
+                                 uiText(QStringLiteral("至少需要保留一个用户图层。")));
         return;
     }
 
     for (int id : ids)
         m_scene->removeLayerWithUndo(id, nullptr);
-    emit statusMessage(ids.size() > 1 ? QStringLiteral("已删除 %1 个图层").arg(ids.size())
-                                      : QStringLiteral("已删除图层"));
+    emit statusMessage(ids.size() > 1 ? uiText(QStringLiteral("已删除 %1 个图层")).arg(ids.size())
+                                      : uiText(QStringLiteral("已删除图层")));
     scheduleRefresh();
 }
 
@@ -443,8 +445,8 @@ void LayerPanel::moveLayer(int delta)
         return;
     const int id = m_scene->activeLayerId();
     if (m_scene->moveLayerWithUndo(id, delta)) {
-        emit statusMessage(delta > 0 ? QStringLiteral("图层已上移")
-                                     : QStringLiteral("图层已下移"));
+        emit statusMessage(delta > 0 ? uiText(QStringLiteral("图层已上移"))
+                                     : uiText(QStringLiteral("图层已下移")));
     }
 }
 
@@ -486,11 +488,11 @@ void LayerPanel::updateSummary()
     const QList<int> ids = selectedLayerIds();
     QString text;
     if (ids.size() > 1) {
-        text = QStringLiteral("已选中 %1 个图层（图元可多选）\n").arg(ids.size());
+        text = uiText(QStringLiteral("已选中 %1 个图层（图元可多选）\n")).arg(ids.size());
     } else {
         const BoardLayer active = m_scene->layer(m_scene->activeLayerId());
-        text = QStringLiteral("当前：%1\n").arg(active.name);
+        text = uiText(QStringLiteral("当前：%1\n")).arg(active.name);
     }
-    text += QStringLiteral("勾选框＝显示/隐藏 · 锁形按钮＝锁定\n编辑模式下，显示且未锁定的图层上图元均可编辑");
+    text += uiText(QStringLiteral("勾选框＝显示/隐藏 · 锁形按钮＝锁定\n编辑模式下，显示且未锁定的图层上图元均可编辑"));
     m_summaryLabel->setText(text);
 }

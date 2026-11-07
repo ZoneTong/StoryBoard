@@ -1,3 +1,5 @@
+#include "I18n.h"
+
 #include "BoardItem.h"
 
 #include "BoardScene.h"
@@ -492,8 +494,8 @@ void BoardItem::finishInteraction()
         }
         if (BoardScene* board = boardScene()) {
             board->pushGeometry(m_before, after,
-                                wasResize ? QStringLiteral("缩放图元")
-                                          : QStringLiteral("移动图元"));
+                                wasResize ? uiText(QStringLiteral("缩放图元"))
+                                          : uiText(QStringLiteral("移动图元")));
         }
     }
     m_before.clear();

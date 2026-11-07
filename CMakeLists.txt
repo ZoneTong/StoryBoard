@@ -14,13 +14,19 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets LinguistTools)
+
+set(STORYBOARD_TS_FILES
+    translations/storyboard_en.ts
+)
 
 set(STORYBOARD_SOURCES
     src/main.cpp
     src/BoardTypes.h
     src/Settings.h
     src/Settings.cpp
+    src/I18n.h
+    src/I18n.cpp
     src/ItemGeometry.h
     src/IconFactory.h
     src/IconFactory.cpp
@@ -56,6 +62,24 @@ set(STORYBOARD_SOURCES
 )
 
 qt_add_executable(StoryBoard WIN32 ${STORYBOARD_SOURCES})
+
+# Qt 官方 i18n 流水线：.ts -> .qm，并把 .qm 与 .ts 一起嵌进资源。
+# 运行时 QTranslator 从 :/i18n/storyboard_en.qm 装载英文翻译。
+qt_add_lrelease(StoryBoard
+    TS_FILES ${STORYBOARD_TS_FILES}
+    QM_FILES_OUTPUT_VARIABLE STORYBOARD_QM_FILES
+)
+# .qm 生成在构建目录里，是绝对路径；给资源一个稳定的相对别名。
+set_source_files_properties(${STORYBOARD_QM_FILES} PROPERTIES
+    QT_RESOURCE_ALIAS "storyboard_en.qm"
+)
+set_source_files_properties(${STORYBOARD_TS_FILES} PROPERTIES
+    QT_RESOURCE_ALIAS "storyboard_en.ts"
+)
+qt_add_resources(StoryBoard "storyboard_translations"
+    PREFIX "/i18n"
+    FILES ${STORYBOARD_TS_FILES} ${STORYBOARD_QM_FILES}
+)
 
 if(WIN32)
     target_sources(StoryBoard PRIVATE resources/app.rc)

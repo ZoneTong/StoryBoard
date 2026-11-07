@@ -1,3 +1,5 @@
+#include "I18n.h"
+
 #include "MainWindow.h"
 #include "BoardScene.h"
 #include "BoardView.h"
@@ -8,11 +10,14 @@
 
 #include <QApplication>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QFont>
 #include <QIcon>
 #include <QMenu>
+#include <QMessageBox>
 #include <QPixmap>
+#include <QSettings>
 #include <QStandardPaths>
 #include <QStyleFactory>
 #include <QTimer>
@@ -134,7 +139,8 @@ int main(int argc, char** argv)
     QCoreApplication::setOrganizationDomain(QStringLiteral("zonetong.github.io"));
     QCoreApplication::setApplicationName(QStringLiteral("StoryBoard"));
     QCoreApplication::setApplicationVersion(QStringLiteral("0.1.0"));
-    app.setApplicationDisplayName(QStringLiteral("StoryBoard 画板"));
+    uiInitializeLanguage();
+    app.setApplicationDisplayName(uiText(QStringLiteral("StoryBoard 画板")));
     app.setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));
     applyApplicationStyle(app);
 
@@ -192,13 +198,60 @@ int main(int argc, char** argv)
         return dialog.grab().save(outputPath) ? 0 : 1;
     }
 
+    if (arguments.contains(QStringLiteral("--set-language"))) {
+        const QString value = takeOptionPath(arguments, QStringLiteral("--set-language"));
+        if (value == QLatin1String("en"))
+            setUiLanguageSetting(UiLanguage::English);
+        else if (value == QLatin1String("zh"))
+            setUiLanguageSetting(UiLanguage::Chinese);
+        else
+            setUiLanguageSetting(UiLanguage::System);
+        return 0;
+    }
+
+    if (arguments.contains(QStringLiteral("--settings-probe"))) {
+        const QString outputPath = takeOptionPath(arguments, QStringLiteral("--settings-probe"));
+        if (outputPath.isEmpty())
+            return 2;
+        QSettings reader;
+        const QString text = QStringLiteral("setting=%1\neffective=%2\nnativeValue=%3\nnativeStatus=%4\nnativeFile=%5\nfallbackFile=%6\n")
+                                 .arg(static_cast<int>(uiLanguageSetting()))
+                                 .arg(static_cast<int>(uiEffectiveLanguage()))
+                                 .arg(reader.value(QStringLiteral("ui/language")).toString())
+                                 .arg(static_cast<int>(reader.status()))
+                                 .arg(reader.fileName())
+                                 .arg(QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("StoryBoard-language.txt")));
+        QFile file(outputPath);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+            return 1;
+        file.write(text.toUtf8());
+        return 0;
+    }
+
+    if (arguments.contains(QStringLiteral("--about-screenshot"))) {
+        const QString outputPath = takeOptionPath(arguments, QStringLiteral("--about-screenshot"));
+        if (outputPath.isEmpty())
+            return 2;
+        MainWindow window;
+        bool saved = false;
+        QTimer::singleShot(80, [&saved, &outputPath]() {
+            auto* box = qobject_cast<QMessageBox*>(QApplication::activeModalWidget());
+            if (!box)
+                return;
+            saved = box->grab().save(outputPath);
+            box->accept();
+        });
+        QMetaObject::invokeMethod(&window, "showAbout", Qt::DirectConnection);
+        return saved ? 0 : 1;
+    }
+
     if (arguments.contains(QStringLiteral("--text-screenshot"))) {
         const QString outputPath = takeOptionPath(arguments, QStringLiteral("--text-screenshot"));
         if (outputPath.isEmpty())
             return 2;
         TextDialog dialog;
-        dialog.setHeading(QStringLiteral("添加文字图元"));
-        dialog.setTextValue(QStringLiteral("镜头标题：傍晚的街道\n第二行说明文字"));
+        dialog.setHeading(uiText(QStringLiteral("添加文字图元")));
+        dialog.setTextValue(uiText(QStringLiteral("镜头标题：傍晚的街道\n第二行说明文字")));
         QFont font(QStringLiteral("Microsoft YaHei UI"));
         font.setPointSize(28);
         font.setBold(true);

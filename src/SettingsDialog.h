@@ -3,10 +3,12 @@
 #include <QDialog>
 
 #include "Settings.h"
+#include "I18n.h"
 
 class QCheckBox;
 class QPushButton;
 class QSpinBox;
+class QComboBox;
 
 class SettingsDialog : public QDialog
 {
@@ -15,6 +17,7 @@ public:
     explicit SettingsDialog(const AppSettings& settings, QWidget* parent = nullptr);
 
     AppSettings settings() const { return m_settings; }
+    UiLanguage language() const;
 
     void setBrushColor(const QColor& color);
     void setCanvasColor(const QColor& color);
@@ -32,4 +35,5 @@ private:
     QSpinBox* m_boardHeightSpin = nullptr;
     QCheckBox* m_gridCheck = nullptr;
     QPushButton* m_canvasColorButton = nullptr;
+    QComboBox* m_languageCombo = nullptr;
 };

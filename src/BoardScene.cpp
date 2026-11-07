@@ -1,3 +1,5 @@
+#include "I18n.h"
+
 #include "BoardScene.h"
 
 #include "BoardItem.h"
@@ -201,7 +203,7 @@ void BoardScene::commitBoardRect(const QRectF& before)
         return;
     if (m_undoStack)
         m_undoStack->push(new BoardSizeCommand(this, before, after,
-                                              QStringLiteral("调整画板尺寸")));
+                                              uiText(QStringLiteral("调整画板尺寸"))));
 }
 
 void BoardScene::applyBackground(const BackgroundState& background)
@@ -218,7 +220,7 @@ void BoardScene::replaceBackground(const BackgroundState& background, const QStr
 
     if (m_undoStack) {
         m_undoStack->push(new BackgroundCommand(this, m_background, background,
-                                               text.isEmpty() ? QStringLiteral("更换背景") : text));
+                                               text.isEmpty() ? uiText(QStringLiteral("更换背景")) : text));
     } else {
         applyBackground(background);
     }
@@ -572,7 +574,7 @@ bool BoardScene::addLayerWithUndo(const QString& name)
     LayerStackState after = before;
     after.layers.append(entry);
     after.activeLayerId = id;
-    const QString text = QStringLiteral("新建图层");
+    const QString text = uiText(QStringLiteral("新建图层"));
 
     if (m_undoStack) {
         m_undoStack->push(new LayerStateCommand(this, before, after, text));
@@ -592,11 +594,11 @@ bool BoardScene::removeLayerWithUndo(int layerId, QString* errorMessage)
 
     const int index = layerIndex(layerId);
     if (index <= 0)
-        return fail(QStringLiteral("背景层不能删除。"));
+        return fail(uiText(QStringLiteral("背景层不能删除。")));
     if (userLayerCount() <= 1)
-        return fail(QStringLiteral("至少需要保留一个图层。"));
+        return fail(uiText(QStringLiteral("至少需要保留一个图层。")));
     if (layerItemCount(layerId) > 0)
-        return fail(QStringLiteral("该图层中还有图元，请先删除或移动图元。"));
+        return fail(uiText(QStringLiteral("该图层中还有图元，请先删除或移动图元。")));
 
     const LayerStackState before = layerState();
     LayerStackState after = before;
@@ -607,7 +609,7 @@ bool BoardScene::removeLayerWithUndo(int layerId, QString* errorMessage)
     }
 
     if (m_undoStack) {
-        m_undoStack->push(new LayerStateCommand(this, before, after, QStringLiteral("删除图层")));
+        m_undoStack->push(new LayerStateCommand(this, before, after, uiText(QStringLiteral("删除图层"))));
     } else {
         applyLayerStateInternal(after);
     }
@@ -628,7 +630,7 @@ bool BoardScene::moveLayerWithUndo(int layerId, int delta)
     LayerStackState after = before;
     after.layers.swapItemsAt(index, target);
 
-    const QString text = delta > 0 ? QStringLiteral("图层上移") : QStringLiteral("图层下移");
+    const QString text = delta > 0 ? uiText(QStringLiteral("图层上移")) : uiText(QStringLiteral("图层下移"));
     if (m_undoStack) {
         m_undoStack->push(new LayerStateCommand(this, before, after, text));
     } else {
@@ -896,7 +898,7 @@ bool BoardScene::adjustItemHeight(BoardItem* item, int delta, const QString& tex
         after.append({ colliding, colliding->layerId(), current });
 
     const QString commandText = text.isEmpty()
-        ? (delta > 0 ? QStringLiteral("上移图元") : QStringLiteral("下移图元"))
+        ? (delta > 0 ? uiText(QStringLiteral("上移图元")) : uiText(QStringLiteral("下移图元")))
         : text;
     if (m_undoStack)
         m_undoStack->push(new ItemStackCommand(this, before, after, commandText));
@@ -921,8 +923,8 @@ int BoardScene::adjustSelectedHeights(int delta)
 
     const bool grouped = m_undoStack && targets.size() > 1;
     if (grouped)
-        m_undoStack->beginMacro(delta > 0 ? QStringLiteral("上移图元")
-                                         : QStringLiteral("下移图元"));
+        m_undoStack->beginMacro(delta > 0 ? uiText(QStringLiteral("上移图元"))
+                                         : uiText(QStringLiteral("下移图元")));
 
     int changed = 0;
     for (BoardItem* item : targets) {
@@ -951,8 +953,8 @@ int BoardScene::moveSelectedItemsToAdjacentLayer(int delta)
 
     const bool grouped = m_undoStack && targets.size() > 1;
     if (grouped)
-        m_undoStack->beginMacro(delta > 0 ? QStringLiteral("移到上一层图层")
-                                         : QStringLiteral("移到下一层图层"));
+        m_undoStack->beginMacro(delta > 0 ? uiText(QStringLiteral("移到上一层图层"))
+                                         : uiText(QStringLiteral("移到下一层图层")));
 
     int changed = 0;
     for (BoardItem* item : targets) {
@@ -995,7 +997,7 @@ bool BoardScene::moveItemToAdjacentLayer(BoardItem* item, int delta, const QStri
     };
 
     const QString commandText = text.isEmpty()
-        ? (delta > 0 ? QStringLiteral("移到上一层图层") : QStringLiteral("移到下一层图层"))
+        ? (delta > 0 ? uiText(QStringLiteral("移到上一层图层")) : uiText(QStringLiteral("移到下一层图层")))
         : text;
     if (m_undoStack)
         m_undoStack->push(new ItemStackCommand(this, before, after, commandText));
@@ -1046,7 +1048,7 @@ bool BoardScene::changeTextWithUndo(TextItem* item, const QString& text, const Q
         return false;
 
     const QString commandText = textCommand.isEmpty()
-        ? QStringLiteral("编辑文字")
+        ? uiText(QStringLiteral("编辑文字"))
         : textCommand;
     if (m_undoStack)
         m_undoStack->push(new TextItemCommand(this, item, before, after, commandText));
@@ -1193,7 +1195,7 @@ void BoardScene::deleteSelected()
         return;
 
     if (m_undoStack) {
-        m_undoStack->push(new RemoveItemsCommand(this, selected, QStringLiteral("删除图元")));
+        m_undoStack->push(new RemoveItemsCommand(this, selected, uiText(QStringLiteral("删除图元"))));
     } else {
         for (BoardItem* item : selected)
             detachItem(item);
@@ -1347,14 +1349,14 @@ bool BoardScene::fromJson(const QJsonObject& root, QString* errorMessage)
     };
 
     if (root.value(QStringLiteral("format")).toString() != QStringLiteral("StoryBoard"))
-        return fail(QStringLiteral("这不是有效的 StoryBoard 模板文件。"));
+        return fail(uiText(QStringLiteral("这不是有效的 StoryBoard 模板文件。")));
 
     const QJsonObject board = root.value(QStringLiteral("board")).toObject();
     // 画板尺寸允许带小数（拖拽边缘时通常不是整数），这里不能用 toInt()。
     const qreal width = board.value(QStringLiteral("width")).toDouble(0.0);
     const qreal height = board.value(QStringLiteral("height")).toDouble(0.0);
     if (width <= 0.0 || height <= 0.0)
-        return fail(QStringLiteral("模板中的画板尺寸无效。"));
+        return fail(uiText(QStringLiteral("模板中的画板尺寸无效。")));
 
     resetDocument();
     applyBoardRect(QRectF(board.value(QStringLiteral("x")).toDouble(0.0),
@@ -1455,7 +1457,7 @@ bool BoardScene::fromJson(const QJsonObject& root, QString* errorMessage)
         BoardItem* item = createItem(kind);
         if (!item) {
             resetDocument();
-            return fail(QStringLiteral("模板中包含未知的图元类型：%1").arg(kind));
+            return fail(uiText(QStringLiteral("模板中包含未知的图元类型：%1")).arg(kind));
         }
         item->fromJson(itemJson);
         if (!hasLayerData) {

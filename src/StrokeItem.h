@@ -1,5 +1,7 @@
 #pragma once
 
+#include "I18n.h"
+
 #include "BoardItem.h"
 
 #include <QColor>
@@ -13,7 +15,7 @@ public:
     explicit StrokeItem(QGraphicsItem* parent = nullptr);
 
     QString kind() const override { return QStringLiteral("stroke"); }
-    QString displayName() const override { return QStringLiteral("笔画"); }
+    QString displayName() const override { return uiText(QStringLiteral("笔画")); }
 
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& json) override;

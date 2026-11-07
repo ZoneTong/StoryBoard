@@ -1,3 +1,5 @@
+#include "I18n.h"
+
 #include "BoardView.h"
 
 #include "BoardItem.h"
@@ -447,22 +449,22 @@ void BoardView::contextMenuEvent(QContextMenuEvent* event)
     TextItem* textItem = dynamic_cast<TextItem*>(item);
     QAction* editText = nullptr;
     if (textItem) {
-        editText = menu.addAction(QStringLiteral("编辑文字…"));
+        editText = menu.addAction(uiText(QStringLiteral("编辑文字…")));
         menu.addSeparator();
     }
 
-    QAction* heightUp = menu.addAction(QStringLiteral("高度 +1（向上叠放）    ]"));
-    QAction* heightDown = menu.addAction(QStringLiteral("高度 -1（向下叠放）    ["));
+    QAction* heightUp = menu.addAction(uiText(QStringLiteral("高度 +1（向上叠放）    ]")));
+    QAction* heightDown = menu.addAction(uiText(QStringLiteral("高度 -1（向下叠放）    [")));
     heightDown->setEnabled(item->height() > 0);
     menu.addSeparator();
 
-    QAction* layerUp = menu.addAction(QStringLiteral("移到上一层图层"));
-    QAction* layerDown = menu.addAction(QStringLiteral("移到下一层图层"));
+    QAction* layerUp = menu.addAction(uiText(QStringLiteral("移到上一层图层")));
+    QAction* layerDown = menu.addAction(uiText(QStringLiteral("移到下一层图层")));
     layerUp->setEnabled(layerIndex >= 0 && layerIndex < m_scene->layerCount() - 1);
     layerDown->setEnabled(layerIndex > 1);
     menu.addSeparator();
 
-    QAction* remove = menu.addAction(QStringLiteral("删除图元"));
+    QAction* remove = menu.addAction(uiText(QStringLiteral("删除图元")));
     remove->setEnabled(item->isSelected());
 
     QAction* chosen = menu.exec(event->globalPos());
@@ -497,7 +499,7 @@ void BoardView::keyPressEvent(QKeyEvent* event)
 
     if (event->key() == Qt::Key_Escape && m_activeStroke) {
         cancelCurrentStroke();
-        emit statusMessage(QStringLiteral("已取消当前笔画"));
+        emit statusMessage(uiText(QStringLiteral("已取消当前笔画")));
         event->accept();
         return;
     }
@@ -532,7 +534,7 @@ void BoardView::finishCurrentStroke()
         return;
     }
 
-    m_scene->commitNewItem(stroke, QStringLiteral("添加笔画"));
+    m_scene->commitNewItem(stroke, uiText(QStringLiteral("添加笔画")));
     updateCursor();
 }
 
@@ -755,7 +757,7 @@ void BoardView::endBoardResize()
     m_boardHandle = BoardHandle::None;
     m_scene->commitBoardRect(m_resizeStartRect);
     const QSizeF size = m_scene->boardSize();
-    emit statusMessage(QStringLiteral("画板尺寸：%1 × %2（可撤销）")
+    emit statusMessage(uiText(QStringLiteral("画板尺寸：%1 × %2（可撤销）"))
                            .arg(qRound(size.width()))
                            .arg(qRound(size.height())));
     updateCursor();

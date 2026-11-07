@@ -5,6 +5,7 @@
 #include "BoardView.h"
 #include "Commands.h"
 #include "ImageItem.h"
+#include "I18n.h"
 #include "LayerPanel.h"
 #include "MainWindow.h"
 #include "SettingsDialog.h"
@@ -17,6 +18,7 @@
 #include <QAction>
 #include <QBuffer>
 #include <QCheckBox>
+#include <QComboBox>
 #include <QContextMenuEvent>
 #include <QCoreApplication>
 #include <QDir>
@@ -154,10 +156,19 @@ void sendMouseEvent(QWidget* target, QEvent::Type type, const QPoint& position,
 
 int runSelfTest(const QString& reportPath)
 {
+    // 自检里的界面文案断言都按中文原文写，固定成中文，避免受机器语言影响。
+    uiOverrideLanguage(UiLanguage::Chinese);
+
     QStringList lines;
     int failures = 0;
 
     auto check = [&lines, &failures](bool condition, const QString& name, const QString& detail = QString()) {
+        static int checkCounter = 0;
+        static QFile progress(QStringLiteral("selftest-progress.txt"));
+        if (!progress.isOpen())
+            progress.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
+        progress.write(QByteArray::number(++checkCounter) + " " + name.toUtf8() + "\n");
+        progress.flush();
         if (condition) {
             lines.append(QStringLiteral("PASS  %1").arg(name));
         } else {
@@ -1806,6 +1817,71 @@ int runSelfTest(const QString& reportPath)
                                              QStringLiteral("画笔模式"), QStringLiteral("文字模式") }),
                   QStringLiteral("模式工具栏顺序为查看 → 编辑 → 画笔 → 文字"),
                   modeOrder.join(QStringLiteral(" / ")));
+
+            // 需求：支持中英文界面，默认系统语言，可在设置里切换。
+            check(uiText(QStringLiteral("新建画板")) == QStringLiteral("新建画板"),
+                  QStringLiteral("中文界面下 uiText 返回中文原文"));
+            uiOverrideLanguage(UiLanguage::English);
+            check(uiText(QStringLiteral("新建画板")) == QStringLiteral("New board")
+                      && uiText(QStringLiteral("六边形")) == QStringLiteral("Hexagon")
+                      && uiText(QStringLiteral("查看模式")) == QStringLiteral("View mode"),
+                  QStringLiteral("英文界面下常用词条有英文译文"),
+                  uiText(QStringLiteral("新建画板")));
+            uiRetranslateWidgetTree(&window);
+            QStringList englishOrder;
+            for (QAction* action : modeBar->actions()) {
+                if (action && !action->isSeparator())
+                    englishOrder.append(action->text());
+            }
+            check(englishOrder == QStringList({ QStringLiteral("View mode"), QStringLiteral("Edit mode"),
+                                               QStringLiteral("Brush mode"), QStringLiteral("Text mode") }),
+                  QStringLiteral("已存在的界面可以原地切换到英文"),
+                  englishOrder.join(QStringLiteral(" / ")));
+            uiOverrideLanguage(UiLanguage::Chinese);
+            uiRetranslateWidgetTree(&window);
+            check(modeBar->actions().size() > 1
+                      && modeBar->actions().at(0)->text() == QStringLiteral("查看模式"),
+                  QStringLiteral("界面可以切回中文"));
+
+            // 切换语言后，走真实刷新路径（写设置 + applyUiLanguage）立即生效。
+            uiOverrideLanguage(UiLanguage::System); // 取消测试用的强制语言，才能验证设置生效
+            const UiLanguage originalSetting = uiLanguageSetting();
+            setUiLanguageSetting(UiLanguage::English);
+            check(uiIsEnglish(), QStringLiteral("设置中选中英文后立即生效（不依赖写入是否落盘）"),
+                  QStringLiteral("setting=%1")
+                      .arg(static_cast<int>(uiLanguageSetting())));
+            window.applyUiLanguage();
+            const QString firstModeText = modeBar->actions().isEmpty()
+                ? QString()
+                : modeBar->actions().at(0)->text();
+            QMenu* shapeMenu = window.findChild<QMenu*>(QStringLiteral("ShapeMenu"));
+            const QString firstShapeText = shapeMenu && !shapeMenu->actions().isEmpty()
+                ? shapeMenu->actions().at(0)->text()
+                : QString();
+            check(firstModeText == QStringLiteral("View mode")
+                      && firstShapeText == QStringLiteral("Rectangle"),
+                  QStringLiteral("切换语言后主界面立即变为英文"),
+                  QStringLiteral("%1 / %2").arg(firstModeText, firstShapeText));
+            setUiLanguageSetting(originalSetting);
+            uiOverrideLanguage(UiLanguage::Chinese);
+            window.applyUiLanguage();
+            check(modeBar->actions().at(0)->text() == QStringLiteral("查看模式"),
+                  QStringLiteral("切回中文后界面恢复中文"));
+
+            // 设置弹窗的语言下拉：选 English 后 language() 返回 English。
+            {
+                SettingsDialog dialog{AppSettings()};
+                QComboBox* combo = dialog.findChild<QComboBox*>();
+                if (combo) {
+                    const int englishIndex = combo->findData(static_cast<int>(UiLanguage::English));
+                    combo->setCurrentIndex(englishIndex);
+                    check(dialog.language() == UiLanguage::English,
+                          QStringLiteral("设置弹窗可以选中 English 并返回该语言"),
+                          QStringLiteral("index=%1 language=%2")
+                              .arg(englishIndex)
+                              .arg(static_cast<int>(dialog.language())));
+                }
+            }
         }
 
         window.view()->setMode(ToolMode::Text);

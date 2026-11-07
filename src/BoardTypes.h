@@ -1,5 +1,7 @@
 #pragma once
 
+#include "I18n.h"
+
 #include <QColor>
 #include <QImage>
 #include <QList>
@@ -80,13 +82,13 @@ inline QString toolModeName(ToolMode mode)
 {
     switch (mode) {
     case ToolMode::View:
-        return QStringLiteral("查看模式");
+        return uiText(QStringLiteral("查看模式"));
     case ToolMode::Brush:
-        return QStringLiteral("画笔模式");
+        return uiText(QStringLiteral("画笔模式"));
     case ToolMode::Edit:
-        return QStringLiteral("编辑模式");
+        return uiText(QStringLiteral("编辑模式"));
     case ToolMode::Text:
-        return QStringLiteral("文字模式");
+        return uiText(QStringLiteral("文字模式"));
     }
     return QString();
 }
@@ -95,11 +97,11 @@ inline QString backgroundModeName(BackgroundMode mode)
 {
     switch (mode) {
     case BackgroundMode::Stretch:
-        return QStringLiteral("拉伸铺满");
+        return uiText(QStringLiteral("拉伸铺满"));
     case BackgroundMode::Fit:
-        return QStringLiteral("完整适应");
+        return uiText(QStringLiteral("完整适应"));
     case BackgroundMode::Tile:
-        return QStringLiteral("平铺");
+        return uiText(QStringLiteral("平铺"));
     }
     return QString();
 }
