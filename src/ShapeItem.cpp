@@ -366,14 +366,33 @@ void ShapeItem::applyState(const ShapeItemState& state)
 QPainterPath ShapeItem::shape() const
 {
     const QPainterPath path = pathFor(m_type, contentRect());
-    if (!shapeTypeIsStrokeOnly(m_type))
-        return path;
+    if (path.isEmpty())
+        return selectionHandleShape();
 
-    QPainterPathStroker stroker;
-    stroker.setWidth(qMax<qreal>(5.0, m_strokeWidth + 6.0));
-    stroker.setCapStyle(Qt::RoundCap);
-    stroker.setJoinStyle(Qt::RoundJoin);
-    return stroker.createStroke(path);
+    QPainterPath result;
+    if (shapeTypeIsStrokeOnly(m_type)) {
+        QPainterPathStroker stroker;
+        stroker.setWidth(qMax<qreal>(5.0, m_strokeWidth + 6.0));
+        stroker.setCapStyle(Qt::RoundCap);
+        stroker.setJoinStyle(Qt::RoundJoin);
+        result = stroker.createStroke(path);
+    } else if (m_type == ShapeType::Arrow || m_type == ShapeType::DoubleArrow) {
+        // Painted with a filled pen-free path, so the outline is exact.
+        result = path;
+    } else {
+        // Filled shapes are stroked with m_strokeWidth, which paints up to
+        // strokeWidth/2 outside the path. Without this ring the visible border
+        // of a thick outline is not part of the hit area.
+        QPainterPathStroker stroker;
+        stroker.setWidth(qMax<qreal>(2.0, m_strokeWidth + 2.0));
+        stroker.setCapStyle(Qt::RoundCap);
+        stroker.setJoinStyle(Qt::RoundJoin);
+        result = stroker.createStroke(path);
+        result.addPath(path);
+    }
+
+    result.addPath(selectionHandleShape());
+    return result;
 }
 
 QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect)

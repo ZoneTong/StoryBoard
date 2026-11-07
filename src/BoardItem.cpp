@@ -15,6 +15,7 @@
 
 namespace {
 constexpr qreal kMinimumSide = 8.0;
+constexpr qreal kHandleHitPadding = 2.0;
 
 bool isLeftHandle(BoardItem::Handle handle)
 {
@@ -101,6 +102,26 @@ QPainterPath BoardItem::shape() const
 {
     QPainterPath path;
     path.addRect(contentRect());
+    path.addPath(selectionHandleShape());
+    return path;
+}
+
+QPainterPath BoardItem::selectionHandleShape() const
+{
+    QPainterPath path;
+    if (!isSelected() || !isEditable() || !hasSingleSelection())
+        return path;
+
+    // Selection handles are centred on the content corners, so half of every
+    // handle lies outside the item geometry. Drawing them without adding them
+    // to shape() leaves the visible handle unclickable; for outlines that never
+    // reach the corner (ellipse, triangle, diamond, star) the handle could not
+    // be grabbed at all.
+    for (int handle = TopLeft; handle <= Left; ++handle) {
+        path.addRect(handleRect(static_cast<Handle>(handle))
+                         .adjusted(-kHandleHitPadding, -kHandleHitPadding,
+                                   kHandleHitPadding, kHandleHitPadding));
+    }
     return path;
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QColor>
+#include <QImage>
 #include <QList>
 #include <QPixmap>
 #include <QString>
@@ -32,10 +33,17 @@ struct BackgroundState {
 
     bool operator==(const BackgroundState& other) const
     {
-        return type == other.type
-            && color == other.color
-            && mode == other.mode
-            && image.cacheKey() == other.image.cacheKey();
+        if (type != other.type || color != other.color || mode != other.mode)
+            return false;
+        // QPixmap::cacheKey() only identifies the underlying pixel storage, so
+        // two QPixmaps decoded from the same file compare unequal. Compare the
+        // decoded contents instead, otherwise re-applying an identical image
+        // pushes a redundant undo step.
+        if (image.isNull() || other.image.isNull())
+            return image.isNull() && other.image.isNull();
+        if (image.size() != other.image.size())
+            return false;
+        return image.toImage() == other.image.toImage();
     }
 
     bool operator!=(const BackgroundState& other) const { return !(*this == other); }
