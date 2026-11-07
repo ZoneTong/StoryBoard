@@ -420,6 +420,39 @@ void MainWindow::createMenus()
     editMenu->addSeparator();
     editMenu->addAction(m_deleteAct);
     editMenu->addAction(m_selectAllAct);
+    editMenu->addSeparator();
+
+    auto applySelectedHeight = [this](int delta) {
+        if (m_view->mode() != ToolMode::Edit) {
+            statusBar()->showMessage(QStringLiteral("高度调整只在编辑模式可用"), 3000);
+            return;
+        }
+        const int changed = m_scene->adjustSelectedHeights(delta);
+        if (changed == 0) {
+            statusBar()->showMessage(
+                QStringLiteral("没有可调整高度的选中图元（或已到高度边界）"), 3000);
+        } else {
+            statusBar()->showMessage(
+                QStringLiteral("已将 %1 个图元的高度 %2")
+                    .arg(changed)
+                    .arg(delta > 0 ? QStringLiteral("+1") : QStringLiteral("-1")),
+                3000);
+        }
+    };
+
+    QAction* heightUpAct = editMenu->addAction(QStringLiteral("高度 +1（向上叠放）    ]"));
+    heightUpAct->setShortcut(QKeySequence(Qt::Key_BracketRight));
+    heightUpAct->setStatusTip(QStringLiteral("提升选中图元的叠放高度（快捷键 ]）"));
+    connect(heightUpAct, &QAction::triggered, this, [applySelectedHeight]() {
+        applySelectedHeight(1);
+    });
+
+    QAction* heightDownAct = editMenu->addAction(QStringLiteral("高度 -1（向下叠放）    ["));
+    heightDownAct->setShortcut(QKeySequence(Qt::Key_BracketLeft));
+    heightDownAct->setStatusTip(QStringLiteral("降低选中图元的叠放高度（快捷键 [）"));
+    connect(heightDownAct, &QAction::triggered, this, [applySelectedHeight]() {
+        applySelectedHeight(-1);
+    });
 
     QMenu* insertMenu = menuBar()->addMenu(QStringLiteral("插入(&I)"));
     insertMenu->addMenu(m_shapeMenu);
@@ -1520,7 +1553,7 @@ void MainWindow::showAbout()
             "<ul>"
             "<li><b>V</b> 查看模式：整体平移 / 缩放，自动全景</li>"
             "<li><b>B</b> 画笔模式：自由曲线，可选颜色与粗细</li>"
-            "<li><b>E</b> 编辑模式：显示且未锁定图层上的图元都能编辑；锁定图层不可编辑；右键调整图层/高度</li>"
+            "<li><b>E</b> 编辑模式：显示且未锁定图层上的图元都能编辑；锁定图层不可编辑；<b>] / [</b> 调整选中图元高度；右键调整图层/高度</li>"
             "<li><b>T</b> 文字模式：点击画板添加文字，双击文字可再次编辑</li>"
             "<li><b>图层</b>：右侧面板勾选框控制显示/隐藏、锁形按钮锁定图层；图层与图元都支持多选</li>"
             "<li><b>插入 → 常见图形</b>：快速插入矩形、圆形、箭头、大括号、对话气泡等</li>"

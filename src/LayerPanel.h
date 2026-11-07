@@ -37,6 +37,7 @@ private:
     void setLayerVisible(int layerId, bool visible);
     void setLayerLocked(int layerId, bool locked);
     void updateButtons();
+    void updateRowStyles();
     void updateSummary();
 
     BoardScene* m_scene = nullptr;

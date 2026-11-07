@@ -811,6 +811,73 @@ bool BoardScene::adjustItemHeight(BoardItem* item, int delta, const QString& tex
     return true;
 }
 
+int BoardScene::adjustSelectedHeights(int delta)
+{
+    if (delta == 0)
+        return 0;
+
+    QList<BoardItem*> targets;
+    const QList<BoardItem*> selected = selectedBoardItems();
+    for (BoardItem* item : selected) {
+        if (item && isItemEditable(item))
+            targets.append(item);
+    }
+    if (targets.isEmpty())
+        return 0;
+
+    const bool grouped = m_undoStack && targets.size() > 1;
+    if (grouped)
+        m_undoStack->beginMacro(delta > 0 ? QStringLiteral("上移图元")
+                                         : QStringLiteral("下移图元"));
+
+    int changed = 0;
+    for (BoardItem* item : targets) {
+        if (adjustItemHeight(item, delta))
+            ++changed;
+    }
+
+    if (grouped)
+        m_undoStack->endMacro();
+    return changed;
+}
+
+int BoardScene::moveSelectedItemsToAdjacentLayer(int delta)
+{
+    if (delta == 0)
+        return 0;
+
+    QList<BoardItem*> targets;
+    const QList<BoardItem*> selected = selectedBoardItems();
+    for (BoardItem* item : selected) {
+        if (item && isItemEditable(item))
+            targets.append(item);
+    }
+    if (targets.isEmpty())
+        return 0;
+
+    const bool grouped = m_undoStack && targets.size() > 1;
+    if (grouped)
+        m_undoStack->beginMacro(delta > 0 ? QStringLiteral("移到上一层图层")
+                                         : QStringLiteral("移到下一层图层"));
+
+    int changed = 0;
+    for (BoardItem* item : targets) {
+        if (moveItemToAdjacentLayer(item, delta))
+            ++changed;
+    }
+
+    if (grouped)
+        m_undoStack->endMacro();
+    return changed;
+}
+
+void BoardScene::setPreferredLayerIds(const QList<int>& ids)
+{
+    if (m_preferredLayerIds == ids)
+        return;
+    m_preferredLayerIds = ids;
+}
+
 bool BoardScene::moveItemToAdjacentLayer(BoardItem* item, int delta, const QString& text)
 {
     if (!item || delta == 0)

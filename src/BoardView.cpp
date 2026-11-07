@@ -257,6 +257,44 @@ void BoardView::mousePressEvent(QMouseEvent* event)
         return;
     }
 
+    // 需求 15：重叠图元优先命中图层面板里已选图层中的图元。
+    // QGraphicsScene 的默认选择总是选最上层，这里在按下期间临时让“非优先图层”
+    // 的图元不可选中，交给基类完成选择/拖拽后再恢复，避免改变真实可见顺序。
+    if (m_mode == ToolMode::Edit && event->button() == Qt::LeftButton) {
+        BoardItem* preferred = preferredEditableItemAt(position);
+        const QList<QGraphicsItem*> candidates = m_scene->items(mapToScene(position));
+        const bool preferredIsTop = !candidates.isEmpty()
+            && qgraphicsitem_cast<BoardItem*>(candidates.first()) == preferred;
+        if (preferred && !preferredIsTop) {
+            struct SuspendedItem {
+                BoardItem* item;
+                Qt::MouseButtons buttons;
+                bool selectable;
+            };
+            QList<SuspendedItem> suspended;
+            for (QGraphicsItem* graphicsItem : candidates) {
+                auto* boardItem = qgraphicsitem_cast<BoardItem*>(graphicsItem);
+                if (!boardItem || boardItem == preferred || !boardItem->isVisible())
+                    continue;
+                if (!m_scene->isItemEditable(boardItem))
+                    continue;
+                if (m_scene->preferredLayerIds().contains(boardItem->layerId()))
+                    continue;
+                suspended.append({ boardItem,
+                                   boardItem->acceptedMouseButtons(),
+                                   boardItem->flags() & QGraphicsItem::ItemIsSelectable });
+                boardItem->setFlag(QGraphicsItem::ItemIsSelectable, false);
+                boardItem->setAcceptedMouseButtons(Qt::NoButton);
+            }
+            QGraphicsView::mousePressEvent(event);
+            for (const SuspendedItem& entry : suspended) {
+                entry.item->setAcceptedMouseButtons(entry.buttons);
+                entry.item->setFlag(QGraphicsItem::ItemIsSelectable, entry.selectable);
+            }
+            return;
+        }
+    }
+
     if (event->button() == Qt::LeftButton && m_mode == ToolMode::Brush && !m_activeStroke) {
         if (!m_scene->isActiveLayerWritable()) {
             emit statusMessage(QStringLiteral(
@@ -407,8 +445,8 @@ void BoardView::contextMenuEvent(QContextMenuEvent* event)
         menu.addSeparator();
     }
 
-    QAction* heightUp = menu.addAction(QStringLiteral("高度 +1（向上叠放）"));
-    QAction* heightDown = menu.addAction(QStringLiteral("高度 -1（向下叠放）"));
+    QAction* heightUp = menu.addAction(QStringLiteral("高度 +1（向上叠放）    ]"));
+    QAction* heightDown = menu.addAction(QStringLiteral("高度 -1（向下叠放）    ["));
     heightDown->setEnabled(item->height() > 0);
     menu.addSeparator();
 
@@ -428,13 +466,13 @@ void BoardView::contextMenuEvent(QContextMenuEvent* event)
     if (editText && chosen == editText)
         emit editTextRequested(textItem);
     else if (chosen == heightUp)
-        m_scene->adjustItemHeight(item, 1);
+        m_scene->adjustSelectedHeights(1);
     else if (chosen == heightDown)
-        m_scene->adjustItemHeight(item, -1);
+        m_scene->adjustSelectedHeights(-1);
     else if (chosen == layerUp)
-        m_scene->moveItemToAdjacentLayer(item, 1);
+        m_scene->moveSelectedItemsToAdjacentLayer(1);
     else if (chosen == layerDown)
-        m_scene->moveItemToAdjacentLayer(item, -1);
+        m_scene->moveSelectedItemsToAdjacentLayer(-1);
     else if (chosen == remove)
         m_scene->deleteSelected();
 
@@ -533,19 +571,44 @@ BoardItem* BoardView::topBoardItemAt(const QPoint& viewportPos) const
     return nullptr;
 }
 
-BoardItem* BoardView::editableItemAt(const QPoint& viewportPos) const
+BoardItem* BoardView::preferredEditableItemAt(const QPoint& viewportPos) const
 {
-    // 命中要“穿透”锁定或隐藏的图层：自上而下找第一个真正可编辑的图元，
-    // 这样锁定的顶层图元不会挡住下面未锁定图层上的图元。
+    const QList<int> preferred = m_scene->preferredLayerIds();
+    if (preferred.isEmpty())
+        return nullptr;
+
+    // 保持顶层优先：列表中越靠前叠得越高。
     const QList<QGraphicsItem*> candidates = m_scene->items(mapToScene(viewportPos));
     for (QGraphicsItem* graphicsItem : candidates) {
         auto* boardItem = qgraphicsitem_cast<BoardItem*>(graphicsItem);
         if (!boardItem || !boardItem->isVisible())
             continue;
-        if (m_scene->isItemEditable(boardItem))
+        if (preferred.contains(boardItem->layerId()) && m_scene->isItemEditable(boardItem))
             return boardItem;
     }
     return nullptr;
+}
+
+BoardItem* BoardView::editableItemAt(const QPoint& viewportPos) const
+{
+    // 命中要“穿透”锁定或隐藏的图层：自上而下找第一个真正可编辑的图元，
+    // 这样锁定的顶层图元不会挡住下面未锁定图层上的图元。
+    const QList<QGraphicsItem*> candidates = m_scene->items(mapToScene(viewportPos));
+    const QList<int> preferred = m_scene->preferredLayerIds();
+    BoardItem* fallback = nullptr;
+    for (QGraphicsItem* graphicsItem : candidates) {
+        auto* boardItem = qgraphicsitem_cast<BoardItem*>(graphicsItem);
+        if (!boardItem || !boardItem->isVisible())
+            continue;
+        if (!m_scene->isItemEditable(boardItem))
+            continue;
+        // 重叠区域优先命中图层面板中已选图层里的图元，其余仍按叠放顺序取最上层。
+        if (preferred.contains(boardItem->layerId()))
+            return boardItem;
+        if (!fallback)
+            fallback = boardItem;
+    }
+    return fallback;
 }
 
 Qt::CursorShape BoardView::boardHandleCursor(BoardHandle handle)

@@ -1695,6 +1695,30 @@ int runSelfTest(const QString& reportPath)
               QStringLiteral("主窗口文字使用所选颜色且高度唯一"));
         check(window.view()->mode() == ToolMode::Edit,
               QStringLiteral("主窗口添加文字后切回编辑模式"));
+
+        QAction* heightUpAction = nullptr;
+        QAction* heightDownAction = nullptr;
+        const QList<QAction*> windowActions = window.findChildren<QAction*>();
+        for (QAction* action : windowActions) {
+            if (action->text().startsWith(QStringLiteral("高度 +1")))
+                heightUpAction = action;
+            else if (action->text().startsWith(QStringLiteral("高度 -1")))
+                heightDownAction = action;
+        }
+        check(heightUpAction
+                  && heightUpAction->shortcut() == QKeySequence(Qt::Key_BracketRight)
+                  && heightDownAction
+                  && heightDownAction->shortcut() == QKeySequence(Qt::Key_BracketLeft),
+              QStringLiteral("编辑菜单提供 ] / [ 高度快捷键"));
+        if (createdText && heightUpAction && heightDownAction) {
+            const int heightBeforeShortcut = createdText->height();
+            heightUpAction->trigger();
+            check(createdText->height() == heightBeforeShortcut + 1,
+                  QStringLiteral("] 快捷键提升选中图元高度"));
+            heightDownAction->trigger();
+            check(createdText->height() == heightBeforeShortcut,
+                  QStringLiteral("[ 快捷键降低选中图元高度"));
+        }
     }
 
     const QString shapeTemplatePath = QDir(workDirectory)
@@ -2004,6 +2028,92 @@ int runSelfTest(const QString& reportPath)
         check(lockLoaded.fromJson(lockRoot, &lockError)
                   && lockLoaded.isLayerLocked(lockLoaded.activeLayerId()),
               QStringLiteral("图层锁定状态随模板保存"), lockError);
+    }
+
+    {
+        // 需求 15：图层面板选中行有高亮，且重叠图元优先命中已选图层。
+        BoardScene styleScene;
+        LayerPanel stylePanel(&styleScene);
+        auto* layerList = stylePanel.findChild<QListWidget*>();
+        check(layerList && layerList->count() >= 2,
+              QStringLiteral("图层面板包含用户图层与背景行"));
+        QListWidgetItem* selectedEntry = nullptr;
+        for (int row = 0; row < layerList->count(); ++row) {
+            QListWidgetItem* entry = layerList->item(row);
+            if (entry->data(Qt::UserRole).toInt() == styleScene.activeLayerId())
+                selectedEntry = entry;
+        }
+        check(selectedEntry && layerList->itemWidget(selectedEntry)
+                  && layerList->itemWidget(selectedEntry)->styleSheet().contains(
+                         QStringLiteral("232, 238, 251")),
+              QStringLiteral("选中的图层行带背景高亮"));
+        check(styleScene.preferredLayerIds().contains(styleScene.activeLayerId()),
+              QStringLiteral("图层面板选中图层同步为首选命中图层"));
+
+        BoardScene overlapScene;
+        overlapScene.setMode(ToolMode::Edit);
+        const int upperLayerId = overlapScene.createLayer(QStringLiteral("上层"));
+        auto* lowerItem = new ShapeItem(ShapeType::Rectangle);
+        lowerItem->setLayerId(BoardScene::BackgroundLayerId + 1);
+        lowerItem->setStyle(QColor(QStringLiteral("#2563EB")), QColor(Qt::transparent), 4.0);
+        lowerItem->setPos(QPointF(200, 170));
+        lowerItem->setContentSize(QSizeF(200, 140));
+        auto* upperItem = new ShapeItem(ShapeType::Rectangle);
+        upperItem->setLayerId(upperLayerId);
+        upperItem->setStyle(QColor(QStringLiteral("#DC2626")), QColor(Qt::transparent), 4.0);
+        upperItem->setPos(QPointF(200, 170));
+        upperItem->setContentSize(QSizeF(200, 140));
+        overlapScene.addItemsWithUndo({ lowerItem, upperItem }, QStringLiteral("重叠图元"));
+
+        BoardView overlapView(&overlapScene);
+        overlapView.resize(640, 460);
+        overlapView.setMode(ToolMode::Edit);
+        overlapView.centerOn(QPointF(300, 240));
+        QApplication::processEvents();
+        const QPoint overlapPoint = overlapView.mapFromScene(QPointF(300, 240));
+
+        overlapScene.clearSelection();
+        overlapScene.setPreferredLayerIds({ BoardScene::BackgroundLayerId + 1 });
+        sendMouseEvent(overlapView.viewport(), QEvent::MouseButtonPress, overlapPoint,
+                       Qt::LeftButton, Qt::LeftButton);
+        sendMouseEvent(overlapView.viewport(), QEvent::MouseButtonRelease, overlapPoint,
+                       Qt::LeftButton, Qt::NoButton);
+        const QList<BoardItem*> lowerSelection = overlapScene.selectedBoardItems();
+        check(lowerSelection.size() == 1 && lowerSelection.first() == lowerItem,
+              QStringLiteral("重叠区域优先选中已选图层中的图元"),
+              QStringLiteral("selected=%1").arg(lowerSelection.size()));
+
+        overlapScene.clearSelection();
+        overlapScene.setPreferredLayerIds({ upperLayerId });
+        sendMouseEvent(overlapView.viewport(), QEvent::MouseButtonPress, overlapPoint,
+                       Qt::LeftButton, Qt::LeftButton);
+        sendMouseEvent(overlapView.viewport(), QEvent::MouseButtonRelease, overlapPoint,
+                       Qt::LeftButton, Qt::NoButton);
+        const QList<BoardItem*> upperSelection = overlapScene.selectedBoardItems();
+        check(upperSelection.size() == 1 && upperSelection.first() == upperItem,
+              QStringLiteral("切换已选图层后优先选中该层图元"));
+
+        // 需求 16：批量高度调整只占一条撤销记录。
+        overlapScene.clearSelection();
+        lowerItem->setSelected(true);
+        upperItem->setSelected(true);
+        QUndoStack heightUndo;
+        overlapScene.setUndoStack(&heightUndo);
+        const int lowerHeightBefore = lowerItem->height();
+        const int upperHeightBefore = upperItem->height();
+        const int heightIndexBefore = heightUndo.index();
+        const int heightChanged = overlapScene.adjustSelectedHeights(1);
+        check(heightChanged == 2
+                  && lowerItem->height() == lowerHeightBefore + 1
+                  && upperItem->height() == upperHeightBefore + 1,
+              QStringLiteral("快捷键批量提升选中图元高度"));
+        check(heightUndo.index() == heightIndexBefore + 1,
+              QStringLiteral("批量高度调整只生成一条撤销记录"));
+        heightUndo.undo();
+        check(lowerItem->height() == lowerHeightBefore
+                  && upperItem->height() == upperHeightBefore,
+              QStringLiteral("批量高度调整可整体撤销"));
+        overlapScene.setUndoStack(nullptr);
     }
 
     int passCount = 0;

@@ -79,6 +79,7 @@ private:
 
     BoardItem* topBoardItemAt(const QPoint& viewportPos) const;
     BoardItem* editableItemAt(const QPoint& viewportPos) const;
+    BoardItem* preferredEditableItemAt(const QPoint& viewportPos) const;
     BoardHandle boardHandleAt(const QPoint& viewportPos) const;
     bool beginBoardResize(const QPoint& viewportPos);
     void updateBoardResize(const QPointF& scenePos);

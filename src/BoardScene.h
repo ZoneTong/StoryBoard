@@ -86,6 +86,13 @@ public:
     bool layerHeightsUnique(int layerId) const;
     bool adjustItemHeight(BoardItem* item, int delta, const QString& text = QString());
     bool moveItemToAdjacentLayer(BoardItem* item, int delta, const QString& text = QString());
+    // 对当前选中的所有图元批量调整高度 / 图层，整体只占一条撤销记录。
+    int adjustSelectedHeights(int delta);
+    int moveSelectedItemsToAdjacentLayer(int delta);
+
+    // 图层面板中被选中的图层。重叠图元命中时优先选择这些图层里的图元。
+    void setPreferredLayerIds(const QList<int>& ids);
+    QList<int> preferredLayerIds() const { return m_preferredLayerIds; }
     void applyItemStack(const ItemStackList& stack);
 
     bool changeTextWithUndo(TextItem* item, const QString& text, const QFont& font,
@@ -148,5 +155,6 @@ private:
     QList<BoardLayer> m_layers;
     int m_activeLayerId = 1;
     int m_nextLayerId = 2;
+    QList<int> m_preferredLayerIds;
     QList<BoardItem*> m_orphans;
 };

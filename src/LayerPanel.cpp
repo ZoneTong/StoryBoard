@@ -72,6 +72,7 @@ LayerPanel::LayerPanel(BoardScene* scene, QWidget* parent)
     layout->addWidget(m_summaryLabel);
 
     connect(m_list, &QListWidget::itemSelectionChanged, this, &LayerPanel::activateCurrentLayer);
+    connect(m_list, &QListWidget::itemSelectionChanged, this, [this]() { updateRowStyles(); });
     connect(m_addButton, &QToolButton::clicked, this, &LayerPanel::addLayer);
     connect(m_removeButton, &QToolButton::clicked, this, &LayerPanel::removeLayer);
     connect(m_upButton, &QToolButton::clicked, this, [this]() { moveLayer(1); });
@@ -233,9 +234,16 @@ void LayerPanel::refresh()
     if (currentRow >= 0)
         m_list->setCurrentRow(currentRow, QItemSelectionModel::NoUpdate);
 
+    if (currentRow >= 0) {
+        if (selectedLayerIds().isEmpty() && activeId > BoardScene::BackgroundLayerId)
+            m_list->item(currentRow)->setSelected(true);
+    }
+
     m_list->verticalScrollBar()->setValue(scroll);
     m_refreshing = false;
 
+    m_scene->setPreferredLayerIds(selectedLayerIds());
+    updateRowStyles();
     updateSummary();
     updateButtons();
 }
@@ -247,6 +255,7 @@ void LayerPanel::activateCurrentLayer()
     const int id = currentLayerId();
     if (id > BoardScene::BackgroundLayerId && m_scene->hasLayer(id))
         m_scene->setActiveLayer(id);
+    m_scene->setPreferredLayerIds(selectedLayerIds());
     updateButtons();
     updateSummary();
 }
@@ -313,8 +322,28 @@ void LayerPanel::syncSceneSelection()
     m_refreshing = false;
     m_syncingScene = false;
 
+    m_scene->setPreferredLayerIds(ids);
+    updateRowStyles();
     updateButtons();
     updateSummary();
+}
+
+void LayerPanel::updateRowStyles()
+{
+    const QString selectedStyle = QStringLiteral(
+        "QWidget#LayerRow { background-color: rgb(232, 238, 251);"
+        " border-left: 3px solid rgb(37, 99, 235); border-radius: 4px; }");
+    const QString normalStyle = QStringLiteral(
+        "QWidget#LayerRow { background-color: transparent;"
+        " border-left: 3px solid transparent; }");
+
+    for (int row = 0; row < m_list->count(); ++row) {
+        QListWidgetItem* entry = m_list->item(row);
+        QWidget* widget = m_list->itemWidget(entry);
+        if (!widget)
+            continue;
+        widget->setStyleSheet(entry->isSelected() ? selectedStyle : normalStyle);
+    }
 }
 
 void LayerPanel::setLayerVisible(int layerId, bool visible)
