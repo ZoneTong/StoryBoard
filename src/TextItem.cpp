@@ -99,7 +99,8 @@ void TextItem::paintContent(QPainter* painter)
     const QStringList lines = m_text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
 
     painter->save();
-    painter->setClipRect(contentRect());
+    // IntersectClip：保留 drawItems() 设置的“被遮挡裁剪”区域，不能整个替换。
+    painter->setClipRect(contentRect(), Qt::IntersectClip);
     painter->scale(scaleX, scaleY);
     painter->translate(kPadding, kPadding);
     painter->setFont(m_font);

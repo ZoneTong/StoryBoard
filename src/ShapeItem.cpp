@@ -177,7 +177,9 @@ void paintPatternFill(QPainter* painter, const QPainterPath& clip, const QRectF&
         lineColor.setAlpha(120);
 
     painter->save();
-    painter->setClipPath(clip);
+    // 必须用 IntersectClip：ReplaceClip 会把 drawItems() 里为“被遮挡裁剪”设置的区域
+    // 整个替换掉，导致纹理线条画到本该被上层纯色图元遮住的地方。
+    painter->setClipPath(clip, Qt::IntersectClip);
     QPen pen(lineColor, kPatternPenWidth, Qt::SolidLine, Qt::FlatCap);
     painter->setPen(pen);
     painter->setBrush(Qt::NoBrush);
@@ -610,12 +612,16 @@ QPainterPath ShapeItem::paintedShape() const
     stroker.setJoinStyle(Qt::RoundJoin);
     QPainterPath result = stroker.createStroke(path);
 
-    // 有面积的图形（矩形、椭圆、箭头、气泡等）按“图元占据的区域”遮挡，与填充样式无关：
-    // 无填充或纹理填充时，下层图元在图形内部同样完全不显示，透出的是画板底色，
-    // 不会出现“上层线条 + 下层颜色”的混合观感。直线、大括号这类只有笔画的图形
-    // 则只遮挡笔画扫过的区域。
-    if (!shapeTypeIsStrokeOnly(m_type))
-        result = result.united(path);
+    // 有面积的图形只有“纯色填充”时才会完整遮住下层：纯色（含半透明纯色）的轮廓内部
+    // 整个算作遮挡区，下层颜色完全不画，避免叠出混合色。
+    // 无填充、斜线/交叉线/六边形等纹理填充不遮挡下层的轮廓，下层照常可见（查看模式也一样）；
+    // 描边本身仍然遮挡笔画扫过的区域，箭头按实心轮廓整体遮挡。
+    if (!shapeTypeIsStrokeOnly(m_type)) {
+        const bool solidFill = m_fillStyle == FillStyle::Solid && m_fillColor.alpha() > 0;
+        const bool solidShape = m_type == ShapeType::Arrow || m_type == ShapeType::DoubleArrow;
+        if (solidFill || solidShape)
+            result = result.united(path);
+    }
     return result;
 }
 

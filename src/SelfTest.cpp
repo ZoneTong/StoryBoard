@@ -2369,8 +2369,8 @@ int runSelfTest(const QString& reportPath)
             hollowScene.render(&hollowPainter, QRectF(0, 0, 300, 200), QRectF(0, 0, 300, 200));
             hollowPainter.end();
             const QColor hollowPixel = hollowImage.pixelColor(150, 110);
-            check(hollowPixel.green() > 200 && hollowPixel.blue() > 200,
-                  QStringLiteral("无填充图形的内部同样完全遮挡下层"),
+            check(hollowPixel.red() > 200 && hollowPixel.green() < 120,
+                  QStringLiteral("无填充图形的内部不遮挡下层，下层颜色照常可见"),
                   QStringLiteral("pixel=%1,%2,%3")
                       .arg(hollowPixel.red()).arg(hollowPixel.green())
                       .arg(hollowPixel.blue()));
@@ -2398,17 +2398,58 @@ int runSelfTest(const QString& reportPath)
             QPainter patternPainter(&patternImage);
             patternScene.render(&patternPainter, QRectF(0, 0, 300, 200), QRectF(0, 0, 300, 200));
             patternPainter.end();
-            int leaked = 0;
+            int lowerVisible = 0;
+            int patternLines = 0;
             for (int y = 72; y < 150; y += 4) {
                 for (int x = 92; x < 210; x += 4) {
                     const QColor pixel = patternImage.pixelColor(x, y);
                     if (pixel.red() > 200 && pixel.green() < 120)
-                        ++leaked;
+                        ++lowerVisible;
+                    if (pixel.blue() > 150 && pixel.red() < 150)
+                        ++patternLines;
                 }
             }
-            check(leaked == 0,
-                  QStringLiteral("纹理填充的图形内部（含空隙）不透出下层颜色"),
-                  QStringLiteral("leaked=%1").arg(leaked));
+            check(lowerVisible > 0 && patternLines > 0,
+                  QStringLiteral("纹理填充不遮挡下层：空隙里透出下层颜色，线条仍然画在上层"),
+                  QStringLiteral("lowerVisible=%1 lines=%2").arg(lowerVisible).arg(patternLines));
+
+            // 反过来：纯色填充（含半透明）压住纹理填充的下层时，下层纹理必须完全消失。
+            BoardScene solidOverTexture;
+            solidOverTexture.applyBoardSize(QSizeF(300, 200));
+            solidOverTexture.setShowGrid(false);
+            auto* texturedLower = new ShapeItem(ShapeType::Rectangle);
+            texturedLower->setPos(QPointF(40, 40));
+            texturedLower->setContentSize(QSizeF(220, 120));
+            texturedLower->setStyle(QColor(239, 68, 68), QColor(239, 68, 68, 200), 1.0);
+            texturedLower->setFill(QColor(239, 68, 68, 200), FillStyle::Honeycomb);
+            solidOverTexture.attachItem(texturedLower);
+
+            auto* solidCover = new ShapeItem(ShapeType::Rectangle);
+            solidCover->setPos(QPointF(80, 60));
+            solidCover->setContentSize(QSizeF(140, 100));
+            solidCover->setStyle(QColor(37, 99, 235), QColor(37, 99, 235, 128), 2.0);
+            solidCover->setFill(QColor(37, 99, 235, 128), FillStyle::Solid);
+            solidOverTexture.attachItem(solidCover);
+
+            QImage solidOverImage(300, 200, QImage::Format_ARGB32_Premultiplied);
+            solidOverImage.fill(Qt::white);
+            QPainter solidOverPainter(&solidOverImage);
+            solidOverTexture.render(&solidOverPainter, QRectF(0, 0, 300, 200), QRectF(0, 0, 300, 200));
+            solidOverPainter.end();
+            int textureLeaked = 0;
+            int solidPixels = 0;
+            for (int y = 72; y < 150; y += 4) {
+                for (int x = 92; x < 210; x += 4) {
+                    const QColor pixel = solidOverImage.pixelColor(x, y);
+                    if (pixel.green() < 120)
+                        ++textureLeaked;
+                    if (pixel.blue() > 200 && pixel.green() > 120)
+                        ++solidPixels;
+                }
+            }
+            check(textureLeaked == 0 && solidPixels > 0,
+                  QStringLiteral("纯色填充也遮挡下层纹理，重叠处只剩纯色"),
+                  QStringLiteral("leaked=%1 solid=%2").arg(textureLeaked).arg(solidPixels));
         }
 
         // 需求 13：画板通过拉伸边缘扩大或裁剪，并随模板保存原点。
