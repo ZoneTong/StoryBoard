@@ -1,0 +1,9 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/icons">
+        <file alias="app.png">app.png</file>
+        <file alias="app.ico">app.ico</file>
+        <file alias="chevron-down.png">chevron-down.png</file>
+        <file alias="chevron-up.png">chevron-up.png</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,10 @@
+[build]
+build/
+out/
+cmake-build-*/
+*.user
+*.autosave
+*.log
+.vs/
+.vscode/
+.idea/

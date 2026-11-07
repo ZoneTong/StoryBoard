@@ -1,0 +1,323 @@
+# StoryBoard 画板
+
+一个使用 **Qt 6 / C++17 / CMake** 编写的轻量画板工具，支持自由笔画、图片、文字与常见图形图元、全景查看、图元移动/缩放、图层与层内叠放、图层显示/隐藏与编辑锁定、背景替换、撤销/重做、模板保存与画板导出。
+
+![StoryBoard 界面](docs/screenshot.png)
+
+## 功能
+
+- **画笔模式**：按住左键绘制平滑的自由曲线，可随时选择画笔颜色与粗细。
+- **编辑模式**：只有当前选中图层上的图元可以选中、移动、缩放、编辑和删除；其他图层保持可见但处于锁定状态。支持框选、多选、`Shift` 等比缩放，以及把图片导入为图元；右键图元可调整层内高度或跨图层移动。
+- **文字图元**：单独的 `T` 文字模式，点击画板放置文字；支持多行、字体、字号、颜色、粗体/斜体；文字与笔画、图片一样可移动、缩放、分层、撤销和保存到模板，编辑模式下双击或右键可再次编辑。
+- **常见图形快速插入**：`插入 → 常见图形` 或顶部工具栏图形按钮可快速插入矩形、圆角矩形、圆形/椭圆、三角形、菱形、五角星、箭头、双向箭头、直线、左/右大括号、对话气泡共 12 种图形；新图形自动进入当前图层并选中，可直接移动、缩放、调整 `height`/图层、撤销和保存到模板。图形颜色与粗细跟随当前画笔设置。
+- **查看模式（默认）**：进入模式时自动缩放到全部可见图元（全景视图）；只通过视图变换平移/缩放，**不修改图元自身坐标**；`Ctrl+0` / `Home` 一键回到全景。
+- **图层**：背景固定为第 0 层；新建图层按创建先后依次变高，低层图元会被高层图元遮盖；右侧图层面板支持新建、删除空图层、上移/下移图层，并可逐层勾选/取消勾选控制显示与隐藏。选中隐藏图层会自动显示，隐藏当前图层会自动切换到最近的可见图层。
+- **层内叠放**：同一图层中的每个图元拥有**唯一**的 `height`，新建图元默认放在该层最高处；右键可 `height +1` / `-1`，`height` 越大越靠上，遇到目标高度已有图元时交换两者高度。
+- **背景**：支持纯色、图片（拉伸 / 适应 / 平铺）和清除背景，图片会随模板一起保存。
+- **配置**：默认画笔颜色/粗细、画板尺寸、辅助网格、画布外围颜色，使用 `QSettings` 持久化。
+- **撤销 / 重做**：添加、删除、移动、缩放、导入图片、添加/编辑文字、插入图形、更换背景、调整画板尺寸、图层增删/排序、图元高度与跨图层移动均可撤销。
+- **模板**：保存/打开 `.sbboard` 模板，图片与背景以 PNG 内嵌，文字保存字体与颜色，图形保存类型、描边、填充与线宽；模板菜单会列出模板目录中的最近文件。
+- **导出**：导出画板区域或全部图元，支持 PNG、JPEG、PDF，可选输出比例；不会导出网格和选中框。
+
+## 本机验证环境
+
+| 项目 | 版本 / 路径 |
+| --- | --- |
+| 操作系统 | Windows 11 23H2（10.0.22631） |
+| Qt | 6.12.0 `mingw_64`（`D:\Qt\6.12.0\mingw_64`） |
+| 编译器 | MinGW-w64 GCC 13.1.0（`D:\Qt\Tools\mingw1310_64`） |
+| CMake | 3.30.5 |
+| 构建生成器 | MinGW Makefiles（本机未安装 Ninja） |
+
+> 理论上 Qt 6.5+ / MinGW 或 MSVC 也可构建，但本项目在当前环境按上述组合完成编译和自检。
+
+## 构建与运行
+
+### 一键脚本（推荐）
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\run.ps1
+```
+
+脚本会自动查找 `D:\Qt\6.*\mingw_64` 和对应的 MinGW 工具链，生成到 `build\bin\StoryBoard.exe`，并在 Release 构建后调用 `windeployqt` 部署 Qt 运行库。
+
+常用参数：
+
+```powershell
+# 清理后重新构建
+powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1 -Clean
+
+# Debug 构建
+powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1 -Config Debug
+
+# 指定 Qt 路径
+powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1 -QtDir "D:\Qt\6.12.0\mingw_64"
+
+# 只构建，不部署运行库
+powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1 -NoDeploy
+
+# 传参数给应用
+powershell -ExecutionPolicy Bypass -File .\scripts\run.ps1 .\examples\demo-storyboard.sbboard
+```
+
+### 手动 CMake
+
+```powershell
+$env:Path = "D:\Qt\Tools\mingw1310_64\bin;D:\Qt\6.12.0\mingw_64\bin;$env:Path"
+
+cmake -S . -B build -G "MinGW Makefiles" `
+  -DCMAKE_BUILD_TYPE=Release `
+  -DCMAKE_PREFIX_PATH=D:/Qt/6.12.0/mingw_64
+
+cmake --build build -j
+cmake --build build --target deploy   # 可选：windeployqt + offscreen 插件
+```
+
+### 在 Qt Creator 中打开
+
+直接用 Qt Creator 打开根目录的 `CMakeLists.txt`，选择 `Desktop Qt 6.12.0 MinGW 64-bit` 套件即可；构建目录建议使用 `build` 之外的目录，避免与脚本构建产物冲突。
+
+## 操作说明
+
+### 四种模式
+
+| 模式 | 快捷键 | 说明 |
+| --- | --- | --- |
+| 查看模式 | `V` | 默认模式。左键拖拽平移，滚轮缩放；切换到此模式会自动全景显示所有图元。视图变换不改变图元坐标。 |
+| 画笔模式 | `B` | 左键绘制自由曲线，工具栏选择颜色/粗细；空格键或中键平移。 |
+| 编辑模式 | `E` | 左键选择/拖动图元，拖动八个控制点缩放；空白处拖动框选；`Shift` 等比缩放；`Delete` 删除。双击文字可编辑。 |
+| 文字模式 | `T` | 点击画板任意位置，在弹出对话框中输入文字并设置字体/字号/颜色；确定后自动切回编辑模式并选中新文字。 |
+
+![添加文字图元对话框](docs/text-dialog.png)
+
+### 插入常见图形
+
+- 入口：顶部工具栏的图形按钮，或菜单 **插入 → 常见图形**。
+- 支持 12 种：矩形、圆角矩形、圆形 / 椭圆、三角形、菱形、五角星、箭头、双向箭头、直线、左大括号、右大括号、对话气泡。
+
+![常见图形快速插入菜单](docs/shape-menu.png)
+
+- 选择图形后会立即插入到当前视图中心附近的画板位置，自动切到编辑模式并选中，可马上拖动、用 8 个控制点缩放。
+- 图形使用当前画笔颜色；矩形、圆形、三角形等封闭图形按画笔粗细描边并带同色半透明填充，箭头使用单色实心轮廓，直线和大括号按画笔粗细绘制。
+- 新图形进入当前图层，并自动获得该层唯一 `height`；右键菜单同样支持调整高度、跨图层移动和删除。
+- 插入操作进入撤销栈，保存模板时记录图形类型与样式。
+
+### 快捷键
+
+| 操作 | 快捷键 |
+| --- | --- |
+| 新建画板 | `Ctrl+N` |
+| 打开模板 | `Ctrl+O` |
+| 保存模板 / 另存为 | `Ctrl+S` / `Ctrl+Shift+S` |
+| 导入图片 | `Ctrl+I` |
+| 导出画板 | `Ctrl+E` |
+| 撤销 / 重做 | `Ctrl+Z` / `Ctrl+Y`（也支持 `Ctrl+Shift+Z`） |
+| 全选 / 删除 | `Ctrl+A` / `Delete` |
+| 查看 / 画笔 / 编辑 / 文字模式 | `V` / `B` / `E` / `T` |
+| 回到全景视图 | `Ctrl+0` / `Home` |
+| 放大 / 缩小 / 实际大小 | `Ctrl+=` / `Ctrl+-` / `Ctrl+1` |
+| 设置 | `Ctrl+,` |
+| 取消当前笔画 | `Esc` |
+
+### 编辑模式细节
+
+- 选中单个图元后，四角与四边共 8 个控制点可缩放图元；拖动角点时按住 `Shift` 保持宽高比。
+- 选中多个图元后拖动其中任意一个，所有选中图元一起移动。
+- 框选使用与图元形状相交的判定；笔画按曲线附近的命中区域选择，而不是整块矩形。
+- 图片、文字、图形图元同样支持移动与缩放；文字缩放会同时缩放字号和行距，图形缩放会改变几何轮廓但保持线宽。
+- 双击文字图元，或在右键菜单选择 `编辑文字…`，可以修改内容、字体、字号、颜色与粗斜体。
+- 右键图元：`高度 +1` / `高度 -1` 调整同层叠放；`移到上一层图层` / `移到下一层图层` 调整所属图层；`删除图元`。文字图元额外显示 `编辑文字…`。
+
+### 图层与叠放
+
+- **第 0 层固定为背景**，不能接收图元，也不能删除或上移。
+- 用户图层在图层面板中按**上层在前**显示。新建图层总是放在最上层，并自动成为当前图层；新笔画、新导入图片、新文字、新图形都会进入当前图层。
+- 图层上移/下移只交换图层顺序，不改变图元坐标；下层图元整体被上层图元遮盖。
+- 同一图层内按 `height` 从小到大绘制，`height` 大的图元遮盖 `height` 小的图元。新建图元自动取 `该层最大 height + 1`。
+- **同一图层内每个图元的 `height` 唯一**。新建、导入、添加文字、插入图形、跨图层移动都会分配唯一值；载入手工修改过、含重复 `height` 的模板时，会按原顺序自动修复为连续且唯一的值。
+- 右键 `高度 +1` / `-1` 每次改变 1；若目标高度已有图元，则交换两者的 `height`，保证点击后立即跨过相邻图元且层内高度保持唯一。
+- 跨图层移动时，图元放到目标图层的最上面。图层增删、排序与高度调整都支持撤销与重做。
+
+#### 显示/隐藏与编辑锁定
+
+- 图层面板每行左侧有勾选框：勾选表示显示，取消勾选表示隐藏；背景第 0 层也可以单独隐藏。
+- **选中的图层自动显示**：在面板中选择一个隐藏图层时，它会立即变为可见并成为当前图层。
+- **隐藏当前图层**时，会自动切换到最近的另一个可见用户图层，避免出现“当前图层不可见”而无法编辑的情况；最后一个可编辑图层不能被隐藏。
+- **只有当前图层上的图元可编辑**：其他可见图层仍参与绘制，但不能被点选、框选、拖动、缩放、双击编辑或右键修改；右键锁定图元时会提示先在图层面板选择对应图层。
+- 隐藏图层不会参与全景视图的内容范围，也不会出现在导出结果中；显示/隐藏状态会随模板保存。
+- 图层显示状态属于查看状态，不进入撤销栈；图层增删/排序、图元编辑等仍可撤销。
+
+### 背景与配置
+
+- **画板 → 替换背景图片…**：选择图片作为背景，支持拉伸、适应、平铺三种填充方式。
+- **画板 → 设置背景颜色…** / **清除背景**：纯色背景或恢复白色。
+- **画板 → 设置…**：默认画笔颜色/粗细、画板尺寸、辅助网格、画布外围颜色。
+- 修改画板尺寸不会移动已有图元，并且可以撤销。
+
+### 模板与示例
+
+- 保存路径默认为 `%APPDATA%\ZoneTong\StoryBoard\templates`，可在设置中打开该目录。
+- 模板菜单会列出模板目录中的 `.sbboard` 文件，可直接打开。
+- 示例模板：[examples/demo-storyboard.sbboard](examples/demo-storyboard.sbboard)
+- 示例画板效果：
+
+![示例画板](docs/sample-board.png)
+
+模板是 UTF-8 JSON，图片图元和图片背景都会转成 PNG 后以 Base64 内嵌，文字以普通字段保存，因此单个模板即可独立分发。
+
+- `version: 2` 起增加 `layers`、`activeLayer`，每个图元记录 `layer` 与 `height`。
+- `layers` 从低到高排列，`id: 0` 固定为背景；背景不参与 `items`。每个图层保存 `visible`，用于恢复显示/隐藏状态。
+- 图元最终绘制顺序由 `图层顺序 + height` 推导，JSON 中的 `z` 仅用于可读性与旧版兼容。
+- `height` 在每层内唯一；读取模板时如果发现重复，会保留原有顺序并重新编号。
+- 文字图元类型为 `text`，额外保存 `text`、`fontFamily`、`fontSize`、`fontWeight`、`italic`、`color`、`baseWidth/baseHeight`。
+- 图形图元类型为 `shape`，额外保存 `shapeType`、`strokeColor`、`fillColor`、`strokeWidth`；`shapeType` 支持 `rectangle`、`rounded_rectangle`、`ellipse`、`triangle`、`diamond`、`star`、`arrow`、`double_arrow`、`line`、`brace_left`、`brace_right`、`callout`。
+- 打开 `version: 1` 的旧模板时，会按原全局 `z` 顺序放入第 1 层，并转换为递增的 `height`。
+
+字段示例：
+
+```json
+{
+  "format": "StoryBoard",
+  "version": 2,
+  "board": { "width": 1920, "height": 1080 },
+  "background": { "type": "color", "color": "#fff7f3ea" },
+  "layers": [
+    { "id": 0, "name": "背景", "visible": true },
+    { "id": 1, "name": "图层 1", "visible": false },
+    { "id": 2, "name": "标注", "visible": true }
+  ],
+  "activeLayer": 2,
+  "items": [
+    {
+      "type": "stroke",
+      "x": 100, "y": 120, "w": 240, "h": 90,
+      "layer": 1, "height": 1, "z": 1000001,
+      "color": "#ffef4444", "width": 6,
+      "points": [[12.5, 13.0], [18.0, 20.5]]
+    },
+    {
+      "type": "image",
+      "x": 300, "y": 200, "w": 320, "h": 200,
+      "layer": 2, "height": 1, "z": 2000001,
+      "name": "shot-01.png",
+      "image": "<base64 PNG>"
+    },
+    {
+      "type": "text",
+      "x": 80, "y": 70, "w": 520, "h": 90,
+      "layer": 2, "height": 2, "z": 2000002,
+      "text": "第一行标题\n第二行文字",
+      "fontFamily": "Microsoft YaHei UI",
+      "fontSize": 36, "fontWeight": 700, "italic": false,
+      "color": "#ff1d4ed8",
+      "baseWidth": 520, "baseHeight": 90
+    },
+    {
+      "type": "shape",
+      "x": 520, "y": 520, "w": 340, "h": 120,
+      "layer": 2, "height": 3, "z": 2000003,
+      "shapeType": "arrow",
+      "strokeColor": "#ffea580c",
+      "fillColor": "#00000000",
+      "strokeWidth": 5
+    }
+  ]
+}
+```
+
+### 导出
+
+- **范围**：画板区域（固定画板尺寸）或全部图元（内容外接矩形加边距）。
+- **格式**：PNG / JPEG / PDF。
+- **比例**：0.25× ~ 4×，导出尺寸会实时估算。
+- 导出内容包含背景和所有可见图层图元，隐藏图层不会导出；不包含编辑网格、选中框与手柄。
+
+## 自检
+
+项目内置一个不依赖 GUI 桌面的自检入口，覆盖图元增删、移动、缩放、背景、图层顺序、图层面板按钮与勾选框、图层显示/隐藏、当前图层自动显示与自动切换、非当前图层编辑锁定、隐藏图层渲染/内容范围/导出排除、层内 `height` 唯一性与叠放、跨图层移动、图层及高度的撤销/重做、文字图元创建/编辑/字体颜色/渲染/模板序列化、12 种常见图形的路径/图标/渲染/移动缩放/模板序列化、图形快速插入菜单、重复 `height` 模板修复、旧版兼容、PNG/JPEG/PDF 导出，以及真实的鼠标事件交互（绘制、文字模式点击、双击文字编辑、主窗口端到端文字创建与模板打开、查看模式全景/平移/缩放、编辑模式点选/移动/缩放、锁定图层点选/双击/右键提示）：
+
+```powershell
+$env:QT_QPA_PLATFORM = "offscreen"
+$report = ".\build\selftest.txt"
+Remove-Item $report -ErrorAction SilentlyContinue
+.\build\bin\StoryBoard.exe --self-test $report
+# 这是 Windows GUI 子系统程序，命令会先返回；等待报告写入后再查看
+Start-Sleep -Seconds 8
+Get-Content $report
+```
+
+当前共 **272 项检查，全部通过**（`SUMMARY 272 passed, 0 failed`）。
+
+> `--self-test` 需要 `platforms\qoffscreen.dll`。`build.ps1` 的部署步骤会一并复制；手动构建时如果只运行窗口程序则不需要它。
+
+其他内部工具参数（开发自检用）：
+
+```powershell
+# 渲染示例画板为 PNG（不弹窗，使用 Windows 字体）
+.\build\bin\StoryBoard.exe --render-demo .\build\demo.png
+
+# 生成示例模板
+.\build\bin\StoryBoard.exe --demo-template .\examples\demo-storyboard.sbboard
+
+# 抓取主界面 / 设置 / 导出 / 文字对话框截图
+.\build\bin\StoryBoard.exe --ui-screenshot .\build\ui.png
+.\build\bin\StoryBoard.exe --settings-screenshot .\build\settings.png
+.\build\bin\StoryBoard.exe --export-screenshot .\build\export.png
+.\build\bin\StoryBoard.exe --text-screenshot .\build\text.png
+
+# 抓取常见图形快速插入菜单
+.\build\bin\StoryBoard.exe --shape-menu-screenshot .\build\shape-menu.png
+```
+
+## 项目结构
+
+```text
+StoryBoard/
+├─ CMakeLists.txt
+├─ src/
+│  ├─ main.cpp               入口、全局主题、开发用截图/自检参数
+│  ├─ MainWindow.*           菜单、工具栏、模板、导入、导出、设置
+│  ├─ BoardScene.*           画板场景、图层/高度模型、背景/网格、模板 JSON、离屏渲染
+│  ├─ BoardView.*            四种模式、绘制、文字放置/双击编辑、视图缩放/平移、全景、右键菜单
+│  ├─ LayerPanel.*           图层面板：新建/删除/上移/下移、当前图层
+│  ├─ BoardItem.*            图元基类：layer/height、选中框、8 个缩放手柄、移动/缩放交互
+│  ├─ StrokeItem.*           自由笔画（平滑路径、点、颜色/粗细）
+│  ├─ ImageItem.*            图片图元
+│  ├─ TextItem.*             文字图元（多行、字体、颜色、缩放、序列化）
+│  ├─ ShapeItem.*            12 种常见图形（路径、描边/填充、缩放、序列化、菜单图标）
+│  ├─ Commands.*             Undo/Redo 命令
+│  ├─ ExportDialog.*         导出设置对话框
+│  ├─ SettingsDialog.*       设置对话框
+│  ├─ TextDialog.*           添加/编辑文字对话框
+│  ├─ Settings.*             QSettings 配置
+│  ├─ IconFactory.*          用 QPainter 绘制的界面图标
+│  └─ SelfTest.*             自检与示例画板生成
+├─ resources/                应用图标、下拉箭头、qrc、rc
+├─ scripts/                  build.ps1 / run.ps1
+├─ examples/                 示例模板
+└─ docs/                     README 截图
+```
+
+## 实现要点
+
+- **场景 / 视图分离**：图元只保存在场景坐标中。查看模式的缩放、平移全部作用于 `QGraphicsView` 的视口变换，图元 `pos()`、尺寸和内部路径都不改变。
+- **自定义图元交互**：`BoardItem` 统一实现移动、八个控制点缩放、多选联动，拖动结束才生成 `GeometryCommand`；撤销时恢复位置与尺寸。
+- **平滑笔画**：绘制时按距离采样，使用二次贝塞尔曲线平滑；笔宽、颜色随图元保存。笔画命中检测使用描边后的路径，而非包围盒。
+- **图层与绘制顺序**：`QGraphicsItem::zValue` 由 `图层序号 × 1000000 + height` 统一推导，场景负责在图层或高度变化后重新计算，图元自身不保存重复的绘制顺序状态。背景由 `BoardScene::drawBackground` 绘制，始终位于所有图元下方，等价于固定的第 0 层。
+- **图层可见性与编辑锁定**：`BoardLayer` 保存 `visible`，场景在图层、当前图层或模式变化时统一调用 `updateItemFlags()`：隐藏图层图元 `setVisible(false)`，只有“编辑模式 + 当前图层 + 可见”三者同时满足的图元才可选中和 hover。当前图层被隐藏时自动切换到最近的用户图层；选中隐藏图层时先恢复可见。隐藏图元同时从 `contentRect()`、全景和导出渲染中消失。
+- **层内高度**：新建图元取当前层最大 `height + 1`；`高度 +1/-1` 遇到同高度图元时交换两者高度；场景在添加、跨层移动、图层重排和模板载入时统一校验并修复 `height`，保证同一图层内每个 `height` 只出现一次。
+- **文字图元**：保存文字、`QFont` 与颜色，使用 `QFontMetricsF` 计算多行文字的自然尺寸；绘制时以图元内容尺寸与自然尺寸的比例缩放文字，因此拖动控制点会同步缩放字号与行距。编辑文字通过 `TextItemCommand` 记录修改前后的文字、字体、颜色、位置与尺寸。
+- **常见图形**：`ShapeItem` 用 `QPainterPath` 描述矩形、圆角矩形、椭圆、三角形、菱形、五角星、单向/双向箭头、直线、左右大括号和对话气泡；缩放只改变图形包围盒，线宽保持不变。箭头、对话气泡等按填充轮廓绘制，直线和大括号按描边路径绘制；模板保存 `shapeType/strokeColor/fillColor/strokeWidth`。
+- **背景绘制**：`QGraphicsView` 负责画布外围颜色，`BoardScene::drawBackground` 负责画板背景和网格；这样既能保留深色画布工作区，也能让导出内容只包含画板本身。
+- **模板**：JSON + Base64 PNG，保存图层顺序、当前图层以及每个图元的 `layer/height`；文字图元直接保存文字与字体字段；兼容旧版仅含 `z` 的模板；载入时修复重复 `height`；未知图元类型会被拒绝，避免半加载。
+- **撤销栈**：`QUndoStack` 上限 300 步；图层顺序、图层增删、层内高度、跨图层移动、文字编辑均通过命令记录；新建/打开模板时先清理命令再清理图元，避免悬空引用。主窗口析构时会先清空撤销栈并断开视图与场景，避免 `QUndoStack` 在场景销毁后触发界面刷新。
+
+## 已知限制
+
+- 当前图元类型为自由笔画、图片、文字与 12 种常见图形，尚未提供旋转、分组功能；文字暂不支持富文本（同一图元内混排不同字号/颜色）。
+- 图形插入时使用当前画笔颜色与粗细，暂不支持单独编辑已插入图形的描边/填充或旋转。
+- 图层删除仅支持空图层；图层重命名和拖拽排序尚未提供，可用面板按钮上移/下移。
+- 模板内嵌图片，包含大图时 `.sbboard` 文件会相应变大。
+- 撤销历史上限 300 步；删除的图元在文档重置前会保留在内存中以便重做。
+- 仅在当前 Windows 11 + MinGW 环境验证；其他平台需自行准备 Qt 6 构建环境。

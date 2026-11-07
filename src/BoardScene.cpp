@@ -1,0 +1,1389 @@
+#include "BoardScene.h"
+
+#include "BoardItem.h"
+#include "Commands.h"
+#include "ImageItem.h"
+#include "ShapeItem.h"
+#include "StrokeItem.h"
+#include "TextItem.h"
+
+#include <QBuffer>
+#include <QHash>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QPainter>
+#include <QSet>
+#include <QUndoStack>
+#include <QtMath>
+
+#include <algorithm>
+#include <utility>
+
+namespace {
+
+constexpr qreal kMinBoardSide = 200.0;
+constexpr qreal kMaxBoardSide = 12000.0;
+constexpr int kMaxItemHeight = 999999;
+constexpr qreal kLayerZStride = 1000000.0;
+constexpr int kFirstUserLayerId = 1;
+const QString kBackgroundLayerName = QStringLiteral("背景");
+
+bool nearlyEqual(qreal a, qreal b)
+{
+    return qAbs(a - b) < 0.01;
+}
+
+bool sameGeometry(const ItemGeometry& a, const ItemGeometry& b)
+{
+    return nearlyEqual(a.pos.x(), b.pos.x())
+        && nearlyEqual(a.pos.y(), b.pos.y())
+        && nearlyEqual(a.size.width(), b.size.width())
+        && nearlyEqual(a.size.height(), b.size.height());
+}
+
+QString encodePixmap(const QPixmap& pixmap)
+{
+    if (pixmap.isNull())
+        return QString();
+    QByteArray bytes;
+    QBuffer buffer(&bytes);
+    buffer.open(QIODevice::WriteOnly);
+    pixmap.save(&buffer, "PNG");
+    return QString::fromLatin1(bytes.toBase64());
+}
+
+QPixmap decodePixmap(const QString& base64)
+{
+    const QByteArray bytes = QByteArray::fromBase64(base64.toLatin1());
+    QPixmap pixmap;
+    if (!bytes.isEmpty())
+        pixmap.loadFromData(bytes, "PNG");
+    return pixmap;
+}
+
+} // namespace
+
+BoardScene::BoardScene(QObject* parent)
+    : QGraphicsScene(parent)
+{
+    m_layers = {
+        { BackgroundLayerId, kBackgroundLayerName },
+        { kFirstUserLayerId, QStringLiteral("图层 1") }
+    };
+    m_activeLayerId = kFirstUserLayerId;
+    m_nextLayerId = kFirstUserLayerId + 1;
+
+    setBackgroundBrush(Qt::NoBrush);
+    setItemIndexMethod(QGraphicsScene::BspTreeIndex);
+    setStickyFocus(true);
+    updateSceneExtent();
+}
+
+BoardScene::~BoardScene()
+{
+    clearOrphans();
+}
+
+void BoardScene::setUndoStack(QUndoStack* stack)
+{
+    m_undoStack = stack;
+}
+
+void BoardScene::setMode(ToolMode mode)
+{
+    if (m_mode == mode)
+        return;
+
+    if (m_mode == ToolMode::Edit)
+        clearSelection();
+
+    m_mode = mode;
+    updateItemFlags();
+    update();
+    emit modeChanged(mode);
+}
+
+void BoardScene::updateItemFlags()
+{
+    const QList<BoardItem*> items = boardItems();
+    for (BoardItem* item : items)
+        applyItemInteraction(item);
+}
+
+void BoardScene::applyItemInteraction(BoardItem* item)
+{
+    if (!item)
+        return;
+
+    const bool layerVisible = isLayerVisible(item->layerId());
+    const bool editable = m_mode == ToolMode::Edit
+        && layerVisible
+        && item->layerId() == m_activeLayerId;
+
+    item->setVisible(layerVisible);
+    item->setFlag(QGraphicsItem::ItemIsSelectable, editable);
+    item->setAcceptHoverEvents(editable);
+    if (!editable)
+        item->setSelected(false);
+}
+
+QRectF BoardScene::boardRect() const
+{
+    return QRectF(QPointF(0.0, 0.0), m_boardSize);
+}
+
+void BoardScene::applyBoardSize(const QSizeF& size)
+{
+    const QSizeF bounded(qBound(kMinBoardSide, size.width(), kMaxBoardSide),
+                         qBound(kMinBoardSide, size.height(), kMaxBoardSide));
+    if (qFuzzyCompare(bounded.width(), m_boardSize.width())
+        && qFuzzyCompare(bounded.height(), m_boardSize.height())) {
+        return;
+    }
+    m_boardSize = bounded;
+    updateSceneExtent();
+    update();
+    emit boardSizeChanged(m_boardSize);
+}
+
+void BoardScene::setBoardSizeWithUndo(const QSizeF& size)
+{
+    const QSizeF bounded(qBound(kMinBoardSide, size.width(), kMaxBoardSide),
+                         qBound(kMinBoardSide, size.height(), kMaxBoardSide));
+    if (qFuzzyCompare(bounded.width(), m_boardSize.width())
+        && qFuzzyCompare(bounded.height(), m_boardSize.height())) {
+        return;
+    }
+
+    if (m_undoStack) {
+        m_undoStack->push(new BoardSizeCommand(this, m_boardSize, bounded,
+                                               QStringLiteral("调整画板尺寸")));
+    } else {
+        applyBoardSize(bounded);
+    }
+}
+
+void BoardScene::applyBackground(const BackgroundState& background)
+{
+    m_background = background;
+    update();
+    emit backgroundChanged();
+}
+
+void BoardScene::replaceBackground(const BackgroundState& background, const QString& text)
+{
+    if (background == m_background)
+        return;
+
+    if (m_undoStack) {
+        m_undoStack->push(new BackgroundCommand(this, m_background, background,
+                                               text.isEmpty() ? QStringLiteral("更换背景") : text));
+    } else {
+        applyBackground(background);
+    }
+}
+
+void BoardScene::setShowGrid(bool enabled)
+{
+    if (m_showGrid == enabled)
+        return;
+    m_showGrid = enabled;
+    update();
+}
+
+QRectF BoardScene::contentRect() const
+{
+    QRectF rect;
+    bool hasItem = false;
+    const QList<BoardItem*> items = boardItems();
+    for (BoardItem* item : items) {
+        if (!item->isVisible())
+            continue;
+        const QRectF itemRect = item->sceneContentRect();
+        if (itemRect.isEmpty())
+            continue;
+        if (!hasItem) {
+            rect = itemRect;
+            hasItem = true;
+        } else {
+            rect = rect.united(itemRect);
+        }
+    }
+    return hasItem ? rect : QRectF();
+}
+
+void BoardScene::updateSceneExtent()
+{
+    QRectF extent = boardRect();
+    const QRectF content = contentRect();
+    if (!content.isEmpty())
+        extent = extent.united(content);
+    extent = extent.adjusted(-400.0, -400.0, 400.0, 400.0);
+    if (sceneRect() != extent)
+        setSceneRect(extent);
+}
+
+QList<BoardItem*> BoardScene::boardItems() const
+{
+    QList<BoardItem*> result;
+    const QList<QGraphicsItem*> allItems = items(Qt::AscendingOrder);
+    result.reserve(allItems.size());
+    for (QGraphicsItem* graphicsItem : allItems) {
+        if (auto* item = qgraphicsitem_cast<BoardItem*>(graphicsItem))
+            result.append(item);
+    }
+    return result;
+}
+
+int BoardScene::boardItemCount() const
+{
+    return boardItems().size();
+}
+
+QList<BoardLayer> BoardScene::userLayers() const
+{
+    if (m_layers.size() <= 1)
+        return {};
+    return m_layers.mid(1);
+}
+
+bool BoardScene::hasLayer(int layerId) const
+{
+    return layerIndex(layerId) >= 0;
+}
+
+BoardLayer BoardScene::layer(int layerId) const
+{
+    for (const BoardLayer& entry : m_layers) {
+        if (entry.id == layerId)
+            return entry;
+    }
+    return {};
+}
+
+int BoardScene::layerIndex(int layerId) const
+{
+    for (int i = 0; i < m_layers.size(); ++i) {
+        if (m_layers.at(i).id == layerId)
+            return i;
+    }
+    return -1;
+}
+
+int BoardScene::layerItemCount(int layerId) const
+{
+    int count = 0;
+    const QList<BoardItem*> items = boardItems();
+    for (BoardItem* item : items) {
+        if (item->layerId() == layerId)
+            ++count;
+    }
+    return count;
+}
+
+QList<BoardItem*> BoardScene::layerItems(int layerId) const
+{
+    QList<BoardItem*> result;
+    const QList<BoardItem*> items = boardItems();
+    for (BoardItem* item : items) {
+        if (item->layerId() == layerId)
+            result.append(item);
+    }
+    return result;
+}
+
+bool BoardScene::isLayerVisible(int layerId) const
+{
+    return hasLayer(layerId) && layer(layerId).visible;
+}
+
+bool BoardScene::setLayerVisible(int layerId, bool visible)
+{
+    const int index = layerIndex(layerId);
+    if (index < 0)
+        return false;
+
+    if (m_layers.at(index).visible == visible)
+        return true;
+
+    bool activeChanged = false;
+    if (!visible && layerId == m_activeLayerId && layerId != BackgroundLayerId) {
+        // The active layer is always visible. Hiding it moves the selection to
+        // the nearest editable layer instead of leaving an invisible active
+        // layer that cannot be edited.
+        int fallbackIndex = -1;
+        for (int distance = 1; distance < m_layers.size(); ++distance) {
+            const int below = index - distance;
+            if (below > 0) {
+                fallbackIndex = below;
+                break;
+            }
+            const int above = index + distance;
+            if (above < m_layers.size()) {
+                fallbackIndex = above;
+                break;
+            }
+        }
+        if (fallbackIndex < 0)
+            return false;
+
+        m_layers[fallbackIndex].visible = true;
+        m_activeLayerId = m_layers.at(fallbackIndex).id;
+        activeChanged = true;
+    }
+
+    m_layers[index].visible = visible;
+    updateItemFlags();
+    updateSceneExtent();
+    update();
+    emit layersChanged();
+    emit contentChanged();
+    if (activeChanged)
+        emit activeLayerChanged(m_activeLayerId);
+    return true;
+}
+
+bool BoardScene::isItemEditable(const BoardItem* item) const
+{
+    return item
+        && item->scene() == this
+        && m_mode == ToolMode::Edit
+        && item->layerId() == m_activeLayerId
+        && isLayerVisible(item->layerId());
+}
+
+void BoardScene::setActiveLayer(int layerId)
+{
+    if (layerId == BackgroundLayerId || !hasLayer(layerId))
+        return;
+
+    bool visibilityChanged = false;
+    if (!isLayerVisible(layerId)) {
+        for (BoardLayer& entry : m_layers) {
+            if (entry.id == layerId) {
+                entry.visible = true;
+                break;
+            }
+        }
+        visibilityChanged = true;
+    }
+
+    if (layerId == m_activeLayerId) {
+        if (visibilityChanged) {
+            updateItemFlags();
+            updateSceneExtent();
+            update();
+            emit layersChanged();
+            emit contentChanged();
+        }
+        return;
+    }
+
+    m_activeLayerId = layerId;
+    updateItemFlags();
+    updateSceneExtent();
+    update();
+    if (visibilityChanged)
+        emit layersChanged();
+    emit activeLayerChanged(m_activeLayerId);
+    if (visibilityChanged)
+        emit contentChanged();
+}
+
+int BoardScene::createLayer(const QString& name)
+{
+    const int id = m_nextLayerId++;
+    BoardLayer entry;
+    entry.id = id;
+    entry.name = name.trimmed().isEmpty() ? QStringLiteral("图层 %1").arg(id) : name.trimmed();
+    m_layers.append(entry);
+    m_activeLayerId = id;
+    applyAllItemStacking();
+    update();
+    emit layersChanged();
+    emit activeLayerChanged(m_activeLayerId);
+    emit contentChanged();
+    return id;
+}
+
+bool BoardScene::addLayerWithUndo(const QString& name)
+{
+    const LayerStackState before = layerState();
+    const int id = m_nextLayerId++;
+    BoardLayer entry;
+    entry.id = id;
+    entry.name = name.trimmed().isEmpty() ? QStringLiteral("图层 %1").arg(id) : name.trimmed();
+
+    LayerStackState after = before;
+    after.layers.append(entry);
+    after.activeLayerId = id;
+    const QString text = QStringLiteral("新建图层");
+
+    if (m_undoStack) {
+        m_undoStack->push(new LayerStateCommand(this, before, after, text));
+    } else {
+        applyLayerStateInternal(after);
+    }
+    return true;
+}
+
+bool BoardScene::removeLayerWithUndo(int layerId, QString* errorMessage)
+{
+    auto fail = [errorMessage](const QString& message) {
+        if (errorMessage)
+            *errorMessage = message;
+        return false;
+    };
+
+    const int index = layerIndex(layerId);
+    if (index <= 0)
+        return fail(QStringLiteral("背景层不能删除。"));
+    if (userLayerCount() <= 1)
+        return fail(QStringLiteral("至少需要保留一个图层。"));
+    if (layerItemCount(layerId) > 0)
+        return fail(QStringLiteral("该图层中还有图元，请先删除或移动图元。"));
+
+    const LayerStackState before = layerState();
+    LayerStackState after = before;
+    after.layers.removeAt(index);
+    if (after.activeLayerId == layerId) {
+        const int fallbackIndex = qBound(1, index - 1, static_cast<int>(after.layers.size()) - 1);
+        after.activeLayerId = after.layers.at(fallbackIndex).id;
+    }
+
+    if (m_undoStack) {
+        m_undoStack->push(new LayerStateCommand(this, before, after, QStringLiteral("删除图层")));
+    } else {
+        applyLayerStateInternal(after);
+    }
+    return true;
+}
+
+bool BoardScene::moveLayerWithUndo(int layerId, int delta)
+{
+    const int index = layerIndex(layerId);
+    if (index <= 0 || delta == 0)
+        return false;
+
+    const int target = index + delta;
+    if (target <= 0 || target >= m_layers.size())
+        return false;
+
+    const LayerStackState before = layerState();
+    LayerStackState after = before;
+    after.layers.swapItemsAt(index, target);
+
+    const QString text = delta > 0 ? QStringLiteral("图层上移") : QStringLiteral("图层下移");
+    if (m_undoStack) {
+        m_undoStack->push(new LayerStateCommand(this, before, after, text));
+    } else {
+        applyLayerStateInternal(after);
+    }
+    return true;
+}
+
+LayerStackState BoardScene::layerState() const
+{
+    LayerStackState state;
+    state.layers = m_layers;
+    state.activeLayerId = m_activeLayerId;
+    return state;
+}
+
+void BoardScene::applyLayerState(const LayerStackState& state)
+{
+    applyLayerStateInternal(sanitizedLayerState(state));
+}
+
+LayerStackState BoardScene::sanitizedLayerState(const LayerStackState& state) const
+{
+    LayerStackState result;
+    bool backgroundVisible = true;
+    for (const BoardLayer& source : state.layers) {
+        if (source.id == BackgroundLayerId) {
+            backgroundVisible = source.visible;
+            break;
+        }
+    }
+    result.layers.append({ BackgroundLayerId, kBackgroundLayerName, backgroundVisible });
+
+    QSet<int> used;
+    used.insert(BackgroundLayerId);
+    for (const BoardLayer& source : state.layers) {
+        if (source.id <= 0 || used.contains(source.id))
+            continue;
+        BoardLayer entry = source;
+        if (entry.name.trimmed().isEmpty())
+            entry.name = QStringLiteral("图层 %1").arg(entry.id);
+        result.layers.append(entry);
+        used.insert(entry.id);
+    }
+
+    if (result.layers.size() == 1) {
+        int fallbackId = kFirstUserLayerId;
+        while (used.contains(fallbackId))
+            ++fallbackId;
+        result.layers.append({ fallbackId, QStringLiteral("图层 %1").arg(fallbackId) });
+    }
+
+    result.activeLayerId = state.activeLayerId;
+    if (result.activeLayerId == BackgroundLayerId || !used.contains(result.activeLayerId)) {
+        result.activeLayerId = result.layers.at(1).id;
+    }
+    for (BoardLayer& entry : result.layers) {
+        if (entry.id == result.activeLayerId) {
+            entry.visible = true;
+            break;
+        }
+    }
+    return result;
+}
+
+void BoardScene::applyLayerStateInternal(const LayerStackState& state)
+{
+    m_layers = state.layers;
+    m_activeLayerId = state.activeLayerId;
+
+    for (BoardLayer& entry : m_layers) {
+        if (entry.id == m_activeLayerId && !entry.visible)
+            entry.visible = true;
+    }
+
+    for (const BoardLayer& entry : m_layers)
+        m_nextLayerId = qMax(m_nextLayerId, entry.id + 1);
+
+    const QList<BoardItem*> items = boardItems();
+    for (BoardItem* item : items) {
+        if (!hasLayer(item->layerId()))
+            item->setLayerId(m_activeLayerId);
+    }
+    normalizeAllHeights();
+    applyAllItemStacking();
+    updateItemFlags();
+    updateSceneExtent();
+    update();
+    emit layersChanged();
+    emit activeLayerChanged(m_activeLayerId);
+    emit contentChanged();
+}
+
+void BoardScene::ensureLayerState()
+{
+    const LayerStackState fixed = sanitizedLayerState(layerState());
+    if (fixed.layers != m_layers || fixed.activeLayerId != m_activeLayerId)
+        applyLayerStateInternal(fixed);
+}
+
+qreal BoardScene::layerBaseZ(int layerId) const
+{
+    const int index = layerIndex(layerId);
+    return index > 0 ? index * kLayerZStride : 0.0;
+}
+
+void BoardScene::applyItemStacking(BoardItem* item)
+{
+    if (!item)
+        return;
+    const int maxHeight = kMaxItemHeight;
+    const int height = qBound(0, item->height(), maxHeight);
+    if (height != item->height())
+        item->setHeight(height);
+    item->setZValue(layerBaseZ(item->layerId()) + height);
+}
+
+void BoardScene::applyAllItemStacking()
+{
+    const QList<BoardItem*> items = boardItems();
+    for (BoardItem* item : items)
+        applyItemStacking(item);
+}
+
+int BoardScene::nextHeight(int layerId) const
+{
+    QSet<int> used;
+    int maximum = 0;
+    const QList<BoardItem*> items = boardItems();
+    for (BoardItem* item : items) {
+        if (item->layerId() != layerId || item->height() < 0)
+            continue;
+        used.insert(item->height());
+        maximum = qMax(maximum, item->height());
+    }
+
+    const int aboveTop = maximum + 1;
+    if (aboveTop <= kMaxItemHeight && !used.contains(aboveTop))
+        return aboveTop;
+
+    // The layer is effectively full (or reached the cap). Fill the first gap
+    // instead of handing out a duplicate height.
+    for (int height = 0; height <= kMaxItemHeight; ++height) {
+        if (!used.contains(height))
+            return height;
+    }
+    return -1;
+}
+
+bool BoardScene::layerHeightsUnique(int layerId) const
+{
+    QSet<int> heights;
+    const QList<BoardItem*> items = layerItems(layerId);
+    for (BoardItem* item : items) {
+        if (item->height() < 0 || item->height() > kMaxItemHeight
+            || heights.contains(item->height())) {
+            return false;
+        }
+        heights.insert(item->height());
+    }
+    return true;
+}
+
+bool BoardScene::heightUsedByOther(int layerId, int height, const BoardItem* except) const
+{
+    const QList<BoardItem*> items = layerItems(layerId);
+    for (const BoardItem* item : items) {
+        if (item != except && item->height() == height)
+            return true;
+    }
+    return false;
+}
+
+bool BoardScene::normalizeLayerHeights(int layerId)
+{
+    QList<BoardItem*> items = layerItems(layerId);
+    if (items.isEmpty())
+        return false;
+
+    QSet<int> seen;
+    bool needsNormalization = false;
+    for (const BoardItem* item : std::as_const(items)) {
+        if (item->height() < 0 || item->height() > kMaxItemHeight
+            || seen.contains(item->height())) {
+            needsNormalization = true;
+            break;
+        }
+        seen.insert(item->height());
+    }
+    if (!needsNormalization)
+        return false;
+
+    std::stable_sort(items.begin(), items.end(),
+                     [](const BoardItem* a, const BoardItem* b) {
+                         if (a->height() != b->height())
+                             return a->height() < b->height();
+                         return a->zValue() < b->zValue();
+                     });
+    for (int i = 0; i < items.size(); ++i) {
+        BoardItem* item = items.at(i);
+        item->setHeight(i + 1);
+        applyItemStacking(item);
+        item->update();
+    }
+    return true;
+}
+
+void BoardScene::normalizeAllHeights()
+{
+    for (const BoardLayer& entry : std::as_const(m_layers)) {
+        if (entry.id != BackgroundLayerId)
+            normalizeLayerHeights(entry.id);
+    }
+}
+
+ItemStackList BoardScene::itemStackSnapshot(const QList<BoardItem*>& items) const
+{
+    ItemStackList snapshot;
+    for (BoardItem* item : items) {
+        if (item)
+            snapshot.append({ item, item->layerId(), item->height() });
+    }
+    return snapshot;
+}
+
+bool BoardScene::adjustItemHeight(BoardItem* item, int delta, const QString& text)
+{
+    if (!item || delta == 0 || !hasLayer(item->layerId()))
+        return false;
+
+    const int current = item->height();
+    const int target = qBound(0, current + delta, kMaxItemHeight);
+    if (target == current)
+        return false;
+
+    BoardItem* colliding = nullptr;
+    const QList<BoardItem*> peers = layerItems(item->layerId());
+    for (BoardItem* peer : peers) {
+        if (peer != item && peer->height() == target) {
+            colliding = peer;
+            break;
+        }
+    }
+
+    const ItemStackList before = itemStackSnapshot(
+        colliding ? QList<BoardItem*> { item, colliding } : QList<BoardItem*> { item });
+    ItemStackList after;
+    after.append({ item, item->layerId(), target });
+    if (colliding)
+        after.append({ colliding, colliding->layerId(), current });
+
+    const QString commandText = text.isEmpty()
+        ? (delta > 0 ? QStringLiteral("上移图元") : QStringLiteral("下移图元"))
+        : text;
+    if (m_undoStack)
+        m_undoStack->push(new ItemStackCommand(this, before, after, commandText));
+    else
+        applyItemStack(after);
+    return true;
+}
+
+bool BoardScene::moveItemToAdjacentLayer(BoardItem* item, int delta, const QString& text)
+{
+    if (!item || delta == 0)
+        return false;
+
+    const int currentIndex = layerIndex(item->layerId());
+    const int targetIndex = currentIndex + delta;
+    if (currentIndex <= 0 || targetIndex <= 0 || targetIndex >= m_layers.size())
+        return false;
+
+    const int targetLayerId = m_layers.at(targetIndex).id;
+    if (targetLayerId == item->layerId())
+        return false;
+
+    const ItemStackList before = itemStackSnapshot({ item });
+    const int targetHeight = nextHeight(targetLayerId);
+    if (targetHeight < 0)
+        return false;
+    const ItemStackList after = {
+        { item, targetLayerId, targetHeight }
+    };
+
+    const QString commandText = text.isEmpty()
+        ? (delta > 0 ? QStringLiteral("移到上一层图层") : QStringLiteral("移到下一层图层"))
+        : text;
+    if (m_undoStack)
+        m_undoStack->push(new ItemStackCommand(this, before, after, commandText));
+    else
+        applyItemStack(after);
+    return true;
+}
+
+void BoardScene::applyItemStack(const ItemStackList& stack)
+{
+    QSet<int> affectedLayers;
+    for (const ItemStack& entry : stack) {
+        if (!entry.item)
+            continue;
+        if (!hasLayer(entry.layerId))
+            entry.item->setLayerId(m_activeLayerId);
+        else
+            entry.item->setLayerId(entry.layerId);
+        entry.item->setHeight(qBound(0, entry.height, kMaxItemHeight));
+        affectedLayers.insert(entry.item->layerId());
+        applyItemStacking(entry.item);
+        entry.item->update();
+    }
+    for (int layerId : std::as_const(affectedLayers))
+        normalizeLayerHeights(layerId);
+    applyAllItemStacking();
+    updateItemFlags();
+    updateSceneExtent();
+    update();
+    emit contentChanged();
+}
+
+bool BoardScene::changeTextWithUndo(TextItem* item, const QString& text, const QFont& font,
+                                    const QColor& color, const QString& textCommand)
+{
+    if (!item || item->scene() != this)
+        return false;
+
+    const TextItemState before = item->state();
+    TextItemState after = before;
+    after.text = text;
+    after.font = font;
+    after.color = color.isValid() ? color : before.color;
+    after.baseSize = TextItem::measure(after.text, after.font);
+    after.size = after.baseSize;
+
+    if (before == after)
+        return false;
+
+    const QString commandText = textCommand.isEmpty()
+        ? QStringLiteral("编辑文字")
+        : textCommand;
+    if (m_undoStack)
+        m_undoStack->push(new TextItemCommand(this, item, before, after, commandText));
+    else
+        applyTextState(item, after);
+    return true;
+}
+
+void BoardScene::applyTextState(TextItem* item, const TextItemState& state)
+{
+    if (!item)
+        return;
+    item->applyState(state);
+    updateSceneExtent();
+    update();
+    emit contentChanged();
+}
+
+void BoardScene::assignNewItemPlacement(BoardItem* item)
+{
+    if (!item)
+        return;
+
+    if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId)
+        item->setLayerId(m_activeLayerId);
+    if (item->height() < 0 || item->height() > kMaxItemHeight
+        || heightUsedByOther(item->layerId(), item->height(), item)) {
+        const int height = nextHeight(item->layerId());
+        item->setHeight(height >= 0 ? height : 0);
+    }
+    applyItemStacking(item);
+}
+
+void BoardScene::addItemsWithUndo(const QList<BoardItem*>& items, const QString& text)
+{
+    if (items.isEmpty())
+        return;
+
+    if (!hasLayer(m_activeLayerId))
+        ensureLayerState();
+
+    // Repair any externally supplied duplicate heights before reserving new
+    // slots. Every layer must expose exactly one item per height value.
+    normalizeAllHeights();
+
+    // Assign the active layer and a unique height before the items are
+    // attached, so a multi-image drop keeps the same top-to-bottom order it
+    // had when it was created.
+    QHash<int, QSet<int>> usedHeights;
+    const QList<BoardItem*> existing = boardItems();
+    for (const BoardItem* item : existing)
+        usedHeights[item->layerId()].insert(item->height());
+
+    for (BoardItem* item : items) {
+        if (!item)
+            continue;
+        if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId)
+            item->setLayerId(m_activeLayerId);
+
+        QSet<int>& used = usedHeights[item->layerId()];
+        int height = item->height();
+        if (height < 0 || height > kMaxItemHeight || used.contains(height)) {
+            height = nextHeight(item->layerId());
+            while (height >= 0 && height < kMaxItemHeight && used.contains(height))
+                ++height;
+            if (height < 0 || used.contains(height))
+                height = 0;
+        }
+        item->setHeight(qBound(0, height, kMaxItemHeight));
+        used.insert(item->height());
+        applyItemStacking(item);
+    }
+
+    if (m_undoStack) {
+        if (items.size() == 1) {
+            m_undoStack->push(new AddItemCommand(this, items.constFirst(), text));
+        } else {
+            m_undoStack->beginMacro(text);
+            for (BoardItem* item : items)
+                m_undoStack->push(new AddItemCommand(this, item, text));
+            m_undoStack->endMacro();
+        }
+    } else {
+        for (BoardItem* item : items)
+            attachItem(item);
+    }
+    updateSceneExtent();
+}
+
+void BoardScene::commitNewItem(BoardItem* item, const QString& text)
+{
+    addItemsWithUndo({ item }, text);
+}
+
+void BoardScene::attachItem(BoardItem* item)
+{
+    if (!item)
+        return;
+
+    m_orphans.removeAll(item);
+    if (item->scene() != this)
+        addItem(item);
+
+    if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId)
+        item->setLayerId(m_activeLayerId);
+    if (item->height() < 0 || item->height() > kMaxItemHeight
+        || heightUsedByOther(item->layerId(), item->height(), item)) {
+        const int height = nextHeight(item->layerId());
+        item->setHeight(height >= 0 ? height : 0);
+    }
+    applyItemStacking(item);
+    applyItemInteraction(item);
+
+    updateSceneExtent();
+    update();
+    emit contentChanged();
+}
+
+void BoardScene::detachItem(BoardItem* item)
+{
+    if (!item)
+        return;
+
+    if (item->scene() == this)
+        removeItem(item);
+    if (!m_orphans.contains(item))
+        m_orphans.append(item);
+    item->setSelected(false);
+
+    updateSceneExtent();
+    update();
+    emit contentChanged();
+}
+
+void BoardScene::deleteSelected()
+{
+    QList<BoardItem*> selected;
+    const QList<QGraphicsItem*> graphicsSelection = selectedItems();
+    for (QGraphicsItem* graphicsItem : graphicsSelection) {
+        if (auto* item = qgraphicsitem_cast<BoardItem*>(graphicsItem))
+            selected.append(item);
+    }
+    if (selected.isEmpty())
+        return;
+
+    if (m_undoStack) {
+        m_undoStack->push(new RemoveItemsCommand(this, selected, QStringLiteral("删除图元")));
+    } else {
+        for (BoardItem* item : selected)
+            detachItem(item);
+    }
+}
+
+void BoardScene::selectAllItems()
+{
+    if (m_mode != ToolMode::Edit)
+        return;
+    const QList<BoardItem*> items = layerItems(m_activeLayerId);
+    for (BoardItem* item : items) {
+        if (isItemEditable(item))
+            item->setSelected(true);
+    }
+}
+
+void BoardScene::pushGeometry(const ItemGeometryList& before, const ItemGeometryList& after,
+                              const QString& text)
+{
+    if (before.size() != after.size())
+        return;
+
+    ItemGeometryList filteredBefore;
+    ItemGeometryList filteredAfter;
+    for (int i = 0; i < before.size(); ++i) {
+        if (!before.at(i).item || !after.at(i).item)
+            continue;
+        if (sameGeometry(before.at(i), after.at(i)))
+            continue;
+        filteredBefore.append(before.at(i));
+        filteredAfter.append(after.at(i));
+    }
+    if (filteredBefore.isEmpty())
+        return;
+
+    if (m_undoStack) {
+        m_undoStack->push(new GeometryCommand(this, filteredBefore, filteredAfter, text));
+    } else {
+        for (const ItemGeometry& geometry : std::as_const(filteredAfter)) {
+            if (!geometry.item)
+                continue;
+            geometry.item->setPos(geometry.pos);
+            geometry.item->setContentSize(geometry.size);
+        }
+    }
+    updateSceneExtent();
+}
+
+void BoardScene::resetDocument()
+{
+    if (m_undoStack)
+        m_undoStack->clear();
+
+    clear();
+    clearOrphans();
+    m_background = BackgroundState();
+    m_layers = {
+        { BackgroundLayerId, kBackgroundLayerName },
+        { kFirstUserLayerId, QStringLiteral("图层 1") }
+    };
+    m_activeLayerId = kFirstUserLayerId;
+    m_nextLayerId = kFirstUserLayerId + 1;
+    m_exporting = false;
+    updateSceneExtent();
+    update();
+    emit layersChanged();
+    emit activeLayerChanged(m_activeLayerId);
+    emit contentChanged();
+    emit backgroundChanged();
+}
+
+void BoardScene::clearOrphans()
+{
+    qDeleteAll(m_orphans);
+    m_orphans.clear();
+}
+
+BoardItem* BoardScene::createItem(const QString& kind) const
+{
+    if (kind == QStringLiteral("stroke"))
+        return new StrokeItem();
+    if (kind == QStringLiteral("image"))
+        return new ImageItem();
+    if (kind == QStringLiteral("text"))
+        return new TextItem();
+    if (kind == QStringLiteral("shape"))
+        return new ShapeItem();
+    return nullptr;
+}
+
+QJsonObject BoardScene::toJson() const
+{
+    QJsonObject root;
+    root.insert(QStringLiteral("format"), QStringLiteral("StoryBoard"));
+    root.insert(QStringLiteral("version"), 2);
+    root.insert(QStringLiteral("generator"), QStringLiteral("StoryBoard 0.2"));
+
+    QJsonObject board;
+    board.insert(QStringLiteral("width"), m_boardSize.width());
+    board.insert(QStringLiteral("height"), m_boardSize.height());
+    root.insert(QStringLiteral("board"), board);
+
+    QJsonObject background;
+    switch (m_background.type) {
+    case BackgroundType::None:
+        background.insert(QStringLiteral("type"), QStringLiteral("none"));
+        break;
+    case BackgroundType::Color:
+        background.insert(QStringLiteral("type"), QStringLiteral("color"));
+        background.insert(QStringLiteral("color"), m_background.color.name(QColor::HexArgb));
+        break;
+    case BackgroundType::Image:
+        background.insert(QStringLiteral("type"), QStringLiteral("image"));
+        background.insert(QStringLiteral("mode"), backgroundModeToString(m_background.mode));
+        background.insert(QStringLiteral("image"), encodePixmap(m_background.image));
+        break;
+    }
+    root.insert(QStringLiteral("background"), background);
+
+    QJsonArray layerArray;
+    for (const BoardLayer& entry : m_layers) {
+        QJsonObject layerJson;
+        layerJson.insert(QStringLiteral("id"), entry.id);
+        layerJson.insert(QStringLiteral("name"), entry.name);
+        layerJson.insert(QStringLiteral("visible"), entry.visible);
+        layerArray.append(layerJson);
+    }
+    root.insert(QStringLiteral("layers"), layerArray);
+    root.insert(QStringLiteral("activeLayer"), m_activeLayerId);
+
+    QJsonArray itemsArray;
+    const QList<BoardItem*> items = boardItems();
+    for (BoardItem* item : items)
+        itemsArray.append(item->toJson());
+    root.insert(QStringLiteral("items"), itemsArray);
+
+    return root;
+}
+
+bool BoardScene::fromJson(const QJsonObject& root, QString* errorMessage)
+{
+    auto fail = [errorMessage](const QString& message) {
+        if (errorMessage)
+            *errorMessage = message;
+        return false;
+    };
+
+    if (root.value(QStringLiteral("format")).toString() != QStringLiteral("StoryBoard"))
+        return fail(QStringLiteral("这不是有效的 StoryBoard 模板文件。"));
+
+    const QJsonObject board = root.value(QStringLiteral("board")).toObject();
+    const int width = board.value(QStringLiteral("width")).toInt();
+    const int height = board.value(QStringLiteral("height")).toInt();
+    if (width <= 0 || height <= 0)
+        return fail(QStringLiteral("模板中的画板尺寸无效。"));
+
+    resetDocument();
+    applyBoardSize(QSizeF(width, height));
+
+    BackgroundState background;
+    const QJsonObject backgroundJson = root.value(QStringLiteral("background")).toObject();
+    const QString backgroundType = backgroundJson.value(QStringLiteral("type")).toString();
+    if (backgroundType == QStringLiteral("color")) {
+        const QColor color(backgroundJson.value(QStringLiteral("color")).toString());
+        background.type = BackgroundType::Color;
+        background.color = color.isValid() ? color : QColor(255, 255, 255);
+    } else if (backgroundType == QStringLiteral("image")) {
+        const QPixmap pixmap = decodePixmap(backgroundJson.value(QStringLiteral("image")).toString());
+        if (!pixmap.isNull()) {
+            background.type = BackgroundType::Image;
+            background.image = pixmap;
+            background.mode = backgroundModeFromString(
+                backgroundJson.value(QStringLiteral("mode")).toString());
+        }
+    }
+    applyBackground(background);
+
+    const bool hasLayerData = root.value(QStringLiteral("layers")).isArray();
+    const QJsonArray rawItems = root.value(QStringLiteral("items")).toArray();
+    QList<QJsonObject> itemObjects;
+    itemObjects.reserve(rawItems.size());
+    for (const QJsonValue& value : rawItems)
+        itemObjects.append(value.toObject());
+
+    if (!hasLayerData) {
+        // Version 1 templates only carried a global z value. Keep their visual
+        // order by sorting on z and placing everything on layer 1.
+        std::stable_sort(itemObjects.begin(), itemObjects.end(),
+                         [](const QJsonObject& a, const QJsonObject& b) {
+                             return a.value(QStringLiteral("z")).toDouble()
+                                 < b.value(QStringLiteral("z")).toDouble();
+                         });
+    }
+
+    LayerStackState state;
+    state.layers = {
+        { BackgroundLayerId, kBackgroundLayerName },
+        { kFirstUserLayerId, QStringLiteral("图层 1") }
+    };
+    state.activeLayerId = kFirstUserLayerId;
+    if (hasLayerData) {
+        bool backgroundVisible = true;
+        state.layers.clear();
+        state.layers.append({ BackgroundLayerId, kBackgroundLayerName });
+        const QJsonArray layerArray = root.value(QStringLiteral("layers")).toArray();
+        QSet<int> used;
+        used.insert(BackgroundLayerId);
+        for (const QJsonValue& value : layerArray) {
+            const QJsonObject layerJson = value.toObject();
+            const int id = layerJson.value(QStringLiteral("id")).toInt();
+            if (id == BackgroundLayerId) {
+                backgroundVisible = layerJson.value(QStringLiteral("visible")).toBool(true);
+                continue;
+            }
+            if (id <= 0 || used.contains(id))
+                continue;
+            BoardLayer entry;
+            entry.id = id;
+            entry.name = layerJson.value(QStringLiteral("name")).toString().trimmed();
+            entry.visible = layerJson.value(QStringLiteral("visible")).toBool(true);
+            if (entry.name.isEmpty())
+                entry.name = QStringLiteral("图层 %1").arg(id);
+            state.layers.append(entry);
+            used.insert(id);
+        }
+        state.layers[0].visible = backgroundVisible;
+        state.activeLayerId = root.value(QStringLiteral("activeLayer")).toInt(kFirstUserLayerId);
+    }
+
+    // Accept templates that reference a layer but omitted it from the layer
+    // array: materialize the missing layer instead of dropping the item.
+    if (hasLayerData) {
+        for (const QJsonObject& itemJson : std::as_const(itemObjects)) {
+            const int layerId = itemJson.value(QStringLiteral("layer")).toInt();
+            if (layerId <= 0)
+                continue;
+            const bool exists = std::any_of(
+                state.layers.cbegin(), state.layers.cend(),
+                [layerId](const BoardLayer& entry) { return entry.id == layerId; });
+            if (!exists)
+                state.layers.append({ layerId, QStringLiteral("图层 %1").arg(layerId) });
+        }
+    }
+
+    applyLayerState(sanitizedLayerState(state));
+
+    for (int i = 0; i < itemObjects.size(); ++i) {
+        const QJsonObject itemJson = itemObjects.at(i);
+        const QString kind = itemJson.value(QStringLiteral("type")).toString();
+        BoardItem* item = createItem(kind);
+        if (!item) {
+            resetDocument();
+            return fail(QStringLiteral("模板中包含未知的图元类型：%1").arg(kind));
+        }
+        item->fromJson(itemJson);
+        if (!hasLayerData) {
+            item->setLayerId(kFirstUserLayerId);
+            item->setHeight(i + 1);
+        } else if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId) {
+            item->setLayerId(m_activeLayerId);
+        }
+        addItem(item);
+    }
+
+    // Assign heights for new-format items that omitted the property, then
+    // normalize any duplicate heights in a layer while keeping their order.
+    QHash<int, int> nextHeights;
+    const QList<BoardItem*> items = boardItems();
+    for (BoardItem* item : items) {
+        if (item->height() >= 0)
+            continue;
+        auto it = nextHeights.constFind(item->layerId());
+        int next = 0;
+        if (it == nextHeights.constEnd()) {
+            next = nextHeight(item->layerId());
+            nextHeights.insert(item->layerId(), next);
+        } else {
+            next = it.value();
+        }
+        item->setHeight(qMin(kMaxItemHeight, next));
+        nextHeights[item->layerId()] = qMin(kMaxItemHeight, next + 1);
+    }
+
+    // Enforce the template invariant: every layer has one item per height.
+    // The stable sort inside normalizeLayerHeights preserves the stored order
+    // when duplicate values are repaired.
+    normalizeAllHeights();
+
+    m_nextLayerId = 1;
+    for (const BoardLayer& entry : std::as_const(m_layers))
+        m_nextLayerId = qMax(m_nextLayerId, entry.id + 1);
+
+    ensureLayerState();
+    applyAllItemStacking();
+    updateItemFlags();
+    updateSceneExtent();
+    update();
+    emit layersChanged();
+    emit activeLayerChanged(m_activeLayerId);
+    emit contentChanged();
+    emit backgroundChanged();
+    emit boardSizeChanged(m_boardSize);
+    return true;
+}
+
+QImage BoardScene::renderImage(const QRectF& area, qreal scale)
+{
+    if (area.isEmpty() || scale <= 0.0)
+        return QImage();
+
+    QSizeF pixelSize(area.width() * scale, area.height() * scale);
+    constexpr qreal kMaxSide = 12000.0;
+    if (pixelSize.width() > kMaxSide || pixelSize.height() > kMaxSide) {
+        const qreal factor = qMin(kMaxSide / pixelSize.width(), kMaxSide / pixelSize.height());
+        pixelSize *= factor;
+    }
+
+    const QSize finalSize(qMax(1, qCeil(pixelSize.width())), qMax(1, qCeil(pixelSize.height())));
+    QImage image(finalSize, QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::white);
+
+    QPainter painter(&image);
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing
+                           | QPainter::SmoothPixmapTransform);
+
+    m_exporting = true;
+    render(&painter,
+           QRectF(0.0, 0.0, finalSize.width(), finalSize.height()),
+           area,
+           Qt::IgnoreAspectRatio);
+    m_exporting = false;
+
+    painter.end();
+    return image;
+}
+
+void BoardScene::drawBackground(QPainter* painter, const QRectF& rect)
+{
+    const QRectF board = boardRect();
+    const QRectF area = rect.intersected(board);
+    if (area.isEmpty())
+        return;
+
+    painter->save();
+    painter->setClipRect(rect);
+    drawBoardBackground(painter, area, !m_exporting && m_showGrid);
+    painter->restore();
+
+    if (!m_exporting) {
+        QPen borderPen(QColor(15, 23, 42, 55));
+        borderPen.setCosmetic(true);
+        borderPen.setWidthF(1.0);
+        painter->setPen(borderPen);
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRect(board.adjusted(0.5, 0.5, -0.5, -0.5));
+    }
+}
+
+void BoardScene::drawBoardBackground(QPainter* painter, const QRectF& area, bool includeGrid) const
+{
+    const QRectF board = boardRect();
+    painter->fillRect(board, QColor(255, 255, 255));
+
+    if (isLayerVisible(BackgroundLayerId)) {
+        switch (m_background.type) {
+        case BackgroundType::None:
+            break;
+        case BackgroundType::Color:
+            painter->fillRect(board, m_background.color);
+            break;
+        case BackgroundType::Image: {
+            const QPixmap& pixmap = m_background.image;
+            if (pixmap.isNull())
+                break;
+            if (m_background.mode == BackgroundMode::Stretch) {
+                painter->drawPixmap(board, pixmap, QRectF(pixmap.rect()));
+            } else if (m_background.mode == BackgroundMode::Tile) {
+                painter->drawTiledPixmap(board, pixmap);
+            } else {
+                const qreal factor = qMin(board.width() / pixmap.width(),
+                                          board.height() / pixmap.height());
+                QSizeF size(pixmap.width() * factor, pixmap.height() * factor);
+                QRectF target(QPointF(0.0, 0.0), size);
+                target.moveCenter(board.center());
+                painter->drawPixmap(target, pixmap, QRectF(pixmap.rect()));
+            }
+            break;
+        }
+        }
+    }
+
+    if (!includeGrid)
+        return;
+
+    const qreal zoom = painter->worldTransform().m11();
+    if (zoom < 0.18)
+        return;
+    const bool drawMinor = zoom >= 0.32;
+    constexpr qreal step = 40.0;
+
+    QPen minorPen(QColor(15, 23, 42, 13));
+    minorPen.setCosmetic(true);
+    minorPen.setWidthF(1.0);
+    QPen majorPen(QColor(15, 23, 42, 30));
+    majorPen.setCosmetic(true);
+    majorPen.setWidthF(1.0);
+
+    painter->save();
+    painter->setClipRect(area);
+    const int columns = qCeil(board.width() / step);
+    for (int i = 0; i <= columns; ++i) {
+        const bool major = (i % 5) == 0;
+        if (!major && !drawMinor)
+            continue;
+        const qreal x = board.left() + i * step;
+        painter->setPen(major ? majorPen : minorPen);
+        painter->drawLine(QPointF(x, board.top()), QPointF(x, board.bottom()));
+    }
+    const int rows = qCeil(board.height() / step);
+    for (int i = 0; i <= rows; ++i) {
+        const bool major = (i % 5) == 0;
+        if (!major && !drawMinor)
+            continue;
+        const qreal y = board.top() + i * step;
+        painter->setPen(major ? majorPen : minorPen);
+        painter->drawLine(QPointF(board.left(), y), QPointF(board.right(), y));
+    }
+    painter->restore();
+}
