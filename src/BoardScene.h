@@ -13,6 +13,8 @@
 class QUndoStack;
 class BoardItem;
 class QFont;
+class QPainter;
+class QStyleOptionGraphicsItem;
 class TextItem;
 struct TextItemState;
 
@@ -115,6 +117,11 @@ public:
     QImage renderImage(const QRectF& area, qreal scale);
     bool isExporting() const { return m_exporting; }
 
+    // 非查看模式下被更高优先级图元遮住、需要额外描出轮廓的图元。
+    // 优先级：图层越高越优先；同一图层内 height 越大越优先。
+    // area 非空时只统计与该区域相交的图元（绘制时用它避免整场景重算）。
+    QList<BoardItem*> obscuredItems(const QRectF& area = QRectF()) const;
+
 signals:
     void modeChanged(ToolMode mode);
     void contentChanged();
@@ -125,6 +132,10 @@ signals:
 
 protected:
     void drawBackground(QPainter* painter, const QRectF& rect) override;
+    void drawForeground(QPainter* painter, const QRectF& rect) override;
+    // 逐图元裁剪：被更高优先级图元盖住的部分不画下层颜色（不是半透明混合）。
+    void drawItems(QPainter* painter, int numItems, QGraphicsItem* items[],
+                   const QStyleOptionGraphicsItem* options, QWidget* widget = nullptr) override;
 
 private:
     BoardItem* createItem(const QString& kind) const;

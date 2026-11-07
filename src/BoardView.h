@@ -98,7 +98,6 @@ private:
     bool m_spaceDown = false;
     bool m_panning = false;
     QPoint m_panStart;
-    QPointF m_panAnchorScene;
     QPointF m_panCenterScene;
 
     bool m_resizingBoard = false;

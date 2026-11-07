@@ -129,7 +129,10 @@ private:
     QAction* m_fillNoneAct = nullptr;
     QAction* m_fillSolidAct = nullptr;
     QAction* m_fillHachureAct = nullptr;
+    QAction* m_fillReverseAct = nullptr;
     QAction* m_fillCrossAct = nullptr;
+    QAction* m_fillGridAct = nullptr;
+    QAction* m_fillHoneycombAct = nullptr;
     QAction* m_fillColorAct = nullptr;
 
     QAction* m_aboutAct = nullptr;

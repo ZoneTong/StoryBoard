@@ -32,6 +32,10 @@ BoardView::BoardView(BoardScene* scene, QWidget* parent)
                    | QPainter::SmoothPixmapTransform);
     setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
     setOptimizationFlag(QGraphicsView::DontAdjustForAntialiasing, false);
+    // QGraphicsView 默认直接用 QGraphicsScenePrivate::drawItems 画图元，不会调用
+    // BoardScene::drawItems 这个虚函数；开启 IndirectPainting 后才会走
+    // QGraphicsView::drawItems → QGraphicsScene::drawItems，遮挡裁剪才在真实视图里生效。
+    setOptimizationFlag(QGraphicsView::IndirectPainting, true);
     setTransformationAnchor(QGraphicsView::NoAnchor);
     setResizeAnchor(QGraphicsView::AnchorViewCenter);
     setDragMode(QGraphicsView::NoDrag);
@@ -206,8 +210,7 @@ void BoardView::beginPan(const QPoint& position)
 {
     m_panning = true;
     m_panStart = position;
-    m_panAnchorScene = mapToScene(position);
-    m_panCenterScene = mapToScene(viewport()->rect().center());
+    m_panCenterScene = mapToScene(viewport()->rect()).boundingRect().center();
     viewport()->setCursor(Qt::ClosedHandCursor);
 }
 
@@ -334,8 +337,11 @@ void BoardView::mouseMoveEvent(QMouseEvent* event)
     const QPoint position = event->position().toPoint();
 
     if (m_panning) {
-        const QPointF delta = m_panAnchorScene - mapToScene(position);
-        centerOn(m_panCenterScene + delta);
+        // 用“按下点 → 当前点”的场景位移来平移：两个点在同一时刻的变换下相减，
+        // 结果与当前视图位置无关。若拿按下时的场景锚点去和当前 mapToScene 相减，
+        // 视图每移动一次都会把上次的位移重复计入，画面就会来回抖动。
+        const QPointF sceneDelta = mapToScene(position) - mapToScene(m_panStart);
+        centerOn(m_panCenterScene - sceneDelta);
         event->accept();
         return;
     }

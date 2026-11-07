@@ -247,8 +247,8 @@ void MainWindow::createActions()
     m_modeGroup = new QActionGroup(this);
     m_modeGroup->setExclusive(true);
     m_modeGroup->addAction(m_viewModeAct);
-    m_modeGroup->addAction(m_brushModeAct);
     m_modeGroup->addAction(m_editModeAct);
+    m_modeGroup->addAction(m_brushModeAct);
     m_modeGroup->addAction(m_textModeAct);
     m_viewModeAct->setData(static_cast<int>(ToolMode::View));
     m_brushModeAct->setData(static_cast<int>(ToolMode::Brush));
@@ -328,20 +328,31 @@ void MainWindow::createActions()
     m_fillNoneAct = new QAction(QStringLiteral("无填充"), this);
     m_fillSolidAct = new QAction(QStringLiteral("纯色填充"), this);
     m_fillHachureAct = new QAction(QStringLiteral("斜线填充"), this);
+    m_fillReverseAct = new QAction(QStringLiteral("反斜线填充"), this);
     m_fillCrossAct = new QAction(QStringLiteral("交叉线填充"), this);
-    for (QAction* action : { m_fillNoneAct, m_fillSolidAct, m_fillHachureAct, m_fillCrossAct })
+    m_fillGridAct = new QAction(QStringLiteral("正交叉线填充"), this);
+    m_fillHoneycombAct = new QAction(QStringLiteral("六边形填充"), this);
+    for (QAction* action : { m_fillNoneAct, m_fillSolidAct, m_fillHachureAct,
+                             m_fillReverseAct, m_fillCrossAct, m_fillGridAct,
+                             m_fillHoneycombAct })
         action->setCheckable(true);
     m_fillStyleGroup = new QActionGroup(this);
     m_fillStyleGroup->setExclusive(true);
     m_fillStyleGroup->addAction(m_fillNoneAct);
     m_fillStyleGroup->addAction(m_fillSolidAct);
     m_fillStyleGroup->addAction(m_fillHachureAct);
+    m_fillStyleGroup->addAction(m_fillReverseAct);
     m_fillStyleGroup->addAction(m_fillCrossAct);
+    m_fillStyleGroup->addAction(m_fillGridAct);
+    m_fillStyleGroup->addAction(m_fillHoneycombAct);
     m_fillSolidAct->setChecked(true);
     connect(m_fillNoneAct, &QAction::triggered, this, [this]() { setFillStyle(FillStyle::None); });
     connect(m_fillSolidAct, &QAction::triggered, this, [this]() { setFillStyle(FillStyle::Solid); });
     connect(m_fillHachureAct, &QAction::triggered, this, [this]() { setFillStyle(FillStyle::Hachure); });
+    connect(m_fillReverseAct, &QAction::triggered, this, [this]() { setFillStyle(FillStyle::ReverseHachure); });
     connect(m_fillCrossAct, &QAction::triggered, this, [this]() { setFillStyle(FillStyle::CrossHatch); });
+    connect(m_fillGridAct, &QAction::triggered, this, [this]() { setFillStyle(FillStyle::GridHatch); });
+    connect(m_fillHoneycombAct, &QAction::triggered, this, [this]() { setFillStyle(FillStyle::Honeycomb); });
     m_fillColorAct = new QAction(QStringLiteral("填充颜色…"), this);
     connect(m_fillColorAct, &QAction::triggered, this, &MainWindow::chooseFillColor);
 
@@ -461,8 +472,8 @@ void MainWindow::createMenus()
 
     QMenu* viewMenu = menuBar()->addMenu(QStringLiteral("视图(&V)"));
     viewMenu->addAction(m_viewModeAct);
-    viewMenu->addAction(m_brushModeAct);
     viewMenu->addAction(m_editModeAct);
+    viewMenu->addAction(m_brushModeAct);
     viewMenu->addAction(m_textModeAct);
     viewMenu->addSeparator();
     viewMenu->addAction(m_fitAct);
@@ -492,7 +503,10 @@ void MainWindow::createMenus()
     styleMenu->addAction(m_fillNoneAct);
     styleMenu->addAction(m_fillSolidAct);
     styleMenu->addAction(m_fillHachureAct);
+    styleMenu->addAction(m_fillReverseAct);
     styleMenu->addAction(m_fillCrossAct);
+    styleMenu->addAction(m_fillGridAct);
+    styleMenu->addAction(m_fillHoneycombAct);
     styleMenu->addSeparator();
     styleMenu->addAction(m_fillColorAct);
 
@@ -569,7 +583,10 @@ void MainWindow::createToolBars()
     fillMenu->addAction(m_fillNoneAct);
     fillMenu->addAction(m_fillSolidAct);
     fillMenu->addAction(m_fillHachureAct);
+    fillMenu->addAction(m_fillReverseAct);
     fillMenu->addAction(m_fillCrossAct);
+    fillMenu->addAction(m_fillGridAct);
+    fillMenu->addAction(m_fillHoneycombAct);
     fillMenu->addSeparator();
     fillMenu->addAction(m_fillColorAct);
     m_fillButton->setMenu(fillMenu);
@@ -625,8 +642,8 @@ void MainWindow::createToolBars()
     modeBar->setMinimumWidth(80);
     addToolBar(Qt::LeftToolBarArea, modeBar);
     modeBar->addAction(m_viewModeAct);
-    modeBar->addAction(m_brushModeAct);
     modeBar->addAction(m_editModeAct);
+    modeBar->addAction(m_brushModeAct);
     modeBar->addAction(m_textModeAct);
 }
 
@@ -1344,8 +1361,14 @@ void MainWindow::updateFillActions()
         m_fillSolidAct->setChecked(m_fillStyle == FillStyle::Solid);
     if (m_fillHachureAct)
         m_fillHachureAct->setChecked(m_fillStyle == FillStyle::Hachure);
+    if (m_fillReverseAct)
+        m_fillReverseAct->setChecked(m_fillStyle == FillStyle::ReverseHachure);
     if (m_fillCrossAct)
         m_fillCrossAct->setChecked(m_fillStyle == FillStyle::CrossHatch);
+    if (m_fillGridAct)
+        m_fillGridAct->setChecked(m_fillStyle == FillStyle::GridHatch);
+    if (m_fillHoneycombAct)
+        m_fillHoneycombAct->setChecked(m_fillStyle == FillStyle::Honeycomb);
 
     const QColor swatch = m_fillColor.isValid() ? m_fillColor : QColor(30, 41, 59, 36);
     m_fillButton->setIcon(makeColorIcon(swatch, 20));
@@ -1552,8 +1575,8 @@ void MainWindow::showAbout()
             "<p><b>主要操作</b></p>"
             "<ul>"
             "<li><b>V</b> 查看模式：整体平移 / 缩放，自动全景</li>"
-            "<li><b>B</b> 画笔模式：自由曲线，可选颜色与粗细</li>"
             "<li><b>E</b> 编辑模式：显示且未锁定图层上的图元都能编辑；锁定图层不可编辑；<b>] / [</b> 调整选中图元高度；右键调整图层/高度</li>"
+            "<li><b>B</b> 画笔模式：自由曲线，可选颜色与粗细</li>"
             "<li><b>T</b> 文字模式：点击画板添加文字，双击文字可再次编辑</li>"
             "<li><b>图层</b>：右侧面板勾选框控制显示/隐藏、锁形按钮锁定图层；图层与图元都支持多选</li>"
             "<li><b>插入 → 常见图形</b>：快速插入矩形、圆形、箭头、大括号、对话气泡等</li>"

@@ -25,7 +25,10 @@ enum class FillStyle {
     None = 0,
     Solid,
     Hachure,
-    CrossHatch
+    ReverseHachure,
+    CrossHatch,
+    GridHatch,
+    Honeycomb
 };
 
 QList<ShapeType> allShapeTypes();
@@ -78,6 +81,8 @@ public:
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& json) override;
     QPainterPath shape() const override;
+    QPainterPath outlineShape() const override;
+    QPainterPath paintedShape() const override;
 
     ShapeType shapeType() const { return m_type; }
     void setShapeType(ShapeType type);

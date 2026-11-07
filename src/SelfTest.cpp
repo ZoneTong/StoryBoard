@@ -48,6 +48,7 @@
 #include <QStringConverter>
 #include <QTextStream>
 #include <QTimer>
+#include <QToolBar>
 #include <QToolButton>
 #include <QUndoStack>
 #include <QWheelEvent>
@@ -555,6 +556,115 @@ int runSelfTest(const QString& reportPath)
         legacyHeightSet.insert(item->height());
     }
     check(legacyHeights, QStringLiteral("旧版 z 顺序转换为唯一 height"));
+
+    // ---------------------------------------------------------------
+    // 叠放优先级（layer / height）与被遮盖图元的轮廓提示。
+    // ---------------------------------------------------------------
+    BoardScene priorityScene;
+    priorityScene.applyBoardSize(QSizeF(600, 400));
+
+    auto addPriorityRect = [&priorityScene](const QRectF& rect, const QColor& color) {
+        auto* shape = new ShapeItem(ShapeType::Rectangle);
+        shape->setPos(rect.topLeft());
+        shape->setContentSize(rect.size());
+        shape->setStyle(color, color, 3.0);
+        shape->setFill(color, FillStyle::Solid);
+        priorityScene.attachItem(shape);
+        return shape;
+    };
+
+    auto* coveredRect = addPriorityRect(QRectF(120.0, 120.0, 240.0, 140.0),
+                                        QColor(QStringLiteral("#DC2626")));
+    auto* coverRect = addPriorityRect(QRectF(120.0, 120.0, 240.0, 140.0),
+                                      QColor(QStringLiteral("#2563EB")));
+    check(coverRect->zValue() > coveredRect->zValue()
+              && coverRect->height() > coveredRect->height(),
+          QStringLiteral("同层后加入的图元叠放优先级更高"));
+
+    priorityScene.setMode(ToolMode::Edit);
+    QList<BoardItem*> obscured = priorityScene.obscuredItems();
+    check(obscured.size() == 1 && obscured.constFirst() == coveredRect,
+          QStringLiteral("非查看模式下完全遮盖的低优先级图元会描出轮廓"),
+          QStringLiteral("count=%1").arg(obscured.size()));
+
+    auto renderSceneImage = [](BoardScene& target) {
+        QImage image(600, 400, QImage::Format_ARGB32_Premultiplied);
+        image.fill(Qt::white);
+        QPainter imagePainter(&image);
+        target.render(&imagePainter, QRectF(0.0, 0.0, 600.0, 400.0),
+                      QRectF(0.0, 0.0, 600.0, 400.0));
+        imagePainter.end();
+        return image;
+    };
+    const QImage editRender = renderSceneImage(priorityScene);
+    priorityScene.setMode(ToolMode::View);
+    const QImage viewRender = renderSceneImage(priorityScene);
+    int changedPixels = 0;
+    for (int y = 0; y < editRender.height(); ++y) {
+        const QRgb* editLine = reinterpret_cast<const QRgb*>(editRender.constScanLine(y));
+        const QRgb* viewLine = reinterpret_cast<const QRgb*>(viewRender.constScanLine(y));
+        for (int x = 0; x < editRender.width(); ++x) {
+            if (editLine[x] != viewLine[x])
+                ++changedPixels;
+        }
+    }
+    check(changedPixels > 0,
+          QStringLiteral("查看模式完全遮盖，编辑模式能看到被遮盖图元的轮廓"),
+          QStringLiteral("changed=%1").arg(changedPixels));
+    check(priorityScene.obscuredItems().isEmpty(),
+          QStringLiteral("查看模式下不再描被遮盖图元的轮廓"));
+
+    priorityScene.setMode(ToolMode::Edit);
+    check(priorityScene.adjustItemHeight(coveredRect, 1),
+          QStringLiteral("调整被遮盖图元的 height"));
+    obscured = priorityScene.obscuredItems();
+    check(coveredRect->zValue() > coverRect->zValue()
+              && obscured.size() == 1 && obscured.constFirst() == coverRect,
+          QStringLiteral("同层 height 更大的图元优先级更高，轮廓提示随之转移"),
+          QStringLiteral("count=%1").arg(obscured.size()));
+
+    check(priorityScene.addLayerWithUndo(QStringLiteral("遮挡层")),
+          QStringLiteral("新建更高的遮挡图层"));
+    const int overlayLayerId = priorityScene.activeLayerId();
+    auto* layerCover = addPriorityRect(QRectF(120.0, 120.0, 240.0, 140.0),
+                                       QColor(QStringLiteral("#059669")));
+    check(layerCover->layerId() == overlayLayerId
+              && layerCover->zValue() > coveredRect->zValue(),
+          QStringLiteral("更高图层的低 height 图元优先级仍然更高"));
+    obscured = priorityScene.obscuredItems();
+    check(obscured.contains(coveredRect) && obscured.contains(coverRect)
+              && !obscured.contains(layerCover),
+          QStringLiteral("轮廓提示只覆盖被更高优先级图元遮住的图元"),
+          QStringLiteral("count=%1").arg(obscured.size()));
+
+    const int coveredLayerId = coveredRect->layerId();
+    check(priorityScene.setLayerVisible(coveredLayerId, false),
+          QStringLiteral("隐藏低优先级图元所在图层"));
+    check(priorityScene.obscuredItems().isEmpty(),
+          QStringLiteral("隐藏图层上的图元不参与轮廓提示"));
+
+    BoardScene partialScene;
+    partialScene.applyBoardSize(QSizeF(500, 300));
+    auto addPartialRect = [&partialScene](const QRectF& rect, const QColor& color) {
+        auto* shape = new ShapeItem(ShapeType::Rectangle);
+        shape->setPos(rect.topLeft());
+        shape->setContentSize(rect.size());
+        shape->setStyle(color, color, 3.0);
+        shape->setFill(color, FillStyle::Solid);
+        partialScene.attachItem(shape);
+        return shape;
+    };
+    auto* partialLower =
+        addPartialRect(QRectF(100.0, 100.0, 200.0, 100.0), QColor(QStringLiteral("#DC2626")));
+    addPartialRect(QRectF(240.0, 140.0, 200.0, 100.0), QColor(QStringLiteral("#2563EB")));
+    partialScene.setMode(ToolMode::Edit);
+    obscured = partialScene.obscuredItems();
+    check(obscured.size() == 1 && obscured.constFirst() == partialLower,
+          QStringLiteral("只要有任何遮挡就描出被遮图元的轮廓"),
+          QStringLiteral("count=%1").arg(obscured.size()));
+    partialScene.setMode(ToolMode::View);
+    check(partialScene.obscuredItems().isEmpty(),
+          QStringLiteral("查看模式下小面积遮挡也不描轮廓"));
 
     // ---------------------------------------------------------------
     // Layer visibility, locking and per-layer editing permissions.
@@ -1465,8 +1575,29 @@ int runSelfTest(const QString& reportPath)
 
     const QPointF centerBefore = view.mapToScene(view.viewport()->rect().center());
     const QPoint panStart = view.viewport()->rect().center();
+    const QPointF panAnchor = view.mapToScene(panStart);
     sendMouseEvent(view.viewport(), QEvent::MouseButtonPress, panStart,
                    Qt::LeftButton, Qt::LeftButton);
+
+    // 连续小幅拖动：按下点在场景里的位置必须始终留在鼠标下方。若平移用“按下时的
+    // 场景锚点”去和随视图移动后的 mapToScene 相减，位移会被反复累加，画面抖动。
+    qreal maxPanDrift = 0.0;
+    for (int step = 1; step <= 6; ++step) {
+        const QPoint cursor = panStart + QPoint(step * 10, step * 6);
+        sendMouseEvent(view.viewport(), QEvent::MouseMove, cursor, Qt::NoButton, Qt::LeftButton);
+        QApplication::processEvents();
+        maxPanDrift = qMax(maxPanDrift, QLineF(view.mapToScene(cursor), panAnchor).length());
+    }
+    check(maxPanDrift < 3.0,
+          QStringLiteral("拖拽平移时图元紧跟鼠标，不会来回抖动"),
+          QStringLiteral("maxDrift=%1").arg(maxPanDrift));
+
+    // 拖回起点：视图应回到原位，不残留位移。
+    sendMouseEvent(view.viewport(), QEvent::MouseMove, panStart, Qt::NoButton, Qt::LeftButton);
+    QApplication::processEvents();
+    check(QLineF(view.mapToScene(view.viewport()->rect().center()), centerBefore).length() < 3.0,
+          QStringLiteral("来回拖拽后视图回到原位，不累积漂移"));
+
     sendMouseEvent(view.viewport(), QEvent::MouseMove, panStart + QPoint(60, 40),
                    Qt::NoButton, Qt::LeftButton);
     sendMouseEvent(view.viewport(), QEvent::MouseButtonRelease, panStart + QPoint(60, 40),
@@ -1662,6 +1793,21 @@ int runSelfTest(const QString& reportPath)
         window.resize(1200, 800);
         window.show();
         QApplication::processEvents();
+
+        auto* modeBar = window.findChild<QToolBar*>(QStringLiteral("ModeToolBar"));
+        check(modeBar != nullptr, QStringLiteral("主窗口存在左侧模式工具栏"));
+        if (modeBar) {
+            QStringList modeOrder;
+            for (QAction* action : modeBar->actions()) {
+                if (action && !action->isSeparator())
+                    modeOrder.append(action->text());
+            }
+            check(modeOrder == QStringList({ QStringLiteral("查看模式"), QStringLiteral("编辑模式"),
+                                             QStringLiteral("画笔模式"), QStringLiteral("文字模式") }),
+                  QStringLiteral("模式工具栏顺序为查看 → 编辑 → 画笔 → 文字"),
+                  modeOrder.join(QStringLiteral(" / ")));
+        }
+
         window.view()->setMode(ToolMode::Text);
         QTimer::singleShot(120, &window, []() {
             auto* dialog = qobject_cast<TextDialog*>(QApplication::activeModalWidget());
@@ -1746,6 +1892,21 @@ int runSelfTest(const QString& reportPath)
         check(shapeButton && shapeButton->menu() == shapeMenu
                   && shapeButton->popupMode() == QToolButton::InstantPopup,
               QStringLiteral("主工具栏图形按钮绑定快速插入菜单"));
+
+        QToolButton* fillButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("FillButton"));
+        QStringList fillActionTexts;
+        if (fillButton && fillButton->menu()) {
+            for (QAction* action : fillButton->menu()->actions()) {
+                if (!action->isSeparator())
+                    fillActionTexts.append(action->text());
+            }
+        }
+        check(fillActionTexts.size() == 8
+                  && fillActionTexts.contains(QStringLiteral("反斜线填充"))
+                  && fillActionTexts.contains(QStringLiteral("正交叉线填充"))
+                  && fillActionTexts.contains(QStringLiteral("六边形填充")),
+              QStringLiteral("填充菜单包含反斜线/正交叉线/六边形"),
+              fillActionTexts.join(QStringLiteral("|")));
 
         QAction* ellipseAction = shapeMenu
             ? shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_ellipse"))
@@ -1961,6 +2122,294 @@ int runSelfTest(const QString& reportPath)
         styleUndo.redo();
         check(styleShape->fillStyle() == FillStyle::CrossHatch,
               QStringLiteral("填充样式可重做"));
+
+        // 交叉线填充必须铺满整个图形：两个方向的斜线在左下角与右上角密度相当。
+        BoardScene hatchScene;
+        hatchScene.applyBoardSize(QSizeF(400, 300));
+        auto* crossShape = new ShapeItem(ShapeType::Rectangle);
+        crossShape->setPos(QPointF(50, 45));
+        crossShape->setContentSize(QSizeF(300, 200));
+        crossShape->setStyle(QColor(QStringLiteral("#94A3B8")),
+                             QColor(QStringLiteral("#94A3B8")), 2.0);
+        crossShape->setFill(QColor(239, 68, 68, 255), FillStyle::CrossHatch);
+        hatchScene.attachItem(crossShape);
+
+        QImage hatchImage(400, 300, QImage::Format_ARGB32_Premultiplied);
+        hatchImage.fill(Qt::white);
+        QPainter hatchPainter(&hatchImage);
+        hatchScene.render(&hatchPainter, QRectF(0, 0, 400, 300), QRectF(0, 0, 400, 300));
+        hatchPainter.end();
+
+        auto hatchPixels = [&hatchImage](const QRect& area) {
+            int count = 0;
+            for (int y = area.top(); y <= area.bottom(); ++y) {
+                for (int x = area.left(); x <= area.right(); ++x) {
+                    const QColor pixel = hatchImage.pixelColor(x, y);
+                    if (pixel.red() - pixel.green() > 25 && pixel.red() - pixel.blue() > 25)
+                        ++count;
+                }
+            }
+            return count;
+        };
+        const int hatchTopRight = hatchPixels(QRect(270, 60, 60, 60));
+        const int hatchBottomLeft = hatchPixels(QRect(60, 180, 60, 60));
+        check(hatchTopRight > 0 && hatchBottomLeft * 4 >= hatchTopRight * 3,
+              QStringLiteral("交叉线填充均匀铺满整个图形，不只出现在右上角"),
+              QStringLiteral("topRight=%1 bottomLeft=%2")
+                  .arg(hatchTopRight).arg(hatchBottomLeft));
+
+        // 填充样式扩展：反斜线、正交叉线、六边形。
+        check(fillStyleName(FillStyle::ReverseHachure) == QStringLiteral("反斜线")
+                  && fillStyleName(FillStyle::GridHatch) == QStringLiteral("正交叉线")
+                  && fillStyleName(FillStyle::Honeycomb) == QStringLiteral("六边形"),
+              QStringLiteral("新增填充样式名称齐全"));
+        check(allFillStyles().size() == 7
+                  && allFillStyles().at(0) == FillStyle::None
+                  && allFillStyles().at(1) == FillStyle::Solid
+                  && allFillStyles().at(2) == FillStyle::Hachure
+                  && allFillStyles().at(3) == FillStyle::ReverseHachure
+                  && allFillStyles().at(4) == FillStyle::CrossHatch
+                  && allFillStyles().at(5) == FillStyle::GridHatch
+                  && allFillStyles().at(6) == FillStyle::Honeycomb,
+              QStringLiteral("填充样式列表包含全部 7 种且顺序稳定"));
+        check(fillStyleFromString(fillStyleToString(FillStyle::ReverseHachure))
+                      == FillStyle::ReverseHachure
+                  && fillStyleFromString(fillStyleToString(FillStyle::GridHatch))
+                      == FillStyle::GridHatch
+                  && fillStyleFromString(fillStyleToString(FillStyle::Honeycomb))
+                      == FillStyle::Honeycomb,
+              QStringLiteral("新增填充样式可序列化往返"));
+
+        auto renderPatternFill = [](FillStyle style, QImage& image) {
+            BoardScene scene;
+            scene.applyBoardSize(QSizeF(400, 300));
+            auto* shape = new ShapeItem(ShapeType::Rectangle);
+            shape->setPos(QPointF(50, 45));
+            shape->setContentSize(QSizeF(300, 200));
+            shape->setStyle(QColor(QStringLiteral("#94A3B8")),
+                            QColor(QStringLiteral("#94A3B8")), 2.0);
+            shape->setFill(QColor(239, 68, 68, 255), style);
+            scene.attachItem(shape);
+            image = QImage(400, 300, QImage::Format_ARGB32_Premultiplied);
+            image.fill(Qt::white);
+            QPainter painter(&image);
+            scene.render(&painter, QRectF(0, 0, 400, 300), QRectF(0, 0, 400, 300));
+            painter.end();
+        };
+        auto patternLinePixel = [](const QImage& image, int x, int y) {
+            const QColor pixel = image.pixelColor(x, y);
+            return pixel.red() - pixel.green() > 25 && pixel.red() - pixel.blue() > 25;
+        };
+
+        // “\” 与 “/” 的方向判别：沿右下方向的相邻像素多，说明是反斜线。
+        QImage reverseImage;
+        renderPatternFill(FillStyle::ReverseHachure, reverseImage);
+        QImage forwardImage;
+        renderPatternFill(FillStyle::Hachure, forwardImage);
+        int reverseDownRight = 0;
+        int reverseUpRight = 0;
+        int forwardDownRight = 0;
+        int forwardUpRight = 0;
+        for (int y = 60; y < 240; ++y) {
+            for (int x = 60; x < 340; ++x) {
+                if (patternLinePixel(reverseImage, x, y)) {
+                    if (patternLinePixel(reverseImage, x + 2, y + 2))
+                        ++reverseDownRight;
+                    if (patternLinePixel(reverseImage, x + 2, y - 2))
+                        ++reverseUpRight;
+                }
+                if (patternLinePixel(forwardImage, x, y)) {
+                    if (patternLinePixel(forwardImage, x + 2, y + 2))
+                        ++forwardDownRight;
+                    if (patternLinePixel(forwardImage, x + 2, y - 2))
+                        ++forwardUpRight;
+                }
+            }
+        }
+        check(reverseDownRight > reverseUpRight * 2 && forwardUpRight > forwardDownRight * 2,
+              QStringLiteral("反斜线填充方向与斜线相反"),
+              QStringLiteral("反斜线 down=%1 up=%2，斜线 down=%3 up=%4")
+                  .arg(reverseDownRight).arg(reverseUpRight)
+                  .arg(forwardDownRight).arg(forwardUpRight));
+
+        // 正交叉线：水平线与竖直线同时存在（行/列方向都能扫到大量线条像素）。
+        QImage gridImage;
+        renderPatternFill(FillStyle::GridHatch, gridImage);
+        int gridRowRun = 0;
+        for (int x = 60; x < 340; ++x) {
+            if (patternLinePixel(gridImage, x, 145))
+                ++gridRowRun;
+        }
+        int gridColumnRun = 0;
+        for (int y = 55; y < 240; ++y) {
+            if (patternLinePixel(gridImage, 200, y))
+                ++gridColumnRun;
+        }
+        check(gridRowRun >= 15 && gridColumnRun >= 12,
+              QStringLiteral("正交叉线填充同时画出水平线与竖直线"),
+              QStringLiteral("rowRun=%1 columnRun=%2").arg(gridRowRun).arg(gridColumnRun));
+
+        // 六边形：单元格中心留空、六条边有线条。
+        // 间距 = 高度 300 的 3%（上限 12）= 9，半径 = 1.15×间距 = 10.35，
+        // 单元宽 √3r ≈ 17.93；第 3 行单元中心 (17.93, 20.7)，右侧竖边在 x≈26.89（局部坐标）。
+        QImage honeycombImage;
+        renderPatternFill(FillStyle::Honeycomb, honeycombImage);
+        const bool honeycombCellEmpty = !patternLinePixel(honeycombImage, 50 + 18, 45 + 21);
+        const bool honeycombEdgeDrawn = patternLinePixel(honeycombImage, 50 + 27, 45 + 21);
+        int honeycombPixels = 0;
+        for (int y = 55; y < 240; ++y) {
+            for (int x = 55; x < 345; ++x) {
+                if (patternLinePixel(honeycombImage, x, y))
+                    ++honeycombPixels;
+            }
+        }
+        const double honeycombRatio = static_cast<double>(honeycombPixels) / (290.0 * 185.0);
+        check(honeycombCellEmpty && honeycombEdgeDrawn && honeycombRatio > 0.1
+                  && honeycombRatio < 0.55,
+              QStringLiteral("六边形填充画出蜂窝网格，格子内部留空"),
+              QStringLiteral("cellEmpty=%1 edge=%2 ratio=%3")
+                  .arg(honeycombCellEmpty ? 1 : 0)
+                  .arg(honeycombEdgeDrawn ? 1 : 0)
+                  .arg(honeycombRatio, 0, 'f', 3));
+
+        // 遮挡必须完全不透：上层是半透明颜色时，重叠处只能看到“上层颜色 + 背景”，
+        // 不能把下层颜色混进来。
+        BoardScene blendScene;
+        blendScene.applyBoardSize(QSizeF(300, 200));
+        blendScene.setShowGrid(false);
+        auto* lowerBand = new ShapeItem(ShapeType::Rectangle);
+        lowerBand->setPos(QPointF(20, 20));
+        lowerBand->setContentSize(QSizeF(160, 120));
+        lowerBand->setStyle(QColor(QStringLiteral("#94A3B8")),
+                            QColor(QStringLiteral("#94A3B8")), 1.0);
+        lowerBand->setFill(QColor(255, 0, 0, 255), FillStyle::Solid);
+        blendScene.attachItem(lowerBand);
+
+        auto* upperBand = new ShapeItem(ShapeType::Rectangle);
+        upperBand->setPos(QPointF(100, 50));
+        upperBand->setContentSize(QSizeF(160, 120));
+        upperBand->setStyle(QColor(QStringLiteral("#94A3B8")),
+                            QColor(QStringLiteral("#94A3B8")), 1.0);
+        upperBand->setFill(QColor(0, 0, 255, 128), FillStyle::Solid);
+        blendScene.attachItem(upperBand);
+
+        QImage blendImage(300, 200, QImage::Format_ARGB32_Premultiplied);
+        blendImage.fill(Qt::white);
+        QPainter blendPainter(&blendImage);
+        blendScene.render(&blendPainter, QRectF(0, 0, 300, 200), QRectF(0, 0, 300, 200));
+        blendPainter.end();
+
+        const QColor overlapPixel = blendImage.pixelColor(140, 90);
+        const QColor lowerOnlyPixel = blendImage.pixelColor(60, 60);
+        check(overlapPixel.green() > 60 && overlapPixel.blue() > 150,
+              QStringLiteral("遮挡处完全不透，只显示上层颜色与背景"),
+              QStringLiteral("overlap=%1,%2,%3")
+                  .arg(overlapPixel.red()).arg(overlapPixel.green()).arg(overlapPixel.blue()));
+        check(lowerOnlyPixel.red() > 200 && lowerOnlyPixel.green() < 80,
+              QStringLiteral("未被遮挡的部分仍显示下层颜色"),
+              QStringLiteral("lower=%1,%2,%3")
+                  .arg(lowerOnlyPixel.red()).arg(lowerOnlyPixel.green())
+                  .arg(lowerOnlyPixel.blue()));
+
+        // 真实视图路径（QGraphicsView::paintEvent）也必须完全不透：默认视图走
+        // QGraphicsScenePrivate::drawItems，绕过 BoardScene::drawItems；只有打开
+        // IndirectPainting 才会调用虚函数，这里用截图验证它确实生效。
+        {
+            BoardView blendView(&blendScene);
+            blendView.resize(460, 340);
+            blendView.setMode(ToolMode::View);
+            blendView.show();
+            QApplication::processEvents();
+
+            const QImage viewImage = blendView.viewport()->grab().toImage();
+            const QPoint viewPoint = blendView.mapFromScene(QPointF(140, 90));
+            const QPoint viewLowerPoint = blendView.mapFromScene(QPointF(60, 60));
+            QColor viewOverlapColor(0, 0, 0);
+            QColor viewLowerColor(0, 0, 0);
+            if (viewImage.rect().contains(viewPoint))
+                viewOverlapColor = viewImage.pixelColor(viewPoint);
+            if (viewImage.rect().contains(viewLowerPoint))
+                viewLowerColor = viewImage.pixelColor(viewLowerPoint);
+            check(viewOverlapColor.green() > 60 && viewOverlapColor.blue() > 150,
+                  QStringLiteral("真实视图中的遮挡处同样完全不透"),
+                  QStringLiteral("view=%1,%2,%3 point=%4,%5")
+                      .arg(viewOverlapColor.red()).arg(viewOverlapColor.green())
+                      .arg(viewOverlapColor.blue()).arg(viewPoint.x()).arg(viewPoint.y()));
+            check(viewLowerColor.red() > 200 && viewLowerColor.green() < 80,
+                  QStringLiteral("真实视图中未被遮挡的部分仍显示下层颜色"),
+                  QStringLiteral("viewLower=%1,%2,%3")
+                      .arg(viewLowerColor.red()).arg(viewLowerColor.green())
+                      .arg(viewLowerColor.blue()));
+        }
+
+        // 无填充、纹理填充的图形也按“图元占据的区域”完整遮挡下层：
+        // 图形内部（含纹理空隙）透出的是画板底色，而不是下层图元的颜色。
+        {
+            BoardScene hollowScene;
+            hollowScene.applyBoardSize(QSizeF(300, 200));
+            hollowScene.setShowGrid(false);
+            auto* lower = new ShapeItem(ShapeType::Rectangle);
+            lower->setPos(QPointF(40, 40));
+            lower->setContentSize(QSizeF(220, 120));
+            lower->setStyle(QColor(QStringLiteral("#94A3B8")),
+                            QColor(QStringLiteral("#94A3B8")), 1.0);
+            lower->setFill(QColor(239, 68, 68), FillStyle::Solid);
+            hollowScene.attachItem(lower);
+
+            auto* hollow = new ShapeItem(ShapeType::Rectangle);
+            hollow->setPos(QPointF(80, 60));
+            hollow->setContentSize(QSizeF(140, 100));
+            hollow->setStyle(QColor(37, 99, 235), QColor(Qt::transparent), 2.0);
+            hollow->setFill(QColor(Qt::transparent), FillStyle::None);
+            hollowScene.attachItem(hollow);
+
+            QImage hollowImage(300, 200, QImage::Format_ARGB32_Premultiplied);
+            hollowImage.fill(Qt::white);
+            QPainter hollowPainter(&hollowImage);
+            hollowScene.render(&hollowPainter, QRectF(0, 0, 300, 200), QRectF(0, 0, 300, 200));
+            hollowPainter.end();
+            const QColor hollowPixel = hollowImage.pixelColor(150, 110);
+            check(hollowPixel.green() > 200 && hollowPixel.blue() > 200,
+                  QStringLiteral("无填充图形的内部同样完全遮挡下层"),
+                  QStringLiteral("pixel=%1,%2,%3")
+                      .arg(hollowPixel.red()).arg(hollowPixel.green())
+                      .arg(hollowPixel.blue()));
+
+            auto* pattern = new ShapeItem(ShapeType::Rectangle);
+            pattern->setPos(QPointF(80, 60));
+            pattern->setContentSize(QSizeF(140, 100));
+            pattern->setStyle(QColor(37, 99, 235), QColor(37, 99, 235, 200), 2.0);
+            pattern->setFill(QColor(37, 99, 235, 200), FillStyle::Honeycomb);
+
+            BoardScene patternScene;
+            patternScene.applyBoardSize(QSizeF(300, 200));
+            patternScene.setShowGrid(false);
+            auto* patternLower = new ShapeItem(ShapeType::Rectangle);
+            patternLower->setPos(QPointF(40, 40));
+            patternLower->setContentSize(QSizeF(220, 120));
+            patternLower->setStyle(QColor(QStringLiteral("#94A3B8")),
+                                   QColor(QStringLiteral("#94A3B8")), 1.0);
+            patternLower->setFill(QColor(239, 68, 68), FillStyle::Solid);
+            patternScene.attachItem(patternLower);
+            patternScene.attachItem(pattern);
+
+            QImage patternImage(300, 200, QImage::Format_ARGB32_Premultiplied);
+            patternImage.fill(Qt::white);
+            QPainter patternPainter(&patternImage);
+            patternScene.render(&patternPainter, QRectF(0, 0, 300, 200), QRectF(0, 0, 300, 200));
+            patternPainter.end();
+            int leaked = 0;
+            for (int y = 72; y < 150; y += 4) {
+                for (int x = 92; x < 210; x += 4) {
+                    const QColor pixel = patternImage.pixelColor(x, y);
+                    if (pixel.red() > 200 && pixel.green() < 120)
+                        ++leaked;
+                }
+            }
+            check(leaked == 0,
+                  QStringLiteral("纹理填充的图形内部（含空隙）不透出下层颜色"),
+                  QStringLiteral("leaked=%1").arg(leaked));
+        }
 
         // 需求 13：画板通过拉伸边缘扩大或裁剪，并随模板保存原点。
         QUndoStack boardUndo;

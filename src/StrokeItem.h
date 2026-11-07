@@ -18,6 +18,8 @@ public:
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& json) override;
     QPainterPath shape() const override;
+    QPainterPath outlineShape() const override;
+    QPainterPath paintedShape() const override;
 
     void beginStroke(const QPointF& scenePos, const QColor& color, qreal width);
     void appendScenePoint(const QPointF& scenePos);

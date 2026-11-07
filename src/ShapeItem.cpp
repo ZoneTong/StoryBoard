@@ -90,30 +90,98 @@ QPainterPath calloutPath(const QRectF& rect)
     return bodyPath.united(tail);
 }
 
-void paintHatchFill(QPainter* painter, const QPainterPath& clip, const QRectF& rect,
-                    const QColor& color, bool cross)
-{
-    QColor hatchColor = color;
-    if (hatchColor.alpha() < 120)
-        hatchColor.setAlpha(120);
+constexpr qreal kPatternPenWidth = 1.6;
 
-    const qreal spacing = qBound<qreal>(5.0,
-                                        qMax(rect.width(), rect.height()) * 0.03,
-                                        12.0);
-    const qreal w = rect.width();
+qreal patternSpacing(const QRectF& rect)
+{
+    return qBound<qreal>(5.0, qMax(rect.width(), rect.height()) * 0.03, 12.0);
+}
+
+bool isPatternFill(FillStyle style)
+{
+    return style == FillStyle::Hachure || style == FillStyle::ReverseHachure
+        || style == FillStyle::CrossHatch || style == FillStyle::GridHatch
+        || style == FillStyle::Honeycomb;
+}
+
+// 填充纹理的中心线。绘制与遮挡计算共用这一份几何，保证看到的和“挡住别人的”一致。
+QPainterPath patternCenterLines(FillStyle style, const QRectF& rect)
+{
+    QPainterPath path;
+    if (rect.isEmpty())
+        return path;
+
+    const qreal spacing = patternSpacing(rect);
     const qreal h = rect.height();
+
+    if (style == FillStyle::Honeycomb) {
+        // 尖顶六边形蜂窝：行距 1.5r、列距 √3r，相邻行错开半个单元。
+        const qreal radius = qMax<qreal>(4.0, spacing * 1.15);
+        const qreal hexWidth = qSqrt(3.0) * radius;
+        const qreal rowStep = 1.5 * radius;
+        int row = 0;
+        for (qreal cy = rect.top() - radius; cy < rect.bottom() + radius;
+             cy += rowStep, ++row) {
+            const qreal offset = (row % 2) ? hexWidth * 0.5 : 0.0;
+            for (qreal cx = rect.left() - hexWidth + offset; cx < rect.right() + hexWidth;
+                 cx += hexWidth) {
+                for (int corner = 0; corner < 6; ++corner) {
+                    const qreal angle = M_PI / 2.0 + corner * M_PI / 3.0;
+                    const QPointF point(cx + radius * qCos(angle), cy + radius * qSin(angle));
+                    if (corner == 0)
+                        path.moveTo(point);
+                    else
+                        path.lineTo(point);
+                }
+                path.closeSubpath();
+            }
+        }
+        return path;
+    }
+
+    if (style == FillStyle::GridHatch) {
+        for (qreal y = rect.top() - spacing; y < rect.bottom() + spacing; y += spacing) {
+            path.moveTo(rect.left() - spacing, y);
+            path.lineTo(rect.right() + spacing, y);
+        }
+        for (qreal x = rect.left() - spacing; x < rect.right() + spacing; x += spacing) {
+            path.moveTo(x, rect.top() - spacing);
+            path.lineTo(x, rect.bottom() + spacing);
+        }
+        return path;
+    }
+
+    // 斜线 / 反斜线 / 交叉线。两组线都从左边外一个“高度”开始，才能铺满左下与右上角。
+    const bool forward = style == FillStyle::Hachure || style == FillStyle::CrossHatch;
+    const bool reverse = style == FillStyle::ReverseHachure || style == FillStyle::CrossHatch;
+    if (forward) {
+        for (qreal x = rect.left() - h; x < rect.right() + spacing; x += spacing) {
+            path.moveTo(x, rect.bottom());
+            path.lineTo(x + h, rect.top());
+        }
+    }
+    if (reverse) {
+        for (qreal x = rect.left() - h; x < rect.right() + spacing; x += spacing) {
+            path.moveTo(x, rect.top());
+            path.lineTo(x + h, rect.bottom());
+        }
+    }
+    return path;
+}
+
+void paintPatternFill(QPainter* painter, const QPainterPath& clip, const QRectF& rect,
+                      const QColor& color, FillStyle style)
+{
+    QColor lineColor = color;
+    if (lineColor.alpha() < 120)
+        lineColor.setAlpha(120);
 
     painter->save();
     painter->setClipPath(clip);
-    QPen pen(hatchColor, 1.6, Qt::SolidLine, Qt::FlatCap);
+    QPen pen(lineColor, kPatternPenWidth, Qt::SolidLine, Qt::FlatCap);
     painter->setPen(pen);
-
-    for (qreal x = rect.left() - h; x < rect.right() + spacing; x += spacing)
-        painter->drawLine(QPointF(x, rect.bottom()), QPointF(x + h, rect.top()));
-    if (cross) {
-        for (qreal x = rect.left() - spacing; x < rect.right() + spacing; x += spacing)
-            painter->drawLine(QPointF(x, rect.top()), QPointF(x + h, rect.bottom()));
-    }
+    painter->setBrush(Qt::NoBrush);
+    painter->drawPath(patternCenterLines(style, rect));
     painter->restore();
 }
 
@@ -301,7 +369,9 @@ bool shapeTypeIsStrokeOnly(ShapeType type)
 
 QList<FillStyle> allFillStyles()
 {
-    return { FillStyle::None, FillStyle::Solid, FillStyle::Hachure, FillStyle::CrossHatch };
+    return { FillStyle::None,       FillStyle::Solid,    FillStyle::Hachure,
+             FillStyle::ReverseHachure, FillStyle::CrossHatch, FillStyle::GridHatch,
+             FillStyle::Honeycomb };
 }
 
 QString fillStyleName(FillStyle style)
@@ -313,8 +383,14 @@ QString fillStyleName(FillStyle style)
         return QStringLiteral("纯色");
     case FillStyle::Hachure:
         return QStringLiteral("斜线");
+    case FillStyle::ReverseHachure:
+        return QStringLiteral("反斜线");
     case FillStyle::CrossHatch:
         return QStringLiteral("交叉线");
+    case FillStyle::GridHatch:
+        return QStringLiteral("正交叉线");
+    case FillStyle::Honeycomb:
+        return QStringLiteral("六边形");
     }
     return QStringLiteral("纯色");
 }
@@ -328,8 +404,14 @@ QString fillStyleToString(FillStyle style)
         return QStringLiteral("solid");
     case FillStyle::Hachure:
         return QStringLiteral("hachure");
+    case FillStyle::ReverseHachure:
+        return QStringLiteral("reverse_hatch");
     case FillStyle::CrossHatch:
         return QStringLiteral("cross_hatch");
+    case FillStyle::GridHatch:
+        return QStringLiteral("grid_hatch");
+    case FillStyle::Honeycomb:
+        return QStringLiteral("honeycomb");
     }
     return QStringLiteral("solid");
 }
@@ -343,9 +425,23 @@ FillStyle fillStyleFromString(const QString& value)
         || normalized == QStringLiteral("diagonal")) {
         return FillStyle::Hachure;
     }
+    if (normalized == QStringLiteral("reverse_hatch")
+        || normalized == QStringLiteral("reverse_hachure")
+        || normalized == QStringLiteral("reverse")
+        || normalized == QStringLiteral("backslash")) {
+        return FillStyle::ReverseHachure;
+    }
     if (normalized == QStringLiteral("cross_hatch") || normalized == QStringLiteral("crosshatch")
         || normalized == QStringLiteral("cross") || normalized == QStringLiteral("zigzag")) {
         return FillStyle::CrossHatch;
+    }
+    if (normalized == QStringLiteral("grid_hatch") || normalized == QStringLiteral("grid")
+        || normalized == QStringLiteral("cross_grid") || normalized == QStringLiteral("orthogonal")) {
+        return FillStyle::GridHatch;
+    }
+    if (normalized == QStringLiteral("honeycomb") || normalized == QStringLiteral("hexagon")
+        || normalized == QStringLiteral("hex")) {
+        return FillStyle::Honeycomb;
     }
     if (normalized == QStringLiteral("solid") || normalized == QStringLiteral("color"))
         return FillStyle::Solid;
@@ -495,6 +591,34 @@ QPainterPath ShapeItem::shape() const
     return result;
 }
 
+QPainterPath ShapeItem::outlineShape() const
+{
+    const QPainterPath path = pathFor(m_type, contentRect());
+    return path.isEmpty() ? BoardItem::outlineShape() : path;
+}
+
+QPainterPath ShapeItem::paintedShape() const
+{
+    const QPainterPath path = pathFor(m_type, contentRect());
+    if (path.isEmpty())
+        return QPainterPath();
+
+    // 描边本身也会遮挡下方图元。
+    QPainterPathStroker stroker;
+    stroker.setWidth(qMax<qreal>(1.0, m_strokeWidth));
+    stroker.setCapStyle(Qt::RoundCap);
+    stroker.setJoinStyle(Qt::RoundJoin);
+    QPainterPath result = stroker.createStroke(path);
+
+    // 有面积的图形（矩形、椭圆、箭头、气泡等）按“图元占据的区域”遮挡，与填充样式无关：
+    // 无填充或纹理填充时，下层图元在图形内部同样完全不显示，透出的是画板底色，
+    // 不会出现“上层线条 + 下层颜色”的混合观感。直线、大括号这类只有笔画的图形
+    // 则只遮挡笔画扫过的区域。
+    if (!shapeTypeIsStrokeOnly(m_type))
+        result = result.united(path);
+    return result;
+}
+
 QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect)
 {
     const QRectF r = normalizedRect(rect);
@@ -613,10 +737,8 @@ void ShapeItem::paintContent(QPainter* painter)
         painter->setBrush(Qt::NoBrush);
         painter->drawPath(path);
     } else {
-        if (m_fillStyle == FillStyle::Hachure || m_fillStyle == FillStyle::CrossHatch) {
-            paintHatchFill(painter, path, rect, m_fillColor,
-                           m_fillStyle == FillStyle::CrossHatch);
-        }
+        if (isPatternFill(m_fillStyle))
+            paintPatternFill(painter, path, rect, m_fillColor, m_fillStyle);
 
         QPen pen(m_strokeColor, m_strokeWidth, Qt::SolidLine,
                  Qt::RoundCap, Qt::RoundJoin);

@@ -106,6 +106,19 @@ QPainterPath BoardItem::shape() const
     return path;
 }
 
+QPainterPath BoardItem::outlineShape() const
+{
+    QPainterPath path;
+    path.addRect(contentRect());
+    return path;
+}
+
+QPainterPath BoardItem::paintedShape() const
+{
+    // 基类按内容矩形整体涂满处理：图片与文字等子类会覆写这里。
+    return outlineShape();
+}
+
 QPainterPath BoardItem::selectionHandleShape() const
 {
     QPainterPath path;

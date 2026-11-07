@@ -170,6 +170,36 @@ void StrokeItem::paintContent(QPainter* painter)
     painter->restore();
 }
 
+QPainterPath StrokeItem::outlineShape() const
+{
+    if (m_baseSize.isEmpty() || m_path.isEmpty())
+        return QPainterPath();
+
+    QTransform transform;
+    transform.scale(contentSize().width() / m_baseSize.width(),
+                    contentSize().height() / m_baseSize.height());
+    return transform.map(m_path);
+}
+
+QPainterPath StrokeItem::paintedShape() const
+{
+    // 完全透明的笔画画不出东西，也就不该算作遮挡。
+    if (m_color.alpha() == 0)
+        return QPainterPath();
+
+    const QPainterPath centerLine = outlineShape();
+    if (centerLine.isEmpty())
+        return centerLine;
+
+    const qreal scaleX = contentSize().width() / m_baseSize.width();
+    const qreal scaleY = contentSize().height() / m_baseSize.height();
+    QPainterPathStroker stroker;
+    stroker.setWidth(qMax<qreal>(1.0, m_penWidth * (scaleX + scaleY) / 2.0));
+    stroker.setCapStyle(Qt::RoundCap);
+    stroker.setJoinStyle(Qt::RoundJoin);
+    return stroker.createStroke(centerLine);
+}
+
 QPainterPath StrokeItem::shape() const
 {
     if (m_baseSize.isEmpty())

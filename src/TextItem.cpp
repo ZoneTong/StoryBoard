@@ -3,6 +3,7 @@
 #include <QFontMetricsF>
 #include <QJsonObject>
 #include <QPainter>
+#include <QPainterPath>
 #include <QtMath>
 
 namespace {
@@ -115,6 +116,49 @@ void TextItem::paintContent(QPainter* painter)
         }
     }
     painter->restore();
+}
+
+QPainterPath TextItem::outlineShape() const
+{
+    QPainterPath path;
+    path.addRect(contentRect());
+    return path;
+}
+
+QPainterPath TextItem::paintedShape() const
+{
+    if (contentSize().isEmpty() || m_color.alpha() == 0)
+        return QPainterPath();
+
+    const QSizeF base = m_baseSize.isEmpty() ? QSizeF(1.0, 1.0) : m_baseSize;
+    const qreal scaleX = contentSize().width() / base.width();
+    const qreal scaleY = contentSize().height() / base.height();
+    const QFontMetricsF metrics(m_font);
+    const QStringList lines = m_text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+
+    // 文字没有底色，只有字形占住画布：用字形轮廓（而不是整块行高矩形）作为
+    // “涂满区域”，这样文字既能遮挡下层，字缝之间又不会挡住下层颜色。
+    QPainterPath path;
+    qreal baseline = metrics.ascent();
+    for (const QString& line : lines) {
+        if (!line.isEmpty()) {
+            QPainterPath linePath;
+            linePath.addText(kPadding, baseline, m_font, line);
+            path = path.united(linePath);
+        }
+        baseline += metrics.lineSpacing();
+    }
+
+    if (path.isEmpty())
+        return BoardItem::paintedShape();
+
+    QTransform transform;
+    transform.scale(scaleX, scaleY);
+    QPainterPath scaled = transform.map(path);
+
+    QPainterPath contentPath;
+    contentPath.addRect(contentRect());
+    return scaled.intersected(contentPath);
 }
 
 QJsonObject TextItem::toJson() const
