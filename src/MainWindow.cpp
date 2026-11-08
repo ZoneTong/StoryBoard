@@ -33,7 +33,6 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
-#include <QFrame>
 #include <QImageReader>
 #include <QImageWriter>
 #include <QJsonArray>
@@ -859,18 +858,8 @@ void MainWindow::createToolBars()
     brushBar->addWidget(widthLabel);
     brushBar->addWidget(m_widthCombo);
 
-    // 两个工具栏排在同一行，用一条可见竖线分隔画笔区与填充区。
-    // 用一个 18px 的承载控件把线放在正中间，两侧各留 8px 空白，避免被当成按钮边框。
-    auto* toolbarDivider = new QWidget(brushBar);
-    toolbarDivider->setObjectName(QStringLiteral("ToolBarDivider"));
-    toolbarDivider->setFixedSize(18, 32);
-    auto* toolbarDividerLine = new QFrame(toolbarDivider);
-    toolbarDividerLine->setObjectName(QStringLiteral("ToolBarDividerLine"));
-    toolbarDividerLine->setFrameShape(QFrame::NoFrame);
-    toolbarDividerLine->setFixedSize(2, 30);
-    toolbarDividerLine->move(8, 1);
-    toolbarDividerLine->setStyleSheet(QStringLiteral("background: #8E9AAF; border: none; border-radius: 1px;"));
-    brushBar->addWidget(toolbarDivider);
+    // 画笔区与填充区之间使用标准工具栏分隔符，不再自绘竖线。
+    brushBar->addSeparator();
 
     // 需求 31：画笔与填充分属两个工具栏。
     auto* fillBar = new QToolBar(uiText(QStringLiteral("Fill toolbar")), this);
@@ -916,7 +905,6 @@ void MainWindow::createToolBars()
     m_strokeColorButton->setToolTip(uiText(QStringLiteral("Outline color: %1 (click to choose)"))
                                         .arg(m_brushColor.name(QColor::HexArgb).toUpper()));
     fillBar->addWidget(m_strokeColorButton);
-    mainBar->addSeparator();
 
     mainBar->addAction(m_fitAct);
     mainBar->addAction(m_zoomInAct);

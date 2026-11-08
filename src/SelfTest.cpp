@@ -2467,17 +2467,23 @@ int runSelfTest(const QString& reportPath)
                   && !mainNames.contains(QStringLiteral("StrokeColorButton")),
               QStringLiteral("主工具栏不再混排画笔和填充样式控件"),
               mainNames.join(QStringLiteral("|")));
-        QWidget* toolbarDivider = shapeWindow.findChild<QWidget*>(
-            QStringLiteral("ToolBarDivider"));
-        QWidget* toolbarDividerLine = shapeWindow.findChild<QWidget*>(
-            QStringLiteral("ToolBarDividerLine"));
-        check(toolbarDivider && toolbarDivider->isVisible(),
-              QStringLiteral("画笔与填充工具栏之间有可见竖线分隔"));
-        check(toolbarDivider && toolbarDividerLine && toolbarDividerLine->isVisible()
-                  && toolbarDivider->width() >= 16,
-              QStringLiteral("工具栏分隔竖线两侧留有可见空白"),
-              QStringLiteral("dividerWidth=%1")
-                  .arg(toolbarDivider ? toolbarDivider->width() : 0));
+        int mainSeparatorCount = 0;
+        if (mainToolBar) {
+            for (QAction* action : mainToolBar->actions()) {
+                if (action->isSeparator())
+                    ++mainSeparatorCount;
+            }
+        }
+        check(mainSeparatorCount == 3,
+              QStringLiteral("主工具栏只保留必要分隔符"),
+              QStringLiteral("separatorCount=%1").arg(mainSeparatorCount));
+        const QList<QAction*> brushToolBarActions = brushToolBar
+            ? brushToolBar->actions()
+            : QList<QAction*>();
+        check(!brushToolBarActions.isEmpty() && brushToolBarActions.last()->isSeparator()
+                  && !shapeWindow.findChild<QWidget*>(QStringLiteral("ToolBarDivider")),
+              QStringLiteral("画笔与填充样式之间使用标准分隔符"),
+              QStringLiteral("actionCount=%1").arg(brushToolBarActions.size()));
         QToolButton* iconFillButton = shapeWindow.findChild<QToolButton*>(
             QStringLiteral("FillButton"));
         QToolButton* iconFillColorButton = shapeWindow.findChild<QToolButton*>(
