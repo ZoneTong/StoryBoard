@@ -6,8 +6,8 @@
 
 namespace {
 
-constexpr int kMinBoardSide = 200;
-constexpr int kMaxBoardSide = 12000;
+constexpr int kMinCanvasSide = 200;
+constexpr int kMaxCanvasSide = 12000;
 
 QColor colorFromSetting(const QSettings& settings, const QString& key, const QColor& fallback)
 {
@@ -23,13 +23,13 @@ void AppSettings::load()
     brushColor = colorFromSetting(settings, QStringLiteral("brush/color"), brushColor);
     brushWidth = qBound(1, settings.value(QStringLiteral("brush/width"), brushWidth).toInt(), 64);
 
-    const int boardWidth = qBound(kMinBoardSide,
-                                  settings.value(QStringLiteral("board/width"), static_cast<int>(boardSize.width())).toInt(),
-                                  kMaxBoardSide);
-    const int boardHeight = qBound(kMinBoardSide,
-                                   settings.value(QStringLiteral("board/height"), static_cast<int>(boardSize.height())).toInt(),
-                                   kMaxBoardSide);
-    boardSize = QSizeF(boardWidth, boardHeight);
+    const int canvasWidth = qBound(kMinCanvasSide,
+                                  settings.value(QStringLiteral("canvas/width"), static_cast<int>(canvasSize.width())).toInt(),
+                                  kMaxCanvasSide);
+    const int canvasHeight = qBound(kMinCanvasSide,
+                                   settings.value(QStringLiteral("canvas/height"), static_cast<int>(canvasSize.height())).toInt(),
+                                   kMaxCanvasSide);
+    canvasSize = QSizeF(canvasWidth, canvasHeight);
 
     showGrid = settings.value(QStringLiteral("view/grid"), showGrid).toBool();
     canvasColor = colorFromSetting(settings, QStringLiteral("view/canvasColor"), canvasColor);
@@ -46,8 +46,8 @@ void AppSettings::save() const
     QSettings settings;
     settings.setValue(QStringLiteral("brush/color"), brushColor.name(QColor::HexArgb));
     settings.setValue(QStringLiteral("brush/width"), brushWidth);
-    settings.setValue(QStringLiteral("board/width"), static_cast<int>(boardSize.width()));
-    settings.setValue(QStringLiteral("board/height"), static_cast<int>(boardSize.height()));
+    settings.setValue(QStringLiteral("canvas/width"), static_cast<int>(canvasSize.width()));
+    settings.setValue(QStringLiteral("canvas/height"), static_cast<int>(canvasSize.height()));
     settings.setValue(QStringLiteral("view/grid"), showGrid);
     settings.setValue(QStringLiteral("view/canvasColor"), canvasColor.name(QColor::HexArgb));
     settings.setValue(QStringLiteral("paths/export"), lastExportDir);

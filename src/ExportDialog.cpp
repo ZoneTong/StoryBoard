@@ -2,7 +2,7 @@
 
 #include "ExportDialog.h"
 
-#include "BoardScene.h"
+#include "CanvasScene.h"
 #include "IconFactory.h"
 
 #include <QComboBox>
@@ -24,7 +24,7 @@
 #include <QVBoxLayout>
 #include <QtMath>
 
-ExportDialog::ExportDialog(BoardScene* scene, const QString& startDirectory, QWidget* parent)
+ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QWidget* parent)
     : QDialog(parent)
     , m_scene(scene)
 {
@@ -136,10 +136,10 @@ QRectF ExportDialog::selectedArea() const
     if (m_scopeCombo->currentIndex() == 1) {
         QRectF content = m_scene->contentRect();
         if (content.isEmpty())
-            content = m_scene->boardRect();
+            content = m_scene->canvasRect();
         return content.adjusted(-24.0, -24.0, 24.0, 24.0);
     }
-    return m_scene->boardRect();
+    return m_scene->canvasRect();
 }
 
 QString ExportDialog::selectedFormat() const
@@ -200,7 +200,7 @@ QStringList ExportDialog::outputFilePaths() const
     const QString suffix = formatSuffix(selectedFormat());
     const QDir directory(baseInfo.absolutePath());
 
-    for (const BoardLayer& layer : m_scene->layers()) {
+    for (const CanvasLayer& layer : m_scene->layers()) {
         if (!layer.visible)
             continue;
         paths.append(directory.filePath(QStringLiteral("%1_L%2_%3.%4")
@@ -222,7 +222,7 @@ ExportDialog::Options ExportDialog::options() const
     result.filePath = m_pathEdit->text().trimmed();
     result.filePaths = outputFilePaths();
     if (result.separateLayers && m_scene) {
-        for (const BoardLayer& layer : m_scene->layers()) {
+        for (const CanvasLayer& layer : m_scene->layers()) {
             if (layer.visible)
                 result.layerIds.append(layer.id);
         }
@@ -247,7 +247,7 @@ void ExportDialog::updateEstimatedSize()
     if (separateLayersSelected()) {
         int count = 0;
         if (m_scene) {
-            for (const BoardLayer& layer : m_scene->layers()) {
+            for (const CanvasLayer& layer : m_scene->layers()) {
                 if (layer.visible)
                     ++count;
             }

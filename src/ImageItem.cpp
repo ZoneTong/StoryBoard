@@ -6,7 +6,7 @@
 #include <QPainter>
 
 ImageItem::ImageItem(QGraphicsItem* parent)
-    : BoardItem(parent)
+    : CanvasItem(parent)
 {
 }
 

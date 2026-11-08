@@ -1,9 +1,9 @@
 #include "I18n.h"
 
 #include "MainWindow.h"
-#include "BoardItem.h"
-#include "BoardScene.h"
-#include "BoardView.h"
+#include "CanvasItem.h"
+#include "CanvasScene.h"
+#include "CanvasView.h"
 #include "ExportDialog.h"
 #include "ItemPropertiesDialog.h"
 #include "SelfTest.h"
@@ -158,7 +158,7 @@ int main(int argc, char** argv)
         const QString outputPath = takeOptionPath(arguments, QStringLiteral("--render-demo"));
         if (outputPath.isEmpty())
             return 2;
-        return renderDemoBoard(outputPath) ? 0 : 1;
+        return renderDemoCanvas(outputPath) ? 0 : 1;
     }
 
     if (arguments.contains(QStringLiteral("--demo-canvas"))) {
@@ -178,7 +178,7 @@ int main(int argc, char** argv)
         window.show();
         QApplication::processEvents();
 
-        BoardScene demoScene;
+        CanvasScene demoScene;
         populateDemoScene(demoScene);
         window.scene()->fromJson(demoScene.toJson());
         window.view()->fitAll();
@@ -303,19 +303,19 @@ int main(int argc, char** argv)
         if (outputPath.isEmpty())
             return 2;
 
-        BoardScene demoScene;
+        CanvasScene demoScene;
         populateDemoScene(demoScene);
         demoScene.assignAutoItemNames();
         demoScene.setMode(ToolMode::Edit);
-        BoardItem* target = nullptr;
-        for (BoardItem* item : demoScene.boardItems()) {
+        CanvasItem* target = nullptr;
+        for (CanvasItem* item : demoScene.canvasItems()) {
             if (dynamic_cast<ShapeItem*>(item)) {
                 target = item;
                 break;
             }
         }
-        if (!target && demoScene.boardItemCount() > 0)
-            target = demoScene.boardItems().constFirst();
+        if (!target && demoScene.canvasItemCount() > 0)
+            target = demoScene.canvasItems().constFirst();
         if (!target)
             return 3;
         demoScene.setActiveLayer(target->layerId());
@@ -431,7 +431,7 @@ int main(int argc, char** argv)
         const QString outputPath = takeOptionPath(arguments, QStringLiteral("--export-screenshot"));
         if (outputPath.isEmpty())
             return 2;
-        BoardScene demoScene;
+        CanvasScene demoScene;
         populateDemoScene(demoScene);
         ExportDialog dialog(&demoScene,
                             QStandardPaths::writableLocation(QStandardPaths::PicturesLocation));

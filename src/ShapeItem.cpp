@@ -494,7 +494,7 @@ QIcon makeShapeIcon(ShapeType type, const QColor& color, int logicalSize)
 }
 
 ShapeItem::ShapeItem(ShapeType type, QGraphicsItem* parent)
-    : BoardItem(parent)
+    : CanvasItem(parent)
     , m_type(type)
 {
     m_fillColor = m_strokeColor;
@@ -597,7 +597,7 @@ QPainterPath ShapeItem::shape() const
 QPainterPath ShapeItem::outlineShape() const
 {
     const QPainterPath path = pathFor(m_type, contentRect());
-    return path.isEmpty() ? BoardItem::outlineShape() : path;
+    return path.isEmpty() ? CanvasItem::outlineShape() : path;
 }
 
 QPainterPath ShapeItem::paintedShape() const

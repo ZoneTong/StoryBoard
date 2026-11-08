@@ -6,7 +6,7 @@
 
 ## 一、审查与验证方式
 
-1. 按依赖顺序通读：数据类型层 → `BoardScene` / `BoardView` → `BoardItem` 及四个子类 → 命令层 → 主窗口/对话框/设置/导出 → 自检用例分布。
+1. 按依赖顺序通读：数据类型层 → `CanvasScene` / `CanvasView` → `CanvasItem` 及四个子类 → 命令层 → 主窗口/对话框/设置/导出 → 自检用例分布。
 2. 修复前先跑既有自检取基线：`SUMMARY 272 passed, 0 failed`（`build\selftest-baseline.txt`）。基线全通过，说明下列缺陷都落在自检未覆盖的路径上（命中判定、对话框回写、背景去重）。
 3. 修复后重新编译并跑自检：`SUMMARY 282 passed, 0 failed`（`build\selftest-after-fix.txt`，新增 10 项检查）。
 4. 额外做渲染回归：`--render-demo`、`--ui-screenshot`、`--settings-screenshot` 均正常出图（`build\verify-*.png`），确认命中判定/设置回写的改动没有影响绘制结果。
@@ -20,22 +20,22 @@
 
 - 现象：`设置 → 默认画笔颜色 / 画布外围颜色`，选完颜色后色块会立刻变色，点“确定”后颜色被还原；只有点“恢复默认值”能生效，且无法自定义。
 - 根因：`SettingsDialog.cpp` 的两个 `clicked` lambda 里写的是
-  `QColor color = m_settings.brushColor; chooseColor(color, ...)`，`color` 是**局部副本**；`chooseColor` 把新色写回这个副本并刷新按钮，函数返回后副本销毁。`accepted` 处理器只回写 `brushWidth / boardSize / showGrid`，`brushColor / canvasColor` 从未写回 `m_settings`。`MainWindow::showSettings()` 的拷回逻辑是正确的，所以问题只在对话框一侧（此前对调用方的怀疑已排除）。
+  `QColor color = m_settings.brushColor; chooseColor(color, ...)`，`color` 是**局部副本**；`chooseColor` 把新色写回这个副本并刷新按钮，函数返回后副本销毁。`accepted` 处理器只回写 `brushWidth / canvasSize / showGrid`，`brushColor / canvasColor` 从未写回 `m_settings`。`MainWindow::showSettings()` 的拷回逻辑是正确的，所以问题只在对话框一侧（此前对调用方的怀疑已排除）。
 - 修复：`chooseColor` 改为返回值语义的 `pickColor(QColor&, title, allowAlpha)`；新增 `setBrushColor() / setCanvasColor()` 作为唯一写入口（内部更新 `m_settings` 并刷新色块），两个 lambda 改成“取色成功才调用 setter”，保证颜色必然落到 `m_settings`。
 - 新增检查：“设置对话框保留画笔颜色”“设置对话框保留画布外围颜色”（先 setter 再 `accept()`，最后用 `settings()` 断言）。
 
 ### B2（功能性，影响可用）选中图元后控制点的外半区点不到
 
 - 现象：选中图元后能看到 8 个控制点，但把光标放到控制点靠外的一半拖动无效；对圆形/椭圆、三角形、菱形、五角星这类轮廓碰不到包围盒四角的图形，四个角控制点**几乎完全拖不动**（只能靠框选或先很大幅度改变尺寸）。
-- 根因：控制点以内容矩形角点为中心绘制，有一半落在图元几何之外；而 `BoardItem::shape()` 只返回 `contentRect()`，`ShapeItem::shape()` 返回图形路径（椭圆路径根本不含包围盒角点），`TextItem` / `ImageItem` 直接用基类实现。`QGraphicsScene` 的命中（点选、`itemAt`、拖动）都以 `shape()` 为准，于是“画出来的手柄”和“能点中的区域”不一致。`StrokeItem::shape()` 里手工补了 8 个手柄矩形，说明作者意识到过这个问题，但只修了笔画一种图元。
-- 修复：`BoardItem` 新增 `selectionHandleShape()`（仅在“已选中 + 可编辑 + 单选”时返回 8 个手柄矩形，并向外留 2px 余量），三处 `shape()` 统一并入：`BoardItem::shape()`（覆盖文字、图片）、`ShapeItem::shape()`、`StrokeItem` 原有的实现等价保留。
+- 根因：控制点以内容矩形角点为中心绘制，有一半落在图元几何之外；而 `CanvasItem::shape()` 只返回 `contentRect()`，`ShapeItem::shape()` 返回图形路径（椭圆路径根本不含包围盒角点），`TextItem` / `ImageItem` 直接用基类实现。`QGraphicsScene` 的命中（点选、`itemAt`、拖动）都以 `shape()` 为准，于是“画出来的手柄”和“能点中的区域”不一致。`StrokeItem::shape()` 里手工补了 8 个手柄矩形，说明作者意识到过这个问题，但只修了笔画一种图元。
+- 修复：`CanvasItem` 新增 `selectionHandleShape()`（仅在“已选中 + 可编辑 + 单选”时返回 8 个手柄矩形，并向外留 2px 余量），三处 `shape()` 统一并入：`CanvasItem::shape()`（覆盖文字、图片）、`ShapeItem::shape()`、`StrokeItem` 原有的实现等价保留。
 - 新增检查：“选中椭圆后左上角控制点可命中”“选中椭圆后右下角控制点可命中”“控制点命中区域不会无限外扩”“未选中时控制点不参与命中”。
 
 ### B3（功能性，轻微）粗描边图形的描边区域点不中
 
 - 现象：给矩形/圆形等封闭图形设置较粗的画笔（线宽最大 48），描边会向路径外侧铺开约 1/2 线宽，但点在这圈描边上选不中图元。
 - 根因：`ShapeItem::shape()` 对非描边类图形直接 `return path;`，只认填充轮廓，忽略 `m_strokeWidth` 的外扩；箭头/双向箭头用无笔画填充绘制，路径即真实轮廓，不受影响。
-- 修复：封闭类图形按 `strokeWidth + 2` 生成描边环（`QPainterPathStroker`），与填充路径合并成命中区域；箭头类仍用精确路径。命中区域（≤25px 外扩）仍小于 `BoardItem` 的 26px 包围盒余量，不会越出 `boundingRect`。
+- 修复：封闭类图形按 `strokeWidth + 2` 生成描边环（`QPainterPathStroker`），与填充路径合并成命中区域；箭头类仍用精确路径。命中区域（≤25px 外扩）仍小于 `CanvasItem` 的 26px 包围盒余量，不会越出 `boundingRect`。
 - 新增检查：“粗描边图形按描边宽度纳入命中”“粗描边命中范围不超过描边宽度”。
 
 ### B4（逻辑，轻微）同一张背景图重复设置会产生多余撤销步骤
@@ -47,10 +47,10 @@
 
 ## 三、记录但未修改的问题（边缘或属设计取舍）
 
-1. **双击 / 右键只取最上层图元**：`BoardView` 双击用 `itemAt()`、右键用 `items()` 取最上层可见 `BoardItem`，若该图元位于其他（锁定）图层，会提示“该图层未选中”，下层当前图层的图元拿不到操作。这与“仅当前图层可编辑、其他图层可见但锁定”的设计一致（单点选也遵循最上层语义），属体验取舍，未改。
+1. **双击 / 右键只取最上层图元**：`CanvasView` 双击用 `itemAt()`、右键用 `items()` 取最上层可见 `CanvasItem`，若该图元位于其他（锁定）图层，会提示“该图层未选中”，下层当前图层的图元拿不到操作。这与“仅当前图层可编辑、其他图层可见但锁定”的设计一致（单点选也遵循最上层语义），属体验取舍，未改。
 2. **字号上限不一致**：`TextItem::fromJson` 允许 6–400，`TextDialog` 上限 200，且对话框确定时会把字号钳到 200。只有手工编辑过画布的大字号文字会受影响，改任一侧都会改变既有画布行为，故只记录。
 3. **导出扩展名改写**：`ExportDialog::updatePathExtension` 用 `chop(当前后缀长度)` 拼接，路径以 `.` 结尾时会出现 `xxx..png`；手动编辑路径时格式提示文本不刷新。不影响导出结果。
-4. **导出异常安全**：`BoardScene::renderImage` 是 `m_exporting = true; render(); m_exporting = false;`，无 RAII/异常保护；当前 `QGraphicsScene::render` 不会抛异常，故未改。
+4. **导出异常安全**：`CanvasScene::renderImage` 是 `m_exporting = true; render(); m_exporting = false;`，无 RAII/异常保护；当前 `QGraphicsScene::render` 不会抛异常，故未改。
 5. **版本号口径**：`main.cpp` 的 `applicationVersion` 为 `0.1.0`，画布 JSON 的 `format` 为 `"StoryBoardCanvas"`、`version` 为 `2`，两者含义不同（应用版本 vs 画布格式），未统一。
 
 ## 四、改动清单
@@ -58,13 +58,13 @@
 | 文件 | 改动 |
 | --- | --- |
 | `src/SettingsDialog.h` / `src/SettingsDialog.cpp` | 新增 `setBrushColor` / `setCanvasColor`，`chooseColor` → `pickColor`，颜色写回 `m_settings` |
-| `src/BoardItem.h` / `src/BoardItem.cpp` | 新增 `selectionHandleShape()`，`shape()` 并入控制点命中区 |
+| `src/CanvasItem.h` / `src/CanvasItem.cpp` | 新增 `selectionHandleShape()`，`shape()` 并入控制点命中区 |
 | `src/ShapeItem.cpp` | `shape()` 按描边宽度纳入命中，合并控制点区；箭头类保持精确路径 |
-| `src/BoardTypes.h` | `BackgroundState::operator==` 改为按图片内容比较（新增 `<QImage>`） |
+| `src/CanvasTypes.h` | `BackgroundState::operator==` 改为按图片内容比较（新增 `<QImage>`） |
 | `src/SelfTest.cpp` | 新增 10 项回归检查（控制点命中 4、粗描边 2、背景等价与去重 2、设置颜色 2） |
 | `README.md` | 自检数量口径 272 → 282，覆盖项补充新检查 |
 
-未新增依赖，未改动构建脚本；`BoardScene` / `BoardView` / 命令层与序列化格式保持不变。
+未新增依赖，未改动构建脚本；`CanvasScene` / `CanvasView` / 命令层与序列化格式保持不变。
 
 ## 五、验证记录
 

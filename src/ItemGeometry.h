@@ -5,10 +5,10 @@
 #include <QPointer>
 #include <QSizeF>
 
-class BoardItem;
+class CanvasItem;
 
 struct ItemGeometry {
-    QPointer<BoardItem> item;
+    QPointer<CanvasItem> item;
     QPointF pos;
     QSizeF size;
 };
@@ -16,7 +16,7 @@ struct ItemGeometry {
 using ItemGeometryList = QList<ItemGeometry>;
 
 struct ItemStack {
-    QPointer<BoardItem> item;
+    QPointer<CanvasItem> item;
     int layerId = 1;
     int height = 1;
 };

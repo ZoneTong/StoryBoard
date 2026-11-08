@@ -1,8 +1,8 @@
 #include "I18n.h"
 
-#include "BoardItem.h"
+#include "CanvasItem.h"
 
-#include "BoardScene.h"
+#include "CanvasScene.h"
 
 #include <QGraphicsScene>
 #include <QGraphicsSceneHoverEvent>
@@ -19,50 +19,51 @@ namespace {
 constexpr qreal kMinimumSide = 8.0;
 constexpr qreal kHandleHitPadding = 2.0;
 
-bool isLeftHandle(BoardItem::Handle handle)
+bool isLeftHandle(CanvasItem::Handle handle)
 {
-    return handle == BoardItem::TopLeft || handle == BoardItem::Left || handle == BoardItem::BottomLeft;
+    return handle == CanvasItem::TopLeft || handle == CanvasItem::Left || handle == CanvasItem::BottomLeft;
 }
 
-bool isRightHandle(BoardItem::Handle handle)
+bool isRightHandle(CanvasItem::Handle handle)
 {
-    return handle == BoardItem::TopRight || handle == BoardItem::Right || handle == BoardItem::BottomRight;
+    return handle == CanvasItem::TopRight || handle == CanvasItem::Right || handle == CanvasItem::BottomRight;
 }
 
-bool isTopHandle(BoardItem::Handle handle)
+bool isTopHandle(CanvasItem::Handle handle)
 {
-    return handle == BoardItem::TopLeft || handle == BoardItem::Top || handle == BoardItem::TopRight;
+    return handle == CanvasItem::TopLeft || handle == CanvasItem::Top || handle == CanvasItem::TopRight;
 }
 
-bool isBottomHandle(BoardItem::Handle handle)
+bool isBottomHandle(CanvasItem::Handle handle)
 {
-    return handle == BoardItem::BottomLeft || handle == BoardItem::Bottom || handle == BoardItem::BottomRight;
+    return handle == CanvasItem::BottomLeft || handle == CanvasItem::Bottom || handle == CanvasItem::BottomRight;
 }
 
-bool isCornerHandle(BoardItem::Handle handle)
+bool isCornerHandle(CanvasItem::Handle handle)
 {
-    return handle == BoardItem::TopLeft || handle == BoardItem::TopRight
-        || handle == BoardItem::BottomLeft || handle == BoardItem::BottomRight;
+    return handle == CanvasItem::TopLeft || handle == CanvasItem::TopRight
+        || handle == CanvasItem::BottomLeft || handle == CanvasItem::BottomRight;
 }
 
 } // namespace
 
-BoardItem::BoardItem(QGraphicsItem* parent)
+CanvasItem::CanvasItem(QGraphicsItem* parent)
     : QGraphicsObject(parent)
 {
     setFlag(QGraphicsItem::ItemIsSelectable, false);
     setFlag(QGraphicsItem::ItemIsFocusable, false);
     setAcceptHoverEvents(false);
     setCursor(Qt::ArrowCursor);
+    setTransformOriginPoint(contentRect().center());
 }
 
-QString BoardItem::name() const
+QString CanvasItem::name() const
 {
     const QString trimmed = m_name.trimmed();
     return trimmed.isEmpty() ? typeDisplayName() : trimmed;
 }
 
-void BoardItem::setName(const QString& name)
+void CanvasItem::setName(const QString& name)
 {
     const QString trimmed = name.trimmed();
     if (m_name == trimmed)
@@ -70,17 +71,17 @@ void BoardItem::setName(const QString& name)
     m_name = trimmed;
 }
 
-QSizeF BoardItem::minimumSize()
+QSizeF CanvasItem::minimumSize()
 {
     return QSizeF(kMinimumSide, kMinimumSide);
 }
 
-QRectF BoardItem::contentRect() const
+QRectF CanvasItem::contentRect() const
 {
     return QRectF(0.0, 0.0, m_size.width(), m_size.height());
 }
 
-void BoardItem::setContentSize(const QSizeF& size)
+void CanvasItem::setContentSize(const QSizeF& size)
 {
     const QSizeF clamped(qMax(kMinimumSide, size.width()), qMax(kMinimumSide, size.height()));
     if (qFuzzyCompare(clamped.width(), m_size.width())
@@ -89,32 +90,44 @@ void BoardItem::setContentSize(const QSizeF& size)
     }
     prepareGeometryChange();
     m_size = clamped;
+    // Rotation uses the content centre as its origin; keep it in sync after
+    // interactive or property-dialog resizing.
+    setTransformOriginPoint(contentRect().center());
     update();
     contentResized();
 }
 
-void BoardItem::setLayerId(int layerId)
+void CanvasItem::setLayerId(int layerId)
 {
     m_layerId = qMax(0, layerId);
 }
 
-void BoardItem::setHeight(int height)
+void CanvasItem::setHeight(int height)
 {
     m_height = qMax(0, height);
 }
 
-QRectF BoardItem::sceneContentRect() const
+void CanvasItem::setRotationAngle(qreal angle)
+{
+    if (qFuzzyCompare(angle, m_rotation))
+        return;
+    m_rotation = angle;
+    setRotation(angle);
+    update();
+}
+
+QRectF CanvasItem::sceneContentRect() const
 {
     return mapRectToScene(contentRect());
 }
 
-QRectF BoardItem::boundingRect() const
+QRectF CanvasItem::boundingRect() const
 {
     const qreal padding = framePadding();
     return contentRect().adjusted(-padding, -padding, padding, padding);
 }
 
-QPainterPath BoardItem::shape() const
+QPainterPath CanvasItem::shape() const
 {
     QPainterPath path;
     path.addRect(contentRect());
@@ -122,20 +135,20 @@ QPainterPath BoardItem::shape() const
     return path;
 }
 
-QPainterPath BoardItem::outlineShape() const
+QPainterPath CanvasItem::outlineShape() const
 {
     QPainterPath path;
     path.addRect(contentRect());
     return path;
 }
 
-QPainterPath BoardItem::paintedShape() const
+QPainterPath CanvasItem::paintedShape() const
 {
     // 基类按内容矩形整体涂满处理：图片与文字等子类会覆写这里。
     return outlineShape();
 }
 
-QPainterPath BoardItem::selectionHandleShape() const
+QPainterPath CanvasItem::selectionHandleShape() const
 {
     QPainterPath path;
     if (!isSelected() || !isEditable() || !hasSingleSelection())
@@ -154,7 +167,7 @@ QPainterPath BoardItem::selectionHandleShape() const
     return path;
 }
 
-void BoardItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+void CanvasItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
     Q_UNUSED(option)
     Q_UNUSED(widget)
@@ -172,24 +185,24 @@ void BoardItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
     }
 }
 
-bool BoardItem::isEditable() const
+bool CanvasItem::isEditable() const
 {
-    const BoardScene* board = boardScene();
-    return board && board->isItemEditable(this);
+    const CanvasScene* canvas = canvasScene();
+    return canvas && canvas->isItemEditable(this);
 }
 
-bool BoardItem::isExporting() const
+bool CanvasItem::isExporting() const
 {
-    const BoardScene* board = boardScene();
-    return board && board->isExporting();
+    const CanvasScene* canvas = canvasScene();
+    return canvas && canvas->isExporting();
 }
 
-BoardScene* BoardItem::boardScene() const
+CanvasScene* CanvasItem::canvasScene() const
 {
-    return dynamic_cast<BoardScene*>(scene());
+    return dynamic_cast<CanvasScene*>(scene());
 }
 
-qreal BoardItem::viewScale() const
+qreal CanvasItem::viewScale() const
 {
     if (scene() && !scene()->views().isEmpty()) {
         const qreal scale = scene()->views().constFirst()->transform().m11();
@@ -198,17 +211,17 @@ qreal BoardItem::viewScale() const
     return 1.0;
 }
 
-bool BoardItem::hasSingleSelection() const
+bool CanvasItem::hasSingleSelection() const
 {
     return scene() && isSelected() && scene()->selectedItems().size() == 1;
 }
 
-qreal BoardItem::handleSize() const
+qreal CanvasItem::handleSize() const
 {
     return qBound<qreal>(6.0, 9.0 / viewScale(), 40.0);
 }
 
-QPointF BoardItem::handleCenter(Handle handle) const
+QPointF CanvasItem::handleCenter(Handle handle) const
 {
     const QRectF rect = contentRect();
     switch (handle) {
@@ -234,14 +247,14 @@ QPointF BoardItem::handleCenter(Handle handle) const
     return rect.center();
 }
 
-QRectF BoardItem::handleRect(Handle handle) const
+QRectF CanvasItem::handleRect(Handle handle) const
 {
     const qreal size = handleSize();
     const QPointF center = handleCenter(handle);
     return QRectF(center.x() - size / 2.0, center.y() - size / 2.0, size, size);
 }
 
-BoardItem::Handle BoardItem::handleAt(const QPointF& pos) const
+CanvasItem::Handle CanvasItem::handleAt(const QPointF& pos) const
 {
     const qreal hitPadding = qMin<qreal>(10.0 / viewScale(), 14.0);
     for (int handle = TopLeft; handle <= Left; ++handle) {
@@ -252,7 +265,7 @@ BoardItem::Handle BoardItem::handleAt(const QPointF& pos) const
     return NoHandle;
 }
 
-QCursor BoardItem::cursorForHandle(Handle handle) const
+QCursor CanvasItem::cursorForHandle(Handle handle) const
 {
     switch (handle) {
     case TopLeft:
@@ -273,7 +286,7 @@ QCursor BoardItem::cursorForHandle(Handle handle) const
     return QCursor(Qt::ArrowCursor);
 }
 
-void BoardItem::drawSelectionOverlay(QPainter* painter)
+void CanvasItem::drawSelectionOverlay(QPainter* painter)
 {
     QPen borderPen(QColor(79, 124, 255));
     borderPen.setWidthF(1.3);
@@ -297,7 +310,7 @@ void BoardItem::drawSelectionOverlay(QPainter* painter)
     }
 }
 
-void BoardItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
+void CanvasItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 {
     if (!isEditable()) {
         unsetCursor();
@@ -308,13 +321,13 @@ void BoardItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
     QGraphicsObject::hoverMoveEvent(event);
 }
 
-void BoardItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+void CanvasItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
     unsetCursor();
     QGraphicsObject::hoverLeaveEvent(event);
 }
 
-void BoardItem::updateHoverCursor(const QPointF& pos)
+void CanvasItem::updateHoverCursor(const QPointF& pos)
 {
     if (!isEditable()) {
         unsetCursor();
@@ -330,7 +343,7 @@ void BoardItem::updateHoverCursor(const QPointF& pos)
     setCursor(QCursor(Qt::OpenHandCursor));
 }
 
-void BoardItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
+void CanvasItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
     if (!isEditable() || event->button() != Qt::LeftButton) {
         QGraphicsObject::mousePressEvent(event);
@@ -365,7 +378,7 @@ void BoardItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
     event->accept();
 }
 
-void BoardItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
+void CanvasItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
     if (m_drag == DragKind::None) {
         QGraphicsObject::mouseMoveEvent(event);
@@ -380,7 +393,7 @@ void BoardItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     event->accept();
 }
 
-void BoardItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
+void CanvasItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     if (m_drag == DragKind::None) {
         QGraphicsObject::mouseReleaseEvent(event);
@@ -392,14 +405,14 @@ void BoardItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     event->accept();
 }
 
-QVariant BoardItem::itemChange(GraphicsItemChange change, const QVariant& value)
+QVariant CanvasItem::itemChange(GraphicsItemChange change, const QVariant& value)
 {
     if (change == QGraphicsItem::ItemSelectedHasChanged)
         update();
     return QGraphicsObject::itemChange(change, value);
 }
 
-void BoardItem::beginMove(const QPointF& scenePos)
+void CanvasItem::beginMove(const QPointF& scenePos)
 {
     m_drag = DragKind::Move;
     m_dragStartScene = scenePos;
@@ -410,16 +423,16 @@ void BoardItem::beginMove(const QPointF& scenePos)
     if (scene()) {
         const QList<QGraphicsItem*> selected = scene()->selectedItems();
         for (QGraphicsItem* item : selected) {
-            auto* boardItem = qgraphicsitem_cast<BoardItem*>(item);
-            if (boardItem)
-                m_before.append({ boardItem, boardItem->pos(), boardItem->contentSize() });
+            auto* canvasItem = qgraphicsitem_cast<CanvasItem*>(item);
+            if (canvasItem)
+                m_before.append({ canvasItem, canvasItem->pos(), canvasItem->contentSize() });
         }
     }
     if (m_before.isEmpty())
         m_before.append({ this, pos(), m_size });
 }
 
-void BoardItem::applyMove(const QPointF& scenePos)
+void CanvasItem::applyMove(const QPointF& scenePos)
 {
     const QPointF delta = scenePos - m_dragStartScene;
     for (const ItemGeometry& geometry : std::as_const(m_before)) {
@@ -428,7 +441,7 @@ void BoardItem::applyMove(const QPointF& scenePos)
     }
 }
 
-void BoardItem::beginResize(Handle handle, const QPointF& scenePos)
+void CanvasItem::beginResize(Handle handle, const QPointF& scenePos)
 {
     m_drag = DragKind::Resize;
     m_resizeHandle = handle;
@@ -438,7 +451,7 @@ void BoardItem::beginResize(Handle handle, const QPointF& scenePos)
     m_before = { { this, pos(), m_size } };
 }
 
-void BoardItem::applyResize(const QPointF& scenePos, Qt::KeyboardModifiers modifiers)
+void CanvasItem::applyResize(const QPointF& scenePos, Qt::KeyboardModifiers modifiers)
 {
     const QPointF delta = scenePos - m_dragStartScene;
     QRectF rect(m_dragStartPos, m_dragStartSize);
@@ -490,7 +503,7 @@ void BoardItem::applyResize(const QPointF& scenePos, Qt::KeyboardModifiers modif
     setContentSize(rect.size());
 }
 
-void BoardItem::finishInteraction()
+void CanvasItem::finishInteraction()
 {
     if (m_drag == DragKind::None)
         return;
@@ -506,8 +519,8 @@ void BoardItem::finishInteraction()
             if (geometry.item)
                 after.append({ geometry.item, geometry.item->pos(), geometry.item->contentSize() });
         }
-        if (BoardScene* board = boardScene()) {
-            board->pushGeometry(m_before, after,
+        if (CanvasScene* canvas = canvasScene()) {
+            canvas->pushGeometry(m_before, after,
                                 wasResize ? uiText(QStringLiteral("Resize item"))
                                           : uiText(QStringLiteral("Move item")));
         }
@@ -515,7 +528,7 @@ void BoardItem::finishInteraction()
     m_before.clear();
 }
 
-QJsonObject BoardItem::baseJson() const
+QJsonObject CanvasItem::baseJson() const
 {
     QJsonObject json;
     json.insert(QStringLiteral("type"), kind());
@@ -525,6 +538,8 @@ QJsonObject BoardItem::baseJson() const
     json.insert(QStringLiteral("h"), m_size.height());
     json.insert(QStringLiteral("layer"), m_layerId);
     json.insert(QStringLiteral("height"), m_height);
+    if (!qFuzzyIsNull(m_rotation))
+        json.insert(QStringLiteral("rotation"), m_rotation);
     if (!m_name.isEmpty())
         json.insert(QStringLiteral("itemName"), m_name);
     // Kept for readability and for older readers; the scene always derives
@@ -533,7 +548,7 @@ QJsonObject BoardItem::baseJson() const
     return json;
 }
 
-void BoardItem::applyBaseJson(const QJsonObject& json)
+void CanvasItem::applyBaseJson(const QJsonObject& json)
 {
     setPos(json.value(QStringLiteral("x")).toDouble(),
            json.value(QStringLiteral("y")).toDouble());
@@ -543,5 +558,6 @@ void BoardItem::applyBaseJson(const QJsonObject& json)
     m_height = json.contains(QStringLiteral("height"))
         ? qMax(0, json.value(QStringLiteral("height")).toInt(0))
         : -1;
+    setRotationAngle(json.value(QStringLiteral("rotation")).toDouble(0.0));
     m_name = json.value(QStringLiteral("itemName")).toString().trimmed();
 }

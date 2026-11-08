@@ -1,6 +1,6 @@
 #include "StrokeItem.h"
 
-#include "BoardScene.h"
+#include "CanvasScene.h"
 
 #include <QJsonArray>
 #include <QLineF>
@@ -11,7 +11,7 @@
 #include <utility>
 
 StrokeItem::StrokeItem(QGraphicsItem* parent)
-    : BoardItem(parent)
+    : CanvasItem(parent)
 {
     setZValue(0.0);
 }

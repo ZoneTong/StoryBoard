@@ -5,13 +5,13 @@
 #include <QPointF>
 #include <QString>
 
-#include "BoardTypes.h"
+#include "CanvasTypes.h"
 #include "Settings.h"
 #include "ShapeItem.h"
 
-class BoardScene;
-class BoardView;
-class BoardItem;
+class CanvasScene;
+class CanvasView;
+class CanvasItem;
 class LayerPanel;
 class QAction;
 class QActionGroup;
@@ -32,8 +32,8 @@ public:
     ~MainWindow() override;
 
     bool openCanvasFile(const QString& path);
-    BoardScene* scene() const { return m_scene; }
-    BoardView* view() const { return m_view; }
+    CanvasScene* scene() const { return m_scene; }
+    CanvasView* view() const { return m_view; }
 
     // 按当前语言刷新整个界面文字（设置里切换语言时调用）。
     void applyUiLanguage();
@@ -92,11 +92,11 @@ private:
     void updateCanvasesMenu();
     void updateBackgroundModeActions();
     void showSelectedItemProperties();
-    void showItemProperties(BoardItem* item);
+    void showItemProperties(CanvasItem* item);
     QString documentName() const;
 
-    BoardScene* m_scene = nullptr;
-    BoardView* m_view = nullptr;
+    CanvasScene* m_scene = nullptr;
+    CanvasView* m_view = nullptr;
     QUndoStack* m_undo = nullptr;
     AppSettings m_settings;
     QString m_filePath;

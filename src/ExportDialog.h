@@ -6,7 +6,7 @@
 #include <QString>
 #include <QStringList>
 
-class BoardScene;
+class CanvasScene;
 class QComboBox;
 class QDoubleSpinBox;
 class QLabel;
@@ -26,7 +26,7 @@ public:
         QList<int> layerIds;
     };
 
-    explicit ExportDialog(BoardScene* scene, const QString& startDirectory,
+    explicit ExportDialog(CanvasScene* scene, const QString& startDirectory,
                           QWidget* parent = nullptr);
 
     Options options() const;
@@ -44,7 +44,7 @@ private:
     void browseForFile();
     void validateAndAccept();
 
-    BoardScene* m_scene = nullptr;
+    CanvasScene* m_scene = nullptr;
     QComboBox* m_scopeCombo = nullptr;
     QComboBox* m_layerModeCombo = nullptr;
     QDoubleSpinBox* m_scaleSpin = nullptr;

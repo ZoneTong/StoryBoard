@@ -51,23 +51,23 @@ struct BackgroundState {
     bool operator!=(const BackgroundState& other) const { return !(*this == other); }
 };
 
-struct BoardLayer {
+struct CanvasLayer {
     int id = 0;
     QString name;
     bool visible = true;
     bool locked = false;
 
-    bool operator==(const BoardLayer& other) const
+    bool operator==(const CanvasLayer& other) const
     {
         return id == other.id && name == other.name && visible == other.visible
             && locked == other.locked;
     }
 
-    bool operator!=(const BoardLayer& other) const { return !(*this == other); }
+    bool operator!=(const CanvasLayer& other) const { return !(*this == other); }
 };
 
 struct LayerStackState {
-    QList<BoardLayer> layers;
+    QList<CanvasLayer> layers;
     int activeLayerId = 0;
 
     bool operator==(const LayerStackState& other) const

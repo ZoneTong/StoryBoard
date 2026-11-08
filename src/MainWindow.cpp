@@ -2,8 +2,8 @@
 
 #include "MainWindow.h"
 
-#include "BoardScene.h"
-#include "BoardView.h"
+#include "CanvasScene.h"
+#include "CanvasView.h"
 #include "Commands.h"
 #include "ExportDialog.h"
 #include "IconFactory.h"
@@ -322,15 +322,15 @@ MainWindow::MainWindow(QWidget* parent)
     m_brushColor = m_settings.brushColor;
     m_brushWidth = m_settings.brushWidth;
 
-    m_scene = new BoardScene(this);
-    m_scene->applyBoardSize(m_settings.boardSize);
+    m_scene = new CanvasScene(this);
+    m_scene->applyCanvasSize(m_settings.canvasSize);
     m_scene->setShowGrid(m_settings.showGrid);
 
     m_undo = new QUndoStack(this);
     m_undo->setUndoLimit(300);
     m_scene->setUndoStack(m_undo);
 
-    m_view = new BoardView(m_scene, this);
+    m_view = new CanvasView(m_scene, this);
     m_view->setBrushColor(m_brushColor);
     m_view->setBrushWidth(m_brushWidth);
     m_view->setCanvasColor(m_settings.canvasColor);
@@ -363,7 +363,7 @@ MainWindow::MainWindow(QWidget* parent)
 
 MainWindow::~MainWindow()
 {
-    // QWidget 析构会先删子对象；子 BoardScene/BoardView 在 clear() 时仍可能发
+    // QWidget 析构会先删子对象；子 CanvasScene/CanvasView 在 clear() 时仍可能发
     // 信号回来。此时 MainWindow 的派生类析构体已经跑完，槽函数里再访问成员
     // 就是未定义行为（Debug 版会报 Q_ASSERT 并直接中止）。先统一断开所有
     // 子对象到本窗口的连接，再清理撤销栈和视图持有的指针。
@@ -510,17 +510,17 @@ void MainWindow::createActions()
 
     connect(m_undoAct, &QAction::triggered, m_undo, &QUndoStack::undo);
     connect(m_redoAct, &QAction::triggered, m_undo, &QUndoStack::redo);
-    connect(m_deleteAct, &QAction::triggered, m_scene, &BoardScene::deleteSelected);
-    connect(m_selectAllAct, &QAction::triggered, m_scene, &BoardScene::selectAllItems);
+    connect(m_deleteAct, &QAction::triggered, m_scene, &CanvasScene::deleteSelected);
+    connect(m_selectAllAct, &QAction::triggered, m_scene, &CanvasScene::selectAllItems);
     connect(m_itemPropsAct, &QAction::triggered, this, &MainWindow::showSelectedItemProperties);
 
     connect(m_modeGroup, &QActionGroup::triggered, this, [this](QAction* action) {
         setToolMode(static_cast<ToolMode>(action->data().toInt()));
     });
-    connect(m_fitAct, &QAction::triggered, m_view, &BoardView::fitAll);
-    connect(m_zoomInAct, &QAction::triggered, m_view, &BoardView::zoomIn);
-    connect(m_zoomOutAct, &QAction::triggered, m_view, &BoardView::zoomOut);
-    connect(m_actualSizeAct, &QAction::triggered, m_view, &BoardView::actualSize);
+    connect(m_fitAct, &QAction::triggered, m_view, &CanvasView::fitAll);
+    connect(m_zoomInAct, &QAction::triggered, m_view, &CanvasView::zoomIn);
+    connect(m_zoomOutAct, &QAction::triggered, m_view, &CanvasView::zoomOut);
+    connect(m_actualSizeAct, &QAction::triggered, m_view, &CanvasView::actualSize);
 
     connect(m_replaceBgAct, &QAction::triggered, this, &MainWindow::replaceBackgroundImage);
     connect(m_bgColorAct, &QAction::triggered, this, &MainWindow::setBackgroundColor);
@@ -967,32 +967,32 @@ void MainWindow::connectSignals()
                                              : uiText(QStringLiteral("Redo: %1")).arg(text));
     });
 
-    connect(m_view, &BoardView::zoomChanged, this, [this](qreal zoom) {
+    connect(m_view, &CanvasView::zoomChanged, this, [this](qreal zoom) {
         if (m_zoomBadge)
             m_zoomBadge->setText(QStringLiteral("%1%").arg(qRound(zoom * 100.0)));
     });
-    connect(m_view, &BoardView::modeChanged, this, [this](ToolMode) { updateModeUi(); });
-    connect(m_view, &BoardView::statusMessage, this, [this](const QString& message) {
+    connect(m_view, &CanvasView::modeChanged, this, [this](ToolMode) { updateModeUi(); });
+    connect(m_view, &CanvasView::statusMessage, this, [this](const QString& message) {
         statusBar()->showMessage(message, 4000);
     });
-    connect(m_view, &BoardView::textPlacementRequested, this, &MainWindow::insertTextAt);
-    connect(m_view, &BoardView::editTextRequested, this, &MainWindow::editTextItem);
-    connect(m_view, &BoardView::itemPropertiesRequested, this, &MainWindow::showItemProperties);
+    connect(m_view, &CanvasView::textPlacementRequested, this, &MainWindow::insertTextAt);
+    connect(m_view, &CanvasView::editTextRequested, this, &MainWindow::editTextItem);
+    connect(m_view, &CanvasView::itemPropertiesRequested, this, &MainWindow::showItemProperties);
 
-    connect(m_scene, &BoardScene::contentChanged, this, [this]() {
+    connect(m_scene, &CanvasScene::contentChanged, this, [this]() {
         updateActions();
         updateStatusBar();
     });
-    connect(m_scene, &BoardScene::layersChanged, this, &MainWindow::updateStatusBar);
-    connect(m_scene, &BoardScene::activeLayerChanged, this, [this](int) {
+    connect(m_scene, &CanvasScene::layersChanged, this, &MainWindow::updateStatusBar);
+    connect(m_scene, &CanvasScene::activeLayerChanged, this, [this](int) {
         updateStatusBar();
     });
-    connect(m_scene, &BoardScene::selectionChanged, this, &MainWindow::updateActions);
-    connect(m_scene, &BoardScene::backgroundChanged, this, [this]() {
+    connect(m_scene, &CanvasScene::selectionChanged, this, &MainWindow::updateActions);
+    connect(m_scene, &CanvasScene::backgroundChanged, this, [this]() {
         updateBackgroundModeActions();
         updateActions();
     });
-    connect(m_scene, &BoardScene::boardSizeChanged, this, [this](const QSizeF&) {
+    connect(m_scene, &CanvasScene::canvasSizeChanged, this, [this](const QSizeF&) {
         if (m_view->mode() == ToolMode::View)
             m_view->fitAll();
     });
@@ -1049,8 +1049,8 @@ void MainWindow::updateActions()
 
     const bool editing = m_view->mode() == ToolMode::Edit;
     m_deleteAct->setEnabled(editing && !m_scene->selectedItems().isEmpty());
-    m_selectAllAct->setEnabled(editing && m_scene->boardItemCount() > 0);
-    m_itemPropsAct->setEnabled(editing && m_scene->selectedBoardItems().size() == 1);
+    m_selectAllAct->setEnabled(editing && m_scene->canvasItemCount() > 0);
+    m_itemPropsAct->setEnabled(editing && m_scene->selectedCanvasItems().size() == 1);
 
     updateBackgroundModeActions();
 }
@@ -1082,7 +1082,7 @@ void MainWindow::updateStatusBar()
         m_zoomBadge->setText(QStringLiteral("%1%").arg(qRound(m_view->zoom() * 100.0)));
     if (m_countBadge) {
         m_countBadge->setText(uiText(QStringLiteral("%1 items · %2 layers"))
-                                  .arg(m_scene->boardItemCount())
+                                  .arg(m_scene->canvasItemCount())
                                   .arg(m_scene->userLayerCount()));
     }
 }
@@ -1174,7 +1174,7 @@ void MainWindow::newCanvas()
 
     m_view->cancelCurrentStroke();
     m_scene->resetDocument();
-    m_scene->applyBoardSize(m_settings.boardSize);
+    m_scene->applyCanvasSize(m_settings.canvasSize);
     m_scene->setShowGrid(m_settings.showGrid);
     m_scene->applyBackground(BackgroundState());
     m_filePath.clear();
@@ -1499,16 +1499,16 @@ void MainWindow::importImageFiles(const QStringList& files)
         setToolMode(ToolMode::Edit);
 
     if (!m_scene->isActiveLayerWritable()) {
-        statusBar()->showMessage(QStringLiteral(
-            "当前图层已锁定或已隐藏，无法导入图片。请先在右侧图层面板解锁或切换图层。"), 5000);
+        statusBar()->showMessage(uiText(QStringLiteral(
+            "The current layer is locked or hidden; images cannot be imported. Unlock or switch layers in the layer panel first.")), 5000);
         return;
     }
 
     const QPointF viewCenter = m_view->mapToScene(m_view->viewport()->rect().center());
-    const QSizeF maxSize(m_scene->boardSize().width() * 0.6,
-                         m_scene->boardSize().height() * 0.6);
+    const QSizeF maxSize(m_scene->canvasSize().width() * 0.6,
+                         m_scene->canvasSize().height() * 0.6);
 
-    QList<BoardItem*> items;
+    QList<CanvasItem*> items;
     QStringList failed;
     int offsetIndex = 0;
 
@@ -1552,7 +1552,7 @@ void MainWindow::importImageFiles(const QStringList& files)
     }
 
     m_scene->addItemsWithUndo(items, uiText(QStringLiteral("Import images")));
-    for (BoardItem* item : items)
+    for (CanvasItem* item : items)
         item->setSelected(true);
 
     m_settings.lastImageDir = QFileInfo(files.constFirst()).absolutePath();
@@ -1572,8 +1572,8 @@ void MainWindow::insertShape(ShapeType type)
         setToolMode(ToolMode::Edit);
 
     if (!m_scene->isActiveLayerWritable()) {
-        statusBar()->showMessage(QStringLiteral(
-            "当前图层已锁定或已隐藏，无法插入图形。请先在右侧图层面板解锁或切换图层。"), 5000);
+        statusBar()->showMessage(uiText(QStringLiteral(
+            "The current layer is locked or hidden; shapes cannot be inserted. Unlock or switch layers in the layer panel first.")), 5000);
         return;
     }
 
@@ -1593,22 +1593,22 @@ void MainWindow::insertShape(ShapeType type)
                    qBound<qreal>(2.5, m_brushWidth, 10.0));
     item->setFillStyle(filled ? m_fillStyle : FillStyle::None);
 
-    const QRectF board = m_scene->boardRect();
+    const QRectF canvas = m_scene->canvasRect();
     QSizeF size = defaultShapeSize(type);
     const qreal fitScale = qMin<qreal>(1.0,
-        qMin(board.width() * 0.72 / qMax<qreal>(1.0, size.width()),
-             board.height() * 0.72 / qMax<qreal>(1.0, size.height())));
+        qMin(canvas.width() * 0.72 / qMax<qreal>(1.0, size.width()),
+             canvas.height() * 0.72 / qMax<qreal>(1.0, size.height())));
     size *= fitScale;
 
     QPointF center = m_view->mapToScene(m_view->viewport()->rect().center());
-    if (!board.contains(center))
-        center = board.center();
-    const qreal cascade = (m_scene->boardItemCount() % 5) * 18.0;
+    if (!canvas.contains(center))
+        center = canvas.center();
+    const qreal cascade = (m_scene->canvasItemCount() % 5) * 18.0;
     center += QPointF(cascade, cascade);
-    center.setX(qBound(board.left() + size.width() / 2.0,
-                       center.x(), board.right() - size.width() / 2.0));
-    center.setY(qBound(board.top() + size.height() / 2.0,
-                       center.y(), board.bottom() - size.height() / 2.0));
+    center.setX(qBound(canvas.left() + size.width() / 2.0,
+                       center.x(), canvas.right() - size.width() / 2.0));
+    center.setY(qBound(canvas.top() + size.height() / 2.0,
+                       center.y(), canvas.bottom() - size.height() / 2.0));
 
     item->setPos(center - QPointF(size.width() / 2.0, size.height() / 2.0));
     item->setContentSize(size);
@@ -1663,8 +1663,8 @@ void MainWindow::chooseStrokeColor()
     setBrushColor(color, true);
 
     QList<ShapeItem*> shapes;
-    const QList<BoardItem*> selected = m_scene->selectedBoardItems();
-    for (BoardItem* item : selected) {
+    const QList<CanvasItem*> selected = m_scene->selectedCanvasItems();
+    for (CanvasItem* item : selected) {
         if (auto* shape = dynamic_cast<ShapeItem*>(item))
             shapes.append(shape);
     }
@@ -1704,8 +1704,8 @@ void MainWindow::applyFillToSelection()
 
     QList<ShapeItem*> shapes;
     int outlineOnlyCount = 0;
-    const QList<BoardItem*> selected = m_scene->selectedBoardItems();
-    for (BoardItem* item : selected) {
+    const QList<CanvasItem*> selected = m_scene->selectedCanvasItems();
+    for (CanvasItem* item : selected) {
         auto* shape = dynamic_cast<ShapeItem*>(item);
         if (!shape)
             continue;
@@ -1813,12 +1813,12 @@ void MainWindow::insertTextAt(const QPointF& scenePos)
     auto* item = new TextItem();
     item->setTextFormat(dialog.textValue(), dialog.textFont(), dialog.textColor());
 
-    const QRectF board = m_scene->boardRect();
+    const QRectF canvas = m_scene->canvasRect();
     const QSizeF size = item->contentSize();
     qreal x = scenePos.x() - size.width() / 2.0;
     qreal y = scenePos.y() - size.height() / 2.0;
-    x = qBound(board.left(), x, qMax(board.left(), board.right() - size.width()));
-    y = qBound(board.top(), y, qMax(board.top(), board.bottom() - size.height()));
+    x = qBound(canvas.left(), x, qMax(canvas.left(), canvas.right() - size.width()));
+    y = qBound(canvas.top(), y, qMax(canvas.top(), canvas.bottom() - size.height()));
     item->setPos(QPointF(x, y));
 
     setToolMode(ToolMode::Edit);
@@ -1850,7 +1850,7 @@ void MainWindow::editTextItem(TextItem* item)
 
 void MainWindow::showSelectedItemProperties()
 {
-    const QList<BoardItem*> items = m_scene->selectedBoardItems();
+    const QList<CanvasItem*> items = m_scene->selectedCanvasItems();
     if (items.size() != 1) {
         statusBar()->showMessage(uiText(QStringLiteral("Select a single item to show its properties")), 3000);
         return;
@@ -1858,7 +1858,7 @@ void MainWindow::showSelectedItemProperties()
     showItemProperties(items.constFirst());
 }
 
-void MainWindow::showItemProperties(BoardItem* item)
+void MainWindow::showItemProperties(CanvasItem* item)
 {
     if (!item || item->scene() != m_scene)
         return;
@@ -1973,7 +1973,7 @@ void MainWindow::showSettings()
     }
     m_settings.brushColor = updated.brushColor;
     m_settings.brushWidth = updated.brushWidth;
-    m_settings.boardSize = updated.boardSize;
+    m_settings.canvasSize = updated.canvasSize;
     m_settings.showGrid = updated.showGrid;
     m_settings.canvasColor = updated.canvasColor;
 
@@ -1981,7 +1981,7 @@ void MainWindow::showSettings()
     setBrushWidthUi(m_settings.brushWidth);
     m_view->setCanvasColor(m_settings.canvasColor);
     m_scene->setShowGrid(m_settings.showGrid);
-    m_scene->setBoardSizeWithUndo(m_settings.boardSize);
+    m_scene->setCanvasSizeWithUndo(m_settings.canvasSize);
 
     if (m_view->mode() == ToolMode::View)
         m_view->fitAll();
@@ -2055,10 +2055,10 @@ void MainWindow::showAbout()
                 .arg(uiText(QStringLiteral("A lightweight canvas app for freehand strokes, image items, overview navigation, canvas files and export.")));
     html += QStringLiteral("<p><b>%1</b></p><ul>").arg(uiText(QStringLiteral("Key operations")));
     const QStringList operations = {
-        QStringLiteral("V View mode: pan / zoom the whole board, automatic overview"),
+        QStringLiteral("V View mode: pan / zoom the whole canvas, automatic overview"),
         QStringLiteral("E Edit mode: items on visible, unlocked layers can be edited; locked layers cannot; ] / [ adjust the height of the selection; right-click adjusts layer / height"),
         QStringLiteral("B Brush mode: freehand strokes, with color and width options"),
-        QStringLiteral("T Text mode: click the board to add text, double-click text to edit it again"),
+        QStringLiteral("T Text mode: click the canvas to add text, double-click text to edit it again"),
         QStringLiteral("Layers: the checkbox in the right panel toggles visibility, the lock button locks a layer; layers and items both support multi-select"),
         QStringLiteral("Insert → Shapes: quickly insert rectangles, ellipses, arrows, braces, speech bubbles and more"),
         QStringLiteral("Ctrl+0 returns to the overview, Ctrl+Z / Ctrl+Y undo / redo"),

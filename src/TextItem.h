@@ -1,6 +1,6 @@
 #pragma once
 
-#include "BoardItem.h"
+#include "CanvasItem.h"
 
 #include <QColor>
 #include <QFont>
@@ -27,7 +27,7 @@ struct TextItemState {
     bool operator!=(const TextItemState& other) const { return !(*this == other); }
 };
 
-class TextItem : public BoardItem
+class TextItem : public CanvasItem
 {
     Q_OBJECT
 public:

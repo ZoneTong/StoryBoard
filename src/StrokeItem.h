@@ -2,13 +2,13 @@
 
 #include "I18n.h"
 
-#include "BoardItem.h"
+#include "CanvasItem.h"
 
 #include <QColor>
 #include <QPainterPath>
 #include <QVector>
 
-class StrokeItem : public BoardItem
+class StrokeItem : public CanvasItem
 {
     Q_OBJECT
 public:

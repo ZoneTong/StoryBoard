@@ -4,7 +4,7 @@
 #include <QIcon>
 #include <QList>
 
-#include "BoardItem.h"
+#include "CanvasItem.h"
 
 enum class ShapeType {
     Rectangle = 0,
@@ -69,7 +69,7 @@ struct ShapeItemState {
     bool operator!=(const ShapeItemState& other) const { return !(*this == other); }
 };
 
-class ShapeItem : public BoardItem
+class ShapeItem : public CanvasItem
 {
     Q_OBJECT
 public:

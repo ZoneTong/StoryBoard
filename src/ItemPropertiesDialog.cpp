@@ -1,7 +1,7 @@
 #include "ItemPropertiesDialog.h"
 
-#include "BoardItem.h"
-#include "BoardScene.h"
+#include "CanvasItem.h"
+#include "CanvasScene.h"
 #include "Commands.h"
 #include "I18n.h"
 #include "IconFactory.h"
@@ -112,7 +112,7 @@ QWidget* makePairField(QWidget* parent, const QString& objectName,
 
 } // namespace
 
-ItemPropertiesDialog::ItemPropertiesDialog(BoardScene* scene, BoardItem* item, QWidget* parent)
+ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item, QWidget* parent)
     : QDialog(parent)
     , m_scene(scene)
     , m_item(item)
@@ -155,6 +155,7 @@ ItemPropertiesDialog::ItemPropertiesDialog(BoardScene* scene, BoardItem* item, Q
     } else {
         m_initialPos = item->pos();
         m_initialSize = item->contentSize();
+        m_initialRotation = item->rotationAngle();
         m_initialItemName = item->rawName();
         m_initialDisplayName = item->name();
         auto* typeValue = new QLabel(item->typeDisplayName(), this);
@@ -173,7 +174,7 @@ ItemPropertiesDialog::ItemPropertiesDialog(BoardScene* scene, BoardItem* item, Q
         m_layerCombo->setObjectName(QStringLiteral("ItemPropertiesLayerValue"));
         m_layerCombo->setMinimumWidth(220);
         if (scene) {
-            for (const BoardLayer& layer : scene->userLayers())
+            for (const CanvasLayer& layer : scene->userLayers())
                 m_layerCombo->addItem(layerDescription(scene, layer.id), layer.id);
         }
         const int layerIndex = m_layerCombo->findData(item->layerId());
@@ -183,9 +184,9 @@ ItemPropertiesDialog::ItemPropertiesDialog(BoardScene* scene, BoardItem* item, Q
 
         m_heightSpin = new QSpinBox(this);
         m_heightSpin->setObjectName(QStringLiteral("ItemPropertiesHeightValue"));
-        m_heightSpin->setRange(1, 999999);
+        m_heightSpin->setRange(0, 999999);
         m_heightSpin->setKeyboardTracking(false);
-        m_heightSpin->setValue(qMax(1, item->height()));
+        m_heightSpin->setValue(qMax(0, item->height()));
         form->addRow(uiText(QStringLiteral("Height")), m_heightSpin);
 
         if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
@@ -279,6 +280,12 @@ ItemPropertiesDialog::ItemPropertiesDialog(BoardScene* scene, BoardItem* item, Q
                      makePairField(this, QStringLiteral("ItemPropertiesSizeValue"),
                                    m_widthSpin, m_heightSizeSpin, QStringLiteral("×")));
 
+        m_rotationSpin = makeSpin(this, QStringLiteral("ItemPropertiesRotationValue"),
+                                  -360.0, 360.0);
+        m_rotationSpin->setSuffix(QStringLiteral("°"));
+        m_rotationSpin->setValue(item->rotationAngle());
+        form->addRow(uiText(QStringLiteral("Rotation")), m_rotationSpin);
+
         root->addLayout(form);
     }
 
@@ -324,10 +331,17 @@ void ItemPropertiesDialog::updateHeightRange(bool selectTop)
         return;
 
     const int targetLayer = m_layerCombo->currentData().toInt();
-    int maxHeight = m_scene ? m_scene->layerItemCount(targetLayer) : 1;
-    if (targetLayer != m_item->layerId())
-        ++maxHeight;
-    maxHeight = qMax(1, maxHeight);
+    int maxHeight = 0;
+    if (m_scene) {
+        for (CanvasItem* peer : m_scene->layerItems(targetLayer))
+            maxHeight = qMax(maxHeight, peer->height());
+    }
+    // Height 0 is valid and deletion can leave gaps. Allow one slot above the
+    // highest existing height, and never clamp the current value on open.
+    maxHeight = qMax(0, maxHeight + 1);
+    if (!selectTop)
+        maxHeight = qMax(maxHeight, m_item->height());
+    maxHeight = qBound(0, maxHeight, 999999);
     m_heightSpin->setMaximum(maxHeight);
     if (selectTop)
         m_heightSpin->setValue(maxHeight);
@@ -369,9 +383,9 @@ void ItemPropertiesDialog::applyChanges()
     const int targetLayer = m_layerCombo ? m_layerCombo->currentData().toInt() : oldLayer;
     const int targetHeight = m_heightSpin ? m_heightSpin->value() : oldHeight;
 
-    QList<BoardItem*> swapped;
+    QList<CanvasItem*> swapped;
     if (targetLayer != oldLayer || targetHeight != oldHeight) {
-        for (BoardItem* peer : m_scene->layerItems(targetLayer)) {
+        for (CanvasItem* peer : m_scene->layerItems(targetLayer)) {
             if (peer != m_item && peer->height() == targetHeight)
                 swapped.append(peer);
         }
@@ -380,9 +394,10 @@ void ItemPropertiesDialog::applyChanges()
     ItemPropertiesState before;
     before.pos = m_item->pos();
     before.size = m_item->contentSize();
+    before.rotation = m_initialRotation;
     before.itemName = m_initialItemName;
     before.stack.append({ m_item, oldLayer, oldHeight });
-    for (BoardItem* peer : std::as_const(swapped))
+    for (CanvasItem* peer : std::as_const(swapped))
         before.stack.append({ peer, peer->layerId(), peer->height() });
 
     ItemPropertiesState after;
@@ -397,12 +412,13 @@ void ItemPropertiesDialog::applyChanges()
                         spinValue(m_positionYSpin, m_initialPos.y()));
     after.size = QSizeF(spinValue(m_widthSpin, m_initialSize.width()),
                         spinValue(m_heightSizeSpin, m_initialSize.height()));
+    after.rotation = spinValue(m_rotationSpin, m_initialRotation);
     const QString typedName = m_nameEdit ? m_nameEdit->text().trimmed() : QString();
     after.itemName = (m_initialItemName.isEmpty() && typedName == m_initialDisplayName)
         ? QString()
         : typedName;
     after.stack.append({ m_item, targetLayer, targetHeight });
-    for (BoardItem* peer : std::as_const(swapped))
+    for (CanvasItem* peer : std::as_const(swapped))
         after.stack.append({ peer, oldLayer, oldHeight });
 
     if (auto* shape = dynamic_cast<ShapeItem*>(m_item)) {
@@ -468,15 +484,15 @@ void ItemPropertiesDialog::applyChanges()
     }
 }
 
-QString ItemPropertiesDialog::layerDescription(const BoardScene* scene, int layerId)
+QString ItemPropertiesDialog::layerDescription(const CanvasScene* scene, int layerId)
 {
-    if (layerId == BoardScene::BackgroundLayerId)
+    if (layerId == CanvasScene::BackgroundLayerId)
         return uiText(QStringLiteral("Background layer"));
 
     const int index = scene ? scene->layerIndex(layerId) : layerId;
     QString layerName;
     if (scene) {
-        for (const BoardLayer& layer : scene->layers()) {
+        for (const CanvasLayer& layer : scene->layers()) {
             if (layer.id == layerId) {
                 layerName = layer.name;
                 break;

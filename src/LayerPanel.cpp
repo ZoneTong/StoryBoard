@@ -2,8 +2,8 @@
 
 #include "LayerPanel.h"
 
-#include "BoardItem.h"
-#include "BoardScene.h"
+#include "CanvasItem.h"
+#include "CanvasScene.h"
 #include "IconFactory.h"
 
 #include <algorithm>
@@ -36,7 +36,7 @@ QToolButton* makeLayerButton(QWidget* parent, const QString& text, const QString
 
 } // namespace
 
-LayerPanel::LayerPanel(BoardScene* scene, QWidget* parent)
+LayerPanel::LayerPanel(CanvasScene* scene, QWidget* parent)
     : QWidget(parent)
     , m_scene(scene)
 {
@@ -107,8 +107,8 @@ LayerPanel::LayerPanel(BoardScene* scene, QWidget* parent)
     connect(m_list, &QListWidget::itemSelectionChanged, this, [this]() { updateRowStyles(); });
     connect(m_allVisibleBox, &QCheckBox::clicked, this, [this]() {
         bool allVisible = true;
-        const QList<BoardLayer> layers = m_scene->layers();
-        for (const BoardLayer& layer : layers) {
+        const QList<CanvasLayer> layers = m_scene->layers();
+        for (const CanvasLayer& layer : layers) {
             if (!layer.visible) {
                 allVisible = false;
                 break;
@@ -123,15 +123,15 @@ LayerPanel::LayerPanel(BoardScene* scene, QWidget* parent)
 
     // 场景信号可能来自行内控件自己的信号栈（勾选框、锁定按钮），直接 refresh
     // 会在 emit 者还被使用时销毁它，所以统一延后到下一个事件循环。
-    connect(m_scene, &BoardScene::layersChanged, this, &LayerPanel::scheduleRefresh);
-    connect(m_scene, &BoardScene::contentChanged, this, &LayerPanel::scheduleRefresh);
-    connect(m_scene, &BoardScene::activeLayerChanged, this, &LayerPanel::syncActiveLayer);
+    connect(m_scene, &CanvasScene::layersChanged, this, &LayerPanel::scheduleRefresh);
+    connect(m_scene, &CanvasScene::contentChanged, this, &LayerPanel::scheduleRefresh);
+    connect(m_scene, &CanvasScene::activeLayerChanged, this, &LayerPanel::syncActiveLayer);
     connect(m_scene, &QGraphicsScene::selectionChanged, this, &LayerPanel::syncSceneSelection);
 
     refresh();
 }
 
-QWidget* LayerPanel::createLayerRow(const BoardLayer& layer, int index, int itemCount)
+QWidget* LayerPanel::createLayerRow(const CanvasLayer& layer, int index, int itemCount)
 {
     auto* row = new QWidget;
     row->setObjectName(QStringLiteral("LayerRow"));
@@ -148,7 +148,7 @@ QWidget* LayerPanel::createLayerRow(const BoardLayer& layer, int index, int item
 
     auto* nameLabel = new QLabel(row);
     nameLabel->setObjectName(QStringLiteral("LayerRowLabel"));
-    QString text = (index == BoardScene::BackgroundLayerId)
+    QString text = (index == CanvasScene::BackgroundLayerId)
         ? uiText(QStringLiteral("Background    (layer 0)"))
         : uiText(QStringLiteral("%1    %2 items")).arg(layer.name).arg(itemCount);
     if (!layer.visible)
@@ -156,14 +156,14 @@ QWidget* LayerPanel::createLayerRow(const BoardLayer& layer, int index, int item
     if (layer.locked)
         text += uiText(QStringLiteral("  · Locked"));
     nameLabel->setText(text);
-    if (index == BoardScene::BackgroundLayerId)
+    if (index == CanvasScene::BackgroundLayerId)
         nameLabel->setStyleSheet(QStringLiteral("color: rgb(120, 128, 140);"));
     else if (layer.locked)
         nameLabel->setStyleSheet(QStringLiteral("color: rgb(96, 104, 120);"));
     else if (!layer.visible)
         nameLabel->setStyleSheet(QStringLiteral("color: rgb(150, 157, 169);"));
 
-    if (index != BoardScene::BackgroundLayerId) {
+    if (index != CanvasScene::BackgroundLayerId) {
         nameLabel->setProperty("layerId", layer.id);
         nameLabel->setCursor(Qt::IBeamCursor);
         nameLabel->setToolTip(uiText(QStringLiteral("Double-click to rename layer")));
@@ -173,7 +173,7 @@ QWidget* LayerPanel::createLayerRow(const BoardLayer& layer, int index, int item
     layout->addWidget(visibleBox);
     layout->addWidget(nameLabel, 1);
 
-    if (index != BoardScene::BackgroundLayerId) {
+    if (index != CanvasScene::BackgroundLayerId) {
         auto* lockButton = new QToolButton(row);
         lockButton->setObjectName(QStringLiteral("LayerLockButton"));
         lockButton->setCheckable(true);
@@ -207,7 +207,7 @@ QList<int> LayerPanel::selectedLayerIds() const
     const QList<QListWidgetItem*> rows = m_list->selectedItems();
     for (const QListWidgetItem* row : rows) {
         const int id = row->data(Qt::UserRole).toInt();
-        if (id > BoardScene::BackgroundLayerId)
+        if (id > CanvasScene::BackgroundLayerId)
             ids.append(id);
     }
     return ids;
@@ -239,9 +239,9 @@ void LayerPanel::refresh()
     m_list->clear();
 
     // 列表顶部是最高层；背景固定在最后一行且不可选中。
-    const QList<BoardLayer> layers = m_scene->layers();
+    const QList<CanvasLayer> layers = m_scene->layers();
     for (int i = layers.size() - 1; i >= 1; --i) {
-        const BoardLayer layer = layers.at(i);
+        const CanvasLayer layer = layers.at(i);
         const int count = m_scene->layerItemCount(layer.id);
         auto* row = new QListWidgetItem(m_list);
         row->setData(Qt::UserRole, layer.id);
@@ -257,12 +257,12 @@ void LayerPanel::refresh()
     }
 
     auto* backgroundRow = new QListWidgetItem(m_list);
-    backgroundRow->setData(Qt::UserRole, BoardScene::BackgroundLayerId);
+    backgroundRow->setData(Qt::UserRole, CanvasScene::BackgroundLayerId);
     backgroundRow->setFlags(Qt::ItemIsEnabled);
     backgroundRow->setSizeHint(QSize(0, 30));
     backgroundRow->setToolTip(uiText(QStringLiteral("The background is always the bottom layer, cannot hold items, and is locked by default.\nUse the checkbox to show or hide it.")));
     m_list->setItemWidget(backgroundRow,
-                          createLayerRow(m_scene->layer(BoardScene::BackgroundLayerId), 0, 0));
+                          createLayerRow(m_scene->layer(CanvasScene::BackgroundLayerId), 0, 0));
 
     // 先恢复当前行（不改变选择），再恢复多选。
     int currentRow = -1;
@@ -285,7 +285,7 @@ void LayerPanel::refresh()
         m_list->setCurrentRow(currentRow, QItemSelectionModel::NoUpdate);
 
     if (currentRow >= 0) {
-        if (selectedLayerIds().isEmpty() && activeId > BoardScene::BackgroundLayerId)
+        if (selectedLayerIds().isEmpty() && activeId > CanvasScene::BackgroundLayerId)
             m_list->item(currentRow)->setSelected(true);
     }
 
@@ -321,7 +321,7 @@ void LayerPanel::activateCurrentLayer()
     if (!m_scene || m_refreshing || m_syncingScene)
         return;
     const int id = currentLayerId();
-    if (id > BoardScene::BackgroundLayerId && m_scene->hasLayer(id))
+    if (id > CanvasScene::BackgroundLayerId && m_scene->hasLayer(id))
         m_scene->setActiveLayer(id);
     m_scene->setPreferredLayerIds(selectedLayerIds());
     updateButtons();
@@ -351,12 +351,12 @@ void LayerPanel::syncSceneSelection()
     if (!m_scene || m_refreshing || m_syncingScene)
         return;
 
-    const QList<BoardItem*> items = m_scene->selectedBoardItems();
+    const QList<CanvasItem*> items = m_scene->selectedCanvasItems();
     if (items.isEmpty())
         return; // 清空选择时保持图层面板的选择，不做反向同步。
 
     QList<int> ids;
-    for (BoardItem* item : items) {
+    for (CanvasItem* item : items) {
         if (!ids.contains(item->layerId()))
             ids.append(item->layerId());
     }
@@ -364,7 +364,7 @@ void LayerPanel::syncSceneSelection()
     const int topId = ids.last();
 
     m_syncingScene = true;
-    if (m_scene->hasLayer(topId) && topId != BoardScene::BackgroundLayerId
+    if (m_scene->hasLayer(topId) && topId != CanvasScene::BackgroundLayerId
         && topId != m_scene->activeLayerId()) {
         // 选中图元时自动把它的图层设为当前图层。
         m_scene->setActiveLayer(topId);
@@ -419,7 +419,7 @@ void LayerPanel::setLayerVisible(int layerId, bool visible)
     if (!m_scene || m_refreshing)
         return;
 
-    const QString layerName = (layerId == BoardScene::BackgroundLayerId)
+    const QString layerName = (layerId == CanvasScene::BackgroundLayerId)
         ? uiText(QStringLiteral("Background layer"))
         : m_scene->layer(layerId).name;
     const int oldActive = m_scene->activeLayerId();
@@ -430,7 +430,7 @@ void LayerPanel::setLayerVisible(int layerId, bool visible)
         return;
     }
 
-    if (layerId == BoardScene::BackgroundLayerId) {
+    if (layerId == CanvasScene::BackgroundLayerId) {
         emit statusMessage(visible ? uiText(QStringLiteral("Background layer shown"))
                                    : uiText(QStringLiteral("Background layer hidden")));
     } else if (!visible && oldActive == layerId
@@ -461,9 +461,9 @@ void LayerPanel::updateAllVisibleState()
     if (!m_allVisibleBox || !m_scene)
         return;
 
-    const QList<BoardLayer> layers = m_scene->layers();
+    const QList<CanvasLayer> layers = m_scene->layers();
     int visibleCount = 0;
-    for (const BoardLayer& layer : layers) {
+    for (const CanvasLayer& layer : layers) {
         if (layer.visible)
             ++visibleCount;
     }
@@ -511,7 +511,7 @@ void LayerPanel::removeLayer()
     QList<int> ids = selectedLayerIds();
     if (ids.isEmpty()) {
         const int fallback = currentLayerId();
-        if (fallback > BoardScene::BackgroundLayerId)
+        if (fallback > CanvasScene::BackgroundLayerId)
             ids.append(fallback);
     }
     if (ids.isEmpty())
@@ -541,10 +541,10 @@ void LayerPanel::removeLayer()
 
 void LayerPanel::renameLayer(int layerId)
 {
-    if (!m_scene || layerId <= BoardScene::BackgroundLayerId || !m_scene->hasLayer(layerId))
+    if (!m_scene || layerId <= CanvasScene::BackgroundLayerId || !m_scene->hasLayer(layerId))
         return;
 
-    const BoardLayer layer = m_scene->layer(layerId);
+    const CanvasLayer layer = m_scene->layer(layerId);
     bool ok = false;
     const QString name = QInputDialog::getText(
         this, uiText(QStringLiteral("Rename layer")), uiText(QStringLiteral("Layer name")),
@@ -586,7 +586,7 @@ void LayerPanel::updateButtons()
     const int activeIndex = m_scene->layerIndex(m_scene->activeLayerId());
     QList<int> ids = selectedLayerIds();
     if (ids.isEmpty()) {
-        if (m_scene->activeLayerId() > BoardScene::BackgroundLayerId)
+        if (m_scene->activeLayerId() > CanvasScene::BackgroundLayerId)
             ids.append(m_scene->activeLayerId());
     }
 
@@ -618,7 +618,7 @@ void LayerPanel::updateSummary()
     if (ids.size() > 1) {
         text = uiText(QStringLiteral("%1 layer(s) selected (items can be multi-selected)\n")).arg(ids.size());
     } else {
-        const BoardLayer active = m_scene->layer(m_scene->activeLayerId());
+        const CanvasLayer active = m_scene->layer(m_scene->activeLayerId());
         text = uiText(QStringLiteral("Current: %1\n")).arg(active.name);
     }
     text += uiText(QStringLiteral("Checkbox = show/hide · lock button = lock\nIn edit mode, items on visible, unlocked layers can be edited"));

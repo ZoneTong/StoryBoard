@@ -7,23 +7,23 @@
 #include <QPointer>
 #include <QSizeF>
 
-#include "BoardTypes.h"
+#include "CanvasTypes.h"
 #include "ItemGeometry.h"
 
 class QUndoStack;
-class BoardItem;
+class CanvasItem;
 class QFont;
 class QPainter;
 class QStyleOptionGraphicsItem;
 class TextItem;
 struct TextItemState;
 
-class BoardScene : public QGraphicsScene
+class CanvasScene : public QGraphicsScene
 {
     Q_OBJECT
 public:
-    explicit BoardScene(QObject* parent = nullptr);
-    ~BoardScene() override;
+    explicit CanvasScene(QObject* parent = nullptr);
+    ~CanvasScene() override;
 
     void setUndoStack(QUndoStack* stack);
     QUndoStack* undoStack() const { return m_undoStack; }
@@ -31,16 +31,16 @@ public:
     ToolMode mode() const { return m_mode; }
     void setMode(ToolMode mode);
 
-    QSizeF boardSize() const { return m_boardSize; }
-    QPointF boardOrigin() const { return m_boardOrigin; }
-    QRectF boardRect() const;
-    void applyBoardSize(const QSizeF& size);
-    void setBoardSizeWithUndo(const QSizeF& size);
-    // Board geometry includes the origin so the canvas can be stretched from
+    QSizeF canvasSize() const { return m_canvasSize; }
+    QPointF canvasOrigin() const { return m_canvasOrigin; }
+    QRectF canvasRect() const;
+    void applyCanvasSize(const QSizeF& size);
+    void setCanvasSizeWithUndo(const QSizeF& size);
+    // Canvas geometry includes the origin so the canvas can be stretched from
     // any edge; apply* is live (drag) and commit* pushes one undo step.
-    void applyBoardRect(const QRectF& rect);
-    void setBoardRectWithUndo(const QRectF& rect);
-    void commitBoardRect(const QRectF& before);
+    void applyCanvasRect(const QRectF& rect);
+    void setCanvasRectWithUndo(const QRectF& rect);
+    void commitCanvasRect(const QRectF& before);
 
     BackgroundState background() const { return m_background; }
     void applyBackground(const BackgroundState& background);
@@ -52,29 +52,29 @@ public:
     QRectF contentRect() const;
     void updateSceneExtent();
 
-    QList<BoardItem*> boardItems() const;
-    int boardItemCount() const;
+    QList<CanvasItem*> canvasItems() const;
+    int canvasItemCount() const;
     // 需求 32：给所有还没有自定义名称的图元补上“类型 1 / 类型 2 …”自动名称。
     void assignAutoItemNames();
-    QList<BoardItem*> selectedBoardItems() const;
+    QList<CanvasItem*> selectedCanvasItems() const;
 
     static constexpr int BackgroundLayerId = 0;
 
-    const QList<BoardLayer>& layers() const { return m_layers; }
-    QList<BoardLayer> userLayers() const;
+    const QList<CanvasLayer>& layers() const { return m_layers; }
+    QList<CanvasLayer> userLayers() const;
     int layerCount() const { return m_layers.size(); }
     int userLayerCount() const { return qMax(0, m_layers.size() - 1); }
     bool hasLayer(int layerId) const;
-    BoardLayer layer(int layerId) const;
+    CanvasLayer layer(int layerId) const;
     int layerIndex(int layerId) const;
     int layerItemCount(int layerId) const;
-    QList<BoardItem*> layerItems(int layerId) const;
+    QList<CanvasItem*> layerItems(int layerId) const;
     bool isLayerVisible(int layerId) const;
     bool setLayerVisible(int layerId, bool visible);
     bool setAllLayersVisible(bool visible);
     bool isLayerLocked(int layerId) const;
     bool setLayerLocked(int layerId, bool locked);
-    bool isItemEditable(const BoardItem* item) const;
+    bool isItemEditable(const CanvasItem* item) const;
     // True when the active layer accepts new items (exists, visible, unlocked).
     bool isActiveLayerWritable() const;
     int activeLayerId() const { return m_activeLayerId; }
@@ -90,8 +90,8 @@ public:
 
     int nextHeight(int layerId) const;
     bool layerHeightsUnique(int layerId) const;
-    bool adjustItemHeight(BoardItem* item, int delta, const QString& text = QString());
-    bool moveItemToAdjacentLayer(BoardItem* item, int delta, const QString& text = QString());
+    bool adjustItemHeight(CanvasItem* item, int delta, const QString& text = QString());
+    bool moveItemToAdjacentLayer(CanvasItem* item, int delta, const QString& text = QString());
     // 对当前选中的所有图元批量调整高度 / 图层，整体只占一条撤销记录。
     int adjustSelectedHeights(int delta);
     int moveSelectedItemsToAdjacentLayer(int delta);
@@ -105,10 +105,10 @@ public:
                             const QColor& color, const QString& commandText = QString());
     void applyTextState(TextItem* item, const TextItemState& state);
 
-    void addItemsWithUndo(const QList<BoardItem*>& items, const QString& text);
-    void commitNewItem(BoardItem* item, const QString& text);
-    void attachItem(BoardItem* item);
-    void detachItem(BoardItem* item);
+    void addItemsWithUndo(const QList<CanvasItem*>& items, const QString& text);
+    void commitNewItem(CanvasItem* item, const QString& text);
+    void attachItem(CanvasItem* item);
+    void detachItem(CanvasItem* item);
     void deleteSelected();
     void selectAllItems();
     void pushGeometry(const ItemGeometryList& before, const ItemGeometryList& after,
@@ -126,13 +126,13 @@ public:
     // 非查看模式下被更高优先级图元遮住、需要额外描出轮廓的图元。
     // 优先级：图层越高越优先；同一图层内 height 越大越优先。
     // area 非空时只统计与该区域相交的图元（绘制时用它避免整场景重算）。
-    QList<BoardItem*> obscuredItems(const QRectF& area = QRectF()) const;
+    QList<CanvasItem*> obscuredItems(const QRectF& area = QRectF()) const;
 
 signals:
     void modeChanged(ToolMode mode);
     void contentChanged();
     void backgroundChanged();
-    void boardSizeChanged(const QSizeF& size);
+    void canvasSizeChanged(const QSizeF& size);
     void layersChanged();
     void activeLayerChanged(int layerId);
 
@@ -144,35 +144,35 @@ protected:
                    const QStyleOptionGraphicsItem* options, QWidget* widget = nullptr) override;
 
 private:
-    BoardItem* createItem(const QString& kind) const;
-    QString uniqueItemName(const QString& base, const BoardItem* except = nullptr) const;
-    void drawBoardBackground(QPainter* painter, const QRectF& area, bool includeGrid) const;
+    CanvasItem* createItem(const QString& kind) const;
+    QString uniqueItemName(const QString& base, const CanvasItem* except = nullptr) const;
+    void drawCanvasBackground(QPainter* painter, const QRectF& area, bool includeGrid) const;
     void updateItemFlags();
-    void applyItemInteraction(BoardItem* item);
+    void applyItemInteraction(CanvasItem* item);
     void clearOrphans();
 
     void ensureLayerState();
     LayerStackState sanitizedLayerState(const LayerStackState& state) const;
     void applyLayerStateInternal(const LayerStackState& state, bool preserveLock = true);
-    void assignNewItemPlacement(BoardItem* item);
-    void applyItemStacking(BoardItem* item);
+    void assignNewItemPlacement(CanvasItem* item);
+    void applyItemStacking(CanvasItem* item);
     void applyAllItemStacking();
     bool normalizeLayerHeights(int layerId);
     void normalizeAllHeights();
-    bool heightUsedByOther(int layerId, int height, const BoardItem* except) const;
+    bool heightUsedByOther(int layerId, int height, const CanvasItem* except) const;
     qreal layerBaseZ(int layerId) const;
-    ItemStackList itemStackSnapshot(const QList<BoardItem*>& items) const;
+    ItemStackList itemStackSnapshot(const QList<CanvasItem*>& items) const;
 
     QUndoStack* m_undoStack = nullptr;
     ToolMode m_mode = ToolMode::View;
-    QSizeF m_boardSize { 1920.0, 1080.0 };
-    QPointF m_boardOrigin { 0.0, 0.0 };
+    QSizeF m_canvasSize { 1920.0, 1080.0 };
+    QPointF m_canvasOrigin { 0.0, 0.0 };
     BackgroundState m_background;
     bool m_showGrid = true;
     bool m_exporting = false;
-    QList<BoardLayer> m_layers;
+    QList<CanvasLayer> m_layers;
     int m_activeLayerId = 1;
     int m_nextLayerId = 2;
     QList<int> m_preferredLayerIds;
-    QList<BoardItem*> m_orphans;
+    QList<CanvasItem*> m_orphans;
 };

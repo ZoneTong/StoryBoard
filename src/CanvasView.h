@@ -3,19 +3,19 @@
 #include <QColor>
 #include <QGraphicsView>
 
-#include "BoardTypes.h"
+#include "CanvasTypes.h"
 
-class BoardItem;
-class BoardScene;
+class CanvasItem;
+class CanvasScene;
 class StrokeItem;
 class TextItem;
 class QContextMenuEvent;
 
-class BoardView : public QGraphicsView
+class CanvasView : public QGraphicsView
 {
     Q_OBJECT
 public:
-    explicit BoardView(BoardScene* scene, QWidget* parent = nullptr);
+    explicit CanvasView(CanvasScene* scene, QWidget* parent = nullptr);
 
     ToolMode mode() const { return m_mode; }
     void setMode(ToolMode mode);
@@ -36,7 +36,7 @@ public:
     void finishCurrentStroke();
 
     // 画板边缘拖动：扩大或裁剪画板。返回当前是否正在拖动边缘。
-    bool isResizingBoard() const { return m_resizingBoard; }
+    bool isResizingCanvas() const { return m_resizingCanvas; }
 
 signals:
     void zoomChanged(qreal zoom);
@@ -44,7 +44,7 @@ signals:
     void statusMessage(const QString& message);
     void textPlacementRequested(const QPointF& scenePos);
     void editTextRequested(TextItem* item);
-    void itemPropertiesRequested(BoardItem* item);
+    void itemPropertiesRequested(CanvasItem* item);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -66,7 +66,7 @@ private:
     void beginPan(const QPoint& position);
     void endPan();
 
-    enum class BoardHandle {
+    enum class CanvasHandle {
         None,
         TopLeft,
         Top,
@@ -78,19 +78,19 @@ private:
         Left
     };
 
-    BoardItem* topBoardItemAt(const QPoint& viewportPos) const;
-    BoardItem* editableItemAt(const QPoint& viewportPos) const;
-    BoardItem* preferredEditableItemAt(const QPoint& viewportPos) const;
-    BoardHandle boardHandleAt(const QPoint& viewportPos) const;
-    bool beginBoardResize(const QPoint& viewportPos);
-    void updateBoardResize(const QPointF& scenePos);
-    void endBoardResize();
-    void updateBoardHoverCursor(const QPoint& viewportPos);
-    QRectF boardRectForDrag(const QPointF& scenePos) const;
-    void drawBoardHandles(QPainter* painter);
-    static Qt::CursorShape boardHandleCursor(BoardHandle handle);
+    CanvasItem* topCanvasItemAt(const QPoint& viewportPos) const;
+    CanvasItem* editableItemAt(const QPoint& viewportPos) const;
+    CanvasItem* preferredEditableItemAt(const QPoint& viewportPos) const;
+    CanvasHandle canvasHandleAt(const QPoint& viewportPos) const;
+    bool beginCanvasResize(const QPoint& viewportPos);
+    void updateCanvasResize(const QPointF& scenePos);
+    void endCanvasResize();
+    void updateCanvasHoverCursor(const QPoint& viewportPos);
+    QRectF canvasRectForDrag(const QPointF& scenePos) const;
+    void drawCanvasHandles(QPainter* painter);
+    static Qt::CursorShape canvasHandleCursor(CanvasHandle handle);
 
-    BoardScene* m_scene = nullptr;
+    CanvasScene* m_scene = nullptr;
     ToolMode m_mode = ToolMode::View;
     StrokeItem* m_activeStroke = nullptr;
     QColor m_brushColor = QColor(30, 41, 59);
@@ -101,8 +101,8 @@ private:
     QPoint m_panStart;
     QPointF m_panCenterScene;
 
-    bool m_resizingBoard = false;
-    BoardHandle m_boardHandle = BoardHandle::None;
-    BoardHandle m_hoverHandle = BoardHandle::None;
+    bool m_resizingCanvas = false;
+    CanvasHandle m_canvasHandle = CanvasHandle::None;
+    CanvasHandle m_hoverHandle = CanvasHandle::None;
     QRectF m_resizeStartRect;
 };

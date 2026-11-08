@@ -59,6 +59,10 @@
       <translation>%1 · %2</translation>
     </message>
     <message>
+      <source>%1 · %2 · height %3</source>
+      <translation>%1 · %2 · 高度 %3</translation>
+    </message>
+    <message>
       <source>%1 × %2</source>
       <translation>%1 × %2</translation>
     </message>
@@ -72,11 +76,11 @@
     </message>
     <message>
       <source>&amp;Canvas</source>
-      <translation>画板(&amp;C)</translation>
+      <translation>画布(&amp;C)</translation>
     </message>
     <message>
       <source>&amp;Canvases</source>
-      <translation>画布(&amp;V)</translation>
+      <translation>最近画布(&amp;V)</translation>
     </message>
     <message>
       <source>&amp;Edit</source>
@@ -1209,6 +1213,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>右大括号</translation>
     </message>
     <message>
+      <source>Rotation</source>
+      <translation>旋转</translation>
+    </message>
+    <message>
       <source>Rounded rectangle</source>
       <translation>圆角矩形</translation>
     </message>
@@ -1453,6 +1461,22 @@ Use the checkbox to show or hide it.</source>
       <translation>当前画布有未保存的修改。</translation>
     </message>
     <message>
+      <source>The current layer is locked or hidden; drawing is unavailable. Unlock or switch layers in the layer panel first.</source>
+      <translation>当前图层已锁定或已隐藏，无法在该图层绘制。请先在右侧图层面板解锁或切换图层。</translation>
+    </message>
+    <message>
+      <source>The current layer is locked or hidden; images cannot be imported. Unlock or switch layers in the layer panel first.</source>
+      <translation>当前图层已锁定或已隐藏，无法导入图片。请先在右侧图层面板解锁或切换图层。</translation>
+    </message>
+    <message>
+      <source>The current layer is locked or hidden; shapes cannot be inserted. Unlock or switch layers in the layer panel first.</source>
+      <translation>当前图层已锁定或已隐藏，无法插入图形。请先在右侧图层面板解锁或切换图层。</translation>
+    </message>
+    <message>
+      <source>The current layer is locked or hidden; text cannot be placed. Unlock or switch layers in the layer panel first.</source>
+      <translation>当前图层已锁定或已隐藏，无法在该图层放置文字。请先在右侧图层面板解锁或切换图层。</translation>
+    </message>
+    <message>
       <source>The file already exists. Overwrite it?
 %1</source>
       <translation>文件已存在，是否覆盖？
@@ -1475,6 +1499,10 @@ Use the checkbox to show or hide it.</source>
     <message>
       <source>The last visible layer cannot be hidden. Create a new layer first.</source>
       <translation>无法隐藏最后一个可见图层，请先新建图层。</translation>
+    </message>
+    <message>
+      <source>The layer containing this item is locked or hidden; editing is unavailable. Unlock or show that layer in the layer panel first.</source>
+      <translation>该图元所在图层已锁定或已隐藏，无法编辑。请先在右侧图层面板解锁或显示该图层。</translation>
     </message>
     <message>
       <source>The outline color did not change</source>

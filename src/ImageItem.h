@@ -1,10 +1,10 @@
 #pragma once
 
-#include "BoardItem.h"
+#include "CanvasItem.h"
 
 #include <QPixmap>
 
-class ImageItem : public BoardItem
+class ImageItem : public CanvasItem
 {
     Q_OBJECT
 public:

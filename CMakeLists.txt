@@ -22,7 +22,7 @@ set(STORYBOARD_TS_FILES
 
 set(STORYBOARD_SOURCES
     src/main.cpp
-    src/BoardTypes.h
+    src/CanvasTypes.h
     src/Settings.h
     src/Settings.cpp
     src/I18n.h
@@ -30,8 +30,8 @@ set(STORYBOARD_SOURCES
     src/ItemGeometry.h
     src/IconFactory.h
     src/IconFactory.cpp
-    src/BoardItem.h
-    src/BoardItem.cpp
+    src/CanvasItem.h
+    src/CanvasItem.cpp
     src/StrokeItem.h
     src/StrokeItem.cpp
     src/ImageItem.h
@@ -42,10 +42,10 @@ set(STORYBOARD_SOURCES
     src/ShapeItem.cpp
     src/Commands.h
     src/Commands.cpp
-    src/BoardScene.h
-    src/BoardScene.cpp
-    src/BoardView.h
-    src/BoardView.cpp
+    src/CanvasScene.h
+    src/CanvasScene.cpp
+    src/CanvasView.h
+    src/CanvasView.cpp
     src/LayerPanel.h
     src/LayerPanel.cpp
     src/ExportDialog.h

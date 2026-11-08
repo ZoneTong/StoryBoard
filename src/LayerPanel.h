@@ -3,9 +3,9 @@
 #include <QList>
 #include <QWidget>
 
-#include "BoardTypes.h"
+#include "CanvasTypes.h"
 
-class BoardScene;
+class CanvasScene;
 class QCheckBox;
 class QEvent;
 class QLabel;
@@ -16,7 +16,7 @@ class LayerPanel : public QWidget
 {
     Q_OBJECT
 public:
-    explicit LayerPanel(BoardScene* scene, QWidget* parent = nullptr);
+    explicit LayerPanel(CanvasScene* scene, QWidget* parent = nullptr);
 
     QList<int> selectedLayerIds() const;
 
@@ -30,7 +30,7 @@ protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
-    QWidget* createLayerRow(const BoardLayer& layer, int index, int itemCount);
+    QWidget* createLayerRow(const CanvasLayer& layer, int index, int itemCount);
     int currentLayerId() const;
     void scheduleRefresh();
     void activateCurrentLayer();
@@ -48,7 +48,7 @@ private:
     void updateRowStyles();
     void updateSummary();
 
-    BoardScene* m_scene = nullptr;
+    CanvasScene* m_scene = nullptr;
     QListWidget* m_list = nullptr;
     QCheckBox* m_allVisibleBox = nullptr;
     QToolButton* m_addButton = nullptr;

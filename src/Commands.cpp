@@ -1,7 +1,7 @@
 #include "Commands.h"
 
-#include "BoardItem.h"
-#include "BoardScene.h"
+#include "CanvasItem.h"
+#include "CanvasScene.h"
 #include "ImageItem.h"
 #include "StrokeItem.h"
 
@@ -27,7 +27,7 @@ bool sameStack(const ItemStackList& first, const ItemStackList& second)
 
 } // namespace
 
-AddItemCommand::AddItemCommand(BoardScene* scene, BoardItem* item, const QString& text)
+AddItemCommand::AddItemCommand(CanvasScene* scene, CanvasItem* item, const QString& text)
     : m_scene(scene)
     , m_item(item)
 {
@@ -46,13 +46,13 @@ void AddItemCommand::redo()
         m_scene->attachItem(m_item);
 }
 
-RemoveItemsCommand::RemoveItemsCommand(BoardScene* scene, const QList<BoardItem*>& items,
+RemoveItemsCommand::RemoveItemsCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
                                        const QString& text)
     : m_scene(scene)
 {
     setText(text);
-    for (BoardItem* item : items)
-        m_items.append(QPointer<BoardItem>(item));
+    for (CanvasItem* item : items)
+        m_items.append(QPointer<CanvasItem>(item));
 }
 
 void RemoveItemsCommand::undo()
@@ -60,7 +60,7 @@ void RemoveItemsCommand::undo()
     if (!m_scene)
         return;
 
-    for (const QPointer<BoardItem>& item : std::as_const(m_items)) {
+    for (const QPointer<CanvasItem>& item : std::as_const(m_items)) {
         if (!item)
             continue;
         m_scene->attachItem(item);
@@ -74,13 +74,13 @@ void RemoveItemsCommand::redo()
     if (!m_scene)
         return;
 
-    for (const QPointer<BoardItem>& item : std::as_const(m_items)) {
+    for (const QPointer<CanvasItem>& item : std::as_const(m_items)) {
         if (item)
             m_scene->detachItem(item);
     }
 }
 
-GeometryCommand::GeometryCommand(BoardScene* scene, const ItemGeometryList& before,
+GeometryCommand::GeometryCommand(CanvasScene* scene, const ItemGeometryList& before,
                                  const ItemGeometryList& after, const QString& text)
     : m_scene(scene)
     , m_before(before)
@@ -113,7 +113,7 @@ void GeometryCommand::apply(const ItemGeometryList& geometry)
     }
 }
 
-BackgroundCommand::BackgroundCommand(BoardScene* scene, const BackgroundState& before,
+BackgroundCommand::BackgroundCommand(CanvasScene* scene, const BackgroundState& before,
                                      const BackgroundState& after, const QString& text)
     : m_scene(scene)
     , m_before(before)
@@ -134,7 +134,7 @@ void BackgroundCommand::redo()
         m_scene->applyBackground(m_after);
 }
 
-BoardSizeCommand::BoardSizeCommand(BoardScene* scene, const QRectF& before, const QRectF& after,
+CanvasSizeCommand::CanvasSizeCommand(CanvasScene* scene, const QRectF& before, const QRectF& after,
                                    const QString& text)
     : m_scene(scene)
     , m_before(before)
@@ -143,19 +143,19 @@ BoardSizeCommand::BoardSizeCommand(BoardScene* scene, const QRectF& before, cons
     setText(text);
 }
 
-void BoardSizeCommand::undo()
+void CanvasSizeCommand::undo()
 {
     if (m_scene)
-        m_scene->applyBoardRect(m_before);
+        m_scene->applyCanvasRect(m_before);
 }
 
-void BoardSizeCommand::redo()
+void CanvasSizeCommand::redo()
 {
     if (m_scene)
-        m_scene->applyBoardRect(m_after);
+        m_scene->applyCanvasRect(m_after);
 }
 
-ItemStackCommand::ItemStackCommand(BoardScene* scene, const ItemStackList& before,
+ItemStackCommand::ItemStackCommand(CanvasScene* scene, const ItemStackList& before,
                                    const ItemStackList& after, const QString& text)
     : m_scene(scene)
     , m_before(before)
@@ -176,7 +176,7 @@ void ItemStackCommand::redo()
         m_scene->applyItemStack(m_after);
 }
 
-TextItemCommand::TextItemCommand(BoardScene* scene, TextItem* item,
+TextItemCommand::TextItemCommand(CanvasScene* scene, TextItem* item,
                                  const TextItemState& before, const TextItemState& after,
                                  const QString& text)
     : m_scene(scene)
@@ -199,7 +199,7 @@ void TextItemCommand::redo()
         m_scene->applyTextState(m_item, m_after);
 }
 
-LayerStateCommand::LayerStateCommand(BoardScene* scene, const LayerStackState& before,
+LayerStateCommand::LayerStateCommand(CanvasScene* scene, const LayerStackState& before,
                                      const LayerStackState& after, const QString& text)
     : m_scene(scene)
     , m_before(before)
@@ -220,7 +220,7 @@ void LayerStateCommand::redo()
         m_scene->applyLayerState(m_after);
 }
 
-ShapeStyleCommand::ShapeStyleCommand(BoardScene* scene, const QList<ShapeItem*>& items,
+ShapeStyleCommand::ShapeStyleCommand(CanvasScene* scene, const QList<ShapeItem*>& items,
                                      const QList<ShapeItemState>& before,
                                      const QList<ShapeItemState>& after,
                                      const QString& text)
@@ -261,6 +261,7 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
     if (!sameStack(stack, other.stack)
         || pos != other.pos
         || size != other.size
+        || !qFuzzyCompare(rotation, other.rotation)
         || itemName != other.itemName
         || hasShapeState != other.hasShapeState
         || hasTextState != other.hasTextState
@@ -282,7 +283,7 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
     return true;
 }
 
-ItemPropertiesCommand::ItemPropertiesCommand(BoardScene* scene, BoardItem* item,
+ItemPropertiesCommand::ItemPropertiesCommand(CanvasScene* scene, CanvasItem* item,
                                              const ItemPropertiesState& before,
                                              const ItemPropertiesState& after,
                                              const QString& text)
@@ -321,6 +322,9 @@ void ItemPropertiesCommand::apply(const ItemPropertiesState& state)
         m_item->setPos(state.pos);
         m_item->setContentSize(state.size);
     }
+
+    // Rotation is a generic CanvasItem property for every item kind.
+    m_item->setRotationAngle(state.rotation);
 
     if (state.hasStrokeStyle) {
         if (auto* stroke = dynamic_cast<StrokeItem*>(m_item.data()))

@@ -7,11 +7,11 @@
 
 #include "ItemGeometry.h"
 
-class BoardScene;
+class CanvasScene;
 class QGraphicsSceneHoverEvent;
 class QGraphicsSceneMouseEvent;
 
-class BoardItem : public QGraphicsObject
+class CanvasItem : public QGraphicsObject
 {
     Q_OBJECT
 public:
@@ -28,7 +28,7 @@ public:
         Left
     };
 
-    explicit BoardItem(QGraphicsItem* parent = nullptr);
+    explicit CanvasItem(QGraphicsItem* parent = nullptr);
 
     int type() const override { return Type; }
 
@@ -54,6 +54,9 @@ public:
     void setLayerId(int layerId);
     int height() const { return m_height; }
     void setHeight(int height);
+    // 需求 24：图元可以绕内容中心旋转；旋转角随画布 JSON 保存并参与撤销。
+    qreal rotationAngle() const { return m_rotation; }
+    void setRotationAngle(qreal angle);
 
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
@@ -84,7 +87,7 @@ protected:
 
     QJsonObject baseJson() const;
     void applyBaseJson(const QJsonObject& json);
-    BoardScene* boardScene() const;
+    CanvasScene* canvasScene() const;
     qreal viewScale() const;
     bool hasSingleSelection() const;
     qreal handleSize() const;
@@ -112,6 +115,7 @@ private:
     QSizeF m_size { 120.0, 90.0 };
     int m_layerId = 0;
     int m_height = -1;
+    qreal m_rotation = 0.0;
     QString m_name;
     DragKind m_drag = DragKind::None;
     Handle m_resizeHandle = NoHandle;

@@ -22,7 +22,7 @@ QFont normalizedFont(QFont font)
 } // namespace
 
 TextItem::TextItem(QGraphicsItem* parent)
-    : BoardItem(parent)
+    : CanvasItem(parent)
 {
     m_font.setFamily(QStringLiteral("Microsoft YaHei UI"));
     m_font.setPointSizeF(kDefaultPointSize);
@@ -158,7 +158,7 @@ QPainterPath TextItem::paintedShape() const
     }
 
     if (path.isEmpty())
-        return BoardItem::paintedShape();
+        return CanvasItem::paintedShape();
 
     QTransform transform;
     transform.scale(scaleX, scaleY);

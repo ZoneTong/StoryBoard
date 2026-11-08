@@ -74,43 +74,43 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
 
     rootLayout->addWidget(brushGroup);
 
-    auto* boardGroup = new QGroupBox(uiText(QStringLiteral("Canvas")), this);
-    auto* boardForm = new QFormLayout(boardGroup);
-    boardForm->setContentsMargins(16, 18, 16, 16);
-    boardForm->setSpacing(10);
+    auto* canvasGroup = new QGroupBox(uiText(QStringLiteral("Canvas")), this);
+    auto* canvasForm = new QFormLayout(canvasGroup);
+    canvasForm->setContentsMargins(16, 18, 16, 16);
+    canvasForm->setSpacing(10);
 
     auto* sizeRow = new QHBoxLayout();
     sizeRow->setSpacing(8);
-    m_boardWidthSpin = new QSpinBox(boardGroup);
-    m_boardWidthSpin->setRange(200, 12000);
-    m_boardWidthSpin->setValue(static_cast<int>(m_settings.boardSize.width()));
-    m_boardWidthSpin->setSuffix(QStringLiteral(" px"));
-    m_boardWidthSpin->setFixedHeight(30);
-    auto* multiply = new QLabel(QStringLiteral("×"), boardGroup);
-    m_boardHeightSpin = new QSpinBox(boardGroup);
-    m_boardHeightSpin->setRange(200, 12000);
-    m_boardHeightSpin->setValue(static_cast<int>(m_settings.boardSize.height()));
-    m_boardHeightSpin->setSuffix(QStringLiteral(" px"));
-    m_boardHeightSpin->setFixedHeight(30);
-    sizeRow->addWidget(m_boardWidthSpin, 1);
+    m_canvasWidthSpin = new QSpinBox(canvasGroup);
+    m_canvasWidthSpin->setRange(200, 12000);
+    m_canvasWidthSpin->setValue(static_cast<int>(m_settings.canvasSize.width()));
+    m_canvasWidthSpin->setSuffix(QStringLiteral(" px"));
+    m_canvasWidthSpin->setFixedHeight(30);
+    auto* multiply = new QLabel(QStringLiteral("×"), canvasGroup);
+    m_canvasHeightSpin = new QSpinBox(canvasGroup);
+    m_canvasHeightSpin->setRange(200, 12000);
+    m_canvasHeightSpin->setValue(static_cast<int>(m_settings.canvasSize.height()));
+    m_canvasHeightSpin->setSuffix(QStringLiteral(" px"));
+    m_canvasHeightSpin->setFixedHeight(30);
+    sizeRow->addWidget(m_canvasWidthSpin, 1);
     sizeRow->addWidget(multiply);
-    sizeRow->addWidget(m_boardHeightSpin, 1);
-    boardForm->addRow(uiText(QStringLiteral("Canvas size")), sizeRow);
+    sizeRow->addWidget(m_canvasHeightSpin, 1);
+    canvasForm->addRow(uiText(QStringLiteral("Canvas size")), sizeRow);
 
-    m_gridCheck = new QCheckBox(uiText(QStringLiteral("Show helper grid")), boardGroup);
+    m_gridCheck = new QCheckBox(uiText(QStringLiteral("Show helper grid")), canvasGroup);
     m_gridCheck->setChecked(m_settings.showGrid);
-    boardForm->addRow(QString(), m_gridCheck);
+    canvasForm->addRow(QString(), m_gridCheck);
 
-    m_canvasColorButton = new QPushButton(boardGroup);
+    m_canvasColorButton = new QPushButton(canvasGroup);
     m_canvasColorButton->setIconSize(QSize(18, 18));
-    boardForm->addRow(uiText(QStringLiteral("Canvas surround color")), m_canvasColorButton);
+    canvasForm->addRow(uiText(QStringLiteral("Canvas surround color")), m_canvasColorButton);
 
-    auto* boardHint = new QLabel(uiText(QStringLiteral("Changing the canvas size does not move existing items; undo restores it.")), boardGroup);
-    boardHint->setObjectName(QStringLiteral("DialogHint"));
-    boardHint->setWordWrap(true);
-    boardForm->addRow(QString(), boardHint);
+    auto* canvasHint = new QLabel(uiText(QStringLiteral("Changing the canvas size does not move existing items; undo restores it.")), canvasGroup);
+    canvasHint->setObjectName(QStringLiteral("DialogHint"));
+    canvasHint->setWordWrap(true);
+    canvasForm->addRow(QString(), canvasHint);
 
-    rootLayout->addWidget(boardGroup);
+    rootLayout->addWidget(canvasGroup);
 
     auto* storageGroup = new QGroupBox(uiText(QStringLiteral("Canvas storage")), this);
     auto* storageLayout = new QHBoxLayout(storageGroup);
@@ -154,7 +154,7 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
     connect(openButton, &QPushButton::clicked, this, &SettingsDialog::openCanvasesFolder);
     connect(buttons, &QDialogButtonBox::accepted, this, [this]() {
         m_settings.brushWidth = m_brushWidthSpin->value();
-        m_settings.boardSize = QSizeF(m_boardWidthSpin->value(), m_boardHeightSpin->value());
+        m_settings.canvasSize = QSizeF(m_canvasWidthSpin->value(), m_canvasHeightSpin->value());
         m_settings.showGrid = m_gridCheck->isChecked();
         accept();
     });
@@ -207,8 +207,8 @@ void SettingsDialog::resetToDefaults()
     if (m_languageCombo)
         m_languageCombo->setCurrentIndex(m_languageCombo->findData(static_cast<int>(UiLanguage::System)));
     m_brushWidthSpin->setValue(defaults.brushWidth);
-    m_boardWidthSpin->setValue(static_cast<int>(defaults.boardSize.width()));
-    m_boardHeightSpin->setValue(static_cast<int>(defaults.boardSize.height()));
+    m_canvasWidthSpin->setValue(static_cast<int>(defaults.canvasSize.width()));
+    m_canvasHeightSpin->setValue(static_cast<int>(defaults.canvasSize.height()));
     m_gridCheck->setChecked(defaults.showGrid);
     m_settings.brushColor = defaults.brushColor;
     m_settings.canvasColor = defaults.canvasColor;

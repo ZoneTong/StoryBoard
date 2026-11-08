@@ -7,8 +7,8 @@
 #include <QSizeF>
 #include <QString>
 
-class BoardItem;
-class BoardScene;
+class CanvasItem;
+class CanvasScene;
 class QComboBox;
 class QDoubleSpinBox;
 class QFormLayout;
@@ -28,9 +28,9 @@ public:
         EditTextRequested = 2
     };
 
-    explicit ItemPropertiesDialog(BoardScene* scene, BoardItem* item, QWidget* parent = nullptr);
+    explicit ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item, QWidget* parent = nullptr);
 
-    static QString layerDescription(const BoardScene* scene, int layerId);
+    static QString layerDescription(const CanvasScene* scene, int layerId);
     void accept() override;
 
 private:
@@ -39,8 +39,8 @@ private:
     void updateFontButton();
     void chooseFont();
 
-    BoardScene* m_scene = nullptr;
-    BoardItem* m_item = nullptr;
+    CanvasScene* m_scene = nullptr;
+    CanvasItem* m_item = nullptr;
 
     QComboBox* m_layerCombo = nullptr;
     QSpinBox* m_heightSpin = nullptr;
@@ -53,6 +53,7 @@ private:
     QDoubleSpinBox* m_positionYSpin = nullptr;
     QDoubleSpinBox* m_widthSpin = nullptr;
     QDoubleSpinBox* m_heightSizeSpin = nullptr;
+    QDoubleSpinBox* m_rotationSpin = nullptr;
     QToolButton* m_textColorButton = nullptr;
     QPushButton* m_fontButton = nullptr;
     QLineEdit* m_imageNameEdit = nullptr;
@@ -62,6 +63,7 @@ private:
     QString m_initialDisplayName;
     QPointF m_initialPos;
     QSizeF m_initialSize;
+    qreal m_initialRotation = 0.0;
     qreal m_initialStrokeWidth = 4.0;
     bool m_hasFill = false;
     bool m_initializing = true;
