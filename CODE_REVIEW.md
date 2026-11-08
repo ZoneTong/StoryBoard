@@ -35,6 +35,8 @@ cmake --build build-check -j 8
 
 便携包由 `scripts/package-portable.sh` 在 Windows 11 + MinGW 13.1 + Qt 6.12 下实机验证：`windeployqt` 部署成功，包内自检 504 项通过。
 
+Windows 便携包另用内部通用自签名证书签名 `StoryBoard.exe`，`Get-AuthenticodeSignature` 返回 `Valid`，签名者为 `CN=ZoneTong Internal Code Signing`；包内附 `ZoneTong-CodeSigning.cer` 与信任安装说明，签名后包内自检仍为 504 passed。
+
 ## 四、记录但未修改
 
 - 双击/右键取最上层图元；若该图元在锁定图层，会提示解锁，属交互取舍。

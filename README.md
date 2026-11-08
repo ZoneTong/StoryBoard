@@ -80,6 +80,62 @@ bash scripts/package-portable.sh --build --qt-dir "$HOME/Qt/6.8.0/gcc_64"
 
 Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux 分支按 Qt 官方部署方式提供，尚未在对应主机实机验证。自检默认要求 Windows 504 项，其他平台接受当前通过数；可用 `--expected-passed 0` 放宽，`--skip-self-test` 跳过（不推荐）。
 
+### Windows 内部签名
+
+公开分发需要购买受信任的代码签名证书；只在内部机器使用时，统一使用本机共享的通用自签名证书：
+
+```text
+主题: CN=ZoneTong Internal Code Signing, O=ZoneTong, C=CN
+指纹: E1622A2E4F44689BF02B8F6415A79A88C509D77F
+有效期: 2026-11-09 至 2031-11-09
+```
+
+私钥只保存在 `Cert:\CurrentUser\My`，不进入仓库和便携包。公钥与复用脚本放在本机共享目录：
+
+```text
+D:\workspace\github.com\ZoneTong\.code-signing\ZoneTong-CodeSigning.cer
+D:\workspace\github.com\ZoneTong\.code-signing\sign-internal.ps1
+```
+
+本机已把公钥安装到 `Cert:\CurrentUser\Root`。其他内部项目可以直接用共享脚本签名：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File `
+  D:\workspace\github.com\ZoneTong\.code-signing\sign-internal.ps1 `
+  D:\work\OtherApp\dist\OtherApp.exe
+```
+
+打包 StoryBoard 时传入证书指纹和公钥文件，脚本会在 `windeployqt` 之后、包内自检之前签 `StoryBoard.exe`，并把 `.cer` 和安装说明放进包内：
+
+```bash
+STORYBOARD_SIGN_CERT_SHA1="E1622A2E4F44689BF02B8F6415A79A88C509D77F" \
+STORYBOARD_SIGN_CERT_FILE="/d/workspace/github.com/ZoneTong/.code-signing/ZoneTong-CodeSigning.cer" \
+bash scripts/package-portable.sh --qt-dir "/d/Qt/6.12.0/mingw_64"
+```
+
+验证签名：
+
+```powershell
+Get-AuthenticodeSignature .\StoryBoard.exe | Format-List Status,StatusMessage,SignerCertificate
+```
+
+目标机器首次使用前，右键包内 `ZoneTong-CodeSigning.cer` → 安装证书 → 当前用户 → 受信任的根证书颁发机构；或执行：
+
+```powershell
+certutil -addstore -user Root .\ZoneTong-CodeSigning.cer
+```
+
+需要所有用户生效时，用管理员 PowerShell：
+
+```powershell
+certutil -addstore Root .\ZoneTong-CodeSigning.cer
+certutil -addstore TrustedPublisher .\ZoneTong-CodeSigning.cer
+```
+
+机器级根存储是让 UAC 和资源管理器都识别发布者的关键；只装当前用户根时，部分 UAC/SmartScreen 场景仍会按机器级存储判定为未知发布者。
+
+自签名只在安装了该根证书的机器上被信任；对外分发仍会提示未知发布者，SmartScreen 信誉也不由自签名解决。若文件是从网络或聊天工具下载的，先对 zip 或 `StoryBoard.exe` 执行 `Unblock-File`，再解压/运行，可去掉“来自 Internet”标记。若签名已显示 `Valid`、证书也已装入机器级根，但仍出现 SmartScreen 的“来自 Internet/无法识别的应用”拦截，那属于 SmartScreen 信誉机制，只能选择“更多信息 → 仍要运行”或关闭系统的“检查应用和文件”。
+
 ## 使用说明
 
 ### 四种模式

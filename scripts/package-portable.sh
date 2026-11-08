@@ -45,6 +45,10 @@ Examples:
   bash scripts/package-portable.sh
   bash scripts/package-portable.sh --build
   bash scripts/package-portable.sh --qt-dir /opt/Qt/6.8.0/gcc_64
+
+Environment (Windows internal signing, optional):
+  STORYBOARD_SIGN_CERT_SHA1  Code-signing cert thumbprint in Cert:\CurrentUser\My
+  STORYBOARD_SIGN_CERT_FILE  Public .cer copied into the package
 EOF
 }
 
@@ -81,6 +85,7 @@ done
 [ -n "$QT_DIR_ARG" ] && QT_DIR_ARG="$(to_posix_path "$QT_DIR_ARG")"
 [ -n "$BUILD_DIR" ] && BUILD_DIR="$(to_posix_path "$BUILD_DIR")"
 [ -n "$OUTPUT_DIR" ] && OUTPUT_DIR="$(to_posix_path "$OUTPUT_DIR")"
+[ -n "${STORYBOARD_SIGN_CERT_FILE:-}" ] && STORYBOARD_SIGN_CERT_FILE="$(to_posix_path "$STORYBOARD_SIGN_CERT_FILE")"
 
 case "$(uname -s)" in
     MINGW*|MSYS*|CYGWIN*) HOST_OS=windows ;;
@@ -355,6 +360,80 @@ win_path() {
     fi
 }
 
+# Sign a Windows PE with a code-signing certificate from Cert:\CurrentUser\My.
+# The private key never leaves the certificate store and is never copied into
+# the repository or the portable package.
+sign_windows_exe() {
+    local exe="$1"
+    if [ -z "${STORYBOARD_SIGN_CERT_SHA1:-}" ]; then
+        return 0
+    fi
+    command -v powershell.exe >/dev/null 2>&1 || \
+        die "STORYBOARD_SIGN_CERT_SHA1 is set but powershell.exe was not found"
+    [ -f "$exe" ] || die "cannot sign missing file: $exe"
+
+    local ps1
+    ps1="$(mktemp "${TMPDIR:-/tmp}/storyboard-sign-XXXXXX.ps1")"
+    cat > "$ps1" <<'PSEOF'
+param(
+    [Parameter(Mandatory = $true)][string]$Exe,
+    [Parameter(Mandatory = $true)][string]$Thumbprint
+)
+$ErrorActionPreference = 'Stop'
+$cert = Get-ChildItem Cert:\CurrentUser\My |
+    Where-Object { $_.Thumbprint -eq $Thumbprint -and $_.HasPrivateKey } |
+    Select-Object -First 1
+if (-not $cert) {
+    throw "code-signing certificate not found in Cert:\CurrentUser\My: $Thumbprint"
+}
+$signature = Set-AuthenticodeSignature -FilePath $Exe -Certificate $cert -HashAlgorithm SHA256
+if ($signature.Status -ne 'Valid') {
+    throw "signature status: $($signature.Status): $($signature.StatusMessage)"
+}
+Write-Output "Signed: $Exe"
+Write-Output "Signer: $($cert.Subject)"
+Write-Output "Thumbprint: $($cert.Thumbprint)"
+PSEOF
+
+    if ! env -u PSModulePath powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass \
+        -File "$(win_path "$ps1")" \
+        -Exe "$(win_path "$exe")" \
+        -Thumbprint "$STORYBOARD_SIGN_CERT_SHA1"; then
+        rm -f "$ps1"
+        die "code signing failed: $exe"
+    fi
+    rm -f "$ps1"
+}
+
+append_signing_readme() {
+    local readme="$1"
+    if [ -z "${STORYBOARD_SIGN_CERT_SHA1:-}" ]; then
+        return 0
+    fi
+    [ -f "$readme" ] || return 0
+
+    local cert_name=""
+    if [ -n "${STORYBOARD_SIGN_CERT_FILE:-}" ]; then
+        cert_name="$(basename "$STORYBOARD_SIGN_CERT_FILE")"
+    fi
+
+    {
+        printf '\n内部签名\n'
+        printf -- '- 本包 StoryBoard.exe 已使用内部自签名证书签名。\n'
+        if [ -n "$cert_name" ]; then
+            printf -- '- 若 Windows 提示“无法验证发布者”，请先安装同目录的 %s：\n' "$cert_name"
+            printf '  推荐在管理员 PowerShell 中执行（机器级信任，UAC 也能识别）：\n'
+            printf '  certutil -addstore Root .\\%s\n' "$cert_name"
+            printf '  certutil -addstore TrustedPublisher .\\%s\n' "$cert_name"
+            printf '  没有管理员权限时，至少装入当前用户：\n'
+            printf '  certutil -addstore -user Root .\\%s\n' "$cert_name"
+        fi
+        printf -- '- 该签名只用于内部识别来源与完整性，不代表对外公开信任。\n'
+        printf -- '- 若文件带有“来自 Internet”标记，可先对 zip 或 StoryBoard.exe 执行：Unblock-File .\\StoryBoard.exe\n'
+        printf -- '- 若签名已信任但仍提示“来自 Internet”，那是 SmartScreen 信誉拦截，自签名无法消除，需选择“更多信息 → 仍要运行”。\n'
+    } >> "$readme"
+}
+
 run_self_test() {
     local package_dir="$1"
     local report="$package_dir/$REPORT_NAME"
@@ -450,6 +529,13 @@ bundle_windows() {
         cp -R "$ROOT/examples/." "$PACKAGE_DIR/examples/"
     fi
     render_readme "$PACKAGE_DIR/README.txt"
+    if [ -n "${STORYBOARD_SIGN_CERT_SHA1:-}" ] && [ -n "${STORYBOARD_SIGN_CERT_FILE:-}" ]; then
+        [ -f "$STORYBOARD_SIGN_CERT_FILE" ] || \
+            die "signing certificate file not found: $STORYBOARD_SIGN_CERT_FILE"
+        cp "$STORYBOARD_SIGN_CERT_FILE" "$PACKAGE_DIR/"
+    fi
+    sign_windows_exe "$PACKAGE_DIR/StoryBoard.exe"
+    append_signing_readme "$PACKAGE_DIR/README.txt"
 }
 
 create_zip() {
