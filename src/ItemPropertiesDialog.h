@@ -5,6 +5,7 @@
 #include <QFont>
 #include <QPointF>
 #include <QSizeF>
+#include <QString>
 
 class BoardItem;
 class BoardScene;
@@ -16,7 +17,7 @@ class QPushButton;
 class QSpinBox;
 class QToolButton;
 
-// 编辑单个图元的属性。图元类型只读，其余字段（图层、层内高度、填充、
+// 编辑单个图元的属性。图元类型只读，其余字段（名称、图层、层内高度、填充、
 // 描边、位置尺寸、文字字体颜色、图片名称）都可以修改，确认后作为一条
 // 撤销记录提交。
 class ItemPropertiesDialog : public QDialog
@@ -43,6 +44,7 @@ private:
 
     QComboBox* m_layerCombo = nullptr;
     QSpinBox* m_heightSpin = nullptr;
+    QLineEdit* m_nameEdit = nullptr;
     QComboBox* m_fillStyleCombo = nullptr;
     QToolButton* m_fillColorButton = nullptr;
     QToolButton* m_strokeColorButton = nullptr;
@@ -56,6 +58,8 @@ private:
     QLineEdit* m_imageNameEdit = nullptr;
 
     QFont m_textFont;
+    QString m_initialItemName;
+    QString m_initialDisplayName;
     QPointF m_initialPos;
     QSizeF m_initialSize;
     qreal m_initialStrokeWidth = 4.0;

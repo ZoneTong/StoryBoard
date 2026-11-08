@@ -37,6 +37,12 @@ public:
     virtual QJsonObject toJson() const = 0;
     virtual void fromJson(const QJsonObject& json) = 0;
 
+    // 需求 30：每个图元都有一个可编辑名称。未自定义名称时回退到类型名，
+    // 这样属性窗、模板和状态提示里始终能拿到一个人类可读的称呼。
+    QString name() const;
+    QString rawName() const { return m_name; }
+    void setName(const QString& name);
+
     QRectF contentRect() const;
     QSizeF contentSize() const { return m_size; }
     void setContentSize(const QSizeF& size);
@@ -104,6 +110,7 @@ private:
     QSizeF m_size { 120.0, 90.0 };
     int m_layerId = 0;
     int m_height = -1;
+    QString m_name;
     DragKind m_drag = DragKind::None;
     Handle m_resizeHandle = NoHandle;
     QPointF m_dragStartScene;

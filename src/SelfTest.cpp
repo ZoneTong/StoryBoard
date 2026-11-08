@@ -1830,6 +1830,8 @@ int runSelfTest(const QString& reportPath)
         QApplication::processEvents();
         QLabel* typeValue = dialog.findChild<QLabel*>(
             QStringLiteral("ItemPropertiesTypeValue"));
+        QLineEdit* nameValue = dialog.findChild<QLineEdit*>(
+            QStringLiteral("ItemPropertiesNameValue"));
         QComboBox* layerValue = dialog.findChild<QComboBox*>(
             QStringLiteral("ItemPropertiesLayerValue"));
         QSpinBox* heightValue = dialog.findChild<QSpinBox*>(
@@ -1848,6 +1850,9 @@ int runSelfTest(const QString& reportPath)
             QStringLiteral("ItemPropertiesWidthValue"));
         check(typeValue && typeValue->text() == propertyShape->displayName(),
               QStringLiteral("属性窗显示图元类型"));
+        check(nameValue && nameValue->isEnabled()
+                  && nameValue->text() == propertyShape->name(),
+              QStringLiteral("属性窗显示图元名称且可编辑"));
         check(layerValue && layerValue->isEnabled()
                   && layerValue->currentText()
                       == ItemPropertiesDialog::layerDescription(&viewScene,
@@ -1909,6 +1914,8 @@ int runSelfTest(const QString& reportPath)
             QApplication::processEvents();
             QComboBox* layerValue = dialog.findChild<QComboBox*>(
                 QStringLiteral("ItemPropertiesLayerValue"));
+            QLineEdit* nameValue = dialog.findChild<QLineEdit*>(
+                QStringLiteral("ItemPropertiesNameValue"));
             QSpinBox* heightValue = dialog.findChild<QSpinBox*>(
                 QStringLiteral("ItemPropertiesHeightValue"));
             QComboBox* fillStyleValue = dialog.findChild<QComboBox*>(
@@ -1927,11 +1934,13 @@ int runSelfTest(const QString& reportPath)
                 QStringLiteral("ItemPropertiesWidthValue"));
             QDoubleSpinBox* heightSizeValue = dialog.findChild<QDoubleSpinBox*>(
                 QStringLiteral("ItemPropertiesHeightSizeValue"));
-            check(layerValue && heightValue && fillStyleValue && fillColorValue
+            check(layerValue && heightValue && nameValue && fillStyleValue && fillColorValue
                       && strokeColorValue && strokeWidthValue && positionXValue
                       && positionYValue && widthValue && heightSizeValue,
                   QStringLiteral("属性窗编辑控件齐全"));
 
+            if (nameValue)
+                nameValue->setText(QStringLiteral("Hero panel"));
             if (layerValue) {
                 const int targetIndex = layerValue->findData(targetLayerId);
                 check(targetIndex >= 0, QStringLiteral("属性窗图层下拉包含目标图层"));
@@ -1975,6 +1984,8 @@ int runSelfTest(const QString& reportPath)
         check(firstShape->pos() == QPointF(150.0, 210.0)
                   && firstShape->contentSize() == QSizeF(240.0, 160.0),
               QStringLiteral("属性窗修改可落到位置和尺寸"));
+        check(firstShape->rawName() == QStringLiteral("Hero panel"),
+              QStringLiteral("属性窗修改可落到图元名称"));
 
         editUndo.undo();
         QApplication::processEvents();
@@ -1982,11 +1993,21 @@ int runSelfTest(const QString& reportPath)
               QStringLiteral("属性窗修改可整体撤销图层和高度"));
         check(firstShape->state() == firstState,
               QStringLiteral("属性窗修改可整体撤销样式和几何"));
+        check(firstShape->rawName().isEmpty(),
+              QStringLiteral("属性窗修改可撤销图元名称"));
 
         editUndo.redo();
         QApplication::processEvents();
         check(firstShape->layerId() == targetLayerId && firstShape->height() == 2,
               QStringLiteral("属性窗修改可整体重做"));
+        check(firstShape->rawName() == QStringLiteral("Hero panel"),
+              QStringLiteral("属性窗修改可重做图元名称"));
+
+        QJsonObject namedJson = firstShape->toJson();
+        ShapeItem loadedNamedShape;
+        loadedNamedShape.fromJson(namedJson);
+        check(loadedNamedShape.rawName() == QStringLiteral("Hero panel"),
+              QStringLiteral("图元名称持久化到模板"));
 
         const int noopUndoBefore = editUndo.count();
         {
@@ -2322,38 +2343,84 @@ int runSelfTest(const QString& reportPath)
 
         QToolBar* mainToolBar = shapeWindow.findChild<QToolBar*>(
             QStringLiteral("MainToolBar"));
-        int colorIndex = -1;
-        int widthIndex = -1;
-        int fillIndex = -1;
-        int fillColorIndex = -1;
-        int strokeColorIndex = -1;
-        if (mainToolBar) {
-            const QList<QAction*> toolbarActions = mainToolBar->actions();
-            for (int i = 0; i < toolbarActions.size(); ++i) {
-                QWidget* widget = toolbarActions.at(i)->isSeparator()
-                    ? nullptr : mainToolBar->widgetForAction(toolbarActions.at(i));
-                if (!widget)
+        QToolBar* brushToolBar = shapeWindow.findChild<QToolBar*>(
+            QStringLiteral("BrushToolBar"));
+        QToolBar* fillToolBar = shapeWindow.findChild<QToolBar*>(
+            QStringLiteral("FillToolBar"));
+        auto toolbarWidgetNames = [](QToolBar* bar) {
+            QStringList names;
+            if (!bar)
+                return names;
+            for (QAction* action : bar->actions()) {
+                if (action->isSeparator())
                     continue;
-                if (widget->objectName() == QStringLiteral("ColorButton"))
-                    colorIndex = i;
-                else if (widget->objectName() == QStringLiteral("BrushWidthCombo"))
-                    widthIndex = i;
-                else if (widget->objectName() == QStringLiteral("FillButton"))
-                    fillIndex = i;
-                else if (widget->objectName() == QStringLiteral("FillColorButton"))
-                    fillColorIndex = i;
-                else if (widget->objectName() == QStringLiteral("StrokeColorButton"))
-                    strokeColorIndex = i;
+                if (QWidget* widget = bar->widgetForAction(action))
+                    names.append(widget->objectName());
+            }
+            return names;
+        };
+        const QStringList mainNames = toolbarWidgetNames(mainToolBar);
+        const QStringList brushNames = toolbarWidgetNames(brushToolBar);
+        const QStringList fillNames = toolbarWidgetNames(fillToolBar);
+        check(brushToolBar && fillToolBar && brushToolBar != fillToolBar,
+              QStringLiteral("画笔样式与填充样式分属两个工具栏"));
+        check(brushNames.contains(QStringLiteral("ColorButton"))
+                  && brushNames.contains(QStringLiteral("BrushWidthCombo"))
+                  && !brushNames.contains(QStringLiteral("FillButton"))
+                  && !brushNames.contains(QStringLiteral("FillColorButton")),
+              QStringLiteral("画笔工具栏只包含画笔颜色和粗细"),
+              brushNames.join(QStringLiteral("|")));
+        check(fillNames.contains(QStringLiteral("FillButton"))
+                  && fillNames.contains(QStringLiteral("FillColorButton"))
+                  && fillNames.contains(QStringLiteral("StrokeColorButton"))
+                  && !fillNames.contains(QStringLiteral("ColorButton"))
+                  && !fillNames.contains(QStringLiteral("BrushWidthCombo")),
+              QStringLiteral("填充工具栏只包含填充样式、填充颜色和描边颜色"),
+              fillNames.join(QStringLiteral("|")));
+        check(!mainNames.contains(QStringLiteral("ColorButton"))
+                  && !mainNames.contains(QStringLiteral("BrushWidthCombo"))
+                  && !mainNames.contains(QStringLiteral("FillButton"))
+                  && !mainNames.contains(QStringLiteral("FillColorButton"))
+                  && !mainNames.contains(QStringLiteral("StrokeColorButton")),
+              QStringLiteral("主工具栏不再混排画笔和填充样式控件"),
+              mainNames.join(QStringLiteral("|")));
+
+        QMenu* brushWidthMenu = shapeWindow.findChild<QMenu*>(
+            QStringLiteral("BrushWidthMenu"));
+        QComboBox* widthCombo = shapeWindow.findChild<QComboBox*>(
+            QStringLiteral("BrushWidthCombo"));
+        check(brushWidthMenu && brushWidthMenu->actions().size() == 15,
+              QStringLiteral("画笔样式菜单提供粗细选项"),
+              QStringLiteral("actions=%1").arg(brushWidthMenu ? brushWidthMenu->actions().size() : 0));
+        if (brushWidthMenu && widthCombo && !brushWidthMenu->actions().isEmpty()) {
+            const int oldWidth = widthCombo->currentData().toInt();
+            QAction* twoPixel = nullptr;
+            for (QAction* action : brushWidthMenu->actions()) {
+                if (action->data().toInt() == 2) {
+                    twoPixel = action;
+                    break;
+                }
+            }
+            check(twoPixel && twoPixel->isCheckable(),
+                  QStringLiteral("画笔粗细菜单使用互斥可勾选选项"),
+                  QStringLiteral("current=%1").arg(oldWidth));
+            if (twoPixel) {
+                twoPixel->trigger();
+                QApplication::processEvents();
+                check(widthCombo->currentData().toInt() == 2 && twoPixel->isChecked(),
+                      QStringLiteral("画笔粗细菜单选项同步工具栏下拉"));
+                QAction* restore = nullptr;
+                for (QAction* action : brushWidthMenu->actions()) {
+                    if (action->data().toInt() == oldWidth) {
+                        restore = action;
+                        break;
+                    }
+                }
+                if (restore)
+                    restore->trigger();
+                QApplication::processEvents();
             }
         }
-        check(colorIndex >= 0 && widthIndex >= 0 && fillIndex >= 0
-                  && fillColorIndex >= 0 && strokeColorIndex >= 0
-                  && colorIndex < widthIndex && widthIndex < fillIndex
-                  && fillIndex < fillColorIndex && fillColorIndex < strokeColorIndex,
-              QStringLiteral("工具栏画笔/填充颜色按钮按顺序连续排列"),
-              QStringLiteral("color=%1 width=%2 fill=%3 fillColor=%4 strokeColor=%5")
-                  .arg(colorIndex).arg(widthIndex).arg(fillIndex)
-                  .arg(fillColorIndex).arg(strokeColorIndex));
 
         QMenu* styleMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("StyleMenu"));
         QMenu* brushStyleMenu = shapeWindow.findChild<QMenu*>(
@@ -2374,6 +2441,8 @@ int runSelfTest(const QString& reportPath)
             fillActions = fillStyleMenu->actions();
         bool brushHasColor = false;
         bool brushHasOutline = false;
+        bool brushHasWidth = brushStyleMenu
+            && brushStyleMenu->findChild<QMenu*>(QStringLiteral("BrushWidthMenu"));
         for (QAction* action : brushActions) {
             if (action->objectName() == QStringLiteral("BrushColorAction"))
                 brushHasColor = true;
@@ -2389,8 +2458,8 @@ int runSelfTest(const QString& reportPath)
             if (action->objectName() == QStringLiteral("FillColorAction"))
                 fillHasColor = true;
         }
-        check(brushStyleMenu && brushHasColor && !brushHasOutline,
-              QStringLiteral("画笔样式子菜单只保留画笔颜色"));
+        check(brushStyleMenu && brushHasColor && brushHasWidth && !brushHasOutline,
+              QStringLiteral("画笔样式子菜单包含画笔颜色和粗细选项"));
         check(fillStyleMenu && fillMenuItemCount == 7 && !fillHasColor,
               QStringLiteral("填充样式子菜单只保留填充样式"),
               QStringLiteral("actions=%1").arg(fillMenuItemCount));

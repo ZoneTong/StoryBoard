@@ -287,6 +287,10 @@
       <translation>画笔样式</translation>
     </message>
     <message>
+      <source>Brush toolbar</source>
+      <translation>画笔工具栏</translation>
+    </message>
+    <message>
       <source>Brush width</source>
       <translation>画笔粗细</translation>
     </message>
@@ -637,6 +641,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>填充样式</translation>
     </message>
     <message>
+      <source>Fill toolbar</source>
+      <translation>填充工具栏</translation>
+    </message>
+    <message>
       <source>Fill: %1 · %2 (click to choose)</source>
       <translation>填充：%1 · %2（点击选择）</translation>
     </message>
@@ -763,6 +771,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>Italic</source>
       <translation>斜体</translation>
+    </message>
+    <message>
+      <source>Item name</source>
+      <translation>图元名称</translation>
     </message>
     <message>
       <source>Item properties</source>

@@ -261,6 +261,7 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
     if (!sameStack(stack, other.stack)
         || pos != other.pos
         || size != other.size
+        || itemName != other.itemName
         || hasShapeState != other.hasShapeState
         || hasTextState != other.hasTextState
         || hasStrokeStyle != other.hasStrokeStyle
@@ -307,6 +308,8 @@ void ItemPropertiesCommand::apply(const ItemPropertiesState& state)
 {
     if (!m_item)
         return;
+
+    m_item->setName(state.itemName);
 
     if (state.hasShapeState) {
         if (auto* shape = dynamic_cast<ShapeItem*>(m_item.data()))

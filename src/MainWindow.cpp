@@ -129,6 +129,11 @@ QLabel* makeBadge(const QString& objectName, QWidget* parent)
     return label;
 }
 
+QList<int> brushWidthPresets()
+{
+    return { 1, 2, 3, 4, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 64 };
+}
+
 } // namespace
 
 MainWindow::MainWindow(QWidget* parent)
@@ -381,6 +386,21 @@ void MainWindow::createActions()
     m_brushColorAct->setIcon(makeColorIcon(m_brushColor, 16));
     connect(m_brushColorAct, &QAction::triggered, this, &MainWindow::chooseBrushColor);
 
+    // 需求 31：画笔样式菜单下提供粗细选项，并与工具栏下拉共用同一个设置。
+    m_brushWidthGroup = new QActionGroup(this);
+    m_brushWidthGroup->setExclusive(true);
+    for (int width : brushWidthPresets()) {
+        auto* action = new QAction(QStringLiteral("%1 px").arg(width), this);
+        action->setObjectName(QStringLiteral("BrushWidthAction%1").arg(width));
+        action->setData(width);
+        action->setCheckable(true);
+        m_brushWidthGroup->addAction(action);
+        connect(action, &QAction::triggered, this, [this, width]() {
+            setBrushWidthUi(width);
+            m_settings.brushWidth = width;
+        });
+    }
+
     auto applyBackgroundMode = [this](BackgroundMode mode) {
         BackgroundState background = m_scene->background();
         if (background.type != BackgroundType::Image)
@@ -532,6 +552,11 @@ void MainWindow::createMenus()
     QMenu* brushStyleMenu = styleMenu->addMenu(uiText(QStringLiteral("Brush style")));
     brushStyleMenu->setObjectName(QStringLiteral("BrushStyleMenu"));
     brushStyleMenu->addAction(m_brushColorAct);
+    brushStyleMenu->addSeparator();
+    QMenu* brushWidthMenu = brushStyleMenu->addMenu(uiText(QStringLiteral("Brush width")));
+    brushWidthMenu->setObjectName(QStringLiteral("BrushWidthMenu"));
+    for (QAction* action : m_brushWidthGroup->actions())
+        brushWidthMenu->addAction(action);
 
     QMenu* fillStyleMenu = styleMenu->addMenu(uiText(QStringLiteral("Fill style")));
     fillStyleMenu->setObjectName(QStringLiteral("FillStyleMenu"));
@@ -576,11 +601,20 @@ void MainWindow::createToolBars()
     mainBar->addAction(m_redoAct);
     mainBar->addSeparator();
 
-    auto* brushLabel = new QLabel(uiText(QStringLiteral("Brush")), mainBar);
-    brushLabel->setObjectName(QStringLiteral("ToolBarLabel"));
-    mainBar->addWidget(brushLabel);
+    auto* brushBar = new QToolBar(uiText(QStringLiteral("Brush toolbar")), this);
+    brushBar->setObjectName(QStringLiteral("BrushToolBar"));
+    brushBar->setMovable(false);
+    brushBar->setFloatable(false);
+    brushBar->setIconSize(QSize(21, 21));
+    brushBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    brushBar->setContextMenuPolicy(Qt::PreventContextMenu);
+    addToolBar(Qt::TopToolBarArea, brushBar);
 
-    m_colorButton = new QToolButton(mainBar);
+    auto* brushLabel = new QLabel(uiText(QStringLiteral("Brush")), brushBar);
+    brushLabel->setObjectName(QStringLiteral("ToolBarLabel"));
+    brushBar->addWidget(brushLabel);
+
+    m_colorButton = new QToolButton(brushBar);
     m_colorButton->setObjectName(QStringLiteral("ColorButton"));
     m_colorButton->setIcon(makeColorIcon(m_brushColor, 20));
     m_colorButton->setIconSize(QSize(20, 20));
@@ -610,15 +644,14 @@ void MainWindow::createToolBars()
     connect(customColor, &QAction::triggered, this, &MainWindow::chooseBrushColor);
     m_colorButton->setMenu(colorMenu);
     connect(m_colorButton, &QToolButton::clicked, this, &MainWindow::chooseBrushColor);
-    mainBar->addWidget(m_colorButton);
+    brushBar->addWidget(m_colorButton);
 
-    m_widthCombo = new QComboBox(mainBar);
+    m_widthCombo = new QComboBox(brushBar);
     m_widthCombo->setObjectName(QStringLiteral("BrushWidthCombo"));
     m_widthCombo->setFixedWidth(88);
     m_widthCombo->setFixedHeight(28);
     m_widthCombo->setToolTip(uiText(QStringLiteral("Brush width")));
-    const QList<int> presetWidths = { 1, 2, 3, 4, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 64 };
-    for (int width : presetWidths)
+    for (int width : brushWidthPresets())
         m_widthCombo->addItem(QStringLiteral("%1 px").arg(width), width);
     connect(m_widthCombo, &QComboBox::currentIndexChanged, this, [this](int index) {
         const int value = m_widthCombo->itemData(index).toInt();
@@ -627,15 +660,33 @@ void MainWindow::createToolBars()
         m_brushWidth = value;
         m_view->setBrushWidth(value);
         m_settings.brushWidth = value;
+        if (m_brushWidthGroup) {
+            for (QAction* action : m_brushWidthGroup->actions()) {
+                if (action->data().toInt() == value) {
+                    const QSignalBlocker blocker(action);
+                    action->setChecked(true);
+                }
+            }
+        }
     });
     setBrushWidthUi(m_brushWidth);
-    auto* widthLabel = new QLabel(uiText(QStringLiteral("Width")), mainBar);
+    auto* widthLabel = new QLabel(uiText(QStringLiteral("Width")), brushBar);
     widthLabel->setObjectName(QStringLiteral("ToolBarLabel"));
-    mainBar->addWidget(widthLabel);
-    mainBar->addWidget(m_widthCombo);
+    brushBar->addWidget(widthLabel);
+    brushBar->addWidget(m_widthCombo);
+    brushBar->addSeparator();
 
-    // 需求 25：填充按钮后移，让画笔颜色与画笔粗细连成一组。
-    m_fillButton = new QToolButton(mainBar);
+    // 需求 31：画笔与填充分属两个工具栏。
+    auto* fillBar = new QToolBar(uiText(QStringLiteral("Fill toolbar")), this);
+    fillBar->setObjectName(QStringLiteral("FillToolBar"));
+    fillBar->setMovable(false);
+    fillBar->setFloatable(false);
+    fillBar->setIconSize(QSize(21, 21));
+    fillBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    fillBar->setContextMenuPolicy(Qt::PreventContextMenu);
+    addToolBar(Qt::TopToolBarArea, fillBar);
+
+    m_fillButton = new QToolButton(fillBar);
     m_fillButton->setObjectName(QStringLiteral("FillButton"));
     m_fillButton->setIconSize(QSize(20, 20));
     m_fillButton->setPopupMode(QToolButton::InstantPopup);
@@ -649,10 +700,10 @@ void MainWindow::createToolBars()
     fillMenu->addAction(m_fillHoneycombAct);
     m_fillButton->setMenu(fillMenu);
     updateFillActions();
-    mainBar->addWidget(m_fillButton);
+    fillBar->addWidget(m_fillButton);
 
     // 需求 29：填充颜色、描边颜色作为独立按钮，排在填充样式按钮之后。
-    m_fillColorButton = new QToolButton(mainBar);
+    m_fillColorButton = new QToolButton(fillBar);
     m_fillColorButton->setObjectName(QStringLiteral("FillColorButton"));
     m_fillColorButton->setIconSize(QSize(20, 20));
     m_fillColorButton->setDefaultAction(m_fillColorAct);
@@ -660,15 +711,15 @@ void MainWindow::createToolBars()
                                       .arg(m_fillColor.isValid()
                                                ? m_fillColor.name(QColor::HexArgb).toUpper()
                                                : uiText(QStringLiteral("Follow brush color"))));
-    mainBar->addWidget(m_fillColorButton);
+    fillBar->addWidget(m_fillColorButton);
 
-    m_strokeColorButton = new QToolButton(mainBar);
+    m_strokeColorButton = new QToolButton(fillBar);
     m_strokeColorButton->setObjectName(QStringLiteral("StrokeColorButton"));
     m_strokeColorButton->setIconSize(QSize(20, 20));
     m_strokeColorButton->setDefaultAction(m_strokeColorAct);
     m_strokeColorButton->setToolTip(uiText(QStringLiteral("Outline color: %1 (click to choose)"))
                                         .arg(m_brushColor.name(QColor::HexArgb).toUpper()));
-    mainBar->addWidget(m_strokeColorButton);
+    fillBar->addWidget(m_strokeColorButton);
     mainBar->addSeparator();
 
     mainBar->addAction(m_fitAct);
@@ -909,6 +960,15 @@ void MainWindow::setBrushWidthUi(int width)
         }
         const QSignalBlocker blocker(m_widthCombo);
         m_widthCombo->setCurrentIndex(index);
+    }
+    if (m_brushWidthGroup) {
+        for (QAction* action : m_brushWidthGroup->actions()) {
+            if (action->data().toInt() == width) {
+                const QSignalBlocker blocker(action);
+                action->setChecked(true);
+                break;
+            }
+        }
     }
 }
 

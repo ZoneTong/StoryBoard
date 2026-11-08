@@ -152,6 +152,7 @@ private:
     QActionGroup* m_modeGroup = nullptr;
     QActionGroup* m_backgroundModeGroup = nullptr;
     QActionGroup* m_fillStyleGroup = nullptr;
+    QActionGroup* m_brushWidthGroup = nullptr;
     QMenu* m_templatesMenu = nullptr;
     QMenu* m_shapeMenu = nullptr;
 

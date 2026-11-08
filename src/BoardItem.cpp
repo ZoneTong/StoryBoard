@@ -56,6 +56,20 @@ BoardItem::BoardItem(QGraphicsItem* parent)
     setCursor(Qt::ArrowCursor);
 }
 
+QString BoardItem::name() const
+{
+    const QString trimmed = m_name.trimmed();
+    return trimmed.isEmpty() ? displayName() : trimmed;
+}
+
+void BoardItem::setName(const QString& name)
+{
+    const QString trimmed = name.trimmed();
+    if (m_name == trimmed)
+        return;
+    m_name = trimmed;
+}
+
 QSizeF BoardItem::minimumSize()
 {
     return QSizeF(kMinimumSide, kMinimumSide);
@@ -511,6 +525,8 @@ QJsonObject BoardItem::baseJson() const
     json.insert(QStringLiteral("h"), m_size.height());
     json.insert(QStringLiteral("layer"), m_layerId);
     json.insert(QStringLiteral("height"), m_height);
+    if (!m_name.isEmpty())
+        json.insert(QStringLiteral("itemName"), m_name);
     // Kept for readability and for older readers; the scene always derives
     // the actual paint order from layer + height.
     json.insert(QStringLiteral("z"), zValue());
@@ -527,4 +543,5 @@ void BoardItem::applyBaseJson(const QJsonObject& json)
     m_height = json.contains(QStringLiteral("height"))
         ? qMax(0, json.value(QStringLiteral("height")).toInt(0))
         : -1;
+    m_name = json.value(QStringLiteral("itemName")).toString().trimmed();
 }

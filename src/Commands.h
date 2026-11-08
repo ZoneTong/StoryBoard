@@ -133,6 +133,7 @@ struct ItemPropertiesState {
     ItemStackList stack;
     QPointF pos;
     QSizeF size;
+    QString itemName;
     bool hasShapeState = false;
     ShapeItemState shapeState;
     bool hasTextState = false;

@@ -149,10 +149,19 @@ ItemPropertiesDialog::ItemPropertiesDialog(BoardScene* scene, BoardItem* item, Q
     } else {
         m_initialPos = item->pos();
         m_initialSize = item->contentSize();
+        m_initialItemName = item->rawName();
+        m_initialDisplayName = item->name();
         auto* typeValue = new QLabel(item->displayName(), this);
         typeValue->setObjectName(QStringLiteral("ItemPropertiesTypeValue"));
         typeValue->setTextInteractionFlags(Qt::TextSelectableByMouse);
         form->addRow(uiText(QStringLiteral("Item type")), typeValue);
+
+        // 需求 30：图元名称可编辑；空名称时显示并回退为类型名称。
+        m_nameEdit = new QLineEdit(this);
+        m_nameEdit->setObjectName(QStringLiteral("ItemPropertiesNameValue"));
+        m_nameEdit->setText(m_initialDisplayName);
+        m_nameEdit->setPlaceholderText(item->displayName());
+        form->addRow(uiText(QStringLiteral("Item name")), m_nameEdit);
 
         m_layerCombo = new QComboBox(this);
         m_layerCombo->setObjectName(QStringLiteral("ItemPropertiesLayerValue"));
@@ -365,6 +374,7 @@ void ItemPropertiesDialog::applyChanges()
     ItemPropertiesState before;
     before.pos = m_item->pos();
     before.size = m_item->contentSize();
+    before.itemName = m_initialItemName;
     before.stack.append({ m_item, oldLayer, oldHeight });
     for (BoardItem* peer : std::as_const(swapped))
         before.stack.append({ peer, peer->layerId(), peer->height() });
@@ -381,6 +391,10 @@ void ItemPropertiesDialog::applyChanges()
                         spinValue(m_positionYSpin, m_initialPos.y()));
     after.size = QSizeF(spinValue(m_widthSpin, m_initialSize.width()),
                         spinValue(m_heightSizeSpin, m_initialSize.height()));
+    const QString typedName = m_nameEdit ? m_nameEdit->text().trimmed() : QString();
+    after.itemName = (m_initialItemName.isEmpty() && typedName == m_initialDisplayName)
+        ? QString()
+        : typedName;
     after.stack.append({ m_item, targetLayer, targetHeight });
     for (BoardItem* peer : std::as_const(swapped))
         after.stack.append({ peer, oldLayer, oldHeight });
