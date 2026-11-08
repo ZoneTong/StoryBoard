@@ -11,6 +11,7 @@
 
 class BoardScene;
 class BoardView;
+class BoardItem;
 class LayerPanel;
 class QAction;
 class QActionGroup;
@@ -88,6 +89,8 @@ private:
     void setBrushWidthUi(int width);
     void updateTemplateMenu();
     void updateBackgroundModeActions();
+    void showSelectedItemProperties();
+    void showItemProperties(BoardItem* item);
     QString documentName() const;
 
     BoardScene* m_scene = nullptr;
@@ -112,6 +115,7 @@ private:
     QAction* m_redoAct = nullptr;
     QAction* m_deleteAct = nullptr;
     QAction* m_selectAllAct = nullptr;
+    QAction* m_itemPropsAct = nullptr;
 
     QAction* m_viewModeAct = nullptr;
     QAction* m_brushModeAct = nullptr;

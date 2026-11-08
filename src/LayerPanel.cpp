@@ -212,7 +212,7 @@ void LayerPanel::refresh()
     backgroundRow->setData(Qt::UserRole, BoardScene::BackgroundLayerId);
     backgroundRow->setFlags(Qt::ItemIsEnabled);
     backgroundRow->setSizeHint(QSize(0, 30));
-    backgroundRow->setToolTip(uiText(QStringLiteral("The background is always the bottom layer and cannot hold items.\nUse the checkbox to show or hide it.")));
+    backgroundRow->setToolTip(uiText(QStringLiteral("The background is always the bottom layer, cannot hold items, and is locked by default.\nUse the checkbox to show or hide it.")));
     m_list->setItemWidget(backgroundRow,
                           createLayerRow(m_scene->layer(BoardScene::BackgroundLayerId), 0, 0));
 
@@ -385,7 +385,7 @@ void LayerPanel::setLayerLocked(int layerId, bool locked)
 
     const QString layerName = m_scene->layer(layerId).name;
     if (!m_scene->setLayerLocked(layerId, locked)) {
-        emit statusMessage(uiText(QStringLiteral("The background layer cannot be locked.")));
+        emit statusMessage(uiText(QStringLiteral("The background layer is always locked.")));
         scheduleRefresh();
         return;
     }

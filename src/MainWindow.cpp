@@ -8,6 +8,7 @@
 #include "ExportDialog.h"
 #include "IconFactory.h"
 #include "ImageItem.h"
+#include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
@@ -234,6 +235,9 @@ void MainWindow::createActions()
     m_selectAllAct = new QAction(uiText(QStringLiteral("Select all items")), this);
     m_selectAllAct->setShortcut(QKeySequence::SelectAll);
     m_selectAllAct->setStatusTip(uiText(QStringLiteral("Select all items (Ctrl+A)")));
+    m_itemPropsAct = makeAction(this, IconId::Settings, uiText(QStringLiteral("Item properties…")),
+                                QKeySequence(QStringLiteral("Q")),
+                                uiText(QStringLiteral("Show the selected item's properties (Q)")));
 
     m_viewModeAct = makeAction(this, IconId::View, uiText(QStringLiteral("View mode")),
                                QKeySequence(QStringLiteral("V")),
@@ -320,6 +324,7 @@ void MainWindow::createActions()
     connect(m_redoAct, &QAction::triggered, m_undo, &QUndoStack::redo);
     connect(m_deleteAct, &QAction::triggered, m_scene, &BoardScene::deleteSelected);
     connect(m_selectAllAct, &QAction::triggered, m_scene, &BoardScene::selectAllItems);
+    connect(m_itemPropsAct, &QAction::triggered, this, &MainWindow::showSelectedItemProperties);
 
     connect(m_modeGroup, &QActionGroup::triggered, this, [this](QAction* action) {
         setToolMode(static_cast<ToolMode>(action->data().toInt()));
@@ -440,6 +445,8 @@ void MainWindow::createMenus()
     editMenu->addSeparator();
     editMenu->addAction(m_deleteAct);
     editMenu->addAction(m_selectAllAct);
+    editMenu->addSeparator();
+    editMenu->addAction(m_itemPropsAct);
     editMenu->addSeparator();
 
     auto applySelectedHeight = [this](int delta) {
@@ -695,6 +702,7 @@ void MainWindow::connectSignals()
     });
     connect(m_view, &BoardView::textPlacementRequested, this, &MainWindow::insertTextAt);
     connect(m_view, &BoardView::editTextRequested, this, &MainWindow::editTextItem);
+    connect(m_view, &BoardView::itemPropertiesRequested, this, &MainWindow::showItemProperties);
 
     connect(m_scene, &BoardScene::contentChanged, this, [this]() {
         updateActions();
@@ -767,6 +775,7 @@ void MainWindow::updateActions()
     const bool editing = m_view->mode() == ToolMode::Edit;
     m_deleteAct->setEnabled(editing && !m_scene->selectedItems().isEmpty());
     m_selectAllAct->setEnabled(editing && m_scene->boardItemCount() > 0);
+    m_itemPropsAct->setEnabled(editing && m_scene->selectedBoardItems().size() == 1);
 
     updateBackgroundModeActions();
 }
@@ -1434,6 +1443,28 @@ void MainWindow::editTextItem(TextItem* item)
         item->setSelected(true);
         statusBar()->showMessage(uiText(QStringLiteral("Text updated")), 4000);
     }
+}
+
+void MainWindow::showSelectedItemProperties()
+{
+    const QList<BoardItem*> items = m_scene->selectedBoardItems();
+    if (items.size() != 1) {
+        statusBar()->showMessage(uiText(QStringLiteral("Select a single item to show its properties")), 3000);
+        return;
+    }
+    showItemProperties(items.constFirst());
+}
+
+void MainWindow::showItemProperties(BoardItem* item)
+{
+    if (!item || item->scene() != m_scene)
+        return;
+
+    ItemPropertiesDialog dialog(m_scene, item, this);
+    if (dialog.exec() != ItemPropertiesDialog::EditTextRequested)
+        return;
+    if (auto* text = dynamic_cast<TextItem*>(item))
+        editTextItem(text);
 }
 
 void MainWindow::replaceBackgroundImage()

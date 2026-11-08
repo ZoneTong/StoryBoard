@@ -96,7 +96,7 @@ BoardScene::BoardScene(QObject* parent)
     : QGraphicsScene(parent)
 {
     m_layers = {
-        { BackgroundLayerId, kBackgroundLayerName, true, false },
+        { BackgroundLayerId, kBackgroundLayerName, true, true },
         { kFirstUserLayerId, QStringLiteral("图层 1"), true, false }
     };
     m_activeLayerId = kFirstUserLayerId;
@@ -471,7 +471,7 @@ bool BoardScene::isLayerLocked(int layerId) const
 
 bool BoardScene::setLayerLocked(int layerId, bool locked)
 {
-    // 背景层不参与锁定：它没有图元，锁定它没有任何可观察的效果。
+    // 背景层始终锁定：它只承载背景，没有可编辑图元，也不允许解锁。
     if (layerId == BackgroundLayerId)
         return false;
 
@@ -662,7 +662,7 @@ LayerStackState BoardScene::sanitizedLayerState(const LayerStackState& state) co
             break;
         }
     }
-    result.layers.append({ BackgroundLayerId, kBackgroundLayerName, backgroundVisible, false });
+    result.layers.append({ BackgroundLayerId, kBackgroundLayerName, backgroundVisible, true });
 
     QSet<int> used;
     used.insert(BackgroundLayerId);
@@ -1254,7 +1254,7 @@ void BoardScene::resetDocument()
     clearOrphans();
     m_background = BackgroundState();
     m_layers = {
-        { BackgroundLayerId, kBackgroundLayerName, true, false },
+        { BackgroundLayerId, kBackgroundLayerName, true, true },
         { kFirstUserLayerId, QStringLiteral("图层 1"), true, false }
     };
     m_activeLayerId = kFirstUserLayerId;
@@ -1400,14 +1400,14 @@ bool BoardScene::fromJson(const QJsonObject& root, QString* errorMessage)
 
     LayerStackState state;
     state.layers = {
-        { BackgroundLayerId, kBackgroundLayerName },
-        { kFirstUserLayerId, QStringLiteral("图层 1") }
+        { BackgroundLayerId, kBackgroundLayerName, true, true },
+        { kFirstUserLayerId, QStringLiteral("图层 1"), true, false }
     };
     state.activeLayerId = kFirstUserLayerId;
     if (hasLayerData) {
         bool backgroundVisible = true;
         state.layers.clear();
-        state.layers.append({ BackgroundLayerId, kBackgroundLayerName });
+        state.layers.append({ BackgroundLayerId, kBackgroundLayerName, true, true });
         const QJsonArray layerArray = root.value(QStringLiteral("layers")).toArray();
         QSet<int> used;
         used.insert(BackgroundLayerId);

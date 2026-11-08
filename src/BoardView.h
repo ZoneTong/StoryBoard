@@ -44,6 +44,7 @@ signals:
     void statusMessage(const QString& message);
     void textPlacementRequested(const QPointF& scenePos);
     void editTextRequested(TextItem* item);
+    void itemPropertiesRequested(BoardItem* item);
 
 protected:
     void paintEvent(QPaintEvent* event) override;

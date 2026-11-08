@@ -54,6 +54,8 @@ set(STORYBOARD_SOURCES
     src/SettingsDialog.cpp
     src/TextDialog.h
     src/TextDialog.cpp
+    src/ItemPropertiesDialog.h
+    src/ItemPropertiesDialog.cpp
     src/MainWindow.h
     src/MainWindow.cpp
     src/SelfTest.h
@@ -64,7 +66,7 @@ set(STORYBOARD_SOURCES
 qt_add_executable(StoryBoard WIN32 ${STORYBOARD_SOURCES})
 
 # Qt 官方 i18n 流水线：.ts -> .qm，并把 .qm 与 .ts 一起嵌进资源。
-# 运行时 QTranslator 从 :/i18n/storyboard_en.qm 装载英文翻译。
+# 运行时 QTranslator 从 :/i18n/storyboard_zh.qm 装载中文翻译。
 qt_add_lrelease(StoryBoard
     TS_FILES ${STORYBOARD_TS_FILES}
     QM_FILES_OUTPUT_VARIABLE STORYBOARD_QM_FILES

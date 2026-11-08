@@ -402,11 +402,10 @@ void BoardView::mouseDoubleClickEvent(QMouseEvent* event)
             QGraphicsView::mouseDoubleClickEvent(event);
             return;
         }
-        if (auto* textItem = dynamic_cast<TextItem*>(boardItem)) {
-            emit editTextRequested(textItem);
-            event->accept();
-            return;
-        }
+        // 双击图元统一弹出属性窗；文字属性的“编辑文字…”按钮再进入文字编辑。
+        emit itemPropertiesRequested(boardItem);
+        event->accept();
+        return;
     }
     QGraphicsView::mouseDoubleClickEvent(event);
 }

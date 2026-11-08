@@ -6,6 +6,7 @@
 #include "Commands.h"
 #include "ImageItem.h"
 #include "I18n.h"
+#include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
 #include "MainWindow.h"
 #include "SettingsDialog.h"
@@ -38,6 +39,8 @@
 #include <QMarginsF>
 #include <QMenu>
 #include <QMouseEvent>
+#include <QPushButton>
+#include <QWidget>
 #include <QPageLayout>
 #include <QPageSize>
 #include <QPainter>
@@ -697,8 +700,11 @@ int runSelfTest(const QString& reportPath)
           QStringLiteral("锁定图层上的图元不可编辑也不可选中"));
     check(layerScene.isItemEditable(topLine),
           QStringLiteral("锁定一个图层不影响其他图层编辑"));
-    check(!layerScene.setLayerLocked(BoardScene::BackgroundLayerId, true),
-          QStringLiteral("背景层不支持锁定"));
+    check(layerScene.isLayerLocked(BoardScene::BackgroundLayerId),
+          QStringLiteral("背景层默认锁定"));
+    check(!layerScene.setLayerLocked(BoardScene::BackgroundLayerId, false)
+              && layerScene.isLayerLocked(BoardScene::BackgroundLayerId),
+          QStringLiteral("背景层锁定状态不可更改"));
     check(layerScene.setLayerLocked(lowerLayerId, false) && layerScene.isItemEditable(lower),
           QStringLiteral("解锁图层后图元恢复可编辑"));
 
@@ -1716,9 +1722,9 @@ int runSelfTest(const QString& reportPath)
     viewScene.addItemsWithUndo({ doubleClickText }, QStringLiteral("添加文字"));
     view.fitAll();
     QApplication::processEvents();
-    int textEditRequests = 0;
-    QObject::connect(&view, &BoardView::editTextRequested, &view,
-                     [&textEditRequests](TextItem*) { ++textEditRequests; });
+    int itemPropertyRequests = 0;
+    QObject::connect(&view, &BoardView::itemPropertiesRequested, &view,
+                     [&itemPropertyRequests](BoardItem*) { ++itemPropertyRequests; });
     const QPoint doubleClickPoint = view.mapFromScene(
         doubleClickText->sceneContentRect().center());
     QMouseEvent doubleClickEvent(
@@ -1727,7 +1733,71 @@ int runSelfTest(const QString& reportPath)
         Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
     QApplication::sendEvent(view.viewport(), &doubleClickEvent);
     QApplication::processEvents();
-    check(textEditRequests == 1, QStringLiteral("双击文字请求编辑"));
+    check(itemPropertyRequests == 1, QStringLiteral("双击文字请求属性弹窗"));
+
+    {
+        ItemPropertiesDialog dialog(&viewScene, doubleClickText, &view);
+        dialog.show();
+        QApplication::processEvents();
+        bool hasEditText = false;
+        for (QPushButton* button : dialog.findChildren<QPushButton*>()) {
+            if (button->text() == uiText(QStringLiteral("Edit text…"))) {
+                hasEditText = true;
+                break;
+            }
+        }
+        check(hasEditText, QStringLiteral("文字属性窗提供编辑文字入口"));
+        dialog.close();
+        QApplication::processEvents();
+    }
+
+    // 需求：选中图元后按 Q 或双击图元，弹窗显示 layer / height / 填充样式 / 颜色等属性。
+    auto* propertyShape = new ShapeItem(ShapeType::RoundedRectangle);
+    propertyShape->setStyle(QColor(QStringLiteral("#1D4ED8")),
+                            QColor(QStringLiteral("#BFDBFE")), 6.0);
+    propertyShape->setFill(QColor(QStringLiteral("#BFDBFE")), FillStyle::GridHatch);
+    propertyShape->setContentSize(QSizeF(180.0, 120.0));
+    propertyShape->setPos(QPointF(360, 620));
+    viewScene.addItemsWithUndo({ propertyShape }, QStringLiteral("Add property shape"));
+    view.fitAll();
+    QApplication::processEvents();
+
+    const int requestsBeforeShape = itemPropertyRequests;
+    const QPoint shapePoint = view.mapFromScene(propertyShape->sceneContentRect().center());
+    QMouseEvent shapeDoubleClick(
+        QEvent::MouseButtonDblClick, QPointF(shapePoint),
+        QPointF(view.viewport()->mapToGlobal(shapePoint)),
+        Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    QApplication::sendEvent(view.viewport(), &shapeDoubleClick);
+    QApplication::processEvents();
+    check(itemPropertyRequests == requestsBeforeShape + 1,
+          QStringLiteral("双击图形请求属性弹窗"));
+
+    {
+        ItemPropertiesDialog dialog(&viewScene, propertyShape, &view);
+        dialog.show();
+        QApplication::processEvents();
+        QLabel* layerValue = dialog.findChild<QLabel*>(
+            QStringLiteral("ItemPropertiesLayerValue"));
+        QLabel* heightValue = dialog.findChild<QLabel*>(
+            QStringLiteral("ItemPropertiesHeightValue"));
+        QLabel* fillStyleValue = dialog.findChild<QLabel*>(
+            QStringLiteral("ItemPropertiesFillStyleValue"));
+        QWidget* fillColorValue = dialog.findChild<QWidget*>(
+            QStringLiteral("ItemPropertiesFillColorValue"));
+        check(layerValue && layerValue->text()
+                  == ItemPropertiesDialog::layerDescription(&viewScene, propertyShape->layerId()),
+              QStringLiteral("属性窗显示图元所在图层"));
+        check(heightValue && heightValue->text() == QString::number(propertyShape->height()),
+              QStringLiteral("属性窗显示层内高度"));
+        check(fillStyleValue
+                  && fillStyleValue->text() == fillStyleName(propertyShape->fillStyle()),
+              QStringLiteral("属性窗显示填充样式"),
+              fillStyleValue ? fillStyleValue->text() : QString());
+        check(fillColorValue != nullptr, QStringLiteral("属性窗显示填充颜色"));
+        dialog.close();
+        QApplication::processEvents();
+    }
 
     const int baseLayerId = viewScene.activeLayerId();
     check(viewScene.addLayerWithUndo(QStringLiteral("锁定的注释")),
@@ -1754,7 +1824,7 @@ int runSelfTest(const QString& reportPath)
     check(!lockedText->isSelected(), QStringLiteral("全选不包含锁定图层图元"));
     viewScene.clearSelection();
 
-    const int requestsBeforeLockedClick = textEditRequests;
+    const int requestsBeforeLockedClick = itemPropertyRequests;
     const QPoint lockedPoint = view.mapFromScene(lockedText->sceneContentRect().center());
     QMouseEvent lockedDoubleClick(
         QEvent::MouseButtonDblClick, QPointF(lockedPoint),
@@ -1762,8 +1832,8 @@ int runSelfTest(const QString& reportPath)
         Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
     QApplication::sendEvent(view.viewport(), &lockedDoubleClick);
     QApplication::processEvents();
-    check(textEditRequests == requestsBeforeLockedClick,
-          QStringLiteral("双击锁定图层文字不会进入编辑"));
+    check(itemPropertyRequests == requestsBeforeLockedClick,
+          QStringLiteral("双击锁定图层图元不会弹出属性窗"));
 
     sendMouseEvent(view.viewport(), QEvent::MouseButtonPress, lockedPoint,
                    Qt::LeftButton, Qt::LeftButton);
@@ -1926,6 +1996,20 @@ int runSelfTest(const QString& reportPath)
                   && heightDownAction
                   && heightDownAction->shortcut() == QKeySequence(Qt::Key_BracketLeft),
               QStringLiteral("编辑菜单提供 ] / [ 高度快捷键"));
+
+        QAction* propertiesAction = nullptr;
+        for (QAction* action : windowActions) {
+            if (action->text().startsWith(QStringLiteral("图元属性"))
+                && action->shortcut() == QKeySequence(QStringLiteral("Q"))) {
+                propertiesAction = action;
+                break;
+            }
+        }
+        if (createdText)
+            createdText->setSelected(true);
+        QApplication::processEvents();
+        check(propertiesAction && propertiesAction->isEnabled(),
+              QStringLiteral("编辑菜单提供 Q 图元属性快捷键且选中单个图元时可用"));
         if (createdText && heightUpAction && heightDownAction) {
             const int heightBeforeShortcut = createdText->height();
             heightUpAction->trigger();

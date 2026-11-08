@@ -1,11 +1,14 @@
 #include "I18n.h"
 
 #include "MainWindow.h"
+#include "BoardItem.h"
 #include "BoardScene.h"
 #include "BoardView.h"
 #include "ExportDialog.h"
+#include "ItemPropertiesDialog.h"
 #include "SelfTest.h"
 #include "SettingsDialog.h"
+#include "ShapeItem.h"
 #include "TextDialog.h"
 
 #include <QApplication>
@@ -257,6 +260,34 @@ int main(int argc, char** argv)
         font.setBold(true);
         dialog.setTextFont(font);
         dialog.setTextColor(QColor(QStringLiteral("#1D4ED8")));
+        dialog.show();
+        QApplication::processEvents();
+        return dialog.grab().save(outputPath) ? 0 : 1;
+    }
+
+    if (arguments.contains(QStringLiteral("--item-properties-screenshot"))) {
+        const QString outputPath = takeOptionPath(arguments, QStringLiteral("--item-properties-screenshot"));
+        if (outputPath.isEmpty())
+            return 2;
+
+        BoardScene demoScene;
+        populateDemoScene(demoScene);
+        demoScene.setMode(ToolMode::Edit);
+        BoardItem* target = nullptr;
+        for (BoardItem* item : demoScene.boardItems()) {
+            if (dynamic_cast<ShapeItem*>(item)) {
+                target = item;
+                break;
+            }
+        }
+        if (!target && demoScene.boardItemCount() > 0)
+            target = demoScene.boardItems().constFirst();
+        if (!target)
+            return 3;
+        demoScene.setActiveLayer(target->layerId());
+        target->setSelected(true);
+
+        ItemPropertiesDialog dialog(&demoScene, target);
         dialog.show();
         QApplication::processEvents();
         return dialog.grab().save(outputPath) ? 0 : 1;
