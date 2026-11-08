@@ -1896,16 +1896,8 @@ void MainWindow::showItemProperties(CanvasItem* item)
     const bool editable = m_view->mode() == ToolMode::Edit && m_scene->isItemEditable(item);
 
     closeItemProperties();
-    QPointer<CanvasItem> itemGuard(item);
     ItemPropertiesDialog dialog(m_scene, item, this, editable);
     m_itemPropertiesDialog = &dialog;
-    connect(&dialog, &QDialog::finished, this, [this, itemGuard](int result) {
-        if (result == ItemPropertiesDialog::EditTextRequested && itemGuard
-            && itemGuard->scene() == m_scene) {
-            if (auto* text = dynamic_cast<TextItem*>(itemGuard.data()))
-                editTextItem(text);
-        }
-    });
     dialog.exec();
     m_itemPropertiesDialog = nullptr;
 }

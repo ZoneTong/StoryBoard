@@ -1,8 +1,8 @@
 # StoryBoard 代码审查与缺陷修复报告
 
 审查对象：`D:\workspace\github.com\ZoneTong\StoryBoard`（Qt 6 / C++17 / CMake，src 下 34 个文件、约 8500 行）
-审查时间：2026-11-07；2026-11-08 追加需求 40–42 与旋转手柄收口复核
-结论：**历史审查发现的 4 个真实缺陷已修复并保留回归；2026-11-08 复核发现的 5 处需求/实现缺口已全部收口，自检 498 项全通过。**
+审查时间：2026-11-07；2026-11-08 追加需求 40–42、旋转手柄与属性窗文字/图片编辑收口复核
+结论：**历史审查发现的 4 个真实缺陷已修复并保留回归；2026-11-08 复核发现的 5 处需求/实现缺口已全部收口，后续属性窗文字/图片编辑也已收口，自检 503 项全通过。**
 
 ## 一、审查与验证方式
 
@@ -91,7 +91,7 @@
    - `CanvasItem::boundingRect()` 在选中时把旋转手柄至内容顶边的距离与半径计入上边界；`refreshViewDependentGeometry()` 在缩放后重新声明几何，`CanvasScene` / `CanvasView::emitZoom()` 统一刷新。
    - 修复前低缩放（例如 0.4×）手柄中心可超出固定 42 场景单位的粗边界，场景命中先失败，表现为看得见拖不动；现在手柄仍位于 `boundingRect()`、`shape()` 与 `QGraphicsScene::items()` 命中范围内。
 5. **自检与文档**
-   - 自检由 486 项增至 **498 项**：新增模态/只读字段断言、只读关闭不写回、主窗口查看模式双击端到端只读弹窗、低缩放 `boundingRect`/`shape`/场景命中四项，均通过。
+   - 当时自检由 486 项增至 **498 项**（后续属性窗文字/图片编辑追加至 503 项）：新增模态/只读字段断言、只读关闭不写回、主窗口查看模式双击端到端只读弹窗、低缩放 `boundingRect`/`shape`/场景命中四项，均通过。
    - `README.md` 已把“非模态/仅编辑模式可用”改为“模态/任意模式可查看、仅编辑模式可编辑”，并补充工具栏旋转按钮与“图形”标签说明；`docs/` 六张截图已用最新构建重新生成。
 
 验证命令与结果：
@@ -102,9 +102,34 @@ cmake --build build-check -j 8
 # [100%] Built target StoryBoard
 
 build-check\bin\StoryBoard.exe --self-test selftest-43.txt
-# SUMMARY 498 passed, 0 failed
+# SUMMARY 498 passed, 0 failed（当时）
 
 StoryBoard.exe --ui-screenshot docs\screenshot.png   # 1440×900，单排工具栏，含“图形”与旋转按钮
 StoryBoard.exe --item-properties-screenshot build-check\bin\props-43-check.png
 ```
+
+## 七、2026-11-08 属性窗文字/图片编辑追加收口
+
+1. **文字重影**
+   - `TextItem::applyState()` 原先在尺寸未变化时仍调用 `prepareGeometryChange()`，随后 `setContentSize()` 内部再次调用；重复声明几何会让旧字形绘制区域没有被稳定纳入重绘。现在只在 `setContentSize()` 真正改变尺寸时声明几何，正文和字体更新后统一 `update()`。
+   - 属性窗正文变化时，`TextItem` 的自然尺寸同步到宽度/高度字段；确定时 `ItemPropertiesCommand` 直接按自然尺寸提交，不再把新文字压进旧图元的拉伸尺寸。
+2. **文字/图片编辑后重置图元尺寸**
+   - 文字正文变化：`after.size = after.textState.baseSize = TextItem::measure(newText, font)`，撤销时恢复旧尺寸。
+   - 图片本体替换：属性窗载入新图后立即把尺寸字段更新为图片原始像素尺寸；确定时 `after.size = newImage.size()`，撤销时恢复旧尺寸。
+3. **移除文字属性窗的“编辑文字…”按钮**
+   - 删除 `ItemPropertiesDialog` 的 `EditTextRequested` 及按钮，文字正文只在属性窗的 `Text content` 编辑框中修改。
+   - `MainWindow::showItemProperties()` 不再连接该结果码；右键菜单独立的“编辑文字…”入口与添加文字对话框保留。
+4. **自检**
+   - 新增/调整：文字属性窗不再提供编辑文字按钮、仍保留正文编辑框、正文修改后自然尺寸与撤销恢复、图片替换后原始像素尺寸与撤销恢复。
+   - 自检从 498 增至 **503 项，全部通过**（`SUMMARY 503 passed, 0 failed`）。
+
+验证命令：
+
+```powershell
+cmake --build build-check -j 8
+# [100%] Built target StoryBoard
+StoryBoard.exe --self-test selftest-44.txt
+# SUMMARY 503 passed, 0 failed
+```
+
 

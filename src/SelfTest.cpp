@@ -1807,7 +1807,11 @@ int runSelfTest(const QString& reportPath)
                 break;
             }
         }
-        check(hasEditText, QStringLiteral("文字属性窗提供编辑文字入口"));
+        check(!hasEditText, QStringLiteral("文字属性窗不再提供编辑文字按钮"));
+        QPlainTextEdit* inlineText = dialog.findChild<QPlainTextEdit*>(
+            QStringLiteral("ItemPropertiesTextValue"));
+        check(inlineText && inlineText->isEnabled(),
+              QStringLiteral("文字属性窗保留直接编辑正文"));
         QToolButton* textColorValue = dialog.findChild<QToolButton*>(
             QStringLiteral("ItemPropertiesTextColorValue"));
         QPushButton* fontValue = dialog.findChild<QPushButton*>(
@@ -2201,6 +2205,10 @@ int runSelfTest(const QString& reportPath)
         check(imageItem->image().size() == QSize(12, 12),
               QStringLiteral("图片本体替换生效"),
               QStringLiteral("%1x%2").arg(imageItem->image().width()).arg(imageItem->image().height()));
+        check(imageItem->contentSize() == QSizeF(12.0, 12.0),
+              QStringLiteral("图片本体替换后重置为原始像素尺寸"),
+              QStringLiteral("%1x%2").arg(imageItem->contentSize().width())
+                  .arg(imageItem->contentSize().height()));
         check(editUndo.index() == imageBodyUndoIndex + 1,
               QStringLiteral("图片本体替换进入属性撤销记录"),
               QStringLiteral("%1 / %2").arg(imageBodyUndoIndex).arg(editUndo.index()));
@@ -2208,6 +2216,8 @@ int runSelfTest(const QString& reportPath)
         QApplication::processEvents();
         check(imageItem->image().size() == QSize(24, 24),
               QStringLiteral("图片本体替换可撤销"));
+        check(imageItem->contentSize() == QSizeF(80.0, 80.0),
+              QStringLiteral("图片本体撤销恢复旧尺寸"));
 
         // 需求 42：非编辑模式打开属性窗时字段只读，关闭不会写回。
         const int readOnlyUndoBefore = editUndo.count();
@@ -2250,6 +2260,7 @@ int runSelfTest(const QString& reportPath)
               QStringLiteral("文字图元自动名称不使用文字内容"), textItem->rawName());
 
         const int textPropertyUndoBefore = editUndo.count();
+        const QSizeF textSizeBefore = textItem->contentSize();
         {
             ItemPropertiesDialog dialog(&editScene, textItem);
             dialog.show();
@@ -2267,10 +2278,16 @@ int runSelfTest(const QString& reportPath)
         check(textItem->text() == QStringLiteral("属性文字已更新")
                   && editUndo.count() == textPropertyUndoBefore + 1,
               QStringLiteral("文字正文修改进入属性撤销记录"));
+        check(textItem->contentSize() == TextItem::measure(textItem->text(), textItem->textFont()),
+              QStringLiteral("文字正文修改后重置为自然尺寸"),
+              QStringLiteral("%1x%2").arg(textItem->contentSize().width())
+                  .arg(textItem->contentSize().height()));
         editUndo.undo();
         QApplication::processEvents();
         check(textItem->text() == QStringLiteral("属性文字"),
               QStringLiteral("文字正文修改可撤销"));
+        check(textItem->contentSize() == textSizeBefore,
+              QStringLiteral("文字正文撤销恢复旧尺寸"));
 
         auto* firstNamingStroke = new StrokeItem();
         firstNamingStroke->beginStroke(QPointF(90.0, 420.0),

@@ -321,6 +321,18 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
         root->addLayout(form);
     }
 
+    // 文字正文直接在属性窗里编辑；内容变化时同步到自然尺寸，确定后由
+    // ItemPropertiesCommand 一次性提交文字、尺寸和撤销记录。
+    if (m_textEdit && m_widthSpin && m_heightSizeSpin) {
+        connect(m_textEdit, &QPlainTextEdit::textChanged, this, [this]() {
+            if (!m_editable || !m_textEdit)
+                return;
+            const QSizeF natural = TextItem::measure(m_textEdit->toPlainText(), m_textFont);
+            m_widthSpin->setValue(natural.width());
+            m_heightSizeSpin->setValue(natural.height());
+        });
+    }
+
     applyEditableState();
 
     auto* buttons = new QDialogButtonBox(
@@ -332,14 +344,6 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
     }
     if (auto* cancel = buttons->button(QDialogButtonBox::Cancel))
         cancel->setText(uiText(QStringLiteral("Cancel")));
-    if (m_editable && dynamic_cast<TextItem*>(item)) {
-        auto* edit = buttons->addButton(uiText(QStringLiteral("Edit text…")),
-                                        QDialogButtonBox::ActionRole);
-        connect(edit, &QPushButton::clicked, this, [this]() {
-            applyChanges();
-            done(EditTextRequested);
-        });
-    }
     connect(buttons, &QDialogButtonBox::accepted, this, &ItemPropertiesDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     root->addWidget(buttons);
@@ -437,7 +441,8 @@ void ItemPropertiesDialog::chooseFont()
     m_textFont = font;
     updateFontButton();
     if (auto* text = dynamic_cast<TextItem*>(m_item.data())) {
-        const QSizeF natural = TextItem::measure(text->text(), m_textFont);
+        const QString currentText = m_textEdit ? m_textEdit->toPlainText() : text->text();
+        const QSizeF natural = TextItem::measure(currentText, m_textFont);
         if (m_widthSpin)
             m_widthSpin->setValue(natural.width());
         if (m_heightSizeSpin)
@@ -477,6 +482,10 @@ bool ItemPropertiesDialog::loadImageFromFile(const QString& path, QString* error
 
     m_newImage = QPixmap::fromImage(image);
     m_imageChanged = true;
+    if (m_widthSpin && m_heightSizeSpin) {
+        m_widthSpin->setValue(m_newImage.width());
+        m_heightSizeSpin->setValue(m_newImage.height());
+    }
     return true;
 }
 
@@ -484,6 +493,10 @@ void ItemPropertiesDialog::setReplacementImage(const QPixmap& image)
 {
     m_newImage = image;
     m_imageChanged = !image.isNull();
+    if (m_imageChanged && m_widthSpin && m_heightSizeSpin) {
+        m_widthSpin->setValue(image.width());
+        m_heightSizeSpin->setValue(image.height());
+    }
 }
 
 bool ItemPropertiesDialog::isItemInScene() const
@@ -569,6 +582,12 @@ void ItemPropertiesDialog::applyChanges()
         if (m_textEdit)
             after.textState.text = m_textEdit->toPlainText();
         after.textState.baseSize = TextItem::measure(after.textState.text, m_textFont);
+        // 需求追加：文字正文变化后直接回到文字自然尺寸，不再沿用旧图元的
+        // 拉伸尺寸，避免新旧字形按不同比例叠在同一块内容区里。
+        if (after.textState.text != before.textState.text) {
+            after.size = after.textState.baseSize;
+            after.textState.size = after.textState.baseSize;
+        }
         if (m_textColorButton)
             after.textState.color = m_textColorButton->property("itemColor").value<QColor>();
     } else if (auto* stroke = dynamic_cast<StrokeItem*>(m_item.data())) {
@@ -591,6 +610,9 @@ void ItemPropertiesDialog::applyChanges()
 
         after.hasImageState = true;
         after.image = m_imageChanged ? m_newImage : before.image;
+        // 需求追加：替换图片本体后直接使用新图片的原始像素尺寸。
+        if (m_imageChanged && !after.image.isNull())
+            after.size = QSizeF(after.image.size());
         after.hasImageName = true;
         after.imageName = m_imageNameEdit ? m_imageNameEdit->text() : before.imageName;
     }

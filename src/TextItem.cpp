@@ -89,7 +89,9 @@ void TextItem::applyState(const TextItemState& state)
     m_color = state.color.isValid() ? state.color : QColor(30, 41, 59);
     m_baseSize = state.baseSize.isEmpty() ? measure(m_text, m_font) : state.baseSize;
 
-    prepareGeometryChange();
+    // 不在这里额外 prepareGeometryChange：setContentSize 会在尺寸真正变化时
+    // 负责声明几何变化；重复调用会让旧的绘制区域没有被正确纳入重绘，留下旧
+    // 字形的残影。
     setPos(state.pos);
     setContentSize(state.size.isEmpty() ? m_baseSize : state.size);
     update();
