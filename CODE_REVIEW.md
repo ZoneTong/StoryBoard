@@ -11,8 +11,8 @@
 3. 修复后重新编译并跑自检：`SUMMARY 282 passed, 0 failed`（`build\selftest-after-fix.txt`，新增 10 项检查）。
 4. 额外做渲染回归：`--render-demo`、`--ui-screenshot`、`--settings-screenshot` 均正常出图（`build\verify-*.png`），确认命中判定/设置回写的改动没有影响绘制结果。
 
-构建命令：`scripts\build.ps1 -Config Release -NoDeploy`
-自检命令：`$env:QT_QPA_PLATFORM='offscreen'; build\bin\StoryBoard.exe --self-test build\selftest-after-fix.txt`
+构建命令：`cmake --build build -j`
+自检命令：`QT_QPA_PLATFORM=offscreen build/bin/StoryBoard --self-test build/selftest-after-fix.txt`（Windows 下可执行文件为 `StoryBoard.exe`）
 
 ## 二、已修复的缺陷
 
@@ -64,11 +64,11 @@
 | `src/SelfTest.cpp` | 新增 10 项回归检查（控制点命中 4、粗描边 2、背景等价与去重 2、设置颜色 2） |
 | `README.md` | 自检数量口径 272 → 282，覆盖项补充新检查 |
 
-未新增依赖，未改动构建脚本；`CanvasScene` / `CanvasView` / 命令层与序列化格式保持不变。
+未新增依赖；`CanvasScene` / `CanvasView` / 命令层与序列化格式保持不变。
 
 ## 五、验证记录
 
-- 构建：MinGW 13.1.0 + Qt 6.12.0，`build.ps1 -Config Release`，无编译错误。
+- 构建：MinGW 13.1.0 + Qt 6.12.0，`cmake --build build -j`，无编译错误。
 - 自检：282 passed / 0 failed（原 272 项全部保持通过，新增 10 项全部通过）。
 - 渲染回归：示例画板、主界面、设置对话框均正常出图；设置对话框的两个色块按钮与布局正常。
 
@@ -96,17 +96,19 @@
 
 验证命令与结果：
 
-```powershell
+```bash
 cmake --build build-check -j 8
 # Generated 411 translation(s) (411 finished and 0 unfinished)   # 当时计数；删 TextDialog 后 405，补文字样式词条后 408，移除样式行后 403
 # [100%] Built target StoryBoard
 
-build-check\bin\StoryBoard.exe --self-test selftest-43.txt
+./build-check/bin/StoryBoard --self-test selftest-43.txt
 # SUMMARY 498 passed, 0 failed（当时）
 
-StoryBoard.exe --ui-screenshot docs\screenshot.png   # 1440×900，单排工具栏，含“图形”与旋转按钮
-StoryBoard.exe --item-properties-screenshot build-check\bin\props-43-check.png
+./build-check/bin/StoryBoard --ui-screenshot docs/screenshot.png   # 1440×900，单排工具栏，含“图形”与旋转按钮
+./build-check/bin/StoryBoard --item-properties-screenshot build-check/bin/props-43-check.png
 ```
+
+> Windows 下把 `./build-check/bin/StoryBoard` 换成 `./build-check/bin/StoryBoard.exe`。
 
 ## 七、2026-11-08 属性窗文字/图片编辑追加收口
 
@@ -135,12 +137,14 @@ StoryBoard.exe --item-properties-screenshot build-check\bin\props-43-check.png
 
 验证命令：
 
-```powershell
+```bash
 cmake --build build-check -j 8
 # [100%] Built target StoryBoard
-StoryBoard.exe --self-test selftest-48-final.txt
+./build-check/bin/StoryBoard --self-test selftest-48-final.txt
 # SUMMARY 504 passed, 0 failed
 ```
+
+> Windows 下把 `./build-check/bin/StoryBoard` 换成 `./build-check/bin/StoryBoard.exe`。
 
 ## 八、开源代码引用统计
 

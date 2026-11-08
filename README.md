@@ -23,64 +23,77 @@
 - **画布文件**：保存/打开 `.sbcanvas` 画布文件（UTF-8 JSON），图片与背景以 PNG 内嵌，文字保存字体、颜色与字体样式字段，图形保存类型、描边、填充与线宽；画布菜单会列出画布目录中的最近文件。
 - **导出**：导出画布区域或全部图元，支持 PNG、JPEG、PDF，可选输出比例；默认把所有可见图层合并成一张图片，也可在导出对话框的“导出方式”里选择“每个可见图层各一张图片”，逐层文件按 `<基础名>_L<图层 id>_<图层名>.<扩展名>` 命名。不会导出网格和选中框。
 
-## 本机验证环境
+## 验证状态
 
-| 项目 | 版本 / 路径 |
+| 平台 | 状态 |
 | --- | --- |
-| 操作系统 | Windows 11 23H2（10.0.22631） |
-| Qt | 6.12.0 `mingw_64`（`D:\Qt\6.12.0\mingw_64`） |
-| 编译器 | MinGW-w64 GCC 13.1.0（`D:\Qt\Tools\mingw1310_64`） |
-| CMake | 3.30.5 |
-| 构建生成器 | MinGW Makefiles（本机未安装 Ninja） |
+| Windows 11 + MinGW GCC 13.1 + Qt 6.12 | 编译、自检 504 项、便携包均已验证 |
+| macOS / Linux | CMake 工程与 `scripts/package-portable.sh` 打包分支已提供，尚未在对应主机实机验证 |
 
-> 理论上 Qt 6.5+ / MinGW 或 MSVC 也可构建，但本项目在当前环境按上述组合完成编译和自检。
+> 项目使用 Qt 6.5+ / C++17 / CMake 3.21+；编译器可以是 MinGW、MSVC、Clang 或 GCC。
 
 ## 构建与运行
 
-### 一键脚本（推荐）
+### 构建
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1
-powershell -ExecutionPolicy Bypass -File .\scripts\run.ps1
-```
-
-脚本会自动查找 `D:\Qt\6.*\mingw_64` 和对应的 MinGW 工具链，生成到 `build\bin\StoryBoard.exe`，并在 Release 构建后调用 `windeployqt` 部署 Qt 运行库。
-
-常用参数：
-
-```powershell
-# 清理后重新构建
-powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1 -Clean
-
-# Debug 构建
-powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1 -Config Debug
-
-# 指定 Qt 路径
-powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1 -QtDir "D:\Qt\6.12.0\mingw_64"
-
-# 只构建，不部署运行库
-powershell -ExecutionPolicy Bypass -File .\scripts\build.ps1 -NoDeploy
-
-# 传参数给应用
-powershell -ExecutionPolicy Bypass -File .\scripts\run.ps1 .\examples\demo-canvas.sbcanvas
-```
-
-### 手动 CMake
-
-```powershell
-$env:Path = "D:\Qt\Tools\mingw1310_64\bin;D:\Qt\6.12.0\mingw_64\bin;$env:Path"
-
-cmake -S . -B build -G "MinGW Makefiles" `
-  -DCMAKE_BUILD_TYPE=Release `
-  -DCMAKE_PREFIX_PATH=D:/Qt/6.12.0/mingw_64
-
+```bash
+# Linux / macOS（Qt 路径换成实际安装位置）
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_PREFIX_PATH="$HOME/Qt/6.8.0/gcc_64"
 cmake --build build -j
-cmake --build build --target deploy   # 可选：windeployqt + offscreen 插件
 ```
+
+```bash
+# Windows 的 Git Bash / MSYS2
+cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_PREFIX_PATH="D:/Qt/6.12.0/mingw_64"
+cmake --build build -j
+```
+
+运行：
+
+```bash
+# Linux / macOS
+./build/bin/StoryBoard
+
+# Windows（Git Bash / MSYS2），文件名带 .exe
+./build/bin/StoryBoard.exe
+
+# 打开示例画布
+./build/bin/StoryBoard examples/demo-canvas.sbcanvas
+```
+
+### 便携打包（跨平台 bash）
+
+`scripts/package-portable.sh` 是跨平台的便携打包入口，可在 Windows 的 Git Bash / MSYS2 / Cygwin、macOS 和 Linux 的 bash 中执行。它会定位 Qt、调用对应平台的部署工具、跑一遍 `--self-test`，最后生成可独立运行的包：
+
+```bash
+# 查看参数
+bash scripts/package-portable.sh --help
+
+# 直接打包（使用已有构建产物）
+bash scripts/package-portable.sh
+
+# 先构建再打包
+bash scripts/package-portable.sh --build
+
+# 指定 Qt
+bash scripts/package-portable.sh --build --qt-dir "$HOME/Qt/6.8.0/gcc_64"
+```
+
+输出位置默认在项目根目录：
+
+| 主机 | 产物 | 部署方式 |
+| --- | --- | --- |
+| Windows（Git Bash / MSYS2 / Cygwin） | `StoryBoard-<ver>-win64-portable.zip` | `windeployqt` + 补 `qoffscreen.dll` |
+| macOS | `StoryBoard.app` 及 `.zip` | `macdeployqt` + 补 `libqoffscreen.dylib` |
+| Linux | `StoryBoard-<ver>-linux-<arch>-portable.tar.gz` | 拷贝 `libQt6*`、插件与 `qt.conf` |
+
+三个分支都按 Qt 官方部署方式编写；Windows 侧流程与已交付的便携包一致，macOS / Linux 分支需在对应主机首次实测。自检默认要求 Windows 504 项、其他平台接受当前通过数；可用 `--expected-passed 0` 放宽，`--skip-self-test` 跳过（不推荐）。
 
 ### 在 Qt Creator 中打开
 
-直接用 Qt Creator 打开根目录的 `CMakeLists.txt`，选择 `Desktop Qt 6.12.0 MinGW 64-bit` 套件即可；构建目录建议使用 `build` 之外的目录，避免与脚本构建产物冲突。
+直接用 Qt Creator 打开根目录的 `CMakeLists.txt`，选择本机对应的 Qt 6 kit 即可；构建目录建议使用 `build` 之外的目录，避免与命令行构建产物冲突。
 
 ## 操作说明
 
@@ -268,45 +281,49 @@ cmake --build build --target deploy   # 可选：windeployqt + offscreen 插件
 
 项目内置一个不依赖 GUI 桌面的自检入口，覆盖图元增删、移动、缩放、背景、图层顺序、图层面板按钮与勾选框/锁定按钮、图层显示/隐藏、当前图层自动显示与自动切换、锁定图层图元禁止编辑、隐藏图层渲染/内容范围/导出排除、层内 `height` 唯一性与叠放、跨图层移动、图层及高度的撤销/重做、图层重命名/撤销重做/空名与背景层拒绝/画布往返、叠放优先级与被遮盖图元轮廓提示（含纯色填充完全不透的像素级验证、无填充与纹理填充不遮挡下层的验证，以及真实视图截图验证）、文字图元创建/编辑/字体颜色/渲染/画布序列化、12 种常见图形的路径/图标/渲染/移动缩放/画布序列化、椭圆默认正圆与拉伸、七种图形填充样式（含交叉线均匀覆盖、反斜线方向、正交叉线双方向、六边形格子结构）与可撤销/画布序列化、图形快速插入菜单与七项填充菜单、图元属性窗可编辑控件与图元名称/图层/高度/填充/描边/位置尺寸/图片名/文字颜色的实际落地、文字正文直接编辑后自然尺寸重置、图片本体替换后原始像素尺寸重置、文字属性窗不再提供编辑文字按钮、只读模式字段禁用与关闭不写回、名称持久化及一条撤销记录、图元名称中文翻译、自动名称按类型编号并递增、笔画图元也自动编号、场景内所有图元都有名称、图片/文字属性窗标题使用图元名称且类型行显示类型名、自动名称画布往返不重复编号、画笔与填充分属两个工具栏、同一排并用标准分隔符分隔、主工具栏只保留必要分隔符、填充样式/填充颜色/描边颜色图标互不相同、主工具栏不混排、画笔样式菜单的 15 档粗细与工具栏下拉同步、样式菜单拆分为画笔样式/填充样式并在其后分离出填充颜色与描边颜色、合并导出与逐层导出（含逐层只渲染指定图层的像素验证）、图层选中高亮与重叠命中优先级、批量高度调整、画布边缘手柄拖动/裁剪及原点序列化、选中控制点的命中区域、粗描边图形的命中区域、背景图片按内容去重、设置对话框颜色持久化、重复 `height` 画布修复、PNG/JPEG/PDF 导出，以及真实的鼠标事件交互（绘制、文字模式点击、双击图元打开属性窗、Q 图元属性快捷键、主窗口端到端文字创建与画布打开、模式工具栏顺序、中英文词条/原地切换/设置下拉选择语言、查看模式全景/平移紧跟鼠标不抖动/缩放、编辑模式点选/移动/缩放、锁定图层点选/双击/右键提示）：
 
-```powershell
-$env:QT_QPA_PLATFORM = "offscreen"
-$report = ".\build\selftest.txt"
-Remove-Item $report -ErrorAction SilentlyContinue
-.\build\bin\StoryBoard.exe --self-test $report
-# 这是 Windows GUI 子系统程序，命令会先返回；等待报告写入后再查看
-Start-Sleep -Seconds 8
-Get-Content $report
+```bash
+# Linux / macOS
+QT_QPA_PLATFORM=offscreen ./build/bin/StoryBoard --self-test build/selftest.txt
+cat build/selftest.txt
+
+# Windows 的 Git Bash / MSYS2
+QT_QPA_PLATFORM=offscreen ./build/bin/StoryBoard.exe --self-test build/selftest.txt
+# Windows GUI 子系统会先返回；等报告写入后再查看
+sleep 8
+cat build/selftest.txt
 ```
 
-当前共 **504 项检查，全部通过**（`SUMMARY 504 passed, 0 failed`）。本轮新增覆盖：文字属性窗直接编辑正文且不再提供“编辑文字…”按钮、右键菜单不再提供独立编辑文字入口、添加文字直接进入属性窗、文字属性窗不再显示文字样式选项、正文修改后重置为自然尺寸并随撤销恢复旧尺寸、图片本体替换后重置为原始像素尺寸并随撤销恢复旧尺寸、Qt 内置字体选择对话框装载中文翻译；以及既有的属性窗模态/只读、旋转手柄低缩放命中、工具栏旋转按钮与“图形”标签等回归。
+当前 Windows 基线为 **504 项检查，全部通过**（`SUMMARY 504 passed, 0 failed`）；其他平台以实际 `SUMMARY` 为准。本轮新增覆盖：文字属性窗直接编辑正文且不再提供“编辑文字…”按钮、右键菜单不再提供独立编辑文字入口、添加文字直接进入属性窗、文字属性窗不再显示文字样式选项、正文修改后重置为自然尺寸并随撤销恢复旧尺寸、图片本体替换后重置为原始像素尺寸并随撤销恢复旧尺寸、Qt 内置字体选择对话框装载中文翻译；以及既有的属性窗模态/只读、旋转手柄低缩放命中、工具栏旋转按钮与“图形”标签等回归。
 
-> `--self-test` 需要 `platforms\qoffscreen.dll`。`build.ps1` 的部署步骤会一并复制；手动构建时如果只运行窗口程序则不需要它。
+> `--self-test` 需要平台插件目录下的 offscreen 插件（Windows `platforms/qoffscreen.dll`、macOS `platforms/libqoffscreen.dylib`、Linux `platforms/libqoffscreen.so`）。`scripts/package-portable.sh` 会自动补齐；手动构建且只启动窗口程序时不需要。
 
 其他内部工具参数（开发自检用）：
 
-```powershell
-# 渲染示例画布为 PNG（不弹窗，使用 Windows 字体）
-.\build\bin\StoryBoard.exe --render-demo .\build\demo.png
+```bash
+# 渲染示例画布为 PNG（不弹窗，使用当前系统字体）
+./build/bin/StoryBoard --render-demo build/demo.png
 
 # 生成示例画布
-.\build\bin\StoryBoard.exe --demo-canvas .\examples\demo-canvas.sbcanvas
+./build/bin/StoryBoard --demo-canvas examples/demo-canvas.sbcanvas
 
 # 抓取主界面 / 设置 / 导出截图
-.\build\bin\StoryBoard.exe --ui-screenshot .\build\ui.png
-.\build\bin\StoryBoard.exe --settings-screenshot .\build\settings.png
-.\build\bin\StoryBoard.exe --export-screenshot .\build\export.png
+./build/bin/StoryBoard --ui-screenshot build/ui.png
+./build/bin/StoryBoard --settings-screenshot build/settings.png
+./build/bin/StoryBoard --export-screenshot build/export.png
 
 # 抓取常见图形快速插入菜单 / 样式菜单
-.\build\bin\StoryBoard.exe --shape-menu-screenshot .\build\shape-menu.png
-.\build\bin\StoryBoard.exe --style-menu-screenshot .\build\style-menu.png
+./build/bin/StoryBoard --shape-menu-screenshot build/shape-menu.png
+./build/bin/StoryBoard --style-menu-screenshot build/style-menu.png
 
 # 抓取画笔样式菜单和其中的画笔粗细子菜单
-.\build\bin\StoryBoard.exe --brush-style-menu-screenshot .\build\brush-style-menu.png
-.\build\bin\StoryBoard.exe --brush-width-menu-screenshot .\build\brush-width-menu.png
+./build/bin/StoryBoard --brush-style-menu-screenshot build/brush-style-menu.png
+./build/bin/StoryBoard --brush-width-menu-screenshot build/brush-width-menu.png
 
 # 抓取图元属性窗
-.\build\bin\StoryBoard.exe --item-properties-screenshot .\build\item-properties.png
+./build/bin/StoryBoard --item-properties-screenshot build/item-properties.png
 ```
+
+> Windows 下把 `./build/bin/StoryBoard` 换成 `./build/bin/StoryBoard.exe`。
 
 ## 项目结构
 
@@ -334,7 +351,7 @@ StoryBoard/
 │  └─ SelfTest.*             自检与示例画布生成
 ├─ resources/                应用图标、下拉箭头、qrc、rc
 ├─ translations/             Qt 翻译源文件（英文为源语言，storyboard_zh.ts）与 Qt 内置控件中文翻译 qtbase_zh_CN.qm
-├─ scripts/                  build.ps1 / run.ps1
+├─ scripts/                  package-portable.sh 与包内 README 模板
 ├─ examples/                 示例画布
 └─ docs/                     README 截图
 ```
@@ -362,4 +379,4 @@ StoryBoard/
 - 图层删除仅支持空图层；图层的拖拽排序尚未提供，可用面板按钮上移/下移。
 - 画布内嵌图片，包含大图时 `.sbcanvas` 文件会相应变大。
 - 撤销历史上限 300 步；删除的图元在文档重置前会保留在内存中以便重做。
-- 仅在当前 Windows 11 + MinGW 环境验证；其他平台需自行准备 Qt 6 构建环境。
+- 应用运行验证目前在 Windows 11 + MinGW 完成；macOS / Linux 的构建与打包分支已提供，但尚未在这两类主机实机验证。

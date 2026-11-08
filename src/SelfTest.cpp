@@ -1508,8 +1508,15 @@ int runSelfTest(const QString& reportPath)
     check(paintedLower.pixelColor(30, 30) == QColor(QStringLiteral("#DC2626")),
           QStringLiteral("图层下移后实际遮盖关系反转"));
 
-    const QString demoPath = QDir(QCoreApplication::applicationDirPath())
-                                 .filePath(QStringLiteral("../../examples/demo-canvas.sbcanvas"));
+    const QString demoPath = []() {
+        const QString appDir = QCoreApplication::applicationDirPath();
+        const QString adjacent = QDir(appDir).filePath(
+            QStringLiteral("examples/demo-canvas.sbcanvas"));
+        if (QFileInfo::exists(adjacent))
+            return adjacent;
+        return QDir(appDir).filePath(
+            QStringLiteral("../../examples/demo-canvas.sbcanvas"));
+    }();
     if (QFileInfo::exists(demoPath)) {
         QFile demoFile(demoPath);
         check(demoFile.open(QIODevice::ReadOnly), QStringLiteral("读取示例画布文件"));
