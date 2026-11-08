@@ -1,165 +1,55 @@
-# StoryBoard 代码审查与缺陷修复报告
+# StoryBoard 代码审查与修复记录
 
-审查对象：`D:\workspace\github.com\ZoneTong\StoryBoard`（Qt 6 / C++17 / CMake，src 下 37 个文件、约 8500 行）
-审查时间：2026-11-07；2026-11-08–09 追加需求 40–42、旋转手柄、属性窗文字/图片编辑、文字对话框移除、文字样式四选项加入后回收与字体选择对话框中文化复核
-结论：**历史审查发现的 4 个真实缺陷已修复并保留回归；2026-11-08 复核发现的 5 处需求/实现缺口已全部收口，后续属性窗文字/图片编辑、文字对话框移除、文字样式四选项加入后按用户要求回收与字体选择对话框中文化也已收口，自检 504 项全通过。**
+审查对象：Qt 6 / C++17 / CMake 工程。审查时间：2026-11-07 至 2026-11-09。
 
-## 一、审查与验证方式
+结论：历史审查发现的 4 个真实缺陷已修复并保留回归；后续属性窗、旋转、文字/图片编辑、文字样式回收与字体选择对话框中文化均已收口。当前自检 **504 passed, 0 failed**。
 
-1. 按依赖顺序通读：数据类型层 → `CanvasScene` / `CanvasView` → `CanvasItem` 及四个子类 → 命令层 → 主窗口/对话框/设置/导出 → 自检用例分布。
-2. 修复前先跑既有自检取基线：`SUMMARY 272 passed, 0 failed`（`build\selftest-baseline.txt`）。基线全通过，说明下列缺陷都落在自检未覆盖的路径上（命中判定、对话框回写、背景去重）。
-3. 修复后重新编译并跑自检：`SUMMARY 282 passed, 0 failed`（`build\selftest-after-fix.txt`，新增 10 项检查）。
-4. 额外做渲染回归：`--render-demo`、`--ui-screenshot`、`--settings-screenshot` 均正常出图（`build\verify-*.png`），确认命中判定/设置回写的改动没有影响绘制结果。
+## 一、已修复缺陷
 
-构建命令：`cmake --build build -j`
-自检命令：`QT_QPA_PLATFORM=offscreen build/bin/StoryBoard --self-test build/selftest-after-fix.txt`（Windows 下可执行文件为 `StoryBoard.exe`）
+| 编号 | 问题 | 根因 | 修复 |
+| --- | --- | --- | --- |
+| B1 | 设置对话框改的画笔颜色、画布外围颜色保存不下来 | 取色写入局部副本，`accepted` 只回写部分字段 | 改为 `pickColor()` 返回值语义，新增 `setBrushColor()` / `setCanvasColor()` 作为唯一写入口 |
+| B2 | 选中图元后控制点外半区点不中，椭圆/三角形等四角手柄几乎拖不动 | `shape()` 只返回内容矩形或图形路径，与画出的手柄区域不一致 | `CanvasItem::selectionHandleShape()` 把 8 个手柄矩形（外扩 2px）并入各图元命中区域 |
+| B3 | 粗描边图形的描边区域点不中 | `ShapeItem::shape()` 只认填充路径，忽略线宽外扩 | 封闭图形按 `QPainterPathStroker` 生成描边环并合并命中；箭头类保持精确路径 |
+| B4 | 重复设置同一张背景图仍产生撤销步骤 | 用 `QPixmap::cacheKey()` 比较，同像素不同对象判不等 | `BackgroundState::operator==` 改为按 `QImage` 逐像素内容比较 |
 
-## 二、已修复的缺陷
+新增回归：控制点命中 4 项、粗描边命中 2 项、背景内容等价与去重 2 项、设置颜色回写 2 项。
 
-### B1（功能性，影响可用）设置对话框里改的颜色永远保存不下来
+## 二、后续需求收口
 
-- 现象：`设置 → 默认画笔颜色 / 画布外围颜色`，选完颜色后色块会立刻变色，点“确定”后颜色被还原；只有点“恢复默认值”能生效，且无法自定义。
-- 根因：`SettingsDialog.cpp` 的两个 `clicked` lambda 里写的是
-  `QColor color = m_settings.brushColor; chooseColor(color, ...)`，`color` 是**局部副本**；`chooseColor` 把新色写回这个副本并刷新按钮，函数返回后副本销毁。`accepted` 处理器只回写 `brushWidth / canvasSize / showGrid`，`brushColor / canvasColor` 从未写回 `m_settings`。`MainWindow::showSettings()` 的拷回逻辑是正确的，所以问题只在对话框一侧（此前对调用方的怀疑已排除）。
-- 修复：`chooseColor` 改为返回值语义的 `pickColor(QColor&, title, allowAlpha)`；新增 `setBrushColor() / setCanvasColor()` 作为唯一写入口（内部更新 `m_settings` 并刷新色块），两个 lambda 改成“取色成功才调用 setter”，保证颜色必然落到 `m_settings`。
-- 新增检查：“设置对话框保留画笔颜色”“设置对话框保留画布外围颜色”（先 setter 再 `accept()`，最后用 `settings()` 断言）。
+- **属性窗**：统一为模态；任意模式可查看，仅编辑模式可编辑；只读时禁用全部字段，关闭不写回。
+- **旋转**：主工具栏加入顺/逆时针 45° 按钮与专用图标；旋转手柄在低缩放下仍位于 `boundingRect()` 和 `shape()` 命中范围。
+- **工具栏**：填充样式按钮前加“图形”标签；画笔样式与填充样式分属两个 `QToolBar`，同一排用标准分隔符分隔。
+- **文字编辑**：正文统一在属性窗内修改；删除独立 `TextDialog`、右键“编辑文字…”入口与 `--text-screenshot` 分支。
+- **文字/图片尺寸**：正文变化后重置为文字自然尺寸；替换图片后重置为原始像素尺寸；两者撤销时恢复旧尺寸。
+- **文字样式**：曾加入粗体/斜体/下划线/删除线勾选框，后续按要求完整移除控件与翻译词条；画布 JSON 仍保留 `underline` / `strikeOut` 字段，避免旧画布丢数据。
+- **字体对话框中文化**：嵌入 Qt 的 `qtbase_zh_CN.qm`，中文模式额外装载 `QTranslator`；字体选择强制使用 `QFontDialog::DontUseNativeDialog`，避免原生窗口跟随系统语言。
 
-### B2（功能性，影响可用）选中图元后控制点的外半区点不到
-
-- 现象：选中图元后能看到 8 个控制点，但把光标放到控制点靠外的一半拖动无效；对圆形/椭圆、三角形、菱形、五角星这类轮廓碰不到包围盒四角的图形，四个角控制点**几乎完全拖不动**（只能靠框选或先很大幅度改变尺寸）。
-- 根因：控制点以内容矩形角点为中心绘制，有一半落在图元几何之外；而 `CanvasItem::shape()` 只返回 `contentRect()`，`ShapeItem::shape()` 返回图形路径（椭圆路径根本不含包围盒角点），`TextItem` / `ImageItem` 直接用基类实现。`QGraphicsScene` 的命中（点选、`itemAt`、拖动）都以 `shape()` 为准，于是“画出来的手柄”和“能点中的区域”不一致。`StrokeItem::shape()` 里手工补了 8 个手柄矩形，说明作者意识到过这个问题，但只修了笔画一种图元。
-- 修复：`CanvasItem` 新增 `selectionHandleShape()`（仅在“已选中 + 可编辑 + 单选”时返回 8 个手柄矩形，并向外留 2px 余量），三处 `shape()` 统一并入：`CanvasItem::shape()`（覆盖文字、图片）、`ShapeItem::shape()`、`StrokeItem` 原有的实现等价保留。
-- 新增检查：“选中椭圆后左上角控制点可命中”“选中椭圆后右下角控制点可命中”“控制点命中区域不会无限外扩”“未选中时控制点不参与命中”。
-
-### B3（功能性，轻微）粗描边图形的描边区域点不中
-
-- 现象：给矩形/圆形等封闭图形设置较粗的画笔（线宽最大 48），描边会向路径外侧铺开约 1/2 线宽，但点在这圈描边上选不中图元。
-- 根因：`ShapeItem::shape()` 对非描边类图形直接 `return path;`，只认填充轮廓，忽略 `m_strokeWidth` 的外扩；箭头/双向箭头用无笔画填充绘制，路径即真实轮廓，不受影响。
-- 修复：封闭类图形按 `strokeWidth + 2` 生成描边环（`QPainterPathStroker`），与填充路径合并成命中区域；箭头类仍用精确路径。命中区域（≤25px 外扩）仍小于 `CanvasItem` 的 26px 包围盒余量，不会越出 `boundingRect`。
-- 新增检查：“粗描边图形按描边宽度纳入命中”“粗描边命中范围不超过描边宽度”。
-
-### B4（逻辑，轻微）同一张背景图重复设置会产生多余撤销步骤
-
-- 现象：对同一张图片点两次“替换背景图片…”，第二次仍会压入一条“更换背景”命令，文档被标记为已修改，撤销一次后画面无任何变化。
-- 根因：`BackgroundState::operator==` 用 `image.cacheKey()` 比较。`cacheKey()` 只标识底层像素存储（同一 `QPixmap` 拷贝相等），两次从文件解码出的**像素相同但对象不同**的图片必然不等，去重判断 `background == m_background` 永远为假。
-- 修复：改为按内容比较——任一为空则要求两者都为空，尺寸不同直接不等，否则比较 `image.toImage()`（`QImage::operator==` 是逐像素内容比较）。
-- 新增检查：“内容相同的背景图片判定为相等”“重复应用同一背景图片不增加撤销步骤”（后者直接断言 `QUndoStack::count()` 不变）。
-
-## 三、记录但未修改的问题（边缘或属设计取舍）
-
-1. **双击 / 右键只取最上层图元**：`CanvasView` 双击用 `itemAt()`、右键用 `items()` 取最上层可见 `CanvasItem`，若该图元位于其他（锁定）图层，会提示“该图层未选中”，下层当前图层的图元拿不到操作。这与“仅当前图层可编辑、其他图层可见但锁定”的设计一致（单点选也遵循最上层语义），属体验取舍，未改。
-2. **字号上限不一致（已随窗体删除消解）**：`TextItem::fromJson` 允许 6–400，原 `TextDialog` 上限 200，且对话框确定时会把字号钳到 200。该对话框已在 2026-11-09 删除，文字字号统一由属性窗与 `TextItem` 的 6–400 口径处理。
-3. **导出扩展名改写**：`ExportDialog::updatePathExtension` 用 `chop(当前后缀长度)` 拼接，路径以 `.` 结尾时会出现 `xxx..png`；手动编辑路径时格式提示文本不刷新。不影响导出结果。
-4. **导出异常安全**：`CanvasScene::renderImage` 是 `m_exporting = true; render(); m_exporting = false;`，无 RAII/异常保护；当前 `QGraphicsScene::render` 不会抛异常，故未改。
-5. **版本号口径**：`main.cpp` 的 `applicationVersion` 为 `0.1.0`，画布 JSON 的 `format` 为 `"StoryBoardCanvas"`、`version` 为 `2`，两者含义不同（应用版本 vs 画布格式），未统一。
-
-## 四、改动清单
-
-| 文件 | 改动 |
-| --- | --- |
-| `src/SettingsDialog.h` / `src/SettingsDialog.cpp` | 新增 `setBrushColor` / `setCanvasColor`，`chooseColor` → `pickColor`，颜色写回 `m_settings` |
-| `src/CanvasItem.h` / `src/CanvasItem.cpp` | 新增 `selectionHandleShape()`，`shape()` 并入控制点命中区 |
-| `src/ShapeItem.cpp` | `shape()` 按描边宽度纳入命中，合并控制点区；箭头类保持精确路径 |
-| `src/CanvasTypes.h` | `BackgroundState::operator==` 改为按图片内容比较（新增 `<QImage>`） |
-| `src/SelfTest.cpp` | 新增 10 项回归检查（控制点命中 4、粗描边 2、背景等价与去重 2、设置颜色 2） |
-| `README.md` | 自检数量口径 272 → 282，覆盖项补充新检查 |
-
-未新增依赖；`CanvasScene` / `CanvasView` / 命令层与序列化格式保持不变。
-
-## 五、验证记录
-
-- 构建：MinGW 13.1.0 + Qt 6.12.0，`cmake --build build -j`，无编译错误。
-- 自检：282 passed / 0 failed（原 272 项全部保持通过，新增 10 项全部通过）。
-- 渲染回归：示例画板、主界面、设置对话框均正常出图；设置对话框的两个色块按钮与布局正常。
-
-> 备注：本次无头（`offscreen`）截图里中文显示为方块，这是该会话下平台插件取不到 CJK 字体的渲染环境问题，与本次改动无关（文字图元绘制的自检像素校验仍通过）。
-
-## 六、2026-11-08 需求 40–42 收口复核
-
-复核结论：需求 40、41、42 以及“拖动旋转手柄无法旋转图形”的根因均已落地；本轮没有引入第三方开源代码。
-
-1. **需求 42（属性窗模态、任何模式可查看、仅编辑模式可编辑）**
-   - `ItemPropertiesDialog` 不再 `setModal(false)`，统一 `setModal(true)`；新增 `editable` 构造参数、`isEditable()` 与 `applyEditableState()`。
-   - 只读时禁用名称/图层/高度/填充/描边/位置/尺寸/旋转/文字/图片等全部编辑控件，显示只读提示，只保留“关闭”按钮；`accept()` 不调用 `applyChanges()`，关闭不写回。
-   - `MainWindow::showItemProperties()` 去掉“仅编辑模式”拦截，按 `mode == Edit && isItemEditable(item)` 计算可编辑性，改用 `exec()` 模态显示；`showSelectedItemProperties()` 与 `updateActions()` 不再要求编辑模式。
-   - `CanvasView` 新增 `propertyItemAt()`，查看/画笔/文字模式双击图元都会请求属性窗；编辑模式仍保留锁定图层“先解锁”的提示。`modeChanged` 不再因离开编辑模式而关闭属性窗。
-2. **需求 40（顺/逆时针旋转 45° 入菜单与工具栏）**
-   - `m_rotateCwAct` / `m_rotateCcwAct` 已加入主工具栏，位于撤销/重做之后；`IconFactory` 新增 `RotateCw` / `RotateCcw` 专用圆形箭头图标，不再复用撤销/重做图标。
-3. **需求 41（填充样式按钮前加“图形”标签）**
-   - `fillBar` 在 `m_fillButton` 前加入 `QLabel`（objectName `ToolBarLabel`，源串 `Shape`），中文翻译为“图形”；主工具栏保持单排。
-4. **旋转手柄低缩放命中修复**
-   - `CanvasItem::boundingRect()` 在选中时把旋转手柄至内容顶边的距离与半径计入上边界；`refreshViewDependentGeometry()` 在缩放后重新声明几何，`CanvasScene` / `CanvasView::emitZoom()` 统一刷新。
-   - 修复前低缩放（例如 0.4×）手柄中心可超出固定 42 场景单位的粗边界，场景命中先失败，表现为看得见拖不动；现在手柄仍位于 `boundingRect()`、`shape()` 与 `QGraphicsScene::items()` 命中范围内。
-5. **自检与文档**
-   - 当时自检由 486 项增至 **498 项**（后续追加属性窗文字/图片编辑、文字对话框移除、文字样式四选项加入后回收与字体选择对话框中文化后最终为 **504 项**）：新增模态/只读字段断言、只读关闭不写回、主窗口查看模式双击端到端只读弹窗、低缩放 `boundingRect`/`shape`/场景命中四项，均通过。
-   - `README.md` 已把“非模态/仅编辑模式可用”改为“模态/任意模式可查看、仅编辑模式可编辑”，并补充工具栏旋转按钮与“图形”标签说明；`docs/` 五张截图已用最新构建重新生成（原 `text-dialog.png` 随窗体删除）。
-
-验证命令与结果：
+## 三、验证
 
 ```bash
 cmake --build build-check -j 8
-# Generated 411 translation(s) (411 finished and 0 unfinished)   # 当时计数；删 TextDialog 后 405，补文字样式词条后 408，移除样式行后 403
-# [100%] Built target StoryBoard
-
-./build-check/bin/StoryBoard --self-test selftest-43.txt
-# SUMMARY 498 passed, 0 failed（当时）
-
-./build-check/bin/StoryBoard --ui-screenshot docs/screenshot.png   # 1440×900，单排工具栏，含“图形”与旋转按钮
-./build-check/bin/StoryBoard --item-properties-screenshot build-check/bin/props-43-check.png
-```
-
-> Windows 下把 `./build-check/bin/StoryBoard` 换成 `./build-check/bin/StoryBoard.exe`。
-
-## 七、2026-11-08 属性窗文字/图片编辑追加收口
-
-1. **文字重影**
-   - `TextItem::applyState()` 原先在尺寸未变化时仍调用 `prepareGeometryChange()`，随后 `setContentSize()` 内部再次调用；重复声明几何会让旧字形绘制区域没有被稳定纳入重绘。现在只在 `setContentSize()` 真正改变尺寸时声明几何，正文和字体更新后统一 `update()`。
-   - 属性窗正文变化时，`TextItem` 的自然尺寸同步到宽度/高度字段；确定时 `ItemPropertiesCommand` 直接按自然尺寸提交，不再把新文字压进旧图元的拉伸尺寸。
-2. **文字/图片编辑后重置图元尺寸**
-   - 文字正文变化：`after.size = after.textState.baseSize = TextItem::measure(newText, font)`，撤销时恢复旧尺寸。
-   - 图片本体替换：属性窗载入新图后立即把尺寸字段更新为图片原始像素尺寸；确定时 `after.size = newImage.size()`，撤销时恢复旧尺寸。
-3. **移除文字属性窗的“编辑文字…”按钮与独立文字对话框**
-   - 删除 `ItemPropertiesDialog` 的 `EditTextRequested` 及按钮，文字正文只在属性窗的 `Text content` 编辑框中修改。
-   - 删除右键菜单的 `编辑文字…` 动作、`CanvasView::editTextRequested` 信号和 `MainWindow::editTextItem()`。
-   - 删除 `TextDialog.h/.cpp` 窗体源码、`--text-screenshot` 截图分支及 `docs/text-dialog.png`；添加文字改为插入默认文字图元后直接打开属性窗。
-4. **文字样式四选项（加入后按要求移除）**
-   - 曾为满足“文字属性窗显示添加文字原有的粗体/斜体/下划线/删除线”要求，在字体行后加入 `Text style` 行及四个 `QCheckBox`；随后用户明确要求“文字图元属性窗中删除文字样式，不可显示或编辑”，当前实现已完整移除该行、四个勾选框、`updateTextStyle()`、只读禁用项与 `chooseFont()` 的反向同步，源码中不再存在 `ItemPropertiesBoldValue`/`ItalicValue`/`UnderlineValue`/`StrikeOutValue` 控件。
-   - `TextItem::toJson()` / `fromJson()` 仍保留 `underline`、`strikeOut` 两个布尔字段（旧画布缺省为 `false`），避免已有画布中的字体样式在打开/保存时丢失；绘制仍使用 `QPainter::drawText(m_font)`。
-   - `translations\storyboard_zh.ts` 中随样式行加入的 `Bold`/`Italic`/`Underline`/`Strikethrough`/`Text style` 五条词条已删除；翻译总数由 408 调整为 **403**。
-   - 自检改为断言编辑态与只读态属性窗均不存在四个样式勾选框，同时保留画布往返恢复 `underline/strikeOut` 的底层数据验证。
-5. **字体选择对话框中文化**
-   - 原因：`QFontDialog` 是 Qt 内置控件，按钮和标签属于 `QFontDialog` 上下文，应用自己的 `:/i18n/storyboard_zh.qm` 只覆盖 `StoryBoard` 上下文；原部署命令 `windeployqt --no-translations` 又跳过了 Qt 翻译目录，因此内置对话框回退为英文。
-   - 处理：把 Qt 6.12 的 `translations/qtbase_zh_CN.qm` 通过 `qt_add_resources` 嵌入 `:/i18n`，中文模式下额外安装一个 `QTranslator`（英文模式移除）；字体按钮调用 `QFontDialog::getFont(..., QFontDialog::DontUseNativeDialog)`，避免 Windows 原生字体窗跟随系统 UI 语言而不受应用语言控制。
-   - 自检新增“Qt 内置字体对话框已装载中文翻译”断言，验证 `QFontDialog` 上下文的 `Effects` 已翻译为“效果”。
-6. **自检**
-   - 新增/调整：文字属性窗不再提供编辑文字按钮、仍保留正文编辑框、正文修改后自然尺寸与撤销恢复、图片替换后原始像素尺寸与撤销恢复、添加文字直接进入属性窗、编辑态与只读态均不显示文字样式勾选框、画布往返保留底层字体样式数据。
-   - 移除已删除的 `TextDialog` 三项独立断言，并新增“右键编辑文字入口信号已移除”断言；自检为 **504 项，全部通过**（`SUMMARY 504 passed, 0 failed`）。
-
-验证命令：
-
-```bash
-cmake --build build-check -j 8
-# [100%] Built target StoryBoard
-./build-check/bin/StoryBoard --self-test selftest-48-final.txt
+./build-check/bin/StoryBoard.exe --self-test build-check/selftest.txt
 # SUMMARY 504 passed, 0 failed
 ```
 
-> Windows 下把 `./build-check/bin/StoryBoard` 换成 `./build-check/bin/StoryBoard.exe`。
+便携包由 `scripts/package-portable.sh` 在 Windows 11 + MinGW 13.1 + Qt 6.12 下实机验证：`windeployqt` 部署成功，包内自检 504 项通过。
 
-## 八、开源代码引用统计
+## 四、记录但未修改
 
-- **需求 14** 唯一明确的参考项目是 `https://github.com/excalidraw/excalidraw`，用于参考填充样式/色块的功能形态与交互思路；实现仍使用 Qt 的 `QPainterPath`、纹理笔刷与自绘图标，未拷贝其源码、图标或资源文件。
-- 源码中未发现第三方版权头、SPDX 标识、GPL/MIT/BSD/Apache 代码片段、`third_party` 目录或外部源码子模块。
-- 构建依赖仅为 Qt 6.12（Qt Widgets / Qt GUI / Qt PDF）、CMake 与 MinGW 13.1；这些是工具链/框架依赖，不计入“参考代码”。
-- **统计结论：参考的开源项目 1 个（Excalidraw，仅功能参考）；引入的开源项目源码 0 个。**
+- 双击/右键取最上层图元；若该图元在锁定图层，会提示解锁，属交互取舍。
+- 导出扩展名改写对以 `.` 结尾的路径可能产生 `xxx..png`，不影响导出结果。
+- `CanvasScene::renderImage` 的 `m_exporting` 标志无 RAII 保护；当前 `render()` 不抛异常。
+- `CanvasScene::normalizeLayerHeights()` 归一化时可能把合法的 `height 0` 抬成 1。
+- 默认图层名仍硬编码中文，英文界面下新图层名不会自动切换。
+- `uniqueItemName()` 按当前语言前缀递增，切换语言后可能出现不同语言前缀的编号序列。
+- `RotationCommand::apply()` 未发 `contentChanged()`，撤销/重做后状态栏刷新可能滞后。
+- `ImageItem` 的 `m_name` 与基类同名遮蔽，分别表示图片文件名和图元名称。
+- `applicationDisplayName` 只在启动时设置一次；关于窗与 PDF 标题仍有 `StoryBoard Canvas` 残留。
 
-## 九、复核后仍保留的非本批遗留
+## 五、开源代码引用
 
-以下问题不影响本批文字链路与 504 项自检，但属于后续可单独立项的实现细节：
-
-1. `CanvasScene::normalizeLayerHeights()` 触发归一化时从 `i + 1` 重新赋值，会把合法的 `height 0` 抬成 1；应在归一化时保留已有最小合法高度。
-2. 默认图层名（`背景`、`图层 1`、`图层 %1`）仍硬编码中文，英文界面下新图层名不会自动切换；应改为 `uiText()` 词条。
-3. `uniqueItemName()` 按当前语言前缀递增，切换界面语言后同层可能出现不同语言前缀的编号序列；应改为按图元类型而不是当前显示前缀判重。
-4. `RotationCommand::apply()` 只调用 `updateSceneExtent()` / `update()`，未发 `contentChanged()`，旋转的撤销/重做后主窗口动作与状态栏刷新可能滞后。
-5. `ImageItem` 自带私有 `m_name` 与基类 `CanvasItem::m_name` 同名遮蔽；当前分别表示“图片文件名”和“图元名称”，建议改名避免误用。
-6. `main.cpp` 的 `applicationDisplayName` 只在启动时设置一次，`applyUiLanguage()` 不刷新；`MainWindow` 的 `showAbout()` 与 PDF `writer.setTitle` 仍有 `StoryBoard Canvas` 残留。
+- 功能参考：Excalidraw（填充样式与色块交互思路）。
+- 未拷贝其源码、图标或资源；无 `third_party` 目录、无第三方版权头或 SPDX 标识。
+- 构建依赖为 Qt 6、CMake 与编译器工具链，不计入参考代码。
+- 结论：参考开源项目 1 个，引入源码 0 个。

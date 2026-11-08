@@ -8,3 +8,8 @@ cmake-build-*/
 .vs/
 .vscode/
 .idea/
+
+# 打包产物
+StoryBoard-*-portable.zip
+StoryBoard-*-portable/
+StoryBoard-*-portable.tar.gz

@@ -53,6 +53,15 @@ die() {
     exit 1
 }
 
+to_posix_path() {
+    local path="$1"
+    if command -v cygpath >/dev/null 2>&1; then
+        cygpath -u "$path"
+    else
+        printf '%s\n' "$path"
+    fi
+}
+
 while [ "$#" -gt 0 ]; do
     case "$1" in
         --build) DO_BUILD=1; shift ;;
@@ -68,6 +77,10 @@ while [ "$#" -gt 0 ]; do
         *) die "unknown option: $1" ;;
     esac
 done
+
+[ -n "$QT_DIR_ARG" ] && QT_DIR_ARG="$(to_posix_path "$QT_DIR_ARG")"
+[ -n "$BUILD_DIR" ] && BUILD_DIR="$(to_posix_path "$BUILD_DIR")"
+[ -n "$OUTPUT_DIR" ] && OUTPUT_DIR="$(to_posix_path "$OUTPUT_DIR")"
 
 case "$(uname -s)" in
     MINGW*|MSYS*|CYGWIN*) HOST_OS=windows ;;
@@ -144,9 +157,16 @@ else
     EXPECTED_PASSED=0
 fi
 
+qt_tool_exists() {
+    [ -x "$1" ] || [ -x "$1.exe" ]
+}
+
 find_qt_dir() {
     if [ -n "$QT_DIR_ARG" ]; then
-        [ -x "$QT_DIR_ARG/bin/qmake" ] || [ -x "$QT_DIR_ARG/bin/qmake6" ] || [ -x "$QT_DIR_ARG/bin/qtpaths" ] || die "invalid Qt directory: $QT_DIR_ARG"
+        qt_tool_exists "$QT_DIR_ARG/bin/qmake" || \
+        qt_tool_exists "$QT_DIR_ARG/bin/qmake6" || \
+        qt_tool_exists "$QT_DIR_ARG/bin/qtpaths" || \
+            die "invalid Qt directory: $QT_DIR_ARG"
         (cd "$QT_DIR_ARG" && pwd)
         return
     fi
@@ -174,7 +194,9 @@ find_qt_dir() {
             ;;
     esac
     for candidate in "${candidates[@]}"; do
-        if [ -x "$candidate/bin/qmake" ] || [ -x "$candidate/bin/qmake6" ] || [ -x "$candidate/bin/qtpaths" ]; then
+        if qt_tool_exists "$candidate/bin/qmake" || \
+           qt_tool_exists "$candidate/bin/qmake6" || \
+           qt_tool_exists "$candidate/bin/qtpaths"; then
             printf '%s\n' "$candidate"
             return
         fi
@@ -191,15 +213,22 @@ qt_query() {
     local key="$1"
     local tool path out
     for tool in qmake qmake6; do
-        path="$QT_BIN/$tool"
-        if [ ! -x "$path" ]; then
-            path="$(command -v "$tool" 2>/dev/null || true)"
-        fi
-        [ -n "$path" ] || continue
-        out="$("$path" -query "$key" 2>/dev/null || true)"
-        if [ -n "$out" ]; then
-            printf '%s\n' "$out"
-            return 0
+        for path in "$QT_BIN/$tool" "$QT_BIN/$tool.exe"; do
+            if [ -x "$path" ]; then
+                out="$("$path" -query "$key" 2>/dev/null || true)"
+                if [ -n "$out" ]; then
+                    printf '%s\n' "$out"
+                    return 0
+                fi
+            fi
+        done
+        path="$(command -v "$tool" 2>/dev/null || command -v "$tool.exe" 2>/dev/null || true)"
+        if [ -n "$path" ]; then
+            out="$("$path" -query "$key" 2>/dev/null || true)"
+            if [ -n "$out" ]; then
+                printf '%s\n' "$out"
+                return 0
+            fi
         fi
     done
     return 1
@@ -283,7 +312,7 @@ fi
 
 if [ "$PLATFORM" = windows ]; then
     WINDEPLOYQT="$QT_BIN/windeployqt.exe"
-    [ -x "$WINDEPLOYQT" ] || WINDEPLOYQT="$(command -v windeployqt 2>/dev/null || true)"
+    [ -x "$WINDEPLOYQT" ] || WINDEPLOYQT="$(command -v windeployqt 2>/dev/null || command -v windeployqt.exe 2>/dev/null || true)"
     [ -n "$WINDEPLOYQT" ] || die "windeployqt not found"
 fi
 
@@ -330,11 +359,10 @@ run_self_test() {
     local package_dir="$1"
     local report="$package_dir/$REPORT_NAME"
     if [ "$PLATFORM" = windows ]; then
-        local win_pkg
-        win_pkg="$(win_path "$package_dir")"
         (
             cd "$package_dir"
-            cmd.exe /c "set \"PATH=C:\\Windows\\System32;C:\\Windows\" && set \"QT_PLUGIN_PATH=\" && set \"QT_QPA_PLATFORM_PLUGIN_PATH=\" && set \"STORYBOARD_LANG=\" && cd /d \"$win_pkg\" && start /wait \"\" StoryBoard.exe --self-test $REPORT_NAME"
+            env -u QT_PLUGIN_PATH -u QT_QPA_PLATFORM_PLUGIN_PATH -u STORYBOARD_LANG \
+                ./StoryBoard.exe --self-test "$REPORT_NAME"
         )
     elif [ "$PLATFORM" = macos ]; then
         env -u QT_PLUGIN_PATH -u QT_QPA_PLATFORM_PLUGIN_PATH -u STORYBOARD_LANG \
@@ -456,6 +484,8 @@ hash_file() {
         shasum -a 256 "$1" | awk '{print $1}'
     elif command -v certutil >/dev/null 2>&1; then
         certutil -hashfile "$1" SHA256 | sed -n '2p' | tr -d ' \r'
+    elif command -v certutil.exe >/dev/null 2>&1; then
+        certutil.exe -hashfile "$1" SHA256 | sed -n '2p' | tr -d ' \r'
     else
         printf 'unavailable\n'
     fi
