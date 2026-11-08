@@ -203,7 +203,7 @@ void BoardScene::commitBoardRect(const QRectF& before)
         return;
     if (m_undoStack)
         m_undoStack->push(new BoardSizeCommand(this, before, after,
-                                              uiText(QStringLiteral("调整画板尺寸"))));
+                                              uiText(QStringLiteral("Resize board"))));
 }
 
 void BoardScene::applyBackground(const BackgroundState& background)
@@ -220,7 +220,7 @@ void BoardScene::replaceBackground(const BackgroundState& background, const QStr
 
     if (m_undoStack) {
         m_undoStack->push(new BackgroundCommand(this, m_background, background,
-                                               text.isEmpty() ? uiText(QStringLiteral("更换背景")) : text));
+                                               text.isEmpty() ? uiText(QStringLiteral("Change background")) : text));
     } else {
         applyBackground(background);
     }
@@ -574,7 +574,7 @@ bool BoardScene::addLayerWithUndo(const QString& name)
     LayerStackState after = before;
     after.layers.append(entry);
     after.activeLayerId = id;
-    const QString text = uiText(QStringLiteral("新建图层"));
+    const QString text = uiText(QStringLiteral("New layer"));
 
     if (m_undoStack) {
         m_undoStack->push(new LayerStateCommand(this, before, after, text));
@@ -594,11 +594,11 @@ bool BoardScene::removeLayerWithUndo(int layerId, QString* errorMessage)
 
     const int index = layerIndex(layerId);
     if (index <= 0)
-        return fail(uiText(QStringLiteral("背景层不能删除。")));
+        return fail(uiText(QStringLiteral("The background layer cannot be deleted.")));
     if (userLayerCount() <= 1)
-        return fail(uiText(QStringLiteral("至少需要保留一个图层。")));
+        return fail(uiText(QStringLiteral("At least one layer must remain.")));
     if (layerItemCount(layerId) > 0)
-        return fail(uiText(QStringLiteral("该图层中还有图元，请先删除或移动图元。")));
+        return fail(uiText(QStringLiteral("This layer still contains items. Delete or move them first.")));
 
     const LayerStackState before = layerState();
     LayerStackState after = before;
@@ -609,7 +609,7 @@ bool BoardScene::removeLayerWithUndo(int layerId, QString* errorMessage)
     }
 
     if (m_undoStack) {
-        m_undoStack->push(new LayerStateCommand(this, before, after, uiText(QStringLiteral("删除图层"))));
+        m_undoStack->push(new LayerStateCommand(this, before, after, uiText(QStringLiteral("Delete layer"))));
     } else {
         applyLayerStateInternal(after);
     }
@@ -630,7 +630,7 @@ bool BoardScene::moveLayerWithUndo(int layerId, int delta)
     LayerStackState after = before;
     after.layers.swapItemsAt(index, target);
 
-    const QString text = delta > 0 ? uiText(QStringLiteral("图层上移")) : uiText(QStringLiteral("图层下移"));
+    const QString text = delta > 0 ? uiText(QStringLiteral("Move layer up")) : uiText(QStringLiteral("Move layer down"));
     if (m_undoStack) {
         m_undoStack->push(new LayerStateCommand(this, before, after, text));
     } else {
@@ -898,7 +898,7 @@ bool BoardScene::adjustItemHeight(BoardItem* item, int delta, const QString& tex
         after.append({ colliding, colliding->layerId(), current });
 
     const QString commandText = text.isEmpty()
-        ? (delta > 0 ? uiText(QStringLiteral("上移图元")) : uiText(QStringLiteral("下移图元")))
+        ? (delta > 0 ? uiText(QStringLiteral("Move item up")) : uiText(QStringLiteral("Move item down")))
         : text;
     if (m_undoStack)
         m_undoStack->push(new ItemStackCommand(this, before, after, commandText));
@@ -923,8 +923,8 @@ int BoardScene::adjustSelectedHeights(int delta)
 
     const bool grouped = m_undoStack && targets.size() > 1;
     if (grouped)
-        m_undoStack->beginMacro(delta > 0 ? uiText(QStringLiteral("上移图元"))
-                                         : uiText(QStringLiteral("下移图元")));
+        m_undoStack->beginMacro(delta > 0 ? uiText(QStringLiteral("Move item up"))
+                                         : uiText(QStringLiteral("Move item down")));
 
     int changed = 0;
     for (BoardItem* item : targets) {
@@ -953,8 +953,8 @@ int BoardScene::moveSelectedItemsToAdjacentLayer(int delta)
 
     const bool grouped = m_undoStack && targets.size() > 1;
     if (grouped)
-        m_undoStack->beginMacro(delta > 0 ? uiText(QStringLiteral("移到上一层图层"))
-                                         : uiText(QStringLiteral("移到下一层图层")));
+        m_undoStack->beginMacro(delta > 0 ? uiText(QStringLiteral("Move to the layer above"))
+                                         : uiText(QStringLiteral("Move to the layer below")));
 
     int changed = 0;
     for (BoardItem* item : targets) {
@@ -997,7 +997,7 @@ bool BoardScene::moveItemToAdjacentLayer(BoardItem* item, int delta, const QStri
     };
 
     const QString commandText = text.isEmpty()
-        ? (delta > 0 ? uiText(QStringLiteral("移到上一层图层")) : uiText(QStringLiteral("移到下一层图层")))
+        ? (delta > 0 ? uiText(QStringLiteral("Move to the layer above")) : uiText(QStringLiteral("Move to the layer below")))
         : text;
     if (m_undoStack)
         m_undoStack->push(new ItemStackCommand(this, before, after, commandText));
@@ -1048,7 +1048,7 @@ bool BoardScene::changeTextWithUndo(TextItem* item, const QString& text, const Q
         return false;
 
     const QString commandText = textCommand.isEmpty()
-        ? uiText(QStringLiteral("编辑文字"))
+        ? uiText(QStringLiteral("Edit text"))
         : textCommand;
     if (m_undoStack)
         m_undoStack->push(new TextItemCommand(this, item, before, after, commandText));
@@ -1195,7 +1195,7 @@ void BoardScene::deleteSelected()
         return;
 
     if (m_undoStack) {
-        m_undoStack->push(new RemoveItemsCommand(this, selected, uiText(QStringLiteral("删除图元"))));
+        m_undoStack->push(new RemoveItemsCommand(this, selected, uiText(QStringLiteral("Delete item"))));
     } else {
         for (BoardItem* item : selected)
             detachItem(item);
@@ -1349,14 +1349,14 @@ bool BoardScene::fromJson(const QJsonObject& root, QString* errorMessage)
     };
 
     if (root.value(QStringLiteral("format")).toString() != QStringLiteral("StoryBoard"))
-        return fail(uiText(QStringLiteral("这不是有效的 StoryBoard 模板文件。")));
+        return fail(uiText(QStringLiteral("This is not a valid StoryBoard template file.")));
 
     const QJsonObject board = root.value(QStringLiteral("board")).toObject();
     // 画板尺寸允许带小数（拖拽边缘时通常不是整数），这里不能用 toInt()。
     const qreal width = board.value(QStringLiteral("width")).toDouble(0.0);
     const qreal height = board.value(QStringLiteral("height")).toDouble(0.0);
     if (width <= 0.0 || height <= 0.0)
-        return fail(uiText(QStringLiteral("模板中的画板尺寸无效。")));
+        return fail(uiText(QStringLiteral("The board size in the template is invalid.")));
 
     resetDocument();
     applyBoardRect(QRectF(board.value(QStringLiteral("x")).toDouble(0.0),
@@ -1457,7 +1457,7 @@ bool BoardScene::fromJson(const QJsonObject& root, QString* errorMessage)
         BoardItem* item = createItem(kind);
         if (!item) {
             resetDocument();
-            return fail(uiText(QStringLiteral("模板中包含未知的图元类型：%1")).arg(kind));
+            return fail(uiText(QStringLiteral("The template contains an unknown item type: %1")).arg(kind));
         }
         item->fromJson(itemJson);
         if (!hasLayerData) {

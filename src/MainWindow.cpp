@@ -62,12 +62,12 @@ namespace {
 
 QString imageFilter()
 {
-    return uiText(QStringLiteral("图片文件 (*.png *.jpg *.jpeg *.bmp *.gif);;所有文件 (*.*)"));
+    return uiText(QStringLiteral("Image files (*.png *.jpg *.jpeg *.bmp *.gif);;All files (*.*)"));
 }
 
 QString templateFilter()
 {
-    return uiText(QStringLiteral("StoryBoard 模板 (*.sbboard);;所有文件 (*.*)"));
+    return uiText(QStringLiteral("StoryBoard templates (*.sbboard);;All files (*.*)"));
 }
 
 QAction* makeAction(QObject* parent, IconId icon, const QString& text,
@@ -95,7 +95,7 @@ bool validateTemplateRoot(const QJsonObject& root, QString* error)
 {
     if (root.value(QStringLiteral("format")).toString() != QStringLiteral("StoryBoard")) {
         if (error)
-            *error = uiText(QStringLiteral("这不是有效的 StoryBoard 模板文件。"));
+            *error = uiText(QStringLiteral("This is not a valid StoryBoard template file."));
         return false;
     }
 
@@ -103,7 +103,7 @@ bool validateTemplateRoot(const QJsonObject& root, QString* error)
     if (board.value(QStringLiteral("width")).toInt() <= 0
         || board.value(QStringLiteral("height")).toInt() <= 0) {
         if (error)
-            *error = uiText(QStringLiteral("模板中的画板尺寸无效。"));
+            *error = uiText(QStringLiteral("The board size in the template is invalid."));
         return false;
     }
 
@@ -113,7 +113,7 @@ bool validateTemplateRoot(const QJsonObject& root, QString* error)
         if (kind != QStringLiteral("stroke") && kind != QStringLiteral("image")
             && kind != QStringLiteral("text") && kind != QStringLiteral("shape")) {
             if (error)
-                *error = uiText(QStringLiteral("模板中包含未知的图元类型：%1")).arg(kind);
+                *error = uiText(QStringLiteral("The template contains an unknown item type: %1")).arg(kind);
             return false;
         }
     }
@@ -197,56 +197,56 @@ MainWindow::~MainWindow()
 
 void MainWindow::createActions()
 {
-    m_newAct = makeAction(this, IconId::New, uiText(QStringLiteral("新建画板")),
+    m_newAct = makeAction(this, IconId::New, uiText(QStringLiteral("New board")),
                           QKeySequence(QStringLiteral("Ctrl+N")),
-                          uiText(QStringLiteral("新建空白画板 (Ctrl+N)")));
-    m_openAct = makeAction(this, IconId::Open, uiText(QStringLiteral("打开模板…")),
+                          uiText(QStringLiteral("Create an empty board (Ctrl+N)")));
+    m_openAct = makeAction(this, IconId::Open, uiText(QStringLiteral("Open template…")),
                            QKeySequence(QStringLiteral("Ctrl+O")),
-                           uiText(QStringLiteral("打开一个 StoryBoard 模板 (Ctrl+O)")));
-    m_saveAct = makeAction(this, IconId::Save, uiText(QStringLiteral("保存模板")),
+                           uiText(QStringLiteral("Open a StoryBoard template (Ctrl+O)")));
+    m_saveAct = makeAction(this, IconId::Save, uiText(QStringLiteral("Save template")),
                            QKeySequence(QStringLiteral("Ctrl+S")),
-                           uiText(QStringLiteral("保存当前画板为模板 (Ctrl+S)")));
-    m_saveAsAct = makeAction(this, IconId::Save, uiText(QStringLiteral("模板另存为…")),
+                           uiText(QStringLiteral("Save the current board as a template (Ctrl+S)")));
+    m_saveAsAct = makeAction(this, IconId::Save, uiText(QStringLiteral("Save template as…")),
                              QKeySequence(QStringLiteral("Ctrl+Shift+S")),
-                             uiText(QStringLiteral("将当前画板另存为模板 (Ctrl+Shift+S)")));
-    m_importAct = makeAction(this, IconId::Image, uiText(QStringLiteral("导入图片…")),
+                             uiText(QStringLiteral("Save the current board as a new template (Ctrl+Shift+S)")));
+    m_importAct = makeAction(this, IconId::Image, uiText(QStringLiteral("Import images…")),
                              QKeySequence(QStringLiteral("Ctrl+I")),
-                             uiText(QStringLiteral("将图片导入为可移动、可缩放的图元 (Ctrl+I)")));
-    m_exportAct = makeAction(this, IconId::Export, uiText(QStringLiteral("导出画板…")),
+                             uiText(QStringLiteral("Import images as movable, resizable items (Ctrl+I)")));
+    m_exportAct = makeAction(this, IconId::Export, uiText(QStringLiteral("Export board…")),
                              QKeySequence(QStringLiteral("Ctrl+E")),
-                             uiText(QStringLiteral("导出为 PNG / JPEG / PDF (Ctrl+E)")));
-    m_quitAct = new QAction(uiText(QStringLiteral("退出")), this);
+                             uiText(QStringLiteral("Export as PNG / JPEG / PDF (Ctrl+E)")));
+    m_quitAct = new QAction(uiText(QStringLiteral("Quit")), this);
     m_quitAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+Q")));
-    m_quitAct->setStatusTip(uiText(QStringLiteral("退出 StoryBoard")));
+    m_quitAct->setStatusTip(uiText(QStringLiteral("Quit StoryBoard")));
 
-    m_undoAct = makeAction(this, IconId::Undo, uiText(QStringLiteral("撤销")),
-                           QKeySequence::Undo, uiText(QStringLiteral("撤销上一步 (Ctrl+Z)")));
+    m_undoAct = makeAction(this, IconId::Undo, uiText(QStringLiteral("Undo")),
+                           QKeySequence::Undo, uiText(QStringLiteral("Undo the last step (Ctrl+Z)")));
     m_undoAct->setEnabled(false);
-    m_redoAct = makeAction(this, IconId::Redo, uiText(QStringLiteral("重做")),
+    m_redoAct = makeAction(this, IconId::Redo, uiText(QStringLiteral("Redo")),
                            QKeySequence(QStringLiteral("Ctrl+Y")),
-                           uiText(QStringLiteral("重做 (Ctrl+Y / Ctrl+Shift+Z)")));
+                           uiText(QStringLiteral("Redo (Ctrl+Y / Ctrl+Shift+Z)")));
     m_redoAct->setShortcuts({ QKeySequence(QStringLiteral("Ctrl+Y")),
                               QKeySequence(QStringLiteral("Ctrl+Shift+Z")) });
     m_redoAct->setEnabled(false);
 
-    m_deleteAct = makeAction(this, IconId::Delete, uiText(QStringLiteral("删除选中图元")),
-                             QKeySequence::Delete, uiText(QStringLiteral("删除选中的图元 (Delete)")));
-    m_selectAllAct = new QAction(uiText(QStringLiteral("全选图元")), this);
+    m_deleteAct = makeAction(this, IconId::Delete, uiText(QStringLiteral("Delete selected items")),
+                             QKeySequence::Delete, uiText(QStringLiteral("Delete the selected items (Delete)")));
+    m_selectAllAct = new QAction(uiText(QStringLiteral("Select all items")), this);
     m_selectAllAct->setShortcut(QKeySequence::SelectAll);
-    m_selectAllAct->setStatusTip(uiText(QStringLiteral("全选图元 (Ctrl+A)")));
+    m_selectAllAct->setStatusTip(uiText(QStringLiteral("Select all items (Ctrl+A)")));
 
-    m_viewModeAct = makeAction(this, IconId::View, uiText(QStringLiteral("查看模式")),
+    m_viewModeAct = makeAction(this, IconId::View, uiText(QStringLiteral("View mode")),
                                QKeySequence(QStringLiteral("V")),
-                               uiText(QStringLiteral("查看模式：全景浏览、整体平移与缩放 (V)")));
-    m_brushModeAct = makeAction(this, IconId::Brush, uiText(QStringLiteral("画笔模式")),
+                               uiText(QStringLiteral("View mode: overview, pan and zoom (V)")));
+    m_brushModeAct = makeAction(this, IconId::Brush, uiText(QStringLiteral("Brush mode")),
                                 QKeySequence(QStringLiteral("B")),
-                                uiText(QStringLiteral("画笔模式：按住左键自由绘制 (B)")));
-    m_editModeAct = makeAction(this, IconId::Edit, uiText(QStringLiteral("编辑模式")),
+                                uiText(QStringLiteral("Brush mode: hold the left button to draw freely (B)")));
+    m_editModeAct = makeAction(this, IconId::Edit, uiText(QStringLiteral("Edit mode")),
                                QKeySequence(QStringLiteral("E")),
-                               uiText(QStringLiteral("编辑模式：选择、移动、缩放图元 (E)")));
-    m_textModeAct = makeAction(this, IconId::Text, uiText(QStringLiteral("文字模式")),
+                               uiText(QStringLiteral("Edit mode: select, move and resize items (E)")));
+    m_textModeAct = makeAction(this, IconId::Text, uiText(QStringLiteral("Text mode")),
                                 QKeySequence(QStringLiteral("T")),
-                                uiText(QStringLiteral("文字模式：点击画板放置文字图元 (T)")));
+                                uiText(QStringLiteral("Text mode: click the board to place a text item (T)")));
     m_viewModeAct->setCheckable(true);
     m_brushModeAct->setCheckable(true);
     m_editModeAct->setCheckable(true);
@@ -264,33 +264,33 @@ void MainWindow::createActions()
     m_editModeAct->setData(static_cast<int>(ToolMode::Edit));
     m_textModeAct->setData(static_cast<int>(ToolMode::Text));
 
-    m_fitAct = makeAction(this, IconId::Fit, uiText(QStringLiteral("回到全景视图")),
+    m_fitAct = makeAction(this, IconId::Fit, uiText(QStringLiteral("Back to overview")),
                           QKeySequence(QStringLiteral("Ctrl+0")),
-                          uiText(QStringLiteral("一键查看全部图元 (Ctrl+0 / Home)")));
+                          uiText(QStringLiteral("Fit all items (Ctrl+0 / Home)")));
     m_fitAct->setShortcuts({ QKeySequence(QStringLiteral("Ctrl+0")),
                              QKeySequence(Qt::Key_Home) });
-    m_zoomInAct = makeAction(this, IconId::ZoomIn, uiText(QStringLiteral("放大")),
+    m_zoomInAct = makeAction(this, IconId::ZoomIn, uiText(QStringLiteral("Zoom in")),
                              QKeySequence(QStringLiteral("Ctrl+=")),
-                             uiText(QStringLiteral("放大视图 (Ctrl+=)")));
+                             uiText(QStringLiteral("Zoom in (Ctrl+=)")));
     m_zoomInAct->setShortcuts({ QKeySequence(QStringLiteral("Ctrl+=")),
                                 QKeySequence(Qt::CTRL | Qt::Key_Plus) });
-    m_zoomOutAct = makeAction(this, IconId::ZoomOut, uiText(QStringLiteral("缩小")),
+    m_zoomOutAct = makeAction(this, IconId::ZoomOut, uiText(QStringLiteral("Zoom out")),
                               QKeySequence(QStringLiteral("Ctrl+-")),
-                              uiText(QStringLiteral("缩小视图 (Ctrl+-)")));
-    m_actualSizeAct = makeAction(this, IconId::ZoomIn, uiText(QStringLiteral("实际大小")),
+                              uiText(QStringLiteral("Zoom out (Ctrl+-)")));
+    m_actualSizeAct = makeAction(this, IconId::ZoomIn, uiText(QStringLiteral("Actual size")),
                                  QKeySequence(QStringLiteral("Ctrl+1")),
-                                 uiText(QStringLiteral("以 100% 显示 (Ctrl+1)")));
+                                 uiText(QStringLiteral("Show at 100% (Ctrl+1)")));
 
-    m_replaceBgAct = makeAction(this, IconId::Background, uiText(QStringLiteral("替换背景图片…")),
-                             QKeySequence(), uiText(QStringLiteral("选择一张图片作为画板背景")));
-    m_bgColorAct = makeAction(this, IconId::Palette, uiText(QStringLiteral("设置背景颜色…")),
-                           QKeySequence(), uiText(QStringLiteral("选择纯色作为画板背景")));
-    m_clearBgAct = makeAction(this, IconId::Delete, uiText(QStringLiteral("清除背景")),
-                           QKeySequence(), uiText(QStringLiteral("恢复为白色背景")));
+    m_replaceBgAct = makeAction(this, IconId::Background, uiText(QStringLiteral("Replace background image…")),
+                             QKeySequence(), uiText(QStringLiteral("Choose an image as the board background")));
+    m_bgColorAct = makeAction(this, IconId::Palette, uiText(QStringLiteral("Set background color…")),
+                           QKeySequence(), uiText(QStringLiteral("Use a solid color as the board background")));
+    m_clearBgAct = makeAction(this, IconId::Delete, uiText(QStringLiteral("Clear background")),
+                           QKeySequence(), uiText(QStringLiteral("Restore the white background")));
 
-    m_bgStretchAct = new QAction(uiText(QStringLiteral("拉伸铺满")), this);
-    m_bgFitAct = new QAction(uiText(QStringLiteral("完整适应")), this);
-    m_bgTileAct = new QAction(uiText(QStringLiteral("平铺")), this);
+    m_bgStretchAct = new QAction(uiText(QStringLiteral("Stretch to fill")), this);
+    m_bgFitAct = new QAction(uiText(QStringLiteral("Fit entirely")), this);
+    m_bgTileAct = new QAction(uiText(QStringLiteral("Tile")), this);
     m_bgStretchAct->setCheckable(true);
     m_bgFitAct->setCheckable(true);
     m_bgTileAct->setCheckable(true);
@@ -300,13 +300,13 @@ void MainWindow::createActions()
     m_backgroundModeGroup->addAction(m_bgFitAct);
     m_backgroundModeGroup->addAction(m_bgTileAct);
 
-    m_settingsAct = makeAction(this, IconId::Settings, uiText(QStringLiteral("设置…")),
+    m_settingsAct = makeAction(this, IconId::Settings, uiText(QStringLiteral("Settings…")),
                                QKeySequence(QStringLiteral("Ctrl+,")),
-                               uiText(QStringLiteral("打开画板配置 (Ctrl+,)")));
+                               uiText(QStringLiteral("Open board settings (Ctrl+,)")));
 
     m_aboutAct = new QAction(QIcon(QStringLiteral(":/icons/app.png")),
-                             uiText(QStringLiteral("关于 StoryBoard")), this);
-    m_aboutQtAct = new QAction(uiText(QStringLiteral("关于 Qt")), this);
+                             uiText(QStringLiteral("About StoryBoard")), this);
+    m_aboutQtAct = new QAction(uiText(QStringLiteral("About Qt")), this);
 
     connect(m_newAct, &QAction::triggered, this, &MainWindow::newBoard);
     connect(m_openAct, &QAction::triggered, this, &MainWindow::openTemplateDialog);
@@ -334,13 +334,13 @@ void MainWindow::createActions()
     connect(m_clearBgAct, &QAction::triggered, this, &MainWindow::clearBackground);
     connect(m_settingsAct, &QAction::triggered, this, &MainWindow::showSettings);
 
-    m_fillNoneAct = new QAction(uiText(QStringLiteral("无填充")), this);
-    m_fillSolidAct = new QAction(uiText(QStringLiteral("纯色填充")), this);
-    m_fillHachureAct = new QAction(uiText(QStringLiteral("斜线填充")), this);
-    m_fillReverseAct = new QAction(uiText(QStringLiteral("反斜线填充")), this);
-    m_fillCrossAct = new QAction(uiText(QStringLiteral("交叉线填充")), this);
-    m_fillGridAct = new QAction(uiText(QStringLiteral("正交叉线填充")), this);
-    m_fillHoneycombAct = new QAction(uiText(QStringLiteral("六边形填充")), this);
+    m_fillNoneAct = new QAction(uiText(QStringLiteral("No fill")), this);
+    m_fillSolidAct = new QAction(uiText(QStringLiteral("Solid fill")), this);
+    m_fillHachureAct = new QAction(uiText(QStringLiteral("Hatch fill")), this);
+    m_fillReverseAct = new QAction(uiText(QStringLiteral("Reverse hatch fill")), this);
+    m_fillCrossAct = new QAction(uiText(QStringLiteral("Cross hatch fill")), this);
+    m_fillGridAct = new QAction(uiText(QStringLiteral("Grid hatch fill")), this);
+    m_fillHoneycombAct = new QAction(uiText(QStringLiteral("Hexagon fill")), this);
     for (QAction* action : { m_fillNoneAct, m_fillSolidAct, m_fillHachureAct,
                              m_fillReverseAct, m_fillCrossAct, m_fillGridAct,
                              m_fillHoneycombAct })
@@ -362,7 +362,7 @@ void MainWindow::createActions()
     connect(m_fillCrossAct, &QAction::triggered, this, [this]() { setFillStyle(FillStyle::CrossHatch); });
     connect(m_fillGridAct, &QAction::triggered, this, [this]() { setFillStyle(FillStyle::GridHatch); });
     connect(m_fillHoneycombAct, &QAction::triggered, this, [this]() { setFillStyle(FillStyle::Honeycomb); });
-    m_fillColorAct = new QAction(uiText(QStringLiteral("填充颜色…")), this);
+    m_fillColorAct = new QAction(uiText(QStringLiteral("Fill color…")), this);
     connect(m_fillColorAct, &QAction::triggered, this, &MainWindow::chooseFillColor);
 
     auto applyBackgroundMode = [this](BackgroundMode mode) {
@@ -370,7 +370,7 @@ void MainWindow::createActions()
         if (background.type != BackgroundType::Image)
             return;
         background.mode = mode;
-        m_scene->replaceBackground(background, uiText(QStringLiteral("调整背景填充方式")));
+        m_scene->replaceBackground(background, uiText(QStringLiteral("Adjust background fill mode")));
     };
     connect(m_bgStretchAct, &QAction::triggered, this, [applyBackgroundMode]() {
         applyBackgroundMode(BackgroundMode::Stretch);
@@ -388,7 +388,7 @@ void MainWindow::createActions()
 
 void MainWindow::createShapeMenu()
 {
-    m_shapeMenu = new QMenu(uiText(QStringLiteral("常见图形")), this);
+    m_shapeMenu = new QMenu(uiText(QStringLiteral("Common shapes")), this);
     m_shapeMenu->setObjectName(QStringLiteral("ShapeMenu"));
     m_shapeMenu->setToolTipsVisible(true);
 
@@ -397,14 +397,14 @@ void MainWindow::createShapeMenu()
             makeShapeIcon(type, QColor(58, 64, 80), 18), shapeTypeName(type));
         action->setObjectName(QStringLiteral("ShapeAction_%1").arg(shapeTypeToString(type)));
         action->setData(static_cast<int>(type));
-        action->setToolTip(uiText(QStringLiteral("插入%1（使用当前画笔颜色）")).arg(shapeTypeName(type)));
+        action->setToolTip(uiText(QStringLiteral("Insert %1 (uses the current brush color)")).arg(shapeTypeName(type)));
         connect(action, &QAction::triggered, this, [this, type]() { insertShape(type); });
     }
 }
 
 void MainWindow::createLayerDock()
 {
-    m_layerDock = new QDockWidget(uiText(QStringLiteral("图层")), this);
+    m_layerDock = new QDockWidget(uiText(QStringLiteral("Layers")), this);
     m_layerDock->setObjectName(QStringLiteral("LayerDock"));
     m_layerDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     m_layerDock->setFeatures(QDockWidget::DockWidgetMovable
@@ -422,7 +422,7 @@ void MainWindow::createLayerDock()
 
 void MainWindow::createMenus()
 {
-    QMenu* fileMenu = menuBar()->addMenu(uiText(QStringLiteral("文件(&F)")));
+    QMenu* fileMenu = menuBar()->addMenu(uiText(QStringLiteral("&File")));
     fileMenu->addAction(m_newAct);
     fileMenu->addAction(m_openAct);
     fileMenu->addSeparator();
@@ -434,7 +434,7 @@ void MainWindow::createMenus()
     fileMenu->addSeparator();
     fileMenu->addAction(m_quitAct);
 
-    QMenu* editMenu = menuBar()->addMenu(uiText(QStringLiteral("编辑(&E)")));
+    QMenu* editMenu = menuBar()->addMenu(uiText(QStringLiteral("&Edit")));
     editMenu->addAction(m_undoAct);
     editMenu->addAction(m_redoAct);
     editMenu->addSeparator();
@@ -444,42 +444,42 @@ void MainWindow::createMenus()
 
     auto applySelectedHeight = [this](int delta) {
         if (m_view->mode() != ToolMode::Edit) {
-            statusBar()->showMessage(uiText(QStringLiteral("高度调整只在编辑模式可用")), 3000);
+            statusBar()->showMessage(uiText(QStringLiteral("Height adjustment is available in edit mode only")), 3000);
             return;
         }
         const int changed = m_scene->adjustSelectedHeights(delta);
         if (changed == 0) {
             statusBar()->showMessage(
-                uiText(QStringLiteral("没有可调整高度的选中图元（或已到高度边界）")), 3000);
+                uiText(QStringLiteral("No selected items can change height (or the height limit was reached)")), 3000);
         } else {
             statusBar()->showMessage(
-                uiText(QStringLiteral("已将 %1 个图元的高度 %2"))
+                uiText(QStringLiteral("Changed the height of %1 item(s) by %2"))
                     .arg(changed)
                     .arg(delta > 0 ? QStringLiteral("+1") : QStringLiteral("-1")),
                 3000);
         }
     };
 
-    QAction* heightUpAct = editMenu->addAction(uiText(QStringLiteral("高度 +1（向上叠放）    ]")));
+    QAction* heightUpAct = editMenu->addAction(uiText(QStringLiteral("Height +1 (stack up)    ]")));
     heightUpAct->setShortcut(QKeySequence(Qt::Key_BracketRight));
-    heightUpAct->setStatusTip(uiText(QStringLiteral("提升选中图元的叠放高度（快捷键 ]）")));
+    heightUpAct->setStatusTip(uiText(QStringLiteral("Raise the stacking height of selected items (shortcut ])")));
     connect(heightUpAct, &QAction::triggered, this, [applySelectedHeight]() {
         applySelectedHeight(1);
     });
 
-    QAction* heightDownAct = editMenu->addAction(uiText(QStringLiteral("高度 -1（向下叠放）    [")));
+    QAction* heightDownAct = editMenu->addAction(uiText(QStringLiteral("Height -1 (stack down)    [")));
     heightDownAct->setShortcut(QKeySequence(Qt::Key_BracketLeft));
-    heightDownAct->setStatusTip(uiText(QStringLiteral("降低选中图元的叠放高度（快捷键 [）")));
+    heightDownAct->setStatusTip(uiText(QStringLiteral("Lower the stacking height of selected items (shortcut [)")));
     connect(heightDownAct, &QAction::triggered, this, [applySelectedHeight]() {
         applySelectedHeight(-1);
     });
 
-    QMenu* insertMenu = menuBar()->addMenu(uiText(QStringLiteral("插入(&I)")));
+    QMenu* insertMenu = menuBar()->addMenu(uiText(QStringLiteral("&Insert")));
     insertMenu->addMenu(m_shapeMenu);
     insertMenu->addSeparator();
     insertMenu->addAction(m_importAct);
 
-    QMenu* viewMenu = menuBar()->addMenu(uiText(QStringLiteral("视图(&V)")));
+    QMenu* viewMenu = menuBar()->addMenu(uiText(QStringLiteral("&View")));
     viewMenu->addAction(m_viewModeAct);
     viewMenu->addAction(m_editModeAct);
     viewMenu->addAction(m_brushModeAct);
@@ -491,24 +491,24 @@ void MainWindow::createMenus()
     viewMenu->addAction(m_actualSizeAct);
     viewMenu->addSeparator();
     QAction* layerDockAction = m_layerDock->toggleViewAction();
-    layerDockAction->setText(uiText(QStringLiteral("图层面板")));
-    layerDockAction->setStatusTip(uiText(QStringLiteral("显示或隐藏图层面板")));
+    layerDockAction->setText(uiText(QStringLiteral("Layer panel")));
+    layerDockAction->setStatusTip(uiText(QStringLiteral("Show or hide the layer panel")));
     viewMenu->addAction(layerDockAction);
 
-    QMenu* canvasMenu = menuBar()->addMenu(uiText(QStringLiteral("画板(&C)")));
+    QMenu* canvasMenu = menuBar()->addMenu(uiText(QStringLiteral("&Canvas")));
     canvasMenu->addAction(m_importAct);
     canvasMenu->addSeparator();
     canvasMenu->addAction(m_replaceBgAct);
     canvasMenu->addAction(m_bgColorAct);
     canvasMenu->addAction(m_clearBgAct);
-    QMenu* fillMenu = canvasMenu->addMenu(uiText(QStringLiteral("背景填充方式")));
+    QMenu* fillMenu = canvasMenu->addMenu(uiText(QStringLiteral("Background fill mode")));
     fillMenu->addAction(m_bgStretchAct);
     fillMenu->addAction(m_bgFitAct);
     fillMenu->addAction(m_bgTileAct);
     canvasMenu->addSeparator();
     canvasMenu->addAction(m_settingsAct);
 
-    QMenu* styleMenu = menuBar()->addMenu(uiText(QStringLiteral("样式(&S)")));
+    QMenu* styleMenu = menuBar()->addMenu(uiText(QStringLiteral("&Style")));
     styleMenu->addAction(m_fillNoneAct);
     styleMenu->addAction(m_fillSolidAct);
     styleMenu->addAction(m_fillHachureAct);
@@ -519,18 +519,18 @@ void MainWindow::createMenus()
     styleMenu->addSeparator();
     styleMenu->addAction(m_fillColorAct);
 
-    m_templatesMenu = menuBar()->addMenu(uiText(QStringLiteral("模板(&T)")));
+    m_templatesMenu = menuBar()->addMenu(uiText(QStringLiteral("&Templates")));
     connect(m_templatesMenu, &QMenu::aboutToShow, this, &MainWindow::updateTemplateMenu);
     updateTemplateMenu();
 
-    QMenu* helpMenu = menuBar()->addMenu(uiText(QStringLiteral("帮助(&H)")));
+    QMenu* helpMenu = menuBar()->addMenu(uiText(QStringLiteral("&Help")));
     helpMenu->addAction(m_aboutAct);
     helpMenu->addAction(m_aboutQtAct);
 }
 
 void MainWindow::createToolBars()
 {
-    auto* mainBar = new QToolBar(uiText(QStringLiteral("主工具栏")), this);
+    auto* mainBar = new QToolBar(uiText(QStringLiteral("Main toolbar")), this);
     mainBar->setObjectName(QStringLiteral("MainToolBar"));
     mainBar->setMovable(false);
     mainBar->setFloatable(false);
@@ -548,7 +548,7 @@ void MainWindow::createToolBars()
     mainBar->addAction(m_redoAct);
     mainBar->addSeparator();
 
-    auto* brushLabel = new QLabel(uiText(QStringLiteral("画笔")), mainBar);
+    auto* brushLabel = new QLabel(uiText(QStringLiteral("Brush")), mainBar);
     brushLabel->setObjectName(QStringLiteral("ToolBarLabel"));
     mainBar->addWidget(brushLabel);
 
@@ -556,20 +556,20 @@ void MainWindow::createToolBars()
     m_colorButton->setObjectName(QStringLiteral("ColorButton"));
     m_colorButton->setIcon(makeColorIcon(m_brushColor, 20));
     m_colorButton->setIconSize(QSize(20, 20));
-    m_colorButton->setToolTip(uiText(QStringLiteral("画笔颜色：%1（点击选择）"))
+    m_colorButton->setToolTip(uiText(QStringLiteral("Brush color: %1 (click to choose)"))
                                   .arg(m_brushColor.name(QColor::HexArgb).toUpper()));
     m_colorButton->setPopupMode(QToolButton::MenuButtonPopup);
 
     auto* colorMenu = new QMenu(m_colorButton);
     const QList<QPair<QString, QColor>> presets = {
-        { uiText(QStringLiteral("墨黑")), QColor(QStringLiteral("#111827")) },
-        { uiText(QStringLiteral("红色")), QColor(QStringLiteral("#EF4444")) },
-        { uiText(QStringLiteral("橙色")), QColor(QStringLiteral("#F59E0B")) },
-        { uiText(QStringLiteral("绿色")), QColor(QStringLiteral("#10B981")) },
-        { uiText(QStringLiteral("蓝色")), QColor(QStringLiteral("#3B82F6")) },
-        { uiText(QStringLiteral("紫色")), QColor(QStringLiteral("#8B5CF6")) },
-        { uiText(QStringLiteral("粉色")), QColor(QStringLiteral("#EC4899")) },
-        { uiText(QStringLiteral("白色")), QColor(QStringLiteral("#FFFFFF")) }
+        { uiText(QStringLiteral("Ink black")), QColor(QStringLiteral("#111827")) },
+        { uiText(QStringLiteral("Red")), QColor(QStringLiteral("#EF4444")) },
+        { uiText(QStringLiteral("Orange")), QColor(QStringLiteral("#F59E0B")) },
+        { uiText(QStringLiteral("Green")), QColor(QStringLiteral("#10B981")) },
+        { uiText(QStringLiteral("Blue")), QColor(QStringLiteral("#3B82F6")) },
+        { uiText(QStringLiteral("Purple")), QColor(QStringLiteral("#8B5CF6")) },
+        { uiText(QStringLiteral("Pink")), QColor(QStringLiteral("#EC4899")) },
+        { uiText(QStringLiteral("White")), QColor(QStringLiteral("#FFFFFF")) }
     };
     for (const auto& preset : presets) {
         QAction* action = colorMenu->addAction(makeColorIcon(preset.second, 16), preset.first);
@@ -578,7 +578,7 @@ void MainWindow::createToolBars()
         });
     }
     colorMenu->addSeparator();
-    QAction* customColor = colorMenu->addAction(uiText(QStringLiteral("自定义颜色…")));
+    QAction* customColor = colorMenu->addAction(uiText(QStringLiteral("Custom color…")));
     connect(customColor, &QAction::triggered, this, &MainWindow::chooseBrushColor);
     m_colorButton->setMenu(colorMenu);
     connect(m_colorButton, &QToolButton::clicked, this, &MainWindow::chooseBrushColor);
@@ -605,7 +605,7 @@ void MainWindow::createToolBars()
     m_widthCombo = new QComboBox(mainBar);
     m_widthCombo->setFixedWidth(88);
     m_widthCombo->setFixedHeight(28);
-    m_widthCombo->setToolTip(uiText(QStringLiteral("画笔粗细")));
+    m_widthCombo->setToolTip(uiText(QStringLiteral("Brush width")));
     const QList<int> presetWidths = { 1, 2, 3, 4, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 64 };
     for (int width : presetWidths)
         m_widthCombo->addItem(QStringLiteral("%1 px").arg(width), width);
@@ -618,7 +618,7 @@ void MainWindow::createToolBars()
         m_settings.brushWidth = value;
     });
     setBrushWidthUi(m_brushWidth);
-    auto* widthLabel = new QLabel(uiText(QStringLiteral("粗细")), mainBar);
+    auto* widthLabel = new QLabel(uiText(QStringLiteral("Width")), mainBar);
     widthLabel->setObjectName(QStringLiteral("ToolBarLabel"));
     mainBar->addWidget(widthLabel);
     mainBar->addWidget(m_widthCombo);
@@ -634,14 +634,14 @@ void MainWindow::createToolBars()
     shapeButton->setIconSize(QSize(21, 21));
     shapeButton->setPopupMode(QToolButton::InstantPopup);
     shapeButton->setMenu(m_shapeMenu);
-    shapeButton->setToolTip(uiText(QStringLiteral("快速插入圆形、矩形、箭头、大括号等图形")));
-    shapeButton->setStatusTip(uiText(QStringLiteral("快速插入常见图形（使用当前画笔颜色）")));
+    shapeButton->setToolTip(uiText(QStringLiteral("Quickly insert circles, rectangles, arrows, braces and more")));
+    shapeButton->setStatusTip(uiText(QStringLiteral("Quickly insert common shapes (uses the current brush color)")));
     mainBar->addWidget(shapeButton);
     mainBar->addAction(m_importAct);
     mainBar->addAction(m_replaceBgAct);
     mainBar->addAction(m_settingsAct);
 
-    auto* modeBar = new QToolBar(uiText(QStringLiteral("模式")), this);
+    auto* modeBar = new QToolBar(uiText(QStringLiteral("Mode")), this);
     modeBar->setObjectName(QStringLiteral("ModeToolBar"));
     modeBar->setMovable(false);
     modeBar->setFloatable(false);
@@ -677,12 +677,12 @@ void MainWindow::connectSignals()
     connect(m_undo, &QUndoStack::canRedoChanged, this, &MainWindow::updateActions);
     connect(m_undo, &QUndoStack::cleanChanged, this, &MainWindow::updateTitle);
     connect(m_undo, &QUndoStack::undoTextChanged, this, [this](const QString& text) {
-        m_undoAct->setToolTip(text.isEmpty() ? uiText(QStringLiteral("撤销"))
-                                             : uiText(QStringLiteral("撤销：%1")).arg(text));
+        m_undoAct->setToolTip(text.isEmpty() ? uiText(QStringLiteral("Undo"))
+                                             : uiText(QStringLiteral("Undo: %1")).arg(text));
     });
     connect(m_undo, &QUndoStack::redoTextChanged, this, [this](const QString& text) {
-        m_redoAct->setToolTip(text.isEmpty() ? uiText(QStringLiteral("重做"))
-                                             : uiText(QStringLiteral("重做：%1")).arg(text));
+        m_redoAct->setToolTip(text.isEmpty() ? uiText(QStringLiteral("Redo"))
+                                             : uiText(QStringLiteral("Redo: %1")).arg(text));
     });
 
     connect(m_view, &BoardView::zoomChanged, this, [this](qreal zoom) {
@@ -738,16 +738,16 @@ void MainWindow::updateModeUi()
     if (m_hintLabel) {
         switch (mode) {
         case ToolMode::View:
-            m_hintLabel->setText(uiText(QStringLiteral("查看模式：拖拽平移 · 滚轮缩放 · 切换模式时自动回到全景")));
+            m_hintLabel->setText(uiText(QStringLiteral("View mode: drag to pan · wheel to zoom · switching modes returns to the overview")));
             break;
         case ToolMode::Brush:
-            m_hintLabel->setText(uiText(QStringLiteral("画笔模式：左键自由绘制 · 滚轮缩放 · 空格 / 中键平移")));
+            m_hintLabel->setText(uiText(QStringLiteral("Brush mode: left button to draw · wheel to zoom · Space / middle button to pan")));
             break;
         case ToolMode::Edit:
-            m_hintLabel->setText(uiText(QStringLiteral("编辑模式：可见且未锁定图层的图元均可编辑 · 拖拽/框选 · 控制点缩放 · 拖动画板边缘调整画板 · Delete 删除")));
+            m_hintLabel->setText(uiText(QStringLiteral("Edit mode: items on visible, unlocked layers can be edited · drag or box-select · resize with handles · drag board edges to resize the board · Delete to remove")));
             break;
         case ToolMode::Text:
-            m_hintLabel->setText(uiText(QStringLiteral("文字模式：点击画板放置文字 · 可设置字体、字号、颜色与粗斜体")));
+            m_hintLabel->setText(uiText(QStringLiteral("Text mode: click the board to place text · set font, size, color and bold/italic")));
             break;
         }
     }
@@ -797,7 +797,7 @@ void MainWindow::updateStatusBar()
     if (m_zoomBadge)
         m_zoomBadge->setText(QStringLiteral("%1%").arg(qRound(m_view->zoom() * 100.0)));
     if (m_countBadge) {
-        m_countBadge->setText(uiText(QStringLiteral("%1 个图元 · %2 层"))
+        m_countBadge->setText(uiText(QStringLiteral("%1 items · %2 layers"))
                                   .arg(m_scene->boardItemCount())
                                   .arg(m_scene->userLayerCount()));
     }
@@ -806,14 +806,14 @@ void MainWindow::updateStatusBar()
 QString MainWindow::documentName() const
 {
     if (m_filePath.isEmpty())
-        return uiText(QStringLiteral("未命名画板"));
+        return uiText(QStringLiteral("Untitled board"));
     const QString name = QFileInfo(m_filePath).completeBaseName();
-    return name.isEmpty() ? uiText(QStringLiteral("未命名画板")) : name;
+    return name.isEmpty() ? uiText(QStringLiteral("Untitled board")) : name;
 }
 
 void MainWindow::updateTitle()
 {
-    setWindowTitle(uiText(QStringLiteral("%1[*] - StoryBoard 画板")).arg(documentName()));
+    setWindowTitle(uiText(QStringLiteral("%1[*] - StoryBoard")).arg(documentName()));
     setWindowModified(m_undo && !m_undo->isClean());
     if (!m_filePath.isEmpty())
         setWindowFilePath(m_filePath);
@@ -828,7 +828,7 @@ void MainWindow::setBrushColor(const QColor& color, bool remember)
     m_view->setBrushColor(color);
     if (m_colorButton) {
         m_colorButton->setIcon(makeColorIcon(color, 20));
-        m_colorButton->setToolTip(uiText(QStringLiteral("画笔颜色：%1（点击选择）"))
+        m_colorButton->setToolTip(uiText(QStringLiteral("Brush color: %1 (click to choose)"))
                                       .arg(color.name(QColor::HexArgb).toUpper()));
     }
     if (remember) {
@@ -857,7 +857,7 @@ void MainWindow::setBrushWidthUi(int width)
 void MainWindow::chooseBrushColor()
 {
     const QColor color = QColorDialog::getColor(m_brushColor, this,
-                                                uiText(QStringLiteral("选择画笔颜色")),
+                                                uiText(QStringLiteral("Choose brush color")),
                                                 QColorDialog::ShowAlphaChannel);
     if (color.isValid())
         setBrushColor(color, true);
@@ -886,13 +886,13 @@ void MainWindow::newBoard()
     updateTitle();
     updateStatusBar();
     updateActions();
-    statusBar()->showMessage(uiText(QStringLiteral("已新建空白画板")), 3000);
+    statusBar()->showMessage(uiText(QStringLiteral("New empty board created")), 3000);
 }
 
 void MainWindow::openTemplateDialog()
 {
     const QString path = QFileDialog::getOpenFileName(
-        this, uiText(QStringLiteral("打开模板")), AppSettings::templatesDir(),
+        this, uiText(QStringLiteral("Open template")), AppSettings::templatesDir(),
         templateFilter());
     if (!path.isEmpty())
         loadTemplateFile(path, true);
@@ -908,8 +908,8 @@ bool MainWindow::loadTemplateFile(const QString& path, bool showErrors)
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
         if (showErrors) {
-            QMessageBox::warning(this, uiText(QStringLiteral("打开模板")),
-                                 uiText(QStringLiteral("无法读取文件：\n%1")).arg(QDir::toNativeSeparators(path)));
+            QMessageBox::warning(this, uiText(QStringLiteral("Open template")),
+                                 uiText(QStringLiteral("Could not read the file:\n%1")).arg(QDir::toNativeSeparators(path)));
         }
         return false;
     }
@@ -918,8 +918,8 @@ bool MainWindow::loadTemplateFile(const QString& path, bool showErrors)
     const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &parseError);
     if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
         if (showErrors) {
-            QMessageBox::warning(this, uiText(QStringLiteral("打开模板")),
-                                 uiText(QStringLiteral("模板文件解析失败：\n%1")).arg(parseError.errorString()));
+            QMessageBox::warning(this, uiText(QStringLiteral("Open template")),
+                                 uiText(QStringLiteral("Failed to parse the template file:\n%1")).arg(parseError.errorString()));
         }
         return false;
     }
@@ -928,7 +928,7 @@ bool MainWindow::loadTemplateFile(const QString& path, bool showErrors)
     QString validationError;
     if (!validateTemplateRoot(root, &validationError)) {
         if (showErrors)
-            QMessageBox::warning(this, uiText(QStringLiteral("打开模板")), validationError);
+            QMessageBox::warning(this, uiText(QStringLiteral("Open template")), validationError);
         return false;
     }
 
@@ -939,7 +939,7 @@ bool MainWindow::loadTemplateFile(const QString& path, bool showErrors)
     QString loadError;
     if (!m_scene->fromJson(root, &loadError)) {
         if (showErrors)
-            QMessageBox::warning(this, uiText(QStringLiteral("打开模板")), loadError);
+            QMessageBox::warning(this, uiText(QStringLiteral("Open template")), loadError);
         return false;
     }
 
@@ -955,7 +955,7 @@ bool MainWindow::loadTemplateFile(const QString& path, bool showErrors)
     updateTitle();
     updateStatusBar();
     updateActions();
-    statusBar()->showMessage(uiText(QStringLiteral("已打开模板：%1")).arg(QFileInfo(m_filePath).fileName()), 4000);
+    statusBar()->showMessage(uiText(QStringLiteral("Template opened: %1")).arg(QFileInfo(m_filePath).fileName()), 4000);
     return true;
 }
 
@@ -971,14 +971,14 @@ bool MainWindow::saveTemplateAs()
     QString suggestion = m_filePath;
     if (suggestion.isEmpty()) {
         QString name = documentName();
-        if (name == uiText(QStringLiteral("未命名画板")))
-            name = uiText(QStringLiteral("未命名模板"));
+        if (name == uiText(QStringLiteral("Untitled board")))
+            name = uiText(QStringLiteral("Untitled template"));
         suggestion = QDir(AppSettings::templatesDir()).filePath(name + QStringLiteral(".sbboard"));
     }
 
     QString path = QFileDialog::getSaveFileName(
-        this, uiText(QStringLiteral("保存为模板")), suggestion,
-        uiText(QStringLiteral("StoryBoard 模板 (*.sbboard)")));
+        this, uiText(QStringLiteral("Save as template")), suggestion,
+        uiText(QStringLiteral("StoryBoard templates (*.sbboard)")));
     if (path.isEmpty())
         return false;
     if (!path.endsWith(QStringLiteral(".sbboard"), Qt::CaseInsensitive))
@@ -995,14 +995,14 @@ bool MainWindow::saveToFile(const QString& path)
 
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly)) {
-        QMessageBox::warning(this, uiText(QStringLiteral("保存模板")),
-                             uiText(QStringLiteral("无法写入文件：\n%1")).arg(QDir::toNativeSeparators(path)));
+        QMessageBox::warning(this, uiText(QStringLiteral("Save template")),
+                             uiText(QStringLiteral("Could not write the file:\n%1")).arg(QDir::toNativeSeparators(path)));
         return false;
     }
     file.write(data);
     if (!file.commit()) {
-        QMessageBox::warning(this, uiText(QStringLiteral("保存模板")),
-                             uiText(QStringLiteral("保存模板失败：\n%1")).arg(QDir::toNativeSeparators(path)));
+        QMessageBox::warning(this, uiText(QStringLiteral("Save template")),
+                             uiText(QStringLiteral("Failed to save the template:\n%1")).arg(QDir::toNativeSeparators(path)));
         return false;
     }
 
@@ -1012,7 +1012,7 @@ bool MainWindow::saveToFile(const QString& path)
     m_undo->setClean();
     updateTitle();
     updateActions();
-    statusBar()->showMessage(uiText(QStringLiteral("模板已保存：%1")).arg(QFileInfo(m_filePath).fileName()), 4000);
+    statusBar()->showMessage(uiText(QStringLiteral("Template saved: %1")).arg(QFileInfo(m_filePath).fileName()), 4000);
     return true;
 }
 
@@ -1023,12 +1023,12 @@ bool MainWindow::maybeSave()
 
     QMessageBox box(this);
     box.setIcon(QMessageBox::Question);
-    box.setWindowTitle(uiText(QStringLiteral("未保存的更改")));
-    box.setText(uiText(QStringLiteral("当前画板有未保存的更改。")));
-    box.setInformativeText(uiText(QStringLiteral("是否先保存为模板？")));
-    QPushButton* saveButton = box.addButton(uiText(QStringLiteral("保存模板")), QMessageBox::AcceptRole);
-    QPushButton* discardButton = box.addButton(uiText(QStringLiteral("不保存")), QMessageBox::DestructiveRole);
-    box.addButton(uiText(QStringLiteral("取消")), QMessageBox::RejectRole);
+    box.setWindowTitle(uiText(QStringLiteral("Unsaved changes")));
+    box.setText(uiText(QStringLiteral("The current board has unsaved changes.")));
+    box.setInformativeText(uiText(QStringLiteral("Save as a template first?")));
+    QPushButton* saveButton = box.addButton(uiText(QStringLiteral("Save template")), QMessageBox::AcceptRole);
+    QPushButton* discardButton = box.addButton(uiText(QStringLiteral("Don't save")), QMessageBox::DestructiveRole);
+    box.addButton(uiText(QStringLiteral("Cancel")), QMessageBox::RejectRole);
     box.setDefaultButton(saveButton);
     box.exec();
 
@@ -1064,8 +1064,8 @@ bool MainWindow::exportToFile(const QString& path, const QRectF& area, qreal sca
     QApplication::restoreOverrideCursor();
 
     if (image.isNull()) {
-        QMessageBox::warning(this, uiText(QStringLiteral("导出画板")),
-                             uiText(QStringLiteral("渲染画板失败，没有可导出的内容。")));
+        QMessageBox::warning(this, uiText(QStringLiteral("Export board")),
+                             uiText(QStringLiteral("Rendering the board failed: nothing to export.")));
         return false;
     }
 
@@ -1075,7 +1075,7 @@ bool MainWindow::exportToFile(const QString& path, const QRectF& area, qreal sca
         {
             QPdfWriter writer(path);
             writer.setResolution(96);
-            writer.setTitle(uiText(QStringLiteral("StoryBoard 画板")));
+            writer.setTitle(uiText(QStringLiteral("StoryBoard Canvas")));
             writer.setCreator(QStringLiteral("StoryBoard"));
             writer.setPageMargins(QMarginsF(0.0, 0.0, 0.0, 0.0), QPageLayout::Point);
             const qreal widthPoints = image.width() * 72.0 / 96.0;
@@ -1089,12 +1089,12 @@ bool MainWindow::exportToFile(const QString& path, const QRectF& area, qreal sca
                 painter.end();
                 success = true;
             } else {
-                errorMessage = uiText(QStringLiteral("无法创建 PDF 输出。"));
+                errorMessage = uiText(QStringLiteral("Could not create the PDF output."));
             }
         }
         if (success && QFileInfo(path).size() <= 0) {
             success = false;
-            errorMessage = uiText(QStringLiteral("PDF 文件写入失败。"));
+            errorMessage = uiText(QStringLiteral("Failed to write the PDF file."));
         }
     } else {
         QImageWriter writer(path, format == QStringLiteral("JPEG") ? "JPEG" : "PNG");
@@ -1106,24 +1106,24 @@ bool MainWindow::exportToFile(const QString& path, const QRectF& area, qreal sca
     }
 
     if (!success) {
-        QMessageBox::critical(this, uiText(QStringLiteral("导出失败")),
-                              uiText(QStringLiteral("无法导出画板：\n%1\n\n%2"))
+        QMessageBox::critical(this, uiText(QStringLiteral("Export failed")),
+                              uiText(QStringLiteral("Could not export the board:\n%1\n\n%2"))
                                   .arg(QDir::toNativeSeparators(path), errorMessage));
         return false;
     }
 
     m_settings.lastExportDir = QFileInfo(path).absolutePath();
     m_settings.save();
-    statusBar()->showMessage(uiText(QStringLiteral("画板已导出：%1")).arg(QFileInfo(path).fileName()), 5000);
+    statusBar()->showMessage(uiText(QStringLiteral("Board exported: %1")).arg(QFileInfo(path).fileName()), 5000);
 
     QMessageBox box(this);
     box.setIcon(QMessageBox::Information);
-    box.setWindowTitle(uiText(QStringLiteral("导出完成")));
-    box.setText(uiText(QStringLiteral("画板已成功导出。")));
+    box.setWindowTitle(uiText(QStringLiteral("Export complete")));
+    box.setText(uiText(QStringLiteral("The board was exported successfully.")));
     box.setInformativeText(QDir::toNativeSeparators(path));
-    QPushButton* openFileButton = box.addButton(uiText(QStringLiteral("打开文件")), QMessageBox::AcceptRole);
-    QPushButton* openFolderButton = box.addButton(uiText(QStringLiteral("打开文件夹")), QMessageBox::ActionRole);
-    box.addButton(uiText(QStringLiteral("完成")), QMessageBox::RejectRole);
+    QPushButton* openFileButton = box.addButton(uiText(QStringLiteral("Open file")), QMessageBox::AcceptRole);
+    QPushButton* openFolderButton = box.addButton(uiText(QStringLiteral("Open folder")), QMessageBox::ActionRole);
+    box.addButton(uiText(QStringLiteral("Done")), QMessageBox::RejectRole);
     box.exec();
 
     if (box.clickedButton() == openFileButton)
@@ -1141,7 +1141,7 @@ void MainWindow::importImagesDialog()
         startDirectory = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
 
     const QStringList files = QFileDialog::getOpenFileNames(
-        this, uiText(QStringLiteral("导入图片")), startDirectory, imageFilter());
+        this, uiText(QStringLiteral("Import images")), startDirectory, imageFilter());
     if (!files.isEmpty())
         importImageFiles(files);
 }
@@ -1202,22 +1202,22 @@ void MainWindow::importImageFiles(const QStringList& files)
     }
 
     if (items.isEmpty()) {
-        QMessageBox::warning(this, uiText(QStringLiteral("导入图片")),
-                             uiText(QStringLiteral("没有可用的图片文件。")));
+        QMessageBox::warning(this, uiText(QStringLiteral("Import images")),
+                             uiText(QStringLiteral("No usable image files.")));
         return;
     }
 
-    m_scene->addItemsWithUndo(items, uiText(QStringLiteral("导入图片")));
+    m_scene->addItemsWithUndo(items, uiText(QStringLiteral("Import images")));
     for (BoardItem* item : items)
         item->setSelected(true);
 
     m_settings.lastImageDir = QFileInfo(files.constFirst()).absolutePath();
     m_settings.save();
 
-    statusBar()->showMessage(uiText(QStringLiteral("已导入 %1 张图片")).arg(items.size()), 4000);
+    statusBar()->showMessage(uiText(QStringLiteral("%1 image(s) imported")).arg(items.size()), 4000);
     if (!failed.isEmpty()) {
-        QMessageBox::warning(this, uiText(QStringLiteral("部分图片未导入")),
-                             uiText(QStringLiteral("以下文件无法读取：\n%1"))
+        QMessageBox::warning(this, uiText(QStringLiteral("Some images were not imported")),
+                             uiText(QStringLiteral("The following files could not be read:\n%1"))
                                  .arg(QDir::toNativeSeparators(failed.join(QLatin1Char('\n')))));
     }
 }
@@ -1268,15 +1268,15 @@ void MainWindow::insertShape(ShapeType type)
     item->setContentSize(size);
 
     m_scene->clearSelection();
-    m_scene->addItemsWithUndo({ item }, uiText(QStringLiteral("插入%1")).arg(shapeTypeName(type)));
+    m_scene->addItemsWithUndo({ item }, uiText(QStringLiteral("Insert %1")).arg(shapeTypeName(type)));
     item->setSelected(true);
     m_view->setFocus();
     if (type == ShapeType::Ellipse) {
         statusBar()->showMessage(
-            uiText(QStringLiteral("已插入正圆；编辑模式下拖动控制点可把它拉伸成椭圆")), 5000);
+            uiText(QStringLiteral("Inserted a circle; in edit mode drag a handle to stretch it into an ellipse")), 5000);
     } else {
         statusBar()->showMessage(
-            uiText(QStringLiteral("已插入%1；拖动可移动，拖动控制点可缩放，颜色跟随当前画笔"))
+            uiText(QStringLiteral("Inserted %1; drag to move, drag handles to resize, color follows the current brush"))
                 .arg(shapeTypeName(type)),
             5000);
     }
@@ -1294,7 +1294,7 @@ void MainWindow::chooseFillColor()
     const QColor initial = m_fillColor.isValid() ? m_fillColor
                                                  : QColor(59, 130, 246, 96);
     const QColor color = QColorDialog::getColor(initial, this,
-                                                uiText(QStringLiteral("选择填充颜色")),
+                                                uiText(QStringLiteral("Choose fill color")),
                                                 QColorDialog::ShowAlphaChannel);
     if (!color.isValid())
         return;
@@ -1324,9 +1324,9 @@ void MainWindow::applyFillToSelection()
     if (shapes.isEmpty()) {
         if (outlineOnlyCount > 0) {
             statusBar()->showMessage(
-                uiText(QStringLiteral("所选图形只有描边（直线、箭头、大括号等），暂不支持填充")), 4000);
+                uiText(QStringLiteral("The selected shape is stroke-only (line, arrow, brace, etc.); fill is not supported")), 4000);
         } else {
-            statusBar()->showMessage(uiText(QStringLiteral("填充已设为「%1」，将用于新插入的图形"))
+            statusBar()->showMessage(uiText(QStringLiteral("Fill set to \"%1\"; it will be used for newly inserted shapes"))
                                          .arg(fillStyleName(m_fillStyle)),
                                      4000);
         }
@@ -1347,13 +1347,13 @@ void MainWindow::applyFillToSelection()
     }
 
     if (before == after) {
-        statusBar()->showMessage(uiText(QStringLiteral("填充样式没有变化")), 3000);
+        statusBar()->showMessage(uiText(QStringLiteral("The fill style did not change")), 3000);
         return;
     }
 
     m_undo->push(new ShapeStyleCommand(m_scene, shapes, before, after,
-                                       uiText(QStringLiteral("调整填充样式"))));
-    statusBar()->showMessage(uiText(QStringLiteral("已对 %1 个图形应用「%2」"))
+                                       uiText(QStringLiteral("Change fill style"))));
+    statusBar()->showMessage(uiText(QStringLiteral("Applied \"%2\" to %1 shape(s)"))
                                  .arg(shapes.size())
                                  .arg(fillStyleName(m_fillStyle)),
                              4000);
@@ -1383,8 +1383,8 @@ void MainWindow::updateFillActions()
     m_fillButton->setIcon(makeColorIcon(swatch, 20));
     const QString colorText = m_fillColor.isValid()
         ? m_fillColor.name(QColor::HexArgb).toUpper()
-        : uiText(QStringLiteral("跟随画笔色"));
-    m_fillButton->setToolTip(uiText(QStringLiteral("填充：%1 · %2（点击选择）"))
+        : uiText(QStringLiteral("Follow brush color"));
+    m_fillButton->setToolTip(uiText(QStringLiteral("Fill: %1 · %2 (click to choose)"))
                                  .arg(fillStyleName(m_fillStyle), colorText));
     if (m_fillColorAct)
         m_fillColorAct->setIcon(makeColorIcon(swatch, 16));
@@ -1393,7 +1393,7 @@ void MainWindow::updateFillActions()
 void MainWindow::insertTextAt(const QPointF& scenePos)
 {
     TextDialog dialog(this);
-    dialog.setHeading(uiText(QStringLiteral("添加文字图元")));
+    dialog.setHeading(uiText(QStringLiteral("Add text item")));
     dialog.setTextColor(m_brushColor);
     if (dialog.exec() != QDialog::Accepted)
         return;
@@ -1410,10 +1410,10 @@ void MainWindow::insertTextAt(const QPointF& scenePos)
     item->setPos(QPointF(x, y));
 
     setToolMode(ToolMode::Edit);
-    m_scene->addItemsWithUndo({ item }, uiText(QStringLiteral("添加文字")));
+    m_scene->addItemsWithUndo({ item }, uiText(QStringLiteral("Add text")));
     item->setSelected(true);
     m_view->setFocus();
-    statusBar()->showMessage(uiText(QStringLiteral("已添加文字图元")), 4000);
+    statusBar()->showMessage(uiText(QStringLiteral("Text item added")), 4000);
 }
 
 void MainWindow::editTextItem(TextItem* item)
@@ -1422,7 +1422,7 @@ void MainWindow::editTextItem(TextItem* item)
         return;
 
     TextDialog dialog(this);
-    dialog.setHeading(uiText(QStringLiteral("编辑文字图元")));
+    dialog.setHeading(uiText(QStringLiteral("Edit text item")));
     dialog.setTextValue(item->text());
     dialog.setTextFont(item->textFont());
     dialog.setTextColor(item->textColor());
@@ -1430,9 +1430,9 @@ void MainWindow::editTextItem(TextItem* item)
         return;
 
     if (m_scene->changeTextWithUndo(item, dialog.textValue(), dialog.textFont(),
-                                    dialog.textColor(), uiText(QStringLiteral("编辑文字")))) {
+                                    dialog.textColor(), uiText(QStringLiteral("Edit text")))) {
         item->setSelected(true);
-        statusBar()->showMessage(uiText(QStringLiteral("文字已更新")), 4000);
+        statusBar()->showMessage(uiText(QStringLiteral("Text updated")), 4000);
     }
 }
 
@@ -1443,7 +1443,7 @@ void MainWindow::replaceBackgroundImage()
         startDirectory = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
 
     const QString path = QFileDialog::getOpenFileName(
-        this, uiText(QStringLiteral("替换背景图片")), startDirectory, imageFilter());
+        this, uiText(QStringLiteral("Replace background image")), startDirectory, imageFilter());
     if (path.isEmpty())
         return;
 
@@ -1451,8 +1451,8 @@ void MainWindow::replaceBackgroundImage()
     reader.setAutoTransform(true);
     const QImage image = reader.read();
     if (image.isNull()) {
-        QMessageBox::warning(this, uiText(QStringLiteral("替换背景")),
-                             uiText(QStringLiteral("无法读取图片：\n%1")).arg(reader.errorString()));
+        QMessageBox::warning(this, uiText(QStringLiteral("Replace background")),
+                             uiText(QStringLiteral("Could not read the image:\n%1")).arg(reader.errorString()));
         return;
     }
 
@@ -1462,11 +1462,11 @@ void MainWindow::replaceBackgroundImage()
     background.mode = m_scene->background().type == BackgroundType::Image
         ? m_scene->background().mode
         : BackgroundMode::Stretch;
-    m_scene->replaceBackground(background, uiText(QStringLiteral("替换背景图片")));
+    m_scene->replaceBackground(background, uiText(QStringLiteral("Replace background image")));
 
     m_settings.lastImageDir = QFileInfo(path).absolutePath();
     m_settings.save();
-    statusBar()->showMessage(uiText(QStringLiteral("背景已替换")), 3000);
+    statusBar()->showMessage(uiText(QStringLiteral("Background replaced")), 3000);
 }
 
 void MainWindow::setBackgroundColor()
@@ -1475,21 +1475,21 @@ void MainWindow::setBackgroundColor()
     if (m_scene->background().type == BackgroundType::Color)
         initial = m_scene->background().color;
 
-    const QColor color = QColorDialog::getColor(initial, this, uiText(QStringLiteral("选择背景颜色")));
+    const QColor color = QColorDialog::getColor(initial, this, uiText(QStringLiteral("Choose background color")));
     if (!color.isValid())
         return;
 
     BackgroundState background;
     background.type = BackgroundType::Color;
     background.color = color;
-    m_scene->replaceBackground(background, uiText(QStringLiteral("设置背景颜色")));
-    statusBar()->showMessage(uiText(QStringLiteral("背景颜色已更新")), 3000);
+    m_scene->replaceBackground(background, uiText(QStringLiteral("Set background color")));
+    statusBar()->showMessage(uiText(QStringLiteral("Background color updated")), 3000);
 }
 
 void MainWindow::clearBackground()
 {
-    m_scene->replaceBackground(BackgroundState(), uiText(QStringLiteral("清除背景")));
-    statusBar()->showMessage(uiText(QStringLiteral("背景已清除")), 3000);
+    m_scene->replaceBackground(BackgroundState(), uiText(QStringLiteral("Clear background")));
+    statusBar()->showMessage(uiText(QStringLiteral("Background cleared")), 3000);
 }
 
 void MainWindow::applyUiLanguage()
@@ -1502,7 +1502,7 @@ void MainWindow::applyUiLanguage()
         for (QAction* action : m_shapeMenu->actions()) {
             const ShapeType type = static_cast<ShapeType>(action->data().toInt());
             action->setText(shapeTypeName(type));
-            action->setToolTip(uiText(QStringLiteral("插入%1（使用当前画笔颜色）"))
+            action->setToolTip(uiText(QStringLiteral("Insert %1 (uses the current brush color)"))
                                     .arg(shapeTypeName(type)));
         }
     }
@@ -1548,7 +1548,7 @@ void MainWindow::showSettings()
 
     m_settings.save();
     updateStatusBar();
-    statusBar()->showMessage(uiText(QStringLiteral("设置已保存")), 3000);
+    statusBar()->showMessage(uiText(QStringLiteral("Settings saved")), 3000);
 }
 
 void MainWindow::fitAll()
@@ -1571,7 +1571,7 @@ void MainWindow::updateTemplateMenu()
     const QFileInfoList files = directory.entryInfoList({ QStringLiteral("*.sbboard") },
                                                         QDir::Files, QDir::Time);
     if (files.isEmpty()) {
-        QAction* emptyAction = m_templatesMenu->addAction(uiText(QStringLiteral("（模板文件夹为空）")));
+        QAction* emptyAction = m_templatesMenu->addAction(uiText(QStringLiteral("(Template folder is empty)")));
         emptyAction->setEnabled(false);
     } else {
         const int maximum = qMin(15, static_cast<int>(files.size()));
@@ -1589,13 +1589,13 @@ void MainWindow::updateTemplateMenu()
         }
         if (files.size() > maximum) {
             QAction* moreAction = m_templatesMenu->addAction(
-                uiText(QStringLiteral("… 共 %1 个模板")).arg(files.size()));
+                uiText(QStringLiteral("… %1 templates in total")).arg(files.size()));
             moreAction->setEnabled(false);
         }
     }
 
     m_templatesMenu->addSeparator();
-    QAction* openFolderAction = m_templatesMenu->addAction(uiText(QStringLiteral("打开模板文件夹")));
+    QAction* openFolderAction = m_templatesMenu->addAction(uiText(QStringLiteral("Open templates folder")));
     connect(openFolderAction, &QAction::triggered, this, &MainWindow::openTemplatesFolder);
 }
 
@@ -1609,24 +1609,24 @@ void MainWindow::openTemplatesFolder()
 void MainWindow::showAbout()
 {
     QString html;
-    html += QStringLiteral("<h3>%1 %2</h3>").arg(uiText(QStringLiteral("StoryBoard 画板")),
+    html += QStringLiteral("<h3>%1 %2</h3>").arg(uiText(QStringLiteral("StoryBoard Canvas")),
                                                 QCoreApplication::applicationVersion());
     html += QStringLiteral("<p>%1</p>")
-                .arg(uiText(QStringLiteral("一个支持自由笔画、图片图元、全景查看、模板与导出的小型画板工具。")));
-    html += QStringLiteral("<p><b>%1</b></p><ul>").arg(uiText(QStringLiteral("主要操作")));
+                .arg(uiText(QStringLiteral("A small board for freehand strokes, image items, overview navigation, templates and export.")));
+    html += QStringLiteral("<p><b>%1</b></p><ul>").arg(uiText(QStringLiteral("Key operations")));
     const QStringList operations = {
-        QStringLiteral("V 查看模式：整体平移 / 缩放，自动全景"),
-        QStringLiteral("E 编辑模式：显示且未锁定图层上的图元都能编辑；锁定图层不可编辑；] / [ 调整选中图元高度；右键调整图层/高度"),
-        QStringLiteral("B 画笔模式：自由曲线，可选颜色与粗细"),
-        QStringLiteral("T 文字模式：点击画板添加文字，双击文字可再次编辑"),
-        QStringLiteral("图层：右侧面板勾选框控制显示/隐藏、锁形按钮锁定图层；图层与图元都支持多选"),
-        QStringLiteral("插入 → 常见图形：快速插入矩形、圆形、箭头、大括号、对话气泡等"),
-        QStringLiteral("Ctrl+0 回到全景视图，Ctrl+Z / Ctrl+Y 撤销 / 重做"),
+        QStringLiteral("V View mode: pan / zoom the whole board, automatic overview"),
+        QStringLiteral("E Edit mode: items on visible, unlocked layers can be edited; locked layers cannot; ] / [ adjust the height of the selection; right-click adjusts layer / height"),
+        QStringLiteral("B Brush mode: freehand strokes, with color and width options"),
+        QStringLiteral("T Text mode: click the board to add text, double-click text to edit it again"),
+        QStringLiteral("Layers: the checkbox in the right panel toggles visibility, the lock button locks a layer; layers and items both support multi-select"),
+        QStringLiteral("Insert → Shapes: quickly insert rectangles, ellipses, arrows, braces, speech bubbles and more"),
+        QStringLiteral("Ctrl+0 returns to the overview, Ctrl+Z / Ctrl+Y undo / redo"),
     };
     for (const QString& operation : operations)
         html += QStringLiteral("<li>%1</li>").arg(uiText(operation));
-    html += QStringLiteral("</ul><p>%1</p>").arg(uiText(QStringLiteral("基于 Qt %1 构建。")).arg(QString::fromLatin1(qVersion())));
-    QMessageBox::about(this, uiText(QStringLiteral("关于 StoryBoard 画板")), html);
+    html += QStringLiteral("</ul><p>%1</p>").arg(uiText(QStringLiteral("Built with Qt %1.")).arg(QString::fromLatin1(qVersion())));
+    QMessageBox::about(this, uiText(QStringLiteral("About StoryBoard Canvas")), html);
 }
 
 void MainWindow::closeEvent(QCloseEvent* event)

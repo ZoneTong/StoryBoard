@@ -34,8 +34,8 @@ QString TextItem::displayName() const
     QString snippet = m_text.simplified();
     if (snippet.size() > 18)
         snippet = snippet.left(18) + QStringLiteral("…");
-    return snippet.isEmpty() ? uiText(QStringLiteral("文字"))
-                             : uiText(QStringLiteral("文字：%1")).arg(snippet);
+    return snippet.isEmpty() ? uiText(QStringLiteral("Text"))
+                             : uiText(QStringLiteral("Text: %1")).arg(snippet);
 }
 
 QSizeF TextItem::measure(const QString& text, const QFont& font)
@@ -110,7 +110,7 @@ void TextItem::paintContent(QPainter* painter)
 
     if (m_text.isEmpty()) {
         painter->setPen(QColor(148, 163, 184));
-        painter->drawText(QPointF(0.0, metrics.ascent()), uiText(QStringLiteral("空文字")));
+        painter->drawText(QPointF(0.0, metrics.ascent()), uiText(QStringLiteral("Empty text")));
     } else {
         qreal baseline = metrics.ascent();
         for (const QString& line : lines) {

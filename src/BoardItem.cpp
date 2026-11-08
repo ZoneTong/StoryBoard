@@ -494,8 +494,8 @@ void BoardItem::finishInteraction()
         }
         if (BoardScene* board = boardScene()) {
             board->pushGeometry(m_before, after,
-                                wasResize ? uiText(QStringLiteral("缩放图元"))
-                                          : uiText(QStringLiteral("移动图元")));
+                                wasResize ? uiText(QStringLiteral("Resize item"))
+                                          : uiText(QStringLiteral("Move item")));
         }
     }
     m_before.clear();

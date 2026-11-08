@@ -27,7 +27,7 @@ ExportDialog::ExportDialog(BoardScene* scene, const QString& startDirectory, QWi
     : QDialog(parent)
     , m_scene(scene)
 {
-    setWindowTitle(uiText(QStringLiteral("导出画板")));
+    setWindowTitle(uiText(QStringLiteral("Export board")));
     setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));
     setModal(true);
     setMinimumWidth(580);
@@ -36,25 +36,25 @@ ExportDialog::ExportDialog(BoardScene* scene, const QString& startDirectory, QWi
     rootLayout->setContentsMargins(22, 20, 22, 18);
     rootLayout->setSpacing(14);
 
-    auto* title = new QLabel(uiText(QStringLiteral("导出当前画板")), this);
+    auto* title = new QLabel(uiText(QStringLiteral("Export the current board")), this);
     title->setObjectName(QStringLiteral("DialogTitle"));
     rootLayout->addWidget(title);
 
-    auto* hint = new QLabel(uiText(QStringLiteral("将画板渲染为图片或 PDF，背景与图元会一并导出（不含网格与选中框）。")), this);
+    auto* hint = new QLabel(uiText(QStringLiteral("Render the board to an image or PDF. The background and items are included (grid and selection outlines are not).")), this);
     hint->setObjectName(QStringLiteral("DialogHint"));
     hint->setWordWrap(true);
     rootLayout->addWidget(hint);
 
-    auto* group = new QGroupBox(uiText(QStringLiteral("输出设置")), this);
+    auto* group = new QGroupBox(uiText(QStringLiteral("Output settings")), this);
     auto* form = new QFormLayout(group);
     form->setContentsMargins(16, 18, 16, 16);
     form->setSpacing(10);
     form->setLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
     m_scopeCombo = new QComboBox(group);
-    m_scopeCombo->addItem(uiText(QStringLiteral("画板区域")));
-    m_scopeCombo->addItem(uiText(QStringLiteral("全部图元")));
-    form->addRow(uiText(QStringLiteral("导出范围")), m_scopeCombo);
+    m_scopeCombo->addItem(uiText(QStringLiteral("Board area")));
+    m_scopeCombo->addItem(uiText(QStringLiteral("All items")));
+    form->addRow(uiText(QStringLiteral("Export area")), m_scopeCombo);
 
     m_scaleSpin = new QDoubleSpinBox(group);
     m_scaleSpin->setRange(0.25, 4.0);
@@ -63,33 +63,33 @@ ExportDialog::ExportDialog(BoardScene* scene, const QString& startDirectory, QWi
     m_scaleSpin->setValue(1.0);
     m_scaleSpin->setSuffix(QStringLiteral(" ×"));
     m_scaleSpin->setFixedHeight(30);
-    form->addRow(uiText(QStringLiteral("输出比例")), m_scaleSpin);
+    form->addRow(uiText(QStringLiteral("Output scale")), m_scaleSpin);
 
     m_formatCombo = new QComboBox(group);
-    m_formatCombo->addItem(uiText(QStringLiteral("PNG 图片")), QStringLiteral("PNG"));
-    m_formatCombo->addItem(uiText(QStringLiteral("JPEG 图片")), QStringLiteral("JPEG"));
-    m_formatCombo->addItem(uiText(QStringLiteral("PDF 文档")), QStringLiteral("PDF"));
-    form->addRow(uiText(QStringLiteral("输出格式")), m_formatCombo);
+    m_formatCombo->addItem(uiText(QStringLiteral("PNG image")), QStringLiteral("PNG"));
+    m_formatCombo->addItem(uiText(QStringLiteral("JPEG image")), QStringLiteral("JPEG"));
+    m_formatCombo->addItem(uiText(QStringLiteral("PDF document")), QStringLiteral("PDF"));
+    form->addRow(uiText(QStringLiteral("Output format")), m_formatCombo);
 
     auto* fileRow = new QHBoxLayout();
     fileRow->setSpacing(8);
     m_pathEdit = new QLineEdit(group);
-    m_pathEdit->setPlaceholderText(uiText(QStringLiteral("选择导出文件路径")));
-    auto* browseButton = new QPushButton(uiText(QStringLiteral("浏览…")), group);
+    m_pathEdit->setPlaceholderText(uiText(QStringLiteral("Choose the export file path")));
+    auto* browseButton = new QPushButton(uiText(QStringLiteral("Browse…")), group);
     fileRow->addWidget(m_pathEdit, 1);
     fileRow->addWidget(browseButton);
-    form->addRow(uiText(QStringLiteral("输出文件")), fileRow);
+    form->addRow(uiText(QStringLiteral("Output file")), fileRow);
 
     m_sizeLabel = new QLabel(group);
     m_sizeLabel->setObjectName(QStringLiteral("DialogHint"));
-    form->addRow(uiText(QStringLiteral("输出尺寸")), m_sizeLabel);
+    form->addRow(uiText(QStringLiteral("Output size")), m_sizeLabel);
 
     rootLayout->addWidget(group);
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
-    buttons->button(QDialogButtonBox::Ok)->setText(uiText(QStringLiteral("导出")));
+    buttons->button(QDialogButtonBox::Ok)->setText(uiText(QStringLiteral("Export")));
     buttons->button(QDialogButtonBox::Ok)->setIcon(makeIcon(IconId::Export, QColor(255, 255, 255), 18));
-    buttons->button(QDialogButtonBox::Cancel)->setText(uiText(QStringLiteral("取消")));
+    buttons->button(QDialogButtonBox::Cancel)->setText(uiText(QStringLiteral("Cancel")));
     rootLayout->addWidget(buttons);
 
     QString directory = startDirectory;
@@ -138,10 +138,10 @@ QString ExportDialog::fileFilter() const
 {
     const QString format = selectedFormat();
     if (format == QStringLiteral("JPEG"))
-        return uiText(QStringLiteral("JPEG 图片 (*.jpg *.jpeg)"));
+        return uiText(QStringLiteral("JPEG images (*.jpg *.jpeg)"));
     if (format == QStringLiteral("PDF"))
-        return uiText(QStringLiteral("PDF 文档 (*.pdf)"));
-    return uiText(QStringLiteral("PNG 图片 (*.png)"));
+        return uiText(QStringLiteral("PDF documents (*.pdf)"));
+    return uiText(QStringLiteral("PNG images (*.png)"));
 }
 
 ExportDialog::Options ExportDialog::options() const
@@ -206,7 +206,7 @@ void ExportDialog::browseForFile()
     const QString current = m_pathEdit->text().trimmed();
     const QString directory = current.isEmpty() ? QString()
                                                 : QFileInfo(current).absolutePath();
-    QString path = QFileDialog::getSaveFileName(this, uiText(QStringLiteral("导出画板")), directory,
+    QString path = QFileDialog::getSaveFileName(this, uiText(QStringLiteral("Export board")), directory,
                                                 fileFilter());
     if (path.isEmpty())
         return;
@@ -226,7 +226,7 @@ void ExportDialog::validateAndAccept()
 {
     QString path = m_pathEdit->text().trimmed();
     if (path.isEmpty()) {
-        QMessageBox::warning(this, uiText(QStringLiteral("导出画板")), uiText(QStringLiteral("请先选择导出文件路径。")));
+        QMessageBox::warning(this, uiText(QStringLiteral("Export board")), uiText(QStringLiteral("Choose an export path first.")));
         return;
     }
 
@@ -251,15 +251,15 @@ void ExportDialog::validateAndAccept()
     }
 
     if (!QDir().mkpath(info.absolutePath())) {
-        QMessageBox::warning(this, uiText(QStringLiteral("导出画板")),
-                             uiText(QStringLiteral("无法创建输出目录：\n%1")).arg(info.absolutePath()));
+        QMessageBox::warning(this, uiText(QStringLiteral("Export board")),
+                             uiText(QStringLiteral("Could not create the output folder:\n%1")).arg(info.absolutePath()));
         return;
     }
 
     if (info.exists()) {
         const QMessageBox::StandardButton answer = QMessageBox::question(
-            this, uiText(QStringLiteral("覆盖文件")),
-            uiText(QStringLiteral("文件已存在，是否覆盖？\n%1")).arg(QDir::toNativeSeparators(path)),
+            this, uiText(QStringLiteral("Overwrite file")),
+            uiText(QStringLiteral("The file already exists. Overwrite it?\n%1")).arg(QDir::toNativeSeparators(path)),
             QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
         if (answer != QMessageBox::Yes)
             return;

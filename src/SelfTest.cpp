@@ -1813,14 +1813,14 @@ int runSelfTest(const QString& reportPath)
                   modeOrder.join(QStringLiteral(" / ")));
 
             // 需求：支持中英文界面，默认系统语言，可在设置里切换。
-            check(uiText(QStringLiteral("新建画板")) == QStringLiteral("新建画板"),
-                  QStringLiteral("中文界面下 uiText 返回中文原文"));
+            check(uiText(QStringLiteral("New board")) == QStringLiteral("新建画板"),
+                  QStringLiteral("中文界面下英文源串显示为中文"));
             uiOverrideLanguage(UiLanguage::English);
-            check(uiText(QStringLiteral("新建画板")) == QStringLiteral("New board")
-                      && uiText(QStringLiteral("六边形")) == QStringLiteral("Hexagon")
-                      && uiText(QStringLiteral("查看模式")) == QStringLiteral("View mode"),
-                  QStringLiteral("英文界面下常用词条有英文译文"),
-                  uiText(QStringLiteral("新建画板")));
+            check(uiText(QStringLiteral("New board")) == QStringLiteral("New board")
+                      && uiText(QStringLiteral("Hexagon")) == QStringLiteral("Hexagon")
+                      && uiText(QStringLiteral("View mode")) == QStringLiteral("View mode"),
+                  QStringLiteral("英文界面下显示英文源串"),
+                  uiText(QStringLiteral("New board")));
             uiRetranslateWidgetTree(&window);
             QStringList englishOrder;
             for (QAction* action : modeBar->actions()) {

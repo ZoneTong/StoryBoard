@@ -213,31 +213,31 @@ QString shapeTypeName(ShapeType type)
 {
     switch (type) {
     case ShapeType::Rectangle:
-        return uiText(QStringLiteral("矩形"));
+        return uiText(QStringLiteral("Rectangle"));
     case ShapeType::RoundedRectangle:
-        return uiText(QStringLiteral("圆角矩形"));
+        return uiText(QStringLiteral("Rounded rectangle"));
     case ShapeType::Ellipse:
-        return uiText(QStringLiteral("椭圆"));
+        return uiText(QStringLiteral("Ellipse"));
     case ShapeType::Triangle:
-        return uiText(QStringLiteral("三角形"));
+        return uiText(QStringLiteral("Triangle"));
     case ShapeType::Diamond:
-        return uiText(QStringLiteral("菱形"));
+        return uiText(QStringLiteral("Diamond"));
     case ShapeType::Star:
-        return uiText(QStringLiteral("五角星"));
+        return uiText(QStringLiteral("Star"));
     case ShapeType::Arrow:
-        return uiText(QStringLiteral("箭头"));
+        return uiText(QStringLiteral("Arrow"));
     case ShapeType::DoubleArrow:
-        return uiText(QStringLiteral("双向箭头"));
+        return uiText(QStringLiteral("Double arrow"));
     case ShapeType::Line:
-        return uiText(QStringLiteral("直线"));
+        return uiText(QStringLiteral("Line"));
     case ShapeType::BraceLeft:
-        return uiText(QStringLiteral("左大括号"));
+        return uiText(QStringLiteral("Left brace"));
     case ShapeType::BraceRight:
-        return uiText(QStringLiteral("右大括号"));
+        return uiText(QStringLiteral("Right brace"));
     case ShapeType::Callout:
-        return uiText(QStringLiteral("对话气泡"));
+        return uiText(QStringLiteral("Speech bubble"));
     }
-    return uiText(QStringLiteral("矩形"));
+    return uiText(QStringLiteral("Rectangle"));
 }
 
 QString shapeTypeToString(ShapeType type)
@@ -382,21 +382,21 @@ QString fillStyleName(FillStyle style)
 {
     switch (style) {
     case FillStyle::None:
-        return uiText(QStringLiteral("无填充"));
+        return uiText(QStringLiteral("No fill"));
     case FillStyle::Solid:
-        return uiText(QStringLiteral("纯色"));
+        return uiText(QStringLiteral("Solid"));
     case FillStyle::Hachure:
-        return uiText(QStringLiteral("斜线"));
+        return uiText(QStringLiteral("Hatch"));
     case FillStyle::ReverseHachure:
-        return uiText(QStringLiteral("反斜线"));
+        return uiText(QStringLiteral("Reverse hatch"));
     case FillStyle::CrossHatch:
-        return uiText(QStringLiteral("交叉线"));
+        return uiText(QStringLiteral("Cross hatch"));
     case FillStyle::GridHatch:
-        return uiText(QStringLiteral("正交叉线"));
+        return uiText(QStringLiteral("Grid hatch"));
     case FillStyle::Honeycomb:
-        return uiText(QStringLiteral("六边形"));
+        return uiText(QStringLiteral("Hexagon"));
     }
-    return uiText(QStringLiteral("纯色"));
+    return uiText(QStringLiteral("Solid"));
 }
 
 QString fillStyleToString(FillStyle style)

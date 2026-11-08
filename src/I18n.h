@@ -19,11 +19,12 @@ void uiOverrideLanguage(UiLanguage language);
 UiLanguage uiEffectiveLanguage();
 bool uiIsEnglish();
 
-// 在创建主窗口之前调用：装载 Qt 翻译资源（:/i18n/storyboard_en.qm）。
+// 在创建主窗口之前调用：装载 Qt 翻译资源（:/i18n/storyboard_zh.qm）。
+// 源语言是英文，中文等其它语种放在对应 .ts 中。
 void uiInitializeLanguage();
 
-// 用 Qt 的 QTranslator 把源码里的中文原文翻成当前语言；找不到译文时原样返回。
-QString uiText(const QString& chinese);
+// 用 Qt 的 QTranslator 把英文源串翻成当前语言；找不到译文时原样返回。
+QString uiText(const QString& english);
 
 // 中英双向翻译（用于把已经显示出来的文本切回另一种语言）。
 QString uiTranslateEitherWay(const QString& text);

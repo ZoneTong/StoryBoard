@@ -82,13 +82,13 @@ inline QString toolModeName(ToolMode mode)
 {
     switch (mode) {
     case ToolMode::View:
-        return uiText(QStringLiteral("查看模式"));
+        return uiText(QStringLiteral("View mode"));
     case ToolMode::Brush:
-        return uiText(QStringLiteral("画笔模式"));
+        return uiText(QStringLiteral("Brush mode"));
     case ToolMode::Edit:
-        return uiText(QStringLiteral("编辑模式"));
+        return uiText(QStringLiteral("Edit mode"));
     case ToolMode::Text:
-        return uiText(QStringLiteral("文字模式"));
+        return uiText(QStringLiteral("Text mode"));
     }
     return QString();
 }
@@ -97,11 +97,11 @@ inline QString backgroundModeName(BackgroundMode mode)
 {
     switch (mode) {
     case BackgroundMode::Stretch:
-        return uiText(QStringLiteral("拉伸铺满"));
+        return uiText(QStringLiteral("Stretch to fill"));
     case BackgroundMode::Fit:
-        return uiText(QStringLiteral("完整适应"));
+        return uiText(QStringLiteral("Fit entirely"));
     case BackgroundMode::Tile:
-        return uiText(QStringLiteral("平铺"));
+        return uiText(QStringLiteral("Tile"));
     }
     return QString();
 }

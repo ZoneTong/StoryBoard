@@ -171,7 +171,7 @@ cmake --build build --target deploy   # 可选：windeployqt + offscreen 插件
 - **画板 → 设置… → 界面语言** 可以选「跟随系统 / 简体中文 / English」，**保存后当前窗口立即切换**，不需要重启；选择优先写入 `QSettings`（`ui/language`），如果当前系统/环境不允许写注册表或 AppData，会自动退到纯文本文件 `StoryBoard-language.txt`（依次尝试 `AppConfigLocation`、`AppDataLocation`、程序目录），下次启动沿用。选择同时会记在进程内，因此即使持久化失败，本次运行也会立刻切换。
 - 用环境变量 `STORYBOARD_LANG=zh` / `en` 可临时覆盖界面语言（用于截图和排查，不写入设置）。
 - 菜单、工具栏、状态栏、图层面板、设置/文字/导出/关于等对话框的文案都会翻译；**用户自己的内容不翻译**：图层名（含默认的「背景」「图层 1」）、画板里的文字、模板文件名保持原样。
-- 实现方式遵循 **Qt 官方 i18n 流水线**：源码里的中文原文作为翻译源，英文词条维护在 `translations/storyboard_en.ts`，构建时由 `lrelease` 生成 `storyboard_en.qm` 并嵌入资源，运行时由 `QTranslator` 装载（`src/I18n.cpp`）。新增语种只要添加对应的 `.ts`、加进 `CMakeLists.txt` 的 `STORYBOARD_TS_FILES`，在设置里增加选项即可；已经创建好的控件由 `uiRetranslateWidgetTree()` 原地重译，动态拼接的文字（形状菜单、图层行、模式徽标、状态栏等）在 `MainWindow::applyUiLanguage()` 里重建。
+- 实现方式遵循 **Qt 官方 i18n 流水线**：C++ 源码里的界面文案以**英文作为源语言**，中文译文维护在 `translations/storyboard_zh.ts`；构建时由 `lrelease` 生成 `storyboard_zh.qm` 并嵌入资源，运行时按当前语言决定是否装载 `QTranslator`（`src/I18n.cpp`）。新增小语种只要添加对应的 `.ts`、加进 `CMakeLists.txt` 的 `STORYBOARD_TS_FILES`、在设置里增加选项即可；已经创建好的控件由 `uiRetranslateWidgetTree()` 原地重译，动态拼接的文字（形状菜单、图层行、模式徽标、状态栏等）在 `MainWindow::applyUiLanguage()` 里重建。
 
 ### 画板尺寸与边缘
 
@@ -322,7 +322,7 @@ StoryBoard/
 │  ├─ IconFactory.*          用 QPainter 绘制的界面图标
 │  └─ SelfTest.*             自检与示例画板生成
 ├─ resources/                应用图标、下拉箭头、qrc、rc
-├─ translations/             Qt 翻译源文件（storyboard_en.ts）
+├─ translations/             Qt 翻译源文件（英文为源语言，storyboard_zh.ts）
 ├─ scripts/                  build.ps1 / run.ps1
 ├─ examples/                 示例模板
 └─ docs/                     README 截图

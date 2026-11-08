@@ -26,7 +26,7 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
     : QDialog(parent)
     , m_settings(settings)
 {
-    setWindowTitle(uiText(QStringLiteral("设置")));
+    setWindowTitle(uiText(QStringLiteral("Settings")));
     setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));
     setModal(true);
     setMinimumWidth(600);
@@ -35,46 +35,46 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
     rootLayout->setContentsMargins(22, 20, 22, 18);
     rootLayout->setSpacing(14);
 
-    auto* title = new QLabel(uiText(QStringLiteral("画板配置")), this);
+    auto* title = new QLabel(uiText(QStringLiteral("Board settings")), this);
     title->setObjectName(QStringLiteral("DialogTitle"));
     rootLayout->addWidget(title);
 
-    auto* hint = new QLabel(uiText(QStringLiteral("这里的设置会作为新画笔、新画板的默认值，并自动保存。")), this);
+    auto* hint = new QLabel(uiText(QStringLiteral("These settings become the defaults for new brushes and boards and are saved automatically.")), this);
     hint->setObjectName(QStringLiteral("DialogHint"));
     rootLayout->addWidget(hint);
 
-    auto* languageGroup = new QGroupBox(uiText(QStringLiteral("界面语言")), this);
+    auto* languageGroup = new QGroupBox(uiText(QStringLiteral("Interface language")), this);
     auto* languageForm = new QFormLayout(languageGroup);
     languageForm->setContentsMargins(16, 18, 16, 16);
     languageForm->setSpacing(10);
     m_languageCombo = new QComboBox(languageGroup);
-    m_languageCombo->addItem(uiText(QStringLiteral("跟随系统")), static_cast<int>(UiLanguage::System));
-    m_languageCombo->addItem(uiText(QStringLiteral("简体中文")), static_cast<int>(UiLanguage::Chinese));
+    m_languageCombo->addItem(uiText(QStringLiteral("Follow system")), static_cast<int>(UiLanguage::System));
+    m_languageCombo->addItem(uiText(QStringLiteral("Simplified Chinese")), static_cast<int>(UiLanguage::Chinese));
     m_languageCombo->addItem(QStringLiteral("English"), static_cast<int>(UiLanguage::English));
     m_languageCombo->setCurrentIndex(m_languageCombo->findData(static_cast<int>(uiLanguageSetting())));
-    languageForm->addRow(uiText(QStringLiteral("语言")), m_languageCombo);
-    languageForm->addRow(QString(), new QLabel(uiText(QStringLiteral("切换后界面会立即更新，并记住这个选择。")), languageGroup));
+    languageForm->addRow(uiText(QStringLiteral("Language")), m_languageCombo);
+    languageForm->addRow(QString(), new QLabel(uiText(QStringLiteral("The interface updates immediately and this choice is remembered.")), languageGroup));
     rootLayout->addWidget(languageGroup);
 
-    auto* brushGroup = new QGroupBox(uiText(QStringLiteral("画笔默认值")), this);
+    auto* brushGroup = new QGroupBox(uiText(QStringLiteral("Brush defaults")), this);
     auto* brushForm = new QFormLayout(brushGroup);
     brushForm->setContentsMargins(16, 18, 16, 16);
     brushForm->setSpacing(10);
 
     m_brushColorButton = new QPushButton(brushGroup);
     m_brushColorButton->setIconSize(QSize(18, 18));
-    brushForm->addRow(uiText(QStringLiteral("默认颜色")), m_brushColorButton);
+    brushForm->addRow(uiText(QStringLiteral("Default color")), m_brushColorButton);
 
     m_brushWidthSpin = new QSpinBox(brushGroup);
     m_brushWidthSpin->setRange(1, 64);
     m_brushWidthSpin->setSuffix(QStringLiteral(" px"));
     m_brushWidthSpin->setValue(m_settings.brushWidth);
     m_brushWidthSpin->setFixedHeight(30);
-    brushForm->addRow(uiText(QStringLiteral("默认粗细")), m_brushWidthSpin);
+    brushForm->addRow(uiText(QStringLiteral("Default width")), m_brushWidthSpin);
 
     rootLayout->addWidget(brushGroup);
 
-    auto* boardGroup = new QGroupBox(uiText(QStringLiteral("画板")), this);
+    auto* boardGroup = new QGroupBox(uiText(QStringLiteral("Board")), this);
     auto* boardForm = new QFormLayout(boardGroup);
     boardForm->setContentsMargins(16, 18, 16, 16);
     boardForm->setSpacing(10);
@@ -95,24 +95,24 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
     sizeRow->addWidget(m_boardWidthSpin, 1);
     sizeRow->addWidget(multiply);
     sizeRow->addWidget(m_boardHeightSpin, 1);
-    boardForm->addRow(uiText(QStringLiteral("画板尺寸")), sizeRow);
+    boardForm->addRow(uiText(QStringLiteral("Board size")), sizeRow);
 
-    m_gridCheck = new QCheckBox(uiText(QStringLiteral("显示辅助网格")), boardGroup);
+    m_gridCheck = new QCheckBox(uiText(QStringLiteral("Show helper grid")), boardGroup);
     m_gridCheck->setChecked(m_settings.showGrid);
     boardForm->addRow(QString(), m_gridCheck);
 
     m_canvasColorButton = new QPushButton(boardGroup);
     m_canvasColorButton->setIconSize(QSize(18, 18));
-    boardForm->addRow(uiText(QStringLiteral("画布外围颜色")), m_canvasColorButton);
+    boardForm->addRow(uiText(QStringLiteral("Canvas surround color")), m_canvasColorButton);
 
-    auto* boardHint = new QLabel(uiText(QStringLiteral("修改画板尺寸不会移动已有图元，可通过撤销恢复。")), boardGroup);
+    auto* boardHint = new QLabel(uiText(QStringLiteral("Changing the board size does not move existing items; undo restores it.")), boardGroup);
     boardHint->setObjectName(QStringLiteral("DialogHint"));
     boardHint->setWordWrap(true);
     boardForm->addRow(QString(), boardHint);
 
     rootLayout->addWidget(boardGroup);
 
-    auto* storageGroup = new QGroupBox(uiText(QStringLiteral("模板存储")), this);
+    auto* storageGroup = new QGroupBox(uiText(QStringLiteral("Template storage")), this);
     auto* storageLayout = new QHBoxLayout(storageGroup);
     storageLayout->setContentsMargins(16, 18, 16, 16);
     storageLayout->setSpacing(10);
@@ -123,7 +123,7 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
     pathEdit->setReadOnly(true);
     pathEdit->setCursorPosition(0);
     pathEdit->setToolTip(QDir::toNativeSeparators(templatesDir));
-    auto* openButton = new QPushButton(uiText(QStringLiteral("打开文件夹")), storageGroup);
+    auto* openButton = new QPushButton(uiText(QStringLiteral("Open folder")), storageGroup);
     storageLayout->addWidget(pathEdit, 1);
     storageLayout->addWidget(openButton);
 
@@ -133,9 +133,9 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel
                                              | QDialogButtonBox::Reset,
                                          this);
-    buttons->button(QDialogButtonBox::Ok)->setText(uiText(QStringLiteral("保存")));
-    buttons->button(QDialogButtonBox::Cancel)->setText(uiText(QStringLiteral("取消")));
-    buttons->button(QDialogButtonBox::Reset)->setText(uiText(QStringLiteral("恢复默认值")));
+    buttons->button(QDialogButtonBox::Ok)->setText(uiText(QStringLiteral("Save")));
+    buttons->button(QDialogButtonBox::Cancel)->setText(uiText(QStringLiteral("Cancel")));
+    buttons->button(QDialogButtonBox::Reset)->setText(uiText(QStringLiteral("Restore defaults")));
     rootLayout->addWidget(buttons);
 
     refreshColorButton(m_brushColorButton, m_settings.brushColor);
@@ -143,12 +143,12 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
 
     connect(m_brushColorButton, &QPushButton::clicked, this, [this]() {
         QColor color = m_settings.brushColor;
-        if (pickColor(color, uiText(QStringLiteral("选择默认画笔颜色")), true))
+        if (pickColor(color, uiText(QStringLiteral("Choose the default brush color")), true))
             setBrushColor(color);
     });
     connect(m_canvasColorButton, &QPushButton::clicked, this, [this]() {
         QColor color = m_settings.canvasColor;
-        if (pickColor(color, uiText(QStringLiteral("选择画布外围颜色")), false))
+        if (pickColor(color, uiText(QStringLiteral("Choose canvas surround color")), false))
             setCanvasColor(color);
     });
     connect(openButton, &QPushButton::clicked, this, &SettingsDialog::openTemplatesFolder);

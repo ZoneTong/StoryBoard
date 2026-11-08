@@ -140,7 +140,7 @@ int main(int argc, char** argv)
     QCoreApplication::setApplicationName(QStringLiteral("StoryBoard"));
     QCoreApplication::setApplicationVersion(QStringLiteral("0.1.0"));
     uiInitializeLanguage();
-    app.setApplicationDisplayName(uiText(QStringLiteral("StoryBoard 画板")));
+    app.setApplicationDisplayName(uiText(QStringLiteral("StoryBoard Canvas")));
     app.setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));
     applyApplicationStyle(app);
 
@@ -250,8 +250,8 @@ int main(int argc, char** argv)
         if (outputPath.isEmpty())
             return 2;
         TextDialog dialog;
-        dialog.setHeading(uiText(QStringLiteral("添加文字图元")));
-        dialog.setTextValue(uiText(QStringLiteral("镜头标题：傍晚的街道\n第二行说明文字")));
+        dialog.setHeading(uiText(QStringLiteral("Add text item")));
+        dialog.setTextValue(uiText(QStringLiteral("Scene title: Evening street\nSecond line caption")));
         QFont font(QStringLiteral("Microsoft YaHei UI"));
         font.setPointSize(28);
         font.setBold(true);

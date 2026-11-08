@@ -29,8 +29,9 @@ UiLanguage gOverride = UiLanguage::System;
 bool gOverrideActive = false;
 
 const char* const kTranslationContext = "StoryBoard";
-const char* const kTranslationResource = ":/i18n/storyboard_en.qm";
-const char* const kTranslationSourceResource = ":/i18n/storyboard_en.ts";
+// 源语言是英文；中文等其它语种放在各自的 .ts/.qm 里。
+const char* const kTranslationResource = ":/i18n/storyboard_zh.qm";
+const char* const kTranslationSourceResource = ":/i18n/storyboard_zh.ts";
 
 QTranslator gTranslator;
 bool gTranslatorLoaded = false;
@@ -69,19 +70,19 @@ void ensureTranslatorLoaded()
         return;
     gTranslatorLoaded = true;
     loadReverseTranslations();
-    gTranslator.load(QString::fromLatin1(kTranslationResource));
+    (void)gTranslator.load(QString::fromLatin1(kTranslationResource));
 }
 
-void installEnglishTranslator(bool english)
+void installChineseTranslator(bool chinese)
 {
     ensureTranslatorLoaded();
     QCoreApplication* app = QCoreApplication::instance();
     if (!app)
         return;
-    if (english && !gTranslatorInstalled) {
+    if (chinese && !gTranslatorInstalled) {
         app->installTranslator(&gTranslator);
         gTranslatorInstalled = true;
-    } else if (!english && gTranslatorInstalled) {
+    } else if (!chinese && gTranslatorInstalled) {
         app->removeTranslator(&gTranslator);
         gTranslatorInstalled = false;
     }
@@ -226,14 +227,14 @@ void setUiLanguageSetting(UiLanguage language)
     if (persistLanguage(stored))
         storedLanguageCache() = stored;
 
-    installEnglishTranslator(uiEffectiveLanguage() == UiLanguage::English);
+    installChineseTranslator(uiEffectiveLanguage() == UiLanguage::Chinese);
 }
 
 void uiOverrideLanguage(UiLanguage language)
 {
     gOverrideActive = language != UiLanguage::System;
     gOverride = language;
-    installEnglishTranslator(uiEffectiveLanguage() == UiLanguage::English);
+    installChineseTranslator(uiEffectiveLanguage() == UiLanguage::Chinese);
 }
 
 UiLanguage uiEffectiveLanguage()
@@ -260,22 +261,25 @@ bool uiIsEnglish()
 void uiInitializeLanguage()
 {
     // 语言资源在窗口创建前就装好，首次构造出来的文字直接是目标语言。
-    installEnglishTranslator(uiEffectiveLanguage() == UiLanguage::English);
+    installChineseTranslator(uiEffectiveLanguage() == UiLanguage::Chinese);
 }
 
-QString uiText(const QString& chinese)
+QString uiText(const QString& english)
 {
-    return translateToCurrent(chinese);
+    return translateToCurrent(english);
 }
 
 QString uiTranslateEitherWay(const QString& text)
 {
     if (text.isEmpty())
         return text;
-    if (uiIsEnglish())
-        return translateToCurrent(text);
-    const auto it = gReverseTranslations.constFind(text);
-    return it == gReverseTranslations.constEnd() ? text : it.value();
+    if (uiIsEnglish()) {
+        // 源语言是英文；只有已经显示成中文的文本需要查反向表。
+        const auto it = gReverseTranslations.constFind(text);
+        return it == gReverseTranslations.constEnd() ? text : it.value();
+    }
+    // 中文翻译器已装载：英文源串会变成中文，本来就是中文的文本保持原样。
+    return translateToCurrent(text);
 }
 
 void uiRetranslateWidgetTree(QWidget* root)

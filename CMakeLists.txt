@@ -17,7 +17,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Widgets LinguistTools)
 
 set(STORYBOARD_TS_FILES
-    translations/storyboard_en.ts
+    translations/storyboard_zh.ts
 )
 
 set(STORYBOARD_SOURCES
@@ -71,10 +71,10 @@ qt_add_lrelease(StoryBoard
 )
 # .qm 生成在构建目录里，是绝对路径；给资源一个稳定的相对别名。
 set_source_files_properties(${STORYBOARD_QM_FILES} PROPERTIES
-    QT_RESOURCE_ALIAS "storyboard_en.qm"
+    QT_RESOURCE_ALIAS "storyboard_zh.qm"
 )
 set_source_files_properties(${STORYBOARD_TS_FILES} PROPERTIES
-    QT_RESOURCE_ALIAS "storyboard_en.ts"
+    QT_RESOURCE_ALIAS "storyboard_zh.ts"
 )
 qt_add_resources(StoryBoard "storyboard_translations"
     PREFIX "/i18n"
