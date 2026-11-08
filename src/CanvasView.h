@@ -79,6 +79,8 @@ private:
     };
 
     CanvasItem* topCanvasItemAt(const QPoint& viewportPos) const;
+    // 需求 42：属性窗在所有模式可查看，因此命中图元不能依赖编辑模式。
+    CanvasItem* propertyItemAt(const QPoint& viewportPos) const;
     CanvasItem* editableItemAt(const QPoint& viewportPos) const;
     CanvasItem* preferredEditableItemAt(const QPoint& viewportPos) const;
     CanvasHandle canvasHandleAt(const QPoint& viewportPos) const;

@@ -427,10 +427,10 @@ void MainWindow::createActions()
     m_itemPropsAct = makeAction(this, IconId::Settings, uiText(QStringLiteral("Item properties…")),
                                 QKeySequence(QStringLiteral("Q")),
                                 uiText(QStringLiteral("Show the selected item's properties (Q)")));
-    m_rotateCwAct = makeAction(this, IconId::Undo, uiText(QStringLiteral("Rotate 45° clockwise")),
+    m_rotateCwAct = makeAction(this, IconId::RotateCw, uiText(QStringLiteral("Rotate 45° clockwise")),
                                QKeySequence(QStringLiteral("Ctrl+R")),
                                uiText(QStringLiteral("Rotate selected items 45° clockwise (Ctrl+R)")));
-    m_rotateCcwAct = makeAction(this, IconId::Redo, uiText(QStringLiteral("Rotate 45° counterclockwise")),
+    m_rotateCcwAct = makeAction(this, IconId::RotateCcw, uiText(QStringLiteral("Rotate 45° counterclockwise")),
                                 QKeySequence(QStringLiteral("Ctrl+Shift+R")),
                                 uiText(QStringLiteral("Rotate selected items 45° counterclockwise (Ctrl+Shift+R)")));
 
@@ -794,6 +794,9 @@ void MainWindow::createToolBars()
     mainBar->addSeparator();
     mainBar->addAction(m_undoAct);
     mainBar->addAction(m_redoAct);
+    // 需求 40：顺/逆时针旋转 45° 除了菜单快捷键，也必须出现在工具栏。
+    mainBar->addAction(m_rotateCwAct);
+    mainBar->addAction(m_rotateCcwAct);
     mainBar->addSeparator();
 
     auto* brushBar = new QToolBar(uiText(QStringLiteral("Brush toolbar")), this);
@@ -808,7 +811,6 @@ void MainWindow::createToolBars()
     auto* brushLabel = new QLabel(uiText(QStringLiteral("Brush")), brushBar);
     brushLabel->setObjectName(QStringLiteral("ToolBarLabel"));
     brushBar->addWidget(brushLabel);
-
     m_colorButton = new QToolButton(brushBar);
     m_colorButton->setObjectName(QStringLiteral("ColorButton"));
     m_colorButton->setIcon(makeColorIcon(m_brushColor, 20));
@@ -882,6 +884,11 @@ void MainWindow::createToolBars()
     fillBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
     fillBar->setContextMenuPolicy(Qt::PreventContextMenu);
     addToolBar(Qt::TopToolBarArea, fillBar);
+
+    // 需求 41：填充样式按钮前显示“图形”标签，与画笔区形成明确分组。
+    auto* fillLabel = new QLabel(uiText(QStringLiteral("Shape")), fillBar);
+    fillLabel->setObjectName(QStringLiteral("ToolBarLabel"));
+    fillBar->addWidget(fillLabel);
 
     m_fillButton = new QToolButton(fillBar);
     m_fillButton->setObjectName(QStringLiteral("FillButton"));
@@ -983,9 +990,7 @@ void MainWindow::connectSignals()
         if (m_zoomBadge)
             m_zoomBadge->setText(QStringLiteral("%1%").arg(qRound(zoom * 100.0)));
     });
-    connect(m_view, &CanvasView::modeChanged, this, [this](ToolMode mode) {
-        if (mode != ToolMode::Edit)
-            closeItemProperties();
+    connect(m_view, &CanvasView::modeChanged, this, [this](ToolMode) {
         updateModeUi();
     });
     connect(m_view, &CanvasView::statusMessage, this, [this](const QString& message) {
@@ -1071,7 +1076,7 @@ void MainWindow::updateActions()
     const bool editing = m_view->mode() == ToolMode::Edit;
     m_deleteAct->setEnabled(editing && !m_scene->selectedItems().isEmpty());
     m_selectAllAct->setEnabled(editing && m_scene->canvasItemCount() > 0);
-    m_itemPropsAct->setEnabled(editing && m_scene->selectedCanvasItems().size() == 1);
+    m_itemPropsAct->setEnabled(m_scene->selectedCanvasItems().size() == 1);
     m_rotateCwAct->setEnabled(editing && !m_scene->selectedCanvasItems().isEmpty());
     m_rotateCcwAct->setEnabled(editing && !m_scene->selectedCanvasItems().isEmpty());
 
@@ -1873,10 +1878,6 @@ void MainWindow::editTextItem(TextItem* item)
 
 void MainWindow::showSelectedItemProperties()
 {
-    if (m_view->mode() != ToolMode::Edit) {
-        statusBar()->showMessage(uiText(QStringLiteral("Item properties are available in edit mode only")), 3000);
-        return;
-    }
     const QList<CanvasItem*> items = m_scene->selectedCanvasItems();
     if (items.size() != 1) {
         statusBar()->showMessage(uiText(QStringLiteral("Select a single item to show its properties")), 3000);
@@ -1889,28 +1890,24 @@ void MainWindow::showItemProperties(CanvasItem* item)
 {
     if (!item || item->scene() != m_scene)
         return;
-    // 需求 38：属性窗只在编辑模式可编辑；模型对话框让用户可以同时操作画布。
-    if (m_view->mode() != ToolMode::Edit) {
-        statusBar()->showMessage(uiText(QStringLiteral("Item properties are available in edit mode only")), 3000);
-        return;
-    }
+
+    // 需求 42：属性窗在任何模式都能打开，但只有编辑模式下且图层可见未锁定
+    // 时才允许修改；查看/画笔/文字模式一律以只读方式展示。
+    const bool editable = m_view->mode() == ToolMode::Edit && m_scene->isItemEditable(item);
 
     closeItemProperties();
     QPointer<CanvasItem> itemGuard(item);
-    auto* dialog = new ItemPropertiesDialog(m_scene, item, this);
-    dialog->setAttribute(Qt::WA_DeleteOnClose, true);
-    dialog->setModal(false);
-    m_itemPropertiesDialog = dialog;
-    connect(dialog, &QDialog::finished, this, [this, itemGuard](int result) {
+    ItemPropertiesDialog dialog(m_scene, item, this, editable);
+    m_itemPropertiesDialog = &dialog;
+    connect(&dialog, &QDialog::finished, this, [this, itemGuard](int result) {
         if (result == ItemPropertiesDialog::EditTextRequested && itemGuard
             && itemGuard->scene() == m_scene) {
             if (auto* text = dynamic_cast<TextItem*>(itemGuard.data()))
                 editTextItem(text);
         }
     });
-    dialog->show();
-    dialog->raise();
-    dialog->activateWindow();
+    dialog.exec();
+    m_itemPropertiesDialog = nullptr;
 }
 
 void MainWindow::closeItemProperties()

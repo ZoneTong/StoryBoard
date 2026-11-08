@@ -1,8 +1,8 @@
 # StoryBoard 代码审查与缺陷修复报告
 
 审查对象：`D:\workspace\github.com\ZoneTong\StoryBoard`（Qt 6 / C++17 / CMake，src 下 34 个文件、约 8500 行）
-审查时间：2026-11-07
-结论：**发现 4 个真实缺陷，已全部修复并用自检覆盖；另有 5 项边缘/体验问题记录在案，未改动。**
+审查时间：2026-11-07；2026-11-08 追加需求 40–42 与旋转手柄收口复核
+结论：**历史审查发现的 4 个真实缺陷已修复并保留回归；2026-11-08 复核发现的 5 处需求/实现缺口已全部收口，自检 498 项全通过。**
 
 ## 一、审查与验证方式
 
@@ -73,3 +73,38 @@
 - 渲染回归：示例画板、主界面、设置对话框均正常出图；设置对话框的两个色块按钮与布局正常。
 
 > 备注：本次无头（`offscreen`）截图里中文显示为方块，这是该会话下平台插件取不到 CJK 字体的渲染环境问题，与本次改动无关（文字图元绘制的自检像素校验仍通过）。
+
+## 六、2026-11-08 需求 40–42 收口复核
+
+复核结论：需求 40、41、42 以及“拖动旋转手柄无法旋转图形”的根因均已落地；本轮没有引入第三方开源代码。
+
+1. **需求 42（属性窗模态、任何模式可查看、仅编辑模式可编辑）**
+   - `ItemPropertiesDialog` 不再 `setModal(false)`，统一 `setModal(true)`；新增 `editable` 构造参数、`isEditable()` 与 `applyEditableState()`。
+   - 只读时禁用名称/图层/高度/填充/描边/位置/尺寸/旋转/文字/图片等全部编辑控件，隐藏“编辑文字…”，只保留“关闭”按钮，并显示只读提示；`accept()` 不调用 `applyChanges()`，关闭不写回。
+   - `MainWindow::showItemProperties()` 去掉“仅编辑模式”拦截，按 `mode == Edit && isItemEditable(item)` 计算可编辑性，改用 `exec()` 模态显示；`showSelectedItemProperties()` 与 `updateActions()` 不再要求编辑模式。
+   - `CanvasView` 新增 `propertyItemAt()`，查看/画笔/文字模式双击图元都会请求属性窗；编辑模式仍保留锁定图层“先解锁”的提示。`modeChanged` 不再因离开编辑模式而关闭属性窗。
+2. **需求 40（顺/逆时针旋转 45° 入菜单与工具栏）**
+   - `m_rotateCwAct` / `m_rotateCcwAct` 已加入主工具栏，位于撤销/重做之后；`IconFactory` 新增 `RotateCw` / `RotateCcw` 专用圆形箭头图标，不再复用撤销/重做图标。
+3. **需求 41（填充样式按钮前加“图形”标签）**
+   - `fillBar` 在 `m_fillButton` 前加入 `QLabel`（objectName `ToolBarLabel`，源串 `Shape`），中文翻译为“图形”；主工具栏保持单排。
+4. **旋转手柄低缩放命中修复**
+   - `CanvasItem::boundingRect()` 在选中时把旋转手柄至内容顶边的距离与半径计入上边界；`refreshViewDependentGeometry()` 在缩放后重新声明几何，`CanvasScene` / `CanvasView::emitZoom()` 统一刷新。
+   - 修复前低缩放（例如 0.4×）手柄中心可超出固定 42 场景单位的粗边界，场景命中先失败，表现为看得见拖不动；现在手柄仍位于 `boundingRect()`、`shape()` 与 `QGraphicsScene::items()` 命中范围内。
+5. **自检与文档**
+   - 自检由 486 项增至 **498 项**：新增模态/只读字段断言、只读关闭不写回、主窗口查看模式双击端到端只读弹窗、低缩放 `boundingRect`/`shape`/场景命中四项，均通过。
+   - `README.md` 已把“非模态/仅编辑模式可用”改为“模态/任意模式可查看、仅编辑模式可编辑”，并补充工具栏旋转按钮与“图形”标签说明；`docs/` 六张截图已用最新构建重新生成。
+
+验证命令与结果：
+
+```powershell
+cmake --build build-check -j 8
+# Generated 411 translation(s) (411 finished and 0 unfinished)
+# [100%] Built target StoryBoard
+
+build-check\bin\StoryBoard.exe --self-test selftest-43.txt
+# SUMMARY 498 passed, 0 failed
+
+StoryBoard.exe --ui-screenshot docs\screenshot.png   # 1440×900，单排工具栏，含“图形”与旋转按钮
+StoryBoard.exe --item-properties-screenshot build-check\bin\props-43-check.png
+```
+

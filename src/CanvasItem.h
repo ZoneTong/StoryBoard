@@ -75,6 +75,9 @@ public:
     bool isEditable() const;
     bool isExporting() const;
 
+    // 旋转手柄的屏幕尺寸随视图缩放变化；缩放后重新声明 boundingRect。
+    void refreshViewDependentGeometry();
+
     static QSizeF minimumSize();
 
 protected:

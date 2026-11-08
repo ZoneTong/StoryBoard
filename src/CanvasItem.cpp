@@ -140,7 +140,21 @@ QRectF CanvasItem::sceneContentRect() const
 QRectF CanvasItem::boundingRect() const
 {
     const qreal padding = framePadding();
-    return contentRect().adjusted(-padding, -padding, padding, padding);
+    qreal topPadding = padding;
+    if (isSelected()) {
+        // 旋转手柄画在内容区上方，其偏移随视图缩放变化。若 boundingRect
+        // 不覆盖它，低缩放时 QGraphicsScene 的粗边界会先一步判定“未命中”，
+        // 表现为旋转钮看得见却按不到、拖不动。
+        const qreal knobRadius = handleSize() / 2.0 + 2.0 / qMax<qreal>(viewScale(), 0.001);
+        topPadding = qMax(topPadding, rotationHandleOffset() + knobRadius);
+    }
+    return contentRect().adjusted(-padding, -topPadding, padding, padding);
+}
+
+void CanvasItem::refreshViewDependentGeometry()
+{
+    prepareGeometryChange();
+    update();
 }
 
 QPainterPath CanvasItem::shape() const
@@ -449,8 +463,11 @@ void CanvasItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 
 QVariant CanvasItem::itemChange(GraphicsItemChange change, const QVariant& value)
 {
-    if (change == QGraphicsItem::ItemSelectedHasChanged)
+    if (change == QGraphicsItem::ItemSelectedHasChanged) {
+        // 选中后才绘制旋转手柄，boundingRect 的上边界随之变化。
+        prepareGeometryChange();
         update();
+    }
     return QGraphicsObject::itemChange(change, value);
 }
 

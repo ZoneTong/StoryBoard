@@ -51,6 +51,8 @@ public:
 
     QRectF contentRect() const;
     void updateSceneExtent();
+    // 视图缩放后刷新图元的 boundingRect（旋转手柄等屏幕尺寸相关几何）。
+    void refreshViewDependentGeometry();
 
     QList<CanvasItem*> canvasItems() const;
     int canvasItemCount() const;

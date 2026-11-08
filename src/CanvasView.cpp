@@ -158,6 +158,8 @@ void CanvasView::applyScale(qreal factor)
 
 void CanvasView::emitZoom()
 {
+    if (m_scene)
+        m_scene->refreshViewDependentGeometry();
     emit zoomChanged(zoom());
 }
 
@@ -390,22 +392,32 @@ void CanvasView::mouseReleaseEvent(QMouseEvent* event)
 
 void CanvasView::mouseDoubleClickEvent(QMouseEvent* event)
 {
-    if (m_mode == ToolMode::Edit && event->button() == Qt::LeftButton) {
-        CanvasItem* canvasItem = editableItemAt(event->position().toPoint());
-        if (!canvasItem) {
-            if (topCanvasItemAt(event->position().toPoint())) {
-                emit statusMessage(uiText(QStringLiteral(
-                    "The layer containing this item is locked or hidden; editing is unavailable. Unlock or show that layer in the layer panel first.")));
-                event->accept();
+    if (event->button() == Qt::LeftButton) {
+        // 需求 42：属性窗在查看/画笔/文字模式下也能打开（只读）；
+        // 编辑模式仍要求图元可编辑，锁定图层维持原来的“先解锁”提示。
+        if (m_mode == ToolMode::Edit) {
+            CanvasItem* canvasItem = editableItemAt(event->position().toPoint());
+            if (!canvasItem) {
+                if (topCanvasItemAt(event->position().toPoint())) {
+                    emit statusMessage(uiText(QStringLiteral(
+                        "The layer containing this item is locked or hidden; editing is unavailable. Unlock or show that layer in the layer panel first.")));
+                    event->accept();
+                    return;
+                }
+                QGraphicsView::mouseDoubleClickEvent(event);
                 return;
             }
-            QGraphicsView::mouseDoubleClickEvent(event);
+            emit itemPropertiesRequested(canvasItem);
+            event->accept();
             return;
         }
-        // 双击图元统一弹出属性窗；文字属性的“编辑文字…”按钮再进入文字编辑。
-        emit itemPropertiesRequested(canvasItem);
-        event->accept();
-        return;
+
+        CanvasItem* canvasItem = propertyItemAt(event->position().toPoint());
+        if (canvasItem) {
+            emit itemPropertiesRequested(canvasItem);
+            event->accept();
+            return;
+        }
     }
     QGraphicsView::mouseDoubleClickEvent(event);
 }
@@ -445,6 +457,10 @@ void CanvasView::contextMenuEvent(QContextMenuEvent* event)
     title->setEnabled(false);
     menu.addSeparator();
 
+    // 需求 42：属性窗在任意模式都可打开；编辑模式下此入口与双击/Q 等价。
+    QAction* properties = menu.addAction(uiText(QStringLiteral("Item properties…")));
+    menu.addSeparator();
+
     TextItem* textItem = dynamic_cast<TextItem*>(item);
     QAction* editText = nullptr;
     if (textItem) {
@@ -470,7 +486,9 @@ void CanvasView::contextMenuEvent(QContextMenuEvent* event)
     if (!chosen)
         return;
 
-    if (editText && chosen == editText)
+    if (chosen == properties)
+        emit itemPropertiesRequested(item);
+    else if (editText && chosen == editText)
         emit editTextRequested(textItem);
     else if (chosen == heightUp)
         m_scene->adjustSelectedHeights(1);
@@ -569,6 +587,19 @@ void CanvasView::leaveEvent(QEvent* event)
 
 CanvasItem* CanvasView::topCanvasItemAt(const QPoint& viewportPos) const
 {
+    const QList<QGraphicsItem*> candidates = m_scene->items(mapToScene(viewportPos));
+    for (QGraphicsItem* graphicsItem : candidates) {
+        auto* canvasItem = qgraphicsitem_cast<CanvasItem*>(graphicsItem);
+        if (canvasItem && canvasItem->isVisible())
+            return canvasItem;
+    }
+    return nullptr;
+}
+
+CanvasItem* CanvasView::propertyItemAt(const QPoint& viewportPos) const
+{
+    // 只按可见性和真实叠放顺序命中，不检查当前工具模式或图层锁定状态；
+    // 属性窗会决定自己是否可编辑。
     const QList<QGraphicsItem*> candidates = m_scene->items(mapToScene(viewportPos));
     for (QGraphicsItem* graphicsItem : candidates) {
         auto* canvasItem = qgraphicsitem_cast<CanvasItem*>(graphicsItem);

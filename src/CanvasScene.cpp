@@ -266,6 +266,15 @@ void CanvasScene::updateSceneExtent()
         setSceneRect(extent);
 }
 
+void CanvasScene::refreshViewDependentGeometry()
+{
+    const QList<CanvasItem*> items = canvasItems();
+    for (CanvasItem* item : items) {
+        if (item)
+            item->refreshViewDependentGeometry();
+    }
+}
+
 QList<CanvasItem*> CanvasScene::canvasItems() const
 {
     QList<CanvasItem*> result;

@@ -86,6 +86,30 @@ void drawIconShape(QPainter& painter, IconId id)
         painter.restore();
         break;
     }
+    case IconId::RotateCcw:
+    case IconId::RotateCw: {
+        const bool clockwise = id == IconId::RotateCw;
+        const QRectF circle(3.5, 3.5, 17.0, 17.0);
+        painter.drawArc(circle, clockwise ? 40 * 16 : 140 * 16, clockwise ? 280 * 16 : -280 * 16);
+
+        // Small solid arrowhead on the upper arc to show the rotation direction.
+        painter.save();
+        painter.setBrush(painter.pen().color());
+        QPainterPath arrow;
+        if (clockwise) {
+            arrow.moveTo(15.5, 2.8);
+            arrow.lineTo(20.0, 5.3);
+            arrow.lineTo(16.6, 8.4);
+        } else {
+            arrow.moveTo(8.5, 2.8);
+            arrow.lineTo(4.0, 5.3);
+            arrow.lineTo(7.4, 8.4);
+        }
+        arrow.closeSubpath();
+        painter.drawPath(arrow);
+        painter.restore();
+        break;
+    }
     case IconId::View: {
         QPainterPath eye;
         eye.moveTo(2.5, 12.0);

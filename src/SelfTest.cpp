@@ -1780,6 +1780,22 @@ int runSelfTest(const QString& reportPath)
     QApplication::processEvents();
     check(itemPropertyRequests == 1, QStringLiteral("双击文字请求属性弹窗"));
 
+    // 需求 42：查看模式下双击图元也可以打开（只读）属性窗。
+    view.setMode(ToolMode::View);
+    view.fitAll();
+    QApplication::processEvents();
+    const QPoint viewDoubleClickPoint = view.mapFromScene(
+        doubleClickText->sceneContentRect().center());
+    QMouseEvent viewDoubleClickEvent(
+        QEvent::MouseButtonDblClick, QPointF(viewDoubleClickPoint),
+        QPointF(view.viewport()->mapToGlobal(viewDoubleClickPoint)),
+        Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    QApplication::sendEvent(view.viewport(), &viewDoubleClickEvent);
+    QApplication::processEvents();
+    check(itemPropertyRequests == 2,
+          QStringLiteral("查看模式双击文字仍请求属性弹窗"));
+    view.setMode(ToolMode::Edit);
+
     {
         ItemPropertiesDialog dialog(&viewScene, doubleClickText, &view);
         dialog.show();
@@ -2062,6 +2078,31 @@ int runSelfTest(const QString& reportPath)
         check(editScene.rotateSelected(-45.0) == 1
                   && qFuzzyCompare(firstShape->rotationAngle(), 30.0),
               QStringLiteral("逆时针旋转快捷键减少 45°"));
+
+        // 需求 35：低缩放下旋转手柄必须仍在 boundingRect 与场景命中范围内。
+        {
+            CanvasView lowZoomView(&editScene);
+            lowZoomView.resize(900, 700);
+            lowZoomView.show();
+            QApplication::processEvents();
+            for (int i = 0; i < 5; ++i)
+                lowZoomView.zoomOut();
+            const qreal lowZoom = lowZoomView.zoom();
+            check(lowZoom < 0.6, QStringLiteral("低缩放测试视图确实缩小"));
+            firstShape->setSelected(true);
+            const QRectF rotationFrame = firstShape->contentRect();
+            const qreal lowZoomHandleSize = qBound(6.0, 9.0 / lowZoom, 40.0);
+            const QPointF lowZoomHandle(
+                rotationFrame.center().x(),
+                rotationFrame.top() - (lowZoomHandleSize + 16.0 / lowZoom));
+            check(firstShape->boundingRect().contains(lowZoomHandle),
+                  QStringLiteral("低缩放下旋转手柄位于 boundingRect 内"));
+            check(firstShape->shape().contains(lowZoomHandle),
+                  QStringLiteral("低缩放下旋转手柄仍在 shape 命中范围内"));
+            check(editScene.items(firstShape->mapToScene(lowZoomHandle)).contains(firstShape),
+                  QStringLiteral("低缩放下旋转手柄可被场景命中"));
+            lowZoomView.hide();
+        }
         editScene.clearSelection();
 
         QJsonObject namedJson = firstShape->toJson();
@@ -2127,8 +2168,8 @@ int runSelfTest(const QString& reportPath)
             QApplication::processEvents();
             QPushButton* replaceButton = dialog.findChild<QPushButton*>(
                 QStringLiteral("ItemPropertiesReplaceImageValue"));
-            check(replaceButton && replaceButton->isEnabled() && !dialog.isModal(),
-                  QStringLiteral("图片属性窗提供替换图片按钮且属性窗为非模态"));
+            check(replaceButton && replaceButton->isEnabled() && dialog.isModal(),
+                  QStringLiteral("图片属性窗提供替换图片按钮且属性窗为模态"));
             QFile iconFile(QStringLiteral(":/icons/app.png"));
             const bool iconRead = iconFile.open(QIODevice::ReadOnly);
             const QByteArray pngBytes = iconRead ? iconFile.readAll() : QByteArray();
@@ -2167,6 +2208,35 @@ int runSelfTest(const QString& reportPath)
         QApplication::processEvents();
         check(imageItem->image().size() == QSize(24, 24),
               QStringLiteral("图片本体替换可撤销"));
+
+        // 需求 42：非编辑模式打开属性窗时字段只读，关闭不会写回。
+        const int readOnlyUndoBefore = editUndo.count();
+        const QString readOnlyImageName = imageItem->imageName();
+        {
+            ItemPropertiesDialog dialog(&editScene, imageItem, nullptr, false);
+            dialog.show();
+            QApplication::processEvents();
+            QLineEdit* readOnlyName = dialog.findChild<QLineEdit*>(
+                QStringLiteral("ItemPropertiesImageValue"));
+            QPushButton* readOnlyReplace = dialog.findChild<QPushButton*>(
+                QStringLiteral("ItemPropertiesReplaceImageValue"));
+            QLabel* readOnlyHint = dialog.findChild<QLabel*>(
+                QStringLiteral("ItemPropertiesReadOnlyHint"));
+            check(dialog.isModal() && !dialog.isEditable(),
+                  QStringLiteral("属性窗在只读口径下仍为模态"));
+            check(readOnlyName && !readOnlyName->isEnabled()
+                      && readOnlyReplace && !readOnlyReplace->isEnabled(),
+                  QStringLiteral("非编辑模式属性窗字段与替换按钮不可编辑"));
+            check(readOnlyHint != nullptr,
+                  QStringLiteral("非编辑模式属性窗显示只读提示"));
+            if (readOnlyName)
+                readOnlyName->setText(QStringLiteral("read-only-probe.png"));
+            dialog.accept();
+            QApplication::processEvents();
+        }
+        check(imageItem->imageName() == readOnlyImageName
+                  && editUndo.count() == readOnlyUndoBefore,
+              QStringLiteral("只读属性窗关闭后不写回图元"));
 
         QFont propertyFont(QStringLiteral("Microsoft YaHei UI"));
         propertyFont.setPointSize(16);
@@ -2520,6 +2590,38 @@ int runSelfTest(const QString& reportPath)
             heightDownAction->trigger();
             check(createdText->height() == heightBeforeShortcut,
                   QStringLiteral("[ 快捷键降低选中图元高度"));
+        }
+
+        // 需求 42 端到端：查看模式双击图元，MainWindow 以只读模态窗打开。
+        if (createdText) {
+            window.view()->setMode(ToolMode::View);
+            QApplication::processEvents();
+            bool readOnlyDialogSeen = false;
+            QTimer::singleShot(80, &window, [&]() {
+                auto* dialog = qobject_cast<ItemPropertiesDialog*>(
+                    QApplication::activeModalWidget());
+                if (!dialog)
+                    return;
+                readOnlyDialogSeen = true;
+                check(dialog->isModal() && !dialog->isEditable(),
+                      QStringLiteral("查看模式端到端打开只读模态属性窗"));
+                QLineEdit* nameEdit = dialog->findChild<QLineEdit*>(
+                    QStringLiteral("ItemPropertiesNameValue"));
+                check(nameEdit && !nameEdit->isEnabled(),
+                      QStringLiteral("查看模式端到端属性字段不可编辑"));
+                dialog->accept();
+            });
+            const QPoint textPoint = window.view()->mapFromScene(
+                createdText->sceneContentRect().center());
+            QMouseEvent textDoubleClick(
+                QEvent::MouseButtonDblClick, QPointF(textPoint),
+                QPointF(window.view()->viewport()->mapToGlobal(textPoint)),
+                Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+            QApplication::sendEvent(window.view()->viewport(), &textDoubleClick);
+            QApplication::processEvents();
+            check(readOnlyDialogSeen,
+                  QStringLiteral("查看模式双击图元确实打开属性窗"));
+            window.view()->setMode(ToolMode::Edit);
         }
     }
 

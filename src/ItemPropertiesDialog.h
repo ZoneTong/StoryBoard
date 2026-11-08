@@ -31,9 +31,11 @@ public:
         EditTextRequested = 2
     };
 
-    explicit ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item, QWidget* parent = nullptr);
+    explicit ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
+                                  QWidget* parent = nullptr, bool editable = true);
 
     CanvasItem* item() const { return m_item.data(); }
+    bool isEditable() const { return m_editable; }
     bool isItemInScene() const;
     // 需求 39：从文件载入替换图片；返回 false 时通过 errorMessage 给出原因。
     bool loadImageFromFile(const QString& path, QString* errorMessage = nullptr);
@@ -47,9 +49,11 @@ private:
     void updateFontButton();
     void chooseFont();
     void chooseImage();
+    void applyEditableState();
 
     CanvasScene* m_scene = nullptr;
     QPointer<CanvasItem> m_item;
+    bool m_editable = true;
 
     QComboBox* m_layerCombo = nullptr;
     QSpinBox* m_heightSpin = nullptr;

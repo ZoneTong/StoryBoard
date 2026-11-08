@@ -801,10 +801,6 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>图元属性</translation>
     </message>
     <message>
-      <source>Item properties are available in edit mode only</source>
-      <translation>图元属性仅在编辑模式可用</translation>
-    </message>
-    <message>
       <source>Item properties…</source>
       <translation>图元属性…</translation>
     </message>
@@ -1153,6 +1149,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>提升选中图元的叠放高度（快捷键 ]）</translation>
     </message>
     <message>
+      <source>Read-only: switch to Edit mode to change properties.</source>
+      <translation>只读：切换到编辑模式后可修改属性。</translation>
+    </message>
+    <message>
       <source>Rectangle</source>
       <translation>矩形</translation>
     </message>
@@ -1345,6 +1345,10 @@ Second line caption</source>
     <message>
       <source>Settings…</source>
       <translation>设置…</translation>
+    </message>
+    <message>
+      <source>Shape</source>
+      <translation>图形</translation>
     </message>
     <message>
       <source>Show at 100% (Ctrl+1)</source>

@@ -10,6 +10,8 @@ enum class IconId {
     Export,
     Undo,
     Redo,
+    RotateCcw,
+    RotateCw,
     View,
     Brush,
     Edit,

@@ -118,14 +118,16 @@ QWidget* makePairField(QWidget* parent, const QString& objectName,
 
 } // namespace
 
-ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item, QWidget* parent)
+ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
+                                           QWidget* parent, bool editable)
     : QDialog(parent)
     , m_scene(scene)
     , m_item(item)
+    , m_editable(editable)
 {
     setWindowTitle(uiText(QStringLiteral("Item properties")));
-    // 需求 38：属性窗改为非模态；删除图元或离开编辑模式时由 MainWindow 关闭。
-    setModal(false);
+    // 需求 42：属性窗统一改为模态；非编辑模式可打开查看，但字段只读。
+    setModal(true);
     setMinimumWidth(480);
 
     // 打开属性窗时再兜底一次自动名称：旧画布、直接 addItem 或清空名称后，
@@ -147,6 +149,15 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
     line->setFrameShape(QFrame::HLine);
     line->setFrameShadow(QFrame::Sunken);
     root->addWidget(line);
+
+    if (!m_editable) {
+        auto* readOnlyHint = new QLabel(
+            uiText(QStringLiteral("Read-only: switch to Edit mode to change properties.")), this);
+        readOnlyHint->setObjectName(QStringLiteral("ItemPropertiesReadOnlyHint"));
+        readOnlyHint->setWordWrap(true);
+        readOnlyHint->setStyleSheet(QStringLiteral("color: #6B7280;"));
+        root->addWidget(readOnlyHint);
+    }
 
     auto* form = new QFormLayout;
     form->setContentsMargins(0, 0, 0, 0);
@@ -310,12 +321,18 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
         root->addLayout(form);
     }
 
-    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
-    if (auto* ok = buttons->button(QDialogButtonBox::Ok))
-        ok->setText(uiText(QStringLiteral("OK")));
+    applyEditableState();
+
+    auto* buttons = new QDialogButtonBox(
+        m_editable ? (QDialogButtonBox::Ok | QDialogButtonBox::Cancel) : QDialogButtonBox::Ok,
+        this);
+    if (auto* ok = buttons->button(QDialogButtonBox::Ok)) {
+        ok->setText(m_editable ? uiText(QStringLiteral("OK"))
+                               : uiText(QStringLiteral("Close")));
+    }
     if (auto* cancel = buttons->button(QDialogButtonBox::Cancel))
         cancel->setText(uiText(QStringLiteral("Cancel")));
-    if (dynamic_cast<TextItem*>(item)) {
+    if (m_editable && dynamic_cast<TextItem*>(item)) {
         auto* edit = buttons->addButton(uiText(QStringLiteral("Edit text…")),
                                         QDialogButtonBox::ActionRole);
         connect(edit, &QPushButton::clicked, this, [this]() {
@@ -340,8 +357,39 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
     }
 }
 
+void ItemPropertiesDialog::applyEditableState()
+{
+    if (m_editable)
+        return;
+
+    for (QWidget* widget : { static_cast<QWidget*>(m_nameEdit),
+                             static_cast<QWidget*>(m_layerCombo),
+                             static_cast<QWidget*>(m_heightSpin),
+                             static_cast<QWidget*>(m_fillStyleCombo),
+                             static_cast<QWidget*>(m_fillColorButton),
+                             static_cast<QWidget*>(m_strokeColorButton),
+                             static_cast<QWidget*>(m_strokeWidthSpin),
+                             static_cast<QWidget*>(m_positionXSpin),
+                             static_cast<QWidget*>(m_positionYSpin),
+                             static_cast<QWidget*>(m_widthSpin),
+                             static_cast<QWidget*>(m_heightSizeSpin),
+                             static_cast<QWidget*>(m_rotationSpin),
+                             static_cast<QWidget*>(m_textColorButton),
+                             static_cast<QWidget*>(m_fontButton),
+                             static_cast<QWidget*>(m_textEdit),
+                             static_cast<QWidget*>(m_imageNameEdit),
+                             static_cast<QWidget*>(m_imageButton) }) {
+        if (widget)
+            widget->setEnabled(false);
+    }
+}
+
 void ItemPropertiesDialog::accept()
 {
+    if (!m_editable) {
+        QDialog::accept();
+        return;
+    }
     applyChanges();
     QDialog::accept();
 }
@@ -377,6 +425,9 @@ void ItemPropertiesDialog::updateFontButton()
 
 void ItemPropertiesDialog::chooseFont()
 {
+    if (!m_editable)
+        return;
+
     bool ok = false;
     const QFont font = QFontDialog::getFont(&ok, m_textFont, this,
                                             uiText(QStringLiteral("Choose font")));
@@ -396,6 +447,9 @@ void ItemPropertiesDialog::chooseFont()
 
 void ItemPropertiesDialog::chooseImage()
 {
+    if (!m_editable)
+        return;
+
     const QString startDirectory = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
     const QString path = QFileDialog::getOpenFileName(
         this, uiText(QStringLiteral("Replace image")), startDirectory,
@@ -439,7 +493,7 @@ bool ItemPropertiesDialog::isItemInScene() const
 
 void ItemPropertiesDialog::applyChanges()
 {
-    if (!m_scene || !m_item)
+    if (!m_editable || !m_scene || !m_item)
         return;
 
     const int oldLayer = m_item->layerId();
