@@ -33,6 +33,7 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFrame>
 #include <QImageReader>
 #include <QImageWriter>
 #include <QJsonArray>
@@ -46,7 +47,10 @@
 #include <QPageLayout>
 #include <QPageSize>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPdfWriter>
+#include <QPixmap>
+#include <QPolygonF>
 #include <QPushButton>
 #include <QSaveFile>
 #include <QSignalBlocker>
@@ -66,9 +70,9 @@ QString imageFilter()
     return uiText(QStringLiteral("Image files (*.png *.jpg *.jpeg *.bmp *.gif);;All files (*.*)"));
 }
 
-QString templateFilter()
+QString canvasFilter()
 {
-    return uiText(QStringLiteral("StoryBoard templates (*.sbboard);;All files (*.*)"));
+    return uiText(QStringLiteral("StoryBoard canvases (*.sbcanvas);;All files (*.*)"));
 }
 
 QAction* makeAction(QObject* parent, IconId icon, const QString& text,
@@ -83,6 +87,178 @@ QAction* makeAction(QObject* parent, IconId icon, const QString& text,
     return action;
 }
 
+QColor fillIconColor(const QColor& color)
+{
+    QColor fill = color.isValid() ? color : QColor(96, 132, 255);
+    if (fill.alpha() < 150)
+        fill.setAlpha(150);
+    return fill;
+}
+
+QIcon makeFillStyleIcon(FillStyle style, const QColor& color, int logicalSize)
+{
+    constexpr qreal scale = 2.0;
+    QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
+    pixmap.fill(Qt::transparent);
+    pixmap.setDevicePixelRatio(scale);
+
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.scale(logicalSize / 24.0, logicalSize / 24.0);
+
+    const QRectF box(3.0, 4.0, 18.0, 16.0);
+    const QColor ink(58, 64, 80);
+    const QColor fill = fillIconColor(color);
+
+    QPainterPath clipPath;
+    clipPath.addRoundedRect(box.adjusted(1.0, 1.0, -1.0, -1.0), 2.5, 2.5);
+    painter.save();
+    painter.setClipPath(clipPath);
+
+    if (style != FillStyle::None) {
+        QColor background = fill;
+        background.setAlpha(style == FillStyle::Solid ? 255 : 70);
+        painter.fillRect(box, background);
+    }
+
+    switch (style) {
+    case FillStyle::None: {
+        painter.setPen(QPen(ink, 2.2, Qt::SolidLine, Qt::RoundCap));
+        painter.drawLine(QPointF(5.5, 18.5), QPointF(18.5, 5.5));
+        break;
+    }
+    case FillStyle::Solid:
+        break;
+    case FillStyle::Hachure:
+    case FillStyle::ReverseHachure:
+    case FillStyle::CrossHatch: {
+        painter.setPen(QPen(ink, 1.5));
+        const bool forward = style != FillStyle::ReverseHachure;
+        const bool backward = style != FillStyle::Hachure;
+        for (qreal offset = -box.height(); offset < box.width() + box.height(); offset += 4.2) {
+            if (forward) {
+                painter.drawLine(QPointF(box.left() + offset, box.bottom()),
+                                 QPointF(box.left() + offset + box.height(), box.top()));
+            }
+            if (backward) {
+                painter.drawLine(QPointF(box.left() + offset, box.top()),
+                                 QPointF(box.left() + offset + box.height(), box.bottom()));
+            }
+        }
+        break;
+    }
+    case FillStyle::GridHatch: {
+        painter.setPen(QPen(ink, 1.4));
+        for (qreal x = box.left() + 4.0; x < box.right(); x += 4.5)
+            painter.drawLine(QPointF(x, box.top()), QPointF(x, box.bottom()));
+        for (qreal y = box.top() + 4.0; y < box.bottom(); y += 4.5)
+            painter.drawLine(QPointF(box.left(), y), QPointF(box.right(), y));
+        break;
+    }
+    case FillStyle::Honeycomb: {
+        painter.setPen(QPen(ink, 1.2));
+        for (int row = 0; row < 3; ++row) {
+            for (int column = 0; column < 3; ++column) {
+                const QPointF center(box.left() + 4.0 + column * 5.5 + (row % 2 ? 2.75 : 0.0),
+                                     box.top() + 3.5 + row * 5.0);
+                QPolygonF hexagon;
+                for (int i = 0; i < 6; ++i) {
+                    const qreal angle = qDegreesToRadians(60.0 * i - 30.0);
+                    hexagon << center + QPointF(2.8 * qCos(angle), 2.8 * qSin(angle));
+                }
+                painter.drawPolygon(hexagon);
+            }
+        }
+        break;
+    }
+    }
+
+    painter.restore();
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(QPen(ink, 1.8));
+    painter.drawRoundedRect(box, 3.0, 3.0);
+    painter.end();
+
+    return QIcon(pixmap);
+}
+
+QIcon makeFillColorIcon(const QColor& color, int logicalSize)
+{
+    constexpr qreal scale = 2.0;
+    QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
+    pixmap.fill(Qt::transparent);
+    pixmap.setDevicePixelRatio(scale);
+
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.scale(logicalSize / 24.0, logicalSize / 24.0);
+
+    const QColor ink(58, 64, 80);
+    const QColor fill = fillIconColor(color);
+
+    QPainterPath bucket;
+    bucket.moveTo(5.0, 9.0);
+    bucket.lineTo(8.0, 20.0);
+    bucket.lineTo(17.0, 20.0);
+    bucket.lineTo(20.0, 9.0);
+    bucket.closeSubpath();
+
+    painter.setPen(QPen(ink, 1.6));
+    painter.setBrush(fill);
+    painter.drawPath(bucket);
+
+    QPainterPath handle;
+    handle.moveTo(7.0, 9.0);
+    handle.cubicTo(7.0, 2.5, 18.0, 2.5, 18.0, 9.0);
+    painter.setPen(QPen(ink, 1.6));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawPath(handle);
+
+    painter.setPen(QPen(ink, 1.9));
+    painter.drawLine(QPointF(4.0, 9.0), QPointF(21.0, 9.0));
+    painter.setPen(QPen(QColor(255, 255, 255, 180), 1.0));
+    painter.drawLine(QPointF(9.5, 12.5), QPointF(11.0, 18.0));
+    painter.end();
+
+    return QIcon(pixmap);
+}
+
+QIcon makeStrokeColorIcon(const QColor& color, int logicalSize)
+{
+    constexpr qreal scale = 2.0;
+    QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
+    pixmap.fill(Qt::transparent);
+    pixmap.setDevicePixelRatio(scale);
+
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.scale(logicalSize / 24.0, logicalSize / 24.0);
+
+    const QColor ink(58, 64, 80);
+    const QColor stroke = fillIconColor(color);
+    const QRectF box(4.0, 4.0, 16.0, 16.0);
+
+    painter.setPen(QPen(ink, 1.0));
+    painter.setBrush(Qt::white);
+    painter.drawRoundedRect(box, 3.0, 3.0);
+    painter.setPen(QPen(stroke, 3.0));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRoundedRect(box.adjusted(2.0, 2.0, -2.0, -2.0), 2.2, 2.2);
+
+    QPainterPath nib;
+    nib.moveTo(14.5, 1.0);
+    nib.lineTo(22.5, 9.0);
+    nib.lineTo(18.5, 10.5);
+    nib.lineTo(13.0, 5.0);
+    nib.closeSubpath();
+    painter.setPen(QPen(ink, 0.8));
+    painter.setBrush(ink);
+    painter.drawPath(nib);
+    painter.end();
+
+    return QIcon(pixmap);
+}
+
 bool hasImageSuffix(const QString& path)
 {
     static const QStringList suffixes = {
@@ -92,19 +268,19 @@ bool hasImageSuffix(const QString& path)
     return suffixes.contains(QFileInfo(path).suffix().toLower());
 }
 
-bool validateTemplateRoot(const QJsonObject& root, QString* error)
+bool validateCanvasRoot(const QJsonObject& root, QString* error)
 {
-    if (root.value(QStringLiteral("format")).toString() != QStringLiteral("StoryBoard")) {
+    if (root.value(QStringLiteral("format")).toString() != QStringLiteral("StoryBoardCanvas")) {
         if (error)
-            *error = uiText(QStringLiteral("This is not a valid StoryBoard template file."));
+            *error = uiText(QStringLiteral("This is not a valid StoryBoard canvas file."));
         return false;
     }
 
-    const QJsonObject board = root.value(QStringLiteral("board")).toObject();
-    if (board.value(QStringLiteral("width")).toInt() <= 0
-        || board.value(QStringLiteral("height")).toInt() <= 0) {
+    const QJsonObject canvas = root.value(QStringLiteral("canvas")).toObject();
+    if (canvas.value(QStringLiteral("width")).toInt() <= 0
+        || canvas.value(QStringLiteral("height")).toInt() <= 0) {
         if (error)
-            *error = uiText(QStringLiteral("The board size in the template is invalid."));
+            *error = uiText(QStringLiteral("The canvas size in the canvas file is invalid."));
         return false;
     }
 
@@ -114,7 +290,7 @@ bool validateTemplateRoot(const QJsonObject& root, QString* error)
         if (kind != QStringLiteral("stroke") && kind != QStringLiteral("image")
             && kind != QStringLiteral("text") && kind != QStringLiteral("shape")) {
             if (error)
-                *error = uiText(QStringLiteral("The template contains an unknown item type: %1")).arg(kind);
+                *error = uiText(QStringLiteral("The canvas contains an unknown item type: %1")).arg(kind);
             return false;
         }
     }
@@ -188,6 +364,14 @@ MainWindow::MainWindow(QWidget* parent)
 
 MainWindow::~MainWindow()
 {
+    // QWidget 析构会先删子对象；子 BoardScene/BoardView 在 clear() 时仍可能发
+    // 信号回来。此时 MainWindow 的派生类析构体已经跑完，槽函数里再访问成员
+    // 就是未定义行为（Debug 版会报 Q_ASSERT 并直接中止）。先统一断开所有
+    // 子对象到本窗口的连接，再清理撤销栈和视图持有的指针。
+    const QObjectList children = findChildren<QObject*>();
+    for (QObject* child : children)
+        QObject::disconnect(child, nullptr, this, nullptr);
+
     // QObject deletes the scene child before the undo stack in some orders.
     // Clear commands while the scene is still alive, and make sure the view
     // no longer points at the scene during teardown.
@@ -203,22 +387,22 @@ MainWindow::~MainWindow()
 
 void MainWindow::createActions()
 {
-    m_newAct = makeAction(this, IconId::New, uiText(QStringLiteral("New board")),
+    m_newAct = makeAction(this, IconId::New, uiText(QStringLiteral("New canvas")),
                           QKeySequence(QStringLiteral("Ctrl+N")),
-                          uiText(QStringLiteral("Create an empty board (Ctrl+N)")));
-    m_openAct = makeAction(this, IconId::Open, uiText(QStringLiteral("Open template…")),
+                          uiText(QStringLiteral("Create an empty canvas (Ctrl+N)")));
+    m_openAct = makeAction(this, IconId::Open, uiText(QStringLiteral("Open canvas…")),
                            QKeySequence(QStringLiteral("Ctrl+O")),
-                           uiText(QStringLiteral("Open a StoryBoard template (Ctrl+O)")));
-    m_saveAct = makeAction(this, IconId::Save, uiText(QStringLiteral("Save template")),
+                           uiText(QStringLiteral("Open a StoryBoard canvas (Ctrl+O)")));
+    m_saveAct = makeAction(this, IconId::Save, uiText(QStringLiteral("Save canvas")),
                            QKeySequence(QStringLiteral("Ctrl+S")),
-                           uiText(QStringLiteral("Save the current board as a template (Ctrl+S)")));
-    m_saveAsAct = makeAction(this, IconId::Save, uiText(QStringLiteral("Save template as…")),
+                           uiText(QStringLiteral("Save the current canvas (Ctrl+S)")));
+    m_saveAsAct = makeAction(this, IconId::Save, uiText(QStringLiteral("Save canvas as…")),
                              QKeySequence(QStringLiteral("Ctrl+Shift+S")),
-                             uiText(QStringLiteral("Save the current board as a new template (Ctrl+Shift+S)")));
+                             uiText(QStringLiteral("Save the current canvas to a new file (Ctrl+Shift+S)")));
     m_importAct = makeAction(this, IconId::Image, uiText(QStringLiteral("Import images…")),
                              QKeySequence(QStringLiteral("Ctrl+I")),
                              uiText(QStringLiteral("Import images as movable, resizable items (Ctrl+I)")));
-    m_exportAct = makeAction(this, IconId::Export, uiText(QStringLiteral("Export board…")),
+    m_exportAct = makeAction(this, IconId::Export, uiText(QStringLiteral("Export canvas…")),
                              QKeySequence(QStringLiteral("Ctrl+E")),
                              uiText(QStringLiteral("Export as PNG / JPEG / PDF (Ctrl+E)")));
     m_quitAct = new QAction(uiText(QStringLiteral("Quit")), this);
@@ -255,7 +439,7 @@ void MainWindow::createActions()
                                uiText(QStringLiteral("Edit mode: select, move and resize items (E)")));
     m_textModeAct = makeAction(this, IconId::Text, uiText(QStringLiteral("Text mode")),
                                 QKeySequence(QStringLiteral("T")),
-                                uiText(QStringLiteral("Text mode: click the board to place a text item (T)")));
+                                uiText(QStringLiteral("Text mode: click the canvas to place a text item (T)")));
     m_viewModeAct->setCheckable(true);
     m_brushModeAct->setCheckable(true);
     m_editModeAct->setCheckable(true);
@@ -291,9 +475,9 @@ void MainWindow::createActions()
                                  uiText(QStringLiteral("Show at 100% (Ctrl+1)")));
 
     m_replaceBgAct = makeAction(this, IconId::Background, uiText(QStringLiteral("Replace background image…")),
-                             QKeySequence(), uiText(QStringLiteral("Choose an image as the board background")));
+                             QKeySequence(), uiText(QStringLiteral("Choose an image as the canvas background")));
     m_bgColorAct = makeAction(this, IconId::Palette, uiText(QStringLiteral("Set background color…")),
-                           QKeySequence(), uiText(QStringLiteral("Use a solid color as the board background")));
+                           QKeySequence(), uiText(QStringLiteral("Use a solid color as the canvas background")));
     m_clearBgAct = makeAction(this, IconId::Delete, uiText(QStringLiteral("Clear background")),
                            QKeySequence(), uiText(QStringLiteral("Restore the white background")));
 
@@ -317,12 +501,12 @@ void MainWindow::createActions()
                              uiText(QStringLiteral("About StoryBoard")), this);
     m_aboutQtAct = new QAction(uiText(QStringLiteral("About Qt")), this);
 
-    connect(m_newAct, &QAction::triggered, this, &MainWindow::newBoard);
-    connect(m_openAct, &QAction::triggered, this, &MainWindow::openTemplateDialog);
-    connect(m_saveAct, &QAction::triggered, this, [this]() { saveTemplate(); });
-    connect(m_saveAsAct, &QAction::triggered, this, [this]() { saveTemplateAs(); });
+    connect(m_newAct, &QAction::triggered, this, &MainWindow::newCanvas);
+    connect(m_openAct, &QAction::triggered, this, &MainWindow::openCanvasDialog);
+    connect(m_saveAct, &QAction::triggered, this, [this]() { saveCanvas(); });
+    connect(m_saveAsAct, &QAction::triggered, this, [this]() { saveCanvasAs(); });
     connect(m_importAct, &QAction::triggered, this, &MainWindow::importImagesDialog);
-    connect(m_exportAct, &QAction::triggered, this, &MainWindow::exportBoard);
+    connect(m_exportAct, &QAction::triggered, this, &MainWindow::exportCanvas);
     connect(m_quitAct, &QAction::triggered, this, &QWidget::close);
 
     connect(m_undoAct, &QAction::triggered, m_undo, &QUndoStack::undo);
@@ -374,12 +558,12 @@ void MainWindow::createActions()
     connect(m_fillHoneycombAct, &QAction::triggered, this, [this]() { setFillStyle(FillStyle::Honeycomb); });
     m_fillColorAct = new QAction(uiText(QStringLiteral("Fill color…")), this);
     m_fillColorAct->setObjectName(QStringLiteral("FillColorAction"));
-    m_fillColorAct->setIcon(makeColorIcon(m_fillColor.isValid() ? m_fillColor
-                                                                : QColor(30, 41, 59, 36), 16));
+    m_fillColorAct->setIcon(makeFillColorIcon(m_fillColor.isValid() ? m_fillColor
+                                                                    : QColor(30, 41, 59, 36), 16));
     connect(m_fillColorAct, &QAction::triggered, this, &MainWindow::chooseFillColor);
     m_strokeColorAct = new QAction(uiText(QStringLiteral("Outline color…")), this);
     m_strokeColorAct->setObjectName(QStringLiteral("OutlineColorAction"));
-    m_strokeColorAct->setIcon(makeColorIcon(m_brushColor, 16));
+    m_strokeColorAct->setIcon(makeStrokeColorIcon(m_brushColor, 16));
     connect(m_strokeColorAct, &QAction::triggered, this, &MainWindow::chooseStrokeColor);
     m_brushColorAct = new QAction(uiText(QStringLiteral("Brush color…")), this);
     m_brushColorAct->setObjectName(QStringLiteral("BrushColorAction"));
@@ -572,9 +756,9 @@ void MainWindow::createMenus()
     styleMenu->addAction(m_fillColorAct);
     styleMenu->addAction(m_strokeColorAct);
 
-    m_templatesMenu = menuBar()->addMenu(uiText(QStringLiteral("&Templates")));
-    connect(m_templatesMenu, &QMenu::aboutToShow, this, &MainWindow::updateTemplateMenu);
-    updateTemplateMenu();
+    m_canvasesMenu = menuBar()->addMenu(uiText(QStringLiteral("&Canvases")));
+    connect(m_canvasesMenu, &QMenu::aboutToShow, this, &MainWindow::updateCanvasesMenu);
+    updateCanvasesMenu();
 
     QMenu* helpMenu = menuBar()->addMenu(uiText(QStringLiteral("&Help")));
     helpMenu->addAction(m_aboutAct);
@@ -648,7 +832,7 @@ void MainWindow::createToolBars()
 
     m_widthCombo = new QComboBox(brushBar);
     m_widthCombo->setObjectName(QStringLiteral("BrushWidthCombo"));
-    m_widthCombo->setFixedWidth(88);
+    m_widthCombo->setFixedWidth(96);
     m_widthCombo->setFixedHeight(28);
     m_widthCombo->setToolTip(uiText(QStringLiteral("Brush width")));
     for (int width : brushWidthPresets())
@@ -674,7 +858,19 @@ void MainWindow::createToolBars()
     widthLabel->setObjectName(QStringLiteral("ToolBarLabel"));
     brushBar->addWidget(widthLabel);
     brushBar->addWidget(m_widthCombo);
-    brushBar->addSeparator();
+
+    // 两个工具栏排在同一行，用一条可见竖线分隔画笔区与填充区。
+    // 用一个 18px 的承载控件把线放在正中间，两侧各留 8px 空白，避免被当成按钮边框。
+    auto* toolbarDivider = new QWidget(brushBar);
+    toolbarDivider->setObjectName(QStringLiteral("ToolBarDivider"));
+    toolbarDivider->setFixedSize(18, 32);
+    auto* toolbarDividerLine = new QFrame(toolbarDivider);
+    toolbarDividerLine->setObjectName(QStringLiteral("ToolBarDividerLine"));
+    toolbarDividerLine->setFrameShape(QFrame::NoFrame);
+    toolbarDividerLine->setFixedSize(2, 30);
+    toolbarDividerLine->move(8, 1);
+    toolbarDividerLine->setStyleSheet(QStringLiteral("background: #8E9AAF; border: none; border-radius: 1px;"));
+    brushBar->addWidget(toolbarDivider);
 
     // 需求 31：画笔与填充分属两个工具栏。
     auto* fillBar = new QToolBar(uiText(QStringLiteral("Fill toolbar")), this);
@@ -843,10 +1039,10 @@ void MainWindow::updateModeUi()
             m_hintLabel->setText(uiText(QStringLiteral("Brush mode: left button to draw · wheel to zoom · Space / middle button to pan")));
             break;
         case ToolMode::Edit:
-            m_hintLabel->setText(uiText(QStringLiteral("Edit mode: items on visible, unlocked layers can be edited · drag or box-select · resize with handles · drag board edges to resize the board · Delete to remove")));
+            m_hintLabel->setText(uiText(QStringLiteral("Edit mode: items on visible, unlocked layers can be edited · drag or box-select · resize with handles · drag canvas edges to resize the canvas · Delete to remove")));
             break;
         case ToolMode::Text:
-            m_hintLabel->setText(uiText(QStringLiteral("Text mode: click the board to place text · set font, size, color and bold/italic")));
+            m_hintLabel->setText(uiText(QStringLiteral("Text mode: click the canvas to place text · set font, size, color and bold/italic")));
             break;
         }
     }
@@ -906,9 +1102,9 @@ void MainWindow::updateStatusBar()
 QString MainWindow::documentName() const
 {
     if (m_filePath.isEmpty())
-        return uiText(QStringLiteral("Untitled board"));
+        return uiText(QStringLiteral("Untitled canvas"));
     const QString name = QFileInfo(m_filePath).completeBaseName();
-    return name.isEmpty() ? uiText(QStringLiteral("Untitled board")) : name;
+    return name.isEmpty() ? uiText(QStringLiteral("Untitled canvas")) : name;
 }
 
 void MainWindow::updateTitle()
@@ -934,12 +1130,14 @@ void MainWindow::setBrushColor(const QColor& color, bool remember)
     if (m_brushColorAct)
         m_brushColorAct->setIcon(makeColorIcon(color, 16));
     if (m_strokeColorAct)
-        m_strokeColorAct->setIcon(makeColorIcon(color, 16));
+        m_strokeColorAct->setIcon(makeStrokeColorIcon(color, 16));
     if (m_strokeColorButton) {
         m_strokeColorButton->setToolTip(
             uiText(QStringLiteral("Outline color: %1 (click to choose)"))
                 .arg(color.name(QColor::HexArgb).toUpper()));
     }
+    if (m_fillButton)
+        updateFillActions();
     if (remember) {
         m_settings.brushColor = color;
         m_settings.save();
@@ -981,7 +1179,7 @@ void MainWindow::chooseBrushColor()
         setBrushColor(color, true);
 }
 
-void MainWindow::newBoard()
+void MainWindow::newCanvas()
 {
     if (!maybeSave())
         return;
@@ -1004,29 +1202,29 @@ void MainWindow::newBoard()
     updateTitle();
     updateStatusBar();
     updateActions();
-    statusBar()->showMessage(uiText(QStringLiteral("New empty board created")), 3000);
+    statusBar()->showMessage(uiText(QStringLiteral("New empty canvas created")), 3000);
 }
 
-void MainWindow::openTemplateDialog()
+void MainWindow::openCanvasDialog()
 {
     const QString path = QFileDialog::getOpenFileName(
-        this, uiText(QStringLiteral("Open template")), AppSettings::templatesDir(),
-        templateFilter());
+        this, uiText(QStringLiteral("Open canvas")), AppSettings::canvasesDir(),
+        canvasFilter());
     if (!path.isEmpty())
-        loadTemplateFile(path, true);
+        loadCanvasFile(path, true);
 }
 
-bool MainWindow::openTemplateFile(const QString& path)
+bool MainWindow::openCanvasFile(const QString& path)
 {
-    return loadTemplateFile(path, true);
+    return loadCanvasFile(path, true);
 }
 
-bool MainWindow::loadTemplateFile(const QString& path, bool showErrors)
+bool MainWindow::loadCanvasFile(const QString& path, bool showErrors)
 {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
         if (showErrors) {
-            QMessageBox::warning(this, uiText(QStringLiteral("Open template")),
+            QMessageBox::warning(this, uiText(QStringLiteral("Open canvas")),
                                  uiText(QStringLiteral("Could not read the file:\n%1")).arg(QDir::toNativeSeparators(path)));
         }
         return false;
@@ -1036,17 +1234,17 @@ bool MainWindow::loadTemplateFile(const QString& path, bool showErrors)
     const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &parseError);
     if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
         if (showErrors) {
-            QMessageBox::warning(this, uiText(QStringLiteral("Open template")),
-                                 uiText(QStringLiteral("Failed to parse the template file:\n%1")).arg(parseError.errorString()));
+            QMessageBox::warning(this, uiText(QStringLiteral("Open canvas")),
+                                 uiText(QStringLiteral("Failed to parse the canvas file:\n%1")).arg(parseError.errorString()));
         }
         return false;
     }
 
     const QJsonObject root = document.object();
     QString validationError;
-    if (!validateTemplateRoot(root, &validationError)) {
+    if (!validateCanvasRoot(root, &validationError)) {
         if (showErrors)
-            QMessageBox::warning(this, uiText(QStringLiteral("Open template")), validationError);
+            QMessageBox::warning(this, uiText(QStringLiteral("Open canvas")), validationError);
         return false;
     }
 
@@ -1057,7 +1255,7 @@ bool MainWindow::loadTemplateFile(const QString& path, bool showErrors)
     QString loadError;
     if (!m_scene->fromJson(root, &loadError)) {
         if (showErrors)
-            QMessageBox::warning(this, uiText(QStringLiteral("Open template")), loadError);
+            QMessageBox::warning(this, uiText(QStringLiteral("Open canvas")), loadError);
         return false;
     }
 
@@ -1068,39 +1266,37 @@ bool MainWindow::loadTemplateFile(const QString& path, bool showErrors)
     else
         m_view->fitAll();
 
-    m_settings.lastTemplatePath = m_filePath;
+    m_settings.lastCanvasPath = m_filePath;
     updateModeUi();
     updateTitle();
     updateStatusBar();
     updateActions();
-    statusBar()->showMessage(uiText(QStringLiteral("Template opened: %1")).arg(QFileInfo(m_filePath).fileName()), 4000);
+    statusBar()->showMessage(uiText(QStringLiteral("Canvas opened: %1")).arg(QFileInfo(m_filePath).fileName()), 4000);
     return true;
 }
 
-bool MainWindow::saveTemplate()
+bool MainWindow::saveCanvas()
 {
     if (m_filePath.isEmpty())
-        return saveTemplateAs();
+        return saveCanvasAs();
     return saveToFile(m_filePath);
 }
 
-bool MainWindow::saveTemplateAs()
+bool MainWindow::saveCanvasAs()
 {
     QString suggestion = m_filePath;
     if (suggestion.isEmpty()) {
-        QString name = documentName();
-        if (name == uiText(QStringLiteral("Untitled board")))
-            name = uiText(QStringLiteral("Untitled template"));
-        suggestion = QDir(AppSettings::templatesDir()).filePath(name + QStringLiteral(".sbboard"));
+        const QString name = documentName();
+        suggestion = QDir(AppSettings::canvasesDir()).filePath(name + QStringLiteral(".sbcanvas"));
     }
 
     QString path = QFileDialog::getSaveFileName(
-        this, uiText(QStringLiteral("Save as template")), suggestion,
-        uiText(QStringLiteral("StoryBoard templates (*.sbboard)")));
+        this, uiText(QStringLiteral("Save canvas as")), suggestion,
+        uiText(QStringLiteral("StoryBoard canvases (*.sbcanvas)")));
     if (path.isEmpty())
         return false;
-    if (!path.endsWith(QStringLiteral(".sbboard"), Qt::CaseInsensitive))
-        path += QStringLiteral(".sbboard");
+    if (!path.endsWith(QStringLiteral(".sbcanvas"), Qt::CaseInsensitive))
+        path += QStringLiteral(".sbcanvas");
     return saveToFile(path);
 }
 
@@ -1113,24 +1309,24 @@ bool MainWindow::saveToFile(const QString& path)
 
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly)) {
-        QMessageBox::warning(this, uiText(QStringLiteral("Save template")),
+        QMessageBox::warning(this, uiText(QStringLiteral("Save canvas")),
                              uiText(QStringLiteral("Could not write the file:\n%1")).arg(QDir::toNativeSeparators(path)));
         return false;
     }
     file.write(data);
     if (!file.commit()) {
-        QMessageBox::warning(this, uiText(QStringLiteral("Save template")),
-                             uiText(QStringLiteral("Failed to save the template:\n%1")).arg(QDir::toNativeSeparators(path)));
+        QMessageBox::warning(this, uiText(QStringLiteral("Save canvas")),
+                             uiText(QStringLiteral("Failed to save the canvas:\n%1")).arg(QDir::toNativeSeparators(path)));
         return false;
     }
 
     m_filePath = QFileInfo(path).absoluteFilePath();
-    m_settings.lastTemplatePath = m_filePath;
+    m_settings.lastCanvasPath = m_filePath;
     m_settings.save();
     m_undo->setClean();
     updateTitle();
     updateActions();
-    statusBar()->showMessage(uiText(QStringLiteral("Template saved: %1")).arg(QFileInfo(m_filePath).fileName()), 4000);
+    statusBar()->showMessage(uiText(QStringLiteral("Canvas saved: %1")).arg(QFileInfo(m_filePath).fileName()), 4000);
     return true;
 }
 
@@ -1142,22 +1338,22 @@ bool MainWindow::maybeSave()
     QMessageBox box(this);
     box.setIcon(QMessageBox::Question);
     box.setWindowTitle(uiText(QStringLiteral("Unsaved changes")));
-    box.setText(uiText(QStringLiteral("The current board has unsaved changes.")));
-    box.setInformativeText(uiText(QStringLiteral("Save as a template first?")));
-    QPushButton* saveButton = box.addButton(uiText(QStringLiteral("Save template")), QMessageBox::AcceptRole);
+    box.setText(uiText(QStringLiteral("The current canvas has unsaved changes.")));
+    box.setInformativeText(uiText(QStringLiteral("Save this canvas first?")));
+    QPushButton* saveButton = box.addButton(uiText(QStringLiteral("Save canvas")), QMessageBox::AcceptRole);
     QPushButton* discardButton = box.addButton(uiText(QStringLiteral("Don't save")), QMessageBox::DestructiveRole);
     box.addButton(uiText(QStringLiteral("Cancel")), QMessageBox::RejectRole);
     box.setDefaultButton(saveButton);
     box.exec();
 
     if (box.clickedButton() == saveButton)
-        return saveTemplate();
+        return saveCanvas();
     if (box.clickedButton() == discardButton)
         return true;
     return false;
 }
 
-void MainWindow::exportBoard()
+void MainWindow::exportCanvas()
 {
     m_view->finishCurrentStroke();
     QString startDirectory = m_settings.lastExportDir;
@@ -1175,7 +1371,7 @@ void MainWindow::exportBoard()
     if (options.separateLayers) {
         const QStringList paths = options.filePaths;
         if (paths.isEmpty()) {
-            QMessageBox::warning(this, uiText(QStringLiteral("Export board")),
+            QMessageBox::warning(this, uiText(QStringLiteral("Export canvas")),
                                  uiText(QStringLiteral("No visible layers to export.")));
             return;
         }
@@ -1221,8 +1417,8 @@ bool MainWindow::exportToFile(const QString& path, const QRectF& area, qreal sca
     QApplication::restoreOverrideCursor();
 
     if (image.isNull()) {
-        QMessageBox::warning(this, uiText(QStringLiteral("Export board")),
-                             uiText(QStringLiteral("Rendering the board failed: nothing to export.")));
+        QMessageBox::warning(this, uiText(QStringLiteral("Export canvas")),
+                             uiText(QStringLiteral("Rendering the canvas failed: nothing to export.")));
         return false;
     }
 
@@ -1264,14 +1460,14 @@ bool MainWindow::exportToFile(const QString& path, const QRectF& area, qreal sca
 
     if (!success) {
         QMessageBox::critical(this, uiText(QStringLiteral("Export failed")),
-                              uiText(QStringLiteral("Could not export the board:\n%1\n\n%2"))
+                              uiText(QStringLiteral("Could not export the canvas:\n%1\n\n%2"))
                                   .arg(QDir::toNativeSeparators(path), errorMessage));
         return false;
     }
 
     m_settings.lastExportDir = QFileInfo(path).absolutePath();
     m_settings.save();
-    statusBar()->showMessage(uiText(QStringLiteral("Board exported: %1")).arg(QFileInfo(path).fileName()), 5000);
+    statusBar()->showMessage(uiText(QStringLiteral("Canvas exported: %1")).arg(QFileInfo(path).fileName()), 5000);
 
     if (!showCompletion)
         return true;
@@ -1279,7 +1475,7 @@ bool MainWindow::exportToFile(const QString& path, const QRectF& area, qreal sca
     QMessageBox box(this);
     box.setIcon(QMessageBox::Information);
     box.setWindowTitle(uiText(QStringLiteral("Export complete")));
-    box.setText(uiText(QStringLiteral("The board was exported successfully.")));
+    box.setText(uiText(QStringLiteral("The canvas was exported successfully.")));
     box.setInformativeText(QDir::toNativeSeparators(path));
     QPushButton* openFileButton = box.addButton(uiText(QStringLiteral("Open file")), QMessageBox::AcceptRole);
     QPushButton* openFolderButton = box.addButton(uiText(QStringLiteral("Open folder")), QMessageBox::ActionRole);
@@ -1589,15 +1785,29 @@ void MainWindow::updateFillActions()
     if (m_fillHoneycombAct)
         m_fillHoneycombAct->setChecked(m_fillStyle == FillStyle::Honeycomb);
 
-    const QColor swatch = m_fillColor.isValid() ? m_fillColor : QColor(30, 41, 59, 36);
-    m_fillButton->setIcon(makeColorIcon(swatch, 20));
+    const QColor swatch = m_fillColor.isValid() ? m_fillColor : m_brushColor;
+    m_fillButton->setIcon(makeFillStyleIcon(m_fillStyle, swatch, 20));
+    if (m_fillNoneAct)
+        m_fillNoneAct->setIcon(makeFillStyleIcon(FillStyle::None, swatch, 16));
+    if (m_fillSolidAct)
+        m_fillSolidAct->setIcon(makeFillStyleIcon(FillStyle::Solid, swatch, 16));
+    if (m_fillHachureAct)
+        m_fillHachureAct->setIcon(makeFillStyleIcon(FillStyle::Hachure, swatch, 16));
+    if (m_fillReverseAct)
+        m_fillReverseAct->setIcon(makeFillStyleIcon(FillStyle::ReverseHachure, swatch, 16));
+    if (m_fillCrossAct)
+        m_fillCrossAct->setIcon(makeFillStyleIcon(FillStyle::CrossHatch, swatch, 16));
+    if (m_fillGridAct)
+        m_fillGridAct->setIcon(makeFillStyleIcon(FillStyle::GridHatch, swatch, 16));
+    if (m_fillHoneycombAct)
+        m_fillHoneycombAct->setIcon(makeFillStyleIcon(FillStyle::Honeycomb, swatch, 16));
     const QString colorText = m_fillColor.isValid()
         ? m_fillColor.name(QColor::HexArgb).toUpper()
         : uiText(QStringLiteral("Follow brush color"));
     m_fillButton->setToolTip(uiText(QStringLiteral("Fill: %1 · %2 (click to choose)"))
                                  .arg(fillStyleName(m_fillStyle), colorText));
     if (m_fillColorAct)
-        m_fillColorAct->setIcon(makeColorIcon(swatch, 16));
+        m_fillColorAct->setIcon(makeFillColorIcon(swatch, 16));
     if (m_fillColorButton) {
         m_fillColorButton->setToolTip(
             uiText(QStringLiteral("Fill color: %1 (click to choose)")).arg(colorText));
@@ -1753,18 +1963,24 @@ void MainWindow::applyUiLanguage()
     updateModeUi();
     updateStatusBar();
     updateTitle();
-    updateTemplateMenu();
+    updateCanvasesMenu();
 }
 
 void MainWindow::showSettings()
 {
-    SettingsDialog dialog(m_settings, this);
-    if (dialog.exec() != QDialog::Accepted)
-        return;
+    AppSettings updated;
+    UiLanguage requestedLanguage = uiLanguageSetting();
+    {
+        SettingsDialog dialog(m_settings, this);
+        if (dialog.exec() != QDialog::Accepted)
+            return;
+        updated = dialog.settings();
+        requestedLanguage = dialog.language();
+    }
 
-    const AppSettings updated = dialog.settings();
-    if (dialog.language() != uiLanguageSetting()) {
-        setUiLanguageSetting(dialog.language());
+    // 对话框对象已经析构，再切换语言/重建动态文案，避免在已关闭的模态窗上重译。
+    if (requestedLanguage != uiLanguageSetting()) {
+        setUiLanguageSetting(requestedLanguage);
         applyUiLanguage();
     }
     m_settings.brushColor = updated.brushColor;
@@ -1792,52 +2008,52 @@ void MainWindow::fitAll()
     m_view->fitAll();
 }
 
-void MainWindow::updateTemplateMenu()
+void MainWindow::updateCanvasesMenu()
 {
-    if (!m_templatesMenu)
+    if (!m_canvasesMenu)
         return;
 
-    m_templatesMenu->clear();
-    m_templatesMenu->addAction(m_saveAct);
-    m_templatesMenu->addAction(m_saveAsAct);
-    m_templatesMenu->addAction(m_openAct);
-    m_templatesMenu->addSeparator();
+    m_canvasesMenu->clear();
+    m_canvasesMenu->addAction(m_saveAct);
+    m_canvasesMenu->addAction(m_saveAsAct);
+    m_canvasesMenu->addAction(m_openAct);
+    m_canvasesMenu->addSeparator();
 
-    QDir directory(AppSettings::templatesDir());
-    const QFileInfoList files = directory.entryInfoList({ QStringLiteral("*.sbboard") },
+    QDir directory(AppSettings::canvasesDir());
+    const QFileInfoList files = directory.entryInfoList({ QStringLiteral("*.sbcanvas") },
                                                         QDir::Files, QDir::Time);
     if (files.isEmpty()) {
-        QAction* emptyAction = m_templatesMenu->addAction(uiText(QStringLiteral("(Template folder is empty)")));
+        QAction* emptyAction = m_canvasesMenu->addAction(uiText(QStringLiteral("(Canvas folder is empty)")));
         emptyAction->setEnabled(false);
     } else {
         const int maximum = qMin(15, static_cast<int>(files.size()));
         for (int i = 0; i < maximum; ++i) {
             const QFileInfo info = files.at(i);
-            QAction* action = m_templatesMenu->addAction(makeIcon(IconId::Save, QColor(90, 98, 112), 16),
+            QAction* action = m_canvasesMenu->addAction(makeIcon(IconId::Save, QColor(90, 98, 112), 16),
                                                          info.completeBaseName());
             action->setCheckable(true);
             action->setChecked(info.absoluteFilePath() == m_filePath);
             action->setToolTip(QDir::toNativeSeparators(info.absoluteFilePath()));
             const QString filePath = info.absoluteFilePath();
             connect(action, &QAction::triggered, this, [this, filePath]() {
-                loadTemplateFile(filePath, true);
+                loadCanvasFile(filePath, true);
             });
         }
         if (files.size() > maximum) {
-            QAction* moreAction = m_templatesMenu->addAction(
-                uiText(QStringLiteral("… %1 templates in total")).arg(files.size()));
+            QAction* moreAction = m_canvasesMenu->addAction(
+                uiText(QStringLiteral("… %1 canvases in total")).arg(files.size()));
             moreAction->setEnabled(false);
         }
     }
 
-    m_templatesMenu->addSeparator();
-    QAction* openFolderAction = m_templatesMenu->addAction(uiText(QStringLiteral("Open templates folder")));
-    connect(openFolderAction, &QAction::triggered, this, &MainWindow::openTemplatesFolder);
+    m_canvasesMenu->addSeparator();
+    QAction* openFolderAction = m_canvasesMenu->addAction(uiText(QStringLiteral("Open canvases folder")));
+    connect(openFolderAction, &QAction::triggered, this, &MainWindow::openCanvasesFolder);
 }
 
-void MainWindow::openTemplatesFolder()
+void MainWindow::openCanvasesFolder()
 {
-    const QString directory = AppSettings::templatesDir();
+    const QString directory = AppSettings::canvasesDir();
     QDir().mkpath(directory);
     QDesktopServices::openUrl(QUrl::fromLocalFile(directory));
 }
@@ -1848,7 +2064,7 @@ void MainWindow::showAbout()
     html += QStringLiteral("<h3>%1 %2</h3>").arg(uiText(QStringLiteral("StoryBoard Canvas")),
                                                 QCoreApplication::applicationVersion());
     html += QStringLiteral("<p>%1</p>")
-                .arg(uiText(QStringLiteral("A small board for freehand strokes, image items, overview navigation, templates and export.")));
+                .arg(uiText(QStringLiteral("A lightweight canvas app for freehand strokes, image items, overview navigation, canvas files and export.")));
     html += QStringLiteral("<p><b>%1</b></p><ul>").arg(uiText(QStringLiteral("Key operations")));
     const QStringList operations = {
         QStringLiteral("V View mode: pan / zoom the whole board, automatic overview"),
@@ -1891,7 +2107,7 @@ void MainWindow::dragEnterEvent(QDragEnterEvent* event)
         if (!url.isLocalFile())
             continue;
         const QString path = url.toLocalFile();
-        if (hasImageSuffix(path) || path.endsWith(QStringLiteral(".sbboard"), Qt::CaseInsensitive)) {
+        if (hasImageSuffix(path) || path.endsWith(QStringLiteral(".sbcanvas"), Qt::CaseInsensitive)) {
             event->acceptProposedAction();
             return;
         }
@@ -1902,20 +2118,20 @@ void MainWindow::dragEnterEvent(QDragEnterEvent* event)
 void MainWindow::dropEvent(QDropEvent* event)
 {
     QStringList images;
-    QString templatePath;
+    QString canvasPath;
 
     for (const QUrl& url : event->mimeData()->urls()) {
         if (!url.isLocalFile())
             continue;
         const QString path = url.toLocalFile();
-        if (path.endsWith(QStringLiteral(".sbboard"), Qt::CaseInsensitive))
-            templatePath = path;
+        if (path.endsWith(QStringLiteral(".sbcanvas"), Qt::CaseInsensitive))
+            canvasPath = path;
         else if (hasImageSuffix(path))
             images.append(path);
     }
 
-    if (!templatePath.isEmpty() && images.isEmpty()) {
-        if (loadTemplateFile(templatePath, true))
+    if (!canvasPath.isEmpty() && images.isEmpty()) {
+        if (loadCanvasFile(canvasPath, true))
             event->acceptProposedAction();
         return;
     }

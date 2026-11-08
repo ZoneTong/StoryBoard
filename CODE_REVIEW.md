@@ -48,10 +48,10 @@
 ## 三、记录但未修改的问题（边缘或属设计取舍）
 
 1. **双击 / 右键只取最上层图元**：`BoardView` 双击用 `itemAt()`、右键用 `items()` 取最上层可见 `BoardItem`，若该图元位于其他（锁定）图层，会提示“该图层未选中”，下层当前图层的图元拿不到操作。这与“仅当前图层可编辑、其他图层可见但锁定”的设计一致（单点选也遵循最上层语义），属体验取舍，未改。
-2. **字号上限不一致**：`TextItem::fromJson` 允许 6–400，`TextDialog` 上限 200，且对话框确定时会把字号钳到 200。只有手工编辑过模板的大字号文字会受影响，改任一侧都会改变既有模板行为，故只记录。
+2. **字号上限不一致**：`TextItem::fromJson` 允许 6–400，`TextDialog` 上限 200，且对话框确定时会把字号钳到 200。只有手工编辑过画布的大字号文字会受影响，改任一侧都会改变既有画布行为，故只记录。
 3. **导出扩展名改写**：`ExportDialog::updatePathExtension` 用 `chop(当前后缀长度)` 拼接，路径以 `.` 结尾时会出现 `xxx..png`；手动编辑路径时格式提示文本不刷新。不影响导出结果。
 4. **导出异常安全**：`BoardScene::renderImage` 是 `m_exporting = true; render(); m_exporting = false;`，无 RAII/异常保护；当前 `QGraphicsScene::render` 不会抛异常，故未改。
-5. **版本号口径**：`main.cpp` 的 `applicationVersion` 为 `0.1.0`，模板 JSON 的 `format` 为 `"StoryBoard 0.2"`，两者含义不同（应用版本 vs 模板格式），未统一。
+5. **版本号口径**：`main.cpp` 的 `applicationVersion` 为 `0.1.0`，画布 JSON 的 `format` 为 `"StoryBoardCanvas"`、`version` 为 `2`，两者含义不同（应用版本 vs 画布格式），未统一。
 
 ## 四、改动清单
 

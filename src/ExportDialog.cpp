@@ -28,7 +28,7 @@ ExportDialog::ExportDialog(BoardScene* scene, const QString& startDirectory, QWi
     : QDialog(parent)
     , m_scene(scene)
 {
-    setWindowTitle(uiText(QStringLiteral("Export board")));
+    setWindowTitle(uiText(QStringLiteral("Export canvas")));
     setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));
     setModal(true);
     setMinimumWidth(580);
@@ -37,11 +37,11 @@ ExportDialog::ExportDialog(BoardScene* scene, const QString& startDirectory, QWi
     rootLayout->setContentsMargins(22, 20, 22, 18);
     rootLayout->setSpacing(14);
 
-    auto* title = new QLabel(uiText(QStringLiteral("Export the current board")), this);
+    auto* title = new QLabel(uiText(QStringLiteral("Export the current canvas")), this);
     title->setObjectName(QStringLiteral("DialogTitle"));
     rootLayout->addWidget(title);
 
-    auto* hint = new QLabel(uiText(QStringLiteral("Render the board to an image or PDF. The background and items are included (grid and selection outlines are not).")), this);
+    auto* hint = new QLabel(uiText(QStringLiteral("Render the canvas to an image or PDF. The background and items are included (grid and selection outlines are not).")), this);
     hint->setObjectName(QStringLiteral("DialogHint"));
     hint->setWordWrap(true);
     rootLayout->addWidget(hint);
@@ -53,7 +53,7 @@ ExportDialog::ExportDialog(BoardScene* scene, const QString& startDirectory, QWi
     form->setLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
     m_scopeCombo = new QComboBox(group);
-    m_scopeCombo->addItem(uiText(QStringLiteral("Board area")));
+    m_scopeCombo->addItem(uiText(QStringLiteral("Canvas area")));
     m_scopeCombo->addItem(uiText(QStringLiteral("All items")));
     form->addRow(uiText(QStringLiteral("Export area")), m_scopeCombo);
 
@@ -293,7 +293,7 @@ void ExportDialog::browseForFile()
     const QString current = m_pathEdit->text().trimmed();
     const QString directory = current.isEmpty() ? QString()
                                                 : QFileInfo(current).absolutePath();
-    QString path = QFileDialog::getSaveFileName(this, uiText(QStringLiteral("Export board")), directory,
+    QString path = QFileDialog::getSaveFileName(this, uiText(QStringLiteral("Export canvas")), directory,
                                                 fileFilter());
     if (path.isEmpty())
         return;
@@ -313,7 +313,7 @@ void ExportDialog::validateAndAccept()
 {
     QString path = m_pathEdit->text().trimmed();
     if (path.isEmpty()) {
-        QMessageBox::warning(this, uiText(QStringLiteral("Export board")), uiText(QStringLiteral("Choose an export path first.")));
+        QMessageBox::warning(this, uiText(QStringLiteral("Export canvas")), uiText(QStringLiteral("Choose an export path first.")));
         return;
     }
 
@@ -338,7 +338,7 @@ void ExportDialog::validateAndAccept()
     }
 
     if (!QDir().mkpath(info.absolutePath())) {
-        QMessageBox::warning(this, uiText(QStringLiteral("Export board")),
+        QMessageBox::warning(this, uiText(QStringLiteral("Export canvas")),
                              uiText(QStringLiteral("Could not create the output folder:\n%1")).arg(info.absolutePath()));
         return;
     }
@@ -346,7 +346,7 @@ void ExportDialog::validateAndAccept()
     if (separateLayersSelected()) {
         const QStringList paths = outputFilePaths();
         if (paths.isEmpty()) {
-            QMessageBox::warning(this, uiText(QStringLiteral("Export board")),
+            QMessageBox::warning(this, uiText(QStringLiteral("Export canvas")),
                                  uiText(QStringLiteral("No visible layers to export.")));
             return;
         }

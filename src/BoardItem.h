@@ -34,11 +34,13 @@ public:
 
     virtual QString kind() const = 0;
     virtual QString displayName() const = 0;
+    // 用于自动命名的类型名：文字/图片不取内容摘要或文件名，而是稳定的类型称呼。
+    virtual QString typeDisplayName() const { return displayName(); }
     virtual QJsonObject toJson() const = 0;
     virtual void fromJson(const QJsonObject& json) = 0;
 
     // 需求 30：每个图元都有一个可编辑名称。未自定义名称时回退到类型名，
-    // 这样属性窗、模板和状态提示里始终能拿到一个人类可读的称呼。
+    // 这样属性窗、画布和状态提示里始终能拿到一个人类可读的称呼。
     QString name() const;
     QString rawName() const { return m_name; }
     void setName(const QString& name);

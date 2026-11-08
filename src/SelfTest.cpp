@@ -271,17 +271,17 @@ int runSelfTest(const QString& reportPath)
     const QByteArray jsonBytes = QJsonDocument(root).toJson(QJsonDocument::Indented);
     check(jsonBytes.contains("StoryBoard") && jsonBytes.contains("\"stroke\"")
               && jsonBytes.contains("\"image\""),
-          QStringLiteral("模板序列化为 JSON"));
+          QStringLiteral("画布序列化为 JSON"));
 
     BoardScene loaded;
     QUndoStack loadedUndo;
     loaded.setUndoStack(&loadedUndo);
     QString loadError;
-    check(loaded.fromJson(root, &loadError), QStringLiteral("反序列化模板"), loadError);
-    check(loaded.boardItemCount() == 2, QStringLiteral("模板图元数量一致"));
+    check(loaded.fromJson(root, &loadError), QStringLiteral("反序列化画布"), loadError);
+    check(loaded.boardItemCount() == 2, QStringLiteral("画布图元数量一致"));
     check(loaded.background().type == BackgroundType::Color
               && loaded.background().color == background.color,
-          QStringLiteral("模板背景恢复"));
+          QStringLiteral("画布背景恢复"));
 
     StrokeItem* loadedStroke = nullptr;
     ImageItem* loadedImage = nullptr;
@@ -292,7 +292,7 @@ int runSelfTest(const QString& reportPath)
         else if (item->kind() == QStringLiteral("image"))
             loadedImage = static_cast<ImageItem*>(item);
     }
-    check(loadedStroke != nullptr, QStringLiteral("模板包含笔画"));
+    check(loadedStroke != nullptr, QStringLiteral("画布包含笔画"));
     if (loadedStroke) {
         check(loadedStroke->strokeColor() == QColor(QStringLiteral("#EF4444")),
               QStringLiteral("笔画颜色恢复"));
@@ -353,20 +353,20 @@ int runSelfTest(const QString& reportPath)
               && imageBackgroundLoaded.background().mode == BackgroundMode::Tile,
           QStringLiteral("反序列化背景图片与填充方式"));
 
-    const QString templatePath = QDir(workDirectory).filePath(QStringLiteral("selftest.sbboard"));
+    const QString canvasPath = QDir(workDirectory).filePath(QStringLiteral("selftest.sbcanvas"));
     {
-        QFile file(templatePath);
+        QFile file(canvasPath);
         if (file.open(QIODevice::WriteOnly))
             file.write(jsonBytes);
     }
     BoardScene reloaded;
     QUndoStack reloadedUndo;
     reloaded.setUndoStack(&reloadedUndo);
-    QFile templateFile(templatePath);
-    check(templateFile.open(QIODevice::ReadOnly), QStringLiteral("读取模板文件"));
-    const QJsonDocument reloadedDocument = QJsonDocument::fromJson(templateFile.readAll());
-    check(reloadedDocument.isObject(), QStringLiteral("模板文件 JSON 有效"));
-    check(reloaded.fromJson(reloadedDocument.object()), QStringLiteral("从文件载入模板"));
+    QFile canvasFile(canvasPath);
+    check(canvasFile.open(QIODevice::ReadOnly), QStringLiteral("读取画布文件"));
+    const QJsonDocument reloadedDocument = QJsonDocument::fromJson(canvasFile.readAll());
+    check(reloadedDocument.isObject(), QStringLiteral("画布文件 JSON 有效"));
+    check(reloaded.fromJson(reloadedDocument.object()), QStringLiteral("从文件载入画布"));
     check(reloaded.boardItemCount() == 2, QStringLiteral("文件载入图元数量一致"));
 
     reloaded.setMode(ToolMode::Edit);
@@ -519,19 +519,19 @@ int runSelfTest(const QString& reportPath)
               && layerRoot.value(QStringLiteral("layers")).toArray().size() == 3
               && layerRoot.value(QStringLiteral("activeLayer")).toInt()
                      == layerScene.activeLayerId(),
-          QStringLiteral("模板保存图层与当前图层"));
+          QStringLiteral("画布保存图层与当前图层"));
     const QByteArray layerBytes = QJsonDocument(layerRoot).toJson(QJsonDocument::Compact);
     check(layerBytes.contains("\"layer\":") && layerBytes.contains("\"height\":"),
-          QStringLiteral("模板保存图元 layer 与 height"));
+          QStringLiteral("画布保存图元 layer 与 height"));
 
     BoardScene layerLoaded;
     QString layerLoadError;
     check(layerLoaded.fromJson(layerRoot, &layerLoadError),
-          QStringLiteral("图层模板反序列化"), layerLoadError);
+          QStringLiteral("图层画布反序列化"), layerLoadError);
     check(layerLoaded.layers() == layerScene.layers()
               && layerLoaded.activeLayerId() == layerScene.activeLayerId(),
           QStringLiteral("图层顺序与当前图层恢复"));
-    check(layerLoaded.boardItemCount() == 3, QStringLiteral("图层模板图元数量一致"));
+    check(layerLoaded.boardItemCount() == 3, QStringLiteral("图层画布图元数量一致"));
     bool layerRoundTrip = layerLoaded.boardItemCount() == layerScene.boardItemCount();
     for (const BoardLayer& entry : layerScene.layers()) {
         if (layerLoaded.layerItemCount(entry.id) != layerScene.layerItemCount(entry.id)) {
@@ -541,34 +541,13 @@ int runSelfTest(const QString& reportPath)
     }
     check(layerRoundTrip, QStringLiteral("图层内图元归属恢复"));
 
-    QJsonObject legacyRoot = layerRoot;
-    legacyRoot.remove(QStringLiteral("layers"));
-    legacyRoot.remove(QStringLiteral("activeLayer"));
-    QJsonArray legacyItems = legacyRoot.value(QStringLiteral("items")).toArray();
-    for (int i = 0; i < legacyItems.size(); ++i) {
-        QJsonObject itemJson = legacyItems.at(i).toObject();
-        itemJson.remove(QStringLiteral("layer"));
-        itemJson.remove(QStringLiteral("height"));
-        legacyItems.replace(i, itemJson);
-    }
-    legacyRoot.insert(QStringLiteral("items"), legacyItems);
-    BoardScene legacyScene;
-    QString legacyError;
-    check(legacyScene.fromJson(legacyRoot, &legacyError),
-          QStringLiteral("兼容旧版无图层模板"), legacyError);
-    check(legacyScene.userLayerCount() == 1, QStringLiteral("旧版模板归入单一图层"));
-    bool legacyHeights = true;
-    QSet<int> legacyHeightSet;
-    const QList<BoardItem*> legacyItemsInScene = legacyScene.boardItems();
-    for (BoardItem* item : legacyItemsInScene) {
-        if (item->layerId() != legacyScene.layers().at(1).id
-            || item->height() <= 0 || legacyHeightSet.contains(item->height())) {
-            legacyHeights = false;
-            break;
-        }
-        legacyHeightSet.insert(item->height());
-    }
-    check(legacyHeights, QStringLiteral("旧版 z 顺序转换为唯一 height"));
+    QJsonObject missingLayersRoot = layerRoot;
+    missingLayersRoot.remove(QStringLiteral("layers"));
+    missingLayersRoot.remove(QStringLiteral("activeLayer"));
+    BoardScene missingLayersScene;
+    QString missingLayersError;
+    check(!missingLayersScene.fromJson(missingLayersRoot, &missingLayersError),
+          QStringLiteral("缺少图层数组的画布被拒绝"));
 
     // ---------------------------------------------------------------
     // 叠放优先级（layer / height）与被遮盖图元的轮廓提示。
@@ -774,7 +753,7 @@ int runSelfTest(const QString& reportPath)
     check(layerScene.setLayerVisible(lowerLayerId, false),
           QStringLiteral("隐藏带图元的下层"));
     check(layerScene.setLayerVisible(BoardScene::BackgroundLayerId, false),
-          QStringLiteral("模板保存前隐藏背景"));
+          QStringLiteral("画布保存前隐藏背景"));
     const QJsonObject visibilityRoot = layerScene.toJson();
     const QJsonArray visibilityLayers = visibilityRoot.value(QStringLiteral("layers")).toArray();
     bool lowerHiddenInJson = false;
@@ -788,16 +767,16 @@ int runSelfTest(const QString& reportPath)
             backgroundHiddenInJson = !layerJson.value(QStringLiteral("visible")).toBool(true);
     }
     check(lowerHiddenInJson && backgroundHiddenInJson,
-          QStringLiteral("模板保存图层显示/隐藏状态"));
+          QStringLiteral("画布保存图层显示/隐藏状态"));
 
     BoardScene visibilityLoaded;
     QString visibilityLoadError;
     check(visibilityLoaded.fromJson(visibilityRoot, &visibilityLoadError),
-          QStringLiteral("图层显示状态模板反序列化"), visibilityLoadError);
+          QStringLiteral("图层显示状态画布反序列化"), visibilityLoadError);
     check(!visibilityLoaded.isLayerVisible(lowerLayerId)
               && !visibilityLoaded.isLayerVisible(BoardScene::BackgroundLayerId)
               && visibilityLoaded.isLayerVisible(topLayerId),
-          QStringLiteral("模板恢复图层显示/隐藏状态"));
+          QStringLiteral("画布恢复图层显示/隐藏状态"));
 
     QJsonObject hiddenActiveRoot = visibilityRoot;
     QJsonArray hiddenActiveLayers = hiddenActiveRoot.value(QStringLiteral("layers")).toArray();
@@ -812,7 +791,7 @@ int runSelfTest(const QString& reportPath)
     BoardScene hiddenActiveScene;
     QString hiddenActiveError;
     check(hiddenActiveScene.fromJson(hiddenActiveRoot, &hiddenActiveError),
-          QStringLiteral("载入当前图层被隐藏的模板"), hiddenActiveError);
+          QStringLiteral("载入当前图层被隐藏的画布"), hiddenActiveError);
     check(hiddenActiveScene.activeLayerId() == topLayerId
               && hiddenActiveScene.isLayerVisible(topLayerId),
           QStringLiteral("载入时自动显示当前图层"));
@@ -977,11 +956,11 @@ int runSelfTest(const QString& reportPath)
     const QJsonObject textRoot = textScene.toJson();
     check(textRoot.value(QStringLiteral("version")).toInt() == 2
               && QJsonDocument(textRoot).toJson(QJsonDocument::Compact).contains("\"text\""),
-          QStringLiteral("模板保存文字图元"));
+          QStringLiteral("画布保存文字图元"));
     BoardScene textLoaded;
     QString textLoadError;
     check(textLoaded.fromJson(textRoot, &textLoadError),
-          QStringLiteral("模板反序列化文字图元"), textLoadError);
+          QStringLiteral("画布反序列化文字图元"), textLoadError);
     TextItem* loadedText = nullptr;
     for (BoardItem* item : textLoaded.boardItems()) {
         if (auto* text = dynamic_cast<TextItem*>(item)) {
@@ -989,23 +968,23 @@ int runSelfTest(const QString& reportPath)
             break;
         }
     }
-    check(loadedText != nullptr, QStringLiteral("模板恢复文字类型"));
+    check(loadedText != nullptr, QStringLiteral("画布恢复文字类型"));
     if (loadedText) {
         check(loadedText->text() == QStringLiteral("更新后的文字")
                   && loadedText->textFont().italic()
                   && loadedText->textColor() == QColor(QStringLiteral("#B91C1C")),
-              QStringLiteral("模板恢复文字内容与样式"));
+              QStringLiteral("画布恢复文字内容与样式"));
         check(loadedText->layerId() == textScene.activeLayerId()
                   && loadedText->height() == heading->height(),
-              QStringLiteral("模板恢复文字图层与高度"));
+              QStringLiteral("画布恢复文字图层与高度"));
         check(qAbs(loadedText->contentSize().width() - heading->contentSize().width()) < 0.5
                   && qAbs(loadedText->contentSize().height() - heading->contentSize().height()) < 0.5,
-              QStringLiteral("模板恢复文字尺寸"));
+              QStringLiteral("画布恢复文字尺寸"));
     }
     check(textLoaded.layerHeightsUnique(textLoaded.activeLayerId()),
-          QStringLiteral("模板载入后层内 height 唯一"));
+          QStringLiteral("画布载入后层内 height 唯一"));
 
-    // A hand-edited template may contain duplicate heights. Loading it must
+    // A hand-edited canvas may contain duplicate heights. Loading it must
     // repair them to a stable, unique sequence while preserving item order.
     QJsonObject duplicateRoot = textScene.toJson();
     QJsonArray duplicateItems = duplicateRoot.value(QStringLiteral("items")).toArray();
@@ -1018,7 +997,7 @@ int runSelfTest(const QString& reportPath)
     BoardScene repairedScene;
     QString repairedError;
     check(repairedScene.fromJson(duplicateRoot, &repairedError),
-          QStringLiteral("载入含重复 height 的模板"), repairedError);
+          QStringLiteral("载入含重复 height 的画布"), repairedError);
     check(repairedScene.layerHeightsUnique(repairedScene.activeLayerId())
               && repairedScene.boardItemCount() == 2,
           QStringLiteral("重复 height 载入后自动修复为唯一值"));
@@ -1039,7 +1018,7 @@ int runSelfTest(const QString& reportPath)
     BoardScene oversizedScene;
     QString oversizedError;
     check(oversizedScene.fromJson(oversizedRoot, &oversizedError),
-          QStringLiteral("载入超出高度上限的模板"), oversizedError);
+          QStringLiteral("载入超出高度上限的画布"), oversizedError);
     bool oversizedRepaired = oversizedScene.layerHeightsUnique(oversizedScene.activeLayerId());
     for (BoardItem* item : oversizedScene.boardItems())
         oversizedRepaired = oversizedRepaired && item->height() <= 999999;
@@ -1184,18 +1163,18 @@ int runSelfTest(const QString& reportPath)
               && shapeBytes.contains("\"shapeType\":\"rectangle\"")
               && shapeBytes.contains("\"strokeColor\"")
               && shapeBytes.contains("\"fillColor\""),
-          QStringLiteral("模板保存图形类型、描边与填充"));
+          QStringLiteral("画布保存图形类型、描边与填充"));
 
     BoardScene shapeLoaded;
     QUndoStack shapeLoadedUndo;
     shapeLoaded.setUndoStack(&shapeLoadedUndo);
     QString shapeLoadError;
     check(shapeLoaded.fromJson(shapeRoot, &shapeLoadError),
-          QStringLiteral("模板反序列化图形图元"), shapeLoadError);
+          QStringLiteral("画布反序列化图形图元"), shapeLoadError);
     check(shapeLoaded.boardItemCount() == shapeItems.size(),
-          QStringLiteral("模板恢复全部图形"));
+          QStringLiteral("画布恢复全部图形"));
     check(shapeLoaded.layerHeightsUnique(shapeLoaded.activeLayerId()),
-          QStringLiteral("模板恢复图形后 height 唯一"));
+          QStringLiteral("画布恢复图形后 height 唯一"));
     QSet<QString> loadedShapeTypes;
     ShapeItem* loadedRectangle = nullptr;
     for (BoardItem* item : shapeLoaded.boardItems()) {
@@ -1206,12 +1185,12 @@ int runSelfTest(const QString& reportPath)
         }
     }
     check(loadedShapeTypes.size() == shapeTypes.size(),
-          QStringLiteral("模板恢复全部 12 种图形类型"));
+          QStringLiteral("画布恢复全部 12 种图形类型"));
     check(loadedRectangle
               && loadedRectangle->strokeColor() == shapeStroke
               && loadedRectangle->fillColor().alpha() == shapeFill.alpha()
               && qAbs(loadedRectangle->strokeWidth() - 4.0) < 0.01,
-          QStringLiteral("模板恢复图形描边、填充和线宽"));
+          QStringLiteral("画布恢复图形描边、填充和线宽"));
 
     TextDialog textDialog;
     textDialog.setTextValue(QStringLiteral("对话框文字\n第二行"));
@@ -1515,19 +1494,19 @@ int runSelfTest(const QString& reportPath)
           QStringLiteral("图层下移后实际遮盖关系反转"));
 
     const QString demoPath = QDir(QCoreApplication::applicationDirPath())
-                                 .filePath(QStringLiteral("../../examples/demo-storyboard.sbboard"));
+                                 .filePath(QStringLiteral("../../examples/demo-canvas.sbcanvas"));
     if (QFileInfo::exists(demoPath)) {
         QFile demoFile(demoPath);
-        check(demoFile.open(QIODevice::ReadOnly), QStringLiteral("读取示例模板文件"));
+        check(demoFile.open(QIODevice::ReadOnly), QStringLiteral("读取示例画布文件"));
         const QJsonDocument demoDocument = QJsonDocument::fromJson(demoFile.readAll());
         BoardScene demoLoaded;
         QString demoError;
         check(demoLoaded.fromJson(demoDocument.object(), &demoError),
-              QStringLiteral("加载示例模板"), demoError);
+              QStringLiteral("加载示例画布"), demoError);
         check(demoLoaded.userLayerCount() == 3
                   && demoLoaded.activeLayerId() == demoLoaded.layers().last().id
                   && demoLoaded.boardItemCount() == 27,
-              QStringLiteral("示例模板图层与图元完整"),
+              QStringLiteral("示例画布图层与图元完整"),
               QStringLiteral("layers=%1 items=%2")
                   .arg(demoLoaded.userLayerCount())
                   .arg(demoLoaded.boardItemCount()));
@@ -1850,6 +1829,9 @@ int runSelfTest(const QString& reportPath)
             QStringLiteral("ItemPropertiesWidthValue"));
         check(typeValue && typeValue->text() == propertyShape->displayName(),
               QStringLiteral("属性窗显示图元类型"));
+        check(uiText(QStringLiteral("Item name")) == QStringLiteral("图元名称"),
+              QStringLiteral("图元名称属性有中文翻译"),
+              uiText(QStringLiteral("Item name")));
         check(nameValue && nameValue->isEnabled()
                   && nameValue->text() == propertyShape->name(),
               QStringLiteral("属性窗显示图元名称且可编辑"));
@@ -1893,6 +1875,9 @@ int runSelfTest(const QString& reportPath)
         firstShape->setContentSize(QSizeF(120.0, 80.0));
         firstShape->setPos(QPointF(40.0, 50.0));
         editScene.addItemsWithUndo({ firstShape }, QStringLiteral("Add property test shape"));
+        const QString firstAutoName = firstShape->rawName();
+        check(firstAutoName == QStringLiteral("矩形 1"),
+              QStringLiteral("新图元自动生成名称"), firstAutoName);
         const int firstLayerId = firstShape->layerId();
         const int firstHeight = firstShape->height();
         const ShapeItemState firstState = firstShape->state();
@@ -1906,6 +1891,15 @@ int runSelfTest(const QString& reportPath)
         secondShape->setContentSize(QSizeF(100.0, 100.0));
         secondShape->setPos(QPointF(240.0, 80.0));
         editScene.addItemsWithUndo({ secondShape }, QStringLiteral("Add target layer shape"));
+        check(secondShape->rawName() == QStringLiteral("椭圆 1"),
+              QStringLiteral("不同图元类型各自从 1 编号"), secondShape->rawName());
+
+        auto* thirdShape = new ShapeItem(ShapeType::Rectangle);
+        thirdShape->setContentSize(QSizeF(90.0, 60.0));
+        thirdShape->setPos(QPointF(360.0, 200.0));
+        editScene.addItemsWithUndo({ thirdShape }, QStringLiteral("Add second rectangle"));
+        check(thirdShape->rawName() == QStringLiteral("矩形 2"),
+              QStringLiteral("同类图元名称后缀自动递增"), thirdShape->rawName());
 
         const int undoCountBeforeEdit = editUndo.count();
         {
@@ -1993,7 +1987,7 @@ int runSelfTest(const QString& reportPath)
               QStringLiteral("属性窗修改可整体撤销图层和高度"));
         check(firstShape->state() == firstState,
               QStringLiteral("属性窗修改可整体撤销样式和几何"));
-        check(firstShape->rawName().isEmpty(),
+        check(firstShape->rawName() == firstAutoName,
               QStringLiteral("属性窗修改可撤销图元名称"));
 
         editUndo.redo();
@@ -2007,7 +2001,7 @@ int runSelfTest(const QString& reportPath)
         ShapeItem loadedNamedShape;
         loadedNamedShape.fromJson(namedJson);
         check(loadedNamedShape.rawName() == QStringLiteral("Hero panel"),
-              QStringLiteral("图元名称持久化到模板"));
+              QStringLiteral("图元名称持久化到画布"));
 
         const int noopUndoBefore = editUndo.count();
         {
@@ -2025,6 +2019,8 @@ int runSelfTest(const QString& reportPath)
         imageItem->setContentSize(QSizeF(80.0, 80.0));
         imageItem->setPos(QPointF(400.0, 200.0));
         editScene.addItemsWithUndo({ imageItem }, QStringLiteral("Add property image"));
+        check(imageItem->rawName() == QStringLiteral("图片 1"),
+              QStringLiteral("图片图元自动名称不使用文件名"), imageItem->rawName());
         const int imageUndoBefore = editUndo.count();
         {
             ItemPropertiesDialog dialog(&editScene, imageItem);
@@ -2032,9 +2028,16 @@ int runSelfTest(const QString& reportPath)
             QApplication::processEvents();
             QLineEdit* imageName = dialog.findChild<QLineEdit*>(
                 QStringLiteral("ItemPropertiesImageValue"));
+            QLabel* typeValue = dialog.findChild<QLabel*>(
+                QStringLiteral("ItemPropertiesTypeValue"));
+            QLabel* heading = dialog.findChild<QLabel*>(
+                QStringLiteral("ItemPropertiesHeading"));
             check(imageName && imageName->isEnabled()
                       && imageName->text() == QStringLiteral("old.png"),
                   QStringLiteral("图片属性窗图片名称可编辑"));
+            check(typeValue && typeValue->text() == uiText(QStringLiteral("Image"))
+                      && heading && heading->text() == imageItem->name(),
+                  QStringLiteral("图片属性窗标题和类型使用图元名称与类型名"));
             if (imageName)
                 imageName->setText(QStringLiteral("new.png"));
             dialog.accept();
@@ -2056,6 +2059,65 @@ int runSelfTest(const QString& reportPath)
         textItem->setContentSize(QSizeF(200.0, 50.0));
         textItem->setPos(QPointF(420.0, 300.0));
         editScene.addItemsWithUndo({ textItem }, QStringLiteral("Add property text"));
+        check(textItem->rawName() == QStringLiteral("文字 1"),
+              QStringLiteral("文字图元自动名称不使用文字内容"), textItem->rawName());
+
+        auto* firstNamingStroke = new StrokeItem();
+        firstNamingStroke->beginStroke(QPointF(90.0, 420.0),
+                                       QColor(QStringLiteral("#0F766E")), 5.0);
+        firstNamingStroke->appendScenePoint(QPointF(150.0, 470.0));
+        firstNamingStroke->appendScenePoint(QPointF(210.0, 440.0));
+        firstNamingStroke->endStroke();
+        editScene.addItemsWithUndo({ firstNamingStroke },
+                                   QStringLiteral("Add numbered stroke"));
+        auto* secondNamingStroke = new StrokeItem();
+        secondNamingStroke->beginStroke(QPointF(260.0, 420.0),
+                                        QColor(QStringLiteral("#0F766E")), 5.0);
+        secondNamingStroke->appendScenePoint(QPointF(320.0, 470.0));
+        secondNamingStroke->appendScenePoint(QPointF(380.0, 440.0));
+        secondNamingStroke->endStroke();
+        editScene.addItemsWithUndo({ secondNamingStroke },
+                                   QStringLiteral("Add second numbered stroke"));
+        check(firstNamingStroke->rawName() == QStringLiteral("笔画 1")
+                  && secondNamingStroke->rawName() == QStringLiteral("笔画 2"),
+              QStringLiteral("笔画图元名称后缀自动递增"),
+              firstNamingStroke->rawName() + QStringLiteral(" / ")
+                  + secondNamingStroke->rawName());
+
+        int strokeUndoBefore = editUndo.count();
+        firstNamingStroke->setName(QString());
+        {
+            ItemPropertiesDialog dialog(&editScene, firstNamingStroke);
+            dialog.show();
+            QApplication::processEvents();
+            QLineEdit* strokeNameValue = dialog.findChild<QLineEdit*>(
+                QStringLiteral("ItemPropertiesNameValue"));
+            QLabel* strokeTypeValue = dialog.findChild<QLabel*>(
+                QStringLiteral("ItemPropertiesTypeValue"));
+            check(!firstNamingStroke->rawName().isEmpty()
+                      && firstNamingStroke->rawName().startsWith(QStringLiteral("笔画 ")),
+                  QStringLiteral("打开属性窗时为无名图元补上自动编号"),
+                  firstNamingStroke->rawName());
+            check(strokeNameValue && strokeNameValue->isEnabled()
+                      && strokeNameValue->text() == firstNamingStroke->name(),
+                  QStringLiteral("笔画属性窗显示可编辑的图元名称"),
+                  strokeNameValue ? strokeNameValue->text() : QStringLiteral("<missing>"));
+            check(strokeTypeValue
+                      && strokeTypeValue->text() == firstNamingStroke->typeDisplayName(),
+                  QStringLiteral("笔画属性窗图元类型不可编辑且与名称行并列显示"));
+            dialog.reject();
+            QApplication::processEvents();
+        }
+        check(editUndo.count() == strokeUndoBefore,
+              QStringLiteral("只打开并取消笔画属性窗不产生撤销记录"));
+        int unnamedItemCount = 0;
+        for (BoardItem* item : editScene.boardItems()) {
+            if (!item || item->rawName().isEmpty())
+                ++unnamedItemCount;
+        }
+        check(unnamedItemCount == 0,
+              QStringLiteral("场景内所有图元都有名称"),
+              QString::number(unnamedItemCount));
         const QColor textColorBefore = textItem->textColor();
         const int textUndoBefore = editUndo.count();
         {
@@ -2064,6 +2126,13 @@ int runSelfTest(const QString& reportPath)
             QApplication::processEvents();
             QToolButton* textColorValue = dialog.findChild<QToolButton*>(
                 QStringLiteral("ItemPropertiesTextColorValue"));
+            QLabel* typeValue = dialog.findChild<QLabel*>(
+                QStringLiteral("ItemPropertiesTypeValue"));
+            QLabel* heading = dialog.findChild<QLabel*>(
+                QStringLiteral("ItemPropertiesHeading"));
+            check(typeValue && typeValue->text() == uiText(QStringLiteral("Text"))
+                      && heading && heading->text() == textItem->name(),
+                  QStringLiteral("文字属性窗标题和类型使用图元名称与类型名"));
             if (textColorValue)
                 textColorValue->setProperty("itemColor", QColor(QStringLiteral("#DB2777")));
             dialog.accept();
@@ -2076,6 +2145,20 @@ int runSelfTest(const QString& reportPath)
         QApplication::processEvents();
         check(textItem->textColor() == textColorBefore,
               QStringLiteral("文字属性窗修改可撤销"));
+
+        BoardScene reloadedNames;
+        check(reloadedNames.fromJson(editScene.toJson()),
+              QStringLiteral("自动名称随画布重新载入"));
+        QStringList reloadedNameList;
+        for (BoardItem* item : reloadedNames.boardItems())
+            reloadedNameList.append(item->rawName());
+        check(reloadedNameList.contains(QStringLiteral("Hero panel"))
+                  && reloadedNameList.contains(QStringLiteral("矩形 2"))
+                  && reloadedNameList.contains(QStringLiteral("椭圆 1"))
+                  && reloadedNameList.contains(QStringLiteral("图片 1"))
+                  && reloadedNameList.contains(QStringLiteral("文字 1")),
+              QStringLiteral("自动名称画布往返不重复编号"),
+              reloadedNameList.join(QStringLiteral(" / ")));
     }
 
     const int baseLayerId = viewScene.activeLayerId();
@@ -2162,14 +2245,14 @@ int runSelfTest(const QString& reportPath)
                   modeOrder.join(QStringLiteral(" / ")));
 
             // 需求：支持中英文界面，默认系统语言，可在设置里切换。
-            check(uiText(QStringLiteral("New board")) == QStringLiteral("新建画板"),
+            check(uiText(QStringLiteral("New canvas")) == QStringLiteral("新建画布"),
                   QStringLiteral("中文界面下英文源串显示为中文"));
             uiOverrideLanguage(UiLanguage::English);
-            check(uiText(QStringLiteral("New board")) == QStringLiteral("New board")
+            check(uiText(QStringLiteral("New canvas")) == QStringLiteral("New canvas")
                       && uiText(QStringLiteral("Hexagon")) == QStringLiteral("Hexagon")
                       && uiText(QStringLiteral("View mode")) == QStringLiteral("View mode"),
                   QStringLiteral("英文界面下显示英文源串"),
-                  uiText(QStringLiteral("New board")));
+                  uiText(QStringLiteral("New canvas")));
             uiRetranslateWidgetTree(&window);
             QStringList englishOrder;
             for (QAction* action : modeBar->actions()) {
@@ -2300,13 +2383,13 @@ int runSelfTest(const QString& reportPath)
         }
     }
 
-    const QString shapeTemplatePath = QDir(workDirectory)
-                                          .filePath(QStringLiteral("shapes.sbboard"));
+    const QString shapeCanvasPath = QDir(workDirectory)
+                                          .filePath(QStringLiteral("shapes.sbcanvas"));
     {
-        QFile shapeTemplateFile(shapeTemplatePath);
-        check(shapeTemplateFile.open(QIODevice::WriteOnly),
-              QStringLiteral("创建图形模板测试文件"));
-        shapeTemplateFile.write(QJsonDocument(shapeRoot).toJson(QJsonDocument::Indented));
+        QFile shapeCanvasFile(shapeCanvasPath);
+        check(shapeCanvasFile.open(QIODevice::WriteOnly),
+              QStringLiteral("创建图形画布测试文件"));
+        shapeCanvasFile.write(QJsonDocument(shapeRoot).toJson(QJsonDocument::Indented));
     }
 
     {
@@ -2384,6 +2467,32 @@ int runSelfTest(const QString& reportPath)
                   && !mainNames.contains(QStringLiteral("StrokeColorButton")),
               QStringLiteral("主工具栏不再混排画笔和填充样式控件"),
               mainNames.join(QStringLiteral("|")));
+        QWidget* toolbarDivider = shapeWindow.findChild<QWidget*>(
+            QStringLiteral("ToolBarDivider"));
+        QWidget* toolbarDividerLine = shapeWindow.findChild<QWidget*>(
+            QStringLiteral("ToolBarDividerLine"));
+        check(toolbarDivider && toolbarDivider->isVisible(),
+              QStringLiteral("画笔与填充工具栏之间有可见竖线分隔"));
+        check(toolbarDivider && toolbarDividerLine && toolbarDividerLine->isVisible()
+                  && toolbarDivider->width() >= 16,
+              QStringLiteral("工具栏分隔竖线两侧留有可见空白"),
+              QStringLiteral("dividerWidth=%1")
+                  .arg(toolbarDivider ? toolbarDivider->width() : 0));
+        QToolButton* iconFillButton = shapeWindow.findChild<QToolButton*>(
+            QStringLiteral("FillButton"));
+        QToolButton* iconFillColorButton = shapeWindow.findChild<QToolButton*>(
+            QStringLiteral("FillColorButton"));
+        QToolButton* iconStrokeColorButton = shapeWindow.findChild<QToolButton*>(
+            QStringLiteral("StrokeColorButton"));
+        const QImage fillStyleImage = iconFillButton ? iconFillButton->icon().pixmap(20, 20).toImage()
+                                                     : QImage();
+        const QImage fillColorImage = iconFillColorButton ? iconFillColorButton->icon().pixmap(20, 20).toImage()
+                                                          : QImage();
+        const QImage strokeColorImage = iconStrokeColorButton ? iconStrokeColorButton->icon().pixmap(20, 20).toImage()
+                                                               : QImage();
+        check(!fillStyleImage.isNull() && !fillColorImage.isNull() && !strokeColorImage.isNull()
+                  && fillStyleImage != fillColorImage && fillColorImage != strokeColorImage,
+              QStringLiteral("填充样式、填充颜色与描边颜色使用彼此不同的图标"));
 
         QMenu* brushWidthMenu = shapeWindow.findChild<QMenu*>(
             QStringLiteral("BrushWidthMenu"));
@@ -2537,35 +2646,35 @@ int runSelfTest(const QString& reportPath)
     }
 
     {
-        MainWindow shapeTemplateWindow;
-        check(shapeTemplateWindow.openTemplateFile(shapeTemplatePath),
-              QStringLiteral("主窗口打开含图形的模板"));
-        check(shapeTemplateWindow.scene()->boardItemCount() == shapeTypes.size(),
-              QStringLiteral("主窗口载入含图形模板完整内容"));
+        MainWindow shapeCanvasWindow;
+        check(shapeCanvasWindow.openCanvasFile(shapeCanvasPath),
+              QStringLiteral("主窗口打开含图形的画布"));
+        check(shapeCanvasWindow.scene()->boardItemCount() == shapeTypes.size(),
+              QStringLiteral("主窗口载入含图形画布完整内容"));
         int loadedShapeCount = 0;
-        for (BoardItem* item : shapeTemplateWindow.scene()->boardItems()) {
+        for (BoardItem* item : shapeCanvasWindow.scene()->boardItems()) {
             if (dynamic_cast<ShapeItem*>(item))
                 ++loadedShapeCount;
         }
         check(loadedShapeCount == shapeTypes.size(),
-              QStringLiteral("主窗口识别模板中的图形图元"));
+              QStringLiteral("主窗口识别画布中的图形图元"));
     }
 
     if (QFileInfo::exists(demoPath)) {
-        MainWindow templateWindow;
-        check(templateWindow.openTemplateFile(demoPath),
-              QStringLiteral("主窗口打开含文字的示例模板"));
-        check(templateWindow.scene()->boardItemCount() == 27
-                  && templateWindow.scene()->userLayerCount() == 3,
-              QStringLiteral("主窗口载入示例模板完整内容"));
+        MainWindow canvasWindow;
+        check(canvasWindow.openCanvasFile(demoPath),
+              QStringLiteral("主窗口打开含文字的示例画布"));
+        check(canvasWindow.scene()->boardItemCount() == 27
+                  && canvasWindow.scene()->userLayerCount() == 3,
+              QStringLiteral("主窗口载入示例画布完整内容"));
         bool hasTextItem = false;
-        for (BoardItem* item : templateWindow.scene()->boardItems()) {
+        for (BoardItem* item : canvasWindow.scene()->boardItems()) {
             if (dynamic_cast<TextItem*>(item)) {
                 hasTextItem = true;
                 break;
             }
         }
-        check(hasTextItem, QStringLiteral("主窗口载入模板中的文字图元"));
+        check(hasTextItem, QStringLiteral("主窗口载入画布中的文字图元"));
     }
 
     // --- 回归：控制点命中、粗描边命中、背景去重、设置颜色持久化 ---
@@ -2729,7 +2838,7 @@ int runSelfTest(const QString& reportPath)
         BoardScene filledLoaded;
         QString filledError;
         check(filledLoaded.fromJson(filledRoot, &filledError),
-              QStringLiteral("填充样式模板反序列化"), filledError);
+              QStringLiteral("填充样式画布反序列化"), filledError);
         ShapeItem* loadedShape = nullptr;
         for (BoardItem* item : filledLoaded.boardItems()) {
             if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
@@ -2739,7 +2848,7 @@ int runSelfTest(const QString& reportPath)
         }
         check(loadedShape && loadedShape->fillStyle() == FillStyle::Hachure
                   && loadedShape->fillColor().alpha() == 160,
-              QStringLiteral("填充样式随模板保存与恢复"));
+              QStringLiteral("填充样式随画布保存与恢复"));
 
         QUndoStack styleUndo;
         BoardScene styleScene;
@@ -3092,7 +3201,7 @@ int runSelfTest(const QString& reportPath)
                   QStringLiteral("leaked=%1 solid=%2").arg(textureLeaked).arg(solidPixels));
         }
 
-        // 需求 13：画板通过拉伸边缘扩大或裁剪，并随模板保存原点。
+        // 需求 13：画板通过拉伸边缘扩大或裁剪，并随画布保存原点。
         QUndoStack boardUndo;
         BoardScene boardScene;
         boardScene.setUndoStack(&boardUndo);
@@ -3144,9 +3253,9 @@ int runSelfTest(const QString& reportPath)
         QString boardError;
         check(boardLoaded.fromJson(boardRoot, &boardError)
                   && boardLoaded.boardRect() == boardScene.boardRect(),
-              QStringLiteral("画板原点随模板保存"), boardError);
+              QStringLiteral("画板原点随画布保存"), boardError);
 
-        // 需求 10：锁定状态随模板保存。
+        // 需求 10：锁定状态随画布保存。
         BoardScene lockScene;
         lockScene.setMode(ToolMode::Edit);
         const int lockLayerId = lockScene.activeLayerId();
@@ -3157,7 +3266,7 @@ int runSelfTest(const QString& reportPath)
         QString lockError;
         check(lockLoaded.fromJson(lockRoot, &lockError)
                   && lockLoaded.isLayerLocked(lockLoaded.activeLayerId()),
-              QStringLiteral("图层锁定状态随模板保存"), lockError);
+              QStringLiteral("图层锁定状态随画布保存"), lockError);
     }
 
     {
@@ -3314,7 +3423,7 @@ int runSelfTest(const QString& reportPath)
     }
 
     {
-        // 需求 28：图层名可编辑，进入撤销栈并随模板持久化。
+        // 需求 28：图层名可编辑，进入撤销栈并随画布持久化。
         BoardScene renameScene;
         QUndoStack renameUndo;
         renameUndo.setUndoLimit(30);
@@ -3340,9 +3449,9 @@ int runSelfTest(const QString& reportPath)
 
         BoardScene reloadedScene;
         check(reloadedScene.fromJson(renameScene.toJson()),
-              QStringLiteral("重命名后的模板可重新载入"));
+              QStringLiteral("重命名后的画布可重新载入"));
         check(reloadedScene.layer(renameLayerId).name == QStringLiteral("终版分镜"),
-              QStringLiteral("图层名持久化到模板"));
+              QStringLiteral("图层名持久化到画布"));
 
         LayerPanel renamePanel(&renameScene);
         auto* renameList = renamePanel.findChild<QListWidget*>(
@@ -3396,7 +3505,7 @@ bool renderDemoBoard(const QString& outputPath)
     return image.save(outputPath);
 }
 
-bool writeDemoTemplate(const QString& outputPath)
+bool writeDemoCanvas(const QString& outputPath)
 {
     BoardScene scene;
     populateDemoScene(scene);

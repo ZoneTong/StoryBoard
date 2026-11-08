@@ -54,6 +54,8 @@ public:
 
     QList<BoardItem*> boardItems() const;
     int boardItemCount() const;
+    // 需求 32：给所有还没有自定义名称的图元补上“类型 1 / 类型 2 …”自动名称。
+    void assignAutoItemNames();
     QList<BoardItem*> selectedBoardItems() const;
 
     static constexpr int BackgroundLayerId = 0;
@@ -143,6 +145,7 @@ protected:
 
 private:
     BoardItem* createItem(const QString& kind) const;
+    QString uniqueItemName(const QString& base, const BoardItem* except = nullptr) const;
     void drawBoardBackground(QPainter* painter, const QRectF& area, bool includeGrid) const;
     void updateItemFlags();
     void applyItemInteraction(BoardItem* item);

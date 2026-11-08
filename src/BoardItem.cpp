@@ -59,7 +59,7 @@ BoardItem::BoardItem(QGraphicsItem* parent)
 QString BoardItem::name() const
 {
     const QString trimmed = m_name.trimmed();
-    return trimmed.isEmpty() ? displayName() : trimmed;
+    return trimmed.isEmpty() ? typeDisplayName() : trimmed;
 }
 
 void BoardItem::setName(const QString& name)

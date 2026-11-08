@@ -36,7 +36,7 @@ TextDialog::TextDialog(QWidget* parent)
     rootLayout->addWidget(m_heading);
 
     auto* hint = new QLabel(
-        uiText(QStringLiteral("Text becomes a separate item on the current layer. It can be moved and resized, and supports undo and template saving.")),
+        uiText(QStringLiteral("Text becomes a separate item on the current layer. It can be moved and resized, and supports undo and canvas saving.")),
         this);
     hint->setObjectName(QStringLiteral("DialogHint"));
     hint->setWordWrap(true);

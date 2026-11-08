@@ -35,6 +35,7 @@ public:
 
     QString kind() const override { return QStringLiteral("text"); }
     QString displayName() const override;
+    QString typeDisplayName() const override;
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& json) override;
     QPainterPath outlineShape() const override;

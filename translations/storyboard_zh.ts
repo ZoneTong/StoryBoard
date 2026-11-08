@@ -68,11 +68,15 @@
     </message>
     <message>
       <source>%1[*] - StoryBoard</source>
-      <translation>%1[*] - StoryBoard 画板</translation>
+      <translation>%1[*] - 画板</translation>
     </message>
     <message>
       <source>&amp;Canvas</source>
       <translation>画板(&amp;C)</translation>
+    </message>
+    <message>
+      <source>&amp;Canvases</source>
+      <translation>画布(&amp;V)</translation>
     </message>
     <message>
       <source>&amp;Edit</source>
@@ -95,20 +99,16 @@
       <translation>样式(&amp;S)</translation>
     </message>
     <message>
-      <source>&amp;Templates</source>
-      <translation>模板(&amp;T)</translation>
-    </message>
-    <message>
       <source>&amp;View</source>
       <translation>视图(&amp;V)</translation>
     </message>
     <message>
-      <source>(Template folder is empty)</source>
-      <translation>（模板文件夹为空）</translation>
+      <source>(Canvas folder is empty)</source>
+      <translation>（画布文件夹为空）</translation>
     </message>
     <message>
-      <source>A small board for freehand strokes, image items, overview navigation, templates and export.</source>
-      <translation>一个支持自由笔画、图片图元、全景查看、模板与导出的小型画板工具。</translation>
+      <source>A lightweight canvas app for freehand strokes, image items, overview navigation, canvas files and export.</source>
+      <translation>一个支持自由笔画、图片图元、全景查看、画布文件与导出的轻量画板应用。</translation>
     </message>
     <message>
       <source>About Qt</source>
@@ -120,7 +120,7 @@
     </message>
     <message>
       <source>About StoryBoard Canvas</source>
-      <translation>关于 StoryBoard 画板</translation>
+      <translation>关于画板</translation>
     </message>
     <message>
       <source>Actual size</source>
@@ -223,28 +223,8 @@
       <translation>蓝色</translation>
     </message>
     <message>
-      <source>Board</source>
-      <translation>画板</translation>
-    </message>
-    <message>
-      <source>Board area</source>
-      <translation>画板区域</translation>
-    </message>
-    <message>
-      <source>Board exported: %1</source>
-      <translation>画板已导出：%1</translation>
-    </message>
-    <message>
       <source>Board settings</source>
       <translation>画板配置</translation>
-    </message>
-    <message>
-      <source>Board size</source>
-      <translation>画板尺寸</translation>
-    </message>
-    <message>
-      <source>Board size: %1 × %2 (undoable)</source>
-      <translation>画板尺寸：%1 × %2（可撤销）</translation>
     </message>
     <message>
       <source>Bold</source>
@@ -303,6 +283,38 @@
       <translation>取消</translation>
     </message>
     <message>
+      <source>Canvas</source>
+      <translation>画布</translation>
+    </message>
+    <message>
+      <source>Canvas area</source>
+      <translation>画布区域</translation>
+    </message>
+    <message>
+      <source>Canvas exported: %1</source>
+      <translation>画布已导出：%1</translation>
+    </message>
+    <message>
+      <source>Canvas opened: %1</source>
+      <translation>画布已打开：%1</translation>
+    </message>
+    <message>
+      <source>Canvas saved: %1</source>
+      <translation>画布已保存：%1</translation>
+    </message>
+    <message>
+      <source>Canvas size</source>
+      <translation>画布尺寸</translation>
+    </message>
+    <message>
+      <source>Canvas size: %1 × %2 (undoable)</source>
+      <translation>画布尺寸：%1 × %2（可撤销）</translation>
+    </message>
+    <message>
+      <source>Canvas storage</source>
+      <translation>画布存储</translation>
+    </message>
+    <message>
       <source>Canvas surround color</source>
       <translation>画布外围颜色</translation>
     </message>
@@ -323,8 +335,8 @@
       <translation>已将 %1 个图元的高度 %2</translation>
     </message>
     <message>
-      <source>Changing the board size does not move existing items; undo restores it.</source>
-      <translation>修改画板尺寸不会移动已有图元，可通过撤销恢复。</translation>
+      <source>Changing the canvas size does not move existing items; undo restores it.</source>
+      <translation>修改画布尺寸不会移动已有图元，可通过撤销恢复。</translation>
     </message>
     <message>
       <source>Check to show this layer, uncheck to hide it</source>
@@ -341,8 +353,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>请先选择导出文件路径。</translation>
     </message>
     <message>
-      <source>Choose an image as the board background</source>
-      <translation>选择一张图片作为画板背景</translation>
+      <source>Choose an image as the canvas background</source>
+      <translation>选择一张图片作为画布背景</translation>
     </message>
     <message>
       <source>Choose background color</source>
@@ -411,11 +423,11 @@ In edit mode, items on visible, unlocked layers can be edited</source>
 %1</translation>
     </message>
     <message>
-      <source>Could not export the board:
+      <source>Could not export the canvas:
 %1
 
 %2</source>
-      <translation>无法导出画板：
+      <translation>无法导出画布：
 %1
 
 %2</translation>
@@ -439,8 +451,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
 %1</translation>
     </message>
     <message>
-      <source>Create an empty board (Ctrl+N)</source>
-      <translation>新建空白画板 (Ctrl+N)</translation>
+      <source>Create an empty canvas (Ctrl+N)</source>
+      <translation>新建空白画布 (Ctrl+N)</translation>
     </message>
     <message>
       <source>Cross hatch</source>
@@ -533,8 +545,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>编辑模式</translation>
     </message>
     <message>
-      <source>Edit mode: items on visible, unlocked layers can be edited · drag or box-select · resize with handles · drag board edges to resize the board · Delete to remove</source>
-      <translation>编辑模式：可见且未锁定图层的图元均可编辑 · 拖拽/框选 · 控制点缩放 · 拖动画板边缘调整画板 · Delete 删除</translation>
+      <source>Edit mode: items on visible, unlocked layers can be edited · drag or box-select · resize with handles · drag canvas edges to resize the canvas · Delete to remove</source>
+      <translation>编辑模式：可见且未锁定图层的图元均可编辑 · 拖拽/框选 · 控制点缩放 · 拖动画布边缘调整画布 · Delete 删除</translation>
     </message>
     <message>
       <source>Edit mode: select, move and resize items (E)</source>
@@ -577,12 +589,12 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>导出为 PNG / JPEG / PDF (Ctrl+E)</translation>
     </message>
     <message>
-      <source>Export board</source>
-      <translation>导出画板</translation>
+      <source>Export canvas</source>
+      <translation>导出画布</translation>
     </message>
     <message>
-      <source>Export board…</source>
-      <translation>导出画板…</translation>
+      <source>Export canvas…</source>
+      <translation>导出画布…</translation>
     </message>
     <message>
       <source>Export complete</source>
@@ -597,23 +609,23 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>导出方式</translation>
     </message>
     <message>
-      <source>Export the current board</source>
-      <translation>导出当前画板</translation>
+      <source>Export the current canvas</source>
+      <translation>导出当前画布</translation>
     </message>
     <message>
       <source>Exported %1 visible layer file(s)</source>
       <translation>已导出 %1 个可见图层文件</translation>
     </message>
     <message>
-      <source>Failed to parse the template file:
+      <source>Failed to parse the canvas file:
 %1</source>
-      <translation>模板文件解析失败：
+      <translation>画布文件解析失败：
 %1</translation>
     </message>
     <message>
-      <source>Failed to save the template:
+      <source>Failed to save the canvas:
 %1</source>
-      <translation>保存模板失败：
+      <translation>保存画布失败：
 %1</translation>
     </message>
     <message>
@@ -961,12 +973,12 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>移到下一层图层</translation>
     </message>
     <message>
-      <source>New board</source>
-      <translation>新建画板</translation>
+      <source>New canvas</source>
+      <translation>新建画布</translation>
     </message>
     <message>
-      <source>New empty board created</source>
-      <translation>已新建空白画板</translation>
+      <source>New empty canvas created</source>
+      <translation>已新建空白画布</translation>
     </message>
     <message>
       <source>New layer</source>
@@ -1005,12 +1017,24 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>确定</translation>
     </message>
     <message>
-      <source>Open a StoryBoard template (Ctrl+O)</source>
-      <translation>打开一个 StoryBoard 模板 (Ctrl+O)</translation>
+      <source>Open a StoryBoard canvas (Ctrl+O)</source>
+      <translation>打开一个 StoryBoard 画布 (Ctrl+O)</translation>
     </message>
     <message>
       <source>Open board settings (Ctrl+,)</source>
       <translation>打开画板配置 (Ctrl+,)</translation>
+    </message>
+    <message>
+      <source>Open canvas</source>
+      <translation>打开画布</translation>
+    </message>
+    <message>
+      <source>Open canvases folder</source>
+      <translation>打开画布文件夹</translation>
+    </message>
+    <message>
+      <source>Open canvas…</source>
+      <translation>打开画布…</translation>
     </message>
     <message>
       <source>Open file</source>
@@ -1019,18 +1043,6 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>Open folder</source>
       <translation>打开文件夹</translation>
-    </message>
-    <message>
-      <source>Open template</source>
-      <translation>打开模板</translation>
-    </message>
-    <message>
-      <source>Open templates folder</source>
-      <translation>打开模板文件夹</translation>
-    </message>
-    <message>
-      <source>Open template…</source>
-      <translation>打开模板…</translation>
     </message>
     <message>
       <source>Orange</source>
@@ -1149,12 +1161,12 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>重命名图层</translation>
     </message>
     <message>
-      <source>Render the board to an image or PDF. The background and items are included (grid and selection outlines are not).</source>
-      <translation>将画板渲染为图片或 PDF，背景与图元会一并导出（不含网格与选中框）。</translation>
+      <source>Render the canvas to an image or PDF. The background and items are included (grid and selection outlines are not).</source>
+      <translation>将画布渲染为图片或 PDF。背景和图元会包含在内（网格和选中框不会）。</translation>
     </message>
     <message>
-      <source>Rendering the board failed: nothing to export.</source>
-      <translation>渲染画板失败，没有可导出的内容。</translation>
+      <source>Rendering the canvas failed: nothing to export.</source>
+      <translation>渲染画布失败：没有可导出的内容。</translation>
     </message>
     <message>
       <source>Replace background</source>
@@ -1169,8 +1181,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>替换背景图片…</translation>
     </message>
     <message>
-      <source>Resize board</source>
-      <translation>调整画板尺寸</translation>
+      <source>Resize canvas</source>
+      <translation>调整画布</translation>
     </message>
     <message>
       <source>Resize item</source>
@@ -1205,28 +1217,28 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>保存</translation>
     </message>
     <message>
-      <source>Save as a template first?</source>
-      <translation>是否先保存为模板？</translation>
+      <source>Save canvas</source>
+      <translation>保存画布</translation>
     </message>
     <message>
-      <source>Save as template</source>
-      <translation>保存为模板</translation>
+      <source>Save canvas as</source>
+      <translation>画布另存为</translation>
     </message>
     <message>
-      <source>Save template</source>
-      <translation>保存模板</translation>
+      <source>Save canvas as…</source>
+      <translation>画布另存为…</translation>
     </message>
     <message>
-      <source>Save template as…</source>
-      <translation>模板另存为…</translation>
+      <source>Save the current canvas (Ctrl+S)</source>
+      <translation>保存当前画布 (Ctrl+S)</translation>
     </message>
     <message>
-      <source>Save the current board as a new template (Ctrl+Shift+S)</source>
-      <translation>将当前画板另存为模板 (Ctrl+Shift+S)</translation>
+      <source>Save the current canvas to a new file (Ctrl+Shift+S)</source>
+      <translation>将当前画布另存为新文件 (Ctrl+Shift+S)</translation>
     </message>
     <message>
-      <source>Save the current board as a template (Ctrl+S)</source>
-      <translation>保存当前画板为模板 (Ctrl+S)</translation>
+      <source>Save this canvas first?</source>
+      <translation>是否先保存当前画布？</translation>
     </message>
     <message>
       <source>Scene title: Evening street
@@ -1322,15 +1334,15 @@ Second line caption</source>
     </message>
     <message>
       <source>StoryBoard Canvas</source>
-      <translation>StoryBoard 画板</translation>
+      <translation>画板</translation>
     </message>
     <message>
-      <source>StoryBoard templates (*.sbboard)</source>
-      <translation>StoryBoard 模板 (*.sbboard)</translation>
+      <source>StoryBoard canvases (*.sbcanvas)</source>
+      <translation>StoryBoard 画布 (*.sbcanvas)</translation>
     </message>
     <message>
-      <source>StoryBoard templates (*.sbboard);;All files (*.*)</source>
-      <translation>StoryBoard 模板 (*.sbboard);;所有文件 (*.*)</translation>
+      <source>StoryBoard canvases (*.sbcanvas);;All files (*.*)</source>
+      <translation>StoryBoard 画布 (*.sbcanvas);;所有文件 (*.*)</translation>
     </message>
     <message>
       <source>Stretch to fill</source>
@@ -1357,18 +1369,6 @@ Second line caption</source>
       <translation>T 文字模式：点击画板添加文字，双击文字可再次编辑</translation>
     </message>
     <message>
-      <source>Template opened: %1</source>
-      <translation>已打开模板：%1</translation>
-    </message>
-    <message>
-      <source>Template saved: %1</source>
-      <translation>模板已保存：%1</translation>
-    </message>
-    <message>
-      <source>Template storage</source>
-      <translation>模板存储</translation>
-    </message>
-    <message>
       <source>Text</source>
       <translation>文字</translation>
     </message>
@@ -1377,8 +1377,8 @@ Second line caption</source>
       <translation>文字内容与样式</translation>
     </message>
     <message>
-      <source>Text becomes a separate item on the current layer. It can be moved and resized, and supports undo and template saving.</source>
-      <translation>文字会作为独立图元加入当前图层，可移动、缩放，支持撤销与模板保存。</translation>
+      <source>Text becomes a separate item on the current layer. It can be moved and resized, and supports undo and canvas saving.</source>
+      <translation>文字会作为独立图元加入当前图层，可移动、缩放，支持撤销与画布保存。</translation>
     </message>
     <message>
       <source>Text color</source>
@@ -1397,12 +1397,12 @@ Second line caption</source>
       <translation>文字模式</translation>
     </message>
     <message>
-      <source>Text mode: click the board to place a text item (T)</source>
-      <translation>文字模式：点击画板放置文字图元 (T)</translation>
+      <source>Text mode: click the canvas to place a text item (T)</source>
+      <translation>文字模式：点击画布放置文字图元 (T)</translation>
     </message>
     <message>
-      <source>Text mode: click the board to place text · set font, size, color and bold/italic</source>
-      <translation>文字模式：点击画板放置文字 · 可设置字体、字号、颜色与粗斜体</translation>
+      <source>Text mode: click the canvas to place text · set font, size, color and bold/italic</source>
+      <translation>文字模式：点击画布放置文字 · 设置字体、字号、颜色和粗体/斜体</translation>
     </message>
     <message>
       <source>Text updated</source>
@@ -1437,16 +1437,20 @@ Use the checkbox to show or hide it.</source>
       <translation>背景图层始终锁定。</translation>
     </message>
     <message>
-      <source>The board size in the template is invalid.</source>
-      <translation>模板中的画板尺寸无效。</translation>
+      <source>The canvas contains an unknown item type: %1</source>
+      <translation>画布中包含未知的图元类型：%1</translation>
     </message>
     <message>
-      <source>The board was exported successfully.</source>
-      <translation>画板已成功导出。</translation>
+      <source>The canvas size in the canvas file is invalid.</source>
+      <translation>画布文件中的画布尺寸无效。</translation>
     </message>
     <message>
-      <source>The current board has unsaved changes.</source>
-      <translation>当前画板有未保存的更改。</translation>
+      <source>The canvas was exported successfully.</source>
+      <translation>画布已导出成功。</translation>
+    </message>
+    <message>
+      <source>The current canvas has unsaved changes.</source>
+      <translation>当前画布有未保存的修改。</translation>
     </message>
     <message>
       <source>The file already exists. Overwrite it?
@@ -1481,20 +1485,16 @@ Use the checkbox to show or hide it.</source>
       <translation>所选图形只支持描边（直线、大括号等），不支持填充</translation>
     </message>
     <message>
-      <source>The template contains an unknown item type: %1</source>
-      <translation>模板中包含未知的图元类型：%1</translation>
-    </message>
-    <message>
       <source>The visible layers were exported successfully.</source>
       <translation>可见图层已成功导出。</translation>
     </message>
     <message>
-      <source>These settings become the defaults for new brushes and boards and are saved automatically.</source>
-      <translation>这里的设置会作为新画笔、新画板的默认值，并自动保存。</translation>
+      <source>These settings become the defaults for new brushes and canvases and are saved automatically.</source>
+      <translation>这些设置会作为新画笔、新画布的默认值，并自动保存。</translation>
     </message>
     <message>
-      <source>This is not a valid StoryBoard template file.</source>
-      <translation>这不是有效的 StoryBoard 模板文件。</translation>
+      <source>This is not a valid StoryBoard canvas file.</source>
+      <translation>这不是有效的 StoryBoard 画布文件。</translation>
     </message>
     <message>
       <source>This layer still contains items. Delete or move them first.</source>
@@ -1533,16 +1533,12 @@ Use the checkbox to show or hide it.</source>
       <translation>未保存的更改</translation>
     </message>
     <message>
-      <source>Untitled board</source>
-      <translation>未命名画板</translation>
+      <source>Untitled canvas</source>
+      <translation>未命名画布</translation>
     </message>
     <message>
-      <source>Untitled template</source>
-      <translation>未命名模板</translation>
-    </message>
-    <message>
-      <source>Use a solid color as the board background</source>
-      <translation>选择纯色作为画板背景</translation>
+      <source>Use a solid color as the canvas background</source>
+      <translation>使用纯色作为画布背景</translation>
     </message>
     <message>
       <source>V View mode: pan / zoom the whole board, automatic overview</source>
@@ -1589,8 +1585,8 @@ Use the checkbox to show or hide it.</source>
       <translation>缩小视图 (Ctrl+-)</translation>
     </message>
     <message>
-      <source>… %1 templates in total</source>
-      <translation>… 共 %1 个模板</translation>
+      <source>… %1 canvases in total</source>
+      <translation>… 共 %1 个画布</translation>
     </message>
   </context>
 </TS>

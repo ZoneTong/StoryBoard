@@ -121,12 +121,18 @@ ItemPropertiesDialog::ItemPropertiesDialog(BoardScene* scene, BoardItem* item, Q
     setModal(true);
     setMinimumWidth(480);
 
+    // 打开属性窗时再兜底一次自动名称：旧画布、直接 addItem 或清空名称后，
+    // 这里也能得到“类型 N”，不会出现看不到名称或名称为空的行。
+    if (scene)
+        scene->assignAutoItemNames();
+
     auto* root = new QVBoxLayout(this);
     root->setContentsMargins(20, 18, 20, 16);
     root->setSpacing(12);
 
-    auto* heading = new QLabel(item ? item->displayName()
+    auto* heading = new QLabel(item ? item->name()
                                     : uiText(QStringLiteral("No item selected")), this);
+    heading->setObjectName(QStringLiteral("ItemPropertiesHeading"));
     heading->setStyleSheet(QStringLiteral("font-size: 15px; font-weight: 600;"));
     root->addWidget(heading);
 
@@ -151,7 +157,7 @@ ItemPropertiesDialog::ItemPropertiesDialog(BoardScene* scene, BoardItem* item, Q
         m_initialSize = item->contentSize();
         m_initialItemName = item->rawName();
         m_initialDisplayName = item->name();
-        auto* typeValue = new QLabel(item->displayName(), this);
+        auto* typeValue = new QLabel(item->typeDisplayName(), this);
         typeValue->setObjectName(QStringLiteral("ItemPropertiesTypeValue"));
         typeValue->setTextInteractionFlags(Qt::TextSelectableByMouse);
         form->addRow(uiText(QStringLiteral("Item type")), typeValue);
@@ -160,7 +166,7 @@ ItemPropertiesDialog::ItemPropertiesDialog(BoardScene* scene, BoardItem* item, Q
         m_nameEdit = new QLineEdit(this);
         m_nameEdit->setObjectName(QStringLiteral("ItemPropertiesNameValue"));
         m_nameEdit->setText(m_initialDisplayName);
-        m_nameEdit->setPlaceholderText(item->displayName());
+        m_nameEdit->setPlaceholderText(item->typeDisplayName());
         form->addRow(uiText(QStringLiteral("Item name")), m_nameEdit);
 
         m_layerCombo = new QComboBox(this);

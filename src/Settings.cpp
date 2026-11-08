@@ -36,8 +36,8 @@ void AppSettings::load()
 
     lastExportDir = settings.value(QStringLiteral("paths/export")).toString();
     lastImageDir = settings.value(QStringLiteral("paths/image")).toString();
-    lastTemplatePath = settings.value(QStringLiteral("paths/template")).toString();
-    templatesDirectory = settings.value(QStringLiteral("paths/templatesDirectory")).toString();
+    lastCanvasPath = settings.value(QStringLiteral("paths/canvas")).toString();
+    canvasesDirectory = settings.value(QStringLiteral("paths/canvasesDirectory")).toString();
     windowGeometry = settings.value(QStringLiteral("window/geometry")).toByteArray();
 }
 
@@ -52,26 +52,32 @@ void AppSettings::save() const
     settings.setValue(QStringLiteral("view/canvasColor"), canvasColor.name(QColor::HexArgb));
     settings.setValue(QStringLiteral("paths/export"), lastExportDir);
     settings.setValue(QStringLiteral("paths/image"), lastImageDir);
-    settings.setValue(QStringLiteral("paths/template"), lastTemplatePath);
-    settings.setValue(QStringLiteral("paths/templatesDirectory"), templatesDirectory);
+    settings.setValue(QStringLiteral("paths/canvas"), lastCanvasPath);
+    settings.setValue(QStringLiteral("paths/canvasesDirectory"), canvasesDirectory);
     settings.setValue(QStringLiteral("window/geometry"), windowGeometry);
 }
 
-QString AppSettings::defaultTemplatesDir()
+QString AppSettings::defaultCanvasesDir()
 {
     const QString base = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    return QDir(base).filePath(QStringLiteral("templates"));
+    return QDir(base).filePath(QStringLiteral("canvases"));
 }
 
-QString AppSettings::templatesDir()
+QString AppSettings::canvasesDir()
 {
-    const QString configured = QSettings().value(QStringLiteral("paths/templatesDirectory")).toString();
-    const QString dir = configured.isEmpty() ? defaultTemplatesDir() : configured;
+    QSettings settings;
+    const QString configured = settings.value(QStringLiteral("paths/canvasesDirectory")).toString();
+    if (!configured.isEmpty()) {
+        QDir().mkpath(configured);
+        return configured;
+    }
+
+    const QString dir = defaultCanvasesDir();
     QDir().mkpath(dir);
     return dir;
 }
 
-void AppSettings::ensureTemplatesDir()
+void AppSettings::ensureCanvasesDir()
 {
-    QDir().mkpath(templatesDir());
+    QDir().mkpath(canvasesDir());
 }

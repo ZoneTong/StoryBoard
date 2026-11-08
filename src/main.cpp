@@ -12,6 +12,7 @@
 #include "TextDialog.h"
 
 #include <QApplication>
+#include <QComboBox>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -58,6 +59,7 @@ QMenu::item:selected { background: #EBF0FF; color: #1F2937; }
 QMenu::item:disabled { color: #A8AFBB; }
 QMenu::separator { height: 1px; background: #EDF0F4; margin: 5px 8px; }
 QToolBar#MainToolBar { background: #FFFFFF; border: none; border-bottom: 1px solid #E3E7EE; spacing: 3px; padding: 6px 10px; }
+QToolBar#BrushToolBar, QToolBar#FillToolBar { background: #FFFFFF; border: none; border-bottom: 1px solid #E3E7EE; spacing: 3px; padding: 6px 4px; }
 QToolBar#ModeToolBar { background: #FFFFFF; border: none; border-right: 1px solid #E3E7EE; spacing: 8px; padding: 12px 7px; }
 QToolBar::separator { background: #E4E8EF; width: 1px; margin: 5px 6px; }
 QToolButton { border: 1px solid transparent; border-radius: 8px; padding: 5px; color: #2B2F36; }
@@ -159,11 +161,11 @@ int main(int argc, char** argv)
         return renderDemoBoard(outputPath) ? 0 : 1;
     }
 
-    if (arguments.contains(QStringLiteral("--demo-template"))) {
-        const QString outputPath = takeOptionPath(arguments, QStringLiteral("--demo-template"));
+    if (arguments.contains(QStringLiteral("--demo-canvas"))) {
+        const QString outputPath = takeOptionPath(arguments, QStringLiteral("--demo-canvas"));
         if (outputPath.isEmpty())
             return 2;
-        return writeDemoTemplate(outputPath) ? 0 : 1;
+        return writeDemoCanvas(outputPath) ? 0 : 1;
     }
 
     if (arguments.contains(QStringLiteral("--ui-screenshot"))) {
@@ -199,6 +201,37 @@ int main(int argc, char** argv)
         dialog.show();
         QApplication::processEvents();
         return dialog.grab().save(outputPath) ? 0 : 1;
+    }
+
+    if (arguments.contains(QStringLiteral("--settings-apply-probe"))) {
+        MainWindow window;
+        window.resize(1000, 700);
+        window.show();
+        QApplication::processEvents();
+        QAction* settingsAction = nullptr;
+        for (QAction* action : window.findChildren<QAction*>()) {
+            if (action->text() == uiText(QStringLiteral("Settings…"))) {
+                settingsAction = action;
+                break;
+            }
+        }
+        if (!settingsAction)
+            return 3;
+        const UiLanguage originalLanguage = uiLanguageSetting();
+        QTimer::singleShot(200, &window, [&window, originalLanguage]() {
+            if (auto* dialog = window.findChild<SettingsDialog*>()) {
+                auto* languageCombo = dialog->findChild<QComboBox*>();
+                if (languageCombo) {
+                    const UiLanguage target = originalLanguage == UiLanguage::Chinese
+                        ? UiLanguage::English : UiLanguage::Chinese;
+                    languageCombo->setCurrentIndex(languageCombo->findData(static_cast<int>(target)));
+                }
+                dialog->accept();
+            }
+        });
+        settingsAction->trigger();
+        setUiLanguageSetting(originalLanguage);
+        return 0;
     }
 
     if (arguments.contains(QStringLiteral("--set-language"))) {
@@ -272,6 +305,7 @@ int main(int argc, char** argv)
 
         BoardScene demoScene;
         populateDemoScene(demoScene);
+        demoScene.assignAutoItemNames();
         demoScene.setMode(ToolMode::Edit);
         BoardItem* target = nullptr;
         for (BoardItem* item : demoScene.boardItems()) {
@@ -353,6 +387,26 @@ int main(int argc, char** argv)
         return shot.save(outputPath) ? 0 : 1;
     }
 
+    if (arguments.contains(QStringLiteral("--fill-style-menu-screenshot"))) {
+        const QString outputPath = takeOptionPath(arguments, QStringLiteral("--fill-style-menu-screenshot"));
+        if (outputPath.isEmpty())
+            return 2;
+
+        MainWindow window;
+        window.resize(1200, 800);
+        window.show();
+        QApplication::processEvents();
+
+        QMenu* menu = window.findChild<QMenu*>(QStringLiteral("FillStyleMenu"));
+        if (!menu)
+            return 3;
+        menu->popup(window.mapToGlobal(QPoint(600, 40)));
+        QApplication::processEvents();
+        const QPixmap shot = menu->grab();
+        menu->hide();
+        return shot.save(outputPath) ? 0 : 1;
+    }
+
     if (arguments.contains(QStringLiteral("--style-menu-screenshot"))) {
         const QString outputPath = takeOptionPath(arguments, QStringLiteral("--style-menu-screenshot"));
         if (outputPath.isEmpty())
@@ -390,20 +444,20 @@ int main(int argc, char** argv)
     window.show();
 
     const QStringList positional = arguments.mid(1);
-    QString templatePath;
+    QString canvasPath;
     for (const QString& argument : positional) {
         if (argument.startsWith(QLatin1Char('-')))
             continue;
         const QString suffix = QFileInfo(argument).suffix().toLower();
         if (QFileInfo::exists(argument)
-            && (suffix == QStringLiteral("sbboard") || suffix == QStringLiteral("json"))) {
-            templatePath = argument;
+            && suffix == QStringLiteral("sbcanvas")) {
+            canvasPath = argument;
             break;
         }
     }
-    if (!templatePath.isEmpty()) {
-        QTimer::singleShot(0, &window, [&window, templatePath]() {
-            window.openTemplateFile(templatePath);
+    if (!canvasPath.isEmpty()) {
+        QTimer::singleShot(0, &window, [&window, canvasPath]() {
+            window.openCanvasFile(canvasPath);
         });
     }
 

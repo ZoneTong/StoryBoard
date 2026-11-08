@@ -14,14 +14,14 @@ public:
     QColor canvasColor = QColor(43, 47, 54);
     QString lastExportDir;
     QString lastImageDir;
-    QString lastTemplatePath;
-    QString templatesDirectory;
+    QString lastCanvasPath;
+    QString canvasesDirectory;
     QByteArray windowGeometry;
 
     void load();
     void save() const;
 
-    static QString defaultTemplatesDir();
-    static QString templatesDir();
-    static void ensureTemplatesDir();
+    static QString defaultCanvasesDir();
+    static QString canvasesDir();
+    static void ensureCanvasesDir();
 };

@@ -31,7 +31,7 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow() override;
 
-    bool openTemplateFile(const QString& path);
+    bool openCanvasFile(const QString& path);
     BoardScene* scene() const { return m_scene; }
     BoardView* view() const { return m_view; }
 
@@ -44,11 +44,11 @@ protected:
     void dropEvent(QDropEvent* event) override;
 
 private slots:
-    void newBoard();
-    void openTemplateDialog();
-    bool saveTemplate();
-    bool saveTemplateAs();
-    void exportBoard();
+    void newCanvas();
+    void openCanvasDialog();
+    bool saveCanvas();
+    bool saveCanvasAs();
+    void exportCanvas();
     void importImagesDialog();
     void insertTextAt(const QPointF& scenePos);
     void editTextItem(TextItem* item);
@@ -64,7 +64,7 @@ private slots:
     void updateActions();
     void updateStatusBar();
     void updateModeUi();
-    void openTemplatesFolder();
+    void openCanvasesFolder();
 
 private:
     void createActions();
@@ -76,7 +76,7 @@ private:
     void connectSignals();
 
     bool maybeSave();
-    bool loadTemplateFile(const QString& path, bool showErrors);
+    bool loadCanvasFile(const QString& path, bool showErrors);
     bool saveToFile(const QString& path);
     bool exportToFile(const QString& path, const QRectF& area, qreal scale, const QString& format,
                       bool showCompletion = true, int layerId = -1);
@@ -89,7 +89,7 @@ private:
     void updateFillActions();
     void setBrushColor(const QColor& color, bool remember);
     void setBrushWidthUi(int width);
-    void updateTemplateMenu();
+    void updateCanvasesMenu();
     void updateBackgroundModeActions();
     void showSelectedItemProperties();
     void showItemProperties(BoardItem* item);
@@ -153,7 +153,7 @@ private:
     QActionGroup* m_backgroundModeGroup = nullptr;
     QActionGroup* m_fillStyleGroup = nullptr;
     QActionGroup* m_brushWidthGroup = nullptr;
-    QMenu* m_templatesMenu = nullptr;
+    QMenu* m_canvasesMenu = nullptr;
     QMenu* m_shapeMenu = nullptr;
 
     QDockWidget* m_layerDock = nullptr;

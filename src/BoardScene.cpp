@@ -203,7 +203,7 @@ void BoardScene::commitBoardRect(const QRectF& before)
         return;
     if (m_undoStack)
         m_undoStack->push(new BoardSizeCommand(this, before, after,
-                                              uiText(QStringLiteral("Resize board"))));
+                                              uiText(QStringLiteral("Resize canvas"))));
 }
 
 void BoardScene::applyBackground(const BackgroundState& background)
@@ -749,7 +749,7 @@ void BoardScene::applyLayerStateInternal(const LayerStackState& state, bool pres
 
     // 锁定状态刻意不进入撤销栈：撤销/重做图层操作（新建、删除、排序、显隐）
     // 不应该顺带改变某一层的锁定。这里用同 id 的旧快照把 locked 覆盖回来；
-    // 但从模板载入时要保留文件里的锁定状态，因此传入 preserveLock=false。
+    // 但从画布载入时要保留文件里的锁定状态，因此传入 preserveLock=false。
     if (preserveLock) {
         for (BoardLayer& entry : m_layers) {
             for (const BoardLayer& previous : previousLayers) {
@@ -1188,6 +1188,33 @@ void BoardScene::commitNewItem(BoardItem* item, const QString& text)
     addItemsWithUndo({ item }, text);
 }
 
+QString BoardScene::uniqueItemName(const QString& base, const BoardItem* except) const
+{
+    const QString typeName = base.trimmed();
+    const QString prefix = typeName + QLatin1Char(' ');
+    int maxSuffix = 0;
+    for (BoardItem* item : boardItems()) {
+        if (!item || item == except)
+            continue;
+        const QString existing = item->rawName();
+        if (!existing.startsWith(prefix))
+            continue;
+        bool ok = false;
+        const int value = existing.mid(prefix.size()).toInt(&ok);
+        if (ok && value > 0)
+            maxSuffix = qMax(maxSuffix, value);
+    }
+    return QStringLiteral("%1 %2").arg(typeName).arg(maxSuffix + 1);
+}
+
+void BoardScene::assignAutoItemNames()
+{
+    for (BoardItem* item : boardItems()) {
+        if (item && item->rawName().isEmpty())
+            item->setName(uniqueItemName(item->typeDisplayName(), item));
+    }
+}
+
 void BoardScene::attachItem(BoardItem* item)
 {
     if (!item)
@@ -1204,6 +1231,8 @@ void BoardScene::attachItem(BoardItem* item)
         const int height = nextHeight(item->layerId());
         item->setHeight(height >= 0 ? height : 0);
     }
+    if (item->rawName().isEmpty())
+        item->setName(uniqueItemName(item->typeDisplayName(), item));
     applyItemStacking(item);
     applyItemInteraction(item);
 
@@ -1336,16 +1365,16 @@ BoardItem* BoardScene::createItem(const QString& kind) const
 QJsonObject BoardScene::toJson() const
 {
     QJsonObject root;
-    root.insert(QStringLiteral("format"), QStringLiteral("StoryBoard"));
+    root.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
     root.insert(QStringLiteral("version"), 2);
     root.insert(QStringLiteral("generator"), QStringLiteral("StoryBoard 0.2"));
 
-    QJsonObject board;
-    board.insert(QStringLiteral("x"), m_boardOrigin.x());
-    board.insert(QStringLiteral("y"), m_boardOrigin.y());
-    board.insert(QStringLiteral("width"), m_boardSize.width());
-    board.insert(QStringLiteral("height"), m_boardSize.height());
-    root.insert(QStringLiteral("board"), board);
+    QJsonObject canvas;
+    canvas.insert(QStringLiteral("x"), m_boardOrigin.x());
+    canvas.insert(QStringLiteral("y"), m_boardOrigin.y());
+    canvas.insert(QStringLiteral("width"), m_boardSize.width());
+    canvas.insert(QStringLiteral("height"), m_boardSize.height());
+    root.insert(QStringLiteral("canvas"), canvas);
 
     QJsonObject background;
     switch (m_background.type) {
@@ -1393,19 +1422,19 @@ bool BoardScene::fromJson(const QJsonObject& root, QString* errorMessage)
         return false;
     };
 
-    if (root.value(QStringLiteral("format")).toString() != QStringLiteral("StoryBoard"))
-        return fail(uiText(QStringLiteral("This is not a valid StoryBoard template file.")));
+    if (root.value(QStringLiteral("format")).toString() != QStringLiteral("StoryBoardCanvas"))
+        return fail(uiText(QStringLiteral("This is not a valid StoryBoard canvas file.")));
 
-    const QJsonObject board = root.value(QStringLiteral("board")).toObject();
-    // 画板尺寸允许带小数（拖拽边缘时通常不是整数），这里不能用 toInt()。
-    const qreal width = board.value(QStringLiteral("width")).toDouble(0.0);
-    const qreal height = board.value(QStringLiteral("height")).toDouble(0.0);
+    const QJsonObject canvas = root.value(QStringLiteral("canvas")).toObject();
+    // 画布尺寸允许带小数（拖拽边缘时通常不是整数），这里不能用 toInt()。
+    const qreal width = canvas.value(QStringLiteral("width")).toDouble(0.0);
+    const qreal height = canvas.value(QStringLiteral("height")).toDouble(0.0);
     if (width <= 0.0 || height <= 0.0)
-        return fail(uiText(QStringLiteral("The board size in the template is invalid.")));
+        return fail(uiText(QStringLiteral("The canvas size in the canvas file is invalid.")));
 
     resetDocument();
-    applyBoardRect(QRectF(board.value(QStringLiteral("x")).toDouble(0.0),
-                          board.value(QStringLiteral("y")).toDouble(0.0),
+    applyBoardRect(QRectF(canvas.value(QStringLiteral("x")).toDouble(0.0),
+                          canvas.value(QStringLiteral("y")).toDouble(0.0),
                           width, height));
 
     BackgroundState background;
@@ -1426,72 +1455,53 @@ bool BoardScene::fromJson(const QJsonObject& root, QString* errorMessage)
     }
     applyBackground(background);
 
-    const bool hasLayerData = root.value(QStringLiteral("layers")).isArray();
     const QJsonArray rawItems = root.value(QStringLiteral("items")).toArray();
     QList<QJsonObject> itemObjects;
     itemObjects.reserve(rawItems.size());
     for (const QJsonValue& value : rawItems)
         itemObjects.append(value.toObject());
 
-    if (!hasLayerData) {
-        // Version 1 templates only carried a global z value. Keep their visual
-        // order by sorting on z and placing everything on layer 1.
-        std::stable_sort(itemObjects.begin(), itemObjects.end(),
-                         [](const QJsonObject& a, const QJsonObject& b) {
-                             return a.value(QStringLiteral("z")).toDouble()
-                                 < b.value(QStringLiteral("z")).toDouble();
-                         });
-    }
+    const QJsonArray layerArray = root.value(QStringLiteral("layers")).toArray();
+    if (!root.value(QStringLiteral("layers")).isArray() || layerArray.isEmpty())
+        return fail(uiText(QStringLiteral("This is not a valid StoryBoard canvas file.")));
 
     LayerStackState state;
-    state.layers = {
-        { BackgroundLayerId, kBackgroundLayerName, true, true },
-        { kFirstUserLayerId, QStringLiteral("图层 1"), true, false }
-    };
-    state.activeLayerId = kFirstUserLayerId;
-    if (hasLayerData) {
-        bool backgroundVisible = true;
-        state.layers.clear();
-        state.layers.append({ BackgroundLayerId, kBackgroundLayerName, true, true });
-        const QJsonArray layerArray = root.value(QStringLiteral("layers")).toArray();
-        QSet<int> used;
-        used.insert(BackgroundLayerId);
-        for (const QJsonValue& value : layerArray) {
-            const QJsonObject layerJson = value.toObject();
-            const int id = layerJson.value(QStringLiteral("id")).toInt();
-            if (id == BackgroundLayerId) {
-                backgroundVisible = layerJson.value(QStringLiteral("visible")).toBool(true);
-                continue;
-            }
-            if (id <= 0 || used.contains(id))
-                continue;
-            BoardLayer entry;
-            entry.id = id;
-            entry.name = layerJson.value(QStringLiteral("name")).toString().trimmed();
-            entry.visible = layerJson.value(QStringLiteral("visible")).toBool(true);
-            entry.locked = layerJson.value(QStringLiteral("locked")).toBool(false);
-            if (entry.name.isEmpty())
-                entry.name = QStringLiteral("图层 %1").arg(id);
-            state.layers.append(entry);
-            used.insert(id);
+    bool backgroundVisible = true;
+    state.layers.append({ BackgroundLayerId, kBackgroundLayerName, true, true });
+    QSet<int> used;
+    used.insert(BackgroundLayerId);
+    for (const QJsonValue& value : layerArray) {
+        const QJsonObject layerJson = value.toObject();
+        const int id = layerJson.value(QStringLiteral("id")).toInt();
+        if (id == BackgroundLayerId) {
+            backgroundVisible = layerJson.value(QStringLiteral("visible")).toBool(true);
+            continue;
         }
-        state.layers[0].visible = backgroundVisible;
-        state.activeLayerId = root.value(QStringLiteral("activeLayer")).toInt(kFirstUserLayerId);
+        if (id <= 0 || used.contains(id))
+            continue;
+        BoardLayer entry;
+        entry.id = id;
+        entry.name = layerJson.value(QStringLiteral("name")).toString().trimmed();
+        entry.visible = layerJson.value(QStringLiteral("visible")).toBool(true);
+        entry.locked = layerJson.value(QStringLiteral("locked")).toBool(false);
+        if (entry.name.isEmpty())
+            entry.name = QStringLiteral("图层 %1").arg(id);
+        state.layers.append(entry);
+        used.insert(id);
     }
+    state.layers[0].visible = backgroundVisible;
+    state.activeLayerId = root.value(QStringLiteral("activeLayer")).toInt(kFirstUserLayerId);
 
-    // Accept templates that reference a layer but omitted it from the layer
-    // array: materialize the missing layer instead of dropping the item.
-    if (hasLayerData) {
-        for (const QJsonObject& itemJson : std::as_const(itemObjects)) {
-            const int layerId = itemJson.value(QStringLiteral("layer")).toInt();
-            if (layerId <= 0)
-                continue;
-            const bool exists = std::any_of(
-                state.layers.cbegin(), state.layers.cend(),
-                [layerId](const BoardLayer& entry) { return entry.id == layerId; });
-            if (!exists)
-                state.layers.append({ layerId, QStringLiteral("图层 %1").arg(layerId) });
-        }
+    // 图元引用了未出现在图层数组中的图层时，补出该图层，避免图元丢失。
+    for (const QJsonObject& itemJson : std::as_const(itemObjects)) {
+        const int layerId = itemJson.value(QStringLiteral("layer")).toInt();
+        if (layerId <= 0)
+            continue;
+        const bool exists = std::any_of(
+            state.layers.cbegin(), state.layers.cend(),
+            [layerId](const BoardLayer& entry) { return entry.id == layerId; });
+        if (!exists)
+            state.layers.append({ layerId, QStringLiteral("图层 %1").arg(layerId) });
     }
 
     applyLayerStateInternal(sanitizedLayerState(state), false);
@@ -1502,17 +1512,17 @@ bool BoardScene::fromJson(const QJsonObject& root, QString* errorMessage)
         BoardItem* item = createItem(kind);
         if (!item) {
             resetDocument();
-            return fail(uiText(QStringLiteral("The template contains an unknown item type: %1")).arg(kind));
+            return fail(uiText(QStringLiteral("The canvas contains an unknown item type: %1")).arg(kind));
         }
         item->fromJson(itemJson);
-        if (!hasLayerData) {
-            item->setLayerId(kFirstUserLayerId);
-            item->setHeight(i + 1);
-        } else if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId) {
+        if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId) {
             item->setLayerId(m_activeLayerId);
         }
         addItem(item);
     }
+
+    // 旧画布没有 itemName；补自动名称，保证重新保存后每个图元都有“类型 N”。
+    assignAutoItemNames();
 
     // Assign heights for new-format items that omitted the property, then
     // normalize any duplicate heights in a layer while keeping their order.
@@ -1533,7 +1543,7 @@ bool BoardScene::fromJson(const QJsonObject& root, QString* errorMessage)
         nextHeights[item->layerId()] = qMin(kMaxItemHeight, next + 1);
     }
 
-    // Enforce the template invariant: every layer has one item per height.
+    // Enforce the canvas invariant: every layer has one item per height.
     // The stable sort inside normalizeLayerHeights preserves the stored order
     // when duplicate values are repaired.
     normalizeAllHeights();

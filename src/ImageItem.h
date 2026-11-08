@@ -12,6 +12,7 @@ public:
 
     QString kind() const override { return QStringLiteral("image"); }
     QString displayName() const override;
+    QString typeDisplayName() const override;
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& json) override;
 

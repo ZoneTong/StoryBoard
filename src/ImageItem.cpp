@@ -15,6 +15,11 @@ QString ImageItem::displayName() const
     return m_name.isEmpty() ? uiText(QStringLiteral("Image")) : m_name;
 }
 
+QString ImageItem::typeDisplayName() const
+{
+    return uiText(QStringLiteral("Image"));
+}
+
 void ImageItem::setImage(const QPixmap& pixmap, const QString& name)
 {
     m_pixmap = pixmap;

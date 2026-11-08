@@ -38,6 +38,11 @@ QString TextItem::displayName() const
                              : uiText(QStringLiteral("Text: %1")).arg(snippet);
 }
 
+QString TextItem::typeDisplayName() const
+{
+    return uiText(QStringLiteral("Text"));
+}
+
 QSizeF TextItem::measure(const QString& text, const QFont& font)
 {
     const QFont effective = normalizedFont(font);

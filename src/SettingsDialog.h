@@ -26,7 +26,7 @@ private:
     bool pickColor(QColor& target, const QString& title, bool allowAlpha);
     void refreshColorButton(QPushButton* button, const QColor& color);
     void resetToDefaults();
-    void openTemplatesFolder();
+    void openCanvasesFolder();
 
     AppSettings m_settings;
     QPushButton* m_brushColorButton = nullptr;

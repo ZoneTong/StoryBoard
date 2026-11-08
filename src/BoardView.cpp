@@ -287,7 +287,7 @@ void BoardView::mousePressEvent(QMouseEvent* event)
                     continue;
                 suspended.append({ boardItem,
                                    boardItem->acceptedMouseButtons(),
-                                   boardItem->flags() & QGraphicsItem::ItemIsSelectable });
+                                   boardItem->flags().testFlag(QGraphicsItem::ItemIsSelectable) });
                 boardItem->setFlag(QGraphicsItem::ItemIsSelectable, false);
                 boardItem->setAcceptedMouseButtons(Qt::NoButton);
             }
@@ -440,7 +440,7 @@ void BoardView::contextMenuEvent(QContextMenuEvent* event)
     QMenu menu(this);
     QAction* title = menu.addAction(
         QStringLiteral("%1 · %2 · height %3")
-            .arg(item->displayName(), itemLayer.name)
+            .arg(item->name(), itemLayer.name)
             .arg(item->height()));
     title->setEnabled(false);
     menu.addSeparator();
@@ -756,7 +756,7 @@ void BoardView::endBoardResize()
     m_boardHandle = BoardHandle::None;
     m_scene->commitBoardRect(m_resizeStartRect);
     const QSizeF size = m_scene->boardSize();
-    emit statusMessage(uiText(QStringLiteral("Board size: %1 × %2 (undoable)"))
+    emit statusMessage(uiText(QStringLiteral("Canvas size: %1 × %2 (undoable)"))
                            .arg(qRound(size.width()))
                            .arg(qRound(size.height())));
     updateCursor();

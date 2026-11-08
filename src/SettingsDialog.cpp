@@ -39,7 +39,7 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
     title->setObjectName(QStringLiteral("DialogTitle"));
     rootLayout->addWidget(title);
 
-    auto* hint = new QLabel(uiText(QStringLiteral("These settings become the defaults for new brushes and boards and are saved automatically.")), this);
+    auto* hint = new QLabel(uiText(QStringLiteral("These settings become the defaults for new brushes and canvases and are saved automatically.")), this);
     hint->setObjectName(QStringLiteral("DialogHint"));
     rootLayout->addWidget(hint);
 
@@ -74,7 +74,7 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
 
     rootLayout->addWidget(brushGroup);
 
-    auto* boardGroup = new QGroupBox(uiText(QStringLiteral("Board")), this);
+    auto* boardGroup = new QGroupBox(uiText(QStringLiteral("Canvas")), this);
     auto* boardForm = new QFormLayout(boardGroup);
     boardForm->setContentsMargins(16, 18, 16, 16);
     boardForm->setSpacing(10);
@@ -95,7 +95,7 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
     sizeRow->addWidget(m_boardWidthSpin, 1);
     sizeRow->addWidget(multiply);
     sizeRow->addWidget(m_boardHeightSpin, 1);
-    boardForm->addRow(uiText(QStringLiteral("Board size")), sizeRow);
+    boardForm->addRow(uiText(QStringLiteral("Canvas size")), sizeRow);
 
     m_gridCheck = new QCheckBox(uiText(QStringLiteral("Show helper grid")), boardGroup);
     m_gridCheck->setChecked(m_settings.showGrid);
@@ -105,24 +105,24 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
     m_canvasColorButton->setIconSize(QSize(18, 18));
     boardForm->addRow(uiText(QStringLiteral("Canvas surround color")), m_canvasColorButton);
 
-    auto* boardHint = new QLabel(uiText(QStringLiteral("Changing the board size does not move existing items; undo restores it.")), boardGroup);
+    auto* boardHint = new QLabel(uiText(QStringLiteral("Changing the canvas size does not move existing items; undo restores it.")), boardGroup);
     boardHint->setObjectName(QStringLiteral("DialogHint"));
     boardHint->setWordWrap(true);
     boardForm->addRow(QString(), boardHint);
 
     rootLayout->addWidget(boardGroup);
 
-    auto* storageGroup = new QGroupBox(uiText(QStringLiteral("Template storage")), this);
+    auto* storageGroup = new QGroupBox(uiText(QStringLiteral("Canvas storage")), this);
     auto* storageLayout = new QHBoxLayout(storageGroup);
     storageLayout->setContentsMargins(16, 18, 16, 16);
     storageLayout->setSpacing(10);
-    const QString templatesDir = m_settings.templatesDirectory.isEmpty()
-        ? AppSettings::defaultTemplatesDir()
-        : m_settings.templatesDirectory;
-    auto* pathEdit = new QLineEdit(QDir::toNativeSeparators(templatesDir), storageGroup);
+    const QString canvasesDir = m_settings.canvasesDirectory.isEmpty()
+        ? AppSettings::defaultCanvasesDir()
+        : m_settings.canvasesDirectory;
+    auto* pathEdit = new QLineEdit(QDir::toNativeSeparators(canvasesDir), storageGroup);
     pathEdit->setReadOnly(true);
     pathEdit->setCursorPosition(0);
-    pathEdit->setToolTip(QDir::toNativeSeparators(templatesDir));
+    pathEdit->setToolTip(QDir::toNativeSeparators(canvasesDir));
     auto* openButton = new QPushButton(uiText(QStringLiteral("Open folder")), storageGroup);
     storageLayout->addWidget(pathEdit, 1);
     storageLayout->addWidget(openButton);
@@ -151,7 +151,7 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
         if (pickColor(color, uiText(QStringLiteral("Choose canvas surround color")), false))
             setCanvasColor(color);
     });
-    connect(openButton, &QPushButton::clicked, this, &SettingsDialog::openTemplatesFolder);
+    connect(openButton, &QPushButton::clicked, this, &SettingsDialog::openCanvasesFolder);
     connect(buttons, &QDialogButtonBox::accepted, this, [this]() {
         m_settings.brushWidth = m_brushWidthSpin->value();
         m_settings.boardSize = QSizeF(m_boardWidthSpin->value(), m_boardHeightSpin->value());
@@ -189,7 +189,9 @@ void SettingsDialog::setCanvasColor(const QColor& color)
 
 bool SettingsDialog::pickColor(QColor& target, const QString& title, bool allowAlpha)
 {
-    QColorDialog::ColorDialogOptions options;
+    // 使用 Qt 自绘颜色窗，避免 Windows 原生颜色对话框在部分会话/显卡驱动下
+    // 进入嵌套模态循环后触发 0xc0000005（打开设置窗后点颜色时崩溃）。
+    QColorDialog::ColorDialogOptions options = QColorDialog::DontUseNativeDialog;
     if (allowAlpha)
         options |= QColorDialog::ShowAlphaChannel;
     const QColor color = QColorDialog::getColor(target, this, title, options);
@@ -221,11 +223,11 @@ UiLanguage SettingsDialog::language() const
     return static_cast<UiLanguage>(m_languageCombo->currentData().toInt());
 }
 
-void SettingsDialog::openTemplatesFolder()
+void SettingsDialog::openCanvasesFolder()
 {
-    const QString dir = m_settings.templatesDirectory.isEmpty()
-        ? AppSettings::defaultTemplatesDir()
-        : m_settings.templatesDirectory;
+    const QString dir = m_settings.canvasesDirectory.isEmpty()
+        ? AppSettings::defaultCanvasesDir()
+        : m_settings.canvasesDirectory;
     QDir().mkpath(dir);
     QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
 }
