@@ -18,6 +18,7 @@ public:
     void setImage(const QPixmap& pixmap, const QString& name = QString());
     QPixmap image() const { return m_pixmap; }
     QString imageName() const { return m_name; }
+    void setImageName(const QString& name);
 
 protected:
     void paintContent(QPainter* painter) override;

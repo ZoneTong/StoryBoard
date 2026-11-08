@@ -661,6 +661,29 @@ bool BoardScene::moveLayerWithUndo(int layerId, int delta)
     return true;
 }
 
+bool BoardScene::renameLayerWithUndo(int layerId, const QString& name)
+{
+    const int index = layerIndex(layerId);
+    if (index <= 0)
+        return false;
+
+    const QString trimmed = name.trimmed();
+    if (trimmed.isEmpty() || m_layers.at(index).name == trimmed)
+        return false;
+
+    const LayerStackState before = layerState();
+    LayerStackState after = before;
+    after.layers[index].name = trimmed;
+
+    const QString text = uiText(QStringLiteral("Rename layer"));
+    if (m_undoStack) {
+        m_undoStack->push(new LayerStateCommand(this, before, after, text));
+    } else {
+        applyLayerStateInternal(after);
+    }
+    return true;
+}
+
 LayerStackState BoardScene::layerState() const
 {
     LayerStackState state;
@@ -1560,6 +1583,26 @@ QImage BoardScene::renderImage(const QRectF& area, qreal scale)
     m_exporting = false;
 
     painter.end();
+    return image;
+}
+
+QImage BoardScene::renderLayerImage(const QRectF& area, qreal scale, int layerId)
+{
+    if (!hasLayer(layerId))
+        return QImage();
+
+    const QList<BoardItem*> items = boardItems();
+    QList<bool> previousVisibility;
+    previousVisibility.reserve(items.size());
+    for (BoardItem* item : items) {
+        previousVisibility.append(item->isVisible());
+        item->setVisible(item->layerId() == layerId && isLayerVisible(layerId));
+    }
+
+    QImage image = renderImage(area, scale);
+
+    for (int i = 0; i < items.size() && i < previousVisibility.size(); ++i)
+        items.at(i)->setVisible(previousVisibility.at(i));
     return image;
 }
 

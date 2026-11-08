@@ -2,21 +2,31 @@
 
 #include "BoardItem.h"
 #include "BoardScene.h"
+#include "Commands.h"
 #include "I18n.h"
+#include "IconFactory.h"
 #include "ImageItem.h"
 #include "ShapeItem.h"
 #include "StrokeItem.h"
 #include "TextItem.h"
 
+#include <QColorDialog>
+#include <QComboBox>
 #include <QDialogButtonBox>
+#include <QDoubleSpinBox>
+#include <QFontDialog>
 #include <QFontInfo>
 #include <QFormLayout>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QPixmap>
+#include <QLineEdit>
 #include <QPushButton>
+#include <QSpinBox>
+#include <QToolButton>
 #include <QVBoxLayout>
+
+#include <utility>
 
 namespace {
 
@@ -27,26 +37,75 @@ QString number(qreal value)
 
 QString colorText(const QColor& color)
 {
-    return color.isValid() ? color.name(QColor::HexArgb) : QStringLiteral("—");
+    return color.isValid() ? color.name(QColor::HexArgb).toUpper() : QStringLiteral("—");
 }
 
-QWidget* makeColorValue(const QColor& color)
+QString fontText(const QFont& font)
 {
-    auto* field = new QWidget;
+    const QFontInfo info(font);
+    const QString size = font.pointSizeF() > 0
+        ? uiText(QStringLiteral("%1 pt")).arg(number(font.pointSizeF()))
+        : uiText(QStringLiteral("%1 px")).arg(font.pixelSize());
+    return uiText(QStringLiteral("%1 · %2")).arg(info.family(), size);
+}
+
+void refreshColorButton(QToolButton* button)
+{
+    const QColor color = button->property("itemColor").value<QColor>();
+    button->setIcon(makeColorIcon(color.isValid() ? color : QColor(Qt::transparent), 18));
+    button->setText(colorText(color));
+    button->setToolTip(colorText(color));
+}
+
+QToolButton* makeColorField(QWidget* parent, const QColor& color, const QString& objectName)
+{
+    auto* button = new QToolButton(parent);
+    button->setObjectName(objectName);
+    button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    button->setMinimumWidth(118);
+    button->setProperty("itemColor", color);
+    refreshColorButton(button);
+
+    QObject::connect(button, &QToolButton::clicked, button, [button]() {
+        const QColor initial = button->property("itemColor").value<QColor>();
+        const QColor chosen = QColorDialog::getColor(initial, button,
+                                                     uiText(QStringLiteral("Choose color")),
+                                                     QColorDialog::ShowAlphaChannel);
+        if (!chosen.isValid())
+            return;
+        button->setProperty("itemColor", chosen);
+        refreshColorButton(button);
+    });
+    return button;
+}
+
+QDoubleSpinBox* makeSpin(QWidget* parent, const QString& objectName,
+                         qreal minimum, qreal maximum)
+{
+    auto* spin = new QDoubleSpinBox(parent);
+    spin->setObjectName(objectName);
+    spin->setDecimals(1);
+    spin->setRange(minimum, maximum);
+    spin->setSingleStep(1.0);
+    spin->setKeyboardTracking(false);
+    spin->setMinimumWidth(88);
+    return spin;
+}
+
+QWidget* makePairField(QWidget* parent, const QString& objectName,
+                       QDoubleSpinBox* first, QDoubleSpinBox* second,
+                       const QString& separator)
+{
+    auto* field = new QWidget(parent);
+    field->setObjectName(objectName);
     auto* layout = new QHBoxLayout(field);
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(8);
-
-    auto* swatch = new QLabel(field);
-    QPixmap pixmap(16, 16);
-    pixmap.fill(color.isValid() ? color : QColor(Qt::transparent));
-    swatch->setPixmap(pixmap);
-    swatch->setFixedSize(16, 16);
-    swatch->setStyleSheet(QStringLiteral("border: 1px solid rgb(180, 186, 196);"));
-    layout->addWidget(swatch);
-
-    auto* text = new QLabel(colorText(color), field);
-    layout->addWidget(text);
+    layout->setSpacing(6);
+    layout->addWidget(first);
+    auto* label = new QLabel(separator, field);
+    label->setAlignment(Qt::AlignCenter);
+    layout->addWidget(label);
+    layout->addWidget(second);
     layout->addStretch(1);
     return field;
 }
@@ -60,7 +119,7 @@ ItemPropertiesDialog::ItemPropertiesDialog(BoardScene* scene, BoardItem* item, Q
 {
     setWindowTitle(uiText(QStringLiteral("Item properties")));
     setModal(true);
-    setMinimumWidth(430);
+    setMinimumWidth(480);
 
     auto* root = new QVBoxLayout(this);
     root->setContentsMargins(20, 18, 20, 16);
@@ -83,66 +142,310 @@ ItemPropertiesDialog::ItemPropertiesDialog(BoardScene* scene, BoardItem* item, Q
     form->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
     if (!item) {
-        addRow(form, uiText(QStringLiteral("Item type")), QStringLiteral("—"));
+        auto* typeValue = new QLabel(QStringLiteral("—"), this);
+        typeValue->setObjectName(QStringLiteral("ItemPropertiesTypeValue"));
+        form->addRow(uiText(QStringLiteral("Item type")), typeValue);
         root->addLayout(form);
     } else {
-        addRow(form, uiText(QStringLiteral("Item type")), item->displayName());
-        addRow(form, uiText(QStringLiteral("Layer")), layerDescription(scene, item->layerId()),
-               QStringLiteral("ItemPropertiesLayerValue"));
-        addRow(form, uiText(QStringLiteral("Height")), QString::number(item->height()),
-               QStringLiteral("ItemPropertiesHeightValue"));
+        m_initialPos = item->pos();
+        m_initialSize = item->contentSize();
+        auto* typeValue = new QLabel(item->displayName(), this);
+        typeValue->setObjectName(QStringLiteral("ItemPropertiesTypeValue"));
+        typeValue->setTextInteractionFlags(Qt::TextSelectableByMouse);
+        form->addRow(uiText(QStringLiteral("Item type")), typeValue);
 
-        if (const auto* shape = dynamic_cast<const ShapeItem*>(item)) {
+        m_layerCombo = new QComboBox(this);
+        m_layerCombo->setObjectName(QStringLiteral("ItemPropertiesLayerValue"));
+        m_layerCombo->setMinimumWidth(220);
+        if (scene) {
+            for (const BoardLayer& layer : scene->userLayers())
+                m_layerCombo->addItem(layerDescription(scene, layer.id), layer.id);
+        }
+        const int layerIndex = m_layerCombo->findData(item->layerId());
+        if (layerIndex >= 0)
+            m_layerCombo->setCurrentIndex(layerIndex);
+        form->addRow(uiText(QStringLiteral("Layer")), m_layerCombo);
+
+        m_heightSpin = new QSpinBox(this);
+        m_heightSpin->setObjectName(QStringLiteral("ItemPropertiesHeightValue"));
+        m_heightSpin->setRange(1, 999999);
+        m_heightSpin->setKeyboardTracking(false);
+        m_heightSpin->setValue(qMax(1, item->height()));
+        form->addRow(uiText(QStringLiteral("Height")), m_heightSpin);
+
+        if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
             const bool filled = shapeTypeIsFilled(shape->shapeType());
-            addRow(form, uiText(QStringLiteral("Fill style")),
-                   filled ? fillStyleName(shape->fillStyle()) : uiText(QStringLiteral("Not applicable")),
-                   QStringLiteral("ItemPropertiesFillStyleValue"));
-            if (filled)
-                addColorRow(form, uiText(QStringLiteral("Fill color")), shape->fillColor(),
-                            QStringLiteral("ItemPropertiesFillColorValue"));
-            else
-                addRow(form, uiText(QStringLiteral("Fill color")),
-                       uiText(QStringLiteral("Not applicable")),
-                       QStringLiteral("ItemPropertiesFillColorValue"));
-            addColorRow(form, uiText(QStringLiteral("Stroke color")), shape->strokeColor());
-            addRow(form, uiText(QStringLiteral("Stroke width")),
-                   uiText(QStringLiteral("%1 px")).arg(number(shape->strokeWidth())));
-        } else if (const auto* stroke = dynamic_cast<const StrokeItem*>(item)) {
-            addColorRow(form, uiText(QStringLiteral("Stroke color")), stroke->strokeColor());
-            addRow(form, uiText(QStringLiteral("Stroke width")),
-                   uiText(QStringLiteral("%1 px")).arg(number(stroke->strokeWidth())));
-        } else if (const auto* image = dynamic_cast<const ImageItem*>(item)) {
-            if (!image->imageName().isEmpty())
-                addRow(form, uiText(QStringLiteral("Image")), image->imageName());
-        } else if (const auto* text = dynamic_cast<const TextItem*>(item)) {
-            addColorRow(form, uiText(QStringLiteral("Text color")), text->textColor());
-            QFont font = text->textFont();
-            const QFontInfo info(font);
-            const QString sizeText = font.pointSizeF() > 0
-                ? uiText(QStringLiteral("%1 pt")).arg(number(font.pointSizeF()))
-                : uiText(QStringLiteral("%1 px")).arg(font.pixelSize());
-            addRow(form, uiText(QStringLiteral("Font")),
-                   uiText(QStringLiteral("%1 · %2")).arg(info.family(), sizeText));
+            m_hasFill = filled;
+
+            m_fillStyleCombo = new QComboBox(this);
+            m_fillStyleCombo->setObjectName(QStringLiteral("ItemPropertiesFillStyleValue"));
+            m_fillStyleCombo->setMinimumWidth(150);
+            if (filled) {
+                for (FillStyle style : allFillStyles())
+                    m_fillStyleCombo->addItem(fillStyleName(style), static_cast<int>(style));
+                const int index = m_fillStyleCombo->findData(static_cast<int>(shape->fillStyle()));
+                if (index >= 0)
+                    m_fillStyleCombo->setCurrentIndex(index);
+            } else {
+                m_fillStyleCombo->addItem(uiText(QStringLiteral("Not applicable")), -1);
+                m_fillStyleCombo->setEnabled(false);
+            }
+            form->addRow(uiText(QStringLiteral("Fill style")), m_fillStyleCombo);
+
+            m_fillColorButton = makeColorField(this, shape->fillColor(),
+                                               QStringLiteral("ItemPropertiesFillColorValue"));
+            m_fillColorButton->setEnabled(filled);
+            form->addRow(uiText(QStringLiteral("Fill color")), m_fillColorButton);
+
+            m_strokeColorButton = makeColorField(this, shape->strokeColor(),
+                                                 QStringLiteral("ItemPropertiesStrokeColorValue"));
+            form->addRow(uiText(QStringLiteral("Stroke color")), m_strokeColorButton);
+
+            m_strokeWidthSpin = new QDoubleSpinBox(this);
+            m_strokeWidthSpin->setObjectName(QStringLiteral("ItemPropertiesStrokeWidthValue"));
+            m_strokeWidthSpin->setDecimals(1);
+            m_strokeWidthSpin->setRange(0.5, 64.0);
+            m_strokeWidthSpin->setSingleStep(0.5);
+            m_strokeWidthSpin->setValue(shape->strokeWidth());
+            m_initialStrokeWidth = shape->strokeWidth();
+            m_strokeWidthSpin->setMinimumWidth(88);
+            form->addRow(uiText(QStringLiteral("Stroke width")), m_strokeWidthSpin);
+        } else if (auto* stroke = dynamic_cast<StrokeItem*>(item)) {
+            m_strokeColorButton = makeColorField(this, stroke->strokeColor(),
+                                                 QStringLiteral("ItemPropertiesStrokeColorValue"));
+            form->addRow(uiText(QStringLiteral("Stroke color")), m_strokeColorButton);
+
+            m_strokeWidthSpin = new QDoubleSpinBox(this);
+            m_strokeWidthSpin->setObjectName(QStringLiteral("ItemPropertiesStrokeWidthValue"));
+            m_strokeWidthSpin->setDecimals(1);
+            m_strokeWidthSpin->setRange(0.5, 64.0);
+            m_strokeWidthSpin->setSingleStep(0.5);
+            m_strokeWidthSpin->setValue(stroke->strokeWidth());
+            m_initialStrokeWidth = stroke->strokeWidth();
+            m_strokeWidthSpin->setMinimumWidth(88);
+            form->addRow(uiText(QStringLiteral("Stroke width")), m_strokeWidthSpin);
+        } else if (auto* image = dynamic_cast<ImageItem*>(item)) {
+            m_imageNameEdit = new QLineEdit(this);
+            m_imageNameEdit->setObjectName(QStringLiteral("ItemPropertiesImageValue"));
+            m_imageNameEdit->setText(image->imageName());
+            m_imageNameEdit->setPlaceholderText(uiText(QStringLiteral("Image")));
+            form->addRow(uiText(QStringLiteral("Image name")), m_imageNameEdit);
+        } else if (auto* text = dynamic_cast<TextItem*>(item)) {
+            m_textFont = text->textFont();
+
+            m_textColorButton = makeColorField(this, text->textColor(),
+                                               QStringLiteral("ItemPropertiesTextColorValue"));
+            form->addRow(uiText(QStringLiteral("Text color")), m_textColorButton);
+
+            m_fontButton = new QPushButton(this);
+            m_fontButton->setObjectName(QStringLiteral("ItemPropertiesFontValue"));
+            m_fontButton->setMinimumWidth(180);
+            updateFontButton();
+            form->addRow(uiText(QStringLiteral("Font")), m_fontButton);
+            connect(m_fontButton, &QPushButton::clicked, this, &ItemPropertiesDialog::chooseFont);
         }
 
-        addRow(form, uiText(QStringLiteral("Position")),
-               uiText(QStringLiteral("%1, %2")).arg(number(item->pos().x()), number(item->pos().y())));
-        addRow(form, uiText(QStringLiteral("Item size")),
-               uiText(QStringLiteral("%1 × %2"))
-                   .arg(number(item->contentSize().width()), number(item->contentSize().height())));
+        m_positionXSpin = makeSpin(this, QStringLiteral("ItemPropertiesPositionXValue"),
+                                   -1000000.0, 1000000.0);
+        m_positionYSpin = makeSpin(this, QStringLiteral("ItemPropertiesPositionYValue"),
+                                   -1000000.0, 1000000.0);
+        m_positionXSpin->setValue(item->pos().x());
+        m_positionYSpin->setValue(item->pos().y());
+        form->addRow(uiText(QStringLiteral("Position")),
+                     makePairField(this, QStringLiteral("ItemPropertiesPositionValue"),
+                                   m_positionXSpin, m_positionYSpin, QStringLiteral(",")));
+
+        m_widthSpin = makeSpin(this, QStringLiteral("ItemPropertiesWidthValue"), 1.0, 1000000.0);
+        m_heightSizeSpin = makeSpin(this, QStringLiteral("ItemPropertiesHeightSizeValue"),
+                                    1.0, 1000000.0);
+        m_widthSpin->setValue(item->contentSize().width());
+        m_heightSizeSpin->setValue(item->contentSize().height());
+        form->addRow(uiText(QStringLiteral("Item size")),
+                     makePairField(this, QStringLiteral("ItemPropertiesSizeValue"),
+                                   m_widthSpin, m_heightSizeSpin, QStringLiteral("×")));
+
         root->addLayout(form);
     }
 
-    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);
-    if (auto* close = buttons->button(QDialogButtonBox::Close))
-        close->setText(uiText(QStringLiteral("Close")));
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+    if (auto* ok = buttons->button(QDialogButtonBox::Ok))
+        ok->setText(uiText(QStringLiteral("OK")));
+    if (auto* cancel = buttons->button(QDialogButtonBox::Cancel))
+        cancel->setText(uiText(QStringLiteral("Cancel")));
     if (dynamic_cast<TextItem*>(item)) {
         auto* edit = buttons->addButton(uiText(QStringLiteral("Edit text…")),
                                         QDialogButtonBox::ActionRole);
-        connect(edit, &QPushButton::clicked, this, [this]() { done(EditTextRequested); });
+        connect(edit, &QPushButton::clicked, this, [this]() {
+            applyChanges();
+            done(EditTextRequested);
+        });
     }
+    connect(buttons, &QDialogButtonBox::accepted, this, &ItemPropertiesDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     root->addWidget(buttons);
+
+    if (m_layerCombo && m_heightSpin) {
+        updateHeightRange(false);
+        connect(m_layerCombo, &QComboBox::currentIndexChanged, this, [this](int) {
+            if (m_initializing)
+                return;
+            updateHeightRange(true);
+        });
+        m_initializing = false;
+    } else {
+        m_initializing = false;
+    }
+}
+
+void ItemPropertiesDialog::accept()
+{
+    applyChanges();
+    QDialog::accept();
+}
+
+void ItemPropertiesDialog::updateHeightRange(bool selectTop)
+{
+    if (!m_layerCombo || !m_heightSpin || !m_item)
+        return;
+
+    const int targetLayer = m_layerCombo->currentData().toInt();
+    int maxHeight = m_scene ? m_scene->layerItemCount(targetLayer) : 1;
+    if (targetLayer != m_item->layerId())
+        ++maxHeight;
+    maxHeight = qMax(1, maxHeight);
+    m_heightSpin->setMaximum(maxHeight);
+    if (selectTop)
+        m_heightSpin->setValue(maxHeight);
+}
+
+void ItemPropertiesDialog::updateFontButton()
+{
+    if (!m_fontButton)
+        return;
+    m_fontButton->setText(fontText(m_textFont));
+}
+
+void ItemPropertiesDialog::chooseFont()
+{
+    bool ok = false;
+    const QFont font = QFontDialog::getFont(&ok, m_textFont, this,
+                                            uiText(QStringLiteral("Choose font")));
+    if (!ok)
+        return;
+
+    m_textFont = font;
+    updateFontButton();
+    if (auto* text = dynamic_cast<TextItem*>(m_item)) {
+        const QSizeF natural = TextItem::measure(text->text(), m_textFont);
+        if (m_widthSpin)
+            m_widthSpin->setValue(natural.width());
+        if (m_heightSizeSpin)
+            m_heightSizeSpin->setValue(natural.height());
+    }
+}
+
+void ItemPropertiesDialog::applyChanges()
+{
+    if (!m_scene || !m_item)
+        return;
+
+    const int oldLayer = m_item->layerId();
+    const int oldHeight = m_item->height();
+    const int targetLayer = m_layerCombo ? m_layerCombo->currentData().toInt() : oldLayer;
+    const int targetHeight = m_heightSpin ? m_heightSpin->value() : oldHeight;
+
+    QList<BoardItem*> swapped;
+    if (targetLayer != oldLayer || targetHeight != oldHeight) {
+        for (BoardItem* peer : m_scene->layerItems(targetLayer)) {
+            if (peer != m_item && peer->height() == targetHeight)
+                swapped.append(peer);
+        }
+    }
+
+    ItemPropertiesState before;
+    before.pos = m_item->pos();
+    before.size = m_item->contentSize();
+    before.stack.append({ m_item, oldLayer, oldHeight });
+    for (BoardItem* peer : std::as_const(swapped))
+        before.stack.append({ peer, peer->layerId(), peer->height() });
+
+    ItemPropertiesState after;
+    auto spinValue = [](QDoubleSpinBox* spin, qreal initial) {
+        if (!spin)
+            return initial;
+        const qreal value = spin->value();
+        // 数值框只显示 1 位小数；用户没动过时保留原始精度，避免“打开就点确定”也产生修改。
+        return qFuzzyCompare(value, qRound(initial * 10.0) / 10.0) ? initial : value;
+    };
+    after.pos = QPointF(spinValue(m_positionXSpin, m_initialPos.x()),
+                        spinValue(m_positionYSpin, m_initialPos.y()));
+    after.size = QSizeF(spinValue(m_widthSpin, m_initialSize.width()),
+                        spinValue(m_heightSizeSpin, m_initialSize.height()));
+    after.stack.append({ m_item, targetLayer, targetHeight });
+    for (BoardItem* peer : std::as_const(swapped))
+        after.stack.append({ peer, oldLayer, oldHeight });
+
+    if (auto* shape = dynamic_cast<ShapeItem*>(m_item)) {
+        before.hasShapeState = true;
+        before.shapeState = shape->state();
+
+        after.hasShapeState = true;
+        after.shapeState = shape->state();
+        after.shapeState.pos = after.pos;
+        after.shapeState.size = after.size;
+        if (m_strokeColorButton)
+            after.shapeState.strokeColor = m_strokeColorButton->property("itemColor").value<QColor>();
+        if (m_strokeWidthSpin)
+            after.shapeState.strokeWidth = spinValue(m_strokeWidthSpin, m_initialStrokeWidth);
+        if (m_hasFill) {
+            if (m_fillStyleCombo && m_fillStyleCombo->currentData().toInt() >= 0)
+                after.shapeState.fillStyle = static_cast<FillStyle>(m_fillStyleCombo->currentData().toInt());
+            if (m_fillColorButton)
+                after.shapeState.fillColor = m_fillColorButton->property("itemColor").value<QColor>();
+        }
+    } else if (auto* text = dynamic_cast<TextItem*>(m_item)) {
+        before.hasTextState = true;
+        before.textState = text->state();
+
+        after.hasTextState = true;
+        after.textState = text->state();
+        after.textState.pos = after.pos;
+        after.textState.size = after.size;
+        after.textState.font = m_textFont;
+        after.textState.baseSize = TextItem::measure(after.textState.text, m_textFont);
+        if (m_textColorButton)
+            after.textState.color = m_textColorButton->property("itemColor").value<QColor>();
+    } else if (auto* stroke = dynamic_cast<StrokeItem*>(m_item)) {
+        before.hasStrokeStyle = true;
+        before.strokeColor = stroke->strokeColor();
+        before.strokeWidth = stroke->strokeWidth();
+
+        after.hasStrokeStyle = true;
+        after.strokeColor = m_strokeColorButton
+            ? m_strokeColorButton->property("itemColor").value<QColor>()
+            : before.strokeColor;
+        after.strokeWidth = m_strokeWidthSpin
+            ? spinValue(m_strokeWidthSpin, m_initialStrokeWidth)
+            : before.strokeWidth;
+    } else if (auto* image = dynamic_cast<ImageItem*>(m_item)) {
+        before.hasImageName = true;
+        before.imageName = image->imageName();
+
+        after.hasImageName = true;
+        after.imageName = m_imageNameEdit ? m_imageNameEdit->text() : before.imageName;
+    }
+
+    if (before == after)
+        return;
+
+    auto* command = new ItemPropertiesCommand(m_scene, m_item, before, after,
+                                              uiText(QStringLiteral("Edit item properties")));
+    if (auto* undo = m_scene->undoStack()) {
+        undo->push(command);
+    } else {
+        command->redo();
+        delete command;
+    }
 }
 
 QString ItemPropertiesDialog::layerDescription(const BoardScene* scene, int layerId)
@@ -164,23 +467,4 @@ QString ItemPropertiesDialog::layerDescription(const BoardScene* scene, int laye
     if (layerName.isEmpty() || layerName == defaultName)
         return defaultName;
     return uiText(QStringLiteral("Layer %1 · %2")).arg(index).arg(layerName);
-}
-
-void ItemPropertiesDialog::addRow(QFormLayout* form, const QString& label,
-                                  const QString& value, const QString& objectName)
-{
-    auto* field = new QLabel(value, this);
-    field->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    if (!objectName.isEmpty())
-        field->setObjectName(objectName);
-    form->addRow(label, field);
-}
-
-void ItemPropertiesDialog::addColorRow(QFormLayout* form, const QString& label,
-                                       const QColor& color, const QString& objectName)
-{
-    QWidget* field = makeColorValue(color);
-    if (!objectName.isEmpty())
-        field->setObjectName(objectName);
-    form->addRow(label, field);
 }

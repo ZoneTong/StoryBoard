@@ -368,10 +368,18 @@ void MainWindow::createActions()
     connect(m_fillGridAct, &QAction::triggered, this, [this]() { setFillStyle(FillStyle::GridHatch); });
     connect(m_fillHoneycombAct, &QAction::triggered, this, [this]() { setFillStyle(FillStyle::Honeycomb); });
     m_fillColorAct = new QAction(uiText(QStringLiteral("Fill color…")), this);
+    m_fillColorAct->setObjectName(QStringLiteral("FillColorAction"));
+    m_fillColorAct->setIcon(makeColorIcon(m_fillColor.isValid() ? m_fillColor
+                                                                : QColor(30, 41, 59, 36), 16));
     connect(m_fillColorAct, &QAction::triggered, this, &MainWindow::chooseFillColor);
     m_strokeColorAct = new QAction(uiText(QStringLiteral("Outline color…")), this);
     m_strokeColorAct->setObjectName(QStringLiteral("OutlineColorAction"));
+    m_strokeColorAct->setIcon(makeColorIcon(m_brushColor, 16));
     connect(m_strokeColorAct, &QAction::triggered, this, &MainWindow::chooseStrokeColor);
+    m_brushColorAct = new QAction(uiText(QStringLiteral("Brush color…")), this);
+    m_brushColorAct->setObjectName(QStringLiteral("BrushColorAction"));
+    m_brushColorAct->setIcon(makeColorIcon(m_brushColor, 16));
+    connect(m_brushColorAct, &QAction::triggered, this, &MainWindow::chooseBrushColor);
 
     auto applyBackgroundMode = [this](BackgroundMode mode) {
         BackgroundState background = m_scene->background();
@@ -519,16 +527,25 @@ void MainWindow::createMenus()
     canvasMenu->addAction(m_settingsAct);
 
     QMenu* styleMenu = menuBar()->addMenu(uiText(QStringLiteral("&Style")));
-    styleMenu->addAction(m_fillNoneAct);
-    styleMenu->addAction(m_fillSolidAct);
-    styleMenu->addAction(m_fillHachureAct);
-    styleMenu->addAction(m_fillReverseAct);
-    styleMenu->addAction(m_fillCrossAct);
-    styleMenu->addAction(m_fillGridAct);
-    styleMenu->addAction(m_fillHoneycombAct);
-    styleMenu->addSeparator();
-    styleMenu->addAction(m_strokeColorAct);
+    styleMenu->setObjectName(QStringLiteral("StyleMenu"));
+
+    QMenu* brushStyleMenu = styleMenu->addMenu(uiText(QStringLiteral("Brush style")));
+    brushStyleMenu->setObjectName(QStringLiteral("BrushStyleMenu"));
+    brushStyleMenu->addAction(m_brushColorAct);
+
+    QMenu* fillStyleMenu = styleMenu->addMenu(uiText(QStringLiteral("Fill style")));
+    fillStyleMenu->setObjectName(QStringLiteral("FillStyleMenu"));
+    fillStyleMenu->addAction(m_fillNoneAct);
+    fillStyleMenu->addAction(m_fillSolidAct);
+    fillStyleMenu->addAction(m_fillHachureAct);
+    fillStyleMenu->addAction(m_fillReverseAct);
+    fillStyleMenu->addAction(m_fillCrossAct);
+    fillStyleMenu->addAction(m_fillGridAct);
+    fillStyleMenu->addAction(m_fillHoneycombAct);
+
+    // 需求 29：颜色从填充样式里分离出来，放在填充样式之后。
     styleMenu->addAction(m_fillColorAct);
+    styleMenu->addAction(m_strokeColorAct);
 
     m_templatesMenu = menuBar()->addMenu(uiText(QStringLiteral("&Templates")));
     connect(m_templatesMenu, &QMenu::aboutToShow, this, &MainWindow::updateTemplateMenu);
@@ -595,26 +612,8 @@ void MainWindow::createToolBars()
     connect(m_colorButton, &QToolButton::clicked, this, &MainWindow::chooseBrushColor);
     mainBar->addWidget(m_colorButton);
 
-    m_fillButton = new QToolButton(mainBar);
-    m_fillButton->setObjectName(QStringLiteral("FillButton"));
-    m_fillButton->setIconSize(QSize(20, 20));
-    m_fillButton->setPopupMode(QToolButton::InstantPopup);
-    auto* fillMenu = new QMenu(m_fillButton);
-    fillMenu->addAction(m_fillNoneAct);
-    fillMenu->addAction(m_fillSolidAct);
-    fillMenu->addAction(m_fillHachureAct);
-    fillMenu->addAction(m_fillReverseAct);
-    fillMenu->addAction(m_fillCrossAct);
-    fillMenu->addAction(m_fillGridAct);
-    fillMenu->addAction(m_fillHoneycombAct);
-    fillMenu->addSeparator();
-    fillMenu->addAction(m_strokeColorAct);
-    fillMenu->addAction(m_fillColorAct);
-    m_fillButton->setMenu(fillMenu);
-    updateFillActions();
-    mainBar->addWidget(m_fillButton);
-
     m_widthCombo = new QComboBox(mainBar);
+    m_widthCombo->setObjectName(QStringLiteral("BrushWidthCombo"));
     m_widthCombo->setFixedWidth(88);
     m_widthCombo->setFixedHeight(28);
     m_widthCombo->setToolTip(uiText(QStringLiteral("Brush width")));
@@ -634,6 +633,42 @@ void MainWindow::createToolBars()
     widthLabel->setObjectName(QStringLiteral("ToolBarLabel"));
     mainBar->addWidget(widthLabel);
     mainBar->addWidget(m_widthCombo);
+
+    // 需求 25：填充按钮后移，让画笔颜色与画笔粗细连成一组。
+    m_fillButton = new QToolButton(mainBar);
+    m_fillButton->setObjectName(QStringLiteral("FillButton"));
+    m_fillButton->setIconSize(QSize(20, 20));
+    m_fillButton->setPopupMode(QToolButton::InstantPopup);
+    auto* fillMenu = new QMenu(m_fillButton);
+    fillMenu->addAction(m_fillNoneAct);
+    fillMenu->addAction(m_fillSolidAct);
+    fillMenu->addAction(m_fillHachureAct);
+    fillMenu->addAction(m_fillReverseAct);
+    fillMenu->addAction(m_fillCrossAct);
+    fillMenu->addAction(m_fillGridAct);
+    fillMenu->addAction(m_fillHoneycombAct);
+    m_fillButton->setMenu(fillMenu);
+    updateFillActions();
+    mainBar->addWidget(m_fillButton);
+
+    // 需求 29：填充颜色、描边颜色作为独立按钮，排在填充样式按钮之后。
+    m_fillColorButton = new QToolButton(mainBar);
+    m_fillColorButton->setObjectName(QStringLiteral("FillColorButton"));
+    m_fillColorButton->setIconSize(QSize(20, 20));
+    m_fillColorButton->setDefaultAction(m_fillColorAct);
+    m_fillColorButton->setToolTip(uiText(QStringLiteral("Fill color: %1 (click to choose)"))
+                                      .arg(m_fillColor.isValid()
+                                               ? m_fillColor.name(QColor::HexArgb).toUpper()
+                                               : uiText(QStringLiteral("Follow brush color"))));
+    mainBar->addWidget(m_fillColorButton);
+
+    m_strokeColorButton = new QToolButton(mainBar);
+    m_strokeColorButton->setObjectName(QStringLiteral("StrokeColorButton"));
+    m_strokeColorButton->setIconSize(QSize(20, 20));
+    m_strokeColorButton->setDefaultAction(m_strokeColorAct);
+    m_strokeColorButton->setToolTip(uiText(QStringLiteral("Outline color: %1 (click to choose)"))
+                                        .arg(m_brushColor.name(QColor::HexArgb).toUpper()));
+    mainBar->addWidget(m_strokeColorButton);
     mainBar->addSeparator();
 
     mainBar->addAction(m_fitAct);
@@ -844,6 +879,15 @@ void MainWindow::setBrushColor(const QColor& color, bool remember)
         m_colorButton->setIcon(makeColorIcon(color, 20));
         m_colorButton->setToolTip(uiText(QStringLiteral("Brush color: %1 (click to choose)"))
                                       .arg(color.name(QColor::HexArgb).toUpper()));
+    }
+    if (m_brushColorAct)
+        m_brushColorAct->setIcon(makeColorIcon(color, 16));
+    if (m_strokeColorAct)
+        m_strokeColorAct->setIcon(makeColorIcon(color, 16));
+    if (m_strokeColorButton) {
+        m_strokeColorButton->setToolTip(
+            uiText(QStringLiteral("Outline color: %1 (click to choose)"))
+                .arg(color.name(QColor::HexArgb).toUpper()));
     }
     if (remember) {
         m_settings.brushColor = color;
@@ -1067,14 +1111,53 @@ void MainWindow::exportBoard()
     const ExportDialog::Options options = dialog.options();
     m_settings.lastExportDir = QFileInfo(options.filePath).absolutePath();
     m_settings.save();
+
+    if (options.separateLayers) {
+        const QStringList paths = options.filePaths;
+        if (paths.isEmpty()) {
+            QMessageBox::warning(this, uiText(QStringLiteral("Export board")),
+                                 uiText(QStringLiteral("No visible layers to export.")));
+            return;
+        }
+
+        QStringList exported;
+        for (int i = 0; i < paths.size(); ++i) {
+            const int layerId = i < options.layerIds.size() ? options.layerIds.at(i) : -1;
+            if (!exportToFile(paths.at(i), options.area, options.scale, options.format,
+                              false, layerId))
+                return;
+            exported.append(paths.at(i));
+        }
+
+        const QString folder = QFileInfo(paths.constFirst()).absolutePath();
+        statusBar()->showMessage(uiText(QStringLiteral("Exported %1 visible layer file(s)"))
+                                     .arg(exported.size()), 5000);
+        QMessageBox box(this);
+        box.setIcon(QMessageBox::Information);
+        box.setWindowTitle(uiText(QStringLiteral("Export complete")));
+        box.setText(uiText(QStringLiteral("The visible layers were exported successfully.")));
+        box.setInformativeText(uiText(QStringLiteral("%1 file(s) in\n%2"))
+                                   .arg(exported.size())
+                                   .arg(QDir::toNativeSeparators(folder)));
+        QPushButton* openFolderButton = box.addButton(uiText(QStringLiteral("Open folder")),
+                                                      QMessageBox::ActionRole);
+        box.addButton(uiText(QStringLiteral("Done")), QMessageBox::RejectRole);
+        box.exec();
+        if (box.clickedButton() == openFolderButton)
+            QDesktopServices::openUrl(QUrl::fromLocalFile(folder));
+        return;
+    }
+
     exportToFile(options.filePath, options.area, options.scale, options.format);
 }
 
 bool MainWindow::exportToFile(const QString& path, const QRectF& area, qreal scale,
-                              const QString& format)
+                              const QString& format, bool showCompletion, int layerId)
 {
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    const QImage image = m_scene->renderImage(area, scale);
+    const QImage image = layerId >= 0
+        ? m_scene->renderLayerImage(area, scale, layerId)
+        : m_scene->renderImage(area, scale);
     QApplication::restoreOverrideCursor();
 
     if (image.isNull()) {
@@ -1129,6 +1212,9 @@ bool MainWindow::exportToFile(const QString& path, const QRectF& area, qreal sca
     m_settings.lastExportDir = QFileInfo(path).absolutePath();
     m_settings.save();
     statusBar()->showMessage(uiText(QStringLiteral("Board exported: %1")).arg(QFileInfo(path).fileName()), 5000);
+
+    if (!showCompletion)
+        return true;
 
     QMessageBox box(this);
     box.setIcon(QMessageBox::Information);
@@ -1452,6 +1538,10 @@ void MainWindow::updateFillActions()
                                  .arg(fillStyleName(m_fillStyle), colorText));
     if (m_fillColorAct)
         m_fillColorAct->setIcon(makeColorIcon(swatch, 16));
+    if (m_fillColorButton) {
+        m_fillColorButton->setToolTip(
+            uiText(QStringLiteral("Fill color: %1 (click to choose)")).arg(colorText));
+    }
 }
 
 void MainWindow::insertTextAt(const QPointF& scenePos)

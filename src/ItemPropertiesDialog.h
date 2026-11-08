@@ -2,14 +2,23 @@
 
 #include <QColor>
 #include <QDialog>
+#include <QFont>
+#include <QPointF>
+#include <QSizeF>
 
 class BoardItem;
 class BoardScene;
+class QComboBox;
+class QDoubleSpinBox;
 class QFormLayout;
-class QVBoxLayout;
+class QLineEdit;
+class QPushButton;
+class QSpinBox;
+class QToolButton;
 
-// 只读展示单个图元的属性：类型、图层、层内高度、填充样式与颜色、位置和尺寸等。
-// 文字图元额外提供“编辑文字…”入口，保持双击图元后的文字编辑路径可达。
+// 编辑单个图元的属性。图元类型只读，其余字段（图层、层内高度、填充、
+// 描边、位置尺寸、文字字体颜色、图片名称）都可以修改，确认后作为一条
+// 撤销记录提交。
 class ItemPropertiesDialog : public QDialog
 {
     Q_OBJECT
@@ -21,13 +30,35 @@ public:
     explicit ItemPropertiesDialog(BoardScene* scene, BoardItem* item, QWidget* parent = nullptr);
 
     static QString layerDescription(const BoardScene* scene, int layerId);
+    void accept() override;
 
 private:
-    void addRow(QFormLayout* form, const QString& label, const QString& value,
-                const QString& objectName = QString());
-    void addColorRow(QFormLayout* form, const QString& label, const QColor& color,
-                     const QString& objectName = QString());
+    void applyChanges();
+    void updateHeightRange(bool selectTop);
+    void updateFontButton();
+    void chooseFont();
 
     BoardScene* m_scene = nullptr;
     BoardItem* m_item = nullptr;
+
+    QComboBox* m_layerCombo = nullptr;
+    QSpinBox* m_heightSpin = nullptr;
+    QComboBox* m_fillStyleCombo = nullptr;
+    QToolButton* m_fillColorButton = nullptr;
+    QToolButton* m_strokeColorButton = nullptr;
+    QDoubleSpinBox* m_strokeWidthSpin = nullptr;
+    QDoubleSpinBox* m_positionXSpin = nullptr;
+    QDoubleSpinBox* m_positionYSpin = nullptr;
+    QDoubleSpinBox* m_widthSpin = nullptr;
+    QDoubleSpinBox* m_heightSizeSpin = nullptr;
+    QToolButton* m_textColorButton = nullptr;
+    QPushButton* m_fontButton = nullptr;
+    QLineEdit* m_imageNameEdit = nullptr;
+
+    QFont m_textFont;
+    QPointF m_initialPos;
+    QSizeF m_initialSize;
+    qreal m_initialStrokeWidth = 4.0;
+    bool m_hasFill = false;
+    bool m_initializing = true;
 };

@@ -313,6 +313,26 @@ int main(int argc, char** argv)
         return shot.save(outputPath) ? 0 : 1;
     }
 
+    if (arguments.contains(QStringLiteral("--style-menu-screenshot"))) {
+        const QString outputPath = takeOptionPath(arguments, QStringLiteral("--style-menu-screenshot"));
+        if (outputPath.isEmpty())
+            return 2;
+
+        MainWindow window;
+        window.resize(1200, 800);
+        window.show();
+        QApplication::processEvents();
+
+        QMenu* menu = window.findChild<QMenu*>(QStringLiteral("StyleMenu"));
+        if (!menu)
+            return 3;
+        menu->popup(window.mapToGlobal(QPoint(500, 40)));
+        QApplication::processEvents();
+        const QPixmap shot = menu->grab();
+        menu->hide();
+        return shot.save(outputPath) ? 0 : 1;
+    }
+
     if (arguments.contains(QStringLiteral("--export-screenshot"))) {
         const QString outputPath = takeOptionPath(arguments, QStringLiteral("--export-screenshot"));
         if (outputPath.isEmpty())

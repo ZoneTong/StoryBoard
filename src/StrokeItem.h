@@ -30,6 +30,7 @@ public:
 
     QColor strokeColor() const { return m_color; }
     qreal strokeWidth() const { return m_penWidth; }
+    void setStyle(const QColor& color, qreal width);
 
 protected:
     void paintContent(QPainter* painter) override;

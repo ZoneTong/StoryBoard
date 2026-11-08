@@ -9,8 +9,11 @@
 #include <algorithm>
 
 #include <QCheckBox>
+#include <QEvent>
 #include <QHBoxLayout>
+#include <QInputDialog>
 #include <QLabel>
+#include <QLineEdit>
 #include <QListWidget>
 #include <QMessageBox>
 #include <QScrollBar>
@@ -160,6 +163,13 @@ QWidget* LayerPanel::createLayerRow(const BoardLayer& layer, int index, int item
     else if (!layer.visible)
         nameLabel->setStyleSheet(QStringLiteral("color: rgb(150, 157, 169);"));
 
+    if (index != BoardScene::BackgroundLayerId) {
+        nameLabel->setProperty("layerId", layer.id);
+        nameLabel->setCursor(Qt::IBeamCursor);
+        nameLabel->setToolTip(uiText(QStringLiteral("Double-click to rename layer")));
+        nameLabel->installEventFilter(this);
+    }
+
     layout->addWidget(visibleBox);
     layout->addWidget(nameLabel, 1);
 
@@ -287,6 +297,23 @@ void LayerPanel::refresh()
     updateSummary();
     updateButtons();
     updateAllVisibleState();
+}
+
+bool LayerPanel::eventFilter(QObject* watched, QEvent* event)
+{
+    if (event && event->type() == QEvent::MouseButtonDblClick) {
+        if (QWidget* widget = qobject_cast<QWidget*>(watched)) {
+            if (widget->objectName() == QStringLiteral("LayerRowLabel")) {
+                bool ok = false;
+                const int layerId = widget->property("layerId").toInt(&ok);
+                if (ok) {
+                    renameLayer(layerId);
+                    return true;
+                }
+            }
+        }
+    }
+    return QWidget::eventFilter(watched, event);
 }
 
 void LayerPanel::activateCurrentLayer()
@@ -510,6 +537,34 @@ void LayerPanel::removeLayer()
     emit statusMessage(ids.size() > 1 ? uiText(QStringLiteral("%1 layer(s) deleted")).arg(ids.size())
                                       : uiText(QStringLiteral("Layer deleted")));
     scheduleRefresh();
+}
+
+void LayerPanel::renameLayer(int layerId)
+{
+    if (!m_scene || layerId <= BoardScene::BackgroundLayerId || !m_scene->hasLayer(layerId))
+        return;
+
+    const BoardLayer layer = m_scene->layer(layerId);
+    bool ok = false;
+    const QString name = QInputDialog::getText(
+        this, uiText(QStringLiteral("Rename layer")), uiText(QStringLiteral("Layer name")),
+        QLineEdit::Normal, layer.name, &ok);
+    if (!ok)
+        return;
+
+    const QString trimmed = name.trimmed();
+    if (trimmed.isEmpty()) {
+        QMessageBox::information(this, uiText(QStringLiteral("Rename layer")),
+                                 uiText(QStringLiteral("Layer name cannot be empty.")));
+        return;
+    }
+    if (trimmed == layer.name)
+        return;
+
+    if (m_scene->renameLayerWithUndo(layerId, trimmed)) {
+        emit statusMessage(uiText(QStringLiteral("Layer renamed to \"%1\"")).arg(trimmed));
+        scheduleRefresh();
+    }
 }
 
 void LayerPanel::moveLayer(int delta)

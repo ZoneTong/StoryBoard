@@ -82,6 +82,7 @@ public:
     bool addLayerWithUndo(const QString& name = QString());
     bool removeLayerWithUndo(int layerId, QString* errorMessage = nullptr);
     bool moveLayerWithUndo(int layerId, int delta);
+    bool renameLayerWithUndo(int layerId, const QString& name);
     LayerStackState layerState() const;
     void applyLayerState(const LayerStackState& state);
 
@@ -116,6 +117,8 @@ public:
     bool fromJson(const QJsonObject& root, QString* errorMessage = nullptr);
 
     QImage renderImage(const QRectF& area, qreal scale);
+    // 只渲染指定图层上的图元；画板背景仍按背景层的显示状态保留。
+    QImage renderLayerImage(const QRectF& area, qreal scale, int layerId);
     bool isExporting() const { return m_exporting; }
 
     // 非查看模式下被更高优先级图元遮住、需要额外描出轮廓的图元。

@@ -11,12 +11,22 @@
       <translation>  · 锁定</translation>
     </message>
     <message>
+      <source> · %1 files</source>
+      <translation> · %1 个文件</translation>
+    </message>
+    <message>
       <source> · Locked</source>
       <translation> · 锁定</translation>
     </message>
     <message>
       <source>%1    %2 items</source>
       <translation>%1    %2 个图元</translation>
+    </message>
+    <message>
+      <source>%1 file(s) in
+%2</source>
+      <translation>%1 个文件，位于
+%2</translation>
     </message>
     <message>
       <source>%1 image(s) imported</source>
@@ -205,6 +215,10 @@
       <translation>背景已替换</translation>
     </message>
     <message>
+      <source>Base path: each visible layer gets its own file</source>
+      <translation>基础文件名：每个可见图层会生成独立文件</translation>
+    </message>
+    <message>
       <source>Blue</source>
       <translation>蓝色</translation>
     </message>
@@ -249,6 +263,10 @@
       <translation>画笔颜色：%1（点击选择）</translation>
     </message>
     <message>
+      <source>Brush color…</source>
+      <translation>画笔颜色…</translation>
+    </message>
+    <message>
       <source>Brush defaults</source>
       <translation>画笔默认值</translation>
     </message>
@@ -263,6 +281,10 @@
     <message>
       <source>Brush mode: left button to draw · wheel to zoom · Space / middle button to pan</source>
       <translation>画笔模式：左键自由绘制 · 滚轮缩放 · 空格 / 中键平移</translation>
+    </message>
+    <message>
+      <source>Brush style</source>
+      <translation>画笔样式</translation>
     </message>
     <message>
       <source>Brush width</source>
@@ -331,8 +353,16 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>选择画布外围颜色</translation>
     </message>
     <message>
+      <source>Choose color</source>
+      <translation>选择颜色</translation>
+    </message>
+    <message>
       <source>Choose fill color</source>
       <translation>选择填充颜色</translation>
+    </message>
+    <message>
+      <source>Choose font</source>
+      <translation>选择字体</translation>
     </message>
     <message>
       <source>Choose outline color</source>
@@ -479,8 +509,20 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>双向箭头</translation>
     </message>
     <message>
+      <source>Double-click to rename layer</source>
+      <translation>双击重命名图层</translation>
+    </message>
+    <message>
       <source>E Edit mode: items on visible, unlocked layers can be edited; locked layers cannot; ] / [ adjust the height of the selection; right-click adjusts layer / height</source>
       <translation>E 编辑模式：显示且未锁定图层上的图元都能编辑；锁定图层不可编辑；] / [ 调整选中图元高度；右键调整图层/高度</translation>
+    </message>
+    <message>
+      <source>Each visible layer (one file per layer)</source>
+      <translation>每个可见图层各一张图片</translation>
+    </message>
+    <message>
+      <source>Edit item properties</source>
+      <translation>编辑图元属性</translation>
     </message>
     <message>
       <source>Edit mode</source>
@@ -547,8 +589,16 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>导出失败</translation>
     </message>
     <message>
+      <source>Export mode</source>
+      <translation>导出方式</translation>
+    </message>
+    <message>
       <source>Export the current board</source>
       <translation>导出当前画板</translation>
+    </message>
+    <message>
+      <source>Exported %1 visible layer file(s)</source>
+      <translation>已导出 %1 个可见图层文件</translation>
     </message>
     <message>
       <source>Failed to parse the template file:
@@ -569,6 +619,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>Fill color</source>
       <translation>填充颜色</translation>
+    </message>
+    <message>
+      <source>Fill color: %1 (click to choose)</source>
+      <translation>填充颜色：%1（点击选择）</translation>
     </message>
     <message>
       <source>Fill color…</source>
@@ -661,6 +715,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>Image files (*.png *.jpg *.jpeg *.bmp *.gif);;All files (*.*)</source>
       <translation>图片文件 (*.png *.jpg *.jpeg *.bmp *.gif);;所有文件 (*.*)</translation>
+    </message>
+    <message>
+      <source>Image name</source>
+      <translation>图片名称</translation>
     </message>
     <message>
       <source>Import images</source>
@@ -791,8 +849,20 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>图层已上移</translation>
     </message>
     <message>
+      <source>Layer name</source>
+      <translation>图层名称</translation>
+    </message>
+    <message>
+      <source>Layer name cannot be empty.</source>
+      <translation>图层名称不能为空。</translation>
+    </message>
+    <message>
       <source>Layer panel</source>
       <translation>图层面板</translation>
+    </message>
+    <message>
+      <source>Layer renamed to "%1"</source>
+      <translation>图层已重命名为“%1”</translation>
     </message>
     <message>
       <source>Layers</source>
@@ -829,6 +899,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>Main toolbar</source>
       <translation>主工具栏</translation>
+    </message>
+    <message>
+      <source>Merge visible layers (one image)</source>
+      <translation>合并可见图层（一张图片）</translation>
     </message>
     <message>
       <source>Missing image</source>
@@ -907,6 +981,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>没有可用的图片文件。</translation>
     </message>
     <message>
+      <source>No visible layers to export.</source>
+      <translation>没有可导出的可见图层。</translation>
+    </message>
+    <message>
       <source>Not applicable</source>
       <translation>不适用</translation>
     </message>
@@ -951,6 +1029,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>已设置描边颜色，将用于新插入的图形</translation>
     </message>
     <message>
+      <source>Outline color: %1 (click to choose)</source>
+      <translation>描边颜色：%1（点击选择）</translation>
+    </message>
+    <message>
       <source>Outline color…</source>
       <translation>描边颜色…</translation>
     </message>
@@ -976,6 +1058,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
       <source>Overwrite file</source>
+      <translation>覆盖文件</translation>
+    </message>
+    <message>
+      <source>Overwrite files</source>
       <translation>覆盖文件</translation>
     </message>
     <message>
@@ -1045,6 +1131,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>Redo: %1</source>
       <translation>重做：%1</translation>
+    </message>
+    <message>
+      <source>Rename layer</source>
+      <translation>重命名图层</translation>
     </message>
     <message>
       <source>Render the board to an image or PDF. The background and items are included (grid and selection outlines are not).</source>
@@ -1203,6 +1293,12 @@ Second line caption</source>
     <message>
       <source>Some images were not imported</source>
       <translation>部分图片未导入</translation>
+    </message>
+    <message>
+      <source>Some output files already exist. Overwrite them?
+%1</source>
+      <translation>部分输出文件已存在，是否覆盖？
+%1</translation>
     </message>
     <message>
       <source>Speech bubble</source>
@@ -1375,6 +1471,10 @@ Use the checkbox to show or hide it.</source>
     <message>
       <source>The template contains an unknown item type: %1</source>
       <translation>模板中包含未知的图元类型：%1</translation>
+    </message>
+    <message>
+      <source>The visible layers were exported successfully.</source>
+      <translation>可见图层已成功导出。</translation>
     </message>
     <message>
       <source>These settings become the defaults for new brushes and boards and are saved automatically.</source>

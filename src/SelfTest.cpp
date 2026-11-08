@@ -4,6 +4,7 @@
 #include "BoardTypes.h"
 #include "BoardView.h"
 #include "Commands.h"
+#include "ExportDialog.h"
 #include "ImageItem.h"
 #include "I18n.h"
 #include "ItemPropertiesDialog.h"
@@ -23,6 +24,7 @@
 #include <QContextMenuEvent>
 #include <QCoreApplication>
 #include <QDir>
+#include <QDoubleSpinBox>
 #include <QFile>
 #include <QFileInfo>
 #include <QFont>
@@ -32,6 +34,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLabel>
+#include <QLineEdit>
 #include <QLineF>
 #include <QLinearGradient>
 #include <QListWidget>
@@ -40,7 +43,9 @@
 #include <QMenu>
 #include <QMouseEvent>
 #include <QPushButton>
+#include <QSpinBox>
 #include <QWidget>
+#include <QWidgetAction>
 #include <QPageLayout>
 #include <QPageSize>
 #include <QPainter>
@@ -1785,6 +1790,14 @@ int runSelfTest(const QString& reportPath)
             }
         }
         check(hasEditText, QStringLiteral("文字属性窗提供编辑文字入口"));
+        QToolButton* textColorValue = dialog.findChild<QToolButton*>(
+            QStringLiteral("ItemPropertiesTextColorValue"));
+        QPushButton* fontValue = dialog.findChild<QPushButton*>(
+            QStringLiteral("ItemPropertiesFontValue"));
+        check(textColorValue && textColorValue->isEnabled(),
+              QStringLiteral("文字属性窗文字颜色可编辑"));
+        check(fontValue && fontValue->isEnabled(),
+              QStringLiteral("文字属性窗字体可编辑"));
         dialog.close();
         QApplication::processEvents();
     }
@@ -1815,26 +1828,233 @@ int runSelfTest(const QString& reportPath)
         ItemPropertiesDialog dialog(&viewScene, propertyShape, &view);
         dialog.show();
         QApplication::processEvents();
-        QLabel* layerValue = dialog.findChild<QLabel*>(
+        QLabel* typeValue = dialog.findChild<QLabel*>(
+            QStringLiteral("ItemPropertiesTypeValue"));
+        QComboBox* layerValue = dialog.findChild<QComboBox*>(
             QStringLiteral("ItemPropertiesLayerValue"));
-        QLabel* heightValue = dialog.findChild<QLabel*>(
+        QSpinBox* heightValue = dialog.findChild<QSpinBox*>(
             QStringLiteral("ItemPropertiesHeightValue"));
-        QLabel* fillStyleValue = dialog.findChild<QLabel*>(
+        QComboBox* fillStyleValue = dialog.findChild<QComboBox*>(
             QStringLiteral("ItemPropertiesFillStyleValue"));
-        QWidget* fillColorValue = dialog.findChild<QWidget*>(
+        QToolButton* fillColorValue = dialog.findChild<QToolButton*>(
             QStringLiteral("ItemPropertiesFillColorValue"));
-        check(layerValue && layerValue->text()
-                  == ItemPropertiesDialog::layerDescription(&viewScene, propertyShape->layerId()),
-              QStringLiteral("属性窗显示图元所在图层"));
-        check(heightValue && heightValue->text() == QString::number(propertyShape->height()),
-              QStringLiteral("属性窗显示层内高度"));
-        check(fillStyleValue
-                  && fillStyleValue->text() == fillStyleName(propertyShape->fillStyle()),
-              QStringLiteral("属性窗显示填充样式"),
-              fillStyleValue ? fillStyleValue->text() : QString());
-        check(fillColorValue != nullptr, QStringLiteral("属性窗显示填充颜色"));
+        QToolButton* strokeColorValue = dialog.findChild<QToolButton*>(
+            QStringLiteral("ItemPropertiesStrokeColorValue"));
+        QDoubleSpinBox* strokeWidthValue = dialog.findChild<QDoubleSpinBox*>(
+            QStringLiteral("ItemPropertiesStrokeWidthValue"));
+        QDoubleSpinBox* positionXValue = dialog.findChild<QDoubleSpinBox*>(
+            QStringLiteral("ItemPropertiesPositionXValue"));
+        QDoubleSpinBox* widthValue = dialog.findChild<QDoubleSpinBox*>(
+            QStringLiteral("ItemPropertiesWidthValue"));
+        check(typeValue && typeValue->text() == propertyShape->displayName(),
+              QStringLiteral("属性窗显示图元类型"));
+        check(layerValue && layerValue->isEnabled()
+                  && layerValue->currentText()
+                      == ItemPropertiesDialog::layerDescription(&viewScene,
+                                                               propertyShape->layerId()),
+              QStringLiteral("属性窗显示并可编辑图元所在图层"));
+        check(heightValue && heightValue->isEnabled()
+                  && heightValue->value() == propertyShape->height(),
+              QStringLiteral("属性窗显示并可编辑层内高度"));
+        check(fillStyleValue && fillStyleValue->isEnabled()
+                  && fillStyleValue->currentText() == fillStyleName(propertyShape->fillStyle()),
+              QStringLiteral("属性窗显示并可编辑填充样式"),
+              fillStyleValue ? fillStyleValue->currentText() : QString());
+        check(fillColorValue && fillColorValue->isEnabled(),
+              QStringLiteral("属性窗填充颜色可编辑"));
+        check(strokeColorValue && strokeColorValue->isEnabled(),
+              QStringLiteral("属性窗描边颜色可编辑"));
+        check(strokeWidthValue && strokeWidthValue->isEnabled()
+                  && qFuzzyCompare(strokeWidthValue->value(), propertyShape->strokeWidth()),
+              QStringLiteral("属性窗描边宽度可编辑"));
+        check(positionXValue && positionXValue->isEnabled()
+                  && widthValue && widthValue->isEnabled(),
+              QStringLiteral("属性窗位置和尺寸可编辑"));
         dialog.close();
         QApplication::processEvents();
+    }
+
+    // 需求 24：除图元类型外，属性弹窗的修改要真正落到图元，并且一次提交只占一条撤销记录。
+    {
+        BoardScene editScene;
+        editScene.applyBoardSize(QSizeF(800.0, 600.0));
+        QUndoStack editUndo;
+        editScene.setUndoStack(&editUndo);
+
+        auto* firstShape = new ShapeItem(ShapeType::Rectangle);
+        firstShape->setStyle(QColor(QStringLiteral("#1E293B")),
+                             QColor(QStringLiteral("#93C5FD")), 3.0);
+        firstShape->setFill(QColor(QStringLiteral("#93C5FD")), FillStyle::Solid);
+        firstShape->setContentSize(QSizeF(120.0, 80.0));
+        firstShape->setPos(QPointF(40.0, 50.0));
+        editScene.addItemsWithUndo({ firstShape }, QStringLiteral("Add property test shape"));
+        const int firstLayerId = firstShape->layerId();
+        const int firstHeight = firstShape->height();
+        const ShapeItemState firstState = firstShape->state();
+
+        check(editScene.addLayerWithUndo(QStringLiteral("属性目标层")),
+              QStringLiteral("创建属性编辑目标图层"));
+        const int targetLayerId = editScene.activeLayerId();
+        auto* secondShape = new ShapeItem(ShapeType::Ellipse);
+        secondShape->setStyle(QColor(QStringLiteral("#334155")),
+                              QColor(QStringLiteral("#FDE68A")), 2.0);
+        secondShape->setContentSize(QSizeF(100.0, 100.0));
+        secondShape->setPos(QPointF(240.0, 80.0));
+        editScene.addItemsWithUndo({ secondShape }, QStringLiteral("Add target layer shape"));
+
+        const int undoCountBeforeEdit = editUndo.count();
+        {
+            ItemPropertiesDialog dialog(&editScene, firstShape);
+            dialog.show();
+            QApplication::processEvents();
+            QComboBox* layerValue = dialog.findChild<QComboBox*>(
+                QStringLiteral("ItemPropertiesLayerValue"));
+            QSpinBox* heightValue = dialog.findChild<QSpinBox*>(
+                QStringLiteral("ItemPropertiesHeightValue"));
+            QComboBox* fillStyleValue = dialog.findChild<QComboBox*>(
+                QStringLiteral("ItemPropertiesFillStyleValue"));
+            QToolButton* fillColorValue = dialog.findChild<QToolButton*>(
+                QStringLiteral("ItemPropertiesFillColorValue"));
+            QToolButton* strokeColorValue = dialog.findChild<QToolButton*>(
+                QStringLiteral("ItemPropertiesStrokeColorValue"));
+            QDoubleSpinBox* strokeWidthValue = dialog.findChild<QDoubleSpinBox*>(
+                QStringLiteral("ItemPropertiesStrokeWidthValue"));
+            QDoubleSpinBox* positionXValue = dialog.findChild<QDoubleSpinBox*>(
+                QStringLiteral("ItemPropertiesPositionXValue"));
+            QDoubleSpinBox* positionYValue = dialog.findChild<QDoubleSpinBox*>(
+                QStringLiteral("ItemPropertiesPositionYValue"));
+            QDoubleSpinBox* widthValue = dialog.findChild<QDoubleSpinBox*>(
+                QStringLiteral("ItemPropertiesWidthValue"));
+            QDoubleSpinBox* heightSizeValue = dialog.findChild<QDoubleSpinBox*>(
+                QStringLiteral("ItemPropertiesHeightSizeValue"));
+            check(layerValue && heightValue && fillStyleValue && fillColorValue
+                      && strokeColorValue && strokeWidthValue && positionXValue
+                      && positionYValue && widthValue && heightSizeValue,
+                  QStringLiteral("属性窗编辑控件齐全"));
+
+            if (layerValue) {
+                const int targetIndex = layerValue->findData(targetLayerId);
+                check(targetIndex >= 0, QStringLiteral("属性窗图层下拉包含目标图层"));
+                if (targetIndex >= 0)
+                    layerValue->setCurrentIndex(targetIndex);
+            }
+            QApplication::processEvents();
+            if (heightValue)
+                heightValue->setValue(2);
+            if (fillStyleValue)
+                fillStyleValue->setCurrentIndex(
+                    fillStyleValue->findData(static_cast<int>(FillStyle::Honeycomb)));
+            if (fillColorValue)
+                fillColorValue->setProperty("itemColor", QColor(QStringLiteral("#22C55E")));
+            if (strokeColorValue)
+                strokeColorValue->setProperty("itemColor", QColor(QStringLiteral("#DC2626")));
+            if (strokeWidthValue)
+                strokeWidthValue->setValue(9.0);
+            if (positionXValue)
+                positionXValue->setValue(150.0);
+            if (positionYValue)
+                positionYValue->setValue(210.0);
+            if (widthValue)
+                widthValue->setValue(240.0);
+            if (heightSizeValue)
+                heightSizeValue->setValue(160.0);
+            dialog.accept();
+            QApplication::processEvents();
+        }
+
+        check(editUndo.count() == undoCountBeforeEdit + 1,
+              QStringLiteral("属性窗修改只生成一条撤销记录"));
+        check(firstShape->layerId() == targetLayerId && firstShape->height() == 2,
+              QStringLiteral("属性窗修改可落到图层和层内高度"));
+        check(firstShape->fillStyle() == FillStyle::Honeycomb
+                  && firstShape->fillColor() == QColor(QStringLiteral("#22C55E")),
+              QStringLiteral("属性窗修改可落到填充样式和填充颜色"));
+        check(firstShape->strokeColor() == QColor(QStringLiteral("#DC2626"))
+                  && qFuzzyCompare(firstShape->strokeWidth(), 9.0),
+              QStringLiteral("属性窗修改可落到描边颜色和描边宽度"));
+        check(firstShape->pos() == QPointF(150.0, 210.0)
+                  && firstShape->contentSize() == QSizeF(240.0, 160.0),
+              QStringLiteral("属性窗修改可落到位置和尺寸"));
+
+        editUndo.undo();
+        QApplication::processEvents();
+        check(firstShape->layerId() == firstLayerId && firstShape->height() == firstHeight,
+              QStringLiteral("属性窗修改可整体撤销图层和高度"));
+        check(firstShape->state() == firstState,
+              QStringLiteral("属性窗修改可整体撤销样式和几何"));
+
+        editUndo.redo();
+        QApplication::processEvents();
+        check(firstShape->layerId() == targetLayerId && firstShape->height() == 2,
+              QStringLiteral("属性窗修改可整体重做"));
+
+        const int noopUndoBefore = editUndo.count();
+        {
+            ItemPropertiesDialog dialog(&editScene, firstShape);
+            dialog.show();
+            QApplication::processEvents();
+            dialog.accept();
+            QApplication::processEvents();
+        }
+        check(editUndo.count() == noopUndoBefore,
+              QStringLiteral("属性窗未修改时确定不产生撤销记录"));
+
+        auto* imageItem = new ImageItem();
+        imageItem->setImage(QPixmap(24, 24), QStringLiteral("old.png"));
+        imageItem->setContentSize(QSizeF(80.0, 80.0));
+        imageItem->setPos(QPointF(400.0, 200.0));
+        editScene.addItemsWithUndo({ imageItem }, QStringLiteral("Add property image"));
+        const int imageUndoBefore = editUndo.count();
+        {
+            ItemPropertiesDialog dialog(&editScene, imageItem);
+            dialog.show();
+            QApplication::processEvents();
+            QLineEdit* imageName = dialog.findChild<QLineEdit*>(
+                QStringLiteral("ItemPropertiesImageValue"));
+            check(imageName && imageName->isEnabled()
+                      && imageName->text() == QStringLiteral("old.png"),
+                  QStringLiteral("图片属性窗图片名称可编辑"));
+            if (imageName)
+                imageName->setText(QStringLiteral("new.png"));
+            dialog.accept();
+            QApplication::processEvents();
+        }
+        check(imageItem->imageName() == QStringLiteral("new.png")
+                  && editUndo.count() == imageUndoBefore + 1,
+              QStringLiteral("图片属性窗修改图片名称并生成一条撤销记录"));
+        editUndo.undo();
+        QApplication::processEvents();
+        check(imageItem->imageName() == QStringLiteral("old.png"),
+              QStringLiteral("图片属性窗修改可撤销"));
+
+        QFont propertyFont(QStringLiteral("Microsoft YaHei UI"));
+        propertyFont.setPointSize(16);
+        auto* textItem = new TextItem();
+        textItem->setTextFormat(QStringLiteral("属性文字"), propertyFont,
+                                QColor(QStringLiteral("#0F766E")));
+        textItem->setContentSize(QSizeF(200.0, 50.0));
+        textItem->setPos(QPointF(420.0, 300.0));
+        editScene.addItemsWithUndo({ textItem }, QStringLiteral("Add property text"));
+        const QColor textColorBefore = textItem->textColor();
+        const int textUndoBefore = editUndo.count();
+        {
+            ItemPropertiesDialog dialog(&editScene, textItem);
+            dialog.show();
+            QApplication::processEvents();
+            QToolButton* textColorValue = dialog.findChild<QToolButton*>(
+                QStringLiteral("ItemPropertiesTextColorValue"));
+            if (textColorValue)
+                textColorValue->setProperty("itemColor", QColor(QStringLiteral("#DB2777")));
+            dialog.accept();
+            QApplication::processEvents();
+        }
+        check(textItem->textColor() == QColor(QStringLiteral("#DB2777"))
+                  && editUndo.count() == textUndoBefore + 1,
+              QStringLiteral("文字属性窗修改文字颜色并生成一条撤销记录"));
+        editUndo.undo();
+        QApplication::processEvents();
+        check(textItem->textColor() == textColorBefore,
+              QStringLiteral("文字属性窗修改可撤销"));
     }
 
     const int baseLayerId = viewScene.activeLayerId();
@@ -2093,13 +2313,102 @@ int runSelfTest(const QString& reportPath)
                     fillActionTexts.append(action->text());
             }
         }
-        check(fillActionTexts.size() == 9
+        check(fillActionTexts.size() == 7
                   && fillActionTexts.contains(QStringLiteral("反斜线填充"))
                   && fillActionTexts.contains(QStringLiteral("正交叉线填充"))
-                  && fillActionTexts.contains(QStringLiteral("六边形填充"))
-                  && fillActionTexts.contains(QStringLiteral("描边颜色…")),
-              QStringLiteral("填充菜单包含反斜线/正交叉线/六边形/描边颜色"),
+                  && fillActionTexts.contains(QStringLiteral("六边形填充")),
+              QStringLiteral("填充菜单只保留填充样式"),
               fillActionTexts.join(QStringLiteral("|")));
+
+        QToolBar* mainToolBar = shapeWindow.findChild<QToolBar*>(
+            QStringLiteral("MainToolBar"));
+        int colorIndex = -1;
+        int widthIndex = -1;
+        int fillIndex = -1;
+        int fillColorIndex = -1;
+        int strokeColorIndex = -1;
+        if (mainToolBar) {
+            const QList<QAction*> toolbarActions = mainToolBar->actions();
+            for (int i = 0; i < toolbarActions.size(); ++i) {
+                QWidget* widget = toolbarActions.at(i)->isSeparator()
+                    ? nullptr : mainToolBar->widgetForAction(toolbarActions.at(i));
+                if (!widget)
+                    continue;
+                if (widget->objectName() == QStringLiteral("ColorButton"))
+                    colorIndex = i;
+                else if (widget->objectName() == QStringLiteral("BrushWidthCombo"))
+                    widthIndex = i;
+                else if (widget->objectName() == QStringLiteral("FillButton"))
+                    fillIndex = i;
+                else if (widget->objectName() == QStringLiteral("FillColorButton"))
+                    fillColorIndex = i;
+                else if (widget->objectName() == QStringLiteral("StrokeColorButton"))
+                    strokeColorIndex = i;
+            }
+        }
+        check(colorIndex >= 0 && widthIndex >= 0 && fillIndex >= 0
+                  && fillColorIndex >= 0 && strokeColorIndex >= 0
+                  && colorIndex < widthIndex && widthIndex < fillIndex
+                  && fillIndex < fillColorIndex && fillColorIndex < strokeColorIndex,
+              QStringLiteral("工具栏画笔/填充颜色按钮按顺序连续排列"),
+              QStringLiteral("color=%1 width=%2 fill=%3 fillColor=%4 strokeColor=%5")
+                  .arg(colorIndex).arg(widthIndex).arg(fillIndex)
+                  .arg(fillColorIndex).arg(strokeColorIndex));
+
+        QMenu* styleMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("StyleMenu"));
+        QMenu* brushStyleMenu = shapeWindow.findChild<QMenu*>(
+            QStringLiteral("BrushStyleMenu"));
+        QMenu* fillStyleMenu = shapeWindow.findChild<QMenu*>(
+            QStringLiteral("FillStyleMenu"));
+        check(styleMenu && styleMenu->actions().size() == 4,
+              QStringLiteral("样式菜单包含画笔样式、填充样式和两个独立颜色项"),
+              QStringLiteral("actions=%1").arg(styleMenu ? styleMenu->actions().size() : 0));
+        QList<QAction*> styleActions;
+        if (styleMenu)
+            styleActions = styleMenu->actions();
+        QList<QAction*> brushActions;
+        if (brushStyleMenu)
+            brushActions = brushStyleMenu->actions();
+        QList<QAction*> fillActions;
+        if (fillStyleMenu)
+            fillActions = fillStyleMenu->actions();
+        bool brushHasColor = false;
+        bool brushHasOutline = false;
+        for (QAction* action : brushActions) {
+            if (action->objectName() == QStringLiteral("BrushColorAction"))
+                brushHasColor = true;
+            else if (action->objectName() == QStringLiteral("OutlineColorAction"))
+                brushHasOutline = true;
+        }
+        bool fillHasColor = false;
+        int fillMenuItemCount = 0;
+        for (QAction* action : fillActions) {
+            if (action->isSeparator())
+                continue;
+            ++fillMenuItemCount;
+            if (action->objectName() == QStringLiteral("FillColorAction"))
+                fillHasColor = true;
+        }
+        check(brushStyleMenu && brushHasColor && !brushHasOutline,
+              QStringLiteral("画笔样式子菜单只保留画笔颜色"));
+        check(fillStyleMenu && fillMenuItemCount == 7 && !fillHasColor,
+              QStringLiteral("填充样式子菜单只保留填充样式"),
+              QStringLiteral("actions=%1").arg(fillMenuItemCount));
+
+        int fillStyleMenuIndex = styleActions.indexOf(fillStyleMenu ? fillStyleMenu->menuAction() : nullptr);
+        int fillColorActionIndex = -1;
+        int outlineActionIndex = -1;
+        for (int i = 0; i < styleActions.size(); ++i) {
+            if (styleActions.at(i)->objectName() == QStringLiteral("FillColorAction"))
+                fillColorActionIndex = i;
+            else if (styleActions.at(i)->objectName() == QStringLiteral("OutlineColorAction"))
+                outlineActionIndex = i;
+        }
+        check(fillStyleMenuIndex >= 0 && fillColorActionIndex > fillStyleMenuIndex
+                  && outlineActionIndex > fillColorActionIndex,
+              QStringLiteral("填充颜色和描边颜色分离到填充样式之后"),
+              QStringLiteral("fillStyle=%1 fillColor=%2 outline=%3")
+                  .arg(fillStyleMenuIndex).arg(fillColorActionIndex).arg(outlineActionIndex));
 
         QAction* outlineAction = shapeWindow.findChild<QAction*>(
             QStringLiteral("OutlineColorAction"));
@@ -2866,6 +3175,124 @@ int runSelfTest(const QString& reportPath)
                   && upperItem->height() == upperHeightBefore,
               QStringLiteral("批量高度调整可整体撤销"));
         overlapScene.setUndoStack(nullptr);
+    }
+
+    {
+        // 需求 27：合并可见图层导出 / 每个可见图层单独导出。
+        BoardScene layerExportScene;
+        BackgroundState exportBackground;
+        exportBackground.type = BackgroundType::Color;
+        exportBackground.color = QColor(Qt::white);
+        layerExportScene.applyBackground(exportBackground);
+
+        const int redLayer = layerExportScene.createLayer(QStringLiteral("红色层"));
+        auto* red = new ShapeItem(ShapeType::Rectangle);
+        red->setLayerId(redLayer);
+        red->setStyle(QColor(QStringLiteral("#DC2626")), QColor(QStringLiteral("#DC2626")), 1.0);
+        red->setPos(QPointF(10, 10));
+        red->setContentSize(QSizeF(40, 40));
+        layerExportScene.attachItem(red);
+
+        const int blueLayer = layerExportScene.createLayer(QStringLiteral("蓝色层"));
+        auto* blue = new ShapeItem(ShapeType::Rectangle);
+        blue->setLayerId(blueLayer);
+        blue->setStyle(QColor(QStringLiteral("#2563EB")), QColor(QStringLiteral("#2563EB")), 1.0);
+        blue->setPos(QPointF(100, 100));
+        blue->setContentSize(QSizeF(40, 40));
+        layerExportScene.attachItem(blue);
+
+        const QImage merged = layerExportScene.renderImage(layerExportScene.boardRect(), 1.0);
+        check(merged.pixelColor(20, 20) == QColor(QStringLiteral("#DC2626"))
+                  && merged.pixelColor(110, 110) == QColor(QStringLiteral("#2563EB")),
+              QStringLiteral("合并导出包含所有可见图层"));
+        const QImage redOnly = layerExportScene.renderLayerImage(layerExportScene.boardRect(), 1.0, redLayer);
+        const QImage blueOnly = layerExportScene.renderLayerImage(layerExportScene.boardRect(), 1.0, blueLayer);
+        check(redOnly.pixelColor(20, 20) == QColor(QStringLiteral("#DC2626"))
+                  && redOnly.pixelColor(110, 110) == QColor(Qt::white),
+              QStringLiteral("逐层导出只渲染指定图层（红层）"));
+        check(blueOnly.pixelColor(110, 110) == QColor(QStringLiteral("#2563EB"))
+                  && blueOnly.pixelColor(20, 20) == QColor(Qt::white),
+              QStringLiteral("逐层导出只渲染指定图层（蓝层）"));
+
+        ExportDialog exportDialog(&layerExportScene, QDir::tempPath());
+        auto* modeCombo = exportDialog.findChild<QComboBox*>(
+            QStringLiteral("ExportLayerModeCombo"));
+        check(modeCombo && modeCombo->count() == 2 && modeCombo->currentIndex() == 0,
+              QStringLiteral("导出对话框默认合并可见图层"));
+        const ExportDialog::Options mergedOptions = exportDialog.options();
+        check(!mergedOptions.separateLayers && mergedOptions.filePaths.size() == 1,
+              QStringLiteral("合并模式只输出一个文件"),
+              QStringLiteral("files=%1").arg(mergedOptions.filePaths.size()));
+        if (modeCombo)
+            modeCombo->setCurrentIndex(1);
+        const ExportDialog::Options layerOptions = exportDialog.options();
+        int visibleLayers = 0;
+        for (const BoardLayer& layer : layerExportScene.layers()) {
+            if (layer.visible)
+                ++visibleLayers;
+        }
+        bool namesLookRight = layerOptions.separateLayers
+            && layerOptions.filePaths.size() == visibleLayers
+            && layerOptions.layerIds.size() == visibleLayers;
+        for (const QString& path : layerOptions.filePaths) {
+            if (!QFileInfo(path).fileName().contains(QStringLiteral("_L")))
+                namesLookRight = false;
+        }
+        check(namesLookRight,
+              QStringLiteral("逐层模式为每个可见图层生成独立文件"),
+              QStringLiteral("files=%1 visible=%2")
+                  .arg(layerOptions.filePaths.size()).arg(visibleLayers));
+    }
+
+    {
+        // 需求 28：图层名可编辑，进入撤销栈并随模板持久化。
+        BoardScene renameScene;
+        QUndoStack renameUndo;
+        renameUndo.setUndoLimit(30);
+        renameScene.setUndoStack(&renameUndo);
+        const int renameLayerId = renameScene.createLayer(QStringLiteral("初版分镜"));
+        const QString beforeName = renameScene.layer(renameLayerId).name;
+        check(renameScene.renameLayerWithUndo(renameLayerId, QStringLiteral("终版分镜")),
+              QStringLiteral("图层重命名成功"));
+        check(renameScene.layer(renameLayerId).name == QStringLiteral("终版分镜"),
+              QStringLiteral("图层重命名立即生效"));
+        check(renameUndo.count() == 1, QStringLiteral("图层重命名生成一条撤销记录"));
+        renameUndo.undo();
+        check(renameScene.layer(renameLayerId).name == beforeName,
+              QStringLiteral("图层重命名可撤销"));
+        renameUndo.redo();
+        check(renameScene.layer(renameLayerId).name == QStringLiteral("终版分镜"),
+              QStringLiteral("图层重命名可重做"));
+        check(!renameScene.renameLayerWithUndo(BoardScene::BackgroundLayerId,
+                                               QStringLiteral("不能改名")),
+              QStringLiteral("背景图层名不可编辑"));
+        check(!renameScene.renameLayerWithUndo(renameLayerId, QStringLiteral("  ")),
+              QStringLiteral("空图层名被拒绝"));
+
+        BoardScene reloadedScene;
+        check(reloadedScene.fromJson(renameScene.toJson()),
+              QStringLiteral("重命名后的模板可重新载入"));
+        check(reloadedScene.layer(renameLayerId).name == QStringLiteral("终版分镜"),
+              QStringLiteral("图层名持久化到模板"));
+
+        LayerPanel renamePanel(&renameScene);
+        auto* renameList = renamePanel.findChild<QListWidget*>(
+            QStringLiteral("LayerList"));
+        QLabel* renameLabel = nullptr;
+        if (renameList) {
+            for (int row = 0; row < renameList->count(); ++row) {
+                if (renameList->item(row)->data(Qt::UserRole).toInt() != renameLayerId)
+                    continue;
+                QWidget* rowWidget = renameList->itemWidget(renameList->item(row));
+                renameLabel = rowWidget ? rowWidget->findChild<QLabel*>(
+                    QStringLiteral("LayerRowLabel")) : nullptr;
+                break;
+            }
+        }
+        check(renameLabel && renameLabel->property("layerId").toInt() == renameLayerId
+                  && renameLabel->toolTip().contains(QStringLiteral("重命名")),
+              QStringLiteral("图层面板行名提供双击重命名入口"));
+        renameScene.setUndoStack(nullptr);
     }
 
     int passCount = 0;

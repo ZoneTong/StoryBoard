@@ -7,6 +7,7 @@
 
 class BoardScene;
 class QCheckBox;
+class QEvent;
 class QLabel;
 class QListWidget;
 class QToolButton;
@@ -25,6 +26,9 @@ public slots:
 signals:
     void statusMessage(const QString& message);
 
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
 private:
     QWidget* createLayerRow(const BoardLayer& layer, int index, int itemCount);
     int currentLayerId() const;
@@ -34,6 +38,7 @@ private:
     void syncSceneSelection();
     void addLayer();
     void removeLayer();
+    void renameLayer(int layerId);
     void moveLayer(int delta);
     void setLayerVisible(int layerId, bool visible);
     void setLayerLocked(int layerId, bool locked);

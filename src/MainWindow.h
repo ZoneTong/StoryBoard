@@ -78,7 +78,8 @@ private:
     bool maybeSave();
     bool loadTemplateFile(const QString& path, bool showErrors);
     bool saveToFile(const QString& path);
-    bool exportToFile(const QString& path, const QRectF& area, qreal scale, const QString& format);
+    bool exportToFile(const QString& path, const QRectF& area, qreal scale, const QString& format,
+                      bool showCompletion = true, int layerId = -1);
     void importImageFiles(const QStringList& files);
     void insertShape(ShapeType type);
     void setFillStyle(FillStyle style);
@@ -143,6 +144,7 @@ private:
     QAction* m_fillHoneycombAct = nullptr;
     QAction* m_fillColorAct = nullptr;
     QAction* m_strokeColorAct = nullptr;
+    QAction* m_brushColorAct = nullptr;
 
     QAction* m_aboutAct = nullptr;
     QAction* m_aboutQtAct = nullptr;
@@ -158,6 +160,8 @@ private:
 
     QToolButton* m_colorButton = nullptr;
     QToolButton* m_fillButton = nullptr;
+    QToolButton* m_fillColorButton = nullptr;
+    QToolButton* m_strokeColorButton = nullptr;
     QComboBox* m_widthCombo = nullptr;
 
     QLabel* m_hintLabel = nullptr;

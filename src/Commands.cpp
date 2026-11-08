@@ -2,10 +2,30 @@
 
 #include "BoardItem.h"
 #include "BoardScene.h"
+#include "ImageItem.h"
+#include "StrokeItem.h"
 
 #include <QGraphicsScene>
 
 #include <utility>
+
+namespace {
+
+bool sameStack(const ItemStackList& first, const ItemStackList& second)
+{
+    if (first.size() != second.size())
+        return false;
+    for (int i = 0; i < first.size(); ++i) {
+        if (first.at(i).item != second.at(i).item
+            || first.at(i).layerId != second.at(i).layerId
+            || first.at(i).height != second.at(i).height) {
+            return false;
+        }
+    }
+    return true;
+}
+
+} // namespace
 
 AddItemCommand::AddItemCommand(BoardScene* scene, BoardItem* item, const QString& text)
     : m_scene(scene)
@@ -230,6 +250,86 @@ void ShapeStyleCommand::apply(const QList<ShapeItemState>& states)
             continue;
         m_items.at(i)->applyState(states.at(i));
     }
+    if (m_scene) {
+        m_scene->updateSceneExtent();
+        m_scene->update();
+    }
+}
+
+bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
+{
+    if (!sameStack(stack, other.stack)
+        || pos != other.pos
+        || size != other.size
+        || hasShapeState != other.hasShapeState
+        || hasTextState != other.hasTextState
+        || hasStrokeStyle != other.hasStrokeStyle
+        || hasImageName != other.hasImageName) {
+        return false;
+    }
+    if (hasShapeState && shapeState != other.shapeState)
+        return false;
+    if (hasTextState && textState != other.textState)
+        return false;
+    if (hasStrokeStyle
+        && (strokeColor != other.strokeColor
+            || !qFuzzyCompare(strokeWidth, other.strokeWidth))) {
+        return false;
+    }
+    if (hasImageName && imageName != other.imageName)
+        return false;
+    return true;
+}
+
+ItemPropertiesCommand::ItemPropertiesCommand(BoardScene* scene, BoardItem* item,
+                                             const ItemPropertiesState& before,
+                                             const ItemPropertiesState& after,
+                                             const QString& text)
+    : m_scene(scene)
+    , m_item(item)
+    , m_before(before)
+    , m_after(after)
+{
+    setText(text);
+}
+
+void ItemPropertiesCommand::undo()
+{
+    apply(m_before);
+}
+
+void ItemPropertiesCommand::redo()
+{
+    apply(m_after);
+}
+
+void ItemPropertiesCommand::apply(const ItemPropertiesState& state)
+{
+    if (!m_item)
+        return;
+
+    if (state.hasShapeState) {
+        if (auto* shape = dynamic_cast<ShapeItem*>(m_item.data()))
+            shape->applyState(state.shapeState);
+    } else if (state.hasTextState) {
+        if (auto* text = dynamic_cast<TextItem*>(m_item.data()))
+            text->applyState(state.textState);
+    } else {
+        m_item->setPos(state.pos);
+        m_item->setContentSize(state.size);
+    }
+
+    if (state.hasStrokeStyle) {
+        if (auto* stroke = dynamic_cast<StrokeItem*>(m_item.data()))
+            stroke->setStyle(state.strokeColor, state.strokeWidth);
+    }
+    if (state.hasImageName) {
+        if (auto* image = dynamic_cast<ImageItem*>(m_item.data()))
+            image->setImageName(state.imageName);
+    }
+
+    if (m_scene && !state.stack.isEmpty())
+        m_scene->applyItemStack(state.stack);
     if (m_scene) {
         m_scene->updateSceneExtent();
         m_scene->update();

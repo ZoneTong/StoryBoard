@@ -22,6 +22,14 @@ void ImageItem::setImage(const QPixmap& pixmap, const QString& name)
     update();
 }
 
+void ImageItem::setImageName(const QString& name)
+{
+    if (m_name == name)
+        return;
+    m_name = name;
+    update();
+}
+
 void ImageItem::paintContent(QPainter* painter)
 {
     if (m_pixmap.isNull()) {

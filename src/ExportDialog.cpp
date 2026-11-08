@@ -19,6 +19,7 @@
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QRegularExpression>
 #include <QStandardPaths>
 #include <QVBoxLayout>
 #include <QtMath>
@@ -71,6 +72,12 @@ ExportDialog::ExportDialog(BoardScene* scene, const QString& startDirectory, QWi
     m_formatCombo->addItem(uiText(QStringLiteral("PDF document")), QStringLiteral("PDF"));
     form->addRow(uiText(QStringLiteral("Output format")), m_formatCombo);
 
+    m_layerModeCombo = new QComboBox(group);
+    m_layerModeCombo->setObjectName(QStringLiteral("ExportLayerModeCombo"));
+    m_layerModeCombo->addItem(uiText(QStringLiteral("Merge visible layers (one image)")), false);
+    m_layerModeCombo->addItem(uiText(QStringLiteral("Each visible layer (one file per layer)")), true);
+    form->addRow(uiText(QStringLiteral("Export mode")), m_layerModeCombo);
+
     auto* fileRow = new QHBoxLayout();
     fileRow->setSpacing(8);
     m_pathEdit = new QLineEdit(group);
@@ -106,6 +113,12 @@ ExportDialog::ExportDialog(BoardScene* scene, const QString& startDirectory, QWi
     m_pathEdit->setToolTip(m_pathEdit->text());
 
     connect(m_scopeCombo, &QComboBox::currentIndexChanged, this, [this]() { updateEstimatedSize(); });
+    connect(m_layerModeCombo, &QComboBox::currentIndexChanged, this, [this]() {
+        m_pathEdit->setToolTip(separateLayersSelected()
+            ? uiText(QStringLiteral("Base path: each visible layer gets its own file"))
+            : m_pathEdit->text());
+        updateEstimatedSize();
+    });
     connect(m_scaleSpin, &QDoubleSpinBox::valueChanged, this, [this]() { updateEstimatedSize(); });
     connect(m_formatCombo, &QComboBox::currentIndexChanged, this, [this]() {
         updatePathExtension();
@@ -144,13 +157,76 @@ QString ExportDialog::fileFilter() const
     return uiText(QStringLiteral("PNG images (*.png)"));
 }
 
+bool ExportDialog::separateLayersSelected() const
+{
+    return m_layerModeCombo && m_layerModeCombo->currentData().toBool();
+}
+
+QString ExportDialog::formatSuffix(const QString& format)
+{
+    return format == QStringLiteral("JPEG") ? QStringLiteral("jpg") : format.toLower();
+}
+
+QString ExportDialog::layerFileComponent(const QString& name, int layerId)
+{
+    QString clean = name.trimmed();
+    clean.replace(QRegularExpression(QStringLiteral("[<>:\"/\\\\|?*\\x00-\\x1F]")),
+                  QStringLiteral("_"));
+    clean = clean.simplified();
+    while (!clean.isEmpty() && (clean.endsWith(QLatin1Char('.')) || clean.endsWith(QLatin1Char(' '))))
+        clean.chop(1);
+    if (clean.isEmpty())
+        clean = QStringLiteral("Layer%1").arg(layerId);
+    return clean.left(40);
+}
+
+QStringList ExportDialog::outputFilePaths() const
+{
+    const QString basePath = m_pathEdit->text().trimmed();
+    if (basePath.isEmpty())
+        return QStringList();
+
+    if (!separateLayersSelected())
+        return QStringList{ basePath };
+
+    QStringList paths;
+    if (!m_scene)
+        return paths;
+
+    const QFileInfo baseInfo(basePath);
+    const QString baseName = baseInfo.completeBaseName().isEmpty()
+        ? QStringLiteral("StoryBoard")
+        : baseInfo.completeBaseName();
+    const QString suffix = formatSuffix(selectedFormat());
+    const QDir directory(baseInfo.absolutePath());
+
+    for (const BoardLayer& layer : m_scene->layers()) {
+        if (!layer.visible)
+            continue;
+        paths.append(directory.filePath(QStringLiteral("%1_L%2_%3.%4")
+                                            .arg(baseName)
+                                            .arg(layer.id)
+                                            .arg(layerFileComponent(layer.name, layer.id),
+                                                 suffix)));
+    }
+    return paths;
+}
+
 ExportDialog::Options ExportDialog::options() const
 {
     Options result;
     result.area = selectedArea();
     result.scale = m_scaleSpin->value();
     result.format = selectedFormat();
+    result.separateLayers = separateLayersSelected();
     result.filePath = m_pathEdit->text().trimmed();
+    result.filePaths = outputFilePaths();
+    if (result.separateLayers && m_scene) {
+        for (const BoardLayer& layer : m_scene->layers()) {
+            if (layer.visible)
+                result.layerIds.append(layer.id);
+        }
+    }
     return result;
 }
 
@@ -167,7 +243,18 @@ void ExportDialog::updateEstimatedSize()
         width = qMax(1, qCeil(width * factor));
         height = qMax(1, qCeil(height * factor));
     }
-    m_sizeLabel->setText(QStringLiteral("%1 × %2 px").arg(width).arg(height));
+    QString text = QStringLiteral("%1 × %2 px").arg(width).arg(height);
+    if (separateLayersSelected()) {
+        int count = 0;
+        if (m_scene) {
+            for (const BoardLayer& layer : m_scene->layers()) {
+                if (layer.visible)
+                    ++count;
+            }
+        }
+        text += uiText(QStringLiteral(" · %1 files")).arg(count);
+    }
+    m_sizeLabel->setText(text);
 }
 
 void ExportDialog::updatePathExtension()
@@ -256,7 +343,32 @@ void ExportDialog::validateAndAccept()
         return;
     }
 
-    if (info.exists()) {
+    if (separateLayersSelected()) {
+        const QStringList paths = outputFilePaths();
+        if (paths.isEmpty()) {
+            QMessageBox::warning(this, uiText(QStringLiteral("Export board")),
+                                 uiText(QStringLiteral("No visible layers to export.")));
+            return;
+        }
+
+        QStringList existing;
+        for (const QString& outputPath : paths) {
+            if (QFileInfo::exists(outputPath))
+                existing.append(QDir::toNativeSeparators(outputPath));
+        }
+        if (!existing.isEmpty()) {
+            QStringList preview = existing.mid(0, 5);
+            if (existing.size() > preview.size())
+                preview.append(QStringLiteral("…"));
+            const QMessageBox::StandardButton answer = QMessageBox::question(
+                this, uiText(QStringLiteral("Overwrite files")),
+                uiText(QStringLiteral("Some output files already exist. Overwrite them?\n%1"))
+                    .arg(preview.join(QStringLiteral("\n"))),
+                QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+            if (answer != QMessageBox::Yes)
+                return;
+        }
+    } else if (info.exists()) {
         const QMessageBox::StandardButton answer = QMessageBox::question(
             this, uiText(QStringLiteral("Overwrite file")),
             uiText(QStringLiteral("The file already exists. Overwrite it?\n%1")).arg(QDir::toNativeSeparators(path)),

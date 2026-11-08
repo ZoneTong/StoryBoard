@@ -29,6 +29,14 @@ void StrokeItem::beginStroke(const QPointF& scenePos, const QColor& color, qreal
     normalizeToContent();
 }
 
+void StrokeItem::setStyle(const QColor& color, qreal width)
+{
+    m_color = color.isValid() ? color : QColor(30, 41, 59);
+    m_penWidth = qMax<qreal>(0.5, width);
+    rebuildPath();
+    update();
+}
+
 void StrokeItem::appendScenePoint(const QPointF& scenePos)
 {
     if (m_finished || m_points.isEmpty())

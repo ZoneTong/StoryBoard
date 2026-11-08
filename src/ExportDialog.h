@@ -1,8 +1,10 @@
 #pragma once
 
 #include <QDialog>
+#include <QList>
 #include <QRectF>
 #include <QString>
+#include <QStringList>
 
 class BoardScene;
 class QComboBox;
@@ -19,6 +21,9 @@ public:
         qreal scale = 1.0;
         QString format;
         QString filePath;
+        bool separateLayers = false;
+        QStringList filePaths;
+        QList<int> layerIds;
     };
 
     explicit ExportDialog(BoardScene* scene, const QString& startDirectory,
@@ -30,6 +35,10 @@ private:
     QRectF selectedArea() const;
     QString selectedFormat() const;
     QString fileFilter() const;
+    bool separateLayersSelected() const;
+    QStringList outputFilePaths() const;
+    static QString layerFileComponent(const QString& name, int layerId);
+    static QString formatSuffix(const QString& format);
     void updateEstimatedSize();
     void updatePathExtension();
     void browseForFile();
@@ -37,6 +46,7 @@ private:
 
     BoardScene* m_scene = nullptr;
     QComboBox* m_scopeCombo = nullptr;
+    QComboBox* m_layerModeCombo = nullptr;
     QDoubleSpinBox* m_scaleSpin = nullptr;
     QComboBox* m_formatCombo = nullptr;
     QLineEdit* m_pathEdit = nullptr;

@@ -127,6 +127,44 @@ private:
     QList<ShapeItemState> m_after;
 };
 
+// 属性弹窗一次修改可能同时涉及层/高度、几何、填充、描边、文字或图片名，
+// 用同一个快照命令承载，保证一次编辑只占一条撤销记录。
+struct ItemPropertiesState {
+    ItemStackList stack;
+    QPointF pos;
+    QSizeF size;
+    bool hasShapeState = false;
+    ShapeItemState shapeState;
+    bool hasTextState = false;
+    TextItemState textState;
+    bool hasStrokeStyle = false;
+    QColor strokeColor;
+    qreal strokeWidth = 4.0;
+    bool hasImageName = false;
+    QString imageName;
+
+    bool operator==(const ItemPropertiesState& other) const;
+    bool operator!=(const ItemPropertiesState& other) const { return !(*this == other); }
+};
+
+class ItemPropertiesCommand : public QUndoCommand
+{
+public:
+    ItemPropertiesCommand(BoardScene* scene, BoardItem* item,
+                          const ItemPropertiesState& before,
+                          const ItemPropertiesState& after, const QString& text);
+    void undo() override;
+    void redo() override;
+
+private:
+    void apply(const ItemPropertiesState& state);
+
+    BoardScene* m_scene = nullptr;
+    QPointer<BoardItem> m_item;
+    ItemPropertiesState m_before;
+    ItemPropertiesState m_after;
+};
+
 class LayerStateCommand : public QUndoCommand
 {
 public:
