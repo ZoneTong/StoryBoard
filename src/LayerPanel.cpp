@@ -48,6 +48,33 @@ LayerPanel::LayerPanel(BoardScene* scene, QWidget* parent)
     caption->setObjectName(QStringLiteral("LayerCaption"));
     layout->addWidget(caption);
 
+    auto* header = new QWidget(this);
+    header->setObjectName(QStringLiteral("LayerHeader"));
+    auto* headerLayout = new QHBoxLayout(header);
+    headerLayout->setContentsMargins(4, 0, 4, 0);
+    headerLayout->setSpacing(5);
+
+    m_allVisibleBox = new QCheckBox(header);
+    m_allVisibleBox->setObjectName(QStringLiteral("LayerVisibleAllBox"));
+    m_allVisibleBox->setTristate(true);
+    m_allVisibleBox->setFocusPolicy(Qt::NoFocus);
+    m_allVisibleBox->setToolTip(uiText(QStringLiteral("Show or hide all layers")));
+    headerLayout->addWidget(m_allVisibleBox);
+
+    auto* nameHeader = new QLabel(uiText(QStringLiteral("Layer")), header);
+    nameHeader->setObjectName(QStringLiteral("LayerNameHeader"));
+    nameHeader->setStyleSheet(QStringLiteral("color: rgb(96, 104, 120); font-weight: 600;"));
+    headerLayout->addWidget(nameHeader, 1);
+
+    auto* lockHeader = new QLabel(uiText(QStringLiteral("Lock")), header);
+    lockHeader->setObjectName(QStringLiteral("LayerLockHeader"));
+    lockHeader->setFixedWidth(30);
+    lockHeader->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    lockHeader->setStyleSheet(QStringLiteral("color: rgb(96, 104, 120); font-weight: 600;"));
+    headerLayout->addWidget(lockHeader);
+    header->setFixedHeight(22);
+    layout->addWidget(header);
+
     m_list = new QListWidget(this);
     m_list->setObjectName(QStringLiteral("LayerList"));
     m_list->setSelectionMode(QAbstractItemView::ExtendedSelection);
@@ -75,6 +102,17 @@ LayerPanel::LayerPanel(BoardScene* scene, QWidget* parent)
 
     connect(m_list, &QListWidget::itemSelectionChanged, this, &LayerPanel::activateCurrentLayer);
     connect(m_list, &QListWidget::itemSelectionChanged, this, [this]() { updateRowStyles(); });
+    connect(m_allVisibleBox, &QCheckBox::clicked, this, [this]() {
+        bool allVisible = true;
+        const QList<BoardLayer> layers = m_scene->layers();
+        for (const BoardLayer& layer : layers) {
+            if (!layer.visible) {
+                allVisible = false;
+                break;
+            }
+        }
+        setAllLayersVisible(!allVisible);
+    });
     connect(m_addButton, &QToolButton::clicked, this, &LayerPanel::addLayer);
     connect(m_removeButton, &QToolButton::clicked, this, &LayerPanel::removeLayer);
     connect(m_upButton, &QToolButton::clicked, this, [this]() { moveLayer(1); });
@@ -248,6 +286,7 @@ void LayerPanel::refresh()
     updateRowStyles();
     updateSummary();
     updateButtons();
+    updateAllVisibleState();
 }
 
 void LayerPanel::activateCurrentLayer()
@@ -376,6 +415,40 @@ void LayerPanel::setLayerVisible(int layerId, bool visible)
                                    : uiText(QStringLiteral("Layer \"%1\" hidden")).arg(layerName));
     }
     scheduleRefresh();
+}
+
+void LayerPanel::setAllLayersVisible(bool visible)
+{
+    if (!m_scene)
+        return;
+    if (!m_scene->setAllLayersVisible(visible))
+        return;
+    emit statusMessage(visible ? uiText(QStringLiteral("All layers shown"))
+                               : uiText(QStringLiteral("All layers hidden")));
+    scheduleRefresh();
+    updateAllVisibleState();
+}
+
+void LayerPanel::updateAllVisibleState()
+{
+    if (!m_allVisibleBox || !m_scene)
+        return;
+
+    const QList<BoardLayer> layers = m_scene->layers();
+    int visibleCount = 0;
+    for (const BoardLayer& layer : layers) {
+        if (layer.visible)
+            ++visibleCount;
+    }
+
+    Qt::CheckState state = Qt::Unchecked;
+    if (!layers.isEmpty() && visibleCount == layers.size())
+        state = Qt::Checked;
+    else if (visibleCount > 0)
+        state = Qt::PartiallyChecked;
+
+    const QSignalBlocker blocker(m_allVisibleBox);
+    m_allVisibleBox->setCheckState(state);
 }
 
 void LayerPanel::setLayerLocked(int layerId, bool locked)

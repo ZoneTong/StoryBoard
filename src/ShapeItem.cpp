@@ -353,10 +353,10 @@ bool shapeTypeIsFilled(ShapeType type)
     case ShapeType::Triangle:
     case ShapeType::Diamond:
     case ShapeType::Star:
-    case ShapeType::Callout:
-        return true;
     case ShapeType::Arrow:
     case ShapeType::DoubleArrow:
+    case ShapeType::Callout:
+        return true;
     case ShapeType::Line:
     case ShapeType::BraceLeft:
     case ShapeType::BraceRight:
@@ -477,10 +477,8 @@ QIcon makeShapeIcon(ShapeType type, const QColor& color, int logicalSize)
     const QPainterPath path = ShapeItem::pathFor(type, rect);
     QPen pen(color, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
 
-    if (type == ShapeType::Arrow || type == ShapeType::DoubleArrow) {
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(color);
-    } else if (shapeTypeIsStrokeOnly(type)) {
+    const bool hollowIcon = type == ShapeType::Arrow || type == ShapeType::DoubleArrow;
+    if (shapeTypeIsStrokeOnly(type) || hollowIcon) {
         painter.setPen(pen);
         painter.setBrush(Qt::NoBrush);
     } else {
@@ -570,15 +568,16 @@ QPainterPath ShapeItem::shape() const
         return selectionHandleShape();
 
     QPainterPath result;
-    if (shapeTypeIsStrokeOnly(m_type)) {
+    if (m_type == ShapeType::Arrow || m_type == ShapeType::DoubleArrow) {
+        // Hollow arrows still use the whole silhouette as the hit area, so the
+        // empty interior remains easy to select and drag.
+        result = path;
+    } else if (shapeTypeIsStrokeOnly(m_type)) {
         QPainterPathStroker stroker;
         stroker.setWidth(qMax<qreal>(5.0, m_strokeWidth + 6.0));
         stroker.setCapStyle(Qt::RoundCap);
         stroker.setJoinStyle(Qt::RoundJoin);
         result = stroker.createStroke(path);
-    } else if (m_type == ShapeType::Arrow || m_type == ShapeType::DoubleArrow) {
-        // Painted with a filled pen-free path, so the outline is exact.
-        result = path;
     } else {
         // Filled shapes are stroked with m_strokeWidth, which paints up to
         // strokeWidth/2 outside the path. Without this ring the visible border
@@ -617,11 +616,10 @@ QPainterPath ShapeItem::paintedShape() const
     // 有面积的图形只有“纯色填充”时才会完整遮住下层：纯色（含半透明纯色）的轮廓内部
     // 整个算作遮挡区，下层颜色完全不画，避免叠出混合色。
     // 无填充、斜线/交叉线/六边形等纹理填充不遮挡下层的轮廓，下层照常可见（查看模式也一样）；
-    // 描边本身仍然遮挡笔画扫过的区域，箭头按实心轮廓整体遮挡。
+    // 描边本身仍然遮挡笔画扫过的区域。
     if (!shapeTypeIsStrokeOnly(m_type)) {
         const bool solidFill = m_fillStyle == FillStyle::Solid && m_fillColor.alpha() > 0;
-        const bool solidShape = m_type == ShapeType::Arrow || m_type == ShapeType::DoubleArrow;
-        if (solidFill || solidShape)
+        if (solidFill)
             result = result.united(path);
     }
     return result;
@@ -734,11 +732,7 @@ void ShapeItem::paintContent(QPainter* painter)
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
 
-    if (m_type == ShapeType::Arrow || m_type == ShapeType::DoubleArrow) {
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(m_strokeColor);
-        painter->drawPath(path);
-    } else if (shapeTypeIsStrokeOnly(m_type)) {
+    if (shapeTypeIsStrokeOnly(m_type)) {
         QPen pen(m_strokeColor, m_strokeWidth, Qt::SolidLine,
                  Qt::RoundCap, Qt::RoundJoin);
         painter->setPen(pen);

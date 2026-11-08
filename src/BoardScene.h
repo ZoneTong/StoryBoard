@@ -69,6 +69,7 @@ public:
     QList<BoardItem*> layerItems(int layerId) const;
     bool isLayerVisible(int layerId) const;
     bool setLayerVisible(int layerId, bool visible);
+    bool setAllLayersVisible(bool visible);
     bool isLayerLocked(int layerId) const;
     bool setLayerLocked(int layerId, bool locked);
     bool isItemEditable(const BoardItem* item) const;

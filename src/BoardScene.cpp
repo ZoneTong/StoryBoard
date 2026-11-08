@@ -469,6 +469,28 @@ bool BoardScene::isLayerLocked(int layerId) const
     return hasLayer(layerId) && layer(layerId).locked;
 }
 
+bool BoardScene::setAllLayersVisible(bool visible)
+{
+    bool changed = false;
+    for (int i = 0; i < m_layers.size(); ++i) {
+        if (m_layers.at(i).visible != visible) {
+            m_layers[i].visible = visible;
+            changed = true;
+        }
+    }
+    if (!changed)
+        return true;
+
+    // 表头勾选框是批量浏览操作：允许一次隐藏全部图层（包括当前图层），
+    // 不套用单行勾选框“至少保留一个可见用户图层”的限制。
+    updateItemFlags();
+    updateSceneExtent();
+    update();
+    emit layersChanged();
+    emit contentChanged();
+    return true;
+}
+
 bool BoardScene::setLayerLocked(int layerId, bool locked)
 {
     // 背景层始终锁定：它只承载背景，没有可编辑图元，也不允许解锁。

@@ -6,6 +6,7 @@
 #include "BoardTypes.h"
 
 class BoardScene;
+class QCheckBox;
 class QLabel;
 class QListWidget;
 class QToolButton;
@@ -36,12 +37,15 @@ private:
     void moveLayer(int delta);
     void setLayerVisible(int layerId, bool visible);
     void setLayerLocked(int layerId, bool locked);
+    void setAllLayersVisible(bool visible);
+    void updateAllVisibleState();
     void updateButtons();
     void updateRowStyles();
     void updateSummary();
 
     BoardScene* m_scene = nullptr;
     QListWidget* m_list = nullptr;
+    QCheckBox* m_allVisibleBox = nullptr;
     QToolButton* m_addButton = nullptr;
     QToolButton* m_removeButton = nullptr;
     QToolButton* m_upButton = nullptr;

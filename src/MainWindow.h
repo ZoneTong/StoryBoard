@@ -83,6 +83,7 @@ private:
     void insertShape(ShapeType type);
     void setFillStyle(FillStyle style);
     void chooseFillColor();
+    void chooseStrokeColor();
     void applyFillToSelection();
     void updateFillActions();
     void setBrushColor(const QColor& color, bool remember);
@@ -141,6 +142,7 @@ private:
     QAction* m_fillGridAct = nullptr;
     QAction* m_fillHoneycombAct = nullptr;
     QAction* m_fillColorAct = nullptr;
+    QAction* m_strokeColorAct = nullptr;
 
     QAction* m_aboutAct = nullptr;
     QAction* m_aboutQtAct = nullptr;

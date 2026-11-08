@@ -369,6 +369,9 @@ void MainWindow::createActions()
     connect(m_fillHoneycombAct, &QAction::triggered, this, [this]() { setFillStyle(FillStyle::Honeycomb); });
     m_fillColorAct = new QAction(uiText(QStringLiteral("Fill color…")), this);
     connect(m_fillColorAct, &QAction::triggered, this, &MainWindow::chooseFillColor);
+    m_strokeColorAct = new QAction(uiText(QStringLiteral("Outline color…")), this);
+    m_strokeColorAct->setObjectName(QStringLiteral("OutlineColorAction"));
+    connect(m_strokeColorAct, &QAction::triggered, this, &MainWindow::chooseStrokeColor);
 
     auto applyBackgroundMode = [this](BackgroundMode mode) {
         BackgroundState background = m_scene->background();
@@ -524,6 +527,7 @@ void MainWindow::createMenus()
     styleMenu->addAction(m_fillGridAct);
     styleMenu->addAction(m_fillHoneycombAct);
     styleMenu->addSeparator();
+    styleMenu->addAction(m_strokeColorAct);
     styleMenu->addAction(m_fillColorAct);
 
     m_templatesMenu = menuBar()->addMenu(uiText(QStringLiteral("&Templates")));
@@ -604,6 +608,7 @@ void MainWindow::createToolBars()
     fillMenu->addAction(m_fillGridAct);
     fillMenu->addAction(m_fillHoneycombAct);
     fillMenu->addSeparator();
+    fillMenu->addAction(m_strokeColorAct);
     fillMenu->addAction(m_fillColorAct);
     m_fillButton->setMenu(fillMenu);
     updateFillActions();
@@ -1250,7 +1255,9 @@ void MainWindow::insertShape(ShapeType type)
     fill.setAlpha(36);
     if (m_fillColor.isValid())
         fill = m_fillColor;
-    const bool filled = shapeTypeIsFilled(type) && m_fillStyle != FillStyle::None;
+    const bool hollowByDefault = type == ShapeType::Arrow || type == ShapeType::DoubleArrow;
+    const bool filled = shapeTypeIsFilled(type) && m_fillStyle != FillStyle::None
+        && !hollowByDefault;
     item->setStyle(stroke,
                    filled ? fill : QColor(Qt::transparent),
                    qBound<qreal>(2.5, m_brushWidth, 10.0));
@@ -1312,6 +1319,54 @@ void MainWindow::chooseFillColor()
     applyFillToSelection();
 }
 
+void MainWindow::chooseStrokeColor()
+{
+    const QColor initial = m_brushColor.alpha() < 8
+        ? QColor(QStringLiteral("#1E293B"))
+        : m_brushColor;
+    const QColor color = QColorDialog::getColor(initial, this,
+                                                uiText(QStringLiteral("Choose outline color")),
+                                                QColorDialog::ShowAlphaChannel);
+    if (!color.isValid())
+        return;
+
+    setBrushColor(color, true);
+
+    QList<ShapeItem*> shapes;
+    const QList<BoardItem*> selected = m_scene->selectedBoardItems();
+    for (BoardItem* item : selected) {
+        if (auto* shape = dynamic_cast<ShapeItem*>(item))
+            shapes.append(shape);
+    }
+
+    if (shapes.isEmpty()) {
+        statusBar()->showMessage(
+            uiText(QStringLiteral("Outline color set; it will be used for newly inserted shapes")), 4000);
+        return;
+    }
+
+    QList<ShapeItemState> before;
+    QList<ShapeItemState> after;
+    before.reserve(shapes.size());
+    after.reserve(shapes.size());
+    for (ShapeItem* shape : shapes) {
+        before.append(shape->state());
+        shape->setStyle(color, shape->fillColor(), shape->strokeWidth());
+        after.append(shape->state());
+    }
+
+    if (before == after) {
+        statusBar()->showMessage(uiText(QStringLiteral("The outline color did not change")), 3000);
+        return;
+    }
+
+    m_undo->push(new ShapeStyleCommand(m_scene, shapes, before, after,
+                                       uiText(QStringLiteral("Change outline color"))));
+    statusBar()->showMessage(uiText(QStringLiteral("Applied outline color to %1 shape(s)"))
+                                 .arg(shapes.size()),
+                             4000);
+}
+
 void MainWindow::applyFillToSelection()
 {
     if (!m_scene || !m_undo)
@@ -1333,7 +1388,7 @@ void MainWindow::applyFillToSelection()
     if (shapes.isEmpty()) {
         if (outlineOnlyCount > 0) {
             statusBar()->showMessage(
-                uiText(QStringLiteral("The selected shape is stroke-only (line, arrow, brace, etc.); fill is not supported")), 4000);
+                uiText(QStringLiteral("The selected shape is stroke-only (line, brace, etc.); fill is not supported")), 4000);
         } else {
             statusBar()->showMessage(uiText(QStringLiteral("Fill set to \"%1\"; it will be used for newly inserted shapes"))
                                          .arg(fillStyleName(m_fillStyle)),

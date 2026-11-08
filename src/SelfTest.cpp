@@ -1405,6 +1405,44 @@ int runSelfTest(const QString& reportPath)
                   QStringLiteral("图层面板可重新显示背景层"));
         }
 
+        QCheckBox* allVisibleBox = visibilityPanel.findChild<QCheckBox*>(
+            QStringLiteral("LayerVisibleAllBox"));
+        check(allVisibleBox && allVisibleBox->isTristate(),
+              QStringLiteral("图层面板表头提供三态勾选框"));
+        check(allVisibleBox && allVisibleBox->checkState() == Qt::PartiallyChecked,
+              QStringLiteral("表头勾选框反映部分图层隐藏"));
+        if (allVisibleBox) {
+            allVisibleBox->click();
+            QApplication::processEvents();
+            bool everyLayerVisible = true;
+            for (const BoardLayer& layer : visibilityPanelScene.layers()) {
+                if (!layer.visible)
+                    everyLayerVisible = false;
+            }
+            check(everyLayerVisible && allVisibleBox->checkState() == Qt::Checked,
+                  QStringLiteral("表头勾选框可全选显示所有图层"));
+
+            allVisibleBox->click();
+            QApplication::processEvents();
+            bool everyLayerHidden = true;
+            for (const BoardLayer& layer : visibilityPanelScene.layers()) {
+                if (layer.visible)
+                    everyLayerHidden = false;
+            }
+            check(everyLayerHidden && allVisibleBox->checkState() == Qt::Unchecked,
+                  QStringLiteral("表头勾选框可全不选隐藏所有图层"));
+
+            allVisibleBox->click();
+            QApplication::processEvents();
+            bool restoredAllVisible = true;
+            for (const BoardLayer& layer : visibilityPanelScene.layers()) {
+                if (!layer.visible)
+                    restoredAllVisible = false;
+            }
+            check(restoredAllVisible && allVisibleBox->checkState() == Qt::Checked,
+                  QStringLiteral("表头勾选框可再次显示所有图层"));
+        }
+
         QToolButton* upperLock = rowLockButton(upperId);
         check(upperLock != nullptr, QStringLiteral("图层面板提供图层锁定按钮"));
         if (upperLock) {
@@ -2055,12 +2093,18 @@ int runSelfTest(const QString& reportPath)
                     fillActionTexts.append(action->text());
             }
         }
-        check(fillActionTexts.size() == 8
+        check(fillActionTexts.size() == 9
                   && fillActionTexts.contains(QStringLiteral("反斜线填充"))
                   && fillActionTexts.contains(QStringLiteral("正交叉线填充"))
-                  && fillActionTexts.contains(QStringLiteral("六边形填充")),
-              QStringLiteral("填充菜单包含反斜线/正交叉线/六边形"),
+                  && fillActionTexts.contains(QStringLiteral("六边形填充"))
+                  && fillActionTexts.contains(QStringLiteral("描边颜色…")),
+              QStringLiteral("填充菜单包含反斜线/正交叉线/六边形/描边颜色"),
               fillActionTexts.join(QStringLiteral("|")));
+
+        QAction* outlineAction = shapeWindow.findChild<QAction*>(
+            QStringLiteral("OutlineColorAction"));
+        check(outlineAction && outlineAction->text() == QStringLiteral("描边颜色…"),
+              QStringLiteral("主窗口提供描边颜色动作"));
 
         QAction* ellipseAction = shapeMenu
             ? shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_ellipse"))
@@ -2091,6 +2135,26 @@ int runSelfTest(const QString& reportPath)
             check(inserted && inserted->fillColor().alpha() > 0
                       && inserted->strokeWidth() > 0.0,
                   QStringLiteral("快速插入图形带有默认描边与填充"));
+        }
+
+        QAction* arrowInsertAction = shapeMenu
+            ? shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_arrow"))
+            : nullptr;
+        check(arrowInsertAction != nullptr, QStringLiteral("图形菜单包含箭头插入动作"));
+        if (arrowInsertAction) {
+            arrowInsertAction->trigger();
+            QApplication::processEvents();
+            ShapeItem* insertedArrow = nullptr;
+            for (BoardItem* item : shapeWindow.scene()->boardItems()) {
+                if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+                    if (shape->shapeType() == ShapeType::Arrow)
+                        insertedArrow = shape;
+                }
+            }
+            check(insertedArrow != nullptr,
+                  QStringLiteral("快速插入的图元类型为箭头"));
+            check(insertedArrow && insertedArrow->fillStyle() == FillStyle::None,
+                  QStringLiteral("新插入箭头默认空心"));
         }
     }
 
@@ -2238,6 +2302,50 @@ int runSelfTest(const QString& reportPath)
                   && filledShape->fillColor().alpha() == 160,
               QStringLiteral("图形可设置填充颜色与斜线填充"));
         reqScene.attachItem(filledShape);
+
+        // 需求 23：箭头内部空心，可参与填充；只有纯色填充才整体遮挡下层。
+        check(shapeTypeIsFilled(ShapeType::Arrow)
+                  && shapeTypeIsFilled(ShapeType::DoubleArrow)
+                  && !shapeTypeIsFilled(ShapeType::Line),
+              QStringLiteral("箭头支持填充，直线仍只支持描边"));
+
+        BoardScene arrowScene;
+        arrowScene.applyBoardSize(QSizeF(400, 200));
+        arrowScene.setShowGrid(false);
+        auto* hollowArrow = new ShapeItem(ShapeType::Arrow);
+        hollowArrow->setPos(QPointF(40, 50));
+        hollowArrow->setContentSize(QSizeF(240, 100));
+        hollowArrow->setStyle(QColor(QStringLiteral("#DC2626")), QColor(Qt::transparent), 6.0);
+        hollowArrow->setFill(QColor(Qt::transparent), FillStyle::None);
+        arrowScene.attachItem(hollowArrow);
+
+        check(!hollowArrow->paintedShape().contains(QPointF(70, 50)),
+              QStringLiteral("无填充箭头内部为空心，不遮挡下层"));
+
+        QImage hollowArrowImage(400, 200, QImage::Format_ARGB32_Premultiplied);
+        hollowArrowImage.fill(Qt::white);
+        QPainter hollowArrowPainter(&hollowArrowImage);
+        arrowScene.render(&hollowArrowPainter, QRectF(0, 0, 400, 200),
+                          QRectF(0, 0, 400, 200));
+        hollowArrowPainter.end();
+        const QColor hollowPixel = hollowArrowImage.pixelColor(110, 100);
+        check(hollowPixel.red() > 245 && hollowPixel.green() > 245 && hollowPixel.blue() > 245,
+              QStringLiteral("无填充箭头内部渲染为空心"),
+              hollowPixel.name());
+
+        hollowArrow->setFill(QColor(QStringLiteral("#2563EB")), FillStyle::Solid);
+        check(hollowArrow->paintedShape().contains(QPointF(70, 50)),
+              QStringLiteral("纯色填充箭头内部整体遮挡下层"));
+        QImage filledArrowImage(400, 200, QImage::Format_ARGB32_Premultiplied);
+        filledArrowImage.fill(Qt::white);
+        QPainter filledArrowPainter(&filledArrowImage);
+        arrowScene.render(&filledArrowPainter, QRectF(0, 0, 400, 200),
+                          QRectF(0, 0, 400, 200));
+        filledArrowPainter.end();
+        const QColor filledPixel = filledArrowImage.pixelColor(110, 100);
+        check(filledPixel.blue() > 200 && filledPixel.red() < 80,
+              QStringLiteral("纯色填充箭头内部渲染为填充色"),
+              filledPixel.name());
 
         const QJsonObject filledRoot = reqScene.toJson();
         BoardScene filledLoaded;

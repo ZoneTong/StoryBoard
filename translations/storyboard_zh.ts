@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <TS version="2.1" language="zh_CN">
   <context>
     <name>StoryBoard</name>
@@ -137,8 +137,20 @@
       <translation>全部图元</translation>
     </message>
     <message>
+      <source>All layers hidden</source>
+      <translation>已隐藏所有图层</translation>
+    </message>
+    <message>
+      <source>All layers shown</source>
+      <translation>已显示所有图层</translation>
+    </message>
+    <message>
       <source>Applied "%2" to %1 shape(s)</source>
       <translation>已对 %1 个图形应用「%2」</translation>
+    </message>
+    <message>
+      <source>Applied outline color to %1 shape(s)</source>
+      <translation>已将描边颜色应用到 %1 个图形</translation>
     </message>
     <message>
       <source>Arrow</source>
@@ -277,6 +289,10 @@
       <translation>调整填充样式</translation>
     </message>
     <message>
+      <source>Change outline color</source>
+      <translation>修改描边颜色</translation>
+    </message>
+    <message>
       <source>Changed the height of %1 item(s) by %2</source>
       <translation>已将 %1 个图元的高度 %2</translation>
     </message>
@@ -317,6 +333,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>Choose fill color</source>
       <translation>选择填充颜色</translation>
+    </message>
+    <message>
+      <source>Choose outline color</source>
+      <translation>选择描边颜色</translation>
     </message>
     <message>
       <source>Choose text color</source>
@@ -791,6 +811,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>直线</translation>
     </message>
     <message>
+      <source>Lock</source>
+      <translation>锁定</translation>
+    </message>
+    <message>
       <source>Lock layer: items on it cannot be edited</source>
       <translation>锁定图层：锁定后该图层上的图元不可编辑</translation>
     </message>
@@ -921,6 +945,14 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>Orange</source>
       <translation>橙色</translation>
+    </message>
+    <message>
+      <source>Outline color set; it will be used for newly inserted shapes</source>
+      <translation>已设置描边颜色，将用于新插入的图形</translation>
+    </message>
+    <message>
+      <source>Outline color…</source>
+      <translation>描边颜色…</translation>
     </message>
     <message>
       <source>Output file</source>
@@ -1141,6 +1173,10 @@ Second line caption</source>
       <translation>显示辅助网格</translation>
     </message>
     <message>
+      <source>Show or hide all layers</source>
+      <translation>显示或隐藏所有图层</translation>
+    </message>
+    <message>
       <source>Show or hide the layer panel</source>
       <translation>显示或隐藏图层面板</translation>
     </message>
@@ -1329,8 +1365,12 @@ Use the checkbox to show or hide it.</source>
       <translation>无法隐藏最后一个可见图层，请先新建图层。</translation>
     </message>
     <message>
-      <source>The selected shape is stroke-only (line, arrow, brace, etc.); fill is not supported</source>
-      <translation>所选图形只有描边（直线、箭头、大括号等），暂不支持填充</translation>
+      <source>The outline color did not change</source>
+      <translation>描边颜色未发生变化</translation>
+    </message>
+    <message>
+      <source>The selected shape is stroke-only (line, brace, etc.); fill is not supported</source>
+      <translation>所选图形只支持描边（直线、大括号等），不支持填充</translation>
     </message>
     <message>
       <source>The template contains an unknown item type: %1</source>
