@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QColor>
+#include <QPixmap>
 #include <QPointer>
 #include <QUndoCommand>
 #include <QList>
@@ -127,6 +129,25 @@ private:
     QList<ShapeItemState> m_after;
 };
 
+// 需求 35：旋转手柄与快捷键共用这一条命令，支持一次旋转多个选中图元。
+class RotationCommand : public QUndoCommand
+{
+public:
+    RotationCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
+                    const QList<qreal>& before, const QList<qreal>& after,
+                    const QString& text);
+    void undo() override;
+    void redo() override;
+
+private:
+    void apply(const QList<qreal>& angles);
+
+    CanvasScene* m_scene = nullptr;
+    QList<QPointer<CanvasItem>> m_items;
+    QList<qreal> m_before;
+    QList<qreal> m_after;
+};
+
 // 属性弹窗一次修改可能同时涉及层/高度、几何、填充、描边、文字或图片名，
 // 用同一个快照命令承载，保证一次编辑只占一条撤销记录。
 struct ItemPropertiesState {
@@ -142,6 +163,9 @@ struct ItemPropertiesState {
     bool hasStrokeStyle = false;
     QColor strokeColor;
     qreal strokeWidth = 4.0;
+    // 需求 39：图片本体也是可编辑属性，替换图片与改名一起进入同一条撤销记录。
+    bool hasImageState = false;
+    QPixmap image;
     bool hasImageName = false;
     QString imageName;
 

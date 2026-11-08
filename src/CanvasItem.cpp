@@ -116,6 +116,22 @@ void CanvasItem::setRotationAngle(qreal angle)
     update();
 }
 
+qreal CanvasItem::normalizeRotation(qreal angle)
+{
+    while (angle >= 180.0)
+        angle -= 360.0;
+    while (angle < -180.0)
+        angle += 360.0;
+    return angle;
+}
+
+qreal CanvasItem::snapRotation(qreal angle, qreal step)
+{
+    if (step <= 0.0)
+        return normalizeRotation(angle);
+    return normalizeRotation(qRound(angle / step) * step);
+}
+
 QRectF CanvasItem::sceneContentRect() const
 {
     return mapRectToScene(contentRect());
@@ -159,7 +175,7 @@ QPainterPath CanvasItem::selectionHandleShape() const
     // to shape() leaves the visible handle unclickable; for outlines that never
     // reach the corner (ellipse, triangle, diamond, star) the handle could not
     // be grabbed at all.
-    for (int handle = TopLeft; handle <= Left; ++handle) {
+    for (int handle = TopLeft; handle <= Rotation; ++handle) {
         path.addRect(handleRect(static_cast<Handle>(handle))
                          .adjusted(-kHandleHitPadding, -kHandleHitPadding,
                                    kHandleHitPadding, kHandleHitPadding));
@@ -241,10 +257,19 @@ QPointF CanvasItem::handleCenter(Handle handle) const
         return rect.bottomLeft();
     case Left:
         return QPointF(rect.left(), rect.center().y());
+    case Rotation:
+        return QPointF(rect.center().x(), rect.top() - rotationHandleOffset());
     case NoHandle:
         break;
     }
     return rect.center();
+}
+
+qreal CanvasItem::rotationHandleOffset() const
+{
+    // Keep the rotation handle one handle-size plus a small gap above the frame,
+    // so it stays visually separate from the Top resize handle at any zoom.
+    return handleSize() + 16.0 / viewScale();
 }
 
 QRectF CanvasItem::handleRect(Handle handle) const
@@ -257,7 +282,7 @@ QRectF CanvasItem::handleRect(Handle handle) const
 CanvasItem::Handle CanvasItem::handleAt(const QPointF& pos) const
 {
     const qreal hitPadding = qMin<qreal>(10.0 / viewScale(), 14.0);
-    for (int handle = TopLeft; handle <= Left; ++handle) {
+    for (int handle = TopLeft; handle <= Rotation; ++handle) {
         const QRectF rect = handleRect(static_cast<Handle>(handle)).adjusted(-hitPadding, -hitPadding, hitPadding, hitPadding);
         if (rect.contains(pos))
             return static_cast<Handle>(handle);
@@ -280,6 +305,8 @@ QCursor CanvasItem::cursorForHandle(Handle handle) const
     case Left:
     case Right:
         return QCursor(Qt::SizeHorCursor);
+    case Rotation:
+        return QCursor(Qt::PointingHandCursor);
     case NoHandle:
         break;
     }
@@ -308,6 +335,13 @@ void CanvasItem::drawSelectionOverlay(QPainter* painter)
     for (int handle = TopLeft; handle <= Left; ++handle) {
         painter->drawRect(handleRect(static_cast<Handle>(handle)));
     }
+
+    // Rotation handle: a circular knob above the frame, connected by a thin line.
+    const QPointF topCenter(handleCenter(Top).x(), contentRect().top());
+    const QPointF rotationCenter = handleCenter(Rotation);
+    painter->drawLine(topCenter, rotationCenter);
+    painter->setBrush(QColor(79, 124, 255));
+    painter->drawEllipse(handleRect(Rotation).adjusted(1.0, 1.0, -1.0, -1.0));
 }
 
 void CanvasItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
@@ -352,6 +386,12 @@ void CanvasItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 
     if (hasSingleSelection()) {
         const Handle handle = handleAt(event->pos());
+        if (handle == Rotation) {
+            beginRotate(event->scenePos());
+            setCursor(QCursor(Qt::PointingHandCursor));
+            event->accept();
+            return;
+        }
         if (handle != NoHandle) {
             beginResize(handle, event->scenePos());
             setCursor(cursorForHandle(handle));
@@ -387,8 +427,10 @@ void CanvasItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
     if (m_drag == DragKind::Move)
         applyMove(event->scenePos());
-    else
+    else if (m_drag == DragKind::Resize)
         applyResize(event->scenePos(), event->modifiers());
+    else if (m_drag == DragKind::Rotate)
+        applyRotate(event->scenePos());
 
     event->accept();
 }
@@ -503,16 +545,43 @@ void CanvasItem::applyResize(const QPointF& scenePos, Qt::KeyboardModifiers modi
     setContentSize(rect.size());
 }
 
+void CanvasItem::beginRotate(const QPointF& scenePos)
+{
+    m_drag = DragKind::Rotate;
+    m_dragStartScene = scenePos;
+    m_dragStartRotation = m_rotation;
+    const QPointF center = mapToScene(contentRect().center());
+    m_rotateStartAngle = qRadiansToDegrees(qAtan2(scenePos.y() - center.y(),
+                                                 scenePos.x() - center.x()));
+    m_before.clear();
+}
+
+void CanvasItem::applyRotate(const QPointF& scenePos)
+{
+    const QPointF center = mapToScene(contentRect().center());
+    const qreal angle = qRadiansToDegrees(qAtan2(scenePos.y() - center.y(),
+                                                scenePos.x() - center.x()));
+    const qreal target = m_dragStartRotation + (angle - m_rotateStartAngle);
+    // 需求 35：旋转手柄按 5° 步长吸附。
+    setRotationAngle(snapRotation(target, 5.0));
+}
+
 void CanvasItem::finishInteraction()
 {
     if (m_drag == DragKind::None)
         return;
 
     const bool wasResize = m_drag == DragKind::Resize;
+    const bool wasRotate = m_drag == DragKind::Rotate;
     m_drag = DragKind::None;
     m_resizeHandle = NoHandle;
 
-    if (!m_before.isEmpty()) {
+    if (wasRotate) {
+        if (CanvasScene* canvas = canvasScene()) {
+            canvas->pushRotation(this, m_dragStartRotation, m_rotation,
+                                uiText(QStringLiteral("Rotate item")));
+        }
+    } else if (!m_before.isEmpty()) {
         ItemGeometryList after;
         after.reserve(m_before.size());
         for (const ItemGeometry& geometry : std::as_const(m_before)) {

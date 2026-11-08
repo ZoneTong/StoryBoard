@@ -27,6 +27,41 @@ bool sameStack(const ItemStackList& first, const ItemStackList& second)
 
 } // namespace
 
+RotationCommand::RotationCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
+                                 const QList<qreal>& before, const QList<qreal>& after,
+                                 const QString& text)
+    : m_scene(scene)
+    , m_before(before)
+    , m_after(after)
+{
+    setText(text);
+    for (CanvasItem* item : items)
+        m_items.append(QPointer<CanvasItem>(item));
+}
+
+void RotationCommand::undo()
+{
+    apply(m_before);
+}
+
+void RotationCommand::redo()
+{
+    apply(m_after);
+}
+
+void RotationCommand::apply(const QList<qreal>& angles)
+{
+    const int count = qMin(m_items.size(), angles.size());
+    for (int i = 0; i < count; ++i) {
+        if (m_items.at(i))
+            m_items.at(i)->setRotationAngle(angles.at(i));
+    }
+    if (m_scene) {
+        m_scene->updateSceneExtent();
+        m_scene->update();
+    }
+}
+
 AddItemCommand::AddItemCommand(CanvasScene* scene, CanvasItem* item, const QString& text)
     : m_scene(scene)
     , m_item(item)
@@ -266,6 +301,7 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
         || hasShapeState != other.hasShapeState
         || hasTextState != other.hasTextState
         || hasStrokeStyle != other.hasStrokeStyle
+        || hasImageState != other.hasImageState
         || hasImageName != other.hasImageName) {
         return false;
     }
@@ -276,6 +312,11 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
     if (hasStrokeStyle
         && (strokeColor != other.strokeColor
             || !qFuzzyCompare(strokeWidth, other.strokeWidth))) {
+        return false;
+    }
+    if (hasImageState
+        && (image.cacheKey() != other.image.cacheKey()
+            || image.size() != other.image.size())) {
         return false;
     }
     if (hasImageName && imageName != other.imageName)
@@ -333,6 +374,10 @@ void ItemPropertiesCommand::apply(const ItemPropertiesState& state)
     if (state.hasImageName) {
         if (auto* image = dynamic_cast<ImageItem*>(m_item.data()))
             image->setImageName(state.imageName);
+    }
+    if (state.hasImageState) {
+        if (auto* image = dynamic_cast<ImageItem*>(m_item.data()))
+            image->setImage(state.image, state.imageName);
     }
 
     if (m_scene && !state.stack.isEmpty())

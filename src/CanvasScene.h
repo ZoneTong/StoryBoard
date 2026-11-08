@@ -113,6 +113,9 @@ public:
     void selectAllItems();
     void pushGeometry(const ItemGeometryList& before, const ItemGeometryList& after,
                       const QString& text);
+    // 需求 35：旋转手柄与快捷键的撤销入口。
+    void pushRotation(CanvasItem* item, qreal before, qreal after, const QString& text);
+    int rotateSelected(qreal degrees, const QString& commandText = QString());
 
     void resetDocument();
     QJsonObject toJson() const;

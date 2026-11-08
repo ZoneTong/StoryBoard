@@ -14,15 +14,21 @@
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
+#include <QFileDialog>
 #include <QFontDialog>
 #include <QFontInfo>
 #include <QFormLayout>
 #include <QFrame>
 #include <QHBoxLayout>
+#include <QImage>
+#include <QImageReader>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMessageBox>
+#include <QPlainTextEdit>
 #include <QPushButton>
 #include <QSpinBox>
+#include <QStandardPaths>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -118,7 +124,8 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
     , m_item(item)
 {
     setWindowTitle(uiText(QStringLiteral("Item properties")));
-    setModal(true);
+    // 需求 38：属性窗改为非模态；删除图元或离开编辑模式时由 MainWindow 关闭。
+    setModal(false);
     setMinimumWidth(480);
 
     // 打开属性窗时再兜底一次自动名称：旧画布、直接 addItem 或清空名称后，
@@ -246,8 +253,21 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
             m_imageNameEdit->setText(image->imageName());
             m_imageNameEdit->setPlaceholderText(uiText(QStringLiteral("Image")));
             form->addRow(uiText(QStringLiteral("Image name")), m_imageNameEdit);
+
+            // 需求 39：图片本体也算可编辑属性，允许在属性窗内直接替换图片。
+            m_imageButton = new QPushButton(uiText(QStringLiteral("Replace image…")), this);
+            m_imageButton->setObjectName(QStringLiteral("ItemPropertiesReplaceImageValue"));
+            connect(m_imageButton, &QPushButton::clicked, this, &ItemPropertiesDialog::chooseImage);
+            form->addRow(uiText(QStringLiteral("Image")), m_imageButton);
         } else if (auto* text = dynamic_cast<TextItem*>(item)) {
             m_textFont = text->textFont();
+
+            // 需求 39：文字正文也是可编辑属性，直接在属性窗里改，不必先离开再开文字对话框。
+            m_textEdit = new QPlainTextEdit(this);
+            m_textEdit->setObjectName(QStringLiteral("ItemPropertiesTextValue"));
+            m_textEdit->setPlainText(text->text());
+            m_textEdit->setMinimumHeight(88);
+            form->addRow(uiText(QStringLiteral("Text content")), m_textEdit);
 
             m_textColorButton = makeColorField(this, text->textColor(),
                                                QStringLiteral("ItemPropertiesTextColorValue"));
@@ -282,6 +302,7 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
 
         m_rotationSpin = makeSpin(this, QStringLiteral("ItemPropertiesRotationValue"),
                                   -360.0, 360.0);
+        m_rotationSpin->setSingleStep(5.0);
         m_rotationSpin->setSuffix(QStringLiteral("°"));
         m_rotationSpin->setValue(item->rotationAngle());
         form->addRow(uiText(QStringLiteral("Rotation")), m_rotationSpin);
@@ -364,13 +385,56 @@ void ItemPropertiesDialog::chooseFont()
 
     m_textFont = font;
     updateFontButton();
-    if (auto* text = dynamic_cast<TextItem*>(m_item)) {
+    if (auto* text = dynamic_cast<TextItem*>(m_item.data())) {
         const QSizeF natural = TextItem::measure(text->text(), m_textFont);
         if (m_widthSpin)
             m_widthSpin->setValue(natural.width());
         if (m_heightSizeSpin)
             m_heightSizeSpin->setValue(natural.height());
     }
+}
+
+void ItemPropertiesDialog::chooseImage()
+{
+    const QString startDirectory = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+    const QString path = QFileDialog::getOpenFileName(
+        this, uiText(QStringLiteral("Replace image")), startDirectory,
+        uiText(QStringLiteral("Image files (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;All files (*.*)")));
+    if (path.isEmpty())
+        return;
+
+    QString error;
+    if (!loadImageFromFile(path, &error)) {
+        QMessageBox::warning(this, uiText(QStringLiteral("Replace image")),
+                             uiText(QStringLiteral("Could not read the image:\n%1")).arg(error));
+    }
+}
+
+bool ItemPropertiesDialog::loadImageFromFile(const QString& path, QString* errorMessage)
+{
+    QImageReader reader(path);
+    reader.setAutoTransform(true);
+    const QImage image = reader.read();
+    if (image.isNull()) {
+        if (errorMessage)
+            *errorMessage = reader.errorString();
+        return false;
+    }
+
+    m_newImage = QPixmap::fromImage(image);
+    m_imageChanged = true;
+    return true;
+}
+
+void ItemPropertiesDialog::setReplacementImage(const QPixmap& image)
+{
+    m_newImage = image;
+    m_imageChanged = !image.isNull();
+}
+
+bool ItemPropertiesDialog::isItemInScene() const
+{
+    return m_scene && m_item && m_item->scene() == m_scene;
 }
 
 void ItemPropertiesDialog::applyChanges()
@@ -421,7 +485,7 @@ void ItemPropertiesDialog::applyChanges()
     for (CanvasItem* peer : std::as_const(swapped))
         after.stack.append({ peer, oldLayer, oldHeight });
 
-    if (auto* shape = dynamic_cast<ShapeItem*>(m_item)) {
+    if (auto* shape = dynamic_cast<ShapeItem*>(m_item.data())) {
         before.hasShapeState = true;
         before.shapeState = shape->state();
 
@@ -439,7 +503,7 @@ void ItemPropertiesDialog::applyChanges()
             if (m_fillColorButton)
                 after.shapeState.fillColor = m_fillColorButton->property("itemColor").value<QColor>();
         }
-    } else if (auto* text = dynamic_cast<TextItem*>(m_item)) {
+    } else if (auto* text = dynamic_cast<TextItem*>(m_item.data())) {
         before.hasTextState = true;
         before.textState = text->state();
 
@@ -448,10 +512,12 @@ void ItemPropertiesDialog::applyChanges()
         after.textState.pos = after.pos;
         after.textState.size = after.size;
         after.textState.font = m_textFont;
+        if (m_textEdit)
+            after.textState.text = m_textEdit->toPlainText();
         after.textState.baseSize = TextItem::measure(after.textState.text, m_textFont);
         if (m_textColorButton)
             after.textState.color = m_textColorButton->property("itemColor").value<QColor>();
-    } else if (auto* stroke = dynamic_cast<StrokeItem*>(m_item)) {
+    } else if (auto* stroke = dynamic_cast<StrokeItem*>(m_item.data())) {
         before.hasStrokeStyle = true;
         before.strokeColor = stroke->strokeColor();
         before.strokeWidth = stroke->strokeWidth();
@@ -463,10 +529,14 @@ void ItemPropertiesDialog::applyChanges()
         after.strokeWidth = m_strokeWidthSpin
             ? spinValue(m_strokeWidthSpin, m_initialStrokeWidth)
             : before.strokeWidth;
-    } else if (auto* image = dynamic_cast<ImageItem*>(m_item)) {
+    } else if (auto* image = dynamic_cast<ImageItem*>(m_item.data())) {
+        before.hasImageState = true;
+        before.image = image->image();
         before.hasImageName = true;
         before.imageName = image->imageName();
 
+        after.hasImageState = true;
+        after.image = m_imageChanged ? m_newImage : before.image;
         after.hasImageName = true;
         after.imageName = m_imageNameEdit ? m_imageNameEdit->text() : before.imageName;
     }

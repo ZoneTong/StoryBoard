@@ -26,6 +26,7 @@
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDesktopServices>
+#include <QDialog>
 #include <QDir>
 #include <QDockWidget>
 #include <QDragEnterEvent>
@@ -426,6 +427,12 @@ void MainWindow::createActions()
     m_itemPropsAct = makeAction(this, IconId::Settings, uiText(QStringLiteral("Item properties…")),
                                 QKeySequence(QStringLiteral("Q")),
                                 uiText(QStringLiteral("Show the selected item's properties (Q)")));
+    m_rotateCwAct = makeAction(this, IconId::Undo, uiText(QStringLiteral("Rotate 45° clockwise")),
+                               QKeySequence(QStringLiteral("Ctrl+R")),
+                               uiText(QStringLiteral("Rotate selected items 45° clockwise (Ctrl+R)")));
+    m_rotateCcwAct = makeAction(this, IconId::Redo, uiText(QStringLiteral("Rotate 45° counterclockwise")),
+                                QKeySequence(QStringLiteral("Ctrl+Shift+R")),
+                                uiText(QStringLiteral("Rotate selected items 45° counterclockwise (Ctrl+Shift+R)")));
 
     m_viewModeAct = makeAction(this, IconId::View, uiText(QStringLiteral("View mode")),
                                QKeySequence(QStringLiteral("V")),
@@ -513,6 +520,8 @@ void MainWindow::createActions()
     connect(m_deleteAct, &QAction::triggered, m_scene, &CanvasScene::deleteSelected);
     connect(m_selectAllAct, &QAction::triggered, m_scene, &CanvasScene::selectAllItems);
     connect(m_itemPropsAct, &QAction::triggered, this, &MainWindow::showSelectedItemProperties);
+    connect(m_rotateCwAct, &QAction::triggered, this, [this]() { rotateSelected(45.0); });
+    connect(m_rotateCcwAct, &QAction::triggered, this, [this]() { rotateSelected(-45.0); });
 
     connect(m_modeGroup, &QActionGroup::triggered, this, [this](QAction* action) {
         setToolMode(static_cast<ToolMode>(action->data().toInt()));
@@ -695,6 +704,10 @@ void MainWindow::createMenus()
         applySelectedHeight(-1);
     });
 
+    editMenu->addSeparator();
+    editMenu->addAction(m_rotateCwAct);
+    editMenu->addAction(m_rotateCcwAct);
+
     QMenu* insertMenu = menuBar()->addMenu(uiText(QStringLiteral("&Insert")));
     insertMenu->addMenu(m_shapeMenu);
     insertMenu->addSeparator();
@@ -727,7 +740,6 @@ void MainWindow::createMenus()
     fillMenu->addAction(m_bgFitAct);
     fillMenu->addAction(m_bgTileAct);
     canvasMenu->addSeparator();
-    canvasMenu->addAction(m_settingsAct);
 
     QMenu* styleMenu = menuBar()->addMenu(uiText(QStringLiteral("&Style")));
     styleMenu->setObjectName(QStringLiteral("StyleMenu"));
@@ -755,7 +767,7 @@ void MainWindow::createMenus()
     styleMenu->addAction(m_fillColorAct);
     styleMenu->addAction(m_strokeColorAct);
 
-    m_canvasesMenu = menuBar()->addMenu(uiText(QStringLiteral("&Canvases")));
+    m_canvasesMenu = menuBar()->addMenu(uiText(QStringLiteral("&Board")));
     connect(m_canvasesMenu, &QMenu::aboutToShow, this, &MainWindow::updateCanvasesMenu);
     updateCanvasesMenu();
 
@@ -971,7 +983,11 @@ void MainWindow::connectSignals()
         if (m_zoomBadge)
             m_zoomBadge->setText(QStringLiteral("%1%").arg(qRound(zoom * 100.0)));
     });
-    connect(m_view, &CanvasView::modeChanged, this, [this](ToolMode) { updateModeUi(); });
+    connect(m_view, &CanvasView::modeChanged, this, [this](ToolMode mode) {
+        if (mode != ToolMode::Edit)
+            closeItemProperties();
+        updateModeUi();
+    });
     connect(m_view, &CanvasView::statusMessage, this, [this](const QString& message) {
         statusBar()->showMessage(message, 4000);
     });
@@ -980,6 +996,11 @@ void MainWindow::connectSignals()
     connect(m_view, &CanvasView::itemPropertiesRequested, this, &MainWindow::showItemProperties);
 
     connect(m_scene, &CanvasScene::contentChanged, this, [this]() {
+        if (m_itemPropertiesDialog
+            && (!m_itemPropertiesDialog->item()
+                || m_itemPropertiesDialog->item()->scene() != m_scene)) {
+            closeItemProperties();
+        }
         updateActions();
         updateStatusBar();
     });
@@ -1051,6 +1072,8 @@ void MainWindow::updateActions()
     m_deleteAct->setEnabled(editing && !m_scene->selectedItems().isEmpty());
     m_selectAllAct->setEnabled(editing && m_scene->canvasItemCount() > 0);
     m_itemPropsAct->setEnabled(editing && m_scene->selectedCanvasItems().size() == 1);
+    m_rotateCwAct->setEnabled(editing && !m_scene->selectedCanvasItems().isEmpty());
+    m_rotateCcwAct->setEnabled(editing && !m_scene->selectedCanvasItems().isEmpty());
 
     updateBackgroundModeActions();
 }
@@ -1850,6 +1873,10 @@ void MainWindow::editTextItem(TextItem* item)
 
 void MainWindow::showSelectedItemProperties()
 {
+    if (m_view->mode() != ToolMode::Edit) {
+        statusBar()->showMessage(uiText(QStringLiteral("Item properties are available in edit mode only")), 3000);
+        return;
+    }
     const QList<CanvasItem*> items = m_scene->selectedCanvasItems();
     if (items.size() != 1) {
         statusBar()->showMessage(uiText(QStringLiteral("Select a single item to show its properties")), 3000);
@@ -1862,12 +1889,55 @@ void MainWindow::showItemProperties(CanvasItem* item)
 {
     if (!item || item->scene() != m_scene)
         return;
-
-    ItemPropertiesDialog dialog(m_scene, item, this);
-    if (dialog.exec() != ItemPropertiesDialog::EditTextRequested)
+    // 需求 38：属性窗只在编辑模式可编辑；模型对话框让用户可以同时操作画布。
+    if (m_view->mode() != ToolMode::Edit) {
+        statusBar()->showMessage(uiText(QStringLiteral("Item properties are available in edit mode only")), 3000);
         return;
-    if (auto* text = dynamic_cast<TextItem*>(item))
-        editTextItem(text);
+    }
+
+    closeItemProperties();
+    QPointer<CanvasItem> itemGuard(item);
+    auto* dialog = new ItemPropertiesDialog(m_scene, item, this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose, true);
+    dialog->setModal(false);
+    m_itemPropertiesDialog = dialog;
+    connect(dialog, &QDialog::finished, this, [this, itemGuard](int result) {
+        if (result == ItemPropertiesDialog::EditTextRequested && itemGuard
+            && itemGuard->scene() == m_scene) {
+            if (auto* text = dynamic_cast<TextItem*>(itemGuard.data()))
+                editTextItem(text);
+        }
+    });
+    dialog->show();
+    dialog->raise();
+    dialog->activateWindow();
+}
+
+void MainWindow::closeItemProperties()
+{
+    if (!m_itemPropertiesDialog)
+        return;
+    QPointer<ItemPropertiesDialog> dialog = m_itemPropertiesDialog;
+    m_itemPropertiesDialog = nullptr;
+    if (dialog)
+        dialog->close();
+}
+
+void MainWindow::rotateSelected(qreal degrees)
+{
+    if (m_view->mode() != ToolMode::Edit) {
+        statusBar()->showMessage(uiText(QStringLiteral("Rotation is available in edit mode only")), 3000);
+        return;
+    }
+    const int changed = m_scene->rotateSelected(
+        degrees, degrees > 0 ? uiText(QStringLiteral("Rotate items clockwise"))
+                             : uiText(QStringLiteral("Rotate items counterclockwise")));
+    if (changed == 0) {
+        statusBar()->showMessage(uiText(QStringLiteral("No selected items can be rotated")), 3000);
+        return;
+    }
+    statusBar()->showMessage(
+        uiText(QStringLiteral("Rotated %1 item(s) by %2°")).arg(changed).arg(qAbs(degrees)), 3000);
 }
 
 void MainWindow::replaceBackgroundImage()
@@ -2002,6 +2072,9 @@ void MainWindow::updateCanvasesMenu()
         return;
 
     m_canvasesMenu->clear();
+    // 需求 37：设置从“画布”菜单移到这里；最近画布列表仍动态更新。
+    m_canvasesMenu->addAction(m_settingsAct);
+    m_canvasesMenu->addSeparator();
     m_canvasesMenu->addAction(m_saveAct);
     m_canvasesMenu->addAction(m_saveAsAct);
     m_canvasesMenu->addAction(m_openAct);
@@ -2066,7 +2139,10 @@ void MainWindow::showAbout()
     for (const QString& operation : operations)
         html += QStringLiteral("<li>%1</li>").arg(uiText(operation));
     html += QStringLiteral("</ul><p>%1</p>").arg(uiText(QStringLiteral("Built with Qt %1.")).arg(QString::fromLatin1(qVersion())));
-    QMessageBox::about(this, uiText(QStringLiteral("About StoryBoard Canvas")), html);
+    QMessageBox box(QMessageBox::Information, uiText(QStringLiteral("About StoryBoard Canvas")),
+                    html, QMessageBox::NoButton, this);
+    box.addButton(uiText(QStringLiteral("OK")), QMessageBox::AcceptRole);
+    box.exec();
 }
 
 void MainWindow::closeEvent(QCloseEvent* event)

@@ -1319,6 +1319,53 @@ void CanvasScene::pushGeometry(const ItemGeometryList& before, const ItemGeometr
     updateSceneExtent();
 }
 
+void CanvasScene::pushRotation(CanvasItem* item, qreal before, qreal after, const QString& text)
+{
+    if (!item || qAbs(before - after) < 0.0001)
+        return;
+
+    if (m_undoStack) {
+        m_undoStack->push(new RotationCommand(this, { item }, { before }, { after }, text));
+    } else {
+        item->setRotationAngle(after);
+    }
+    updateSceneExtent();
+}
+
+int CanvasScene::rotateSelected(qreal degrees, const QString& commandText)
+{
+    const QList<CanvasItem*> items = selectedCanvasItems();
+    QList<CanvasItem*> changed;
+    QList<qreal> before;
+    QList<qreal> after;
+    for (CanvasItem* item : items) {
+        if (!item || !isItemEditable(item))
+            continue;
+        const qreal start = item->rotationAngle();
+        const qreal target = CanvasItem::normalizeRotation(start + degrees);
+        if (qAbs(start - target) < 0.0001)
+            continue;
+        changed.append(item);
+        before.append(start);
+        after.append(target);
+    }
+    if (changed.isEmpty())
+        return 0;
+
+    const QString text = commandText.isEmpty()
+        ? uiText(QStringLiteral("Rotate items"))
+        : commandText;
+    if (m_undoStack) {
+        m_undoStack->push(new RotationCommand(this, changed, before, after, text));
+    } else {
+        for (int i = 0; i < changed.size(); ++i)
+            changed.at(i)->setRotationAngle(after.at(i));
+    }
+    updateSceneExtent();
+    update();
+    return changed.size();
+}
+
 void CanvasScene::resetDocument()
 {
     if (m_undoStack)

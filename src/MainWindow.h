@@ -3,6 +3,7 @@
 #include <QColor>
 #include <QMainWindow>
 #include <QPointF>
+#include <QPointer>
 #include <QString>
 
 #include "CanvasTypes.h"
@@ -12,6 +13,7 @@
 class CanvasScene;
 class CanvasView;
 class CanvasItem;
+class ItemPropertiesDialog;
 class LayerPanel;
 class QAction;
 class QActionGroup;
@@ -93,6 +95,8 @@ private:
     void updateBackgroundModeActions();
     void showSelectedItemProperties();
     void showItemProperties(CanvasItem* item);
+    void rotateSelected(qreal degrees);
+    void closeItemProperties();
     QString documentName() const;
 
     CanvasScene* m_scene = nullptr;
@@ -118,6 +122,8 @@ private:
     QAction* m_deleteAct = nullptr;
     QAction* m_selectAllAct = nullptr;
     QAction* m_itemPropsAct = nullptr;
+    QAction* m_rotateCwAct = nullptr;
+    QAction* m_rotateCcwAct = nullptr;
 
     QAction* m_viewModeAct = nullptr;
     QAction* m_brushModeAct = nullptr;
@@ -164,6 +170,7 @@ private:
     QToolButton* m_fillColorButton = nullptr;
     QToolButton* m_strokeColorButton = nullptr;
     QComboBox* m_widthCombo = nullptr;
+    QPointer<ItemPropertiesDialog> m_itemPropertiesDialog;
 
     QLabel* m_hintLabel = nullptr;
     QLabel* m_modeBadge = nullptr;

@@ -4,6 +4,8 @@
 #include <QDialog>
 #include <QFont>
 #include <QPointF>
+#include <QPixmap>
+#include <QPointer>
 #include <QSizeF>
 #include <QString>
 
@@ -13,6 +15,7 @@ class QComboBox;
 class QDoubleSpinBox;
 class QFormLayout;
 class QLineEdit;
+class QPlainTextEdit;
 class QPushButton;
 class QSpinBox;
 class QToolButton;
@@ -30,6 +33,11 @@ public:
 
     explicit ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item, QWidget* parent = nullptr);
 
+    CanvasItem* item() const { return m_item.data(); }
+    bool isItemInScene() const;
+    // 需求 39：从文件载入替换图片；返回 false 时通过 errorMessage 给出原因。
+    bool loadImageFromFile(const QString& path, QString* errorMessage = nullptr);
+    void setReplacementImage(const QPixmap& image);
     static QString layerDescription(const CanvasScene* scene, int layerId);
     void accept() override;
 
@@ -38,9 +46,10 @@ private:
     void updateHeightRange(bool selectTop);
     void updateFontButton();
     void chooseFont();
+    void chooseImage();
 
     CanvasScene* m_scene = nullptr;
-    CanvasItem* m_item = nullptr;
+    QPointer<CanvasItem> m_item;
 
     QComboBox* m_layerCombo = nullptr;
     QSpinBox* m_heightSpin = nullptr;
@@ -56,7 +65,11 @@ private:
     QDoubleSpinBox* m_rotationSpin = nullptr;
     QToolButton* m_textColorButton = nullptr;
     QPushButton* m_fontButton = nullptr;
+    QPlainTextEdit* m_textEdit = nullptr;
     QLineEdit* m_imageNameEdit = nullptr;
+    QPushButton* m_imageButton = nullptr;
+    QPixmap m_newImage;
+    bool m_imageChanged = false;
 
     QFont m_textFont;
     QString m_initialItemName;

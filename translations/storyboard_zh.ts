@@ -72,15 +72,15 @@
     </message>
     <message>
       <source>%1[*] - StoryBoard</source>
-      <translation>%1[*] - 画板</translation>
+      <translation>%1[*] - 故事板</translation>
+    </message>
+    <message>
+      <source>&amp;Board</source>
+      <translation>画板(&amp;B)</translation>
     </message>
     <message>
       <source>&amp;Canvas</source>
       <translation>画布(&amp;C)</translation>
-    </message>
-    <message>
-      <source>&amp;Canvases</source>
-      <translation>最近画布(&amp;V)</translation>
     </message>
     <message>
       <source>&amp;Edit</source>
@@ -112,7 +112,7 @@
     </message>
     <message>
       <source>A lightweight canvas app for freehand strokes, image items, overview navigation, canvas files and export.</source>
-      <translation>一个支持自由笔画、图片图元、全景查看、画布文件与导出的轻量画板应用。</translation>
+      <translation>一个支持自由笔画、图片图元、全景查看、画布文件与导出的轻量故事板应用。</translation>
     </message>
     <message>
       <source>About Qt</source>
@@ -120,11 +120,11 @@
     </message>
     <message>
       <source>About StoryBoard</source>
-      <translation>关于 StoryBoard</translation>
+      <translation>关于故事板</translation>
     </message>
     <message>
       <source>About StoryBoard Canvas</source>
-      <translation>关于画板</translation>
+      <translation>关于故事板</translation>
     </message>
     <message>
       <source>Actual size</source>
@@ -737,6 +737,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>图片</translation>
     </message>
     <message>
+      <source>Image files (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;All files (*.*)</source>
+      <translation>图片文件 (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;所有文件 (*.*)</translation>
+    </message>
+    <message>
       <source>Image files (*.png *.jpg *.jpeg *.bmp *.gif);;All files (*.*)</source>
       <translation>图片文件 (*.png *.jpg *.jpeg *.bmp *.gif);;所有文件 (*.*)</translation>
     </message>
@@ -795,6 +799,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>Item properties</source>
       <translation>图元属性</translation>
+    </message>
+    <message>
+      <source>Item properties are available in edit mode only</source>
+      <translation>图元属性仅在编辑模式可用</translation>
     </message>
     <message>
       <source>Item properties…</source>
@@ -1001,6 +1009,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>未选中图元</translation>
     </message>
     <message>
+      <source>No selected items can be rotated</source>
+      <translation>没有可旋转的选中图元</translation>
+    </message>
+    <message>
       <source>No selected items can change height (or the height limit was reached)</source>
       <translation>没有可调整高度的选中图元（或已到高度边界）</translation>
     </message>
@@ -1022,7 +1034,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
       <source>Open a StoryBoard canvas (Ctrl+O)</source>
-      <translation>打开一个 StoryBoard 画布 (Ctrl+O)</translation>
+      <translation>打开故事板画布 (Ctrl+O)</translation>
     </message>
     <message>
       <source>Open board settings (Ctrl+,)</source>
@@ -1134,7 +1146,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
       <source>Quit StoryBoard</source>
-      <translation>退出 StoryBoard</translation>
+      <translation>退出故事板</translation>
     </message>
     <message>
       <source>Raise the stacking height of selected items (shortcut ])</source>
@@ -1185,6 +1197,14 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>替换背景图片…</translation>
     </message>
     <message>
+      <source>Replace image</source>
+      <translation>替换图片</translation>
+    </message>
+    <message>
+      <source>Replace image…</source>
+      <translation>替换图片…</translation>
+    </message>
+    <message>
       <source>Resize canvas</source>
       <translation>调整画布</translation>
     </message>
@@ -1213,8 +1233,48 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>右大括号</translation>
     </message>
     <message>
+      <source>Rotate 45° clockwise</source>
+      <translation>顺时针旋转 45°</translation>
+    </message>
+    <message>
+      <source>Rotate 45° counterclockwise</source>
+      <translation>逆时针旋转 45°</translation>
+    </message>
+    <message>
+      <source>Rotate item</source>
+      <translation>旋转图元</translation>
+    </message>
+    <message>
+      <source>Rotate items</source>
+      <translation>旋转图元</translation>
+    </message>
+    <message>
+      <source>Rotate items clockwise</source>
+      <translation>顺时针旋转图元</translation>
+    </message>
+    <message>
+      <source>Rotate items counterclockwise</source>
+      <translation>逆时针旋转图元</translation>
+    </message>
+    <message>
+      <source>Rotate selected items 45° clockwise (Ctrl+R)</source>
+      <translation>将选中图元顺时针旋转 45° (Ctrl+R)</translation>
+    </message>
+    <message>
+      <source>Rotate selected items 45° counterclockwise (Ctrl+Shift+R)</source>
+      <translation>将选中图元逆时针旋转 45° (Ctrl+Shift+R)</translation>
+    </message>
+    <message>
+      <source>Rotated %1 item(s) by %2°</source>
+      <translation>已旋转 %1 个图元，角度 %2°</translation>
+    </message>
+    <message>
       <source>Rotation</source>
       <translation>旋转</translation>
+    </message>
+    <message>
+      <source>Rotation is available in edit mode only</source>
+      <translation>旋转仅在编辑模式可用</translation>
     </message>
     <message>
       <source>Rounded rectangle</source>
@@ -1342,15 +1402,15 @@ Second line caption</source>
     </message>
     <message>
       <source>StoryBoard Canvas</source>
-      <translation>画板</translation>
+      <translation>故事板</translation>
     </message>
     <message>
       <source>StoryBoard canvases (*.sbcanvas)</source>
-      <translation>StoryBoard 画布 (*.sbcanvas)</translation>
+      <translation>故事板画布 (*.sbcanvas)</translation>
     </message>
     <message>
       <source>StoryBoard canvases (*.sbcanvas);;All files (*.*)</source>
-      <translation>StoryBoard 画布 (*.sbcanvas);;所有文件 (*.*)</translation>
+      <translation>故事板画布 (*.sbcanvas);;所有文件 (*.*)</translation>
     </message>
     <message>
       <source>Stretch to fill</source>
@@ -1375,6 +1435,10 @@ Second line caption</source>
     <message>
       <source>T Text mode: click the board to add text, double-click text to edit it again</source>
       <translation>T 文字模式：点击画板添加文字，双击文字可再次编辑</translation>
+    </message>
+    <message>
+      <source>T Text mode: click the canvas to add text, double-click text to edit it again</source>
+      <translation>T 文字模式：点击画布添加文字，双击文字可再次编辑</translation>
     </message>
     <message>
       <source>Text</source>
@@ -1522,7 +1586,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>This is not a valid StoryBoard canvas file.</source>
-      <translation>这不是有效的 StoryBoard 画布文件。</translation>
+      <translation>这不是有效的故事板画布文件。</translation>
     </message>
     <message>
       <source>This layer still contains items. Delete or move them first.</source>
@@ -1571,6 +1635,10 @@ Use the checkbox to show or hide it.</source>
     <message>
       <source>V View mode: pan / zoom the whole board, automatic overview</source>
       <translation>V 查看模式：整体平移 / 缩放，自动全景</translation>
+    </message>
+    <message>
+      <source>V View mode: pan / zoom the whole canvas, automatic overview</source>
+      <translation>V 查看模式：平移 / 缩放整张画布，切换时自动全景</translation>
     </message>
     <message>
       <source>View mode</source>

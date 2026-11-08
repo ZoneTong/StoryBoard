@@ -38,6 +38,7 @@
 #include <QLineF>
 #include <QLinearGradient>
 #include <QListWidget>
+#include <QPlainTextEdit>
 #include <QListWidgetItem>
 #include <QMarginsF>
 #include <QMenu>
@@ -1887,6 +1888,7 @@ int runSelfTest(const QString& reportPath)
     {
         CanvasScene editScene;
         editScene.applyCanvasSize(QSizeF(800.0, 600.0));
+        editScene.setMode(ToolMode::Edit);
         QUndoStack editUndo;
         editScene.setUndoStack(&editUndo);
 
@@ -2032,6 +2034,36 @@ int runSelfTest(const QString& reportPath)
         check(qFuzzyCompare(firstShape->rotationAngle(), 30.0),
               QStringLiteral("属性窗修改可重做旋转角度"));
 
+        check(qFuzzyCompare(CanvasItem::snapRotation(12.4), 10.0)
+                  && qFuzzyCompare(CanvasItem::snapRotation(-12.4), -10.0),
+              QStringLiteral("旋转手柄角度按 5° 步长吸附"));
+        const QRectF rotationFrame = firstShape->contentRect();
+        const QPointF rotationHandlePoint(rotationFrame.center().x(),
+                                          rotationFrame.top() - 25.0);
+        editScene.clearSelection();
+        firstShape->setSelected(true);
+        check(firstShape->shape().contains(rotationHandlePoint),
+              QStringLiteral("选中单个图元时显示旋转手柄"));
+        firstShape->setSelected(false);
+        check(!firstShape->shape().contains(rotationHandlePoint),
+              QStringLiteral("未选中图元时不显示旋转手柄"));
+        firstShape->setSelected(true);
+        const int rotateUndoBefore = editUndo.count();
+        const int rotatedCount = editScene.rotateSelected(45.0);
+        check(rotatedCount == 1 && qFuzzyCompare(firstShape->rotationAngle(), 75.0)
+                  && editUndo.count() == rotateUndoBefore + 1,
+              QStringLiteral("旋转快捷键对选中图元增加 45°"));
+        editUndo.undo();
+        check(qFuzzyCompare(firstShape->rotationAngle(), 30.0),
+              QStringLiteral("旋转快捷键可整体撤销"));
+        editUndo.redo();
+        check(qFuzzyCompare(firstShape->rotationAngle(), 75.0),
+              QStringLiteral("旋转快捷键可重做"));
+        check(editScene.rotateSelected(-45.0) == 1
+                  && qFuzzyCompare(firstShape->rotationAngle(), 30.0),
+              QStringLiteral("逆时针旋转快捷键减少 45°"));
+        editScene.clearSelection();
+
         QJsonObject namedJson = firstShape->toJson();
         ShapeItem loadedNamedShape;
         loadedNamedShape.fromJson(namedJson);
@@ -2088,6 +2120,54 @@ int runSelfTest(const QString& reportPath)
         check(imageItem->imageName() == QStringLiteral("old.png"),
               QStringLiteral("图片属性窗修改可撤销"));
 
+        const int imageBodyUndoIndex = editUndo.index();
+        {
+            ItemPropertiesDialog dialog(&editScene, imageItem);
+            dialog.show();
+            QApplication::processEvents();
+            QPushButton* replaceButton = dialog.findChild<QPushButton*>(
+                QStringLiteral("ItemPropertiesReplaceImageValue"));
+            check(replaceButton && replaceButton->isEnabled() && !dialog.isModal(),
+                  QStringLiteral("图片属性窗提供替换图片按钮且属性窗为非模态"));
+            QFile iconFile(QStringLiteral(":/icons/app.png"));
+            const bool iconRead = iconFile.open(QIODevice::ReadOnly);
+            const QByteArray pngBytes = iconRead ? iconFile.readAll() : QByteArray();
+            const QString replacementPath = QDir(workDirectory)
+                .filePath(QStringLiteral("chprops-replacement-probe.png"));
+            QFile probeFile(replacementPath);
+            const bool probeWritten = probeFile.open(QIODevice::WriteOnly)
+                && probeFile.write(pngBytes) == pngBytes.size();
+            probeFile.close();
+            QString probeError;
+            const bool probeLoaded = probeWritten && !pngBytes.isEmpty()
+                && dialog.loadImageFromFile(replacementPath, &probeError);
+            QFile::remove(replacementPath);
+            check(!pngBytes.isEmpty(),
+                  QStringLiteral("图片替换探针可读取应用图标资源"),
+                  QString::number(pngBytes.size()));
+            check(probeWritten,
+                  QStringLiteral("图片替换探针可写入临时图片"),
+                  replacementPath);
+            check(probeLoaded,
+                  QStringLiteral("图片属性窗可从文件载入替换图片"),
+                  probeLoaded ? QStringLiteral("ok") : probeError);
+            QPixmap replacement(12, 12);
+            replacement.fill(Qt::blue);
+            dialog.setReplacementImage(replacement);
+            dialog.accept();
+            QApplication::processEvents();
+        }
+        check(imageItem->image().size() == QSize(12, 12),
+              QStringLiteral("图片本体替换生效"),
+              QStringLiteral("%1x%2").arg(imageItem->image().width()).arg(imageItem->image().height()));
+        check(editUndo.index() == imageBodyUndoIndex + 1,
+              QStringLiteral("图片本体替换进入属性撤销记录"),
+              QStringLiteral("%1 / %2").arg(imageBodyUndoIndex).arg(editUndo.index()));
+        editUndo.undo();
+        QApplication::processEvents();
+        check(imageItem->image().size() == QSize(24, 24),
+              QStringLiteral("图片本体替换可撤销"));
+
         QFont propertyFont(QStringLiteral("Microsoft YaHei UI"));
         propertyFont.setPointSize(16);
         auto* textItem = new TextItem();
@@ -2098,6 +2178,29 @@ int runSelfTest(const QString& reportPath)
         editScene.addItemsWithUndo({ textItem }, QStringLiteral("Add property text"));
         check(textItem->rawName() == QStringLiteral("文字 1"),
               QStringLiteral("文字图元自动名称不使用文字内容"), textItem->rawName());
+
+        const int textPropertyUndoBefore = editUndo.count();
+        {
+            ItemPropertiesDialog dialog(&editScene, textItem);
+            dialog.show();
+            QApplication::processEvents();
+            QPlainTextEdit* textValue = dialog.findChild<QPlainTextEdit*>(
+                QStringLiteral("ItemPropertiesTextValue"));
+            check(textValue && textValue->isEnabled()
+                      && textValue->toPlainText() == QStringLiteral("属性文字"),
+                  QStringLiteral("文字属性窗可编辑文字正文"));
+            if (textValue)
+                textValue->setPlainText(QStringLiteral("属性文字已更新"));
+            dialog.accept();
+            QApplication::processEvents();
+        }
+        check(textItem->text() == QStringLiteral("属性文字已更新")
+                  && editUndo.count() == textPropertyUndoBefore + 1,
+              QStringLiteral("文字正文修改进入属性撤销记录"));
+        editUndo.undo();
+        QApplication::processEvents();
+        check(textItem->text() == QStringLiteral("属性文字"),
+              QStringLiteral("文字正文修改可撤销"));
 
         auto* firstNamingStroke = new StrokeItem();
         firstNamingStroke->beginStroke(QPointF(90.0, 420.0),

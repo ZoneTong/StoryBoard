@@ -25,7 +25,8 @@ public:
         BottomRight,
         Bottom,
         BottomLeft,
-        Left
+        Left,
+        Rotation
     };
 
     explicit CanvasItem(QGraphicsItem* parent = nullptr);
@@ -57,6 +58,9 @@ public:
     // 需求 24：图元可以绕内容中心旋转；旋转角随画布 JSON 保存并参与撤销。
     qreal rotationAngle() const { return m_rotation; }
     void setRotationAngle(qreal angle);
+    // 旋转手柄与快捷键使用：角度落在 [-180, 180)。
+    static qreal normalizeRotation(qreal angle);
+    static qreal snapRotation(qreal angle, qreal step = 5.0);
 
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
@@ -76,7 +80,7 @@ public:
 protected:
     virtual void paintContent(QPainter* painter) = 0;
     virtual void contentResized() {}
-    virtual qreal framePadding() const { return 26.0; }
+    virtual qreal framePadding() const { return 42.0; }
 
     void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
@@ -95,6 +99,7 @@ protected:
     QPointF handleCenter(Handle handle) const;
     QRectF handleRect(Handle handle) const;
     Handle handleAt(const QPointF& pos) const;
+    qreal rotationHandleOffset() const;
     // Clickable area of the resize handles drawn by drawSelectionOverlay().
     // Handles are centred on the content corners, so half of every handle sits
     // outside shape(); item hit tests must include it explicitly.
@@ -103,12 +108,14 @@ protected:
     QCursor cursorForHandle(Handle handle) const;
 
 private:
-    enum class DragKind { None, Move, Resize };
+    enum class DragKind { None, Move, Resize, Rotate };
 
     void beginMove(const QPointF& scenePos);
     void beginResize(Handle handle, const QPointF& scenePos);
+    void beginRotate(const QPointF& scenePos);
     void applyMove(const QPointF& scenePos);
     void applyResize(const QPointF& scenePos, Qt::KeyboardModifiers modifiers);
+    void applyRotate(const QPointF& scenePos);
     void finishInteraction();
     void updateHoverCursor(const QPointF& pos);
 
@@ -122,5 +129,7 @@ private:
     QPointF m_dragStartScene;
     QPointF m_dragStartPos;
     QSizeF m_dragStartSize;
+    qreal m_dragStartRotation = 0.0;
+    qreal m_rotateStartAngle = 0.0;
     ItemGeometryList m_before;
 };
