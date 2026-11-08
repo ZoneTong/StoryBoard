@@ -32,10 +32,15 @@ const char* const kTranslationContext = "StoryBoard";
 // 源语言是英文；中文等其它语种放在各自的 .ts/.qm 里。
 const char* const kTranslationResource = ":/i18n/storyboard_zh.qm";
 const char* const kTranslationSourceResource = ":/i18n/storyboard_zh.ts";
+// Qt 6 内置控件（QFontDialog、QMessageBox 等）的标准标签由 qtbase 翻译提供。
+const char* const kQtTranslationResource = ":/i18n/qtbase_zh_CN.qm";
 
 QTranslator gTranslator;
 bool gTranslatorLoaded = false;
 bool gTranslatorInstalled = false;
+QTranslator gQtTranslator;
+bool gQtTranslationAvailable = false;
+bool gQtTranslatorInstalled = false;
 QHash<QString, QString> gReverseTranslations;
 
 void loadReverseTranslations()
@@ -71,6 +76,8 @@ void ensureTranslatorLoaded()
     gTranslatorLoaded = true;
     loadReverseTranslations();
     (void)gTranslator.load(QString::fromLatin1(kTranslationResource));
+    gQtTranslationAvailable = gQtTranslator.load(
+        QString::fromLatin1(kQtTranslationResource));
 }
 
 void installChineseTranslator(bool chinese)
@@ -79,12 +86,26 @@ void installChineseTranslator(bool chinese)
     QCoreApplication* app = QCoreApplication::instance();
     if (!app)
         return;
-    if (chinese && !gTranslatorInstalled) {
-        app->installTranslator(&gTranslator);
-        gTranslatorInstalled = true;
-    } else if (!chinese && gTranslatorInstalled) {
-        app->removeTranslator(&gTranslator);
-        gTranslatorInstalled = false;
+    if (chinese) {
+        if (!gTranslatorInstalled) {
+            app->installTranslator(&gTranslator);
+            gTranslatorInstalled = true;
+        }
+        // qtbase 翻译放在最后安装：Qt 内置控件优先查到它，应用自己的
+        // StoryBoard 上下文仍由 gTranslator 提供。
+        if (gQtTranslationAvailable && !gQtTranslatorInstalled) {
+            app->installTranslator(&gQtTranslator);
+            gQtTranslatorInstalled = true;
+        }
+    } else {
+        if (gQtTranslatorInstalled) {
+            app->removeTranslator(&gQtTranslator);
+            gQtTranslatorInstalled = false;
+        }
+        if (gTranslatorInstalled) {
+            app->removeTranslator(&gTranslator);
+            gTranslatorInstalled = false;
+        }
     }
 }
 

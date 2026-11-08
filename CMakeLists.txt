@@ -20,6 +20,12 @@ set(STORYBOARD_TS_FILES
     translations/storyboard_zh.ts
 )
 
+# Qt 内置对话框（如 QFontDialog）的标签由 qtbase 自己的翻译目录提供；
+# 这里把 Qt 6.12 的中文基础翻译一并嵌入，避免部署时依赖额外 translations 目录。
+set(STORYBOARD_QT_TRANSLATION_FILE
+    translations/qtbase_zh_CN.qm
+)
+
 set(STORYBOARD_SOURCES
     src/main.cpp
     src/CanvasTypes.h
@@ -52,8 +58,6 @@ set(STORYBOARD_SOURCES
     src/ExportDialog.cpp
     src/SettingsDialog.h
     src/SettingsDialog.cpp
-    src/TextDialog.h
-    src/TextDialog.cpp
     src/ItemPropertiesDialog.h
     src/ItemPropertiesDialog.cpp
     src/MainWindow.h
@@ -78,9 +82,12 @@ set_source_files_properties(${STORYBOARD_QM_FILES} PROPERTIES
 set_source_files_properties(${STORYBOARD_TS_FILES} PROPERTIES
     QT_RESOURCE_ALIAS "storyboard_zh.ts"
 )
+set_source_files_properties(${STORYBOARD_QT_TRANSLATION_FILE} PROPERTIES
+    QT_RESOURCE_ALIAS "qtbase_zh_CN.qm"
+)
 qt_add_resources(StoryBoard "storyboard_translations"
     PREFIX "/i18n"
-    FILES ${STORYBOARD_TS_FILES} ${STORYBOARD_QM_FILES}
+    FILES ${STORYBOARD_TS_FILES} ${STORYBOARD_QM_FILES} ${STORYBOARD_QT_TRANSLATION_FILE}
 )
 
 if(WIN32)

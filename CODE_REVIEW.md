@@ -1,8 +1,8 @@
 # StoryBoard 代码审查与缺陷修复报告
 
-审查对象：`D:\workspace\github.com\ZoneTong\StoryBoard`（Qt 6 / C++17 / CMake，src 下 34 个文件、约 8500 行）
-审查时间：2026-11-07；2026-11-08 追加需求 40–42、旋转手柄与属性窗文字/图片编辑收口复核
-结论：**历史审查发现的 4 个真实缺陷已修复并保留回归；2026-11-08 复核发现的 5 处需求/实现缺口已全部收口，后续属性窗文字/图片编辑也已收口，自检 503 项全通过。**
+审查对象：`D:\workspace\github.com\ZoneTong\StoryBoard`（Qt 6 / C++17 / CMake，src 下 37 个文件、约 8500 行）
+审查时间：2026-11-07；2026-11-08–09 追加需求 40–42、旋转手柄、属性窗文字/图片编辑、文字对话框移除、文字样式四选项加入后回收与字体选择对话框中文化复核
+结论：**历史审查发现的 4 个真实缺陷已修复并保留回归；2026-11-08 复核发现的 5 处需求/实现缺口已全部收口，后续属性窗文字/图片编辑、文字对话框移除、文字样式四选项加入后按用户要求回收与字体选择对话框中文化也已收口，自检 504 项全通过。**
 
 ## 一、审查与验证方式
 
@@ -48,7 +48,7 @@
 ## 三、记录但未修改的问题（边缘或属设计取舍）
 
 1. **双击 / 右键只取最上层图元**：`CanvasView` 双击用 `itemAt()`、右键用 `items()` 取最上层可见 `CanvasItem`，若该图元位于其他（锁定）图层，会提示“该图层未选中”，下层当前图层的图元拿不到操作。这与“仅当前图层可编辑、其他图层可见但锁定”的设计一致（单点选也遵循最上层语义），属体验取舍，未改。
-2. **字号上限不一致**：`TextItem::fromJson` 允许 6–400，`TextDialog` 上限 200，且对话框确定时会把字号钳到 200。只有手工编辑过画布的大字号文字会受影响，改任一侧都会改变既有画布行为，故只记录。
+2. **字号上限不一致（已随窗体删除消解）**：`TextItem::fromJson` 允许 6–400，原 `TextDialog` 上限 200，且对话框确定时会把字号钳到 200。该对话框已在 2026-11-09 删除，文字字号统一由属性窗与 `TextItem` 的 6–400 口径处理。
 3. **导出扩展名改写**：`ExportDialog::updatePathExtension` 用 `chop(当前后缀长度)` 拼接，路径以 `.` 结尾时会出现 `xxx..png`；手动编辑路径时格式提示文本不刷新。不影响导出结果。
 4. **导出异常安全**：`CanvasScene::renderImage` 是 `m_exporting = true; render(); m_exporting = false;`，无 RAII/异常保护；当前 `QGraphicsScene::render` 不会抛异常，故未改。
 5. **版本号口径**：`main.cpp` 的 `applicationVersion` 为 `0.1.0`，画布 JSON 的 `format` 为 `"StoryBoardCanvas"`、`version` 为 `2`，两者含义不同（应用版本 vs 画布格式），未统一。
@@ -80,7 +80,7 @@
 
 1. **需求 42（属性窗模态、任何模式可查看、仅编辑模式可编辑）**
    - `ItemPropertiesDialog` 不再 `setModal(false)`，统一 `setModal(true)`；新增 `editable` 构造参数、`isEditable()` 与 `applyEditableState()`。
-   - 只读时禁用名称/图层/高度/填充/描边/位置/尺寸/旋转/文字/图片等全部编辑控件，隐藏“编辑文字…”，只保留“关闭”按钮，并显示只读提示；`accept()` 不调用 `applyChanges()`，关闭不写回。
+   - 只读时禁用名称/图层/高度/填充/描边/位置/尺寸/旋转/文字/图片等全部编辑控件，显示只读提示，只保留“关闭”按钮；`accept()` 不调用 `applyChanges()`，关闭不写回。
    - `MainWindow::showItemProperties()` 去掉“仅编辑模式”拦截，按 `mode == Edit && isItemEditable(item)` 计算可编辑性，改用 `exec()` 模态显示；`showSelectedItemProperties()` 与 `updateActions()` 不再要求编辑模式。
    - `CanvasView` 新增 `propertyItemAt()`，查看/画笔/文字模式双击图元都会请求属性窗；编辑模式仍保留锁定图层“先解锁”的提示。`modeChanged` 不再因离开编辑模式而关闭属性窗。
 2. **需求 40（顺/逆时针旋转 45° 入菜单与工具栏）**
@@ -91,14 +91,14 @@
    - `CanvasItem::boundingRect()` 在选中时把旋转手柄至内容顶边的距离与半径计入上边界；`refreshViewDependentGeometry()` 在缩放后重新声明几何，`CanvasScene` / `CanvasView::emitZoom()` 统一刷新。
    - 修复前低缩放（例如 0.4×）手柄中心可超出固定 42 场景单位的粗边界，场景命中先失败，表现为看得见拖不动；现在手柄仍位于 `boundingRect()`、`shape()` 与 `QGraphicsScene::items()` 命中范围内。
 5. **自检与文档**
-   - 当时自检由 486 项增至 **498 项**（后续属性窗文字/图片编辑追加至 503 项）：新增模态/只读字段断言、只读关闭不写回、主窗口查看模式双击端到端只读弹窗、低缩放 `boundingRect`/`shape`/场景命中四项，均通过。
-   - `README.md` 已把“非模态/仅编辑模式可用”改为“模态/任意模式可查看、仅编辑模式可编辑”，并补充工具栏旋转按钮与“图形”标签说明；`docs/` 六张截图已用最新构建重新生成。
+   - 当时自检由 486 项增至 **498 项**（后续追加属性窗文字/图片编辑、文字对话框移除、文字样式四选项加入后回收与字体选择对话框中文化后最终为 **504 项**）：新增模态/只读字段断言、只读关闭不写回、主窗口查看模式双击端到端只读弹窗、低缩放 `boundingRect`/`shape`/场景命中四项，均通过。
+   - `README.md` 已把“非模态/仅编辑模式可用”改为“模态/任意模式可查看、仅编辑模式可编辑”，并补充工具栏旋转按钮与“图形”标签说明；`docs/` 五张截图已用最新构建重新生成（原 `text-dialog.png` 随窗体删除）。
 
 验证命令与结果：
 
 ```powershell
 cmake --build build-check -j 8
-# Generated 411 translation(s) (411 finished and 0 unfinished)
+# Generated 411 translation(s) (411 finished and 0 unfinished)   # 当时计数；删 TextDialog 后 405，补文字样式词条后 408，移除样式行后 403
 # [100%] Built target StoryBoard
 
 build-check\bin\StoryBoard.exe --self-test selftest-43.txt
@@ -116,20 +116,46 @@ StoryBoard.exe --item-properties-screenshot build-check\bin\props-43-check.png
 2. **文字/图片编辑后重置图元尺寸**
    - 文字正文变化：`after.size = after.textState.baseSize = TextItem::measure(newText, font)`，撤销时恢复旧尺寸。
    - 图片本体替换：属性窗载入新图后立即把尺寸字段更新为图片原始像素尺寸；确定时 `after.size = newImage.size()`，撤销时恢复旧尺寸。
-3. **移除文字属性窗的“编辑文字…”按钮**
+3. **移除文字属性窗的“编辑文字…”按钮与独立文字对话框**
    - 删除 `ItemPropertiesDialog` 的 `EditTextRequested` 及按钮，文字正文只在属性窗的 `Text content` 编辑框中修改。
-   - `MainWindow::showItemProperties()` 不再连接该结果码；右键菜单独立的“编辑文字…”入口与添加文字对话框保留。
-4. **自检**
-   - 新增/调整：文字属性窗不再提供编辑文字按钮、仍保留正文编辑框、正文修改后自然尺寸与撤销恢复、图片替换后原始像素尺寸与撤销恢复。
-   - 自检从 498 增至 **503 项，全部通过**（`SUMMARY 503 passed, 0 failed`）。
+   - 删除右键菜单的 `编辑文字…` 动作、`CanvasView::editTextRequested` 信号和 `MainWindow::editTextItem()`。
+   - 删除 `TextDialog.h/.cpp` 窗体源码、`--text-screenshot` 截图分支及 `docs/text-dialog.png`；添加文字改为插入默认文字图元后直接打开属性窗。
+4. **文字样式四选项（加入后按要求移除）**
+   - 曾为满足“文字属性窗显示添加文字原有的粗体/斜体/下划线/删除线”要求，在字体行后加入 `Text style` 行及四个 `QCheckBox`；随后用户明确要求“文字图元属性窗中删除文字样式，不可显示或编辑”，当前实现已完整移除该行、四个勾选框、`updateTextStyle()`、只读禁用项与 `chooseFont()` 的反向同步，源码中不再存在 `ItemPropertiesBoldValue`/`ItalicValue`/`UnderlineValue`/`StrikeOutValue` 控件。
+   - `TextItem::toJson()` / `fromJson()` 仍保留 `underline`、`strikeOut` 两个布尔字段（旧画布缺省为 `false`），避免已有画布中的字体样式在打开/保存时丢失；绘制仍使用 `QPainter::drawText(m_font)`。
+   - `translations\storyboard_zh.ts` 中随样式行加入的 `Bold`/`Italic`/`Underline`/`Strikethrough`/`Text style` 五条词条已删除；翻译总数由 408 调整为 **403**。
+   - 自检改为断言编辑态与只读态属性窗均不存在四个样式勾选框，同时保留画布往返恢复 `underline/strikeOut` 的底层数据验证。
+5. **字体选择对话框中文化**
+   - 原因：`QFontDialog` 是 Qt 内置控件，按钮和标签属于 `QFontDialog` 上下文，应用自己的 `:/i18n/storyboard_zh.qm` 只覆盖 `StoryBoard` 上下文；原部署命令 `windeployqt --no-translations` 又跳过了 Qt 翻译目录，因此内置对话框回退为英文。
+   - 处理：把 Qt 6.12 的 `translations/qtbase_zh_CN.qm` 通过 `qt_add_resources` 嵌入 `:/i18n`，中文模式下额外安装一个 `QTranslator`（英文模式移除）；字体按钮调用 `QFontDialog::getFont(..., QFontDialog::DontUseNativeDialog)`，避免 Windows 原生字体窗跟随系统 UI 语言而不受应用语言控制。
+   - 自检新增“Qt 内置字体对话框已装载中文翻译”断言，验证 `QFontDialog` 上下文的 `Effects` 已翻译为“效果”。
+6. **自检**
+   - 新增/调整：文字属性窗不再提供编辑文字按钮、仍保留正文编辑框、正文修改后自然尺寸与撤销恢复、图片替换后原始像素尺寸与撤销恢复、添加文字直接进入属性窗、编辑态与只读态均不显示文字样式勾选框、画布往返保留底层字体样式数据。
+   - 移除已删除的 `TextDialog` 三项独立断言，并新增“右键编辑文字入口信号已移除”断言；自检为 **504 项，全部通过**（`SUMMARY 504 passed, 0 failed`）。
 
 验证命令：
 
 ```powershell
 cmake --build build-check -j 8
 # [100%] Built target StoryBoard
-StoryBoard.exe --self-test selftest-44.txt
-# SUMMARY 503 passed, 0 failed
+StoryBoard.exe --self-test selftest-48-final.txt
+# SUMMARY 504 passed, 0 failed
 ```
 
+## 八、开源代码引用统计
 
+- **需求 14** 唯一明确的参考项目是 `https://github.com/excalidraw/excalidraw`，用于参考填充样式/色块的功能形态与交互思路；实现仍使用 Qt 的 `QPainterPath`、纹理笔刷与自绘图标，未拷贝其源码、图标或资源文件。
+- 源码中未发现第三方版权头、SPDX 标识、GPL/MIT/BSD/Apache 代码片段、`third_party` 目录或外部源码子模块。
+- 构建依赖仅为 Qt 6.12（Qt Widgets / Qt GUI / Qt PDF）、CMake 与 MinGW 13.1；这些是工具链/框架依赖，不计入“参考代码”。
+- **统计结论：参考的开源项目 1 个（Excalidraw，仅功能参考）；引入的开源项目源码 0 个。**
+
+## 九、复核后仍保留的非本批遗留
+
+以下问题不影响本批文字链路与 504 项自检，但属于后续可单独立项的实现细节：
+
+1. `CanvasScene::normalizeLayerHeights()` 触发归一化时从 `i + 1` 重新赋值，会把合法的 `height 0` 抬成 1；应在归一化时保留已有最小合法高度。
+2. 默认图层名（`背景`、`图层 1`、`图层 %1`）仍硬编码中文，英文界面下新图层名不会自动切换；应改为 `uiText()` 词条。
+3. `uniqueItemName()` 按当前语言前缀递增，切换界面语言后同层可能出现不同语言前缀的编号序列；应改为按图元类型而不是当前显示前缀判重。
+4. `RotationCommand::apply()` 只调用 `updateSceneExtent()` / `update()`，未发 `contentChanged()`，旋转的撤销/重做后主窗口动作与状态栏刷新可能滞后。
+5. `ImageItem` 自带私有 `m_name` 与基类 `CanvasItem::m_name` 同名遮蔽；当前分别表示“图片文件名”和“图元名称”，建议改名避免误用。
+6. `main.cpp` 的 `applicationDisplayName` 只在启动时设置一次，`applyUiLanguage()` 不刷新；`MainWindow` 的 `showAbout()` 与 PDF `writer.setTitle` 仍有 `StoryBoard Canvas` 残留。

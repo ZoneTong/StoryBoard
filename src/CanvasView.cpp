@@ -5,7 +5,6 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "StrokeItem.h"
-#include "TextItem.h"
 
 #include <QAction>
 #include <QContextMenuEvent>
@@ -461,13 +460,6 @@ void CanvasView::contextMenuEvent(QContextMenuEvent* event)
     QAction* properties = menu.addAction(uiText(QStringLiteral("Item properties…")));
     menu.addSeparator();
 
-    TextItem* textItem = dynamic_cast<TextItem*>(item);
-    QAction* editText = nullptr;
-    if (textItem) {
-        editText = menu.addAction(uiText(QStringLiteral("Edit text…")));
-        menu.addSeparator();
-    }
-
     QAction* heightUp = menu.addAction(uiText(QStringLiteral("Height +1 (stack up)    ]")));
     QAction* heightDown = menu.addAction(uiText(QStringLiteral("Height -1 (stack down)    [")));
     heightDown->setEnabled(item->height() > 0);
@@ -488,8 +480,6 @@ void CanvasView::contextMenuEvent(QContextMenuEvent* event)
 
     if (chosen == properties)
         emit itemPropertiesRequested(item);
-    else if (editText && chosen == editText)
-        emit editTextRequested(textItem);
     else if (chosen == heightUp)
         m_scene->adjustSelectedHeights(1);
     else if (chosen == heightDown)

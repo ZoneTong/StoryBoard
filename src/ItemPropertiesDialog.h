@@ -44,6 +44,7 @@ private:
     void updateHeightRange(bool selectTop);
     void updateFontButton();
     void chooseFont();
+    void syncTextNaturalSize();
     void chooseImage();
     void applyEditableState();
 

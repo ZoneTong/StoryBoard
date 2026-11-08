@@ -323,14 +323,9 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
 
     // 文字正文直接在属性窗里编辑；内容变化时同步到自然尺寸，确定后由
     // ItemPropertiesCommand 一次性提交文字、尺寸和撤销记录。
-    if (m_textEdit && m_widthSpin && m_heightSizeSpin) {
-        connect(m_textEdit, &QPlainTextEdit::textChanged, this, [this]() {
-            if (!m_editable || !m_textEdit)
-                return;
-            const QSizeF natural = TextItem::measure(m_textEdit->toPlainText(), m_textFont);
-            m_widthSpin->setValue(natural.width());
-            m_heightSizeSpin->setValue(natural.height());
-        });
+    if (m_textEdit) {
+        connect(m_textEdit, &QPlainTextEdit::textChanged, this,
+                &ItemPropertiesDialog::syncTextNaturalSize);
     }
 
     applyEditableState();
@@ -427,27 +422,37 @@ void ItemPropertiesDialog::updateFontButton()
     m_fontButton->setText(fontText(m_textFont));
 }
 
+void ItemPropertiesDialog::syncTextNaturalSize()
+{
+    if (!m_editable || !m_textEdit)
+        return;
+    if (auto* text = dynamic_cast<TextItem*>(m_item.data())) {
+        Q_UNUSED(text);
+        const QSizeF natural = TextItem::measure(m_textEdit->toPlainText(), m_textFont);
+        if (m_widthSpin)
+            m_widthSpin->setValue(natural.width());
+        if (m_heightSizeSpin)
+            m_heightSizeSpin->setValue(natural.height());
+    }
+}
+
 void ItemPropertiesDialog::chooseFont()
 {
     if (!m_editable)
         return;
 
     bool ok = false;
+    // 使用 Qt 自绘字体窗，避免 Windows 原生字体对话框跟随系统 UI 语言而
+    // 与应用内语言不一致；标准标签由嵌入的 qtbase_zh_CN.qm 提供中文。
     const QFont font = QFontDialog::getFont(&ok, m_textFont, this,
-                                            uiText(QStringLiteral("Choose font")));
+                                            uiText(QStringLiteral("Choose font")),
+                                            QFontDialog::DontUseNativeDialog);
     if (!ok)
         return;
 
     m_textFont = font;
     updateFontButton();
-    if (auto* text = dynamic_cast<TextItem*>(m_item.data())) {
-        const QString currentText = m_textEdit ? m_textEdit->toPlainText() : text->text();
-        const QSizeF natural = TextItem::measure(currentText, m_textFont);
-        if (m_widthSpin)
-            m_widthSpin->setValue(natural.width());
-        if (m_heightSizeSpin)
-            m_heightSizeSpin->setValue(natural.height());
-    }
+    syncTextNaturalSize();
 }
 
 void ItemPropertiesDialog::chooseImage()

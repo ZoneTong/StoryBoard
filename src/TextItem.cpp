@@ -180,6 +180,8 @@ QJsonObject TextItem::toJson() const
     json.insert(QStringLiteral("fontSize"), m_font.pointSizeF());
     json.insert(QStringLiteral("fontWeight"), static_cast<int>(m_font.weight()));
     json.insert(QStringLiteral("italic"), m_font.italic());
+    json.insert(QStringLiteral("underline"), m_font.underline());
+    json.insert(QStringLiteral("strikeOut"), m_font.strikeOut());
     json.insert(QStringLiteral("baseWidth"), m_baseSize.width());
     json.insert(QStringLiteral("baseHeight"), m_baseSize.height());
     return json;
@@ -197,6 +199,8 @@ void TextItem::fromJson(const QJsonObject& json)
                            .toInt(static_cast<int>(QFont::Normal));
     m_font.setWeight(static_cast<QFont::Weight>(qBound(1, weight, 1000)));
     m_font.setItalic(json.value(QStringLiteral("italic")).toBool(false));
+    m_font.setUnderline(json.value(QStringLiteral("underline")).toBool(false));
+    m_font.setStrikeOut(json.value(QStringLiteral("strikeOut")).toBool(false));
 
     m_color = QColor(json.value(QStringLiteral("color"))
                          .toString(QStringLiteral("#ff1e293b")));

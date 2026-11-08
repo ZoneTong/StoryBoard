@@ -8,7 +8,6 @@
 class CanvasItem;
 class CanvasScene;
 class StrokeItem;
-class TextItem;
 class QContextMenuEvent;
 
 class CanvasView : public QGraphicsView
@@ -43,7 +42,6 @@ signals:
     void modeChanged(ToolMode mode);
     void statusMessage(const QString& message);
     void textPlacementRequested(const QPointF& scenePos);
-    void editTextRequested(TextItem* item);
     void itemPropertiesRequested(CanvasItem* item);
 
 protected:

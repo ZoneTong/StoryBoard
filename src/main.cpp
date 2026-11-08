@@ -9,7 +9,6 @@
 #include "SelfTest.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "TextDialog.h"
 
 #include <QApplication>
 #include <QComboBox>
@@ -279,23 +278,6 @@ int main(int argc, char** argv)
         });
         QMetaObject::invokeMethod(&window, "showAbout", Qt::DirectConnection);
         return saved ? 0 : 1;
-    }
-
-    if (arguments.contains(QStringLiteral("--text-screenshot"))) {
-        const QString outputPath = takeOptionPath(arguments, QStringLiteral("--text-screenshot"));
-        if (outputPath.isEmpty())
-            return 2;
-        TextDialog dialog;
-        dialog.setHeading(uiText(QStringLiteral("Add text item")));
-        dialog.setTextValue(uiText(QStringLiteral("Scene title: Evening street\nSecond line caption")));
-        QFont font(QStringLiteral("Microsoft YaHei UI"));
-        font.setPointSize(28);
-        font.setBold(true);
-        dialog.setTextFont(font);
-        dialog.setTextColor(QColor(QStringLiteral("#1D4ED8")));
-        dialog.show();
-        QApplication::processEvents();
-        return dialog.grab().save(outputPath) ? 0 : 1;
     }
 
     if (arguments.contains(QStringLiteral("--item-properties-screenshot"))) {

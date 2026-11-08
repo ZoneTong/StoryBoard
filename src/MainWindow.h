@@ -23,7 +23,6 @@ class QLabel;
 class QMenu;
 class QToolButton;
 class QUndoStack;
-class TextItem;
 enum class ShapeType;
 
 class MainWindow : public QMainWindow
@@ -53,7 +52,6 @@ private slots:
     void exportCanvas();
     void importImagesDialog();
     void insertTextAt(const QPointF& scenePos);
-    void editTextItem(TextItem* item);
     void chooseBrushColor();
     void replaceBackgroundImage();
     void setBackgroundColor();

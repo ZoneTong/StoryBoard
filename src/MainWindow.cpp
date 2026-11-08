@@ -12,7 +12,6 @@
 #include "LayerPanel.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "TextDialog.h"
 #include "TextItem.h"
 
 #include <QAction>
@@ -997,7 +996,6 @@ void MainWindow::connectSignals()
         statusBar()->showMessage(message, 4000);
     });
     connect(m_view, &CanvasView::textPlacementRequested, this, &MainWindow::insertTextAt);
-    connect(m_view, &CanvasView::editTextRequested, this, &MainWindow::editTextItem);
     connect(m_view, &CanvasView::itemPropertiesRequested, this, &MainWindow::showItemProperties);
 
     connect(m_scene, &CanvasScene::contentChanged, this, [this]() {
@@ -1832,14 +1830,8 @@ void MainWindow::updateFillActions()
 
 void MainWindow::insertTextAt(const QPointF& scenePos)
 {
-    TextDialog dialog(this);
-    dialog.setHeading(uiText(QStringLiteral("Add text item")));
-    dialog.setTextColor(m_brushColor);
-    if (dialog.exec() != QDialog::Accepted)
-        return;
-
     auto* item = new TextItem();
-    item->setTextFormat(dialog.textValue(), dialog.textFont(), dialog.textColor());
+    item->setTextFormat(uiText(QStringLiteral("Text")), item->textFont(), m_brushColor);
 
     const QRectF canvas = m_scene->canvasRect();
     const QSizeF size = item->contentSize();
@@ -1854,26 +1846,10 @@ void MainWindow::insertTextAt(const QPointF& scenePos)
     item->setSelected(true);
     m_view->setFocus();
     statusBar()->showMessage(uiText(QStringLiteral("Text item added")), 4000);
-}
 
-void MainWindow::editTextItem(TextItem* item)
-{
-    if (!item || item->scene() != m_scene)
-        return;
-
-    TextDialog dialog(this);
-    dialog.setHeading(uiText(QStringLiteral("Edit text item")));
-    dialog.setTextValue(item->text());
-    dialog.setTextFont(item->textFont());
-    dialog.setTextColor(item->textColor());
-    if (dialog.exec() != QDialog::Accepted)
-        return;
-
-    if (m_scene->changeTextWithUndo(item, dialog.textValue(), dialog.textFont(),
-                                    dialog.textColor(), uiText(QStringLiteral("Edit text")))) {
-        item->setSelected(true);
-        statusBar()->showMessage(uiText(QStringLiteral("Text updated")), 4000);
-    }
+    // 文字正文现在由属性窗直接编辑；添加后立即打开属性窗，避免再维护独立
+    // 的文字输入对话框。
+    showItemProperties(item);
 }
 
 void MainWindow::showSelectedItemProperties()

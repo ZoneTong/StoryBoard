@@ -13,7 +13,6 @@
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
 #include "StrokeItem.h"
-#include "TextDialog.h"
 #include "TextItem.h"
 
 #include <QApplication>
@@ -180,6 +179,10 @@ int runSelfTest(const QString& reportPath)
                              .arg(name, detail.isEmpty() ? QString() : QStringLiteral("  [") + detail + QLatin1Char(']')));
         }
     };
+
+    // Qt 内置字体对话框的标签来自 qtbase 翻译，而不是应用自己的 StoryBoard 上下文。
+    check(QCoreApplication::translate("QFontDialog", "Effects") == QStringLiteral("效果"),
+          QStringLiteral("Qt 内置字体对话框已装载中文翻译"));
 
     const QString resolvedReportPath = reportPath.isEmpty()
         ? QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
@@ -940,12 +943,16 @@ int runSelfTest(const QString& reportPath)
     QFont editedFont(QStringLiteral("Microsoft YaHei UI"));
     editedFont.setPointSize(24);
     editedFont.setItalic(true);
+    editedFont.setUnderline(true);
+    editedFont.setStrikeOut(true);
     check(textScene.changeTextWithUndo(heading, QStringLiteral("更新后的文字"),
                                        editedFont, QColor(QStringLiteral("#B91C1C")),
                                        QStringLiteral("编辑文字")),
           QStringLiteral("编辑文字进入撤销栈"));
     check(heading->text() == QStringLiteral("更新后的文字")
               && heading->textFont().italic()
+              && heading->textFont().underline()
+              && heading->textFont().strikeOut()
               && heading->textColor() == QColor(QStringLiteral("#B91C1C")),
           QStringLiteral("编辑文字内容与样式生效"));
     textUndo.undo();
@@ -995,6 +1002,8 @@ int runSelfTest(const QString& reportPath)
     if (loadedText) {
         check(loadedText->text() == QStringLiteral("更新后的文字")
                   && loadedText->textFont().italic()
+                  && loadedText->textFont().underline()
+                  && loadedText->textFont().strikeOut()
                   && loadedText->textColor() == QColor(QStringLiteral("#B91C1C")),
               QStringLiteral("画布恢复文字内容与样式"));
         check(loadedText->layerId() == textScene.activeLayerId()
@@ -1214,23 +1223,6 @@ int runSelfTest(const QString& reportPath)
               && loadedRectangle->fillColor().alpha() == shapeFill.alpha()
               && qAbs(loadedRectangle->strokeWidth() - 4.0) < 0.01,
           QStringLiteral("画布恢复图形描边、填充和线宽"));
-
-    TextDialog textDialog;
-    textDialog.setTextValue(QStringLiteral("对话框文字\n第二行"));
-    QFont dialogFont(QStringLiteral("Microsoft YaHei UI"));
-    dialogFont.setPointSize(22);
-    dialogFont.setBold(true);
-    dialogFont.setItalic(true);
-    textDialog.setTextFont(dialogFont);
-    textDialog.setTextColor(QColor(QStringLiteral("#7C3AED")));
-    check(textDialog.textValue() == QStringLiteral("对话框文字\n第二行"),
-          QStringLiteral("文字对话框保留换行内容"));
-    check(qAbs(textDialog.textFont().pointSizeF() - 22.0) < 0.1
-              && textDialog.textFont().bold()
-              && textDialog.textFont().italic(),
-          QStringLiteral("文字对话框返回字体样式"));
-    check(textDialog.textColor() == QColor(QStringLiteral("#7C3AED")),
-          QStringLiteral("文字对话框返回颜色"));
 
     // Exercise the actual layer panel buttons, not only the scene API.
     CanvasScene panelScene;
@@ -1549,6 +1541,8 @@ int runSelfTest(const QString& reportPath)
     view.show();
     QApplication::processEvents();
 
+    check(view.metaObject()->indexOfSignal("editTextRequested(TextItem*)") < 0,
+          QStringLiteral("右键独立编辑文字入口信号已移除"));
     check(view.mode() == ToolMode::View, QStringLiteral("默认模式为查看模式"));
     view.fitAll();
     QApplication::processEvents();
@@ -1821,6 +1815,23 @@ int runSelfTest(const QString& reportPath)
         check(fontValue && fontValue->isEnabled(),
               QStringLiteral("文字属性窗字体可编辑"));
         dialog.close();
+        QApplication::processEvents();
+    }
+
+    {
+        ItemPropertiesDialog readOnlyDialog(&viewScene, doubleClickText, &view, false);
+        readOnlyDialog.show();
+        QApplication::processEvents();
+        check(!readOnlyDialog.findChild<QCheckBox*>(
+                  QStringLiteral("ItemPropertiesBoldValue"))
+                  && !readOnlyDialog.findChild<QCheckBox*>(
+                      QStringLiteral("ItemPropertiesItalicValue"))
+                  && !readOnlyDialog.findChild<QCheckBox*>(
+                      QStringLiteral("ItemPropertiesUnderlineValue"))
+                  && !readOnlyDialog.findChild<QCheckBox*>(
+                      QStringLiteral("ItemPropertiesStrikeOutValue")),
+              QStringLiteral("只读文字属性窗不显示文字样式选项"));
+        readOnlyDialog.close();
         QApplication::processEvents();
     }
 
@@ -2373,6 +2384,23 @@ int runSelfTest(const QString& reportPath)
         check(textItem->textColor() == textColorBefore,
               QStringLiteral("文字属性窗修改可撤销"));
 
+        {
+            ItemPropertiesDialog dialog(&editScene, textItem);
+            dialog.show();
+            QApplication::processEvents();
+            check(!dialog.findChild<QCheckBox*>(
+                      QStringLiteral("ItemPropertiesBoldValue"))
+                      && !dialog.findChild<QCheckBox*>(
+                          QStringLiteral("ItemPropertiesItalicValue"))
+                      && !dialog.findChild<QCheckBox*>(
+                          QStringLiteral("ItemPropertiesUnderlineValue"))
+                      && !dialog.findChild<QCheckBox*>(
+                          QStringLiteral("ItemPropertiesStrikeOutValue")),
+                  QStringLiteral("文字属性窗不再显示文字样式选项"));
+            dialog.close();
+            QApplication::processEvents();
+        }
+
         CanvasScene reloadedNames;
         check(reloadedNames.fromJson(editScene.toJson()),
               QStringLiteral("自动名称随画布重新载入"));
@@ -2538,15 +2566,15 @@ int runSelfTest(const QString& reportPath)
         }
 
         window.view()->setMode(ToolMode::Text);
-        QTimer::singleShot(120, &window, []() {
-            auto* dialog = qobject_cast<TextDialog*>(QApplication::activeModalWidget());
+        QTimer::singleShot(120, &window, [&]() {
+            auto* dialog = qobject_cast<ItemPropertiesDialog*>(QApplication::activeModalWidget());
             if (!dialog)
                 return;
-            dialog->setTextValue(QStringLiteral("端到端文字图元"));
-            QFont font(QStringLiteral("Microsoft YaHei UI"));
-            font.setPointSize(26);
-            dialog->setTextFont(font);
-            dialog->setTextColor(QColor(QStringLiteral("#EA580C")));
+            QPlainTextEdit* textValue = dialog->findChild<QPlainTextEdit*>(
+                QStringLiteral("ItemPropertiesTextValue"));
+            if (!textValue)
+                return;
+            textValue->setPlainText(QStringLiteral("端到端文字图元"));
             dialog->accept();
         });
         const QPoint clickPosition = window.view()->mapFromScene(
@@ -2564,7 +2592,7 @@ int runSelfTest(const QString& reportPath)
             createdText = dynamic_cast<TextItem*>(window.scene()->canvasItems().constFirst());
         check(createdText && createdText->text() == QStringLiteral("端到端文字图元"),
               QStringLiteral("主窗口创建的文字内容正确"));
-        check(createdText && createdText->textColor() == QColor(QStringLiteral("#EA580C"))
+        check(createdText && createdText->textColor() == window.view()->brushColor()
                   && createdText->layerId() == window.scene()->activeLayerId()
                   && window.scene()->layerHeightsUnique(createdText->layerId()),
               QStringLiteral("主窗口文字使用所选颜色且高度唯一"));

@@ -139,10 +139,6 @@
       <translation>添加文字</translation>
     </message>
     <message>
-      <source>Add text item</source>
-      <translation>添加文字图元</translation>
-    </message>
-    <message>
       <source>Adjust background fill mode</source>
       <translation>调整背景填充方式</translation>
     </message>
@@ -229,10 +225,6 @@
     <message>
       <source>Board settings</source>
       <translation>画板配置</translation>
-    </message>
-    <message>
-      <source>Bold</source>
-      <translation>粗体</translation>
     </message>
     <message>
       <source>Browse…</source>
@@ -561,24 +553,12 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>编辑文字</translation>
     </message>
     <message>
-      <source>Edit text item</source>
-      <translation>编辑文字图元</translation>
-    </message>
-    <message>
-      <source>Edit text…</source>
-      <translation>编辑文字…</translation>
-    </message>
-    <message>
       <source>Ellipse</source>
       <translation>椭圆</translation>
     </message>
     <message>
       <source>Empty text</source>
       <translation>空文字</translation>
-    </message>
-    <message>
-      <source>Enter text; press Enter for a new line…</source>
-      <translation>输入文字，按 Enter 换行…</translation>
     </message>
     <message>
       <source>Export</source>
@@ -787,10 +767,6 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>Interface language</source>
       <translation>界面语言</translation>
-    </message>
-    <message>
-      <source>Italic</source>
-      <translation>斜体</translation>
     </message>
     <message>
       <source>Item name</source>
@@ -1447,14 +1423,6 @@ Second line caption</source>
     <message>
       <source>Text</source>
       <translation>文字</translation>
-    </message>
-    <message>
-      <source>Text and style</source>
-      <translation>文字内容与样式</translation>
-    </message>
-    <message>
-      <source>Text becomes a separate item on the current layer. It can be moved and resized, and supports undo and canvas saving.</source>
-      <translation>文字会作为独立图元加入当前图层，可移动、缩放，支持撤销与画布保存。</translation>
     </message>
     <message>
       <source>Text color</source>
