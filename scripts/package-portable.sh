@@ -33,7 +33,7 @@ Options:
   --build                 Build the existing build directory before packaging
   --build-dir <dir>      Build directory (default: build-check if present, else build)
   --qt-dir <dir>         Qt installation directory (default: auto-detect qmake/Qt roots)
-  --version <version>    Package version (default: read from CMakeLists.txt)
+  --version <version>    Assert version matches CMakeLists.txt (optional)
   --output-dir <dir>     Directory that receives the package/zip (default: project root)
   --package-name <name>  Override the package directory name
   --platform <name>      windows|macos|linux (default: detect from uname)
@@ -97,10 +97,12 @@ case "$PLATFORM" in
     *) die "unsupported platform: $PLATFORM" ;;
 esac
 
-if [ -z "$VERSION" ]; then
-    VERSION="$(sed -n 's/.*project(StoryBoard VERSION \(0[0-9.]*\).*/\1/p' "$ROOT/CMakeLists.txt" | head -n 1)"
+CMAKE_VERSION="$(sed -n 's/.*project(StoryBoard VERSION \([0-9][0-9.]*\).*/\1/p' "$ROOT/CMakeLists.txt" | head -n 1)"
+[ -n "$CMAKE_VERSION" ] || die "cannot read project version from CMakeLists.txt"
+if [ -n "$VERSION" ] && [ "$VERSION" != "$CMAKE_VERSION" ]; then
+    die "--version $VERSION does not match CMakeLists.txt project version $CMAKE_VERSION; bump CMakeLists.txt instead"
 fi
-[ -n "$VERSION" ] || VERSION="0.1.0"
+VERSION="$CMAKE_VERSION"
 
 if [ -z "$BUILD_DIR" ]; then
     if [ -e "$ROOT/build-check/bin/StoryBoard.exe" ] || \

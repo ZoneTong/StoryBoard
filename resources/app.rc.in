@@ -1,10 +1,10 @@
 #include <windows.h>
 
-IDI_ICON1 ICON "app.ico"
+IDI_ICON1 ICON "@STORYBOARD_APP_ICON@"
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,1,0,0
- PRODUCTVERSION 0,1,0,0
+ FILEVERSION @STORYBOARD_VERSION_COMMA@
+ PRODUCTVERSION @STORYBOARD_VERSION_COMMA@
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -21,11 +21,11 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "ZoneTong"
             VALUE "FileDescription", "StoryBoard Canvas"
-            VALUE "FileVersion", "0.1.0"
+            VALUE "FileVersion", "@STORYBOARD_VERSION@"
             VALUE "InternalName", "StoryBoard"
             VALUE "OriginalFilename", "StoryBoard.exe"
             VALUE "ProductName", "StoryBoard"
-            VALUE "ProductVersion", "0.1.0"
+            VALUE "ProductVersion", "@STORYBOARD_VERSION@"
         END
     END
     BLOCK "VarFileInfo"
