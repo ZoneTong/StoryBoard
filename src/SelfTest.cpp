@@ -2582,6 +2582,22 @@ int runSelfTest(const QString& reportPath)
         const QPointF secondBefore = second->pos();
         const QPointF firstCenter = first->mapToScene(first->contentRect().center());
         const QPoint dragStart = groupView.mapFromScene(firstCenter);
+
+        // 右键点中已选图元时，Qt 默认选择逻辑不能把多选收成单选，
+        // 否则右键菜单里的“组合选中图元”会一直处于禁用态。
+        first->setSelected(true);
+        second->setSelected(true);
+        sendMouseEvent(groupView.viewport(), QEvent::MouseButtonPress, dragStart,
+                       Qt::RightButton, Qt::RightButton);
+        sendMouseEvent(groupView.viewport(), QEvent::MouseButtonRelease, dragStart,
+                       Qt::RightButton, Qt::NoButton);
+        QApplication::processEvents();
+        check(groupScene.selectedCanvasItems().size() == 2
+                  && first->isSelected() && second->isSelected(),
+              QStringLiteral("右键已选组员不破坏多选"));
+
+        groupScene.clearSelection();
+        first->setSelected(true);
         sendMouseEvent(groupView.viewport(), QEvent::MouseButtonPress, dragStart,
                        Qt::LeftButton, Qt::LeftButton);
         sendMouseEvent(groupView.viewport(), QEvent::MouseMove, dragStart + QPoint(50, 35),

@@ -250,6 +250,16 @@ void CanvasView::wheelEvent(QWheelEvent* event)
 void CanvasView::mousePressEvent(QMouseEvent* event)
 {
     const QPoint position = event->position().toPoint();
+    // 右键点中已选图元时不要走默认选择逻辑：QGraphicsView 会先把多选收成单选，
+    // 导致随后的右键菜单拿不到完整选择，“组合选中图元”被误禁用。
+    if (m_mode == ToolMode::Edit && event->button() == Qt::RightButton) {
+        CanvasItem* item = editableItemAt(position);
+        if (item && item->isSelected()) {
+            event->accept();
+            return;
+        }
+    }
+
     if (event->button() == Qt::MiddleButton
         || (event->button() == Qt::LeftButton && (m_spaceDown || m_mode == ToolMode::View))) {
         beginPan(position);
