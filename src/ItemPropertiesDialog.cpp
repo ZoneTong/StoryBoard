@@ -389,6 +389,17 @@ void ItemPropertiesDialog::accept()
         QDialog::accept();
         return;
     }
+    if (m_nameEdit && m_scene && m_item) {
+        const QString typedName = m_nameEdit->text().trimmed();
+        if (!typedName.isEmpty() && !m_scene->isItemNameAvailable(typedName, m_item)) {
+            QMessageBox::warning(this,
+                                 uiText(QStringLiteral("Duplicate item name")),
+                                 uiText(QStringLiteral("Another item in this canvas already uses this name. Choose a different name.")));
+            m_nameEdit->setFocus();
+            m_nameEdit->selectAll();
+            return;
+        }
+    }
     applyChanges();
     QDialog::accept();
 }
@@ -550,9 +561,13 @@ void ItemPropertiesDialog::applyChanges()
                         spinValue(m_heightSizeSpin, m_initialSize.height()));
     after.rotation = spinValue(m_rotationSpin, m_initialRotation);
     const QString typedName = m_nameEdit ? m_nameEdit->text().trimmed() : QString();
+    // 清空名称不能退回“多个同名类型名”的状态；这时补一个本画布内唯一的自动名称。
+    const QString effectiveName = typedName.isEmpty()
+        ? m_scene->uniqueItemName(m_item->typeDisplayName(), m_item)
+        : typedName;
     after.itemName = (m_initialItemName.isEmpty() && typedName == m_initialDisplayName)
         ? QString()
-        : typedName;
+        : effectiveName;
     after.stack.append({ m_item, targetLayer, targetHeight });
     for (CanvasItem* peer : std::as_const(swapped))
         after.stack.append({ peer, oldLayer, oldHeight });

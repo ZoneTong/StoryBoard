@@ -420,6 +420,19 @@ void MainWindow::createActions()
 
     m_deleteAct = makeAction(this, IconId::Delete, uiText(QStringLiteral("Delete selected items")),
                              QKeySequence::Delete, uiText(QStringLiteral("Delete the selected items (Delete)")));
+    m_duplicateAct = new QAction(uiText(QStringLiteral("Duplicate selected items")), this);
+    m_duplicateAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+D")));
+    m_duplicateAct->setStatusTip(uiText(QStringLiteral("Duplicate the selected items with a small offset (Ctrl+D)")));
+    m_duplicateAct->setEnabled(false);
+    connect(m_duplicateAct, &QAction::triggered, this, [this]() {
+        if (!m_scene)
+            return;
+        const int duplicated = m_scene->duplicateSelectedItems();
+        if (duplicated > 0) {
+            statusBar()->showMessage(
+                uiText(QStringLiteral("Duplicated %1 item(s)")).arg(duplicated), 3000);
+        }
+    });
     m_selectAllAct = new QAction(uiText(QStringLiteral("Select all items")), this);
     m_selectAllAct->setShortcut(QKeySequence::SelectAll);
     m_selectAllAct->setStatusTip(uiText(QStringLiteral("Select all items (Ctrl+A)")));
@@ -666,6 +679,7 @@ void MainWindow::createMenus()
     editMenu->addAction(m_redoAct);
     editMenu->addSeparator();
     editMenu->addAction(m_deleteAct);
+    editMenu->addAction(m_duplicateAct);
     editMenu->addAction(m_selectAllAct);
     editMenu->addSeparator();
     editMenu->addAction(m_itemPropsAct);
@@ -1073,6 +1087,7 @@ void MainWindow::updateActions()
 
     const bool editing = m_view->mode() == ToolMode::Edit;
     m_deleteAct->setEnabled(editing && !m_scene->selectedItems().isEmpty());
+    m_duplicateAct->setEnabled(editing && !m_scene->selectedCanvasItems().isEmpty());
     m_selectAllAct->setEnabled(editing && m_scene->canvasItemCount() > 0);
     m_itemPropsAct->setEnabled(m_scene->selectedCanvasItems().size() == 1);
     m_rotateCwAct->setEnabled(editing && !m_scene->selectedCanvasItems().isEmpty());

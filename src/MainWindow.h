@@ -118,6 +118,7 @@ private:
     QAction* m_undoAct = nullptr;
     QAction* m_redoAct = nullptr;
     QAction* m_deleteAct = nullptr;
+    QAction* m_duplicateAct = nullptr;
     QAction* m_selectAllAct = nullptr;
     QAction* m_itemPropsAct = nullptr;
     QAction* m_rotateCwAct = nullptr;

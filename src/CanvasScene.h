@@ -5,6 +5,7 @@
 #include <QJsonObject>
 #include <QList>
 #include <QPointer>
+#include <QSet>
 #include <QSizeF>
 
 #include "CanvasTypes.h"
@@ -57,8 +58,18 @@ public:
     QList<CanvasItem*> canvasItems() const;
     int canvasItemCount() const;
     // 需求 32：给所有还没有自定义名称的图元补上“类型 1 / 类型 2 …”自动名称。
+    // 同时修复载入文件里已有的重名条目，保证画布内名称唯一。
     void assignAutoItemNames();
     QList<CanvasItem*> selectedCanvasItems() const;
+    // 名称只按画布内图元的 name() 比较；空名称不占用唯一名额。
+    bool isItemNameAvailable(const QString& name, const CanvasItem* except = nullptr) const;
+    // 按“类型 1 / 类型 2 …”生成类型专属的自动名称；用于新建图元与空名称补名。
+    QString uniqueItemName(const QString& base, const CanvasItem* except = nullptr) const;
+    // 在已有名称基础上生成唯一副本名称：Hero panel → Hero panel 2，矩形 1 → 矩形 2。
+    QString uniqueItemNameFor(const QString& requested, const CanvasItem* except = nullptr) const;
+    // 复制当前选中的可编辑图元（同层、偏移一点、名称自动取唯一值），整体一条撤销记录。
+    // 返回实际生成的副本数量。
+    int duplicateSelectedItems();
 
     static constexpr int BackgroundLayerId = 0;
 
@@ -150,7 +161,9 @@ protected:
 
 private:
     CanvasItem* createItem(const QString& kind) const;
-    QString uniqueItemName(const QString& base, const CanvasItem* except = nullptr) const;
+    // reserved 里是尚未挂到场景、但已经保留给其它副本的名称。
+    QString uniqueItemNameFor(const QString& requested, const CanvasItem* except,
+                              const QSet<QString>& reserved) const;
     void drawCanvasBackground(QPainter* painter, const QRectF& area, bool includeGrid) const;
     void updateItemFlags();
     void applyItemInteraction(CanvasItem* item);

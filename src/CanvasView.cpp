@@ -458,6 +458,8 @@ void CanvasView::contextMenuEvent(QContextMenuEvent* event)
 
     // 需求 42：属性窗在任意模式都可打开；编辑模式下此入口与双击/Q 等价。
     QAction* properties = menu.addAction(uiText(QStringLiteral("Item properties…")));
+    QAction* duplicate = menu.addAction(uiText(QStringLiteral("Duplicate item")));
+    duplicate->setEnabled(item->isSelected());
     menu.addSeparator();
 
     QAction* heightUp = menu.addAction(uiText(QStringLiteral("Height +1 (stack up)    ]")));
@@ -480,7 +482,11 @@ void CanvasView::contextMenuEvent(QContextMenuEvent* event)
 
     if (chosen == properties)
         emit itemPropertiesRequested(item);
-    else if (chosen == heightUp)
+    else if (chosen == duplicate) {
+        const int duplicated = m_scene->duplicateSelectedItems();
+        if (duplicated > 0)
+            emit statusMessage(uiText(QStringLiteral("Duplicated %1 item(s)")).arg(duplicated));
+    } else if (chosen == heightUp)
         m_scene->adjustSelectedHeights(1);
     else if (chosen == heightDown)
         m_scene->adjustSelectedHeights(-1);

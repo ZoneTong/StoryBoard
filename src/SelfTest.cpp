@@ -2423,6 +2423,108 @@ int runSelfTest(const QString& reportPath)
               reloadedNameList.join(QStringLiteral(" / ")));
     }
 
+    // 图元拷贝：副本偏移、名称自动接续，并整体进入一条撤销记录。
+    {
+        CanvasScene duplicateScene;
+        duplicateScene.applyCanvasSize(QSizeF(800.0, 600.0));
+        duplicateScene.setMode(ToolMode::Edit);
+        QUndoStack duplicateUndo;
+        duplicateScene.setUndoStack(&duplicateUndo);
+
+        auto* source = new ShapeItem(ShapeType::Rectangle);
+        source->setContentSize(QSizeF(120.0, 80.0));
+        source->setPos(QPointF(40.0, 50.0));
+        duplicateScene.addItemsWithUndo({ source }, QStringLiteral("Add duplicate source"));
+        check(source->rawName() == QStringLiteral("矩形 1"),
+              QStringLiteral("拷贝源图元使用自动名称"), source->rawName());
+        source->setSelected(true);
+
+        const int countBefore = duplicateScene.canvasItemCount();
+        const int undoBefore = duplicateUndo.count();
+        const int duplicated = duplicateScene.duplicateSelectedItems();
+        check(duplicated == 1 && duplicateScene.canvasItemCount() == countBefore + 1,
+              QStringLiteral("拷贝选中的图元"), QString::number(duplicated));
+
+        CanvasItem* copy = nullptr;
+        for (CanvasItem* item : duplicateScene.canvasItems()) {
+            if (item != source && item->rawName() == QStringLiteral("矩形 2"))
+                copy = item;
+        }
+        check(copy != nullptr, QStringLiteral("副本名称自动接续为同类下一个编号"));
+        check(copy && copy->pos() == source->pos() + QPointF(20.0, 20.0),
+              QStringLiteral("副本相对源图元偏移"),
+              copy ? QStringLiteral("%1,%2").arg(copy->pos().x()).arg(copy->pos().y())
+                   : QStringLiteral("<missing>"));
+        check(!duplicateScene.isItemNameAvailable(QStringLiteral("矩形 1"), copy)
+                  && duplicateScene.isItemNameAvailable(QStringLiteral("自定义名称"), copy),
+              QStringLiteral("画布内名称唯一性可查询"));
+        check(duplicateUndo.count() == undoBefore + 1,
+              QStringLiteral("拷贝图元只产生一条撤销记录"));
+
+        duplicateUndo.undo();
+        QApplication::processEvents();
+        check(duplicateScene.canvasItemCount() == countBefore,
+              QStringLiteral("撤销拷贝删除副本"));
+        duplicateUndo.redo();
+        QApplication::processEvents();
+        check(duplicateScene.canvasItemCount() == countBefore + 1 && copy
+                  && copy->scene() == &duplicateScene && copy->rawName() == QStringLiteral("矩形 2"),
+              QStringLiteral("重做拷贝恢复副本和名称"));
+    }
+
+    // 自定义名称拷贝：Hero panel / Hero panel 2 之后取 Hero panel 3，不产生重名。
+    {
+        CanvasScene customNameScene;
+        customNameScene.applyCanvasSize(QSizeF(800.0, 600.0));
+        customNameScene.setMode(ToolMode::Edit);
+        QUndoStack customNameUndo;
+        customNameScene.setUndoStack(&customNameUndo);
+
+        auto* first = new ShapeItem(ShapeType::Rectangle);
+        first->setContentSize(QSizeF(100.0, 60.0));
+        customNameScene.addItemsWithUndo({ first }, QStringLiteral("Add first custom item"));
+        first->setName(QStringLiteral("Hero panel"));
+
+        auto* second = new ShapeItem(ShapeType::Ellipse);
+        second->setContentSize(QSizeF(90.0, 90.0));
+        customNameScene.addItemsWithUndo({ second }, QStringLiteral("Add second custom item"));
+        second->setName(QStringLiteral("Hero panel 2"));
+
+        first->setSelected(true);
+        const int duplicated = customNameScene.duplicateSelectedItems();
+        CanvasItem* copy = nullptr;
+        for (CanvasItem* item : customNameScene.canvasItems()) {
+            if (item != first && item != second
+                && item->rawName() == QStringLiteral("Hero panel 3"))
+                copy = item;
+        }
+        check(duplicated == 1 && copy != nullptr,
+              QStringLiteral("自定义名称拷贝时取下一个唯一名称"));
+    }
+
+    // 载入或旧文件里已有的重名，在补名时一并修复。
+    {
+        CanvasScene repairScene;
+        auto* first = new ShapeItem(ShapeType::Rectangle);
+        first->setContentSize(QSizeF(80.0, 60.0));
+        repairScene.addItemsWithUndo({ first }, QStringLiteral("Add repair item"));
+        auto* second = new ShapeItem(ShapeType::Rectangle);
+        second->setContentSize(QSizeF(70.0, 50.0));
+        repairScene.addItemsWithUndo({ second }, QStringLiteral("Add repair item"));
+        first->setName(QStringLiteral("Same name"));
+        second->setName(QStringLiteral("Same name"));
+        repairScene.assignAutoItemNames();
+        const QString firstName = first->rawName();
+        const QString secondName = second->rawName();
+        check(firstName != secondName
+                  && (firstName == QStringLiteral("Same name")
+                      || firstName == QStringLiteral("Same name 2"))
+                  && (secondName == QStringLiteral("Same name")
+                      || secondName == QStringLiteral("Same name 2")),
+              QStringLiteral("补名时修复画布内已有重名"),
+              firstName + QStringLiteral(" / ") + secondName);
+    }
+
     const int baseLayerId = viewScene.activeLayerId();
     check(viewScene.addLayerWithUndo(QStringLiteral("锁定的注释")),
           QStringLiteral("创建锁定测试图层"));

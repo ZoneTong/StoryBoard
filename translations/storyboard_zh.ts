@@ -773,6 +773,30 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>图元名称</translation>
     </message>
     <message>
+      <source>Duplicate item</source>
+      <translation>复制图元</translation>
+    </message>
+    <message>
+      <source>Duplicate selected items</source>
+      <translation>复制选中图元</translation>
+    </message>
+    <message>
+      <source>Duplicate the selected items with a small offset (Ctrl+D)</source>
+      <translation>复制选中图元并略微偏移（Ctrl+D）</translation>
+    </message>
+    <message>
+      <source>Duplicated %1 item(s)</source>
+      <translation>已复制 %1 个图元</translation>
+    </message>
+    <message>
+      <source>Duplicate item name</source>
+      <translation>图元名称重复</translation>
+    </message>
+    <message>
+      <source>Another item in this canvas already uses this name. Choose a different name.</source>
+      <translation>画布中已有图元使用该名称，请换一个名称。</translation>
+    </message>
+    <message>
       <source>Item properties</source>
       <translation>图元属性</translation>
     </message>

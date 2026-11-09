@@ -1205,8 +1205,8 @@ QString CanvasScene::uniqueItemName(const QString& base, const CanvasItem* excep
     for (CanvasItem* item : canvasItems()) {
         if (!item || item == except)
             continue;
-        const QString existing = item->rawName();
-        if (!existing.startsWith(prefix))
+        const QString existing = item->name();
+        if (!existing.startsWith(prefix, Qt::CaseInsensitive))
             continue;
         bool ok = false;
         const int value = existing.mid(prefix.size()).toInt(&ok);
@@ -1216,11 +1216,91 @@ QString CanvasScene::uniqueItemName(const QString& base, const CanvasItem* excep
     return QStringLiteral("%1 %2").arg(typeName).arg(maxSuffix + 1);
 }
 
+bool CanvasScene::isItemNameAvailable(const QString& name, const CanvasItem* except) const
+{
+    const QString candidate = name.trimmed();
+    if (candidate.isEmpty())
+        return true;
+    for (CanvasItem* item : canvasItems()) {
+        if (!item || item == except)
+            continue;
+        if (item->name().trimmed().compare(candidate, Qt::CaseInsensitive) == 0)
+            return false;
+    }
+    return true;
+}
+
+QString CanvasScene::uniqueItemNameFor(const QString& requested, const CanvasItem* except) const
+{
+    static const QSet<QString> reserved;
+    return uniqueItemNameFor(requested, except, reserved);
+}
+
+QString CanvasScene::uniqueItemNameFor(const QString& requested, const CanvasItem* except,
+                                       const QSet<QString>& reserved) const
+{
+    const QString trimmed = requested.trimmed();
+    if (trimmed.isEmpty())
+        return QString();
+
+    // “Hero panel” → base=Hero panel, suffix=0；“矩形 1” → base=矩形, suffix=1。
+    QString base = trimmed;
+    int suffix = 0;
+    const int split = base.lastIndexOf(QLatin1Char(' '));
+    if (split > 0) {
+        bool ok = false;
+        const int value = base.mid(split + 1).toInt(&ok);
+        if (ok && value > 0) {
+            base = base.left(split).trimmed();
+            suffix = value;
+        }
+    }
+    if (base.isEmpty())
+        base = trimmed;
+
+    const QString prefix = base + QLatin1Char(' ');
+    bool exactBase = false;
+    int maxSuffix = suffix;
+
+    auto consider = [&](const QString& rawName) {
+        const QString existing = rawName.trimmed();
+        if (existing.isEmpty())
+            return;
+        if (existing.compare(base, Qt::CaseInsensitive) == 0)
+            exactBase = true;
+        if (!existing.startsWith(prefix, Qt::CaseInsensitive))
+            return;
+        bool ok = false;
+        const int value = existing.mid(prefix.size()).toInt(&ok);
+        if (ok && value > 0)
+            maxSuffix = qMax(maxSuffix, value);
+    };
+
+    for (CanvasItem* item : canvasItems()) {
+        if (!item || item == except)
+            continue;
+        consider(item->name());
+    }
+    for (const QString& name : reserved)
+        consider(name);
+
+    int next = qMax(maxSuffix + 1, exactBase ? 2 : 1);
+    if (suffix > 0)
+        next = qMax(next, suffix + 1);
+    return prefix + QString::number(next);
+}
+
 void CanvasScene::assignAutoItemNames()
 {
     for (CanvasItem* item : canvasItems()) {
-        if (item && item->rawName().isEmpty())
+        if (!item)
+            continue;
+        const QString existing = item->rawName().trimmed();
+        if (existing.isEmpty()) {
             item->setName(uniqueItemName(item->typeDisplayName(), item));
+        } else if (!isItemNameAvailable(existing, item)) {
+            item->setName(uniqueItemNameFor(existing, item));
+        }
     }
 }
 
@@ -1240,8 +1320,11 @@ void CanvasScene::attachItem(CanvasItem* item)
         const int height = nextHeight(item->layerId());
         item->setHeight(height >= 0 ? height : 0);
     }
-    if (item->rawName().isEmpty())
+    const QString existingName = item->rawName().trimmed();
+    if (existingName.isEmpty())
         item->setName(uniqueItemName(item->typeDisplayName(), item));
+    else if (!isItemNameAvailable(existingName, item))
+        item->setName(uniqueItemNameFor(existingName, item));
     applyItemStacking(item);
     applyItemInteraction(item);
 
@@ -1283,6 +1366,55 @@ void CanvasScene::deleteSelected()
         for (CanvasItem* item : selected)
             detachItem(item);
     }
+}
+
+int CanvasScene::duplicateSelectedItems()
+{
+    if (m_mode != ToolMode::Edit)
+        return 0;
+
+    QList<CanvasItem*> sources;
+    for (CanvasItem* item : selectedCanvasItems()) {
+        if (item && isItemEditable(item))
+            sources.append(item);
+    }
+    if (sources.isEmpty())
+        return 0;
+
+    QList<CanvasItem*> copies;
+    QSet<QString> reservedNames;
+    for (CanvasItem* source : sources) {
+        CanvasItem* copy = createItem(source->kind());
+        if (!copy)
+            continue;
+        copy->fromJson(source->toJson());
+
+        // 副本与原图元完全重叠会让用户以为没有复制成功，统一向右下错开一点。
+        copy->setPos(source->pos() + QPointF(20.0, 20.0));
+
+        const QString sourceName = source->rawName().trimmed();
+        if (sourceName.isEmpty()) {
+            copy->setName(QString());
+        } else {
+            const QString copyName = uniqueItemNameFor(sourceName, copy, reservedNames);
+            copy->setName(copyName);
+            reservedNames.insert(copyName.toCaseFolded());
+        }
+        copies.append(copy);
+    }
+    if (copies.isEmpty())
+        return 0;
+
+    addItemsWithUndo(copies, uiText(QStringLiteral("Duplicate selected items")));
+    clearSelection();
+    for (CanvasItem* copy : copies) {
+        if (isItemEditable(copy))
+            copy->setSelected(true);
+    }
+    updateSceneExtent();
+    update();
+    emit contentChanged();
+    return copies.size();
 }
 
 void CanvasScene::selectAllItems()
