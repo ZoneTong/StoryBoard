@@ -2,6 +2,23 @@ cmake_minimum_required(VERSION 3.21)
 
 project(StoryBoard VERSION 0.1.0 LANGUAGES CXX)
 
+set(STORYBOARD_VERSION "${PROJECT_VERSION}")
+set(STORYBOARD_VERSION_TWEAK "${PROJECT_VERSION_TWEAK}")
+if(STORYBOARD_VERSION_TWEAK STREQUAL "")
+    set(STORYBOARD_VERSION_TWEAK 0)
+endif()
+set(STORYBOARD_VERSION_COMMA
+    "${PROJECT_VERSION_MAJOR},${PROJECT_VERSION_MINOR},${PROJECT_VERSION_PATCH},${STORYBOARD_VERSION_TWEAK}")
+set(STORYBOARD_APP_ICON "${CMAKE_CURRENT_SOURCE_DIR}/resources/app.ico")
+
+# Windows 版本资源从 CMake 的 PROJECT_VERSION 生成，避免 app.rc / main.cpp /
+# CMakeLists 各维护一份版本号。
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/resources/app.rc.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/app.rc"
+    @ONLY
+)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -69,6 +86,8 @@ set(STORYBOARD_SOURCES
 
 qt_add_executable(StoryBoard WIN32 ${STORYBOARD_SOURCES})
 
+target_compile_definitions(StoryBoard PRIVATE STORYBOARD_VERSION="${STORYBOARD_VERSION}")
+
 # Qt 官方 i18n 流水线：.ts -> .qm，并把 .qm 与 .ts 一起嵌进资源。
 # 运行时 QTranslator 从 :/i18n/storyboard_zh.qm 装载中文翻译。
 qt_add_lrelease(StoryBoard
@@ -91,7 +110,7 @@ qt_add_resources(StoryBoard "storyboard_translations"
 )
 
 if(WIN32)
-    target_sources(StoryBoard PRIVATE resources/app.rc)
+    target_sources(StoryBoard PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/app.rc")
 endif()
 
 target_include_directories(StoryBoard PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")

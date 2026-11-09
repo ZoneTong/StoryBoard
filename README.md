@@ -24,6 +24,8 @@
 
 要求：Qt 6.5+、C++17、CMake 3.21+；编译器可用 MinGW、MSVC、Clang 或 GCC。
 
+项目版本号只在 `CMakeLists.txt` 的 `project(StoryBoard VERSION ...)` 维护；Windows 文件版本资源、关于对话框和便携包命名都从它派生，不要再单独写死版本号。
+
 ### Linux / macOS
 
 ```bash
@@ -241,7 +243,7 @@ cat build/selftest.txt
 StoryBoard/
 ├─ CMakeLists.txt
 ├─ src/                 主窗口、画布场景/视图、图元、命令、对话框、设置、i18n、自检
-├─ resources/           图标、下拉箭头、qrc、Windows rc
+├─ resources/           图标、下拉箭头、qrc、Windows rc 模板
 ├─ translations/        storyboard_zh.ts 与 qtbase_zh_CN.qm
 ├─ scripts/             package-portable.sh 与各平台包内 README 模板
 ├─ examples/            示例画布

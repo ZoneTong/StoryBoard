@@ -25,6 +25,10 @@
 #include <QStyleFactory>
 #include <QTimer>
 
+#ifndef STORYBOARD_VERSION
+#define STORYBOARD_VERSION "0.1.0"
+#endif
+
 namespace {
 
 QString takeOptionPath(const QStringList& arguments, const QString& option)
@@ -142,7 +146,7 @@ int main(int argc, char** argv)
     QCoreApplication::setOrganizationName(QStringLiteral("ZoneTong"));
     QCoreApplication::setOrganizationDomain(QStringLiteral("zonetong.github.io"));
     QCoreApplication::setApplicationName(QStringLiteral("StoryBoard"));
-    QCoreApplication::setApplicationVersion(QStringLiteral("0.1.0"));
+    QCoreApplication::setApplicationVersion(QString::fromLatin1(STORYBOARD_VERSION));
     uiInitializeLanguage();
     app.setApplicationDisplayName(uiText(QStringLiteral("StoryBoard Canvas")));
     app.setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));
