@@ -2665,6 +2665,64 @@ int runSelfTest(const QString& reportPath)
         QApplication::processEvents();
     }
 
+    // 框选按图元中心判断：只碰到边缘不选中，框住中心才选中。
+    {
+        CanvasScene rubberScene;
+        rubberScene.applyCanvasSize(QSizeF(800.0, 600.0));
+        rubberScene.setMode(ToolMode::Edit);
+        auto* target = new ShapeItem(ShapeType::Rectangle);
+        target->setContentSize(QSizeF(120.0, 80.0));
+        target->setPos(QPointF(300.0, 250.0));
+        rubberScene.addItemsWithUndo({ target }, QStringLiteral("Add rubber-band target"));
+
+        CanvasView rubberView(&rubberScene);
+        rubberView.resize(900, 700);
+        rubberView.show();
+        rubberView.setMode(ToolMode::Edit);
+        rubberView.fitAll();
+        QApplication::processEvents();
+
+        const QPointF center = target->mapToScene(target->contentRect().center());
+        const QPoint start = rubberView.mapFromScene(center + QPointF(-140.0, -100.0));
+        const QPoint edgeEnd = rubberView.mapFromScene(center + QPointF(-15.0, -15.0));
+        sendMouseEvent(rubberView.viewport(), QEvent::MouseButtonPress, start,
+                       Qt::LeftButton, Qt::LeftButton);
+        sendMouseEvent(rubberView.viewport(), QEvent::MouseMove, edgeEnd,
+                       Qt::NoButton, Qt::LeftButton);
+        sendMouseEvent(rubberView.viewport(), QEvent::MouseButtonRelease, edgeEnd,
+                       Qt::LeftButton, Qt::NoButton);
+        QApplication::processEvents();
+        check(!target->isSelected(),
+              QStringLiteral("框选只碰到图元边缘时不选中"));
+
+        rubberScene.clearSelection();
+        const QPoint centerEnd = rubberView.mapFromScene(center + QPointF(15.0, 15.0));
+        sendMouseEvent(rubberView.viewport(), QEvent::MouseButtonPress, start,
+                       Qt::LeftButton, Qt::LeftButton);
+        sendMouseEvent(rubberView.viewport(), QEvent::MouseMove, centerEnd,
+                       Qt::NoButton, Qt::LeftButton);
+        sendMouseEvent(rubberView.viewport(), QEvent::MouseButtonRelease, centerEnd,
+                       Qt::LeftButton, Qt::NoButton);
+        QApplication::processEvents();
+        check(!target->isSelected(),
+              QStringLiteral("框住中心但图元仍有部分在框外时不选中"));
+
+        rubberScene.clearSelection();
+        const QPoint fullEnd = rubberView.mapFromScene(center + QPointF(140.0, 100.0));
+        sendMouseEvent(rubberView.viewport(), QEvent::MouseButtonPress, start,
+                       Qt::LeftButton, Qt::LeftButton);
+        sendMouseEvent(rubberView.viewport(), QEvent::MouseMove, fullEnd,
+                       Qt::NoButton, Qt::LeftButton);
+        sendMouseEvent(rubberView.viewport(), QEvent::MouseButtonRelease, fullEnd,
+                       Qt::LeftButton, Qt::NoButton);
+        QApplication::processEvents();
+        check(target->isSelected(),
+              QStringLiteral("图元完整落在框内时选中"));
+
+        rubberView.close();
+        QApplication::processEvents();
+    }
+
     const int baseLayerId = viewScene.activeLayerId();
     check(viewScene.addLayerWithUndo(QStringLiteral("锁定的注释")),
           QStringLiteral("创建锁定测试图层"));

@@ -46,7 +46,7 @@ CanvasView::CanvasView(CanvasScene* scene, QWidget* parent)
     setMouseTracking(true);
     viewport()->setMouseTracking(true);
     setBackgroundBrush(Qt::NoBrush);
-    setRubberBandSelectionMode(Qt::IntersectsItemShape);
+    setRubberBandSelectionMode(Qt::ContainsItemShape);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setMinimumSize(360, 260);
