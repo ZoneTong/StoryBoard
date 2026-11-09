@@ -10,6 +10,7 @@
 #include <QGraphicsView>
 #include <QJsonArray>
 #include <QPainter>
+#include <QSet>
 #include <QStyleOptionGraphicsItem>
 #include <QtMath>
 
@@ -480,12 +481,39 @@ void CanvasItem::beginMove(const QPointF& scenePos)
     m_before.clear();
 
     if (scene()) {
+        QSet<CanvasItem*> seen;
+        QSet<int> groupIds;
+        auto addItem = [&seen](CanvasItem* item) {
+            if (item && !seen.contains(item))
+                seen.insert(item);
+        };
         const QList<QGraphicsItem*> selected = scene()->selectedItems();
         for (QGraphicsItem* item : selected) {
             auto* canvasItem = qgraphicsitem_cast<CanvasItem*>(item);
-            if (canvasItem)
-                m_before.append({ canvasItem, canvasItem->pos(), canvasItem->contentSize() });
+            if (!canvasItem)
+                continue;
+            if (!seen.contains(canvasItem))
+                seen.insert(canvasItem);
+            if (canvasItem->groupId() > 0)
+                groupIds.insert(canvasItem->groupId());
         }
+        seen.insert(this);
+
+        // 拖动任意一个组员时，把同组图元一并收进本次移动快照；组员不必处于
+        // 选中状态，这样单个图元仍可打开属性窗并保持组内联动。
+        if (CanvasScene* canvas = canvasScene()) {
+            for (int groupId : std::as_const(groupIds)) {
+                for (CanvasItem* member : canvas->itemsInGroup(groupId)) {
+                    // 正常分组都同层；若图层后续被拆分或锁定，至少不要移动
+                    // 当前不可编辑的组员，避免绕过图层锁定。
+                    if (canvas->isItemEditable(member))
+                        addItem(member);
+                }
+            }
+        }
+
+        for (CanvasItem* canvasItem : std::as_const(seen))
+            m_before.append({ canvasItem, canvasItem->pos(), canvasItem->contentSize() });
     }
     if (m_before.isEmpty())
         m_before.append({ this, pos(), m_size });
@@ -624,6 +652,8 @@ QJsonObject CanvasItem::baseJson() const
     json.insert(QStringLiteral("h"), m_size.height());
     json.insert(QStringLiteral("layer"), m_layerId);
     json.insert(QStringLiteral("height"), m_height);
+    if (m_groupId > 0)
+        json.insert(QStringLiteral("group"), m_groupId);
     if (!qFuzzyIsNull(m_rotation))
         json.insert(QStringLiteral("rotation"), m_rotation);
     if (!m_name.isEmpty())
@@ -641,6 +671,7 @@ void CanvasItem::applyBaseJson(const QJsonObject& json)
     setContentSize(QSizeF(json.value(QStringLiteral("w")).toDouble(m_size.width()),
                           json.value(QStringLiteral("h")).toDouble(m_size.height())));
     m_layerId = qMax(0, json.value(QStringLiteral("layer")).toInt(0));
+    m_groupId = qMax(0, json.value(QStringLiteral("group")).toInt(0));
     m_height = json.contains(QStringLiteral("height"))
         ? qMax(0, json.value(QStringLiteral("height")).toInt(0))
         : -1;

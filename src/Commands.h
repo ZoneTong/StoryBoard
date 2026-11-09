@@ -54,6 +54,24 @@ private:
     ItemGeometryList m_after;
 };
 
+class GroupCommand : public QUndoCommand
+{
+public:
+    GroupCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
+                 const QList<int>& before, const QList<int>& after,
+                 const QString& text);
+    void undo() override;
+    void redo() override;
+
+private:
+    void apply(const QList<int>& groupIds);
+
+    CanvasScene* m_scene = nullptr;
+    QList<QPointer<CanvasItem>> m_items;
+    QList<int> m_before;
+    QList<int> m_after;
+};
+
 class BackgroundCommand : public QUndoCommand
 {
 public:

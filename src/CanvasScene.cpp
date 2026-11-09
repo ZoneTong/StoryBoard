@@ -370,6 +370,123 @@ QList<CanvasItem*> CanvasScene::selectedCanvasItems() const
     return result;
 }
 
+QList<CanvasItem*> CanvasScene::itemsInGroup(int groupId) const
+{
+    QList<CanvasItem*> result;
+    if (groupId <= 0)
+        return result;
+    for (CanvasItem* item : canvasItems()) {
+        if (item->groupId() == groupId)
+            result.append(item);
+    }
+    return result;
+}
+
+bool CanvasScene::canGroupSelectedItems() const
+{
+    if (m_mode != ToolMode::Edit)
+        return false;
+    const QList<CanvasItem*> selected = selectedCanvasItems();
+    if (selected.size() < 2)
+        return false;
+
+    const int layerId = selected.constFirst()->layerId();
+    for (CanvasItem* item : selected) {
+        if (!isItemEditable(item) || item->layerId() != layerId)
+            return false;
+    }
+    return true;
+}
+
+bool CanvasScene::canUngroupSelectedItems() const
+{
+    if (m_mode != ToolMode::Edit)
+        return false;
+    for (CanvasItem* item : selectedCanvasItems()) {
+        if (isItemEditable(item) && item->groupId() > 0)
+            return true;
+    }
+    return false;
+}
+
+int CanvasScene::groupSelectedItems()
+{
+    if (!canGroupSelectedItems())
+        return 0;
+
+    const QList<CanvasItem*> items = selectedCanvasItems();
+    const int groupId = m_nextGroupId++;
+    QList<int> before;
+    QList<int> after;
+    before.reserve(items.size());
+    after.reserve(items.size());
+    for (CanvasItem* item : items) {
+        before.append(item->groupId());
+        after.append(groupId);
+    }
+
+    if (m_undoStack) {
+        m_undoStack->push(new GroupCommand(this, items, before, after,
+                                           uiText(QStringLiteral("Group selected items"))));
+    } else {
+        applyGroupIds(items, after);
+    }
+    return items.size();
+}
+
+int CanvasScene::ungroupSelectedItems()
+{
+    if (!canUngroupSelectedItems())
+        return 0;
+
+    QList<CanvasItem*> items;
+    QSet<CanvasItem*> seen;
+    QSet<int> groupIds;
+    for (CanvasItem* selected : selectedCanvasItems()) {
+        if (isItemEditable(selected) && selected->groupId() > 0)
+            groupIds.insert(selected->groupId());
+    }
+    for (int groupId : std::as_const(groupIds)) {
+        for (CanvasItem* member : itemsInGroup(groupId)) {
+            if (!seen.contains(member)) {
+                seen.insert(member);
+                items.append(member);
+            }
+        }
+    }
+    if (items.isEmpty())
+        return 0;
+
+    QList<int> before;
+    QList<int> after;
+    before.reserve(items.size());
+    after.reserve(items.size());
+    for (CanvasItem* item : items) {
+        before.append(item->groupId());
+        after.append(0);
+    }
+
+    if (m_undoStack) {
+        m_undoStack->push(new GroupCommand(this, items, before, after,
+                                           uiText(QStringLiteral("Ungroup selected items"))));
+    } else {
+        applyGroupIds(items, after);
+    }
+    return items.size();
+}
+
+void CanvasScene::applyGroupIds(const QList<CanvasItem*>& items, const QList<int>& groupIds)
+{
+    if (items.size() != groupIds.size())
+        return;
+    for (int i = 0; i < items.size(); ++i) {
+        if (items.at(i))
+            items.at(i)->setGroupId(groupIds.at(i));
+    }
+    update();
+    emit contentChanged();
+}
+
 QList<CanvasLayer> CanvasScene::userLayers() const
 {
     if (m_layers.size() <= 1)
@@ -1173,6 +1290,8 @@ void CanvasScene::addItemsWithUndo(const QList<CanvasItem*>& items, const QStrin
         }
         item->setHeight(qBound(0, height, kMaxItemHeight));
         used.insert(item->height());
+        if (item->groupId() > 0)
+            m_nextGroupId = qMax(m_nextGroupId, item->groupId() + 1);
         applyItemStacking(item);
     }
 
@@ -1381,6 +1500,20 @@ int CanvasScene::duplicateSelectedItems()
     if (sources.isEmpty())
         return 0;
 
+    // 只有在整组成员都被复制时，副本才重新组成一个新组；只复制组内单个图元
+    // 时副本保持未分组，避免副本和原组意外联动。
+    QHash<int, QList<CanvasItem*>> groupMembers;
+    for (CanvasItem* item : canvasItems()) {
+        if (item->groupId() > 0)
+            groupMembers[item->groupId()].append(item);
+    }
+    QHash<int, int> selectedGroupCounts;
+    for (CanvasItem* source : sources) {
+        if (source->groupId() > 0)
+            ++selectedGroupCounts[source->groupId()];
+    }
+    QHash<int, int> copyGroupIds;
+
     QList<CanvasItem*> copies;
     QSet<QString> reservedNames;
     for (CanvasItem* source : sources) {
@@ -1388,6 +1521,16 @@ int CanvasScene::duplicateSelectedItems()
         if (!copy)
             continue;
         copy->fromJson(source->toJson());
+        copy->setGroupId(0);
+
+        const int sourceGroupId = source->groupId();
+        if (sourceGroupId > 0
+            && selectedGroupCounts.value(sourceGroupId) == groupMembers.value(sourceGroupId).size()
+            && groupMembers.value(sourceGroupId).size() >= 2) {
+            if (!copyGroupIds.contains(sourceGroupId))
+                copyGroupIds.insert(sourceGroupId, m_nextGroupId++);
+            copy->setGroupId(copyGroupIds.value(sourceGroupId));
+        }
 
         // 副本与原图元完全重叠会让用户以为没有复制成功，统一向右下错开一点。
         copy->setPos(source->pos() + QPointF(20.0, 20.0));
@@ -1521,6 +1664,7 @@ void CanvasScene::resetDocument()
     };
     m_activeLayerId = kFirstUserLayerId;
     m_nextLayerId = kFirstUserLayerId + 1;
+    m_nextGroupId = 1;
     m_canvasOrigin = QPointF(0.0, 0.0);
     m_exporting = false;
     updateSceneExtent();
@@ -1708,6 +1852,10 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
         }
         addItem(item);
     }
+
+    m_nextGroupId = 1;
+    for (CanvasItem* item : canvasItems())
+        m_nextGroupId = qMax(m_nextGroupId, item->groupId() + 1);
 
     // 旧画布没有 itemName；补自动名称，保证重新保存后每个图元都有“类型 N”。
     assignAutoItemNames();

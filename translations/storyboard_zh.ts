@@ -789,6 +789,30 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>已复制 %1 个图元</translation>
     </message>
     <message>
+      <source>Group selected items</source>
+      <translation>组合选中图元</translation>
+    </message>
+    <message>
+      <source>Group the selected items so they move together (Ctrl+G)</source>
+      <translation>组合选中图元，使其整组移动（Ctrl+G）</translation>
+    </message>
+    <message>
+      <source>Grouped %1 item(s)</source>
+      <translation>已组合 %1 个图元</translation>
+    </message>
+    <message>
+      <source>Ungroup selected items</source>
+      <translation>取消组合选中图元</translation>
+    </message>
+    <message>
+      <source>Ungroup the selected group(s) (Ctrl+Shift+G)</source>
+      <translation>取消选中图元所在的组（Ctrl+Shift+G）</translation>
+    </message>
+    <message>
+      <source>Ungrouped %1 item(s)</source>
+      <translation>已取消组合 %1 个图元</translation>
+    </message>
+    <message>
       <source>Duplicate item name</source>
       <translation>图元名称重复</translation>
     </message>

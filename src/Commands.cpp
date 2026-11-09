@@ -148,6 +148,41 @@ void GeometryCommand::apply(const ItemGeometryList& geometry)
     }
 }
 
+GroupCommand::GroupCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
+                           const QList<int>& before, const QList<int>& after,
+                           const QString& text)
+    : m_scene(scene)
+    , m_before(before)
+    , m_after(after)
+{
+    setText(text);
+    for (CanvasItem* item : items)
+        m_items.append(QPointer<CanvasItem>(item));
+}
+
+void GroupCommand::undo()
+{
+    apply(m_before);
+}
+
+void GroupCommand::redo()
+{
+    apply(m_after);
+}
+
+void GroupCommand::apply(const QList<int>& groupIds)
+{
+    if (!m_scene)
+        return;
+    QList<CanvasItem*> items;
+    items.reserve(m_items.size());
+    for (const QPointer<CanvasItem>& item : std::as_const(m_items)) {
+        if (item)
+            items.append(item.data());
+    }
+    m_scene->applyGroupIds(items, groupIds);
+}
+
 BackgroundCommand::BackgroundCommand(CanvasScene* scene, const BackgroundState& before,
                                      const BackgroundState& after, const QString& text)
     : m_scene(scene)

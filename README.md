@@ -12,9 +12,10 @@
 - **图元**：自由笔画、图片、文字，以及矩形、圆角矩形、椭圆、三角形、菱形、五角星、箭头、双向箭头、直线、左右大括号、对话气泡共 12 种常见图形。
 - **图元属性**：选中图元后按 `Q` 或双击打开模态属性窗。任意模式可查看，仅编辑模式可编辑；名称、图层、层内高度、填充、描边、位置尺寸、旋转角度、文字正文/颜色/字体、图片名称与图片本体均可修改，确认后只生成一条撤销记录。图元名称在画布内唯一，手动改名遇到重名会提示，清空名称会自动补一个唯一名称。
 - **图元拷贝**：`Ctrl+D` 或右键“复制图元”复制选中图元；副本相对原图元偏移，名称自动接续为唯一编号，整体只占一条撤销记录。
+- **图元分组**：同层多选后按 `Ctrl+G` 或右键“组合选中图元”，拖动组内任意一个图元时整组一起移动；组员仍可单独选中、缩放、旋转，并按 `Q` 打开属性窗编辑自己的属性。`Ctrl+Shift+G` 或右键“取消组合选中图元”可解组，分组与解组都可撤销。
 - **图层与叠放**：背景固定为第 0 层；用户图层可新建、删除空图层、上移/下移、重命名、显示/隐藏、锁定。同一图层内的 `height` 唯一，`]` / `[` 或右键可调整层内高度，也可跨图层移动。
 - **背景与画布**：纯色/图片背景（拉伸、适应、平铺），辅助网格，画布外围颜色；画布四边四角可拖拽拉伸或裁剪，越界图元不会被删除。
-- **撤销 / 重做**：图元增删、移动缩放旋转、文字与图片编辑、图形插入、背景替换、画布尺寸、图层增删/排序、层内高度与跨图层移动均进入撤销栈，上限 300 步。
+- **撤销 / 重做**：图元增删、移动缩放旋转、分组/解组、文字与图片编辑、图形插入、背景替换、画布尺寸、图层增删/排序、层内高度与跨图层移动均进入撤销栈，上限 300 步。
 - **画布文件**：图片与背景以 PNG 内嵌，文字保存字体、颜色、粗体/斜体/下划线/删除线字段，图形保存类型、描边、填充与线宽。
 - **导出**：画布区域或全部图元，PNG / JPEG / PDF，0.25×–4×；可合并导出，也可按每个可见图层分别导出。
 - **界面语言**：简体中文 / English，可跟随系统；切换后当前窗口立即生效，不需要重启。
@@ -81,7 +82,7 @@ bash scripts/package-portable.sh --build --qt-dir "$HOME/Qt/6.8.0/gcc_64"
 | macOS | `StoryBoard.app` 及 `.zip` | `macdeployqt` + 补 `libqoffscreen.dylib` |
 | Linux | `StoryBoard-<ver>-linux-<arch>-portable.tar.gz` | 拷贝 `libQt6*`、插件与 `qt.conf` |
 
-Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux 分支按 Qt 官方部署方式提供，尚未在对应主机实机验证。自检默认要求 Windows 504 项，其他平台接受当前通过数；可用 `--expected-passed 0` 放宽，`--skip-self-test` 跳过（不推荐）。
+Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux 分支按 Qt 官方部署方式提供，尚未在对应主机实机验证。自检默认要求 Windows 528 项，其他平台接受当前通过数；可用 `--expected-passed 0` 放宽，`--skip-self-test` 跳过（不推荐）。
 
 ## 使用说明
 
@@ -97,10 +98,11 @@ Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux �
 ### 图元与属性
 
 - 选中单个图元后，四角与四边共 8 个控制点可缩放；按住 `Shift` 等比缩放。选中多个图元后拖动任意一个，全部一起移动。
+- 同层选中至少两个图元后可按 `Ctrl+G` 组合；组合后拖动任意组员会带动整组，但单个组员仍可独立选中并缩放、旋转、打开属性窗。`Ctrl+Shift+G` 取消组合。
 - 旋转手柄按 5° 步长旋转；`Ctrl+R` / `Ctrl+Shift+R` 顺/逆时针旋转 45°。
 - 双击图元或按 `Q` 打开属性窗。文字正文、字体、字号、颜色、图片名称与图片本体都在属性窗内编辑，不再提供独立文字对话框。
 - 文字正文变化后，图元尺寸自动重置为文字自然尺寸；替换图片后，尺寸重置为新图片原始像素尺寸。
-- 右键图元可调整层内高度、跨图层移动或删除；多选时批量作用于全部选中图元。
+- 右键图元可复制、组合/取消组合、调整层内高度、跨图层移动或删除；多选时批量作用于全部选中图元。
 
 ### 图层与叠放
 
@@ -128,7 +130,7 @@ Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux �
 
 ![示例画布](docs/sample-canvas.png)
 
-- 画布 JSON 保存画布范围、图层顺序/显示/锁定、当前图层，以及每个图元的 `layer` / `height`。
+- 画布 JSON 保存画布范围、图层顺序/显示/锁定、当前图层，以及每个图元的 `layer` / `height` / `group`。
 - 文字额外保存 `fontFamily`、`fontSize`、`fontWeight`、`italic`、`underline`、`strikeOut`、`color`。
 - 图形额外保存 `shapeType`、`strokeColor`、`fillColor`、`strokeWidth`、`fillStyle`。
 
@@ -149,6 +151,7 @@ Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux �
 | 撤销 / 重做 | `Ctrl+Z` / `Ctrl+Y`（也支持 `Ctrl+Shift+Z`） |
 | 全选 / 删除 | `Ctrl+A` / `Delete` |
 | 复制选中图元 | `Ctrl+D` |
+| 组合 / 取消组合选中图元 | `Ctrl+G` / `Ctrl+Shift+G` |
 | 顺时针 / 逆时针旋转 45° | `Ctrl+R` / `Ctrl+Shift+R` |
 | 查看 / 画笔 / 编辑 / 文字模式 | `V` / `B` / `E` / `T` |
 | 回到全景 / 放大 / 缩小 / 实际大小 | `Ctrl+0` 或 `Home` / `Ctrl+=` / `Ctrl+-` / `Ctrl+1` |
@@ -168,7 +171,7 @@ QT_QPA_PLATFORM=offscreen ./out/bin/StoryBoard.exe --self-test out/selftest.txt
 cat out/selftest.txt
 ```
 
-当前 Windows 基线为 **514 passed, 0 failed**；其他平台以实际 `SUMMARY` 为准。
+当前 Windows 基线为 **528 passed, 0 failed**；其他平台以实际 `SUMMARY` 为准。
 
 `--self-test` 需要平台插件目录下的 offscreen 插件（Windows `platforms/qoffscreen.dll`、macOS `platforms/libqoffscreen.dylib`、Linux `platforms/libqoffscreen.so`）。打包脚本会自动补齐。
 
@@ -207,7 +210,7 @@ StoryBoard/
 
 ## 已知限制
 
-- 暂无图元分组；文字不支持同一图元内混排不同字号/颜色。
+- 图元分组要求同层，暂不支持组嵌套；文字不支持同一图元内混排不同字号/颜色。
 - 图形不支持逐图元独立设置描边线宽或虚线。
 - 图层删除仅支持空图层；图层拖拽排序尚未提供，可用面板按钮上移/下移。
 - 画布内嵌图片，包含大图时 `.sbcanvas` 会相应变大。

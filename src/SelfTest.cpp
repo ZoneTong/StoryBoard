@@ -2525,6 +2525,130 @@ int runSelfTest(const QString& reportPath)
               firstName + QStringLiteral(" / ") + secondName);
     }
 
+    // 图元分组：同层多选可组合；单个组员仍能单独选中并编辑属性；
+    // 拖动任意组员时整组移动，分组与取消分组都可撤销。
+    {
+        CanvasScene groupScene;
+        QUndoStack groupUndo;
+        groupScene.setUndoStack(&groupUndo);
+        groupScene.applyCanvasSize(QSizeF(800.0, 600.0));
+        groupScene.setMode(ToolMode::Edit);
+
+        auto* first = new ShapeItem(ShapeType::Rectangle);
+        first->setContentSize(QSizeF(90.0, 70.0));
+        first->setPos(QPointF(80.0, 90.0));
+        auto* second = new ShapeItem(ShapeType::Ellipse);
+        second->setContentSize(QSizeF(90.0, 70.0));
+        second->setPos(QPointF(320.0, 260.0));
+        groupScene.addItemsWithUndo({ first, second }, QStringLiteral("Add grouped sources"));
+
+        first->setSelected(true);
+        second->setSelected(true);
+        const int grouped = groupScene.groupSelectedItems();
+        const int groupId = first->groupId();
+        check(grouped == 2 && groupId > 0 && second->groupId() == groupId,
+              QStringLiteral("同层多选图元可组合"),
+              QStringLiteral("group=%1 first=%2 second=%3")
+                  .arg(grouped).arg(first->groupId()).arg(second->groupId()));
+        check(groupScene.canUngroupSelectedItems(),
+              QStringLiteral("组合后可取消组合"));
+
+        groupUndo.undo();
+        check(first->groupId() == 0 && second->groupId() == 0,
+              QStringLiteral("撤销组合恢复未分组"));
+        groupUndo.redo();
+        check(first->groupId() == groupId && second->groupId() == groupId,
+              QStringLiteral("重做组合恢复组标记"));
+
+        // 单个组员仍可成为唯一选中项，属性窗保持可编辑。
+        groupScene.clearSelection();
+        first->setSelected(true);
+        check(groupScene.selectedCanvasItems().size() == 1 && first->isEditable(),
+              QStringLiteral("组合后单个图元仍可单独选中"));
+        ItemPropertiesDialog propertiesDialog(&groupScene, first, nullptr);
+        QLineEdit* nameEdit = propertiesDialog.findChild<QLineEdit*>(
+            QStringLiteral("ItemPropertiesNameValue"));
+        check(nameEdit != nullptr && !nameEdit->isReadOnly(),
+              QStringLiteral("组合后单个图元属性窗仍可编辑"));
+
+        CanvasView groupView(&groupScene);
+        groupView.resize(900, 700);
+        groupView.show();
+        groupView.setMode(ToolMode::Edit);
+        groupView.fitAll();
+        QApplication::processEvents();
+
+        const QPointF firstBefore = first->pos();
+        const QPointF secondBefore = second->pos();
+        const QPointF firstCenter = first->mapToScene(first->contentRect().center());
+        const QPoint dragStart = groupView.mapFromScene(firstCenter);
+        sendMouseEvent(groupView.viewport(), QEvent::MouseButtonPress, dragStart,
+                       Qt::LeftButton, Qt::LeftButton);
+        sendMouseEvent(groupView.viewport(), QEvent::MouseMove, dragStart + QPoint(50, 35),
+                       Qt::NoButton, Qt::LeftButton);
+        sendMouseEvent(groupView.viewport(), QEvent::MouseButtonRelease, dragStart + QPoint(50, 35),
+                       Qt::LeftButton, Qt::NoButton);
+        QApplication::processEvents();
+
+        const QPointF firstDelta = first->pos() - firstBefore;
+        const QPointF secondDelta = second->pos() - secondBefore;
+        check(QLineF(firstDelta, QPointF()).length() > 1.0
+                  && QLineF(firstDelta, secondDelta).length() < 0.01,
+              QStringLiteral("拖动单个组员时整组一起移动"),
+              QStringLiteral("first=%1,%2 second=%3,%4")
+                  .arg(firstDelta.x()).arg(firstDelta.y())
+                  .arg(secondDelta.x()).arg(secondDelta.y()));
+
+        groupUndo.undo();
+        check(first->pos() == firstBefore && second->pos() == secondBefore,
+              QStringLiteral("撤销整组移动恢复所有组员"));
+        groupUndo.redo();
+        check(first->pos() != firstBefore && second->pos() != secondBefore,
+              QStringLiteral("重做整组移动"));
+
+        CanvasScene reloadedGroups;
+        check(reloadedGroups.fromJson(groupScene.toJson()),
+              QStringLiteral("分组画布可重新载入"));
+        CanvasItem* reloadedFirst = nullptr;
+        CanvasItem* reloadedSecond = nullptr;
+        for (CanvasItem* item : reloadedGroups.canvasItems()) {
+            if (item->rawName() == first->rawName())
+                reloadedFirst = item;
+            if (item->rawName() == second->rawName())
+                reloadedSecond = item;
+        }
+        check(reloadedFirst && reloadedSecond
+                  && reloadedFirst->groupId() > 0
+                  && reloadedFirst->groupId() == reloadedSecond->groupId(),
+              QStringLiteral("分组关系随画布保存和载入"));
+
+        // 只复制组内一个图元时，副本不能误加入原组。
+        groupScene.clearSelection();
+        first->setSelected(true);
+        const int duplicatedGroupMember = groupScene.duplicateSelectedItems();
+        CanvasItem* groupCopy = nullptr;
+        for (CanvasItem* item : groupScene.canvasItems()) {
+            if (item != first && item != second && item->rawName() == QStringLiteral("矩形 2"))
+                groupCopy = item;
+        }
+        check(duplicatedGroupMember == 1 && groupCopy && groupCopy->groupId() == 0,
+              QStringLiteral("只复制单个组员时副本保持未分组"));
+
+        // 只选中一个组员也能取消整个组。
+        groupScene.clearSelection();
+        first->setSelected(true);
+        const int ungrouped = groupScene.ungroupSelectedItems();
+        check(ungrouped == 2 && first->groupId() == 0 && second->groupId() == 0,
+              QStringLiteral("取消组合会清除整个组"),
+              QStringLiteral("ungrouped=%1").arg(ungrouped));
+        groupUndo.undo();
+        check(first->groupId() == groupId && second->groupId() == groupId,
+              QStringLiteral("撤销取消组合恢复整组"));
+
+        groupView.close();
+        QApplication::processEvents();
+    }
+
     const int baseLayerId = viewScene.activeLayerId();
     check(viewScene.addLayerWithUndo(QStringLiteral("锁定的注释")),
           QStringLiteral("创建锁定测试图层"));

@@ -53,6 +53,9 @@ public:
 
     int layerId() const { return m_layerId; }
     void setLayerId(int layerId);
+    // 同一分组内的图元在编辑模式下整组移动；0 表示未分组。
+    int groupId() const { return m_groupId; }
+    void setGroupId(int groupId) { m_groupId = qMax(0, groupId); }
     int height() const { return m_height; }
     void setHeight(int height);
     // 需求 24：图元可以绕内容中心旋转；旋转角随画布 JSON 保存并参与撤销。
@@ -124,6 +127,7 @@ private:
 
     QSizeF m_size { 120.0, 90.0 };
     int m_layerId = 0;
+    int m_groupId = 0;
     int m_height = -1;
     qreal m_rotation = 0.0;
     QString m_name;

@@ -433,6 +433,34 @@ void MainWindow::createActions()
                 uiText(QStringLiteral("Duplicated %1 item(s)")).arg(duplicated), 3000);
         }
     });
+    m_groupAct = new QAction(uiText(QStringLiteral("Group selected items")), this);
+    m_groupAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+G")));
+    m_groupAct->setStatusTip(
+        uiText(QStringLiteral("Group the selected items so they move together (Ctrl+G)")));
+    m_groupAct->setEnabled(false);
+    connect(m_groupAct, &QAction::triggered, this, [this]() {
+        if (!m_scene)
+            return;
+        const int grouped = m_scene->groupSelectedItems();
+        if (grouped > 0) {
+            statusBar()->showMessage(
+                uiText(QStringLiteral("Grouped %1 item(s)")).arg(grouped), 3000);
+        }
+    });
+    m_ungroupAct = new QAction(uiText(QStringLiteral("Ungroup selected items")), this);
+    m_ungroupAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+G")));
+    m_ungroupAct->setStatusTip(
+        uiText(QStringLiteral("Ungroup the selected group(s) (Ctrl+Shift+G)")));
+    m_ungroupAct->setEnabled(false);
+    connect(m_ungroupAct, &QAction::triggered, this, [this]() {
+        if (!m_scene)
+            return;
+        const int ungrouped = m_scene->ungroupSelectedItems();
+        if (ungrouped > 0) {
+            statusBar()->showMessage(
+                uiText(QStringLiteral("Ungrouped %1 item(s)")).arg(ungrouped), 3000);
+        }
+    });
     m_selectAllAct = new QAction(uiText(QStringLiteral("Select all items")), this);
     m_selectAllAct->setShortcut(QKeySequence::SelectAll);
     m_selectAllAct->setStatusTip(uiText(QStringLiteral("Select all items (Ctrl+A)")));
@@ -680,6 +708,8 @@ void MainWindow::createMenus()
     editMenu->addSeparator();
     editMenu->addAction(m_deleteAct);
     editMenu->addAction(m_duplicateAct);
+    editMenu->addAction(m_groupAct);
+    editMenu->addAction(m_ungroupAct);
     editMenu->addAction(m_selectAllAct);
     editMenu->addSeparator();
     editMenu->addAction(m_itemPropsAct);
@@ -1088,6 +1118,8 @@ void MainWindow::updateActions()
     const bool editing = m_view->mode() == ToolMode::Edit;
     m_deleteAct->setEnabled(editing && !m_scene->selectedItems().isEmpty());
     m_duplicateAct->setEnabled(editing && !m_scene->selectedCanvasItems().isEmpty());
+    m_groupAct->setEnabled(editing && m_scene->canGroupSelectedItems());
+    m_ungroupAct->setEnabled(editing && m_scene->canUngroupSelectedItems());
     m_selectAllAct->setEnabled(editing && m_scene->canvasItemCount() > 0);
     m_itemPropsAct->setEnabled(m_scene->selectedCanvasItems().size() == 1);
     m_rotateCwAct->setEnabled(editing && !m_scene->selectedCanvasItems().isEmpty());

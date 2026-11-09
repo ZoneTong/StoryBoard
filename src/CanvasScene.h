@@ -71,6 +71,15 @@ public:
     // 返回实际生成的副本数量。
     int duplicateSelectedItems();
 
+    // 分组：只允许同层、至少两个可编辑图元。移动任意组员时整组移动，
+    // 但组员仍可单独选中并编辑属性。
+    bool canGroupSelectedItems() const;
+    bool canUngroupSelectedItems() const;
+    int groupSelectedItems();
+    int ungroupSelectedItems();
+    QList<CanvasItem*> itemsInGroup(int groupId) const;
+    void applyGroupIds(const QList<CanvasItem*>& items, const QList<int>& groupIds);
+
     static constexpr int BackgroundLayerId = 0;
 
     const QList<CanvasLayer>& layers() const { return m_layers; }
@@ -191,6 +200,7 @@ private:
     QList<CanvasLayer> m_layers;
     int m_activeLayerId = 1;
     int m_nextLayerId = 2;
+    int m_nextGroupId = 1;
     QList<int> m_preferredLayerIds;
     QList<CanvasItem*> m_orphans;
 };

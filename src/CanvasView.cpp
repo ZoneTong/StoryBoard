@@ -460,6 +460,10 @@ void CanvasView::contextMenuEvent(QContextMenuEvent* event)
     QAction* properties = menu.addAction(uiText(QStringLiteral("Item properties…")));
     QAction* duplicate = menu.addAction(uiText(QStringLiteral("Duplicate item")));
     duplicate->setEnabled(item->isSelected());
+    QAction* group = menu.addAction(uiText(QStringLiteral("Group selected items")));
+    group->setEnabled(m_scene->canGroupSelectedItems());
+    QAction* ungroup = menu.addAction(uiText(QStringLiteral("Ungroup selected items")));
+    ungroup->setEnabled(m_scene->canUngroupSelectedItems());
     menu.addSeparator();
 
     QAction* heightUp = menu.addAction(uiText(QStringLiteral("Height +1 (stack up)    ]")));
@@ -486,6 +490,14 @@ void CanvasView::contextMenuEvent(QContextMenuEvent* event)
         const int duplicated = m_scene->duplicateSelectedItems();
         if (duplicated > 0)
             emit statusMessage(uiText(QStringLiteral("Duplicated %1 item(s)")).arg(duplicated));
+    } else if (chosen == group) {
+        const int grouped = m_scene->groupSelectedItems();
+        if (grouped > 0)
+            emit statusMessage(uiText(QStringLiteral("Grouped %1 item(s)")).arg(grouped));
+    } else if (chosen == ungroup) {
+        const int ungrouped = m_scene->ungroupSelectedItems();
+        if (ungrouped > 0)
+            emit statusMessage(uiText(QStringLiteral("Ungrouped %1 item(s)")).arg(ungrouped));
     } else if (chosen == heightUp)
         m_scene->adjustSelectedHeights(1);
     else if (chosen == heightDown)

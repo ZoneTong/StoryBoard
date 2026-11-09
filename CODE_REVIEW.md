@@ -2,7 +2,7 @@
 
 审查对象：Qt 6 / C++17 / CMake 工程。审查时间：2026-11-07 至 2026-11-09。
 
-结论：历史审查发现的 4 个真实缺陷已修复并保留回归；后续属性窗、旋转、文字/图片编辑、文字样式回收与字体选择对话框中文化均已收口。当前自检 **514 passed, 0 failed**。
+结论：历史审查发现的 4 个真实缺陷已修复并保留回归；后续属性窗、旋转、文字/图片编辑、文字样式回收、字体选择对话框中文化与图元分组均已收口。当前自检 **528 passed, 0 failed**。
 
 ## 一、已修复缺陷
 
@@ -24,16 +24,17 @@
 - **文字/图片尺寸**：正文变化后重置为文字自然尺寸；替换图片后重置为原始像素尺寸；两者撤销时恢复旧尺寸。
 - **文字样式**：曾加入粗体/斜体/下划线/删除线勾选框，后续按要求完整移除控件与翻译词条；画布 JSON 仍保留 `underline` / `strikeOut` 字段，避免旧画布丢数据。
 - **字体对话框中文化**：嵌入 Qt 的 `qtbase_zh_CN.qm`，中文模式额外装载 `QTranslator`；字体选择强制使用 `QFontDialog::DontUseNativeDialog`，避免原生窗口跟随系统语言。
+- **图元分组**：同层多选可组合，拖动任意组员整组移动；组员仍可单独选中、缩放、旋转并编辑自己的属性；支持 `Ctrl+G` / `Ctrl+Shift+G`、右键菜单、画布 JSON 持久化与撤销/重做。
 
 ## 三、验证
 
 ```bash
 cmake --build out -j 8
 ./out/bin/StoryBoard.exe --self-test out/selftest.txt
-# SUMMARY 514 passed, 0 failed
+# SUMMARY 528 passed, 0 failed
 ```
 
-便携包由 `scripts/package-portable.sh` 在 Windows 11 + MinGW 13.1 + Qt 6.12 下实机验证：`windeployqt` 部署成功，包内自检 514 项通过。
+便携包已重新打包并在 Windows 11 + MinGW 13.1 + Qt 6.12 下实机验证：`windeployqt` 部署成功，包内自检 528 项通过。
 
 ## 四、记录但未修改
 
