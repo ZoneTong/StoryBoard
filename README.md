@@ -30,30 +30,30 @@
 ### Linux / macOS
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+cmake -S . -B out -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_PREFIX_PATH="$HOME/Qt/6.8.0/gcc_64"
-cmake --build build -j
+cmake --build out -j
 ```
 
 ### Windows（Git Bash / MSYS2）
 
 ```bash
-cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release \
+cmake -S . -B out -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_PREFIX_PATH="D:/Qt/6.12.0/mingw_64"
-cmake --build build -j
+cmake --build out -j
 ```
 
 ### 运行
 
 ```bash
 # Linux / macOS
-./build/bin/StoryBoard
+./out/bin/StoryBoard
 
 # Windows（Git Bash / MSYS2）
-./build/bin/StoryBoard.exe
+./out/bin/StoryBoard.exe
 
 # 打开示例画布
-./build/bin/StoryBoard examples/demo-canvas.sbcanvas
+./out/bin/StoryBoard examples/demo-canvas.sbcanvas
 ```
 
 也可以直接用 Qt Creator 打开根目录的 `CMakeLists.txt`，选择本机对应的 Qt 6 kit。
@@ -160,28 +160,28 @@ Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux �
 
 ```bash
 # Linux / macOS
-QT_QPA_PLATFORM=offscreen ./build/bin/StoryBoard --self-test build/selftest.txt
-cat build/selftest.txt
+QT_QPA_PLATFORM=offscreen ./out/bin/StoryBoard --self-test out/selftest.txt
+cat out/selftest.txt
 
 # Windows 的 Git Bash / MSYS2
-QT_QPA_PLATFORM=offscreen ./build/bin/StoryBoard.exe --self-test build/selftest.txt
-cat build/selftest.txt
+QT_QPA_PLATFORM=offscreen ./out/bin/StoryBoard.exe --self-test out/selftest.txt
+cat out/selftest.txt
 ```
 
-当前 Windows 基线为 **504 passed, 0 failed**；其他平台以实际 `SUMMARY` 为准。
+当前 Windows 基线为 **514 passed, 0 failed**；其他平台以实际 `SUMMARY` 为准。
 
 `--self-test` 需要平台插件目录下的 offscreen 插件（Windows `platforms/qoffscreen.dll`、macOS `platforms/libqoffscreen.dylib`、Linux `platforms/libqoffscreen.so`）。打包脚本会自动补齐。
 
 开发用截图/渲染参数：
 
 ```bash
-./build/bin/StoryBoard --render-demo build/demo.png
-./build/bin/StoryBoard --demo-canvas examples/demo-canvas.sbcanvas
-./build/bin/StoryBoard --ui-screenshot build/ui.png
-./build/bin/StoryBoard --item-properties-screenshot build/props.png
+./out/bin/StoryBoard --render-demo out/demo.png
+./out/bin/StoryBoard --demo-canvas examples/demo-canvas.sbcanvas
+./out/bin/StoryBoard --ui-screenshot out/ui.png
+./out/bin/StoryBoard --item-properties-screenshot out/props.png
 ```
 
-> Windows 下把 `./build/bin/StoryBoard` 换成 `./build/bin/StoryBoard.exe`。
+> Windows 下把 `./out/bin/StoryBoard` 换成 `./out/bin/StoryBoard.exe`。
 
 ## 项目结构
 

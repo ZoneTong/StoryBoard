@@ -2,7 +2,7 @@
 
 审查对象：Qt 6 / C++17 / CMake 工程。审查时间：2026-11-07 至 2026-11-09。
 
-结论：历史审查发现的 4 个真实缺陷已修复并保留回归；后续属性窗、旋转、文字/图片编辑、文字样式回收与字体选择对话框中文化均已收口。当前自检 **504 passed, 0 failed**。
+结论：历史审查发现的 4 个真实缺陷已修复并保留回归；后续属性窗、旋转、文字/图片编辑、文字样式回收与字体选择对话框中文化均已收口。当前自检 **514 passed, 0 failed**。
 
 ## 一、已修复缺陷
 
@@ -28,12 +28,12 @@
 ## 三、验证
 
 ```bash
-cmake --build build-check -j 8
-./build-check/bin/StoryBoard.exe --self-test build-check/selftest.txt
-# SUMMARY 504 passed, 0 failed
+cmake --build out -j 8
+./out/bin/StoryBoard.exe --self-test out/selftest.txt
+# SUMMARY 514 passed, 0 failed
 ```
 
-便携包由 `scripts/package-portable.sh` 在 Windows 11 + MinGW 13.1 + Qt 6.12 下实机验证：`windeployqt` 部署成功，包内自检 504 项通过。
+便携包由 `scripts/package-portable.sh` 在 Windows 11 + MinGW 13.1 + Qt 6.12 下实机验证：`windeployqt` 部署成功，包内自检 514 项通过。
 
 ## 四、记录但未修改
 

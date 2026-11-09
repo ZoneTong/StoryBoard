@@ -30,8 +30,8 @@ usage() {
 Usage: package-portable.sh [options]
 
 Options:
-  --build                 Build the existing build directory before packaging
-  --build-dir <dir>      Build directory (default: build-check if present, else build)
+  --build                 Build the configured build directory before packaging
+  --build-dir <dir>      Build directory (default: out)
   --qt-dir <dir>         Qt installation directory (default: auto-detect qmake/Qt roots)
   --version <version>    Assert version matches CMakeLists.txt (optional)
   --output-dir <dir>     Directory that receives the package/zip (default: project root)
@@ -105,13 +105,7 @@ fi
 VERSION="$CMAKE_VERSION"
 
 if [ -z "$BUILD_DIR" ]; then
-    if [ -e "$ROOT/build-check/bin/StoryBoard.exe" ] || \
-       [ -e "$ROOT/build-check/bin/StoryBoard" ] || \
-       [ -d "$ROOT/build-check/bin/StoryBoard.app" ]; then
-        BUILD_DIR="$ROOT/build-check"
-    else
-        BUILD_DIR="$ROOT/build"
-    fi
+    BUILD_DIR="$ROOT/out"
 fi
 [ -n "$OUTPUT_DIR" ] || die "output directory must not be empty"
 BUILD_DIR="$(cd "$(dirname "$BUILD_DIR")" 2>/dev/null && pwd)/$(basename "$BUILD_DIR")" || die "invalid build directory"
