@@ -335,6 +335,8 @@ Result extract(const QImage& source, const Options& options)
         const int regionCount = regions.size();
 
         // 相邻关系只记一份：每个像素只看右、右下、下、左下四个方向。
+        // 只认 8 邻域贴边：允许跨间隙合并会把中间那条过渡线一起并进来，
+        // 整片结构会跟着糊掉（实测 recall 会从 0.96 掉到 0.65）。
         QVector<int> edgeFirst;
         QVector<int> edgeSecond;
         QSet<qint64> seenEdges;

@@ -17,10 +17,45 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QSignalBlocker>
 #include <QSpinBox>
 #include <QStandardPaths>
 #include <QUrl>
 #include <QVBoxLayout>
+
+namespace {
+
+// 线稿化档位：每档是一组实测过的参数。数值按 tools/lineart-similarity 那张地图调过，
+// “Balanced”就是默认值（f1 0.933，900 条轮廓）；往左更保小道具，往右更干净。
+struct LineArtPreset {
+    const char* name;
+    int levels;
+    int palette;
+    int adjacent;
+    int minArea;
+};
+
+const LineArtPreset kLineArtPresets[] = {
+    { "Keep details", 6, 40, 44, 8 },
+    { "Balanced", 6, 48, 48, 12 },
+    { "Clean lines", 6, 64, 56, 20 },
+    { "Bold blocks", 6, 80, 56, 32 },
+};
+
+int lineArtPresetCount()
+{
+    return static_cast<int>(sizeof(kLineArtPresets) / sizeof(kLineArtPresets[0]));
+}
+
+LineArtPreset lineArtPreset(int index)
+{
+    static const LineArtPreset fallback {};
+    if (index < 0 || index >= lineArtPresetCount())
+        return fallback;
+    return kLineArtPresets[index];
+}
+
+} // namespace
 
 SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
     : QDialog(parent)
@@ -127,10 +162,20 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
     rootLayout->addWidget(canvasGroup);
 
     // 图片线稿化的参数：颜色怎么并、碎块怎么并，都要能自己调，否则遇到别的图只能重编译。
+    // 上面再加一个档位，一键把下面几项换成一组实测过的组合。
     auto* lineArtGroup = new QGroupBox(uiText(QStringLiteral("Image outline tracing")), this);
     auto* lineArtForm = new QFormLayout(lineArtGroup);
     lineArtForm->setContentsMargins(16, 18, 16, 16);
     lineArtForm->setSpacing(10);
+
+    m_lineArtPresetCombo = new QComboBox(lineArtGroup);
+    m_lineArtPresetCombo->setObjectName(QStringLiteral("LineArtPresetCombo"));
+    m_lineArtPresetCombo->setFixedHeight(30);
+    for (int i = 0; i < lineArtPresetCount(); ++i)
+        m_lineArtPresetCombo->addItem(uiText(QString::fromLatin1(lineArtPreset(i).name)), i);
+    m_lineArtPresetCombo->addItem(uiText(QStringLiteral("Custom")), -1);
+    m_lineArtPresetCombo->setToolTip(uiText(QStringLiteral("Applies a tested parameter set to all items below; editing any value switches back to Custom.")));
+    lineArtForm->addRow(uiText(QStringLiteral("Preset")), m_lineArtPresetCombo);
 
     m_lineArtLevelsSpin = new QSpinBox(lineArtGroup);
     m_lineArtLevelsSpin->setObjectName(QStringLiteral("LineArtLevelsSpin"));
@@ -145,16 +190,16 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
     m_lineArtPaletteMergeSpin->setRange(0, 160);
     m_lineArtPaletteMergeSpin->setValue(m_settings.lineArtPaletteMerge);
     m_lineArtPaletteMergeSpin->setFixedHeight(30);
-    m_lineArtPaletteMergeSpin->setToolTip(uiText(QStringLiteral("Color distance under which two colors count as the same one; smaller values keep small colored props.")));
-    lineArtForm->addRow(uiText(QStringLiteral("Color match distance")), m_lineArtPaletteMergeSpin);
+    m_lineArtPaletteMergeSpin->setToolTip(uiText(QStringLiteral("Two colors whose distance is under this value count as one color; smaller values keep small colored props.")));
+    lineArtForm->addRow(uiText(QStringLiteral("Same color similarity")), m_lineArtPaletteMergeSpin);
 
     m_lineArtAdjacentMergeSpin = new QSpinBox(lineArtGroup);
     m_lineArtAdjacentMergeSpin->setObjectName(QStringLiteral("LineArtAdjacentMergeSpin"));
     m_lineArtAdjacentMergeSpin->setRange(0, 160);
     m_lineArtAdjacentMergeSpin->setValue(m_settings.lineArtAdjacentMerge);
     m_lineArtAdjacentMergeSpin->setFixedHeight(30);
-    m_lineArtAdjacentMergeSpin->setToolTip(uiText(QStringLiteral("Adjacent blocks whose colors differ less than this are traced as one block; 0 disables merging.")));
-    lineArtForm->addRow(uiText(QStringLiteral("Merge adjacent blocks")), m_lineArtAdjacentMergeSpin);
+    m_lineArtAdjacentMergeSpin->setToolTip(uiText(QStringLiteral("Adjacent blocks whose colors differ less than this are drawn as one block; 0 disables merging.")));
+    lineArtForm->addRow(uiText(QStringLiteral("Adjacent color similarity")), m_lineArtAdjacentMergeSpin);
 
     m_lineArtMinAreaSpin = new QSpinBox(lineArtGroup);
     m_lineArtMinAreaSpin->setObjectName(QStringLiteral("LineArtMinAreaSpin"));
@@ -165,8 +210,60 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
     m_lineArtMinAreaSpin->setToolTip(uiText(QStringLiteral("Blocks smaller than this area are skipped; lower it to trace tiny props.")));
     lineArtForm->addRow(uiText(QStringLiteral("Smallest block")), m_lineArtMinAreaSpin);
 
+    // 档位 ↔ 具体数值：切档位就整组写入，手改任何一项就跳回“自定义”。
+    auto matchesPreset = [this](const LineArtPreset& preset) {
+        return m_lineArtLevelsSpin->value() == preset.levels
+            && m_lineArtPaletteMergeSpin->value() == preset.palette
+            && m_lineArtAdjacentMergeSpin->value() == preset.adjacent
+            && m_lineArtAdjacentMergeSpin->value() == preset.adjacent
+            && m_lineArtMinAreaSpin->value() == preset.minArea;
+    };
+    auto applyPreset = [this](int index) {
+        const LineArtPreset preset = lineArtPreset(index);
+        m_applyingPreset = true;
+        m_lineArtLevelsSpin->setValue(preset.levels);
+        m_lineArtPaletteMergeSpin->setValue(preset.palette);
+        m_lineArtAdjacentMergeSpin->setValue(preset.adjacent);
+        m_lineArtMinAreaSpin->setValue(preset.minArea);
+        m_applyingPreset = false;
+    };
+    auto syncPresetCombo = [this, matchesPreset]() {
+        int data = -1;
+        for (int i = 0; i < lineArtPresetCount(); ++i) {
+            if (matchesPreset(lineArtPreset(i))) {
+                data = i;
+                break;
+            }
+        }
+        const int index = m_lineArtPresetCombo->findData(data);
+        if (index < 0)
+            return;
+        QSignalBlocker blocker(m_lineArtPresetCombo);
+        m_lineArtPresetCombo->setCurrentIndex(index);
+    };
+
+    connect(m_lineArtPresetCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this, applyPreset](int) {
+                if (m_applyingPreset)
+                    return;
+                const int data = m_lineArtPresetCombo->currentData().toInt();
+                if (data >= 0)
+                    applyPreset(data);
+            });
+    for (QSpinBox* spin : { m_lineArtLevelsSpin, m_lineArtPaletteMergeSpin,
+                            m_lineArtAdjacentMergeSpin, m_lineArtMinAreaSpin }) {
+        connect(spin, QOverload<int>::of(&QSpinBox::valueChanged), this,
+                [this, syncPresetCombo](int) {
+                    if (m_applyingPreset)
+                        return;
+                    syncPresetCombo();
+                });
+    }
+    syncPresetCombo();
+
     auto* lineArtHint = new QLabel(uiText(QStringLiteral(
-        "A bigger merge distance joins neighbouring blocks of similar color into one outline; too big and real borders disappear. 0 turns merging off.")),
+        "Similarity values are RGB color distances (0-441): lower keeps more small props, higher merges more fragments. "
+        "Adjacent merging only joins blocks that actually touch, so colour is the knob that changes the result.")),
         lineArtGroup);
     lineArtHint->setObjectName(QStringLiteral("DialogHint"));
     lineArtHint->setWordWrap(true);

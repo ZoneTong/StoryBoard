@@ -3188,8 +3188,10 @@ int runSelfTest(const QString& reportPath)
                   && brushNames.contains(QStringLiteral("BrushSmoothingSpin"))
                   && brushNames.contains(QStringLiteral("SmoothStrokeButton"))
                   && !brushNames.contains(QStringLiteral("FillButton"))
-                  && !brushNames.contains(QStringLiteral("FillColorButton")),
-              QStringLiteral("画笔工具栏只包含画笔颜色、粗细、平滑容差和平滑按钮"),
+                  && !brushNames.contains(QStringLiteral("FillColorButton"))
+                  && brushNames.indexOf(QStringLiteral("BrushSmoothingSpin"))
+                         > brushNames.indexOf(QStringLiteral("SmoothStrokeButton")),
+              QStringLiteral("画笔工具栏只包含画笔颜色、粗细、平滑按钮和容差，且平滑按钮在容差之前"),
               brushNames.join(QStringLiteral("|")));
         QSpinBox* toolbarSmoothing = shapeWindow.findChild<QSpinBox*>(
             QStringLiteral("BrushSmoothingSpin"));
@@ -3197,25 +3199,25 @@ int runSelfTest(const QString& reportPath)
         check(toolbarSmoothing && canvasView
                   && toolbarSmoothing->minimum() == 0 && toolbarSmoothing->maximum() == 30
                   && toolbarSmoothing->value() == canvasView->strokeSmoothing(),
-              QStringLiteral("画笔工具栏提供可调平滑容差"),
+              QStringLiteral("画笔工具栏提供可调容差"),
               QStringLiteral("value=%1 view=%2")
                   .arg(toolbarSmoothing ? toolbarSmoothing->value() : -1)
                   .arg(canvasView ? canvasView->strokeSmoothing() : -1));
         if (toolbarSmoothing) {
             toolbarSmoothing->setValue(0);
             check(canvasView && canvasView->strokeSmoothing() == 0,
-                  QStringLiteral("工具栏平滑容差即时生效"),
+                  QStringLiteral("工具栏容差即时生效"),
                   QStringLiteral("view=%1").arg(canvasView ? canvasView->strokeSmoothing() : -1));
             toolbarSmoothing->setValue(4);
         }
         QToolButton* smoothButton = shapeWindow.findChild<QToolButton*>(
             QStringLiteral("SmoothStrokeButton"));
         check(smoothButton && smoothButton->defaultAction()
-                  && smoothButton->defaultAction()->text() == QStringLiteral("平滑选中笔画"),
+                  && smoothButton->defaultAction()->text() == QStringLiteral("平滑笔画"),
               QStringLiteral("画笔工具栏提供手动平滑按钮"));
         QAction* smoothAction = nullptr;
         for (QAction* action : shapeWindow.findChildren<QAction*>()) {
-            if (action->text() == QStringLiteral("平滑选中笔画"))
+            if (action->text() == QStringLiteral("平滑笔画"))
                 smoothAction = action;
         }
         check(smoothAction
@@ -3591,6 +3593,78 @@ int runSelfTest(const QString& reportPath)
               QStringLiteral("palette=%1 area=%2")
                   .arg(dialog.settings().lineArtPaletteMerge)
                   .arg(dialog.settings().lineArtMinRegionArea));
+    }
+
+    {
+        // 需求：线稿化要给几档预设，一键换掉全部参数；手改任一项就回到“自定义”。
+        const AppSettings defaults;
+        SettingsDialog dialog(defaults);
+        auto* presetCombo = dialog.findChild<QComboBox*>(
+            QStringLiteral("LineArtPresetCombo"));
+        auto* levelsSpin = dialog.findChild<QSpinBox*>(
+            QStringLiteral("LineArtLevelsSpin"));
+        auto* paletteSpin = dialog.findChild<QSpinBox*>(
+            QStringLiteral("LineArtPaletteMergeSpin"));
+        auto* adjacentSpin = dialog.findChild<QSpinBox*>(
+            QStringLiteral("LineArtAdjacentMergeSpin"));
+        auto* areaSpin = dialog.findChild<QSpinBox*>(
+            QStringLiteral("LineArtMinAreaSpin"));
+        check(presetCombo && levelsSpin && paletteSpin && adjacentSpin && areaSpin,
+              QStringLiteral("设置对话框提供线稿化档位下拉"));
+
+        // 默认参数正好是“均衡”档，打开时就应选中它。
+        check(presetCombo && presetCombo->currentText() == QStringLiteral("均衡"),
+              QStringLiteral("线稿化档位默认选中均衡"),
+              presetCombo ? presetCombo->currentText() : QString());
+
+        if (presetCombo && areaSpin && paletteSpin && adjacentSpin && levelsSpin) {
+            const int cleanIndex = presetCombo->findData(2); // 线条干净
+            presetCombo->setCurrentIndex(cleanIndex);
+            check(paletteSpin->value() == 64 && adjacentSpin->value() == 56
+                      && areaSpin->value() == 20,
+                  QStringLiteral("切换“线条干净”档位一次性改掉全部参数"),
+                  QStringLiteral("palette=%1 adjacent=%2 area=%3")
+                      .arg(paletteSpin->value()).arg(adjacentSpin->value())
+                      .arg(areaSpin->value()));
+
+            const int detailIndex = presetCombo->findData(0); // 保留细节
+            presetCombo->setCurrentIndex(detailIndex);
+            check(levelsSpin->value() == 6 && paletteSpin->value() == 40
+                      && adjacentSpin->value() == 44 && areaSpin->value() == 8,
+                  QStringLiteral("切换“保留细节”档位一次性改掉全部参数"),
+                  QStringLiteral("levels=%1 palette=%2 adjacent=%3 area=%4")
+                      .arg(levelsSpin->value()).arg(paletteSpin->value())
+                      .arg(adjacentSpin->value()).arg(areaSpin->value()));
+
+            // 用户手改任一参数，档位要立刻回到“自定义”。
+            areaSpin->setValue(33);
+            check(presetCombo->currentText() == QStringLiteral("自定义"),
+                  QStringLiteral("手动改动参数后档位回到自定义"),
+                  presetCombo->currentText());
+            paletteSpin->setValue(51);
+            check(presetCombo->currentText() == QStringLiteral("自定义"),
+                  QStringLiteral("手改颜色近似度同样回到自定义"),
+                  presetCombo->currentText());
+
+            // 再选回“均衡”，写回的值应当与默认一致。
+            presetCombo->setCurrentIndex(presetCombo->findData(1));
+            if (auto* buttons = dialog.findChild<QDialogButtonBox*>()) {
+                if (QPushButton* ok = buttons->button(QDialogButtonBox::Ok))
+                    ok->click();
+                else
+                    dialog.accept();
+            } else {
+                dialog.accept();
+            }
+            check(dialog.settings().lineArtPaletteMerge == defaults.lineArtPaletteMerge
+                      && dialog.settings().lineArtAdjacentMerge == defaults.lineArtAdjacentMerge
+                      && dialog.settings().lineArtMinRegionArea == defaults.lineArtMinRegionArea,
+                  QStringLiteral("“均衡”档位写回后与默认参数一致"),
+                  QStringLiteral("palette=%1 adjacent=%2 area=%3")
+                      .arg(dialog.settings().lineArtPaletteMerge)
+                      .arg(dialog.settings().lineArtAdjacentMerge)
+                      .arg(dialog.settings().lineArtMinRegionArea));
+        }
     }
     // ---------------------------------------------------------------
     // 需求 10/11/12/13/14 回归：锁定、椭圆、填充样式、画板尺寸。

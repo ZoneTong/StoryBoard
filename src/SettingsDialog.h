@@ -37,6 +37,8 @@ private:
     QCheckBox* m_gridCheck = nullptr;
     QPushButton* m_canvasColorButton = nullptr;
     QComboBox* m_languageCombo = nullptr;
+    QComboBox* m_lineArtPresetCombo = nullptr;
+    bool m_applyingPreset = false;
     QSpinBox* m_lineArtLevelsSpin = nullptr;
     QSpinBox* m_lineArtPaletteMergeSpin = nullptr;
     QSpinBox* m_lineArtAdjacentMergeSpin = nullptr;

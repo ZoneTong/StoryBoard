@@ -47,6 +47,17 @@ levels=6 colors=24 merge=48 adjmerge=48 minarea=12 minthick=1.0 tol=0.6 maxregio
 | 第一轮（levels=6 / merge=64 / minarea=24 / minthick=1.2 / maxregions=800） | 524 | 12451 | 0.889 | 0.894 | 0.892 |
 | 第二轮（merge=48 / adjmerge=48 / minarea=12 / minthick=1.0 / maxregions=1200） | 900 | 15964 | 0.962 | 0.906 | 0.933 |
 
+界面上的四个档位就是四组标定好的参数（同一张地图、`minthick=1.0 tol=0.6 maxregions=1200`）：
+
+| 档位 | levels / merge / adjmerge / minarea | outlines | recall | precision | f1 |
+| --- | --- | --- | --- | --- | --- |
+| 保留细节 Keep details | 6 / 40 / 44 / 8 | 1088 | 0.932 | 0.916 | 0.924 |
+| 均衡 Balanced（默认） | 6 / 48 / 48 / 12 | 900 | 0.962 | 0.906 | 0.933 |
+| 线条干净 Clean lines | 6 / 64 / 56 / 20 | 551 | 0.885 | 0.935 | 0.909 |
+| 大块概括 Bold blocks | 6 / 80 / 56 / 32 | 431 | 0.857 | 0.933 | 0.894 |
+
+“保留细节”召回最高但碎线最多，“大块概括”精度最高、结构最省，默认落在“均衡”。
+
 扫参结论：
 
 - `colorLevels=6` 最优（8 以上会把明暗层次切成碎块，precision 掉到 0.75 左右）。

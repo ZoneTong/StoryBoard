@@ -1741,8 +1741,8 @@ Use the checkbox to show or hide it.</source>
       <translation>自动平滑容差</translation>
     </message>
     <message>
-      <source>Smoothing tolerance</source>
-      <translation>平滑容差</translation>
+      <source>Tolerance</source>
+      <translation>容差</translation>
     </message>
     <message>
       <source>Auto-smoothing tolerance used when a stroke ends; 0 disables automatic smoothing</source>
@@ -1753,24 +1753,24 @@ Use the checkbox to show or hide it.</source>
       <translation>0 表示关闭自动平滑；数值越大，允许的手抖与偏差越大。</translation>
     </message>
     <message>
-      <source>Smooth selected strokes</source>
-      <translation>平滑选中笔画</translation>
+      <source>Smooth strokes</source>
+      <translation>平滑笔画</translation>
     </message>
     <message>
-      <source>Smooth the selected strokes once using the current tolerance (Ctrl+Shift+M)</source>
-      <translation>按当前容差平滑选中笔画一次 (Ctrl+Shift+M)</translation>
+      <source>Smooth strokes once using the current tolerance (Ctrl+Shift+M)</source>
+      <translation>按当前容差平滑笔画一次 (Ctrl+Shift+M)</translation>
     </message>
     <message>
-      <source>Smooth the selected strokes once</source>
-      <translation>平滑选中笔画一次</translation>
+      <source>Smooth strokes once</source>
+      <translation>平滑笔画一次</translation>
     </message>
     <message>
       <source>Smoothed %1 stroke(s)</source>
       <translation>已平滑 %1 条笔画</translation>
     </message>
     <message>
-      <source>No selected strokes need smoothing</source>
-      <translation>选中的笔画无需平滑</translation>
+      <source>No strokes need smoothing</source>
+      <translation>没有需要平滑的笔画</translation>
     </message>
     <message>
       <source>Image outline tracing</source>
@@ -1781,36 +1781,64 @@ Use the checkbox to show or hide it.</source>
       <translation>颜色级数</translation>
     </message>
     <message>
-      <source>Color match distance</source>
-      <translation>颜色聚类距离</translation>
+      <source>Same color similarity</source>
+      <translation>颜色近似度（同色合并）</translation>
     </message>
     <message>
-      <source>Merge adjacent blocks</source>
-      <translation>相邻色块合并距离</translation>
+      <source>Adjacent color similarity</source>
+      <translation>颜色近似度（相邻色块）</translation>
     </message>
     <message>
       <source>Smallest block</source>
       <translation>最小色块</translation>
     </message>
     <message>
+      <source>Preset</source>
+      <translation>档位</translation>
+    </message>
+    <message>
+      <source>Keep details</source>
+      <translation>保留细节</translation>
+    </message>
+    <message>
+      <source>Balanced</source>
+      <translation>均衡</translation>
+    </message>
+    <message>
+      <source>Clean lines</source>
+      <translation>线条干净</translation>
+    </message>
+    <message>
+      <source>Bold blocks</source>
+      <translation>大块概括</translation>
+    </message>
+    <message>
+      <source>Custom</source>
+      <translation>自定义</translation>
+    </message>
+    <message>
+      <source>Applies a tested parameter set to all items below; editing any value switches back to Custom.</source>
+      <translation>一键换成一组实测过的参数；手动改动下面任一项就会切回“自定义”。</translation>
+    </message>
+    <message>
       <source>How many steps each color channel is cut into; more steps keeps subtle shading but also more fragments.</source>
       <translation>每个颜色通道切成几级；级数越多越能保住细微明暗，也越容易切出碎块。</translation>
     </message>
     <message>
-      <source>Color distance under which two colors count as the same one; smaller values keep small colored props.</source>
-      <translation>颜色距离小于该值时视为同一种颜色；调小可以把小道具单独留出来。</translation>
+      <source>Two colors whose distance is under this value count as one color; smaller values keep small colored props.</source>
+      <translation>两种颜色差小于该值就算同一种颜色；调小可以把小道具单独留出来。</translation>
     </message>
     <message>
-      <source>Adjacent blocks whose colors differ less than this are traced as one block; 0 disables merging.</source>
-      <translation>相邻色块的颜色差小于该值时并成一块再描轮廓；0 表示不合并。</translation>
+      <source>Adjacent blocks whose colors differ less than this are drawn as one block; 0 disables merging.</source>
+      <translation>相邻两块的颜色差小于该值时并成一块再描轮廓；0 表示不合并。</translation>
     </message>
     <message>
       <source>Blocks smaller than this area are skipped; lower it to trace tiny props.</source>
       <translation>面积小于该值的色块不描边；调小可以描出更细小的道具。</translation>
     </message>
     <message>
-      <source>A bigger merge distance joins neighbouring blocks of similar color into one outline; too big and real borders disappear. 0 turns merging off.</source>
-      <translation>合并距离越大，相邻的近似色块越容易被描成一条轮廓；调得过大真实边界会消失，0 表示关闭合并。</translation>
+      <source>Similarity values are RGB color distances (0-441): lower keeps more small props, higher merges more fragments. Adjacent merging only joins blocks that actually touch, so colour is the knob that changes the result.</source>
+      <translation>近似度是 RGB 颜色距离（0–441）：数值越小越保小道具，越大越能把碎块并掉。相邻合并只作用于真正贴边的两块，真正起决定作用的是颜色参数。</translation>
     </message>
   </context>
 </TS>

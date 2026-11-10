@@ -469,9 +469,9 @@ void MainWindow::createActions()
         }
     });
     m_smoothAct = makeAction(this, IconId::Smooth,
-                             uiText(QStringLiteral("Smooth selected strokes")),
+                             uiText(QStringLiteral("Smooth strokes")),
                              QKeySequence(QStringLiteral("Ctrl+Shift+M")),
-                             uiText(QStringLiteral("Smooth the selected strokes once using the current tolerance (Ctrl+Shift+M)")));
+                             uiText(QStringLiteral("Smooth strokes once using the current tolerance (Ctrl+Shift+M)")));
     m_smoothAct->setEnabled(false);
     connect(m_smoothAct, &QAction::triggered, this, [this]() {
         if (!m_scene || !m_view)
@@ -482,7 +482,7 @@ void MainWindow::createActions()
                 uiText(QStringLiteral("Smoothed %1 stroke(s)")).arg(smoothed), 3000);
         } else {
             statusBar()->showMessage(
-                uiText(QStringLiteral("No selected strokes need smoothing")), 3000);
+                uiText(QStringLiteral("No strokes need smoothing")), 3000);
         }
     });
     m_selectAllAct = new QAction(uiText(QStringLiteral("Select all items")), this);
@@ -944,7 +944,14 @@ void MainWindow::createToolBars()
     brushBar->addWidget(widthLabel);
     brushBar->addWidget(m_widthCombo);
 
-    auto* smoothingLabel = new QLabel(uiText(QStringLiteral("Smoothing tolerance")), brushBar);
+    auto* smoothButton = new QToolButton(brushBar);
+    smoothButton->setObjectName(QStringLiteral("SmoothStrokeButton"));
+    smoothButton->setDefaultAction(m_smoothAct);
+    smoothButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    smoothButton->setToolTip(uiText(QStringLiteral("Smooth strokes once")));
+    brushBar->addWidget(smoothButton);
+
+    auto* smoothingLabel = new QLabel(uiText(QStringLiteral("Tolerance")), brushBar);
     smoothingLabel->setObjectName(QStringLiteral("ToolBarLabel"));
     brushBar->addWidget(smoothingLabel);
 
@@ -962,13 +969,6 @@ void MainWindow::createToolBars()
         m_view->setStrokeSmoothing(value);
     });
     brushBar->addWidget(m_smoothingSpin);
-
-    auto* smoothButton = new QToolButton(brushBar);
-    smoothButton->setObjectName(QStringLiteral("SmoothStrokeButton"));
-    smoothButton->setDefaultAction(m_smoothAct);
-    smoothButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    smoothButton->setToolTip(uiText(QStringLiteral("Smooth the selected strokes once")));
-    brushBar->addWidget(smoothButton);
 
     // 画笔区与填充区之间使用标准工具栏分隔符，不再自绘竖线。
     brushBar->addSeparator();
