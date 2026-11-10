@@ -167,14 +167,18 @@ find_qt_dir() {
         return
     fi
 
-    if command -v qmake >/dev/null 2>&1; then
-        qmake -query QT_INSTALL_PREFIX
-        return
-    fi
-    if command -v qmake6 >/dev/null 2>&1; then
-        qmake6 -query QT_INSTALL_PREFIX
-        return
-    fi
+    # 这台机器上可能同时装着 Qt 5 和 Qt 6，PATH 里的 qmake 未必是 Qt 6，所以逐个校验大版本。
+    local tool prefix version
+    for tool in qmake6 qtpaths6 qmake qtpaths; do
+        command -v "$tool" >/dev/null 2>&1 || continue
+        version="$("$tool" -query QT_VERSION 2>/dev/null || true)"
+        [ "${version%%.*}" = 6 ] || continue
+        prefix="$("$tool" -query QT_INSTALL_PREFIX 2>/dev/null || true)"
+        if [ -n "$prefix" ] && [ -d "$prefix/bin" ]; then
+            (cd "$prefix" && pwd)
+            return
+        fi
+    done
 
     local candidates=()
     shopt -s nullglob
@@ -189,16 +193,24 @@ find_qt_dir() {
             candidates=("$HOME"/Qt/*/gcc_64 /opt/Qt/*/gcc_64 /usr/lib/qt6 /usr/lib/x86_64-linux-gnu/qt6)
             ;;
     esac
-    for candidate in "${candidates[@]}"; do
-        if qt_tool_exists "$candidate/bin/qmake" || \
-           qt_tool_exists "$candidate/bin/qmake6" || \
-           qt_tool_exists "$candidate/bin/qtpaths"; then
-            printf '%s\n' "$candidate"
-            return
-        fi
-    done
     shopt -u nullglob
-    die "Qt 6 installation not found; use --qt-dir <dir>"
+    [ "${#candidates[@]}" -gt 0 ] || die "Qt 6 installation not found; use --qt-dir <dir>"
+
+    # 按版本倒序排，跳过 Qt 5 之类的大版本，取最新的 Qt 6。
+    local sorted=() candidate
+    while IFS= read -r candidate; do
+        [ -n "$candidate" ] || continue
+        qt_tool_exists "$candidate/bin/qmake" || \
+        qt_tool_exists "$candidate/bin/qmake6" || \
+        qt_tool_exists "$candidate/bin/qtpaths" || continue
+        version="$("$candidate/bin/qmake" -query QT_VERSION 2>/dev/null || \
+                  "$candidate/bin/qmake6" -query QT_VERSION 2>/dev/null || true)"
+        [ "${version%%.*}" = 6 ] || continue
+        sorted+=("$candidate")
+    done < <(printf '%s\n' "${candidates[@]}" | sort -rV)
+
+    [ "${#sorted[@]}" -gt 0 ] || die "Qt 6 installation not found; use --qt-dir <dir>"
+    printf '%s\n' "${sorted[0]}"
 }
 
 QT_DIR="$(find_qt_dir)"
