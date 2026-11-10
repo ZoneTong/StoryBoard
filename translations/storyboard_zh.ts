@@ -1764,5 +1764,45 @@ Use the checkbox to show or hide it.</source>
       <source>No selected strokes need smoothing</source>
       <translation>选中的笔画无需平滑</translation>
     </message>
+    <message>
+      <source>Image outline tracing</source>
+      <translation>图片线稿化</translation>
+    </message>
+    <message>
+      <source>Color levels</source>
+      <translation>颜色级数</translation>
+    </message>
+    <message>
+      <source>Color match distance</source>
+      <translation>颜色聚类距离</translation>
+    </message>
+    <message>
+      <source>Merge adjacent blocks</source>
+      <translation>相邻色块合并距离</translation>
+    </message>
+    <message>
+      <source>Smallest block</source>
+      <translation>最小色块</translation>
+    </message>
+    <message>
+      <source>How many steps each color channel is cut into; more steps keeps subtle shading but also more fragments.</source>
+      <translation>每个颜色通道切成几级；级数越多越能保住细微明暗，也越容易切出碎块。</translation>
+    </message>
+    <message>
+      <source>Color distance under which two colors count as the same one; smaller values keep small colored props.</source>
+      <translation>颜色距离小于该值时视为同一种颜色；调小可以把小道具单独留出来。</translation>
+    </message>
+    <message>
+      <source>Adjacent blocks whose colors differ less than this are traced as one block; 0 disables merging.</source>
+      <translation>相邻色块的颜色差小于该值时并成一块再描轮廓；0 表示不合并。</translation>
+    </message>
+    <message>
+      <source>Blocks smaller than this area are skipped; lower it to trace tiny props.</source>
+      <translation>面积小于该值的色块不描边；调小可以描出更细小的道具。</translation>
+    </message>
+    <message>
+      <source>A bigger merge distance joins neighbouring blocks of similar color into one outline; too big and real borders disappear. 0 turns merging off.</source>
+      <translation>合并距离越大，相邻的近似色块越容易被描成一条轮廓；调得过大真实边界会消失，0 表示关闭合并。</translation>
+    </message>
   </context>
 </TS>

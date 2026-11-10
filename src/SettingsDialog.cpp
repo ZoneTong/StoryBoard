@@ -126,6 +126,54 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
 
     rootLayout->addWidget(canvasGroup);
 
+    // 图片线稿化的参数：颜色怎么并、碎块怎么并，都要能自己调，否则遇到别的图只能重编译。
+    auto* lineArtGroup = new QGroupBox(uiText(QStringLiteral("Image outline tracing")), this);
+    auto* lineArtForm = new QFormLayout(lineArtGroup);
+    lineArtForm->setContentsMargins(16, 18, 16, 16);
+    lineArtForm->setSpacing(10);
+
+    m_lineArtLevelsSpin = new QSpinBox(lineArtGroup);
+    m_lineArtLevelsSpin->setObjectName(QStringLiteral("LineArtLevelsSpin"));
+    m_lineArtLevelsSpin->setRange(2, 12);
+    m_lineArtLevelsSpin->setValue(m_settings.lineArtColorLevels);
+    m_lineArtLevelsSpin->setFixedHeight(30);
+    m_lineArtLevelsSpin->setToolTip(uiText(QStringLiteral("How many steps each color channel is cut into; more steps keeps subtle shading but also more fragments.")));
+    lineArtForm->addRow(uiText(QStringLiteral("Color levels")), m_lineArtLevelsSpin);
+
+    m_lineArtPaletteMergeSpin = new QSpinBox(lineArtGroup);
+    m_lineArtPaletteMergeSpin->setObjectName(QStringLiteral("LineArtPaletteMergeSpin"));
+    m_lineArtPaletteMergeSpin->setRange(0, 160);
+    m_lineArtPaletteMergeSpin->setValue(m_settings.lineArtPaletteMerge);
+    m_lineArtPaletteMergeSpin->setFixedHeight(30);
+    m_lineArtPaletteMergeSpin->setToolTip(uiText(QStringLiteral("Color distance under which two colors count as the same one; smaller values keep small colored props.")));
+    lineArtForm->addRow(uiText(QStringLiteral("Color match distance")), m_lineArtPaletteMergeSpin);
+
+    m_lineArtAdjacentMergeSpin = new QSpinBox(lineArtGroup);
+    m_lineArtAdjacentMergeSpin->setObjectName(QStringLiteral("LineArtAdjacentMergeSpin"));
+    m_lineArtAdjacentMergeSpin->setRange(0, 160);
+    m_lineArtAdjacentMergeSpin->setValue(m_settings.lineArtAdjacentMerge);
+    m_lineArtAdjacentMergeSpin->setFixedHeight(30);
+    m_lineArtAdjacentMergeSpin->setToolTip(uiText(QStringLiteral("Adjacent blocks whose colors differ less than this are traced as one block; 0 disables merging.")));
+    lineArtForm->addRow(uiText(QStringLiteral("Merge adjacent blocks")), m_lineArtAdjacentMergeSpin);
+
+    m_lineArtMinAreaSpin = new QSpinBox(lineArtGroup);
+    m_lineArtMinAreaSpin->setObjectName(QStringLiteral("LineArtMinAreaSpin"));
+    m_lineArtMinAreaSpin->setRange(4, 400);
+    m_lineArtMinAreaSpin->setSuffix(QStringLiteral(" px"));
+    m_lineArtMinAreaSpin->setValue(m_settings.lineArtMinRegionArea);
+    m_lineArtMinAreaSpin->setFixedHeight(30);
+    m_lineArtMinAreaSpin->setToolTip(uiText(QStringLiteral("Blocks smaller than this area are skipped; lower it to trace tiny props.")));
+    lineArtForm->addRow(uiText(QStringLiteral("Smallest block")), m_lineArtMinAreaSpin);
+
+    auto* lineArtHint = new QLabel(uiText(QStringLiteral(
+        "A bigger merge distance joins neighbouring blocks of similar color into one outline; too big and real borders disappear. 0 turns merging off.")),
+        lineArtGroup);
+    lineArtHint->setObjectName(QStringLiteral("DialogHint"));
+    lineArtHint->setWordWrap(true);
+    lineArtForm->addRow(QString(), lineArtHint);
+
+    rootLayout->addWidget(lineArtGroup);
+
     auto* storageGroup = new QGroupBox(uiText(QStringLiteral("Canvas storage")), this);
     auto* storageLayout = new QHBoxLayout(storageGroup);
     storageLayout->setContentsMargins(16, 18, 16, 16);
@@ -171,6 +219,10 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
         m_settings.strokeSmoothing = m_strokeSmoothingSpin->value();
         m_settings.canvasSize = QSizeF(m_canvasWidthSpin->value(), m_canvasHeightSpin->value());
         m_settings.showGrid = m_gridCheck->isChecked();
+        m_settings.lineArtColorLevels = m_lineArtLevelsSpin->value();
+        m_settings.lineArtPaletteMerge = m_lineArtPaletteMergeSpin->value();
+        m_settings.lineArtAdjacentMerge = m_lineArtAdjacentMergeSpin->value();
+        m_settings.lineArtMinRegionArea = m_lineArtMinAreaSpin->value();
         accept();
     });
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -226,6 +278,10 @@ void SettingsDialog::resetToDefaults()
     m_canvasWidthSpin->setValue(static_cast<int>(defaults.canvasSize.width()));
     m_canvasHeightSpin->setValue(static_cast<int>(defaults.canvasSize.height()));
     m_gridCheck->setChecked(defaults.showGrid);
+    m_lineArtLevelsSpin->setValue(defaults.lineArtColorLevels);
+    m_lineArtPaletteMergeSpin->setValue(defaults.lineArtPaletteMerge);
+    m_lineArtAdjacentMergeSpin->setValue(defaults.lineArtAdjacentMerge);
+    m_lineArtMinAreaSpin->setValue(defaults.lineArtMinRegionArea);
     m_settings.brushColor = defaults.brushColor;
     m_settings.canvasColor = defaults.canvasColor;
     refreshColorButton(m_brushColorButton, defaults.brushColor);

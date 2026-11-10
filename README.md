@@ -11,7 +11,7 @@
 - **四种模式**：查看、编辑、画笔、文字。查看模式只改变视图，不修改图元坐标；编辑模式支持选择、移动、缩放、旋转和框选；画笔模式绘制自由曲线；文字模式点击画布插入文字。
 - **图元**：自由笔画、图片、文字，以及矩形、圆角矩形、椭圆、三角形、菱形、五角星、箭头、双向箭头、直线、左右大括号、对话气泡共 12 种常见图形。
 - **插入图片**：`Ctrl+I` 或「文件 / 画布 → 插入图片…」把图片作为可移动、可缩放的图片图元插入当前图层，同样支持拖拽文件到画布。
-- **导入图片线稿化**：`Ctrl+I` 之外另设「文件 / 画布 → 导入图片线稿化…」（紧跟在“打开画布”后面）。它把图片按颜色切块，再描出每块色块的轮廓，逐块生成线宽固定为 1 的笔画图元，整体只占一条撤销记录；色块过多时只取面积最大的 800 块并给出提示。
+- **导入图片线稿化**：`Ctrl+I` 之外另设「文件 / 画布 / 画板 → 导入图片线稿化…」（紧跟在“打开画布”后面）。它把图片按颜色切块，再描出每块色块的轮廓，逐块生成线宽固定为 1 的笔画图元，整体只占一条撤销记录；色块过多时只取面积最大的 1200 块并给出提示。切块参数在「设置 → 图片线稿化」里可调：颜色级数、颜色聚类距离、相邻色块合并距离（把空间相邻且颜色接近的碎块并成一块，0 表示关闭）、最小色块面积。
 - **图元属性**：选中图元后按 `Q` 或双击打开模态属性窗。任意模式可查看，仅编辑模式可编辑；名称、图层、层内高度、填充、描边、位置尺寸、旋转角度、文字正文/颜色/字体、图片名称与图片本体均可修改，确认后只生成一条撤销记录。图元名称在画布内唯一，手动改名遇到重名会提示，清空名称会自动补一个唯一名称。
 - **图元拷贝**：`Ctrl+D` 或右键“复制图元”复制选中图元；副本相对原图元偏移，名称自动接续为唯一编号，整体只占一条撤销记录。
 - **图元分组**：同层多选后按 `Ctrl+G` 或右键“组合选中图元”，拖动组内任意一个图元时整组一起移动；组员仍可单独选中、缩放、旋转，并按 `Q` 打开属性窗编辑自己的属性。`Ctrl+Shift+G` 或右键“取消组合选中图元”可解组，分组与解组都可撤销。
@@ -84,7 +84,7 @@ bash scripts/package-portable.sh --build --qt-dir "$HOME/Qt/6.8.0/gcc_64"
 | macOS | `StoryBoard.app` 及 `.zip` | `macdeployqt` + 补 `libqoffscreen.dylib` |
 | Linux | `StoryBoard-<ver>-linux-<arch>-portable.tar.gz` | 拷贝 `libQt6*`、插件与 `qt.conf` |
 
-Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux 分支按 Qt 官方部署方式提供，尚未在对应主机实机验证。自检默认要求 Windows 561 项，其他平台接受当前通过数；可用 `--expected-passed 0` 放宽，`--skip-self-test` 跳过（不推荐）。
+Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux 分支按 Qt 官方部署方式提供，尚未在对应主机实机验证。自检默认要求 Windows 572 项，其他平台接受当前通过数；可用 `--expected-passed 0` 放宽，`--skip-self-test` 跳过（不推荐）。
 
 ## 使用说明
 
@@ -174,7 +174,7 @@ QT_QPA_PLATFORM=offscreen ./out/bin/StoryBoard.exe --self-test out/selftest.txt
 cat out/selftest.txt
 ```
 
-当前 Windows 基线为 **561 passed, 0 failed**；其他平台以实际 `SUMMARY` 为准。
+当前 Windows 基线为 **572 passed, 0 failed**；其他平台以实际 `SUMMARY` 为准。
 
 `--self-test` 需要平台插件目录下的 offscreen 插件（Windows `platforms/qoffscreen.dll`、macOS `platforms/libqoffscreen.dylib`、Linux `platforms/libqoffscreen.so`）。打包脚本会自动补齐。
 

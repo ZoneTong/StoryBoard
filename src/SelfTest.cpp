@@ -2993,6 +2993,27 @@ int runSelfTest(const QString& reportPath)
                   entries.join(QStringLiteral(" / ")));
         }
 
+        // 需求：画板菜单里也有“打开画布”，其后同样要有“导入图片线稿化”。
+        QMenu* boardMenu = nullptr;
+        for (QAction* action : window.menuBar()->actions()) {
+            QMenu* menu = action ? action->menu() : nullptr;
+            if (menu && menu->title() == QStringLiteral("画板(&B)"))
+                boardMenu = menu;
+        }
+        check(boardMenu != nullptr, QStringLiteral("主窗口存在画板菜单"));
+        if (boardMenu) {
+            QStringList entries;
+            for (QAction* action : boardMenu->actions()) {
+                if (action && !action->isSeparator())
+                    entries.append(action->text());
+            }
+            const int openIndex = entries.indexOf(QStringLiteral("打开画布…"));
+            const int lineArtIndex = entries.indexOf(QStringLiteral("导入图片线稿化"));
+            check(openIndex >= 0 && lineArtIndex == openIndex + 1,
+                  QStringLiteral("画板菜单里的导入图片线稿化紧跟在打开画布后面"),
+                  entries.join(QStringLiteral(" / ")));
+        }
+
         window.view()->setMode(ToolMode::Text);
         QTimer::singleShot(120, &window, [&]() {
             auto* dialog = qobject_cast<ItemPropertiesDialog*>(QApplication::activeModalWidget());
@@ -3502,6 +3523,56 @@ int runSelfTest(const QString& reportPath)
         check(dialog.settings().strokeSmoothing == 0,
               QStringLiteral("设置对话框可关闭自动平滑"),
               QString::number(dialog.settings().strokeSmoothing));
+    }
+
+    {
+        // 需求：把“相邻且颜色接近的色块并成一块”做成可调参数，并放在设置里。
+        const AppSettings defaults;
+        check(defaults.lineArtAdjacentMerge
+                  == qRound(LineArtConverter::Options().adjacentMergeDistance)
+                  && defaults.lineArtPaletteMerge
+                      == qRound(LineArtConverter::Options().paletteMergeDistance),
+              QStringLiteral("线稿化设置的默认值与转换器默认参数一致"),
+              QStringLiteral("adjacent=%1 palette=%2")
+                  .arg(defaults.lineArtAdjacentMerge)
+                  .arg(defaults.lineArtPaletteMerge));
+
+        SettingsDialog dialog(defaults);
+        auto* adjacentSpin = dialog.findChild<QSpinBox*>(
+            QStringLiteral("LineArtAdjacentMergeSpin"));
+        auto* paletteSpin = dialog.findChild<QSpinBox*>(
+            QStringLiteral("LineArtPaletteMergeSpin"));
+        auto* areaSpin = dialog.findChild<QSpinBox*>(
+            QStringLiteral("LineArtMinAreaSpin"));
+        check(adjacentSpin && adjacentSpin->value() == defaults.lineArtAdjacentMerge,
+              QStringLiteral("设置对话框显示相邻色块合并距离"),
+              QString::number(adjacentSpin ? adjacentSpin->value() : -1));
+        check(paletteSpin && paletteSpin->value() == defaults.lineArtPaletteMerge,
+              QStringLiteral("设置对话框显示颜色聚类距离"),
+              QString::number(paletteSpin ? paletteSpin->value() : -1));
+        if (adjacentSpin)
+            adjacentSpin->setValue(96);
+        if (paletteSpin)
+            paletteSpin->setValue(24);
+        if (areaSpin)
+            areaSpin->setValue(8);
+        if (auto* buttons = dialog.findChild<QDialogButtonBox*>()) {
+            if (QPushButton* ok = buttons->button(QDialogButtonBox::Ok))
+                ok->click();
+            else
+                dialog.accept();
+        } else {
+            dialog.accept();
+        }
+        check(dialog.settings().lineArtAdjacentMerge == 96,
+              QStringLiteral("设置对话框可调整相邻色块合并距离"),
+              QString::number(dialog.settings().lineArtAdjacentMerge));
+        check(dialog.settings().lineArtPaletteMerge == 24
+                  && dialog.settings().lineArtMinRegionArea == 8,
+              QStringLiteral("设置对话框可调整颜色聚类距离与最小色块"),
+              QStringLiteral("palette=%1 area=%2")
+                  .arg(dialog.settings().lineArtPaletteMerge)
+                  .arg(dialog.settings().lineArtMinRegionArea));
     }
     // ---------------------------------------------------------------
     // 需求 10/11/12/13/14 回归：锁定、椭圆、填充样式、画板尺寸。
@@ -4346,6 +4417,64 @@ int runSelfTest(const QString& reportPath)
         const LineArtConverter::Result flatResult = LineArtConverter::extract(flat);
         check(!flatResult.ok && !flatResult.error.isEmpty(),
               QStringLiteral("纯色图片不会生成空线稿"), flatResult.error);
+
+        // 相邻且颜色接近的两块，应该在合并参数打开时并成一条轮廓；参数为 0 时各自一条。
+        QImage twin(320, 200, QImage::Format_RGB32);
+        twin.fill(Qt::white);
+        {
+            QPainter painter(&twin);
+            painter.setPen(Qt::NoPen);
+            painter.fillRect(QRect(40, 40, 120, 120), QColor(200, 120, 60));
+            painter.fillRect(QRect(160, 40, 120, 120), QColor(212, 132, 72));
+        }
+        LineArtConverter::Options splitOptions;
+        splitOptions.adjacentMergeDistance = 0.0;
+        // 关掉颜色聚类，让两块近似色先各自成为独立色块，才能单独验证相邻合并这一步。
+        splitOptions.paletteMergeDistance = 0.0;
+        const LineArtConverter::Result splitResult =
+            LineArtConverter::extract(twin, splitOptions);
+        LineArtConverter::Options mergeOptions;
+        mergeOptions.adjacentMergeDistance = 48.0;
+        const LineArtConverter::Result mergeResult =
+            LineArtConverter::extract(twin, mergeOptions);
+        check(splitResult.ok && splitResult.outlines.size() == 2,
+              QStringLiteral("关闭相邻合并时两块近似色各自成轮廓"),
+              QStringLiteral("outlines=%1").arg(splitResult.outlines.size()));
+        check(mergeResult.ok && mergeResult.outlines.size() == 1,
+              QStringLiteral("相邻近似色块合并成一条轮廓"),
+              QStringLiteral("outlines=%1 regions=%2")
+                  .arg(mergeResult.outlines.size())
+                  .arg(mergeResult.regionCount));
+        if (mergeResult.outlines.size() == 1 && splitResult.outlines.size() == 2) {
+            qreal splitSpan = 0.0;
+            for (const LineArtConverter::Outline& outline : splitResult.outlines) {
+                qreal maxX = 0.0;
+                for (const QPointF& point : outline.points)
+                    maxX = qMax(maxX, point.x());
+                splitSpan += maxX;
+            }
+            qreal mergedMaxX = 0.0;
+            for (const QPointF& point : mergeResult.outlines.constFirst().points)
+                mergedMaxX = qMax(mergedMaxX, point.x());
+            check(mergedMaxX > splitSpan / 2.0,
+                  QStringLiteral("合并后的轮廓覆盖原来两个色块的位置"),
+                  QStringLiteral("mergedMaxX=%1").arg(mergedMaxX));
+        }
+
+        // 颜色差得远的相邻色块不能被合并，否则真实边界会消失。
+        QImage farTwin(320, 200, QImage::Format_RGB32);
+        farTwin.fill(Qt::white);
+        {
+            QPainter painter(&farTwin);
+            painter.setPen(Qt::NoPen);
+            painter.fillRect(QRect(40, 40, 120, 120), QColor(200, 120, 60));
+            painter.fillRect(QRect(160, 40, 120, 120), QColor(60, 90, 200));
+        }
+        const LineArtConverter::Result farResult =
+            LineArtConverter::extract(farTwin, mergeOptions);
+        check(farResult.ok && farResult.outlines.size() == 2,
+              QStringLiteral("颜色差得远的相邻色块不会被合并"),
+              QStringLiteral("outlines=%1").arg(farResult.outlines.size()));
 
         // 渐变底色的图：色块很多，结果必须有界，不能把画布塞满。
         QImage gradient(400, 300, QImage::Format_RGB32);

@@ -34,19 +34,24 @@ python .\metrics.py .\run ..\..\examples\540451553-d6032a86-5676-4ee1-8f13-aee8d
 参数按键值对传，留空就是 `LineArtConverter::Options` 的默认值：
 
 ```
-levels=6 colors=24 merge=64 minarea=24 minthick=1.2 tol=0.6 maxregions=800 side=900 width=1
+levels=6 colors=24 merge=48 adjmerge=48 minarea=12 minthick=1.0 tol=0.6 maxregions=1200 side=900 width=1
 ```
 
 ## 基线
 
-`example` 里那张 1568×1712 游戏地图，默认参数（`levels=6 merge=64 minthick=1.2 tol=0.6`）：
+`examples` 里那张 1568×1712 游戏地图（默认参数 `levels=6 merge=48 adjmerge=48 minarea=12 minthick=1.0 tol=0.6 maxregions=1200`）：
 
 | 版本 | outlines | points | recall | precision | f1 |
 | --- | --- | --- | --- | --- | --- |
 | 调优前（levels=5 / colors=24 / merge 未聚类 / minarea=24） | 555 | 12506 | 0.798 | 0.780 | 0.789 |
-| 调优后 | 524 | 12451 | 0.889 | 0.894 | 0.892 |
+| 第一轮（levels=6 / merge=64 / minarea=24 / minthick=1.2 / maxregions=800） | 524 | 12451 | 0.889 | 0.894 | 0.892 |
+| 第二轮（merge=48 / adjmerge=48 / minarea=12 / minthick=1.0 / maxregions=1200） | 900 | 15964 | 0.962 | 0.906 | 0.933 |
 
-扫参结论：`colorLevels=6` 最优（8 以上会把明暗层次切成碎块，precision 掉到 0.75 左右）；
-`paletteMergeDistance` 56/64/72 都在 0.89–0.90，取 64 兼顾串色风险；
-`minRegionThickness=1.2`（更细的条带直接丢，recall 会掉到 0.83）；
-`simplifyTolerance` 主要影响点数，0.6 时圆弧不至于成多边形。
+扫参结论：
+
+- `colorLevels=6` 最优（8 以上会把明暗层次切成碎块，precision 掉到 0.75 左右）。
+- `maxRegions` 早期设 800 会把小道具截掉（这张图本来有 900 块），调到 1200 后 recall 从 0.91 升到 0.96。
+- `adjacentMergeDistance`（相邻且近似色块并成一块）在 44–52 是安全区：48 时 f1 0.933 且小道具保留最好；
+  56 起结构开始糊，64 时 recall 掉到 0.828，88 以上几乎只剩大块（recall 0.198）。
+- 相邻合并按“原始色差”排序逐个并，不用合并后的综合色做链式扩散；后者会把整片区域滚成一块。
+- `minRegionThickness=1.0`（1.2 会丢掉细条带）；`simplifyTolerance` 主要影响点数，0.6 时圆弧不至于成多边形。

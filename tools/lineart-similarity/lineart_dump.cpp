@@ -46,6 +46,8 @@ int main(int argc, char** argv)
             options.paletteMergeDistance = value;
         else if (key == QStringLiteral("minarea"))
             options.minRegionArea = static_cast<int>(value);
+        else if (key == QStringLiteral("adjmerge"))
+            options.adjacentMergeDistance = value;
         else if (key == QStringLiteral("minthick"))
             options.minRegionThickness = value;
         else if (key == QStringLiteral("tol"))

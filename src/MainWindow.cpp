@@ -1635,7 +1635,13 @@ void MainWindow::importOutlineImageFile(const QString& file)
         return;
     }
 
-    const LineArtConverter::Result traced = LineArtConverter::extract(image);
+    // 参数来自设置里的“图片线稿化”分组；线宽按需求固定为 1，不受设置影响。
+    LineArtConverter::Options options;
+    options.colorLevels = m_settings.lineArtColorLevels;
+    options.paletteMergeDistance = m_settings.lineArtPaletteMerge;
+    options.adjacentMergeDistance = m_settings.lineArtAdjacentMerge;
+    options.minRegionArea = m_settings.lineArtMinRegionArea;
+    const LineArtConverter::Result traced = LineArtConverter::extract(image, options);
     if (!traced.ok || traced.outlines.isEmpty()) {
         QMessageBox::warning(this, uiText(QStringLiteral("Import outline image")),
                              traced.error.isEmpty()
@@ -1669,8 +1675,7 @@ void MainWindow::importOutlineImageFile(const QString& file)
         // 不再做额外平滑：轮廓已经按像素级 RDP 简化过，再平滑会把方角磨圆；
         // 折线模式让路径按直线段绘制，方角保持方正。
         auto* stroke = new StrokeItem();
-        stroke->setStrokePoints(scenePoints, outline.color,
-                                LineArtConverter::Options().strokeWidth, 0.0, true);
+        stroke->setStrokePoints(scenePoints, outline.color, options.strokeWidth, 0.0, true);
         items.append(stroke);
     }
 
@@ -2224,6 +2229,8 @@ void MainWindow::updateCanvasesMenu()
     m_canvasesMenu->addAction(m_saveAct);
     m_canvasesMenu->addAction(m_saveAsAct);
     m_canvasesMenu->addAction(m_openAct);
+    // 画板菜单里的“打开画布”后面也放同一个线稿化入口，跟文件菜单保持一致。
+    m_canvasesMenu->addAction(m_lineArtAct);
     m_canvasesMenu->addSeparator();
 
     QDir directory(AppSettings::canvasesDir());

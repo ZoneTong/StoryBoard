@@ -20,6 +20,12 @@ public:
     QString canvasesDirectory;
     QByteArray windowGeometry;
 
+    // 图片线稿化参数，见 LineArtConverter::Options。用户可在设置里调整。
+    int lineArtColorLevels = 6;
+    int lineArtPaletteMerge = 48;
+    int lineArtAdjacentMerge = 48;
+    int lineArtMinRegionArea = 12;
+
     void load();
     void save() const;
 

@@ -20,16 +20,23 @@ struct Options {
     int maxPaletteColors = 24;
     // 颜色距离小于该值（RGB 欧氏距离）的颜色格子会并进同一个主色，
     // 用来吃掉抗锯齿和细微色差，避免同一个色块被切成一圈圈的过渡带。
-    qreal paletteMergeDistance = 64.0;
+    // 调小能让颜色接近底色的小道具独立成块，代价是过渡带可能重新出现。
+    qreal paletteMergeDistance = 48.0;
     // 小于该像素面积的色块不描边（按处理尺度统计）。
-    int minRegionArea = 24;
+    int minRegionArea = 12;
+    // 相邻色块合并距离：两个相邻色块的平均颜色距离小于该值时，视为同一块颜色的碎块，
+    // 合并成一个色块后只描一条外轮廓。0 表示不合并。
+    // 它和 paletteMergeDistance 的区别：后者合并的是“同一种颜色”，会把挨在一起的
+    // 相近颜色直接并进同一个主色；前者发生在连通域之后，只动空间上相邻的碎块，
+    // 因此可以放心把 paletteMergeDistance 调小来保住小道具，再用这里消除碎线。
+    qreal adjacentMergeDistance = 48.0;
     // 最多描多少个色块；超出的色块直接丢弃，并在 Result::truncated 里报告。
-    int maxRegions = 800;
+    int maxRegions = 1200;
     // 轮廓简化容差（处理尺度像素）。线稿按折线绘制，容差留小一点，圆弧才不像多边形；
     // 太小的话像素阶梯又会被当成真实拐点留下来。
     qreal simplifyTolerance = 0.6;
     // 抗锯齿产生的极细条带（平均宽度小于该像素值）不描边，避免沿着色块描出一圈细环。
-    qreal minRegionThickness = 1.2;
+    qreal minRegionThickness = 1.0;
     // 生成笔画的线宽（场景坐标）。按需求固定为 1，不能再粗。
     qreal strokeWidth = 1.0;
 };

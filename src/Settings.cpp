@@ -40,6 +40,11 @@ void AppSettings::load()
     lastCanvasPath = settings.value(QStringLiteral("paths/canvas")).toString();
     canvasesDirectory = settings.value(QStringLiteral("paths/canvasesDirectory")).toString();
     windowGeometry = settings.value(QStringLiteral("window/geometry")).toByteArray();
+
+    lineArtColorLevels = qBound(2, settings.value(QStringLiteral("lineArt/colorLevels"), lineArtColorLevels).toInt(), 12);
+    lineArtPaletteMerge = qBound(0, settings.value(QStringLiteral("lineArt/paletteMerge"), lineArtPaletteMerge).toInt(), 160);
+    lineArtAdjacentMerge = qBound(0, settings.value(QStringLiteral("lineArt/adjacentMerge"), lineArtAdjacentMerge).toInt(), 160);
+    lineArtMinRegionArea = qBound(4, settings.value(QStringLiteral("lineArt/minRegionArea"), lineArtMinRegionArea).toInt(), 400);
 }
 
 void AppSettings::save() const
@@ -57,6 +62,10 @@ void AppSettings::save() const
     settings.setValue(QStringLiteral("paths/canvas"), lastCanvasPath);
     settings.setValue(QStringLiteral("paths/canvasesDirectory"), canvasesDirectory);
     settings.setValue(QStringLiteral("window/geometry"), windowGeometry);
+    settings.setValue(QStringLiteral("lineArt/colorLevels"), lineArtColorLevels);
+    settings.setValue(QStringLiteral("lineArt/paletteMerge"), lineArtPaletteMerge);
+    settings.setValue(QStringLiteral("lineArt/adjacentMerge"), lineArtAdjacentMerge);
+    settings.setValue(QStringLiteral("lineArt/minRegionArea"), lineArtMinRegionArea);
 }
 
 QString AppSettings::defaultCanvasesDir()
