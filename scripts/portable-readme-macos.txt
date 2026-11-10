@@ -11,6 +11,6 @@ StoryBoard @VERSION@ 便携版（macOS）
 - README.txt：本说明。
 
 说明
-- 这是免安装包，但界面语言设置会写入当前用户配置目录。
+- 这是免安装包，但所有设置（含界面语言）都写进当前用户配置目录的 StoryBoard.ini，不使用注册表。
 - 命令行自检可用：
   ./StoryBoard.app/Contents/MacOS/StoryBoard --self-test selftest.txt

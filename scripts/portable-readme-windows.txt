@@ -14,6 +14,6 @@ StoryBoard @VERSION@ 便携版（Windows x64）
 - portable-selftest.txt：本包在无 Qt 环境下运行自检的结果。
 
 说明
-- 这是绿色免安装包，但界面语言设置会写入当前用户配置目录，不会写入安装目录。
+- 这是绿色免安装包，但所有设置（含界面语言）都写进当前用户配置目录的 StoryBoard.ini，不使用注册表，也不会写入安装目录。
 - 命令行自检可用：StoryBoard.exe --self-test selftest.txt
 - 建议在 Windows 10/11 x64 上运行。

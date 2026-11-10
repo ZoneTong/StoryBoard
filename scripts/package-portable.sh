@@ -23,6 +23,7 @@ PACKAGE_NAME=""
 PLATFORM=""
 DO_BUILD=0
 SKIP_SELF_TEST=0
+SKIP_ARCHIVE=0
 EXPECTED_PASSED=""
 
 usage() {
@@ -39,6 +40,7 @@ Options:
   --platform <name>      windows|macos|linux (default: detect from uname)
   --expected-passed <n>  Require exactly n passing checks (0 = accept current count)
   --skip-self-test       Skip --self-test (not recommended)
+  --no-archive           Prepare the package directory only, do not compress it
   -h, --help             Show this help
 
 Examples:
@@ -73,6 +75,7 @@ while [ "$#" -gt 0 ]; do
         --platform) [ "$#" -ge 2 ] || die "--platform needs a value"; PLATFORM="$2"; shift 2 ;;
         --expected-passed) [ "$#" -ge 2 ] || die "--expected-passed needs a value"; EXPECTED_PASSED="$2"; shift 2 ;;
         --skip-self-test) SKIP_SELF_TEST=1; shift ;;
+        --no-archive) SKIP_ARCHIVE=1; shift ;;
         -h|--help) usage; exit 0 ;;
         *) die "unknown option: $1" ;;
     esac
@@ -511,12 +514,18 @@ if [ "$SKIP_SELF_TEST" -eq 0 ]; then
     [ -d "$work_dir" ] && rm -rf "$work_dir"
 fi
 
-create_zip
+if [ "$SKIP_ARCHIVE" -eq 0 ]; then
+    create_zip
+fi
 
 printf '\nPortable package: %s\n' "$PACKAGE_DIR"
-printf 'Archive:          %s\n' "$ZIP_PATH"
-printf 'Archive size:     %s bytes\n' "$(wc -c < "$ZIP_PATH" | tr -d '[:space:]')"
-printf 'Archive SHA256:   %s\n' "$(hash_file "$ZIP_PATH")"
+if [ "$SKIP_ARCHIVE" -eq 0 ]; then
+    printf 'Archive:          %s\n' "$ZIP_PATH"
+    printf 'Archive size:     %s bytes\n' "$(wc -c < "$ZIP_PATH" | tr -d '[:space:]')"
+    printf 'Archive SHA256:   %s\n' "$(hash_file "$ZIP_PATH")"
+else
+    printf 'Archive:          skipped (package directory only)\n'
+fi
 if [ "$SKIP_SELF_TEST" -eq 0 ]; then
     printf 'Self-test report: %s\n' "$PACKAGE_DIR/$REPORT_NAME"
 fi

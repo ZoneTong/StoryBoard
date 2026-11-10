@@ -655,6 +655,7 @@ void MainWindow::createActions()
         connect(action, &QAction::triggered, this, [this, width]() {
             setBrushWidthUi(width);
             m_settings.brushWidth = width;
+            m_settings.save();
         });
     }
 
@@ -929,6 +930,7 @@ void MainWindow::createToolBars()
         m_brushWidth = value;
         m_view->setBrushWidth(value);
         m_settings.brushWidth = value;
+        m_settings.save();
         if (m_brushWidthGroup) {
             for (QAction* action : m_brushWidthGroup->actions()) {
                 if (action->data().toInt() == value) {
@@ -967,6 +969,7 @@ void MainWindow::createToolBars()
     connect(m_smoothingSpin, &QSpinBox::valueChanged, this, [this](int value) {
         m_settings.strokeSmoothing = value;
         m_view->setStrokeSmoothing(value);
+        m_settings.save();
     });
     brushBar->addWidget(m_smoothingSpin);
 
@@ -2222,12 +2225,9 @@ void MainWindow::showSettings()
         setUiLanguageSetting(requestedLanguage);
         applyUiLanguage();
     }
-    m_settings.brushColor = updated.brushColor;
-    m_settings.brushWidth = updated.brushWidth;
-    m_settings.strokeSmoothing = updated.strokeSmoothing;
-    m_settings.canvasSize = updated.canvasSize;
-    m_settings.showGrid = updated.showGrid;
-    m_settings.canvasColor = updated.canvasColor;
+    // 对话框里的设置是主窗口设置的一份完整副本：语言另存，其余整份拷回，
+    // 避免新增参数（例如线稿化档位）漏在“改完却记不住”的队伍里。
+    m_settings = updated;
 
     setBrushColor(m_settings.brushColor, false);
     setBrushWidthUi(m_settings.brushWidth);
@@ -2341,6 +2341,12 @@ void MainWindow::closeEvent(QCloseEvent* event)
     m_settings.windowGeometry = saveGeometry();
     m_settings.brushColor = m_brushColor;
     m_settings.brushWidth = m_brushWidth;
+    if (m_smoothingSpin)
+        m_settings.strokeSmoothing = m_smoothingSpin->value();
+    if (m_scene) {
+        m_settings.canvasSize = m_scene->canvasSize();
+        m_settings.showGrid = m_scene->showGrid();
+    }
     m_settings.save();
     event->accept();
 }

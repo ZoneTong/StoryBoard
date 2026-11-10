@@ -2950,6 +2950,132 @@ int runSelfTest(const QString& reportPath)
                               .arg(static_cast<int>(dialog.language())));
                 }
             }
+
+            // 设置必须真的落到纯文本配置里：写盘 → 重新读取 → 每一项都对得上。
+            {
+                const QString configPath = AppSettings::settingsFilePath();
+                check(configPath.endsWith(QStringLiteral("StoryBoard.ini")),
+                      QStringLiteral("配置文件是纯文本 StoryBoard.ini"),
+                      configPath);
+
+                AppSettings written;
+                written.brushColor = QColor(255, 128, 0, 255);
+                written.brushWidth = 37;
+                written.strokeSmoothing = 11;
+                written.canvasSize = QSizeF(2400.0, 1500.0);
+                written.showGrid = false;
+                written.canvasColor = QColor(18, 22, 30, 255);
+                written.lineArtColorLevels = 9;
+                written.lineArtPaletteMerge = 70;
+                written.lineArtAdjacentMerge = 30;
+                written.lineArtMinRegionArea = 40;
+                check(written.save() && QFileInfo::exists(configPath),
+                      QStringLiteral("设置参数写入 StoryBoard.ini"), configPath);
+
+                AppSettings reloaded;
+                reloaded.load();
+                const bool same = reloaded.brushColor == written.brushColor
+                    && reloaded.brushWidth == written.brushWidth
+                    && reloaded.strokeSmoothing == written.strokeSmoothing
+                    && reloaded.canvasSize == written.canvasSize
+                    && reloaded.showGrid == written.showGrid
+                    && reloaded.canvasColor == written.canvasColor
+                    && reloaded.lineArtColorLevels == written.lineArtColorLevels
+                    && reloaded.lineArtPaletteMerge == written.lineArtPaletteMerge
+                    && reloaded.lineArtAdjacentMerge == written.lineArtAdjacentMerge
+                    && reloaded.lineArtMinRegionArea == written.lineArtMinRegionArea;
+                check(same,
+                      QStringLiteral("重新读取后各设置参数与写入时一致"),
+                      QStringLiteral("width=%1 smoothing=%2 grid=%3 levels=%4 minArea=%5")
+                          .arg(reloaded.brushWidth)
+                          .arg(reloaded.strokeSmoothing)
+                          .arg(reloaded.showGrid)
+                          .arg(reloaded.lineArtColorLevels)
+                          .arg(reloaded.lineArtMinRegionArea));
+
+                // 语言与其它设置共用一份文件，写语言不能把已保存的参数冲掉。
+                check(AppSettings::setLanguageSetting(QStringLiteral("en"))
+                          && AppSettings::languageSetting() == QStringLiteral("en"),
+                      QStringLiteral("界面语言写入同一份配置文件"));
+                AppSettings afterLanguage;
+                afterLanguage.load();
+                check(afterLanguage.brushWidth == 37
+                          && afterLanguage.lineArtColorLevels == 9
+                          && afterLanguage.lineArtMinRegionArea == 40,
+                      QStringLiteral("写语言后其它设置仍然保留"),
+                      QStringLiteral("width=%1 levels=%2")
+                          .arg(afterLanguage.brushWidth)
+                          .arg(afterLanguage.lineArtColorLevels));
+                AppSettings::setLanguageSetting(QStringLiteral("system"));
+
+                // 设置弹窗里改的线稿化参数必须经主窗口回写并落盘（曾经只改了弹窗内存副本）。
+                {
+                    MainWindow settingsWindow;
+                    QAction* settingsAction = nullptr;
+                    for (QAction* action : settingsWindow.findChildren<QAction*>()) {
+                        if (action->text() == uiText(QStringLiteral("Settings…"))) {
+                            settingsAction = action;
+                            break;
+                        }
+                    }
+                    check(settingsAction != nullptr, QStringLiteral("主窗口提供设置入口"));
+                    bool dialogSeen = false;
+                    bool dialogUpdated = false;
+                    if (settingsAction) {
+                        QTimer::singleShot(0, &settingsWindow, [&]() {
+                            auto* dialog = settingsWindow.findChild<SettingsDialog*>();
+                            if (!dialog)
+                                return;
+                            dialogSeen = true;
+                            QSpinBox* levels = dialog->findChild<QSpinBox*>(
+                                QStringLiteral("LineArtLevelsSpin"));
+                            QSpinBox* minArea = dialog->findChild<QSpinBox*>(
+                                QStringLiteral("LineArtMinAreaSpin"));
+                            if (levels && minArea) {
+                                levels->setValue(8);
+                                minArea->setValue(56);
+                            }
+                            if (auto* box = dialog->findChild<QDialogButtonBox*>()) {
+                                dialogUpdated = box->button(QDialogButtonBox::Ok) != nullptr;
+                                if (dialogUpdated)
+                                    box->button(QDialogButtonBox::Ok)->click();
+                            }
+                        });
+                        settingsAction->trigger();
+                    }
+                    AppSettings fromDialog;
+                    fromDialog.load();
+                    check(dialogSeen && dialogUpdated
+                              && fromDialog.lineArtColorLevels == 8
+                              && fromDialog.lineArtMinRegionArea == 56,
+                          QStringLiteral("设置弹窗里的线稿化参数回写并持久化"),
+                          QStringLiteral("seen=%1 ok=%2 levels=%3 minArea=%4")
+                              .arg(dialogSeen)
+                              .arg(dialogUpdated)
+                              .arg(fromDialog.lineArtColorLevels)
+                              .arg(fromDialog.lineArtMinRegionArea));
+                }
+
+                // 关窗时保存窗口几何：重开程序应当恢复成关闭前的尺寸，而不是默认 1440x900。
+                {
+                    bool closed = false;
+                    {
+                        MainWindow closeWindow;
+                        closeWindow.show();
+                        QApplication::processEvents();
+                        closeWindow.resize(1280, 820);
+                        QApplication::processEvents();
+                        closed = closeWindow.close();
+                    }
+                    AppSettings afterClose;
+                    afterClose.load();
+                    check(closed && !afterClose.windowGeometry.isEmpty(),
+                          QStringLiteral("关闭窗口时把窗口几何写进配置文件"),
+                          QStringLiteral("closed=%1 bytes=%2")
+                              .arg(closed)
+                              .arg(afterClose.windowGeometry.size()));
+                }
+            }
         }
 
         // 需求：原来的“导入图片”改名“插入图片”，并在“打开画布”后面加入“导入图片线稿化”。

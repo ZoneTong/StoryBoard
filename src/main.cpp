@@ -20,7 +20,6 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QPixmap>
-#include <QSettings>
 #include <QStandardPaths>
 #include <QStyleFactory>
 #include <QTimer>
@@ -141,6 +140,19 @@ int main(int argc, char** argv)
     const bool renderDemo = arguments.contains(QStringLiteral("--render-demo"));
     if (selfTest && qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM"))
         qputenv("QT_QPA_PLATFORM", "offscreen");
+    if (selfTest && qEnvironmentVariableIsEmpty("STORYBOARD_CONFIG")) {
+        // 自检会反复写设置，把配置指到自检工作目录，绝不碰用户自己的 StoryBoard.ini。
+        const QString reportPath = takeOptionPath(arguments, QStringLiteral("--self-test"));
+        const QString reportFile = reportPath.isEmpty()
+            ? QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
+                  .filePath(QStringLiteral("storyboard_selftest.txt"))
+            : reportPath;
+        const QString workDirectory = QDir(QFileInfo(reportFile).absolutePath())
+                                          .filePath(QStringLiteral("storyboard-selftest-work"));
+        QDir().mkpath(workDirectory);
+        qputenv("STORYBOARD_CONFIG",
+                QDir(workDirectory).filePath(QStringLiteral("StoryBoard.ini")).toUtf8());
+    }
 
     QApplication app(argc, argv);
     QCoreApplication::setOrganizationName(QStringLiteral("ZoneTong"));
@@ -252,18 +264,19 @@ int main(int argc, char** argv)
         const QString outputPath = takeOptionPath(arguments, QStringLiteral("--settings-probe"));
         if (outputPath.isEmpty())
             return 2;
-        QSettings reader;
-        const QString text = QStringLiteral("setting=%1\neffective=%2\nnativeValue=%3\nnativeStatus=%4\nnativeFile=%5\nfallbackFile=%6\n")
+        AppSettings probe;
+        probe.load();
+        const QString file = AppSettings::settingsFilePath();
+        const QString text = QStringLiteral("file=%1\nexists=%2\nsetting=%3\neffective=%4\nstored=%5\n")
+                                 .arg(file)
+                                 .arg(QFileInfo::exists(file))
                                  .arg(static_cast<int>(uiLanguageSetting()))
                                  .arg(static_cast<int>(uiEffectiveLanguage()))
-                                 .arg(reader.value(QStringLiteral("ui/language")).toString())
-                                 .arg(static_cast<int>(reader.status()))
-                                 .arg(reader.fileName())
-                                 .arg(QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("StoryBoard-language.txt")));
-        QFile file(outputPath);
-        if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+                                 .arg(AppSettings::languageSetting());
+        QFile output(outputPath);
+        if (!output.open(QIODevice::WriteOnly | QIODevice::Truncate))
             return 1;
-        file.write(text.toUtf8());
+        output.write(text.toUtf8());
         return 0;
     }
 

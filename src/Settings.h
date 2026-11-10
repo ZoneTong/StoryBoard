@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QByteArray>
 #include <QColor>
 #include <QSizeF>
 #include <QString>
@@ -26,10 +27,18 @@ public:
     int lineArtAdjacentMerge = 48;
     int lineArtMinRegionArea = 12;
 
+    // 从配置文件读取；配置文件不存在时按默认值写出一份，保证首次运行就有文件。
     void load();
-    void save() const;
+    // 把当前值合并写回配置文件，未识别的键（例如语言）保持不动。
+    bool save() const;
 
+    // 唯一的配置文件：用户配置目录下的 StoryBoard.ini；进程内每次返回同一路径。
+    static QString settingsFilePath();
     static QString defaultCanvasesDir();
     static QString canvasesDir();
     static void ensureCanvasesDir();
+
+    // 界面语言以 "system" / "zh" / "en" 存进同一个 ini，不再使用注册表。
+    static QString languageSetting();
+    static bool setLanguageSetting(const QString& stored);
 };

@@ -1,5 +1,7 @@
 #include "I18n.h"
 
+#include "Settings.h"
+
 #include <QAbstractButton>
 #include <QAction>
 #include <QComboBox>
@@ -7,13 +9,11 @@
 #include <QDir>
 #include <QDockWidget>
 #include <QFile>
-#include <QFileInfo>
 #include <QGroupBox>
 #include <QLabel>
 #include <QLineEdit>
 #include <QLocale>
 #include <QMenu>
-#include <QSettings>
 #include <QStandardPaths>
 #include <QTabWidget>
 #include <QTranslator>
@@ -117,14 +117,9 @@ QString translateToCurrent(const QString& source)
 UiLanguage gExplicitLanguage = UiLanguage::System;
 bool gExplicitActive = false;
 
-QString languageKey()
-{
-    return QStringLiteral("ui/language");
-}
-
-// 有些环境（受限的注册表/AppData）里 QSettings 会返回 AccessError，写入静默丢失。
-// 这里额外准备几个纯文本落点，注册表写不进去时退到文件，保证语言选择能记住。
-QStringList fallbackLanguageFiles()
+// 旧版本把语言单独存在 StoryBoard-language.txt（注册表写不进去时的退路）。
+// 这些文件只用于一次性迁移，读到旧值就并入 StoryBoard.ini 再删除，避免两处配置打架。
+QStringList legacyLanguageFiles()
 {
     static const QStringList files = []() {
         QStringList dirs;
@@ -159,27 +154,24 @@ QString readPlainLanguage(const QString& file)
     return QString();
 }
 
-bool writePlainLanguage(const QString& file, const QString& stored)
-{
-    QDir().mkpath(QFileInfo(file).absolutePath());
-    QFile output(file);
-    if (!output.open(QIODevice::WriteOnly | QIODevice::Truncate))
-        return false;
-    output.write(QStringLiteral("ui/language=%1\n").arg(stored).toUtf8());
-    output.close();
-    return readPlainLanguage(file) == stored;
-}
-
 QString readStoredLanguage()
 {
-    for (const QString& file : fallbackLanguageFiles()) {
-        const QString plain = readPlainLanguage(file);
-        if (!plain.isEmpty())
-            return plain;
+    const QString stored = AppSettings::languageSetting();
+    if (!stored.isEmpty())
+        return stored;
+
+    for (const QString& file : legacyLanguageFiles()) {
+        const QString legacy = readPlainLanguage(file);
+        if (legacy.isEmpty())
+            continue;
+        if (AppSettings::setLanguageSetting(legacy)) {
+            for (const QString& other : legacyLanguageFiles())
+                QFile::remove(other);
+        }
+        return legacy;
     }
-    QSettings settings;
-    if (settings.contains(languageKey()))
-        return settings.value(languageKey()).toString();
+    // 新装的机器第一次运行就把语言落进 ini，配置文件里能看到这项设置。
+    AppSettings::setLanguageSetting(QStringLiteral("system"));
     return QStringLiteral("system");
 }
 
@@ -189,27 +181,14 @@ QString& storedLanguageCache()
     return cached;
 }
 
-bool writeLanguageSetting(QSettings& settings, const QString& stored)
-{
-    settings.setValue(languageKey(), stored);
-    settings.sync();
-    return settings.status() == QSettings::NoError && settings.value(languageKey()).toString() == stored;
-}
-
 bool persistLanguage(const QString& stored)
 {
-    QSettings native;
-    if (writeLanguageSetting(native, stored)) {
-        for (const QString& file : fallbackLanguageFiles())
-            QFile::remove(file);
-        return true;
-    }
-
-    for (const QString& file : fallbackLanguageFiles()) {
-        if (writePlainLanguage(file, stored))
-            return true;
-    }
-    return false;
+    if (!AppSettings::setLanguageSetting(stored))
+        return false;
+    // 语言已经写进 StoryBoard.ini，旧的独立文件不再保留。
+    for (const QString& file : legacyLanguageFiles())
+        QFile::remove(file);
+    return true;
 }
 
 UiLanguage languageFromStored(const QString& stored)
