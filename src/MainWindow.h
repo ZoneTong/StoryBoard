@@ -21,6 +21,7 @@ class QComboBox;
 class QDockWidget;
 class QLabel;
 class QMenu;
+class QSpinBox;
 class QToolButton;
 class QUndoStack;
 enum class ShapeType;
@@ -91,6 +92,7 @@ private:
     void updateFillActions();
     void setBrushColor(const QColor& color, bool remember);
     void setBrushWidthUi(int width);
+    void setStrokeSmoothingUi(int tolerance);
     void updateCanvasesMenu();
     void updateBackgroundModeActions();
     void showSelectedItemProperties();
@@ -175,6 +177,7 @@ private:
     QToolButton* m_fillColorButton = nullptr;
     QToolButton* m_strokeColorButton = nullptr;
     QComboBox* m_widthCombo = nullptr;
+    QSpinBox* m_smoothingSpin = nullptr;
     QPointer<ItemPropertiesDialog> m_itemPropertiesDialog;
 
     QLabel* m_hintLabel = nullptr;

@@ -3185,11 +3185,29 @@ int runSelfTest(const QString& reportPath)
               QStringLiteral("画笔样式与填充样式分属两个工具栏"));
         check(brushNames.contains(QStringLiteral("ColorButton"))
                   && brushNames.contains(QStringLiteral("BrushWidthCombo"))
+                  && brushNames.contains(QStringLiteral("BrushSmoothingSpin"))
                   && brushNames.contains(QStringLiteral("SmoothStrokeButton"))
                   && !brushNames.contains(QStringLiteral("FillButton"))
                   && !brushNames.contains(QStringLiteral("FillColorButton")),
-              QStringLiteral("画笔工具栏只包含画笔颜色、粗细和平滑按钮"),
+              QStringLiteral("画笔工具栏只包含画笔颜色、粗细、平滑容差和平滑按钮"),
               brushNames.join(QStringLiteral("|")));
+        QSpinBox* toolbarSmoothing = shapeWindow.findChild<QSpinBox*>(
+            QStringLiteral("BrushSmoothingSpin"));
+        CanvasView* canvasView = shapeWindow.findChild<CanvasView*>();
+        check(toolbarSmoothing && canvasView
+                  && toolbarSmoothing->minimum() == 0 && toolbarSmoothing->maximum() == 30
+                  && toolbarSmoothing->value() == canvasView->strokeSmoothing(),
+              QStringLiteral("画笔工具栏提供可调平滑容差"),
+              QStringLiteral("value=%1 view=%2")
+                  .arg(toolbarSmoothing ? toolbarSmoothing->value() : -1)
+                  .arg(canvasView ? canvasView->strokeSmoothing() : -1));
+        if (toolbarSmoothing) {
+            toolbarSmoothing->setValue(0);
+            check(canvasView && canvasView->strokeSmoothing() == 0,
+                  QStringLiteral("工具栏平滑容差即时生效"),
+                  QStringLiteral("view=%1").arg(canvasView ? canvasView->strokeSmoothing() : -1));
+            toolbarSmoothing->setValue(4);
+        }
         QToolButton* smoothButton = shapeWindow.findChild<QToolButton*>(
             QStringLiteral("SmoothStrokeButton"));
         check(smoothButton && smoothButton->defaultAction()

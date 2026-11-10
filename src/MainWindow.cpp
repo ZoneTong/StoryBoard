@@ -54,6 +54,7 @@
 #include <QPushButton>
 #include <QSaveFile>
 #include <QSignalBlocker>
+#include <QSpinBox>
 #include <QStandardPaths>
 #include <QStatusBar>
 #include <QTimer>
@@ -943,6 +944,25 @@ void MainWindow::createToolBars()
     brushBar->addWidget(widthLabel);
     brushBar->addWidget(m_widthCombo);
 
+    auto* smoothingLabel = new QLabel(uiText(QStringLiteral("Smoothing tolerance")), brushBar);
+    smoothingLabel->setObjectName(QStringLiteral("ToolBarLabel"));
+    brushBar->addWidget(smoothingLabel);
+
+    m_smoothingSpin = new QSpinBox(brushBar);
+    m_smoothingSpin->setObjectName(QStringLiteral("BrushSmoothingSpin"));
+    m_smoothingSpin->setRange(0, 30);
+    m_smoothingSpin->setSuffix(QStringLiteral(" px"));
+    m_smoothingSpin->setFixedWidth(78);
+    m_smoothingSpin->setFixedHeight(28);
+    m_smoothingSpin->setValue(m_settings.strokeSmoothing);
+    m_smoothingSpin->setToolTip(uiText(QStringLiteral(
+        "Auto-smoothing tolerance used when a stroke ends; 0 disables automatic smoothing")));
+    connect(m_smoothingSpin, &QSpinBox::valueChanged, this, [this](int value) {
+        m_settings.strokeSmoothing = value;
+        m_view->setStrokeSmoothing(value);
+    });
+    brushBar->addWidget(m_smoothingSpin);
+
     auto* smoothButton = new QToolButton(brushBar);
     smoothButton->setObjectName(QStringLiteral("SmoothStrokeButton"));
     smoothButton->setDefaultAction(m_smoothAct);
@@ -1264,6 +1284,18 @@ void MainWindow::setBrushWidthUi(int width)
                 break;
             }
         }
+    }
+}
+
+void MainWindow::setStrokeSmoothingUi(int tolerance)
+{
+    tolerance = qBound(0, tolerance, 30);
+    m_settings.strokeSmoothing = tolerance;
+    if (m_view)
+        m_view->setStrokeSmoothing(tolerance);
+    if (m_smoothingSpin) {
+        const QSignalBlocker blocker(m_smoothingSpin);
+        m_smoothingSpin->setValue(tolerance);
     }
 }
 
@@ -2199,7 +2231,7 @@ void MainWindow::showSettings()
 
     setBrushColor(m_settings.brushColor, false);
     setBrushWidthUi(m_settings.brushWidth);
-    m_view->setStrokeSmoothing(m_settings.strokeSmoothing);
+    setStrokeSmoothingUi(m_settings.strokeSmoothing);
     m_view->setCanvasColor(m_settings.canvasColor);
     m_scene->setShowGrid(m_settings.showGrid);
     m_scene->setCanvasSizeWithUndo(m_settings.canvasSize);

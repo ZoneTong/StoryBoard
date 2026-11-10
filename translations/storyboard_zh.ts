@@ -1741,6 +1741,14 @@ Use the checkbox to show or hide it.</source>
       <translation>自动平滑容差</translation>
     </message>
     <message>
+      <source>Smoothing tolerance</source>
+      <translation>平滑容差</translation>
+    </message>
+    <message>
+      <source>Auto-smoothing tolerance used when a stroke ends; 0 disables automatic smoothing</source>
+      <translation>笔画收尾时使用的自动平滑容差；0 表示关闭自动平滑。</translation>
+    </message>
+    <message>
       <source>0 disables automatic smoothing; larger values tolerate more hand jitter and deviation.</source>
       <translation>0 表示关闭自动平滑；数值越大，允许的手抖与偏差越大。</translation>
     </message>
