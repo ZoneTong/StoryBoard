@@ -195,6 +195,18 @@ void drawIconShape(QPainter& painter, IconId id)
         painter.drawPath(hills);
         break;
     }
+    case IconId::LineArt: {
+        // 一个画框加里面一条单线轮廓，表达“把图片描成线稿”。
+        painter.drawRoundedRect(QRectF(3.0, 4.0, 18.0, 16.0), 2.0, 2.0);
+        QPainterPath contour;
+        contour.moveTo(5.5, 17.0);
+        contour.lineTo(9.0, 10.5);
+        contour.lineTo(12.5, 14.5);
+        contour.lineTo(16.0, 8.5);
+        contour.lineTo(18.5, 17.0);
+        painter.drawPath(contour);
+        break;
+    }
     case IconId::Background: {
         painter.drawRoundedRect(QRectF(3.0, 4.0, 18.0, 16.0), 2.0, 2.0);
         painter.save();

@@ -20,6 +20,7 @@ enum class IconId {
     ZoomIn,
     ZoomOut,
     Image,
+    LineArt,
     Background,
     Settings,
     Delete,

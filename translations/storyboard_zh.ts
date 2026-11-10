@@ -29,8 +29,8 @@
 %2</translation>
     </message>
     <message>
-      <source>%1 image(s) imported</source>
-      <translation>已导入 %1 张图片</translation>
+      <source>%1 image(s) inserted</source>
+      <translation>已插入 %1 张图片</translation>
     </message>
     <message>
       <source>%1 items · %2 layers</source>
@@ -53,6 +53,10 @@
     <message>
       <source>%1 px</source>
       <translation>%1 像素</translation>
+    </message>
+    <message>
+      <source>%1 stroke(s) created from the image outlines</source>
+      <translation>已从图片轮廓生成 %1 条笔画</translation>
     </message>
     <message>
       <source>%1 · %2</source>
@@ -729,16 +733,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>图片名称</translation>
     </message>
     <message>
-      <source>Import images</source>
-      <translation>导入图片</translation>
-    </message>
-    <message>
-      <source>Import images as movable, resizable items (Ctrl+I)</source>
-      <translation>将图片导入为可移动、可缩放的图元 (Ctrl+I)</translation>
-    </message>
-    <message>
-      <source>Import images…</source>
-      <translation>导入图片…</translation>
+      <source>Import outline image</source>
+      <translation>导入图片线稿化</translation>
     </message>
     <message>
       <source>Ink black</source>
@@ -751,6 +747,18 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>Insert %1 (uses the current brush color)</source>
       <translation>插入%1（使用当前画笔颜色）</translation>
+    </message>
+    <message>
+      <source>Insert images</source>
+      <translation>插入图片</translation>
+    </message>
+    <message>
+      <source>Insert images as movable, resizable items (Ctrl+I)</source>
+      <translation>将图片插入为可移动、可缩放的图元 (Ctrl+I)</translation>
+    </message>
+    <message>
+      <source>Insert images…</source>
+      <translation>插入图片…</translation>
     </message>
     <message>
       <source>Insert → Shapes: quickly insert rectangles, ellipses, arrows, braces, speech bubbles and more</source>
@@ -1019,6 +1027,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>New layer (placed on top)</source>
       <translation>新建图层（放在最上层）</translation>
+    </message>
+    <message>
+      <source>No color blocks were found in the image.</source>
+      <translation>图片里没有识别到可描边的色块。</translation>
     </message>
     <message>
       <source>No fill</source>
@@ -1411,8 +1423,8 @@ Second line caption</source>
       <translation>纯色填充</translation>
     </message>
     <message>
-      <source>Some images were not imported</source>
-      <translation>部分图片未导入</translation>
+      <source>Some images were not inserted</source>
+      <translation>部分图片未插入</translation>
     </message>
     <message>
       <source>Some output files already exist. Overwrite them?
@@ -1549,8 +1561,12 @@ Use the checkbox to show or hide it.</source>
       <translation>当前图层已锁定或已隐藏，无法在该图层绘制。请先在右侧图层面板解锁或切换图层。</translation>
     </message>
     <message>
-      <source>The current layer is locked or hidden; images cannot be imported. Unlock or switch layers in the layer panel first.</source>
-      <translation>当前图层已锁定或已隐藏，无法导入图片。请先在右侧图层面板解锁或切换图层。</translation>
+      <source>The current layer is locked or hidden; images cannot be inserted. Unlock or switch layers in the layer panel first.</source>
+      <translation>当前图层已锁定或已隐藏，无法插入图片。请先在右侧图层面板解锁或切换图层。</translation>
+    </message>
+    <message>
+      <source>The current layer is locked or hidden; the image outline cannot be imported. Unlock or switch layers in the layer panel first.</source>
+      <translation>当前图层已锁定或已隐藏，无法导入图片线稿化。请先在右侧图层面板解锁或切换图层。</translation>
     </message>
     <message>
       <source>The current layer is locked or hidden; shapes cannot be inserted. Unlock or switch layers in the layer panel first.</source>
@@ -1575,6 +1591,18 @@ Use the checkbox to show or hide it.</source>
 %1</source>
       <translation>以下文件无法读取：
 %1</translation>
+    </message>
+    <message>
+      <source>The image has too many color blocks; only the first %1 outlines were converted.</source>
+      <translation>图片色块过多，只转换了前 %1 条轮廓。</translation>
+    </message>
+    <message>
+      <source>The image is empty.</source>
+      <translation>图片内容为空。</translation>
+    </message>
+    <message>
+      <source>The image is too small to trace.</source>
+      <translation>图片太小，无法描出轮廓。</translation>
     </message>
     <message>
       <source>The interface updates immediately and this choice is remembered.</source>
@@ -1619,6 +1647,10 @@ Use the checkbox to show or hide it.</source>
     <message>
       <source>Top layer first · multi-select</source>
       <translation>上层在前 · 可多选</translation>
+    </message>
+    <message>
+      <source>Trace the color-block outlines of an image into stroke items (line width 1)</source>
+      <translation>把图片里的各色块轮廓识别为笔画图元（线宽 1）</translation>
     </message>
     <message>
       <source>Triangle</source>

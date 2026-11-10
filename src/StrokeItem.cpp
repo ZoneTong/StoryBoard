@@ -180,6 +180,38 @@ void StrokeItem::appendScenePoint(const QPointF& scenePos)
     normalizeToContent();
 }
 
+void StrokeItem::setStrokePoints(const QVector<QPointF>& scenePoints, const QColor& color,
+                                 qreal width, qreal smoothingTolerance, bool linearPath)
+{
+    m_color = color.isValid() ? color : QColor(30, 41, 59);
+    m_penWidth = qMax<qreal>(0.5, width);
+    m_pad = m_penWidth / 2.0 + 2.0;
+    m_linearPath = linearPath;
+    m_points.clear();
+    m_dot = false;
+    m_finished = false;
+
+    if (scenePoints.isEmpty()) {
+        m_finished = true;
+        return;
+    }
+
+    // 以首点为原点记局部坐标，normalizeToContent() 会再按内容边界对齐一次。
+    const QPointF origin = scenePoints.constFirst();
+    setPos(origin);
+    m_points.reserve(scenePoints.size());
+    for (const QPointF& point : scenePoints)
+        m_points.append(point - origin);
+
+    normalizeToContent();
+    if (smoothingTolerance > 0.0)
+        smoothStroke(smoothingTolerance);
+    normalizeToContent();
+    rebuildPath();
+    m_finished = true;
+    update();
+}
+
 void StrokeItem::endStroke(qreal smoothingTolerance)
 {
     if (m_finished)
@@ -322,7 +354,10 @@ void StrokeItem::rebuildPath()
 
     QPainterPath path;
     path.moveTo(m_points.constFirst());
-    if (m_points.size() == 2) {
+    if (m_linearPath) {
+        for (int i = 1; i < m_points.size(); ++i)
+            path.lineTo(m_points.at(i));
+    } else if (m_points.size() == 2) {
         path.lineTo(m_points.constLast());
     } else {
         for (int i = 1; i < m_points.size() - 1; ++i) {
@@ -420,6 +455,8 @@ QJsonObject StrokeItem::toJson() const
     json.insert(QStringLiteral("baseWidth"), m_baseSize.width());
     json.insert(QStringLiteral("baseHeight"), m_baseSize.height());
     json.insert(QStringLiteral("dot"), m_dot);
+    if (m_linearPath)
+        json.insert(QStringLiteral("linear"), true);
 
     QJsonArray points;
     for (const QPointF& point : m_points) {
@@ -440,6 +477,7 @@ void StrokeItem::fromJson(const QJsonObject& json)
     m_penWidth = qMax<qreal>(0.5, json.value(QStringLiteral("width")).toDouble(4.0));
     m_pad = m_penWidth / 2.0 + 2.0;
     m_dot = json.value(QStringLiteral("dot")).toBool(false);
+    m_linearPath = json.value(QStringLiteral("linear")).toBool(false);
 
     m_points.clear();
     const QJsonArray points = json.value(QStringLiteral("points")).toArray();

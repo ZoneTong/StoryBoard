@@ -63,6 +63,8 @@ set(STORYBOARD_SOURCES
     src/TextItem.cpp
     src/ShapeItem.h
     src/ShapeItem.cpp
+    src/LineArtConverter.h
+    src/LineArtConverter.cpp
     src/Commands.h
     src/Commands.cpp
     src/CanvasScene.h

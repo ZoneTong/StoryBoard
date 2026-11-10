@@ -37,6 +37,10 @@ public:
 
     void beginStroke(const QPointF& scenePos, const QColor& color, qreal width);
     void appendScenePoint(const QPointF& scenePos);
+    // 用算好的场景坐标直接构造一条笔画（图片线稿化等程序化场景使用）。
+    // 不走 appendScenePoint 的最小间距过滤，密集的轮廓点不会被丢掉。
+    void setStrokePoints(const QVector<QPointF>& scenePoints, const QColor& color, qreal width,
+                         qreal smoothingTolerance = 0.0, bool linearPath = false);
     // smoothingTolerance > 0 时先判断是否接近直线，直线直接收敛成两点，
     // 曲线则按容差简化并做角切平滑；0 表示不做自动平滑。
     void endStroke(qreal smoothingTolerance = 0.0);
@@ -44,6 +48,7 @@ public:
 
     QColor strokeColor() const { return m_color; }
     qreal strokeWidth() const { return m_penWidth; }
+    bool isLinearPath() const { return m_linearPath; }
     void setStyle(const QColor& color, qreal width);
 
     int strokePointCount() const { return m_points.size(); }
@@ -68,5 +73,7 @@ private:
     QSizeF m_baseSize { 1.0, 1.0 };
     bool m_dot = false;
     bool m_finished = false;
+    // 折线笔画：路径按直线段连接，方角不会被平滑成圆角（图片线稿化使用）。
+    bool m_linearPath = false;
     qreal m_pad = 4.0;
 };

@@ -51,6 +51,7 @@ private slots:
     bool saveCanvasAs();
     void exportCanvas();
     void importImagesDialog();
+    void importOutlineImageDialog();
     void insertTextAt(const QPointF& scenePos);
     void chooseBrushColor();
     void replaceBackgroundImage();
@@ -81,6 +82,7 @@ private:
     bool exportToFile(const QString& path, const QRectF& area, qreal scale, const QString& format,
                       bool showCompletion = true, int layerId = -1);
     void importImageFiles(const QStringList& files);
+    void importOutlineImageFile(const QString& file);
     void insertShape(ShapeType type);
     void setFillStyle(FillStyle style);
     void chooseFillColor();
@@ -112,6 +114,7 @@ private:
     QAction* m_saveAct = nullptr;
     QAction* m_saveAsAct = nullptr;
     QAction* m_importAct = nullptr;
+    QAction* m_lineArtAct = nullptr;
     QAction* m_exportAct = nullptr;
     QAction* m_quitAct = nullptr;
 

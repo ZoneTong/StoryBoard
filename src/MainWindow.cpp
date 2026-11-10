@@ -10,6 +10,7 @@
 #include "ImageItem.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
+#include "LineArtConverter.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
 #include "TextItem.h"
@@ -399,9 +400,13 @@ void MainWindow::createActions()
     m_saveAsAct = makeAction(this, IconId::Save, uiText(QStringLiteral("Save canvas as…")),
                              QKeySequence(QStringLiteral("Ctrl+Shift+S")),
                              uiText(QStringLiteral("Save the current canvas to a new file (Ctrl+Shift+S)")));
-    m_importAct = makeAction(this, IconId::Image, uiText(QStringLiteral("Import images…")),
+    m_importAct = makeAction(this, IconId::Image, uiText(QStringLiteral("Insert images…")),
                              QKeySequence(QStringLiteral("Ctrl+I")),
-                             uiText(QStringLiteral("Import images as movable, resizable items (Ctrl+I)")));
+                             uiText(QStringLiteral("Insert images as movable, resizable items (Ctrl+I)")));
+    m_lineArtAct = makeAction(this, IconId::LineArt, uiText(QStringLiteral("Import outline image")),
+                              QKeySequence(),
+                              uiText(QStringLiteral(
+                                  "Trace the color-block outlines of an image into stroke items (line width 1)")));
     m_exportAct = makeAction(this, IconId::Export, uiText(QStringLiteral("Export canvas…")),
                              QKeySequence(QStringLiteral("Ctrl+E")),
                              uiText(QStringLiteral("Export as PNG / JPEG / PDF (Ctrl+E)")));
@@ -570,6 +575,7 @@ void MainWindow::createActions()
     connect(m_saveAct, &QAction::triggered, this, [this]() { saveCanvas(); });
     connect(m_saveAsAct, &QAction::triggered, this, [this]() { saveCanvasAs(); });
     connect(m_importAct, &QAction::triggered, this, &MainWindow::importImagesDialog);
+    connect(m_lineArtAct, &QAction::triggered, this, &MainWindow::importOutlineImageDialog);
     connect(m_exportAct, &QAction::triggered, this, &MainWindow::exportCanvas);
     connect(m_quitAct, &QAction::triggered, this, &QWidget::close);
 
@@ -711,6 +717,8 @@ void MainWindow::createMenus()
     QMenu* fileMenu = menuBar()->addMenu(uiText(QStringLiteral("&File")));
     fileMenu->addAction(m_newAct);
     fileMenu->addAction(m_openAct);
+    // 需求：在“打开画布”后面提供图片线稿化入口，把色块轮廓变成笔画图元。
+    fileMenu->addAction(m_lineArtAct);
     fileMenu->addSeparator();
     fileMenu->addAction(m_saveAct);
     fileMenu->addAction(m_saveAsAct);
@@ -793,6 +801,7 @@ void MainWindow::createMenus()
 
     QMenu* canvasMenu = menuBar()->addMenu(uiText(QStringLiteral("&Canvas")));
     canvasMenu->addAction(m_importAct);
+    canvasMenu->addAction(m_lineArtAct);
     canvasMenu->addSeparator();
     canvasMenu->addAction(m_replaceBgAct);
     canvasMenu->addAction(m_bgColorAct);
@@ -1585,9 +1594,105 @@ void MainWindow::importImagesDialog()
         startDirectory = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
 
     const QStringList files = QFileDialog::getOpenFileNames(
-        this, uiText(QStringLiteral("Import images")), startDirectory, imageFilter());
+        this, uiText(QStringLiteral("Insert images")), startDirectory, imageFilter());
     if (!files.isEmpty())
         importImageFiles(files);
+}
+
+void MainWindow::importOutlineImageDialog()
+{
+    QString startDirectory = m_settings.lastImageDir;
+    if (startDirectory.isEmpty())
+        startDirectory = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+
+    const QString file = QFileDialog::getOpenFileName(
+        this, uiText(QStringLiteral("Import outline image")), startDirectory, imageFilter());
+    if (!file.isEmpty())
+        importOutlineImageFile(file);
+}
+
+void MainWindow::importOutlineImageFile(const QString& file)
+{
+    if (file.isEmpty())
+        return;
+
+    if (m_view->mode() != ToolMode::Edit)
+        setToolMode(ToolMode::Edit);
+
+    if (!m_scene->isActiveLayerWritable()) {
+        statusBar()->showMessage(uiText(QStringLiteral(
+            "The current layer is locked or hidden; the image outline cannot be imported. Unlock or switch layers in the layer panel first.")), 5000);
+        return;
+    }
+
+    QImageReader reader(file);
+    reader.setAutoTransform(true);
+    const QImage image = reader.read();
+    if (image.isNull()) {
+        QMessageBox::warning(this, uiText(QStringLiteral("Import outline image")),
+                             uiText(QStringLiteral("Could not read the image:\n%1"))
+                                 .arg(QDir::toNativeSeparators(file)));
+        return;
+    }
+
+    const LineArtConverter::Result traced = LineArtConverter::extract(image);
+    if (!traced.ok || traced.outlines.isEmpty()) {
+        QMessageBox::warning(this, uiText(QStringLiteral("Import outline image")),
+                             traced.error.isEmpty()
+                                 ? uiText(QStringLiteral("No color blocks were found in the image."))
+                                 : uiText(traced.error));
+        return;
+    }
+
+    // 和插入图片一致：等比缩到画布的 60% 以内，居中放到当前视图中心。
+    const QSizeF processed(traced.imageSize.width(), traced.imageSize.height());
+    qreal scale = qMin(1.0, qMin(m_scene->canvasSize().width() * 0.6 / processed.width(),
+                                 m_scene->canvasSize().height() * 0.6 / processed.height()));
+    if (!(scale > 0.0))
+        scale = 1.0;
+
+    const QPointF viewCenter = m_view->mapToScene(m_view->viewport()->rect().center());
+    const QSizeF placed(processed.width() * scale, processed.height() * scale);
+    const QPointF topLeft = viewCenter - QPointF(placed.width() / 2.0, placed.height() / 2.0);
+
+    QList<CanvasItem*> items;
+    items.reserve(traced.outlines.size());
+    for (const LineArtConverter::Outline& outline : traced.outlines) {
+        if (outline.points.size() < 4)
+            continue;
+
+        QVector<QPointF> scenePoints;
+        scenePoints.reserve(outline.points.size());
+        for (const QPointF& point : outline.points)
+            scenePoints.append(topLeft + QPointF(point.x() * scale, point.y() * scale));
+
+        // 不再做额外平滑：轮廓已经按像素级 RDP 简化过，再平滑会把方角磨圆；
+        // 折线模式让路径按直线段绘制，方角保持方正。
+        auto* stroke = new StrokeItem();
+        stroke->setStrokePoints(scenePoints, outline.color,
+                                LineArtConverter::Options().strokeWidth, 0.0, true);
+        items.append(stroke);
+    }
+
+    if (items.isEmpty()) {
+        QMessageBox::warning(this, uiText(QStringLiteral("Import outline image")),
+                             uiText(QStringLiteral("No color blocks were found in the image.")));
+        return;
+    }
+
+    m_scene->addItemsWithUndo(items, uiText(QStringLiteral("Import outline image")));
+
+    m_settings.lastImageDir = QFileInfo(file).absolutePath();
+    m_settings.save();
+
+    statusBar()->showMessage(
+        uiText(QStringLiteral("%1 stroke(s) created from the image outlines")).arg(items.size()), 5000);
+    if (traced.truncated) {
+        QMessageBox::information(
+            this, uiText(QStringLiteral("Import outline image")),
+            uiText(QStringLiteral("The image has too many color blocks; only the first %1 outlines were converted."))
+                .arg(items.size()));
+    }
 }
 
 void MainWindow::importImageFiles(const QStringList& files)
@@ -1600,7 +1705,7 @@ void MainWindow::importImageFiles(const QStringList& files)
 
     if (!m_scene->isActiveLayerWritable()) {
         statusBar()->showMessage(uiText(QStringLiteral(
-            "The current layer is locked or hidden; images cannot be imported. Unlock or switch layers in the layer panel first.")), 5000);
+            "The current layer is locked or hidden; images cannot be inserted. Unlock or switch layers in the layer panel first.")), 5000);
         return;
     }
 
@@ -1646,21 +1751,21 @@ void MainWindow::importImageFiles(const QStringList& files)
     }
 
     if (items.isEmpty()) {
-        QMessageBox::warning(this, uiText(QStringLiteral("Import images")),
+        QMessageBox::warning(this, uiText(QStringLiteral("Insert images")),
                              uiText(QStringLiteral("No usable image files.")));
         return;
     }
 
-    m_scene->addItemsWithUndo(items, uiText(QStringLiteral("Import images")));
+    m_scene->addItemsWithUndo(items, uiText(QStringLiteral("Insert images")));
     for (CanvasItem* item : items)
         item->setSelected(true);
 
     m_settings.lastImageDir = QFileInfo(files.constFirst()).absolutePath();
     m_settings.save();
 
-    statusBar()->showMessage(uiText(QStringLiteral("%1 image(s) imported")).arg(items.size()), 4000);
+    statusBar()->showMessage(uiText(QStringLiteral("%1 image(s) inserted")).arg(items.size()), 4000);
     if (!failed.isEmpty()) {
-        QMessageBox::warning(this, uiText(QStringLiteral("Some images were not imported")),
+        QMessageBox::warning(this, uiText(QStringLiteral("Some images were not inserted")),
                              uiText(QStringLiteral("The following files could not be read:\n%1"))
                                  .arg(QDir::toNativeSeparators(failed.join(QLatin1Char('\n')))));
     }

@@ -9,6 +9,7 @@
 #include "I18n.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
+#include "LineArtConverter.h"
 #include "MainWindow.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
@@ -270,8 +271,8 @@ int runSelfTest(const QString& reportPath)
     imageItem->setImage(shot, QStringLiteral("shot-01.png"));
     imageItem->setContentSize(QSizeF(320, 200));
     imageItem->setPos(QPointF(400, 260));
-    scene.addItemsWithUndo({ imageItem }, QStringLiteral("导入图片"));
-    check(scene.canvasItemCount() == 2, QStringLiteral("导入图片图元"));
+    scene.addItemsWithUndo({ imageItem }, QStringLiteral("插入图片"));
+    check(scene.canvasItemCount() == 2, QStringLiteral("插入图片图元"));
 
     const QJsonObject root = scene.toJson();
     const QByteArray jsonBytes = QJsonDocument(root).toJson(QJsonDocument::Indented);
@@ -2951,6 +2952,47 @@ int runSelfTest(const QString& reportPath)
             }
         }
 
+        // 需求：原来的“导入图片”改名“插入图片”，并在“打开画布”后面加入“导入图片线稿化”。
+        QMenu* fileMenu = nullptr;
+        QMenu* canvasMenu = nullptr;
+        for (QAction* action : window.menuBar()->actions()) {
+            QMenu* menu = action ? action->menu() : nullptr;
+            if (!menu)
+                continue;
+            if (menu->title() == QStringLiteral("文件(&F)"))
+                fileMenu = menu;
+            else if (menu->title() == QStringLiteral("画布(&C)"))
+                canvasMenu = menu;
+        }
+        check(fileMenu != nullptr && canvasMenu != nullptr, QStringLiteral("主窗口存在文件与画布菜单"));
+        if (fileMenu) {
+            QStringList entries;
+            for (QAction* action : fileMenu->actions()) {
+                if (action && !action->isSeparator())
+                    entries.append(action->text());
+            }
+            const int openIndex = entries.indexOf(QStringLiteral("打开画布…"));
+            const int lineArtIndex = entries.indexOf(QStringLiteral("导入图片线稿化"));
+            check(openIndex >= 0 && lineArtIndex == openIndex + 1,
+                  QStringLiteral("导入图片线稿化紧跟在打开画布后面"),
+                  entries.join(QStringLiteral(" / ")));
+            check(entries.contains(QStringLiteral("插入图片…"))
+                      && !entries.contains(QStringLiteral("导入图片…")),
+                  QStringLiteral("原来的导入图片改名为插入图片"),
+                  entries.join(QStringLiteral(" / ")));
+        }
+        if (canvasMenu) {
+            QStringList entries;
+            for (QAction* action : canvasMenu->actions()) {
+                if (action && !action->isSeparator())
+                    entries.append(action->text());
+            }
+            check(entries.contains(QStringLiteral("插入图片…"))
+                      && entries.contains(QStringLiteral("导入图片线稿化")),
+                  QStringLiteral("画布菜单同时提供插入图片与导入图片线稿化"),
+                  entries.join(QStringLiteral(" / ")));
+        }
+
         window.view()->setMode(ToolMode::Text);
         QTimer::singleShot(120, &window, [&]() {
             auto* dialog = qobject_cast<ItemPropertiesDialog*>(QApplication::activeModalWidget());
@@ -4181,6 +4223,165 @@ int runSelfTest(const QString& reportPath)
                   && renameLabel->toolTip().contains(QStringLiteral("重命名")),
               QStringLiteral("图层面板行名提供双击重命名入口"));
         renameScene.setUndoStack(nullptr);
+    }
+
+    {
+        // 需求：导入图片线稿化 —— 图片里的各色块轮廓要描成笔画图元，线宽固定为 1。
+        QImage artwork(240, 160, QImage::Format_RGB32);
+        artwork.fill(Qt::white);
+        {
+            QPainter painter(&artwork);
+            painter.setRenderHint(QPainter::Antialiasing, true);
+            painter.fillRect(QRectF(24.0, 24.0, 80.0, 56.0), QColor(QStringLiteral("#EF4444")));
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(QColor(QStringLiteral("#2563EB")));
+            painter.drawEllipse(QPointF(168.0, 78.0), 28.0, 28.0);
+            painter.setBrush(Qt::NoBrush);
+            painter.setPen(QPen(QColor(QStringLiteral("#0F766E")), 5.0));
+            QPainterPath wave;
+            wave.moveTo(30.0, 128.0);
+            wave.cubicTo(70.0, 100.0, 110.0, 150.0, 210.0, 118.0);
+            painter.drawPath(wave);
+        }
+
+        const LineArtConverter::Result traced = LineArtConverter::extract(artwork);
+        check(traced.ok, QStringLiteral("图片线稿化提取成功"), traced.error);
+        check(traced.outlines.size() >= 3 && traced.outlines.size() <= 8,
+              QStringLiteral("线稿化把每一块颜色描成一条轮廓"),
+              QStringLiteral("outlines=%1 regions=%2")
+                  .arg(traced.outlines.size()).arg(traced.regionCount));
+
+        bool closedLoops = !traced.outlines.isEmpty();
+        bool insideImage = closedLoops;
+        bool redBlockFound = false;
+        for (const LineArtConverter::Outline& outline : traced.outlines) {
+            if (outline.points.size() < 4
+                || outline.points.constFirst() != outline.points.constLast()) {
+                closedLoops = false;
+            }
+            for (const QPointF& point : outline.points) {
+                if (point.x() < -1.0 || point.y() < -1.0
+                    || point.x() > artwork.width() + 1.0 || point.y() > artwork.height() + 1.0) {
+                    insideImage = false;
+                }
+            }
+            if (outline.color.red() > 200 && outline.color.green() < 130
+                && outline.color.blue() < 130) {
+                redBlockFound = true;
+            }
+        }
+        check(closedLoops, QStringLiteral("线稿轮廓都是闭合回路"));
+        check(insideImage, QStringLiteral("线稿轮廓落在图片范围内"));
+        check(redBlockFound, QStringLiteral("线稿笔画颜色取自对应色块"));
+
+        CanvasScene lineArtScene;
+        QUndoStack lineArtUndo;
+        lineArtUndo.setUndoLimit(30);
+        lineArtScene.setUndoStack(&lineArtUndo);
+        lineArtScene.applyCanvasSize(QSizeF(240.0, 160.0));
+        QList<CanvasItem*> lineArtItems;
+        for (const LineArtConverter::Outline& outline : traced.outlines) {
+            auto* stroke = new StrokeItem();
+            stroke->setStrokePoints(outline.points, outline.color,
+                                    LineArtConverter::Options().strokeWidth, 0.0, true);
+            lineArtItems.append(stroke);
+        }
+        check(!lineArtItems.isEmpty(), QStringLiteral("线稿轮廓生成笔画图元"));
+        if (!lineArtItems.isEmpty()) {
+            lineArtScene.addItemsWithUndo(lineArtItems, QStringLiteral("导入图片线稿化"));
+            check(lineArtScene.canvasItemCount() == lineArtItems.size(),
+                  QStringLiteral("线稿笔画加入画布"));
+            check(lineArtUndo.count() == 1, QStringLiteral("线稿化整体只占一条撤销记录"));
+
+            int thinStrokes = 0;
+            for (CanvasItem* item : lineArtItems) {
+                if (auto* stroke = dynamic_cast<StrokeItem*>(item);
+                    stroke && qFuzzyCompare(stroke->strokeWidth(), 1.0)) {
+                    ++thinStrokes;
+                }
+            }
+            check(thinStrokes == lineArtItems.size(), QStringLiteral("线稿笔画线宽都是 1"),
+                  QStringLiteral("thin=%1 total=%2").arg(thinStrokes).arg(lineArtItems.size()));
+
+            int linearStrokes = 0;
+            for (CanvasItem* item : lineArtItems) {
+                if (auto* stroke = dynamic_cast<StrokeItem*>(item);
+                    stroke && stroke->isLinearPath()) {
+                    ++linearStrokes;
+                }
+            }
+            check(linearStrokes == lineArtItems.size(),
+                  QStringLiteral("线稿笔画按折线绘制，方角不会被磨圆"));
+
+            bool linearPersisted = false;
+            if (auto* firstStroke = dynamic_cast<StrokeItem*>(lineArtItems.constFirst())) {
+                StrokeItem reloadedStroke;
+                reloadedStroke.fromJson(firstStroke->toJson());
+                linearPersisted = reloadedStroke.isLinearPath()
+                    && qFuzzyCompare(reloadedStroke.strokeWidth(), 1.0);
+            }
+            check(linearPersisted, QStringLiteral("折线线稿笔画可以存取还原"));
+
+            const QImage rendered = lineArtScene.renderImage(QRectF(0.0, 0.0, 240.0, 160.0), 2.0);
+            int inkPixels = 0;
+            for (int y = 0; y < rendered.height(); ++y) {
+                for (int x = 0; x < rendered.width(); ++x) {
+                    if (rendered.pixelColor(x, y) != QColor(Qt::white))
+                        ++inkPixels;
+                }
+            }
+            check(inkPixels > 1000, QStringLiteral("线稿笔画在画布上可见"),
+                  QStringLiteral("ink=%1").arg(inkPixels));
+
+            const QString lineArtPath = QDir(workDirectory).filePath(
+                QStringLiteral("lineart.png"));
+            check(rendered.save(lineArtPath), QStringLiteral("线稿渲染结果可保存为 PNG"),
+                  lineArtPath);
+        }
+        lineArtScene.setUndoStack(nullptr);
+
+        // 纯色图片没有可描的色块，应当明确报告而不是生成空图元。
+        QImage flat(64, 64, QImage::Format_RGB32);
+        flat.fill(Qt::white);
+        const LineArtConverter::Result flatResult = LineArtConverter::extract(flat);
+        check(!flatResult.ok && !flatResult.error.isEmpty(),
+              QStringLiteral("纯色图片不会生成空线稿"), flatResult.error);
+
+        // 渐变底色的图：色块很多，结果必须有界，不能把画布塞满。
+        QImage gradient(400, 300, QImage::Format_RGB32);
+        {
+            QPainter painter(&gradient);
+            QLinearGradient back(0.0, 0.0, 0.0, 300.0);
+            back.setColorAt(0.0, QColor(QStringLiteral("#1E293B")));
+            back.setColorAt(1.0, QColor(QStringLiteral("#64748B")));
+            painter.fillRect(gradient.rect(), back);
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(QColor(Qt::white));
+            painter.drawEllipse(QPointF(140.0, 140.0), 60.0, 60.0);
+            painter.setBrush(QColor(QStringLiteral("#F59E0B")));
+            painter.drawRoundedRect(QRectF(230.0, 90.0, 120.0, 90.0), 12.0, 12.0);
+        }
+        const LineArtConverter::Result gradientResult = LineArtConverter::extract(gradient);
+        check(gradientResult.ok && gradientResult.outlines.size() <= 120,
+              QStringLiteral("渐变底色的图片线稿数量有界"),
+              QStringLiteral("outlines=%1 regions=%2 truncated=%3")
+                  .arg(gradientResult.outlines.size())
+                  .arg(gradientResult.regionCount)
+                  .arg(gradientResult.truncated ? 1 : 0));
+        {
+            CanvasScene gradientScene;
+            gradientScene.applyCanvasSize(QSizeF(400.0, 300.0));
+            QList<CanvasItem*> gradientItems;
+            for (const LineArtConverter::Outline& outline : gradientResult.outlines) {
+                auto* stroke = new StrokeItem();
+                stroke->setStrokePoints(outline.points, outline.color,
+                                        LineArtConverter::Options().strokeWidth, 0.0, true);
+                gradientItems.append(stroke);
+            }
+            gradientScene.addItemsWithUndo(gradientItems, QStringLiteral("导入图片线稿化"));
+            const QImage rendered = gradientScene.renderImage(QRectF(0.0, 0.0, 400.0, 300.0), 1.5);
+            rendered.save(QDir(workDirectory).filePath(QStringLiteral("lineart-gradient.png")));
+        }
     }
 
     int passCount = 0;
