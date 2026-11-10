@@ -475,7 +475,7 @@ void CanvasView::contextMenuEvent(QContextMenuEvent* event)
     QAction* properties = menu.addAction(uiText(QStringLiteral("Item properties…")));
     QAction* duplicate = menu.addAction(uiText(QStringLiteral("Duplicate item")));
     duplicate->setEnabled(item->isSelected());
-    QAction* smooth = menu.addAction(uiText(QStringLiteral("Smooth selected strokes")));
+    QAction* smooth = menu.addAction(uiText(QStringLiteral("Smooth strokes")));
     smooth->setEnabled(m_scene->canSmoothSelectedStrokes());
     QAction* group = menu.addAction(uiText(QStringLiteral("Group selected items")));
     group->setEnabled(m_scene->canGroupSelectedItems());
