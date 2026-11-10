@@ -1704,5 +1704,33 @@ Use the checkbox to show or hide it.</source>
       <source>… %1 canvases in total</source>
       <translation>… 共 %1 个画布</translation>
     </message>
+    <message>
+      <source>Auto-smooth tolerance</source>
+      <translation>自动平滑容差</translation>
+    </message>
+    <message>
+      <source>0 disables automatic smoothing; larger values tolerate more hand jitter and deviation.</source>
+      <translation>0 表示关闭自动平滑；数值越大，允许的手抖与偏差越大。</translation>
+    </message>
+    <message>
+      <source>Smooth selected strokes</source>
+      <translation>平滑选中笔画</translation>
+    </message>
+    <message>
+      <source>Smooth the selected strokes once using the current tolerance (Ctrl+Shift+M)</source>
+      <translation>按当前容差平滑选中笔画一次 (Ctrl+Shift+M)</translation>
+    </message>
+    <message>
+      <source>Smooth the selected strokes once</source>
+      <translation>平滑选中笔画一次</translation>
+    </message>
+    <message>
+      <source>Smoothed %1 stroke(s)</source>
+      <translation>已平滑 %1 条笔画</translation>
+    </message>
+    <message>
+      <source>No selected strokes need smoothing</source>
+      <translation>选中的笔画无需平滑</translation>
+    </message>
   </context>
 </TS>

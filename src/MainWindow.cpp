@@ -333,6 +333,7 @@ MainWindow::MainWindow(QWidget* parent)
     m_view = new CanvasView(m_scene, this);
     m_view->setBrushColor(m_brushColor);
     m_view->setBrushWidth(m_brushWidth);
+    m_view->setStrokeSmoothing(m_settings.strokeSmoothing);
     m_view->setCanvasColor(m_settings.canvasColor);
     setCentralWidget(m_view);
 
@@ -459,6 +460,23 @@ void MainWindow::createActions()
         if (ungrouped > 0) {
             statusBar()->showMessage(
                 uiText(QStringLiteral("Ungrouped %1 item(s)")).arg(ungrouped), 3000);
+        }
+    });
+    m_smoothAct = makeAction(this, IconId::Smooth,
+                             uiText(QStringLiteral("Smooth selected strokes")),
+                             QKeySequence(QStringLiteral("Ctrl+Shift+M")),
+                             uiText(QStringLiteral("Smooth the selected strokes once using the current tolerance (Ctrl+Shift+M)")));
+    m_smoothAct->setEnabled(false);
+    connect(m_smoothAct, &QAction::triggered, this, [this]() {
+        if (!m_scene || !m_view)
+            return;
+        const int smoothed = m_scene->smoothSelectedStrokes(m_settings.strokeSmoothing);
+        if (smoothed > 0) {
+            statusBar()->showMessage(
+                uiText(QStringLiteral("Smoothed %1 stroke(s)")).arg(smoothed), 3000);
+        } else {
+            statusBar()->showMessage(
+                uiText(QStringLiteral("No selected strokes need smoothing")), 3000);
         }
     });
     m_selectAllAct = new QAction(uiText(QStringLiteral("Select all items")), this);
@@ -710,6 +728,7 @@ void MainWindow::createMenus()
     editMenu->addAction(m_duplicateAct);
     editMenu->addAction(m_groupAct);
     editMenu->addAction(m_ungroupAct);
+    editMenu->addAction(m_smoothAct);
     editMenu->addAction(m_selectAllAct);
     editMenu->addSeparator();
     editMenu->addAction(m_itemPropsAct);
@@ -914,6 +933,13 @@ void MainWindow::createToolBars()
     widthLabel->setObjectName(QStringLiteral("ToolBarLabel"));
     brushBar->addWidget(widthLabel);
     brushBar->addWidget(m_widthCombo);
+
+    auto* smoothButton = new QToolButton(brushBar);
+    smoothButton->setObjectName(QStringLiteral("SmoothStrokeButton"));
+    smoothButton->setDefaultAction(m_smoothAct);
+    smoothButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    smoothButton->setToolTip(uiText(QStringLiteral("Smooth the selected strokes once")));
+    brushBar->addWidget(smoothButton);
 
     // 画笔区与填充区之间使用标准工具栏分隔符，不再自绘竖线。
     brushBar->addSeparator();
@@ -1120,6 +1146,7 @@ void MainWindow::updateActions()
     m_duplicateAct->setEnabled(editing && !m_scene->selectedCanvasItems().isEmpty());
     m_groupAct->setEnabled(editing && m_scene->canGroupSelectedItems());
     m_ungroupAct->setEnabled(editing && m_scene->canUngroupSelectedItems());
+    m_smoothAct->setEnabled(editing && m_scene->canSmoothSelectedStrokes());
     m_selectAllAct->setEnabled(editing && m_scene->canvasItemCount() > 0);
     m_itemPropsAct->setEnabled(m_scene->selectedCanvasItems().size() == 1);
     m_rotateCwAct->setEnabled(editing && !m_scene->selectedCanvasItems().isEmpty());
@@ -2055,12 +2082,14 @@ void MainWindow::showSettings()
     }
     m_settings.brushColor = updated.brushColor;
     m_settings.brushWidth = updated.brushWidth;
+    m_settings.strokeSmoothing = updated.strokeSmoothing;
     m_settings.canvasSize = updated.canvasSize;
     m_settings.showGrid = updated.showGrid;
     m_settings.canvasColor = updated.canvasColor;
 
     setBrushColor(m_settings.brushColor, false);
     setBrushWidthUi(m_settings.brushWidth);
+    m_view->setStrokeSmoothing(m_settings.strokeSmoothing);
     m_view->setCanvasColor(m_settings.canvasColor);
     m_scene->setShowGrid(m_settings.showGrid);
     m_scene->setCanvasSizeWithUndo(m_settings.canvasSize);

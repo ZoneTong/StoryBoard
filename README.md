@@ -82,7 +82,7 @@ bash scripts/package-portable.sh --build --qt-dir "$HOME/Qt/6.8.0/gcc_64"
 | macOS | `StoryBoard.app` 及 `.zip` | `macdeployqt` + 补 `libqoffscreen.dylib` |
 | Linux | `StoryBoard-<ver>-linux-<arch>-portable.tar.gz` | 拷贝 `libQt6*`、插件与 `qt.conf` |
 
-Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux 分支按 Qt 官方部署方式提供，尚未在对应主机实机验证。自检默认要求 Windows 532 项，其他平台接受当前通过数；可用 `--expected-passed 0` 放宽，`--skip-self-test` 跳过（不推荐）。
+Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux 分支按 Qt 官方部署方式提供，尚未在对应主机实机验证。自检默认要求 Windows 542 项，其他平台接受当前通过数；可用 `--expected-passed 0` 放宽，`--skip-self-test` 跳过（不推荐）。
 
 ## 使用说明
 
@@ -92,7 +92,7 @@ Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux �
 | --- | --- | --- |
 | 查看模式 | `V` | 默认模式。左键拖拽平移，滚轮缩放；进入时自动全景显示所有可见图元。 |
 | 编辑模式 | `E` | 选择/拖动图元，拖动 8 个控制点缩放；顶边上方旋转手柄按 5° 吸附旋转；空白处框选（需完整框住图元才选中）；`Delete` 删除。 |
-| 画笔模式 | `B` | 左键绘制自由曲线；工具栏选择颜色与粗细。 |
+| 画笔模式 | `B` | 左键绘制自由曲线；收尾时按当前容差自动识别直线/曲线并平滑，设置中可关闭（0 = 关闭）；工具栏选择颜色与粗细。 |
 | 文字模式 | `T` | 点击画布插入默认文字图元并打开属性窗，确定后回到编辑模式并选中新文字。 |
 
 ### 图元与属性
@@ -103,6 +103,7 @@ Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux �
 - 双击图元或按 `Q` 打开属性窗。文字正文、字体、字号、颜色、图片名称与图片本体都在属性窗内编辑，不再提供独立文字对话框。
 - 文字正文变化后，图元尺寸自动重置为文字自然尺寸；替换图片后，尺寸重置为新图片原始像素尺寸。
 - 右键图元可复制、组合/取消组合、调整层内高度、跨图层移动或删除；多选时批量作用于全部选中图元。
+- 选中笔画后，可点画笔工具栏的“平滑选中笔画”按钮、按 `Ctrl+Shift+M` 或使用右键/编辑菜单，按当前容差再平滑一次。
 
 ### 图层与叠放
 
@@ -116,7 +117,7 @@ Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux �
 ### 背景、设置与语言
 
 - **画布 → 替换背景图片…**：纯色、图片（拉伸/适应/平铺）或清除背景。
-- **画布 → 设置…**：默认画笔颜色/粗细、画布尺寸、辅助网格、画布外围颜色、界面语言。
+- **画布 → 设置…**：默认画笔颜色/粗细、画笔自动平滑容差、画布尺寸、辅助网格、画布外围颜色、界面语言。
 
 ![设置对话框](docs/settings.png)
 
@@ -171,7 +172,7 @@ QT_QPA_PLATFORM=offscreen ./out/bin/StoryBoard.exe --self-test out/selftest.txt
 cat out/selftest.txt
 ```
 
-当前 Windows 基线为 **532 passed, 0 failed**；其他平台以实际 `SUMMARY` 为准。
+当前 Windows 基线为 **542 passed, 0 failed**；其他平台以实际 `SUMMARY` 为准。
 
 `--self-test` 需要平台插件目录下的 offscreen 插件（Windows `platforms/qoffscreen.dll`、macOS `platforms/libqoffscreen.dylib`、Linux `platforms/libqoffscreen.so`）。打包脚本会自动补齐。
 

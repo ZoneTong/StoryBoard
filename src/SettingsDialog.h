@@ -31,6 +31,7 @@ private:
     AppSettings m_settings;
     QPushButton* m_brushColorButton = nullptr;
     QSpinBox* m_brushWidthSpin = nullptr;
+    QSpinBox* m_strokeSmoothingSpin = nullptr;
     QSpinBox* m_canvasWidthSpin = nullptr;
     QSpinBox* m_canvasHeightSpin = nullptr;
     QCheckBox* m_gridCheck = nullptr;

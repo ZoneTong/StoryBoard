@@ -22,6 +22,7 @@ void AppSettings::load()
     QSettings settings;
     brushColor = colorFromSetting(settings, QStringLiteral("brush/color"), brushColor);
     brushWidth = qBound(1, settings.value(QStringLiteral("brush/width"), brushWidth).toInt(), 64);
+    strokeSmoothing = qBound(0, settings.value(QStringLiteral("brush/smoothing"), strokeSmoothing).toInt(), 30);
 
     const int canvasWidth = qBound(kMinCanvasSide,
                                   settings.value(QStringLiteral("canvas/width"), static_cast<int>(canvasSize.width())).toInt(),
@@ -46,6 +47,7 @@ void AppSettings::save() const
     QSettings settings;
     settings.setValue(QStringLiteral("brush/color"), brushColor.name(QColor::HexArgb));
     settings.setValue(QStringLiteral("brush/width"), brushWidth);
+    settings.setValue(QStringLiteral("brush/smoothing"), strokeSmoothing);
     settings.setValue(QStringLiteral("canvas/width"), static_cast<int>(canvasSize.width()));
     settings.setValue(QStringLiteral("canvas/height"), static_cast<int>(canvasSize.height()));
     settings.setValue(QStringLiteral("view/grid"), showGrid);

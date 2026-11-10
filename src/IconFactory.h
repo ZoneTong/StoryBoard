@@ -27,6 +27,7 @@ enum class IconId {
     Palette,
     Folder,
     Shapes,
+    Smooth,
     Lock
 };
 

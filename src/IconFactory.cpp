@@ -299,6 +299,19 @@ void drawIconShape(QPainter& painter, IconId id)
         painter.drawPath(triangle);
         break;
     }
+    case IconId::Smooth: {
+        // 一条手绘波浪线加两个控制点，表达“把抖动收敛成平滑曲线”。
+        QPainterPath wave;
+        wave.moveTo(2.5, 16.0);
+        wave.cubicTo(6.0, 4.0, 10.5, 21.0, 14.5, 10.0);
+        wave.cubicTo(17.5, 3.0, 20.0, 12.0, 21.5, 16.0);
+        painter.drawPath(wave);
+        painter.setBrush(painter.pen().color());
+        painter.drawEllipse(QPointF(2.5, 16.0), 1.5, 1.5);
+        painter.drawEllipse(QPointF(21.5, 16.0), 1.5, 1.5);
+        painter.setBrush(Qt::NoBrush);
+        break;
+    }
     }
 }
 

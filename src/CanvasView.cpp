@@ -173,6 +173,11 @@ void CanvasView::setBrushWidth(qreal width)
     m_brushWidth = qBound<qreal>(0.5, width, 64.0);
 }
 
+void CanvasView::setStrokeSmoothing(int tolerance)
+{
+    m_strokeSmoothing = qBound(0, tolerance, 30);
+}
+
 void CanvasView::setCanvasColor(const QColor& color)
 {
     if (!color.isValid())
@@ -470,6 +475,8 @@ void CanvasView::contextMenuEvent(QContextMenuEvent* event)
     QAction* properties = menu.addAction(uiText(QStringLiteral("Item properties…")));
     QAction* duplicate = menu.addAction(uiText(QStringLiteral("Duplicate item")));
     duplicate->setEnabled(item->isSelected());
+    QAction* smooth = menu.addAction(uiText(QStringLiteral("Smooth selected strokes")));
+    smooth->setEnabled(m_scene->canSmoothSelectedStrokes());
     QAction* group = menu.addAction(uiText(QStringLiteral("Group selected items")));
     group->setEnabled(m_scene->canGroupSelectedItems());
     QAction* ungroup = menu.addAction(uiText(QStringLiteral("Ungroup selected items")));
@@ -500,6 +507,10 @@ void CanvasView::contextMenuEvent(QContextMenuEvent* event)
         const int duplicated = m_scene->duplicateSelectedItems();
         if (duplicated > 0)
             emit statusMessage(uiText(QStringLiteral("Duplicated %1 item(s)")).arg(duplicated));
+    } else if (chosen == smooth) {
+        const int smoothed = m_scene->smoothSelectedStrokes(m_strokeSmoothing);
+        if (smoothed > 0)
+            emit statusMessage(uiText(QStringLiteral("Smoothed %1 stroke(s)")).arg(smoothed));
     } else if (chosen == group) {
         const int grouped = m_scene->groupSelectedItems();
         if (grouped > 0)
@@ -560,7 +571,7 @@ void CanvasView::finishCurrentStroke()
 
     StrokeItem* stroke = m_activeStroke;
     m_activeStroke = nullptr;
-    stroke->endStroke();
+    stroke->endStroke(m_strokeSmoothing);
 
     if (stroke->isEmpty()) {
         m_scene->removeItem(stroke);

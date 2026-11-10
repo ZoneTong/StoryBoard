@@ -22,6 +22,7 @@
 #include <QComboBox>
 #include <QContextMenuEvent>
 #include <QCoreApplication>
+#include <QDialogButtonBox>
 #include <QDir>
 #include <QDoubleSpinBox>
 #include <QFile>
@@ -41,6 +42,7 @@
 #include <QListWidgetItem>
 #include <QMarginsF>
 #include <QMenu>
+#include <QMenuBar>
 #include <QMouseEvent>
 #include <QPushButton>
 #include <QSpinBox>
@@ -1590,6 +1592,83 @@ int runSelfTest(const QString& reportPath)
     viewUndo.redo();
     check(viewScene.canvasItemCount() == 1, QStringLiteral("重做鼠标绘制"));
 
+    {
+        // 画笔收尾自动平滑：轻微手抖的直线收敛成两点，曲线保留形状但点集被简化。
+        StrokeItem jitterLine;
+        jitterLine.beginStroke(QPointF(100, 100), QColor(QStringLiteral("#111827")), 4.0);
+        for (int i = 0; i < 40; ++i) {
+            const qreal x = 100.0 + i * 5.0;
+            const qreal y = 100.0 + (i % 2 == 0 ? 1.5 : -1.5);
+            jitterLine.appendScenePoint(QPointF(x, y));
+        }
+        jitterLine.endStroke(4.0);
+        check(jitterLine.strokePointCount() == 2,
+              QStringLiteral("自动平滑将手绘直线收敛为两点"),
+              QString::number(jitterLine.strokePointCount()));
+
+        StrokeItem rawLine;
+        rawLine.beginStroke(QPointF(100, 100), QColor(QStringLiteral("#111827")), 4.0);
+        for (int i = 0; i < 40; ++i) {
+            const qreal x = 100.0 + i * 5.0;
+            const qreal y = 100.0 + (i % 2 == 0 ? 1.5 : -1.5);
+            rawLine.appendScenePoint(QPointF(x, y));
+        }
+        rawLine.endStroke(0.0);
+        check(rawLine.strokePointCount() == 41,
+              QStringLiteral("平滑参数为 0 时关闭自动平滑"),
+              QString::number(rawLine.strokePointCount()));
+
+        StrokeItem rawCurve;
+        rawCurve.beginStroke(QPointF(100, 200), QColor(QStringLiteral("#111827")), 4.0);
+        StrokeItem smoothCurve;
+        smoothCurve.beginStroke(QPointF(100, 200), QColor(QStringLiteral("#111827")), 4.0);
+        for (int i = 0; i < 60; ++i) {
+            const qreal x = 100.0 + i * 4.0;
+            const qreal y = 200.0 + 24.0 * qSin(i * 0.35) + (i % 2 == 0 ? 1.2 : -1.2);
+            rawCurve.appendScenePoint(QPointF(x, y));
+            smoothCurve.appendScenePoint(QPointF(x, y));
+        }
+        rawCurve.endStroke(0.0);
+        smoothCurve.endStroke(4.0);
+        check(smoothCurve.strokePointCount() >= 3
+                  && (smoothCurve.strokePointCount() != rawCurve.strokePointCount()
+                      || smoothCurve.strokePoints() != rawCurve.strokePoints()),
+              QStringLiteral("自动平滑保留曲线并简化采样点"),
+              QStringLiteral("raw=%1 smooth=%2")
+                  .arg(rawCurve.strokePointCount())
+                  .arg(smoothCurve.strokePointCount()));
+
+        CanvasScene manualScene;
+        manualScene.applyCanvasSize(QSizeF(800, 600));
+        manualScene.setShowGrid(false);
+        manualScene.setMode(ToolMode::Edit);
+        QUndoStack manualUndo;
+        manualScene.setUndoStack(&manualUndo);
+        auto* manualStroke = new StrokeItem();
+        manualStroke->setLayerId(manualScene.activeLayerId());
+        manualStroke->beginStroke(QPointF(120, 240), QColor(QStringLiteral("#111827")), 4.0);
+        for (int i = 0; i < 50; ++i) {
+            const qreal x = 120.0 + i * 4.0;
+            const qreal y = 240.0 + 18.0 * qSin(i * 0.4);
+            manualStroke->appendScenePoint(QPointF(x, y));
+        }
+        manualStroke->endStroke(0.0);
+        manualScene.attachItem(manualStroke);
+        manualStroke->setSelected(true);
+        const QVector<QPointF> beforeSmooth = manualStroke->strokePoints();
+        const int manuallySmoothed = manualScene.smoothSelectedStrokes(4.0);
+        const QVector<QPointF> afterSmooth = manualStroke->strokePoints();
+        check(manuallySmoothed == 1 && manualUndo.count() == 1,
+              QStringLiteral("选中笔画可手动平滑并进入撤销栈"),
+              QStringLiteral("changed=%1 undo=%2").arg(manuallySmoothed).arg(manualUndo.count()));
+        manualUndo.undo();
+        check(manualStroke->strokePoints() == beforeSmooth,
+              QStringLiteral("撤销手动平滑恢复笔画采样点"));
+        manualUndo.redo();
+        check(manualStroke->strokePoints() == afterSmooth,
+              QStringLiteral("重做手动平滑恢复平滑结果"));
+    }
+
     int textPlacementRequests = 0;
     QPointF requestedTextPosition;
     QObject::connect(&view, &CanvasView::textPlacementRequested, &view,
@@ -3043,10 +3122,24 @@ int runSelfTest(const QString& reportPath)
               QStringLiteral("画笔样式与填充样式分属两个工具栏"));
         check(brushNames.contains(QStringLiteral("ColorButton"))
                   && brushNames.contains(QStringLiteral("BrushWidthCombo"))
+                  && brushNames.contains(QStringLiteral("SmoothStrokeButton"))
                   && !brushNames.contains(QStringLiteral("FillButton"))
                   && !brushNames.contains(QStringLiteral("FillColorButton")),
-              QStringLiteral("画笔工具栏只包含画笔颜色和粗细"),
+              QStringLiteral("画笔工具栏只包含画笔颜色、粗细和平滑按钮"),
               brushNames.join(QStringLiteral("|")));
+        QToolButton* smoothButton = shapeWindow.findChild<QToolButton*>(
+            QStringLiteral("SmoothStrokeButton"));
+        check(smoothButton && smoothButton->defaultAction()
+                  && smoothButton->defaultAction()->text() == QStringLiteral("平滑选中笔画"),
+              QStringLiteral("画笔工具栏提供手动平滑按钮"));
+        QAction* smoothAction = nullptr;
+        for (QAction* action : shapeWindow.findChildren<QAction*>()) {
+            if (action->text() == QStringLiteral("平滑选中笔画"))
+                smoothAction = action;
+        }
+        check(smoothAction
+                  && smoothAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+Shift+M")),
+              QStringLiteral("编辑菜单提供手动平滑入口与快捷键"));
         check(fillNames.contains(QStringLiteral("FillButton"))
                   && fillNames.contains(QStringLiteral("FillColorButton"))
                   && fillNames.contains(QStringLiteral("StrokeColorButton"))
@@ -3345,11 +3438,28 @@ int runSelfTest(const QString& reportPath)
         SettingsDialog dialog(defaults);
         dialog.setBrushColor(QColor(QStringLiteral("#FF8800")));
         dialog.setCanvasColor(QColor(QStringLiteral("#102A43")));
-        dialog.accept();
+        auto* smoothingSpin = dialog.findChild<QSpinBox*>(QStringLiteral("StrokeSmoothingSpin"));
+        check(smoothingSpin && smoothingSpin->value() == defaults.strokeSmoothing,
+              QStringLiteral("设置对话框默认启用画笔自动平滑"),
+              QString::number(smoothingSpin ? smoothingSpin->value() : -1));
+        if (smoothingSpin)
+            smoothingSpin->setValue(0);
+        // 走真实的“确定”按钮，验证 accepted 处理器把平滑参数写回设置。
+        if (auto* buttons = dialog.findChild<QDialogButtonBox*>()) {
+            if (QPushButton* ok = buttons->button(QDialogButtonBox::Ok))
+                ok->click();
+            else
+                dialog.accept();
+        } else {
+            dialog.accept();
+        }
         check(dialog.settings().brushColor == QColor(QStringLiteral("#FF8800")),
               QStringLiteral("设置对话框保留画笔颜色"));
         check(dialog.settings().canvasColor == QColor(QStringLiteral("#102A43")),
               QStringLiteral("设置对话框保留画布外围颜色"));
+        check(dialog.settings().strokeSmoothing == 0,
+              QStringLiteral("设置对话框可关闭自动平滑"),
+              QString::number(dialog.settings().strokeSmoothing));
     }
     // ---------------------------------------------------------------
     // 需求 10/11/12/13/14 回归：锁定、椭圆、填充样式、画板尺寸。

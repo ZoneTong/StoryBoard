@@ -121,6 +121,7 @@ private:
     QAction* m_duplicateAct = nullptr;
     QAction* m_groupAct = nullptr;
     QAction* m_ungroupAct = nullptr;
+    QAction* m_smoothAct = nullptr;
     QAction* m_selectAllAct = nullptr;
     QAction* m_itemPropsAct = nullptr;
     QAction* m_rotateCwAct = nullptr;

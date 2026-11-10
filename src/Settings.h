@@ -9,6 +9,8 @@ class AppSettings
 public:
     QColor brushColor = QColor(30, 41, 59);
     int brushWidth = 4;
+    // 画笔收尾自动平滑容差，单位为画布像素；0 表示关闭自动平滑。
+    int strokeSmoothing = 4;
     QSizeF canvasSize = QSizeF(1920.0, 1080.0);
     bool showGrid = true;
     QColor canvasColor = QColor(43, 47, 54);

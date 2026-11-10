@@ -29,6 +29,9 @@ public:
     void setBrushWidth(qreal width);
     QColor brushColor() const { return m_brushColor; }
     qreal brushWidth() const { return m_brushWidth; }
+    // 画笔收尾自动平滑容差，单位为画布像素；0 表示关闭自动平滑。
+    void setStrokeSmoothing(int tolerance);
+    int strokeSmoothing() const { return m_strokeSmoothing; }
 
     void setCanvasColor(const QColor& color);
     void cancelCurrentStroke();
@@ -96,6 +99,7 @@ private:
     QColor m_brushColor = QColor(30, 41, 59);
     QColor m_canvasColor = QColor(43, 47, 54);
     qreal m_brushWidth = 4.0;
+    int m_strokeSmoothing = 4;
     bool m_spaceDown = false;
     bool m_panning = false;
     QPoint m_panStart;

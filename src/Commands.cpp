@@ -183,6 +183,44 @@ void GroupCommand::apply(const QList<int>& groupIds)
     m_scene->applyGroupIds(items, groupIds);
 }
 
+StrokeSmoothCommand::StrokeSmoothCommand(CanvasScene* scene,
+                                         const QList<StrokeItem*>& items,
+                                         const QList<StrokeItem::GeometryState>& before,
+                                         const QList<StrokeItem::GeometryState>& after,
+                                         const QString& text)
+    : m_scene(scene)
+    , m_before(before)
+    , m_after(after)
+{
+    setText(text);
+    for (StrokeItem* item : items)
+        m_items.append(QPointer<StrokeItem>(item));
+}
+
+void StrokeSmoothCommand::undo()
+{
+    apply(m_before);
+}
+
+void StrokeSmoothCommand::redo()
+{
+    apply(m_after);
+}
+
+void StrokeSmoothCommand::apply(const QList<StrokeItem::GeometryState>& states)
+{
+    if (states.size() != m_items.size())
+        return;
+    for (int i = 0; i < m_items.size(); ++i) {
+        if (m_items.at(i))
+            m_items.at(i)->applyGeometryState(states.at(i));
+    }
+    if (m_scene) {
+        m_scene->updateSceneExtent();
+        m_scene->update();
+    }
+}
+
 BackgroundCommand::BackgroundCommand(CanvasScene* scene, const BackgroundState& before,
                                      const BackgroundState& after, const QString& text)
     : m_scene(scene)

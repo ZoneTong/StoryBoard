@@ -9,6 +9,7 @@
 #include "CanvasTypes.h"
 #include "ItemGeometry.h"
 #include "ShapeItem.h"
+#include "StrokeItem.h"
 #include "TextItem.h"
 
 class CanvasItem;
@@ -164,6 +165,26 @@ private:
     QList<QPointer<CanvasItem>> m_items;
     QList<qreal> m_before;
     QList<qreal> m_after;
+};
+
+// 手动平滑一次可能同时作用于多条选中笔画，整体只占一条撤销记录。
+class StrokeSmoothCommand : public QUndoCommand
+{
+public:
+    StrokeSmoothCommand(CanvasScene* scene, const QList<StrokeItem*>& items,
+                        const QList<StrokeItem::GeometryState>& before,
+                        const QList<StrokeItem::GeometryState>& after,
+                        const QString& text);
+    void undo() override;
+    void redo() override;
+
+private:
+    void apply(const QList<StrokeItem::GeometryState>& states);
+
+    CanvasScene* m_scene = nullptr;
+    QList<QPointer<StrokeItem>> m_items;
+    QList<StrokeItem::GeometryState> m_before;
+    QList<StrokeItem::GeometryState> m_after;
 };
 
 // 属性弹窗一次修改可能同时涉及层/高度、几何、填充、描边、文字或图片名，

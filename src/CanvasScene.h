@@ -80,6 +80,10 @@ public:
     QList<CanvasItem*> itemsInGroup(int groupId) const;
     void applyGroupIds(const QList<CanvasItem*>& items, const QList<int>& groupIds);
 
+    // 手动平滑：只处理编辑模式下选中的自由笔画，一次操作只占一条撤销记录。
+    bool canSmoothSelectedStrokes() const;
+    int smoothSelectedStrokes(qreal tolerance);
+
     static constexpr int BackgroundLayerId = 0;
 
     const QList<CanvasLayer>& layers() const { return m_layers; }

@@ -72,6 +72,20 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
     m_brushWidthSpin->setFixedHeight(30);
     brushForm->addRow(uiText(QStringLiteral("Default width")), m_brushWidthSpin);
 
+    m_strokeSmoothingSpin = new QSpinBox(brushGroup);
+    m_strokeSmoothingSpin->setObjectName(QStringLiteral("StrokeSmoothingSpin"));
+    m_strokeSmoothingSpin->setRange(0, 30);
+    m_strokeSmoothingSpin->setSuffix(QStringLiteral(" px"));
+    m_strokeSmoothingSpin->setValue(m_settings.strokeSmoothing);
+    m_strokeSmoothingSpin->setFixedHeight(30);
+    m_strokeSmoothingSpin->setToolTip(uiText(QStringLiteral("0 disables automatic smoothing; larger values tolerate more hand jitter and deviation.")));
+    brushForm->addRow(uiText(QStringLiteral("Auto-smooth tolerance")), m_strokeSmoothingSpin);
+
+    auto* smoothingHint = new QLabel(uiText(QStringLiteral("0 disables automatic smoothing; larger values tolerate more hand jitter and deviation.")), brushGroup);
+    smoothingHint->setObjectName(QStringLiteral("DialogHint"));
+    smoothingHint->setWordWrap(true);
+    brushForm->addRow(QString(), smoothingHint);
+
     rootLayout->addWidget(brushGroup);
 
     auto* canvasGroup = new QGroupBox(uiText(QStringLiteral("Canvas")), this);
@@ -154,6 +168,7 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
     connect(openButton, &QPushButton::clicked, this, &SettingsDialog::openCanvasesFolder);
     connect(buttons, &QDialogButtonBox::accepted, this, [this]() {
         m_settings.brushWidth = m_brushWidthSpin->value();
+        m_settings.strokeSmoothing = m_strokeSmoothingSpin->value();
         m_settings.canvasSize = QSizeF(m_canvasWidthSpin->value(), m_canvasHeightSpin->value());
         m_settings.showGrid = m_gridCheck->isChecked();
         accept();
@@ -207,6 +222,7 @@ void SettingsDialog::resetToDefaults()
     if (m_languageCombo)
         m_languageCombo->setCurrentIndex(m_languageCombo->findData(static_cast<int>(UiLanguage::System)));
     m_brushWidthSpin->setValue(defaults.brushWidth);
+    m_strokeSmoothingSpin->setValue(defaults.strokeSmoothing);
     m_canvasWidthSpin->setValue(static_cast<int>(defaults.canvasSize.width()));
     m_canvasHeightSpin->setValue(static_cast<int>(defaults.canvasSize.height()));
     m_gridCheck->setChecked(defaults.showGrid);

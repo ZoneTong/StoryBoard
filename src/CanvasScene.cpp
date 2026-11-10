@@ -487,6 +487,61 @@ void CanvasScene::applyGroupIds(const QList<CanvasItem*>& items, const QList<int
     emit contentChanged();
 }
 
+bool CanvasScene::canSmoothSelectedStrokes() const
+{
+    if (m_mode != ToolMode::Edit)
+        return false;
+    for (CanvasItem* item : selectedCanvasItems()) {
+        if (!isItemEditable(item))
+            continue;
+        if (auto* stroke = dynamic_cast<StrokeItem*>(item)) {
+            if (!stroke->isEmpty() && stroke->strokePointCount() >= 3)
+                return true;
+        }
+    }
+    return false;
+}
+
+int CanvasScene::smoothSelectedStrokes(qreal tolerance)
+{
+    if (m_mode != ToolMode::Edit)
+        return 0;
+
+    // 参数 0 只关闭“收尾自动平滑”；手动按钮即使在该设置下也执行一次轻量平滑。
+    const qreal effectiveTolerance = qMax<qreal>(2.0, tolerance);
+    QList<StrokeItem*> items;
+    QList<StrokeItem::GeometryState> before;
+    QList<StrokeItem::GeometryState> after;
+    for (CanvasItem* item : selectedCanvasItems()) {
+        if (!isItemEditable(item))
+            continue;
+        auto* stroke = dynamic_cast<StrokeItem*>(item);
+        if (!stroke || stroke->isEmpty() || stroke->strokePointCount() < 3)
+            continue;
+
+        const StrokeItem::GeometryState beforeState = stroke->geometryState();
+        if (!stroke->smoothStroke(effectiveTolerance))
+            continue;
+        items.append(stroke);
+        before.append(beforeState);
+        after.append(stroke->geometryState());
+    }
+    if (items.isEmpty())
+        return 0;
+
+    if (m_undoStack) {
+        m_undoStack->push(new StrokeSmoothCommand(this, items, before, after,
+                                                  uiText(QStringLiteral("Smooth selected strokes"))));
+    } else {
+        for (int i = 0; i < items.size(); ++i)
+            items.at(i)->applyGeometryState(after.at(i));
+        updateSceneExtent();
+        update();
+        emit contentChanged();
+    }
+    return items.size();
+}
+
 QList<CanvasLayer> CanvasScene::userLayers() const
 {
     if (m_layers.size() <= 1)
