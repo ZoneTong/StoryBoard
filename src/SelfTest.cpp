@@ -58,6 +58,7 @@
 #include <QPixmap>
 #include <QPolygonF>
 #include <QSet>
+#include <QSize>
 #include <QStandardPaths>
 #include <QStringConverter>
 #include <QTextStream>
@@ -3295,10 +3296,6 @@ int runSelfTest(const QString& reportPath)
 
         QToolBar* mainToolBar = shapeWindow.findChild<QToolBar*>(
             QStringLiteral("MainToolBar"));
-        QToolBar* brushToolBar = shapeWindow.findChild<QToolBar*>(
-            QStringLiteral("BrushToolBar"));
-        QToolBar* fillToolBar = shapeWindow.findChild<QToolBar*>(
-            QStringLiteral("FillToolBar"));
         auto toolbarWidgetNames = [](QToolBar* bar) {
             QStringList names;
             if (!bar)
@@ -3312,20 +3309,21 @@ int runSelfTest(const QString& reportPath)
             return names;
         };
         const QStringList mainNames = toolbarWidgetNames(mainToolBar);
-        const QStringList brushNames = toolbarWidgetNames(brushToolBar);
-        const QStringList fillNames = toolbarWidgetNames(fillToolBar);
-        check(brushToolBar && fillToolBar && brushToolBar != fillToolBar,
-              QStringLiteral("画笔样式与填充样式分属两个工具栏"));
-        check(brushNames.contains(QStringLiteral("ColorButton"))
-                  && brushNames.contains(QStringLiteral("BrushWidthCombo"))
-                  && brushNames.contains(QStringLiteral("BrushSmoothingSpin"))
-                  && brushNames.contains(QStringLiteral("SmoothStrokeButton"))
-                  && !brushNames.contains(QStringLiteral("FillButton"))
-                  && !brushNames.contains(QStringLiteral("FillColorButton"))
-                  && brushNames.indexOf(QStringLiteral("BrushSmoothingSpin"))
-                         > brushNames.indexOf(QStringLiteral("SmoothStrokeButton")),
-              QStringLiteral("画笔工具栏只包含画笔颜色、粗细、平滑按钮和容差，且平滑按钮在容差之前"),
-              brushNames.join(QStringLiteral("|")));
+        // 画笔样式与填充样式已并入主工具栏，靠标准分隔符分组，不再各占一个工具栏。
+        const int shapeIndex = mainNames.indexOf(QStringLiteral("ShapeButton"));
+        const int fillIndex = mainNames.indexOf(QStringLiteral("FillButton"));
+        const int fillColorIndex = mainNames.indexOf(QStringLiteral("FillColorButton"));
+        const int strokeColorIndex = mainNames.indexOf(QStringLiteral("StrokeColorButton"));
+        const int brushColorIndex = mainNames.indexOf(QStringLiteral("ColorButton"));
+        const int brushWidthIndex = mainNames.indexOf(QStringLiteral("BrushWidthCombo"));
+        const int smoothIndex = mainNames.indexOf(QStringLiteral("SmoothStrokeButton"));
+        const int smoothingIndex = mainNames.indexOf(QStringLiteral("BrushSmoothingSpin"));
+        check(shapeIndex >= 0 && shapeIndex < fillIndex && fillIndex < fillColorIndex
+                  && fillColorIndex < strokeColorIndex && strokeColorIndex < brushColorIndex
+                  && brushColorIndex < brushWidthIndex && brushWidthIndex < smoothIndex
+                  && smoothIndex < smoothingIndex,
+              QStringLiteral("主工具栏按图形、填充、画笔三组顺序排列"),
+              mainNames.join(QStringLiteral("|")));
         QSpinBox* toolbarSmoothing = shapeWindow.findChild<QSpinBox*>(
             QStringLiteral("BrushSmoothingSpin"));
         CanvasView* canvasView = shapeWindow.findChild<CanvasView*>();
@@ -3356,20 +3354,6 @@ int runSelfTest(const QString& reportPath)
         check(smoothAction
                   && smoothAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+Shift+M")),
               QStringLiteral("编辑菜单提供手动平滑入口与快捷键"));
-        check(fillNames.contains(QStringLiteral("FillButton"))
-                  && fillNames.contains(QStringLiteral("FillColorButton"))
-                  && fillNames.contains(QStringLiteral("StrokeColorButton"))
-                  && !fillNames.contains(QStringLiteral("ColorButton"))
-                  && !fillNames.contains(QStringLiteral("BrushWidthCombo")),
-              QStringLiteral("填充工具栏只包含填充样式、填充颜色和描边颜色"),
-              fillNames.join(QStringLiteral("|")));
-        check(!mainNames.contains(QStringLiteral("ColorButton"))
-                  && !mainNames.contains(QStringLiteral("BrushWidthCombo"))
-                  && !mainNames.contains(QStringLiteral("FillButton"))
-                  && !mainNames.contains(QStringLiteral("FillColorButton"))
-                  && !mainNames.contains(QStringLiteral("StrokeColorButton")),
-              QStringLiteral("主工具栏不再混排画笔和填充样式控件"),
-              mainNames.join(QStringLiteral("|")));
         int mainSeparatorCount = 0;
         if (mainToolBar) {
             for (QAction* action : mainToolBar->actions()) {
@@ -3377,16 +3361,76 @@ int runSelfTest(const QString& reportPath)
                     ++mainSeparatorCount;
             }
         }
-        check(mainSeparatorCount == 3,
-              QStringLiteral("主工具栏只保留必要分隔符"),
+        check(mainSeparatorCount == 5,
+              QStringLiteral("主工具栏用 5 个分隔符切成 6 组"),
               QStringLiteral("separatorCount=%1").arg(mainSeparatorCount));
-        const QList<QAction*> brushToolBarActions = brushToolBar
-            ? brushToolBar->actions()
-            : QList<QAction*>();
-        check(!brushToolBarActions.isEmpty() && brushToolBarActions.last()->isSeparator()
+        QString separatorAfterFillGroup;
+        if (mainToolBar) {
+            const QList<QAction*> actions = mainToolBar->actions();
+            for (int index = 1; index + 1 < actions.size(); ++index) {
+                if (!actions.at(index)->isSeparator())
+                    continue;
+                const QWidget* before = mainToolBar->widgetForAction(actions.at(index - 1));
+                if (before && before->objectName() == QStringLiteral("StrokeColorButton"))
+                    separatorAfterFillGroup = QStringLiteral("ok");
+            }
+        }
+        check(separatorAfterFillGroup == QStringLiteral("ok")
                   && !shapeWindow.findChild<QWidget*>(QStringLiteral("ToolBarDivider")),
-              QStringLiteral("画笔与填充样式之间使用标准分隔符"),
-              QStringLiteral("actionCount=%1").arg(brushToolBarActions.size()));
+              QStringLiteral("填充组与画笔组之间使用标准分隔符"),
+              separatorAfterFillGroup);
+
+        // 工具栏尺寸：所有按钮共用一套尺寸，和下拉框/数字框对齐同一基线。
+        check(mainToolBar
+                  && mainToolBar->iconSize() == QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize),
+              QStringLiteral("主工具栏统一使用 %1px 图标").arg(MainWindow::kToolBarIconSize),
+              QStringLiteral("iconSize=%1x%2")
+                  .arg(mainToolBar ? mainToolBar->iconSize().width() : -1)
+                  .arg(mainToolBar ? mainToolBar->iconSize().height() : -1));
+        const QStringList iconButtonNames = {
+            QStringLiteral("ShapeButton"),
+            QStringLiteral("FillButton"),
+            QStringLiteral("FillColorButton"),
+            QStringLiteral("StrokeColorButton"),
+            QStringLiteral("ColorButton")};
+        QString iconButtonReport;
+        bool iconButtonsUniform = true;
+        for (const QString& name : iconButtonNames) {
+            QToolButton* button = shapeWindow.findChild<QToolButton*>(name);
+            if (!button) {
+                iconButtonsUniform = false;
+                iconButtonReport += name + QStringLiteral("=missing;");
+                continue;
+            }
+            const int expectedWidth = name == QStringLiteral("ColorButton") ? MainWindow::kToolBarSplitButtonWidth
+                                                                           : MainWindow::kToolBarButtonSize;
+            const QSize expected(expectedWidth, MainWindow::kToolBarButtonSize);
+            const QSize expectedIcon(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize);
+            iconButtonReport += QStringLiteral("%1=%2x%3/%4x%5;")
+                                    .arg(name)
+                                    .arg(button->width())
+                                    .arg(button->height())
+                                    .arg(button->iconSize().width())
+                                    .arg(button->iconSize().height());
+            if (button->size() != expected || button->iconSize() != expectedIcon)
+                iconButtonsUniform = false;
+        }
+        check(iconButtonsUniform,
+              QStringLiteral("工具栏图标按钮统一为 %1×%1（图标 %2px，分裂按钮宽 %3）")
+                  .arg(MainWindow::kToolBarButtonSize)
+                  .arg(MainWindow::kToolBarIconSize)
+                  .arg(MainWindow::kToolBarSplitButtonWidth),
+              iconButtonReport);
+        QComboBox* toolbarWidthCombo = shapeWindow.findChild<QComboBox*>(
+            QStringLiteral("BrushWidthCombo"));
+        check(toolbarWidthCombo && toolbarWidthCombo->height() == MainWindow::kToolBarControlHeight
+                  && toolbarSmoothing && toolbarSmoothing->height() == MainWindow::kToolBarControlHeight
+                  && smoothButton && smoothButton->height() == MainWindow::kToolBarButtonSize,
+              QStringLiteral("工具栏下拉框、数字框与按钮同高"),
+              QStringLiteral("combo=%1 spin=%2 smooth=%3")
+                  .arg(toolbarWidthCombo ? toolbarWidthCombo->height() : -1)
+                  .arg(toolbarSmoothing ? toolbarSmoothing->height() : -1)
+                  .arg(smoothButton ? smoothButton->height() : -1));
         QToolButton* iconFillButton = shapeWindow.findChild<QToolButton*>(
             QStringLiteral("FillButton"));
         QToolButton* iconFillColorButton = shapeWindow.findChild<QToolButton*>(

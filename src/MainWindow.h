@@ -33,6 +33,15 @@ class MainWindow : public QMainWindow {
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow() override;
 
+    // 工具栏的统一尺寸：图标 20px，图标按钮 30×30，下拉框/数字框高 30px，
+    // 三者对齐同一条 30px 基线。自检按这些值校验，QSS 与代码的尺寸偏差会直接失败。
+    static constexpr int kToolBarIconSize = 20;
+    static constexpr int kToolBarButtonSize = 30;
+    static constexpr int kToolBarControlHeight = 30;
+    // 画笔颜色是带下拉的分裂按钮（点色块直接调色、点箭头选预设），比纯图标按钮
+    // 宽出一条箭头区，高度保持一致。
+    static constexpr int kToolBarSplitButtonWidth = 34;
+
     bool openCanvasFile(const QString& path);
     CanvasScene* scene() const { return m_scene; }
     CanvasView* view() const { return m_view; }

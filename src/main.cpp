@@ -60,16 +60,27 @@ QMenu::item { padding: 7px 28px 7px 26px; border-radius: 5px; }
 QMenu::item:selected { background: #EBF0FF; color: #1F2937; }
 QMenu::item:disabled { color: #A8AFBB; }
 QMenu::separator { height: 1px; background: #EDF0F4; margin: 5px 8px; }
-QToolBar#MainToolBar { background: #FFFFFF; border: none; border-bottom: 1px solid #E3E7EE; spacing: 3px; padding: 6px 10px; }
+QToolBar#MainToolBar { background: #FFFFFF; border: none; border-bottom: 1px solid #E3E7EE; spacing: 3px; padding: 4px 8px; }
 QToolBar#ModeToolBar { background: #FFFFFF; border: none; border-right: 1px solid #E3E7EE; spacing: 8px; padding: 12px 7px; }
-QToolBar::separator { background: #E4E8EF; width: 1px; margin: 5px 6px; }
+QToolBar::separator { background: #E4E8EF; width: 1px; margin: 4px 6px; }
 QToolButton { border: 1px solid transparent; border-radius: 8px; padding: 5px; color: #2B2F36; }
 QToolButton:hover { background: #F1F4F9; }
 QToolButton:pressed { background: #E7ECF5; }
 QToolButton:checked { background: #E9EEFF; border-color: #C9D6FF; color: #2F52C7; }
 QToolButton:disabled { color: #B4BAC5; }
+/* 主工具栏图标 20px、按钮 30×30（尺寸在 MainWindow 里钉死），与 30px 高的下拉框同基线。 */
+QToolBar#MainToolBar QToolButton { padding: 0px; }
+QToolButton#SmoothStrokeButton { padding: 0px 8px; }
+/* 画笔颜色按钮是分裂按钮：色块区保持 20px 图标，右侧箭头单独占一条窄区，
+   画一条分隔线而不是叠一个白框，避免看起来像两个控件压在一起。 */
+QToolButton#ColorButton::menu-button { width: 8px; border: none; border-left: 1px solid #E3E7EE; }
+QToolButton#ColorButton::menu-button:hover { background: #EDF1F8; }
+/* 下拉框的箭头子控件本身就是 24px，再留右内边距会把文字挤成省略，
+   所以只保留左内边距；数字框的加减按钮画在右内边距里，右侧留 22px。 */
+QToolBar#MainToolBar QComboBox { padding: 3px 0px 3px 8px; }
+QToolBar#MainToolBar QSpinBox { padding: 3px 22px 3px 8px; }
 QToolBar#ModeToolBar QToolButton { padding: 9px 4px; min-width: 58px; }
-QLabel#ToolBarLabel { color: #6B7280; padding: 0 2px 0 6px; }
+QLabel#ToolBarLabel { color: #6B7280; padding: 0 4px 0 8px; }
 QLabel#Badge { background: #F0F3F8; border-radius: 9px; padding: 1px 10px; color: #4B5563; }
 QLabel#StatusHint { color: #6B7280; padding-left: 8px; }
 QStatusBar { background: #FFFFFF; border-top: 1px solid #E3E7EE; min-height: 28px; }

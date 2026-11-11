@@ -79,7 +79,8 @@ QString canvasFilter()
 QAction* makeAction(QObject* parent, IconId icon, const QString& text, const QKeySequence& shortcut = QKeySequence(),
                     const QString& tip = QString())
 {
-    auto* action = new QAction(makeIcon(icon), text, parent);
+    // 工具栏按钮与菜单项共用一份图标，按工具栏图标尺寸生成；菜单再缩放到 16px。
+    auto* action = new QAction(makeIcon(icon, QColor(58, 64, 80), MainWindow::kToolBarIconSize), text, parent);
     if (!shortcut.isEmpty()) {
         action->setShortcut(shortcut);
     }
@@ -840,7 +841,7 @@ void MainWindow::createToolBars()
     mainBar->setObjectName(QStringLiteral("MainToolBar"));
     mainBar->setMovable(false);
     mainBar->setFloatable(false);
-    mainBar->setIconSize(QSize(21, 21));
+    mainBar->setIconSize(QSize(kToolBarIconSize, kToolBarIconSize));
     mainBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
     mainBar->setContextMenuPolicy(Qt::PreventContextMenu);
     addToolBar(Qt::TopToolBarArea, mainBar);
@@ -870,11 +871,24 @@ void MainWindow::createToolBars()
     mainBar->addAction(m_replaceBgAct);
     mainBar->addAction(m_settingsAct);
 
+    // 统一主工具栏里所有纯图标按钮的尺寸：QToolBar 为 action 自动创建的按钮、
+    // 以及 addWidget 加入的色板/填充按钮，都钉成同一个正方形，避免按各自
+    // sizeHint 算出宽窄不一的方块。带文字或下拉菜单的按钮保持自身宽度。
+    for (QToolButton* button : mainBar->findChildren<QToolButton*>()) {
+        if (button->toolButtonStyle() != Qt::ToolButtonIconOnly)
+            continue;
+        if (button == m_colorButton) {
+            button->setFixedSize(kToolBarSplitButtonWidth, kToolBarButtonSize);
+            continue;
+        }
+        button->setFixedSize(kToolBarButtonSize, kToolBarButtonSize);
+    }
+
     auto* modeBar = new QToolBar(uiText(QStringLiteral("Mode")), this);
     modeBar->setObjectName(QStringLiteral("ModeToolBar"));
     modeBar->setMovable(false);
     modeBar->setFloatable(false);
-    modeBar->setIconSize(QSize(23, 23));
+    modeBar->setIconSize(QSize(kToolBarIconSize, kToolBarIconSize));
     modeBar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     modeBar->setContextMenuPolicy(Qt::PreventContextMenu);
     modeBar->setMinimumWidth(80);
@@ -892,8 +906,8 @@ void MainWindow::CreateBrushToolbar(QToolBar* mainBar)
     mainBar->addWidget(brushLabel);
     m_colorButton = new QToolButton(mainBar);
     m_colorButton->setObjectName(QStringLiteral("ColorButton"));
-    m_colorButton->setIcon(makeColorIcon(m_brushColor, 20));
-    m_colorButton->setIconSize(QSize(20, 20));
+    m_colorButton->setIcon(makeColorIcon(m_brushColor, kToolBarIconSize));
+    m_colorButton->setIconSize(QSize(kToolBarIconSize, kToolBarIconSize));
     m_colorButton->setToolTip(
         uiText(QStringLiteral("Brush color: %1 (click to choose)")).arg(m_brushColor.name(QColor::HexArgb).toUpper()));
     m_colorButton->setPopupMode(QToolButton::MenuButtonPopup);
@@ -921,8 +935,8 @@ void MainWindow::CreateBrushToolbar(QToolBar* mainBar)
 
     m_widthCombo = new QComboBox(mainBar);
     m_widthCombo->setObjectName(QStringLiteral("BrushWidthCombo"));
-    m_widthCombo->setFixedWidth(70);
-    m_widthCombo->setFixedHeight(28);
+    m_widthCombo->setFixedWidth(74);
+    m_widthCombo->setFixedHeight(kToolBarControlHeight);
     m_widthCombo->setToolTip(uiText(QStringLiteral("Brush width")));
     for (int width : brushWidthPresets()) {
         m_widthCombo->addItem(QStringLiteral("%1 px").arg(width), width);
@@ -954,6 +968,10 @@ void MainWindow::CreateBrushToolbar(QToolBar* mainBar)
     auto* smoothButton = new QToolButton(mainBar);
     smoothButton->setObjectName(QStringLiteral("SmoothStrokeButton"));
     smoothButton->setDefaultAction(m_smoothAct);
+    // 这个按钮由工具栏 addWidget 加入，不会自动继承 QToolBar::iconSize，
+    // 必须显式设置，否则图标会按样式默认尺寸绘制、比旁边按钮大一圈。
+    smoothButton->setIconSize(QSize(kToolBarIconSize, kToolBarIconSize));
+    smoothButton->setFixedHeight(kToolBarButtonSize);
     smoothButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     smoothButton->setToolTip(uiText(QStringLiteral("Smooth strokes once")));
     mainBar->addWidget(smoothButton);
@@ -967,7 +985,7 @@ void MainWindow::CreateBrushToolbar(QToolBar* mainBar)
     m_smoothingSpin->setRange(0, 30);
     m_smoothingSpin->setSuffix(QStringLiteral(" px"));
     m_smoothingSpin->setFixedWidth(64);
-    m_smoothingSpin->setFixedHeight(28);
+    m_smoothingSpin->setFixedHeight(kToolBarControlHeight);
     m_smoothingSpin->setValue(m_settings.strokeSmoothing);
     m_smoothingSpin->setToolTip(
         uiText(QStringLiteral("Auto-smoothing tolerance used when a stroke ends; 0 disables automatic smoothing")));
@@ -987,8 +1005,8 @@ void MainWindow::CreateFillToolbar(QToolBar* mainBar)
     mainBar->addWidget(fillLabel);
     auto* shapeButton = new QToolButton(mainBar);
     shapeButton->setObjectName(QStringLiteral("ShapeButton"));
-    shapeButton->setIcon(makeIcon(IconId::Shapes, QColor(58, 64, 80), 21));
-    shapeButton->setIconSize(QSize(21, 21));
+    shapeButton->setIcon(makeIcon(IconId::Shapes, QColor(58, 64, 80), kToolBarIconSize));
+    shapeButton->setIconSize(QSize(kToolBarIconSize, kToolBarIconSize));
     shapeButton->setPopupMode(QToolButton::InstantPopup);
     shapeButton->setMenu(m_shapeMenu);
     shapeButton->setToolTip(uiText(QStringLiteral("Quickly insert circles, rectangles, arrows, braces and more")));
@@ -997,7 +1015,7 @@ void MainWindow::CreateFillToolbar(QToolBar* mainBar)
 
     m_fillButton = new QToolButton(mainBar);
     m_fillButton->setObjectName(QStringLiteral("FillButton"));
-    m_fillButton->setIconSize(QSize(20, 20));
+    m_fillButton->setIconSize(QSize(kToolBarIconSize, kToolBarIconSize));
     m_fillButton->setPopupMode(QToolButton::InstantPopup);
     auto* fillMenu = new QMenu(m_fillButton);
     fillMenu->addAction(m_fillNoneAct);
@@ -1014,7 +1032,7 @@ void MainWindow::CreateFillToolbar(QToolBar* mainBar)
     // 需求 29：填充颜色、描边颜色作为独立按钮，排在填充样式按钮之后。
     m_fillColorButton = new QToolButton(mainBar);
     m_fillColorButton->setObjectName(QStringLiteral("FillColorButton"));
-    m_fillColorButton->setIconSize(QSize(20, 20));
+    m_fillColorButton->setIconSize(QSize(kToolBarIconSize, kToolBarIconSize));
     m_fillColorButton->setDefaultAction(m_fillColorAct);
     m_fillColorButton->setToolTip(uiText(QStringLiteral("Fill color: %1 (click to choose)"))
                                       .arg(m_fillColor.isValid() ? m_fillColor.name(QColor::HexArgb).toUpper()
@@ -1023,8 +1041,10 @@ void MainWindow::CreateFillToolbar(QToolBar* mainBar)
 
     m_strokeColorButton = new QToolButton(mainBar);
     m_strokeColorButton->setObjectName(QStringLiteral("StrokeColorButton"));
-    m_strokeColorButton->setIconSize(QSize(20, 20));
+    m_strokeColorButton->setIconSize(QSize(kToolBarIconSize, kToolBarIconSize));
     m_strokeColorButton->setDefaultAction(m_strokeColorAct);
+    // 菜单项图标是 16px，工具栏按钮另画一份 20px 的，避免比旁边的图标小一圈。
+    m_strokeColorButton->setIcon(makeStrokeColorIcon(m_brushColor, kToolBarIconSize));
     m_strokeColorButton->setToolTip(uiText(QStringLiteral("Outline color: %1 (click to choose)"))
                                         .arg(m_brushColor.name(QColor::HexArgb).toUpper()));
     mainBar->addWidget(m_strokeColorButton);
@@ -1226,7 +1246,7 @@ void MainWindow::setBrushColor(const QColor& color, bool remember)
     m_brushColor = color;
     m_view->setBrushColor(color);
     if (m_colorButton) {
-        m_colorButton->setIcon(makeColorIcon(color, 20));
+        m_colorButton->setIcon(makeColorIcon(color, kToolBarIconSize));
         m_colorButton->setToolTip(
             uiText(QStringLiteral("Brush color: %1 (click to choose)")).arg(color.name(QColor::HexArgb).toUpper()));
     }
@@ -1237,6 +1257,7 @@ void MainWindow::setBrushColor(const QColor& color, bool remember)
         m_strokeColorAct->setIcon(makeStrokeColorIcon(color, 16));
     }
     if (m_strokeColorButton) {
+        m_strokeColorButton->setIcon(makeStrokeColorIcon(color, kToolBarIconSize));
         m_strokeColorButton->setToolTip(
             uiText(QStringLiteral("Outline color: %1 (click to choose)")).arg(color.name(QColor::HexArgb).toUpper()));
     }
@@ -2046,7 +2067,7 @@ void MainWindow::updateFillActions()
     }
 
     const QColor swatch = m_fillColor.isValid() ? m_fillColor : m_brushColor;
-    m_fillButton->setIcon(makeFillStyleIcon(m_fillStyle, swatch, 20));
+    m_fillButton->setIcon(makeFillStyleIcon(m_fillStyle, swatch, kToolBarIconSize));
     if (m_fillNoneAct) {
         m_fillNoneAct->setIcon(makeFillStyleIcon(FillStyle::None, swatch, 16));
     }
@@ -2076,6 +2097,8 @@ void MainWindow::updateFillActions()
         m_fillColorAct->setIcon(makeFillColorIcon(swatch, 16));
     }
     if (m_fillColorButton) {
+        // 工具栏按钮的色板图标单独按工具栏尺寸绘制，菜单项保持 16px。
+        m_fillColorButton->setIcon(makeFillColorIcon(swatch, kToolBarIconSize));
         m_fillColorButton->setToolTip(uiText(QStringLiteral("Fill color: %1 (click to choose)")).arg(colorText));
     }
 }
