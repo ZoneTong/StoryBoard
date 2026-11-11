@@ -70,7 +70,7 @@ QToolButton:checked { background: #E9EEFF; border-color: #C9D6FF; color: #2F52C7
 QToolButton:disabled { color: #B4BAC5; }
 /* 主工具栏图标 20px、按钮 30×30（尺寸在 MainWindow 里钉死），与 30px 高的下拉框同基线。 */
 QToolBar#MainToolBar QToolButton { padding: 0px; }
-QToolButton#SmoothStrokeButton { padding: 0px 8px; }
+QToolButton#SmoothStrokeButton { padding: 0px 6px; }
 /* 画笔颜色按钮是分裂按钮：色块区保持 20px 图标，右侧箭头单独占一条窄区，
    画一条分隔线而不是叠一个白框，避免看起来像两个控件压在一起。 */
 QToolButton#ColorButton::menu-button { width: 8px; border: none; border-left: 1px solid #E3E7EE; }
@@ -81,6 +81,8 @@ QToolBar#MainToolBar QComboBox { padding: 3px 0px 3px 8px; }
 QToolBar#MainToolBar QSpinBox { padding: 3px 22px 3px 8px; }
 QToolBar#ModeToolBar QToolButton { padding: 9px 4px; min-width: 58px; }
 QLabel#ToolBarLabel { color: #6B7280; padding: 0 4px 0 8px; }
+/* 紧跟文字按钮后的标签：按钮自身已有内边距，这里只留一点点空隙，避免叠成一条长缝。 */
+QLabel#ToolBarLabelTight { color: #6B7280; padding: 0 4px 0 2px; }
 QLabel#Badge { background: #F0F3F8; border-radius: 9px; padding: 1px 10px; color: #4B5563; }
 QLabel#StatusHint { color: #6B7280; padding-left: 8px; }
 QStatusBar { background: #FFFFFF; border-top: 1px solid #E3E7EE; min-height: 28px; }

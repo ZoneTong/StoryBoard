@@ -979,7 +979,8 @@ void MainWindow::CreateBrushToolbar(QToolBar* mainBar)
     mainBar->addWidget(smoothButton);
 
     auto* smoothingLabel = new QLabel(uiText(QStringLiteral("Tolerance")), mainBar);
-    smoothingLabel->setObjectName(QStringLiteral("ToolBarLabel"));
+    // 平滑按钮自己已经带文字，标签紧贴其后即可，用紧凑样式避免两段留白叠成一条长缝。
+    smoothingLabel->setObjectName(QStringLiteral("ToolBarLabelTight"));
     mainBar->addWidget(smoothingLabel);
 
     m_smoothingSpin = new QSpinBox(mainBar);
