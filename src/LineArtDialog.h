@@ -6,6 +6,7 @@
 #include <QDialog>
 
 class QComboBox;
+class QCheckBox;
 class QSpinBox;
 
 // 选完图片后弹出的线稿化参数对话框：档位一键切换整组参数，手改任一项就回到“自定义”。
@@ -26,5 +27,7 @@ private:
     QSpinBox* m_paletteMergeSpin = nullptr;
     QSpinBox* m_adjacentMergeSpin = nullptr;
     QSpinBox* m_minAreaSpin = nullptr;
+    QSpinBox* m_adaptiveLimitSpin = nullptr;
+    QCheckBox* m_adaptiveCheck = nullptr;
     bool m_applyingPreset = false;
 };

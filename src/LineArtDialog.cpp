@@ -5,6 +5,7 @@
 #include "LineArtPresets.h"
 
 #include <QComboBox>
+#include <QCheckBox>
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QGroupBox>
@@ -75,6 +76,27 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
     m_minAreaSpin->setFixedHeight(30);
     m_minAreaSpin->setToolTip(uiText(QStringLiteral("Blocks smaller than this area are skipped; lower it to trace tiny props.")));
     lineArtForm->addRow(uiText(QStringLiteral("Smallest block")), m_minAreaSpin);
+
+    // 色块过多时自适应降采样：默认勾选，取消勾选就按原始处理尺寸硬算（色块多时会变慢）。
+    m_adaptiveLimitSpin = new QSpinBox(lineArtGroup);
+    m_adaptiveLimitSpin->setObjectName(QStringLiteral("LineArtAdaptiveLimitSpin"));
+    m_adaptiveLimitSpin->setRange(100, 20000);
+    m_adaptiveLimitSpin->setSingleStep(100);
+    m_adaptiveLimitSpin->setSuffix(uiText(QStringLiteral(" blocks")));
+    m_adaptiveLimitSpin->setValue(settings.lineArtAdaptiveLimit);
+    m_adaptiveLimitSpin->setFixedHeight(30);
+    m_adaptiveLimitSpin->setToolTip(uiText(QStringLiteral(
+        "Once the detected block count passes this value, the image is processed at a smaller size so the stroke count stays reasonable.")));
+    lineArtForm->addRow(uiText(QStringLiteral("Block count limit")), m_adaptiveLimitSpin);
+
+    m_adaptiveCheck = new QCheckBox(uiText(QStringLiteral("Auto downsample when exceeded")), lineArtGroup);
+    m_adaptiveCheck->setObjectName(QStringLiteral("LineArtAdaptiveCheck"));
+    m_adaptiveCheck->setChecked(settings.lineArtAdaptiveDownscale);
+    m_adaptiveCheck->setToolTip(uiText(QStringLiteral(
+        "Checked by default: shrink the processing size instead of dropping blocks, so nothing disappears from the image. Uncheck to trace at full size.")));
+    m_adaptiveLimitSpin->setEnabled(m_adaptiveCheck->isChecked());
+    connect(m_adaptiveCheck, &QCheckBox::toggled, m_adaptiveLimitSpin, &QSpinBox::setEnabled);
+    lineArtForm->addRow(QString(), m_adaptiveCheck);
 
     rootLayout->addWidget(lineArtGroup);
 
@@ -151,6 +173,8 @@ LineArtConverter::Options LineArtDialog::options() const
     options.paletteMergeDistance = m_paletteMergeSpin->value();
     options.adjacentMergeDistance = m_adjacentMergeSpin->value();
     options.minRegionArea = m_minAreaSpin->value();
+    options.adaptiveDownscale = m_adaptiveCheck->isChecked();
+    options.adaptiveRegionLimit = m_adaptiveLimitSpin->value();
     // 需求：线稿线宽固定为 1，不随任何设置变化。
     options.strokeWidth = 1.0;
     return options;
@@ -162,4 +186,6 @@ void LineArtDialog::applyToSettings(AppSettings& settings) const
     settings.lineArtPaletteMerge = m_paletteMergeSpin->value();
     settings.lineArtAdjacentMerge = m_adjacentMergeSpin->value();
     settings.lineArtMinRegionArea = m_minAreaSpin->value();
+    settings.lineArtAdaptiveDownscale = m_adaptiveCheck->isChecked();
+    settings.lineArtAdaptiveLimit = m_adaptiveLimitSpin->value();
 }

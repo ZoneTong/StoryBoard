@@ -545,12 +545,12 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>编辑模式</translation>
     </message>
     <message>
-      <source>Edit mode: items on visible, unlocked layers can be edited · drag or box-select · resize with handles · drag canvas edges to resize the canvas · Delete to remove</source>
-      <translation>编辑模式：可见且未锁定图层的图元均可编辑 · 拖拽/框选 · 控制点缩放 · 拖动画布边缘调整画布 · Delete 删除</translation>
+      <source>Edit mode: items on visible, unlocked layers can be edited · drag or box-select · resize with handles · hold Ctrl to drag / wheel zoom the whole view · drag canvas edges to resize the canvas · Delete to remove</source>
+      <translation>编辑模式：可见且未锁定图层的图元均可编辑 · 拖拽/框选 · 控制点缩放 · 按住 Ctrl 拖动/滚轮平移缩放整体视图 · 拖动画布边缘调整画布 · Delete 删除</translation>
     </message>
     <message>
-      <source>Edit mode: select, move and resize items (E)</source>
-      <translation>编辑模式：选择、移动、缩放图元 (E)</translation>
+      <source>Edit mode: select, move and resize items; hold Ctrl to pan the view (E)</source>
+      <translation>编辑模式：选择、移动、缩放图元；按住 Ctrl 平移视图 (E)</translation>
     </message>
     <message>
       <source>Edit text</source>
@@ -975,6 +975,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>Mode</source>
       <translation>模式</translation>
+    </message>
+    <message>
+      <source>Mouse: wheel zooms, Space / middle button pans in any mode; in edit mode holding Ctrl and dragging also pans the whole view</source>
+      <translation>鼠标：滚轮缩放，任意模式都可用空格/中键平移；编辑模式下按住 Ctrl 拖动同样可平移整体视图</translation>
     </message>
     <message>
       <source>Move item</source>
@@ -1831,6 +1835,26 @@ Use the checkbox to show or hide it.</source>
     <message>
       <source>Blocks smaller than this area are skipped; lower it to trace tiny props.</source>
       <translation>面积小于该值的色块不描边；调小可以描出更细小的道具。</translation>
+    </message>
+    <message>
+      <source> blocks</source>
+      <translation> 块</translation>
+    </message>
+    <message>
+      <source>Auto downsample when exceeded</source>
+      <translation>色块过多时自动降采样</translation>
+    </message>
+    <message>
+      <source>Block count limit</source>
+      <translation>色块数量上限</translation>
+    </message>
+    <message>
+      <source>Checked by default: shrink the processing size instead of dropping blocks, so nothing disappears from the image. Uncheck to trace at full size.</source>
+      <translation>默认勾选：色块过多时缩小处理尺寸重算，而不是丢弃色块，图里的内容不会凭空消失；取消勾选后按原始处理尺寸硬算。</translation>
+    </message>
+    <message>
+      <source>Once the detected block count passes this value, the image is processed at a smaller size so the stroke count stays reasonable.</source>
+      <translation>识别到的色块数超过该值时，自动缩小处理尺寸重算，让生成的笔画数量保持在合理范围。</translation>
     </message>
     <message>
       <source>Similarity values are RGB color distances (0-441): lower keeps more small props, higher merges more fragments. Adjacent merging only joins blocks that actually touch, so colour is the knob that changes the result. Stroke width is fixed at 1.</source>

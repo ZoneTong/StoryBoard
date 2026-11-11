@@ -161,6 +161,9 @@ void mergeSettings(SettingsMap& values, const AppSettings& settings)
     values.insert(QStringLiteral("lineArt/paletteMerge"), QString::number(settings.lineArtPaletteMerge));
     values.insert(QStringLiteral("lineArt/adjacentMerge"), QString::number(settings.lineArtAdjacentMerge));
     values.insert(QStringLiteral("lineArt/minRegionArea"), QString::number(settings.lineArtMinRegionArea));
+    values.insert(QStringLiteral("lineArt/adaptiveDownscale"),
+                  settings.lineArtAdaptiveDownscale ? QStringLiteral("true") : QStringLiteral("false"));
+    values.insert(QStringLiteral("lineArt/adaptiveLimit"), QString::number(settings.lineArtAdaptiveLimit));
 }
 
 } // namespace
@@ -203,6 +206,10 @@ void AppSettings::load()
                                           lineArtAdjacentMerge, 0, 160);
     lineArtMinRegionArea = boundedFromMap(values, QStringLiteral("lineArt/minRegionArea"),
                                           lineArtMinRegionArea, 4, 400);
+    lineArtAdaptiveDownscale = boolFromMap(values, QStringLiteral("lineArt/adaptiveDownscale"),
+                                           lineArtAdaptiveDownscale);
+    lineArtAdaptiveLimit = boundedFromMap(values, QStringLiteral("lineArt/adaptiveLimit"),
+                                          lineArtAdaptiveLimit, 100, 20000);
 
     // 首次运行也立刻落盘，确保配置文件一定存在；已存在的文件只在读取成功时才规范化，
     // 读取失败（例如临时被占用）不做覆盖，避免把用户的配置写回默认值。

@@ -8,6 +8,7 @@
 class QCheckBox;
 class QPushButton;
 class QSpinBox;
+class QCheckBox;
 class QComboBox;
 
 class SettingsDialog : public QDialog
@@ -43,4 +44,6 @@ private:
     QSpinBox* m_lineArtPaletteMergeSpin = nullptr;
     QSpinBox* m_lineArtAdjacentMergeSpin = nullptr;
     QSpinBox* m_lineArtMinAreaSpin = nullptr;
+    QSpinBox* m_lineArtAdaptiveLimitSpin = nullptr;
+    QCheckBox* m_lineArtAdaptiveCheck = nullptr;
 };

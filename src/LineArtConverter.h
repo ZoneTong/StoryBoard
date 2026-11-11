@@ -33,6 +33,14 @@ struct Options {
     // 最多描多少个色块。0（默认）表示不设上限，图里有多少块就描多少块；
     // 只在调用方显式给出正数时才截断，并在 Result::truncated 里报告。
     int maxRegions = 0;
+    // 色块过多时自动降低处理尺寸：候选色块数量超过 adaptiveRegionLimit 时，
+    // 按 sqrt(阈值/数量) 缩小处理长边重算，笔画数量被压住，但整块区域不会像截断那样消失。
+    // 默认开启，用户可在参数对话框里取消勾选。
+    bool adaptiveDownscale = true;
+    // 触发自适应降采样的候选色块数量阈值。
+    int adaptiveRegionLimit = 2000;
+    // 降采样后处理长边的下限，缩得太狠会把结构一起糊掉。
+    int minAdaptiveSide = 320;
     // 轮廓简化容差（处理尺度像素）。线稿按折线绘制，容差留小一点，圆弧才不像多边形；
     // 太小的话像素阶梯又会被当成真实拐点留下来。
     qreal simplifyTolerance = 0.6;
@@ -61,6 +69,8 @@ struct Result {
     int regionCount = 0;
     // 只有显式设置了 maxRegions 上限且真的截断时才为 true。
     bool truncated = false;
+    // 候选色块数量（截断之前），用于判断是否触发了自适应降采样。
+    int candidateCount = 0;
 };
 
 Result extract(const QImage& image, const Options& options = Options());

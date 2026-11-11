@@ -177,6 +177,27 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
     m_lineArtMinAreaSpin->setToolTip(uiText(QStringLiteral("Blocks smaller than this area are skipped; lower it to trace tiny props.")));
     lineArtForm->addRow(uiText(QStringLiteral("Smallest block")), m_lineArtMinAreaSpin);
 
+    // 色块过多时自适应降采样，默认勾选；取消勾选就按原始处理尺寸硬算。
+    m_lineArtAdaptiveLimitSpin = new QSpinBox(lineArtGroup);
+    m_lineArtAdaptiveLimitSpin->setObjectName(QStringLiteral("LineArtAdaptiveLimitSpin"));
+    m_lineArtAdaptiveLimitSpin->setRange(100, 20000);
+    m_lineArtAdaptiveLimitSpin->setSingleStep(100);
+    m_lineArtAdaptiveLimitSpin->setSuffix(uiText(QStringLiteral(" blocks")));
+    m_lineArtAdaptiveLimitSpin->setValue(m_settings.lineArtAdaptiveLimit);
+    m_lineArtAdaptiveLimitSpin->setFixedHeight(30);
+    m_lineArtAdaptiveLimitSpin->setToolTip(uiText(QStringLiteral(
+        "Once the detected block count passes this value, the image is processed at a smaller size so the stroke count stays reasonable.")));
+    lineArtForm->addRow(uiText(QStringLiteral("Block count limit")), m_lineArtAdaptiveLimitSpin);
+
+    m_lineArtAdaptiveCheck = new QCheckBox(uiText(QStringLiteral("Auto downsample when exceeded")), lineArtGroup);
+    m_lineArtAdaptiveCheck->setObjectName(QStringLiteral("LineArtAdaptiveCheck"));
+    m_lineArtAdaptiveCheck->setChecked(m_settings.lineArtAdaptiveDownscale);
+    m_lineArtAdaptiveCheck->setToolTip(uiText(QStringLiteral(
+        "Checked by default: shrink the processing size instead of dropping blocks, so nothing disappears from the image. Uncheck to trace at full size.")));
+    m_lineArtAdaptiveLimitSpin->setEnabled(m_lineArtAdaptiveCheck->isChecked());
+    connect(m_lineArtAdaptiveCheck, &QCheckBox::toggled, m_lineArtAdaptiveLimitSpin, &QSpinBox::setEnabled);
+    lineArtForm->addRow(QString(), m_lineArtAdaptiveCheck);
+
     // 档位 ↔ 具体数值：切档位就整组写入，手改任何一项就跳回“自定义”。
     auto matchesPreset = [this](const LineArtPreset& preset) {
         return m_lineArtLevelsSpin->value() == preset.levels
@@ -287,6 +308,8 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
         m_settings.lineArtPaletteMerge = m_lineArtPaletteMergeSpin->value();
         m_settings.lineArtAdjacentMerge = m_lineArtAdjacentMergeSpin->value();
         m_settings.lineArtMinRegionArea = m_lineArtMinAreaSpin->value();
+        m_settings.lineArtAdaptiveDownscale = m_lineArtAdaptiveCheck->isChecked();
+        m_settings.lineArtAdaptiveLimit = m_lineArtAdaptiveLimitSpin->value();
         accept();
     });
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -346,6 +369,8 @@ void SettingsDialog::resetToDefaults()
     m_lineArtPaletteMergeSpin->setValue(defaults.lineArtPaletteMerge);
     m_lineArtAdjacentMergeSpin->setValue(defaults.lineArtAdjacentMerge);
     m_lineArtMinAreaSpin->setValue(defaults.lineArtMinRegionArea);
+    m_lineArtAdaptiveLimitSpin->setValue(defaults.lineArtAdaptiveLimit);
+    m_lineArtAdaptiveCheck->setChecked(defaults.lineArtAdaptiveDownscale);
     m_settings.brushColor = defaults.brushColor;
     m_settings.canvasColor = defaults.canvasColor;
     refreshColorButton(m_brushColorButton, defaults.brushColor);

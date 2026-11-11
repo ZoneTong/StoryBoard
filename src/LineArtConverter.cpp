@@ -155,6 +155,9 @@ struct RegionData {
 
 namespace LineArtConverter {
 
+// 单轮处理：把 base（已合成白底的原图）缩到长边 side 后切块、逐块描边。
+static Result extractAtSide(const QImage& base, const Options& options, int side);
+
 Result extract(const QImage& source, const Options& options)
 {
     Result result;
@@ -164,17 +167,43 @@ Result extract(const QImage& source, const Options& options)
     }
 
     // 透明像素按白底处理：线稿化时透明区域不该被切成一堆看不见的色块。
-    QImage image(source.size(), QImage::Format_RGB32);
-    image.fill(Qt::white);
+    QImage base(source.size(), QImage::Format_RGB32);
+    base.fill(Qt::white);
     {
-        QPainter painter(&image);
+        QPainter painter(&base);
         painter.drawImage(0, 0, source);
     }
 
-    // 处理尺寸有上限：超大图先等比缩小，否则连通域和轮廓跟踪都会明显变慢。
-    const int maxSide = qMax(64, options.maxProcessingSide);
-    if (qMax(image.width(), image.height()) > maxSide) {
-        image = image.scaled(maxSide, maxSide, Qt::KeepAspectRatio, Qt::SmoothTransformation)
+    const int longEdge = qMax(base.width(), base.height());
+    int side = qMin(qMax(64, options.maxProcessingSide), longEdge);
+    Result pass = extractAtSide(base, options, side);
+    if (!options.adaptiveDownscale || options.adaptiveRegionLimit <= 0 || !pass.ok)
+        return pass;
+
+    // ---- 自适应降采样：色块太多时缩小处理尺寸重算，而不是把色块直接丢掉 ----
+    // 色块数量大致与处理面积的平方成正比，所以按 sqrt(阈值/实测数量) 估缩放比，
+    // 每次留 5% 余量，最多重算三轮，并且不低于 minAdaptiveSide。
+    const int floorSide = qBound(64, options.minAdaptiveSide, side);
+    for (int round = 0; round < 3 && pass.candidateCount > options.adaptiveRegionLimit; ++round) {
+        const qreal ratio =
+            qSqrt(static_cast<qreal>(options.adaptiveRegionLimit) / qMax(1, pass.candidateCount));
+        const int nextSide = qMax(floorSide, static_cast<int>(side * ratio * 0.95));
+        if (nextSide >= side)
+            break;
+        side = nextSide;
+        pass = extractAtSide(base, options, side);
+        if (!pass.ok)
+            break;
+    }
+    return pass;
+}
+
+static Result extractAtSide(const QImage& base, const Options& options, int side)
+{
+    Result result;
+    QImage image = base;
+    if (qMax(image.width(), image.height()) > side) {
+        image = image.scaled(side, side, Qt::KeepAspectRatio, Qt::SmoothTransformation)
                     .convertToFormat(QImage::Format_RGB32);
     }
 
@@ -502,6 +531,8 @@ Result extract(const QImage& source, const Options& options)
         candidates.resize(options.maxRegions);
         result.truncated = true;
     }
+    // 候选色块数量（截断与描边之前的实测值），自适应降采样据此判断要不要重算。
+    result.candidateCount = candidates.size();
     candidates.squeeze();
 
     for (int index : candidates) {

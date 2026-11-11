@@ -26,6 +26,9 @@ public:
     int lineArtPaletteMerge = 48;
     int lineArtAdjacentMerge = 48;
     int lineArtMinRegionArea = 12;
+    // 色块过多时自动降低处理尺寸（默认开启），超过 lineArtAdaptiveLimit 块就触发。
+    bool lineArtAdaptiveDownscale = true;
+    int lineArtAdaptiveLimit = 2000;
 
     // 从配置文件读取；配置文件不存在时按默认值写出一份，保证首次运行就有文件。
     void load();
