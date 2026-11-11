@@ -3324,6 +3324,20 @@ int runSelfTest(const QString& reportPath)
                   && smoothIndex < smoothingIndex,
               QStringLiteral("主工具栏按图形、填充、画笔三组顺序排列"),
               mainNames.join(QStringLiteral("|")));
+
+        // 需求：工具栏在“保存画布”按钮前放线稿化入口。
+        QStringList mainActionTexts;
+        if (mainToolBar) {
+            for (QAction* action : mainToolBar->actions()) {
+                if (action && !action->isSeparator())
+                    mainActionTexts.append(action->text());
+            }
+        }
+        const int toolbarSaveIndex = mainActionTexts.indexOf(QStringLiteral("保存画布"));
+        const int toolbarLineArtIndex = mainActionTexts.indexOf(QStringLiteral("导入图片线稿化"));
+        check(toolbarSaveIndex >= 0 && toolbarLineArtIndex == toolbarSaveIndex - 1,
+              QStringLiteral("工具栏导入图片线稿化紧挨在保存画布之前"),
+              mainActionTexts.join(QStringLiteral(" / ")));
         QSpinBox* toolbarSmoothing = shapeWindow.findChild<QSpinBox*>(
             QStringLiteral("BrushSmoothingSpin"));
         CanvasView* canvasView = shapeWindow.findChild<CanvasView*>();

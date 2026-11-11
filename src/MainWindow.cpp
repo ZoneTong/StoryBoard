@@ -848,6 +848,8 @@ void MainWindow::createToolBars()
 
     mainBar->addAction(m_newAct);
     mainBar->addAction(m_openAct);
+    // 需求：线稿化入口放在“保存画布”按钮前面，和文件菜单里的位置对应。
+    mainBar->addAction(m_lineArtAct);
     mainBar->addAction(m_saveAct);
     mainBar->addAction(m_exportAct);
     mainBar->addSeparator();
