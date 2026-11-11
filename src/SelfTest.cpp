@@ -3134,10 +3134,16 @@ int runSelfTest(const QString& reportPath)
                 if (action && !action->isSeparator())
                     entries.append(action->text());
             }
-            const int openIndex = entries.indexOf(QStringLiteral("打开画布…"));
-            const int lineArtIndex = entries.indexOf(QStringLiteral("导入图片线稿化"));
-            check(openIndex >= 0 && lineArtIndex == openIndex + 1,
-                  QStringLiteral("画板菜单里的导入图片线稿化紧跟在打开画布后面"),
+            // 需求：画板菜单不再重复文件菜单里已有的画布操作。
+            check(!entries.contains(QStringLiteral("打开画布…"))
+                      && !entries.contains(QStringLiteral("保存画布"))
+                      && !entries.contains(QStringLiteral("画布另存为…"))
+                      && !entries.contains(QStringLiteral("导入图片线稿化")),
+                  QStringLiteral("画板菜单不再重复文件菜单的保存与打开项"),
+                  entries.join(QStringLiteral(" / ")));
+            check(entries.contains(QStringLiteral("设置…"))
+                      && entries.contains(QStringLiteral("打开画布文件夹")),
+                  QStringLiteral("画板菜单保留设置与画布文件夹入口"),
                   entries.join(QStringLiteral(" / ")));
         }
 

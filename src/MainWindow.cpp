@@ -2301,12 +2301,8 @@ void MainWindow::updateCanvasesMenu()
     // 需求 37：设置从“画布”菜单移到这里；最近画布列表仍动态更新。
     m_canvasesMenu->addAction(m_settingsAct);
     m_canvasesMenu->addSeparator();
-    m_canvasesMenu->addAction(m_saveAct);
-    m_canvasesMenu->addAction(m_saveAsAct);
-    m_canvasesMenu->addAction(m_openAct);
-    // 画板菜单里的“打开画布”后面也放同一个线稿化入口，跟文件菜单保持一致。
-    m_canvasesMenu->addAction(m_lineArtAct);
-    m_canvasesMenu->addSeparator();
+    // 画板菜单只保留文件菜单里没有的项：设置、最近画布、打开画布文件夹。
+    // 保存 / 另存为 / 打开画布 / 导入图片线稿化统一走文件菜单，避免同一操作两处出现。
 
     QDir directory(AppSettings::canvasesDir());
     const QFileInfoList files = directory.entryInfoList({QStringLiteral("*.sbcanvas")}, QDir::Files, QDir::Time);
