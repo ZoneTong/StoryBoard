@@ -10,6 +10,7 @@
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
 #include "LineArtConverter.h"
+#include "LineArtDialog.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
 #include "TextItem.h"
@@ -1650,12 +1651,23 @@ void MainWindow::importOutlineImageDialog()
 
     const QString file = QFileDialog::getOpenFileName(this, uiText(QStringLiteral("Import outline image")),
                                                       startDirectory, imageFilter());
-    if (!file.isEmpty()) {
-        importOutlineImageFile(file);
+    if (file.isEmpty()) {
+        return;
     }
+
+    // 选完图片先弹参数：档位和四项数值都在这里，点“确定”才真正描线。
+    LineArtDialog dialog(m_settings, this);
+    if (dialog.exec() != QDialog::Accepted) {
+        return;
+    }
+
+    AppSettings settings = m_settings;
+    dialog.applyToSettings(settings);
+    m_settings = settings;
+    importOutlineImageFile(file, dialog.options());
 }
 
-void MainWindow::importOutlineImageFile(const QString& file)
+void MainWindow::importOutlineImageFile(const QString& file, const LineArtConverter::Options& options)
 {
     if (file.isEmpty()) {
         return;
@@ -1683,12 +1695,6 @@ void MainWindow::importOutlineImageFile(const QString& file)
         return;
     }
 
-    // 参数来自设置里的“图片线稿化”分组；线宽按需求固定为 1，不受设置影响。
-    LineArtConverter::Options options;
-    options.colorLevels = m_settings.lineArtColorLevels;
-    options.paletteMergeDistance = m_settings.lineArtPaletteMerge;
-    options.adjacentMergeDistance = m_settings.lineArtAdjacentMerge;
-    options.minRegionArea = m_settings.lineArtMinRegionArea;
     const LineArtConverter::Result traced = LineArtConverter::extract(image, options);
     if (!traced.ok || traced.outlines.isEmpty()) {
         QMessageBox::warning(this, uiText(QStringLiteral("Import outline image")),

@@ -10,6 +10,7 @@
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
 #include "LineArtConverter.h"
+#include "LineArtDialog.h"
 #include "MainWindow.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
@@ -3721,6 +3722,63 @@ int runSelfTest(const QString& reportPath)
                   .arg(dialog.settings().lineArtMinRegionArea));
     }
 
+    {
+        // 需求：选完图片先弹线稿化参数，点确定后才生成笔画。
+        const AppSettings defaults;
+        LineArtDialog dialog(defaults);
+        auto* presetCombo = dialog.findChild<QComboBox*>(QStringLiteral("LineArtPresetCombo"));
+        auto* levelsSpin = dialog.findChild<QSpinBox*>(QStringLiteral("LineArtLevelsSpin"));
+        auto* paletteSpin = dialog.findChild<QSpinBox*>(QStringLiteral("LineArtPaletteMergeSpin"));
+        auto* adjacentSpin = dialog.findChild<QSpinBox*>(QStringLiteral("LineArtAdjacentMergeSpin"));
+        auto* areaSpin = dialog.findChild<QSpinBox*>(QStringLiteral("LineArtMinAreaSpin"));
+        check(presetCombo && levelsSpin && paletteSpin && adjacentSpin && areaSpin,
+              QStringLiteral("线稿化参数对话框提供档位与四项参数"));
+
+        const LineArtConverter::Options initial = dialog.options();
+        check(initial.colorLevels == defaults.lineArtColorLevels
+                  && qRound(initial.paletteMergeDistance) == defaults.lineArtPaletteMerge
+                  && qRound(initial.adjacentMergeDistance) == defaults.lineArtAdjacentMerge
+                  && initial.minRegionArea == defaults.lineArtMinRegionArea
+                  && qFuzzyCompare(initial.strokeWidth, 1.0),
+              QStringLiteral("参数对话框初始值来自设置且线宽固定为 1"),
+              QStringLiteral("levels=%1 palette=%2 adjacent=%3 area=%4 width=%5")
+                  .arg(initial.colorLevels)
+                  .arg(initial.paletteMergeDistance)
+                  .arg(initial.adjacentMergeDistance)
+                  .arg(initial.minRegionArea)
+                  .arg(initial.strokeWidth));
+
+        if (presetCombo && levelsSpin && paletteSpin && adjacentSpin && areaSpin) {
+            presetCombo->setCurrentIndex(presetCombo->findData(2)); // 线条干净
+            const LineArtConverter::Options clean = dialog.options();
+            check(clean.paletteMergeDistance == 64.0 && clean.adjacentMergeDistance == 56.0
+                      && clean.minRegionArea == 20,
+                  QStringLiteral("参数对话框切档位后输出参数跟着变"),
+                  QStringLiteral("palette=%1 adjacent=%2 area=%3")
+                      .arg(clean.paletteMergeDistance)
+                      .arg(clean.adjacentMergeDistance)
+                      .arg(clean.minRegionArea));
+
+            areaSpin->setValue(77);
+            check(presetCombo->currentText() == QStringLiteral("自定义"),
+                  QStringLiteral("参数对话框手改数值后档位回到自定义"),
+                  presetCombo->currentText());
+            check(dialog.options().minRegionArea == 77
+                      && dialog.options().paletteMergeDistance == 64.0,
+                  QStringLiteral("参数对话框手改数值即时反映到输出参数"),
+                  QStringLiteral("area=%1 palette=%2")
+                      .arg(dialog.options().minRegionArea)
+                      .arg(dialog.options().paletteMergeDistance));
+
+            AppSettings written = defaults;
+            dialog.applyToSettings(written);
+            check(written.lineArtMinRegionArea == 77 && written.lineArtPaletteMerge == 64,
+                  QStringLiteral("参数对话框确定后把参数写回设置"),
+                  QStringLiteral("palette=%1 area=%2")
+                      .arg(written.lineArtPaletteMerge)
+                      .arg(written.lineArtMinRegionArea));
+        }
+    }
     {
         // 需求：线稿化要给几档预设，一键换掉全部参数；手改任一项就回到“自定义”。
         const AppSettings defaults;

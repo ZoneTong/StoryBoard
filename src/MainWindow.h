@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CanvasTypes.h"
+#include "LineArtConverter.h"
 #include "Settings.h"
 #include "ShapeItem.h"
 
@@ -84,7 +85,7 @@ class MainWindow : public QMainWindow {
     bool exportToFile(const QString& path, const QRectF& area, qreal scale, const QString& format,
                       bool showCompletion = true, int layerId = -1);
     void importImageFiles(const QStringList& files);
-    void importOutlineImageFile(const QString& file);
+    void importOutlineImageFile(const QString& file, const LineArtConverter::Options& options);
     void insertShape(ShapeType type);
     void setFillStyle(FillStyle style);
     void chooseFillColor();

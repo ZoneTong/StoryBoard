@@ -1837,6 +1837,10 @@ Use the checkbox to show or hide it.</source>
       <translation>面积小于该值的色块不描边；调小可以描出更细小的道具。</translation>
     </message>
     <message>
+      <source>Similarity values are RGB color distances (0-441): lower keeps more small props, higher merges more fragments. Adjacent merging only joins blocks that actually touch, so colour is the knob that changes the result. Stroke width is fixed at 1.</source>
+      <translation>近似度是 RGB 颜色距离（0–441）：数值越小越保小道具，越大越能把碎块并掉。相邻合并只作用于真正贴边的两块，真正起决定作用的是颜色参数。线宽固定为 1。</translation>
+    </message>
+    <message>
       <source>Similarity values are RGB color distances (0-441): lower keeps more small props, higher merges more fragments. Adjacent merging only joins blocks that actually touch, so colour is the knob that changes the result.</source>
       <translation>近似度是 RGB 颜色距离（0–441）：数值越小越保小道具，越大越能把碎块并掉。相邻合并只作用于真正贴边的两块，真正起决定作用的是颜色参数。</translation>
     </message>
