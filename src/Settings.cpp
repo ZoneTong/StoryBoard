@@ -134,6 +134,14 @@ int boundedFromMap(const SettingsMap& values, const QString& key, int fallback, 
     return qBound(minimum, ok ? value : fallback, maximum);
 }
 
+qreal boundedDoubleFromMap(const SettingsMap& values, const QString& key, qreal fallback, qreal minimum,
+                          qreal maximum)
+{
+    bool ok = false;
+    const qreal value = values.value(key).toDouble(&ok);
+    return qBound(minimum, ok ? value : fallback, maximum);
+}
+
 void mergeSettings(SettingsMap& values, const AppSettings& settings)
 {
     values.insert(QStringLiteral("brush/color"), settings.brushColor.name(QColor::HexArgb));
@@ -164,6 +172,10 @@ void mergeSettings(SettingsMap& values, const AppSettings& settings)
     values.insert(QStringLiteral("lineArt/adaptiveDownscale"),
                   settings.lineArtAdaptiveDownscale ? QStringLiteral("true") : QStringLiteral("false"));
     values.insert(QStringLiteral("lineArt/adaptiveLimit"), QString::number(settings.lineArtAdaptiveLimit));
+    values.insert(QStringLiteral("lineArt/simplifyTolerance"),
+                  QString::number(settings.lineArtSimplifyTolerance, 'f', 2));
+    values.insert(QStringLiteral("lineArt/minThickness"),
+                  QString::number(settings.lineArtMinThickness, 'f', 2));
 }
 
 } // namespace
@@ -210,6 +222,10 @@ void AppSettings::load()
                                            lineArtAdaptiveDownscale);
     lineArtAdaptiveLimit = boundedFromMap(values, QStringLiteral("lineArt/adaptiveLimit"),
                                           lineArtAdaptiveLimit, 100, 20000);
+    lineArtSimplifyTolerance = boundedDoubleFromMap(values, QStringLiteral("lineArt/simplifyTolerance"),
+                                                   lineArtSimplifyTolerance, 0.0, 4.0);
+    lineArtMinThickness = boundedDoubleFromMap(values, QStringLiteral("lineArt/minThickness"),
+                                              lineArtMinThickness, 0.0, 8.0);
 
     // 首次运行也立刻落盘，确保配置文件一定存在；已存在的文件只在读取成功时才规范化，
     // 读取失败（例如临时被占用）不做覆盖，避免把用户的配置写回默认值。

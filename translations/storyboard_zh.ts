@@ -1837,6 +1837,22 @@ Use the checkbox to show or hide it.</source>
       <translation>面积小于该值的色块不描边；调小可以描出更细小的道具。</translation>
     </message>
     <message>
+      <source>Blocks whose average width is under this value are not traced; 0 keeps every thin band, higher drops antialiasing halos.</source>
+      <translation>平均宽度小于该值的条带不描边；0 表示连极细条带也描，调大可以滤掉抗锯齿光晕。</translation>
+    </message>
+    <message>
+      <source>How far the traced outline may deviate from its points; smaller follows pixel steps, larger turns arcs into fewer, straighter segments.</source>
+      <translation>轮廓点允许偏离原像素轮廓的距离；越小越贴着像素走，越大圆弧会被压成更少更直的线段。</translation>
+    </message>
+    <message>
+      <source>Simplify tolerance</source>
+      <translation>简化容差</translation>
+    </message>
+    <message>
+      <source>Thinnest band</source>
+      <translation>最细条带</translation>
+    </message>
+    <message>
       <source> blocks</source>
       <translation> 块</translation>
     </message>

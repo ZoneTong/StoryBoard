@@ -6,6 +6,7 @@
 
 #include <QComboBox>
 #include <QCheckBox>
+#include <QDoubleSpinBox>
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QGroupBox>
@@ -76,6 +77,30 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
     m_minAreaSpin->setFixedHeight(30);
     m_minAreaSpin->setToolTip(uiText(QStringLiteral("Blocks smaller than this area are skipped; lower it to trace tiny props.")));
     lineArtForm->addRow(uiText(QStringLiteral("Smallest block")), m_minAreaSpin);
+
+    m_toleranceSpin = new QDoubleSpinBox(lineArtGroup);
+    m_toleranceSpin->setObjectName(QStringLiteral("LineArtToleranceSpin"));
+    m_toleranceSpin->setRange(0.0, 4.0);
+    m_toleranceSpin->setSingleStep(0.1);
+    m_toleranceSpin->setDecimals(2);
+    m_toleranceSpin->setSuffix(QStringLiteral(" px"));
+    m_toleranceSpin->setValue(settings.lineArtSimplifyTolerance);
+    m_toleranceSpin->setFixedHeight(30);
+    m_toleranceSpin->setToolTip(uiText(QStringLiteral(
+        "How far the traced outline may deviate from its points; smaller follows pixel steps, larger turns arcs into fewer, straighter segments.")));
+    lineArtForm->addRow(uiText(QStringLiteral("Simplify tolerance")), m_toleranceSpin);
+
+    m_thicknessSpin = new QDoubleSpinBox(lineArtGroup);
+    m_thicknessSpin->setObjectName(QStringLiteral("LineArtThicknessSpin"));
+    m_thicknessSpin->setRange(0.0, 8.0);
+    m_thicknessSpin->setSingleStep(0.1);
+    m_thicknessSpin->setDecimals(2);
+    m_thicknessSpin->setSuffix(QStringLiteral(" px"));
+    m_thicknessSpin->setValue(settings.lineArtMinThickness);
+    m_thicknessSpin->setFixedHeight(30);
+    m_thicknessSpin->setToolTip(uiText(QStringLiteral(
+        "Blocks whose average width is under this value are not traced; 0 keeps every thin band, higher drops antialiasing halos.")));
+    lineArtForm->addRow(uiText(QStringLiteral("Thinnest band")), m_thicknessSpin);
 
     // 色块过多时自适应降采样：默认勾选，取消勾选就按原始处理尺寸硬算（色块多时会变慢）。
     m_adaptiveLimitSpin = new QSpinBox(lineArtGroup);
@@ -175,6 +200,8 @@ LineArtConverter::Options LineArtDialog::options() const
     options.minRegionArea = m_minAreaSpin->value();
     options.adaptiveDownscale = m_adaptiveCheck->isChecked();
     options.adaptiveRegionLimit = m_adaptiveLimitSpin->value();
+    options.simplifyTolerance = m_toleranceSpin->value();
+    options.minRegionThickness = m_thicknessSpin->value();
     // 需求：线稿线宽固定为 1，不随任何设置变化。
     options.strokeWidth = 1.0;
     return options;
@@ -188,4 +215,6 @@ void LineArtDialog::applyToSettings(AppSettings& settings) const
     settings.lineArtMinRegionArea = m_minAreaSpin->value();
     settings.lineArtAdaptiveDownscale = m_adaptiveCheck->isChecked();
     settings.lineArtAdaptiveLimit = m_adaptiveLimitSpin->value();
+    settings.lineArtSimplifyTolerance = m_toleranceSpin->value();
+    settings.lineArtMinThickness = m_thicknessSpin->value();
 }

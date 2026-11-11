@@ -6,6 +6,7 @@
 #include "I18n.h"
 
 class QCheckBox;
+class QDoubleSpinBox;
 class QPushButton;
 class QSpinBox;
 class QCheckBox;
@@ -46,4 +47,6 @@ private:
     QSpinBox* m_lineArtMinAreaSpin = nullptr;
     QSpinBox* m_lineArtAdaptiveLimitSpin = nullptr;
     QCheckBox* m_lineArtAdaptiveCheck = nullptr;
+    QDoubleSpinBox* m_lineArtToleranceSpin = nullptr;
+    QDoubleSpinBox* m_lineArtThicknessSpin = nullptr;
 };

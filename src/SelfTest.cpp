@@ -3951,6 +3951,58 @@ int runSelfTest(const QString& reportPath)
         }
     }
     {
+        // 需求：简化容差与最细条带也暴露到界面，能在参数对话框和设置里调。
+        const AppSettings defaults;
+        LineArtDialog dialog(defaults);
+        auto* toleranceSpin = dialog.findChild<QDoubleSpinBox*>(
+            QStringLiteral("LineArtToleranceSpin"));
+        auto* thicknessSpin = dialog.findChild<QDoubleSpinBox*>(
+            QStringLiteral("LineArtThicknessSpin"));
+        check(toleranceSpin && thicknessSpin
+                  && qAbs(toleranceSpin->value() - defaults.lineArtSimplifyTolerance) < 1e-6
+                  && qAbs(thicknessSpin->value() - defaults.lineArtMinThickness) < 1e-6,
+              QStringLiteral("参数对话框显示简化容差与最细条带"),
+              QStringLiteral("tolerance=%1 thickness=%2")
+                  .arg(toleranceSpin ? toleranceSpin->value() : -1.0)
+                  .arg(thicknessSpin ? thicknessSpin->value() : -1.0));
+
+        const LineArtConverter::Options initial = dialog.options();
+        const LineArtConverter::Options converterDefaults;
+        check(qAbs(initial.simplifyTolerance - converterDefaults.simplifyTolerance) < 1e-6
+                  && qAbs(initial.minRegionThickness - converterDefaults.minRegionThickness) < 1e-6,
+              QStringLiteral("默认简化容差与最细条带跟转换器默认一致"),
+              QStringLiteral("tolerance=%1 thickness=%2")
+                  .arg(initial.simplifyTolerance)
+                  .arg(initial.minRegionThickness));
+
+        if (toleranceSpin && thicknessSpin) {
+            toleranceSpin->setValue(1.5);
+            thicknessSpin->setValue(2.0);
+            const LineArtConverter::Options changed = dialog.options();
+            check(qAbs(changed.simplifyTolerance - 1.5) < 1e-6
+                      && qAbs(changed.minRegionThickness - 2.0) < 1e-6,
+                  QStringLiteral("手改简化容差与最细条带即时反映到转换参数"),
+                  QStringLiteral("tolerance=%1 thickness=%2")
+                      .arg(changed.simplifyTolerance)
+                      .arg(changed.minRegionThickness));
+
+            AppSettings written = defaults;
+            dialog.applyToSettings(written);
+            check(qAbs(written.lineArtSimplifyTolerance - 1.5) < 1e-6
+                      && qAbs(written.lineArtMinThickness - 2.0) < 1e-6,
+                  QStringLiteral("简化容差与最细条带会写回设置"),
+                  QStringLiteral("tolerance=%1 thickness=%2")
+                      .arg(written.lineArtSimplifyTolerance)
+                      .arg(written.lineArtMinThickness));
+        }
+
+        SettingsDialog settingsDialog(defaults);
+        check(settingsDialog.findChild<QDoubleSpinBox*>(QStringLiteral("LineArtToleranceSpin"))
+                  && settingsDialog.findChild<QDoubleSpinBox*>(
+                      QStringLiteral("LineArtThicknessSpin")),
+              QStringLiteral("设置对话框也提供简化容差与最细条带"));
+    }
+    {
         // 需求：色块超过阈值时自动降采样；取消勾选就按原处理尺寸硬算。
         QImage manyBlocks(640, 480, QImage::Format_RGB32);
         manyBlocks.fill(Qt::white);

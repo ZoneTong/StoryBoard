@@ -28,6 +28,9 @@ public:
     int lineArtMinRegionArea = 12;
     // 色块过多时自动降低处理尺寸（默认开启），超过 lineArtAdaptiveLimit 块就触发。
     bool lineArtAdaptiveDownscale = true;
+    // 轮廓简化容差与最细条带阈值，单位都是处理尺度像素。
+    qreal lineArtSimplifyTolerance = 0.6;
+    qreal lineArtMinThickness = 1.0;
     int lineArtAdaptiveLimit = 2000;
 
     // 从配置文件读取；配置文件不存在时按默认值写出一份，保证首次运行就有文件。

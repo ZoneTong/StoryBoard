@@ -6,6 +6,7 @@
 #include "LineArtPresets.h"
 
 #include <QCheckBox>
+#include <QDoubleSpinBox>
 #include <QColorDialog>
 #include <QComboBox>
 #include <QDesktopServices>
@@ -177,6 +178,30 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
     m_lineArtMinAreaSpin->setToolTip(uiText(QStringLiteral("Blocks smaller than this area are skipped; lower it to trace tiny props.")));
     lineArtForm->addRow(uiText(QStringLiteral("Smallest block")), m_lineArtMinAreaSpin);
 
+    m_lineArtToleranceSpin = new QDoubleSpinBox(lineArtGroup);
+    m_lineArtToleranceSpin->setObjectName(QStringLiteral("LineArtToleranceSpin"));
+    m_lineArtToleranceSpin->setRange(0.0, 4.0);
+    m_lineArtToleranceSpin->setSingleStep(0.1);
+    m_lineArtToleranceSpin->setDecimals(2);
+    m_lineArtToleranceSpin->setSuffix(QStringLiteral(" px"));
+    m_lineArtToleranceSpin->setValue(m_settings.lineArtSimplifyTolerance);
+    m_lineArtToleranceSpin->setFixedHeight(30);
+    m_lineArtToleranceSpin->setToolTip(uiText(QStringLiteral(
+        "How far the traced outline may deviate from its points; smaller follows pixel steps, larger turns arcs into fewer, straighter segments.")));
+    lineArtForm->addRow(uiText(QStringLiteral("Simplify tolerance")), m_lineArtToleranceSpin);
+
+    m_lineArtThicknessSpin = new QDoubleSpinBox(lineArtGroup);
+    m_lineArtThicknessSpin->setObjectName(QStringLiteral("LineArtThicknessSpin"));
+    m_lineArtThicknessSpin->setRange(0.0, 8.0);
+    m_lineArtThicknessSpin->setSingleStep(0.1);
+    m_lineArtThicknessSpin->setDecimals(2);
+    m_lineArtThicknessSpin->setSuffix(QStringLiteral(" px"));
+    m_lineArtThicknessSpin->setValue(m_settings.lineArtMinThickness);
+    m_lineArtThicknessSpin->setFixedHeight(30);
+    m_lineArtThicknessSpin->setToolTip(uiText(QStringLiteral(
+        "Blocks whose average width is under this value are not traced; 0 keeps every thin band, higher drops antialiasing halos.")));
+    lineArtForm->addRow(uiText(QStringLiteral("Thinnest band")), m_lineArtThicknessSpin);
+
     // 色块过多时自适应降采样，默认勾选；取消勾选就按原始处理尺寸硬算。
     m_lineArtAdaptiveLimitSpin = new QSpinBox(lineArtGroup);
     m_lineArtAdaptiveLimitSpin->setObjectName(QStringLiteral("LineArtAdaptiveLimitSpin"));
@@ -310,6 +335,8 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
         m_settings.lineArtMinRegionArea = m_lineArtMinAreaSpin->value();
         m_settings.lineArtAdaptiveDownscale = m_lineArtAdaptiveCheck->isChecked();
         m_settings.lineArtAdaptiveLimit = m_lineArtAdaptiveLimitSpin->value();
+        m_settings.lineArtSimplifyTolerance = m_lineArtToleranceSpin->value();
+        m_settings.lineArtMinThickness = m_lineArtThicknessSpin->value();
         accept();
     });
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -371,6 +398,8 @@ void SettingsDialog::resetToDefaults()
     m_lineArtMinAreaSpin->setValue(defaults.lineArtMinRegionArea);
     m_lineArtAdaptiveLimitSpin->setValue(defaults.lineArtAdaptiveLimit);
     m_lineArtAdaptiveCheck->setChecked(defaults.lineArtAdaptiveDownscale);
+    m_lineArtToleranceSpin->setValue(defaults.lineArtSimplifyTolerance);
+    m_lineArtThicknessSpin->setValue(defaults.lineArtMinThickness);
     m_settings.brushColor = defaults.brushColor;
     m_settings.canvasColor = defaults.canvasColor;
     refreshColorButton(m_brushColorButton, defaults.brushColor);
