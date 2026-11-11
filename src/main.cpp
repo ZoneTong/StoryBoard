@@ -70,7 +70,6 @@ QToolButton:checked { background: #E9EEFF; border-color: #C9D6FF; color: #2F52C7
 QToolButton:disabled { color: #B4BAC5; }
 /* 主工具栏图标 20px、按钮 30×30（尺寸在 MainWindow 里钉死），与 30px 高的下拉框同基线。 */
 QToolBar#MainToolBar QToolButton { padding: 0px; }
-QToolButton#SmoothStrokeButton { padding: 0px 6px; }
 /* 画笔颜色按钮是分裂按钮：色块区保持 20px 图标，右侧箭头单独占一条窄区，
    画一条分隔线而不是叠一个白框，避免看起来像两个控件压在一起。 */
 QToolButton#ColorButton::menu-button { width: 8px; border: none; border-left: 1px solid #E3E7EE; }

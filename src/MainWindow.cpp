@@ -974,12 +974,13 @@ void MainWindow::CreateBrushToolbar(QToolBar* mainBar)
     // 必须显式设置，否则图标会按样式默认尺寸绘制、比旁边按钮大一圈。
     smoothButton->setIconSize(QSize(kToolBarIconSize, kToolBarIconSize));
     smoothButton->setFixedHeight(kToolBarButtonSize);
-    smoothButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    // 只显示图标，与相邻按钮等宽；功能靠悬停提示说明。
+    smoothButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
     smoothButton->setToolTip(uiText(QStringLiteral("Smooth strokes once")));
     mainBar->addWidget(smoothButton);
 
     auto* smoothingLabel = new QLabel(uiText(QStringLiteral("Tolerance")), mainBar);
-    // 平滑按钮自己已经带文字，标签紧贴其后即可，用紧凑样式避免两段留白叠成一条长缝。
+    // 紧跟图标按钮的标签，留白收到最小，避免和按钮内边距叠成一条缝。
     smoothingLabel->setObjectName(QStringLiteral("ToolBarLabelTight"));
     mainBar->addWidget(smoothingLabel);
 

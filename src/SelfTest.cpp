@@ -3406,7 +3406,8 @@ int runSelfTest(const QString& reportPath)
             QStringLiteral("FillButton"),
             QStringLiteral("FillColorButton"),
             QStringLiteral("StrokeColorButton"),
-            QStringLiteral("ColorButton")};
+            QStringLiteral("ColorButton"),
+            QStringLiteral("SmoothStrokeButton")};
         QString iconButtonReport;
         bool iconButtonsUniform = true;
         for (const QString& name : iconButtonNames) {
@@ -3420,13 +3421,18 @@ int runSelfTest(const QString& reportPath)
                                                                            : MainWindow::kToolBarButtonSize;
             const QSize expected(expectedWidth, MainWindow::kToolBarButtonSize);
             const QSize expectedIcon(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize);
-            iconButtonReport += QStringLiteral("%1=%2x%3/%4x%5;")
+            iconButtonReport += QStringLiteral("%1=%2x%3/%4x%5/%6;")
                                     .arg(name)
                                     .arg(button->width())
                                     .arg(button->height())
                                     .arg(button->iconSize().width())
-                                    .arg(button->iconSize().height());
-            if (button->size() != expected || button->iconSize() != expectedIcon)
+                                    .arg(button->iconSize().height())
+                                    .arg(button->toolButtonStyle() == Qt::ToolButtonIconOnly
+                                             ? QStringLiteral("icon")
+                                             : QStringLiteral("withtext"));
+            // 平滑按钮也只要图标：统一尺寸之外再校验它没有退化成图标+文字。
+            if (button->size() != expected || button->iconSize() != expectedIcon
+                || button->toolButtonStyle() != Qt::ToolButtonIconOnly)
                 iconButtonsUniform = false;
         }
         check(iconButtonsUniform,
