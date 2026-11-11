@@ -920,7 +920,7 @@ void MainWindow::CreateBrushToolbar(QToolBar* mainBar)
 
     m_widthCombo = new QComboBox(mainBar);
     m_widthCombo->setObjectName(QStringLiteral("BrushWidthCombo"));
-    m_widthCombo->setFixedWidth(96);
+    m_widthCombo->setFixedWidth(70);
     m_widthCombo->setFixedHeight(28);
     m_widthCombo->setToolTip(uiText(QStringLiteral("Brush width")));
     for (int width : brushWidthPresets()) {
@@ -965,7 +965,7 @@ void MainWindow::CreateBrushToolbar(QToolBar* mainBar)
     m_smoothingSpin->setObjectName(QStringLiteral("BrushSmoothingSpin"));
     m_smoothingSpin->setRange(0, 30);
     m_smoothingSpin->setSuffix(QStringLiteral(" px"));
-    m_smoothingSpin->setFixedWidth(78);
+    m_smoothingSpin->setFixedWidth(64);
     m_smoothingSpin->setFixedHeight(28);
     m_smoothingSpin->setValue(m_settings.strokeSmoothing);
     m_smoothingSpin->setToolTip(

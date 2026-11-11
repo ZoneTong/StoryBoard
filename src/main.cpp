@@ -106,7 +106,7 @@ QDialog { background: #F7F8FA; }
 QGroupBox { background: #FFFFFF; border: 1px solid #E3E7EE; border-radius: 10px; margin-top: 10px; padding-top: 6px; font-weight: 600; }
 QGroupBox::title { subcontrol-origin: margin; left: 14px; padding: 0 6px; color: #374151; }
 QLineEdit, QComboBox, QFontComboBox { background: #FFFFFF; border: 1px solid #DDE2EA; border-radius: 6px; padding: 5px 8px; min-height: 20px; color: #2B2F36; }
-QComboBox, QFontComboBox { padding-right: 26px; }
+QComboBox, QFontComboBox { padding-right: 0px; }
 QLineEdit:focus, QComboBox:focus, QFontComboBox:focus { border-color: #7C9BFF; }
 QPlainTextEdit { background: #FFFFFF; border: 1px solid #DDE2EA; border-radius: 6px; padding: 7px 8px; color: #2B2F36; selection-background-color: #DCE6FF; }
 QPlainTextEdit:focus { border-color: #7C9BFF; }
