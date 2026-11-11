@@ -30,8 +30,9 @@ struct Options {
     // 相近颜色直接并进同一个主色；前者发生在连通域之后，只动空间上相邻的碎块，
     // 因此可以放心把 paletteMergeDistance 调小来保住小道具，再用这里消除碎线。
     qreal adjacentMergeDistance = 48.0;
-    // 最多描多少个色块；超出的色块直接丢弃，并在 Result::truncated 里报告。
-    int maxRegions = 1200;
+    // 最多描多少个色块。0（默认）表示不设上限，图里有多少块就描多少块；
+    // 只在调用方显式给出正数时才截断，并在 Result::truncated 里报告。
+    int maxRegions = 0;
     // 轮廓简化容差（处理尺度像素）。线稿按折线绘制，容差留小一点，圆弧才不像多边形；
     // 太小的话像素阶梯又会被当成真实拐点留下来。
     qreal simplifyTolerance = 0.6;
@@ -58,7 +59,7 @@ struct Result {
     QVector<Outline> outlines;
     // 识别到的色块数量（含被当作背景跳过的整片底色）。
     int regionCount = 0;
-    // 色块太多，只描了前 maxRegions 个。
+    // 只有显式设置了 maxRegions 上限且真的截断时才为 true。
     bool truncated = false;
 };
 

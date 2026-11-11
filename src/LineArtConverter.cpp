@@ -498,8 +498,8 @@ Result extract(const QImage& source, const Options& options)
     std::stable_sort(candidates.begin(), candidates.end(), [&regions](int first, int second) {
         return regions.at(first).area > regions.at(second).area;
     });
-    if (candidates.size() > qMax(1, options.maxRegions)) {
-        candidates.resize(qMax(1, options.maxRegions));
+    if (options.maxRegions > 0 && candidates.size() > options.maxRegions) {
+        candidates.resize(options.maxRegions);
         result.truncated = true;
     }
     candidates.squeeze();

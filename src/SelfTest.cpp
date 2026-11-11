@@ -4836,9 +4836,32 @@ int runSelfTest(const QString& reportPath)
             painter.setBrush(QColor(QStringLiteral("#F59E0B")));
             painter.drawRoundedRect(QRectF(230.0, 90.0, 120.0, 90.0), 12.0, 12.0);
         }
+        // 色块数量上限已放开：旧上限是 1200 块，超过的也要全部描出来。
+        QImage manyBlocks(640, 480, QImage::Format_RGB32);
+        manyBlocks.fill(Qt::white);
+        {
+            QPainter painter(&manyBlocks);
+            painter.setPen(Qt::NoPen);
+            const QColor palette[] = { QColor(220, 60, 60), QColor(60, 90, 200),
+                                       QColor(40, 160, 90), QColor(210, 180, 50) };
+            for (int row = 0; row < 30; ++row) {
+                for (int col = 0; col < 40; ++col) {
+                    painter.fillRect(QRect(col * 16 + 1, row * 16 + 1, 13, 13),
+                                     palette[(row + col) % 4]);
+                }
+            }
+        }
+        const LineArtConverter::Result manyResult = LineArtConverter::extract(manyBlocks);
+        check(manyResult.ok && !manyResult.truncated && manyResult.outlines.size() >= 1200,
+              QStringLiteral("色块超过 1200 块时不再截断"),
+              QStringLiteral("outlines=%1 regions=%2 truncated=%3")
+                  .arg(manyResult.outlines.size())
+                  .arg(manyResult.regionCount)
+                  .arg(manyResult.truncated ? 1 : 0));
+
         const LineArtConverter::Result gradientResult = LineArtConverter::extract(gradient);
-        check(gradientResult.ok && gradientResult.outlines.size() <= 120,
-              QStringLiteral("渐变底色的图片线稿数量有界"),
+        check(gradientResult.ok && !gradientResult.truncated && !gradientResult.outlines.isEmpty(),
+              QStringLiteral("渐变底色的图片线稿不再按数量截断"),
               QStringLiteral("outlines=%1 regions=%2 truncated=%3")
                   .arg(gradientResult.outlines.size())
                   .arg(gradientResult.regionCount)

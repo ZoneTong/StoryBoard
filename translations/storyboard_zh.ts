@@ -1593,10 +1593,6 @@ Use the checkbox to show or hide it.</source>
 %1</translation>
     </message>
     <message>
-      <source>The image has too many color blocks; only the first %1 outlines were converted.</source>
-      <translation>图片色块过多，只转换了前 %1 条轮廓。</translation>
-    </message>
-    <message>
       <source>The image is empty.</source>
       <translation>图片内容为空。</translation>
     </message>

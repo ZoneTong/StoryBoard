@@ -1773,12 +1773,7 @@ void MainWindow::importOutlineImageFile(const QString& file, const LineArtConver
 
     statusBar()->showMessage(uiText(QStringLiteral("%1 stroke(s) created from the image outlines")).arg(items.size()),
                              5000);
-    if (traced.truncated) {
-        QMessageBox::information(
-            this, uiText(QStringLiteral("Import outline image")),
-            uiText(QStringLiteral("The image has too many color blocks; only the first %1 outlines were converted."))
-                .arg(items.size()));
-    }
+    // 色块数量上限已放开：有多少块就描多少块，不再提示“只转换了前 N 个”。
 }
 
 void MainWindow::importImageFiles(const QStringList& files)

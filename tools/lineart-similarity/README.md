@@ -61,7 +61,7 @@ levels=6 colors=24 merge=48 adjmerge=48 minarea=12 minthick=1.0 tol=0.6 maxregio
 扫参结论：
 
 - `colorLevels=6` 最优（8 以上会把明暗层次切成碎块，precision 掉到 0.75 左右）。
-- `maxRegions` 早期设 800 会把小道具截掉（这张图本来有 900 块），调到 1200 后 recall 从 0.91 升到 0.96。
+- `maxRegions` 早期设 800 会把小道具截掉（这张图本来有 900 块），调到 1200 后 recall 从 0.91 升到 0.96；现在产品里已默认不设上限（`maxRegions = 0`），这个参数只留给实验台复现旧结果。
 - `adjacentMergeDistance`（相邻且近似色块并成一块）在 44–52 是安全区：48 时 f1 0.933 且小道具保留最好；
   56 起结构开始糊，64 时 recall 掉到 0.828，88 以上几乎只剩大块（recall 0.198）。
 - 相邻合并按“原始色差”排序逐个并，不用合并后的综合色做链式扩散；后者会把整片区域滚成一块。
