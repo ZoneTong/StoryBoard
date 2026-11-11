@@ -3912,6 +3912,86 @@ int runSelfTest(const QString& reportPath)
         }
     }
     {
+        // 需求：色块过多时自适应降采样，默认勾选、可取消。
+        const AppSettings defaults;
+        LineArtDialog dialog(defaults);
+        auto* adaptiveCheck = dialog.findChild<QCheckBox*>(
+            QStringLiteral("LineArtAdaptiveCheck"));
+        auto* limitSpin = dialog.findChild<QSpinBox*>(
+            QStringLiteral("LineArtAdaptiveLimitSpin"));
+        check(adaptiveCheck && adaptiveCheck->isChecked() && limitSpin
+                  && limitSpin->value() == defaults.lineArtAdaptiveLimit && limitSpin->isEnabled(),
+              QStringLiteral("参数对话框默认勾选自适应降采样"),
+              QStringLiteral("checked=%1 limit=%2 enabled=%3")
+                  .arg(adaptiveCheck && adaptiveCheck->isChecked() ? 1 : 0)
+                  .arg(limitSpin ? limitSpin->value() : -1)
+                  .arg(limitSpin && limitSpin->isEnabled() ? 1 : 0));
+
+        const LineArtConverter::Options initial = dialog.options();
+        check(initial.adaptiveDownscale
+                  && initial.adaptiveRegionLimit == defaults.lineArtAdaptiveLimit,
+              QStringLiteral("自适应降采样设置会交给转换器"),
+              QStringLiteral("adaptive=%1 limit=%2")
+                  .arg(initial.adaptiveDownscale ? 1 : 0)
+                  .arg(initial.adaptiveRegionLimit));
+
+        if (adaptiveCheck && limitSpin) {
+            adaptiveCheck->setChecked(false);
+            check(!dialog.options().adaptiveDownscale && !limitSpin->isEnabled(),
+                  QStringLiteral("取消勾选后自适应降采样关闭且阈值不可编辑"),
+                  QStringLiteral("adaptive=%1 enabled=%2")
+                      .arg(dialog.options().adaptiveDownscale ? 1 : 0)
+                      .arg(limitSpin->isEnabled() ? 1 : 0));
+
+            AppSettings written = defaults;
+            dialog.applyToSettings(written);
+            check(!written.lineArtAdaptiveDownscale,
+                  QStringLiteral("取消勾选会写回设置"),
+                  QString::number(written.lineArtAdaptiveDownscale ? 1 : 0));
+        }
+    }
+    {
+        // 需求：色块超过阈值时自动降采样；取消勾选就按原处理尺寸硬算。
+        QImage manyBlocks(640, 480, QImage::Format_RGB32);
+        manyBlocks.fill(Qt::white);
+        {
+            QPainter painter(&manyBlocks);
+            painter.setPen(Qt::NoPen);
+            const QColor palette[] = { QColor(220, 60, 60), QColor(60, 90, 200),
+                                       QColor(40, 160, 90), QColor(210, 180, 50) };
+            for (int row = 0; row < 30; ++row) {
+                for (int col = 0; col < 40; ++col) {
+                    painter.fillRect(QRect(col * 16 + 1, row * 16 + 1, 13, 13),
+                                     palette[(row + col) % 4]);
+                }
+            }
+        }
+
+        LineArtConverter::Options adaptive;
+        adaptive.adaptiveDownscale = true;
+        adaptive.adaptiveRegionLimit = 300;
+        const LineArtConverter::Result downscaled =
+            LineArtConverter::extract(manyBlocks, adaptive);
+        check(downscaled.ok && downscaled.imageSize.height() < 480,
+              QStringLiteral("色块超过阈值时自动降低处理尺寸"),
+              QStringLiteral("size=%1x%2 candidate=%3 outlines=%4")
+                  .arg(downscaled.imageSize.width())
+                  .arg(downscaled.imageSize.height())
+                  .arg(downscaled.candidateCount)
+                  .arg(downscaled.outlines.size()));
+
+        LineArtConverter::Options keepSize = adaptive;
+        keepSize.adaptiveDownscale = false;
+        const LineArtConverter::Result fullSize =
+            LineArtConverter::extract(manyBlocks, keepSize);
+        check(fullSize.ok && fullSize.imageSize == QSize(640, 480) && !fullSize.truncated,
+              QStringLiteral("取消自适应降采样后按原处理尺寸描边"),
+              QStringLiteral("size=%1x%2 outlines=%3")
+                  .arg(fullSize.imageSize.width())
+                  .arg(fullSize.imageSize.height())
+                  .arg(fullSize.outlines.size()));
+    }
+    {
         // 需求：线稿化要给几档预设，一键换掉全部参数；手改任一项就回到“自定义”。
         const AppSettings defaults;
         SettingsDialog dialog(defaults);
