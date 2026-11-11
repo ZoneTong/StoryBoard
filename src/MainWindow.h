@@ -1,14 +1,14 @@
 #pragma once
 
+#include "CanvasTypes.h"
+#include "Settings.h"
+#include "ShapeItem.h"
+
 #include <QColor>
 #include <QMainWindow>
 #include <QPointF>
 #include <QPointer>
 #include <QString>
-
-#include "CanvasTypes.h"
-#include "Settings.h"
-#include "ShapeItem.h"
 
 class CanvasScene;
 class CanvasView;
@@ -26,10 +26,9 @@ class QToolButton;
 class QUndoStack;
 enum class ShapeType;
 
-class MainWindow : public QMainWindow
-{
+class MainWindow : public QMainWindow {
     Q_OBJECT
-public:
+  public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow() override;
 
@@ -40,12 +39,12 @@ public:
     // 按当前语言刷新整个界面文字（设置里切换语言时调用）。
     void applyUiLanguage();
 
-protected:
+  protected:
     void closeEvent(QCloseEvent* event) override;
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dropEvent(QDropEvent* event) override;
 
-private slots:
+  private slots:
     void newCanvas();
     void openCanvasDialog();
     bool saveCanvas();
@@ -68,7 +67,7 @@ private slots:
     void updateModeUi();
     void openCanvasesFolder();
 
-private:
+  private:
     void createActions();
     void createShapeMenu();
     void createLayerDock();
@@ -76,6 +75,8 @@ private:
     void createToolBars();
     void createStatusBar();
     void connectSignals();
+    void CreateBrushToolbar(QToolBar* mainBar);
+    void CreateFillToolbar(QToolBar* mainBar);
 
     bool maybeSave();
     bool loadCanvasFile(const QString& path, bool showErrors);

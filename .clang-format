@@ -1,0 +1,51 @@
+# 基于华为 C++ 编码规范（公开信息整理）
+Language: Cpp
+BasedOnStyle: LLVM
+
+# 缩进：使用 4 个空格，禁止 Tab
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+# 行宽限制
+ColumnLimit: 120
+
+# 大括号：函数左大括号换行，控制语句不换行
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: true
+  AfterControlStatement: false
+  AfterClass: false
+  AfterStruct: false
+  AfterEnum: false
+  AfterNamespace: false
+  BeforeElse: false
+  BeforeCatch: false
+
+# 强制控制语句使用大括号（即使只有一条语句）
+InsertBraces: true
+
+# 包含头文件排序
+SortIncludes: true
+IncludeBlocks: Regroup
+
+# 指针/引用对齐方式（华为规范未强制，此处采用常见左对齐）
+PointerAlignment: Left
+DerivePointerAlignment: false
+
+# 短函数与短语句
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: false
+
+# 运算符与空格
+SpaceBeforeParens: ControlStatements
+SpacesInAngles: Never
+SpacesInParens: Never
+
+# 注释对齐
+AlignTrailingComments: true
+
+# 连续空行上限
+MaxEmptyLinesToKeep: 2

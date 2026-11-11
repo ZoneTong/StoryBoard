@@ -61,7 +61,6 @@ QMenu::item:selected { background: #EBF0FF; color: #1F2937; }
 QMenu::item:disabled { color: #A8AFBB; }
 QMenu::separator { height: 1px; background: #EDF0F4; margin: 5px 8px; }
 QToolBar#MainToolBar { background: #FFFFFF; border: none; border-bottom: 1px solid #E3E7EE; spacing: 3px; padding: 6px 10px; }
-QToolBar#BrushToolBar, QToolBar#FillToolBar { background: #FFFFFF; border: none; border-bottom: 1px solid #E3E7EE; spacing: 3px; padding: 6px 4px; }
 QToolBar#ModeToolBar { background: #FFFFFF; border: none; border-right: 1px solid #E3E7EE; spacing: 8px; padding: 12px 7px; }
 QToolBar::separator { background: #E4E8EF; width: 1px; margin: 5px 6px; }
 QToolButton { border: 1px solid transparent; border-radius: 8px; padding: 5px; color: #2B2F36; }
