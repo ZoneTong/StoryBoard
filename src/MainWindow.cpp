@@ -507,7 +507,7 @@ void MainWindow::createActions()
                    uiText(QStringLiteral("Brush mode: hold the left button to draw freely (B)")));
     m_editModeAct =
         makeAction(this, IconId::Edit, uiText(QStringLiteral("Edit mode")), QKeySequence(QStringLiteral("E")),
-                   uiText(QStringLiteral("Edit mode: select, move and resize items (E)")));
+                   uiText(QStringLiteral("Edit mode: select, move and resize items; hold Ctrl to pan the view (E)")));
     m_textModeAct =
         makeAction(this, IconId::Text, uiText(QStringLiteral("Text mode")), QKeySequence(QStringLiteral("T")),
                    uiText(QStringLiteral("Text mode: click the canvas to place a text item (T)")));
@@ -1151,7 +1151,8 @@ void MainWindow::updateModeUi()
         case ToolMode::Edit:
             m_hintLabel->setText(uiText(
                 QStringLiteral("Edit mode: items on visible, unlocked layers can be edited · drag or box-select · "
-                               "resize with handles · drag canvas edges to resize the canvas · Delete to remove")));
+                               "resize with handles · hold Ctrl to drag / wheel zoom the whole view · "
+                               "drag canvas edges to resize the canvas · Delete to remove")));
             break;
         case ToolMode::Text:
             m_hintLabel->setText(uiText(
@@ -2380,6 +2381,8 @@ void MainWindow::showAbout()
         QStringLiteral("Layers: the checkbox in the right panel toggles visibility, the lock button locks a layer; "
                        "layers and items both support multi-select"),
         QStringLiteral("Insert → Shapes: quickly insert rectangles, ellipses, arrows, braces, speech bubbles and more"),
+        QStringLiteral("Mouse: wheel zooms, Space / middle button pans in any mode; in edit mode holding Ctrl "
+                       "and dragging also pans the whole view"),
         QStringLiteral("Ctrl+0 returns to the overview, Ctrl+Z / Ctrl+Y undo / redo"),
     };
     for (const QString& operation : operations) {

@@ -1784,6 +1784,68 @@ int runSelfTest(const QString& reportPath)
         check(drawnStroke->pos() != viewPosBefore, QStringLiteral("重做拖动移动图元"));
     }
 
+    {
+        // 编辑模式按住 Ctrl：左键拖动平移整体视图，不移动图元、也不清空已有选择。
+        const QPointF ctrlDragItemBefore = drawnStroke ? drawnStroke->pos() : QPointF();
+        const int ctrlDragSelectionBefore = viewScene.selectedItems().size();
+        const QPointF ctrlDragCenterBefore = view.mapToScene(view.viewport()->rect().center());
+        const QPoint ctrlDragStart = view.mapFromScene(
+            drawnStroke ? drawnStroke->sceneContentRect().center() : QPointF(500.0, 400.0));
+        sendMouseEvent(view.viewport(), QEvent::MouseButtonPress, ctrlDragStart,
+                       Qt::LeftButton, Qt::LeftButton, Qt::ControlModifier);
+        sendMouseEvent(view.viewport(), QEvent::MouseMove, ctrlDragStart + QPoint(70, 45),
+                       Qt::NoButton, Qt::LeftButton, Qt::ControlModifier);
+        sendMouseEvent(view.viewport(), QEvent::MouseButtonRelease, ctrlDragStart + QPoint(70, 45),
+                       Qt::LeftButton, Qt::NoButton, Qt::ControlModifier);
+        QApplication::processEvents();
+        const QPointF ctrlDragCenterAfter = view.mapToScene(view.viewport()->rect().center());
+        check(QLineF(ctrlDragCenterBefore, ctrlDragCenterAfter).length() > 1.0,
+              QStringLiteral("编辑模式按住 Ctrl 拖动平移整体视图"),
+              QStringLiteral("before=%1,%2 after=%3,%4")
+                  .arg(ctrlDragCenterBefore.x()).arg(ctrlDragCenterBefore.y())
+                  .arg(ctrlDragCenterAfter.x()).arg(ctrlDragCenterAfter.y()));
+        check(drawnStroke && drawnStroke->pos() == ctrlDragItemBefore,
+              QStringLiteral("编辑模式 Ctrl 拖动不移动图元"));
+        check(viewScene.selectedItems().size() == ctrlDragSelectionBefore,
+              QStringLiteral("编辑模式 Ctrl 拖动不清空已有选择"));
+    }
+
+    if (drawnStroke) {
+        // Ctrl 只是点击（没有拖动）时仍按点选处理，保留原有的“Ctrl 点击切换选中”。
+        const bool ctrlClickSelectedBefore = drawnStroke->isSelected();
+        const QPoint ctrlClickPoint = view.mapFromScene(drawnStroke->sceneContentRect().center());
+        sendMouseEvent(view.viewport(), QEvent::MouseButtonPress, ctrlClickPoint,
+                       Qt::LeftButton, Qt::LeftButton, Qt::ControlModifier);
+        sendMouseEvent(view.viewport(), QEvent::MouseButtonRelease, ctrlClickPoint,
+                       Qt::LeftButton, Qt::NoButton, Qt::ControlModifier);
+        QApplication::processEvents();
+        check(drawnStroke->isSelected() != ctrlClickSelectedBefore,
+              QStringLiteral("编辑模式 Ctrl 点击切换图元选中"));
+        sendMouseEvent(view.viewport(), QEvent::MouseButtonPress, ctrlClickPoint,
+                       Qt::LeftButton, Qt::LeftButton, Qt::ControlModifier);
+        sendMouseEvent(view.viewport(), QEvent::MouseButtonRelease, ctrlClickPoint,
+                       Qt::LeftButton, Qt::NoButton, Qt::ControlModifier);
+        QApplication::processEvents();
+        check(drawnStroke->isSelected() == ctrlClickSelectedBefore,
+              QStringLiteral("编辑模式再次 Ctrl 点击恢复图元选中状态"));
+
+        // Ctrl + 滚轮同样缩放整体视图，且尺寸不随缩放改变。
+        const qreal ctrlWheelZoomBefore = view.zoom();
+        const QSizeF ctrlWheelSizeBefore = drawnStroke->contentSize();
+        const QPoint wheelCenter = view.viewport()->rect().center();
+        QWheelEvent ctrlWheel(QPointF(wheelCenter),
+                              QPointF(view.viewport()->mapToGlobal(wheelCenter)),
+                              QPoint(), QPoint(0, 120), Qt::NoButton, Qt::ControlModifier,
+                              Qt::ScrollUpdate, false);
+        QApplication::sendEvent(view.viewport(), &ctrlWheel);
+        QApplication::processEvents();
+        check(view.zoom() > ctrlWheelZoomBefore,
+              QStringLiteral("编辑模式 Ctrl 滚轮缩放整体视图"),
+              QStringLiteral("before=%1 after=%2").arg(ctrlWheelZoomBefore).arg(view.zoom()));
+        check(drawnStroke->contentSize() == ctrlWheelSizeBefore,
+              QStringLiteral("编辑模式 Ctrl 滚轮缩放不修改图元尺寸"));
+    }
+
     if (drawnStroke) {
         const QSizeF sizeBeforeResize = drawnStroke->contentSize();
         const QPoint handleScreen = view.mapFromScene(
