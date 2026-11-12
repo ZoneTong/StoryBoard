@@ -3154,7 +3154,7 @@ int runSelfTest(const QString& reportPath)
 
         // 需求：原来的“导入图片”改名“插入图片”，并在“打开画布”后面加入“导入图片线稿化”。
         QMenu* fileMenu = nullptr;
-        QMenu* canvasMenu = nullptr;
+        bool canvasMenuGone = true;
         for (QAction* action : window.menuBar()->actions()) {
             QMenu* menu = action ? action->menu() : nullptr;
             if (!menu)
@@ -3162,8 +3162,10 @@ int runSelfTest(const QString& reportPath)
             if (menu->title() == QStringLiteral("文件(&F)"))
                 fileMenu = menu;
             else if (menu->title() == QStringLiteral("画布(&C)"))
-                canvasMenu = menu;
+                canvasMenuGone = false;
         }
+        // 需求：画布菜单已并入插入菜单，菜单栏不再有画布一级菜单。
+        check(canvasMenuGone, QStringLiteral("菜单栏不再单独出现画布菜单"));
         if (fileMenu) {
             QStringList entries;
             for (QAction* action : fileMenu->actions()) {
@@ -3175,46 +3177,57 @@ int runSelfTest(const QString& reportPath)
             check(openIndex >= 0 && lineArtIndex == openIndex + 1,
                   QStringLiteral("导入图片线稿化紧跟在打开画布后面"),
                   entries.join(QStringLiteral(" / ")));
-            check(entries.contains(QStringLiteral("插入图片…"))
+            check(!entries.contains(QStringLiteral("插入图片…"))
                       && !entries.contains(QStringLiteral("导入图片…")),
-                  QStringLiteral("原来的导入图片改名为插入图片"),
-                  entries.join(QStringLiteral(" / ")));
-        }
-        if (canvasMenu) {
-            QStringList entries;
-            for (QAction* action : canvasMenu->actions()) {
-                if (action && !action->isSeparator())
-                    entries.append(action->text());
-            }
-            check(entries.contains(QStringLiteral("插入图片…"))
-                      && entries.contains(QStringLiteral("导入图片线稿化")),
-                  QStringLiteral("画布菜单同时提供插入图片与导入图片线稿化"),
+                  QStringLiteral("插入图片只在插入菜单出现"),
                   entries.join(QStringLiteral(" / ")));
         }
 
-        // 需求：画板菜单里也有“打开画布”，其后同样要有“导入图片线稿化”。
-        QMenu* boardMenu = nullptr;
+        // 需求：视图一级菜单紧跟文件，排在编辑之前。
+        {
+            QStringList menuOrder;
+            for (QAction* action : window.menuBar()->actions()) {
+                QMenu* menu = action ? action->menu() : nullptr;
+                if (menu)
+                    menuOrder.append(menu->title());
+            }
+            const int fileIndex = menuOrder.indexOf(QStringLiteral("文件(&F)"));
+            const int viewIndex = menuOrder.indexOf(QStringLiteral("视图(&V)"));
+            const int editIndex = menuOrder.indexOf(QStringLiteral("编辑(&E)"));
+            check(fileIndex >= 0 && viewIndex == fileIndex + 1 && editIndex == viewIndex + 1,
+                  QStringLiteral("视图菜单紧跟文件并排在编辑之前"),
+                  menuOrder.join(QStringLiteral(" / ")));
+        }
+
+        // 需求：画板不再作为父菜单存在，它的设置、最近画布与画布文件夹直接并入文件菜单，位于退出之上。
+        bool boardTopLevel = false;
         for (QAction* action : window.menuBar()->actions()) {
             QMenu* menu = action ? action->menu() : nullptr;
             if (menu && menu->title() == QStringLiteral("画板(&B)"))
-                boardMenu = menu;
+                boardTopLevel = true;
         }
-        if (boardMenu) {
+        check(!boardTopLevel && window.findChild<QMenu*>(QStringLiteral("BoardMenu")) == nullptr,
+              QStringLiteral("菜单栏不再出现画板菜单及其子菜单对象"));
+        if (fileMenu) {
+            const QList<QAction*> fileActions = fileMenu->actions();
+            int settingsIndex = -1;
+            int folderIndex = -1;
+            int quitIndex = -1;
             QStringList entries;
-            for (QAction* action : boardMenu->actions()) {
-                if (action && !action->isSeparator())
-                    entries.append(action->text());
+            for (int i = 0; i < fileActions.size(); ++i) {
+                QAction* action = fileActions.at(i);
+                if (!action || action->isSeparator())
+                    continue;
+                entries.append(action->text());
+                if (action->text() == QStringLiteral("设置…"))
+                    settingsIndex = i;
+                else if (action->text() == QStringLiteral("打开画布文件夹"))
+                    folderIndex = i;
+                else if (action->text().startsWith(QStringLiteral("退出")))
+                    quitIndex = i;
             }
-            // 需求：画板菜单不再重复文件菜单里已有的画布操作。
-            check(!entries.contains(QStringLiteral("打开画布…"))
-                      && !entries.contains(QStringLiteral("保存画布"))
-                      && !entries.contains(QStringLiteral("画布另存为…"))
-                      && !entries.contains(QStringLiteral("导入图片线稿化")),
-                  QStringLiteral("画板菜单不再重复文件菜单的保存与打开项"),
-                  entries.join(QStringLiteral(" / ")));
-            check(entries.contains(QStringLiteral("设置…"))
-                      && entries.contains(QStringLiteral("打开画布文件夹")),
-                  QStringLiteral("画板菜单保留设置与画布文件夹入口"),
+            check(settingsIndex >= 0 && folderIndex > settingsIndex && quitIndex > folderIndex,
+                  QStringLiteral("设置与画布文件夹直接出现在文件菜单，且都在退出之上"),
                   entries.join(QStringLiteral(" / ")));
         }
 
@@ -3573,32 +3586,42 @@ int runSelfTest(const QString& reportPath)
             }
         }
 
-        QMenu* styleMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("StyleMenu"));
-        QMenu* brushStyleMenu = shapeWindow.findChild<QMenu*>(
-            QStringLiteral("BrushStyleMenu"));
+        // 需求：“画笔样式”已独立为一级菜单“画笔”，“平滑笔画”也归到该菜单；
+        // 填充样式与填充／描边颜色并入“插入”菜单，紧跟在常见图形之后。
+        QMenu* brushMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("BrushMenu"));
         QMenu* fillStyleMenu = shapeWindow.findChild<QMenu*>(
             QStringLiteral("FillStyleMenu"));
-        check(styleMenu && styleMenu->actions().size() == 4,
-              QStringLiteral("样式菜单包含画笔样式、填充样式和两个独立颜色项"),
-              QStringLiteral("actions=%1").arg(styleMenu ? styleMenu->actions().size() : 0));
-        QList<QAction*> styleActions;
-        if (styleMenu)
-            styleActions = styleMenu->actions();
+        bool brushIsTopLevel = false;
+        for (QAction* action : shapeWindow.menuBar()->actions()) {
+            QMenu* menu = action ? action->menu() : nullptr;
+            if (menu && menu->objectName() == QStringLiteral("BrushMenu"))
+                brushIsTopLevel = true;
+        }
+        check(brushMenu && brushIsTopLevel && brushMenu->title() == QStringLiteral("画笔(&B)"),
+              QStringLiteral("画笔是一级菜单"),
+              brushMenu ? brushMenu->title() : QStringLiteral("missing"));
+        bool styleMenuGone = shapeWindow.findChild<QMenu*>(QStringLiteral("StyleMenu")) == nullptr
+            && shapeWindow.findChild<QMenu*>(QStringLiteral("BrushStyleMenu")) == nullptr;
+        check(styleMenuGone, QStringLiteral("样式菜单与画笔样式子菜单不再存在"));
+
         QList<QAction*> brushActions;
-        if (brushStyleMenu)
-            brushActions = brushStyleMenu->actions();
+        if (brushMenu)
+            brushActions = brushMenu->actions();
         QList<QAction*> fillActions;
         if (fillStyleMenu)
             fillActions = fillStyleMenu->actions();
         bool brushHasColor = false;
         bool brushHasOutline = false;
-        bool brushHasWidth = brushStyleMenu
-            && brushStyleMenu->findChild<QMenu*>(QStringLiteral("BrushWidthMenu"));
+        bool brushHasSmooth = false;
+        bool brushHasWidth = brushMenu
+            && brushMenu->findChild<QMenu*>(QStringLiteral("BrushWidthMenu"));
         for (QAction* action : brushActions) {
             if (action->objectName() == QStringLiteral("BrushColorAction"))
                 brushHasColor = true;
             else if (action->objectName() == QStringLiteral("OutlineColorAction"))
                 brushHasOutline = true;
+            if (action->text() == QStringLiteral("平滑笔画"))
+                brushHasSmooth = true;
         }
         bool fillHasColor = false;
         int fillMenuItemCount = 0;
@@ -3609,26 +3632,62 @@ int runSelfTest(const QString& reportPath)
             if (action->objectName() == QStringLiteral("FillColorAction"))
                 fillHasColor = true;
         }
-        check(brushStyleMenu && brushHasColor && brushHasWidth && !brushHasOutline,
-              QStringLiteral("画笔样式子菜单包含画笔颜色和粗细选项"));
+        check(brushMenu && brushHasColor && brushHasWidth && brushHasSmooth && !brushHasOutline,
+              QStringLiteral("画笔菜单包含画笔颜色、粗细选项与平滑笔画"));
         check(fillStyleMenu && fillMenuItemCount == 7 && !fillHasColor,
               QStringLiteral("填充样式子菜单只保留填充样式"),
               QStringLiteral("actions=%1").arg(fillMenuItemCount));
 
-        int fillStyleMenuIndex = styleActions.indexOf(fillStyleMenu ? fillStyleMenu->menuAction() : nullptr);
+        QMenu* insertMenu = nullptr;
+        for (QAction* action : shapeWindow.menuBar()->actions()) {
+            QMenu* menu = action ? action->menu() : nullptr;
+            if (menu && menu->objectName() == QStringLiteral("InsertMenu"))
+                insertMenu = menu;
+        }
+        QList<QAction*> insertActions;
+        if (insertMenu)
+            insertActions = insertMenu->actions();
+        {
+            // 需求：插入图片只归插入菜单，菜单栏里不再重复。
+            QStringList insertEntries;
+            for (QAction* action : insertActions) {
+                if (action && !action->isSeparator())
+                    insertEntries.append(action->text());
+            }
+            check(insertEntries.contains(QStringLiteral("插入图片…")),
+                  QStringLiteral("插入菜单提供插入图片"),
+                  insertEntries.join(QStringLiteral(" / ")));
+            // 需求：原画布菜单的背景项已并入插入菜单。
+            check(insertEntries.contains(QStringLiteral("替换背景图片…"))
+                      && insertEntries.contains(QStringLiteral("设置背景颜色…"))
+                      && insertEntries.contains(QStringLiteral("清除背景"))
+                      && insertEntries.contains(QStringLiteral("背景填充方式")),
+                  QStringLiteral("插入菜单包含原画布菜单的背景项"),
+                  insertEntries.join(QStringLiteral(" / ")));
+        }
+        int fillStyleMenuIndex = insertActions.indexOf(fillStyleMenu ? fillStyleMenu->menuAction() : nullptr);
+        int shapeMenuIndex = insertActions.indexOf(shapeMenu ? shapeMenu->menuAction() : nullptr);
         int fillColorActionIndex = -1;
         int outlineActionIndex = -1;
-        for (int i = 0; i < styleActions.size(); ++i) {
-            if (styleActions.at(i)->objectName() == QStringLiteral("FillColorAction"))
+        for (int i = 0; i < insertActions.size(); ++i) {
+            if (insertActions.at(i)->objectName() == QStringLiteral("FillColorAction"))
                 fillColorActionIndex = i;
-            else if (styleActions.at(i)->objectName() == QStringLiteral("OutlineColorAction"))
+            else if (insertActions.at(i)->objectName() == QStringLiteral("OutlineColorAction"))
                 outlineActionIndex = i;
         }
-        check(fillStyleMenuIndex >= 0 && fillColorActionIndex > fillStyleMenuIndex
-                  && outlineActionIndex > fillColorActionIndex,
-              QStringLiteral("填充颜色和描边颜色分离到填充样式之后"),
-              QStringLiteral("fillStyle=%1 fillColor=%2 outline=%3")
-                  .arg(fillStyleMenuIndex).arg(fillColorActionIndex).arg(outlineActionIndex));
+        bool insertOrderOk = shapeMenuIndex >= 0 && fillStyleMenuIndex > shapeMenuIndex
+            && fillColorActionIndex > fillStyleMenuIndex
+            && outlineActionIndex > fillColorActionIndex;
+        for (int i = shapeMenuIndex + 1; insertOrderOk && i < fillStyleMenuIndex; ++i) {
+            // 常见图形与填充样式之间只允许出现分隔线。
+            if (!insertActions.at(i)->isSeparator())
+                insertOrderOk = false;
+        }
+        check(insertOrderOk,
+              QStringLiteral("填充样式与两个颜色项紧跟常见图形位于插入菜单"),
+              QStringLiteral("shape=%1 fillStyle=%2 fillColor=%3 outline=%4")
+                  .arg(shapeMenuIndex).arg(fillStyleMenuIndex).arg(fillColorActionIndex)
+                  .arg(outlineActionIndex));
 
         QAction* outlineAction = shapeWindow.findChild<QAction*>(
             QStringLiteral("OutlineColorAction"));
@@ -3909,7 +3968,74 @@ int runSelfTest(const QString& reportPath)
         }
     }
     {
-        // 需求：色块过多时自适应降采样，默认勾选、可取消。
+        // 需求：参数只在内存里生效，只有点“保存到配置文件”才覆盖配置文件。
+        const AppSettings defaults;
+        const QString configPath = AppSettings::settingsFilePath();
+        auto readConfig = [&configPath]() {
+            QFile file(configPath);
+            if (!file.open(QIODevice::ReadOnly))
+                return QByteArray();
+            return file.readAll();
+        };
+
+        LineArtDialog dialog(defaults);
+        QPushButton* saveButton = dialog.findChild<QPushButton*>(
+            QStringLiteral("LineArtSaveSettingsButton"));
+        check(saveButton && saveButton->text() == QStringLiteral("保存到配置文件"),
+              QStringLiteral("参数对话框提供保存到配置文件按钮"),
+              saveButton ? saveButton->text() : QStringLiteral("missing"));
+
+        QSpinBox* levelsSpin = dialog.findChild<QSpinBox*>(QStringLiteral("LineArtLevelsSpin"));
+        if (levelsSpin)
+            levelsSpin->setValue(11);
+        const QByteArray beforeAccept = readConfig();
+        dialog.accept();
+        const QByteArray afterAccept = readConfig();
+        check(!dialog.saveRequested(), QStringLiteral("点确定只改内存不写配置文件"));
+        check(afterAccept == beforeAccept, QStringLiteral("点确定后配置文件内容原样未动"),
+              QStringLiteral("before=%1 after=%2").arg(beforeAccept.size()).arg(afterAccept.size()));
+
+        LineArtDialog saveDialog(defaults);
+        QPushButton* saveButton2 = saveDialog.findChild<QPushButton*>(
+            QStringLiteral("LineArtSaveSettingsButton"));
+        QSpinBox* saveAreaSpin = saveDialog.findChild<QSpinBox*>(
+            QStringLiteral("LineArtMinAreaSpin"));
+        if (saveAreaSpin)
+            saveAreaSpin->setValue(96);
+        if (saveButton2)
+            saveButton2->click();
+        check(saveDialog.saveRequested() && saveDialog.result() == QDialog::Accepted,
+              QStringLiteral("点保存到配置文件会置位保存请求并继续"),
+              QStringLiteral("requested=%1 result=%2")
+                  .arg(saveDialog.saveRequested() ? 1 : 0)
+                  .arg(saveDialog.result()));
+
+        AppSettings memory = defaults;
+        saveDialog.applyToSettings(memory);
+        check(memory.lineArtMinRegionArea == 96,
+              QStringLiteral("不点保存时参数仍写进行程内设置"),
+              QString::number(memory.lineArtMinRegionArea));
+
+        // 只写线稿化键：先记下文件里的非线稿化值，保存后它们必须原样保留。
+        AppSettings seeded;
+        seeded.load();
+        const int brushWidthBefore = seeded.brushWidth;
+        AppSettings lineOnly = seeded;
+        lineOnly.lineArtColorLevels = 11;
+        lineOnly.lineArtMinThickness = 3.5;
+        check(lineOnly.saveLineArt(), QStringLiteral("保存到配置文件只写线稿化参数"));
+        AppSettings reloaded;
+        reloaded.load();
+        check(reloaded.lineArtColorLevels == 11
+                  && qAbs(reloaded.lineArtMinThickness - 3.5) < 1e-6
+                  && reloaded.brushWidth == brushWidthBefore,
+              QStringLiteral("只覆盖线稿化参数，其它设置保持不动"),
+              QStringLiteral("levels=%1 thickness=%2 width=%3")
+                  .arg(reloaded.lineArtColorLevels)
+                  .arg(reloaded.lineArtMinThickness)
+                  .arg(reloaded.brushWidth));
+    }
+    {
         const AppSettings defaults;
         LineArtDialog dialog(defaults);
         auto* adaptiveCheck = dialog.findChild<QCheckBox*>(
@@ -3962,15 +4088,6 @@ int runSelfTest(const QString& reportPath)
               QStringLiteral("tolerance=%1 thickness=%2")
                   .arg(toleranceSpin ? toleranceSpin->value() : -1.0)
                   .arg(thicknessSpin ? thicknessSpin->value() : -1.0));
-
-        const LineArtConverter::Options initial = dialog.options();
-        const LineArtConverter::Options converterDefaults;
-        check(qAbs(initial.simplifyTolerance - converterDefaults.simplifyTolerance) < 1e-6
-                  && qAbs(initial.minRegionThickness - converterDefaults.minRegionThickness) < 1e-6,
-              QStringLiteral("默认简化容差与最细条带跟转换器默认一致"),
-              QStringLiteral("tolerance=%1 thickness=%2")
-                  .arg(initial.simplifyTolerance)
-                  .arg(initial.minRegionThickness));
 
         if (toleranceSpin && thicknessSpin) {
             toleranceSpin->setValue(1.5);
@@ -4149,10 +4266,6 @@ int runSelfTest(const QString& reportPath)
                   QStringLiteral("手动改动参数后档位回到自定义"),
                   presetCombo->currentText());
             paletteSpin->setValue(51);
-            check(presetCombo->currentText() == QStringLiteral("自定义"),
-                  QStringLiteral("手改颜色近似度同样回到自定义"),
-                  presetCombo->currentText());
-
             // 再选回“均衡”，写回的值应当与默认一致。
             presetCombo->setCurrentIndex(presetCombo->findData(1));
             if (auto* buttons = dialog.findChild<QDialogButtonBox*>()) {

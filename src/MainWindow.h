@@ -116,6 +116,9 @@ class MainWindow : public QMainWindow {
     CanvasView* m_view = nullptr;
     QUndoStack* m_undo = nullptr;
     AppSettings m_settings;
+    // 图片线稿化参数的进程内副本：初始值取自配置文件，参数对话框改的就是它；
+    // 只有用户点“保存到配置文件”时才把它写回 StoryBoard.ini。
+    AppSettings m_lineArtSettings;
     QString m_filePath;
     QColor m_brushColor;
     QColor m_fillColor;
@@ -177,7 +180,8 @@ class MainWindow : public QMainWindow {
     QActionGroup* m_backgroundModeGroup = nullptr;
     QActionGroup* m_fillStyleGroup = nullptr;
     QActionGroup* m_brushWidthGroup = nullptr;
-    QMenu* m_canvasesMenu = nullptr;
+    QMenu* m_fileMenu = nullptr;
+    QAction* m_boardSectionSeparator = nullptr;
     QMenu* m_shapeMenu = nullptr;
 
     QDockWidget* m_layerDock = nullptr;

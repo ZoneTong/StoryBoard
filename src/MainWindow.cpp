@@ -324,6 +324,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     setAcceptDrops(true);
 
     m_settings.load();
+    m_lineArtSettings = m_settings;
     m_brushColor = m_settings.brushColor;
     m_brushWidth = m_settings.brushWidth;
 
@@ -706,7 +707,8 @@ void MainWindow::createLayerDock()
 
 void MainWindow::createMenus()
 {
-    QMenu* fileMenu = menuBar()->addMenu(tr("&File"));
+    m_fileMenu = menuBar()->addMenu(tr("&File"));
+    QMenu* fileMenu = m_fileMenu;
     fileMenu->addAction(m_newAct);
     fileMenu->addAction(m_openAct);
     // 需求：在“打开画布”后面提供图片线稿化入口，把色块轮廓变成笔画图元。
@@ -715,10 +717,33 @@ void MainWindow::createMenus()
     fileMenu->addAction(m_saveAct);
     fileMenu->addAction(m_saveAsAct);
     fileMenu->addSeparator();
-    fileMenu->addAction(m_importAct);
+    // 插入图片只留在“插入”菜单，导入图片线稿化只留在文件菜单，避免同一动作多处出现。
     fileMenu->addAction(m_exportAct);
-    fileMenu->addSeparator();
+    // 需求：原“画板”菜单不再作为父菜单存在，它的设置、最近画布与画布文件夹
+    // 直接并入文件菜单，位于“退出”之上；这一段由 updateCanvasesMenu 动态重建。
+    QAction* boardSectionSeparator = fileMenu->addSeparator();
+    m_boardSectionSeparator = boardSectionSeparator;
     fileMenu->addAction(m_quitAct);
+    connect(m_fileMenu, &QMenu::aboutToShow, this, &MainWindow::updateCanvasesMenu);
+    updateCanvasesMenu();
+
+    // 需求：“视图”一级菜单紧跟“文件”，放在“编辑”之前。
+    QMenu* viewMenu = menuBar()->addMenu(tr("&View"));
+    viewMenu->setObjectName(QStringLiteral("ViewMenu"));
+    viewMenu->addAction(m_viewModeAct);
+    viewMenu->addAction(m_editModeAct);
+    viewMenu->addAction(m_brushModeAct);
+    viewMenu->addAction(m_textModeAct);
+    viewMenu->addSeparator();
+    viewMenu->addAction(m_fitAct);
+    viewMenu->addAction(m_zoomInAct);
+    viewMenu->addAction(m_zoomOutAct);
+    viewMenu->addAction(m_actualSizeAct);
+    viewMenu->addSeparator();
+    QAction* layerDockAction = m_layerDock->toggleViewAction();
+    layerDockAction->setText(tr("Layer panel"));
+    layerDockAction->setStatusTip(tr("Show or hide the layer panel"));
+    viewMenu->addAction(layerDockAction);
 
     QMenu* editMenu = menuBar()->addMenu(tr("&Edit"));
     editMenu->addAction(m_undoAct);
@@ -728,7 +753,7 @@ void MainWindow::createMenus()
     editMenu->addAction(m_duplicateAct);
     editMenu->addAction(m_groupAct);
     editMenu->addAction(m_ungroupAct);
-    editMenu->addAction(m_smoothAct);
+    // 需求：平滑笔画移到“笔画”菜单下，不再留在编辑菜单。
     editMenu->addAction(m_selectAllAct);
     editMenu->addSeparator();
     editMenu->addAction(m_itemPropsAct);
@@ -765,54 +790,15 @@ void MainWindow::createMenus()
     editMenu->addAction(m_rotateCwAct);
     editMenu->addAction(m_rotateCcwAct);
 
+    // 需求：原“样式”菜单拆开——“画笔样式”独立为一级菜单“画笔”，
+    // 填充样式与填充／描边颜色并入“插入”菜单，紧跟在“常见图形”之后。
     QMenu* insertMenu = menuBar()->addMenu(tr("&Insert"));
+    insertMenu->setObjectName(QStringLiteral("InsertMenu"));
+
     insertMenu->addMenu(m_shapeMenu);
     insertMenu->addSeparator();
-    insertMenu->addAction(m_importAct);
 
-    QMenu* viewMenu = menuBar()->addMenu(tr("&View"));
-    viewMenu->addAction(m_viewModeAct);
-    viewMenu->addAction(m_editModeAct);
-    viewMenu->addAction(m_brushModeAct);
-    viewMenu->addAction(m_textModeAct);
-    viewMenu->addSeparator();
-    viewMenu->addAction(m_fitAct);
-    viewMenu->addAction(m_zoomInAct);
-    viewMenu->addAction(m_zoomOutAct);
-    viewMenu->addAction(m_actualSizeAct);
-    viewMenu->addSeparator();
-    QAction* layerDockAction = m_layerDock->toggleViewAction();
-    layerDockAction->setText(tr("Layer panel"));
-    layerDockAction->setStatusTip(tr("Show or hide the layer panel"));
-    viewMenu->addAction(layerDockAction);
-
-    QMenu* canvasMenu = menuBar()->addMenu(tr("&Canvas"));
-    canvasMenu->addAction(m_importAct);
-    canvasMenu->addAction(m_lineArtAct);
-    canvasMenu->addSeparator();
-    canvasMenu->addAction(m_replaceBgAct);
-    canvasMenu->addAction(m_bgColorAct);
-    canvasMenu->addAction(m_clearBgAct);
-    QMenu* fillMenu = canvasMenu->addMenu(tr("Background fill mode"));
-    fillMenu->addAction(m_bgStretchAct);
-    fillMenu->addAction(m_bgFitAct);
-    fillMenu->addAction(m_bgTileAct);
-    canvasMenu->addSeparator();
-
-    QMenu* styleMenu = menuBar()->addMenu(tr("&Style"));
-    styleMenu->setObjectName(QStringLiteral("StyleMenu"));
-
-    QMenu* brushStyleMenu = styleMenu->addMenu(tr("Brush style"));
-    brushStyleMenu->setObjectName(QStringLiteral("BrushStyleMenu"));
-    brushStyleMenu->addAction(m_brushColorAct);
-    brushStyleMenu->addSeparator();
-    QMenu* brushWidthMenu = brushStyleMenu->addMenu(tr("Brush width"));
-    brushWidthMenu->setObjectName(QStringLiteral("BrushWidthMenu"));
-    for (QAction* action : m_brushWidthGroup->actions()) {
-        brushWidthMenu->addAction(action);
-    }
-
-    QMenu* fillStyleMenu = styleMenu->addMenu(tr("Fill style"));
+    QMenu* fillStyleMenu = insertMenu->addMenu(tr("Fill style"));
     fillStyleMenu->setObjectName(QStringLiteral("FillStyleMenu"));
     fillStyleMenu->addAction(m_fillNoneAct);
     fillStyleMenu->addAction(m_fillSolidAct);
@@ -823,12 +809,34 @@ void MainWindow::createMenus()
     fillStyleMenu->addAction(m_fillHoneycombAct);
 
     // 需求 29：颜色从填充样式里分离出来，放在填充样式之后。
-    styleMenu->addAction(m_fillColorAct);
-    styleMenu->addAction(m_strokeColorAct);
+    insertMenu->addAction(m_fillColorAct);
+    insertMenu->addAction(m_strokeColorAct);
+    insertMenu->addSeparator();
+    insertMenu->addAction(m_importAct);
 
-    m_canvasesMenu = menuBar()->addMenu(tr("&Board"));
-    connect(m_canvasesMenu, &QMenu::aboutToShow, this, &MainWindow::updateCanvasesMenu);
-    updateCanvasesMenu();
+    // 需求：原“画布”菜单不再作为父菜单存在，背景相关项直接并入“插入”菜单。
+    insertMenu->addSeparator();
+    insertMenu->addAction(m_replaceBgAct);
+    insertMenu->addAction(m_bgColorAct);
+    insertMenu->addAction(m_clearBgAct);
+    QMenu* fillMenu = insertMenu->addMenu(tr("Background fill mode"));
+    fillMenu->addAction(m_bgStretchAct);
+    fillMenu->addAction(m_bgFitAct);
+    fillMenu->addAction(m_bgTileAct);
+
+    // 需求：原“样式 → 画笔样式”提升为一级菜单“画笔”，“平滑笔画”归到这里。
+    QMenu* brushMenu = menuBar()->addMenu(tr("&Brush"));
+    brushMenu->setObjectName(QStringLiteral("BrushMenu"));
+
+    brushMenu->addAction(m_brushColorAct);
+    brushMenu->addSeparator();
+    QMenu* brushWidthMenu = brushMenu->addMenu(tr("Brush width"));
+    brushWidthMenu->setObjectName(QStringLiteral("BrushWidthMenu"));
+    for (QAction* action : m_brushWidthGroup->actions()) {
+        brushWidthMenu->addAction(action);
+    }
+    brushMenu->addSeparator();
+    brushMenu->addAction(m_smoothAct);
 
     QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));
     helpMenu->addAction(m_aboutAct);
@@ -1677,15 +1685,27 @@ void MainWindow::importOutlineImageDialog()
         return;
     }
 
-    // 选完图片先弹参数：档位和四项数值都在这里，点“确定”才真正描线。
-    LineArtDialog dialog(m_settings, this);
+    // 选完图片先弹参数：档位和各项数值都在这里，点“确定”才真正描线。
+    // 参数只改进程内副本；只有点“保存到配置文件”才覆盖 StoryBoard.ini。
+    LineArtDialog dialog(m_lineArtSettings, this);
     if (dialog.exec() != QDialog::Accepted) {
         return;
     }
 
-    AppSettings settings = m_settings;
-    dialog.applyToSettings(settings);
-    m_settings = settings;
+    dialog.applyToSettings(m_lineArtSettings);
+    if (dialog.saveRequested()) {
+        const bool saved = m_lineArtSettings.saveLineArt();
+        if (saved) {
+            // 文件已经是新值了，主设置对象同步一份，避免之后整份保存把旧值写回去。
+            m_settings.copyLineArtFrom(m_lineArtSettings);
+            statusBar()->showMessage(tr("Image outline settings saved to the configuration file"),
+                                     4000);
+        } else {
+            statusBar()->showMessage(tr("Could not write the configuration file; the settings apply "
+                                        "to this session only"),
+                                     5000);
+        }
+    }
     importOutlineImageFile(file, dialog.options());
 }
 
@@ -2288,6 +2308,8 @@ void MainWindow::showSettings()
     // 对话框里的设置是主窗口设置的一份完整副本：语言另存，其余整份拷回，
     // 避免新增参数（例如线稿化档位）漏在“改完却记不住”的队伍里。
     m_settings = updated;
+    // 设置窗里的线稿化参数已经随整份保存落盘，进程内副本跟着刷新。
+    m_lineArtSettings.copyLineArtFrom(m_settings);
 
     setBrushColor(m_settings.brushColor, false);
     setBrushWidthUi(m_settings.brushWidth);
@@ -2312,44 +2334,71 @@ void MainWindow::fitAll()
 
 void MainWindow::updateCanvasesMenu()
 {
-    if (!m_canvasesMenu) {
+    if (!m_fileMenu || !m_boardSectionSeparator) {
         return;
     }
 
-    m_canvasesMenu->clear();
-    // 需求 37：设置从“画布”菜单移到这里；最近画布列表仍动态更新。
-    m_canvasesMenu->addAction(m_settingsAct);
-    m_canvasesMenu->addSeparator();
-    // 画板菜单只保留文件菜单里没有的项：设置、最近画布、打开画布文件夹。
-    // 保存 / 另存为 / 打开画布 / 导入图片线稿化统一走文件菜单，避免同一操作两处出现。
+    // 先清掉上一轮动态生成的项：分隔线之后、退出之前的内容全部重建。
+    const QList<QAction*> existing = m_fileMenu->actions();
+    const int anchor = existing.indexOf(m_boardSectionSeparator);
+    if (anchor >= 0) {
+        for (int i = anchor + 1; i < existing.size(); ++i) {
+            QAction* action = existing.at(i);
+            if (!action || action == m_quitAct)
+                continue;
+            m_fileMenu->removeAction(action);
+            if (action != m_settingsAct)
+                action->deleteLater();
+        }
+    }
+
+    QList<QAction*> items;
+    // 需求 37：设置留在文件菜单里；最近画布列表每次都重新读目录。
+    items.append(m_settingsAct);
+    items.append(nullptr); // 占位：之后换成真正的分隔线
 
     QDir directory(AppSettings::canvasesDir());
     const QFileInfoList files = directory.entryInfoList({QStringLiteral("*.sbcanvas")}, QDir::Files, QDir::Time);
     if (files.isEmpty()) {
-        QAction* emptyAction = m_canvasesMenu->addAction(tr("(Canvas folder is empty)"));
+        QAction* emptyAction = new QAction(tr("(Canvas folder is empty)"), m_fileMenu);
         emptyAction->setEnabled(false);
+        items.append(emptyAction);
     } else {
         const int maximum = qMin(15, static_cast<int>(files.size()));
         for (int i = 0; i < maximum; ++i) {
             const QFileInfo info = files.at(i);
-            QAction* action =
-                m_canvasesMenu->addAction(makeIcon(IconId::Save, QColor(90, 98, 112), 16), info.completeBaseName());
+            QAction* action = new QAction(makeIcon(IconId::Save, QColor(90, 98, 112), 16),
+                                          info.completeBaseName(), m_fileMenu);
             action->setCheckable(true);
             action->setChecked(info.absoluteFilePath() == m_filePath);
             action->setToolTip(QDir::toNativeSeparators(info.absoluteFilePath()));
             const QString filePath = info.absoluteFilePath();
             connect(action, &QAction::triggered, this, [this, filePath]() { loadCanvasFile(filePath, true); });
+            items.append(action);
         }
         if (files.size() > maximum) {
             QAction* moreAction =
-                m_canvasesMenu->addAction(tr("… %1 canvases in total").arg(files.size()));
+                new QAction(tr("… %1 canvases in total").arg(files.size()), m_fileMenu);
             moreAction->setEnabled(false);
+            items.append(moreAction);
         }
     }
 
-    m_canvasesMenu->addSeparator();
-    QAction* openFolderAction = m_canvasesMenu->addAction(tr("Open canvases folder"));
+    items.append(nullptr); // 占位：画布列表之后的分隔线
+    QAction* openFolderAction = new QAction(tr("Open canvases folder"), m_fileMenu);
     connect(openFolderAction, &QAction::triggered, this, &MainWindow::openCanvasesFolder);
+    items.append(openFolderAction);
+
+    // 全部插到“退出”之前，保持原来画板菜单的顺序：设置 → 最近画布 → 画布文件夹。
+    for (QAction* item : items) {
+        if (!item) {
+            QAction* separator = new QAction(m_fileMenu);
+            separator->setSeparator(true);
+            m_fileMenu->insertAction(m_quitAct, separator);
+            continue;
+        }
+        m_fileMenu->insertAction(m_quitAct, item);
+    }
 }
 
 void MainWindow::openCanvasesFolder()

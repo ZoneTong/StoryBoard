@@ -37,6 +37,11 @@ public:
     void load();
     // 把当前值合并写回配置文件，未识别的键（例如语言）保持不动。
     bool save() const;
+    // 只把图片线稿化参数写回配置文件，其余键沿用文件里的现值。
+    // 线稿化参数对话框默认只改内存，只有用户点“保存到配置文件”时才调用它。
+    bool saveLineArt() const;
+    // 只把另一份设置里的图片线稿化参数拷过来，其它字段不动。
+    void copyLineArtFrom(const AppSettings& other);
 
     // 唯一的配置文件：用户配置目录下的 StoryBoard.ini；进程内每次返回同一路径。
     static QString settingsFilePath();

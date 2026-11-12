@@ -132,6 +132,17 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     buttons->button(QDialogButtonBox::Ok)->setText(tr("OK"));
     buttons->button(QDialogButtonBox::Cancel)->setText(tr("Cancel"));
+
+    // 需求：参数默认只改内存，本次进程内生效；只有点这个按钮才把当前参数覆盖进配置文件。
+    m_saveToConfigButton = new QPushButton(tr("Save to configuration file"), this);
+    m_saveToConfigButton->setObjectName(QStringLiteral("LineArtSaveSettingsButton"));
+    m_saveToConfigButton->setToolTip(
+        tr("Write the parameters above into StoryBoard.ini now; otherwise they only apply to this session."));
+    buttons->addButton(m_saveToConfigButton, QDialogButtonBox::ActionRole);
+    connect(m_saveToConfigButton, &QPushButton::clicked, this, [this]() {
+        m_saveToConfig = true;
+        accept();
+    });
     rootLayout->addWidget(buttons);
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
