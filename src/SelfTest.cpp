@@ -3144,7 +3144,7 @@ int runSelfTest(const QString& reportPath)
 
         // 需求：原来的“导入图片”改名“插入图片”，并在“打开画布”后面加入“导入图片线稿化”。
         QMenu* fileMenu = nullptr;
-        QMenu* canvasMenu = nullptr;
+        bool canvasMenuGone = true;
         for (QAction* action : window.menuBar()->actions()) {
             QMenu* menu = action ? action->menu() : nullptr;
             if (!menu)
@@ -3152,9 +3152,11 @@ int runSelfTest(const QString& reportPath)
             if (menu->title() == QStringLiteral("文件(&F)"))
                 fileMenu = menu;
             else if (menu->title() == QStringLiteral("画布(&C)"))
-                canvasMenu = menu;
+                canvasMenuGone = false;
         }
-        check(fileMenu != nullptr && canvasMenu != nullptr, QStringLiteral("主窗口存在文件与画布菜单"));
+        check(fileMenu != nullptr, QStringLiteral("主窗口存在文件菜单"));
+        // 需求：画布菜单已并入插入菜单，菜单栏不再有画布一级菜单。
+        check(canvasMenuGone, QStringLiteral("菜单栏不再单独出现画布菜单"));
         if (fileMenu) {
             QStringList entries;
             for (QAction* action : fileMenu->actions()) {
@@ -3169,20 +3171,6 @@ int runSelfTest(const QString& reportPath)
             check(!entries.contains(QStringLiteral("插入图片…"))
                       && !entries.contains(QStringLiteral("导入图片…")),
                   QStringLiteral("插入图片只在插入菜单出现"),
-                  entries.join(QStringLiteral(" / ")));
-        }
-        if (canvasMenu) {
-            QStringList entries;
-            for (QAction* action : canvasMenu->actions()) {
-                if (action && !action->isSeparator())
-                    entries.append(action->text());
-            }
-            // 需求：去掉菜单栏里重复的子菜单项，插入图片与导入图片线稿化不再出现在画布菜单。
-            check(!entries.contains(QStringLiteral("插入图片…"))
-                      && !entries.contains(QStringLiteral("导入图片线稿化"))
-                      && entries.contains(QStringLiteral("替换背景图片…"))
-                      && entries.contains(QStringLiteral("清除背景")),
-                  QStringLiteral("画布菜单只保留背景相关项"),
                   entries.join(QStringLiteral(" / ")));
         }
 
@@ -3662,6 +3650,13 @@ int runSelfTest(const QString& reportPath)
             }
             check(insertEntries.contains(QStringLiteral("插入图片…")),
                   QStringLiteral("插入菜单提供插入图片"),
+                  insertEntries.join(QStringLiteral(" / ")));
+            // 需求：原画布菜单的背景项已并入插入菜单。
+            check(insertEntries.contains(QStringLiteral("替换背景图片…"))
+                      && insertEntries.contains(QStringLiteral("设置背景颜色…"))
+                      && insertEntries.contains(QStringLiteral("清除背景"))
+                      && insertEntries.contains(QStringLiteral("背景填充方式")),
+                  QStringLiteral("插入菜单包含原画布菜单的背景项"),
                   insertEntries.join(QStringLiteral(" / ")));
         }
         int fillStyleMenuIndex = insertActions.indexOf(fillStyleMenu ? fillStyleMenu->menuAction() : nullptr);

@@ -83,10 +83,6 @@
       <translation>画笔(&amp;B)</translation>
     </message>
     <message>
-      <source>&amp;Canvas</source>
-      <translation>画布(&amp;C)</translation>
-    </message>
-    <message>
       <source>&amp;Edit</source>
       <translation>编辑(&amp;E)</translation>
     </message>

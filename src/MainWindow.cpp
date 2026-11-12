@@ -813,11 +813,12 @@ void MainWindow::createMenus()
     insertMenu->addSeparator();
     insertMenu->addAction(m_importAct);
 
-    QMenu* canvasMenu = menuBar()->addMenu(uiText(QStringLiteral("&Canvas")));
-    canvasMenu->addAction(m_replaceBgAct);
-    canvasMenu->addAction(m_bgColorAct);
-    canvasMenu->addAction(m_clearBgAct);
-    QMenu* fillMenu = canvasMenu->addMenu(uiText(QStringLiteral("Background fill mode")));
+    // 需求：原“画布”菜单不再作为父菜单存在，背景相关项直接并入“插入”菜单。
+    insertMenu->addSeparator();
+    insertMenu->addAction(m_replaceBgAct);
+    insertMenu->addAction(m_bgColorAct);
+    insertMenu->addAction(m_clearBgAct);
+    QMenu* fillMenu = insertMenu->addMenu(uiText(QStringLiteral("Background fill mode")));
     fillMenu->addAction(m_bgStretchAct);
     fillMenu->addAction(m_bgFitAct);
     fillMenu->addAction(m_bgTileAct);
