@@ -105,11 +105,17 @@ QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
 QDockWidget { color: #374151; font-weight: 600; }
 QDockWidget::title { background: #FFFFFF; padding: 7px 10px; border-bottom: 1px solid #E3E7EE; }
 QWidget#LayerPanel { background: #FFFFFF; }
-QLabel#LayerCaption { color: #8A909C; font-size: 8.5pt; font-weight: 600; }
-QLabel#LayerHint { color: #8A909C; font-size: 8pt; }
+QLabel#LayerCaption { color: #8A909C; font-size: 9pt; font-weight: 600; }
+QLabel#LayerHint { color: #8A909C; font-size: 9pt; }
 QListWidget#LayerList { background: #F8F9FC; border: 1px solid #E6E9F0; border-radius: 8px; padding: 4px; outline: none; }
 QListWidget#LayerList::item { padding: 7px 8px; border-radius: 6px; margin: 2px 1px; color: #374151; }
 QListWidget#LayerList::item:hover { background: #EEF2F9; }
+/* 图层行的高亮由选中状态驱动，用动态属性而不是逐行写内联样式。 */
+QWidget#LayerRow { background-color: transparent; border-left: 3px solid transparent; border-radius: 4px; }
+QWidget#LayerRow[selected="true"] { background-color: #E8EEFB; border-left: 3px solid #2563EB; }
+QLabel#LayerRowLabel[state="background"] { color: #787F8C; }
+QLabel#LayerRowLabel[state="locked"] { color: #606878; }
+QLabel#LayerRowLabel[state="hidden"] { color: #969DA9; }
 QListWidget#LayerList::item:selected { background: #E9EEFF; color: #2F52C7; }
 QListWidget#LayerList::item:disabled { color: #A8AFBB; }
 QToolButton#LayerToolButton { border: 1px solid #DDE2EA; border-radius: 6px; background: #FFFFFF; color: #4B5563; font-size: 13px; font-weight: 700; padding: 0; }
@@ -133,7 +139,10 @@ QPushButton:default { background: #3E6BFF; border-color: #3E6BFF; color: #FFFFFF
 QPushButton:default:hover { background: #4E78FF; }
 QDialogButtonBox QPushButton { min-width: 82px; }
 QLabel#DialogTitle { font-size: 17px; font-weight: 700; color: #1F2937; }
-QLabel#DialogHint { color: #6B7280; }
+/* 次级标题与表格标题共用 15px/600，提示文字统一走正文 9pt，字号只留三档。 */
+QLabel#ItemPropertiesHeading { font-size: 15px; font-weight: 600; }
+QLabel#LayerNameHeader, QLabel#LayerLockHeader { color: #8A909C; font-size: 9pt; font-weight: 600; }
+QLabel#DialogHint, QLabel#ItemPropertiesReadOnlyHint { color: #6B7280; }
 QCheckBox { spacing: 7px; color: #374151; }
 QToolTip { background: #1F2937; color: #F9FAFB; border: none; padding: 5px 8px; border-radius: 4px; }
 )"));

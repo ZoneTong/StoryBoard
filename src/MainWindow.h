@@ -69,6 +69,7 @@ class MainWindow : public QMainWindow {
     void clearBackground();
     void showSettings();
     void showAbout();
+    void showShortcuts();
     void fitAll();
     void setToolMode(ToolMode mode);
     void updateTitle();
@@ -154,6 +155,8 @@ class MainWindow : public QMainWindow {
     QAction* m_zoomInAct = nullptr;
     QAction* m_zoomOutAct = nullptr;
     QAction* m_actualSizeAct = nullptr;
+    // 视图菜单里的辅助网格开关，和「设置 → 画布」里的同名复选框共用 settings.showGrid。
+    QAction* m_gridAct = nullptr;
 
     QAction* m_replaceBgAct = nullptr;
     QAction* m_bgColorAct = nullptr;
@@ -174,6 +177,7 @@ class MainWindow : public QMainWindow {
     QAction* m_brushColorAct = nullptr;
 
     QAction* m_aboutAct = nullptr;
+    QAction* m_shortcutsAct = nullptr;
     QAction* m_aboutQtAct = nullptr;
 
     QActionGroup* m_modeGroup = nullptr;

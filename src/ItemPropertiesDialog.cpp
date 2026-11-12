@@ -134,7 +134,6 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
 
     auto* heading = new QLabel(item ? item->name() : tr("No item selected"), this);
     heading->setObjectName(QStringLiteral("ItemPropertiesHeading"));
-    heading->setStyleSheet(QStringLiteral("font-size: 15px; font-weight: 600;"));
     root->addWidget(heading);
 
     auto* line = new QFrame(this);
@@ -146,7 +145,6 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
         auto* readOnlyHint = new QLabel(tr("Read-only: switch to Edit mode to change properties."), this);
         readOnlyHint->setObjectName(QStringLiteral("ItemPropertiesReadOnlyHint"));
         readOnlyHint->setWordWrap(true);
-        readOnlyHint->setStyleSheet(QStringLiteral("color: #6B7280;"));
         root->addWidget(readOnlyHint);
     }
 

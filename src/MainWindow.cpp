@@ -52,6 +52,7 @@
 #include <QPixmap>
 #include <QPolygonF>
 #include <QPushButton>
+#include <QRegularExpression>
 #include <QSaveFile>
 #include <QSignalBlocker>
 #include <QSpinBox>
@@ -63,6 +64,7 @@
 #include <QUndoStack>
 #include <QUrl>
 #include <QtMath>
+#include <algorithm>
 
 namespace {
 
@@ -77,12 +79,19 @@ QString canvasFilter()
 }
 
 QAction* makeAction(QObject* parent, IconId icon, const QString& text, const QKeySequence& shortcut = QKeySequence(),
-                    const QString& tip = QString())
+                    QString tip = QString())
 {
     // 工具栏按钮与菜单项共用一份图标，按工具栏图标尺寸生成；菜单再缩放到 16px。
     auto* action = new QAction(makeIcon(icon, QColor(58, 64, 80), MainWindow::kToolBarIconSize), text, parent);
     if (!shortcut.isEmpty()) {
         action->setShortcut(shortcut);
+    }
+    // 提示里统一带上快捷键，省得逐个动作手写；已有的 “(Ctrl+X)” 不会重复追加。
+    if (!tip.isEmpty() && !shortcut.isEmpty()) {
+        const QString keys = shortcut.toString(QKeySequence::NativeText);
+        if (!tip.contains(keys, Qt::CaseInsensitive)) {
+            tip = tip + QStringLiteral(" (") + keys + QStringLiteral(")");
+        }
     }
     action->setToolTip(tip.isEmpty() ? text : tip);
     action->setStatusTip(tip.isEmpty() ? text : tip);
@@ -416,7 +425,7 @@ void MainWindow::createActions()
                              tr("Export as PNG / JPEG / PDF (Ctrl+E)"));
     m_quitAct = new QAction(tr("Quit"), this);
     m_quitAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+Q")));
-    m_quitAct->setStatusTip(tr("Quit StoryBoard"));
+    m_quitAct->setStatusTip(tr("Quit StoryBoard (Ctrl+Q)"));
 
     m_undoAct = makeAction(this, IconId::Undo, tr("Undo"), QKeySequence::Undo, tr("Undo the last step (Ctrl+Z)"));
     m_undoAct->setEnabled(false);
@@ -528,6 +537,18 @@ void MainWindow::createActions()
     m_actualSizeAct = makeAction(this, IconId::ZoomIn, tr("Actual size"), QKeySequence(QStringLiteral("Ctrl+1")),
                                  tr("Show at 100% (Ctrl+1)"));
 
+    m_gridAct = makeAction(this, IconId::Grid, tr("Helper grid"), QKeySequence(),
+                           tr("Show or hide the helper grid on the canvas"));
+    m_gridAct->setObjectName(QStringLiteral("GridToggleAction"));
+    m_gridAct->setCheckable(true);
+    m_gridAct->setChecked(m_settings.showGrid);
+    connect(m_gridAct, &QAction::toggled, this, [this](bool visible) {
+        m_scene->setShowGrid(visible);
+        m_settings.showGrid = visible;
+        m_settings.save();
+        statusBar()->showMessage(visible ? tr("Helper grid shown") : tr("Helper grid hidden"), 2000);
+    });
+
     m_replaceBgAct = makeAction(this, IconId::Background, tr("Replace background image…"), QKeySequence(),
                                 tr("Choose an image as the canvas background"));
     m_bgColorAct = makeAction(this, IconId::Palette, tr("Set background color…"), QKeySequence(),
@@ -551,6 +572,8 @@ void MainWindow::createActions()
                                tr("Open board settings (Ctrl+,)"));
 
     m_aboutAct = new QAction(QIcon(QStringLiteral(":/icons/app.png")), tr("About StoryBoard"), this);
+    m_shortcutsAct = new QAction(tr("Keyboard shortcuts…"), this);
+    m_shortcutsAct->setStatusTip(tr("List every action that has a shortcut"));
     m_aboutQtAct = new QAction(tr("About Qt"), this);
 
     connect(m_newAct, &QAction::triggered, this, &MainWindow::newCanvas);
@@ -655,6 +678,7 @@ void MainWindow::createActions()
             [applyBackgroundMode]() { applyBackgroundMode(BackgroundMode::Tile); });
 
     connect(m_aboutAct, &QAction::triggered, this, &MainWindow::showAbout);
+    connect(m_shortcutsAct, &QAction::triggered, this, &MainWindow::showShortcuts);
     connect(m_aboutQtAct, &QAction::triggered, qApp, &QApplication::aboutQt);
 }
 
@@ -724,6 +748,8 @@ void MainWindow::createMenus()
     viewMenu->addAction(m_zoomOutAct);
     viewMenu->addAction(m_actualSizeAct);
     viewMenu->addSeparator();
+    // 需求：辅助网格除设置外还要能从视图菜单直接开关，开关状态与设置里的复选框同步。
+    viewMenu->addAction(m_gridAct);
     QAction* layerDockAction = m_layerDock->toggleViewAction();
     layerDockAction->setText(tr("Layer panel"));
     layerDockAction->setStatusTip(tr("Show or hide the layer panel"));
@@ -794,10 +820,8 @@ void MainWindow::createMenus()
     // 需求 29：颜色从填充样式里分离出来，放在填充样式之后。
     insertMenu->addAction(m_fillColorAct);
     insertMenu->addAction(m_strokeColorAct);
-    insertMenu->addSeparator();
-    insertMenu->addAction(m_importAct);
-
-    // 需求：原“画布”菜单不再作为父菜单存在，背景相关项直接并入“插入”菜单。
+    // 需求：原“画布”菜单不再作为父菜单存在，背景相关项直接并入“插入”菜单；
+    // 背景属于画布属性，排在“插入图片”之前，避免和插入类动作混在一段。
     insertMenu->addSeparator();
     insertMenu->addAction(m_replaceBgAct);
     insertMenu->addAction(m_bgColorAct);
@@ -806,6 +830,9 @@ void MainWindow::createMenus()
     fillMenu->addAction(m_bgStretchAct);
     fillMenu->addAction(m_bgFitAct);
     fillMenu->addAction(m_bgTileAct);
+
+    insertMenu->addSeparator();
+    insertMenu->addAction(m_importAct);
 
     // 需求：原“样式 → 画笔样式”提升为一级菜单“画笔”，“平滑笔画”归到这里。
     QMenu* brushMenu = menuBar()->addMenu(tr("&Brush"));
@@ -822,6 +849,7 @@ void MainWindow::createMenus()
     brushMenu->addAction(m_smoothAct);
 
     QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));
+    helpMenu->addAction(m_shortcutsAct);
     helpMenu->addAction(m_aboutAct);
     helpMenu->addAction(m_aboutQtAct);
 }
@@ -2269,6 +2297,11 @@ void MainWindow::showSettings()
     setStrokeSmoothingUi(m_settings.strokeSmoothing);
     m_view->setCanvasColor(m_settings.canvasColor);
     m_scene->setShowGrid(m_settings.showGrid);
+    // 设置里改过辅助网格时，视图菜单的勾选状态跟着走（屏蔽信号，避免回写一遍配置）。
+    if (m_gridAct) {
+        const QSignalBlocker blocker(m_gridAct);
+        m_gridAct->setChecked(m_settings.showGrid);
+    }
     m_scene->setCanvasSizeWithUndo(m_settings.canvasSize);
 
     if (m_view->mode() == ToolMode::View) {
@@ -2360,6 +2393,58 @@ void MainWindow::openCanvasesFolder()
     const QString directory = AppSettings::canvasesDir();
     QDir().mkpath(directory);
     QDesktopServices::openUrl(QUrl::fromLocalFile(directory));
+}
+
+void MainWindow::showShortcuts()
+{
+    // 直接从现有动作汇总：以后新加快捷键自动进表，不会和手写清单对不上。
+    struct Entry {
+        QString text;
+        QString keys;
+    };
+    QList<Entry> entries;
+    const QList<QAction*> actions = findChildren<QAction*>();
+    for (QAction* action : actions) {
+        if (!action || action->shortcut().isEmpty()) {
+            continue;
+        }
+        QString text = action->text();
+        // 高度两项的菜单文字里带了给菜单排版用的 “] / [” 后缀，这里去掉，快捷键单独成列。
+        text.remove(QRegularExpression(QStringLiteral("[\\[\\]]+\\s*$")));
+        text = text.trimmed();
+        if (text.isEmpty()) {
+            continue;
+        }
+        const QString keys = action->shortcut().toString(QKeySequence::NativeText);
+        bool duplicate = false;
+        for (const Entry& existing : entries) {
+            if (existing.text == text && existing.keys == keys) {
+                duplicate = true;
+                break;
+            }
+        }
+        if (!duplicate) {
+            entries.append({text, keys});
+        }
+    }
+    std::sort(entries.begin(), entries.end(), [](const Entry& left, const Entry& right) {
+        return left.text.compare(right.text, Qt::CaseInsensitive) < 0;
+    });
+
+    QString html = QStringLiteral("<p>%1</p>").arg(tr("Every action that currently has a shortcut:"));
+    html += QStringLiteral("<table cellspacing='0' cellpadding='4'>");
+    for (const Entry& entry : entries) {
+        html += QStringLiteral("<tr><td>%1</td><td><code>%2</code></td></tr>")
+                    .arg(entry.text.toHtmlEscaped(), entry.keys.toHtmlEscaped());
+    }
+    html += QStringLiteral("</table>");
+
+    QMessageBox box(this);
+    box.setWindowTitle(tr("Keyboard shortcuts"));
+    box.setTextFormat(Qt::RichText);
+    box.setText(html);
+    box.setStandardButtons(QMessageBox::Close);
+    box.exec();
 }
 
 void MainWindow::showAbout()

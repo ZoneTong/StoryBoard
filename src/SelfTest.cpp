@@ -2983,6 +2983,30 @@ int runSelfTest(const QString& reportPath)
         check(shapeButton && shapeButton->menu() == shapeMenu && shapeButton->popupMode() == QToolButton::InstantPopup,
               QStringLiteral("主工具栏图形按钮绑定快速插入菜单"));
 
+        // 需求：辅助网格除了设置里勾选，还要能从视图菜单直接开关，勾选状态与画布一致。
+        QAction* gridAction = shapeWindow.findChild<QAction*>(QStringLiteral("GridToggleAction"));
+        CanvasScene* gridScene = shapeWindow.scene();
+        check(gridAction && gridAction->isCheckable() && gridScene && gridAction->isChecked() == gridScene->showGrid(),
+              QStringLiteral("视图菜单提供辅助网格开关"),
+              QStringLiteral("checked=%1 scene=%2")
+                  .arg(gridAction && gridAction->isChecked() ? 1 : 0)
+                  .arg(gridScene && gridScene->showGrid() ? 1 : 0));
+        if (gridAction && gridScene) {
+            const bool gridBefore = gridScene->showGrid();
+            gridAction->setChecked(!gridBefore);
+            check(gridScene->showGrid() == !gridBefore, QStringLiteral("辅助网格开关即时生效"),
+                  QStringLiteral("scene=%1").arg(gridScene->showGrid() ? 1 : 0));
+            gridAction->setChecked(gridBefore);
+        }
+
+        QAction* shortcutsAction = nullptr;
+        for (QAction* action : shapeWindow.findChildren<QAction*>()) {
+            if (action->text() == QStringLiteral("快捷键一览…")) {
+                shortcutsAction = action;
+            }
+        }
+        check(shortcutsAction != nullptr, QStringLiteral("帮助菜单提供快捷键一览入口"));
+
         QToolButton* fillButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("FillButton"));
         QStringList fillActionTexts;
         if (fillButton && fillButton->menu()) {
@@ -4219,8 +4243,9 @@ int runSelfTest(const QString& reportPath)
                 selectedEntry = entry;
             }
         }
+        // 高亮改由 QSS 的 selected 属性驱动，这里校验选中行确实带上了该属性。
         check(selectedEntry && layerList->itemWidget(selectedEntry) &&
-                  layerList->itemWidget(selectedEntry)->styleSheet().contains(QStringLiteral("232, 238, 251")),
+                  layerList->itemWidget(selectedEntry)->property("selected").toBool(),
               QStringLiteral("选中的图层行带背景高亮"));
         check(styleScene.preferredLayerIds().contains(styleScene.activeLayerId()),
               QStringLiteral("图层面板选中图层同步为首选命中图层"));

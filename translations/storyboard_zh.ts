@@ -2954,6 +2954,42 @@ Use the checkbox to show or hide it.</source>
       <source>Output line width is fixed at 1 and the result is inserted as plain stroke items.</source>
       <translation>生成的线宽固定为 1，结果以普通笔画图元插入当前图层。</translation>
     </message>
+    <message>
+      <source>Helper grid</source>
+      <translation>辅助网格</translation>
+    </message>
+    <message>
+      <source>Show or hide the helper grid on the canvas</source>
+      <translation>显示或隐藏画布上的辅助网格</translation>
+    </message>
+    <message>
+      <source>Helper grid shown</source>
+      <translation>已显示辅助网格</translation>
+    </message>
+    <message>
+      <source>Helper grid hidden</source>
+      <translation>已隐藏辅助网格</translation>
+    </message>
+    <message>
+      <source>Keyboard shortcuts…</source>
+      <translation>快捷键一览…</translation>
+    </message>
+    <message>
+      <source>List every action that has a shortcut</source>
+      <translation>列出所有带快捷键的动作</translation>
+    </message>
+    <message>
+      <source>Keyboard shortcuts</source>
+      <translation>快捷键一览</translation>
+    </message>
+    <message>
+      <source>Every action that currently has a shortcut:</source>
+      <translation>当前所有带快捷键的动作：</translation>
+    </message>
+    <message>
+      <source>Quit StoryBoard (Ctrl+Q)</source>
+      <translation>退出 StoryBoard（Ctrl+Q）</translation>
+    </message>
   </context>
   <context>
     <name>SettingsDialog</name>

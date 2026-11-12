@@ -15,6 +15,7 @@
 #include <QMessageBox>
 #include <QScrollBar>
 #include <QSignalBlocker>
+#include <QStyle>
 #include <QTimer>
 #include <QToolButton>
 #include <QVBoxLayout>
@@ -62,14 +63,12 @@ LayerPanel::LayerPanel(CanvasScene* scene, QWidget* parent) : QWidget(parent), m
 
     auto* nameHeader = new QLabel(tr("Layer"), header);
     nameHeader->setObjectName(QStringLiteral("LayerNameHeader"));
-    nameHeader->setStyleSheet(QStringLiteral("color: rgb(96, 104, 120); font-weight: 600;"));
     headerLayout->addWidget(nameHeader, 1);
 
     auto* lockHeader = new QLabel(tr("Lock"), header);
     lockHeader->setObjectName(QStringLiteral("LayerLockHeader"));
     lockHeader->setFixedWidth(30);
     lockHeader->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    lockHeader->setStyleSheet(QStringLiteral("color: rgb(96, 104, 120); font-weight: 600;"));
     headerLayout->addWidget(lockHeader);
     header->setFixedHeight(22);
     layout->addWidget(header);
@@ -153,12 +152,13 @@ QWidget* LayerPanel::createLayerRow(const CanvasLayer& layer, int index, int ite
         text += tr("  · Locked");
     }
     nameLabel->setText(text);
+    // 背景层 / 锁定 / 隐藏三种弱化文字色走 QSS 的 state 属性，不再逐行写内联样式。
     if (index == CanvasScene::BackgroundLayerId) {
-        nameLabel->setStyleSheet(QStringLiteral("color: rgb(120, 128, 140);"));
+        nameLabel->setProperty("state", QStringLiteral("background"));
     } else if (layer.locked) {
-        nameLabel->setStyleSheet(QStringLiteral("color: rgb(96, 104, 120);"));
+        nameLabel->setProperty("state", QStringLiteral("locked"));
     } else if (!layer.visible) {
-        nameLabel->setStyleSheet(QStringLiteral("color: rgb(150, 157, 169);"));
+        nameLabel->setProperty("state", QStringLiteral("hidden"));
     }
 
     if (index != CanvasScene::BackgroundLayerId) {
@@ -409,18 +409,17 @@ void LayerPanel::syncSceneSelection()
 
 void LayerPanel::updateRowStyles()
 {
-    const QString selectedStyle = QStringLiteral("QWidget#LayerRow { background-color: rgb(232, 238, 251);"
-                                                 " border-left: 3px solid rgb(37, 99, 235); border-radius: 4px; }");
-    const QString normalStyle = QStringLiteral("QWidget#LayerRow { background-color: transparent;"
-                                               " border-left: 3px solid transparent; }");
-
     for (int row = 0; row < m_list->count(); ++row) {
         QListWidgetItem* entry = m_list->item(row);
         QWidget* widget = m_list->itemWidget(entry);
         if (!widget) {
             continue;
         }
-        widget->setStyleSheet(entry->isSelected() ? selectedStyle : normalStyle);
+        // 选中态走 QSS 的动态属性，颜色只在 main.cpp 的样式表里维护。
+        widget->setProperty("selected", entry->isSelected());
+        widget->style()->unpolish(widget);
+        widget->style()->polish(widget);
+        widget->update();
     }
 }
 

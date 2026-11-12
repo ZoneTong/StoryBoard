@@ -106,7 +106,7 @@ bash scripts/package-portable.sh --build --qt-dir "$HOME/Qt/6.8.0/gcc_64"
 | macOS | `StoryBoard.app` 及 `.zip` | `macdeployqt` + 补 `libqoffscreen.dylib` |
 | Linux | `StoryBoard-<ver>-linux-<arch>-portable.tar.gz` | 拷贝 `libQt6*`、插件与 `qt.conf` |
 
-Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux 分支按 Qt 官方部署方式提供，尚未在对应主机实机验证。自检默认要求 Windows 609 项，其他平台接受当前通过数；可用 `--expected-passed 0` 放宽，`--skip-self-test` 跳过（不推荐）。
+Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux 分支按 Qt 官方部署方式提供，尚未在对应主机实机验证。自检默认要求 Windows 612 项，其他平台接受当前通过数；可用 `--expected-passed 0` 放宽，`--skip-self-test` 跳过（不推荐）。
 
 ## 使用说明
 
@@ -142,8 +142,10 @@ Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux �
 
 ### 背景、设置与语言
 
-- **插入 → 替换背景图片…**：纯色、图片（拉伸/适应/平铺）或清除背景（原“画布”菜单已并入插入菜单）。
+- **插入 → 替换背景图片…**：纯色、图片（拉伸/适应/平铺）或清除背景（原“画布”菜单已并入插入菜单，背景四项排在“插入图片”之前）。
+- **视图 → 辅助网格**：直接勾选/取消画布网格，和「设置 → 画布 → 显示辅助网格」共用同一份配置，改哪边都会同步。
 - **文件 → 设置…**（`Ctrl+,`）：默认画笔颜色/粗细、画笔自动平滑容差、画布尺寸、辅助网格、画布外围颜色、界面语言、图片线稿化参数（档位与各项细项）。
+- **帮助 → 快捷键一览…**：按当前动作自动汇总所有带快捷键的条目（动作名 + 组合键），新增快捷键后清单自动跟上。
 
 ![设置对话框](docs/settings.png)
 
@@ -188,6 +190,8 @@ Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux �
 
 ### 快捷键
 
+应用内「帮助 → 快捷键一览…」会按当前动作实时汇总全部快捷键，下面只列常用项。所有带快捷键的动作，提示文字里也会带上组合键。
+
 | 操作 | 快捷键 |
 | --- | --- |
 | 新建 / 打开 / 保存 / 另存为 | `Ctrl+N` / `Ctrl+O` / `Ctrl+S` / `Ctrl+Shift+S` |
@@ -217,7 +221,7 @@ QT_QPA_PLATFORM=offscreen ./out/bin/StoryBoard.exe --self-test out/selftest.txt
 cat out/selftest.txt
 ```
 
-当前 Windows 基线为 **609 passed, 0 failed**；其他平台以实际 `SUMMARY` 为准。
+当前 Windows 基线为 **612 passed, 0 failed**；其他平台以实际 `SUMMARY` 为准。
 
 `--self-test` 需要平台插件目录下的 offscreen 插件（Windows `platforms/qoffscreen.dll`、macOS `platforms/libqoffscreen.dylib`、Linux `platforms/libqoffscreen.so`）。打包脚本会自动补齐。
 
