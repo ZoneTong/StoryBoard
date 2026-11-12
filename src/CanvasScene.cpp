@@ -203,7 +203,7 @@ void CanvasScene::commitCanvasRect(const QRectF& before)
         return;
     if (m_undoStack)
         m_undoStack->push(new CanvasSizeCommand(this, before, after,
-                                              uiText(QStringLiteral("Resize canvas"))));
+                                              tr("Resize canvas")));
 }
 
 void CanvasScene::applyBackground(const BackgroundState& background)
@@ -220,7 +220,7 @@ void CanvasScene::replaceBackground(const BackgroundState& background, const QSt
 
     if (m_undoStack) {
         m_undoStack->push(new BackgroundCommand(this, m_background, background,
-                                               text.isEmpty() ? uiText(QStringLiteral("Change background")) : text));
+                                               text.isEmpty() ? tr("Change background") : text));
     } else {
         applyBackground(background);
     }
@@ -427,7 +427,7 @@ int CanvasScene::groupSelectedItems()
 
     if (m_undoStack) {
         m_undoStack->push(new GroupCommand(this, items, before, after,
-                                           uiText(QStringLiteral("Group selected items"))));
+                                           tr("Group selected items")));
     } else {
         applyGroupIds(items, after);
     }
@@ -468,7 +468,7 @@ int CanvasScene::ungroupSelectedItems()
 
     if (m_undoStack) {
         m_undoStack->push(new GroupCommand(this, items, before, after,
-                                           uiText(QStringLiteral("Ungroup selected items"))));
+                                           tr("Ungroup selected items")));
     } else {
         applyGroupIds(items, after);
     }
@@ -531,7 +531,7 @@ int CanvasScene::smoothSelectedStrokes(qreal tolerance)
 
     if (m_undoStack) {
         m_undoStack->push(new StrokeSmoothCommand(this, items, before, after,
-                                                  uiText(QStringLiteral("Smooth selected strokes"))));
+                                                  tr("Smooth selected strokes")));
     } else {
         for (int i = 0; i < items.size(); ++i)
             items.at(i)->applyGeometryState(after.at(i));
@@ -777,7 +777,7 @@ bool CanvasScene::addLayerWithUndo(const QString& name)
     LayerStackState after = before;
     after.layers.append(entry);
     after.activeLayerId = id;
-    const QString text = uiText(QStringLiteral("New layer"));
+    const QString text = tr("New layer");
 
     if (m_undoStack) {
         m_undoStack->push(new LayerStateCommand(this, before, after, text));
@@ -797,11 +797,11 @@ bool CanvasScene::removeLayerWithUndo(int layerId, QString* errorMessage)
 
     const int index = layerIndex(layerId);
     if (index <= 0)
-        return fail(uiText(QStringLiteral("The background layer cannot be deleted.")));
+        return fail(tr("The background layer cannot be deleted."));
     if (userLayerCount() <= 1)
-        return fail(uiText(QStringLiteral("At least one layer must remain.")));
+        return fail(tr("At least one layer must remain."));
     if (layerItemCount(layerId) > 0)
-        return fail(uiText(QStringLiteral("This layer still contains items. Delete or move them first.")));
+        return fail(tr("This layer still contains items. Delete or move them first."));
 
     const LayerStackState before = layerState();
     LayerStackState after = before;
@@ -812,7 +812,7 @@ bool CanvasScene::removeLayerWithUndo(int layerId, QString* errorMessage)
     }
 
     if (m_undoStack) {
-        m_undoStack->push(new LayerStateCommand(this, before, after, uiText(QStringLiteral("Delete layer"))));
+        m_undoStack->push(new LayerStateCommand(this, before, after, tr("Delete layer")));
     } else {
         applyLayerStateInternal(after);
     }
@@ -833,7 +833,7 @@ bool CanvasScene::moveLayerWithUndo(int layerId, int delta)
     LayerStackState after = before;
     after.layers.swapItemsAt(index, target);
 
-    const QString text = delta > 0 ? uiText(QStringLiteral("Move layer up")) : uiText(QStringLiteral("Move layer down"));
+    const QString text = delta > 0 ? tr("Move layer up") : tr("Move layer down");
     if (m_undoStack) {
         m_undoStack->push(new LayerStateCommand(this, before, after, text));
     } else {
@@ -856,7 +856,7 @@ bool CanvasScene::renameLayerWithUndo(int layerId, const QString& name)
     LayerStackState after = before;
     after.layers[index].name = trimmed;
 
-    const QString text = uiText(QStringLiteral("Rename layer"));
+    const QString text = tr("Rename layer");
     if (m_undoStack) {
         m_undoStack->push(new LayerStateCommand(this, before, after, text));
     } else {
@@ -1124,7 +1124,7 @@ bool CanvasScene::adjustItemHeight(CanvasItem* item, int delta, const QString& t
         after.append({ colliding, colliding->layerId(), current });
 
     const QString commandText = text.isEmpty()
-        ? (delta > 0 ? uiText(QStringLiteral("Move item up")) : uiText(QStringLiteral("Move item down")))
+        ? (delta > 0 ? tr("Move item up") : tr("Move item down"))
         : text;
     if (m_undoStack)
         m_undoStack->push(new ItemStackCommand(this, before, after, commandText));
@@ -1149,8 +1149,8 @@ int CanvasScene::adjustSelectedHeights(int delta)
 
     const bool grouped = m_undoStack && targets.size() > 1;
     if (grouped)
-        m_undoStack->beginMacro(delta > 0 ? uiText(QStringLiteral("Move item up"))
-                                         : uiText(QStringLiteral("Move item down")));
+        m_undoStack->beginMacro(delta > 0 ? tr("Move item up")
+                                         : tr("Move item down"));
 
     int changed = 0;
     for (CanvasItem* item : targets) {
@@ -1179,8 +1179,8 @@ int CanvasScene::moveSelectedItemsToAdjacentLayer(int delta)
 
     const bool grouped = m_undoStack && targets.size() > 1;
     if (grouped)
-        m_undoStack->beginMacro(delta > 0 ? uiText(QStringLiteral("Move to the layer above"))
-                                         : uiText(QStringLiteral("Move to the layer below")));
+        m_undoStack->beginMacro(delta > 0 ? tr("Move to the layer above")
+                                         : tr("Move to the layer below"));
 
     int changed = 0;
     for (CanvasItem* item : targets) {
@@ -1223,7 +1223,7 @@ bool CanvasScene::moveItemToAdjacentLayer(CanvasItem* item, int delta, const QSt
     };
 
     const QString commandText = text.isEmpty()
-        ? (delta > 0 ? uiText(QStringLiteral("Move to the layer above")) : uiText(QStringLiteral("Move to the layer below")))
+        ? (delta > 0 ? tr("Move to the layer above") : tr("Move to the layer below"))
         : text;
     if (m_undoStack)
         m_undoStack->push(new ItemStackCommand(this, before, after, commandText));
@@ -1274,7 +1274,7 @@ bool CanvasScene::changeTextWithUndo(TextItem* item, const QString& text, const 
         return false;
 
     const QString commandText = textCommand.isEmpty()
-        ? uiText(QStringLiteral("Edit text"))
+        ? tr("Edit text")
         : textCommand;
     if (m_undoStack)
         m_undoStack->push(new TextItemCommand(this, item, before, after, commandText));
@@ -1535,7 +1535,7 @@ void CanvasScene::deleteSelected()
         return;
 
     if (m_undoStack) {
-        m_undoStack->push(new RemoveItemsCommand(this, selected, uiText(QStringLiteral("Delete item"))));
+        m_undoStack->push(new RemoveItemsCommand(this, selected, tr("Delete item")));
     } else {
         for (CanvasItem* item : selected)
             detachItem(item);
@@ -1603,7 +1603,7 @@ int CanvasScene::duplicateSelectedItems()
     if (copies.isEmpty())
         return 0;
 
-    addItemsWithUndo(copies, uiText(QStringLiteral("Duplicate selected items")));
+    addItemsWithUndo(copies, tr("Duplicate selected items"));
     clearSelection();
     for (CanvasItem* copy : copies) {
         if (isItemEditable(copy))
@@ -1692,7 +1692,7 @@ int CanvasScene::rotateSelected(qreal degrees, const QString& commandText)
         return 0;
 
     const QString text = commandText.isEmpty()
-        ? uiText(QStringLiteral("Rotate items"))
+        ? tr("Rotate items")
         : commandText;
     if (m_undoStack) {
         m_undoStack->push(new RotationCommand(this, changed, before, after, text));
@@ -1810,14 +1810,14 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
     };
 
     if (root.value(QStringLiteral("format")).toString() != QStringLiteral("StoryBoardCanvas"))
-        return fail(uiText(QStringLiteral("This is not a valid StoryBoard canvas file.")));
+        return fail(tr("This is not a valid StoryBoard canvas file."));
 
     const QJsonObject canvas = root.value(QStringLiteral("canvas")).toObject();
     // 画布尺寸允许带小数（拖拽边缘时通常不是整数），这里不能用 toInt()。
     const qreal width = canvas.value(QStringLiteral("width")).toDouble(0.0);
     const qreal height = canvas.value(QStringLiteral("height")).toDouble(0.0);
     if (width <= 0.0 || height <= 0.0)
-        return fail(uiText(QStringLiteral("The canvas size in the canvas file is invalid.")));
+        return fail(tr("The canvas size in the canvas file is invalid."));
 
     resetDocument();
     applyCanvasRect(QRectF(canvas.value(QStringLiteral("x")).toDouble(0.0),
@@ -1850,7 +1850,7 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
 
     const QJsonArray layerArray = root.value(QStringLiteral("layers")).toArray();
     if (!root.value(QStringLiteral("layers")).isArray() || layerArray.isEmpty())
-        return fail(uiText(QStringLiteral("This is not a valid StoryBoard canvas file.")));
+        return fail(tr("This is not a valid StoryBoard canvas file."));
 
     LayerStackState state;
     bool backgroundVisible = true;
@@ -1899,7 +1899,7 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
         CanvasItem* item = createItem(kind);
         if (!item) {
             resetDocument();
-            return fail(uiText(QStringLiteral("The canvas contains an unknown item type: %1")).arg(kind));
+            return fail(tr("The canvas contains an unknown item type: %1").arg(kind));
         }
         item->fromJson(itemJson);
         if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId) {

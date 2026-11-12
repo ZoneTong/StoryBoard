@@ -2194,4 +2194,125 @@ Use the checkbox to show or hide it.</source>
       <translation>选择画布外围颜色</translation>
     </message>
   </context>
+  <context>
+    <name>CanvasScene</name>
+    <message>
+      <source>Resize canvas</source>
+      <translation>调整画布</translation>
+    </message>
+    <message>
+      <source>Change background</source>
+      <translation>更换背景</translation>
+    </message>
+    <message>
+      <source>Group selected items</source>
+      <translation>组合选中图元</translation>
+    </message>
+    <message>
+      <source>Ungroup selected items</source>
+      <translation>取消组合选中图元</translation>
+    </message>
+    <message>
+      <source>New layer</source>
+      <translation>新建图层</translation>
+    </message>
+    <message>
+      <source>The background layer cannot be deleted.</source>
+      <translation>背景层不能删除。</translation>
+    </message>
+    <message>
+      <source>At least one layer must remain.</source>
+      <translation>至少需要保留一个图层。</translation>
+    </message>
+    <message>
+      <source>This layer still contains items. Delete or move them first.</source>
+      <translation>该图层中还有图元，请先删除或移动图元。</translation>
+    </message>
+    <message>
+      <source>Delete layer</source>
+      <translation>删除图层</translation>
+    </message>
+    <message>
+      <source>Move layer up</source>
+      <translation>图层上移</translation>
+    </message>
+    <message>
+      <source>Move layer down</source>
+      <translation>图层下移</translation>
+    </message>
+    <message>
+      <source>Rename layer</source>
+      <translation>重命名图层</translation>
+    </message>
+    <message>
+      <source>Move item up</source>
+      <translation>上移图元</translation>
+    </message>
+    <message>
+      <source>Move item down</source>
+      <translation>下移图元</translation>
+    </message>
+    <message>
+      <source>Move to the layer above</source>
+      <translation>移到上一层图层</translation>
+    </message>
+    <message>
+      <source>Move to the layer below</source>
+      <translation>移到下一层图层</translation>
+    </message>
+    <message>
+      <source>Edit text</source>
+      <translation>编辑文字</translation>
+    </message>
+    <message>
+      <source>Delete item</source>
+      <translation>删除图元</translation>
+    </message>
+    <message>
+      <source>Duplicate selected items</source>
+      <translation>复制选中图元</translation>
+    </message>
+    <message>
+      <source>Rotate items</source>
+      <translation>旋转图元</translation>
+    </message>
+    <message>
+      <source>This is not a valid StoryBoard canvas file.</source>
+      <translation>这不是有效的故事板画布文件。</translation>
+    </message>
+    <message>
+      <source>The canvas size in the canvas file is invalid.</source>
+      <translation>画布文件中的画布尺寸无效。</translation>
+    </message>
+    <message>
+      <source>The canvas contains an unknown item type: %1</source>
+      <translation>画布中包含未知的图元类型：%1</translation>
+    </message>
+    <message>
+      <source>Smooth selected strokes</source>
+      <translation>平滑选中笔画</translation>
+    </message>
+  </context>
+  <context>
+    <name>CanvasItem</name>
+    <message>
+      <source>Rotate item</source>
+      <translation>旋转图元</translation>
+    </message>
+    <message>
+      <source>Resize item</source>
+      <translation>缩放图元</translation>
+    </message>
+    <message>
+      <source>Move item</source>
+      <translation>移动图元</translation>
+    </message>
+  </context>
+  <context>
+    <name>StrokeItem</name>
+    <message>
+      <source>Stroke</source>
+      <translation>笔画</translation>
+    </message>
+  </context>
 </TS>

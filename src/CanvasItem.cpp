@@ -624,7 +624,7 @@ void CanvasItem::finishInteraction()
     if (wasRotate) {
         if (CanvasScene* canvas = canvasScene()) {
             canvas->pushRotation(this, m_dragStartRotation, m_rotation,
-                                uiText(QStringLiteral("Rotate item")));
+                                tr("Rotate item"));
         }
     } else if (!m_before.isEmpty()) {
         ItemGeometryList after;
@@ -635,8 +635,8 @@ void CanvasItem::finishInteraction()
         }
         if (CanvasScene* canvas = canvasScene()) {
             canvas->pushGeometry(m_before, after,
-                                wasResize ? uiText(QStringLiteral("Resize item"))
-                                          : uiText(QStringLiteral("Move item")));
+                                wasResize ? tr("Resize item")
+                                          : tr("Move item"));
         }
     }
     m_before.clear();

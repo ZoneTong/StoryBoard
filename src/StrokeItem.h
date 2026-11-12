@@ -27,7 +27,7 @@ public:
     explicit StrokeItem(QGraphicsItem* parent = nullptr);
 
     QString kind() const override { return QStringLiteral("stroke"); }
-    QString displayName() const override { return uiText(QStringLiteral("Stroke")); }
+    QString displayName() const override { return tr("Stroke"); }
 
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& json) override;
