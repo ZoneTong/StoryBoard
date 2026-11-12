@@ -188,6 +188,9 @@ int runSelfTest(const QString& reportPath)
     // Qt 内置字体对话框的标签来自 qtbase 翻译，而不是应用自己的 StoryBoard 上下文。
     check(QCoreApplication::translate("QFontDialog", "Effects") == QStringLiteral("效果"),
           QStringLiteral("Qt 内置字体对话框已装载中文翻译"));
+    // 视图 → 辅助网格 的菜单文案在 MainWindow 上下文里，缺译文就会显示英文。
+    check(QCoreApplication::translate("MainWindow", "Helper grid") == QStringLiteral("辅助网格"),
+          QStringLiteral("视图菜单的辅助网格项有中文译文"), QCoreApplication::translate("MainWindow", "Helper grid"));
 
     const QString resolvedReportPath = reportPath.isEmpty()
                                            ? QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
