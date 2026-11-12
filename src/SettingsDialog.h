@@ -12,6 +12,7 @@ class QSpinBox;
 class QCheckBox;
 class QComboBox;
 class QToolButton;
+class QShowEvent;
 
 class SettingsDialog : public QDialog {
     Q_OBJECT
@@ -23,6 +24,10 @@ class SettingsDialog : public QDialog {
 
     void setBrushColor(const QColor& color);
     void setCanvasColor(const QColor& color);
+
+  protected:
+    // 窗口显示后布局才是最终值，这里按真实内容高度补一次尺寸，避免底部说明被裁。
+    void showEvent(QShowEvent* event) override;
 
   private:
     bool pickColor(QColor& target, const QString& title, bool allowAlpha);
@@ -50,4 +55,5 @@ class SettingsDialog : public QDialog {
     QDoubleSpinBox* m_lineArtToleranceSpin = nullptr;
     QDoubleSpinBox* m_lineArtThicknessSpin = nullptr;
     QToolButton* m_lineArtHintToggle = nullptr;
+    bool m_heightFitted = false;
 };

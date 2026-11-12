@@ -367,10 +367,11 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     grid->setContentsMargins(0, 0, 8, 0);
     grid->setHorizontalSpacing(14);
     grid->setVerticalSpacing(12);
-    grid->addWidget(languageGroup, 0, 0);
-    grid->addWidget(brushGroup, 0, 1);
-    grid->addWidget(canvasGroup, 1, 0);
-    grid->addWidget(storageGroup, 1, 1);
+    // 各组按自身高度靠上排，不让短分组被同排的高分组拉长成大片空白。
+    grid->addWidget(languageGroup, 0, 0, Qt::AlignTop);
+    grid->addWidget(brushGroup, 0, 1, Qt::AlignTop);
+    grid->addWidget(canvasGroup, 1, 0, Qt::AlignTop);
+    grid->addWidget(storageGroup, 1, 1, Qt::AlignTop);
     grid->addWidget(lineArtGroup, 2, 0, 1, 2);
     grid->setColumnStretch(0, 1);
     grid->setColumnStretch(1, 1);
@@ -427,6 +428,33 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     });
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     connect(buttons->button(QDialogButtonBox::Reset), &QPushButton::clicked, this, &SettingsDialog::resetToDefaults);
+}
+
+void SettingsDialog::showEvent(QShowEvent* event)
+{
+    QDialog::showEvent(event);
+    if (m_heightFitted) {
+        return;
+    }
+    m_heightFitted = true;
+
+    QScrollArea* scroll = findChild<QScrollArea*>(QStringLiteral("SettingsScroll"));
+    if (!scroll || !scroll->widget()) {
+        return;
+    }
+    // 显示之后布局才真正跑过一遍：按内容真实高度补窗口高度，屏幕不够高时仍然保留滚动条兜底。
+    const QWidget* content = scroll->widget();
+    const int chrome = height() - scroll->height();
+    int contentHeight = content->sizeHint().height();
+    if (content->hasHeightForWidth()) {
+        contentHeight = qMax(contentHeight, content->heightForWidth(content->width()));
+    }
+    const QScreen* scr = screen();
+    const int maxHeight = scr ? scr->availableGeometry().height() - 40 : contentHeight + chrome;
+    const int target = qBound(minimumHeight(), contentHeight + chrome, qMax(minimumHeight(), maxHeight));
+    if (target > height()) {
+        resize(width(), target);
+    }
 }
 
 void SettingsDialog::refreshColorButton(QPushButton* button, const QColor& color)
