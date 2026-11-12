@@ -1345,6 +1345,22 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>保存当前画布 (Ctrl+S)</translation>
     </message>
     <message>
+      <source>Save to configuration file</source>
+      <translation>保存到配置文件</translation>
+    </message>
+    <message>
+      <source>Write the parameters above into StoryBoard.ini now; otherwise they only apply to this session.</source>
+      <translation>立即把上面的参数写进 StoryBoard.ini；不点这个按钮则只在本次运行中生效。</translation>
+    </message>
+    <message>
+      <source>Image outline settings saved to the configuration file</source>
+      <translation>线稿化参数已保存到配置文件</translation>
+    </message>
+    <message>
+      <source>Could not write the configuration file; the settings apply to this session only</source>
+      <translation>配置文件写入失败，参数只在本次运行中生效</translation>
+    </message>
+    <message>
       <source>Save the current canvas to a new file (Ctrl+Shift+S)</source>
       <translation>将当前画布另存为新文件 (Ctrl+Shift+S)</translation>
     </message>

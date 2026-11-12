@@ -3964,7 +3964,75 @@ int runSelfTest(const QString& reportPath)
         }
     }
     {
-        // 需求：色块过多时自适应降采样，默认勾选、可取消。
+        // 需求：参数只在内存里生效，只有点“保存到配置文件”才覆盖配置文件。
+        const AppSettings defaults;
+        const QString configPath = AppSettings::settingsFilePath();
+        auto readConfig = [&configPath]() {
+            QFile file(configPath);
+            if (!file.open(QIODevice::ReadOnly))
+                return QByteArray();
+            return file.readAll();
+        };
+
+        LineArtDialog dialog(defaults);
+        check(!dialog.saveRequested(), QStringLiteral("参数对话框打开时不会请求保存配置"));
+        QPushButton* saveButton = dialog.findChild<QPushButton*>(
+            QStringLiteral("LineArtSaveSettingsButton"));
+        check(saveButton && saveButton->text() == QStringLiteral("保存到配置文件"),
+              QStringLiteral("参数对话框提供保存到配置文件按钮"),
+              saveButton ? saveButton->text() : QStringLiteral("missing"));
+
+        QSpinBox* levelsSpin = dialog.findChild<QSpinBox*>(QStringLiteral("LineArtLevelsSpin"));
+        if (levelsSpin)
+            levelsSpin->setValue(11);
+        const QByteArray beforeAccept = readConfig();
+        dialog.accept();
+        const QByteArray afterAccept = readConfig();
+        check(!dialog.saveRequested(), QStringLiteral("点确定只改内存不写配置文件"));
+        check(afterAccept == beforeAccept, QStringLiteral("点确定后配置文件内容原样未动"),
+              QStringLiteral("before=%1 after=%2").arg(beforeAccept.size()).arg(afterAccept.size()));
+
+        LineArtDialog saveDialog(defaults);
+        QPushButton* saveButton2 = saveDialog.findChild<QPushButton*>(
+            QStringLiteral("LineArtSaveSettingsButton"));
+        QSpinBox* saveAreaSpin = saveDialog.findChild<QSpinBox*>(
+            QStringLiteral("LineArtMinAreaSpin"));
+        if (saveAreaSpin)
+            saveAreaSpin->setValue(96);
+        if (saveButton2)
+            saveButton2->click();
+        check(saveDialog.saveRequested() && saveDialog.result() == QDialog::Accepted,
+              QStringLiteral("点保存到配置文件会置位保存请求并继续"),
+              QStringLiteral("requested=%1 result=%2")
+                  .arg(saveDialog.saveRequested() ? 1 : 0)
+                  .arg(saveDialog.result()));
+
+        AppSettings memory = defaults;
+        saveDialog.applyToSettings(memory);
+        check(memory.lineArtMinRegionArea == 96,
+              QStringLiteral("不点保存时参数仍写进行程内设置"),
+              QString::number(memory.lineArtMinRegionArea));
+
+        // 只写线稿化键：先记下文件里的非线稿化值，保存后它们必须原样保留。
+        AppSettings seeded;
+        seeded.load();
+        const int brushWidthBefore = seeded.brushWidth;
+        AppSettings lineOnly = seeded;
+        lineOnly.lineArtColorLevels = 11;
+        lineOnly.lineArtMinThickness = 3.5;
+        check(lineOnly.saveLineArt(), QStringLiteral("保存到配置文件只写线稿化参数"));
+        AppSettings reloaded;
+        reloaded.load();
+        check(reloaded.lineArtColorLevels == 11
+                  && qAbs(reloaded.lineArtMinThickness - 3.5) < 1e-6
+                  && reloaded.brushWidth == brushWidthBefore,
+              QStringLiteral("只覆盖线稿化参数，其它设置保持不动"),
+              QStringLiteral("levels=%1 thickness=%2 width=%3")
+                  .arg(reloaded.lineArtColorLevels)
+                  .arg(reloaded.lineArtMinThickness)
+                  .arg(reloaded.brushWidth));
+    }
+    {
         const AppSettings defaults;
         LineArtDialog dialog(defaults);
         auto* adaptiveCheck = dialog.findChild<QCheckBox*>(

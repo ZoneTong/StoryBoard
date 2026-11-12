@@ -142,6 +142,8 @@ qreal boundedDoubleFromMap(const SettingsMap& values, const QString& key, qreal 
     return qBound(minimum, ok ? value : fallback, maximum);
 }
 
+void mergeLineArtSettings(SettingsMap& values, const AppSettings& settings);
+
 void mergeSettings(SettingsMap& values, const AppSettings& settings)
 {
     values.insert(QStringLiteral("brush/color"), settings.brushColor.name(QColor::HexArgb));
@@ -165,6 +167,11 @@ void mergeSettings(SettingsMap& values, const AppSettings& settings)
     values.insert(QStringLiteral("window/geometryBase64"),
                   QString::fromLatin1(settings.windowGeometry.toBase64()));
 
+    mergeLineArtSettings(values, settings);
+}
+
+void mergeLineArtSettings(SettingsMap& values, const AppSettings& settings)
+{
     values.insert(QStringLiteral("lineArt/colorLevels"), QString::number(settings.lineArtColorLevels));
     values.insert(QStringLiteral("lineArt/paletteMerge"), QString::number(settings.lineArtPaletteMerge));
     values.insert(QStringLiteral("lineArt/adjacentMerge"), QString::number(settings.lineArtAdjacentMerge));
@@ -239,6 +246,26 @@ bool AppSettings::save() const
     SettingsMap values = readSettingsFile(path);
     mergeSettings(values, *this);
     return writeSettingsFile(path, values);
+}
+
+bool AppSettings::saveLineArt() const
+{
+    const QString path = settingsFilePath();
+    SettingsMap values = readSettingsFile(path);
+    mergeLineArtSettings(values, *this);
+    return writeSettingsFile(path, values);
+}
+
+void AppSettings::copyLineArtFrom(const AppSettings& other)
+{
+    lineArtColorLevels = other.lineArtColorLevels;
+    lineArtPaletteMerge = other.lineArtPaletteMerge;
+    lineArtAdjacentMerge = other.lineArtAdjacentMerge;
+    lineArtMinRegionArea = other.lineArtMinRegionArea;
+    lineArtAdaptiveDownscale = other.lineArtAdaptiveDownscale;
+    lineArtAdaptiveLimit = other.lineArtAdaptiveLimit;
+    lineArtSimplifyTolerance = other.lineArtSimplifyTolerance;
+    lineArtMinThickness = other.lineArtMinThickness;
 }
 
 QString AppSettings::defaultCanvasesDir()

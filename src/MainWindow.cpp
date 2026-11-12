@@ -324,6 +324,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     setAcceptDrops(true);
 
     m_settings.load();
+    m_lineArtSettings = m_settings;
     m_brushColor = m_settings.brushColor;
     m_brushWidth = m_settings.brushWidth;
 
@@ -1689,15 +1690,27 @@ void MainWindow::importOutlineImageDialog()
         return;
     }
 
-    // 选完图片先弹参数：档位和四项数值都在这里，点“确定”才真正描线。
-    LineArtDialog dialog(m_settings, this);
+    // 选完图片先弹参数：档位和各项数值都在这里，点“确定”才真正描线。
+    // 参数只改进程内副本；只有点“保存到配置文件”才覆盖 StoryBoard.ini。
+    LineArtDialog dialog(m_lineArtSettings, this);
     if (dialog.exec() != QDialog::Accepted) {
         return;
     }
 
-    AppSettings settings = m_settings;
-    dialog.applyToSettings(settings);
-    m_settings = settings;
+    dialog.applyToSettings(m_lineArtSettings);
+    if (dialog.saveRequested()) {
+        const bool saved = m_lineArtSettings.saveLineArt();
+        if (saved) {
+            // 文件已经是新值了，主设置对象同步一份，避免之后整份保存把旧值写回去。
+            m_settings.copyLineArtFrom(m_lineArtSettings);
+            statusBar()->showMessage(uiText(QStringLiteral("Image outline settings saved to the configuration file")),
+                                     4000);
+        } else {
+            statusBar()->showMessage(uiText(QStringLiteral("Could not write the configuration file; the settings apply "
+                                                        "to this session only")),
+                                     5000);
+        }
+    }
     importOutlineImageFile(file, dialog.options());
 }
 
@@ -2300,6 +2313,8 @@ void MainWindow::showSettings()
     // 对话框里的设置是主窗口设置的一份完整副本：语言另存，其余整份拷回，
     // 避免新增参数（例如线稿化档位）漏在“改完却记不住”的队伍里。
     m_settings = updated;
+    // 设置窗里的线稿化参数已经随整份保存落盘，进程内副本跟着刷新。
+    m_lineArtSettings.copyLineArtFrom(m_settings);
 
     setBrushColor(m_settings.brushColor, false);
     setBrushWidthUi(m_settings.brushWidth);
