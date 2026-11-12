@@ -2996,6 +2996,11 @@ int runSelfTest(const QString& reportPath)
               QStringLiteral("checked=%1 scene=%2")
                   .arg(gridAction && gridAction->isChecked() ? 1 : 0)
                   .arg(gridScene && gridScene->showGrid() ? 1 : 0));
+        if (gridAction) {
+            // 菜单项文案必须是中文，不能因为上下文/译文缺失而露出英文。
+            check(gridAction->text() == QStringLiteral("辅助网格"), QStringLiteral("辅助网格菜单项显示中文"),
+                  gridAction->text());
+        }
         if (gridAction && gridScene) {
             const bool gridBefore = gridScene->showGrid();
             gridAction->setChecked(!gridBefore);
