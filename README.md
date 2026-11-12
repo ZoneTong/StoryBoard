@@ -232,7 +232,10 @@ cat out/selftest.txt
 ./out/bin/StoryBoard --demo-canvas examples/demo-canvas.sbcanvas
 ./out/bin/StoryBoard --ui-screenshot out/ui.png
 ./out/bin/StoryBoard --item-properties-screenshot out/props.png
+./out/bin/StoryBoard --settings-screenshot out/settings.png
 ```
+
+`--settings-screenshot` 只弹设置窗并把它自己抓成图片，不需要人工截图；配合 `QT_QPA_PLATFORM=offscreen` 和 `QT_QPA_FONTDIR`（Windows 指向 `C:\Windows\Fonts`）就能在后台生成中文完整的文档图，不会占用桌面。
 
 > Windows 下把 `./out/bin/StoryBoard` 换成 `./out/bin/StoryBoard.exe`。
 

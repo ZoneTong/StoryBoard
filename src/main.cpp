@@ -19,6 +19,7 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QPixmap>
+#include <QScrollArea>
 #include <QStandardPaths>
 #include <QStyleFactory>
 #include <QTimer>
@@ -247,6 +248,18 @@ int main(int argc, char** argv)
         SettingsDialog dialog(settings);
         dialog.show();
         QApplication::processEvents();
+        // 截图要完整一张：把窗口撑到内容的真实高度，不受离屏平台小屏幕的夹取影响。
+        if (QScrollArea* scroll = dialog.findChild<QScrollArea*>(QStringLiteral("SettingsScroll"))) {
+            if (QWidget* content = scroll->widget()) {
+                const int chrome = dialog.height() - scroll->height();
+                int contentHeight = content->sizeHint().height();
+                if (content->hasHeightForWidth()) {
+                    contentHeight = qMax(contentHeight, content->heightForWidth(content->width()));
+                }
+                dialog.resize(dialog.width(), qMax(dialog.height(), contentHeight + chrome + 12));
+                QApplication::processEvents();
+            }
+        }
         return dialog.grab().save(outputPath) ? 0 : 1;
     }
 
