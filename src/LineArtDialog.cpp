@@ -1,13 +1,12 @@
-#include "I18n.h"
-
 #include "LineArtDialog.h"
 
+#include "I18n.h"
 #include "LineArtPresets.h"
 
-#include <QComboBox>
 #include <QCheckBox>
-#include <QDoubleSpinBox>
+#include <QComboBox>
 #include <QDialogButtonBox>
+#include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QLabel>
@@ -16,8 +15,7 @@
 #include <QSpinBox>
 #include <QVBoxLayout>
 
-LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
-    : QDialog(parent)
+LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent) : QDialog(parent)
 {
     setWindowTitle(tr("Image outline tracing"));
     setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));
@@ -39,10 +37,12 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
 
     m_presetCombo = new QComboBox(lineArtGroup);
     m_presetCombo->setObjectName(QStringLiteral("LineArtPresetCombo"));
-    for (int i = 0; i < lineArtPresetCount(); ++i)
+    for (int i = 0; i < lineArtPresetCount(); ++i) {
         m_presetCombo->addItem(uiText(QString::fromLatin1(lineArtPreset(i).name)), i);
+    }
     m_presetCombo->addItem(tr("Custom"), -1);
-    m_presetCombo->setToolTip(tr("Applies a tested parameter set to all items below; editing any value switches back to Custom."));
+    m_presetCombo->setToolTip(
+        tr("Applies a tested parameter set to all items below; editing any value switches back to Custom."));
     lineArtForm->addRow(tr("Preset"), m_presetCombo);
 
     m_levelsSpin = new QSpinBox(lineArtGroup);
@@ -50,7 +50,8 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
     m_levelsSpin->setRange(2, 12);
     m_levelsSpin->setValue(settings.lineArtColorLevels);
     m_levelsSpin->setFixedHeight(30);
-    m_levelsSpin->setToolTip(tr("How many steps each color channel is cut into; more steps keeps subtle shading but also more fragments."));
+    m_levelsSpin->setToolTip(
+        tr("How many steps each color channel is cut into; more steps keeps subtle shading but also more fragments."));
     lineArtForm->addRow(tr("Color levels"), m_levelsSpin);
 
     m_paletteMergeSpin = new QSpinBox(lineArtGroup);
@@ -58,7 +59,8 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
     m_paletteMergeSpin->setRange(0, 160);
     m_paletteMergeSpin->setValue(settings.lineArtPaletteMerge);
     m_paletteMergeSpin->setFixedHeight(30);
-    m_paletteMergeSpin->setToolTip(tr("Two colors whose distance is under this value count as one color; smaller values keep small colored props."));
+    m_paletteMergeSpin->setToolTip(tr(
+        "Two colors whose distance is under this value count as one color; smaller values keep small colored props."));
     lineArtForm->addRow(tr("Same color similarity"), m_paletteMergeSpin);
 
     m_adjacentMergeSpin = new QSpinBox(lineArtGroup);
@@ -66,7 +68,8 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
     m_adjacentMergeSpin->setRange(0, 160);
     m_adjacentMergeSpin->setValue(settings.lineArtAdjacentMerge);
     m_adjacentMergeSpin->setFixedHeight(30);
-    m_adjacentMergeSpin->setToolTip(tr("Adjacent blocks whose colors differ less than this are drawn as one block; 0 disables merging."));
+    m_adjacentMergeSpin->setToolTip(
+        tr("Adjacent blocks whose colors differ less than this are drawn as one block; 0 disables merging."));
     lineArtForm->addRow(tr("Adjacent color similarity"), m_adjacentMergeSpin);
 
     m_minAreaSpin = new QSpinBox(lineArtGroup);
@@ -86,7 +89,8 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
     m_toleranceSpin->setSuffix(QStringLiteral(" px"));
     m_toleranceSpin->setValue(settings.lineArtSimplifyTolerance);
     m_toleranceSpin->setFixedHeight(30);
-    m_toleranceSpin->setToolTip(tr("How far the traced outline may deviate from its points; smaller follows pixel steps, larger turns arcs into fewer, straighter segments."));
+    m_toleranceSpin->setToolTip(tr("How far the traced outline may deviate from its points; smaller follows pixel "
+                                   "steps, larger turns arcs into fewer, straighter segments."));
     lineArtForm->addRow(tr("Simplify tolerance"), m_toleranceSpin);
 
     m_thicknessSpin = new QDoubleSpinBox(lineArtGroup);
@@ -97,7 +101,8 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
     m_thicknessSpin->setSuffix(QStringLiteral(" px"));
     m_thicknessSpin->setValue(settings.lineArtMinThickness);
     m_thicknessSpin->setFixedHeight(30);
-    m_thicknessSpin->setToolTip(tr("Blocks whose average width is under this value are not traced; 0 keeps every thin band, higher drops antialiasing halos."));
+    m_thicknessSpin->setToolTip(tr("Blocks whose average width is under this value are not traced; 0 keeps every thin "
+                                   "band, higher drops antialiasing halos."));
     lineArtForm->addRow(tr("Thinnest band"), m_thicknessSpin);
 
     // 色块过多时自适应降采样：默认勾选，取消勾选就按原始处理尺寸硬算（色块多时会变慢）。
@@ -108,13 +113,15 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
     m_adaptiveLimitSpin->setSuffix(tr(" blocks"));
     m_adaptiveLimitSpin->setValue(settings.lineArtAdaptiveLimit);
     m_adaptiveLimitSpin->setFixedHeight(30);
-    m_adaptiveLimitSpin->setToolTip(tr("Once the detected block count passes this value, the image is processed at a smaller size so the stroke count stays reasonable."));
+    m_adaptiveLimitSpin->setToolTip(tr("Once the detected block count passes this value, the image is processed at a "
+                                       "smaller size so the stroke count stays reasonable."));
     lineArtForm->addRow(tr("Block count limit"), m_adaptiveLimitSpin);
 
     m_adaptiveCheck = new QCheckBox(tr("Auto downsample when exceeded"), lineArtGroup);
     m_adaptiveCheck->setObjectName(QStringLiteral("LineArtAdaptiveCheck"));
     m_adaptiveCheck->setChecked(settings.lineArtAdaptiveDownscale);
-    m_adaptiveCheck->setToolTip(tr("Checked by default: shrink the processing size instead of dropping blocks, so nothing disappears from the image. Uncheck to trace at full size."));
+    m_adaptiveCheck->setToolTip(tr("Checked by default: shrink the processing size instead of dropping blocks, so "
+                                   "nothing disappears from the image. Uncheck to trace at full size."));
     m_adaptiveLimitSpin->setEnabled(m_adaptiveCheck->isChecked());
     connect(m_adaptiveCheck, &QCheckBox::toggled, m_adaptiveLimitSpin, &QSpinBox::setEnabled);
     lineArtForm->addRow(QString(), m_adaptiveCheck);
@@ -122,13 +129,18 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
     rootLayout->addWidget(lineArtGroup);
 
     auto* hint = new QLabel(tr("<b>How to tune</b><ul>"
-        "<li>Color similarity: RGB color distance (0-441). Lower keeps more small props, higher merges more fragments; adjacent merging only joins blocks that actually touch.</li>"
-        "<li>Simplify tolerance: how far a traced point may move. Smaller follows pixel steps, larger flattens arcs into straight segments.</li>"
-        "<li>Thinnest band: drops antialiasing halos; 0 keeps every thin band, higher also drops genuinely thin lines.</li>"
-        "<li>Block count limit: over the limit the image is traced at a smaller size instead of losing blocks. Uncheck to trace at full size (slower on busy images).</li>"
-        "<li>Stroke width is fixed at 1. OK and Cancel apply to this run only; Save to configuration file writes StoryBoard.ini.</li>"
-        "</ul>"),
-        this);
+                               "<li>Color similarity: RGB color distance (0-441). Lower keeps more small props, higher "
+                               "merges more fragments; adjacent merging only joins blocks that actually touch.</li>"
+                               "<li>Simplify tolerance: how far a traced point may move. Smaller follows pixel steps, "
+                               "larger flattens arcs into straight segments.</li>"
+                               "<li>Thinnest band: drops antialiasing halos; 0 keeps every thin band, higher also "
+                               "drops genuinely thin lines.</li>"
+                               "<li>Block count limit: over the limit the image is traced at a smaller size instead of "
+                               "losing blocks. Uncheck to trace at full size (slower on busy images).</li>"
+                               "<li>Stroke width is fixed at 1. OK and Cancel apply to this run only; Save to "
+                               "configuration file writes StoryBoard.ini.</li>"
+                               "</ul>"),
+                            this);
     hint->setTextFormat(Qt::RichText);
     hint->setObjectName(QStringLiteral("DialogHint"));
     hint->setWordWrap(true);
@@ -154,12 +166,11 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
 
     // 档位 ↔ 具体数值：切档位就整组写入，手改任何一项就跳回“自定义”。
     auto matchesPreset = [this](const LineArtPreset& preset) {
-        return m_levelsSpin->value() == preset.levels
-            && m_paletteMergeSpin->value() == preset.palette
-            && m_adjacentMergeSpin->value() == preset.adjacent
-            && m_minAreaSpin->value() == preset.minArea
-            // 容差是浮点，比较留 1e-3 余量，免得 0.6000000001 被判成“自定义”。
-            && qAbs(m_toleranceSpin->value() - preset.tolerance) < 1e-3;
+        return m_levelsSpin->value() == preset.levels && m_paletteMergeSpin->value() == preset.palette &&
+               m_adjacentMergeSpin->value() == preset.adjacent &&
+               m_minAreaSpin->value() == preset.minArea
+               // 容差是浮点，比较留 1e-3 余量，免得 0.6000000001 被判成“自定义”。
+               && qAbs(m_toleranceSpin->value() - preset.tolerance) < 1e-3;
     };
     auto applyPreset = [this](int index) {
         const LineArtPreset preset = lineArtPreset(index);
@@ -180,33 +191,36 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
             }
         }
         const int index = m_presetCombo->findData(data);
-        if (index < 0)
+        if (index < 0) {
             return;
+        }
         QSignalBlocker blocker(m_presetCombo);
         m_presetCombo->setCurrentIndex(index);
     };
 
-    connect(m_presetCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, [this, applyPreset](int) {
-                if (m_applyingPreset)
-                    return;
-                const int data = m_presetCombo->currentData().toInt();
-                if (data >= 0)
-                    applyPreset(data);
-            });
-    for (QSpinBox* spin : { m_levelsSpin, m_paletteMergeSpin, m_adjacentMergeSpin, m_minAreaSpin }) {
-        connect(spin, QOverload<int>::of(&QSpinBox::valueChanged), this,
-                [this, syncPresetCombo](int) {
-                    if (m_applyingPreset)
-                        return;
-                    syncPresetCombo();
-                });
+    connect(m_presetCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, applyPreset](int) {
+        if (m_applyingPreset) {
+            return;
+        }
+        const int data = m_presetCombo->currentData().toInt();
+        if (data >= 0) {
+            applyPreset(data);
+        }
+    });
+    for (QSpinBox* spin : {m_levelsSpin, m_paletteMergeSpin, m_adjacentMergeSpin, m_minAreaSpin}) {
+        connect(spin, QOverload<int>::of(&QSpinBox::valueChanged), this, [this, syncPresetCombo](int) {
+            if (m_applyingPreset) {
+                return;
+            }
+            syncPresetCombo();
+        });
     }
     // 手改简化容差同样要跳回“自定义”。
     connect(m_toleranceSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
             [this, syncPresetCombo](double) {
-                if (m_applyingPreset)
+                if (m_applyingPreset) {
                     return;
+                }
                 syncPresetCombo();
             });
     syncPresetCombo();

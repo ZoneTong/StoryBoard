@@ -106,7 +106,7 @@ bash scripts/package-portable.sh --build --qt-dir "$HOME/Qt/6.8.0/gcc_64"
 | macOS | `StoryBoard.app` 及 `.zip` | `macdeployqt` + 补 `libqoffscreen.dylib` |
 | Linux | `StoryBoard-<ver>-linux-<arch>-portable.tar.gz` | 拷贝 `libQt6*`、插件与 `qt.conf` |
 
-Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux 分支按 Qt 官方部署方式提供，尚未在对应主机实机验证。自检默认要求 Windows 619 项，其他平台接受当前通过数；可用 `--expected-passed 0` 放宽，`--skip-self-test` 跳过（不推荐）。
+Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux 分支按 Qt 官方部署方式提供，尚未在对应主机实机验证。自检默认要求 Windows 609 项，其他平台接受当前通过数；可用 `--expected-passed 0` 放宽，`--skip-self-test` 跳过（不推荐）。
 
 ## 使用说明
 
@@ -217,7 +217,7 @@ QT_QPA_PLATFORM=offscreen ./out/bin/StoryBoard.exe --self-test out/selftest.txt
 cat out/selftest.txt
 ```
 
-当前 Windows 基线为 **619 passed, 0 failed**；其他平台以实际 `SUMMARY` 为准。
+当前 Windows 基线为 **609 passed, 0 failed**；其他平台以实际 `SUMMARY` 为准。
 
 `--self-test` 需要平台插件目录下的 offscreen 插件（Windows `platforms/qoffscreen.dll`、macOS `platforms/libqoffscreen.dylib`、Linux `platforms/libqoffscreen.so`）。打包脚本会自动补齐。
 
@@ -237,6 +237,7 @@ cat out/selftest.txt
 ```text
 StoryBoard/
 ├─ CMakeLists.txt
+├─ .clang-format        代码风格（以华为 C++ 规范为基础：4 空格缩进、120 列、函数大括号换行、强制补大括号、include 分组排序）
 ├─ src/                 主窗口、画布场景/视图、图元、命令、对话框、设置、i18n、自检
 ├─ resources/           图标、下拉箭头、qrc、Windows rc 模板
 ├─ translations/        storyboard_zh.ts 与 qtbase_zh_CN.qm
@@ -244,6 +245,8 @@ StoryBoard/
 ├─ examples/            示例画布
 └─ docs/                README 截图
 ```
+
+提交前格式化：`clang-format -i --style=file src/*.cpp src/*.h tools/lineart-similarity/*.cpp`（`src` 与 `tools` 的 C++ 源文件已按该配置全量整理过一遍）。
 
 核心实现：
 

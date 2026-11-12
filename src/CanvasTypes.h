@@ -3,30 +3,17 @@
 #include "I18n.h"
 
 #include <QColor>
+#include <QCoreApplication>
 #include <QImage>
 #include <QList>
 #include <QPixmap>
 #include <QString>
-#include <QCoreApplication>
 
-enum class ToolMode {
-    View = 0,
-    Brush = 1,
-    Edit = 2,
-    Text = 3
-};
+enum class ToolMode { View = 0, Brush = 1, Edit = 2, Text = 3 };
 
-enum class BackgroundType {
-    None = 0,
-    Color = 1,
-    Image = 2
-};
+enum class BackgroundType { None = 0, Color = 1, Image = 2 };
 
-enum class BackgroundMode {
-    Stretch = 0,
-    Fit = 1,
-    Tile = 2
-};
+enum class BackgroundMode { Stretch = 0, Fit = 1, Tile = 2 };
 
 struct BackgroundState {
     BackgroundType type = BackgroundType::None;
@@ -36,16 +23,19 @@ struct BackgroundState {
 
     bool operator==(const BackgroundState& other) const
     {
-        if (type != other.type || color != other.color || mode != other.mode)
+        if (type != other.type || color != other.color || mode != other.mode) {
             return false;
+        }
         // QPixmap::cacheKey() only identifies the underlying pixel storage, so
         // two QPixmaps decoded from the same file compare unequal. Compare the
         // decoded contents instead, otherwise re-applying an identical image
         // pushes a redundant undo step.
-        if (image.isNull() || other.image.isNull())
+        if (image.isNull() || other.image.isNull()) {
             return image.isNull() && other.image.isNull();
-        if (image.size() != other.image.size())
+        }
+        if (image.size() != other.image.size()) {
             return false;
+        }
         return image.toImage() == other.image.toImage();
     }
 
@@ -60,8 +50,7 @@ struct CanvasLayer {
 
     bool operator==(const CanvasLayer& other) const
     {
-        return id == other.id && name == other.name && visible == other.visible
-            && locked == other.locked;
+        return id == other.id && name == other.name && visible == other.visible && locked == other.locked;
     }
 
     bool operator!=(const CanvasLayer& other) const { return !(*this == other); }
@@ -122,9 +111,11 @@ inline QString backgroundModeToString(BackgroundMode mode)
 
 inline BackgroundMode backgroundModeFromString(const QString& value)
 {
-    if (value == QStringLiteral("fit"))
+    if (value == QStringLiteral("fit")) {
         return BackgroundMode::Fit;
-    if (value == QStringLiteral("tile"))
+    }
+    if (value == QStringLiteral("tile")) {
         return BackgroundMode::Tile;
+    }
     return BackgroundMode::Stretch;
 }

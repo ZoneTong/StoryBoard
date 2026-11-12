@@ -31,7 +31,6 @@
 #include <QStandardPaths>
 #include <QToolButton>
 #include <QVBoxLayout>
-
 #include <utility>
 
 namespace {
@@ -49,9 +48,8 @@ QString colorText(const QColor& color)
 QString fontText(const QFont& font)
 {
     const QFontInfo info(font);
-    const QString size = font.pointSizeF() > 0
-        ? ItemPropertiesDialog::tr("%1 pt").arg(number(font.pointSizeF()))
-        : ItemPropertiesDialog::tr("%1 px").arg(font.pixelSize());
+    const QString size = font.pointSizeF() > 0 ? ItemPropertiesDialog::tr("%1 pt").arg(number(font.pointSizeF()))
+                                               : ItemPropertiesDialog::tr("%1 px").arg(font.pixelSize());
     return ItemPropertiesDialog::tr("%1 · %2").arg(info.family(), size);
 }
 
@@ -74,19 +72,18 @@ QToolButton* makeColorField(QWidget* parent, const QColor& color, const QString&
 
     QObject::connect(button, &QToolButton::clicked, button, [button]() {
         const QColor initial = button->property("itemColor").value<QColor>();
-        const QColor chosen = QColorDialog::getColor(initial, button,
-                                                     ItemPropertiesDialog::tr("Choose color"),
+        const QColor chosen = QColorDialog::getColor(initial, button, ItemPropertiesDialog::tr("Choose color"),
                                                      QColorDialog::ShowAlphaChannel);
-        if (!chosen.isValid())
+        if (!chosen.isValid()) {
             return;
+        }
         button->setProperty("itemColor", chosen);
         refreshColorButton(button);
     });
     return button;
 }
 
-QDoubleSpinBox* makeSpin(QWidget* parent, const QString& objectName,
-                         qreal minimum, qreal maximum)
+QDoubleSpinBox* makeSpin(QWidget* parent, const QString& objectName, qreal minimum, qreal maximum)
 {
     auto* spin = new QDoubleSpinBox(parent);
     spin->setObjectName(objectName);
@@ -98,8 +95,7 @@ QDoubleSpinBox* makeSpin(QWidget* parent, const QString& objectName,
     return spin;
 }
 
-QWidget* makePairField(QWidget* parent, const QString& objectName,
-                       QDoubleSpinBox* first, QDoubleSpinBox* second,
+QWidget* makePairField(QWidget* parent, const QString& objectName, QDoubleSpinBox* first, QDoubleSpinBox* second,
                        const QString& separator)
 {
     auto* field = new QWidget(parent);
@@ -118,12 +114,8 @@ QWidget* makePairField(QWidget* parent, const QString& objectName,
 
 } // namespace
 
-ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
-                                           QWidget* parent, bool editable)
-    : QDialog(parent)
-    , m_scene(scene)
-    , m_item(item)
-    , m_editable(editable)
+ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item, QWidget* parent, bool editable)
+    : QDialog(parent), m_scene(scene), m_item(item), m_editable(editable)
 {
     setWindowTitle(tr("Item properties"));
     // 需求 42：属性窗统一改为模态；非编辑模式可打开查看，但字段只读。
@@ -132,15 +124,15 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
 
     // 打开属性窗时再兜底一次自动名称：旧画布、直接 addItem 或清空名称后，
     // 这里也能得到“类型 N”，不会出现看不到名称或名称为空的行。
-    if (scene)
+    if (scene) {
         scene->assignAutoItemNames();
+    }
 
     auto* root = new QVBoxLayout(this);
     root->setContentsMargins(20, 18, 20, 16);
     root->setSpacing(12);
 
-    auto* heading = new QLabel(item ? item->name()
-                                    : tr("No item selected"), this);
+    auto* heading = new QLabel(item ? item->name() : tr("No item selected"), this);
     heading->setObjectName(QStringLiteral("ItemPropertiesHeading"));
     heading->setStyleSheet(QStringLiteral("font-size: 15px; font-weight: 600;"));
     root->addWidget(heading);
@@ -151,8 +143,7 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
     root->addWidget(line);
 
     if (!m_editable) {
-        auto* readOnlyHint = new QLabel(
-            tr("Read-only: switch to Edit mode to change properties."), this);
+        auto* readOnlyHint = new QLabel(tr("Read-only: switch to Edit mode to change properties."), this);
         readOnlyHint->setObjectName(QStringLiteral("ItemPropertiesReadOnlyHint"));
         readOnlyHint->setWordWrap(true);
         readOnlyHint->setStyleSheet(QStringLiteral("color: #6B7280;"));
@@ -192,12 +183,14 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
         m_layerCombo->setObjectName(QStringLiteral("ItemPropertiesLayerValue"));
         m_layerCombo->setMinimumWidth(220);
         if (scene) {
-            for (const CanvasLayer& layer : scene->userLayers())
+            for (const CanvasLayer& layer : scene->userLayers()) {
                 m_layerCombo->addItem(layerDescription(scene, layer.id), layer.id);
+            }
         }
         const int layerIndex = m_layerCombo->findData(item->layerId());
-        if (layerIndex >= 0)
+        if (layerIndex >= 0) {
             m_layerCombo->setCurrentIndex(layerIndex);
+        }
         form->addRow(tr("Layer"), m_layerCombo);
 
         m_heightSpin = new QSpinBox(this);
@@ -215,24 +208,26 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
             m_fillStyleCombo->setObjectName(QStringLiteral("ItemPropertiesFillStyleValue"));
             m_fillStyleCombo->setMinimumWidth(150);
             if (filled) {
-                for (FillStyle style : allFillStyles())
+                for (FillStyle style : allFillStyles()) {
                     m_fillStyleCombo->addItem(fillStyleName(style), static_cast<int>(style));
+                }
                 const int index = m_fillStyleCombo->findData(static_cast<int>(shape->fillStyle()));
-                if (index >= 0)
+                if (index >= 0) {
                     m_fillStyleCombo->setCurrentIndex(index);
+                }
             } else {
                 m_fillStyleCombo->addItem(tr("Not applicable"), -1);
                 m_fillStyleCombo->setEnabled(false);
             }
             form->addRow(tr("Fill style"), m_fillStyleCombo);
 
-            m_fillColorButton = makeColorField(this, shape->fillColor(),
-                                               QStringLiteral("ItemPropertiesFillColorValue"));
+            m_fillColorButton =
+                makeColorField(this, shape->fillColor(), QStringLiteral("ItemPropertiesFillColorValue"));
             m_fillColorButton->setEnabled(filled);
             form->addRow(tr("Fill color"), m_fillColorButton);
 
-            m_strokeColorButton = makeColorField(this, shape->strokeColor(),
-                                                 QStringLiteral("ItemPropertiesStrokeColorValue"));
+            m_strokeColorButton =
+                makeColorField(this, shape->strokeColor(), QStringLiteral("ItemPropertiesStrokeColorValue"));
             form->addRow(tr("Stroke color"), m_strokeColorButton);
 
             m_strokeWidthSpin = new QDoubleSpinBox(this);
@@ -245,8 +240,8 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
             m_strokeWidthSpin->setMinimumWidth(88);
             form->addRow(tr("Stroke width"), m_strokeWidthSpin);
         } else if (auto* stroke = dynamic_cast<StrokeItem*>(item)) {
-            m_strokeColorButton = makeColorField(this, stroke->strokeColor(),
-                                                 QStringLiteral("ItemPropertiesStrokeColorValue"));
+            m_strokeColorButton =
+                makeColorField(this, stroke->strokeColor(), QStringLiteral("ItemPropertiesStrokeColorValue"));
             form->addRow(tr("Stroke color"), m_strokeColorButton);
 
             m_strokeWidthSpin = new QDoubleSpinBox(this);
@@ -280,8 +275,7 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
             m_textEdit->setMinimumHeight(88);
             form->addRow(tr("Text content"), m_textEdit);
 
-            m_textColorButton = makeColorField(this, text->textColor(),
-                                               QStringLiteral("ItemPropertiesTextColorValue"));
+            m_textColorButton = makeColorField(this, text->textColor(), QStringLiteral("ItemPropertiesTextColorValue"));
             form->addRow(tr("Text color"), m_textColorButton);
 
             m_fontButton = new QPushButton(this);
@@ -292,27 +286,21 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
             connect(m_fontButton, &QPushButton::clicked, this, &ItemPropertiesDialog::chooseFont);
         }
 
-        m_positionXSpin = makeSpin(this, QStringLiteral("ItemPropertiesPositionXValue"),
-                                   -1000000.0, 1000000.0);
-        m_positionYSpin = makeSpin(this, QStringLiteral("ItemPropertiesPositionYValue"),
-                                   -1000000.0, 1000000.0);
+        m_positionXSpin = makeSpin(this, QStringLiteral("ItemPropertiesPositionXValue"), -1000000.0, 1000000.0);
+        m_positionYSpin = makeSpin(this, QStringLiteral("ItemPropertiesPositionYValue"), -1000000.0, 1000000.0);
         m_positionXSpin->setValue(item->pos().x());
         m_positionYSpin->setValue(item->pos().y());
-        form->addRow(tr("Position"),
-                     makePairField(this, QStringLiteral("ItemPropertiesPositionValue"),
-                                   m_positionXSpin, m_positionYSpin, QStringLiteral(",")));
+        form->addRow(tr("Position"), makePairField(this, QStringLiteral("ItemPropertiesPositionValue"), m_positionXSpin,
+                                                   m_positionYSpin, QStringLiteral(",")));
 
         m_widthSpin = makeSpin(this, QStringLiteral("ItemPropertiesWidthValue"), 1.0, 1000000.0);
-        m_heightSizeSpin = makeSpin(this, QStringLiteral("ItemPropertiesHeightSizeValue"),
-                                    1.0, 1000000.0);
+        m_heightSizeSpin = makeSpin(this, QStringLiteral("ItemPropertiesHeightSizeValue"), 1.0, 1000000.0);
         m_widthSpin->setValue(item->contentSize().width());
         m_heightSizeSpin->setValue(item->contentSize().height());
-        form->addRow(tr("Item size"),
-                     makePairField(this, QStringLiteral("ItemPropertiesSizeValue"),
-                                   m_widthSpin, m_heightSizeSpin, QStringLiteral("×")));
+        form->addRow(tr("Item size"), makePairField(this, QStringLiteral("ItemPropertiesSizeValue"), m_widthSpin,
+                                                    m_heightSizeSpin, QStringLiteral("×")));
 
-        m_rotationSpin = makeSpin(this, QStringLiteral("ItemPropertiesRotationValue"),
-                                  -360.0, 360.0);
+        m_rotationSpin = makeSpin(this, QStringLiteral("ItemPropertiesRotationValue"), -360.0, 360.0);
         m_rotationSpin->setSingleStep(5.0);
         m_rotationSpin->setSuffix(QStringLiteral("°"));
         m_rotationSpin->setValue(item->rotationAngle());
@@ -324,21 +312,19 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
     // 文字正文直接在属性窗里编辑；内容变化时同步到自然尺寸，确定后由
     // ItemPropertiesCommand 一次性提交文字、尺寸和撤销记录。
     if (m_textEdit) {
-        connect(m_textEdit, &QPlainTextEdit::textChanged, this,
-                &ItemPropertiesDialog::syncTextNaturalSize);
+        connect(m_textEdit, &QPlainTextEdit::textChanged, this, &ItemPropertiesDialog::syncTextNaturalSize);
     }
 
     applyEditableState();
 
     auto* buttons = new QDialogButtonBox(
-        m_editable ? (QDialogButtonBox::Ok | QDialogButtonBox::Cancel) : QDialogButtonBox::Ok,
-        this);
+        m_editable ? (QDialogButtonBox::Ok | QDialogButtonBox::Cancel) : QDialogButtonBox::Ok, this);
     if (auto* ok = buttons->button(QDialogButtonBox::Ok)) {
-        ok->setText(m_editable ? tr("OK")
-                               : tr("Close"));
+        ok->setText(m_editable ? tr("OK") : tr("Close"));
     }
-    if (auto* cancel = buttons->button(QDialogButtonBox::Cancel))
+    if (auto* cancel = buttons->button(QDialogButtonBox::Cancel)) {
         cancel->setText(tr("Cancel"));
+    }
     connect(buttons, &QDialogButtonBox::accepted, this, &ItemPropertiesDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     root->addWidget(buttons);
@@ -346,8 +332,9 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
     if (m_layerCombo && m_heightSpin) {
         updateHeightRange(false);
         connect(m_layerCombo, &QComboBox::currentIndexChanged, this, [this](int) {
-            if (m_initializing)
+            if (m_initializing) {
                 return;
+            }
             updateHeightRange(true);
         });
         m_initializing = false;
@@ -358,28 +345,22 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
 
 void ItemPropertiesDialog::applyEditableState()
 {
-    if (m_editable)
+    if (m_editable) {
         return;
+    }
 
-    for (QWidget* widget : { static_cast<QWidget*>(m_nameEdit),
-                             static_cast<QWidget*>(m_layerCombo),
-                             static_cast<QWidget*>(m_heightSpin),
-                             static_cast<QWidget*>(m_fillStyleCombo),
-                             static_cast<QWidget*>(m_fillColorButton),
-                             static_cast<QWidget*>(m_strokeColorButton),
-                             static_cast<QWidget*>(m_strokeWidthSpin),
-                             static_cast<QWidget*>(m_positionXSpin),
-                             static_cast<QWidget*>(m_positionYSpin),
-                             static_cast<QWidget*>(m_widthSpin),
-                             static_cast<QWidget*>(m_heightSizeSpin),
-                             static_cast<QWidget*>(m_rotationSpin),
-                             static_cast<QWidget*>(m_textColorButton),
-                             static_cast<QWidget*>(m_fontButton),
-                             static_cast<QWidget*>(m_textEdit),
-                             static_cast<QWidget*>(m_imageNameEdit),
-                             static_cast<QWidget*>(m_imageButton) }) {
-        if (widget)
+    for (QWidget* widget :
+         {static_cast<QWidget*>(m_nameEdit), static_cast<QWidget*>(m_layerCombo), static_cast<QWidget*>(m_heightSpin),
+          static_cast<QWidget*>(m_fillStyleCombo), static_cast<QWidget*>(m_fillColorButton),
+          static_cast<QWidget*>(m_strokeColorButton), static_cast<QWidget*>(m_strokeWidthSpin),
+          static_cast<QWidget*>(m_positionXSpin), static_cast<QWidget*>(m_positionYSpin),
+          static_cast<QWidget*>(m_widthSpin), static_cast<QWidget*>(m_heightSizeSpin),
+          static_cast<QWidget*>(m_rotationSpin), static_cast<QWidget*>(m_textColorButton),
+          static_cast<QWidget*>(m_fontButton), static_cast<QWidget*>(m_textEdit),
+          static_cast<QWidget*>(m_imageNameEdit), static_cast<QWidget*>(m_imageButton)}) {
+        if (widget) {
             widget->setEnabled(false);
+        }
     }
 }
 
@@ -392,8 +373,7 @@ void ItemPropertiesDialog::accept()
     if (m_nameEdit && m_scene && m_item) {
         const QString typedName = m_nameEdit->text().trimmed();
         if (!typedName.isEmpty() && !m_scene->isItemNameAvailable(typedName, m_item)) {
-            QMessageBox::warning(this,
-                                 tr("Duplicate item name"),
+            QMessageBox::warning(this, tr("Duplicate item name"),
                                  tr("Another item in this canvas already uses this name. Choose a different name."));
             m_nameEdit->setFocus();
             m_nameEdit->selectAll();
@@ -406,60 +386,68 @@ void ItemPropertiesDialog::accept()
 
 void ItemPropertiesDialog::updateHeightRange(bool selectTop)
 {
-    if (!m_layerCombo || !m_heightSpin || !m_item)
+    if (!m_layerCombo || !m_heightSpin || !m_item) {
         return;
+    }
 
     const int targetLayer = m_layerCombo->currentData().toInt();
     int maxHeight = 0;
     if (m_scene) {
-        for (CanvasItem* peer : m_scene->layerItems(targetLayer))
+        for (CanvasItem* peer : m_scene->layerItems(targetLayer)) {
             maxHeight = qMax(maxHeight, peer->height());
+        }
     }
     // Height 0 is valid and deletion can leave gaps. Allow one slot above the
     // highest existing height, and never clamp the current value on open.
     maxHeight = qMax(0, maxHeight + 1);
-    if (!selectTop)
+    if (!selectTop) {
         maxHeight = qMax(maxHeight, m_item->height());
+    }
     maxHeight = qBound(0, maxHeight, 999999);
     m_heightSpin->setMaximum(maxHeight);
-    if (selectTop)
+    if (selectTop) {
         m_heightSpin->setValue(maxHeight);
+    }
 }
 
 void ItemPropertiesDialog::updateFontButton()
 {
-    if (!m_fontButton)
+    if (!m_fontButton) {
         return;
+    }
     m_fontButton->setText(fontText(m_textFont));
 }
 
 void ItemPropertiesDialog::syncTextNaturalSize()
 {
-    if (!m_editable || !m_textEdit)
+    if (!m_editable || !m_textEdit) {
         return;
+    }
     if (auto* text = dynamic_cast<TextItem*>(m_item.data())) {
         Q_UNUSED(text);
         const QSizeF natural = TextItem::measure(m_textEdit->toPlainText(), m_textFont);
-        if (m_widthSpin)
+        if (m_widthSpin) {
             m_widthSpin->setValue(natural.width());
-        if (m_heightSizeSpin)
+        }
+        if (m_heightSizeSpin) {
             m_heightSizeSpin->setValue(natural.height());
+        }
     }
 }
 
 void ItemPropertiesDialog::chooseFont()
 {
-    if (!m_editable)
+    if (!m_editable) {
         return;
+    }
 
     bool ok = false;
     // 使用 Qt 自绘字体窗，避免 Windows 原生字体对话框跟随系统 UI 语言而
     // 与应用内语言不一致；标准标签由嵌入的 qtbase_zh_CN.qm 提供中文。
-    const QFont font = QFontDialog::getFont(&ok, m_textFont, this,
-                                            tr("Choose font"),
-                                            QFontDialog::DontUseNativeDialog);
-    if (!ok)
+    const QFont font = QFontDialog::getFont(&ok, m_textFont, this, tr("Choose font"), QFontDialog::DontUseNativeDialog);
+    if (!ok) {
         return;
+    }
 
     m_textFont = font;
     updateFontButton();
@@ -468,20 +456,21 @@ void ItemPropertiesDialog::chooseFont()
 
 void ItemPropertiesDialog::chooseImage()
 {
-    if (!m_editable)
+    if (!m_editable) {
         return;
+    }
 
     const QString startDirectory = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
-    const QString path = QFileDialog::getOpenFileName(
-        this, tr("Replace image"), startDirectory,
-        tr("Image files (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;All files (*.*)"));
-    if (path.isEmpty())
+    const QString path =
+        QFileDialog::getOpenFileName(this, tr("Replace image"), startDirectory,
+                                     tr("Image files (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;All files (*.*)"));
+    if (path.isEmpty()) {
         return;
+    }
 
     QString error;
     if (!loadImageFromFile(path, &error)) {
-        QMessageBox::warning(this, tr("Replace image"),
-                             tr("Could not read the image:\n%1").arg(error));
+        QMessageBox::warning(this, tr("Replace image"), tr("Could not read the image:\n%1").arg(error));
     }
 }
 
@@ -491,8 +480,9 @@ bool ItemPropertiesDialog::loadImageFromFile(const QString& path, QString* error
     reader.setAutoTransform(true);
     const QImage image = reader.read();
     if (image.isNull()) {
-        if (errorMessage)
+        if (errorMessage) {
             *errorMessage = reader.errorString();
+        }
         return false;
     }
 
@@ -522,8 +512,9 @@ bool ItemPropertiesDialog::isItemInScene() const
 
 void ItemPropertiesDialog::applyChanges()
 {
-    if (!m_editable || !m_scene || !m_item)
+    if (!m_editable || !m_scene || !m_item) {
         return;
+    }
 
     const int oldLayer = m_item->layerId();
     const int oldHeight = m_item->height();
@@ -533,8 +524,9 @@ void ItemPropertiesDialog::applyChanges()
     QList<CanvasItem*> swapped;
     if (targetLayer != oldLayer || targetHeight != oldHeight) {
         for (CanvasItem* peer : m_scene->layerItems(targetLayer)) {
-            if (peer != m_item && peer->height() == targetHeight)
+            if (peer != m_item && peer->height() == targetHeight) {
                 swapped.append(peer);
+            }
         }
     }
 
@@ -543,34 +535,33 @@ void ItemPropertiesDialog::applyChanges()
     before.size = m_item->contentSize();
     before.rotation = m_initialRotation;
     before.itemName = m_initialItemName;
-    before.stack.append({ m_item, oldLayer, oldHeight });
-    for (CanvasItem* peer : std::as_const(swapped))
-        before.stack.append({ peer, peer->layerId(), peer->height() });
+    before.stack.append({m_item, oldLayer, oldHeight});
+    for (CanvasItem* peer : std::as_const(swapped)) {
+        before.stack.append({peer, peer->layerId(), peer->height()});
+    }
 
     ItemPropertiesState after;
     auto spinValue = [](QDoubleSpinBox* spin, qreal initial) {
-        if (!spin)
+        if (!spin) {
             return initial;
+        }
         const qreal value = spin->value();
         // 数值框只显示 1 位小数；用户没动过时保留原始精度，避免“打开就点确定”也产生修改。
         return qFuzzyCompare(value, qRound(initial * 10.0) / 10.0) ? initial : value;
     };
-    after.pos = QPointF(spinValue(m_positionXSpin, m_initialPos.x()),
-                        spinValue(m_positionYSpin, m_initialPos.y()));
-    after.size = QSizeF(spinValue(m_widthSpin, m_initialSize.width()),
-                        spinValue(m_heightSizeSpin, m_initialSize.height()));
+    after.pos = QPointF(spinValue(m_positionXSpin, m_initialPos.x()), spinValue(m_positionYSpin, m_initialPos.y()));
+    after.size =
+        QSizeF(spinValue(m_widthSpin, m_initialSize.width()), spinValue(m_heightSizeSpin, m_initialSize.height()));
     after.rotation = spinValue(m_rotationSpin, m_initialRotation);
     const QString typedName = m_nameEdit ? m_nameEdit->text().trimmed() : QString();
     // 清空名称不能退回“多个同名类型名”的状态；这时补一个本画布内唯一的自动名称。
-    const QString effectiveName = typedName.isEmpty()
-        ? m_scene->uniqueItemName(m_item->typeDisplayName(), m_item)
-        : typedName;
-    after.itemName = (m_initialItemName.isEmpty() && typedName == m_initialDisplayName)
-        ? QString()
-        : effectiveName;
-    after.stack.append({ m_item, targetLayer, targetHeight });
-    for (CanvasItem* peer : std::as_const(swapped))
-        after.stack.append({ peer, oldLayer, oldHeight });
+    const QString effectiveName =
+        typedName.isEmpty() ? m_scene->uniqueItemName(m_item->typeDisplayName(), m_item) : typedName;
+    after.itemName = (m_initialItemName.isEmpty() && typedName == m_initialDisplayName) ? QString() : effectiveName;
+    after.stack.append({m_item, targetLayer, targetHeight});
+    for (CanvasItem* peer : std::as_const(swapped)) {
+        after.stack.append({peer, oldLayer, oldHeight});
+    }
 
     if (auto* shape = dynamic_cast<ShapeItem*>(m_item.data())) {
         before.hasShapeState = true;
@@ -580,15 +571,19 @@ void ItemPropertiesDialog::applyChanges()
         after.shapeState = shape->state();
         after.shapeState.pos = after.pos;
         after.shapeState.size = after.size;
-        if (m_strokeColorButton)
+        if (m_strokeColorButton) {
             after.shapeState.strokeColor = m_strokeColorButton->property("itemColor").value<QColor>();
-        if (m_strokeWidthSpin)
+        }
+        if (m_strokeWidthSpin) {
             after.shapeState.strokeWidth = spinValue(m_strokeWidthSpin, m_initialStrokeWidth);
+        }
         if (m_hasFill) {
-            if (m_fillStyleCombo && m_fillStyleCombo->currentData().toInt() >= 0)
+            if (m_fillStyleCombo && m_fillStyleCombo->currentData().toInt() >= 0) {
                 after.shapeState.fillStyle = static_cast<FillStyle>(m_fillStyleCombo->currentData().toInt());
-            if (m_fillColorButton)
+            }
+            if (m_fillColorButton) {
                 after.shapeState.fillColor = m_fillColorButton->property("itemColor").value<QColor>();
+            }
         }
     } else if (auto* text = dynamic_cast<TextItem*>(m_item.data())) {
         before.hasTextState = true;
@@ -599,8 +594,9 @@ void ItemPropertiesDialog::applyChanges()
         after.textState.pos = after.pos;
         after.textState.size = after.size;
         after.textState.font = m_textFont;
-        if (m_textEdit)
+        if (m_textEdit) {
             after.textState.text = m_textEdit->toPlainText();
+        }
         after.textState.baseSize = TextItem::measure(after.textState.text, m_textFont);
         // 需求追加：文字正文变化后直接回到文字自然尺寸，不再沿用旧图元的
         // 拉伸尺寸，避免新旧字形按不同比例叠在同一块内容区里。
@@ -608,20 +604,18 @@ void ItemPropertiesDialog::applyChanges()
             after.size = after.textState.baseSize;
             after.textState.size = after.textState.baseSize;
         }
-        if (m_textColorButton)
+        if (m_textColorButton) {
             after.textState.color = m_textColorButton->property("itemColor").value<QColor>();
+        }
     } else if (auto* stroke = dynamic_cast<StrokeItem*>(m_item.data())) {
         before.hasStrokeStyle = true;
         before.strokeColor = stroke->strokeColor();
         before.strokeWidth = stroke->strokeWidth();
 
         after.hasStrokeStyle = true;
-        after.strokeColor = m_strokeColorButton
-            ? m_strokeColorButton->property("itemColor").value<QColor>()
-            : before.strokeColor;
-        after.strokeWidth = m_strokeWidthSpin
-            ? spinValue(m_strokeWidthSpin, m_initialStrokeWidth)
-            : before.strokeWidth;
+        after.strokeColor =
+            m_strokeColorButton ? m_strokeColorButton->property("itemColor").value<QColor>() : before.strokeColor;
+        after.strokeWidth = m_strokeWidthSpin ? spinValue(m_strokeWidthSpin, m_initialStrokeWidth) : before.strokeWidth;
     } else if (auto* image = dynamic_cast<ImageItem*>(m_item.data())) {
         before.hasImageState = true;
         before.image = image->image();
@@ -631,17 +625,18 @@ void ItemPropertiesDialog::applyChanges()
         after.hasImageState = true;
         after.image = m_imageChanged ? m_newImage : before.image;
         // 需求追加：替换图片本体后直接使用新图片的原始像素尺寸。
-        if (m_imageChanged && !after.image.isNull())
+        if (m_imageChanged && !after.image.isNull()) {
             after.size = QSizeF(after.image.size());
+        }
         after.hasImageName = true;
         after.imageName = m_imageNameEdit ? m_imageNameEdit->text() : before.imageName;
     }
 
-    if (before == after)
+    if (before == after) {
         return;
+    }
 
-    auto* command = new ItemPropertiesCommand(m_scene, m_item, before, after,
-                                              tr("Edit item properties"));
+    auto* command = new ItemPropertiesCommand(m_scene, m_item, before, after, tr("Edit item properties"));
     if (auto* undo = m_scene->undoStack()) {
         undo->push(command);
     } else {
@@ -652,8 +647,9 @@ void ItemPropertiesDialog::applyChanges()
 
 QString ItemPropertiesDialog::layerDescription(const CanvasScene* scene, int layerId)
 {
-    if (layerId == CanvasScene::BackgroundLayerId)
+    if (layerId == CanvasScene::BackgroundLayerId) {
         return tr("Background layer");
+    }
 
     const int index = scene ? scene->layerIndex(layerId) : layerId;
     QString layerName;
@@ -666,7 +662,8 @@ QString ItemPropertiesDialog::layerDescription(const CanvasScene* scene, int lay
         }
     }
     const QString defaultName = tr("Layer %1").arg(index);
-    if (layerName.isEmpty() || layerName == defaultName)
+    if (layerName.isEmpty() || layerName == defaultName) {
         return defaultName;
+    }
     return tr("Layer %1 · %2").arg(index).arg(layerName);
 }

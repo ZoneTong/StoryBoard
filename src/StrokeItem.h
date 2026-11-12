@@ -1,17 +1,15 @@
 #pragma once
 
-#include "I18n.h"
-
 #include "CanvasItem.h"
+#include "I18n.h"
 
 #include <QColor>
 #include <QPainterPath>
 #include <QVector>
 
-class StrokeItem : public CanvasItem
-{
+class StrokeItem : public CanvasItem {
     Q_OBJECT
-public:
+  public:
     // 平滑会同时改变局部采样点、内容尺寸和位置，撤销/重做需要完整快照。
     struct GeometryState {
         QVector<QPointF> points;
@@ -58,10 +56,10 @@ public:
     // 手动平滑一次；返回是否真的改变了采样点。
     bool smoothStroke(qreal tolerance);
 
-protected:
+  protected:
     void paintContent(QPainter* painter) override;
 
-private:
+  private:
     void rebuildPath();
     void normalizeToContent();
     qreal pathLength() const;
@@ -70,7 +68,7 @@ private:
     QPainterPath m_path;
     QColor m_color = QColor(30, 41, 59);
     qreal m_penWidth = 4.0;
-    QSizeF m_baseSize { 1.0, 1.0 };
+    QSizeF m_baseSize{1.0, 1.0};
     bool m_dot = false;
     bool m_finished = false;
     // 折线笔画：路径按直线段连接，方角不会被平滑成圆角（图片线稿化使用）。

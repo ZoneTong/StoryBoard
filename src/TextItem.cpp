@@ -1,6 +1,6 @@
-#include "I18n.h"
-
 #include "TextItem.h"
+
+#include "I18n.h"
 
 #include <QFontMetricsF>
 #include <QJsonObject>
@@ -14,15 +14,15 @@ constexpr qreal kDefaultPointSize = 32.0;
 
 QFont normalizedFont(QFont font)
 {
-    if (font.pointSizeF() <= 0.0)
+    if (font.pointSizeF() <= 0.0) {
         font.setPointSizeF(kDefaultPointSize);
+    }
     return font;
 }
 
 } // namespace
 
-TextItem::TextItem(QGraphicsItem* parent)
-    : CanvasItem(parent)
+TextItem::TextItem(QGraphicsItem* parent) : CanvasItem(parent)
 {
     m_font.setFamily(QStringLiteral("Microsoft YaHei UI"));
     m_font.setPointSizeF(kDefaultPointSize);
@@ -32,10 +32,10 @@ TextItem::TextItem(QGraphicsItem* parent)
 QString TextItem::displayName() const
 {
     QString snippet = m_text.simplified();
-    if (snippet.size() > 18)
+    if (snippet.size() > 18) {
         snippet = snippet.left(18) + QStringLiteral("…");
-    return snippet.isEmpty() ? tr("Text")
-                             : tr("Text: %1").arg(snippet);
+    }
+    return snippet.isEmpty() ? tr("Text") : tr("Text: %1").arg(snippet);
 }
 
 QString TextItem::typeDisplayName() const
@@ -50,14 +50,15 @@ QSizeF TextItem::measure(const QString& text, const QFont& font)
     const QStringList lines = text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
 
     qreal width = 0.0;
-    for (const QString& line : lines)
+    for (const QString& line : lines) {
         width = qMax(width, metrics.horizontalAdvance(line));
+    }
     qreal height = metrics.lineSpacing() * qMax(1, lines.size());
-    if (height <= 0.0)
+    if (height <= 0.0) {
         height = metrics.height();
+    }
 
-    return QSizeF(qMax<qreal>(64.0, width + 2.0 * kPadding),
-                  qMax<qreal>(32.0, height + 2.0 * kPadding));
+    return QSizeF(qMax<qreal>(64.0, width + 2.0 * kPadding), qMax<qreal>(32.0, height + 2.0 * kPadding));
 }
 
 void TextItem::setTextFormat(const QString& text, const QFont& font, const QColor& color)
@@ -99,8 +100,9 @@ void TextItem::applyState(const TextItemState& state)
 
 void TextItem::paintContent(QPainter* painter)
 {
-    if (m_baseSize.isEmpty() || contentSize().isEmpty())
+    if (m_baseSize.isEmpty() || contentSize().isEmpty()) {
         return;
+    }
 
     const qreal scaleX = contentSize().width() / m_baseSize.width();
     const qreal scaleY = contentSize().height() / m_baseSize.height();
@@ -137,8 +139,9 @@ QPainterPath TextItem::outlineShape() const
 
 QPainterPath TextItem::paintedShape() const
 {
-    if (contentSize().isEmpty() || m_color.alpha() == 0)
+    if (contentSize().isEmpty() || m_color.alpha() == 0) {
         return QPainterPath();
+    }
 
     const QSizeF base = m_baseSize.isEmpty() ? QSizeF(1.0, 1.0) : m_baseSize;
     const qreal scaleX = contentSize().width() / base.width();
@@ -159,8 +162,9 @@ QPainterPath TextItem::paintedShape() const
         baseline += metrics.lineSpacing();
     }
 
-    if (path.isEmpty())
+    if (path.isEmpty()) {
         return CanvasItem::paintedShape();
+    }
 
     QTransform transform;
     transform.scale(scaleX, scaleY);
@@ -191,29 +195,26 @@ void TextItem::fromJson(const QJsonObject& json)
 {
     m_text = json.value(QStringLiteral("text")).toString();
 
-    m_font.setFamily(json.value(QStringLiteral("fontFamily"))
-                         .toString(QStringLiteral("Microsoft YaHei UI")));
+    m_font.setFamily(json.value(QStringLiteral("fontFamily")).toString(QStringLiteral("Microsoft YaHei UI")));
     const qreal pointSize = json.value(QStringLiteral("fontSize")).toDouble(kDefaultPointSize);
     m_font.setPointSizeF(qBound<qreal>(6.0, pointSize, 400.0));
-    const int weight = json.value(QStringLiteral("fontWeight"))
-                           .toInt(static_cast<int>(QFont::Normal));
+    const int weight = json.value(QStringLiteral("fontWeight")).toInt(static_cast<int>(QFont::Normal));
     m_font.setWeight(static_cast<QFont::Weight>(qBound(1, weight, 1000)));
     m_font.setItalic(json.value(QStringLiteral("italic")).toBool(false));
     m_font.setUnderline(json.value(QStringLiteral("underline")).toBool(false));
     m_font.setStrikeOut(json.value(QStringLiteral("strikeOut")).toBool(false));
 
-    m_color = QColor(json.value(QStringLiteral("color"))
-                         .toString(QStringLiteral("#ff1e293b")));
-    if (!m_color.isValid())
+    m_color = QColor(json.value(QStringLiteral("color")).toString(QStringLiteral("#ff1e293b")));
+    if (!m_color.isValid()) {
         m_color = QColor(30, 41, 59);
+    }
 
     const QSizeF storedBase(json.value(QStringLiteral("baseWidth")).toDouble(0.0),
                             json.value(QStringLiteral("baseHeight")).toDouble(0.0));
-    m_baseSize = (storedBase.width() > 0.0 && storedBase.height() > 0.0)
-        ? storedBase
-        : measure(m_text, m_font);
+    m_baseSize = (storedBase.width() > 0.0 && storedBase.height() > 0.0) ? storedBase : measure(m_text, m_font);
 
     applyBaseJson(json);
-    if (contentSize().isEmpty())
+    if (contentSize().isEmpty()) {
         setContentSize(m_baseSize);
+    }
 }

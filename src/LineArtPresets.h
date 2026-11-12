@@ -15,10 +15,10 @@ struct LineArtPreset {
 };
 
 inline constexpr LineArtPreset kLineArtPresets[] = {
-    { "Keep details", 6, 40, 44, 8, 0.5 },
-    { "Balanced", 6, 48, 48, 12, 0.6 },
-    { "Clean lines", 6, 64, 56, 20, 0.8 },
-    { "Bold blocks", 6, 80, 56, 32, 1.0 },
+    {"Keep details", 6, 40, 44, 8, 0.5},
+    {"Balanced", 6, 48, 48, 12, 0.6},
+    {"Clean lines", 6, 64, 56, 20, 0.8},
+    {"Bold blocks", 6, 80, 56, 32, 1.0},
 };
 
 inline int lineArtPresetCount()
@@ -28,8 +28,9 @@ inline int lineArtPresetCount()
 
 inline LineArtPreset lineArtPreset(int index)
 {
-    static const LineArtPreset fallback {};
-    if (index < 0 || index >= lineArtPresetCount())
+    static const LineArtPreset fallback{};
+    if (index < 0 || index >= lineArtPresetCount()) {
         return fallback;
+    }
     return kLineArtPresets[index];
 }

@@ -1,14 +1,11 @@
-#include "I18n.h"
-
 #include "ImageItem.h"
+
+#include "I18n.h"
 
 #include <QBuffer>
 #include <QPainter>
 
-ImageItem::ImageItem(QGraphicsItem* parent)
-    : CanvasItem(parent)
-{
-}
+ImageItem::ImageItem(QGraphicsItem* parent) : CanvasItem(parent) {}
 
 QString ImageItem::displayName() const
 {
@@ -29,8 +26,9 @@ void ImageItem::setImage(const QPixmap& pixmap, const QString& name)
 
 void ImageItem::setImageName(const QString& name)
 {
-    if (m_name == name)
+    if (m_name == name) {
         return;
+    }
     m_name = name;
     update();
 }
@@ -67,12 +65,12 @@ QJsonObject ImageItem::toJson() const
 void ImageItem::fromJson(const QJsonObject& json)
 {
     m_name = json.value(QStringLiteral("name")).toString();
-    const QByteArray bytes = QByteArray::fromBase64(
-        json.value(QStringLiteral("image")).toString().toLatin1());
+    const QByteArray bytes = QByteArray::fromBase64(json.value(QStringLiteral("image")).toString().toLatin1());
 
     QPixmap pixmap;
-    if (!bytes.isEmpty())
+    if (!bytes.isEmpty()) {
         pixmap.loadFromData(bytes, "PNG");
+    }
     m_pixmap = pixmap;
     applyBaseJson(json);
 }

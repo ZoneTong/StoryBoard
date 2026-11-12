@@ -1,9 +1,9 @@
 #pragma once
 
+#include "CanvasTypes.h"
+
 #include <QColor>
 #include <QGraphicsView>
-
-#include "CanvasTypes.h"
 
 class CanvasItem;
 class CanvasScene;
@@ -11,10 +11,9 @@ class StrokeItem;
 class QContextMenuEvent;
 class QFocusEvent;
 
-class CanvasView : public QGraphicsView
-{
+class CanvasView : public QGraphicsView {
     Q_OBJECT
-public:
+  public:
     explicit CanvasView(CanvasScene* scene, QWidget* parent = nullptr);
 
     ToolMode mode() const { return m_mode; }
@@ -41,14 +40,14 @@ public:
     // 画板边缘拖动：扩大或裁剪画板。返回当前是否正在拖动边缘。
     bool isResizingCanvas() const { return m_resizingCanvas; }
 
-signals:
+  signals:
     void zoomChanged(qreal zoom);
     void modeChanged(ToolMode mode);
     void statusMessage(const QString& message);
     void textPlacementRequested(const QPointF& scenePos);
     void itemPropertiesRequested(CanvasItem* item);
 
-protected:
+  protected:
     void paintEvent(QPaintEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void drawBackground(QPainter* painter, const QRectF& rect) override;
@@ -62,7 +61,7 @@ protected:
     void focusOutEvent(QFocusEvent* event) override;
     void contextMenuEvent(QContextMenuEvent* event) override;
 
-private:
+  private:
     void applyScale(qreal factor);
     void emitZoom();
     void updateCursor();
@@ -73,17 +72,7 @@ private:
     bool ctrlPanActive(Qt::KeyboardModifiers modifiers) const;
     void applyPanClickSelection(const QPoint& viewportPos);
 
-    enum class CanvasHandle {
-        None,
-        TopLeft,
-        Top,
-        TopRight,
-        Right,
-        BottomRight,
-        Bottom,
-        BottomLeft,
-        Left
-    };
+    enum class CanvasHandle { None, TopLeft, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left };
 
     CanvasItem* topCanvasItemAt(const QPoint& viewportPos) const;
     // 需求 42：属性窗在所有模式可查看，因此命中图元不能依赖编辑模式。

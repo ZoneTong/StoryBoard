@@ -179,8 +179,9 @@ void drawIconShape(QPainter& painter, IconId id)
         painter.drawEllipse(QPointF(10.5, 10.5), 6.2, 6.2);
         painter.drawLine(QPointF(15.2, 15.2), QPointF(20.5, 20.5));
         painter.drawLine(QPointF(7.6, 10.5), QPointF(13.4, 10.5));
-        if (id == IconId::ZoomIn)
+        if (id == IconId::ZoomIn) {
             painter.drawLine(QPointF(10.5, 7.6), QPointF(10.5, 13.4));
+        }
         break;
     }
     case IconId::Image: {

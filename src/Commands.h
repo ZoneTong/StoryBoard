@@ -1,53 +1,50 @@
 #pragma once
 
-#include <QColor>
-#include <QPixmap>
-#include <QPointer>
-#include <QUndoCommand>
-#include <QList>
-
 #include "CanvasTypes.h"
 #include "ItemGeometry.h"
 #include "ShapeItem.h"
 #include "StrokeItem.h"
 #include "TextItem.h"
 
+#include <QColor>
+#include <QList>
+#include <QPixmap>
+#include <QPointer>
+#include <QUndoCommand>
+
 class CanvasItem;
 class CanvasScene;
 
-class AddItemCommand : public QUndoCommand
-{
-public:
+class AddItemCommand : public QUndoCommand {
+  public:
     AddItemCommand(CanvasScene* scene, CanvasItem* item, const QString& text);
     void undo() override;
     void redo() override;
 
-private:
+  private:
     CanvasScene* m_scene = nullptr;
     QPointer<CanvasItem> m_item;
 };
 
-class RemoveItemsCommand : public QUndoCommand
-{
-public:
+class RemoveItemsCommand : public QUndoCommand {
+  public:
     RemoveItemsCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QString& text);
     void undo() override;
     void redo() override;
 
-private:
+  private:
     CanvasScene* m_scene = nullptr;
     QList<QPointer<CanvasItem>> m_items;
 };
 
-class GeometryCommand : public QUndoCommand
-{
-public:
-    GeometryCommand(CanvasScene* scene, const ItemGeometryList& before,
-                    const ItemGeometryList& after, const QString& text);
+class GeometryCommand : public QUndoCommand {
+  public:
+    GeometryCommand(CanvasScene* scene, const ItemGeometryList& before, const ItemGeometryList& after,
+                    const QString& text);
     void undo() override;
     void redo() override;
 
-private:
+  private:
     void apply(const ItemGeometryList& geometry);
 
     CanvasScene* m_scene = nullptr;
@@ -55,16 +52,14 @@ private:
     ItemGeometryList m_after;
 };
 
-class GroupCommand : public QUndoCommand
-{
-public:
-    GroupCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
-                 const QList<int>& before, const QList<int>& after,
+class GroupCommand : public QUndoCommand {
+  public:
+    GroupCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<int>& before, const QList<int>& after,
                  const QString& text);
     void undo() override;
     void redo() override;
 
-private:
+  private:
     void apply(const QList<int>& groupIds);
 
     CanvasScene* m_scene = nullptr;
@@ -73,73 +68,65 @@ private:
     QList<int> m_after;
 };
 
-class BackgroundCommand : public QUndoCommand
-{
-public:
-    BackgroundCommand(CanvasScene* scene, const BackgroundState& before,
-                      const BackgroundState& after, const QString& text);
+class BackgroundCommand : public QUndoCommand {
+  public:
+    BackgroundCommand(CanvasScene* scene, const BackgroundState& before, const BackgroundState& after,
+                      const QString& text);
     void undo() override;
     void redo() override;
 
-private:
+  private:
     CanvasScene* m_scene = nullptr;
     BackgroundState m_before;
     BackgroundState m_after;
 };
 
-class CanvasSizeCommand : public QUndoCommand
-{
-public:
-    CanvasSizeCommand(CanvasScene* scene, const QRectF& before, const QRectF& after,
-                     const QString& text);
+class CanvasSizeCommand : public QUndoCommand {
+  public:
+    CanvasSizeCommand(CanvasScene* scene, const QRectF& before, const QRectF& after, const QString& text);
     void undo() override;
     void redo() override;
 
-private:
+  private:
     CanvasScene* m_scene = nullptr;
     QRectF m_before;
     QRectF m_after;
 };
 
-class ItemStackCommand : public QUndoCommand
-{
-public:
-    ItemStackCommand(CanvasScene* scene, const ItemStackList& before,
-                     const ItemStackList& after, const QString& text);
+class ItemStackCommand : public QUndoCommand {
+  public:
+    ItemStackCommand(CanvasScene* scene, const ItemStackList& before, const ItemStackList& after, const QString& text);
     void undo() override;
     void redo() override;
 
-private:
+  private:
     CanvasScene* m_scene = nullptr;
     ItemStackList m_before;
     ItemStackList m_after;
 };
 
-class TextItemCommand : public QUndoCommand
-{
-public:
-    TextItemCommand(CanvasScene* scene, TextItem* item, const TextItemState& before,
-                    const TextItemState& after, const QString& text);
+class TextItemCommand : public QUndoCommand {
+  public:
+    TextItemCommand(CanvasScene* scene, TextItem* item, const TextItemState& before, const TextItemState& after,
+                    const QString& text);
     void undo() override;
     void redo() override;
 
-private:
+  private:
     CanvasScene* m_scene = nullptr;
     QPointer<TextItem> m_item;
     TextItemState m_before;
     TextItemState m_after;
 };
 
-class ShapeStyleCommand : public QUndoCommand
-{
-public:
-    ShapeStyleCommand(CanvasScene* scene, const QList<ShapeItem*>& items,
-                      const QList<ShapeItemState>& before,
+class ShapeStyleCommand : public QUndoCommand {
+  public:
+    ShapeStyleCommand(CanvasScene* scene, const QList<ShapeItem*>& items, const QList<ShapeItemState>& before,
                       const QList<ShapeItemState>& after, const QString& text);
     void undo() override;
     void redo() override;
 
-private:
+  private:
     void apply(const QList<ShapeItemState>& states);
 
     CanvasScene* m_scene = nullptr;
@@ -149,16 +136,14 @@ private:
 };
 
 // 需求 35：旋转手柄与快捷键共用这一条命令，支持一次旋转多个选中图元。
-class RotationCommand : public QUndoCommand
-{
-public:
-    RotationCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
-                    const QList<qreal>& before, const QList<qreal>& after,
-                    const QString& text);
+class RotationCommand : public QUndoCommand {
+  public:
+    RotationCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<qreal>& before,
+                    const QList<qreal>& after, const QString& text);
     void undo() override;
     void redo() override;
 
-private:
+  private:
     void apply(const QList<qreal>& angles);
 
     CanvasScene* m_scene = nullptr;
@@ -168,17 +153,15 @@ private:
 };
 
 // 手动平滑一次可能同时作用于多条选中笔画，整体只占一条撤销记录。
-class StrokeSmoothCommand : public QUndoCommand
-{
-public:
+class StrokeSmoothCommand : public QUndoCommand {
+  public:
     StrokeSmoothCommand(CanvasScene* scene, const QList<StrokeItem*>& items,
-                        const QList<StrokeItem::GeometryState>& before,
-                        const QList<StrokeItem::GeometryState>& after,
+                        const QList<StrokeItem::GeometryState>& before, const QList<StrokeItem::GeometryState>& after,
                         const QString& text);
     void undo() override;
     void redo() override;
 
-private:
+  private:
     void apply(const QList<StrokeItem::GeometryState>& states);
 
     CanvasScene* m_scene = nullptr;
@@ -212,16 +195,14 @@ struct ItemPropertiesState {
     bool operator!=(const ItemPropertiesState& other) const { return !(*this == other); }
 };
 
-class ItemPropertiesCommand : public QUndoCommand
-{
-public:
-    ItemPropertiesCommand(CanvasScene* scene, CanvasItem* item,
-                          const ItemPropertiesState& before,
+class ItemPropertiesCommand : public QUndoCommand {
+  public:
+    ItemPropertiesCommand(CanvasScene* scene, CanvasItem* item, const ItemPropertiesState& before,
                           const ItemPropertiesState& after, const QString& text);
     void undo() override;
     void redo() override;
 
-private:
+  private:
     void apply(const ItemPropertiesState& state);
 
     CanvasScene* m_scene = nullptr;
@@ -230,15 +211,14 @@ private:
     ItemPropertiesState m_after;
 };
 
-class LayerStateCommand : public QUndoCommand
-{
-public:
-    LayerStateCommand(CanvasScene* scene, const LayerStackState& before,
-                      const LayerStackState& after, const QString& text);
+class LayerStateCommand : public QUndoCommand {
+  public:
+    LayerStateCommand(CanvasScene* scene, const LayerStackState& before, const LayerStackState& after,
+                      const QString& text);
     void undo() override;
     void redo() override;
 
-private:
+  private:
     CanvasScene* m_scene = nullptr;
     LayerStackState m_before;
     LayerStackState m_after;

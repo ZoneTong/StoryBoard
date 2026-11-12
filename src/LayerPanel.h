@@ -1,9 +1,9 @@
 #pragma once
 
+#include "CanvasTypes.h"
+
 #include <QList>
 #include <QWidget>
-
-#include "CanvasTypes.h"
 
 class CanvasScene;
 class QCheckBox;
@@ -12,24 +12,23 @@ class QLabel;
 class QListWidget;
 class QToolButton;
 
-class LayerPanel : public QWidget
-{
+class LayerPanel : public QWidget {
     Q_OBJECT
-public:
+  public:
     explicit LayerPanel(CanvasScene* scene, QWidget* parent = nullptr);
 
     QList<int> selectedLayerIds() const;
 
-public slots:
+  public slots:
     void refresh();
 
-signals:
+  signals:
     void statusMessage(const QString& message);
 
-protected:
+  protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
 
-private:
+  private:
     QWidget* createLayerRow(const CanvasLayer& layer, int index, int itemCount);
     int currentLayerId() const;
     void scheduleRefresh();

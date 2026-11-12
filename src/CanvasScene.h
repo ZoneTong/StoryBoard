@@ -1,5 +1,8 @@
 #pragma once
 
+#include "CanvasTypes.h"
+#include "ItemGeometry.h"
+
 #include <QGraphicsScene>
 #include <QImage>
 #include <QJsonObject>
@@ -7,9 +10,6 @@
 #include <QPointer>
 #include <QSet>
 #include <QSizeF>
-
-#include "CanvasTypes.h"
-#include "ItemGeometry.h"
 
 class QUndoStack;
 class CanvasItem;
@@ -19,10 +19,9 @@ class QStyleOptionGraphicsItem;
 class TextItem;
 struct TextItemState;
 
-class CanvasScene : public QGraphicsScene
-{
+class CanvasScene : public QGraphicsScene {
     Q_OBJECT
-public:
+  public:
     explicit CanvasScene(QObject* parent = nullptr);
     ~CanvasScene() override;
 
@@ -127,8 +126,8 @@ public:
     QList<int> preferredLayerIds() const { return m_preferredLayerIds; }
     void applyItemStack(const ItemStackList& stack);
 
-    bool changeTextWithUndo(TextItem* item, const QString& text, const QFont& font,
-                            const QColor& color, const QString& commandText = QString());
+    bool changeTextWithUndo(TextItem* item, const QString& text, const QFont& font, const QColor& color,
+                            const QString& commandText = QString());
     void applyTextState(TextItem* item, const TextItemState& state);
 
     void addItemsWithUndo(const QList<CanvasItem*>& items, const QString& text);
@@ -137,8 +136,7 @@ public:
     void detachItem(CanvasItem* item);
     void deleteSelected();
     void selectAllItems();
-    void pushGeometry(const ItemGeometryList& before, const ItemGeometryList& after,
-                      const QString& text);
+    void pushGeometry(const ItemGeometryList& before, const ItemGeometryList& after, const QString& text);
     // 需求 35：旋转手柄与快捷键的撤销入口。
     void pushRotation(CanvasItem* item, qreal before, qreal after, const QString& text);
     int rotateSelected(qreal degrees, const QString& commandText = QString());
@@ -157,7 +155,7 @@ public:
     // area 非空时只统计与该区域相交的图元（绘制时用它避免整场景重算）。
     QList<CanvasItem*> obscuredItems(const QRectF& area = QRectF()) const;
 
-signals:
+  signals:
     void modeChanged(ToolMode mode);
     void contentChanged();
     void backgroundChanged();
@@ -165,18 +163,17 @@ signals:
     void layersChanged();
     void activeLayerChanged(int layerId);
 
-protected:
+  protected:
     void drawBackground(QPainter* painter, const QRectF& rect) override;
     void drawForeground(QPainter* painter, const QRectF& rect) override;
     // 逐图元裁剪：被更高优先级图元盖住的部分不画下层颜色（不是半透明混合）。
-    void drawItems(QPainter* painter, int numItems, QGraphicsItem* items[],
-                   const QStyleOptionGraphicsItem* options, QWidget* widget = nullptr) override;
+    void drawItems(QPainter* painter, int numItems, QGraphicsItem* items[], const QStyleOptionGraphicsItem* options,
+                   QWidget* widget = nullptr) override;
 
-private:
+  private:
     CanvasItem* createItem(const QString& kind) const;
     // reserved 里是尚未挂到场景、但已经保留给其它副本的名称。
-    QString uniqueItemNameFor(const QString& requested, const CanvasItem* except,
-                              const QSet<QString>& reserved) const;
+    QString uniqueItemNameFor(const QString& requested, const CanvasItem* except, const QSet<QString>& reserved) const;
     void drawCanvasBackground(QPainter* painter, const QRectF& area, bool includeGrid) const;
     void updateItemFlags();
     void applyItemInteraction(CanvasItem* item);
@@ -196,8 +193,8 @@ private:
 
     QUndoStack* m_undoStack = nullptr;
     ToolMode m_mode = ToolMode::View;
-    QSizeF m_canvasSize { 1920.0, 1080.0 };
-    QPointF m_canvasOrigin { 0.0, 0.0 };
+    QSizeF m_canvasSize{1920.0, 1080.0};
+    QPointF m_canvasOrigin{0.0, 0.0};
     BackgroundState m_background;
     bool m_showGrid = true;
     bool m_exporting = false;

@@ -398,43 +398,35 @@ MainWindow::~MainWindow()
 
 void MainWindow::createActions()
 {
-    m_newAct =
-        makeAction(this, IconId::New, tr("New canvas"), QKeySequence(QStringLiteral("Ctrl+N")),
-                   tr("Create an empty canvas (Ctrl+N)"));
-    m_openAct =
-        makeAction(this, IconId::Open, tr("Open canvas…"), QKeySequence(QStringLiteral("Ctrl+O")),
-                   tr("Open a StoryBoard canvas (Ctrl+O)"));
-    m_saveAct =
-        makeAction(this, IconId::Save, tr("Save canvas"), QKeySequence(QStringLiteral("Ctrl+S")),
-                   tr("Save the current canvas (Ctrl+S)"));
-    m_saveAsAct = makeAction(this, IconId::Save, tr("Save canvas as…"),
-                             QKeySequence(QStringLiteral("Ctrl+Shift+S")),
+    m_newAct = makeAction(this, IconId::New, tr("New canvas"), QKeySequence(QStringLiteral("Ctrl+N")),
+                          tr("Create an empty canvas (Ctrl+N)"));
+    m_openAct = makeAction(this, IconId::Open, tr("Open canvas…"), QKeySequence(QStringLiteral("Ctrl+O")),
+                           tr("Open a StoryBoard canvas (Ctrl+O)"));
+    m_saveAct = makeAction(this, IconId::Save, tr("Save canvas"), QKeySequence(QStringLiteral("Ctrl+S")),
+                           tr("Save the current canvas (Ctrl+S)"));
+    m_saveAsAct = makeAction(this, IconId::Save, tr("Save canvas as…"), QKeySequence(QStringLiteral("Ctrl+Shift+S")),
                              tr("Save the current canvas to a new file (Ctrl+Shift+S)"));
-    m_importAct = makeAction(this, IconId::Image, tr("Insert images…"),
-                             QKeySequence(QStringLiteral("Ctrl+I")),
+    m_importAct = makeAction(this, IconId::Image, tr("Insert images…"), QKeySequence(QStringLiteral("Ctrl+I")),
                              tr("Insert images as movable, resizable items (Ctrl+I)"));
     m_lineArtAct = makeAction(
-        this, IconId::LineArt, tr("Import outline image"),
-        QKeySequence(QStringLiteral("Ctrl+Shift+I")),
+        this, IconId::LineArt, tr("Import outline image"), QKeySequence(QStringLiteral("Ctrl+Shift+I")),
         tr("Trace an image's color-block outlines into strokes (line width 1); a parameter dialog opens first and "
            "only Save to configuration file writes StoryBoard.ini (Ctrl+Shift+I)"));
-    m_exportAct = makeAction(this, IconId::Export, tr("Export canvas…"),
-                             QKeySequence(QStringLiteral("Ctrl+E")),
+    m_exportAct = makeAction(this, IconId::Export, tr("Export canvas…"), QKeySequence(QStringLiteral("Ctrl+E")),
                              tr("Export as PNG / JPEG / PDF (Ctrl+E)"));
     m_quitAct = new QAction(tr("Quit"), this);
     m_quitAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+Q")));
     m_quitAct->setStatusTip(tr("Quit StoryBoard"));
 
-    m_undoAct = makeAction(this, IconId::Undo, tr("Undo"), QKeySequence::Undo,
-                           tr("Undo the last step (Ctrl+Z)"));
+    m_undoAct = makeAction(this, IconId::Undo, tr("Undo"), QKeySequence::Undo, tr("Undo the last step (Ctrl+Z)"));
     m_undoAct->setEnabled(false);
     m_redoAct = makeAction(this, IconId::Redo, tr("Redo"), QKeySequence(QStringLiteral("Ctrl+Y")),
                            tr("Redo (Ctrl+Y / Ctrl+Shift+Z)"));
     m_redoAct->setShortcuts({QKeySequence(QStringLiteral("Ctrl+Y")), QKeySequence(QStringLiteral("Ctrl+Shift+Z"))});
     m_redoAct->setEnabled(false);
 
-    m_deleteAct = makeAction(this, IconId::Delete, tr("Delete selected items"),
-                             QKeySequence::Delete, tr("Delete the selected items (Delete)"));
+    m_deleteAct = makeAction(this, IconId::Delete, tr("Delete selected items"), QKeySequence::Delete,
+                             tr("Delete the selected items (Delete)"));
     m_duplicateAct = new QAction(tr("Duplicate selected items"), this);
     m_duplicateAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+D")));
     m_duplicateAct->setStatusTip(tr("Duplicate the selected items with a small offset (Ctrl+D)"));
@@ -474,8 +466,7 @@ void MainWindow::createActions()
             statusBar()->showMessage(tr("Ungrouped %1 item(s)").arg(ungrouped), 3000);
         }
     });
-    m_smoothAct = makeAction(this, IconId::Smooth, tr("Smooth strokes"),
-                             QKeySequence(QStringLiteral("Ctrl+Shift+M")),
+    m_smoothAct = makeAction(this, IconId::Smooth, tr("Smooth strokes"), QKeySequence(QStringLiteral("Ctrl+Shift+M")),
                              tr("Smooth strokes once using the current tolerance (Ctrl+Shift+M)"));
     m_smoothAct->setEnabled(false);
     connect(m_smoothAct, &QAction::triggered, this, [this]() {
@@ -492,28 +483,23 @@ void MainWindow::createActions()
     m_selectAllAct = new QAction(tr("Select all items"), this);
     m_selectAllAct->setShortcut(QKeySequence::SelectAll);
     m_selectAllAct->setStatusTip(tr("Select all items (Ctrl+A)"));
-    m_itemPropsAct = makeAction(this, IconId::Settings, tr("Item properties…"),
-                                QKeySequence(QStringLiteral("Q")),
+    m_itemPropsAct = makeAction(this, IconId::Settings, tr("Item properties…"), QKeySequence(QStringLiteral("Q")),
                                 tr("Show the selected item's properties (Q)"));
-    m_rotateCwAct = makeAction(this, IconId::RotateCw, tr("Rotate 45° clockwise"),
-                               QKeySequence(QStringLiteral("Ctrl+R")),
-                               tr("Rotate selected items 45° clockwise (Ctrl+R)"));
+    m_rotateCwAct =
+        makeAction(this, IconId::RotateCw, tr("Rotate 45° clockwise"), QKeySequence(QStringLiteral("Ctrl+R")),
+                   tr("Rotate selected items 45° clockwise (Ctrl+R)"));
     m_rotateCcwAct = makeAction(this, IconId::RotateCcw, tr("Rotate 45° counterclockwise"),
                                 QKeySequence(QStringLiteral("Ctrl+Shift+R")),
                                 tr("Rotate selected items 45° counterclockwise (Ctrl+Shift+R)"));
 
-    m_viewModeAct =
-        makeAction(this, IconId::View, tr("View mode"), QKeySequence(QStringLiteral("V")),
-                   tr("View mode: overview, pan and zoom (V)"));
-    m_brushModeAct =
-        makeAction(this, IconId::Brush, tr("Brush mode"), QKeySequence(QStringLiteral("B")),
-                   tr("Brush mode: hold the left button to draw freely (B)"));
-    m_editModeAct =
-        makeAction(this, IconId::Edit, tr("Edit mode"), QKeySequence(QStringLiteral("E")),
-                   tr("Edit mode: select, move and resize items; hold Ctrl to pan the view (E)"));
-    m_textModeAct =
-        makeAction(this, IconId::Text, tr("Text mode"), QKeySequence(QStringLiteral("T")),
-                   tr("Text mode: click the canvas to place a text item (T)"));
+    m_viewModeAct = makeAction(this, IconId::View, tr("View mode"), QKeySequence(QStringLiteral("V")),
+                               tr("View mode: overview, pan and zoom (V)"));
+    m_brushModeAct = makeAction(this, IconId::Brush, tr("Brush mode"), QKeySequence(QStringLiteral("B")),
+                                tr("Brush mode: hold the left button to draw freely (B)"));
+    m_editModeAct = makeAction(this, IconId::Edit, tr("Edit mode"), QKeySequence(QStringLiteral("E")),
+                               tr("Edit mode: select, move and resize items; hold Ctrl to pan the view (E)"));
+    m_textModeAct = makeAction(this, IconId::Text, tr("Text mode"), QKeySequence(QStringLiteral("T")),
+                               tr("Text mode: click the canvas to place a text item (T)"));
     m_viewModeAct->setCheckable(true);
     m_brushModeAct->setCheckable(true);
     m_editModeAct->setCheckable(true);
@@ -531,25 +517,23 @@ void MainWindow::createActions()
     m_editModeAct->setData(static_cast<int>(ToolMode::Edit));
     m_textModeAct->setData(static_cast<int>(ToolMode::Text));
 
-    m_fitAct =
-        makeAction(this, IconId::Fit, tr("Back to overview"),
-                   QKeySequence(QStringLiteral("Ctrl+0")), tr("Fit all items (Ctrl+0 / Home)"));
+    m_fitAct = makeAction(this, IconId::Fit, tr("Back to overview"), QKeySequence(QStringLiteral("Ctrl+0")),
+                          tr("Fit all items (Ctrl+0 / Home)"));
     m_fitAct->setShortcuts({QKeySequence(QStringLiteral("Ctrl+0")), QKeySequence(Qt::Key_Home)});
-    m_zoomInAct = makeAction(this, IconId::ZoomIn, tr("Zoom in"),
-                             QKeySequence(QStringLiteral("Ctrl+=")), tr("Zoom in (Ctrl+=)"));
+    m_zoomInAct =
+        makeAction(this, IconId::ZoomIn, tr("Zoom in"), QKeySequence(QStringLiteral("Ctrl+=")), tr("Zoom in (Ctrl+=)"));
     m_zoomInAct->setShortcuts({QKeySequence(QStringLiteral("Ctrl+=")), QKeySequence(Qt::CTRL | Qt::Key_Plus)});
-    m_zoomOutAct = makeAction(this, IconId::ZoomOut, tr("Zoom out"),
-                              QKeySequence(QStringLiteral("Ctrl+-")), tr("Zoom out (Ctrl+-)"));
-    m_actualSizeAct =
-        makeAction(this, IconId::ZoomIn, tr("Actual size"), QKeySequence(QStringLiteral("Ctrl+1")),
-                   tr("Show at 100% (Ctrl+1)"));
+    m_zoomOutAct = makeAction(this, IconId::ZoomOut, tr("Zoom out"), QKeySequence(QStringLiteral("Ctrl+-")),
+                              tr("Zoom out (Ctrl+-)"));
+    m_actualSizeAct = makeAction(this, IconId::ZoomIn, tr("Actual size"), QKeySequence(QStringLiteral("Ctrl+1")),
+                                 tr("Show at 100% (Ctrl+1)"));
 
-    m_replaceBgAct = makeAction(this, IconId::Background, tr("Replace background image…"),
-                                QKeySequence(), tr("Choose an image as the canvas background"));
+    m_replaceBgAct = makeAction(this, IconId::Background, tr("Replace background image…"), QKeySequence(),
+                                tr("Choose an image as the canvas background"));
     m_bgColorAct = makeAction(this, IconId::Palette, tr("Set background color…"), QKeySequence(),
                               tr("Use a solid color as the canvas background"));
-    m_clearBgAct = makeAction(this, IconId::Delete, tr("Clear background"), QKeySequence(),
-                              tr("Restore the white background"));
+    m_clearBgAct =
+        makeAction(this, IconId::Delete, tr("Clear background"), QKeySequence(), tr("Restore the white background"));
 
     m_bgStretchAct = new QAction(tr("Stretch to fill"), this);
     m_bgFitAct = new QAction(tr("Fit entirely"), this);
@@ -563,12 +547,10 @@ void MainWindow::createActions()
     m_backgroundModeGroup->addAction(m_bgFitAct);
     m_backgroundModeGroup->addAction(m_bgTileAct);
 
-    m_settingsAct =
-        makeAction(this, IconId::Settings, tr("Settings…"), QKeySequence(QStringLiteral("Ctrl+,")),
-                   tr("Open board settings (Ctrl+,)"));
+    m_settingsAct = makeAction(this, IconId::Settings, tr("Settings…"), QKeySequence(QStringLiteral("Ctrl+,")),
+                               tr("Open board settings (Ctrl+,)"));
 
-    m_aboutAct =
-        new QAction(QIcon(QStringLiteral(":/icons/app.png")), tr("About StoryBoard"), this);
+    m_aboutAct = new QAction(QIcon(QStringLiteral(":/icons/app.png")), tr("About StoryBoard"), this);
     m_aboutQtAct = new QAction(tr("About Qt"), this);
 
     connect(m_newAct, &QAction::triggered, this, &MainWindow::newCanvas);
@@ -768,8 +750,7 @@ void MainWindow::createMenus()
         }
         const int changed = m_scene->adjustSelectedHeights(delta);
         if (changed == 0) {
-            statusBar()->showMessage(
-                tr("No selected items can change height (or the height limit was reached)"), 3000);
+            statusBar()->showMessage(tr("No selected items can change height (or the height limit was reached)"), 3000);
         } else {
             statusBar()->showMessage(tr("Changed the height of %1 item(s) by %2")
                                          .arg(changed)
@@ -887,8 +868,9 @@ void MainWindow::createToolBars()
     // 以及 addWidget 加入的色板/填充按钮，都钉成同一个正方形，避免按各自
     // sizeHint 算出宽窄不一的方块。带文字或下拉菜单的按钮保持自身宽度。
     for (QToolButton* button : mainBar->findChildren<QToolButton*>()) {
-        if (button->toolButtonStyle() != Qt::ToolButtonIconOnly)
+        if (button->toolButtonStyle() != Qt::ToolButtonIconOnly) {
             continue;
+        }
         if (button == m_colorButton) {
             button->setFixedSize(kToolBarSplitButtonWidth, kToolBarButtonSize);
             continue;
@@ -926,14 +908,10 @@ void MainWindow::CreateBrushToolbar(QToolBar* mainBar)
 
     auto* colorMenu = new QMenu(m_colorButton);
     const QList<QPair<QString, QColor>> presets = {
-        {tr("Ink black"), QColor(QStringLiteral("#111827"))},
-        {tr("Red"), QColor(QStringLiteral("#EF4444"))},
-        {tr("Orange"), QColor(QStringLiteral("#F59E0B"))},
-        {tr("Green"), QColor(QStringLiteral("#10B981"))},
-        {tr("Blue"), QColor(QStringLiteral("#3B82F6"))},
-        {tr("Purple"), QColor(QStringLiteral("#8B5CF6"))},
-        {tr("Pink"), QColor(QStringLiteral("#EC4899"))},
-        {tr("White"), QColor(QStringLiteral("#FFFFFF"))}};
+        {tr("Ink black"), QColor(QStringLiteral("#111827"))}, {tr("Red"), QColor(QStringLiteral("#EF4444"))},
+        {tr("Orange"), QColor(QStringLiteral("#F59E0B"))},    {tr("Green"), QColor(QStringLiteral("#10B981"))},
+        {tr("Blue"), QColor(QStringLiteral("#3B82F6"))},      {tr("Purple"), QColor(QStringLiteral("#8B5CF6"))},
+        {tr("Pink"), QColor(QStringLiteral("#EC4899"))},      {tr("White"), QColor(QStringLiteral("#FFFFFF"))}};
     for (const auto& preset : presets) {
         QAction* action = colorMenu->addAction(makeColorIcon(preset.second, 16), preset.first);
         connect(action, &QAction::triggered, this, [this, color = preset.second]() { setBrushColor(color, true); });
@@ -1001,8 +979,7 @@ void MainWindow::CreateBrushToolbar(QToolBar* mainBar)
     m_smoothingSpin->setFixedWidth(64);
     m_smoothingSpin->setFixedHeight(kToolBarControlHeight);
     m_smoothingSpin->setValue(m_settings.strokeSmoothing);
-    m_smoothingSpin->setToolTip(
-        tr("Auto-smoothing tolerance used when a stroke ends; 0 disables automatic smoothing"));
+    m_smoothingSpin->setToolTip(tr("Auto-smoothing tolerance used when a stroke ends; 0 disables automatic smoothing"));
     connect(m_smoothingSpin, &QSpinBox::valueChanged, this, [this](int value) {
         m_settings.strokeSmoothing = value;
         m_view->setStrokeSmoothing(value);
@@ -1048,9 +1025,9 @@ void MainWindow::CreateFillToolbar(QToolBar* mainBar)
     m_fillColorButton->setObjectName(QStringLiteral("FillColorButton"));
     m_fillColorButton->setIconSize(QSize(kToolBarIconSize, kToolBarIconSize));
     m_fillColorButton->setDefaultAction(m_fillColorAct);
-    m_fillColorButton->setToolTip(tr("Fill color: %1 (click to choose)")
-                                      .arg(m_fillColor.isValid() ? m_fillColor.name(QColor::HexArgb).toUpper()
-                                                                 : tr("Follow brush color")));
+    m_fillColorButton->setToolTip(
+        tr("Fill color: %1 (click to choose)")
+            .arg(m_fillColor.isValid() ? m_fillColor.name(QColor::HexArgb).toUpper() : tr("Follow brush color")));
     mainBar->addWidget(m_fillColorButton);
 
     m_strokeColorButton = new QToolButton(mainBar);
@@ -1059,8 +1036,8 @@ void MainWindow::CreateFillToolbar(QToolBar* mainBar)
     m_strokeColorButton->setDefaultAction(m_strokeColorAct);
     // 菜单项图标是 16px，工具栏按钮另画一份 20px 的，避免比旁边的图标小一圈。
     m_strokeColorButton->setIcon(makeStrokeColorIcon(m_brushColor, kToolBarIconSize));
-    m_strokeColorButton->setToolTip(tr("Outline color: %1 (click to choose)")
-                                        .arg(m_brushColor.name(QColor::HexArgb).toUpper()));
+    m_strokeColorButton->setToolTip(
+        tr("Outline color: %1 (click to choose)").arg(m_brushColor.name(QColor::HexArgb).toUpper()));
     mainBar->addWidget(m_strokeColorButton);
 }
 
@@ -1085,12 +1062,10 @@ void MainWindow::connectSignals()
     connect(m_undo, &QUndoStack::canRedoChanged, this, &MainWindow::updateActions);
     connect(m_undo, &QUndoStack::cleanChanged, this, &MainWindow::updateTitle);
     connect(m_undo, &QUndoStack::undoTextChanged, this, [this](const QString& text) {
-        m_undoAct->setToolTip(text.isEmpty() ? tr("Undo")
-                                             : tr("Undo: %1").arg(text));
+        m_undoAct->setToolTip(text.isEmpty() ? tr("Undo") : tr("Undo: %1").arg(text));
     });
     connect(m_undo, &QUndoStack::redoTextChanged, this, [this](const QString& text) {
-        m_redoAct->setToolTip(text.isEmpty() ? tr("Redo")
-                                             : tr("Redo: %1").arg(text));
+        m_redoAct->setToolTip(text.isEmpty() ? tr("Redo") : tr("Redo: %1").arg(text));
     });
 
     connect(m_view, &CanvasView::zoomChanged, this, [this](qreal zoom) {
@@ -1151,18 +1126,20 @@ void MainWindow::updateModeUi()
     if (m_hintLabel) {
         switch (mode) {
         case ToolMode::View:
-            m_hintLabel->setText(tr("View mode: drag to pan · wheel to zoom · switching modes returns to the overview"));
+            m_hintLabel->setText(
+                tr("View mode: drag to pan · wheel to zoom · switching modes returns to the overview"));
             break;
         case ToolMode::Brush:
             m_hintLabel->setText(tr("Brush mode: left button to draw · wheel to zoom · Space / middle button to pan"));
             break;
         case ToolMode::Edit:
             m_hintLabel->setText(tr("Edit mode: items on visible, unlocked layers can be edited · drag or box-select · "
-                               "resize with handles · hold Ctrl to drag / wheel zoom the whole view · "
-                               "drag canvas edges to resize the canvas · Delete to remove"));
+                                    "resize with handles · hold Ctrl to drag / wheel zoom the whole view · "
+                                    "drag canvas edges to resize the canvas · Delete to remove"));
             break;
         case ToolMode::Text:
-            m_hintLabel->setText(tr("Text mode: click the canvas to place text · set font, size, color and bold/italic"));
+            m_hintLabel->setText(
+                tr("Text mode: click the canvas to place text · set font, size, color and bold/italic"));
             break;
         }
     }
@@ -1224,9 +1201,8 @@ void MainWindow::updateStatusBar()
         m_zoomBadge->setText(QStringLiteral("%1%").arg(qRound(m_view->zoom() * 100.0)));
     }
     if (m_countBadge) {
-        m_countBadge->setText(tr("%1 items · %2 layers")
-                                  .arg(m_scene->canvasItemCount())
-                                  .arg(m_scene->userLayerCount()));
+        m_countBadge->setText(
+            tr("%1 items · %2 layers").arg(m_scene->canvasItemCount()).arg(m_scene->userLayerCount()));
     }
 }
 
@@ -1258,8 +1234,7 @@ void MainWindow::setBrushColor(const QColor& color, bool remember)
     m_view->setBrushColor(color);
     if (m_colorButton) {
         m_colorButton->setIcon(makeColorIcon(color, kToolBarIconSize));
-        m_colorButton->setToolTip(
-            tr("Brush color: %1 (click to choose)").arg(color.name(QColor::HexArgb).toUpper()));
+        m_colorButton->setToolTip(tr("Brush color: %1 (click to choose)").arg(color.name(QColor::HexArgb).toUpper()));
     }
     if (m_brushColorAct) {
         m_brushColorAct->setIcon(makeColorIcon(color, 16));
@@ -1323,8 +1298,8 @@ void MainWindow::setStrokeSmoothingUi(int tolerance)
 
 void MainWindow::chooseBrushColor()
 {
-    const QColor color = QColorDialog::getColor(m_brushColor, this, tr("Choose brush color"),
-                                                QColorDialog::ShowAlphaChannel);
+    const QColor color =
+        QColorDialog::getColor(m_brushColor, this, tr("Choose brush color"), QColorDialog::ShowAlphaChannel);
     if (color.isValid()) {
         setBrushColor(color, true);
     }
@@ -1360,8 +1335,8 @@ void MainWindow::newCanvas()
 
 void MainWindow::openCanvasDialog()
 {
-    const QString path = QFileDialog::getOpenFileName(this, tr("Open canvas"),
-                                                      AppSettings::canvasesDir(), canvasFilter());
+    const QString path =
+        QFileDialog::getOpenFileName(this, tr("Open canvas"), AppSettings::canvasesDir(), canvasFilter());
     if (!path.isEmpty()) {
         loadCanvasFile(path, true);
     }
@@ -1377,9 +1352,8 @@ bool MainWindow::loadCanvasFile(const QString& path, bool showErrors)
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
         if (showErrors) {
-            QMessageBox::warning(
-                this, tr("Open canvas"),
-                tr("Could not read the file:\n%1").arg(QDir::toNativeSeparators(path)));
+            QMessageBox::warning(this, tr("Open canvas"),
+                                 tr("Could not read the file:\n%1").arg(QDir::toNativeSeparators(path)));
         }
         return false;
     }
@@ -1388,9 +1362,8 @@ bool MainWindow::loadCanvasFile(const QString& path, bool showErrors)
     const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &parseError);
     if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
         if (showErrors) {
-            QMessageBox::warning(
-                this, tr("Open canvas"),
-                tr("Failed to parse the canvas file:\n%1").arg(parseError.errorString()));
+            QMessageBox::warning(this, tr("Open canvas"),
+                                 tr("Failed to parse the canvas file:\n%1").arg(parseError.errorString()));
         }
         return false;
     }
@@ -1450,8 +1423,8 @@ bool MainWindow::saveCanvasAs()
         suggestion = QDir(AppSettings::canvasesDir()).filePath(name + QStringLiteral(".sbcanvas"));
     }
 
-    QString path = QFileDialog::getSaveFileName(this, tr("Save canvas as"), suggestion,
-                                                tr("StoryBoard canvases (*.sbcanvas)"));
+    QString path =
+        QFileDialog::getSaveFileName(this, tr("Save canvas as"), suggestion, tr("StoryBoard canvases (*.sbcanvas)"));
     if (path.isEmpty()) {
         return false;
     }
@@ -1470,16 +1443,14 @@ bool MainWindow::saveToFile(const QString& path)
 
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly)) {
-        QMessageBox::warning(
-            this, tr("Save canvas"),
-            tr("Could not write the file:\n%1").arg(QDir::toNativeSeparators(path)));
+        QMessageBox::warning(this, tr("Save canvas"),
+                             tr("Could not write the file:\n%1").arg(QDir::toNativeSeparators(path)));
         return false;
     }
     file.write(data);
     if (!file.commit()) {
-        QMessageBox::warning(
-            this, tr("Save canvas"),
-            tr("Failed to save the canvas:\n%1").arg(QDir::toNativeSeparators(path)));
+        QMessageBox::warning(this, tr("Save canvas"),
+                             tr("Failed to save the canvas:\n%1").arg(QDir::toNativeSeparators(path)));
         return false;
     }
 
@@ -1539,8 +1510,7 @@ void MainWindow::exportCanvas()
     if (options.separateLayers) {
         const QStringList paths = options.filePaths;
         if (paths.isEmpty()) {
-            QMessageBox::warning(this, tr("Export canvas"),
-                                 tr("No visible layers to export."));
+            QMessageBox::warning(this, tr("Export canvas"), tr("No visible layers to export."));
             return;
         }
 
@@ -1554,14 +1524,12 @@ void MainWindow::exportCanvas()
         }
 
         const QString folder = QFileInfo(paths.constFirst()).absolutePath();
-        statusBar()->showMessage(tr("Exported %1 visible layer file(s)").arg(exported.size()),
-                                 5000);
+        statusBar()->showMessage(tr("Exported %1 visible layer file(s)").arg(exported.size()), 5000);
         QMessageBox box(this);
         box.setIcon(QMessageBox::Information);
         box.setWindowTitle(tr("Export complete"));
         box.setText(tr("The visible layers were exported successfully."));
-        box.setInformativeText(
-            tr("%1 file(s) in\n%2").arg(exported.size()).arg(QDir::toNativeSeparators(folder)));
+        box.setInformativeText(tr("%1 file(s) in\n%2").arg(exported.size()).arg(QDir::toNativeSeparators(folder)));
         QPushButton* openFolderButton = box.addButton(tr("Open folder"), QMessageBox::ActionRole);
         box.addButton(tr("Done"), QMessageBox::RejectRole);
         box.exec();
@@ -1583,8 +1551,7 @@ bool MainWindow::exportToFile(const QString& path, const QRectF& area, qreal sca
     QApplication::restoreOverrideCursor();
 
     if (image.isNull()) {
-        QMessageBox::warning(this, tr("Export canvas"),
-                             tr("Rendering the canvas failed: nothing to export."));
+        QMessageBox::warning(this, tr("Export canvas"), tr("Rendering the canvas failed: nothing to export."));
         return false;
     }
 
@@ -1627,9 +1594,9 @@ bool MainWindow::exportToFile(const QString& path, const QRectF& area, qreal sca
     }
 
     if (!success) {
-        QMessageBox::critical(this, tr("Export failed"),
-                              tr("Could not export the canvas:\n%1\n\n%2")
-                                  .arg(QDir::toNativeSeparators(path), errorMessage));
+        QMessageBox::critical(
+            this, tr("Export failed"),
+            tr("Could not export the canvas:\n%1\n\n%2").arg(QDir::toNativeSeparators(path), errorMessage));
         return false;
     }
 
@@ -1667,8 +1634,7 @@ void MainWindow::importImagesDialog()
         startDirectory = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
     }
 
-    const QStringList files =
-        QFileDialog::getOpenFileNames(this, tr("Insert images"), startDirectory, imageFilter());
+    const QStringList files = QFileDialog::getOpenFileNames(this, tr("Insert images"), startDirectory, imageFilter());
     if (!files.isEmpty()) {
         importImageFiles(files);
     }
@@ -1681,8 +1647,7 @@ void MainWindow::importOutlineImageDialog()
         startDirectory = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
     }
 
-    const QString file = QFileDialog::getOpenFileName(this, tr("Import outline image"),
-                                                      startDirectory, imageFilter());
+    const QString file = QFileDialog::getOpenFileName(this, tr("Import outline image"), startDirectory, imageFilter());
     if (file.isEmpty()) {
         return;
     }
@@ -1700,8 +1665,7 @@ void MainWindow::importOutlineImageDialog()
         if (saved) {
             // 文件已经是新值了，主设置对象同步一份，避免之后整份保存把旧值写回去。
             m_settings.copyLineArtFrom(m_lineArtSettings);
-            statusBar()->showMessage(tr("Image outline settings saved to the configuration file"),
-                                     4000);
+            statusBar()->showMessage(tr("Image outline settings saved to the configuration file"), 4000);
         } else {
             statusBar()->showMessage(tr("Could not write the configuration file; the settings apply "
                                         "to this session only"),
@@ -1733,9 +1697,8 @@ void MainWindow::importOutlineImageFile(const QString& file, const LineArtConver
     reader.setAutoTransform(true);
     const QImage image = reader.read();
     if (image.isNull()) {
-        QMessageBox::warning(
-            this, tr("Import outline image"),
-            tr("Could not read the image:\n%1").arg(QDir::toNativeSeparators(file)));
+        QMessageBox::warning(this, tr("Import outline image"),
+                             tr("Could not read the image:\n%1").arg(QDir::toNativeSeparators(file)));
         return;
     }
 
@@ -1780,8 +1743,7 @@ void MainWindow::importOutlineImageFile(const QString& file, const LineArtConver
     }
 
     if (items.isEmpty()) {
-        QMessageBox::warning(this, tr("Import outline image"),
-                             tr("No color blocks were found in the image."));
+        QMessageBox::warning(this, tr("Import outline image"), tr("No color blocks were found in the image."));
         return;
     }
 
@@ -1790,8 +1752,7 @@ void MainWindow::importOutlineImageFile(const QString& file, const LineArtConver
     m_settings.lastImageDir = QFileInfo(file).absolutePath();
     m_settings.save();
 
-    statusBar()->showMessage(tr("%1 stroke(s) created from the image outlines").arg(items.size()),
-                             5000);
+    statusBar()->showMessage(tr("%1 stroke(s) created from the image outlines").arg(items.size()), 5000);
     // 色块数量上限已放开：有多少块就描多少块，不再提示“只转换了前 N 个”。
 }
 
@@ -1807,7 +1768,7 @@ void MainWindow::importImageFiles(const QStringList& files)
 
     if (!m_scene->isActiveLayerWritable()) {
         statusBar()->showMessage(tr("The current layer is locked or hidden; images cannot be "
-                                                       "inserted. Unlock or switch layers in the layer panel first."),
+                                    "inserted. Unlock or switch layers in the layer panel first."),
                                  5000);
         return;
     }
@@ -1852,8 +1813,7 @@ void MainWindow::importImageFiles(const QStringList& files)
     }
 
     if (items.isEmpty()) {
-        QMessageBox::warning(this, tr("Insert images"),
-                             tr("No usable image files."));
+        QMessageBox::warning(this, tr("Insert images"), tr("No usable image files."));
         return;
     }
 
@@ -1881,7 +1841,7 @@ void MainWindow::insertShape(ShapeType type)
 
     if (!m_scene->isActiveLayerWritable()) {
         statusBar()->showMessage(tr("The current layer is locked or hidden; shapes cannot be "
-                                                       "inserted. Unlock or switch layers in the layer panel first."),
+                                    "inserted. Unlock or switch layers in the layer panel first."),
                                  5000);
         return;
     }
@@ -1921,9 +1881,8 @@ void MainWindow::insertShape(ShapeType type)
     item->setSelected(true);
     m_view->setFocus();
     if (type == ShapeType::Ellipse) {
-        statusBar()->showMessage(
-            tr("Inserted a circle; in edit mode drag a handle to stretch it into an ellipse"),
-            5000);
+        statusBar()->showMessage(tr("Inserted a circle; in edit mode drag a handle to stretch it into an ellipse"),
+                                 5000);
     } else {
         statusBar()->showMessage(
             tr("Inserted %1; drag to move, drag handles to resize, color follows the current brush")
@@ -1942,8 +1901,7 @@ void MainWindow::setFillStyle(FillStyle style)
 void MainWindow::chooseFillColor()
 {
     const QColor initial = m_fillColor.isValid() ? m_fillColor : QColor(59, 130, 246, 96);
-    const QColor color = QColorDialog::getColor(initial, this, tr("Choose fill color"),
-                                                QColorDialog::ShowAlphaChannel);
+    const QColor color = QColorDialog::getColor(initial, this, tr("Choose fill color"), QColorDialog::ShowAlphaChannel);
     if (!color.isValid()) {
         return;
     }
@@ -1955,8 +1913,8 @@ void MainWindow::chooseFillColor()
 void MainWindow::chooseStrokeColor()
 {
     const QColor initial = m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_brushColor;
-    const QColor color = QColorDialog::getColor(initial, this, tr("Choose outline color"),
-                                                QColorDialog::ShowAlphaChannel);
+    const QColor color =
+        QColorDialog::getColor(initial, this, tr("Choose outline color"), QColorDialog::ShowAlphaChannel);
     if (!color.isValid()) {
         return;
     }
@@ -1972,8 +1930,7 @@ void MainWindow::chooseStrokeColor()
     }
 
     if (shapes.isEmpty()) {
-        statusBar()->showMessage(tr("Outline color set; it will be used for newly inserted shapes"),
-                                 4000);
+        statusBar()->showMessage(tr("Outline color set; it will be used for newly inserted shapes"), 4000);
         return;
     }
 
@@ -2019,13 +1976,11 @@ void MainWindow::applyFillToSelection()
 
     if (shapes.isEmpty()) {
         if (outlineOnlyCount > 0) {
-            statusBar()->showMessage(
-                tr("The selected shape is stroke-only (line, brace, etc.); fill is not supported"),
-                4000);
+            statusBar()->showMessage(tr("The selected shape is stroke-only (line, brace, etc.); fill is not supported"),
+                                     4000);
         } else {
             statusBar()->showMessage(
-                tr("Fill set to \"%1\"; it will be used for newly inserted shapes")
-                    .arg(fillStyleName(m_fillStyle)),
+                tr("Fill set to \"%1\"; it will be used for newly inserted shapes").arg(fillStyleName(m_fillStyle)),
                 4000);
         }
         return;
@@ -2051,9 +2006,8 @@ void MainWindow::applyFillToSelection()
     }
 
     m_undo->push(new ShapeStyleCommand(m_scene, shapes, before, after, tr("Change fill style")));
-    statusBar()->showMessage(
-        tr("Applied \"%2\" to %1 shape(s)").arg(shapes.size()).arg(fillStyleName(m_fillStyle)),
-        4000);
+    statusBar()->showMessage(tr("Applied \"%2\" to %1 shape(s)").arg(shapes.size()).arg(fillStyleName(m_fillStyle)),
+                             4000);
 }
 
 void MainWindow::updateFillActions()
@@ -2107,10 +2061,9 @@ void MainWindow::updateFillActions()
     if (m_fillHoneycombAct) {
         m_fillHoneycombAct->setIcon(makeFillStyleIcon(FillStyle::Honeycomb, swatch, 16));
     }
-    const QString colorText = m_fillColor.isValid() ? m_fillColor.name(QColor::HexArgb).toUpper()
-                                                    : tr("Follow brush color");
-    m_fillButton->setToolTip(
-        tr("Fill: %1 · %2 (click to choose)").arg(fillStyleName(m_fillStyle), colorText));
+    const QString colorText =
+        m_fillColor.isValid() ? m_fillColor.name(QColor::HexArgb).toUpper() : tr("Follow brush color");
+    m_fillButton->setToolTip(tr("Fill: %1 · %2 (click to choose)").arg(fillStyleName(m_fillStyle), colorText));
     if (m_fillColorAct) {
         m_fillColorAct->setIcon(makeFillColorIcon(swatch, 16));
     }
@@ -2190,9 +2143,8 @@ void MainWindow::rotateSelected(qreal degrees)
         statusBar()->showMessage(tr("Rotation is available in edit mode only"), 3000);
         return;
     }
-    const int changed =
-        m_scene->rotateSelected(degrees, degrees > 0 ? tr("Rotate items clockwise")
-                                                     : tr("Rotate items counterclockwise"));
+    const int changed = m_scene->rotateSelected(degrees, degrees > 0 ? tr("Rotate items clockwise")
+                                                                     : tr("Rotate items counterclockwise"));
     if (changed == 0) {
         statusBar()->showMessage(tr("No selected items can be rotated"), 3000);
         return;
@@ -2207,8 +2159,8 @@ void MainWindow::replaceBackgroundImage()
         startDirectory = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
     }
 
-    const QString path = QFileDialog::getOpenFileName(this, tr("Replace background image"),
-                                                      startDirectory, imageFilter());
+    const QString path =
+        QFileDialog::getOpenFileName(this, tr("Replace background image"), startDirectory, imageFilter());
     if (path.isEmpty()) {
         return;
     }
@@ -2269,8 +2221,7 @@ void MainWindow::applyUiLanguage()
         for (QAction* action : m_shapeMenu->actions()) {
             const ShapeType type = static_cast<ShapeType>(action->data().toInt());
             action->setText(shapeTypeName(type));
-            action->setToolTip(
-                tr("Insert %1 (uses the current brush color)").arg(shapeTypeName(type)));
+            action->setToolTip(tr("Insert %1 (uses the current brush color)").arg(shapeTypeName(type)));
         }
     }
 
@@ -2346,11 +2297,13 @@ void MainWindow::updateCanvasesMenu()
     if (anchor >= 0) {
         for (int i = anchor + 1; i < existing.size(); ++i) {
             QAction* action = existing.at(i);
-            if (!action || action == m_quitAct)
+            if (!action || action == m_quitAct) {
                 continue;
+            }
             m_fileMenu->removeAction(action);
-            if (action != m_settingsAct)
+            if (action != m_settingsAct) {
                 action->deleteLater();
+            }
         }
     }
 
@@ -2369,8 +2322,8 @@ void MainWindow::updateCanvasesMenu()
         const int maximum = qMin(15, static_cast<int>(files.size()));
         for (int i = 0; i < maximum; ++i) {
             const QFileInfo info = files.at(i);
-            QAction* action = new QAction(makeIcon(IconId::Save, QColor(90, 98, 112), 16),
-                                          info.completeBaseName(), m_fileMenu);
+            QAction* action =
+                new QAction(makeIcon(IconId::Save, QColor(90, 98, 112), 16), info.completeBaseName(), m_fileMenu);
             action->setCheckable(true);
             action->setChecked(info.absoluteFilePath() == m_filePath);
             action->setToolTip(QDir::toNativeSeparators(info.absoluteFilePath()));
@@ -2379,8 +2332,7 @@ void MainWindow::updateCanvasesMenu()
             items.append(action);
         }
         if (files.size() > maximum) {
-            QAction* moreAction =
-                new QAction(tr("… %1 canvases in total").arg(files.size()), m_fileMenu);
+            QAction* moreAction = new QAction(tr("… %1 canvases in total").arg(files.size()), m_fileMenu);
             moreAction->setEnabled(false);
             items.append(moreAction);
         }
@@ -2413,25 +2365,29 @@ void MainWindow::openCanvasesFolder()
 void MainWindow::showAbout()
 {
     QString html;
-    html += QStringLiteral("<h3>%1 %2</h3>")
-                .arg(tr("StoryBoard Canvas"), QCoreApplication::applicationVersion());
+    html += QStringLiteral("<h3>%1 %2</h3>").arg(tr("StoryBoard Canvas"), QCoreApplication::applicationVersion());
     html += QStringLiteral("<p>%1</p>")
                 .arg(tr("A lightweight canvas app for freehand strokes, image items, overview "
-                                           "navigation, canvas files and export."));
+                        "navigation, canvas files and export."));
     // 关于窗口的线稿化备注：说明入口、参数顺序和输出，和功能实际行为保持一致。
     html += QStringLiteral("<p><b>%1</b></p><ul>").arg(tr("Image outline tracing"));
-    html += QStringLiteral("<li>%1</li>")
-                .arg(tr("Import an image and the parameter dialog opens first; strokes are created only after you confirm."));
-    html += QStringLiteral("<li>%1</li>")
-                .arg(tr("Four presets (keep details / balanced / clean lines / bold blocks) set color levels, "
-                        "same-color similarity, adjacent-color similarity, smallest block and simplify tolerance in one go; "
-                        "editing any value switches back to Custom."));
+    html +=
+        QStringLiteral("<li>%1</li>")
+            .arg(tr(
+                "Import an image and the parameter dialog opens first; strokes are created only after you confirm."));
+    html +=
+        QStringLiteral("<li>%1</li>")
+            .arg(
+                tr("Four presets (keep details / balanced / clean lines / bold blocks) set color levels, "
+                   "same-color similarity, adjacent-color similarity, smallest block and simplify tolerance in one go; "
+                   "editing any value switches back to Custom."));
     html += QStringLiteral("<li>%1</li>")
                 .arg(tr("Simplify tolerance and thinnest band are adjustable; OK / Cancel apply to this run only, "
                         "Save to configuration file writes the values into StoryBoard.ini."));
-    html += QStringLiteral("<li>%1</li>")
-                .arg(tr("Block count limit with automatic downsampling: checked by default, the image is processed at a "
-                        "smaller size instead of dropping blocks."));
+    html +=
+        QStringLiteral("<li>%1</li>")
+            .arg(tr("Block count limit with automatic downsampling: checked by default, the image is processed at a "
+                    "smaller size instead of dropping blocks."));
     html += QStringLiteral("<li>%1</li>")
                 .arg(tr("Output line width is fixed at 1 and the result is inserted as plain stroke items."));
     html += QStringLiteral("</ul><p><b>%1</b></p><ul>").arg(tr("Key operations"));
@@ -2451,10 +2407,8 @@ void MainWindow::showAbout()
     for (const QString& operation : operations) {
         html += QStringLiteral("<li>%1</li>").arg(uiText(operation));
     }
-    html += QStringLiteral("</ul><p>%1</p>")
-                .arg(tr("Built with Qt %1.").arg(QString::fromLatin1(qVersion())));
-    QMessageBox box(QMessageBox::Information, tr("About StoryBoard Canvas"), html,
-                    QMessageBox::NoButton, this);
+    html += QStringLiteral("</ul><p>%1</p>").arg(tr("Built with Qt %1.").arg(QString::fromLatin1(qVersion())));
+    QMessageBox box(QMessageBox::Information, tr("About StoryBoard Canvas"), html, QMessageBox::NoButton, this);
     box.addButton(tr("OK"), QMessageBox::AcceptRole);
     box.exec();
 }

@@ -3,8 +3,8 @@
 #include <QColor>
 #include <QDialog>
 #include <QFont>
-#include <QPointF>
 #include <QPixmap>
+#include <QPointF>
 #include <QPointer>
 #include <QSizeF>
 #include <QString>
@@ -23,12 +23,11 @@ class QToolButton;
 // 编辑单个图元的属性。图元类型只读，其余字段（名称、图层、层内高度、填充、
 // 描边、位置尺寸、文字字体颜色、图片名称）都可以修改，确认后作为一条
 // 撤销记录提交。文字正文在属性窗内直接编辑，不再弹出额外的文字对话框。
-class ItemPropertiesDialog : public QDialog
-{
+class ItemPropertiesDialog : public QDialog {
     Q_OBJECT
-public:
-    explicit ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
-                                  QWidget* parent = nullptr, bool editable = true);
+  public:
+    explicit ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item, QWidget* parent = nullptr,
+                                  bool editable = true);
 
     CanvasItem* item() const { return m_item.data(); }
     bool isEditable() const { return m_editable; }
@@ -39,7 +38,7 @@ public:
     static QString layerDescription(const CanvasScene* scene, int layerId);
     void accept() override;
 
-private:
+  private:
     void applyChanges();
     void updateHeightRange(bool selectTop);
     void updateFontButton();

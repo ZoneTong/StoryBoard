@@ -1,33 +1,21 @@
 #pragma once
 
+#include "ItemGeometry.h"
+
 #include <QCursor>
 #include <QGraphicsObject>
 #include <QJsonObject>
 #include <QSizeF>
 
-#include "ItemGeometry.h"
-
 class CanvasScene;
 class QGraphicsSceneHoverEvent;
 class QGraphicsSceneMouseEvent;
 
-class CanvasItem : public QGraphicsObject
-{
+class CanvasItem : public QGraphicsObject {
     Q_OBJECT
-public:
+  public:
     enum { Type = QGraphicsItem::UserType + 1 };
-    enum Handle {
-        NoHandle = -1,
-        TopLeft = 0,
-        Top,
-        TopRight,
-        Right,
-        BottomRight,
-        Bottom,
-        BottomLeft,
-        Left,
-        Rotation
-    };
+    enum Handle { NoHandle = -1, TopLeft = 0, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left, Rotation };
 
     explicit CanvasItem(QGraphicsItem* parent = nullptr);
 
@@ -83,7 +71,7 @@ public:
 
     static QSizeF minimumSize();
 
-protected:
+  protected:
     virtual void paintContent(QPainter* painter) = 0;
     virtual void contentResized() {}
     virtual qreal framePadding() const { return 42.0; }
@@ -113,7 +101,7 @@ protected:
     void drawSelectionOverlay(QPainter* painter);
     QCursor cursorForHandle(Handle handle) const;
 
-private:
+  private:
     enum class DragKind { None, Move, Resize, Rotate };
 
     void beginMove(const QPointF& scenePos);
@@ -125,7 +113,7 @@ private:
     void finishInteraction();
     void updateHoverCursor(const QPointF& pos);
 
-    QSizeF m_size { 120.0, 90.0 };
+    QSizeF m_size{120.0, 90.0};
     int m_layerId = 0;
     int m_groupId = 0;
     int m_height = -1;

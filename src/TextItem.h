@@ -16,21 +16,16 @@ struct TextItemState {
 
     bool operator==(const TextItemState& other) const
     {
-        return text == other.text
-            && font == other.font
-            && color == other.color
-            && pos == other.pos
-            && size == other.size
-            && baseSize == other.baseSize;
+        return text == other.text && font == other.font && color == other.color && pos == other.pos &&
+               size == other.size && baseSize == other.baseSize;
     }
 
     bool operator!=(const TextItemState& other) const { return !(*this == other); }
 };
 
-class TextItem : public CanvasItem
-{
+class TextItem : public CanvasItem {
     Q_OBJECT
-public:
+  public:
     explicit TextItem(QGraphicsItem* parent = nullptr);
 
     QString kind() const override { return QStringLiteral("text"); }
@@ -52,13 +47,13 @@ public:
     TextItemState state() const;
     void applyState(const TextItemState& state);
 
-protected:
+  protected:
     void paintContent(QPainter* painter) override;
     qreal framePadding() const override { return 20.0; }
 
-private:
+  private:
     QString m_text;
     QFont m_font;
     QColor m_color = QColor(30, 41, 59);
-    QSizeF m_baseSize { 120.0, 44.0 };
+    QSizeF m_baseSize{120.0, 44.0};
 };

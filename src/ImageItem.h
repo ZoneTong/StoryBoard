@@ -4,10 +4,9 @@
 
 #include <QPixmap>
 
-class ImageItem : public CanvasItem
-{
+class ImageItem : public CanvasItem {
     Q_OBJECT
-public:
+  public:
     explicit ImageItem(QGraphicsItem* parent = nullptr);
 
     QString kind() const override { return QStringLiteral("image"); }
@@ -21,10 +20,10 @@ public:
     QString imageName() const { return m_name; }
     void setImageName(const QString& name);
 
-protected:
+  protected:
     void paintContent(QPainter* painter) override;
 
-private:
+  private:
     QPixmap m_pixmap;
     QString m_name;
 };

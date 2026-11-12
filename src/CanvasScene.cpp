@@ -1,9 +1,8 @@
-#include "I18n.h"
-
 #include "CanvasScene.h"
 
 #include "CanvasItem.h"
 #include "Commands.h"
+#include "I18n.h"
 #include "ImageItem.h"
 #include "ShapeItem.h"
 #include "StrokeItem.h"
@@ -22,7 +21,6 @@
 #include <QUndoStack>
 #include <QVector>
 #include <QtMath>
-
 #include <algorithm>
 #include <utility>
 
@@ -42,16 +40,15 @@ bool nearlyEqual(qreal a, qreal b)
 
 bool sameGeometry(const ItemGeometry& a, const ItemGeometry& b)
 {
-    return nearlyEqual(a.pos.x(), b.pos.x())
-        && nearlyEqual(a.pos.y(), b.pos.y())
-        && nearlyEqual(a.size.width(), b.size.width())
-        && nearlyEqual(a.size.height(), b.size.height());
+    return nearlyEqual(a.pos.x(), b.pos.x()) && nearlyEqual(a.pos.y(), b.pos.y()) &&
+           nearlyEqual(a.size.width(), b.size.width()) && nearlyEqual(a.size.height(), b.size.height());
 }
 
 QString encodePixmap(const QPixmap& pixmap)
 {
-    if (pixmap.isNull())
+    if (pixmap.isNull()) {
         return QString();
+    }
     QByteArray bytes;
     QBuffer buffer(&bytes);
     buffer.open(QIODevice::WriteOnly);
@@ -63,21 +60,24 @@ QPixmap decodePixmap(const QString& base64)
 {
     const QByteArray bytes = QByteArray::fromBase64(base64.toLatin1());
     QPixmap pixmap;
-    if (!bytes.isEmpty())
+    if (!bytes.isEmpty()) {
         pixmap.loadFromData(bytes, "PNG");
+    }
     return pixmap;
 }
 
 QRegion filledRegion(const QPainterPath& path)
 {
     QRegion region;
-    if (path.isEmpty())
+    if (path.isEmpty()) {
         return region;
+    }
     // 用路径填充多边形近似成区域，便于快速算出被遮盖的面积占比。
     for (const QPolygonF& polygon : path.toFillPolygons()) {
         const QPolygon points = polygon.toPolygon();
-        if (points.size() >= 3)
+        if (points.size() >= 3) {
             region = region.united(QRegion(points));
+        }
     }
     return region;
 }
@@ -85,20 +85,18 @@ QRegion filledRegion(const QPainterPath& path)
 qreal filledRegionArea(const QRegion& region)
 {
     qreal area = 0.0;
-    for (const QRect& rect : region)
+    for (const QRect& rect : region) {
         area += qreal(rect.width()) * qreal(rect.height());
+    }
     return area;
 }
 
 } // namespace
 
-CanvasScene::CanvasScene(QObject* parent)
-    : QGraphicsScene(parent)
+CanvasScene::CanvasScene(QObject* parent) : QGraphicsScene(parent)
 {
-    m_layers = {
-        { BackgroundLayerId, kBackgroundLayerName, true, true },
-        { kFirstUserLayerId, QStringLiteral("图层 1"), true, false }
-    };
+    m_layers = {{BackgroundLayerId, kBackgroundLayerName, true, true},
+                {kFirstUserLayerId, QStringLiteral("图层 1"), true, false}};
     m_activeLayerId = kFirstUserLayerId;
     m_nextLayerId = kFirstUserLayerId + 1;
 
@@ -120,11 +118,13 @@ void CanvasScene::setUndoStack(QUndoStack* stack)
 
 void CanvasScene::setMode(ToolMode mode)
 {
-    if (m_mode == mode)
+    if (m_mode == mode) {
         return;
+    }
 
-    if (m_mode == ToolMode::Edit)
+    if (m_mode == ToolMode::Edit) {
         clearSelection();
+    }
 
     m_mode = mode;
     updateItemFlags();
@@ -135,25 +135,26 @@ void CanvasScene::setMode(ToolMode mode)
 void CanvasScene::updateItemFlags()
 {
     const QList<CanvasItem*> items = canvasItems();
-    for (CanvasItem* item : items)
+    for (CanvasItem* item : items) {
         applyItemInteraction(item);
+    }
 }
 
 void CanvasScene::applyItemInteraction(CanvasItem* item)
 {
-    if (!item)
+    if (!item) {
         return;
+    }
 
     const bool layerVisible = isLayerVisible(item->layerId());
-    const bool editable = m_mode == ToolMode::Edit
-        && layerVisible
-        && !isLayerLocked(item->layerId());
+    const bool editable = m_mode == ToolMode::Edit && layerVisible && !isLayerLocked(item->layerId());
 
     item->setVisible(layerVisible);
     item->setFlag(QGraphicsItem::ItemIsSelectable, editable);
     item->setAcceptHoverEvents(editable);
-    if (!editable)
+    if (!editable) {
         item->setSelected(false);
+    }
 }
 
 QRectF CanvasScene::canvasRect() const
@@ -167,9 +168,8 @@ void CanvasScene::applyCanvasRect(const QRectF& rect)
     const QSizeF bounded(qBound(kMinCanvasSide, normalized.width(), kMaxCanvasSide),
                          qBound(kMinCanvasSide, normalized.height(), kMaxCanvasSide));
     const QPointF origin(normalized.left(), normalized.top());
-    if (qFuzzyCompare(bounded.width(), m_canvasSize.width())
-        && qFuzzyCompare(bounded.height(), m_canvasSize.height())
-        && origin == m_canvasOrigin) {
+    if (qFuzzyCompare(bounded.width(), m_canvasSize.width()) &&
+        qFuzzyCompare(bounded.height(), m_canvasSize.height()) && origin == m_canvasOrigin) {
         return;
     }
     m_canvasOrigin = origin;
@@ -199,11 +199,12 @@ void CanvasScene::setCanvasRectWithUndo(const QRectF& rect)
 void CanvasScene::commitCanvasRect(const QRectF& before)
 {
     const QRectF after = canvasRect();
-    if (before == after)
+    if (before == after) {
         return;
-    if (m_undoStack)
-        m_undoStack->push(new CanvasSizeCommand(this, before, after,
-                                              tr("Resize canvas")));
+    }
+    if (m_undoStack) {
+        m_undoStack->push(new CanvasSizeCommand(this, before, after, tr("Resize canvas")));
+    }
 }
 
 void CanvasScene::applyBackground(const BackgroundState& background)
@@ -215,12 +216,13 @@ void CanvasScene::applyBackground(const BackgroundState& background)
 
 void CanvasScene::replaceBackground(const BackgroundState& background, const QString& text)
 {
-    if (background == m_background)
+    if (background == m_background) {
         return;
+    }
 
     if (m_undoStack) {
-        m_undoStack->push(new BackgroundCommand(this, m_background, background,
-                                               text.isEmpty() ? tr("Change background") : text));
+        m_undoStack->push(
+            new BackgroundCommand(this, m_background, background, text.isEmpty() ? tr("Change background") : text));
     } else {
         applyBackground(background);
     }
@@ -228,8 +230,9 @@ void CanvasScene::replaceBackground(const BackgroundState& background, const QSt
 
 void CanvasScene::setShowGrid(bool enabled)
 {
-    if (m_showGrid == enabled)
+    if (m_showGrid == enabled) {
         return;
+    }
     m_showGrid = enabled;
     update();
 }
@@ -240,11 +243,13 @@ QRectF CanvasScene::contentRect() const
     bool hasItem = false;
     const QList<CanvasItem*> items = canvasItems();
     for (CanvasItem* item : items) {
-        if (!item->isVisible())
+        if (!item->isVisible()) {
             continue;
+        }
         const QRectF itemRect = item->sceneContentRect();
-        if (itemRect.isEmpty())
+        if (itemRect.isEmpty()) {
             continue;
+        }
         if (!hasItem) {
             rect = itemRect;
             hasItem = true;
@@ -259,19 +264,22 @@ void CanvasScene::updateSceneExtent()
 {
     QRectF extent = canvasRect();
     const QRectF content = contentRect();
-    if (!content.isEmpty())
+    if (!content.isEmpty()) {
         extent = extent.united(content);
+    }
     extent = extent.adjusted(-400.0, -400.0, 400.0, 400.0);
-    if (sceneRect() != extent)
+    if (sceneRect() != extent) {
         setSceneRect(extent);
+    }
 }
 
 void CanvasScene::refreshViewDependentGeometry()
 {
     const QList<CanvasItem*> items = canvasItems();
     for (CanvasItem* item : items) {
-        if (item)
+        if (item) {
             item->refreshViewDependentGeometry();
+        }
     }
 }
 
@@ -281,8 +289,9 @@ QList<CanvasItem*> CanvasScene::canvasItems() const
     const QList<QGraphicsItem*> allItems = items(Qt::AscendingOrder);
     result.reserve(allItems.size());
     for (QGraphicsItem* graphicsItem : allItems) {
-        if (auto* item = qgraphicsitem_cast<CanvasItem*>(graphicsItem))
+        if (auto* item = qgraphicsitem_cast<CanvasItem*>(graphicsItem)) {
             result.append(item);
+        }
     }
     return result;
 }
@@ -297,18 +306,21 @@ QList<CanvasItem*> CanvasScene::obscuredItems(const QRectF& area) const
     QList<CanvasItem*> result;
 
     // 查看模式下要求完全遮盖（什么提示都不画）；导出同样不画提示轮廓。
-    if (m_mode == ToolMode::View || m_exporting)
+    if (m_mode == ToolMode::View || m_exporting) {
         return result;
+    }
 
     QList<CanvasItem*> stack = canvasItems();
-    stack.erase(std::remove_if(stack.begin(), stack.end(), [&area](CanvasItem* item) {
-        if (!item || !item->isVisible())
-            return true;
-        return !area.isEmpty() && !item->sceneBoundingRect().intersects(area);
-    }), stack.end());
-    std::stable_sort(stack.begin(), stack.end(), [](const CanvasItem* a, const CanvasItem* b) {
-        return a->zValue() < b->zValue();
-    });
+    stack.erase(std::remove_if(stack.begin(), stack.end(),
+                               [&area](CanvasItem* item) {
+                                   if (!item || !item->isVisible()) {
+                                       return true;
+                                   }
+                                   return !area.isEmpty() && !item->sceneBoundingRect().intersects(area);
+                               }),
+                stack.end());
+    std::stable_sort(stack.begin(), stack.end(),
+                     [](const CanvasItem* a, const CanvasItem* b) { return a->zValue() < b->zValue(); });
 
     const int count = stack.size();
     QList<QRectF> bounds;
@@ -337,24 +349,28 @@ QList<CanvasItem*> CanvasScene::obscuredItems(const QRectF& area) const
         CanvasItem* lower = stack.at(i);
         const QRegion own = regionOf(i);
         const qreal ownArea = filledRegionArea(own);
-        if (ownArea <= 0.0)
+        if (ownArea <= 0.0) {
             continue;
+        }
 
         QRegion covered;
         for (int j = i + 1; j < count; ++j) {
             CanvasItem* upper = stack.at(j);
             // layer 更大，或同层 height 更大，就是更高优先级。
-            if (upper->zValue() <= lower->zValue())
+            if (upper->zValue() <= lower->zValue()) {
                 continue;
-            if (!bounds.at(j).intersects(bounds.at(i)))
+            }
+            if (!bounds.at(j).intersects(bounds.at(i))) {
                 continue;
+            }
             covered = covered.united(own.intersected(regionOf(j)));
         }
 
         // 只要有任何面积被更高优先级图元盖住，就算被遮挡：被盖住的内容完全看不见，
         // 但会给它补一圈轮廓。
-        if (filledRegionArea(covered) > 0.0)
+        if (filledRegionArea(covered) > 0.0) {
             result.append(lower);
+        }
     }
     return result;
 }
@@ -364,8 +380,9 @@ QList<CanvasItem*> CanvasScene::selectedCanvasItems() const
     QList<CanvasItem*> result;
     const QList<QGraphicsItem*> graphicsItems = selectedItems();
     for (QGraphicsItem* graphicsItem : graphicsItems) {
-        if (auto* item = qgraphicsitem_cast<CanvasItem*>(graphicsItem))
+        if (auto* item = qgraphicsitem_cast<CanvasItem*>(graphicsItem)) {
             result.append(item);
+        }
     }
     return result;
 }
@@ -373,46 +390,54 @@ QList<CanvasItem*> CanvasScene::selectedCanvasItems() const
 QList<CanvasItem*> CanvasScene::itemsInGroup(int groupId) const
 {
     QList<CanvasItem*> result;
-    if (groupId <= 0)
+    if (groupId <= 0) {
         return result;
+    }
     for (CanvasItem* item : canvasItems()) {
-        if (item->groupId() == groupId)
+        if (item->groupId() == groupId) {
             result.append(item);
+        }
     }
     return result;
 }
 
 bool CanvasScene::canGroupSelectedItems() const
 {
-    if (m_mode != ToolMode::Edit)
+    if (m_mode != ToolMode::Edit) {
         return false;
+    }
     const QList<CanvasItem*> selected = selectedCanvasItems();
-    if (selected.size() < 2)
+    if (selected.size() < 2) {
         return false;
+    }
 
     const int layerId = selected.constFirst()->layerId();
     for (CanvasItem* item : selected) {
-        if (!isItemEditable(item) || item->layerId() != layerId)
+        if (!isItemEditable(item) || item->layerId() != layerId) {
             return false;
+        }
     }
     return true;
 }
 
 bool CanvasScene::canUngroupSelectedItems() const
 {
-    if (m_mode != ToolMode::Edit)
+    if (m_mode != ToolMode::Edit) {
         return false;
+    }
     for (CanvasItem* item : selectedCanvasItems()) {
-        if (isItemEditable(item) && item->groupId() > 0)
+        if (isItemEditable(item) && item->groupId() > 0) {
             return true;
+        }
     }
     return false;
 }
 
 int CanvasScene::groupSelectedItems()
 {
-    if (!canGroupSelectedItems())
+    if (!canGroupSelectedItems()) {
         return 0;
+    }
 
     const QList<CanvasItem*> items = selectedCanvasItems();
     const int groupId = m_nextGroupId++;
@@ -426,8 +451,7 @@ int CanvasScene::groupSelectedItems()
     }
 
     if (m_undoStack) {
-        m_undoStack->push(new GroupCommand(this, items, before, after,
-                                           tr("Group selected items")));
+        m_undoStack->push(new GroupCommand(this, items, before, after, tr("Group selected items")));
     } else {
         applyGroupIds(items, after);
     }
@@ -436,15 +460,17 @@ int CanvasScene::groupSelectedItems()
 
 int CanvasScene::ungroupSelectedItems()
 {
-    if (!canUngroupSelectedItems())
+    if (!canUngroupSelectedItems()) {
         return 0;
+    }
 
     QList<CanvasItem*> items;
     QSet<CanvasItem*> seen;
     QSet<int> groupIds;
     for (CanvasItem* selected : selectedCanvasItems()) {
-        if (isItemEditable(selected) && selected->groupId() > 0)
+        if (isItemEditable(selected) && selected->groupId() > 0) {
             groupIds.insert(selected->groupId());
+        }
     }
     for (int groupId : std::as_const(groupIds)) {
         for (CanvasItem* member : itemsInGroup(groupId)) {
@@ -454,8 +480,9 @@ int CanvasScene::ungroupSelectedItems()
             }
         }
     }
-    if (items.isEmpty())
+    if (items.isEmpty()) {
         return 0;
+    }
 
     QList<int> before;
     QList<int> after;
@@ -467,8 +494,7 @@ int CanvasScene::ungroupSelectedItems()
     }
 
     if (m_undoStack) {
-        m_undoStack->push(new GroupCommand(this, items, before, after,
-                                           tr("Ungroup selected items")));
+        m_undoStack->push(new GroupCommand(this, items, before, after, tr("Ungroup selected items")));
     } else {
         applyGroupIds(items, after);
     }
@@ -477,11 +503,13 @@ int CanvasScene::ungroupSelectedItems()
 
 void CanvasScene::applyGroupIds(const QList<CanvasItem*>& items, const QList<int>& groupIds)
 {
-    if (items.size() != groupIds.size())
+    if (items.size() != groupIds.size()) {
         return;
+    }
     for (int i = 0; i < items.size(); ++i) {
-        if (items.at(i))
+        if (items.at(i)) {
             items.at(i)->setGroupId(groupIds.at(i));
+        }
     }
     update();
     emit contentChanged();
@@ -489,14 +517,17 @@ void CanvasScene::applyGroupIds(const QList<CanvasItem*>& items, const QList<int
 
 bool CanvasScene::canSmoothSelectedStrokes() const
 {
-    if (m_mode != ToolMode::Edit)
+    if (m_mode != ToolMode::Edit) {
         return false;
+    }
     for (CanvasItem* item : selectedCanvasItems()) {
-        if (!isItemEditable(item))
+        if (!isItemEditable(item)) {
             continue;
+        }
         if (auto* stroke = dynamic_cast<StrokeItem*>(item)) {
-            if (!stroke->isEmpty() && stroke->strokePointCount() >= 3)
+            if (!stroke->isEmpty() && stroke->strokePointCount() >= 3) {
                 return true;
+            }
         }
     }
     return false;
@@ -504,8 +535,9 @@ bool CanvasScene::canSmoothSelectedStrokes() const
 
 int CanvasScene::smoothSelectedStrokes(qreal tolerance)
 {
-    if (m_mode != ToolMode::Edit)
+    if (m_mode != ToolMode::Edit) {
         return 0;
+    }
 
     // 参数 0 只关闭“收尾自动平滑”；手动按钮即使在该设置下也执行一次轻量平滑。
     const qreal effectiveTolerance = qMax<qreal>(2.0, tolerance);
@@ -513,28 +545,32 @@ int CanvasScene::smoothSelectedStrokes(qreal tolerance)
     QList<StrokeItem::GeometryState> before;
     QList<StrokeItem::GeometryState> after;
     for (CanvasItem* item : selectedCanvasItems()) {
-        if (!isItemEditable(item))
+        if (!isItemEditable(item)) {
             continue;
+        }
         auto* stroke = dynamic_cast<StrokeItem*>(item);
-        if (!stroke || stroke->isEmpty() || stroke->strokePointCount() < 3)
+        if (!stroke || stroke->isEmpty() || stroke->strokePointCount() < 3) {
             continue;
+        }
 
         const StrokeItem::GeometryState beforeState = stroke->geometryState();
-        if (!stroke->smoothStroke(effectiveTolerance))
+        if (!stroke->smoothStroke(effectiveTolerance)) {
             continue;
+        }
         items.append(stroke);
         before.append(beforeState);
         after.append(stroke->geometryState());
     }
-    if (items.isEmpty())
+    if (items.isEmpty()) {
         return 0;
+    }
 
     if (m_undoStack) {
-        m_undoStack->push(new StrokeSmoothCommand(this, items, before, after,
-                                                  tr("Smooth selected strokes")));
+        m_undoStack->push(new StrokeSmoothCommand(this, items, before, after, tr("Smooth selected strokes")));
     } else {
-        for (int i = 0; i < items.size(); ++i)
+        for (int i = 0; i < items.size(); ++i) {
             items.at(i)->applyGeometryState(after.at(i));
+        }
         updateSceneExtent();
         update();
         emit contentChanged();
@@ -544,8 +580,9 @@ int CanvasScene::smoothSelectedStrokes(qreal tolerance)
 
 QList<CanvasLayer> CanvasScene::userLayers() const
 {
-    if (m_layers.size() <= 1)
+    if (m_layers.size() <= 1) {
         return {};
+    }
     return m_layers.mid(1);
 }
 
@@ -557,8 +594,9 @@ bool CanvasScene::hasLayer(int layerId) const
 CanvasLayer CanvasScene::layer(int layerId) const
 {
     for (const CanvasLayer& entry : m_layers) {
-        if (entry.id == layerId)
+        if (entry.id == layerId) {
             return entry;
+        }
     }
     return {};
 }
@@ -566,8 +604,9 @@ CanvasLayer CanvasScene::layer(int layerId) const
 int CanvasScene::layerIndex(int layerId) const
 {
     for (int i = 0; i < m_layers.size(); ++i) {
-        if (m_layers.at(i).id == layerId)
+        if (m_layers.at(i).id == layerId) {
             return i;
+        }
     }
     return -1;
 }
@@ -577,8 +616,9 @@ int CanvasScene::layerItemCount(int layerId) const
     int count = 0;
     const QList<CanvasItem*> items = canvasItems();
     for (CanvasItem* item : items) {
-        if (item->layerId() == layerId)
+        if (item->layerId() == layerId) {
             ++count;
+        }
     }
     return count;
 }
@@ -588,8 +628,9 @@ QList<CanvasItem*> CanvasScene::layerItems(int layerId) const
     QList<CanvasItem*> result;
     const QList<CanvasItem*> items = canvasItems();
     for (CanvasItem* item : items) {
-        if (item->layerId() == layerId)
+        if (item->layerId() == layerId) {
             result.append(item);
+        }
     }
     return result;
 }
@@ -602,11 +643,13 @@ bool CanvasScene::isLayerVisible(int layerId) const
 bool CanvasScene::setLayerVisible(int layerId, bool visible)
 {
     const int index = layerIndex(layerId);
-    if (index < 0)
+    if (index < 0) {
         return false;
+    }
 
-    if (m_layers.at(index).visible == visible)
+    if (m_layers.at(index).visible == visible) {
         return true;
+    }
 
     bool activeChanged = false;
     if (!visible && layerId == m_activeLayerId && layerId != BackgroundLayerId) {
@@ -626,8 +669,9 @@ bool CanvasScene::setLayerVisible(int layerId, bool visible)
                 break;
             }
         }
-        if (fallbackIndex < 0)
+        if (fallbackIndex < 0) {
             return false;
+        }
 
         m_layers[fallbackIndex].visible = true;
         m_activeLayerId = m_layers.at(fallbackIndex).id;
@@ -640,8 +684,9 @@ bool CanvasScene::setLayerVisible(int layerId, bool visible)
     update();
     emit layersChanged();
     emit contentChanged();
-    if (activeChanged)
+    if (activeChanged) {
         emit activeLayerChanged(m_activeLayerId);
+    }
     return true;
 }
 
@@ -659,8 +704,9 @@ bool CanvasScene::setAllLayersVisible(bool visible)
             changed = true;
         }
     }
-    if (!changed)
+    if (!changed) {
         return true;
+    }
 
     // 表头勾选框是批量浏览操作：允许一次隐藏全部图层（包括当前图层），
     // 不套用单行勾选框“至少保留一个可见用户图层”的限制。
@@ -675,14 +721,17 @@ bool CanvasScene::setAllLayersVisible(bool visible)
 bool CanvasScene::setLayerLocked(int layerId, bool locked)
 {
     // 背景层始终锁定：它只承载背景，没有可编辑图元，也不允许解锁。
-    if (layerId == BackgroundLayerId)
+    if (layerId == BackgroundLayerId) {
         return false;
+    }
 
     const int index = layerIndex(layerId);
-    if (index < 0)
+    if (index < 0) {
         return false;
-    if (m_layers.at(index).locked == locked)
+    }
+    if (m_layers.at(index).locked == locked) {
         return true;
+    }
 
     m_layers[index].locked = locked;
     updateItemFlags();
@@ -695,27 +744,23 @@ bool CanvasScene::setLayerLocked(int layerId, bool locked)
 
 bool CanvasScene::isActiveLayerWritable() const
 {
-    return m_activeLayerId != BackgroundLayerId
-        && hasLayer(m_activeLayerId)
-        && isLayerVisible(m_activeLayerId)
-        && !isLayerLocked(m_activeLayerId);
+    return m_activeLayerId != BackgroundLayerId && hasLayer(m_activeLayerId) && isLayerVisible(m_activeLayerId) &&
+           !isLayerLocked(m_activeLayerId);
 }
 
 bool CanvasScene::isItemEditable(const CanvasItem* item) const
 {
     // 需求变更后的口径：编辑模式下，只要图元所在图层可见且未锁定就能编辑，
     // 与“当前图层”无关。
-    return item
-        && item->scene() == this
-        && m_mode == ToolMode::Edit
-        && isLayerVisible(item->layerId())
-        && !isLayerLocked(item->layerId());
+    return item && item->scene() == this && m_mode == ToolMode::Edit && isLayerVisible(item->layerId()) &&
+           !isLayerLocked(item->layerId());
 }
 
 void CanvasScene::setActiveLayer(int layerId)
 {
-    if (layerId == BackgroundLayerId || !hasLayer(layerId))
+    if (layerId == BackgroundLayerId || !hasLayer(layerId)) {
         return;
+    }
 
     bool visibilityChanged = false;
     if (!isLayerVisible(layerId)) {
@@ -743,11 +788,13 @@ void CanvasScene::setActiveLayer(int layerId)
     updateItemFlags();
     updateSceneExtent();
     update();
-    if (visibilityChanged)
+    if (visibilityChanged) {
         emit layersChanged();
+    }
     emit activeLayerChanged(m_activeLayerId);
-    if (visibilityChanged)
+    if (visibilityChanged) {
         emit contentChanged();
+    }
 }
 
 int CanvasScene::createLayer(const QString& name)
@@ -790,18 +837,22 @@ bool CanvasScene::addLayerWithUndo(const QString& name)
 bool CanvasScene::removeLayerWithUndo(int layerId, QString* errorMessage)
 {
     auto fail = [errorMessage](const QString& message) {
-        if (errorMessage)
+        if (errorMessage) {
             *errorMessage = message;
+        }
         return false;
     };
 
     const int index = layerIndex(layerId);
-    if (index <= 0)
+    if (index <= 0) {
         return fail(tr("The background layer cannot be deleted."));
-    if (userLayerCount() <= 1)
+    }
+    if (userLayerCount() <= 1) {
         return fail(tr("At least one layer must remain."));
-    if (layerItemCount(layerId) > 0)
+    }
+    if (layerItemCount(layerId) > 0) {
         return fail(tr("This layer still contains items. Delete or move them first."));
+    }
 
     const LayerStackState before = layerState();
     LayerStackState after = before;
@@ -822,12 +873,14 @@ bool CanvasScene::removeLayerWithUndo(int layerId, QString* errorMessage)
 bool CanvasScene::moveLayerWithUndo(int layerId, int delta)
 {
     const int index = layerIndex(layerId);
-    if (index <= 0 || delta == 0)
+    if (index <= 0 || delta == 0) {
         return false;
+    }
 
     const int target = index + delta;
-    if (target <= 0 || target >= m_layers.size())
+    if (target <= 0 || target >= m_layers.size()) {
         return false;
+    }
 
     const LayerStackState before = layerState();
     LayerStackState after = before;
@@ -845,12 +898,14 @@ bool CanvasScene::moveLayerWithUndo(int layerId, int delta)
 bool CanvasScene::renameLayerWithUndo(int layerId, const QString& name)
 {
     const int index = layerIndex(layerId);
-    if (index <= 0)
+    if (index <= 0) {
         return false;
+    }
 
     const QString trimmed = name.trimmed();
-    if (trimmed.isEmpty() || m_layers.at(index).name == trimmed)
+    if (trimmed.isEmpty() || m_layers.at(index).name == trimmed) {
         return false;
+    }
 
     const LayerStackState before = layerState();
     LayerStackState after = before;
@@ -888,25 +943,28 @@ LayerStackState CanvasScene::sanitizedLayerState(const LayerStackState& state) c
             break;
         }
     }
-    result.layers.append({ BackgroundLayerId, kBackgroundLayerName, backgroundVisible, true });
+    result.layers.append({BackgroundLayerId, kBackgroundLayerName, backgroundVisible, true});
 
     QSet<int> used;
     used.insert(BackgroundLayerId);
     for (const CanvasLayer& source : state.layers) {
-        if (source.id <= 0 || used.contains(source.id))
+        if (source.id <= 0 || used.contains(source.id)) {
             continue;
+        }
         CanvasLayer entry = source;
-        if (entry.name.trimmed().isEmpty())
+        if (entry.name.trimmed().isEmpty()) {
             entry.name = QStringLiteral("图层 %1").arg(entry.id);
+        }
         result.layers.append(entry);
         used.insert(entry.id);
     }
 
     if (result.layers.size() == 1) {
         int fallbackId = kFirstUserLayerId;
-        while (used.contains(fallbackId))
+        while (used.contains(fallbackId)) {
             ++fallbackId;
-        result.layers.append({ fallbackId, QStringLiteral("图层 %1").arg(fallbackId), true, false });
+        }
+        result.layers.append({fallbackId, QStringLiteral("图层 %1").arg(fallbackId), true, false});
     }
 
     result.activeLayerId = state.activeLayerId;
@@ -943,17 +1001,20 @@ void CanvasScene::applyLayerStateInternal(const LayerStackState& state, bool pre
     }
 
     for (CanvasLayer& entry : m_layers) {
-        if (entry.id == m_activeLayerId && !entry.visible)
+        if (entry.id == m_activeLayerId && !entry.visible) {
             entry.visible = true;
+        }
     }
 
-    for (const CanvasLayer& entry : m_layers)
+    for (const CanvasLayer& entry : m_layers) {
         m_nextLayerId = qMax(m_nextLayerId, entry.id + 1);
+    }
 
     const QList<CanvasItem*> items = canvasItems();
     for (CanvasItem* item : items) {
-        if (!hasLayer(item->layerId()))
+        if (!hasLayer(item->layerId())) {
             item->setLayerId(m_activeLayerId);
+        }
     }
     normalizeAllHeights();
     applyAllItemStacking();
@@ -968,8 +1029,9 @@ void CanvasScene::applyLayerStateInternal(const LayerStackState& state, bool pre
 void CanvasScene::ensureLayerState()
 {
     const LayerStackState fixed = sanitizedLayerState(layerState());
-    if (fixed.layers != m_layers || fixed.activeLayerId != m_activeLayerId)
+    if (fixed.layers != m_layers || fixed.activeLayerId != m_activeLayerId) {
         applyLayerStateInternal(fixed, false);
+    }
 }
 
 qreal CanvasScene::layerBaseZ(int layerId) const
@@ -980,20 +1042,23 @@ qreal CanvasScene::layerBaseZ(int layerId) const
 
 void CanvasScene::applyItemStacking(CanvasItem* item)
 {
-    if (!item)
+    if (!item) {
         return;
+    }
     const int maxHeight = kMaxItemHeight;
     const int height = qBound(0, item->height(), maxHeight);
-    if (height != item->height())
+    if (height != item->height()) {
         item->setHeight(height);
+    }
     item->setZValue(layerBaseZ(item->layerId()) + height);
 }
 
 void CanvasScene::applyAllItemStacking()
 {
     const QList<CanvasItem*> items = canvasItems();
-    for (CanvasItem* item : items)
+    for (CanvasItem* item : items) {
         applyItemStacking(item);
+    }
 }
 
 int CanvasScene::nextHeight(int layerId) const
@@ -1002,21 +1067,24 @@ int CanvasScene::nextHeight(int layerId) const
     int maximum = 0;
     const QList<CanvasItem*> items = canvasItems();
     for (CanvasItem* item : items) {
-        if (item->layerId() != layerId || item->height() < 0)
+        if (item->layerId() != layerId || item->height() < 0) {
             continue;
+        }
         used.insert(item->height());
         maximum = qMax(maximum, item->height());
     }
 
     const int aboveTop = maximum + 1;
-    if (aboveTop <= kMaxItemHeight && !used.contains(aboveTop))
+    if (aboveTop <= kMaxItemHeight && !used.contains(aboveTop)) {
         return aboveTop;
+    }
 
     // The layer is effectively full (or reached the cap). Fill the first gap
     // instead of handing out a duplicate height.
     for (int height = 0; height <= kMaxItemHeight; ++height) {
-        if (!used.contains(height))
+        if (!used.contains(height)) {
             return height;
+        }
     }
     return -1;
 }
@@ -1026,8 +1094,7 @@ bool CanvasScene::layerHeightsUnique(int layerId) const
     QSet<int> heights;
     const QList<CanvasItem*> items = layerItems(layerId);
     for (CanvasItem* item : items) {
-        if (item->height() < 0 || item->height() > kMaxItemHeight
-            || heights.contains(item->height())) {
+        if (item->height() < 0 || item->height() > kMaxItemHeight || heights.contains(item->height())) {
             return false;
         }
         heights.insert(item->height());
@@ -1039,8 +1106,9 @@ bool CanvasScene::heightUsedByOther(int layerId, int height, const CanvasItem* e
 {
     const QList<CanvasItem*> items = layerItems(layerId);
     for (const CanvasItem* item : items) {
-        if (item != except && item->height() == height)
+        if (item != except && item->height() == height) {
             return true;
+        }
     }
     return false;
 }
@@ -1048,28 +1116,29 @@ bool CanvasScene::heightUsedByOther(int layerId, int height, const CanvasItem* e
 bool CanvasScene::normalizeLayerHeights(int layerId)
 {
     QList<CanvasItem*> items = layerItems(layerId);
-    if (items.isEmpty())
+    if (items.isEmpty()) {
         return false;
+    }
 
     QSet<int> seen;
     bool needsNormalization = false;
     for (const CanvasItem* item : std::as_const(items)) {
-        if (item->height() < 0 || item->height() > kMaxItemHeight
-            || seen.contains(item->height())) {
+        if (item->height() < 0 || item->height() > kMaxItemHeight || seen.contains(item->height())) {
             needsNormalization = true;
             break;
         }
         seen.insert(item->height());
     }
-    if (!needsNormalization)
+    if (!needsNormalization) {
         return false;
+    }
 
-    std::stable_sort(items.begin(), items.end(),
-                     [](const CanvasItem* a, const CanvasItem* b) {
-                         if (a->height() != b->height())
-                             return a->height() < b->height();
-                         return a->zValue() < b->zValue();
-                     });
+    std::stable_sort(items.begin(), items.end(), [](const CanvasItem* a, const CanvasItem* b) {
+        if (a->height() != b->height()) {
+            return a->height() < b->height();
+        }
+        return a->zValue() < b->zValue();
+    });
     for (int i = 0; i < items.size(); ++i) {
         CanvasItem* item = items.at(i);
         item->setHeight(i + 1);
@@ -1082,8 +1151,9 @@ bool CanvasScene::normalizeLayerHeights(int layerId)
 void CanvasScene::normalizeAllHeights()
 {
     for (const CanvasLayer& entry : std::as_const(m_layers)) {
-        if (entry.id != BackgroundLayerId)
+        if (entry.id != BackgroundLayerId) {
             normalizeLayerHeights(entry.id);
+        }
     }
 }
 
@@ -1091,21 +1161,24 @@ ItemStackList CanvasScene::itemStackSnapshot(const QList<CanvasItem*>& items) co
 {
     ItemStackList snapshot;
     for (CanvasItem* item : items) {
-        if (item)
-            snapshot.append({ item, item->layerId(), item->height() });
+        if (item) {
+            snapshot.append({item, item->layerId(), item->height()});
+        }
     }
     return snapshot;
 }
 
 bool CanvasScene::adjustItemHeight(CanvasItem* item, int delta, const QString& text)
 {
-    if (!item || delta == 0 || !hasLayer(item->layerId()))
+    if (!item || delta == 0 || !hasLayer(item->layerId())) {
         return false;
+    }
 
     const int current = item->height();
     const int target = qBound(0, current + delta, kMaxItemHeight);
-    if (target == current)
+    if (target == current) {
         return false;
+    }
 
     CanvasItem* colliding = nullptr;
     const QList<CanvasItem*> peers = layerItems(item->layerId());
@@ -1116,119 +1189,132 @@ bool CanvasScene::adjustItemHeight(CanvasItem* item, int delta, const QString& t
         }
     }
 
-    const ItemStackList before = itemStackSnapshot(
-        colliding ? QList<CanvasItem*> { item, colliding } : QList<CanvasItem*> { item });
+    const ItemStackList before =
+        itemStackSnapshot(colliding ? QList<CanvasItem*>{item, colliding} : QList<CanvasItem*>{item});
     ItemStackList after;
-    after.append({ item, item->layerId(), target });
-    if (colliding)
-        after.append({ colliding, colliding->layerId(), current });
+    after.append({item, item->layerId(), target});
+    if (colliding) {
+        after.append({colliding, colliding->layerId(), current});
+    }
 
-    const QString commandText = text.isEmpty()
-        ? (delta > 0 ? tr("Move item up") : tr("Move item down"))
-        : text;
-    if (m_undoStack)
+    const QString commandText = text.isEmpty() ? (delta > 0 ? tr("Move item up") : tr("Move item down")) : text;
+    if (m_undoStack) {
         m_undoStack->push(new ItemStackCommand(this, before, after, commandText));
-    else
+    } else {
         applyItemStack(after);
+    }
     return true;
 }
 
 int CanvasScene::adjustSelectedHeights(int delta)
 {
-    if (delta == 0)
+    if (delta == 0) {
         return 0;
+    }
 
     QList<CanvasItem*> targets;
     const QList<CanvasItem*> selected = selectedCanvasItems();
     for (CanvasItem* item : selected) {
-        if (item && isItemEditable(item))
+        if (item && isItemEditable(item)) {
             targets.append(item);
+        }
     }
-    if (targets.isEmpty())
+    if (targets.isEmpty()) {
         return 0;
+    }
 
     const bool grouped = m_undoStack && targets.size() > 1;
-    if (grouped)
-        m_undoStack->beginMacro(delta > 0 ? tr("Move item up")
-                                         : tr("Move item down"));
+    if (grouped) {
+        m_undoStack->beginMacro(delta > 0 ? tr("Move item up") : tr("Move item down"));
+    }
 
     int changed = 0;
     for (CanvasItem* item : targets) {
-        if (adjustItemHeight(item, delta))
+        if (adjustItemHeight(item, delta)) {
             ++changed;
+        }
     }
 
-    if (grouped)
+    if (grouped) {
         m_undoStack->endMacro();
+    }
     return changed;
 }
 
 int CanvasScene::moveSelectedItemsToAdjacentLayer(int delta)
 {
-    if (delta == 0)
+    if (delta == 0) {
         return 0;
+    }
 
     QList<CanvasItem*> targets;
     const QList<CanvasItem*> selected = selectedCanvasItems();
     for (CanvasItem* item : selected) {
-        if (item && isItemEditable(item))
+        if (item && isItemEditable(item)) {
             targets.append(item);
+        }
     }
-    if (targets.isEmpty())
+    if (targets.isEmpty()) {
         return 0;
+    }
 
     const bool grouped = m_undoStack && targets.size() > 1;
-    if (grouped)
-        m_undoStack->beginMacro(delta > 0 ? tr("Move to the layer above")
-                                         : tr("Move to the layer below"));
+    if (grouped) {
+        m_undoStack->beginMacro(delta > 0 ? tr("Move to the layer above") : tr("Move to the layer below"));
+    }
 
     int changed = 0;
     for (CanvasItem* item : targets) {
-        if (moveItemToAdjacentLayer(item, delta))
+        if (moveItemToAdjacentLayer(item, delta)) {
             ++changed;
+        }
     }
 
-    if (grouped)
+    if (grouped) {
         m_undoStack->endMacro();
+    }
     return changed;
 }
 
 void CanvasScene::setPreferredLayerIds(const QList<int>& ids)
 {
-    if (m_preferredLayerIds == ids)
+    if (m_preferredLayerIds == ids) {
         return;
+    }
     m_preferredLayerIds = ids;
 }
 
 bool CanvasScene::moveItemToAdjacentLayer(CanvasItem* item, int delta, const QString& text)
 {
-    if (!item || delta == 0)
+    if (!item || delta == 0) {
         return false;
+    }
 
     const int currentIndex = layerIndex(item->layerId());
     const int targetIndex = currentIndex + delta;
-    if (currentIndex <= 0 || targetIndex <= 0 || targetIndex >= m_layers.size())
+    if (currentIndex <= 0 || targetIndex <= 0 || targetIndex >= m_layers.size()) {
         return false;
+    }
 
     const int targetLayerId = m_layers.at(targetIndex).id;
-    if (targetLayerId == item->layerId())
+    if (targetLayerId == item->layerId()) {
         return false;
+    }
 
-    const ItemStackList before = itemStackSnapshot({ item });
+    const ItemStackList before = itemStackSnapshot({item});
     const int targetHeight = nextHeight(targetLayerId);
-    if (targetHeight < 0)
+    if (targetHeight < 0) {
         return false;
-    const ItemStackList after = {
-        { item, targetLayerId, targetHeight }
-    };
+    }
+    const ItemStackList after = {{item, targetLayerId, targetHeight}};
 
-    const QString commandText = text.isEmpty()
-        ? (delta > 0 ? tr("Move to the layer above") : tr("Move to the layer below"))
-        : text;
-    if (m_undoStack)
+    const QString commandText =
+        text.isEmpty() ? (delta > 0 ? tr("Move to the layer above") : tr("Move to the layer below")) : text;
+    if (m_undoStack) {
         m_undoStack->push(new ItemStackCommand(this, before, after, commandText));
-    else
+    } else {
         applyItemStack(after);
+    }
     return true;
 }
 
@@ -1236,19 +1322,22 @@ void CanvasScene::applyItemStack(const ItemStackList& stack)
 {
     QSet<int> affectedLayers;
     for (const ItemStack& entry : stack) {
-        if (!entry.item)
+        if (!entry.item) {
             continue;
-        if (!hasLayer(entry.layerId))
+        }
+        if (!hasLayer(entry.layerId)) {
             entry.item->setLayerId(m_activeLayerId);
-        else
+        } else {
             entry.item->setLayerId(entry.layerId);
+        }
         entry.item->setHeight(qBound(0, entry.height, kMaxItemHeight));
         affectedLayers.insert(entry.item->layerId());
         applyItemStacking(entry.item);
         entry.item->update();
     }
-    for (int layerId : std::as_const(affectedLayers))
+    for (int layerId : std::as_const(affectedLayers)) {
         normalizeLayerHeights(layerId);
+    }
     applyAllItemStacking();
     updateItemFlags();
     updateSceneExtent();
@@ -1256,11 +1345,12 @@ void CanvasScene::applyItemStack(const ItemStackList& stack)
     emit contentChanged();
 }
 
-bool CanvasScene::changeTextWithUndo(TextItem* item, const QString& text, const QFont& font,
-                                    const QColor& color, const QString& textCommand)
+bool CanvasScene::changeTextWithUndo(TextItem* item, const QString& text, const QFont& font, const QColor& color,
+                                     const QString& textCommand)
 {
-    if (!item || item->scene() != this)
+    if (!item || item->scene() != this) {
         return false;
+    }
 
     const TextItemState before = item->state();
     TextItemState after = before;
@@ -1270,23 +1360,24 @@ bool CanvasScene::changeTextWithUndo(TextItem* item, const QString& text, const 
     after.baseSize = TextItem::measure(after.text, after.font);
     after.size = after.baseSize;
 
-    if (before == after)
+    if (before == after) {
         return false;
+    }
 
-    const QString commandText = textCommand.isEmpty()
-        ? tr("Edit text")
-        : textCommand;
-    if (m_undoStack)
+    const QString commandText = textCommand.isEmpty() ? tr("Edit text") : textCommand;
+    if (m_undoStack) {
         m_undoStack->push(new TextItemCommand(this, item, before, after, commandText));
-    else
+    } else {
         applyTextState(item, after);
+    }
     return true;
 }
 
 void CanvasScene::applyTextState(TextItem* item, const TextItemState& state)
 {
-    if (!item)
+    if (!item) {
         return;
+    }
     item->applyState(state);
     updateSceneExtent();
     update();
@@ -1295,13 +1386,15 @@ void CanvasScene::applyTextState(TextItem* item, const TextItemState& state)
 
 void CanvasScene::assignNewItemPlacement(CanvasItem* item)
 {
-    if (!item)
+    if (!item) {
         return;
+    }
 
-    if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId)
+    if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId) {
         item->setLayerId(m_activeLayerId);
-    if (item->height() < 0 || item->height() > kMaxItemHeight
-        || heightUsedByOther(item->layerId(), item->height(), item)) {
+    }
+    if (item->height() < 0 || item->height() > kMaxItemHeight ||
+        heightUsedByOther(item->layerId(), item->height(), item)) {
         const int height = nextHeight(item->layerId());
         item->setHeight(height >= 0 ? height : 0);
     }
@@ -1310,11 +1403,13 @@ void CanvasScene::assignNewItemPlacement(CanvasItem* item)
 
 void CanvasScene::addItemsWithUndo(const QList<CanvasItem*>& items, const QString& text)
 {
-    if (items.isEmpty())
+    if (items.isEmpty()) {
         return;
+    }
 
-    if (!hasLayer(m_activeLayerId))
+    if (!hasLayer(m_activeLayerId)) {
         ensureLayerState();
+    }
 
     // Repair any externally supplied duplicate heights before reserving new
     // slots. Every layer must expose exactly one item per height value.
@@ -1325,28 +1420,34 @@ void CanvasScene::addItemsWithUndo(const QList<CanvasItem*>& items, const QStrin
     // had when it was created.
     QHash<int, QSet<int>> usedHeights;
     const QList<CanvasItem*> existing = canvasItems();
-    for (const CanvasItem* item : existing)
+    for (const CanvasItem* item : existing) {
         usedHeights[item->layerId()].insert(item->height());
+    }
 
     for (CanvasItem* item : items) {
-        if (!item)
+        if (!item) {
             continue;
-        if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId)
+        }
+        if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId) {
             item->setLayerId(m_activeLayerId);
+        }
 
         QSet<int>& used = usedHeights[item->layerId()];
         int height = item->height();
         if (height < 0 || height > kMaxItemHeight || used.contains(height)) {
             height = nextHeight(item->layerId());
-            while (height >= 0 && height < kMaxItemHeight && used.contains(height))
+            while (height >= 0 && height < kMaxItemHeight && used.contains(height)) {
                 ++height;
-            if (height < 0 || used.contains(height))
+            }
+            if (height < 0 || used.contains(height)) {
                 height = 0;
+            }
         }
         item->setHeight(qBound(0, height, kMaxItemHeight));
         used.insert(item->height());
-        if (item->groupId() > 0)
+        if (item->groupId() > 0) {
             m_nextGroupId = qMax(m_nextGroupId, item->groupId() + 1);
+        }
         applyItemStacking(item);
     }
 
@@ -1355,20 +1456,22 @@ void CanvasScene::addItemsWithUndo(const QList<CanvasItem*>& items, const QStrin
             m_undoStack->push(new AddItemCommand(this, items.constFirst(), text));
         } else {
             m_undoStack->beginMacro(text);
-            for (CanvasItem* item : items)
+            for (CanvasItem* item : items) {
                 m_undoStack->push(new AddItemCommand(this, item, text));
+            }
             m_undoStack->endMacro();
         }
     } else {
-        for (CanvasItem* item : items)
+        for (CanvasItem* item : items) {
             attachItem(item);
+        }
     }
     updateSceneExtent();
 }
 
 void CanvasScene::commitNewItem(CanvasItem* item, const QString& text)
 {
-    addItemsWithUndo({ item }, text);
+    addItemsWithUndo({item}, text);
 }
 
 QString CanvasScene::uniqueItemName(const QString& base, const CanvasItem* except) const
@@ -1377,15 +1480,18 @@ QString CanvasScene::uniqueItemName(const QString& base, const CanvasItem* excep
     const QString prefix = typeName + QLatin1Char(' ');
     int maxSuffix = 0;
     for (CanvasItem* item : canvasItems()) {
-        if (!item || item == except)
+        if (!item || item == except) {
             continue;
+        }
         const QString existing = item->name();
-        if (!existing.startsWith(prefix, Qt::CaseInsensitive))
+        if (!existing.startsWith(prefix, Qt::CaseInsensitive)) {
             continue;
+        }
         bool ok = false;
         const int value = existing.mid(prefix.size()).toInt(&ok);
-        if (ok && value > 0)
+        if (ok && value > 0) {
             maxSuffix = qMax(maxSuffix, value);
+        }
     }
     return QStringLiteral("%1 %2").arg(typeName).arg(maxSuffix + 1);
 }
@@ -1393,13 +1499,16 @@ QString CanvasScene::uniqueItemName(const QString& base, const CanvasItem* excep
 bool CanvasScene::isItemNameAvailable(const QString& name, const CanvasItem* except) const
 {
     const QString candidate = name.trimmed();
-    if (candidate.isEmpty())
+    if (candidate.isEmpty()) {
         return true;
+    }
     for (CanvasItem* item : canvasItems()) {
-        if (!item || item == except)
+        if (!item || item == except) {
             continue;
-        if (item->name().trimmed().compare(candidate, Qt::CaseInsensitive) == 0)
+        }
+        if (item->name().trimmed().compare(candidate, Qt::CaseInsensitive) == 0) {
             return false;
+        }
     }
     return true;
 }
@@ -1414,8 +1523,9 @@ QString CanvasScene::uniqueItemNameFor(const QString& requested, const CanvasIte
                                        const QSet<QString>& reserved) const
 {
     const QString trimmed = requested.trimmed();
-    if (trimmed.isEmpty())
+    if (trimmed.isEmpty()) {
         return QString();
+    }
 
     // “Hero panel” → base=Hero panel, suffix=0；“矩形 1” → base=矩形, suffix=1。
     QString base = trimmed;
@@ -1429,8 +1539,9 @@ QString CanvasScene::uniqueItemNameFor(const QString& requested, const CanvasIte
             suffix = value;
         }
     }
-    if (base.isEmpty())
+    if (base.isEmpty()) {
         base = trimmed;
+    }
 
     const QString prefix = base + QLatin1Char(' ');
     bool exactBase = false;
@@ -1438,37 +1549,45 @@ QString CanvasScene::uniqueItemNameFor(const QString& requested, const CanvasIte
 
     auto consider = [&](const QString& rawName) {
         const QString existing = rawName.trimmed();
-        if (existing.isEmpty())
+        if (existing.isEmpty()) {
             return;
-        if (existing.compare(base, Qt::CaseInsensitive) == 0)
+        }
+        if (existing.compare(base, Qt::CaseInsensitive) == 0) {
             exactBase = true;
-        if (!existing.startsWith(prefix, Qt::CaseInsensitive))
+        }
+        if (!existing.startsWith(prefix, Qt::CaseInsensitive)) {
             return;
+        }
         bool ok = false;
         const int value = existing.mid(prefix.size()).toInt(&ok);
-        if (ok && value > 0)
+        if (ok && value > 0) {
             maxSuffix = qMax(maxSuffix, value);
+        }
     };
 
     for (CanvasItem* item : canvasItems()) {
-        if (!item || item == except)
+        if (!item || item == except) {
             continue;
+        }
         consider(item->name());
     }
-    for (const QString& name : reserved)
+    for (const QString& name : reserved) {
         consider(name);
+    }
 
     int next = qMax(maxSuffix + 1, exactBase ? 2 : 1);
-    if (suffix > 0)
+    if (suffix > 0) {
         next = qMax(next, suffix + 1);
+    }
     return prefix + QString::number(next);
 }
 
 void CanvasScene::assignAutoItemNames()
 {
     for (CanvasItem* item : canvasItems()) {
-        if (!item)
+        if (!item) {
             continue;
+        }
         const QString existing = item->rawName().trimmed();
         if (existing.isEmpty()) {
             item->setName(uniqueItemName(item->typeDisplayName(), item));
@@ -1480,25 +1599,29 @@ void CanvasScene::assignAutoItemNames()
 
 void CanvasScene::attachItem(CanvasItem* item)
 {
-    if (!item)
+    if (!item) {
         return;
+    }
 
     m_orphans.removeAll(item);
-    if (item->scene() != this)
+    if (item->scene() != this) {
         addItem(item);
+    }
 
-    if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId)
+    if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId) {
         item->setLayerId(m_activeLayerId);
-    if (item->height() < 0 || item->height() > kMaxItemHeight
-        || heightUsedByOther(item->layerId(), item->height(), item)) {
+    }
+    if (item->height() < 0 || item->height() > kMaxItemHeight ||
+        heightUsedByOther(item->layerId(), item->height(), item)) {
         const int height = nextHeight(item->layerId());
         item->setHeight(height >= 0 ? height : 0);
     }
     const QString existingName = item->rawName().trimmed();
-    if (existingName.isEmpty())
+    if (existingName.isEmpty()) {
         item->setName(uniqueItemName(item->typeDisplayName(), item));
-    else if (!isItemNameAvailable(existingName, item))
+    } else if (!isItemNameAvailable(existingName, item)) {
         item->setName(uniqueItemNameFor(existingName, item));
+    }
     applyItemStacking(item);
     applyItemInteraction(item);
 
@@ -1509,13 +1632,16 @@ void CanvasScene::attachItem(CanvasItem* item)
 
 void CanvasScene::detachItem(CanvasItem* item)
 {
-    if (!item)
+    if (!item) {
         return;
+    }
 
-    if (item->scene() == this)
+    if (item->scene() == this) {
         removeItem(item);
-    if (!m_orphans.contains(item))
+    }
+    if (!m_orphans.contains(item)) {
         m_orphans.append(item);
+    }
     item->setSelected(false);
 
     updateSceneExtent();
@@ -1528,44 +1654,52 @@ void CanvasScene::deleteSelected()
     QList<CanvasItem*> selected;
     const QList<QGraphicsItem*> graphicsSelection = selectedItems();
     for (QGraphicsItem* graphicsItem : graphicsSelection) {
-        if (auto* item = qgraphicsitem_cast<CanvasItem*>(graphicsItem))
+        if (auto* item = qgraphicsitem_cast<CanvasItem*>(graphicsItem)) {
             selected.append(item);
+        }
     }
-    if (selected.isEmpty())
+    if (selected.isEmpty()) {
         return;
+    }
 
     if (m_undoStack) {
         m_undoStack->push(new RemoveItemsCommand(this, selected, tr("Delete item")));
     } else {
-        for (CanvasItem* item : selected)
+        for (CanvasItem* item : selected) {
             detachItem(item);
+        }
     }
 }
 
 int CanvasScene::duplicateSelectedItems()
 {
-    if (m_mode != ToolMode::Edit)
+    if (m_mode != ToolMode::Edit) {
         return 0;
+    }
 
     QList<CanvasItem*> sources;
     for (CanvasItem* item : selectedCanvasItems()) {
-        if (item && isItemEditable(item))
+        if (item && isItemEditable(item)) {
             sources.append(item);
+        }
     }
-    if (sources.isEmpty())
+    if (sources.isEmpty()) {
         return 0;
+    }
 
     // 只有在整组成员都被复制时，副本才重新组成一个新组；只复制组内单个图元
     // 时副本保持未分组，避免副本和原组意外联动。
     QHash<int, QList<CanvasItem*>> groupMembers;
     for (CanvasItem* item : canvasItems()) {
-        if (item->groupId() > 0)
+        if (item->groupId() > 0) {
             groupMembers[item->groupId()].append(item);
+        }
     }
     QHash<int, int> selectedGroupCounts;
     for (CanvasItem* source : sources) {
-        if (source->groupId() > 0)
+        if (source->groupId() > 0) {
             ++selectedGroupCounts[source->groupId()];
+        }
     }
     QHash<int, int> copyGroupIds;
 
@@ -1573,17 +1707,18 @@ int CanvasScene::duplicateSelectedItems()
     QSet<QString> reservedNames;
     for (CanvasItem* source : sources) {
         CanvasItem* copy = createItem(source->kind());
-        if (!copy)
+        if (!copy) {
             continue;
+        }
         copy->fromJson(source->toJson());
         copy->setGroupId(0);
 
         const int sourceGroupId = source->groupId();
-        if (sourceGroupId > 0
-            && selectedGroupCounts.value(sourceGroupId) == groupMembers.value(sourceGroupId).size()
-            && groupMembers.value(sourceGroupId).size() >= 2) {
-            if (!copyGroupIds.contains(sourceGroupId))
+        if (sourceGroupId > 0 && selectedGroupCounts.value(sourceGroupId) == groupMembers.value(sourceGroupId).size() &&
+            groupMembers.value(sourceGroupId).size() >= 2) {
+            if (!copyGroupIds.contains(sourceGroupId)) {
                 copyGroupIds.insert(sourceGroupId, m_nextGroupId++);
+            }
             copy->setGroupId(copyGroupIds.value(sourceGroupId));
         }
 
@@ -1600,14 +1735,16 @@ int CanvasScene::duplicateSelectedItems()
         }
         copies.append(copy);
     }
-    if (copies.isEmpty())
+    if (copies.isEmpty()) {
         return 0;
+    }
 
     addItemsWithUndo(copies, tr("Duplicate selected items"));
     clearSelection();
     for (CanvasItem* copy : copies) {
-        if (isItemEditable(copy))
+        if (isItemEditable(copy)) {
             copy->setSelected(true);
+        }
     }
     updateSceneExtent();
     update();
@@ -1617,40 +1754,46 @@ int CanvasScene::duplicateSelectedItems()
 
 void CanvasScene::selectAllItems()
 {
-    if (m_mode != ToolMode::Edit)
+    if (m_mode != ToolMode::Edit) {
         return;
+    }
     const QList<CanvasItem*> allItems = canvasItems();
     for (CanvasItem* item : allItems) {
-        if (isItemEditable(item))
+        if (isItemEditable(item)) {
             item->setSelected(true);
+        }
     }
 }
 
-void CanvasScene::pushGeometry(const ItemGeometryList& before, const ItemGeometryList& after,
-                              const QString& text)
+void CanvasScene::pushGeometry(const ItemGeometryList& before, const ItemGeometryList& after, const QString& text)
 {
-    if (before.size() != after.size())
+    if (before.size() != after.size()) {
         return;
+    }
 
     ItemGeometryList filteredBefore;
     ItemGeometryList filteredAfter;
     for (int i = 0; i < before.size(); ++i) {
-        if (!before.at(i).item || !after.at(i).item)
+        if (!before.at(i).item || !after.at(i).item) {
             continue;
-        if (sameGeometry(before.at(i), after.at(i)))
+        }
+        if (sameGeometry(before.at(i), after.at(i))) {
             continue;
+        }
         filteredBefore.append(before.at(i));
         filteredAfter.append(after.at(i));
     }
-    if (filteredBefore.isEmpty())
+    if (filteredBefore.isEmpty()) {
         return;
+    }
 
     if (m_undoStack) {
         m_undoStack->push(new GeometryCommand(this, filteredBefore, filteredAfter, text));
     } else {
         for (const ItemGeometry& geometry : std::as_const(filteredAfter)) {
-            if (!geometry.item)
+            if (!geometry.item) {
                 continue;
+            }
             geometry.item->setPos(geometry.pos);
             geometry.item->setContentSize(geometry.size);
         }
@@ -1660,11 +1803,12 @@ void CanvasScene::pushGeometry(const ItemGeometryList& before, const ItemGeometr
 
 void CanvasScene::pushRotation(CanvasItem* item, qreal before, qreal after, const QString& text)
 {
-    if (!item || qAbs(before - after) < 0.0001)
+    if (!item || qAbs(before - after) < 0.0001) {
         return;
+    }
 
     if (m_undoStack) {
-        m_undoStack->push(new RotationCommand(this, { item }, { before }, { after }, text));
+        m_undoStack->push(new RotationCommand(this, {item}, {before}, {after}, text));
     } else {
         item->setRotationAngle(after);
     }
@@ -1678,27 +1822,29 @@ int CanvasScene::rotateSelected(qreal degrees, const QString& commandText)
     QList<qreal> before;
     QList<qreal> after;
     for (CanvasItem* item : items) {
-        if (!item || !isItemEditable(item))
+        if (!item || !isItemEditable(item)) {
             continue;
+        }
         const qreal start = item->rotationAngle();
         const qreal target = CanvasItem::normalizeRotation(start + degrees);
-        if (qAbs(start - target) < 0.0001)
+        if (qAbs(start - target) < 0.0001) {
             continue;
+        }
         changed.append(item);
         before.append(start);
         after.append(target);
     }
-    if (changed.isEmpty())
+    if (changed.isEmpty()) {
         return 0;
+    }
 
-    const QString text = commandText.isEmpty()
-        ? tr("Rotate items")
-        : commandText;
+    const QString text = commandText.isEmpty() ? tr("Rotate items") : commandText;
     if (m_undoStack) {
         m_undoStack->push(new RotationCommand(this, changed, before, after, text));
     } else {
-        for (int i = 0; i < changed.size(); ++i)
+        for (int i = 0; i < changed.size(); ++i) {
             changed.at(i)->setRotationAngle(after.at(i));
+        }
     }
     updateSceneExtent();
     update();
@@ -1707,16 +1853,15 @@ int CanvasScene::rotateSelected(qreal degrees, const QString& commandText)
 
 void CanvasScene::resetDocument()
 {
-    if (m_undoStack)
+    if (m_undoStack) {
         m_undoStack->clear();
+    }
 
     clear();
     clearOrphans();
     m_background = BackgroundState();
-    m_layers = {
-        { BackgroundLayerId, kBackgroundLayerName, true, true },
-        { kFirstUserLayerId, QStringLiteral("图层 1"), true, false }
-    };
+    m_layers = {{BackgroundLayerId, kBackgroundLayerName, true, true},
+                {kFirstUserLayerId, QStringLiteral("图层 1"), true, false}};
     m_activeLayerId = kFirstUserLayerId;
     m_nextLayerId = kFirstUserLayerId + 1;
     m_nextGroupId = 1;
@@ -1738,14 +1883,18 @@ void CanvasScene::clearOrphans()
 
 CanvasItem* CanvasScene::createItem(const QString& kind) const
 {
-    if (kind == QStringLiteral("stroke"))
+    if (kind == QStringLiteral("stroke")) {
         return new StrokeItem();
-    if (kind == QStringLiteral("image"))
+    }
+    if (kind == QStringLiteral("image")) {
         return new ImageItem();
-    if (kind == QStringLiteral("text"))
+    }
+    if (kind == QStringLiteral("text")) {
         return new TextItem();
-    if (kind == QStringLiteral("shape"))
+    }
+    if (kind == QStringLiteral("shape")) {
         return new ShapeItem();
+    }
     return nullptr;
 }
 
@@ -1794,8 +1943,9 @@ QJsonObject CanvasScene::toJson() const
 
     QJsonArray itemsArray;
     const QList<CanvasItem*> items = canvasItems();
-    for (CanvasItem* item : items)
+    for (CanvasItem* item : items) {
         itemsArray.append(item->toJson());
+    }
     root.insert(QStringLiteral("items"), itemsArray);
 
     return root;
@@ -1804,25 +1954,27 @@ QJsonObject CanvasScene::toJson() const
 bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
 {
     auto fail = [errorMessage](const QString& message) {
-        if (errorMessage)
+        if (errorMessage) {
             *errorMessage = message;
+        }
         return false;
     };
 
-    if (root.value(QStringLiteral("format")).toString() != QStringLiteral("StoryBoardCanvas"))
+    if (root.value(QStringLiteral("format")).toString() != QStringLiteral("StoryBoardCanvas")) {
         return fail(tr("This is not a valid StoryBoard canvas file."));
+    }
 
     const QJsonObject canvas = root.value(QStringLiteral("canvas")).toObject();
     // 画布尺寸允许带小数（拖拽边缘时通常不是整数），这里不能用 toInt()。
     const qreal width = canvas.value(QStringLiteral("width")).toDouble(0.0);
     const qreal height = canvas.value(QStringLiteral("height")).toDouble(0.0);
-    if (width <= 0.0 || height <= 0.0)
+    if (width <= 0.0 || height <= 0.0) {
         return fail(tr("The canvas size in the canvas file is invalid."));
+    }
 
     resetDocument();
     applyCanvasRect(QRectF(canvas.value(QStringLiteral("x")).toDouble(0.0),
-                          canvas.value(QStringLiteral("y")).toDouble(0.0),
-                          width, height));
+                           canvas.value(QStringLiteral("y")).toDouble(0.0), width, height));
 
     BackgroundState background;
     const QJsonObject backgroundJson = root.value(QStringLiteral("background")).toObject();
@@ -1836,8 +1988,7 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
         if (!pixmap.isNull()) {
             background.type = BackgroundType::Image;
             background.image = pixmap;
-            background.mode = backgroundModeFromString(
-                backgroundJson.value(QStringLiteral("mode")).toString());
+            background.mode = backgroundModeFromString(backgroundJson.value(QStringLiteral("mode")).toString());
         }
     }
     applyBackground(background);
@@ -1845,16 +1996,18 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
     const QJsonArray rawItems = root.value(QStringLiteral("items")).toArray();
     QList<QJsonObject> itemObjects;
     itemObjects.reserve(rawItems.size());
-    for (const QJsonValue& value : rawItems)
+    for (const QJsonValue& value : rawItems) {
         itemObjects.append(value.toObject());
+    }
 
     const QJsonArray layerArray = root.value(QStringLiteral("layers")).toArray();
-    if (!root.value(QStringLiteral("layers")).isArray() || layerArray.isEmpty())
+    if (!root.value(QStringLiteral("layers")).isArray() || layerArray.isEmpty()) {
         return fail(tr("This is not a valid StoryBoard canvas file."));
+    }
 
     LayerStackState state;
     bool backgroundVisible = true;
-    state.layers.append({ BackgroundLayerId, kBackgroundLayerName, true, true });
+    state.layers.append({BackgroundLayerId, kBackgroundLayerName, true, true});
     QSet<int> used;
     used.insert(BackgroundLayerId);
     for (const QJsonValue& value : layerArray) {
@@ -1864,15 +2017,17 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
             backgroundVisible = layerJson.value(QStringLiteral("visible")).toBool(true);
             continue;
         }
-        if (id <= 0 || used.contains(id))
+        if (id <= 0 || used.contains(id)) {
             continue;
+        }
         CanvasLayer entry;
         entry.id = id;
         entry.name = layerJson.value(QStringLiteral("name")).toString().trimmed();
         entry.visible = layerJson.value(QStringLiteral("visible")).toBool(true);
         entry.locked = layerJson.value(QStringLiteral("locked")).toBool(false);
-        if (entry.name.isEmpty())
+        if (entry.name.isEmpty()) {
             entry.name = QStringLiteral("图层 %1").arg(id);
+        }
         state.layers.append(entry);
         used.insert(id);
     }
@@ -1882,13 +2037,14 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
     // 图元引用了未出现在图层数组中的图层时，补出该图层，避免图元丢失。
     for (const QJsonObject& itemJson : std::as_const(itemObjects)) {
         const int layerId = itemJson.value(QStringLiteral("layer")).toInt();
-        if (layerId <= 0)
+        if (layerId <= 0) {
             continue;
-        const bool exists = std::any_of(
-            state.layers.cbegin(), state.layers.cend(),
-            [layerId](const CanvasLayer& entry) { return entry.id == layerId; });
-        if (!exists)
-            state.layers.append({ layerId, QStringLiteral("图层 %1").arg(layerId) });
+        }
+        const bool exists = std::any_of(state.layers.cbegin(), state.layers.cend(),
+                                        [layerId](const CanvasLayer& entry) { return entry.id == layerId; });
+        if (!exists) {
+            state.layers.append({layerId, QStringLiteral("图层 %1").arg(layerId)});
+        }
     }
 
     applyLayerStateInternal(sanitizedLayerState(state), false);
@@ -1909,8 +2065,9 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
     }
 
     m_nextGroupId = 1;
-    for (CanvasItem* item : canvasItems())
+    for (CanvasItem* item : canvasItems()) {
         m_nextGroupId = qMax(m_nextGroupId, item->groupId() + 1);
+    }
 
     // 旧画布没有 itemName；补自动名称，保证重新保存后每个图元都有“类型 N”。
     assignAutoItemNames();
@@ -1920,8 +2077,9 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
     QHash<int, int> nextHeights;
     const QList<CanvasItem*> items = canvasItems();
     for (CanvasItem* item : items) {
-        if (item->height() >= 0)
+        if (item->height() >= 0) {
             continue;
+        }
         auto it = nextHeights.constFind(item->layerId());
         int next = 0;
         if (it == nextHeights.constEnd()) {
@@ -1940,8 +2098,9 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
     normalizeAllHeights();
 
     m_nextLayerId = 1;
-    for (const CanvasLayer& entry : std::as_const(m_layers))
+    for (const CanvasLayer& entry : std::as_const(m_layers)) {
         m_nextLayerId = qMax(m_nextLayerId, entry.id + 1);
+    }
 
     ensureLayerState();
     applyAllItemStacking();
@@ -1958,8 +2117,9 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
 
 QImage CanvasScene::renderImage(const QRectF& area, qreal scale)
 {
-    if (area.isEmpty() || scale <= 0.0)
+    if (area.isEmpty() || scale <= 0.0) {
         return QImage();
+    }
 
     QSizeF pixelSize(area.width() * scale, area.height() * scale);
     constexpr qreal kMaxSide = 12000.0;
@@ -1973,14 +2133,10 @@ QImage CanvasScene::renderImage(const QRectF& area, qreal scale)
     image.fill(Qt::white);
 
     QPainter painter(&image);
-    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing
-                           | QPainter::SmoothPixmapTransform);
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
 
     m_exporting = true;
-    render(&painter,
-           QRectF(0.0, 0.0, finalSize.width(), finalSize.height()),
-           area,
-           Qt::IgnoreAspectRatio);
+    render(&painter, QRectF(0.0, 0.0, finalSize.width(), finalSize.height()), area, Qt::IgnoreAspectRatio);
     m_exporting = false;
 
     painter.end();
@@ -1989,8 +2145,9 @@ QImage CanvasScene::renderImage(const QRectF& area, qreal scale)
 
 QImage CanvasScene::renderLayerImage(const QRectF& area, qreal scale, int layerId)
 {
-    if (!hasLayer(layerId))
+    if (!hasLayer(layerId)) {
         return QImage();
+    }
 
     const QList<CanvasItem*> items = canvasItems();
     QList<bool> previousVisibility;
@@ -2002,8 +2159,9 @@ QImage CanvasScene::renderLayerImage(const QRectF& area, qreal scale, int layerI
 
     QImage image = renderImage(area, scale);
 
-    for (int i = 0; i < items.size() && i < previousVisibility.size(); ++i)
+    for (int i = 0; i < items.size() && i < previousVisibility.size(); ++i) {
         items.at(i)->setVisible(previousVisibility.at(i));
+    }
     return image;
 }
 
@@ -2011,8 +2169,9 @@ void CanvasScene::drawBackground(QPainter* painter, const QRectF& rect)
 {
     const QRectF canvas = canvasRect();
     const QRectF area = rect.intersected(canvas);
-    if (area.isEmpty())
+    if (area.isEmpty()) {
         return;
+    }
 
     painter->save();
     painter->setClipRect(rect);
@@ -2036,8 +2195,9 @@ void CanvasScene::drawForeground(QPainter* painter, const QRectF& rect)
     // 非查看模式下，被高层级/更高 height 图元遮住的图元补画一圈虚线轮廓，
     // 让用户仍能看出那里有东西（查看模式与导出不画）。
     const QList<CanvasItem*> obscured = obscuredItems(rect);
-    if (!painter || obscured.isEmpty())
+    if (!painter || obscured.isEmpty()) {
         return;
+    }
 
     painter->save();
     painter->setClipRect(rect);
@@ -2054,12 +2214,13 @@ void CanvasScene::drawForeground(QPainter* painter, const QRectF& rect)
     dashPen.setWidthF(1.2);
     dashPen.setCosmetic(true);
     dashPen.setStyle(Qt::DashLine);
-    dashPen.setDashPattern({ 5.0, 4.0 });
+    dashPen.setDashPattern({5.0, 4.0});
 
     for (CanvasItem* item : obscured) {
         const QPainterPath path = item->sceneTransform().map(item->outlineShape());
-        if (path.isEmpty())
+        if (path.isEmpty()) {
             continue;
+        }
         painter->setPen(haloPen);
         painter->setBrush(Qt::NoBrush);
         painter->drawPath(path);
@@ -2070,7 +2231,7 @@ void CanvasScene::drawForeground(QPainter* painter, const QRectF& rect)
 }
 
 void CanvasScene::drawItems(QPainter* painter, int numItems, QGraphicsItem* items[],
-                           const QStyleOptionGraphicsItem* options, QWidget* widget)
+                            const QStyleOptionGraphicsItem* options, QWidget* widget)
 {
     if (numItems <= 1) {
         QGraphicsScene::drawItems(painter, numItems, items, options, widget);
@@ -2086,24 +2247,24 @@ void CanvasScene::drawItems(QPainter* painter, int numItems, QGraphicsItem* item
     QRectF clipBounds = painter->clipBoundingRect();
     if (clipBounds.isEmpty()) {
         if (QPaintDevice* device = painter->device()) {
-            clipBounds = painter->worldTransform().inverted().mapRect(
-                QRectF(0, 0, device->width(), device->height()));
+            clipBounds = painter->worldTransform().inverted().mapRect(QRectF(0, 0, device->width(), device->height()));
         }
     }
     const QRegion visibleBase(clipBounds.toAlignedRect());
 
     QList<int> order;
     order.reserve(numItems);
-    for (int i = 0; i < numItems; ++i)
+    for (int i = 0; i < numItems; ++i) {
         order.append(i);
-    std::stable_sort(order.begin(), order.end(), [items](int a, int b) {
-        return items[a]->zValue() < items[b]->zValue();
-    });
+    }
+    std::stable_sort(order.begin(), order.end(),
+                     [items](int a, int b) { return items[a]->zValue() < items[b]->zValue(); });
 
     QList<QRectF> bounds;
     bounds.reserve(order.size());
-    for (int index : order)
+    for (int index : order) {
         bounds.append(items[index]->sceneBoundingRect());
+    }
 
     // 上方图元的涂满区域按需计算：只有包围盒真的相交时才会用到。
     QList<QRegion> regions;
@@ -2111,11 +2272,11 @@ void CanvasScene::drawItems(QPainter* painter, int numItems, QGraphicsItem* item
     QVector<bool> regionReady(order.size(), false);
     auto regionOf = [&](int position) -> const QRegion& {
         if (!regionReady.at(position)) {
-            if (auto* canvasItem = qgraphicsitem_cast<CanvasItem*>(items[order.at(position)]))
-                regions[position] = filledRegion(
-                    canvasItem->sceneTransform().map(canvasItem->paintedShape()));
-            else
+            if (auto* canvasItem = qgraphicsitem_cast<CanvasItem*>(items[order.at(position)])) {
+                regions[position] = filledRegion(canvasItem->sceneTransform().map(canvasItem->paintedShape()));
+            } else {
                 regions[position] = QRegion(bounds.at(position).toAlignedRect());
+            }
             regionReady[position] = true;
         }
         return regions.at(position);
@@ -2124,14 +2285,16 @@ void CanvasScene::drawItems(QPainter* painter, int numItems, QGraphicsItem* item
     for (int position = 0; position < order.size(); ++position) {
         QRegion covered;
         for (int above = position + 1; above < order.size(); ++above) {
-            if (!bounds.at(above).intersects(bounds.at(position)))
+            if (!bounds.at(above).intersects(bounds.at(position))) {
                 continue;
+            }
             covered = covered.united(regionOf(above));
         }
 
         const QRegion visible = visibleBase.subtracted(covered);
-        if (visible.isEmpty())
+        if (visible.isEmpty()) {
             continue;
+        }
 
         const int index = order.at(position);
         painter->save();
@@ -2155,15 +2318,15 @@ void CanvasScene::drawCanvasBackground(QPainter* painter, const QRectF& area, bo
             break;
         case BackgroundType::Image: {
             const QPixmap& pixmap = m_background.image;
-            if (pixmap.isNull())
+            if (pixmap.isNull()) {
                 break;
+            }
             if (m_background.mode == BackgroundMode::Stretch) {
                 painter->drawPixmap(canvas, pixmap, QRectF(pixmap.rect()));
             } else if (m_background.mode == BackgroundMode::Tile) {
                 painter->drawTiledPixmap(canvas, pixmap);
             } else {
-                const qreal factor = qMin(canvas.width() / pixmap.width(),
-                                          canvas.height() / pixmap.height());
+                const qreal factor = qMin(canvas.width() / pixmap.width(), canvas.height() / pixmap.height());
                 QSizeF size(pixmap.width() * factor, pixmap.height() * factor);
                 QRectF target(QPointF(0.0, 0.0), size);
                 target.moveCenter(canvas.center());
@@ -2174,12 +2337,14 @@ void CanvasScene::drawCanvasBackground(QPainter* painter, const QRectF& area, bo
         }
     }
 
-    if (!includeGrid)
+    if (!includeGrid) {
         return;
+    }
 
     const qreal zoom = painter->worldTransform().m11();
-    if (zoom < 0.18)
+    if (zoom < 0.18) {
         return;
+    }
     const bool drawMinor = zoom >= 0.32;
     constexpr qreal step = 40.0;
 
@@ -2195,8 +2360,9 @@ void CanvasScene::drawCanvasBackground(QPainter* painter, const QRectF& area, bo
     const int columns = qCeil(canvas.width() / step);
     for (int i = 0; i <= columns; ++i) {
         const bool major = (i % 5) == 0;
-        if (!major && !drawMinor)
+        if (!major && !drawMinor) {
             continue;
+        }
         const qreal x = canvas.left() + i * step;
         painter->setPen(major ? majorPen : minorPen);
         painter->drawLine(QPointF(x, canvas.top()), QPointF(x, canvas.bottom()));
@@ -2204,8 +2370,9 @@ void CanvasScene::drawCanvasBackground(QPainter* painter, const QRectF& area, bo
     const int rows = qCeil(canvas.height() / step);
     for (int i = 0; i <= rows; ++i) {
         const bool major = (i % 5) == 0;
-        if (!major && !drawMinor)
+        if (!major && !drawMinor) {
             continue;
+        }
         const qreal y = canvas.top() + i * step;
         painter->setPen(major ? majorPen : minorPen);
         painter->drawLine(QPointF(canvas.left(), y), QPointF(canvas.right(), y));

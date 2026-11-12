@@ -1,10 +1,10 @@
 #pragma once
 
+#include "CanvasItem.h"
+
 #include <QColor>
 #include <QIcon>
 #include <QList>
-
-#include "CanvasItem.h"
 
 enum class ShapeType {
     Rectangle = 0,
@@ -21,15 +21,7 @@ enum class ShapeType {
     Callout
 };
 
-enum class FillStyle {
-    None = 0,
-    Solid,
-    Hachure,
-    ReverseHachure,
-    CrossHatch,
-    GridHatch,
-    Honeycomb
-};
+enum class FillStyle { None = 0, Solid, Hachure, ReverseHachure, CrossHatch, GridHatch, Honeycomb };
 
 QList<ShapeType> allShapeTypes();
 QString shapeTypeName(ShapeType type);
@@ -38,8 +30,7 @@ ShapeType shapeTypeFromString(const QString& value);
 QSizeF defaultShapeSize(ShapeType type);
 bool shapeTypeIsFilled(ShapeType type);
 bool shapeTypeIsStrokeOnly(ShapeType type);
-QIcon makeShapeIcon(ShapeType type, const QColor& color = QColor(58, 64, 80),
-                    int logicalSize = 22);
+QIcon makeShapeIcon(ShapeType type, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);
 
 QList<FillStyle> allFillStyles();
 QString fillStyleName(FillStyle style);
@@ -57,24 +48,18 @@ struct ShapeItemState {
 
     bool operator==(const ShapeItemState& other) const
     {
-        return type == other.type
-            && strokeColor == other.strokeColor
-            && fillColor == other.fillColor
-            && fillStyle == other.fillStyle
-            && qFuzzyCompare(strokeWidth, other.strokeWidth)
-            && pos == other.pos
-            && size == other.size;
+        return type == other.type && strokeColor == other.strokeColor && fillColor == other.fillColor &&
+               fillStyle == other.fillStyle && qFuzzyCompare(strokeWidth, other.strokeWidth) && pos == other.pos &&
+               size == other.size;
     }
 
     bool operator!=(const ShapeItemState& other) const { return !(*this == other); }
 };
 
-class ShapeItem : public CanvasItem
-{
+class ShapeItem : public CanvasItem {
     Q_OBJECT
-public:
-    explicit ShapeItem(ShapeType type = ShapeType::Rectangle,
-                       QGraphicsItem* parent = nullptr);
+  public:
+    explicit ShapeItem(ShapeType type = ShapeType::Rectangle, QGraphicsItem* parent = nullptr);
 
     QString kind() const override { return QStringLiteral("shape"); }
     QString displayName() const override;
@@ -99,11 +84,11 @@ public:
 
     static QPainterPath pathFor(ShapeType type, const QRectF& rect);
 
-protected:
+  protected:
     void paintContent(QPainter* painter) override;
     qreal framePadding() const override { return qMax<qreal>(22.0, m_strokeWidth + 6.0); }
 
-private:
+  private:
     ShapeType m_type = ShapeType::Rectangle;
     QColor m_strokeColor = QColor(30, 41, 59);
     QColor m_fillColor = QColor(30, 41, 59, 36);

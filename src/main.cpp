@@ -1,11 +1,10 @@
-#include "I18n.h"
-
-#include "MainWindow.h"
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "CanvasView.h"
 #include "ExportDialog.h"
+#include "I18n.h"
 #include "ItemPropertiesDialog.h"
+#include "MainWindow.h"
 #include "SelfTest.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
@@ -33,11 +32,13 @@ namespace {
 QString takeOptionPath(const QStringList& arguments, const QString& option)
 {
     const int index = arguments.indexOf(option);
-    if (index < 0 || index + 1 >= arguments.size())
+    if (index < 0 || index + 1 >= arguments.size()) {
         return QString();
+    }
     const QString value = arguments.at(index + 1);
-    if (value.startsWith(QLatin1Char('-')))
+    if (value.startsWith(QLatin1Char('-'))) {
         return QString();
+    }
     return value;
 }
 
@@ -144,25 +145,26 @@ int main(int argc, char** argv)
 {
     QStringList arguments;
     arguments.reserve(argc);
-    for (int i = 0; i < argc; ++i)
+    for (int i = 0; i < argc; ++i) {
         arguments.append(QString::fromLocal8Bit(argv[i]));
+    }
 
     const bool selfTest = arguments.contains(QStringLiteral("--self-test"));
     const bool renderDemo = arguments.contains(QStringLiteral("--render-demo"));
-    if (selfTest && qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM"))
+    if (selfTest && qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM")) {
         qputenv("QT_QPA_PLATFORM", "offscreen");
+    }
     if (selfTest && qEnvironmentVariableIsEmpty("STORYBOARD_CONFIG")) {
         // 自检会反复写设置，把配置指到自检工作目录，绝不碰用户自己的 StoryBoard.ini。
         const QString reportPath = takeOptionPath(arguments, QStringLiteral("--self-test"));
         const QString reportFile = reportPath.isEmpty()
-            ? QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
-                  .filePath(QStringLiteral("storyboard_selftest.txt"))
-            : reportPath;
-        const QString workDirectory = QDir(QFileInfo(reportFile).absolutePath())
-                                          .filePath(QStringLiteral("storyboard-selftest-work"));
+                                       ? QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
+                                             .filePath(QStringLiteral("storyboard_selftest.txt"))
+                                       : reportPath;
+        const QString workDirectory =
+            QDir(QFileInfo(reportFile).absolutePath()).filePath(QStringLiteral("storyboard-selftest-work"));
         QDir().mkpath(workDirectory);
-        qputenv("STORYBOARD_CONFIG",
-                QDir(workDirectory).filePath(QStringLiteral("StoryBoard.ini")).toUtf8());
+        qputenv("STORYBOARD_CONFIG", QDir(workDirectory).filePath(QStringLiteral("StoryBoard.ini")).toUtf8());
     }
 
     QApplication app(argc, argv);
@@ -182,22 +184,25 @@ int main(int argc, char** argv)
 
     if (renderDemo) {
         const QString outputPath = takeOptionPath(arguments, QStringLiteral("--render-demo"));
-        if (outputPath.isEmpty())
+        if (outputPath.isEmpty()) {
             return 2;
+        }
         return renderDemoCanvas(outputPath) ? 0 : 1;
     }
 
     if (arguments.contains(QStringLiteral("--demo-canvas"))) {
         const QString outputPath = takeOptionPath(arguments, QStringLiteral("--demo-canvas"));
-        if (outputPath.isEmpty())
+        if (outputPath.isEmpty()) {
             return 2;
+        }
         return writeDemoCanvas(outputPath) ? 0 : 1;
     }
 
     if (arguments.contains(QStringLiteral("--ui-screenshot"))) {
         const QString outputPath = takeOptionPath(arguments, QStringLiteral("--ui-screenshot"));
-        if (outputPath.isEmpty())
+        if (outputPath.isEmpty()) {
             return 2;
+        }
 
         MainWindow window;
         window.resize(1440, 900);
@@ -219,8 +224,9 @@ int main(int argc, char** argv)
 
     if (arguments.contains(QStringLiteral("--settings-screenshot"))) {
         const QString outputPath = takeOptionPath(arguments, QStringLiteral("--settings-screenshot"));
-        if (outputPath.isEmpty())
+        if (outputPath.isEmpty()) {
             return 2;
+        }
         AppSettings settings;
         settings.load();
         SettingsDialog dialog(settings);
@@ -241,15 +247,16 @@ int main(int argc, char** argv)
                 break;
             }
         }
-        if (!settingsAction)
+        if (!settingsAction) {
             return 3;
+        }
         const UiLanguage originalLanguage = uiLanguageSetting();
         QTimer::singleShot(200, &window, [&window, originalLanguage]() {
             if (auto* dialog = window.findChild<SettingsDialog*>()) {
                 auto* languageCombo = dialog->findChild<QComboBox*>();
                 if (languageCombo) {
-                    const UiLanguage target = originalLanguage == UiLanguage::Chinese
-                        ? UiLanguage::English : UiLanguage::Chinese;
+                    const UiLanguage target =
+                        originalLanguage == UiLanguage::Chinese ? UiLanguage::English : UiLanguage::Chinese;
                     languageCombo->setCurrentIndex(languageCombo->findData(static_cast<int>(target)));
                 }
                 dialog->accept();
@@ -262,19 +269,21 @@ int main(int argc, char** argv)
 
     if (arguments.contains(QStringLiteral("--set-language"))) {
         const QString value = takeOptionPath(arguments, QStringLiteral("--set-language"));
-        if (value == QLatin1String("en"))
+        if (value == QLatin1String("en")) {
             setUiLanguageSetting(UiLanguage::English);
-        else if (value == QLatin1String("zh"))
+        } else if (value == QLatin1String("zh")) {
             setUiLanguageSetting(UiLanguage::Chinese);
-        else
+        } else {
             setUiLanguageSetting(UiLanguage::System);
+        }
         return 0;
     }
 
     if (arguments.contains(QStringLiteral("--settings-probe"))) {
         const QString outputPath = takeOptionPath(arguments, QStringLiteral("--settings-probe"));
-        if (outputPath.isEmpty())
+        if (outputPath.isEmpty()) {
             return 2;
+        }
         AppSettings probe;
         probe.load();
         const QString file = AppSettings::settingsFilePath();
@@ -285,22 +294,25 @@ int main(int argc, char** argv)
                                  .arg(static_cast<int>(uiEffectiveLanguage()))
                                  .arg(AppSettings::languageSetting());
         QFile output(outputPath);
-        if (!output.open(QIODevice::WriteOnly | QIODevice::Truncate))
+        if (!output.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
             return 1;
+        }
         output.write(text.toUtf8());
         return 0;
     }
 
     if (arguments.contains(QStringLiteral("--about-screenshot"))) {
         const QString outputPath = takeOptionPath(arguments, QStringLiteral("--about-screenshot"));
-        if (outputPath.isEmpty())
+        if (outputPath.isEmpty()) {
             return 2;
+        }
         MainWindow window;
         bool saved = false;
         QTimer::singleShot(80, [&saved, &outputPath]() {
             auto* box = qobject_cast<QMessageBox*>(QApplication::activeModalWidget());
-            if (!box)
+            if (!box) {
                 return;
+            }
             saved = box->grab().save(outputPath);
             box->accept();
         });
@@ -310,8 +322,9 @@ int main(int argc, char** argv)
 
     if (arguments.contains(QStringLiteral("--item-properties-screenshot"))) {
         const QString outputPath = takeOptionPath(arguments, QStringLiteral("--item-properties-screenshot"));
-        if (outputPath.isEmpty())
+        if (outputPath.isEmpty()) {
             return 2;
+        }
 
         CanvasScene demoScene;
         populateDemoScene(demoScene);
@@ -324,10 +337,12 @@ int main(int argc, char** argv)
                 break;
             }
         }
-        if (!target && demoScene.canvasItemCount() > 0)
+        if (!target && demoScene.canvasItemCount() > 0) {
             target = demoScene.canvasItems().constFirst();
-        if (!target)
+        }
+        if (!target) {
             return 3;
+        }
         demoScene.setActiveLayer(target->layerId());
         target->setSelected(true);
 
@@ -339,8 +354,9 @@ int main(int argc, char** argv)
 
     if (arguments.contains(QStringLiteral("--shape-menu-screenshot"))) {
         const QString outputPath = takeOptionPath(arguments, QStringLiteral("--shape-menu-screenshot"));
-        if (outputPath.isEmpty())
+        if (outputPath.isEmpty()) {
             return 2;
+        }
 
         MainWindow window;
         window.resize(1200, 800);
@@ -348,8 +364,9 @@ int main(int argc, char** argv)
         QApplication::processEvents();
 
         QMenu* menu = window.findChild<QMenu*>(QStringLiteral("ShapeMenu"));
-        if (!menu)
+        if (!menu) {
             return 3;
+        }
         menu->popup(window.mapToGlobal(QPoint(420, 80)));
         QApplication::processEvents();
         const QPixmap shot = menu->grab();
@@ -359,8 +376,9 @@ int main(int argc, char** argv)
 
     if (arguments.contains(QStringLiteral("--brush-style-menu-screenshot"))) {
         const QString outputPath = takeOptionPath(arguments, QStringLiteral("--brush-style-menu-screenshot"));
-        if (outputPath.isEmpty())
+        if (outputPath.isEmpty()) {
             return 2;
+        }
 
         MainWindow window;
         window.resize(1200, 800);
@@ -368,8 +386,9 @@ int main(int argc, char** argv)
         QApplication::processEvents();
 
         QMenu* menu = window.findChild<QMenu*>(QStringLiteral("BrushStyleMenu"));
-        if (!menu)
+        if (!menu) {
             return 3;
+        }
         menu->popup(window.mapToGlobal(QPoint(500, 40)));
         QApplication::processEvents();
         const QPixmap shot = menu->grab();
@@ -379,8 +398,9 @@ int main(int argc, char** argv)
 
     if (arguments.contains(QStringLiteral("--brush-width-menu-screenshot"))) {
         const QString outputPath = takeOptionPath(arguments, QStringLiteral("--brush-width-menu-screenshot"));
-        if (outputPath.isEmpty())
+        if (outputPath.isEmpty()) {
             return 2;
+        }
 
         MainWindow window;
         window.resize(1200, 800);
@@ -388,8 +408,9 @@ int main(int argc, char** argv)
         QApplication::processEvents();
 
         QMenu* menu = window.findChild<QMenu*>(QStringLiteral("BrushWidthMenu"));
-        if (!menu)
+        if (!menu) {
             return 3;
+        }
         menu->popup(window.mapToGlobal(QPoint(600, 40)));
         QApplication::processEvents();
         const QPixmap shot = menu->grab();
@@ -399,8 +420,9 @@ int main(int argc, char** argv)
 
     if (arguments.contains(QStringLiteral("--fill-style-menu-screenshot"))) {
         const QString outputPath = takeOptionPath(arguments, QStringLiteral("--fill-style-menu-screenshot"));
-        if (outputPath.isEmpty())
+        if (outputPath.isEmpty()) {
             return 2;
+        }
 
         MainWindow window;
         window.resize(1200, 800);
@@ -408,8 +430,9 @@ int main(int argc, char** argv)
         QApplication::processEvents();
 
         QMenu* menu = window.findChild<QMenu*>(QStringLiteral("FillStyleMenu"));
-        if (!menu)
+        if (!menu) {
             return 3;
+        }
         menu->popup(window.mapToGlobal(QPoint(600, 40)));
         QApplication::processEvents();
         const QPixmap shot = menu->grab();
@@ -419,8 +442,9 @@ int main(int argc, char** argv)
 
     if (arguments.contains(QStringLiteral("--style-menu-screenshot"))) {
         const QString outputPath = takeOptionPath(arguments, QStringLiteral("--style-menu-screenshot"));
-        if (outputPath.isEmpty())
+        if (outputPath.isEmpty()) {
             return 2;
+        }
 
         MainWindow window;
         window.resize(1200, 800);
@@ -428,8 +452,9 @@ int main(int argc, char** argv)
         QApplication::processEvents();
 
         QMenu* menu = window.findChild<QMenu*>(QStringLiteral("StyleMenu"));
-        if (!menu)
+        if (!menu) {
             return 3;
+        }
         menu->popup(window.mapToGlobal(QPoint(500, 40)));
         QApplication::processEvents();
         const QPixmap shot = menu->grab();
@@ -439,12 +464,12 @@ int main(int argc, char** argv)
 
     if (arguments.contains(QStringLiteral("--export-screenshot"))) {
         const QString outputPath = takeOptionPath(arguments, QStringLiteral("--export-screenshot"));
-        if (outputPath.isEmpty())
+        if (outputPath.isEmpty()) {
             return 2;
+        }
         CanvasScene demoScene;
         populateDemoScene(demoScene);
-        ExportDialog dialog(&demoScene,
-                            QStandardPaths::writableLocation(QStandardPaths::PicturesLocation));
+        ExportDialog dialog(&demoScene, QStandardPaths::writableLocation(QStandardPaths::PicturesLocation));
         dialog.show();
         QApplication::processEvents();
         return dialog.grab().save(outputPath) ? 0 : 1;
@@ -456,19 +481,17 @@ int main(int argc, char** argv)
     const QStringList positional = arguments.mid(1);
     QString canvasPath;
     for (const QString& argument : positional) {
-        if (argument.startsWith(QLatin1Char('-')))
+        if (argument.startsWith(QLatin1Char('-'))) {
             continue;
+        }
         const QString suffix = QFileInfo(argument).suffix().toLower();
-        if (QFileInfo::exists(argument)
-            && suffix == QStringLiteral("sbcanvas")) {
+        if (QFileInfo::exists(argument) && suffix == QStringLiteral("sbcanvas")) {
             canvasPath = argument;
             break;
         }
     }
     if (!canvasPath.isEmpty()) {
-        QTimer::singleShot(0, &window, [&window, canvasPath]() {
-            window.openCanvasFile(canvasPath);
-        });
+        QTimer::singleShot(0, &window, [&window, canvasPath]() { window.openCanvasFile(canvasPath); });
     }
 
     return app.exec();

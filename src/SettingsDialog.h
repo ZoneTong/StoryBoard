@@ -1,9 +1,9 @@
 #pragma once
 
-#include <QDialog>
-
-#include "Settings.h"
 #include "I18n.h"
+#include "Settings.h"
+
+#include <QDialog>
 
 class QCheckBox;
 class QDoubleSpinBox;
@@ -12,10 +12,9 @@ class QSpinBox;
 class QCheckBox;
 class QComboBox;
 
-class SettingsDialog : public QDialog
-{
+class SettingsDialog : public QDialog {
     Q_OBJECT
-public:
+  public:
     explicit SettingsDialog(const AppSettings& settings, QWidget* parent = nullptr);
 
     AppSettings settings() const { return m_settings; }
@@ -24,7 +23,7 @@ public:
     void setBrushColor(const QColor& color);
     void setCanvasColor(const QColor& color);
 
-private:
+  private:
     bool pickColor(QColor& target, const QString& title, bool allowAlpha);
     void refreshColorButton(QPushButton* button, const QColor& color);
     void resetToDefaults();

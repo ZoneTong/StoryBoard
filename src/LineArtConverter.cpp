@@ -6,20 +6,20 @@
 #include <QPair>
 #include <QSet>
 #include <QtMath>
-
 #include <algorithm>
 
 namespace {
 
 // 8 邻域，从“右”开始顺时针排列。
-const int kDirX[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
-const int kDirY[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
+const int kDirX[8] = {1, 1, 0, -1, -1, -1, 0, 1};
+const int kDirY[8] = {0, 1, 1, 1, 0, -1, -1, -1};
 
 int directionIndex(int dx, int dy)
 {
     for (int i = 0; i < 8; ++i) {
-        if (kDirX[i] == dx && kDirY[i] == dy)
+        if (kDirX[i] == dx && kDirY[i] == dy) {
             return i;
+        }
     }
     return -1;
 }
@@ -28,8 +28,9 @@ qreal pointToSegmentDistance(const QPointF& point, const QPointF& start, const Q
 {
     const QPointF segment = end - start;
     const qreal lengthSquared = QPointF::dotProduct(segment, segment);
-    if (lengthSquared <= 0.0)
+    if (lengthSquared <= 0.0) {
         return QLineF(point, start).length();
+    }
 
     qreal t = QPointF::dotProduct(point - start, segment) / lengthSquared;
     t = qBound<qreal>(0.0, t, 1.0);
@@ -40,8 +41,9 @@ qreal pointToSegmentDistance(const QPointF& point, const QPointF& start, const Q
 // 用显式栈而不是递归，避免长轮廓把调用栈压爆。
 QVector<QPointF> simplifyPolyline(const QVector<QPointF>& points, qreal tolerance)
 {
-    if (points.size() <= 2 || tolerance <= 0.0)
+    if (points.size() <= 2 || tolerance <= 0.0) {
         return points;
+    }
 
     QVector<bool> keep(points.size(), false);
     keep.first() = true;
@@ -53,14 +55,14 @@ QVector<QPointF> simplifyPolyline(const QVector<QPointF>& points, qreal toleranc
         const QPair<int, int> span = pending.takeLast();
         const int first = span.first;
         const int last = span.second;
-        if (last <= first + 1)
+        if (last <= first + 1) {
             continue;
+        }
 
         qreal maxDistance = -1.0;
         int maxIndex = -1;
         for (int i = first + 1; i < last; ++i) {
-            const qreal distance = pointToSegmentDistance(points.at(i), points.at(first),
-                                                          points.at(last));
+            const qreal distance = pointToSegmentDistance(points.at(i), points.at(first), points.at(last));
             if (distance > maxDistance) {
                 maxDistance = distance;
                 maxIndex = i;
@@ -76,8 +78,9 @@ QVector<QPointF> simplifyPolyline(const QVector<QPointF>& points, qreal toleranc
     QVector<QPointF> result;
     result.reserve(points.size());
     for (int i = 0; i < points.size(); ++i) {
-        if (keep.at(i))
+        if (keep.at(i)) {
             result.append(points.at(i));
+        }
     }
     return result;
 }
@@ -85,16 +88,14 @@ QVector<QPointF> simplifyPolyline(const QVector<QPointF>& points, qreal toleranc
 // Moore 邻域边界跟踪：从一个色块的最左上像素出发绕它走一圈。
 // 停止条件用“位置 + 进入方向”这种状态重复来判断（Jacob 停止条件的等价形式）。
 // 返回像素中心坐标，首点只出现一次（闭合点由调用方补上）。
-QVector<QPointF> traceContour(const QVector<int>& labels, int width, int height, int seed,
-                              int regionId)
+QVector<QPointF> traceContour(const QVector<int>& labels, int width, int height, int seed, int regionId)
 {
     QVector<QPointF> contour;
     const int startX = seed % width;
     const int startY = seed / width;
 
     const auto isRegion = [&labels, width, height, regionId](int x, int y) {
-        return x >= 0 && y >= 0 && x < width && y < height
-            && labels.at(y * width + x) == regionId;
+        return x >= 0 && y >= 0 && x < width && y < height && labels.at(y * width + x) == regionId;
     };
 
     int cx = startX;
@@ -107,13 +108,15 @@ QVector<QPointF> traceContour(const QVector<int>& labels, int width, int height,
     for (int step = 0; step < guard; ++step) {
         // backtrack 相对当前像素的方位，扫描从这里开始顺时针绕一圈。
         int backDir = directionIndex(backX - cx, backY - cy);
-        if (backDir < 0)
+        if (backDir < 0) {
             backDir = 4;
+        }
 
         // 同一个像素、又是从同一方向进来的：这一圈已经走完了。
         const qint64 state = (static_cast<qint64>(cy) * width + cx) * 8 + backDir;
-        if (visitedStates.contains(state))
+        if (visitedStates.contains(state)) {
             break;
+        }
         visitedStates.insert(state);
 
         int nextDir = -1;
@@ -129,8 +132,9 @@ QVector<QPointF> traceContour(const QVector<int>& labels, int width, int height,
             backX = nx;
             backY = ny;
         }
-        if (nextDir < 0)
+        if (nextDir < 0) {
             break;
+        }
 
         contour.append(QPointF(cx, cy));
         cx += kDirX[nextDir];
@@ -177,23 +181,25 @@ Result extract(const QImage& source, const Options& options)
     const int longEdge = qMax(base.width(), base.height());
     int side = qMin(qMax(64, options.maxProcessingSide), longEdge);
     Result pass = extractAtSide(base, options, side);
-    if (!options.adaptiveDownscale || options.adaptiveRegionLimit <= 0 || !pass.ok)
+    if (!options.adaptiveDownscale || options.adaptiveRegionLimit <= 0 || !pass.ok) {
         return pass;
+    }
 
     // ---- 自适应降采样：色块太多时缩小处理尺寸重算，而不是把色块直接丢掉 ----
     // 色块数量大致与处理面积的平方成正比，所以按 sqrt(阈值/实测数量) 估缩放比，
     // 每次留 5% 余量，最多重算三轮，并且不低于 minAdaptiveSide。
     const int floorSide = qBound(64, options.minAdaptiveSide, side);
     for (int round = 0; round < 3 && pass.candidateCount > options.adaptiveRegionLimit; ++round) {
-        const qreal ratio =
-            qSqrt(static_cast<qreal>(options.adaptiveRegionLimit) / qMax(1, pass.candidateCount));
+        const qreal ratio = qSqrt(static_cast<qreal>(options.adaptiveRegionLimit) / qMax(1, pass.candidateCount));
         const int nextSide = qMax(floorSide, static_cast<int>(side * ratio * 0.95));
-        if (nextSide >= side)
+        if (nextSide >= side) {
             break;
+        }
         side = nextSide;
         pass = extractAtSide(base, options, side);
-        if (!pass.ok)
+        if (!pass.ok) {
             break;
+        }
     }
     return pass;
 }
@@ -251,12 +257,12 @@ static Result extractAtSide(const QImage& base, const Options& options, int side
     QVector<int> order;
     order.reserve(binTotal);
     for (int key = 0; key < binTotal; ++key) {
-        if (binCount.at(key) > 0)
+        if (binCount.at(key) > 0) {
             order.append(key);
+        }
     }
-    std::stable_sort(order.begin(), order.end(), [&binCount](int first, int second) {
-        return binCount.at(first) > binCount.at(second);
-    });
+    std::stable_sort(order.begin(), order.end(),
+                     [&binCount](int first, int second) { return binCount.at(first) > binCount.at(second); });
 
     const int maxColors = qBound(1, options.maxPaletteColors, binTotal);
     const qint64 coverageTarget = static_cast<qint64>(total) * 995 / 1000;
@@ -268,8 +274,7 @@ static Result extractAtSide(const QImage& base, const Options& options, int side
     for (int index = 0; index < order.size(); ++index) {
         const int key = order.at(index);
         const qint64 count = binCount.at(key);
-        const QColor color(static_cast<int>(binR.at(key) / count),
-                           static_cast<int>(binG.at(key) / count),
+        const QColor color(static_cast<int>(binR.at(key) / count), static_cast<int>(binG.at(key) / count),
                            static_cast<int>(binB.at(key) / count));
 
         int nearest = -1;
@@ -296,8 +301,9 @@ static Result extractAtSide(const QImage& base, const Options& options, int side
     }
 
     QVector<int> paletteIndex(total, 0);
-    for (int index = 0; index < total; ++index)
+    for (int index = 0; index < total; ++index) {
         paletteIndex[index] = paletteOfBin.at(binOfPixel.at(index));
+    }
     binOfPixel.clear();
     binOfPixel.squeeze();
 
@@ -308,8 +314,9 @@ static Result extractAtSide(const QImage& base, const Options& options, int side
     pending.reserve(1024);
 
     for (int seed = 0; seed < total; ++seed) {
-        if (labels.at(seed) >= 0)
+        if (labels.at(seed) >= 0) {
             continue;
+        }
 
         const int palette = paletteIndex.at(seed);
         const int regionId = regions.size();
@@ -330,23 +337,29 @@ static Result extractAtSide(const QImage& base, const Options& options, int side
             region.sumR += qRed(rgb);
             region.sumG += qGreen(rgb);
             region.sumB += qBlue(rgb);
-            if (x < region.minX)
+            if (x < region.minX) {
                 region.minX = x;
-            if (x > region.maxX)
+            }
+            if (x > region.maxX) {
                 region.maxX = x;
-            if (y < region.minY)
+            }
+            if (y < region.minY) {
                 region.minY = y;
-            if (y > region.maxY)
+            }
+            if (y > region.maxY) {
                 region.maxY = y;
+            }
 
             for (int k = 0; k < 8; ++k) {
                 const int nx = x + kDirX[k];
                 const int ny = y + kDirY[k];
-                if (nx < 0 || ny < 0 || nx >= width || ny >= height)
+                if (nx < 0 || ny < 0 || nx >= width || ny >= height) {
                     continue;
+                }
                 const int neighbour = ny * width + nx;
-                if (labels.at(neighbour) >= 0 || paletteIndex.at(neighbour) != palette)
+                if (labels.at(neighbour) >= 0 || paletteIndex.at(neighbour) != palette) {
                     continue;
+                }
                 labels[neighbour] = regionId;
                 pending.append(neighbour);
             }
@@ -376,16 +389,19 @@ static Result extractAtSide(const QImage& base, const Options& options, int side
                 for (int k = 0; k < 4; ++k) {
                     const int nx = x + kDirX[k];
                     const int ny = y + kDirY[k];
-                    if (nx < 0 || ny < 0 || nx >= width || ny >= height)
+                    if (nx < 0 || ny < 0 || nx >= width || ny >= height) {
                         continue;
+                    }
                     const int other = labels.at(ny * width + nx);
-                    if (other == label)
+                    if (other == label) {
                         continue;
+                    }
                     const int first = qMin(label, other);
                     const int second = qMax(label, other);
                     const qint64 key = static_cast<qint64>(first) * regionCount + second;
-                    if (seenEdges.contains(key))
+                    if (seenEdges.contains(key)) {
                         continue;
+                    }
                     seenEdges.insert(key);
                     edgeFirst.append(first);
                     edgeSecond.append(second);
@@ -394,8 +410,9 @@ static Result extractAtSide(const QImage& base, const Options& options, int side
         }
 
         QVector<int> parent(regionCount);
-        for (int i = 0; i < regionCount; ++i)
+        for (int i = 0; i < regionCount; ++i) {
             parent[i] = i;
+        }
         auto findRoot = [&parent](int value) {
             while (parent.at(value) != value) {
                 parent[value] = parent.at(parent.at(value));
@@ -440,20 +457,22 @@ static Result extractAtSide(const QImage& base, const Options& options, int side
             rootB[i] = regions.at(i).sumB;
         }
 
-        std::stable_sort(pairs.begin(), pairs.end(),
-                         [](const AdjacentPair& left, const AdjacentPair& right) {
-                             return left.distance < right.distance;
-                         });
+        std::stable_sort(pairs.begin(), pairs.end(), [](const AdjacentPair& left, const AdjacentPair& right) {
+            return left.distance < right.distance;
+        });
         for (int i = 0; i < pairs.size(); ++i) {
             const AdjacentPair& pair = pairs.at(i);
-            if (pair.distance > options.adjacentMergeDistance)
+            if (pair.distance > options.adjacentMergeDistance) {
                 break;
+            }
             int first = findRoot(pair.first);
             int second = findRoot(pair.second);
-            if (first == second)
+            if (first == second) {
                 continue;
-            if (rootArea.at(first) < rootArea.at(second))
+            }
+            if (rootArea.at(first) < rootArea.at(second)) {
                 qSwap(first, second);
+            }
             parent[second] = first;
             rootArea[first] += rootArea.at(second);
             rootR[first] += rootR.at(second);
@@ -486,14 +505,18 @@ static Result extractAtSide(const QImage& base, const Options& options, int side
             region.sumR += qRed(rgb);
             region.sumG += qGreen(rgb);
             region.sumB += qBlue(rgb);
-            if (x < region.minX)
+            if (x < region.minX) {
                 region.minX = x;
-            if (x > region.maxX)
+            }
+            if (x > region.maxX) {
                 region.maxX = x;
-            if (y < region.minY)
+            }
+            if (y < region.minY) {
                 region.minY = y;
-            if (y > region.maxY)
+            }
+            if (y > region.maxY) {
                 region.maxY = y;
+            }
             mergedLabels[index] = id;
         }
 
@@ -509,24 +532,26 @@ static Result extractAtSide(const QImage& base, const Options& options, int side
     candidates.reserve(regions.size());
     for (int index = 0; index < regions.size(); ++index) {
         const RegionData& region = regions.at(index);
-        const bool touchesBorder = region.minX <= 0 || region.minY <= 0
-            || region.maxX >= width - 1 || region.maxY >= height - 1;
+        const bool touchesBorder =
+            region.minX <= 0 || region.minY <= 0 || region.maxX >= width - 1 || region.maxY >= height - 1;
         // 贴着画框又占了很大面积的那一块就是整张图的底色，描它的外框没有意义。
-        if (touchesBorder && region.area >= imageArea / 5)
+        if (touchesBorder && region.area >= imageArea / 5) {
             continue;
+        }
         // 横跨整幅（或纵贯整幅）的大块通常是渐变底色被量化出来的条带，同理跳过。
         const bool spansWidth = region.minX <= 0 && region.maxX >= width - 1;
         const bool spansHeight = region.minY <= 0 && region.maxY >= height - 1;
-        if ((spansWidth || spansHeight) && region.area >= imageArea / 12)
+        if ((spansWidth || spansHeight) && region.area >= imageArea / 12) {
             continue;
-        if (region.area < qMax(4, options.minRegionArea))
+        }
+        if (region.area < qMax(4, options.minRegionArea)) {
             continue;
+        }
         candidates.append(index);
     }
     // 大色块先描、小色块后描：小细节压在共享边界上面，看起来更清楚。
-    std::stable_sort(candidates.begin(), candidates.end(), [&regions](int first, int second) {
-        return regions.at(first).area > regions.at(second).area;
-    });
+    std::stable_sort(candidates.begin(), candidates.end(),
+                     [&regions](int first, int second) { return regions.at(first).area > regions.at(second).area; });
     if (options.maxRegions > 0 && candidates.size() > options.maxRegions) {
         candidates.resize(options.maxRegions);
         result.truncated = true;
@@ -538,30 +563,34 @@ static Result extractAtSide(const QImage& base, const Options& options, int side
     for (int index : candidates) {
         const RegionData& region = regions.at(index);
         const QVector<QPointF> contour = traceContour(labels, width, height, region.seed, index);
-        if (contour.size() < 3)
+        if (contour.size() < 3) {
             continue;
+        }
 
         // 轮廓周长 ≈ 走一圈的像素步数；2*面积/周长 就是这一块的平均宽度。
         // 平均宽度太小的条带基本是抗锯齿过渡带，描出来只是一圈没意义的细环。
         const qreal thickness = 2.0 * region.area / qMax(1, contour.size());
-        if (options.minRegionThickness > 0.0 && thickness < options.minRegionThickness)
+        if (options.minRegionThickness > 0.0 && thickness < options.minRegionThickness) {
             continue;
+        }
 
         QVector<QPointF> points = simplifyPolyline(contour, options.simplifyTolerance);
-        if (points.size() < 2)
+        if (points.size() < 2) {
             continue;
+        }
         // 补上闭合点，让笔画图元自己形成一个完整的回路。
-        if (points.constFirst() != points.constLast())
+        if (points.constFirst() != points.constLast()) {
             points.append(points.constFirst());
-        if (points.size() < 4)
+        }
+        if (points.size() < 4) {
             continue;
+        }
 
         Outline outline;
         outline.points = points;
         outline.area = region.area;
         const qint64 count = qMax<qint64>(1, region.area);
-        outline.color = QColor(static_cast<int>(region.sumR / count),
-                               static_cast<int>(region.sumG / count),
+        outline.color = QColor(static_cast<int>(region.sumR / count), static_cast<int>(region.sumG / count),
                                static_cast<int>(region.sumB / count));
         result.outlines.append(outline);
     }

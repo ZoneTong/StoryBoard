@@ -5,9 +5,8 @@
 #include <QSizeF>
 #include <QString>
 
-class AppSettings
-{
-public:
+class AppSettings {
+  public:
     QColor brushColor = QColor(30, 41, 59);
     int brushWidth = 4;
     // 画笔收尾自动平滑容差，单位为画布像素；0 表示关闭自动平滑。

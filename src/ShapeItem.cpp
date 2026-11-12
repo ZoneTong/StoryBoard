@@ -1,6 +1,6 @@
-#include "I18n.h"
-
 #include "ShapeItem.h"
+
+#include "I18n.h"
 
 #include <QJsonObject>
 #include <QPainter>
@@ -21,8 +21,9 @@ QPainterPath bracePath(const QRectF& rect)
     const QRectF r = normalizedRect(rect);
     const qreal w = r.width();
     const qreal h = r.height();
-    if (w <= 0.0 || h <= 0.0)
+    if (w <= 0.0 || h <= 0.0) {
         return QPainterPath();
+    }
 
     const qreal xOuter = r.left() + w * 0.82;
     const qreal xMid = r.left() + w * 0.60;
@@ -30,18 +31,10 @@ QPainterPath bracePath(const QRectF& rect)
 
     QPainterPath path;
     path.moveTo(xOuter, r.top());
-    path.cubicTo(xMid, r.top() + h * 0.025,
-                 xMid, r.top() + h * 0.14,
-                 xMid, r.top() + h * 0.30);
-    path.cubicTo(xMid, r.top() + h * 0.43,
-                 xTip, r.top() + h * 0.42,
-                 xTip, r.center().y());
-    path.cubicTo(xTip, r.top() + h * 0.58,
-                 xMid, r.top() + h * 0.57,
-                 xMid, r.top() + h * 0.70);
-    path.cubicTo(xMid, r.top() + h * 0.86,
-                 xMid, r.bottom() - h * 0.025,
-                 xOuter, r.bottom());
+    path.cubicTo(xMid, r.top() + h * 0.025, xMid, r.top() + h * 0.14, xMid, r.top() + h * 0.30);
+    path.cubicTo(xMid, r.top() + h * 0.43, xTip, r.top() + h * 0.42, xTip, r.center().y());
+    path.cubicTo(xTip, r.top() + h * 0.58, xMid, r.top() + h * 0.57, xMid, r.top() + h * 0.70);
+    path.cubicTo(xMid, r.top() + h * 0.86, xMid, r.bottom() - h * 0.025, xOuter, r.bottom());
     return path;
 }
 
@@ -51,20 +44,21 @@ QPainterPath starPath(const QRectF& rect)
     const QPointF center = r.center();
     const qreal rx = r.width() / 2.0;
     const qreal ry = r.height() / 2.0;
-    if (rx <= 0.0 || ry <= 0.0)
+    if (rx <= 0.0 || ry <= 0.0) {
         return QPainterPath();
+    }
 
     QPainterPath path;
     constexpr int points = 10;
     for (int i = 0; i < points; ++i) {
         const qreal angle = -M_PI / 2.0 + i * M_PI / 5.0;
         const qreal factor = (i % 2 == 0) ? 1.0 : 0.42;
-        const QPointF point(center.x() + qCos(angle) * rx * factor,
-                            center.y() + qSin(angle) * ry * factor);
-        if (i == 0)
+        const QPointF point(center.x() + qCos(angle) * rx * factor, center.y() + qSin(angle) * ry * factor);
+        if (i == 0) {
             path.moveTo(point);
-        else
+        } else {
             path.lineTo(point);
+        }
     }
     path.closeSubpath();
     return path;
@@ -75,8 +69,9 @@ QPainterPath calloutPath(const QRectF& rect)
     const QRectF r = normalizedRect(rect);
     const qreal w = r.width();
     const qreal h = r.height();
-    if (w <= 0.0 || h <= 0.0)
+    if (w <= 0.0 || h <= 0.0) {
         return QPainterPath();
+    }
 
     const QRectF body(r.left(), r.top(), w, h * 0.78);
     const qreal radius = qMin(w, h) * 0.16;
@@ -101,17 +96,17 @@ qreal patternSpacing(const QRectF& rect)
 
 bool isPatternFill(FillStyle style)
 {
-    return style == FillStyle::Hachure || style == FillStyle::ReverseHachure
-        || style == FillStyle::CrossHatch || style == FillStyle::GridHatch
-        || style == FillStyle::Honeycomb;
+    return style == FillStyle::Hachure || style == FillStyle::ReverseHachure || style == FillStyle::CrossHatch ||
+           style == FillStyle::GridHatch || style == FillStyle::Honeycomb;
 }
 
 // 填充纹理的中心线。绘制与遮挡计算共用这一份几何，保证看到的和“挡住别人的”一致。
 QPainterPath patternCenterLines(FillStyle style, const QRectF& rect)
 {
     QPainterPath path;
-    if (rect.isEmpty())
+    if (rect.isEmpty()) {
         return path;
+    }
 
     const qreal spacing = patternSpacing(rect);
     const qreal h = rect.height();
@@ -122,18 +117,17 @@ QPainterPath patternCenterLines(FillStyle style, const QRectF& rect)
         const qreal hexWidth = qSqrt(3.0) * radius;
         const qreal rowStep = 1.5 * radius;
         int row = 0;
-        for (qreal cy = rect.top() - radius; cy < rect.bottom() + radius;
-             cy += rowStep, ++row) {
+        for (qreal cy = rect.top() - radius; cy < rect.bottom() + radius; cy += rowStep, ++row) {
             const qreal offset = (row % 2) ? hexWidth * 0.5 : 0.0;
-            for (qreal cx = rect.left() - hexWidth + offset; cx < rect.right() + hexWidth;
-                 cx += hexWidth) {
+            for (qreal cx = rect.left() - hexWidth + offset; cx < rect.right() + hexWidth; cx += hexWidth) {
                 for (int corner = 0; corner < 6; ++corner) {
                     const qreal angle = M_PI / 2.0 + corner * M_PI / 3.0;
                     const QPointF point(cx + radius * qCos(angle), cy + radius * qSin(angle));
-                    if (corner == 0)
+                    if (corner == 0) {
                         path.moveTo(point);
-                    else
+                    } else {
                         path.lineTo(point);
+                    }
                 }
                 path.closeSubpath();
             }
@@ -171,12 +165,13 @@ QPainterPath patternCenterLines(FillStyle style, const QRectF& rect)
     return path;
 }
 
-void paintPatternFill(QPainter* painter, const QPainterPath& clip, const QRectF& rect,
-                      const QColor& color, FillStyle style)
+void paintPatternFill(QPainter* painter, const QPainterPath& clip, const QRectF& rect, const QColor& color,
+                      FillStyle style)
 {
     QColor lineColor = color;
-    if (lineColor.alpha() < 120)
+    if (lineColor.alpha() < 120) {
         lineColor.setAlpha(120);
+    }
 
     painter->save();
     // 必须用 IntersectClip：ReplaceClip 会把 drawItems() 里为“被遮挡裁剪”设置的区域
@@ -193,20 +188,10 @@ void paintPatternFill(QPainter* painter, const QPainterPath& clip, const QRectF&
 
 QList<ShapeType> allShapeTypes()
 {
-    return {
-        ShapeType::Rectangle,
-        ShapeType::RoundedRectangle,
-        ShapeType::Ellipse,
-        ShapeType::Triangle,
-        ShapeType::Diamond,
-        ShapeType::Star,
-        ShapeType::Arrow,
-        ShapeType::DoubleArrow,
-        ShapeType::Line,
-        ShapeType::BraceLeft,
-        ShapeType::BraceRight,
-        ShapeType::Callout
-    };
+    return {ShapeType::Rectangle, ShapeType::RoundedRectangle, ShapeType::Ellipse,
+            ShapeType::Triangle,  ShapeType::Diamond,          ShapeType::Star,
+            ShapeType::Arrow,     ShapeType::DoubleArrow,      ShapeType::Line,
+            ShapeType::BraceLeft, ShapeType::BraceRight,       ShapeType::Callout};
 }
 
 QString shapeTypeName(ShapeType type)
@@ -274,43 +259,48 @@ QString shapeTypeToString(ShapeType type)
 ShapeType shapeTypeFromString(const QString& value)
 {
     const QString normalized = value.trimmed().toLower();
-    if (normalized == QStringLiteral("rounded_rectangle")
-        || normalized == QStringLiteral("roundedrect")
-        || normalized == QStringLiteral("roundrect")) {
+    if (normalized == QStringLiteral("rounded_rectangle") || normalized == QStringLiteral("roundedrect") ||
+        normalized == QStringLiteral("roundrect")) {
         return ShapeType::RoundedRectangle;
     }
-    if (normalized == QStringLiteral("ellipse") || normalized == QStringLiteral("circle")
-        || normalized == QStringLiteral("oval")) {
+    if (normalized == QStringLiteral("ellipse") || normalized == QStringLiteral("circle") ||
+        normalized == QStringLiteral("oval")) {
         return ShapeType::Ellipse;
     }
-    if (normalized == QStringLiteral("triangle"))
+    if (normalized == QStringLiteral("triangle")) {
         return ShapeType::Triangle;
-    if (normalized == QStringLiteral("diamond") || normalized == QStringLiteral("rhombus"))
+    }
+    if (normalized == QStringLiteral("diamond") || normalized == QStringLiteral("rhombus")) {
         return ShapeType::Diamond;
-    if (normalized == QStringLiteral("star"))
+    }
+    if (normalized == QStringLiteral("star")) {
         return ShapeType::Star;
-    if (normalized == QStringLiteral("arrow"))
+    }
+    if (normalized == QStringLiteral("arrow")) {
         return ShapeType::Arrow;
-    if (normalized == QStringLiteral("double_arrow") || normalized == QStringLiteral("doublearrow")
-        || normalized == QStringLiteral("bidirectional")) {
+    }
+    if (normalized == QStringLiteral("double_arrow") || normalized == QStringLiteral("doublearrow") ||
+        normalized == QStringLiteral("bidirectional")) {
         return ShapeType::DoubleArrow;
     }
-    if (normalized == QStringLiteral("line"))
+    if (normalized == QStringLiteral("line")) {
         return ShapeType::Line;
-    if (normalized == QStringLiteral("brace_left") || normalized == QStringLiteral("leftbrace")
-        || normalized == QStringLiteral("braceleft")) {
+    }
+    if (normalized == QStringLiteral("brace_left") || normalized == QStringLiteral("leftbrace") ||
+        normalized == QStringLiteral("braceleft")) {
         return ShapeType::BraceLeft;
     }
-    if (normalized == QStringLiteral("brace_right") || normalized == QStringLiteral("rightbrace")
-        || normalized == QStringLiteral("braceright")) {
+    if (normalized == QStringLiteral("brace_right") || normalized == QStringLiteral("rightbrace") ||
+        normalized == QStringLiteral("braceright")) {
         return ShapeType::BraceRight;
     }
-    if (normalized == QStringLiteral("callout") || normalized == QStringLiteral("bubble")
-        || normalized == QStringLiteral("speech")) {
+    if (normalized == QStringLiteral("callout") || normalized == QStringLiteral("bubble") ||
+        normalized == QStringLiteral("speech")) {
         return ShapeType::Callout;
     }
-    if (normalized == QStringLiteral("rect") || normalized == QStringLiteral("rectangle"))
+    if (normalized == QStringLiteral("rect") || normalized == QStringLiteral("rectangle")) {
         return ShapeType::Rectangle;
+    }
     return ShapeType::Rectangle;
 }
 
@@ -367,15 +357,13 @@ bool shapeTypeIsFilled(ShapeType type)
 
 bool shapeTypeIsStrokeOnly(ShapeType type)
 {
-    return type == ShapeType::Line || type == ShapeType::BraceLeft
-        || type == ShapeType::BraceRight;
+    return type == ShapeType::Line || type == ShapeType::BraceLeft || type == ShapeType::BraceRight;
 }
 
 QList<FillStyle> allFillStyles()
 {
-    return { FillStyle::None,       FillStyle::Solid,    FillStyle::Hachure,
-             FillStyle::ReverseHachure, FillStyle::CrossHatch, FillStyle::GridHatch,
-             FillStyle::Honeycomb };
+    return {FillStyle::None,       FillStyle::Solid,     FillStyle::Hachure,  FillStyle::ReverseHachure,
+            FillStyle::CrossHatch, FillStyle::GridHatch, FillStyle::Honeycomb};
 }
 
 QString fillStyleName(FillStyle style)
@@ -423,40 +411,39 @@ QString fillStyleToString(FillStyle style)
 FillStyle fillStyleFromString(const QString& value)
 {
     const QString normalized = value.trimmed().toLower();
-    if (normalized == QStringLiteral("none") || normalized == QStringLiteral("transparent"))
+    if (normalized == QStringLiteral("none") || normalized == QStringLiteral("transparent")) {
         return FillStyle::None;
-    if (normalized == QStringLiteral("hachure") || normalized == QStringLiteral("hatch")
-        || normalized == QStringLiteral("diagonal")) {
+    }
+    if (normalized == QStringLiteral("hachure") || normalized == QStringLiteral("hatch") ||
+        normalized == QStringLiteral("diagonal")) {
         return FillStyle::Hachure;
     }
-    if (normalized == QStringLiteral("reverse_hatch")
-        || normalized == QStringLiteral("reverse_hachure")
-        || normalized == QStringLiteral("reverse")
-        || normalized == QStringLiteral("backslash")) {
+    if (normalized == QStringLiteral("reverse_hatch") || normalized == QStringLiteral("reverse_hachure") ||
+        normalized == QStringLiteral("reverse") || normalized == QStringLiteral("backslash")) {
         return FillStyle::ReverseHachure;
     }
-    if (normalized == QStringLiteral("cross_hatch") || normalized == QStringLiteral("crosshatch")
-        || normalized == QStringLiteral("cross") || normalized == QStringLiteral("zigzag")) {
+    if (normalized == QStringLiteral("cross_hatch") || normalized == QStringLiteral("crosshatch") ||
+        normalized == QStringLiteral("cross") || normalized == QStringLiteral("zigzag")) {
         return FillStyle::CrossHatch;
     }
-    if (normalized == QStringLiteral("grid_hatch") || normalized == QStringLiteral("grid")
-        || normalized == QStringLiteral("cross_grid") || normalized == QStringLiteral("orthogonal")) {
+    if (normalized == QStringLiteral("grid_hatch") || normalized == QStringLiteral("grid") ||
+        normalized == QStringLiteral("cross_grid") || normalized == QStringLiteral("orthogonal")) {
         return FillStyle::GridHatch;
     }
-    if (normalized == QStringLiteral("honeycomb") || normalized == QStringLiteral("hexagon")
-        || normalized == QStringLiteral("hex")) {
+    if (normalized == QStringLiteral("honeycomb") || normalized == QStringLiteral("hexagon") ||
+        normalized == QStringLiteral("hex")) {
         return FillStyle::Honeycomb;
     }
-    if (normalized == QStringLiteral("solid") || normalized == QStringLiteral("color"))
+    if (normalized == QStringLiteral("solid") || normalized == QStringLiteral("color")) {
         return FillStyle::Solid;
+    }
     return FillStyle::Solid;
 }
 
 QIcon makeShapeIcon(ShapeType type, const QColor& color, int logicalSize)
 {
     constexpr qreal scale = 2.0;
-    QPixmap pixmap(static_cast<int>(logicalSize * scale),
-                   static_cast<int>(logicalSize * scale));
+    QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
     pixmap.fill(Qt::transparent);
     pixmap.setDevicePixelRatio(scale);
 
@@ -465,12 +452,11 @@ QIcon makeShapeIcon(ShapeType type, const QColor& color, int logicalSize)
     painter.scale(logicalSize / 24.0, logicalSize / 24.0);
 
     QRectF rect(3.0, 4.0, 18.0, 16.0);
-    if (type == ShapeType::Ellipse)
+    if (type == ShapeType::Ellipse) {
         rect = QRectF(4.0, 4.0, 16.0, 16.0);
-    else if (type == ShapeType::BraceLeft || type == ShapeType::BraceRight)
+    } else if (type == ShapeType::BraceLeft || type == ShapeType::BraceRight) {
         rect = QRectF(6.0, 2.0, 12.0, 20.0);
-    else if (type == ShapeType::Arrow || type == ShapeType::DoubleArrow
-             || type == ShapeType::Line) {
+    } else if (type == ShapeType::Arrow || type == ShapeType::DoubleArrow || type == ShapeType::Line) {
         rect = QRectF(2.0, 7.0, 20.0, 10.0);
     }
 
@@ -493,9 +479,7 @@ QIcon makeShapeIcon(ShapeType type, const QColor& color, int logicalSize)
     return QIcon(pixmap);
 }
 
-ShapeItem::ShapeItem(ShapeType type, QGraphicsItem* parent)
-    : CanvasItem(parent)
-    , m_type(type)
+ShapeItem::ShapeItem(ShapeType type, QGraphicsItem* parent) : CanvasItem(parent), m_type(type)
 {
     m_fillColor = m_strokeColor;
     m_fillColor.setAlpha(36);
@@ -509,8 +493,9 @@ QString ShapeItem::displayName() const
 
 void ShapeItem::setShapeType(ShapeType type)
 {
-    if (m_type == type)
+    if (m_type == type) {
         return;
+    }
     m_type = type;
     update();
 }
@@ -532,8 +517,9 @@ void ShapeItem::setFill(const QColor& fillColor, FillStyle style)
 
 void ShapeItem::setFillStyle(FillStyle style)
 {
-    if (m_fillStyle == style)
+    if (m_fillStyle == style) {
         return;
+    }
     m_fillStyle = style;
     update();
 }
@@ -564,8 +550,9 @@ void ShapeItem::applyState(const ShapeItemState& state)
 QPainterPath ShapeItem::shape() const
 {
     const QPainterPath path = pathFor(m_type, contentRect());
-    if (path.isEmpty())
+    if (path.isEmpty()) {
         return selectionHandleShape();
+    }
 
     QPainterPath result;
     if (m_type == ShapeType::Arrow || m_type == ShapeType::DoubleArrow) {
@@ -603,8 +590,9 @@ QPainterPath ShapeItem::outlineShape() const
 QPainterPath ShapeItem::paintedShape() const
 {
     const QPainterPath path = pathFor(m_type, contentRect());
-    if (path.isEmpty())
+    if (path.isEmpty()) {
         return QPainterPath();
+    }
 
     // 描边本身也会遮挡下方图元。
     QPainterPathStroker stroker;
@@ -619,8 +607,9 @@ QPainterPath ShapeItem::paintedShape() const
     // 描边本身仍然遮挡笔画扫过的区域。
     if (!shapeTypeIsStrokeOnly(m_type)) {
         const bool solidFill = m_fillStyle == FillStyle::Solid && m_fillColor.alpha() > 0;
-        if (solidFill)
+        if (solidFill) {
             result = result.united(path);
+        }
     }
     return result;
 }
@@ -628,8 +617,9 @@ QPainterPath ShapeItem::paintedShape() const
 QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect)
 {
     const QRectF r = normalizedRect(rect);
-    if (r.width() <= 0.0 || r.height() <= 0.0)
+    if (r.width() <= 0.0 || r.height() <= 0.0) {
         return QPainterPath();
+    }
 
     QPainterPath path;
     switch (type) {
@@ -661,8 +651,7 @@ QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect)
         path = starPath(r);
         break;
     case ShapeType::Arrow: {
-        const qreal headLength = qMin(r.width() * 0.45,
-                                      qMax(r.height() * 0.75, r.width() * 0.22));
+        const qreal headLength = qMin(r.width() * 0.45, qMax(r.height() * 0.75, r.width() * 0.22));
         const qreal shaftHalf = qMin(r.height() * 0.17, headLength * 0.45);
         const qreal cy = r.center().y();
         const qreal headBase = r.right() - headLength;
@@ -677,9 +666,8 @@ QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect)
         break;
     }
     case ShapeType::DoubleArrow: {
-        const qreal headLength = qMin(r.width() * 0.45,
-                                      qMin(r.width() * 0.30,
-                                           qMax(r.height() * 0.70, r.width() * 0.16)));
+        const qreal headLength =
+            qMin(r.width() * 0.45, qMin(r.width() * 0.30, qMax(r.height() * 0.70, r.width() * 0.16)));
         const qreal shaftHalf = qMin(r.height() * 0.17, headLength * 0.45);
         const qreal cy = r.center().y();
         const qreal leftBase = r.left() + headLength;
@@ -722,33 +710,35 @@ QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect)
 void ShapeItem::paintContent(QPainter* painter)
 {
     const QRectF rect = contentRect();
-    if (rect.isEmpty())
+    if (rect.isEmpty()) {
         return;
+    }
 
     const QPainterPath path = pathFor(m_type, rect);
-    if (path.isEmpty())
+    if (path.isEmpty()) {
         return;
+    }
 
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
 
     if (shapeTypeIsStrokeOnly(m_type)) {
-        QPen pen(m_strokeColor, m_strokeWidth, Qt::SolidLine,
-                 Qt::RoundCap, Qt::RoundJoin);
+        QPen pen(m_strokeColor, m_strokeWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
         painter->setPen(pen);
         painter->setBrush(Qt::NoBrush);
         painter->drawPath(path);
     } else {
-        if (isPatternFill(m_fillStyle))
+        if (isPatternFill(m_fillStyle)) {
             paintPatternFill(painter, path, rect, m_fillColor, m_fillStyle);
+        }
 
-        QPen pen(m_strokeColor, m_strokeWidth, Qt::SolidLine,
-                 Qt::RoundCap, Qt::RoundJoin);
+        QPen pen(m_strokeColor, m_strokeWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
         painter->setPen(pen);
-        if (m_fillStyle == FillStyle::Solid && m_fillColor.alpha() > 0)
+        if (m_fillStyle == FillStyle::Solid && m_fillColor.alpha() > 0) {
             painter->setBrush(m_fillColor);
-        else
+        } else {
             painter->setBrush(Qt::NoBrush);
+        }
         painter->drawPath(path);
     }
     painter->restore();
@@ -769,15 +759,16 @@ void ShapeItem::fromJson(const QJsonObject& json)
 {
     m_type = shapeTypeFromString(json.value(QStringLiteral("shapeType")).toString());
 
-    m_strokeColor = QColor(json.value(QStringLiteral("strokeColor"))
-                               .toString(QStringLiteral("#ff1e293b")));
-    if (!m_strokeColor.isValid())
+    m_strokeColor = QColor(json.value(QStringLiteral("strokeColor")).toString(QStringLiteral("#ff1e293b")));
+    if (!m_strokeColor.isValid()) {
         m_strokeColor = QColor(30, 41, 59);
+    }
 
     if (json.contains(QStringLiteral("fillColor"))) {
         m_fillColor = QColor(json.value(QStringLiteral("fillColor")).toString());
-        if (!m_fillColor.isValid())
+        if (!m_fillColor.isValid()) {
             m_fillColor = QColor(Qt::transparent);
+        }
     } else {
         m_fillColor = m_strokeColor;
         m_fillColor.setAlpha(36);
@@ -789,11 +780,11 @@ void ShapeItem::fromJson(const QJsonObject& json)
         m_fillStyle = m_fillColor.alpha() > 0 ? FillStyle::Solid : FillStyle::None;
     }
 
-    m_strokeWidth = qBound<qreal>(
-        0.5, json.value(QStringLiteral("strokeWidth")).toDouble(4.0), 48.0);
+    m_strokeWidth = qBound<qreal>(0.5, json.value(QStringLiteral("strokeWidth")).toDouble(4.0), 48.0);
 
     applyBaseJson(json);
-    if (contentSize().isEmpty())
+    if (contentSize().isEmpty()) {
         setContentSize(defaultShapeSize(m_type));
+    }
     update();
 }

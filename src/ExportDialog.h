@@ -12,10 +12,9 @@ class QDoubleSpinBox;
 class QLabel;
 class QLineEdit;
 
-class ExportDialog : public QDialog
-{
+class ExportDialog : public QDialog {
     Q_OBJECT
-public:
+  public:
     struct Options {
         QRectF area;
         qreal scale = 1.0;
@@ -26,12 +25,11 @@ public:
         QList<int> layerIds;
     };
 
-    explicit ExportDialog(CanvasScene* scene, const QString& startDirectory,
-                          QWidget* parent = nullptr);
+    explicit ExportDialog(CanvasScene* scene, const QString& startDirectory, QWidget* parent = nullptr);
 
     Options options() const;
 
-private:
+  private:
     QRectF selectedArea() const;
     QString selectedFormat() const;
     QString fileFilter() const;
