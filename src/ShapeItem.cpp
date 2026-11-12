@@ -213,31 +213,31 @@ QString shapeTypeName(ShapeType type)
 {
     switch (type) {
     case ShapeType::Rectangle:
-        return uiText(QStringLiteral("Rectangle"));
+        return ShapeItem::tr("Rectangle");
     case ShapeType::RoundedRectangle:
-        return uiText(QStringLiteral("Rounded rectangle"));
+        return ShapeItem::tr("Rounded rectangle");
     case ShapeType::Ellipse:
-        return uiText(QStringLiteral("Ellipse"));
+        return ShapeItem::tr("Ellipse");
     case ShapeType::Triangle:
-        return uiText(QStringLiteral("Triangle"));
+        return ShapeItem::tr("Triangle");
     case ShapeType::Diamond:
-        return uiText(QStringLiteral("Diamond"));
+        return ShapeItem::tr("Diamond");
     case ShapeType::Star:
-        return uiText(QStringLiteral("Star"));
+        return ShapeItem::tr("Star");
     case ShapeType::Arrow:
-        return uiText(QStringLiteral("Arrow"));
+        return ShapeItem::tr("Arrow");
     case ShapeType::DoubleArrow:
-        return uiText(QStringLiteral("Double arrow"));
+        return ShapeItem::tr("Double arrow");
     case ShapeType::Line:
-        return uiText(QStringLiteral("Line"));
+        return ShapeItem::tr("Line");
     case ShapeType::BraceLeft:
-        return uiText(QStringLiteral("Left brace"));
+        return ShapeItem::tr("Left brace");
     case ShapeType::BraceRight:
-        return uiText(QStringLiteral("Right brace"));
+        return ShapeItem::tr("Right brace");
     case ShapeType::Callout:
-        return uiText(QStringLiteral("Speech bubble"));
+        return ShapeItem::tr("Speech bubble");
     }
-    return uiText(QStringLiteral("Rectangle"));
+    return ShapeItem::tr("Rectangle");
 }
 
 QString shapeTypeToString(ShapeType type)
@@ -382,21 +382,21 @@ QString fillStyleName(FillStyle style)
 {
     switch (style) {
     case FillStyle::None:
-        return uiText(QStringLiteral("No fill"));
+        return ShapeItem::tr("No fill");
     case FillStyle::Solid:
-        return uiText(QStringLiteral("Solid"));
+        return ShapeItem::tr("Solid");
     case FillStyle::Hachure:
-        return uiText(QStringLiteral("Hatch"));
+        return ShapeItem::tr("Hatch");
     case FillStyle::ReverseHachure:
-        return uiText(QStringLiteral("Reverse hatch"));
+        return ShapeItem::tr("Reverse hatch");
     case FillStyle::CrossHatch:
-        return uiText(QStringLiteral("Cross hatch"));
+        return ShapeItem::tr("Cross hatch");
     case FillStyle::GridHatch:
-        return uiText(QStringLiteral("Grid hatch"));
+        return ShapeItem::tr("Grid hatch");
     case FillStyle::Honeycomb:
-        return uiText(QStringLiteral("Hexagon"));
+        return ShapeItem::tr("Hexagon");
     }
-    return uiText(QStringLiteral("Solid"));
+    return ShapeItem::tr("Solid");
 }
 
 QString fillStyleToString(FillStyle style)

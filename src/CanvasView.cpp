@@ -363,8 +363,7 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
 
     if (event->button() == Qt::LeftButton && m_mode == ToolMode::Brush && !m_activeStroke) {
         if (!m_scene->isActiveLayerWritable()) {
-            emit statusMessage(uiText(QStringLiteral(
-                "The current layer is locked or hidden; drawing is unavailable. Unlock or switch layers in the layer panel first.")));
+            emit statusMessage(tr("The current layer is locked or hidden; drawing is unavailable. Unlock or switch layers in the layer panel first."));
             event->accept();
             return;
         }
@@ -382,8 +381,7 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
 
     if (event->button() == Qt::LeftButton && m_mode == ToolMode::Text) {
         if (!m_scene->isActiveLayerWritable()) {
-            emit statusMessage(uiText(QStringLiteral(
-                "The current layer is locked or hidden; text cannot be placed. Unlock or switch layers in the layer panel first.")));
+            emit statusMessage(tr("The current layer is locked or hidden; text cannot be placed. Unlock or switch layers in the layer panel first."));
             event->accept();
             return;
         }
@@ -472,8 +470,7 @@ void CanvasView::mouseDoubleClickEvent(QMouseEvent* event)
             CanvasItem* canvasItem = editableItemAt(event->position().toPoint());
             if (!canvasItem) {
                 if (topCanvasItemAt(event->position().toPoint())) {
-                    emit statusMessage(uiText(QStringLiteral(
-                        "The layer containing this item is locked or hidden; editing is unavailable. Unlock or show that layer in the layer panel first.")));
+                    emit statusMessage(tr("The layer containing this item is locked or hidden; editing is unavailable. Unlock or show that layer in the layer panel first."));
                     event->accept();
                     return;
                 }
@@ -505,8 +502,7 @@ void CanvasView::contextMenuEvent(QContextMenuEvent* event)
     CanvasItem* item = editableItemAt(event->pos());
     if (!item) {
         if (topCanvasItemAt(event->pos())) {
-            emit statusMessage(uiText(QStringLiteral(
-                "The layer containing this item is locked or hidden; editing is unavailable. Unlock or show that layer in the layer panel first.")));
+            emit statusMessage(tr("The layer containing this item is locked or hidden; editing is unavailable. Unlock or show that layer in the layer panel first."));
             event->accept();
             return;
         }
@@ -524,36 +520,36 @@ void CanvasView::contextMenuEvent(QContextMenuEvent* event)
 
     QMenu menu(this);
     QAction* title = menu.addAction(
-        uiText(QStringLiteral("%1 · %2 · height %3"))
+        tr("%1 · %2 · height %3")
             .arg(item->name(), itemLayer.name)
             .arg(item->height()));
     title->setEnabled(false);
     menu.addSeparator();
 
     // 需求 42：属性窗在任意模式都可打开；编辑模式下此入口与双击/Q 等价。
-    QAction* properties = menu.addAction(uiText(QStringLiteral("Item properties…")));
-    QAction* duplicate = menu.addAction(uiText(QStringLiteral("Duplicate item")));
+    QAction* properties = menu.addAction(tr("Item properties…"));
+    QAction* duplicate = menu.addAction(tr("Duplicate item"));
     duplicate->setEnabled(item->isSelected());
-    QAction* smooth = menu.addAction(uiText(QStringLiteral("Smooth strokes")));
+    QAction* smooth = menu.addAction(tr("Smooth strokes"));
     smooth->setEnabled(m_scene->canSmoothSelectedStrokes());
-    QAction* group = menu.addAction(uiText(QStringLiteral("Group selected items")));
+    QAction* group = menu.addAction(tr("Group selected items"));
     group->setEnabled(m_scene->canGroupSelectedItems());
-    QAction* ungroup = menu.addAction(uiText(QStringLiteral("Ungroup selected items")));
+    QAction* ungroup = menu.addAction(tr("Ungroup selected items"));
     ungroup->setEnabled(m_scene->canUngroupSelectedItems());
     menu.addSeparator();
 
-    QAction* heightUp = menu.addAction(uiText(QStringLiteral("Height +1 (stack up)    ]")));
-    QAction* heightDown = menu.addAction(uiText(QStringLiteral("Height -1 (stack down)    [")));
+    QAction* heightUp = menu.addAction(tr("Height +1 (stack up)    ]"));
+    QAction* heightDown = menu.addAction(tr("Height -1 (stack down)    ["));
     heightDown->setEnabled(item->height() > 0);
     menu.addSeparator();
 
-    QAction* layerUp = menu.addAction(uiText(QStringLiteral("Move to the layer above")));
-    QAction* layerDown = menu.addAction(uiText(QStringLiteral("Move to the layer below")));
+    QAction* layerUp = menu.addAction(tr("Move to the layer above"));
+    QAction* layerDown = menu.addAction(tr("Move to the layer below"));
     layerUp->setEnabled(layerIndex >= 0 && layerIndex < m_scene->layerCount() - 1);
     layerDown->setEnabled(layerIndex > 1);
     menu.addSeparator();
 
-    QAction* remove = menu.addAction(uiText(QStringLiteral("Delete item")));
+    QAction* remove = menu.addAction(tr("Delete item"));
     remove->setEnabled(item->isSelected());
 
     QAction* chosen = menu.exec(event->globalPos());
@@ -565,19 +561,19 @@ void CanvasView::contextMenuEvent(QContextMenuEvent* event)
     else if (chosen == duplicate) {
         const int duplicated = m_scene->duplicateSelectedItems();
         if (duplicated > 0)
-            emit statusMessage(uiText(QStringLiteral("Duplicated %1 item(s)")).arg(duplicated));
+            emit statusMessage(tr("Duplicated %1 item(s)").arg(duplicated));
     } else if (chosen == smooth) {
         const int smoothed = m_scene->smoothSelectedStrokes(m_strokeSmoothing);
         if (smoothed > 0)
-            emit statusMessage(uiText(QStringLiteral("Smoothed %1 stroke(s)")).arg(smoothed));
+            emit statusMessage(tr("Smoothed %1 stroke(s)").arg(smoothed));
     } else if (chosen == group) {
         const int grouped = m_scene->groupSelectedItems();
         if (grouped > 0)
-            emit statusMessage(uiText(QStringLiteral("Grouped %1 item(s)")).arg(grouped));
+            emit statusMessage(tr("Grouped %1 item(s)").arg(grouped));
     } else if (chosen == ungroup) {
         const int ungrouped = m_scene->ungroupSelectedItems();
         if (ungrouped > 0)
-            emit statusMessage(uiText(QStringLiteral("Ungrouped %1 item(s)")).arg(ungrouped));
+            emit statusMessage(tr("Ungrouped %1 item(s)").arg(ungrouped));
     } else if (chosen == heightUp)
         m_scene->adjustSelectedHeights(1);
     else if (chosen == heightDown)
@@ -613,7 +609,7 @@ void CanvasView::keyPressEvent(QKeyEvent* event)
 
     if (event->key() == Qt::Key_Escape && m_activeStroke) {
         cancelCurrentStroke();
-        emit statusMessage(uiText(QStringLiteral("Current stroke canceled")));
+        emit statusMessage(tr("Current stroke canceled"));
         event->accept();
         return;
     }
@@ -666,7 +662,7 @@ void CanvasView::finishCurrentStroke()
         return;
     }
 
-    m_scene->commitNewItem(stroke, uiText(QStringLiteral("Add stroke")));
+    m_scene->commitNewItem(stroke, tr("Add stroke"));
     updateCursor();
 }
 
@@ -902,7 +898,7 @@ void CanvasView::endCanvasResize()
     m_canvasHandle = CanvasHandle::None;
     m_scene->commitCanvasRect(m_resizeStartRect);
     const QSizeF size = m_scene->canvasSize();
-    emit statusMessage(uiText(QStringLiteral("Canvas size: %1 × %2 (undoable)"))
+    emit statusMessage(tr("Canvas size: %1 × %2 (undoable)")
                            .arg(qRound(size.width()))
                            .arg(qRound(size.height())));
     updateCursor();

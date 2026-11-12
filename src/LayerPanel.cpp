@@ -47,7 +47,7 @@ LayerPanel::LayerPanel(CanvasScene* scene, QWidget* parent)
     layout->setContentsMargins(10, 10, 10, 10);
     layout->setSpacing(7);
 
-    auto* caption = new QLabel(uiText(QStringLiteral("Top layer first · multi-select")), this);
+    auto* caption = new QLabel(tr("Top layer first · multi-select"), this);
     caption->setObjectName(QStringLiteral("LayerCaption"));
     layout->addWidget(caption);
 
@@ -61,15 +61,15 @@ LayerPanel::LayerPanel(CanvasScene* scene, QWidget* parent)
     m_allVisibleBox->setObjectName(QStringLiteral("LayerVisibleAllBox"));
     m_allVisibleBox->setTristate(true);
     m_allVisibleBox->setFocusPolicy(Qt::NoFocus);
-    m_allVisibleBox->setToolTip(uiText(QStringLiteral("Show or hide all layers")));
+    m_allVisibleBox->setToolTip(tr("Show or hide all layers"));
     headerLayout->addWidget(m_allVisibleBox);
 
-    auto* nameHeader = new QLabel(uiText(QStringLiteral("Layer")), header);
+    auto* nameHeader = new QLabel(tr("Layer"), header);
     nameHeader->setObjectName(QStringLiteral("LayerNameHeader"));
     nameHeader->setStyleSheet(QStringLiteral("color: rgb(96, 104, 120); font-weight: 600;"));
     headerLayout->addWidget(nameHeader, 1);
 
-    auto* lockHeader = new QLabel(uiText(QStringLiteral("Lock")), header);
+    auto* lockHeader = new QLabel(tr("Lock"), header);
     lockHeader->setObjectName(QStringLiteral("LayerLockHeader"));
     lockHeader->setFixedWidth(30);
     lockHeader->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
@@ -87,10 +87,10 @@ LayerPanel::LayerPanel(CanvasScene* scene, QWidget* parent)
 
     auto* buttonRow = new QHBoxLayout;
     buttonRow->setSpacing(5);
-    m_addButton = makeLayerButton(this, QStringLiteral("+"), uiText(QStringLiteral("New layer (placed on top)")));
-    m_removeButton = makeLayerButton(this, QStringLiteral("−"), uiText(QStringLiteral("Delete the selected empty layers (multi-select)")));
-    m_upButton = makeLayerButton(this, QStringLiteral("↑"), uiText(QStringLiteral("Move the current layer up one step")));
-    m_downButton = makeLayerButton(this, QStringLiteral("↓"), uiText(QStringLiteral("Move the current layer down one step")));
+    m_addButton = makeLayerButton(this, QStringLiteral("+"), tr("New layer (placed on top)"));
+    m_removeButton = makeLayerButton(this, QStringLiteral("−"), tr("Delete the selected empty layers (multi-select)"));
+    m_upButton = makeLayerButton(this, QStringLiteral("↑"), tr("Move the current layer up one step"));
+    m_downButton = makeLayerButton(this, QStringLiteral("↓"), tr("Move the current layer down one step"));
     buttonRow->addWidget(m_addButton);
     buttonRow->addWidget(m_removeButton);
     buttonRow->addStretch(1);
@@ -143,18 +143,18 @@ QWidget* LayerPanel::createLayerRow(const CanvasLayer& layer, int index, int ite
     auto* visibleBox = new QCheckBox(row);
     visibleBox->setObjectName(QStringLiteral("LayerVisibleBox"));
     visibleBox->setFocusPolicy(Qt::NoFocus);
-    visibleBox->setToolTip(uiText(QStringLiteral("Check to show this layer, uncheck to hide it")));
+    visibleBox->setToolTip(tr("Check to show this layer, uncheck to hide it"));
     visibleBox->setChecked(layer.visible);
 
     auto* nameLabel = new QLabel(row);
     nameLabel->setObjectName(QStringLiteral("LayerRowLabel"));
     QString text = (index == CanvasScene::BackgroundLayerId)
-        ? uiText(QStringLiteral("Background    (layer 0)"))
-        : uiText(QStringLiteral("%1    %2 items")).arg(layer.name).arg(itemCount);
+        ? tr("Background    (layer 0)")
+        : tr("%1    %2 items").arg(layer.name).arg(itemCount);
     if (!layer.visible)
-        text += uiText(QStringLiteral("  · Hidden"));
+        text += tr("  · Hidden");
     if (layer.locked)
-        text += uiText(QStringLiteral("  · Locked"));
+        text += tr("  · Locked");
     nameLabel->setText(text);
     if (index == CanvasScene::BackgroundLayerId)
         nameLabel->setStyleSheet(QStringLiteral("color: rgb(120, 128, 140);"));
@@ -166,7 +166,7 @@ QWidget* LayerPanel::createLayerRow(const CanvasLayer& layer, int index, int ite
     if (index != CanvasScene::BackgroundLayerId) {
         nameLabel->setProperty("layerId", layer.id);
         nameLabel->setCursor(Qt::IBeamCursor);
-        nameLabel->setToolTip(uiText(QStringLiteral("Double-click to rename layer")));
+        nameLabel->setToolTip(tr("Double-click to rename layer"));
         nameLabel->installEventFilter(this);
     }
 
@@ -183,7 +183,7 @@ QWidget* LayerPanel::createLayerRow(const CanvasLayer& layer, int index, int ite
         lockButton->setIcon(makeIcon(IconId::Lock,
                                      layer.locked ? QColor(37, 99, 235) : QColor(110, 118, 132), 18));
         lockButton->setIconSize(QSize(18, 18));
-        lockButton->setToolTip(uiText(QStringLiteral("Lock layer: items on it cannot be edited")));
+        lockButton->setToolTip(tr("Lock layer: items on it cannot be edited"));
         layout->addWidget(lockButton);
         connect(lockButton, &QToolButton::toggled, this,
                 [this, layerId = layer.id](bool locked) { setLayerLocked(layerId, locked); });
@@ -247,12 +247,12 @@ void LayerPanel::refresh()
         row->setData(Qt::UserRole, layer.id);
         row->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
         row->setSizeHint(QSize(0, 30));
-        row->setToolTip(uiText(QStringLiteral("Layer %1 · %2 items\n%3%4\nIn edit mode, items on visible, unlocked layers can be edited"))
+        row->setToolTip(tr("Layer %1 · %2 items\n%3%4\nIn edit mode, items on visible, unlocked layers can be edited")
                             .arg(i)
                             .arg(count)
-                            .arg(layer.visible ? uiText(QStringLiteral("Visible"))
-                                               : uiText(QStringLiteral("Hidden")),
-                                 layer.locked ? uiText(QStringLiteral(" · Locked")) : QString()));
+                            .arg(layer.visible ? tr("Visible")
+                                               : tr("Hidden"),
+                                 layer.locked ? tr(" · Locked") : QString()));
         m_list->setItemWidget(row, createLayerRow(layer, i, count));
     }
 
@@ -260,7 +260,7 @@ void LayerPanel::refresh()
     backgroundRow->setData(Qt::UserRole, CanvasScene::BackgroundLayerId);
     backgroundRow->setFlags(Qt::ItemIsEnabled);
     backgroundRow->setSizeHint(QSize(0, 30));
-    backgroundRow->setToolTip(uiText(QStringLiteral("The background is always the bottom layer, cannot hold items, and is locked by default.\nUse the checkbox to show or hide it.")));
+    backgroundRow->setToolTip(tr("The background is always the bottom layer, cannot hold items, and is locked by default.\nUse the checkbox to show or hide it."));
     m_list->setItemWidget(backgroundRow,
                           createLayerRow(m_scene->layer(CanvasScene::BackgroundLayerId), 0, 0));
 
@@ -420,26 +420,26 @@ void LayerPanel::setLayerVisible(int layerId, bool visible)
         return;
 
     const QString layerName = (layerId == CanvasScene::BackgroundLayerId)
-        ? uiText(QStringLiteral("Background layer"))
+        ? tr("Background layer")
         : m_scene->layer(layerId).name;
     const int oldActive = m_scene->activeLayerId();
 
     if (!m_scene->setLayerVisible(layerId, visible)) {
-        emit statusMessage(uiText(QStringLiteral("The last visible layer cannot be hidden. Create a new layer first.")));
+        emit statusMessage(tr("The last visible layer cannot be hidden. Create a new layer first."));
         scheduleRefresh();
         return;
     }
 
     if (layerId == CanvasScene::BackgroundLayerId) {
-        emit statusMessage(visible ? uiText(QStringLiteral("Background layer shown"))
-                                   : uiText(QStringLiteral("Background layer hidden")));
+        emit statusMessage(visible ? tr("Background layer shown")
+                                   : tr("Background layer hidden"));
     } else if (!visible && oldActive == layerId
                && m_scene->activeLayerId() != oldActive) {
-        emit statusMessage(uiText(QStringLiteral("Layer \"%1\" hidden; the current layer switched to \"%2\""))
+        emit statusMessage(tr("Layer \"%1\" hidden; the current layer switched to \"%2\"")
                                .arg(layerName, m_scene->layer(m_scene->activeLayerId()).name));
     } else {
-        emit statusMessage(visible ? uiText(QStringLiteral("Layer \"%1\" shown")).arg(layerName)
-                                   : uiText(QStringLiteral("Layer \"%1\" hidden")).arg(layerName));
+        emit statusMessage(visible ? tr("Layer \"%1\" shown").arg(layerName)
+                                   : tr("Layer \"%1\" hidden").arg(layerName));
     }
     scheduleRefresh();
 }
@@ -450,8 +450,8 @@ void LayerPanel::setAllLayersVisible(bool visible)
         return;
     if (!m_scene->setAllLayersVisible(visible))
         return;
-    emit statusMessage(visible ? uiText(QStringLiteral("All layers shown"))
-                               : uiText(QStringLiteral("All layers hidden")));
+    emit statusMessage(visible ? tr("All layers shown")
+                               : tr("All layers hidden"));
     scheduleRefresh();
     updateAllVisibleState();
 }
@@ -485,13 +485,13 @@ void LayerPanel::setLayerLocked(int layerId, bool locked)
 
     const QString layerName = m_scene->layer(layerId).name;
     if (!m_scene->setLayerLocked(layerId, locked)) {
-        emit statusMessage(uiText(QStringLiteral("The background layer is always locked.")));
+        emit statusMessage(tr("The background layer is always locked."));
         scheduleRefresh();
         return;
     }
 
-    emit statusMessage(locked ? uiText(QStringLiteral("Locked layer \"%1\"; its items can no longer be edited")).arg(layerName)
-                              : uiText(QStringLiteral("Unlocked layer \"%1\"")).arg(layerName));
+    emit statusMessage(locked ? tr("Locked layer \"%1\"; its items can no longer be edited").arg(layerName)
+                              : tr("Unlocked layer \"%1\"").arg(layerName));
     scheduleRefresh();
 }
 
@@ -500,7 +500,7 @@ void LayerPanel::addLayer()
     if (!m_scene)
         return;
     m_scene->addLayerWithUndo();
-    emit statusMessage(uiText(QStringLiteral("Layer created")));
+    emit statusMessage(tr("Layer created"));
 }
 
 void LayerPanel::removeLayer()
@@ -520,22 +520,22 @@ void LayerPanel::removeLayer()
     for (int id : ids) {
         if (m_scene->layerItemCount(id) > 0) {
             QMessageBox::information(
-                this, uiText(QStringLiteral("Delete layer")),
-                uiText(QStringLiteral("Layer \"%1\" still contains items. Move or delete them first."))
+                this, tr("Delete layer"),
+                tr("Layer \"%1\" still contains items. Move or delete them first.")
                     .arg(m_scene->layer(id).name));
             return;
         }
     }
     if (m_scene->userLayerCount() - ids.size() < 1) {
-        QMessageBox::information(this, uiText(QStringLiteral("Delete layer")),
-                                 uiText(QStringLiteral("At least one user layer must remain.")));
+        QMessageBox::information(this, tr("Delete layer"),
+                                 tr("At least one user layer must remain."));
         return;
     }
 
     for (int id : ids)
         m_scene->removeLayerWithUndo(id, nullptr);
-    emit statusMessage(ids.size() > 1 ? uiText(QStringLiteral("%1 layer(s) deleted")).arg(ids.size())
-                                      : uiText(QStringLiteral("Layer deleted")));
+    emit statusMessage(ids.size() > 1 ? tr("%1 layer(s) deleted").arg(ids.size())
+                                      : tr("Layer deleted"));
     scheduleRefresh();
 }
 
@@ -547,22 +547,22 @@ void LayerPanel::renameLayer(int layerId)
     const CanvasLayer layer = m_scene->layer(layerId);
     bool ok = false;
     const QString name = QInputDialog::getText(
-        this, uiText(QStringLiteral("Rename layer")), uiText(QStringLiteral("Layer name")),
+        this, tr("Rename layer"), tr("Layer name"),
         QLineEdit::Normal, layer.name, &ok);
     if (!ok)
         return;
 
     const QString trimmed = name.trimmed();
     if (trimmed.isEmpty()) {
-        QMessageBox::information(this, uiText(QStringLiteral("Rename layer")),
-                                 uiText(QStringLiteral("Layer name cannot be empty.")));
+        QMessageBox::information(this, tr("Rename layer"),
+                                 tr("Layer name cannot be empty."));
         return;
     }
     if (trimmed == layer.name)
         return;
 
     if (m_scene->renameLayerWithUndo(layerId, trimmed)) {
-        emit statusMessage(uiText(QStringLiteral("Layer renamed to \"%1\"")).arg(trimmed));
+        emit statusMessage(tr("Layer renamed to \"%1\"").arg(trimmed));
         scheduleRefresh();
     }
 }
@@ -573,8 +573,8 @@ void LayerPanel::moveLayer(int delta)
         return;
     const int id = m_scene->activeLayerId();
     if (m_scene->moveLayerWithUndo(id, delta)) {
-        emit statusMessage(delta > 0 ? uiText(QStringLiteral("Layer moved up"))
-                                     : uiText(QStringLiteral("Layer moved down")));
+        emit statusMessage(delta > 0 ? tr("Layer moved up")
+                                     : tr("Layer moved down"));
     }
 }
 
@@ -616,11 +616,11 @@ void LayerPanel::updateSummary()
     const QList<int> ids = selectedLayerIds();
     QString text;
     if (ids.size() > 1) {
-        text = uiText(QStringLiteral("%1 layer(s) selected (items can be multi-selected)\n")).arg(ids.size());
+        text = tr("%1 layer(s) selected (items can be multi-selected)\n").arg(ids.size());
     } else {
         const CanvasLayer active = m_scene->layer(m_scene->activeLayerId());
-        text = uiText(QStringLiteral("Current: %1\n")).arg(active.name);
+        text = tr("Current: %1\n").arg(active.name);
     }
-    text += uiText(QStringLiteral("Checkbox = show/hide · lock button = lock\nIn edit mode, items on visible, unlocked layers can be edited"));
+    text += tr("Checkbox = show/hide · lock button = lock\nIn edit mode, items on visible, unlocked layers can be edited");
     m_summaryLabel->setText(text);
 }

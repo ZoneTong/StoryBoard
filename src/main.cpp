@@ -171,7 +171,7 @@ int main(int argc, char** argv)
     QCoreApplication::setApplicationName(QStringLiteral("StoryBoard"));
     QCoreApplication::setApplicationVersion(QString::fromLatin1(STORYBOARD_VERSION));
     uiInitializeLanguage();
-    app.setApplicationDisplayName(uiText(QStringLiteral("StoryBoard Canvas")));
+    app.setApplicationDisplayName(QCoreApplication::tr("StoryBoard Canvas"));
     app.setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));
     applyApplicationStyle(app);
 
@@ -236,7 +236,7 @@ int main(int argc, char** argv)
         QApplication::processEvents();
         QAction* settingsAction = nullptr;
         for (QAction* action : window.findChildren<QAction*>()) {
-            if (action->text() == uiText(QStringLiteral("Settings…"))) {
+            if (action->text() == QCoreApplication::tr("Settings…")) {
                 settingsAction = action;
                 break;
             }

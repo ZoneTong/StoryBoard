@@ -12,12 +12,12 @@ ImageItem::ImageItem(QGraphicsItem* parent)
 
 QString ImageItem::displayName() const
 {
-    return m_name.isEmpty() ? uiText(QStringLiteral("Image")) : m_name;
+    return m_name.isEmpty() ? tr("Image") : m_name;
 }
 
 QString ImageItem::typeDisplayName() const
 {
-    return uiText(QStringLiteral("Image"));
+    return tr("Image");
 }
 
 void ImageItem::setImage(const QPixmap& pixmap, const QString& name)
@@ -41,7 +41,7 @@ void ImageItem::paintContent(QPainter* painter)
         painter->setPen(QPen(QColor(148, 163, 184), 1.0, Qt::DashLine));
         painter->setBrush(QColor(248, 250, 252));
         painter->drawRoundedRect(contentRect(), 4.0, 4.0);
-        painter->drawText(contentRect(), Qt::AlignCenter, uiText(QStringLiteral("Missing image")));
+        painter->drawText(contentRect(), Qt::AlignCenter, tr("Missing image"));
         return;
     }
 

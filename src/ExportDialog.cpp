@@ -28,7 +28,7 @@ ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QW
     : QDialog(parent)
     , m_scene(scene)
 {
-    setWindowTitle(uiText(QStringLiteral("Export canvas")));
+    setWindowTitle(tr("Export canvas"));
     setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));
     setModal(true);
     setMinimumWidth(580);
@@ -37,25 +37,25 @@ ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QW
     rootLayout->setContentsMargins(22, 20, 22, 18);
     rootLayout->setSpacing(14);
 
-    auto* title = new QLabel(uiText(QStringLiteral("Export the current canvas")), this);
+    auto* title = new QLabel(tr("Export the current canvas"), this);
     title->setObjectName(QStringLiteral("DialogTitle"));
     rootLayout->addWidget(title);
 
-    auto* hint = new QLabel(uiText(QStringLiteral("Render the canvas to an image or PDF. The background and items are included (grid and selection outlines are not).")), this);
+    auto* hint = new QLabel(tr("Render the canvas to an image or PDF. The background and items are included (grid and selection outlines are not)."), this);
     hint->setObjectName(QStringLiteral("DialogHint"));
     hint->setWordWrap(true);
     rootLayout->addWidget(hint);
 
-    auto* group = new QGroupBox(uiText(QStringLiteral("Output settings")), this);
+    auto* group = new QGroupBox(tr("Output settings"), this);
     auto* form = new QFormLayout(group);
     form->setContentsMargins(16, 18, 16, 16);
     form->setSpacing(10);
     form->setLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
     m_scopeCombo = new QComboBox(group);
-    m_scopeCombo->addItem(uiText(QStringLiteral("Canvas area")));
-    m_scopeCombo->addItem(uiText(QStringLiteral("All items")));
-    form->addRow(uiText(QStringLiteral("Export area")), m_scopeCombo);
+    m_scopeCombo->addItem(tr("Canvas area"));
+    m_scopeCombo->addItem(tr("All items"));
+    form->addRow(tr("Export area"), m_scopeCombo);
 
     m_scaleSpin = new QDoubleSpinBox(group);
     m_scaleSpin->setRange(0.25, 4.0);
@@ -64,39 +64,39 @@ ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QW
     m_scaleSpin->setValue(1.0);
     m_scaleSpin->setSuffix(QStringLiteral(" ×"));
     m_scaleSpin->setFixedHeight(30);
-    form->addRow(uiText(QStringLiteral("Output scale")), m_scaleSpin);
+    form->addRow(tr("Output scale"), m_scaleSpin);
 
     m_formatCombo = new QComboBox(group);
-    m_formatCombo->addItem(uiText(QStringLiteral("PNG image")), QStringLiteral("PNG"));
-    m_formatCombo->addItem(uiText(QStringLiteral("JPEG image")), QStringLiteral("JPEG"));
-    m_formatCombo->addItem(uiText(QStringLiteral("PDF document")), QStringLiteral("PDF"));
-    form->addRow(uiText(QStringLiteral("Output format")), m_formatCombo);
+    m_formatCombo->addItem(tr("PNG image"), QStringLiteral("PNG"));
+    m_formatCombo->addItem(tr("JPEG image"), QStringLiteral("JPEG"));
+    m_formatCombo->addItem(tr("PDF document"), QStringLiteral("PDF"));
+    form->addRow(tr("Output format"), m_formatCombo);
 
     m_layerModeCombo = new QComboBox(group);
     m_layerModeCombo->setObjectName(QStringLiteral("ExportLayerModeCombo"));
-    m_layerModeCombo->addItem(uiText(QStringLiteral("Merge visible layers (one image)")), false);
-    m_layerModeCombo->addItem(uiText(QStringLiteral("Each visible layer (one file per layer)")), true);
-    form->addRow(uiText(QStringLiteral("Export mode")), m_layerModeCombo);
+    m_layerModeCombo->addItem(tr("Merge visible layers (one image)"), false);
+    m_layerModeCombo->addItem(tr("Each visible layer (one file per layer)"), true);
+    form->addRow(tr("Export mode"), m_layerModeCombo);
 
     auto* fileRow = new QHBoxLayout();
     fileRow->setSpacing(8);
     m_pathEdit = new QLineEdit(group);
-    m_pathEdit->setPlaceholderText(uiText(QStringLiteral("Choose the export file path")));
-    auto* browseButton = new QPushButton(uiText(QStringLiteral("Browse…")), group);
+    m_pathEdit->setPlaceholderText(tr("Choose the export file path"));
+    auto* browseButton = new QPushButton(tr("Browse…"), group);
     fileRow->addWidget(m_pathEdit, 1);
     fileRow->addWidget(browseButton);
-    form->addRow(uiText(QStringLiteral("Output file")), fileRow);
+    form->addRow(tr("Output file"), fileRow);
 
     m_sizeLabel = new QLabel(group);
     m_sizeLabel->setObjectName(QStringLiteral("DialogHint"));
-    form->addRow(uiText(QStringLiteral("Output size")), m_sizeLabel);
+    form->addRow(tr("Output size"), m_sizeLabel);
 
     rootLayout->addWidget(group);
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
-    buttons->button(QDialogButtonBox::Ok)->setText(uiText(QStringLiteral("Export")));
+    buttons->button(QDialogButtonBox::Ok)->setText(tr("Export"));
     buttons->button(QDialogButtonBox::Ok)->setIcon(makeIcon(IconId::Export, QColor(255, 255, 255), 18));
-    buttons->button(QDialogButtonBox::Cancel)->setText(uiText(QStringLiteral("Cancel")));
+    buttons->button(QDialogButtonBox::Cancel)->setText(tr("Cancel"));
     rootLayout->addWidget(buttons);
 
     QString directory = startDirectory;
@@ -115,7 +115,7 @@ ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QW
     connect(m_scopeCombo, &QComboBox::currentIndexChanged, this, [this]() { updateEstimatedSize(); });
     connect(m_layerModeCombo, &QComboBox::currentIndexChanged, this, [this]() {
         m_pathEdit->setToolTip(separateLayersSelected()
-            ? uiText(QStringLiteral("Base path: each visible layer gets its own file"))
+            ? tr("Base path: each visible layer gets its own file")
             : m_pathEdit->text());
         updateEstimatedSize();
     });
@@ -151,10 +151,10 @@ QString ExportDialog::fileFilter() const
 {
     const QString format = selectedFormat();
     if (format == QStringLiteral("JPEG"))
-        return uiText(QStringLiteral("JPEG images (*.jpg *.jpeg)"));
+        return tr("JPEG images (*.jpg *.jpeg)");
     if (format == QStringLiteral("PDF"))
-        return uiText(QStringLiteral("PDF documents (*.pdf)"));
-    return uiText(QStringLiteral("PNG images (*.png)"));
+        return tr("PDF documents (*.pdf)");
+    return tr("PNG images (*.png)");
 }
 
 bool ExportDialog::separateLayersSelected() const
@@ -252,7 +252,7 @@ void ExportDialog::updateEstimatedSize()
                     ++count;
             }
         }
-        text += uiText(QStringLiteral(" · %1 files")).arg(count);
+        text += tr(" · %1 files").arg(count);
     }
     m_sizeLabel->setText(text);
 }
@@ -293,7 +293,7 @@ void ExportDialog::browseForFile()
     const QString current = m_pathEdit->text().trimmed();
     const QString directory = current.isEmpty() ? QString()
                                                 : QFileInfo(current).absolutePath();
-    QString path = QFileDialog::getSaveFileName(this, uiText(QStringLiteral("Export canvas")), directory,
+    QString path = QFileDialog::getSaveFileName(this, tr("Export canvas"), directory,
                                                 fileFilter());
     if (path.isEmpty())
         return;
@@ -313,7 +313,7 @@ void ExportDialog::validateAndAccept()
 {
     QString path = m_pathEdit->text().trimmed();
     if (path.isEmpty()) {
-        QMessageBox::warning(this, uiText(QStringLiteral("Export canvas")), uiText(QStringLiteral("Choose an export path first.")));
+        QMessageBox::warning(this, tr("Export canvas"), tr("Choose an export path first."));
         return;
     }
 
@@ -338,16 +338,16 @@ void ExportDialog::validateAndAccept()
     }
 
     if (!QDir().mkpath(info.absolutePath())) {
-        QMessageBox::warning(this, uiText(QStringLiteral("Export canvas")),
-                             uiText(QStringLiteral("Could not create the output folder:\n%1")).arg(info.absolutePath()));
+        QMessageBox::warning(this, tr("Export canvas"),
+                             tr("Could not create the output folder:\n%1").arg(info.absolutePath()));
         return;
     }
 
     if (separateLayersSelected()) {
         const QStringList paths = outputFilePaths();
         if (paths.isEmpty()) {
-            QMessageBox::warning(this, uiText(QStringLiteral("Export canvas")),
-                                 uiText(QStringLiteral("No visible layers to export.")));
+            QMessageBox::warning(this, tr("Export canvas"),
+                                 tr("No visible layers to export."));
             return;
         }
 
@@ -361,8 +361,8 @@ void ExportDialog::validateAndAccept()
             if (existing.size() > preview.size())
                 preview.append(QStringLiteral("…"));
             const QMessageBox::StandardButton answer = QMessageBox::question(
-                this, uiText(QStringLiteral("Overwrite files")),
-                uiText(QStringLiteral("Some output files already exist. Overwrite them?\n%1"))
+                this, tr("Overwrite files"),
+                tr("Some output files already exist. Overwrite them?\n%1")
                     .arg(preview.join(QStringLiteral("\n"))),
                 QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
             if (answer != QMessageBox::Yes)
@@ -370,8 +370,8 @@ void ExportDialog::validateAndAccept()
         }
     } else if (info.exists()) {
         const QMessageBox::StandardButton answer = QMessageBox::question(
-            this, uiText(QStringLiteral("Overwrite file")),
-            uiText(QStringLiteral("The file already exists. Overwrite it?\n%1")).arg(QDir::toNativeSeparators(path)),
+            this, tr("Overwrite file"),
+            tr("The file already exists. Overwrite it?\n%1").arg(QDir::toNativeSeparators(path)),
             QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
         if (answer != QMessageBox::Yes)
             return;

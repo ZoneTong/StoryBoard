@@ -7,6 +7,7 @@
 #include <QList>
 #include <QPixmap>
 #include <QString>
+#include <QCoreApplication>
 
 enum class ToolMode {
     View = 0,
@@ -82,13 +83,13 @@ inline QString toolModeName(ToolMode mode)
 {
     switch (mode) {
     case ToolMode::View:
-        return uiText(QStringLiteral("View mode"));
+        return QCoreApplication::tr("View mode");
     case ToolMode::Brush:
-        return uiText(QStringLiteral("Brush mode"));
+        return QCoreApplication::tr("Brush mode");
     case ToolMode::Edit:
-        return uiText(QStringLiteral("Edit mode"));
+        return QCoreApplication::tr("Edit mode");
     case ToolMode::Text:
-        return uiText(QStringLiteral("Text mode"));
+        return QCoreApplication::tr("Text mode");
     }
     return QString();
 }
@@ -97,11 +98,11 @@ inline QString backgroundModeName(BackgroundMode mode)
 {
     switch (mode) {
     case BackgroundMode::Stretch:
-        return uiText(QStringLiteral("Stretch to fill"));
+        return QCoreApplication::tr("Stretch to fill");
     case BackgroundMode::Fit:
-        return uiText(QStringLiteral("Fit entirely"));
+        return QCoreApplication::tr("Fit entirely");
     case BackgroundMode::Tile:
-        return uiText(QStringLiteral("Tile"));
+        return QCoreApplication::tr("Tile");
     }
     return QString();
 }
