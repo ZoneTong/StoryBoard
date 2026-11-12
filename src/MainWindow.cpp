@@ -27,6 +27,7 @@
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QDialog>
+#include <QDialogButtonBox>
 #include <QDir>
 #include <QDockWidget>
 #include <QDragEnterEvent>
@@ -34,11 +35,13 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QGridLayout>
 #include <QImageReader>
 #include <QImageWriter>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QKeySequenceEdit>
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
@@ -87,6 +90,8 @@ QAction* makeAction(QObject* parent, IconId icon, const QString& text, const QKe
         action->setShortcut(shortcut);
     }
     // 提示里统一带上快捷键，省得逐个动作手写；已有的 “(Ctrl+X)” 不会重复追加。
+    // 基串记到属性里，改键之后刷新提示可以直接拿它重拼，不会把旧键留在文字里。
+    action->setProperty("storyBoardBaseTip", tip);
     if (!tip.isEmpty() && !shortcut.isEmpty()) {
         const QString keys = shortcut.toString(QKeySequence::NativeText);
         if (!tip.contains(keys, Qt::CaseInsensitive)) {
@@ -359,6 +364,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     createToolBars();
     createStatusBar();
     connectSignals();
+    applyShortcutOverrides();
 
     if (!m_settings.windowGeometry.isEmpty()) {
         restoreGeometry(m_settings.windowGeometry);
@@ -785,12 +791,13 @@ void MainWindow::createMenus()
         }
     };
 
-    QAction* heightUpAct = editMenu->addAction(tr("Height +1 (stack up)    ]"));
+    // 高度两项只写动作名：快捷键交给 QAction 自己显示，手写 “] / [” 会跟它重复一遍。
+    QAction* heightUpAct = editMenu->addAction(tr("Height +1 (stack up)"));
     heightUpAct->setShortcut(QKeySequence(Qt::Key_BracketRight));
     heightUpAct->setStatusTip(tr("Raise the stacking height of selected items (shortcut ])"));
     connect(heightUpAct, &QAction::triggered, this, [applySelectedHeight]() { applySelectedHeight(1); });
 
-    QAction* heightDownAct = editMenu->addAction(tr("Height -1 (stack down)    ["));
+    QAction* heightDownAct = editMenu->addAction(tr("Height -1 (stack down)"));
     heightDownAct->setShortcut(QKeySequence(Qt::Key_BracketLeft));
     heightDownAct->setStatusTip(tr("Lower the stacking height of selected items (shortcut [)"));
     connect(heightDownAct, &QAction::triggered, this, [applySelectedHeight]() { applySelectedHeight(-1); });
@@ -2395,22 +2402,113 @@ void MainWindow::openCanvasesFolder()
     QDesktopServices::openUrl(QUrl::fromLocalFile(directory));
 }
 
+void MainWindow::applyShortcutOverrides()
+{
+    // 用「默认快捷键」当稳定标识：它在代码里写死，换语言、改键后都不变，
+    // 比菜单文字更适合做配置键。
+    m_shortcutIds.clear();
+    for (QAction* action : findChildren<QAction*>()) {
+        if (!action || action->shortcuts().isEmpty()) {
+            continue;
+        }
+        const QString id = action->shortcuts().constFirst().toString(QKeySequence::PortableText);
+        if (id.isEmpty()) {
+            continue;
+        }
+        m_shortcutIds.insert(action, id);
+        const auto it = m_settings.shortcutOverrides.constFind(id);
+        if (it != m_settings.shortcutOverrides.constEnd() && !it.value().isEmpty()) {
+            const QKeySequence sequence = QKeySequence::fromString(it.value(), QKeySequence::PortableText);
+            if (!sequence.isEmpty()) {
+                action->setShortcut(sequence);
+            }
+        }
+    }
+    refreshShortcutTips();
+}
+
+void MainWindow::refreshShortcutTips()
+{
+    for (QAction* action : findChildren<QAction*>()) {
+        if (!action) {
+            continue;
+        }
+        const QVariant base = action->property("storyBoardBaseTip");
+        // 没走 makeAction 的动作（如退出、高度 ±1）没有记基串，就从现有提示里
+        // 去掉末尾的 “(Ctrl+X) / （Ctrl+X）”，否则改键后旧键会一直留在提示里。
+        QString baseTip;
+        if (base.isValid()) {
+            baseTip = base.toString();
+        } else {
+            const QString source = action->statusTip().isEmpty() ? action->toolTip() : action->statusTip();
+            baseTip = source;
+            static const QRegularExpression tail(QStringLiteral("(?:\\s*[（(][^（）()]*[）)])$"));
+            baseTip.remove(tail);
+        }
+        if (baseTip.isEmpty()) {
+            if (!base.isValid()) {
+                // 原本就没有提示的动作，不要硬塞一条。
+                continue;
+            }
+            action->setToolTip(action->text());
+            action->setStatusTip(action->text());
+            continue;
+        }
+        const QString keys = action->shortcut().toString(QKeySequence::NativeText);
+        const QString tip = keys.isEmpty() ? baseTip : baseTip + QStringLiteral(" (") + keys + QLatin1Char(')');
+        action->setToolTip(tip);
+        action->setStatusTip(tip);
+    }
+}
+
+bool MainWindow::changeShortcut(QAction* action, const QKeySequence& sequence)
+{
+    if (!action || sequence.isEmpty()) {
+        return false;
+    }
+    const QString id = m_shortcutIds.value(action);
+    if (id.isEmpty()) {
+        return false;
+    }
+    // 同一组合键只允许绑定一个动作，避免按下后 Qt 触发不确定的那个。
+    for (QAction* other : findChildren<QAction*>()) {
+        if (!other || other == action || other->shortcut().isEmpty()) {
+            continue;
+        }
+        for (const QKeySequence& existing : other->shortcuts()) {
+            if (existing == sequence) {
+                QMessageBox::warning(
+                    this, tr("Shortcut already in use"),
+                    tr("%1 is already used by “%2”.").arg(sequence.toString(QKeySequence::NativeText), other->text()));
+                return false;
+            }
+        }
+    }
+    action->setShortcut(sequence);
+    if (sequence == QKeySequence::fromString(id, QKeySequence::PortableText)) {
+        m_settings.shortcutOverrides.remove(id);
+    } else {
+        m_settings.shortcutOverrides.insert(id, sequence.toString(QKeySequence::PortableText));
+    }
+    m_settings.save();
+    refreshShortcutTips();
+    return true;
+}
+
 void MainWindow::showShortcuts()
 {
-    // 直接从现有动作汇总：以后新加快捷键自动进表，不会和手写清单对不上。
+    // 直接从现有动作汇总，新加的快捷键自动进表。
     struct Entry {
+        QAction* action = nullptr;
         QString text;
         QString keys;
     };
     QList<Entry> entries;
-    const QList<QAction*> actions = findChildren<QAction*>();
-    for (QAction* action : actions) {
+    for (QAction* action : findChildren<QAction*>()) {
         if (!action || action->shortcut().isEmpty()) {
             continue;
         }
         QString text = action->text();
-        // 高度两项的菜单文字里带了给菜单排版用的 “] / [” 后缀，这里去掉，快捷键单独成列。
-        text.remove(QRegularExpression(QStringLiteral("[\\[\\]]+\\s*$")));
         text = text.trimmed();
         if (text.isEmpty()) {
             continue;
@@ -2424,27 +2522,84 @@ void MainWindow::showShortcuts()
             }
         }
         if (!duplicate) {
-            entries.append({text, keys});
+            entries.append({action, text, keys});
         }
     }
     std::sort(entries.begin(), entries.end(), [](const Entry& left, const Entry& right) {
         return left.text.compare(right.text, Qt::CaseInsensitive) < 0;
     });
 
-    QString html = QStringLiteral("<p>%1</p>").arg(tr("Every action that currently has a shortcut:"));
-    html += QStringLiteral("<table cellspacing='0' cellpadding='4'>");
-    for (const Entry& entry : entries) {
-        html += QStringLiteral("<tr><td>%1</td><td><code>%2</code></td></tr>")
-                    .arg(entry.text.toHtmlEscaped(), entry.keys.toHtmlEscaped());
-    }
-    html += QStringLiteral("</table>");
+    QDialog dialog(this);
+    dialog.setWindowTitle(tr("Keyboard shortcuts"));
+    auto* layout = new QVBoxLayout(&dialog);
+    layout->setContentsMargins(18, 16, 18, 12);
+    layout->setSpacing(10);
 
-    QMessageBox box(this);
-    box.setWindowTitle(tr("Keyboard shortcuts"));
-    box.setTextFormat(Qt::RichText);
-    box.setText(html);
-    box.setStandardButtons(QMessageBox::Close);
-    box.exec();
+    auto* title = new QLabel(tr("Click a shortcut to change it; Esc closes this dialog."), &dialog);
+    title->setWordWrap(true);
+    layout->addWidget(title);
+
+    // 分成三栏，条目多时也不至于拉成一条细长的竖列。
+    constexpr int kColumns = 3;
+    auto* grid = new QGridLayout();
+    grid->setContentsMargins(0, 0, 0, 0);
+    grid->setHorizontalSpacing(18);
+    grid->setVerticalSpacing(6);
+    const int rows = (entries.size() + kColumns - 1) / kColumns;
+    for (int i = 0; i < entries.size(); ++i) {
+        const int column = i / qMax(1, rows);
+        const int row = i % qMax(1, rows);
+        auto* name = new QLabel(entries.at(i).text, &dialog);
+        name->setToolTip(entries.at(i).text);
+        auto* keys = new QPushButton(entries.at(i).keys, &dialog);
+        keys->setFlat(true);
+        keys->setCursor(Qt::PointingHandCursor);
+        keys->setToolTip(tr("Change this shortcut"));
+        QAction* action = entries.at(i).action;
+        connect(keys, &QPushButton::clicked, &dialog, [this, &dialog, action]() {
+            QDialog edit(&dialog);
+            edit.setWindowTitle(tr("Change shortcut"));
+            auto* editLayout = new QVBoxLayout(&edit);
+            auto* prompt = new QLabel(tr("Press the new key combination for “%1”.").arg(action->text()), &edit);
+            prompt->setWordWrap(true);
+            editLayout->addWidget(prompt);
+            auto* editor = new QKeySequenceEdit(action->shortcut(), &edit);
+            editLayout->addWidget(editor);
+            auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &edit);
+            editLayout->addWidget(buttons);
+            connect(buttons, &QDialogButtonBox::accepted, &edit, &QDialog::accept);
+            connect(buttons, &QDialogButtonBox::rejected, &edit, &QDialog::reject);
+            if (edit.exec() != QDialog::Accepted) {
+                return;
+            }
+            changeShortcut(action, editor->keySequence());
+        });
+        grid->addWidget(name, row, column * 2);
+        grid->addWidget(keys, row, column * 2 + 1);
+    }
+    for (int column = 0; column < kColumns; ++column) {
+        grid->setColumnStretch(column * 2, 1);
+    }
+    layout->addLayout(grid);
+    layout->addStretch(1);
+
+    auto* buttonRow = new QHBoxLayout();
+    auto* resetButton = new QPushButton(tr("Restore default shortcuts"), &dialog);
+    buttonRow->addWidget(resetButton);
+    buttonRow->addStretch(1);
+    auto* closeButton = new QPushButton(tr("Close"), &dialog);
+    closeButton->setDefault(true);
+    buttonRow->addWidget(closeButton);
+    layout->addLayout(buttonRow);
+    connect(closeButton, &QPushButton::clicked, &dialog, &QDialog::accept);
+    connect(resetButton, &QPushButton::clicked, &dialog, [this]() {
+        m_settings.shortcutOverrides.clear();
+        m_settings.save();
+        applyShortcutOverrides();
+    });
+
+    dialog.resize(920, 560);
+    dialog.exec();
 }
 
 void MainWindow::showAbout()

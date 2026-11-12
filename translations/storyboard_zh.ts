@@ -685,12 +685,12 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>层内高度</translation>
     </message>
     <message>
-      <source>Height +1 (stack up)    ]</source>
-      <translation>高度 +1（向上叠放）    ]</translation>
+      <source>Height +1 (stack up)</source>
+      <translation>高度 +1（向上叠放）</translation>
     </message>
     <message>
-      <source>Height -1 (stack down)    [</source>
-      <translation>高度 -1（向下叠放）    [</translation>
+      <source>Height -1 (stack down)</source>
+      <translation>高度 -1（向下叠放）</translation>
     </message>
     <message>
       <source>Height adjustment is available in edit mode only</source>
@@ -2387,16 +2387,16 @@ Use the checkbox to show or hide it.</source>
       <translation>已将 %1 个图元的高度 %2</translation>
     </message>
     <message>
-      <source>Height +1 (stack up)    ]</source>
-      <translation>高度 +1（向上叠放）    ]</translation>
+      <source>Height +1 (stack up)</source>
+      <translation>高度 +1（向上叠放）</translation>
     </message>
     <message>
       <source>Raise the stacking height of selected items (shortcut ])</source>
       <translation>提升选中图元的叠放高度（快捷键 ]）</translation>
     </message>
     <message>
-      <source>Height -1 (stack down)    [</source>
-      <translation>高度 -1（向下叠放）    [</translation>
+      <source>Height -1 (stack down)</source>
+      <translation>高度 -1（向下叠放）</translation>
     </message>
     <message>
       <source>Lower the stacking height of selected items (shortcut [)</source>
@@ -2990,7 +2990,39 @@ Use the checkbox to show or hide it.</source>
       <source>Quit StoryBoard (Ctrl+Q)</source>
       <translation>退出 StoryBoard（Ctrl+Q）</translation>
     </message>
-  </context>
+      <message>
+      <source>Click a shortcut to change it; Esc closes this dialog.</source>
+      <translation>点一下快捷键即可修改；按 Esc 关闭本窗口。</translation>
+    </message>
+    <message>
+      <source>Change this shortcut</source>
+      <translation>修改这个快捷键</translation>
+    </message>
+    <message>
+      <source>Change shortcut</source>
+      <translation>修改快捷键</translation>
+    </message>
+    <message>
+      <source>Press the new key combination for “%1”.</source>
+      <translation>请按下「%1」的新组合键。</translation>
+    </message>
+    <message>
+      <source>Restore default shortcuts</source>
+      <translation>恢复默认快捷键</translation>
+    </message>
+    <message>
+      <source>Close</source>
+      <translation>关闭</translation>
+    </message>
+    <message>
+      <source>Shortcut already in use</source>
+      <translation>快捷键已被占用</translation>
+    </message>
+    <message>
+      <source>%1 is already used by “%2”.</source>
+      <translation>%1 已经被「%2」占用。</translation>
+    </message>
+</context>
   <context>
     <name>SettingsDialog</name>
     <message>
@@ -3847,12 +3879,12 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>取消组合选中图元</translation>
     </message>
     <message>
-      <source>Height +1 (stack up)    ]</source>
-      <translation>高度 +1（向上叠放）    ]</translation>
+      <source>Height +1 (stack up)</source>
+      <translation>高度 +1（向上叠放）</translation>
     </message>
     <message>
-      <source>Height -1 (stack down)    [</source>
-      <translation>高度 -1（向下叠放）    [</translation>
+      <source>Height -1 (stack down)</source>
+      <translation>高度 -1（向下叠放）</translation>
     </message>
     <message>
       <source>Move to the layer above</source>

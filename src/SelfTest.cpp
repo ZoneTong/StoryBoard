@@ -2748,6 +2748,37 @@ int runSelfTest(const QString& reportPath)
                           .arg(afterLanguage.lineArtColorLevels));
                 AppSettings::setLanguageSetting(QStringLiteral("system"));
 
+                // 自定义快捷键：写进配置后重建窗口直接生效，提示里的键也跟着换。
+                {
+                    AppSettings shortcutSettings;
+                    shortcutSettings.load();
+                    const QMap<QString, QString> originalShortcuts = shortcutSettings.shortcutOverrides;
+                    shortcutSettings.shortcutOverrides.insert(QStringLiteral("Ctrl+Q"), QStringLiteral("Ctrl+Alt+Q"));
+                    check(shortcutSettings.save(), QStringLiteral("自定义快捷键写入配置文件"));
+                    AppSettings shortcutReloaded;
+                    shortcutReloaded.load();
+                    check(shortcutReloaded.shortcutOverrides.value(QStringLiteral("Ctrl+Q")) ==
+                              QStringLiteral("Ctrl+Alt+Q"),
+                          QStringLiteral("自定义快捷键能重新读回"));
+                    {
+                        MainWindow shortcutWindow;
+                        QAction* quitAction = nullptr;
+                        for (QAction* action : shortcutWindow.findChildren<QAction*>()) {
+                            if (action->text() == QStringLiteral("退出")) {
+                                quitAction = action;
+                                break;
+                            }
+                        }
+                        check(quitAction && quitAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+Alt+Q")),
+                              QStringLiteral("自定义快捷键在启动时生效"),
+                              quitAction ? quitAction->shortcut().toString() : QString());
+                        check(quitAction && quitAction->statusTip().contains(QStringLiteral("Ctrl+Alt+Q")),
+                              QStringLiteral("改键后状态栏提示同步"), quitAction ? quitAction->statusTip() : QString());
+                    }
+                    shortcutSettings.shortcutOverrides = originalShortcuts;
+                    shortcutSettings.save();
+                }
+
                 // 设置弹窗里改的线稿化参数必须经主窗口回写并落盘（曾经只改了弹窗内存副本）。
                 {
                     MainWindow settingsWindow;
@@ -2918,6 +2949,10 @@ int runSelfTest(const QString& reportPath)
         check(heightUpAction && heightUpAction->shortcut() == QKeySequence(Qt::Key_BracketRight) && heightDownAction &&
                   heightDownAction->shortcut() == QKeySequence(Qt::Key_BracketLeft),
               QStringLiteral("编辑菜单提供 ] / [ 高度快捷键"));
+        // 菜单文字里不该再手写方括号：QAction 自己会把快捷键显示在右侧，写一遍就成了两份。
+        check(heightUpAction && !heightUpAction->text().contains(QLatin1Char(']')) && heightDownAction &&
+                  !heightDownAction->text().contains(QLatin1Char('[')),
+              QStringLiteral("高度菜单项文字不再自带方括号"), heightUpAction ? heightUpAction->text() : QString());
 
         QAction* propertiesAction = nullptr;
         for (QAction* action : windowActions) {

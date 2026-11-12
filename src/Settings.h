@@ -2,6 +2,7 @@
 
 #include <QByteArray>
 #include <QColor>
+#include <QMap>
 #include <QSizeF>
 #include <QString>
 
@@ -19,6 +20,9 @@ class AppSettings {
     QString lastCanvasPath;
     QString canvasesDirectory;
     QByteArray windowGeometry;
+    // 自定义快捷键：键是动作的默认组合键（便携文本），值是新组合键；
+    // 没有条目就用代码里的默认值。
+    QMap<QString, QString> shortcutOverrides;
 
     // 图片线稿化参数，见 LineArtConverter::Options。用户可在设置里调整。
     int lineArtColorLevels = 6;

@@ -6,6 +6,8 @@
 #include "ShapeItem.h"
 
 #include <QColor>
+#include <QHash>
+#include <QKeySequence>
 #include <QMainWindow>
 #include <QPointF>
 #include <QPointer>
@@ -111,7 +113,14 @@ class MainWindow : public QMainWindow {
     void showItemProperties(CanvasItem* item);
     void rotateSelected(qreal degrees);
     void closeItemProperties();
+    // 快捷键：按「默认组合键」把动作和配置文件里的自定义键对上；改键后立即落盘。
+    void applyShortcutOverrides();
+    void refreshShortcutTips();
+    bool changeShortcut(QAction* action, const QKeySequence& sequence);
     QString documentName() const;
+
+    // 动作 → 默认快捷键（便携文本），作为配置里 shortcutOverrides 的键。
+    QHash<QAction*, QString> m_shortcutIds;
 
     CanvasScene* m_scene = nullptr;
     CanvasView* m_view = nullptr;

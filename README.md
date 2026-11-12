@@ -106,7 +106,7 @@ bash scripts/package-portable.sh --build --qt-dir "$HOME/Qt/6.8.0/gcc_64"
 | macOS | `StoryBoard.app` 及 `.zip` | `macdeployqt` + 补 `libqoffscreen.dylib` |
 | Linux | `StoryBoard-<ver>-linux-<arch>-portable.tar.gz` | 拷贝 `libQt6*`、插件与 `qt.conf` |
 
-Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux 分支按 Qt 官方部署方式提供，尚未在对应主机实机验证。自检默认要求 Windows 619 项，其他平台接受当前通过数；可用 `--expected-passed 0` 放宽，`--skip-self-test` 跳过（不推荐）。
+Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux 分支按 Qt 官方部署方式提供，尚未在对应主机实机验证。自检默认要求 Windows 624 项，其他平台接受当前通过数；可用 `--expected-passed 0` 放宽，`--skip-self-test` 跳过（不推荐）。
 
 ## 使用说明
 
@@ -145,7 +145,7 @@ Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux �
 - **插入 → 替换背景图片…**：纯色、图片（拉伸/适应/平铺）或清除背景（原“画布”菜单已并入插入菜单，背景四项排在“插入图片”之前）。
 - **视图 → 辅助网格**：直接勾选/取消画布网格，和「设置 → 画布 → 显示辅助网格」共用同一份配置，改哪边都会同步。
 - **文件 → 设置…**（`Ctrl+,`）：默认画笔颜色/粗细、画笔自动平滑容差、画布尺寸、画布外围颜色、画布存储目录、界面语言、图片线稿化参数（档位与各项细项）。版面安排：标题行右侧是「界面语言」下拉；下一行左边「画笔默认值」、右边「画布」（尺寸、外围颜色、存储目录合为一组），图片线稿化整组独占再下一行（组内 8 个数值项分左右两列，行数减半）；补充说明都收进控件的 tooltip，线稿化的「色块过多时自动降采样」复选框与「怎么调」折叠开关并排一行，整页高度约 625px，1080p 屏幕一屏放下不用滚动。辅助网格不在这里，走 **视图 → 辅助网格** 菜单开关。窗口尺寸随内容自适应：最小宽度取内容最小宽度加余量（英文标签、高 DPI 都不会截断右侧），高度按内容真实高度计算并按屏幕可用高度夹取，屏幕较矮时才出现纵向滚动条。线稿化的「怎么调」说明默认展开，点一下即可折叠。
-- **帮助 → 快捷键一览…**：按当前动作自动汇总所有带快捷键的条目（动作名 + 组合键），新增快捷键后清单自动跟上。
+- **帮助 → 快捷键一览…**：按当前动作自动汇总所有带快捷键的条目（动作名 + 组合键），分三栏排布，新增快捷键后清单自动跟上。点条目右侧的组合键即可改键（弹出按键捕获框；按 Esc 关闭一览窗口）。新键与现有动作冲突时会提示被谁占用，并放弃本次修改。改完立即写入 `StoryBoard.ini` 的 `[shortcuts]` 段，重启后仍然生效；「恢复默认快捷键」清空该段，回到代码里的默认键。
 
 ![设置对话框](docs/settings.png)
 
@@ -209,6 +209,8 @@ Windows 分支已在 Windows 11 + MinGW + Qt 6.12 实机验证；macOS / Linux �
 | 调整层内高度 | `]` / `[` |
 | 退出 | `Ctrl+Q` |
 
+「快捷键一览」窗口里点组合键可以改成自己的习惯键（例如把全选改成 `Ctrl+Shift+A`），冲突会提示，改完写进配置、重启后照样生效；想回到出厂键就按「恢复默认快捷键」。
+
 ## 自检
 
 ```bash
@@ -221,7 +223,7 @@ QT_QPA_PLATFORM=offscreen ./out/bin/StoryBoard.exe --self-test out/selftest.txt
 cat out/selftest.txt
 ```
 
-当前 Windows 基线为 **619 passed, 0 failed**；其他平台以实际 `SUMMARY` 为准。
+当前 Windows 基线为 **624 passed, 0 failed**；其他平台以实际 `SUMMARY` 为准。
 
 `--self-test` 需要平台插件目录下的 offscreen 插件（Windows `platforms/qoffscreen.dll`、macOS `platforms/libqoffscreen.dylib`、Linux `platforms/libqoffscreen.so`）。打包脚本会自动补齐。
 

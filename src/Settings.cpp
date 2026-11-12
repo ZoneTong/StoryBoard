@@ -154,6 +154,7 @@ qreal boundedDoubleFromMap(const SettingsMap& values, const QString& key, qreal 
 }
 
 void mergeLineArtSettings(SettingsMap& values, const AppSettings& settings);
+void mergeShortcutSettings(SettingsMap& values, const AppSettings& settings);
 
 void mergeSettings(SettingsMap& values, const AppSettings& settings)
 {
@@ -174,7 +175,29 @@ void mergeSettings(SettingsMap& values, const AppSettings& settings)
 
     values.insert(QStringLiteral("window/geometryBase64"), QString::fromLatin1(settings.windowGeometry.toBase64()));
 
+    // 快捷键整段重写：先清掉旧的 shortcuts/*，再按当前内存里的覆盖表写入，
+    // 这样「恢复默认」删掉的条目才会真的从文件里消失。
+    mergeShortcutSettings(values, settings);
+
     mergeLineArtSettings(values, settings);
+}
+
+void mergeShortcutSettings(SettingsMap& values, const AppSettings& settings)
+{
+    const QString prefix = QStringLiteral("shortcuts/");
+    for (auto it = values.begin(); it != values.end();) {
+        if (it.key().startsWith(prefix)) {
+            it = values.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    for (auto it = settings.shortcutOverrides.constBegin(); it != settings.shortcutOverrides.constEnd(); ++it) {
+        if (it.key().isEmpty() || it.value().isEmpty()) {
+            continue;
+        }
+        values.insert(prefix + it.key(), it.value());
+    }
 }
 
 void mergeLineArtSettings(SettingsMap& values, const AppSettings& settings)
@@ -222,6 +245,15 @@ void AppSettings::load()
     lastCanvasPath = values.value(QStringLiteral("paths/canvas"), lastCanvasPath);
     canvasesDirectory = values.value(QStringLiteral("paths/canvasesDirectory"), canvasesDirectory);
     windowGeometry = QByteArray::fromBase64(values.value(QStringLiteral("window/geometryBase64")).toLatin1());
+
+    shortcutOverrides.clear();
+    const QString shortcutPrefix = QStringLiteral("shortcuts/");
+    for (auto it = values.constBegin(); it != values.constEnd(); ++it) {
+        if (!it.key().startsWith(shortcutPrefix) || it.value().isEmpty()) {
+            continue;
+        }
+        shortcutOverrides.insert(it.key().mid(shortcutPrefix.size()), it.value());
+    }
 
     lineArtColorLevels = boundedFromMap(values, QStringLiteral("lineArt/colorLevels"), lineArtColorLevels, 2, 12);
     lineArtPaletteMerge = boundedFromMap(values, QStringLiteral("lineArt/paletteMerge"), lineArtPaletteMerge, 0, 160);
