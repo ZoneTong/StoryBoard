@@ -121,10 +121,15 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
 
     rootLayout->addWidget(lineArtGroup);
 
-    auto* hint = new QLabel(tr("Similarity values are RGB color distances (0-441): lower keeps more small props, higher merges more fragments. "
-        "Adjacent merging only joins blocks that actually touch, so colour is the knob that changes the result. "
-        "Stroke width is fixed at 1."),
+    auto* hint = new QLabel(tr("<b>How to tune</b><ul>"
+        "<li>Color similarity: RGB color distance (0-441). Lower keeps more small props, higher merges more fragments; adjacent merging only joins blocks that actually touch.</li>"
+        "<li>Simplify tolerance: how far a traced point may move. Smaller follows pixel steps, larger flattens arcs into straight segments.</li>"
+        "<li>Thinnest band: drops antialiasing halos; 0 keeps every thin band, higher also drops genuinely thin lines.</li>"
+        "<li>Block count limit: over the limit the image is traced at a smaller size instead of losing blocks. Uncheck to trace at full size (slower on busy images).</li>"
+        "<li>Stroke width is fixed at 1. OK and Cancel apply to this run only; Save to configuration file writes StoryBoard.ini.</li>"
+        "</ul>"),
         this);
+    hint->setTextFormat(Qt::RichText);
     hint->setObjectName(QStringLiteral("DialogHint"));
     hint->setWordWrap(true);
     rootLayout->addWidget(hint);

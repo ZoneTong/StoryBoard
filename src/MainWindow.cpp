@@ -414,8 +414,10 @@ void MainWindow::createActions()
                              QKeySequence(QStringLiteral("Ctrl+I")),
                              tr("Insert images as movable, resizable items (Ctrl+I)"));
     m_lineArtAct = makeAction(
-        this, IconId::LineArt, tr("Import outline image"), QKeySequence(),
-        tr("Trace the color-block outlines of an image into stroke items (line width 1)"));
+        this, IconId::LineArt, tr("Import outline image"),
+        QKeySequence(QStringLiteral("Ctrl+Shift+I")),
+        tr("Trace an image's color-block outlines into strokes (line width 1); a parameter dialog opens first and "
+           "only Save to configuration file writes StoryBoard.ini (Ctrl+Shift+I)"));
     m_exportAct = makeAction(this, IconId::Export, tr("Export canvas…"),
                              QKeySequence(QStringLiteral("Ctrl+E")),
                              tr("Export as PNG / JPEG / PDF (Ctrl+E)"));
@@ -2424,6 +2426,9 @@ void MainWindow::showAbout()
                 .arg(tr("Four presets (keep details / balanced / clean lines / bold blocks) set color levels, "
                         "same-color similarity, adjacent-color similarity, smallest block and simplify tolerance in one go; "
                         "editing any value switches back to Custom."));
+    html += QStringLiteral("<li>%1</li>")
+                .arg(tr("Simplify tolerance and thinnest band are adjustable; OK / Cancel apply to this run only, "
+                        "Save to configuration file writes the values into StoryBoard.ini."));
     html += QStringLiteral("<li>%1</li>")
                 .arg(tr("Block count limit with automatic downsampling: checked by default, the image is processed at a "
                         "smaller size instead of dropping blocks."));

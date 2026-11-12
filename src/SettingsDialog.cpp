@@ -279,9 +279,15 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent)
             });
     syncPresetCombo();
 
-    auto* lineArtHint = new QLabel(tr("Similarity values are RGB color distances (0-441): lower keeps more small props, higher merges more fragments. "
-        "Adjacent merging only joins blocks that actually touch, so colour is the knob that changes the result."),
+    auto* lineArtHint = new QLabel(tr("<b>How to tune</b><ul>"
+        "<li>Color similarity: RGB color distance (0-441). Lower keeps more small props, higher merges more fragments; adjacent merging only joins blocks that actually touch.</li>"
+        "<li>Simplify tolerance: how far a traced point may move. Smaller follows pixel steps, larger flattens arcs into straight segments.</li>"
+        "<li>Thinnest band: drops antialiasing halos; 0 keeps every thin band, higher also drops genuinely thin lines.</li>"
+        "<li>Block count limit: over the limit the image is traced at a smaller size instead of losing blocks. Uncheck to trace at full size (slower on busy images).</li>"
+        "<li>Saved with this dialog: these values become the defaults for the import dialog, which can overwrite them with its own Save to configuration file button.</li>"
+        "</ul>"),
         lineArtGroup);
+    lineArtHint->setTextFormat(Qt::RichText);
     lineArtHint->setObjectName(QStringLiteral("DialogHint"));
     lineArtHint->setWordWrap(true);
     lineArtForm->addRow(QString(), lineArtHint);
