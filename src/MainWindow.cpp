@@ -2367,7 +2367,20 @@ void MainWindow::showAbout()
     html += QStringLiteral("<p>%1</p>")
                 .arg(tr("A lightweight canvas app for freehand strokes, image items, overview "
                                            "navigation, canvas files and export."));
-    html += QStringLiteral("<p><b>%1</b></p><ul>").arg(tr("Key operations"));
+    // 关于窗口的线稿化备注：说明入口、参数顺序和输出，和功能实际行为保持一致。
+    html += QStringLiteral("<p><b>%1</b></p><ul>").arg(tr("Image outline tracing"));
+    html += QStringLiteral("<li>%1</li>")
+                .arg(tr("Import an image and the parameter dialog opens first; strokes are created only after you confirm."));
+    html += QStringLiteral("<li>%1</li>")
+                .arg(tr("Four presets (keep details / balanced / clean lines / bold blocks) set color levels, "
+                        "same-color similarity, adjacent-color similarity, smallest block and simplify tolerance in one go; "
+                        "editing any value switches back to Custom."));
+    html += QStringLiteral("<li>%1</li>")
+                .arg(tr("Block count limit with automatic downsampling: checked by default, the image is processed at a "
+                        "smaller size instead of dropping blocks."));
+    html += QStringLiteral("<li>%1</li>")
+                .arg(tr("Output line width is fixed at 1 and the result is inserted as plain stroke items."));
+    html += QStringLiteral("</ul><p><b>%1</b></p><ul>").arg(tr("Key operations"));
     const QStringList operations = {
         QStringLiteral("V View mode: pan / zoom the whole canvas, automatic overview"),
         QStringLiteral("E Edit mode: items on visible, unlocked layers can be edited; locked layers cannot; ] / [ "

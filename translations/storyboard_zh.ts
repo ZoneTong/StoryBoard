@@ -2914,6 +2914,26 @@ Use the checkbox to show or hide it.</source>
       <source>&amp;Help</source>
       <translation>帮助(&amp;H)</translation>
     </message>
+    <message>
+      <source>Image outline tracing</source>
+      <translation>图片线稿化</translation>
+    </message>
+    <message>
+      <source>Import an image and the parameter dialog opens first; strokes are created only after you confirm.</source>
+      <translation>导入图片后会先弹出参数对话框，点确定才生成笔画图元。</translation>
+    </message>
+    <message>
+      <source>Four presets (keep details / balanced / clean lines / bold blocks) set color levels, same-color similarity, adjacent-color similarity, smallest block and simplify tolerance in one go; editing any value switches back to Custom.</source>
+      <translation>四档预设（保留细节 / 均衡 / 线条干净 / 大块概括）一次性写入颜色级数、同色近似度、相邻近似度、最小色块与简化容差；手改任一项自动回到“自定义”。</translation>
+    </message>
+    <message>
+      <source>Block count limit with automatic downsampling: checked by default, the image is processed at a smaller size instead of dropping blocks.</source>
+      <translation>色块上限配合自适应降采样：默认勾选，超过阈值时按更小的处理尺寸重算，而不是丢掉色块。</translation>
+    </message>
+    <message>
+      <source>Output line width is fixed at 1 and the result is inserted as plain stroke items.</source>
+      <translation>生成的线宽固定为 1，结果以普通笔画图元插入当前图层。</translation>
+    </message>
   </context>
   <context>
     <name>SettingsDialog</name>
