@@ -706,6 +706,12 @@ void MainWindow::createLayerDock()
 
 void MainWindow::createMenus()
 {
+    // 需求：“画板”菜单合并进“文件”菜单，作为子菜单放在“退出”之上。
+    m_canvasesMenu = new QMenu(uiText(QStringLiteral("&Board")), this);
+    m_canvasesMenu->setObjectName(QStringLiteral("BoardMenu"));
+    connect(m_canvasesMenu, &QMenu::aboutToShow, this, &MainWindow::updateCanvasesMenu);
+    updateCanvasesMenu();
+
     QMenu* fileMenu = menuBar()->addMenu(uiText(QStringLiteral("&File")));
     fileMenu->addAction(m_newAct);
     fileMenu->addAction(m_openAct);
@@ -718,6 +724,7 @@ void MainWindow::createMenus()
     fileMenu->addAction(m_importAct);
     fileMenu->addAction(m_exportAct);
     fileMenu->addSeparator();
+    fileMenu->addMenu(m_canvasesMenu);
     fileMenu->addAction(m_quitAct);
 
     QMenu* editMenu = menuBar()->addMenu(uiText(QStringLiteral("&Edit")));
@@ -728,7 +735,7 @@ void MainWindow::createMenus()
     editMenu->addAction(m_duplicateAct);
     editMenu->addAction(m_groupAct);
     editMenu->addAction(m_ungroupAct);
-    editMenu->addAction(m_smoothAct);
+    // 需求：平滑笔画移到“笔画”菜单下，不再留在编辑菜单。
     editMenu->addAction(m_selectAllAct);
     editMenu->addSeparator();
     editMenu->addAction(m_itemPropsAct);
@@ -765,8 +772,26 @@ void MainWindow::createMenus()
     editMenu->addAction(m_rotateCwAct);
     editMenu->addAction(m_rotateCcwAct);
 
+    // 需求：原“样式”菜单拆开——“画笔样式”独立为一级菜单“笔画”，
+    // 填充样式与填充／描边颜色并入“插入”菜单，紧跟在“常见图形”之后。
     QMenu* insertMenu = menuBar()->addMenu(uiText(QStringLiteral("&Insert")));
+    insertMenu->setObjectName(QStringLiteral("InsertMenu"));
     insertMenu->addMenu(m_shapeMenu);
+    insertMenu->addSeparator();
+
+    QMenu* fillStyleMenu = insertMenu->addMenu(uiText(QStringLiteral("Fill style")));
+    fillStyleMenu->setObjectName(QStringLiteral("FillStyleMenu"));
+    fillStyleMenu->addAction(m_fillNoneAct);
+    fillStyleMenu->addAction(m_fillSolidAct);
+    fillStyleMenu->addAction(m_fillHachureAct);
+    fillStyleMenu->addAction(m_fillReverseAct);
+    fillStyleMenu->addAction(m_fillCrossAct);
+    fillStyleMenu->addAction(m_fillGridAct);
+    fillStyleMenu->addAction(m_fillHoneycombAct);
+
+    // 需求 29：颜色从填充样式里分离出来，放在填充样式之后。
+    insertMenu->addAction(m_fillColorAct);
+    insertMenu->addAction(m_strokeColorAct);
     insertMenu->addSeparator();
     insertMenu->addAction(m_importAct);
 
@@ -799,36 +824,19 @@ void MainWindow::createMenus()
     fillMenu->addAction(m_bgTileAct);
     canvasMenu->addSeparator();
 
-    QMenu* styleMenu = menuBar()->addMenu(uiText(QStringLiteral("&Style")));
-    styleMenu->setObjectName(QStringLiteral("StyleMenu"));
+    // 需求：原“样式 → 画笔样式”提升为一级菜单“笔画”，“平滑笔画”归到这里。
+    QMenu* strokeMenu = menuBar()->addMenu(uiText(QStringLiteral("&Stroke")));
+    strokeMenu->setObjectName(QStringLiteral("StrokeMenu"));
 
-    QMenu* brushStyleMenu = styleMenu->addMenu(uiText(QStringLiteral("Brush style")));
-    brushStyleMenu->setObjectName(QStringLiteral("BrushStyleMenu"));
-    brushStyleMenu->addAction(m_brushColorAct);
-    brushStyleMenu->addSeparator();
-    QMenu* brushWidthMenu = brushStyleMenu->addMenu(uiText(QStringLiteral("Brush width")));
+    strokeMenu->addAction(m_brushColorAct);
+    strokeMenu->addSeparator();
+    QMenu* brushWidthMenu = strokeMenu->addMenu(uiText(QStringLiteral("Brush width")));
     brushWidthMenu->setObjectName(QStringLiteral("BrushWidthMenu"));
     for (QAction* action : m_brushWidthGroup->actions()) {
         brushWidthMenu->addAction(action);
     }
-
-    QMenu* fillStyleMenu = styleMenu->addMenu(uiText(QStringLiteral("Fill style")));
-    fillStyleMenu->setObjectName(QStringLiteral("FillStyleMenu"));
-    fillStyleMenu->addAction(m_fillNoneAct);
-    fillStyleMenu->addAction(m_fillSolidAct);
-    fillStyleMenu->addAction(m_fillHachureAct);
-    fillStyleMenu->addAction(m_fillReverseAct);
-    fillStyleMenu->addAction(m_fillCrossAct);
-    fillStyleMenu->addAction(m_fillGridAct);
-    fillStyleMenu->addAction(m_fillHoneycombAct);
-
-    // 需求 29：颜色从填充样式里分离出来，放在填充样式之后。
-    styleMenu->addAction(m_fillColorAct);
-    styleMenu->addAction(m_strokeColorAct);
-
-    m_canvasesMenu = menuBar()->addMenu(uiText(QStringLiteral("&Board")));
-    connect(m_canvasesMenu, &QMenu::aboutToShow, this, &MainWindow::updateCanvasesMenu);
-    updateCanvasesMenu();
+    strokeMenu->addSeparator();
+    strokeMenu->addAction(m_smoothAct);
 
     QMenu* helpMenu = menuBar()->addMenu(uiText(QStringLiteral("&Help")));
     helpMenu->addAction(m_aboutAct);

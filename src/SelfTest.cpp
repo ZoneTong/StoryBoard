@@ -3183,14 +3183,37 @@ int runSelfTest(const QString& reportPath)
                   entries.join(QStringLiteral(" / ")));
         }
 
-        // 需求：画板菜单里也有“打开画布”，其后同样要有“导入图片线稿化”。
+        // 需求：“画板”菜单已合并到“文件”菜单，作为子菜单放在“退出”之上。
         QMenu* boardMenu = nullptr;
+        if (fileMenu) {
+            for (QAction* action : fileMenu->actions()) {
+                QMenu* menu = action ? action->menu() : nullptr;
+                if (menu && menu->title() == QStringLiteral("画板(&B)"))
+                    boardMenu = menu;
+            }
+        }
+        check(boardMenu != nullptr, QStringLiteral("文件菜单下的画板子菜单存在"));
+        if (fileMenu) {
+            const QList<QAction*> fileActions = fileMenu->actions();
+            const int boardIndex = boardMenu ? fileActions.indexOf(boardMenu->menuAction()) : -1;
+            const int quitIndex = [&fileActions]() {
+                for (int i = 0; i < fileActions.size(); ++i) {
+                    if (fileActions.at(i) && fileActions.at(i)->text().startsWith(QStringLiteral("退出")))
+                        return i;
+                }
+                return -1;
+            }();
+            check(boardIndex >= 0 && quitIndex == boardIndex + 1,
+                  QStringLiteral("画板子菜单紧挨在退出项之上"),
+                  QStringLiteral("board=%1 quit=%2").arg(boardIndex).arg(quitIndex));
+        }
+        bool boardTopLevel = false;
         for (QAction* action : window.menuBar()->actions()) {
             QMenu* menu = action ? action->menu() : nullptr;
             if (menu && menu->title() == QStringLiteral("画板(&B)"))
-                boardMenu = menu;
+                boardTopLevel = true;
         }
-        check(boardMenu != nullptr, QStringLiteral("主窗口存在画板菜单"));
+        check(!boardTopLevel, QStringLiteral("菜单栏不再单独出现画板菜单"));
         if (boardMenu) {
             QStringList entries;
             for (QAction* action : boardMenu->actions()) {
@@ -3566,32 +3589,42 @@ int runSelfTest(const QString& reportPath)
             }
         }
 
-        QMenu* styleMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("StyleMenu"));
-        QMenu* brushStyleMenu = shapeWindow.findChild<QMenu*>(
-            QStringLiteral("BrushStyleMenu"));
+        // 需求：“画笔样式”已独立为一级菜单“笔画”，“平滑笔画”也归到该菜单；
+        // 填充样式与填充／描边颜色并入“插入”菜单，紧跟在常见图形之后。
+        QMenu* strokeMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("StrokeMenu"));
         QMenu* fillStyleMenu = shapeWindow.findChild<QMenu*>(
             QStringLiteral("FillStyleMenu"));
-        check(styleMenu && styleMenu->actions().size() == 4,
-              QStringLiteral("样式菜单包含画笔样式、填充样式和两个独立颜色项"),
-              QStringLiteral("actions=%1").arg(styleMenu ? styleMenu->actions().size() : 0));
-        QList<QAction*> styleActions;
-        if (styleMenu)
-            styleActions = styleMenu->actions();
-        QList<QAction*> brushActions;
-        if (brushStyleMenu)
-            brushActions = brushStyleMenu->actions();
+        bool strokeIsTopLevel = false;
+        for (QAction* action : shapeWindow.menuBar()->actions()) {
+            QMenu* menu = action ? action->menu() : nullptr;
+            if (menu && menu->objectName() == QStringLiteral("StrokeMenu"))
+                strokeIsTopLevel = true;
+        }
+        check(strokeMenu && strokeIsTopLevel && strokeMenu->title() == QStringLiteral("笔画(&S)"),
+              QStringLiteral("笔画是一级菜单"),
+              strokeMenu ? strokeMenu->title() : QStringLiteral("missing"));
+        bool styleMenuGone = shapeWindow.findChild<QMenu*>(QStringLiteral("StyleMenu")) == nullptr
+            && shapeWindow.findChild<QMenu*>(QStringLiteral("BrushStyleMenu")) == nullptr;
+        check(styleMenuGone, QStringLiteral("样式菜单与画笔样式子菜单不再存在"));
+
+        QList<QAction*> strokeActions;
+        if (strokeMenu)
+            strokeActions = strokeMenu->actions();
         QList<QAction*> fillActions;
         if (fillStyleMenu)
             fillActions = fillStyleMenu->actions();
         bool brushHasColor = false;
         bool brushHasOutline = false;
-        bool brushHasWidth = brushStyleMenu
-            && brushStyleMenu->findChild<QMenu*>(QStringLiteral("BrushWidthMenu"));
-        for (QAction* action : brushActions) {
+        bool brushHasSmooth = false;
+        bool brushHasWidth = strokeMenu
+            && strokeMenu->findChild<QMenu*>(QStringLiteral("BrushWidthMenu"));
+        for (QAction* action : strokeActions) {
             if (action->objectName() == QStringLiteral("BrushColorAction"))
                 brushHasColor = true;
             else if (action->objectName() == QStringLiteral("OutlineColorAction"))
                 brushHasOutline = true;
+            if (action->text() == QStringLiteral("平滑笔画"))
+                brushHasSmooth = true;
         }
         bool fillHasColor = false;
         int fillMenuItemCount = 0;
@@ -3602,26 +3635,45 @@ int runSelfTest(const QString& reportPath)
             if (action->objectName() == QStringLiteral("FillColorAction"))
                 fillHasColor = true;
         }
-        check(brushStyleMenu && brushHasColor && brushHasWidth && !brushHasOutline,
-              QStringLiteral("画笔样式子菜单包含画笔颜色和粗细选项"));
+        check(strokeMenu && brushHasColor && brushHasWidth && brushHasSmooth && !brushHasOutline,
+              QStringLiteral("笔画菜单包含画笔颜色、粗细选项与平滑笔画"));
         check(fillStyleMenu && fillMenuItemCount == 7 && !fillHasColor,
               QStringLiteral("填充样式子菜单只保留填充样式"),
               QStringLiteral("actions=%1").arg(fillMenuItemCount));
 
-        int fillStyleMenuIndex = styleActions.indexOf(fillStyleMenu ? fillStyleMenu->menuAction() : nullptr);
+        QMenu* insertMenu = nullptr;
+        for (QAction* action : shapeWindow.menuBar()->actions()) {
+            QMenu* menu = action ? action->menu() : nullptr;
+            if (menu && menu->objectName() == QStringLiteral("InsertMenu"))
+                insertMenu = menu;
+        }
+        check(insertMenu != nullptr, QStringLiteral("主窗口存在插入菜单"));
+        QList<QAction*> insertActions;
+        if (insertMenu)
+            insertActions = insertMenu->actions();
+        int fillStyleMenuIndex = insertActions.indexOf(fillStyleMenu ? fillStyleMenu->menuAction() : nullptr);
+        int shapeMenuIndex = insertActions.indexOf(shapeMenu ? shapeMenu->menuAction() : nullptr);
         int fillColorActionIndex = -1;
         int outlineActionIndex = -1;
-        for (int i = 0; i < styleActions.size(); ++i) {
-            if (styleActions.at(i)->objectName() == QStringLiteral("FillColorAction"))
+        for (int i = 0; i < insertActions.size(); ++i) {
+            if (insertActions.at(i)->objectName() == QStringLiteral("FillColorAction"))
                 fillColorActionIndex = i;
-            else if (styleActions.at(i)->objectName() == QStringLiteral("OutlineColorAction"))
+            else if (insertActions.at(i)->objectName() == QStringLiteral("OutlineColorAction"))
                 outlineActionIndex = i;
         }
-        check(fillStyleMenuIndex >= 0 && fillColorActionIndex > fillStyleMenuIndex
-                  && outlineActionIndex > fillColorActionIndex,
-              QStringLiteral("填充颜色和描边颜色分离到填充样式之后"),
-              QStringLiteral("fillStyle=%1 fillColor=%2 outline=%3")
-                  .arg(fillStyleMenuIndex).arg(fillColorActionIndex).arg(outlineActionIndex));
+        bool insertOrderOk = shapeMenuIndex >= 0 && fillStyleMenuIndex > shapeMenuIndex
+            && fillColorActionIndex > fillStyleMenuIndex
+            && outlineActionIndex > fillColorActionIndex;
+        for (int i = shapeMenuIndex + 1; insertOrderOk && i < fillStyleMenuIndex; ++i) {
+            // 常见图形与填充样式之间只允许出现分隔线。
+            if (!insertActions.at(i)->isSeparator())
+                insertOrderOk = false;
+        }
+        check(insertOrderOk,
+              QStringLiteral("填充样式与两个颜色项紧跟常见图形位于插入菜单"),
+              QStringLiteral("shape=%1 fillStyle=%2 fillColor=%3 outline=%4")
+                  .arg(shapeMenuIndex).arg(fillStyleMenuIndex).arg(fillColorActionIndex)
+                  .arg(outlineActionIndex));
 
         QAction* outlineAction = shapeWindow.findChild<QAction*>(
             QStringLiteral("OutlineColorAction"));

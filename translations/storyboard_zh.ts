@@ -107,6 +107,10 @@
       <translation>样式(&amp;S)</translation>
     </message>
     <message>
+      <source>&amp;Stroke</source>
+      <translation>笔画(&amp;S)</translation>
+    </message>
+    <message>
       <source>&amp;View</source>
       <translation>视图(&amp;V)</translation>
     </message>
