@@ -79,8 +79,8 @@
       <translation>%1[*] - 故事板</translation>
     </message>
     <message>
-      <source>&amp;Board</source>
-      <translation>画板(&amp;B)</translation>
+      <source>&amp;Brush</source>
+      <translation>画笔(&amp;B)</translation>
     </message>
     <message>
       <source>&amp;Canvas</source>
@@ -101,14 +101,6 @@
     <message>
       <source>&amp;Insert</source>
       <translation>插入(&amp;I)</translation>
-    </message>
-    <message>
-      <source>&amp;Style</source>
-      <translation>样式(&amp;S)</translation>
-    </message>
-    <message>
-      <source>&amp;Stroke</source>
-      <translation>笔画(&amp;S)</translation>
     </message>
     <message>
       <source>&amp;View</source>

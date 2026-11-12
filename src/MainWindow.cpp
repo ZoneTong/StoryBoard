@@ -707,13 +707,8 @@ void MainWindow::createLayerDock()
 
 void MainWindow::createMenus()
 {
-    // 需求：“画板”菜单合并进“文件”菜单，作为子菜单放在“退出”之上。
-    m_canvasesMenu = new QMenu(uiText(QStringLiteral("&Board")), this);
-    m_canvasesMenu->setObjectName(QStringLiteral("BoardMenu"));
-    connect(m_canvasesMenu, &QMenu::aboutToShow, this, &MainWindow::updateCanvasesMenu);
-    updateCanvasesMenu();
-
-    QMenu* fileMenu = menuBar()->addMenu(uiText(QStringLiteral("&File")));
+    m_fileMenu = menuBar()->addMenu(uiText(QStringLiteral("&File")));
+    QMenu* fileMenu = m_fileMenu;
     fileMenu->addAction(m_newAct);
     fileMenu->addAction(m_openAct);
     // 需求：在“打开画布”后面提供图片线稿化入口，把色块轮廓变成笔画图元。
@@ -724,9 +719,13 @@ void MainWindow::createMenus()
     fileMenu->addSeparator();
     fileMenu->addAction(m_importAct);
     fileMenu->addAction(m_exportAct);
-    fileMenu->addSeparator();
-    fileMenu->addMenu(m_canvasesMenu);
+    // 需求：原“画板”菜单不再作为父菜单存在，它的设置、最近画布与画布文件夹
+    // 直接并入文件菜单，位于“退出”之上；这一段由 updateCanvasesMenu 动态重建。
+    QAction* boardSectionSeparator = fileMenu->addSeparator();
+    m_boardSectionSeparator = boardSectionSeparator;
     fileMenu->addAction(m_quitAct);
+    connect(m_fileMenu, &QMenu::aboutToShow, this, &MainWindow::updateCanvasesMenu);
+    updateCanvasesMenu();
 
     QMenu* editMenu = menuBar()->addMenu(uiText(QStringLiteral("&Edit")));
     editMenu->addAction(m_undoAct);
@@ -825,19 +824,19 @@ void MainWindow::createMenus()
     fillMenu->addAction(m_bgTileAct);
     canvasMenu->addSeparator();
 
-    // 需求：原“样式 → 画笔样式”提升为一级菜单“笔画”，“平滑笔画”归到这里。
-    QMenu* strokeMenu = menuBar()->addMenu(uiText(QStringLiteral("&Stroke")));
-    strokeMenu->setObjectName(QStringLiteral("StrokeMenu"));
+    // 需求：原“样式 → 画笔样式”提升为一级菜单“画笔”，“平滑笔画”归到这里。
+    QMenu* brushMenu = menuBar()->addMenu(uiText(QStringLiteral("&Brush")));
+    brushMenu->setObjectName(QStringLiteral("BrushMenu"));
 
-    strokeMenu->addAction(m_brushColorAct);
-    strokeMenu->addSeparator();
-    QMenu* brushWidthMenu = strokeMenu->addMenu(uiText(QStringLiteral("Brush width")));
+    brushMenu->addAction(m_brushColorAct);
+    brushMenu->addSeparator();
+    QMenu* brushWidthMenu = brushMenu->addMenu(uiText(QStringLiteral("Brush width")));
     brushWidthMenu->setObjectName(QStringLiteral("BrushWidthMenu"));
     for (QAction* action : m_brushWidthGroup->actions()) {
         brushWidthMenu->addAction(action);
     }
-    strokeMenu->addSeparator();
-    strokeMenu->addAction(m_smoothAct);
+    brushMenu->addSeparator();
+    brushMenu->addAction(m_smoothAct);
 
     QMenu* helpMenu = menuBar()->addMenu(uiText(QStringLiteral("&Help")));
     helpMenu->addAction(m_aboutAct);
@@ -2339,44 +2338,71 @@ void MainWindow::fitAll()
 
 void MainWindow::updateCanvasesMenu()
 {
-    if (!m_canvasesMenu) {
+    if (!m_fileMenu || !m_boardSectionSeparator) {
         return;
     }
 
-    m_canvasesMenu->clear();
-    // 需求 37：设置从“画布”菜单移到这里；最近画布列表仍动态更新。
-    m_canvasesMenu->addAction(m_settingsAct);
-    m_canvasesMenu->addSeparator();
-    // 画板菜单只保留文件菜单里没有的项：设置、最近画布、打开画布文件夹。
-    // 保存 / 另存为 / 打开画布 / 导入图片线稿化统一走文件菜单，避免同一操作两处出现。
+    // 先清掉上一轮动态生成的项：分隔线之后、退出之前的内容全部重建。
+    const QList<QAction*> existing = m_fileMenu->actions();
+    const int anchor = existing.indexOf(m_boardSectionSeparator);
+    if (anchor >= 0) {
+        for (int i = anchor + 1; i < existing.size(); ++i) {
+            QAction* action = existing.at(i);
+            if (!action || action == m_quitAct)
+                continue;
+            m_fileMenu->removeAction(action);
+            if (action != m_settingsAct)
+                action->deleteLater();
+        }
+    }
+
+    QList<QAction*> items;
+    // 需求 37：设置留在文件菜单里；最近画布列表每次都重新读目录。
+    items.append(m_settingsAct);
+    items.append(nullptr); // 占位：之后换成真正的分隔线
 
     QDir directory(AppSettings::canvasesDir());
     const QFileInfoList files = directory.entryInfoList({QStringLiteral("*.sbcanvas")}, QDir::Files, QDir::Time);
     if (files.isEmpty()) {
-        QAction* emptyAction = m_canvasesMenu->addAction(uiText(QStringLiteral("(Canvas folder is empty)")));
+        QAction* emptyAction = new QAction(uiText(QStringLiteral("(Canvas folder is empty)")), m_fileMenu);
         emptyAction->setEnabled(false);
+        items.append(emptyAction);
     } else {
         const int maximum = qMin(15, static_cast<int>(files.size()));
         for (int i = 0; i < maximum; ++i) {
             const QFileInfo info = files.at(i);
-            QAction* action =
-                m_canvasesMenu->addAction(makeIcon(IconId::Save, QColor(90, 98, 112), 16), info.completeBaseName());
+            QAction* action = new QAction(makeIcon(IconId::Save, QColor(90, 98, 112), 16),
+                                          info.completeBaseName(), m_fileMenu);
             action->setCheckable(true);
             action->setChecked(info.absoluteFilePath() == m_filePath);
             action->setToolTip(QDir::toNativeSeparators(info.absoluteFilePath()));
             const QString filePath = info.absoluteFilePath();
             connect(action, &QAction::triggered, this, [this, filePath]() { loadCanvasFile(filePath, true); });
+            items.append(action);
         }
         if (files.size() > maximum) {
             QAction* moreAction =
-                m_canvasesMenu->addAction(uiText(QStringLiteral("… %1 canvases in total")).arg(files.size()));
+                new QAction(uiText(QStringLiteral("… %1 canvases in total")).arg(files.size()), m_fileMenu);
             moreAction->setEnabled(false);
+            items.append(moreAction);
         }
     }
 
-    m_canvasesMenu->addSeparator();
-    QAction* openFolderAction = m_canvasesMenu->addAction(uiText(QStringLiteral("Open canvases folder")));
+    items.append(nullptr); // 占位：画布列表之后的分隔线
+    QAction* openFolderAction = new QAction(uiText(QStringLiteral("Open canvases folder")), m_fileMenu);
     connect(openFolderAction, &QAction::triggered, this, &MainWindow::openCanvasesFolder);
+    items.append(openFolderAction);
+
+    // 全部插到“退出”之前，保持原来画板菜单的顺序：设置 → 最近画布 → 画布文件夹。
+    for (QAction* item : items) {
+        if (!item) {
+            QAction* separator = new QAction(m_fileMenu);
+            separator->setSeparator(true);
+            m_fileMenu->insertAction(m_quitAct, separator);
+            continue;
+        }
+        m_fileMenu->insertAction(m_quitAct, item);
+    }
 }
 
 void MainWindow::openCanvasesFolder()

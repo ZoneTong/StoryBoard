@@ -180,7 +180,8 @@ class MainWindow : public QMainWindow {
     QActionGroup* m_backgroundModeGroup = nullptr;
     QActionGroup* m_fillStyleGroup = nullptr;
     QActionGroup* m_brushWidthGroup = nullptr;
-    QMenu* m_canvasesMenu = nullptr;
+    QMenu* m_fileMenu = nullptr;
+    QAction* m_boardSectionSeparator = nullptr;
     QMenu* m_shapeMenu = nullptr;
 
     QDockWidget* m_layerDock = nullptr;
