@@ -57,6 +57,7 @@
 #include <QPolygonF>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QScrollBar>
 #include <QSet>
 #include <QSize>
 #include <QSpinBox>
@@ -3459,6 +3460,21 @@ int runSelfTest(const QString& reportPath)
             check(!lineArtHint->isVisibleTo(&dialog), QStringLiteral("折叠后隐藏线稿化用法提示"));
             hintToggle->setChecked(true);
         }
+        // 默认尺寸下内容不能比视口宽，否则右侧标签/按钮会被裁掉。
+        dialog.resize(1100, 960);
+        dialog.show();
+        QApplication::processEvents();
+        QWidget* settingsContent = scroll ? scroll->widget() : nullptr;
+        check(settingsContent && settingsContent->width() >= settingsContent->minimumSizeHint().width(),
+              QStringLiteral("设置页默认尺寸下内容不被横向裁切"),
+              settingsContent ? QStringLiteral("width=%1 min=%2")
+                                    .arg(settingsContent->width())
+                                    .arg(settingsContent->minimumSizeHint().width())
+                              : QString());
+        // 够高的窗口（如 1080p）里应当一屏放下，不需要纵向滚动条。
+        check(scroll && scroll->verticalScrollBar()->maximum() == 0, QStringLiteral("够高的窗口不需要纵向滚动"),
+              scroll ? QStringLiteral("max=%1").arg(scroll->verticalScrollBar()->maximum()) : QString());
+        dialog.hide();
     }
     {
         // 需求：参数只在内存里生效，只有点“保存到配置文件”才覆盖配置文件。

@@ -19,6 +19,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QScreen>
 #include <QScrollArea>
 #include <QSignalBlocker>
 #include <QSpinBox>
@@ -32,8 +33,8 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     setWindowTitle(tr("Settings"));
     setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));
     setModal(true);
-    setMinimumSize(760, 520);
-    resize(920, 660);
+    setMinimumSize(900, 560);
+    resize(1060, 700);
 
     auto* rootLayout = new QVBoxLayout(this);
     rootLayout->setContentsMargins(22, 20, 22, 18);
@@ -353,7 +354,8 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     storageLayout->addWidget(pathEdit, 1);
     storageLayout->addWidget(openButton);
 
-    // 设置项变多后单列会超出屏幕：整页放进滚动区，宽屏时左右两列并排，窄屏自动出现纵向滚动条。
+    // 设置项变多后单列会超出屏幕：整页放进滚动区，宽屏时每行最多两列并排。
+    // 线稿化那组字段最多、标签最长，单独占满一整行，避免被两列挤压导致右侧文字截断。
     auto* scroll = new QScrollArea(this);
     scroll->setObjectName(QStringLiteral("SettingsScroll"));
     scroll->setWidgetResizable(true);
@@ -366,15 +368,24 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     grid->setHorizontalSpacing(14);
     grid->setVerticalSpacing(12);
     grid->addWidget(languageGroup, 0, 0);
-    grid->addWidget(brushGroup, 1, 0);
-    grid->addWidget(canvasGroup, 2, 0);
-    grid->addWidget(lineArtGroup, 0, 1, 4, 1);
-    grid->addWidget(storageGroup, 4, 0, 1, 2);
+    grid->addWidget(brushGroup, 0, 1);
+    grid->addWidget(canvasGroup, 1, 0);
+    grid->addWidget(storageGroup, 1, 1);
+    grid->addWidget(lineArtGroup, 2, 0, 1, 2);
     grid->setColumnStretch(0, 1);
     grid->setColumnStretch(1, 1);
     grid->setRowStretch(3, 1);
     scroll->setWidget(content);
     rootLayout->addWidget(scroll);
+
+    // 最小宽度跟着内容走：英文标签更长、系统 DPI 更高时也不会把最右侧的标签和按钮裁掉。
+    const int contentMinWidth = content->minimumSizeHint().width();
+    setMinimumWidth(qMax(900, contentMinWidth + 60));
+    // 高度按内容算：能一屏放下就不开滚动；屏幕不够高时取屏幕可用高度的九成，其余交给滚动条。
+    const int wantedHeight = content->sizeHint().height() + 110;
+    const QRect available = screen() ? screen()->availableGeometry() : QRect(0, 0, 1920, 1080);
+    const int fittedHeight = qBound(560, wantedHeight, qMax(560, available.height() - 60));
+    resize(qMax(1060, minimumWidth() + 40), fittedHeight);
 
     auto* buttons =
         new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel | QDialogButtonBox::Reset, this);
