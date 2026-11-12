@@ -1881,8 +1881,8 @@ Use the checkbox to show or hide it.</source>
       <translation>识别到的色块数超过该值时，自动缩小处理尺寸重算，让生成的笔画数量保持在合理范围。</translation>
     </message>
     <message>
-      <source>&lt;b&gt;How to tune&lt;/b&gt;&lt;ul&gt;&lt;li&gt;Color similarity: RGB color distance (0-441). Lower keeps more small props, higher merges more fragments; adjacent merging only joins blocks that actually touch.&lt;/li&gt;&lt;li&gt;Simplify tolerance: how far a traced point may move. Smaller follows pixel steps, larger flattens arcs into straight segments.&lt;/li&gt;&lt;li&gt;Thinnest band: drops antialiasing halos; 0 keeps every thin band, higher also drops genuinely thin lines.&lt;/li&gt;&lt;li&gt;Block count limit: over the limit the image is traced at a smaller size instead of losing blocks. Uncheck to trace at full size (slower on busy images).&lt;/li&gt;&lt;li&gt;Stroke width is fixed at 1. OK and Cancel apply to this run only; Save to configuration file writes StoryBoard.ini.&lt;/li&gt;&lt;/ul&gt;</source>
-      <translation>&lt;b&gt;怎么调&lt;/b&gt;&lt;ul&gt;&lt;li&gt;颜色近似度：RGB 颜色距离（0–441），调小保更多小道具，调大合并更多碎块；相邻合并只作用于真正贴边的色块。&lt;/li&gt;&lt;li&gt;简化容差：轮廓点允许挪动的距离，越小越贴像素台阶，越大弧线越平直。&lt;/li&gt;&lt;li&gt;最细条带：丢掉抗锯齿光晕，0 表示连极细条带也描，调大会连真正细的线条一起丢掉。&lt;/li&gt;&lt;li&gt;色块上限：超过后缩小处理尺寸重描，不会丢色块；取消勾选按原尺寸硬算（图复杂时更慢）。&lt;/li&gt;&lt;li&gt;线宽固定为 1。确定和取消只影响本次运行，点「保存到配置文件」才写入 StoryBoard.ini。&lt;/li&gt;&lt;/ul&gt;</translation>
+      <source>&lt;b&gt;How to tune&lt;/b&gt;&lt;ul&gt;&lt;li&gt;Color similarity: RGB color distance (0-441). Lower keeps more small props, higher merges more fragments; adjacent merging only joins blocks that actually touch.&lt;/li&gt;&lt;li&gt;Simplify tolerance: how far a traced point may move. Smaller follows pixel steps, larger flattens arcs into straight segments.&lt;/li&gt;&lt;li&gt;Thinnest band: drops antialiasing halos; 0 keeps every thin band, higher also drops genuinely thin lines.&lt;/li&gt;&lt;li&gt;Block count limit: over the limit the image is traced at a smaller size instead of losing blocks. Uncheck to trace at full size (slower on busy images).&lt;/li&gt;&lt;li&gt;Stroke width is fixed at 1. OK and Cancel apply to this run only; Save to configuration file writes StoryBoard.ini; Restore initial values reloads the parameters currently in StoryBoard.ini.&lt;/li&gt;&lt;/ul&gt;</source>
+      <translation>&lt;b&gt;怎么调&lt;/b&gt;&lt;ul&gt;&lt;li&gt;颜色近似度：RGB 颜色距离（0–441），调小保更多小道具，调大合并更多碎块；相邻合并只作用于真正贴边的色块。&lt;/li&gt;&lt;li&gt;简化容差：轮廓点允许挪动的距离，越小越贴像素台阶，越大弧线越平直。&lt;/li&gt;&lt;li&gt;最细条带：丢掉抗锯齿光晕，0 表示连极细条带也描，调大会连真正细的线条一起丢掉。&lt;/li&gt;&lt;li&gt;色块上限：超过后缩小处理尺寸重描，不会丢色块；取消勾选按原尺寸硬算（图复杂时更慢）。&lt;/li&gt;&lt;li&gt;线宽固定为 1。确定和取消只影响本次运行，点「保存到配置文件」才写入 StoryBoard.ini；点「恢复初始值」重新读回配置文件里的那一套。&lt;/li&gt;&lt;/ul&gt;</translation>
     </message>
     <message>
       <source>&lt;b&gt;How to tune&lt;/b&gt;&lt;ul&gt;&lt;li&gt;Color similarity: RGB color distance (0-441). Lower keeps more small props, higher merges more fragments; adjacent merging only joins blocks that actually touch.&lt;/li&gt;&lt;li&gt;Simplify tolerance: how far a traced point may move. Smaller follows pixel steps, larger flattens arcs into straight segments.&lt;/li&gt;&lt;li&gt;Thinnest band: drops antialiasing halos; 0 keeps every thin band, higher also drops genuinely thin lines.&lt;/li&gt;&lt;li&gt;Block count limit: over the limit the image is traced at a smaller size instead of losing blocks. Uncheck to trace at full size (slower on busy images).&lt;/li&gt;&lt;li&gt;Saved with this dialog: these values become the defaults for the import dialog, which can overwrite them with its own Save to configuration file button.&lt;/li&gt;&lt;/ul&gt;</source>
@@ -1980,8 +1980,8 @@ Use the checkbox to show or hide it.</source>
       <translation>默认勾选：色块过多时缩小处理尺寸重算，而不是丢弃色块，图里的内容不会凭空消失；取消勾选后按原始处理尺寸硬算。</translation>
     </message>
     <message>
-      <source>&lt;b&gt;How to tune&lt;/b&gt;&lt;ul&gt;&lt;li&gt;Color similarity: RGB color distance (0-441). Lower keeps more small props, higher merges more fragments; adjacent merging only joins blocks that actually touch.&lt;/li&gt;&lt;li&gt;Simplify tolerance: how far a traced point may move. Smaller follows pixel steps, larger flattens arcs into straight segments.&lt;/li&gt;&lt;li&gt;Thinnest band: drops antialiasing halos; 0 keeps every thin band, higher also drops genuinely thin lines.&lt;/li&gt;&lt;li&gt;Block count limit: over the limit the image is traced at a smaller size instead of losing blocks. Uncheck to trace at full size (slower on busy images).&lt;/li&gt;&lt;li&gt;Stroke width is fixed at 1. OK and Cancel apply to this run only; Save to configuration file writes StoryBoard.ini.&lt;/li&gt;&lt;/ul&gt;</source>
-      <translation>&lt;b&gt;怎么调&lt;/b&gt;&lt;ul&gt;&lt;li&gt;颜色近似度：RGB 颜色距离（0–441），调小保更多小道具，调大合并更多碎块；相邻合并只作用于真正贴边的色块。&lt;/li&gt;&lt;li&gt;简化容差：轮廓点允许挪动的距离，越小越贴像素台阶，越大弧线越平直。&lt;/li&gt;&lt;li&gt;最细条带：丢掉抗锯齿光晕，0 表示连极细条带也描，调大会连真正细的线条一起丢掉。&lt;/li&gt;&lt;li&gt;色块上限：超过后缩小处理尺寸重描，不会丢色块；取消勾选按原尺寸硬算（图复杂时更慢）。&lt;/li&gt;&lt;li&gt;线宽固定为 1。确定和取消只影响本次运行，点「保存到配置文件」才写入 StoryBoard.ini。&lt;/li&gt;&lt;/ul&gt;</translation>
+      <source>&lt;b&gt;How to tune&lt;/b&gt;&lt;ul&gt;&lt;li&gt;Color similarity: RGB color distance (0-441). Lower keeps more small props, higher merges more fragments; adjacent merging only joins blocks that actually touch.&lt;/li&gt;&lt;li&gt;Simplify tolerance: how far a traced point may move. Smaller follows pixel steps, larger flattens arcs into straight segments.&lt;/li&gt;&lt;li&gt;Thinnest band: drops antialiasing halos; 0 keeps every thin band, higher also drops genuinely thin lines.&lt;/li&gt;&lt;li&gt;Block count limit: over the limit the image is traced at a smaller size instead of losing blocks. Uncheck to trace at full size (slower on busy images).&lt;/li&gt;&lt;li&gt;Stroke width is fixed at 1. OK and Cancel apply to this run only; Save to configuration file writes StoryBoard.ini; Restore initial values reloads the parameters currently in StoryBoard.ini.&lt;/li&gt;&lt;/ul&gt;</source>
+      <translation>&lt;b&gt;怎么调&lt;/b&gt;&lt;ul&gt;&lt;li&gt;颜色近似度：RGB 颜色距离（0–441），调小保更多小道具，调大合并更多碎块；相邻合并只作用于真正贴边的色块。&lt;/li&gt;&lt;li&gt;简化容差：轮廓点允许挪动的距离，越小越贴像素台阶，越大弧线越平直。&lt;/li&gt;&lt;li&gt;最细条带：丢掉抗锯齿光晕，0 表示连极细条带也描，调大会连真正细的线条一起丢掉。&lt;/li&gt;&lt;li&gt;色块上限：超过后缩小处理尺寸重描，不会丢色块；取消勾选按原尺寸硬算（图复杂时更慢）。&lt;/li&gt;&lt;li&gt;线宽固定为 1。确定和取消只影响本次运行，点「保存到配置文件」才写入 StoryBoard.ini；点「恢复初始值」重新读回配置文件里的那一套。&lt;/li&gt;&lt;/ul&gt;</translation>
     </message>
     <message>
       <source>OK</source>
@@ -1991,7 +1991,15 @@ Use the checkbox to show or hide it.</source>
       <source>Cancel</source>
       <translation>取消</translation>
     </message>
-  </context>
+      <message>
+      <source>Restore initial values</source>
+      <translation>恢复初始值</translation>
+    </message>
+    <message>
+      <source>Reload the parameters currently stored in StoryBoard.ini and discard unsaved changes.</source>
+      <translation>重新读回 StoryBoard.ini 里当前保存的参数，丢掉本次未保存的改动。</translation>
+    </message>
+</context>
   <context>
     <name>MainWindow</name>
     <message>

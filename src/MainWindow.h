@@ -119,8 +119,9 @@ class MainWindow : public QMainWindow {
     bool changeShortcut(QAction* action, const QKeySequence& sequence);
     QString documentName() const;
 
-    // 动作 → 默认快捷键（便携文本），作为配置里 shortcutOverrides 的键。
-    QHash<QAction*, QString> m_shortcutIds;
+    // 动作 → 默认快捷键（便携文本，多键动作保留整组），作为配置里 shortcutOverrides 的键。
+    // 只在启动时采集一次，改键后不覆盖，才能「恢复默认」。
+    QHash<QAction*, QStringList> m_defaultShortcuts;
 
     CanvasScene* m_scene = nullptr;
     CanvasView* m_view = nullptr;

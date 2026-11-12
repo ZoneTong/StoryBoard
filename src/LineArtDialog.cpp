@@ -138,7 +138,8 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent) : QDi
                                "<li>Block count limit: over the limit the image is traced at a smaller size instead of "
                                "losing blocks. Uncheck to trace at full size (slower on busy images).</li>"
                                "<li>Stroke width is fixed at 1. OK and Cancel apply to this run only; Save to "
-                               "configuration file writes StoryBoard.ini.</li>"
+                               "configuration file writes StoryBoard.ini; Restore initial values reloads the "
+                               "parameters currently in StoryBoard.ini.</li>"
                                "</ul>"),
                             this);
     hint->setTextFormat(Qt::RichText);
@@ -156,6 +157,13 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent) : QDi
     m_saveToConfigButton->setToolTip(
         tr("Write the parameters above into StoryBoard.ini now; otherwise they only apply to this session."));
     buttons->addButton(m_saveToConfigButton, QDialogButtonBox::ActionRole);
+
+    // 「恢复初始值」：把上面的数值重新读回配置文件里当前保存的一套，丢掉本次未保存的改动。
+    auto* restoreButton = new QPushButton(tr("Restore initial values"), this);
+    restoreButton->setObjectName(QStringLiteral("LineArtRestoreButton"));
+    restoreButton->setToolTip(
+        tr("Reload the parameters currently stored in StoryBoard.ini and discard unsaved changes."));
+    buttons->addButton(restoreButton, QDialogButtonBox::ResetRole);
     connect(m_saveToConfigButton, &QPushButton::clicked, this, [this]() {
         m_saveToConfig = true;
         accept();
@@ -224,6 +232,23 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent) : QDi
                 syncPresetCombo();
             });
     syncPresetCombo();
+
+    auto restoreFromFile = [this, syncPresetCombo]() {
+        AppSettings fileSettings;
+        fileSettings.load();
+        m_applyingPreset = true;
+        m_levelsSpin->setValue(fileSettings.lineArtColorLevels);
+        m_paletteMergeSpin->setValue(fileSettings.lineArtPaletteMerge);
+        m_adjacentMergeSpin->setValue(fileSettings.lineArtAdjacentMerge);
+        m_minAreaSpin->setValue(fileSettings.lineArtMinRegionArea);
+        m_toleranceSpin->setValue(fileSettings.lineArtSimplifyTolerance);
+        m_thicknessSpin->setValue(fileSettings.lineArtMinThickness);
+        m_adaptiveLimitSpin->setValue(fileSettings.lineArtAdaptiveLimit);
+        m_adaptiveCheck->setChecked(fileSettings.lineArtAdaptiveDownscale);
+        m_applyingPreset = false;
+        syncPresetCombo();
+    };
+    connect(restoreButton, &QPushButton::clicked, this, restoreFromFile);
 }
 
 LineArtConverter::Options LineArtDialog::options() const

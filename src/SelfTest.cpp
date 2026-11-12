@@ -3429,6 +3429,29 @@ int runSelfTest(const QString& reportPath)
     }
 
     {
+        // 「恢复初始值」：改完数值点一下，应该回到配置文件里当前保存的那一套。
+        AppSettings fileSettings;
+        fileSettings.load();
+        const int fileLevels = fileSettings.lineArtColorLevels;
+        LineArtDialog dialog(fileSettings);
+        auto* levels = dialog.findChild<QSpinBox*>(QStringLiteral("LineArtLevelsSpin"));
+        auto* restore = dialog.findChild<QPushButton*>(QStringLiteral("LineArtRestoreButton"));
+        check(restore != nullptr, QStringLiteral("线稿化参数窗提供「恢复初始值」按钮"));
+        if (levels) {
+            levels->setValue(fileLevels == 2 ? 3 : 2);
+        }
+        const int editedLevels = levels ? levels->value() : -1;
+        if (restore) {
+            restore->click();
+        }
+        check(levels && levels->value() == fileLevels, QStringLiteral("恢复初始值后回到配置文件里的参数"),
+              QStringLiteral("edited=%1 restored=%2 file=%3")
+                  .arg(editedLevels)
+                  .arg(levels ? levels->value() : -1)
+                  .arg(fileLevels));
+    }
+
+    {
         // 需求：选完图片先弹线稿化参数，点确定后才生成笔画。
         const AppSettings defaults;
         LineArtDialog dialog(defaults);
