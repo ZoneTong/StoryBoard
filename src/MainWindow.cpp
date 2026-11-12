@@ -413,8 +413,8 @@ void MainWindow::createActions()
                              QKeySequence(QStringLiteral("Ctrl+I")),
                              uiText(QStringLiteral("Insert images as movable, resizable items (Ctrl+I)")));
     m_lineArtAct = makeAction(
-        this, IconId::LineArt, uiText(QStringLiteral("Import outline image")), QKeySequence(),
-        uiText(QStringLiteral("Trace the color-block outlines of an image into stroke items (line width 1)")));
+        this, IconId::LineArt, tr("Import outline image"), QKeySequence(),
+        tr("Trace the color-block outlines of an image into stroke items (line width 1)"));
     m_exportAct = makeAction(this, IconId::Export, uiText(QStringLiteral("Export canvas…")),
                              QKeySequence(QStringLiteral("Ctrl+E")),
                              uiText(QStringLiteral("Export as PNG / JPEG / PDF (Ctrl+E)")));
@@ -1675,7 +1675,7 @@ void MainWindow::importOutlineImageDialog()
         startDirectory = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
     }
 
-    const QString file = QFileDialog::getOpenFileName(this, uiText(QStringLiteral("Import outline image")),
+    const QString file = QFileDialog::getOpenFileName(this, tr("Import outline image"),
                                                       startDirectory, imageFilter());
     if (file.isEmpty()) {
         return;
@@ -1705,8 +1705,8 @@ void MainWindow::importOutlineImageFile(const QString& file, const LineArtConver
 
     if (!m_scene->isActiveLayerWritable()) {
         statusBar()->showMessage(
-            uiText(QStringLiteral("The current layer is locked or hidden; the image outline cannot be imported. Unlock "
-                                  "or switch layers in the layer panel first.")),
+            tr("The current layer is locked or hidden; the image outline cannot be imported. Unlock "
+               "or switch layers in the layer panel first."),
             5000);
         return;
     }
@@ -1716,15 +1716,15 @@ void MainWindow::importOutlineImageFile(const QString& file, const LineArtConver
     const QImage image = reader.read();
     if (image.isNull()) {
         QMessageBox::warning(
-            this, uiText(QStringLiteral("Import outline image")),
-            uiText(QStringLiteral("Could not read the image:\n%1")).arg(QDir::toNativeSeparators(file)));
+            this, tr("Import outline image"),
+            tr("Could not read the image:\n%1").arg(QDir::toNativeSeparators(file)));
         return;
     }
 
     const LineArtConverter::Result traced = LineArtConverter::extract(image, options);
     if (!traced.ok || traced.outlines.isEmpty()) {
-        QMessageBox::warning(this, uiText(QStringLiteral("Import outline image")),
-                             traced.error.isEmpty() ? uiText(QStringLiteral("No color blocks were found in the image."))
+        QMessageBox::warning(this, tr("Import outline image"),
+                             traced.error.isEmpty() ? tr("No color blocks were found in the image.")
                                                     : uiText(traced.error));
         return;
     }
@@ -1762,17 +1762,17 @@ void MainWindow::importOutlineImageFile(const QString& file, const LineArtConver
     }
 
     if (items.isEmpty()) {
-        QMessageBox::warning(this, uiText(QStringLiteral("Import outline image")),
-                             uiText(QStringLiteral("No color blocks were found in the image.")));
+        QMessageBox::warning(this, tr("Import outline image"),
+                             tr("No color blocks were found in the image."));
         return;
     }
 
-    m_scene->addItemsWithUndo(items, uiText(QStringLiteral("Import outline image")));
+    m_scene->addItemsWithUndo(items, tr("Import outline image"));
 
     m_settings.lastImageDir = QFileInfo(file).absolutePath();
     m_settings.save();
 
-    statusBar()->showMessage(uiText(QStringLiteral("%1 stroke(s) created from the image outlines")).arg(items.size()),
+    statusBar()->showMessage(tr("%1 stroke(s) created from the image outlines").arg(items.size()),
                              5000);
     // 色块数量上限已放开：有多少块就描多少块，不再提示“只转换了前 N 个”。
 }

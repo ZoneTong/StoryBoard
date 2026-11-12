@@ -1881,4 +1881,317 @@ Use the checkbox to show or hide it.</source>
       <translation>近似度是 RGB 颜色距离（0–441）：数值越小越保小道具，越大越能把碎块并掉。相邻合并只作用于真正贴边的两块，真正起决定作用的是颜色参数。</translation>
     </message>
   </context>
+  <context>
+    <name>LineArtDialog</name>
+    <message>
+      <source>Image outline tracing</source>
+      <translation>图片线稿化</translation>
+    </message>
+    <message>
+      <source>Custom</source>
+      <translation>自定义</translation>
+    </message>
+    <message>
+      <source>Applies a tested parameter set to all items below; editing any value switches back to Custom.</source>
+      <translation>一键换成一组实测过的参数；手动改动下面任一项就会切回“自定义”。</translation>
+    </message>
+    <message>
+      <source>Preset</source>
+      <translation>档位</translation>
+    </message>
+    <message>
+      <source>How many steps each color channel is cut into; more steps keeps subtle shading but also more fragments.</source>
+      <translation>每个颜色通道切成几级；级数越多越能保住细微明暗，也越容易切出碎块。</translation>
+    </message>
+    <message>
+      <source>Color levels</source>
+      <translation>颜色级数</translation>
+    </message>
+    <message>
+      <source>Two colors whose distance is under this value count as one color; smaller values keep small colored props.</source>
+      <translation>两种颜色差小于该值就算同一种颜色；调小可以把小道具单独留出来。</translation>
+    </message>
+    <message>
+      <source>Same color similarity</source>
+      <translation>颜色近似度（同色合并）</translation>
+    </message>
+    <message>
+      <source>Adjacent blocks whose colors differ less than this are drawn as one block; 0 disables merging.</source>
+      <translation>相邻两块的颜色差小于该值时并成一块再描轮廓；0 表示不合并。</translation>
+    </message>
+    <message>
+      <source>Adjacent color similarity</source>
+      <translation>颜色近似度（相邻色块）</translation>
+    </message>
+    <message>
+      <source>Blocks smaller than this area are skipped; lower it to trace tiny props.</source>
+      <translation>面积小于该值的色块不描边；调小可以描出更细小的道具。</translation>
+    </message>
+    <message>
+      <source>Smallest block</source>
+      <translation>最小色块</translation>
+    </message>
+    <message>
+      <source>How far the traced outline may deviate from its points; smaller follows pixel steps, larger turns arcs into fewer, straighter segments.</source>
+      <translation>轮廓点允许偏离原像素轮廓的距离；越小越贴着像素走，越大圆弧会被压成更少更直的线段。</translation>
+    </message>
+    <message>
+      <source>Simplify tolerance</source>
+      <translation>简化容差</translation>
+    </message>
+    <message>
+      <source>Blocks whose average width is under this value are not traced; 0 keeps every thin band, higher drops antialiasing halos.</source>
+      <translation>平均宽度小于该值的条带不描边；0 表示连极细条带也描，调大可以滤掉抗锯齿光晕。</translation>
+    </message>
+    <message>
+      <source>Thinnest band</source>
+      <translation>最细条带</translation>
+    </message>
+    <message>
+      <source> blocks</source>
+      <translation> 块</translation>
+    </message>
+    <message>
+      <source>Once the detected block count passes this value, the image is processed at a smaller size so the stroke count stays reasonable.</source>
+      <translation>识别到的色块数超过该值时，自动缩小处理尺寸重算，让生成的笔画数量保持在合理范围。</translation>
+    </message>
+    <message>
+      <source>Block count limit</source>
+      <translation>色块数量上限</translation>
+    </message>
+    <message>
+      <source>Auto downsample when exceeded</source>
+      <translation>色块过多时自动降采样</translation>
+    </message>
+    <message>
+      <source>Checked by default: shrink the processing size instead of dropping blocks, so nothing disappears from the image. Uncheck to trace at full size.</source>
+      <translation>默认勾选：色块过多时缩小处理尺寸重算，而不是丢弃色块，图里的内容不会凭空消失；取消勾选后按原始处理尺寸硬算。</translation>
+    </message>
+    <message>
+      <source>Similarity values are RGB color distances (0-441): lower keeps more small props, higher merges more fragments. Adjacent merging only joins blocks that actually touch, so colour is the knob that changes the result. Stroke width is fixed at 1.</source>
+      <translation>近似度是 RGB 颜色距离（0–441）：数值越小越保小道具，越大越能把碎块并掉。相邻合并只作用于真正贴边的两块，真正起决定作用的是颜色参数。线宽固定为 1。</translation>
+    </message>
+    <message>
+      <source>OK</source>
+      <translation>确定</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>取消</translation>
+    </message>
+  </context>
+  <context>
+    <name>MainWindow</name>
+    <message>
+      <source>Import outline image</source>
+      <translation>导入图片线稿化</translation>
+    </message>
+    <message>
+      <source>Trace the color-block outlines of an image into stroke items (line width 1)</source>
+      <translation>把图片里的各色块轮廓识别为笔画图元（线宽 1）</translation>
+    </message>
+    <message>
+      <source>The current layer is locked or hidden; the image outline cannot be imported. Unlock or switch layers in the layer panel first.</source>
+      <translation>当前图层已锁定或已隐藏，无法导入图片线稿化。请先在右侧图层面板解锁或切换图层。</translation>
+    </message>
+    <message>
+      <source>No color blocks were found in the image.</source>
+      <translation>图片里没有识别到可描边的色块。</translation>
+    </message>
+    <message>
+      <source>%1 stroke(s) created from the image outlines</source>
+      <translation>已从图片轮廓生成 %1 条笔画</translation>
+    </message>
+  </context>
+  <context>
+    <name>SettingsDialog</name>
+    <message>
+      <source>Settings</source>
+      <translation>设置</translation>
+    </message>
+    <message>
+      <source>Board settings</source>
+      <translation>画板配置</translation>
+    </message>
+    <message>
+      <source>These settings become the defaults for new brushes and canvases and are saved automatically.</source>
+      <translation>这些设置会作为新画笔、新画布的默认值，并自动保存。</translation>
+    </message>
+    <message>
+      <source>Interface language</source>
+      <translation>界面语言</translation>
+    </message>
+    <message>
+      <source>Follow system</source>
+      <translation>跟随系统</translation>
+    </message>
+    <message>
+      <source>Simplified Chinese</source>
+      <translation>简体中文</translation>
+    </message>
+    <message>
+      <source>Language</source>
+      <translation>语言</translation>
+    </message>
+    <message>
+      <source>The interface updates immediately and this choice is remembered.</source>
+      <translation>切换后界面会立即更新，并记住这个选择。</translation>
+    </message>
+    <message>
+      <source>Brush defaults</source>
+      <translation>画笔默认值</translation>
+    </message>
+    <message>
+      <source>Default color</source>
+      <translation>默认颜色</translation>
+    </message>
+    <message>
+      <source>Default width</source>
+      <translation>默认粗细</translation>
+    </message>
+    <message>
+      <source>0 disables automatic smoothing; larger values tolerate more hand jitter and deviation.</source>
+      <translation>0 表示关闭自动平滑；数值越大，允许的手抖与偏差越大。</translation>
+    </message>
+    <message>
+      <source>Auto-smooth tolerance</source>
+      <translation>自动平滑容差</translation>
+    </message>
+    <message>
+      <source>Canvas</source>
+      <translation>画布</translation>
+    </message>
+    <message>
+      <source>Canvas size</source>
+      <translation>画布尺寸</translation>
+    </message>
+    <message>
+      <source>Show helper grid</source>
+      <translation>显示辅助网格</translation>
+    </message>
+    <message>
+      <source>Canvas surround color</source>
+      <translation>画布外围颜色</translation>
+    </message>
+    <message>
+      <source>Changing the canvas size does not move existing items; undo restores it.</source>
+      <translation>修改画布尺寸不会移动已有图元，可通过撤销恢复。</translation>
+    </message>
+    <message>
+      <source>Image outline tracing</source>
+      <translation>图片线稿化</translation>
+    </message>
+    <message>
+      <source>Custom</source>
+      <translation>自定义</translation>
+    </message>
+    <message>
+      <source>Applies a tested parameter set to all items below; editing any value switches back to Custom.</source>
+      <translation>一键换成一组实测过的参数；手动改动下面任一项就会切回“自定义”。</translation>
+    </message>
+    <message>
+      <source>Preset</source>
+      <translation>档位</translation>
+    </message>
+    <message>
+      <source>How many steps each color channel is cut into; more steps keeps subtle shading but also more fragments.</source>
+      <translation>每个颜色通道切成几级；级数越多越能保住细微明暗，也越容易切出碎块。</translation>
+    </message>
+    <message>
+      <source>Color levels</source>
+      <translation>颜色级数</translation>
+    </message>
+    <message>
+      <source>Two colors whose distance is under this value count as one color; smaller values keep small colored props.</source>
+      <translation>两种颜色差小于该值就算同一种颜色；调小可以把小道具单独留出来。</translation>
+    </message>
+    <message>
+      <source>Same color similarity</source>
+      <translation>颜色近似度（同色合并）</translation>
+    </message>
+    <message>
+      <source>Adjacent blocks whose colors differ less than this are drawn as one block; 0 disables merging.</source>
+      <translation>相邻两块的颜色差小于该值时并成一块再描轮廓；0 表示不合并。</translation>
+    </message>
+    <message>
+      <source>Adjacent color similarity</source>
+      <translation>颜色近似度（相邻色块）</translation>
+    </message>
+    <message>
+      <source>Blocks smaller than this area are skipped; lower it to trace tiny props.</source>
+      <translation>面积小于该值的色块不描边；调小可以描出更细小的道具。</translation>
+    </message>
+    <message>
+      <source>Smallest block</source>
+      <translation>最小色块</translation>
+    </message>
+    <message>
+      <source>How far the traced outline may deviate from its points; smaller follows pixel steps, larger turns arcs into fewer, straighter segments.</source>
+      <translation>轮廓点允许偏离原像素轮廓的距离；越小越贴着像素走，越大圆弧会被压成更少更直的线段。</translation>
+    </message>
+    <message>
+      <source>Simplify tolerance</source>
+      <translation>简化容差</translation>
+    </message>
+    <message>
+      <source>Blocks whose average width is under this value are not traced; 0 keeps every thin band, higher drops antialiasing halos.</source>
+      <translation>平均宽度小于该值的条带不描边；0 表示连极细条带也描，调大可以滤掉抗锯齿光晕。</translation>
+    </message>
+    <message>
+      <source>Thinnest band</source>
+      <translation>最细条带</translation>
+    </message>
+    <message>
+      <source> blocks</source>
+      <translation> 块</translation>
+    </message>
+    <message>
+      <source>Once the detected block count passes this value, the image is processed at a smaller size so the stroke count stays reasonable.</source>
+      <translation>识别到的色块数超过该值时，自动缩小处理尺寸重算，让生成的笔画数量保持在合理范围。</translation>
+    </message>
+    <message>
+      <source>Block count limit</source>
+      <translation>色块数量上限</translation>
+    </message>
+    <message>
+      <source>Auto downsample when exceeded</source>
+      <translation>色块过多时自动降采样</translation>
+    </message>
+    <message>
+      <source>Checked by default: shrink the processing size instead of dropping blocks, so nothing disappears from the image. Uncheck to trace at full size.</source>
+      <translation>默认勾选：色块过多时缩小处理尺寸重算，而不是丢弃色块，图里的内容不会凭空消失；取消勾选后按原始处理尺寸硬算。</translation>
+    </message>
+    <message>
+      <source>Similarity values are RGB color distances (0-441): lower keeps more small props, higher merges more fragments. Adjacent merging only joins blocks that actually touch, so colour is the knob that changes the result.</source>
+      <translation>近似度是 RGB 颜色距离（0–441）：数值越小越保小道具，越大越能把碎块并掉。相邻合并只作用于真正贴边的两块，真正起决定作用的是颜色参数。</translation>
+    </message>
+    <message>
+      <source>Canvas storage</source>
+      <translation>画布存储</translation>
+    </message>
+    <message>
+      <source>Open folder</source>
+      <translation>打开文件夹</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>保存</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>取消</translation>
+    </message>
+    <message>
+      <source>Restore defaults</source>
+      <translation>恢复默认值</translation>
+    </message>
+    <message>
+      <source>Choose the default brush color</source>
+      <translation>选择默认画笔颜色</translation>
+    </message>
+    <message>
+      <source>Choose canvas surround color</source>
+      <translation>选择画布外围颜色</translation>
+    </message>
+  </context>
 </TS>

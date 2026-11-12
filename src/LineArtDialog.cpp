@@ -19,7 +19,7 @@
 LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
     : QDialog(parent)
 {
-    setWindowTitle(uiText(QStringLiteral("Image outline tracing")));
+    setWindowTitle(tr("Image outline tracing"));
     setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));
     setModal(true);
     setMinimumWidth(460);
@@ -28,11 +28,11 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
     rootLayout->setContentsMargins(22, 20, 22, 18);
     rootLayout->setSpacing(14);
 
-    auto* title = new QLabel(uiText(QStringLiteral("Image outline tracing")), this);
+    auto* title = new QLabel(tr("Image outline tracing"), this);
     title->setObjectName(QStringLiteral("DialogTitle"));
     rootLayout->addWidget(title);
 
-    auto* lineArtGroup = new QGroupBox(uiText(QStringLiteral("Image outline tracing")), this);
+    auto* lineArtGroup = new QGroupBox(tr("Image outline tracing"), this);
     auto* lineArtForm = new QFormLayout(lineArtGroup);
     lineArtForm->setContentsMargins(16, 18, 16, 16);
     lineArtForm->setSpacing(10);
@@ -41,33 +41,33 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
     m_presetCombo->setObjectName(QStringLiteral("LineArtPresetCombo"));
     for (int i = 0; i < lineArtPresetCount(); ++i)
         m_presetCombo->addItem(uiText(QString::fromLatin1(lineArtPreset(i).name)), i);
-    m_presetCombo->addItem(uiText(QStringLiteral("Custom")), -1);
-    m_presetCombo->setToolTip(uiText(QStringLiteral("Applies a tested parameter set to all items below; editing any value switches back to Custom.")));
-    lineArtForm->addRow(uiText(QStringLiteral("Preset")), m_presetCombo);
+    m_presetCombo->addItem(tr("Custom"), -1);
+    m_presetCombo->setToolTip(tr("Applies a tested parameter set to all items below; editing any value switches back to Custom."));
+    lineArtForm->addRow(tr("Preset"), m_presetCombo);
 
     m_levelsSpin = new QSpinBox(lineArtGroup);
     m_levelsSpin->setObjectName(QStringLiteral("LineArtLevelsSpin"));
     m_levelsSpin->setRange(2, 12);
     m_levelsSpin->setValue(settings.lineArtColorLevels);
     m_levelsSpin->setFixedHeight(30);
-    m_levelsSpin->setToolTip(uiText(QStringLiteral("How many steps each color channel is cut into; more steps keeps subtle shading but also more fragments.")));
-    lineArtForm->addRow(uiText(QStringLiteral("Color levels")), m_levelsSpin);
+    m_levelsSpin->setToolTip(tr("How many steps each color channel is cut into; more steps keeps subtle shading but also more fragments."));
+    lineArtForm->addRow(tr("Color levels"), m_levelsSpin);
 
     m_paletteMergeSpin = new QSpinBox(lineArtGroup);
     m_paletteMergeSpin->setObjectName(QStringLiteral("LineArtPaletteMergeSpin"));
     m_paletteMergeSpin->setRange(0, 160);
     m_paletteMergeSpin->setValue(settings.lineArtPaletteMerge);
     m_paletteMergeSpin->setFixedHeight(30);
-    m_paletteMergeSpin->setToolTip(uiText(QStringLiteral("Two colors whose distance is under this value count as one color; smaller values keep small colored props.")));
-    lineArtForm->addRow(uiText(QStringLiteral("Same color similarity")), m_paletteMergeSpin);
+    m_paletteMergeSpin->setToolTip(tr("Two colors whose distance is under this value count as one color; smaller values keep small colored props."));
+    lineArtForm->addRow(tr("Same color similarity"), m_paletteMergeSpin);
 
     m_adjacentMergeSpin = new QSpinBox(lineArtGroup);
     m_adjacentMergeSpin->setObjectName(QStringLiteral("LineArtAdjacentMergeSpin"));
     m_adjacentMergeSpin->setRange(0, 160);
     m_adjacentMergeSpin->setValue(settings.lineArtAdjacentMerge);
     m_adjacentMergeSpin->setFixedHeight(30);
-    m_adjacentMergeSpin->setToolTip(uiText(QStringLiteral("Adjacent blocks whose colors differ less than this are drawn as one block; 0 disables merging.")));
-    lineArtForm->addRow(uiText(QStringLiteral("Adjacent color similarity")), m_adjacentMergeSpin);
+    m_adjacentMergeSpin->setToolTip(tr("Adjacent blocks whose colors differ less than this are drawn as one block; 0 disables merging."));
+    lineArtForm->addRow(tr("Adjacent color similarity"), m_adjacentMergeSpin);
 
     m_minAreaSpin = new QSpinBox(lineArtGroup);
     m_minAreaSpin->setObjectName(QStringLiteral("LineArtMinAreaSpin"));
@@ -75,8 +75,8 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
     m_minAreaSpin->setSuffix(QStringLiteral(" px"));
     m_minAreaSpin->setValue(settings.lineArtMinRegionArea);
     m_minAreaSpin->setFixedHeight(30);
-    m_minAreaSpin->setToolTip(uiText(QStringLiteral("Blocks smaller than this area are skipped; lower it to trace tiny props.")));
-    lineArtForm->addRow(uiText(QStringLiteral("Smallest block")), m_minAreaSpin);
+    m_minAreaSpin->setToolTip(tr("Blocks smaller than this area are skipped; lower it to trace tiny props."));
+    lineArtForm->addRow(tr("Smallest block"), m_minAreaSpin);
 
     m_toleranceSpin = new QDoubleSpinBox(lineArtGroup);
     m_toleranceSpin->setObjectName(QStringLiteral("LineArtToleranceSpin"));
@@ -86,9 +86,8 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
     m_toleranceSpin->setSuffix(QStringLiteral(" px"));
     m_toleranceSpin->setValue(settings.lineArtSimplifyTolerance);
     m_toleranceSpin->setFixedHeight(30);
-    m_toleranceSpin->setToolTip(uiText(QStringLiteral(
-        "How far the traced outline may deviate from its points; smaller follows pixel steps, larger turns arcs into fewer, straighter segments.")));
-    lineArtForm->addRow(uiText(QStringLiteral("Simplify tolerance")), m_toleranceSpin);
+    m_toleranceSpin->setToolTip(tr("How far the traced outline may deviate from its points; smaller follows pixel steps, larger turns arcs into fewer, straighter segments."));
+    lineArtForm->addRow(tr("Simplify tolerance"), m_toleranceSpin);
 
     m_thicknessSpin = new QDoubleSpinBox(lineArtGroup);
     m_thicknessSpin->setObjectName(QStringLiteral("LineArtThicknessSpin"));
@@ -98,45 +97,41 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
     m_thicknessSpin->setSuffix(QStringLiteral(" px"));
     m_thicknessSpin->setValue(settings.lineArtMinThickness);
     m_thicknessSpin->setFixedHeight(30);
-    m_thicknessSpin->setToolTip(uiText(QStringLiteral(
-        "Blocks whose average width is under this value are not traced; 0 keeps every thin band, higher drops antialiasing halos.")));
-    lineArtForm->addRow(uiText(QStringLiteral("Thinnest band")), m_thicknessSpin);
+    m_thicknessSpin->setToolTip(tr("Blocks whose average width is under this value are not traced; 0 keeps every thin band, higher drops antialiasing halos."));
+    lineArtForm->addRow(tr("Thinnest band"), m_thicknessSpin);
 
     // 色块过多时自适应降采样：默认勾选，取消勾选就按原始处理尺寸硬算（色块多时会变慢）。
     m_adaptiveLimitSpin = new QSpinBox(lineArtGroup);
     m_adaptiveLimitSpin->setObjectName(QStringLiteral("LineArtAdaptiveLimitSpin"));
     m_adaptiveLimitSpin->setRange(100, 20000);
     m_adaptiveLimitSpin->setSingleStep(100);
-    m_adaptiveLimitSpin->setSuffix(uiText(QStringLiteral(" blocks")));
+    m_adaptiveLimitSpin->setSuffix(tr(" blocks"));
     m_adaptiveLimitSpin->setValue(settings.lineArtAdaptiveLimit);
     m_adaptiveLimitSpin->setFixedHeight(30);
-    m_adaptiveLimitSpin->setToolTip(uiText(QStringLiteral(
-        "Once the detected block count passes this value, the image is processed at a smaller size so the stroke count stays reasonable.")));
-    lineArtForm->addRow(uiText(QStringLiteral("Block count limit")), m_adaptiveLimitSpin);
+    m_adaptiveLimitSpin->setToolTip(tr("Once the detected block count passes this value, the image is processed at a smaller size so the stroke count stays reasonable."));
+    lineArtForm->addRow(tr("Block count limit"), m_adaptiveLimitSpin);
 
-    m_adaptiveCheck = new QCheckBox(uiText(QStringLiteral("Auto downsample when exceeded")), lineArtGroup);
+    m_adaptiveCheck = new QCheckBox(tr("Auto downsample when exceeded"), lineArtGroup);
     m_adaptiveCheck->setObjectName(QStringLiteral("LineArtAdaptiveCheck"));
     m_adaptiveCheck->setChecked(settings.lineArtAdaptiveDownscale);
-    m_adaptiveCheck->setToolTip(uiText(QStringLiteral(
-        "Checked by default: shrink the processing size instead of dropping blocks, so nothing disappears from the image. Uncheck to trace at full size.")));
+    m_adaptiveCheck->setToolTip(tr("Checked by default: shrink the processing size instead of dropping blocks, so nothing disappears from the image. Uncheck to trace at full size."));
     m_adaptiveLimitSpin->setEnabled(m_adaptiveCheck->isChecked());
     connect(m_adaptiveCheck, &QCheckBox::toggled, m_adaptiveLimitSpin, &QSpinBox::setEnabled);
     lineArtForm->addRow(QString(), m_adaptiveCheck);
 
     rootLayout->addWidget(lineArtGroup);
 
-    auto* hint = new QLabel(uiText(QStringLiteral(
-        "Similarity values are RGB color distances (0-441): lower keeps more small props, higher merges more fragments. "
+    auto* hint = new QLabel(tr("Similarity values are RGB color distances (0-441): lower keeps more small props, higher merges more fragments. "
         "Adjacent merging only joins blocks that actually touch, so colour is the knob that changes the result. "
-        "Stroke width is fixed at 1.")),
+        "Stroke width is fixed at 1."),
         this);
     hint->setObjectName(QStringLiteral("DialogHint"));
     hint->setWordWrap(true);
     rootLayout->addWidget(hint);
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
-    buttons->button(QDialogButtonBox::Ok)->setText(uiText(QStringLiteral("OK")));
-    buttons->button(QDialogButtonBox::Cancel)->setText(uiText(QStringLiteral("Cancel")));
+    buttons->button(QDialogButtonBox::Ok)->setText(tr("OK"));
+    buttons->button(QDialogButtonBox::Cancel)->setText(tr("Cancel"));
     rootLayout->addWidget(buttons);
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -146,7 +141,9 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
         return m_levelsSpin->value() == preset.levels
             && m_paletteMergeSpin->value() == preset.palette
             && m_adjacentMergeSpin->value() == preset.adjacent
-            && m_minAreaSpin->value() == preset.minArea;
+            && m_minAreaSpin->value() == preset.minArea
+            // 容差是浮点，比较留 1e-3 余量，免得 0.6000000001 被判成“自定义”。
+            && qAbs(m_toleranceSpin->value() - preset.tolerance) < 1e-3;
     };
     auto applyPreset = [this](int index) {
         const LineArtPreset preset = lineArtPreset(index);
@@ -155,6 +152,7 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
         m_paletteMergeSpin->setValue(preset.palette);
         m_adjacentMergeSpin->setValue(preset.adjacent);
         m_minAreaSpin->setValue(preset.minArea);
+        m_toleranceSpin->setValue(preset.tolerance);
         m_applyingPreset = false;
     };
     auto syncPresetCombo = [this, matchesPreset]() {
@@ -188,6 +186,13 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent)
                     syncPresetCombo();
                 });
     }
+    // 手改简化容差同样要跳回“自定义”。
+    connect(m_toleranceSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
+            [this, syncPresetCombo](double) {
+                if (m_applyingPreset)
+                    return;
+                syncPresetCombo();
+            });
     syncPresetCombo();
 }
 

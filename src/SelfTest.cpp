@@ -11,6 +11,7 @@
 #include "LayerPanel.h"
 #include "LineArtConverter.h"
 #include "LineArtDialog.h"
+#include "LineArtPresets.h"
 #include "MainWindow.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
@@ -30,6 +31,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QFont>
+#include <QGroupBox>
 #include <QImage>
 #include <QImageWriter>
 #include <QJsonArray>
@@ -3000,6 +3002,23 @@ int runSelfTest(const QString& reportPath)
             check(modeBar->actions().at(0)->text() == QStringLiteral("查看模式"),
                   QStringLiteral("切回中文后界面恢复中文"));
 
+            // 线稿化模块已改成标准 tr()：译文走各自类名的上下文，中文界面下必须仍是中文。
+            {
+                LineArtDialog lineArtDialog{AppSettings()};
+                QGroupBox* group = lineArtDialog.findChild<QGroupBox*>();
+                check(lineArtDialog.windowTitle() == QStringLiteral("图片线稿化")
+                          && group && group->title() == QStringLiteral("图片线稿化"),
+                      QStringLiteral("线稿化对话框的 tr() 文本在中文界面显示中文"),
+                      QStringLiteral("title=%1 group=%2")
+                          .arg(lineArtDialog.windowTitle(), group ? group->title() : QString()));
+
+                QStringList actionTexts;
+                for (QAction* action : window.findChildren<QAction*>())
+                    actionTexts.append(action->text());
+                check(actionTexts.contains(QStringLiteral("导入图片线稿化")),
+                      QStringLiteral("主界面线稿化入口的 tr() 文本显示中文"));
+            }
+
             // 设置弹窗的语言下拉：选 English 后 language() 返回 English。
             {
                 SettingsDialog dialog{AppSettings()};
@@ -4001,6 +4020,82 @@ int runSelfTest(const QString& reportPath)
                   && settingsDialog.findChild<QDoubleSpinBox*>(
                       QStringLiteral("LineArtThicknessSpin")),
               QStringLiteral("设置对话框也提供简化容差与最细条带"));
+    }
+    {
+        // 需求：简化容差并入档位，切档位一起换；手改就回“自定义”；容差不进档位的是最细条带。
+        const AppSettings defaults;
+        LineArtDialog dialog(defaults);
+        auto* presetCombo = dialog.findChild<QComboBox*>(QStringLiteral("LineArtPresetCombo"));
+        auto* toleranceSpin = dialog.findChild<QDoubleSpinBox*>(
+            QStringLiteral("LineArtToleranceSpin"));
+        auto* areaSpin = dialog.findChild<QSpinBox*>(QStringLiteral("LineArtMinAreaSpin"));
+        check(presetCombo && toleranceSpin && areaSpin,
+              QStringLiteral("参数对话框可用于验证档位与简化容差联动"));
+
+        if (presetCombo && toleranceSpin && areaSpin) {
+            presetCombo->setCurrentIndex(presetCombo->findData(0));
+            check(qAbs(dialog.options().simplifyTolerance - 0.5) < 1e-6,
+                  QStringLiteral("切到保留细节档位时简化容差跟着变 0.5"),
+                  QString::number(dialog.options().simplifyTolerance));
+
+            presetCombo->setCurrentIndex(presetCombo->findData(3));
+            check(qAbs(dialog.options().simplifyTolerance - 1.0) < 1e-6,
+                  QStringLiteral("切换到大块概括档位时简化容差跟着变 1.0"),
+                  QString::number(dialog.options().simplifyTolerance));
+
+            presetCombo->setCurrentIndex(presetCombo->findData(1));
+            check(presetCombo->currentData().toInt() == 1
+                      && qAbs(toleranceSpin->value() - 0.6) < 1e-6,
+                  QStringLiteral("均衡档位的容差是 0.6 且档位显示不被容差打回自定义"),
+                  QStringLiteral("data=%1 tolerance=%2")
+                      .arg(presetCombo->currentData().toInt())
+                      .arg(toleranceSpin->value()));
+
+            toleranceSpin->setValue(0.9);
+            check(presetCombo->currentText() == QStringLiteral("自定义"),
+                  QStringLiteral("手改简化容差后档位回到自定义"),
+                  presetCombo->currentText());
+
+            toleranceSpin->setValue(0.8);
+            areaSpin->setValue(77);
+            check(presetCombo->currentText() == QStringLiteral("自定义"),
+                  QStringLiteral("容差回到档位值但其它参数不同时仍是自定义"),
+                  presetCombo->currentText());
+
+            areaSpin->setValue(12);
+            toleranceSpin->setValue(0.6);
+            check(presetCombo->currentData().toInt() == 1,
+                  QStringLiteral("容差与其它四项都回到档位值后重新识别出均衡档位"),
+                  QString::number(presetCombo->currentData().toInt()));
+        }
+
+        SettingsDialog settingsDialog(defaults);
+        auto* settingsPresetCombo = settingsDialog.findChild<QComboBox*>(
+            QStringLiteral("LineArtPresetCombo"));
+        auto* settingsToleranceSpin = settingsDialog.findChild<QDoubleSpinBox*>(
+            QStringLiteral("LineArtToleranceSpin"));
+        if (settingsPresetCombo && settingsToleranceSpin) {
+            settingsPresetCombo->setCurrentIndex(settingsPresetCombo->findData(2));
+            check(qAbs(settingsToleranceSpin->value() - 0.8) < 1e-6,
+                  QStringLiteral("设置对话框切档位时简化容差同步"),
+
+                  QString::number(settingsToleranceSpin->value()));
+            settingsToleranceSpin->setValue(0.65);
+            check(settingsPresetCombo->currentText() == QStringLiteral("自定义"),
+                  QStringLiteral("设置对话框手改简化容差后档位回到自定义"),
+                  settingsPresetCombo->currentText());
+        }
+        const LineArtPreset balanced = lineArtPreset(1);
+        check(balanced.minArea == 12 && qAbs(balanced.tolerance - 0.6) < 1e-6
+                  && lineArtPreset(0).minArea == 8 && qAbs(lineArtPreset(0).tolerance - 0.5) < 1e-6
+                  && lineArtPreset(2).minArea == 20 && qAbs(lineArtPreset(2).tolerance - 0.8) < 1e-6
+                  && lineArtPreset(3).minArea == 32 && qAbs(lineArtPreset(3).tolerance - 1.0) < 1e-6,
+              QStringLiteral("四档的简化容差顺序是 0.5/0.6/0.8/1.0"),
+              QStringLiteral("%1/%2/%3/%4")
+                  .arg(lineArtPreset(0).tolerance)
+                  .arg(lineArtPreset(1).tolerance)
+                  .arg(lineArtPreset(2).tolerance)
+                  .arg(lineArtPreset(3).tolerance));
     }
     {
         // 需求：色块超过阈值时自动降采样；取消勾选就按原处理尺寸硬算。
