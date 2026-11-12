@@ -40,27 +40,31 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     rootLayout->setContentsMargins(18, 14, 18, 12);
     rootLayout->setSpacing(10);
 
+    auto* headerRow = new QHBoxLayout();
+    headerRow->setContentsMargins(0, 0, 0, 0);
+    headerRow->setSpacing(10);
     auto* title = new QLabel(tr("Board settings"), this);
     title->setObjectName(QStringLiteral("DialogTitle"));
-    rootLayout->addWidget(title);
-
-    auto* hint = new QLabel(
-        tr("These settings become the defaults for new brushes and canvases and are saved automatically."), this);
-    hint->setObjectName(QStringLiteral("DialogHint"));
-    rootLayout->addWidget(hint);
-
-    auto* languageGroup = new QGroupBox(tr("Interface language"), this);
-    auto* languageForm = new QFormLayout(languageGroup);
-    languageForm->setContentsMargins(12, 16, 12, 10);
-    languageForm->setSpacing(8);
-    m_languageCombo = new QComboBox(languageGroup);
+    headerRow->addWidget(title);
+    headerRow->addStretch(1);
+    auto* languageLabel = new QLabel(tr("Interface language"), this);
+    languageLabel->setObjectName(QStringLiteral("DialogHint"));
+    headerRow->addWidget(languageLabel);
+    m_languageCombo = new QComboBox(this);
     m_languageCombo->setFixedHeight(30);
+    m_languageCombo->setMinimumWidth(150);
     m_languageCombo->addItem(tr("Follow system"), static_cast<int>(UiLanguage::System));
     m_languageCombo->addItem(tr("Simplified Chinese"), static_cast<int>(UiLanguage::Chinese));
     m_languageCombo->addItem(QStringLiteral("English"), static_cast<int>(UiLanguage::English));
     m_languageCombo->setCurrentIndex(m_languageCombo->findData(static_cast<int>(uiLanguageSetting())));
     m_languageCombo->setToolTip(tr("The interface updates immediately and this choice is remembered."));
-    languageForm->addRow(tr("Language"), m_languageCombo);
+    headerRow->addWidget(m_languageCombo);
+    rootLayout->addLayout(headerRow);
+
+    auto* hint = new QLabel(
+        tr("These settings become the defaults for new brushes and canvases and are saved automatically."), this);
+    hint->setObjectName(QStringLiteral("DialogHint"));
+    rootLayout->addWidget(hint);
 
     auto* brushGroup = new QGroupBox(tr("Brush defaults"), this);
     auto* brushForm = new QFormLayout(brushGroup);
@@ -113,10 +117,6 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     sizeRow->addWidget(multiply);
     sizeRow->addWidget(m_canvasHeightSpin, 1);
     canvasForm->addRow(tr("Canvas size"), sizeRow);
-
-    m_gridCheck = new QCheckBox(tr("Show helper grid"), canvasGroup);
-    m_gridCheck->setChecked(m_settings.showGrid);
-    canvasForm->addRow(QString(), m_gridCheck);
 
     m_canvasColorButton = new QPushButton(canvasGroup);
     m_canvasColorButton->setIconSize(QSize(18, 18));
@@ -335,20 +335,20 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     });
 
 
-    auto* storageGroup = new QGroupBox(tr("Canvas storage"), this);
-    auto* storageLayout = new QHBoxLayout(storageGroup);
-    storageLayout->setContentsMargins(12, 16, 12, 10);
-    storageLayout->setSpacing(8);
+    // 画布相关的项合成一组：尺寸、外围颜色、画布存储目录。
+    // 「显示辅助网格」放在视图 → 辅助网格 菜单里开关，这里不再重复一份。
     const QString canvasesDir =
         m_settings.canvasesDirectory.isEmpty() ? AppSettings::defaultCanvasesDir() : m_settings.canvasesDirectory;
-    auto* pathEdit = new QLineEdit(QDir::toNativeSeparators(canvasesDir), storageGroup);
+    auto* pathEdit = new QLineEdit(QDir::toNativeSeparators(canvasesDir), canvasGroup);
     pathEdit->setReadOnly(true);
     pathEdit->setCursorPosition(0);
     pathEdit->setToolTip(QDir::toNativeSeparators(canvasesDir));
-    auto* openButton = new QPushButton(tr("Open folder"), storageGroup);
-    storageLayout->addWidget(pathEdit, 1);
-    storageLayout->addWidget(openButton);
-
+    auto* openButton = new QPushButton(tr("Open folder"), canvasGroup);
+    auto* storageRow = new QHBoxLayout();
+    storageRow->setSpacing(8);
+    storageRow->addWidget(pathEdit, 1);
+    storageRow->addWidget(openButton);
+    canvasForm->addRow(tr("Canvas storage"), storageRow);
     // 设置项变多后单列会超出屏幕：整页放进滚动区，宽屏时每行最多两列并排。
     // 线稿化那组字段最多、标签最长，单独占满一整行，避免被两列挤压导致右侧文字截断。
     auto* scroll = new QScrollArea(this);
@@ -362,26 +362,9 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     grid->setContentsMargins(0, 0, 8, 0);
     grid->setHorizontalSpacing(12);
     grid->setVerticalSpacing(10);
-    // 左右各一列，列内竖排：语言 → 画布 / 画笔 → 画布存储。
-    // 两列各自堆叠后，矮组不再被同排的高组拉出大片空白；线稿化整组仍独占一行。
-    auto* leftColumn = new QWidget(content);
-    auto* leftLayout = new QVBoxLayout(leftColumn);
-    leftLayout->setContentsMargins(0, 0, 0, 0);
-    leftLayout->setSpacing(10);
-    leftLayout->addWidget(languageGroup);
-    leftLayout->addWidget(canvasGroup);
-    leftLayout->addStretch(1);
-
-    auto* rightColumn = new QWidget(content);
-    auto* rightLayout = new QVBoxLayout(rightColumn);
-    rightLayout->setContentsMargins(0, 0, 0, 0);
-    rightLayout->setSpacing(10);
-    rightLayout->addWidget(brushGroup);
-    rightLayout->addWidget(storageGroup);
-    rightLayout->addStretch(1);
-
-    grid->addWidget(leftColumn, 0, 0);
-    grid->addWidget(rightColumn, 0, 1);
+    // 第一行「画笔默认值 | 画布（含存储目录）」，线稿化整组占满下一行。
+    grid->addWidget(brushGroup, 0, 0, Qt::AlignTop);
+    grid->addWidget(canvasGroup, 0, 1, Qt::AlignTop);
     grid->addWidget(lineArtGroup, 1, 0, 1, 2);
     grid->setColumnStretch(0, 1);
     grid->setColumnStretch(1, 1);
@@ -425,7 +408,6 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
         m_settings.brushWidth = m_brushWidthSpin->value();
         m_settings.strokeSmoothing = m_strokeSmoothingSpin->value();
         m_settings.canvasSize = QSizeF(m_canvasWidthSpin->value(), m_canvasHeightSpin->value());
-        m_settings.showGrid = m_gridCheck->isChecked();
         m_settings.lineArtColorLevels = m_lineArtLevelsSpin->value();
         m_settings.lineArtPaletteMerge = m_lineArtPaletteMergeSpin->value();
         m_settings.lineArtAdjacentMerge = m_lineArtAdjacentMergeSpin->value();
@@ -519,7 +501,6 @@ void SettingsDialog::resetToDefaults()
     m_strokeSmoothingSpin->setValue(defaults.strokeSmoothing);
     m_canvasWidthSpin->setValue(static_cast<int>(defaults.canvasSize.width()));
     m_canvasHeightSpin->setValue(static_cast<int>(defaults.canvasSize.height()));
-    m_gridCheck->setChecked(defaults.showGrid);
     m_lineArtLevelsSpin->setValue(defaults.lineArtColorLevels);
     m_lineArtPaletteMergeSpin->setValue(defaults.lineArtPaletteMerge);
     m_lineArtAdjacentMergeSpin->setValue(defaults.lineArtAdjacentMerge);

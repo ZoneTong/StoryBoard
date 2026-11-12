@@ -41,7 +41,6 @@ class SettingsDialog : public QDialog {
     QSpinBox* m_strokeSmoothingSpin = nullptr;
     QSpinBox* m_canvasWidthSpin = nullptr;
     QSpinBox* m_canvasHeightSpin = nullptr;
-    QCheckBox* m_gridCheck = nullptr;
     QPushButton* m_canvasColorButton = nullptr;
     QComboBox* m_languageCombo = nullptr;
     QComboBox* m_lineArtPresetCombo = nullptr;
