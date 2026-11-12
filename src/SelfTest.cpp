@@ -3166,9 +3166,9 @@ int runSelfTest(const QString& reportPath)
             check(openIndex >= 0 && lineArtIndex == openIndex + 1,
                   QStringLiteral("导入图片线稿化紧跟在打开画布后面"),
                   entries.join(QStringLiteral(" / ")));
-            check(entries.contains(QStringLiteral("插入图片…"))
+            check(!entries.contains(QStringLiteral("插入图片…"))
                       && !entries.contains(QStringLiteral("导入图片…")),
-                  QStringLiteral("原来的导入图片改名为插入图片"),
+                  QStringLiteral("插入图片只在插入菜单出现"),
                   entries.join(QStringLiteral(" / ")));
         }
         if (canvasMenu) {
@@ -3177,10 +3177,29 @@ int runSelfTest(const QString& reportPath)
                 if (action && !action->isSeparator())
                     entries.append(action->text());
             }
-            check(entries.contains(QStringLiteral("插入图片…"))
-                      && entries.contains(QStringLiteral("导入图片线稿化")),
-                  QStringLiteral("画布菜单同时提供插入图片与导入图片线稿化"),
+            // 需求：去掉菜单栏里重复的子菜单项，插入图片与导入图片线稿化不再出现在画布菜单。
+            check(!entries.contains(QStringLiteral("插入图片…"))
+                      && !entries.contains(QStringLiteral("导入图片线稿化"))
+                      && entries.contains(QStringLiteral("替换背景图片…"))
+                      && entries.contains(QStringLiteral("清除背景")),
+                  QStringLiteral("画布菜单只保留背景相关项"),
                   entries.join(QStringLiteral(" / ")));
+        }
+
+        // 需求：视图一级菜单紧跟文件，排在编辑之前。
+        {
+            QStringList menuOrder;
+            for (QAction* action : window.menuBar()->actions()) {
+                QMenu* menu = action ? action->menu() : nullptr;
+                if (menu)
+                    menuOrder.append(menu->title());
+            }
+            const int fileIndex = menuOrder.indexOf(QStringLiteral("文件(&F)"));
+            const int viewIndex = menuOrder.indexOf(QStringLiteral("视图(&V)"));
+            const int editIndex = menuOrder.indexOf(QStringLiteral("编辑(&E)"));
+            check(fileIndex >= 0 && viewIndex == fileIndex + 1 && editIndex == viewIndex + 1,
+                  QStringLiteral("视图菜单紧跟文件并排在编辑之前"),
+                  menuOrder.join(QStringLiteral(" / ")));
         }
 
         // 需求：画板不再作为父菜单存在，它的设置、最近画布与画布文件夹直接并入文件菜单，位于退出之上。
@@ -3634,6 +3653,17 @@ int runSelfTest(const QString& reportPath)
         QList<QAction*> insertActions;
         if (insertMenu)
             insertActions = insertMenu->actions();
+        {
+            // 需求：插入图片只归插入菜单，菜单栏里不再重复。
+            QStringList insertEntries;
+            for (QAction* action : insertActions) {
+                if (action && !action->isSeparator())
+                    insertEntries.append(action->text());
+            }
+            check(insertEntries.contains(QStringLiteral("插入图片…")),
+                  QStringLiteral("插入菜单提供插入图片"),
+                  insertEntries.join(QStringLiteral(" / ")));
+        }
         int fillStyleMenuIndex = insertActions.indexOf(fillStyleMenu ? fillStyleMenu->menuAction() : nullptr);
         int shapeMenuIndex = insertActions.indexOf(shapeMenu ? shapeMenu->menuAction() : nullptr);
         int fillColorActionIndex = -1;

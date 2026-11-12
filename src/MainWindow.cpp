@@ -717,7 +717,7 @@ void MainWindow::createMenus()
     fileMenu->addAction(m_saveAct);
     fileMenu->addAction(m_saveAsAct);
     fileMenu->addSeparator();
-    fileMenu->addAction(m_importAct);
+    // 插入图片只留在“插入”菜单，导入图片线稿化只留在文件菜单，避免同一动作多处出现。
     fileMenu->addAction(m_exportAct);
     // 需求：原“画板”菜单不再作为父菜单存在，它的设置、最近画布与画布文件夹
     // 直接并入文件菜单，位于“退出”之上；这一段由 updateCanvasesMenu 动态重建。
@@ -726,6 +726,24 @@ void MainWindow::createMenus()
     fileMenu->addAction(m_quitAct);
     connect(m_fileMenu, &QMenu::aboutToShow, this, &MainWindow::updateCanvasesMenu);
     updateCanvasesMenu();
+
+    // 需求：“视图”一级菜单紧跟“文件”，放在“编辑”之前。
+    QMenu* viewMenu = menuBar()->addMenu(uiText(QStringLiteral("&View")));
+    viewMenu->setObjectName(QStringLiteral("ViewMenu"));
+    viewMenu->addAction(m_viewModeAct);
+    viewMenu->addAction(m_editModeAct);
+    viewMenu->addAction(m_brushModeAct);
+    viewMenu->addAction(m_textModeAct);
+    viewMenu->addSeparator();
+    viewMenu->addAction(m_fitAct);
+    viewMenu->addAction(m_zoomInAct);
+    viewMenu->addAction(m_zoomOutAct);
+    viewMenu->addAction(m_actualSizeAct);
+    viewMenu->addSeparator();
+    QAction* layerDockAction = m_layerDock->toggleViewAction();
+    layerDockAction->setText(uiText(QStringLiteral("Layer panel")));
+    layerDockAction->setStatusTip(uiText(QStringLiteral("Show or hide the layer panel")));
+    viewMenu->addAction(layerDockAction);
 
     QMenu* editMenu = menuBar()->addMenu(uiText(QStringLiteral("&Edit")));
     editMenu->addAction(m_undoAct);
@@ -795,26 +813,7 @@ void MainWindow::createMenus()
     insertMenu->addSeparator();
     insertMenu->addAction(m_importAct);
 
-    QMenu* viewMenu = menuBar()->addMenu(uiText(QStringLiteral("&View")));
-    viewMenu->addAction(m_viewModeAct);
-    viewMenu->addAction(m_editModeAct);
-    viewMenu->addAction(m_brushModeAct);
-    viewMenu->addAction(m_textModeAct);
-    viewMenu->addSeparator();
-    viewMenu->addAction(m_fitAct);
-    viewMenu->addAction(m_zoomInAct);
-    viewMenu->addAction(m_zoomOutAct);
-    viewMenu->addAction(m_actualSizeAct);
-    viewMenu->addSeparator();
-    QAction* layerDockAction = m_layerDock->toggleViewAction();
-    layerDockAction->setText(uiText(QStringLiteral("Layer panel")));
-    layerDockAction->setStatusTip(uiText(QStringLiteral("Show or hide the layer panel")));
-    viewMenu->addAction(layerDockAction);
-
     QMenu* canvasMenu = menuBar()->addMenu(uiText(QStringLiteral("&Canvas")));
-    canvasMenu->addAction(m_importAct);
-    canvasMenu->addAction(m_lineArtAct);
-    canvasMenu->addSeparator();
     canvasMenu->addAction(m_replaceBgAct);
     canvasMenu->addAction(m_bgColorAct);
     canvasMenu->addAction(m_clearBgAct);
@@ -822,7 +821,6 @@ void MainWindow::createMenus()
     fillMenu->addAction(m_bgStretchAct);
     fillMenu->addAction(m_bgFitAct);
     fillMenu->addAction(m_bgTileAct);
-    canvasMenu->addSeparator();
 
     // 需求：原“样式 → 画笔样式”提升为一级菜单“画笔”，“平滑笔画”归到这里。
     QMenu* brushMenu = menuBar()->addMenu(uiText(QStringLiteral("&Brush")));
