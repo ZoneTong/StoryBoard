@@ -37,8 +37,8 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     resize(1060, 700);
 
     auto* rootLayout = new QVBoxLayout(this);
-    rootLayout->setContentsMargins(22, 20, 22, 18);
-    rootLayout->setSpacing(14);
+    rootLayout->setContentsMargins(18, 14, 18, 12);
+    rootLayout->setSpacing(10);
 
     auto* title = new QLabel(tr("Board settings"), this);
     title->setObjectName(QStringLiteral("DialogTitle"));
@@ -51,21 +51,21 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
 
     auto* languageGroup = new QGroupBox(tr("Interface language"), this);
     auto* languageForm = new QFormLayout(languageGroup);
-    languageForm->setContentsMargins(16, 18, 16, 16);
-    languageForm->setSpacing(10);
+    languageForm->setContentsMargins(12, 16, 12, 10);
+    languageForm->setSpacing(8);
     m_languageCombo = new QComboBox(languageGroup);
+    m_languageCombo->setFixedHeight(30);
     m_languageCombo->addItem(tr("Follow system"), static_cast<int>(UiLanguage::System));
     m_languageCombo->addItem(tr("Simplified Chinese"), static_cast<int>(UiLanguage::Chinese));
     m_languageCombo->addItem(QStringLiteral("English"), static_cast<int>(UiLanguage::English));
     m_languageCombo->setCurrentIndex(m_languageCombo->findData(static_cast<int>(uiLanguageSetting())));
+    m_languageCombo->setToolTip(tr("The interface updates immediately and this choice is remembered."));
     languageForm->addRow(tr("Language"), m_languageCombo);
-    languageForm->addRow(
-        QString(), new QLabel(tr("The interface updates immediately and this choice is remembered."), languageGroup));
 
     auto* brushGroup = new QGroupBox(tr("Brush defaults"), this);
     auto* brushForm = new QFormLayout(brushGroup);
-    brushForm->setContentsMargins(16, 18, 16, 16);
-    brushForm->setSpacing(10);
+    brushForm->setContentsMargins(12, 16, 12, 10);
+    brushForm->setSpacing(8);
 
     m_brushColorButton = new QPushButton(brushGroup);
     m_brushColorButton->setIconSize(QSize(18, 18));
@@ -88,17 +88,11 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
         tr("0 disables automatic smoothing; larger values tolerate more hand jitter and deviation."));
     brushForm->addRow(tr("Auto-smooth tolerance"), m_strokeSmoothingSpin);
 
-    auto* smoothingHint = new QLabel(
-        tr("0 disables automatic smoothing; larger values tolerate more hand jitter and deviation."), brushGroup);
-    smoothingHint->setObjectName(QStringLiteral("DialogHint"));
-    smoothingHint->setWordWrap(true);
-    brushForm->addRow(QString(), smoothingHint);
-
 
     auto* canvasGroup = new QGroupBox(tr("Canvas"), this);
     auto* canvasForm = new QFormLayout(canvasGroup);
-    canvasForm->setContentsMargins(16, 18, 16, 16);
-    canvasForm->setSpacing(10);
+    canvasForm->setContentsMargins(12, 16, 12, 10);
+    canvasForm->setSpacing(8);
 
     auto* sizeRow = new QHBoxLayout();
     sizeRow->setSpacing(8);
@@ -107,12 +101,14 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     m_canvasWidthSpin->setValue(static_cast<int>(m_settings.canvasSize.width()));
     m_canvasWidthSpin->setSuffix(QStringLiteral(" px"));
     m_canvasWidthSpin->setFixedHeight(30);
+    m_canvasWidthSpin->setToolTip(tr("Changing the canvas size does not move existing items; undo restores it."));
     auto* multiply = new QLabel(QStringLiteral("×"), canvasGroup);
     m_canvasHeightSpin = new QSpinBox(canvasGroup);
     m_canvasHeightSpin->setRange(200, 12000);
     m_canvasHeightSpin->setValue(static_cast<int>(m_settings.canvasSize.height()));
     m_canvasHeightSpin->setSuffix(QStringLiteral(" px"));
     m_canvasHeightSpin->setFixedHeight(30);
+    m_canvasHeightSpin->setToolTip(tr("Changing the canvas size does not move existing items; undo restores it."));
     sizeRow->addWidget(m_canvasWidthSpin, 1);
     sizeRow->addWidget(multiply);
     sizeRow->addWidget(m_canvasHeightSpin, 1);
@@ -126,29 +122,23 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     m_canvasColorButton->setIconSize(QSize(18, 18));
     canvasForm->addRow(tr("Canvas surround color"), m_canvasColorButton);
 
-    auto* canvasHint =
-        new QLabel(tr("Changing the canvas size does not move existing items; undo restores it."), canvasGroup);
-    canvasHint->setObjectName(QStringLiteral("DialogHint"));
-    canvasHint->setWordWrap(true);
-    canvasForm->addRow(QString(), canvasHint);
-
 
     // 图片线稿化的参数：颜色怎么并、碎块怎么并，都要能自己调，否则遇到别的图只能重编译。
     // 上面再加一个档位，一键把下面几项换成一组实测过的组合。
     auto* lineArtGroup = new QGroupBox(tr("Image outline tracing"), this);
     auto* lineArtLayout = new QVBoxLayout(lineArtGroup);
-    lineArtLayout->setContentsMargins(16, 18, 16, 16);
-    lineArtLayout->setSpacing(10);
+    lineArtLayout->setContentsMargins(12, 16, 12, 10);
+    lineArtLayout->setSpacing(8);
     // 8 个数值项分左右两列排，行数减半；窄窗口下两列仍各占一半宽度，不会挤出横向滚动条。
     auto* fieldsRow = new QHBoxLayout();
     fieldsRow->setContentsMargins(0, 0, 0, 0);
     fieldsRow->setSpacing(18);
     auto* lineArtForm = new QFormLayout();
     lineArtForm->setContentsMargins(0, 0, 0, 0);
-    lineArtForm->setSpacing(10);
+    lineArtForm->setSpacing(8);
     auto* lineArtFormRight = new QFormLayout();
     lineArtFormRight->setContentsMargins(0, 0, 0, 0);
-    lineArtFormRight->setSpacing(10);
+    lineArtFormRight->setSpacing(8);
     fieldsRow->addLayout(lineArtForm, 1);
     fieldsRow->addLayout(lineArtFormRight, 1);
     lineArtLayout->addLayout(fieldsRow);
@@ -243,7 +233,6 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
                                           "so nothing disappears from the image. Uncheck to trace at full size."));
     m_lineArtAdaptiveLimitSpin->setEnabled(m_lineArtAdaptiveCheck->isChecked());
     connect(m_lineArtAdaptiveCheck, &QCheckBox::toggled, m_lineArtAdaptiveLimitSpin, &QSpinBox::setEnabled);
-    lineArtLayout->addWidget(m_lineArtAdaptiveCheck);
 
     // 档位 ↔ 具体数值：切档位就整组写入，手改任何一项就跳回“自定义”。
     auto matchesPreset = [this](const LineArtPreset& preset) {
@@ -325,14 +314,20 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     lineArtHint->setObjectName(QStringLiteral("DialogHint"));
     lineArtHint->setWordWrap(true);
 
-    // 「怎么调」默认展开，点一下折叠，避免长提示长期占掉半屏。
+    // 复选框和「怎么调」放同一行，省一行高度；说明默认展开，点一下即可折叠。
     m_lineArtHintToggle = new QToolButton(lineArtGroup);
     m_lineArtHintToggle->setObjectName(QStringLiteral("LineArtHintToggle"));
     m_lineArtHintToggle->setCheckable(true);
     m_lineArtHintToggle->setChecked(true);
     m_lineArtHintToggle->setCursor(Qt::PointingHandCursor);
     m_lineArtHintToggle->setText(QStringLiteral("▾ ") + tr("How to tune"));
-    lineArtLayout->addWidget(m_lineArtHintToggle, 0, Qt::AlignLeft);
+    auto* lineArtFooter = new QHBoxLayout();
+    lineArtFooter->setContentsMargins(0, 0, 0, 0);
+    lineArtFooter->setSpacing(12);
+    lineArtFooter->addWidget(m_lineArtAdaptiveCheck);
+    lineArtFooter->addStretch(1);
+    lineArtFooter->addWidget(m_lineArtHintToggle);
+    lineArtLayout->addLayout(lineArtFooter);
     lineArtLayout->addWidget(lineArtHint);
     connect(m_lineArtHintToggle, &QToolButton::toggled, this, [this, lineArtHint](bool expanded) {
         lineArtHint->setVisible(expanded);
@@ -342,8 +337,8 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
 
     auto* storageGroup = new QGroupBox(tr("Canvas storage"), this);
     auto* storageLayout = new QHBoxLayout(storageGroup);
-    storageLayout->setContentsMargins(16, 18, 16, 16);
-    storageLayout->setSpacing(10);
+    storageLayout->setContentsMargins(12, 16, 12, 10);
+    storageLayout->setSpacing(8);
     const QString canvasesDir =
         m_settings.canvasesDirectory.isEmpty() ? AppSettings::defaultCanvasesDir() : m_settings.canvasesDirectory;
     auto* pathEdit = new QLineEdit(QDir::toNativeSeparators(canvasesDir), storageGroup);
@@ -365,17 +360,32 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     auto* content = new QWidget(scroll);
     auto* grid = new QGridLayout(content);
     grid->setContentsMargins(0, 0, 8, 0);
-    grid->setHorizontalSpacing(14);
-    grid->setVerticalSpacing(12);
-    // 各组按自身高度靠上排，不让短分组被同排的高分组拉长成大片空白。
-    grid->addWidget(languageGroup, 0, 0, Qt::AlignTop);
-    grid->addWidget(brushGroup, 0, 1, Qt::AlignTop);
-    grid->addWidget(canvasGroup, 1, 0, Qt::AlignTop);
-    grid->addWidget(storageGroup, 1, 1, Qt::AlignTop);
-    grid->addWidget(lineArtGroup, 2, 0, 1, 2);
+    grid->setHorizontalSpacing(12);
+    grid->setVerticalSpacing(10);
+    // 左右各一列，列内竖排：语言 → 画布 / 画笔 → 画布存储。
+    // 两列各自堆叠后，矮组不再被同排的高组拉出大片空白；线稿化整组仍独占一行。
+    auto* leftColumn = new QWidget(content);
+    auto* leftLayout = new QVBoxLayout(leftColumn);
+    leftLayout->setContentsMargins(0, 0, 0, 0);
+    leftLayout->setSpacing(10);
+    leftLayout->addWidget(languageGroup);
+    leftLayout->addWidget(canvasGroup);
+    leftLayout->addStretch(1);
+
+    auto* rightColumn = new QWidget(content);
+    auto* rightLayout = new QVBoxLayout(rightColumn);
+    rightLayout->setContentsMargins(0, 0, 0, 0);
+    rightLayout->setSpacing(10);
+    rightLayout->addWidget(brushGroup);
+    rightLayout->addWidget(storageGroup);
+    rightLayout->addStretch(1);
+
+    grid->addWidget(leftColumn, 0, 0);
+    grid->addWidget(rightColumn, 0, 1);
+    grid->addWidget(lineArtGroup, 1, 0, 1, 2);
     grid->setColumnStretch(0, 1);
     grid->setColumnStretch(1, 1);
-    grid->setRowStretch(3, 1);
+    grid->setRowStretch(2, 1);
     scroll->setWidget(content);
     rootLayout->addWidget(scroll);
 
