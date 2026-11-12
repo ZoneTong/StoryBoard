@@ -143,6 +143,12 @@ QLabel#DialogTitle { font-size: 17px; font-weight: 700; color: #1F2937; }
 QLabel#ItemPropertiesHeading { font-size: 15px; font-weight: 600; }
 QLabel#LayerNameHeader, QLabel#LayerLockHeader { color: #8A909C; font-size: 9pt; font-weight: 600; }
 QLabel#DialogHint, QLabel#ItemPropertiesReadOnlyHint { color: #6B7280; }
+/* 设置页整页可滚动，滚动区本身不画底，避免和对话框背景割裂。 */
+QScrollArea#SettingsScroll { background: transparent; border: none; }
+QScrollArea#SettingsScroll > QWidget { background: transparent; }
+/* “怎么调”折叠按钮做成文字按钮，不要工具按钮的边框。 */
+QToolButton#LineArtHintToggle { border: none; background: transparent; color: #3E6BFF; font-weight: 600; padding: 0px; }
+QToolButton#LineArtHintToggle:hover { color: #2F52C7; }
 QCheckBox { spacing: 7px; color: #374151; }
 QToolTip { background: #1F2937; color: #F9FAFB; border: none; padding: 5px 8px; border-radius: 4px; }
 )"));

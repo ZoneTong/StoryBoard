@@ -13,14 +13,17 @@
 #include <QDoubleSpinBox>
 #include <QFileInfo>
 #include <QFormLayout>
+#include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QScrollArea>
 #include <QSignalBlocker>
 #include <QSpinBox>
 #include <QStandardPaths>
+#include <QToolButton>
 #include <QUrl>
 #include <QVBoxLayout>
 
@@ -29,7 +32,8 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     setWindowTitle(tr("Settings"));
     setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));
     setModal(true);
-    setMinimumWidth(600);
+    setMinimumSize(760, 520);
+    resize(920, 660);
 
     auto* rootLayout = new QVBoxLayout(this);
     rootLayout->setContentsMargins(22, 20, 22, 18);
@@ -56,7 +60,6 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     languageForm->addRow(tr("Language"), m_languageCombo);
     languageForm->addRow(
         QString(), new QLabel(tr("The interface updates immediately and this choice is remembered."), languageGroup));
-    rootLayout->addWidget(languageGroup);
 
     auto* brushGroup = new QGroupBox(tr("Brush defaults"), this);
     auto* brushForm = new QFormLayout(brushGroup);
@@ -90,7 +93,6 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     smoothingHint->setWordWrap(true);
     brushForm->addRow(QString(), smoothingHint);
 
-    rootLayout->addWidget(brushGroup);
 
     auto* canvasGroup = new QGroupBox(tr("Canvas"), this);
     auto* canvasForm = new QFormLayout(canvasGroup);
@@ -129,14 +131,26 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     canvasHint->setWordWrap(true);
     canvasForm->addRow(QString(), canvasHint);
 
-    rootLayout->addWidget(canvasGroup);
 
     // 图片线稿化的参数：颜色怎么并、碎块怎么并，都要能自己调，否则遇到别的图只能重编译。
     // 上面再加一个档位，一键把下面几项换成一组实测过的组合。
     auto* lineArtGroup = new QGroupBox(tr("Image outline tracing"), this);
-    auto* lineArtForm = new QFormLayout(lineArtGroup);
-    lineArtForm->setContentsMargins(16, 18, 16, 16);
+    auto* lineArtLayout = new QVBoxLayout(lineArtGroup);
+    lineArtLayout->setContentsMargins(16, 18, 16, 16);
+    lineArtLayout->setSpacing(10);
+    // 8 个数值项分左右两列排，行数减半；窄窗口下两列仍各占一半宽度，不会挤出横向滚动条。
+    auto* fieldsRow = new QHBoxLayout();
+    fieldsRow->setContentsMargins(0, 0, 0, 0);
+    fieldsRow->setSpacing(18);
+    auto* lineArtForm = new QFormLayout();
+    lineArtForm->setContentsMargins(0, 0, 0, 0);
     lineArtForm->setSpacing(10);
+    auto* lineArtFormRight = new QFormLayout();
+    lineArtFormRight->setContentsMargins(0, 0, 0, 0);
+    lineArtFormRight->setSpacing(10);
+    fieldsRow->addLayout(lineArtForm, 1);
+    fieldsRow->addLayout(lineArtFormRight, 1);
+    lineArtLayout->addLayout(fieldsRow);
 
     m_lineArtPresetCombo = new QComboBox(lineArtGroup);
     m_lineArtPresetCombo->setObjectName(QStringLiteral("LineArtPresetCombo"));
@@ -183,7 +197,7 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     m_lineArtMinAreaSpin->setValue(m_settings.lineArtMinRegionArea);
     m_lineArtMinAreaSpin->setFixedHeight(30);
     m_lineArtMinAreaSpin->setToolTip(tr("Blocks smaller than this area are skipped; lower it to trace tiny props."));
-    lineArtForm->addRow(tr("Smallest block"), m_lineArtMinAreaSpin);
+    lineArtFormRight->addRow(tr("Smallest block"), m_lineArtMinAreaSpin);
 
     m_lineArtToleranceSpin = new QDoubleSpinBox(lineArtGroup);
     m_lineArtToleranceSpin->setObjectName(QStringLiteral("LineArtToleranceSpin"));
@@ -195,7 +209,7 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     m_lineArtToleranceSpin->setFixedHeight(30);
     m_lineArtToleranceSpin->setToolTip(tr("How far the traced outline may deviate from its points; smaller follows "
                                           "pixel steps, larger turns arcs into fewer, straighter segments."));
-    lineArtForm->addRow(tr("Simplify tolerance"), m_lineArtToleranceSpin);
+    lineArtFormRight->addRow(tr("Simplify tolerance"), m_lineArtToleranceSpin);
 
     m_lineArtThicknessSpin = new QDoubleSpinBox(lineArtGroup);
     m_lineArtThicknessSpin->setObjectName(QStringLiteral("LineArtThicknessSpin"));
@@ -207,7 +221,7 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     m_lineArtThicknessSpin->setFixedHeight(30);
     m_lineArtThicknessSpin->setToolTip(tr("Blocks whose average width is under this value are not traced; 0 keeps "
                                           "every thin band, higher drops antialiasing halos."));
-    lineArtForm->addRow(tr("Thinnest band"), m_lineArtThicknessSpin);
+    lineArtFormRight->addRow(tr("Thinnest band"), m_lineArtThicknessSpin);
 
     // 色块过多时自适应降采样，默认勾选；取消勾选就按原始处理尺寸硬算。
     m_lineArtAdaptiveLimitSpin = new QSpinBox(lineArtGroup);
@@ -219,7 +233,7 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     m_lineArtAdaptiveLimitSpin->setFixedHeight(30);
     m_lineArtAdaptiveLimitSpin->setToolTip(tr("Once the detected block count passes this value, the image is processed "
                                               "at a smaller size so the stroke count stays reasonable."));
-    lineArtForm->addRow(tr("Block count limit"), m_lineArtAdaptiveLimitSpin);
+    lineArtFormRight->addRow(tr("Block count limit"), m_lineArtAdaptiveLimitSpin);
 
     m_lineArtAdaptiveCheck = new QCheckBox(tr("Auto downsample when exceeded"), lineArtGroup);
     m_lineArtAdaptiveCheck->setObjectName(QStringLiteral("LineArtAdaptiveCheck"));
@@ -228,7 +242,7 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
                                           "so nothing disappears from the image. Uncheck to trace at full size."));
     m_lineArtAdaptiveLimitSpin->setEnabled(m_lineArtAdaptiveCheck->isChecked());
     connect(m_lineArtAdaptiveCheck, &QCheckBox::toggled, m_lineArtAdaptiveLimitSpin, &QSpinBox::setEnabled);
-    lineArtForm->addRow(QString(), m_lineArtAdaptiveCheck);
+    lineArtLayout->addWidget(m_lineArtAdaptiveCheck);
 
     // 档位 ↔ 具体数值：切档位就整组写入，手改任何一项就跳回“自定义”。
     auto matchesPreset = [this](const LineArtPreset& preset) {
@@ -293,7 +307,7 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     syncPresetCombo();
 
     auto* lineArtHint =
-        new QLabel(tr("<b>How to tune</b><ul>"
+        new QLabel(tr("<ul>"
                       "<li>Color similarity: RGB color distance (0-441). Lower keeps more small props, higher merges "
                       "more fragments; adjacent merging only joins blocks that actually touch.</li>"
                       "<li>Simplify tolerance: how far a traced point may move. Smaller follows pixel steps, larger "
@@ -309,9 +323,21 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     lineArtHint->setTextFormat(Qt::RichText);
     lineArtHint->setObjectName(QStringLiteral("DialogHint"));
     lineArtHint->setWordWrap(true);
-    lineArtForm->addRow(QString(), lineArtHint);
 
-    rootLayout->addWidget(lineArtGroup);
+    // 「怎么调」默认展开，点一下折叠，避免长提示长期占掉半屏。
+    m_lineArtHintToggle = new QToolButton(lineArtGroup);
+    m_lineArtHintToggle->setObjectName(QStringLiteral("LineArtHintToggle"));
+    m_lineArtHintToggle->setCheckable(true);
+    m_lineArtHintToggle->setChecked(true);
+    m_lineArtHintToggle->setCursor(Qt::PointingHandCursor);
+    m_lineArtHintToggle->setText(QStringLiteral("▾ ") + tr("How to tune"));
+    lineArtLayout->addWidget(m_lineArtHintToggle, 0, Qt::AlignLeft);
+    lineArtLayout->addWidget(lineArtHint);
+    connect(m_lineArtHintToggle, &QToolButton::toggled, this, [this, lineArtHint](bool expanded) {
+        lineArtHint->setVisible(expanded);
+        m_lineArtHintToggle->setText((expanded ? QStringLiteral("▾ ") : QStringLiteral("▸ ")) + tr("How to tune"));
+    });
+
 
     auto* storageGroup = new QGroupBox(tr("Canvas storage"), this);
     auto* storageLayout = new QHBoxLayout(storageGroup);
@@ -327,8 +353,28 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     storageLayout->addWidget(pathEdit, 1);
     storageLayout->addWidget(openButton);
 
-    rootLayout->addWidget(storageGroup);
-    rootLayout->addStretch();
+    // 设置项变多后单列会超出屏幕：整页放进滚动区，宽屏时左右两列并排，窄屏自动出现纵向滚动条。
+    auto* scroll = new QScrollArea(this);
+    scroll->setObjectName(QStringLiteral("SettingsScroll"));
+    scroll->setWidgetResizable(true);
+    scroll->setFrameShape(QFrame::NoFrame);
+    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    auto* content = new QWidget(scroll);
+    auto* grid = new QGridLayout(content);
+    grid->setContentsMargins(0, 0, 8, 0);
+    grid->setHorizontalSpacing(14);
+    grid->setVerticalSpacing(12);
+    grid->addWidget(languageGroup, 0, 0);
+    grid->addWidget(brushGroup, 1, 0);
+    grid->addWidget(canvasGroup, 2, 0);
+    grid->addWidget(lineArtGroup, 0, 1, 4, 1);
+    grid->addWidget(storageGroup, 4, 0, 1, 2);
+    grid->setColumnStretch(0, 1);
+    grid->setColumnStretch(1, 1);
+    grid->setRowStretch(3, 1);
+    scroll->setWidget(content);
+    rootLayout->addWidget(scroll);
 
     auto* buttons =
         new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel | QDialogButtonBox::Reset, this);

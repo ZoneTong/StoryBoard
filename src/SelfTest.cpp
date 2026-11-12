@@ -56,6 +56,7 @@
 #include <QPlainTextEdit>
 #include <QPolygonF>
 #include <QPushButton>
+#include <QScrollArea>
 #include <QSet>
 #include <QSize>
 #include <QSpinBox>
@@ -3433,6 +3434,30 @@ int runSelfTest(const QString& reportPath)
                   QStringLiteral("palette=%1 area=%2")
                       .arg(written.lineArtPaletteMerge)
                       .arg(written.lineArtMinRegionArea));
+        }
+    }
+    {
+        // 需求：设置项变多后页面不能再溢出屏幕，整页放进滚动区，线稿化说明可折叠。
+        const AppSettings defaults;
+        SettingsDialog dialog(defaults);
+        QScrollArea* scroll = dialog.findChild<QScrollArea*>(QStringLiteral("SettingsScroll"));
+        check(scroll && scroll->widgetResizable() && scroll->widget(), QStringLiteral("设置对话框内容放在可滚动区域"),
+              QStringLiteral("scroll=%1").arg(scroll ? 1 : 0));
+        QToolButton* hintToggle = dialog.findChild<QToolButton*>(QStringLiteral("LineArtHintToggle"));
+        QLabel* lineArtHint = nullptr;
+        for (QLabel* label : dialog.findChildren<QLabel*>()) {
+            if (label->text().startsWith(QStringLiteral("<ul>"))) {
+                lineArtHint = label;
+                break;
+            }
+        }
+        check(hintToggle && lineArtHint && hintToggle->isChecked() && lineArtHint->isVisibleTo(&dialog),
+              QStringLiteral("线稿化用法提示默认展开并提供折叠开关"),
+              QStringLiteral("toggle=%1 hint=%2").arg(hintToggle ? 1 : 0).arg(lineArtHint ? 1 : 0));
+        if (hintToggle && lineArtHint) {
+            hintToggle->setChecked(false);
+            check(!lineArtHint->isVisibleTo(&dialog), QStringLiteral("折叠后隐藏线稿化用法提示"));
+            hintToggle->setChecked(true);
         }
     }
     {

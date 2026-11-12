@@ -11,6 +11,7 @@ class QPushButton;
 class QSpinBox;
 class QCheckBox;
 class QComboBox;
+class QToolButton;
 
 class SettingsDialog : public QDialog {
     Q_OBJECT
@@ -48,4 +49,5 @@ class SettingsDialog : public QDialog {
     QCheckBox* m_lineArtAdaptiveCheck = nullptr;
     QDoubleSpinBox* m_lineArtToleranceSpin = nullptr;
     QDoubleSpinBox* m_lineArtThicknessSpin = nullptr;
+    QToolButton* m_lineArtHintToggle = nullptr;
 };
