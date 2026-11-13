@@ -83,6 +83,19 @@ cmake --build "out" --parallel 8
 
 也可以直接用 Qt Creator 打开根目录的 `CMakeLists.txt`，选择本机对应的 Qt 6 kit。
 
+## 并行开发（git 工作树）
+
+多个需求同时推进时，一个需求一棵工作树：从主干当前 HEAD 拉临时分支 `feature/<需求名>`，在旁边的 `StoryBoard_<需求名>` 目录里独立改代码；工作树里**不跑自检、不打包**，合并回主干后才在主干目录做构建、自检和打包。
+
+```bash
+bash scripts/worktree.sh new   <需求名>          # 建工作树（默认从 main 拉）
+bash scripts/worktree.sh list                    # 列出工作树
+bash scripts/worktree.sh merge <需求名>          # 合并进主干，成功后删工作树与临时分支
+bash scripts/worktree.sh drop  <需求名>          # 丢弃工作树（含未合并的提交）
+```
+
+合并用 `--no-ff` 保留需求分支的提交，冲突时脚本停下并打印冲突文件，就地解决后重跑 `merge`。为了少冲突，新功能尽量按功能拆类拆文件，别把不相干的改动都塞进同一处。
+
 ## 便携打包
 
 `scripts/package-portable.sh` 是跨平台打包入口，可在 Windows 的 Git Bash / MSYS2 / Cygwin、macOS 和 Linux 的 bash 中执行。脚本会定位 Qt、调用平台部署工具、补齐 offscreen 插件、运行包内自检，然后生成压缩包。
