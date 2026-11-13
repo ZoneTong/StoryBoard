@@ -5142,15 +5142,16 @@ int runSelfTest(const QString& reportPath)
         check(!scanDirs.isEmpty() && scanDirs.contains(shapesDirectory) && scanDirs.contains(bundledDir),
               QStringLiteral("自定义图形同时扫描配置文件同级与部署目录旁的 shapes"),
               QStringLiteral("dirs=%1").arg(scanDirs.join(QStringLiteral("|"))));
-        if (!QDir().mkpath(bundledDir)) {
-            check(false, QStringLiteral("部署目录 shapes 可创建"), bundledDir);
-        } else {
+        {
+            // 合并多目录时用临时目录，别往真实部署目录里写测试文件，否则包里会留下残留。
+            const QString secondDir = QDir(workDirectory).filePath(QStringLiteral("deployed-shapes"));
+            QDir().mkpath(secondDir);
             QJsonObject deployedRoot;
             deployedRoot.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
             ShapeItem deployedShape(ShapeType::Ellipse);
             deployedShape.setContentSize(QSizeF(90, 90));
             deployedRoot.insert(QStringLiteral("items"), QJsonArray{deployedShape.toJson()});
-            const QString deployedPath = QDir(bundledDir).filePath(QStringLiteral("deployed-leaf.sbcanvas"));
+            const QString deployedPath = QDir(secondDir).filePath(QStringLiteral("deployed-leaf.sbcanvas"));
             QFile deployedFile(deployedPath);
             if (deployedFile.open(QIODevice::WriteOnly)) {
                 deployedFile.write(QJsonDocument(deployedRoot).toJson(QJsonDocument::Indented));
@@ -5163,7 +5164,8 @@ int runSelfTest(const QString& reportPath)
                 duplicateUser.close();
             }
             QStringList mergedErrors;
-            const QList<CustomShapeTemplate> merged = loadCustomShapeTemplatesFromDirs(scanDirs, &mergedErrors);
+            const QList<CustomShapeTemplate> merged =
+                loadCustomShapeTemplatesFromDirs({shapesDirectory, secondDir}, &mergedErrors);
             int deployedCount = 0;
             QString winnerPath;
             for (const CustomShapeTemplate& entry : merged) {
@@ -5174,11 +5176,7 @@ int runSelfTest(const QString& reportPath)
             }
             check(deployedCount == 1 && QFileInfo(winnerPath).absolutePath() == QDir(shapesDirectory).absolutePath(),
                   QStringLiteral("同名模板只保留配置文件同级的那一份"),
-                  QStringLiteral("count=%1 winner=%2 user=%3 bundled=%4")
-                      .arg(deployedCount)
-                      .arg(winnerPath)
-                      .arg(shapesDirectory)
-                      .arg(bundledDir));
+                  QStringLiteral("count=%1 winner=%2").arg(deployedCount).arg(winnerPath));
             QFile::remove(deployedPath);
             QFile::remove(duplicateUser.fileName());
         }
