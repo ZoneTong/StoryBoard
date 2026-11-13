@@ -77,6 +77,15 @@ class CanvasScene : public QGraphicsScene {
     int groupSelectedItems();
     int ungroupSelectedItems();
     QList<CanvasItem*> itemsInGroup(int groupId) const;
+    // 分组有层级：组本身还能被更外层的组包住。outermostGroup 沿父链找到最外层组，
+    // itemsInGroupTree 返回该组及其所有嵌套子组里的图元。
+    int parentGroup(int groupId) const;
+    int outermostGroup(int groupId) const;
+    QList<CanvasItem*> itemsInGroupTree(int groupId) const;
+    // 单击组内任意图元时选中整棵组树；返回 true 表示该图元属于某个组。
+    bool selectGroupOfItem(CanvasItem* item);
+    QHash<int, int> groupParents() const { return m_groupParents; }
+    void applyGroupParents(const QHash<int, int>& parents);
     void applyGroupIds(const QList<CanvasItem*>& items, const QList<int>& groupIds);
 
     // 手动平滑：只处理编辑模式下选中的自由笔画，一次操作只占一条撤销记录。
@@ -202,6 +211,8 @@ class CanvasScene : public QGraphicsScene {
     int m_activeLayerId = 1;
     int m_nextLayerId = 2;
     int m_nextGroupId = 1;
+    // 组 → 父组。组本身可以被更外层的组包住，成员通过 groupId 指到自己所在的那一层组。
+    QHash<int, int> m_groupParents;
     QList<int> m_preferredLayerIds;
     QList<CanvasItem*> m_orphans;
 };

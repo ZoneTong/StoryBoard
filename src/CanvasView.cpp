@@ -399,7 +399,26 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
         return;
     }
 
+    // 分组层级：单击组内任意图元时先展开成整棵组树的选择，再交给基类开始拖拽，
+    // 这样一拖就是整组移动；Ctrl 点击仍保留加选/减选。
+    if (m_mode == ToolMode::Edit && event->button() == Qt::LeftButton &&
+        !event->modifiers().testFlag(Qt::ControlModifier)) {
+        CanvasItem* item = editableItemAt(position);
+        if (item && item->groupId() > 0) {
+            m_scene->selectGroupOfItem(item);
+        }
+    }
+
     QGraphicsView::mousePressEvent(event);
+
+    // 基类按下时可能把多选收成单选，按完再补一次整组选择。
+    if (m_mode == ToolMode::Edit && event->button() == Qt::LeftButton &&
+        !event->modifiers().testFlag(Qt::ControlModifier)) {
+        CanvasItem* item = editableItemAt(position);
+        if (item && item->groupId() > 0 && m_scene->selectedCanvasItems().size() > 1) {
+            m_scene->selectGroupOfItem(item);
+        }
+    }
 }
 
 void CanvasView::mouseMoveEvent(QMouseEvent* event)

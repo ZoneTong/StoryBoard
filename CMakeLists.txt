@@ -46,6 +46,10 @@ set(STORYBOARD_QT_TRANSLATION_FILE
 set(STORYBOARD_SOURCES
     src/main.cpp
     src/CanvasTypes.h
+    src/CompositeShapeItem.h
+    src/CompositeShapeItem.cpp
+    src/BoolOps.h
+    src/BoolOps.cpp
     src/Settings.h
     src/Settings.cpp
     src/I18n.h

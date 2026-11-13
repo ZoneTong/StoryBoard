@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BoolOps.h"
 #include "CanvasTypes.h"
 #include "LineArtConverter.h"
 #include "Settings.h"
@@ -8,6 +9,7 @@
 #include <QColor>
 #include <QHash>
 #include <QKeySequence>
+#include <QList>
 #include <QMainWindow>
 #include <QPointF>
 #include <QPointer>
@@ -90,6 +92,8 @@ class MainWindow : public QMainWindow {
     void connectSignals();
     void CreateBrushToolbar(QToolBar* mainBar);
     void CreateFillToolbar(QToolBar* mainBar);
+    // 布尔运算：合并 / 相减 / 相交，结果替换为复合图元，只记一条撤销。
+    void applyBoolOperation(BoolOps::Operation operation);
 
     bool maybeSave();
     bool loadCanvasFile(const QString& path, bool showErrors);
@@ -189,6 +193,8 @@ class MainWindow : public QMainWindow {
     QAction* m_aboutAct = nullptr;
     QAction* m_shortcutsAct = nullptr;
     QAction* m_aboutQtAct = nullptr;
+    // 布尔运算动作（合并 / 相减 / 相交）。
+    QList<QAction*> m_boolActions;
 
     QActionGroup* m_modeGroup = nullptr;
     QActionGroup* m_backgroundModeGroup = nullptr;

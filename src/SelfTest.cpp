@@ -1,9 +1,11 @@
 #include "SelfTest.h"
 
+#include "BoolOps.h"
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
 #include "CanvasView.h"
 #include "Commands.h"
+#include "CompositeShapeItem.h"
 #include "ExportDialog.h"
 #include "I18n.h"
 #include "ImageItem.h"
@@ -4746,6 +4748,94 @@ int runSelfTest(const QString& reportPath)
             const QImage rendered = gradientScene.renderImage(QRectF(0.0, 0.0, 400.0, 300.0), 1.5);
             rendered.save(QDir(workDirectory).filePath(QStringLiteral("lineart-gradient.png")));
         }
+    }
+
+    // 分组层级与布尔运算。组可以再被组包住：单击组内图元选中整棵组树。
+    {
+        CanvasScene groupScene;
+        groupScene.applyCanvasSize(QSizeF(400.0, 300.0));
+        auto makeRect = [&groupScene](qreal x, qreal y) {
+            auto* item = new ShapeItem();
+            item->setShapeType(ShapeType::Rectangle);
+            item->setPos(QPointF(x, y));
+            item->setContentSize(QSizeF(40.0, 40.0));
+            item->setStyle(QColor(30, 41, 59), QColor(30, 41, 59, 36), 1.0);
+            item->setFill(QColor(30, 41, 59, 36), FillStyle::Solid);
+            groupScene.addItem(item);
+            return item;
+        };
+        CanvasItem* first = makeRect(10.0, 10.0);
+        CanvasItem* second = makeRect(20.0, 20.0);
+        CanvasItem* third = makeRect(30.0, 30.0);
+        first->setSelected(true);
+        second->setSelected(true);
+        const int innerGroup = groupScene.groupSelectedItems();
+        check(innerGroup == 2 && first->groupId() > 0 &&
+                  groupScene.itemsInGroup(first->groupId()).size() == 2,
+              QStringLiteral("两个同层图元可以组合成一组"), QStringLiteral("grouped=%1").arg(innerGroup));
+
+        third->setSelected(true);
+        groupScene.groupSelectedItems();
+        const int outerGroup = first->groupId() > 0 ? groupScene.outermostGroup(first->groupId()) : 0;
+        check(outerGroup > 0 && groupScene.itemsInGroupTree(outerGroup).size() == 3,
+              QStringLiteral("再和其他图元组合时形成外层组，覆盖整棵组树"),
+              QStringLiteral("outer=%1 members=%2").arg(outerGroup).arg(groupScene.itemsInGroupTree(outerGroup).size()));
+
+        groupScene.clearSelection();
+        const bool selectedWholeTree = groupScene.selectGroupOfItem(second);
+        check(selectedWholeTree && groupScene.selectedCanvasItems().size() == 3,
+              QStringLiteral("单击组内图元时选中整棵组树"),
+              QStringLiteral("selected=%1").arg(groupScene.selectedCanvasItems().size()));
+        // 撤销分组后成员回到散图元状态。
+        groupScene.undoStack()->undo();
+        check(third->groupId() == 0 && groupScene.groupParents().isEmpty(),
+              QStringLiteral("撤销外层分组还原组层级"));
+    }
+    {
+        CanvasScene boolScene;
+        boolScene.applyCanvasSize(QSizeF(400.0, 300.0));
+        auto makeRect = [&boolScene](qreal x, const QColor& color) {
+            auto* item = new ShapeItem();
+            item->setShapeType(ShapeType::Rectangle);
+            item->setPos(QPointF(x, 40.0));
+            item->setContentSize(QSizeF(60.0, 60.0));
+            item->setStyle(color, color.lighter(160), 1.0);
+            boolScene.addItem(item);
+            return item;
+        };
+        CanvasItem* lower = makeRect(20.0, QColor(200, 40, 40));
+        CanvasItem* upper = makeRect(50.0, QColor(40, 90, 200));
+        lower->setSelected(true);
+        upper->setSelected(true);
+        check(BoolOps::supports(&boolScene), QStringLiteral("两个图元可以进行布尔运算"), QStringLiteral("items=2"));
+        const int commandCount = boolScene.undoStack()->count();
+        const bool applied = BoolOps::apply(&boolScene, BoolOps::Operation::Union, QStringLiteral("合并"));
+        const QList<CanvasItem*> selected = boolScene.selectedCanvasItems();
+        auto* composite = selected.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(selected.constFirst());
+        check(applied && composite && composite->layerCount() == 2,
+              QStringLiteral("合并运算生成两层复合图元"),
+              QStringLiteral("ok=%1 layers=%2").arg(applied ? 1 : 0).arg(composite ? composite->layerCount() : -1));
+        check(boolScene.undoStack()->count() == commandCount + 1,
+              QStringLiteral("布尔运算只占一条撤销记录"),
+              QStringLiteral("before=%1 after=%2").arg(commandCount).arg(boolScene.undoStack()->count()));
+        boolScene.undoStack()->undo();
+        const int restored = boolScene.canvasItems().size();
+        check(restored == 2, QStringLiteral("撤销布尔运算还原原图元"), QStringLiteral("items=%1").arg(restored));
+        boolScene.undoStack()->redo();
+        boolScene.undoStack()->undo();
+        boolScene.undoStack()->redo();
+
+        const QJsonObject json = composite ? composite->toJson() : QJsonObject();
+        CanvasItem* recreated = json.isEmpty() ? nullptr : boolScene.createItem(QStringLiteral("composite"));
+        if (recreated) {
+            recreated->fromJson(json);
+        }
+        auto* reloaded = dynamic_cast<CompositeShapeItem*>(recreated);
+        check(reloaded && reloaded->layerCount() == 2 && !reloaded->paintedShape().isEmpty(),
+              QStringLiteral("复合图元可以序列化并重新读回"),
+              QStringLiteral("kind=%1 layers=%2").arg(recreated ? recreated->kind() : QStringLiteral("-"))
+                  .arg(reloaded ? reloaded->layerCount() : -1));
+        delete recreated;
     }
 
     int passCount = 0;

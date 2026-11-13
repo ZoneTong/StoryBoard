@@ -54,18 +54,22 @@ class GeometryCommand : public QUndoCommand {
 
 class GroupCommand : public QUndoCommand {
   public:
+    // 分组有层级后，撤销不仅要还原成员归属，还要还原组与组的父子关系。
     GroupCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<int>& before, const QList<int>& after,
-                 const QString& text);
+                 const QString& text, const QHash<int, int>& parentsBefore = QHash<int, int>(),
+                 const QHash<int, int>& parentsAfter = QHash<int, int>());
     void undo() override;
     void redo() override;
 
   private:
-    void apply(const QList<int>& groupIds);
+    void apply(const QList<int>& groupIds, const QHash<int, int>& parents);
 
     CanvasScene* m_scene = nullptr;
     QList<QPointer<CanvasItem>> m_items;
     QList<int> m_before;
     QList<int> m_after;
+    QHash<int, int> m_parentsBefore;
+    QHash<int, int> m_parentsAfter;
 };
 
 class BackgroundCommand : public QUndoCommand {
