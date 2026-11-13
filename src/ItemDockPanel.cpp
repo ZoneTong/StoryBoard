@@ -16,6 +16,7 @@
 #include <QSpinBox>
 #include <QTimer>
 #include <QToolButton>
+#include <QUndoStack>
 #include <QVBoxLayout>
 
 namespace {
@@ -115,6 +116,10 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     if (m_scene) {
         connect(m_scene, &QGraphicsScene::selectionChanged, this, &ItemDockPanel::scheduleRefresh);
         connect(m_scene, &CanvasScene::contentChanged, this, &ItemDockPanel::scheduleRefresh);
+        if (m_scene->undoStack()) {
+            // 撤销 / 重做后卡片里的数值也要回到图元的真实状态。
+            connect(m_scene->undoStack(), &QUndoStack::indexChanged, this, &ItemDockPanel::scheduleRefresh);
+        }
     }
 
     refresh();
