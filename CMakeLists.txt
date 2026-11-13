@@ -107,7 +107,8 @@ set(STORYBOARD_SOURCES
 
 qt_add_executable(StoryBoard WIN32 ${STORYBOARD_SOURCES})
 
-target_compile_definitions(StoryBoard PRIVATE STORYBOARD_VERSION="${STORYBOARD_VERSION}")
+target_compile_definitions(StoryBoard PRIVATE STORYBOARD_VERSION="${STORYBOARD_VERSION}"
+                                                    STORYBOARD_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 
 # Qt 官方 i18n 流水线：.ts -> .qm，并把 .qm 与 .ts 一起嵌进资源。
 # 运行时 QTranslator 从 :/i18n/storyboard_zh.qm 装载中文翻译。

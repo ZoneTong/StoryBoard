@@ -73,6 +73,21 @@
 
 namespace {
 
+bool selfTestMode()
+{
+    return qApp && qApp->property("storyboardSelfTest").toBool();
+}
+
+// 统一的报错出口：自检（离屏）时不许弹模态框，否则没人点“确定”，进程会一直挂着。
+void reportWarning(QWidget* parent, const QString& title, const QString& text)
+{
+    if (selfTestMode()) {
+        qWarning("self-test suppressed dialog [%s]: %s", qUtf8Printable(title), qUtf8Printable(text));
+        return;
+    }
+    QMessageBox::warning(parent, title, text);
+}
+
 QString imageFilter()
 {
     return MainWindow::tr("Image files (*.png *.jpg *.jpeg *.bmp *.gif);;All files (*.*)");
@@ -1570,8 +1585,8 @@ bool MainWindow::loadCanvasFile(const QString& path, bool showErrors)
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
         if (showErrors) {
-            QMessageBox::warning(this, tr("Open canvas"),
-                                 tr("Could not read the file:\n%1").arg(QDir::toNativeSeparators(path)));
+            reportWarning(this, tr("Open canvas"),
+                          tr("Could not read the file:\n%1").arg(QDir::toNativeSeparators(path)));
         }
         return false;
     }
@@ -1580,8 +1595,8 @@ bool MainWindow::loadCanvasFile(const QString& path, bool showErrors)
     const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &parseError);
     if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
         if (showErrors) {
-            QMessageBox::warning(this, tr("Open canvas"),
-                                 tr("Failed to parse the canvas file:\n%1").arg(parseError.errorString()));
+            reportWarning(this, tr("Open canvas"),
+                          tr("Failed to parse the canvas file:\n%1").arg(parseError.errorString()));
         }
         return false;
     }
@@ -1590,7 +1605,7 @@ bool MainWindow::loadCanvasFile(const QString& path, bool showErrors)
     QString validationError;
     if (!validateCanvasRoot(root, &validationError)) {
         if (showErrors) {
-            QMessageBox::warning(this, tr("Open canvas"), validationError);
+            reportWarning(this, tr("Open canvas"), validationError);
         }
         return false;
     }
@@ -1603,7 +1618,7 @@ bool MainWindow::loadCanvasFile(const QString& path, bool showErrors)
     QString loadError;
     if (!m_scene->fromJson(root, &loadError)) {
         if (showErrors) {
-            QMessageBox::warning(this, tr("Open canvas"), loadError);
+            reportWarning(this, tr("Open canvas"), loadError);
         }
         return false;
     }
@@ -1661,14 +1676,13 @@ bool MainWindow::saveToFile(const QString& path)
 
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly)) {
-        QMessageBox::warning(this, tr("Save canvas"),
-                             tr("Could not write the file:\n%1").arg(QDir::toNativeSeparators(path)));
+        reportWarning(this, tr("Save canvas"), tr("Could not write the file:\n%1").arg(QDir::toNativeSeparators(path)));
         return false;
     }
     file.write(data);
     if (!file.commit()) {
-        QMessageBox::warning(this, tr("Save canvas"),
-                             tr("Failed to save the canvas:\n%1").arg(QDir::toNativeSeparators(path)));
+        reportWarning(this, tr("Save canvas"),
+                      tr("Failed to save the canvas:\n%1").arg(QDir::toNativeSeparators(path)));
         return false;
     }
 
@@ -1728,7 +1742,7 @@ void MainWindow::exportCanvas()
     if (options.separateLayers) {
         const QStringList paths = options.filePaths;
         if (paths.isEmpty()) {
-            QMessageBox::warning(this, tr("Export canvas"), tr("No visible layers to export."));
+            reportWarning(this, tr("Export canvas"), tr("No visible layers to export."));
             return;
         }
 
@@ -1769,7 +1783,7 @@ bool MainWindow::exportToFile(const QString& path, const QRectF& area, qreal sca
     QApplication::restoreOverrideCursor();
 
     if (image.isNull()) {
-        QMessageBox::warning(this, tr("Export canvas"), tr("Rendering the canvas failed: nothing to export."));
+        reportWarning(this, tr("Export canvas"), tr("Rendering the canvas failed: nothing to export."));
         return false;
     }
 
@@ -1812,9 +1826,8 @@ bool MainWindow::exportToFile(const QString& path, const QRectF& area, qreal sca
     }
 
     if (!success) {
-        QMessageBox::critical(
-            this, tr("Export failed"),
-            tr("Could not export the canvas:\n%1\n\n%2").arg(QDir::toNativeSeparators(path), errorMessage));
+        reportWarning(this, tr("Export failed"),
+                      tr("Could not export the canvas:\n%1\n\n%2").arg(QDir::toNativeSeparators(path), errorMessage));
         return false;
     }
 
@@ -1915,16 +1928,15 @@ void MainWindow::importOutlineImageFile(const QString& file, const LineArtConver
     reader.setAutoTransform(true);
     const QImage image = reader.read();
     if (image.isNull()) {
-        QMessageBox::warning(this, tr("Import outline image"),
-                             tr("Could not read the image:\n%1").arg(QDir::toNativeSeparators(file)));
+        reportWarning(this, tr("Import outline image"),
+                      tr("Could not read the image:\n%1").arg(QDir::toNativeSeparators(file)));
         return;
     }
 
     const LineArtConverter::Result traced = LineArtConverter::extract(image, options);
     if (!traced.ok || traced.outlines.isEmpty()) {
-        QMessageBox::warning(this, tr("Import outline image"),
-                             traced.error.isEmpty() ? tr("No color blocks were found in the image.")
-                                                    : uiText(traced.error));
+        reportWarning(this, tr("Import outline image"),
+                      traced.error.isEmpty() ? tr("No color blocks were found in the image.") : uiText(traced.error));
         return;
     }
 
@@ -1961,7 +1973,7 @@ void MainWindow::importOutlineImageFile(const QString& file, const LineArtConver
     }
 
     if (items.isEmpty()) {
-        QMessageBox::warning(this, tr("Import outline image"), tr("No color blocks were found in the image."));
+        reportWarning(this, tr("Import outline image"), tr("No color blocks were found in the image."));
         return;
     }
 
@@ -2031,7 +2043,7 @@ void MainWindow::importImageFiles(const QStringList& files)
     }
 
     if (items.isEmpty()) {
-        QMessageBox::warning(this, tr("Insert images"), tr("No usable image files."));
+        reportWarning(this, tr("Insert images"), tr("No usable image files."));
         return;
     }
 
@@ -2045,9 +2057,9 @@ void MainWindow::importImageFiles(const QStringList& files)
 
     statusBar()->showMessage(tr("%1 image(s) inserted").arg(items.size()), 4000);
     if (!failed.isEmpty()) {
-        QMessageBox::warning(this, tr("Some images were not inserted"),
-                             tr("The following files could not be read:\n%1")
-                                 .arg(QDir::toNativeSeparators(failed.join(QLatin1Char('\n')))));
+        reportWarning(this, tr("Some images were not inserted"),
+                      tr("The following files could not be read:\n%1")
+                          .arg(QDir::toNativeSeparators(failed.join(QLatin1Char('\n')))));
     }
 }
 
@@ -2125,8 +2137,8 @@ void MainWindow::insertCustomShape(const QString& filePath)
     CustomShapeTemplate customShape;
     QString error;
     if (!loadCustomShapeTemplate(filePath, &customShape, &error)) {
-        QMessageBox::warning(this, tr("Custom shape"),
-                             tr("Could not read %1:\n%2").arg(QDir::toNativeSeparators(filePath), error));
+        reportWarning(this, tr("Custom shape"),
+                      tr("Could not read %1:\n%2").arg(QDir::toNativeSeparators(filePath), error));
         return;
     }
 
@@ -2549,8 +2561,7 @@ void MainWindow::replaceBackgroundImage()
     reader.setAutoTransform(true);
     const QImage image = reader.read();
     if (image.isNull()) {
-        QMessageBox::warning(this, tr("Replace background"),
-                             tr("Could not read the image:\n%1").arg(reader.errorString()));
+        reportWarning(this, tr("Replace background"), tr("Could not read the image:\n%1").arg(reader.errorString()));
         return;
     }
 
@@ -2843,7 +2854,7 @@ bool MainWindow::changeShortcut(QAction* action, const QKeySequence& sequence)
         }
         for (const QKeySequence& existing : other->shortcuts()) {
             if (existing == sequence) {
-                QMessageBox::warning(
+                reportWarning(
                     this, tr("Shortcut already in use"),
                     tr("%1 is already used by “%2”.").arg(sequence.toString(QKeySequence::NativeText), other->text()));
                 return false;

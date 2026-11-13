@@ -216,6 +216,9 @@ int main(int argc, char** argv)
     applyApplicationStyle(app);
 
     if (selfTest) {
+        // 自检跑在离屏平台上，任何模态弹窗都会永久阻塞进程；打上标记后
+        // MainWindow 的报错路径改为只写状态栏 / stderr。
+        app.setProperty("storyboardSelfTest", true);
         const QString reportPath = takeOptionPath(arguments, QStringLiteral("--self-test"));
         return runSelfTest(reportPath);
     }

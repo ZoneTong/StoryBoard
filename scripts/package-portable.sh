@@ -426,6 +426,11 @@ EOF
         mkdir -p "$PACKAGE_DIR/examples"
         cp -R "$ROOT/examples/." "$PACKAGE_DIR/examples/"
     fi
+    # 部署目录旁的 shapes 会被程序扫描：把仓库里的样例模板一并放进包里。
+    if [ -d "$ROOT/examples/shapes" ]; then
+        mkdir -p "$PACKAGE_DIR/shapes"
+        cp -R "$ROOT/examples/shapes/." "$PACKAGE_DIR/shapes/"
+    fi
     render_readme "$PACKAGE_DIR/README.txt"
 }
 
