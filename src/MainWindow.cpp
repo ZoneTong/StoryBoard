@@ -436,8 +436,7 @@ void MainWindow::createActions()
     m_undoAct = makeAction(this, IconId::Undo, tr("Undo"), QKeySequence::Undo, tr("Undo the last step (Ctrl+Z)"));
     m_undoAct->setEnabled(false);
     m_redoAct = makeAction(this, IconId::Redo, tr("Redo"), QKeySequence(QStringLiteral("Ctrl+Y")),
-                           tr("Redo (Ctrl+Y / Ctrl+Shift+Z)"));
-    m_redoAct->setShortcuts({QKeySequence(QStringLiteral("Ctrl+Y")), QKeySequence(QStringLiteral("Ctrl+Shift+Z"))});
+                           tr("Redo (Ctrl+Y)"));
     m_redoAct->setEnabled(false);
 
     m_deleteAct = makeAction(this, IconId::Delete, tr("Delete selected items"), QKeySequence::Delete,
@@ -537,7 +536,6 @@ void MainWindow::createActions()
     m_fitAct->setShortcuts({QKeySequence(QStringLiteral("Ctrl+0")), QKeySequence(Qt::Key_Home)});
     m_zoomInAct =
         makeAction(this, IconId::ZoomIn, tr("Zoom in"), QKeySequence(QStringLiteral("Ctrl+=")), tr("Zoom in (Ctrl+=)"));
-    m_zoomInAct->setShortcuts({QKeySequence(QStringLiteral("Ctrl+=")), QKeySequence(Qt::CTRL | Qt::Key_Plus)});
     m_zoomOutAct = makeAction(this, IconId::ZoomOut, tr("Zoom out"), QKeySequence(QStringLiteral("Ctrl+-")),
                               tr("Zoom out (Ctrl+-)"));
     m_actualSizeAct = makeAction(this, IconId::ZoomIn, tr("Actual size"), QKeySequence(QStringLiteral("Ctrl+1")),
@@ -806,6 +804,38 @@ void MainWindow::createMenus()
     editMenu->addAction(m_rotateCwAct);
     editMenu->addAction(m_rotateCcwAct);
 
+    // 多图元对齐：编辑菜单里做成下拉子菜单，工具栏上再给一个下拉按钮，共用同一组动作。
+    QMenu* alignMenu = editMenu->addMenu(tr("Align"));
+    alignMenu->setObjectName(QStringLiteral("AlignMenu"));
+    struct AlignEntry {
+        Alignment::Mode mode;
+        const char* text;
+        const char* tip;
+    };
+    const AlignEntry alignEntries[] = {
+        {Alignment::Mode::Left, QT_TR_NOOP("Align left"), QT_TR_NOOP("Line up the left edges of the selected items")},
+        {Alignment::Mode::HorizontalCenter, QT_TR_NOOP("Align horizontal centers"),
+         QT_TR_NOOP("Center the selected items on the same vertical axis")},
+        {Alignment::Mode::Right, QT_TR_NOOP("Align right"),
+         QT_TR_NOOP("Line up the right edges of the selected items")},
+        {Alignment::Mode::Top, QT_TR_NOOP("Align top"), QT_TR_NOOP("Line up the top edges of the selected items")},
+        {Alignment::Mode::VerticalCenter, QT_TR_NOOP("Align vertical centers"),
+         QT_TR_NOOP("Center the selected items on the same horizontal axis")},
+        {Alignment::Mode::Bottom, QT_TR_NOOP("Align bottom"),
+         QT_TR_NOOP("Line up the bottom edges of the selected items")},
+        {Alignment::Mode::DistributeHorizontal, QT_TR_NOOP("Distribute horizontally"),
+         QT_TR_NOOP("Space the selected items evenly from left to right (needs 3 or more)")},
+        {Alignment::Mode::DistributeVertical, QT_TR_NOOP("Distribute vertically"),
+         QT_TR_NOOP("Space the selected items evenly from top to bottom (needs 3 or more)")},
+    };
+    for (const AlignEntry& entry : alignEntries) {
+        QAction* action = alignMenu->addAction(tr(entry.text));
+        action->setStatusTip(tr(entry.tip));
+        action->setProperty("alignMode", static_cast<int>(entry.mode));
+        connect(action, &QAction::triggered, this, [this, mode = entry.mode]() { applyAlignment(mode); });
+        m_alignActions.append(action);
+    }
+
     // 需求：原“样式”菜单拆开——“画笔样式”独立为一级菜单“画笔”，
     // 填充样式与填充／描边颜色并入“插入”菜单，紧跟在“常见图形”之后。
     QMenu* insertMenu = menuBar()->addMenu(tr("&Insert"));
@@ -884,6 +914,21 @@ void MainWindow::createToolBars()
     // 需求 40：顺/逆时针旋转 45° 除了菜单快捷键，也必须出现在工具栏。
     mainBar->addAction(m_rotateCwAct);
     mainBar->addAction(m_rotateCcwAct);
+
+    // 对齐下拉按钮：和编辑菜单里的对齐子菜单共用同一组动作，展开就是一个下拉清单。
+    m_alignButton = new QToolButton(mainBar);
+    m_alignButton->setObjectName(QStringLiteral("AlignToolButton"));
+    m_alignButton->setText(tr("Align"));
+    m_alignButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    m_alignButton->setPopupMode(QToolButton::InstantPopup);
+    m_alignButton->setToolTip(tr("Align or distribute the selected items"));
+    auto* alignButtonMenu = new QMenu(m_alignButton);
+    alignButtonMenu->setObjectName(QStringLiteral("AlignToolButtonMenu"));
+    for (QAction* action : std::as_const(m_alignActions)) {
+        alignButtonMenu->addAction(action);
+    }
+    m_alignButton->setMenu(alignButtonMenu);
+    mainBar->addWidget(m_alignButton);
     mainBar->addSeparator();
 
     CreateFillToolbar(mainBar);
@@ -1202,6 +1247,18 @@ void MainWindow::updateActions()
     m_itemPropsAct->setEnabled(m_scene->selectedCanvasItems().size() == 1);
     m_rotateCwAct->setEnabled(editing && !m_scene->selectedCanvasItems().isEmpty());
     m_rotateCcwAct->setEnabled(editing && !m_scene->selectedCanvasItems().isEmpty());
+
+    // 对齐动作按当前选择更新可用状态：对齐要 2 个图元，等间距要 3 个。
+    bool alignAny = false;
+    for (QAction* action : std::as_const(m_alignActions)) {
+        const Alignment::Mode mode = static_cast<Alignment::Mode>(action->property("alignMode").toInt());
+        const bool usable = editing && Alignment::supports(m_scene, mode);
+        action->setEnabled(usable);
+        alignAny = alignAny || usable;
+    }
+    if (m_alignButton) {
+        m_alignButton->setEnabled(alignAny);
+    }
 
     updateBackgroundModeActions();
 }
@@ -2185,6 +2242,48 @@ void MainWindow::rotateSelected(qreal degrees)
         return;
     }
     statusBar()->showMessage(tr("Rotated %1 item(s) by %2°").arg(changed).arg(qAbs(degrees)), 3000);
+}
+
+void MainWindow::applyAlignment(Alignment::Mode mode)
+{
+    if (m_view->mode() != ToolMode::Edit) {
+        statusBar()->showMessage(tr("Alignment is available in edit mode only"), 3000);
+        return;
+    }
+    QString commandText;
+    switch (mode) {
+    case Alignment::Mode::Left:
+        commandText = tr("Align items left");
+        break;
+    case Alignment::Mode::HorizontalCenter:
+        commandText = tr("Align items horizontal centers");
+        break;
+    case Alignment::Mode::Right:
+        commandText = tr("Align items right");
+        break;
+    case Alignment::Mode::Top:
+        commandText = tr("Align items top");
+        break;
+    case Alignment::Mode::VerticalCenter:
+        commandText = tr("Align items vertical centers");
+        break;
+    case Alignment::Mode::Bottom:
+        commandText = tr("Align items bottom");
+        break;
+    case Alignment::Mode::DistributeHorizontal:
+        commandText = tr("Distribute items horizontally");
+        break;
+    case Alignment::Mode::DistributeVertical:
+        commandText = tr("Distribute items vertically");
+        break;
+    }
+    const int moved = Alignment::apply(m_scene, mode, commandText);
+    if (moved == 0) {
+        statusBar()->showMessage(tr("The selected items are already aligned"), 3000);
+        return;
+    }
+    statusBar()->showMessage(tr("Aligned %1 item(s)").arg(moved), 3000);
+    updateActions();
 }
 
 void MainWindow::replaceBackgroundImage()
