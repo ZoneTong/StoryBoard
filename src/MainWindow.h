@@ -205,8 +205,9 @@ class MainWindow : public QMainWindow {
     // 对齐动作（左 / 水平居中 / 右 / 上 / 垂直居中 / 下 / 水平等距 / 垂直等距）。
     QList<QAction*> m_alignActions;
     QToolButton* m_alignButton = nullptr;
-    // 布尔运算动作（合并 / 相减 / 相交）。
+    // 布尔运算动作（联合 / 组合 / 拆分 / 相交 / 相减）。
     QList<QAction*> m_boolActions;
+    QToolButton* m_boolButton = nullptr;
 
     QActionGroup* m_modeGroup = nullptr;
     QActionGroup* m_backgroundModeGroup = nullptr;

@@ -1,6 +1,6 @@
 [build]
 build/
-out/
+out*/
 cmake-build-*/
 *.user
 *.autosave

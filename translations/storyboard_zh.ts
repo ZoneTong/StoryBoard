@@ -1889,8 +1889,8 @@ Use the checkbox to show or hide it.</source>
       <translation>&lt;b&gt;怎么调&lt;/b&gt;&lt;ul&gt;&lt;li&gt;颜色近似度：RGB 颜色距离（0–441），调小保更多小道具，调大合并更多碎块；相邻合并只作用于真正贴边的色块。&lt;/li&gt;&lt;li&gt;简化容差：轮廓点允许挪动的距离，越小越贴像素台阶，越大弧线越平直。&lt;/li&gt;&lt;li&gt;最细条带：丢掉抗锯齿光晕，0 表示连极细条带也描，调大会连真正细的线条一起丢掉。&lt;/li&gt;&lt;li&gt;色块上限：超过后缩小处理尺寸重描，不会丢色块；取消勾选按原尺寸硬算（图复杂时更慢）。&lt;/li&gt;&lt;li&gt;保存规则：这里点「保存」写入配置文件，并作为线稿化参数窗的初始值；参数窗里的「保存到配置文件」会立即覆盖同一份配置。&lt;/li&gt;&lt;/ul&gt;</translation>
     </message>
       <message>
-      <source>Composite shape</source>
-      <translation>复合图形</translation>
+      <source>Boolean shape</source>
+      <translation>布尔图形</translation>
     </message>
 
     <message>
@@ -3431,6 +3431,26 @@ Use the checkbox to show or hide it.</source>
     <message>
         <source>Applied &amp;quot;%2&amp;quot; to %1 shape(s)</source>
         <translation>已对 %1 个图形应用「%2」</translation>
+    </message>
+    <message>
+      <source>Boolean</source>
+      <translation>布尔</translation>
+    </message>
+    <message>
+      <source>Combine the selected shapes</source>
+      <translation>对选中图元做布尔运算</translation>
+    </message>
+    <message>
+      <source>Merge the selected items into one boolean shape</source>
+      <translation>把选中图元联合成一个布尔图形</translation>
+    </message>
+    <message>
+      <source>Combined into one boolean shape (undo to restore)</source>
+      <translation>已合并为布尔图形，撤销可还原</translation>
+    </message>
+    <message>
+      <source>Boolean shape</source>
+      <translation>布尔图形</translation>
     </message>
 </context>
   <context>

@@ -725,8 +725,8 @@ void MainWindow::updateCustomShapeMenu()
         empty->setEnabled(false);
     } else {
         for (const CustomShapeTemplate& entry : templates) {
-            QAction* action = m_customShapeMenu->addAction(makeCustomShapeIcon(entry.unitPath, QColor(58, 64, 80), 18),
-                                                           entry.name);
+            QAction* action =
+                m_customShapeMenu->addAction(makeCustomShapeIcon(entry.unitPath, QColor(58, 64, 80), 18), entry.name);
             const QString filePath = entry.filePath;
             action->setToolTip(tr("Insert the custom shape from %1").arg(QFileInfo(filePath).fileName()));
             connect(action, &QAction::triggered, this, [this, filePath]() { insertCustomShape(filePath); });
@@ -918,7 +918,7 @@ void MainWindow::createMenus()
         {BoolOps::Operation::Subtract, tr("Subtract")},
     };
     const QList<QString> boolTips = {
-        tr("Merge the selected items into one composite shape"),
+        tr("Merge the selected items into one boolean shape"),
         tr("Merge the outlines and cut out the overlapping part"),
         tr("Split the selected items into separate pieces at every overlap"),
         tr("Keep only the overlapping part"),
@@ -1025,6 +1025,25 @@ void MainWindow::createToolBars()
     }
     m_alignButton->setMenu(alignButtonMenu);
     mainBar->addWidget(m_alignButton);
+
+    // 布尔运算同样做成工具栏下拉按钮，菜单里再挂一份到画布右键菜单。
+    m_boolButton = new QToolButton(mainBar);
+    m_boolButton->setObjectName(QStringLiteral("BoolToolButton"));
+    m_boolButton->setText(tr("Boolean"));
+    m_boolButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    m_boolButton->setPopupMode(QToolButton::InstantPopup);
+    m_boolButton->setToolTip(tr("Combine the selected shapes"));
+    m_boolButton->setEnabled(false);
+    auto* boolButtonMenu = new QMenu(m_boolButton);
+    boolButtonMenu->setObjectName(QStringLiteral("BoolToolButtonMenu"));
+    for (QAction* action : std::as_const(m_boolActions)) {
+        boolButtonMenu->addAction(action);
+    }
+    m_boolButton->setMenu(boolButtonMenu);
+    mainBar->addWidget(m_boolButton);
+    if (m_view) {
+        m_view->addContextMenuGroup(tr("Combine shapes"), m_boolActions);
+    }
     mainBar->addSeparator();
 
     CreateFillToolbar(mainBar);
@@ -1265,10 +1284,8 @@ void MainWindow::connectSignals()
     });
     connect(m_scene, &CanvasScene::layersChanged, this, &MainWindow::updateStatusBar);
     connect(m_scene, &CanvasScene::activeLayerChanged, this, [this](int) { updateStatusBar(); });
-    connect(m_scene, &CanvasScene::selectionChanged, this, [this]() {
-        updateActions();
-        updateItemDockVisibility();
-    });
+    connect(m_scene, &CanvasScene::selectionChanged, this, &MainWindow::updateActions);
+    connect(m_scene, &CanvasScene::selectionChanged, this, &MainWindow::updateItemDockVisibility);
     connect(m_scene, &CanvasScene::backgroundChanged, this, [this]() {
         updateBackgroundModeActions();
         updateActions();
@@ -1364,6 +1381,9 @@ void MainWindow::updateActions()
     const bool boolReady = editing && BoolOps::supports(m_scene);
     for (QAction* action : std::as_const(m_boolActions)) {
         action->setEnabled(boolReady);
+    }
+    if (m_boolButton) {
+        m_boolButton->setEnabled(boolReady);
     }
 
     updateBackgroundModeActions();
@@ -2106,8 +2126,7 @@ void MainWindow::insertCustomShape(const QString& filePath)
     QString error;
     if (!loadCustomShapeTemplate(filePath, &customShape, &error)) {
         QMessageBox::warning(this, tr("Custom shape"),
-                             tr("Could not read %1:\n%2")
-                                 .arg(QDir::toNativeSeparators(filePath), error));
+                             tr("Could not read %1:\n%2").arg(QDir::toNativeSeparators(filePath), error));
         return;
     }
 
@@ -2173,8 +2192,7 @@ void MainWindow::updateItemDockVisibility()
         return;
     }
     // 需求：选中图元时默认显示卡片，无选中则隐藏；非编辑模式没有可编辑选择，也收起。
-    const bool hasSelection =
-        m_view->mode() == ToolMode::Edit && !m_scene->selectedCanvasItems().isEmpty();
+    const bool hasSelection = m_view->mode() == ToolMode::Edit && !m_scene->selectedCanvasItems().isEmpty();
     if (m_itemDock->isVisible() != hasSelection) {
         m_itemDock->setVisible(hasSelection);
     }
@@ -2510,7 +2528,7 @@ void MainWindow::applyBoolOperation(BoolOps::Operation operation)
         statusBar()->showMessage(tr("Select at least two shapes with a visible outline"), 3000);
         return;
     }
-    statusBar()->showMessage(tr("Combined into one composite shape (undo to restore)"), 3000);
+    statusBar()->showMessage(tr("Combined into one boolean shape (undo to restore)"), 3000);
     updateActions();
 }
 
