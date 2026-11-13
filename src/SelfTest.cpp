@@ -4947,6 +4947,73 @@ int runSelfTest(const QString& reportPath)
         check(fragmentOk && fragmentLayers == 3, QStringLiteral("拆分运算把重叠区切成三块"),
               QStringLiteral("ok=%1 layers=%2").arg(fragmentOk ? 1 : 0).arg(fragmentLayers));
     }
+    {
+        // 联合的重叠区必须整块取高优先级图元的颜色（含轮廓色），不留低层的描边。
+        QUndoStack unionUndo;
+        CanvasScene unionScene;
+        unionScene.setUndoStack(&unionUndo);
+        unionScene.setMode(ToolMode::Edit);
+        unionScene.applyCanvasSize(QSizeF(300.0, 200.0));
+        const QColor lowerFill(30, 160, 90);
+        const QColor lowerStroke(200, 40, 40);
+        const QColor upperFill(40, 90, 200);
+        const QColor upperStroke(40, 90, 200);
+        auto makeRect = [&unionScene](qreal x, const QColor& fill, const QColor& stroke) {
+            auto* item = new ShapeItem();
+            item->setShapeType(ShapeType::Rectangle);
+            item->setPos(QPointF(x, 60.0));
+            item->setContentSize(QSizeF(80.0, 80.0));
+            item->setStyle(stroke, fill, 6.0);
+            item->setFill(fill, FillStyle::Solid);
+            unionScene.addItemsWithUndo({item}, QStringLiteral("Add union item"));
+            return item;
+        };
+        CanvasItem* lower = makeRect(40.0, lowerFill, lowerStroke);
+        CanvasItem* upper = makeRect(80.0, upperFill, upperStroke);
+        lower->setSelected(true);
+        upper->setSelected(true);
+        const bool unionOk = BoolOps::apply(&unionScene, BoolOps::Operation::Union, QStringLiteral("联合"));
+        const QImage rendered = unionScene.renderImage(QRectF(0.0, 0.0, 300.0, 200.0), 1.0);
+        const QColor overlapPixel = rendered.pixelColor(90, 100); // 两块都覆盖
+        const QColor lowerPixel = rendered.pixelColor(50, 100);   // 只有下层
+        const QColor upperEdge = rendered.pixelColor(80, 100);    // 上层左边框，落在下层区域内
+        check(unionOk && overlapPixel == upperFill, QStringLiteral("联合后重叠区按高优先级图元的填充色显示"),
+              QStringLiteral("ok=%1 pixel=%2 expected=%3")
+                  .arg(unionOk ? 1 : 0)
+                  .arg(overlapPixel.name())
+                  .arg(upperFill.name()));
+        check(lowerPixel == lowerFill, QStringLiteral("联合后非重叠区保留低层图元的填充色"),
+              QStringLiteral("pixel=%1 expected=%2").arg(lowerPixel.name()).arg(lowerFill.name()));
+        check(upperEdge == upperFill || upperEdge == upperStroke,
+              QStringLiteral("重叠区内的轮廓改取高优先级图元的颜色"), QStringLiteral("pixel=%1").arg(upperEdge.name()));
+    }
+    {
+        // 布尔运算要能从菜单、工具栏和右键菜单三处进入，且共用同一批动作。
+        MainWindow boolWindow;
+        QToolButton* boolButton = boolWindow.findChild<QToolButton*>(QStringLiteral("BoolToolButton"));
+        QMenu* boolMenu = boolWindow.findChild<QMenu*>(QStringLiteral("BoolMenu"));
+        CanvasView* boolView = boolWindow.findChild<CanvasView*>();
+        check(boolMenu && boolMenu->actions().size() == 5, QStringLiteral("编辑菜单提供 5 项布尔运算"),
+              boolMenu ? QString::number(boolMenu->actions().size()) : QString());
+        check(boolButton && boolButton->menu() && boolButton->menu()->actions().size() == 5 &&
+                  boolButton->popupMode() == QToolButton::InstantPopup,
+              QStringLiteral("工具栏布尔按钮是可下拉控件且与菜单同项"));
+        check(boolView && boolView->contextMenuGroupCount() >= 1, QStringLiteral("画布右键菜单挂上了布尔运算分组"),
+              boolView ? QString::number(boolView->contextMenuGroupCount()) : QString());
+        const QList<QAction*> buttonActions = boolButton ? boolButton->menu()->actions() : QList<QAction*>();
+        bool shared = buttonActions.size() == 5;
+        if (shared) {
+            for (int i = 0; i < buttonActions.size(); ++i) {
+                if (i < boolMenu->actions().size() && buttonActions.at(i) != boolMenu->actions().at(i)) {
+                    shared = false;
+                    break;
+                }
+            }
+        }
+        check(shared, QStringLiteral("工具栏与菜单栏共用同一批布尔运算动作"));
+        const bool named = uiText(QStringLiteral("Boolean shape")) != QStringLiteral("Boolean shape");
+        check(named, QStringLiteral("布尔图形的类型名有中文译文"), uiText(QStringLiteral("Boolean shape")));
+    }
 
     int passCount = 0;
     for (const QString& line : lines) {

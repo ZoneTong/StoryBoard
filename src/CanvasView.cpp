@@ -184,6 +184,16 @@ void CanvasView::setStrokeSmoothing(int tolerance)
     m_strokeSmoothing = qBound(0, tolerance, 30);
 }
 
+void CanvasView::addContextMenuGroup(const QString& title, const QList<QAction*>& actions)
+{
+    for (const ContextMenuGroup& group : std::as_const(m_contextGroups)) {
+        if (group.title == title) {
+            return;
+        }
+    }
+    m_contextGroups.append({title, actions});
+}
+
 void CanvasView::setCanvasColor(const QColor& color)
 {
     if (!color.isValid()) {
@@ -511,6 +521,17 @@ void CanvasView::contextMenuEvent(QContextMenuEvent* event)
     group->setEnabled(m_scene->canGroupSelectedItems());
     QAction* ungroup = menu.addAction(tr("Ungroup selected items"));
     ungroup->setEnabled(m_scene->canUngroupSelectedItems());
+
+    // 主窗口挂进来的动作组（例如布尔运算）与菜单栏、工具栏共用同一批 QAction。
+    for (const ContextMenuGroup& group : std::as_const(m_contextGroups)) {
+        if (group.actions.isEmpty()) {
+            continue;
+        }
+        QMenu* submenu = menu.addMenu(group.title);
+        for (QAction* action : group.actions) {
+            submenu->addAction(action);
+        }
+    }
     menu.addSeparator();
 
     // 右键菜单的高度项只写动作名，快捷键交给 QAction 自己画，避免跟菜单里的快捷键重复。

@@ -4,6 +4,7 @@
 
 #include <QColor>
 #include <QGraphicsView>
+#include <QList>
 
 class CanvasItem;
 class CanvasScene;
@@ -39,6 +40,11 @@ class CanvasView : public QGraphicsView {
 
     // 画板边缘拖动：扩大或裁剪画板。返回当前是否正在拖动边缘。
     bool isResizingCanvas() const { return m_resizingCanvas; }
+
+    // 让主窗口把自己的动作组挂进右键菜单（例如布尔运算下拉），
+    // 传进来的动作与菜单栏、工具栏共用同一个 QAction，状态自然同步。
+    void addContextMenuGroup(const QString& title, const QList<QAction*>& actions);
+    int contextMenuGroupCount() const { return m_contextGroups.size(); }
 
   signals:
     void zoomChanged(qreal zoom);
@@ -101,4 +107,10 @@ class CanvasView : public QGraphicsView {
     CanvasHandle m_canvasHandle = CanvasHandle::None;
     CanvasHandle m_hoverHandle = CanvasHandle::None;
     QRectF m_resizeStartRect;
+
+    struct ContextMenuGroup {
+        QString title;
+        QList<QAction*> actions;
+    };
+    QList<ContextMenuGroup> m_contextGroups;
 };

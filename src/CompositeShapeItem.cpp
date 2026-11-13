@@ -14,12 +14,12 @@ CompositeShapeItem::CompositeShapeItem(const QList<Layer>& layers) : CanvasItem(
 
 QString CompositeShapeItem::displayName() const
 {
-    return uiText(QStringLiteral("Composite shape"));
+    return uiText(QStringLiteral("Boolean shape"));
 }
 
 QString CompositeShapeItem::typeDisplayName() const
 {
-    return uiText(QStringLiteral("Composite shape"));
+    return uiText(QStringLiteral("Boolean shape"));
 }
 
 void CompositeShapeItem::updateBoundsFromLayers()
@@ -83,18 +83,35 @@ void CompositeShapeItem::paintContent(QPainter* painter)
 {
     painter->save();
     painter->setTransform(layerTransform(), true);
-    for (const Layer& layer : m_layers) {
+    // 按优先级从低到高逐层绘制，每层只画“不被更高层盖住”的那部分：
+    // 重叠区因此整块显示最高优先级图元的填充色，重叠区里的下层轮廓也被裁掉，
+    // 边界上的轮廓颜色同样是高层图元的描边色。
+    const int count = m_layers.size();
+    for (int i = 0; i < count; ++i) {
+        const Layer& layer = m_layers.at(i);
+        QPainterPath above;
+        for (int j = i + 1; j < count; ++j) {
+            above = above.isEmpty() ? m_layers.at(j).path : above.united(m_layers.at(j).path);
+        }
+        const QPainterPath visible = above.isEmpty() ? layer.path : layer.path.subtracted(above);
+        if (visible.isEmpty()) {
+            continue;
+        }
         if (layer.filled && layer.fill.alpha() > 0) {
             painter->setPen(Qt::NoPen);
             painter->setBrush(layer.fill);
-            painter->drawPath(layer.path);
+            painter->drawPath(visible);
         }
         if (layer.stroke.alpha() > 0 && layer.strokeWidth > 0.0) {
             QPen pen(layer.stroke, layer.strokeWidth);
             pen.setJoinStyle(Qt::MiterJoin);
             painter->setPen(pen);
             painter->setBrush(Qt::NoBrush);
-            painter->drawPath(layer.path);
+            painter->drawPath(visible);
+            // 顶层图元整圈描边画在最后，重叠边界处也取它的轮廓颜色。
+            if (i == count - 1) {
+                painter->drawPath(layer.path);
+            }
         }
     }
     painter->restore();
