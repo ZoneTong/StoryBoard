@@ -15,7 +15,7 @@ namespace {
 
 struct Participant {
     CanvasItem* item = nullptr;
-    QPainterPath path;   // 场景坐标
+    QPainterPath path; // 场景坐标
     QColor fill;
     QColor stroke;
     qreal strokeWidth = 1.0;

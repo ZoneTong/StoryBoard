@@ -1,11 +1,11 @@
 #pragma once
 
+#include "CanvasItem.h"
+
 #include <QColor>
 #include <QJsonObject>
 #include <QList>
 #include <QPainterPath>
-
-#include "CanvasItem.h"
 
 // 布尔运算得到的复合图元：内部按“优先级从低到高”保存若干图层，
 // 每层是一块路径 + 自己的填充色/描边色。逐层绘制时高层后画，
@@ -14,7 +14,7 @@
 class CompositeShapeItem : public CanvasItem {
   public:
     struct Layer {
-        QPainterPath path;   // 内容区局部坐标（0,0 为左上角）
+        QPainterPath path; // 内容区局部坐标（0,0 为左上角）
         QColor fill;
         QColor stroke;
         qreal strokeWidth = 1.0;

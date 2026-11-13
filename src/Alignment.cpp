@@ -85,8 +85,7 @@ int apply(CanvasScene* scene, Mode mode, const QString& commandText)
 
     QList<qreal> dxs;
     QList<qreal> dys;
-    const bool distribute =
-        mode == Mode::DistributeHorizontal || mode == Mode::DistributeVertical;
+    const bool distribute = mode == Mode::DistributeHorizontal || mode == Mode::DistributeVertical;
     if (distribute) {
         if (items.size() < 3) {
             return 0;

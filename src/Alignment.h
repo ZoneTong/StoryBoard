@@ -10,12 +10,12 @@ class CanvasItem;
 namespace Alignment {
 
 enum class Mode {
-    Left,                // 左边缘对齐
-    HorizontalCenter,    // 水平居中
-    Right,               // 右边缘对齐
-    Top,                 // 顶边对齐
-    VerticalCenter,      // 垂直居中
-    Bottom,              // 底边对齐
+    Left,                 // 左边缘对齐
+    HorizontalCenter,     // 水平居中
+    Right,                // 右边缘对齐
+    Top,                  // 顶边对齐
+    VerticalCenter,       // 垂直居中
+    Bottom,               // 底边对齐
     DistributeHorizontal, // 水平等间距（至少 3 个）
     DistributeVertical,   // 垂直等间距（至少 3 个）
 };

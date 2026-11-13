@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QString>
+
 class CanvasScene;
 
 // 多图元布尔运算（合并 / 相减 / 相交），语义参照 PPT 的「合并形状」：
