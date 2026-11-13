@@ -1892,6 +1892,121 @@ Use the checkbox to show or hide it.</source>
       <source>Composite shape</source>
       <translation>复合图形</translation>
     </message>
+
+    <message>
+        <source>Common colors</source>
+        <translation>常用颜色</translation>
+    </message>
+    <message>
+        <source>Border style</source>
+        <translation>边框样式</translation>
+    </message>
+    <message>
+        <source>Opacity</source>
+        <translation>透明度</translation>
+    </message>
+    <message>
+        <source>Corner radius</source>
+        <translation>圆角</translation>
+    </message>
+    <message>
+        <source>Custom shapes</source>
+        <translation>自定义图形</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>填充</translation>
+    </message>
+    <message>
+        <source>Radius</source>
+        <translation>半径</translation>
+    </message>
+    <message>
+        <source>Layer -1</source>
+        <translation>图层 -1</translation>
+    </message>
+    <message>
+        <source>Layer +1</source>
+        <translation>图层 +1</translation>
+    </message>
+    <message>
+        <source>%1 items selected</source>
+        <translation>已选中 %1 个图元</translation>
+    </message>
+    <message>
+        <source>(No custom shapes in the shapes folder)</source>
+        <translation>（shapes 目录里还没有自定义图形）</translation>
+    </message>
+    <message>
+        <source>Open shapes folder…</source>
+        <translation>打开 shapes 目录…</translation>
+    </message>
+    <message>
+        <source>%1 shape file(s) could not be read</source>
+        <translation>有 %1 个图形文件无法读取</translation>
+    </message>
+    <message>
+        <source>Change shape type</source>
+        <translation>切换图形类型</translation>
+    </message>
+    <message>
+        <source>Trace an image&amp;apos;s color-block outlines into strokes (line width 1); a parameter dialog opens first and only Save to configuration file writes StoryBoard.ini (Ctrl+Shift+I)</source>
+        <translation>把图片色块轮廓描成笔画（线宽 1）；先弹参数窗，只有点「保存到配置文件」才写进 StoryBoard.ini（Ctrl+Shift+I）</translation>
+    </message>
+    <message>
+        <source>Show the selected item&amp;apos;s properties (Q)</source>
+        <translation>显示选中图元的属性 (Q)</translation>
+    </message>
+    <message>
+        <source>Insert the custom shape from %1</source>
+        <translation>插入来自 %1 的自定义图形</translation>
+    </message>
+    <message>
+        <source>Selected item</source>
+        <translation>选中图元</translation>
+    </message>
+    <message>
+        <source>Selected item panel</source>
+        <translation>选中图元工具卡</translation>
+    </message>
+    <message>
+        <source>Show or hide the selected item panel (it appears automatically when an item is selected)</source>
+        <translation>显示或隐藏选中图元工具卡（选中图元时会自动出现）</translation>
+    </message>
+    <message>
+        <source>Don&amp;apos;t save</source>
+        <translation>不保存</translation>
+    </message>
+    <message>
+        <source>Custom shape</source>
+        <translation>自定义图形</translation>
+    </message>
+    <message>
+        <source>Could not read %1:
+%2</source>
+        <translation>无法读取 %1：
+%2</translation>
+    </message>
+    <message>
+        <source>Insert custom shape “%1”</source>
+        <translation>插入自定义图形“%1”</translation>
+    </message>
+    <message>
+        <source>Inserted custom shape “%1” from the shapes folder</source>
+        <translation>已从 shapes 目录插入自定义图形“%1”</translation>
+    </message>
+    <message>
+        <source>Could not open the shapes folder: %1</source>
+        <translation>无法打开 shapes 目录：%1</translation>
+    </message>
+    <message>
+        <source>Fill set to &amp;quot;%1&amp;quot;; it will be used for newly inserted shapes</source>
+        <translation>填充已设为「%1」，将用于新插入的图形</translation>
+    </message>
+    <message>
+        <source>Applied &amp;quot;%2&amp;quot; to %1 shape(s)</source>
+        <translation>已对 %1 个图形应用「%2」</translation>
+    </message>
 </context>
   <context>
     <name>LineArtDialog</name>
@@ -3242,6 +3357,81 @@ Use the checkbox to show or hide it.</source>
       <source>Fragment shapes</source>
       <translation>拆分选中图元</translation>
     </message>
+
+    <message>
+        <source>Trace an image&amp;apos;s color-block outlines into strokes (line width 1); a parameter dialog opens first and only Save to configuration file writes StoryBoard.ini (Ctrl+Shift+I)</source>
+        <translation>把图片色块轮廓描成笔画（线宽 1）；先弹参数窗，只有点「保存到配置文件」才写进 StoryBoard.ini（Ctrl+Shift+I）</translation>
+    </message>
+    <message>
+        <source>Show the selected item&amp;apos;s properties (Q)</source>
+        <translation>显示选中图元的属性 (Q)</translation>
+    </message>
+    <message>
+        <source>Custom shapes</source>
+        <translation>自定义图形</translation>
+    </message>
+    <message>
+        <source>(No custom shapes in the shapes folder)</source>
+        <translation>（shapes 目录里还没有自定义图形）</translation>
+    </message>
+    <message>
+        <source>Insert the custom shape from %1</source>
+        <translation>插入来自 %1 的自定义图形</translation>
+    </message>
+    <message>
+        <source>Open shapes folder…</source>
+        <translation>打开 shapes 目录…</translation>
+    </message>
+    <message>
+        <source>%1 shape file(s) could not be read</source>
+        <translation>有 %1 个图形文件无法读取</translation>
+    </message>
+    <message>
+        <source>Selected item</source>
+        <translation>选中图元</translation>
+    </message>
+    <message>
+        <source>Selected item panel</source>
+        <translation>选中图元工具卡</translation>
+    </message>
+    <message>
+        <source>Show or hide the selected item panel (it appears automatically when an item is selected)</source>
+        <translation>显示或隐藏选中图元工具卡（选中图元时会自动出现）</translation>
+    </message>
+    <message>
+        <source>Don&amp;apos;t save</source>
+        <translation>不保存</translation>
+    </message>
+    <message>
+        <source>Custom shape</source>
+        <translation>自定义图形</translation>
+    </message>
+    <message>
+        <source>Could not read %1:
+%2</source>
+        <translation>无法读取 %1：
+%2</translation>
+    </message>
+    <message>
+        <source>Insert custom shape “%1”</source>
+        <translation>插入自定义图形“%1”</translation>
+    </message>
+    <message>
+        <source>Inserted custom shape “%1” from the shapes folder</source>
+        <translation>已从 shapes 目录插入自定义图形“%1”</translation>
+    </message>
+    <message>
+        <source>Could not open the shapes folder: %1</source>
+        <translation>无法打开 shapes 目录：%1</translation>
+    </message>
+    <message>
+        <source>Fill set to &amp;quot;%1&amp;quot;; it will be used for newly inserted shapes</source>
+        <translation>填充已设为「%1」，将用于新插入的图形</translation>
+    </message>
+    <message>
+        <source>Applied &amp;quot;%2&amp;quot; to %1 shape(s)</source>
+        <translation>已对 %1 个图形应用「%2」</translation>
+    </message>
 </context>
   <context>
     <name>SettingsDialog</name>
@@ -4298,4 +4488,80 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>效果</translation>
     </message>
   </context>
+
+<context>
+    <name>ItemDockPanel</name>
+    <message>
+        <source>Common shapes</source>
+        <translation>常见图形</translation>
+    </message>
+    <message>
+        <source>Common colors</source>
+        <translation>常用颜色</translation>
+    </message>
+    <message>
+        <source>Fill style</source>
+        <translation>填充样式</translation>
+    </message>
+    <message>
+        <source>Border style</source>
+        <translation>边框样式</translation>
+    </message>
+    <message>
+        <source>Opacity</source>
+        <translation>透明度</translation>
+    </message>
+    <message>
+        <source>Corner radius</source>
+        <translation>圆角</translation>
+    </message>
+    <message>
+        <source>Custom shapes</source>
+        <translation>自定义图形</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>填充</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>粗细</translation>
+    </message>
+    <message>
+        <source>Radius</source>
+        <translation>半径</translation>
+    </message>
+    <message>
+        <source>Layer -1</source>
+        <translation>图层 -1</translation>
+    </message>
+    <message>
+        <source>Layer +1</source>
+        <translation>图层 +1</translation>
+    </message>
+    <message>
+        <source>No item selected</source>
+        <translation>未选中图元</translation>
+    </message>
+    <message>
+        <source>%1 items selected</source>
+        <translation>已选中 %1 个图元</translation>
+    </message>
+    <message>
+        <source>(No custom shapes in the shapes folder)</source>
+        <translation>（shapes 目录里还没有自定义图形）</translation>
+    </message>
+    <message>
+        <source>Open shapes folder…</source>
+        <translation>打开 shapes 目录…</translation>
+    </message>
+    <message>
+        <source>%1 shape file(s) could not be read</source>
+        <translation>有 %1 个图形文件无法读取</translation>
+    </message>
+    <message>
+        <source>Change shape type</source>
+        <translation>切换图形类型</translation>
+    </message>
+</context>
 </TS>

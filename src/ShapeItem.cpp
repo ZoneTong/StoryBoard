@@ -2,6 +2,9 @@
 
 #include "I18n.h"
 
+#include <QByteArray>
+#include <QDataStream>
+#include <QIODevice>
 #include <QJsonObject>
 #include <QPainter>
 #include <QPainterPathStroker>
@@ -14,6 +17,30 @@ namespace {
 QRectF normalizedRect(const QRectF& rect)
 {
     return rect.normalized();
+}
+
+// 自定义图形轮廓随画布内嵌：QPainterPath 本身没有 JSON 表示，用 QDataStream
+// 序列化再 base64，比手写点表更可靠，也兼容曲线与多子路径。
+QString encodePathData(const QPainterPath& path)
+{
+    QByteArray data;
+    QDataStream stream(&data, QIODevice::WriteOnly);
+    stream.setVersion(QDataStream::Qt_6_0);
+    stream << path;
+    return QString::fromLatin1(data.toBase64());
+}
+
+QPainterPath decodePathData(const QString& text)
+{
+    QByteArray data = QByteArray::fromBase64(text.toLatin1());
+    if (data.isEmpty()) {
+        return QPainterPath();
+    }
+    QDataStream stream(&data, QIODevice::ReadOnly);
+    stream.setVersion(QDataStream::Qt_6_0);
+    QPainterPath path;
+    stream >> path;
+    return path;
 }
 
 QPainterPath bracePath(const QRectF& rect)
@@ -488,15 +515,32 @@ ShapeItem::ShapeItem(ShapeType type, QGraphicsItem* parent) : CanvasItem(parent)
 
 QString ShapeItem::displayName() const
 {
+    if (!m_customName.isEmpty()) {
+        return m_customName;
+    }
     return shapeTypeName(m_type);
 }
 
 void ShapeItem::setShapeType(ShapeType type)
 {
-    if (m_type == type) {
+    if (m_type == type && m_customPath.isEmpty()) {
         return;
     }
     m_type = type;
+    // 切换到内置图形时丢掉自定义轮廓，否则自定义路径会继续盖住新类型。
+    m_customPath = QPainterPath();
+    m_customName.clear();
+    m_cornerRadius = -1.0;
+    update();
+}
+
+void ShapeItem::setCustomShape(const QString& name, const QPainterPath& unitPath)
+{
+    m_customName = name;
+    m_customPath = unitPath;
+    if (!m_customPath.isEmpty()) {
+        m_cornerRadius = -1.0;
+    }
     update();
 }
 
@@ -524,6 +568,38 @@ void ShapeItem::setFillStyle(FillStyle style)
     update();
 }
 
+void ShapeItem::setStrokeStyle(Qt::PenStyle style)
+{
+    if (m_strokeStyle == style) {
+        return;
+    }
+    m_strokeStyle = style;
+    update();
+}
+
+void ShapeItem::setOpacity(qreal opacity)
+{
+    const qreal clamped = qBound<qreal>(0.0, opacity, 1.0);
+    if (qFuzzyCompare(m_opacity, clamped)) {
+        return;
+    }
+    m_opacity = clamped;
+    update();
+}
+
+void ShapeItem::setCornerRadius(qreal radius)
+{
+    // 负数表示恢复该类型的默认圆角；正数按画布像素处理，不超过短边的一半。
+    const qreal clamped = radius < 0.0 ? -1.0 : qBound<qreal>(0.0, radius, qMin(contentRect().width(),
+                                                                              contentRect().height()) /
+                                                                      2.0);
+    if (qFuzzyCompare(m_cornerRadius + 2.0, clamped + 2.0)) {
+        return;
+    }
+    m_cornerRadius = clamped;
+    update();
+}
+
 ShapeItemState ShapeItem::state() const
 {
     ShapeItemState result;
@@ -532,6 +608,9 @@ ShapeItemState ShapeItem::state() const
     result.fillColor = m_fillColor;
     result.fillStyle = m_fillStyle;
     result.strokeWidth = m_strokeWidth;
+    result.strokeStyle = m_strokeStyle;
+    result.opacity = m_opacity;
+    result.cornerRadius = m_cornerRadius;
     result.pos = pos();
     result.size = contentSize();
     return result;
@@ -541,6 +620,9 @@ void ShapeItem::applyState(const ShapeItemState& state)
 {
     m_type = state.type;
     m_fillStyle = state.fillStyle;
+    m_strokeStyle = state.strokeStyle;
+    m_opacity = state.opacity;
+    m_cornerRadius = state.cornerRadius;
     setStyle(state.strokeColor, state.fillColor, state.strokeWidth);
     setPos(state.pos);
     setContentSize(state.size.isEmpty() ? defaultShapeSize(state.type) : state.size);
@@ -549,7 +631,7 @@ void ShapeItem::applyState(const ShapeItemState& state)
 
 QPainterPath ShapeItem::shape() const
 {
-    const QPainterPath path = pathFor(m_type, contentRect());
+    const QPainterPath path = currentPath(contentRect());
     if (path.isEmpty()) {
         return selectionHandleShape();
     }
@@ -583,13 +665,13 @@ QPainterPath ShapeItem::shape() const
 
 QPainterPath ShapeItem::outlineShape() const
 {
-    const QPainterPath path = pathFor(m_type, contentRect());
+    const QPainterPath path = currentPath(contentRect());
     return path.isEmpty() ? CanvasItem::outlineShape() : path;
 }
 
 QPainterPath ShapeItem::paintedShape() const
 {
-    const QPainterPath path = pathFor(m_type, contentRect());
+    const QPainterPath path = currentPath(contentRect());
     if (path.isEmpty()) {
         return QPainterPath();
     }
@@ -614,7 +696,28 @@ QPainterPath ShapeItem::paintedShape() const
     return result;
 }
 
+QPainterPath ShapeItem::currentPath(const QRectF& rect) const
+{
+    if (!m_customPath.isEmpty()) {
+        const QRectF r = normalizedRect(rect);
+        if (r.width() <= 0.0 || r.height() <= 0.0) {
+            return QPainterPath();
+        }
+        // 模板存的是 0–1 单位坐标，插入 / 缩放时按内容矩形铺开，路径本身可任意放大缩小。
+        QTransform transform;
+        transform.translate(r.left(), r.top());
+        transform.scale(r.width(), r.height());
+        return transform.map(m_customPath);
+    }
+    return pathFor(m_type, rect, m_cornerRadius);
+}
+
 QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect)
+{
+    return pathFor(type, rect, -1.0);
+}
+
+QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius)
 {
     const QRectF r = normalizedRect(rect);
     if (r.width() <= 0.0 || r.height() <= 0.0) {
@@ -624,10 +727,17 @@ QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect)
     QPainterPath path;
     switch (type) {
     case ShapeType::Rectangle:
-        path.addRect(r);
+        if (cornerRadius > 0.0) {
+            const qreal radius = qMin(cornerRadius, qMin(r.width(), r.height()) / 2.0);
+            path.addRoundedRect(r, radius, radius);
+        } else {
+            path.addRect(r);
+        }
         break;
     case ShapeType::RoundedRectangle: {
-        const qreal radius = qMin(r.width(), r.height()) * 0.16;
+        const qreal radius =
+            cornerRadius >= 0.0 ? qMin(cornerRadius, qMin(r.width(), r.height()) / 2.0)
+                                : qMin(r.width(), r.height()) * 0.16;
         path.addRoundedRect(r, radius, radius);
         break;
     }
@@ -714,16 +824,17 @@ void ShapeItem::paintContent(QPainter* painter)
         return;
     }
 
-    const QPainterPath path = pathFor(m_type, rect);
+    const QPainterPath path = currentPath(rect);
     if (path.isEmpty()) {
         return;
     }
 
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->setOpacity(painter->opacity() * m_opacity);
 
     if (shapeTypeIsStrokeOnly(m_type)) {
-        QPen pen(m_strokeColor, m_strokeWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+        QPen pen(m_strokeColor, m_strokeWidth, m_strokeStyle, Qt::RoundCap, Qt::RoundJoin);
         painter->setPen(pen);
         painter->setBrush(Qt::NoBrush);
         painter->drawPath(path);
@@ -732,7 +843,7 @@ void ShapeItem::paintContent(QPainter* painter)
             paintPatternFill(painter, path, rect, m_fillColor, m_fillStyle);
         }
 
-        QPen pen(m_strokeColor, m_strokeWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+        QPen pen(m_strokeColor, m_strokeWidth, m_strokeStyle, Qt::RoundCap, Qt::RoundJoin);
         painter->setPen(pen);
         if (m_fillStyle == FillStyle::Solid && m_fillColor.alpha() > 0) {
             painter->setBrush(m_fillColor);
@@ -752,12 +863,29 @@ QJsonObject ShapeItem::toJson() const
     json.insert(QStringLiteral("fillColor"), m_fillColor.name(QColor::HexArgb));
     json.insert(QStringLiteral("fillStyle"), fillStyleToString(m_fillStyle));
     json.insert(QStringLiteral("strokeWidth"), m_strokeWidth);
+    json.insert(QStringLiteral("strokeStyle"), static_cast<int>(m_strokeStyle));
+    json.insert(QStringLiteral("opacity"), m_opacity);
+    json.insert(QStringLiteral("cornerRadius"), m_cornerRadius);
+    if (!m_customPath.isEmpty()) {
+        json.insert(QStringLiteral("shapeType"), QStringLiteral("custom"));
+        json.insert(QStringLiteral("customName"), m_customName);
+        json.insert(QStringLiteral("pathData"), encodePathData(m_customPath));
+    }
     return json;
 }
 
 void ShapeItem::fromJson(const QJsonObject& json)
 {
-    m_type = shapeTypeFromString(json.value(QStringLiteral("shapeType")).toString());
+    const QString typeName = json.value(QStringLiteral("shapeType")).toString();
+    if (typeName == QStringLiteral("custom")) {
+        m_customName = json.value(QStringLiteral("customName")).toString();
+        m_customPath = decodePathData(json.value(QStringLiteral("pathData")).toString());
+        m_type = ShapeType::Rectangle;
+    } else {
+        m_type = shapeTypeFromString(typeName);
+        m_customName.clear();
+        m_customPath = QPainterPath();
+    }
 
     m_strokeColor = QColor(json.value(QStringLiteral("strokeColor")).toString(QStringLiteral("#ff1e293b")));
     if (!m_strokeColor.isValid()) {
@@ -781,6 +909,9 @@ void ShapeItem::fromJson(const QJsonObject& json)
     }
 
     m_strokeWidth = qBound<qreal>(0.5, json.value(QStringLiteral("strokeWidth")).toDouble(4.0), 48.0);
+    m_strokeStyle = static_cast<Qt::PenStyle>(qBound(0, json.value(QStringLiteral("strokeStyle")).toInt(1), 5));
+    m_opacity = qBound<qreal>(0.0, json.value(QStringLiteral("opacity")).toDouble(1.0), 1.0);
+    m_cornerRadius = json.value(QStringLiteral("cornerRadius")).toDouble(-1.0);
 
     applyBaseJson(json);
     if (contentSize().isEmpty()) {

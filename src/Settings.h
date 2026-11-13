@@ -51,7 +51,9 @@ class AppSettings {
     static QString defaultCanvasesDir();
     static QString canvasesDir();
     static void ensureCanvasesDir();
-
+    // 自定义图形模板目录：与 StoryBoard.ini 同级，固定叫 shapes。
+    static QString shapesDir();
+    static void ensureShapesDir();
     // 界面语言以 "system" / "zh" / "en" 存进同一个 ini，不再使用注册表。
     static QString languageSetting();
     static bool setLanguageSetting(const QString& stored);

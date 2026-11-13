@@ -23,6 +23,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# 项目的验证编译链是 GCC 15.1（Qt 官方 mingw1510_64）。版本偏低仍可尝试构建，
+# 但给出警告，避免把未验证的二进制当成发布包。
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 15.0)
+    message(WARNING "StoryBoard 的验证编译链为 GCC 15.1，当前 GCC ${CMAKE_CXX_COMPILER_VERSION} 未经验证。")
+endif()
+
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
@@ -69,6 +75,8 @@ set(STORYBOARD_SOURCES
     src/TextItem.cpp
     src/ShapeItem.h
     src/ShapeItem.cpp
+    src/CustomShapeTemplates.h
+    src/CustomShapeTemplates.cpp
     src/LineArtConverter.h
     src/LineArtConverter.cpp
     src/LineArtPresets.h
@@ -82,6 +90,8 @@ set(STORYBOARD_SOURCES
     src/CanvasView.cpp
     src/LayerPanel.h
     src/LayerPanel.cpp
+    src/ItemDockPanel.h
+    src/ItemDockPanel.cpp
     src/ExportDialog.h
     src/ExportDialog.cpp
     src/SettingsDialog.h

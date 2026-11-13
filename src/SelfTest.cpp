@@ -7,15 +7,18 @@
 #include "CanvasView.h"
 #include "Commands.h"
 #include "CompositeShapeItem.h"
+#include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
 #include "ImageItem.h"
+#include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
 #include "LineArtConverter.h"
 #include "LineArtDialog.h"
 #include "LineArtPresets.h"
 #include "MainWindow.h"
+#include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
 #include "StrokeItem.h"
@@ -28,6 +31,7 @@
 #include <QComboBox>
 #include <QContextMenuEvent>
 #include <QCoreApplication>
+#include <QDockWidget>
 #include <QDialogButtonBox>
 #include <QDir>
 #include <QDoubleSpinBox>
@@ -3001,8 +3005,22 @@ int runSelfTest(const QString& reportPath)
         QApplication::processEvents();
 
         QMenu* shapeMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("ShapeMenu"));
-        check(shapeMenu && shapeMenu->actions().size() == shapeTypes.size(), QStringLiteral("图形菜单包含全部图形"),
-              QStringLiteral("actions=%1").arg(shapeMenu ? shapeMenu->actions().size() : 0));
+        int builtInShapeActions = 0;
+        if (shapeMenu) {
+            for (QAction* action : shapeMenu->actions()) {
+                if (action->objectName().startsWith(QStringLiteral("ShapeAction_"))) {
+                    ++builtInShapeActions;
+                }
+            }
+        }
+        QMenu* customShapeMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("CustomShapeMenu"));
+        check(shapeMenu && builtInShapeActions == shapeTypes.size() && customShapeMenu &&
+                  shapeMenu->actions().contains(customShapeMenu->menuAction()),
+              QStringLiteral("图形菜单包含全部图形并在下方追加自定义图形子菜单"),
+              QStringLiteral("actions=%1 builtIn=%2 custom=%3")
+                  .arg(shapeMenu ? shapeMenu->actions().size() : 0)
+                  .arg(builtInShapeActions)
+                  .arg(customShapeMenu ? 1 : 0));
         QToolButton* shapeButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("ShapeButton"));
         check(shapeButton && shapeButton->menu() == shapeMenu && shapeButton->popupMode() == QToolButton::InstantPopup,
               QStringLiteral("主工具栏图形按钮绑定快速插入菜单"));
@@ -4946,6 +4964,246 @@ int runSelfTest(const QString& reportPath)
         const bool fragmentOk = runOperation(BoolOps::Operation::Fragment, fragmentLayers, fragmentWidth);
         check(fragmentOk && fragmentLayers == 3, QStringLiteral("拆分运算把重叠区切成三块"),
               QStringLiteral("ok=%1 layers=%2").arg(fragmentOk ? 1 : 0).arg(fragmentLayers));
+    }
+
+    // 需求：选中图元工具卡（边框样式 / 透明度 / 矩形圆角 / 图层与高度）与画布格式自定义图形。
+    {
+        ShapeItem styled(ShapeType::Rectangle);
+        styled.setContentSize(QSizeF(200, 120));
+        styled.setStyle(QColor(QStringLiteral("#1E293B")), QColor(QStringLiteral("#F97316")), 6.0);
+        styled.setStrokeStyle(Qt::DashLine);
+        styled.setOpacity(0.42);
+        styled.setCornerRadius(18.0);
+
+        ShapeItem reloaded;
+        reloaded.fromJson(styled.toJson());
+        check(reloaded.strokeStyle() == Qt::DashLine && qAbs(reloaded.opacity() - 0.42) < 0.001 &&
+                  qAbs(reloaded.cornerRadius() - 18.0) < 0.001,
+              QStringLiteral("图形边框样式、透明度与圆角随画布保存"),
+              QStringLiteral("style=%1 opacity=%2 radius=%3")
+                  .arg(static_cast<int>(reloaded.strokeStyle()))
+                  .arg(reloaded.opacity())
+                  .arg(reloaded.cornerRadius()));
+
+        const int squareElements =
+            ShapeItem::pathFor(ShapeType::Rectangle, QRectF(0, 0, 100, 80), 0.0).elementCount();
+        const int roundElements =
+            ShapeItem::pathFor(ShapeType::Rectangle, QRectF(0, 0, 100, 80), 20.0).elementCount();
+        check(roundElements > squareElements, QStringLiteral("矩形圆角半径改变轮廓"),
+              QStringLiteral("square=%1 round=%2").arg(squareElements).arg(roundElements));
+
+        QPainterPath unit;
+        unit.addRect(QRectF(0.0, 0.0, 1.0, 1.0));
+        ShapeItem custom;
+        custom.setCustomShape(QStringLiteral("Badge"), unit);
+        custom.setContentSize(QSizeF(160, 100));
+        ShapeItem customReloaded;
+        customReloaded.fromJson(custom.toJson());
+        const QRectF customBounds = customReloaded.currentPath(QRectF(0, 0, 160, 100)).boundingRect();
+        check(customReloaded.isCustomShape() && customReloaded.displayName() == QStringLiteral("Badge") &&
+                  qAbs(customBounds.width() - 160.0) < 0.01 && qAbs(customBounds.height() - 100.0) < 0.01,
+              QStringLiteral("自定义图形轮廓随画布保存并按内容矩形缩放"),
+              QStringLiteral("custom=%1 name=%2 w=%3")
+                  .arg(customReloaded.isCustomShape() ? 1 : 0)
+                  .arg(customReloaded.displayName())
+                  .arg(customBounds.width()));
+        customReloaded.setShapeType(ShapeType::Ellipse);
+        check(!customReloaded.isCustomShape(), QStringLiteral("切换内置图形时清除自定义轮廓"));
+
+        // 自定义图形目录：配置同级的 shapes 子目录，扫描 .sbcanvas 并按文件名命名。
+        const QString shapesConfig = QDir(workDirectory).filePath(QStringLiteral("custom-shape-config.ini"));
+        qputenv("STORYBOARD_CONFIG", shapesConfig.toLocal8Bit());
+        const QString shapesDirectory = AppSettings::shapesDir();
+        check(QFileInfo(shapesDirectory).absolutePath() == QFileInfo(shapesConfig).absolutePath() &&
+                  QFileInfo(shapesDirectory).fileName() == QStringLiteral("shapes"),
+              QStringLiteral("自定义图形目录位于配置文件同级的 shapes 子目录"), shapesDirectory);
+
+        ShapeItem templateShape(ShapeType::Star);
+        templateShape.setPos(QPointF(12, 18));
+        templateShape.setContentSize(QSizeF(160, 100));
+        QJsonObject templateRoot;
+        templateRoot.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
+        templateRoot.insert(QStringLiteral("items"), QJsonArray{templateShape.toJson()});
+        const QString templatePath = QDir(shapesDirectory).filePath(QStringLiteral("probe-badge.sbcanvas"));
+        for (const QString& stale : QDir(shapesDirectory).entryList({QStringLiteral("*.sbcanvas")}, QDir::Files)) {
+            QFile::remove(QDir(shapesDirectory).filePath(stale));
+        }
+        QFile templateFile(templatePath);
+        const bool templateWritten = templateFile.open(QIODevice::WriteOnly);
+        if (templateWritten) {
+            templateFile.write(QJsonDocument(templateRoot).toJson(QJsonDocument::Indented));
+            templateFile.close();
+        }
+        QStringList templateErrors;
+        const QList<CustomShapeTemplate> templates = loadCustomShapeTemplates(shapesDirectory, &templateErrors);
+        const CustomShapeTemplate* probeTemplate = nullptr;
+        for (const CustomShapeTemplate& entry : templates) {
+            if (entry.name == QStringLiteral("probe-badge")) {
+                probeTemplate = &entry;
+            }
+        }
+        const bool templateOk = probeTemplate != nullptr && templateErrors.isEmpty();
+        const QRectF unitBounds = templateOk ? probeTemplate->unitPath.boundingRect() : QRectF();
+        check(templateOk && probeTemplate->aspectRatio > 1.0 && qAbs(unitBounds.left()) < 0.01 &&
+                  qAbs(unitBounds.top()) < 0.01 && qAbs(unitBounds.width() - 1.0) < 0.01 &&
+                  qAbs(unitBounds.height() - 1.0) < 0.01,
+              QStringLiteral("自定义图形模板按文件名命名并归一化到单位坐标"),
+              QStringLiteral("count=%1 name=%2 bounds=%3,%4 %5x%6")
+                  .arg(templates.size())
+                  .arg(templateOk ? probeTemplate->name : QString())
+                  .arg(unitBounds.left())
+                  .arg(unitBounds.top())
+                  .arg(unitBounds.width())
+                  .arg(unitBounds.height()));
+
+        for (const QString& stale : QDir(shapesDirectory).entryList({QStringLiteral("*.sbcanvas")}, QDir::Files)) {
+            QFile::remove(QDir(shapesDirectory).filePath(stale));
+        }
+
+        CanvasScene panelScene;
+        ItemDockPanel panel(&panelScene);
+        const QList<QToolButton*> sectionToggles =
+            panel.findChildren<QToolButton*>(QStringLiteral("ItemSectionToggle"));
+        int expandedSections = 0;
+        for (QToolButton* toggle : sectionToggles) {
+            if (toggle->isChecked()) {
+                ++expandedSections;
+            }
+        }
+        check(sectionToggles.size() == 7 && expandedSections == 5,
+              QStringLiteral("工具卡分组齐全，常见图形 / 常用颜色 / 填充 / 边框 / 图层默认展开"),
+              QStringLiteral("sections=%1 expanded=%2").arg(sectionToggles.size()).arg(expandedSections));
+        check(panel.findChildren<QToolButton*>(QStringLiteral("ItemLayerUpButton")).size() == 1 &&
+                  panel.findChildren<QToolButton*>(QStringLiteral("ItemLayerDownButton")).size() == 1 &&
+                  panel.findChildren<QToolButton*>(QStringLiteral("ItemHeightUpButton")).size() == 1 &&
+                  panel.findChildren<QToolButton*>(QStringLiteral("ItemHeightDownButton")).size() == 1,
+              QStringLiteral("工具卡提供图层与层内高度 ±1 按钮"));
+
+        qunsetenv("STORYBOARD_CONFIG");
+    }
+
+    // 工具卡与主窗口联动：选中出现 / 清空隐藏、透明度 / 边框 / 填充 / 高度即时生效并可撤销。
+    {
+        const QString dockConfig = QDir(workDirectory).filePath(QStringLiteral("dock-panel-config.ini"));
+        qputenv("STORYBOARD_CONFIG", dockConfig.toLocal8Bit());
+        const QString dockShapesDir = AppSettings::shapesDir();
+        ShapeItem menuShape(ShapeType::Star);
+        menuShape.setContentSize(QSizeF(120, 80));
+        QJsonObject menuRoot;
+        menuRoot.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
+        menuRoot.insert(QStringLiteral("items"), QJsonArray{menuShape.toJson()});
+        const QString menuTemplatePath = QDir(dockShapesDir).filePath(QStringLiteral("dock-probe.sbcanvas"));
+        for (const QString& stale : QDir(dockShapesDir).entryList({QStringLiteral("*.sbcanvas")}, QDir::Files)) {
+            QFile::remove(QDir(dockShapesDir).filePath(stale));
+        }
+        QFile menuTemplate(menuTemplatePath);
+        if (menuTemplate.open(QIODevice::WriteOnly)) {
+            menuTemplate.write(QJsonDocument(menuRoot).toJson(QJsonDocument::Indented));
+            menuTemplate.close();
+        }
+
+        MainWindow dockWindow;
+        dockWindow.resize(1200, 800);
+        dockWindow.show();
+        QApplication::processEvents();
+
+        QDockWidget* itemDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("ItemDock"));
+        ItemDockPanel* dockPanel =
+            itemDock ? itemDock->findChild<ItemDockPanel*>(QStringLiteral("ItemPanel")) : nullptr;
+        QMenu* dockCustomMenu = dockWindow.findChild<QMenu*>(QStringLiteral("CustomShapeMenu"));
+        QStringList customTexts;
+        if (dockCustomMenu) {
+            for (QAction* action : dockCustomMenu->actions()) {
+                customTexts.append(action->text());
+            }
+        }
+        check(itemDock && dockPanel && !itemDock->isVisible(), QStringLiteral("右侧提供选中图元工具卡且无选中时隐藏"));
+        check(dockCustomMenu && customTexts.contains(QStringLiteral("dock-probe")),
+              QStringLiteral("自定义图形追加到常见图形下方的下拉菜单"), customTexts.join(QStringLiteral("|")));
+        check(dockWindow.findChild<QAction*>(QStringLiteral("ItemDockToggleAction")) != nullptr,
+              QStringLiteral("视图菜单提供选中图元工具卡开关"));
+
+        CanvasScene* dockScene = dockWindow.scene();
+        const int beforeCount = dockScene->canvasItemCount();
+        QList<QToolButton*> shapeButtons;
+        if (dockPanel) {
+            shapeButtons = dockPanel->findChildren<QToolButton*>(QStringLiteral("ItemShapeButton"));
+        }
+        if (!shapeButtons.isEmpty()) {
+            shapeButtons.first()->click();
+        }
+        QApplication::processEvents();
+        ShapeItem* selectedShape =
+            dockScene->selectedCanvasItems().isEmpty()
+                ? nullptr
+                : dynamic_cast<ShapeItem*>(dockScene->selectedCanvasItems().first());
+        check(selectedShape && dockScene->canvasItemCount() == beforeCount + 1 && itemDock->isVisible(),
+              QStringLiteral("工具卡可插入矩形且选中后卡片自动出现"));
+
+        if (selectedShape && dockPanel) {
+            QList<QSpinBox*> valueSpins = dockPanel->findChildren<QSpinBox*>(QStringLiteral("ItemValueSpin"));
+            QSpinBox* opacitySpin = nullptr;
+            QSpinBox* cornerSpin = nullptr;
+            for (QSpinBox* spin : valueSpins) {
+                if (spin->maximum() == 100) {
+                    opacitySpin = spin;
+                } else if (spin->maximum() == 400) {
+                    cornerSpin = spin;
+                }
+            }
+            const QList<QToolButton*> borderButtons =
+                dockPanel->findChildren<QToolButton*>(QStringLiteral("ItemBorderStyleButton"));
+            const QList<QToolButton*> fillButtons =
+                dockPanel->findChildren<QToolButton*>(QStringLiteral("ItemFillStyleButton"));
+            QToolButton* heightUp = dockPanel->findChild<QToolButton*>(QStringLiteral("ItemHeightUpButton"));
+
+            if (opacitySpin) {
+                opacitySpin->setValue(45);
+                QApplication::processEvents();
+            }
+            check(qAbs(selectedShape->opacity() - 0.45) < 0.01, QStringLiteral("工具卡透明度即时作用到图形"),
+                  QString::number(selectedShape->opacity()));
+            dockScene->undoStack()->undo();
+            check(qAbs(selectedShape->opacity() - 1.0) < 0.01, QStringLiteral("撤销透明度修改恢复原值"),
+                  QString::number(selectedShape->opacity()));
+
+            if (borderButtons.size() > 1) {
+                borderButtons.at(1)->click();
+                QApplication::processEvents();
+            }
+            check(selectedShape->strokeStyle() == Qt::DashLine, QStringLiteral("工具卡边框样式作用到图形"));
+            if (fillButtons.size() > 2) {
+                fillButtons.at(2)->click();
+                QApplication::processEvents();
+            }
+            check(selectedShape->fillStyle() == FillStyle::Hachure, QStringLiteral("工具卡填充样式作用到图形"));
+
+            if (cornerSpin) {
+                cornerSpin->setValue(24);
+                QApplication::processEvents();
+            }
+            check(qAbs(selectedShape->cornerRadius() - 24.0) < 0.01, QStringLiteral("矩形选中时圆角设置可用"),
+                  QString::number(selectedShape->cornerRadius()));
+
+            const int heightBefore = selectedShape->height();
+            if (heightUp) {
+                heightUp->click();
+                QApplication::processEvents();
+            }
+            check(selectedShape->height() == heightBefore + 1, QStringLiteral("工具卡高度 +1 按钮生效"),
+                  QStringLiteral("%1->%2").arg(heightBefore).arg(selectedShape->height()));
+            dockScene->undoStack()->undo();
+            check(selectedShape->height() == heightBefore, QStringLiteral("撤销高度 +1 恢复原高度"));
+
+            dockScene->clearSelection();
+            QApplication::processEvents();
+            check(!itemDock->isVisible(), QStringLiteral("清空选中后隐藏选中图元卡片"));
+        }
+
+        for (const QString& stale : QDir(dockShapesDir).entryList({QStringLiteral("*.sbcanvas")}, QDir::Files)) {
+            QFile::remove(QDir(dockShapesDir).filePath(stale));
+        }
+        qunsetenv("STORYBOARD_CONFIG");
     }
 
     int passCount = 0;

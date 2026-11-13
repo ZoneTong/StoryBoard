@@ -333,6 +333,19 @@ void AppSettings::ensureCanvasesDir()
     QDir().mkpath(canvasesDir());
 }
 
+QString AppSettings::shapesDir()
+{
+    // 与配置文件同级：便携版里配了 STORYBOARD_CONFIG 就是 exe 旁的 shapes 目录。
+    const QString dir = QDir(QFileInfo(settingsFilePath()).absolutePath()).filePath(QStringLiteral("shapes"));
+    QDir().mkpath(dir);
+    return dir;
+}
+
+void AppSettings::ensureShapesDir()
+{
+    QDir().mkpath(shapesDir());
+}
+
 QString AppSettings::languageSetting()
 {
     return readSettingsFile(settingsFilePath()).value(QStringLiteral("ui/language"));

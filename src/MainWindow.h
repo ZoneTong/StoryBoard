@@ -20,6 +20,7 @@ class CanvasScene;
 class CanvasView;
 class CanvasItem;
 class ItemPropertiesDialog;
+class ItemDockPanel;
 class LayerPanel;
 class QAction;
 class QActionGroup;
@@ -86,7 +87,9 @@ class MainWindow : public QMainWindow {
   private:
     void createActions();
     void createShapeMenu();
+    void updateCustomShapeMenu();
     void createLayerDock();
+    void createItemDock();
     void createMenus();
     void createToolBars();
     void createStatusBar();
@@ -106,6 +109,9 @@ class MainWindow : public QMainWindow {
     void importImageFiles(const QStringList& files);
     void importOutlineImageFile(const QString& file, const LineArtConverter::Options& options);
     void insertShape(ShapeType type);
+    void insertCustomShape(const QString& filePath);
+    void openShapesFolder();
+    void updateItemDockVisibility();
     void setFillStyle(FillStyle style);
     void chooseFillColor();
     void chooseStrokeColor();
@@ -209,9 +215,12 @@ class MainWindow : public QMainWindow {
     QMenu* m_fileMenu = nullptr;
     QAction* m_boardSectionSeparator = nullptr;
     QMenu* m_shapeMenu = nullptr;
+    QMenu* m_customShapeMenu = nullptr;
 
     QDockWidget* m_layerDock = nullptr;
     LayerPanel* m_layerPanel = nullptr;
+    QDockWidget* m_itemDock = nullptr;
+    ItemDockPanel* m_itemPanel = nullptr;
 
     QToolButton* m_colorButton = nullptr;
     QToolButton* m_fillButton = nullptr;

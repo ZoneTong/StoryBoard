@@ -5,6 +5,7 @@
 #include <QColor>
 #include <QIcon>
 #include <QList>
+#include <QPainterPath>
 
 enum class ShapeType {
     Rectangle = 0,
@@ -43,13 +44,18 @@ struct ShapeItemState {
     QColor fillColor = QColor(30, 41, 59, 36);
     FillStyle fillStyle = FillStyle::Solid;
     qreal strokeWidth = 4.0;
+    Qt::PenStyle strokeStyle = Qt::SolidLine;
+    qreal opacity = 1.0;
+    qreal cornerRadius = -1.0;
     QPointF pos;
     QSizeF size;
 
     bool operator==(const ShapeItemState& other) const
     {
         return type == other.type && strokeColor == other.strokeColor && fillColor == other.fillColor &&
-               fillStyle == other.fillStyle && qFuzzyCompare(strokeWidth, other.strokeWidth) && pos == other.pos &&
+               fillStyle == other.fillStyle && qFuzzyCompare(strokeWidth, other.strokeWidth) &&
+               strokeStyle == other.strokeStyle && qFuzzyCompare(opacity, other.opacity) &&
+               qFuzzyCompare(cornerRadius + 2.0, other.cornerRadius + 2.0) && pos == other.pos &&
                size == other.size;
     }
 
@@ -75,14 +81,29 @@ class ShapeItem : public CanvasItem {
     QColor fillColor() const { return m_fillColor; }
     FillStyle fillStyle() const { return m_fillStyle; }
     qreal strokeWidth() const { return m_strokeWidth; }
+    Qt::PenStyle strokeStyle() const { return m_strokeStyle; }
+    qreal opacity() const { return m_opacity; }
+    qreal cornerRadius() const { return m_cornerRadius; }
     void setStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth);
     void setFill(const QColor& fillColor, FillStyle style);
     void setFillStyle(FillStyle style);
+    void setStrokeStyle(Qt::PenStyle style);
+    void setOpacity(qreal opacity);
+    void setCornerRadius(qreal radius);
+
+    // 自定义图形：轮廓来自画布模板，存的是 0–1 单位坐标；没有自定义轮廓时按 shapeType 画。
+    bool isCustomShape() const { return !m_customPath.isEmpty(); }
+    QString customShapeName() const { return m_customName; }
+    QPainterPath customShapePath() const { return m_customPath; }
+    void setCustomShape(const QString& name, const QPainterPath& unitPath);
 
     ShapeItemState state() const;
     void applyState(const ShapeItemState& state);
 
     static QPainterPath pathFor(ShapeType type, const QRectF& rect);
+    static QPainterPath pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius);
+    // 当前生效的轮廓：自定义图形按内容矩形缩放单位路径，普通图形带圆角参数。
+    QPainterPath currentPath(const QRectF& rect) const;
 
   protected:
     void paintContent(QPainter* painter) override;
@@ -94,4 +115,10 @@ class ShapeItem : public CanvasItem {
     QColor m_fillColor = QColor(30, 41, 59, 36);
     FillStyle m_fillStyle = FillStyle::Solid;
     qreal m_strokeWidth = 4.0;
+    Qt::PenStyle m_strokeStyle = Qt::SolidLine;
+    qreal m_opacity = 1.0;
+    // < 0 表示用该图形类型的默认圆角（只有矩形 / 圆角矩形生效）。
+    qreal m_cornerRadius = -1.0;
+    QString m_customName;
+    QPainterPath m_customPath;
 };

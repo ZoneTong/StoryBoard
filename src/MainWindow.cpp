@@ -701,6 +701,45 @@ void MainWindow::createShapeMenu()
         action->setToolTip(tr("Insert %1 (uses the current brush color)").arg(shapeTypeName(type)));
         connect(action, &QAction::triggered, this, [this, type]() { insertShape(type); });
     }
+
+    // 需求：画布格式的自定义图形追加在“常见图形”下方的下拉菜单里，每次展开时重扫目录，
+    // 用户新放进 shapes 目录的文件不用重启就能出现。
+    m_shapeMenu->addSeparator();
+    m_customShapeMenu = m_shapeMenu->addMenu(tr("Custom shapes"));
+    m_customShapeMenu->setObjectName(QStringLiteral("CustomShapeMenu"));
+    connect(m_shapeMenu, &QMenu::aboutToShow, this, &MainWindow::updateCustomShapeMenu);
+    updateCustomShapeMenu();
+}
+
+void MainWindow::updateCustomShapeMenu()
+{
+    if (!m_customShapeMenu) {
+        return;
+    }
+    m_customShapeMenu->clear();
+
+    QStringList errors;
+    const QList<CustomShapeTemplate> templates = loadCustomShapeTemplates(AppSettings::shapesDir(), &errors);
+    if (templates.isEmpty()) {
+        QAction* empty = m_customShapeMenu->addAction(tr("(No custom shapes in the shapes folder)"));
+        empty->setEnabled(false);
+    } else {
+        for (const CustomShapeTemplate& entry : templates) {
+            QAction* action = m_customShapeMenu->addAction(makeCustomShapeIcon(entry.unitPath, QColor(58, 64, 80), 18),
+                                                           entry.name);
+            const QString filePath = entry.filePath;
+            action->setToolTip(tr("Insert the custom shape from %1").arg(QFileInfo(filePath).fileName()));
+            connect(action, &QAction::triggered, this, [this, filePath]() { insertCustomShape(filePath); });
+        }
+    }
+    m_customShapeMenu->addSeparator();
+    connect(m_customShapeMenu->addAction(tr("Open shapes folder…")), &QAction::triggered, this,
+            &MainWindow::openShapesFolder);
+    if (!errors.isEmpty()) {
+        QAction* broken = m_customShapeMenu->addAction(tr("%1 shape file(s) could not be read").arg(errors.size()));
+        broken->setEnabled(false);
+        broken->setToolTip(errors.join(QLatin1Char('\n')));
+    }
 }
 
 void MainWindow::createLayerDock()
@@ -787,8 +826,10 @@ void MainWindow::createMenus()
     viewMenu->addAction(layerDockAction);
 
     QAction* itemDockAction = m_itemDock->toggleViewAction();
+    itemDockAction->setObjectName(QStringLiteral("ItemDockToggleAction"));
     itemDockAction->setText(tr("Selected item panel"));
-    itemDockAction->setStatusTip(tr("Show or hide the selected item panel (it appears automatically when an item is selected)"));
+    itemDockAction->setStatusTip(
+        tr("Show or hide the selected item panel (it appears automatically when an item is selected)"));
     viewMenu->addAction(itemDockAction);
 
     QMenu* editMenu = menuBar()->addMenu(tr("&Edit"));
@@ -2084,12 +2125,14 @@ void MainWindow::insertCustomShape(const QString& filePath)
     // 按模板原始宽高比插入，最长边不超过画布的 72%，小图形也不会被拉到画布大小。
     const QRectF canvas = m_scene->canvasRect();
     const qreal aspect = qMax<qreal>(0.05, customShape.aspectRatio);
-    QSizeF size(320.0, 320.0 / aspect);
-    if (aspect > 1.0) {
-        size.setHeight(320.0 / aspect);
+    qreal designWidth = 320.0;
+    qreal designHeight = 320.0;
+    if (aspect >= 1.0) {
+        designHeight = 320.0 / aspect;
     } else {
-        size.setWidth(320.0 * aspect);
+        designWidth = 320.0 * aspect;
     }
+    QSizeF size(designWidth, designHeight);
     const qreal fitScale = qMin<qreal>(1.0, qMin(canvas.width() * 0.72 / qMax<qreal>(1.0, size.width()),
                                                  canvas.height() * 0.72 / qMax<qreal>(1.0, size.height())));
     size *= fitScale;
