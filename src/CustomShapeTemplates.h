@@ -20,9 +20,12 @@ struct CustomShapeTemplate {
 // 解析失败的条目会追加到 errors（一行一个文件名 + 原因），供界面提示。
 QList<CustomShapeTemplate> loadCustomShapeTemplates(const QString& directory, QStringList* errors = nullptr);
 
+// 按给出的目录顺序扫描并合并结果：同名模板只保留先扫到的那份（前面的目录优先）。
+QList<CustomShapeTemplate> loadCustomShapeTemplatesFromDirs(const QStringList& directories,
+                                                            QStringList* errors = nullptr);
+
 // 读取单个模板文件；失败时通过 error 返回原因。
 bool loadCustomShapeTemplate(const QString& filePath, CustomShapeTemplate* result, QString* error = nullptr);
 
 // 用模板轮廓画一个菜单图标（单位路径按原比例铺进图标框）。
-QIcon makeCustomShapeIcon(const QPainterPath& unitPath, const QColor& color = QColor(58, 64, 80),
-                          int logicalSize = 18);
+QIcon makeCustomShapeIcon(const QPainterPath& unitPath, const QColor& color = QColor(58, 64, 80), int logicalSize = 18);

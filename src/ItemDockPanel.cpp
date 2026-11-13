@@ -196,9 +196,9 @@ void ItemDockPanel::buildColorsSection(QWidget* body)
     layout->setContentsMargins(2, 0, 2, 0);
     layout->setSpacing(4);
 
-    const QStringList presets = {
-        QStringLiteral("#1E293B"), QStringLiteral("#EF4444"), QStringLiteral("#F97316"), QStringLiteral("#EAB308"),
-        QStringLiteral("#22C55E"), QStringLiteral("#14B8A6"), QStringLiteral("#3B82F6"), QStringLiteral("#8B5CF6")};
+    const QStringList presets = {QStringLiteral("#1E293B"), QStringLiteral("#EF4444"), QStringLiteral("#F97316"),
+                                 QStringLiteral("#EAB308"), QStringLiteral("#22C55E"), QStringLiteral("#14B8A6"),
+                                 QStringLiteral("#3B82F6"), QStringLiteral("#8B5CF6")};
 
     auto makeRow = [this, body, &presets](const QString& labelText, bool stroke) {
         auto* row = new QWidget(body);
@@ -233,12 +233,11 @@ void ItemDockPanel::buildColorsSection(QWidget* body)
         custom->setText(QStringLiteral("…"));
         connect(custom, &QToolButton::clicked, this, [this, stroke]() {
             const QList<class ShapeItem*> shapes = selectedShapes();
-            const QColor initial =
-                shapes.isEmpty() ? QColor(QStringLiteral("#1E293B"))
-                                 : (stroke ? shapes.first()->strokeColor() : shapes.first()->fillColor());
-            const QColor chosen =
-                QColorDialog::getColor(initial, this, stroke ? tr("Stroke color") : tr("Fill color"),
-                                       QColorDialog::ShowAlphaChannel);
+            const QColor initial = shapes.isEmpty()
+                                       ? QColor(QStringLiteral("#1E293B"))
+                                       : (stroke ? shapes.first()->strokeColor() : shapes.first()->fillColor());
+            const QColor chosen = QColorDialog::getColor(initial, this, stroke ? tr("Stroke color") : tr("Fill color"),
+                                                         QColorDialog::ShowAlphaChannel);
             if (!chosen.isValid()) {
                 return;
             }
@@ -473,10 +472,8 @@ void ItemDockPanel::updateSummary()
     }
     CanvasItem* item = items.first();
     m_titleLabel->setText(item->displayName());
-    m_metaLabel->setText(tr("%1 · layer %2 · order %3")
-                             .arg(item->typeDisplayName())
-                             .arg(item->layerId())
-                             .arg(item->height()));
+    m_metaLabel->setText(
+        tr("%1 · layer %2 · order %3").arg(item->typeDisplayName()).arg(item->layerId()).arg(item->height()));
 }
 
 void ItemDockPanel::updateSections()
@@ -583,8 +580,7 @@ void ItemDockPanel::updateArrangeButtons()
     }
 }
 
-void ItemDockPanel::changeSelectedShapes(const QString& text,
-                                         const std::function<void(ShapeItem*)>& mutate)
+void ItemDockPanel::changeSelectedShapes(const QString& text, const std::function<void(ShapeItem*)>& mutate)
 {
     const QList<ShapeItem*> shapes = selectedShapes();
     if (shapes.isEmpty() || !m_scene || !m_scene->undoStack()) {
@@ -636,8 +632,7 @@ void ItemDockPanel::applyFillStyle(FillStyle style)
 
 void ItemDockPanel::applyBorderStyle(Qt::PenStyle style)
 {
-    changeSelectedShapes(tr("Change shape border style"),
-                         [style](ShapeItem* shape) { shape->setStrokeStyle(style); });
+    changeSelectedShapes(tr("Change shape border style"), [style](ShapeItem* shape) { shape->setStrokeStyle(style); });
 }
 
 void ItemDockPanel::applyBorderWidth(qreal width)
@@ -712,14 +707,14 @@ void ItemDockPanel::rebuildCustomShapeMenu()
     m_customShapeMenu->clear();
 
     QStringList errors;
-    const QList<CustomShapeTemplate> templates = loadCustomShapeTemplates(AppSettings::shapesDir(), &errors);
+    const QList<CustomShapeTemplate> templates = loadCustomShapeTemplatesFromDirs(AppSettings::shapesDirs(), &errors);
     if (templates.isEmpty()) {
         QAction* empty = m_customShapeMenu->addAction(tr("(No custom shapes in the shapes folder)"));
         empty->setEnabled(false);
     } else {
         for (const CustomShapeTemplate& entry : templates) {
-            QAction* action = m_customShapeMenu->addAction(makeCustomShapeIcon(entry.unitPath, QColor(58, 64, 80), 18),
-                                                           entry.name);
+            QAction* action =
+                m_customShapeMenu->addAction(makeCustomShapeIcon(entry.unitPath, QColor(58, 64, 80), 18), entry.name);
             const QString filePath = entry.filePath;
             connect(action, &QAction::triggered, this,
                     [this, filePath]() { emit insertCustomShapeRequested(filePath); });

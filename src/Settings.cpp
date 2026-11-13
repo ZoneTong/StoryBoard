@@ -341,6 +341,24 @@ QString AppSettings::shapesDir()
     return dir;
 }
 
+QString AppSettings::bundledShapesDir()
+{
+    // 部署目录旁的 shapes：便携包解压后把模板丢这里就能被扫到，不必去用户配置目录翻。
+    return QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("shapes"));
+}
+
+QStringList AppSettings::shapesDirs()
+{
+    const QString userDir = shapesDir();
+    const QString bundledDir = bundledShapesDir();
+    QStringList dirs{userDir};
+    // 便携包里两者常常是同一个目录，去重后只扫一次。
+    if (QDir::cleanPath(bundledDir) != QDir::cleanPath(userDir)) {
+        dirs.append(bundledDir);
+    }
+    return dirs;
+}
+
 void AppSettings::ensureShapesDir()
 {
     QDir().mkpath(shapesDir());

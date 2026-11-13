@@ -53,6 +53,11 @@ class AppSettings {
     static void ensureCanvasesDir();
     // 自定义图形模板目录：与 StoryBoard.ini 同级，固定叫 shapes。
     static QString shapesDir();
+    // 程序部署目录（可执行文件所在目录）下的 shapes 子目录，便携版可直接往里放模板。
+    static QString bundledShapesDir();
+    // 参与扫描的模板目录，顺序即优先顺序：先配置文件同级，再部署目录；
+    // 同名模板取前面的那份。两者不存在时不建目录，避免在只读安装目录里写入。
+    static QStringList shapesDirs();
     static void ensureShapesDir();
     // 界面语言以 "system" / "zh" / "en" 存进同一个 ini，不再使用注册表。
     static QString languageSetting();
