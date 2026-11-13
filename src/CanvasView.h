@@ -67,10 +67,6 @@ class CanvasView : public QGraphicsView {
     void updateCursor();
     void beginPan(const QPoint& position);
     void endPan();
-    // 编辑模式下按住 Ctrl：左键拖动平移整体视图，滚轮以光标为中心缩放。
-    bool ctrlPanActive() const;
-    bool ctrlPanActive(Qt::KeyboardModifiers modifiers) const;
-    void applyPanClickSelection(const QPoint& viewportPos);
 
     enum class CanvasHandle { None, TopLeft, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left };
 
@@ -96,14 +92,10 @@ class CanvasView : public QGraphicsView {
     qreal m_brushWidth = 4.0;
     int m_strokeSmoothing = 4;
     bool m_spaceDown = false;
-    bool m_ctrlDown = false;
     bool m_panning = false;
     QPoint m_panStart;
     QPointF m_panCenterScene;
-    // 编辑模式 Ctrl 平移：按下后几乎没移动时按点选处理，保留 Ctrl 点击切换选中的行为。
-    bool m_panByCtrl = false;
     bool m_panMoved = false;
-    CanvasItem* m_panClickItem = nullptr;
 
     bool m_resizingCanvas = false;
     CanvasHandle m_canvasHandle = CanvasHandle::None;

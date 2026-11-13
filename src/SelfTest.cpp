@@ -1,5 +1,6 @@
 #include "SelfTest.h"
 
+#include "Alignment.h"
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
 #include "CanvasView.h"
@@ -4746,6 +4747,81 @@ int runSelfTest(const QString& reportPath)
             const QImage rendered = gradientScene.renderImage(QRectF(0.0, 0.0, 400.0, 300.0), 1.5);
             rendered.save(QDir(workDirectory).filePath(QStringLiteral("lineart-gradient.png")));
         }
+    }
+
+    // 多图元对齐：左对齐后边缘一致、整体一条撤销记录，等间距至少要三个图元。
+    {
+        CanvasScene alignScene;
+        alignScene.applyCanvasSize(QSizeF(800.0, 600.0));
+        alignScene.setMode(ToolMode::Edit);
+        QUndoStack alignUndo;
+        alignScene.setUndoStack(&alignUndo);
+
+        auto* leftItem = new ShapeItem(ShapeType::Rectangle);
+        leftItem->setContentSize(QSizeF(120.0, 90.0));
+        alignScene.addItemsWithUndo({leftItem}, QStringLiteral("Add align item"));
+        auto* rightItem = new ShapeItem(ShapeType::Ellipse);
+        rightItem->setContentSize(QSizeF(80.0, 60.0));
+        alignScene.addItemsWithUndo({rightItem}, QStringLiteral("Add align item"));
+        leftItem->setPos(QPointF(40.0, 60.0));
+        rightItem->setPos(QPointF(240.0, 180.0));
+
+        alignScene.clearSelection();
+        leftItem->setSelected(true);
+        rightItem->setSelected(true);
+        check(Alignment::supports(&alignScene, Alignment::Mode::Left) &&
+                  !Alignment::supports(&alignScene, Alignment::Mode::DistributeHorizontal),
+              QStringLiteral("对齐需要两个图元、等间距需要三个图元"));
+
+        const int undoBefore = alignUndo.count();
+        const int moved = Alignment::apply(&alignScene, Alignment::Mode::Left,
+                                           QStringLiteral("Align items left"));
+        check(moved == 1 &&
+                  qAbs(leftItem->sceneContentRect().left() - rightItem->sceneContentRect().left()) < 0.01,
+              QStringLiteral("左对齐后两图元左边缘一致"),
+              QStringLiteral("dx=%1")
+                  .arg(rightItem->sceneContentRect().left() - leftItem->sceneContentRect().left()));
+        check(alignUndo.count() == undoBefore + 1, QStringLiteral("对齐整体只占一条撤销记录"));
+        alignUndo.undo();
+        check(qAbs(rightItem->pos().x() - 240.0) < 0.01, QStringLiteral("对齐可撤销"));
+
+        // 等间距：三个图元按空隙均分。
+        auto* thirdItem = new ShapeItem(ShapeType::Rectangle);
+        thirdItem->setContentSize(QSizeF(60.0, 40.0));
+        alignScene.addItemsWithUndo({thirdItem}, QStringLiteral("Add align item"));
+        thirdItem->setPos(QPointF(620.0, 300.0));
+        alignScene.clearSelection();
+        leftItem->setSelected(true);
+        rightItem->setSelected(true);
+        thirdItem->setSelected(true);
+        check(Alignment::supports(&alignScene, Alignment::Mode::DistributeHorizontal),
+              QStringLiteral("三个图元可以水平等间距"));
+    }
+
+    // 菜单与工具栏都提供对齐下拉，且不再保留重复的 Ctrl 组合键。
+    {
+        MainWindow alignWindow;
+        QMenu* alignMenu = alignWindow.findChild<QMenu*>(QStringLiteral("AlignMenu"));
+        QToolButton* alignButton = alignWindow.findChild<QToolButton*>(QStringLiteral("AlignToolButton"));
+        check(alignMenu && alignMenu->actions().size() == 8, QStringLiteral("编辑菜单提供 8 项对齐动作"),
+              alignMenu ? QString::number(alignMenu->actions().size()) : QString());
+        check(alignButton && alignButton->menu() && alignButton->menu()->actions().size() == 8 &&
+                  alignButton->popupMode() == QToolButton::InstantPopup,
+              QStringLiteral("工具栏对齐按钮是可下拉控件且与菜单同项"));
+
+        QAction* redoAction = nullptr;
+        QAction* zoomInAction = nullptr;
+        for (QAction* action : alignWindow.findChildren<QAction*>()) {
+            if (action->text() == QStringLiteral("重做")) {
+                redoAction = action;
+            } else if (action->text() == QStringLiteral("放大")) {
+                zoomInAction = action;
+            }
+        }
+        check(redoAction && redoAction->shortcuts().size() == 1, QStringLiteral("重做只保留一个组合键"),
+              redoAction ? redoAction->shortcut().toString() : QString());
+        check(zoomInAction && zoomInAction->shortcuts().size() == 1, QStringLiteral("放大只保留一个组合键"),
+              zoomInAction ? zoomInAction->shortcut().toString() : QString());
     }
 
     int passCount = 0;

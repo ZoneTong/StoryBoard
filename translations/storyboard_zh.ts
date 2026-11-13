@@ -1197,7 +1197,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>重做</translation>
     </message>
     <message>
-      <source>Redo (Ctrl+Y / Ctrl+Shift+Z)</source>
+      <source>Redo (Ctrl+Y)</source>
       <translation>重做 (Ctrl+Y / Ctrl+Shift+Z)</translation>
     </message>
     <message>
@@ -1999,6 +1999,10 @@ Use the checkbox to show or hide it.</source>
       <source>Reload the parameters currently stored in StoryBoard.ini and discard unsaved changes.</source>
       <translation>重新读回 StoryBoard.ini 里当前保存的参数，丢掉本次未保存的改动。</translation>
     </message>
+    <message>
+      <source>Write the parameters above into StoryBoard.ini now; otherwise they only apply to this session.</source>
+      <translation>现在把上面的参数写进 StoryBoard.ini；不点则只在本次运行内生效。</translation>
+    </message>
 </context>
   <context>
     <name>MainWindow</name>
@@ -2115,7 +2119,7 @@ Use the checkbox to show or hide it.</source>
       <translation>重做</translation>
     </message>
     <message>
-      <source>Redo (Ctrl+Y / Ctrl+Shift+Z)</source>
+      <source>Redo (Ctrl+Y)</source>
       <translation>重做 (Ctrl+Y / Ctrl+Shift+Z)</translation>
     </message>
     <message>
@@ -3029,6 +3033,130 @@ Use the checkbox to show or hide it.</source>
     <message>
       <source>%1 is already used by “%2”.</source>
       <translation>%1 已经被「%2」占用。</translation>
+    </message>
+    <message>
+      <source>Align</source>
+      <translation>对齐</translation>
+    </message>
+    <message>
+      <source>Align left</source>
+      <translation>左对齐</translation>
+    </message>
+    <message>
+      <source>Line up the left edges of the selected items</source>
+      <translation>把选中图元的左边缘对齐</translation>
+    </message>
+    <message>
+      <source>Align horizontal centers</source>
+      <translation>水平居中</translation>
+    </message>
+    <message>
+      <source>Center the selected items on the same vertical axis</source>
+      <translation>让选中图元落在同一条竖直中线上</translation>
+    </message>
+    <message>
+      <source>Align right</source>
+      <translation>右对齐</translation>
+    </message>
+    <message>
+      <source>Line up the right edges of the selected items</source>
+      <translation>把选中图元的右边缘对齐</translation>
+    </message>
+    <message>
+      <source>Align top</source>
+      <translation>顶部对齐</translation>
+    </message>
+    <message>
+      <source>Line up the top edges of the selected items</source>
+      <translation>把选中图元的上边缘对齐</translation>
+    </message>
+    <message>
+      <source>Align vertical centers</source>
+      <translation>垂直居中</translation>
+    </message>
+    <message>
+      <source>Center the selected items on the same horizontal axis</source>
+      <translation>让选中图元落在同一条水平中线上</translation>
+    </message>
+    <message>
+      <source>Align bottom</source>
+      <translation>底部对齐</translation>
+    </message>
+    <message>
+      <source>Line up the bottom edges of the selected items</source>
+      <translation>把选中图元的下边缘对齐</translation>
+    </message>
+    <message>
+      <source>Distribute horizontally</source>
+      <translation>水平等间距</translation>
+    </message>
+    <message>
+      <source>Space the selected items evenly from left to right (needs 3 or more)</source>
+      <translation>把选中图元从左到右等间距排开（至少 3 个）</translation>
+    </message>
+    <message>
+      <source>Distribute vertically</source>
+      <translation>垂直等间距</translation>
+    </message>
+    <message>
+      <source>Space the selected items evenly from top to bottom (needs 3 or more)</source>
+      <translation>把选中图元从上到下等间距排开（至少 3 个）</translation>
+    </message>
+    <message>
+      <source>Align or distribute the selected items</source>
+      <translation>对齐或等间距排列选中的图元</translation>
+    </message>
+    <message>
+      <source>Alignment is available in edit mode only</source>
+      <translation>对齐只在编辑模式可用</translation>
+    </message>
+    <message>
+      <source>The selected items are already aligned</source>
+      <translation>选中的图元已经对齐</translation>
+    </message>
+    <message>
+      <source>Aligned %1 item(s)</source>
+      <translation>已对齐 %1 个图元</translation>
+    </message>
+    <message>
+      <source>Align items left</source>
+      <translation>左对齐选中图元</translation>
+    </message>
+    <message>
+      <source>Align items horizontal centers</source>
+      <translation>水平居中选中图元</translation>
+    </message>
+    <message>
+      <source>Align items right</source>
+      <translation>右对齐选中图元</translation>
+    </message>
+    <message>
+      <source>Align items top</source>
+      <translation>顶部对齐选中图元</translation>
+    </message>
+    <message>
+      <source>Align items vertical centers</source>
+      <translation>垂直居中选中图元</translation>
+    </message>
+    <message>
+      <source>Align items bottom</source>
+      <translation>底部对齐选中图元</translation>
+    </message>
+    <message>
+      <source>Distribute items horizontally</source>
+      <translation>水平等间距排列选中图元</translation>
+    </message>
+    <message>
+      <source>Distribute items vertically</source>
+      <translation>垂直等间距排列选中图元</translation>
+    </message>
+    <message>
+      <source>Image outline settings saved to the configuration file</source>
+      <translation>图片线稿化参数已写入配置文件</translation>
+    </message>
+    <message>
+      <source>Could not write the configuration file; the settings apply to this session only</source>
+      <translation>配置文件写入失败，本次改动只在当前会话生效</translation>
     </message>
 </context>
   <context>
@@ -4077,6 +4205,13 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>Settings…</source>
       <translation>设置…</translation>
+    </message>
+  </context>
+  <context>
+    <name>QFontDialog</name>
+    <message>
+      <source>Effects</source>
+      <translation>效果</translation>
     </message>
   </context>
 </TS>

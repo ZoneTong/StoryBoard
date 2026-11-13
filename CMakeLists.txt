@@ -46,6 +46,8 @@ set(STORYBOARD_QT_TRANSLATION_FILE
 set(STORYBOARD_SOURCES
     src/main.cpp
     src/CanvasTypes.h
+    src/Alignment.h
+    src/Alignment.cpp
     src/Settings.h
     src/Settings.cpp
     src/I18n.h

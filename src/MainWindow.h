@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Alignment.h"
 #include "CanvasTypes.h"
 #include "LineArtConverter.h"
 #include "Settings.h"
@@ -8,6 +9,7 @@
 #include <QColor>
 #include <QHash>
 #include <QKeySequence>
+#include <QList>
 #include <QMainWindow>
 #include <QPointF>
 #include <QPointer>
@@ -90,6 +92,8 @@ class MainWindow : public QMainWindow {
     void connectSignals();
     void CreateBrushToolbar(QToolBar* mainBar);
     void CreateFillToolbar(QToolBar* mainBar);
+    // 多图元对齐：菜单与工具栏下拉共用同一组动作，状态按当前选择更新。
+    void applyAlignment(Alignment::Mode mode);
 
     bool maybeSave();
     bool loadCanvasFile(const QString& path, bool showErrors);
@@ -189,6 +193,9 @@ class MainWindow : public QMainWindow {
     QAction* m_aboutAct = nullptr;
     QAction* m_shortcutsAct = nullptr;
     QAction* m_aboutQtAct = nullptr;
+    // 对齐动作（左 / 水平居中 / 右 / 上 / 垂直居中 / 下 / 水平等距 / 垂直等距）。
+    QList<QAction*> m_alignActions;
+    QToolButton* m_alignButton = nullptr;
 
     QActionGroup* m_modeGroup = nullptr;
     QActionGroup* m_backgroundModeGroup = nullptr;

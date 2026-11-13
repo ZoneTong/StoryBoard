@@ -205,12 +205,6 @@ void CanvasView::updateCursor()
         viewport()->setCursor(Qt::ClosedHandCursor);
         return;
     }
-    if (ctrlPanActive()) {
-        // 编辑模式按住 Ctrl 时左键让位给整体视图平移，画板边缘不再提示可拉伸。
-        m_hoverHandle = CanvasHandle::None;
-        viewport()->setCursor(Qt::OpenHandCursor);
-        return;
-    }
     switch (m_mode) {
     case ToolMode::View:
         viewport()->setCursor(Qt::OpenHandCursor);
@@ -227,48 +221,20 @@ void CanvasView::updateCursor()
     }
 }
 
-bool CanvasView::ctrlPanActive() const
-{
-    return ctrlPanActive(m_ctrlDown ? Qt::ControlModifier : Qt::NoModifier);
-}
-
-bool CanvasView::ctrlPanActive(Qt::KeyboardModifiers modifiers) const
-{
-    return m_mode == ToolMode::Edit && modifiers.testFlag(Qt::ControlModifier);
-}
-
 void CanvasView::beginPan(const QPoint& position)
 {
     m_panning = true;
     m_panStart = position;
     m_panCenterScene = mapToScene(viewport()->rect()).boundingRect().center();
-    m_panByCtrl = false;
     m_panMoved = false;
-    m_panClickItem = nullptr;
     viewport()->setCursor(Qt::ClosedHandCursor);
 }
 
 void CanvasView::endPan()
 {
     m_panning = false;
-    m_panByCtrl = false;
     m_panMoved = false;
-    m_panClickItem = nullptr;
     updateCursor();
-}
-
-void CanvasView::applyPanClickSelection(const QPoint& viewportPos)
-{
-    // Ctrl 点击未拖动时按点选处理，保持 CanvasItem 原本“Ctrl 点击切换选中”的行为：
-    // 空白处点击保留现有选择，图元上点击则在选中/未选中之间切换。
-    CanvasItem* item = m_panClickItem;
-    if (!item) {
-        return;
-    }
-    if (!m_scene->isItemEditable(item)) {
-        return;
-    }
-    item->setSelected(!item->isSelected());
 }
 
 void CanvasView::wheelEvent(QWheelEvent* event)
@@ -298,7 +264,6 @@ void CanvasView::wheelEvent(QWheelEvent* event)
 void CanvasView::mousePressEvent(QMouseEvent* event)
 {
     const QPoint position = event->position().toPoint();
-    m_ctrlDown = event->modifiers().testFlag(Qt::ControlModifier);
     // 右键点中已选图元时不要走默认选择逻辑：QGraphicsView 会先把多选收成单选，
     // 导致随后的右键菜单拿不到完整选择，“组合选中图元”被误禁用。
     if (m_mode == ToolMode::Edit && event->button() == Qt::RightButton) {
@@ -309,16 +274,10 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
         }
     }
 
-    // 编辑模式下 Ctrl + 左键拖动平移整体视图：先于图元选择与画板边缘拉伸处理。
-    const bool ctrlPan = m_mode == ToolMode::Edit && event->button() == Qt::LeftButton &&
-                         event->modifiers().testFlag(Qt::ControlModifier);
+    // 平移只保留中键与查看模式左键：编辑模式不再用 Ctrl+左键平移，把 Ctrl 留给多选。
     if (event->button() == Qt::MiddleButton ||
-        (event->button() == Qt::LeftButton && (m_mode == ToolMode::View || m_spaceDown || ctrlPan))) {
+        (event->button() == Qt::LeftButton && (m_mode == ToolMode::View || m_spaceDown))) {
         beginPan(position);
-        if (ctrlPan) {
-            m_panByCtrl = true;
-            m_panClickItem = editableItemAt(position);
-        }
         event->accept();
         return;
     }
@@ -405,11 +364,9 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
 void CanvasView::mouseMoveEvent(QMouseEvent* event)
 {
     const QPoint position = event->position().toPoint();
-    m_ctrlDown = event->modifiers().testFlag(Qt::ControlModifier);
 
     if (m_panning) {
-        if (m_panByCtrl && !m_panMoved &&
-            (position - m_panStart).manhattanLength() > QApplication::startDragDistance()) {
+        if (!m_panMoved && (position - m_panStart).manhattanLength() > QApplication::startDragDistance()) {
             m_panMoved = true;
         }
         // 用“按下点 → 当前点”的场景位移来平移：两个点在同一时刻的变换下相减，
@@ -441,10 +398,6 @@ void CanvasView::mouseMoveEvent(QMouseEvent* event)
 void CanvasView::mouseReleaseEvent(QMouseEvent* event)
 {
     if (m_panning) {
-        // Ctrl 按住但几乎没有拖动时按点选处理，免得平移把 Ctrl 点击多选的既有行为挤掉。
-        if (m_panByCtrl && !m_panMoved) {
-            applyPanClickSelection(m_panStart);
-        }
         endPan();
         event->accept();
         return;
@@ -467,12 +420,6 @@ void CanvasView::mouseReleaseEvent(QMouseEvent* event)
 
 void CanvasView::mouseDoubleClickEvent(QMouseEvent* event)
 {
-    // 编辑模式下 Ctrl 是平移修饰键，按住 Ctrl 双击不打开属性窗。
-    if (m_mode == ToolMode::Edit && event->modifiers().testFlag(Qt::ControlModifier)) {
-        QGraphicsView::mouseDoubleClickEvent(event);
-        return;
-    }
-
     if (event->button() == Qt::LeftButton) {
         // 需求 42：属性窗在查看/画笔/文字模式下也能打开（只读）；
         // 编辑模式仍要求图元可编辑，锁定图层维持原来的“先解锁”提示。
@@ -547,8 +494,13 @@ void CanvasView::contextMenuEvent(QContextMenuEvent* event)
     ungroup->setEnabled(m_scene->canUngroupSelectedItems());
     menu.addSeparator();
 
-    QAction* heightUp = menu.addAction(tr("Height +1 (stack up)    ]"));
-    QAction* heightDown = menu.addAction(tr("Height -1 (stack down)    ["));
+    // 右键菜单的高度项只写动作名，快捷键交给 QAction 自己画，避免跟菜单里的快捷键重复。
+    QAction* heightUp = menu.addAction(tr("Height +1 (stack up)"));
+    QAction* heightDown = menu.addAction(tr("Height -1 (stack down)"));
+    heightUp->setShortcut(QKeySequence(Qt::Key_BracketRight));
+    heightDown->setShortcut(QKeySequence(Qt::Key_BracketLeft));
+    heightUp->setShortcutVisibleInContextMenu(true);
+    heightDown->setShortcutVisibleInContextMenu(true);
     heightDown->setEnabled(item->height() > 0);
     menu.addSeparator();
 
@@ -614,16 +566,6 @@ void CanvasView::keyPressEvent(QKeyEvent* event)
         return;
     }
 
-    if (event->key() == Qt::Key_Control && !event->isAutoRepeat() && m_mode == ToolMode::Edit) {
-        // 编辑模式按住 Ctrl：左键改为平移整体视图，鼠标暂时不动也要把光标换成手形。
-        m_ctrlDown = true;
-        if (!m_panning) {
-            updateCursor();
-        }
-        event->accept();
-        return;
-    }
-
     if (event->key() == Qt::Key_Escape && m_activeStroke) {
         cancelCurrentStroke();
         emit statusMessage(tr("Current stroke canceled"));
@@ -642,13 +584,9 @@ void CanvasView::keyReleaseEvent(QKeyEvent* event)
         event->accept();
         return;
     }
-    if (event->key() == Qt::Key_Control && !event->isAutoRepeat()) {
-        m_ctrlDown = false;
-        if (!m_panning && m_mode == ToolMode::Edit) {
-            updateCursor();
-        }
-        event->accept();
-        return;
+    if (!m_panning) {
+        m_spaceDown = false;
+        updateCursor();
     }
     QGraphicsView::keyReleaseEvent(event);
 }
@@ -657,7 +595,6 @@ void CanvasView::focusOutEvent(QFocusEvent* event)
 {
     // 焦点离开后收不到按键抬起事件，按住状态必须复位，否则回来后 Ctrl / 空格会被误判为一直按住。
     if (!m_panning) {
-        m_ctrlDown = false;
         m_spaceDown = false;
         updateCursor();
     }
@@ -950,8 +887,8 @@ void CanvasView::updateCanvasHoverCursor(const QPoint& viewportPos)
     if (m_panning || m_activeStroke || m_resizingCanvas) {
         return;
     }
-    // 编辑模式按住 Ctrl 时左键用于平移整体视图，画板边缘不再提示可以拉伸。
-    const CanvasHandle handle = ctrlPanActive() ? CanvasHandle::None : canvasHandleAt(viewportPos);
+    // 编辑模式下左键不再兼作平移，画板边缘始终可以按提示拉伸。
+    const CanvasHandle handle = canvasHandleAt(viewportPos);
     if (handle == m_hoverHandle) {
         return;
     }
