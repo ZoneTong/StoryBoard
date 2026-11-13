@@ -14,8 +14,8 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
+#include <QSet>
 #include <QTransform>
-
 #include <memory>
 
 namespace {
@@ -143,6 +143,24 @@ QList<CustomShapeTemplate> loadCustomShapeTemplates(const QString& directory, QS
             templates.append(entry);
         } else if (errors) {
             errors->append(QStringLiteral("%1: %2").arg(info.fileName(), error));
+        }
+    }
+    return templates;
+}
+
+QList<CustomShapeTemplate> loadCustomShapeTemplatesFromDirs(const QStringList& directories, QStringList* errors)
+{
+    QList<CustomShapeTemplate> templates;
+    QSet<QString> seenNames;
+    for (const QString& directory : directories) {
+        const QList<CustomShapeTemplate> found = loadCustomShapeTemplates(directory, errors);
+        for (const CustomShapeTemplate& entry : found) {
+            // 同名模板按目录顺序优先：配置文件同级的覆盖部署目录里的。
+            if (seenNames.contains(entry.name)) {
+                continue;
+            }
+            seenNames.insert(entry.name);
+            templates.append(entry);
         }
     }
     return templates;

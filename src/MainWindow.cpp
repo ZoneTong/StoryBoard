@@ -719,7 +719,7 @@ void MainWindow::updateCustomShapeMenu()
     m_customShapeMenu->clear();
 
     QStringList errors;
-    const QList<CustomShapeTemplate> templates = loadCustomShapeTemplates(AppSettings::shapesDir(), &errors);
+    const QList<CustomShapeTemplate> templates = loadCustomShapeTemplatesFromDirs(AppSettings::shapesDirs(), &errors);
     if (templates.isEmpty()) {
         QAction* empty = m_customShapeMenu->addAction(tr("(No custom shapes in the shapes folder)"));
         empty->setEnabled(false);

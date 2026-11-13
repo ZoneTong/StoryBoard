@@ -5125,6 +5125,53 @@ int runSelfTest(const QString& reportPath)
             QFile::remove(QDir(shapesDirectory).filePath(stale));
         }
 
+        // 部署目录（可执行文件旁）的 shapes 也要参与扫描，同名模板按目录顺序优先。
+        const QString bundledDir = AppSettings::bundledShapesDir();
+        const QStringList scanDirs = AppSettings::shapesDirs();
+        check(!scanDirs.isEmpty() && scanDirs.contains(shapesDirectory) && scanDirs.contains(bundledDir),
+              QStringLiteral("自定义图形同时扫描配置文件同级与部署目录旁的 shapes"),
+              QStringLiteral("dirs=%1").arg(scanDirs.join(QStringLiteral("|"))));
+        if (!QDir().mkpath(bundledDir)) {
+            check(false, QStringLiteral("部署目录 shapes 可创建"), bundledDir);
+        } else {
+            QJsonObject deployedRoot;
+            deployedRoot.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
+            ShapeItem deployedShape(ShapeType::Ellipse);
+            deployedShape.setContentSize(QSizeF(90, 90));
+            deployedRoot.insert(QStringLiteral("items"), QJsonArray{deployedShape.toJson()});
+            const QString deployedPath = QDir(bundledDir).filePath(QStringLiteral("deployed-leaf.sbcanvas"));
+            QFile deployedFile(deployedPath);
+            if (deployedFile.open(QIODevice::WriteOnly)) {
+                deployedFile.write(QJsonDocument(deployedRoot).toJson(QJsonDocument::Indented));
+                deployedFile.close();
+            }
+            // 同名模板放两份：配置文件同级的那份应当胜出。
+            QFile duplicateUser(QDir(shapesDirectory).filePath(QStringLiteral("deployed-leaf.sbcanvas")));
+            if (duplicateUser.open(QIODevice::WriteOnly)) {
+                duplicateUser.write(QJsonDocument(templateRoot).toJson(QJsonDocument::Indented));
+                duplicateUser.close();
+            }
+            QStringList mergedErrors;
+            const QList<CustomShapeTemplate> merged = loadCustomShapeTemplatesFromDirs(scanDirs, &mergedErrors);
+            int deployedCount = 0;
+            QString winnerPath;
+            for (const CustomShapeTemplate& entry : merged) {
+                if (entry.name == QStringLiteral("deployed-leaf")) {
+                    ++deployedCount;
+                    winnerPath = entry.filePath;
+                }
+            }
+            check(deployedCount == 1 && QFileInfo(winnerPath).absolutePath() == QDir(shapesDirectory).absolutePath(),
+                  QStringLiteral("同名模板只保留配置文件同级的那一份"),
+                  QStringLiteral("count=%1 winner=%2 user=%3 bundled=%4")
+                      .arg(deployedCount)
+                      .arg(winnerPath)
+                      .arg(shapesDirectory)
+                      .arg(bundledDir));
+            QFile::remove(deployedPath);
+            QFile::remove(duplicateUser.fileName());
+        }
+
         CanvasScene panelScene;
         ItemDockPanel panel(&panelScene);
         const QList<QToolButton*> sectionToggles =
