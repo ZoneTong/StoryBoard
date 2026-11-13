@@ -1,0 +1,42 @@
+{
+    "format": "StoryBoardCanvas",
+    "version": 2,
+    "generator": "StoryBoard 0.2",
+    "canvas": {
+        "x": 0,
+        "y": 0,
+        "width": 200,
+        "height": 200
+    },
+    "background": {
+        "type": "none"
+    },
+    "layers": [
+        {
+            "id": 1,
+            "name": "图层 1",
+            "visible": true,
+            "locked": false
+        }
+    ],
+    "activeLayer": 1,
+    "items": [
+        {
+            "type": "shape",
+            "shapeType": "star",
+            "x": 30,
+            "y": 30,
+            "w": 140,
+            "h": 140,
+            "layer": 1,
+            "height": 1,
+            "z": 1000001,
+            "itemName": "样例五角星",
+            "strokeColor": "#ff1f2937",
+            "fillColor": "#ff1f2937",
+            "fillStyle": "solid",
+            "strokeWidth": 6,
+            "opacity": 1
+        }
+    ]
+}
