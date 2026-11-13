@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Alignment.h"
+#include "BoolOps.h"
 #include "CanvasTypes.h"
 #include "LineArtConverter.h"
 #include "Settings.h"
@@ -94,6 +95,8 @@ class MainWindow : public QMainWindow {
     void CreateFillToolbar(QToolBar* mainBar);
     // 多图元对齐：菜单与工具栏下拉共用同一组动作，状态按当前选择更新。
     void applyAlignment(Alignment::Mode mode);
+    // 布尔运算：合并 / 相减 / 相交，结果替换为复合图元，只记一条撤销。
+    void applyBoolOperation(BoolOps::Operation operation);
 
     bool maybeSave();
     bool loadCanvasFile(const QString& path, bool showErrors);
@@ -196,6 +199,8 @@ class MainWindow : public QMainWindow {
     // 对齐动作（左 / 水平居中 / 右 / 上 / 垂直居中 / 下 / 水平等距 / 垂直等距）。
     QList<QAction*> m_alignActions;
     QToolButton* m_alignButton = nullptr;
+    // 布尔运算动作（合并 / 相减 / 相交）。
+    QList<QAction*> m_boolActions;
 
     QActionGroup* m_modeGroup = nullptr;
     QActionGroup* m_backgroundModeGroup = nullptr;

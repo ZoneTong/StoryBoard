@@ -1888,7 +1888,11 @@ Use the checkbox to show or hide it.</source>
       <source>&lt;b&gt;How to tune&lt;/b&gt;&lt;ul&gt;&lt;li&gt;Color similarity: RGB color distance (0-441). Lower keeps more small props, higher merges more fragments; adjacent merging only joins blocks that actually touch.&lt;/li&gt;&lt;li&gt;Simplify tolerance: how far a traced point may move. Smaller follows pixel steps, larger flattens arcs into straight segments.&lt;/li&gt;&lt;li&gt;Thinnest band: drops antialiasing halos; 0 keeps every thin band, higher also drops genuinely thin lines.&lt;/li&gt;&lt;li&gt;Block count limit: over the limit the image is traced at a smaller size instead of losing blocks. Uncheck to trace at full size (slower on busy images).&lt;/li&gt;&lt;li&gt;Saved with this dialog: these values become the defaults for the import dialog, which can overwrite them with its own Save to configuration file button.&lt;/li&gt;&lt;/ul&gt;</source>
       <translation>&lt;b&gt;怎么调&lt;/b&gt;&lt;ul&gt;&lt;li&gt;颜色近似度：RGB 颜色距离（0–441），调小保更多小道具，调大合并更多碎块；相邻合并只作用于真正贴边的色块。&lt;/li&gt;&lt;li&gt;简化容差：轮廓点允许挪动的距离，越小越贴像素台阶，越大弧线越平直。&lt;/li&gt;&lt;li&gt;最细条带：丢掉抗锯齿光晕，0 表示连极细条带也描，调大会连真正细的线条一起丢掉。&lt;/li&gt;&lt;li&gt;色块上限：超过后缩小处理尺寸重描，不会丢色块；取消勾选按原尺寸硬算（图复杂时更慢）。&lt;/li&gt;&lt;li&gt;保存规则：这里点「保存」写入配置文件，并作为线稿化参数窗的初始值；参数窗里的「保存到配置文件」会立即覆盖同一份配置。&lt;/li&gt;&lt;/ul&gt;</translation>
     </message>
-  </context>
+      <message>
+      <source>Composite shape</source>
+      <translation>复合图形</translation>
+    </message>
+</context>
   <context>
     <name>LineArtDialog</name>
     <message>
@@ -3157,6 +3161,50 @@ Use the checkbox to show or hide it.</source>
     <message>
       <source>Could not write the configuration file; the settings apply to this session only</source>
       <translation>配置文件写入失败，本次改动只在当前会话生效</translation>
+    </message>
+    <message>
+      <source>Combine shapes</source>
+      <translation>布尔运算</translation>
+    </message>
+    <message>
+      <source>Union</source>
+      <translation>合并</translation>
+    </message>
+    <message>
+      <source>Subtract</source>
+      <translation>相减</translation>
+    </message>
+    <message>
+      <source>Intersect</source>
+      <translation>相交</translation>
+    </message>
+    <message>
+      <source>Combine the selected items into one composite shape</source>
+      <translation>把选中图元合并成一个复合图元</translation>
+    </message>
+    <message>
+      <source>Combine shapes is available in edit mode only</source>
+      <translation>布尔运算只在编辑模式可用</translation>
+    </message>
+    <message>
+      <source>Select at least two shapes with a visible outline</source>
+      <translation>请先选中至少两个有可见轮廓的图形</translation>
+    </message>
+    <message>
+      <source>Combined into one composite shape (undo to restore)</source>
+      <translation>已合并为复合图元，撤销可还原</translation>
+    </message>
+    <message>
+      <source>Union shapes</source>
+      <translation>合并选中图元</translation>
+    </message>
+    <message>
+      <source>Subtract shapes</source>
+      <translation>相减选中图元</translation>
+    </message>
+    <message>
+      <source>Intersect shapes</source>
+      <translation>相交选中图元</translation>
     </message>
 </context>
   <context>

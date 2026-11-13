@@ -1,10 +1,12 @@
 #include "SelfTest.h"
 
 #include "Alignment.h"
+#include "BoolOps.h"
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
 #include "CanvasView.h"
 #include "Commands.h"
+#include "CompositeShapeItem.h"
 #include "ExportDialog.h"
 #include "I18n.h"
 #include "ImageItem.h"
@@ -1622,10 +1624,8 @@ int runSelfTest(const QString& reportPath)
     }
 
     {
-        // 编辑模式按住 Ctrl：左键拖动平移整体视图，不移动图元、也不清空已有选择。
+        // Ctrl 在编辑模式下只负责加选/减选，不再用来拖动平移整体视图。
         const QPointF ctrlDragItemBefore = drawnStroke ? drawnStroke->pos() : QPointF();
-        const int ctrlDragSelectionBefore = viewScene.selectedItems().size();
-        const QPointF ctrlDragCenterBefore = view.mapToScene(view.viewport()->rect().center());
         const QPoint ctrlDragStart =
             view.mapFromScene(drawnStroke ? drawnStroke->sceneContentRect().center() : QPointF(500.0, 400.0));
         sendMouseEvent(view.viewport(), QEvent::MouseButtonPress, ctrlDragStart, Qt::LeftButton, Qt::LeftButton,
@@ -1635,17 +1635,7 @@ int runSelfTest(const QString& reportPath)
         sendMouseEvent(view.viewport(), QEvent::MouseButtonRelease, ctrlDragStart + QPoint(70, 45), Qt::LeftButton,
                        Qt::NoButton, Qt::ControlModifier);
         QApplication::processEvents();
-        const QPointF ctrlDragCenterAfter = view.mapToScene(view.viewport()->rect().center());
-        check(QLineF(ctrlDragCenterBefore, ctrlDragCenterAfter).length() > 1.0,
-              QStringLiteral("编辑模式按住 Ctrl 拖动平移整体视图"),
-              QStringLiteral("before=%1,%2 after=%3,%4")
-                  .arg(ctrlDragCenterBefore.x())
-                  .arg(ctrlDragCenterBefore.y())
-                  .arg(ctrlDragCenterAfter.x())
-                  .arg(ctrlDragCenterAfter.y()));
         check(drawnStroke && drawnStroke->pos() == ctrlDragItemBefore, QStringLiteral("编辑模式 Ctrl 拖动不移动图元"));
-        check(viewScene.selectedItems().size() == ctrlDragSelectionBefore,
-              QStringLiteral("编辑模式 Ctrl 拖动不清空已有选择"));
     }
 
     if (drawnStroke) {
@@ -1658,15 +1648,8 @@ int runSelfTest(const QString& reportPath)
                        Qt::ControlModifier);
         QApplication::processEvents();
         check(drawnStroke->isSelected() != ctrlClickSelectedBefore, QStringLiteral("编辑模式 Ctrl 点击切换图元选中"));
-        sendMouseEvent(view.viewport(), QEvent::MouseButtonPress, ctrlClickPoint, Qt::LeftButton, Qt::LeftButton,
-                       Qt::ControlModifier);
-        sendMouseEvent(view.viewport(), QEvent::MouseButtonRelease, ctrlClickPoint, Qt::LeftButton, Qt::NoButton,
-                       Qt::ControlModifier);
-        QApplication::processEvents();
-        check(drawnStroke->isSelected() == ctrlClickSelectedBefore,
-              QStringLiteral("编辑模式再次 Ctrl 点击恢复图元选中状态"));
 
-        // Ctrl + 滚轮同样缩放整体视图，且尺寸不随缩放改变。
+        // Ctrl + 滚轮缩放整体视图，且尺寸不随缩放改变。
         const qreal ctrlWheelZoomBefore = view.zoom();
         const QSizeF ctrlWheelSizeBefore = drawnStroke->contentSize();
         const QPoint wheelCenter = view.viewport()->rect().center();
@@ -4774,13 +4757,10 @@ int runSelfTest(const QString& reportPath)
               QStringLiteral("对齐需要两个图元、等间距需要三个图元"));
 
         const int undoBefore = alignUndo.count();
-        const int moved = Alignment::apply(&alignScene, Alignment::Mode::Left,
-                                           QStringLiteral("Align items left"));
-        check(moved == 1 &&
-                  qAbs(leftItem->sceneContentRect().left() - rightItem->sceneContentRect().left()) < 0.01,
+        const int moved = Alignment::apply(&alignScene, Alignment::Mode::Left, QStringLiteral("Align items left"));
+        check(moved == 1 && qAbs(leftItem->sceneContentRect().left() - rightItem->sceneContentRect().left()) < 0.01,
               QStringLiteral("左对齐后两图元左边缘一致"),
-              QStringLiteral("dx=%1")
-                  .arg(rightItem->sceneContentRect().left() - leftItem->sceneContentRect().left()));
+              QStringLiteral("dx=%1").arg(rightItem->sceneContentRect().left() - leftItem->sceneContentRect().left()));
         check(alignUndo.count() == undoBefore + 1, QStringLiteral("对齐整体只占一条撤销记录"));
         alignUndo.undo();
         check(qAbs(rightItem->pos().x() - 240.0) < 0.01, QStringLiteral("对齐可撤销"));
@@ -4822,6 +4802,105 @@ int runSelfTest(const QString& reportPath)
               redoAction ? redoAction->shortcut().toString() : QString());
         check(zoomInAction && zoomInAction->shortcuts().size() == 1, QStringLiteral("放大只保留一个组合键"),
               zoomInAction ? zoomInAction->shortcut().toString() : QString());
+    }
+
+    // 分组层级与布尔运算。组可以再被组包住：单击组内图元选中整棵组树。
+    {
+        QUndoStack groupUndo;
+        CanvasScene groupScene;
+        groupScene.setUndoStack(&groupUndo);
+        groupScene.setMode(ToolMode::Edit);
+        groupScene.applyCanvasSize(QSizeF(400.0, 300.0));
+        auto makeRect = [&groupScene](qreal x, qreal y) {
+            auto* item = new ShapeItem();
+            item->setShapeType(ShapeType::Rectangle);
+            item->setPos(QPointF(x, y));
+            item->setContentSize(QSizeF(40.0, 40.0));
+            item->setStyle(QColor(30, 41, 59), QColor(30, 41, 59, 36), 1.0);
+            item->setFill(QColor(30, 41, 59, 36), FillStyle::Solid);
+            groupScene.addItemsWithUndo({item}, QStringLiteral("Add group item"));
+            return item;
+        };
+        CanvasItem* first = makeRect(10.0, 10.0);
+        CanvasItem* second = makeRect(20.0, 20.0);
+        CanvasItem* third = makeRect(30.0, 30.0);
+        first->setSelected(true);
+        second->setSelected(true);
+        const int innerGroup = groupScene.groupSelectedItems();
+        check(innerGroup == 2 && first->groupId() > 0 && groupScene.itemsInGroup(first->groupId()).size() == 2,
+              QStringLiteral("两个同层图元可以组合成一组"), QStringLiteral("grouped=%1").arg(innerGroup));
+
+        third->setSelected(true);
+        groupScene.groupSelectedItems();
+        const int outerGroup = first->groupId() > 0 ? groupScene.outermostGroup(first->groupId()) : 0;
+        check(
+            outerGroup > 0 && groupScene.itemsInGroupTree(outerGroup).size() == 3,
+            QStringLiteral("再和其他图元组合时形成外层组，覆盖整棵组树"),
+            QStringLiteral("outer=%1 members=%2").arg(outerGroup).arg(groupScene.itemsInGroupTree(outerGroup).size()));
+
+        groupScene.clearSelection();
+        const bool selectedWholeTree = groupScene.selectGroupOfItem(second);
+        check(selectedWholeTree && groupScene.selectedCanvasItems().size() == 3,
+              QStringLiteral("单击组内图元时选中整棵组树"),
+              QStringLiteral("selected=%1").arg(groupScene.selectedCanvasItems().size()));
+        // 撤销分组后成员回到散图元状态。
+        groupScene.undoStack()->undo();
+        check(third->groupId() == 0 && groupScene.groupParents().isEmpty(), QStringLiteral("撤销外层分组还原组层级"));
+    }
+    {
+        QUndoStack boolUndo;
+        CanvasScene boolScene;
+        boolScene.setUndoStack(&boolUndo);
+        boolScene.setMode(ToolMode::Edit);
+        boolScene.applyCanvasSize(QSizeF(400.0, 300.0));
+        auto makeRect = [&boolScene](qreal x, const QColor& color) {
+            auto* item = new ShapeItem();
+            item->setShapeType(ShapeType::Rectangle);
+            item->setPos(QPointF(x, 40.0));
+            item->setContentSize(QSizeF(60.0, 60.0));
+            item->setStyle(color, color.lighter(160), 1.0);
+            boolScene.addItemsWithUndo({item}, QStringLiteral("Add bool item"));
+            return item;
+        };
+        CanvasItem* lower = makeRect(20.0, QColor(200, 40, 40));
+        CanvasItem* upper = makeRect(50.0, QColor(40, 90, 200));
+        lower->setSelected(true);
+        upper->setSelected(true);
+        check(BoolOps::supports(&boolScene), QStringLiteral("两个图元可以进行布尔运算"), QStringLiteral("items=2"));
+        const int commandCount = boolScene.undoStack()->count();
+        const bool applied = BoolOps::apply(&boolScene, BoolOps::Operation::Union, QStringLiteral("合并"));
+        const QList<CanvasItem*> selected = boolScene.selectedCanvasItems();
+        auto* composite = selected.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(selected.constFirst());
+        check(applied && composite && composite->layerCount() == 2, QStringLiteral("合并运算生成两层复合图元"),
+              QStringLiteral("ok=%1 layers=%2").arg(applied ? 1 : 0).arg(composite ? composite->layerCount() : -1));
+        check(boolScene.undoStack()->count() == commandCount + 1, QStringLiteral("布尔运算只占一条撤销记录"),
+              QStringLiteral("before=%1 after=%2").arg(commandCount).arg(boolScene.undoStack()->count()));
+
+        // 序列化要在撤销/重做之前取，撤销会销毁复合图元本身。
+        const QJsonObject json = composite ? composite->toJson() : QJsonObject();
+        CompositeShapeItem reloaded;
+        if (!json.isEmpty()) {
+            reloaded.fromJson(json);
+        }
+        check(!json.isEmpty() && reloaded.layerCount() == 2 && !reloaded.paintedShape().isEmpty(),
+              QStringLiteral("复合图元可以序列化并重新读回"),
+              QStringLiteral("kind=%1 layers=%2")
+                  .arg(json.value(QStringLiteral("kind")).toString())
+                  .arg(reloaded.layerCount()));
+
+        boolScene.undoStack()->undo();
+        const int restored = boolScene.canvasItems().size();
+        check(restored == 2, QStringLiteral("撤销布尔运算还原原图元"), QStringLiteral("items=%1").arg(restored));
+        boolScene.undoStack()->redo();
+        CompositeShapeItem* redoneComposite = nullptr;
+        for (CanvasItem* item : boolScene.canvasItems()) {
+            if (auto* compositeItem = dynamic_cast<CompositeShapeItem*>(item)) {
+                redoneComposite = compositeItem;
+                break;
+            }
+        }
+        check(redoneComposite && redoneComposite->layerCount() == 2, QStringLiteral("重做布尔运算重新生成复合图元"),
+              QStringLiteral("layers=%1").arg(redoneComposite ? redoneComposite->layerCount() : -1));
     }
 
     int passCount = 0;

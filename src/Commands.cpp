@@ -151,8 +151,9 @@ void GeometryCommand::apply(const ItemGeometryList& geometry)
 }
 
 GroupCommand::GroupCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<int>& before,
-                           const QList<int>& after, const QString& text)
-    : m_scene(scene), m_before(before), m_after(after)
+                           const QList<int>& after, const QString& text, const QHash<int, int>& parentsBefore,
+                           const QHash<int, int>& parentsAfter)
+    : m_scene(scene), m_before(before), m_after(after), m_parentsBefore(parentsBefore), m_parentsAfter(parentsAfter)
 {
     setText(text);
     for (CanvasItem* item : items) {
@@ -162,15 +163,15 @@ GroupCommand::GroupCommand(CanvasScene* scene, const QList<CanvasItem*>& items, 
 
 void GroupCommand::undo()
 {
-    apply(m_before);
+    apply(m_before, m_parentsBefore);
 }
 
 void GroupCommand::redo()
 {
-    apply(m_after);
+    apply(m_after, m_parentsAfter);
 }
 
-void GroupCommand::apply(const QList<int>& groupIds)
+void GroupCommand::apply(const QList<int>& groupIds, const QHash<int, int>& parents)
 {
     if (!m_scene) {
         return;
@@ -183,6 +184,7 @@ void GroupCommand::apply(const QList<int>& groupIds)
         }
     }
     m_scene->applyGroupIds(items, groupIds);
+    m_scene->applyGroupParents(parents);
 }
 
 StrokeSmoothCommand::StrokeSmoothCommand(CanvasScene* scene, const QList<StrokeItem*>& items,

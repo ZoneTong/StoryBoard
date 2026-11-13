@@ -435,8 +435,7 @@ void MainWindow::createActions()
 
     m_undoAct = makeAction(this, IconId::Undo, tr("Undo"), QKeySequence::Undo, tr("Undo the last step (Ctrl+Z)"));
     m_undoAct->setEnabled(false);
-    m_redoAct = makeAction(this, IconId::Redo, tr("Redo"), QKeySequence(QStringLiteral("Ctrl+Y")),
-                           tr("Redo (Ctrl+Y)"));
+    m_redoAct = makeAction(this, IconId::Redo, tr("Redo"), QKeySequence(QStringLiteral("Ctrl+Y")), tr("Redo (Ctrl+Y)"));
     m_redoAct->setEnabled(false);
 
     m_deleteAct = makeAction(this, IconId::Delete, tr("Delete selected items"), QKeySequence::Delete,
@@ -834,6 +833,22 @@ void MainWindow::createMenus()
         action->setProperty("alignMode", static_cast<int>(entry.mode));
         connect(action, &QAction::triggered, this, [this, mode = entry.mode]() { applyAlignment(mode); });
         m_alignActions.append(action);
+    }
+
+    // 布尔运算：与 PPT「合并形状」同一套语义——合并 / 相减 / 相交。
+    QMenu* boolMenu = editMenu->addMenu(tr("Combine shapes"));
+    boolMenu->setObjectName(QStringLiteral("BoolMenu"));
+    const QList<QPair<BoolOps::Operation, QString>> boolEntries = {
+        {BoolOps::Operation::Union, tr("Union")},
+        {BoolOps::Operation::Subtract, tr("Subtract")},
+        {BoolOps::Operation::Intersect, tr("Intersect")},
+    };
+    for (const auto& entry : boolEntries) {
+        QAction* action = boolMenu->addAction(entry.second);
+        action->setStatusTip(tr("Combine the selected items into one composite shape"));
+        connect(action, &QAction::triggered, this,
+                [this, operation = entry.first]() { applyBoolOperation(operation); });
+        m_boolActions.append(action);
     }
 
     // 需求：原“样式”菜单拆开——“画笔样式”独立为一级菜单“画笔”，
@@ -1258,6 +1273,12 @@ void MainWindow::updateActions()
     }
     if (m_alignButton) {
         m_alignButton->setEnabled(alignAny);
+    }
+
+    // 布尔运算要选中至少两个可编辑图元。
+    const bool boolReady = editing && BoolOps::supports(m_scene);
+    for (QAction* action : std::as_const(m_boolActions)) {
+        action->setEnabled(boolReady);
     }
 
     updateBackgroundModeActions();
@@ -2283,6 +2304,31 @@ void MainWindow::applyAlignment(Alignment::Mode mode)
         return;
     }
     statusBar()->showMessage(tr("Aligned %1 item(s)").arg(moved), 3000);
+}
+
+void MainWindow::applyBoolOperation(BoolOps::Operation operation)
+{
+    if (m_view->mode() != ToolMode::Edit) {
+        statusBar()->showMessage(tr("Combine shapes is available in edit mode only"), 3000);
+        return;
+    }
+    QString commandText;
+    switch (operation) {
+    case BoolOps::Operation::Union:
+        commandText = tr("Union shapes");
+        break;
+    case BoolOps::Operation::Subtract:
+        commandText = tr("Subtract shapes");
+        break;
+    case BoolOps::Operation::Intersect:
+        commandText = tr("Intersect shapes");
+        break;
+    }
+    if (!BoolOps::apply(m_scene, operation, commandText)) {
+        statusBar()->showMessage(tr("Select at least two shapes with a visible outline"), 3000);
+        return;
+    }
+    statusBar()->showMessage(tr("Combined into one composite shape (undo to restore)"), 3000);
     updateActions();
 }
 

@@ -48,6 +48,10 @@ set(STORYBOARD_SOURCES
     src/CanvasTypes.h
     src/Alignment.h
     src/Alignment.cpp
+    src/CompositeShapeItem.h
+    src/CompositeShapeItem.cpp
+    src/BoolOps.h
+    src/BoolOps.cpp
     src/Settings.h
     src/Settings.cpp
     src/I18n.h

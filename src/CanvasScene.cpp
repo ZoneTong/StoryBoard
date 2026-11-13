@@ -2,6 +2,7 @@
 
 #include "CanvasItem.h"
 #include "Commands.h"
+#include "CompositeShapeItem.h"
 #include "I18n.h"
 #include "ImageItem.h"
 #include "ShapeItem.h"
@@ -401,6 +402,65 @@ QList<CanvasItem*> CanvasScene::itemsInGroup(int groupId) const
     return result;
 }
 
+int CanvasScene::parentGroup(int groupId) const
+{
+    return m_groupParents.value(groupId, 0);
+}
+
+int CanvasScene::outermostGroup(int groupId) const
+{
+    int current = groupId;
+    int guard = 0;
+    while (current > 0 && guard++ < 64) {
+        const int parent = parentGroup(current);
+        if (parent <= 0) {
+            break;
+        }
+        current = parent;
+    }
+    return current;
+}
+
+QList<CanvasItem*> CanvasScene::itemsInGroupTree(int groupId) const
+{
+    QList<CanvasItem*> result;
+    if (groupId <= 0) {
+        return result;
+    }
+    for (CanvasItem* item : canvasItems()) {
+        if (item->groupId() > 0 && outermostGroup(item->groupId()) == groupId) {
+            result.append(item);
+        }
+    }
+    return result;
+}
+
+bool CanvasScene::selectGroupOfItem(CanvasItem* item)
+{
+    if (!item || item->groupId() <= 0) {
+        return false;
+    }
+    const int groupId = outermostGroup(item->groupId());
+    if (groupId <= 0) {
+        return false;
+    }
+    clearSelection();
+    for (CanvasItem* member : itemsInGroupTree(groupId)) {
+        if (isItemEditable(member)) {
+            member->setSelected(true);
+        }
+    }
+    return true;
+}
+
+void CanvasScene::applyGroupParents(const QHash<int, int>& parents)
+{
+    m_groupParents = parents;
+    for (auto it = m_groupParents.constBegin(); it != m_groupParents.constEnd(); ++it) {
+        m_nextGroupId = qMax(m_nextGroupId, qMax(it.key(), it.value()) + 1);
+    }
+}
+
 bool CanvasScene::canGroupSelectedItems() const
 {
     if (m_mode != ToolMode::Edit) {
@@ -441,19 +501,30 @@ int CanvasScene::groupSelectedItems()
 
     const QList<CanvasItem*> items = selectedCanvasItems();
     const int groupId = m_nextGroupId++;
+    QHash<int, int> parentsBefore = m_groupParents;
+    QHash<int, int> parentsAfter = parentsBefore;
     QList<int> before;
     QList<int> after;
     before.reserve(items.size());
     after.reserve(items.size());
     for (CanvasItem* item : items) {
         before.append(item->groupId());
-        after.append(groupId);
+        if (item->groupId() > 0) {
+            // 选中项已经在某个组里：保留它的内层归属，把那个组整体并入新组，
+            // 这样旧组变成新组的子组，选中行为才按“最外层组”展开。
+            parentsAfter.insert(outermostGroup(item->groupId()), groupId);
+            after.append(item->groupId());
+        } else {
+            after.append(groupId);
+        }
     }
 
     if (m_undoStack) {
-        m_undoStack->push(new GroupCommand(this, items, before, after, tr("Group selected items")));
+        m_undoStack->push(
+            new GroupCommand(this, items, before, after, tr("Group selected items"), parentsBefore, parentsAfter));
     } else {
         applyGroupIds(items, after);
+        applyGroupParents(parentsAfter);
     }
     return items.size();
 }
@@ -469,14 +540,24 @@ int CanvasScene::ungroupSelectedItems()
     QSet<int> groupIds;
     for (CanvasItem* selected : selectedCanvasItems()) {
         if (isItemEditable(selected) && selected->groupId() > 0) {
-            groupIds.insert(selected->groupId());
+            groupIds.insert(outermostGroup(selected->groupId()));
         }
     }
+    QHash<int, int> parentsAfter = m_groupParents;
     for (int groupId : std::as_const(groupIds)) {
-        for (CanvasItem* member : itemsInGroup(groupId)) {
+        for (CanvasItem* member : itemsInGroupTree(groupId)) {
             if (!seen.contains(member)) {
                 seen.insert(member);
                 items.append(member);
+            }
+        }
+        parentsAfter.remove(groupId);
+        // 子组随父组一起解散，父子关系全部清掉，避免留下悬空的父指针。
+        for (auto it = parentsAfter.begin(); it != parentsAfter.end();) {
+            if (it.value() == groupId) {
+                it = parentsAfter.erase(it);
+            } else {
+                ++it;
             }
         }
     }
@@ -494,9 +575,11 @@ int CanvasScene::ungroupSelectedItems()
     }
 
     if (m_undoStack) {
-        m_undoStack->push(new GroupCommand(this, items, before, after, tr("Ungroup selected items")));
+        m_undoStack->push(
+            new GroupCommand(this, items, before, after, tr("Ungroup selected items"), m_groupParents, parentsAfter));
     } else {
         applyGroupIds(items, after);
+        applyGroupParents(parentsAfter);
     }
     return items.size();
 }
@@ -1865,6 +1948,7 @@ void CanvasScene::resetDocument()
     m_activeLayerId = kFirstUserLayerId;
     m_nextLayerId = kFirstUserLayerId + 1;
     m_nextGroupId = 1;
+    m_groupParents.clear();
     m_canvasOrigin = QPointF(0.0, 0.0);
     m_exporting = false;
     updateSceneExtent();
@@ -1894,6 +1978,9 @@ CanvasItem* CanvasScene::createItem(const QString& kind) const
     }
     if (kind == QStringLiteral("shape")) {
         return new ShapeItem();
+    }
+    if (kind == QStringLiteral("composite")) {
+        return new CompositeShapeItem();
     }
     return nullptr;
 }
@@ -1928,6 +2015,17 @@ QJsonObject CanvasScene::toJson() const
         break;
     }
     root.insert(QStringLiteral("background"), background);
+
+    // 组的父子关系：{"子组 id": "父组 id"}，用于还原嵌套分组的选择行为。
+    QJsonObject groupParents;
+    for (auto it = m_groupParents.constBegin(); it != m_groupParents.constEnd(); ++it) {
+        if (it.key() > 0 && it.value() > 0) {
+            groupParents.insert(QString::number(it.key()), it.value());
+        }
+    }
+    if (!groupParents.isEmpty()) {
+        root.insert(QStringLiteral("groupParents"), groupParents);
+    }
 
     QJsonArray layerArray;
     for (const CanvasLayer& entry : m_layers) {
@@ -2068,6 +2166,17 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
     for (CanvasItem* item : canvasItems()) {
         m_nextGroupId = qMax(m_nextGroupId, item->groupId() + 1);
     }
+    // 还原嵌套分组的父子关系（旧文件没有这个字段，按平铺分组处理）。
+    QHash<int, int> parents;
+    const QJsonObject parentsJson = root.value(QStringLiteral("groupParents")).toObject();
+    for (auto it = parentsJson.constBegin(); it != parentsJson.constEnd(); ++it) {
+        const int child = it.key().toInt();
+        const int parent = it.value().toInt();
+        if (child > 0 && parent > 0 && child != parent) {
+            parents.insert(child, parent);
+        }
+    }
+    applyGroupParents(parents);
 
     // 旧画布没有 itemName；补自动名称，保证重新保存后每个图元都有“类型 N”。
     assignAutoItemNames();
