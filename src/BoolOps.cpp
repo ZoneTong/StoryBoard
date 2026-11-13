@@ -22,9 +22,7 @@ struct Participant {
     bool filled = true;
     int layerIndex = 0;
     int height = -1;
-};
-
-// 收集参与运算的图元，并按优先级从低到高排序（图层先比，再比同层 height）。
+}; // 收集参与运算的图元，并按优先级从低到高排序（图层先比，再比同层 height）。
 QList<Participant> collect(CanvasScene* scene)
 {
     QList<Participant> participants;
@@ -69,6 +67,18 @@ QList<Participant> collect(CanvasScene* scene)
     return participants;
 }
 
+// 单层结果统一用最高优先级图元的颜色。
+CompositeShapeItem::Layer singleLayer(const QPainterPath& path, const Participant& style)
+{
+    CompositeShapeItem::Layer layer;
+    layer.path = path;
+    layer.fill = style.fill;
+    layer.stroke = style.stroke;
+    layer.strokeWidth = qMax(0.0, style.strokeWidth);
+    layer.filled = true;
+    return layer;
+}
+
 } // namespace
 
 namespace BoolOps {
@@ -89,7 +99,8 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
     const Participant top = participants.constLast();
     QList<CompositeShapeItem::Layer> layers;
 
-    if (operation == Operation::Union) {
+    switch (operation) {
+    case Operation::Union: {
         // 直接按优先级叠加：高层后画，重叠处显示高层的填充与轮廓颜色。
         for (const Participant& participant : participants) {
             CompositeShapeItem::Layer layer;
@@ -100,7 +111,61 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
             layer.filled = participant.filled;
             layers.append(layer);
         }
-    } else if (operation == Operation::Intersect) {
+        break;
+    }
+    case Operation::Combine: {
+        // 组合：并集挖掉重叠区，重叠部分变成空洞，整体仍是单层、用顶层颜色。
+        QPainterPath result = participants.constFirst().path;
+        for (int i = 1; i < participants.size() && !result.isEmpty(); ++i) {
+            const QPainterPath& other = participants.at(i).path;
+            result = result.united(other).subtracted(result.intersected(other));
+        }
+        if (result.isEmpty()) {
+            return false;
+        }
+        layers.append(singleLayer(result, top));
+        break;
+    }
+    case Operation::Fragment: {
+        // 拆分：按“被哪些图元覆盖”把重叠区切成互不重叠的多块，每块沿用覆盖它
+        // 的最高优先级图元的颜色。图元数超过 8 个时 2^n 组合过大，取前 8 个参与。
+        const int count = qMin(participants.size(), 8);
+        for (int mask = 1; mask < (1 << count); ++mask) {
+            QPainterPath region;
+            int topOfRegion = -1;
+            bool started = false;
+            for (int i = 0; i < count; ++i) {
+                if (!(mask & (1 << i))) {
+                    continue;
+                }
+                region = started ? region.intersected(participants.at(i).path) : participants.at(i).path;
+                started = true;
+                topOfRegion = i;
+            }
+            if (region.isEmpty()) {
+                continue;
+            }
+            // 挖掉不在本组合里的图元，得到只在 mask 覆盖下的那一块。
+            for (int i = 0; i < participants.size(); ++i) {
+                if (i < count && (mask & (1 << i))) {
+                    continue;
+                }
+                region = region.subtracted(participants.at(i).path);
+                if (region.isEmpty()) {
+                    break;
+                }
+            }
+            if (region.isEmpty()) {
+                continue;
+            }
+            layers.append(singleLayer(region, participants.at(topOfRegion)));
+        }
+        if (layers.isEmpty()) {
+            return false;
+        }
+        break;
+    }
+    case Operation::Intersect: {
         QPainterPath result = participants.constFirst().path;
         for (int i = 1; i < participants.size() && !result.isEmpty(); ++i) {
             result = result.intersected(participants.at(i).path);
@@ -108,14 +173,10 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         if (result.isEmpty()) {
             return false;
         }
-        CompositeShapeItem::Layer layer;
-        layer.path = result;
-        layer.fill = top.fill;
-        layer.stroke = top.stroke;
-        layer.strokeWidth = top.strokeWidth;
-        layer.filled = true;
-        layers.append(layer);
-    } else {
+        layers.append(singleLayer(result, top));
+        break;
+    }
+    case Operation::Subtract: {
         // 相减：以最上层图元为底，依次挖掉其余图元。
         QPainterPath result = top.path;
         for (int i = 0; i < participants.size() - 1 && !result.isEmpty(); ++i) {
@@ -124,13 +185,9 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         if (result.isEmpty()) {
             return false;
         }
-        CompositeShapeItem::Layer layer;
-        layer.path = result;
-        layer.fill = top.fill;
-        layer.stroke = top.stroke;
-        layer.strokeWidth = top.strokeWidth;
-        layer.filled = true;
-        layers.append(layer);
+        layers.append(singleLayer(result, top));
+        break;
+    }
     }
 
     auto* composite = new CompositeShapeItem(layers);

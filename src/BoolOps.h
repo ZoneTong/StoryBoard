@@ -4,12 +4,13 @@
 
 class CanvasScene;
 
-// 多图元布尔运算（合并 / 相减 / 相交），语义参照 PPT 的「合并形状」：
+// 多图元布尔运算，语义参照 PPT 的「合并形状」五个命令：
+// 联合（合并）/ 组合（去重叠）/ 拆分 / 相交 / 相减。
 // 结果是一个复合图元，原图元被替换，整个过程只占一条撤销记录；
 // 运算本身不可逆，只能撤销 / 重做。
 namespace BoolOps {
 
-enum class Operation { Union, Subtract, Intersect };
+enum class Operation { Union, Combine, Fragment, Intersect, Subtract };
 
 // 至少两个可编辑图元才能做布尔运算。
 bool supports(CanvasScene* scene);

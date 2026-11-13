@@ -3,10 +3,12 @@
 #include "CanvasScene.h"
 #include "CanvasView.h"
 #include "Commands.h"
+#include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
 #include "IconFactory.h"
 #include "ImageItem.h"
+#include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
 #include "LineArtConverter.h"
@@ -360,6 +362,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     createActions();
     createShapeMenu();
     createLayerDock();
+    createItemDock();
     createMenus();
     createToolBars();
     createStatusBar();
@@ -716,6 +719,31 @@ void MainWindow::createLayerDock()
             [this](const QString& message) { statusBar()->showMessage(message, 3000); });
 }
 
+void MainWindow::createItemDock()
+{
+    m_itemDock = new QDockWidget(tr("Selected item"), this);
+    m_itemDock->setObjectName(QStringLiteral("ItemDock"));
+    m_itemDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    m_itemDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable |
+                            QDockWidget::DockWidgetClosable);
+
+    m_itemPanel = new ItemDockPanel(m_scene, m_itemDock);
+    m_itemDock->setWidget(m_itemPanel);
+    addDockWidget(Qt::RightDockWidgetArea, m_itemDock);
+    // 选中图元工具卡与图层卡上下排布，右侧形成“选中图元 / 图层”两张卡片。
+    splitDockWidget(m_itemDock, m_layerDock, Qt::Vertical);
+
+    connect(m_itemPanel, &ItemDockPanel::insertShapeRequested, this,
+            [this](int type) { insertShape(static_cast<ShapeType>(type)); });
+    connect(m_itemPanel, &ItemDockPanel::insertCustomShapeRequested, this, &MainWindow::insertCustomShape);
+    connect(m_itemPanel, &ItemDockPanel::openShapesFolderRequested, this, &MainWindow::openShapesFolder);
+    connect(m_itemPanel, &ItemDockPanel::statusMessage, this,
+            [this](const QString& message) { statusBar()->showMessage(message, 3000); });
+
+    // 需求：默认无选中就隐藏，选中图元时自动出现。
+    m_itemDock->setVisible(false);
+}
+
 void MainWindow::createMenus()
 {
     m_fileMenu = menuBar()->addMenu(tr("&File"));
@@ -757,6 +785,11 @@ void MainWindow::createMenus()
     layerDockAction->setText(tr("Layer panel"));
     layerDockAction->setStatusTip(tr("Show or hide the layer panel"));
     viewMenu->addAction(layerDockAction);
+
+    QAction* itemDockAction = m_itemDock->toggleViewAction();
+    itemDockAction->setText(tr("Selected item panel"));
+    itemDockAction->setStatusTip(tr("Show or hide the selected item panel (it appears automatically when an item is selected)"));
+    viewMenu->addAction(itemDockAction);
 
     QMenu* editMenu = menuBar()->addMenu(tr("&Edit"));
     editMenu->addAction(m_undoAct);
@@ -835,19 +868,26 @@ void MainWindow::createMenus()
         m_alignActions.append(action);
     }
 
-    // 布尔运算：与 PPT「合并形状」同一套语义——合并 / 相减 / 相交。
+    // 布尔运算：与 PPT「合并形状」同一套语义——联合 / 组合 / 拆分 / 相交 / 相减。
     QMenu* boolMenu = editMenu->addMenu(tr("Combine shapes"));
     boolMenu->setObjectName(QStringLiteral("BoolMenu"));
     const QList<QPair<BoolOps::Operation, QString>> boolEntries = {
-        {BoolOps::Operation::Union, tr("Union")},
+        {BoolOps::Operation::Union, tr("Union")},       {BoolOps::Operation::Combine, tr("Combine")},
+        {BoolOps::Operation::Fragment, tr("Fragment")}, {BoolOps::Operation::Intersect, tr("Intersect")},
         {BoolOps::Operation::Subtract, tr("Subtract")},
-        {BoolOps::Operation::Intersect, tr("Intersect")},
     };
-    for (const auto& entry : boolEntries) {
-        QAction* action = boolMenu->addAction(entry.second);
-        action->setStatusTip(tr("Combine the selected items into one composite shape"));
+    const QList<QString> boolTips = {
+        tr("Merge the selected items into one composite shape"),
+        tr("Merge the outlines and cut out the overlapping part"),
+        tr("Split the selected items into separate pieces at every overlap"),
+        tr("Keep only the overlapping part"),
+        tr("Cut the lower items out of the topmost item"),
+    };
+    for (int i = 0; i < boolEntries.size(); ++i) {
+        QAction* action = boolMenu->addAction(boolEntries.at(i).second);
+        action->setStatusTip(boolTips.at(qMin(i, boolTips.size() - 1)));
         connect(action, &QAction::triggered, this,
-                [this, operation = entry.first]() { applyBoolOperation(operation); });
+                [this, operation = boolEntries.at(i).first]() { applyBoolOperation(operation); });
         m_boolActions.append(action);
     }
 
@@ -1184,7 +1224,10 @@ void MainWindow::connectSignals()
     });
     connect(m_scene, &CanvasScene::layersChanged, this, &MainWindow::updateStatusBar);
     connect(m_scene, &CanvasScene::activeLayerChanged, this, [this](int) { updateStatusBar(); });
-    connect(m_scene, &CanvasScene::selectionChanged, this, &MainWindow::updateActions);
+    connect(m_scene, &CanvasScene::selectionChanged, this, [this]() {
+        updateActions();
+        updateItemDockVisibility();
+    });
     connect(m_scene, &CanvasScene::backgroundChanged, this, [this]() {
         updateBackgroundModeActions();
         updateActions();
@@ -1241,6 +1284,7 @@ void MainWindow::updateModeUi()
 
     updateStatusBar();
     updateActions();
+    updateItemDockVisibility();
 }
 
 void MainWindow::updateActions()
@@ -2004,6 +2048,95 @@ void MainWindow::insertShape(ShapeType type)
     }
 }
 
+void MainWindow::insertCustomShape(const QString& filePath)
+{
+    if (m_view->mode() != ToolMode::Edit) {
+        setToolMode(ToolMode::Edit);
+    }
+
+    if (!m_scene->isActiveLayerWritable()) {
+        statusBar()->showMessage(tr("The current layer is locked or hidden; shapes cannot be inserted. "
+                                    "Unlock or switch layers in the layer panel first."),
+                                 5000);
+        return;
+    }
+
+    CustomShapeTemplate customShape;
+    QString error;
+    if (!loadCustomShapeTemplate(filePath, &customShape, &error)) {
+        QMessageBox::warning(this, tr("Custom shape"),
+                             tr("Could not read %1:\n%2")
+                                 .arg(QDir::toNativeSeparators(filePath), error));
+        return;
+    }
+
+    auto* item = new ShapeItem();
+    item->setCustomShape(customShape.name, customShape.unitPath);
+    const QColor stroke = m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_brushColor;
+    QColor fill = m_fillColor.isValid() ? m_fillColor : stroke;
+    if (!m_fillColor.isValid()) {
+        fill.setAlpha(36);
+    }
+    const bool filled = m_fillStyle != FillStyle::None;
+    item->setStyle(stroke, filled ? fill : QColor(Qt::transparent), qBound<qreal>(2.5, m_brushWidth, 10.0));
+    item->setFillStyle(filled ? m_fillStyle : FillStyle::None);
+
+    // 按模板原始宽高比插入，最长边不超过画布的 72%，小图形也不会被拉到画布大小。
+    const QRectF canvas = m_scene->canvasRect();
+    const qreal aspect = qMax<qreal>(0.05, customShape.aspectRatio);
+    QSizeF size(320.0, 320.0 / aspect);
+    if (aspect > 1.0) {
+        size.setHeight(320.0 / aspect);
+    } else {
+        size.setWidth(320.0 * aspect);
+    }
+    const qreal fitScale = qMin<qreal>(1.0, qMin(canvas.width() * 0.72 / qMax<qreal>(1.0, size.width()),
+                                                 canvas.height() * 0.72 / qMax<qreal>(1.0, size.height())));
+    size *= fitScale;
+    size.setWidth(qMax<qreal>(24.0, size.width()));
+    size.setHeight(qMax<qreal>(24.0, size.height()));
+
+    QPointF center = m_view->mapToScene(m_view->viewport()->rect().center());
+    if (!canvas.contains(center)) {
+        center = canvas.center();
+    }
+    const qreal cascade = (m_scene->canvasItemCount() % 5) * 18.0;
+    center += QPointF(cascade, cascade);
+    center.setX(qBound(canvas.left() + size.width() / 2.0, center.x(), canvas.right() - size.width() / 2.0));
+    center.setY(qBound(canvas.top() + size.height() / 2.0, center.y(), canvas.bottom() - size.height() / 2.0));
+
+    item->setPos(center - QPointF(size.width() / 2.0, size.height() / 2.0));
+    item->setContentSize(size);
+
+    m_scene->clearSelection();
+    m_scene->addItemsWithUndo({item}, tr("Insert custom shape “%1”").arg(customShape.name));
+    item->setSelected(true);
+    m_view->setFocus();
+    statusBar()->showMessage(tr("Inserted custom shape “%1” from the shapes folder").arg(customShape.name), 4000);
+}
+
+void MainWindow::openShapesFolder()
+{
+    const QString directory = AppSettings::shapesDir();
+    if (!QDesktopServices::openUrl(QUrl::fromLocalFile(directory))) {
+        statusBar()->showMessage(tr("Could not open the shapes folder: %1").arg(QDir::toNativeSeparators(directory)),
+                                 5000);
+    }
+}
+
+void MainWindow::updateItemDockVisibility()
+{
+    if (!m_itemDock || !m_scene || !m_view) {
+        return;
+    }
+    // 需求：选中图元时默认显示卡片，无选中则隐藏；非编辑模式没有可编辑选择，也收起。
+    const bool hasSelection =
+        m_view->mode() == ToolMode::Edit && !m_scene->selectedCanvasItems().isEmpty();
+    if (m_itemDock->isVisible() != hasSelection) {
+        m_itemDock->setVisible(hasSelection);
+    }
+}
+
 void MainWindow::setFillStyle(FillStyle style)
 {
     m_fillStyle = style;
@@ -2317,11 +2450,17 @@ void MainWindow::applyBoolOperation(BoolOps::Operation operation)
     case BoolOps::Operation::Union:
         commandText = tr("Union shapes");
         break;
-    case BoolOps::Operation::Subtract:
-        commandText = tr("Subtract shapes");
+    case BoolOps::Operation::Combine:
+        commandText = tr("Combine shapes and cut the overlap");
+        break;
+    case BoolOps::Operation::Fragment:
+        commandText = tr("Fragment shapes");
         break;
     case BoolOps::Operation::Intersect:
         commandText = tr("Intersect shapes");
+        break;
+    case BoolOps::Operation::Subtract:
+        commandText = tr("Subtract shapes");
         break;
     }
     if (!BoolOps::apply(m_scene, operation, commandText)) {

@@ -4902,6 +4902,51 @@ int runSelfTest(const QString& reportPath)
         check(redoneComposite && redoneComposite->layerCount() == 2, QStringLiteral("重做布尔运算重新生成复合图元"),
               QStringLiteral("layers=%1").arg(redoneComposite ? redoneComposite->layerCount() : -1));
     }
+    {
+        // 组合（挖掉重叠）与拆分（切成互不重叠的多块）：
+        // 两个 60×60 矩形横向错开 30，重叠区 30×60。
+        auto runOperation = [](BoolOps::Operation operation, int& layerCount, qreal& area) {
+            QUndoStack undo;
+            CanvasScene scene;
+            scene.setUndoStack(&undo);
+            scene.setMode(ToolMode::Edit);
+            scene.applyCanvasSize(QSizeF(400.0, 300.0));
+            auto makeRect = [&scene](qreal x, const QColor& color) {
+                auto* item = new ShapeItem();
+                item->setShapeType(ShapeType::Rectangle);
+                item->setPos(QPointF(x, 40.0));
+                item->setContentSize(QSizeF(60.0, 60.0));
+                item->setStyle(color, color.lighter(160), 1.0);
+                scene.addItemsWithUndo({item}, QStringLiteral("Add bool item"));
+                return item;
+            };
+            CanvasItem* lower = makeRect(20.0, QColor(200, 40, 40));
+            CanvasItem* upper = makeRect(50.0, QColor(40, 90, 200));
+            lower->setSelected(true);
+            upper->setSelected(true);
+            const bool ok = BoolOps::apply(&scene, operation, QStringLiteral("bool"));
+            layerCount = 0;
+            area = 0.0;
+            const QList<CanvasItem*> selected = scene.selectedCanvasItems();
+            if (auto* composite =
+                    ok && !selected.isEmpty() ? dynamic_cast<CompositeShapeItem*>(selected.constFirst()) : nullptr) {
+                layerCount = composite->layerCount();
+                area = composite->outlineShape().boundingRect().width();
+            }
+            return ok;
+        };
+        int combineLayers = 0;
+        qreal combineWidth = 0.0;
+        const bool combineOk = runOperation(BoolOps::Operation::Combine, combineLayers, combineWidth);
+        check(combineOk && combineLayers == 1, QStringLiteral("组合运算生成单层结果，重叠区被挖空"),
+              QStringLiteral("ok=%1 layers=%2").arg(combineOk ? 1 : 0).arg(combineLayers));
+
+        int fragmentLayers = 0;
+        qreal fragmentWidth = 0.0;
+        const bool fragmentOk = runOperation(BoolOps::Operation::Fragment, fragmentLayers, fragmentWidth);
+        check(fragmentOk && fragmentLayers == 3, QStringLiteral("拆分运算把重叠区切成三块"),
+              QStringLiteral("ok=%1 layers=%2").arg(fragmentOk ? 1 : 0).arg(fragmentLayers));
+    }
 
     int passCount = 0;
     for (const QString& line : lines) {

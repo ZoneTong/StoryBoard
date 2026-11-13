@@ -3206,6 +3206,42 @@ Use the checkbox to show or hide it.</source>
       <source>Intersect shapes</source>
       <translation>相交选中图元</translation>
     </message>
+    <message>
+      <source>Combine</source>
+      <translation>组合</translation>
+    </message>
+    <message>
+      <source>Fragment</source>
+      <translation>拆分</translation>
+    </message>
+    <message>
+      <source>Merge the selected items into one composite shape</source>
+      <translation>把选中图元合并成一个复合图元</translation>
+    </message>
+    <message>
+      <source>Merge the outlines and cut out the overlapping part</source>
+      <translation>合并轮廓并挖掉重叠部分</translation>
+    </message>
+    <message>
+      <source>Split the selected items into separate pieces at every overlap</source>
+      <translation>在每个重叠处把选中图元切成多块</translation>
+    </message>
+    <message>
+      <source>Keep only the overlapping part</source>
+      <translation>只保留重叠部分</translation>
+    </message>
+    <message>
+      <source>Cut the lower items out of the topmost item</source>
+      <translation>以最上层图元为底挖掉下层图元</translation>
+    </message>
+    <message>
+      <source>Combine shapes and cut the overlap</source>
+      <translation>组合选中图元并挖掉重叠区</translation>
+    </message>
+    <message>
+      <source>Fragment shapes</source>
+      <translation>拆分选中图元</translation>
+    </message>
 </context>
   <context>
     <name>SettingsDialog</name>
