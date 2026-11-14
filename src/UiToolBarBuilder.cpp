@@ -6,6 +6,7 @@
 #include "StyleController.h"
 
 #include <QActionGroup>
+#include <QColor>
 #include <QComboBox>
 #include <QLabel>
 #include <QMenu>
@@ -54,7 +55,8 @@ void UiToolBarBuilder::buildToolBars()
     m_window->m_alignButton = new QToolButton(mainBar);
     m_window->m_alignButton->setObjectName(QStringLiteral("AlignToolButton"));
     m_window->m_alignButton->setText(MainWindow::tr("Align"));
-    m_window->m_alignButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    m_window->m_alignButton->setIcon(makeIcon(IconId::Align, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
+    m_window->m_alignButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
     m_window->m_alignButton->setPopupMode(QToolButton::InstantPopup);
     m_window->m_alignButton->setToolTip(MainWindow::tr("Align or distribute the selected items"));
     auto* alignButtonMenu = new QMenu(m_window->m_alignButton);
@@ -69,7 +71,8 @@ void UiToolBarBuilder::buildToolBars()
     m_window->m_boolButton = new QToolButton(mainBar);
     m_window->m_boolButton->setObjectName(QStringLiteral("BoolToolButton"));
     m_window->m_boolButton->setText(MainWindow::tr("Morph"));
-    m_window->m_boolButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    m_window->m_boolButton->setIcon(makeIcon(IconId::Morph, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
+    m_window->m_boolButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
     m_window->m_boolButton->setPopupMode(QToolButton::InstantPopup);
     m_window->m_boolButton->setToolTip(MainWindow::tr("Morph the selected shapes"));
     m_window->m_boolButton->setEnabled(false);
@@ -83,7 +86,6 @@ void UiToolBarBuilder::buildToolBars()
     if (m_window->m_view) {
         m_window->m_view->addContextMenuGroup(MainWindow::tr("Morph"), m_window->m_boolActions);
     }
-    mainBar->addSeparator();
 
     // 画笔区只留下平滑笔画按钮和容差输入；画笔颜色 / 粗细改由图形描线区统一设置。
     createSmoothingToolbar(mainBar);
@@ -153,9 +155,6 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
 {
     // 「图形」区：常见图形在原下拉入口的位置直接平铺成一排按钮，
     // 复用「插入 → 常见图形」同一批动作，避免两套插入逻辑。
-    auto* fillLabel = new QLabel(MainWindow::tr("Shape"), mainBar);
-    fillLabel->setObjectName(QStringLiteral("ToolBarLabel"));
-    mainBar->addWidget(fillLabel);
     for (QAction* action : m_window->m_shapeMenu->actions()) {
         if (!action || action->isSeparator() || !action->objectName().startsWith(QStringLiteral("ShapeAction_"))) {
             continue;
@@ -170,6 +169,17 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
         QObject::connect(shapeButton, &QToolButton::clicked, action, &QAction::trigger);
         mainBar->addWidget(shapeButton);
     }
+
+    // 常见图形之后追加自定义图形下拉，和「插入 → 常见图形」里的同一份目录菜单。
+    auto* customShapeButton = new QToolButton(mainBar);
+    customShapeButton->setObjectName(QStringLiteral("ToolBarCustomShapeButton"));
+    customShapeButton->setIcon(makeIcon(IconId::Shapes, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
+    customShapeButton->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
+    customShapeButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    customShapeButton->setPopupMode(QToolButton::InstantPopup);
+    customShapeButton->setToolTip(MainWindow::tr("Custom shapes"));
+    customShapeButton->setMenu(m_window->m_customShapeMenu);
+    mainBar->addWidget(customShapeButton);
 
     m_window->m_fillButton = new QToolButton(mainBar);
     m_window->m_fillButton->setObjectName(QStringLiteral("FillButton"));

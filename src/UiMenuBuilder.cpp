@@ -44,6 +44,7 @@ void UiMenuBuilder::buildShapeMenu()
     m_window->m_customShapeMenu = m_window->m_shapeMenu->addMenu(MainWindow::tr("Custom shapes"));
     m_window->m_customShapeMenu->setObjectName(QStringLiteral("CustomShapeMenu"));
     QObject::connect(m_window->m_shapeMenu, &QMenu::aboutToShow, m_window, &MainWindow::updateCustomShapeMenu);
+    QObject::connect(m_window->m_customShapeMenu, &QMenu::aboutToShow, m_window, &MainWindow::updateCustomShapeMenu);
     m_window->updateCustomShapeMenu();
 }
 
