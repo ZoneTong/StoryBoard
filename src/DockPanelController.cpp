@@ -5,6 +5,7 @@
 #include "LayerPanel.h"
 #include "MainWindow.h"
 
+#include <QColor>
 #include <QDockWidget>
 #include <QEvent>
 #include <QStatusBar>
@@ -48,6 +49,11 @@ void DockPanelController::createItemDock()
 
     QObject::connect(m_itemPanel, &ItemDockPanel::statusMessage, m_window,
                      [this](const QString& message) { m_window->statusBar()->showMessage(message, 3000); });
+    // 画笔与描边共用同一套颜色 / 宽度：卡片里改描边后，之后画出的笔画立即沿用新值。
+    QObject::connect(m_itemPanel, &ItemDockPanel::strokeColorPicked, m_window,
+                     [this](const QColor& color) { m_window->setBrushColor(color, true); });
+    QObject::connect(m_itemPanel, &ItemDockPanel::borderWidthPicked, m_window,
+                     [this](qreal width) { m_window->setBrushWidthUi(qBound(1, qRound(width), 64)); });
 
     // 卡片停靠在主窗口里时常驻显示，不随有没有选中图元整张显隐；
     // 默认悬浮与悬浮后的显隐规则见 applyDockLayout / updateItemDockVisibility。

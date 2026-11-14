@@ -34,6 +34,9 @@ class ItemDockPanel : public QWidget {
 
   signals:
     void statusMessage(const QString& message);
+    // 卡片里的描边颜色 / 宽度同时是画笔的当前颜色与宽度，改动后交给主窗口同步。
+    void strokeColorPicked(const QColor& color);
+    void borderWidthPicked(qreal width);
 
   private:
     void scheduleRefresh();

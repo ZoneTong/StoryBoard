@@ -250,6 +250,7 @@ void ItemDockPanel::applyStrokeColor(const QColor& color)
     if (!color.isValid()) {
         return;
     }
+    emit strokeColorPicked(color);
     changeSelectedShapes(tr("Change shape border color"), [color](ShapeItem* shape) {
         shape->setStyle(color, shape->fillColor(), shape->strokeWidth());
     });
@@ -277,6 +278,7 @@ void ItemDockPanel::applyBorderStyle(Qt::PenStyle style)
 
 void ItemDockPanel::applyBorderWidth(qreal width)
 {
+    emit borderWidthPicked(width);
     changeSelectedShapes(tr("Change shape border width"), [width](ShapeItem* shape) {
         shape->setStyle(shape->strokeColor(), shape->fillColor(), width);
     });
