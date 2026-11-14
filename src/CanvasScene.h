@@ -207,7 +207,7 @@ class CanvasScene : public QGraphicsScene {
     QSizeF m_canvasSize{1920.0, 1080.0};
     QPointF m_canvasOrigin{0.0, 0.0};
     BackgroundState m_background;
-    bool m_showGrid = true;
+    bool m_showGrid = false;
     bool m_exporting = false;
     QList<CanvasLayer> m_layers;
     int m_activeLayerId = 1;
