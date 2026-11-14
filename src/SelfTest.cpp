@@ -5263,6 +5263,16 @@ int runSelfTest(const QString& reportPath)
         check(selectedShape && dockScene->canvasItemCount() == beforeCount + 1 && itemDock->isVisible(),
               QStringLiteral("工具卡可插入矩形且选中后卡片自动出现"));
 
+        QDockWidget* layerDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("LayerDock"));
+        check(layerDock && dockWindow.dockWidgetArea(layerDock) == Qt::RightDockWidgetArea,
+              QStringLiteral("右侧提供图层卡"));
+        check(layerDock && itemDock && itemDock->isVisible() &&
+                  layerDock->mapTo(&dockWindow, QPoint(0, 0)).y() < itemDock->mapTo(&dockWindow, QPoint(0, 0)).y(),
+              QStringLiteral("图层卡默认在编辑图元卡上方"));
+        check(layerDock && itemDock && layerDock->height() < dockWindow.height() - 100 &&
+                  itemDock->height() < dockWindow.height() - 100,
+              QStringLiteral("两张卡片默认高度不占满窗口"));
+
         if (selectedShape && dockPanel) {
             QList<QSpinBox*> valueSpins = dockPanel->findChildren<QSpinBox*>(QStringLiteral("ItemValueSpin"));
             QSpinBox* opacitySpin = nullptr;
@@ -5321,11 +5331,42 @@ int runSelfTest(const QString& reportPath)
             dockScene->clearSelection();
             QApplication::processEvents();
             check(!itemDock->isVisible(), QStringLiteral("清空选中后隐藏编辑图元卡"));
+            check(layerDock && layerDock->height() < dockWindow.height() - 100,
+                  QStringLiteral("隐藏编辑图元卡后图层卡不撑满窗口高度"));
         }
 
         for (const QString& stale : QDir(dockShapesDir).entryList({QStringLiteral("*.sbcanvas")}, QDir::Files)) {
             QFile::remove(QDir(dockShapesDir).filePath(stale));
         }
+        qunsetenv("STORYBOARD_CONFIG");
+    }
+
+    // 右侧卡片的上下顺序：写进设置文件、读回、启动时按保存的顺序恢复。
+    {
+        const QString orderConfig = QDir(workDirectory).filePath(QStringLiteral("dock-order-config.ini"));
+        QFile::remove(orderConfig);
+        qputenv("STORYBOARD_CONFIG", orderConfig.toLocal8Bit());
+        AppSettings seededOrder;
+        seededOrder.dockOrder = QStringList{QStringLiteral("ItemDock"), QStringLiteral("LayerDock")};
+        const bool orderSaved = seededOrder.save();
+        AppSettings reloadedOrder;
+        reloadedOrder.load();
+        check(orderSaved && reloadedOrder.dockOrder == seededOrder.dockOrder,
+              QStringLiteral("卡片顺序写入设置文件并可读回"), reloadedOrder.dockOrder.join(QStringLiteral("|")));
+
+        MainWindow orderWindow;
+        orderWindow.resize(1200, 800);
+        orderWindow.show();
+        QApplication::processEvents();
+        QDockWidget* orderLayer = orderWindow.findChild<QDockWidget*>(QStringLiteral("LayerDock"));
+        QDockWidget* orderItem = orderWindow.findChild<QDockWidget*>(QStringLiteral("ItemDock"));
+        if (orderItem) {
+            orderItem->setVisible(true);
+        }
+        QApplication::processEvents();
+        check(orderLayer && orderItem &&
+                  orderItem->mapTo(&orderWindow, QPoint(0, 0)).y() < orderLayer->mapTo(&orderWindow, QPoint(0, 0)).y(),
+              QStringLiteral("启动时按设置文件恢复卡片顺序"));
         qunsetenv("STORYBOARD_CONFIG");
     }
 

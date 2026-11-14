@@ -15,6 +15,7 @@
 #include <QPointF>
 #include <QPointer>
 #include <QString>
+#include <QStringList>
 
 class CanvasScene;
 class CanvasView;
@@ -59,6 +60,7 @@ class MainWindow : public QMainWindow {
     void closeEvent(QCloseEvent* event) override;
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dropEvent(QDropEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
   private slots:
     void newCanvas();
@@ -90,6 +92,11 @@ class MainWindow : public QMainWindow {
     void updateCustomShapeMenu();
     void createLayerDock();
     void createItemDock();
+    // 右侧两张卡（图层 / 编辑图元）的上下顺序：默认图层在上，用户拖拽调整后
+    // 顺序写进设置文件，下次启动按保存的顺序恢复。
+    void applyDockLayout();
+    void rememberDockOrder();
+    QStringList currentDockOrder() const;
     void createMenus();
     void createToolBars();
     void createStatusBar();
@@ -222,6 +229,9 @@ class MainWindow : public QMainWindow {
     LayerPanel* m_layerPanel = nullptr;
     QDockWidget* m_itemDock = nullptr;
     ItemDockPanel* m_itemPanel = nullptr;
+    // 右侧两张卡的当前上下顺序（对象名），拖拽或布局变化后更新并写回设置。
+    QStringList m_dockOrder;
+    bool m_applyingDockLayout = false;
 
     QToolButton* m_colorButton = nullptr;
     QToolButton* m_fillButton = nullptr;

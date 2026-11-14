@@ -175,6 +175,13 @@ void mergeSettings(SettingsMap& values, const AppSettings& settings)
 
     values.insert(QStringLiteral("window/geometryBase64"), QString::fromLatin1(settings.windowGeometry.toBase64()));
 
+    // 卡片顺序：逗号分隔的 objectName 列表，空列表就不写这个键。
+    if (!settings.dockOrder.isEmpty()) {
+        values.insert(QStringLiteral("layout/dockOrder"), settings.dockOrder.join(QLatin1Char(',')));
+    } else {
+        values.remove(QStringLiteral("layout/dockOrder"));
+    }
+
     // 快捷键整段重写：先清掉旧的 shortcuts/*，再按当前内存里的覆盖表写入，
     // 这样「恢复默认」删掉的条目才会真的从文件里消失。
     mergeShortcutSettings(values, settings);
@@ -245,6 +252,10 @@ void AppSettings::load()
     lastCanvasPath = values.value(QStringLiteral("paths/canvas"), lastCanvasPath);
     canvasesDirectory = values.value(QStringLiteral("paths/canvasesDirectory"), canvasesDirectory);
     windowGeometry = QByteArray::fromBase64(values.value(QStringLiteral("window/geometryBase64")).toLatin1());
+    dockOrder = values.value(QStringLiteral("layout/dockOrder")).split(QLatin1Char(','), Qt::SkipEmptyParts);
+    for (QString& name : dockOrder) {
+        name = name.trimmed();
+    }
 
     shortcutOverrides.clear();
     const QString shortcutPrefix = QStringLiteral("shortcuts/");
