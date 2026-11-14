@@ -534,6 +534,28 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         ctx.check(loadedShapeCount == shapeTypes.size(), QStringLiteral("主窗口识别画布中的图形图元"));
     }
 
+    {
+        QJsonObject fractionalRoot = ctx.shapeRoot;
+        QJsonObject fractionalCanvas = fractionalRoot.value(QStringLiteral("canvas")).toObject();
+        fractionalCanvas.insert(QStringLiteral("width"), 800.5);
+        fractionalCanvas.insert(QStringLiteral("height"), 600.25);
+        fractionalRoot.insert(QStringLiteral("canvas"), fractionalCanvas);
+        const QString fractionalPath = QDir(ctx.workDirectory).filePath(QStringLiteral("fractional-canvas.sbcanvas"));
+        QFile fractionalFile(fractionalPath);
+        ctx.check(fractionalFile.open(QIODevice::WriteOnly), QStringLiteral("创建小数尺寸画布测试文件"));
+        fractionalFile.write(QJsonDocument(fractionalRoot).toJson(QJsonDocument::Indented));
+        fractionalFile.close();
+
+        MainWindow fractionalWindow;
+        ctx.check(fractionalWindow.openCanvasFile(fractionalPath), QStringLiteral("主窗口打开带小数尺寸的画布"));
+        ctx.check(qAbs(fractionalWindow.scene()->canvasSize().width() - 800.5) < 0.01 &&
+                      qAbs(fractionalWindow.scene()->canvasSize().height() - 600.25) < 0.01,
+                  QStringLiteral("小数画布尺寸按原值载入"),
+                  QStringLiteral("%1 x %2")
+                      .arg(fractionalWindow.scene()->canvasSize().width())
+                      .arg(fractionalWindow.scene()->canvasSize().height()));
+    }
+
     const QString demoPath = demoCanvasPath();
     if (QFileInfo::exists(demoPath)) {
         MainWindow canvasWindow;

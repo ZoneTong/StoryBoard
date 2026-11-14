@@ -56,7 +56,11 @@ bool validateCanvasRoot(const QJsonObject& root, QString* error)
     }
 
     const QJsonObject canvas = root.value(QStringLiteral("canvas")).toObject();
-    if (canvas.value(QStringLiteral("width")).toInt() <= 0 || canvas.value(QStringLiteral("height")).toInt() <= 0) {
+    // 画布尺寸允许带小数（拖拽边缘时通常不是整数）；toInt() 会把 800.5 截成 800，
+    // 更会把 0.5 判成 0 而误报“尺寸无效”。
+    const qreal width = canvas.value(QStringLiteral("width")).toDouble(0.0);
+    const qreal height = canvas.value(QStringLiteral("height")).toDouble(0.0);
+    if (width <= 0.0 || height <= 0.0) {
         if (error) {
             *error = MainWindow::tr("The canvas size in the canvas file is invalid.");
         }
