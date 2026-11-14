@@ -46,10 +46,6 @@ void DockPanelController::createItemDock()
     m_itemDock->setMinimumHeight(240);
     m_itemDock->setMaximumHeight(620);
 
-    QObject::connect(m_itemPanel, &ItemDockPanel::insertShapeRequested, m_window,
-                     [this](int type) { m_window->insertShape(static_cast<ShapeType>(type)); });
-    QObject::connect(m_itemPanel, &ItemDockPanel::insertCustomShapeRequested, m_window, &MainWindow::insertCustomShape);
-    QObject::connect(m_itemPanel, &ItemDockPanel::openShapesFolderRequested, m_window, &MainWindow::openShapesFolder);
     QObject::connect(m_itemPanel, &ItemDockPanel::statusMessage, m_window,
                      [this](const QString& message) { m_window->statusBar()->showMessage(message, 3000); });
 

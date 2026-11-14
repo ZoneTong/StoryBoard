@@ -237,16 +237,17 @@ void selftest::runCustomShapeDockTests(Context& ctx)
         CanvasScene panelScene;
         ItemDockPanel panel(&panelScene);
         // 紧凑化后不再有折叠分组小标题：断言整卡只由标题行 + 内容滚动区组成，
-        // 图形 / 颜色 / 填充 / 边框 / 透明度 / 圆角 / 图层各行控件直接平铺在卡内。
+        // 颜色 / 填充 / 边框 / 透明度 / 圆角 / 图层各行控件直接平铺在卡内。
         ctx.check(panel.findChildren<QToolButton*>(QStringLiteral("ItemSectionToggle")).isEmpty(),
                   QStringLiteral("编辑图元卡已去掉折叠分组小标题"));
-        ctx.check(panel.findChildren<QToolButton*>(QStringLiteral("ItemShapeButton")).size() >= 6 &&
-                      panel.findChildren<QToolButton*>(QStringLiteral("ItemColorSwatch")).size() >= 16 &&
+        ctx.check(panel.findChildren<QToolButton*>(QStringLiteral("ItemShapeButton")).isEmpty() &&
+                      panel.findChildren<QToolButton*>(QStringLiteral("ItemCustomShapeButton")).isEmpty(),
+                  QStringLiteral("编辑图元卡已移除常见图形展开行"));
+        ctx.check(panel.findChildren<QToolButton*>(QStringLiteral("ItemColorSwatch")).size() >= 16 &&
                       panel.findChildren<QToolButton*>(QStringLiteral("ItemFillStyleButton")).size() == 7 &&
                       panel.findChildren<QToolButton*>(QStringLiteral("ItemBorderStyleButton")).size() == 4,
-                  QStringLiteral("编辑图元卡平铺图形 / 颜色 / 填充 / 边框等工具"),
-                  QStringLiteral("shapes=%1 colors=%2 fills=%3 borders=%4")
-                      .arg(panel.findChildren<QToolButton*>(QStringLiteral("ItemShapeButton")).size())
+                  QStringLiteral("编辑图元卡平铺颜色 / 填充 / 边框等工具"),
+                  QStringLiteral("colors=%1 fills=%2 borders=%3")
                       .arg(panel.findChildren<QToolButton*>(QStringLiteral("ItemColorSwatch")).size())
                       .arg(panel.findChildren<QToolButton*>(QStringLiteral("ItemFillStyleButton")).size())
                       .arg(panel.findChildren<QToolButton*>(QStringLiteral("ItemBorderStyleButton")).size()));
@@ -346,20 +347,33 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                   QStringLiteral("视图菜单提供编辑图元卡开关"));
 
         CanvasScene* dockScene = dockWindow.scene();
+        // 卡片不再有常见图形行，插入改为走场景接口（等价于「插入」菜单插入矩形）；
+        // 默认是查看模式，先切到编辑模式，图元才可被选中。
+        CanvasView* dockView = dockWindow.findChild<CanvasView*>();
+        if (dockView) {
+            dockView->setMode(ToolMode::Edit);
+        }
+        QApplication::processEvents();
         const int beforeCount = dockScene->canvasItemCount();
-        QList<QToolButton*> shapeButtons;
-        if (dockPanel) {
-            shapeButtons = dockPanel->findChildren<QToolButton*>(QStringLiteral("ItemShapeButton"));
-        }
-        if (!shapeButtons.isEmpty()) {
-            shapeButtons.first()->click();
-        }
+        auto* insertedShape = new ShapeItem(ShapeType::Rectangle);
+        insertedShape->setPos(QPointF(160.0, 140.0));
+        insertedShape->setContentSize(QSizeF(140.0, 100.0));
+        dockScene->addItemsWithUndo({insertedShape}, QStringLiteral("Add rectangle"));
+        insertedShape->setSelected(true);
         QApplication::processEvents();
         ShapeItem* selectedShape = dockScene->selectedCanvasItems().isEmpty()
                                        ? nullptr
                                        : dynamic_cast<ShapeItem*>(dockScene->selectedCanvasItems().first());
-        ctx.check(selectedShape && dockScene->canvasItemCount() == beforeCount + 1 && itemDock->isVisible(),
-                  QStringLiteral("工具卡可插入矩形且卡片保持显示"));
+        ctx.check(selectedShape == insertedShape && dockScene->canvasItemCount() == beforeCount + 1 &&
+                      itemDock->isVisible(),
+                  QStringLiteral("插入矩形后编辑图元卡随选中出现并保持显示"),
+                  QStringLiteral("same=%1 count=%2/%3 visible=%4 sel=%5 inScene=%6")
+                      .arg(selectedShape == insertedShape ? 1 : 0)
+                      .arg(dockScene->canvasItemCount())
+                      .arg(beforeCount + 1)
+                      .arg(itemDock->isVisible() ? 1 : 0)
+                      .arg(insertedShape->isSelected() ? 1 : 0)
+                      .arg(dockScene->canvasItems().contains(insertedShape) ? 1 : 0));
 
         QDockWidget* layerDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("LayerDock"));
         QDockWidget* viewModeDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("ViewModeDock"));

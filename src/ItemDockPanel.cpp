@@ -7,7 +7,6 @@
 #include "ItemDockPanelColorsCard.h"
 #include "ItemDockPanelFillBorderCard.h"
 #include "ItemDockPanelSelectionCard.h"
-#include "ItemDockPanelShapesCard.h"
 #include "ItemDockPanelValueCard.h"
 #include "ShapeItem.h"
 
@@ -45,9 +44,6 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
 
     // 紧凑布局：不再做带文字的折叠分组标题，各行内容直接平铺，
     // 行首用小图标标注用途（描边 / 填充 / 边框 / 透明度 / 圆角 / 图层 / 顺序）。
-    m_shapesCard = new ItemDockPanelShapesCard(content);
-    layout->addWidget(m_shapesCard);
-
     m_selectionCard = new ItemDockPanelSelectionCard(content);
     layout->addWidget(m_selectionCard);
 
@@ -71,11 +67,6 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     scroll->setWidget(content);
     outer->addWidget(scroll, 1);
 
-    connect(m_shapesCard, &ItemDockPanelShapesCard::shapeTriggered, this, &ItemDockPanel::onShapeTriggered);
-    connect(m_shapesCard, &ItemDockPanelShapesCard::insertCustomShapeRequested, this,
-            &ItemDockPanel::insertCustomShapeRequested);
-    connect(m_shapesCard, &ItemDockPanelShapesCard::openShapesFolderRequested, this,
-            &ItemDockPanel::openShapesFolderRequested);
     connect(m_colorsCard, &ItemDockPanelColorsCard::strokeColorChosen, this, &ItemDockPanel::applyStrokeColor);
     connect(m_colorsCard, &ItemDockPanelColorsCard::fillColorChosen, this, &ItemDockPanel::applyFillColor);
     connect(m_fillBorderCard, &ItemDockPanelFillBorderCard::fillStyleChosen, this, &ItemDockPanel::applyFillStyle);
@@ -100,11 +91,6 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     }
 
     refresh();
-}
-
-void ItemDockPanel::onShapeTriggered(int type)
-{
-    insertOrChangeShape(static_cast<ShapeType>(type));
 }
 
 void ItemDockPanel::setSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions,
@@ -167,7 +153,6 @@ void ItemDockPanel::refresh()
     m_valueCard->setCornerVisible(hasCorner);
     m_valueCard->setArcRadiusVisible(hasArc);
 
-    m_shapesCard->refresh(shapes);
     m_colorsCard->refresh(shapes);
     m_fillBorderCard->refresh(shapes);
     m_valueCard->refresh(shapes);
@@ -305,31 +290,6 @@ void ItemDockPanel::applySweepAngle(int angle)
 void ItemDockPanel::applyShapeRadius(int radius)
 {
     changeSelectedShapes(tr("Change shape radius"), [radius](ShapeItem* shape) { shape->setShapeRadius(radius); });
-}
-
-void ItemDockPanel::insertOrChangeShape(ShapeType type)
-{
-    const QList<ShapeItem*> shapes = selectedShapes();
-    if (shapes.isEmpty()) {
-        emit insertShapeRequested(static_cast<int>(type));
-        return;
-    }
-
-    QList<ShapeItemState> before;
-    QList<ShapeItemState> after;
-    for (ShapeItem* shape : shapes) {
-        before.append(shape->state());
-    }
-    m_refreshing = true;
-    for (ShapeItem* shape : shapes) {
-        shape->setShapeType(type);
-        after.append(shape->state());
-    }
-    m_refreshing = false;
-    if (m_scene && m_scene->undoStack()) {
-        m_scene->undoStack()->push(new ShapeStyleCommand(m_scene, shapes, before, after, tr("Change shape type")));
-    }
-    refresh();
 }
 
 void ItemDockPanel::adjustLayer(int delta)
