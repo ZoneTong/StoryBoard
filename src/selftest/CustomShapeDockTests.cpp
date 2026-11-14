@@ -289,6 +289,24 @@ void selftest::runCustomShapeDockTests(Context& ctx)
                   QStringLiteral("stroke=%1 height=%2")
                       .arg(ItemDockPanel::tr("Border color"))
                       .arg(ItemDockPanel::tr("Height +1")));
+
+        // 选中只描边 / 非填充图元时隐藏填充两行，混入可填充图元再恢复。
+        panelScene.setMode(ToolMode::Edit);
+        auto* strokeOnlyShape = new ShapeItem(ShapeType::Line);
+        strokeOnlyShape->setContentSize(QSizeF(140.0, 1.0));
+        panelScene.addItemsWithUndo({strokeOnlyShape}, QStringLiteral("Add line"));
+        strokeOnlyShape->setSelected(true);
+        QApplication::processEvents();
+        ctx.check(fillStyleRow && fillStyleRow->isHidden() && fillColorRow && fillColorRow->isHidden(),
+                  QStringLiteral("选中不支持填充的图元时隐藏填充颜色与填充样式行"));
+        auto* fillableShape = new ShapeItem(ShapeType::Rectangle);
+        fillableShape->setContentSize(QSizeF(120.0, 80.0));
+        panelScene.addItemsWithUndo({fillableShape}, QStringLiteral("Add rectangle"));
+        fillableShape->setSelected(true);
+        strokeOnlyShape->setSelected(true);
+        QApplication::processEvents();
+        ctx.check(fillStyleRow && !fillStyleRow->isHidden() && fillColorRow && !fillColorRow->isHidden(),
+                  QStringLiteral("混入可填充图元时恢复填充颜色与填充样式行"));
         bool priorityTipFound = false;
         for (QToolButton* rowIcon : panel.findChildren<QToolButton*>(QStringLiteral("ItemRowIcon"))) {
             if (rowIcon->toolTip().contains(QStringLiteral("优先级"))) {
