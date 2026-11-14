@@ -79,6 +79,12 @@ CompositeShapeItem::Layer singleLayer(const QPainterPath& path, const Participan
     return layer;
 }
 
+// 填充是否可见：填色模式不是“无填充”，且颜色不完全透明。
+bool hasVisibleFill(const Participant& participant)
+{
+    return participant.filled && participant.fill.alpha() > 0;
+}
+
 } // namespace
 
 namespace BoolOps {
@@ -158,7 +164,19 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
             if (region.isEmpty()) {
                 continue;
             }
-            layers.append(singleLayer(region, participants.at(topOfRegion)));
+            // 取色：本块覆盖到的图元里，从高优先级往下找第一个可见填充色；
+            // 全都透明时退回最高优先级图元本身。
+            int styleIndex = topOfRegion;
+            for (int i = topOfRegion; i >= 0; --i) {
+                if (i >= count || !(mask & (1 << i))) {
+                    continue;
+                }
+                if (hasVisibleFill(participants.at(i))) {
+                    styleIndex = i;
+                    break;
+                }
+            }
+            layers.append(singleLayer(region, participants.at(styleIndex)));
         }
         if (layers.isEmpty()) {
             return false;
@@ -173,7 +191,15 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         if (result.isEmpty()) {
             return false;
         }
-        layers.append(singleLayer(result, top));
+        // 相交结果整块都在重叠区，颜色按优先级从高到低取第一个可见填充色。
+        int styleIndex = participants.size() - 1;
+        for (int i = participants.size() - 1; i >= 0; --i) {
+            if (hasVisibleFill(participants.at(i))) {
+                styleIndex = i;
+                break;
+            }
+        }
+        layers.append(singleLayer(result, participants.at(styleIndex)));
         break;
     }
     case Operation::Subtract: {

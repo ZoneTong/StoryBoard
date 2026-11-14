@@ -4890,26 +4890,26 @@ int runSelfTest(const QString& reportPath)
         const bool applied = BoolOps::apply(&boolScene, BoolOps::Operation::Union, QStringLiteral("合并"));
         const QList<CanvasItem*> selected = boolScene.selectedCanvasItems();
         auto* composite = selected.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(selected.constFirst());
-        check(applied && composite && composite->layerCount() == 2, QStringLiteral("联合运算生成两层布尔图形"),
+        check(applied && composite && composite->layerCount() == 2, QStringLiteral("联合运算生成两层合并图形"),
               QStringLiteral("ok=%1 layers=%2").arg(applied ? 1 : 0).arg(composite ? composite->layerCount() : -1));
         check(boolScene.undoStack()->count() == commandCount + 1, QStringLiteral("合并形状只占一条撤销记录"),
               QStringLiteral("before=%1 after=%2").arg(commandCount).arg(boolScene.undoStack()->count()));
 
-        // 序列化要在撤销/重做之前取，撤销会销毁布尔图形本身。
+        // 序列化要在撤销/重做之前取，撤销会销毁合并图形本身。
         const QJsonObject json = composite ? composite->toJson() : QJsonObject();
         CompositeShapeItem reloaded;
         if (!json.isEmpty()) {
             reloaded.fromJson(json);
         }
         check(!json.isEmpty() && reloaded.layerCount() == 2 && !reloaded.paintedShape().isEmpty(),
-              QStringLiteral("布尔图形可以序列化并重新读回"),
+              QStringLiteral("合并图形可以序列化并重新读回"),
               QStringLiteral("kind=%1 layers=%2")
                   .arg(json.value(QStringLiteral("kind")).toString())
                   .arg(reloaded.layerCount()));
 
         boolScene.undoStack()->undo();
         const int restored = boolScene.canvasItems().size();
-        check(restored == 2, QStringLiteral("撤销布尔运算还原原图元"), QStringLiteral("items=%1").arg(restored));
+        check(restored == 2, QStringLiteral("撤销合并形状还原原图元"), QStringLiteral("items=%1").arg(restored));
         boolScene.undoStack()->redo();
         CompositeShapeItem* redoneComposite = nullptr;
         for (CanvasItem* item : boolScene.canvasItems()) {
@@ -4918,7 +4918,7 @@ int runSelfTest(const QString& reportPath)
                 break;
             }
         }
-        check(redoneComposite && redoneComposite->layerCount() == 2, QStringLiteral("重做布尔运算重新生成布尔图形"),
+        check(redoneComposite && redoneComposite->layerCount() == 2, QStringLiteral("重做合并形状重新生成合并图形"),
               QStringLiteral("layers=%1").arg(redoneComposite ? redoneComposite->layerCount() : -1));
     }
     {
@@ -5007,7 +5007,44 @@ int runSelfTest(const QString& reportPath)
               QStringLiteral("重叠区内的轮廓改取高优先级图元的颜色"), QStringLiteral("pixel=%1").arg(upperEdge.name()));
     }
     {
-        // 布尔运算要能从菜单、工具栏和右键菜单三处进入，且共用同一批动作。
+        // 重叠区的取色优先级：高层填充透明时落到次优先级；交界轮廓被填充色同化。
+        QUndoStack fallbackUndo;
+        CanvasScene fallbackScene;
+        fallbackScene.setUndoStack(&fallbackUndo);
+        fallbackScene.setMode(ToolMode::Edit);
+        fallbackScene.applyCanvasSize(QSizeF(300.0, 200.0));
+        const QColor lowerFill(30, 160, 90);
+        const QColor upperFill(40, 90, 200);
+        const QColor upperStroke(220, 40, 40);
+        auto makeRect = [&fallbackScene](qreal x, const QColor& fill, const QColor& stroke, qreal width) {
+            auto* item = new ShapeItem();
+            item->setShapeType(ShapeType::Rectangle);
+            item->setPos(QPointF(x, 60.0));
+            item->setContentSize(QSizeF(80.0, 80.0));
+            item->setStyle(stroke, fill, width);
+            item->setFill(fill, FillStyle::Solid);
+            fallbackScene.addItemsWithUndo({item}, QStringLiteral("Add fallback item"));
+            return item;
+        };
+        CanvasItem* lower = makeRect(40.0, lowerFill, lowerFill, 1.0);
+        CanvasItem* upper =
+            makeRect(80.0, QColor(upperFill.red(), upperFill.green(), upperFill.blue(), 0), upperStroke, 6.0);
+        lower->setSelected(true);
+        upper->setSelected(true);
+        const bool fallbackOk = BoolOps::apply(&fallbackScene, BoolOps::Operation::Union, QStringLiteral("联合"));
+        const QImage rendered = fallbackScene.renderImage(QRectF(0.0, 0.0, 300.0, 200.0), 1.0);
+        const QColor overlapPixel = rendered.pixelColor(90, 100);
+        check(fallbackOk && overlapPixel == lowerFill, QStringLiteral("高层填充透明时重叠区改用次优先级图元的颜色"),
+              QStringLiteral("ok=%1 pixel=%2 expected=%3")
+                  .arg(fallbackOk ? 1 : 0)
+                  .arg(overlapPixel.name())
+                  .arg(lowerFill.name()));
+        const QColor internalEdge = rendered.pixelColor(81, 100); // 上层左边框，落在下层内部
+        check(internalEdge != upperStroke, QStringLiteral("重叠区内部的交界轮廓被填充色同化"),
+              QStringLiteral("pixel=%1").arg(internalEdge.name()));
+    }
+    {
+        // 合并形状要能从菜单、工具栏和右键菜单三处进入，且共用同一批动作。
         MainWindow boolWindow;
         QToolButton* boolButton = boolWindow.findChild<QToolButton*>(QStringLiteral("BoolToolButton"));
         QMenu* boolMenu = boolWindow.findChild<QMenu*>(QStringLiteral("BoolMenu"));
@@ -5030,8 +5067,8 @@ int runSelfTest(const QString& reportPath)
             }
         }
         check(shared, QStringLiteral("工具栏与菜单栏共用同一批合并形状动作"));
-        const bool named = uiText(QStringLiteral("Boolean shape")) != QStringLiteral("Boolean shape");
-        check(named, QStringLiteral("布尔图形的类型名有中文译文"), uiText(QStringLiteral("Boolean shape")));
+        const bool named = uiText(QStringLiteral("Merged shape")) != QStringLiteral("Merged shape");
+        check(named, QStringLiteral("合并图形的类型名有中文译文"), uiText(QStringLiteral("Merged shape")));
     }
 
     // 需求：选中图元工具卡（边框样式 / 透明度 / 矩形圆角 / 图层与高度）与画布格式自定义图形。

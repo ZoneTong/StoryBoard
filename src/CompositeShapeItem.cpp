@@ -5,6 +5,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QPainter>
+#include <QPainterPathStroker>
 #include <QTransform>
 
 CompositeShapeItem::CompositeShapeItem(const QList<Layer>& layers) : CanvasItem(), m_layers(layers)
@@ -14,12 +15,12 @@ CompositeShapeItem::CompositeShapeItem(const QList<Layer>& layers) : CanvasItem(
 
 QString CompositeShapeItem::displayName() const
 {
-    return uiText(QStringLiteral("Boolean shape"));
+    return uiText(QStringLiteral("Merged shape"));
 }
 
 QString CompositeShapeItem::typeDisplayName() const
 {
-    return uiText(QStringLiteral("Boolean shape"));
+    return uiText(QStringLiteral("Merged shape"));
 }
 
 void CompositeShapeItem::updateBoundsFromLayers()
@@ -81,39 +82,85 @@ QPainterPath CompositeShapeItem::outlineShape() const
 
 void CompositeShapeItem::paintContent(QPainter* painter)
 {
+    if (m_layers.isEmpty()) {
+        return;
+    }
+
     painter->save();
     painter->setTransform(layerTransform(), true);
-    // 按优先级从低到高逐层绘制，每层只画“不被更高层盖住”的那部分：
-    // 重叠区因此整块显示最高优先级图元的填充色，重叠区里的下层轮廓也被裁掉，
-    // 边界上的轮廓颜色同样是高层图元的描边色。
     const int count = m_layers.size();
+
+    // 填充取色：优先级从低到高逐层绘制，但只有“填充可见”的高层才遮挡低层。
+    // 高层填充完全透明时不参与遮挡，重叠区自然落到次优先级图元的颜色，以此类推。
     for (int i = 0; i < count; ++i) {
         const Layer& layer = m_layers.at(i);
-        QPainterPath above;
+        QPainterPath maskedByHigher;
         for (int j = i + 1; j < count; ++j) {
-            above = above.isEmpty() ? m_layers.at(j).path : above.united(m_layers.at(j).path);
+            const Layer& higher = m_layers.at(j);
+            if (higher.filled && higher.fill.alpha() > 0) {
+                maskedByHigher = maskedByHigher.isEmpty() ? higher.path : maskedByHigher.united(higher.path);
+            }
         }
-        const QPainterPath visible = above.isEmpty() ? layer.path : layer.path.subtracted(above);
+        if (!layer.filled || layer.fill.alpha() <= 0) {
+            continue;
+        }
+        const QPainterPath visible = maskedByHigher.isEmpty() ? layer.path : layer.path.subtracted(maskedByHigher);
         if (visible.isEmpty()) {
             continue;
         }
-        if (layer.filled && layer.fill.alpha() > 0) {
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(layer.fill);
-            painter->drawPath(visible);
-        }
-        if (layer.stroke.alpha() > 0 && layer.strokeWidth > 0.0) {
-            QPen pen(layer.stroke, layer.strokeWidth);
-            pen.setJoinStyle(Qt::MiterJoin);
-            painter->setPen(pen);
-            painter->setBrush(Qt::NoBrush);
-            painter->drawPath(visible);
-            // 顶层图元整圈描边画在最后，重叠边界处也取它的轮廓颜色。
-            if (i == count - 1) {
-                painter->drawPath(layer.path);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(layer.fill);
+        painter->drawPath(visible);
+    }
+
+    // 描边：只保留合并图形整体外轮廓（含孔洞边界）上的部分。
+    // 落在图形内部的交界轮廓不再绘制，由填充色盖住（无填充时透出相邻像素）。
+    bool overlapping = false;
+    for (int i = 0; i < count && !overlapping; ++i) {
+        for (int j = i + 1; j < count; ++j) {
+            const QRectF bound = m_layers.at(i).path.boundingRect().intersected(m_layers.at(j).path.boundingRect());
+            if (bound.isNull()) {
+                continue;
+            }
+            if (!m_layers.at(i).path.intersected(m_layers.at(j).path).isEmpty()) {
+                overlapping = true;
+                break;
             }
         }
     }
+
+    qreal maxWidth = 0.0;
+    for (const Layer& layer : m_layers) {
+        if (layer.stroke.alpha() > 0) {
+            maxWidth = qMax(maxWidth, layer.strokeWidth);
+        }
+    }
+
+    if (overlapping && maxWidth > 0.0) {
+        // 用整体并集的外轮廓做一条描边带，把各层描边裁到这条带上：
+        // 外轮廓按贡献它的图元颜色描边，内部交界线被裁掉。
+        QPainterPath merged;
+        for (const Layer& layer : m_layers) {
+            merged = merged.isEmpty() ? layer.path : merged.united(layer.path);
+        }
+        QPainterPathStroker stroker;
+        stroker.setJoinStyle(Qt::MiterJoin);
+        stroker.setWidth(qMax(2.0, maxWidth + 2.0));
+        const QPainterPath band = stroker.createStroke(merged);
+        painter->setClipPath(band, Qt::IntersectClip);
+    }
+
+    for (const Layer& layer : m_layers) {
+        if (layer.stroke.alpha() <= 0 || layer.strokeWidth <= 0.0) {
+            continue;
+        }
+        QPen pen(layer.stroke, layer.strokeWidth);
+        pen.setJoinStyle(Qt::MiterJoin);
+        painter->setPen(pen);
+        painter->setBrush(Qt::NoBrush);
+        painter->drawPath(layer.path);
+    }
+
     painter->restore();
 }
 

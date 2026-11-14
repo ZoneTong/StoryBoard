@@ -1038,7 +1038,7 @@ void MainWindow::createMenus()
         {BoolOps::Operation::Subtract, tr("Subtract")},
     };
     const QList<QString> boolTips = {
-        tr("Merge the selected items into one boolean shape"),
+        tr("Merge the selected items into one merged shape"),
         tr("Merge the outlines and cut out the overlapping part"),
         tr("Split the selected items into separate pieces at every overlap"),
         tr("Keep only the overlapping part"),

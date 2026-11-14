@@ -105,7 +105,7 @@ class MainWindow : public QMainWindow {
     void CreateFillToolbar(QToolBar* mainBar);
     // 多图元对齐：菜单与工具栏下拉共用同一组动作，状态按当前选择更新。
     void applyAlignment(Alignment::Mode mode);
-    // 布尔运算：合并 / 相减 / 相交，结果替换为复合图元，只记一条撤销。
+    // 合并形状：联合 / 组合 / 拆分 / 相交 / 剪除，结果替换为一个合并图形，只记一条撤销。
     void applyBoolOperation(BoolOps::Operation operation);
 
     bool maybeSave();
