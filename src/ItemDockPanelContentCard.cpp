@@ -17,7 +17,9 @@
 
 namespace {
 
-constexpr int kSmallIconSize = 14;
+constexpr int kSmallIconSize = 16;
+constexpr int kButtonSize = 28;
+constexpr int kSwatchSize = 24;
 
 QToolButton* makeRowIcon(IconId id, QWidget* parent)
 {
@@ -25,7 +27,7 @@ QToolButton* makeRowIcon(IconId id, QWidget* parent)
     button->setObjectName(QStringLiteral("ItemRowIcon"));
     button->setIcon(makeIcon(id, QColor(139, 144, 156), kSmallIconSize));
     button->setIconSize(QSize(kSmallIconSize, kSmallIconSize));
-    button->setFixedSize(kSmallIconSize + 4, kSmallIconSize + 4);
+    button->setFixedSize(kButtonSize, kButtonSize);
     button->setAutoRaise(true);
     button->setFocusPolicy(Qt::NoFocus);
     return button;
@@ -35,7 +37,7 @@ QToolButton* makeSwatch(const QColor& color, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemTextColorSwatch"));
-    button->setFixedSize(20, 20);
+    button->setFixedSize(kSwatchSize, kSwatchSize);
     button->setCheckable(true);
     button->setToolTip(color.name(QColor::HexRgb).toUpper());
     button->setStyleSheet(QStringLiteral("QToolButton { border: 1px solid #CBD5E1; border-radius: 3px; "
@@ -98,7 +100,7 @@ ItemDockPanelContentCard::ItemDockPanelContentCard(QWidget* parent) : QWidget(pa
     m_boldButton->setObjectName(QStringLiteral("ItemTextBoldButton"));
     m_boldButton->setText(QStringLiteral("B"));
     m_boldButton->setCheckable(true);
-    m_boldButton->setFixedSize(22, 22);
+    m_boldButton->setFixedSize(kButtonSize, kButtonSize);
     m_boldButton->setToolTip(ItemDockPanel::tr("Bold"));
     QFont boldFont = m_boldButton->font();
     boldFont.setBold(true);
@@ -108,7 +110,7 @@ ItemDockPanelContentCard::ItemDockPanelContentCard(QWidget* parent) : QWidget(pa
     m_italicButton->setObjectName(QStringLiteral("ItemTextItalicButton"));
     m_italicButton->setText(QStringLiteral("I"));
     m_italicButton->setCheckable(true);
-    m_italicButton->setFixedSize(22, 22);
+    m_italicButton->setFixedSize(kButtonSize, kButtonSize);
     m_italicButton->setToolTip(ItemDockPanel::tr("Italic"));
     QFont italicFont = m_italicButton->font();
     italicFont.setItalic(true);
@@ -145,7 +147,7 @@ ItemDockPanelContentCard::ItemDockPanelContentCard(QWidget* parent) : QWidget(pa
     m_replaceImageButton->setObjectName(QStringLiteral("ItemReplaceImageButton"));
     m_replaceImageButton->setIcon(makeIcon(IconId::Image, QColor(75, 85, 99), kSmallIconSize));
     m_replaceImageButton->setIconSize(QSize(kSmallIconSize, kSmallIconSize));
-    m_replaceImageButton->setFixedSize(22, 22);
+    m_replaceImageButton->setFixedSize(kButtonSize, kButtonSize);
     m_replaceImageButton->setAutoRaise(true);
     m_replaceImageButton->setToolTip(ItemDockPanel::tr("Replace image…"));
     connect(m_replaceImageButton, &QToolButton::clicked, this, &ItemDockPanelContentCard::replaceImageRequested);
@@ -184,7 +186,7 @@ QWidget* ItemDockPanelContentCard::makeTextColorRow()
 
     m_textColorButton = new QToolButton(row);
     m_textColorButton->setObjectName(QStringLiteral("ItemTextColorButton"));
-    m_textColorButton->setFixedSize(20, 20);
+    m_textColorButton->setFixedSize(kSwatchSize, kSwatchSize);
     m_textColorButton->setIconSize(QSize(kSmallIconSize, kSmallIconSize));
     m_textColorButton->setIcon(ItemStyleVisuals::fillColorIcon(m_textColorFallback, kSmallIconSize));
     m_textColorButton->setToolTip(ItemDockPanel::tr("Text color"));

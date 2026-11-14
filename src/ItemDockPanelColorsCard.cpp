@@ -13,13 +13,15 @@
 
 namespace {
 
-constexpr int kSmallIconSize = 14;
+constexpr int kSmallIconSize = 16;
+constexpr int kButtonSize = 28;
+constexpr int kSwatchSize = 24;
 
 QToolButton* makeSwatch(const QColor& color, QWidget* parent, const QString& objectName)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(objectName);
-    button->setFixedSize(20, 20);
+    button->setFixedSize(kSwatchSize, kSwatchSize);
     button->setCheckable(true);
     button->setToolTip(color.name(QColor::HexRgb).toUpper());
     button->setStyleSheet(QStringLiteral("QToolButton { border: 1px solid #CBD5E1; border-radius: 3px; "
@@ -41,7 +43,7 @@ QToolButton* makeRowIcon(IconId id, QWidget* parent)
     button->setObjectName(QStringLiteral("ItemRowIcon"));
     button->setIcon(makeIcon(id, QColor(139, 144, 156), kSmallIconSize));
     button->setIconSize(QSize(kSmallIconSize, kSmallIconSize));
-    button->setFixedSize(kSmallIconSize + 4, kSmallIconSize + 4);
+    button->setFixedSize(kButtonSize, kButtonSize);
     button->setAutoRaise(true);
     button->setFocusPolicy(Qt::NoFocus);
     return button;
@@ -88,7 +90,7 @@ QWidget* ItemDockPanelColorsCard::makeColorRow(bool stroke)
 
     auto* custom = new QToolButton(row);
     custom->setObjectName(QStringLiteral("ItemColorButton"));
-    custom->setFixedSize(20, 20);
+    custom->setFixedSize(kSwatchSize, kSwatchSize);
     custom->setIconSize(QSize(kSmallIconSize, kSmallIconSize));
     custom->setIcon(stroke ? ItemStyleVisuals::borderColorIcon(m_strokeFallback, kSmallIconSize)
                            : ItemStyleVisuals::fillColorIcon(m_fillFallback, kSmallIconSize));

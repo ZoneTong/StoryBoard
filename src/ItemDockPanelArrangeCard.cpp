@@ -9,7 +9,8 @@
 namespace {
 
 constexpr int kIconSize = 16;
-constexpr int kSmallIconSize = 14;
+constexpr int kSmallIconSize = 16;
+constexpr int kButtonSize = 28;
 
 QToolButton* makeRowIcon(IconId id, QWidget* parent)
 {
@@ -17,7 +18,7 @@ QToolButton* makeRowIcon(IconId id, QWidget* parent)
     button->setObjectName(QStringLiteral("ItemRowIcon"));
     button->setIcon(makeIcon(id, QColor(139, 144, 156), kSmallIconSize));
     button->setIconSize(QSize(kSmallIconSize, kSmallIconSize));
-    button->setFixedSize(kSmallIconSize + 4, kSmallIconSize + 4);
+    button->setFixedSize(kButtonSize, kButtonSize);
     button->setAutoRaise(true);
     button->setFocusPolicy(Qt::NoFocus);
     return button;
@@ -58,7 +59,7 @@ QToolButton* ItemDockPanelArrangeCard::makeButton(IconId id, const QString& tool
     button->setObjectName(objectName);
     button->setIcon(makeIcon(id, QColor(75, 85, 99), kIconSize));
     button->setIconSize(QSize(kIconSize, kIconSize));
-    button->setFixedSize(24, 24);
+    button->setFixedSize(kButtonSize, kButtonSize);
     button->setToolTip(toolTip);
     button->setAutoRaise(true);
     connect(button, &QToolButton::clicked, this, [this, delta, height]() {

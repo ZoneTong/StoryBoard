@@ -46,6 +46,8 @@ void DockPanelController::createItemDock()
     // 编辑图元卡固定在左侧，高度限定在合适区间，避免单独占满整列。
     m_itemDock->setMinimumHeight(240);
     m_itemDock->setMaximumHeight(620);
+    // 按钮放大后卡片会按内容变宽，但始终限制在 360px 内，避免遮挡画布或超出窗口。
+    m_itemDock->setMaximumWidth(360);
 
     QObject::connect(m_itemPanel, &ItemDockPanel::statusMessage, m_window,
                      [this](const QString& message) { m_window->statusBar()->showMessage(message, 3000); });

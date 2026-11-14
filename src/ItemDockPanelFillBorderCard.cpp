@@ -15,7 +15,8 @@
 namespace {
 
 constexpr int kIconSize = 16;
-constexpr int kSmallIconSize = 14;
+constexpr int kSmallIconSize = 16;
+constexpr int kButtonSize = 28;
 
 QToolButton* makeRowIcon(IconId id, QWidget* parent)
 {
@@ -23,7 +24,7 @@ QToolButton* makeRowIcon(IconId id, QWidget* parent)
     button->setObjectName(QStringLiteral("ItemRowIcon"));
     button->setIcon(makeIcon(id, QColor(139, 144, 156), kSmallIconSize));
     button->setIconSize(QSize(kSmallIconSize, kSmallIconSize));
-    button->setFixedSize(kSmallIconSize + 4, kSmallIconSize + 4);
+    button->setFixedSize(kButtonSize, kButtonSize);
     button->setAutoRaise(true);
     button->setFocusPolicy(Qt::NoFocus);
     return button;
@@ -50,7 +51,7 @@ ItemDockPanelFillBorderCard::ItemDockPanelFillBorderCard(QWidget* parent) : QWid
         button->setAutoRaise(true);
         button->setIcon(ItemStyleVisuals::fillStyleIcon(style, kIconSize));
         button->setIconSize(QSize(kIconSize, kIconSize));
-        button->setFixedSize(24, 24);
+        button->setFixedSize(kButtonSize, kButtonSize);
         button->setToolTip(fillStyleName(style));
         button->setProperty("fillStyle", static_cast<int>(style));
         connect(button, &QToolButton::clicked, this, [this, style]() { emit fillStyleChosen(style); });
@@ -78,7 +79,7 @@ ItemDockPanelFillBorderCard::ItemDockPanelFillBorderCard(QWidget* parent) : QWid
         button->setAutoRaise(true);
         button->setIcon(ItemStyleVisuals::borderStyleIcon(penStyles.at(index), kIconSize));
         button->setIconSize(QSize(kIconSize, kIconSize));
-        button->setFixedSize(24, 24);
+        button->setFixedSize(kButtonSize, kButtonSize);
         button->setToolTip(ItemStyleVisuals::borderStyleName(penStyles.at(index)));
         const Qt::PenStyle style = penStyles.at(index);
         connect(button, &QToolButton::clicked, this, [this, style]() { emit borderStyleChosen(style); });
