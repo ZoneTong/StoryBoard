@@ -10,17 +10,20 @@ class CanvasScene;
 class CanvasItem;
 class QAction;
 class QLabel;
-class QMenu;
-class QSpinBox;
-class QDoubleSpinBox;
-class QToolButton;
 
-// 选中图元时出现在右侧的「编辑图元」dock 卡片。紧凑布局：去掉了折叠分组
-// 小标题，行内用小图标标注各行用途，常见图形、常用颜色、填充、边框、
-// 透明度、圆角、图层与层内高度全部平铺，没有选中图元时由 MainWindow
-// 隐藏整张卡片，行为与图层面板一致。
+class ItemDockPanelShapesCard;
+class ItemDockPanelSelectionCard;
+class ItemDockPanelColorsCard;
+class ItemDockPanelFillBorderCard;
+class ItemDockPanelValueCard;
+class ItemDockPanelArrangeCard;
+
+// 选中图元时出现在右侧的「编辑图元」dock 卡片。外壳只负责整体布局、选中联动与
+// 撤销命令提交；图形、颜色、填充 / 描边、透明度 / 圆角、图层 / 高度各行由对应
+// 子部件卡片构建与刷新，没有选中图元时由 MainWindow 隐藏整张卡片。
 class ItemDockPanel : public QWidget {
     Q_OBJECT
+
   public:
     explicit ItemDockPanel(CanvasScene* scene, QWidget* parent = nullptr);
 
@@ -36,31 +39,12 @@ class ItemDockPanel : public QWidget {
     void statusMessage(const QString& message);
 
   private:
-    void buildShapesSection(QWidget* body);
-    void buildSelectionSection(QWidget* body);
-    void buildColorsSection(QWidget* body);
-    void buildFillSection(QWidget* body);
-    void buildBorderSection(QWidget* body);
-    void buildOpacitySection(QWidget* body);
-    void buildCornerSection(QWidget* body);
-    void buildAngleSection(QWidget* body);
-    void buildRadiusSection(QWidget* body);
-    void buildArrangeSection(QWidget* body);
-    void rebuildCustomShapeMenu();
-
     void scheduleRefresh();
     void updateSummary();
-    void updateSections();
-    void updateShapeButtons();
-    void updateColorSwatches();
-    void updateFillButtons();
-    void updateBorderButtons();
-    void updateValueEditors();
-    void updateArrangeButtons();
 
     QList<CanvasItem*> selectedItems() const;
-    QList<class ShapeItem*> selectedShapes() const;
-    void changeSelectedShapes(const QString& text, const std::function<void(class ShapeItem*)>& mutate);
+    QList<ShapeItem*> selectedShapes() const;
+    void changeSelectedShapes(const QString& text, const std::function<void(ShapeItem*)>& mutate);
     void applyStrokeColor(const QColor& color);
     void applyFillColor(const QColor& color);
     void applyFillStyle(FillStyle style);
@@ -74,39 +58,18 @@ class ItemDockPanel : public QWidget {
     void adjustLayer(int delta);
     void adjustHeight(int delta);
 
+    void onShapeTriggered(int type);
+
     CanvasScene* m_scene = nullptr;
     QLabel* m_titleLabel = nullptr;
     QLabel* m_metaLabel = nullptr;
-    QWidget* m_selectionSection = nullptr;
-    QToolButton* m_alignButton = nullptr;
-    QToolButton* m_mergeButton = nullptr;
-    QMenu* m_alignMenu = nullptr;
-    QMenu* m_mergeMenu = nullptr;
-    QWidget* m_cornerSection = nullptr;
-    QWidget* m_angleSection = nullptr;
-    QWidget* m_radiusSection = nullptr;
 
-    QList<QToolButton*> m_shapeButtons;
-    QToolButton* m_customShapeButton = nullptr;
-    QMenu* m_customShapeMenu = nullptr;
-
-    QToolButton* m_strokeColorButton = nullptr;
-    QToolButton* m_fillColorButton = nullptr;
-    QList<QToolButton*> m_strokeSwatches;
-    QList<QToolButton*> m_fillSwatches;
-
-    QList<QToolButton*> m_fillStyleButtons;
-    QList<QToolButton*> m_borderStyleButtons;
-    QDoubleSpinBox* m_borderWidthSpin = nullptr;
-    QSpinBox* m_opacitySpin = nullptr;
-    QSpinBox* m_cornerSpin = nullptr;
-    QSpinBox* m_angleSpin = nullptr;
-    QSpinBox* m_radiusSpin = nullptr;
-
-    QToolButton* m_layerDownButton = nullptr;
-    QToolButton* m_layerUpButton = nullptr;
-    QToolButton* m_heightDownButton = nullptr;
-    QToolButton* m_heightUpButton = nullptr;
+    ItemDockPanelShapesCard* m_shapesCard = nullptr;
+    ItemDockPanelSelectionCard* m_selectionCard = nullptr;
+    ItemDockPanelColorsCard* m_colorsCard = nullptr;
+    ItemDockPanelFillBorderCard* m_fillBorderCard = nullptr;
+    ItemDockPanelValueCard* m_valueCard = nullptr;
+    ItemDockPanelArrangeCard* m_arrangeCard = nullptr;
 
     bool m_refreshing = false;
     bool m_refreshPending = false;
