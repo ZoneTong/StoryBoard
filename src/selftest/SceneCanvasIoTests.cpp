@@ -276,5 +276,31 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     undo.undo();
     ctx.check(qFuzzyCompare(scene.canvasSize().width(), 800.0), QStringLiteral("撤销调整画板尺寸"));
 
+    // 透明背景在屏幕视图上画白 / 浅灰棋盘格，离屏导出图仍保持纯透明。
+    {
+        CanvasScene checkerScene;
+        checkerScene.applyCanvasSize(QSizeF(200, 120));
+        checkerScene.setShowGrid(false);
+
+        const QImage checkerExport = checkerScene.renderImage(checkerScene.canvasRect(), 1.0);
+        ctx.check(checkerExport.pixelColor(5, 5).alpha() == 0, QStringLiteral("棋盘格不进入离屏导出图"));
+
+        CanvasView checkerView(&checkerScene);
+        checkerView.resize(260, 180);
+        checkerView.setMode(ToolMode::View);
+        checkerView.show();
+        QApplication::processEvents();
+        checkerView.viewport()->repaint();
+        QApplication::processEvents();
+
+        const QImage viewImage = checkerView.viewport()->grab().toImage();
+        // 棋盘格 10px 一格：(5,5) 为白格中心，(15,5) 为相邻灰格中心。
+        const QColor whitePixel = viewImage.pixelColor(checkerView.mapFromScene(QPointF(5, 5)));
+        const QColor grayPixel = viewImage.pixelColor(checkerView.mapFromScene(QPointF(15, 5)));
+        ctx.check(whitePixel.red() > 245 && grayPixel.red() < 235 && grayPixel.blue() < 245,
+                  QStringLiteral("视图透明背景显示白 / 浅灰棋盘格"),
+                  QStringLiteral("white=%1 gray=%2").arg(whitePixel.name()).arg(grayPixel.name()));
+    }
+
     // ---------------------------------------------------------------
 }
