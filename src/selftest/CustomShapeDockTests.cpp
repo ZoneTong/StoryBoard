@@ -783,6 +783,161 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             ctx.check(qAbs(selectedShape->opacity() - 1.0) < 0.01 && qAbs(selectedStroke->opacity() - 1.0) < 0.01,
                       QStringLiteral("撤销透明度同时恢复图形和笔画"));
 
+            // 文字 / 图片内容行与卡片操作按钮：只对相应类型显示，并且写入能撤销。
+            auto* cardText = new TextItem();
+            cardText->setTextFormat(QStringLiteral("卡片文字"), QFont(QStringLiteral("Arial"), 12),
+                                    QColor(QStringLiteral("#1E293B")));
+            cardText->setPos(QPointF(420.0, 430.0));
+            dockScene->addItemsWithUndo({cardText}, QStringLiteral("Add card text"));
+            dockScene->clearSelection();
+            cardText->setSelected(true);
+            QApplication::processEvents();
+
+            QWidget* textContentRow = itemDock->findChild<QWidget*>(QStringLiteral("ItemTextContentRow"));
+            QWidget* textFontRow = itemDock->findChild<QWidget*>(QStringLiteral("ItemTextFontRow"));
+            QWidget* textColorRow = itemDock->findChild<QWidget*>(QStringLiteral("ItemTextColorRow"));
+            QWidget* imageRow = itemDock->findChild<QWidget*>(QStringLiteral("ItemImageRow"));
+            QToolButton* propertiesButton = itemDock->findChild<QToolButton*>(QStringLiteral("ItemPropertiesButton"));
+            QToolButton* smoothButton = itemDock->findChild<QToolButton*>(QStringLiteral("ItemSmoothButton"));
+            ctx.check(textContentRow && textContentRow->isVisible() && textFontRow && textFontRow->isVisible() &&
+                          textColorRow && textColorRow->isVisible(),
+                      QStringLiteral("选中文字时显示正文 / 字体 / 颜色行"));
+            ctx.check(imageRow && !imageRow->isVisible(), QStringLiteral("选中文字时隐藏图片行"));
+            ctx.check(propertiesButton && propertiesButton->isVisible(), QStringLiteral("选中文字时显示图元属性按钮"));
+            ctx.check(smoothButton && !smoothButton->isVisible(), QStringLiteral("选中文字时隐藏笔画平滑按钮"));
+
+            // 图元属性按钮不是摆设：点击后打开属性窗，测试中立即关闭。
+            bool propertyDialogOpened = false;
+            QTimer::singleShot(0, [&propertyDialogOpened]() {
+                if (auto* dialog = qobject_cast<ItemPropertiesDialog*>(QApplication::activeModalWidget())) {
+                    propertyDialogOpened = true;
+                    dialog->reject();
+                }
+            });
+            if (propertiesButton) {
+                propertiesButton->click();
+                QApplication::processEvents();
+            }
+            ctx.check(propertyDialogOpened, QStringLiteral("卡片图元属性按钮真正打开属性窗"));
+
+            auto* textEdit = itemDock->findChild<QLineEdit*>(QStringLiteral("ItemTextContentEdit"));
+            if (textEdit) {
+                textEdit->setText(QStringLiteral("改后文字"));
+                QMetaObject::invokeMethod(textEdit, "editingFinished", Qt::DirectConnection);
+                QApplication::processEvents();
+            }
+            ctx.check(cardText->text() == QStringLiteral("改后文字"), QStringLiteral("卡片正文直接修改文字"),
+                      cardText->text());
+            dockScene->undoStack()->undo();
+            QApplication::processEvents();
+            ctx.check(cardText->text() == QStringLiteral("卡片文字"), QStringLiteral("撤销正文恢复原文"),
+                      cardText->text());
+
+            auto* fontSizeSpin = itemDock->findChild<QSpinBox*>(QStringLiteral("ItemTextFontSizeSpin"));
+            if (fontSizeSpin) {
+                fontSizeSpin->setValue(20);
+                QApplication::processEvents();
+            }
+            ctx.check(cardText->textFont().pointSize() == 20, QStringLiteral("卡片字号直接修改文字字体"),
+                      QString::number(cardText->textFont().pointSize()));
+            dockScene->undoStack()->undo();
+            QApplication::processEvents();
+            ctx.check(cardText->textFont().pointSize() == 12, QStringLiteral("撤销字号恢复原字体"),
+                      QString::number(cardText->textFont().pointSize()));
+
+            const QList<QToolButton*> textSwatches =
+                itemDock->findChildren<QToolButton*>(QStringLiteral("ItemTextColorSwatch"));
+            if (textSwatches.size() > 1) {
+                textSwatches.at(1)->click();
+                QApplication::processEvents();
+            }
+            ctx.check(cardText->textColor() == QColor(QStringLiteral("#EF4444")),
+                      QStringLiteral("卡片文字颜色直接修改文字"), cardText->textColor().name());
+            dockScene->undoStack()->undo();
+            QApplication::processEvents();
+            ctx.check(cardText->textColor() == QColor(QStringLiteral("#1E293B")),
+                      QStringLiteral("撤销文字颜色恢复原色"), cardText->textColor().name());
+
+            auto* cardImage = new ImageItem();
+            QPixmap imagePixmap(32, 24);
+            imagePixmap.fill(QColor(QStringLiteral("#2563EB")));
+            cardImage->setImage(imagePixmap, QStringLiteral("图A"));
+            cardImage->setPos(QPointF(620.0, 430.0));
+            dockScene->addItemsWithUndo({cardImage}, QStringLiteral("Add card image"));
+            dockScene->clearSelection();
+            cardImage->setSelected(true);
+            QApplication::processEvents();
+            ctx.check(imageRow && imageRow->isVisible(), QStringLiteral("选中图片时显示图片行"));
+            ctx.check(textContentRow && !textContentRow->isVisible() && textFontRow && !textFontRow->isVisible() &&
+                          textColorRow && !textColorRow->isVisible(),
+                      QStringLiteral("选中图片时隐藏文字行"));
+
+            auto* imageNameEdit = itemDock->findChild<QLineEdit*>(QStringLiteral("ItemImageNameEdit"));
+            if (imageNameEdit) {
+                imageNameEdit->setText(QStringLiteral("图B"));
+                QMetaObject::invokeMethod(imageNameEdit, "editingFinished", Qt::DirectConnection);
+                QApplication::processEvents();
+            }
+            ctx.check(cardImage->imageName() == QStringLiteral("图B"), QStringLiteral("卡片图片名称直接修改图元"),
+                      cardImage->imageName());
+            dockScene->undoStack()->undo();
+            QApplication::processEvents();
+            ctx.check(cardImage->imageName() == QStringLiteral("图A"), QStringLiteral("撤销图片名称恢复原名"),
+                      cardImage->imageName());
+
+            QPixmap replacement(64, 48);
+            replacement.fill(QColor(QStringLiteral("#16A34A")));
+            dockPanel->replaceSelectedImageWith(replacement, QStringLiteral("替换图"));
+            QApplication::processEvents();
+            ctx.check(cardImage->image().size() == QSize(64, 48) && cardImage->imageName() == QStringLiteral("替换图"),
+                      QStringLiteral("卡片替换图片同时更新像素与名称"),
+                      QStringLiteral("%1x%2 %3")
+                          .arg(cardImage->image().width())
+                          .arg(cardImage->image().height())
+                          .arg(cardImage->imageName()));
+            dockScene->undoStack()->undo();
+            QApplication::processEvents();
+            ctx.check(cardImage->image().size() == QSize(32, 24) && cardImage->imageName() == QStringLiteral("图A"),
+                      QStringLiteral("撤销替换图片恢复原像素与名称"),
+                      QStringLiteral("%1x%2 %3")
+                          .arg(cardImage->image().width())
+                          .arg(cardImage->image().height())
+                          .arg(cardImage->imageName()));
+
+            // 文字与图片混合选中时，对齐 / 化形 / 分组操作照常显示。
+            cardText->setSelected(true);
+            cardImage->setSelected(true);
+            QApplication::processEvents();
+            ctx.check(!alignRowButtons.isEmpty() && alignRowButtons.first()->isVisible() && !morphButtons.isEmpty() &&
+                          morphButtons.first()->isVisible() && groupButton && groupButton->isVisible(),
+                      QStringLiteral("文字与图片混合选中显示对齐 / 化形 / 分组按钮"));
+
+            // 只选笔画时显示笔画平滑按钮，点击后平滑结果进入撤销栈。
+            auto* smoothStroke = new StrokeItem();
+            QVector<QPointF> jitterPoints;
+            for (int i = 0; i <= 8; ++i) {
+                jitterPoints.append(QPointF(520.0 + i * 6.0, 470.0 + (i % 2) * 3.0));
+            }
+            smoothStroke->setStrokePoints(jitterPoints, QColor(QStringLiteral("#334155")), 5.0);
+            dockScene->addItemsWithUndo({smoothStroke}, QStringLiteral("Add smooth stroke"));
+            dockScene->clearSelection();
+            smoothStroke->setSelected(true);
+            QApplication::processEvents();
+            auto* smoothingSpin = itemDock->window()->findChild<QSpinBox*>(QStringLiteral("BrushSmoothingSpin"));
+            if (smoothingSpin) {
+                smoothingSpin->setValue(10);
+                QApplication::processEvents();
+            }
+            ctx.check(smoothButton && smoothButton->isVisible(), QStringLiteral("选中笔画时显示笔画平滑按钮"));
+            const int undoIndexBeforeSmooth = dockScene->undoStack()->index();
+            if (smoothButton) {
+                smoothButton->click();
+                QApplication::processEvents();
+            }
+            ctx.check(dockScene->undoStack()->index() > undoIndexBeforeSmooth,
+                      QStringLiteral("卡片笔画平滑按钮真正执行平滑且可撤销"),
+                      QStringLiteral("index=%1->%2").arg(undoIndexBeforeSmooth).arg(dockScene->undoStack()->index()));
+
             // 悬浮卡片跟随选中状态：清空选中后隐藏，重新选中再出现。
             dockScene->clearSelection();
             QApplication::processEvents();

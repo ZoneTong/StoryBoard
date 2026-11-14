@@ -19,6 +19,8 @@ class ItemDockPanelSelectionCard : public QWidget {
     void setSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions,
                              QAction* copyAction, QAction* removeAction, QAction* rotateCwAction,
                              QAction* rotateCcwAction, QAction* groupAction, QAction* ungroupAction);
+    // 笔画平滑与图元属性窗：动作可用时按钮才出现，和菜单 / 工具栏共用同一批 QAction。
+    void setItemActions(QAction* smoothAction, QAction* propertiesAction);
     // 有选中才可能显示整卡；groupUseful 为 false（选中的正好是一整个组）时不再提供“组合”。
     void setSelectionState(bool hasSelection, bool groupUseful);
 
@@ -41,6 +43,8 @@ class ItemDockPanelSelectionCard : public QWidget {
     QToolButton* m_deleteButton = nullptr;
     QToolButton* m_rotateCwButton = nullptr;
     QToolButton* m_rotateCcwButton = nullptr;
+    QToolButton* m_smoothButton = nullptr;
+    QToolButton* m_propertiesButton = nullptr;
     QToolButton* m_groupButton = nullptr;
     QToolButton* m_ungroupButton = nullptr;
 
@@ -48,6 +52,8 @@ class ItemDockPanelSelectionCard : public QWidget {
     QAction* m_deleteAction = nullptr;
     QAction* m_rotateCwAction = nullptr;
     QAction* m_rotateCcwAction = nullptr;
+    QAction* m_smoothAction = nullptr;
+    QAction* m_propertiesAction = nullptr;
     QAction* m_groupAction = nullptr;
     QAction* m_ungroupAction = nullptr;
 

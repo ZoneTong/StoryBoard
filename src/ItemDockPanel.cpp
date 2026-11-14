@@ -3,14 +3,20 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
+#include "ImageItem.h"
 #include "ItemDockPanelArrangeCard.h"
 #include "ItemDockPanelColorsCard.h"
+#include "ItemDockPanelContentCard.h"
 #include "ItemDockPanelFillBorderCard.h"
 #include "ItemDockPanelSelectionCard.h"
 #include "ItemDockPanelValueCard.h"
 #include "ShapeItem.h"
 #include "StrokeItem.h"
+#include "TextItem.h"
 
+#include <QFileDialog>
+#include <QFileInfo>
+#include <QFont>
 #include <QLabel>
 #include <QScrollArea>
 #include <QTimer>
@@ -45,13 +51,28 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
 
     // 紧凑布局：不再做带文字的折叠分组标题，各行内容直接平铺，
     // 行首用小图标标注用途（描边 / 填充 / 边框 / 透明度 / 圆角 / 图层 / 顺序）。
-    // 选中后的操作行（复制/删除/旋转、对齐、化形、组合）统一放在卡片底部，
-    // 位于「图层与高度」行之前，避免操作按钮压在样式行上方。
+    // 选中的操作行（复制/删除/旋转、对齐、化形、分组）统一放在卡片底部；
+    // 后加的文字 / 图片内容行与样式行排在「图层与高度」行下方。
     m_selectionCard = new ItemDockPanelSelectionCard(content);
     m_selectionCard->setObjectName(QStringLiteral("ItemSelectionRowsCard"));
 
     m_colorsCard = new ItemDockPanelColorsCard(content);
     m_fillBorderCard = new ItemDockPanelFillBorderCard(content);
+    m_contentCard = new ItemDockPanelContentCard(content);
+
+    // 图层与高度保持靠上，文字 / 图片内容行及填充、描线样式行统一排在其下方；
+    // 选中后的操作行仍放在卡片底部。
+    m_valueCard = new ItemDockPanelValueCard(content);
+    layout->addWidget(m_valueCard);
+
+    m_arrangeCard = new ItemDockPanelArrangeCard(content);
+    m_arrangeCard->setObjectName(QStringLiteral("ItemArrangeCard"));
+    layout->addWidget(m_arrangeCard);
+
+    layout->addWidget(m_contentCard->textContentRow());
+    layout->addWidget(m_contentCard->textFontRow());
+    layout->addWidget(m_contentCard->textColorRow());
+    layout->addWidget(m_contentCard->imageRow());
 
     // 各行按功能顺序平铺：填充样式 → 填充颜色 → 边框样式 → 边框颜色 → 边框宽度。
     layout->addWidget(m_fillBorderCard->fillStyleRow());
@@ -60,12 +81,6 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     layout->addWidget(m_colorsCard->borderColorRow());
     layout->addWidget(m_fillBorderCard->borderWidthRow());
 
-    m_valueCard = new ItemDockPanelValueCard(content);
-    layout->addWidget(m_valueCard);
-
-    m_arrangeCard = new ItemDockPanelArrangeCard(content);
-    m_arrangeCard->setObjectName(QStringLiteral("ItemArrangeCard"));
-    layout->addWidget(m_arrangeCard);
     layout->addWidget(m_selectionCard);
     layout->addStretch(1);
 
@@ -77,6 +92,12 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     connect(m_fillBorderCard, &ItemDockPanelFillBorderCard::fillStyleChosen, this, &ItemDockPanel::applyFillStyle);
     connect(m_fillBorderCard, &ItemDockPanelFillBorderCard::borderStyleChosen, this, &ItemDockPanel::applyBorderStyle);
     connect(m_fillBorderCard, &ItemDockPanelFillBorderCard::borderWidthChosen, this, &ItemDockPanel::applyBorderWidth);
+    connect(m_contentCard, &ItemDockPanelContentCard::textContentChosen, this, &ItemDockPanel::applyTextContent);
+    connect(m_contentCard, &ItemDockPanelContentCard::textFontChosen, this, &ItemDockPanel::applyTextFont);
+    connect(m_contentCard, &ItemDockPanelContentCard::textColorChosen, this, &ItemDockPanel::applyTextColor);
+    connect(m_contentCard, &ItemDockPanelContentCard::imageNameChosen, this, &ItemDockPanel::applyImageName);
+    connect(m_contentCard, &ItemDockPanelContentCard::replaceImageRequested, this,
+            &ItemDockPanel::chooseReplacementImage);
     connect(m_valueCard, &ItemDockPanelValueCard::opacityChosen, this, &ItemDockPanel::applyOpacity);
     connect(m_valueCard, &ItemDockPanelValueCard::cornerRadiusChosen, this, &ItemDockPanel::applyCornerRadius);
     connect(m_valueCard, &ItemDockPanelValueCard::sweepAngleChosen, this, &ItemDockPanel::applySweepAngle);
@@ -105,6 +126,13 @@ void ItemDockPanel::setSelectionActions(const QList<QAction*>& alignActions, con
     if (m_selectionCard) {
         m_selectionCard->setSelectionActions(alignActions, boolActions, copyAction, removeAction, rotateCwAction,
                                              rotateCcwAction, groupAction, ungroupAction);
+    }
+}
+
+void ItemDockPanel::setItemActions(QAction* smoothAction, QAction* propertiesAction)
+{
+    if (m_selectionCard) {
+        m_selectionCard->setItemActions(smoothAction, propertiesAction);
     }
 }
 
@@ -146,6 +174,28 @@ QList<CanvasItem*> ItemDockPanel::selectedStrokeTargets() const
     return targets;
 }
 
+QList<TextItem*> ItemDockPanel::selectedTexts() const
+{
+    QList<TextItem*> texts;
+    for (CanvasItem* item : selectedItems()) {
+        if (auto* text = dynamic_cast<TextItem*>(item)) {
+            texts.append(text);
+        }
+    }
+    return texts;
+}
+
+QList<ImageItem*> ItemDockPanel::selectedImages() const
+{
+    QList<ImageItem*> images;
+    for (CanvasItem* item : selectedItems()) {
+        if (auto* image = dynamic_cast<ImageItem*>(item)) {
+            images.append(image);
+        }
+    }
+    return images;
+}
+
 void ItemDockPanel::scheduleRefresh()
 {
     if (m_refreshing) {
@@ -166,6 +216,8 @@ void ItemDockPanel::refresh()
     const QList<CanvasItem*> items = selectedItems();
     const QList<ShapeItem*> shapes = selectedShapes();
     const QList<StrokeItem*> strokes = selectedStrokes();
+    const QList<TextItem*> texts = selectedTexts();
+    const QList<ImageItem*> images = selectedImages();
     m_selectionCard->setSelectionState(!items.isEmpty(), selectionGroupUseful(items));
 
     bool hasCorner = false;
@@ -194,10 +246,14 @@ void ItemDockPanel::refresh()
     m_fillBorderCard->fillStyleRow()->setVisible(showFillRows);
     m_colorsCard->fillColorRow()->setVisible(showFillRows);
 
-    // 描线样式只对图形有意义；只选中笔画时不需要显示这一行。
+    // 描线样式只对图形有意义；描线颜色 / 宽度对图形与笔画都有效。
     const bool showBorderStyleRow = items.isEmpty() || !shapes.isEmpty();
+    const bool showStrokeRows = items.isEmpty() || !shapes.isEmpty() || !strokes.isEmpty();
     m_fillBorderCard->borderStyleRow()->setVisible(showBorderStyleRow);
+    m_colorsCard->borderColorRow()->setVisible(showStrokeRows);
+    m_fillBorderCard->borderWidthRow()->setVisible(showStrokeRows);
 
+    m_contentCard->refresh(texts, images);
     m_colorsCard->refresh(shapes, strokes);
     m_fillBorderCard->refresh(shapes, strokes);
     m_valueCard->refresh(shapes, items);
@@ -386,6 +442,165 @@ void ItemDockPanel::applyOpacity(int percent)
 
     m_scene->undoStack()->push(new ItemOpacityCommand(m_scene, items, before, after, tr("Change opacity")));
     refresh();
+}
+
+void ItemDockPanel::changeSelectedTexts(const QString& text, const std::function<void(TextItemState&)>& mutate)
+{
+    const QList<TextItem*> texts = selectedTexts();
+    if (texts.isEmpty() || !m_scene || !m_scene->undoStack()) {
+        return;
+    }
+
+    QList<TextItemState> beforeStates;
+    QList<TextItemState> afterStates;
+    bool changed = false;
+    for (TextItem* item : texts) {
+        const TextItemState before = item->state();
+        TextItemState after = before;
+        mutate(after);
+        beforeStates.append(before);
+        afterStates.append(after);
+        changed = changed || after != before;
+    }
+    if (!changed) {
+        return;
+    }
+
+    QUndoStack* undo = m_scene->undoStack();
+    undo->beginMacro(text);
+    for (int i = 0; i < texts.size(); ++i) {
+        undo->push(new TextItemCommand(m_scene, texts.at(i), beforeStates.at(i), afterStates.at(i), text));
+    }
+    undo->endMacro();
+    refresh();
+}
+
+void ItemDockPanel::applyTextContent(const QString& text)
+{
+    changeSelectedTexts(tr("Change text content"), [&text](TextItemState& state) {
+        if (state.text == text) {
+            return;
+        }
+        state.text = text;
+        state.baseSize = TextItem::measure(state.text, state.font);
+        state.size = state.baseSize;
+    });
+}
+
+void ItemDockPanel::applyTextFont(const QFont& font)
+{
+    changeSelectedTexts(tr("Change text font"), [&font](TextItemState& state) {
+        if (state.font == font) {
+            return;
+        }
+        state.font = font;
+        state.baseSize = TextItem::measure(state.text, state.font);
+        state.size = state.baseSize;
+    });
+}
+
+void ItemDockPanel::applyTextColor(const QColor& color)
+{
+    if (!color.isValid()) {
+        return;
+    }
+    changeSelectedTexts(tr("Change text color"), [&color](TextItemState& state) { state.color = color; });
+}
+
+void ItemDockPanel::applyImageName(const QString& name)
+{
+    const QList<ImageItem*> images = selectedImages();
+    if (images.isEmpty() || !m_scene || !m_scene->undoStack()) {
+        return;
+    }
+
+    auto imageState = [](ImageItem* image) {
+        ItemPropertiesState state;
+        state.pos = image->pos();
+        state.size = image->contentSize();
+        state.rotation = image->rotationAngle();
+        state.itemName = image->rawName();
+        state.hasImageState = true;
+        state.image = image->image();
+        state.hasImageName = true;
+        state.imageName = image->imageName();
+        return state;
+    };
+
+    QList<ItemPropertiesState> beforeStates;
+    QList<ItemPropertiesState> afterStates;
+    bool changed = false;
+    for (ImageItem* image : images) {
+        ItemPropertiesState before = imageState(image);
+        if (before.imageName == name) {
+            continue;
+        }
+        ItemPropertiesState after = before;
+        after.imageName = name;
+        beforeStates.append(before);
+        afterStates.append(after);
+        changed = true;
+    }
+    if (!changed) {
+        return;
+    }
+
+    QUndoStack* undo = m_scene->undoStack();
+    undo->beginMacro(tr("Change image name"));
+    for (int i = 0; i < beforeStates.size(); ++i) {
+        undo->push(new ItemPropertiesCommand(m_scene, images.at(i), beforeStates.at(i), afterStates.at(i),
+                                             tr("Change image name")));
+    }
+    undo->endMacro();
+    refresh();
+}
+
+void ItemDockPanel::replaceSelectedImageWith(const QPixmap& pixmap, const QString& name)
+{
+    const QList<ImageItem*> images = selectedImages();
+    if (images.size() != 1 || pixmap.isNull() || !m_scene || !m_scene->undoStack()) {
+        return;
+    }
+    ImageItem* image = images.first();
+
+    ItemPropertiesState before;
+    before.pos = image->pos();
+    before.size = image->contentSize();
+    before.rotation = image->rotationAngle();
+    before.itemName = image->rawName();
+    before.hasImageState = true;
+    before.image = image->image();
+    before.hasImageName = true;
+    before.imageName = image->imageName();
+
+    ItemPropertiesState after = before;
+    after.image = pixmap;
+    after.imageName = name.isEmpty() ? before.imageName : name;
+    // 替换图片后回到新图片的原始像素尺寸，与属性窗行为一致。
+    after.size = QSizeF(pixmap.size());
+
+    m_scene->undoStack()->push(new ItemPropertiesCommand(m_scene, image, before, after, tr("Replace image")));
+    refresh();
+}
+
+void ItemDockPanel::chooseReplacementImage()
+{
+    const QList<ImageItem*> images = selectedImages();
+    if (images.size() != 1) {
+        return;
+    }
+    const QString path = QFileDialog::getOpenFileName(
+        this, tr("Replace image"), QString(), tr("Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;All files (*)"));
+    if (path.isEmpty()) {
+        return;
+    }
+    const QPixmap pixmap(path);
+    if (pixmap.isNull()) {
+        statusMessage(tr("Unable to load the selected image."));
+        return;
+    }
+    const QString currentName = images.first()->imageName();
+    replaceSelectedImageWith(pixmap, currentName.isEmpty() ? QFileInfo(path).completeBaseName() : currentName);
 }
 
 void ItemDockPanel::applyCornerRadius(int radius)

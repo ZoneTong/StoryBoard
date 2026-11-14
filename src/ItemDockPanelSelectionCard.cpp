@@ -41,6 +41,8 @@ ItemDockPanelSelectionCard::ItemDockPanelSelectionCard(QWidget* parent) : QWidge
     QHBoxLayout* groupLayout = nullptr;
     m_groupRow = makeRow(this, &groupLayout);
 
+    m_propertiesButton = makeButton(QStringLiteral("ItemPropertiesButton"));
+    basicLayout->addWidget(m_propertiesButton);
     m_copyButton = makeButton(QStringLiteral("ItemCopyButton"));
     basicLayout->addWidget(m_copyButton);
     m_deleteButton = makeButton(QStringLiteral("ItemDeleteButton"));
@@ -49,6 +51,8 @@ ItemDockPanelSelectionCard::ItemDockPanelSelectionCard(QWidget* parent) : QWidge
     basicLayout->addWidget(m_rotateCwButton);
     m_rotateCcwButton = makeButton(QStringLiteral("ItemRotateCcwButton"));
     basicLayout->addWidget(m_rotateCcwButton);
+    m_smoothButton = makeButton(QStringLiteral("ItemSmoothButton"));
+    basicLayout->addWidget(m_smoothButton);
     basicLayout->addStretch(1);
 
     // 对齐 8 项与化形 5 项各占一行：多选时直接平铺，不再收进下拉菜单。
@@ -125,6 +129,12 @@ QAction* ItemDockPanelSelectionCard::actionForButton(QToolButton* button) const
     if (button == m_rotateCcwButton) {
         return m_rotateCcwAction;
     }
+    if (button == m_smoothButton) {
+        return m_smoothAction;
+    }
+    if (button == m_propertiesButton) {
+        return m_propertiesAction;
+    }
     if (button == m_groupButton) {
         return m_groupAction;
     }
@@ -173,6 +183,15 @@ void ItemDockPanelSelectionCard::setSelectionActions(const QList<QAction*>& alig
     refreshVisibility();
 }
 
+void ItemDockPanelSelectionCard::setItemActions(QAction* smoothAction, QAction* propertiesAction)
+{
+    m_smoothAction = smoothAction;
+    m_propertiesAction = propertiesAction;
+    bindAction(m_smoothButton, smoothAction);
+    bindAction(m_propertiesButton, propertiesAction);
+    refreshVisibility();
+}
+
 void ItemDockPanelSelectionCard::setSelectionState(bool hasSelection, bool groupUseful)
 {
     m_hasSelection = hasSelection;
@@ -192,10 +211,12 @@ void ItemDockPanelSelectionCard::refreshVisibility()
     };
 
     bool anyBasic = false;
+    anyBasic = usable(m_propertiesButton) || anyBasic;
     anyBasic = usable(m_copyButton) || anyBasic;
     anyBasic = usable(m_deleteButton) || anyBasic;
     anyBasic = usable(m_rotateCwButton) || anyBasic;
     anyBasic = usable(m_rotateCcwButton) || anyBasic;
+    anyBasic = usable(m_smoothButton) || anyBasic;
 
     bool anyAlign = false;
     for (QToolButton* button : std::as_const(m_alignButtons)) {

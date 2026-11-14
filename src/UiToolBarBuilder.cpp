@@ -51,44 +51,13 @@ void UiToolBarBuilder::buildToolBars()
     createShapeToolbar(mainBar);
     mainBar->addSeparator();
 
-    // 对齐下拉按钮：和编辑菜单里的对齐子菜单共用同一组动作，展开就是一个下拉清单。
-    m_window->m_alignButton = new QToolButton(mainBar);
-    m_window->m_alignButton->setObjectName(QStringLiteral("AlignToolButton"));
-    m_window->m_alignButton->setText(MainWindow::tr("Align"));
-    m_window->m_alignButton->setIcon(makeIcon(IconId::Align, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
-    m_window->m_alignButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
-    m_window->m_alignButton->setPopupMode(QToolButton::InstantPopup);
-    m_window->m_alignButton->setToolTip(MainWindow::tr("Align or distribute the selected items"));
-    auto* alignButtonMenu = new QMenu(m_window->m_alignButton);
-    alignButtonMenu->setObjectName(QStringLiteral("AlignToolButtonMenu"));
-    for (QAction* action : std::as_const(m_window->m_alignActions)) {
-        alignButtonMenu->addAction(action);
-    }
-    m_window->m_alignButton->setMenu(alignButtonMenu);
-    mainBar->addWidget(m_window->m_alignButton);
-
-    // 布尔运算同样做成工具栏下拉按钮，菜单里再挂一份到画布右键菜单。
-    m_window->m_boolButton = new QToolButton(mainBar);
-    m_window->m_boolButton->setObjectName(QStringLiteral("BoolToolButton"));
-    m_window->m_boolButton->setText(MainWindow::tr("Morph"));
-    m_window->m_boolButton->setIcon(makeIcon(IconId::Morph, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
-    m_window->m_boolButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
-    m_window->m_boolButton->setPopupMode(QToolButton::InstantPopup);
-    m_window->m_boolButton->setToolTip(MainWindow::tr("Morph the selected shapes"));
-    m_window->m_boolButton->setEnabled(false);
-    auto* boolButtonMenu = new QMenu(m_window->m_boolButton);
-    boolButtonMenu->setObjectName(QStringLiteral("BoolToolButtonMenu"));
-    for (QAction* action : std::as_const(m_window->m_boolActions)) {
-        boolButtonMenu->addAction(action);
-    }
-    m_window->m_boolButton->setMenu(boolButtonMenu);
-    mainBar->addWidget(m_window->m_boolButton);
+    // 对齐与化形留在菜单栏与编辑图元卡里，主工具栏不再重复放置入口。
+    // 画笔区只留下平滑笔画按钮和容差输入；画笔颜色 / 粗细改由图形描线区统一设置。
+    createSmoothingToolbar(mainBar);
+    // 布尔运算的右键菜单入口照旧保留，只是不再作为工具栏下拉按钮。
     if (m_window->m_view) {
         m_window->m_view->addContextMenuGroup(MainWindow::tr("Morph"), m_window->m_boolActions);
     }
-
-    // 画笔区只留下平滑笔画按钮和容差输入；画笔颜色 / 粗细改由图形描线区统一设置。
-    createSmoothingToolbar(mainBar);
 
     // 统一主工具栏里所有纯图标按钮的尺寸：QToolBar 为 action 自动创建的按钮、
     // 以及 addWidget 加入的色板/填充按钮，都钉成同一个正方形，避免按各自
