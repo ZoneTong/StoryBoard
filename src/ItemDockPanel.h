@@ -9,6 +9,11 @@
 class CanvasScene;
 class CanvasItem;
 class StrokeItem;
+class TextItem;
+class ImageItem;
+struct TextItemState;
+class QPixmap;
+class QFont;
 class QAction;
 class QLabel;
 
@@ -17,6 +22,7 @@ class ItemDockPanelColorsCard;
 class ItemDockPanelFillBorderCard;
 class ItemDockPanelValueCard;
 class ItemDockPanelArrangeCard;
+class ItemDockPanelContentCard;
 
 // 选中图元时出现在右侧的「编辑图元」dock 卡片。外壳只负责整体布局、选中联动与
 // 撤销命令提交；图形、颜色、填充 / 描边、透明度 / 圆角、图层 / 高度各行由对应
@@ -32,6 +38,10 @@ class ItemDockPanel : public QWidget {
     void setSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions,
                              QAction* copyAction, QAction* removeAction, QAction* rotateCwAction,
                              QAction* rotateCcwAction, QAction* groupAction, QAction* ungroupAction);
+    // 笔画平滑与图元属性窗也是选中项可用的操作，卡片沿用主窗口同一批 QAction。
+    void setItemActions(QAction* smoothAction, QAction* propertiesAction);
+    // 替换当前唯一选中的图片，保留原位置与图元名称；图片本体、尺寸和名称一起进入撤销记录。
+    void replaceSelectedImageWith(const QPixmap& pixmap, const QString& name = QString());
 
   signals:
     void statusMessage(const QString& message);
@@ -48,9 +58,17 @@ class ItemDockPanel : public QWidget {
     QList<CanvasItem*> selectedItems() const;
     QList<ShapeItem*> selectedShapes() const;
     QList<StrokeItem*> selectedStrokes() const;
+    QList<TextItem*> selectedTexts() const;
+    QList<ImageItem*> selectedImages() const;
     // 描线颜色 / 宽度可作用的对象：图形与笔画。
     QList<CanvasItem*> selectedStrokeTargets() const;
     void changeSelectedShapes(const QString& text, const std::function<void(ShapeItem*)>& mutate);
+    void changeSelectedTexts(const QString& text, const std::function<void(TextItemState&)>& mutate);
+    void applyTextContent(const QString& text);
+    void applyTextFont(const QFont& font);
+    void applyTextColor(const QColor& color);
+    void applyImageName(const QString& name);
+    void chooseReplacementImage();
     void applyStrokeColor(const QColor& color);
     void applyFillColor(const QColor& color);
     void applyFillStyle(FillStyle style);
@@ -68,6 +86,7 @@ class ItemDockPanel : public QWidget {
     QLabel* m_metaLabel = nullptr;
 
     ItemDockPanelSelectionCard* m_selectionCard = nullptr;
+    ItemDockPanelContentCard* m_contentCard = nullptr;
     ItemDockPanelColorsCard* m_colorsCard = nullptr;
     ItemDockPanelFillBorderCard* m_fillBorderCard = nullptr;
     ItemDockPanelValueCard* m_valueCard = nullptr;
