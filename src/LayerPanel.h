@@ -6,8 +6,10 @@
 #include <QWidget>
 
 class CanvasScene;
+class LayerActions;
+class LayerPanelView;
+class LayerRow;
 class QCheckBox;
-class QEvent;
 class QLabel;
 class QListWidget;
 class QToolButton;
@@ -25,29 +27,17 @@ class LayerPanel : public QWidget {
   signals:
     void statusMessage(const QString& message);
 
-  protected:
-    bool eventFilter(QObject* watched, QEvent* event) override;
-
   private:
-    QWidget* createLayerRow(const CanvasLayer& layer, int index, int itemCount);
-    int currentLayerId() const;
+    LayerRow* createRow(const CanvasLayer& layer, int index, int itemCount);
     void scheduleRefresh();
     void activateCurrentLayer();
     void syncActiveLayer();
     void syncSceneSelection();
-    void addLayer();
-    void removeLayer();
-    void renameLayer(int layerId);
-    void moveLayer(int delta);
-    void setLayerVisible(int layerId, bool visible);
-    void setLayerLocked(int layerId, bool locked);
-    void setAllLayersVisible(bool visible);
-    void updateAllVisibleState();
-    void updateButtons();
-    void updateRowStyles();
-    void updateSummary();
+    void removeSelectedLayers();
 
     CanvasScene* m_scene = nullptr;
+    LayerActions* m_actions = nullptr;
+    LayerPanelView* m_view = nullptr;
     QListWidget* m_list = nullptr;
     QCheckBox* m_allVisibleBox = nullptr;
     QToolButton* m_addButton = nullptr;

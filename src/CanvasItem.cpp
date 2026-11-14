@@ -1,5 +1,8 @@
 #include "CanvasItem.h"
 
+#include "CanvasItemGeometry.h"
+#include "CanvasItemHandles.h"
+#include "CanvasItemInteraction.h"
 #include "CanvasScene.h"
 #include "I18n.h"
 
@@ -16,34 +19,6 @@
 
 namespace {
 constexpr qreal kMinimumSide = 8.0;
-constexpr qreal kHandleHitPadding = 2.0;
-
-bool isLeftHandle(CanvasItem::Handle handle)
-{
-    return handle == CanvasItem::TopLeft || handle == CanvasItem::Left || handle == CanvasItem::BottomLeft;
-}
-
-bool isRightHandle(CanvasItem::Handle handle)
-{
-    return handle == CanvasItem::TopRight || handle == CanvasItem::Right || handle == CanvasItem::BottomRight;
-}
-
-bool isTopHandle(CanvasItem::Handle handle)
-{
-    return handle == CanvasItem::TopLeft || handle == CanvasItem::Top || handle == CanvasItem::TopRight;
-}
-
-bool isBottomHandle(CanvasItem::Handle handle)
-{
-    return handle == CanvasItem::BottomLeft || handle == CanvasItem::Bottom || handle == CanvasItem::BottomRight;
-}
-
-bool isCornerHandle(CanvasItem::Handle handle)
-{
-    return handle == CanvasItem::TopLeft || handle == CanvasItem::TopRight || handle == CanvasItem::BottomLeft ||
-           handle == CanvasItem::BottomRight;
-}
-
 } // namespace
 
 CanvasItem::CanvasItem(QGraphicsItem* parent) : QGraphicsObject(parent)
@@ -53,6 +28,14 @@ CanvasItem::CanvasItem(QGraphicsItem* parent) : QGraphicsObject(parent)
     setAcceptHoverEvents(false);
     setCursor(Qt::ArrowCursor);
     setTransformOriginPoint(contentRect().center());
+    m_handles = new CanvasItemHandles(this);
+    m_interaction = new CanvasItemInteraction(this);
+}
+
+CanvasItem::~CanvasItem()
+{
+    delete m_handles;
+    delete m_interaction;
 }
 
 QString CanvasItem::name() const
@@ -77,7 +60,7 @@ QSizeF CanvasItem::minimumSize()
 
 QRectF CanvasItem::contentRect() const
 {
-    return QRectF(0.0, 0.0, m_size.width(), m_size.height());
+    return CanvasItemGeometry::contentRect(m_size);
 }
 
 void CanvasItem::setContentSize(const QSizeF& size)
@@ -141,16 +124,8 @@ QRectF CanvasItem::sceneContentRect() const
 
 QRectF CanvasItem::boundingRect() const
 {
-    const qreal padding = framePadding();
-    qreal topPadding = padding;
-    if (isSelected()) {
-        // 旋转手柄画在内容区上方，其偏移随视图缩放变化。若 boundingRect
-        // 不覆盖它，低缩放时 QGraphicsScene 的粗边界会先一步判定“未命中”，
-        // 表现为旋转钮看得见却按不到、拖不动。
-        const qreal knobRadius = handleSize() / 2.0 + 2.0 / qMax<qreal>(viewScale(), 0.001);
-        topPadding = qMax(topPadding, rotationHandleOffset() + knobRadius);
-    }
-    return contentRect().adjusted(-padding, -topPadding, padding, padding);
+    return CanvasItemGeometry::boundingRect(contentRect(), framePadding(), isSelected(), viewScale(), m_handles->size(),
+                                            m_handles->rotationOffset());
 }
 
 void CanvasItem::refreshViewDependentGeometry()
@@ -182,21 +157,7 @@ QPainterPath CanvasItem::paintedShape() const
 
 QPainterPath CanvasItem::selectionHandleShape() const
 {
-    QPainterPath path;
-    if (!isSelected() || !isEditable() || !hasSingleSelection()) {
-        return path;
-    }
-
-    // Selection handles are centred on the content corners, so half of every
-    // handle lies outside the item geometry. Drawing them without adding them
-    // to shape() leaves the visible handle unclickable; for outlines that never
-    // reach the corner (ellipse, triangle, diamond, star) the handle could not
-    // be grabbed at all.
-    for (int handle = TopLeft; handle <= Rotation; ++handle) {
-        path.addRect(handleRect(static_cast<Handle>(handle))
-                         .adjusted(-kHandleHitPadding, -kHandleHitPadding, kHandleHitPadding, kHandleHitPadding));
-    }
-    return path;
+    return m_handles->selectionShape();
 }
 
 void CanvasItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
@@ -250,222 +211,62 @@ bool CanvasItem::hasSingleSelection() const
 
 qreal CanvasItem::handleSize() const
 {
-    return qBound<qreal>(6.0, 9.0 / viewScale(), 40.0);
+    return m_handles->size();
 }
 
 QPointF CanvasItem::handleCenter(Handle handle) const
 {
-    const QRectF rect = contentRect();
-    switch (handle) {
-    case TopLeft:
-        return rect.topLeft();
-    case Top:
-        return QPointF(rect.center().x(), rect.top());
-    case TopRight:
-        return rect.topRight();
-    case Right:
-        return QPointF(rect.right(), rect.center().y());
-    case BottomRight:
-        return rect.bottomRight();
-    case Bottom:
-        return QPointF(rect.center().x(), rect.bottom());
-    case BottomLeft:
-        return rect.bottomLeft();
-    case Left:
-        return QPointF(rect.left(), rect.center().y());
-    case Rotation:
-        return QPointF(rect.center().x(), rect.top() - rotationHandleOffset());
-    case NoHandle:
-        break;
-    }
-    return rect.center();
+    return m_handles->center(handle);
 }
 
 qreal CanvasItem::rotationHandleOffset() const
 {
-    // Keep the rotation handle one handle-size plus a small gap above the frame,
-    // so it stays visually separate from the Top resize handle at any zoom.
-    return handleSize() + 16.0 / viewScale();
+    return m_handles->rotationOffset();
 }
 
 QRectF CanvasItem::handleRect(Handle handle) const
 {
-    const qreal size = handleSize();
-    const QPointF center = handleCenter(handle);
-    return QRectF(center.x() - size / 2.0, center.y() - size / 2.0, size, size);
+    return m_handles->rect(handle);
 }
 
 CanvasItem::Handle CanvasItem::handleAt(const QPointF& pos) const
 {
-    const qreal hitPadding = qMin<qreal>(10.0 / viewScale(), 14.0);
-    for (int handle = TopLeft; handle <= Rotation; ++handle) {
-        const QRectF rect =
-            handleRect(static_cast<Handle>(handle)).adjusted(-hitPadding, -hitPadding, hitPadding, hitPadding);
-        if (rect.contains(pos)) {
-            return static_cast<Handle>(handle);
-        }
-    }
-    return NoHandle;
+    return static_cast<Handle>(m_handles->hitAt(pos));
 }
 
 QCursor CanvasItem::cursorForHandle(Handle handle) const
 {
-    switch (handle) {
-    case TopLeft:
-    case BottomRight:
-        return QCursor(Qt::SizeFDiagCursor);
-    case TopRight:
-    case BottomLeft:
-        return QCursor(Qt::SizeBDiagCursor);
-    case Top:
-    case Bottom:
-        return QCursor(Qt::SizeVerCursor);
-    case Left:
-    case Right:
-        return QCursor(Qt::SizeHorCursor);
-    case Rotation:
-        return QCursor(Qt::PointingHandCursor);
-    case NoHandle:
-        break;
-    }
-    return QCursor(Qt::ArrowCursor);
+    return m_handles->cursor(handle);
 }
 
 void CanvasItem::drawSelectionOverlay(QPainter* painter)
 {
-    QPen borderPen(QColor(79, 124, 255));
-    borderPen.setWidthF(1.3);
-    borderPen.setCosmetic(true);
-    borderPen.setStyle(Qt::DashLine);
-    borderPen.setDashPattern({5.0, 4.0});
-    painter->setPen(borderPen);
-    painter->setBrush(Qt::NoBrush);
-    painter->drawRect(contentRect());
-
-    if (!isEditable() || !hasSingleSelection()) {
-        return;
-    }
-
-    QPen handlePen(QColor(79, 124, 255));
-    handlePen.setWidthF(1.4);
-    handlePen.setCosmetic(true);
-    painter->setPen(handlePen);
-    painter->setBrush(Qt::white);
-    for (int handle = TopLeft; handle <= Left; ++handle) {
-        painter->drawRect(handleRect(static_cast<Handle>(handle)));
-    }
-
-    // Rotation handle: a circular knob above the frame, connected by a thin line.
-    const QPointF topCenter(handleCenter(Top).x(), contentRect().top());
-    const QPointF rotationCenter = handleCenter(Rotation);
-    painter->drawLine(topCenter, rotationCenter);
-    painter->setBrush(QColor(79, 124, 255));
-    painter->drawEllipse(handleRect(Rotation).adjusted(1.0, 1.0, -1.0, -1.0));
+    m_handles->drawOverlay(painter);
 }
 
 void CanvasItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 {
-    if (!isEditable()) {
-        unsetCursor();
-        QGraphicsObject::hoverMoveEvent(event);
-        return;
-    }
-    updateHoverCursor(event->pos());
-    QGraphicsObject::hoverMoveEvent(event);
+    m_interaction->onHoverMove(event);
 }
 
 void CanvasItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
-    unsetCursor();
-    QGraphicsObject::hoverLeaveEvent(event);
-}
-
-void CanvasItem::updateHoverCursor(const QPointF& pos)
-{
-    if (!isEditable()) {
-        unsetCursor();
-        return;
-    }
-    if (hasSingleSelection()) {
-        const Handle handle = handleAt(pos);
-        if (handle != NoHandle) {
-            setCursor(cursorForHandle(handle));
-            return;
-        }
-    }
-    setCursor(QCursor(Qt::OpenHandCursor));
+    m_interaction->onHoverLeave(event);
 }
 
 void CanvasItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
-    if (!isEditable() || event->button() != Qt::LeftButton) {
-        QGraphicsObject::mousePressEvent(event);
-        return;
-    }
-
-    if (hasSingleSelection()) {
-        const Handle handle = handleAt(event->pos());
-        if (handle == Rotation) {
-            beginRotate(event->scenePos());
-            setCursor(QCursor(Qt::PointingHandCursor));
-            event->accept();
-            return;
-        }
-        if (handle != NoHandle) {
-            beginResize(handle, event->scenePos());
-            setCursor(cursorForHandle(handle));
-            event->accept();
-            return;
-        }
-    }
-
-    const Qt::KeyboardModifiers modifiers = event->modifiers();
-    if (modifiers & Qt::ControlModifier) {
-        setSelected(!isSelected());
-        if (!isSelected()) {
-            event->accept();
-            return;
-        }
-    } else if (!isSelected()) {
-        if (!(modifiers & Qt::ShiftModifier)) {
-            scene()->clearSelection();
-        }
-        setSelected(true);
-    }
-
-    beginMove(event->scenePos());
-    setCursor(QCursor(Qt::ClosedHandCursor));
-    event->accept();
+    m_interaction->onMousePress(event);
 }
 
 void CanvasItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
-    if (m_drag == DragKind::None) {
-        QGraphicsObject::mouseMoveEvent(event);
-        return;
-    }
-
-    if (m_drag == DragKind::Move) {
-        applyMove(event->scenePos());
-    } else if (m_drag == DragKind::Resize) {
-        applyResize(event->scenePos(), event->modifiers());
-    } else if (m_drag == DragKind::Rotate) {
-        applyRotate(event->scenePos());
-    }
-
-    event->accept();
+    m_interaction->onMouseMove(event);
 }
 
 void CanvasItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-    if (m_drag == DragKind::None) {
-        QGraphicsObject::mouseReleaseEvent(event);
-        return;
-    }
-
-    finishInteraction();
-    updateHoverCursor(event->pos());
-    event->accept();
+    m_interaction->onMouseRelease(event);
 }
 
 QVariant CanvasItem::itemChange(GraphicsItemChange change, const QVariant& value)
@@ -476,189 +277,6 @@ QVariant CanvasItem::itemChange(GraphicsItemChange change, const QVariant& value
         update();
     }
     return QGraphicsObject::itemChange(change, value);
-}
-
-void CanvasItem::beginMove(const QPointF& scenePos)
-{
-    m_drag = DragKind::Move;
-    m_dragStartScene = scenePos;
-    m_dragStartPos = pos();
-    m_dragStartSize = m_size;
-    m_before.clear();
-
-    if (scene()) {
-        QSet<CanvasItem*> seen;
-        QSet<int> groupIds;
-        auto addItem = [&seen](CanvasItem* item) {
-            if (item && !seen.contains(item)) {
-                seen.insert(item);
-            }
-        };
-        const QList<QGraphicsItem*> selected = scene()->selectedItems();
-        for (QGraphicsItem* item : selected) {
-            auto* canvasItem = qgraphicsitem_cast<CanvasItem*>(item);
-            if (!canvasItem) {
-                continue;
-            }
-            if (!seen.contains(canvasItem)) {
-                seen.insert(canvasItem);
-            }
-            if (canvasItem->groupId() > 0) {
-                groupIds.insert(canvasItem->groupId());
-            }
-        }
-        seen.insert(this);
-
-        // 拖动任意一个组员时，把同一棵组树里的图元一并收进本次移动快照；组员不必处于
-        // 选中状态，这样单个图元仍可打开属性窗并保持组内联动。
-        if (CanvasScene* canvas = canvasScene()) {
-            for (int groupId : std::as_const(groupIds)) {
-                for (CanvasItem* member : canvas->itemsInGroupTree(canvas->outermostGroup(groupId))) {
-                    // 正常分组都同层；若图层后续被拆分或锁定，至少不要移动
-                    // 当前不可编辑的组员，避免绕过图层锁定。
-                    if (canvas->isItemEditable(member)) {
-                        addItem(member);
-                    }
-                }
-            }
-        }
-
-        for (CanvasItem* canvasItem : std::as_const(seen)) {
-            m_before.append({canvasItem, canvasItem->pos(), canvasItem->contentSize()});
-        }
-    }
-    if (m_before.isEmpty()) {
-        m_before.append({this, pos(), m_size});
-    }
-}
-
-void CanvasItem::applyMove(const QPointF& scenePos)
-{
-    const QPointF delta = scenePos - m_dragStartScene;
-    for (const ItemGeometry& geometry : std::as_const(m_before)) {
-        if (geometry.item) {
-            geometry.item->setPos(geometry.pos + delta);
-        }
-    }
-}
-
-void CanvasItem::beginResize(Handle handle, const QPointF& scenePos)
-{
-    m_drag = DragKind::Resize;
-    m_resizeHandle = handle;
-    m_dragStartScene = scenePos;
-    m_dragStartPos = pos();
-    m_dragStartSize = m_size;
-    m_before = {{this, pos(), m_size}};
-}
-
-void CanvasItem::applyResize(const QPointF& scenePos, Qt::KeyboardModifiers modifiers)
-{
-    const QPointF delta = scenePos - m_dragStartScene;
-    QRectF rect(m_dragStartPos, m_dragStartSize);
-
-    if (isLeftHandle(m_resizeHandle)) {
-        rect.setLeft(rect.left() + delta.x());
-    }
-    if (isRightHandle(m_resizeHandle)) {
-        rect.setRight(rect.right() + delta.x());
-    }
-    if (isTopHandle(m_resizeHandle)) {
-        rect.setTop(rect.top() + delta.y());
-    }
-    if (isBottomHandle(m_resizeHandle)) {
-        rect.setBottom(rect.bottom() + delta.y());
-    }
-
-    const qreal minSide = kMinimumSide;
-    if (rect.width() < minSide) {
-        if (isLeftHandle(m_resizeHandle)) {
-            rect.setLeft(rect.right() - minSide);
-        } else {
-            rect.setRight(rect.left() + minSide);
-        }
-    }
-    if (rect.height() < minSide) {
-        if (isTopHandle(m_resizeHandle)) {
-            rect.setTop(rect.bottom() - minSide);
-        } else {
-            rect.setBottom(rect.top() + minSide);
-        }
-    }
-
-    if ((modifiers & Qt::ShiftModifier) && isCornerHandle(m_resizeHandle) && m_dragStartSize.height() > 0.0) {
-        const qreal aspect = m_dragStartSize.width() / m_dragStartSize.height();
-        QSizeF size = rect.size();
-        if (size.width() / size.height() > aspect) {
-            size.setWidth(size.height() * aspect);
-        } else {
-            size.setHeight(size.width() / aspect);
-        }
-        size = size.expandedTo(QSizeF(minSide, minSide));
-
-        if (isLeftHandle(m_resizeHandle)) {
-            rect.setLeft(rect.right() - size.width());
-        } else {
-            rect.setRight(rect.left() + size.width());
-        }
-        if (isTopHandle(m_resizeHandle)) {
-            rect.setTop(rect.bottom() - size.height());
-        } else {
-            rect.setBottom(rect.top() + size.height());
-        }
-    }
-
-    setPos(rect.topLeft());
-    setContentSize(rect.size());
-}
-
-void CanvasItem::beginRotate(const QPointF& scenePos)
-{
-    m_drag = DragKind::Rotate;
-    m_dragStartScene = scenePos;
-    m_dragStartRotation = m_rotation;
-    const QPointF center = mapToScene(contentRect().center());
-    m_rotateStartAngle = qRadiansToDegrees(qAtan2(scenePos.y() - center.y(), scenePos.x() - center.x()));
-    m_before.clear();
-}
-
-void CanvasItem::applyRotate(const QPointF& scenePos)
-{
-    const QPointF center = mapToScene(contentRect().center());
-    const qreal angle = qRadiansToDegrees(qAtan2(scenePos.y() - center.y(), scenePos.x() - center.x()));
-    const qreal target = m_dragStartRotation + (angle - m_rotateStartAngle);
-    // 需求 35：旋转手柄按 5° 步长吸附。
-    setRotationAngle(snapRotation(target, 5.0));
-}
-
-void CanvasItem::finishInteraction()
-{
-    if (m_drag == DragKind::None) {
-        return;
-    }
-
-    const bool wasResize = m_drag == DragKind::Resize;
-    const bool wasRotate = m_drag == DragKind::Rotate;
-    m_drag = DragKind::None;
-    m_resizeHandle = NoHandle;
-
-    if (wasRotate) {
-        if (CanvasScene* canvas = canvasScene()) {
-            canvas->pushRotation(this, m_dragStartRotation, m_rotation, tr("Rotate item"));
-        }
-    } else if (!m_before.isEmpty()) {
-        ItemGeometryList after;
-        after.reserve(m_before.size());
-        for (const ItemGeometry& geometry : std::as_const(m_before)) {
-            if (geometry.item) {
-                after.append({geometry.item, geometry.item->pos(), geometry.item->contentSize()});
-            }
-        }
-        if (CanvasScene* canvas = canvasScene()) {
-            canvas->pushGeometry(m_before, after, wasResize ? tr("Resize item") : tr("Move item"));
-        }
-    }
-    m_before.clear();
 }
 
 QJsonObject CanvasItem::baseJson() const
