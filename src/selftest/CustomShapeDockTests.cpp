@@ -618,8 +618,9 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             ctx.check(visibleAlign == 6, QStringLiteral("两个图元时对齐行展开 6 个可用模式"),
                       QString::number(visibleAlign));
             ctx.check(visibleMorph == 5, QStringLiteral("多选时化形五项展开成一行"));
-            ctx.check(groupButton->isVisible() && !ungroupButton->isVisible(),
-                      QStringLiteral("多选未分组时显示组合、不显示取消组合"));
+            ctx.check(groupButton->isVisible() && !ungroupButton->isVisible() &&
+                          groupButton->property("cardActionText").toString() == QStringLiteral("图元分组"),
+                      QStringLiteral("多选未分组时显示图元分组、不显示解散分组"));
 
             // 对齐行按钮真正调用对齐动作；对齐后可撤销并恢复两个图元。
             if (!alignRowButtons.isEmpty()) {
@@ -669,8 +670,9 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             selectedShape->setSelected(true);
             secondShape->setSelected(true);
             QApplication::processEvents();
-            ctx.check(groupedCount == 2 && ungroupButton->isVisible() && !groupButton->isVisible(),
-                      QStringLiteral("选中整组时只显示取消组合"));
+            ctx.check(groupedCount == 2 && ungroupButton->isVisible() && !groupButton->isVisible() &&
+                          ungroupButton->property("cardActionText").toString() == QStringLiteral("解散分组"),
+                      QStringLiteral("选中整组时只显示解散分组"));
 
             // 组 + 组外图元混合选中：再套一层组合与取消组合同时可用（分组支持多层）。
             auto* thirdShape = new ShapeItem(ShapeType::Ellipse);
@@ -681,8 +683,10 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             secondShape->setSelected(true);
             thirdShape->setSelected(true);
             QApplication::processEvents();
-            ctx.check(groupButton->isVisible() && ungroupButton->isVisible(),
-                      QStringLiteral("组与普通图元混合选中时组合和取消组合都显示"));
+            ctx.check(groupButton->isVisible() && ungroupButton->isVisible() &&
+                          groupButton->property("cardActionText").toString() == QStringLiteral("图元分组") &&
+                          ungroupButton->property("cardActionText").toString() == QStringLiteral("解散分组"),
+                      QStringLiteral("组与普通图元混合选中时图元分组和解散分组都显示"));
 
             // 删除按钮单独用一个临时图元验证，避免删掉后面还要复用的图元。
             auto* deleteProbe = new ShapeItem(ShapeType::Rectangle);

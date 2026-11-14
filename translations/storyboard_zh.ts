@@ -790,27 +790,27 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
       <source>Group selected items</source>
-      <translation>组合选中图元</translation>
+      <translation>图元分组</translation>
     </message>
     <message>
       <source>Group the selected items so they move together (Ctrl+G)</source>
-      <translation>组合选中图元，使其整组移动（Ctrl+G）</translation>
+      <translation>将选中图元分组，使其整组移动（Ctrl+G）</translation>
     </message>
     <message>
       <source>Grouped %1 item(s)</source>
-      <translation>已组合 %1 个图元</translation>
+      <translation>已将 %1 个图元分组</translation>
     </message>
     <message>
       <source>Ungroup selected items</source>
-      <translation>取消组合选中图元</translation>
+      <translation>解散分组</translation>
     </message>
     <message>
       <source>Ungroup the selected group(s) (Ctrl+Shift+G)</source>
-      <translation>取消选中图元所在的组（Ctrl+Shift+G）</translation>
+      <translation>解散选中的图元组（Ctrl+Shift+G）</translation>
     </message>
     <message>
       <source>Ungrouped %1 item(s)</source>
-      <translation>已取消组合 %1 个图元</translation>
+      <translation>已解散 %1 个图元的分组</translation>
     </message>
     <message>
       <source>Duplicate item name</source>
@@ -2370,27 +2370,27 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Group selected items</source>
-      <translation>组合选中图元</translation>
+      <translation>图元分组</translation>
     </message>
     <message>
       <source>Group the selected items so they move together (Ctrl+G)</source>
-      <translation>组合选中图元，使其整组移动（Ctrl+G）</translation>
+      <translation>将选中图元分组，使其整组移动（Ctrl+G）</translation>
     </message>
     <message>
       <source>Grouped %1 item(s)</source>
-      <translation>已组合 %1 个图元</translation>
+      <translation>已将 %1 个图元分组</translation>
     </message>
     <message>
       <source>Ungroup selected items</source>
-      <translation>取消组合选中图元</translation>
+      <translation>解散分组</translation>
     </message>
     <message>
       <source>Ungroup the selected group(s) (Ctrl+Shift+G)</source>
-      <translation>取消选中图元所在的组（Ctrl+Shift+G）</translation>
+      <translation>解散选中的图元组（Ctrl+Shift+G）</translation>
     </message>
     <message>
       <source>Ungrouped %1 item(s)</source>
-      <translation>已取消组合 %1 个图元</translation>
+      <translation>已解散 %1 个图元的分组</translation>
     </message>
     <message>
       <source>Smooth strokes</source>
@@ -3812,11 +3812,11 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Group selected items</source>
-      <translation>组合选中图元</translation>
+      <translation>图元分组</translation>
     </message>
     <message>
       <source>Ungroup selected items</source>
-      <translation>取消组合选中图元</translation>
+      <translation>解散分组</translation>
     </message>
     <message>
       <source>New layer</source>
@@ -4486,11 +4486,11 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
       <source>Group selected items</source>
-      <translation>组合选中图元</translation>
+      <translation>图元分组</translation>
     </message>
     <message>
       <source>Ungroup selected items</source>
-      <translation>取消组合选中图元</translation>
+      <translation>解散分组</translation>
     </message>
     <message>
       <source>Height +1 (stack up)</source>
@@ -4522,11 +4522,11 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
       <source>Grouped %1 item(s)</source>
-      <translation>已组合 %1 个图元</translation>
+      <translation>已将 %1 个图元分组</translation>
     </message>
     <message>
       <source>Ungrouped %1 item(s)</source>
-      <translation>已取消组合 %1 个图元</translation>
+      <translation>已解散 %1 个图元的分组</translation>
     </message>
     <message>
       <source>Current stroke canceled</source>
