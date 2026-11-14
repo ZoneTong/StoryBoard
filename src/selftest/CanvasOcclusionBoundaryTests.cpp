@@ -77,33 +77,14 @@ void selftest::runCanvasOcclusionBoundaryTests(Context& ctx)
         const QImage viewImage = blendView.viewport()->grab().toImage();
         const QPoint viewPoint = blendView.mapFromScene(QPointF(140, 90));
         const QPoint viewLowerPoint = blendView.mapFromScene(QPointF(60, 60));
-        const QPoint viewBgPoint = blendView.mapFromScene(QPointF(5, 5));
         QColor viewOverlapColor(0, 0, 0);
         QColor viewLowerColor(0, 0, 0);
-        QColor viewBgColor(0, 0, 0);
         if (viewImage.rect().contains(viewPoint)) {
             viewOverlapColor = viewImage.pixelColor(viewPoint);
         }
         if (viewImage.rect().contains(viewLowerPoint)) {
             viewLowerColor = viewImage.pixelColor(viewLowerPoint);
         }
-        if (viewImage.rect().contains(viewBgPoint)) {
-            viewBgColor = viewImage.pixelColor(viewBgPoint);
-        }
-        ctx.check(true, QStringLiteral("诊断视图取色"),
-                  QStringLiteral("bg=%1,%2,%3,%4 lower=%5,%6,%7 overlap=%8,%9,%10 img=%11x%12")
-                      .arg(viewBgColor.red())
-                      .arg(viewBgColor.green())
-                      .arg(viewBgColor.blue())
-                      .arg(viewBgColor.alpha())
-                      .arg(viewLowerColor.red())
-                      .arg(viewLowerColor.green())
-                      .arg(viewLowerColor.blue())
-                      .arg(viewOverlapColor.red())
-                      .arg(viewOverlapColor.green())
-                      .arg(viewOverlapColor.blue())
-                      .arg(viewImage.width())
-                      .arg(viewImage.height()));
         ctx.check(viewOverlapColor.green() > 60 && viewOverlapColor.blue() > 150,
                   QStringLiteral("真实视图中的遮挡处同样完全不透"),
                   QStringLiteral("view=%1,%2,%3 point=%4,%5")
