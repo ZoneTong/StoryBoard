@@ -2,8 +2,9 @@
 # 并行开发用的工作树工具。
 #
 # 一个需求一棵工作树：从主干当前 HEAD 拉临时分支 feature/<需求名>，
-# 在旁边的 StoryBoard_<需求名> 目录里独立开发；合并回主干后工作树和临时分支一起删掉。
-# 工作树里只写代码，不跑自检、不打包；自检和打包只在主干目录做。
+# 统一放在仓库旁的 StoryBoard-worktrees/<需求名> 目录里独立开发；
+# 合并回主干后工作树和临时分支一起删掉。
+# 工作树里只写代码和自测，不部署打包；部署和打包只在主干目录做。
 #
 # 用法：
 #   bash scripts/worktree.sh new    <需求名> [主干分支]   # 建工作树
@@ -17,8 +18,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MAIN_BRANCH="${STORYBOARD_MAIN_BRANCH:-main}"
-BASE_DIR="$(dirname "$ROOT")"
-REPO_NAME="$(basename "$ROOT")"
+BASE_DIR="${STORYBOARD_WORKTREE_BASE:-$(dirname "$ROOT")/StoryBoard-worktrees}"
 
 usage() {
     sed -n '4,14p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
@@ -41,7 +41,7 @@ require_name() {
 }
 
 worktree_path() {
-    printf '%s/%s_%s' "$BASE_DIR" "$REPO_NAME" "$1"
+    printf '%s/%s' "$BASE_DIR" "$1"
 }
 
 current_branch() {
@@ -63,10 +63,11 @@ cmd_new() {
         exit 1
     fi
 
+    mkdir -p "$BASE_DIR"
     git -C "$ROOT" worktree add -b "feature/$name" "$wt" "$main_branch"
     echo "worktree: $wt"
     echo "branch:   feature/$name (from $main_branch)"
-    echo "note:     code only in the worktree; self-test and packaging run in $ROOT"
+    echo "note:     code and self-test in the worktree; deploy and package in $ROOT"
 }
 
 cmd_merge() {

@@ -23,11 +23,15 @@
 
 - **自定义图形**：把 `.sbcanvas` 放进配置文件同级的 `shapes` 子目录，应用会自动扫描并追加到「常见图形 → 自定义图形」；便携包根目录的 `shapes` 也会扫描，同名模板以配置目录为准。模板只取图形 / 笔画 / 合并图形的矢量轮廓，忽略图片与文字，按外接矩形归一化并保持原宽高比。模板删除不影响已插入的画布。
 
+- **常见图形几何**：矩形 / 圆角矩形默认插入为正方形；椭圆可编辑长半轴、短半轴，圆形、扇形、弧线由椭圆派生；扇形与弧线可编辑角度和半径；两种箭头默认填充。
+
 - **图元分组与层级**：同层多选后 `Ctrl+G` 或右键组合，拖动任一成员整组移动。分组可嵌套；单击组内图元会选中整棵组树，双击仍可打开单个图元的属性窗。`Ctrl+Shift+G` 连同子组一起解散。分组、解组可撤销，层级随画布保存。
 
 - **多图元对齐**：选中 2 个及以上图元，用「编辑 → 对齐」或工具栏下拉按钮做左 / 水平居中 / 右 / 上 / 垂直居中 / 下对齐；3 个及以上还可水平或垂直等间距，只占一条撤销记录。
 
-- **编辑图元卡**：选中图元时右侧自动出现「编辑图元」，无选中则收起，与图层卡上下排列（默认图层卡在上）。紧凑图标布局包含常见图形、描边 / 填充色板、填充样式、边框样式与线宽、透明度、矩形圆角，以及图层 ±1、层内高度 ±1。修改直接写入图元并进入撤销栈；未选中图形时点常见图形等于插入新图形。
+- **编辑图元卡**：选中图元时左侧自动出现「编辑图元」，无选中则收起。顶部是常见图形；多选时出现对齐 / 合并形状；随后依次为填充样式、填充颜色、边框样式、边框颜色、边框宽度；下方是透明度、矩形圆角、扇形 / 弧线扫过角与半径，最后是图层 ±1 与层内高度 ±1。修改直接写入图元并进入撤销栈；未选中图形时点常见图形等于插入新图形。
+
+- **卡片布局**：编辑图元卡默认停靠左侧；原来的查看 / 编辑 / 画笔 / 文字模式栏作为「视图模式」卡默认停靠在右上角；图层树卡占据右下角剩余高度。右侧两张卡可拖动、浮动，上下顺序会写入设置并在下次启动恢复。
 
 - **图元属性与复制**：选中后按 `Q` 或双击打开模态属性窗，任意模式可查看，仅编辑模式可编辑；名称、图层、层内高度、填充、描边、位置尺寸、旋转、圆角、文字或图片内容均可修改。矩形 / 圆角矩形可调圆角，圆角矩形默认显示短边 16% 的非零半径。`Ctrl+D` 复制图元，副本自动偏移并接续唯一名称。两者各只产生一条撤销记录。
 
@@ -46,6 +50,16 @@
 - **界面语言**：简体中文 / English，可跟随系统，切换后立即生效；`STORYBOARD_LANG=zh|en` 可临时覆盖。
 
 ![常见图形快速插入菜单](docs/shape-menu.png)
+
+## 设置与导出
+
+设置对话框集中管理画笔默认值、画布尺寸 / 外围颜色、图片线稿化的档位与参数；「保存」写入配置文件并作为新建画笔、新建画布和线稿化参数窗的默认值。
+
+![画板配置](docs/settings.png)
+
+导出支持画布区域或全部图元、PNG / JPEG / PDF、0.25×–4×，可合并图层或按可见图层分别导出。
+
+![导出对话框](docs/export-dialog.png)
 
 ## 快捷键
 
@@ -72,7 +86,7 @@
 
 项目名自动取仓库根目录文件夹名：`project()`、可执行目标、Windows 版本资源、便携包目录都从它派生。版本只在 `CMakeLists.txt` 的 `project(... VERSION ...)` 维护，当前为 **1.0.0**。
 
-源文件按文件夹收集：`STORYBOARD_SOURCE_FOLDERS` 默认列出 `src`、`src/selftest`、`resources`，目录内新增或删除文件由 `CONFIGURE_DEPENDS` 自动同步。
+源文件按文件夹收集：`STORYBOARD_SOURCE_FOLDERS` 默认列出 `src`、`src/scene`、`src/selftest`、`resources`，目录内新增或删除文件由 `CONFIGURE_DEPENDS` 自动同步。
 
 Linux / macOS：
 
@@ -104,7 +118,7 @@ APP=$(basename "$PWD")
 
 ## 并行开发与打包
 
-一个需求一棵工作树，从主干 HEAD 拉临时分支，在旁边的 `StoryBoard_<需求名>` 目录独立开发；工作树里不跑自检、不打包，合并回主干后再构建、自检和打包。
+一个需求一棵工作树，从主干 `main` 的 HEAD 拉临时分支，在仓库旁的 `StoryBoard-worktrees/<需求名>` 独立开发。工作树里只写代码和自测，不部署打包；合并回主干后统一构建、自检和打包。需求按功能模块拆分，能复用的部分优先追加到相关度高的工作树。
 
 ```bash
 bash scripts/worktree.sh new   <需求名>
@@ -113,18 +127,18 @@ bash scripts/worktree.sh merge <需求名>
 bash scripts/worktree.sh drop  <需求名>
 ```
 
-打包脚本同样在 bash 下运行，从根目录名推导应用名：
+打包脚本同样在 bash 下运行，从根目录名推导应用名；发布时加 `--no-archive`，只保留目录：
 
 ```bash
 bash scripts/package-portable.sh --help
 bash scripts/package-portable.sh --build --qt-dir "$QT_DIR" --no-archive
 ```
 
-| 主机 | 产物 | 部署 |
+| 主机 | 产物目录 | 部署 |
 | --- | --- | --- |
 | Windows | `<项目名>-<版本>-win64-portable/` | `windeployqt` + `qoffscreen.dll` |
-| macOS | `<项目名>.app` 及 `.zip` | `macdeployqt` + `libqoffscreen.dylib` |
-| Linux | `<项目名>-<版本>-linux-<arch>-portable.tar.gz` | Qt 库、插件与 `qt.conf` |
+| macOS | `<项目名>.app` | `macdeployqt` + `libqoffscreen.dylib` |
+| Linux | `<项目名>-<版本>-linux-<arch>-portable/` | Qt 库、插件与 `qt.conf` |
 
 Windows 分支已在 Windows 11 + GCC 15 + Qt 6.12 实机验证；macOS / Linux 分支按 Qt 官方部署方式提供，尚未在对应主机实机验证。
 
@@ -135,7 +149,7 @@ APP=$(basename "$PWD")
 QT_QPA_PLATFORM=offscreen ./build/bin/$APP --self-test build/selftest.txt
 ```
 
-当前 Windows 基线为 **710 passed, 0 failed**，其他平台以实际 `SUMMARY` 为准。自检需要平台插件目录下的 offscreen 插件，打包脚本会自动补齐。
+当前 Windows 基线为 **712 passed, 0 failed**，其他平台以实际 `SUMMARY` 为准。自检需要平台插件目录下的 offscreen 插件，打包脚本会自动补齐。
 
 ## 项目结构
 
@@ -143,15 +157,18 @@ QT_QPA_PLATFORM=offscreen ./build/bin/$APP --self-test build/selftest.txt
 StoryBoard/
 ├─ CMakeLists.txt
 ├─ .clang-format        华为 C++ 规范基础：4 空格、120 列、函数大括号换行
-├─ src/                 主窗口、场景 / 视图、图元、命令、对话框、设置、i18n、自检
+├─ src/                 主窗口、场景 / 视图、图元、命令、对话框、设置、i18n
+│  ├─ scene/            CanvasScene 按画布、图元、图层、序列化、叠放、命中拆分
+│  ├─ selftest/         自检上下文、公共辅助与按功能段的测试入口
+│  └─ *Controller.cpp   MainWindow 的文档、导入导出、编辑动作、插入等控制器
 ├─ resources/           图标、下拉箭头、qrc、Windows rc 模板
 ├─ translations/        storyboard_zh.ts 与 qtbase_zh_CN.qm
 ├─ scripts/             worktree.sh、package-portable.sh、各平台包内 README 模板
 ├─ examples/            示例画布与自定义图形模板
-└─ docs/                README 截图
+└─ docs/                README 截图与回归记录
 ```
 
-提交前格式化：
+开发约定：新写或拆分出的 `.cpp` 按 `cloc` 统计控制在 500 行以内，提交前格式化：
 
 ```bash
 find src -type f \( -name '*.cpp' -o -name '*.h' \) -print0 | xargs -0 clang-format -i
