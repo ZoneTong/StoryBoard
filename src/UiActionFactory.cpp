@@ -318,7 +318,7 @@ void UiActionFactory::build()
     QObject::connect(m_window->m_strokeColorAct, &QAction::triggered, m_window, &MainWindow::chooseStrokeColor);
     m_window->m_brushColorAct = new QAction(MainWindow::tr("Brush color…"), m_window);
     m_window->m_brushColorAct->setObjectName(QStringLiteral("BrushColorAction"));
-    m_window->m_brushColorAct->setIcon(makeColorIcon(m_window->m_brushColor, 16));
+    m_window->m_brushColorAct->setIcon(m_window->m_style->strokeColorIcon(m_window->m_brushColor, 16));
     QObject::connect(m_window->m_brushColorAct, &QAction::triggered, m_window, &MainWindow::chooseBrushColor);
 
     // 需求 31：画笔样式菜单下提供粗细选项，并与工具栏下拉共用同一个设置。

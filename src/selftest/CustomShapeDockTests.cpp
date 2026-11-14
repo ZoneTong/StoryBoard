@@ -282,10 +282,11 @@ void selftest::runCustomShapeDockTests(Context& ctx)
                       .arg(borderStyleIndex)
                       .arg(borderColorIndex)
                       .arg(borderWidthIndex));
-        ctx.check(ItemDockPanel::tr("Border color") == QStringLiteral("边框颜色") &&
+        ctx.check(ItemDockPanel::tr("Border color") == QStringLiteral("描线颜色") &&
+                      ItemDockPanel::tr("Border width") == QStringLiteral("描线宽度") &&
                       ItemDockPanel::tr("Height +1") == QStringLiteral("高度 +1") &&
                       ItemDockPanel::tr("Layer and height") == QStringLiteral("图层与高度"),
-                  QStringLiteral("编辑图元卡的工具提示都有中文译文"),
+                  QStringLiteral("编辑图元卡把颜色与宽度统一称为描线颜色 / 描线宽度"),
                   QStringLiteral("stroke=%1 height=%2")
                       .arg(ItemDockPanel::tr("Border color"))
                       .arg(ItemDockPanel::tr("Height +1")));

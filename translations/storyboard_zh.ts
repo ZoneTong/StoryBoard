@@ -156,7 +156,7 @@
     </message>
     <message>
       <source>Applied border color to %1 shape(s)</source>
-      <translation>已将边框颜色应用到 %1 个图形</translation>
+      <translation>已将描线颜色应用到 %1 个图形</translation>
     </message>
     <message>
       <source>Arrow</source>
@@ -232,15 +232,15 @@
     </message>
     <message>
       <source>Brush color: %1 (click to choose)</source>
-      <translation>画笔颜色：%1（点击选择）</translation>
+      <translation>描线颜色：%1（点击选择）</translation>
     </message>
     <message>
       <source>Brush color…</source>
-      <translation>画笔颜色…</translation>
+      <translation>描线颜色…</translation>
     </message>
     <message>
       <source>Brush defaults</source>
-      <translation>画笔默认值</translation>
+      <translation>描线默认值</translation>
     </message>
     <message>
       <source>Brush mode</source>
@@ -264,7 +264,7 @@
     </message>
     <message>
       <source>Brush width</source>
-      <translation>画笔粗细</translation>
+      <translation>描线宽度</translation>
     </message>
     <message>
       <source>Built with Qt %1.</source>
@@ -320,7 +320,7 @@
     </message>
     <message>
       <source>Change border color</source>
-      <translation>修改边框颜色</translation>
+      <translation>修改描线颜色</translation>
     </message>
     <message>
       <source>Changed the height of %1 item(s) by %2</source>
@@ -354,7 +354,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
       <source>Choose brush color</source>
-      <translation>选择画笔颜色</translation>
+      <translation>选择描线颜色</translation>
     </message>
     <message>
       <source>Choose canvas surround color</source>
@@ -374,7 +374,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
       <source>Choose border color</source>
-      <translation>选择边框颜色</translation>
+      <translation>选择描线颜色</translation>
     </message>
     <message>
       <source>Choose text color</source>
@@ -382,7 +382,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
       <source>Choose the default brush color</source>
-      <translation>选择默认画笔颜色</translation>
+      <translation>选择默认描线颜色</translation>
     </message>
     <message>
       <source>Choose the export file path</source>
@@ -474,11 +474,11 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
       <source>Default color</source>
-      <translation>默认颜色</translation>
+      <translation>描线颜色</translation>
     </message>
     <message>
       <source>Default width</source>
-      <translation>默认粗细</translation>
+      <translation>描线宽度</translation>
     </message>
     <message>
       <source>Delete item</source>
@@ -738,7 +738,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
       <source>Insert %1 (uses the current brush color)</source>
-      <translation>插入%1（使用当前画笔颜色）</translation>
+      <translation>插入%1（使用当前描线颜色）</translation>
     </message>
     <message>
       <source>Insert images</source>
@@ -1094,15 +1094,15 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
       <source>Border color set; it will be used for newly inserted shapes</source>
-      <translation>已设置边框颜色，将用于新插入的图形</translation>
+      <translation>已设置描线颜色，将用于新插入的图形</translation>
     </message>
     <message>
       <source>Border color: %1 (click to choose)</source>
-      <translation>边框颜色：%1（点击选择）</translation>
+      <translation>描线颜色：%1（点击选择）</translation>
     </message>
     <message>
       <source>Border color…</source>
-      <translation>边框颜色…</translation>
+      <translation>描线颜色…</translation>
     </message>
     <message>
       <source>Output file</source>
@@ -1166,7 +1166,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
       <source>Quickly insert common shapes (uses the current brush color)</source>
-      <translation>快速插入常见图形（使用当前画笔颜色）</translation>
+      <translation>快速插入常见图形（使用当前描线颜色）</translation>
     </message>
     <message>
       <source>Quit</source>
@@ -1474,11 +1474,11 @@ Second line caption</source>
     </message>
     <message>
       <source>Border color</source>
-      <translation>边框颜色</translation>
+      <translation>描线颜色</translation>
     </message>
     <message>
       <source>Border width</source>
-      <translation>边框宽度</translation>
+      <translation>描线宽度</translation>
     </message>
     <message>
       <source>Style</source>
@@ -1626,7 +1626,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>The border color did not change</source>
-      <translation>边框颜色未发生变化</translation>
+      <translation>描线颜色未发生变化</translation>
     </message>
     <message>
       <source>The selected shape is stroke-only (line, brace, etc.); fill is not supported</source>
@@ -1722,7 +1722,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Width</source>
-      <translation>粗细</translation>
+      <translation>描线宽度</translation>
     </message>
     <message>
       <source>Zoom in</source>
@@ -1899,7 +1899,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
         <source>Border style</source>
-        <translation>边框样式</translation>
+        <translation>描线样式</translation>
     </message>
     <message>
         <source>Opacity</source>
@@ -2080,7 +2080,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
         <source>Change shape border color</source>
-        <translation>修改图形边框颜色</translation>
+        <translation>修改图形描线颜色</translation>
     </message>
     <message>
         <source>Change shape fill color</source>
@@ -2092,11 +2092,11 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
         <source>Change shape border style</source>
-        <translation>修改图形边框样式</translation>
+        <translation>修改图形描线样式</translation>
     </message>
     <message>
         <source>Change shape border width</source>
-        <translation>修改图形边框粗细</translation>
+        <translation>修改图形描线宽度</translation>
     </message>
     <message>
         <source>Change shape opacity</source>
@@ -2590,11 +2590,11 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Border color…</source>
-      <translation>边框颜色…</translation>
+      <translation>描线颜色…</translation>
     </message>
     <message>
       <source>Brush color…</source>
-      <translation>画笔颜色…</translation>
+      <translation>描线颜色…</translation>
     </message>
     <message>
       <source>Adjust background fill mode</source>
@@ -2606,7 +2606,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Insert %1 (uses the current brush color)</source>
-      <translation>插入%1（使用当前画笔颜色）</translation>
+      <translation>插入%1（使用当前描线颜色）</translation>
     </message>
     <message>
       <source>Layers</source>
@@ -2658,7 +2658,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Brush width</source>
-      <translation>画笔粗细</translation>
+      <translation>描线宽度</translation>
     </message>
     <message>
       <source>Fill style</source>
@@ -2678,7 +2678,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Brush color: %1 (click to choose)</source>
-      <translation>画笔颜色：%1（点击选择）</translation>
+      <translation>描线颜色：%1（点击选择）</translation>
     </message>
     <message>
       <source>Ink black</source>
@@ -2718,7 +2718,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Width</source>
-      <translation>粗细</translation>
+      <translation>描线宽度</translation>
     </message>
     <message>
       <source>Smooth strokes once</source>
@@ -2742,7 +2742,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Quickly insert common shapes (uses the current brush color)</source>
-      <translation>快速插入常见图形（使用当前画笔颜色）</translation>
+      <translation>快速插入常见图形（使用当前描线颜色）</translation>
     </message>
     <message>
       <source>Fill color: %1 (click to choose)</source>
@@ -2754,7 +2754,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Border color: %1 (click to choose)</source>
-      <translation>边框颜色：%1（点击选择）</translation>
+      <translation>描线颜色：%1（点击选择）</translation>
     </message>
     <message>
       <source>Undo: %1</source>
@@ -2794,7 +2794,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Choose brush color</source>
-      <translation>选择画笔颜色</translation>
+      <translation>选择描线颜色</translation>
     </message>
     <message>
       <source>New empty canvas created</source>
@@ -2994,23 +2994,23 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Choose border color</source>
-      <translation>选择边框颜色</translation>
+      <translation>选择描线颜色</translation>
     </message>
     <message>
       <source>Border color set; it will be used for newly inserted shapes</source>
-      <translation>已设置边框颜色，将用于新插入的图形</translation>
+      <translation>已设置描线颜色，将用于新插入的图形</translation>
     </message>
     <message>
       <source>The border color did not change</source>
-      <translation>边框颜色未发生变化</translation>
+      <translation>描线颜色未发生变化</translation>
     </message>
     <message>
       <source>Change border color</source>
-      <translation>修改边框颜色</translation>
+      <translation>修改描线颜色</translation>
     </message>
     <message>
       <source>Applied border color to %1 shape(s)</source>
-      <translation>已将边框颜色应用到 %1 个图形</translation>
+      <translation>已将描线颜色应用到 %1 个图形</translation>
     </message>
     <message>
       <source>The selected shape is stroke-only (line, brace, etc.); fill is not supported</source>
@@ -3641,15 +3641,15 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Brush defaults</source>
-      <translation>画笔默认值</translation>
+      <translation>描线默认值</translation>
     </message>
     <message>
       <source>Default color</source>
-      <translation>默认颜色</translation>
+      <translation>描线颜色</translation>
     </message>
     <message>
       <source>Default width</source>
-      <translation>默认粗细</translation>
+      <translation>描线宽度</translation>
     </message>
     <message>
       <source>0 disables automatic smoothing; larger values tolerate more hand jitter and deviation.</source>
@@ -3789,7 +3789,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Choose the default brush color</source>
-      <translation>选择默认画笔颜色</translation>
+      <translation>选择默认描线颜色</translation>
     </message>
     <message>
       <source>Choose canvas surround color</source>
@@ -4184,11 +4184,11 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
       <source>Border color</source>
-      <translation>边框颜色</translation>
+      <translation>描线颜色</translation>
     </message>
     <message>
       <source>Border width</source>
-      <translation>边框宽度</translation>
+      <translation>描线宽度</translation>
     </message>
     <message>
       <source>Image</source>
@@ -4286,7 +4286,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
       <source>Border style</source>
-      <translation>边框样式</translation>
+      <translation>描线样式</translation>
     </message>
     <message>
       <source>Opacity</source>
@@ -4717,7 +4717,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
         <source>Border style</source>
-        <translation>边框样式</translation>
+        <translation>描线样式</translation>
     </message>
     <message>
         <source>Opacity</source>
@@ -4737,7 +4737,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
         <source>Width</source>
-        <translation>粗细</translation>
+        <translation>描线宽度</translation>
     </message>
     <message>
         <source>Radius</source>
@@ -4800,7 +4800,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
 
     <message>
         <source>Border color</source>
-        <translation>边框颜色</translation>
+        <translation>描线颜色</translation>
     </message>
     <message>
         <source>Fill color</source>
@@ -4840,7 +4840,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
         <source>Change shape border color</source>
-        <translation>修改图形边框颜色</translation>
+        <translation>修改图形描线颜色</translation>
     </message>
     <message>
         <source>Change shape fill color</source>
@@ -4852,11 +4852,11 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
         <source>Change shape border style</source>
-        <translation>修改图形边框样式</translation>
+        <translation>修改图形描线样式</translation>
     </message>
     <message>
         <source>Change shape border width</source>
-        <translation>修改图形边框粗细</translation>
+        <translation>修改图形描线宽度</translation>
     </message>
     <message>
         <source>Change shape opacity</source>
@@ -4900,11 +4900,11 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         </message>
     <message>
       <source>Border</source>
-      <translation>边框</translation>
+      <translation>描线</translation>
     </message>
     <message>
       <source>Border width</source>
-      <translation>边框宽度</translation>
+      <translation>描线宽度</translation>
     </message>
   </context>
 <context>

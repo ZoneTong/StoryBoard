@@ -204,10 +204,47 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                       fillStyleImage != fillColorImage && fillColorImage != strokeColorImage,
                   QStringLiteral("填充样式、填充颜色与边框颜色使用彼此不同的图标"));
 
+        QToolButton* iconBrushColorButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("ColorButton"));
+        QAction* brushColorAction = shapeWindow.findChild<QAction*>(QStringLiteral("BrushColorAction"));
+        QAction* strokeColorAction = shapeWindow.findChild<QAction*>(QStringLiteral("BorderColorAction"));
+        const QImage brushColorImage =
+            iconBrushColorButton ? iconBrushColorButton->icon().pixmap(20, 20).toImage() : QImage();
+        // 两个按钮各自生成同一套描线图标，抗锯齿取整会带来极小像素差，按平均差异判断。
+        bool sameIconSize =
+            brushColorImage.isNull() == strokeColorImage.isNull() && brushColorImage.size() == strokeColorImage.size();
+        double iconDiff = 0.0;
+        if (sameIconSize && !brushColorImage.isNull()) {
+            for (int y = 0; y < brushColorImage.height(); ++y) {
+                for (int x = 0; x < brushColorImage.width(); ++x) {
+                    const QColor left = brushColorImage.pixelColor(x, y);
+                    const QColor right = strokeColorImage.pixelColor(x, y);
+                    const int channelDiff =
+                        qMax(qMax(qAbs(left.red() - right.red()), qAbs(left.green() - right.green())),
+                             qMax(qAbs(left.blue() - right.blue()), qAbs(left.alpha() - right.alpha())));
+                    iconDiff += channelDiff / 255.0;
+                }
+            }
+            iconDiff /= brushColorImage.width() * brushColorImage.height();
+        }
+        ctx.check(sameIconSize && iconDiff < 0.08 && brushColorAction && strokeColorAction &&
+                      brushColorAction->text() == strokeColorAction->text() &&
+                      brushColorAction->text() == QStringLiteral("描线颜色…"),
+                  QStringLiteral("画笔与描线颜色统一名称和图标"),
+                  QStringLiteral("img=%1 text=%2/%3")
+                      .arg(QString::number(iconDiff, 'f', 3))
+                      .arg(brushColorAction ? brushColorAction->text() : QStringLiteral("-"))
+                      .arg(strokeColorAction ? strokeColorAction->text() : QStringLiteral("-")));
+
         QMenu* brushWidthMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("BrushWidthMenu"));
         QComboBox* widthCombo = shapeWindow.findChild<QComboBox*>(QStringLiteral("BrushWidthCombo"));
         ctx.check(brushWidthMenu && brushWidthMenu->actions().size() == 15, QStringLiteral("画笔样式菜单提供粗细选项"),
                   QStringLiteral("actions=%1").arg(brushWidthMenu ? brushWidthMenu->actions().size() : 0));
+        ctx.check(brushWidthMenu && widthCombo && brushWidthMenu->title() == QStringLiteral("描线宽度") &&
+                      widthCombo->toolTip() == QStringLiteral("描线宽度"),
+                  QStringLiteral("菜单与工具栏统一使用描线宽度"),
+                  QStringLiteral("menu=%1 combo=%2")
+                      .arg(brushWidthMenu ? brushWidthMenu->title() : QStringLiteral("-"))
+                      .arg(widthCombo ? widthCombo->toolTip() : QStringLiteral("-")));
         if (brushWidthMenu && widthCombo && !brushWidthMenu->actions().isEmpty()) {
             const int oldWidth = widthCombo->currentData().toInt();
             QAction* twoPixel = nullptr;
@@ -328,8 +365,8 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                   QStringLiteral("shape=%1 fillStyle=%2").arg(shapeMenuIndex).arg(fillStyleMenuIndex));
 
         QAction* outlineAction = shapeWindow.findChild<QAction*>(QStringLiteral("BorderColorAction"));
-        ctx.check(outlineAction && outlineAction->text() == QStringLiteral("边框颜色…"),
-                  QStringLiteral("主窗口提供边框颜色动作"));
+        ctx.check(outlineAction && outlineAction->text() == QStringLiteral("描线颜色…"),
+                  QStringLiteral("主窗口提供描线颜色动作"));
 
         QAction* ellipseAction =
             shapeMenu ? shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_ellipse")) : nullptr;
