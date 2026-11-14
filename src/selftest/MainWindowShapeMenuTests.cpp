@@ -96,7 +96,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
 
     {
         MainWindow shapeWindow;
-        shapeWindow.resize(1200, 800);
+        shapeWindow.resize(1082, 800);
         shapeWindow.show();
         QApplication::processEvents();
 
@@ -134,6 +134,66 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                   QStringLiteral("buttons=%1 builtIn=%2").arg(toolbarShapeButtons.size()).arg(builtInShapeActions));
 
         QToolBar* mainToolBar = shapeWindow.findChild<QToolBar*>(QStringLiteral("MainToolBar"));
+        QAction* exportAction = nullptr;
+        for (QAction* action : shapeWindow.findChildren<QAction*>()) {
+            if (action->text() == QStringLiteral("导出画布…")) {
+                exportAction = action;
+                break;
+            }
+        }
+        QToolButton* exportButton = mainToolBar && exportAction
+                                        ? qobject_cast<QToolButton*>(mainToolBar->widgetForAction(exportAction))
+                                        : nullptr;
+        QToolButton* alignButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("AlignToolButton"));
+        QToolButton* morphButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("BoolToolButton"));
+        ctx.check(exportButton && exportButton->isVisible() && exportButton->width() > 0 && exportAction &&
+                      !exportAction->icon().isNull(),
+                  QStringLiteral("工具栏导出按钮正常显示"),
+                  QStringLiteral("visible=%1 width=%2 icon=%3")
+                      .arg(exportButton && exportButton->isVisible() ? 1 : 0)
+                      .arg(exportButton ? exportButton->width() : 0)
+                      .arg(exportAction && !exportAction->icon().isNull() ? 1 : 0));
+        ctx.check(alignButton && alignButton->isVisible() && alignButton->width() > 0 && !alignButton->icon().isNull(),
+                  QStringLiteral("工具栏对齐下拉按钮正常显示"),
+                  QStringLiteral("visible=%1 width=%2 icon=%3")
+                      .arg(alignButton && alignButton->isVisible() ? 1 : 0)
+                      .arg(alignButton ? alignButton->width() : 0)
+                      .arg(alignButton && !alignButton->icon().isNull() ? 1 : 0));
+        ctx.check(morphButton && morphButton->isVisible() && morphButton->width() > 0 && !morphButton->icon().isNull(),
+                  QStringLiteral("工具栏化形下拉按钮正常显示"),
+                  QStringLiteral("visible=%1 width=%2 icon=%3")
+                      .arg(morphButton && morphButton->isVisible() ? 1 : 0)
+                      .arg(morphButton ? morphButton->width() : 0)
+                      .arg(morphButton && !morphButton->icon().isNull() ? 1 : 0));
+
+        QToolButton* customShapeButton =
+            shapeWindow.findChild<QToolButton*>(QStringLiteral("ToolBarCustomShapeButton"));
+        ctx.check(customShapeButton && customShapeButton->menu() == customShapeMenu && customShapeButton->isVisible(),
+                  QStringLiteral("常见图形后追加自定义图形下拉按钮"),
+                  QStringLiteral("button=%1 menu=%2 visible=%3")
+                      .arg(customShapeButton ? 1 : 0)
+                      .arg(customShapeButton && customShapeButton->menu() == customShapeMenu ? 1 : 0)
+                      .arg(customShapeButton && customShapeButton->isVisible() ? 1 : 0));
+
+        int toolbarSeparators = 0;
+        bool hasShapeTextLabel = false;
+        if (mainToolBar) {
+            for (QAction* action : mainToolBar->actions()) {
+                if (action && action->isSeparator()) {
+                    ++toolbarSeparators;
+                }
+            }
+            for (QLabel* label : mainToolBar->findChildren<QLabel*>()) {
+                if (label->text() == QStringLiteral("图形")) {
+                    hasShapeTextLabel = true;
+                    break;
+                }
+            }
+        }
+        ctx.check(mainToolBar && toolbarSeparators <= 2 && !hasShapeTextLabel,
+                  QStringLiteral("工具栏没有多余的图形文字和分隔符"),
+                  QStringLiteral("separators=%1 shapeLabel=%2").arg(toolbarSeparators).arg(hasShapeTextLabel ? 1 : 0));
+
         bool hasRemovedToolbarEntry = false;
         if (mainToolBar) {
             for (QAction* action : mainToolBar->actions()) {
