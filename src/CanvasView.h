@@ -1,14 +1,22 @@
 #pragma once
 
+#include "CanvasContextMenuController.h"
+#include "CanvasPanController.h"
+#include "CanvasResizeController.h"
+#include "CanvasStrokeController.h"
 #include "CanvasTypes.h"
+#include "CanvasViewCursor.h"
+#include "CanvasViewHitTester.h"
+#include "CanvasZoomController.h"
 
 #include <QColor>
 #include <QGraphicsView>
 #include <QList>
+#include <memory>
 
 class CanvasItem;
 class CanvasScene;
-class StrokeItem;
+class QAction;
 class QContextMenuEvent;
 class QFocusEvent;
 
@@ -28,23 +36,23 @@ class CanvasView : public QGraphicsView {
 
     void setBrushColor(const QColor& color);
     void setBrushWidth(qreal width);
-    QColor brushColor() const { return m_brushColor; }
-    qreal brushWidth() const { return m_brushWidth; }
+    QColor brushColor() const { return m_stroke->brushColor(); }
+    qreal brushWidth() const { return m_stroke->brushWidth(); }
     // 画笔收尾自动平滑容差，单位为画布像素；0 表示关闭自动平滑。
     void setStrokeSmoothing(int tolerance);
-    int strokeSmoothing() const { return m_strokeSmoothing; }
+    int strokeSmoothing() const { return m_stroke->strokeSmoothing(); }
 
     void setCanvasColor(const QColor& color);
     void cancelCurrentStroke();
     void finishCurrentStroke();
 
     // 画板边缘拖动：扩大或裁剪画板。返回当前是否正在拖动边缘。
-    bool isResizingCanvas() const { return m_resizingCanvas; }
+    bool isResizingCanvas() const { return m_resize->isResizing(); }
 
     // 让主窗口把自己的动作组挂进右键菜单（例如布尔运算下拉），
     // 传进来的动作与菜单栏、工具栏共用同一个 QAction，状态自然同步。
     void addContextMenuGroup(const QString& title, const QList<QAction*>& actions);
-    int contextMenuGroupCount() const { return m_contextGroups.size(); }
+    int contextMenuGroupCount() const { return m_menu->groupCount(); }
 
   signals:
     void zoomChanged(qreal zoom);
@@ -68,49 +76,25 @@ class CanvasView : public QGraphicsView {
     void contextMenuEvent(QContextMenuEvent* event) override;
 
   private:
-    void applyScale(qreal factor);
-    void emitZoom();
+    friend class CanvasZoomController;
+    friend class CanvasPanController;
+    friend class CanvasResizeController;
+    friend class CanvasStrokeController;
+    friend class CanvasContextMenuController;
+
     void updateCursor();
-    void beginPan(const QPoint& position);
-    void endPan();
-
-    enum class CanvasHandle { None, TopLeft, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left };
-
-    CanvasItem* topCanvasItemAt(const QPoint& viewportPos) const;
-    // 需求 42：属性窗在所有模式可查看，因此命中图元不能依赖编辑模式。
-    CanvasItem* propertyItemAt(const QPoint& viewportPos) const;
-    CanvasItem* editableItemAt(const QPoint& viewportPos) const;
-    CanvasItem* preferredEditableItemAt(const QPoint& viewportPos) const;
-    CanvasHandle canvasHandleAt(const QPoint& viewportPos) const;
-    bool beginCanvasResize(const QPoint& viewportPos);
-    void updateCanvasResize(const QPointF& scenePos);
-    void endCanvasResize();
-    void updateCanvasHoverCursor(const QPoint& viewportPos);
-    QRectF canvasRectForDrag(const QPointF& scenePos) const;
-    void drawCanvasHandles(QPainter* painter);
-    static Qt::CursorShape canvasHandleCursor(CanvasHandle handle);
+    void baseContextMenuEvent(QContextMenuEvent* event) { QGraphicsView::contextMenuEvent(event); }
 
     CanvasScene* m_scene = nullptr;
     ToolMode m_mode = ToolMode::View;
-    StrokeItem* m_activeStroke = nullptr;
-    QColor m_brushColor = QColor(30, 41, 59);
     QColor m_canvasColor = QColor(43, 47, 54);
-    qreal m_brushWidth = 4.0;
-    int m_strokeSmoothing = 4;
     bool m_spaceDown = false;
-    bool m_panning = false;
-    QPoint m_panStart;
-    QPointF m_panCenterScene;
-    bool m_panMoved = false;
 
-    bool m_resizingCanvas = false;
-    CanvasHandle m_canvasHandle = CanvasHandle::None;
-    CanvasHandle m_hoverHandle = CanvasHandle::None;
-    QRectF m_resizeStartRect;
-
-    struct ContextMenuGroup {
-        QString title;
-        QList<QAction*> actions;
-    };
-    QList<ContextMenuGroup> m_contextGroups;
+    std::unique_ptr<CanvasZoomController> m_zoom;
+    std::unique_ptr<CanvasPanController> m_pan;
+    std::unique_ptr<CanvasResizeController> m_resize;
+    std::unique_ptr<CanvasStrokeController> m_stroke;
+    std::unique_ptr<CanvasViewHitTester> m_hits;
+    std::unique_ptr<CanvasViewCursor> m_cursor;
+    std::unique_ptr<CanvasContextMenuController> m_menu;
 };
