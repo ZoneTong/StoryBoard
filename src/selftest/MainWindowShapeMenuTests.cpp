@@ -303,37 +303,28 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                       .arg(strokeButtonX)
                       .arg(strokeWidthSpin ? strokeWidthSpin->singleStep() : 0));
 
-        QMenu* brushWidthMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("BrushWidthMenu"));
-        ctx.check(brushWidthMenu && brushWidthMenu->actions().size() == 15, QStringLiteral("画笔样式菜单提供粗细选项"),
-                  QStringLiteral("actions=%1").arg(brushWidthMenu ? brushWidthMenu->actions().size() : 0));
-        ctx.check(brushWidthMenu && strokeWidthSpin && brushWidthMenu->title() == QStringLiteral("描线宽度") &&
-                      strokeWidthSpin->toolTip() == QStringLiteral("描线宽度"),
-                  QStringLiteral("菜单与工具栏统一使用描线宽度"),
-                  QStringLiteral("menu=%1 spin=%2")
-                      .arg(brushWidthMenu ? brushWidthMenu->title() : QStringLiteral("-"))
-                      .arg(strokeWidthSpin ? strokeWidthSpin->toolTip() : QStringLiteral("-")));
-        if (brushWidthMenu && strokeWidthSpin && !brushWidthMenu->actions().isEmpty()) {
-            const int oldWidth = strokeWidthSpin->value();
-            QAction* twoPixel = nullptr;
-            for (QAction* action : brushWidthMenu->actions()) {
-                if (action->data().toInt() == 2) {
-                    twoPixel = action;
-                    break;
-                }
-            }
-            ctx.check(twoPixel && twoPixel->isCheckable(), QStringLiteral("画笔粗细菜单使用互斥可勾选选项"),
-                      QStringLiteral("current=%1").arg(oldWidth));
-            if (twoPixel) {
-                twoPixel->trigger();
-                QApplication::processEvents();
-                ctx.check(strokeWidthSpin->value() == 2 && twoPixel->isChecked(),
-                          QStringLiteral("画笔粗细菜单选项同步工具栏 SpinBox"),
-                          QStringLiteral("spin=%1 checked=%2")
-                              .arg(strokeWidthSpin->value())
-                              .arg(twoPixel->isChecked() ? 1 : 0));
-                strokeWidthSpin->setValue(oldWidth);
-                QApplication::processEvents();
-            }
+        QSpinBox* menuWidthSpin = shapeWindow.findChild<QSpinBox*>(QStringLiteral("MenuStrokeWidthSpin"));
+        QAction* widthWidgetAction = shapeWindow.findChild<QAction*>(QStringLiteral("BrushWidthWidgetAction"));
+        ctx.check(menuWidthSpin && widthWidgetAction && strokeWidthSpin && menuWidthSpin->singleStep() == 1 &&
+                      menuWidthSpin->minimum() == strokeWidthSpin->minimum() &&
+                      menuWidthSpin->maximum() == strokeWidthSpin->maximum() &&
+                      menuWidthSpin->toolTip() == QStringLiteral("描线宽度"),
+                  QStringLiteral("菜单描线宽度与工具栏使用同一规格的 SpinBox"),
+                  QStringLiteral("menuSpin=%1 action=%2 step=%3 range=%4-%5 tip=%6")
+                      .arg(menuWidthSpin ? 1 : 0)
+                      .arg(widthWidgetAction ? 1 : 0)
+                      .arg(menuWidthSpin ? menuWidthSpin->singleStep() : 0)
+                      .arg(menuWidthSpin ? menuWidthSpin->minimum() : -1)
+                      .arg(menuWidthSpin ? menuWidthSpin->maximum() : -1)
+                      .arg(menuWidthSpin ? menuWidthSpin->toolTip() : QStringLiteral("-")));
+        if (menuWidthSpin && strokeWidthSpin) {
+            const int oldWidth = menuWidthSpin->value();
+            menuWidthSpin->setValue(2);
+            QApplication::processEvents();
+            ctx.check(strokeWidthSpin->value() == 2, QStringLiteral("菜单描线宽度 SpinBox 同步工具栏"),
+                      QStringLiteral("toolbar=%1 menu=%2").arg(strokeWidthSpin->value()).arg(menuWidthSpin->value()));
+            menuWidthSpin->setValue(oldWidth);
+            QApplication::processEvents();
         }
 
         // 一级「画笔」菜单已删除：描线宽度子菜单与平滑笔画并到「插入」的描线颜色之后，
@@ -347,8 +338,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         }
         const int strokeColorIndex =
             insertActionsForOrder.indexOf(shapeWindow.findChild<QAction*>(QStringLiteral("BorderColorAction")));
-        const int widthMenuIndex =
-            insertActionsForOrder.indexOf(brushWidthMenu ? brushWidthMenu->menuAction() : nullptr);
+        const int widthMenuIndex = insertActionsForOrder.indexOf(widthWidgetAction);
         int smoothActionIndex = -1;
         for (int i = 0; i < insertActionsForOrder.size(); ++i) {
             if (insertActionsForOrder.at(i) && insertActionsForOrder.at(i)->text() == QStringLiteral("平滑笔画")) {
@@ -491,26 +481,31 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         QApplication::processEvents();
 
         QSpinBox* widthSpin = strokeWindow.findChild<QSpinBox*>(QStringLiteral("StrokeWidthSpin"));
-        QAction* widthTwo = strokeWindow.findChild<QAction*>(QStringLiteral("BrushWidthAction2"));
-        ctx.check(widthSpin && widthTwo, QStringLiteral("工具栏与菜单提供描线宽度入口"),
-                  QStringLiteral("spin=%1 action=%2").arg(widthSpin ? 1 : 0).arg(widthTwo ? 1 : 0));
-        if (widthSpin && widthTwo) {
-            const int originalWidth = widthSpin->value();
-            widthTwo->trigger();
+        QSpinBox* menuWidthSpin = strokeWindow.findChild<QSpinBox*>(QStringLiteral("MenuStrokeWidthSpin"));
+        ctx.check(widthSpin && menuWidthSpin, QStringLiteral("工具栏与菜单提供描线宽度入口"),
+                  QStringLiteral("toolbar=%1 menu=%2").arg(widthSpin ? 1 : 0).arg(menuWidthSpin ? 1 : 0));
+        if (widthSpin && menuWidthSpin) {
+            const int originalWidth = menuWidthSpin->value();
+            menuWidthSpin->setValue(2);
             QApplication::processEvents();
             ctx.check(qAbs(stroke->strokeWidth() - 2.0) < 0.01 && widthSpin->value() == 2,
                       QStringLiteral("菜单描线宽度改变选中笔画宽度"),
-                      QStringLiteral("stroke=%1 spin=%2").arg(stroke->strokeWidth()).arg(widthSpin->value()));
+                      QStringLiteral("stroke=%1 toolbar=%2 menu=%3")
+                          .arg(stroke->strokeWidth())
+                          .arg(widthSpin->value())
+                          .arg(menuWidthSpin->value()));
 
             widthSpin->setValue(7);
             QApplication::processEvents();
-            ctx.check(qAbs(stroke->strokeWidth() - 7.0) < 0.01 && strokeWindow.view()->brushWidth() == 7.0,
+            ctx.check(qAbs(stroke->strokeWidth() - 7.0) < 0.01 && strokeWindow.view()->brushWidth() == 7.0 &&
+                          menuWidthSpin->value() == 7,
                       QStringLiteral("工具栏描线宽度 SpinBox 步进 1px 并改变选中笔画宽度"),
-                      QStringLiteral("stroke=%1 brush=%2 step=%3")
+                      QStringLiteral("stroke=%1 brush=%2 step=%3 menu=%4")
                           .arg(stroke->strokeWidth())
                           .arg(strokeWindow.view()->brushWidth())
-                          .arg(widthSpin->singleStep()));
-            widthSpin->setValue(originalWidth);
+                          .arg(widthSpin->singleStep())
+                          .arg(menuWidthSpin->value()));
+            menuWidthSpin->setValue(originalWidth);
             QApplication::processEvents();
         }
 

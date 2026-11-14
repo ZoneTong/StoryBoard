@@ -123,6 +123,7 @@ class MainWindow : public QMainWindow {
     void updateFillActions();
     void setBrushColor(const QColor& color, bool remember);
     void setBrushWidthUi(int width);
+    void applyBrushWidth(int width);
     void setStrokeSmoothingUi(int tolerance);
     void updateCanvasesMenu();
     void updateBackgroundModeActions();
@@ -223,7 +224,6 @@ class MainWindow : public QMainWindow {
     QActionGroup* m_modeGroup = nullptr;
     QActionGroup* m_backgroundModeGroup = nullptr;
     QActionGroup* m_fillStyleGroup = nullptr;
-    QActionGroup* m_brushWidthGroup = nullptr;
     QMenu* m_fileMenu = nullptr;
     QAction* m_boardSectionSeparator = nullptr;
     QMenu* m_shapeMenu = nullptr;
@@ -233,6 +233,7 @@ class MainWindow : public QMainWindow {
     QToolButton* m_fillColorButton = nullptr;
     QToolButton* m_strokeColorButton = nullptr;
     QSpinBox* m_widthSpin = nullptr;
+    QSpinBox* m_menuWidthSpin = nullptr;
     QSpinBox* m_smoothingSpin = nullptr;
     QPointer<ItemPropertiesDialog> m_itemPropertiesDialog;
     std::unique_ptr<BackgroundController> m_background;

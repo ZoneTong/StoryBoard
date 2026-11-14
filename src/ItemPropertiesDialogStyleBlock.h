@@ -7,7 +7,6 @@
 #include <QWidget>
 
 class QComboBox;
-class QDoubleSpinBox;
 class QFormLayout;
 class QSpinBox;
 class QToolButton;
@@ -30,7 +29,7 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     QToolButton* fillColorButton() const { return m_fillColorButton; }
     QToolButton* strokeColorButton() const { return m_strokeColorButton; }
     QComboBox* borderStyleCombo() const { return m_borderStyleCombo; }
-    QDoubleSpinBox* strokeWidthSpin() const { return m_strokeWidthSpin; }
+    QSpinBox* strokeWidthSpin() const { return m_strokeWidthSpin; }
     QSpinBox* opacitySpin() const { return m_opacitySpin; }
     qreal initialOpacity() const { return m_initialOpacity; }
     int initialOpacityPercent() const { return m_initialOpacityPercent; }
@@ -59,7 +58,7 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     QToolButton* m_fillColorButton = nullptr;
     QToolButton* m_strokeColorButton = nullptr;
     QComboBox* m_borderStyleCombo = nullptr;
-    QDoubleSpinBox* m_strokeWidthSpin = nullptr;
+    QSpinBox* m_strokeWidthSpin = nullptr;
     QSpinBox* m_opacitySpin = nullptr;
     qreal m_initialOpacity = 1.0;
     int m_initialOpacityPercent = 100;

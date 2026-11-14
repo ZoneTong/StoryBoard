@@ -57,8 +57,7 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
         QToolButton* fillColorValue = dialog.findChild<QToolButton*>(QStringLiteral("ItemPropertiesFillColorValue"));
         QToolButton* strokeColorValue =
             dialog.findChild<QToolButton*>(QStringLiteral("ItemPropertiesStrokeColorValue"));
-        QDoubleSpinBox* strokeWidthValue =
-            dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesStrokeWidthValue"));
+        QSpinBox* strokeWidthValue = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesStrokeWidthValue"));
         QComboBox* borderStyleValue = dialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesBorderStyleValue"));
         QSpinBox* opacityValue = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesOpacityValue"));
         QSpinBox* cornerRadiusValue = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesCornerRadiusValue"));
@@ -83,8 +82,10 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
         ctx.check(fillColorValue && fillColorValue->isEnabled(), QStringLiteral("属性窗填充颜色可编辑"));
         ctx.check(strokeColorValue && strokeColorValue->isEnabled(), QStringLiteral("属性窗边框颜色可编辑"));
         ctx.check(strokeWidthValue && strokeWidthValue->isEnabled() &&
-                      qFuzzyCompare(strokeWidthValue->value(), propertyShape->strokeWidth()),
-                  QStringLiteral("属性窗边框宽度可编辑"));
+                      qFuzzyCompare(strokeWidthValue->value(), propertyShape->strokeWidth()) &&
+                      strokeWidthValue->minimum() == 1 && strokeWidthValue->maximum() == 64 &&
+                      strokeWidthValue->singleStep() == 1 && strokeWidthValue->suffix() == QStringLiteral(" px"),
+                  QStringLiteral("属性窗边框宽度可编辑且与工具栏使用同一 SpinBox 规格"));
         ctx.check(borderStyleValue && borderStyleValue->isEnabled() &&
                       borderStyleValue->currentData().toInt() == static_cast<int>(Qt::SolidLine),
                   QStringLiteral("属性窗边框样式可编辑"));
@@ -169,8 +170,7 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
                 dialog.findChild<QToolButton*>(QStringLiteral("ItemPropertiesFillColorValue"));
             QToolButton* strokeColorValue =
                 dialog.findChild<QToolButton*>(QStringLiteral("ItemPropertiesStrokeColorValue"));
-            QDoubleSpinBox* strokeWidthValue =
-                dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesStrokeWidthValue"));
+            QSpinBox* strokeWidthValue = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesStrokeWidthValue"));
             QSpinBox* cornerRadiusValue =
                 dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesCornerRadiusValue"));
             QDoubleSpinBox* positionXValue =
@@ -218,7 +218,7 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
                 strokeColorValue->setProperty("itemColor", QColor(QStringLiteral("#DC2626")));
             }
             if (strokeWidthValue) {
-                strokeWidthValue->setValue(9.0);
+                strokeWidthValue->setValue(9);
             }
             if (positionXValue) {
                 positionXValue->setValue(150.0);

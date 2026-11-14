@@ -35,7 +35,6 @@
 #include <QDialogButtonBox>
 #include <QDir>
 #include <QDockWidget>
-#include <QDoubleSpinBox>
 #include <QFile>
 #include <QFileInfo>
 #include <QFont>
@@ -488,12 +487,21 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
 
             // 边框颜色 / 宽度同时是画笔的当前颜色与宽度，改完描边后画笔立即沿用。
             QWidget* borderWidthWidget = dockPanel->findChild<QWidget*>(QStringLiteral("ItemBorderWidthRow"));
-            QDoubleSpinBox* borderWidthSpin =
-                borderWidthWidget ? borderWidthWidget->findChild<QDoubleSpinBox*>() : nullptr;
+            QSpinBox* borderWidthSpin =
+                borderWidthWidget ? borderWidthWidget->findChild<QSpinBox*>(QStringLiteral("ItemBorderWidthSpin"))
+                                  : nullptr;
             if (borderWidthSpin) {
-                borderWidthSpin->setValue(9.0);
+                borderWidthSpin->setValue(9);
                 QApplication::processEvents();
             }
+            ctx.check(borderWidthSpin && borderWidthSpin->minimum() == 1 && borderWidthSpin->maximum() == 64 &&
+                          borderWidthSpin->singleStep() == 1 && borderWidthSpin->suffix() == QStringLiteral(" px"),
+                      QStringLiteral("卡片描线宽度与工具栏使用同一 SpinBox 规格"),
+                      QStringLiteral("min=%1 max=%2 step=%3 suffix=%4")
+                          .arg(borderWidthSpin ? borderWidthSpin->minimum() : -1)
+                          .arg(borderWidthSpin ? borderWidthSpin->maximum() : -1)
+                          .arg(borderWidthSpin ? borderWidthSpin->singleStep() : 0)
+                          .arg(borderWidthSpin ? borderWidthSpin->suffix() : QStringLiteral("-")));
             ctx.check(qAbs(selectedShape->strokeWidth() - 9.0) < 0.01 && dockView &&
                           qAbs(dockView->brushWidth() - 9.0) < 0.01,
                       QStringLiteral("边框宽度同时成为画笔宽度"),
@@ -744,7 +752,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                       QStringLiteral("撤销描线颜色恢复笔画原色"), selectedStroke->strokeColor().name());
 
             if (borderWidthSpin) {
-                borderWidthSpin->setValue(11.0);
+                borderWidthSpin->setValue(11);
                 QApplication::processEvents();
             }
             ctx.check(qAbs(selectedStroke->strokeWidth() - 11.0) < 0.01, QStringLiteral("卡片描线宽度直接改变笔画宽度"),

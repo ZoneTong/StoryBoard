@@ -14,11 +14,16 @@
 #include <QAction>
 #include <QActionGroup>
 #include <QDockWidget>
+#include <QHBoxLayout>
+#include <QLabel>
 #include <QList>
 #include <QMenu>
 #include <QMenuBar>
 #include <QPair>
+#include <QSpinBox>
 #include <QStatusBar>
+#include <QWidget>
+#include <QWidgetAction>
 
 UiMenuBuilder::UiMenuBuilder(MainWindow* window) : m_window(window) {}
 
@@ -251,13 +256,28 @@ void UiMenuBuilder::buildMenus()
     // 需求 29：颜色从填充样式里分离出来，放在填充样式之后。
     insertMenu->addAction(m_window->m_fillColorAct);
     insertMenu->addAction(m_window->m_strokeColorAct);
-    // 原一级「画笔」菜单已删除：描线宽度与平滑笔画并到描线颜色后面；
-    // 画笔颜色与描线颜色重复，只保留后者。
-    QMenu* brushWidthMenu = insertMenu->addMenu(MainWindow::tr("Brush width"));
-    brushWidthMenu->setObjectName(QStringLiteral("BrushWidthMenu"));
-    for (QAction* action : m_window->m_brushWidthGroup->actions()) {
-        brushWidthMenu->addAction(action);
-    }
+    // 描线宽度在菜单、工具栏、卡片和属性窗统一使用同一种 SpinBox 控件。
+    auto* menuWidthWidget = new QWidget(insertMenu);
+    auto* menuWidthLayout = new QHBoxLayout(menuWidthWidget);
+    menuWidthLayout->setContentsMargins(12, 4, 12, 4);
+    menuWidthLayout->setSpacing(8);
+    auto* menuWidthLabel = new QLabel(MainWindow::tr("Brush width"), menuWidthWidget);
+    menuWidthLayout->addWidget(menuWidthLabel);
+    m_window->m_menuWidthSpin = new QSpinBox(menuWidthWidget);
+    m_window->m_menuWidthSpin->setObjectName(QStringLiteral("MenuStrokeWidthSpin"));
+    m_window->m_menuWidthSpin->setRange(1, 64);
+    m_window->m_menuWidthSpin->setSingleStep(1);
+    m_window->m_menuWidthSpin->setSuffix(QStringLiteral(" px"));
+    m_window->m_menuWidthSpin->setFixedWidth(74);
+    m_window->m_menuWidthSpin->setToolTip(MainWindow::tr("Brush width"));
+    menuWidthLayout->addWidget(m_window->m_menuWidthSpin);
+    QObject::connect(m_window->m_menuWidthSpin, &QSpinBox::valueChanged, m_window, &MainWindow::applyBrushWidth);
+    auto* menuWidthAction = new QWidgetAction(insertMenu);
+    menuWidthAction->setObjectName(QStringLiteral("BrushWidthWidgetAction"));
+    menuWidthAction->setText(MainWindow::tr("Brush width"));
+    menuWidthAction->setDefaultWidget(menuWidthWidget);
+    insertMenu->addAction(menuWidthAction);
+    m_window->setBrushWidthUi(m_window->m_brushWidth);
     insertMenu->addAction(m_window->m_smoothAct);
     // 需求：原“画布”菜单不再作为父菜单存在，背景相关项直接并入“插入”菜单；
     // 背景属于画布属性，排在“插入图片”之前，避免和插入类动作混在一段。

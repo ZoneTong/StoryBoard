@@ -5,7 +5,7 @@
 #include <QList>
 #include <QWidget>
 
-class QDoubleSpinBox;
+class QSpinBox;
 class QToolButton;
 class StrokeItem;
 
@@ -35,5 +35,5 @@ class ItemDockPanelFillBorderCard : public QWidget {
     bool m_refreshing = false;
     QList<QToolButton*> m_fillStyleButtons;
     QList<QToolButton*> m_borderStyleButtons;
-    QDoubleSpinBox* m_borderWidthSpin = nullptr;
+    QSpinBox* m_borderWidthSpin = nullptr;
 };

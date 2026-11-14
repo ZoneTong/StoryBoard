@@ -247,6 +247,14 @@ void MainWindow::setBrushWidthUi(int width)
     m_style->setBrushWidthUi(width);
 }
 
+void MainWindow::applyBrushWidth(int width)
+{
+    setBrushWidthUi(width);
+    m_settings.brushWidth = m_brushWidth;
+    m_settings.save();
+    m_style->applyStrokeWidthToSelection(m_brushWidth);
+}
+
 void MainWindow::setStrokeSmoothingUi(int tolerance)
 {
     m_style->setStrokeSmoothingUi(tolerance);

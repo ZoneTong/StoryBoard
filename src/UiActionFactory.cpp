@@ -37,11 +37,6 @@ QAction* makeAction(QObject* parent, IconId icon, const QString& text, const QKe
     return action;
 }
 
-QList<int> brushWidthPresets()
-{
-    return {1, 2, 3, 4, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 64};
-}
-
 } // namespace
 
 UiActionFactory::UiActionFactory(MainWindow* window) : m_window(window) {}
@@ -316,23 +311,6 @@ void UiActionFactory::build()
     m_window->m_strokeColorAct->setObjectName(QStringLiteral("BorderColorAction"));
     m_window->m_strokeColorAct->setIcon(m_window->m_style->strokeColorIcon(m_window->m_brushColor, 16));
     QObject::connect(m_window->m_strokeColorAct, &QAction::triggered, m_window, &MainWindow::chooseStrokeColor);
-
-    // 需求 31：画笔样式菜单下提供粗细选项，并与工具栏下拉共用同一个设置。
-    m_window->m_brushWidthGroup = new QActionGroup(m_window);
-    m_window->m_brushWidthGroup->setExclusive(true);
-    for (int width : brushWidthPresets()) {
-        auto* action = new QAction(QStringLiteral("%1 px").arg(width), m_window);
-        action->setObjectName(QStringLiteral("BrushWidthAction%1").arg(width));
-        action->setData(width);
-        action->setCheckable(true);
-        m_window->m_brushWidthGroup->addAction(action);
-        QObject::connect(action, &QAction::triggered, m_window, [this, width]() {
-            m_window->setBrushWidthUi(width);
-            m_window->m_settings.brushWidth = width;
-            m_window->m_settings.save();
-            m_window->m_style->applyStrokeWidthToSelection(width);
-        });
-    }
 
     auto applyBackgroundMode = [this](BackgroundMode mode) {
         BackgroundState background = m_window->m_scene->background();
