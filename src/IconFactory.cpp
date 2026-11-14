@@ -415,6 +415,15 @@ void drawIconShape(QPainter& painter, IconId id)
         painter.drawArc(QRectF(3.5, 3.5, 17.0, 17.0), -90 * 16, 180 * 16);
         break;
     }
+    case IconId::Align: {
+        // 三条左对齐的短线，表达“对齐 / 分布”。
+        painter.setPen(QPen(painter.pen().color(), 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter.drawLine(QPointF(3.5, 5.0), QPointF(3.5, 19.0));
+        painter.drawLine(QPointF(7.0, 7.5), QPointF(18.5, 7.5));
+        painter.drawLine(QPointF(7.0, 12.0), QPointF(15.0, 12.0));
+        painter.drawLine(QPointF(7.0, 16.5), QPointF(20.5, 16.5));
+        break;
+    }
     case IconId::MergeUnion:
     case IconId::MergeCombine:
     case IconId::MergeFragment:

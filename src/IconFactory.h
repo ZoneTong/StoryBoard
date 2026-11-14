@@ -42,7 +42,9 @@ enum class IconId {
     MergeCombine,
     MergeFragment,
     MergeIntersect,
-    MergeSubtract
+    MergeSubtract,
+    // 多选工具卡里的对齐入口。
+    Align
 };
 
 QIcon makeIcon(IconId id, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);

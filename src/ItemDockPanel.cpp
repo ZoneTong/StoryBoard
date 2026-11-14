@@ -8,6 +8,7 @@
 #include "Settings.h"
 #include "ShapeItem.h"
 
+#include <QAction>
 #include <QColorDialog>
 #include <QDoubleSpinBox>
 #include <QGridLayout>
@@ -163,6 +164,11 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     buildShapesSection(shapesBody);
     layout->addWidget(shapesBody);
 
+    QWidget* selectionBody = new QWidget(content);
+    buildSelectionSection(selectionBody);
+    m_selectionSection = selectionBody;
+    layout->addWidget(selectionBody);
+
     QWidget* colorsBody = new QWidget(content);
     buildColorsSection(colorsBody);
     layout->addWidget(colorsBody);
@@ -255,6 +261,56 @@ void ItemDockPanel::buildShapesSection(QWidget* body)
     connect(m_customShapeMenu, &QMenu::aboutToShow, this, &ItemDockPanel::rebuildCustomShapeMenu);
     grid->addWidget(m_customShapeButton, types.size() / 6, types.size() % 6);
     rebuildCustomShapeMenu();
+}
+
+void ItemDockPanel::buildSelectionSection(QWidget* body)
+{
+    auto* layout = new QHBoxLayout(body);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(4);
+
+    m_alignButton = new QToolButton(body);
+    m_alignButton->setObjectName(QStringLiteral("ItemAlignButton"));
+    m_alignButton->setIcon(makeIcon(IconId::Align, QColor(58, 64, 80), kSmallIconSize));
+    m_alignButton->setIconSize(QSize(kSmallIconSize, kSmallIconSize));
+    m_alignButton->setFixedSize(26, 26);
+    m_alignButton->setPopupMode(QToolButton::InstantPopup);
+    m_alignButton->setToolTip(tr("Align"));
+    m_alignMenu = new QMenu(m_alignButton);
+    m_alignMenu->setObjectName(QStringLiteral("ItemAlignMenu"));
+    m_alignButton->setMenu(m_alignMenu);
+    layout->addWidget(m_alignButton);
+
+    m_mergeButton = new QToolButton(body);
+    m_mergeButton->setObjectName(QStringLiteral("ItemMergeButton"));
+    m_mergeButton->setIcon(makeIcon(IconId::MergeUnion, QColor(58, 64, 80), kSmallIconSize));
+    m_mergeButton->setIconSize(QSize(kSmallIconSize, kSmallIconSize));
+    m_mergeButton->setFixedSize(26, 26);
+    m_mergeButton->setPopupMode(QToolButton::InstantPopup);
+    m_mergeButton->setToolTip(tr("Merge shapes"));
+    m_mergeMenu = new QMenu(m_mergeButton);
+    m_mergeMenu->setObjectName(QStringLiteral("ItemMergeMenu"));
+    m_mergeButton->setMenu(m_mergeMenu);
+    layout->addWidget(m_mergeButton);
+    layout->addStretch(1);
+
+    body->setVisible(false);
+}
+
+void ItemDockPanel::setSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions)
+{
+    if (m_alignMenu) {
+        m_alignMenu->clear();
+        for (QAction* action : alignActions) {
+            m_alignMenu->addAction(action);
+        }
+    }
+    if (m_mergeMenu) {
+        m_mergeMenu->clear();
+        for (QAction* action : boolActions) {
+            m_mergeMenu->addAction(action);
+        }
+    }
 }
 
 void ItemDockPanel::buildColorsSection(QWidget* body)
@@ -612,7 +668,26 @@ void ItemDockPanel::updateSummary()
 
 void ItemDockPanel::updateSections()
 {
+    const QList<CanvasItem*> items = selectedItems();
     const QList<ShapeItem*> shapes = selectedShapes();
+    const bool multiSelection = items.size() >= 2;
+    if (m_selectionSection) {
+        m_selectionSection->setVisible(multiSelection);
+    }
+    if (m_alignButton) {
+        bool anyEnabled = false;
+        for (QAction* action : m_alignMenu->actions()) {
+            anyEnabled = anyEnabled || action->isEnabled();
+        }
+        m_alignButton->setEnabled(anyEnabled);
+    }
+    if (m_mergeButton) {
+        bool anyEnabled = false;
+        for (QAction* action : m_mergeMenu->actions()) {
+            anyEnabled = anyEnabled || action->isEnabled();
+        }
+        m_mergeButton->setEnabled(anyEnabled);
+    }
     bool hasCorner = false;
     bool hasArc = false;
     for (ShapeItem* shape : shapes) {

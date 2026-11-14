@@ -933,6 +933,11 @@ void MainWindow::createMenus()
                 [this, operation = boolEntries.at(i).first]() { applyBoolOperation(operation); });
         m_boolActions.append(action);
     }
+    // 多选时编辑图元卡直接复用同一批对齐 / 合并形状动作，快捷键与启用状态不用再维护一份。
+    if (m_docks && m_docks->itemPanel()) {
+        m_docks->itemPanel()->setSelectionActions(m_alignActions, m_boolActions);
+        m_docks->itemPanel()->refresh();
+    }
 
     // 需求：原“样式”菜单拆开——“画笔样式”独立为一级菜单“画笔”，
     // 填充样式与填充／描边颜色并入“插入”菜单，紧跟在“常见图形”之后。

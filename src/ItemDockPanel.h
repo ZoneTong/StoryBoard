@@ -8,6 +8,7 @@
 
 class CanvasScene;
 class CanvasItem;
+class QAction;
 class QLabel;
 class QMenu;
 class QSpinBox;
@@ -24,6 +25,8 @@ class ItemDockPanel : public QWidget {
     explicit ItemDockPanel(CanvasScene* scene, QWidget* parent = nullptr);
 
     void refresh();
+    // 多选时复用主窗口的对齐 / 合并形状动作，保证菜单、工具栏与卡片行为一致。
+    void setSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions);
 
   signals:
     // 没有选中图形时，点常见图形按“插入”处理，交给主窗口沿用当前画笔与填充设置。
@@ -34,6 +37,7 @@ class ItemDockPanel : public QWidget {
 
   private:
     void buildShapesSection(QWidget* body);
+    void buildSelectionSection(QWidget* body);
     void buildColorsSection(QWidget* body);
     void buildFillSection(QWidget* body);
     void buildBorderSection(QWidget* body);
@@ -73,6 +77,11 @@ class ItemDockPanel : public QWidget {
     CanvasScene* m_scene = nullptr;
     QLabel* m_titleLabel = nullptr;
     QLabel* m_metaLabel = nullptr;
+    QWidget* m_selectionSection = nullptr;
+    QToolButton* m_alignButton = nullptr;
+    QToolButton* m_mergeButton = nullptr;
+    QMenu* m_alignMenu = nullptr;
+    QMenu* m_mergeMenu = nullptr;
     QWidget* m_cornerSection = nullptr;
     QWidget* m_angleSection = nullptr;
     QWidget* m_radiusSection = nullptr;

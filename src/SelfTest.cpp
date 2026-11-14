@@ -5488,6 +5488,22 @@ int runSelfTest(const QString& reportPath)
             dockScene->undoStack()->undo();
             check(selectedShape->height() == heightBefore, QStringLiteral("撤销高度 +1 恢复原高度"));
 
+            // 多选时卡片提供对齐与合并形状入口，复用菜单栏同一批动作。
+            auto* secondShape = new ShapeItem(ShapeType::Rectangle);
+            secondShape->setPos(QPointF(420.0, 240.0));
+            secondShape->setContentSize(QSizeF(120.0, 90.0));
+            secondShape->setStyle(QColor(QStringLiteral("#1D4ED8")), QColor(29, 78, 216, 40), 3.0);
+            dockScene->addItemsWithUndo({secondShape}, QStringLiteral("Add second shape"));
+            selectedShape->setSelected(true);
+            secondShape->setSelected(true);
+            QApplication::processEvents();
+            QToolButton* alignButton = dockPanel->findChild<QToolButton*>(QStringLiteral("ItemAlignButton"));
+            QToolButton* mergeButton = dockPanel->findChild<QToolButton*>(QStringLiteral("ItemMergeButton"));
+            check(alignButton && mergeButton && alignButton->isVisible() && mergeButton->isVisible() &&
+                      alignButton->menu() && alignButton->menu()->actions().size() == 8 && mergeButton->menu() &&
+                      mergeButton->menu()->actions().size() == 5,
+                  QStringLiteral("多选时编辑图元卡提供对齐与合并形状按钮"));
+
             dockScene->clearSelection();
             QApplication::processEvents();
             check(!itemDock->isVisible(), QStringLiteral("清空选中后隐藏编辑图元卡"));

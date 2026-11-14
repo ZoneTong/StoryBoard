@@ -4842,5 +4842,13 @@ In edit mode, items on visible, unlocked layers can be edited</source>
             <source>Change shape radius</source>
             <translation>修改图形半径</translation>
         </message>
+        <message>
+            <source>Align</source>
+            <translation>对齐</translation>
+        </message>
+        <message>
+            <source>Merge shapes</source>
+            <translation>合并形状</translation>
+        </message>
 </context>
 </TS>
