@@ -215,6 +215,43 @@ class ItemPropertiesCommand : public QUndoCommand {
     ItemPropertiesState m_after;
 };
 
+// 描线颜色 / 宽度同时作用于选中的图形和笔画，一次修改只占一条撤销记录。
+class ItemStrokeStyleCommand : public QUndoCommand {
+  public:
+    ItemStrokeStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<QColor>& beforeColors,
+                           const QList<qreal>& beforeWidths, const QList<QColor>& afterColors,
+                           const QList<qreal>& afterWidths, const QString& text);
+    void undo() override;
+    void redo() override;
+
+  private:
+    void apply(const QList<QColor>& colors, const QList<qreal>& widths);
+
+    CanvasScene* m_scene = nullptr;
+    QList<QPointer<CanvasItem>> m_items;
+    QList<QColor> m_beforeColors;
+    QList<qreal> m_beforeWidths;
+    QList<QColor> m_afterColors;
+    QList<qreal> m_afterWidths;
+};
+
+// 透明度对图形、笔画、文字、图片等所有图元都生效。
+class ItemOpacityCommand : public QUndoCommand {
+  public:
+    ItemOpacityCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<qreal>& before,
+                       const QList<qreal>& after, const QString& text);
+    void undo() override;
+    void redo() override;
+
+  private:
+    void apply(const QList<qreal>& values);
+
+    CanvasScene* m_scene = nullptr;
+    QList<QPointer<CanvasItem>> m_items;
+    QList<qreal> m_before;
+    QList<qreal> m_after;
+};
+
 class LayerStateCommand : public QUndoCommand {
   public:
     LayerStateCommand(CanvasScene* scene, const LayerStackState& before, const LayerStackState& after,

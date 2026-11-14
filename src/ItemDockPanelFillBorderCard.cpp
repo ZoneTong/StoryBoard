@@ -4,6 +4,7 @@
 #include "ItemDockPanel.h"
 #include "ItemStyleVisuals.h"
 #include "ShapeItem.h"
+#include "StrokeItem.h"
 
 #include <QDoubleSpinBox>
 #include <QHBoxLayout>
@@ -109,7 +110,7 @@ ItemDockPanelFillBorderCard::ItemDockPanelFillBorderCard(QWidget* parent) : QWid
     m_borderWidthRow->setObjectName(QStringLiteral("ItemBorderWidthRow"));
 }
 
-void ItemDockPanelFillBorderCard::refresh(const QList<ShapeItem*>& shapes)
+void ItemDockPanelFillBorderCard::refresh(const QList<ShapeItem*>& shapes, const QList<StrokeItem*>& strokes)
 {
     m_refreshing = true;
 
@@ -125,8 +126,15 @@ void ItemDockPanelFillBorderCard::refresh(const QList<ShapeItem*>& shapes)
         m_borderStyleButtons.at(index)->setChecked(!shapes.isEmpty() && penStyles.at(index) == currentStyle);
     }
     if (m_borderWidthSpin) {
-        m_borderWidthSpin->setEnabled(!shapes.isEmpty());
-        m_borderWidthSpin->setValue(shapes.isEmpty() ? 4.0 : shapes.first()->strokeWidth());
+        const bool hasTargets = !shapes.isEmpty() || !strokes.isEmpty();
+        m_borderWidthSpin->setEnabled(hasTargets);
+        qreal width = 4.0;
+        if (!shapes.isEmpty()) {
+            width = shapes.first()->strokeWidth();
+        } else if (!strokes.isEmpty()) {
+            width = strokes.first()->strokeWidth();
+        }
+        m_borderWidthSpin->setValue(width);
     }
 
     m_refreshing = false;

@@ -9,6 +9,7 @@
 #include "ItemDockPanelSelectionCard.h"
 #include "ItemDockPanelValueCard.h"
 #include "ShapeItem.h"
+#include "StrokeItem.h"
 
 #include <QLabel>
 #include <QScrollArea>
@@ -123,6 +124,28 @@ QList<ShapeItem*> ItemDockPanel::selectedShapes() const
     return shapes;
 }
 
+QList<StrokeItem*> ItemDockPanel::selectedStrokes() const
+{
+    QList<StrokeItem*> strokes;
+    for (CanvasItem* item : selectedItems()) {
+        if (auto* stroke = dynamic_cast<StrokeItem*>(item)) {
+            strokes.append(stroke);
+        }
+    }
+    return strokes;
+}
+
+QList<CanvasItem*> ItemDockPanel::selectedStrokeTargets() const
+{
+    QList<CanvasItem*> targets;
+    for (CanvasItem* item : selectedItems()) {
+        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<StrokeItem*>(item)) {
+            targets.append(item);
+        }
+    }
+    return targets;
+}
+
 void ItemDockPanel::scheduleRefresh()
 {
     if (m_refreshing) {
@@ -142,6 +165,7 @@ void ItemDockPanel::refresh()
 
     const QList<CanvasItem*> items = selectedItems();
     const QList<ShapeItem*> shapes = selectedShapes();
+    const QList<StrokeItem*> strokes = selectedStrokes();
     m_selectionCard->setSelectionState(!items.isEmpty(), selectionGroupUseful(items));
 
     bool hasCorner = false;
@@ -170,9 +194,13 @@ void ItemDockPanel::refresh()
     m_fillBorderCard->fillStyleRow()->setVisible(showFillRows);
     m_colorsCard->fillColorRow()->setVisible(showFillRows);
 
-    m_colorsCard->refresh(shapes);
-    m_fillBorderCard->refresh(shapes);
-    m_valueCard->refresh(shapes);
+    // 描线样式只对图形有意义；只选中笔画时不需要显示这一行。
+    const bool showBorderStyleRow = items.isEmpty() || !shapes.isEmpty();
+    m_fillBorderCard->borderStyleRow()->setVisible(showBorderStyleRow);
+
+    m_colorsCard->refresh(shapes, strokes);
+    m_fillBorderCard->refresh(shapes, strokes);
+    m_valueCard->refresh(shapes, items);
     m_arrangeCard->refresh(!selectedItems().isEmpty());
 
     m_refreshing = false;
@@ -251,13 +279,37 @@ void ItemDockPanel::changeSelectedShapes(const QString& text, const std::functio
 
 void ItemDockPanel::applyStrokeColor(const QColor& color)
 {
-    if (!color.isValid()) {
+    const QList<CanvasItem*> items = selectedStrokeTargets();
+    if (!color.isValid() || items.isEmpty() || !m_scene || !m_scene->undoStack()) {
         return;
     }
     emit strokeColorPicked(color);
-    changeSelectedShapes(tr("Change shape border color"), [color](ShapeItem* shape) {
-        shape->setStyle(color, shape->fillColor(), shape->strokeWidth());
-    });
+
+    QList<QColor> beforeColors;
+    QList<qreal> beforeWidths;
+    QList<QColor> afterColors;
+    QList<qreal> afterWidths;
+    m_refreshing = true;
+    for (CanvasItem* item : items) {
+        if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+            beforeColors.append(shape->strokeColor());
+            beforeWidths.append(shape->strokeWidth());
+            shape->setStyle(color, shape->fillColor(), shape->strokeWidth());
+            afterColors.append(shape->strokeColor());
+            afterWidths.append(shape->strokeWidth());
+        } else if (auto* stroke = dynamic_cast<StrokeItem*>(item)) {
+            beforeColors.append(stroke->strokeColor());
+            beforeWidths.append(stroke->strokeWidth());
+            stroke->setStyle(color, stroke->strokeWidth());
+            afterColors.append(stroke->strokeColor());
+            afterWidths.append(stroke->strokeWidth());
+        }
+    }
+    m_refreshing = false;
+
+    m_scene->undoStack()->push(new ItemStrokeStyleCommand(m_scene, items, beforeColors, beforeWidths, afterColors,
+                                                          afterWidths, tr("Change border color")));
+    refresh();
 }
 
 void ItemDockPanel::applyFillColor(const QColor& color)
@@ -282,16 +334,64 @@ void ItemDockPanel::applyBorderStyle(Qt::PenStyle style)
 
 void ItemDockPanel::applyBorderWidth(qreal width)
 {
+    const QList<CanvasItem*> items = selectedStrokeTargets();
+    if (items.isEmpty() || !m_scene || !m_scene->undoStack()) {
+        return;
+    }
     emit borderWidthPicked(width);
-    changeSelectedShapes(tr("Change shape border width"), [width](ShapeItem* shape) {
-        shape->setStyle(shape->strokeColor(), shape->fillColor(), width);
-    });
+
+    QList<QColor> beforeColors;
+    QList<qreal> beforeWidths;
+    QList<QColor> afterColors;
+    QList<qreal> afterWidths;
+    m_refreshing = true;
+    for (CanvasItem* item : items) {
+        if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+            beforeColors.append(shape->strokeColor());
+            beforeWidths.append(shape->strokeWidth());
+            shape->setStyle(shape->strokeColor(), shape->fillColor(), width);
+            afterColors.append(shape->strokeColor());
+            afterWidths.append(shape->strokeWidth());
+        } else if (auto* stroke = dynamic_cast<StrokeItem*>(item)) {
+            beforeColors.append(stroke->strokeColor());
+            beforeWidths.append(stroke->strokeWidth());
+            stroke->setStyle(stroke->strokeColor(), width);
+            afterColors.append(stroke->strokeColor());
+            afterWidths.append(stroke->strokeWidth());
+        }
+    }
+    m_refreshing = false;
+
+    m_scene->undoStack()->push(new ItemStrokeStyleCommand(m_scene, items, beforeColors, beforeWidths, afterColors,
+                                                          afterWidths, tr("Change border width")));
+    refresh();
 }
 
 void ItemDockPanel::applyOpacity(int percent)
 {
-    changeSelectedShapes(tr("Change shape opacity"),
-                         [percent](ShapeItem* shape) { shape->setOpacity(percent / 100.0); });
+    const QList<CanvasItem*> items = selectedItems();
+    if (items.isEmpty() || !m_scene || !m_scene->undoStack()) {
+        return;
+    }
+
+    QList<qreal> before;
+    QList<qreal> after;
+    m_refreshing = true;
+    for (CanvasItem* item : items) {
+        auto* shape = dynamic_cast<ShapeItem*>(item);
+        const qreal previous = shape ? shape->opacity() : item->opacity();
+        before.append(previous);
+        if (shape) {
+            shape->setOpacity(percent / 100.0);
+        } else {
+            item->setOpacity(percent / 100.0);
+        }
+        after.append(shape ? shape->opacity() : item->opacity());
+    }
+    m_refreshing = false;
+
+    m_scene->undoStack()->push(new ItemOpacityCommand(m_scene, items, before, after, tr("Change opacity")));
+    refresh();
 }
 
 void ItemDockPanel::applyCornerRadius(int radius)

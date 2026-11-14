@@ -1,5 +1,6 @@
 #include "ItemDockPanelValueCard.h"
 
+#include "CanvasItem.h"
 #include "IconFactory.h"
 #include "ItemDockPanel.h"
 #include "ShapeItem.h"
@@ -122,14 +123,19 @@ ItemDockPanelValueCard::ItemDockPanelValueCard(QWidget* parent) : QWidget(parent
     outer->addWidget(m_radiusSection);
 }
 
-void ItemDockPanelValueCard::refresh(const QList<ShapeItem*>& shapes)
+void ItemDockPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QList<CanvasItem*>& items)
 {
     m_refreshing = true;
 
     const bool enabled = !shapes.isEmpty();
     if (m_opacitySpin) {
-        m_opacitySpin->setEnabled(enabled);
-        m_opacitySpin->setValue(shapes.isEmpty() ? 100 : qRound(shapes.first()->opacity() * 100.0));
+        m_opacitySpin->setEnabled(!items.isEmpty());
+        qreal opacity = 1.0;
+        if (!items.isEmpty()) {
+            auto* shape = dynamic_cast<ShapeItem*>(items.first());
+            opacity = shape ? shape->opacity() : items.first()->opacity();
+        }
+        m_opacitySpin->setValue(qRound(opacity * 100.0));
     }
     if (m_cornerSpin) {
         m_cornerSpin->setEnabled(enabled);

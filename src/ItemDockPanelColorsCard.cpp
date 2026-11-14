@@ -4,6 +4,7 @@
 #include "ItemDockPanel.h"
 #include "ItemStyleVisuals.h"
 #include "ShapeItem.h"
+#include "StrokeItem.h"
 
 #include <QColorDialog>
 #include <QHBoxLayout>
@@ -90,7 +91,7 @@ QWidget* ItemDockPanelColorsCard::makeColorRow(bool stroke)
     custom->setFixedSize(20, 20);
     custom->setIconSize(QSize(kSmallIconSize, kSmallIconSize));
     custom->setIcon(stroke ? ItemStyleVisuals::borderColorIcon(m_strokeFallback, kSmallIconSize)
-                          : ItemStyleVisuals::fillColorIcon(m_fillFallback, kSmallIconSize));
+                           : ItemStyleVisuals::fillColorIcon(m_fillFallback, kSmallIconSize));
     custom->setToolTip(stroke ? ItemDockPanel::tr("Border color") : ItemDockPanel::tr("Fill color"));
     connect(custom, &QToolButton::clicked, this, [this, stroke]() {
         const QColor initial = stroke ? m_strokeFallback : m_fillFallback;
@@ -117,9 +118,15 @@ QWidget* ItemDockPanelColorsCard::makeColorRow(bool stroke)
     return row;
 }
 
-void ItemDockPanelColorsCard::refresh(const QList<ShapeItem*>& shapes)
+void ItemDockPanelColorsCard::refresh(const QList<ShapeItem*>& shapes, const QList<StrokeItem*>& strokes)
 {
-    m_strokeFallback = shapes.isEmpty() ? QColor(QStringLiteral("#1E293B")) : shapes.first()->strokeColor();
+    QColor strokeFallback = QColor(QStringLiteral("#1E293B"));
+    if (!shapes.isEmpty()) {
+        strokeFallback = shapes.first()->strokeColor();
+    } else if (!strokes.isEmpty()) {
+        strokeFallback = strokes.first()->strokeColor();
+    }
+    m_strokeFallback = strokeFallback;
     m_fillFallback = shapes.isEmpty() ? QColor(QStringLiteral("#1E293B")) : shapes.first()->fillColor();
     for (QToolButton* swatch : m_strokeSwatches) {
         const QColor color = swatch->property("swatchColor").value<QColor>();
