@@ -3,6 +3,7 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "CanvasView.h"
+#include "DocumentController.h"
 #include "ExportDialog.h"
 #include "I18n.h"
 #include "ImageItem.h"
@@ -15,12 +16,14 @@
 #include <QDesktopServices>
 #include <QDialog>
 #include <QDir>
+#include <QDropEvent>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QImage>
 #include <QImageReader>
 #include <QImageWriter>
 #include <QMessageBox>
+#include <QMimeData>
 #include <QPageLayout>
 #include <QPageSize>
 #include <QPainter>
@@ -53,6 +56,13 @@ void reportWarning(QWidget* parent, const QString& title, const QString& text)
 QString imageFilter()
 {
     return MainWindow::tr("Image files (*.png *.jpg *.jpeg *.bmp *.gif);;All files (*.*)");
+}
+
+bool hasImageSuffix(const QString& path)
+{
+    static const QStringList suffixes = {QStringLiteral("png"), QStringLiteral("jpg"), QStringLiteral("jpeg"),
+                                         QStringLiteral("bmp"), QStringLiteral("gif")};
+    return suffixes.contains(QFileInfo(path).suffix().toLower());
 }
 
 } // namespace
@@ -409,5 +419,52 @@ void ImportExportController::importImageFiles(const QStringList& files)
         reportWarning(m_window, MainWindow::tr("Some images were not inserted"),
                       MainWindow::tr("The following files could not be read:\n%1")
                           .arg(QDir::toNativeSeparators(failed.join(QLatin1Char('\n')))));
+    }
+}
+
+bool ImportExportController::acceptsDropUrls(const QMimeData* mimeData) const
+{
+    if (!mimeData || !mimeData->hasUrls()) {
+        return false;
+    }
+    for (const QUrl& url : mimeData->urls()) {
+        if (!url.isLocalFile()) {
+            continue;
+        }
+        const QString path = url.toLocalFile();
+        if (hasImageSuffix(path) || path.endsWith(QStringLiteral(".sbcanvas"), Qt::CaseInsensitive)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void ImportExportController::handleDrop(QDropEvent* event)
+{
+    QStringList images;
+    QString canvasPath;
+
+    for (const QUrl& url : event->mimeData()->urls()) {
+        if (!url.isLocalFile()) {
+            continue;
+        }
+        const QString path = url.toLocalFile();
+        if (path.endsWith(QStringLiteral(".sbcanvas"), Qt::CaseInsensitive)) {
+            canvasPath = path;
+        } else if (hasImageSuffix(path)) {
+            images.append(path);
+        }
+    }
+
+    if (!canvasPath.isEmpty() && images.isEmpty()) {
+        if (m_window->m_document->loadCanvasFile(canvasPath, true)) {
+            event->acceptProposedAction();
+        }
+        return;
+    }
+
+    if (!images.isEmpty()) {
+        importImageFiles(images);
+        event->acceptProposedAction();
     }
 }

@@ -1,13 +1,19 @@
 #pragma once
 
-class MainWindow;
-class QToolBar;
+#include <memory>
 
-// 界面搭建：动作、菜单、工具栏与状态栏的创建顺序、文案、objectName 与尺寸常量
-// 与原 MainWindow 保持一致；QAction / 控件所有权仍归 MainWindow，本类只负责构建代码。
+class MainWindow;
+class UiActionFactory;
+class UiMenuBuilder;
+class UiToolBarBuilder;
+class UiStatusBarBuilder;
+
+// 界面搭建门面：动作定义、菜单、工具栏、状态栏分别由四个职责类完成，本类只持有
+// 它们并按原顺序转发构建调用；QAction / 控件所有权仍归 MainWindow。
 class UiBuilderController {
   public:
     explicit UiBuilderController(MainWindow* window);
+    ~UiBuilderController();
 
     void buildActions();
     void buildShapeMenu();
@@ -16,8 +22,9 @@ class UiBuilderController {
     void buildStatusBar();
 
   private:
-    void createBrushToolbar(QToolBar* mainBar);
-    void createFillToolbar(QToolBar* mainBar);
-
     MainWindow* m_window = nullptr;
+    std::unique_ptr<UiActionFactory> m_actions;
+    std::unique_ptr<UiMenuBuilder> m_menus;
+    std::unique_ptr<UiToolBarBuilder> m_toolBars;
+    std::unique_ptr<UiStatusBarBuilder> m_statusBar;
 };

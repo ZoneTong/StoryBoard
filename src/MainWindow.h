@@ -32,6 +32,13 @@ class ImportExportController;
 class StyleController;
 class ViewStatusController;
 class UiBuilderController;
+class UiActionFactory;
+class UiMenuBuilder;
+class UiToolBarBuilder;
+class UiStatusBarBuilder;
+class MainWindowEditActionsController;
+class MainWindowInsertController;
+class MainWindowAppController;
 class QAction;
 class QActionGroup;
 class QComboBox;
@@ -87,7 +94,6 @@ class MainWindow : public QMainWindow {
     void showSettings();
     void showAbout();
     void showShortcuts();
-    void fitAll();
     void setToolMode(ToolMode mode);
     void updateTitle();
     void updateActions();
@@ -108,13 +114,6 @@ class MainWindow : public QMainWindow {
     // 合并形状：联合 / 组合 / 拆分 / 相交 / 剪除，结果替换为一个合并图形，只记一条撤销。
     void applyBoolOperation(BoolOps::Operation operation);
 
-    bool maybeSave();
-    bool loadCanvasFile(const QString& path, bool showErrors);
-    bool saveToFile(const QString& path);
-    bool exportToFile(const QString& path, const QRectF& area, qreal scale, const QString& format,
-                      bool showCompletion = true, int layerId = -1);
-    void importImageFiles(const QStringList& files);
-    void importOutlineImageFile(const QString& file, const LineArtConverter::Options& options);
     void insertShape(ShapeType type);
     void insertCustomShape(const QString& filePath);
     void openShapesFolder();
@@ -122,7 +121,6 @@ class MainWindow : public QMainWindow {
     void setFillStyle(FillStyle style);
     void chooseFillColor();
     void chooseStrokeColor();
-    void applyFillToSelection();
     void updateFillActions();
     void setBrushColor(const QColor& color, bool remember);
     void setBrushWidthUi(int width);
@@ -133,7 +131,6 @@ class MainWindow : public QMainWindow {
     void showItemProperties(CanvasItem* item);
     void rotateSelected(qreal degrees);
     void closeItemProperties();
-    QString documentName() const;
 
   private:
     friend class BackgroundController;
@@ -144,6 +141,13 @@ class MainWindow : public QMainWindow {
     friend class StyleController;
     friend class ViewStatusController;
     friend class UiBuilderController;
+    friend class UiActionFactory;
+    friend class UiMenuBuilder;
+    friend class UiToolBarBuilder;
+    friend class UiStatusBarBuilder;
+    friend class MainWindowEditActionsController;
+    friend class MainWindowInsertController;
+    friend class MainWindowAppController;
 
     CanvasScene* m_scene = nullptr;
     CanvasView* m_view = nullptr;
@@ -242,6 +246,9 @@ class MainWindow : public QMainWindow {
     std::unique_ptr<StyleController> m_style;
     std::unique_ptr<ViewStatusController> m_viewStatus;
     std::unique_ptr<UiBuilderController> m_ui;
+    std::unique_ptr<MainWindowEditActionsController> m_editActions;
+    std::unique_ptr<MainWindowInsertController> m_insert;
+    std::unique_ptr<MainWindowAppController> m_app;
 
     QLabel* m_hintLabel = nullptr;
     QLabel* m_modeBadge = nullptr;

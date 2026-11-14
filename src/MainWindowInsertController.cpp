@@ -1,0 +1,239 @@
+#include "MainWindowInsertController.h"
+
+#include "CanvasScene.h"
+#include "CanvasView.h"
+#include "CustomShapeTemplates.h"
+#include "IconFactory.h"
+#include "MainWindow.h"
+#include "Settings.h"
+#include "ShapeItem.h"
+#include "TextItem.h"
+
+#include <QAction>
+#include <QApplication>
+#include <QDesktopServices>
+#include <QDir>
+#include <QFileInfo>
+#include <QMenu>
+#include <QMessageBox>
+#include <QStatusBar>
+#include <QUrl>
+#include <QtMath>
+
+namespace {
+
+bool selfTestMode()
+{
+    return qApp && qApp->property("storyboardSelfTest").toBool();
+}
+
+// 与 MainWindow 相同的报错出口：自检（离屏）时不许弹模态框。
+void reportWarning(QWidget* parent, const QString& title, const QString& text)
+{
+    if (selfTestMode()) {
+        qWarning("self-test suppressed dialog [%s]: %s", qUtf8Printable(title), qUtf8Printable(text));
+        return;
+    }
+    QMessageBox::warning(parent, title, text);
+}
+
+} // namespace
+
+MainWindowInsertController::MainWindowInsertController(MainWindow* window) : m_window(window) {}
+
+void MainWindowInsertController::insertTextAt(const QPointF& scenePos)
+{
+    auto* item = new TextItem();
+    item->setTextFormat(MainWindow::tr("Text"), item->textFont(), m_window->m_brushColor);
+
+    const QRectF canvas = m_window->m_scene->canvasRect();
+    const QSizeF size = item->contentSize();
+    qreal x = scenePos.x() - size.width() / 2.0;
+    qreal y = scenePos.y() - size.height() / 2.0;
+    x = qBound(canvas.left(), x, qMax(canvas.left(), canvas.right() - size.width()));
+    y = qBound(canvas.top(), y, qMax(canvas.top(), canvas.bottom() - size.height()));
+    item->setPos(QPointF(x, y));
+
+    m_window->setToolMode(ToolMode::Edit);
+    m_window->m_scene->addItemsWithUndo({item}, MainWindow::tr("Add text"));
+    item->setSelected(true);
+    m_window->m_view->setFocus();
+    m_window->statusBar()->showMessage(MainWindow::tr("Text item added"), 4000);
+
+    // 文字正文现在由属性窗直接编辑；添加后立即打开属性窗，避免再维护独立
+    // 的文字输入对话框。
+    m_window->showItemProperties(item);
+}
+
+void MainWindowInsertController::insertShape(ShapeType type)
+{
+    if (m_window->m_view->mode() != ToolMode::Edit) {
+        m_window->setToolMode(ToolMode::Edit);
+    }
+
+    if (!m_window->m_scene->isActiveLayerWritable()) {
+        m_window->statusBar()->showMessage(
+            MainWindow::tr("The current layer is locked or hidden; shapes cannot be "
+                           "inserted. Unlock or switch layers in the layer panel first."),
+            5000);
+        return;
+    }
+
+    auto* item = new ShapeItem(type);
+    const QColor stroke =
+        m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
+    QColor fill = stroke;
+    fill.setAlpha(36);
+    if (m_window->m_fillColor.isValid()) {
+        fill = m_window->m_fillColor;
+    }
+    const bool filled = shapeTypeIsFilled(type) && m_window->m_fillStyle != FillStyle::None;
+    item->setStyle(stroke, filled ? fill : QColor(Qt::transparent), qBound<qreal>(2.5, m_window->m_brushWidth, 10.0));
+    item->setFillStyle(filled ? m_window->m_fillStyle : FillStyle::None);
+
+    const QRectF canvas = m_window->m_scene->canvasRect();
+    QSizeF size = defaultShapeSize(type);
+    const qreal fitScale = qMin<qreal>(1.0, qMin(canvas.width() * 0.72 / qMax<qreal>(1.0, size.width()),
+                                                 canvas.height() * 0.72 / qMax<qreal>(1.0, size.height())));
+    size *= fitScale;
+
+    QPointF center = m_window->m_view->mapToScene(m_window->m_view->viewport()->rect().center());
+    if (!canvas.contains(center)) {
+        center = canvas.center();
+    }
+    const qreal cascade = (m_window->m_scene->canvasItemCount() % 5) * 18.0;
+    center += QPointF(cascade, cascade);
+    center.setX(qBound(canvas.left() + size.width() / 2.0, center.x(), canvas.right() - size.width() / 2.0));
+    center.setY(qBound(canvas.top() + size.height() / 2.0, center.y(), canvas.bottom() - size.height() / 2.0));
+
+    item->setPos(center - QPointF(size.width() / 2.0, size.height() / 2.0));
+    item->setContentSize(size);
+
+    m_window->m_scene->clearSelection();
+    m_window->m_scene->addItemsWithUndo({item}, MainWindow::tr("Insert %1").arg(shapeTypeName(type)));
+    item->setSelected(true);
+    m_window->m_view->setFocus();
+    if (type == ShapeType::Ellipse) {
+        m_window->statusBar()->showMessage(
+            MainWindow::tr("Inserted a circle; in edit mode drag a handle to stretch it into an ellipse"), 5000);
+    } else {
+        m_window->statusBar()->showMessage(
+            MainWindow::tr("Inserted %1; drag to move, drag handles to resize, color follows the current brush")
+                .arg(shapeTypeName(type)),
+            5000);
+    }
+}
+
+void MainWindowInsertController::insertCustomShape(const QString& filePath)
+{
+    if (m_window->m_view->mode() != ToolMode::Edit) {
+        m_window->setToolMode(ToolMode::Edit);
+    }
+
+    if (!m_window->m_scene->isActiveLayerWritable()) {
+        m_window->statusBar()->showMessage(
+            MainWindow::tr("The current layer is locked or hidden; shapes cannot be "
+                           "inserted. Unlock or switch layers in the layer panel first."),
+            5000);
+        return;
+    }
+
+    CustomShapeTemplate customShape;
+    QString error;
+    if (!loadCustomShapeTemplate(filePath, &customShape, &error)) {
+        reportWarning(m_window, MainWindow::tr("Custom shape"),
+                      MainWindow::tr("Could not read %1:\n%2").arg(QDir::toNativeSeparators(filePath), error));
+        return;
+    }
+
+    auto* item = new ShapeItem();
+    item->setCustomShape(customShape.name, customShape.unitPath);
+    const QColor stroke =
+        m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
+    QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : stroke;
+    if (!m_window->m_fillColor.isValid()) {
+        fill.setAlpha(36);
+    }
+    const bool filled = m_window->m_fillStyle != FillStyle::None;
+    item->setStyle(stroke, filled ? fill : QColor(Qt::transparent), qBound<qreal>(2.5, m_window->m_brushWidth, 10.0));
+    item->setFillStyle(filled ? m_window->m_fillStyle : FillStyle::None);
+
+    // 按模板原始宽高比插入，最长边不超过画布的 72%，小图形也不会被拉到画布大小。
+    const QRectF canvas = m_window->m_scene->canvasRect();
+    const qreal aspect = qMax<qreal>(0.05, customShape.aspectRatio);
+    qreal designWidth = 320.0;
+    qreal designHeight = 320.0;
+    if (aspect >= 1.0) {
+        designHeight = 320.0 / aspect;
+    } else {
+        designWidth = 320.0 * aspect;
+    }
+    QSizeF size(designWidth, designHeight);
+    const qreal fitScale = qMin<qreal>(1.0, qMin(canvas.width() * 0.72 / qMax<qreal>(1.0, size.width()),
+                                                 canvas.height() * 0.72 / qMax<qreal>(1.0, size.height())));
+    size *= fitScale;
+    size.setWidth(qMax<qreal>(24.0, size.width()));
+    size.setHeight(qMax<qreal>(24.0, size.height()));
+
+    QPointF center = m_window->m_view->mapToScene(m_window->m_view->viewport()->rect().center());
+    if (!canvas.contains(center)) {
+        center = canvas.center();
+    }
+    const qreal cascade = (m_window->m_scene->canvasItemCount() % 5) * 18.0;
+    center += QPointF(cascade, cascade);
+    center.setX(qBound(canvas.left() + size.width() / 2.0, center.x(), canvas.right() - size.width() / 2.0));
+    center.setY(qBound(canvas.top() + size.height() / 2.0, center.y(), canvas.bottom() - size.height() / 2.0));
+
+    item->setPos(center - QPointF(size.width() / 2.0, size.height() / 2.0));
+    item->setContentSize(size);
+
+    m_window->m_scene->clearSelection();
+    m_window->m_scene->addItemsWithUndo({item}, MainWindow::tr("Insert custom shape “%1”").arg(customShape.name));
+    item->setSelected(true);
+    m_window->m_view->setFocus();
+    m_window->statusBar()->showMessage(
+        MainWindow::tr("Inserted custom shape “%1” from the shapes folder").arg(customShape.name), 4000);
+}
+
+void MainWindowInsertController::openShapesFolder()
+{
+    const QString directory = AppSettings::shapesDir();
+    if (!QDesktopServices::openUrl(QUrl::fromLocalFile(directory))) {
+        m_window->statusBar()->showMessage(
+            MainWindow::tr("Could not open the shapes folder: %1").arg(QDir::toNativeSeparators(directory)), 5000);
+    }
+}
+
+void MainWindowInsertController::updateCustomShapeMenu()
+{
+    if (!m_window->m_customShapeMenu) {
+        return;
+    }
+    m_window->m_customShapeMenu->clear();
+
+    QStringList errors;
+    const QList<CustomShapeTemplate> templates = loadCustomShapeTemplatesFromDirs(AppSettings::shapesDirs(), &errors);
+    if (templates.isEmpty()) {
+        QAction* empty =
+            m_window->m_customShapeMenu->addAction(MainWindow::tr("(No custom shapes in the shapes folder)"));
+        empty->setEnabled(false);
+    } else {
+        for (const CustomShapeTemplate& entry : templates) {
+            QAction* action = m_window->m_customShapeMenu->addAction(
+                makeCustomShapeIcon(entry.unitPath, QColor(58, 64, 80), 18), entry.name);
+            const QString filePath = entry.filePath;
+            action->setToolTip(MainWindow::tr("Insert the custom shape from %1").arg(QFileInfo(filePath).fileName()));
+            QObject::connect(action, &QAction::triggered, m_window,
+                             [this, filePath]() { m_window->insertCustomShape(filePath); });
+        }
+    }
+    m_window->m_customShapeMenu->addSeparator();
+    QObject::connect(m_window->m_customShapeMenu->addAction(MainWindow::tr("Open shapes folder…")), &QAction::triggered,
+                     m_window, &MainWindow::openShapesFolder);
+    if (!errors.isEmpty()) {
+        QAction* broken = m_window->m_customShapeMenu->addAction(
+            MainWindow::tr("%1 shape file(s) could not be read").arg(errors.size()));
+        broken->setEnabled(false);
+        broken->setToolTip(errors.join(QLatin1Char('\n')));
+    }
+}
