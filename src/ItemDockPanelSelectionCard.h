@@ -24,6 +24,8 @@ class ItemDockPanelSelectionCard : public QWidget {
 
   private:
     QToolButton* makeButton(const QString& objectName);
+    void bindAction(QToolButton* button, QAction* action);
+    QAction* actionForButton(QToolButton* button) const;
     void refreshVisibility();
 
     QWidget* m_basicRow = nullptr;
@@ -33,6 +35,8 @@ class ItemDockPanelSelectionCard : public QWidget {
 
     QList<QToolButton*> m_alignButtons;
     QList<QToolButton*> m_boolButtons;
+    QList<QAction*> m_alignActions;
+    QList<QAction*> m_boolActions;
     QToolButton* m_copyButton = nullptr;
     QToolButton* m_deleteButton = nullptr;
     QToolButton* m_rotateCwButton = nullptr;

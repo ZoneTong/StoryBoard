@@ -524,6 +524,28 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                           !groupButton->isVisible() && !ungroupButton->isVisible(),
                       QStringLiteral("单选时不显示对齐 / 化形 / 组合按钮行"));
 
+            // 卡片里每颗可见按钮都必须绑定具体动作，不能只显示图标。
+            const QStringList cardButtonNames = {
+                QStringLiteral("ItemCopyButton"),     QStringLiteral("ItemDeleteButton"),
+                QStringLiteral("ItemRotateCwButton"), QStringLiteral("ItemRotateCcwButton"),
+                QStringLiteral("ItemAlignRowButton"), QStringLiteral("ItemMorphButton"),
+                QStringLiteral("ItemGroupButton"),    QStringLiteral("ItemUngroupButton"),
+            };
+            int visibleCardButtons = 0;
+            int unboundCardButtons = 0;
+            for (QToolButton* button : dockPanel->findChildren<QToolButton*>()) {
+                if (!button || !cardButtonNames.contains(button->objectName()) || !button->isVisible()) {
+                    continue;
+                }
+                ++visibleCardButtons;
+                if (button->property("cardActionText").toString().isEmpty()) {
+                    ++unboundCardButtons;
+                }
+            }
+            ctx.check(visibleCardButtons >= 4 && unboundCardButtons == 0,
+                      QStringLiteral("卡片所有可见按钮都关联了具体动作"),
+                      QStringLiteral("visible=%1 unbound=%2").arg(visibleCardButtons).arg(unboundCardButtons));
+
             // 卡片按钮不是摆设：逐一验证旋转与复制按钮真的执行主窗口动作，且可撤销。
             if (rotateCwButton) {
                 const qreal rotationBefore = selectedShape->rotation();
@@ -553,6 +575,21 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                               .arg(countBeforeCopy)
                               .arg(countAfterCopy)
                               .arg(dockScene->canvasItemCount()));
+                selectedShape->setSelected(true);
+                QApplication::processEvents();
+            }
+            if (rotateCcwButton) {
+                const qreal rotationBefore = selectedShape->rotation();
+                rotateCcwButton->click();
+                QApplication::processEvents();
+                const qreal rotationAfter = selectedShape->rotation();
+                dockScene->undoStack()->undo();
+                QApplication::processEvents();
+                ctx.check(
+                    qAbs(rotationAfter - rotationBefore + 45.0) < 0.01 &&
+                        qAbs(selectedShape->rotation() - rotationBefore) < 0.01,
+                    QStringLiteral("卡片逆时针旋转按钮真正旋转图元且可撤销"),
+                    QStringLiteral("%1->%2->%3").arg(rotationBefore).arg(rotationAfter).arg(selectedShape->rotation()));
                 selectedShape->setSelected(true);
                 QApplication::processEvents();
             }
@@ -646,6 +683,30 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             QApplication::processEvents();
             ctx.check(groupButton->isVisible() && ungroupButton->isVisible(),
                       QStringLiteral("组与普通图元混合选中时组合和取消组合都显示"));
+
+            // 删除按钮单独用一个临时图元验证，避免删掉后面还要复用的图元。
+            auto* deleteProbe = new ShapeItem(ShapeType::Rectangle);
+            deleteProbe->setPos(QPointF(640.0, 360.0));
+            deleteProbe->setContentSize(QSizeF(80.0, 60.0));
+            dockScene->addItemsWithUndo({deleteProbe}, QStringLiteral("Add delete probe"));
+            dockScene->clearSelection();
+            deleteProbe->setSelected(true);
+            QApplication::processEvents();
+            const int countBeforeDelete = dockScene->canvasItemCount();
+            if (deleteButton) {
+                deleteButton->click();
+                QApplication::processEvents();
+            }
+            const int countAfterDelete = dockScene->canvasItemCount();
+            dockScene->undoStack()->undo();
+            QApplication::processEvents();
+            ctx.check(countAfterDelete == countBeforeDelete - 1 && dockScene->canvasItemCount() == countBeforeDelete,
+                      QStringLiteral("卡片删除按钮真正删除图元且可撤销"),
+                      QStringLiteral("%1->%2->%3")
+                          .arg(countBeforeDelete)
+                          .arg(countAfterDelete)
+                          .arg(dockScene->canvasItemCount()));
+
 
             // 悬浮卡片跟随选中状态：清空选中后隐藏，重新选中再出现。
             dockScene->clearSelection();
