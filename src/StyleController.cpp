@@ -9,11 +9,11 @@
 #include "MainWindow.h"
 #include "Settings.h"
 #include "ShapeItem.h"
+#include "StrokeItem.h"
 
 #include <QAction>
 #include <QActionGroup>
 #include <QColorDialog>
-#include <QComboBox>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
@@ -64,6 +64,10 @@ void StyleController::chooseFillColor()
 
 void StyleController::chooseStrokeColor()
 {
+    if (!m_window->m_scene || !m_window->m_undo) {
+        return;
+    }
+
     const QColor initial =
         m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
     const QColor color = QColorDialog::getColor(initial, m_window, MainWindow::tr("Choose border color"),
@@ -73,39 +77,86 @@ void StyleController::chooseStrokeColor()
     }
 
     setBrushColor(color, true);
+    const int applied = applyStrokeStyleToSelection(color, 0, true, false, MainWindow::tr("Change border color"));
+    if (applied == 0) {
+        m_window->statusBar()->showMessage(
+            MainWindow::tr("Border color set; it will be used for newly inserted shapes and strokes"), 4000);
+    }
+}
 
-    QList<ShapeItem*> shapes;
+void StyleController::applyStrokeColorToSelection(const QColor& color)
+{
+    if (color.isValid()) {
+        applyStrokeStyleToSelection(color, 0, true, false, MainWindow::tr("Change border color"));
+    }
+}
+
+void StyleController::applyStrokeWidthToSelection(qreal width)
+{
+    if (width > 0) {
+        applyStrokeStyleToSelection(QColor(), width, false, true, MainWindow::tr("Change border width"));
+    }
+}
+
+int StyleController::applyStrokeStyleToSelection(const QColor& color, qreal width, bool changeColor, bool changeWidth,
+                                                 const QString& text)
+{
+    if (!m_window->m_scene || !m_window->m_undo) {
+        return 0;
+    }
+
+    QList<CanvasItem*> items;
     const QList<CanvasItem*> selected = m_window->m_scene->selectedCanvasItems();
     for (CanvasItem* item : selected) {
-        if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
-            shapes.append(shape);
+        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<StrokeItem*>(item)) {
+            items.append(item);
         }
     }
-
-    if (shapes.isEmpty()) {
-        m_window->statusBar()->showMessage(
-            MainWindow::tr("Border color set; it will be used for newly inserted shapes"), 4000);
-        return;
+    if (items.isEmpty()) {
+        return 0;
     }
 
-    QList<ShapeItemState> before;
-    QList<ShapeItemState> after;
-    before.reserve(shapes.size());
-    after.reserve(shapes.size());
-    for (ShapeItem* shape : shapes) {
-        before.append(shape->state());
-        shape->setStyle(color, shape->fillColor(), shape->strokeWidth());
-        after.append(shape->state());
+    QList<QColor> beforeColors;
+    QList<qreal> beforeWidths;
+    QList<QColor> afterColors;
+    QList<qreal> afterWidths;
+    beforeColors.reserve(items.size());
+    beforeWidths.reserve(items.size());
+    afterColors.reserve(items.size());
+    afterWidths.reserve(items.size());
+    for (CanvasItem* item : items) {
+        QColor beforeColor;
+        qreal beforeWidth = 0;
+        QColor afterColor;
+        qreal afterWidth = 0;
+        if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+            beforeColor = shape->strokeColor();
+            beforeWidth = shape->strokeWidth();
+            afterColor = changeColor ? color : beforeColor;
+            afterWidth = changeWidth ? width : beforeWidth;
+            shape->setStyle(afterColor, shape->fillColor(), afterWidth);
+        } else if (auto* stroke = dynamic_cast<StrokeItem*>(item)) {
+            beforeColor = stroke->strokeColor();
+            beforeWidth = stroke->strokeWidth();
+            afterColor = changeColor ? color : beforeColor;
+            afterWidth = changeWidth ? width : beforeWidth;
+            stroke->setStyle(afterColor, afterWidth);
+        }
+        beforeColors.append(beforeColor);
+        beforeWidths.append(beforeWidth);
+        afterColors.append(afterColor);
+        afterWidths.append(afterWidth);
     }
 
-    if (before == after) {
-        m_window->statusBar()->showMessage(MainWindow::tr("The border color did not change"), 3000);
-        return;
+    if (beforeColors == afterColors && beforeWidths == afterWidths) {
+        m_window->statusBar()->showMessage(MainWindow::tr("The border style did not change"), 3000);
+        return items.size();
     }
 
-    m_window->m_undo->push(
-        new ShapeStyleCommand(m_window->m_scene, shapes, before, after, MainWindow::tr("Change border color")));
-    m_window->statusBar()->showMessage(MainWindow::tr("Applied border color to %1 shape(s)").arg(shapes.size()), 4000);
+    m_window->m_undo->push(new ItemStrokeStyleCommand(m_window->m_scene, items, beforeColors, beforeWidths, afterColors,
+                                                      afterWidths, text));
+    m_window->statusBar()->showMessage(MainWindow::tr("Applied border style to %1 item(s)").arg(items.size()), 4000);
+    return items.size();
 }
 
 void StyleController::applyFillToSelection()
@@ -266,14 +317,9 @@ void StyleController::setBrushWidthUi(int width)
     if (m_window->m_view) {
         m_window->m_view->setBrushWidth(width);
     }
-    if (m_window->m_widthCombo) {
-        int index = m_window->m_widthCombo->findData(width);
-        if (index < 0) {
-            m_window->m_widthCombo->addItem(QStringLiteral("%1 px").arg(width), width);
-            index = m_window->m_widthCombo->count() - 1;
-        }
-        const QSignalBlocker blocker(m_window->m_widthCombo);
-        m_window->m_widthCombo->setCurrentIndex(index);
+    if (m_window->m_widthSpin) {
+        const QSignalBlocker blocker(m_window->m_widthSpin);
+        m_window->m_widthSpin->setValue(width);
     }
     if (m_window->m_brushWidthGroup) {
         for (QAction* action : m_window->m_brushWidthGroup->actions()) {

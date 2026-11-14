@@ -41,7 +41,6 @@ class MainWindowInsertController;
 class MainWindowAppController;
 class QAction;
 class QActionGroup;
-class QComboBox;
 class QDockWidget;
 class QLabel;
 class QMenu;
@@ -233,7 +232,7 @@ class MainWindow : public QMainWindow {
     QToolButton* m_fillButton = nullptr;
     QToolButton* m_fillColorButton = nullptr;
     QToolButton* m_strokeColorButton = nullptr;
-    QComboBox* m_widthCombo = nullptr;
+    QSpinBox* m_widthSpin = nullptr;
     QSpinBox* m_smoothingSpin = nullptr;
     QPointer<ItemPropertiesDialog> m_itemPropertiesDialog;
     std::unique_ptr<BackgroundController> m_background;

@@ -20,6 +20,7 @@
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
 #include "StrokeItem.h"
+#include "StyleController.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -285,34 +286,34 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                       fillStyleImage != fillColorImage && fillColorImage != strokeColorImage,
                   QStringLiteral("填充样式、填充颜色与边框颜色使用彼此不同的图标"));
 
-        // 画笔颜色按钮与画笔宽度按钮已从工具栏移除；描线宽度改挂在描线颜色按钮之后。
+        // 画笔颜色按钮与画笔宽度按钮已从工具栏移除；描线宽度改为描线颜色按钮后的 SpinBox。
         QToolButton* removedBrushColorButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("ColorButton"));
         QAction* removedBrushColorAction = shapeWindow.findChild<QAction*>(QStringLiteral("BrushColorAction"));
-        QComboBox* strokeWidthCombo = shapeWindow.findChild<QComboBox*>(QStringLiteral("BrushWidthCombo"));
+        QSpinBox* strokeWidthSpin = shapeWindow.findChild<QSpinBox*>(QStringLiteral("StrokeWidthSpin"));
         const int strokeButtonX =
             iconStrokeColorButton ? iconStrokeColorButton->mapTo(&shapeWindow, QPoint(0, 0)).x() : -1;
-        const int widthComboX = strokeWidthCombo ? strokeWidthCombo->mapTo(&shapeWindow, QPoint(0, 0)).x() : -1;
-        ctx.check(!removedBrushColorButton && !removedBrushColorAction && strokeWidthCombo && iconStrokeColorButton &&
-                      widthComboX > strokeButtonX,
-                  QStringLiteral("工具栏去掉画笔颜色按钮并在描线按钮后追加描线宽度下拉"),
-                  QStringLiteral("color=%1 action=%2 comboX=%3 strokeX=%4")
+        const int widthSpinX = strokeWidthSpin ? strokeWidthSpin->mapTo(&shapeWindow, QPoint(0, 0)).x() : -1;
+        ctx.check(!removedBrushColorButton && !removedBrushColorAction && strokeWidthSpin && iconStrokeColorButton &&
+                      widthSpinX > strokeButtonX && strokeWidthSpin->singleStep() == 1,
+                  QStringLiteral("工具栏去掉画笔颜色按钮并在描线按钮后追加描线宽度 SpinBox"),
+                  QStringLiteral("color=%1 action=%2 spinX=%3 strokeX=%4 step=%5")
                       .arg(removedBrushColorButton ? 1 : 0)
                       .arg(removedBrushColorAction ? 1 : 0)
-                      .arg(widthComboX)
-                      .arg(strokeButtonX));
+                      .arg(widthSpinX)
+                      .arg(strokeButtonX)
+                      .arg(strokeWidthSpin ? strokeWidthSpin->singleStep() : 0));
 
         QMenu* brushWidthMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("BrushWidthMenu"));
-        QComboBox* widthCombo = shapeWindow.findChild<QComboBox*>(QStringLiteral("BrushWidthCombo"));
         ctx.check(brushWidthMenu && brushWidthMenu->actions().size() == 15, QStringLiteral("画笔样式菜单提供粗细选项"),
                   QStringLiteral("actions=%1").arg(brushWidthMenu ? brushWidthMenu->actions().size() : 0));
-        ctx.check(brushWidthMenu && widthCombo && brushWidthMenu->title() == QStringLiteral("描线宽度") &&
-                      widthCombo->toolTip() == QStringLiteral("描线宽度"),
+        ctx.check(brushWidthMenu && strokeWidthSpin && brushWidthMenu->title() == QStringLiteral("描线宽度") &&
+                      strokeWidthSpin->toolTip() == QStringLiteral("描线宽度"),
                   QStringLiteral("菜单与工具栏统一使用描线宽度"),
-                  QStringLiteral("menu=%1 combo=%2")
+                  QStringLiteral("menu=%1 spin=%2")
                       .arg(brushWidthMenu ? brushWidthMenu->title() : QStringLiteral("-"))
-                      .arg(widthCombo ? widthCombo->toolTip() : QStringLiteral("-")));
-        if (brushWidthMenu && widthCombo && !brushWidthMenu->actions().isEmpty()) {
-            const int oldWidth = widthCombo->currentData().toInt();
+                      .arg(strokeWidthSpin ? strokeWidthSpin->toolTip() : QStringLiteral("-")));
+        if (brushWidthMenu && strokeWidthSpin && !brushWidthMenu->actions().isEmpty()) {
+            const int oldWidth = strokeWidthSpin->value();
             QAction* twoPixel = nullptr;
             for (QAction* action : brushWidthMenu->actions()) {
                 if (action->data().toInt() == 2) {
@@ -325,18 +326,12 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
             if (twoPixel) {
                 twoPixel->trigger();
                 QApplication::processEvents();
-                ctx.check(widthCombo->currentData().toInt() == 2 && twoPixel->isChecked(),
-                          QStringLiteral("画笔粗细菜单选项同步工具栏下拉"));
-                QAction* restore = nullptr;
-                for (QAction* action : brushWidthMenu->actions()) {
-                    if (action->data().toInt() == oldWidth) {
-                        restore = action;
-                        break;
-                    }
-                }
-                if (restore) {
-                    restore->trigger();
-                }
+                ctx.check(strokeWidthSpin->value() == 2 && twoPixel->isChecked(),
+                          QStringLiteral("画笔粗细菜单选项同步工具栏 SpinBox"),
+                          QStringLiteral("spin=%1 checked=%2")
+                              .arg(strokeWidthSpin->value())
+                              .arg(twoPixel->isChecked() ? 1 : 0));
+                strokeWidthSpin->setValue(oldWidth);
                 QApplication::processEvents();
             }
         }
@@ -479,6 +474,55 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                           insertedArrow->fillColor().alpha() > 0,
                       QStringLiteral("新插入箭头默认填充"));
         }
+    }
+
+    {
+        MainWindow strokeWindow;
+        strokeWindow.show();
+        QApplication::processEvents();
+
+        auto* stroke = new StrokeItem();
+        const QColor initialColor(QStringLiteral("#1E293B"));
+        stroke->setStrokePoints({QPointF(40, 40), QPointF(160, 120)}, initialColor, 4.0);
+        strokeWindow.scene()->addItemsWithUndo({stroke}, QStringLiteral("Add width stroke"));
+        strokeWindow.view()->setMode(ToolMode::Edit);
+        strokeWindow.scene()->clearSelection();
+        stroke->setSelected(true);
+        QApplication::processEvents();
+
+        QSpinBox* widthSpin = strokeWindow.findChild<QSpinBox*>(QStringLiteral("StrokeWidthSpin"));
+        QAction* widthTwo = strokeWindow.findChild<QAction*>(QStringLiteral("BrushWidthAction2"));
+        ctx.check(widthSpin && widthTwo, QStringLiteral("工具栏与菜单提供描线宽度入口"),
+                  QStringLiteral("spin=%1 action=%2").arg(widthSpin ? 1 : 0).arg(widthTwo ? 1 : 0));
+        if (widthSpin && widthTwo) {
+            const int originalWidth = widthSpin->value();
+            widthTwo->trigger();
+            QApplication::processEvents();
+            ctx.check(qAbs(stroke->strokeWidth() - 2.0) < 0.01 && widthSpin->value() == 2,
+                      QStringLiteral("菜单描线宽度改变选中笔画宽度"),
+                      QStringLiteral("stroke=%1 spin=%2").arg(stroke->strokeWidth()).arg(widthSpin->value()));
+
+            widthSpin->setValue(7);
+            QApplication::processEvents();
+            ctx.check(qAbs(stroke->strokeWidth() - 7.0) < 0.01 && strokeWindow.view()->brushWidth() == 7.0,
+                      QStringLiteral("工具栏描线宽度 SpinBox 步进 1px 并改变选中笔画宽度"),
+                      QStringLiteral("stroke=%1 brush=%2 step=%3")
+                          .arg(stroke->strokeWidth())
+                          .arg(strokeWindow.view()->brushWidth())
+                          .arg(widthSpin->singleStep()));
+            widthSpin->setValue(originalWidth);
+            QApplication::processEvents();
+        }
+
+        StyleController styleController(&strokeWindow);
+        const QColor changedColor(QStringLiteral("#20C997"));
+        styleController.applyStrokeColorToSelection(changedColor);
+        ctx.check(stroke->strokeColor() == changedColor, QStringLiteral("描线颜色改变选中笔画颜色"),
+                  stroke->strokeColor().name());
+        strokeWindow.scene()->undoStack()->undo();
+        QApplication::processEvents();
+        ctx.check(stroke->strokeColor() == initialColor, QStringLiteral("撤销描线颜色恢复笔画颜色"),
+                  stroke->strokeColor().name());
     }
 
     {
