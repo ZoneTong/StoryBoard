@@ -262,8 +262,10 @@ void selftest::runCustomShapeDockTests(Context& ctx)
         QWidget* borderStyleRow = panel.findChild<QWidget*>(QStringLiteral("ItemBorderStyleRow"));
         QWidget* borderWidthRow = panel.findChild<QWidget*>(QStringLiteral("ItemBorderWidthRow"));
         QWidget* borderColorRow = panel.findChild<QWidget*>(QStringLiteral("ItemBorderColorRow"));
-        const int fillStyleIndex = content && content->layout() && fillStyleRow ? content->layout()->indexOf(fillStyleRow) : -1;
-        const int fillColorIndex = content && content->layout() && fillColorRow ? content->layout()->indexOf(fillColorRow) : -1;
+        const int fillStyleIndex =
+            content && content->layout() && fillStyleRow ? content->layout()->indexOf(fillStyleRow) : -1;
+        const int fillColorIndex =
+            content && content->layout() && fillColorRow ? content->layout()->indexOf(fillColorRow) : -1;
         const int borderStyleIndex =
             content && content->layout() && borderStyleRow ? content->layout()->indexOf(borderStyleRow) : -1;
         const int borderWidthIndex =
@@ -336,8 +338,8 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 customTexts.append(action->text());
             }
         }
-        ctx.check(itemDock && dockPanel && itemDock->isVisible() == false,
-                  QStringLiteral("左侧提供编辑图元卡且无选中时隐藏"));
+        ctx.check(itemDock && dockPanel && itemDock->isFloating() && !itemDock->isVisible(),
+                  QStringLiteral("编辑图元卡默认悬浮，无选中时隐藏"));
         ctx.check(dockCustomMenu && customTexts.contains(QStringLiteral("dock-probe")),
                   QStringLiteral("自定义图形追加到常见图形下方的下拉菜单"), customTexts.join(QStringLiteral("|")));
         ctx.check(dockWindow.findChild<QAction*>(QStringLiteral("ItemDockToggleAction")) != nullptr,
@@ -357,15 +359,15 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                                        ? nullptr
                                        : dynamic_cast<ShapeItem*>(dockScene->selectedCanvasItems().first());
         ctx.check(selectedShape && dockScene->canvasItemCount() == beforeCount + 1 && itemDock->isVisible(),
-                  QStringLiteral("工具卡可插入矩形且选中后卡片自动出现"));
+                  QStringLiteral("工具卡可插入矩形且卡片保持显示"));
 
         QDockWidget* layerDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("LayerDock"));
         QDockWidget* viewModeDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("ViewModeDock"));
         QToolBar* modeBar = dockWindow.findChild<QToolBar*>(QStringLiteral("ModeToolBar"));
         ctx.check(viewModeDock && modeBar && viewModeDock->widget() == modeBar,
                   QStringLiteral("视图模式栏作为右上角卡片"));
-        ctx.check(itemDock && dockWindow.dockWidgetArea(itemDock) == Qt::LeftDockWidgetArea,
-                  QStringLiteral("编辑图元卡默认停靠左侧"));
+        // 悬浮后 dockWidgetArea 仍保留停靠前的区域，只以 isFloating 判断是否已脱离主窗口。
+        ctx.check(itemDock && itemDock->isFloating(), QStringLiteral("编辑图元卡默认悬浮成独立窗口"));
         ctx.check(viewModeDock && layerDock && dockWindow.dockWidgetArea(viewModeDock) == Qt::RightDockWidgetArea &&
                       dockWindow.dockWidgetArea(layerDock) == Qt::RightDockWidgetArea,
                   QStringLiteral("视图模式卡与图层卡默认停靠右侧"));
@@ -448,11 +450,23 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                           mergeButton->menu()->actions().size() == 5,
                       QStringLiteral("多选时编辑图元卡提供对齐与合并形状按钮"));
 
+            // 悬浮卡片跟随选中状态：清空选中后隐藏，重新选中再出现。
             dockScene->clearSelection();
             QApplication::processEvents();
-            ctx.check(!itemDock->isVisible(), QStringLiteral("清空选中后隐藏编辑图元卡"));
+            ctx.check(!itemDock->isVisible(), QStringLiteral("悬浮时清空选中隐藏编辑图元卡"));
+            selectedShape->setSelected(true);
+            QApplication::processEvents();
+            ctx.check(itemDock->isVisible(), QStringLiteral("悬浮时有选中显示编辑图元卡"));
+
+            // 拖回主窗口停靠后卡片常驻，不再随选中状态整张显隐。
+            itemDock->setFloating(false);
+            QApplication::processEvents();
+            ctx.check(!itemDock->isFloating() && itemDock->isVisible(), QStringLiteral("拖回主窗口后停靠并保持显示"));
+            dockScene->clearSelection();
+            QApplication::processEvents();
+            ctx.check(itemDock->isVisible(), QStringLiteral("停靠时清空选中不隐藏编辑图元卡"));
             ctx.check(layerDock && layerDock->height() < dockWindow.height() - 100,
-                      QStringLiteral("隐藏编辑图元卡后图层卡不撑满窗口高度"));
+                      QStringLiteral("编辑图元卡停靠时图层卡不撑满窗口高度"));
         }
 
         for (const QString& stale : QDir(dockShapesDir).entryList({QStringLiteral("*.sbcanvas")}, QDir::Files)) {

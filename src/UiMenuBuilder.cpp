@@ -92,8 +92,9 @@ void UiMenuBuilder::buildMenus()
     QAction* itemDockAction = m_window->m_docks->itemDock()->toggleViewAction();
     itemDockAction->setObjectName(QStringLiteral("ItemDockToggleAction"));
     itemDockAction->setText(MainWindow::tr("Edit item panel"));
-    itemDockAction->setStatusTip(
-        MainWindow::tr("Show or hide the edit item panel (it appears automatically when an item is selected)"));
+    itemDockAction->setStatusTip(MainWindow::tr(
+        "Show or hide the edit item panel (it stays visible while docked and follows the item selection while "
+        "floating)"));
     viewMenu->addAction(itemDockAction);
 
     QMenu* editMenu = m_window->menuBar()->addMenu(MainWindow::tr("&Edit"));
