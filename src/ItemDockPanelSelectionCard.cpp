@@ -90,17 +90,71 @@ QToolButton* ItemDockPanelSelectionCard::makeButton(const QString& objectName)
     return button;
 }
 
+void ItemDockPanelSelectionCard::bindAction(QToolButton* button, QAction* action)
+{
+    if (!button) {
+        return;
+    }
+    // 不再依赖 setDefaultAction 的隐式转发：按钮显示后直接点击必须能触发动作。
+    button->setDefaultAction(nullptr);
+    button->setFocusPolicy(Qt::NoFocus);
+    button->setIcon(action ? action->icon() : QIcon());
+    button->setToolTip(action ? action->text() : QString());
+    button->setAccessibleName(action ? action->text() : QString());
+    button->setProperty("cardActionText", action ? action->text() : QString());
+    button->setEnabled(action && action->isEnabled());
+    if (action) {
+        QObject::connect(button, &QToolButton::clicked, action, &QAction::trigger, Qt::UniqueConnection);
+    }
+}
+
+QAction* ItemDockPanelSelectionCard::actionForButton(QToolButton* button) const
+{
+    if (!button) {
+        return nullptr;
+    }
+    if (button == m_copyButton) {
+        return m_copyAction;
+    }
+    if (button == m_deleteButton) {
+        return m_deleteAction;
+    }
+    if (button == m_rotateCwButton) {
+        return m_rotateCwAction;
+    }
+    if (button == m_rotateCcwButton) {
+        return m_rotateCcwAction;
+    }
+    if (button == m_groupButton) {
+        return m_groupAction;
+    }
+    if (button == m_ungroupButton) {
+        return m_ungroupAction;
+    }
+    const int alignIndex = m_alignButtons.indexOf(button);
+    if (alignIndex >= 0 && alignIndex < m_alignActions.size()) {
+        return m_alignActions.at(alignIndex);
+    }
+    const int boolIndex = m_boolButtons.indexOf(button);
+    if (boolIndex >= 0 && boolIndex < m_boolActions.size()) {
+        return m_boolActions.at(boolIndex);
+    }
+    return nullptr;
+}
+
 void ItemDockPanelSelectionCard::setSelectionActions(const QList<QAction*>& alignActions,
                                                      const QList<QAction*>& boolActions, QAction* copyAction,
                                                      QAction* removeAction, QAction* rotateCwAction,
                                                      QAction* rotateCcwAction, QAction* groupAction,
                                                      QAction* ungroupAction)
 {
+    m_alignActions = alignActions;
+    m_boolActions = boolActions;
     for (int i = 0; i < m_alignButtons.size() && i < alignActions.size(); ++i) {
-        m_alignButtons.at(i)->setDefaultAction(alignActions.at(i));
+        bindAction(m_alignButtons.at(i), alignActions.at(i));
     }
     for (int i = 0; i < m_boolButtons.size() && i < boolActions.size(); ++i) {
-        m_boolButtons.at(i)->setDefaultAction(boolActions.at(i));
+        bindAction(m_boolButtons.at(i), boolActions.at(i));
     }
 
     m_copyAction = copyAction;
@@ -109,24 +163,12 @@ void ItemDockPanelSelectionCard::setSelectionActions(const QList<QAction*>& alig
     m_rotateCcwAction = rotateCcwAction;
     m_groupAction = groupAction;
     m_ungroupAction = ungroupAction;
-    if (copyAction) {
-        m_copyButton->setDefaultAction(copyAction);
-    }
-    if (removeAction) {
-        m_deleteButton->setDefaultAction(removeAction);
-    }
-    if (rotateCwAction) {
-        m_rotateCwButton->setDefaultAction(rotateCwAction);
-    }
-    if (rotateCcwAction) {
-        m_rotateCcwButton->setDefaultAction(rotateCcwAction);
-    }
-    if (groupAction) {
-        m_groupButton->setDefaultAction(groupAction);
-    }
-    if (ungroupAction) {
-        m_ungroupButton->setDefaultAction(ungroupAction);
-    }
+    bindAction(m_copyButton, copyAction);
+    bindAction(m_deleteButton, removeAction);
+    bindAction(m_rotateCwButton, rotateCwAction);
+    bindAction(m_rotateCcwButton, rotateCcwAction);
+    bindAction(m_groupButton, groupAction);
+    bindAction(m_ungroupButton, ungroupAction);
 
     refreshVisibility();
 }
@@ -141,9 +183,10 @@ void ItemDockPanelSelectionCard::setSelectionState(bool hasSelection, bool group
 void ItemDockPanelSelectionCard::refreshVisibility()
 {
     // 动作不可用就整颗按钮隐藏：卡片只列出当前选中真正能做的操作。
-    auto usable = [](QToolButton* button) {
-        QAction* action = button->defaultAction();
+    auto usable = [this](QToolButton* button) {
+        QAction* action = actionForButton(button);
         const bool enabled = action && action->isEnabled();
+        button->setEnabled(enabled);
         button->setVisible(enabled);
         return enabled;
     };
@@ -163,8 +206,8 @@ void ItemDockPanelSelectionCard::refreshVisibility()
         anyMorph = usable(button) || anyMorph;
     }
 
-    const bool groupVisible = m_groupUseful && m_groupAction && m_groupAction->isEnabled();
-    const bool ungroupVisible = m_ungroupAction && m_ungroupAction->isEnabled();
+    const bool groupVisible = m_groupUseful && usable(m_groupButton);
+    const bool ungroupVisible = usable(m_ungroupButton);
     m_groupButton->setVisible(groupVisible);
     m_ungroupButton->setVisible(ungroupVisible);
 
