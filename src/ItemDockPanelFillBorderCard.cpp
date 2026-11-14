@@ -6,10 +6,11 @@
 #include "ShapeItem.h"
 #include "StrokeItem.h"
 
-#include <QDoubleSpinBox>
 #include <QHBoxLayout>
+#include <QSpinBox>
 #include <QToolButton>
 #include <QVBoxLayout>
+#include <QtMath>
 
 namespace {
 
@@ -92,14 +93,13 @@ ItemDockPanelFillBorderCard::ItemDockPanelFillBorderCard(QWidget* parent) : QWid
     auto* widthLayout = new QHBoxLayout(widthRow);
     widthLayout->setContentsMargins(0, 0, 0, 0);
     widthLayout->setSpacing(4);
-    m_borderWidthSpin = new QDoubleSpinBox(widthRow);
-    m_borderWidthSpin->setObjectName(QStringLiteral("ItemValueSpin"));
-    m_borderWidthSpin->setRange(0.5, 48.0);
-    m_borderWidthSpin->setSingleStep(0.5);
-    m_borderWidthSpin->setDecimals(1);
+    m_borderWidthSpin = new QSpinBox(widthRow);
+    m_borderWidthSpin->setObjectName(QStringLiteral("ItemBorderWidthSpin"));
+    m_borderWidthSpin->setRange(1, 64);
+    m_borderWidthSpin->setSingleStep(1);
     m_borderWidthSpin->setSuffix(QStringLiteral(" px"));
     m_borderWidthSpin->setToolTip(ItemDockPanel::tr("Border width"));
-    connect(m_borderWidthSpin, &QDoubleSpinBox::valueChanged, this, [this](double value) {
+    connect(m_borderWidthSpin, &QSpinBox::valueChanged, this, [this](int value) {
         if (!m_refreshing) {
             emit borderWidthChosen(value);
         }
@@ -134,7 +134,7 @@ void ItemDockPanelFillBorderCard::refresh(const QList<ShapeItem*>& shapes, const
         } else if (!strokes.isEmpty()) {
             width = strokes.first()->strokeWidth();
         }
-        m_borderWidthSpin->setValue(width);
+        m_borderWidthSpin->setValue(qRound(width));
     }
 
     m_refreshing = false;

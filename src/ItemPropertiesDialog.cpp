@@ -341,12 +341,12 @@ void ItemPropertiesDialog::applyChanges()
     }
 
     ItemPropertiesState after;
-    auto spinValue = [](QDoubleSpinBox* spin, qreal initial) {
+    auto spinValue = [](auto* spin, qreal initial) {
         if (!spin) {
             return initial;
         }
         const qreal value = spin->value();
-        // 数值框只显示 1 位小数；用户没动过时保留原始精度，避免“打开就点确定”也产生修改。
+        // 数值框按控件自身精度显示；用户没动过时保留原始精度，避免“打开就点确定”也产生修改。
         return qFuzzyCompare(value, qRound(initial * 10.0) / 10.0) ? initial : value;
     };
     after.pos = QPointF(spinValue(geometry->positionXSpin(), m_initialPos.x()),

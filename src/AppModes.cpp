@@ -297,7 +297,7 @@ int run(QApplication& app, const CommandLineOptions& options)
         return grabMenu(QStringLiteral("BrushStyleMenu"), QPoint(500, 40), options.brushStyleMenuScreenshotPath);
     }
     if (options.brushWidthMenuScreenshot) {
-        return grabMenu(QStringLiteral("BrushWidthMenu"), QPoint(600, 40), options.brushWidthMenuScreenshotPath);
+        return grabMenu(QStringLiteral("InsertMenu"), QPoint(420, 40), options.brushWidthMenuScreenshotPath);
     }
     if (options.fillStyleMenuScreenshot) {
         return grabMenu(QStringLiteral("FillStyleMenu"), QPoint(600, 40), options.fillStyleMenuScreenshotPath);

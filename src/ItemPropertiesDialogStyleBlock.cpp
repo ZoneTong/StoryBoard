@@ -7,7 +7,6 @@
 #include "StrokeItem.h"
 
 #include <QComboBox>
-#include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QSpinBox>
 #include <QToolButton>
@@ -45,34 +44,33 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_fillStyleCombo->setEnabled(false);
         }
 
-        m_fillColorButton = ItemPropertiesFields::makeColorField(
-            this, shape->fillColor(), QStringLiteral("ItemPropertiesFillColorValue"),
-            ItemPropertiesFields::ColorIconRole::Fill);
+        m_fillColorButton = ItemPropertiesFields::makeColorField(this, shape->fillColor(),
+                                                                 QStringLiteral("ItemPropertiesFillColorValue"),
+                                                                 ItemPropertiesFields::ColorIconRole::Fill);
         m_fillColorButton->setEnabled(filled);
 
-        m_strokeColorButton = ItemPropertiesFields::makeColorField(
-            this, shape->strokeColor(), QStringLiteral("ItemPropertiesStrokeColorValue"),
-            ItemPropertiesFields::ColorIconRole::Border);
+        m_strokeColorButton = ItemPropertiesFields::makeColorField(this, shape->strokeColor(),
+                                                                   QStringLiteral("ItemPropertiesStrokeColorValue"),
+                                                                   ItemPropertiesFields::ColorIconRole::Border);
 
         m_borderStyleCombo = new QComboBox(this);
         m_borderStyleCombo->setObjectName(QStringLiteral("ItemPropertiesBorderStyleValue"));
         m_borderStyleCombo->setMinimumWidth(180);
         for (Qt::PenStyle penStyle : ItemStyleVisuals::borderStyles()) {
             m_borderStyleCombo->addItem(ItemStyleVisuals::borderStyleIcon(penStyle, 16),
-                                        ItemStyleVisuals::borderStyleName(penStyle),
-                                        static_cast<int>(penStyle));
+                                        ItemStyleVisuals::borderStyleName(penStyle), static_cast<int>(penStyle));
         }
         const int borderStyleIndex = m_borderStyleCombo->findData(static_cast<int>(shape->strokeStyle()));
         if (borderStyleIndex >= 0) {
             m_borderStyleCombo->setCurrentIndex(borderStyleIndex);
         }
 
-        m_strokeWidthSpin = new QDoubleSpinBox(this);
+        m_strokeWidthSpin = new QSpinBox(this);
         m_strokeWidthSpin->setObjectName(QStringLiteral("ItemPropertiesStrokeWidthValue"));
-        m_strokeWidthSpin->setDecimals(1);
-        m_strokeWidthSpin->setRange(0.5, 64.0);
-        m_strokeWidthSpin->setSingleStep(0.5);
-        m_strokeWidthSpin->setValue(shape->strokeWidth());
+        m_strokeWidthSpin->setRange(1, 64);
+        m_strokeWidthSpin->setSingleStep(1);
+        m_strokeWidthSpin->setSuffix(QStringLiteral(" px"));
+        m_strokeWidthSpin->setValue(qRound(shape->strokeWidth()));
         m_initialStrokeWidth = shape->strokeWidth();
         m_strokeWidthSpin->setMinimumWidth(88);
 
@@ -90,12 +88,12 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_initialStartAngle = shape->startAngle();
             m_initialSweepAngle = shape->sweepAngle();
             m_initialStoredShapeRadius = shape->shapeRadius();
-            const int maximumRadius =
-                qMax(1, qRound(shape->contentSize().width() / 2.0));
-            m_initialShapeRadius = qBound(
-                1, qRound(m_initialStoredShapeRadius >= 0.0 ? m_initialStoredShapeRadius
-                                                            : shape->contentSize().width() / 2.0),
-                maximumRadius);
+            const int maximumRadius = qMax(1, qRound(shape->contentSize().width() / 2.0));
+            m_initialShapeRadius =
+                qBound(1,
+                       qRound(m_initialStoredShapeRadius >= 0.0 ? m_initialStoredShapeRadius
+                                                                : shape->contentSize().width() / 2.0),
+                       maximumRadius);
 
             m_startAngleSpin = new QSpinBox(this);
             m_startAngleSpin->setObjectName(QStringLiteral("ItemPropertiesStartAngleValue"));
@@ -119,9 +117,8 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_shapeRadiusSpin->setSuffix(QStringLiteral(" px"));
             m_shapeRadiusSpin->setValue(m_initialShapeRadius);
             m_shapeRadiusSpin->setMinimumWidth(88);
-            connect(m_shapeRadiusSpin, &QSpinBox::valueChanged, this, [this](int value) {
-                m_shapeRadiusEdited = value != m_initialShapeRadius;
-            });
+            connect(m_shapeRadiusSpin, &QSpinBox::valueChanged, this,
+                    [this](int value) { m_shapeRadiusEdited = value != m_initialShapeRadius; });
         }
 
         if (!shape->isCustomShape() && (type == ShapeType::Rectangle || type == ShapeType::RoundedRectangle)) {
@@ -143,16 +140,16 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
                     [this](int value) { m_cornerEdited = value != m_initialCornerRadius; });
         }
     } else if (auto* stroke = dynamic_cast<StrokeItem*>(item)) {
-        m_strokeColorButton = ItemPropertiesFields::makeColorField(
-            this, stroke->strokeColor(), QStringLiteral("ItemPropertiesStrokeColorValue"),
-            ItemPropertiesFields::ColorIconRole::Border);
+        m_strokeColorButton = ItemPropertiesFields::makeColorField(this, stroke->strokeColor(),
+                                                                   QStringLiteral("ItemPropertiesStrokeColorValue"),
+                                                                   ItemPropertiesFields::ColorIconRole::Border);
 
-        m_strokeWidthSpin = new QDoubleSpinBox(this);
+        m_strokeWidthSpin = new QSpinBox(this);
         m_strokeWidthSpin->setObjectName(QStringLiteral("ItemPropertiesStrokeWidthValue"));
-        m_strokeWidthSpin->setDecimals(1);
-        m_strokeWidthSpin->setRange(0.5, 64.0);
-        m_strokeWidthSpin->setSingleStep(0.5);
-        m_strokeWidthSpin->setValue(stroke->strokeWidth());
+        m_strokeWidthSpin->setRange(1, 64);
+        m_strokeWidthSpin->setSingleStep(1);
+        m_strokeWidthSpin->setSuffix(QStringLiteral(" px"));
+        m_strokeWidthSpin->setValue(qRound(stroke->strokeWidth()));
         m_initialStrokeWidth = stroke->strokeWidth();
         m_strokeWidthSpin->setMinimumWidth(88);
     }

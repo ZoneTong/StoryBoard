@@ -11,8 +11,6 @@
 #include "ShapeItem.h"
 #include "StrokeItem.h"
 
-#include <QAction>
-#include <QActionGroup>
 #include <QColorDialog>
 #include <QPainter>
 #include <QPainterPath>
@@ -317,17 +315,10 @@ void StyleController::setBrushWidthUi(int width)
     if (m_window->m_view) {
         m_window->m_view->setBrushWidth(width);
     }
-    if (m_window->m_widthSpin) {
-        const QSignalBlocker blocker(m_window->m_widthSpin);
-        m_window->m_widthSpin->setValue(width);
-    }
-    if (m_window->m_brushWidthGroup) {
-        for (QAction* action : m_window->m_brushWidthGroup->actions()) {
-            if (action->data().toInt() == width) {
-                const QSignalBlocker blocker(action);
-                action->setChecked(true);
-                break;
-            }
+    for (QSpinBox* spin : {m_window->m_widthSpin, m_window->m_menuWidthSpin}) {
+        if (spin) {
+            const QSignalBlocker blocker(spin);
+            spin->setValue(width);
         }
     }
 }

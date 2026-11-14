@@ -185,15 +185,7 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
     m_window->m_widthSpin->setFixedWidth(74);
     m_window->m_widthSpin->setFixedHeight(MainWindow::kToolBarControlHeight);
     m_window->m_widthSpin->setToolTip(MainWindow::tr("Brush width"));
-    QObject::connect(m_window->m_widthSpin, &QSpinBox::valueChanged, m_window, [this](int value) {
-        if (value <= 0) {
-            return;
-        }
-        m_window->setBrushWidthUi(value);
-        m_window->m_settings.brushWidth = m_window->m_brushWidth;
-        m_window->m_settings.save();
-        m_window->m_style->applyStrokeWidthToSelection(m_window->m_brushWidth);
-    });
+    QObject::connect(m_window->m_widthSpin, &QSpinBox::valueChanged, m_window, &MainWindow::applyBrushWidth);
     m_window->setBrushWidthUi(m_window->m_brushWidth);
     mainBar->addWidget(m_window->m_widthSpin);
 }
