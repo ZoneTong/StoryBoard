@@ -5123,6 +5123,12 @@ int runSelfTest(const QString& reportPath)
             }
         }
         check(iconsOk, QStringLiteral("合并形状五项操作都带参照 PPT 的图标"));
+        QAction* heightUp = boolWindow.findChild<QAction*>(QStringLiteral("HeightUpAction"));
+        QAction* heightDown = boolWindow.findChild<QAction*>(QStringLiteral("HeightDownAction"));
+        QMenu* shapeMenu = boolWindow.findChild<QMenu*>(QStringLiteral("ShapeMenu"));
+        check(heightUp && heightDown && !heightUp->icon().isNull() && !heightDown->icon().isNull() && boolMenu &&
+                  !boolMenu->icon().isNull() && shapeMenu && !shapeMenu->icon().isNull(),
+              QStringLiteral("菜单栏为已有图标的同类功能补齐图标"));
         const bool named = uiText(QStringLiteral("Merged shape")) != QStringLiteral("Merged shape");
         check(named, QStringLiteral("合并图形的类型名有中文译文"), uiText(QStringLiteral("Merged shape")));
     }

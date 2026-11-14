@@ -357,9 +357,9 @@ void drawIconShape(QPainter& painter, IconId id)
         painter.setBrush(QColor(255, 255, 255));
         painter.drawRect(QRectF(3.0, 4.0, 12.0, 15.0));
         painter.setBrush(Qt::NoBrush);
-        painter.drawLine(QPointF(18.5, 16.5), QPointF(18.5, 9.5));
-        painter.drawLine(QPointF(18.5, 9.5), QPointF(15.8, 12.2));
-        painter.drawLine(QPointF(18.5, 9.5), QPointF(21.2, 12.2));
+        painter.drawLine(QPointF(18.5, 9.5), QPointF(18.5, 16.5));
+        painter.drawLine(QPointF(18.5, 16.5), QPointF(15.8, 13.8));
+        painter.drawLine(QPointF(18.5, 16.5), QPointF(21.2, 13.8));
         break;
     }
     case IconId::OrderUp: {

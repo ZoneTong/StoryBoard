@@ -716,6 +716,8 @@ void MainWindow::createShapeMenu()
 {
     m_shapeMenu = new QMenu(tr("Common shapes"), this);
     m_shapeMenu->setObjectName(QStringLiteral("ShapeMenu"));
+    m_shapeMenu->setIcon(makeIcon(IconId::Shapes, QColor(58, 64, 80), kToolBarIconSize));
+    m_shapeMenu->setObjectName(QStringLiteral("ShapeMenu"));
     m_shapeMenu->setToolTipsVisible(true);
 
     for (ShapeType type : allShapeTypes()) {
@@ -855,11 +857,15 @@ void MainWindow::createMenus()
 
     // 高度两项只写动作名：快捷键交给 QAction 自己显示，手写 “] / [” 会跟它重复一遍。
     QAction* heightUpAct = editMenu->addAction(tr("Height +1 (stack up)"));
+    heightUpAct->setObjectName(QStringLiteral("HeightUpAction"));
+    heightUpAct->setIcon(makeIcon(IconId::OrderUp, QColor(58, 64, 80), kToolBarIconSize));
     heightUpAct->setShortcut(QKeySequence(Qt::Key_BracketRight));
     heightUpAct->setStatusTip(tr("Raise the stacking height of selected items (shortcut ])"));
     connect(heightUpAct, &QAction::triggered, this, [applySelectedHeight]() { applySelectedHeight(1); });
 
     QAction* heightDownAct = editMenu->addAction(tr("Height -1 (stack down)"));
+    heightDownAct->setObjectName(QStringLiteral("HeightDownAction"));
+    heightDownAct->setIcon(makeIcon(IconId::OrderDown, QColor(58, 64, 80), kToolBarIconSize));
     heightDownAct->setShortcut(QKeySequence(Qt::Key_BracketLeft));
     heightDownAct->setStatusTip(tr("Lower the stacking height of selected items (shortcut [)"));
     connect(heightDownAct, &QAction::triggered, this, [applySelectedHeight]() { applySelectedHeight(-1); });
@@ -903,6 +909,7 @@ void MainWindow::createMenus()
     // 合并形状：与 PPT「合并形状」同一套命名——联合 / 组合 / 拆分 / 相交 / 剪除。
     QMenu* boolMenu = editMenu->addMenu(tr("Merge shapes"));
     boolMenu->setObjectName(QStringLiteral("BoolMenu"));
+    boolMenu->setIcon(makeIcon(IconId::MergeUnion, QColor(58, 64, 80), kToolBarIconSize));
     const QList<QPair<BoolOps::Operation, QString>> boolEntries = {
         {BoolOps::Operation::Union, tr("Union")},       {BoolOps::Operation::Combine, tr("Combine")},
         {BoolOps::Operation::Fragment, tr("Fragment")}, {BoolOps::Operation::Intersect, tr("Intersect")},
@@ -937,6 +944,7 @@ void MainWindow::createMenus()
 
     QMenu* fillStyleMenu = insertMenu->addMenu(tr("Fill style"));
     fillStyleMenu->setObjectName(QStringLiteral("FillStyleMenu"));
+    fillStyleMenu->setIcon(makeFillStyleIcon(m_fillStyle, m_fillColor.isValid() ? m_fillColor : m_brushColor, 16));
     fillStyleMenu->addAction(m_fillNoneAct);
     fillStyleMenu->addAction(m_fillSolidAct);
     fillStyleMenu->addAction(m_fillHachureAct);
@@ -955,6 +963,7 @@ void MainWindow::createMenus()
     insertMenu->addAction(m_bgColorAct);
     insertMenu->addAction(m_clearBgAct);
     QMenu* fillMenu = insertMenu->addMenu(tr("Background fill mode"));
+    fillMenu->setIcon(makeIcon(IconId::Background, QColor(58, 64, 80), kToolBarIconSize));
     fillMenu->addAction(m_bgStretchAct);
     fillMenu->addAction(m_bgFitAct);
     fillMenu->addAction(m_bgTileAct);
