@@ -4906,6 +4906,70 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <source>Border width</source>
       <translation>描线宽度</translation>
     </message>
+    <message>
+      <source>Text content</source>
+      <translation>文字内容</translation>
+    </message>
+    <message>
+      <source>Edit the selected text</source>
+      <translation>编辑选中的文字</translation>
+    </message>
+    <message>
+      <source>Font</source>
+      <translation>字体</translation>
+    </message>
+    <message>
+      <source>Font size</source>
+      <translation>字号</translation>
+    </message>
+    <message>
+      <source>Bold</source>
+      <translation>粗体</translation>
+    </message>
+    <message>
+      <source>Italic</source>
+      <translation>斜体</translation>
+    </message>
+    <message>
+      <source>Text color</source>
+      <translation>文字颜色</translation>
+    </message>
+    <message>
+      <source>Image name</source>
+      <translation>图片名称</translation>
+    </message>
+    <message>
+      <source>Replace image…</source>
+      <translation>替换图片…</translation>
+    </message>
+    <message>
+      <source>Change text content</source>
+      <translation>修改文字内容</translation>
+    </message>
+    <message>
+      <source>Change text font</source>
+      <translation>修改文字字体</translation>
+    </message>
+    <message>
+      <source>Change text color</source>
+      <translation>修改文字颜色</translation>
+    </message>
+    <message>
+      <source>Change image name</source>
+      <translation>修改图片名称</translation>
+    </message>
+    <message>
+      <source>Replace image</source>
+      <translation>替换图片</translation>
+    </message>
+    <message>
+      <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;All files (*)</source>
+      <translation>图片 (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;所有文件 (*)</translation>
+    </message>
+    <message>
+      <source>Unable to load the selected image.</source>
+      <translation>无法加载所选图片。</translation>
+    </message>
   </context>
 <context>
     <name>ItemStyleVisuals</name>

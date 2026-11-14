@@ -224,6 +224,7 @@ void UiMenuBuilder::buildMenus()
         m_window->m_docks->itemPanel()->setSelectionActions(
             m_window->m_alignActions, m_window->m_boolActions, m_window->m_duplicateAct, m_window->m_deleteAct,
             m_window->m_rotateCwAct, m_window->m_rotateCcwAct, m_window->m_groupAct, m_window->m_ungroupAct);
+        m_window->m_docks->itemPanel()->setItemActions(m_window->m_smoothAct, m_window->m_itemPropsAct);
         m_window->m_docks->itemPanel()->refresh();
     }
 

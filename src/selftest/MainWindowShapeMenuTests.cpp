@@ -153,18 +153,8 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                       .arg(exportButton && exportButton->isVisible() ? 1 : 0)
                       .arg(exportButton ? exportButton->width() : 0)
                       .arg(exportAction && !exportAction->icon().isNull() ? 1 : 0));
-        ctx.check(alignButton && alignButton->isVisible() && alignButton->width() > 0 && !alignButton->icon().isNull(),
-                  QStringLiteral("工具栏对齐下拉按钮正常显示"),
-                  QStringLiteral("visible=%1 width=%2 icon=%3")
-                      .arg(alignButton && alignButton->isVisible() ? 1 : 0)
-                      .arg(alignButton ? alignButton->width() : 0)
-                      .arg(alignButton && !alignButton->icon().isNull() ? 1 : 0));
-        ctx.check(morphButton && morphButton->isVisible() && morphButton->width() > 0 && !morphButton->icon().isNull(),
-                  QStringLiteral("工具栏化形下拉按钮正常显示"),
-                  QStringLiteral("visible=%1 width=%2 icon=%3")
-                      .arg(morphButton && morphButton->isVisible() ? 1 : 0)
-                      .arg(morphButton ? morphButton->width() : 0)
-                      .arg(morphButton && !morphButton->icon().isNull() ? 1 : 0));
+        ctx.check(!alignButton && !morphButton, QStringLiteral("工具栏不再显示对齐和化形按钮"),
+                  QStringLiteral("align=%1 morph=%2").arg(alignButton ? 1 : 0).arg(morphButton ? 1 : 0));
 
         QToolButton* customShapeButton =
             shapeWindow.findChild<QToolButton*>(QStringLiteral("ToolBarCustomShapeButton"));

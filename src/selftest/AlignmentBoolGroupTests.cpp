@@ -135,16 +135,14 @@ void selftest::runAlignmentTests(Context& ctx)
 
 void selftest::runAlignmentMenuTests(Context& ctx)
 {
-    // 菜单与工具栏都提供对齐下拉，且不再保留重复的 Ctrl 组合键。
+    // 菜单保留对齐下拉；主工具栏不再放对齐按钮，入口集中到菜单与编辑图元卡。
     {
         MainWindow alignWindow;
         QMenu* alignMenu = alignWindow.findChild<QMenu*>(QStringLiteral("AlignMenu"));
         QToolButton* alignButton = alignWindow.findChild<QToolButton*>(QStringLiteral("AlignToolButton"));
         ctx.check(alignMenu && alignMenu->actions().size() == 8, QStringLiteral("编辑菜单提供 8 项对齐动作"),
                   alignMenu ? QString::number(alignMenu->actions().size()) : QString());
-        ctx.check(alignButton && alignButton->menu() && alignButton->menu()->actions().size() == 8 &&
-                      alignButton->popupMode() == QToolButton::InstantPopup,
-                  QStringLiteral("工具栏对齐按钮是可下拉控件且与菜单同项"));
+        ctx.check(!alignButton, QStringLiteral("工具栏不再显示对齐按钮"));
 
         QAction* redoAction = nullptr;
         QAction* zoomInAction = nullptr;
@@ -398,29 +396,16 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                   QStringLiteral("pixel=%1").arg(internalEdge.name()));
     }
     {
-        // 化形要能从菜单、工具栏和右键菜单三处进入，且共用同一批动作。
+        // 化形仍然能从菜单、右键菜单和编辑图元卡进入，但主工具栏不再放化形按钮。
         MainWindow boolWindow;
         QToolButton* boolButton = boolWindow.findChild<QToolButton*>(QStringLiteral("BoolToolButton"));
         QMenu* boolMenu = boolWindow.findChild<QMenu*>(QStringLiteral("BoolMenu"));
         CanvasView* boolView = boolWindow.findChild<CanvasView*>();
         ctx.check(boolMenu && boolMenu->actions().size() == 5, QStringLiteral("编辑菜单提供 5 项化形操作"),
                   boolMenu ? QString::number(boolMenu->actions().size()) : QString());
-        ctx.check(boolButton && boolButton->menu() && boolButton->menu()->actions().size() == 5 &&
-                      boolButton->popupMode() == QToolButton::InstantPopup,
-                  QStringLiteral("工具栏化形按钮是可下拉控件且与菜单同项"));
+        ctx.check(!boolButton, QStringLiteral("工具栏不再显示化形按钮"));
         ctx.check(boolView && boolView->contextMenuGroupCount() >= 1, QStringLiteral("画布右键菜单挂上了化形分组"),
                   boolView ? QString::number(boolView->contextMenuGroupCount()) : QString());
-        const QList<QAction*> buttonActions = boolButton ? boolButton->menu()->actions() : QList<QAction*>();
-        bool shared = buttonActions.size() == 5;
-        if (shared) {
-            for (int i = 0; i < buttonActions.size(); ++i) {
-                if (i < boolMenu->actions().size() && buttonActions.at(i) != boolMenu->actions().at(i)) {
-                    shared = false;
-                    break;
-                }
-            }
-        }
-        ctx.check(shared, QStringLiteral("工具栏与菜单栏共用同一批化形动作"));
         bool iconsOk = boolMenu && boolMenu->actions().size() == 5;
         if (iconsOk) {
             for (QAction* action : boolMenu->actions()) {
