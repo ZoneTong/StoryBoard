@@ -44,8 +44,10 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
 
     // 紧凑布局：不再做带文字的折叠分组标题，各行内容直接平铺，
     // 行首用小图标标注用途（描边 / 填充 / 边框 / 透明度 / 圆角 / 图层 / 顺序）。
+    // 选中后的操作行（复制/删除/旋转、对齐、化形、组合）统一放在卡片底部，
+    // 位于「图层与高度」行之前，避免操作按钮压在样式行上方。
     m_selectionCard = new ItemDockPanelSelectionCard(content);
-    layout->addWidget(m_selectionCard);
+    m_selectionCard->setObjectName(QStringLiteral("ItemSelectionRowsCard"));
 
     m_colorsCard = new ItemDockPanelColorsCard(content);
     m_fillBorderCard = new ItemDockPanelFillBorderCard(content);
@@ -61,7 +63,9 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     layout->addWidget(m_valueCard);
 
     m_arrangeCard = new ItemDockPanelArrangeCard(content);
+    m_arrangeCard->setObjectName(QStringLiteral("ItemArrangeCard"));
     layout->addWidget(m_arrangeCard);
+    layout->addWidget(m_selectionCard);
     layout->addStretch(1);
 
     scroll->setWidget(content);
