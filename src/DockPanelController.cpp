@@ -9,6 +9,7 @@
 #include <QEvent>
 #include <QStatusBar>
 #include <QTimer>
+#include <QToolBar>
 
 DockPanelController::DockPanelController(MainWindow* window) : m_window(window) {}
 
@@ -23,9 +24,8 @@ void DockPanelController::createLayerDock()
     m_layerPanel = new LayerPanel(m_window->m_scene, m_layerDock);
     m_layerDock->setWidget(m_layerPanel);
     m_window->addDockWidget(Qt::RightDockWidgetArea, m_layerDock);
-    // 卡片不铺满右侧：给出合适的高度区间，避免单独显示时被拉到整列高度。
+    // 卡片不铺满右侧：给出最小高度，实际高度由上方模式卡之外的剩余空间决定。
     m_layerDock->setMinimumHeight(200);
-    m_layerDock->setMaximumHeight(420);
 
     QObject::connect(m_layerPanel, &LayerPanel::statusMessage, m_window,
                      [this](const QString& message) { m_window->statusBar()->showMessage(message, 3000); });
@@ -41,8 +41,8 @@ void DockPanelController::createItemDock()
 
     m_itemPanel = new ItemDockPanel(m_window->m_scene, m_itemDock);
     m_itemDock->setWidget(m_itemPanel);
-    m_window->addDockWidget(Qt::RightDockWidgetArea, m_itemDock);
-    // 编辑图元卡同样限定高度区间，显示 / 隐藏时不会把另一张卡顶到整列高。
+    m_window->addDockWidget(Qt::LeftDockWidgetArea, m_itemDock);
+    // 编辑图元卡固定在左侧，高度限定在合适区间，避免单独占满整列。
     m_itemDock->setMinimumHeight(240);
     m_itemDock->setMaximumHeight(620);
 
@@ -57,79 +57,111 @@ void DockPanelController::createItemDock()
     m_itemDock->setVisible(false);
 }
 
+void DockPanelController::createViewModeDock()
+{
+    m_viewModeDock = new QDockWidget(MainWindow::tr("View mode"), m_window);
+    m_viewModeDock->setObjectName(QStringLiteral("ViewModeDock"));
+    m_viewModeDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    // 不提供关闭按钮，避免用户误关后没有入口重新打开模式卡。
+    m_viewModeDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
+    m_window->addDockWidget(Qt::RightDockWidgetArea, m_viewModeDock);
+    m_viewModeDock->setMinimumHeight(90);
+    m_viewModeDock->setMaximumHeight(130);
+}
+
+void DockPanelController::attachViewModeToolBar()
+{
+    if (!m_viewModeDock) {
+        return;
+    }
+    auto* modeBar = m_window->findChild<QToolBar*>(QStringLiteral("ModeToolBar"));
+    if (!modeBar) {
+        return;
+    }
+    // 模式栏原先由 UiBuilderController 建在左侧工具条；这里把它从工具条区域摘下，
+    // 作为右上卡片的唯一内容，保留原动作、图标和翻译，不改动大文件的构建。
+    m_window->removeToolBar(modeBar);
+    modeBar->setOrientation(Qt::Horizontal);
+    m_viewModeDock->setWidget(modeBar);
+}
+
 QStringList DockPanelController::currentDockOrder() const
 {
-    if (!m_layerDock || !m_itemDock) {
+    if (!m_viewModeDock || !m_layerDock) {
         return {};
     }
-    // 两张卡都在右侧且都已显示时按实际上下位置排序；否则沿用上一次记录，
-    // 避免编辑图元卡隐藏时无法判断它的位置而把顺序写丢。
-    if (m_window->dockWidgetArea(m_layerDock) != Qt::RightDockWidgetArea ||
-        m_window->dockWidgetArea(m_itemDock) != Qt::RightDockWidgetArea || !m_layerDock->isVisible() ||
-        !m_itemDock->isVisible()) {
+    // 右侧两张卡都显示时按实际上下位置排序；否则沿用上一次记录，
+    // 避免其中一张被隐藏时无法判断位置而把顺序写丢。
+    if (m_window->dockWidgetArea(m_viewModeDock) != Qt::RightDockWidgetArea ||
+        m_window->dockWidgetArea(m_layerDock) != Qt::RightDockWidgetArea || !m_viewModeDock->isVisible() ||
+        !m_layerDock->isVisible()) {
         return m_dockOrder;
     }
+    const int viewTop = m_viewModeDock->mapTo(m_window, QPoint(0, 0)).y();
     const int layerTop = m_layerDock->mapTo(m_window, QPoint(0, 0)).y();
-    const int itemTop = m_itemDock->mapTo(m_window, QPoint(0, 0)).y();
-    if (layerTop == itemTop) {
+    if (viewTop == layerTop) {
         return m_dockOrder;
     }
     QStringList order;
-    if (layerTop < itemTop) {
-        order << QStringLiteral("LayerDock") << QStringLiteral("ItemDock");
+    if (viewTop < layerTop) {
+        order << QStringLiteral("ViewModeDock") << QStringLiteral("LayerDock");
     } else {
-        order << QStringLiteral("ItemDock") << QStringLiteral("LayerDock");
+        order << QStringLiteral("LayerDock") << QStringLiteral("ViewModeDock");
     }
     return order;
 }
 
 void DockPanelController::applyDockLayout()
 {
-    if (!m_layerDock || !m_itemDock) {
+    if (!m_viewModeDock || !m_layerDock || !m_itemDock) {
         return;
     }
     m_applyingDockLayout = true;
 
-    // 默认图层卡在上、编辑图元卡在下；用户在界面上拖拽调整过则按设置文件恢复。
+    // 默认视图模式卡在上、图层卡在下；用户拖拽调整过则按设置文件恢复右侧顺序。
     QStringList order;
     for (const QString& name : m_window->m_settings.dockOrder) {
-        if ((name == QStringLiteral("ItemDock") || name == QStringLiteral("LayerDock")) && !order.contains(name)) {
+        if ((name == QStringLiteral("ViewModeDock") || name == QStringLiteral("LayerDock")) &&
+            !order.contains(name)) {
             order.append(name);
         }
     }
     if (order.size() != 2) {
-        order = {QStringLiteral("LayerDock"), QStringLiteral("ItemDock")};
+        order = {QStringLiteral("ViewModeDock"), QStringLiteral("LayerDock")};
     }
     m_dockOrder = order;
     m_window->m_settings.dockOrder = order;
 
-    QDockWidget* first = order.first() == QStringLiteral("LayerDock") ? m_layerDock : m_itemDock;
-    QDockWidget* second = first == m_layerDock ? m_itemDock : m_layerDock;
+    QDockWidget* first = order.first() == QStringLiteral("ViewModeDock") ? m_viewModeDock : m_layerDock;
+    QDockWidget* second = first == m_viewModeDock ? m_layerDock : m_viewModeDock;
 
-    // 重新排布两张卡：同一右侧区域，竖直切分，first 在上、second 在下。
-    m_window->removeDockWidget(m_layerDock);
+    // 编辑图元卡固定左侧；视图模式 / 图层卡在右侧竖直切分，first 在上、second 在下。
     m_window->removeDockWidget(m_itemDock);
+    m_window->removeDockWidget(m_viewModeDock);
+    m_window->removeDockWidget(m_layerDock);
+    m_window->addDockWidget(Qt::LeftDockWidgetArea, m_itemDock);
     m_window->addDockWidget(Qt::RightDockWidgetArea, first);
     m_window->addDockWidget(Qt::RightDockWidgetArea, second);
     m_window->splitDockWidget(first, second, Qt::Vertical);
-    // 默认给一个合适高度，不占满右侧整列；上限已在建卡时限定。
-    m_window->resizeDocks({m_layerDock, m_itemDock}, {300, 420}, Qt::Vertical);
+    // 右上模式卡保持紧凑，右下图层卡吃掉剩余高度，落在右下角。
+    m_window->resizeDocks({m_viewModeDock, m_layerDock}, {100, 1000}, Qt::Vertical);
     QTimer::singleShot(0, m_window, [this]() {
         // 窗口显示后再定一次初始高度：构造阶段窗口还没有实际尺寸，切分比例会失真。
-        m_window->resizeDocks({m_layerDock, m_itemDock}, {300, 420}, Qt::Vertical);
+        m_window->resizeDocks({m_viewModeDock, m_layerDock}, {100, 1000}, Qt::Vertical);
     });
 
-    // 拖动标题栏调整卡片相对顺序时记录新顺序（同一区域内换位不会有位置信号，
+    // 拖动标题栏调整右侧卡片相对顺序时记录新顺序（同一区域内换位不会有位置信号，
     // 用移动事件兜底，延迟到本轮布局结束后再读实际坐标）。
+    m_viewModeDock->installEventFilter(m_window);
     m_layerDock->installEventFilter(m_window);
-    m_itemDock->installEventFilter(m_window);
+    QObject::connect(m_viewModeDock, &QDockWidget::dockLocationChanged, m_window, [this](Qt::DockWidgetArea) {
+        QTimer::singleShot(0, m_window, [this]() { rememberDockOrder(); });
+    });
     QObject::connect(m_layerDock, &QDockWidget::dockLocationChanged, m_window, [this](Qt::DockWidgetArea) {
         QTimer::singleShot(0, m_window, [this]() { rememberDockOrder(); });
     });
-    QObject::connect(m_itemDock, &QDockWidget::dockLocationChanged, m_window, [this](Qt::DockWidgetArea) {
-        QTimer::singleShot(0, m_window, [this]() { rememberDockOrder(); });
-    });
 
+    m_viewModeDock->setVisible(true);
     m_layerDock->setVisible(true);
     m_itemDock->setVisible(false);
     m_applyingDockLayout = false;
@@ -151,7 +183,7 @@ void DockPanelController::rememberDockOrder()
 
 void DockPanelController::handleMoveEvent(QObject* watched, QEvent* event)
 {
-    if ((watched == m_layerDock || watched == m_itemDock) && event->type() == QEvent::Move) {
+    if ((watched == m_viewModeDock || watched == m_layerDock) && event->type() == QEvent::Move) {
         // 卡片被拖到新位置后，等布局稳定再读上下关系并落盘。
         QTimer::singleShot(0, m_window, [this]() { rememberDockOrder(); });
     }
@@ -165,9 +197,5 @@ void DockPanelController::updateItemDockVisibility()
     const bool hasSelection = !m_window->m_scene->selectedCanvasItems().isEmpty();
     if (m_itemDock->isVisible() != hasSelection) {
         m_itemDock->setVisible(hasSelection);
-    }
-    // 选中出现 / 清空隐藏时都重新按默认比例排一次，避免卡片被拉到整列高。
-    if (!m_itemDock->isVisible() || m_itemDock->height() >= 300) {
-        m_window->resizeDocks({m_layerDock, m_itemDock}, {300, 420}, Qt::Vertical);
     }
 }

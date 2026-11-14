@@ -271,14 +271,14 @@ void selftest::runCustomShapeDockTests(Context& ctx)
         const int borderColorIndex =
             content && content->layout() && borderColorRow ? content->layout()->indexOf(borderColorRow) : -1;
         ctx.check(fillStyleIndex >= 0 && fillColorIndex > fillStyleIndex && borderStyleIndex > fillColorIndex &&
-                      borderWidthIndex > borderStyleIndex && borderColorIndex > borderWidthIndex,
-                  QStringLiteral("编辑图元卡按填充样式、填充颜色、边框样式、边框宽度、边框颜色排列"),
+                      borderColorIndex > borderStyleIndex && borderWidthIndex > borderColorIndex,
+                  QStringLiteral("编辑图元卡按填充样式、填充颜色、边框样式、边框颜色、边框宽度排列"),
                   QStringLiteral("%1/%2/%3/%4/%5")
                       .arg(fillStyleIndex)
                       .arg(fillColorIndex)
                       .arg(borderStyleIndex)
-                      .arg(borderWidthIndex)
-                      .arg(borderColorIndex));
+                      .arg(borderColorIndex)
+                      .arg(borderWidthIndex));
         ctx.check(ItemDockPanel::tr("Border color") == QStringLiteral("边框颜色") &&
                       ItemDockPanel::tr("Height +1") == QStringLiteral("高度 +1") &&
                       ItemDockPanel::tr("Layer and height") == QStringLiteral("图层与高度"),
@@ -336,7 +336,8 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 customTexts.append(action->text());
             }
         }
-        ctx.check(itemDock && dockPanel && !itemDock->isVisible(), QStringLiteral("右侧提供编辑图元卡且无选中时隐藏"));
+        ctx.check(itemDock && dockPanel && itemDock->isVisible() == false,
+                  QStringLiteral("左侧提供编辑图元卡且无选中时隐藏"));
         ctx.check(dockCustomMenu && customTexts.contains(QStringLiteral("dock-probe")),
                   QStringLiteral("自定义图形追加到常见图形下方的下拉菜单"), customTexts.join(QStringLiteral("|")));
         ctx.check(dockWindow.findChild<QAction*>(QStringLiteral("ItemDockToggleAction")) != nullptr,
@@ -359,14 +360,22 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                   QStringLiteral("工具卡可插入矩形且选中后卡片自动出现"));
 
         QDockWidget* layerDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("LayerDock"));
-        ctx.check(layerDock && dockWindow.dockWidgetArea(layerDock) == Qt::RightDockWidgetArea,
-                  QStringLiteral("右侧提供图层卡"));
-        ctx.check(layerDock && itemDock && itemDock->isVisible() &&
-                      layerDock->mapTo(&dockWindow, QPoint(0, 0)).y() < itemDock->mapTo(&dockWindow, QPoint(0, 0)).y(),
-                  QStringLiteral("图层卡默认在编辑图元卡上方"));
-        ctx.check(layerDock && itemDock && layerDock->height() < dockWindow.height() - 100 &&
-                      itemDock->height() < dockWindow.height() - 100,
-                  QStringLiteral("两张卡片默认高度不占满窗口"));
+        QDockWidget* viewModeDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("ViewModeDock"));
+        QToolBar* modeBar = dockWindow.findChild<QToolBar*>(QStringLiteral("ModeToolBar"));
+        ctx.check(viewModeDock && modeBar && viewModeDock->widget() == modeBar,
+                  QStringLiteral("视图模式栏作为右上角卡片"));
+        ctx.check(itemDock && dockWindow.dockWidgetArea(itemDock) == Qt::LeftDockWidgetArea,
+                  QStringLiteral("编辑图元卡默认停靠左侧"));
+        ctx.check(viewModeDock && layerDock && dockWindow.dockWidgetArea(viewModeDock) == Qt::RightDockWidgetArea &&
+                      dockWindow.dockWidgetArea(layerDock) == Qt::RightDockWidgetArea,
+                  QStringLiteral("视图模式卡与图层卡默认停靠右侧"));
+        ctx.check(viewModeDock && layerDock &&
+                      viewModeDock->mapTo(&dockWindow, QPoint(0, 0)).y() <
+                          layerDock->mapTo(&dockWindow, QPoint(0, 0)).y(),
+                  QStringLiteral("视图模式卡在右上角、图层卡在右下角"));
+        ctx.check(viewModeDock && layerDock && viewModeDock->height() < dockWindow.height() - 100 &&
+                      layerDock->height() < dockWindow.height() - 100,
+                  QStringLiteral("右侧两张卡片默认高度不占满窗口"));
 
         if (selectedShape && dockPanel) {
             QList<QSpinBox*> valueSpins = dockPanel->findChildren<QSpinBox*>(QStringLiteral("ItemValueSpin"));

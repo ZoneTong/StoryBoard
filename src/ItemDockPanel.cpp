@@ -54,12 +54,12 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     m_colorsCard = new ItemDockPanelColorsCard(content);
     m_fillBorderCard = new ItemDockPanelFillBorderCard(content);
 
-    // 各行按功能顺序平铺：填充样式 → 填充颜色 → 边框样式 → 边框宽度 → 边框颜色。
+    // 各行按功能顺序平铺：填充样式 → 填充颜色 → 边框样式 → 边框颜色 → 边框宽度。
     layout->addWidget(m_fillBorderCard->fillStyleRow());
     layout->addWidget(m_colorsCard->fillColorRow());
     layout->addWidget(m_fillBorderCard->borderStyleRow());
-    layout->addWidget(m_fillBorderCard->borderWidthRow());
     layout->addWidget(m_colorsCard->borderColorRow());
+    layout->addWidget(m_fillBorderCard->borderWidthRow());
 
     m_valueCard = new ItemDockPanelValueCard(content);
     layout->addWidget(m_valueCard);

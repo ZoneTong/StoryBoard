@@ -21,8 +21,8 @@ class AppSettings {
     QString lastCanvasPath;
     QString canvasesDirectory;
     QByteArray windowGeometry;
-    // 右侧卡片的上下顺序（QDockWidget 的 objectName，图层卡 / 编辑图元卡）。
-    // 用户在界面上拖拽换位后自动写回，启动时按它恢复。
+    // 右侧卡片的上下顺序（QDockWidget 的 objectName：视图模式卡 / 图层卡）。
+    // 编辑图元卡固定在左侧；右侧两张卡由用户拖拽换位后自动写回，启动时恢复。
     QStringList dockOrder;
     // 自定义快捷键：键是动作的默认组合键（便携文本），值是新组合键；
     // 没有条目就用代码里的默认值。

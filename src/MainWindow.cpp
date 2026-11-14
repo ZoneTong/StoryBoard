@@ -145,9 +145,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     createShapeMenu();
     m_docks->createLayerDock();
     m_docks->createItemDock();
-    m_docks->applyDockLayout();
+    m_docks->createViewModeDock();
     createMenus();
     createToolBars();
+    m_docks->attachViewModeToolBar();
+    m_docks->applyDockLayout();
     createStatusBar();
     connectSignals();
     m_shortcuts->applyShortcutOverrides();
