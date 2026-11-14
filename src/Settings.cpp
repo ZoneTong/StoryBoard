@@ -182,6 +182,19 @@ void mergeSettings(SettingsMap& values, const AppSettings& settings)
         values.remove(QStringLiteral("layout/dockOrder"));
     }
 
+    // 编辑图元卡位置：是否已经由用户移动过、当前停靠侧、是否悬浮以及悬浮几何。
+    values.insert(QStringLiteral("layout/itemDockSaved"),
+                  settings.itemDockStateSaved ? QStringLiteral("true") : QStringLiteral("false"));
+    values.insert(QStringLiteral("layout/itemDockFloating"),
+                  settings.itemDockFloating ? QStringLiteral("true") : QStringLiteral("false"));
+    values.insert(QStringLiteral("layout/itemDockArea"), settings.itemDockArea);
+    if (!settings.itemDockGeometry.isEmpty()) {
+        values.insert(QStringLiteral("layout/itemDockGeometryBase64"),
+                      QString::fromLatin1(settings.itemDockGeometry.toBase64()));
+    } else {
+        values.remove(QStringLiteral("layout/itemDockGeometryBase64"));
+    }
+
     // 快捷键整段重写：先清掉旧的 shortcuts/*，再按当前内存里的覆盖表写入，
     // 这样「恢复默认」删掉的条目才会真的从文件里消失。
     mergeShortcutSettings(values, settings);
@@ -256,6 +269,12 @@ void AppSettings::load()
     for (QString& name : dockOrder) {
         name = name.trimmed();
     }
+
+    itemDockStateSaved = boolFromMap(values, QStringLiteral("layout/itemDockSaved"), itemDockStateSaved);
+    itemDockFloating = boolFromMap(values, QStringLiteral("layout/itemDockFloating"), itemDockFloating);
+    const QString savedItemDockArea = values.value(QStringLiteral("layout/itemDockArea")).trimmed().toLower();
+    itemDockArea = savedItemDockArea == QLatin1String("right") ? QStringLiteral("right") : QStringLiteral("left");
+    itemDockGeometry = QByteArray::fromBase64(values.value(QStringLiteral("layout/itemDockGeometryBase64")).toLatin1());
 
     shortcutOverrides.clear();
     const QString shortcutPrefix = QStringLiteral("shortcuts/");

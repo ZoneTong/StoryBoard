@@ -36,6 +36,7 @@
 #include <QDir>
 #include <QDockWidget>
 #include <QDoubleSpinBox>
+#include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
 #include <QFont>
@@ -116,6 +117,68 @@ void selftest::runDockOrderPersistenceTests(Context& ctx)
         ctx.check(orderWindowClosed && savedOrderAfterClose.dockOrder == seededOrder.dockOrder,
                   QStringLiteral("关闭窗口时把卡片顺序写回设置文件"),
                   savedOrderAfterClose.dockOrder.join(QStringLiteral("|")));
+        qunsetenv("STORYBOARD_CONFIG");
+    }
+
+    // 编辑图元卡：首次启动停靠左侧并显示；拖动成悬浮窗口后保存位置，重启按保存的位置恢复。
+    {
+        const QString itemConfig =
+            QDir(ctx.workDirectory)
+                .filePath(QStringLiteral("item-dock-config-%1.ini").arg(QCoreApplication::applicationPid()));
+        QFile::remove(itemConfig);
+        qputenv("STORYBOARD_CONFIG", itemConfig.toLocal8Bit());
+
+        QPoint movedPosition;
+        {
+            MainWindow itemWindow;
+            itemWindow.resize(1200, 800);
+            itemWindow.show();
+            QApplication::processEvents();
+            QDockWidget* itemDock = itemWindow.findChild<QDockWidget*>(QStringLiteral("ItemDock"));
+            ctx.check(itemDock && !itemDock->isFloating() &&
+                          itemWindow.dockWidgetArea(itemDock) == Qt::LeftDockWidgetArea && itemDock->isVisible(),
+                      QStringLiteral("首次启动编辑图元卡显示并固定在窗口左侧"),
+                      itemDock ? QStringLiteral("floating=%1 area=%2 visible=%3")
+                                     .arg(itemDock->isFloating() ? 1 : 0)
+                                     .arg(static_cast<int>(itemWindow.dockWidgetArea(itemDock)))
+                                     .arg(itemDock->isVisible() ? 1 : 0)
+                               : QString());
+
+            if (itemDock) {
+                itemDock->setFloating(true);
+                itemDock->resize(300, 480);
+                itemDock->move(320, 180);
+                QApplication::processEvents();
+                movedPosition = itemDock->pos();
+                QElapsedTimer saveWait;
+                saveWait.start();
+                while (saveWait.elapsed() < 500) {
+                    QApplication::processEvents();
+                }
+                AppSettings movedSettings;
+                movedSettings.load();
+                ctx.check(movedSettings.itemDockStateSaved && movedSettings.itemDockFloating &&
+                              !movedSettings.itemDockGeometry.isEmpty(),
+                          QStringLiteral("编辑图元卡悬浮后把位置写入设置文件"));
+            }
+            itemWindow.close();
+            QApplication::processEvents();
+        }
+
+        {
+            MainWindow restoredWindow;
+            restoredWindow.resize(1200, 800);
+            restoredWindow.show();
+            QApplication::processEvents();
+            QDockWidget* itemDock = restoredWindow.findChild<QDockWidget*>(QStringLiteral("ItemDock"));
+            const bool positionRestored = itemDock && qAbs(itemDock->pos().x() - movedPosition.x()) <= 24 &&
+                                          qAbs(itemDock->pos().y() - movedPosition.y()) <= 24;
+            ctx.check(itemDock && itemDock->isFloating() && positionRestored,
+                      QStringLiteral("重启后按设置恢复编辑图元卡的悬浮位置"),
+                      itemDock ? QStringLiteral("%1,%2").arg(itemDock->pos().x()).arg(itemDock->pos().y()) : QString());
+            restoredWindow.close();
+            QApplication::processEvents();
+        }
         qunsetenv("STORYBOARD_CONFIG");
     }
 }

@@ -366,8 +366,9 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 customTexts.append(action->text());
             }
         }
-        ctx.check(itemDock && dockPanel && itemDock->isFloating() && !itemDock->isVisible(),
-                  QStringLiteral("编辑图元卡默认悬浮，无选中时隐藏"));
+        ctx.check(itemDock && dockPanel && !itemDock->isFloating() &&
+                      dockWindow.dockWidgetArea(itemDock) == Qt::LeftDockWidgetArea && itemDock->isVisible(),
+                  QStringLiteral("编辑图元卡首次启动显示并固定在窗口左侧"));
         ctx.check(dockCustomMenu && customTexts.contains(QStringLiteral("dock-probe")),
                   QStringLiteral("自定义图形追加到常见图形下方的下拉菜单"), customTexts.join(QStringLiteral("|")));
         ctx.check(dockWindow.findChild<QAction*>(QStringLiteral("ItemDockToggleAction")) != nullptr,
@@ -407,8 +408,9 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
         QToolBar* modeBar = dockWindow.findChild<QToolBar*>(QStringLiteral("ModeToolBar"));
         ctx.check(viewModeDock && modeBar && viewModeDock->widget() == modeBar,
                   QStringLiteral("视图模式栏作为右上角卡片"));
-        // 悬浮后 dockWidgetArea 仍保留停靠前的区域，只以 isFloating 判断是否已脱离主窗口。
-        ctx.check(itemDock && itemDock->isFloating(), QStringLiteral("编辑图元卡默认悬浮成独立窗口"));
+        // 默认停靠在左侧，不属于悬浮窗口。
+        ctx.check(itemDock && !itemDock->isFloating() && dockWindow.dockWidgetArea(itemDock) == Qt::LeftDockWidgetArea,
+                  QStringLiteral("编辑图元卡默认停靠左侧"));
         ctx.check(viewModeDock && layerDock && dockWindow.dockWidgetArea(viewModeDock) == Qt::RightDockWidgetArea &&
                       dockWindow.dockWidgetArea(layerDock) == Qt::RightDockWidgetArea,
                   QStringLiteral("视图模式卡与图层卡默认停靠右侧"));
@@ -959,6 +961,8 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                       QStringLiteral("index=%1->%2").arg(undoIndexBeforeSmooth).arg(dockScene->undoStack()->index()));
 
             // 悬浮卡片跟随选中状态：清空选中后隐藏，重新选中再出现。
+            itemDock->setFloating(true);
+            QApplication::processEvents();
             dockScene->clearSelection();
             QApplication::processEvents();
             ctx.check(!itemDock->isVisible(), QStringLiteral("悬浮时清空选中隐藏编辑图元卡"));

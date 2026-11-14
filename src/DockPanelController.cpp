@@ -12,7 +12,13 @@
 #include <QTimer>
 #include <QToolBar>
 
-DockPanelController::DockPanelController(MainWindow* window) : m_window(window) {}
+DockPanelController::DockPanelController(MainWindow* window) : m_window(window)
+{
+    m_itemDockStateTimer = new QTimer(window);
+    m_itemDockStateTimer->setSingleShot(true);
+    m_itemDockStateTimer->setInterval(300);
+    QObject::connect(m_itemDockStateTimer, &QTimer::timeout, window, [this]() { rememberItemDockState(); });
+}
 
 void DockPanelController::createLayerDock()
 {
@@ -57,15 +63,18 @@ void DockPanelController::createItemDock()
     QObject::connect(m_itemPanel, &ItemDockPanel::borderWidthPicked, m_window,
                      [this](qreal width) { m_window->setBrushWidthUi(qBound(1, qRound(width), 64)); });
 
-    // 卡片停靠在主窗口里时常驻显示，不随有没有选中图元整张显隐；
-    // 默认悬浮与悬浮后的显隐规则见 applyDockLayout / updateItemDockVisibility。
+    // 编辑图元卡默认停靠左侧并常驻显示；首次启动没有保存位置时由 applyDockLayout 固定到左侧。
     m_itemDock->setVisible(true);
+    m_itemDock->installEventFilter(m_window);
     QObject::connect(m_itemDock, &QDockWidget::topLevelChanged, m_window, [this](bool floating) {
         if (!floating) {
             // 悬浮卡拖回主窗口后重新固定，恢复常驻显示。
             m_itemDock->setVisible(true);
         }
+        scheduleItemDockStateSave();
     });
+    QObject::connect(m_itemDock, &QDockWidget::dockLocationChanged, m_window,
+                     [this](Qt::DockWidgetArea) { scheduleItemDockStateSave(); });
 }
 
 void DockPanelController::createViewModeDock()
@@ -145,11 +154,10 @@ void DockPanelController::applyDockLayout()
     QDockWidget* first = order.first() == QStringLiteral("ViewModeDock") ? m_viewModeDock : m_layerDock;
     QDockWidget* second = first == m_viewModeDock ? m_layerDock : m_viewModeDock;
 
-    // 编辑图元卡默认悬浮成独立卡片；视图模式 / 图层卡在右侧竖直切分，first 在上、second 在下。
+    // 编辑图元卡由 restoreItemDockState 按设置恢复：首次启动没有保存位置时停靠左侧。
     m_window->removeDockWidget(m_itemDock);
     m_window->removeDockWidget(m_viewModeDock);
     m_window->removeDockWidget(m_layerDock);
-    m_window->addDockWidget(Qt::LeftDockWidgetArea, m_itemDock);
     m_window->addDockWidget(Qt::RightDockWidgetArea, first);
     m_window->addDockWidget(Qt::RightDockWidgetArea, second);
     m_window->splitDockWidget(first, second, Qt::Vertical);
@@ -174,22 +182,70 @@ void DockPanelController::applyDockLayout()
     m_viewModeDock->setVisible(true);
     m_layerDock->setVisible(true);
 
-    // 编辑图元卡默认悬浮：从左侧停靠位摘出成独立窗口，并且没有选中图元时先隐藏；
-    // 悬浮卡片之后由 updateItemDockVisibility 跟随选中状态显隐。
+    // 编辑图元卡：首次启动固定左侧；之后按设置恢复停靠侧或悬浮位置。
+    restoreItemDockState();
+
+    m_applyingDockLayout = false;
+}
+
+void DockPanelController::restoreItemDockState()
+{
+    if (!m_itemDock) {
+        return;
+    }
+    const AppSettings& settings = m_window->m_settings;
+    const bool saved = settings.itemDockStateSaved;
+    const bool floating = saved && settings.itemDockFloating;
+    const Qt::DockWidgetArea area =
+        saved && settings.itemDockArea == QLatin1String("right") ? Qt::RightDockWidgetArea : Qt::LeftDockWidgetArea;
+
+    // 先固定回停靠区，再决定是否摘成悬浮窗口；首次没有保存记录时这就是最终状态。
+    m_itemDock->setFloating(false);
+    m_window->addDockWidget(area, m_itemDock);
+
+    if (!floating) {
+        m_itemDock->setVisible(true);
+        return;
+    }
+
     m_itemDock->setFloating(true);
-    m_itemDock->setVisible(false);
-    QTimer::singleShot(0, m_window, [this]() {
-        if (!m_itemDock->isFloating()) {
+    const bool geometryRestored =
+        !settings.itemDockGeometry.isEmpty() && m_itemDock->restoreGeometry(settings.itemDockGeometry);
+    QTimer::singleShot(0, m_window, [this, geometryRestored]() {
+        if (!m_itemDock || !m_itemDock->isFloating() || geometryRestored) {
             return;
         }
-        // 悬浮卡落在画布左上角，尺寸落在卡片本身合适的高度区间。
+        // 没有可用的悬浮几何时落在画布左上角，尺寸限制在卡片自身区间。
         const QRect frame = m_window->frameGeometry();
         const int width = qBound(260, frame.width() / 4, 360);
         const int height = qBound(320, frame.height() - 200, 560);
         m_itemDock->resize(width, height);
         m_itemDock->move(frame.left() + 24, frame.top() + 88);
     });
-    m_applyingDockLayout = false;
+    m_itemDock->setVisible(true);
+    updateItemDockVisibility();
+}
+
+void DockPanelController::rememberItemDockState()
+{
+    if (!m_itemDock || m_applyingDockLayout) {
+        return;
+    }
+    AppSettings& settings = m_window->m_settings;
+    settings.itemDockStateSaved = true;
+    settings.itemDockFloating = m_itemDock->isFloating();
+    settings.itemDockArea = m_window->dockWidgetArea(m_itemDock) == Qt::RightDockWidgetArea ? QStringLiteral("right")
+                                                                                            : QStringLiteral("left");
+    settings.itemDockGeometry = m_itemDock->saveGeometry();
+    settings.save();
+}
+
+void DockPanelController::scheduleItemDockStateSave()
+{
+    if (!m_itemDockStateTimer || m_applyingDockLayout) {
+        return;
+    }
+    m_itemDockStateTimer->start();
 }
 
 void DockPanelController::rememberDockOrder()
@@ -211,6 +267,10 @@ void DockPanelController::handleMoveEvent(QObject* watched, QEvent* event)
     if ((watched == m_viewModeDock || watched == m_layerDock) && event->type() == QEvent::Move) {
         // 卡片被拖到新位置后，等布局稳定再读上下关系并落盘。
         QTimer::singleShot(0, m_window, [this]() { rememberDockOrder(); });
+    } else if (watched == m_itemDock && (event->type() == QEvent::Move || event->type() == QEvent::Resize) &&
+               m_itemDock->isFloating()) {
+        // 悬浮卡拖动或缩放后延迟保存位置，避免拖动期间反复写文件。
+        scheduleItemDockStateSave();
     }
 }
 

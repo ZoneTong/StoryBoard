@@ -155,6 +155,9 @@ void MainWindowAppController::persistBeforeExit()
     m_window->m_settings.windowGeometry = m_window->saveGeometry();
     // 退出时按实际上下位置再记一次卡片顺序，拖拽换位后即使没有触发移动事件也能落盘。
     m_window->m_settings.dockOrder = m_window->m_docks ? m_window->m_docks->currentDockOrder() : QStringList();
+    if (m_window->m_docks) {
+        m_window->m_docks->rememberItemDockState();
+    }
     m_window->m_settings.brushColor = m_window->m_brushColor;
     m_window->m_settings.brushWidth = m_window->m_brushWidth;
     if (m_window->m_smoothingSpin) {
