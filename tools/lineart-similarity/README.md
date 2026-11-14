@@ -1,79 +1,63 @@
 # 线稿化相似度实验台
 
-「导入图片线稿化」的参数不靠肉眼拍板：这里把 `LineArtConverter` 单独编成一个小程序，
-把结果落成 `outlines.json` + `strokes.png`，再用 `metrics.py` 跟原图边缘比相似度。
-主程序不依赖这个目录，它只是调参和回归的工具。
+`LineArtConverter` 的调参与回归工具：单独编译一个小程序，把线稿结果落成 `outlines.json` + `strokes.png`，再用 `metrics.py` 与原图边缘比较。主程序不依赖本目录。
 
-## 指标口径
+## 指标
 
-- 真值边缘：原图（缩到线稿化的处理尺寸，默认长边 900）逐通道求 Sobel 梯度取最大值，阈值 40。
-- `recall`：真值边缘像素中，落在生成笔画 2px 内的比例。
-- `precision`：生成笔画像素中，落在真值边缘 2px 内的比例。
+- 真值边缘：原图缩到处理尺寸（默认长边 900）后逐通道求 Sobel 梯度取最大值，阈值 40。
+- `recall`：真值边缘像素落在生成笔画 2 px 内的比例。
+- `precision`：生成笔画像素落在真值边缘 2 px 内的比例。
 - `f1`：两者调和平均。
 
-指标偏宽松（这张地图约 15% 像素算边缘），适合横向比较参数，不适合当绝对分数。
+指标偏宽松，适合横向比较参数，不适合当绝对分数。
 
-## 构建
+## 构建与运行
 
-```powershell
-$env:PATH = "D:\Qt\Tools\mingw1310_64\bin;D:\Qt\6.12.0\mingw_64\bin;" + $env:PATH
-& "D:\Qt\Tools\mingw1310_64\bin\g++.exe" -O2 -std=c++17 `
-  -I "D:\Qt\6.12.0\mingw_64\include" -I "D:\Qt\6.12.0\mingw_64\include\QtCore" `
-  -I "D:\Qt\6.12.0\mingw_64\include\QtGui" -I "..\..\src" `
-  lineart_dump.cpp "..\..\src\LineArtConverter.cpp" -o lineart_dump.exe `
-  -L "D:\Qt\6.12.0\mingw_64\lib" -lQt6Gui -lQt6Core
+Linux / macOS：
+
+```bash
+QT_DIR=${QT_DIR:-$HOME/Qt/6.12.0/gcc_64}
+g++ -O2 -std=c++17 \
+  -I"$QT_DIR/include" -I"$QT_DIR/include/QtCore" -I"$QT_DIR/include/QtGui" \
+  -I../../src lineart_dump.cpp ../../src/LineArtConverter.cpp \
+  -o lineart_dump -L"$QT_DIR/lib" -lQt6Gui -lQt6Core
+
+IMG=$(ls ../../examples/*.png | head -n 1)
+./lineart_dump "$IMG" run
+PY=$(command -v python3 || command -v python)
+"$PY" -m pip install pillow   # 首次运行需要 Pillow
+"$PY" metrics.py run "$IMG"
 ```
 
-## 跑一次
+Windows 在 Git Bash 中先准备 GCC 15 与 Qt 的 `PATH`，并把 `QT_DIR` 指向 `mingw_64`：
 
-```powershell
-.\lineart_dump.exe ..\..\examples\540451553-d6032a86-5676-4ee1-8f13-aee8db52e8bf.png .\run
-python .\metrics.py .\run ..\..\examples\540451553-d6032a86-5676-4ee1-8f13-aee8db52e8bf.png
+```bash
+export PATH="/d/Qt/Tools/mingw1510_64/bin:/d/Qt/6.12.0/mingw_64/bin:$PATH"
+QT_DIR=/d/Qt/6.12.0/mingw_64
 ```
 
-参数按键值对传，留空就是 `LineArtConverter::Options` 的默认值：
+其余命令相同，产物为 `lineart_dump.exe`；运行、指标脚本均可在 bash 下执行。
 
-```
-levels=6 colors=24 merge=48 adjmerge=48 minarea=12 minthick=1.0 tol=0.6 maxregions=1200 side=900 width=1
+参数按键值对传入，留空即使用默认值：
+
+```text
+levels=6 colors=24 merge=48 adjmerge=48 minarea=12 minthick=1.0 tol=0.6 maxregions=0 side=900 width=1
 ```
 
 ## 基线
 
-`examples` 里那张 1568×1712 游戏地图（默认参数 `levels=6 merge=48 adjmerge=48 minarea=12 minthick=1.0 tol=0.6 maxregions=1200`）：
+示例图 1568×1712，默认档位“均衡”：
 
-| 版本 | outlines | points | recall | precision | f1 |
-| --- | --- | --- | --- | --- | --- |
-| 调优前（levels=5 / colors=24 / merge 未聚类 / minarea=24） | 555 | 12506 | 0.798 | 0.780 | 0.789 |
-| 第一轮（levels=6 / merge=64 / minarea=24 / minthick=1.2 / maxregions=800） | 524 | 12451 | 0.889 | 0.894 | 0.892 |
-| 第二轮（merge=48 / adjmerge=48 / minarea=12 / minthick=1.0 / maxregions=1200） | 900 | 15964 | 0.962 | 0.906 | 0.933 |
-
-界面上的四个档位就是四组标定好的参数（同一张地图、`minthick=1.0`）。简化容差已并入档位，
-每档用自己的 `tol`（同一组参数在 `tol=0.6` 下的旧数据放在括号里对照）：
-
-| 档位 | levels / merge / adjmerge / minarea / tol | outlines | points | recall | precision | f1 |
+| 档位 | levels / merge / adjmerge / minarea / tol | 轮廓 | 点数 | recall | precision | f1 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 保留细节 Keep details | 6 / 40 / 44 / 8 / 0.5 | 1088 | 15563 | 0.932 | 0.916 | 0.924 |
-| 均衡 Balanced（默认） | 6 / 48 / 48 / 12 / 0.6 | 900 | 15964 | 0.962 | 0.906 | 0.933 |
-| 线条干净 Clean lines | 6 / 64 / 56 / 20 / 0.8 | 551 | 10098 | 0.885 | 0.935 | 0.909 |
-| 大块概括 Bold blocks | 6 / 80 / 56 / 32 / 1.0 | 429 | 6880 | 0.856 | 0.933 | 0.893 |
+| 保留细节 | 6 / 40 / 44 / 8 / 0.5 | 1088 | 15563 | 0.932 | 0.916 | 0.924 |
+| 均衡（默认） | 6 / 48 / 48 / 12 / 0.6 | 900 | 15964 | 0.962 | 0.906 | 0.933 |
+| 线条干净 | 6 / 64 / 56 / 20 / 0.8 | 551 | 10098 | 0.885 | 0.935 | 0.909 |
+| 大块概括 | 6 / 80 / 56 / 32 / 1.0 | 429 | 6880 | 0.856 | 0.933 | 0.893 |
 
-“保留细节”召回最高但碎线最多，“大块概括”精度最高、结构最省，默认落在“均衡”。
+结论：
 
-只动容差的对照（其它参数不变，验证“容差并入档位”没有把指标带坏）：
-
-| 档位 | tol=0.6（旧） | 档位自己的 tol（新） | 点数变化 | f1 变化 |
-| --- | --- | --- | --- | --- |
-| 线条干净 Clean lines | 11238 点 / f1 0.909 | 10098 点 / f1 0.909（tol=0.8） | -10.1% | 0 |
-| 大块概括 Bold blocks | 431 条 / 10450 点 / f1 0.894 | 429 条 / 6880 点 / f1 0.893（tol=1.0） | -34.2% | -0.001 |
-
-结论：容差主要改的是**点数**（即笔画被压成多少段），在“与真值边缘 2px 内重合”这个指标上几乎不动
-（最大 0.001）。所以它适合当“手感旋钮”跟着档位走，而不是当精度参数——精度由颜色级数与两个近似度决定。
-
-扫参结论：
-
-- `colorLevels=6` 最优（8 以上会把明暗层次切成碎块，precision 掉到 0.75 左右）。
-- `maxRegions` 早期设 800 会把小道具截掉（这张图本来有 900 块），调到 1200 后 recall 从 0.91 升到 0.96；现在产品里已默认不设上限（`maxRegions = 0`），这个参数只留给实验台复现旧结果；块数超过阈值时产品改走「缩小处理尺寸重算」（`adaptiveDownscale`），而不是截断。
-- `adjacentMergeDistance`（相邻且近似色块并成一块）在 44–52 是安全区：48 时 f1 0.933 且小道具保留最好；
-  56 起结构开始糊，64 时 recall 掉到 0.828，88 以上几乎只剩大块（recall 0.198）。
-- 相邻合并按“原始色差”排序逐个并，不用合并后的综合色做链式扩散；后者会把整片区域滚成一块。
-- `minRegionThickness=1.0`（1.2 会丢掉细条带）；`simplifyTolerance` 主要影响点数（0.5→1.0 点数掉三成而 f1 基本不变），0.6 时圆弧不至于成多边形，所以它随档位在 0.5–1.0 之间取值。
+- `colorLevels=6` 最稳；更高会把明暗层次切成碎块。
+- `paletteMergeDistance` / `adjacentMergeDistance` 在 44–52 是安全区，48 时小道具保留最好。
+- `simplifyTolerance` 主要影响点数，对边缘重合指标影响很小，因此跟随档位在 0.5–1.0 取值。
+- 产品默认 `maxRegions=0`（不截断）；块数超过 2000 时走 `adaptiveDownscale` 缩小处理尺寸重算，本实验台可用 `maxregions` 复现旧的截断结果。

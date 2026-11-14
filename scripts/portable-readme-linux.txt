@@ -1,19 +1,18 @@
 @APP_NAME@ @VERSION@ 便携版（Linux）
 
-运行方法
+运行
 1. 将整个目录解压到任意位置。
-2. 打开终端，进入解压后的目录，执行：
-   ./@APP_NAME@
-3. 如果提示缺少系统图形库，请按发行版安装 Qt/X11 相关运行库。
+2. 在终端进入目录后执行：./@APP_NAME@
+3. 若提示缺少图形库，按发行版安装 Qt/X11 相关运行库。
 
-目录说明
+目录
 - @APP_NAME@：主程序。
 - libQt6*.so*：Qt 运行库。
 - plugins：Qt 插件，请勿删除或移出程序目录。
 - examples/demo-canvas.sbcanvas：示例画布。
-- portable-selftest.txt：本包运行自检的结果。
-- README.txt：本说明。
+- shapes/：自定义图形模板，展开「常见图形 → 自定义图形」即可看到。
+- portable-selftest.txt：本包运行自检结果。
 
 说明
-- 这是免安装包，但所有设置（含界面语言）都写进当前用户配置目录的 @SETTINGS_FILE@，不使用注册表。
-- 命令行自检可用：./@APP_NAME@ --self-test selftest.txt
+- 免安装包；设置（含界面语言）写入当前用户配置目录的 @SETTINGS_FILE@，不使用注册表。
+- 命令行自检：./@APP_NAME@ --self-test selftest.txt
