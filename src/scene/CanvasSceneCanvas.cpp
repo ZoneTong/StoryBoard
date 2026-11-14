@@ -290,17 +290,20 @@ void CanvasScene::drawCheckerboard(QPainter* painter, const QRectF& canvas) cons
         return;
     }
 
-    constexpr qreal tile = 10.0;
+    // 格子随画布缩放：整张画布按 16×16 等分，每格为画布的 1/16。
+    constexpr int columnsCount = 16;
+    constexpr int rowsCount = 16;
+    const qreal tileWidth = canvas.width() / columnsCount;
+    const qreal tileHeight = canvas.height() / rowsCount;
     const QColor white(255, 255, 255);
     const QColor lightGray(229, 231, 235);
 
     painter->save();
     painter->setClipRect(canvas);
-    const int columns = qCeil(canvas.width() / tile);
-    const int rows = qCeil(canvas.height() / tile);
-    for (int row = 0; row < rows; ++row) {
-        for (int col = 0; col < columns; ++col) {
-            const QRectF tileRect(canvas.left() + col * tile, canvas.top() + row * tile, tile, tile);
+    for (int row = 0; row < rowsCount; ++row) {
+        for (int col = 0; col < columnsCount; ++col) {
+            const QRectF tileRect(canvas.left() + col * tileWidth, canvas.top() + row * tileHeight, tileWidth,
+                                  tileHeight);
             painter->fillRect(tileRect, ((row + col) % 2 == 0) ? white : lightGray);
         }
     }

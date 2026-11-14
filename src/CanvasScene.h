@@ -184,7 +184,7 @@ class CanvasScene : public QGraphicsScene {
     // reserved 里是尚未挂到场景、但已经保留给其它副本的名称。
     QString uniqueItemNameFor(const QString& requested, const CanvasItem* except, const QSet<QString>& reserved) const;
     void drawCanvasBackground(QPainter* painter, const QRectF& area, bool includeGrid) const;
-    // 透明背景（None）在视图里画浅灰 / 白棋盘格作为透明标识；导出图不画。
+    // 透明背景（None）在视图里画浅灰 / 白棋盘格作为透明标识，整张画布按 16×16 等分；导出图不画。
     void drawCheckerboard(QPainter* painter, const QRectF& canvas) const;
     void updateItemFlags();
     void applyItemInteraction(CanvasItem* item);
