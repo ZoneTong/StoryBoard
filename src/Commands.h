@@ -181,6 +181,8 @@ struct ItemPropertiesState {
     QPointF pos;
     QSizeF size;
     qreal rotation = 0.0;
+    // 透明度是所有图元共有的属性，属性窗统一按这个字段提交。
+    qreal opacity = 1.0;
     QString itemName;
     bool hasShapeState = false;
     ShapeItemState shapeState;

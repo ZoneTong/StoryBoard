@@ -42,6 +42,10 @@ class CanvasItem : public QGraphicsObject {
     void setContentSize(const QSizeF& size);
     QRectF sceneContentRect() const;
 
+    // 透明度是所有图元共有的属性；图形因为有自绘填充，单独覆盖这两个接口。
+    virtual qreal itemOpacity() const { return QGraphicsItem::opacity(); }
+    virtual void setItemOpacity(qreal opacity);
+
     int layerId() const { return m_layerId; }
     void setLayerId(int layerId);
     // 同一分组内的图元在编辑模式下整组移动；0 表示未分组。

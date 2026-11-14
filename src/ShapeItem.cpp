@@ -236,6 +236,11 @@ void ShapeItem::setOpacity(qreal opacity)
     update();
 }
 
+void ShapeItem::setItemOpacity(qreal opacity)
+{
+    setOpacity(opacity);
+}
+
 void ShapeItem::setCornerRadius(qreal radius)
 {
     // 负数表示恢复该类型的默认圆角；正数按画布像素处理，不超过短边的一半。

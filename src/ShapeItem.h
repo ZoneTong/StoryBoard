@@ -94,6 +94,8 @@ class ShapeItem : public CanvasItem {
     qreal strokeWidth() const { return m_strokeWidth; }
     Qt::PenStyle strokeStyle() const { return m_strokeStyle; }
     qreal opacity() const { return m_opacity; }
+    qreal itemOpacity() const override { return m_opacity; }
+    void setItemOpacity(qreal opacity) override;
     qreal cornerRadius() const { return m_cornerRadius; }
     qreal startAngle() const { return m_startAngle; }
     qreal sweepAngle() const { return m_sweepAngle; }

@@ -378,15 +378,9 @@ void ItemDockPanel::applyOpacity(int percent)
     QList<qreal> after;
     m_refreshing = true;
     for (CanvasItem* item : items) {
-        auto* shape = dynamic_cast<ShapeItem*>(item);
-        const qreal previous = shape ? shape->opacity() : item->opacity();
-        before.append(previous);
-        if (shape) {
-            shape->setOpacity(percent / 100.0);
-        } else {
-            item->setOpacity(percent / 100.0);
-        }
-        after.append(shape ? shape->opacity() : item->opacity());
+        before.append(item->itemOpacity());
+        item->setItemOpacity(percent / 100.0);
+        after.append(item->itemOpacity());
     }
     m_refreshing = false;
 

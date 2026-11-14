@@ -130,12 +130,7 @@ void ItemDockPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QLis
     const bool enabled = !shapes.isEmpty();
     if (m_opacitySpin) {
         m_opacitySpin->setEnabled(!items.isEmpty());
-        qreal opacity = 1.0;
-        if (!items.isEmpty()) {
-            auto* shape = dynamic_cast<ShapeItem*>(items.first());
-            opacity = shape ? shape->opacity() : items.first()->opacity();
-        }
-        m_opacitySpin->setValue(qRound(opacity * 100.0));
+        m_opacitySpin->setValue(items.isEmpty() ? 100 : qRound(items.first()->itemOpacity() * 100.0));
     }
     if (m_cornerSpin) {
         m_cornerSpin->setEnabled(enabled);

@@ -78,6 +78,11 @@ void CanvasItem::setContentSize(const QSizeF& size)
     contentResized();
 }
 
+void CanvasItem::setItemOpacity(qreal opacity)
+{
+    QGraphicsItem::setOpacity(qBound<qreal>(0.0, opacity, 1.0));
+}
+
 void CanvasItem::setLayerId(int layerId)
 {
     m_layerId = qMax(0, layerId);
