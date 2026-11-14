@@ -94,7 +94,10 @@ QJsonObject CanvasScene::toJson() const
     QJsonArray itemsArray;
     const QList<CanvasItem*> items = canvasItems();
     for (CanvasItem* item : items) {
-        itemsArray.append(item->toJson());
+        QJsonObject itemJson = item->toJson();
+        // 旧画布只有图形自带 opacity，这里统一给所有图元写入透明度。
+        itemJson.insert(QStringLiteral("opacity"), item->itemOpacity());
+        itemsArray.append(itemJson);
     }
     root.insert(QStringLiteral("items"), itemsArray);
 
@@ -208,6 +211,7 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
             return fail(tr("The canvas contains an unknown item type: %1").arg(kind));
         }
         item->fromJson(itemJson);
+        item->setItemOpacity(itemJson.value(QStringLiteral("opacity")).toDouble(1.0));
         if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId) {
             item->setLayerId(m_activeLayerId);
         }

@@ -109,6 +109,19 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
                     &ItemPropertiesDialog::syncTextNaturalSize);
         }
 
+        // 图形在样式区已有透明度行；笔画、文字、图片等图元在这里统一补一行。
+        if (!dynamic_cast<ShapeItem*>(item)) {
+            m_opacitySpin = new QSpinBox(this);
+            m_opacitySpin->setObjectName(QStringLiteral("ItemPropertiesOpacityValue"));
+            m_opacitySpin->setRange(0, 100);
+            m_opacitySpin->setSuffix(QStringLiteral(" %"));
+            m_opacitySpin->setMinimumWidth(88);
+            m_initialOpacity = item->itemOpacity();
+            m_opacitySpin->setValue(qRound(m_initialOpacity * 100.0));
+            m_initialOpacityPercent = m_opacitySpin->value();
+            form->addRow(tr("Opacity"), m_opacitySpin);
+        }
+
         m_geometryBlock = new ItemPropertiesDialogGeometryBlock(item, this);
         m_geometryBlock->addRows(form);
         if (m_styleBlock && (m_styleBlock->cornerRadiusSpin() || m_styleBlock->shapeRadiusSpin())) {
@@ -175,9 +188,11 @@ void ItemPropertiesDialog::applyEditableState()
     if (m_styleBlock) {
         widgets << m_styleBlock->fillStyleCombo() << m_styleBlock->fillColorButton()
                 << m_styleBlock->strokeColorButton() << m_styleBlock->borderStyleCombo()
-                << m_styleBlock->strokeWidthSpin() << m_styleBlock->opacitySpin()
-                << m_styleBlock->cornerRadiusSpin() << m_styleBlock->startAngleSpin()
-                << m_styleBlock->sweepAngleSpin() << m_styleBlock->shapeRadiusSpin();
+                << m_styleBlock->strokeWidthSpin() << m_styleBlock->opacitySpin() << m_styleBlock->cornerRadiusSpin()
+                << m_styleBlock->startAngleSpin() << m_styleBlock->sweepAngleSpin() << m_styleBlock->shapeRadiusSpin();
+    }
+    if (m_opacitySpin) {
+        widgets << m_opacitySpin;
     }
     if (m_textBlock) {
         widgets << m_textBlock->textColorButton() << m_textBlock->fontButton() << m_textBlock->textEdit();
@@ -318,6 +333,7 @@ void ItemPropertiesDialog::applyChanges()
     before.pos = m_item->pos();
     before.size = m_item->contentSize();
     before.rotation = m_initialRotation;
+    before.opacity = m_item->itemOpacity();
     before.itemName = m_initialItemName;
     before.stack.append({m_item, oldLayer, oldHeight});
     for (CanvasItem* peer : std::as_const(swapped)) {
@@ -338,6 +354,7 @@ void ItemPropertiesDialog::applyChanges()
     after.size = QSizeF(spinValue(geometry->widthSpin(), m_initialSize.width()),
                         spinValue(geometry->heightSizeSpin(), m_initialSize.height()));
     after.rotation = spinValue(geometry->rotationSpin(), m_initialRotation);
+    after.opacity = before.opacity;
     const QString typedName = (identity && identity->nameEdit()) ? identity->nameEdit()->text().trimmed() : QString();
     // 清空名称不能退回“多个同名类型名”的状态；这时补一个本画布内唯一的自动名称。
     const QString effectiveName =
@@ -363,13 +380,13 @@ void ItemPropertiesDialog::applyChanges()
             after.shapeState.strokeWidth = spinValue(style->strokeWidthSpin(), m_initialStrokeWidth);
         }
         if (style && style->borderStyleCombo() && style->borderStyleCombo()->currentData().toInt() >= 0) {
-            after.shapeState.strokeStyle =
-                static_cast<Qt::PenStyle>(style->borderStyleCombo()->currentData().toInt());
+            after.shapeState.strokeStyle = static_cast<Qt::PenStyle>(style->borderStyleCombo()->currentData().toInt());
         }
         if (style && style->opacitySpin()) {
             const int percent = style->opacitySpin()->value();
             after.shapeState.opacity =
                 percent == style->initialOpacityPercent() ? style->initialOpacity() : percent / 100.0;
+            after.opacity = after.shapeState.opacity;
         }
         if (style && style->startAngleSpin()) {
             const int value = style->startAngleSpin()->value();
@@ -449,6 +466,11 @@ void ItemPropertiesDialog::applyChanges()
         }
         after.hasImageName = true;
         after.imageName = (image && image->imageNameEdit()) ? image->imageNameEdit()->text() : before.imageName;
+    }
+
+    if (m_opacitySpin) {
+        const int percent = m_opacitySpin->value();
+        after.opacity = percent == m_initialOpacityPercent ? m_initialOpacity : percent / 100.0;
     }
 
     if (before == after) {

@@ -161,6 +161,10 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     scene.addItemsWithUndo({imageItem}, QStringLiteral("插入图片"));
     ctx.check(scene.canvasItemCount() == 2, QStringLiteral("插入图片图元"));
 
+    // 透明度是所有图元共有属性：笔画与图片都要随画布一起保存和恢复。
+    stroke->setItemOpacity(0.35);
+    imageItem->setItemOpacity(0.6);
+
     const QJsonObject root = scene.toJson();
     const QByteArray jsonBytes = QJsonDocument(root).toJson(QJsonDocument::Indented);
     ctx.check(jsonBytes.contains("StoryBoard") && jsonBytes.contains("\"stroke\"") && jsonBytes.contains("\"image\""),
@@ -193,6 +197,12 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
                   QStringLiteral("笔画缩放状态恢复"));
     }
     ctx.check(loadedImage != nullptr && !loadedImage->image().isNull(), QStringLiteral("图片内容恢复"));
+    ctx.check(loadedStroke && qAbs(loadedStroke->itemOpacity() - 0.35) < 0.01 && loadedImage &&
+                  qAbs(loadedImage->itemOpacity() - 0.6) < 0.01,
+              QStringLiteral("笔画与图片的透明度随画布恢复"),
+              QStringLiteral("stroke=%1 image=%2")
+                  .arg(loadedStroke ? loadedStroke->itemOpacity() : -1.0)
+                  .arg(loadedImage ? loadedImage->itemOpacity() : -1.0));
 
     const QImage rendered = loaded.renderImage(loaded.canvasRect(), 1.0);
     ctx.check(rendered.size() == QSize(800, 600), QStringLiteral("导出图像尺寸正确"));

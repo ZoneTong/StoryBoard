@@ -820,6 +820,18 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             }
             ctx.check(propertyDialogOpened, QStringLiteral("卡片图元属性按钮真正打开属性窗"));
 
+            // 透明度不仅作用于图形和笔画，文字等所有图元都走同一属性。
+            if (opacitySpin) {
+                opacitySpin->setValue(40);
+                QApplication::processEvents();
+            }
+            ctx.check(qAbs(cardText->itemOpacity() - 0.4) < 0.01, QStringLiteral("卡片透明度作用于文字图元"),
+                      QString::number(cardText->itemOpacity()));
+            dockScene->undoStack()->undo();
+            QApplication::processEvents();
+            ctx.check(qAbs(cardText->itemOpacity() - 1.0) < 0.01, QStringLiteral("撤销透明度恢复文字原值"),
+                      QString::number(cardText->itemOpacity()));
+
             auto* textEdit = itemDock->findChild<QLineEdit*>(QStringLiteral("ItemTextContentEdit"));
             if (textEdit) {
                 textEdit->setText(QStringLiteral("改后文字"));

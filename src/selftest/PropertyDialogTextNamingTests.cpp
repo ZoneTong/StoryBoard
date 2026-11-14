@@ -64,6 +64,29 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
     ctx.check(textItem->text() == QStringLiteral("属性文字"), QStringLiteral("文字正文修改可撤销"));
     ctx.check(textItem->contentSize() == textSizeBefore, QStringLiteral("文字正文撤销恢复旧尺寸"));
 
+    // 文字不是图形，属性窗单独提供透明度行；修改同样进入撤销记录。
+    {
+        ItemPropertiesDialog dialog(&editScene, textItem);
+        dialog.show();
+        QApplication::processEvents();
+        QSpinBox* opacityValue = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesOpacityValue"));
+        ctx.check(opacityValue && opacityValue->isEnabled() && opacityValue->value() == 100,
+                  QStringLiteral("文字属性窗提供透明度编辑"),
+                  opacityValue ? QString::number(opacityValue->value()) : QString());
+        if (opacityValue) {
+            opacityValue->setValue(35);
+        }
+        dialog.accept();
+        QApplication::processEvents();
+    }
+    ctx.check(qAbs(textItem->itemOpacity() - 0.35) < 0.01 && editUndo.canUndo(),
+              QStringLiteral("文字属性窗修改透明度并可撤销"),
+              QStringLiteral("opacity=%1 canUndo=%2").arg(textItem->itemOpacity()).arg(editUndo.canUndo() ? 1 : 0));
+    editUndo.undo();
+    QApplication::processEvents();
+    ctx.check(qAbs(textItem->itemOpacity() - 1.0) < 0.01, QStringLiteral("撤销文字透明度恢复原值"),
+              QString::number(textItem->itemOpacity()));
+
     auto* firstNamingStroke = new StrokeItem();
     firstNamingStroke->beginStroke(QPointF(90.0, 420.0), QColor(QStringLiteral("#0F766E")), 5.0);
     firstNamingStroke->appendScenePoint(QPointF(150.0, 470.0));

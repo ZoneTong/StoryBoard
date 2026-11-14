@@ -427,15 +427,8 @@ void ItemOpacityCommand::redo()
 void ItemOpacityCommand::apply(const QList<qreal>& values)
 {
     for (int i = 0; i < m_items.size() && i < values.size(); ++i) {
-        CanvasItem* item = m_items.at(i);
-        if (!item) {
-            continue;
-        }
-        // ShapeItem 用自身的 m_opacity 控制绘制透明度，必须走它的 setOpacity。
-        if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
-            shape->setOpacity(values.at(i));
-        } else {
-            item->setOpacity(values.at(i));
+        if (CanvasItem* item = m_items.at(i)) {
+            item->setItemOpacity(values.at(i));
         }
     }
     if (m_scene) {
@@ -446,8 +439,8 @@ void ItemOpacityCommand::apply(const QList<qreal>& values)
 bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
 {
     if (!sameStack(stack, other.stack) || pos != other.pos || size != other.size ||
-        !qFuzzyCompare(rotation, other.rotation) || itemName != other.itemName ||
-        hasShapeState != other.hasShapeState || hasTextState != other.hasTextState ||
+        !qFuzzyCompare(rotation, other.rotation) || !qFuzzyCompare(1.0 + opacity, 1.0 + other.opacity) ||
+        itemName != other.itemName || hasShapeState != other.hasShapeState || hasTextState != other.hasTextState ||
         hasStrokeStyle != other.hasStrokeStyle || hasImageState != other.hasImageState ||
         hasImageName != other.hasImageName) {
         return false;
@@ -510,6 +503,7 @@ void ItemPropertiesCommand::apply(const ItemPropertiesState& state)
 
     // Rotation is a generic CanvasItem property for every item kind.
     m_item->setRotationAngle(state.rotation);
+    m_item->setItemOpacity(state.opacity);
 
     if (state.hasStrokeStyle) {
         if (auto* stroke = dynamic_cast<StrokeItem*>(m_item.data())) {

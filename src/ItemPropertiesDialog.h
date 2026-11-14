@@ -16,6 +16,7 @@ class ItemPropertiesDialogIdentityBlock;
 class ItemPropertiesDialogImageBlock;
 class ItemPropertiesDialogStyleBlock;
 class ItemPropertiesDialogTextBlock;
+class QSpinBox;
 
 // 编辑单个图元的属性。图元类型只读，其余字段（名称、图层、层内高度、填充、
 // 描边、位置尺寸、文字字体颜色、图片名称）由对应区块类构建与收集，确认后
@@ -51,6 +52,10 @@ class ItemPropertiesDialog : public QDialog {
     ItemPropertiesDialogTextBlock* m_textBlock = nullptr;
     ItemPropertiesDialogImageBlock* m_imageBlock = nullptr;
     ItemPropertiesDialogGeometryBlock* m_geometryBlock = nullptr;
+    // 图形沿用样式区里的透明度行，其余图元由属性窗统一提供。
+    QSpinBox* m_opacitySpin = nullptr;
+    qreal m_initialOpacity = 1.0;
+    int m_initialOpacityPercent = 100;
 
     QPixmap m_newImage;
     bool m_imageChanged = false;
