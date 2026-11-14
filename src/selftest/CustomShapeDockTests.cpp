@@ -282,6 +282,15 @@ void selftest::runCustomShapeDockTests(Context& ctx)
                       .arg(borderStyleIndex)
                       .arg(borderColorIndex)
                       .arg(borderWidthIndex));
+        // 新增的选中操作行统一排在「图层与高度」行下方。
+        QWidget* selectionRows = panel.findChild<QWidget*>(QStringLiteral("ItemSelectionRowsCard"));
+        QWidget* arrangeCard = panel.findChild<QWidget*>(QStringLiteral("ItemArrangeCard"));
+        const int selectionIndex =
+            content && content->layout() && selectionRows ? content->layout()->indexOf(selectionRows) : -1;
+        const int arrangeIndex =
+            content && content->layout() && arrangeCard ? content->layout()->indexOf(arrangeCard) : -1;
+        ctx.check(arrangeIndex >= 0 && selectionIndex > arrangeIndex, QStringLiteral("新增操作行位于图层与高度行下方"),
+                  QStringLiteral("arrange=%1 selection=%2").arg(arrangeIndex).arg(selectionIndex));
         ctx.check(ItemDockPanel::tr("Border color") == QStringLiteral("描线颜色") &&
                       ItemDockPanel::tr("Border width") == QStringLiteral("描线宽度") &&
                       ItemDockPanel::tr("Height +1") == QStringLiteral("高度 +1") &&
@@ -515,6 +524,39 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                           !groupButton->isVisible() && !ungroupButton->isVisible(),
                       QStringLiteral("单选时不显示对齐 / 化形 / 组合按钮行"));
 
+            // 卡片按钮不是摆设：逐一验证旋转与复制按钮真的执行主窗口动作，且可撤销。
+            if (rotateCwButton) {
+                const qreal rotationBefore = selectedShape->rotation();
+                rotateCwButton->click();
+                QApplication::processEvents();
+                const qreal rotationAfter = selectedShape->rotation();
+                dockScene->undoStack()->undo();
+                QApplication::processEvents();
+                ctx.check(
+                    qAbs(rotationAfter - rotationBefore - 45.0) < 0.01 &&
+                        qAbs(selectedShape->rotation() - rotationBefore) < 0.01,
+                    QStringLiteral("卡片旋转按钮真正旋转图元且可撤销"),
+                    QStringLiteral("%1->%2->%3").arg(rotationBefore).arg(rotationAfter).arg(selectedShape->rotation()));
+                selectedShape->setSelected(true);
+                QApplication::processEvents();
+            }
+            if (copyButton) {
+                const int countBeforeCopy = dockScene->canvasItemCount();
+                copyButton->click();
+                QApplication::processEvents();
+                const int countAfterCopy = dockScene->canvasItemCount();
+                dockScene->undoStack()->undo();
+                QApplication::processEvents();
+                ctx.check(countAfterCopy == countBeforeCopy + 1 && dockScene->canvasItemCount() == countBeforeCopy,
+                          QStringLiteral("卡片复制按钮真正复制图元且可撤销"),
+                          QStringLiteral("%1->%2->%3")
+                              .arg(countBeforeCopy)
+                              .arg(countAfterCopy)
+                              .arg(dockScene->canvasItemCount()));
+                selectedShape->setSelected(true);
+                QApplication::processEvents();
+            }
+
             // 多选时卡片把对齐 8 项与化形 5 项直接展开成图标按钮行，并复用菜单栏同一批动作。
             auto* secondShape = new ShapeItem(ShapeType::Rectangle);
             secondShape->setPos(QPointF(420.0, 240.0));
@@ -541,6 +583,48 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             ctx.check(visibleMorph == 5, QStringLiteral("多选时化形五项展开成一行"));
             ctx.check(groupButton->isVisible() && !ungroupButton->isVisible(),
                       QStringLiteral("多选未分组时显示组合、不显示取消组合"));
+
+            // 对齐行按钮真正调用对齐动作；对齐后可撤销并恢复两个图元。
+            if (!alignRowButtons.isEmpty()) {
+                alignRowButtons.first()->click();
+                QApplication::processEvents();
+                const bool aligned =
+                    qAbs(selectedShape->sceneBoundingRect().left() - secondShape->sceneBoundingRect().left()) < 0.5;
+                dockScene->undoStack()->undo();
+                QApplication::processEvents();
+                ctx.check(aligned, QStringLiteral("卡片对齐按钮真正对齐图元"),
+                          QStringLiteral("left=%1/%2")
+                              .arg(selectedShape->sceneBoundingRect().left())
+                              .arg(secondShape->sceneBoundingRect().left()));
+                selectedShape->setSelected(true);
+                secondShape->setSelected(true);
+                QApplication::processEvents();
+            }
+            // 化形行按钮真正执行布尔运算：联合后两个矩形合并成一个复合图元，撤销恢复。
+            if (!morphButtons.isEmpty()) {
+                const int countBeforeMorph = dockScene->canvasItemCount();
+                morphButtons.first()->click();
+                QApplication::processEvents();
+                bool hasComposite = false;
+                for (CanvasItem* item : dockScene->canvasItems()) {
+                    if (dynamic_cast<CompositeShapeItem*>(item)) {
+                        hasComposite = true;
+                        break;
+                    }
+                }
+                const bool merged = dockScene->canvasItemCount() == countBeforeMorph - 1 && hasComposite;
+                dockScene->undoStack()->undo();
+                QApplication::processEvents();
+                ctx.check(merged && dockScene->canvasItemCount() == countBeforeMorph,
+                          QStringLiteral("卡片化形按钮真正合并图元且可撤销"),
+                          QStringLiteral("count=%1->%2 composite=%3")
+                              .arg(countBeforeMorph)
+                              .arg(dockScene->canvasItemCount())
+                              .arg(hasComposite ? 1 : 0));
+                selectedShape->setSelected(true);
+                secondShape->setSelected(true);
+                QApplication::processEvents();
+            }
 
             const int groupedCount = dockScene->groupSelectedItems();
             // 组合不改选中集合，重新点选一次让主窗口按新的组归属刷新动作可用状态。
