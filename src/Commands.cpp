@@ -363,6 +363,86 @@ void ShapeStyleCommand::apply(const QList<ShapeItemState>& states)
     }
 }
 
+ItemStrokeStyleCommand::ItemStrokeStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
+                                               const QList<QColor>& beforeColors, const QList<qreal>& beforeWidths,
+                                               const QList<QColor>& afterColors, const QList<qreal>& afterWidths,
+                                               const QString& text)
+    : m_scene(scene), m_beforeColors(beforeColors), m_beforeWidths(beforeWidths), m_afterColors(afterColors),
+      m_afterWidths(afterWidths)
+{
+    setText(text);
+    for (CanvasItem* item : items) {
+        m_items.append(QPointer<CanvasItem>(item));
+    }
+}
+
+void ItemStrokeStyleCommand::undo()
+{
+    apply(m_beforeColors, m_beforeWidths);
+}
+
+void ItemStrokeStyleCommand::redo()
+{
+    apply(m_afterColors, m_afterWidths);
+}
+
+void ItemStrokeStyleCommand::apply(const QList<QColor>& colors, const QList<qreal>& widths)
+{
+    for (int i = 0; i < m_items.size() && i < colors.size() && i < widths.size(); ++i) {
+        CanvasItem* item = m_items.at(i);
+        if (!item) {
+            continue;
+        }
+        if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+            shape->setStyle(colors.at(i), shape->fillColor(), widths.at(i));
+        } else if (auto* stroke = dynamic_cast<StrokeItem*>(item)) {
+            stroke->setStyle(colors.at(i), widths.at(i));
+        }
+    }
+    if (m_scene) {
+        m_scene->update();
+    }
+}
+
+ItemOpacityCommand::ItemOpacityCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<qreal>& before,
+                                       const QList<qreal>& after, const QString& text)
+    : m_scene(scene), m_before(before), m_after(after)
+{
+    setText(text);
+    for (CanvasItem* item : items) {
+        m_items.append(QPointer<CanvasItem>(item));
+    }
+}
+
+void ItemOpacityCommand::undo()
+{
+    apply(m_before);
+}
+
+void ItemOpacityCommand::redo()
+{
+    apply(m_after);
+}
+
+void ItemOpacityCommand::apply(const QList<qreal>& values)
+{
+    for (int i = 0; i < m_items.size() && i < values.size(); ++i) {
+        CanvasItem* item = m_items.at(i);
+        if (!item) {
+            continue;
+        }
+        // ShapeItem 用自身的 m_opacity 控制绘制透明度，必须走它的 setOpacity。
+        if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+            shape->setOpacity(values.at(i));
+        } else {
+            item->setOpacity(values.at(i));
+        }
+    }
+    if (m_scene) {
+        m_scene->update();
+    }
+}
+
 bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
 {
     if (!sameStack(stack, other.stack) || pos != other.pos || size != other.size ||

@@ -8,6 +8,7 @@
 
 class CanvasScene;
 class CanvasItem;
+class StrokeItem;
 class QAction;
 class QLabel;
 
@@ -46,6 +47,9 @@ class ItemDockPanel : public QWidget {
 
     QList<CanvasItem*> selectedItems() const;
     QList<ShapeItem*> selectedShapes() const;
+    QList<StrokeItem*> selectedStrokes() const;
+    // 描线颜色 / 宽度可作用的对象：图形与笔画。
+    QList<CanvasItem*> selectedStrokeTargets() const;
     void changeSelectedShapes(const QString& text, const std::function<void(ShapeItem*)>& mutate);
     void applyStrokeColor(const QColor& color);
     void applyFillColor(const QColor& color);

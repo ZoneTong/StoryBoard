@@ -5,6 +5,7 @@
 #include <QList>
 #include <QWidget>
 
+class CanvasItem;
 class QSpinBox;
 
 // 编辑图元卡的透明度、圆角半径、扇形 / 弧线扫过角与半径各行：圆角行只在矩形类
@@ -16,7 +17,7 @@ class ItemDockPanelValueCard : public QWidget {
   public:
     explicit ItemDockPanelValueCard(QWidget* parent = nullptr);
 
-    void refresh(const QList<ShapeItem*>& shapes);
+    void refresh(const QList<ShapeItem*>& shapes, const QList<CanvasItem*>& items);
     // 圆角行是否可见：只有矩形类图元才显示圆角编辑。
     void setCornerVisible(bool visible);
     // 扫过角与半径两行是否可见：只有扇形 / 弧线才显示角度与半径编辑。

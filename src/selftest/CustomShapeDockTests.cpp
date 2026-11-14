@@ -712,6 +712,77 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                           .arg(dockScene->canvasItemCount()));
 
 
+            // 笔画复用描线颜色 / 宽度与透明度：只选笔画时不显示描线样式行，
+            // 描线颜色、宽度直接改笔画；透明度对图形和笔画都生效。
+            auto* selectedStroke = new StrokeItem();
+            selectedStroke->setStrokePoints({QPointF(60.0, 300.0), QPointF(180.0, 300.0)},
+                                            QColor(QStringLiteral("#2563EB")), 6.0);
+            dockScene->addItemsWithUndo({selectedStroke}, QStringLiteral("Add stroke"));
+            dockScene->clearSelection();
+            selectedStroke->setSelected(true);
+            QApplication::processEvents();
+
+            QWidget* borderStyleWidget = dockPanel->findChild<QWidget*>(QStringLiteral("ItemBorderStyleRow"));
+            ctx.check(borderStyleWidget && !borderStyleWidget->isVisible(), QStringLiteral("只选笔画时隐藏描线样式行"));
+            ctx.check(borderWidthSpin && borderWidthSpin->isEnabled() &&
+                          qAbs(borderWidthSpin->value() - selectedStroke->strokeWidth()) < 0.01 && opacitySpin &&
+                          opacitySpin->isEnabled(),
+                      QStringLiteral("只选笔画时描线宽度与透明度可用并按笔画回显"),
+                      QStringLiteral("width=%1 spin=%2")
+                          .arg(selectedStroke->strokeWidth())
+                          .arg(borderWidthSpin ? borderWidthSpin->value() : -1.0));
+
+            if (strokeSwatches.size() > 1) {
+                strokeSwatches.at(1)->click();
+                QApplication::processEvents();
+            }
+            ctx.check(selectedStroke->strokeColor() == QColor(QStringLiteral("#EF4444")),
+                      QStringLiteral("卡片描线颜色直接改变笔画颜色"), selectedStroke->strokeColor().name());
+            dockScene->undoStack()->undo();
+            QApplication::processEvents();
+            ctx.check(selectedStroke->strokeColor() == QColor(QStringLiteral("#2563EB")),
+                      QStringLiteral("撤销描线颜色恢复笔画原色"), selectedStroke->strokeColor().name());
+
+            if (borderWidthSpin) {
+                borderWidthSpin->setValue(11.0);
+                QApplication::processEvents();
+            }
+            ctx.check(qAbs(selectedStroke->strokeWidth() - 11.0) < 0.01, QStringLiteral("卡片描线宽度直接改变笔画宽度"),
+                      QString::number(selectedStroke->strokeWidth()));
+            dockScene->undoStack()->undo();
+            QApplication::processEvents();
+            ctx.check(qAbs(selectedStroke->strokeWidth() - 6.0) < 0.01, QStringLiteral("撤销描线宽度恢复笔画原宽度"),
+                      QString::number(selectedStroke->strokeWidth()));
+
+            if (opacitySpin) {
+                opacitySpin->setValue(55);
+                QApplication::processEvents();
+            }
+            ctx.check(qAbs(selectedStroke->opacity() - 0.55) < 0.01, QStringLiteral("透明度作用到笔画"),
+                      QString::number(selectedStroke->opacity()));
+            dockScene->undoStack()->undo();
+            QApplication::processEvents();
+            ctx.check(qAbs(selectedStroke->opacity() - 1.0) < 0.01, QStringLiteral("撤销透明度恢复笔画原值"),
+                      QString::number(selectedStroke->opacity()));
+
+            selectedShape->setSelected(true);
+            selectedStroke->setSelected(true);
+            QApplication::processEvents();
+            ctx.check(borderStyleWidget && borderStyleWidget->isVisible(),
+                      QStringLiteral("图形与笔画混合选中时保留描线样式行"));
+            if (opacitySpin) {
+                opacitySpin->setValue(30);
+                QApplication::processEvents();
+            }
+            ctx.check(
+                qAbs(selectedShape->opacity() - 0.3) < 0.01 && qAbs(selectedStroke->opacity() - 0.3) < 0.01,
+                QStringLiteral("透明度同时作用到图形和笔画"),
+                QStringLiteral("shape=%1 stroke=%2").arg(selectedShape->opacity()).arg(selectedStroke->opacity()));
+            dockScene->undoStack()->undo();
+            QApplication::processEvents();
+            ctx.check(qAbs(selectedShape->opacity() - 1.0) < 0.01 && qAbs(selectedStroke->opacity() - 1.0) < 0.01,
+                      QStringLiteral("撤销透明度同时恢复图形和笔画"));
+
             // 悬浮卡片跟随选中状态：清空选中后隐藏，重新选中再出现。
             dockScene->clearSelection();
             QApplication::processEvents();
