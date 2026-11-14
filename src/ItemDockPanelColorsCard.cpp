@@ -13,9 +13,9 @@
 
 namespace {
 
-constexpr int kSmallIconSize = 16;
-constexpr int kButtonSize = 28;
-constexpr int kSwatchSize = 24;
+constexpr int kSmallIconSize = 20;
+constexpr int kButtonSize = 32;
+constexpr int kSwatchSize = 26;
 
 QToolButton* makeSwatch(const QColor& color, QWidget* parent, const QString& objectName)
 {

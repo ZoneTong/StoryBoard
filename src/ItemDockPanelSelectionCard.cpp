@@ -8,8 +8,8 @@
 
 namespace {
 
-constexpr int kButtonSize = 28;
-constexpr int kIconSize = 16;
+constexpr int kButtonSize = 32;
+constexpr int kIconSize = 20;
 constexpr int kAlignButtonCount = 8;
 constexpr int kBoolButtonCount = 5;
 

@@ -12,8 +12,8 @@
 
 namespace {
 
-constexpr int kSmallIconSize = 16;
-constexpr int kButtonSize = 28;
+constexpr int kSmallIconSize = 20;
+constexpr int kButtonSize = 32;
 
 QToolButton* makeRowIcon(IconId id, QWidget* parent)
 {
