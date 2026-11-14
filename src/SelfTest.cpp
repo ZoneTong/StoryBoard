@@ -5367,6 +5367,13 @@ int runSelfTest(const QString& reportPath)
         check(orderLayer && orderItem &&
                   orderItem->mapTo(&orderWindow, QPoint(0, 0)).y() < orderLayer->mapTo(&orderWindow, QPoint(0, 0)).y(),
               QStringLiteral("启动时按设置文件恢复卡片顺序"));
+        const bool orderWindowClosed = orderWindow.close();
+        QApplication::processEvents();
+        AppSettings savedOrderAfterClose;
+        savedOrderAfterClose.load();
+        check(orderWindowClosed && savedOrderAfterClose.dockOrder == seededOrder.dockOrder,
+              QStringLiteral("关闭窗口时把卡片顺序写回设置文件"),
+              savedOrderAfterClose.dockOrder.join(QStringLiteral("|")));
         qunsetenv("STORYBOARD_CONFIG");
     }
 
