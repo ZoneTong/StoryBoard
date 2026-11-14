@@ -53,8 +53,15 @@ void DockPanelController::createItemDock()
     QObject::connect(m_itemPanel, &ItemDockPanel::statusMessage, m_window,
                      [this](const QString& message) { m_window->statusBar()->showMessage(message, 3000); });
 
-    // 需求：默认无选中就隐藏，选中图元时自动出现。
-    m_itemDock->setVisible(false);
+    // 卡片停靠在主窗口里时常驻显示，不随有没有选中图元整张显隐；
+    // 默认悬浮与悬浮后的显隐规则见 applyDockLayout / updateItemDockVisibility。
+    m_itemDock->setVisible(true);
+    QObject::connect(m_itemDock, &QDockWidget::topLevelChanged, m_window, [this](bool floating) {
+        if (!floating) {
+            // 悬浮卡拖回主窗口后重新固定，恢复常驻显示。
+            m_itemDock->setVisible(true);
+        }
+    });
 }
 
 void DockPanelController::createViewModeDock()
@@ -121,8 +128,7 @@ void DockPanelController::applyDockLayout()
     // 默认视图模式卡在上、图层卡在下；用户拖拽调整过则按设置文件恢复右侧顺序。
     QStringList order;
     for (const QString& name : m_window->m_settings.dockOrder) {
-        if ((name == QStringLiteral("ViewModeDock") || name == QStringLiteral("LayerDock")) &&
-            !order.contains(name)) {
+        if ((name == QStringLiteral("ViewModeDock") || name == QStringLiteral("LayerDock")) && !order.contains(name)) {
             order.append(name);
         }
     }
@@ -135,7 +141,7 @@ void DockPanelController::applyDockLayout()
     QDockWidget* first = order.first() == QStringLiteral("ViewModeDock") ? m_viewModeDock : m_layerDock;
     QDockWidget* second = first == m_viewModeDock ? m_layerDock : m_viewModeDock;
 
-    // 编辑图元卡固定左侧；视图模式 / 图层卡在右侧竖直切分，first 在上、second 在下。
+    // 编辑图元卡默认悬浮成独立卡片；视图模式 / 图层卡在右侧竖直切分，first 在上、second 在下。
     m_window->removeDockWidget(m_itemDock);
     m_window->removeDockWidget(m_viewModeDock);
     m_window->removeDockWidget(m_layerDock);
@@ -163,7 +169,22 @@ void DockPanelController::applyDockLayout()
 
     m_viewModeDock->setVisible(true);
     m_layerDock->setVisible(true);
+
+    // 编辑图元卡默认悬浮：从左侧停靠位摘出成独立窗口，并且没有选中图元时先隐藏；
+    // 悬浮卡片之后由 updateItemDockVisibility 跟随选中状态显隐。
+    m_itemDock->setFloating(true);
     m_itemDock->setVisible(false);
+    QTimer::singleShot(0, m_window, [this]() {
+        if (!m_itemDock->isFloating()) {
+            return;
+        }
+        // 悬浮卡落在画布左上角，尺寸落在卡片本身合适的高度区间。
+        const QRect frame = m_window->frameGeometry();
+        const int width = qBound(260, frame.width() / 4, 360);
+        const int height = qBound(320, frame.height() - 200, 560);
+        m_itemDock->resize(width, height);
+        m_itemDock->move(frame.left() + 24, frame.top() + 88);
+    });
     m_applyingDockLayout = false;
 }
 
@@ -192,6 +213,11 @@ void DockPanelController::handleMoveEvent(QObject* watched, QEvent* event)
 void DockPanelController::updateItemDockVisibility()
 {
     if (!m_itemDock || !m_window->m_scene || !m_window->m_view) {
+        return;
+    }
+    // 停靠在主窗口里时卡片常驻，选中状态变化不动整张卡片；
+    // 只有悬浮窗口才跟随选中状态：有选中显示、清空选中隐藏。
+    if (!m_itemDock->isFloating()) {
         return;
     }
     const bool hasSelection = !m_window->m_scene->selectedCanvasItems().isEmpty();

@@ -10,7 +10,7 @@ class QObject;
 class QEvent;
 
 // 主界面三张卡片：编辑图元在左侧，视图模式在右上、图层列表在右下。
-// 右侧两张卡片的上下顺序可由用户拖拽调整并写进设置文件；编辑图元卡固定左侧。
+// 右侧两张卡片的上下顺序可由用户拖拽调整并写进设置文件；编辑图元卡默认悬浮，可拖回左侧停靠。
 class DockPanelController {
   public:
     explicit DockPanelController(MainWindow* window);
@@ -24,7 +24,7 @@ class DockPanelController {
     void applyDockLayout();
     // 拖拽后读取实际上下位置并落盘。
     void rememberDockOrder();
-    // 编辑图元卡跟随选中状态显示 / 隐藏。
+    // 编辑图元卡停靠时始终显示；只有悬浮窗口才跟随选中状态显隐。
     void updateItemDockVisibility();
 
     // 拖拽卡片标题栏换位时没有位置信号，用移动事件兜底。

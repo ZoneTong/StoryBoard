@@ -3569,6 +3569,10 @@ Use the checkbox to show or hide it.</source>
         <translation>编辑图元卡</translation>
     </message>
     <message>
+        <source>Show or hide the edit item panel (it stays visible while docked and follows the item selection while floating)</source>
+        <translation>显示或隐藏编辑图元卡（停靠时始终显示，悬浮时随图元选中状态显隐）</translation>
+    </message>
+    <message>
         <source>Show or hide the edit item panel (it appears automatically when an item is selected)</source>
         <translation>显示或隐藏编辑图元卡（选中图元时自动出现）</translation>
     </message>
