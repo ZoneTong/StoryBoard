@@ -18,7 +18,9 @@
 #include <QFileInfo>
 #include <QFont>
 #include <QLabel>
+#include <QLayout>
 #include <QScrollArea>
+#include <QStyle>
 #include <QTimer>
 #include <QUndoStack>
 #include <QVBoxLayout>
@@ -45,6 +47,7 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     scroll->setFrameShape(QFrame::NoFrame);
     auto* content = new QWidget(scroll);
     content->setObjectName(QStringLiteral("ItemPanelContent"));
+    m_contentWidget = content;
     auto* layout = new QVBoxLayout(content);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(4);
@@ -86,6 +89,7 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
 
     scroll->setWidget(content);
     outer->addWidget(scroll, 1);
+    m_preferredWidth = preferredWidth();
 
     connect(m_colorsCard, &ItemDockPanelColorsCard::strokeColorChosen, this, &ItemDockPanel::applyStrokeColor);
     connect(m_colorsCard, &ItemDockPanelColorsCard::fillColorChosen, this, &ItemDockPanel::applyFillColor);
@@ -205,6 +209,35 @@ void ItemDockPanel::scheduleRefresh()
     QTimer::singleShot(0, this, &ItemDockPanel::refresh);
 }
 
+int ItemDockPanel::preferredWidth() const
+{
+    if (!m_contentWidget || !m_contentWidget->layout()) {
+        return 260;
+    }
+
+    int widestRow = 0;
+    auto scanRows = [&widestRow](QLayout* layout) {
+        if (!layout) {
+            return;
+        }
+        for (int index = 0; index < layout->count(); ++index) {
+            const QWidget* row = layout->itemAt(index)->widget();
+            if (row) {
+                widestRow = qMax(widestRow, row->sizeHint().width());
+            }
+        }
+    };
+    scanRows(m_contentWidget->layout());
+    // 选中操作卡里的对齐 / 化形行在无选中时会隐藏，但按钮放大后仍需预留它们展开后的宽度。
+    if (m_selectionCard) {
+        scanRows(m_selectionCard->layout());
+    }
+
+    // 两侧外边距 + 垂直滚动条；按钮放大后宽度随之增长，上限仍是 360px。
+    const int chrome = 12 + style()->pixelMetric(QStyle::PM_ScrollBarExtent) + 2;
+    return qBound(260, widestRow + chrome, 360);
+}
+
 void ItemDockPanel::refresh()
 {
     if (!m_scene) {
@@ -258,6 +291,12 @@ void ItemDockPanel::refresh()
     m_fillBorderCard->refresh(shapes, strokes);
     m_valueCard->refresh(shapes, items);
     m_arrangeCard->refresh(!selectedItems().isEmpty());
+
+    const int width = preferredWidth();
+    if (width != m_preferredWidth) {
+        m_preferredWidth = width;
+        emit preferredWidthChanged(width);
+    }
 
     m_refreshing = false;
     if (m_refreshPending) {

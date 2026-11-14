@@ -52,11 +52,19 @@ void DockPanelController::createItemDock()
     // 编辑图元卡固定在左侧，高度限定在合适区间，避免单独占满整列。
     m_itemDock->setMinimumHeight(240);
     m_itemDock->setMaximumHeight(620);
-    // 按钮放大后卡片会按内容变宽，但始终限制在 360px 内，避免遮挡画布或超出窗口。
+    // 按钮放大后按内容最宽一行决定卡片宽度，既不裁掉按钮也不超过 360px。
+    m_itemDock->setMinimumWidth(m_itemPanel->preferredWidth());
     m_itemDock->setMaximumWidth(360);
 
     QObject::connect(m_itemPanel, &ItemDockPanel::statusMessage, m_window,
                      [this](const QString& message) { m_window->statusBar()->showMessage(message, 3000); });
+    QObject::connect(m_itemPanel, &ItemDockPanel::preferredWidthChanged, m_window, [this](int width) {
+        const int bounded = qBound(260, width, 360);
+        m_itemDock->setMinimumWidth(bounded);
+        if (m_itemDock->isFloating() && m_itemDock->width() < bounded) {
+            m_itemDock->resize(bounded, m_itemDock->height());
+        }
+    });
     // 画笔与描边共用同一套颜色 / 宽度：卡片里改描边后，之后画出的笔画立即沿用新值。
     QObject::connect(m_itemPanel, &ItemDockPanel::strokeColorPicked, m_window,
                      [this](const QColor& color) { m_window->setBrushColor(color, true); });
