@@ -242,14 +242,6 @@ void StyleController::setBrushColor(const QColor& color, bool remember)
 
     m_window->m_brushColor = color;
     m_window->m_view->setBrushColor(color);
-    if (m_window->m_colorButton) {
-        m_window->m_colorButton->setIcon(strokeColorIcon(color, MainWindow::kToolBarIconSize));
-        m_window->m_colorButton->setToolTip(
-            MainWindow::tr("Brush color: %1 (click to choose)").arg(color.name(QColor::HexArgb).toUpper()));
-    }
-    if (m_window->m_brushColorAct) {
-        m_window->m_brushColorAct->setIcon(strokeColorIcon(color, 16));
-    }
     if (m_window->m_strokeColorAct) {
         m_window->m_strokeColorAct->setIcon(strokeColorIcon(color, 16));
     }

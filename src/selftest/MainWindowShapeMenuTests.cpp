@@ -117,10 +117,41 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                       .arg(shapeMenu ? shapeMenu->actions().size() : 0)
                       .arg(builtInShapeActions)
                       .arg(customShapeMenu ? 1 : 0));
+        // 工具栏在原「图形」入口处把常见图形直接平铺成一排，复用菜单里的同一批动作。
         QToolButton* shapeButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("ShapeButton"));
-        ctx.check(shapeButton && shapeButton->menu() == shapeMenu &&
-                      shapeButton->popupMode() == QToolButton::InstantPopup,
-                  QStringLiteral("主工具栏图形按钮绑定快速插入菜单"));
+        QList<QToolButton*> toolbarShapeButtons =
+            shapeWindow.findChildren<QToolButton*>(QStringLiteral("ToolBarShapeButton"));
+        bool shapeButtonsShareMenu = toolbarShapeButtons.size() == builtInShapeActions && shapeMenu;
+        for (QToolButton* button : std::as_const(toolbarShapeButtons)) {
+            const QString actionName = button->property("shapeActionName").toString();
+            QAction* boundAction = actionName.isEmpty() ? nullptr : shapeWindow.findChild<QAction*>(actionName);
+            if (!boundAction || !shapeMenu || !shapeMenu->actions().contains(boundAction)) {
+                shapeButtonsShareMenu = false;
+                break;
+            }
+        }
+        ctx.check(shapeButtonsShareMenu && !shapeButton, QStringLiteral("主工具栏把常见图形展开成一排按钮"),
+                  QStringLiteral("buttons=%1 builtIn=%2").arg(toolbarShapeButtons.size()).arg(builtInShapeActions));
+
+        QToolBar* mainToolBar = shapeWindow.findChild<QToolBar*>(QStringLiteral("MainToolBar"));
+        bool hasRemovedToolbarEntry = false;
+        if (mainToolBar) {
+            for (QAction* action : mainToolBar->actions()) {
+                if (!action || action->isSeparator()) {
+                    continue;
+                }
+                const QString text = action->text();
+                if (text == QStringLiteral("撤销") || text == QStringLiteral("重做") ||
+                    text == QStringLiteral("放大") || text == QStringLiteral("缩小") ||
+                    text == QStringLiteral("适应画布") || text == QStringLiteral("替换背景图片…") ||
+                    text == QStringLiteral("设置…")) {
+                    hasRemovedToolbarEntry = true;
+                    break;
+                }
+            }
+        }
+        ctx.check(mainToolBar && !hasRemovedToolbarEntry,
+                  QStringLiteral("主工具栏不再保留撤销 / 重做 / 缩放 / 背景 / 设置按钮"));
 
         // 需求：辅助网格除了设置里勾选，还要能从视图菜单直接开关，勾选状态与画布一致。
         QAction* gridAction = shapeWindow.findChild<QAction*>(QStringLiteral("GridToggleAction"));
@@ -204,36 +235,21 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                       fillStyleImage != fillColorImage && fillColorImage != strokeColorImage,
                   QStringLiteral("填充样式、填充颜色与边框颜色使用彼此不同的图标"));
 
-        QToolButton* iconBrushColorButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("ColorButton"));
-        QAction* brushColorAction = shapeWindow.findChild<QAction*>(QStringLiteral("BrushColorAction"));
-        QAction* strokeColorAction = shapeWindow.findChild<QAction*>(QStringLiteral("BorderColorAction"));
-        const QImage brushColorImage =
-            iconBrushColorButton ? iconBrushColorButton->icon().pixmap(20, 20).toImage() : QImage();
-        // 两个按钮各自生成同一套描线图标，抗锯齿取整会带来极小像素差，按平均差异判断。
-        bool sameIconSize =
-            brushColorImage.isNull() == strokeColorImage.isNull() && brushColorImage.size() == strokeColorImage.size();
-        double iconDiff = 0.0;
-        if (sameIconSize && !brushColorImage.isNull()) {
-            for (int y = 0; y < brushColorImage.height(); ++y) {
-                for (int x = 0; x < brushColorImage.width(); ++x) {
-                    const QColor left = brushColorImage.pixelColor(x, y);
-                    const QColor right = strokeColorImage.pixelColor(x, y);
-                    const int channelDiff =
-                        qMax(qMax(qAbs(left.red() - right.red()), qAbs(left.green() - right.green())),
-                             qMax(qAbs(left.blue() - right.blue()), qAbs(left.alpha() - right.alpha())));
-                    iconDiff += channelDiff / 255.0;
-                }
-            }
-            iconDiff /= brushColorImage.width() * brushColorImage.height();
-        }
-        ctx.check(sameIconSize && iconDiff < 0.08 && brushColorAction && strokeColorAction &&
-                      brushColorAction->text() == strokeColorAction->text() &&
-                      brushColorAction->text() == QStringLiteral("描线颜色…"),
-                  QStringLiteral("画笔与描线颜色统一名称和图标"),
-                  QStringLiteral("img=%1 text=%2/%3")
-                      .arg(QString::number(iconDiff, 'f', 3))
-                      .arg(brushColorAction ? brushColorAction->text() : QStringLiteral("-"))
-                      .arg(strokeColorAction ? strokeColorAction->text() : QStringLiteral("-")));
+        // 画笔颜色按钮与画笔宽度按钮已从工具栏移除；描线宽度改挂在描线颜色按钮之后。
+        QToolButton* removedBrushColorButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("ColorButton"));
+        QAction* removedBrushColorAction = shapeWindow.findChild<QAction*>(QStringLiteral("BrushColorAction"));
+        QComboBox* strokeWidthCombo = shapeWindow.findChild<QComboBox*>(QStringLiteral("BrushWidthCombo"));
+        const int strokeButtonX =
+            iconStrokeColorButton ? iconStrokeColorButton->mapTo(&shapeWindow, QPoint(0, 0)).x() : -1;
+        const int widthComboX = strokeWidthCombo ? strokeWidthCombo->mapTo(&shapeWindow, QPoint(0, 0)).x() : -1;
+        ctx.check(!removedBrushColorButton && !removedBrushColorAction && strokeWidthCombo && iconStrokeColorButton &&
+                      widthComboX > strokeButtonX,
+                  QStringLiteral("工具栏去掉画笔颜色按钮并在描线按钮后追加描线宽度下拉"),
+                  QStringLiteral("color=%1 action=%2 comboX=%3 strokeX=%4")
+                      .arg(removedBrushColorButton ? 1 : 0)
+                      .arg(removedBrushColorAction ? 1 : 0)
+                      .arg(widthComboX)
+                      .arg(strokeButtonX));
 
         QMenu* brushWidthMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("BrushWidthMenu"));
         QComboBox* widthCombo = shapeWindow.findChild<QComboBox*>(QStringLiteral("BrushWidthCombo"));
@@ -275,44 +291,49 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
             }
         }
 
-        // 需求：“画笔样式”已独立为一级菜单“画笔”，“平滑笔画”也归到该菜单；
-        // 填充样式与填充／描边颜色并入“插入”菜单，紧跟在常见图形之后。
+        // 一级「画笔」菜单已删除：描线宽度子菜单与平滑笔画并到「插入」的描线颜色之后，
+        // 重复的画笔颜色项不再保留。
         QMenu* brushMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("BrushMenu"));
         QMenu* fillStyleMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("FillStyleMenu"));
-        bool brushIsTopLevel = false;
-        for (QAction* action : shapeWindow.menuBar()->actions()) {
-            QMenu* menu = action ? action->menu() : nullptr;
-            if (menu && menu->objectName() == QStringLiteral("BrushMenu")) {
-                brushIsTopLevel = true;
+        QMenu* insertMenuForOrder = shapeWindow.findChild<QMenu*>(QStringLiteral("InsertMenu"));
+        QList<QAction*> insertActionsForOrder;
+        if (insertMenuForOrder) {
+            insertActionsForOrder = insertMenuForOrder->actions();
+        }
+        const int strokeColorIndex =
+            insertActionsForOrder.indexOf(shapeWindow.findChild<QAction*>(QStringLiteral("BorderColorAction")));
+        const int widthMenuIndex =
+            insertActionsForOrder.indexOf(brushWidthMenu ? brushWidthMenu->menuAction() : nullptr);
+        int smoothActionIndex = -1;
+        for (int i = 0; i < insertActionsForOrder.size(); ++i) {
+            if (insertActionsForOrder.at(i) && insertActionsForOrder.at(i)->text() == QStringLiteral("平滑笔画")) {
+                smoothActionIndex = i;
+                break;
             }
         }
-        ctx.check(brushMenu && brushIsTopLevel && brushMenu->title() == QStringLiteral("画笔(&B)"),
-                  QStringLiteral("画笔是一级菜单"), brushMenu ? brushMenu->title() : QStringLiteral("missing"));
+        bool repeatedBrushColor = false;
+        for (QAction* action : std::as_const(insertActionsForOrder)) {
+            if (action && action->objectName() == QStringLiteral("BrushColorAction")) {
+                repeatedBrushColor = true;
+                break;
+            }
+        }
+        ctx.check(!brushMenu && strokeColorIndex >= 0 && widthMenuIndex > strokeColorIndex &&
+                      smoothActionIndex > widthMenuIndex && !repeatedBrushColor,
+                  QStringLiteral("描线宽度与平滑笔画移到插入菜单描线颜色之后"),
+                  QStringLiteral("brush=%1 stroke=%2 width=%3 smooth=%4 repeat=%5")
+                      .arg(brushMenu ? 1 : 0)
+                      .arg(strokeColorIndex)
+                      .arg(widthMenuIndex)
+                      .arg(smoothActionIndex)
+                      .arg(repeatedBrushColor ? 1 : 0));
         bool styleMenuGone = shapeWindow.findChild<QMenu*>(QStringLiteral("StyleMenu")) == nullptr &&
                              shapeWindow.findChild<QMenu*>(QStringLiteral("BrushStyleMenu")) == nullptr;
         ctx.check(styleMenuGone, QStringLiteral("样式菜单与画笔样式子菜单不再存在"));
 
-        QList<QAction*> brushActions;
-        if (brushMenu) {
-            brushActions = brushMenu->actions();
-        }
         QList<QAction*> fillActions;
         if (fillStyleMenu) {
             fillActions = fillStyleMenu->actions();
-        }
-        bool brushHasColor = false;
-        bool brushHasOutline = false;
-        bool brushHasSmooth = false;
-        bool brushHasWidth = brushMenu && brushMenu->findChild<QMenu*>(QStringLiteral("BrushWidthMenu"));
-        for (QAction* action : brushActions) {
-            if (action->objectName() == QStringLiteral("BrushColorAction")) {
-                brushHasColor = true;
-            } else if (action->objectName() == QStringLiteral("BorderColorAction")) {
-                brushHasOutline = true;
-            }
-            if (action->text() == QStringLiteral("平滑笔画")) {
-                brushHasSmooth = true;
-            }
         }
         bool fillHasColor = false;
         int fillMenuItemCount = 0;
@@ -325,8 +346,6 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                 fillHasColor = true;
             }
         }
-        ctx.check(brushMenu && brushHasColor && brushHasWidth && brushHasSmooth && !brushHasOutline,
-                  QStringLiteral("画笔菜单包含画笔颜色、粗细选项与平滑笔画"));
         ctx.check(fillStyleMenu && fillMenuItemCount == 7 && !fillHasColor,
                   QStringLiteral("填充样式子菜单只保留填充样式"), QStringLiteral("actions=%1").arg(fillMenuItemCount));
 

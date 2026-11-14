@@ -210,7 +210,6 @@ class MainWindow : public QMainWindow {
     QAction* m_fillHoneycombAct = nullptr;
     QAction* m_fillColorAct = nullptr;
     QAction* m_strokeColorAct = nullptr;
-    QAction* m_brushColorAct = nullptr;
 
     QAction* m_aboutAct = nullptr;
     QAction* m_shortcutsAct = nullptr;
@@ -231,7 +230,6 @@ class MainWindow : public QMainWindow {
     QMenu* m_shapeMenu = nullptr;
     QMenu* m_customShapeMenu = nullptr;
 
-    QToolButton* m_colorButton = nullptr;
     QToolButton* m_fillButton = nullptr;
     QToolButton* m_fillColorButton = nullptr;
     QToolButton* m_strokeColorButton = nullptr;
