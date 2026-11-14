@@ -153,6 +153,19 @@ void ItemDockPanel::refresh()
     m_valueCard->setCornerVisible(hasCorner);
     m_valueCard->setArcRadiusVisible(hasArc);
 
+    // 选中的图元都不支持填充（直线 / 弧线 / 大括号 / 文字 / 图片 / 合并图形）时，
+    // 填充样式与填充颜色两行没有可作用的对象，直接隐藏；无选中时保持原有布局。
+    bool anyFillable = false;
+    for (ShapeItem* shape : shapes) {
+        if (shapeTypeIsFilled(shape->shapeType())) {
+            anyFillable = true;
+            break;
+        }
+    }
+    const bool showFillRows = items.isEmpty() || anyFillable;
+    m_fillBorderCard->fillStyleRow()->setVisible(showFillRows);
+    m_colorsCard->fillColorRow()->setVisible(showFillRows);
+
     m_colorsCard->refresh(shapes);
     m_fillBorderCard->refresh(shapes);
     m_valueCard->refresh(shapes);
