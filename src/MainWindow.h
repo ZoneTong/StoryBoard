@@ -27,6 +27,11 @@ class LayerPanel;
 class BackgroundController;
 class DockPanelController;
 class ShortcutController;
+class DocumentController;
+class ImportExportController;
+class StyleController;
+class ViewStatusController;
+class UiBuilderController;
 class QAction;
 class QActionGroup;
 class QComboBox;
@@ -98,8 +103,6 @@ class MainWindow : public QMainWindow {
     void createToolBars();
     void createStatusBar();
     void connectSignals();
-    void CreateBrushToolbar(QToolBar* mainBar);
-    void CreateFillToolbar(QToolBar* mainBar);
     // 多图元对齐：菜单与工具栏下拉共用同一组动作，状态按当前选择更新。
     void applyAlignment(Alignment::Mode mode);
     // 合并形状：联合 / 组合 / 拆分 / 相交 / 剪除，结果替换为一个合并图形，只记一条撤销。
@@ -136,6 +139,11 @@ class MainWindow : public QMainWindow {
     friend class BackgroundController;
     friend class DockPanelController;
     friend class ShortcutController;
+    friend class DocumentController;
+    friend class ImportExportController;
+    friend class StyleController;
+    friend class ViewStatusController;
+    friend class UiBuilderController;
 
     CanvasScene* m_scene = nullptr;
     CanvasView* m_view = nullptr;
@@ -229,6 +237,11 @@ class MainWindow : public QMainWindow {
     std::unique_ptr<BackgroundController> m_background;
     std::unique_ptr<DockPanelController> m_docks;
     std::unique_ptr<ShortcutController> m_shortcuts;
+    std::unique_ptr<DocumentController> m_document;
+    std::unique_ptr<ImportExportController> m_io;
+    std::unique_ptr<StyleController> m_style;
+    std::unique_ptr<ViewStatusController> m_viewStatus;
+    std::unique_ptr<UiBuilderController> m_ui;
 
     QLabel* m_hintLabel = nullptr;
     QLabel* m_modeBadge = nullptr;
