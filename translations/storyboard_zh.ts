@@ -155,8 +155,8 @@
       <translation>已对 %1 个图形应用「%2」</translation>
     </message>
     <message>
-      <source>Applied outline color to %1 shape(s)</source>
-      <translation>已将描边颜色应用到 %1 个图形</translation>
+      <source>Applied border color to %1 shape(s)</source>
+      <translation>已将边框颜色应用到 %1 个图形</translation>
     </message>
     <message>
       <source>Arrow</source>
@@ -319,8 +319,8 @@
       <translation>调整填充样式</translation>
     </message>
     <message>
-      <source>Change outline color</source>
-      <translation>修改描边颜色</translation>
+      <source>Change border color</source>
+      <translation>修改边框颜色</translation>
     </message>
     <message>
       <source>Changed the height of %1 item(s) by %2</source>
@@ -373,8 +373,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>选择字体</translation>
     </message>
     <message>
-      <source>Choose outline color</source>
-      <translation>选择描边颜色</translation>
+      <source>Choose border color</source>
+      <translation>选择边框颜色</translation>
     </message>
     <message>
       <source>Choose text color</source>
@@ -1093,16 +1093,16 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>橙色</translation>
     </message>
     <message>
-      <source>Outline color set; it will be used for newly inserted shapes</source>
-      <translation>已设置描边颜色，将用于新插入的图形</translation>
+      <source>Border color set; it will be used for newly inserted shapes</source>
+      <translation>已设置边框颜色，将用于新插入的图形</translation>
     </message>
     <message>
-      <source>Outline color: %1 (click to choose)</source>
-      <translation>描边颜色：%1（点击选择）</translation>
+      <source>Border color: %1 (click to choose)</source>
+      <translation>边框颜色：%1（点击选择）</translation>
     </message>
     <message>
-      <source>Outline color…</source>
-      <translation>描边颜色…</translation>
+      <source>Border color…</source>
+      <translation>边框颜色…</translation>
     </message>
     <message>
       <source>Output file</source>
@@ -1473,12 +1473,12 @@ Second line caption</source>
       <translation>笔画</translation>
     </message>
     <message>
-      <source>Stroke color</source>
-      <translation>描边颜色</translation>
+      <source>Border color</source>
+      <translation>边框颜色</translation>
     </message>
     <message>
-      <source>Stroke width</source>
-      <translation>描边宽度</translation>
+      <source>Border width</source>
+      <translation>边框宽度</translation>
     </message>
     <message>
       <source>Style</source>
@@ -1625,8 +1625,8 @@ Use the checkbox to show or hide it.</source>
       <translation>该图元所在图层已锁定或已隐藏，无法编辑。请先在右侧图层面板解锁或显示该图层。</translation>
     </message>
     <message>
-      <source>The outline color did not change</source>
-      <translation>描边颜色未发生变化</translation>
+      <source>The border color did not change</source>
+      <translation>边框颜色未发生变化</translation>
     </message>
     <message>
       <source>The selected shape is stroke-only (line, brace, etc.); fill is not supported</source>
@@ -2079,8 +2079,8 @@ Use the checkbox to show or hide it.</source>
         <translation>修改会作用于所有选中的图形。</translation>
     </message>
     <message>
-        <source>Change shape stroke color</source>
-        <translation>修改图形描边颜色</translation>
+        <source>Change shape border color</source>
+        <translation>修改图形边框颜色</translation>
     </message>
     <message>
         <source>Change shape fill color</source>
@@ -2589,8 +2589,8 @@ Use the checkbox to show or hide it.</source>
       <translation>填充颜色…</translation>
     </message>
     <message>
-      <source>Outline color…</source>
-      <translation>描边颜色…</translation>
+      <source>Border color…</source>
+      <translation>边框颜色…</translation>
     </message>
     <message>
       <source>Brush color…</source>
@@ -2753,8 +2753,8 @@ Use the checkbox to show or hide it.</source>
       <translation>跟随画笔色</translation>
     </message>
     <message>
-      <source>Outline color: %1 (click to choose)</source>
-      <translation>描边颜色：%1（点击选择）</translation>
+      <source>Border color: %1 (click to choose)</source>
+      <translation>边框颜色：%1（点击选择）</translation>
     </message>
     <message>
       <source>Undo: %1</source>
@@ -2993,24 +2993,24 @@ Use the checkbox to show or hide it.</source>
       <translation>选择填充颜色</translation>
     </message>
     <message>
-      <source>Choose outline color</source>
-      <translation>选择描边颜色</translation>
+      <source>Choose border color</source>
+      <translation>选择边框颜色</translation>
     </message>
     <message>
-      <source>Outline color set; it will be used for newly inserted shapes</source>
-      <translation>已设置描边颜色，将用于新插入的图形</translation>
+      <source>Border color set; it will be used for newly inserted shapes</source>
+      <translation>已设置边框颜色，将用于新插入的图形</translation>
     </message>
     <message>
-      <source>The outline color did not change</source>
-      <translation>描边颜色未发生变化</translation>
+      <source>The border color did not change</source>
+      <translation>边框颜色未发生变化</translation>
     </message>
     <message>
-      <source>Change outline color</source>
-      <translation>修改描边颜色</translation>
+      <source>Change border color</source>
+      <translation>修改边框颜色</translation>
     </message>
     <message>
-      <source>Applied outline color to %1 shape(s)</source>
-      <translation>已将描边颜色应用到 %1 个图形</translation>
+      <source>Applied border color to %1 shape(s)</source>
+      <translation>已将边框颜色应用到 %1 个图形</translation>
     </message>
     <message>
       <source>The selected shape is stroke-only (line, brace, etc.); fill is not supported</source>
@@ -4167,12 +4167,12 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>填充颜色</translation>
     </message>
     <message>
-      <source>Stroke color</source>
-      <translation>描边颜色</translation>
+      <source>Border color</source>
+      <translation>边框颜色</translation>
     </message>
     <message>
-      <source>Stroke width</source>
-      <translation>描边宽度</translation>
+      <source>Border width</source>
+      <translation>边框宽度</translation>
     </message>
     <message>
       <source>Image</source>
@@ -4267,6 +4267,34 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>Corner radius</source>
       <translation>圆角</translation>
+    </message>
+    <message>
+      <source>Border style</source>
+      <translation>边框样式</translation>
+    </message>
+    <message>
+      <source>Opacity</source>
+      <translation>透明度</translation>
+    </message>
+    <message>
+      <source>Start angle</source>
+      <translation>起始角</translation>
+    </message>
+    <message>
+      <source>Sweep angle</source>
+      <translation>扫过角度</translation>
+    </message>
+    <message>
+      <source>Shape radius</source>
+      <translation>图形半径</translation>
+    </message>
+    <message>
+      <source>Semi-major axis</source>
+      <translation>长半轴</translation>
+    </message>
+    <message>
+      <source>Semi-minor axis</source>
+      <translation>短半轴</translation>
     </message>
   </context>
   <context>
@@ -4755,8 +4783,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
 
     <message>
-        <source>Stroke color</source>
-        <translation>描边颜色</translation>
+        <source>Border color</source>
+        <translation>边框颜色</translation>
     </message>
     <message>
         <source>Fill color</source>
@@ -4795,8 +4823,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <translation>修改会作用于所有选中的图形。</translation>
     </message>
     <message>
-        <source>Change shape stroke color</source>
-        <translation>修改图形描边颜色</translation>
+        <source>Change shape border color</source>
+        <translation>修改图形边框颜色</translation>
     </message>
     <message>
         <source>Change shape fill color</source>
@@ -4854,5 +4882,32 @@ In edit mode, items on visible, unlocked layers can be edited</source>
             <source>Merge shapes</source>
             <translation>合并形状</translation>
         </message>
-</context>
+    <message>
+      <source>Border</source>
+      <translation>边框</translation>
+    </message>
+    <message>
+      <source>Border width</source>
+      <translation>边框宽度</translation>
+    </message>
+  </context>
+<context>
+    <name>ItemStyleVisuals</name>
+    <message>
+      <source>Solid</source>
+      <translation>实线</translation>
+    </message>
+    <message>
+      <source>Dashed</source>
+      <translation>虚线</translation>
+    </message>
+    <message>
+      <source>Dotted</source>
+      <translation>点线</translation>
+    </message>
+    <message>
+      <source>Dash-dot</source>
+      <translation>点划线</translation>
+    </message>
+  </context>
 </TS>

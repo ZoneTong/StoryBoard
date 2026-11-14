@@ -2,6 +2,7 @@
 
 #include "IconFactory.h"
 #include "ItemPropertiesDialog.h"
+#include "ItemStyleVisuals.h"
 
 #include <QColorDialog>
 #include <QDoubleSpinBox>
@@ -33,18 +34,30 @@ QString fontText(const QFont& font)
 void refreshColorButton(QToolButton* button)
 {
     const QColor color = button->property("itemColor").value<QColor>();
-    button->setIcon(makeColorIcon(color.isValid() ? color : QColor(Qt::transparent), 18));
+    const ColorIconRole role =
+        static_cast<ColorIconRole>(button->property("colorIconRole").toInt());
+    QIcon icon;
+    if (role == ColorIconRole::Fill) {
+        icon = ItemStyleVisuals::fillColorIcon(color.isValid() ? color : QColor(Qt::transparent), 18);
+    } else if (role == ColorIconRole::Border) {
+        icon = ItemStyleVisuals::borderColorIcon(color.isValid() ? color : QColor(Qt::transparent), 18);
+    } else {
+        icon = makeColorIcon(color.isValid() ? color : QColor(Qt::transparent), 18);
+    }
+    button->setIcon(icon);
     button->setText(colorText(color));
     button->setToolTip(colorText(color));
 }
 
-QToolButton* makeColorField(QWidget* parent, const QColor& color, const QString& objectName)
+QToolButton* makeColorField(QWidget* parent, const QColor& color, const QString& objectName,
+                            ColorIconRole iconRole)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(objectName);
     button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     button->setMinimumWidth(118);
     button->setProperty("itemColor", color);
+    button->setProperty("colorIconRole", static_cast<int>(iconRole));
     refreshColorButton(button);
 
     QObject::connect(button, &QToolButton::clicked, button, [button]() {

@@ -333,8 +333,8 @@ void UiBuilderController::buildActions()
     m_window->m_fillColorAct->setIcon(m_window->m_style->fillColorIcon(
         m_window->m_fillColor.isValid() ? m_window->m_fillColor : QColor(30, 41, 59, 36), 16));
     QObject::connect(m_window->m_fillColorAct, &QAction::triggered, m_window, &MainWindow::chooseFillColor);
-    m_window->m_strokeColorAct = new QAction(MainWindow::tr("Outline color…"), m_window);
-    m_window->m_strokeColorAct->setObjectName(QStringLiteral("OutlineColorAction"));
+    m_window->m_strokeColorAct = new QAction(MainWindow::tr("Border color…"), m_window);
+    m_window->m_strokeColorAct->setObjectName(QStringLiteral("BorderColorAction"));
     m_window->m_strokeColorAct->setIcon(m_window->m_style->strokeColorIcon(m_window->m_brushColor, 16));
     QObject::connect(m_window->m_strokeColorAct, &QAction::triggered, m_window, &MainWindow::chooseStrokeColor);
     m_window->m_brushColorAct = new QAction(MainWindow::tr("Brush color…"), m_window);
@@ -882,7 +882,7 @@ void UiBuilderController::createFillToolbar(QToolBar* mainBar)
     // 菜单项图标是 16px，工具栏按钮另画一份 20px 的，避免比旁边的图标小一圈。
     m_window->m_strokeColorButton->setIcon(
         m_window->m_style->strokeColorIcon(m_window->m_brushColor, MainWindow::kToolBarIconSize));
-    m_window->m_strokeColorButton->setToolTip(MainWindow::tr("Outline color: %1 (click to choose)")
+    m_window->m_strokeColorButton->setToolTip(MainWindow::tr("Border color: %1 (click to choose)")
                                                   .arg(m_window->m_brushColor.name(QColor::HexArgb).toUpper()));
     mainBar->addWidget(m_window->m_strokeColorButton);
 }

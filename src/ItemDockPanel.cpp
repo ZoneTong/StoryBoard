@@ -52,10 +52,14 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     layout->addWidget(m_selectionCard);
 
     m_colorsCard = new ItemDockPanelColorsCard(content);
-    layout->addWidget(m_colorsCard);
-
     m_fillBorderCard = new ItemDockPanelFillBorderCard(content);
-    layout->addWidget(m_fillBorderCard);
+
+    // 各行按功能顺序平铺：填充样式 → 填充颜色 → 边框样式 → 边框宽度 → 边框颜色。
+    layout->addWidget(m_fillBorderCard->fillStyleRow());
+    layout->addWidget(m_colorsCard->fillColorRow());
+    layout->addWidget(m_fillBorderCard->borderStyleRow());
+    layout->addWidget(m_fillBorderCard->borderWidthRow());
+    layout->addWidget(m_colorsCard->borderColorRow());
 
     m_valueCard = new ItemDockPanelValueCard(content);
     layout->addWidget(m_valueCard);
@@ -221,7 +225,7 @@ void ItemDockPanel::applyStrokeColor(const QColor& color)
     if (!color.isValid()) {
         return;
     }
-    changeSelectedShapes(tr("Change shape stroke color"), [color](ShapeItem* shape) {
+    changeSelectedShapes(tr("Change shape border color"), [color](ShapeItem* shape) {
         shape->setStyle(color, shape->fillColor(), shape->strokeWidth());
     });
 }

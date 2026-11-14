@@ -111,7 +111,7 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
 
         m_geometryBlock = new ItemPropertiesDialogGeometryBlock(item, this);
         m_geometryBlock->addRows(form);
-        if (m_styleBlock && m_styleBlock->cornerRadiusSpin()) {
+        if (m_styleBlock && (m_styleBlock->cornerRadiusSpin() || m_styleBlock->shapeRadiusSpin())) {
             auto syncCornerRange = [this]() {
                 if (!m_geometryBlock) {
                     return;
@@ -174,8 +174,10 @@ void ItemPropertiesDialog::applyEditableState()
     }
     if (m_styleBlock) {
         widgets << m_styleBlock->fillStyleCombo() << m_styleBlock->fillColorButton()
-                << m_styleBlock->strokeColorButton() << m_styleBlock->strokeWidthSpin()
-                << m_styleBlock->cornerRadiusSpin();
+                << m_styleBlock->strokeColorButton() << m_styleBlock->borderStyleCombo()
+                << m_styleBlock->strokeWidthSpin() << m_styleBlock->opacitySpin()
+                << m_styleBlock->cornerRadiusSpin() << m_styleBlock->startAngleSpin()
+                << m_styleBlock->sweepAngleSpin() << m_styleBlock->shapeRadiusSpin();
     }
     if (m_textBlock) {
         widgets << m_textBlock->textColorButton() << m_textBlock->fontButton() << m_textBlock->textEdit();
@@ -185,7 +187,8 @@ void ItemPropertiesDialog::applyEditableState()
     }
     if (m_geometryBlock) {
         widgets << m_geometryBlock->positionXSpin() << m_geometryBlock->positionYSpin() << m_geometryBlock->widthSpin()
-                << m_geometryBlock->heightSizeSpin() << m_geometryBlock->rotationSpin();
+                << m_geometryBlock->heightSizeSpin() << m_geometryBlock->majorAxisSpin()
+                << m_geometryBlock->minorAxisSpin() << m_geometryBlock->rotationSpin();
     }
     for (QWidget* widget : widgets) {
         if (widget) {
@@ -358,6 +361,30 @@ void ItemPropertiesDialog::applyChanges()
         }
         if (style && style->strokeWidthSpin()) {
             after.shapeState.strokeWidth = spinValue(style->strokeWidthSpin(), m_initialStrokeWidth);
+        }
+        if (style && style->borderStyleCombo() && style->borderStyleCombo()->currentData().toInt() >= 0) {
+            after.shapeState.strokeStyle =
+                static_cast<Qt::PenStyle>(style->borderStyleCombo()->currentData().toInt());
+        }
+        if (style && style->opacitySpin()) {
+            const int percent = style->opacitySpin()->value();
+            after.shapeState.opacity =
+                percent == style->initialOpacityPercent() ? style->initialOpacity() : percent / 100.0;
+        }
+        if (style && style->startAngleSpin()) {
+            const int value = style->startAngleSpin()->value();
+            after.shapeState.startAngle =
+                value == qRound(style->initialStartAngle()) ? style->initialStartAngle() : value;
+        }
+        if (style && style->sweepAngleSpin()) {
+            const int value = style->sweepAngleSpin()->value();
+            after.shapeState.sweepAngle =
+                value == qRound(style->initialSweepAngle()) ? style->initialSweepAngle() : value;
+        }
+        if (style && style->shapeRadiusSpin()) {
+            const int value = style->shapeRadiusSpin()->value();
+            after.shapeState.shapeRadius =
+                value == style->initialShapeRadius() ? style->initialStoredShapeRadius() : value;
         }
         if (style && style->cornerRadiusSpin()) {
             const int value = style->cornerRadiusSpin()->value();

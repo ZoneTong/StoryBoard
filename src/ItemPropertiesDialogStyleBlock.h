@@ -12,9 +12,10 @@ class QFormLayout;
 class QSpinBox;
 class QToolButton;
 
-// 属性窗的填充 / 描边区块：图形图元提供填充样式、填充颜色、描边颜色与宽度，
-// 矩形 / 圆角矩形额外提供圆角半径；笔画图元只提供描边颜色与宽度。
-// 控件初始值取自图元，快照值供确定时提交撤销记录。
+// 属性窗的填充 / 边框区块：图形图元提供填充样式、填充颜色、边框颜色、边框样式、
+// 边框宽度、透明度；矩形 / 圆角矩形额外提供圆角半径，扇形 / 弧线额外提供
+// 起始角、扫过角与半径；笔画图元只提供边框颜色与宽度。控件初始值取自图元，
+// 快照值供确定时提交撤销记录。
 class ItemPropertiesDialogStyleBlock : public QWidget {
     Q_OBJECT
 
@@ -28,7 +29,19 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     QComboBox* fillStyleCombo() const { return m_fillStyleCombo; }
     QToolButton* fillColorButton() const { return m_fillColorButton; }
     QToolButton* strokeColorButton() const { return m_strokeColorButton; }
+    QComboBox* borderStyleCombo() const { return m_borderStyleCombo; }
     QDoubleSpinBox* strokeWidthSpin() const { return m_strokeWidthSpin; }
+    QSpinBox* opacitySpin() const { return m_opacitySpin; }
+    qreal initialOpacity() const { return m_initialOpacity; }
+    int initialOpacityPercent() const { return m_initialOpacityPercent; }
+
+    QSpinBox* startAngleSpin() const { return m_startAngleSpin; }
+    QSpinBox* sweepAngleSpin() const { return m_sweepAngleSpin; }
+    QSpinBox* shapeRadiusSpin() const { return m_shapeRadiusSpin; }
+    qreal initialStartAngle() const { return m_initialStartAngle; }
+    qreal initialSweepAngle() const { return m_initialSweepAngle; }
+    int initialShapeRadius() const { return m_initialShapeRadius; }
+    qreal initialStoredShapeRadius() const { return m_initialStoredShapeRadius; }
 
     bool hasCornerRadius() const { return m_cornerRadiusSpin != nullptr; }
     QSpinBox* cornerRadiusSpin() const { return m_cornerRadiusSpin; }
@@ -45,7 +58,20 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     QComboBox* m_fillStyleCombo = nullptr;
     QToolButton* m_fillColorButton = nullptr;
     QToolButton* m_strokeColorButton = nullptr;
+    QComboBox* m_borderStyleCombo = nullptr;
     QDoubleSpinBox* m_strokeWidthSpin = nullptr;
+    QSpinBox* m_opacitySpin = nullptr;
+    qreal m_initialOpacity = 1.0;
+    int m_initialOpacityPercent = 100;
+
+    QSpinBox* m_startAngleSpin = nullptr;
+    QSpinBox* m_sweepAngleSpin = nullptr;
+    QSpinBox* m_shapeRadiusSpin = nullptr;
+    qreal m_initialStartAngle = 0.0;
+    qreal m_initialSweepAngle = 0.0;
+    int m_initialShapeRadius = 0;
+    qreal m_initialStoredShapeRadius = -1.0;
+    bool m_shapeRadiusEdited = false;
 
     qreal m_defaultCornerRatio = 0.0;
     QSizeF m_contentSize;

@@ -121,6 +121,9 @@ void selftest::runPropertyDialogTests(Context& ctx)
             dialog.findChild<QToolButton*>(QStringLiteral("ItemPropertiesStrokeColorValue"));
         QDoubleSpinBox* strokeWidthValue =
             dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesStrokeWidthValue"));
+        QComboBox* borderStyleValue =
+            dialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesBorderStyleValue"));
+        QSpinBox* opacityValue = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesOpacityValue"));
         QSpinBox* cornerRadiusValue = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesCornerRadiusValue"));
         QDoubleSpinBox* positionXValue =
             dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesPositionXValue"));
@@ -141,10 +144,22 @@ void selftest::runPropertyDialogTests(Context& ctx)
                   QStringLiteral("属性窗显示并可编辑填充样式"),
                   fillStyleValue ? fillStyleValue->currentText() : QString());
         ctx.check(fillColorValue && fillColorValue->isEnabled(), QStringLiteral("属性窗填充颜色可编辑"));
-        ctx.check(strokeColorValue && strokeColorValue->isEnabled(), QStringLiteral("属性窗描边颜色可编辑"));
+        ctx.check(strokeColorValue && strokeColorValue->isEnabled(), QStringLiteral("属性窗边框颜色可编辑"));
         ctx.check(strokeWidthValue && strokeWidthValue->isEnabled() &&
                       qFuzzyCompare(strokeWidthValue->value(), propertyShape->strokeWidth()),
-                  QStringLiteral("属性窗描边宽度可编辑"));
+                  QStringLiteral("属性窗边框宽度可编辑"));
+        ctx.check(borderStyleValue && borderStyleValue->isEnabled() &&
+                      borderStyleValue->currentData().toInt() == static_cast<int>(Qt::SolidLine),
+                  QStringLiteral("属性窗边框样式可编辑"));
+        ctx.check(opacityValue && opacityValue->isEnabled() && opacityValue->value() == 100,
+                  QStringLiteral("属性窗透明度可编辑"));
+        if (borderStyleValue) {
+            borderStyleValue->setCurrentIndex(
+                borderStyleValue->findData(static_cast<int>(Qt::DashLine)));
+        }
+        if (opacityValue) {
+            opacityValue->setValue(45);
+        }
         const int roundedDefaultRadius =
             qRound(qMin(propertyShape->contentSize().width(), propertyShape->contentSize().height()) * 0.16);
         ctx.check(cornerRadiusValue && cornerRadiusValue->isEnabled() &&
@@ -160,6 +175,11 @@ void selftest::runPropertyDialogTests(Context& ctx)
         QApplication::processEvents();
         ctx.check(qAbs(propertyShape->cornerRadius() - 40.0) < 0.01, QStringLiteral("圆角矩形属性窗可修改圆角"),
                   QString::number(propertyShape->cornerRadius()));
+        ctx.check(propertyShape->strokeStyle() == Qt::DashLine && qAbs(propertyShape->opacity() - 0.45) < 0.01,
+                  QStringLiteral("属性窗修改可落到边框样式和透明度"),
+                  QStringLiteral("style=%1 opacity=%2")
+                      .arg(static_cast<int>(propertyShape->strokeStyle()))
+                      .arg(propertyShape->opacity()));
     }
 
     // 需求 24：除图元类型外，属性弹窗的修改要真正落到图元，并且一次提交只占一条撤销记录。
@@ -290,7 +310,7 @@ void selftest::runPropertyDialogTests(Context& ctx)
                   QStringLiteral("属性窗修改可落到填充样式和填充颜色"));
         ctx.check(firstShape->strokeColor() == QColor(QStringLiteral("#DC2626")) &&
                       qFuzzyCompare(firstShape->strokeWidth(), 9.0),
-                  QStringLiteral("属性窗修改可落到描边颜色和描边宽度"));
+                  QStringLiteral("属性窗修改可落到边框颜色和边框宽度"));
         ctx.check(qAbs(firstShape->cornerRadius() - 20.0) < 0.01, QStringLiteral("矩形属性窗修改可落到圆角半径"),
                   QString::number(firstShape->cornerRadius()));
         ctx.check(firstShape->pos() == QPointF(150.0, 210.0) && firstShape->contentSize() == QSizeF(240.0, 160.0),
@@ -609,5 +629,98 @@ void selftest::runPropertyDialogTests(Context& ctx)
                       reloadedNameList.contains(QStringLiteral("图片 1")) &&
                       reloadedNameList.contains(QStringLiteral("文字 1")),
                   QStringLiteral("自动名称画布往返不重复编号"), reloadedNameList.join(QStringLiteral(" / ")));
+
+        CanvasScene ellipseScene;
+        QUndoStack ellipseUndo;
+        ellipseScene.setUndoStack(&ellipseUndo);
+        auto* ellipse = new ShapeItem(ShapeType::Ellipse);
+        ellipse->setContentSize(QSizeF(300.0, 100.0));
+        ellipse->setPos(QPointF(100.0, 100.0));
+        ellipseScene.addItemsWithUndo({ellipse}, QStringLiteral("Add ellipse"));
+        {
+            ItemPropertiesDialog dialog(&ellipseScene, ellipse);
+            dialog.show();
+            QApplication::processEvents();
+            QDoubleSpinBox* majorAxisValue =
+                dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesMajorAxisValue"));
+            QDoubleSpinBox* minorAxisValue =
+                dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesMinorAxisValue"));
+            ctx.check(majorAxisValue && minorAxisValue && majorAxisValue->isEnabled() && minorAxisValue->isEnabled() &&
+                          qAbs(majorAxisValue->value() - 150.0) < 0.01 &&
+                          qAbs(minorAxisValue->value() - 50.0) < 0.01,
+                      QStringLiteral("椭圆属性窗按内容宽高显示长半轴 / 短半轴"),
+                      QStringLiteral("major=%1 minor=%2")
+                          .arg(majorAxisValue ? majorAxisValue->value() : -999.0)
+                          .arg(minorAxisValue ? minorAxisValue->value() : -999.0));
+            if (majorAxisValue) {
+                majorAxisValue->setValue(200.0);
+            }
+            if (minorAxisValue) {
+                minorAxisValue->setValue(80.0);
+            }
+            dialog.accept();
+            QApplication::processEvents();
+        }
+        ctx.check(qAbs(ellipse->contentSize().width() - 400.0) < 0.01 &&
+                      qAbs(ellipse->contentSize().height() - 160.0) < 0.01 &&
+                      qAbs(ellipse->pos().x() - 50.0) < 0.01 && qAbs(ellipse->pos().y() - 70.0) < 0.01,
+                  QStringLiteral("修改长短半轴会同步内容尺寸并保持椭圆中心"),
+                  QStringLiteral("size=%1x%2 pos=%3,%4")
+                      .arg(ellipse->contentSize().width())
+                      .arg(ellipse->contentSize().height())
+                      .arg(ellipse->pos().x())
+                      .arg(ellipse->pos().y()));
+
+        CanvasScene arcScene;
+        QUndoStack arcUndo;
+        arcScene.setUndoStack(&arcUndo);
+        auto* sector = new ShapeItem(ShapeType::Sector);
+        sector->setContentSize(QSizeF(200.0, 200.0));
+        arcScene.addItemsWithUndo({sector}, QStringLiteral("Add sector"));
+        {
+            ItemPropertiesDialog dialog(&arcScene, sector);
+            dialog.show();
+            QApplication::processEvents();
+            QSpinBox* startAngleValue =
+                dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesStartAngleValue"));
+            QSpinBox* sweepAngleValue =
+                dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesSweepAngleValue"));
+            QSpinBox* shapeRadiusValue =
+                dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesShapeRadiusValue"));
+            QDoubleSpinBox* majorAxisValue =
+                dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesMajorAxisValue"));
+            QDoubleSpinBox* minorAxisValue =
+                dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesMinorAxisValue"));
+            ctx.check(startAngleValue && sweepAngleValue && shapeRadiusValue && startAngleValue->isEnabled() &&
+                          sweepAngleValue->isEnabled() && shapeRadiusValue->isEnabled() &&
+                          startAngleValue->value() == 30 && sweepAngleValue->value() == 120 &&
+                          shapeRadiusValue->value() == 100,
+                      QStringLiteral("扇形属性窗提供起始角 / 扫过角 / 半径"),
+                      QStringLiteral("start=%1 sweep=%2 radius=%3")
+                          .arg(startAngleValue ? startAngleValue->value() : -999)
+                          .arg(sweepAngleValue ? sweepAngleValue->value() : -999)
+                          .arg(shapeRadiusValue ? shapeRadiusValue->value() : -999));
+            ctx.check(majorAxisValue && minorAxisValue && qAbs(majorAxisValue->value() - 100.0) < 0.01 &&
+                          qAbs(minorAxisValue->value() - 100.0) < 0.01,
+                      QStringLiteral("扇形保持椭圆派生并显示长短半轴"));
+            if (startAngleValue) {
+                startAngleValue->setValue(60);
+            }
+            if (sweepAngleValue) {
+                sweepAngleValue->setValue(200);
+            }
+            if (shapeRadiusValue) {
+                shapeRadiusValue->setValue(70);
+            }
+            dialog.accept();
+            QApplication::processEvents();
+        }
+        ctx.check(qAbs(sector->startAngle() - 60.0) < 0.01 && qAbs(sector->sweepAngle() - 200.0) < 0.01 &&
+                      qAbs(sector->shapeRadius() - 70.0) < 0.01,
+                  QStringLiteral("属性窗修改可落到扇形角度和半径"),
+                  QStringLiteral("start=%1 sweep=%2 radius=%3")
+                      .arg(sector->startAngle())
+                      .arg(sector->sweepAngle())
+                      .arg(sector->shapeRadius()));
     }
 }

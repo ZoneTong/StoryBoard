@@ -202,7 +202,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
             iconStrokeColorButton ? iconStrokeColorButton->icon().pixmap(20, 20).toImage() : QImage();
         ctx.check(!fillStyleImage.isNull() && !fillColorImage.isNull() && !strokeColorImage.isNull() &&
                       fillStyleImage != fillColorImage && fillColorImage != strokeColorImage,
-                  QStringLiteral("填充样式、填充颜色与描边颜色使用彼此不同的图标"));
+                  QStringLiteral("填充样式、填充颜色与边框颜色使用彼此不同的图标"));
 
         QMenu* brushWidthMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("BrushWidthMenu"));
         QComboBox* widthCombo = shapeWindow.findChild<QComboBox*>(QStringLiteral("BrushWidthCombo"));
@@ -270,7 +270,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         for (QAction* action : brushActions) {
             if (action->objectName() == QStringLiteral("BrushColorAction")) {
                 brushHasColor = true;
-            } else if (action->objectName() == QStringLiteral("OutlineColorAction")) {
+            } else if (action->objectName() == QStringLiteral("BorderColorAction")) {
                 brushHasOutline = true;
             }
             if (action->text() == QStringLiteral("平滑笔画")) {
@@ -327,9 +327,9 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                   QStringLiteral("插入菜单包含常见图形与填充样式两个子菜单"),
                   QStringLiteral("shape=%1 fillStyle=%2").arg(shapeMenuIndex).arg(fillStyleMenuIndex));
 
-        QAction* outlineAction = shapeWindow.findChild<QAction*>(QStringLiteral("OutlineColorAction"));
-        ctx.check(outlineAction && outlineAction->text() == QStringLiteral("描边颜色…"),
-                  QStringLiteral("主窗口提供描边颜色动作"));
+        QAction* outlineAction = shapeWindow.findChild<QAction*>(QStringLiteral("BorderColorAction"));
+        ctx.check(outlineAction && outlineAction->text() == QStringLiteral("边框颜色…"),
+                  QStringLiteral("主窗口提供边框颜色动作"));
 
         QAction* ellipseAction =
             shapeMenu ? shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_ellipse")) : nullptr;

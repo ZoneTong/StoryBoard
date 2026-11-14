@@ -135,7 +135,7 @@ APP=$(basename "$PWD")
 QT_QPA_PLATFORM=offscreen ./build/bin/$APP --self-test build/selftest.txt
 ```
 
-当前 Windows 基线为 **701 passed, 0 failed**，其他平台以实际 `SUMMARY` 为准。自检需要平台插件目录下的 offscreen 插件，打包脚本会自动补齐。
+当前 Windows 基线为 **710 passed, 0 failed**，其他平台以实际 `SUMMARY` 为准。自检需要平台插件目录下的 offscreen 插件，打包脚本会自动补齐。
 
 ## 项目结构
 

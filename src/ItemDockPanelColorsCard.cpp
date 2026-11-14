@@ -2,6 +2,7 @@
 
 #include "IconFactory.h"
 #include "ItemDockPanel.h"
+#include "ItemStyleVisuals.h"
 #include "ShapeItem.h"
 
 #include <QColorDialog>
@@ -49,12 +50,10 @@ QToolButton* makeRowIcon(IconId id, QWidget* parent)
 
 ItemDockPanelColorsCard::ItemDockPanelColorsCard(QWidget* parent) : QWidget(parent)
 {
-    auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(2);
-
-    layout->addWidget(makeColorRow(true));
-    layout->addWidget(makeColorRow(false));
+    m_borderColorRow = makeColorRow(true);
+    m_borderColorRow->setObjectName(QStringLiteral("ItemBorderColorRow"));
+    m_fillColorRow = makeColorRow(false);
+    m_fillColorRow->setObjectName(QStringLiteral("ItemFillColorRow"));
 }
 
 QWidget* ItemDockPanelColorsCard::makeColorRow(bool stroke)
@@ -65,7 +64,7 @@ QWidget* ItemDockPanelColorsCard::makeColorRow(bool stroke)
     rowLayout->setSpacing(2);
 
     QToolButton* icon = makeRowIcon(stroke ? IconId::Brush : IconId::Palette, row);
-    icon->setToolTip(stroke ? ItemDockPanel::tr("Stroke") : ItemDockPanel::tr("Fill"));
+    icon->setToolTip(stroke ? ItemDockPanel::tr("Border") : ItemDockPanel::tr("Fill"));
     rowLayout->addWidget(icon);
 
     const QStringList presets = {QStringLiteral("#1E293B"), QStringLiteral("#EF4444"), QStringLiteral("#F97316"),
@@ -89,12 +88,14 @@ QWidget* ItemDockPanelColorsCard::makeColorRow(bool stroke)
     auto* custom = new QToolButton(row);
     custom->setObjectName(QStringLiteral("ItemColorButton"));
     custom->setFixedSize(20, 20);
-    custom->setToolTip(stroke ? ItemDockPanel::tr("Stroke color") : ItemDockPanel::tr("Fill color"));
-    custom->setText(QStringLiteral("…"));
+    custom->setIconSize(QSize(kSmallIconSize, kSmallIconSize));
+    custom->setIcon(stroke ? ItemStyleVisuals::borderColorIcon(m_strokeFallback, kSmallIconSize)
+                          : ItemStyleVisuals::fillColorIcon(m_fillFallback, kSmallIconSize));
+    custom->setToolTip(stroke ? ItemDockPanel::tr("Border color") : ItemDockPanel::tr("Fill color"));
     connect(custom, &QToolButton::clicked, this, [this, stroke]() {
         const QColor initial = stroke ? m_strokeFallback : m_fillFallback;
         const QColor chosen = QColorDialog::getColor(
-            initial, this, stroke ? ItemDockPanel::tr("Stroke color") : ItemDockPanel::tr("Fill color"),
+            initial, this, stroke ? ItemDockPanel::tr("Border color") : ItemDockPanel::tr("Fill color"),
             QColorDialog::ShowAlphaChannel);
         if (!chosen.isValid()) {
             return;
@@ -129,9 +130,11 @@ void ItemDockPanelColorsCard::refresh(const QList<ShapeItem*>& shapes)
         swatch->setChecked(color.rgb() == m_fillFallback.rgb());
     }
     if (m_strokeColorButton) {
+        m_strokeColorButton->setIcon(ItemStyleVisuals::borderColorIcon(m_strokeFallback, kSmallIconSize));
         m_strokeColorButton->setToolTip(colorTip(m_strokeFallback));
     }
     if (m_fillColorButton) {
+        m_fillColorButton->setIcon(ItemStyleVisuals::fillColorIcon(m_fillFallback, kSmallIconSize));
         m_fillColorButton->setToolTip(colorTip(m_fillFallback));
     }
 }

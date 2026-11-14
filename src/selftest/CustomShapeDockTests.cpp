@@ -46,6 +46,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLabel>
+#include <QLayout>
 #include <QLineEdit>
 #include <QLineF>
 #include <QLinearGradient>
@@ -254,12 +255,36 @@ void selftest::runCustomShapeDockTests(Context& ctx)
                       panel.findChildren<QToolButton*>(QStringLiteral("ItemHeightUpButton")).size() == 1 &&
                       panel.findChildren<QToolButton*>(QStringLiteral("ItemHeightDownButton")).size() == 1,
                   QStringLiteral("工具卡提供图层与层内高度 ±1 按钮"));
-        ctx.check(ItemDockPanel::tr("Stroke color") == QStringLiteral("描边颜色") &&
+
+        QWidget* content = panel.findChild<QWidget*>(QStringLiteral("ItemPanelContent"));
+        QWidget* fillStyleRow = panel.findChild<QWidget*>(QStringLiteral("ItemFillStyleRow"));
+        QWidget* fillColorRow = panel.findChild<QWidget*>(QStringLiteral("ItemFillColorRow"));
+        QWidget* borderStyleRow = panel.findChild<QWidget*>(QStringLiteral("ItemBorderStyleRow"));
+        QWidget* borderWidthRow = panel.findChild<QWidget*>(QStringLiteral("ItemBorderWidthRow"));
+        QWidget* borderColorRow = panel.findChild<QWidget*>(QStringLiteral("ItemBorderColorRow"));
+        const int fillStyleIndex = content && content->layout() && fillStyleRow ? content->layout()->indexOf(fillStyleRow) : -1;
+        const int fillColorIndex = content && content->layout() && fillColorRow ? content->layout()->indexOf(fillColorRow) : -1;
+        const int borderStyleIndex =
+            content && content->layout() && borderStyleRow ? content->layout()->indexOf(borderStyleRow) : -1;
+        const int borderWidthIndex =
+            content && content->layout() && borderWidthRow ? content->layout()->indexOf(borderWidthRow) : -1;
+        const int borderColorIndex =
+            content && content->layout() && borderColorRow ? content->layout()->indexOf(borderColorRow) : -1;
+        ctx.check(fillStyleIndex >= 0 && fillColorIndex > fillStyleIndex && borderStyleIndex > fillColorIndex &&
+                      borderWidthIndex > borderStyleIndex && borderColorIndex > borderWidthIndex,
+                  QStringLiteral("编辑图元卡按填充样式、填充颜色、边框样式、边框宽度、边框颜色排列"),
+                  QStringLiteral("%1/%2/%3/%4/%5")
+                      .arg(fillStyleIndex)
+                      .arg(fillColorIndex)
+                      .arg(borderStyleIndex)
+                      .arg(borderWidthIndex)
+                      .arg(borderColorIndex));
+        ctx.check(ItemDockPanel::tr("Border color") == QStringLiteral("边框颜色") &&
                       ItemDockPanel::tr("Height +1") == QStringLiteral("高度 +1") &&
                       ItemDockPanel::tr("Layer and height") == QStringLiteral("图层与高度"),
                   QStringLiteral("编辑图元卡的工具提示都有中文译文"),
                   QStringLiteral("stroke=%1 height=%2")
-                      .arg(ItemDockPanel::tr("Stroke color"))
+                      .arg(ItemDockPanel::tr("Border color"))
                       .arg(ItemDockPanel::tr("Height +1")));
         bool priorityTipFound = false;
         for (QToolButton* rowIcon : panel.findChildren<QToolButton*>(QStringLiteral("ItemRowIcon"))) {
