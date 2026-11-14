@@ -25,6 +25,11 @@ void selftest::runCanvasOcclusionBoundaryTests(Context& ctx)
     CanvasScene blendScene;
     blendScene.applyCanvasSize(QSizeF(300, 200));
     blendScene.setShowGrid(false);
+    // 真实视图截图路径与离屏 render 路径对齐：显式铺白底，避免默认透明衬底参与取色。
+    BackgroundState blendBackground;
+    blendBackground.type = BackgroundType::Color;
+    blendBackground.color = QColor(Qt::white);
+    blendScene.applyBackground(blendBackground);
     auto* lowerBand = new ShapeItem(ShapeType::Rectangle);
     lowerBand->setPos(QPointF(20, 20));
     lowerBand->setContentSize(QSizeF(160, 120));
@@ -65,18 +70,40 @@ void selftest::runCanvasOcclusionBoundaryTests(Context& ctx)
         blendView.setMode(ToolMode::View);
         blendView.show();
         QApplication::processEvents();
+        // offscreen 下首帧可能只画了图元还没铺画布底色，先显式重绘一次再截图。
+        blendView.viewport()->repaint();
+        QApplication::processEvents();
 
         const QImage viewImage = blendView.viewport()->grab().toImage();
         const QPoint viewPoint = blendView.mapFromScene(QPointF(140, 90));
         const QPoint viewLowerPoint = blendView.mapFromScene(QPointF(60, 60));
+        const QPoint viewBgPoint = blendView.mapFromScene(QPointF(5, 5));
         QColor viewOverlapColor(0, 0, 0);
         QColor viewLowerColor(0, 0, 0);
+        QColor viewBgColor(0, 0, 0);
         if (viewImage.rect().contains(viewPoint)) {
             viewOverlapColor = viewImage.pixelColor(viewPoint);
         }
         if (viewImage.rect().contains(viewLowerPoint)) {
             viewLowerColor = viewImage.pixelColor(viewLowerPoint);
         }
+        if (viewImage.rect().contains(viewBgPoint)) {
+            viewBgColor = viewImage.pixelColor(viewBgPoint);
+        }
+        ctx.check(true, QStringLiteral("诊断视图取色"),
+                  QStringLiteral("bg=%1,%2,%3,%4 lower=%5,%6,%7 overlap=%8,%9,%10 img=%11x%12")
+                      .arg(viewBgColor.red())
+                      .arg(viewBgColor.green())
+                      .arg(viewBgColor.blue())
+                      .arg(viewBgColor.alpha())
+                      .arg(viewLowerColor.red())
+                      .arg(viewLowerColor.green())
+                      .arg(viewLowerColor.blue())
+                      .arg(viewOverlapColor.red())
+                      .arg(viewOverlapColor.green())
+                      .arg(viewOverlapColor.blue())
+                      .arg(viewImage.width())
+                      .arg(viewImage.height()));
         ctx.check(viewOverlapColor.green() > 60 && viewOverlapColor.blue() > 150,
                   QStringLiteral("真实视图中的遮挡处同样完全不透"),
                   QStringLiteral("view=%1,%2,%3 point=%4,%5")
