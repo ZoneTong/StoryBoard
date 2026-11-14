@@ -184,6 +184,16 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     m_cornerSection = cornerBody;
     layout->addWidget(cornerBody);
 
+    QWidget* angleBody = new QWidget(content);
+    buildAngleSection(angleBody);
+    m_angleSection = angleBody;
+    layout->addWidget(angleBody);
+
+    QWidget* radiusBody = new QWidget(content);
+    buildRadiusSection(radiusBody);
+    m_radiusSection = radiusBody;
+    layout->addWidget(radiusBody);
+
     QWidget* arrangeBody = new QWidget(content);
     buildArrangeSection(arrangeBody);
     layout->addWidget(arrangeBody);
@@ -447,6 +457,52 @@ void ItemDockPanel::buildCornerSection(QWidget* body)
     layout->addWidget(m_cornerSpin, 1);
 }
 
+void ItemDockPanel::buildAngleSection(QWidget* body)
+{
+    auto* layout = new QHBoxLayout(body);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(4);
+
+    QToolButton* icon = makeRowIcon(IconId::RotateCcw, body);
+    icon->setToolTip(tr("Sweep angle"));
+    layout->addWidget(icon);
+
+    m_angleSpin = new QSpinBox(body);
+    m_angleSpin->setObjectName(QStringLiteral("ItemValueSpin"));
+    m_angleSpin->setRange(1, 359);
+    m_angleSpin->setSuffix(QStringLiteral("°"));
+    m_angleSpin->setToolTip(tr("Sweep angle"));
+    connect(m_angleSpin, &QSpinBox::valueChanged, this, [this](int value) {
+        if (!m_refreshing) {
+            applySweepAngle(value);
+        }
+    });
+    layout->addWidget(m_angleSpin, 1);
+}
+
+void ItemDockPanel::buildRadiusSection(QWidget* body)
+{
+    auto* layout = new QHBoxLayout(body);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(4);
+
+    QToolButton* icon = makeRowIcon(IconId::Corner, body);
+    icon->setToolTip(tr("Shape radius"));
+    layout->addWidget(icon);
+
+    m_radiusSpin = new QSpinBox(body);
+    m_radiusSpin->setObjectName(QStringLiteral("ItemValueSpin"));
+    m_radiusSpin->setRange(1, 1000);
+    m_radiusSpin->setSuffix(QStringLiteral(" px"));
+    m_radiusSpin->setToolTip(tr("Shape radius"));
+    connect(m_radiusSpin, &QSpinBox::valueChanged, this, [this](int value) {
+        if (!m_refreshing) {
+            applyShapeRadius(value);
+        }
+    });
+    layout->addWidget(m_radiusSpin, 1);
+}
+
 void ItemDockPanel::buildArrangeSection(QWidget* body)
 {
     auto* row = new QHBoxLayout(body);
@@ -558,14 +614,23 @@ void ItemDockPanel::updateSections()
 {
     const QList<ShapeItem*> shapes = selectedShapes();
     bool hasCorner = false;
+    bool hasArc = false;
     for (ShapeItem* shape : shapes) {
         if (shape->shapeType() == ShapeType::Rectangle || shape->shapeType() == ShapeType::RoundedRectangle) {
             hasCorner = true;
-            break;
+        }
+        if (shape->shapeType() == ShapeType::Sector || shape->shapeType() == ShapeType::Arc) {
+            hasArc = true;
         }
     }
     if (m_cornerSection) {
         m_cornerSection->setVisible(hasCorner);
+    }
+    if (m_angleSection) {
+        m_angleSection->setVisible(hasArc);
+    }
+    if (m_radiusSection) {
+        m_radiusSection->setVisible(hasArc);
     }
 }
 
@@ -645,6 +710,20 @@ void ItemDockPanel::updateValueEditors()
         m_cornerSpin->setEnabled(enabled);
         const qreal radius = shapes.isEmpty() ? 0.0 : qMax<qreal>(0.0, shapes.first()->cornerRadius());
         m_cornerSpin->setValue(qRound(radius));
+    }
+    if (m_angleSpin) {
+        m_angleSpin->setEnabled(enabled);
+        m_angleSpin->setValue(shapes.isEmpty() ? 120 : qRound(shapes.first()->sweepAngle()));
+    }
+    if (m_radiusSpin) {
+        m_radiusSpin->setEnabled(enabled);
+        // 自动半径（<0）显示为实际生效的短边一半，用户改一下即成为显式半径。
+        qreal radius = 100.0;
+        if (!shapes.isEmpty()) {
+            const qreal stored = shapes.first()->shapeRadius();
+            radius = stored >= 0.0 ? stored : shapes.first()->contentSize().width() / 2.0;
+        }
+        m_radiusSpin->setValue(qMax(1, qRound(radius)));
     }
 }
 
@@ -730,6 +809,17 @@ void ItemDockPanel::applyCornerRadius(int radius)
 {
     changeSelectedShapes(tr("Change rectangle corner radius"),
                          [radius](ShapeItem* shape) { shape->setCornerRadius(radius); });
+}
+
+void ItemDockPanel::applySweepAngle(int angle)
+{
+    changeSelectedShapes(tr("Change sector angle"),
+                         [angle](ShapeItem* shape) { shape->setArcAngles(shape->startAngle(), angle); });
+}
+
+void ItemDockPanel::applyShapeRadius(int radius)
+{
+    changeSelectedShapes(tr("Change shape radius"), [radius](ShapeItem* shape) { shape->setShapeRadius(radius); });
 }
 
 void ItemDockPanel::insertOrChangeShape(ShapeType type)

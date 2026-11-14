@@ -39,6 +39,8 @@ class ItemDockPanel : public QWidget {
     void buildBorderSection(QWidget* body);
     void buildOpacitySection(QWidget* body);
     void buildCornerSection(QWidget* body);
+    void buildAngleSection(QWidget* body);
+    void buildRadiusSection(QWidget* body);
     void buildArrangeSection(QWidget* body);
     void rebuildCustomShapeMenu();
 
@@ -62,6 +64,8 @@ class ItemDockPanel : public QWidget {
     void applyBorderWidth(qreal width);
     void applyOpacity(int percent);
     void applyCornerRadius(int radius);
+    void applySweepAngle(int angle);
+    void applyShapeRadius(int radius);
     void insertOrChangeShape(ShapeType type);
     void adjustLayer(int delta);
     void adjustHeight(int delta);
@@ -70,6 +74,8 @@ class ItemDockPanel : public QWidget {
     QLabel* m_titleLabel = nullptr;
     QLabel* m_metaLabel = nullptr;
     QWidget* m_cornerSection = nullptr;
+    QWidget* m_angleSection = nullptr;
+    QWidget* m_radiusSection = nullptr;
 
     QList<QToolButton*> m_shapeButtons;
     QToolButton* m_customShapeButton = nullptr;
@@ -85,6 +91,8 @@ class ItemDockPanel : public QWidget {
     QDoubleSpinBox* m_borderWidthSpin = nullptr;
     QSpinBox* m_opacitySpin = nullptr;
     QSpinBox* m_cornerSpin = nullptr;
+    QSpinBox* m_angleSpin = nullptr;
+    QSpinBox* m_radiusSpin = nullptr;
 
     QToolButton* m_layerDownButton = nullptr;
     QToolButton* m_layerUpButton = nullptr;

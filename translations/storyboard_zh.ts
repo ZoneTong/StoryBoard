@@ -4571,7 +4571,15 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <source>Hexagon</source>
       <translation>六边形</translation>
     </message>
-  </context>
+          <message>
+            <source>Sector</source>
+            <translation>扇形</translation>
+        </message>
+        <message>
+            <source>Arc</source>
+            <translation>弧线</translation>
+        </message>
+</context>
   <context>
     <name>TextItem</name>
     <message>
@@ -4818,5 +4826,21 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>The height did not change.</source>
         <translation>层内高度未变化。</translation>
     </message>
+        <message>
+            <source>Sweep angle</source>
+            <translation>扫过角度</translation>
+        </message>
+        <message>
+            <source>Shape radius</source>
+            <translation>图形半径</translation>
+        </message>
+        <message>
+            <source>Change sector angle</source>
+            <translation>修改扇形角度</translation>
+        </message>
+        <message>
+            <source>Change shape radius</source>
+            <translation>修改图形半径</translation>
+        </message>
 </context>
 </TS>

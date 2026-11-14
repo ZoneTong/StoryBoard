@@ -978,11 +978,11 @@ int runSelfTest(const QString& reportPath)
     QUndoStack shapeUndo;
     shapeUndo.setUndoLimit(100);
     shapeScene.setUndoStack(&shapeUndo);
-    shapeScene.applyCanvasSize(QSizeF(1000, 800));
+    shapeScene.applyCanvasSize(QSizeF(1000, 1000));
     shapeScene.setShowGrid(false);
 
     const QList<ShapeType> shapeTypes = allShapeTypes();
-    check(shapeTypes.size() == 12, QStringLiteral("提供 12 种常见图形"),
+    check(shapeTypes.size() == 14, QStringLiteral("提供 14 种常见图形"),
           QStringLiteral("count=%1").arg(shapeTypes.size()));
     check(shapeTypeFromString(QStringLiteral("circle")) == ShapeType::Ellipse &&
               shapeTypeFromString(QStringLiteral("roundrect")) == ShapeType::RoundedRectangle &&
@@ -1008,6 +1008,40 @@ int runSelfTest(const QString& reportPath)
     }
     check(shapePathsOk, QStringLiteral("每种图形都能生成有效路径与名称"));
     check(shapeIconsOk, QStringLiteral("每种图形都能生成菜单图标"));
+    check(defaultShapeSize(ShapeType::Rectangle).width() == defaultShapeSize(ShapeType::Rectangle).height() &&
+              defaultShapeSize(ShapeType::RoundedRectangle).width() ==
+                  defaultShapeSize(ShapeType::RoundedRectangle).height(),
+          QStringLiteral("矩形与圆角矩形默认插入为正方形"));
+    check(shapeTypeFromString(QStringLiteral("sector")) == ShapeType::Sector &&
+              shapeTypeFromString(QStringLiteral("arc")) == ShapeType::Arc && shapeTypeIsFilled(ShapeType::Sector) &&
+              shapeTypeIsStrokeOnly(ShapeType::Arc),
+          QStringLiteral("扇形与弧线可识别，扇形填充、弧线只描边"));
+    {
+        ShapeItem sector(ShapeType::Sector);
+        sector.setContentSize(QSizeF(200.0, 200.0));
+        sector.setArcAngles(0.0, 90.0);
+        sector.setShapeRadius(60.0);
+        const QPainterPath sectorPath = sector.currentPath(sector.contentRect());
+        ShapeItem arc(ShapeType::Arc);
+        arc.setContentSize(QSizeF(200.0, 200.0));
+        arc.setArcAngles(15.0, 140.0);
+        arc.setShapeRadius(55.0);
+        const QPainterPath arcPath = arc.currentPath(arc.contentRect());
+        check(!sectorPath.isEmpty() && !arcPath.isEmpty() && sectorPath.boundingRect().width() <= 122.0 &&
+                  arcPath.boundingRect().width() <= 112.0,
+              QStringLiteral("扇形与弧线按角度和半径生成路径"));
+        ShapeItem ovalArc(ShapeType::Arc);
+        ovalArc.setContentSize(QSizeF(240.0, 120.0));
+        ovalArc.setArcAngles(0.0, 90.0);
+        const QRectF ovalBounds = ovalArc.currentPath(ovalArc.contentRect()).boundingRect();
+        check(qAbs(ovalBounds.width() - 120.0) < 2.0 && qAbs(ovalBounds.height() - 60.0) < 2.0,
+              QStringLiteral("扇形与弧线由椭圆派生并跟随图元拉伸"));
+        ShapeItem copy;
+        copy.fromJson(sector.toJson());
+        check(copy.shapeType() == ShapeType::Sector && qFuzzyCompare(copy.sweepAngle() + 2.0, 92.0) &&
+                  qFuzzyCompare(copy.shapeRadius() + 2.0, 62.0),
+              QStringLiteral("扇形角度与半径随画布保存和恢复"));
+    }
 
     QList<ShapeItem*> shapeItems;
     const QColor shapeStroke(QStringLiteral("#1D4ED8"));
@@ -1117,7 +1151,7 @@ int runSelfTest(const QString& reportPath)
             }
         }
     }
-    check(loadedShapeTypes.size() == shapeTypes.size(), QStringLiteral("画布恢复全部 12 种图形类型"));
+    check(loadedShapeTypes.size() == shapeTypes.size(), QStringLiteral("画布恢复全部 14 种图形类型"));
     check(loadedRectangle && loadedRectangle->strokeColor() == shapeStroke &&
               loadedRectangle->fillColor().alpha() == shapeFill.alpha() &&
               qAbs(loadedRectangle->strokeWidth() - 4.0) < 0.01,
@@ -3278,7 +3312,9 @@ int runSelfTest(const QString& reportPath)
                 }
             }
             check(insertedArrow != nullptr, QStringLiteral("快速插入的图元类型为箭头"));
-            check(insertedArrow && insertedArrow->fillStyle() == FillStyle::None, QStringLiteral("新插入箭头默认空心"));
+            check(insertedArrow && insertedArrow->fillStyle() != FillStyle::None &&
+                      insertedArrow->fillColor().alpha() > 0,
+                  QStringLiteral("新插入箭头默认填充"));
         }
     }
 

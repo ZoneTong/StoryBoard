@@ -21,7 +21,7 @@
 - **图层与叠放**：背景固定为第 0 层；用户图层可新建、删除空图层、上移 / 下移、重命名、显示 / 隐藏、锁定。同层 `height` 唯一，`]` / `[` 或右键调整层内高度，也可跨图层移动。
 - **背景与画布**：纯色 / 图片背景（拉伸、适应、平铺），辅助网格，画布外围颜色；画布四边四角可拖拽拉伸或裁剪，越界图元不会被删除。
 - **导出**：画布区域或全部图元，PNG / JPEG / PDF，0.25×–4×；可合并导出，也可按每个可见图层分别导出。
-- **画布文件**：图片与背景以 PNG 内嵌；文字保存字体、颜色、粗体 / 斜体 / 下划线 / 删除线；图形保存类型、描边、填充、线宽、边框样式、透明度、圆角与自定义轮廓。
+- **画布文件**：图片与背景以 PNG 内嵌；文字保存字体、颜色、粗体 / 斜体 / 下划线 / 删除线；图形保存类型、描边、填充、线宽、边框样式、透明度、圆角、扇形 / 弧线的角度与半径，以及自定义轮廓。
 - **撤销 / 重做**：图元增删、移动缩放旋转、分组 / 解组、文字与图片编辑、图形插入与样式修改、背景替换、画布尺寸、图层增删 / 排序、层内高度与跨图层移动均进入撤销栈，上限 300 步。
 - **四种模式**：查看、编辑、画笔、文字；查看只改变视图，编辑支持选择 / 移动 / 缩放 / 旋转 / 框选，画笔绘制自由曲线，文字模式点击画布插入文字。
 - **界面语言**：简体中文 / English，可跟随系统；切换后当前窗口立即生效，无需重启。
@@ -117,7 +117,7 @@ bash scripts/package-portable.sh --build --qt-dir "$HOME/Qt/6.8.0/gcc_64"
 | macOS | `StoryBoard.app` 及 `.zip` | `macdeployqt` + 补 `libqoffscreen.dylib` |
 | Linux | `StoryBoard-<ver>-linux-<arch>-portable.tar.gz` | 拷贝 `libQt6*`、插件与 `qt.conf` |
 
-Windows 分支已在 Windows 11 + GCC 15 + Qt 6.12 实机验证；macOS / Linux 分支按 Qt 官方部署方式提供，尚未在对应主机实机验证。自检默认要求 Windows 688 项，其他平台接受当前通过数；可用 `--expected-passed 0` 放宽，`--skip-self-test` 跳过（不推荐）。
+Windows 分支已在 Windows 11 + GCC 15 + Qt 6.12 实机验证；macOS / Linux 分支按 Qt 官方部署方式提供，尚未在对应主机实机验证。自检默认要求 Windows 694 项，其他平台接受当前通过数；可用 `--expected-passed 0` 放宽，`--skip-self-test` 跳过（不推荐）。
 
 ## 使用说明
 
@@ -147,12 +147,13 @@ Windows 分支已在 Windows 11 + GCC 15 + Qt 6.12 实机验证；macOS / Linux 
 
 右侧默认图层卡在上、编辑图元卡在下，两张卡都限定了高度区间，不会铺满整列，开关编辑卡时图层卡的高度变化很小。拖动卡片标题栏可互换上下顺序，顺序自动写入配置文件（`layout/dockOrder`），下次启动按保存的顺序恢复。
 
-- 常见图形：点击切换选中图形类型；未选中图形时点击即插入新图形。
+- 常见图形：点击切换选中图形类型；未选中图形时点击即插入新图形。矩形与圆角矩形默认插入为正方形，需要长方形时再拖控制点拉伸；扇形与弧线由椭圆派生，可调扫过角与半径；可填充的图形（含单向 / 双向箭头）插入即带默认填充。
 - 常用颜色：描边 / 填充各一排预设色块，末尾色块按钮打开自定义颜色（支持透明度）。
 - 填充样式：无填充、纯色、斜线、反斜线、正交叉线、网格、六边形；对支持填充的图形生效。
 - 边框样式：实线 / 虚线 / 点线 / 点划线，并可调边框粗细。
 - 透明度：0–100%，作用于整个图形（填充与边框一起变淡）。
 - 圆角：仅矩形 / 圆角矩形显示，0 为直角，单位与画布像素一致。
+- 角度 / 半径：仅扇形 / 弧线显示；角度为扫过角（1–359°），半径为椭圆横向半径（像素），默认取内容宽度的一半（整椭圆），拉伸图元时按宽高比同步缩放。
 - 图层 / 高度：图层 ±1 跨层移动，高度 ±1 调整同层内的 `height`（层内叠放位置），都会进入撤销栈；优先级的判定是先按图层、同层再按 `height`。
 
 ### 自定义图形目录
@@ -211,7 +212,7 @@ Windows 分支已在 Windows 11 + GCC 15 + Qt 6.12 实机验证；macOS / Linux 
 
 - 画布 JSON 保存画布范围、图层顺序 / 显示 / 锁定、当前图层，以及每个图元的 `layer` / `height` / `group`。
 - 文字额外保存 `fontFamily`、`fontSize`、`fontWeight`、`italic`、`underline`、`strikeOut`、`color`。
-- 图形额外保存 `shapeType`、`strokeColor`、`fillColor`、`strokeWidth`、`fillStyle`、`strokeStyle`、`opacity`、`cornerRadius`；自定义图形另存 `customName` 与 `pathData`（轮廓随画布内嵌）。
+- 图形额外保存 `shapeType`、`strokeColor`、`fillColor`、`strokeWidth`、`fillStyle`、`strokeStyle`、`opacity`、`cornerRadius`、`startAngle`、`sweepAngle`、`shapeRadius`；自定义图形另存 `customName` 与 `pathData`（轮廓随画布内嵌）。
 
 ### 导出
 
@@ -249,7 +250,7 @@ QT_QPA_PLATFORM=offscreen ./out/bin/StoryBoard --self-test out/selftest.txt
 cat out/selftest.txt
 ```
 
-当前 Windows 基线为 **688 passed, 0 failed**；其他平台以实际 `SUMMARY` 为准。
+当前 Windows 基线为 **694 passed, 0 failed**；其他平台以实际 `SUMMARY` 为准。
 
 `--self-test` 需要平台插件目录下的 offscreen 插件（Windows `platforms/qoffscreen.dll`、macOS `platforms/libqoffscreen.dylib`、Linux `platforms/libqoffscreen.so`）。打包脚本会自动补齐。
 

@@ -215,10 +215,13 @@ void paintPatternFill(QPainter* painter, const QPainterPath& clip, const QRectF&
 
 QList<ShapeType> allShapeTypes()
 {
-    return {ShapeType::Rectangle, ShapeType::RoundedRectangle, ShapeType::Ellipse,
-            ShapeType::Triangle,  ShapeType::Diamond,          ShapeType::Star,
-            ShapeType::Arrow,     ShapeType::DoubleArrow,      ShapeType::Line,
-            ShapeType::BraceLeft, ShapeType::BraceRight,       ShapeType::Callout};
+    return {ShapeType::Rectangle,  ShapeType::RoundedRectangle,
+            ShapeType::Ellipse,    ShapeType::Triangle,
+            ShapeType::Diamond,    ShapeType::Star,
+            ShapeType::Arrow,      ShapeType::DoubleArrow,
+            ShapeType::Line,       ShapeType::BraceLeft,
+            ShapeType::BraceRight, ShapeType::Callout,
+            ShapeType::Sector,     ShapeType::Arc};
 }
 
 QString shapeTypeName(ShapeType type)
@@ -248,6 +251,10 @@ QString shapeTypeName(ShapeType type)
         return ShapeItem::tr("Right brace");
     case ShapeType::Callout:
         return ShapeItem::tr("Speech bubble");
+    case ShapeType::Sector:
+        return ShapeItem::tr("Sector");
+    case ShapeType::Arc:
+        return ShapeItem::tr("Arc");
     }
     return ShapeItem::tr("Rectangle");
 }
@@ -279,6 +286,10 @@ QString shapeTypeToString(ShapeType type)
         return QStringLiteral("brace_right");
     case ShapeType::Callout:
         return QStringLiteral("callout");
+    case ShapeType::Sector:
+        return QStringLiteral("sector");
+    case ShapeType::Arc:
+        return QStringLiteral("arc");
     }
     return QStringLiteral("rectangle");
 }
@@ -325,6 +336,12 @@ ShapeType shapeTypeFromString(const QString& value)
         normalized == QStringLiteral("speech")) {
         return ShapeType::Callout;
     }
+    if (normalized == QStringLiteral("sector") || normalized == QStringLiteral("pie")) {
+        return ShapeType::Sector;
+    }
+    if (normalized == QStringLiteral("arc") || normalized == QStringLiteral("curve")) {
+        return ShapeType::Arc;
+    }
     if (normalized == QStringLiteral("rect") || normalized == QStringLiteral("rectangle")) {
         return ShapeType::Rectangle;
     }
@@ -336,7 +353,8 @@ QSizeF defaultShapeSize(ShapeType type)
     switch (type) {
     case ShapeType::Rectangle:
     case ShapeType::RoundedRectangle:
-        return QSizeF(300.0, 190.0);
+        // 在编辑区插入时默认是正方形，需要长方形再拖控制点拉伸。
+        return QSizeF(200.0, 200.0);
     case ShapeType::Ellipse:
         // 插入即为标准圆形；编辑模式下拖动控制点可拉伸成椭圆。
         return QSizeF(200.0, 200.0);
@@ -357,6 +375,10 @@ QSizeF defaultShapeSize(ShapeType type)
         return QSizeF(100.0, 300.0);
     case ShapeType::Callout:
         return QSizeF(300.0, 200.0);
+    case ShapeType::Sector:
+        return QSizeF(200.0, 200.0);
+    case ShapeType::Arc:
+        return QSizeF(220.0, 160.0);
     }
     return QSizeF(300.0, 190.0);
 }
@@ -373,10 +395,12 @@ bool shapeTypeIsFilled(ShapeType type)
     case ShapeType::Arrow:
     case ShapeType::DoubleArrow:
     case ShapeType::Callout:
+    case ShapeType::Sector:
         return true;
     case ShapeType::Line:
     case ShapeType::BraceLeft:
     case ShapeType::BraceRight:
+    case ShapeType::Arc:
         return false;
     }
     return false;
@@ -384,7 +408,8 @@ bool shapeTypeIsFilled(ShapeType type)
 
 bool shapeTypeIsStrokeOnly(ShapeType type)
 {
-    return type == ShapeType::Line || type == ShapeType::BraceLeft || type == ShapeType::BraceRight;
+    return type == ShapeType::Line || type == ShapeType::BraceLeft || type == ShapeType::BraceRight ||
+           type == ShapeType::Arc;
 }
 
 QList<FillStyle> allFillStyles()
@@ -485,13 +510,14 @@ QIcon makeShapeIcon(ShapeType type, const QColor& color, int logicalSize)
         rect = QRectF(6.0, 2.0, 12.0, 20.0);
     } else if (type == ShapeType::Arrow || type == ShapeType::DoubleArrow || type == ShapeType::Line) {
         rect = QRectF(2.0, 7.0, 20.0, 10.0);
+    } else if (type == ShapeType::Sector || type == ShapeType::Arc) {
+        rect = QRectF(4.0, 4.0, 16.0, 16.0);
     }
 
     const QPainterPath path = ShapeItem::pathFor(type, rect);
     QPen pen(color, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
 
-    const bool hollowIcon = type == ShapeType::Arrow || type == ShapeType::DoubleArrow;
-    if (shapeTypeIsStrokeOnly(type) || hollowIcon) {
+    if (shapeTypeIsStrokeOnly(type)) {
         painter.setPen(pen);
         painter.setBrush(Qt::NoBrush);
     } else {
@@ -531,6 +557,9 @@ void ShapeItem::setShapeType(ShapeType type)
     m_customPath = QPainterPath();
     m_customName.clear();
     m_cornerRadius = -1.0;
+    m_startAngle = 30.0;
+    m_sweepAngle = 120.0;
+    m_shapeRadius = -1.0;
     update();
 }
 
@@ -599,6 +628,28 @@ void ShapeItem::setCornerRadius(qreal radius)
     update();
 }
 
+void ShapeItem::setShapeRadius(qreal radius)
+{
+    const qreal clamped = radius < 0.0 ? -1.0 : qMax<qreal>(0.0, radius);
+    if (qFuzzyCompare(m_shapeRadius + 2.0, clamped + 2.0)) {
+        return;
+    }
+    m_shapeRadius = clamped;
+    update();
+}
+
+void ShapeItem::setArcAngles(qreal startAngle, qreal sweepAngle)
+{
+    const qreal start = qBound<qreal>(-360.0, startAngle, 360.0);
+    const qreal sweep = qBound<qreal>(-360.0, sweepAngle, 360.0);
+    if (qFuzzyCompare(m_startAngle + 2.0, start + 2.0) && qFuzzyCompare(m_sweepAngle + 2.0, sweep + 2.0)) {
+        return;
+    }
+    m_startAngle = start;
+    m_sweepAngle = sweep;
+    update();
+}
+
 ShapeItemState ShapeItem::state() const
 {
     ShapeItemState result;
@@ -610,6 +661,9 @@ ShapeItemState ShapeItem::state() const
     result.strokeStyle = m_strokeStyle;
     result.opacity = m_opacity;
     result.cornerRadius = m_cornerRadius;
+    result.startAngle = m_startAngle;
+    result.sweepAngle = m_sweepAngle;
+    result.shapeRadius = m_shapeRadius;
     result.pos = pos();
     result.size = contentSize();
     return result;
@@ -622,6 +676,9 @@ void ShapeItem::applyState(const ShapeItemState& state)
     m_strokeStyle = state.strokeStyle;
     m_opacity = state.opacity;
     m_cornerRadius = state.cornerRadius;
+    m_startAngle = state.startAngle;
+    m_sweepAngle = state.sweepAngle;
+    m_shapeRadius = state.shapeRadius;
     setStyle(state.strokeColor, state.fillColor, state.strokeWidth);
     setPos(state.pos);
     setContentSize(state.size.isEmpty() ? defaultShapeSize(state.type) : state.size);
@@ -708,20 +765,40 @@ QPainterPath ShapeItem::currentPath(const QRectF& rect) const
         transform.scale(r.width(), r.height());
         return transform.map(m_customPath);
     }
-    return pathFor(m_type, rect, m_cornerRadius);
+    return pathFor(m_type, rect, m_cornerRadius, m_startAngle, m_sweepAngle, m_shapeRadius);
 }
 
 QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect)
 {
-    return pathFor(type, rect, -1.0);
+    return pathFor(type, rect, -1.0, 30.0, 120.0, -1.0);
 }
 
 QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius)
+{
+    return pathFor(type, rect, cornerRadius, 30.0, 120.0, -1.0);
+}
+
+QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius, qreal startAngle,
+                                qreal sweepAngle, qreal shapeRadius)
 {
     const QRectF r = normalizedRect(rect);
     if (r.width() <= 0.0 || r.height() <= 0.0) {
         return QPainterPath();
     }
+
+    // 扇形 / 弧线由椭圆派生：半径缺省取内容矩形宽度的一半（即整椭圆），
+    // 显式半径按内容矩形的宽高比同步缩放，拉伸图元时仍保持椭圆形状。
+    auto arcRect = [&r, shapeRadius]() {
+        const qreal maximum = r.width() / 2.0;
+        const qreal radius = shapeRadius >= 0.0 ? qBound<qreal>(0.0, shapeRadius, maximum) : maximum;
+        const qreal ry = radius * r.height() / r.width();
+        return QRectF(r.center().x() - radius, r.center().y() - ry, radius * 2.0, ry * 2.0);
+    };
+    auto arcSweep = [sweepAngle]() {
+        const qreal sweep = qBound<qreal>(-360.0, sweepAngle, 360.0);
+        // 扫过角为 0 时画不出可见图形，退回默认 120°，避免插入后“什么都没有”。
+        return qFuzzyIsNull(sweep) ? 120.0 : sweep;
+    };
 
     QPainterPath path;
     switch (type) {
@@ -811,6 +888,16 @@ QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect, qreal corner
     case ShapeType::Callout:
         path = calloutPath(r);
         break;
+    case ShapeType::Sector:
+        path.arcMoveTo(arcRect(), startAngle);
+        path.arcTo(arcRect(), startAngle, arcSweep());
+        path.lineTo(r.center());
+        path.closeSubpath();
+        break;
+    case ShapeType::Arc:
+        path.arcMoveTo(arcRect(), startAngle);
+        path.arcTo(arcRect(), startAngle, arcSweep());
+        break;
     }
     return path;
 }
@@ -864,6 +951,9 @@ QJsonObject ShapeItem::toJson() const
     json.insert(QStringLiteral("strokeStyle"), static_cast<int>(m_strokeStyle));
     json.insert(QStringLiteral("opacity"), m_opacity);
     json.insert(QStringLiteral("cornerRadius"), m_cornerRadius);
+    json.insert(QStringLiteral("startAngle"), m_startAngle);
+    json.insert(QStringLiteral("sweepAngle"), m_sweepAngle);
+    json.insert(QStringLiteral("shapeRadius"), m_shapeRadius);
     if (!m_customPath.isEmpty()) {
         json.insert(QStringLiteral("shapeType"), QStringLiteral("custom"));
         json.insert(QStringLiteral("customName"), m_customName);
@@ -910,6 +1000,9 @@ void ShapeItem::fromJson(const QJsonObject& json)
     m_strokeStyle = static_cast<Qt::PenStyle>(qBound(0, json.value(QStringLiteral("strokeStyle")).toInt(1), 5));
     m_opacity = qBound<qreal>(0.0, json.value(QStringLiteral("opacity")).toDouble(1.0), 1.0);
     m_cornerRadius = json.value(QStringLiteral("cornerRadius")).toDouble(-1.0);
+    m_startAngle = json.value(QStringLiteral("startAngle")).toDouble(30.0);
+    m_sweepAngle = json.value(QStringLiteral("sweepAngle")).toDouble(120.0);
+    m_shapeRadius = json.value(QStringLiteral("shapeRadius")).toDouble(-1.0);
 
     applyBaseJson(json);
     if (contentSize().isEmpty()) {

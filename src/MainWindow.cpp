@@ -2053,8 +2053,7 @@ void MainWindow::insertShape(ShapeType type)
     if (m_fillColor.isValid()) {
         fill = m_fillColor;
     }
-    const bool hollowByDefault = type == ShapeType::Arrow || type == ShapeType::DoubleArrow;
-    const bool filled = shapeTypeIsFilled(type) && m_fillStyle != FillStyle::None && !hollowByDefault;
+    const bool filled = shapeTypeIsFilled(type) && m_fillStyle != FillStyle::None;
     item->setStyle(stroke, filled ? fill : QColor(Qt::transparent), qBound<qreal>(2.5, m_brushWidth, 10.0));
     item->setFillStyle(filled ? m_fillStyle : FillStyle::None);
 
