@@ -1044,8 +1044,12 @@ void MainWindow::createMenus()
         tr("Keep only the overlapping part"),
         tr("Cut the lower items out of the topmost item"),
     };
+    // 图标与 PPT「合并形状」一致：两个交叠圆表示各运算的结果区域。
+    const QList<IconId> boolIcons = {IconId::MergeUnion, IconId::MergeCombine, IconId::MergeFragment,
+                                     IconId::MergeIntersect, IconId::MergeSubtract};
     for (int i = 0; i < boolEntries.size(); ++i) {
         QAction* action = boolMenu->addAction(boolEntries.at(i).second);
+        action->setIcon(makeIcon(boolIcons.at(qMin(i, boolIcons.size() - 1)), QColor(58, 64, 80), kToolBarIconSize));
         action->setStatusTip(boolTips.at(qMin(i, boolTips.size() - 1)));
         connect(action, &QAction::triggered, this,
                 [this, operation = boolEntries.at(i).first]() { applyBoolOperation(operation); });

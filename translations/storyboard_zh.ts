@@ -2036,6 +2036,84 @@ Use the checkbox to show or hide it.</source>
         <source>Merge shapes</source>
         <translation>合并形状</translation>
     </message>
+
+    <message>
+        <source>Layer and height</source>
+        <translation>图层与高度</translation>
+    </message>
+    <message>
+        <source>Height -1</source>
+        <translation>高度 -1</translation>
+    </message>
+    <message>
+        <source>Height +1</source>
+        <translation>高度 +1</translation>
+    </message>
+    <message>
+        <source>%1 · layer %2 · height %3</source>
+        <translation>%1 · 第 %2 层 · 高度 %3</translation>
+    </message>
+
+    <message>
+        <source>Dashed</source>
+        <translation>虚线</translation>
+    </message>
+    <message>
+        <source>Dotted</source>
+        <translation>点线</translation>
+    </message>
+    <message>
+        <source>Dash-dot</source>
+        <translation>点划线</translation>
+    </message>
+    <message>
+        <source>Priority: layer order first, then height within the same layer</source>
+        <translation>优先级：先按图层顺序，同层再按层内高度</translation>
+    </message>
+    <message>
+        <source>Select an item on the canvas to edit its style here.</source>
+        <translation>在画布上选中图元后，可在这里编辑它的样式。</translation>
+    </message>
+    <message>
+        <source>Changes apply to every selected shape.</source>
+        <translation>修改会作用于所有选中的图形。</translation>
+    </message>
+    <message>
+        <source>Change shape stroke color</source>
+        <translation>修改图形描边颜色</translation>
+    </message>
+    <message>
+        <source>Change shape fill color</source>
+        <translation>修改图形填充颜色</translation>
+    </message>
+    <message>
+        <source>Change shape fill style</source>
+        <translation>修改图形填充样式</translation>
+    </message>
+    <message>
+        <source>Change shape border style</source>
+        <translation>修改图形边框样式</translation>
+    </message>
+    <message>
+        <source>Change shape border width</source>
+        <translation>修改图形边框粗细</translation>
+    </message>
+    <message>
+        <source>Change shape opacity</source>
+        <translation>修改图形透明度</translation>
+    </message>
+    <message>
+        <source>Change rectangle corner radius</source>
+        <translation>修改矩形圆角半径</translation>
+    </message>
+    <message>
+        <source>Adjusted the height of %1 item(s).</source>
+        <translation>已调整 %1 个图元的层内高度。</translation>
+    </message>
+    <message>
+        <source>The height did not change.</source>
+        <translation>层内高度未变化。</translation>
+    </message>
 </context>
   <context>
     <name>LineArtDialog</name>
@@ -4645,6 +4723,100 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
         <source>Selected item</source>
         <translation>编辑图元</translation>
+    </message>
+
+    <message>
+        <source>Layer and height</source>
+        <translation>图层与高度</translation>
+    </message>
+    <message>
+        <source>Height -1</source>
+        <translation>高度 -1</translation>
+    </message>
+    <message>
+        <source>Height +1</source>
+        <translation>高度 +1</translation>
+    </message>
+    <message>
+        <source>%1 · layer %2 · height %3</source>
+        <translation>%1 · 第 %2 层 · 高度 %3</translation>
+    </message>
+
+    <message>
+        <source>Stroke color</source>
+        <translation>描边颜色</translation>
+    </message>
+    <message>
+        <source>Fill color</source>
+        <translation>填充颜色</translation>
+    </message>
+    <message>
+        <source>Stroke</source>
+        <translation>描边</translation>
+    </message>
+    <message>
+        <source>Solid</source>
+        <translation>实线</translation>
+    </message>
+    <message>
+        <source>Dashed</source>
+        <translation>虚线</translation>
+    </message>
+    <message>
+        <source>Dotted</source>
+        <translation>点线</translation>
+    </message>
+    <message>
+        <source>Dash-dot</source>
+        <translation>点划线</translation>
+    </message>
+    <message>
+        <source>Priority: layer order first, then height within the same layer</source>
+        <translation>优先级：先按图层顺序，同层再按层内高度</translation>
+    </message>
+    <message>
+        <source>Select an item on the canvas to edit its style here.</source>
+        <translation>在画布上选中图元后，可在这里编辑它的样式。</translation>
+    </message>
+    <message>
+        <source>Changes apply to every selected shape.</source>
+        <translation>修改会作用于所有选中的图形。</translation>
+    </message>
+    <message>
+        <source>Change shape stroke color</source>
+        <translation>修改图形描边颜色</translation>
+    </message>
+    <message>
+        <source>Change shape fill color</source>
+        <translation>修改图形填充颜色</translation>
+    </message>
+    <message>
+        <source>Change shape fill style</source>
+        <translation>修改图形填充样式</translation>
+    </message>
+    <message>
+        <source>Change shape border style</source>
+        <translation>修改图形边框样式</translation>
+    </message>
+    <message>
+        <source>Change shape border width</source>
+        <translation>修改图形边框粗细</translation>
+    </message>
+    <message>
+        <source>Change shape opacity</source>
+        <translation>修改图形透明度</translation>
+    </message>
+    <message>
+        <source>Change rectangle corner radius</source>
+        <translation>修改矩形圆角半径</translation>
+    </message>
+    <message>
+        <source>Adjusted the height of %1 item(s).</source>
+        <translation>已调整 %1 个图元的层内高度。</translation>
+    </message>
+    <message>
+        <source>The height did not change.</source>
+        <translation>层内高度未变化。</translation>
     </message>
 </context>
 </TS>

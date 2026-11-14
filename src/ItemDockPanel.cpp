@@ -454,7 +454,8 @@ void ItemDockPanel::buildArrangeSection(QWidget* body)
     row->setSpacing(2);
 
     QToolButton* icon = makeRowIcon(IconId::OrderUp, body);
-    icon->setToolTip(tr("Layer and order"));
+    icon->setToolTip(tr("Layer and height") + QLatin1Char('\n') +
+                     tr("Priority: layer order first, then height within the same layer"));
     row->addWidget(icon);
 
     auto makeButton = [this, body](IconId id, const QString& toolTip, const QString& objectName, int delta,
@@ -478,9 +479,9 @@ void ItemDockPanel::buildArrangeSection(QWidget* body)
 
     m_layerUpButton = makeButton(IconId::LayerUp, tr("Layer +1"), QStringLiteral("ItemLayerUpButton"), 1, false);
     m_layerDownButton = makeButton(IconId::LayerDown, tr("Layer -1"), QStringLiteral("ItemLayerDownButton"), -1, false);
-    m_heightUpButton = makeButton(IconId::OrderUp, tr("Order +1"), QStringLiteral("ItemHeightUpButton"), 1, true);
+    m_heightUpButton = makeButton(IconId::OrderUp, tr("Height +1"), QStringLiteral("ItemHeightUpButton"), 1, true);
     m_heightDownButton =
-        makeButton(IconId::OrderDown, tr("Order -1"), QStringLiteral("ItemHeightDownButton"), -1, true);
+        makeButton(IconId::OrderDown, tr("Height -1"), QStringLiteral("ItemHeightDownButton"), -1, true);
     row->addWidget(m_layerUpButton);
     row->addWidget(m_layerDownButton);
     row->addWidget(m_heightUpButton);
@@ -550,7 +551,7 @@ void ItemDockPanel::updateSummary()
     CanvasItem* item = items.first();
     m_titleLabel->setText(item->displayName());
     m_metaLabel->setText(
-        tr("%1 · layer %2 · order %3").arg(item->typeDisplayName()).arg(item->layerId()).arg(item->height()));
+        tr("%1 · layer %2 · height %3").arg(item->typeDisplayName()).arg(item->layerId()).arg(item->height()));
 }
 
 void ItemDockPanel::updateSections()
@@ -770,8 +771,8 @@ void ItemDockPanel::adjustHeight(int delta)
 {
     if (m_scene) {
         const int count = m_scene->adjustSelectedHeights(delta);
-        statusMessage(count > 0 ? tr("Adjusted the stacking order of %1 item(s).").arg(count)
-                                : tr("The stacking order did not change."));
+        statusMessage(count > 0 ? tr("Adjusted the height of %1 item(s).").arg(count)
+                                : tr("The height did not change."));
         refresh();
     }
 }

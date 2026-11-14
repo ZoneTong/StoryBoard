@@ -5067,8 +5067,64 @@ int runSelfTest(const QString& reportPath)
             }
         }
         check(shared, QStringLiteral("工具栏与菜单栏共用同一批合并形状动作"));
+        bool iconsOk = boolMenu && boolMenu->actions().size() == 5;
+        if (iconsOk) {
+            for (QAction* action : boolMenu->actions()) {
+                if (action->icon().isNull()) {
+                    iconsOk = false;
+                    break;
+                }
+            }
+        }
+        check(iconsOk, QStringLiteral("合并形状五项操作都带参照 PPT 的图标"));
         const bool named = uiText(QStringLiteral("Merged shape")) != QStringLiteral("Merged shape");
         check(named, QStringLiteral("合并图形的类型名有中文译文"), uiText(QStringLiteral("Merged shape")));
+    }
+    {
+        // 拆分结果必须在块间保留交界线，不能渲染成联合的样子。
+        const QColor fillA(200, 40, 40);
+        const QColor strokeA(250, 200, 40);
+        const QColor fillB(40, 90, 200);
+        const QColor strokeB(40, 200, 120);
+        auto renderOp = [&](BoolOps::Operation op, QUndoStack* undo, CanvasScene* scene) {
+            scene->setUndoStack(undo);
+            scene->setMode(ToolMode::Edit);
+            scene->applyCanvasSize(QSizeF(300.0, 200.0));
+            auto makeRect = [scene](qreal x, const QColor& fill, const QColor& stroke) {
+                auto* item = new ShapeItem();
+                item->setShapeType(ShapeType::Rectangle);
+                item->setPos(QPointF(x, 40.0));
+                item->setContentSize(QSizeF(60.0, 60.0));
+                item->setStyle(stroke, fill, 2.0);
+                item->setFill(fill, FillStyle::Solid);
+                scene->addItemsWithUndo({item}, QStringLiteral("Add split item"));
+                return item;
+            };
+            CanvasItem* lower = makeRect(20.0, fillA, strokeA);
+            CanvasItem* upper = makeRect(50.0, fillB, strokeB);
+            lower->setSelected(true);
+            upper->setSelected(true);
+            return BoolOps::apply(scene, op, QStringLiteral("split"));
+        };
+        QUndoStack unionSplitUndo;
+        QUndoStack fragmentUndo;
+        CanvasScene unionSplitScene;
+        CanvasScene fragmentScene;
+        const bool unionSplitOk = renderOp(BoolOps::Operation::Union, &unionSplitUndo, &unionSplitScene);
+        const bool fragmentOk = renderOp(BoolOps::Operation::Fragment, &fragmentUndo, &fragmentScene);
+        const QImage unionImage = unionSplitScene.renderImage(QRectF(0.0, 0.0, 300.0, 200.0), 1.0);
+        const QImage fragmentImage = fragmentScene.renderImage(QRectF(0.0, 0.0, 300.0, 200.0), 1.0);
+        int differingPixels = 0;
+        for (int y = 40; y < 100; ++y) {
+            for (int x = 20; x < 110; ++x) {
+                if (unionImage.pixelColor(x, y) != fragmentImage.pixelColor(x, y)) {
+                    ++differingPixels;
+                }
+            }
+        }
+        check(unionSplitOk && fragmentOk && differingPixels > 10,
+              QStringLiteral("拆分在块间保留内部交界线，与联合结果不同"),
+              QStringLiteral("diff=%1").arg(differingPixels));
     }
 
     // 需求：选中图元工具卡（边框样式 / 透明度 / 矩形圆角 / 图层与高度）与画布格式自定义图形。
@@ -5239,6 +5295,21 @@ int runSelfTest(const QString& reportPath)
                   panel.findChildren<QToolButton*>(QStringLiteral("ItemHeightUpButton")).size() == 1 &&
                   panel.findChildren<QToolButton*>(QStringLiteral("ItemHeightDownButton")).size() == 1,
               QStringLiteral("工具卡提供图层与层内高度 ±1 按钮"));
+        check(ItemDockPanel::tr("Stroke color") == QStringLiteral("描边颜色") &&
+                  ItemDockPanel::tr("Height +1") == QStringLiteral("高度 +1") &&
+                  ItemDockPanel::tr("Layer and height") == QStringLiteral("图层与高度"),
+              QStringLiteral("编辑图元卡的工具提示都有中文译文"),
+              QStringLiteral("stroke=%1 height=%2")
+                  .arg(ItemDockPanel::tr("Stroke color"))
+                  .arg(ItemDockPanel::tr("Height +1")));
+        bool priorityTipFound = false;
+        for (QToolButton* rowIcon : panel.findChildren<QToolButton*>(QStringLiteral("ItemRowIcon"))) {
+            if (rowIcon->toolTip().contains(QStringLiteral("优先级"))) {
+                priorityTipFound = true;
+                break;
+            }
+        }
+        check(priorityTipFound, QStringLiteral("工具卡标明优先级先按图层再按层内高度"));
 
         qunsetenv("STORYBOARD_CONFIG");
     }

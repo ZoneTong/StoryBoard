@@ -122,7 +122,10 @@ void CompositeShapeItem::paintContent(QPainter* painter)
             if (bound.isNull()) {
                 continue;
             }
-            if (!m_layers.at(i).path.intersected(m_layers.at(j).path).isEmpty()) {
+            // 拆分结果的各块可能共边，共边会生成零面积的退化交集；
+            // 只有真正有面积的重叠才算“重叠层”，否则会把块间交界线误裁掉。
+            const QRectF common = m_layers.at(i).path.intersected(m_layers.at(j).path).boundingRect();
+            if (common.width() * common.height() > 1.0) {
                 overlapping = true;
                 break;
             }

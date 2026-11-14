@@ -36,7 +36,13 @@ enum class IconId {
     OrderUp,
     OrderDown,
     Corner,
-    Opacity
+    Opacity,
+    // 合并形状五项操作，图形参照 PPT「合并形状」菜单。
+    MergeUnion,
+    MergeCombine,
+    MergeFragment,
+    MergeIntersect,
+    MergeSubtract
 };
 
 QIcon makeIcon(IconId id, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);
