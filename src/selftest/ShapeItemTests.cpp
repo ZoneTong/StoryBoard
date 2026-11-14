@@ -201,7 +201,7 @@ void selftest::runShapeItemTests(Context& ctx)
         int inkPixels = 0;
         for (int y = area.top(); y <= area.bottom(); ++y) {
             for (int x = area.left(); x <= area.right(); ++x) {
-                if (shapesRendered.pixelColor(x, y) != QColor(Qt::white)) {
+                if (shapesRendered.pixelColor(x, y).alpha() > 0) {
                     ++inkPixels;
                 }
             }

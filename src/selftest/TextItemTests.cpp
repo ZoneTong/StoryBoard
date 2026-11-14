@@ -121,7 +121,8 @@ void selftest::runTextItemTests(Context& ctx)
     int textInkPixels = 0;
     for (int y = textArea.top(); y <= textArea.bottom(); ++y) {
         for (int x = textArea.left(); x <= textArea.right(); ++x) {
-            if (textRendered.pixelColor(x, y).lightness() < 240) {
+            const QColor textPixel = textRendered.pixelColor(x, y);
+            if (textPixel.alpha() > 0 && textPixel.lightness() < 240) {
                 ++textInkPixels;
             }
         }

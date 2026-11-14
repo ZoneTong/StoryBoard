@@ -53,6 +53,17 @@ void reportWarning(QWidget* parent, const QString& title, const QString& text)
     QMessageBox::warning(parent, title, text);
 }
 
+// JPEG / PDF 不保留透明通道：导出前把透明区域合成到白底上，避免透出黑色。
+QImage flattenOnWhite(const QImage& source)
+{
+    QImage result(source.size(), QImage::Format_ARGB32_Premultiplied);
+    result.fill(Qt::white);
+    QPainter painter(&result);
+    painter.drawImage(QPointF(0.0, 0.0), source);
+    painter.end();
+    return result;
+}
+
 QString imageFilter()
 {
     return MainWindow::tr("Image files (*.png *.jpg *.jpeg *.bmp *.gif);;All files (*.*)");
@@ -127,15 +138,18 @@ bool ImportExportController::exportToFile(const QString& path, const QRectF& are
                                           bool showCompletion, int layerId)
 {
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    const QImage image = layerId >= 0 ? m_window->m_scene->renderLayerImage(area, scale, layerId)
-                                      : m_window->m_scene->renderImage(area, scale);
+    const QImage rawImage = layerId >= 0 ? m_window->m_scene->renderLayerImage(area, scale, layerId)
+                                         : m_window->m_scene->renderImage(area, scale);
     QApplication::restoreOverrideCursor();
 
-    if (image.isNull()) {
+    if (rawImage.isNull()) {
         reportWarning(m_window, MainWindow::tr("Export canvas"),
                       MainWindow::tr("Rendering the canvas failed: nothing to export."));
         return false;
     }
+
+    // PNG 保留透明背景；JPEG / PDF 不支持透明，先合成白底。
+    const QImage image = format == QStringLiteral("PNG") ? rawImage : flattenOnWhite(rawImage);
 
     bool success = false;
     QString errorMessage;

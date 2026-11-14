@@ -141,7 +141,7 @@ QImage CanvasScene::renderImage(const QRectF& area, qreal scale)
 
     const QSize finalSize(qMax(1, qCeil(pixelSize.width())), qMax(1, qCeil(pixelSize.height())));
     QImage image(finalSize, QImage::Format_ARGB32_Premultiplied);
-    image.fill(Qt::white);
+    image.fill(Qt::transparent);
 
     QPainter painter(&image);
     painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
@@ -202,8 +202,9 @@ void CanvasScene::drawBackground(QPainter* painter, const QRectF& rect)
 void CanvasScene::drawCanvasBackground(QPainter* painter, const QRectF& area, bool includeGrid) const
 {
     const QRectF canvas = canvasRect();
-    painter->fillRect(canvas, QColor(255, 255, 255));
 
+    // 默认背景层为无色（None）：不铺任何底色，画布区域保持纯透明；
+    // 背景层隐藏时同样不绘制底，仅在设置了纯色或背景图时才覆盖画布。
     if (isLayerVisible(BackgroundLayerId)) {
         switch (m_background.type) {
         case BackgroundType::None:
