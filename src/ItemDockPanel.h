@@ -11,7 +11,6 @@ class CanvasItem;
 class QAction;
 class QLabel;
 
-class ItemDockPanelShapesCard;
 class ItemDockPanelSelectionCard;
 class ItemDockPanelColorsCard;
 class ItemDockPanelFillBorderCard;
@@ -34,10 +33,6 @@ class ItemDockPanel : public QWidget {
                              QAction* rotateCcwAction, QAction* groupAction, QAction* ungroupAction);
 
   signals:
-    // 没有选中图形时，点常见图形按“插入”处理，交给主窗口沿用当前画笔与填充设置。
-    void insertShapeRequested(int shapeType);
-    void insertCustomShapeRequested(const QString& filePath);
-    void openShapesFolderRequested();
     void statusMessage(const QString& message);
 
   private:
@@ -58,17 +53,13 @@ class ItemDockPanel : public QWidget {
     void applyCornerRadius(int radius);
     void applySweepAngle(int angle);
     void applyShapeRadius(int radius);
-    void insertOrChangeShape(ShapeType type);
     void adjustLayer(int delta);
     void adjustHeight(int delta);
-
-    void onShapeTriggered(int type);
 
     CanvasScene* m_scene = nullptr;
     QLabel* m_titleLabel = nullptr;
     QLabel* m_metaLabel = nullptr;
 
-    ItemDockPanelShapesCard* m_shapesCard = nullptr;
     ItemDockPanelSelectionCard* m_selectionCard = nullptr;
     ItemDockPanelColorsCard* m_colorsCard = nullptr;
     ItemDockPanelFillBorderCard* m_fillBorderCard = nullptr;
