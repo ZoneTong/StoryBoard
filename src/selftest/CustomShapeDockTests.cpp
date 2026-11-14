@@ -395,6 +395,16 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             const QList<QToolButton*> fillButtons =
                 dockPanel->findChildren<QToolButton*>(QStringLiteral("ItemFillStyleButton"));
             QToolButton* heightUp = dockPanel->findChild<QToolButton*>(QStringLiteral("ItemHeightUpButton"));
+            QToolButton* copyButton = dockPanel->findChild<QToolButton*>(QStringLiteral("ItemCopyButton"));
+            QToolButton* deleteButton = dockPanel->findChild<QToolButton*>(QStringLiteral("ItemDeleteButton"));
+            QToolButton* rotateCwButton = dockPanel->findChild<QToolButton*>(QStringLiteral("ItemRotateCwButton"));
+            QToolButton* rotateCcwButton = dockPanel->findChild<QToolButton*>(QStringLiteral("ItemRotateCcwButton"));
+            QToolButton* groupButton = dockPanel->findChild<QToolButton*>(QStringLiteral("ItemGroupButton"));
+            QToolButton* ungroupButton = dockPanel->findChild<QToolButton*>(QStringLiteral("ItemUngroupButton"));
+            const QList<QToolButton*> alignRowButtons =
+                dockPanel->findChildren<QToolButton*>(QStringLiteral("ItemAlignRowButton"));
+            const QList<QToolButton*> morphButtons =
+                dockPanel->findChildren<QToolButton*>(QStringLiteral("ItemMorphButton"));
 
             if (opacitySpin) {
                 opacitySpin->setValue(45);
@@ -434,7 +444,15 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             dockScene->undoStack()->undo();
             ctx.check(selectedShape->height() == heightBefore, QStringLiteral("撤销高度 +1 恢复原高度"));
 
-            // 多选时卡片提供对齐与合并形状入口，复用菜单栏同一批动作。
+            ctx.check(copyButton && deleteButton && rotateCwButton && rotateCcwButton && copyButton->isVisible() &&
+                          deleteButton->isVisible() && rotateCwButton->isVisible() && rotateCcwButton->isVisible(),
+                      QStringLiteral("单选时编辑图元卡列出复制 / 删除 / 旋转按钮"));
+            ctx.check(alignRowButtons.size() == 8 && morphButtons.size() == 5 && groupButton && ungroupButton &&
+                          !alignRowButtons.first()->isVisible() && !morphButtons.first()->isVisible() &&
+                          !groupButton->isVisible() && !ungroupButton->isVisible(),
+                      QStringLiteral("单选时不显示对齐 / 化形 / 组合按钮行"));
+
+            // 多选时卡片把对齐 8 项与化形 5 项直接展开成图标按钮行，并复用菜单栏同一批动作。
             auto* secondShape = new ShapeItem(ShapeType::Rectangle);
             secondShape->setPos(QPointF(420.0, 240.0));
             secondShape->setContentSize(QSizeF(120.0, 90.0));
@@ -443,12 +461,44 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             selectedShape->setSelected(true);
             secondShape->setSelected(true);
             QApplication::processEvents();
-            QToolButton* alignButton = dockPanel->findChild<QToolButton*>(QStringLiteral("ItemAlignButton"));
-            QToolButton* mergeButton = dockPanel->findChild<QToolButton*>(QStringLiteral("ItemMergeButton"));
-            ctx.check(alignButton && mergeButton && alignButton->isVisible() && mergeButton->isVisible() &&
-                          alignButton->menu() && alignButton->menu()->actions().size() == 8 && mergeButton->menu() &&
-                          mergeButton->menu()->actions().size() == 5,
-                      QStringLiteral("多选时编辑图元卡提供对齐与合并形状按钮"));
+            int visibleAlign = 0;
+            for (const QToolButton* button : alignRowButtons) {
+                if (button->isVisible()) {
+                    ++visibleAlign;
+                }
+            }
+            int visibleMorph = 0;
+            for (const QToolButton* button : morphButtons) {
+                if (button->isVisible()) {
+                    ++visibleMorph;
+                }
+            }
+            ctx.check(visibleAlign == 6, QStringLiteral("两个图元时对齐行展开 6 个可用模式"),
+                      QString::number(visibleAlign));
+            ctx.check(visibleMorph == 5, QStringLiteral("多选时化形五项展开成一行"));
+            ctx.check(groupButton->isVisible() && !ungroupButton->isVisible(),
+                      QStringLiteral("多选未分组时显示组合、不显示取消组合"));
+
+            const int groupedCount = dockScene->groupSelectedItems();
+            // 组合不改选中集合，重新点选一次让主窗口按新的组归属刷新动作可用状态。
+            dockScene->clearSelection();
+            selectedShape->setSelected(true);
+            secondShape->setSelected(true);
+            QApplication::processEvents();
+            ctx.check(groupedCount == 2 && ungroupButton->isVisible() && !groupButton->isVisible(),
+                      QStringLiteral("选中整组时只显示取消组合"));
+
+            // 组 + 组外图元混合选中：再套一层组合与取消组合同时可用（分组支持多层）。
+            auto* thirdShape = new ShapeItem(ShapeType::Ellipse);
+            thirdShape->setPos(QPointF(560.0, 320.0));
+            thirdShape->setContentSize(QSizeF(100.0, 80.0));
+            dockScene->addItemsWithUndo({thirdShape}, QStringLiteral("Add third shape"));
+            selectedShape->setSelected(true);
+            secondShape->setSelected(true);
+            thirdShape->setSelected(true);
+            QApplication::processEvents();
+            ctx.check(groupButton->isVisible() && ungroupButton->isVisible(),
+                      QStringLiteral("组与普通图元混合选中时组合和取消组合都显示"));
 
             // 悬浮卡片跟随选中状态：清空选中后隐藏，重新选中再出现。
             dockScene->clearSelection();

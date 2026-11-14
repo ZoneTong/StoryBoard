@@ -69,10 +69,10 @@ void UiToolBarBuilder::buildToolBars()
     // 布尔运算同样做成工具栏下拉按钮，菜单里再挂一份到画布右键菜单。
     m_window->m_boolButton = new QToolButton(mainBar);
     m_window->m_boolButton->setObjectName(QStringLiteral("BoolToolButton"));
-    m_window->m_boolButton->setText(MainWindow::tr("Merge shapes"));
+    m_window->m_boolButton->setText(MainWindow::tr("Morph"));
     m_window->m_boolButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
     m_window->m_boolButton->setPopupMode(QToolButton::InstantPopup);
-    m_window->m_boolButton->setToolTip(MainWindow::tr("Merge the selected shapes"));
+    m_window->m_boolButton->setToolTip(MainWindow::tr("Morph the selected shapes"));
     m_window->m_boolButton->setEnabled(false);
     auto* boolButtonMenu = new QMenu(m_window->m_boolButton);
     boolButtonMenu->setObjectName(QStringLiteral("BoolToolButtonMenu"));
@@ -82,7 +82,7 @@ void UiToolBarBuilder::buildToolBars()
     m_window->m_boolButton->setMenu(boolButtonMenu);
     mainBar->addWidget(m_window->m_boolButton);
     if (m_window->m_view) {
-        m_window->m_view->addContextMenuGroup(MainWindow::tr("Merge shapes"), m_window->m_boolActions);
+        m_window->m_view->addContextMenuGroup(MainWindow::tr("Morph"), m_window->m_boolActions);
     }
     mainBar->addSeparator();
 

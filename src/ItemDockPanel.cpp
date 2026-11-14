@@ -91,6 +91,8 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     if (m_scene) {
         connect(m_scene, &QGraphicsScene::selectionChanged, this, &ItemDockPanel::scheduleRefresh);
         connect(m_scene, &CanvasScene::contentChanged, this, &ItemDockPanel::scheduleRefresh);
+        // 模式切换会改写一批动作的可用状态，操作栏要跟着重算显隐。
+        connect(m_scene, &CanvasScene::modeChanged, this, &ItemDockPanel::scheduleRefresh);
         if (m_scene->undoStack()) {
             // 撤销 / 重做后卡片里的数值也要回到图元的真实状态。
             connect(m_scene->undoStack(), &QUndoStack::indexChanged, this, &ItemDockPanel::scheduleRefresh);
@@ -105,10 +107,13 @@ void ItemDockPanel::onShapeTriggered(int type)
     insertOrChangeShape(static_cast<ShapeType>(type));
 }
 
-void ItemDockPanel::setSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions)
+void ItemDockPanel::setSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions,
+                                        QAction* copyAction, QAction* removeAction, QAction* rotateCwAction,
+                                        QAction* rotateCcwAction, QAction* groupAction, QAction* ungroupAction)
 {
     if (m_selectionCard) {
-        m_selectionCard->setSelectionActions(alignActions, boolActions);
+        m_selectionCard->setSelectionActions(alignActions, boolActions, copyAction, removeAction, rotateCwAction,
+                                             rotateCcwAction, groupAction, ungroupAction);
     }
 }
 
@@ -147,8 +152,7 @@ void ItemDockPanel::refresh()
 
     const QList<CanvasItem*> items = selectedItems();
     const QList<ShapeItem*> shapes = selectedShapes();
-    const bool multiSelection = items.size() >= 2;
-    m_selectionCard->setMultiSelection(multiSelection);
+    m_selectionCard->setSelectionState(!items.isEmpty(), selectionGroupUseful(items));
 
     bool hasCorner = false;
     bool hasArc = false;
@@ -174,6 +178,29 @@ void ItemDockPanel::refresh()
         m_refreshPending = false;
         scheduleRefresh();
     }
+}
+
+bool ItemDockPanel::selectionGroupUseful(const QList<CanvasItem*>& items) const
+{
+    if (!m_scene || items.size() < 2) {
+        return false;
+    }
+    int outerGroup = 0;
+    for (CanvasItem* item : items) {
+        // 有组外图元参与时组合总能多套一层，值得提供。
+        if (item->groupId() <= 0) {
+            return true;
+        }
+        const int current = m_scene->outermostGroup(item->groupId());
+        if (outerGroup == 0) {
+            outerGroup = current;
+        } else if (current != outerGroup) {
+            // 选中了两个不同的组：组合成外层组有意义。
+            return true;
+        }
+    }
+    // 全部落在同一个组里：组合只会把原组整个再包一层，不再显示“组合”。
+    return false;
 }
 
 void ItemDockPanel::updateSummary()
