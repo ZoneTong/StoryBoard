@@ -1,0 +1,137 @@
+#include "ItemDockPanelColorsCard.h"
+
+#include "IconFactory.h"
+#include "ItemDockPanel.h"
+#include "ShapeItem.h"
+
+#include <QColorDialog>
+#include <QHBoxLayout>
+#include <QToolButton>
+#include <QVBoxLayout>
+
+namespace {
+
+constexpr int kSmallIconSize = 14;
+
+QToolButton* makeSwatch(const QColor& color, QWidget* parent, const QString& objectName)
+{
+    auto* button = new QToolButton(parent);
+    button->setObjectName(objectName);
+    button->setFixedSize(20, 20);
+    button->setCheckable(true);
+    button->setToolTip(color.name(QColor::HexRgb).toUpper());
+    button->setStyleSheet(QStringLiteral("QToolButton { border: 1px solid #CBD5E1; border-radius: 3px; "
+                                         "background: %1; } QToolButton:hover { border-color: #2563EB; } "
+                                         "QToolButton:checked { border: 2px solid #1D4ED8; }")
+                              .arg(color.name(QColor::HexArgb)));
+    button->setProperty("swatchColor", color);
+    return button;
+}
+
+QString colorTip(const QColor& color)
+{
+    return color.name(QColor::HexRgb).toUpper();
+}
+
+QToolButton* makeRowIcon(IconId id, QWidget* parent)
+{
+    auto* button = new QToolButton(parent);
+    button->setObjectName(QStringLiteral("ItemRowIcon"));
+    button->setIcon(makeIcon(id, QColor(139, 144, 156), kSmallIconSize));
+    button->setIconSize(QSize(kSmallIconSize, kSmallIconSize));
+    button->setFixedSize(kSmallIconSize + 4, kSmallIconSize + 4);
+    button->setAutoRaise(true);
+    button->setFocusPolicy(Qt::NoFocus);
+    return button;
+}
+
+} // namespace
+
+ItemDockPanelColorsCard::ItemDockPanelColorsCard(QWidget* parent) : QWidget(parent)
+{
+    auto* layout = new QVBoxLayout(this);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(2);
+
+    layout->addWidget(makeColorRow(true));
+    layout->addWidget(makeColorRow(false));
+}
+
+QWidget* ItemDockPanelColorsCard::makeColorRow(bool stroke)
+{
+    auto* row = new QWidget(this);
+    auto* rowLayout = new QHBoxLayout(row);
+    rowLayout->setContentsMargins(0, 0, 0, 0);
+    rowLayout->setSpacing(2);
+
+    QToolButton* icon = makeRowIcon(stroke ? IconId::Brush : IconId::Palette, row);
+    icon->setToolTip(stroke ? ItemDockPanel::tr("Stroke") : ItemDockPanel::tr("Fill"));
+    rowLayout->addWidget(icon);
+
+    const QStringList presets = {QStringLiteral("#1E293B"), QStringLiteral("#EF4444"), QStringLiteral("#F97316"),
+                                 QStringLiteral("#EAB308"), QStringLiteral("#22C55E"), QStringLiteral("#14B8A6"),
+                                 QStringLiteral("#3B82F6"), QStringLiteral("#8B5CF6")};
+    QList<QToolButton*>* swatches = stroke ? &m_strokeSwatches : &m_fillSwatches;
+    for (const QString& hex : presets) {
+        const QColor color(hex);
+        QToolButton* swatch = makeSwatch(color, row, QStringLiteral("ItemColorSwatch"));
+        connect(swatch, &QToolButton::clicked, this, [this, color, stroke]() {
+            if (stroke) {
+                emit strokeColorChosen(color);
+            } else {
+                emit fillColorChosen(color);
+            }
+        });
+        rowLayout->addWidget(swatch);
+        swatches->append(swatch);
+    }
+
+    auto* custom = new QToolButton(row);
+    custom->setObjectName(QStringLiteral("ItemColorButton"));
+    custom->setFixedSize(20, 20);
+    custom->setToolTip(stroke ? ItemDockPanel::tr("Stroke color") : ItemDockPanel::tr("Fill color"));
+    custom->setText(QStringLiteral("…"));
+    connect(custom, &QToolButton::clicked, this, [this, stroke]() {
+        const QColor initial = stroke ? m_strokeFallback : m_fillFallback;
+        const QColor chosen = QColorDialog::getColor(
+            initial, this, stroke ? ItemDockPanel::tr("Stroke color") : ItemDockPanel::tr("Fill color"),
+            QColorDialog::ShowAlphaChannel);
+        if (!chosen.isValid()) {
+            return;
+        }
+        if (stroke) {
+            emit strokeColorChosen(chosen);
+        } else {
+            emit fillColorChosen(chosen);
+        }
+    });
+    rowLayout->addWidget(custom);
+
+    if (stroke) {
+        m_strokeColorButton = custom;
+    } else {
+        m_fillColorButton = custom;
+    }
+    rowLayout->addStretch(1);
+    return row;
+}
+
+void ItemDockPanelColorsCard::refresh(const QList<ShapeItem*>& shapes)
+{
+    m_strokeFallback = shapes.isEmpty() ? QColor(QStringLiteral("#1E293B")) : shapes.first()->strokeColor();
+    m_fillFallback = shapes.isEmpty() ? QColor(QStringLiteral("#1E293B")) : shapes.first()->fillColor();
+    for (QToolButton* swatch : m_strokeSwatches) {
+        const QColor color = swatch->property("swatchColor").value<QColor>();
+        swatch->setChecked(color.rgb() == m_strokeFallback.rgb());
+    }
+    for (QToolButton* swatch : m_fillSwatches) {
+        const QColor color = swatch->property("swatchColor").value<QColor>();
+        swatch->setChecked(color.rgb() == m_fillFallback.rgb());
+    }
+    if (m_strokeColorButton) {
+        m_strokeColorButton->setToolTip(colorTip(m_strokeFallback));
+    }
+    if (m_fillColorButton) {
+        m_fillColorButton->setToolTip(colorTip(m_fillFallback));
+    }
+}
