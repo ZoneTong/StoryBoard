@@ -4264,6 +4264,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <source>Layer %1 · %2</source>
       <translation>图层 %1 · %2</translation>
     </message>
+    <message>
+      <source>Corner radius</source>
+      <translation>圆角</translation>
+    </message>
   </context>
   <context>
     <name>ExportDialog</name>

@@ -8,7 +8,18 @@
 #include <QComboBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
+#include <QSpinBox>
 #include <QToolButton>
+
+namespace {
+qreal defaultCornerRadius(ShapeType type, const QSizeF& size)
+{
+    if (type == ShapeType::RoundedRectangle) {
+        return qMin(size.width(), size.height()) * 0.16;
+    }
+    return 0.0;
+}
+} // namespace
 
 ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item, QWidget* parent) : QWidget(parent)
 {
@@ -47,6 +58,26 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
         m_strokeWidthSpin->setValue(shape->strokeWidth());
         m_initialStrokeWidth = shape->strokeWidth();
         m_strokeWidthSpin->setMinimumWidth(88);
+
+        const ShapeType type = shape->shapeType();
+        if (type == ShapeType::Rectangle || type == ShapeType::RoundedRectangle) {
+            m_defaultCornerRatio = type == ShapeType::RoundedRectangle ? 0.16 : 0.0;
+            m_contentSize = shape->contentSize();
+            m_initialStoredCornerRadius = shape->cornerRadius();
+            const qreal radius = m_initialStoredCornerRadius >= 0.0 ? m_initialStoredCornerRadius
+                                                                    : defaultCornerRadius(type, m_contentSize);
+            m_initialCornerRadius = qRound(radius);
+
+            m_cornerRadiusSpin = new QSpinBox(this);
+            m_cornerRadiusSpin->setObjectName(QStringLiteral("ItemPropertiesCornerRadiusValue"));
+            m_cornerRadiusSpin->setRange(0, qMax(0, qRound(qMin(m_contentSize.width(), m_contentSize.height()) / 2.0)));
+            m_cornerRadiusSpin->setSuffix(QStringLiteral(" px"));
+            m_cornerRadiusSpin->setToolTip(ItemPropertiesDialog::tr("Corner radius"));
+            m_cornerRadiusSpin->setMinimumWidth(88);
+            m_cornerRadiusSpin->setValue(m_initialCornerRadius);
+            connect(m_cornerRadiusSpin, &QSpinBox::valueChanged, this,
+                    [this](int value) { m_cornerEdited = value != m_initialCornerRadius; });
+        }
     } else if (auto* stroke = dynamic_cast<StrokeItem*>(item)) {
         m_strokeColorButton = ItemPropertiesFields::makeColorField(this, stroke->strokeColor(),
                                                                    QStringLiteral("ItemPropertiesStrokeColorValue"));
@@ -76,4 +107,23 @@ void ItemPropertiesDialogStyleBlock::addRows(QFormLayout* form)
     if (m_strokeWidthSpin) {
         form->addRow(ItemPropertiesDialog::tr("Stroke width"), m_strokeWidthSpin);
     }
+    if (m_cornerRadiusSpin) {
+        form->addRow(ItemPropertiesDialog::tr("Corner radius"), m_cornerRadiusSpin);
+    }
+}
+
+void ItemPropertiesDialogStyleBlock::setContentSize(const QSizeF& size)
+{
+    if (!m_cornerRadiusSpin) {
+        return;
+    }
+    m_contentSize = size;
+    const int maximum = qMax(0, qRound(qMin(size.width(), size.height()) / 2.0));
+    const bool blocked = m_cornerRadiusSpin->blockSignals(true);
+    m_cornerRadiusSpin->setMaximum(maximum);
+    if (!m_cornerEdited && m_initialStoredCornerRadius < 0.0) {
+        m_initialCornerRadius = qRound(qMin(size.width(), size.height()) * m_defaultCornerRatio);
+        m_cornerRadiusSpin->setValue(m_initialCornerRadius);
+    }
+    m_cornerRadiusSpin->blockSignals(blocked);
 }

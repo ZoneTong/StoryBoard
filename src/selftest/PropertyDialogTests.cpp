@@ -121,6 +121,7 @@ void selftest::runPropertyDialogTests(Context& ctx)
             dialog.findChild<QToolButton*>(QStringLiteral("ItemPropertiesStrokeColorValue"));
         QDoubleSpinBox* strokeWidthValue =
             dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesStrokeWidthValue"));
+        QSpinBox* cornerRadiusValue = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesCornerRadiusValue"));
         QDoubleSpinBox* positionXValue =
             dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesPositionXValue"));
         QDoubleSpinBox* widthValue = dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesWidthValue"));
@@ -144,10 +145,21 @@ void selftest::runPropertyDialogTests(Context& ctx)
         ctx.check(strokeWidthValue && strokeWidthValue->isEnabled() &&
                       qFuzzyCompare(strokeWidthValue->value(), propertyShape->strokeWidth()),
                   QStringLiteral("属性窗描边宽度可编辑"));
+        const int roundedDefaultRadius =
+            qRound(qMin(propertyShape->contentSize().width(), propertyShape->contentSize().height()) * 0.16);
+        ctx.check(cornerRadiusValue && cornerRadiusValue->isEnabled() &&
+                      cornerRadiusValue->value() == roundedDefaultRadius && cornerRadiusValue->value() > 0,
+                  QStringLiteral("圆角矩形属性窗显示非零默认圆角"),
+                  cornerRadiusValue ? QString::number(cornerRadiusValue->value()) : QString());
+        if (cornerRadiusValue) {
+            cornerRadiusValue->setValue(40);
+        }
         ctx.check(positionXValue && positionXValue->isEnabled() && widthValue && widthValue->isEnabled(),
                   QStringLiteral("属性窗位置和尺寸可编辑"));
-        dialog.close();
+        dialog.accept();
         QApplication::processEvents();
+        ctx.check(qAbs(propertyShape->cornerRadius() - 40.0) < 0.01, QStringLiteral("圆角矩形属性窗可修改圆角"),
+                  QString::number(propertyShape->cornerRadius()));
     }
 
     // 需求 24：除图元类型外，属性弹窗的修改要真正落到图元，并且一次提交只占一条撤销记录。
@@ -202,6 +214,8 @@ void selftest::runPropertyDialogTests(Context& ctx)
                 dialog.findChild<QToolButton*>(QStringLiteral("ItemPropertiesStrokeColorValue"));
             QDoubleSpinBox* strokeWidthValue =
                 dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesStrokeWidthValue"));
+            QSpinBox* cornerRadiusValue =
+                dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesCornerRadiusValue"));
             QDoubleSpinBox* positionXValue =
                 dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesPositionXValue"));
             QDoubleSpinBox* positionYValue =
@@ -212,9 +226,14 @@ void selftest::runPropertyDialogTests(Context& ctx)
             QDoubleSpinBox* rotationValue =
                 dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesRotationValue"));
             ctx.check(layerValue && heightValue && nameValue && fillStyleValue && fillColorValue && strokeColorValue &&
-                          strokeWidthValue && positionXValue && positionYValue && widthValue && heightSizeValue &&
-                          rotationValue,
+                          strokeWidthValue && cornerRadiusValue && positionXValue && positionYValue && widthValue &&
+                          heightSizeValue && rotationValue,
                       QStringLiteral("属性窗编辑控件齐全"));
+            ctx.check(cornerRadiusValue && cornerRadiusValue->isEnabled() && cornerRadiusValue->value() == 0,
+                      QStringLiteral("矩形属性窗圆角默认值为 0"));
+            if (cornerRadiusValue) {
+                cornerRadiusValue->setValue(20);
+            }
             ctx.check(rotationValue && qFuzzyCompare(rotationValue->value(), firstShape->rotationAngle()),
                       QStringLiteral("属性窗显示图元旋转角度"));
 
@@ -272,6 +291,8 @@ void selftest::runPropertyDialogTests(Context& ctx)
         ctx.check(firstShape->strokeColor() == QColor(QStringLiteral("#DC2626")) &&
                       qFuzzyCompare(firstShape->strokeWidth(), 9.0),
                   QStringLiteral("属性窗修改可落到描边颜色和描边宽度"));
+        ctx.check(qAbs(firstShape->cornerRadius() - 20.0) < 0.01, QStringLiteral("矩形属性窗修改可落到圆角半径"),
+                  QString::number(firstShape->cornerRadius()));
         ctx.check(firstShape->pos() == QPointF(150.0, 210.0) && firstShape->contentSize() == QSizeF(240.0, 160.0),
                   QStringLiteral("属性窗修改可落到位置和尺寸"));
         ctx.check(firstShape->rawName() == QStringLiteral("Hero panel"), QStringLiteral("属性窗修改可落到图元名称"));

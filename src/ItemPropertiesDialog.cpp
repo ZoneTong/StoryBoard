@@ -111,6 +111,17 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
 
         m_geometryBlock = new ItemPropertiesDialogGeometryBlock(item, this);
         m_geometryBlock->addRows(form);
+        if (m_styleBlock && m_styleBlock->cornerRadiusSpin()) {
+            auto syncCornerRange = [this]() {
+                if (!m_geometryBlock) {
+                    return;
+                }
+                m_styleBlock->setContentSize(
+                    QSizeF(m_geometryBlock->widthSpin()->value(), m_geometryBlock->heightSizeSpin()->value()));
+            };
+            connect(m_geometryBlock->widthSpin(), &QDoubleSpinBox::valueChanged, this, syncCornerRange);
+            connect(m_geometryBlock->heightSizeSpin(), &QDoubleSpinBox::valueChanged, this, syncCornerRange);
+        }
 
         root->addLayout(form);
     }
@@ -163,7 +174,8 @@ void ItemPropertiesDialog::applyEditableState()
     }
     if (m_styleBlock) {
         widgets << m_styleBlock->fillStyleCombo() << m_styleBlock->fillColorButton()
-                << m_styleBlock->strokeColorButton() << m_styleBlock->strokeWidthSpin();
+                << m_styleBlock->strokeColorButton() << m_styleBlock->strokeWidthSpin()
+                << m_styleBlock->cornerRadiusSpin();
     }
     if (m_textBlock) {
         widgets << m_textBlock->textColorButton() << m_textBlock->fontButton() << m_textBlock->textEdit();
@@ -346,6 +358,13 @@ void ItemPropertiesDialog::applyChanges()
         }
         if (style && style->strokeWidthSpin()) {
             after.shapeState.strokeWidth = spinValue(style->strokeWidthSpin(), m_initialStrokeWidth);
+        }
+        if (style && style->cornerRadiusSpin()) {
+            const int value = style->cornerRadiusSpin()->value();
+            // 圆角矩形默认值来自短边的 16%，对话框里显示为非 0；
+            // 未改动时保留“按类型取默认”的 -1，避免打开属性窗点确定就写回显式值。
+            after.shapeState.cornerRadius =
+                value == style->initialCornerRadius() ? style->initialStoredCornerRadius() : value;
         }
         if (m_hasFill) {
             if (style && style->fillStyleCombo() && style->fillStyleCombo()->currentData().toInt() >= 0) {
