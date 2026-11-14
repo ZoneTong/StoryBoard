@@ -22,6 +22,7 @@
 #include <QPair>
 #include <QSpinBox>
 #include <QStatusBar>
+#include <QStyle>
 #include <QWidget>
 #include <QWidgetAction>
 
@@ -259,9 +260,14 @@ void UiMenuBuilder::buildMenus()
     // 描线宽度在菜单、工具栏、卡片和属性窗统一使用同一种 SpinBox 控件。
     auto* menuWidthWidget = new QWidget(insertMenu);
     auto* menuWidthLayout = new QHBoxLayout(menuWidthWidget);
-    menuWidthLayout->setContentsMargins(12, 4, 12, 4);
+    // 菜单项的图标列和勾选列会把文字推到固定缩进；宽度行的标签要与上下菜单项文字左对齐。
+    const int menuIconSize = insertMenu->style()->pixelMetric(QStyle::PM_SmallIconSize, nullptr, insertMenu);
+    const int menuTextInset =
+        2 * menuIconSize + insertMenu->style()->pixelMetric(QStyle::PM_MenuHMargin, nullptr, insertMenu) + 8;
+    menuWidthLayout->setContentsMargins(menuTextInset, 4, 12, 4);
     menuWidthLayout->setSpacing(8);
     auto* menuWidthLabel = new QLabel(MainWindow::tr("Brush width"), menuWidthWidget);
+    menuWidthLabel->setObjectName(QStringLiteral("MenuStrokeWidthLabel"));
     menuWidthLayout->addWidget(menuWidthLabel);
     m_window->m_menuWidthSpin = new QSpinBox(menuWidthWidget);
     m_window->m_menuWidthSpin->setObjectName(QStringLiteral("MenuStrokeWidthSpin"));
