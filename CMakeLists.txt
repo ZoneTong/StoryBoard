@@ -1,6 +1,17 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(StoryBoard VERSION 0.1.2 LANGUAGES CXX)
+# 项目名取自仓库根目录的文件夹名，重命名目录或在工作树中构建时无需改配置。
+# 仅把不能安全用于目标名的字符替换为下划线，普通目录名保持原样。
+get_filename_component(STORYBOARD_ROOT_FOLDER_NAME "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
+string(REGEX REPLACE "[^A-Za-z0-9_.+-]" "_" STORYBOARD_PROJECT_NAME "${STORYBOARD_ROOT_FOLDER_NAME}")
+if(STORYBOARD_PROJECT_NAME STREQUAL "")
+    set(STORYBOARD_PROJECT_NAME "StoryBoard")
+elseif(STORYBOARD_PROJECT_NAME MATCHES "^[^A-Za-z_]")
+    set(STORYBOARD_PROJECT_NAME "_${STORYBOARD_PROJECT_NAME}")
+endif()
+
+project(${STORYBOARD_PROJECT_NAME} VERSION 0.1.2 LANGUAGES CXX)
+message(STATUS "Project name from folder: ${STORYBOARD_ROOT_FOLDER_NAME} -> ${PROJECT_NAME}")
 
 set(STORYBOARD_VERSION "${PROJECT_VERSION}")
 set(STORYBOARD_VERSION_TWEAK "${PROJECT_VERSION_TWEAK}")
@@ -9,6 +20,8 @@ if(STORYBOARD_VERSION_TWEAK STREQUAL "")
 endif()
 set(STORYBOARD_VERSION_COMMA
     "${PROJECT_VERSION_MAJOR},${PROJECT_VERSION_MINOR},${PROJECT_VERSION_PATCH},${STORYBOARD_VERSION_TWEAK}")
+set(STORYBOARD_APP_NAME "${PROJECT_NAME}")
+set(STORYBOARD_APP_EXE_NAME "${PROJECT_NAME}.exe")
 set(STORYBOARD_APP_ICON "${CMAKE_CURRENT_SOURCE_DIR}/resources/app.ico")
 
 # Windows 版本资源从 CMake 的 PROJECT_VERSION 生成，避免 app.rc / main.cpp /
@@ -26,7 +39,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # 项目的验证编译链是 GCC 15.1（Qt 官方 mingw1510_64）。版本偏低仍可尝试构建，
 # 但给出警告，避免把未验证的二进制当成发布包。
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 15.0)
-    message(WARNING "StoryBoard 的验证编译链为 GCC 15.1，当前 GCC ${CMAKE_CXX_COMPILER_VERSION} 未经验证。")
+    message(WARNING "${PROJECT_NAME} 的验证编译链为 GCC 15.1，当前 GCC ${CMAKE_CXX_COMPILER_VERSION} 未经验证。")
 endif()
 
 set(CMAKE_AUTOMOC ON)
@@ -77,17 +90,32 @@ set(STORYBOARD_SOURCE_FOLDERS
     resources
 )
 
-qt_add_executable(StoryBoard WIN32)
+set(STORYBOARD_EXECUTABLE_KEYWORDS)
+if(WIN32)
+    list(APPEND STORYBOARD_EXECUTABLE_KEYWORDS WIN32)
+elseif(APPLE)
+    list(APPEND STORYBOARD_EXECUTABLE_KEYWORDS MACOSX_BUNDLE)
+endif()
+qt_add_executable(${PROJECT_NAME} ${STORYBOARD_EXECUTABLE_KEYWORDS})
 foreach(source_folder IN LISTS STORYBOARD_SOURCE_FOLDERS)
-    storyboard_add_source_folder(StoryBoard "${CMAKE_CURRENT_SOURCE_DIR}/${source_folder}")
+    storyboard_add_source_folder(${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${source_folder}")
 endforeach()
 
-target_compile_definitions(StoryBoard PRIVATE STORYBOARD_VERSION="${STORYBOARD_VERSION}"
-                                                    STORYBOARD_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+if(APPLE)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        MACOSX_BUNDLE_BUNDLE_NAME "${PROJECT_NAME}"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.zonetong.${PROJECT_NAME}"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+    )
+endif()
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE STORYBOARD_VERSION="${STORYBOARD_VERSION}"
+                                                         STORYBOARD_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 
 # Qt 官方 i18n 流水线：.ts -> .qm，并把 .qm 与 .ts 一起嵌进资源。
 # 运行时 QTranslator 从 :/i18n/storyboard_zh.qm 装载中文翻译。
-qt_add_lrelease(StoryBoard
+qt_add_lrelease(${PROJECT_NAME}
     TS_FILES ${STORYBOARD_TS_FILES}
     QM_FILES_OUTPUT_VARIABLE STORYBOARD_QM_FILES
 )
@@ -101,22 +129,22 @@ set_source_files_properties(${STORYBOARD_TS_FILES} PROPERTIES
 set_source_files_properties(${STORYBOARD_QT_TRANSLATION_FILE} PROPERTIES
     QT_RESOURCE_ALIAS "qtbase_zh_CN.qm"
 )
-qt_add_resources(StoryBoard "storyboard_translations"
+qt_add_resources(${PROJECT_NAME} "storyboard_translations"
     PREFIX "/i18n"
     FILES ${STORYBOARD_TS_FILES} ${STORYBOARD_QM_FILES} ${STORYBOARD_QT_TRANSLATION_FILE}
 )
 
 if(WIN32)
-    target_sources(StoryBoard PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/app.rc")
+    target_sources(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/app.rc")
 endif()
 
-target_include_directories(StoryBoard PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
-target_link_libraries(StoryBoard PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
+target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
 
 if(MSVC)
-    target_compile_options(StoryBoard PRIVATE /utf-8 /W4)
+    target_compile_options(${PROJECT_NAME} PRIVATE /utf-8 /W4)
 else()
-    target_compile_options(StoryBoard PRIVATE -Wall -Wextra -Wno-unused-parameter)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wno-unused-parameter)
 endif()
 
 # Copy the Qt runtime next to the executable so it can be launched by double click.
@@ -130,19 +158,19 @@ if(WIN32 AND WINDEPLOYQT_EXECUTABLE)
         list(APPEND STORYBOARD_DEPLOY_EXTRA
             COMMAND "${CMAKE_COMMAND}" -E copy_if_different
                     "${QT6_INSTALL_PREFIX}/plugins/platforms/qoffscreen.dll"
-                    "$<TARGET_FILE_DIR:StoryBoard>/platforms/qoffscreen.dll"
+                    "$<TARGET_FILE_DIR:${PROJECT_NAME}>/platforms/qoffscreen.dll"
         )
     endif()
 
     add_custom_target(deploy
         COMMAND "${WINDEPLOYQT_EXECUTABLE}"
                 --no-translations
-                "$<TARGET_FILE:StoryBoard>"
+                "$<TARGET_FILE:${PROJECT_NAME}>"
         ${STORYBOARD_DEPLOY_EXTRA}
-        DEPENDS StoryBoard
-        COMMENT "Deploying Qt runtime next to StoryBoard.exe"
+        DEPENDS ${PROJECT_NAME}
+        COMMENT "Deploying Qt runtime next to ${PROJECT_NAME}"
         VERBATIM
     )
 endif()
 
-install(TARGETS StoryBoard RUNTIME DESTINATION .)
+install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION .)

@@ -32,7 +32,7 @@
 
 要求：Qt 6.5+、C++17、CMake 3.21+。Windows / Linux 使用 **GCC 15**（Qt 官方 `mingw1510_64` / `gcc_64` 工具链），macOS 使用 Qt 官方 AppleClang 工具链。
 
-项目版本号只在 `CMakeLists.txt` 的 `project(StoryBoard VERSION ...)` 维护；Windows 文件版本资源、关于对话框和便携包命名都从它派生。
+项目名自动取仓库根目录的文件夹名：`project()`、可执行目标、Windows 版本资源与便携包目录都从它派生，重命名仓库或在 `StoryBoard_<需求名>` 工作树里构建都不需要改 `CMakeLists.txt`。版本号仍只在 `CMakeLists.txt` 的 `project(... VERSION ...)` 维护。
 
 源文件按文件夹配置：`CMakeLists.txt` 的 `STORYBOARD_SOURCE_FOLDERS` 只列目录（默认 `src`、`src/selftest`、`resources`），目录内的 `.cpp/.h/.hpp/.qrc` 由 `CONFIGURE_DEPENDS` 自动收集；新增或删除文件不必改清单，新增子目录时只加一行目录路径。
 
@@ -105,7 +105,7 @@ bash scripts/worktree.sh drop  <需求名>          # 丢弃工作树（含未�
 
 ## 便携打包
 
-`scripts/package-portable.sh` 是跨平台打包入口，可在 Windows 的 Git Bash / MSYS2 / Cygwin、macOS 和 Linux 的 bash 中执行。脚本负责定位 Qt、调用平台部署工具、补齐 offscreen 插件、运行包内自检并生成压缩包。
+`scripts/package-portable.sh` 是跨平台打包入口，可在 Windows 的 Git Bash / MSYS2 / Cygwin、macOS 和 Linux 的 bash 中执行。脚本从根目录文件夹名推导应用名，负责定位 Qt、调用平台部署工具、补齐 offscreen 插件、运行包内自检并生成压缩包。
 
 ```bash
 bash scripts/package-portable.sh --help
@@ -115,9 +115,9 @@ bash scripts/package-portable.sh --build --qt-dir "$HOME/Qt/6.8.0/gcc_64"
 
 | 主机 | 产物 | 部署方式 |
 | --- | --- | --- |
-| Windows（Git Bash / MSYS2 / Cygwin） | `StoryBoard-<ver>-win64-portable.zip` | `windeployqt` + 补 `qoffscreen.dll` |
-| macOS | `StoryBoard.app` 及 `.zip` | `macdeployqt` + 补 `libqoffscreen.dylib` |
-| Linux | `StoryBoard-<ver>-linux-<arch>-portable.tar.gz` | 拷贝 `libQt6*`、插件与 `qt.conf` |
+| Windows（Git Bash / MSYS2 / Cygwin） | `<项目名>-<ver>-win64-portable.zip` | `windeployqt` + 补 `qoffscreen.dll` |
+| macOS | `<项目名>.app` 及 `.zip` | `macdeployqt` + 补 `libqoffscreen.dylib` |
+| Linux | `<项目名>-<ver>-linux-<arch>-portable.tar.gz` | 拷贝 `libQt6*`、插件与 `qt.conf` |
 
 Windows 分支已在 Windows 11 + GCC 15 + Qt 6.12 实机验证；macOS / Linux 分支按 Qt 官方部署方式提供，尚未在对应主机实机验证。自检默认要求 Windows 697 项，其他平台接受当前通过数；可用 `--expected-passed 0` 放宽，`--skip-self-test` 跳过（不推荐）。
 

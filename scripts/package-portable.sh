@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
-# Cross-platform portable packager for StoryBoard.
+# Cross-platform portable packager. The app name is derived from the project root folder.
 #
 # Supported hosts:
 #   Windows : Git Bash / MSYS2 / Cygwin, packages a win64 zip with windeployqt
-#   macOS   : packages StoryBoard.app with macdeployqt
+#   macOS   : packages <Project>.app with macdeployqt
 #   Linux   : packages a tar.gz with Qt libraries/plugins
 #
-# The script never terminates a running StoryBoard process. It refuses to
+# The script never terminates a running project process. It refuses to
 # overwrite a package directory that is currently in use.
 #
 set -euo pipefail
@@ -55,6 +55,14 @@ die() {
     exit 1
 }
 
+# 应用名与根目录文件夹名一致；只做目标名安全化，避免空格或特殊字符破坏路径。
+APP_NAME="${STORYBOARD_APP_NAME:-$(basename "$ROOT")}"
+APP_NAME="$(printf '%s' "$APP_NAME" | sed 's/[^A-Za-z0-9_.+-]/_/g')"
+case "$APP_NAME" in
+    [0-9]*|.*) APP_NAME="_$APP_NAME" ;;
+esac
+[ -n "$APP_NAME" ] || die "cannot derive app name from project folder"
+
 to_posix_path() {
     local path="$1"
     if command -v cygpath >/dev/null 2>&1; then
@@ -100,7 +108,7 @@ case "$PLATFORM" in
     *) die "unsupported platform: $PLATFORM" ;;
 esac
 
-CMAKE_VERSION="$(sed -n 's/.*project(StoryBoard VERSION \([0-9][0-9.]*\).*/\1/p' "$ROOT/CMakeLists.txt" | head -n 1)"
+CMAKE_VERSION="$(sed -n 's/^[[:space:]]*project([^)]* VERSION \([0-9][0-9.]*\).*/\1/p' "$ROOT/CMakeLists.txt" | head -n 1)"
 [ -n "$CMAKE_VERSION" ] || die "cannot read project version from CMakeLists.txt"
 if [ -n "$VERSION" ] && [ "$VERSION" != "$CMAKE_VERSION" ]; then
     die "--version $VERSION does not match CMakeLists.txt project version $CMAKE_VERSION; bump CMakeLists.txt instead"
@@ -119,7 +127,7 @@ case "$PLATFORM" in
     linux) SUFFIX="linux-$(uname -m)" ;;
 esac
 if [ -z "$PACKAGE_NAME" ]; then
-    PACKAGE_NAME="StoryBoard-$VERSION-$SUFFIX-portable"
+    PACKAGE_NAME="$APP_NAME-$VERSION-$SUFFIX-portable"
 fi
 [ -n "$PACKAGE_NAME" ] || die "package name must not be empty"
 case "$PACKAGE_NAME" in
@@ -313,8 +321,8 @@ if [ "$DO_BUILD" = 1 ]; then
 fi
 
 case "$PLATFORM" in
-    windows) EXE="$BUILD_DIR/bin/StoryBoard.exe" ;;
-    linux) EXE="$BUILD_DIR/bin/StoryBoard" ;;
+    windows) EXE="$BUILD_DIR/bin/$APP_NAME.exe" ;;
+    linux) EXE="$BUILD_DIR/bin/$APP_NAME" ;;
     macos) EXE="" ;;
 esac
 if [ "$PLATFORM" != macos ]; then
@@ -340,7 +348,7 @@ if [ -d "$PACKAGE_DIR" ]; then
         fi
     elif [ "$PLATFORM" = windows ] && command -v powershell.exe >/dev/null 2>&1; then
         win_pkg="$(command -v cygpath >/dev/null 2>&1 && cygpath -w "$PACKAGE_DIR" || printf '%s' "$PACKAGE_DIR")"
-        if powershell.exe -NoProfile -Command "Get-Process StoryBoard -ErrorAction SilentlyContinue | Where-Object { \$_.Path -like '$win_pkg\\*' } | Select-Object -First 1 -ExpandProperty Id" | grep -q '[0-9]'; then
+        if powershell.exe -NoProfile -Command "Get-Process '$APP_NAME' -ErrorAction SilentlyContinue | Where-Object { \$_.Path -like '$win_pkg\\*' } | Select-Object -First 1 -ExpandProperty Id" | grep -q '[0-9]'; then
             die "package is currently running: $PACKAGE_DIR"
         fi
     fi
@@ -352,9 +360,11 @@ render_readme() {
     local dest="$1"
     local template="$SCRIPT_DIR/portable-readme-$PLATFORM.txt"
     if [ -f "$template" ]; then
-        awk -v version="$VERSION" '{ gsub(/@VERSION@/, version); print }' "$template" > "$dest"
+        awk -v version="$VERSION" -v app="$APP_NAME" -v settings="StoryBoard.ini" \
+            '{ gsub(/@VERSION@/, version); gsub(/@APP_NAME@/, app); gsub(/@SETTINGS_FILE@/, settings); print }' \
+            "$template" > "$dest"
     else
-        printf 'StoryBoard %s portable package\n' "$VERSION" > "$dest"
+        printf '%s %s portable package\n' "$APP_NAME" "$VERSION" > "$dest"
     fi
 }
 
@@ -373,18 +383,18 @@ run_self_test() {
         (
             cd "$package_dir"
             env -u QT_PLUGIN_PATH -u QT_QPA_PLATFORM_PLUGIN_PATH -u STORYBOARD_LANG \
-                ./StoryBoard.exe --self-test "$REPORT_NAME"
+                "./$APP_NAME.exe" --self-test "$REPORT_NAME"
         )
     elif [ "$PLATFORM" = macos ]; then
         env -u QT_PLUGIN_PATH -u QT_QPA_PLATFORM_PLUGIN_PATH -u STORYBOARD_LANG \
             QT_QPA_PLATFORM=offscreen \
-            "$package_dir/StoryBoard.app/Contents/MacOS/StoryBoard" --self-test "$report"
+            "$package_dir/$APP_NAME.app/Contents/MacOS/$APP_NAME" --self-test "$report"
     else
         env -u QT_QPA_PLATFORM_PLUGIN_PATH -u STORYBOARD_LANG \
             LD_LIBRARY_PATH="$package_dir${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
             QT_PLUGIN_PATH="$package_dir/plugins" \
             QT_QPA_PLATFORM=offscreen \
-            "$package_dir/StoryBoard" --self-test "$report"
+            "$package_dir/$APP_NAME" --self-test "$report"
     fi
 
     [ -f "$report" ] || die "self-test report not found: $report"
@@ -401,7 +411,7 @@ run_self_test() {
 }
 
 bundle_linux() {
-    cp "$EXE" "$PACKAGE_DIR/StoryBoard"
+    cp "$EXE" "$PACKAGE_DIR/$APP_NAME"
     local qt_libs qt_plugins
     qt_libs="$(qt_query QT_INSTALL_LIBS || true)"
     qt_plugins="$(qt_query QT_INSTALL_PLUGINS || true)"
@@ -436,11 +446,14 @@ EOF
 
 bundle_macos() {
     local app_src
-    app_src="$(find "$BUILD_DIR/bin" -maxdepth 1 -name '*.app' -type d | head -n 1)"
+    app_src="$BUILD_DIR/bin/$APP_NAME.app"
+    if [ ! -d "$app_src" ]; then
+        app_src="$(find "$BUILD_DIR/bin" -maxdepth 1 -name '*.app' -type d | head -n 1)"
+    fi
     [ -n "$app_src" ] || die "no .app bundle found under $BUILD_DIR/bin (build a macOS app first)"
-    cp -R "$app_src" "$PACKAGE_DIR/StoryBoard.app"
-    "$MACDEPLOYQT" "$PACKAGE_DIR/StoryBoard.app" -always-overwrite
-    local app="$PACKAGE_DIR/StoryBoard.app"
+    cp -R "$app_src" "$PACKAGE_DIR/$APP_NAME.app"
+    "$MACDEPLOYQT" "$PACKAGE_DIR/$APP_NAME.app" -always-overwrite
+    local app="$PACKAGE_DIR/$APP_NAME.app"
     mkdir -p "$app/Contents/PlugIns/platforms" "$app/Contents/MacOS/examples"
     if [ -f "$QT_DIR/plugins/platforms/libqoffscreen.dylib" ]; then
         cp "$QT_DIR/plugins/platforms/libqoffscreen.dylib" "$app/Contents/PlugIns/platforms/"
@@ -454,9 +467,9 @@ bundle_macos() {
 }
 
 bundle_windows() {
-    cp "$EXE" "$PACKAGE_DIR/StoryBoard.exe"
+    cp "$EXE" "$PACKAGE_DIR/$APP_NAME.exe"
     "$WINDEPLOYQT" --release --no-translations --compiler-runtime \
-        --dir "$(win_path "$PACKAGE_DIR")" "$(win_path "$PACKAGE_DIR/StoryBoard.exe")"
+        --dir "$(win_path "$PACKAGE_DIR")" "$(win_path "$PACKAGE_DIR/$APP_NAME.exe")"
     if [ -f "$QT_DIR/plugins/platforms/qoffscreen.dll" ]; then
         mkdir -p "$PACKAGE_DIR/platforms"
         cp "$QT_DIR/plugins/platforms/qoffscreen.dll" "$PACKAGE_DIR/platforms/"

@@ -20,11 +20,11 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "CompanyName", "ZoneTong"
-            VALUE "FileDescription", "StoryBoard Canvas"
+            VALUE "FileDescription", "@STORYBOARD_APP_NAME@"
             VALUE "FileVersion", "@STORYBOARD_VERSION@"
-            VALUE "InternalName", "StoryBoard"
-            VALUE "OriginalFilename", "StoryBoard.exe"
-            VALUE "ProductName", "StoryBoard"
+            VALUE "InternalName", "@STORYBOARD_APP_NAME@"
+            VALUE "OriginalFilename", "@STORYBOARD_APP_EXE_NAME@"
+            VALUE "ProductName", "@STORYBOARD_APP_NAME@"
             VALUE "ProductVersion", "@STORYBOARD_VERSION@"
         END
     END
