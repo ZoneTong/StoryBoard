@@ -14,7 +14,8 @@ class AppSettings {
     // 画笔收尾自动平滑容差，单位为画布像素；0 表示关闭自动平滑。
     int strokeSmoothing = 4;
     QSizeF canvasSize = QSizeF(1920.0, 1080.0);
-    bool showGrid = true;
+    // 初始设置默认不显示辅助网格，需要时从视图菜单或设置里手动打开。
+    bool showGrid = false;
     QColor canvasColor = QColor(43, 47, 54);
     QString lastExportDir;
     QString lastImageDir;

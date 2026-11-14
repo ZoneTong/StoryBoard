@@ -169,6 +169,15 @@ void selftest::runMainWindowFlowTests(Context& ctx)
                 }
             }
 
+            // 初始设置默认不显示辅助网格：新建配置对象与新建场景都应是关闭态，
+            // 只有用户手动打开或旧配置里存了 view/grid=true 时才画网格。
+            {
+                AppSettings defaults;
+                CanvasScene freshScene;
+                ctx.check(!defaults.showGrid && !freshScene.showGrid(), QStringLiteral("初始设置默认不显示辅助网格"),
+                          QStringLiteral("settings=%1 scene=%2").arg(defaults.showGrid).arg(freshScene.showGrid()));
+            }
+
             // 设置必须真的落到纯文本配置里：写盘 → 重新读取 → 每一项都对得上。
             {
                 const QString configPath = AppSettings::settingsFilePath();
@@ -180,7 +189,8 @@ void selftest::runMainWindowFlowTests(Context& ctx)
                 written.brushWidth = 37;
                 written.strokeSmoothing = 11;
                 written.canvasSize = QSizeF(2400.0, 1500.0);
-                written.showGrid = false;
+                // 默认已是关闭，这里写相反的值，读回来才对不上就说明持久化断了。
+                written.showGrid = true;
                 written.canvasColor = QColor(18, 22, 30, 255);
                 written.lineArtColorLevels = 9;
                 written.lineArtPaletteMerge = 70;
