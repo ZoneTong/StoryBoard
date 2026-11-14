@@ -94,6 +94,9 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     ctx.check(qFuzzyCompare(scene.canvasSize().width(), 800.0) && qFuzzyCompare(scene.canvasSize().height(), 600.0),
               QStringLiteral("设置画板尺寸"), geometryText(QPointF(), scene.canvasSize()));
 
+    const QImage defaultImage = scene.renderImage(scene.canvasRect(), 1.0);
+    ctx.check(defaultImage.pixelColor(5, 5).alpha() == 0, QStringLiteral("默认背景层为无色纯透明"));
+
     BackgroundState background;
     background.type = BackgroundType::Color;
     background.color = QColor(QStringLiteral("#FEF3C7"));

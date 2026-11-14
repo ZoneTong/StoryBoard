@@ -176,7 +176,7 @@ void selftest::runLineArtConverterTests(Context& ctx)
         int inkPixels = 0;
         for (int y = 0; y < rendered.height(); ++y) {
             for (int x = 0; x < rendered.width(); ++x) {
-                if (rendered.pixelColor(x, y) != QColor(Qt::white)) {
+                if (rendered.pixelColor(x, y).alpha() > 0) {
                     ++inkPixels;
                 }
             }

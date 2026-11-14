@@ -1249,8 +1249,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>恢复默认值</translation>
     </message>
     <message>
-      <source>Restore the white background</source>
-      <translation>恢复为白色背景</translation>
+      <source>Restore a transparent background</source>
+      <translation>恢复为透明背景</translation>
     </message>
     <message>
       <source>Reverse hatch</source>
@@ -2525,8 +2525,8 @@ Use the checkbox to show or hide it.</source>
       <translation>清除背景</translation>
     </message>
     <message>
-      <source>Restore the white background</source>
-      <translation>恢复为白色背景</translation>
+      <source>Restore a transparent background</source>
+      <translation>恢复为透明背景</translation>
     </message>
     <message>
       <source>Stretch to fill</source>

@@ -318,7 +318,7 @@ void selftest::runLayerVisibilityLockTests(Context& ctx)
     layerScene.applyBackground(visibilityBackground);
     ctx.check(layerScene.setLayerVisible(CanvasScene::BackgroundLayerId, false), QStringLiteral("隐藏背景层"));
     const QImage noBackgroundImage = layerScene.renderImage(layerScene.canvasRect(), 1.0);
-    ctx.check(noBackgroundImage.pixelColor(5, 5) == QColor(Qt::white), QStringLiteral("隐藏背景层后导出为白色底"));
+    ctx.check(noBackgroundImage.pixelColor(5, 5).alpha() == 0, QStringLiteral("隐藏背景层后导出为透明底"));
     ctx.check(layerScene.setLayerVisible(CanvasScene::BackgroundLayerId, true), QStringLiteral("显示背景层"));
     const QImage backgroundImage = layerScene.renderImage(layerScene.canvasRect(), 1.0);
     ctx.check(backgroundImage.pixelColor(5, 5) == visibilityBackground.color,

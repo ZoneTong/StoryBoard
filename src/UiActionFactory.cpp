@@ -216,7 +216,7 @@ void UiActionFactory::build()
     m_window->m_bgColorAct = makeAction(m_window, IconId::Palette, MainWindow::tr("Set background color…"),
                                         QKeySequence(), MainWindow::tr("Use a solid color as the canvas background"));
     m_window->m_clearBgAct = makeAction(m_window, IconId::Delete, MainWindow::tr("Clear background"), QKeySequence(),
-                                        MainWindow::tr("Restore the white background"));
+                                        MainWindow::tr("Restore a transparent background"));
 
     m_window->m_bgStretchAct = new QAction(MainWindow::tr("Stretch to fill"), m_window);
     m_window->m_bgFitAct = new QAction(MainWindow::tr("Fit entirely"), m_window);
