@@ -249,6 +249,14 @@ void UiMenuBuilder::buildMenus()
     // 需求 29：颜色从填充样式里分离出来，放在填充样式之后。
     insertMenu->addAction(m_window->m_fillColorAct);
     insertMenu->addAction(m_window->m_strokeColorAct);
+    // 原一级「画笔」菜单已删除：描线宽度与平滑笔画并到描线颜色后面；
+    // 画笔颜色与描线颜色重复，只保留后者。
+    QMenu* brushWidthMenu = insertMenu->addMenu(MainWindow::tr("Brush width"));
+    brushWidthMenu->setObjectName(QStringLiteral("BrushWidthMenu"));
+    for (QAction* action : m_window->m_brushWidthGroup->actions()) {
+        brushWidthMenu->addAction(action);
+    }
+    insertMenu->addAction(m_window->m_smoothAct);
     // 需求：原“画布”菜单不再作为父菜单存在，背景相关项直接并入“插入”菜单；
     // 背景属于画布属性，排在“插入图片”之前，避免和插入类动作混在一段。
     insertMenu->addSeparator();
@@ -263,20 +271,6 @@ void UiMenuBuilder::buildMenus()
 
     insertMenu->addSeparator();
     insertMenu->addAction(m_window->m_importAct);
-
-    // 需求：原“样式 → 画笔样式”提升为一级菜单“画笔”，“平滑笔画”归到这里。
-    QMenu* brushMenu = m_window->menuBar()->addMenu(MainWindow::tr("&Brush"));
-    brushMenu->setObjectName(QStringLiteral("BrushMenu"));
-
-    brushMenu->addAction(m_window->m_brushColorAct);
-    brushMenu->addSeparator();
-    QMenu* brushWidthMenu = brushMenu->addMenu(MainWindow::tr("Brush width"));
-    brushWidthMenu->setObjectName(QStringLiteral("BrushWidthMenu"));
-    for (QAction* action : m_window->m_brushWidthGroup->actions()) {
-        brushWidthMenu->addAction(action);
-    }
-    brushMenu->addSeparator();
-    brushMenu->addAction(m_window->m_smoothAct);
 
     QMenu* helpMenu = m_window->menuBar()->addMenu(MainWindow::tr("&Help"));
     helpMenu->addAction(m_window->m_shortcutsAct);

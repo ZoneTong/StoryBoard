@@ -45,11 +45,10 @@ void UiToolBarBuilder::buildToolBars()
     mainBar->addAction(m_window->m_saveAct);
     mainBar->addAction(m_window->m_exportAct);
     mainBar->addSeparator();
-    mainBar->addAction(m_window->m_undoAct);
-    mainBar->addAction(m_window->m_redoAct);
-    // 需求 40：顺/逆时针旋转 45° 除了菜单快捷键，也必须出现在工具栏。
-    mainBar->addAction(m_window->m_rotateCwAct);
-    mainBar->addAction(m_window->m_rotateCcwAct);
+
+    // 图形区：常见图形直接平铺成一排，后面接填充 / 描线颜色与描线宽度。
+    createShapeToolbar(mainBar);
+    mainBar->addSeparator();
 
     // 对齐下拉按钮：和编辑菜单里的对齐子菜单共用同一组动作，展开就是一个下拉清单。
     m_window->m_alignButton = new QToolButton(mainBar);
@@ -86,28 +85,14 @@ void UiToolBarBuilder::buildToolBars()
     }
     mainBar->addSeparator();
 
-    createFillToolbar(mainBar);
-    mainBar->addSeparator();
-    createBrushToolbar(mainBar);
-    mainBar->addSeparator();
-
-    mainBar->addAction(m_window->m_fitAct);
-    mainBar->addAction(m_window->m_zoomInAct);
-    mainBar->addAction(m_window->m_zoomOutAct);
-    mainBar->addSeparator();
-    mainBar->addAction(m_window->m_importAct);
-    mainBar->addAction(m_window->m_replaceBgAct);
-    mainBar->addAction(m_window->m_settingsAct);
+    // 画笔区只留下平滑笔画按钮和容差输入；画笔颜色 / 粗细改由图形描线区统一设置。
+    createSmoothingToolbar(mainBar);
 
     // 统一主工具栏里所有纯图标按钮的尺寸：QToolBar 为 action 自动创建的按钮、
     // 以及 addWidget 加入的色板/填充按钮，都钉成同一个正方形，避免按各自
     // sizeHint 算出宽窄不一的方块。带文字或下拉菜单的按钮保持自身宽度。
     for (QToolButton* button : mainBar->findChildren<QToolButton*>()) {
         if (button->toolButtonStyle() != Qt::ToolButtonIconOnly) {
-            continue;
-        }
-        if (button == m_window->m_colorButton) {
-            button->setFixedSize(MainWindow::kToolBarSplitButtonWidth, MainWindow::kToolBarButtonSize);
             continue;
         }
         button->setFixedSize(MainWindow::kToolBarButtonSize, MainWindow::kToolBarButtonSize);
@@ -128,73 +113,8 @@ void UiToolBarBuilder::buildToolBars()
     modeBar->addAction(m_window->m_textModeAct);
 }
 
-void UiToolBarBuilder::createBrushToolbar(QToolBar* mainBar)
+void UiToolBarBuilder::createSmoothingToolbar(QToolBar* mainBar)
 {
-    auto* brushLabel = new QLabel(MainWindow::tr("Brush"), mainBar);
-    brushLabel->setObjectName(QStringLiteral("ToolBarLabel"));
-    mainBar->addWidget(brushLabel);
-    m_window->m_colorButton = new QToolButton(mainBar);
-    m_window->m_colorButton->setObjectName(QStringLiteral("ColorButton"));
-    m_window->m_colorButton->setIcon(
-        m_window->m_style->strokeColorIcon(m_window->m_brushColor, MainWindow::kToolBarIconSize));
-    m_window->m_colorButton->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
-    m_window->m_colorButton->setToolTip(MainWindow::tr("Brush color: %1 (click to choose)")
-                                            .arg(m_window->m_brushColor.name(QColor::HexArgb).toUpper()));
-    m_window->m_colorButton->setPopupMode(QToolButton::MenuButtonPopup);
-
-    auto* colorMenu = new QMenu(m_window->m_colorButton);
-    const QList<QPair<QString, QColor>> presets = {{MainWindow::tr("Ink black"), QColor(QStringLiteral("#111827"))},
-                                                   {MainWindow::tr("Red"), QColor(QStringLiteral("#EF4444"))},
-                                                   {MainWindow::tr("Orange"), QColor(QStringLiteral("#F59E0B"))},
-                                                   {MainWindow::tr("Green"), QColor(QStringLiteral("#10B981"))},
-                                                   {MainWindow::tr("Blue"), QColor(QStringLiteral("#3B82F6"))},
-                                                   {MainWindow::tr("Purple"), QColor(QStringLiteral("#8B5CF6"))},
-                                                   {MainWindow::tr("Pink"), QColor(QStringLiteral("#EC4899"))},
-                                                   {MainWindow::tr("White"), QColor(QStringLiteral("#FFFFFF"))}};
-    for (const auto& preset : presets) {
-        QAction* action = colorMenu->addAction(makeColorIcon(preset.second, 16), preset.first);
-        QObject::connect(action, &QAction::triggered, m_window,
-                         [this, color = preset.second]() { m_window->setBrushColor(color, true); });
-    }
-    colorMenu->addSeparator();
-    QAction* customColor = colorMenu->addAction(MainWindow::tr("Custom color…"));
-    QObject::connect(customColor, &QAction::triggered, m_window, &MainWindow::chooseBrushColor);
-    m_window->m_colorButton->setMenu(colorMenu);
-    QObject::connect(m_window->m_colorButton, &QToolButton::clicked, m_window, &MainWindow::chooseBrushColor);
-    mainBar->addWidget(m_window->m_colorButton);
-
-    m_window->m_widthCombo = new QComboBox(mainBar);
-    m_window->m_widthCombo->setObjectName(QStringLiteral("BrushWidthCombo"));
-    m_window->m_widthCombo->setFixedWidth(74);
-    m_window->m_widthCombo->setFixedHeight(MainWindow::kToolBarControlHeight);
-    m_window->m_widthCombo->setToolTip(MainWindow::tr("Brush width"));
-    for (int width : brushWidthPresets()) {
-        m_window->m_widthCombo->addItem(QStringLiteral("%1 px").arg(width), width);
-    }
-    QObject::connect(m_window->m_widthCombo, &QComboBox::currentIndexChanged, m_window, [this](int index) {
-        const int value = m_window->m_widthCombo->itemData(index).toInt();
-        if (value <= 0) {
-            return;
-        }
-        m_window->m_brushWidth = value;
-        m_window->m_view->setBrushWidth(value);
-        m_window->m_settings.brushWidth = value;
-        m_window->m_settings.save();
-        if (m_window->m_brushWidthGroup) {
-            for (QAction* action : m_window->m_brushWidthGroup->actions()) {
-                if (action->data().toInt() == value) {
-                    const QSignalBlocker blocker(action);
-                    action->setChecked(true);
-                }
-            }
-        }
-    });
-    m_window->setBrushWidthUi(m_window->m_brushWidth);
-    auto* widthLabel = new QLabel(MainWindow::tr("Width"), mainBar);
-    widthLabel->setObjectName(QStringLiteral("ToolBarLabel"));
-    mainBar->addWidget(widthLabel);
-    mainBar->addWidget(m_window->m_widthCombo);
-
     auto* smoothButton = new QToolButton(mainBar);
     smoothButton->setObjectName(QStringLiteral("SmoothStrokeButton"));
     smoothButton->setDefaultAction(m_window->m_smoothAct);
@@ -229,21 +149,27 @@ void UiToolBarBuilder::createBrushToolbar(QToolBar* mainBar)
     mainBar->addWidget(m_window->m_smoothingSpin);
 }
 
-void UiToolBarBuilder::createFillToolbar(QToolBar* mainBar)
+void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
 {
-    // 需求 41：填充样式按钮前显示“图形”标签，与画笔区形成明确分组。
+    // 「图形」区：常见图形在原下拉入口的位置直接平铺成一排按钮，
+    // 复用「插入 → 常见图形」同一批动作，避免两套插入逻辑。
     auto* fillLabel = new QLabel(MainWindow::tr("Shape"), mainBar);
     fillLabel->setObjectName(QStringLiteral("ToolBarLabel"));
     mainBar->addWidget(fillLabel);
-    auto* shapeButton = new QToolButton(mainBar);
-    shapeButton->setObjectName(QStringLiteral("ShapeButton"));
-    shapeButton->setIcon(makeIcon(IconId::Shapes, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
-    shapeButton->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
-    shapeButton->setPopupMode(QToolButton::InstantPopup);
-    shapeButton->setMenu(m_window->m_shapeMenu);
-    shapeButton->setToolTip(MainWindow::tr("Quickly insert circles, rectangles, arrows, braces and more"));
-    shapeButton->setStatusTip(MainWindow::tr("Quickly insert common shapes (uses the current brush color)"));
-    mainBar->addWidget(shapeButton);
+    for (QAction* action : m_window->m_shapeMenu->actions()) {
+        if (!action || action->isSeparator() || !action->objectName().startsWith(QStringLiteral("ShapeAction_"))) {
+            continue;
+        }
+        auto* shapeButton = new QToolButton(mainBar);
+        shapeButton->setObjectName(QStringLiteral("ToolBarShapeButton"));
+        shapeButton->setProperty("shapeActionName", action->objectName());
+        shapeButton->setIcon(action->icon());
+        shapeButton->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
+        shapeButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+        shapeButton->setToolTip(action->toolTip());
+        QObject::connect(shapeButton, &QToolButton::clicked, action, &QAction::trigger);
+        mainBar->addWidget(shapeButton);
+    }
 
     m_window->m_fillButton = new QToolButton(mainBar);
     m_window->m_fillButton->setObjectName(QStringLiteral("FillButton"));
@@ -282,4 +208,34 @@ void UiToolBarBuilder::createFillToolbar(QToolBar* mainBar)
     m_window->m_strokeColorButton->setToolTip(MainWindow::tr("Border color: %1 (click to choose)")
                                                   .arg(m_window->m_brushColor.name(QColor::HexArgb).toUpper()));
     mainBar->addWidget(m_window->m_strokeColorButton);
+
+    // 描线颜色按钮后紧跟描线宽度下拉，改宽度与改描线宽度走同一套设置。
+    m_window->m_widthCombo = new QComboBox(mainBar);
+    m_window->m_widthCombo->setObjectName(QStringLiteral("BrushWidthCombo"));
+    m_window->m_widthCombo->setFixedWidth(74);
+    m_window->m_widthCombo->setFixedHeight(MainWindow::kToolBarControlHeight);
+    m_window->m_widthCombo->setToolTip(MainWindow::tr("Brush width"));
+    for (int width : brushWidthPresets()) {
+        m_window->m_widthCombo->addItem(QStringLiteral("%1 px").arg(width), width);
+    }
+    QObject::connect(m_window->m_widthCombo, &QComboBox::currentIndexChanged, m_window, [this](int index) {
+        const int value = m_window->m_widthCombo->itemData(index).toInt();
+        if (value <= 0) {
+            return;
+        }
+        m_window->m_brushWidth = value;
+        m_window->m_view->setBrushWidth(value);
+        m_window->m_settings.brushWidth = value;
+        m_window->m_settings.save();
+        if (m_window->m_brushWidthGroup) {
+            for (QAction* action : m_window->m_brushWidthGroup->actions()) {
+                if (action->data().toInt() == value) {
+                    const QSignalBlocker blocker(action);
+                    action->setChecked(true);
+                }
+            }
+        }
+    });
+    m_window->setBrushWidthUi(m_window->m_brushWidth);
+    mainBar->addWidget(m_window->m_widthCombo);
 }
