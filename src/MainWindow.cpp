@@ -775,7 +775,7 @@ void MainWindow::createLayerDock()
 
 void MainWindow::createItemDock()
 {
-    m_itemDock = new QDockWidget(tr("Selected item"), this);
+    m_itemDock = new QDockWidget(tr("Edit item"), this);
     m_itemDock->setObjectName(QStringLiteral("ItemDock"));
     m_itemDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     m_itemDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable |
@@ -842,9 +842,9 @@ void MainWindow::createMenus()
 
     QAction* itemDockAction = m_itemDock->toggleViewAction();
     itemDockAction->setObjectName(QStringLiteral("ItemDockToggleAction"));
-    itemDockAction->setText(tr("Selected item panel"));
+    itemDockAction->setText(tr("Edit item panel"));
     itemDockAction->setStatusTip(
-        tr("Show or hide the selected item panel (it appears automatically when an item is selected)"));
+        tr("Show or hide the edit item panel (it appears automatically when an item is selected)"));
     viewMenu->addAction(itemDockAction);
 
     QMenu* editMenu = menuBar()->addMenu(tr("&Edit"));
@@ -924,8 +924,8 @@ void MainWindow::createMenus()
         m_alignActions.append(action);
     }
 
-    // 布尔运算：与 PPT「合并形状」同一套语义——联合 / 组合 / 拆分 / 相交 / 相减。
-    QMenu* boolMenu = editMenu->addMenu(tr("Combine shapes"));
+    // 合并形状：与 PPT「合并形状」同一套命名——联合 / 组合 / 拆分 / 相交 / 剪除。
+    QMenu* boolMenu = editMenu->addMenu(tr("Merge shapes"));
     boolMenu->setObjectName(QStringLiteral("BoolMenu"));
     const QList<QPair<BoolOps::Operation, QString>> boolEntries = {
         {BoolOps::Operation::Union, tr("Union")},       {BoolOps::Operation::Combine, tr("Combine")},
@@ -1044,10 +1044,10 @@ void MainWindow::createToolBars()
     // 布尔运算同样做成工具栏下拉按钮，菜单里再挂一份到画布右键菜单。
     m_boolButton = new QToolButton(mainBar);
     m_boolButton->setObjectName(QStringLiteral("BoolToolButton"));
-    m_boolButton->setText(tr("Boolean"));
+    m_boolButton->setText(tr("Merge shapes"));
     m_boolButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
     m_boolButton->setPopupMode(QToolButton::InstantPopup);
-    m_boolButton->setToolTip(tr("Combine the selected shapes"));
+    m_boolButton->setToolTip(tr("Merge the selected shapes"));
     m_boolButton->setEnabled(false);
     auto* boolButtonMenu = new QMenu(m_boolButton);
     boolButtonMenu->setObjectName(QStringLiteral("BoolToolButtonMenu"));
@@ -1057,7 +1057,7 @@ void MainWindow::createToolBars()
     m_boolButton->setMenu(boolButtonMenu);
     mainBar->addWidget(m_boolButton);
     if (m_view) {
-        m_view->addContextMenuGroup(tr("Combine shapes"), m_boolActions);
+        m_view->addContextMenuGroup(tr("Merge shapes"), m_boolActions);
     }
     mainBar->addSeparator();
 
@@ -2515,7 +2515,7 @@ void MainWindow::applyAlignment(Alignment::Mode mode)
 void MainWindow::applyBoolOperation(BoolOps::Operation operation)
 {
     if (m_view->mode() != ToolMode::Edit) {
-        statusBar()->showMessage(tr("Combine shapes is available in edit mode only"), 3000);
+        statusBar()->showMessage(tr("Merge shapes is available in edit mode only"), 3000);
         return;
     }
     QString commandText;
@@ -2540,7 +2540,7 @@ void MainWindow::applyBoolOperation(BoolOps::Operation operation)
         statusBar()->showMessage(tr("Select at least two shapes with a visible outline"), 3000);
         return;
     }
-    statusBar()->showMessage(tr("Combined into one boolean shape (undo to restore)"), 3000);
+    statusBar()->showMessage(tr("Merged into one shape (undo to restore)"), 3000);
     updateActions();
 }
 

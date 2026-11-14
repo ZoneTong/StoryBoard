@@ -4885,14 +4885,14 @@ int runSelfTest(const QString& reportPath)
         CanvasItem* upper = makeRect(50.0, QColor(40, 90, 200));
         lower->setSelected(true);
         upper->setSelected(true);
-        check(BoolOps::supports(&boolScene), QStringLiteral("两个图元可以进行布尔运算"), QStringLiteral("items=2"));
+        check(BoolOps::supports(&boolScene), QStringLiteral("两个图元可以进行合并形状"), QStringLiteral("items=2"));
         const int commandCount = boolScene.undoStack()->count();
         const bool applied = BoolOps::apply(&boolScene, BoolOps::Operation::Union, QStringLiteral("合并"));
         const QList<CanvasItem*> selected = boolScene.selectedCanvasItems();
         auto* composite = selected.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(selected.constFirst());
         check(applied && composite && composite->layerCount() == 2, QStringLiteral("联合运算生成两层布尔图形"),
               QStringLiteral("ok=%1 layers=%2").arg(applied ? 1 : 0).arg(composite ? composite->layerCount() : -1));
-        check(boolScene.undoStack()->count() == commandCount + 1, QStringLiteral("布尔运算只占一条撤销记录"),
+        check(boolScene.undoStack()->count() == commandCount + 1, QStringLiteral("合并形状只占一条撤销记录"),
               QStringLiteral("before=%1 after=%2").arg(commandCount).arg(boolScene.undoStack()->count()));
 
         // 序列化要在撤销/重做之前取，撤销会销毁布尔图形本身。
@@ -5012,12 +5012,12 @@ int runSelfTest(const QString& reportPath)
         QToolButton* boolButton = boolWindow.findChild<QToolButton*>(QStringLiteral("BoolToolButton"));
         QMenu* boolMenu = boolWindow.findChild<QMenu*>(QStringLiteral("BoolMenu"));
         CanvasView* boolView = boolWindow.findChild<CanvasView*>();
-        check(boolMenu && boolMenu->actions().size() == 5, QStringLiteral("编辑菜单提供 5 项布尔运算"),
+        check(boolMenu && boolMenu->actions().size() == 5, QStringLiteral("编辑菜单提供 5 项合并形状操作"),
               boolMenu ? QString::number(boolMenu->actions().size()) : QString());
         check(boolButton && boolButton->menu() && boolButton->menu()->actions().size() == 5 &&
                   boolButton->popupMode() == QToolButton::InstantPopup,
-              QStringLiteral("工具栏布尔按钮是可下拉控件且与菜单同项"));
-        check(boolView && boolView->contextMenuGroupCount() >= 1, QStringLiteral("画布右键菜单挂上了布尔运算分组"),
+              QStringLiteral("工具栏合并形状按钮是可下拉控件且与菜单同项"));
+        check(boolView && boolView->contextMenuGroupCount() >= 1, QStringLiteral("画布右键菜单挂上了合并形状分组"),
               boolView ? QString::number(boolView->contextMenuGroupCount()) : QString());
         const QList<QAction*> buttonActions = boolButton ? boolButton->menu()->actions() : QList<QAction*>();
         bool shared = buttonActions.size() == 5;
@@ -5029,7 +5029,7 @@ int runSelfTest(const QString& reportPath)
                 }
             }
         }
-        check(shared, QStringLiteral("工具栏与菜单栏共用同一批布尔运算动作"));
+        check(shared, QStringLiteral("工具栏与菜单栏共用同一批合并形状动作"));
         const bool named = uiText(QStringLiteral("Boolean shape")) != QStringLiteral("Boolean shape");
         check(named, QStringLiteral("布尔图形的类型名有中文译文"), uiText(QStringLiteral("Boolean shape")));
     }
@@ -5183,17 +5183,20 @@ int runSelfTest(const QString& reportPath)
 
         CanvasScene panelScene;
         ItemDockPanel panel(&panelScene);
-        const QList<QToolButton*> sectionToggles =
-            panel.findChildren<QToolButton*>(QStringLiteral("ItemSectionToggle"));
-        int expandedSections = 0;
-        for (QToolButton* toggle : sectionToggles) {
-            if (toggle->isChecked()) {
-                ++expandedSections;
-            }
-        }
-        check(sectionToggles.size() == 7 && expandedSections == 5,
-              QStringLiteral("工具卡分组齐全，常见图形 / 常用颜色 / 填充 / 边框 / 图层默认展开"),
-              QStringLiteral("sections=%1 expanded=%2").arg(sectionToggles.size()).arg(expandedSections));
+        // 紧凑化后不再有折叠分组小标题：断言整卡只由标题行 + 内容滚动区组成，
+        // 图形 / 颜色 / 填充 / 边框 / 透明度 / 圆角 / 图层各行控件直接平铺在卡内。
+        check(panel.findChildren<QToolButton*>(QStringLiteral("ItemSectionToggle")).isEmpty(),
+              QStringLiteral("编辑图元卡已去掉折叠分组小标题"));
+        check(panel.findChildren<QToolButton*>(QStringLiteral("ItemShapeButton")).size() >= 6 &&
+                  panel.findChildren<QToolButton*>(QStringLiteral("ItemColorSwatch")).size() >= 16 &&
+                  panel.findChildren<QToolButton*>(QStringLiteral("ItemFillStyleButton")).size() == 7 &&
+                  panel.findChildren<QToolButton*>(QStringLiteral("ItemBorderStyleButton")).size() == 4,
+              QStringLiteral("编辑图元卡平铺图形 / 颜色 / 填充 / 边框等工具"),
+              QStringLiteral("shapes=%1 colors=%2 fills=%3 borders=%4")
+                  .arg(panel.findChildren<QToolButton*>(QStringLiteral("ItemShapeButton")).size())
+                  .arg(panel.findChildren<QToolButton*>(QStringLiteral("ItemColorSwatch")).size())
+                  .arg(panel.findChildren<QToolButton*>(QStringLiteral("ItemFillStyleButton")).size())
+                  .arg(panel.findChildren<QToolButton*>(QStringLiteral("ItemBorderStyleButton")).size()));
         check(panel.findChildren<QToolButton*>(QStringLiteral("ItemLayerUpButton")).size() == 1 &&
                   panel.findChildren<QToolButton*>(QStringLiteral("ItemLayerDownButton")).size() == 1 &&
                   panel.findChildren<QToolButton*>(QStringLiteral("ItemHeightUpButton")).size() == 1 &&
@@ -5238,11 +5241,11 @@ int runSelfTest(const QString& reportPath)
                 customTexts.append(action->text());
             }
         }
-        check(itemDock && dockPanel && !itemDock->isVisible(), QStringLiteral("右侧提供选中图元工具卡且无选中时隐藏"));
+        check(itemDock && dockPanel && !itemDock->isVisible(), QStringLiteral("右侧提供编辑图元卡且无选中时隐藏"));
         check(dockCustomMenu && customTexts.contains(QStringLiteral("dock-probe")),
               QStringLiteral("自定义图形追加到常见图形下方的下拉菜单"), customTexts.join(QStringLiteral("|")));
         check(dockWindow.findChild<QAction*>(QStringLiteral("ItemDockToggleAction")) != nullptr,
-              QStringLiteral("视图菜单提供选中图元工具卡开关"));
+              QStringLiteral("视图菜单提供编辑图元卡开关"));
 
         CanvasScene* dockScene = dockWindow.scene();
         const int beforeCount = dockScene->canvasItemCount();
@@ -5317,7 +5320,7 @@ int runSelfTest(const QString& reportPath)
 
             dockScene->clearSelection();
             QApplication::processEvents();
-            check(!itemDock->isVisible(), QStringLiteral("清空选中后隐藏选中图元卡片"));
+            check(!itemDock->isVisible(), QStringLiteral("清空选中后隐藏编辑图元卡"));
         }
 
         for (const QString& stale : QDir(dockShapesDir).entryList({QStringLiteral("*.sbcanvas")}, QDir::Files)) {

@@ -127,8 +127,10 @@ bool isPatternFill(FillStyle style)
            style == FillStyle::GridHatch || style == FillStyle::Honeycomb;
 }
 
+} // namespace
+
 // 填充纹理的中心线。绘制与遮挡计算共用这一份几何，保证看到的和“挡住别人的”一致。
-QPainterPath patternCenterLines(FillStyle style, const QRectF& rect)
+QPainterPath fillPatternCenterLines(FillStyle style, const QRectF& rect)
 {
     QPainterPath path;
     if (rect.isEmpty()) {
@@ -207,11 +209,9 @@ void paintPatternFill(QPainter* painter, const QPainterPath& clip, const QRectF&
     QPen pen(lineColor, kPatternPenWidth, Qt::SolidLine, Qt::FlatCap);
     painter->setPen(pen);
     painter->setBrush(Qt::NoBrush);
-    painter->drawPath(patternCenterLines(style, rect));
+    painter->drawPath(fillPatternCenterLines(style, rect));
     painter->restore();
 }
-
-} // namespace
 
 QList<ShapeType> allShapeTypes()
 {
@@ -590,9 +590,8 @@ void ShapeItem::setOpacity(qreal opacity)
 void ShapeItem::setCornerRadius(qreal radius)
 {
     // 负数表示恢复该类型的默认圆角；正数按画布像素处理，不超过短边的一半。
-    const qreal clamped = radius < 0.0 ? -1.0 : qBound<qreal>(0.0, radius, qMin(contentRect().width(),
-                                                                              contentRect().height()) /
-                                                                      2.0);
+    const qreal clamped =
+        radius < 0.0 ? -1.0 : qBound<qreal>(0.0, radius, qMin(contentRect().width(), contentRect().height()) / 2.0);
     if (qFuzzyCompare(m_cornerRadius + 2.0, clamped + 2.0)) {
         return;
     }
@@ -735,9 +734,8 @@ QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect, qreal corner
         }
         break;
     case ShapeType::RoundedRectangle: {
-        const qreal radius =
-            cornerRadius >= 0.0 ? qMin(cornerRadius, qMin(r.width(), r.height()) / 2.0)
-                                : qMin(r.width(), r.height()) * 0.16;
+        const qreal radius = cornerRadius >= 0.0 ? qMin(cornerRadius, qMin(r.width(), r.height()) / 2.0)
+                                                 : qMin(r.width(), r.height()) * 0.16;
         path.addRoundedRect(r, radius, radius);
         break;
     }

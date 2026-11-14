@@ -4,7 +4,9 @@
 #include "CanvasScene.h"
 #include "Commands.h"
 #include "CustomShapeTemplates.h"
+#include "IconFactory.h"
 #include "Settings.h"
+#include "ShapeItem.h"
 
 #include <QColorDialog>
 #include <QDoubleSpinBox>
@@ -12,6 +14,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMenu>
+#include <QPainter>
 #include <QScrollArea>
 #include <QSpinBox>
 #include <QTimer>
@@ -21,22 +24,14 @@
 
 namespace {
 
-QToolButton* makeSectionToggle(QWidget* parent)
-{
-    auto* toggle = new QToolButton(parent);
-    toggle->setObjectName(QStringLiteral("ItemSectionToggle"));
-    toggle->setCheckable(true);
-    toggle->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    toggle->setArrowType(Qt::RightArrow);
-    toggle->setAutoRaise(true);
-    return toggle;
-}
+constexpr int kIconSize = 16;
+constexpr int kSmallIconSize = 14;
 
 QToolButton* makeSwatch(const QColor& color, QWidget* parent, const QString& objectName)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(objectName);
-    button->setFixedSize(22, 22);
+    button->setFixedSize(20, 20);
     button->setCheckable(true);
     button->setToolTip(color.name(QColor::HexRgb).toUpper());
     button->setStyleSheet(QStringLiteral("QToolButton { border: 1px solid #CBD5E1; border-radius: 3px; "
@@ -52,6 +47,88 @@ QString colorTip(const QColor& color)
     return color.name(QColor::HexRgb).toUpper();
 }
 
+// 填充样式按钮的缩略图：None 画叉、Solid 纯色、纹理复用 ShapeItem 的纹理中心线。
+QIcon makeFillStyleIcon(FillStyle style, int logicalSize)
+{
+    constexpr qreal scale = 2.0;
+    QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
+    pixmap.fill(Qt::transparent);
+    pixmap.setDevicePixelRatio(scale);
+
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    const QRectF rect(3.0, 3.0, logicalSize - 6.0, logicalSize - 6.0);
+    painter.setPen(QPen(QColor(120, 128, 145), 1.2));
+    if (style == FillStyle::None) {
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRect(rect);
+        painter.drawLine(rect.topLeft(), rect.bottomRight());
+        painter.drawLine(rect.topRight(), rect.bottomLeft());
+        painter.end();
+        return QIcon(pixmap);
+    }
+    if (style == FillStyle::Solid) {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QColor(58, 64, 80));
+        painter.drawRect(rect);
+        painter.end();
+        return QIcon(pixmap);
+    }
+    painter.setBrush(QColor(248, 249, 252));
+    painter.drawRect(rect);
+    painter.setPen(QPen(QColor(58, 64, 80), 1.0, Qt::SolidLine, Qt::FlatCap));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawPath(fillPatternCenterLines(style, rect));
+    painter.end();
+    return QIcon(pixmap);
+}
+
+// 边框样式按钮的缩略图：按 4 种 PenStyle 画一小段线。
+QIcon makeBorderStyleIcon(Qt::PenStyle style, int logicalSize)
+{
+    constexpr qreal scale = 2.0;
+    QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
+    pixmap.fill(Qt::transparent);
+    pixmap.setDevicePixelRatio(scale);
+
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(QPen(QColor(58, 64, 80), 1.8, style, Qt::RoundCap, Qt::RoundJoin));
+    painter.drawLine(QPointF(4.0, logicalSize / 2.0), QPointF(logicalSize - 4.0, logicalSize / 2.0));
+    painter.end();
+    return QIcon(pixmap);
+}
+
+// 边框样式按钮的提示文案。
+QString borderStyleName(Qt::PenStyle style)
+{
+    switch (style) {
+    case Qt::SolidLine:
+        return ItemDockPanel::tr("Solid");
+    case Qt::DashLine:
+        return ItemDockPanel::tr("Dashed");
+    case Qt::DotLine:
+        return ItemDockPanel::tr("Dotted");
+    case Qt::DashDotLine:
+        return ItemDockPanel::tr("Dash-dot");
+    default:
+        return ItemDockPanel::tr("Solid");
+    }
+}
+
+// 行首小图标按钮：紧凑布局里用图标代替文字小标题。
+QToolButton* makeRowIcon(IconId id, QWidget* parent)
+{
+    auto* button = new QToolButton(parent);
+    button->setObjectName(QStringLiteral("ItemRowIcon"));
+    button->setIcon(makeIcon(id, QColor(139, 144, 156), kSmallIconSize));
+    button->setIconSize(QSize(kSmallIconSize, kSmallIconSize));
+    button->setFixedSize(kSmallIconSize + 4, kSmallIconSize + 4);
+    button->setAutoRaise(true);
+    button->setFocusPolicy(Qt::NoFocus);
+    return button;
+}
+
 } // namespace
 
 ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(parent), m_scene(scene)
@@ -59,8 +136,8 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     setObjectName(QStringLiteral("ItemPanel"));
 
     auto* outer = new QVBoxLayout(this);
-    outer->setContentsMargins(10, 8, 10, 8);
-    outer->setSpacing(6);
+    outer->setContentsMargins(6, 4, 6, 4);
+    outer->setSpacing(3);
 
     m_titleLabel = new QLabel(tr("Selected item"), this);
     m_titleLabel->setObjectName(QStringLiteral("ItemTitle"));
@@ -80,34 +157,36 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(4);
 
+    // 紧凑布局：不再做带文字的折叠分组标题，各行内容直接平铺，
+    // 行首用小图标标注用途（描边 / 填充 / 边框 / 透明度 / 圆角 / 图层 / 顺序）。
     QWidget* shapesBody = new QWidget(content);
     buildShapesSection(shapesBody);
-    layout->addWidget(createSection(tr("Common shapes"), shapesBody, true));
+    layout->addWidget(shapesBody);
 
     QWidget* colorsBody = new QWidget(content);
     buildColorsSection(colorsBody);
-    layout->addWidget(createSection(tr("Common colors"), colorsBody, true));
+    layout->addWidget(colorsBody);
 
     QWidget* fillBody = new QWidget(content);
     buildFillSection(fillBody);
-    layout->addWidget(createSection(tr("Fill style"), fillBody, true));
+    layout->addWidget(fillBody);
 
     QWidget* borderBody = new QWidget(content);
     buildBorderSection(borderBody);
-    layout->addWidget(createSection(tr("Border style"), borderBody, true));
+    layout->addWidget(borderBody);
 
     QWidget* opacityBody = new QWidget(content);
     buildOpacitySection(opacityBody);
-    layout->addWidget(createSection(tr("Opacity"), opacityBody, false));
+    layout->addWidget(opacityBody);
 
     QWidget* cornerBody = new QWidget(content);
     buildCornerSection(cornerBody);
-    m_cornerSection = createSection(tr("Corner radius"), cornerBody, false);
-    layout->addWidget(m_cornerSection);
+    m_cornerSection = cornerBody;
+    layout->addWidget(cornerBody);
 
     QWidget* arrangeBody = new QWidget(content);
     buildArrangeSection(arrangeBody);
-    layout->addWidget(createSection(tr("Layer and order"), arrangeBody, true));
+    layout->addWidget(arrangeBody);
     layout->addStretch(1);
 
     scroll->setWidget(content);
@@ -125,40 +204,15 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     refresh();
 }
 
-QWidget* ItemDockPanel::createSection(const QString& title, QWidget* body, bool expanded)
-{
-    auto* section = new QWidget(this);
-    section->setObjectName(QStringLiteral("ItemSection"));
-    auto* layout = new QVBoxLayout(section);
-    layout->setContentsMargins(0, 2, 0, 2);
-    layout->setSpacing(2);
-
-    QToolButton* toggle = makeSectionToggle(section);
-    toggle->setText(title);
-    toggle->setChecked(expanded);
-    toggle->setArrowType(expanded ? Qt::DownArrow : Qt::RightArrow);
-    layout->addWidget(toggle);
-
-    body->setObjectName(QStringLiteral("ItemSectionBody"));
-    body->setVisible(expanded);
-    layout->addWidget(body);
-
-    connect(toggle, &QToolButton::toggled, this, [toggle, body](bool checked) {
-        body->setVisible(checked);
-        toggle->setArrowType(checked ? Qt::DownArrow : Qt::RightArrow);
-    });
-    return section;
-}
-
 void ItemDockPanel::buildShapesSection(QWidget* body)
 {
     auto* layout = new QVBoxLayout(body);
-    layout->setContentsMargins(2, 0, 2, 0);
-    layout->setSpacing(4);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(2);
 
     auto* grid = new QGridLayout();
     grid->setContentsMargins(0, 0, 0, 0);
-    grid->setSpacing(3);
+    grid->setSpacing(2);
     const QList<ShapeType> types = allShapeTypes();
     for (int index = 0; index < types.size(); ++index) {
         const ShapeType type = types.at(index);
@@ -166,10 +220,10 @@ void ItemDockPanel::buildShapesSection(QWidget* body)
         button->setObjectName(QStringLiteral("ItemShapeButton"));
         button->setCheckable(true);
         button->setAutoRaise(true);
-        button->setIcon(makeShapeIcon(type, QColor(58, 64, 80), 20));
-        button->setIconSize(QSize(20, 20));
-        button->setFixedSize(30, 30);
-        button->setToolTip(shapeTypeName(type));
+        button->setIcon(makeShapeIcon(type, QColor(58, 64, 80), 18));
+        button->setIconSize(QSize(18, 18));
+        button->setFixedSize(26, 26);
+        button->setToolTip(tr("Common shapes") + QStringLiteral(" · ") + shapeTypeName(type));
         connect(button, &QToolButton::clicked, this, [this, type]() { insertOrChangeShape(type); });
         m_shapeButtons.append(button);
         grid->addWidget(button, index / 6, index % 6);
@@ -178,38 +232,40 @@ void ItemDockPanel::buildShapesSection(QWidget* body)
 
     m_customShapeButton = new QToolButton(body);
     m_customShapeButton->setObjectName(QStringLiteral("ItemCustomShapeButton"));
-    m_customShapeButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    m_customShapeButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
     m_customShapeButton->setPopupMode(QToolButton::InstantPopup);
     m_customShapeButton->setArrowType(Qt::DownArrow);
     m_customShapeButton->setText(tr("Custom shapes"));
-    m_customShapeButton->setIcon(makeCustomShapeIcon(QPainterPath(), QColor(58, 64, 80), 18));
+    m_customShapeButton->setIcon(makeCustomShapeIcon(QPainterPath(), QColor(58, 64, 80), kIconSize));
+    m_customShapeButton->setIconSize(QSize(kIconSize, kIconSize));
+    m_customShapeButton->setFixedSize(26, 26);
+    m_customShapeButton->setToolTip(tr("Custom shapes"));
     m_customShapeMenu = new QMenu(m_customShapeButton);
     m_customShapeButton->setMenu(m_customShapeMenu);
     connect(m_customShapeMenu, &QMenu::aboutToShow, this, &ItemDockPanel::rebuildCustomShapeMenu);
-    layout->addWidget(m_customShapeButton);
+    grid->addWidget(m_customShapeButton, types.size() / 6, types.size() % 6);
     rebuildCustomShapeMenu();
 }
 
 void ItemDockPanel::buildColorsSection(QWidget* body)
 {
     auto* layout = new QVBoxLayout(body);
-    layout->setContentsMargins(2, 0, 2, 0);
-    layout->setSpacing(4);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(2);
 
     const QStringList presets = {QStringLiteral("#1E293B"), QStringLiteral("#EF4444"), QStringLiteral("#F97316"),
                                  QStringLiteral("#EAB308"), QStringLiteral("#22C55E"), QStringLiteral("#14B8A6"),
                                  QStringLiteral("#3B82F6"), QStringLiteral("#8B5CF6")};
 
-    auto makeRow = [this, body, &presets](const QString& labelText, bool stroke) {
+    auto makeRow = [this, body, &presets](IconId rowIcon, bool stroke) {
         auto* row = new QWidget(body);
         auto* rowLayout = new QHBoxLayout(row);
         rowLayout->setContentsMargins(0, 0, 0, 0);
-        rowLayout->setSpacing(3);
+        rowLayout->setSpacing(2);
 
-        auto* label = new QLabel(labelText, row);
-        label->setObjectName(QStringLiteral("ItemColorLabel"));
-        label->setFixedWidth(30);
-        rowLayout->addWidget(label);
+        QToolButton* icon = makeRowIcon(rowIcon, row);
+        icon->setToolTip(stroke ? tr("Stroke") : tr("Fill"));
+        rowLayout->addWidget(icon);
 
         QList<QToolButton*>* swatches = stroke ? &m_strokeSwatches : &m_fillSwatches;
         for (const QString& hex : presets) {
@@ -228,8 +284,8 @@ void ItemDockPanel::buildColorsSection(QWidget* body)
 
         auto* custom = new QToolButton(row);
         custom->setObjectName(QStringLiteral("ItemColorButton"));
-        custom->setFixedSize(22, 22);
-        custom->setToolTip(tr("Custom color…"));
+        custom->setFixedSize(20, 20);
+        custom->setToolTip(stroke ? tr("Stroke color") : tr("Fill color"));
         custom->setText(QStringLiteral("…"));
         connect(custom, &QToolButton::clicked, this, [this, stroke]() {
             const QList<class ShapeItem*> shapes = selectedShapes();
@@ -258,134 +314,158 @@ void ItemDockPanel::buildColorsSection(QWidget* body)
         return row;
     };
 
-    layout->addWidget(makeRow(tr("Stroke"), true));
-    layout->addWidget(makeRow(tr("Fill"), false));
-    auto* hint = new QLabel(tr("Colors apply to the selected shape; transparency is kept."), body);
-    hint->setObjectName(QStringLiteral("ItemColorHint"));
-    hint->setWordWrap(true);
-    layout->addWidget(hint);
+    // 描边行用画笔图标，填充行用色板图标，代替原来的文字小标题。
+    layout->addWidget(makeRow(IconId::Brush, true));
+    layout->addWidget(makeRow(IconId::Palette, false));
 }
 
 void ItemDockPanel::buildFillSection(QWidget* body)
 {
-    auto* grid = new QGridLayout(body);
-    grid->setContentsMargins(2, 0, 2, 0);
-    grid->setSpacing(3);
+    auto* row = new QHBoxLayout(body);
+    row->setContentsMargins(0, 0, 0, 0);
+    row->setSpacing(2);
+
+    QToolButton* icon = makeRowIcon(IconId::Image, body);
+    icon->setToolTip(tr("Fill style"));
+    row->addWidget(icon);
+
     const QList<FillStyle> styles = allFillStyles();
-    for (int index = 0; index < styles.size(); ++index) {
-        const FillStyle style = styles.at(index);
+    for (const FillStyle style : styles) {
         auto* button = new QToolButton(body);
         button->setObjectName(QStringLiteral("ItemFillStyleButton"));
         button->setCheckable(true);
         button->setAutoRaise(true);
-        button->setText(fillStyleName(style));
+        button->setIcon(makeFillStyleIcon(style, kIconSize));
+        button->setIconSize(QSize(kIconSize, kIconSize));
+        button->setFixedSize(24, 24);
         button->setToolTip(fillStyleName(style));
-        button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        button->setProperty("fillStyle", static_cast<int>(style));
         connect(button, &QToolButton::clicked, this, [this, style]() { applyFillStyle(style); });
         m_fillStyleButtons.append(button);
-        grid->addWidget(button, index / 3, index % 3);
+        row->addWidget(button);
     }
+    row->addStretch(1);
 }
 
 void ItemDockPanel::buildBorderSection(QWidget* body)
 {
     auto* layout = new QVBoxLayout(body);
-    layout->setContentsMargins(2, 0, 2, 0);
-    layout->setSpacing(4);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(2);
 
     auto* styleRow = new QWidget(body);
     auto* styleLayout = new QHBoxLayout(styleRow);
     styleLayout->setContentsMargins(0, 0, 0, 0);
-    styleLayout->setSpacing(3);
+    styleLayout->setSpacing(2);
+
+    QToolButton* icon = makeRowIcon(IconId::Edit, styleRow);
+    icon->setToolTip(tr("Border style"));
+    styleLayout->addWidget(icon);
+
     const QList<Qt::PenStyle> styles = {Qt::SolidLine, Qt::DashLine, Qt::DotLine, Qt::DashDotLine};
-    const QStringList names = {tr("Solid"), tr("Dashed"), tr("Dotted"), tr("Dash-dot")};
     for (int index = 0; index < styles.size(); ++index) {
         auto* button = new QToolButton(styleRow);
         button->setObjectName(QStringLiteral("ItemBorderStyleButton"));
         button->setCheckable(true);
         button->setAutoRaise(true);
-        button->setText(names.at(index));
-        button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        button->setIcon(makeBorderStyleIcon(styles.at(index), kIconSize));
+        button->setIconSize(QSize(kIconSize, kIconSize));
+        button->setFixedSize(24, 24);
+        button->setToolTip(borderStyleName(styles.at(index)));
         const Qt::PenStyle style = styles.at(index);
         connect(button, &QToolButton::clicked, this, [this, style]() { applyBorderStyle(style); });
         m_borderStyleButtons.append(button);
         styleLayout->addWidget(button);
     }
+    styleLayout->addStretch(1);
     layout->addWidget(styleRow);
 
     auto* widthRow = new QWidget(body);
     auto* widthLayout = new QHBoxLayout(widthRow);
     widthLayout->setContentsMargins(0, 0, 0, 0);
-    widthLayout->setSpacing(6);
-    auto* widthLabel = new QLabel(tr("Width"), widthRow);
-    widthLabel->setObjectName(QStringLiteral("ItemColorLabel"));
+    widthLayout->setSpacing(4);
     m_borderWidthSpin = new QDoubleSpinBox(widthRow);
     m_borderWidthSpin->setObjectName(QStringLiteral("ItemValueSpin"));
     m_borderWidthSpin->setRange(0.5, 48.0);
     m_borderWidthSpin->setSingleStep(0.5);
     m_borderWidthSpin->setDecimals(1);
     m_borderWidthSpin->setSuffix(QStringLiteral(" px"));
+    m_borderWidthSpin->setToolTip(tr("Width"));
     connect(m_borderWidthSpin, &QDoubleSpinBox::valueChanged, this, [this](double value) {
         if (!m_refreshing) {
             applyBorderWidth(value);
         }
     });
-    widthLayout->addWidget(widthLabel);
-    widthLayout->addWidget(m_borderWidthSpin, 1);
+    widthLayout->addWidget(m_borderWidthSpin);
+    widthLayout->addStretch(1);
     layout->addWidget(widthRow);
 }
 
 void ItemDockPanel::buildOpacitySection(QWidget* body)
 {
     auto* layout = new QHBoxLayout(body);
-    layout->setContentsMargins(2, 0, 2, 0);
-    layout->setSpacing(6);
-    auto* label = new QLabel(tr("Opacity"), body);
-    label->setObjectName(QStringLiteral("ItemColorLabel"));
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(4);
+
+    QToolButton* icon = makeRowIcon(IconId::Opacity, body);
+    icon->setToolTip(tr("Opacity"));
+    layout->addWidget(icon);
+
     m_opacitySpin = new QSpinBox(body);
     m_opacitySpin->setObjectName(QStringLiteral("ItemValueSpin"));
     m_opacitySpin->setRange(0, 100);
     m_opacitySpin->setSuffix(QStringLiteral(" %"));
+    m_opacitySpin->setToolTip(tr("Opacity"));
     connect(m_opacitySpin, &QSpinBox::valueChanged, this, [this](int value) {
         if (!m_refreshing) {
             applyOpacity(value);
         }
     });
-    layout->addWidget(label);
     layout->addWidget(m_opacitySpin, 1);
 }
 
 void ItemDockPanel::buildCornerSection(QWidget* body)
 {
     auto* layout = new QHBoxLayout(body);
-    layout->setContentsMargins(2, 0, 2, 0);
-    layout->setSpacing(6);
-    auto* label = new QLabel(tr("Radius"), body);
-    label->setObjectName(QStringLiteral("ItemColorLabel"));
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(4);
+
+    QToolButton* icon = makeRowIcon(IconId::Corner, body);
+    icon->setToolTip(tr("Corner radius"));
+    layout->addWidget(icon);
+
     m_cornerSpin = new QSpinBox(body);
     m_cornerSpin->setObjectName(QStringLiteral("ItemValueSpin"));
     m_cornerSpin->setRange(0, 400);
     m_cornerSpin->setSuffix(QStringLiteral(" px"));
+    m_cornerSpin->setToolTip(tr("Corner radius"));
     connect(m_cornerSpin, &QSpinBox::valueChanged, this, [this](int value) {
         if (!m_refreshing) {
             applyCornerRadius(value);
         }
     });
-    layout->addWidget(label);
     layout->addWidget(m_cornerSpin, 1);
 }
 
 void ItemDockPanel::buildArrangeSection(QWidget* body)
 {
-    auto* grid = new QGridLayout(body);
-    grid->setContentsMargins(2, 0, 2, 0);
-    grid->setSpacing(3);
+    auto* row = new QHBoxLayout(body);
+    row->setContentsMargins(0, 0, 0, 0);
+    row->setSpacing(2);
 
-    auto makeButton = [this, body](const QString& text, const QString& objectName, int delta, bool height) {
+    QToolButton* icon = makeRowIcon(IconId::OrderUp, body);
+    icon->setToolTip(tr("Layer and order"));
+    row->addWidget(icon);
+
+    auto makeButton = [this, body](IconId id, const QString& toolTip, const QString& objectName, int delta,
+                                   bool height) {
         auto* button = new QToolButton(body);
         button->setObjectName(objectName);
-        button->setText(text);
-        button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        button->setIcon(makeIcon(id, QColor(75, 85, 99), kIconSize));
+        button->setIconSize(QSize(kIconSize, kIconSize));
+        button->setFixedSize(24, 24);
+        button->setToolTip(toolTip);
+        button->setAutoRaise(true);
         connect(button, &QToolButton::clicked, this, [this, delta, height]() {
             if (height) {
                 adjustHeight(delta);
@@ -396,19 +476,16 @@ void ItemDockPanel::buildArrangeSection(QWidget* body)
         return button;
     };
 
-    m_layerUpButton = makeButton(tr("Layer +1"), QStringLiteral("ItemLayerUpButton"), 1, false);
-    m_layerDownButton = makeButton(tr("Layer -1"), QStringLiteral("ItemLayerDownButton"), -1, false);
-    m_heightUpButton = makeButton(tr("Order +1"), QStringLiteral("ItemHeightUpButton"), 1, true);
-    m_heightDownButton = makeButton(tr("Order -1"), QStringLiteral("ItemHeightDownButton"), -1, true);
-    grid->addWidget(m_layerUpButton, 0, 0);
-    grid->addWidget(m_layerDownButton, 0, 1);
-    grid->addWidget(m_heightUpButton, 1, 0);
-    grid->addWidget(m_heightDownButton, 1, 1);
-
-    auto* hint = new QLabel(tr("Layer moves across layers; order changes stacking inside the layer."), body);
-    hint->setObjectName(QStringLiteral("ItemColorHint"));
-    hint->setWordWrap(true);
-    grid->addWidget(hint, 2, 0, 1, 2);
+    m_layerUpButton = makeButton(IconId::LayerUp, tr("Layer +1"), QStringLiteral("ItemLayerUpButton"), 1, false);
+    m_layerDownButton = makeButton(IconId::LayerDown, tr("Layer -1"), QStringLiteral("ItemLayerDownButton"), -1, false);
+    m_heightUpButton = makeButton(IconId::OrderUp, tr("Order +1"), QStringLiteral("ItemHeightUpButton"), 1, true);
+    m_heightDownButton =
+        makeButton(IconId::OrderDown, tr("Order -1"), QStringLiteral("ItemHeightDownButton"), -1, true);
+    row->addWidget(m_layerUpButton);
+    row->addWidget(m_layerDownButton);
+    row->addWidget(m_heightUpButton);
+    row->addWidget(m_heightDownButton);
+    row->addStretch(1);
 }
 
 QList<CanvasItem*> ItemDockPanel::selectedItems() const
@@ -503,9 +580,9 @@ void ItemDockPanel::updateShapeButtons()
     if (m_customShapeButton) {
         m_customShapeButton->setChecked(hasCustom);
         if (hasCustom) {
-            m_customShapeButton->setText(shapes.first()->customShapeName());
+            m_customShapeButton->setToolTip(shapes.first()->customShapeName());
         } else {
-            m_customShapeButton->setText(tr("Custom shapes"));
+            m_customShapeButton->setToolTip(tr("Custom shapes"));
         }
     }
 }
@@ -536,7 +613,7 @@ void ItemDockPanel::updateFillButtons()
     const QList<ShapeItem*> shapes = selectedShapes();
     const FillStyle current = shapes.isEmpty() ? FillStyle::None : shapes.first()->fillStyle();
     for (QToolButton* button : m_fillStyleButtons) {
-        const FillStyle style = static_cast<FillStyle>(m_fillStyleButtons.indexOf(button));
+        const FillStyle style = static_cast<FillStyle>(button->property("fillStyle").toInt());
         button->setChecked(!shapes.isEmpty() && style == current);
     }
 }

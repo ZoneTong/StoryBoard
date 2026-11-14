@@ -4,7 +4,6 @@
 
 #include <QList>
 #include <QWidget>
-
 #include <functional>
 
 class CanvasScene;
@@ -15,9 +14,10 @@ class QSpinBox;
 class QDoubleSpinBox;
 class QToolButton;
 
-// 选中图元时出现在右侧的 dock 卡片：按当前选择汇总常用操作——常见图形、
-// 常用颜色、填充样式、边框样式、透明度、矩形圆角，以及图层 / 层内高度 ±1。
-// 没有选中图元时由 MainWindow 隐藏整张卡片，行为与图层面板一致。
+// 选中图元时出现在右侧的「编辑图元」dock 卡片。紧凑布局：去掉了折叠分组
+// 小标题，行内用小图标标注各行用途，常见图形、常用颜色、填充、边框、
+// 透明度、圆角、图层与层内高度全部平铺，没有选中图元时由 MainWindow
+// 隐藏整张卡片，行为与图层面板一致。
 class ItemDockPanel : public QWidget {
     Q_OBJECT
   public:
@@ -33,7 +33,6 @@ class ItemDockPanel : public QWidget {
     void statusMessage(const QString& message);
 
   private:
-    QWidget* createSection(const QString& title, QWidget* body, bool expanded);
     void buildShapesSection(QWidget* body);
     void buildColorsSection(QWidget* body);
     void buildFillSection(QWidget* body);

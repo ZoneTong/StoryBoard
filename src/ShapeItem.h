@@ -37,6 +37,8 @@ QList<FillStyle> allFillStyles();
 QString fillStyleName(FillStyle style);
 QString fillStyleToString(FillStyle style);
 FillStyle fillStyleFromString(const QString& value);
+// 填充纹理的中心线几何，编辑图元卡的工具按钮缩略图与图元绘制共用这一份。
+QPainterPath fillPatternCenterLines(FillStyle style, const QRectF& rect);
 
 struct ShapeItemState {
     ShapeType type = ShapeType::Rectangle;
@@ -55,8 +57,7 @@ struct ShapeItemState {
         return type == other.type && strokeColor == other.strokeColor && fillColor == other.fillColor &&
                fillStyle == other.fillStyle && qFuzzyCompare(strokeWidth, other.strokeWidth) &&
                strokeStyle == other.strokeStyle && qFuzzyCompare(opacity, other.opacity) &&
-               qFuzzyCompare(cornerRadius + 2.0, other.cornerRadius + 2.0) && pos == other.pos &&
-               size == other.size;
+               qFuzzyCompare(cornerRadius + 2.0, other.cornerRadius + 2.0) && pos == other.pos && size == other.size;
     }
 
     bool operator!=(const ShapeItemState& other) const { return !(*this == other); }

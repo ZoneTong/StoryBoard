@@ -1967,11 +1967,11 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
         <source>Selected item panel</source>
-        <translation>选中图元工具卡</translation>
+        <translation>编辑图元卡</translation>
     </message>
     <message>
         <source>Show or hide the selected item panel (it appears automatically when an item is selected)</source>
-        <translation>显示或隐藏选中图元工具卡（选中图元时会自动出现）</translation>
+        <translation>显示或隐藏编辑图元卡（选中图元时自动出现）</translation>
     </message>
     <message>
         <source>Don&amp;apos;t save</source>
@@ -2006,6 +2006,35 @@ Use the checkbox to show or hide it.</source>
     <message>
         <source>Applied &amp;quot;%2&amp;quot; to %1 shape(s)</source>
         <translation>已对 %1 个图形应用「%2」</translation>
+    </message>
+
+    <message>
+        <source>Edit item</source>
+        <translation>编辑图元</translation>
+    </message>
+    <message>
+        <source>Edit item panel</source>
+        <translation>编辑图元卡</translation>
+    </message>
+    <message>
+        <source>Show or hide the edit item panel (it appears automatically when an item is selected)</source>
+        <translation>显示或隐藏编辑图元卡（选中图元时自动出现）</translation>
+    </message>
+    <message>
+        <source>Merge the selected shapes</source>
+        <translation>合并选中的图形</translation>
+    </message>
+    <message>
+        <source>Merge shapes is available in edit mode only</source>
+        <translation>合并形状只在编辑模式可用</translation>
+    </message>
+    <message>
+        <source>Merged into one shape (undo to restore)</source>
+        <translation>已合并为复合图元，撤销可还原</translation>
+    </message>
+    <message>
+        <source>Merge shapes</source>
+        <translation>合并形状</translation>
     </message>
 </context>
   <context>
@@ -3279,15 +3308,15 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Combine shapes</source>
-      <translation>布尔运算</translation>
+      <translation>合并形状</translation>
     </message>
     <message>
       <source>Union</source>
-      <translation>合并</translation>
+      <translation>联合</translation>
     </message>
     <message>
       <source>Subtract</source>
-      <translation>相减</translation>
+      <translation>剪除</translation>
     </message>
     <message>
       <source>Intersect</source>
@@ -3299,7 +3328,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Combine shapes is available in edit mode only</source>
-      <translation>布尔运算只在编辑模式可用</translation>
+      <translation>合并形状只在编辑模式可用</translation>
     </message>
     <message>
       <source>Select at least two shapes with a visible outline</source>
@@ -3311,15 +3340,15 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Union shapes</source>
-      <translation>合并选中图元</translation>
+      <translation>联合选中图形</translation>
     </message>
     <message>
       <source>Subtract shapes</source>
-      <translation>相减选中图元</translation>
+      <translation>剪除选中图形</translation>
     </message>
     <message>
       <source>Intersect shapes</source>
-      <translation>相交选中图元</translation>
+      <translation>相交选中图形</translation>
     </message>
     <message>
       <source>Combine</source>
@@ -3351,11 +3380,11 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Combine shapes and cut the overlap</source>
-      <translation>组合选中图元并挖掉重叠区</translation>
+      <translation>组合选中图形并挖掉重叠区</translation>
     </message>
     <message>
       <source>Fragment shapes</source>
-      <translation>拆分选中图元</translation>
+      <translation>拆分选中图形</translation>
     </message>
 
     <message>
@@ -3392,11 +3421,11 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
         <source>Selected item panel</source>
-        <translation>选中图元工具卡</translation>
+        <translation>编辑图元卡</translation>
     </message>
     <message>
         <source>Show or hide the selected item panel (it appears automatically when an item is selected)</source>
-        <translation>显示或隐藏选中图元工具卡（选中图元时会自动出现）</translation>
+        <translation>显示或隐藏编辑图元卡（选中图元时自动出现）</translation>
     </message>
     <message>
         <source>Don&amp;apos;t save</source>
@@ -3438,19 +3467,48 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Combine the selected shapes</source>
-      <translation>对选中图元做布尔运算</translation>
+      <translation>对选中图形做合并形状操作</translation>
     </message>
     <message>
       <source>Merge the selected items into one boolean shape</source>
-      <translation>把选中图元联合成一个布尔图形</translation>
+      <translation>把选中图形联合成一个复合图元</translation>
     </message>
     <message>
       <source>Combined into one boolean shape (undo to restore)</source>
-      <translation>已合并为布尔图形，撤销可还原</translation>
+      <translation>已合并为复合图元，撤销可还原</translation>
     </message>
     <message>
       <source>Boolean shape</source>
       <translation>布尔图形</translation>
+    </message>
+
+    <message>
+        <source>Edit item</source>
+        <translation>编辑图元</translation>
+    </message>
+    <message>
+        <source>Edit item panel</source>
+        <translation>编辑图元卡</translation>
+    </message>
+    <message>
+        <source>Show or hide the edit item panel (it appears automatically when an item is selected)</source>
+        <translation>显示或隐藏编辑图元卡（选中图元时自动出现）</translation>
+    </message>
+    <message>
+        <source>Merge the selected shapes</source>
+        <translation>合并选中的图形</translation>
+    </message>
+    <message>
+        <source>Merge shapes is available in edit mode only</source>
+        <translation>合并形状只在编辑模式可用</translation>
+    </message>
+    <message>
+        <source>Merged into one shape (undo to restore)</source>
+        <translation>已合并为复合图元，撤销可还原</translation>
+    </message>
+    <message>
+        <source>Merge shapes</source>
+        <translation>合并形状</translation>
     </message>
 </context>
   <context>
@@ -4582,6 +4640,11 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
         <source>Change shape type</source>
         <translation>切换图形类型</translation>
+    </message>
+
+    <message>
+        <source>Selected item</source>
+        <translation>编辑图元</translation>
     </message>
 </context>
 </TS>

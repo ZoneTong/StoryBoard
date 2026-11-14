@@ -325,6 +325,96 @@ void drawIconShape(QPainter& painter, IconId id)
         painter.setBrush(Qt::NoBrush);
         break;
     }
+    case IconId::LayerUp: {
+        // 双层页片整体上移，表达“跨图层移动”。
+        painter.setBrush(QColor(255, 255, 255));
+        painter.drawRect(QRectF(5.0, 7.0, 12.0, 15.0));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRect(QRectF(3.0, 5.0, 12.0, 15.0));
+        painter.setBrush(painter.pen().color());
+        painter.setPen(Qt::NoPen);
+        painter.drawRect(QRectF(3.0, 5.0, 12.0, 15.0));
+        painter.setBrush(Qt::NoBrush);
+        painter.setPen(QPen(painter.pen().color(), 1.9, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter.setBrush(QColor(255, 255, 255));
+        painter.drawRect(QRectF(3.0, 5.0, 12.0, 15.0));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawLine(QPointF(18.5, 14.5), QPointF(18.5, 21.5));
+        painter.drawLine(QPointF(18.5, 14.5), QPointF(15.8, 17.2));
+        painter.drawLine(QPointF(18.5, 14.5), QPointF(21.2, 17.2));
+        break;
+    }
+    case IconId::LayerDown: {
+        painter.setBrush(QColor(255, 255, 255));
+        painter.drawRect(QRectF(5.0, 2.0, 12.0, 15.0));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRect(QRectF(3.0, 4.0, 12.0, 15.0));
+        painter.setBrush(painter.pen().color());
+        painter.setPen(Qt::NoPen);
+        painter.drawRect(QRectF(3.0, 4.0, 12.0, 15.0));
+        painter.setBrush(Qt::NoBrush);
+        painter.setPen(QPen(painter.pen().color(), 1.9, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter.setBrush(QColor(255, 255, 255));
+        painter.drawRect(QRectF(3.0, 4.0, 12.0, 15.0));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawLine(QPointF(18.5, 16.5), QPointF(18.5, 9.5));
+        painter.drawLine(QPointF(18.5, 9.5), QPointF(15.8, 12.2));
+        painter.drawLine(QPointF(18.5, 9.5), QPointF(21.2, 12.2));
+        break;
+    }
+    case IconId::OrderUp: {
+        // 方块上移一层，表达“层内顺序 +1”。
+        painter.setBrush(painter.pen().color());
+        painter.drawRect(QRectF(4.0, 12.0, 10.0, 9.0));
+        painter.setBrush(Qt::NoBrush);
+        painter.setPen(QPen(painter.pen().color(), 1.9, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter.setBrush(QColor(255, 255, 255));
+        painter.drawRect(QRectF(10.0, 3.0, 10.0, 9.0));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawLine(QPointF(15.5, 15.5), QPointF(15.5, 22.5));
+        painter.drawLine(QPointF(15.5, 15.5), QPointF(12.8, 18.2));
+        painter.drawLine(QPointF(15.5, 15.5), QPointF(18.2, 18.2));
+        break;
+    }
+    case IconId::OrderDown: {
+        painter.setBrush(painter.pen().color());
+        painter.drawRect(QRectF(4.0, 3.0, 10.0, 9.0));
+        painter.setBrush(Qt::NoBrush);
+        painter.setPen(QPen(painter.pen().color(), 1.9, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter.setBrush(QColor(255, 255, 255));
+        painter.drawRect(QRectF(10.0, 12.0, 10.0, 9.0));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawLine(QPointF(15.5, 8.5), QPointF(15.5, 15.5));
+        painter.drawLine(QPointF(15.5, 15.5), QPointF(12.8, 12.8));
+        painter.drawLine(QPointF(15.5, 15.5), QPointF(18.2, 12.8));
+        break;
+    }
+    case IconId::Corner: {
+        // 一角带圆弧的方框，表达“矩形圆角”。
+        QPainterPath frame;
+        frame.moveTo(4.0, 16.5);
+        frame.lineTo(4.0, 10.0);
+        frame.quadTo(4.0, 4.0, 10.0, 4.0);
+        frame.lineTo(20.0, 4.0);
+        painter.drawPath(frame);
+        painter.setBrush(painter.pen().color());
+        painter.setPen(Qt::NoPen);
+        painter.drawEllipse(QPointF(6.8, 6.8), 1.4, 1.4);
+        break;
+    }
+    case IconId::Opacity: {
+        // 左实右虚的圆，表达“不透明度”。
+        QPainterPath left;
+        left.moveTo(12.0, 3.5);
+        left.arcTo(QRectF(3.5, 3.5, 17.0, 17.0), 90.0, 180.0);
+        left.closeSubpath();
+        painter.setBrush(painter.pen().color());
+        painter.drawPath(left);
+        painter.setBrush(Qt::NoBrush);
+        painter.setPen(QPen(painter.pen().color(), 1.9, Qt::DashLine, Qt::RoundCap, Qt::RoundJoin));
+        painter.drawArc(QRectF(3.5, 3.5, 17.0, 17.0), -90 * 16, 180 * 16);
+        break;
+    }
     }
 }
 

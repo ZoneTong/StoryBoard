@@ -29,7 +29,14 @@ enum class IconId {
     Folder,
     Shapes,
     Smooth,
-    Lock
+    Lock,
+    // 编辑图元卡用的紧凑图标。
+    LayerUp,
+    LayerDown,
+    OrderUp,
+    OrderDown,
+    Corner,
+    Opacity
 };
 
 QIcon makeIcon(IconId id, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);

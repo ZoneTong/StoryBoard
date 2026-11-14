@@ -125,25 +125,24 @@ QToolButton#LayerToolButton:disabled { color: #C4CAD4; background: #F7F8FA; }
 QWidget#ItemPanel, QWidget#ItemPanelContent, QWidget#ItemPanelScroll { background: #FFFFFF; }
 QLabel#ItemTitle { font-size: 13px; font-weight: 700; color: #1F2937; }
 QLabel#ItemMeta { color: #6B7280; font-size: 9pt; }
-QWidget#ItemSection { border-top: 1px solid #EDF0F5; }
-QToolButton#ItemSectionToggle { border: none; background: transparent; color: #374151; font-weight: 600; padding: 4px 2px; text-align: left; }
-QToolButton#ItemSectionToggle:hover { color: #2563EB; }
 QToolButton#ItemShapeButton { border: 1px solid transparent; border-radius: 6px; background: #F8F9FC; }
 QToolButton#ItemShapeButton:hover { background: #EEF2F9; }
 QToolButton#ItemShapeButton:checked { background: #E8EEFB; border-color: #2563EB; }
 QToolButton#ItemCustomShapeButton { border: 1px solid #DDE2EA; border-radius: 6px; background: #FFFFFF; padding: 4px 6px; color: #4B5563; }
 QToolButton#ItemCustomShapeButton:hover { background: #F3F6FB; }
 QToolButton#ItemCustomShapeButton:checked { border-color: #2563EB; color: #1D4ED8; }
+QToolButton#ItemRowIcon { border: none; background: transparent; padding: 0; }
 QLabel#ItemColorLabel { color: #6B7280; font-size: 9pt; }
 QLabel#ItemColorHint { color: #8A909C; font-size: 9pt; }
 QToolButton#ItemColorSwatch { border: 1px solid #CBD5E1; border-radius: 4px; }
 QToolButton#ItemColorButton { border: 1px solid #DDE2EA; border-radius: 4px; background: #FFFFFF; color: #4B5563; }
-QToolButton#ItemFillStyleButton, QToolButton#ItemBorderStyleButton { border: 1px solid #DDE2EA; border-radius: 6px; background: #FFFFFF; padding: 3px 4px; color: #4B5563; font-size: 9pt; }
-QToolButton#ItemFillStyleButton:hover, QToolButton#ItemBorderStyleButton:hover { background: #F3F6FB; }
-QToolButton#ItemFillStyleButton:checked, QToolButton#ItemBorderStyleButton:checked { background: #E8EEFB; border-color: #2563EB; color: #1D4ED8; }
-QToolButton#ItemLayerUpButton, QToolButton#ItemLayerDownButton, QToolButton#ItemHeightUpButton, QToolButton#ItemHeightDownButton { border: 1px solid #DDE2EA; border-radius: 6px; background: #FFFFFF; padding: 4px 6px; color: #4B5563; font-size: 9pt; }
-QToolButton#ItemLayerUpButton:hover, QToolButton#ItemLayerDownButton:hover, QToolButton#ItemHeightUpButton:hover, QToolButton#ItemHeightDownButton:hover { background: #F3F6FB; }
-QSpinBox#ItemValueSpin, QDoubleSpinBox#ItemValueSpin { background: #FFFFFF; border: 1px solid #DDE2EA; border-radius: 6px; padding: 3px 6px; min-height: 18px; color: #2B2F36; }
+QToolButton#ItemFillStyleButton, QToolButton#ItemBorderStyleButton { border: 1px solid transparent; border-radius: 5px; background: #F8F9FC; padding: 2px; }
+QToolButton#ItemFillStyleButton:hover, QToolButton#ItemBorderStyleButton:hover { background: #EEF2F9; }
+QToolButton#ItemFillStyleButton:checked, QToolButton#ItemBorderStyleButton:checked { background: #E8EEFB; border-color: #2563EB; }
+QToolButton#ItemLayerUpButton, QToolButton#ItemLayerDownButton, QToolButton#ItemHeightUpButton, QToolButton#ItemHeightDownButton { border: 1px solid transparent; border-radius: 5px; background: #F8F9FC; padding: 2px; }
+QToolButton#ItemLayerUpButton:hover, QToolButton#ItemLayerDownButton:hover, QToolButton#ItemHeightUpButton:hover, QToolButton#ItemHeightDownButton:hover { background: #EEF2F9; }
+QToolButton#ItemLayerUpButton:checked, QToolButton#ItemLayerDownButton:checked, QToolButton#ItemHeightUpButton:checked, QToolButton#ItemHeightDownButton:checked { background: #E8EEFB; border-color: #2563EB; }
+QSpinBox#ItemValueSpin, QDoubleSpinBox#ItemValueSpin { background: #FFFFFF; border: 1px solid #DDE2EA; border-radius: 5px; padding: 2px 4px; min-height: 16px; color: #2B2F36; }
 QDialog { background: #F7F8FA; }
 QGroupBox { background: #FFFFFF; border: 1px solid #E3E7EE; border-radius: 10px; margin-top: 10px; padding-top: 6px; font-weight: 600; }
 QGroupBox::title { subcontrol-origin: margin; left: 14px; padding: 0 6px; color: #374151; }
