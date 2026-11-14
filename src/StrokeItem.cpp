@@ -1,147 +1,27 @@
 #include "StrokeItem.h"
 
 #include "CanvasScene.h"
+#include "StrokeGeometry.h"
+#include "StrokePath.h"
+#include "StrokeSmoothing.h"
 
 #include <QJsonArray>
 #include <QLineF>
 #include <QPainter>
-#include <QPainterPathStroker>
-#include <QTransform>
 #include <QtMath>
-#include <functional>
 #include <utility>
-
-namespace {
-
-constexpr qreal kStateEpsilon = 0.01;
-
-bool samePoint(const QPointF& first, const QPointF& second)
-{
-    return qAbs(first.x() - second.x()) < kStateEpsilon && qAbs(first.y() - second.y()) < kStateEpsilon;
-}
-
-bool samePoints(const QVector<QPointF>& first, const QVector<QPointF>& second)
-{
-    if (first.size() != second.size()) {
-        return false;
-    }
-    for (int i = 0; i < first.size(); ++i) {
-        if (!samePoint(first.at(i), second.at(i))) {
-            return false;
-        }
-    }
-    return true;
-}
-
-qreal pointToSegmentDistance(const QPointF& point, const QPointF& start, const QPointF& end)
-{
-    const QPointF segment = end - start;
-    const qreal lengthSquared = QPointF::dotProduct(segment, segment);
-    if (lengthSquared <= 0.0) {
-        return QLineF(point, start).length();
-    }
-
-    qreal t = QPointF::dotProduct(point - start, segment) / lengthSquared;
-    t = qBound<qreal>(0.0, t, 1.0);
-    return QLineF(point, start + segment * t).length();
-}
-
-// Ramer-Douglas-Peucker：容差越大，越多的小抖动会被压掉。
-QVector<QPointF> simplifyRdp(const QVector<QPointF>& points, qreal tolerance)
-{
-    if (points.size() <= 2 || tolerance <= 0.0) {
-        return points;
-    }
-
-    QVector<QPointF> result;
-    result.reserve(points.size());
-    std::function<void(int, int)> simplify = [&](int first, int last) {
-        if (last <= first + 1) {
-            result.append(points.at(first));
-            return;
-        }
-        qreal maxDistance = 0.0;
-        int maxIndex = -1;
-        for (int i = first + 1; i < last; ++i) {
-            const qreal distance = pointToSegmentDistance(points.at(i), points.at(first), points.at(last));
-            if (distance > maxDistance) {
-                maxDistance = distance;
-                maxIndex = i;
-            }
-        }
-        if (maxDistance > tolerance && maxIndex > first) {
-            simplify(first, maxIndex);
-            simplify(maxIndex, last);
-        } else {
-            result.append(points.at(first));
-        }
-    };
-    simplify(0, points.size() - 1);
-    result.append(points.constLast());
-    return result;
-}
-
-QVector<QPointF> chaikinSmooth(const QVector<QPointF>& points, int iterations)
-{
-    QVector<QPointF> result = points;
-    for (int pass = 0; pass < iterations && result.size() > 2; ++pass) {
-        QVector<QPointF> next;
-        next.reserve(result.size() * 2);
-        next.append(result.constFirst());
-        for (int i = 0; i < result.size() - 1; ++i) {
-            const QPointF first = result.at(i);
-            const QPointF second = result.at(i + 1);
-            next.append((first * 3.0 + second) / 4.0);
-            next.append((first + second * 3.0) / 4.0);
-        }
-        next.append(result.constLast());
-        result = next;
-    }
-    return result;
-}
-
-bool looksLikeStraightLine(const QVector<QPointF>& points, qreal tolerance, qreal& chordLength)
-{
-    if (points.size() < 3) {
-        return true;
-    }
-
-    const QPointF start = points.constFirst();
-    const QPointF end = points.constLast();
-    chordLength = QLineF(start, end).length();
-    // 太短的笔画不做“直线吸附”，否则会把一个小勾/小弯折压成点或短线段。
-    if (chordLength < qMax<qreal>(16.0, tolerance * 4.0)) {
-        return false;
-    }
-
-    qreal maxDeviation = 0.0;
-    for (int i = 1; i < points.size() - 1; ++i) {
-        maxDeviation = qMax(maxDeviation, pointToSegmentDistance(points.at(i), start, end));
-    }
-    if (maxDeviation > tolerance) {
-        return false;
-    }
-
-    qreal length = 0.0;
-    for (int i = 1; i < points.size(); ++i) {
-        length += QLineF(points.at(i - 1), points.at(i)).length();
-    }
-    // 高频来回抖动的笔画即使最大偏离不大，也不应当作直线吸附。
-    return length <= chordLength * 1.6;
-}
-
-} // namespace
 
 bool StrokeItem::GeometryState::operator==(const GeometryState& other) const
 {
-    if (dot != other.dot || !samePoints(points, other.points)) {
+    if (dot != other.dot || !StrokeSmoothing::samePoints(points, other.points)) {
         return false;
     }
-    return qAbs(pos.x() - other.pos.x()) < kStateEpsilon && qAbs(pos.y() - other.pos.y()) < kStateEpsilon &&
-           qAbs(contentSize.width() - other.contentSize.width()) < kStateEpsilon &&
-           qAbs(contentSize.height() - other.contentSize.height()) < kStateEpsilon &&
-           qAbs(baseSize.width() - other.baseSize.width()) < kStateEpsilon &&
-           qAbs(baseSize.height() - other.baseSize.height()) < kStateEpsilon;
+    return qAbs(pos.x() - other.pos.x()) < StrokeSmoothing::StateEpsilon &&
+           qAbs(pos.y() - other.pos.y()) < StrokeSmoothing::StateEpsilon &&
+           qAbs(contentSize.width() - other.contentSize.width()) < StrokeSmoothing::StateEpsilon &&
+           qAbs(contentSize.height() - other.contentSize.height()) < StrokeSmoothing::StateEpsilon &&
+           qAbs(baseSize.width() - other.baseSize.width()) < StrokeSmoothing::StateEpsilon &&
+           qAbs(baseSize.height() - other.baseSize.height()) < StrokeSmoothing::StateEpsilon;
 }
 
 StrokeItem::StrokeItem(QGraphicsItem* parent) : CanvasItem(parent)
@@ -259,19 +139,19 @@ bool StrokeItem::smoothStroke(qreal tolerance)
 
     QVector<QPointF> smoothed = m_points;
     qreal chordLength = 0.0;
-    if (looksLikeStraightLine(smoothed, tolerance, chordLength)) {
+    if (StrokeSmoothing::looksLikeStraightLine(smoothed, tolerance, chordLength)) {
         // 用户想画直线：收成首尾两点，避免保留手抖造成的微小波浪。
         smoothed = {smoothed.constFirst(), smoothed.constLast()};
     } else {
         const qreal rdpTolerance = qMax<qreal>(1.0, tolerance * 0.75);
-        smoothed = simplifyRdp(smoothed, rdpTolerance);
+        smoothed = StrokeSmoothing::simplifyRdp(smoothed, rdpTolerance);
         if (smoothed.size() > 2) {
             const int passes = qBound(1, qRound(tolerance / 5.0), 3);
-            smoothed = chaikinSmooth(smoothed, passes);
+            smoothed = StrokeSmoothing::chaikinSmooth(smoothed, passes);
         }
     }
 
-    if (samePoints(smoothed, m_points)) {
+    if (StrokeSmoothing::samePoints(smoothed, m_points)) {
         return false;
     }
 
@@ -301,11 +181,7 @@ void StrokeItem::applyGeometryState(const GeometryState& state)
 
 qreal StrokeItem::pathLength() const
 {
-    qreal length = 0.0;
-    for (int i = 1; i < m_points.size(); ++i) {
-        length += QLineF(m_points.at(i - 1), m_points.at(i)).length();
-    }
-    return length;
+    return StrokePath::length(m_points);
 }
 
 void StrokeItem::normalizeToContent()
@@ -358,66 +234,17 @@ void StrokeItem::normalizeToContent()
 
 void StrokeItem::rebuildPath()
 {
-    m_path = QPainterPath();
-    if (m_points.isEmpty()) {
-        return;
-    }
-
-    if (m_dot || m_points.size() == 1) {
-        const QPointF center = m_points.constFirst();
-        const qreal radius = m_penWidth / 2.0;
-        m_path.addEllipse(center, radius, radius);
-        return;
-    }
-
-    QPainterPath path;
-    path.moveTo(m_points.constFirst());
-    if (m_linearPath) {
-        for (int i = 1; i < m_points.size(); ++i) {
-            path.lineTo(m_points.at(i));
-        }
-    } else if (m_points.size() == 2) {
-        path.lineTo(m_points.constLast());
-    } else {
-        for (int i = 1; i < m_points.size() - 1; ++i) {
-            const QPointF middle = (m_points.at(i) + m_points.at(i + 1)) / 2.0;
-            path.quadTo(m_points.at(i), middle);
-        }
-        path.lineTo(m_points.constLast());
-    }
-    m_path = path;
+    m_path = StrokePath::build(m_points, m_dot, m_linearPath, m_penWidth);
 }
 
 void StrokeItem::paintContent(QPainter* painter)
 {
-    if (m_baseSize.isEmpty() || m_path.isEmpty()) {
-        return;
-    }
-
-    const qreal scaleX = contentSize().width() / m_baseSize.width();
-    const qreal scaleY = contentSize().height() / m_baseSize.height();
-
-    painter->save();
-    painter->scale(scaleX, scaleY);
-    QPen pen(m_color);
-    pen.setWidthF(m_penWidth);
-    pen.setCapStyle(Qt::RoundCap);
-    pen.setJoinStyle(Qt::RoundJoin);
-    painter->setPen(pen);
-    painter->setBrush(Qt::NoBrush);
-    painter->drawPath(m_path);
-    painter->restore();
+    StrokeGeometry::render(painter, m_path, m_baseSize, contentSize(), m_color, m_penWidth);
 }
 
 QPainterPath StrokeItem::outlineShape() const
 {
-    if (m_baseSize.isEmpty() || m_path.isEmpty()) {
-        return QPainterPath();
-    }
-
-    QTransform transform;
-    transform.scale(contentSize().width() / m_baseSize.width(), contentSize().height() / m_baseSize.height());
-    return transform.map(m_path);
+    return StrokeGeometry::outline(m_path, m_baseSize, contentSize());
 }
 
 QPainterPath StrokeItem::paintedShape() const
@@ -428,37 +255,12 @@ QPainterPath StrokeItem::paintedShape() const
     }
 
     const QPainterPath centerLine = outlineShape();
-    if (centerLine.isEmpty()) {
-        return centerLine;
-    }
-
-    const qreal scaleX = contentSize().width() / m_baseSize.width();
-    const qreal scaleY = contentSize().height() / m_baseSize.height();
-    QPainterPathStroker stroker;
-    stroker.setWidth(qMax<qreal>(1.0, m_penWidth * (scaleX + scaleY) / 2.0));
-    stroker.setCapStyle(Qt::RoundCap);
-    stroker.setJoinStyle(Qt::RoundJoin);
-    return stroker.createStroke(centerLine);
+    return StrokeGeometry::painted(centerLine, m_baseSize, contentSize(), m_penWidth);
 }
 
 QPainterPath StrokeItem::shape() const
 {
-    if (m_baseSize.isEmpty()) {
-        return QPainterPath();
-    }
-
-    const qreal scaleX = contentSize().width() / m_baseSize.width();
-    const qreal scaleY = contentSize().height() / m_baseSize.height();
-    QTransform transform;
-    transform.scale(scaleX, scaleY);
-    const QPainterPath scaled = transform.map(m_path);
-
-    QPainterPathStroker stroker;
-    const qreal averageScale = (scaleX + scaleY) / 2.0;
-    const qreal tolerance = qMin<qreal>(4.0 / viewScale(), 16.0);
-    stroker.setWidth(qMax<qreal>(2.0, m_penWidth * averageScale) + tolerance);
-    QPainterPath result = stroker.createStroke(scaled);
-    result.addPath(scaled);
+    QPainterPath result = StrokeGeometry::hitScaled(m_path, m_baseSize, contentSize(), m_penWidth, viewScale());
 
     // Selection handles sit on the content corners; make them clickable even when
     // the stroke itself does not pass through those points.

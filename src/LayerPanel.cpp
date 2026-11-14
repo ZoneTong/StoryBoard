@@ -3,19 +3,16 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "I18n.h"
-#include "IconFactory.h"
+#include "LayerActions.h"
+#include "LayerPanelView.h"
+#include "LayerRow.h"
 
 #include <QCheckBox>
-#include <QEvent>
 #include <QHBoxLayout>
-#include <QInputDialog>
 #include <QLabel>
-#include <QLineEdit>
 #include <QListWidget>
-#include <QMessageBox>
 #include <QScrollBar>
 #include <QSignalBlocker>
-#include <QStyle>
 #include <QTimer>
 #include <QToolButton>
 #include <QVBoxLayout>
@@ -39,6 +36,10 @@ LayerPanel::LayerPanel(CanvasScene* scene, QWidget* parent) : QWidget(parent), m
 {
     setObjectName(QStringLiteral("LayerPanel"));
     setMinimumWidth(228);
+
+    m_actions = new LayerActions(m_scene, this);
+    connect(m_actions, &LayerActions::statusMessage, this, &LayerPanel::statusMessage);
+    connect(m_actions, &LayerActions::refreshRequested, this, &LayerPanel::scheduleRefresh);
 
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(10, 10, 10, 10);
@@ -98,8 +99,11 @@ LayerPanel::LayerPanel(CanvasScene* scene, QWidget* parent) : QWidget(parent), m
     m_summaryLabel->setWordWrap(true);
     layout->addWidget(m_summaryLabel);
 
+    m_view = new LayerPanelView(m_scene, m_list, m_allVisibleBox, m_addButton, m_removeButton, m_upButton, m_downButton,
+                                m_summaryLabel);
+
     connect(m_list, &QListWidget::itemSelectionChanged, this, &LayerPanel::activateCurrentLayer);
-    connect(m_list, &QListWidget::itemSelectionChanged, this, [this]() { updateRowStyles(); });
+    connect(m_list, &QListWidget::itemSelectionChanged, this, [this]() { m_view->refreshRowStyles(); });
     connect(m_allVisibleBox, &QCheckBox::clicked, this, [this]() {
         bool allVisible = true;
         const QList<CanvasLayer> layers = m_scene->layers();
@@ -109,12 +113,12 @@ LayerPanel::LayerPanel(CanvasScene* scene, QWidget* parent) : QWidget(parent), m
                 break;
             }
         }
-        setAllLayersVisible(!allVisible);
+        m_actions->setAllLayersVisible(!allVisible);
     });
-    connect(m_addButton, &QToolButton::clicked, this, &LayerPanel::addLayer);
-    connect(m_removeButton, &QToolButton::clicked, this, &LayerPanel::removeLayer);
-    connect(m_upButton, &QToolButton::clicked, this, [this]() { moveLayer(1); });
-    connect(m_downButton, &QToolButton::clicked, this, [this]() { moveLayer(-1); });
+    connect(m_addButton, &QToolButton::clicked, this, [this]() { m_actions->addLayer(); });
+    connect(m_removeButton, &QToolButton::clicked, this, &LayerPanel::removeSelectedLayers);
+    connect(m_upButton, &QToolButton::clicked, this, [this]() { m_actions->moveLayer(1); });
+    connect(m_downButton, &QToolButton::clicked, this, [this]() { m_actions->moveLayer(-1); });
 
     // 场景信号可能来自行内控件自己的信号栈（勾选框、锁定按钮），直接 refresh
     // 会在 emit 者还被使用时销毁它，所以统一延后到下一个事件循环。
@@ -126,89 +130,26 @@ LayerPanel::LayerPanel(CanvasScene* scene, QWidget* parent) : QWidget(parent), m
     refresh();
 }
 
-QWidget* LayerPanel::createLayerRow(const CanvasLayer& layer, int index, int itemCount)
+LayerRow* LayerPanel::createRow(const CanvasLayer& layer, int index, int itemCount)
 {
-    auto* row = new QWidget;
-    row->setObjectName(QStringLiteral("LayerRow"));
-
-    auto* layout = new QHBoxLayout(row);
-    layout->setContentsMargins(4, 0, 4, 0);
-    layout->setSpacing(5);
-
-    auto* visibleBox = new QCheckBox(row);
-    visibleBox->setObjectName(QStringLiteral("LayerVisibleBox"));
-    visibleBox->setFocusPolicy(Qt::NoFocus);
-    visibleBox->setToolTip(tr("Check to show this layer, uncheck to hide it"));
-    visibleBox->setChecked(layer.visible);
-
-    auto* nameLabel = new QLabel(row);
-    nameLabel->setObjectName(QStringLiteral("LayerRowLabel"));
-    QString text = (index == CanvasScene::BackgroundLayerId) ? tr("Background    (layer 0)")
-                                                             : tr("%1    %2 items").arg(layer.name).arg(itemCount);
-    if (!layer.visible) {
-        text += tr("  · Hidden");
-    }
-    if (layer.locked) {
-        text += tr("  · Locked");
-    }
-    nameLabel->setText(text);
-    // 背景层 / 锁定 / 隐藏三种弱化文字色走 QSS 的 state 属性，不再逐行写内联样式。
-    if (index == CanvasScene::BackgroundLayerId) {
-        nameLabel->setProperty("state", QStringLiteral("background"));
-    } else if (layer.locked) {
-        nameLabel->setProperty("state", QStringLiteral("locked"));
-    } else if (!layer.visible) {
-        nameLabel->setProperty("state", QStringLiteral("hidden"));
-    }
-
-    if (index != CanvasScene::BackgroundLayerId) {
-        nameLabel->setProperty("layerId", layer.id);
-        nameLabel->setCursor(Qt::IBeamCursor);
-        nameLabel->setToolTip(tr("Double-click to rename layer"));
-        nameLabel->installEventFilter(this);
-    }
-
-    layout->addWidget(visibleBox);
-    layout->addWidget(nameLabel, 1);
-
-    if (index != CanvasScene::BackgroundLayerId) {
-        auto* lockButton = new QToolButton(row);
-        lockButton->setObjectName(QStringLiteral("LayerLockButton"));
-        lockButton->setCheckable(true);
-        lockButton->setChecked(layer.locked);
-        lockButton->setFocusPolicy(Qt::NoFocus);
-        lockButton->setFixedSize(22, 22);
-        lockButton->setIcon(makeIcon(IconId::Lock, layer.locked ? QColor(37, 99, 235) : QColor(110, 118, 132), 18));
-        lockButton->setIconSize(QSize(18, 18));
-        lockButton->setToolTip(tr("Lock layer: items on it cannot be edited"));
-        layout->addWidget(lockButton);
-        connect(lockButton, &QToolButton::toggled, this,
-                [this, layerId = layer.id](bool locked) { setLayerLocked(layerId, locked); });
-    }
-
-    connect(visibleBox, &QCheckBox::toggled, this,
-            [this, layerId = layer.id](bool visible) { setLayerVisible(layerId, visible); });
-
+    auto* row = new LayerRow(layer, index, itemCount);
+    connect(row, &LayerRow::visibilityToggled, this, [this](int layerId, bool visible) {
+        if (!m_refreshing) {
+            m_actions->setLayerVisible(layerId, visible);
+        }
+    });
+    connect(row, &LayerRow::lockToggled, this, [this](int layerId, bool locked) {
+        if (!m_refreshing) {
+            m_actions->setLayerLocked(layerId, locked);
+        }
+    });
+    connect(row, &LayerRow::renameRequested, this, [this](int layerId) { m_actions->renameLayer(this, layerId); });
     return row;
-}
-
-int LayerPanel::currentLayerId() const
-{
-    const QListWidgetItem* current = m_list->currentItem();
-    return current ? current->data(Qt::UserRole).toInt() : 0;
 }
 
 QList<int> LayerPanel::selectedLayerIds() const
 {
-    QList<int> ids;
-    const QList<QListWidgetItem*> rows = m_list->selectedItems();
-    for (const QListWidgetItem* row : rows) {
-        const int id = row->data(Qt::UserRole).toInt();
-        if (id > CanvasScene::BackgroundLayerId) {
-            ids.append(id);
-        }
-    }
-    return ids;
+    return m_view->selectedLayerIds();
 }
 
 void LayerPanel::scheduleRefresh()
@@ -234,7 +175,7 @@ void LayerPanel::refresh()
     const int scroll = m_list->verticalScrollBar()->value();
     const QList<int> previouslySelected = selectedLayerIds();
     const int activeId = m_scene->activeLayerId();
-    const int previousCurrent = currentLayerId();
+    const int previousCurrent = m_view->currentLayerId();
 
     m_list->clear();
 
@@ -252,7 +193,7 @@ void LayerPanel::refresh()
                 .arg(i)
                 .arg(count)
                 .arg(layer.visible ? tr("Visible") : tr("Hidden"), layer.locked ? tr(" · Locked") : QString()));
-        m_list->setItemWidget(row, createLayerRow(layer, i, count));
+        m_list->setItemWidget(row, createRow(layer, i, count));
     }
 
     auto* backgroundRow = new QListWidgetItem(m_list);
@@ -261,7 +202,7 @@ void LayerPanel::refresh()
     backgroundRow->setSizeHint(QSize(0, 30));
     backgroundRow->setToolTip(tr("The background is always the bottom layer, cannot hold items, and is locked by "
                                  "default.\nUse the checkbox to show or hide it."));
-    m_list->setItemWidget(backgroundRow, createLayerRow(m_scene->layer(CanvasScene::BackgroundLayerId), 0, 0));
+    m_list->setItemWidget(backgroundRow, createRow(m_scene->layer(CanvasScene::BackgroundLayerId), 0, 0));
 
     // 先恢复当前行（不改变选择），再恢复多选。
     int currentRow = -1;
@@ -296,27 +237,10 @@ void LayerPanel::refresh()
     m_refreshing = false;
 
     m_scene->setPreferredLayerIds(selectedLayerIds());
-    updateRowStyles();
-    updateSummary();
-    updateButtons();
-    updateAllVisibleState();
-}
-
-bool LayerPanel::eventFilter(QObject* watched, QEvent* event)
-{
-    if (event && event->type() == QEvent::MouseButtonDblClick) {
-        if (QWidget* widget = qobject_cast<QWidget*>(watched)) {
-            if (widget->objectName() == QStringLiteral("LayerRowLabel")) {
-                bool ok = false;
-                const int layerId = widget->property("layerId").toInt(&ok);
-                if (ok) {
-                    renameLayer(layerId);
-                    return true;
-                }
-            }
-        }
-    }
-    return QWidget::eventFilter(watched, event);
+    m_view->refreshRowStyles();
+    m_view->refreshSummary();
+    m_view->refreshButtons();
+    m_view->refreshAllVisibleState();
 }
 
 void LayerPanel::activateCurrentLayer()
@@ -324,13 +248,13 @@ void LayerPanel::activateCurrentLayer()
     if (!m_scene || m_refreshing || m_syncingScene) {
         return;
     }
-    const int id = currentLayerId();
+    const int id = m_view->currentLayerId();
     if (id > CanvasScene::BackgroundLayerId && m_scene->hasLayer(id)) {
         m_scene->setActiveLayer(id);
     }
     m_scene->setPreferredLayerIds(selectedLayerIds());
-    updateButtons();
-    updateSummary();
+    m_view->refreshButtons();
+    m_view->refreshSummary();
 }
 
 void LayerPanel::syncActiveLayer()
@@ -348,8 +272,8 @@ void LayerPanel::syncActiveLayer()
         }
     }
     m_refreshing = false;
-    updateSummary();
-    updateButtons();
+    m_view->refreshSummary();
+    m_view->refreshButtons();
 }
 
 void LayerPanel::syncSceneSelection()
@@ -402,121 +326,12 @@ void LayerPanel::syncSceneSelection()
     m_syncingScene = false;
 
     m_scene->setPreferredLayerIds(ids);
-    updateRowStyles();
-    updateButtons();
-    updateSummary();
+    m_view->refreshRowStyles();
+    m_view->refreshButtons();
+    m_view->refreshSummary();
 }
 
-void LayerPanel::updateRowStyles()
-{
-    for (int row = 0; row < m_list->count(); ++row) {
-        QListWidgetItem* entry = m_list->item(row);
-        QWidget* widget = m_list->itemWidget(entry);
-        if (!widget) {
-            continue;
-        }
-        // 选中态走 QSS 的动态属性，颜色只在 main.cpp 的样式表里维护。
-        widget->setProperty("selected", entry->isSelected());
-        widget->style()->unpolish(widget);
-        widget->style()->polish(widget);
-        widget->update();
-    }
-}
-
-void LayerPanel::setLayerVisible(int layerId, bool visible)
-{
-    if (!m_scene || m_refreshing) {
-        return;
-    }
-
-    const QString layerName =
-        (layerId == CanvasScene::BackgroundLayerId) ? tr("Background layer") : m_scene->layer(layerId).name;
-    const int oldActive = m_scene->activeLayerId();
-
-    if (!m_scene->setLayerVisible(layerId, visible)) {
-        emit statusMessage(tr("The last visible layer cannot be hidden. Create a new layer first."));
-        scheduleRefresh();
-        return;
-    }
-
-    if (layerId == CanvasScene::BackgroundLayerId) {
-        emit statusMessage(visible ? tr("Background layer shown") : tr("Background layer hidden"));
-    } else if (!visible && oldActive == layerId && m_scene->activeLayerId() != oldActive) {
-        emit statusMessage(tr("Layer \"%1\" hidden; the current layer switched to \"%2\"")
-                               .arg(layerName, m_scene->layer(m_scene->activeLayerId()).name));
-    } else {
-        emit statusMessage(visible ? tr("Layer \"%1\" shown").arg(layerName)
-                                   : tr("Layer \"%1\" hidden").arg(layerName));
-    }
-    scheduleRefresh();
-}
-
-void LayerPanel::setAllLayersVisible(bool visible)
-{
-    if (!m_scene) {
-        return;
-    }
-    if (!m_scene->setAllLayersVisible(visible)) {
-        return;
-    }
-    emit statusMessage(visible ? tr("All layers shown") : tr("All layers hidden"));
-    scheduleRefresh();
-    updateAllVisibleState();
-}
-
-void LayerPanel::updateAllVisibleState()
-{
-    if (!m_allVisibleBox || !m_scene) {
-        return;
-    }
-
-    const QList<CanvasLayer> layers = m_scene->layers();
-    int visibleCount = 0;
-    for (const CanvasLayer& layer : layers) {
-        if (layer.visible) {
-            ++visibleCount;
-        }
-    }
-
-    Qt::CheckState state = Qt::Unchecked;
-    if (!layers.isEmpty() && visibleCount == layers.size()) {
-        state = Qt::Checked;
-    } else if (visibleCount > 0) {
-        state = Qt::PartiallyChecked;
-    }
-
-    const QSignalBlocker blocker(m_allVisibleBox);
-    m_allVisibleBox->setCheckState(state);
-}
-
-void LayerPanel::setLayerLocked(int layerId, bool locked)
-{
-    if (!m_scene || m_refreshing) {
-        return;
-    }
-
-    const QString layerName = m_scene->layer(layerId).name;
-    if (!m_scene->setLayerLocked(layerId, locked)) {
-        emit statusMessage(tr("The background layer is always locked."));
-        scheduleRefresh();
-        return;
-    }
-
-    emit statusMessage(locked ? tr("Locked layer \"%1\"; its items can no longer be edited").arg(layerName)
-                              : tr("Unlocked layer \"%1\"").arg(layerName));
-    scheduleRefresh();
-}
-
-void LayerPanel::addLayer()
-{
-    if (!m_scene) {
-        return;
-    }
-    m_scene->addLayerWithUndo();
-    emit statusMessage(tr("Layer created"));
-}
-
-void LayerPanel::removeLayer()
+void LayerPanel::removeSelectedLayers()
 {
     if (!m_scene) {
         return;
@@ -524,121 +339,10 @@ void LayerPanel::removeLayer()
 
     QList<int> ids = selectedLayerIds();
     if (ids.isEmpty()) {
-        const int fallback = currentLayerId();
+        const int fallback = m_view->currentLayerId();
         if (fallback > CanvasScene::BackgroundLayerId) {
             ids.append(fallback);
         }
     }
-    if (ids.isEmpty()) {
-        return;
-    }
-
-    for (int id : ids) {
-        if (m_scene->layerItemCount(id) > 0) {
-            QMessageBox::information(
-                this, tr("Delete layer"),
-                tr("Layer \"%1\" still contains items. Move or delete them first.").arg(m_scene->layer(id).name));
-            return;
-        }
-    }
-    if (m_scene->userLayerCount() - ids.size() < 1) {
-        QMessageBox::information(this, tr("Delete layer"), tr("At least one user layer must remain."));
-        return;
-    }
-
-    for (int id : ids) {
-        m_scene->removeLayerWithUndo(id, nullptr);
-    }
-    emit statusMessage(ids.size() > 1 ? tr("%1 layer(s) deleted").arg(ids.size()) : tr("Layer deleted"));
-    scheduleRefresh();
-}
-
-void LayerPanel::renameLayer(int layerId)
-{
-    if (!m_scene || layerId <= CanvasScene::BackgroundLayerId || !m_scene->hasLayer(layerId)) {
-        return;
-    }
-
-    const CanvasLayer layer = m_scene->layer(layerId);
-    bool ok = false;
-    const QString name =
-        QInputDialog::getText(this, tr("Rename layer"), tr("Layer name"), QLineEdit::Normal, layer.name, &ok);
-    if (!ok) {
-        return;
-    }
-
-    const QString trimmed = name.trimmed();
-    if (trimmed.isEmpty()) {
-        QMessageBox::information(this, tr("Rename layer"), tr("Layer name cannot be empty."));
-        return;
-    }
-    if (trimmed == layer.name) {
-        return;
-    }
-
-    if (m_scene->renameLayerWithUndo(layerId, trimmed)) {
-        emit statusMessage(tr("Layer renamed to \"%1\"").arg(trimmed));
-        scheduleRefresh();
-    }
-}
-
-void LayerPanel::moveLayer(int delta)
-{
-    if (!m_scene) {
-        return;
-    }
-    const int id = m_scene->activeLayerId();
-    if (m_scene->moveLayerWithUndo(id, delta)) {
-        emit statusMessage(delta > 0 ? tr("Layer moved up") : tr("Layer moved down"));
-    }
-}
-
-void LayerPanel::updateButtons()
-{
-    if (!m_scene) {
-        return;
-    }
-
-    const int activeIndex = m_scene->layerIndex(m_scene->activeLayerId());
-    QList<int> ids = selectedLayerIds();
-    if (ids.isEmpty()) {
-        if (m_scene->activeLayerId() > CanvasScene::BackgroundLayerId) {
-            ids.append(m_scene->activeLayerId());
-        }
-    }
-
-    int removable = 0;
-    bool removeable = true;
-    for (int id : ids) {
-        const int index = m_scene->layerIndex(id);
-        if (index <= 0 || m_scene->layerItemCount(id) > 0) {
-            removeable = false;
-            break;
-        }
-        ++removable;
-    }
-
-    m_addButton->setEnabled(true);
-    m_removeButton->setEnabled(removeable && !ids.isEmpty() && m_scene->userLayerCount() - removable >= 1);
-    m_upButton->setEnabled(activeIndex > 0 && activeIndex < m_scene->layerCount() - 1);
-    m_downButton->setEnabled(activeIndex > 1);
-}
-
-void LayerPanel::updateSummary()
-{
-    if (!m_scene) {
-        return;
-    }
-
-    const QList<int> ids = selectedLayerIds();
-    QString text;
-    if (ids.size() > 1) {
-        text = tr("%1 layer(s) selected (items can be multi-selected)\n").arg(ids.size());
-    } else {
-        const CanvasLayer active = m_scene->layer(m_scene->activeLayerId());
-        text = tr("Current: %1\n").arg(active.name);
-    }
-    text +=
-        tr("Checkbox = show/hide · lock button = lock\nIn edit mode, items on visible, unlocked layers can be edited");
-    m_summaryLabel->setText(text);
+    m_actions->removeLayer(this, ids);
 }

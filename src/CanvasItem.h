@@ -8,6 +8,8 @@
 #include <QSizeF>
 
 class CanvasScene;
+class CanvasItemHandles;
+class CanvasItemInteraction;
 class QGraphicsSceneHoverEvent;
 class QGraphicsSceneMouseEvent;
 
@@ -18,6 +20,7 @@ class CanvasItem : public QGraphicsObject {
     enum Handle { NoHandle = -1, TopLeft = 0, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left, Rotation };
 
     explicit CanvasItem(QGraphicsItem* parent = nullptr);
+    ~CanvasItem() override;
 
     int type() const override { return Type; }
 
@@ -102,16 +105,10 @@ class CanvasItem : public QGraphicsObject {
     QCursor cursorForHandle(Handle handle) const;
 
   private:
-    enum class DragKind { None, Move, Resize, Rotate };
+    friend class CanvasItemHandles;
+    friend class CanvasItemInteraction;
 
-    void beginMove(const QPointF& scenePos);
-    void beginResize(Handle handle, const QPointF& scenePos);
-    void beginRotate(const QPointF& scenePos);
-    void applyMove(const QPointF& scenePos);
-    void applyResize(const QPointF& scenePos, Qt::KeyboardModifiers modifiers);
-    void applyRotate(const QPointF& scenePos);
-    void finishInteraction();
-    void updateHoverCursor(const QPointF& pos);
+    enum class DragKind { None, Move, Resize, Rotate };
 
     QSizeF m_size{120.0, 90.0};
     int m_layerId = 0;
@@ -127,4 +124,6 @@ class CanvasItem : public QGraphicsObject {
     qreal m_dragStartRotation = 0.0;
     qreal m_rotateStartAngle = 0.0;
     ItemGeometryList m_before;
+    CanvasItemHandles* m_handles = nullptr;
+    CanvasItemInteraction* m_interaction = nullptr;
 };
