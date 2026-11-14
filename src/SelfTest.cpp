@@ -4924,7 +4924,7 @@ int runSelfTest(const QString& reportPath)
     {
         // 组合（挖掉重叠）与拆分（切成互不重叠的多块）：
         // 两个 60×60 矩形横向错开 30，重叠区 30×60。
-        auto runOperation = [](BoolOps::Operation operation, int& layerCount, qreal& area) {
+        auto runOperation = [](BoolOps::Operation operation, int& layerCount, qreal& area, int& itemCount) {
             QUndoStack undo;
             CanvasScene scene;
             scene.setUndoStack(&undo);
@@ -4947,24 +4947,34 @@ int runSelfTest(const QString& reportPath)
             layerCount = 0;
             area = 0.0;
             const QList<CanvasItem*> selected = scene.selectedCanvasItems();
-            if (auto* composite =
-                    ok && !selected.isEmpty() ? dynamic_cast<CompositeShapeItem*>(selected.constFirst()) : nullptr) {
-                layerCount = composite->layerCount();
-                area = composite->outlineShape().boundingRect().width();
+            itemCount = ok ? selected.size() : 0;
+            for (CanvasItem* item : selected) {
+                if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+                    layerCount += composite->layerCount();
+                    if (area <= 0.0) {
+                        area = composite->outlineShape().boundingRect().width();
+                    }
+                }
             }
             return ok;
         };
         int combineLayers = 0;
         qreal combineWidth = 0.0;
-        const bool combineOk = runOperation(BoolOps::Operation::Combine, combineLayers, combineWidth);
-        check(combineOk && combineLayers == 1, QStringLiteral("组合运算生成单层结果，重叠区被挖空"),
-              QStringLiteral("ok=%1 layers=%2").arg(combineOk ? 1 : 0).arg(combineLayers));
+        int combineItems = 0;
+        const bool combineOk = runOperation(BoolOps::Operation::Combine, combineLayers, combineWidth, combineItems);
+        check(combineOk && combineLayers == 1 && combineItems == 1,
+              QStringLiteral("组合运算生成单个单层结果，重叠区被挖空"),
+              QStringLiteral("ok=%1 layers=%2 items=%3").arg(combineOk ? 1 : 0).arg(combineLayers).arg(combineItems));
 
         int fragmentLayers = 0;
         qreal fragmentWidth = 0.0;
-        const bool fragmentOk = runOperation(BoolOps::Operation::Fragment, fragmentLayers, fragmentWidth);
-        check(fragmentOk && fragmentLayers == 3, QStringLiteral("拆分运算把重叠区切成三块"),
-              QStringLiteral("ok=%1 layers=%2").arg(fragmentOk ? 1 : 0).arg(fragmentLayers));
+        int fragmentItems = 0;
+        const bool fragmentOk =
+            runOperation(BoolOps::Operation::Fragment, fragmentLayers, fragmentWidth, fragmentItems);
+        check(
+            fragmentOk && fragmentItems == 3 && fragmentLayers == 3,
+            QStringLiteral("拆分把重叠区切成三个可分别选中的合并图形"),
+            QStringLiteral("ok=%1 items=%2 layers=%3").arg(fragmentOk ? 1 : 0).arg(fragmentItems).arg(fragmentLayers));
     }
     {
         // 联合的重叠区必须整块取高优先级图元的颜色（含轮廓色），不留低层的描边。

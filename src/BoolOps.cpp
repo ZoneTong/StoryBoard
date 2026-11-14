@@ -103,11 +103,13 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
 
     // 顶层图元（优先级最高的那个）决定结果的颜色与落点。
     const Participant top = participants.constLast();
-    QList<CompositeShapeItem::Layer> layers;
+    // 除拆分外的运算都只产出一个合并图形；拆分产出多个互不重叠的独立图元。
+    QList<QList<CompositeShapeItem::Layer>> results;
 
     switch (operation) {
     case Operation::Union: {
         // 直接按优先级叠加：高层后画，重叠处显示高层的填充与轮廓颜色。
+        QList<CompositeShapeItem::Layer> layers;
         for (const Participant& participant : participants) {
             CompositeShapeItem::Layer layer;
             layer.path = participant.path;
@@ -117,6 +119,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
             layer.filled = participant.filled;
             layers.append(layer);
         }
+        results.append(layers);
         break;
     }
     case Operation::Combine: {
@@ -129,12 +132,13 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         if (result.isEmpty()) {
             return false;
         }
-        layers.append(singleLayer(result, top));
+        results.append(QList<CompositeShapeItem::Layer>{singleLayer(result, top)});
         break;
     }
     case Operation::Fragment: {
         // 拆分：按“被哪些图元覆盖”把重叠区切成互不重叠的多块，每块沿用覆盖它
-        // 的最高优先级图元的颜色。图元数超过 8 个时 2^n 组合过大，取前 8 个参与。
+        // 的最高优先级图元的颜色；每块单独生成一个合并图形图元，可分别选中和拖动。
+        // 图元数超过 8 个时 2^n 组合过大，取前 8 个参与。
         const int count = qMin(participants.size(), 8);
         for (int mask = 1; mask < (1 << count); ++mask) {
             QPainterPath region;
@@ -176,9 +180,9 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
                     break;
                 }
             }
-            layers.append(singleLayer(region, participants.at(styleIndex)));
+            results.append(QList<CompositeShapeItem::Layer>{singleLayer(region, participants.at(styleIndex))});
         }
-        if (layers.isEmpty()) {
+        if (results.isEmpty()) {
             return false;
         }
         break;
@@ -199,7 +203,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
                 break;
             }
         }
-        layers.append(singleLayer(result, participants.at(styleIndex)));
+        results.append(QList<CompositeShapeItem::Layer>{singleLayer(result, participants.at(styleIndex))});
         break;
     }
     case Operation::Subtract: {
@@ -211,15 +215,10 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         if (result.isEmpty()) {
             return false;
         }
-        layers.append(singleLayer(result, top));
+        results.append(QList<CompositeShapeItem::Layer>{singleLayer(result, top)});
         break;
     }
     }
-
-    auto* composite = new CompositeShapeItem(layers);
-    composite->setName(scene->uniqueItemName(composite->typeDisplayName()));
-    composite->setLayerId(top.item->layerId());
-    composite->setHeight(scene->nextHeight(top.item->layerId()));
 
     QList<CanvasItem*> originals;
     for (const Participant& participant : participants) {
@@ -230,12 +229,24 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
     if (!undo) {
         return false;
     }
+
+    // 一次操作只占一条撤销记录；拆分产出的多个图元逐条加入同一宏内。
+    QList<CanvasItem*> created;
     undo->beginMacro(commandText);
     undo->push(new RemoveItemsCommand(scene, originals, commandText));
-    undo->push(new AddItemCommand(scene, composite, commandText));
+    for (const QList<CompositeShapeItem::Layer>& block : results) {
+        auto* composite = new CompositeShapeItem(block);
+        composite->setName(scene->uniqueItemName(composite->typeDisplayName()));
+        composite->setLayerId(top.item->layerId());
+        composite->setHeight(scene->nextHeight(top.item->layerId()));
+        undo->push(new AddItemCommand(scene, composite, commandText));
+        created.append(composite);
+    }
     undo->endMacro();
     scene->clearSelection();
-    composite->setSelected(true);
+    for (CanvasItem* item : created) {
+        item->setSelected(true);
+    }
     return true;
 }
 
