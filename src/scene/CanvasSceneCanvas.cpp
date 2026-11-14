@@ -8,6 +8,7 @@
 #include <QPen>
 #include <QPixmap>
 #include <QUndoStack>
+#include <QWidget>
 #include <QtMath>
 
 QRectF CanvasScene::canvasRect() const
@@ -233,6 +234,12 @@ void CanvasScene::drawCanvasBackground(QPainter* painter, const QRectF& area, bo
         }
     }
 
+    // 透明背景：仅在屏幕视图上用白 / 浅灰棋盘格标识透明区域；离屏渲染与导出图保持纯透明，不画棋盘。
+    const bool onScreen = dynamic_cast<const QWidget*>(painter->device()) != nullptr;
+    if (onScreen && !m_exporting && isLayerVisible(BackgroundLayerId) && m_background.type == BackgroundType::None) {
+        drawCheckerboard(painter, canvas);
+    }
+
     if (!includeGrid) {
         return;
     }
@@ -272,6 +279,30 @@ void CanvasScene::drawCanvasBackground(QPainter* painter, const QRectF& area, bo
         const qreal y = canvas.top() + i * step;
         painter->setPen(major ? majorPen : minorPen);
         painter->drawLine(QPointF(canvas.left(), y), QPointF(canvas.right(), y));
+    }
+    painter->restore();
+}
+
+void CanvasScene::drawCheckerboard(QPainter* painter, const QRectF& canvas) const
+{
+    const qreal zoom = painter->worldTransform().m11();
+    if (zoom < 0.18) {
+        return;
+    }
+
+    constexpr qreal tile = 10.0;
+    const QColor white(255, 255, 255);
+    const QColor lightGray(229, 231, 235);
+
+    painter->save();
+    painter->setClipRect(canvas);
+    const int columns = qCeil(canvas.width() / tile);
+    const int rows = qCeil(canvas.height() / tile);
+    for (int row = 0; row < rows; ++row) {
+        for (int col = 0; col < columns; ++col) {
+            const QRectF tileRect(canvas.left() + col * tile, canvas.top() + row * tile, tile, tile);
+            painter->fillRect(tileRect, ((row + col) % 2 == 0) ? white : lightGray);
+        }
     }
     painter->restore();
 }
