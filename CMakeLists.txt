@@ -100,6 +100,12 @@ set(STORYBOARD_SOURCES
     src/ItemPropertiesDialog.cpp
     src/MainWindow.h
     src/MainWindow.cpp
+    src/BackgroundController.h
+    src/BackgroundController.cpp
+    src/DockPanelController.h
+    src/DockPanelController.cpp
+    src/ShortcutController.h
+    src/ShortcutController.cpp
     src/SelfTest.h
     src/SelfTest.cpp
     resources/resources.qrc

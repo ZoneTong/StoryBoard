@@ -1,9 +1,11 @@
 #include "MainWindow.h"
 
+#include "BackgroundController.h"
 #include "CanvasScene.h"
 #include "CanvasView.h"
 #include "Commands.h"
 #include "CustomShapeTemplates.h"
+#include "DockPanelController.h"
 #include "ExportDialog.h"
 #include "I18n.h"
 #include "IconFactory.h"
@@ -15,6 +17,7 @@
 #include "LineArtDialog.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
+#include "ShortcutController.h"
 #include "TextItem.h"
 
 #include <QAbstractButton>
@@ -375,16 +378,20 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     m_view->setCanvasColor(m_settings.canvasColor);
     setCentralWidget(m_view);
 
+    m_background = std::make_unique<BackgroundController>(this);
+    m_docks = std::make_unique<DockPanelController>(this);
+    m_shortcuts = std::make_unique<ShortcutController>(this);
+
     createActions();
     createShapeMenu();
-    createLayerDock();
-    createItemDock();
-    applyDockLayout();
+    m_docks->createLayerDock();
+    m_docks->createItemDock();
+    m_docks->applyDockLayout();
     createMenus();
     createToolBars();
     createStatusBar();
     connectSignals();
-    applyShortcutOverrides();
+    m_shortcuts->applyShortcutOverrides();
 
     if (!m_settings.windowGeometry.isEmpty()) {
         restoreGeometry(m_settings.windowGeometry);
@@ -759,146 +766,10 @@ void MainWindow::updateCustomShapeMenu()
     }
 }
 
-void MainWindow::createLayerDock()
-{
-    m_layerDock = new QDockWidget(tr("Layers"), this);
-    m_layerDock->setObjectName(QStringLiteral("LayerDock"));
-    m_layerDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    m_layerDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable |
-                             QDockWidget::DockWidgetClosable);
-
-    m_layerPanel = new LayerPanel(m_scene, m_layerDock);
-    m_layerDock->setWidget(m_layerPanel);
-    addDockWidget(Qt::RightDockWidgetArea, m_layerDock);
-    // 卡片不铺满右侧：给出合适的高度区间，避免单独显示时被拉到整列高度。
-    m_layerDock->setMinimumHeight(200);
-    m_layerDock->setMaximumHeight(420);
-
-    connect(m_layerPanel, &LayerPanel::statusMessage, this,
-            [this](const QString& message) { statusBar()->showMessage(message, 3000); });
-}
-
-void MainWindow::createItemDock()
-{
-    m_itemDock = new QDockWidget(tr("Edit item"), this);
-    m_itemDock->setObjectName(QStringLiteral("ItemDock"));
-    m_itemDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    m_itemDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable |
-                            QDockWidget::DockWidgetClosable);
-
-    m_itemPanel = new ItemDockPanel(m_scene, m_itemDock);
-    m_itemDock->setWidget(m_itemPanel);
-    addDockWidget(Qt::RightDockWidgetArea, m_itemDock);
-    // 编辑图元卡同样限定高度区间，显示 / 隐藏时不会把另一张卡顶到整列高。
-    m_itemDock->setMinimumHeight(240);
-    m_itemDock->setMaximumHeight(620);
-
-    connect(m_itemPanel, &ItemDockPanel::insertShapeRequested, this,
-            [this](int type) { insertShape(static_cast<ShapeType>(type)); });
-    connect(m_itemPanel, &ItemDockPanel::insertCustomShapeRequested, this, &MainWindow::insertCustomShape);
-    connect(m_itemPanel, &ItemDockPanel::openShapesFolderRequested, this, &MainWindow::openShapesFolder);
-    connect(m_itemPanel, &ItemDockPanel::statusMessage, this,
-            [this](const QString& message) { statusBar()->showMessage(message, 3000); });
-
-    // 需求：默认无选中就隐藏，选中图元时自动出现。
-    m_itemDock->setVisible(false);
-}
-
-QStringList MainWindow::currentDockOrder() const
-{
-    if (!m_layerDock || !m_itemDock) {
-        return {};
-    }
-    // 两张卡都在右侧且都已显示时按实际上下位置排序；否则沿用上一次记录，
-    // 避免编辑图元卡隐藏时无法判断它的位置而把顺序写丢。
-    if (dockWidgetArea(m_layerDock) != Qt::RightDockWidgetArea ||
-        dockWidgetArea(m_itemDock) != Qt::RightDockWidgetArea || !m_layerDock->isVisible() ||
-        !m_itemDock->isVisible()) {
-        return m_dockOrder;
-    }
-    const int layerTop = m_layerDock->mapTo(this, QPoint(0, 0)).y();
-    const int itemTop = m_itemDock->mapTo(this, QPoint(0, 0)).y();
-    if (layerTop == itemTop) {
-        return m_dockOrder;
-    }
-    QStringList order;
-    if (layerTop < itemTop) {
-        order << QStringLiteral("LayerDock") << QStringLiteral("ItemDock");
-    } else {
-        order << QStringLiteral("ItemDock") << QStringLiteral("LayerDock");
-    }
-    return order;
-}
-
-void MainWindow::applyDockLayout()
-{
-    if (!m_layerDock || !m_itemDock) {
-        return;
-    }
-    m_applyingDockLayout = true;
-
-    // 默认图层卡在上、编辑图元卡在下；用户在界面上拖拽调整过则按设置文件恢复。
-    QStringList order;
-    for (const QString& name : m_settings.dockOrder) {
-        if ((name == QStringLiteral("ItemDock") || name == QStringLiteral("LayerDock")) && !order.contains(name)) {
-            order.append(name);
-        }
-    }
-    if (order.size() != 2) {
-        order = {QStringLiteral("LayerDock"), QStringLiteral("ItemDock")};
-    }
-    m_dockOrder = order;
-    m_settings.dockOrder = order;
-
-    QDockWidget* first = order.first() == QStringLiteral("LayerDock") ? m_layerDock : m_itemDock;
-    QDockWidget* second = first == m_layerDock ? m_itemDock : m_layerDock;
-
-    // 重新排布两张卡：同一右侧区域，竖直切分，first 在上、second 在下。
-    removeDockWidget(m_layerDock);
-    removeDockWidget(m_itemDock);
-    addDockWidget(Qt::RightDockWidgetArea, first);
-    addDockWidget(Qt::RightDockWidgetArea, second);
-    splitDockWidget(first, second, Qt::Vertical);
-    // 默认给一个合适高度，不占满右侧整列；上限已在建卡时限定。
-    resizeDocks({m_layerDock, m_itemDock}, {300, 420}, Qt::Vertical);
-    QTimer::singleShot(0, this, [this]() {
-        // 窗口显示后再定一次初始高度：构造阶段窗口还没有实际尺寸，切分比例会失真。
-        resizeDocks({m_layerDock, m_itemDock}, {300, 420}, Qt::Vertical);
-    });
-
-    // 拖动标题栏调整卡片相对顺序时记录新顺序（同一区域内换位不会有位置信号，
-    // 用移动事件兜底，延迟到本轮布局结束后再读实际坐标）。
-    m_layerDock->installEventFilter(this);
-    m_itemDock->installEventFilter(this);
-    connect(m_layerDock, &QDockWidget::dockLocationChanged, this,
-            [this](Qt::DockWidgetArea) { QTimer::singleShot(0, this, &MainWindow::rememberDockOrder); });
-    connect(m_itemDock, &QDockWidget::dockLocationChanged, this,
-            [this](Qt::DockWidgetArea) { QTimer::singleShot(0, this, &MainWindow::rememberDockOrder); });
-
-    m_layerDock->setVisible(true);
-    m_itemDock->setVisible(false);
-    m_applyingDockLayout = false;
-}
-
-void MainWindow::rememberDockOrder()
-{
-    if (m_applyingDockLayout || !m_layerDock || !m_itemDock) {
-        return;
-    }
-    const QStringList order = currentDockOrder();
-    if (order.isEmpty() || order == m_dockOrder) {
-        return;
-    }
-    m_dockOrder = order;
-    m_settings.dockOrder = order;
-    m_settings.save();
-}
-
 bool MainWindow::eventFilter(QObject* watched, QEvent* event)
 {
-    if ((watched == m_layerDock || watched == m_itemDock) && event->type() == QEvent::Move) {
-        // 卡片被拖到新位置后，等布局稳定再读上下关系并落盘。
-        QTimer::singleShot(0, this, &MainWindow::rememberDockOrder);
+    if (m_docks) {
+        m_docks->handleMoveEvent(watched, event);
     }
     return QMainWindow::eventFilter(watched, event);
 }
@@ -940,12 +811,12 @@ void MainWindow::createMenus()
     viewMenu->addSeparator();
     // 需求：辅助网格除设置外还要能从视图菜单直接开关，开关状态与设置里的复选框同步。
     viewMenu->addAction(m_gridAct);
-    QAction* layerDockAction = m_layerDock->toggleViewAction();
+    QAction* layerDockAction = m_docks->layerDock()->toggleViewAction();
     layerDockAction->setText(tr("Layer panel"));
     layerDockAction->setStatusTip(tr("Show or hide the layer panel"));
     viewMenu->addAction(layerDockAction);
 
-    QAction* itemDockAction = m_itemDock->toggleViewAction();
+    QAction* itemDockAction = m_docks->itemDock()->toggleViewAction();
     itemDockAction->setObjectName(QStringLiteral("ItemDockToggleAction"));
     itemDockAction->setText(tr("Edit item panel"));
     itemDockAction->setStatusTip(
@@ -1515,19 +1386,9 @@ void MainWindow::updateActions()
 
 void MainWindow::updateBackgroundModeActions()
 {
-    if (!m_scene || !m_bgStretchAct) {
-        return;
+    if (m_background) {
+        m_background->updateModeActions();
     }
-
-    const BackgroundState background = m_scene->background();
-    const bool hasImage = background.type == BackgroundType::Image;
-    m_bgStretchAct->setEnabled(hasImage);
-    m_bgFitAct->setEnabled(hasImage);
-    m_bgTileAct->setEnabled(hasImage);
-    m_bgStretchAct->setChecked(hasImage && background.mode == BackgroundMode::Stretch);
-    m_bgFitAct->setChecked(hasImage && background.mode == BackgroundMode::Fit);
-    m_bgTileAct->setChecked(hasImage && background.mode == BackgroundMode::Tile);
-    m_clearBgAct->setEnabled(background.type != BackgroundType::None);
 }
 
 void MainWindow::updateStatusBar()
@@ -2309,22 +2170,8 @@ void MainWindow::openShapesFolder()
 
 void MainWindow::updateItemDockVisibility()
 {
-    if (!m_itemDock || !m_scene || !m_view) {
-        return;
-    }
-    // 需求：选中图元时默认显示卡片，无选中则隐藏；非编辑模式没有可编辑选择，也收起。
-    const bool hasSelection = m_view->mode() == ToolMode::Edit && !m_scene->selectedCanvasItems().isEmpty();
-    if (m_itemDock->isVisible() != hasSelection) {
-        m_itemDock->setVisible(hasSelection);
-    }
-    if (hasSelection) {
-        // 首次弹出时给编辑卡一个合适高度；用户已经拖大过就不再干预。
-        QTimer::singleShot(0, this, [this]() {
-            if (!m_itemDock->isVisible() || m_itemDock->height() >= 300) {
-                return;
-            }
-            resizeDocks({m_layerDock, m_itemDock}, {300, 420}, Qt::Vertical);
-        });
+    if (m_docks) {
+        m_docks->updateItemDockVisibility();
     }
 }
 
@@ -2664,60 +2511,17 @@ void MainWindow::applyBoolOperation(BoolOps::Operation operation)
 
 void MainWindow::replaceBackgroundImage()
 {
-    QString startDirectory = m_settings.lastImageDir;
-    if (startDirectory.isEmpty()) {
-        startDirectory = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
-    }
-
-    const QString path =
-        QFileDialog::getOpenFileName(this, tr("Replace background image"), startDirectory, imageFilter());
-    if (path.isEmpty()) {
-        return;
-    }
-
-    QImageReader reader(path);
-    reader.setAutoTransform(true);
-    const QImage image = reader.read();
-    if (image.isNull()) {
-        reportWarning(this, tr("Replace background"), tr("Could not read the image:\n%1").arg(reader.errorString()));
-        return;
-    }
-
-    BackgroundState background;
-    background.type = BackgroundType::Image;
-    background.image = QPixmap::fromImage(image);
-    background.mode =
-        m_scene->background().type == BackgroundType::Image ? m_scene->background().mode : BackgroundMode::Stretch;
-    m_scene->replaceBackground(background, tr("Replace background image"));
-
-    m_settings.lastImageDir = QFileInfo(path).absolutePath();
-    m_settings.save();
-    statusBar()->showMessage(tr("Background replaced"), 3000);
+    m_background->replaceBackgroundImage();
 }
 
 void MainWindow::setBackgroundColor()
 {
-    QColor initial(255, 255, 255);
-    if (m_scene->background().type == BackgroundType::Color) {
-        initial = m_scene->background().color;
-    }
-
-    const QColor color = QColorDialog::getColor(initial, this, tr("Choose background color"));
-    if (!color.isValid()) {
-        return;
-    }
-
-    BackgroundState background;
-    background.type = BackgroundType::Color;
-    background.color = color;
-    m_scene->replaceBackground(background, tr("Set background color"));
-    statusBar()->showMessage(tr("Background color updated"), 3000);
+    m_background->setBackgroundColor();
 }
 
 void MainWindow::clearBackground()
 {
-    m_scene->replaceBackground(BackgroundState(), tr("Clear background"));
-    statusBar()->showMessage(tr("Background cleared"), 3000);
+    m_background->clearBackground();
 }
 
 void MainWindow::applyUiLanguage()
@@ -2735,8 +2539,8 @@ void MainWindow::applyUiLanguage()
     }
 
     // 图层面板每行文字（图层名、图元数、锁定/隐藏后缀）是动态拼的，重建一次。
-    if (m_layerPanel) {
-        m_layerPanel->refresh();
+    if (m_docks && m_docks->layerPanel()) {
+        m_docks->layerPanel()->refresh();
     }
 
     if (m_view) {
@@ -2876,237 +2680,9 @@ void MainWindow::openCanvasesFolder()
     QDesktopServices::openUrl(QUrl::fromLocalFile(directory));
 }
 
-void MainWindow::applyShortcutOverrides()
-{
-    // 用「默认快捷键」当稳定标识：它在代码里写死，换语言、改键后都不变，
-    // 比菜单文字更适合做配置键。默认键只在启动时记一次，之后改键不会把它覆盖掉，
-    // 否则「恢复默认」就找不回原来的组合键了。
-    if (m_defaultShortcuts.isEmpty()) {
-        for (QAction* action : findChildren<QAction*>()) {
-            if (!action || action->shortcuts().isEmpty()) {
-                continue;
-            }
-            QStringList portable;
-            for (const QKeySequence& sequence : action->shortcuts()) {
-                const QString text = sequence.toString(QKeySequence::PortableText);
-                if (!text.isEmpty()) {
-                    portable.append(text);
-                }
-            }
-            if (!portable.isEmpty()) {
-                m_defaultShortcuts.insert(action, portable);
-            }
-        }
-    }
-    for (auto it = m_defaultShortcuts.constBegin(); it != m_defaultShortcuts.constEnd(); ++it) {
-        QAction* action = it.key();
-        if (!action) {
-            continue;
-        }
-        const QString id = it.value().constFirst();
-        const auto overrideIt = m_settings.shortcutOverrides.constFind(id);
-        if (overrideIt != m_settings.shortcutOverrides.constEnd() && !overrideIt.value().isEmpty()) {
-            const QKeySequence sequence = QKeySequence::fromString(overrideIt.value(), QKeySequence::PortableText);
-            if (!sequence.isEmpty()) {
-                action->setShortcut(sequence);
-                continue;
-            }
-        }
-        // 没有覆盖（或覆盖为空）就是默认值：多键动作整组恢复，不只恢复第一个。
-        QList<QKeySequence> defaults;
-        for (const QString& portable : it.value()) {
-            defaults.append(QKeySequence::fromString(portable, QKeySequence::PortableText));
-        }
-        action->setShortcuts(defaults);
-    }
-    refreshShortcutTips();
-}
-
-void MainWindow::refreshShortcutTips()
-{
-    for (QAction* action : findChildren<QAction*>()) {
-        if (!action) {
-            continue;
-        }
-        const QVariant base = action->property("storyBoardBaseTip");
-        // 没走 makeAction 的动作（如退出、高度 ±1）没有记基串，就从现有提示里
-        // 去掉末尾的 “(Ctrl+X) / （Ctrl+X）”，否则改键后旧键会一直留在提示里。
-        QString baseTip;
-        if (base.isValid()) {
-            baseTip = base.toString();
-        } else {
-            const QString source = action->statusTip().isEmpty() ? action->toolTip() : action->statusTip();
-            baseTip = source;
-            static const QRegularExpression tail(QStringLiteral("(?:\\s*[（(][^（）()]*[）)])$"));
-            baseTip.remove(tail);
-        }
-        if (baseTip.isEmpty()) {
-            if (!base.isValid()) {
-                // 原本就没有提示的动作，不要硬塞一条。
-                continue;
-            }
-            action->setToolTip(action->text());
-            action->setStatusTip(action->text());
-            continue;
-        }
-        const QString keys = action->shortcut().toString(QKeySequence::NativeText);
-        const QString tip = keys.isEmpty() ? baseTip : baseTip + QStringLiteral(" (") + keys + QLatin1Char(')');
-        action->setToolTip(tip);
-        action->setStatusTip(tip);
-    }
-}
-
-bool MainWindow::changeShortcut(QAction* action, const QKeySequence& sequence)
-{
-    if (!action || sequence.isEmpty()) {
-        return false;
-    }
-    const QString id = m_defaultShortcuts.value(action).value(0);
-    if (id.isEmpty()) {
-        return false;
-    }
-    // 同一组合键只允许绑定一个动作，避免按下后 Qt 触发不确定的那个。
-    for (QAction* other : findChildren<QAction*>()) {
-        if (!other || other == action || other->shortcut().isEmpty()) {
-            continue;
-        }
-        for (const QKeySequence& existing : other->shortcuts()) {
-            if (existing == sequence) {
-                reportWarning(
-                    this, tr("Shortcut already in use"),
-                    tr("%1 is already used by “%2”.").arg(sequence.toString(QKeySequence::NativeText), other->text()));
-                return false;
-            }
-        }
-    }
-    action->setShortcut(sequence);
-    if (sequence == QKeySequence::fromString(id, QKeySequence::PortableText)) {
-        m_settings.shortcutOverrides.remove(id);
-    } else {
-        m_settings.shortcutOverrides.insert(id, sequence.toString(QKeySequence::PortableText));
-    }
-    m_settings.save();
-    refreshShortcutTips();
-    return true;
-}
-
 void MainWindow::showShortcuts()
 {
-    // 直接从现有动作汇总，新加的快捷键自动进表。
-    struct Entry {
-        QAction* action = nullptr;
-        QString text;
-        QString keys;
-    };
-    QList<Entry> entries;
-    for (QAction* action : findChildren<QAction*>()) {
-        if (!action || action->shortcut().isEmpty()) {
-            continue;
-        }
-        QString text = action->text();
-        text = text.trimmed();
-        if (text.isEmpty()) {
-            continue;
-        }
-        const QString keys = action->shortcut().toString(QKeySequence::NativeText);
-        bool duplicate = false;
-        for (const Entry& existing : entries) {
-            if (existing.text == text && existing.keys == keys) {
-                duplicate = true;
-                break;
-            }
-        }
-        if (!duplicate) {
-            entries.append({action, text, keys});
-        }
-    }
-    std::sort(entries.begin(), entries.end(), [](const Entry& left, const Entry& right) {
-        return left.text.compare(right.text, Qt::CaseInsensitive) < 0;
-    });
-
-    QDialog dialog(this);
-    dialog.setWindowTitle(tr("Keyboard shortcuts"));
-    auto* layout = new QVBoxLayout(&dialog);
-    layout->setContentsMargins(18, 16, 18, 12);
-    layout->setSpacing(10);
-
-    auto* title = new QLabel(tr("Click a shortcut to change it; Esc closes this dialog."), &dialog);
-    title->setWordWrap(true);
-    layout->addWidget(title);
-
-    // 改成新键后要就地回显键帽文字，不能等下次打开列表才更新。
-    QList<QPair<QAction*, QPushButton*>> keyButtons;
-
-    // 分成三栏，条目多时也不至于拉成一条细长的竖列。
-    constexpr int kColumns = 3;
-    auto* grid = new QGridLayout();
-    grid->setContentsMargins(0, 0, 0, 0);
-    grid->setHorizontalSpacing(18);
-    grid->setVerticalSpacing(6);
-    const int rows = (entries.size() + kColumns - 1) / kColumns;
-    for (int i = 0; i < entries.size(); ++i) {
-        const int column = i / qMax(1, rows);
-        const int row = i % qMax(1, rows);
-        auto* name = new QLabel(entries.at(i).text, &dialog);
-        name->setToolTip(entries.at(i).text);
-        auto* keys = new QPushButton(entries.at(i).keys, &dialog);
-        keys->setFlat(true);
-        keys->setCursor(Qt::PointingHandCursor);
-        keys->setToolTip(tr("Change this shortcut"));
-        QAction* action = entries.at(i).action;
-        keyButtons.append(qMakePair(action, keys));
-        connect(keys, &QPushButton::clicked, &dialog, [this, &dialog, action, keys]() {
-            QDialog edit(&dialog);
-            edit.setWindowTitle(tr("Change shortcut"));
-            auto* editLayout = new QVBoxLayout(&edit);
-            auto* prompt = new QLabel(tr("Press the new key combination for “%1”.").arg(action->text()), &edit);
-            prompt->setWordWrap(true);
-            editLayout->addWidget(prompt);
-            auto* editor = new QKeySequenceEdit(action->shortcut(), &edit);
-            editLayout->addWidget(editor);
-            auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &edit);
-            editLayout->addWidget(buttons);
-            connect(buttons, &QDialogButtonBox::accepted, &edit, &QDialog::accept);
-            connect(buttons, &QDialogButtonBox::rejected, &edit, &QDialog::reject);
-            if (edit.exec() != QDialog::Accepted) {
-                return;
-            }
-            if (changeShortcut(action, editor->keySequence())) {
-                keys->setText(action->shortcut().toString(QKeySequence::NativeText));
-            }
-        });
-        grid->addWidget(name, row, column * 2);
-        grid->addWidget(keys, row, column * 2 + 1);
-    }
-    for (int column = 0; column < kColumns; ++column) {
-        grid->setColumnStretch(column * 2, 1);
-    }
-    layout->addLayout(grid);
-    layout->addStretch(1);
-
-    auto* buttonRow = new QHBoxLayout();
-    auto* resetButton = new QPushButton(tr("Restore default shortcuts"), &dialog);
-    buttonRow->addWidget(resetButton);
-    buttonRow->addStretch(1);
-    auto* closeButton = new QPushButton(tr("Close"), &dialog);
-    closeButton->setDefault(true);
-    buttonRow->addWidget(closeButton);
-    layout->addLayout(buttonRow);
-    connect(closeButton, &QPushButton::clicked, &dialog, &QDialog::accept);
-    connect(resetButton, &QPushButton::clicked, &dialog, [this, &keyButtons]() {
-        m_settings.shortcutOverrides.clear();
-        m_settings.save();
-        applyShortcutOverrides();
-        // 恢复默认后键帽也要当场回到默认键。
-        for (const auto& item : keyButtons) {
-            if (item.first) {
-                item.second->setText(item.first->shortcut().toString(QKeySequence::NativeText));
-            }
-        }
-    });
-
-    dialog.resize(920, 560);
-    dialog.exec();
+    m_shortcuts->showShortcuts();
 }
 
 void MainWindow::showAbout()
@@ -3170,7 +2746,7 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
     m_settings.windowGeometry = saveGeometry();
     // 退出时按实际上下位置再记一次卡片顺序，拖拽换位后即使没有触发移动事件也能落盘。
-    m_settings.dockOrder = currentDockOrder();
+    m_settings.dockOrder = m_docks ? m_docks->currentDockOrder() : QStringList();
     m_settings.brushColor = m_brushColor;
     m_settings.brushWidth = m_brushWidth;
     if (m_smoothingSpin) {

@@ -16,6 +16,7 @@
 #include <QPointer>
 #include <QString>
 #include <QStringList>
+#include <memory>
 
 class CanvasScene;
 class CanvasView;
@@ -23,6 +24,9 @@ class CanvasItem;
 class ItemPropertiesDialog;
 class ItemDockPanel;
 class LayerPanel;
+class BackgroundController;
+class DockPanelController;
+class ShortcutController;
 class QAction;
 class QActionGroup;
 class QComboBox;
@@ -90,13 +94,6 @@ class MainWindow : public QMainWindow {
     void createActions();
     void createShapeMenu();
     void updateCustomShapeMenu();
-    void createLayerDock();
-    void createItemDock();
-    // 右侧两张卡（图层 / 编辑图元）的上下顺序：默认图层在上，用户拖拽调整后
-    // 顺序写进设置文件，下次启动按保存的顺序恢复。
-    void applyDockLayout();
-    void rememberDockOrder();
-    QStringList currentDockOrder() const;
     void createMenus();
     void createToolBars();
     void createStatusBar();
@@ -133,15 +130,12 @@ class MainWindow : public QMainWindow {
     void showItemProperties(CanvasItem* item);
     void rotateSelected(qreal degrees);
     void closeItemProperties();
-    // 快捷键：按「默认组合键」把动作和配置文件里的自定义键对上；改键后立即落盘。
-    void applyShortcutOverrides();
-    void refreshShortcutTips();
-    bool changeShortcut(QAction* action, const QKeySequence& sequence);
     QString documentName() const;
 
-    // 动作 → 默认快捷键（便携文本，多键动作保留整组），作为配置里 shortcutOverrides 的键。
-    // 只在启动时采集一次，改键后不覆盖，才能「恢复默认」。
-    QHash<QAction*, QStringList> m_defaultShortcuts;
+  private:
+    friend class BackgroundController;
+    friend class DockPanelController;
+    friend class ShortcutController;
 
     CanvasScene* m_scene = nullptr;
     CanvasView* m_view = nullptr;
@@ -225,14 +219,6 @@ class MainWindow : public QMainWindow {
     QMenu* m_shapeMenu = nullptr;
     QMenu* m_customShapeMenu = nullptr;
 
-    QDockWidget* m_layerDock = nullptr;
-    LayerPanel* m_layerPanel = nullptr;
-    QDockWidget* m_itemDock = nullptr;
-    ItemDockPanel* m_itemPanel = nullptr;
-    // 右侧两张卡的当前上下顺序（对象名），拖拽或布局变化后更新并写回设置。
-    QStringList m_dockOrder;
-    bool m_applyingDockLayout = false;
-
     QToolButton* m_colorButton = nullptr;
     QToolButton* m_fillButton = nullptr;
     QToolButton* m_fillColorButton = nullptr;
@@ -240,6 +226,9 @@ class MainWindow : public QMainWindow {
     QComboBox* m_widthCombo = nullptr;
     QSpinBox* m_smoothingSpin = nullptr;
     QPointer<ItemPropertiesDialog> m_itemPropertiesDialog;
+    std::unique_ptr<BackgroundController> m_background;
+    std::unique_ptr<DockPanelController> m_docks;
+    std::unique_ptr<ShortcutController> m_shortcuts;
 
     QLabel* m_hintLabel = nullptr;
     QLabel* m_modeBadge = nullptr;
