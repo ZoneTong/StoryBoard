@@ -28,8 +28,10 @@ class ItemDockPanel : public QWidget {
     explicit ItemDockPanel(CanvasScene* scene, QWidget* parent = nullptr);
 
     void refresh();
-    // 多选时复用主窗口的对齐 / 合并形状动作，保证菜单、工具栏与卡片行为一致。
-    void setSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions);
+    // 多选时复用主窗口的对齐 / 化形 / 复制 / 删除 / 旋转 / 组合动作，保证菜单、工具栏与卡片行为一致。
+    void setSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions,
+                             QAction* copyAction, QAction* removeAction, QAction* rotateCwAction,
+                             QAction* rotateCcwAction, QAction* groupAction, QAction* ungroupAction);
 
   signals:
     // 没有选中图形时，点常见图形按“插入”处理，交给主窗口沿用当前画笔与填充设置。
@@ -41,6 +43,8 @@ class ItemDockPanel : public QWidget {
   private:
     void scheduleRefresh();
     void updateSummary();
+    // 选中的是否还值得再套一层组合：正好选中的是一整棵组树时返回 false。
+    bool selectionGroupUseful(const QList<CanvasItem*>& items) const;
 
     QList<CanvasItem*> selectedItems() const;
     QList<ShapeItem*> selectedShapes() const;

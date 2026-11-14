@@ -3592,6 +3592,18 @@ Use the checkbox to show or hide it.</source>
         <source>Merge shapes</source>
         <translation>合并形状</translation>
     </message>
+    <message>
+        <source>Morph</source>
+        <translation>化形</translation>
+    </message>
+    <message>
+        <source>Morph the selected shapes</source>
+        <translation>化形选中的图形</translation>
+    </message>
+    <message>
+        <source>Morph is available in edit mode only</source>
+        <translation>化形只在编辑模式可用</translation>
+    </message>
 </context>
   <context>
     <name>SettingsDialog</name>

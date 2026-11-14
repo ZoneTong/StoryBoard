@@ -44,7 +44,21 @@ enum class IconId {
     MergeIntersect,
     MergeSubtract,
     // 多选工具卡里的对齐入口。
-    Align
+    Align,
+    // 对齐展开后的 8 个按钮：左 / 水平居中 / 右 / 上 / 垂直居中 / 下 / 水平等距 / 垂直等距。
+    AlignLeft,
+    AlignCenterH,
+    AlignRight,
+    AlignTop,
+    AlignCenterV,
+    AlignBottom,
+    DistributeH,
+    DistributeV,
+    // 选中操作栏：复制、组合、取消组合；化形主入口用独立的形变图标，避免和五项子操作重复。
+    Copy,
+    Group,
+    Ungroup,
+    Morph
 };
 
 QIcon makeIcon(IconId id, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);

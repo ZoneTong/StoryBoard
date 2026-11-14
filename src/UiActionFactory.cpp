@@ -85,6 +85,7 @@ void UiActionFactory::build()
     m_window->m_deleteAct = makeAction(m_window, IconId::Delete, MainWindow::tr("Delete selected items"),
                                        QKeySequence::Delete, MainWindow::tr("Delete the selected items (Delete)"));
     m_window->m_duplicateAct = new QAction(MainWindow::tr("Duplicate selected items"), m_window);
+    m_window->m_duplicateAct->setIcon(makeIcon(IconId::Copy, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
     m_window->m_duplicateAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+D")));
     m_window->m_duplicateAct->setStatusTip(MainWindow::tr("Duplicate the selected items with a small offset (Ctrl+D)"));
     m_window->m_duplicateAct->setEnabled(false);
@@ -98,6 +99,7 @@ void UiActionFactory::build()
         }
     });
     m_window->m_groupAct = new QAction(MainWindow::tr("Group selected items"), m_window);
+    m_window->m_groupAct->setIcon(makeIcon(IconId::Group, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
     m_window->m_groupAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+G")));
     m_window->m_groupAct->setStatusTip(MainWindow::tr("Group the selected items so they move together (Ctrl+G)"));
     m_window->m_groupAct->setEnabled(false);
@@ -108,9 +110,12 @@ void UiActionFactory::build()
         const int grouped = m_window->m_scene->groupSelectedItems();
         if (grouped > 0) {
             m_window->statusBar()->showMessage(MainWindow::tr("Grouped %1 item(s)").arg(grouped), 3000);
+            // 组合前后“取消组合”的可用状态会变，立即刷新一批动作与卡片。
+            m_window->updateActions();
         }
     });
     m_window->m_ungroupAct = new QAction(MainWindow::tr("Ungroup selected items"), m_window);
+    m_window->m_ungroupAct->setIcon(makeIcon(IconId::Ungroup, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
     m_window->m_ungroupAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+G")));
     m_window->m_ungroupAct->setStatusTip(MainWindow::tr("Ungroup the selected group(s) (Ctrl+Shift+G)"));
     m_window->m_ungroupAct->setEnabled(false);
@@ -121,6 +126,7 @@ void UiActionFactory::build()
         const int ungrouped = m_window->m_scene->ungroupSelectedItems();
         if (ungrouped > 0) {
             m_window->statusBar()->showMessage(MainWindow::tr("Ungrouped %1 item(s)").arg(ungrouped), 3000);
+            m_window->updateActions();
         }
     });
     m_window->m_smoothAct = makeAction(

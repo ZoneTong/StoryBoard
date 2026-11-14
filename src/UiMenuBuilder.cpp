@@ -154,27 +154,31 @@ void UiMenuBuilder::buildMenus()
     alignMenu->setObjectName(QStringLiteral("AlignMenu"));
     struct AlignEntry {
         Alignment::Mode mode;
+        IconId icon;
         const char* text;
         const char* tip;
     };
     const AlignEntry alignEntries[] = {
-        {Alignment::Mode::Left, QT_TR_NOOP("Align left"), QT_TR_NOOP("Line up the left edges of the selected items")},
-        {Alignment::Mode::HorizontalCenter, QT_TR_NOOP("Align horizontal centers"),
+        {Alignment::Mode::Left, IconId::AlignLeft, QT_TR_NOOP("Align left"),
+         QT_TR_NOOP("Line up the left edges of the selected items")},
+        {Alignment::Mode::HorizontalCenter, IconId::AlignCenterH, QT_TR_NOOP("Align horizontal centers"),
          QT_TR_NOOP("Center the selected items on the same vertical axis")},
-        {Alignment::Mode::Right, QT_TR_NOOP("Align right"),
+        {Alignment::Mode::Right, IconId::AlignRight, QT_TR_NOOP("Align right"),
          QT_TR_NOOP("Line up the right edges of the selected items")},
-        {Alignment::Mode::Top, QT_TR_NOOP("Align top"), QT_TR_NOOP("Line up the top edges of the selected items")},
-        {Alignment::Mode::VerticalCenter, QT_TR_NOOP("Align vertical centers"),
+        {Alignment::Mode::Top, IconId::AlignTop, QT_TR_NOOP("Align top"),
+         QT_TR_NOOP("Line up the top edges of the selected items")},
+        {Alignment::Mode::VerticalCenter, IconId::AlignCenterV, QT_TR_NOOP("Align vertical centers"),
          QT_TR_NOOP("Center the selected items on the same horizontal axis")},
-        {Alignment::Mode::Bottom, QT_TR_NOOP("Align bottom"),
+        {Alignment::Mode::Bottom, IconId::AlignBottom, QT_TR_NOOP("Align bottom"),
          QT_TR_NOOP("Line up the bottom edges of the selected items")},
-        {Alignment::Mode::DistributeHorizontal, QT_TR_NOOP("Distribute horizontally"),
+        {Alignment::Mode::DistributeHorizontal, IconId::DistributeH, QT_TR_NOOP("Distribute horizontally"),
          QT_TR_NOOP("Space the selected items evenly from left to right (needs 3 or more)")},
-        {Alignment::Mode::DistributeVertical, QT_TR_NOOP("Distribute vertically"),
+        {Alignment::Mode::DistributeVertical, IconId::DistributeV, QT_TR_NOOP("Distribute vertically"),
          QT_TR_NOOP("Space the selected items evenly from top to bottom (needs 3 or more)")},
     };
     for (const AlignEntry& entry : alignEntries) {
         QAction* action = alignMenu->addAction(MainWindow::tr(entry.text));
+        action->setIcon(makeIcon(entry.icon, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
         action->setStatusTip(MainWindow::tr(entry.tip));
         action->setProperty("alignMode", static_cast<int>(entry.mode));
         QObject::connect(action, &QAction::triggered, m_window,
@@ -182,10 +186,11 @@ void UiMenuBuilder::buildMenus()
         m_window->m_alignActions.append(action);
     }
 
-    // 合并形状：与 PPT「合并形状」同一套命名——联合 / 组合 / 拆分 / 相交 / 剪除。
-    QMenu* boolMenu = editMenu->addMenu(MainWindow::tr("Merge shapes"));
+    // 化形：与 PPT「合并形状」同一套子操作命名——联合 / 组合 / 拆分 / 相交 / 剪除；
+    // 主入口用独立图标（形变图形），五项子操作继续用两圆交叠的运算图标。
+    QMenu* boolMenu = editMenu->addMenu(MainWindow::tr("Morph"));
     boolMenu->setObjectName(QStringLiteral("BoolMenu"));
-    boolMenu->setIcon(makeIcon(IconId::MergeUnion, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
+    boolMenu->setIcon(makeIcon(IconId::Morph, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
     const QList<QPair<BoolOps::Operation, QString>> boolEntries = {
         {BoolOps::Operation::Union, MainWindow::tr("Union")},
         {BoolOps::Operation::Combine, MainWindow::tr("Combine")},
@@ -212,9 +217,12 @@ void UiMenuBuilder::buildMenus()
                          [this, operation = boolEntries.at(i).first]() { m_window->applyBoolOperation(operation); });
         m_window->m_boolActions.append(action);
     }
-    // 多选时编辑图元卡直接复用同一批对齐 / 合并形状动作，快捷键与启用状态不用再维护一份。
+    // 多选时编辑图元卡直接复用同一批对齐 / 化形 / 复制 / 删除 / 旋转 / 组合动作，
+    // 快捷键与启用状态不用再维护一份。
     if (m_window->m_docks && m_window->m_docks->itemPanel()) {
-        m_window->m_docks->itemPanel()->setSelectionActions(m_window->m_alignActions, m_window->m_boolActions);
+        m_window->m_docks->itemPanel()->setSelectionActions(
+            m_window->m_alignActions, m_window->m_boolActions, m_window->m_duplicateAct, m_window->m_deleteAct,
+            m_window->m_rotateCwAct, m_window->m_rotateCcwAct, m_window->m_groupAct, m_window->m_ungroupAct);
         m_window->m_docks->itemPanel()->refresh();
     }
 
