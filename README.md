@@ -34,6 +34,8 @@
 
 项目版本号只在 `CMakeLists.txt` 的 `project(StoryBoard VERSION ...)` 维护；Windows 文件版本资源、关于对话框和便携包命名都从它派生。
 
+源文件按文件夹配置：`CMakeLists.txt` 的 `STORYBOARD_SOURCE_FOLDERS` 只列目录（默认 `src`、`src/selftest`、`resources`），目录内的 `.cpp/.h/.hpp/.qrc` 由 `CONFIGURE_DEPENDS` 自动收集；新增或删除文件不必改清单，新增子目录时只加一行目录路径。
+
 ### Linux / macOS
 
 ```bash

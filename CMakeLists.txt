@@ -49,69 +49,38 @@ set(STORYBOARD_QT_TRANSLATION_FILE
     translations/qtbase_zh_CN.qm
 )
 
-set(STORYBOARD_SOURCES
-    src/main.cpp
-    src/CanvasTypes.h
-    src/Alignment.h
-    src/Alignment.cpp
-    src/CompositeShapeItem.h
-    src/CompositeShapeItem.cpp
-    src/BoolOps.h
-    src/BoolOps.cpp
-    src/Settings.h
-    src/Settings.cpp
-    src/I18n.h
-    src/I18n.cpp
-    src/ItemGeometry.h
-    src/IconFactory.h
-    src/IconFactory.cpp
-    src/CanvasItem.h
-    src/CanvasItem.cpp
-    src/StrokeItem.h
-    src/StrokeItem.cpp
-    src/ImageItem.h
-    src/ImageItem.cpp
-    src/TextItem.h
-    src/TextItem.cpp
-    src/ShapeItem.h
-    src/ShapeItem.cpp
-    src/CustomShapeTemplates.h
-    src/CustomShapeTemplates.cpp
-    src/LineArtConverter.h
-    src/LineArtConverter.cpp
-    src/LineArtPresets.h
-    src/LineArtDialog.h
-    src/LineArtDialog.cpp
-    src/Commands.h
-    src/Commands.cpp
-    src/CanvasScene.h
-    src/CanvasScene.cpp
-    src/CanvasView.h
-    src/CanvasView.cpp
-    src/LayerPanel.h
-    src/LayerPanel.cpp
-    src/ItemDockPanel.h
-    src/ItemDockPanel.cpp
-    src/ExportDialog.h
-    src/ExportDialog.cpp
-    src/SettingsDialog.h
-    src/SettingsDialog.cpp
-    src/ItemPropertiesDialog.h
-    src/ItemPropertiesDialog.cpp
-    src/MainWindow.h
-    src/MainWindow.cpp
-    src/BackgroundController.h
-    src/BackgroundController.cpp
-    src/DockPanelController.h
-    src/DockPanelController.cpp
-    src/ShortcutController.h
-    src/ShortcutController.cpp
-    src/SelfTest.h
-    src/SelfTest.cpp
-    resources/resources.qrc
+# 源文件按文件夹组织：目录内新增 / 删除文件由 CONFIGURE_DEPENDS 自动同步，
+# 不再逐个文件维护清单。新增子目录时只在这里追加一行文件夹路径。
+function(storyboard_add_source_folder target folder)
+    if(NOT IS_DIRECTORY "${folder}")
+        return()
+    endif()
+    file(GLOB STORYBOARD_FOLDER_SOURCES CONFIGURE_DEPENDS
+        "${folder}/*.cpp"
+        "${folder}/*.cxx"
+        "${folder}/*.cc"
+        "${folder}/*.h"
+        "${folder}/*.hpp"
+        "${folder}/*.hxx"
+        "${folder}/*.qrc"
+    )
+    if(STORYBOARD_FOLDER_SOURCES)
+        target_sources(${target} PRIVATE ${STORYBOARD_FOLDER_SOURCES})
+        # IDE 里仍按真实目录层级展示，避免所有文件挤在 Source Files 根下。
+        source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" PREFIX "" FILES ${STORYBOARD_FOLDER_SOURCES})
+    endif()
+endfunction()
+
+set(STORYBOARD_SOURCE_FOLDERS
+    src
+    src/selftest
+    resources
 )
 
-qt_add_executable(StoryBoard WIN32 ${STORYBOARD_SOURCES})
+qt_add_executable(StoryBoard WIN32)
+foreach(source_folder IN LISTS STORYBOARD_SOURCE_FOLDERS)
+    storyboard_add_source_folder(StoryBoard "${CMAKE_CURRENT_SOURCE_DIR}/${source_folder}")
+endforeach()
 
 target_compile_definitions(StoryBoard PRIVATE STORYBOARD_VERSION="${STORYBOARD_VERSION}"
                                                     STORYBOARD_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
