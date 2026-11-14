@@ -94,6 +94,10 @@ ItemDockPanelFillBorderCard::ItemDockPanelFillBorderCard(QWidget* parent) : QWid
     auto* widthLayout = new QHBoxLayout(widthRow);
     widthLayout->setContentsMargins(0, 0, 0, 0);
     widthLayout->setSpacing(4);
+    QToolButton* widthIcon = makeRowIcon(IconId::Brush, widthRow);
+    widthIcon->setObjectName(QStringLiteral("ItemBorderWidthIcon"));
+    widthIcon->setToolTip(ItemDockPanel::tr("Border width"));
+    widthLayout->addWidget(widthIcon);
     m_borderWidthSpin = new QSpinBox(widthRow);
     m_borderWidthSpin->setObjectName(QStringLiteral("ItemBorderWidthSpin"));
     m_borderWidthSpin->setRange(1, 64);
