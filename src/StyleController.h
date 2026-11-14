@@ -5,6 +5,7 @@
 
 #include <QColor>
 #include <QIcon>
+#include <QString>
 
 class MainWindow;
 
@@ -17,6 +18,8 @@ class StyleController {
     void setFillStyle(FillStyle style);
     void chooseFillColor();
     void chooseStrokeColor();
+    void applyStrokeColorToSelection(const QColor& color);
+    void applyStrokeWidthToSelection(qreal width);
     void applyFillToSelection();
     void updateFillActions();
 
@@ -31,5 +34,8 @@ class StyleController {
     QIcon fillStyleIcon(FillStyle style, const QColor& color, int logicalSize) const;
 
   private:
+    int applyStrokeStyleToSelection(const QColor& color, qreal width, bool changeColor, bool changeWidth,
+                                    const QString& text);
+
     MainWindow* m_window = nullptr;
 };

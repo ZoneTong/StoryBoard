@@ -3013,6 +3013,22 @@ Use the checkbox to show or hide it.</source>
       <translation>已将描线颜色应用到 %1 个图形</translation>
     </message>
     <message>
+      <source>Border color set; it will be used for newly inserted shapes and strokes</source>
+      <translation>已设置描线颜色，将用于新插入的图形和笔画</translation>
+    </message>
+    <message>
+      <source>Change border width</source>
+      <translation>修改描线宽度</translation>
+    </message>
+    <message>
+      <source>The border style did not change</source>
+      <translation>描线样式未发生变化</translation>
+    </message>
+    <message>
+      <source>Applied border style to %1 item(s)</source>
+      <translation>已将描线样式应用到 %1 个图元</translation>
+    </message>
+    <message>
       <source>The selected shape is stroke-only (line, brace, etc.); fill is not supported</source>
       <translation>所选图形只支持描边（直线、大括号等），不支持填充</translation>
     </message>

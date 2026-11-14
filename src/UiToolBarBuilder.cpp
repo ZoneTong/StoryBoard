@@ -5,26 +5,14 @@
 #include "MainWindow.h"
 #include "StyleController.h"
 
-#include <QActionGroup>
 #include <QColor>
-#include <QComboBox>
 #include <QLabel>
 #include <QMenu>
-#include <QSignalBlocker>
 #include <QSize>
 #include <QSpinBox>
 #include <QToolBar>
 #include <QToolButton>
 #include <utility>
-
-namespace {
-
-QList<int> brushWidthPresets()
-{
-    return {1, 2, 3, 4, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 64};
-}
-
-} // namespace
 
 UiToolBarBuilder::UiToolBarBuilder(MainWindow* window) : m_window(window) {}
 
@@ -188,33 +176,24 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
                                                   .arg(m_window->m_brushColor.name(QColor::HexArgb).toUpper()));
     mainBar->addWidget(m_window->m_strokeColorButton);
 
-    // 描线颜色按钮后紧跟描线宽度下拉，改宽度与改描线宽度走同一套设置。
-    m_window->m_widthCombo = new QComboBox(mainBar);
-    m_window->m_widthCombo->setObjectName(QStringLiteral("BrushWidthCombo"));
-    m_window->m_widthCombo->setFixedWidth(74);
-    m_window->m_widthCombo->setFixedHeight(MainWindow::kToolBarControlHeight);
-    m_window->m_widthCombo->setToolTip(MainWindow::tr("Brush width"));
-    for (int width : brushWidthPresets()) {
-        m_window->m_widthCombo->addItem(QStringLiteral("%1 px").arg(width), width);
-    }
-    QObject::connect(m_window->m_widthCombo, &QComboBox::currentIndexChanged, m_window, [this](int index) {
-        const int value = m_window->m_widthCombo->itemData(index).toInt();
+    // 描线颜色按钮后紧跟描线宽度输入框；修改宽度同时作用于选中图形和笔画。
+    m_window->m_widthSpin = new QSpinBox(mainBar);
+    m_window->m_widthSpin->setObjectName(QStringLiteral("StrokeWidthSpin"));
+    m_window->m_widthSpin->setRange(1, 64);
+    m_window->m_widthSpin->setSingleStep(1);
+    m_window->m_widthSpin->setSuffix(QStringLiteral(" px"));
+    m_window->m_widthSpin->setFixedWidth(74);
+    m_window->m_widthSpin->setFixedHeight(MainWindow::kToolBarControlHeight);
+    m_window->m_widthSpin->setToolTip(MainWindow::tr("Brush width"));
+    QObject::connect(m_window->m_widthSpin, &QSpinBox::valueChanged, m_window, [this](int value) {
         if (value <= 0) {
             return;
         }
-        m_window->m_brushWidth = value;
-        m_window->m_view->setBrushWidth(value);
-        m_window->m_settings.brushWidth = value;
+        m_window->setBrushWidthUi(value);
+        m_window->m_settings.brushWidth = m_window->m_brushWidth;
         m_window->m_settings.save();
-        if (m_window->m_brushWidthGroup) {
-            for (QAction* action : m_window->m_brushWidthGroup->actions()) {
-                if (action->data().toInt() == value) {
-                    const QSignalBlocker blocker(action);
-                    action->setChecked(true);
-                }
-            }
-        }
+        m_window->m_style->applyStrokeWidthToSelection(m_window->m_brushWidth);
     });
     m_window->setBrushWidthUi(m_window->m_brushWidth);
-    mainBar->addWidget(m_window->m_widthCombo);
+    mainBar->addWidget(m_window->m_widthSpin);
 }

@@ -330,6 +330,7 @@ void UiActionFactory::build()
             m_window->setBrushWidthUi(width);
             m_window->m_settings.brushWidth = width;
             m_window->m_settings.save();
+            m_window->m_style->applyStrokeWidthToSelection(width);
         });
     }
 
