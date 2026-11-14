@@ -476,6 +476,36 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             dockScene->undoStack()->undo();
             ctx.check(selectedShape->height() == heightBefore, QStringLiteral("撤销高度 +1 恢复原高度"));
 
+            // 边框颜色 / 宽度同时是画笔的当前颜色与宽度，改完描边后画笔立即沿用。
+            QWidget* borderWidthWidget = dockPanel->findChild<QWidget*>(QStringLiteral("ItemBorderWidthRow"));
+            QDoubleSpinBox* borderWidthSpin =
+                borderWidthWidget ? borderWidthWidget->findChild<QDoubleSpinBox*>() : nullptr;
+            if (borderWidthSpin) {
+                borderWidthSpin->setValue(9.0);
+                QApplication::processEvents();
+            }
+            ctx.check(qAbs(selectedShape->strokeWidth() - 9.0) < 0.01 && dockView &&
+                          qAbs(dockView->brushWidth() - 9.0) < 0.01,
+                      QStringLiteral("边框宽度同时成为画笔宽度"),
+                      QStringLiteral("stroke=%1 brush=%2")
+                          .arg(selectedShape->strokeWidth())
+                          .arg(dockView ? dockView->brushWidth() : -1.0));
+            QWidget* borderColorWidget = dockPanel->findChild<QWidget*>(QStringLiteral("ItemBorderColorRow"));
+            const QList<QToolButton*> strokeSwatches =
+                borderColorWidget ? borderColorWidget->findChildren<QToolButton*>(QStringLiteral("ItemColorSwatch"))
+                                  : QList<QToolButton*>();
+            const QColor brushColorTarget(QStringLiteral("#EF4444"));
+            if (strokeSwatches.size() > 1) {
+                strokeSwatches.at(1)->click();
+                QApplication::processEvents();
+            }
+            ctx.check(selectedShape->strokeColor() == brushColorTarget && dockView &&
+                          dockView->brushColor() == brushColorTarget,
+                      QStringLiteral("边框颜色同时成为画笔颜色"),
+                      QStringLiteral("stroke=%1 brush=%2")
+                          .arg(selectedShape->strokeColor().name())
+                          .arg(dockView ? dockView->brushColor().name() : QStringLiteral("-")));
+
             ctx.check(copyButton && deleteButton && rotateCwButton && rotateCcwButton && copyButton->isVisible() &&
                           deleteButton->isVisible() && rotateCwButton->isVisible() && rotateCcwButton->isVisible(),
                       QStringLiteral("单选时编辑图元卡列出复制 / 删除 / 旋转按钮"));
