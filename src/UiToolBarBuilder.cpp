@@ -135,7 +135,8 @@ void UiToolBarBuilder::createBrushToolbar(QToolBar* mainBar)
     mainBar->addWidget(brushLabel);
     m_window->m_colorButton = new QToolButton(mainBar);
     m_window->m_colorButton->setObjectName(QStringLiteral("ColorButton"));
-    m_window->m_colorButton->setIcon(makeColorIcon(m_window->m_brushColor, MainWindow::kToolBarIconSize));
+    m_window->m_colorButton->setIcon(
+        m_window->m_style->strokeColorIcon(m_window->m_brushColor, MainWindow::kToolBarIconSize));
     m_window->m_colorButton->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
     m_window->m_colorButton->setToolTip(MainWindow::tr("Brush color: %1 (click to choose)")
                                             .arg(m_window->m_brushColor.name(QColor::HexArgb).toUpper()));

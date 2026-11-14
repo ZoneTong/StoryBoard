@@ -25,7 +25,6 @@
 #include <QtMath>
 
 
-
 StyleController::StyleController(MainWindow* window) : m_window(window) {}
 
 QIcon StyleController::fillColorIcon(const QColor& color, int logicalSize) const
@@ -210,8 +209,7 @@ void StyleController::updateFillActions()
         m_window->m_fillHachureAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::Hachure, swatch, 16));
     }
     if (m_window->m_fillReverseAct) {
-        m_window->m_fillReverseAct->setIcon(
-        ItemStyleVisuals::fillStyleIcon(FillStyle::ReverseHachure, swatch, 16));
+        m_window->m_fillReverseAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::ReverseHachure, swatch, 16));
     }
     if (m_window->m_fillCrossAct) {
         m_window->m_fillCrossAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::CrossHatch, swatch, 16));
@@ -245,12 +243,12 @@ void StyleController::setBrushColor(const QColor& color, bool remember)
     m_window->m_brushColor = color;
     m_window->m_view->setBrushColor(color);
     if (m_window->m_colorButton) {
-        m_window->m_colorButton->setIcon(makeColorIcon(color, MainWindow::kToolBarIconSize));
+        m_window->m_colorButton->setIcon(strokeColorIcon(color, MainWindow::kToolBarIconSize));
         m_window->m_colorButton->setToolTip(
             MainWindow::tr("Brush color: %1 (click to choose)").arg(color.name(QColor::HexArgb).toUpper()));
     }
     if (m_window->m_brushColorAct) {
-        m_window->m_brushColorAct->setIcon(makeColorIcon(color, 16));
+        m_window->m_brushColorAct->setIcon(strokeColorIcon(color, 16));
     }
     if (m_window->m_strokeColorAct) {
         m_window->m_strokeColorAct->setIcon(strokeColorIcon(color, 16));
