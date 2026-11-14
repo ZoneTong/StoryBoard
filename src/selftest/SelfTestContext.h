@@ -9,6 +9,7 @@
 #include <QUndoStack>
 #include <memory>
 
+class ShapeItem;
 class StrokeItem;
 class TextItem;
 
@@ -44,6 +45,11 @@ class Context {
 
     // 图形段产出的整画布 JSON，主窗口图形菜单 / 载入段复用。
     QJsonObject shapeRoot;
+
+    // 属性对话框段创建，后续图片 / 文字命名段继续复用同一编辑场景与首图形。
+    CanvasScene propertyScene;
+    QUndoStack propertyUndo;
+    ShapeItem* propertyFirstShape = nullptr;
 };
 
 } // namespace selftest
