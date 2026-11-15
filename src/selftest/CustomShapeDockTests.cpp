@@ -739,8 +739,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                           .arg(dockScene->canvasItemCount()));
 
 
-            // 笔画复用描线颜色 / 宽度与透明度：只选笔画时不显示描线样式行，
-            // 描线颜色、宽度直接改笔画；透明度对图形和笔画都生效。
+            // 曲线复用描线颜色 / 宽度 / 样式与透明度：只选曲线时描线样式行可用。
             auto* selectedStroke = new CurveItem();
             selectedStroke->setStrokePoints({QPointF(60.0, 300.0), QPointF(180.0, 300.0)},
                                             QColor(QStringLiteral("#2563EB")), 6.0);
@@ -750,7 +749,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             QApplication::processEvents();
 
             QWidget* borderStyleWidget = dockPanel->findChild<QWidget*>(QStringLiteral("ItemBorderStyleRow"));
-            ctx.check(borderStyleWidget && !borderStyleWidget->isVisible(), QStringLiteral("只选笔画时隐藏描线样式行"));
+            ctx.check(borderStyleWidget && borderStyleWidget->isVisible(), QStringLiteral("只选曲线时显示描线样式行"));
             ctx.check(borderWidthSpin && borderWidthSpin->isEnabled() &&
                           qAbs(borderWidthSpin->value() - selectedStroke->strokeWidth()) < 0.01 && opacitySpin &&
                           opacitySpin->isEnabled(),
@@ -781,6 +780,16 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             ctx.check(qAbs(selectedStroke->strokeWidth() - 6.0) < 0.01, QStringLiteral("撤销描线宽度恢复笔画原宽度"),
                       QString::number(selectedStroke->strokeWidth()));
 
+            if (borderButtons.size() > 1) {
+                const Qt::PenStyle styleBefore = selectedStroke->strokeStyle();
+                borderButtons.at(1)->click();
+                QApplication::processEvents();
+                ctx.check(selectedStroke->strokeStyle() != styleBefore, QStringLiteral("曲线可通过编辑卡切换描线样式"));
+                dockScene->undoStack()->undo();
+                QApplication::processEvents();
+                ctx.check(selectedStroke->strokeStyle() == styleBefore, QStringLiteral("撤销描线样式恢复曲线原样式"));
+            }
+
             if (opacitySpin) {
                 opacitySpin->setValue(55);
                 QApplication::processEvents();
@@ -796,7 +805,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             selectedStroke->setSelected(true);
             QApplication::processEvents();
             ctx.check(borderStyleWidget && borderStyleWidget->isVisible(),
-                      QStringLiteral("图形与笔画混合选中时保留描线样式行"));
+                      QStringLiteral("图形与曲线混合选中时保留描线样式行"));
             if (opacitySpin) {
                 opacitySpin->setValue(30);
                 QApplication::processEvents();

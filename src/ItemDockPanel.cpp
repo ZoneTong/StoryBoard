@@ -281,8 +281,8 @@ void ItemDockPanel::refresh()
     m_fillBorderCard->fillStyleRow()->setVisible(showFillRows);
     m_colorsCard->fillColorRow()->setVisible(showFillRows);
 
-    // 描线样式只对图形有意义；描线颜色 / 宽度对图形与笔画都有效。
-    const bool showBorderStyleRow = hasSelection && !shapes.isEmpty();
+    // 描线样式对图形与曲线都有效；描线颜色 / 宽度对图形与曲线也有效。
+    const bool showBorderStyleRow = hasSelection && (!shapes.isEmpty() || !strokes.isEmpty());
     const bool showStrokeRows = hasSelection && (!shapes.isEmpty() || !strokes.isEmpty());
     m_fillBorderCard->borderStyleRow()->setVisible(showBorderStyleRow);
     m_colorsCard->borderColorRow()->setVisible(showStrokeRows);
@@ -425,7 +425,25 @@ void ItemDockPanel::applyFillStyle(FillStyle style)
 
 void ItemDockPanel::applyBorderStyle(Qt::PenStyle style)
 {
-    changeSelectedShapes(tr("Change shape border style"), [style](ShapeItem* shape) { shape->setStrokeStyle(style); });
+    const QList<CanvasItem*> items = selectedStrokeTargets();
+    if (items.isEmpty() || !m_scene || !m_scene->undoStack()) {
+        return;
+    }
+
+    QList<Qt::PenStyle> beforeStyles;
+    QList<Qt::PenStyle> afterStyles;
+    for (CanvasItem* item : items) {
+        if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+            beforeStyles.append(shape->strokeStyle());
+            afterStyles.append(style);
+        } else if (auto* curve = dynamic_cast<CurveItem*>(item)) {
+            beforeStyles.append(curve->strokeStyle());
+            afterStyles.append(style);
+        }
+    }
+    m_scene->undoStack()->push(
+        new ItemPenStyleCommand(m_scene, items, beforeStyles, afterStyles, tr("Change shape border style")));
+    refresh();
 }
 
 void ItemDockPanel::applyBorderWidth(qreal width)

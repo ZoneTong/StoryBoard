@@ -1,10 +1,10 @@
 #include "ItemDockPanelFillBorderCard.h"
 
+#include "CurveItem.h"
 #include "IconFactory.h"
 #include "ItemDockPanel.h"
 #include "ItemStyleVisuals.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 
 #include <QHBoxLayout>
 #include <QSpinBox>
@@ -125,10 +125,16 @@ void ItemDockPanelFillBorderCard::refresh(const QList<ShapeItem*>& shapes, const
         button->setChecked(!shapes.isEmpty() && style == currentFill);
     }
 
-    const Qt::PenStyle currentStyle = shapes.isEmpty() ? Qt::SolidLine : shapes.first()->strokeStyle();
+    Qt::PenStyle currentStyle = Qt::SolidLine;
+    if (!shapes.isEmpty()) {
+        currentStyle = shapes.first()->strokeStyle();
+    } else if (!strokes.isEmpty()) {
+        currentStyle = strokes.first()->strokeStyle();
+    }
     const QList<Qt::PenStyle> penStyles = ItemStyleVisuals::borderStyles();
     for (int index = 0; index < m_borderStyleButtons.size(); ++index) {
-        m_borderStyleButtons.at(index)->setChecked(!shapes.isEmpty() && penStyles.at(index) == currentStyle);
+        const bool hasTargets = !shapes.isEmpty() || !strokes.isEmpty();
+        m_borderStyleButtons.at(index)->setChecked(hasTargets && penStyles.at(index) == currentStyle);
     }
     if (m_borderWidthSpin) {
         const bool hasTargets = !shapes.isEmpty() || !strokes.isEmpty();

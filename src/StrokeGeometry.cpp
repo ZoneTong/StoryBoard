@@ -66,7 +66,7 @@ QPainterPath hitScaled(const QPainterPath& path, const QSizeF& baseSize, const Q
 }
 
 void render(QPainter* painter, const QPainterPath& path, const QSizeF& baseSize, const QSizeF& contentSize,
-            const QColor& color, qreal penWidth)
+            const QColor& color, qreal penWidth, Qt::PenStyle style)
 {
     if (baseSize.isEmpty() || path.isEmpty()) {
         return;
@@ -79,6 +79,7 @@ void render(QPainter* painter, const QPainterPath& path, const QSizeF& baseSize,
     painter->scale(scaleX, scaleY);
     QPen pen(color);
     pen.setWidthF(penWidth);
+    pen.setStyle(style);
     pen.setCapStyle(Qt::RoundCap);
     pen.setJoinStyle(Qt::RoundJoin);
     painter->setPen(pen);

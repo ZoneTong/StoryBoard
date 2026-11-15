@@ -1,9 +1,9 @@
 #pragma once
 
 #include "CanvasTypes.h"
+#include "CurveItem.h"
 #include "ItemGeometry.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 #include "TextItem.h"
 
 #include <QColor>
@@ -191,6 +191,7 @@ struct ItemPropertiesState {
     bool hasStrokeStyle = false;
     QColor strokeColor;
     qreal strokeWidth = 4.0;
+    Qt::PenStyle strokeStyle = Qt::SolidLine;
     // 需求 39：图片本体也是可编辑属性，替换图片与改名一起进入同一条撤销记录。
     bool hasImageState = false;
     QPixmap image;
@@ -235,6 +236,23 @@ class ItemStrokeStyleCommand : public QUndoCommand {
     QList<qreal> m_beforeWidths;
     QList<QColor> m_afterColors;
     QList<qreal> m_afterWidths;
+};
+
+// 描线样式对图形与曲线都生效；只改样式，不动颜色与宽度。
+class ItemPenStyleCommand : public QUndoCommand {
+  public:
+    ItemPenStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<Qt::PenStyle>& before,
+                        const QList<Qt::PenStyle>& after, const QString& text);
+    void undo() override;
+    void redo() override;
+
+  private:
+    void apply(const QList<Qt::PenStyle>& styles);
+
+    CanvasScene* m_scene = nullptr;
+    QList<QPointer<CanvasItem>> m_items;
+    QList<Qt::PenStyle> m_before;
+    QList<Qt::PenStyle> m_after;
 };
 
 // 透明度对图形、笔画、文字、图片等所有图元都生效。

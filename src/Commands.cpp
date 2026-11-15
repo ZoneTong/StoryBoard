@@ -2,8 +2,8 @@
 
 #include "CanvasItem.h"
 #include "CanvasScene.h"
-#include "ImageItem.h"
 #include "CurveItem.h"
+#include "ImageItem.h"
 
 #include <QGraphicsScene>
 #include <utility>
@@ -404,6 +404,46 @@ void ItemStrokeStyleCommand::apply(const QList<QColor>& colors, const QList<qrea
     }
 }
 
+ItemPenStyleCommand::ItemPenStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
+                                         const QList<Qt::PenStyle>& before, const QList<Qt::PenStyle>& after,
+                                         const QString& text)
+    : m_scene(scene), m_before(before), m_after(after)
+{
+    setText(text);
+    for (CanvasItem* item : items) {
+        m_items.append(QPointer<CanvasItem>(item));
+    }
+}
+
+void ItemPenStyleCommand::undo()
+{
+    apply(m_before);
+}
+
+void ItemPenStyleCommand::redo()
+{
+    apply(m_after);
+}
+
+void ItemPenStyleCommand::apply(const QList<Qt::PenStyle>& styles)
+{
+    for (int i = 0; i < m_items.size() && i < styles.size(); ++i) {
+        CanvasItem* item = m_items.at(i);
+        if (!item) {
+            continue;
+        }
+        const Qt::PenStyle style = styles.at(i);
+        if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+            shape->setStrokeStyle(style);
+        } else if (auto* curve = dynamic_cast<CurveItem*>(item)) {
+            curve->setStrokeStyle(style);
+        }
+    }
+    if (m_scene) {
+        m_scene->update();
+    }
+}
+
 ItemOpacityCommand::ItemOpacityCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<qreal>& before,
                                        const QList<qreal>& after, const QString& text)
     : m_scene(scene), m_before(before), m_after(after)
@@ -451,7 +491,8 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
     if (hasTextState && textState != other.textState) {
         return false;
     }
-    if (hasStrokeStyle && (strokeColor != other.strokeColor || !qFuzzyCompare(strokeWidth, other.strokeWidth))) {
+    if (hasStrokeStyle && (strokeColor != other.strokeColor || !qFuzzyCompare(strokeWidth, other.strokeWidth) ||
+                           strokeStyle != other.strokeStyle)) {
         return false;
     }
     if (hasImageState && (image.cacheKey() != other.image.cacheKey() || image.size() != other.image.size())) {
@@ -508,6 +549,7 @@ void ItemPropertiesCommand::apply(const ItemPropertiesState& state)
     if (state.hasStrokeStyle) {
         if (auto* stroke = dynamic_cast<CurveItem*>(m_item.data())) {
             stroke->setStyle(state.strokeColor, state.strokeWidth);
+            stroke->setStrokeStyle(state.strokeStyle);
         }
     }
     if (state.hasImageName) {

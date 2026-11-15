@@ -5,6 +5,7 @@
 #include "CanvasView.h"
 #include "Commands.h"
 #include "CompositeShapeItem.h"
+#include "CurveItem.h"
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
@@ -19,7 +20,6 @@
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -118,6 +118,7 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
         stroke->appendScenePoint(QPointF(x, y));
     }
     stroke->endStroke();
+    stroke->setStrokeStyle(Qt::DashLine);
     ctx.check(!stroke->isEmpty(), QStringLiteral("生成自由笔画"));
     scene.addItemsWithUndo({stroke}, QStringLiteral("添加笔画"));
     ctx.check(scene.canvasItemCount() == 1, QStringLiteral("笔画加入场景"));
@@ -191,7 +192,10 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     }
     ctx.check(loadedStroke != nullptr, QStringLiteral("画布包含笔画"));
     if (loadedStroke) {
-        ctx.check(loadedStroke->strokeColor() == QColor(QStringLiteral("#EF4444")), QStringLiteral("笔画颜色恢复"));
+        ctx.check(loadedStroke->strokeColor() == QColor(QStringLiteral("#EF4444")) &&
+                      loadedStroke->strokeStyle() == Qt::DashLine,
+                  QStringLiteral("笔画颜色与描线样式恢复"),
+                  QString::number(static_cast<int>(loadedStroke->strokeStyle())));
         ctx.check(qAbs(loadedStroke->contentSize().width() - resized.width()) < 0.5 &&
                       qAbs(loadedStroke->contentSize().height() - resized.height()) < 0.5,
                   QStringLiteral("笔画缩放状态恢复"));

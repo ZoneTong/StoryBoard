@@ -5,6 +5,7 @@
 #include "CanvasView.h"
 #include "Commands.h"
 #include "CompositeShapeItem.h"
+#include "CurveItem.h"
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
@@ -19,7 +20,6 @@
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -387,8 +387,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         const bool fallbackOk = BoolOps::apply(&fallbackScene, BoolOps::Operation::Union, QStringLiteral("联合"));
         const QImage rendered = fallbackScene.renderImage(QRectF(0.0, 0.0, 300.0, 200.0), 1.0);
         const QColor overlapPixel = rendered.pixelColor(90, 100);
-        ctx.check(fallbackOk && overlapPixel.alpha() == 0,
-                  QStringLiteral("donor 填充透明时重叠区保持透明"),
+        ctx.check(fallbackOk && overlapPixel.alpha() == 0, QStringLiteral("donor 填充透明时重叠区保持透明"),
                   QStringLiteral("ok=%1 pixel=%2 alpha=%3")
                       .arg(fallbackOk ? 1 : 0)
                       .arg(overlapPixel.name())
@@ -396,6 +395,55 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         const QColor internalEdge = rendered.pixelColor(81, 100); // 上层左边框，落在下层内部
         ctx.check(internalEdge != upperStroke, QStringLiteral("重叠区内部的交界轮廓被填充色同化"),
                   QStringLiteral("pixel=%1").arg(internalEdge.name()));
+    }
+    {
+        // 整组作为一个参与者：组内两个方块先并成一条轮廓再参与相减，
+        // 不会因为最高优先级组员被挖空就把整组结果判成空。
+        QUndoStack groupBoolUndo;
+        CanvasScene groupBoolScene;
+        groupBoolScene.setUndoStack(&groupBoolUndo);
+        groupBoolScene.setMode(ToolMode::Edit);
+        groupBoolScene.applyCanvasSize(QSizeF(300.0, 200.0));
+        auto makeRect = [&groupBoolScene](qreal x, const QColor& color) {
+            auto* item = new ShapeItem();
+            item->setShapeType(ShapeType::Rectangle);
+            item->setPos(QPointF(x, 100.0));
+            item->setContentSize(QSizeF(40.0, 40.0));
+            item->setStyle(color, color, 2.0);
+            item->setFill(color, FillStyle::Solid);
+            groupBoolScene.addItemsWithUndo({item}, QStringLiteral("Add grouped bool item"));
+            return item;
+        };
+        CanvasItem* outside = makeRect(120.0, QColor(40, 90, 200));
+        CanvasItem* groupLow = makeRect(10.0, QColor(220, 60, 60));
+        CanvasItem* groupHigh = makeRect(100.0, QColor(30, 160, 90));
+        groupLow->setSelected(true);
+        groupHigh->setSelected(true);
+        groupBoolScene.groupSelectedItems();
+        groupBoolScene.clearSelection();
+        groupBoolScene.selectGroupOfItem(groupLow);
+        outside->setSelected(true);
+
+        const bool groupedSubtract =
+            BoolOps::apply(&groupBoolScene, BoolOps::Operation::Subtract, QStringLiteral("相减"));
+        const QList<CanvasItem*> groupedSelection = groupBoolScene.selectedCanvasItems();
+        auto* groupedResult =
+            groupedSelection.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(groupedSelection.constFirst());
+        ctx.check(groupedSubtract && groupedResult && groupedResult->outlineShape().boundingRect().width() > 100.0,
+                  QStringLiteral("整组作为一个参与者参与合并"),
+                  QStringLiteral("ok=%1 width=%2")
+                      .arg(groupedSubtract ? 1 : 0)
+                      .arg(groupedResult ? groupedResult->outlineShape().boundingRect().width() : -1.0));
+        ctx.check(groupedResult && !groupedResult->layers().isEmpty() &&
+                      groupedResult->layers().constFirst().fill == QColor(30, 160, 90),
+                  QStringLiteral("整组结果采用组内最高优先级图元的样式"));
+        groupBoolUndo.undo();
+        bool restoredGroup = false;
+        for (CanvasItem* item : groupBoolScene.canvasItems()) {
+            restoredGroup = restoredGroup || item->groupId() > 0;
+        }
+        ctx.check(groupBoolScene.canvasItemCount() == 3 && restoredGroup, QStringLiteral("撤销合并恢复整组全部成员"),
+                  QStringLiteral("count=%1 group=%2").arg(groupBoolScene.canvasItemCount()).arg(restoredGroup ? 1 : 0));
     }
     {
         // 化形仍然能从菜单、右键菜单和编辑图元卡进入，但主工具栏不再放化形按钮。

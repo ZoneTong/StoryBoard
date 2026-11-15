@@ -3,6 +3,7 @@
 #include <QColor>
 #include <QPainterPath>
 #include <QSizeF>
+#include <Qt>
 
 class QPainter;
 
@@ -22,6 +23,6 @@ QPainterPath hitScaled(const QPainterPath& path, const QSizeF& baseSize, const Q
 
 // 按内容尺寸缩放后描边渲染。
 void render(QPainter* painter, const QPainterPath& path, const QSizeF& baseSize, const QSizeF& contentSize,
-            const QColor& color, qreal penWidth);
+            const QColor& color, qreal penWidth, Qt::PenStyle style = Qt::SolidLine);
 
 } // namespace StrokeGeometry

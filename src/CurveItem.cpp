@@ -62,6 +62,15 @@ void CurveItem::setStyle(const QColor& color, qreal width)
     update();
 }
 
+void CurveItem::setStrokeStyle(Qt::PenStyle style)
+{
+    if (m_penStyle == style) {
+        return;
+    }
+    m_penStyle = style;
+    update();
+}
+
 void CurveItem::appendScenePoint(const QPointF& scenePos)
 {
     if (m_finished || !m_drawing || m_rawPoints.isEmpty()) {
@@ -79,8 +88,8 @@ void CurveItem::appendScenePoint(const QPointF& scenePos)
     normalizeToContent();
 }
 
-void CurveItem::setStrokePoints(const QVector<QPointF>& scenePoints, const QColor& color, qreal width,
-                                qreal tolerance, bool linearPath)
+void CurveItem::setStrokePoints(const QVector<QPointF>& scenePoints, const QColor& color, qreal width, qreal tolerance,
+                                bool linearPath)
 {
     m_color = color.isValid() ? color : QColor(30, 41, 59);
     m_penWidth = qMax<qreal>(0.5, width);
@@ -177,8 +186,8 @@ bool CurveItem::simplifyCurve(qreal tolerance)
 
 CurveItem::GeometryState CurveItem::geometryState() const
 {
-    return GeometryState{m_segments, pos(), contentSize(), m_baseSize, m_dot,
-                         m_rawPoints.isEmpty() ? QPointF() : m_rawPoints.constFirst()};
+    return GeometryState{m_segments, pos(), contentSize(),
+                         m_baseSize, m_dot, m_rawPoints.isEmpty() ? QPointF() : m_rawPoints.constFirst()};
 }
 
 void CurveItem::applyGeometryState(const GeometryState& state)
@@ -286,7 +295,7 @@ void CurveItem::rebuildPath()
 
 void CurveItem::paintContent(QPainter* painter)
 {
-    StrokeGeometry::render(painter, m_path, m_baseSize, contentSize(), m_color, m_penWidth);
+    StrokeGeometry::render(painter, m_path, m_baseSize, contentSize(), m_color, m_penWidth, m_penStyle);
 }
 
 QPainterPath CurveItem::outlineShape() const
@@ -324,6 +333,7 @@ QJsonObject CurveItem::toJson() const
     QJsonObject json = baseJson();
     json.insert(QStringLiteral("color"), m_color.name(QColor::HexArgb));
     json.insert(QStringLiteral("width"), m_penWidth);
+    json.insert(QStringLiteral("strokeStyle"), static_cast<int>(m_penStyle));
     json.insert(QStringLiteral("baseWidth"), m_baseSize.width());
     json.insert(QStringLiteral("baseHeight"), m_baseSize.height());
     json.insert(QStringLiteral("dot"), m_dot);
@@ -362,6 +372,7 @@ void CurveItem::fromJson(const QJsonObject& json)
         m_color = QColor(30, 41, 59);
     }
     m_penWidth = qMax<qreal>(0.5, json.value(QStringLiteral("width")).toDouble(4.0));
+    m_penStyle = static_cast<Qt::PenStyle>(json.value(QStringLiteral("strokeStyle")).toInt(Qt::SolidLine));
     m_pad = m_penWidth / 2.0 + 2.0;
     m_dot = json.value(QStringLiteral("dot")).toBool(false);
     m_linearPath = json.value(QStringLiteral("linear")).toBool(false);

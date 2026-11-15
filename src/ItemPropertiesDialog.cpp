@@ -3,6 +3,7 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
+#include "CurveItem.h"
 #include "ImageItem.h"
 #include "ItemPropertiesDialogGeometryBlock.h"
 #include "ItemPropertiesDialogIdentityBlock.h"
@@ -10,7 +11,6 @@
 #include "ItemPropertiesDialogStyleBlock.h"
 #include "ItemPropertiesDialogTextBlock.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 #include "TextItem.h"
 
 #include <QComboBox>
@@ -444,6 +444,7 @@ void ItemPropertiesDialog::applyChanges()
         before.hasStrokeStyle = true;
         before.strokeColor = stroke->strokeColor();
         before.strokeWidth = stroke->strokeWidth();
+        before.strokeStyle = stroke->strokeStyle();
 
         after.hasStrokeStyle = true;
         after.strokeColor = (style && style->strokeColorButton())
@@ -452,6 +453,9 @@ void ItemPropertiesDialog::applyChanges()
         after.strokeWidth = (style && style->strokeWidthSpin())
                                 ? spinValue(style->strokeWidthSpin(), m_initialStrokeWidth)
                                 : before.strokeWidth;
+        after.strokeStyle = (style && style->borderStyleCombo())
+                                ? static_cast<Qt::PenStyle>(style->borderStyleCombo()->currentData().toInt())
+                                : before.strokeStyle;
     } else if (auto* imageItem = dynamic_cast<ImageItem*>(m_item.data())) {
         before.hasImageState = true;
         before.image = imageItem->image();

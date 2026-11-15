@@ -7,6 +7,7 @@
 #include <QColor>
 #include <QPainterPath>
 #include <QVector>
+#include <Qt>
 
 // 曲线图元：内部几何是分段三次贝塞尔，绘制期的采样点只在收笔拟合时短暂存在，
 // 不写入画布文件。属性与直线对齐：描线颜色 / 宽度 / 样式、透明度、位置尺寸、
@@ -41,16 +42,18 @@ class CurveItem : public CanvasItem {
     void beginStroke(const QPointF& scenePos, const QColor& color, qreal width);
     void appendScenePoint(const QPointF& scenePos);
     // 用算好的场景坐标直接构造一条曲线（图片线稿化等程序化场景使用）。
-    void setStrokePoints(const QVector<QPointF>& scenePoints, const QColor& color, qreal width,
-                         qreal tolerance = 0.0, bool linearPath = false);
+    void setStrokePoints(const QVector<QPointF>& scenePoints, const QColor& color, qreal width, qreal tolerance = 0.0,
+                         bool linearPath = false);
     // tolerance 是绘制期拟合参数：0 表示按采样点直接连成曲线段，>0 时先抽点再拟合。
     void endStroke(qreal tolerance = 0.0);
     bool isEmpty() const;
 
     QColor strokeColor() const { return m_color; }
     qreal strokeWidth() const { return m_penWidth; }
+    Qt::PenStyle strokeStyle() const { return m_penStyle; }
     bool isLinearPath() const { return m_linearPath; }
     void setStyle(const QColor& color, qreal width);
+    void setStrokeStyle(Qt::PenStyle style);
 
     int segmentCount() const { return m_segments.size(); }
     // 曲线段的端点序列，供只读检查与撤销比较；不再暴露原始采样点。
@@ -77,6 +80,7 @@ class CurveItem : public CanvasItem {
     QPainterPath m_path;
     QColor m_color = QColor(30, 41, 59);
     qreal m_penWidth = 4.0;
+    Qt::PenStyle m_penStyle = Qt::SolidLine;
     QSizeF m_baseSize{1.0, 1.0};
     bool m_dot = false;
     bool m_drawing = false;

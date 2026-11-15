@@ -4,67 +4,136 @@
 #include "CanvasScene.h"
 #include "Commands.h"
 #include "CompositeShapeItem.h"
+#include "CurveItem.h"
 #include "ImageItem.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 #include "TextItem.h"
 
 #include <QPainterPath>
+#include <QSet>
 #include <QUndoStack>
 #include <algorithm>
 
 namespace {
 
 struct Participant {
-    CanvasItem* item = nullptr;
-    QPainterPath path; // 场景坐标
+    CanvasItem* item = nullptr; // 代表图元：决定样式与落点
+    QList<CanvasItem*> members; // 参与替换的全部图元（整组时含组内成员）
+    QPainterPath path;          // 场景坐标，整组时为组内矢量轮廓的并集
     QColor fill;
     QColor stroke;
     qreal strokeWidth = 1.0;
     bool filled = true;
     int layerIndex = 0;
     int height = -1;
-}; // 收集参与运算的图元，并按优先级从低到高排序（图层先比，再比同层 height）。
+};
+
+bool priorityLess(CanvasScene* scene, CanvasItem* left, CanvasItem* right)
+{
+    const int leftLayer = scene->layerIndex(left->layerId());
+    const int rightLayer = scene->layerIndex(right->layerId());
+    if (leftLayer != rightLayer) {
+        return leftLayer < rightLayer;
+    }
+    if (left->height() != right->height()) {
+        return left->height() < right->height();
+    }
+    return left->zValue() < right->zValue();
+}
+
+// 把一批图元合成一个参与者：组按整棵组树算一个轮廓，样式取组内最高优先级
+// 的矢量图元；含图片的整组直接跳过，图片不参与合并。
+bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bool grouped, QList<Participant>* out)
+{
+    QList<CanvasItem*> editable;
+    QList<CanvasItem*> vectorMembers;
+    bool hasImage = false;
+    for (CanvasItem* member : members) {
+        if (!member || !scene->isItemEditable(member)) {
+            continue;
+        }
+        editable.append(member);
+        if (dynamic_cast<ImageItem*>(member)) {
+            hasImage = true;
+        } else {
+            vectorMembers.append(member);
+        }
+    }
+    // 图片不参与合并：整组作为一个参与者时，含图片的组直接跳过，避免图片随组被替换。
+    if (editable.isEmpty() || vectorMembers.isEmpty() || (grouped && hasImage)) {
+        return false;
+    }
+    std::sort(vectorMembers.begin(), vectorMembers.end(),
+              [scene](CanvasItem* left, CanvasItem* right) { return priorityLess(scene, left, right); });
+
+    Participant participant;
+    participant.item = vectorMembers.constLast();
+    participant.members = editable;
+    for (CanvasItem* vectorMember : std::as_const(vectorMembers)) {
+        const QPainterPath memberPath = vectorMember->mapToScene(vectorMember->paintedShape());
+        if (memberPath.isEmpty()) {
+            continue;
+        }
+        participant.path = participant.path.isEmpty() ? memberPath : participant.path.united(memberPath);
+    }
+    if (participant.path.isEmpty()) {
+        return false;
+    }
+
+    CanvasItem* styleItem = participant.item;
+    if (auto* shape = dynamic_cast<ShapeItem*>(styleItem)) {
+        participant.fill = shape->fillColor();
+        participant.stroke = shape->strokeColor();
+        participant.strokeWidth = shape->strokeWidth();
+        participant.filled = shape->fillStyle() != FillStyle::None;
+    } else if (auto* stroke = dynamic_cast<CurveItem*>(styleItem)) {
+        participant.fill = stroke->strokeColor();
+        participant.stroke = stroke->strokeColor();
+        participant.strokeWidth = stroke->strokeWidth();
+        participant.filled = false;
+    } else if (auto* text = dynamic_cast<TextItem*>(styleItem)) {
+        // 文字参照曲线：填充色等于字形描线色、纯色、面积按 0 参与。
+        participant.fill = text->textColor();
+        participant.stroke = text->textColor();
+        participant.strokeWidth = 1.0;
+        participant.filled = false;
+    } else {
+        participant.fill = QColor(30, 41, 59, 36);
+        participant.stroke = QColor(30, 41, 59);
+    }
+    participant.layerIndex = scene->layerIndex(participant.item->layerId());
+    participant.height = participant.item->height();
+    out->append(participant);
+    return true;
+}
+
+// 收集参与运算的参与者，并按优先级从低到高排序（图层先比，再比同层 height、
+// 最后比 zValue）。整组只算一个参与者，避免组内成员被拆开重复参与。
 QList<Participant> collect(CanvasScene* scene)
 {
     QList<Participant> participants;
     if (!scene) {
         return participants;
     }
+    QSet<int> handledGroups;
     for (CanvasItem* item : scene->selectedCanvasItems()) {
         if (!item || !scene->isItemEditable(item)) {
             continue;
         }
-        // 图片没有矢量轮廓，不参与合并图元。
+        if (item->groupId() > 0) {
+            const int rootGroup = scene->outermostGroup(item->groupId());
+            if (handledGroups.contains(rootGroup)) {
+                continue;
+            }
+            handledGroups.insert(rootGroup);
+            appendParticipant(scene, scene->itemsInGroupTree(rootGroup), true, &participants);
+            continue;
+        }
+        // 未分组图片没有矢量轮廓，不参与合并图元。
         if (dynamic_cast<ImageItem*>(item)) {
             continue;
         }
-        Participant participant;
-        participant.item = item;
-        participant.path = item->mapToScene(item->paintedShape());
-        if (participant.path.isEmpty()) {
-            continue;
-        }
-        if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
-            participant.fill = shape->fillColor();
-            participant.stroke = shape->strokeColor();
-            participant.strokeWidth = shape->strokeWidth();
-            participant.filled = shape->fillStyle() != FillStyle::None;
-        } else if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
-            participant.fill = stroke->strokeColor();
-            participant.stroke = stroke->strokeColor();
-        } else if (auto* text = dynamic_cast<TextItem*>(item)) {
-            // 文字参照笔画：填充色等于字形描线色、纯色、面积按 0 参与。
-            participant.fill = text->textColor();
-            participant.stroke = text->textColor();
-            participant.filled = false;
-        } else {
-            participant.fill = QColor(30, 41, 59, 36);
-            participant.stroke = QColor(30, 41, 59);
-        }
-        participant.layerIndex = scene->layerIndex(item->layerId());
-        participant.height = item->height();
-        participants.append(participant);
+        appendParticipant(scene, QList<CanvasItem*>{item}, false, &participants);
     }
     std::sort(participants.begin(), participants.end(), [](const Participant& left, const Participant& right) {
         if (left.layerIndex != right.layerIndex) {
@@ -203,8 +272,14 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
     }
 
     QList<CanvasItem*> originals;
+    QSet<CanvasItem*> originalSet;
     for (const Participant& participant : participants) {
-        originals.append(participant.item);
+        for (CanvasItem* member : participant.members) {
+            if (member && !originalSet.contains(member)) {
+                originalSet.insert(member);
+                originals.append(member);
+            }
+        }
     }
 
     QUndoStack* undo = scene->undoStack();

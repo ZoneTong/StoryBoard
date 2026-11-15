@@ -1,10 +1,10 @@
 #include "ItemPropertiesDialogStyleBlock.h"
 
+#include "CurveItem.h"
 #include "ItemPropertiesDialog.h"
 #include "ItemPropertiesDialogFields.h"
 #include "ItemStyleVisuals.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 
 #include <QComboBox>
 #include <QFormLayout>
@@ -143,6 +143,18 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
         m_strokeColorButton = ItemPropertiesFields::makeColorField(this, stroke->strokeColor(),
                                                                    QStringLiteral("ItemPropertiesStrokeColorValue"),
                                                                    ItemPropertiesFields::ColorIconRole::Border);
+
+        m_borderStyleCombo = new QComboBox(this);
+        m_borderStyleCombo->setObjectName(QStringLiteral("ItemPropertiesBorderStyleValue"));
+        m_borderStyleCombo->setMinimumWidth(180);
+        for (Qt::PenStyle penStyle : ItemStyleVisuals::borderStyles()) {
+            m_borderStyleCombo->addItem(ItemStyleVisuals::borderStyleIcon(penStyle, 16),
+                                        ItemStyleVisuals::borderStyleName(penStyle), static_cast<int>(penStyle));
+        }
+        const int borderStyleIndex = m_borderStyleCombo->findData(static_cast<int>(stroke->strokeStyle()));
+        if (borderStyleIndex >= 0) {
+            m_borderStyleCombo->setCurrentIndex(borderStyleIndex);
+        }
 
         m_strokeWidthSpin = new QSpinBox(this);
         m_strokeWidthSpin->setObjectName(QStringLiteral("ItemPropertiesStrokeWidthValue"));

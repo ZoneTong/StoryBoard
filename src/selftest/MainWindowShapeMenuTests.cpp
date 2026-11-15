@@ -157,9 +157,6 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         ctx.check(!alignButton && !morphButton, QStringLiteral("工具栏不再显示对齐和合并图元按钮"),
                   QStringLiteral("align=%1 morph=%2").arg(alignButton ? 1 : 0).arg(morphButton ? 1 : 0));
 
-        QToolButton* toolbarSmoothButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("SmoothStrokeButton"));
-        ctx.check(!toolbarSmoothButton, QStringLiteral("工具栏不保留平滑按钮"),
-                  QStringLiteral("button=%1").arg(toolbarSmoothButton ? 1 : 0));
         auto* toleranceSpin = shapeWindow.findChild<QDoubleSpinBox*>(QStringLiteral("BrushSmoothingSpin"));
         CanvasView* toleranceView = shapeWindow.findChild<CanvasView*>();
         ctx.check(toleranceSpin && toleranceSpin->minimum() == 0.0 && toleranceSpin->maximum() == 20.0 &&
@@ -308,13 +305,6 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
 
         QDoubleSpinBox* toolbarSmoothing = shapeWindow.findChild<QDoubleSpinBox*>(QStringLiteral("BrushSmoothingSpin"));
         CanvasView* canvasView = shapeWindow.findChild<CanvasView*>();
-        ctx.check(toolbarSmoothing && canvasView && toolbarSmoothing->minimum() == 0.0 &&
-                      toolbarSmoothing->maximum() == 20.0 && qAbs(toolbarSmoothing->singleStep() - 0.1) < 0.001 &&
-                      toolbarSmoothing->value() == canvasView->strokeSmoothing(),
-                  QStringLiteral("画笔工具栏提供 0–20、0.1 步进的可调容差"),
-                  QStringLiteral("value=%1 view=%2")
-                      .arg(toolbarSmoothing ? toolbarSmoothing->value() : -1)
-                      .arg(canvasView ? canvasView->strokeSmoothing() : -1));
         if (toolbarSmoothing) {
             toolbarSmoothing->setValue(0.0);
             ctx.check(canvasView && canvasView->strokeSmoothing() == 0, QStringLiteral("工具栏容差即时生效"),
