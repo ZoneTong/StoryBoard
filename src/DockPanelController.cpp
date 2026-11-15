@@ -52,19 +52,13 @@ void DockPanelController::createItemDock()
     // 编辑图元卡固定在左侧，高度限定在合适区间，避免单独占满整列。
     m_itemDock->setMinimumHeight(240);
     m_itemDock->setMaximumHeight(620);
-    // 按钮放大后按内容最宽一行决定卡片宽度，既不裁掉按钮也不超过 360px。
-    m_itemDock->setMinimumWidth(m_itemPanel->preferredWidth());
-    m_itemDock->setMaximumWidth(360);
+    // 宽度贴合卡片内容，既不裁掉按钮也不留下大片空白，上限 360px。
+    applyItemDockWidth(m_itemPanel->preferredWidth());
 
     QObject::connect(m_itemPanel, &ItemDockPanel::statusMessage, m_window,
                      [this](const QString& message) { m_window->statusBar()->showMessage(message, 3000); });
-    QObject::connect(m_itemPanel, &ItemDockPanel::preferredWidthChanged, m_window, [this](int width) {
-        const int bounded = qBound(260, width, 360);
-        m_itemDock->setMinimumWidth(bounded);
-        if (m_itemDock->isFloating() && m_itemDock->width() < bounded) {
-            m_itemDock->resize(bounded, m_itemDock->height());
-        }
-    });
+    QObject::connect(m_itemPanel, &ItemDockPanel::preferredWidthChanged, m_window,
+                     [this](int width) { applyItemDockWidth(width); });
     // 画笔与描边共用同一套颜色 / 宽度：卡片里改描边后，之后画出的笔画立即沿用新值。
     QObject::connect(m_itemPanel, &ItemDockPanel::strokeColorPicked, m_window,
                      [this](const QColor& color) { m_window->setBrushColor(color, true); });
@@ -79,6 +73,8 @@ void DockPanelController::createItemDock()
             // 悬浮卡拖回主窗口后重新固定，恢复常驻显示。
             m_itemDock->setVisible(true);
         }
+        // 停靠 / 悬浮切换后重新贴合宽度，避免沿用另一形态下的宽度。
+        applyItemDockWidth(m_itemPanel ? m_itemPanel->preferredWidth() : m_itemDock->minimumWidth());
         scheduleItemDockStateSave();
     });
     QObject::connect(m_itemDock, &QDockWidget::dockLocationChanged, m_window,
@@ -196,6 +192,29 @@ void DockPanelController::applyDockLayout()
     m_applyingDockLayout = false;
 }
 
+void DockPanelController::applyItemDockWidth(int width)
+{
+    if (!m_itemDock || !m_itemPanel) {
+        return;
+    }
+    // 内容宽度同时决定上下限：卡片不再被历史宽度或窗口布局拉宽。
+    const int bounded = qBound(260, width, 360);
+    m_itemDock->setMinimumWidth(bounded);
+    if (m_itemDock->isFloating()) {
+        // 悬浮时允许用户自行拉宽，只保证不窄于当前内容。
+        m_itemDock->setMaximumWidth(360);
+        if (m_itemDock->width() < bounded) {
+            m_itemDock->resize(bounded, m_itemDock->height());
+        }
+        return;
+    }
+    // 停靠时把最大宽度也锁到内容宽度，右侧不再留出空白。
+    m_itemDock->setMaximumWidth(bounded);
+    if (m_itemDock->width() != bounded) {
+        m_window->resizeDocks({m_itemDock}, {bounded}, Qt::Horizontal);
+    }
+}
+
 void DockPanelController::restoreItemDockState()
 {
     if (!m_itemDock) {
@@ -213,12 +232,15 @@ void DockPanelController::restoreItemDockState()
 
     if (!floating) {
         m_itemDock->setVisible(true);
+        applyItemDockWidth(m_itemPanel ? m_itemPanel->preferredWidth() : m_itemDock->width());
         return;
     }
 
     m_itemDock->setFloating(true);
     const bool geometryRestored =
         !settings.itemDockGeometry.isEmpty() && m_itemDock->restoreGeometry(settings.itemDockGeometry);
+    // 恢复的悬浮几何可能比内容宽，先按内容收窄，再兜底默认位置。
+    applyItemDockWidth(m_itemPanel ? m_itemPanel->preferredWidth() : m_itemDock->width());
     QTimer::singleShot(0, m_window, [this, geometryRestored]() {
         if (!m_itemDock || !m_itemDock->isFloating() || geometryRestored) {
             return;

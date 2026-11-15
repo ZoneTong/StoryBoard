@@ -45,6 +45,8 @@ class DockPanelController {
   private:
     void scheduleItemDockStateSave();
     void restoreItemDockState();
+    // 让编辑图元卡宽度贴合内容：停靠时锁到内容宽度，悬浮时只保证不窄于内容。
+    void applyItemDockWidth(int width);
 
     MainWindow* m_window = nullptr;
     QDockWidget* m_layerDock = nullptr;

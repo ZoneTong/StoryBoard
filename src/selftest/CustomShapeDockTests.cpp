@@ -370,11 +370,13 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                       dockWindow.dockWidgetArea(itemDock) == Qt::LeftDockWidgetArea && itemDock->isVisible(),
                   QStringLiteral("编辑图元卡首次启动显示并固定在窗口左侧"));
         const int preferredCardWidth = dockPanel ? dockPanel->preferredWidth() : 0;
-        ctx.check(
-            itemDock && dockPanel && preferredCardWidth >= 300 && preferredCardWidth <= 360 &&
-                itemDock->width() >= preferredCardWidth && itemDock->width() <= 360,
-            QStringLiteral("编辑图元卡宽度随放大按钮增长且不超出 360px"),
-            QStringLiteral("preferred=%1 actual=%2").arg(preferredCardWidth).arg(itemDock ? itemDock->width() : -1));
+        const int actualCardWidth = itemDock ? itemDock->width() : -1;
+        // 宽度既要覆盖内容，也不能明显宽于内容，否则右侧会留下空白。
+        const bool dockWidthFits =
+            actualCardWidth >= preferredCardWidth - 2 && actualCardWidth <= preferredCardWidth + 2;
+        ctx.check(itemDock && dockPanel && preferredCardWidth >= 260 && preferredCardWidth <= 360 && dockWidthFits,
+                  QStringLiteral("编辑图元卡宽度贴合内容且不超出 360px"),
+                  QStringLiteral("preferred=%1 actual=%2").arg(preferredCardWidth).arg(actualCardWidth));
         ctx.check(dockCustomMenu && customTexts.contains(QStringLiteral("dock-probe")),
                   QStringLiteral("自定义图形追加到常见图形下方的下拉菜单"), customTexts.join(QStringLiteral("|")));
         ctx.check(dockWindow.findChild<QAction*>(QStringLiteral("ItemDockToggleAction")) != nullptr,
@@ -408,6 +410,15 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                       .arg(itemDock->isVisible() ? 1 : 0)
                       .arg(insertedShape->isSelected() ? 1 : 0)
                       .arg(dockScene->canvasItems().contains(insertedShape) ? 1 : 0));
+
+        // 选中图元后可见行变多，卡片应随之贴合新内容宽度，而不是沿用旧宽度。
+        QApplication::processEvents();
+        const int selectedPreferredWidth = dockPanel ? dockPanel->preferredWidth() : 0;
+        const int selectedActualWidth = itemDock ? itemDock->width() : -1;
+        ctx.check(selectedActualWidth >= selectedPreferredWidth - 2 &&
+                      selectedActualWidth <= selectedPreferredWidth + 2,
+                  QStringLiteral("切换选中后编辑图元卡宽度重新贴合内容"),
+                  QStringLiteral("preferred=%1 actual=%2").arg(selectedPreferredWidth).arg(selectedActualWidth));
 
         QDockWidget* layerDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("LayerDock"));
         QDockWidget* viewModeDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("ViewModeDock"));

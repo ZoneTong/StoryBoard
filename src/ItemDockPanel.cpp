@@ -216,24 +216,25 @@ int ItemDockPanel::preferredWidth() const
     }
 
     int widestRow = 0;
+    // 只按当前真正可见的行计算宽度：隐藏的对齐 / 化形行、无填充对象的样式行
+    // 不再预留宽度，否则单选时卡片会固定在最宽的多选状态下，右侧留下大片空白。
     auto scanRows = [&widestRow](QLayout* layout) {
         if (!layout) {
             return;
         }
         for (int index = 0; index < layout->count(); ++index) {
             const QWidget* row = layout->itemAt(index)->widget();
-            if (row) {
+            if (row && !row->isHidden()) {
                 widestRow = qMax(widestRow, row->sizeHint().width());
             }
         }
     };
     scanRows(m_contentWidget->layout());
-    // 选中操作卡里的对齐 / 化形行在无选中时会隐藏，但按钮放大后仍需预留它们展开后的宽度。
-    if (m_selectionCard) {
+    if (m_selectionCard && !m_selectionCard->isHidden()) {
         scanRows(m_selectionCard->layout());
     }
 
-    // 两侧外边距 + 垂直滚动条；按钮放大后宽度随之增长，上限仍是 360px。
+    // 两侧外边距 + 垂直滚动条；宽度贴合内容，上限仍是 360px。
     const int chrome = 12 + style()->pixelMetric(QStyle::PM_ScrollBarExtent) + 2;
     return qBound(260, widestRow + chrome, 360);
 }
