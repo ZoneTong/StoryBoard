@@ -20,7 +20,7 @@ struct Participant {
     CanvasItem* item = nullptr; // 代表图元：决定样式与落点
     QList<CanvasItem*> members; // 参与替换的全部图元（整组时含组内成员）
     QPainterPath path;          // 场景坐标，整组时为组内矢量轮廓的并集
-    QPainterPath fillPath;      // 有面积图形（含合并图形）的填充轮廓
+    QPainterPath fillPath;      // 有面积图形（含多边形）的填充轮廓
     QPainterPath strokePath;    // 零面积描线图元（直线 / 曲线）的描边带
     QPainterPath textPath;      // 文字字形轮廓
     QColor textColor = QColor(30, 41, 59);
