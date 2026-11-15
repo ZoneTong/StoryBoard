@@ -20,6 +20,10 @@ struct Participant {
     CanvasItem* item = nullptr; // 代表图元：决定样式与落点
     QList<CanvasItem*> members; // 参与替换的全部图元（整组时含组内成员）
     QPainterPath path;          // 场景坐标，整组时为组内矢量轮廓的并集
+    QPainterPath fillPath;      // 有面积图形（含合并图形）的填充轮廓
+    QPainterPath strokePath;    // 零面积描线图元（直线 / 曲线）的描边带
+    QPainterPath textPath;      // 文字字形轮廓
+    QColor textColor = QColor(30, 41, 59);
     QColor fill;
     QColor stroke;
     qreal strokeWidth = 1.0;
@@ -75,6 +79,26 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
             continue;
         }
         participant.path = participant.path.isEmpty() ? memberPath : participant.path.united(memberPath);
+
+        // 按绘制方式分组：有面积图形走填充+外轮廓描线；直线 / 曲线走零面积
+        // 描线带，不能再叠一层描线，否则线宽会变成“原线宽 + donor 线宽”；
+        // 文字只填字形，不描边，避免 donor 描线色在字形外形成重影。
+        if (auto* text = dynamic_cast<TextItem*>(vectorMember)) {
+            participant.textPath =
+                participant.textPath.isEmpty() ? memberPath : participant.textPath.united(memberPath);
+            participant.textColor = text->textColor();
+        } else if (auto* curve = dynamic_cast<CurveItem*>(vectorMember)) {
+            Q_UNUSED(curve)
+            participant.strokePath =
+                participant.strokePath.isEmpty() ? memberPath : participant.strokePath.united(memberPath);
+        } else if (auto* shape = dynamic_cast<ShapeItem*>(vectorMember);
+                   shape && shapeTypeIsStrokeOnly(shape->shapeType())) {
+            participant.strokePath =
+                participant.strokePath.isEmpty() ? memberPath : participant.strokePath.united(memberPath);
+        } else {
+            participant.fillPath =
+                participant.fillPath.isEmpty() ? memberPath : participant.fillPath.united(memberPath);
+        }
     }
     if (participant.path.isEmpty()) {
         return false;
@@ -147,16 +171,89 @@ QList<Participant> collect(CanvasScene* scene)
     return participants;
 }
 
-// 单层结果统一用最高优先级图元的颜色。
-CompositeShapeItem::Layer singleLayer(const QPainterPath& path, const Participant& style)
+// 按绘制方式分层，避免同一块结果既填充又重复描线：
+// 有面积图形一层（填充 + 外轮廓描线），直线 / 曲线一层（已是线宽带，只填充不描线），
+// 文字一层（只填字形，不描边）。分层只在结果包含零面积图元或文字时出现。
+QList<CompositeShapeItem::Layer> buildLayers(const QPainterPath& result, const QList<Participant>& participants,
+                                             const Participant& top)
 {
-    CompositeShapeItem::Layer layer;
-    layer.path = path;
-    layer.fill = style.fill;
-    layer.stroke = style.stroke;
-    layer.strokeWidth = qMax(0.0, style.strokeWidth);
-    layer.filled = true;
-    return layer;
+    QPainterPath areas;
+    QPainterPath strokes;
+    QPainterPath texts;
+    QColor textColor = top.stroke;
+    int areaRank = -1;
+    int strokeRank = -1;
+    int textRank = -1;
+    for (int i = 0; i < participants.size(); ++i) {
+        const Participant& participant = participants.at(i);
+        auto append = [&result](QPainterPath& target, const QPainterPath& source) {
+            if (source.isEmpty()) {
+                return;
+            }
+            const QPainterPath clipped = source.intersected(result);
+            if (clipped.isEmpty()) {
+                return;
+            }
+            target = target.isEmpty() ? clipped : target.united(clipped);
+        };
+        if (!participant.fillPath.isEmpty()) {
+            append(areas, participant.fillPath);
+            areaRank = i;
+        }
+        if (!participant.strokePath.isEmpty()) {
+            append(strokes, participant.strokePath);
+            strokeRank = i;
+        }
+        if (!participant.textPath.isEmpty()) {
+            append(texts, participant.textPath);
+            textRank = i;
+            textColor = participant.textColor;
+        }
+    }
+
+    struct RankedLayer {
+        int rank = 0;
+        int order = 0;
+        CompositeShapeItem::Layer layer;
+    };
+    QList<RankedLayer> ranked;
+    if (!areas.isEmpty()) {
+        CompositeShapeItem::Layer layer;
+        layer.path = areas;
+        layer.fill = top.fill;
+        layer.stroke = top.stroke;
+        layer.strokeWidth = qMax(0.0, top.strokeWidth);
+        layer.filled = true;
+        ranked.append(RankedLayer{areaRank, 0, layer});
+    }
+    if (!strokes.isEmpty()) {
+        CompositeShapeItem::Layer layer;
+        layer.path = strokes;
+        layer.fill = top.stroke;
+        layer.strokeWidth = 0.0;
+        layer.filled = true;
+        ranked.append(RankedLayer{strokeRank, 1, layer});
+    }
+    if (!texts.isEmpty()) {
+        CompositeShapeItem::Layer layer;
+        layer.path = texts;
+        layer.fill = textColor;
+        layer.strokeWidth = 0.0;
+        layer.filled = true;
+        ranked.append(RankedLayer{textRank, 2, layer});
+    }
+
+    std::stable_sort(ranked.begin(), ranked.end(), [](const RankedLayer& left, const RankedLayer& right) {
+        if (left.rank != right.rank) {
+            return left.rank < right.rank;
+        }
+        return left.order < right.order;
+    });
+    QList<CompositeShapeItem::Layer> layers;
+    for (const RankedLayer& entry : std::as_const(ranked)) {
+        layers.append(entry.layer);
+    }
+    return layers;
 }
 
 } // namespace
@@ -190,7 +287,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         if (result.isEmpty()) {
             return false;
         }
-        results.append(QList<CompositeShapeItem::Layer>{singleLayer(result, top)});
+        results.append(buildLayers(result, participants, top));
         break;
     }
     case Operation::Combine: {
@@ -203,7 +300,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         if (result.isEmpty()) {
             return false;
         }
-        results.append(QList<CompositeShapeItem::Layer>{singleLayer(result, top)});
+        results.append(buildLayers(result, participants, top));
         break;
     }
     case Operation::Fragment: {
@@ -238,7 +335,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
                 continue;
             }
             // 拆分出的每一块都沿用同一个 donor（全局最高优先级图元）的样式。
-            results.append(QList<CompositeShapeItem::Layer>{singleLayer(region, top)});
+            results.append(buildLayers(region, participants, top));
         }
         if (results.isEmpty()) {
             return false;
@@ -254,7 +351,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
             return false;
         }
         // 相交结果同样统一采用最高优先级图元的样式。
-        results.append(QList<CompositeShapeItem::Layer>{singleLayer(result, top)});
+        results.append(buildLayers(result, participants, top));
         break;
     }
     case Operation::Subtract: {
@@ -266,7 +363,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         if (result.isEmpty()) {
             return false;
         }
-        results.append(QList<CompositeShapeItem::Layer>{singleLayer(result, top)});
+        results.append(buildLayers(result, participants, top));
         break;
     }
     }

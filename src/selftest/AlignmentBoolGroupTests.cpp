@@ -232,6 +232,113 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         ctx.check(applied && composite && composite->layerCount() == 1,
                   QStringLiteral("联合运算生成单层 donor 样式多边形"),
                   QStringLiteral("ok=%1 layers=%2").arg(applied ? 1 : 0).arg(composite ? composite->layerCount() : -1));
+
+        // 零面积直线参与合并：线宽带只做填充、不再叠一层描线，线宽保持自身值。
+        {
+            QUndoStack undo;
+            CanvasScene scene;
+            scene.setUndoStack(&undo);
+            scene.setMode(ToolMode::Edit);
+            scene.applyCanvasSize(QSizeF(320.0, 220.0));
+            auto* diamond = new ShapeItem();
+            diamond->setShapeType(ShapeType::Diamond);
+            diamond->setPos(QPointF(70.0, 40.0));
+            diamond->setContentSize(QSizeF(160.0, 120.0));
+            diamond->setStyle(QColor(20, 20, 20), QColor(255, 255, 255), 4.0);
+            diamond->setFill(QColor(255, 255, 255), FillStyle::Solid);
+            auto* line = new ShapeItem();
+            line->setShapeType(ShapeType::Line);
+            line->setPos(QPointF(30.0, 80.0));
+            line->setContentSize(QSizeF(250.0, 40.0));
+            line->setStyle(QColor(30, 90, 200), QColor(30, 90, 200), 2.0);
+            scene.addItemsWithUndo({line, diamond}, QStringLiteral("Add line and diamond"));
+            line->setSelected(true);
+            diamond->setSelected(true);
+            const bool lineMerged = BoolOps::apply(&scene, BoolOps::Operation::Union, QStringLiteral("合并"));
+            const QList<CanvasItem*> lineSelected = scene.selectedCanvasItems();
+            auto* lineShell =
+                lineSelected.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(lineSelected.constFirst());
+
+            int lineThickness = -1;
+            if (lineShell) {
+                const QImage rendered = scene.renderImage(QRectF(0.0, 0.0, 320.0, 220.0), 1.0);
+                int count = 0;
+                for (int y = 80; y < 140; ++y) {
+                    const QColor pixel = rendered.pixelColor(45, y);
+                    if (pixel.alpha() > 0 && (pixel.red() < 245 || pixel.green() < 245 || pixel.blue() < 245)) {
+                        ++count;
+                    }
+                }
+                lineThickness = count;
+            }
+            ctx.check(lineMerged && lineShell && lineThickness > 0 && lineThickness <= 3,
+                      QStringLiteral("直线与菱形合并后直线保持自身线宽"),
+                      QStringLiteral("ok=%1 thickness=%2 layers=%3")
+                          .arg(lineMerged ? 1 : 0)
+                          .arg(lineThickness)
+                          .arg(lineShell ? lineShell->layerCount() : -1));
+            bool bandLayerFound = false;
+            if (lineShell) {
+                for (const CompositeShapeItem::Layer& layer : lineShell->layers()) {
+                    if (!qFuzzyIsNull(layer.strokeWidth)) {
+                        continue;
+                    }
+                    bandLayerFound = true;
+                    break;
+                }
+            }
+            ctx.check(lineShell && lineShell->layerCount() == 2 && bandLayerFound,
+                      QStringLiteral("直线合并结果单独使用无描线的线宽带"),
+                      QStringLiteral("layers=%1 band=%2")
+                          .arg(lineShell ? lineShell->layerCount() : -1)
+                          .arg(bandLayerFound ? 1 : 0));
+        }
+
+        // 文字参与合并：只填字形、不描边；不透明层直接覆盖，避免抗锯齿边缘露出白色重影。
+        {
+            QUndoStack undo;
+            CanvasScene scene;
+            scene.setUndoStack(&undo);
+            scene.setMode(ToolMode::Edit);
+            scene.applyCanvasSize(QSizeF(320.0, 220.0));
+            auto* diamond = new ShapeItem();
+            diamond->setShapeType(ShapeType::Diamond);
+            diamond->setPos(QPointF(60.0, 30.0));
+            diamond->setContentSize(QSizeF(180.0, 140.0));
+            diamond->setStyle(QColor(20, 20, 20), QColor(255, 255, 255), 4.0);
+            diamond->setFill(QColor(255, 255, 255), FillStyle::Solid);
+            auto* text = new TextItem();
+            text->setTextFormat(QStringLiteral("Ag文"), QFont(QStringLiteral("Microsoft YaHei"), 24), QColor(0, 0, 0));
+            text->setContentSize(QSizeF(150.0, 50.0));
+            text->setPos(QPointF(75.0, 80.0));
+            scene.addItemsWithUndo({diamond, text}, QStringLiteral("Add diamond and text"));
+            diamond->setSelected(true);
+            text->setSelected(true);
+            const bool textMerged = BoolOps::apply(&scene, BoolOps::Operation::Union, QStringLiteral("合并"));
+            const QList<CanvasItem*> textSelected = scene.selectedCanvasItems();
+            auto* textShell =
+                textSelected.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(textSelected.constFirst());
+
+            int whitePixels = -1;
+            if (textShell) {
+                const QImage rendered = scene.renderImage(QRectF(0.0, 0.0, 320.0, 220.0), 1.0);
+                int count = 0;
+                for (int y = 85; y < 125; ++y) {
+                    for (int x = 100; x < 200; ++x) {
+                        const QColor pixel = rendered.pixelColor(x, y);
+                        if (pixel.red() > 240 && pixel.green() > 240 && pixel.blue() > 240) {
+                            ++count;
+                        }
+                    }
+                }
+                whitePixels = count;
+            }
+            ctx.check(textMerged && textShell && whitePixels == 0, QStringLiteral("黑色文字合并后字形外无白色重影"),
+                      QStringLiteral("ok=%1 white=%2 layers=%3")
+                          .arg(textMerged ? 1 : 0)
+                          .arg(whitePixels)
+                          .arg(textShell ? textShell->layerCount() : -1));
+        }
     }
     {
         // 组合（挖掉重叠）与拆分（切成互不重叠的多块）：

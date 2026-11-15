@@ -97,7 +97,9 @@ void CompositeShapeItem::paintContent(QPainter* painter)
         QPainterPath maskedByHigher;
         for (int j = i + 1; j < count; ++j) {
             const Layer& higher = m_layers.at(j);
-            if (higher.filled && higher.fill.alpha() > 0) {
+            // 高层为不透明填充时直接覆盖下层即可；若先把下层挖掉再填，会在
+            // 两层的抗锯齿边缘露出画布底色，形成文字 / 图形边上的白色重影。
+            if (higher.filled && higher.fill.alpha() > 0 && higher.fill.alpha() < 255) {
                 maskedByHigher = maskedByHigher.isEmpty() ? higher.path : maskedByHigher.united(higher.path);
             }
         }
