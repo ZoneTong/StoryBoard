@@ -411,14 +411,12 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                       .arg(insertedShape->isSelected() ? 1 : 0)
                       .arg(dockScene->canvasItems().contains(insertedShape) ? 1 : 0));
 
-        // 选中图元后可见行变多，卡片应随之贴合新内容宽度，而不是沿用旧宽度。
+        // 选中图元后可见行变多，卡片宽度保持启动时的值，不随选中来回跳动。
         QApplication::processEvents();
-        const int selectedPreferredWidth = dockPanel ? dockPanel->preferredWidth() : 0;
         const int selectedActualWidth = itemDock ? itemDock->width() : -1;
-        ctx.check(selectedActualWidth >= selectedPreferredWidth - 2 &&
-                      selectedActualWidth <= selectedPreferredWidth + 2,
-                  QStringLiteral("切换选中后编辑图元卡宽度重新贴合内容"),
-                  QStringLiteral("preferred=%1 actual=%2").arg(selectedPreferredWidth).arg(selectedActualWidth));
+        ctx.check(qAbs(selectedActualWidth - preferredCardWidth) <= 2,
+                  QStringLiteral("切换选中后编辑图元卡宽度保持不变"),
+                  QStringLiteral("start=%1 actual=%2").arg(preferredCardWidth).arg(selectedActualWidth));
 
         QDockWidget* layerDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("LayerDock"));
         QDockWidget* viewModeDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("ViewModeDock"));

@@ -71,7 +71,8 @@ bool validateCanvasRoot(const QJsonObject& root, QString* error)
     for (const QJsonValue& value : items) {
         const QString kind = value.toObject().value(QStringLiteral("type")).toString();
         if (kind != QStringLiteral("stroke") && kind != QStringLiteral("image") && kind != QStringLiteral("text") &&
-            kind != QStringLiteral("shape")) {
+            kind != QStringLiteral("shape") && kind != QStringLiteral("polygon") &&
+            kind != QStringLiteral("composite")) {
             if (error) {
                 *error = MainWindow::tr("The canvas contains an unknown item type: %1").arg(kind);
             }

@@ -3572,8 +3572,8 @@ Use the checkbox to show or hide it.</source>
       <translation>已合并为一个合并图形，撤销可还原</translation>
     </message>
     <message>
-      <source>Merged shape</source>
-      <translation>合并图形</translation>
+      <source>Polygon</source>
+      <translation>多边形</translation>
     </message>
 
     <message>

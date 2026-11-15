@@ -433,8 +433,8 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         ctx.check(heightUp && heightDown && !heightUp->icon().isNull() && !heightDown->icon().isNull() && boolMenu &&
                       !boolMenu->icon().isNull() && shapeMenu && !shapeMenu->icon().isNull(),
                   QStringLiteral("菜单栏为已有图标的同类功能补齐图标"));
-        const bool named = uiText(QStringLiteral("Merged shape")) != QStringLiteral("Merged shape");
-        ctx.check(named, QStringLiteral("合并图形的类型名有中文译文"), uiText(QStringLiteral("Merged shape")));
+        const bool named = uiText(QStringLiteral("Polygon")) != QStringLiteral("Polygon");
+        ctx.check(named, QStringLiteral("多边形的类型名有中文译文"), uiText(QStringLiteral("Polygon")));
     }
     {
         // 拆分结果必须在块间保留交界线，不能渲染成联合的样子。

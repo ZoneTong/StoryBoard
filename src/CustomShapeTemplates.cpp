@@ -44,7 +44,7 @@ CanvasItem* createTemplateItem(const QString& kind)
     if (kind == QStringLiteral("stroke")) {
         return new StrokeItem();
     }
-    if (kind == QStringLiteral("composite")) {
+    if (kind == QStringLiteral("polygon") || kind == QStringLiteral("composite")) {
         return new CompositeShapeItem();
     }
     // 图片与文字不适合做矢量轮廓模板：图片会丢掉色彩层次，文字转轮廓还会依赖字体。

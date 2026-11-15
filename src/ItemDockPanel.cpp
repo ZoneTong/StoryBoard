@@ -89,7 +89,6 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
 
     scroll->setWidget(content);
     outer->addWidget(scroll, 1);
-    m_preferredWidth = preferredWidth();
 
     connect(m_colorsCard, &ItemDockPanelColorsCard::strokeColorChosen, this, &ItemDockPanel::applyStrokeColor);
     connect(m_colorsCard, &ItemDockPanelColorsCard::fillColorChosen, this, &ItemDockPanel::applyFillColor);
@@ -216,15 +215,15 @@ int ItemDockPanel::preferredWidth() const
     }
 
     int widestRow = 0;
-    // 只按当前真正可见的行计算宽度：隐藏的对齐 / 化形行、无填充对象的样式行
-    // 不再预留宽度，否则单选时卡片会固定在最宽的多选状态下，右侧留下大片空白。
+    // 按卡片里所有行（包括当前隐藏的对齐 / 合并行）计算一次宽度：
+    // 卡片宽度在启动时固定，不随选中项增减而跳动，也不会在多选时挤掉按钮。
     auto scanRows = [&widestRow](QLayout* layout) {
         if (!layout) {
             return;
         }
         for (int index = 0; index < layout->count(); ++index) {
             const QWidget* row = layout->itemAt(index)->widget();
-            if (row && !row->isHidden()) {
+            if (row) {
                 widestRow = qMax(widestRow, row->sizeHint().width());
             }
         }
@@ -292,12 +291,6 @@ void ItemDockPanel::refresh()
     m_fillBorderCard->refresh(shapes, strokes);
     m_valueCard->refresh(shapes, items);
     m_arrangeCard->refresh(!selectedItems().isEmpty());
-
-    const int width = preferredWidth();
-    if (width != m_preferredWidth) {
-        m_preferredWidth = width;
-        emit preferredWidthChanged(width);
-    }
 
     m_refreshing = false;
     if (m_refreshPending) {

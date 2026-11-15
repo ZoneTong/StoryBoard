@@ -36,7 +36,7 @@ class ItemDockPanel : public QWidget {
     explicit ItemDockPanel(CanvasScene* scene, QWidget* parent = nullptr);
 
     void refresh();
-    // 按卡片内最宽的一行（包括当前隐藏的行）计算合适宽度，供停靠窗口随按钮尺寸调整宽度。
+    // 按卡片内最宽的一行（包括当前隐藏的行）计算启动宽度；之后不再随选中变化。
     int preferredWidth() const;
     // 多选时复用主窗口的对齐 / 化形 / 复制 / 删除 / 旋转 / 组合动作，保证菜单、工具栏与卡片行为一致。
     void setSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions,
@@ -49,8 +49,6 @@ class ItemDockPanel : public QWidget {
 
   signals:
     void statusMessage(const QString& message);
-    // 卡片内容需要的宽度变化时发出，停靠窗口据此更新最小宽度。
-    void preferredWidthChanged(int width);
     // 卡片里的描边颜色 / 宽度同时是画笔的当前颜色与宽度，改动后交给主窗口同步。
     void strokeColorPicked(const QColor& color);
     void borderWidthPicked(qreal width);
@@ -101,5 +99,4 @@ class ItemDockPanel : public QWidget {
 
     bool m_refreshing = false;
     bool m_refreshPending = false;
-    int m_preferredWidth = 0;
 };

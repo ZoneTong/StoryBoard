@@ -7,9 +7,9 @@
 #include <QList>
 #include <QPainterPath>
 
-// 合并形状得到的复合图元：内部按“优先级从低到高”保存若干图层，
-// 每层是一块路径 + 自己的填充色/描边色。填充取优先级最高且不透明的颜色，
-// 高层填充透明时退到次优先级；内部交界轮廓不描边，由填充色覆盖。
+// 合并图元得到的多边形：内部按“优先级从低到高”保存若干图层，
+// 每层是一块路径 + 自己的填充色/描线色。填充取优先级最高且不透明的颜色，
+// 高层填充透明时退到次优先级；内部交界轮廓不描线，由填充色覆盖。
 class CompositeShapeItem : public CanvasItem {
   public:
     struct Layer {
@@ -22,7 +22,7 @@ class CompositeShapeItem : public CanvasItem {
 
     explicit CompositeShapeItem(const QList<Layer>& layers = QList<Layer>());
 
-    QString kind() const override { return QStringLiteral("composite"); }
+    QString kind() const override { return QStringLiteral("polygon"); }
     QString displayName() const override;
     QString typeDisplayName() const override;
     QJsonObject toJson() const override;

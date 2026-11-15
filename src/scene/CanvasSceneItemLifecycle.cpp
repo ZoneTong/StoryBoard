@@ -256,7 +256,7 @@ CanvasItem* CanvasScene::createItem(const QString& kind) const
     if (kind == QStringLiteral("shape")) {
         return new ShapeItem();
     }
-    if (kind == QStringLiteral("composite")) {
+    if (kind == QStringLiteral("polygon") || kind == QStringLiteral("composite")) {
         return new CompositeShapeItem();
     }
     return nullptr;

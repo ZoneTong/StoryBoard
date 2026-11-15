@@ -15,12 +15,12 @@ CompositeShapeItem::CompositeShapeItem(const QList<Layer>& layers) : CanvasItem(
 
 QString CompositeShapeItem::displayName() const
 {
-    return uiText(QStringLiteral("Merged shape"));
+    return uiText(QStringLiteral("Polygon"));
 }
 
 QString CompositeShapeItem::typeDisplayName() const
 {
-    return uiText(QStringLiteral("Merged shape"));
+    return uiText(QStringLiteral("Polygon"));
 }
 
 void CompositeShapeItem::updateBoundsFromLayers()
