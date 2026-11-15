@@ -153,9 +153,11 @@ void selftest::runAlignmentMenuTests(Context& ctx)
                 zoomInAction = action;
             }
         }
-        ctx.check(redoAction && redoAction->shortcuts().size() == 1, QStringLiteral("重做只保留一个组合键"),
+        ctx.check(redoAction && redoAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+Y")),
+                  QStringLiteral("重做主键为 Ctrl+Y（可带副键 Ctrl+Shift+Z）"),
                   redoAction ? redoAction->shortcut().toString() : QString());
-        ctx.check(zoomInAction && zoomInAction->shortcuts().size() == 1, QStringLiteral("放大只保留一个组合键"),
+        ctx.check(zoomInAction && zoomInAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+=")),
+                  QStringLiteral("放大主键为 Ctrl+=（可带副键 Ctrl++）"),
                   zoomInAction ? zoomInAction->shortcut().toString() : QString());
     }
 }

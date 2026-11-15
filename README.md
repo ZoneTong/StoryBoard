@@ -68,17 +68,22 @@
 | 操作 | 快捷键 |
 | --- | --- |
 | 新建 / 打开 / 保存 / 另存为 | `Ctrl+N` / `Ctrl+O` / `Ctrl+S` / `Ctrl+Shift+S` |
-| 插入图片 / 导入图片线稿化 / 导出 | `Ctrl+I` / `Ctrl+Shift+I` / `Ctrl+E` |
-| 撤销 / 重做 | `Ctrl+Z` / `Ctrl+Y`（也支持 `Ctrl+Shift+Z`） |
-| 全选 / 删除 / 复制 | `Ctrl+A` / `Delete` / `Ctrl+D` |
+| 插入图片 / 导入图片线稿化 / 导出 | `Ctrl+P`（副键 `Ctrl+I`）/ `Ctrl+Shift+I` / `Ctrl+E` |
+| 撤销 / 重做 | `Ctrl+Z` / `Ctrl+Y`（副键 `Ctrl+Shift+Z`） |
+| 复制 / 剪切 / 粘贴 / 副本 | `Ctrl+C` / `Ctrl+X` / `Ctrl+V` / `Ctrl+D` |
+| 全选 / 删除 | `Ctrl+A` / `Delete`（副键 `Backspace`） |
 | 组合 / 取消组合 | `Ctrl+G` / `Ctrl+Shift+G` |
 | 简化选中曲线 | `Ctrl+Shift+M` |
 | 顺 / 逆时针旋转 45° | `Ctrl+R` / `Ctrl+Shift+R` |
-| 查看 / 画笔 / 编辑 / 文字模式 | `V` / `B` / `E` / `T` |
-| 全景 / 放大 / 缩小 / 实际大小 | `Ctrl+0` 或 `Home` / `Ctrl+=` / `Ctrl+-` / `Ctrl+1` |
+| 查看 / 编辑 / 画笔 / 文字模式 | `H` / `V` / `B` / `T` |
+| 全景 / 放大 / 缩小 / 实际大小 | `Ctrl+0` 或 `Home` / `Ctrl+=`（副键 `Ctrl++`）/ `Ctrl+-` / `Ctrl+1` |
+| 网格开关 | `Ctrl+'` |
+| 图层面板 / 图元编辑面板 | `Alt+1` / `Alt+2` |
+| 快捷键一览 | `F1` |
 | 设置 | `Ctrl+,` |
 | 调整层内高度 | `]` / `[` |
-| 取消当前笔画 / 退出 | `Esc` / `Ctrl+Q` |
+| 方向键微调 | `←` / `→` / `↑` / `↓`（按住 `Shift` 单次步进 10px） |
+| 取消笔画 / 清除选中 / 退出 | `Esc`（有进行中笔画时取消笔画，否则清除选中）/ `Ctrl+Q` 或 `Alt+F4` |
 
 ## 构建与运行
 

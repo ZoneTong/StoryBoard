@@ -375,6 +375,38 @@ void CanvasView::keyPressEvent(QKeyEvent* event)
         return;
     }
 
+    if (event->key() == Qt::Key_Escape) {
+        scene()->clearSelection();
+        event->accept();
+        return;
+    }
+
+    if (m_mode == ToolMode::Edit) {
+        const qreal step = (event->modifiers() & Qt::ShiftModifier) ? 10.0 : 1.0;
+        QPointF delta;
+        switch (event->key()) {
+        case Qt::Key_Left:
+            delta.rx() -= step;
+            break;
+        case Qt::Key_Right:
+            delta.rx() += step;
+            break;
+        case Qt::Key_Up:
+            delta.ry() -= step;
+            break;
+        case Qt::Key_Down:
+            delta.ry() += step;
+            break;
+        default:
+            break;
+        }
+        if (!delta.isNull()) {
+            m_scene->nudgeSelected(delta);
+            event->accept();
+            return;
+        }
+    }
+
     QGraphicsView::keyPressEvent(event);
 }
 

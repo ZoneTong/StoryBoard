@@ -10,6 +10,9 @@ class CanvasItem;
 // 变更本身落回 CanvasScene 的撤销记录；本类只编排对话框、状态提示与命令转发。
 class MainWindowEditActionsController {
   public:
+    // 剪贴板自定义 MIME：只在本应用进程间互贴，不向其它软件暴露图元格式。
+    static constexpr const char* kClipboardMimeType = "application/x-storyboard-items";
+
     explicit MainWindowEditActionsController(MainWindow* window);
 
     void showSelectedItemProperties();
@@ -18,6 +21,10 @@ class MainWindowEditActionsController {
     void rotateSelected(qreal degrees);
     void applyAlignment(Alignment::Mode mode);
     void applyBoolOperation(BoolOps::Operation operation);
+
+    void copySelectedItems();
+    void cutSelectedItems();
+    void pasteItems();
 
   private:
     MainWindow* m_window = nullptr;

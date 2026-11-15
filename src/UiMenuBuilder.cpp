@@ -93,12 +93,14 @@ void UiMenuBuilder::buildMenus()
     viewMenu->addAction(m_window->m_gridAct);
     QAction* layerDockAction = m_window->m_docks->layerDock()->toggleViewAction();
     layerDockAction->setText(MainWindow::tr("Layer panel"));
+    layerDockAction->setShortcut(QKeySequence(QStringLiteral("Alt+1")));
     layerDockAction->setStatusTip(MainWindow::tr("Show or hide the layer panel"));
     viewMenu->addAction(layerDockAction);
 
     QAction* itemDockAction = m_window->m_docks->itemDock()->toggleViewAction();
     itemDockAction->setObjectName(QStringLiteral("ItemDockToggleAction"));
     itemDockAction->setText(MainWindow::tr("Edit item panel"));
+    itemDockAction->setShortcut(QKeySequence(QStringLiteral("Alt+2")));
     itemDockAction->setStatusTip(MainWindow::tr(
         "Show or hide the edit item panel (it stays visible while docked and follows the item selection while "
         "floating)"));
@@ -109,6 +111,9 @@ void UiMenuBuilder::buildMenus()
     editMenu->addAction(m_window->m_redoAct);
     editMenu->addSeparator();
     editMenu->addAction(m_window->m_deleteAct);
+    editMenu->addAction(m_window->m_copyAct);
+    editMenu->addAction(m_window->m_cutAct);
+    editMenu->addAction(m_window->m_pasteAct);
     editMenu->addAction(m_window->m_duplicateAct);
     editMenu->addAction(m_window->m_groupAct);
     editMenu->addAction(m_window->m_ungroupAct);

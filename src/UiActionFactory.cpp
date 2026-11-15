@@ -4,6 +4,7 @@
 #include "CanvasView.h"
 #include "IconFactory.h"
 #include "MainWindow.h"
+#include "MainWindowEditActionsController.h"
 #include "StyleController.h"
 
 #include <QAction>
@@ -56,8 +57,10 @@ void UiActionFactory::build()
                                        QKeySequence(QStringLiteral("Ctrl+Shift+S")),
                                        MainWindow::tr("Save the current canvas to a new file (Ctrl+Shift+S)"));
     m_window->m_importAct =
-        makeAction(m_window, IconId::Image, MainWindow::tr("Insert images…"), QKeySequence(QStringLiteral("Ctrl+I")),
-                   MainWindow::tr("Insert images as movable, resizable items (Ctrl+I)"));
+        makeAction(m_window, IconId::Image, MainWindow::tr("Insert images…"), QKeySequence(QStringLiteral("Ctrl+P")),
+                   MainWindow::tr("Insert images as movable, resizable items (Ctrl+P)"));
+    m_window->m_importAct->setShortcuts(
+        {QKeySequence(QStringLiteral("Ctrl+P")), QKeySequence(QStringLiteral("Ctrl+I"))});
     m_window->m_lineArtAct = makeAction(
         m_window, IconId::LineArt, MainWindow::tr("Import outline image"), QKeySequence(QStringLiteral("Ctrl+Shift+I")),
         MainWindow::tr(
@@ -67,18 +70,21 @@ void UiActionFactory::build()
         makeAction(m_window, IconId::Export, MainWindow::tr("Export canvas…"), QKeySequence(QStringLiteral("Ctrl+E")),
                    MainWindow::tr("Export as PNG / JPEG / PDF (Ctrl+E)"));
     m_window->m_quitAct = new QAction(MainWindow::tr("Quit"), m_window);
-    m_window->m_quitAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+Q")));
-    m_window->m_quitAct->setStatusTip(MainWindow::tr("Quit StoryBoard (Ctrl+Q)"));
+    m_window->m_quitAct->setShortcuts({QKeySequence(QStringLiteral("Ctrl+Q")), QKeySequence(Qt::ALT | Qt::Key_F4)});
+    m_window->m_quitAct->setStatusTip(MainWindow::tr("Quit StoryBoard (Ctrl+Q / Alt+F4)"));
 
     m_window->m_undoAct = makeAction(m_window, IconId::Undo, MainWindow::tr("Undo"), QKeySequence::Undo,
                                      MainWindow::tr("Undo the last step (Ctrl+Z)"));
     m_window->m_undoAct->setEnabled(false);
     m_window->m_redoAct = makeAction(m_window, IconId::Redo, MainWindow::tr("Redo"),
                                      QKeySequence(QStringLiteral("Ctrl+Y")), MainWindow::tr("Redo (Ctrl+Y)"));
+    m_window->m_redoAct->setShortcuts(
+        {QKeySequence(QStringLiteral("Ctrl+Y")), QKeySequence(QStringLiteral("Ctrl+Shift+Z"))});
     m_window->m_redoAct->setEnabled(false);
 
     m_window->m_deleteAct = makeAction(m_window, IconId::Delete, MainWindow::tr("Delete selected items"),
                                        QKeySequence::Delete, MainWindow::tr("Delete the selected items (Delete)"));
+    m_window->m_deleteAct->setShortcuts({QKeySequence::Delete, QKeySequence(Qt::Key_Backspace)});
     m_window->m_duplicateAct = new QAction(MainWindow::tr("Duplicate selected items"), m_window);
     m_window->m_duplicateAct->setIcon(makeIcon(IconId::Copy, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
     m_window->m_duplicateAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+D")));
@@ -93,6 +99,22 @@ void UiActionFactory::build()
             m_window->statusBar()->showMessage(MainWindow::tr("Duplicated %1 item(s)").arg(duplicated), 3000);
         }
     });
+    m_window->m_copyAct = makeAction(m_window, IconId::Copy, MainWindow::tr("Copy selected items"),
+                                     QKeySequence(QStringLiteral("Ctrl+C")),
+                                     MainWindow::tr("Copy the selected items to the clipboard (Ctrl+C)"));
+    m_window->m_copyAct->setObjectName(QStringLiteral("CopyItemsAction"));
+    m_window->m_copyAct->setEnabled(false);
+    m_window->m_cutAct = makeAction(m_window, IconId::Delete, MainWindow::tr("Cut selected items"),
+                                    QKeySequence(QStringLiteral("Ctrl+X")),
+                                    MainWindow::tr("Cut the selected items to the clipboard (Ctrl+X)"));
+    m_window->m_cutAct->setObjectName(QStringLiteral("CutItemsAction"));
+    m_window->m_cutAct->setEnabled(false);
+    m_window->m_pasteAct = new QAction(MainWindow::tr("Paste"), m_window);
+    m_window->m_pasteAct->setObjectName(QStringLiteral("PasteItemsAction"));
+    m_window->m_pasteAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+V")));
+    m_window->m_pasteAct->setStatusTip(MainWindow::tr("Paste items from the clipboard (Ctrl+V)"));
+    m_window->m_pasteAct->setEnabled(false);
+
     m_window->m_groupAct = new QAction(MainWindow::tr("Group selected items"), m_window);
     m_window->m_groupAct->setIcon(makeIcon(IconId::Group, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
     m_window->m_groupAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+G")));
@@ -142,9 +164,8 @@ void UiActionFactory::build()
     m_window->m_selectAllAct = new QAction(MainWindow::tr("Select all items"), m_window);
     m_window->m_selectAllAct->setShortcut(QKeySequence::SelectAll);
     m_window->m_selectAllAct->setStatusTip(MainWindow::tr("Select all items (Ctrl+A)"));
-    m_window->m_itemPropsAct =
-        makeAction(m_window, IconId::Settings, MainWindow::tr("Item properties…"), QKeySequence(QStringLiteral("Q")),
-                   MainWindow::tr("Show the selected item's properties (Q)"));
+    m_window->m_itemPropsAct = makeAction(m_window, IconId::Settings, MainWindow::tr("Item properties…"),
+                                          QKeySequence(), MainWindow::tr("Show the selected item's properties"));
     m_window->m_rotateCwAct = makeAction(m_window, IconId::RotateCw, MainWindow::tr("Rotate 45° clockwise"),
                                          QKeySequence(QStringLiteral("Ctrl+R")),
                                          MainWindow::tr("Rotate selected items 45° clockwise (Ctrl+R)"));
@@ -153,14 +174,14 @@ void UiActionFactory::build()
                                           MainWindow::tr("Rotate selected items 45° counterclockwise (Ctrl+Shift+R)"));
 
     m_window->m_viewModeAct =
-        makeAction(m_window, IconId::View, MainWindow::tr("View mode"), QKeySequence(QStringLiteral("V")),
-                   MainWindow::tr("View mode: overview, pan and zoom (V)"));
+        makeAction(m_window, IconId::View, MainWindow::tr("View mode"), QKeySequence(QStringLiteral("H")),
+                   MainWindow::tr("View mode: overview, pan and zoom (H)"));
     m_window->m_brushModeAct =
         makeAction(m_window, IconId::Brush, MainWindow::tr("Brush mode"), QKeySequence(QStringLiteral("B")),
                    MainWindow::tr("Brush mode: hold the left button to draw freely (B)"));
     m_window->m_editModeAct =
-        makeAction(m_window, IconId::Edit, MainWindow::tr("Edit mode"), QKeySequence(QStringLiteral("E")),
-                   MainWindow::tr("Edit mode: select, move and resize items; hold Ctrl to pan the view (E)"));
+        makeAction(m_window, IconId::Edit, MainWindow::tr("Edit mode"), QKeySequence(QStringLiteral("V")),
+                   MainWindow::tr("Edit mode: select, move and resize items; hold Ctrl to pan the view (V)"));
     m_window->m_textModeAct =
         makeAction(m_window, IconId::Text, MainWindow::tr("Text mode"), QKeySequence(QStringLiteral("T")),
                    MainWindow::tr("Text mode: click the canvas to place a text item (T)"));
@@ -187,14 +208,17 @@ void UiActionFactory::build()
     m_window->m_fitAct->setShortcuts({QKeySequence(QStringLiteral("Ctrl+0")), QKeySequence(Qt::Key_Home)});
     m_window->m_zoomInAct = makeAction(m_window, IconId::ZoomIn, MainWindow::tr("Zoom in"),
                                        QKeySequence(QStringLiteral("Ctrl+=")), MainWindow::tr("Zoom in (Ctrl+=)"));
+    m_window->m_zoomInAct->setShortcuts(
+        {QKeySequence(QStringLiteral("Ctrl+=")), QKeySequence(QStringLiteral("Ctrl++"))});
     m_window->m_zoomOutAct = makeAction(m_window, IconId::ZoomOut, MainWindow::tr("Zoom out"),
                                         QKeySequence(QStringLiteral("Ctrl+-")), MainWindow::tr("Zoom out (Ctrl+-)"));
     m_window->m_actualSizeAct =
         makeAction(m_window, IconId::ZoomIn, MainWindow::tr("Actual size"), QKeySequence(QStringLiteral("Ctrl+1")),
                    MainWindow::tr("Show at 100% (Ctrl+1)"));
 
-    m_window->m_gridAct = makeAction(m_window, IconId::Grid, MainWindow::tr("Helper grid"), QKeySequence(),
-                                     MainWindow::tr("Show or hide the helper grid on the canvas"));
+    m_window->m_gridAct =
+        makeAction(m_window, IconId::Grid, MainWindow::tr("Helper grid"), QKeySequence(QStringLiteral("Ctrl+'")),
+                   MainWindow::tr("Show or hide the helper grid on the canvas"));
     m_window->m_gridAct->setObjectName(QStringLiteral("GridToggleAction"));
     m_window->m_gridAct->setCheckable(true);
     m_window->m_gridAct->setChecked(m_window->m_settings.showGrid);
@@ -232,6 +256,7 @@ void UiActionFactory::build()
     m_window->m_aboutAct =
         new QAction(QIcon(QStringLiteral(":/icons/app.png")), MainWindow::tr("About StoryBoard"), m_window);
     m_window->m_shortcutsAct = new QAction(MainWindow::tr("Keyboard shortcuts…"), m_window);
+    m_window->m_shortcutsAct->setShortcut(QKeySequence(QKeySequence::HelpContents));
     m_window->m_shortcutsAct->setStatusTip(MainWindow::tr("List every action that has a shortcut"));
     m_window->m_aboutQtAct = new QAction(MainWindow::tr("About Qt"), m_window);
 
@@ -247,6 +272,12 @@ void UiActionFactory::build()
     QObject::connect(m_window->m_undoAct, &QAction::triggered, m_window->m_undo, &QUndoStack::undo);
     QObject::connect(m_window->m_redoAct, &QAction::triggered, m_window->m_undo, &QUndoStack::redo);
     QObject::connect(m_window->m_deleteAct, &QAction::triggered, m_window->m_scene, &CanvasScene::deleteSelected);
+    QObject::connect(m_window->m_copyAct, &QAction::triggered, m_window,
+                     [this]() { m_window->m_editActions->copySelectedItems(); });
+    QObject::connect(m_window->m_cutAct, &QAction::triggered, m_window,
+                     [this]() { m_window->m_editActions->cutSelectedItems(); });
+    QObject::connect(m_window->m_pasteAct, &QAction::triggered, m_window,
+                     [this]() { m_window->m_editActions->pasteItems(); });
     QObject::connect(m_window->m_selectAllAct, &QAction::triggered, m_window->m_scene, &CanvasScene::selectAllItems);
     QObject::connect(m_window->m_itemPropsAct, &QAction::triggered, m_window, &MainWindow::showSelectedItemProperties);
     QObject::connect(m_window->m_rotateCwAct, &QAction::triggered, m_window,

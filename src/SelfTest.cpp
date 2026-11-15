@@ -80,6 +80,7 @@ int runSelfTest(const QString& reportPath)
     selftest::runCustomShapeDockTests(ctx);
     selftest::runDockPanelMainWindowTests(ctx);
     selftest::runDockOrderPersistenceTests(ctx);
+    selftest::runClipboardShortcutTests(ctx);
 
     int passCount = 0;
     for (const QString& line : ctx.lines) {

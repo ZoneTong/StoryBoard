@@ -549,8 +549,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>编辑模式：可见且未锁定图层的图元均可编辑 · 拖拽/框选 · 控制点缩放 · 按住 Ctrl 拖动/滚轮平移缩放整体视图 · 拖动画布边缘调整画布 · Delete 删除</translation>
     </message>
     <message>
-      <source>Edit mode: select, move and resize items; hold Ctrl to pan the view (E)</source>
-      <translation>编辑模式：选择、移动、缩放图元；按住 Ctrl 平移视图 (E)</translation>
+      <source>Edit mode: select, move and resize items; hold Ctrl to pan the view (V)</source>
+      <translation>编辑模式：选择、移动、缩放图元；按住 Ctrl 平移视图 (V)</translation>
     </message>
     <message>
       <source>Edit text</source>
@@ -795,6 +795,54 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>Duplicated %1 item(s)</source>
       <translation>已复制 %1 个图元</translation>
+    </message>
+    <message>
+      <source>Copy selected items</source>
+      <translation>复制选中图元</translation>
+    </message>
+    <message>
+      <source>Copy the selected items to the clipboard (Ctrl+C)</source>
+      <translation>把选中图元复制到剪贴板 (Ctrl+C)</translation>
+    </message>
+    <message>
+      <source>Cut selected items</source>
+      <translation>剪切选中图元</translation>
+    </message>
+    <message>
+      <source>Cut the selected items to the clipboard (Ctrl+X)</source>
+      <translation>把选中图元剪切到剪贴板 (Ctrl+X)</translation>
+    </message>
+    <message>
+      <source>Paste</source>
+      <translation>粘贴</translation>
+    </message>
+    <message>
+      <source>Paste items from the clipboard (Ctrl+V)</source>
+      <translation>从剪贴板粘贴图元 (Ctrl+V)</translation>
+    </message>
+    <message>
+      <source>Copied %1 item(s)</source>
+      <translation>已复制 %1 个图元到剪贴板</translation>
+    </message>
+    <message>
+      <source>Pasted %1 item(s)</source>
+      <translation>已粘贴 %1 个图元</translation>
+    </message>
+    <message>
+      <source>Select an item to copy</source>
+      <translation>请先选中要复制的图元</translation>
+    </message>
+    <message>
+      <source>Nothing to paste</source>
+      <translation>剪贴板中没有可粘贴的内容</translation>
+    </message>
+    <message>
+      <source>Paste items</source>
+      <translation>粘贴图元</translation>
+    </message>
+    <message>
+      <source>Nudge items</source>
+      <translation>微调图元</translation>
     </message>
     <message>
       <source>Group selected items</source>
@@ -1717,8 +1765,8 @@ Use the checkbox to show or hide it.</source>
       <translation>查看模式：拖拽平移 · 滚轮缩放 · 切换模式时自动回到全景</translation>
     </message>
     <message>
-      <source>View mode: overview, pan and zoom (V)</source>
-      <translation>查看模式：全景浏览、整体平移与缩放 (V)</translation>
+      <source>View mode: overview, pan and zoom (H)</source>
+      <translation>查看模式：概览、拖拽平移 (H)</translation>
     </message>
     <message>
       <source>Visible</source>
@@ -2321,8 +2369,8 @@ Use the checkbox to show or hide it.</source>
       <translation>插入图片…</translation>
     </message>
     <message>
-      <source>Insert images as movable, resizable items (Ctrl+I)</source>
-      <translation>将图片插入为可移动、可缩放的图元 (Ctrl+I)</translation>
+      <source>Insert images as movable, resizable items (Ctrl+P)</source>
+      <translation>将图片插入为可移动、可缩放的图元 (Ctrl+P)</translation>
     </message>
     <message>
       <source>Export canvas…</source>
@@ -2375,6 +2423,54 @@ Use the checkbox to show or hide it.</source>
     <message>
       <source>Duplicated %1 item(s)</source>
       <translation>已复制 %1 个图元</translation>
+    </message>
+    <message>
+      <source>Copy selected items</source>
+      <translation>复制选中图元</translation>
+    </message>
+    <message>
+      <source>Copy the selected items to the clipboard (Ctrl+C)</source>
+      <translation>把选中图元复制到剪贴板 (Ctrl+C)</translation>
+    </message>
+    <message>
+      <source>Cut selected items</source>
+      <translation>剪切选中图元</translation>
+    </message>
+    <message>
+      <source>Cut the selected items to the clipboard (Ctrl+X)</source>
+      <translation>把选中图元剪切到剪贴板 (Ctrl+X)</translation>
+    </message>
+    <message>
+      <source>Paste</source>
+      <translation>粘贴</translation>
+    </message>
+    <message>
+      <source>Paste items from the clipboard (Ctrl+V)</source>
+      <translation>从剪贴板粘贴图元 (Ctrl+V)</translation>
+    </message>
+    <message>
+      <source>Copied %1 item(s)</source>
+      <translation>已复制 %1 个图元到剪贴板</translation>
+    </message>
+    <message>
+      <source>Pasted %1 item(s)</source>
+      <translation>已粘贴 %1 个图元</translation>
+    </message>
+    <message>
+      <source>Select an item to copy</source>
+      <translation>请先选中要复制的图元</translation>
+    </message>
+    <message>
+      <source>Nothing to paste</source>
+      <translation>剪贴板中没有可粘贴的内容</translation>
+    </message>
+    <message>
+      <source>Paste items</source>
+      <translation>粘贴图元</translation>
+    </message>
+    <message>
+      <source>Nudge items</source>
+      <translation>微调图元</translation>
     </message>
     <message>
       <source>Group selected items</source>
@@ -2453,8 +2549,8 @@ Use the checkbox to show or hide it.</source>
       <translation>查看模式</translation>
     </message>
     <message>
-      <source>View mode: overview, pan and zoom (V)</source>
-      <translation>查看模式：全景浏览、整体平移与缩放 (V)</translation>
+      <source>View mode: overview, pan and zoom (H)</source>
+      <translation>查看模式：概览、拖拽平移 (H)</translation>
     </message>
     <message>
       <source>Brush mode</source>
@@ -2469,8 +2565,8 @@ Use the checkbox to show or hide it.</source>
       <translation>编辑模式</translation>
     </message>
     <message>
-      <source>Edit mode: select, move and resize items; hold Ctrl to pan the view (E)</source>
-      <translation>编辑模式：选择、移动、缩放图元；按住 Ctrl 平移视图 (E)</translation>
+      <source>Edit mode: select, move and resize items; hold Ctrl to pan the view (V)</source>
+      <translation>编辑模式：选择、移动、缩放图元；按住 Ctrl 平移视图 (V)</translation>
     </message>
     <message>
       <source>Text mode</source>
@@ -3249,8 +3345,8 @@ Use the checkbox to show or hide it.</source>
       <translation>当前所有带快捷键的动作：</translation>
     </message>
     <message>
-      <source>Quit StoryBoard (Ctrl+Q)</source>
-      <translation>退出 StoryBoard（Ctrl+Q）</translation>
+      <source>Quit StoryBoard (Ctrl+Q / Alt+F4)</source>
+      <translation>退出 StoryBoard（Ctrl+Q / Alt+F4）</translation>
     </message>
       <message>
       <source>Click a shortcut to change it; Esc closes this dialog.</source>

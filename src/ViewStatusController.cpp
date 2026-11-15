@@ -7,9 +7,12 @@
 #include "CanvasView.h"
 #include "DockPanelController.h"
 #include "MainWindow.h"
+#include "MainWindowEditActionsController.h"
 
 #include <QAction>
+#include <QApplication>
 #include <QLabel>
+#include <QMimeData>
 #include <QToolButton>
 #include <QUndoStack>
 #include <QtMath>
@@ -78,7 +81,13 @@ void ViewStatusController::updateActions()
 
     const bool editing = m_window->m_view->mode() == ToolMode::Edit;
     m_window->m_deleteAct->setEnabled(editing && !m_window->m_scene->selectedItems().isEmpty());
-    m_window->m_duplicateAct->setEnabled(editing && !m_window->m_scene->selectedCanvasItems().isEmpty());
+    const bool hasSelection = !m_window->m_scene->selectedCanvasItems().isEmpty();
+    m_window->m_copyAct->setEnabled(editing && hasSelection);
+    m_window->m_cutAct->setEnabled(editing && hasSelection);
+    const QMimeData* mime = QApplication::clipboard()->mimeData();
+    m_window->m_pasteAct->setEnabled(
+        editing && mime && mime->hasFormat(QLatin1String(MainWindowEditActionsController::kClipboardMimeType)));
+    m_window->m_duplicateAct->setEnabled(editing && hasSelection);
     m_window->m_groupAct->setEnabled(editing && m_window->m_scene->canGroupSelectedItems());
     m_window->m_ungroupAct->setEnabled(editing && m_window->m_scene->canUngroupSelectedItems());
     m_window->m_smoothAct->setEnabled(editing && m_window->m_scene->canSmoothSelectedStrokes());

@@ -16,6 +16,8 @@
 #include "ViewStatusController.h"
 
 #include <QAction>
+#include <QApplication>
+#include <QClipboard>
 #include <QCloseEvent>
 #include <QDragEnterEvent>
 #include <QDropEvent>
@@ -196,6 +198,7 @@ void MainWindow::connectSignals()
     connect(m_scene, &CanvasScene::activeLayerChanged, this, [this](int) { updateStatusBar(); });
     connect(m_scene, &CanvasScene::selectionChanged, this, &MainWindow::updateActions);
     connect(m_scene, &CanvasScene::selectionChanged, this, &MainWindow::updateItemDockVisibility);
+    connect(QApplication::clipboard(), &QClipboard::dataChanged, this, &MainWindow::updateActions);
     connect(m_scene, &CanvasScene::backgroundChanged, this, [this]() {
         updateBackgroundModeActions();
         updateActions();

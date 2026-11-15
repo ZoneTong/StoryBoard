@@ -5,6 +5,7 @@
 #include "CanvasView.h"
 #include "Commands.h"
 #include "CompositeShapeItem.h"
+#include "CurveItem.h"
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
@@ -19,7 +20,6 @@
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -440,8 +440,7 @@ void selftest::runMainWindowFlowTests(Context& ctx)
 
         QAction* propertiesAction = nullptr;
         for (QAction* action : windowActions) {
-            if (action->text().startsWith(QStringLiteral("图元属性")) &&
-                action->shortcut() == QKeySequence(QStringLiteral("Q"))) {
+            if (action->text().startsWith(QStringLiteral("图元属性"))) {
                 propertiesAction = action;
                 break;
             }
@@ -450,8 +449,9 @@ void selftest::runMainWindowFlowTests(Context& ctx)
             createdText->setSelected(true);
         }
         QApplication::processEvents();
-        ctx.check(propertiesAction && propertiesAction->isEnabled(),
-                  QStringLiteral("编辑菜单提供 Q 图元属性快捷键且选中单个图元时可用"));
+        ctx.check(propertiesAction && propertiesAction->isEnabled() && propertiesAction->shortcut().isEmpty(),
+                  QStringLiteral("图元属性保留菜单入口、不绑单字母快捷键，选中单个图元时可用"),
+                  propertiesAction ? propertiesAction->text() : QString());
         if (createdText && heightUpAction && heightDownAction) {
             const int heightBeforeShortcut = createdText->height();
             heightUpAction->trigger();

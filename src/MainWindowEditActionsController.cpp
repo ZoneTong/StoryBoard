@@ -6,7 +6,12 @@
 #include "ItemPropertiesDialog.h"
 #include "MainWindow.h"
 
+#include <QApplication>
+#include <QClipboard>
+#include <QJsonArray>
+#include <QJsonDocument>
 #include <QList>
+#include <QMimeData>
 #include <QPointer>
 #include <QStatusBar>
 #include <QtMath>
@@ -140,4 +145,47 @@ void MainWindowEditActionsController::applyBoolOperation(BoolOps::Operation oper
     }
     m_window->statusBar()->showMessage(MainWindow::tr("Merged into one polygon (undo to restore)"), 3000);
     m_window->updateActions();
+}
+
+void MainWindowEditActionsController::copySelectedItems()
+{
+    if (!m_window->m_scene) {
+        return;
+    }
+    const QJsonArray items = m_window->m_scene->clipboardItems();
+    if (items.isEmpty()) {
+        m_window->statusBar()->showMessage(MainWindow::tr("Select an item to copy"), 3000);
+        return;
+    }
+    auto* mime = new QMimeData;
+    mime->setData(QLatin1String(kClipboardMimeType), QJsonDocument(items).toJson(QJsonDocument::Compact));
+    QApplication::clipboard()->setMimeData(mime);
+    m_window->statusBar()->showMessage(MainWindow::tr("Copied %1 item(s)").arg(items.size()), 3000);
+}
+
+void MainWindowEditActionsController::cutSelectedItems()
+{
+    copySelectedItems();
+    if (m_window->m_scene) {
+        m_window->m_scene->deleteSelected();
+    }
+}
+
+void MainWindowEditActionsController::pasteItems()
+{
+    if (!m_window->m_scene) {
+        return;
+    }
+    const QMimeData* mime = QApplication::clipboard()->mimeData();
+    if (!mime || !mime->hasFormat(QLatin1String(kClipboardMimeType))) {
+        m_window->statusBar()->showMessage(MainWindow::tr("Nothing to paste"), 3000);
+        return;
+    }
+    const QJsonDocument doc = QJsonDocument::fromJson(mime->data(QLatin1String(kClipboardMimeType)));
+    const int pasted = m_window->m_scene->pasteClipboardItems(doc.array());
+    if (pasted == 0) {
+        m_window->statusBar()->showMessage(MainWindow::tr("Nothing to paste"), 3000);
+        return;
+    }
+    m_window->statusBar()->showMessage(MainWindow::tr("Pasted %1 item(s)").arg(pasted), 3000);
 }

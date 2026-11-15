@@ -175,6 +175,9 @@ class MainWindow : public QMainWindow {
     QAction* m_undoAct = nullptr;
     QAction* m_redoAct = nullptr;
     QAction* m_deleteAct = nullptr;
+    QAction* m_copyAct = nullptr;
+    QAction* m_cutAct = nullptr;
+    QAction* m_pasteAct = nullptr;
     QAction* m_duplicateAct = nullptr;
     QAction* m_groupAct = nullptr;
     QAction* m_ungroupAct = nullptr;

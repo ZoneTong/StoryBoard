@@ -5,6 +5,7 @@
 
 #include <QGraphicsScene>
 #include <QImage>
+#include <QJsonArray>
 #include <QJsonObject>
 #include <QList>
 #include <QPointer>
@@ -69,6 +70,12 @@ class CanvasScene : public QGraphicsScene {
     // 复制当前选中的可编辑图元（同层、偏移一点、名称自动取唯一值），整体一条撤销记录。
     // 返回实际生成的副本数量。
     int duplicateSelectedItems();
+
+    // 剪贴板：把选中的可编辑图元序列化成 JSON 数组；粘贴时按数组重建并偏移选中。
+    QJsonArray clipboardItems() const;
+    int pasteClipboardItems(const QJsonArray& items);
+    // 方向键微调：按 delta 移动选中的可编辑图元，整体一条撤销记录，返回移动数量。
+    int nudgeSelected(const QPointF& delta);
 
     // 分组：只允许同层、至少两个可编辑图元。移动任意组员时整组移动，
     // 但组员仍可单独选中并编辑属性。
