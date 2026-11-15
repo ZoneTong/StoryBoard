@@ -3,6 +3,7 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
+#include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "ImageItem.h"
 #include "ItemDockPanelArrangeCard.h"
@@ -155,6 +156,17 @@ QList<ShapeItem*> ItemDockPanel::selectedShapes() const
     return shapes;
 }
 
+QList<CompositeShapeItem*> ItemDockPanel::selectedComposites() const
+{
+    QList<CompositeShapeItem*> composites;
+    for (CanvasItem* item : selectedItems()) {
+        if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+            composites.append(composite);
+        }
+    }
+    return composites;
+}
+
 QList<CurveItem*> ItemDockPanel::selectedStrokes() const
 {
     QList<CurveItem*> strokes;
@@ -170,7 +182,8 @@ QList<CanvasItem*> ItemDockPanel::selectedStrokeTargets() const
 {
     QList<CanvasItem*> targets;
     for (CanvasItem* item : selectedItems()) {
-        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<CurveItem*>(item)) {
+        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<CurveItem*>(item) ||
+            dynamic_cast<CompositeShapeItem*>(item)) {
             targets.append(item);
         }
     }
@@ -248,6 +261,7 @@ void ItemDockPanel::refresh()
 
     const QList<CanvasItem*> items = selectedItems();
     const QList<ShapeItem*> shapes = selectedShapes();
+    const QList<CompositeShapeItem*> composites = selectedComposites();
     const QList<CurveItem*> strokes = selectedStrokes();
     const QList<TextItem*> texts = selectedTexts();
     const QList<ImageItem*> images = selectedImages();
@@ -268,9 +282,8 @@ void ItemDockPanel::refresh()
 
     // 没有选中图元时隐藏全部图元编辑项，停靠卡片本身保持常驻。
     const bool hasSelection = !items.isEmpty();
-    // 选中的图元都不支持填充（直线 / 弧线 / 大括号 / 文字 / 图片 / 多边形）时，
-    // 填充样式与填充颜色两行没有可作用的对象，直接隐藏。
-    bool anyFillable = false;
+    // 多边形自身可填充；直线 / 弧线 / 大括号 / 文字 / 图片仍不提供填充。
+    bool anyFillable = !composites.isEmpty();
     for (ShapeItem* shape : shapes) {
         if (shapeTypeIsFilled(shape->shapeType())) {
             anyFillable = true;
@@ -281,9 +294,9 @@ void ItemDockPanel::refresh()
     m_fillBorderCard->fillStyleRow()->setVisible(showFillRows);
     m_colorsCard->fillColorRow()->setVisible(showFillRows);
 
-    // 描线样式对图形与曲线都有效；描线颜色 / 宽度对图形与曲线也有效。
-    const bool showBorderStyleRow = hasSelection && (!shapes.isEmpty() || !strokes.isEmpty());
-    const bool showStrokeRows = hasSelection && (!shapes.isEmpty() || !strokes.isEmpty());
+    // 描线样式对图形、曲线与多边形都有效；描线颜色 / 宽度同样如此。
+    const bool showBorderStyleRow = hasSelection && (!shapes.isEmpty() || !strokes.isEmpty() || !composites.isEmpty());
+    const bool showStrokeRows = hasSelection && (!shapes.isEmpty() || !strokes.isEmpty() || !composites.isEmpty());
     m_fillBorderCard->borderStyleRow()->setVisible(showBorderStyleRow);
     m_colorsCard->borderColorRow()->setVisible(showStrokeRows);
     m_fillBorderCard->borderWidthRow()->setVisible(showStrokeRows);
@@ -294,8 +307,8 @@ void ItemDockPanel::refresh()
     m_valueCard->setVisible(hasSelection);
     m_arrangeCard->setVisible(hasSelection);
     m_contentCard->refresh(texts, images);
-    m_colorsCard->refresh(shapes, strokes);
-    m_fillBorderCard->refresh(shapes, strokes);
+    m_colorsCard->refresh(shapes, strokes, composites);
+    m_fillBorderCard->refresh(shapes, strokes, composites);
     m_valueCard->refresh(shapes, items);
     m_arrangeCard->refresh(!selectedItems().isEmpty());
 
@@ -399,6 +412,12 @@ void ItemDockPanel::applyStrokeColor(const QColor& color)
             stroke->setStyle(color, stroke->strokeWidth());
             afterColors.append(stroke->strokeColor());
             afterWidths.append(stroke->strokeWidth());
+        } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+            beforeColors.append(composite->strokeColor());
+            beforeWidths.append(composite->strokeWidth());
+            composite->setStroke(color, composite->strokeWidth());
+            afterColors.append(composite->strokeColor());
+            afterWidths.append(composite->strokeWidth());
         }
     }
     m_refreshing = false;
@@ -413,14 +432,23 @@ void ItemDockPanel::applyFillColor(const QColor& color)
     if (!color.isValid()) {
         return;
     }
-    changeSelectedShapes(tr("Change shape fill color"), [color](ShapeItem* shape) {
-        shape->setFill(color, shape->fillStyle() == FillStyle::None ? FillStyle::Solid : shape->fillStyle());
-    });
+    changeSelectedFills(
+        tr("Change shape fill color"),
+        [color](ShapeItem* shape) {
+            shape->setFill(color, shape->fillStyle() == FillStyle::None ? FillStyle::Solid : shape->fillStyle());
+        },
+        [color](CompositeShapeItem* composite) {
+            const FillStyle style =
+                composite->fillStyle() == FillStyle::None ? FillStyle::Solid : composite->fillStyle();
+            composite->setFill(color, style);
+        });
 }
 
 void ItemDockPanel::applyFillStyle(FillStyle style)
 {
-    changeSelectedShapes(tr("Change shape fill style"), [style](ShapeItem* shape) { shape->setFillStyle(style); });
+    changeSelectedFills(
+        tr("Change shape fill style"), [style](ShapeItem* shape) { shape->setFillStyle(style); },
+        [style](CompositeShapeItem* composite) { composite->setFillStyle(style); });
 }
 
 void ItemDockPanel::applyBorderStyle(Qt::PenStyle style)
@@ -438,6 +466,9 @@ void ItemDockPanel::applyBorderStyle(Qt::PenStyle style)
             afterStyles.append(style);
         } else if (auto* curve = dynamic_cast<CurveItem*>(item)) {
             beforeStyles.append(curve->strokeStyle());
+            afterStyles.append(style);
+        } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+            beforeStyles.append(composite->strokeStyle());
             afterStyles.append(style);
         }
     }
@@ -472,6 +503,12 @@ void ItemDockPanel::applyBorderWidth(qreal width)
             stroke->setStyle(stroke->strokeColor(), width);
             afterColors.append(stroke->strokeColor());
             afterWidths.append(stroke->strokeWidth());
+        } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+            beforeColors.append(composite->strokeColor());
+            beforeWidths.append(composite->strokeWidth());
+            composite->setStroke(composite->strokeColor(), width);
+            afterColors.append(composite->strokeColor());
+            afterWidths.append(composite->strokeWidth());
         }
     }
     m_refreshing = false;
@@ -499,6 +536,68 @@ void ItemDockPanel::applyOpacity(int percent)
     m_refreshing = false;
 
     m_scene->undoStack()->push(new ItemOpacityCommand(m_scene, items, before, after, tr("Change opacity")));
+    refresh();
+}
+
+void ItemDockPanel::changeSelectedFills(const QString& text, const std::function<void(ShapeItem*)>& mutateShape,
+                                        const std::function<void(CompositeShapeItem*)>& mutateComposite)
+{
+    const QList<ShapeItem*> shapes = selectedShapes();
+    const QList<CompositeShapeItem*> composites = selectedComposites();
+    if ((shapes.isEmpty() && composites.isEmpty()) || !m_scene || !m_scene->undoStack()) {
+        return;
+    }
+
+    QList<ShapeItemState> beforeShapes;
+    QList<ShapeItemState> afterShapes;
+    QList<QColor> beforeCompositeColors;
+    QList<FillStyle> beforeCompositeStyles;
+    QList<QColor> afterCompositeColors;
+    QList<FillStyle> afterCompositeStyles;
+    for (ShapeItem* shape : shapes) {
+        beforeShapes.append(shape->state());
+    }
+    for (CompositeShapeItem* composite : composites) {
+        beforeCompositeColors.append(composite->fillColor());
+        beforeCompositeStyles.append(composite->fillStyle());
+    }
+
+    m_refreshing = true;
+    for (ShapeItem* shape : shapes) {
+        mutateShape(shape);
+        afterShapes.append(shape->state());
+    }
+    for (CompositeShapeItem* composite : composites) {
+        mutateComposite(composite);
+        afterCompositeColors.append(composite->fillColor());
+        afterCompositeStyles.append(composite->fillStyle());
+    }
+    m_refreshing = false;
+
+    if (beforeShapes == afterShapes && beforeCompositeColors == afterCompositeColors &&
+        beforeCompositeStyles == afterCompositeStyles) {
+        return;
+    }
+
+    QUndoStack* undo = m_scene->undoStack();
+    const bool mixed = !shapes.isEmpty() && !composites.isEmpty();
+    if (mixed) {
+        undo->beginMacro(text);
+    }
+    if (!shapes.isEmpty()) {
+        undo->push(new ShapeStyleCommand(m_scene, shapes, beforeShapes, afterShapes, text));
+    }
+    if (!composites.isEmpty()) {
+        QList<CanvasItem*> compositeItems;
+        for (CompositeShapeItem* composite : composites) {
+            compositeItems.append(composite);
+        }
+        undo->push(new CompositeFillStyleCommand(m_scene, compositeItems, beforeCompositeColors, beforeCompositeStyles,
+                                                 afterCompositeColors, afterCompositeStyles, text));
+    }
+    if (mixed) {
+        undo->endMacro();
+    }
     refresh();
 }
 

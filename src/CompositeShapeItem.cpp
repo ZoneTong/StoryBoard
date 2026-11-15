@@ -1,6 +1,7 @@
 #include "CompositeShapeItem.h"
 
 #include "I18n.h"
+#include "ShapePainter.h"
 
 #include <QJsonArray>
 #include <QJsonObject>
@@ -8,9 +9,98 @@
 #include <QPainterPathStroker>
 #include <QTransform>
 
-CompositeShapeItem::CompositeShapeItem(const QList<Layer>& layers) : CanvasItem(), m_layers(layers)
+CompositeShapeItem::CompositeShapeItem(const QList<Layer>& layers, FillStyle fillStyle, Qt::PenStyle strokeStyle)
+    : CanvasItem(), m_layers(layers), m_fillStyle(fillStyle), m_strokeStyle(strokeStyle)
 {
     updateBoundsFromLayers();
+}
+
+QColor CompositeShapeItem::fillColor() const
+{
+    for (const Layer& layer : m_layers) {
+        if (layer.role == LayerRole::FilledArea && layer.filled) {
+            return layer.fill;
+        }
+    }
+    for (const Layer& layer : m_layers) {
+        if (layer.filled) {
+            return layer.fill;
+        }
+    }
+    return QColor();
+}
+
+QColor CompositeShapeItem::strokeColor() const
+{
+    for (const Layer& layer : m_layers) {
+        if (layer.role == LayerRole::FilledArea && layer.strokeWidth > 0.0) {
+            return layer.stroke;
+        }
+    }
+    for (const Layer& layer : m_layers) {
+        // 纯直线 / 曲线合并没有面积层，线宽带的填充色就是描线色。
+        if (layer.role == LayerRole::StrokeBand) {
+            return layer.fill;
+        }
+    }
+    return fillColor();
+}
+
+qreal CompositeShapeItem::strokeWidth() const
+{
+    for (const Layer& layer : m_layers) {
+        if (layer.role == LayerRole::FilledArea && layer.strokeWidth > 0.0) {
+            return layer.strokeWidth;
+        }
+    }
+    return 0.0;
+}
+
+void CompositeShapeItem::setFill(const QColor& color, FillStyle style)
+{
+    if (!color.isValid()) {
+        return;
+    }
+    m_fillStyle = style;
+    for (Layer& layer : m_layers) {
+        // 文字字形跟多边形填充色一起变化；线宽带属于描线，不在这里改。
+        if (layer.role == LayerRole::FilledArea || layer.role == LayerRole::Text) {
+            layer.fill = color;
+        }
+    }
+    update();
+}
+
+void CompositeShapeItem::setFillStyle(FillStyle style)
+{
+    m_fillStyle = style;
+    update();
+}
+
+void CompositeShapeItem::setStroke(const QColor& color, qreal width)
+{
+    if (!color.isValid()) {
+        return;
+    }
+    const qreal effectiveWidth = qMax(0.0, width);
+    for (Layer& layer : m_layers) {
+        if (layer.role == LayerRole::FilledArea) {
+            layer.stroke = color;
+            if (effectiveWidth > 0.0) {
+                layer.strokeWidth = effectiveWidth;
+            }
+        } else if (layer.role == LayerRole::StrokeBand) {
+            // 零面积图元的线宽由自身几何决定，换色只改填充，避免再次描边加粗。
+            layer.fill = color;
+        }
+    }
+    update();
+}
+
+void CompositeShapeItem::setStrokeStyle(Qt::PenStyle style)
+{
+    m_strokeStyle = style;
+    update();
 }
 
 QString CompositeShapeItem::displayName() const
@@ -110,9 +200,16 @@ void CompositeShapeItem::paintContent(QPainter* painter)
         if (visible.isEmpty()) {
             continue;
         }
+        if (layer.role == LayerRole::FilledArea && m_fillStyle == FillStyle::None) {
+            continue;
+        }
         painter->setPen(Qt::NoPen);
-        painter->setBrush(layer.fill);
-        painter->drawPath(visible);
+        if (layer.role == LayerRole::FilledArea && ShapePainter::isPatternFill(m_fillStyle)) {
+            ShapePainter::paintPatternFill(painter, visible, visible.boundingRect(), layer.fill, m_fillStyle);
+        } else {
+            painter->setBrush(layer.fill);
+            painter->drawPath(visible);
+        }
     }
 
     // 描边：只保留多边形整体外轮廓（含孔洞边界）上的部分。
@@ -159,7 +256,7 @@ void CompositeShapeItem::paintContent(QPainter* painter)
         if (layer.stroke.alpha() <= 0 || layer.strokeWidth <= 0.0) {
             continue;
         }
-        QPen pen(layer.stroke, layer.strokeWidth);
+        QPen pen(layer.stroke, layer.strokeWidth, m_strokeStyle);
         pen.setJoinStyle(Qt::MiterJoin);
         painter->setPen(pen);
         painter->setBrush(Qt::NoBrush);
@@ -236,9 +333,12 @@ QJsonObject CompositeShapeItem::toJson() const
         entry.insert(QStringLiteral("stroke"), layer.stroke.name(QColor::HexArgb));
         entry.insert(QStringLiteral("width"), layer.strokeWidth);
         entry.insert(QStringLiteral("filled"), layer.filled);
+        entry.insert(QStringLiteral("role"), static_cast<int>(layer.role));
         layers.append(entry);
     }
     json.insert(QStringLiteral("layers"), layers);
+    json.insert(QStringLiteral("fillStyle"), static_cast<int>(m_fillStyle));
+    json.insert(QStringLiteral("strokeStyle"), static_cast<int>(m_strokeStyle));
     json.insert(QStringLiteral("designWidth"), m_designSize.width());
     json.insert(QStringLiteral("designHeight"), m_designSize.height());
     return json;
@@ -257,8 +357,20 @@ void CompositeShapeItem::fromJson(const QJsonObject& json)
         layer.stroke = QColor(entry.value(QStringLiteral("stroke")).toString());
         layer.strokeWidth = entry.value(QStringLiteral("width")).toDouble(1.0);
         layer.filled = entry.value(QStringLiteral("filled")).toBool(true);
+        const int role = entry.value(QStringLiteral("role")).toInt(static_cast<int>(LayerRole::FilledArea));
+        if (role >= static_cast<int>(LayerRole::FilledArea) && role <= static_cast<int>(LayerRole::Text)) {
+            layer.role = static_cast<LayerRole>(role);
+        }
         m_layers.append(layer);
     }
+    const int fillStyle = json.value(QStringLiteral("fillStyle")).toInt(static_cast<int>(FillStyle::Solid));
+    m_fillStyle = fillStyle >= static_cast<int>(FillStyle::None) && fillStyle <= static_cast<int>(FillStyle::Honeycomb)
+                      ? static_cast<FillStyle>(fillStyle)
+                      : FillStyle::Solid;
+    const int strokeStyle = json.value(QStringLiteral("strokeStyle")).toInt(static_cast<int>(Qt::SolidLine));
+    m_strokeStyle = strokeStyle >= static_cast<int>(Qt::NoPen) && strokeStyle <= static_cast<int>(Qt::CustomDashLine)
+                        ? static_cast<Qt::PenStyle>(strokeStyle)
+                        : Qt::SolidLine;
     m_designSize = QSizeF(qMax(1.0, json.value(QStringLiteral("designWidth")).toDouble(1.0)),
                           qMax(1.0, json.value(QStringLiteral("designHeight")).toDouble(1.0)));
     setContentSize(m_designSize);

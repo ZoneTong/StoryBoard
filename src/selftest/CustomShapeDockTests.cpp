@@ -819,6 +819,154 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             ctx.check(qAbs(selectedShape->opacity() - 1.0) < 0.01 && qAbs(selectedStroke->opacity() - 1.0) < 0.01,
                       QStringLiteral("撤销透明度同时恢复图形和曲线"));
 
+            // 多边形也要有填充 / 描线属性：选中后五行可见，按钮改动真正落到图层并可撤销。
+            CompositeShapeItem::Layer polygonLayer;
+            polygonLayer.path.addRect(0.0, 0.0, 140.0, 90.0);
+            polygonLayer.fill = QColor(QStringLiteral("#3B82F6"));
+            polygonLayer.stroke = QColor(QStringLiteral("#1E293B"));
+            polygonLayer.strokeWidth = 4.0;
+            polygonLayer.role = CompositeShapeItem::LayerRole::FilledArea;
+            auto* polygon = new CompositeShapeItem({polygonLayer});
+            polygon->setPos(QPointF(240.0, 240.0));
+            dockScene->addItemsWithUndo({polygon}, QStringLiteral("Add polygon"));
+            dockScene->clearSelection();
+            polygon->setSelected(true);
+            QApplication::processEvents();
+
+            QWidget* fillStyleRow = dockPanel->findChild<QWidget*>(QStringLiteral("ItemFillStyleRow"));
+            QWidget* fillColorRow = dockPanel->findChild<QWidget*>(QStringLiteral("ItemFillColorRow"));
+            QWidget* borderColorRow = dockPanel->findChild<QWidget*>(QStringLiteral("ItemBorderColorRow"));
+            QWidget* borderWidthRow = dockPanel->findChild<QWidget*>(QStringLiteral("ItemBorderWidthRow"));
+            ctx.check(fillStyleRow && fillStyleRow->isVisible() && fillColorRow && fillColorRow->isVisible() &&
+                          borderStyleWidget && borderStyleWidget->isVisible() && borderColorRow &&
+                          borderColorRow->isVisible() && borderWidthRow && borderWidthRow->isVisible(),
+                      QStringLiteral("选中多边形时填充与描线五行全部可见"));
+
+            const FillStyle polygonFillBefore = polygon->fillStyle();
+            if (fillButtons.size() > 2) {
+                fillButtons.at(2)->click();
+                QApplication::processEvents();
+            }
+            ctx.check(polygon->fillStyle() == FillStyle::Hachure, QStringLiteral("编辑卡填充样式作用到多边形"),
+                      QString::number(static_cast<int>(polygon->fillStyle())));
+            dockScene->undoStack()->undo();
+            QApplication::processEvents();
+            ctx.check(polygon->fillStyle() == polygonFillBefore, QStringLiteral("撤销填充样式恢复多边形原样式"));
+
+            const QList<QToolButton*> fillSwatches =
+                fillColorRow ? fillColorRow->findChildren<QToolButton*>(QStringLiteral("ItemColorSwatch"))
+                             : QList<QToolButton*>();
+            const QColor polygonFillBeforeColor = polygon->fillColor();
+            if (fillSwatches.size() > 1) {
+                fillSwatches.at(1)->click();
+                QApplication::processEvents();
+            }
+            ctx.check(polygon->fillColor() == QColor(QStringLiteral("#EF4444")),
+                      QStringLiteral("编辑卡填充颜色作用到多边形"), polygon->fillColor().name());
+            dockScene->undoStack()->undo();
+            QApplication::processEvents();
+            ctx.check(polygon->fillColor() == polygonFillBeforeColor, QStringLiteral("撤销填充颜色恢复多边形原色"),
+                      polygon->fillColor().name());
+
+            const Qt::PenStyle polygonPenBefore = polygon->strokeStyle();
+            if (borderButtons.size() > 1) {
+                borderButtons.at(1)->click();
+                QApplication::processEvents();
+            }
+            ctx.check(polygon->strokeStyle() != polygonPenBefore, QStringLiteral("编辑卡描线样式作用到多边形"));
+            dockScene->undoStack()->undo();
+            QApplication::processEvents();
+            ctx.check(polygon->strokeStyle() == polygonPenBefore, QStringLiteral("撤销描线样式恢复多边形原样式"));
+
+            const QColor polygonStrokeBefore = polygon->strokeColor();
+            const QList<QToolButton*> polygonStrokeSwatches =
+                borderColorRow ? borderColorRow->findChildren<QToolButton*>(QStringLiteral("ItemColorSwatch"))
+                               : QList<QToolButton*>();
+            if (polygonStrokeSwatches.size() > 1) {
+                polygonStrokeSwatches.at(1)->click();
+                QApplication::processEvents();
+            }
+            ctx.check(polygon->strokeColor() == QColor(QStringLiteral("#EF4444")),
+                      QStringLiteral("编辑卡描线颜色作用到多边形"), polygon->strokeColor().name());
+            dockScene->undoStack()->undo();
+            QApplication::processEvents();
+            ctx.check(polygon->strokeColor() == polygonStrokeBefore, QStringLiteral("撤销描线颜色恢复多边形原色"),
+                      polygon->strokeColor().name());
+
+            const qreal polygonWidthBefore = polygon->strokeWidth();
+            QSpinBox* polygonWidthSpin =
+                borderWidthRow ? borderWidthRow->findChild<QSpinBox*>(QStringLiteral("ItemBorderWidthSpin")) : nullptr;
+            if (polygonWidthSpin) {
+                polygonWidthSpin->setValue(9);
+                QApplication::processEvents();
+            }
+            ctx.check(qAbs(polygon->strokeWidth() - 9.0) < 0.01, QStringLiteral("编辑卡描线宽度作用到多边形"),
+                      QString::number(polygon->strokeWidth()));
+            dockScene->undoStack()->undo();
+            QApplication::processEvents();
+            ctx.check(qAbs(polygon->strokeWidth() - polygonWidthBefore) < 0.01,
+                      QStringLiteral("撤销描线宽度恢复多边形原宽度"), QString::number(polygon->strokeWidth()));
+
+            // 属性窗同样识别多边形的填充 / 描线字段，确认后只占一条撤销记录。
+            ItemPropertiesDialog polygonDialog(dockScene, polygon);
+            QComboBox* dialogFillStyle =
+                polygonDialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesFillStyleValue"));
+            QSpinBox* dialogStrokeWidth =
+                polygonDialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesStrokeWidthValue"));
+            const FillStyle dialogFillBefore = polygon->fillStyle();
+            const qreal dialogWidthBefore = polygon->strokeWidth();
+            if (dialogFillStyle) {
+                const int hachureIndex = dialogFillStyle->findData(static_cast<int>(FillStyle::Hachure));
+                if (hachureIndex >= 0) {
+                    dialogFillStyle->setCurrentIndex(hachureIndex);
+                }
+            }
+            if (dialogStrokeWidth) {
+                dialogStrokeWidth->setValue(12);
+            }
+            polygonDialog.accept();
+            QApplication::processEvents();
+            ctx.check(polygon->fillStyle() == FillStyle::Hachure && qAbs(polygon->strokeWidth() - 12.0) < 0.01,
+                      QStringLiteral("属性窗填充样式与描线宽度作用到多边形"),
+                      QStringLiteral("fill=%1 width=%2")
+                          .arg(static_cast<int>(polygon->fillStyle()))
+                          .arg(polygon->strokeWidth()));
+            dockScene->undoStack()->undo();
+            QApplication::processEvents();
+            ctx.check(polygon->fillStyle() == dialogFillBefore &&
+                          qAbs(polygon->strokeWidth() - dialogWidthBefore) < 0.01,
+                      QStringLiteral("撤销属性窗修改同时恢复多边形填充与描线"));
+
+            // 图形与多边形混合选中时，一次填充色修改只占一条撤销记录。
+            dockScene->clearSelection();
+            selectedShape->setSelected(true);
+            polygon->setSelected(true);
+            QApplication::processEvents();
+            const QColor mixedShapeFillBefore = selectedShape->fillColor();
+            const QColor mixedPolygonFillBefore = polygon->fillColor();
+            const int mixedUndoBefore = dockScene->undoStack()->index();
+            if (fillSwatches.size() > 2) {
+                fillSwatches.at(2)->click();
+                QApplication::processEvents();
+            }
+            const int mixedUndoAfter = dockScene->undoStack()->index();
+            ctx.check(selectedShape->fillColor() != mixedShapeFillBefore &&
+                          polygon->fillColor() != mixedPolygonFillBefore && mixedUndoAfter == mixedUndoBefore + 1,
+                      QStringLiteral("混合选中图形与多边形时填充色只占一条撤销记录"),
+                      QStringLiteral("undo=%1->%2 shape=%3->%4 polygon=%5->%6 selected=%7")
+                          .arg(mixedUndoBefore)
+                          .arg(mixedUndoAfter)
+                          .arg(mixedShapeFillBefore.name())
+                          .arg(selectedShape->fillColor().name())
+                          .arg(mixedPolygonFillBefore.name())
+                          .arg(polygon->fillColor().name())
+                          .arg(dockScene->selectedCanvasItems().size()));
+            dockScene->undoStack()->undo();
+            QApplication::processEvents();
+            ctx.check(selectedShape->fillColor() == mixedShapeFillBefore &&
+                          polygon->fillColor() == mixedPolygonFillBefore,
+                      QStringLiteral("撤销混合填充同时恢复图形与多边形原色"));
+
             // 文字 / 图片内容行与卡片操作按钮：只对相应类型显示，并且写入能撤销。
             auto* cardText = new TextItem();
             cardText->setTextFormat(QStringLiteral("卡片文字"), QFont(QStringLiteral("Arial"), 12),

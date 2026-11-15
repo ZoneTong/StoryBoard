@@ -1,5 +1,6 @@
 #include "ItemPropertiesDialogStyleBlock.h"
 
+#include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "ItemPropertiesDialog.h"
 #include "ItemPropertiesDialogFields.h"
@@ -139,6 +140,48 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             connect(m_cornerRadiusSpin, &QSpinBox::valueChanged, this,
                     [this](int value) { m_cornerEdited = value != m_initialCornerRadius; });
         }
+    } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+        m_hasFill = true;
+
+        m_fillStyleCombo = new QComboBox(this);
+        m_fillStyleCombo->setObjectName(QStringLiteral("ItemPropertiesFillStyleValue"));
+        m_fillStyleCombo->setMinimumWidth(180);
+        for (FillStyle style : allFillStyles()) {
+            m_fillStyleCombo->addItem(ItemStyleVisuals::fillStyleIcon(style, 16), fillStyleName(style),
+                                      static_cast<int>(style));
+        }
+        const int fillIndex = m_fillStyleCombo->findData(static_cast<int>(composite->fillStyle()));
+        if (fillIndex >= 0) {
+            m_fillStyleCombo->setCurrentIndex(fillIndex);
+        }
+
+        m_fillColorButton = ItemPropertiesFields::makeColorField(this, composite->fillColor(),
+                                                                 QStringLiteral("ItemPropertiesFillColorValue"),
+                                                                 ItemPropertiesFields::ColorIconRole::Fill);
+        m_strokeColorButton = ItemPropertiesFields::makeColorField(this, composite->strokeColor(),
+                                                                   QStringLiteral("ItemPropertiesStrokeColorValue"),
+                                                                   ItemPropertiesFields::ColorIconRole::Border);
+
+        m_borderStyleCombo = new QComboBox(this);
+        m_borderStyleCombo->setObjectName(QStringLiteral("ItemPropertiesBorderStyleValue"));
+        m_borderStyleCombo->setMinimumWidth(180);
+        for (Qt::PenStyle penStyle : ItemStyleVisuals::borderStyles()) {
+            m_borderStyleCombo->addItem(ItemStyleVisuals::borderStyleIcon(penStyle, 16),
+                                        ItemStyleVisuals::borderStyleName(penStyle), static_cast<int>(penStyle));
+        }
+        const int compositeBorderIndex = m_borderStyleCombo->findData(static_cast<int>(composite->strokeStyle()));
+        if (compositeBorderIndex >= 0) {
+            m_borderStyleCombo->setCurrentIndex(compositeBorderIndex);
+        }
+
+        m_strokeWidthSpin = new QSpinBox(this);
+        m_strokeWidthSpin->setObjectName(QStringLiteral("ItemPropertiesStrokeWidthValue"));
+        m_strokeWidthSpin->setRange(1, 64);
+        m_strokeWidthSpin->setSingleStep(1);
+        m_strokeWidthSpin->setSuffix(QStringLiteral(" px"));
+        m_strokeWidthSpin->setValue(qRound(qMax<qreal>(1.0, composite->strokeWidth())));
+        m_initialStrokeWidth = composite->strokeWidth();
+        m_strokeWidthSpin->setMinimumWidth(88);
     } else if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
         m_strokeColorButton = ItemPropertiesFields::makeColorField(this, stroke->strokeColor(),
                                                                    QStringLiteral("ItemPropertiesStrokeColorValue"),

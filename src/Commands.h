@@ -14,6 +14,7 @@
 
 class CanvasItem;
 class CanvasScene;
+class CompositeShapeItem;
 
 class AddItemCommand : public QUndoCommand {
   public:
@@ -186,6 +187,10 @@ struct ItemPropertiesState {
     QString itemName;
     bool hasShapeState = false;
     ShapeItemState shapeState;
+    // 多边形没有 ShapeItemState，填充与描线单独记一份快照。
+    bool hasCompositeStyle = false;
+    QColor compositeFillColor;
+    FillStyle compositeFillStyle = FillStyle::Solid;
     bool hasTextState = false;
     TextItemState textState;
     bool hasStrokeStyle = false;
@@ -218,7 +223,27 @@ class ItemPropertiesCommand : public QUndoCommand {
     ItemPropertiesState m_after;
 };
 
-// 描线颜色 / 宽度同时作用于选中的图形和笔画，一次修改只占一条撤销记录。
+// 多边形填充色 / 填充样式一起改；内部按层记录，撤销可完整恢复原色。
+class CompositeFillStyleCommand : public QUndoCommand {
+  public:
+    CompositeFillStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<QColor>& beforeColors,
+                              const QList<FillStyle>& beforeStyles, const QList<QColor>& afterColors,
+                              const QList<FillStyle>& afterStyles, const QString& text);
+    void undo() override;
+    void redo() override;
+
+  private:
+    void apply(const QList<QColor>& colors, const QList<FillStyle>& styles);
+
+    CanvasScene* m_scene = nullptr;
+    QList<QPointer<CanvasItem>> m_items;
+    QList<QColor> m_beforeColors;
+    QList<FillStyle> m_beforeStyles;
+    QList<QColor> m_afterColors;
+    QList<FillStyle> m_afterStyles;
+};
+
+// 描线颜色 / 宽度同时作用于选中的图形、笔画和多边形，一次修改只占一条撤销记录。
 class ItemStrokeStyleCommand : public QUndoCommand {
   public:
     ItemStrokeStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<QColor>& beforeColors,

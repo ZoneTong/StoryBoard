@@ -569,6 +569,68 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
     }
 
     {
+        MainWindow polygonWindow;
+        polygonWindow.show();
+        QApplication::processEvents();
+
+        CompositeShapeItem::Layer layer;
+        layer.path.addRect(0.0, 0.0, 120.0, 80.0);
+        layer.fill = QColor(QStringLiteral("#3B82F6"));
+        layer.stroke = QColor(QStringLiteral("#1E293B"));
+        layer.strokeWidth = 4.0;
+        layer.role = CompositeShapeItem::LayerRole::FilledArea;
+        auto* polygon = new CompositeShapeItem({layer});
+        polygonWindow.scene()->addItemsWithUndo({polygon}, QStringLiteral("Add toolbar polygon"));
+        polygonWindow.view()->setMode(ToolMode::Edit);
+        polygonWindow.scene()->clearSelection();
+        polygon->setSelected(true);
+        QApplication::processEvents();
+
+        QToolButton* fillButton = polygonWindow.findChild<QToolButton*>(QStringLiteral("FillButton"));
+        QAction* hachureAction = nullptr;
+        if (fillButton && fillButton->menu()) {
+            for (QAction* action : fillButton->menu()->actions()) {
+                if (action->text() == QStringLiteral("反斜线填充")) {
+                    hachureAction = action;
+                }
+            }
+        }
+        const FillStyle fillBefore = polygon->fillStyle();
+        if (hachureAction) {
+            hachureAction->trigger();
+            QApplication::processEvents();
+        }
+        ctx.check(polygon->fillStyle() == FillStyle::ReverseHachure, QStringLiteral("工具栏填充样式作用到多边形"),
+                  QString::number(static_cast<int>(polygon->fillStyle())));
+        polygonWindow.scene()->undoStack()->undo();
+        QApplication::processEvents();
+        ctx.check(polygon->fillStyle() == fillBefore, QStringLiteral("撤销工具栏填充样式恢复多边形原样式"));
+
+        StyleController styleController(&polygonWindow);
+        const QColor changedStroke(QStringLiteral("#20C997"));
+        const QColor strokeBefore = polygon->strokeColor();
+        styleController.applyStrokeColorToSelection(changedStroke);
+        ctx.check(polygon->strokeColor() == changedStroke, QStringLiteral("工具栏描线颜色作用到多边形"),
+                  polygon->strokeColor().name());
+        polygonWindow.scene()->undoStack()->undo();
+        QApplication::processEvents();
+        ctx.check(polygon->strokeColor() == strokeBefore, QStringLiteral("撤销工具栏描线颜色恢复多边形原色"));
+
+        QSpinBox* polygonWidthSpin = polygonWindow.findChild<QSpinBox*>(QStringLiteral("StrokeWidthSpin"));
+        const qreal widthBefore = polygon->strokeWidth();
+        if (polygonWidthSpin) {
+            polygonWidthSpin->setValue(9);
+            QApplication::processEvents();
+        }
+        ctx.check(qAbs(polygon->strokeWidth() - 9.0) < 0.01, QStringLiteral("工具栏描线宽度作用到多边形"),
+                  QString::number(polygon->strokeWidth()));
+        polygonWindow.scene()->undoStack()->undo();
+        QApplication::processEvents();
+        ctx.check(qAbs(polygon->strokeWidth() - widthBefore) < 0.01,
+                  QStringLiteral("撤销工具栏描线宽度恢复多边形原宽度"));
+    }
+
+    {
         MainWindow shapeCanvasWindow;
         ctx.check(shapeCanvasWindow.openCanvasFile(shapeCanvasPath), QStringLiteral("主窗口打开含图形的画布"));
         ctx.check(shapeCanvasWindow.scene()->canvasItemCount() == shapeTypes.size(),
