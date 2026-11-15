@@ -941,13 +941,13 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                           .arg(cardImage->image().height())
                           .arg(cardImage->imageName()));
 
-            // 文字与图片混合选中时，对齐 / 化形 / 分组操作照常显示。
+            // 图片不参与合并图元：文字与图片混合选中时只保留对齐 / 分组，化形入口禁用。
             cardText->setSelected(true);
             cardImage->setSelected(true);
             QApplication::processEvents();
             ctx.check(!alignRowButtons.isEmpty() && alignRowButtons.first()->isVisible() && !morphButtons.isEmpty() &&
-                          morphButtons.first()->isVisible() && groupButton && groupButton->isVisible(),
-                      QStringLiteral("文字与图片混合选中显示对齐 / 化形 / 分组按钮"));
+                          !morphButtons.first()->isVisible() && groupButton && groupButton->isVisible(),
+                      QStringLiteral("文字与图片混合选中隐藏化形入口，保留对齐 / 分组"));
 
             // 只选笔画时显示笔画平滑按钮，点击后平滑结果进入撤销栈。
             auto* smoothStroke = new CurveItem();

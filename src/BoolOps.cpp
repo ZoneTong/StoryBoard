@@ -4,8 +4,10 @@
 #include "CanvasScene.h"
 #include "Commands.h"
 #include "CompositeShapeItem.h"
+#include "ImageItem.h"
 #include "ShapeItem.h"
 #include "CurveItem.h"
+#include "TextItem.h"
 
 #include <QPainterPath>
 #include <QUndoStack>
@@ -33,6 +35,10 @@ QList<Participant> collect(CanvasScene* scene)
         if (!item || !scene->isItemEditable(item)) {
             continue;
         }
+        // 图片没有矢量轮廓，不参与合并图元。
+        if (dynamic_cast<ImageItem*>(item)) {
+            continue;
+        }
         Participant participant;
         participant.item = item;
         participant.path = item->mapToScene(item->paintedShape());
@@ -47,6 +53,11 @@ QList<Participant> collect(CanvasScene* scene)
         } else if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
             participant.fill = stroke->strokeColor();
             participant.stroke = stroke->strokeColor();
+        } else if (auto* text = dynamic_cast<TextItem*>(item)) {
+            // 文字参照笔画：填充色等于字形描线色、纯色、面积按 0 参与。
+            participant.fill = text->textColor();
+            participant.stroke = text->textColor();
+            participant.filled = false;
         } else {
             participant.fill = QColor(30, 41, 59, 36);
             participant.stroke = QColor(30, 41, 59);
@@ -79,12 +90,6 @@ CompositeShapeItem::Layer singleLayer(const QPainterPath& path, const Participan
     return layer;
 }
 
-// 填充是否可见：填色模式不是“无填充”，且颜色不完全透明。
-bool hasVisibleFill(const Participant& participant)
-{
-    return participant.filled && participant.fill.alpha() > 0;
-}
-
 } // namespace
 
 namespace BoolOps {
@@ -108,18 +113,15 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
 
     switch (operation) {
     case Operation::Union: {
-        // 直接按优先级叠加：高层后画，重叠处显示高层的填充与轮廓颜色。
-        QList<CompositeShapeItem::Layer> layers;
-        for (const Participant& participant : participants) {
-            CompositeShapeItem::Layer layer;
-            layer.path = participant.path;
-            layer.fill = participant.fill;
-            layer.stroke = participant.stroke;
-            layer.strokeWidth = qMax(0.0, participant.strokeWidth);
-            layer.filled = participant.filled;
-            layers.append(layer);
+        // 联合：内部共边不描线，整块结果统一采用最高优先级图元的填充与描线。
+        QPainterPath result = participants.constFirst().path;
+        for (int i = 1; i < participants.size() && !result.isEmpty(); ++i) {
+            result = result.united(participants.at(i).path);
         }
-        results.append(layers);
+        if (result.isEmpty()) {
+            return false;
+        }
+        results.append(QList<CompositeShapeItem::Layer>{singleLayer(result, top)});
         break;
     }
     case Operation::Combine: {
@@ -142,7 +144,6 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         const int count = qMin(participants.size(), 8);
         for (int mask = 1; mask < (1 << count); ++mask) {
             QPainterPath region;
-            int topOfRegion = -1;
             bool started = false;
             for (int i = 0; i < count; ++i) {
                 if (!(mask & (1 << i))) {
@@ -150,7 +151,6 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
                 }
                 region = started ? region.intersected(participants.at(i).path) : participants.at(i).path;
                 started = true;
-                topOfRegion = i;
             }
             if (region.isEmpty()) {
                 continue;
@@ -168,19 +168,8 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
             if (region.isEmpty()) {
                 continue;
             }
-            // 取色：本块覆盖到的图元里，从高优先级往下找第一个可见填充色；
-            // 全都透明时退回最高优先级图元本身。
-            int styleIndex = topOfRegion;
-            for (int i = topOfRegion; i >= 0; --i) {
-                if (i >= count || !(mask & (1 << i))) {
-                    continue;
-                }
-                if (hasVisibleFill(participants.at(i))) {
-                    styleIndex = i;
-                    break;
-                }
-            }
-            results.append(QList<CompositeShapeItem::Layer>{singleLayer(region, participants.at(styleIndex))});
+            // 拆分出的每一块都沿用同一个 donor（全局最高优先级图元）的样式。
+            results.append(QList<CompositeShapeItem::Layer>{singleLayer(region, top)});
         }
         if (results.isEmpty()) {
             return false;
@@ -195,15 +184,8 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         if (result.isEmpty()) {
             return false;
         }
-        // 相交结果整块都在重叠区，颜色按优先级从高到低取第一个可见填充色。
-        int styleIndex = participants.size() - 1;
-        for (int i = participants.size() - 1; i >= 0; --i) {
-            if (hasVisibleFill(participants.at(i))) {
-                styleIndex = i;
-                break;
-            }
-        }
-        results.append(QList<CompositeShapeItem::Layer>{singleLayer(result, participants.at(styleIndex))});
+        // 相交结果同样统一采用最高优先级图元的样式。
+        results.append(QList<CompositeShapeItem::Layer>{singleLayer(result, top)});
         break;
     }
     case Operation::Subtract: {

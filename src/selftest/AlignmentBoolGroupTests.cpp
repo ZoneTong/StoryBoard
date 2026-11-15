@@ -230,7 +230,8 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         const bool applied = BoolOps::apply(&boolScene, BoolOps::Operation::Union, QStringLiteral("合并"));
         const QList<CanvasItem*> selected = boolScene.selectedCanvasItems();
         auto* composite = selected.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(selected.constFirst());
-        ctx.check(applied && composite && composite->layerCount() == 2, QStringLiteral("联合运算生成两层合并图形"),
+        ctx.check(applied && composite && composite->layerCount() == 1,
+                  QStringLiteral("联合运算生成单层 donor 样式合并图形"),
                   QStringLiteral("ok=%1 layers=%2").arg(applied ? 1 : 0).arg(composite ? composite->layerCount() : -1));
         ctx.check(boolScene.undoStack()->count() == commandCount + 1, QStringLiteral("化形只占一条撤销记录"),
                   QStringLiteral("before=%1 after=%2").arg(commandCount).arg(boolScene.undoStack()->count()));
@@ -241,7 +242,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         if (!json.isEmpty()) {
             reloaded.fromJson(json);
         }
-        ctx.check(!json.isEmpty() && reloaded.layerCount() == 2 && !reloaded.paintedShape().isEmpty(),
+        ctx.check(!json.isEmpty() && reloaded.layerCount() == 1 && !reloaded.paintedShape().isEmpty(),
                   QStringLiteral("合并图形可以序列化并重新读回"),
                   QStringLiteral("kind=%1 layers=%2")
                       .arg(json.value(QStringLiteral("kind")).toString())
@@ -258,7 +259,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                 break;
             }
         }
-        ctx.check(redoneComposite && redoneComposite->layerCount() == 2, QStringLiteral("重做化形重新生成合并图形"),
+        ctx.check(redoneComposite && redoneComposite->layerCount() == 1, QStringLiteral("重做化形重新生成合并图形"),
                   QStringLiteral("layers=%1").arg(redoneComposite ? redoneComposite->layerCount() : -1));
     }
     {
@@ -352,8 +353,8 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                       .arg(unionOk ? 1 : 0)
                       .arg(overlapPixel.name())
                       .arg(upperFill.name()));
-        ctx.check(lowerPixel == lowerFill, QStringLiteral("联合后非重叠区保留低层图元的填充色"),
-                  QStringLiteral("pixel=%1 expected=%2").arg(lowerPixel.name()).arg(lowerFill.name()));
+        ctx.check(lowerPixel == upperFill, QStringLiteral("联合后整体改用高优先级图元的填充色"),
+                  QStringLiteral("pixel=%1 expected=%2").arg(lowerPixel.name()).arg(upperFill.name()));
         ctx.check(upperEdge == upperFill || upperEdge == upperStroke,
                   QStringLiteral("重叠区内的轮廓改取高优先级图元的颜色"),
                   QStringLiteral("pixel=%1").arg(upperEdge.name()));
@@ -386,11 +387,12 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         const bool fallbackOk = BoolOps::apply(&fallbackScene, BoolOps::Operation::Union, QStringLiteral("联合"));
         const QImage rendered = fallbackScene.renderImage(QRectF(0.0, 0.0, 300.0, 200.0), 1.0);
         const QColor overlapPixel = rendered.pixelColor(90, 100);
-        ctx.check(fallbackOk && overlapPixel == lowerFill, QStringLiteral("高层填充透明时重叠区改用次优先级图元的颜色"),
-                  QStringLiteral("ok=%1 pixel=%2 expected=%3")
+        ctx.check(fallbackOk && overlapPixel.alpha() == 0,
+                  QStringLiteral("donor 填充透明时重叠区保持透明"),
+                  QStringLiteral("ok=%1 pixel=%2 alpha=%3")
                       .arg(fallbackOk ? 1 : 0)
                       .arg(overlapPixel.name())
-                      .arg(lowerFill.name()));
+                      .arg(overlapPixel.alpha()));
         const QColor internalEdge = rendered.pixelColor(81, 100); // 上层左边框，落在下层内部
         ctx.check(internalEdge != upperStroke, QStringLiteral("重叠区内部的交界轮廓被填充色同化"),
                   QStringLiteral("pixel=%1").arg(internalEdge.name()));
