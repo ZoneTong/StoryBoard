@@ -19,7 +19,7 @@
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 #include "StyleController.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
@@ -471,7 +471,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         strokeWindow.show();
         QApplication::processEvents();
 
-        auto* stroke = new StrokeItem();
+        auto* stroke = new CurveItem();
         const QColor initialColor(QStringLiteral("#1E293B"));
         stroke->setStrokePoints({QPointF(40, 40), QPointF(160, 120)}, initialColor, 4.0);
         strokeWindow.scene()->addItemsWithUndo({stroke}, QStringLiteral("Add width stroke"));

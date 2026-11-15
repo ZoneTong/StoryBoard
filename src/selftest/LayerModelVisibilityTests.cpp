@@ -19,7 +19,7 @@
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -246,9 +246,9 @@ void selftest::runLayerModelTests(Context& ctx)
 void selftest::runLayerVisibilityLockTests(Context& ctx)
 {
     CanvasScene& layerScene = ctx.layerScene;
-    StrokeItem* lower = ctx.lowerLine;
-    StrokeItem* upper = ctx.upperLine;
-    StrokeItem* topLine = ctx.topLine;
+    CurveItem* lower = ctx.lowerLine;
+    CurveItem* upper = ctx.upperLine;
+    CurveItem* topLine = ctx.topLine;
     const int& topLayerId = ctx.topLayerId;
 
     const int lowerLayerId = layerScene.layers().at(1).id;

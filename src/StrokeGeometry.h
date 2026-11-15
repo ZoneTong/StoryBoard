@@ -7,7 +7,7 @@
 class QPainter;
 
 // 笔画的几何与命中：按内容尺寸把路径映射到当前大小，生成描边遮挡区、
-// 加粗命中区，并负责把笔画画到画布上。笔画数据仍由 StrokeItem 持有。
+// 加粗命中区，并负责把笔画画到画布上。笔画数据仍由 CurveItem 持有。
 namespace StrokeGeometry {
 
 // 路径按 baseSize -> contentSize 的比例映射到当前大小。

@@ -1,7 +1,7 @@
 #include "selftest/SelftestHelpers.h"
 
 #include "CanvasScene.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 
 #include <QApplication>
 #include <QCoreApplication>
@@ -83,7 +83,7 @@ QPixmap makeTextImage(const QString& text, const QColor& color, const QFont& fon
 
 void addStroke(CanvasScene& scene, const QVector<QPointF>& points, const QColor& color, qreal width, int layerId)
 {
-    auto* stroke = new StrokeItem();
+    auto* stroke = new CurveItem();
     stroke->setLayerId(layerId);
     stroke->beginStroke(points.constFirst(), color, width);
     for (int i = 1; i < points.size(); ++i) {
@@ -98,9 +98,9 @@ void addLine(CanvasScene& scene, const QPointF& from, const QPointF& to, const Q
     addStroke(scene, {from, to}, color, width, layerId);
 }
 
-StrokeItem* makeLineItem(const QPointF& from, const QPointF& to, const QColor& color)
+CurveItem* makeLineItem(const QPointF& from, const QPointF& to, const QColor& color)
 {
-    auto* item = new StrokeItem();
+    auto* item = new CurveItem();
     item->beginStroke(from, color, 4.0);
     item->appendScenePoint(to);
     item->endStroke();

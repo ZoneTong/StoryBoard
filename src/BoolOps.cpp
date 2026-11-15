@@ -5,7 +5,7 @@
 #include "Commands.h"
 #include "CompositeShapeItem.h"
 #include "ShapeItem.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 
 #include <QPainterPath>
 #include <QUndoStack>
@@ -44,7 +44,7 @@ QList<Participant> collect(CanvasScene* scene)
             participant.stroke = shape->strokeColor();
             participant.strokeWidth = shape->strokeWidth();
             participant.filled = shape->fillStyle() != FillStyle::None;
-        } else if (auto* stroke = dynamic_cast<StrokeItem*>(item)) {
+        } else if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
             participant.fill = stroke->strokeColor();
             participant.stroke = stroke->strokeColor();
         } else {

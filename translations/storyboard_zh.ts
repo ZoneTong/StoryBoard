@@ -3,6 +3,14 @@
   <context>
     <name>StoryBoard</name>
     <message>
+      <source>Polygon</source>
+      <translation>多边形</translation>
+    </message>
+    <message>
+      <source>Curve</source>
+      <translation>曲线</translation>
+    </message>
+    <message>
       <source>  · Hidden</source>
       <translation>  · 隐藏</translation>
     </message>
@@ -3574,6 +3582,10 @@ Use the checkbox to show or hide it.</source>
     <message>
       <source>Polygon</source>
       <translation>多边形</translation>
+    </message>
+    <message>
+      <source>Curve</source>
+      <translation>曲线</translation>
     </message>
 
     <message>

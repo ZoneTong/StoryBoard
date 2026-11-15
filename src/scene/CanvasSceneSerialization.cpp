@@ -205,6 +205,10 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
     for (int i = 0; i < itemObjects.size(); ++i) {
         const QJsonObject itemJson = itemObjects.at(i);
         const QString kind = itemJson.value(QStringLiteral("type")).toString();
+        if (kind == QStringLiteral("stroke")) {
+            // 旧笔画图元不兼容新曲线：跳过，不因单个旧图元阻断整份画布。
+            continue;
+        }
         CanvasItem* item = createItem(kind);
         if (!item) {
             resetDocument();

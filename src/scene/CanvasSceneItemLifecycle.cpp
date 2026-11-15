@@ -4,7 +4,7 @@
 #include "CompositeShapeItem.h"
 #include "ImageItem.h"
 #include "ShapeItem.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 #include "TextItem.h"
 #include "scene/SceneConstants.h"
 
@@ -244,8 +244,8 @@ void CanvasScene::commitNewItem(CanvasItem* item, const QString& text)
 
 CanvasItem* CanvasScene::createItem(const QString& kind) const
 {
-    if (kind == QStringLiteral("stroke")) {
-        return new StrokeItem();
+    if (kind == QStringLiteral("curve")) {
+        return new CurveItem();
     }
     if (kind == QStringLiteral("image")) {
         return new ImageItem();

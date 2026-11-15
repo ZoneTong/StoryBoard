@@ -3,7 +3,7 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "ImageItem.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 
 #include <QGraphicsScene>
 #include <utility>
@@ -187,14 +187,14 @@ void GroupCommand::apply(const QList<int>& groupIds, const QHash<int, int>& pare
     m_scene->applyGroupParents(parents);
 }
 
-StrokeSmoothCommand::StrokeSmoothCommand(CanvasScene* scene, const QList<StrokeItem*>& items,
-                                         const QList<StrokeItem::GeometryState>& before,
-                                         const QList<StrokeItem::GeometryState>& after, const QString& text)
+StrokeSmoothCommand::StrokeSmoothCommand(CanvasScene* scene, const QList<CurveItem*>& items,
+                                         const QList<CurveItem::GeometryState>& before,
+                                         const QList<CurveItem::GeometryState>& after, const QString& text)
     : m_scene(scene), m_before(before), m_after(after)
 {
     setText(text);
-    for (StrokeItem* item : items) {
-        m_items.append(QPointer<StrokeItem>(item));
+    for (CurveItem* item : items) {
+        m_items.append(QPointer<CurveItem>(item));
     }
 }
 
@@ -208,7 +208,7 @@ void StrokeSmoothCommand::redo()
     apply(m_after);
 }
 
-void StrokeSmoothCommand::apply(const QList<StrokeItem::GeometryState>& states)
+void StrokeSmoothCommand::apply(const QList<CurveItem::GeometryState>& states)
 {
     if (states.size() != m_items.size()) {
         return;
@@ -395,7 +395,7 @@ void ItemStrokeStyleCommand::apply(const QList<QColor>& colors, const QList<qrea
         }
         if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
             shape->setStyle(colors.at(i), shape->fillColor(), widths.at(i));
-        } else if (auto* stroke = dynamic_cast<StrokeItem*>(item)) {
+        } else if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
             stroke->setStyle(colors.at(i), widths.at(i));
         }
     }
@@ -506,7 +506,7 @@ void ItemPropertiesCommand::apply(const ItemPropertiesState& state)
     m_item->setItemOpacity(state.opacity);
 
     if (state.hasStrokeStyle) {
-        if (auto* stroke = dynamic_cast<StrokeItem*>(m_item.data())) {
+        if (auto* stroke = dynamic_cast<CurveItem*>(m_item.data())) {
             stroke->setStyle(state.strokeColor, state.strokeWidth);
         }
     }

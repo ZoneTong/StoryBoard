@@ -4,7 +4,7 @@
 #include "ItemPropertiesDialogFields.h"
 #include "ItemStyleVisuals.h"
 #include "ShapeItem.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 
 #include <QComboBox>
 #include <QFormLayout>
@@ -139,7 +139,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             connect(m_cornerRadiusSpin, &QSpinBox::valueChanged, this,
                     [this](int value) { m_cornerEdited = value != m_initialCornerRadius; });
         }
-    } else if (auto* stroke = dynamic_cast<StrokeItem*>(item)) {
+    } else if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
         m_strokeColorButton = ItemPropertiesFields::makeColorField(this, stroke->strokeColor(),
                                                                    QStringLiteral("ItemPropertiesStrokeColorValue"),
                                                                    ItemPropertiesFields::ColorIconRole::Border);

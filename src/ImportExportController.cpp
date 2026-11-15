@@ -10,7 +10,7 @@
 #include "LineArtDialog.h"
 #include "MainWindow.h"
 #include "Settings.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 
 #include <QApplication>
 #include <QDesktopServices>
@@ -337,7 +337,7 @@ void ImportExportController::importOutlineImageFile(const QString& file, const L
 
         // 不再做额外平滑：轮廓已经按像素级 RDP 简化过，再平滑会把方角磨圆；
         // 折线模式让路径按直线段绘制，方角保持方正。
-        auto* stroke = new StrokeItem();
+        auto* stroke = new CurveItem();
         stroke->setStrokePoints(scenePoints, outline.color, options.strokeWidth, 0.0, true);
         items.append(stroke);
     }

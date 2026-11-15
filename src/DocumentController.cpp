@@ -70,9 +70,13 @@ bool validateCanvasRoot(const QJsonObject& root, QString* error)
     const QJsonArray items = root.value(QStringLiteral("items")).toArray();
     for (const QJsonValue& value : items) {
         const QString kind = value.toObject().value(QStringLiteral("type")).toString();
-        if (kind != QStringLiteral("stroke") && kind != QStringLiteral("image") && kind != QStringLiteral("text") &&
+        if (kind != QStringLiteral("curve") && kind != QStringLiteral("image") && kind != QStringLiteral("text") &&
             kind != QStringLiteral("shape") && kind != QStringLiteral("polygon") &&
             kind != QStringLiteral("composite")) {
+            if (kind == QStringLiteral("stroke")) {
+                // 旧笔画图元不做兼容：加载时整体跳过，由加载流程统一提示。
+                continue;
+            }
             if (error) {
                 *error = MainWindow::tr("The canvas contains an unknown item type: %1").arg(kind);
             }
@@ -158,6 +162,13 @@ bool DocumentController::loadCanvasFile(const QString& path, bool showErrors)
         return false;
     }
 
+    int legacyStrokes = 0;
+    for (const QJsonValue& value : root.value(QStringLiteral("items")).toArray()) {
+        if (value.toObject().value(QStringLiteral("type")).toString() == QStringLiteral("stroke")) {
+            ++legacyStrokes;
+        }
+    }
+
     if (!maybeSave()) {
         return false;
     }
@@ -186,6 +197,12 @@ bool DocumentController::loadCanvasFile(const QString& path, bool showErrors)
     m_window->updateActions();
     m_window->statusBar()->showMessage(
         MainWindow::tr("Canvas opened: %1").arg(QFileInfo(m_window->m_filePath).fileName()), 4000);
+    if (legacyStrokes > 0) {
+        m_window->statusBar()->showMessage(
+            MainWindow::tr("Skipped %1 legacy stroke item(s); curves are not backward compatible")
+                .arg(legacyStrokes),
+            6000);
+    }
     return true;
 }
 

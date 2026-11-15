@@ -2,7 +2,7 @@
 #include "I18n.h"
 #include "ItemPropertiesDialog.h"
 #include "ShapeItem.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -87,20 +87,20 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
     ctx.check(qAbs(textItem->itemOpacity() - 1.0) < 0.01, QStringLiteral("撤销文字透明度恢复原值"),
               QString::number(textItem->itemOpacity()));
 
-    auto* firstNamingStroke = new StrokeItem();
+    auto* firstNamingStroke = new CurveItem();
     firstNamingStroke->beginStroke(QPointF(90.0, 420.0), QColor(QStringLiteral("#0F766E")), 5.0);
     firstNamingStroke->appendScenePoint(QPointF(150.0, 470.0));
     firstNamingStroke->appendScenePoint(QPointF(210.0, 440.0));
     firstNamingStroke->endStroke();
     editScene.addItemsWithUndo({firstNamingStroke}, QStringLiteral("Add numbered stroke"));
-    auto* secondNamingStroke = new StrokeItem();
+    auto* secondNamingStroke = new CurveItem();
     secondNamingStroke->beginStroke(QPointF(260.0, 420.0), QColor(QStringLiteral("#0F766E")), 5.0);
     secondNamingStroke->appendScenePoint(QPointF(320.0, 470.0));
     secondNamingStroke->appendScenePoint(QPointF(380.0, 440.0));
     secondNamingStroke->endStroke();
     editScene.addItemsWithUndo({secondNamingStroke}, QStringLiteral("Add second numbered stroke"));
-    ctx.check(firstNamingStroke->rawName() == QStringLiteral("笔画 1") &&
-                  secondNamingStroke->rawName() == QStringLiteral("笔画 2"),
+    ctx.check(firstNamingStroke->rawName() == QStringLiteral("曲线 1") &&
+                  secondNamingStroke->rawName() == QStringLiteral("曲线 2"),
               QStringLiteral("笔画图元名称后缀自动递增"),
               firstNamingStroke->rawName() + QStringLiteral(" / ") + secondNamingStroke->rawName());
 
@@ -113,7 +113,7 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
         QLineEdit* strokeNameValue = dialog.findChild<QLineEdit*>(QStringLiteral("ItemPropertiesNameValue"));
         QLabel* strokeTypeValue = dialog.findChild<QLabel*>(QStringLiteral("ItemPropertiesTypeValue"));
         ctx.check(!firstNamingStroke->rawName().isEmpty() &&
-                      firstNamingStroke->rawName().startsWith(QStringLiteral("笔画 ")),
+                      firstNamingStroke->rawName().startsWith(QStringLiteral("曲线 ")),
                   QStringLiteral("打开属性窗时为无名图元补上自动编号"), firstNamingStroke->rawName());
         ctx.check(strokeNameValue && strokeNameValue->isEnabled() &&
                       strokeNameValue->text() == firstNamingStroke->name(),

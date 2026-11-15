@@ -12,7 +12,7 @@ class QFont;
 class QPoint;
 class QPixmap;
 class QWidget;
-class StrokeItem;
+class CurveItem;
 
 namespace selftest {
 
@@ -22,7 +22,7 @@ QPixmap makeTextImage(const QString& text, const QColor& color, const QFont& fon
 void addStroke(CanvasScene& scene, const QVector<QPointF>& points, const QColor& color, qreal width, int layerId = -1);
 void addLine(CanvasScene& scene, const QPointF& from, const QPointF& to, const QColor& color, qreal width,
              int layerId = -1);
-StrokeItem* makeLineItem(const QPointF& from, const QPointF& to, const QColor& color);
+CurveItem* makeLineItem(const QPointF& from, const QPointF& to, const QColor& color);
 void sendMouseEvent(QWidget* target, QEvent::Type type, const QPoint& position, Qt::MouseButton button,
                     Qt::MouseButtons buttons, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
 QString demoCanvasPath();

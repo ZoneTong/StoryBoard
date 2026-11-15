@@ -2,7 +2,7 @@
 
 #include "CompositeShapeItem.h"
 #include "ShapeItem.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 
 #include <QDir>
 #include <QFile>
@@ -42,7 +42,7 @@ CanvasItem* createTemplateItem(const QString& kind)
         return new ShapeItem();
     }
     if (kind == QStringLiteral("stroke")) {
-        return new StrokeItem();
+        return new CurveItem();
     }
     if (kind == QStringLiteral("polygon") || kind == QStringLiteral("composite")) {
         return new CompositeShapeItem();

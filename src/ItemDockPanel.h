@@ -8,7 +8,7 @@
 
 class CanvasScene;
 class CanvasItem;
-class StrokeItem;
+class CurveItem;
 class TextItem;
 class ImageItem;
 struct TextItemState;
@@ -61,7 +61,7 @@ class ItemDockPanel : public QWidget {
 
     QList<CanvasItem*> selectedItems() const;
     QList<ShapeItem*> selectedShapes() const;
-    QList<StrokeItem*> selectedStrokes() const;
+    QList<CurveItem*> selectedStrokes() const;
     QList<TextItem*> selectedTexts() const;
     QList<ImageItem*> selectedImages() const;
     // 描线颜色 / 宽度可作用的对象：图形与笔画。

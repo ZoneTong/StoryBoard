@@ -19,7 +19,7 @@
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -110,7 +110,7 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     undo.redo();
     ctx.check(scene.background().color == background.color, QStringLiteral("重做背景替换"));
 
-    auto* stroke = new StrokeItem();
+    auto* stroke = new CurveItem();
     stroke->beginStroke(QPointF(90, 120), QColor(QStringLiteral("#EF4444")), 6.0);
     for (int i = 1; i <= 60; ++i) {
         const qreal x = 90.0 + i * 7.0;
@@ -167,7 +167,7 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
 
     const QJsonObject root = scene.toJson();
     const QByteArray jsonBytes = QJsonDocument(root).toJson(QJsonDocument::Indented);
-    ctx.check(jsonBytes.contains("StoryBoard") && jsonBytes.contains("\"stroke\"") && jsonBytes.contains("\"image\""),
+    ctx.check(jsonBytes.contains("StoryBoard") && jsonBytes.contains("\"curve\"") && jsonBytes.contains("\"image\""),
               QStringLiteral("画布序列化为 JSON"));
 
     CanvasScene loaded;
@@ -179,12 +179,12 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     ctx.check(loaded.background().type == BackgroundType::Color && loaded.background().color == background.color,
               QStringLiteral("画布背景恢复"));
 
-    StrokeItem* loadedStroke = nullptr;
+    CurveItem* loadedStroke = nullptr;
     ImageItem* loadedImage = nullptr;
     const QList<CanvasItem*> loadedItems = loaded.canvasItems();
     for (CanvasItem* item : loadedItems) {
-        if (item->kind() == QStringLiteral("stroke")) {
-            loadedStroke = static_cast<StrokeItem*>(item);
+        if (item->kind() == QStringLiteral("curve")) {
+            loadedStroke = static_cast<CurveItem*>(item);
         } else if (item->kind() == QStringLiteral("image")) {
             loadedImage = static_cast<ImageItem*>(item);
         }

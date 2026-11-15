@@ -4,7 +4,7 @@
 #include "ItemDockPanel.h"
 #include "ItemStyleVisuals.h"
 #include "ShapeItem.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 
 #include <QHBoxLayout>
 #include <QSpinBox>
@@ -115,7 +115,7 @@ ItemDockPanelFillBorderCard::ItemDockPanelFillBorderCard(QWidget* parent) : QWid
     m_borderWidthRow->setObjectName(QStringLiteral("ItemBorderWidthRow"));
 }
 
-void ItemDockPanelFillBorderCard::refresh(const QList<ShapeItem*>& shapes, const QList<StrokeItem*>& strokes)
+void ItemDockPanelFillBorderCard::refresh(const QList<ShapeItem*>& shapes, const QList<CurveItem*>& strokes)
 {
     m_refreshing = true;
 

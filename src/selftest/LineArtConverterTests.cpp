@@ -19,7 +19,7 @@
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -137,7 +137,7 @@ void selftest::runLineArtConverterTests(Context& ctx)
     lineArtScene.applyCanvasSize(QSizeF(240.0, 160.0));
     QList<CanvasItem*> lineArtItems;
     for (const LineArtConverter::Outline& outline : traced.outlines) {
-        auto* stroke = new StrokeItem();
+        auto* stroke = new CurveItem();
         stroke->setStrokePoints(outline.points, outline.color, LineArtConverter::Options().strokeWidth, 0.0, true);
         lineArtItems.append(stroke);
     }
@@ -149,7 +149,7 @@ void selftest::runLineArtConverterTests(Context& ctx)
 
         int thinStrokes = 0;
         for (CanvasItem* item : lineArtItems) {
-            if (auto* stroke = dynamic_cast<StrokeItem*>(item); stroke && qFuzzyCompare(stroke->strokeWidth(), 1.0)) {
+            if (auto* stroke = dynamic_cast<CurveItem*>(item); stroke && qFuzzyCompare(stroke->strokeWidth(), 1.0)) {
                 ++thinStrokes;
             }
         }
@@ -158,15 +158,15 @@ void selftest::runLineArtConverterTests(Context& ctx)
 
         int linearStrokes = 0;
         for (CanvasItem* item : lineArtItems) {
-            if (auto* stroke = dynamic_cast<StrokeItem*>(item); stroke && stroke->isLinearPath()) {
+            if (auto* stroke = dynamic_cast<CurveItem*>(item); stroke && stroke->isLinearPath()) {
                 ++linearStrokes;
             }
         }
         ctx.check(linearStrokes == lineArtItems.size(), QStringLiteral("线稿笔画按折线绘制，方角不会被磨圆"));
 
         bool linearPersisted = false;
-        if (auto* firstStroke = dynamic_cast<StrokeItem*>(lineArtItems.constFirst())) {
-            StrokeItem reloadedStroke;
+        if (auto* firstStroke = dynamic_cast<CurveItem*>(lineArtItems.constFirst())) {
+            CurveItem reloadedStroke;
             reloadedStroke.fromJson(firstStroke->toJson());
             linearPersisted = reloadedStroke.isLinearPath() && qFuzzyCompare(reloadedStroke.strokeWidth(), 1.0);
         }
@@ -293,7 +293,7 @@ void selftest::runLineArtConverterTests(Context& ctx)
         gradientScene.applyCanvasSize(QSizeF(400.0, 300.0));
         QList<CanvasItem*> gradientItems;
         for (const LineArtConverter::Outline& outline : gradientResult.outlines) {
-            auto* stroke = new StrokeItem();
+            auto* stroke = new CurveItem();
             stroke->setStrokePoints(outline.points, outline.color, LineArtConverter::Options().strokeWidth, 0.0, true);
             gradientItems.append(stroke);
         }

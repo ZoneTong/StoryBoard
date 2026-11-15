@@ -10,7 +10,7 @@
 #include <memory>
 
 class ShapeItem;
-class StrokeItem;
+class CurveItem;
 class TextItem;
 
 namespace selftest {
@@ -30,16 +30,16 @@ class Context {
     // 图层模型段创建，可见性 / 锁定段继续复用。
     CanvasScene layerScene;
     QUndoStack layerUndo;
-    StrokeItem* lowerLine = nullptr;
-    StrokeItem* upperLine = nullptr;
-    StrokeItem* topLine = nullptr;
+    CurveItem* lowerLine = nullptr;
+    CurveItem* upperLine = nullptr;
+    CurveItem* topLine = nullptr;
     int topLayerId = -1;
 
     // 视图交互段创建，属性对话框段与锁定图层段复用；锁定图层段末尾销毁视图。
     CanvasScene viewScene;
     QUndoStack viewUndo;
     std::unique_ptr<CanvasView> view;
-    StrokeItem* drawnStroke = nullptr;
+    CurveItem* drawnStroke = nullptr;
     TextItem* doubleClickText = nullptr;
     int itemPropertyRequests = 0;
 

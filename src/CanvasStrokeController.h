@@ -6,7 +6,7 @@
 
 class CanvasScene;
 class CanvasView;
-class StrokeItem;
+class CurveItem;
 
 // 画笔交互：进行中的自由笔画、画笔颜色 / 粗细 / 收尾平滑容差，按下起笔、移动加点、
 // 收尾提交或取消。图层锁定 / 隐藏时给出状态栏提示，不起笔。
@@ -32,7 +32,7 @@ class CanvasStrokeController {
   private:
     CanvasView* m_view = nullptr;
     CanvasScene* m_scene = nullptr;
-    StrokeItem* m_activeStroke = nullptr;
+    CurveItem* m_activeStroke = nullptr;
     QColor m_brushColor = QColor(30, 41, 59);
     qreal m_brushWidth = 4.0;
     int m_strokeSmoothing = 4;

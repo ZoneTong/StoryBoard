@@ -9,7 +9,7 @@
 #include "MainWindow.h"
 #include "Settings.h"
 #include "ShapeItem.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 
 #include <QColorDialog>
 #include <QPainter>
@@ -106,7 +106,7 @@ int StyleController::applyStrokeStyleToSelection(const QColor& color, qreal widt
     QList<CanvasItem*> items;
     const QList<CanvasItem*> selected = m_window->m_scene->selectedCanvasItems();
     for (CanvasItem* item : selected) {
-        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<StrokeItem*>(item)) {
+        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<CurveItem*>(item)) {
             items.append(item);
         }
     }
@@ -133,7 +133,7 @@ int StyleController::applyStrokeStyleToSelection(const QColor& color, qreal widt
             afterColor = changeColor ? color : beforeColor;
             afterWidth = changeWidth ? width : beforeWidth;
             shape->setStyle(afterColor, shape->fillColor(), afterWidth);
-        } else if (auto* stroke = dynamic_cast<StrokeItem*>(item)) {
+        } else if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
             beforeColor = stroke->strokeColor();
             beforeWidth = stroke->strokeWidth();
             afterColor = changeColor ? color : beforeColor;

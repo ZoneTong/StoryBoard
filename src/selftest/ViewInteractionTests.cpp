@@ -19,7 +19,7 @@
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -121,7 +121,7 @@ void selftest::runViewInteractionTests(Context& ctx)
 
     ctx.check(viewScene.canvasItemCount() == 1, QStringLiteral("鼠标绘制生成笔画"));
     CanvasItem* drawnItem = viewScene.canvasItems().value(0);
-    auto* drawnStroke = dynamic_cast<StrokeItem*>(drawnItem);
+    auto* drawnStroke = dynamic_cast<CurveItem*>(drawnItem);
     ctx.check(drawnStroke != nullptr, QStringLiteral("绘制图元类型为笔画"));
     if (drawnStroke) {
         ctx.check(drawnStroke->strokeColor() == QColor(QStringLiteral("#2563EB")),
@@ -129,6 +129,9 @@ void selftest::runViewInteractionTests(Context& ctx)
         ctx.check(qAbs(drawnStroke->strokeWidth() - 7.0) < 0.01, QStringLiteral("画笔粗细应用到图元"));
         ctx.check(drawnStroke->layerId() == viewScene.activeLayerId() && drawnStroke->height() == 1,
                   QStringLiteral("鼠标绘制落入当前图层"));
+        ctx.check(drawnStroke->contentSize().width() > 300.0 && drawnStroke->contentSize().height() > 150.0,
+                  QStringLiteral("绘制曲线内容尺寸覆盖笔画范围"),
+                  geometryText(drawnStroke->pos(), drawnStroke->contentSize()));
     }
     ctx.check(viewUndo.count() == 1, QStringLiteral("鼠标绘制进入撤销栈"));
     viewUndo.undo();
@@ -138,7 +141,7 @@ void selftest::runViewInteractionTests(Context& ctx)
 
     {
         // 画笔收尾自动平滑：轻微手抖的直线收敛成两点，曲线保留形状但点集被简化。
-        StrokeItem jitterLine;
+        CurveItem jitterLine;
         jitterLine.beginStroke(QPointF(100, 100), QColor(QStringLiteral("#111827")), 4.0);
         for (int i = 0; i < 40; ++i) {
             const qreal x = 100.0 + i * 5.0;
@@ -149,7 +152,7 @@ void selftest::runViewInteractionTests(Context& ctx)
         ctx.check(jitterLine.strokePointCount() == 2, QStringLiteral("自动平滑将手绘直线收敛为两点"),
                   QString::number(jitterLine.strokePointCount()));
 
-        StrokeItem rawLine;
+        CurveItem rawLine;
         rawLine.beginStroke(QPointF(100, 100), QColor(QStringLiteral("#111827")), 4.0);
         for (int i = 0; i < 40; ++i) {
             const qreal x = 100.0 + i * 5.0;
@@ -160,9 +163,9 @@ void selftest::runViewInteractionTests(Context& ctx)
         ctx.check(rawLine.strokePointCount() == 41, QStringLiteral("平滑参数为 0 时关闭自动平滑"),
                   QString::number(rawLine.strokePointCount()));
 
-        StrokeItem rawCurve;
+        CurveItem rawCurve;
         rawCurve.beginStroke(QPointF(100, 200), QColor(QStringLiteral("#111827")), 4.0);
-        StrokeItem smoothCurve;
+        CurveItem smoothCurve;
         smoothCurve.beginStroke(QPointF(100, 200), QColor(QStringLiteral("#111827")), 4.0);
         for (int i = 0; i < 60; ++i) {
             const qreal x = 100.0 + i * 4.0;
@@ -184,7 +187,7 @@ void selftest::runViewInteractionTests(Context& ctx)
         manualScene.setMode(ToolMode::Edit);
         QUndoStack manualUndo;
         manualScene.setUndoStack(&manualUndo);
-        auto* manualStroke = new StrokeItem();
+        auto* manualStroke = new CurveItem();
         manualStroke->setLayerId(manualScene.activeLayerId());
         manualStroke->beginStroke(QPointF(120, 240), QColor(QStringLiteral("#111827")), 4.0);
         for (int i = 0; i < 50; ++i) {
@@ -295,7 +298,8 @@ void selftest::runViewInteractionTests(Context& ctx)
     view.fitAll();
     QApplication::processEvents();
 
-    const QPoint midStroke = view.mapFromScene(QPointF(500, 400));
+    const QPointF midScene(500.0, 400.0);
+    const QPoint midStroke = view.mapFromScene(midScene);
     sendMouseEvent(view.viewport(), QEvent::MouseButtonPress, midStroke, Qt::LeftButton, Qt::LeftButton);
     sendMouseEvent(view.viewport(), QEvent::MouseMove, midStroke + QPoint(55, 35), Qt::NoButton, Qt::LeftButton);
     sendMouseEvent(view.viewport(), QEvent::MouseButtonRelease, midStroke + QPoint(55, 35), Qt::LeftButton,
@@ -370,7 +374,7 @@ void selftest::runViewInteractionTests(Context& ctx)
         viewUndo.redo();
         ctx.check(drawnStroke->contentSize() != sizeBeforeResize, QStringLiteral("重做缩放图元（鼠标交互）"));
 
-        auto* secondStroke = new StrokeItem();
+        auto* secondStroke = new CurveItem();
         secondStroke->beginStroke(QPointF(900, 160), QColor(QStringLiteral("#0F766E")), 5.0);
         secondStroke->appendScenePoint(QPointF(1000, 220));
         secondStroke->appendScenePoint(QPointF(1100, 170));

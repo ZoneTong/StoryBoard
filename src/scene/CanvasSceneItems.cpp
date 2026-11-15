@@ -1,7 +1,7 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 #include "scene/SceneConstants.h"
 
 #include <QSet>
@@ -72,7 +72,7 @@ bool CanvasScene::canSmoothSelectedStrokes() const
         if (!isItemEditable(item)) {
             continue;
         }
-        if (auto* stroke = dynamic_cast<StrokeItem*>(item)) {
+        if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
             if (!stroke->isEmpty() && stroke->strokePointCount() >= 3) {
                 return true;
             }
@@ -89,19 +89,19 @@ int CanvasScene::smoothSelectedStrokes(qreal tolerance)
 
     // 参数 0 只关闭“收尾自动平滑”；手动按钮即使在该设置下也执行一次轻量平滑。
     const qreal effectiveTolerance = qMax<qreal>(2.0, tolerance);
-    QList<StrokeItem*> items;
-    QList<StrokeItem::GeometryState> before;
-    QList<StrokeItem::GeometryState> after;
+    QList<CurveItem*> items;
+    QList<CurveItem::GeometryState> before;
+    QList<CurveItem::GeometryState> after;
     for (CanvasItem* item : selectedCanvasItems()) {
         if (!isItemEditable(item)) {
             continue;
         }
-        auto* stroke = dynamic_cast<StrokeItem*>(item);
+        auto* stroke = dynamic_cast<CurveItem*>(item);
         if (!stroke || stroke->isEmpty() || stroke->strokePointCount() < 3) {
             continue;
         }
 
-        const StrokeItem::GeometryState beforeState = stroke->geometryState();
+        const CurveItem::GeometryState beforeState = stroke->geometryState();
         if (!stroke->smoothStroke(effectiveTolerance)) {
             continue;
         }

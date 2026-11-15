@@ -19,7 +19,7 @@
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -433,8 +433,10 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         ctx.check(heightUp && heightDown && !heightUp->icon().isNull() && !heightDown->icon().isNull() && boolMenu &&
                       !boolMenu->icon().isNull() && shapeMenu && !shapeMenu->icon().isNull(),
                   QStringLiteral("菜单栏为已有图标的同类功能补齐图标"));
-        const bool named = uiText(QStringLiteral("Polygon")) != QStringLiteral("Polygon");
-        ctx.check(named, QStringLiteral("多边形的类型名有中文译文"), uiText(QStringLiteral("Polygon")));
+        const QString polyText = uiText(QStringLiteral("Polygon"));
+        const QString curveText = uiText(QStringLiteral("Curve"));
+        const bool named = polyText != QStringLiteral("Polygon") && curveText != QStringLiteral("Curve");
+        ctx.check(named, QStringLiteral("多边形的类型名有中文译文"), polyText + QStringLiteral(" / ") + curveText);
     }
     {
         // 拆分结果必须在块间保留交界线，不能渲染成联合的样子。

@@ -10,7 +10,7 @@
 #include "ItemPropertiesDialogStyleBlock.h"
 #include "ItemPropertiesDialogTextBlock.h"
 #include "ShapeItem.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 #include "TextItem.h"
 
 #include <QComboBox>
@@ -92,7 +92,7 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
         m_identityBlock = new ItemPropertiesDialogIdentityBlock(scene, item, this);
         m_identityBlock->addRows(form);
 
-        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<StrokeItem*>(item)) {
+        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<CurveItem*>(item)) {
             m_styleBlock = new ItemPropertiesDialogStyleBlock(item, this);
             m_styleBlock->addRows(form);
             m_hasFill = m_styleBlock->hasFill();
@@ -440,7 +440,7 @@ void ItemPropertiesDialog::applyChanges()
         if (text && text->textColorButton()) {
             after.textState.color = text->textColorButton()->property("itemColor").value<QColor>();
         }
-    } else if (auto* stroke = dynamic_cast<StrokeItem*>(m_item.data())) {
+    } else if (auto* stroke = dynamic_cast<CurveItem*>(m_item.data())) {
         before.hasStrokeStyle = true;
         before.strokeColor = stroke->strokeColor();
         before.strokeWidth = stroke->strokeWidth();

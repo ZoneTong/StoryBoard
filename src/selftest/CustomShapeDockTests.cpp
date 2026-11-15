@@ -19,7 +19,7 @@
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -739,7 +739,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
 
             // 笔画复用描线颜色 / 宽度与透明度：只选笔画时不显示描线样式行，
             // 描线颜色、宽度直接改笔画；透明度对图形和笔画都生效。
-            auto* selectedStroke = new StrokeItem();
+            auto* selectedStroke = new CurveItem();
             selectedStroke->setStrokePoints({QPointF(60.0, 300.0), QPointF(180.0, 300.0)},
                                             QColor(QStringLiteral("#2563EB")), 6.0);
             dockScene->addItemsWithUndo({selectedStroke}, QStringLiteral("Add stroke"));
@@ -950,7 +950,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                       QStringLiteral("文字与图片混合选中显示对齐 / 化形 / 分组按钮"));
 
             // 只选笔画时显示笔画平滑按钮，点击后平滑结果进入撤销栈。
-            auto* smoothStroke = new StrokeItem();
+            auto* smoothStroke = new CurveItem();
             QVector<QPointF> jitterPoints;
             for (int i = 0; i <= 8; ++i) {
                 jitterPoints.append(QPointF(520.0 + i * 6.0, 470.0 + (i % 2) * 3.0));

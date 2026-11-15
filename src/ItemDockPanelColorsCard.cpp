@@ -4,7 +4,7 @@
 #include "ItemDockPanel.h"
 #include "ItemStyleVisuals.h"
 #include "ShapeItem.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 
 #include <QColorDialog>
 #include <QHBoxLayout>
@@ -120,7 +120,7 @@ QWidget* ItemDockPanelColorsCard::makeColorRow(bool stroke)
     return row;
 }
 
-void ItemDockPanelColorsCard::refresh(const QList<ShapeItem*>& shapes, const QList<StrokeItem*>& strokes)
+void ItemDockPanelColorsCard::refresh(const QList<ShapeItem*>& shapes, const QList<CurveItem*>& strokes)
 {
     QColor strokeFallback = QColor(QStringLiteral("#1E293B"));
     if (!shapes.isEmpty()) {

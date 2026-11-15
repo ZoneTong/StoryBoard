@@ -2,7 +2,7 @@
 
 #include "CanvasScene.h"
 #include "CanvasView.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 
 #include <QCoreApplication>
 
@@ -41,7 +41,7 @@ bool CanvasStrokeController::beginStroke(const QPoint& viewportPos)
         return false;
     }
 
-    auto* stroke = new StrokeItem();
+    auto* stroke = new CurveItem();
     // Keep the in-progress stroke on top while drawing. The final layer
     // and height are assigned when the stroke is committed.
     stroke->setZValue(1.0e12);
@@ -67,7 +67,7 @@ void CanvasStrokeController::finishStroke()
         return;
     }
 
-    StrokeItem* stroke = m_activeStroke;
+    CurveItem* stroke = m_activeStroke;
     m_activeStroke = nullptr;
     stroke->endStroke(m_strokeSmoothing);
 
@@ -88,7 +88,7 @@ void CanvasStrokeController::cancelStroke()
         return;
     }
 
-    StrokeItem* stroke = m_activeStroke;
+    CurveItem* stroke = m_activeStroke;
     m_activeStroke = nullptr;
     m_scene->removeItem(stroke);
     delete stroke;

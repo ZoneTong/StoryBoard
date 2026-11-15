@@ -11,7 +11,7 @@
 #include "ItemDockPanelSelectionCard.h"
 #include "ItemDockPanelValueCard.h"
 #include "ShapeItem.h"
-#include "StrokeItem.h"
+#include "CurveItem.h"
 #include "TextItem.h"
 
 #include <QFileDialog>
@@ -155,11 +155,11 @@ QList<ShapeItem*> ItemDockPanel::selectedShapes() const
     return shapes;
 }
 
-QList<StrokeItem*> ItemDockPanel::selectedStrokes() const
+QList<CurveItem*> ItemDockPanel::selectedStrokes() const
 {
-    QList<StrokeItem*> strokes;
+    QList<CurveItem*> strokes;
     for (CanvasItem* item : selectedItems()) {
-        if (auto* stroke = dynamic_cast<StrokeItem*>(item)) {
+        if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
             strokes.append(stroke);
         }
     }
@@ -170,7 +170,7 @@ QList<CanvasItem*> ItemDockPanel::selectedStrokeTargets() const
 {
     QList<CanvasItem*> targets;
     for (CanvasItem* item : selectedItems()) {
-        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<StrokeItem*>(item)) {
+        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<CurveItem*>(item)) {
             targets.append(item);
         }
     }
@@ -248,7 +248,7 @@ void ItemDockPanel::refresh()
 
     const QList<CanvasItem*> items = selectedItems();
     const QList<ShapeItem*> shapes = selectedShapes();
-    const QList<StrokeItem*> strokes = selectedStrokes();
+    const QList<CurveItem*> strokes = selectedStrokes();
     const QList<TextItem*> texts = selectedTexts();
     const QList<ImageItem*> images = selectedImages();
     m_selectionCard->setSelectionState(!items.isEmpty(), selectionGroupUseful(items));
@@ -386,7 +386,7 @@ void ItemDockPanel::applyStrokeColor(const QColor& color)
             shape->setStyle(color, shape->fillColor(), shape->strokeWidth());
             afterColors.append(shape->strokeColor());
             afterWidths.append(shape->strokeWidth());
-        } else if (auto* stroke = dynamic_cast<StrokeItem*>(item)) {
+        } else if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
             beforeColors.append(stroke->strokeColor());
             beforeWidths.append(stroke->strokeWidth());
             stroke->setStyle(color, stroke->strokeWidth());
@@ -441,7 +441,7 @@ void ItemDockPanel::applyBorderWidth(qreal width)
             shape->setStyle(shape->strokeColor(), shape->fillColor(), width);
             afterColors.append(shape->strokeColor());
             afterWidths.append(shape->strokeWidth());
-        } else if (auto* stroke = dynamic_cast<StrokeItem*>(item)) {
+        } else if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
             beforeColors.append(stroke->strokeColor());
             beforeWidths.append(stroke->strokeWidth());
             stroke->setStyle(stroke->strokeColor(), width);
