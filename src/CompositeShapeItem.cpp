@@ -113,7 +113,7 @@ void CompositeShapeItem::paintContent(QPainter* painter)
         painter->drawPath(visible);
     }
 
-    // 描边：只保留合并图形整体外轮廓（含孔洞边界）上的部分。
+    // 描边：只保留多边形整体外轮廓（含孔洞边界）上的部分。
     // 落在图形内部的交界轮廓不再绘制，由填充色盖住（无填充时透出相邻像素）。
     bool overlapping = false;
     for (int i = 0; i < count && !overlapping; ++i) {

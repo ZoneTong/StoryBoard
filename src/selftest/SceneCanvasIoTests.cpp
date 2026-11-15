@@ -119,19 +119,19 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     }
     stroke->endStroke();
     stroke->setStrokeStyle(Qt::DashLine);
-    ctx.check(!stroke->isEmpty(), QStringLiteral("生成自由笔画"));
-    scene.addItemsWithUndo({stroke}, QStringLiteral("添加笔画"));
-    ctx.check(scene.canvasItemCount() == 1, QStringLiteral("笔画加入场景"));
-    ctx.check(undo.canUndo(), QStringLiteral("添加笔画进入撤销栈"));
+    ctx.check(!stroke->isEmpty(), QStringLiteral("生成自由曲线"));
+    scene.addItemsWithUndo({stroke}, QStringLiteral("添加曲线"));
+    ctx.check(scene.canvasItemCount() == 1, QStringLiteral("曲线加入场景"));
+    ctx.check(undo.canUndo(), QStringLiteral("添加曲线进入撤销栈"));
 
     const QPointF strokePos = stroke->pos();
     const QSizeF strokeSize = stroke->contentSize();
 
     undo.undo();
-    ctx.check(scene.canvasItemCount() == 0, QStringLiteral("撤销添加笔画"));
+    ctx.check(scene.canvasItemCount() == 0, QStringLiteral("撤销添加曲线"));
     undo.redo();
-    ctx.check(scene.canvasItemCount() == 1, QStringLiteral("重做添加笔画"));
-    ctx.check(stroke->pos() == strokePos && stroke->contentSize() == strokeSize, QStringLiteral("重做后笔画几何一致"),
+    ctx.check(scene.canvasItemCount() == 1, QStringLiteral("重做添加曲线"));
+    ctx.check(stroke->pos() == strokePos && stroke->contentSize() == strokeSize, QStringLiteral("重做后曲线几何一致"),
               geometryText(stroke->pos(), stroke->contentSize()));
 
     ItemGeometry beforeMove{stroke, stroke->pos(), stroke->contentSize()};
@@ -162,7 +162,7 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     scene.addItemsWithUndo({imageItem}, QStringLiteral("插入图片"));
     ctx.check(scene.canvasItemCount() == 2, QStringLiteral("插入图片图元"));
 
-    // 透明度是所有图元共有属性：笔画与图片都要随画布一起保存和恢复。
+    // 透明度是所有图元共有属性：曲线与图片都要随画布一起保存和恢复。
     stroke->setItemOpacity(0.35);
     imageItem->setItemOpacity(0.6);
 
@@ -190,20 +190,20 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
             loadedImage = static_cast<ImageItem*>(item);
         }
     }
-    ctx.check(loadedStroke != nullptr, QStringLiteral("画布包含笔画"));
+    ctx.check(loadedStroke != nullptr, QStringLiteral("画布包含曲线"));
     if (loadedStroke) {
         ctx.check(loadedStroke->strokeColor() == QColor(QStringLiteral("#EF4444")) &&
                       loadedStroke->strokeStyle() == Qt::DashLine,
-                  QStringLiteral("笔画颜色与描线样式恢复"),
+                  QStringLiteral("曲线颜色与描线样式恢复"),
                   QString::number(static_cast<int>(loadedStroke->strokeStyle())));
         ctx.check(qAbs(loadedStroke->contentSize().width() - resized.width()) < 0.5 &&
                       qAbs(loadedStroke->contentSize().height() - resized.height()) < 0.5,
-                  QStringLiteral("笔画缩放状态恢复"));
+                  QStringLiteral("曲线缩放状态恢复"));
     }
     ctx.check(loadedImage != nullptr && !loadedImage->image().isNull(), QStringLiteral("图片内容恢复"));
     ctx.check(loadedStroke && qAbs(loadedStroke->itemOpacity() - 0.35) < 0.01 && loadedImage &&
                   qAbs(loadedImage->itemOpacity() - 0.6) < 0.01,
-              QStringLiteral("笔画与图片的透明度随画布恢复"),
+              QStringLiteral("曲线与图片的透明度随画布恢复"),
               QStringLiteral("stroke=%1 image=%2")
                   .arg(loadedStroke ? loadedStroke->itemOpacity() : -1.0)
                   .arg(loadedImage ? loadedImage->itemOpacity() : -1.0));

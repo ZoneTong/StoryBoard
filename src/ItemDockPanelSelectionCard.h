@@ -7,7 +7,7 @@ class QAction;
 class QToolButton;
 
 // 编辑图元卡的选中操作栏：单选时提供复制 / 删除 / 顺、逆时针旋转；多选时把对齐 8 项与
-// 化形 5 项直接展开成图标按钮行，再按当前选择能否组合 / 取消组合显示组操作按钮。
+// 合并图元 5 项直接展开成图标按钮行，再按当前选择能否组合 / 取消组合显示组操作按钮。
 // 按钮全部复用主窗口 QAction，卡片只负责图标按钮、逐行显隐与整卡可见性。
 class ItemDockPanelSelectionCard : public QWidget {
     Q_OBJECT
@@ -15,7 +15,7 @@ class ItemDockPanelSelectionCard : public QWidget {
   public:
     explicit ItemDockPanelSelectionCard(QWidget* parent = nullptr);
 
-    // 用主窗口已有的对齐 / 化形 / 编辑动作填充按钮，触发与启用状态由主窗口维护。
+    // 用主窗口已有的对齐 / 合并图元 / 编辑动作填充按钮，触发与启用状态由主窗口维护。
     void setSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions,
                              QAction* copyAction, QAction* removeAction, QAction* rotateCwAction,
                              QAction* rotateCcwAction, QAction* groupAction, QAction* ungroupAction);

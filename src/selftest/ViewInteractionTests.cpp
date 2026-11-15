@@ -5,6 +5,7 @@
 #include "CanvasView.h"
 #include "Commands.h"
 #include "CompositeShapeItem.h"
+#include "CurveItem.h"
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
@@ -19,7 +20,6 @@
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -119,10 +119,10 @@ void selftest::runViewInteractionTests(Context& ctx)
     sendMouseEvent(view.viewport(), QEvent::MouseButtonRelease, brushEnd, Qt::LeftButton, Qt::NoButton);
     QApplication::processEvents();
 
-    ctx.check(viewScene.canvasItemCount() == 1, QStringLiteral("鼠标绘制生成笔画"));
+    ctx.check(viewScene.canvasItemCount() == 1, QStringLiteral("鼠标绘制生成曲线"));
     CanvasItem* drawnItem = viewScene.canvasItems().value(0);
     auto* drawnStroke = dynamic_cast<CurveItem*>(drawnItem);
-    ctx.check(drawnStroke != nullptr, QStringLiteral("绘制图元类型为笔画"));
+    ctx.check(drawnStroke != nullptr, QStringLiteral("绘制图元类型为曲线"));
     if (drawnStroke) {
         ctx.check(drawnStroke->strokeColor() == QColor(QStringLiteral("#2563EB")),
                   QStringLiteral("画笔颜色应用到图元"));
@@ -130,7 +130,7 @@ void selftest::runViewInteractionTests(Context& ctx)
         ctx.check(drawnStroke->layerId() == viewScene.activeLayerId() && drawnStroke->height() == 1,
                   QStringLiteral("鼠标绘制落入当前图层"));
         ctx.check(drawnStroke->contentSize().width() > 300.0 && drawnStroke->contentSize().height() > 150.0,
-                  QStringLiteral("绘制曲线内容尺寸覆盖笔画范围"),
+                  QStringLiteral("绘制曲线内容尺寸覆盖曲线范围"),
                   geometryText(drawnStroke->pos(), drawnStroke->contentSize()));
     }
     ctx.check(viewUndo.count() == 1, QStringLiteral("鼠标绘制进入撤销栈"));
@@ -201,10 +201,10 @@ void selftest::runViewInteractionTests(Context& ctx)
         const QVector<QPointF> beforeSmooth = manualStroke->strokePoints();
         const int manuallySmoothed = manualScene.smoothSelectedStrokes(4.0);
         const QVector<QPointF> afterSmooth = manualStroke->strokePoints();
-        ctx.check(manuallySmoothed == 1 && manualUndo.count() == 1, QStringLiteral("选中笔画可手动平滑并进入撤销栈"),
+        ctx.check(manuallySmoothed == 1 && manualUndo.count() == 1, QStringLiteral("选中曲线可手动平滑并进入撤销栈"),
                   QStringLiteral("changed=%1 undo=%2").arg(manuallySmoothed).arg(manualUndo.count()));
         manualUndo.undo();
-        ctx.check(manualStroke->strokePoints() == beforeSmooth, QStringLiteral("撤销手动平滑恢复笔画采样点"));
+        ctx.check(manualStroke->strokePoints() == beforeSmooth, QStringLiteral("撤销手动平滑恢复曲线采样点"));
         manualUndo.redo();
         ctx.check(manualStroke->strokePoints() == afterSmooth, QStringLiteral("重做手动平滑恢复平滑结果"));
     }
@@ -379,7 +379,7 @@ void selftest::runViewInteractionTests(Context& ctx)
         secondStroke->appendScenePoint(QPointF(1000, 220));
         secondStroke->appendScenePoint(QPointF(1100, 170));
         secondStroke->endStroke();
-        viewScene.addItemsWithUndo({secondStroke}, QStringLiteral("添加笔画"));
+        viewScene.addItemsWithUndo({secondStroke}, QStringLiteral("添加曲线"));
         view.fitAll();
         QApplication::processEvents();
         viewScene.selectAllItems();

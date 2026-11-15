@@ -193,7 +193,7 @@ void UiMenuBuilder::buildMenus()
         m_window->m_alignActions.append(action);
     }
 
-    // 化形：与 PPT「合并形状」同一套子操作命名——联合 / 组合 / 拆分 / 相交 / 剪除；
+    // 合并图元：与 PPT「合并形状」同一套子操作命名——联合 / 组合 / 拆分 / 相交 / 剪除；
     // 主入口用独立图标（形变图形），五项子操作继续用两圆交叠的运算图标。
     QMenu* boolMenu = editMenu->addMenu(MainWindow::tr("Merge items"));
     boolMenu->setObjectName(QStringLiteral("BoolMenu"));
@@ -206,7 +206,7 @@ void UiMenuBuilder::buildMenus()
         {BoolOps::Operation::Subtract, MainWindow::tr("Subtract")},
     };
     const QList<QString> boolTips = {
-        MainWindow::tr("Merge the selected items into one merged shape"),
+        MainWindow::tr("Merge the selected items into one polygon"),
         MainWindow::tr("Merge the outlines and cut out the overlapping part"),
         MainWindow::tr("Split the selected items into separate pieces at every overlap"),
         MainWindow::tr("Keep only the overlapping part"),
@@ -224,7 +224,7 @@ void UiMenuBuilder::buildMenus()
                          [this, operation = boolEntries.at(i).first]() { m_window->applyBoolOperation(operation); });
         m_window->m_boolActions.append(action);
     }
-    // 多选时编辑图元卡直接复用同一批对齐 / 化形 / 复制 / 删除 / 旋转 / 组合动作，
+    // 多选时编辑图元卡直接复用同一批对齐 / 合并图元 / 复制 / 删除 / 旋转 / 组合动作，
     // 快捷键与启用状态不用再维护一份。
     if (m_window->m_docks && m_window->m_docks->itemPanel()) {
         m_window->m_docks->itemPanel()->setSelectionActions(

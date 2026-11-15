@@ -138,6 +138,6 @@ void MainWindowEditActionsController::applyBoolOperation(BoolOps::Operation oper
         m_window->statusBar()->showMessage(MainWindow::tr("Select at least two shapes with a visible outline"), 3000);
         return;
     }
-    m_window->statusBar()->showMessage(MainWindow::tr("Merged into one shape (undo to restore)"), 3000);
+    m_window->statusBar()->showMessage(MainWindow::tr("Merged into one polygon (undo to restore)"), 3000);
     m_window->updateActions();
 }

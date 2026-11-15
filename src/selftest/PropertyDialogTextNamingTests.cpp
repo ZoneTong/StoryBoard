@@ -1,8 +1,8 @@
 #include "CanvasScene.h"
+#include "CurveItem.h"
 #include "I18n.h"
 #include "ItemPropertiesDialog.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -101,7 +101,7 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
     editScene.addItemsWithUndo({secondNamingStroke}, QStringLiteral("Add second numbered stroke"));
     ctx.check(firstNamingStroke->rawName() == QStringLiteral("曲线 1") &&
                   secondNamingStroke->rawName() == QStringLiteral("曲线 2"),
-              QStringLiteral("笔画图元名称后缀自动递增"),
+              QStringLiteral("曲线图元名称后缀自动递增"),
               firstNamingStroke->rawName() + QStringLiteral(" / ") + secondNamingStroke->rawName());
 
     int strokeUndoBefore = editUndo.count();
@@ -117,14 +117,14 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
                   QStringLiteral("打开属性窗时为无名图元补上自动编号"), firstNamingStroke->rawName());
         ctx.check(strokeNameValue && strokeNameValue->isEnabled() &&
                       strokeNameValue->text() == firstNamingStroke->name(),
-                  QStringLiteral("笔画属性窗显示可编辑的图元名称"),
+                  QStringLiteral("曲线属性窗显示可编辑的图元名称"),
                   strokeNameValue ? strokeNameValue->text() : QStringLiteral("<missing>"));
         ctx.check(strokeTypeValue && strokeTypeValue->text() == firstNamingStroke->typeDisplayName(),
-                  QStringLiteral("笔画属性窗图元类型只读显示当前类型"));
+                  QStringLiteral("曲线属性窗图元类型只读显示当前类型"));
         dialog.reject();
         QApplication::processEvents();
     }
-    ctx.check(editUndo.count() == strokeUndoBefore, QStringLiteral("只打开并取消笔画属性窗不产生撤销记录"));
+    ctx.check(editUndo.count() == strokeUndoBefore, QStringLiteral("只打开并取消曲线属性窗不产生撤销记录"));
     int unnamedItemCount = 0;
     for (CanvasItem* item : editScene.canvasItems()) {
         if (!item || item->rawName().isEmpty()) {

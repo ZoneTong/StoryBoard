@@ -177,7 +177,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
 
     // 顶层图元（优先级最高的那个）决定结果的颜色与落点。
     const Participant top = participants.constLast();
-    // 除拆分外的运算都只产出一个合并图形；拆分产出多个互不重叠的独立图元。
+    // 除拆分外的运算都只产出一个多边形；拆分产出多个互不重叠的独立图元。
     QList<QList<CompositeShapeItem::Layer>> results;
 
     switch (operation) {
@@ -208,7 +208,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
     }
     case Operation::Fragment: {
         // 拆分：按“被哪些图元覆盖”把重叠区切成互不重叠的多块，每块沿用覆盖它
-        // 的最高优先级图元的颜色；每块单独生成一个合并图形图元，可分别选中和拖动。
+        // 的最高优先级图元的颜色；每块单独生成一个多边形图元，可分别选中和拖动。
         // 图元数超过 8 个时 2^n 组合过大，取前 8 个参与。
         const int count = qMin(participants.size(), 8);
         for (int mask = 1; mask < (1 << count); ++mask) {

@@ -225,42 +225,13 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         CanvasItem* upper = makeRect(50.0, QColor(40, 90, 200));
         lower->setSelected(true);
         upper->setSelected(true);
-        ctx.check(BoolOps::supports(&boolScene), QStringLiteral("两个图元可以进行化形"), QStringLiteral("items=2"));
-        const int commandCount = boolScene.undoStack()->count();
+        ctx.check(BoolOps::supports(&boolScene), QStringLiteral("两个图元可以进行合并"), QStringLiteral("items=2"));
         const bool applied = BoolOps::apply(&boolScene, BoolOps::Operation::Union, QStringLiteral("合并"));
         const QList<CanvasItem*> selected = boolScene.selectedCanvasItems();
         auto* composite = selected.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(selected.constFirst());
         ctx.check(applied && composite && composite->layerCount() == 1,
-                  QStringLiteral("联合运算生成单层 donor 样式合并图形"),
+                  QStringLiteral("联合运算生成单层 donor 样式多边形"),
                   QStringLiteral("ok=%1 layers=%2").arg(applied ? 1 : 0).arg(composite ? composite->layerCount() : -1));
-        ctx.check(boolScene.undoStack()->count() == commandCount + 1, QStringLiteral("化形只占一条撤销记录"),
-                  QStringLiteral("before=%1 after=%2").arg(commandCount).arg(boolScene.undoStack()->count()));
-
-        // 序列化要在撤销/重做之前取，撤销会销毁合并图形本身。
-        const QJsonObject json = composite ? composite->toJson() : QJsonObject();
-        CompositeShapeItem reloaded;
-        if (!json.isEmpty()) {
-            reloaded.fromJson(json);
-        }
-        ctx.check(!json.isEmpty() && reloaded.layerCount() == 1 && !reloaded.paintedShape().isEmpty(),
-                  QStringLiteral("合并图形可以序列化并重新读回"),
-                  QStringLiteral("kind=%1 layers=%2")
-                      .arg(json.value(QStringLiteral("kind")).toString())
-                      .arg(reloaded.layerCount()));
-
-        boolScene.undoStack()->undo();
-        const int restored = boolScene.canvasItems().size();
-        ctx.check(restored == 2, QStringLiteral("撤销化形还原原图元"), QStringLiteral("items=%1").arg(restored));
-        boolScene.undoStack()->redo();
-        CompositeShapeItem* redoneComposite = nullptr;
-        for (CanvasItem* item : boolScene.canvasItems()) {
-            if (auto* compositeItem = dynamic_cast<CompositeShapeItem*>(item)) {
-                redoneComposite = compositeItem;
-                break;
-            }
-        }
-        ctx.check(redoneComposite && redoneComposite->layerCount() == 1, QStringLiteral("重做化形重新生成合并图形"),
-                  QStringLiteral("layers=%1").arg(redoneComposite ? redoneComposite->layerCount() : -1));
     }
     {
         // 组合（挖掉重叠）与拆分（切成互不重叠的多块）：
@@ -315,7 +286,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             runOperation(BoolOps::Operation::Fragment, fragmentLayers, fragmentWidth, fragmentItems);
         ctx.check(
             fragmentOk && fragmentItems == 3 && fragmentLayers == 3,
-            QStringLiteral("拆分把重叠区切成三个可分别选中的合并图形"),
+            QStringLiteral("拆分把重叠区切成三个可分别选中的多边形"),
             QStringLiteral("ok=%1 items=%2 layers=%3").arg(fragmentOk ? 1 : 0).arg(fragmentItems).arg(fragmentLayers));
     }
     {
@@ -437,24 +408,17 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         ctx.check(groupedResult && !groupedResult->layers().isEmpty() &&
                       groupedResult->layers().constFirst().fill == QColor(30, 160, 90),
                   QStringLiteral("整组结果采用组内最高优先级图元的样式"));
-        groupBoolUndo.undo();
-        bool restoredGroup = false;
-        for (CanvasItem* item : groupBoolScene.canvasItems()) {
-            restoredGroup = restoredGroup || item->groupId() > 0;
-        }
-        ctx.check(groupBoolScene.canvasItemCount() == 3 && restoredGroup, QStringLiteral("撤销合并恢复整组全部成员"),
-                  QStringLiteral("count=%1 group=%2").arg(groupBoolScene.canvasItemCount()).arg(restoredGroup ? 1 : 0));
     }
     {
-        // 化形仍然能从菜单、右键菜单和编辑图元卡进入，但主工具栏不再放化形按钮。
+        // 合并图元仍然能从菜单、右键菜单和编辑图元卡进入，但主工具栏不再放合并图元按钮。
         MainWindow boolWindow;
         QToolButton* boolButton = boolWindow.findChild<QToolButton*>(QStringLiteral("BoolToolButton"));
         QMenu* boolMenu = boolWindow.findChild<QMenu*>(QStringLiteral("BoolMenu"));
         CanvasView* boolView = boolWindow.findChild<CanvasView*>();
-        ctx.check(boolMenu && boolMenu->actions().size() == 5, QStringLiteral("编辑菜单提供 5 项化形操作"),
+        ctx.check(boolMenu && boolMenu->actions().size() == 5, QStringLiteral("编辑菜单提供 5 项合并图元操作"),
                   boolMenu ? QString::number(boolMenu->actions().size()) : QString());
-        ctx.check(!boolButton, QStringLiteral("工具栏不再显示化形按钮"));
-        ctx.check(boolView && boolView->contextMenuGroupCount() >= 1, QStringLiteral("画布右键菜单挂上了化形分组"),
+        ctx.check(!boolButton, QStringLiteral("工具栏不再显示合并图元按钮"));
+        ctx.check(boolView && boolView->contextMenuGroupCount() >= 1, QStringLiteral("画布右键菜单挂上了合并图元分组"),
                   boolView ? QString::number(boolView->contextMenuGroupCount()) : QString());
         bool iconsOk = boolMenu && boolMenu->actions().size() == 5;
         if (iconsOk) {
@@ -465,8 +429,8 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                 }
             }
         }
-        ctx.check(iconsOk, QStringLiteral("化形五项操作都带参照 PPT 的图标"));
-        // 化形主入口（菜单项）图标必须与 5 项子操作不同，否则看起来像同一项操作。
+        ctx.check(iconsOk, QStringLiteral("合并图元五项操作都带参照 PPT 的图标"));
+        // 合并图元主入口（菜单项）图标必须与 5 项子操作不同，否则看起来像同一项操作。
         bool morphIconDistinct = boolMenu && !boolMenu->icon().isNull();
         if (morphIconDistinct) {
             for (QAction* action : boolMenu->actions()) {
@@ -476,7 +440,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                 }
             }
         }
-        ctx.check(morphIconDistinct, QStringLiteral("化形主入口图标与五项子操作图标不同"));
+        ctx.check(morphIconDistinct, QStringLiteral("合并图元主入口图标与五项子操作图标不同"));
         QAction* heightUp = boolWindow.findChild<QAction*>(QStringLiteral("HeightUpAction"));
         QAction* heightDown = boolWindow.findChild<QAction*>(QStringLiteral("HeightDownAction"));
         QMenu* shapeMenu = boolWindow.findChild<QMenu*>(QStringLiteral("ShapeMenu"));

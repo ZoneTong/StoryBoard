@@ -549,7 +549,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             ctx.check(alignRowButtons.size() == 8 && morphButtons.size() == 5 && groupButton && ungroupButton &&
                           !alignRowButtons.first()->isVisible() && !morphButtons.first()->isVisible() &&
                           !groupButton->isVisible() && !ungroupButton->isVisible(),
-                      QStringLiteral("单选时不显示对齐 / 化形 / 组合按钮行"));
+                      QStringLiteral("单选时不显示对齐 / 合并图元 / 组合按钮行"));
 
             // 卡片里每颗可见按钮都必须绑定具体动作，不能只显示图标。
             const QStringList cardButtonNames = {
@@ -621,7 +621,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 QApplication::processEvents();
             }
 
-            // 多选时卡片把对齐 8 项与化形 5 项直接展开成图标按钮行，并复用菜单栏同一批动作。
+            // 多选时卡片把对齐 8 项与合并图元 5 项直接展开成图标按钮行，并复用菜单栏同一批动作。
             auto* secondShape = new ShapeItem(ShapeType::Rectangle);
             secondShape->setPos(QPointF(420.0, 240.0));
             secondShape->setContentSize(QSizeF(120.0, 90.0));
@@ -644,7 +644,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             }
             ctx.check(visibleAlign == 6, QStringLiteral("两个图元时对齐行展开 6 个可用模式"),
                       QString::number(visibleAlign));
-            ctx.check(visibleMorph == 5, QStringLiteral("多选时化形五项展开成一行"));
+            ctx.check(visibleMorph == 5, QStringLiteral("多选时合并图元五项展开成一行"));
             ctx.check(groupButton->isVisible() && !ungroupButton->isVisible() &&
                           groupButton->property("cardActionText").toString() == QStringLiteral("图元分组"),
                       QStringLiteral("多选未分组时显示图元分组、不显示解散分组"));
@@ -665,7 +665,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 secondShape->setSelected(true);
                 QApplication::processEvents();
             }
-            // 化形行按钮真正执行布尔运算：联合后两个矩形合并成一个复合图元，撤销恢复。
+            // 合并图元行按钮真正执行布尔运算：联合后两个矩形合并成一个多边形，撤销恢复。
             if (!morphButtons.isEmpty()) {
                 const int countBeforeMorph = dockScene->canvasItemCount();
                 morphButtons.first()->click();
@@ -681,7 +681,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 dockScene->undoStack()->undo();
                 QApplication::processEvents();
                 ctx.check(merged && dockScene->canvasItemCount() == countBeforeMorph,
-                          QStringLiteral("卡片化形按钮真正合并图元且可撤销"),
+                          QStringLiteral("卡片合并图元按钮真正合并图元且可撤销"),
                           QStringLiteral("count=%1->%2 composite=%3")
                               .arg(countBeforeMorph)
                               .arg(dockScene->canvasItemCount())
@@ -753,7 +753,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             ctx.check(borderWidthSpin && borderWidthSpin->isEnabled() &&
                           qAbs(borderWidthSpin->value() - selectedStroke->strokeWidth()) < 0.01 && opacitySpin &&
                           opacitySpin->isEnabled(),
-                      QStringLiteral("只选笔画时描线宽度与透明度可用并按笔画回显"),
+                      QStringLiteral("只选曲线时描线宽度与透明度可用并按曲线回显"),
                       QStringLiteral("width=%1 spin=%2")
                           .arg(selectedStroke->strokeWidth())
                           .arg(borderWidthSpin ? borderWidthSpin->value() : -1.0));
@@ -763,21 +763,21 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 QApplication::processEvents();
             }
             ctx.check(selectedStroke->strokeColor() == QColor(QStringLiteral("#EF4444")),
-                      QStringLiteral("卡片描线颜色直接改变笔画颜色"), selectedStroke->strokeColor().name());
+                      QStringLiteral("卡片描线颜色直接改变曲线颜色"), selectedStroke->strokeColor().name());
             dockScene->undoStack()->undo();
             QApplication::processEvents();
             ctx.check(selectedStroke->strokeColor() == QColor(QStringLiteral("#2563EB")),
-                      QStringLiteral("撤销描线颜色恢复笔画原色"), selectedStroke->strokeColor().name());
+                      QStringLiteral("撤销描线颜色恢复曲线原色"), selectedStroke->strokeColor().name());
 
             if (borderWidthSpin) {
                 borderWidthSpin->setValue(11);
                 QApplication::processEvents();
             }
-            ctx.check(qAbs(selectedStroke->strokeWidth() - 11.0) < 0.01, QStringLiteral("卡片描线宽度直接改变笔画宽度"),
+            ctx.check(qAbs(selectedStroke->strokeWidth() - 11.0) < 0.01, QStringLiteral("卡片描线宽度直接改变曲线宽度"),
                       QString::number(selectedStroke->strokeWidth()));
             dockScene->undoStack()->undo();
             QApplication::processEvents();
-            ctx.check(qAbs(selectedStroke->strokeWidth() - 6.0) < 0.01, QStringLiteral("撤销描线宽度恢复笔画原宽度"),
+            ctx.check(qAbs(selectedStroke->strokeWidth() - 6.0) < 0.01, QStringLiteral("撤销描线宽度恢复曲线原宽度"),
                       QString::number(selectedStroke->strokeWidth()));
 
             if (borderButtons.size() > 1) {
@@ -794,11 +794,11 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 opacitySpin->setValue(55);
                 QApplication::processEvents();
             }
-            ctx.check(qAbs(selectedStroke->opacity() - 0.55) < 0.01, QStringLiteral("透明度作用到笔画"),
+            ctx.check(qAbs(selectedStroke->opacity() - 0.55) < 0.01, QStringLiteral("透明度作用到曲线"),
                       QString::number(selectedStroke->opacity()));
             dockScene->undoStack()->undo();
             QApplication::processEvents();
-            ctx.check(qAbs(selectedStroke->opacity() - 1.0) < 0.01, QStringLiteral("撤销透明度恢复笔画原值"),
+            ctx.check(qAbs(selectedStroke->opacity() - 1.0) < 0.01, QStringLiteral("撤销透明度恢复曲线原值"),
                       QString::number(selectedStroke->opacity()));
 
             selectedShape->setSelected(true);
@@ -812,12 +812,12 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             }
             ctx.check(
                 qAbs(selectedShape->opacity() - 0.3) < 0.01 && qAbs(selectedStroke->opacity() - 0.3) < 0.01,
-                QStringLiteral("透明度同时作用到图形和笔画"),
+                QStringLiteral("透明度同时作用到图形和曲线"),
                 QStringLiteral("shape=%1 stroke=%2").arg(selectedShape->opacity()).arg(selectedStroke->opacity()));
             dockScene->undoStack()->undo();
             QApplication::processEvents();
             ctx.check(qAbs(selectedShape->opacity() - 1.0) < 0.01 && qAbs(selectedStroke->opacity() - 1.0) < 0.01,
-                      QStringLiteral("撤销透明度同时恢复图形和笔画"));
+                      QStringLiteral("撤销透明度同时恢复图形和曲线"));
 
             // 文字 / 图片内容行与卡片操作按钮：只对相应类型显示，并且写入能撤销。
             auto* cardText = new TextItem();
@@ -856,7 +856,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             }
             ctx.check(propertyDialogOpened, QStringLiteral("卡片图元属性按钮真正打开属性窗"));
 
-            // 透明度不仅作用于图形和笔画，文字等所有图元都走同一属性。
+            // 透明度不仅作用于图形和曲线，文字等所有图元都走同一属性。
             if (opacitySpin) {
                 opacitySpin->setValue(40);
                 QApplication::processEvents();
@@ -952,13 +952,13 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                           .arg(cardImage->image().height())
                           .arg(cardImage->imageName()));
 
-            // 图片不参与合并图元：文字与图片混合选中时只保留对齐 / 分组，化形入口禁用。
+            // 图片不参与合并图元：文字与图片混合选中时只保留对齐 / 分组，合并图元入口禁用。
             cardText->setSelected(true);
             cardImage->setSelected(true);
             QApplication::processEvents();
             ctx.check(!alignRowButtons.isEmpty() && alignRowButtons.first()->isVisible() && !morphButtons.isEmpty() &&
                           !morphButtons.first()->isVisible() && groupButton && groupButton->isVisible(),
-                      QStringLiteral("文字与图片混合选中隐藏化形入口，保留对齐 / 分组"));
+                      QStringLiteral("文字与图片混合选中隐藏合并图元入口，保留对齐 / 分组"));
 
             // 只选曲线时显示简化曲线按钮，点击后平滑结果进入撤销栈。
             auto* smoothStroke = new CurveItem();

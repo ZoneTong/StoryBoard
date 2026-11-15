@@ -54,7 +54,7 @@ enum class IconId {
     AlignBottom,
     DistributeH,
     DistributeV,
-    // 选中操作栏：复制、组合、取消组合；化形主入口用独立的形变图标，避免和五项子操作重复。
+    // 选中操作栏：复制、组合、取消组合；合并图元主入口用独立的形变图标，避免和五项子操作重复。
     Copy,
     Group,
     Ungroup,

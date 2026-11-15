@@ -55,7 +55,7 @@ ItemDockPanelSelectionCard::ItemDockPanelSelectionCard(QWidget* parent) : QWidge
     basicLayout->addWidget(m_smoothButton);
     basicLayout->addStretch(1);
 
-    // 对齐 8 项与化形 5 项各占一行：多选时直接平铺，不再收进下拉菜单。
+    // 对齐 8 项与合并图元 5 项各占一行：多选时直接平铺，不再收进下拉菜单。
     for (int i = 0; i < kAlignButtonCount; ++i) {
         auto* button = makeButton(QStringLiteral("ItemAlignRowButton"));
         m_alignButtons.append(button);

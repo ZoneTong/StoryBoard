@@ -375,7 +375,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
             QApplication::processEvents();
         }
 
-        // 一级「画笔」菜单已删除：描线宽度子菜单与平滑笔画并到「插入」的描线颜色之后，
+        // 一级「画笔」菜单已删除：描线宽度子菜单与平滑曲线并到「插入」的描线颜色之后，
         // 重复的画笔颜色项不再保留。
         QMenu* brushMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("BrushMenu"));
         QMenu* fillStyleMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("FillStyleMenu"));
@@ -537,7 +537,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
             menuWidthSpin->setValue(2);
             QApplication::processEvents();
             ctx.check(qAbs(stroke->strokeWidth() - 2.0) < 0.01 && widthSpin->value() == 2,
-                      QStringLiteral("菜单描线宽度改变选中笔画宽度"),
+                      QStringLiteral("菜单描线宽度改变选中曲线宽度"),
                       QStringLiteral("stroke=%1 toolbar=%2 menu=%3")
                           .arg(stroke->strokeWidth())
                           .arg(widthSpin->value())
@@ -547,7 +547,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
             QApplication::processEvents();
             ctx.check(qAbs(stroke->strokeWidth() - 7.0) < 0.01 && strokeWindow.view()->brushWidth() == 7.0 &&
                           menuWidthSpin->value() == 7,
-                      QStringLiteral("工具栏描线宽度 SpinBox 步进 1px 并改变选中笔画宽度"),
+                      QStringLiteral("工具栏描线宽度 SpinBox 步进 1px 并改变选中曲线宽度"),
                       QStringLiteral("stroke=%1 brush=%2 step=%3 menu=%4")
                           .arg(stroke->strokeWidth())
                           .arg(strokeWindow.view()->brushWidth())
@@ -560,11 +560,11 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         StyleController styleController(&strokeWindow);
         const QColor changedColor(QStringLiteral("#20C997"));
         styleController.applyStrokeColorToSelection(changedColor);
-        ctx.check(stroke->strokeColor() == changedColor, QStringLiteral("描线颜色改变选中笔画颜色"),
+        ctx.check(stroke->strokeColor() == changedColor, QStringLiteral("描线颜色改变选中曲线颜色"),
                   stroke->strokeColor().name());
         strokeWindow.scene()->undoStack()->undo();
         QApplication::processEvents();
-        ctx.check(stroke->strokeColor() == initialColor, QStringLiteral("撤销描线颜色恢复笔画颜色"),
+        ctx.check(stroke->strokeColor() == initialColor, QStringLiteral("撤销描线颜色恢复曲线颜色"),
                   stroke->strokeColor().name());
     }
 

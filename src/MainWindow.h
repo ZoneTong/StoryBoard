@@ -111,7 +111,7 @@ class MainWindow : public QMainWindow {
     void connectSignals();
     // 多图元对齐：菜单与工具栏下拉共用同一组动作，状态按当前选择更新。
     void applyAlignment(Alignment::Mode mode);
-    // 合并形状：联合 / 组合 / 拆分 / 相交 / 剪除，结果替换为一个合并图形，只记一条撤销。
+    // 合并形状：联合 / 组合 / 拆分 / 相交 / 剪除，结果替换为一个多边形，只记一条撤销。
     void applyBoolOperation(BoolOps::Operation operation);
 
     void insertShape(ShapeType type);

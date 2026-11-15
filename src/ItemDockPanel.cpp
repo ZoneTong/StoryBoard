@@ -54,7 +54,7 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
 
     // 紧凑布局：不再做带文字的折叠分组标题，各行内容直接平铺，
     // 行首用小图标标注用途（描边 / 填充 / 边框 / 透明度 / 圆角 / 图层 / 顺序）。
-    // 选中的操作行（复制/删除/旋转、对齐、化形、分组）统一放在卡片底部；
+    // 选中的操作行（复制/删除/旋转、对齐、合并图元、分组）统一放在卡片底部；
     // 后加的文字 / 图片内容行与样式行排在「图层与高度」行下方。
     m_selectionCard = new ItemDockPanelSelectionCard(content);
     m_selectionCard->setObjectName(QStringLiteral("ItemSelectionRowsCard"));
@@ -268,7 +268,7 @@ void ItemDockPanel::refresh()
 
     // 没有选中图元时隐藏全部图元编辑项，停靠卡片本身保持常驻。
     const bool hasSelection = !items.isEmpty();
-    // 选中的图元都不支持填充（直线 / 弧线 / 大括号 / 文字 / 图片 / 合并图形）时，
+    // 选中的图元都不支持填充（直线 / 弧线 / 大括号 / 文字 / 图片 / 多边形）时，
     // 填充样式与填充颜色两行没有可作用的对象，直接隐藏。
     bool anyFillable = false;
     for (ShapeItem* shape : shapes) {

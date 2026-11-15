@@ -21,7 +21,7 @@
 void selftest::runLineArtDialogParameterTests(Context& ctx)
 {
     {
-        // 需求：选完图片先弹线稿化参数，点确定后才生成笔画。
+        // 需求：选完图片先弹线稿化参数，点确定后才生成曲线。
         const AppSettings defaults;
         LineArtDialog dialog(defaults);
         auto* presetCombo = dialog.findChild<QComboBox*>(QStringLiteral("LineArtPresetCombo"));

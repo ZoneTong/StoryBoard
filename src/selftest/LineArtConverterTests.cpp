@@ -5,6 +5,7 @@
 #include "CanvasView.h"
 #include "Commands.h"
 #include "CompositeShapeItem.h"
+#include "CurveItem.h"
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
@@ -19,7 +20,6 @@
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -85,7 +85,7 @@
 
 void selftest::runLineArtConverterTests(Context& ctx)
 {
-    // 需求：导入图片线稿化 —— 图片里的各色块轮廓要描成笔画图元，线宽固定为 1。
+    // 需求：导入图片线稿化 —— 图片里的各色块轮廓要描成曲线图元，线宽固定为 1。
     QImage artwork(240, 160, QImage::Format_RGB32);
     artwork.fill(Qt::white);
     {
@@ -128,7 +128,7 @@ void selftest::runLineArtConverterTests(Context& ctx)
     }
     ctx.check(closedLoops, QStringLiteral("线稿轮廓都是闭合回路"));
     ctx.check(insideImage, QStringLiteral("线稿轮廓落在图片范围内"));
-    ctx.check(redBlockFound, QStringLiteral("线稿笔画颜色取自对应色块"));
+    ctx.check(redBlockFound, QStringLiteral("线稿曲线颜色取自对应色块"));
 
     CanvasScene lineArtScene;
     QUndoStack lineArtUndo;
@@ -141,10 +141,10 @@ void selftest::runLineArtConverterTests(Context& ctx)
         stroke->setStrokePoints(outline.points, outline.color, LineArtConverter::Options().strokeWidth, 0.0, true);
         lineArtItems.append(stroke);
     }
-    ctx.check(!lineArtItems.isEmpty(), QStringLiteral("线稿轮廓生成笔画图元"));
+    ctx.check(!lineArtItems.isEmpty(), QStringLiteral("线稿轮廓生成曲线图元"));
     if (!lineArtItems.isEmpty()) {
         lineArtScene.addItemsWithUndo(lineArtItems, QStringLiteral("导入图片线稿化"));
-        ctx.check(lineArtScene.canvasItemCount() == lineArtItems.size(), QStringLiteral("线稿笔画加入画布"));
+        ctx.check(lineArtScene.canvasItemCount() == lineArtItems.size(), QStringLiteral("线稿曲线加入画布"));
         ctx.check(lineArtUndo.count() == 1, QStringLiteral("线稿化整体只占一条撤销记录"));
 
         int thinStrokes = 0;
@@ -153,7 +153,7 @@ void selftest::runLineArtConverterTests(Context& ctx)
                 ++thinStrokes;
             }
         }
-        ctx.check(thinStrokes == lineArtItems.size(), QStringLiteral("线稿笔画线宽都是 1"),
+        ctx.check(thinStrokes == lineArtItems.size(), QStringLiteral("线稿曲线线宽都是 1"),
                   QStringLiteral("thin=%1 total=%2").arg(thinStrokes).arg(lineArtItems.size()));
 
         int linearStrokes = 0;
@@ -162,7 +162,7 @@ void selftest::runLineArtConverterTests(Context& ctx)
                 ++linearStrokes;
             }
         }
-        ctx.check(linearStrokes == lineArtItems.size(), QStringLiteral("线稿笔画按折线绘制，方角不会被磨圆"));
+        ctx.check(linearStrokes == lineArtItems.size(), QStringLiteral("线稿曲线按折线绘制，方角不会被磨圆"));
 
         bool linearPersisted = false;
         if (auto* firstStroke = dynamic_cast<CurveItem*>(lineArtItems.constFirst())) {
@@ -170,7 +170,7 @@ void selftest::runLineArtConverterTests(Context& ctx)
             reloadedStroke.fromJson(firstStroke->toJson());
             linearPersisted = reloadedStroke.isLinearPath() && qFuzzyCompare(reloadedStroke.strokeWidth(), 1.0);
         }
-        ctx.check(linearPersisted, QStringLiteral("折线线稿笔画可以存取还原"));
+        ctx.check(linearPersisted, QStringLiteral("折线线稿曲线可以存取还原"));
 
         const QImage rendered = lineArtScene.renderImage(QRectF(0.0, 0.0, 240.0, 160.0), 2.0);
         int inkPixels = 0;
@@ -181,7 +181,7 @@ void selftest::runLineArtConverterTests(Context& ctx)
                 }
             }
         }
-        ctx.check(inkPixels > 1000, QStringLiteral("线稿笔画在画布上可见"), QStringLiteral("ink=%1").arg(inkPixels));
+        ctx.check(inkPixels > 1000, QStringLiteral("线稿曲线在画布上可见"), QStringLiteral("ink=%1").arg(inkPixels));
 
         const QString lineArtPath = QDir(ctx.workDirectory).filePath(QStringLiteral("lineart.png"));
         ctx.check(rendered.save(lineArtPath), QStringLiteral("线稿渲染结果可保存为 PNG"), lineArtPath);

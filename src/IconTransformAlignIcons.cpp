@@ -164,7 +164,7 @@ void drawGroup(QPainter& p, IconId id)
 
 void drawMorph(QPainter& painter, IconId)
 {
-    // 圆 → 箭头 → 圆角方：表达“化形”，与并集 / 组合等五项子操作的图形语言区分开。
+    // 圆 → 箭头 → 圆角方：表达“合并图元”，与并集 / 组合等五项子操作的图形语言区分开。
     const QColor color = painter.pen().color();
     painter.save();
     painter.setBrush(Qt::NoBrush);

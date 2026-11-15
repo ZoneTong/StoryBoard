@@ -38,7 +38,7 @@ class ItemDockPanel : public QWidget {
     void refresh();
     // 按卡片内最宽的一行（包括当前隐藏的行）计算启动宽度；之后不再随选中变化。
     int preferredWidth() const;
-    // 多选时复用主窗口的对齐 / 化形 / 复制 / 删除 / 旋转 / 组合动作，保证菜单、工具栏与卡片行为一致。
+    // 多选时复用主窗口的对齐 / 合并图元 / 复制 / 删除 / 旋转 / 组合动作，保证菜单、工具栏与卡片行为一致。
     void setSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions,
                              QAction* copyAction, QAction* removeAction, QAction* rotateCwAction,
                              QAction* rotateCcwAction, QAction* groupAction, QAction* ungroupAction);

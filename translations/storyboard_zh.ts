@@ -1898,7 +1898,7 @@ Use the checkbox to show or hide it.</source>
     </message>
       <message>
       <source>Merged shape</source>
-      <translation>合并图形</translation>
+      <translation>多边形</translation>
     </message>
 
     <message>
@@ -2034,15 +2034,15 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
         <source>Merge shapes is available in edit mode only</source>
-        <translation>合并形状只在编辑模式可用</translation>
+        <translation>合并图元只在编辑模式可用</translation>
     </message>
     <message>
-        <source>Merged into one shape (undo to restore)</source>
-        <translation>已合并为一个合并图形，撤销可还原</translation>
+        <source>Merged into one polygon (undo to restore)</source>
+        <translation>已合并为一个多边形，撤销可还原</translation>
     </message>
     <message>
         <source>Merge shapes</source>
-        <translation>合并形状</translation>
+        <translation>合并图元</translation>
     </message>
 
     <message>
@@ -3410,7 +3410,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Combine shapes</source>
-      <translation>合并形状</translation>
+      <translation>合并图元</translation>
     </message>
     <message>
       <source>Union</source>
@@ -3430,7 +3430,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Combine shapes is available in edit mode only</source>
-      <translation>合并形状只在编辑模式可用</translation>
+      <translation>合并图元只在编辑模式可用</translation>
     </message>
     <message>
       <source>Select at least two shapes with a visible outline</source>
@@ -3438,7 +3438,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Combined into one composite shape (undo to restore)</source>
-      <translation>已合并为一个合并图形，撤销可还原</translation>
+      <translation>已合并为一个多边形，撤销可还原</translation>
     </message>
     <message>
       <source>Union shapes</source>
@@ -3569,15 +3569,15 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Combine the selected shapes</source>
-      <translation>对选中图形做合并形状操作</translation>
+      <translation>对选中图形做合并图元操作</translation>
     </message>
     <message>
-      <source>Merge the selected items into one merged shape</source>
-      <translation>把选中图形合并成一个合并图形</translation>
+      <source>Merge the selected items into one polygon</source>
+      <translation>把选中图形合并成一个多边形</translation>
     </message>
     <message>
-      <source>Combined into one merged shape (undo to restore)</source>
-      <translation>已合并为一个合并图形，撤销可还原</translation>
+      <source>Combined into one polygon (undo to restore)</source>
+      <translation>已合并为一个多边形，撤销可还原</translation>
     </message>
     <message>
       <source>Polygon</source>
@@ -3610,15 +3610,15 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
         <source>Merge shapes is available in edit mode only</source>
-        <translation>合并形状只在编辑模式可用</translation>
+        <translation>合并图元只在编辑模式可用</translation>
     </message>
     <message>
-        <source>Merged into one shape (undo to restore)</source>
-        <translation>已合并为一个合并图形，撤销可还原</translation>
+        <source>Merged into one polygon (undo to restore)</source>
+        <translation>已合并为一个多边形，撤销可还原</translation>
     </message>
     <message>
         <source>Merge shapes</source>
-        <translation>合并形状</translation>
+        <translation>合并图元</translation>
     </message>
     <message>
         <source>Merge items</source>
@@ -4924,7 +4924,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         </message>
         <message>
             <source>Merge shapes</source>
-            <translation>合并形状</translation>
+            <translation>合并图元</translation>
         </message>
     <message>
       <source>Border</source>
