@@ -27,6 +27,8 @@ struct Participant {
     QColor fill;
     QColor stroke;
     qreal strokeWidth = 1.0;
+    FillStyle fillStyle = FillStyle::Solid;
+    Qt::PenStyle strokeStyle = Qt::SolidLine;
     bool filled = true;
     int layerIndex = 0;
     int height = -1;
@@ -109,17 +111,28 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
         participant.fill = shape->fillColor();
         participant.stroke = shape->strokeColor();
         participant.strokeWidth = shape->strokeWidth();
+        participant.fillStyle = shape->fillStyle();
+        participant.strokeStyle = shape->strokeStyle();
         participant.filled = shape->fillStyle() != FillStyle::None;
+    } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(styleItem)) {
+        participant.fill = composite->fillColor();
+        participant.stroke = composite->strokeColor();
+        participant.strokeWidth = composite->strokeWidth();
+        participant.fillStyle = composite->fillStyle();
+        participant.strokeStyle = composite->strokeStyle();
+        participant.filled = true;
     } else if (auto* stroke = dynamic_cast<CurveItem*>(styleItem)) {
         participant.fill = stroke->strokeColor();
         participant.stroke = stroke->strokeColor();
         participant.strokeWidth = stroke->strokeWidth();
+        participant.strokeStyle = stroke->strokeStyle();
         participant.filled = false;
     } else if (auto* text = dynamic_cast<TextItem*>(styleItem)) {
         // 文字参照曲线：填充色等于字形描线色、纯色、面积按 0 参与。
         participant.fill = text->textColor();
         participant.stroke = text->textColor();
         participant.strokeWidth = 1.0;
+        participant.fillStyle = FillStyle::Solid;
         participant.filled = false;
     } else {
         participant.fill = QColor(30, 41, 59, 36);
@@ -224,6 +237,7 @@ QList<CompositeShapeItem::Layer> buildLayers(const QPainterPath& result, const Q
         layer.stroke = top.stroke;
         layer.strokeWidth = qMax(0.0, top.strokeWidth);
         layer.filled = true;
+        layer.role = CompositeShapeItem::LayerRole::FilledArea;
         ranked.append(RankedLayer{areaRank, 0, layer});
     }
     if (!strokes.isEmpty()) {
@@ -232,6 +246,7 @@ QList<CompositeShapeItem::Layer> buildLayers(const QPainterPath& result, const Q
         layer.fill = top.stroke;
         layer.strokeWidth = 0.0;
         layer.filled = true;
+        layer.role = CompositeShapeItem::LayerRole::StrokeBand;
         ranked.append(RankedLayer{strokeRank, 1, layer});
     }
     if (!texts.isEmpty()) {
@@ -240,6 +255,7 @@ QList<CompositeShapeItem::Layer> buildLayers(const QPainterPath& result, const Q
         layer.fill = textColor;
         layer.strokeWidth = 0.0;
         layer.filled = true;
+        layer.role = CompositeShapeItem::LayerRole::Text;
         ranked.append(RankedLayer{textRank, 2, layer});
     }
 
@@ -389,7 +405,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
     undo->beginMacro(commandText);
     undo->push(new RemoveItemsCommand(scene, originals, commandText));
     for (const QList<CompositeShapeItem::Layer>& block : results) {
-        auto* composite = new CompositeShapeItem(block);
+        auto* composite = new CompositeShapeItem(block, top.fillStyle, top.strokeStyle);
         composite->setName(scene->uniqueItemName(composite->typeDisplayName()));
         composite->setLayerId(top.item->layerId());
         composite->setHeight(scene->nextHeight(top.item->layerId()));

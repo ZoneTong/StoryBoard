@@ -7,6 +7,7 @@
 
 class QSpinBox;
 class QToolButton;
+class CompositeShapeItem;
 class CurveItem;
 
 // 编辑图元卡的填充样式、边框样式与边框宽度三行：样式按钮按当前图元勾选，
@@ -18,7 +19,8 @@ class ItemDockPanelFillBorderCard : public QWidget {
   public:
     explicit ItemDockPanelFillBorderCard(QWidget* parent = nullptr);
 
-    void refresh(const QList<ShapeItem*>& shapes, const QList<CurveItem*>& strokes);
+    void refresh(const QList<ShapeItem*>& shapes, const QList<CurveItem*>& strokes,
+                 const QList<CompositeShapeItem*>& composites = QList<CompositeShapeItem*>());
     QWidget* fillStyleRow() const { return m_fillStyleRow; }
     QWidget* borderStyleRow() const { return m_borderStyleRow; }
     QWidget* borderWidthRow() const { return m_borderWidthRow; }

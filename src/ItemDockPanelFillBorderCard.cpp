@@ -1,5 +1,6 @@
 #include "ItemDockPanelFillBorderCard.h"
 
+#include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "IconFactory.h"
 #include "ItemDockPanel.h"
@@ -115,14 +116,21 @@ ItemDockPanelFillBorderCard::ItemDockPanelFillBorderCard(QWidget* parent) : QWid
     m_borderWidthRow->setObjectName(QStringLiteral("ItemBorderWidthRow"));
 }
 
-void ItemDockPanelFillBorderCard::refresh(const QList<ShapeItem*>& shapes, const QList<CurveItem*>& strokes)
+void ItemDockPanelFillBorderCard::refresh(const QList<ShapeItem*>& shapes, const QList<CurveItem*>& strokes,
+                                          const QList<CompositeShapeItem*>& composites)
 {
     m_refreshing = true;
 
-    const FillStyle currentFill = shapes.isEmpty() ? FillStyle::None : shapes.first()->fillStyle();
+    const bool hasFillTargets = !shapes.isEmpty() || !composites.isEmpty();
+    FillStyle currentFill = FillStyle::None;
+    if (!shapes.isEmpty()) {
+        currentFill = shapes.first()->fillStyle();
+    } else if (!composites.isEmpty()) {
+        currentFill = composites.first()->fillStyle();
+    }
     for (QToolButton* button : m_fillStyleButtons) {
         const FillStyle style = static_cast<FillStyle>(button->property("fillStyle").toInt());
-        button->setChecked(!shapes.isEmpty() && style == currentFill);
+        button->setChecked(hasFillTargets && style == currentFill);
     }
 
     Qt::PenStyle currentStyle = Qt::SolidLine;
@@ -130,22 +138,25 @@ void ItemDockPanelFillBorderCard::refresh(const QList<ShapeItem*>& shapes, const
         currentStyle = shapes.first()->strokeStyle();
     } else if (!strokes.isEmpty()) {
         currentStyle = strokes.first()->strokeStyle();
+    } else if (!composites.isEmpty()) {
+        currentStyle = composites.first()->strokeStyle();
     }
     const QList<Qt::PenStyle> penStyles = ItemStyleVisuals::borderStyles();
+    const bool hasStrokeTargets = !shapes.isEmpty() || !strokes.isEmpty() || !composites.isEmpty();
     for (int index = 0; index < m_borderStyleButtons.size(); ++index) {
-        const bool hasTargets = !shapes.isEmpty() || !strokes.isEmpty();
-        m_borderStyleButtons.at(index)->setChecked(hasTargets && penStyles.at(index) == currentStyle);
+        m_borderStyleButtons.at(index)->setChecked(hasStrokeTargets && penStyles.at(index) == currentStyle);
     }
     if (m_borderWidthSpin) {
-        const bool hasTargets = !shapes.isEmpty() || !strokes.isEmpty();
-        m_borderWidthSpin->setEnabled(hasTargets);
+        m_borderWidthSpin->setEnabled(hasStrokeTargets);
         qreal width = 4.0;
         if (!shapes.isEmpty()) {
             width = shapes.first()->strokeWidth();
         } else if (!strokes.isEmpty()) {
             width = strokes.first()->strokeWidth();
+        } else if (!composites.isEmpty()) {
+            width = composites.first()->strokeWidth();
         }
-        m_borderWidthSpin->setValue(qRound(width));
+        m_borderWidthSpin->setValue(qRound(qMax<qreal>(1.0, width)));
     }
 
     m_refreshing = false;

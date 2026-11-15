@@ -1,10 +1,11 @@
 #include "ItemDockPanelColorsCard.h"
 
+#include "CompositeShapeItem.h"
+#include "CurveItem.h"
 #include "IconFactory.h"
 #include "ItemDockPanel.h"
 #include "ItemStyleVisuals.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 
 #include <QColorDialog>
 #include <QHBoxLayout>
@@ -120,16 +121,25 @@ QWidget* ItemDockPanelColorsCard::makeColorRow(bool stroke)
     return row;
 }
 
-void ItemDockPanelColorsCard::refresh(const QList<ShapeItem*>& shapes, const QList<CurveItem*>& strokes)
+void ItemDockPanelColorsCard::refresh(const QList<ShapeItem*>& shapes, const QList<CurveItem*>& strokes,
+                                      const QList<CompositeShapeItem*>& composites)
 {
     QColor strokeFallback = QColor(QStringLiteral("#1E293B"));
     if (!shapes.isEmpty()) {
         strokeFallback = shapes.first()->strokeColor();
     } else if (!strokes.isEmpty()) {
         strokeFallback = strokes.first()->strokeColor();
+    } else if (!composites.isEmpty()) {
+        strokeFallback = composites.first()->strokeColor();
     }
     m_strokeFallback = strokeFallback;
-    m_fillFallback = shapes.isEmpty() ? QColor(QStringLiteral("#1E293B")) : shapes.first()->fillColor();
+    QColor fillFallback = QColor(QStringLiteral("#1E293B"));
+    if (!shapes.isEmpty()) {
+        fillFallback = shapes.first()->fillColor();
+    } else if (!composites.isEmpty()) {
+        fillFallback = composites.first()->fillColor();
+    }
+    m_fillFallback = fillFallback;
     for (QToolButton* swatch : m_strokeSwatches) {
         const QColor color = swatch->property("swatchColor").value<QColor>();
         swatch->setChecked(color.rgb() == m_strokeFallback.rgb());

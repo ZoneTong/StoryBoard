@@ -2,6 +2,7 @@
 
 #include "CanvasItem.h"
 #include "CanvasScene.h"
+#include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "ImageItem.h"
 
@@ -363,6 +364,42 @@ void ShapeStyleCommand::apply(const QList<ShapeItemState>& states)
     }
 }
 
+CompositeFillStyleCommand::CompositeFillStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
+                                                     const QList<QColor>& beforeColors,
+                                                     const QList<FillStyle>& beforeStyles,
+                                                     const QList<QColor>& afterColors,
+                                                     const QList<FillStyle>& afterStyles, const QString& text)
+    : m_scene(scene), m_beforeColors(beforeColors), m_beforeStyles(beforeStyles), m_afterColors(afterColors),
+      m_afterStyles(afterStyles)
+{
+    setText(text);
+    for (CanvasItem* item : items) {
+        m_items.append(QPointer<CanvasItem>(item));
+    }
+}
+
+void CompositeFillStyleCommand::undo()
+{
+    apply(m_beforeColors, m_beforeStyles);
+}
+
+void CompositeFillStyleCommand::redo()
+{
+    apply(m_afterColors, m_afterStyles);
+}
+
+void CompositeFillStyleCommand::apply(const QList<QColor>& colors, const QList<FillStyle>& styles)
+{
+    for (int i = 0; i < m_items.size() && i < colors.size() && i < styles.size(); ++i) {
+        if (auto* composite = dynamic_cast<CompositeShapeItem*>(m_items.at(i).data())) {
+            composite->setFill(colors.at(i), styles.at(i));
+        }
+    }
+    if (m_scene) {
+        m_scene->update();
+    }
+}
+
 ItemStrokeStyleCommand::ItemStrokeStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
                                                const QList<QColor>& beforeColors, const QList<qreal>& beforeWidths,
                                                const QList<QColor>& afterColors, const QList<qreal>& afterWidths,
@@ -397,6 +434,8 @@ void ItemStrokeStyleCommand::apply(const QList<QColor>& colors, const QList<qrea
             shape->setStyle(colors.at(i), shape->fillColor(), widths.at(i));
         } else if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
             stroke->setStyle(colors.at(i), widths.at(i));
+        } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+            composite->setStroke(colors.at(i), widths.at(i));
         }
     }
     if (m_scene) {
@@ -437,6 +476,8 @@ void ItemPenStyleCommand::apply(const QList<Qt::PenStyle>& styles)
             shape->setStrokeStyle(style);
         } else if (auto* curve = dynamic_cast<CurveItem*>(item)) {
             curve->setStrokeStyle(style);
+        } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+            composite->setStrokeStyle(style);
         }
     }
     if (m_scene) {
@@ -480,12 +521,17 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
 {
     if (!sameStack(stack, other.stack) || pos != other.pos || size != other.size ||
         !qFuzzyCompare(rotation, other.rotation) || !qFuzzyCompare(1.0 + opacity, 1.0 + other.opacity) ||
-        itemName != other.itemName || hasShapeState != other.hasShapeState || hasTextState != other.hasTextState ||
+        itemName != other.itemName || hasShapeState != other.hasShapeState ||
+        hasCompositeStyle != other.hasCompositeStyle || hasTextState != other.hasTextState ||
         hasStrokeStyle != other.hasStrokeStyle || hasImageState != other.hasImageState ||
         hasImageName != other.hasImageName) {
         return false;
     }
     if (hasShapeState && shapeState != other.shapeState) {
+        return false;
+    }
+    if (hasCompositeStyle &&
+        (compositeFillColor != other.compositeFillColor || compositeFillStyle != other.compositeFillStyle)) {
         return false;
     }
     if (hasTextState && textState != other.textState) {
@@ -546,10 +592,19 @@ void ItemPropertiesCommand::apply(const ItemPropertiesState& state)
     m_item->setRotationAngle(state.rotation);
     m_item->setItemOpacity(state.opacity);
 
+    if (state.hasCompositeStyle) {
+        if (auto* composite = dynamic_cast<CompositeShapeItem*>(m_item.data())) {
+            composite->setFill(state.compositeFillColor, state.compositeFillStyle);
+        }
+    }
+
     if (state.hasStrokeStyle) {
         if (auto* stroke = dynamic_cast<CurveItem*>(m_item.data())) {
             stroke->setStyle(state.strokeColor, state.strokeWidth);
             stroke->setStrokeStyle(state.strokeStyle);
+        } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(m_item.data())) {
+            composite->setStroke(state.strokeColor, state.strokeWidth);
+            composite->setStrokeStyle(state.strokeStyle);
         }
     }
     if (state.hasImageName) {

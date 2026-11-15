@@ -4,6 +4,7 @@
 #include "CanvasScene.h"
 #include "CanvasView.h"
 #include "Commands.h"
+#include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "IconFactory.h"
 #include "ItemStyleVisuals.h"
@@ -106,7 +107,8 @@ int StyleController::applyStrokeStyleToSelection(const QColor& color, qreal widt
     QList<CanvasItem*> items;
     const QList<CanvasItem*> selected = m_window->m_scene->selectedCanvasItems();
     for (CanvasItem* item : selected) {
-        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<CurveItem*>(item)) {
+        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<CurveItem*>(item) ||
+            dynamic_cast<CompositeShapeItem*>(item)) {
             items.append(item);
         }
     }
@@ -139,6 +141,12 @@ int StyleController::applyStrokeStyleToSelection(const QColor& color, qreal widt
             afterColor = changeColor ? color : beforeColor;
             afterWidth = changeWidth ? width : beforeWidth;
             stroke->setStyle(afterColor, afterWidth);
+        } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+            beforeColor = composite->strokeColor();
+            beforeWidth = composite->strokeWidth();
+            afterColor = changeColor ? color : beforeColor;
+            afterWidth = changeWidth ? width : beforeWidth;
+            composite->setStroke(afterColor, afterWidth);
         }
         beforeColors.append(beforeColor);
         beforeWidths.append(beforeWidth);
@@ -164,9 +172,14 @@ void StyleController::applyFillToSelection()
     }
 
     QList<ShapeItem*> shapes;
+    QList<CompositeShapeItem*> composites;
     int outlineOnlyCount = 0;
     const QList<CanvasItem*> selected = m_window->m_scene->selectedCanvasItems();
     for (CanvasItem* item : selected) {
+        if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+            composites.append(composite);
+            continue;
+        }
         auto* shape = dynamic_cast<ShapeItem*>(item);
         if (!shape) {
             continue;
@@ -178,7 +191,7 @@ void StyleController::applyFillToSelection()
         }
     }
 
-    if (shapes.isEmpty()) {
+    if (shapes.isEmpty() && composites.isEmpty()) {
         if (outlineOnlyCount > 0) {
             m_window->statusBar()->showMessage(
                 MainWindow::tr("The selected shape is stroke-only (line, brace, etc.); fill is not supported"), 4000);
@@ -193,6 +206,10 @@ void StyleController::applyFillToSelection()
 
     QList<ShapeItemState> before;
     QList<ShapeItemState> after;
+    QList<QColor> beforeCompositeColors;
+    QList<FillStyle> beforeCompositeStyles;
+    QList<QColor> afterCompositeColors;
+    QList<FillStyle> afterCompositeStyles;
     before.reserve(shapes.size());
     after.reserve(shapes.size());
     for (ShapeItem* shape : shapes) {
@@ -204,17 +221,48 @@ void StyleController::applyFillToSelection()
         shape->setFill(fill, m_window->m_fillStyle);
         after.append(shape->state());
     }
+    for (CompositeShapeItem* composite : composites) {
+        beforeCompositeColors.append(composite->fillColor());
+        beforeCompositeStyles.append(composite->fillStyle());
+        QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : composite->fillColor();
+        if (fill.alpha() == 0) {
+            fill = composite->strokeColor();
+        }
+        composite->setFill(fill, m_window->m_fillStyle);
+        afterCompositeColors.append(composite->fillColor());
+        afterCompositeStyles.append(composite->fillStyle());
+    }
 
-    if (before == after) {
+    if (before == after && beforeCompositeColors == afterCompositeColors &&
+        beforeCompositeStyles == afterCompositeStyles) {
         m_window->statusBar()->showMessage(MainWindow::tr("The fill style did not change"), 3000);
         return;
     }
 
-    m_window->m_undo->push(
-        new ShapeStyleCommand(m_window->m_scene, shapes, before, after, MainWindow::tr("Change fill style")));
-    m_window->statusBar()->showMessage(
-        MainWindow::tr("Applied \"%2\" to %1 shape(s)").arg(shapes.size()).arg(fillStyleName(m_window->m_fillStyle)),
-        4000);
+    const bool mixed = !shapes.isEmpty() && !composites.isEmpty();
+    if (mixed) {
+        m_window->m_undo->beginMacro(MainWindow::tr("Change fill style"));
+    }
+    if (!shapes.isEmpty()) {
+        m_window->m_undo->push(
+            new ShapeStyleCommand(m_window->m_scene, shapes, before, after, MainWindow::tr("Change fill style")));
+    }
+    if (!composites.isEmpty()) {
+        QList<CanvasItem*> compositeItems;
+        for (CompositeShapeItem* composite : composites) {
+            compositeItems.append(composite);
+        }
+        m_window->m_undo->push(new CompositeFillStyleCommand(
+            m_window->m_scene, compositeItems, beforeCompositeColors, beforeCompositeStyles, afterCompositeColors,
+            afterCompositeStyles, MainWindow::tr("Change fill style")));
+    }
+    if (mixed) {
+        m_window->m_undo->endMacro();
+    }
+    m_window->statusBar()->showMessage(MainWindow::tr("Applied \"%2\" to %1 shape(s)")
+                                           .arg(shapes.size() + composites.size())
+                                           .arg(fillStyleName(m_window->m_fillStyle)),
+                                       4000);
 }
 
 void StyleController::updateFillActions()
