@@ -320,6 +320,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                 textSelected.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(textSelected.constFirst());
 
             int whitePixels = -1;
+            bool textLayerFound = false;
             if (textShell) {
                 const QImage rendered = scene.renderImage(QRectF(0.0, 0.0, 320.0, 220.0), 1.0);
                 int count = 0;
@@ -332,10 +333,18 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                     }
                 }
                 whitePixels = count;
+                for (const CompositeShapeItem::Layer& layer : textShell->layers()) {
+                    if (qFuzzyIsNull(layer.strokeWidth) && layer.fill == QColor(0, 0, 0)) {
+                        textLayerFound = true;
+                        break;
+                    }
+                }
             }
-            ctx.check(textMerged && textShell && whitePixels == 0, QStringLiteral("黑色文字合并后字形外无白色重影"),
-                      QStringLiteral("ok=%1 white=%2 layers=%3")
+            ctx.check(textMerged && textShell && textLayerFound && whitePixels == 0,
+                      QStringLiteral("黑色文字合并后字形外无白色重影"),
+                      QStringLiteral("ok=%1 textLayer=%2 white=%3 layers=%4")
                           .arg(textMerged ? 1 : 0)
+                          .arg(textLayerFound ? 1 : 0)
                           .arg(whitePixels)
                           .arg(textShell ? textShell->layerCount() : -1));
         }
