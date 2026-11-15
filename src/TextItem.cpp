@@ -175,6 +175,13 @@ QPainterPath TextItem::paintedShape() const
     return scaled.intersected(contentPath);
 }
 
+QPainterPath TextItem::clippingShape() const
+{
+    // 文字直接叠在下层上绘制，不参与下层的遮挡裁剪。按字形裁剪下层会
+    // 在低缩放和亚像素位置露出画板底色，表现为黑字后面的白色错位重影。
+    return QPainterPath();
+}
+
 QJsonObject TextItem::toJson() const
 {
     QJsonObject json = baseJson();

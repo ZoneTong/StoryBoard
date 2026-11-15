@@ -54,6 +54,8 @@ class CompositeShapeItem : public CanvasItem {
     // 按当前内容尺寸缩放后的整体轮廓，供命中与遮挡判断使用。
     QPainterPath paintedShape() const override;
     QPainterPath outlineShape() const override;
+    // 把某层的局部路径映射到图元坐标；布尔运算需要按层角色分别取几何。
+    QPainterPath mapLayerPath(const QPainterPath& localPath) const;
 
     // 路径 → JSON 元素数组（布尔运算结果随画布文件保存与撤销一起走）。
     static QJsonArray pathToJson(const QPainterPath& path);

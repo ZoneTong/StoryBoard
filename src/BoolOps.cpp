@@ -76,7 +76,52 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
     participant.item = vectorMembers.constLast();
     participant.members = editable;
     for (CanvasItem* vectorMember : std::as_const(vectorMembers)) {
-        const QPainterPath memberPath = vectorMember->mapToScene(vectorMember->paintedShape());
+        QPainterPath memberPath;
+        QPainterPath fillPart;
+        QPainterPath strokePart;
+        QPainterPath textPart;
+
+        // 布尔运算使用图元的几何轮廓，而不是“可见涂色区域”：无填充、纹理填充的
+        // 闭合图形也必须按完整轮廓参与联合 / 相交 / 相减，否则菱形与五角星这类
+        // 图形联合后会只剩描线带，内部被错误地留空。
+        if (auto* text = dynamic_cast<TextItem*>(vectorMember)) {
+            memberPath = text->mapToScene(text->paintedShape());
+            textPart = memberPath;
+            participant.textColor = text->textColor();
+        } else if (auto* curve = dynamic_cast<CurveItem*>(vectorMember)) {
+            Q_UNUSED(curve)
+            memberPath = vectorMember->mapToScene(vectorMember->paintedShape());
+            strokePart = memberPath;
+        } else if (auto* shape = dynamic_cast<ShapeItem*>(vectorMember);
+                   shape && shapeTypeIsStrokeOnly(shape->shapeType())) {
+            memberPath = shape->mapToScene(shape->paintedShape());
+            strokePart = memberPath;
+        } else if (auto* shape = dynamic_cast<ShapeItem*>(vectorMember)) {
+            memberPath = shape->mapToScene(shape->outlineShape());
+            fillPart = memberPath;
+        } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(vectorMember)) {
+            for (const CompositeShapeItem::Layer& layer : composite->layers()) {
+                if (layer.path.isEmpty()) {
+                    continue;
+                }
+                const QPainterPath part = composite->mapToScene(composite->mapLayerPath(layer.path));
+                if (layer.role == CompositeShapeItem::LayerRole::FilledArea) {
+                    fillPart = fillPart.isEmpty() ? part : fillPart.united(part);
+                } else if (layer.role == CompositeShapeItem::LayerRole::StrokeBand) {
+                    strokePart = strokePart.isEmpty() ? part : strokePart.united(part);
+                } else if (layer.role == CompositeShapeItem::LayerRole::Text) {
+                    textPart = textPart.isEmpty() ? part : textPart.united(part);
+                    participant.textColor = layer.fill;
+                }
+            }
+            memberPath = fillPart;
+            memberPath = memberPath.isEmpty() ? strokePart : memberPath.united(strokePart);
+            memberPath = memberPath.isEmpty() ? textPart : memberPath.united(textPart);
+        } else {
+            memberPath = vectorMember->mapToScene(vectorMember->paintedShape());
+            fillPart = memberPath;
+        }
+
         if (memberPath.isEmpty()) {
             continue;
         }
@@ -85,21 +130,15 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
         // 按绘制方式分组：有面积图形走填充+外轮廓描线；直线 / 曲线走零面积
         // 描线带，不能再叠一层描线，否则线宽会变成“原线宽 + donor 线宽”；
         // 文字只填字形，不描边，避免 donor 描线色在字形外形成重影。
-        if (auto* text = dynamic_cast<TextItem*>(vectorMember)) {
-            participant.textPath =
-                participant.textPath.isEmpty() ? memberPath : participant.textPath.united(memberPath);
-            participant.textColor = text->textColor();
-        } else if (auto* curve = dynamic_cast<CurveItem*>(vectorMember)) {
-            Q_UNUSED(curve)
+        if (!fillPart.isEmpty()) {
+            participant.fillPath = participant.fillPath.isEmpty() ? fillPart : participant.fillPath.united(fillPart);
+        }
+        if (!strokePart.isEmpty()) {
             participant.strokePath =
-                participant.strokePath.isEmpty() ? memberPath : participant.strokePath.united(memberPath);
-        } else if (auto* shape = dynamic_cast<ShapeItem*>(vectorMember);
-                   shape && shapeTypeIsStrokeOnly(shape->shapeType())) {
-            participant.strokePath =
-                participant.strokePath.isEmpty() ? memberPath : participant.strokePath.united(memberPath);
-        } else {
-            participant.fillPath =
-                participant.fillPath.isEmpty() ? memberPath : participant.fillPath.united(memberPath);
+                participant.strokePath.isEmpty() ? strokePart : participant.strokePath.united(strokePart);
+        }
+        if (!textPart.isEmpty()) {
+            participant.textPath = participant.textPath.isEmpty() ? textPart : participant.textPath.united(textPart);
         }
     }
     if (participant.path.isEmpty()) {

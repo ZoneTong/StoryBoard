@@ -449,6 +449,203 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                   QStringLiteral("pixel=%1").arg(upperEdge.name()));
     }
     {
+        // 菱形与五角星都是凹多边形：联合必须按完整轮廓取并集，不能只取可见的
+        // 描线带；同时覆盖无填充 / 有填充组合和五种布尔方式。
+        struct PairResult {
+            bool ok = false;
+            QImage image;
+            QPainterPath path;
+            QPointF overlapPoint;
+            int items = 0;
+            int layers = 0;
+            FillStyle fillStyle = FillStyle::None;
+            qreal strokeWidth = 0.0;
+        };
+        const QPointF diamondCenter(150.0, 160.0);
+        const QPointF starCenter(270.0, 150.0);
+        const QColor diamondFill(30, 160, 90);
+        const QColor starFill(40, 90, 200);
+
+        auto interiorPoint = [](const QPainterPath& path) {
+            const QRectF bounds = path.boundingRect();
+            if (bounds.isEmpty()) {
+                return bounds.center();
+            }
+            for (int y = 1; y < 20; ++y) {
+                for (int x = 1; x < 20; ++x) {
+                    const QPointF point(bounds.left() + bounds.width() * x / 20.0,
+                                        bounds.top() + bounds.height() * y / 20.0);
+                    if (path.contains(point)) {
+                        return point;
+                    }
+                }
+            }
+            return bounds.center();
+        };
+
+        auto runPair = [&](BoolOps::Operation operation, bool diamondFilled, bool starFilled) {
+            PairResult result;
+            QUndoStack undo;
+            CanvasScene scene;
+            scene.setUndoStack(&undo);
+            scene.setMode(ToolMode::Edit);
+            scene.applyCanvasSize(QSizeF(420.0, 320.0));
+            scene.setShowGrid(false);
+            BackgroundState background;
+            background.type = BackgroundType::Color;
+            background.color = QColor(Qt::white);
+            scene.applyBackground(background);
+
+            auto makeShape = [&scene](ShapeType type, QPointF pos, const QColor& fill, bool filled) {
+                auto* shape = new ShapeItem(type);
+                shape->setPos(pos);
+                shape->setContentSize(QSizeF(180.0, 180.0));
+                shape->setStyle(QColor(20, 20, 20), filled ? fill : QColor(Qt::transparent), 8.0);
+                shape->setFill(filled ? fill : QColor(Qt::transparent), filled ? FillStyle::Solid : FillStyle::None);
+                scene.addItemsWithUndo({shape}, QStringLiteral("Add pair shape"));
+                return shape;
+            };
+            auto* lower = makeShape(ShapeType::Diamond, QPointF(60.0, 70.0), diamondFill, diamondFilled);
+            auto* upper = makeShape(ShapeType::Star, QPointF(180.0, 60.0), starFill, starFilled);
+            const QPainterPath lowerOutline = lower->mapToScene(lower->outlineShape());
+            const QPainterPath upperOutline = upper->mapToScene(upper->outlineShape());
+            result.overlapPoint = interiorPoint(lowerOutline.intersected(upperOutline));
+            lower->setSelected(true);
+            upper->setSelected(true);
+            result.ok = BoolOps::apply(&scene, operation, QStringLiteral("Pair operation"));
+            result.image = scene.renderImage(QRectF(0.0, 0.0, 420.0, 320.0), 1.0);
+
+            const QList<CanvasItem*> selected = scene.selectedCanvasItems();
+            result.items = selected.size();
+            for (CanvasItem* item : selected) {
+                if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+                    const QPainterPath outline = composite->mapToScene(composite->outlineShape());
+                    result.path = result.path.isEmpty() ? outline : result.path.united(outline);
+                    result.layers += composite->layerCount();
+                    result.fillStyle = composite->fillStyle();
+                    result.strokeWidth = composite->strokeWidth();
+                }
+            }
+            return result;
+        };
+
+        const PairResult unionBoth = runPair(BoolOps::Operation::Union, true, true);
+        ctx.check(unionBoth.ok && unionBoth.path.contains(diamondCenter) && unionBoth.path.contains(starCenter) &&
+                      unionBoth.image.pixelColor(diamondCenter.toPoint()) == starFill &&
+                      unionBoth.image.pixelColor(starCenter.toPoint()) == starFill,
+                  QStringLiteral("菱形与五角星联合保留完整轮廓并统一顶层填充"),
+                  QStringLiteral("ok=%1 diamond=%2 star=%3")
+                      .arg(unionBoth.ok ? 1 : 0)
+                      .arg(unionBoth.path.contains(diamondCenter) ? 1 : 0)
+                      .arg(unionBoth.path.contains(starCenter) ? 1 : 0));
+
+        const PairResult hollowDiamondUnion = runPair(BoolOps::Operation::Union, false, true);
+        ctx.check(hollowDiamondUnion.ok && hollowDiamondUnion.path.contains(diamondCenter) &&
+                      hollowDiamondUnion.image.pixelColor(diamondCenter.toPoint()) == starFill,
+                  QStringLiteral("无填充菱形与填充五角星联合仍按完整轮廓取并集"),
+                  QStringLiteral("ok=%1 contains=%2 pixel=%3")
+                      .arg(hollowDiamondUnion.ok ? 1 : 0)
+                      .arg(hollowDiamondUnion.path.contains(diamondCenter) ? 1 : 0)
+                      .arg(hollowDiamondUnion.image.pixelColor(diamondCenter.toPoint()).name()));
+
+        const PairResult hollowUnion = runPair(BoolOps::Operation::Union, false, false);
+        ctx.check(hollowUnion.ok && hollowUnion.path.contains(diamondCenter) && hollowUnion.path.contains(starCenter) &&
+                      hollowUnion.layers == 1 && hollowUnion.fillStyle == FillStyle::None &&
+                      hollowUnion.strokeWidth > 0.0,
+                  QStringLiteral("两个无填充图形联合得到单层闭合轮廓，不保留内部交界"),
+                  QStringLiteral("ok=%1 layers=%2 contains=%3,%4")
+                      .arg(hollowUnion.ok ? 1 : 0)
+                      .arg(hollowUnion.layers)
+                      .arg(hollowUnion.path.contains(diamondCenter) ? 1 : 0)
+                      .arg(hollowUnion.path.contains(starCenter) ? 1 : 0));
+
+        const PairResult combine = runPair(BoolOps::Operation::Combine, true, true);
+        ctx.check(combine.ok && combine.path.contains(diamondCenter) && combine.path.contains(starCenter) &&
+                      !combine.path.contains(combine.overlapPoint),
+                  QStringLiteral("菱形与五角星组合后重叠区被挖空"),
+                  QStringLiteral("ok=%1 overlap=%2")
+                      .arg(combine.ok ? 1 : 0)
+                      .arg(combine.path.contains(combine.overlapPoint) ? 1 : 0));
+
+        const PairResult intersect = runPair(BoolOps::Operation::Intersect, true, true);
+        ctx.check(intersect.ok && intersect.path.contains(intersect.overlapPoint) &&
+                      !intersect.path.contains(diamondCenter) && !intersect.path.contains(starCenter),
+                  QStringLiteral("菱形与五角星相交只保留重叠区"),
+                  QStringLiteral("ok=%1 overlap=%2 diamond=%3 star=%4")
+                      .arg(intersect.ok ? 1 : 0)
+                      .arg(intersect.path.contains(intersect.overlapPoint) ? 1 : 0)
+                      .arg(intersect.path.contains(diamondCenter) ? 1 : 0)
+                      .arg(intersect.path.contains(starCenter) ? 1 : 0));
+
+        const PairResult subtract = runPair(BoolOps::Operation::Subtract, true, true);
+        ctx.check(subtract.ok && subtract.path.contains(starCenter) && !subtract.path.contains(subtract.overlapPoint),
+                  QStringLiteral("菱形与五角星相减按顶层保留五角星并挖掉重叠区"),
+                  QStringLiteral("ok=%1 star=%2 overlap=%3")
+                      .arg(subtract.ok ? 1 : 0)
+                      .arg(subtract.path.contains(starCenter) ? 1 : 0)
+                      .arg(subtract.path.contains(subtract.overlapPoint) ? 1 : 0));
+
+        const PairResult fragment = runPair(BoolOps::Operation::Fragment, true, true);
+        ctx.check(fragment.ok && fragment.items == 3 && fragment.layers == 3 && fragment.path.contains(diamondCenter) &&
+                      fragment.path.contains(starCenter),
+                  QStringLiteral("菱形与五角星拆分得到三块可分别选中的多边形"),
+                  QStringLiteral("ok=%1 items=%2 layers=%3")
+                      .arg(fragment.ok ? 1 : 0)
+                      .arg(fragment.items)
+                      .arg(fragment.layers));
+    }
+    {
+        // 已生成的多边形再次参与联合：按层分解成填充轮廓后整块作为参与者，
+        // 不能因为它是复合图层就把填充区域丢掉。
+        QUndoStack compositeUndo;
+        CanvasScene compositeScene;
+        compositeScene.setUndoStack(&compositeUndo);
+        compositeScene.setMode(ToolMode::Edit);
+        compositeScene.applyCanvasSize(QSizeF(460.0, 320.0));
+        compositeScene.setShowGrid(false);
+        BackgroundState compositeBackground;
+        compositeBackground.type = BackgroundType::Color;
+        compositeBackground.color = QColor(Qt::white);
+        compositeScene.applyBackground(compositeBackground);
+
+        auto makeShape = [&compositeScene](ShapeType type, QPointF pos, QColor fill) {
+            auto* shape = new ShapeItem(type);
+            shape->setPos(pos);
+            shape->setContentSize(QSizeF(140.0, 140.0));
+            shape->setStyle(fill, fill, 4.0);
+            shape->setFill(fill, FillStyle::Solid);
+            compositeScene.addItemsWithUndo({shape}, QStringLiteral("Add composite source"));
+            return shape;
+        };
+        auto* rectangle = makeShape(ShapeType::Rectangle, QPointF(40.0, 60.0), QColor(30, 160, 90));
+        auto* diamond = makeShape(ShapeType::Diamond, QPointF(100.0, 100.0), QColor(230, 140, 40));
+        rectangle->setSelected(true);
+        diamond->setSelected(true);
+        const bool firstUnion =
+            BoolOps::apply(&compositeScene, BoolOps::Operation::Union, QStringLiteral("First union"));
+        const QList<CanvasItem*> firstSelection = compositeScene.selectedCanvasItems();
+        auto* polygon =
+            firstSelection.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(firstSelection.constFirst());
+        auto* star = makeShape(ShapeType::Star, QPointF(260.0, 90.0), QColor(40, 90, 200));
+        if (polygon) {
+            polygon->setSelected(true);
+        }
+        star->setSelected(true);
+        const bool secondUnion =
+            BoolOps::apply(&compositeScene, BoolOps::Operation::Union, QStringLiteral("Second union"));
+        const QList<CanvasItem*> secondSelection = compositeScene.selectedCanvasItems();
+        auto* result = secondSelection.isEmpty() ? nullptr : secondSelection.constFirst();
+        const QPainterPath resultPath = result ? result->mapToScene(result->outlineShape()) : QPainterPath();
+        ctx.check(firstUnion && polygon && secondUnion && result && resultPath.contains(QPointF(80.0, 100.0)) &&
+                      resultPath.contains(QPointF(330.0, 160.0)),
+                  QStringLiteral("已生成的多边形再次参与联合仍保留原填充区域"),
+                  QStringLiteral("first=%1 polygon=%2 second=%3 result=%4")
+                      .arg(firstUnion ? 1 : 0)
+                      .arg(polygon ? 1 : 0)
+                      .arg(secondUnion ? 1 : 0)
+                      .arg(result ? 1 : 0));
+    }
+    {
         // 重叠区的取色优先级：高层填充透明时落到次优先级；交界轮廓被填充色同化。
         QUndoStack fallbackUndo;
         CanvasScene fallbackScene;

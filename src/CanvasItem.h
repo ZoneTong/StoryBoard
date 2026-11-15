@@ -69,6 +69,9 @@ class CanvasItem : public QGraphicsObject {
     // 图元真正涂满画布、能够遮挡下方图元的区域：无填充图形只算描边，
     // 描边类图元只算笔迹本身。既用于判断自己被遮住多少，也用于遮挡别人。
     virtual QPainterPath paintedShape() const;
+    // 绘制时从下层图元可见区域中减去的形状。默认与 paintedShape() 相同；
+    // 文字只画字形，不能按字形裁剪下层，否则低缩放时字边会露出背景形成重影。
+    virtual QPainterPath clippingShape() const;
 
     bool isEditable() const;
     bool isExporting() const;

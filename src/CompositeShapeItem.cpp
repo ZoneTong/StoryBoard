@@ -150,6 +150,11 @@ QTransform CompositeShapeItem::layerTransform() const
     return transform;
 }
 
+QPainterPath CompositeShapeItem::mapLayerPath(const QPainterPath& localPath) const
+{
+    return layerTransform().map(localPath);
+}
+
 QPainterPath CompositeShapeItem::paintedShape() const
 {
     QPainterPath shape;

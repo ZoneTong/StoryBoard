@@ -160,6 +160,11 @@ QPainterPath CanvasItem::paintedShape() const
     return outlineShape();
 }
 
+QPainterPath CanvasItem::clippingShape() const
+{
+    return paintedShape();
+}
+
 QPainterPath CanvasItem::selectionHandleShape() const
 {
     return m_handles->selectionShape();

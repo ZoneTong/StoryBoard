@@ -105,7 +105,7 @@ void CanvasScene::drawItems(QPainter* painter, int numItems, QGraphicsItem* item
         if (!regionReady.at(position)) {
             if (auto* canvasItem = qgraphicsitem_cast<CanvasItem*>(items[order.at(position)])) {
                 regions[position] =
-                    ObscurationAnalyzer::filledRegion(canvasItem->sceneTransform().map(canvasItem->paintedShape()));
+                    ObscurationAnalyzer::filledRegion(canvasItem->sceneTransform().map(canvasItem->clippingShape()));
             } else {
                 regions[position] = QRegion(bounds.at(position).toAlignedRect());
             }

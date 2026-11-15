@@ -2,12 +2,14 @@
 #include "CanvasTypes.h"
 #include "CanvasView.h"
 #include "ShapeItem.h"
+#include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
 #include "selftest/SelftestHelpers.h"
 
 #include <QApplication>
 #include <QColor>
+#include <QFont>
 #include <QImage>
 #include <QJsonObject>
 #include <QPainter>
@@ -60,6 +62,53 @@ void selftest::runCanvasOcclusionBoundaryTests(Context& ctx)
                   .arg(lowerOnlyPixel.red())
                   .arg(lowerOnlyPixel.green())
                   .arg(lowerOnlyPixel.blue()));
+
+    // 文字只画字形，不能把下层填充按字形挖空：低缩放或亚像素偏移时，
+    // 挖空区域会从黑字边缘露出白色背景，形成错位白色文字重影。
+    {
+        CanvasScene textScene;
+        textScene.applyCanvasSize(QSizeF(300, 240));
+        textScene.setShowGrid(false);
+        BackgroundState textBackground;
+        textBackground.type = BackgroundType::Color;
+        textBackground.color = QColor(Qt::white);
+        textScene.applyBackground(textBackground);
+
+        auto* rectangle = new ShapeItem(ShapeType::Rectangle);
+        rectangle->setPos(QPointF(30, 30));
+        rectangle->setContentSize(QSizeF(200, 150));
+        rectangle->setStyle(QColor(QStringLiteral("#1E293B")), QColor(QStringLiteral("#1E293B")), 2.0);
+        rectangle->setFill(QColor(QStringLiteral("#FFF59D")), FillStyle::Solid);
+        textScene.attachItem(rectangle);
+
+        auto* text = new TextItem;
+        text->setTextFormat(QStringLiteral("文字"), QFont(QStringLiteral("Microsoft YaHei"), 24), QColor(Qt::black));
+        text->setPos(QPointF(100, 100));
+        textScene.attachItem(text);
+
+        QImage textImage(300, 240, QImage::Format_ARGB32_Premultiplied);
+        textImage.fill(Qt::white);
+        QPainter textPainter(&textImage);
+        textScene.render(&textPainter, QRectF(0, 0, 300, 240), QRectF(0, 0, 300, 240));
+        textPainter.end();
+
+        int whiteHoles = 0;
+        int yellowFill = 0;
+        for (int y = 50; y < 160; ++y) {
+            for (int x = 50; x < 210; ++x) {
+                const QColor pixel = textImage.pixelColor(x, y);
+                if (pixel.red() > 245 && pixel.green() > 245 && pixel.blue() > 245) {
+                    ++whiteHoles;
+                }
+                if (pixel.red() > 230 && pixel.green() > 220 && pixel.blue() < 190) {
+                    ++yellowFill;
+                }
+            }
+        }
+        ctx.check(whiteHoles == 0 && yellowFill > 1000,
+                  QStringLiteral("文字覆盖在有填充矩形上时不在字形后留下白色孔洞"),
+                  QStringLiteral("white=%1 yellow=%2").arg(whiteHoles).arg(yellowFill));
+    }
 
     // 真实视图路径（QGraphicsView::paintEvent）也必须完全不透：默认视图走
     // QGraphicsScenePrivate::drawItems，绕过 CanvasScene::drawItems；只有打开

@@ -11,6 +11,7 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QClipboard>
 #include <QLabel>
 #include <QMimeData>
 #include <QToolButton>

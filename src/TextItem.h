@@ -35,6 +35,7 @@ class TextItem : public CanvasItem {
     void fromJson(const QJsonObject& json) override;
     QPainterPath outlineShape() const override;
     QPainterPath paintedShape() const override;
+    QPainterPath clippingShape() const override;
 
     void setTextFormat(const QString& text, const QFont& font, const QColor& color);
     QString text() const { return m_text; }
