@@ -4,12 +4,12 @@
 #include "CanvasScene.h"
 #include "CanvasView.h"
 #include "Commands.h"
+#include "CurveItem.h"
 #include "IconFactory.h"
 #include "ItemStyleVisuals.h"
 #include "MainWindow.h"
 #include "Settings.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 
 #include <QColorDialog>
 #include <QPainter>
@@ -323,9 +323,9 @@ void StyleController::setBrushWidthUi(int width)
     }
 }
 
-void StyleController::setStrokeSmoothingUi(int tolerance)
+void StyleController::setStrokeSmoothingUi(qreal tolerance)
 {
-    tolerance = qBound(0, tolerance, 30);
+    tolerance = qBound<qreal>(0.0, tolerance, 20.0);
     m_window->m_settings.strokeSmoothing = tolerance;
     if (m_window->m_view) {
         m_window->m_view->setStrokeSmoothing(tolerance);

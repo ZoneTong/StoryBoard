@@ -3,6 +3,7 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
+#include "CurveItem.h"
 #include "ImageItem.h"
 #include "ItemDockPanelArrangeCard.h"
 #include "ItemDockPanelColorsCard.h"
@@ -11,7 +12,6 @@
 #include "ItemDockPanelSelectionCard.h"
 #include "ItemDockPanelValueCard.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 #include "TextItem.h"
 
 #include <QFileDialog>
@@ -233,9 +233,9 @@ int ItemDockPanel::preferredWidth() const
         scanRows(m_selectionCard->layout());
     }
 
-    // 两侧外边距 + 垂直滚动条；宽度贴合内容，上限仍是 360px。
+    // 两侧外边距 + 垂直滚动条；宽度贴合内容，上限 320px 避免右侧留白过多。
     const int chrome = 12 + style()->pixelMetric(QStyle::PM_ScrollBarExtent) + 2;
-    return qBound(260, widestRow + chrome, 360);
+    return qBound(260, widestRow + chrome, 320);
 }
 
 void ItemDockPanel::refresh()
@@ -266,8 +266,10 @@ void ItemDockPanel::refresh()
     m_valueCard->setCornerVisible(hasCorner);
     m_valueCard->setArcRadiusVisible(hasArc);
 
+    // 没有选中图元时隐藏全部图元编辑项，停靠卡片本身保持常驻。
+    const bool hasSelection = !items.isEmpty();
     // 选中的图元都不支持填充（直线 / 弧线 / 大括号 / 文字 / 图片 / 合并图形）时，
-    // 填充样式与填充颜色两行没有可作用的对象，直接隐藏；无选中时保持原有布局。
+    // 填充样式与填充颜色两行没有可作用的对象，直接隐藏。
     bool anyFillable = false;
     for (ShapeItem* shape : shapes) {
         if (shapeTypeIsFilled(shape->shapeType())) {
@@ -275,17 +277,22 @@ void ItemDockPanel::refresh()
             break;
         }
     }
-    const bool showFillRows = items.isEmpty() || anyFillable;
+    const bool showFillRows = hasSelection && anyFillable;
     m_fillBorderCard->fillStyleRow()->setVisible(showFillRows);
     m_colorsCard->fillColorRow()->setVisible(showFillRows);
 
     // 描线样式只对图形有意义；描线颜色 / 宽度对图形与笔画都有效。
-    const bool showBorderStyleRow = items.isEmpty() || !shapes.isEmpty();
-    const bool showStrokeRows = items.isEmpty() || !shapes.isEmpty() || !strokes.isEmpty();
+    const bool showBorderStyleRow = hasSelection && !shapes.isEmpty();
+    const bool showStrokeRows = hasSelection && (!shapes.isEmpty() || !strokes.isEmpty());
     m_fillBorderCard->borderStyleRow()->setVisible(showBorderStyleRow);
     m_colorsCard->borderColorRow()->setVisible(showStrokeRows);
     m_fillBorderCard->borderWidthRow()->setVisible(showStrokeRows);
 
+    m_contentCard->setVisible(hasSelection);
+    m_colorsCard->setVisible(hasSelection);
+    m_fillBorderCard->setVisible(hasSelection);
+    m_valueCard->setVisible(hasSelection);
+    m_arrangeCard->setVisible(hasSelection);
     m_contentCard->refresh(texts, images);
     m_colorsCard->refresh(shapes, strokes);
     m_fillBorderCard->refresh(shapes, strokes);

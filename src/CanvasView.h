@@ -39,8 +39,8 @@ class CanvasView : public QGraphicsView {
     QColor brushColor() const { return m_stroke->brushColor(); }
     qreal brushWidth() const { return m_stroke->brushWidth(); }
     // 画笔收尾自动平滑容差，单位为画布像素；0 表示关闭自动平滑。
-    void setStrokeSmoothing(int tolerance);
-    int strokeSmoothing() const { return m_stroke->strokeSmoothing(); }
+    void setStrokeSmoothing(qreal tolerance);
+    qreal strokeSmoothing() const { return m_stroke->strokeSmoothing(); }
 
     void setCanvasColor(const QColor& color);
     void cancelCurrentStroke();

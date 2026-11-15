@@ -5,6 +5,7 @@
 #include "CanvasView.h"
 #include "Commands.h"
 #include "CompositeShapeItem.h"
+#include "CurveItem.h"
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
@@ -19,7 +20,6 @@
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 #include "StyleController.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
@@ -154,8 +154,66 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                       .arg(exportButton && exportButton->isVisible() ? 1 : 0)
                       .arg(exportButton ? exportButton->width() : 0)
                       .arg(exportAction && !exportAction->icon().isNull() ? 1 : 0));
-        ctx.check(!alignButton && !morphButton, QStringLiteral("工具栏不再显示对齐和化形按钮"),
+        ctx.check(!alignButton && !morphButton, QStringLiteral("工具栏不再显示对齐和合并图元按钮"),
                   QStringLiteral("align=%1 morph=%2").arg(alignButton ? 1 : 0).arg(morphButton ? 1 : 0));
+
+        QToolButton* toolbarSmoothButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("SmoothStrokeButton"));
+        ctx.check(!toolbarSmoothButton, QStringLiteral("工具栏不保留平滑按钮"),
+                  QStringLiteral("button=%1").arg(toolbarSmoothButton ? 1 : 0));
+        auto* toleranceSpin = shapeWindow.findChild<QDoubleSpinBox*>(QStringLiteral("BrushSmoothingSpin"));
+        CanvasView* toleranceView = shapeWindow.findChild<CanvasView*>();
+        ctx.check(toleranceSpin && toleranceSpin->minimum() == 0.0 && toleranceSpin->maximum() == 20.0 &&
+                      qAbs(toleranceSpin->singleStep() - 0.1) < 0.001 && toleranceSpin->decimals() == 1 &&
+                      toleranceView && qAbs(toleranceSpin->value() - toleranceView->strokeSmoothing()) < 0.001 &&
+                      toleranceSpin->toolTip().contains(QStringLiteral("画笔")),
+                  QStringLiteral("工具栏拟合容差为 0–20、0.1 步进、与画布同步且提示含画笔"),
+                  QStringLiteral("spin=%1 range=%2-%3 step=%4 value=%5 tip=%6")
+                      .arg(toleranceSpin ? 1 : 0)
+                      .arg(toleranceSpin ? toleranceSpin->minimum() : 0.0)
+                      .arg(toleranceSpin ? toleranceSpin->maximum() : 0.0)
+                      .arg(toleranceSpin ? toleranceSpin->singleStep() : 0.0)
+                      .arg(toleranceSpin ? toleranceSpin->value() : 0.0)
+                      .arg(toleranceSpin ? toleranceSpin->toolTip() : QString()));
+
+        QToolButton* fillColorButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("FillColorButton"));
+        QToolButton* fillStyleButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("FillButton"));
+        QToolButton* strokeColorButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("StrokeColorButton"));
+        QSpinBox* toolbarStrokeWidthSpin = shapeWindow.findChild<QSpinBox*>(QStringLiteral("StrokeWidthSpin"));
+        QToolBar* mainBar = shapeWindow.findChild<QToolBar*>(QStringLiteral("MainToolBar"));
+        auto toolbarActionIndex = [mainBar](QWidget* widget) {
+            if (!mainBar || !widget) {
+                return -1;
+            }
+            const QList<QAction*> barActions = mainBar->actions();
+            for (int i = 0; i < barActions.size(); ++i) {
+                QWidget* actionWidget = mainBar->widgetForAction(barActions.at(i));
+                if (auto* widgetAction = qobject_cast<QWidgetAction*>(barActions.at(i))) {
+                    if (widgetAction->defaultWidget()) {
+                        actionWidget = widgetAction->defaultWidget();
+                    }
+                }
+                if (actionWidget == widget) {
+                    return i;
+                }
+            }
+            return -1;
+        };
+        const int toolbarFillColorIndex = toolbarActionIndex(fillColorButton);
+        const int toolbarFillStyleIndex = toolbarActionIndex(fillStyleButton);
+        const int toolbarStrokeColorIndex = toolbarActionIndex(strokeColorButton);
+        const int toolbarStrokeWidthIndex = toolbarActionIndex(toolbarStrokeWidthSpin);
+        const int toolbarToleranceIndex = toolbarActionIndex(toleranceSpin);
+        ctx.check(toolbarFillColorIndex >= 0 && toolbarFillStyleIndex > toolbarFillColorIndex &&
+                      toolbarStrokeColorIndex > toolbarFillStyleIndex &&
+                      toolbarStrokeWidthIndex > toolbarStrokeColorIndex &&
+                      toolbarToleranceIndex > toolbarStrokeWidthIndex,
+                  QStringLiteral("工具栏顺序为填充颜色、填充样式、描线颜色、描线宽度、拟合容差"),
+                  QStringLiteral("index=%1,%2,%3,%4,%5")
+                      .arg(toolbarFillColorIndex)
+                      .arg(toolbarFillStyleIndex)
+                      .arg(toolbarStrokeColorIndex)
+                      .arg(toolbarStrokeWidthIndex)
+                      .arg(toolbarToleranceIndex));
 
         QToolButton* customShapeButton =
             shapeWindow.findChild<QToolButton*>(QStringLiteral("ToolBarCustomShapeButton"));
@@ -248,32 +306,32 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                       fillActionTexts.contains(QStringLiteral("六边形填充")),
                   QStringLiteral("填充菜单只保留填充样式"), fillActionTexts.join(QStringLiteral("|")));
 
-        QSpinBox* toolbarSmoothing = shapeWindow.findChild<QSpinBox*>(QStringLiteral("BrushSmoothingSpin"));
+        QDoubleSpinBox* toolbarSmoothing = shapeWindow.findChild<QDoubleSpinBox*>(QStringLiteral("BrushSmoothingSpin"));
         CanvasView* canvasView = shapeWindow.findChild<CanvasView*>();
-        ctx.check(toolbarSmoothing && canvasView && toolbarSmoothing->minimum() == 0 &&
-                      toolbarSmoothing->maximum() == 30 && toolbarSmoothing->value() == canvasView->strokeSmoothing(),
-                  QStringLiteral("画笔工具栏提供可调容差"),
+        ctx.check(toolbarSmoothing && canvasView && toolbarSmoothing->minimum() == 0.0 &&
+                      toolbarSmoothing->maximum() == 20.0 && qAbs(toolbarSmoothing->singleStep() - 0.1) < 0.001 &&
+                      toolbarSmoothing->value() == canvasView->strokeSmoothing(),
+                  QStringLiteral("画笔工具栏提供 0–20、0.1 步进的可调容差"),
                   QStringLiteral("value=%1 view=%2")
                       .arg(toolbarSmoothing ? toolbarSmoothing->value() : -1)
                       .arg(canvasView ? canvasView->strokeSmoothing() : -1));
         if (toolbarSmoothing) {
-            toolbarSmoothing->setValue(0);
+            toolbarSmoothing->setValue(0.0);
             ctx.check(canvasView && canvasView->strokeSmoothing() == 0, QStringLiteral("工具栏容差即时生效"),
                       QStringLiteral("view=%1").arg(canvasView ? canvasView->strokeSmoothing() : -1));
-            toolbarSmoothing->setValue(4);
+            toolbarSmoothing->setValue(2.0);
         }
         QToolButton* smoothButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("SmoothStrokeButton"));
-        ctx.check(smoothButton && smoothButton->defaultAction() &&
-                      smoothButton->defaultAction()->text() == QStringLiteral("平滑笔画"),
-                  QStringLiteral("画笔工具栏提供手动平滑按钮"));
+        ctx.check(!smoothButton, QStringLiteral("工具栏不提供手动平滑按钮"),
+                  QStringLiteral("button=%1").arg(smoothButton ? 1 : 0));
         QAction* smoothAction = nullptr;
         for (QAction* action : shapeWindow.findChildren<QAction*>()) {
-            if (action->text() == QStringLiteral("平滑笔画")) {
+            if (action->text() == QStringLiteral("简化曲线")) {
                 smoothAction = action;
             }
         }
         ctx.check(smoothAction && smoothAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+Shift+M")),
-                  QStringLiteral("编辑菜单提供手动平滑入口与快捷键"));
+                  QStringLiteral("菜单提供简化曲线入口与快捷键"));
         QToolButton* iconFillButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("FillButton"));
         QToolButton* iconFillColorButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("FillColorButton"));
         QToolButton* iconStrokeColorButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("StrokeColorButton"));
@@ -341,7 +399,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         const int widthMenuIndex = insertActionsForOrder.indexOf(widthWidgetAction);
         int smoothActionIndex = -1;
         for (int i = 0; i < insertActionsForOrder.size(); ++i) {
-            if (insertActionsForOrder.at(i) && insertActionsForOrder.at(i)->text() == QStringLiteral("平滑笔画")) {
+            if (insertActionsForOrder.at(i) && insertActionsForOrder.at(i)->text() == QStringLiteral("简化曲线")) {
                 smoothActionIndex = i;
                 break;
             }
@@ -355,7 +413,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         }
         ctx.check(!brushMenu && strokeColorIndex >= 0 && widthMenuIndex > strokeColorIndex &&
                       smoothActionIndex > widthMenuIndex && !repeatedBrushColor,
-                  QStringLiteral("描线宽度与平滑笔画移到插入菜单描线颜色之后"),
+                  QStringLiteral("描线宽度与简化曲线移到插入菜单描线颜色之后"),
                   QStringLiteral("brush=%1 stroke=%2 width=%3 smooth=%4 repeat=%5")
                       .arg(brushMenu ? 1 : 0)
                       .arg(strokeColorIndex)

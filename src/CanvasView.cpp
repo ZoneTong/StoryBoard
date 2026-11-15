@@ -128,7 +128,7 @@ void CanvasView::setBrushWidth(qreal width)
     m_stroke->setBrushWidth(width);
 }
 
-void CanvasView::setStrokeSmoothing(int tolerance)
+void CanvasView::setStrokeSmoothing(qreal tolerance)
 {
     m_stroke->setStrokeSmoothing(tolerance);
 }

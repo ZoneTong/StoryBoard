@@ -1753,40 +1753,40 @@ Use the checkbox to show or hide it.</source>
       <translation>… 共 %1 个画布</translation>
     </message>
     <message>
-      <source>Auto-smooth tolerance</source>
-      <translation>自动平滑容差</translation>
+      <source>Brush fit tolerance</source>
+      <translation>画笔拟合容差</translation>
     </message>
     <message>
-      <source>Tolerance</source>
-      <translation>容差</translation>
+      <source>Brush fit tolerance</source>
+      <translation>画笔拟合容差</translation>
     </message>
     <message>
-      <source>Auto-smoothing tolerance used when a stroke ends; 0 disables automatic smoothing</source>
-      <translation>笔画收尾时使用的自动平滑容差；0 表示关闭自动平滑。</translation>
+      <source>Brush fit tolerance in pixels (0–20, 0.1 px steps); 0 disables curve fitting</source>
+      <translation>画笔拟合容差（0–20，0.1 px 步进）；0 表示关闭曲线拟合。</translation>
     </message>
     <message>
-      <source>0 disables automatic smoothing; larger values tolerate more hand jitter and deviation.</source>
-      <translation>0 表示关闭自动平滑；数值越大，允许的手抖与偏差越大。</translation>
+      <source>Brush fit tolerance in pixels; 0 disables fitting, 0.1 px steps are supported.</source>
+      <translation>画笔拟合容差，单位 px；0 表示关闭拟合，支持 0.1 px 步进。</translation>
     </message>
     <message>
-      <source>Smooth strokes</source>
-      <translation>平滑笔画</translation>
+      <source>Simplify curve</source>
+      <translation>简化曲线</translation>
     </message>
     <message>
-      <source>Smooth strokes once using the current tolerance (Ctrl+Shift+M)</source>
-      <translation>按当前容差平滑笔画一次 (Ctrl+Shift+M)</translation>
+      <source>Simplify the selected curve once using the current brush tolerance (Ctrl+Shift+M)</source>
+      <translation>按当前画笔容差简化选中的曲线一次 (Ctrl+Shift+M)</translation>
     </message>
     <message>
-      <source>Smooth strokes once</source>
-      <translation>平滑笔画一次</translation>
+      <source>Simplify the selected curve</source>
+      <translation>简化曲线一次</translation>
     </message>
     <message>
-      <source>Smoothed %1 stroke(s)</source>
-      <translation>已平滑 %1 条笔画</translation>
+      <source>Simplified %1 curve(s)</source>
+      <translation>已简化 %1 条曲线</translation>
     </message>
     <message>
-      <source>No strokes need smoothing</source>
-      <translation>没有需要平滑的笔画</translation>
+      <source>No curves need simplifying</source>
+      <translation>没有需要简化的曲线</translation>
     </message>
     <message>
       <source>Image outline tracing</source>
@@ -2401,20 +2401,20 @@ Use the checkbox to show or hide it.</source>
       <translation>已解散 %1 个图元的分组</translation>
     </message>
     <message>
-      <source>Smooth strokes</source>
-      <translation>平滑笔画</translation>
+      <source>Simplify curve</source>
+      <translation>简化曲线</translation>
     </message>
     <message>
-      <source>Smooth strokes once using the current tolerance (Ctrl+Shift+M)</source>
-      <translation>按当前容差平滑笔画一次 (Ctrl+Shift+M)</translation>
+      <source>Simplify the selected curve once using the current brush tolerance (Ctrl+Shift+M)</source>
+      <translation>按当前画笔容差简化选中的曲线一次 (Ctrl+Shift+M)</translation>
     </message>
     <message>
-      <source>Smoothed %1 stroke(s)</source>
-      <translation>已平滑 %1 条笔画</translation>
+      <source>Simplified %1 curve(s)</source>
+      <translation>已简化 %1 条曲线</translation>
     </message>
     <message>
-      <source>No strokes need smoothing</source>
-      <translation>没有需要平滑的笔画</translation>
+      <source>No curves need simplifying</source>
+      <translation>没有需要简化的曲线</translation>
     </message>
     <message>
       <source>Select all items</source>
@@ -2729,16 +2729,16 @@ Use the checkbox to show or hide it.</source>
       <translation>描线宽度</translation>
     </message>
     <message>
-      <source>Smooth strokes once</source>
-      <translation>平滑笔画一次</translation>
+      <source>Simplify the selected curve</source>
+      <translation>简化曲线一次</translation>
     </message>
     <message>
-      <source>Tolerance</source>
-      <translation>容差</translation>
+      <source>Brush fit tolerance</source>
+      <translation>画笔拟合容差</translation>
     </message>
     <message>
-      <source>Auto-smoothing tolerance used when a stroke ends; 0 disables automatic smoothing</source>
-      <translation>笔画收尾时使用的自动平滑容差；0 表示关闭自动平滑。</translation>
+      <source>Brush fit tolerance in pixels (0–20, 0.1 px steps); 0 disables curve fitting</source>
+      <translation>画笔拟合容差（0–20，0.1 px 步进）；0 表示关闭曲线拟合。</translation>
     </message>
     <message>
       <source>Shape</source>
@@ -3621,16 +3621,16 @@ Use the checkbox to show or hide it.</source>
         <translation>合并形状</translation>
     </message>
     <message>
-        <source>Morph</source>
-        <translation>化形</translation>
+        <source>Merge items</source>
+        <translation>合并图元</translation>
     </message>
     <message>
-        <source>Morph the selected shapes</source>
-        <translation>化形选中的图形</translation>
+        <source>Merge the selected items</source>
+        <translation>合并选中的图元</translation>
     </message>
     <message>
-        <source>Morph is available in edit mode only</source>
-        <translation>化形只在编辑模式可用</translation>
+        <source>Merge items is available in edit mode only</source>
+        <translation>合并图元只在编辑模式可用</translation>
     </message>
 </context>
   <context>
@@ -3680,12 +3680,12 @@ Use the checkbox to show or hide it.</source>
       <translation>描线宽度</translation>
     </message>
     <message>
-      <source>0 disables automatic smoothing; larger values tolerate more hand jitter and deviation.</source>
-      <translation>0 表示关闭自动平滑；数值越大，允许的手抖与偏差越大。</translation>
+      <source>Brush fit tolerance in pixels; 0 disables fitting, 0.1 px steps are supported.</source>
+      <translation>画笔拟合容差，单位 px；0 表示关闭拟合，支持 0.1 px 步进。</translation>
     </message>
     <message>
-      <source>Auto-smooth tolerance</source>
-      <translation>自动平滑容差</translation>
+      <source>Brush fit tolerance</source>
+      <translation>画笔拟合容差</translation>
     </message>
     <message>
       <source>Canvas</source>
@@ -4509,8 +4509,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>复制图元</translation>
     </message>
     <message>
-      <source>Smooth strokes</source>
-      <translation>平滑笔画</translation>
+      <source>Simplify curve</source>
+      <translation>简化曲线</translation>
     </message>
     <message>
       <source>Group selected items</source>
@@ -4545,8 +4545,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>已复制 %1 个图元</translation>
     </message>
     <message>
-      <source>Smoothed %1 stroke(s)</source>
-      <translation>已平滑 %1 条笔画</translation>
+      <source>Simplified %1 curve(s)</source>
+      <translation>已简化 %1 条曲线</translation>
     </message>
     <message>
       <source>Grouped %1 item(s)</source>

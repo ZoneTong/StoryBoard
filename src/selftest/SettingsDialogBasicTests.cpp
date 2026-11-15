@@ -10,6 +10,7 @@
 
 #include <QColor>
 #include <QDialogButtonBox>
+#include <QDoubleSpinBox>
 #include <QPixmap>
 #include <QPointF>
 #include <QPushButton>
@@ -82,12 +83,14 @@ void selftest::runSettingsDialogBasicTests(Context& ctx)
         SettingsDialog dialog(defaults);
         dialog.setBrushColor(QColor(QStringLiteral("#FF8800")));
         dialog.setCanvasColor(QColor(QStringLiteral("#102A43")));
-        auto* smoothingSpin = dialog.findChild<QSpinBox*>(QStringLiteral("StrokeSmoothingSpin"));
-        ctx.check(smoothingSpin && smoothingSpin->value() == defaults.strokeSmoothing,
-                  QStringLiteral("设置对话框默认启用画笔自动平滑"),
-                  QString::number(smoothingSpin ? smoothingSpin->value() : -1));
+        auto* smoothingSpin = dialog.findChild<QDoubleSpinBox*>(QStringLiteral("StrokeSmoothingSpin"));
+        ctx.check(smoothingSpin && smoothingSpin->minimum() == 0.0 && smoothingSpin->maximum() == 20.0 &&
+                      qAbs(smoothingSpin->singleStep() - 0.1) < 0.001 && smoothingSpin->decimals() == 1 &&
+                      smoothingSpin->value() == defaults.strokeSmoothing,
+                  QStringLiteral("设置对话框默认启用 0.1 精度的画笔拟合容差"),
+                  smoothingSpin ? QString::number(smoothingSpin->value()) : QStringLiteral("-1"));
         if (smoothingSpin) {
-            smoothingSpin->setValue(0);
+            smoothingSpin->setValue(0.0);
         }
         // 走真实的“确定”按钮，验证 accepted 处理器把平滑参数写回设置。
         if (auto* buttons = dialog.findChild<QDialogButtonBox*>()) {

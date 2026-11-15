@@ -113,7 +113,7 @@ void MainWindowEditActionsController::applyAlignment(Alignment::Mode mode)
 void MainWindowEditActionsController::applyBoolOperation(BoolOps::Operation operation)
 {
     if (m_window->m_view->mode() != ToolMode::Edit) {
-        m_window->statusBar()->showMessage(MainWindow::tr("Morph is available in edit mode only"), 3000);
+        m_window->statusBar()->showMessage(MainWindow::tr("Merge items is available in edit mode only"), 3000);
         return;
     }
     QString commandText;

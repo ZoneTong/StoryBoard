@@ -195,7 +195,7 @@ void UiMenuBuilder::buildMenus()
 
     // 化形：与 PPT「合并形状」同一套子操作命名——联合 / 组合 / 拆分 / 相交 / 剪除；
     // 主入口用独立图标（形变图形），五项子操作继续用两圆交叠的运算图标。
-    QMenu* boolMenu = editMenu->addMenu(MainWindow::tr("Morph"));
+    QMenu* boolMenu = editMenu->addMenu(MainWindow::tr("Merge items"));
     boolMenu->setObjectName(QStringLiteral("BoolMenu"));
     boolMenu->setIcon(makeIcon(IconId::Morph, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
     const QList<QPair<BoolOps::Operation, QString>> boolEntries = {

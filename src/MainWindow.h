@@ -42,6 +42,7 @@ class MainWindowAppController;
 class QAction;
 class QActionGroup;
 class QDockWidget;
+class QDoubleSpinBox;
 class QLabel;
 class QMenu;
 class QSpinBox;
@@ -124,7 +125,7 @@ class MainWindow : public QMainWindow {
     void setBrushColor(const QColor& color, bool remember);
     void setBrushWidthUi(int width);
     void applyBrushWidth(int width);
-    void setStrokeSmoothingUi(int tolerance);
+    void setStrokeSmoothingUi(qreal tolerance);
     void updateCanvasesMenu();
     void updateBackgroundModeActions();
     void showSelectedItemProperties();
@@ -234,7 +235,7 @@ class MainWindow : public QMainWindow {
     QToolButton* m_strokeColorButton = nullptr;
     QSpinBox* m_widthSpin = nullptr;
     QSpinBox* m_menuWidthSpin = nullptr;
-    QSpinBox* m_smoothingSpin = nullptr;
+    QDoubleSpinBox* m_smoothingSpin = nullptr;
     QPointer<ItemPropertiesDialog> m_itemPropertiesDialog;
     std::unique_ptr<BackgroundController> m_background;
     std::unique_ptr<DockPanelController> m_docks;

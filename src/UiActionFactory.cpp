@@ -125,8 +125,8 @@ void UiActionFactory::build()
         }
     });
     m_window->m_smoothAct = makeAction(
-        m_window, IconId::Smooth, MainWindow::tr("Smooth strokes"), QKeySequence(QStringLiteral("Ctrl+Shift+M")),
-        MainWindow::tr("Smooth strokes once using the current tolerance (Ctrl+Shift+M)"));
+        m_window, IconId::Smooth, MainWindow::tr("Simplify curve"), QKeySequence(QStringLiteral("Ctrl+Shift+M")),
+        MainWindow::tr("Simplify the selected curve once using the current brush tolerance (Ctrl+Shift+M)"));
     m_window->m_smoothAct->setEnabled(false);
     QObject::connect(m_window->m_smoothAct, &QAction::triggered, m_window, [this]() {
         if (!m_window->m_scene || !m_window->m_view) {
@@ -134,9 +134,9 @@ void UiActionFactory::build()
         }
         const int smoothed = m_window->m_scene->smoothSelectedStrokes(m_window->m_settings.strokeSmoothing);
         if (smoothed > 0) {
-            m_window->statusBar()->showMessage(MainWindow::tr("Smoothed %1 stroke(s)").arg(smoothed), 3000);
+            m_window->statusBar()->showMessage(MainWindow::tr("Simplified %1 curve(s)").arg(smoothed), 3000);
         } else {
-            m_window->statusBar()->showMessage(MainWindow::tr("No strokes need smoothing"), 3000);
+            m_window->statusBar()->showMessage(MainWindow::tr("No curves need simplifying"), 3000);
         }
     });
     m_window->m_selectAllAct = new QAction(MainWindow::tr("Select all items"), m_window);

@@ -27,9 +27,9 @@ void CanvasStrokeController::setBrushWidth(qreal width)
     m_brushWidth = qBound<qreal>(0.5, width, 64.0);
 }
 
-void CanvasStrokeController::setStrokeSmoothing(int tolerance)
+void CanvasStrokeController::setStrokeSmoothing(qreal tolerance)
 {
-    m_strokeSmoothing = qBound(0, tolerance, 30);
+    m_strokeSmoothing = qBound<qreal>(0.0, tolerance, 20.0);
 }
 
 bool CanvasStrokeController::beginStroke(const QPoint& viewportPos)

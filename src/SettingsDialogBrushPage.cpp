@@ -4,6 +4,7 @@
 #include "SettingsDialog.h"
 
 #include <QColorDialog>
+#include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QPushButton>
@@ -43,15 +44,17 @@ SettingsDialogBrushPage::SettingsDialogBrushPage(const AppSettings& settings, QW
     m_brushWidthSpin->setFixedHeight(30);
     form->addRow(SettingsDialog::tr("Default width"), m_brushWidthSpin);
 
-    m_smoothingSpin = new QSpinBox(m_group);
+    m_smoothingSpin = new QDoubleSpinBox(m_group);
     m_smoothingSpin->setObjectName(QStringLiteral("StrokeSmoothingSpin"));
-    m_smoothingSpin->setRange(0, 30);
+    m_smoothingSpin->setRange(0.0, 20.0);
+    m_smoothingSpin->setSingleStep(0.1);
+    m_smoothingSpin->setDecimals(1);
     m_smoothingSpin->setSuffix(QStringLiteral(" px"));
     m_smoothingSpin->setValue(settings.strokeSmoothing);
     m_smoothingSpin->setFixedHeight(30);
     m_smoothingSpin->setToolTip(
-        SettingsDialog::tr("0 disables automatic smoothing; larger values tolerate more hand jitter and deviation."));
-    form->addRow(SettingsDialog::tr("Auto-smooth tolerance"), m_smoothingSpin);
+        SettingsDialog::tr("Brush fit tolerance in pixels; 0 disables fitting, 0.1 px steps are supported."));
+    form->addRow(SettingsDialog::tr("Brush fit tolerance"), m_smoothingSpin);
 }
 
 void SettingsDialogBrushPage::writeTo(AppSettings& settings) const

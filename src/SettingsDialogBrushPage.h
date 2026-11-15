@@ -7,6 +7,7 @@
 
 class QGroupBox;
 class QPushButton;
+class QDoubleSpinBox;
 class QSpinBox;
 
 // 设置窗的画笔默认值页：默认颜色、默认宽度与自动平滑容差；颜色按钮在页内
@@ -33,6 +34,6 @@ class SettingsDialogBrushPage : public QWidget {
     QGroupBox* m_group = nullptr;
     QPushButton* m_brushColorButton = nullptr;
     QSpinBox* m_brushWidthSpin = nullptr;
-    QSpinBox* m_smoothingSpin = nullptr;
+    QDoubleSpinBox* m_smoothingSpin = nullptr;
     QColor m_brushColor;
 };

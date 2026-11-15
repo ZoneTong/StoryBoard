@@ -5,6 +5,7 @@
 #include "CanvasView.h"
 #include "Commands.h"
 #include "CompositeShapeItem.h"
+#include "CurveItem.h"
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
@@ -19,7 +20,6 @@
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -35,6 +35,7 @@
 #include <QDialogButtonBox>
 #include <QDir>
 #include <QDockWidget>
+#include <QDoubleSpinBox>
 #include <QFile>
 #include <QFileInfo>
 #include <QFont>
@@ -334,6 +335,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
     // 工具卡与主窗口联动：选中出现 / 清空隐藏、透明度 / 边框 / 填充 / 高度即时生效并可撤销。
     {
         const QString dockConfig = QDir(ctx.workDirectory).filePath(QStringLiteral("dock-panel-config.ini"));
+        QFile::remove(dockConfig);
         qputenv("STORYBOARD_CONFIG", dockConfig.toLocal8Bit());
         const QString dockShapesDir = AppSettings::shapesDir();
         ShapeItem menuShape(ShapeType::Star);
@@ -374,8 +376,8 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
         // 宽度既要覆盖内容，也不能明显宽于内容，否则右侧会留下空白。
         const bool dockWidthFits =
             actualCardWidth >= preferredCardWidth - 2 && actualCardWidth <= preferredCardWidth + 2;
-        ctx.check(itemDock && dockPanel && preferredCardWidth >= 260 && preferredCardWidth <= 360 && dockWidthFits,
-                  QStringLiteral("编辑图元卡宽度贴合内容且不超出 360px"),
+        ctx.check(itemDock && dockPanel && preferredCardWidth >= 260 && preferredCardWidth <= 320 && dockWidthFits,
+                  QStringLiteral("编辑图元卡宽度贴合内容且不超出 320px"),
                   QStringLiteral("preferred=%1 actual=%2").arg(preferredCardWidth).arg(actualCardWidth));
         ctx.check(dockCustomMenu && customTexts.contains(QStringLiteral("dock-probe")),
                   QStringLiteral("自定义图形追加到常见图形下方的下拉菜单"), customTexts.join(QStringLiteral("|")));
@@ -829,7 +831,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                       QStringLiteral("选中文字时显示正文 / 字体 / 颜色行"));
             ctx.check(imageRow && !imageRow->isVisible(), QStringLiteral("选中文字时隐藏图片行"));
             ctx.check(propertiesButton && propertiesButton->isVisible(), QStringLiteral("选中文字时显示图元属性按钮"));
-            ctx.check(smoothButton && !smoothButton->isVisible(), QStringLiteral("选中文字时隐藏笔画平滑按钮"));
+            ctx.check(smoothButton && !smoothButton->isVisible(), QStringLiteral("选中文字时隐藏简化曲线按钮"));
 
             // 图元属性按钮不是摆设：点击后打开属性窗，测试中立即关闭。
             bool propertyDialogOpened = false;
@@ -949,7 +951,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                           !morphButtons.first()->isVisible() && groupButton && groupButton->isVisible(),
                       QStringLiteral("文字与图片混合选中隐藏化形入口，保留对齐 / 分组"));
 
-            // 只选笔画时显示笔画平滑按钮，点击后平滑结果进入撤销栈。
+            // 只选曲线时显示简化曲线按钮，点击后平滑结果进入撤销栈。
             auto* smoothStroke = new CurveItem();
             QVector<QPointF> jitterPoints;
             for (int i = 0; i <= 8; ++i) {
@@ -958,21 +960,27 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             smoothStroke->setStrokePoints(jitterPoints, QColor(QStringLiteral("#334155")), 5.0);
             dockScene->addItemsWithUndo({smoothStroke}, QStringLiteral("Add smooth stroke"));
             dockScene->clearSelection();
+            QApplication::processEvents();
+            QWidget* fillStyleRowWhenEmpty = itemDock->findChild<QWidget*>(QStringLiteral("ItemFillStyleRow"));
+            QWidget* borderWidthRowWhenEmpty = itemDock->findChild<QWidget*>(QStringLiteral("ItemBorderWidthRow"));
+            ctx.check(fillStyleRowWhenEmpty && fillStyleRowWhenEmpty->isHidden() && borderWidthRowWhenEmpty &&
+                          borderWidthRowWhenEmpty->isHidden(),
+                      QStringLiteral("无图元选中时隐藏图元编辑选项"));
             smoothStroke->setSelected(true);
             QApplication::processEvents();
             auto* smoothingSpin = itemDock->window()->findChild<QSpinBox*>(QStringLiteral("BrushSmoothingSpin"));
             if (smoothingSpin) {
-                smoothingSpin->setValue(10);
+                smoothingSpin->setValue(10.0);
                 QApplication::processEvents();
             }
-            ctx.check(smoothButton && smoothButton->isVisible(), QStringLiteral("选中笔画时显示笔画平滑按钮"));
+            ctx.check(smoothButton && smoothButton->isVisible(), QStringLiteral("选中曲线时显示简化曲线按钮"));
             const int undoIndexBeforeSmooth = dockScene->undoStack()->index();
             if (smoothButton) {
                 smoothButton->click();
                 QApplication::processEvents();
             }
             ctx.check(dockScene->undoStack()->index() > undoIndexBeforeSmooth,
-                      QStringLiteral("卡片笔画平滑按钮真正执行平滑且可撤销"),
+                      QStringLiteral("卡片简化曲线按钮真正执行简化且可撤销"),
                       QStringLiteral("index=%1->%2").arg(undoIndexBeforeSmooth).arg(dockScene->undoStack()->index()));
 
             // 悬浮卡片跟随选中状态：清空选中后隐藏，重新选中再出现。

@@ -255,7 +255,7 @@ void MainWindow::applyBrushWidth(int width)
     m_style->applyStrokeWidthToSelection(m_brushWidth);
 }
 
-void MainWindow::setStrokeSmoothingUi(int tolerance)
+void MainWindow::setStrokeSmoothingUi(qreal tolerance)
 {
     m_style->setStrokeSmoothingUi(tolerance);
 }

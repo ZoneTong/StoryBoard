@@ -6,6 +6,7 @@
 #include "StyleController.h"
 
 #include <QColor>
+#include <QDoubleSpinBox>
 #include <QLabel>
 #include <QMenu>
 #include <QSize>
@@ -39,12 +40,12 @@ void UiToolBarBuilder::buildToolBars()
     createShapeToolbar(mainBar);
     mainBar->addSeparator();
 
-    // 对齐与化形留在菜单栏与编辑图元卡里，主工具栏不再重复放置入口。
-    // 画笔区只留下平滑笔画按钮和容差输入；画笔颜色 / 粗细改由图形描线区统一设置。
+    // 对齐与合并图元留在菜单栏与编辑图元卡里，主工具栏不再重复放置入口。
+    // 画笔区只保留拟合容差输入；画笔颜色 / 粗细由图形描线区统一设置。
     createSmoothingToolbar(mainBar);
     // 布尔运算的右键菜单入口照旧保留，只是不再作为工具栏下拉按钮。
     if (m_window->m_view) {
-        m_window->m_view->addContextMenuGroup(MainWindow::tr("Morph"), m_window->m_boolActions);
+        m_window->m_view->addContextMenuGroup(MainWindow::tr("Merge items"), m_window->m_boolActions);
     }
 
     // 统一主工具栏里所有纯图标按钮的尺寸：QToolBar 为 action 自动创建的按钮、
@@ -74,33 +75,22 @@ void UiToolBarBuilder::buildToolBars()
 
 void UiToolBarBuilder::createSmoothingToolbar(QToolBar* mainBar)
 {
-    auto* smoothButton = new QToolButton(mainBar);
-    smoothButton->setObjectName(QStringLiteral("SmoothStrokeButton"));
-    smoothButton->setDefaultAction(m_window->m_smoothAct);
-    // 这个按钮由工具栏 addWidget 加入，不会自动继承 QToolBar::iconSize，
-    // 必须显式设置，否则图标会按样式默认尺寸绘制、比旁边按钮大一圈。
-    smoothButton->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
-    smoothButton->setFixedHeight(MainWindow::kToolBarButtonSize);
-    // 只显示图标，与相邻按钮等宽；功能靠悬停提示说明。
-    smoothButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
-    smoothButton->setToolTip(MainWindow::tr("Smooth strokes once"));
-    mainBar->addWidget(smoothButton);
-
-    auto* smoothingLabel = new QLabel(MainWindow::tr("Tolerance"), mainBar);
-    // 紧跟图标按钮的标签，留白收到最小，避免和按钮内边距叠成一条缝。
+    auto* smoothingLabel = new QLabel(MainWindow::tr("Brush fit tolerance"), mainBar);
     smoothingLabel->setObjectName(QStringLiteral("ToolBarLabelTight"));
     mainBar->addWidget(smoothingLabel);
 
-    m_window->m_smoothingSpin = new QSpinBox(mainBar);
+    m_window->m_smoothingSpin = new QDoubleSpinBox(mainBar);
     m_window->m_smoothingSpin->setObjectName(QStringLiteral("BrushSmoothingSpin"));
-    m_window->m_smoothingSpin->setRange(0, 30);
+    m_window->m_smoothingSpin->setRange(0.0, 20.0);
+    m_window->m_smoothingSpin->setSingleStep(0.1);
+    m_window->m_smoothingSpin->setDecimals(1);
     m_window->m_smoothingSpin->setSuffix(QStringLiteral(" px"));
-    m_window->m_smoothingSpin->setFixedWidth(64);
+    m_window->m_smoothingSpin->setFixedWidth(74);
     m_window->m_smoothingSpin->setFixedHeight(MainWindow::kToolBarControlHeight);
     m_window->m_smoothingSpin->setValue(m_window->m_settings.strokeSmoothing);
     m_window->m_smoothingSpin->setToolTip(
-        MainWindow::tr("Auto-smoothing tolerance used when a stroke ends; 0 disables automatic smoothing"));
-    QObject::connect(m_window->m_smoothingSpin, &QSpinBox::valueChanged, m_window, [this](int value) {
+        MainWindow::tr("Brush fit tolerance in pixels (0–20, 0.1 px steps); 0 disables curve fitting"));
+    QObject::connect(m_window->m_smoothingSpin, &QDoubleSpinBox::valueChanged, m_window, [this](qreal value) {
         m_window->m_settings.strokeSmoothing = value;
         m_window->m_view->setStrokeSmoothing(value);
         m_window->m_settings.save();
@@ -152,7 +142,6 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
     fillMenu->addAction(m_window->m_fillHoneycombAct);
     m_window->m_fillButton->setMenu(fillMenu);
     m_window->updateFillActions();
-    mainBar->addWidget(m_window->m_fillButton);
 
     // 需求 29：填充颜色、描边颜色作为独立按钮，排在填充样式按钮之后。
     m_window->m_fillColorButton = new QToolButton(mainBar);
@@ -164,6 +153,8 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
                                                          ? m_window->m_fillColor.name(QColor::HexArgb).toUpper()
                                                          : MainWindow::tr("Follow brush color")));
     mainBar->addWidget(m_window->m_fillColorButton);
+    // 填充颜色之后接填充样式，再是描线颜色与描线宽度。
+    mainBar->addWidget(m_window->m_fillButton);
 
     m_window->m_strokeColorButton = new QToolButton(mainBar);
     m_window->m_strokeColorButton->setObjectName(QStringLiteral("StrokeColorButton"));

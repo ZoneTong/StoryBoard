@@ -16,12 +16,12 @@ class CanvasStrokeController {
 
     QColor brushColor() const { return m_brushColor; }
     qreal brushWidth() const { return m_brushWidth; }
-    int strokeSmoothing() const { return m_strokeSmoothing; }
+    qreal strokeSmoothing() const { return m_strokeSmoothing; }
     bool hasActiveStroke() const { return m_activeStroke != nullptr; }
 
     void setBrushColor(const QColor& color);
     void setBrushWidth(qreal width);
-    void setStrokeSmoothing(int tolerance);
+    void setStrokeSmoothing(qreal tolerance);
 
     // 起笔；图层不可写时发状态栏提示并返回 false。
     bool beginStroke(const QPoint& viewportPos);
@@ -35,5 +35,5 @@ class CanvasStrokeController {
     CurveItem* m_activeStroke = nullptr;
     QColor m_brushColor = QColor(30, 41, 59);
     qreal m_brushWidth = 4.0;
-    int m_strokeSmoothing = 4;
+    qreal m_strokeSmoothing = 2.0;
 };

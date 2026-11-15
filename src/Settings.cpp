@@ -249,7 +249,7 @@ void AppSettings::load()
 
     brushColor = colorFromMap(values, QStringLiteral("brush/color"), brushColor);
     brushWidth = boundedFromMap(values, QStringLiteral("brush/width"), brushWidth, 1, 64);
-    strokeSmoothing = boundedFromMap(values, QStringLiteral("brush/smoothing"), strokeSmoothing, 0, 30);
+    strokeSmoothing = boundedDoubleFromMap(values, QStringLiteral("brush/smoothing"), strokeSmoothing, 0.0, 20.0);
 
     const int canvasWidth = boundedFromMap(values, QStringLiteral("canvas/width"), qRound(canvasSize.width()),
                                            kMinCanvasSide, kMaxCanvasSide);

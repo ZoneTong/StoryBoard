@@ -25,7 +25,7 @@ class StyleController {
 
     void setBrushColor(const QColor& color, bool remember);
     void setBrushWidthUi(int width);
-    void setStrokeSmoothingUi(int tolerance);
+    void setStrokeSmoothingUi(qreal tolerance);
     void chooseBrushColor();
 
     // 填充 / 描边色板图标：动作创建与工具栏搭建阶段也复用这一份绘制逻辑。

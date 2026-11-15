@@ -70,7 +70,7 @@ void CanvasContextMenuController::showMenu(QContextMenuEvent* event)
     QAction* properties = menu.addAction(trView("Item properties…"));
     QAction* duplicate = menu.addAction(trView("Duplicate item"));
     duplicate->setEnabled(item->isSelected());
-    QAction* smooth = menu.addAction(trView("Smooth strokes"));
+    QAction* smooth = menu.addAction(trView("Simplify curve"));
     smooth->setEnabled(m_scene->canSmoothSelectedStrokes());
     QAction* group = menu.addAction(trView("Group selected items"));
     group->setEnabled(m_scene->canGroupSelectedItems());
@@ -123,7 +123,7 @@ void CanvasContextMenuController::showMenu(QContextMenuEvent* event)
     } else if (chosen == smooth) {
         const int smoothed = m_scene->smoothSelectedStrokes(m_view->strokeSmoothing());
         if (smoothed > 0) {
-            emit m_view->statusMessage(trView("Smoothed %1 stroke(s)").arg(smoothed));
+            emit m_view->statusMessage(trView("Simplified %1 curve(s)").arg(smoothed));
         }
     } else if (chosen == group) {
         const int grouped = m_scene->groupSelectedItems();
