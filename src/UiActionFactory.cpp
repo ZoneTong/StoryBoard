@@ -10,9 +10,18 @@
 #include <QAction>
 #include <QActionGroup>
 #include <QApplication>
+#include <QRegularExpression>
 #include <QStatusBar>
 #include <QUndoStack>
 #include <QWidget>
+
+QString stripShortcutTail(const QString& tip)
+{
+    static const QRegularExpression tail(QStringLiteral("(?:\\s*[（(][^（）()]*[）)])$"));
+    QString result = tip;
+    result.remove(tail);
+    return result;
+}
 
 namespace {
 
@@ -24,8 +33,10 @@ QAction* makeAction(QObject* parent, IconId icon, const QString& text, const QKe
     if (!shortcut.isEmpty()) {
         action->setShortcut(shortcut);
     }
-    // 提示里统一带上快捷键，省得逐个动作手写；已有的 “(Ctrl+X)” 不会重复追加。
-    // 基串记到属性里，改键之后刷新提示可以直接拿它重拼，不会把旧键留在文字里。
+    // 提示里统一带上快捷键，省得逐个动作手写。基串是「不带键位的纯描述」：
+    // 作者手写的 “(Ctrl+N)” 在入库前剥掉，改键后 refreshShortcutTips 重拼
+    // 只会拼一次，不会再出现双份括号。
+    tip = stripShortcutTail(tip);
     action->setProperty("storyBoardBaseTip", tip);
     if (!tip.isEmpty() && !shortcut.isEmpty()) {
         const QString keys = shortcut.toString(QKeySequence::NativeText);

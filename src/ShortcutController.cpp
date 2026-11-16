@@ -1,6 +1,7 @@
 #include "ShortcutController.h"
 
 #include "MainWindow.h"
+#include "UiActionFactory.h"
 
 #include <QAction>
 #include <QApplication>
@@ -13,7 +14,6 @@
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QPushButton>
-#include <QRegularExpression>
 #include <QVBoxLayout>
 #include <algorithm>
 
@@ -119,9 +119,9 @@ void ShortcutController::refreshShortcutTips()
             baseTip = base.toString();
         } else {
             const QString source = action->statusTip().isEmpty() ? action->toolTip() : action->statusTip();
-            baseTip = source;
-            static const QRegularExpression tail(QStringLiteral("(?:\\s*[（(][^（）()]*[）)])$"));
-            baseTip.remove(tail);
+            // 没走 makeAction 的动作（如退出、高度 ±1）没有记基串，就用同一份
+            // stripShortcutTail 从现有提示里剥掉末尾键位括号。
+            baseTip = stripShortcutTail(source);
         }
         if (baseTip.isEmpty()) {
             if (!base.isValid()) {
