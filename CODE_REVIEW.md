@@ -15,10 +15,25 @@
 
 ## 当前回归
 
-- 自检基线：**850 passed, 0 failed**；本轮新增「回到全景」「退出」两条断言与 1 条合并优先级用例，合并后预期 853，以实跑 `SUMMARY` 为准。
+- 自检基线：**853 passed, 0 failed**（2026-11-16 实跑 `out15/bin/StoryBoard.exe --self-test`，Windows 11 + GCC 15.1 + Qt 6.12）。
 - 主干已完成场景、自检、MainWindow 与界面卡片按职责拆分；编辑图元卡默认悬浮、停靠时常驻，视图模式卡在右上，图层卡在右下。
 - 实机环境：Windows 11 + GCC 15.1 + Qt 6.12；便携包经 `windeployqt` 部署后，隔离 PATH 运行包内自检同样通过。
 - macOS / Linux 分支已提供构建与打包路径，尚未在对应主机实机验证。
+
+## 静态审查修复记录（2026-11-16，本地主干实修）
+
+静态审查节的 P0/P1/P2 已全部在主干修复并构建自测通过，提交序列：补丁应用 `2f3fa9c` → P0 `4e75c6a` → 双份括号 `7da390b` → nudge `bb6605d` → 键盘跟踪 `feaaecd` → P2 `02eac70` → I18n `bb8c497` → CLI 线稿化 `8914846` → 合并遮挡 `d0f8fcc`。
+
+| 级别 | 修复内容 | 落点 |
+| --- | --- | --- |
+| P0 | `fromJson` 全部校验与图元预创建通过后才 `resetDocument()`，坏文件不再清空当前文档；画布尺寸按文件原值加载不钳位；`validateCanvasRoot` 补 layers 非空检查（失败发生在 `maybeSave` 消耗未保存内容之前） | `CanvasSceneSerialization.cpp`、`DocumentController.cpp` |
+| P1 | `stripShortcutTail()` 共享：`makeAction` 基串入库前剥掉尾部键位括号，双份括号根除 | `UiActionFactory.*`、`ShortcutController.cpp` |
+| P1 | 方向键微调按最外层组树展开；`GeometryCommand` 增加 mergeId/mergeWith，连续 nudge 并成一条撤销记录 | `CanvasSceneClipboard.cpp`、`Commands.*`、`CanvasSceneItems.cpp` |
+| P1 | 属性卡数字框全部 `setKeyboardTracking(false)`，输入过程不再触发提交与刷新 | `ItemDockPanelValueCard.cpp`、`ItemDockPanelFillBorderCard.cpp` |
+| P2 | 多选上移/下移「全或不动」；`normalizeLayerHeights` 修复压入撤销栈（`m_restoringDocument` 守卫排除加载期）；图片图元保留原始 base64 字节防再保存丢图；`pathFromJson` 短曲线段降级折线；`nextHeight -1` 退化取同层最大高度 +1；generator 版本号随 CMake `STORYBOARD_VERSION` 注入 | `CanvasSceneItemStacking.cpp`、`CanvasScene.h`、`ImageItem.*`、`CompositeShapeItem.cpp`、`CanvasSceneSerialization.cpp` |
+| 合并遮挡 | 补丁的优先级排序曾连带改变结果层绘制顺序（零面积图元被先画、被有填充图元盖掉）。改为：优先级只决定样式 donor，绘制顺序按合并前叠放序号 `stackRank`；文字合并用例断言随 donor 语义更新（字形保持可见 + 零描边） | `BoolOps.cpp`、`AlignmentBoolGroupTests.cpp` |
+| 新功能 | 命令行线稿化：`--lineart 图片 [--lineart-out 画布.sbcanvas]`，默认均衡档 + 1px 最细条带；`--lineart-preset` 选档位，`--lineart-max-side / -color-levels / -palette-colors / -palette-merge / -adjacent-merge / -min-area / -max-regions / -adaptive / -adaptive-limit / -min-adaptive-side / -tolerance / -min-thickness` 全量覆盖转换参数（线宽按需求固定 1） | `CommandLineOptions.*`、`AppModes.cpp` |
+| I18n | 关于窗口键位文案对齐现行键位（H 查看 / V 编辑 / 新组合键行），`storyboard_zh.ts` 同步；`Ctrl+B` 词源更正为 Brush | `MainWindowAppController.cpp`、`translations/storyboard_zh.ts`、`docs/shortcut-redesign.md` |
 
 ## 参考与引用
 
