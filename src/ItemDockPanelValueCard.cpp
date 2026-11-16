@@ -49,6 +49,9 @@ ItemDockPanelValueCard::ItemDockPanelValueCard(QWidget* parent) : QWidget(parent
     m_opacitySpin->setRange(0, 100);
     m_opacitySpin->setSuffix(QStringLiteral(" %"));
     m_opacitySpin->setToolTip(ItemDockPanel::tr("Opacity"));
+    // 关闭键盘跟踪：输入过程不触发 valueChanged，回车或失焦才提交，
+    // 选中变化触发的 refresh() 也就不会打断正在输入的值。
+    m_opacitySpin->setKeyboardTracking(false);
     connect(m_opacitySpin, &QSpinBox::valueChanged, this, [this](int value) {
         if (!m_refreshing) {
             emit opacityChosen(value);
@@ -71,6 +74,7 @@ ItemDockPanelValueCard::ItemDockPanelValueCard(QWidget* parent) : QWidget(parent
     m_cornerSpin->setRange(0, 400);
     m_cornerSpin->setSuffix(QStringLiteral(" px"));
     m_cornerSpin->setToolTip(ItemDockPanel::tr("Corner radius"));
+    m_cornerSpin->setKeyboardTracking(false);
     connect(m_cornerSpin, &QSpinBox::valueChanged, this, [this](int value) {
         if (!m_refreshing) {
             emit cornerRadiusChosen(value);
@@ -93,6 +97,7 @@ ItemDockPanelValueCard::ItemDockPanelValueCard(QWidget* parent) : QWidget(parent
     m_angleSpin->setRange(1, 359);
     m_angleSpin->setSuffix(QStringLiteral("°"));
     m_angleSpin->setToolTip(ItemDockPanel::tr("Sweep angle"));
+    m_angleSpin->setKeyboardTracking(false);
     connect(m_angleSpin, &QSpinBox::valueChanged, this, [this](int value) {
         if (!m_refreshing) {
             emit sweepAngleChosen(value);
@@ -115,6 +120,7 @@ ItemDockPanelValueCard::ItemDockPanelValueCard(QWidget* parent) : QWidget(parent
     m_radiusSpin->setRange(1, 1000);
     m_radiusSpin->setSuffix(QStringLiteral(" px"));
     m_radiusSpin->setToolTip(ItemDockPanel::tr("Shape radius"));
+    m_radiusSpin->setKeyboardTracking(false);
     connect(m_radiusSpin, &QSpinBox::valueChanged, this, [this](int value) {
         if (!m_refreshing) {
             emit shapeRadiusChosen(value);

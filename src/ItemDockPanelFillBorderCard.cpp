@@ -105,6 +105,8 @@ ItemDockPanelFillBorderCard::ItemDockPanelFillBorderCard(QWidget* parent) : QWid
     m_borderWidthSpin->setSingleStep(1);
     m_borderWidthSpin->setSuffix(QStringLiteral(" px"));
     m_borderWidthSpin->setToolTip(ItemDockPanel::tr("Border width"));
+    // 关闭键盘跟踪：输入过程不触发 valueChanged，回车或失焦才提交。
+    m_borderWidthSpin->setKeyboardTracking(false);
     connect(m_borderWidthSpin, &QSpinBox::valueChanged, this, [this](int value) {
         if (!m_refreshing) {
             emit borderWidthChosen(value);
