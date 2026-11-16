@@ -4,9 +4,12 @@
 #include "CanvasScene.h"
 #include "CanvasView.h"
 #include "CommandLineOptions.h"
+#include "CurveItem.h"
 #include "ExportDialog.h"
 #include "I18n.h"
 #include "ItemPropertiesDialog.h"
+#include "LineArtConverter.h"
+#include "LineArtPresets.h"
 #include "MainWindow.h"
 #include "SelfTest.h"
 #include "Settings.h"
@@ -17,16 +20,22 @@
 #include <QApplication>
 #include <QComboBox>
 #include <QCoreApplication>
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QImageReader>
+#include <QJsonDocument>
 #include <QMenu>
 #include <QMessageBox>
 #include <QPixmap>
 #include <QPoint>
+#include <QSaveFile>
 #include <QScrollArea>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QWidget>
+
+#include <cstdio>
 
 namespace {
 
@@ -241,6 +250,135 @@ int runExportScreenshot(const CommandLineOptions& options)
     return dialog.grab().save(outputPath) ? 0 : 1;
 }
 
+int runLineArt(const CommandLineOptions& options)
+{
+    // 默认均衡档（Balanced）+ 1px 最细条带；显式给出的细项覆盖档位对应值。
+    // 覆盖范围 = 档位 5 项之外的 Options 全部可调字段（除固定为 1 的线宽）。
+    LineArtConverter::Options lineArtOptions;
+    const LineArtPreset preset = lineArtPreset(options.lineArtPreset);
+    lineArtOptions.colorLevels = preset.levels;
+    lineArtOptions.maxPaletteColors = preset.palette;
+    lineArtOptions.adjacentMergeDistance = preset.adjacent;
+    lineArtOptions.minRegionArea = preset.minArea;
+    lineArtOptions.simplifyTolerance = preset.tolerance;
+    lineArtOptions.minRegionThickness = 1.0;
+
+    if (options.lineArtMaxSideSeen) {
+        lineArtOptions.maxProcessingSide = options.lineArtMaxSide;
+    }
+    if (options.lineArtColorLevelsSeen) {
+        lineArtOptions.colorLevels = qBound(2, options.lineArtColorLevels, 64);
+    }
+    if (options.lineArtPaletteColorsSeen) {
+        lineArtOptions.maxPaletteColors = qMax(1, options.lineArtPaletteColors);
+    }
+    if (options.lineArtPaletteMergeSeen) {
+        lineArtOptions.paletteMergeDistance = qMax(0.0, options.lineArtPaletteMerge);
+    }
+    if (options.lineArtAdjacentMergeSeen) {
+        lineArtOptions.adjacentMergeDistance = qMax(0.0, options.lineArtAdjacentMerge);
+    }
+    if (options.lineArtMinAreaSeen) {
+        lineArtOptions.minRegionArea = qMax(0, options.lineArtMinArea);
+    }
+    if (options.lineArtMaxRegionsSeen) {
+        lineArtOptions.maxRegions = qMax(0, options.lineArtMaxRegions);
+    }
+    if (options.lineArtAdaptiveSeen) {
+        lineArtOptions.adaptiveDownscale = options.lineArtAdaptive;
+    }
+    if (options.lineArtAdaptiveLimitSeen) {
+        lineArtOptions.adaptiveRegionLimit = qMax(1, options.lineArtAdaptiveLimit);
+    }
+    if (options.lineArtMinAdaptiveSideSeen) {
+        lineArtOptions.minAdaptiveSide = qMax(32, options.lineArtMinAdaptiveSide);
+    }
+    if (options.lineArtToleranceSeen) {
+        lineArtOptions.simplifyTolerance = qMax(0.0, options.lineArtTolerance);
+    }
+    if (options.lineArtMinThicknessSeen) {
+        lineArtOptions.minRegionThickness = qMax(0.0, options.lineArtMinThickness);
+    }
+
+    if (options.lineArtInputPath.isEmpty()) {
+        std::fprintf(stderr, "lineart: missing --lineart <image path>\n");
+        return 2;
+    }
+
+    QImageReader reader(options.lineArtInputPath);
+    reader.setAutoTransform(true);
+    const QImage image = reader.read();
+    if (image.isNull()) {
+        std::fprintf(stderr, "lineart: could not read image: %s\n", qPrintable(options.lineArtInputPath));
+        return 1;
+    }
+
+    const LineArtConverter::Result traced = LineArtConverter::extract(image, lineArtOptions);
+    if (!traced.ok) {
+        std::fprintf(stderr, "lineart: %s\n", qPrintable(traced.error));
+        return 1;
+    }
+    if (traced.outlines.isEmpty()) {
+        std::fprintf(stderr, "lineart: no color blocks were found in the image.\n");
+        return 1;
+    }
+
+    // 画布按图片 1:1 摆放（留 20px 边距）；超过单边 12000 时整体等比缩小，
+    // 保证生成画布仍可正常继续编辑（编辑操作的钳位范围是 200–12000）。
+    const qreal longest = qMax<qreal>(traced.imageSize.width(), traced.imageSize.height());
+    const qreal scale = longest > 11800.0 ? 11800.0 / longest : 1.0;
+    const QSizeF canvasSize(traced.imageSize.width() * scale + 40.0, traced.imageSize.height() * scale + 40.0);
+
+    CanvasScene scene;
+    scene.applyCanvasSize(canvasSize);
+
+    QList<CanvasItem*> items;
+    items.reserve(traced.outlines.size());
+    for (const LineArtConverter::Outline& outline : traced.outlines) {
+        if (outline.points.size() < 4) {
+            continue;
+        }
+        QVector<QPointF> scenePoints;
+        scenePoints.reserve(outline.points.size());
+        for (const QPointF& point : outline.points) {
+            scenePoints.append(QPointF(20.0 + point.x() * scale, 20.0 + point.y() * scale));
+        }
+        // 与「导入图片线稿化」一致：不额外平滑，折线模式保持方角。
+        auto* stroke = new CurveItem();
+        stroke->setStrokePoints(scenePoints, outline.color, lineArtOptions.strokeWidth, 0.0, true);
+        items.append(stroke);
+    }
+    if (items.isEmpty()) {
+        std::fprintf(stderr, "lineart: no color blocks were found in the image.\n");
+        return 1;
+    }
+    scene.addItemsWithUndo(items, QStringLiteral("Import outline image"));
+    scene.assignAutoItemNames();
+
+    QString outputPath = options.lineArtOutputPath;
+    if (outputPath.isEmpty()) {
+        const QFileInfo info(options.lineArtInputPath);
+        outputPath = info.absolutePath() + QLatin1Char('/') + info.completeBaseName() + QStringLiteral(".sbcanvas");
+    }
+
+    QSaveFile file(outputPath);
+    if (!file.open(QIODevice::WriteOnly)) {
+        std::fprintf(stderr, "lineart: could not write the file: %s\n", qPrintable(outputPath));
+        return 1;
+    }
+    const QJsonDocument document(scene.toJson());
+    file.write(document.toJson(QJsonDocument::Indented));
+    if (!file.commit()) {
+        std::fprintf(stderr, "lineart: could not write the file: %s\n", qPrintable(outputPath));
+        return 1;
+    }
+
+    std::fprintf(stdout, "lineart: %d stroke(s) -> %s (canvas %.0fx%.0f, regions %d%s)\n", items.size(),
+                 qPrintable(QDir::toNativeSeparators(outputPath)), canvasSize.width(), canvasSize.height(),
+                 traced.regionCount, traced.truncated ? ", truncated" : "");
+    return 0;
+}
+
 int runNormalLaunch(QApplication& app, const CommandLineOptions& options)
 {
     MainWindow window;
@@ -307,6 +445,9 @@ int run(QApplication& app, const CommandLineOptions& options)
     }
     if (options.exportScreenshot) {
         return runExportScreenshot(options);
+    }
+    if (options.lineArt) {
+        return runLineArt(options);
     }
 
     return runNormalLaunch(app, options);
