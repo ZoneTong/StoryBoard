@@ -463,8 +463,12 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>交叉线填充</translation>
     </message>
     <message>
-      <source>Ctrl+0 returns to the overview, Ctrl+Z / Ctrl+Y undo / redo</source>
-      <translation>Ctrl+0 回到全景视图，Ctrl+Z / Ctrl+Y 撤销 / 重做</translation>
+      <source>Ctrl+0 returns to the overview, Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z undo / redo</source>
+      <translation>Ctrl+0 回到全景视图，Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z 撤销 / 重做</translation>
+    </message>
+    <message>
+      <source>Ctrl+I / Ctrl+L / Ctrl+E insert image / import outline image / export canvas; Ctrl+B simplifies the selected curve (Brush); Ctrl+Q or Alt+F4 quits</source>
+      <translation>Ctrl+I / Ctrl+L / Ctrl+E 插入图片 / 导入图片线稿化 / 导出画板；Ctrl+B 简化选中曲线（Brush）；Ctrl+Q 或 Alt+F4 退出</translation>
     </message>
     <message>
       <source>Current stroke canceled</source>
@@ -529,8 +533,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>双击重命名图层</translation>
     </message>
     <message>
-      <source>E Edit mode: items on visible, unlocked layers can be edited; locked layers cannot; ] / [ adjust the height of the selection; right-click adjusts layer / height</source>
-      <translation>E 编辑模式：显示且未锁定图层上的图元都能编辑；锁定图层不可编辑；] / [ 调整选中图元高度；右键调整图层/高度</translation>
+      <source>V Edit mode: items on visible, unlocked layers can be edited; locked layers cannot; ] / [ adjust the height of the selection; right-click adjusts layer / height</source>
+      <translation>V 编辑模式：显示且未锁定图层上的图元都能编辑；锁定图层不可编辑；] / [ 调整选中图元高度；右键调整图层/高度</translation>
     </message>
     <message>
       <source>Each visible layer (one file per layer)</source>
@@ -1753,8 +1757,8 @@ Use the checkbox to show or hide it.</source>
       <translation>V 查看模式：整体平移 / 缩放，自动全景</translation>
     </message>
     <message>
-      <source>V View mode: pan / zoom the whole canvas, automatic overview</source>
-      <translation>V 查看模式：平移 / 缩放整张画布，切换时自动全景</translation>
+      <source>H View mode: pan / zoom the whole canvas, automatic overview</source>
+      <translation>H 查看模式：平移 / 缩放整张画布，切换时自动全景</translation>
     </message>
     <message>
       <source>View mode</source>

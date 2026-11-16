@@ -271,8 +271,8 @@
 | --- | --- | --- | --- |
 | 编辑 / 选择模式 | `E` | `V` | PS / Figma 指针工具通用键 |
 | 导入图片线稿化 | `Ctrl+Shift+I` | `Ctrl+L` | Line / Lineart 线稿，词源清晰 |
-| 简化选中曲线 | `Ctrl+Shift+M` | `Ctrl+B` | Smooth 平滑简化；与画笔单键 `B` 靠修饰键隔离，不冲突 |
+| 简化选中曲线 | `Ctrl+Shift+M` | `Ctrl+B` | Brush 画笔：简化的对象是画笔（Brush）生成的曲线；与画笔单键 `B` 靠修饰键隔离，不冲突 |
 
-现存自定义组合核验：`Ctrl+I` Insert、`Ctrl+R` Rotate、`Ctrl+E` Export、`Ctrl+L` Lineart、`Ctrl+B` Smooth、`Ctrl+G` / `Ctrl+Shift+G` Group / Ungroup、`Ctrl+D` Duplicate、`Ctrl+'` 网格（Figma）；工具单键 `H` / `V` / `B` / `T`（PS / Figma）；符号特例 `]` / `[` 与面板索引 `Alt+1` / `Alt+2`。无剩余词源不明的功能组合键。
+现存自定义组合核验：`Ctrl+I` Insert、`Ctrl+R` Rotate、`Ctrl+E` Export、`Ctrl+L` Lineart、`Ctrl+B` Brush（简化画笔曲线）、`Ctrl+G` / `Ctrl+Shift+G` Group / Ungroup、`Ctrl+D` Duplicate、`Ctrl+'` 网格（Figma）；工具单键 `H` / `V` / `B` / `T`（PS / Figma）；符号特例 `]` / `[` 与面板索引 `Alt+1` / `Alt+2`。无剩余词源不明的功能组合键。
 
 改动点：`UiActionFactory.cpp` 三处键位与提示文字；`ClipboardShortcutTests` 编辑模式断言改 `V`；`MainWindowShapeMenuTests` 简化曲线断言改 `Ctrl+B`；`storyboard_zh.ts` 同步旧键位译文。配置兼容：本轮未改动副键与配置键名（`Ctrl+Y` / `Alt+F4` / `Ctrl+=` 不变）；线稿化与简化曲线的旧 `shortcutOverrides` 条目匹配不到新默认，按 §5.3 口径属无效残留，「恢复默认」即可清空。

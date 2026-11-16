@@ -126,8 +126,8 @@ void MainWindowAppController::showAbout()
                                     "items."));
     html += QStringLiteral("</ul><p><b>%1</b></p><ul>").arg(MainWindow::tr("Key operations"));
     const QStringList operations = {
-        QStringLiteral("V View mode: pan / zoom the whole canvas, automatic overview"),
-        QStringLiteral("E Edit mode: items on visible, unlocked layers can be edited; locked layers cannot; ] / [ "
+        QStringLiteral("H View mode: pan / zoom the whole canvas, automatic overview"),
+        QStringLiteral("V Edit mode: items on visible, unlocked layers can be edited; locked layers cannot; ] / [ "
                        "adjust the height of the selection; right-click adjusts layer / height"),
         QStringLiteral("B Brush mode: freehand strokes, with color and width options"),
         QStringLiteral("T Text mode: click the canvas to add text, double-click text to edit it again"),
@@ -137,7 +137,9 @@ void MainWindowAppController::showAbout()
                        "more"),
         QStringLiteral("Mouse: wheel zooms, Space / middle button pans in any mode; in edit mode holding Ctrl "
                        "and dragging also pans the whole view"),
-        QStringLiteral("Ctrl+0 returns to the overview, Ctrl+Z / Ctrl+Y undo / redo"),
+        QStringLiteral("Ctrl+0 returns to the overview, Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z undo / redo"),
+        QStringLiteral("Ctrl+I / Ctrl+L / Ctrl+E insert image / import outline image / export canvas; Ctrl+B "
+                       "simplifies the selected curve (Brush); Ctrl+Q or Alt+F4 quits"),
     };
     for (const QString& operation : operations) {
         html += QStringLiteral("<li>%1</li>").arg(uiText(operation));
