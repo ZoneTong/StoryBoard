@@ -136,6 +136,38 @@ void GeometryCommand::redo()
     apply(m_after);
 }
 
+void GeometryCommand::setMergeId(const QString& id)
+{
+    m_mergeId = id;
+}
+
+int GeometryCommand::id() const
+{
+    return m_mergeId.isEmpty() ? -1 : GeometryNudgeCommandId;
+}
+
+bool GeometryCommand::mergeWith(const QUndoCommand* other)
+{
+    // 合并条件：同为 nudge 标记，且作用的是同一批图元（指针与顺序一致）。
+    // 满足时新命令并入旧命令：撤销回到最早的 before，重做到最新的 after。
+    const auto* geometry = dynamic_cast<const GeometryCommand*>(other);
+    if (!geometry || geometry->m_mergeId.isEmpty() || geometry->m_mergeId != m_mergeId) {
+        return false;
+    }
+    if (geometry->m_before.size() != m_before.size() || geometry->m_after.size() != m_after.size()) {
+        return false;
+    }
+    for (int i = 0; i < m_before.size(); ++i) {
+        if (geometry->m_before.at(i).item != m_before.at(i).item ||
+            geometry->m_after.at(i).item != m_after.at(i).item) {
+            return false;
+        }
+    }
+    m_before = geometry->m_before;
+    setText(geometry->text());
+    return true;
+}
+
 void GeometryCommand::apply(const ItemGeometryList& geometry)
 {
     for (const ItemGeometry& entry : geometry) {

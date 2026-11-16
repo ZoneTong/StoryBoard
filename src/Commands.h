@@ -38,12 +38,21 @@ class RemoveItemsCommand : public QUndoCommand {
     QList<QPointer<CanvasItem>> m_items;
 };
 
+// 连续方向键微调共用这个命令 id：QUndoStack 只对 id 相同且非 -1 的命令尝试
+// mergeWith，普通拖拽/缩放的 GeometryCommand 不带 mergeId，绝不参与合并。
+enum { GeometryNudgeCommandId = 1001 };
+
 class GeometryCommand : public QUndoCommand {
   public:
     GeometryCommand(CanvasScene* scene, const ItemGeometryList& before, const ItemGeometryList& after,
                     const QString& text);
     void undo() override;
     void redo() override;
+    // 标记为可合并的连续操作（目前只有 nudge）：同一批图元的相邻两次调用
+    // 由 mergeWith 叠加成一条撤销记录，方向键按住不放不再刷爆撤销栈。
+    void setMergeId(const QString& id);
+    int id() const override;
+    bool mergeWith(const QUndoCommand* other) override;
 
   private:
     void apply(const ItemGeometryList& geometry);
@@ -51,6 +60,7 @@ class GeometryCommand : public QUndoCommand {
     CanvasScene* m_scene = nullptr;
     ItemGeometryList m_before;
     ItemGeometryList m_after;
+    QString m_mergeId;
 };
 
 class GroupCommand : public QUndoCommand {

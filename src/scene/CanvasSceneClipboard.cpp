@@ -77,10 +77,25 @@ int CanvasScene::nudgeSelected(const QPointF& delta)
         return 0;
     }
 
+    // 方向键微调按「最外层组树」展开：选中组内任一成员时，整棵组树一起动，
+    // 与拖拽移动组的行为一致；多个选中目标之间按图元指针去重。
     QList<CanvasItem*> targets;
+    QSet<CanvasItem*> seen;
     for (CanvasItem* item : selectedCanvasItems()) {
-        if (item && isItemEditable(item)) {
-            targets.append(item);
+        if (!item || !isItemEditable(item)) {
+            continue;
+        }
+        QList<CanvasItem*> members;
+        if (item->groupId() > 0) {
+            members = itemsInGroupTree(outermostGroup(item->groupId()));
+        } else {
+            members.append(item);
+        }
+        for (CanvasItem* member : members) {
+            if (member && isItemEditable(member) && !seen.contains(member)) {
+                seen.insert(member);
+                targets.append(member);
+            }
         }
     }
     if (targets.isEmpty()) {
@@ -100,6 +115,7 @@ int CanvasScene::nudgeSelected(const QPointF& delta)
     for (CanvasItem* item : targets) {
         after.append({item, item->pos(), item->contentSize()});
     }
-    pushGeometry(before, after, tr("Nudge items"));
+    // 标记为 nudge 合并：按住方向键连续微调时并入同一条撤销记录。
+    pushGeometry(before, after, tr("Nudge items"), QStringLiteral("nudge"));
     return targets.size();
 }

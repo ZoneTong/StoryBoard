@@ -152,7 +152,9 @@ class CanvasScene : public QGraphicsScene {
     void detachItem(CanvasItem* item);
     void deleteSelected();
     void selectAllItems();
-    void pushGeometry(const ItemGeometryList& before, const ItemGeometryList& after, const QString& text);
+    // mergeId 非空时命令标记为可合并（目前用于 nudge：连续方向键微调并成一条撤销记录）。
+    void pushGeometry(const ItemGeometryList& before, const ItemGeometryList& after, const QString& text,
+                      const QString& mergeId = QString());
     // 需求 35：旋转手柄与快捷键的撤销入口。
     void pushRotation(CanvasItem* item, qreal before, qreal after, const QString& text);
     int rotateSelected(qreal degrees, const QString& commandText = QString());

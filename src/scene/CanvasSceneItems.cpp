@@ -262,7 +262,8 @@ void CanvasScene::selectAllItems()
     }
 }
 
-void CanvasScene::pushGeometry(const ItemGeometryList& before, const ItemGeometryList& after, const QString& text)
+void CanvasScene::pushGeometry(const ItemGeometryList& before, const ItemGeometryList& after, const QString& text,
+                               const QString& mergeId)
 {
     if (before.size() != after.size()) {
         return;
@@ -285,7 +286,11 @@ void CanvasScene::pushGeometry(const ItemGeometryList& before, const ItemGeometr
     }
 
     if (m_undoStack) {
-        m_undoStack->push(new GeometryCommand(this, filteredBefore, filteredAfter, text));
+        auto* command = new GeometryCommand(this, filteredBefore, filteredAfter, text);
+        if (!mergeId.isEmpty()) {
+            command->setMergeId(mergeId);
+        }
+        m_undoStack->push(command);
     } else {
         for (const ItemGeometry& geometry : std::as_const(filteredAfter)) {
             if (!geometry.item) {
