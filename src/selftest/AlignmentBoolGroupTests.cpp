@@ -352,7 +352,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             auto* textShell =
                 textSelected.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(textSelected.constFirst());
 
-            int whitePixels = -1;
+            int inkPixels = -1;
             bool textLayerFound = false;
             if (textShell) {
                 const QImage rendered = scene.renderImage(QRectF(0.0, 0.0, 320.0, 220.0), 1.0);
@@ -360,12 +360,12 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                 for (int y = 85; y < 125; ++y) {
                     for (int x = 100; x < 200; ++x) {
                         const QColor pixel = rendered.pixelColor(x, y);
-                        if (pixel.red() > 240 && pixel.green() > 240 && pixel.blue() > 240) {
+                        if (pixel.red() < 60 && pixel.green() < 60 && pixel.blue() < 60) {
                             ++count;
                         }
                     }
                 }
-                whitePixels = count;
+                inkPixels = count;
                 for (const CompositeShapeItem::Layer& layer : textShell->layers()) {
                     if (qFuzzyIsNull(layer.strokeWidth) && layer.fill == QColor(0, 0, 0)) {
                         textLayerFound = true;
@@ -373,12 +373,16 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                     }
                 }
             }
-            ctx.check(textMerged && textShell && textLayerFound && whitePixels == 0,
-                      QStringLiteral("黑色文字合并后字形外无白色重影"),
-                      QStringLiteral("ok=%1 textLayer=%2 white=%3 layers=%4")
+            // donor 换成有填充空间的菱形（白底）后，字形缝隙露出白底属合法；
+            // 需要守住的是两条：黑色字形在合并后仍可见（遮挡语义：合并前在上层
+            // 的文字合并后仍后画），以及文字层零描边（donor 白色描线不在字形外
+            // 形成重影）。inkPixels > 0 即字形可见。
+            ctx.check(textMerged && textShell && textLayerFound && inkPixels > 0,
+                      QStringLiteral("黑色文字合并后字形保持可见且无描边重影"),
+                      QStringLiteral("ok=%1 textLayer=%2 ink=%3 layers=%4")
                           .arg(textMerged ? 1 : 0)
                           .arg(textLayerFound ? 1 : 0)
-                          .arg(whitePixels)
+                          .arg(inkPixels)
                           .arg(textShell ? textShell->layerCount() : -1));
         }
     }

@@ -73,7 +73,7 @@ bool CanvasScene::normalizeLayerHeights(int layerId)
 
     ItemStackList before;
     before.reserve(items.size());
-    for (const CanvasItem* item : std::as_const(items)) {
+    for (CanvasItem* item : items) {
         before.append({item, item->layerId(), item->height()});
     }
 

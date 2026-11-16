@@ -373,9 +373,9 @@ int runLineArt(const CommandLineOptions& options)
         return 1;
     }
 
-    std::fprintf(stdout, "lineart: %d stroke(s) -> %s (canvas %.0fx%.0f, regions %d%s)\n", items.size(),
-                 qPrintable(QDir::toNativeSeparators(outputPath)), canvasSize.width(), canvasSize.height(),
-                 traced.regionCount, traced.truncated ? ", truncated" : "");
+    std::fprintf(stdout, "lineart: %d stroke(s) -> %s (canvas %.0fx%.0f, regions %d%s)\n",
+                 static_cast<int>(items.size()), qPrintable(QDir::toNativeSeparators(outputPath)), canvasSize.width(),
+                 canvasSize.height(), traced.regionCount, traced.truncated ? ", truncated" : "");
     return 0;
 }
 

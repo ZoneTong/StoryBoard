@@ -33,6 +33,8 @@ struct Participant {
     bool fillSpace = false; // 代表图元是否有填充空间（闭合图形 / 含面积层的多边形）
     int layerIndex = 0;
     int height = -1;
+    CanvasItem* stackItem = nullptr; // 叠放位置最高（后画）的成员，用于保持遮挡关系
+    int stackRank = 0;               // 合并前叠放序号（0 最先画），决定结果各层绘制顺序
 };
 
 // 判定图元是否「有填充空间」：闭合图形与含面积层的多边形算有，直线 / 曲线 /
@@ -54,15 +56,10 @@ bool hasFillSpace(CanvasItem* item)
     return !dynamic_cast<CurveItem*>(item) && !dynamic_cast<TextItem*>(item);
 }
 
-// 合并优先级：有填充空间的图元整体高于零面积描线图元（矩形 > 曲线），同类
-// 内部再按图层顺序、同层 height、最后 zValue 比较；排序为升序，末位即 donor。
-bool priorityLess(CanvasScene* scene, CanvasItem* left, CanvasItem* right)
+// 合并前的叠放顺序（决定合并后各层的绘制顺序，保持遮挡关系）：
+// 图层在下 → 同层 height 小在下 → zValue 小在下。
+bool stackLess(CanvasScene* scene, CanvasItem* left, CanvasItem* right)
 {
-    const bool leftFilled = hasFillSpace(left);
-    const bool rightFilled = hasFillSpace(right);
-    if (leftFilled != rightFilled) {
-        return !leftFilled;
-    }
     const int leftLayer = scene->layerIndex(left->layerId());
     const int rightLayer = scene->layerIndex(right->layerId());
     if (leftLayer != rightLayer) {
@@ -72,6 +69,19 @@ bool priorityLess(CanvasScene* scene, CanvasItem* left, CanvasItem* right)
         return left->height() < right->height();
     }
     return left->zValue() < right->zValue();
+}
+
+// 合并优先级（只决定样式 donor，不决定绘制顺序）：有填充空间的图元整体高于
+// 零面积描线图元（矩形 > 曲线），同类内部再按叠放顺序比较；排序为升序，末位
+// 即 donor。绘制顺序由 stackRank 另行保证。
+bool priorityLess(CanvasScene* scene, CanvasItem* left, CanvasItem* right)
+{
+    const bool leftFilled = hasFillSpace(left);
+    const bool rightFilled = hasFillSpace(right);
+    if (leftFilled != rightFilled) {
+        return !leftFilled;
+    }
+    return stackLess(scene, left, right);
 }
 
 // 把一批图元合成一个参与者：组按整棵组树算一个轮廓，样式取组内最高优先级
@@ -102,6 +112,11 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
     Participant participant;
     participant.item = vectorMembers.constLast();
     participant.fillSpace = hasFillSpace(participant.item);
+    // 叠放最高的成员代表该参与者在合并前的可见位置；合并后它所在的层保持后画。
+    QList<CanvasItem*> byStacking = vectorMembers;
+    std::sort(byStacking.begin(), byStacking.end(),
+              [scene](CanvasItem* left, CanvasItem* right) { return stackLess(scene, left, right); });
+    participant.stackItem = byStacking.constLast();
     participant.members = editable;
     for (CanvasItem* vectorMember : std::as_const(vectorMembers)) {
         QPainterPath memberPath;
@@ -211,9 +226,9 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
     return true;
 }
 
-// 收集参与运算的参与者，并按优先级从低到高排序：先比有无填充空间（有填充
-// 空间的整体靠后、优先级高），再比图层顺序、同层 height，最后比 zValue。
-// 整组只算一个参与者，避免组内成员被拆开重复参与。
+// 收集参与运算的参与者：先记录合并前叠放序号（绘制顺序用），再按样式优先级
+// 从低到高排序（有填充空间整体靠后、优先级高，末位即 donor）。整组只算一个
+// 参与者，避免组内成员被拆开重复参与。
 QList<Participant> collect(CanvasScene* scene)
 {
     QList<Participant> participants;
@@ -240,17 +255,27 @@ QList<Participant> collect(CanvasScene* scene)
         }
         appendParticipant(scene, QList<CanvasItem*>{item}, false, &participants);
     }
+    // 先按合并前叠放顺序记序号：合并结果各层按它排绘制顺序，保证合并前
+    // 可见（在上层 / 更高 height）的部分合并后仍后画、仍可见。
+    QList<int> paintOrder;
+    paintOrder.reserve(participants.size());
+    for (int i = 0; i < participants.size(); ++i) {
+        paintOrder.append(i);
+    }
+    std::sort(paintOrder.begin(), paintOrder.end(), [scene, &participants](int left, int right) {
+        return stackLess(scene, participants.at(left).stackItem, participants.at(right).stackItem);
+    });
+    for (int rank = 0; rank < paintOrder.size(); ++rank) {
+        participants[paintOrder.at(rank)].stackRank = rank;
+    }
+
+    // 优先级排序只决定 donor：先比有无填充空间，同类内按叠放序号（stackRank
+    // 已随参与者记录，排序后仍然有效）。
     std::sort(participants.begin(), participants.end(), [](const Participant& left, const Participant& right) {
         if (left.fillSpace != right.fillSpace) {
             return !left.fillSpace;
         }
-        if (left.layerIndex != right.layerIndex) {
-            return left.layerIndex < right.layerIndex;
-        }
-        if (left.height != right.height) {
-            return left.height < right.height;
-        }
-        return left.item->zValue() < right.item->zValue();
+        return left.stackRank < right.stackRank;
     });
     return participants;
 }
@@ -280,17 +305,19 @@ QList<CompositeShapeItem::Layer> buildLayers(const QPainterPath& result, const Q
             }
             target = target.isEmpty() ? clipped : target.united(clipped);
         };
+        // 每个角色层的绘制序号取该角色贡献者中叠放序号最大者（最靠上的），
+        // 保持合并前的遮挡关系；participants 已按优先级排序，不能用下标 i。
         if (!participant.fillPath.isEmpty()) {
             append(areas, participant.fillPath);
-            areaRank = i;
+            areaRank = areaRank < 0 ? participant.stackRank : qMax(areaRank, participant.stackRank);
         }
         if (!participant.strokePath.isEmpty()) {
             append(strokes, participant.strokePath);
-            strokeRank = i;
+            strokeRank = strokeRank < 0 ? participant.stackRank : qMax(strokeRank, participant.stackRank);
         }
         if (!participant.textPath.isEmpty()) {
             append(texts, participant.textPath);
-            textRank = i;
+            textRank = textRank < 0 ? participant.stackRank : qMax(textRank, participant.stackRank);
             textColor = participant.textColor;
         }
     }

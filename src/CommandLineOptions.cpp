@@ -89,7 +89,7 @@ CommandLineOptions CommandLineOptions::parse(const QStringList& arguments)
             options.lineArtPreset = preset;
         }
     }
-    auto takeInt = [this, &arguments](const QString& option, bool& seen, int& value) {
+    auto takeInt = [&arguments](const QString& option, bool& seen, int& value) {
         const QString text = takeOptionPath(arguments, option);
         if (text.isEmpty()) {
             return;
@@ -101,7 +101,7 @@ CommandLineOptions CommandLineOptions::parse(const QStringList& arguments)
             value = parsed;
         }
     };
-    auto takeDouble = [this, &arguments](const QString& option, bool& seen, double& value) {
+    auto takeDouble = [&arguments](const QString& option, bool& seen, double& value) {
         const QString text = takeOptionPath(arguments, option);
         if (text.isEmpty()) {
             return;
