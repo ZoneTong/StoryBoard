@@ -157,9 +157,10 @@ void UiActionFactory::build()
             m_window->updateActions();
         }
     });
-    m_window->m_smoothAct =
-        makeAction(m_window, IconId::Smooth, MainWindow::tr("Simplify curve"), QKeySequence(QStringLiteral("Ctrl+B")),
-                   MainWindow::tr("Simplify the selected curve once using the current brush tolerance (Ctrl+B)"));
+    m_window->m_smoothAct = makeAction(
+        m_window, IconId::Smooth, MainWindow::tr("Simplify curve"), QKeySequence(QStringLiteral("Ctrl+Shift+B")),
+        MainWindow::tr("Simplify the selected curve once using the current brush tolerance "
+                       "(Ctrl+Shift+B)"));
     m_window->m_smoothAct->setEnabled(false);
     QObject::connect(m_window->m_smoothAct, &QAction::triggered, m_window, [this]() {
         if (!m_window->m_scene || !m_window->m_view) {

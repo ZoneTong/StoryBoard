@@ -467,8 +467,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>Ctrl+0 回到全景视图，Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z 撤销 / 重做</translation>
     </message>
     <message>
-      <source>Ctrl+I / Ctrl+L / Ctrl+E insert image / import outline image / export canvas; Ctrl+B simplifies the selected curve (Brush); Ctrl+Q or Alt+F4 quits</source>
-      <translation>Ctrl+I / Ctrl+L / Ctrl+E 插入图片 / 导入图片线稿化 / 导出画板；Ctrl+B 简化选中曲线（Brush）；Ctrl+Q 或 Alt+F4 退出</translation>
+      <source>Ctrl+I / Ctrl+L / Ctrl+E insert image / import outline image / export canvas; Ctrl+Shift+B simplifies the selected curve (Brush); Ctrl+Q or Alt+F4 quits</source>
+      <translation>Ctrl+I / Ctrl+L / Ctrl+E 插入图片 / 导入图片线稿化 / 导出画板；Ctrl+Shift+B 简化选中曲线（Brush）；Ctrl+Q 或 Alt+F4 退出</translation>
     </message>
     <message>
       <source>Current stroke canceled</source>
@@ -1825,8 +1825,8 @@ Use the checkbox to show or hide it.</source>
       <translation>简化曲线</translation>
     </message>
     <message>
-      <source>Simplify the selected curve once using the current brush tolerance (Ctrl+B)</source>
-      <translation>按当前画笔容差简化选中的曲线一次 (Ctrl+B)</translation>
+      <source>Simplify the selected curve once using the current brush tolerance (Ctrl+Shift+B)</source>
+      <translation>按当前画笔容差简化选中的曲线一次 (Ctrl+Shift+B)</translation>
     </message>
     <message>
       <source>Simplify the selected curve</source>
@@ -2505,8 +2505,8 @@ Use the checkbox to show or hide it.</source>
       <translation>简化曲线</translation>
     </message>
     <message>
-      <source>Simplify the selected curve once using the current brush tolerance (Ctrl+B)</source>
-      <translation>按当前画笔容差简化选中的曲线一次 (Ctrl+B)</translation>
+      <source>Simplify the selected curve once using the current brush tolerance (Ctrl+Shift+B)</source>
+      <translation>按当前画笔容差简化选中的曲线一次 (Ctrl+Shift+B)</translation>
     </message>
     <message>
       <source>Simplified %1 curve(s)</source>
