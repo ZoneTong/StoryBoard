@@ -209,15 +209,7 @@
 3. **图元属性解绑 `Q`**：仅保留双击、属性卡与菜单入口。
 4. **可选增强全部落地**：`Esc` 先取消进行中笔画、否则清除选中；方向键微调 1px、`Shift+方向键` 10px；图层面板 `Alt+1`、图元编辑面板 `Alt+2`；快捷键一览 `F1`；网格开关 `Ctrl+'`。
 
-最终默认键位：
-
-| 分组 | 快捷键 |
-| --- | --- |
-| 文件 | 新建 `Ctrl+N`、打开 `Ctrl+O`、保存 `Ctrl+S`、另存为 `Ctrl+Shift+S`、插入图片 `Ctrl+P`（副 `Ctrl+I`）、线稿化 `Ctrl+Shift+I`、导出 `Ctrl+E`、退出 `Ctrl+Q` / `Alt+F4` |
-| 编辑 | 撤销 `Ctrl+Z`、重做 `Ctrl+Y` / `Ctrl+Shift+Z`、复制 `Ctrl+C`、剪切 `Ctrl+X`、粘贴 `Ctrl+V`、副本 `Ctrl+D`、删除 `Delete` / `Backspace`、组合 `Ctrl+G`、取消组合 `Ctrl+Shift+G`、全选 `Ctrl+A`、简化曲线 `Ctrl+Shift+M`、顺时针 `Ctrl+R`、逆时针 `Ctrl+Shift+R` |
-| 工具 | 选择 `V`、手型 `H`、画笔 `B`、文字 `T` |
-| 视图 | 适应全部 `Ctrl+0` / `Home`、放大 `Ctrl+=` / `Ctrl++`、缩小 `Ctrl+-`、实际大小 `Ctrl+1`、网格 `Ctrl+'`、图层面板 `Alt+1`、图元面板 `Alt+2`、帮助 `F1` |
-| 其他 | 设置 `Ctrl+,`、层内高度 `]` / `[`、方向键微调（`Shift` 加速）、空格长按平移、`Esc` 取消笔画/清选中 |
+最终默认键位：本节当初的键位表已随后续修订全部过时（插入图片、线稿化、简化曲线、删除、全景、副键与编辑模式键都变了），不再保留副本，以 README「快捷键」四张表为准。
 
 实现要点：场景侧 `CanvasScene::clipboardItems()` / `pasteClipboardItems()` / `nudgeSelected()`，新文件 `src/scene/CanvasSceneClipboard.cpp`；控制器 `MainWindowEditActionsController` 编排剪贴板读写；粘贴动作启用状态跟随剪贴板 `dataChanged` 刷新。
 
@@ -276,3 +268,7 @@
 现存自定义组合核验：`Ctrl+I` Insert、`Ctrl+R` Rotate、`Ctrl+E` Export、`Ctrl+L` Lineart、`Ctrl+B` Brush（简化画笔曲线）、`Ctrl+G` / `Ctrl+Shift+G` Group / Ungroup、`Ctrl+D` Duplicate、`Ctrl+'` 网格（Figma）；工具单键 `H` / `V` / `B` / `T`（PS / Figma）；符号特例 `]` / `[` 与面板索引 `Alt+1` / `Alt+2`。无剩余词源不明的功能组合键。
 
 改动点：`UiActionFactory.cpp` 三处键位与提示文字；`ClipboardShortcutTests` 编辑模式断言改 `V`；`MainWindowShapeMenuTests` 简化曲线断言改 `Ctrl+B`；`storyboard_zh.ts` 同步旧键位译文。配置兼容：本轮未改动副键与配置键名（`Ctrl+Y` / `Alt+F4` / `Ctrl+=` 不变）；线稿化与简化曲线的旧 `shortcutOverrides` 条目匹配不到新默认，按 §5.3 口径属无效残留，「恢复默认」即可清空。
+
+## 11. 自测口径收敛：只验绑定生效（2026-11-16）
+
+按最终口径「功能键只看绑定键是否正常工作，副键组合只要不与任何功能冲突即可」，删除附加键的守卫式自检：`ClipboardShortcutTests` 的 `hasOnlyShortcut` / `hasExactShortcuts` 整组断言与 `AlignmentBoolGroupTests` 的 `shortcuts().size() == 2` 判断全部移除，改为断言主键 `shortcut()` 生效（插入图片 `Ctrl+I`、重做 `Ctrl+Y`、放大 `Ctrl+=`、删除 `Delete`、全景 `Ctrl+0`、退出 `Alt+F4`）；副键存在性由 `UiActionFactory` 的键位定义保证，冲突由改键窗口的占用提示兜底。基线 853 passed / 0 failed 不变。

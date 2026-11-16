@@ -103,6 +103,51 @@
 | 快捷键一览 | `F1` |
 | 平移 / 取消 | 长按 `Space` 或中键拖动平移；`Esc`（有进行中笔画时取消笔画，否则清除选中） |
 
+## 命令行
+
+无参数启动进入图形界面；位置参数里第一个存在的 `.sbcanvas` 文件启动后直接打开：
+
+```bash
+StoryBoard.exe examples/demo-canvas.sbcanvas
+```
+
+### 图片线稿化
+
+`--lineart 图片.png --lineart-out 输出.sbcanvas`：按当前设置档把图片转成曲线画布，默认均衡档、1px 最细条带、线宽固定 1，超过 11800 px 的长边等比缩小，输出画布四周留 20 px 边距；失败时打印原因并返回非 0。与「设置 → 图片线稿化」共用一套参数语义，档位 0–3 对应保留细节 / 均衡（默认）/ 线条干净 / 大块概括：
+
+```bash
+StoryBoard.exe --lineart input.png                          # 输出 input.sbcanvas，均衡档
+StoryBoard.exe --lineart input.png --lineart-out out.sbcanvas --lineart-preset 2
+StoryBoard.exe --lineart input.png --lineart-min-area 40 --lineart-max-regions 800
+```
+
+档位外的 11 个细项参数可逐个覆盖（不传则取档位默认值，均以命令行为准、不写回配置文件）：
+
+| 参数 | 含义 |
+| --- | --- |
+| `--lineart-max-side` | 处理时长边像素上限 |
+| `--lineart-color-levels` | 每通道颜色量化级数，越小越易并块 |
+| `--lineart-palette-colors` | 保留的主色数量上限 |
+| `--lineart-palette-merge` | 同色合并距离（RGB 欧氏距离），吃掉抗锯齿过渡带 |
+| `--lineart-adjacent-merge` | 相邻色块合并距离，只并空间相邻的碎块 |
+| `--lineart-min-area` | 小于该像素面积的色块不描边 |
+| `--lineart-max-regions` | 最多描多少块，0 不设上限 |
+| `--lineart-adaptive` | `on` / `off`，色块过多时自动降处理尺寸重算 |
+| `--lineart-adaptive-limit` | 触发自适应降采样的色块数阈值 |
+| `--lineart-min-adaptive-side` | 自适应降采样的处理长边下限 |
+| `--lineart-tolerance` | 轮廓简化容差（折线模式，不平滑） |
+| `--lineart-min-thickness` | 抗锯齿细条带的平均宽度阈值，低于它不描边（默认 1px，最细条带） |
+
+### 自检与诊断
+
+| 参数 | 作用 |
+| --- | --- |
+| `--self-test [报告路径]` | 跑全部自检并写报告，`SUMMARY` 行给出通过 / 失败数 |
+| `--set-language zh\|en\|system` | 写入界面语言设置后退出 |
+| `--settings-probe` / `--settings-apply-probe` | 配置文件读 / 写冒烟探测 |
+| `--render-demo` / `--demo-canvas` | 渲染演示画布、生成示例 `.sbcanvas` |
+| `--ui-screenshot`、`--settings-screenshot`、`--about-screenshot`、`--item-properties-screenshot`、`--shape-menu-screenshot`、`--brush-style-menu-screenshot`、`--brush-width-menu-screenshot`、`--fill-style-menu-screenshot`、`--style-menu-screenshot`、`--export-screenshot` | 截取对应界面保存为图片，用于文档与回归 |
+
 ## 构建与运行
 
 要求 Qt 6.5+、C++17、CMake 3.21+、GCC 15（Windows / Linux）或 Qt 官方 AppleClang（macOS）。
@@ -174,11 +219,7 @@ APP=$(basename "$PWD")
 QT_QPA_PLATFORM=offscreen ./build/bin/$APP --self-test build/selftest.txt
 ```
 
-当前 Windows 基线为 **850 passed, 0 failed**，其他平台以实际 `SUMMARY` 为准。自检需要平台插件目录下的 offscreen 插件，打包脚本会自动补齐。
-
-多边形图元支持填充样式 / 填充颜色、描线样式 / 描线颜色 / 描线宽度，编辑图元卡、工具栏与图元属性窗都可直接修改并进入撤销记录；其中填充样式只作用于有面积图层，文字字形与直线 / 曲线线宽带保持纯色，描线宽度与样式只作用于有面积轮廓。
-
-文字只绘制字形，不参与下层图元的遮挡裁剪，避免低缩放或亚像素偏移时在文字背后露出白色孔洞；合并图元按图元的完整几何轮廓计算并集 / 组合 / 拆分 / 相交 / 相减，无填充图形与已生成多边形再次参与合并时同样保留完整区域。
+当前 Windows 基线为 **853 passed, 0 failed**（GCC 15 + Qt 6.12 实跑），其他平台以实际 `SUMMARY` 为准。自检需要平台插件目录下的 offscreen 插件，打包脚本会自动补齐。自检只验证功能键的绑定键生效且互不冲突；副键组合只要不与任何功能冲突即可，不做额外守卫。
 
 ## 项目结构
 
