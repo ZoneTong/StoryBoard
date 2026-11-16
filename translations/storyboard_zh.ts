@@ -649,8 +649,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>填充：%1 · %2（点击选择）</translation>
     </message>
     <message>
-      <source>Fit all items (Ctrl+0 / Home)</source>
-      <translation>一键查看全部图元 (Ctrl+0 / Home)</translation>
+      <source>Fit all items (Ctrl+0)</source>
+      <translation>一键查看全部图元 (Ctrl+0)</translation>
     </message>
     <message>
       <source>Fit entirely</source>
@@ -1254,7 +1254,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
       <source>Redo (Ctrl+Y)</source>
-      <translation>重做 (Ctrl+Y / Ctrl+Shift+Z)</translation>
+      <translation>重做 (Ctrl+Y)</translation>
     </message>
     <message>
       <source>Redo: %1</source>
@@ -1713,8 +1713,8 @@ Use the checkbox to show or hide it.</source>
       <translation>上层在前 · 可多选</translation>
     </message>
     <message>
-      <source>Trace an image's color-block outlines into strokes (line width 1); a parameter dialog opens first and only Save to configuration file writes StoryBoard.ini (Ctrl+Shift+I)</source>
-      <translation>把图片色块轮廓描成笔画（线宽 1）；先弹参数窗，只有点「保存到配置文件」才写进 StoryBoard.ini（Ctrl+Shift+I）</translation>
+      <source>Trace an image's color-block outlines into strokes (line width 1); a parameter dialog opens first and only Save to configuration file writes StoryBoard.ini (Ctrl+L)</source>
+      <translation>把图片色块轮廓描成笔画（线宽 1）；先弹参数窗，只有点「保存到配置文件」才写进 StoryBoard.ini（Ctrl+L）</translation>
     </message>
     <message>
       <source>Triangle</source>
@@ -1821,8 +1821,8 @@ Use the checkbox to show or hide it.</source>
       <translation>简化曲线</translation>
     </message>
     <message>
-      <source>Simplify the selected curve once using the current brush tolerance (Ctrl+Shift+M)</source>
-      <translation>按当前画笔容差简化选中的曲线一次 (Ctrl+Shift+M)</translation>
+      <source>Simplify the selected curve once using the current brush tolerance (Ctrl+B)</source>
+      <translation>按当前画笔容差简化选中的曲线一次 (Ctrl+B)</translation>
     </message>
     <message>
       <source>Simplify the selected curve</source>
@@ -2006,8 +2006,8 @@ Use the checkbox to show or hide it.</source>
         <translation>切换图形类型</translation>
     </message>
     <message>
-        <source>Trace an image&amp;apos;s color-block outlines into strokes (line width 1); a parameter dialog opens first and only Save to configuration file writes StoryBoard.ini (Ctrl+Shift+I)</source>
-        <translation>把图片色块轮廓描成笔画（线宽 1）；先弹参数窗，只有点「保存到配置文件」才写进 StoryBoard.ini（Ctrl+Shift+I）</translation>
+        <source>Trace an image&amp;apos;s color-block outlines into strokes (line width 1); a parameter dialog opens first and only Save to configuration file writes StoryBoard.ini (Ctrl+L)</source>
+        <translation>把图片色块轮廓描成笔画（线宽 1）；先弹参数窗，只有点「保存到配置文件」才写进 StoryBoard.ini（Ctrl+L）</translation>
     </message>
     <message>
         <source>Show the selected item&amp;apos;s properties (Q)</source>
@@ -2297,8 +2297,8 @@ Use the checkbox to show or hide it.</source>
       <translation>导入图片线稿化</translation>
     </message>
     <message>
-      <source>Trace an image's color-block outlines into strokes (line width 1); a parameter dialog opens first and only Save to configuration file writes StoryBoard.ini (Ctrl+Shift+I)</source>
-      <translation>把图片色块轮廓描成笔画（线宽 1）；先弹参数窗，只有点「保存到配置文件」才写进 StoryBoard.ini（Ctrl+Shift+I）</translation>
+      <source>Trace an image's color-block outlines into strokes (line width 1); a parameter dialog opens first and only Save to configuration file writes StoryBoard.ini (Ctrl+L)</source>
+      <translation>把图片色块轮廓描成笔画（线宽 1）；先弹参数窗，只有点「保存到配置文件」才写进 StoryBoard.ini（Ctrl+L）</translation>
     </message>
     <message>
       <source>The current layer is locked or hidden; the image outline cannot be imported. Unlock or switch layers in the layer panel first.</source>
@@ -2369,8 +2369,8 @@ Use the checkbox to show or hide it.</source>
       <translation>插入图片…</translation>
     </message>
     <message>
-      <source>Insert images as movable, resizable items (Ctrl+P)</source>
-      <translation>将图片插入为可移动、可缩放的图元 (Ctrl+P)</translation>
+      <source>Insert images as movable, resizable items (Ctrl+I)</source>
+      <translation>将图片插入为可移动、可缩放的图元 (Ctrl+I)</translation>
     </message>
     <message>
       <source>Export canvas…</source>
@@ -2402,7 +2402,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Redo (Ctrl+Y)</source>
-      <translation>重做 (Ctrl+Y / Ctrl+Shift+Z)</translation>
+      <translation>重做 (Ctrl+Y)</translation>
     </message>
     <message>
       <source>Delete selected items</source>
@@ -2501,8 +2501,8 @@ Use the checkbox to show or hide it.</source>
       <translation>简化曲线</translation>
     </message>
     <message>
-      <source>Simplify the selected curve once using the current brush tolerance (Ctrl+Shift+M)</source>
-      <translation>按当前画笔容差简化选中的曲线一次 (Ctrl+Shift+M)</translation>
+      <source>Simplify the selected curve once using the current brush tolerance (Ctrl+B)</source>
+      <translation>按当前画笔容差简化选中的曲线一次 (Ctrl+B)</translation>
     </message>
     <message>
       <source>Simplified %1 curve(s)</source>
@@ -2581,8 +2581,8 @@ Use the checkbox to show or hide it.</source>
       <translation>回到全景视图</translation>
     </message>
     <message>
-      <source>Fit all items (Ctrl+0 / Home)</source>
-      <translation>一键查看全部图元 (Ctrl+0 / Home)</translation>
+      <source>Fit all items (Ctrl+0)</source>
+      <translation>一键查看全部图元 (Ctrl+0)</translation>
     </message>
     <message>
       <source>Zoom in</source>
@@ -3345,8 +3345,8 @@ Use the checkbox to show or hide it.</source>
       <translation>当前所有带快捷键的动作：</translation>
     </message>
     <message>
-      <source>Quit StoryBoard (Ctrl+Q / Alt+F4)</source>
-      <translation>退出 StoryBoard（Ctrl+Q / Alt+F4）</translation>
+      <source>Quit StoryBoard (Alt+F4)</source>
+      <translation>退出 StoryBoard（Alt+F4）</translation>
     </message>
       <message>
       <source>Click a shortcut to change it; Esc closes this dialog.</source>
@@ -3586,8 +3586,8 @@ Use the checkbox to show or hide it.</source>
     </message>
 
     <message>
-        <source>Trace an image&amp;apos;s color-block outlines into strokes (line width 1); a parameter dialog opens first and only Save to configuration file writes StoryBoard.ini (Ctrl+Shift+I)</source>
-        <translation>把图片色块轮廓描成笔画（线宽 1）；先弹参数窗，只有点「保存到配置文件」才写进 StoryBoard.ini（Ctrl+Shift+I）</translation>
+        <source>Trace an image&amp;apos;s color-block outlines into strokes (line width 1); a parameter dialog opens first and only Save to configuration file writes StoryBoard.ini (Ctrl+L)</source>
+        <translation>把图片色块轮廓描成笔画（线宽 1）；先弹参数窗，只有点「保存到配置文件」才写进 StoryBoard.ini（Ctrl+L）</translation>
     </message>
     <message>
         <source>Show the selected item&amp;apos;s properties (Q)</source>

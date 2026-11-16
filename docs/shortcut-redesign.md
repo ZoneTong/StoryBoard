@@ -220,3 +220,59 @@
 | 其他 | 设置 `Ctrl+,`、层内高度 `]` / `[`、方向键微调（`Shift` 加速）、空格长按平移、`Esc` 取消笔画/清选中 |
 
 实现要点：场景侧 `CanvasScene::clipboardItems()` / `pasteClipboardItems()` / `nudgeSelected()`，新文件 `src/scene/CanvasSceneClipboard.cpp`；控制器 `MainWindowEditActionsController` 编排剪贴板读写；粘贴动作启用状态跟随剪贴板 `dataChanged` 刷新。
+
+## 7. 一览窗口与文档的分组排列（2026-11-16）
+
+键位定稿后，「快捷键一览」窗口仍按动作文字字典序排三栏，同一功能的键位被拆到不同列，找键比按菜单找入口更费劲。改动：
+
+- `ShortcutController::showShortcuts()`：先沿 `QMenuBar` 顺序递归收集菜单项里的动作（文件 → 视图 → 编辑 → 插入 → 帮助），再补上只有工具栏 / 卡片入口、没有菜单项的动作（按文字序）；同一菜单下的动作列出时天然相邻，换语言或改键都不影响分组。
+- 排布仍是三栏、按列连续填充，一列内的条目保持原分组顺序，组与组之间不再交叉。
+- README 的快捷键一节按同一分组拆成「文件与画布」「视图与工具模式」「编辑与图元」「其他」四张表；`CODE_REVIEW.md` 记录本次按代码复核的差异。
+- 自检没有针对窗口排序的断言，基线仍为 850 passed / 0 failed。
+
+## 8. 取消副键，每个动作只留一个主键（2026-11-16）
+
+§6 表格里的副键以下一节为准、全部作废。§6 落地时给六个动作留了副键，实际使用中两套键位既没有增加便利，又让「改键 / 恢复默认」多一层歧义（换掉主键后副键仍在）。改为每个动作只保留一个键，取舍以「通用软件标准优先，其次是直觉」为准：
+
+| 动作 | 删掉的副键 | 保留的主键 | 依据 |
+| --- | --- | --- | --- |
+| 插入图片 | `Ctrl+P` | `Ctrl+I` | `Ctrl+P` 是打印的通用标准键，不该占用；`I` 对应 image / insert，最直觉 |
+| 重做 | `Ctrl+Shift+Z` | `Ctrl+Y` | Windows 桌面应用的通用标准 |
+| 删除选中图元 | `Backspace` | `Delete` | Windows 标准；`Backspace` 在文本与浏览器场景带「回退」语义，容易误删 |
+| 退出 | `Ctrl+Q` | `Alt+F4` | Windows 标准关闭窗口键 |
+| 回到全景视图 | `Home` | `Ctrl+0` | Photoshop / Figma 的缩放归位习惯 |
+| 放大 | `Ctrl++` | `Ctrl+=` | 与 `Ctrl++` 是同一个物理键，`Ctrl+=` 不必按 Shift，PS 与浏览器同样接受 |
+
+改动点：`src/UiActionFactory.cpp` 去掉六处 `setShortcuts` 多键赋值，提示文字同步改成单键；`translations/storyboard_zh.ts` 里带旧键位的译文跟着改；`src/selftest/ClipboardShortcutTests.cpp` 的 `hasShortcut` 换成 `hasOnlyShortcut`（要求 `shortcuts().size() == 1`），新增「回到全景」「退出」两条用例；`AlignmentBoolGroupTests` 的重做 / 放大用例补上单键判断。
+
+配置兼容沿用 §5.3 的口径：`shortcutOverrides` 以默认键的 PortableText 为键名，默认键变了以后旧覆盖条目匹配不到新默认，属于无效残留，在「快捷键一览」里点「恢复默认」即可清空。
+
+## 9. 副键二次修订：恢复操作系统级副键（2026-11-16）
+
+§8 的「全部单键」再修正一次：自创的、与功能无关的副键仍然不要，但**操作系统级的标准键恢复为副键**；自创组合键保持少量，且一律取自英文词义。
+
+| 动作 | 恢复的副键 | 依据 |
+| --- | --- | --- |
+| 重做 | `Ctrl+Shift+Z` | macOS / GNOME 级重做标准，与主键 `Ctrl+Y` 并存 |
+| 退出 | `Ctrl+Q` | Linux / macOS 级退出标准，主键仍为 `Alt+F4` |
+| 放大 | `Ctrl++` | 系统级放大标准绑定（含小键盘加号），与 `Ctrl+=` 同义并存 |
+
+不恢复的三个：`Ctrl+P`（打印的 OS 级标准键，语义冲突）、`Backspace`（非 OS 级删除标准，带回退语义易误删）、`Home`（自创绑定，非 OS 级）。自创键位收敛后的清单与英文依据：`Ctrl+I`=Insert、`H`=Hand、`E`=Edit、`B`=Brush、`T`=Text、`Ctrl+R`=Rotate；`Alt+1` / `Alt+2` 是面板索引约定；`]` / `[` 仅编辑模式的层内高度微调，为仅有的两处符号键。
+
+编辑模式键由 `V` 改为 `E`（Edit 取自英文词义；`V` 是 PS 移动工具的沿用，不符合本原则）。`E` 与导出的 `Ctrl+E` 不冲突（修饰键不同）。
+
+改动点：`src/UiActionFactory.cpp` 恢复三处 `setShortcuts` 双键赋值，编辑模式改绑 `E`；`ClipboardShortcutTests` 新增 `hasExactShortcuts` 按「主键在前、副键在后」整组校验重做 / 放大 / 退出，编辑模式断言改 `E`；`AlignmentBoolGroupTests` 重做 / 放大改断言双键。配置兼容不变：`shortcutOverrides` 仍以默认主键的 PortableText 为键名（`Ctrl+Y` / `Alt+F4` / `Ctrl+=`），主键未变、旧覆盖条目继续有效；手动改键会把动作整体换成单键，点「恢复默认」找回整组。
+
+## 10. 键位再收敛：编辑模式回 `V`，两个弱词源组合键替换（2026-11-16）
+
+§9 的 `E` 方案作废：主流绘图软件的选择 / 指针工具一律是 `V`（PS 移动工具、Figma 指针），行业直觉优先于 Edit 字面；同时清理两个说不出清晰词源的自创组合键。
+
+| 功能 | 旧键 | 新键 | 依据 |
+| --- | --- | --- | --- |
+| 编辑 / 选择模式 | `E` | `V` | PS / Figma 指针工具通用键 |
+| 导入图片线稿化 | `Ctrl+Shift+I` | `Ctrl+L` | Line / Lineart 线稿，词源清晰 |
+| 简化选中曲线 | `Ctrl+Shift+M` | `Ctrl+B` | Smooth 平滑简化；与画笔单键 `B` 靠修饰键隔离，不冲突 |
+
+现存自定义组合核验：`Ctrl+I` Insert、`Ctrl+R` Rotate、`Ctrl+E` Export、`Ctrl+L` Lineart、`Ctrl+B` Smooth、`Ctrl+G` / `Ctrl+Shift+G` Group / Ungroup、`Ctrl+D` Duplicate、`Ctrl+'` 网格（Figma）；工具单键 `H` / `V` / `B` / `T`（PS / Figma）；符号特例 `]` / `[` 与面板索引 `Alt+1` / `Alt+2`。无剩余词源不明的功能组合键。
+
+改动点：`UiActionFactory.cpp` 三处键位与提示文字；`ClipboardShortcutTests` 编辑模式断言改 `V`；`MainWindowShapeMenuTests` 简化曲线断言改 `Ctrl+B`；`storyboard_zh.ts` 同步旧键位译文。配置兼容：本轮未改动副键与配置键名（`Ctrl+Y` / `Alt+F4` / `Ctrl+=` 不变）；线稿化与简化曲线的旧 `shortcutOverrides` 条目匹配不到新默认，按 §5.3 口径属无效残留，「恢复默认」即可清空。

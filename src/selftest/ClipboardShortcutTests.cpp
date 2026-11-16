@@ -18,18 +18,27 @@
 
 namespace {
 
-bool hasShortcut(QAction* action, const QString& shortcut)
+// 无系统级副键的动作只留一个主键；有副键的动作按「主键在前、副键在后」整组校验。
+bool hasOnlyShortcut(QAction* action, const QString& shortcut)
 {
     if (!action) {
         return false;
     }
-    const QKeySequence target(shortcut);
-    for (const QKeySequence& seq : action->shortcuts()) {
-        if (seq == target) {
-            return true;
+    const QList<QKeySequence> sequences = action->shortcuts();
+    return sequences.size() == 1 && sequences.constFirst() == QKeySequence(shortcut);
+}
+
+bool hasExactShortcuts(QAction* action, const QStringList& shortcuts)
+{
+    if (!action || action->shortcuts().size() != shortcuts.size()) {
+        return false;
+    }
+    for (int i = 0; i < shortcuts.size(); ++i) {
+        if (action->shortcuts().at(i) != QKeySequence(shortcuts.at(i))) {
+            return false;
         }
     }
-    return false;
+    return true;
 }
 
 QAction* findActionByObjectName(QWidget* window, const QString& objectName)
@@ -104,7 +113,7 @@ void selftest::runClipboardShortcutTests(Context& ctx)
         }
     }
 
-    // 默认键位映射：按业内通用绘图软件习惯核对主键与副键。
+    // 默认键位映射：按通用软件标准或直觉核对每个动作唯一的那个键。
     {
         MainWindow shortcutWindow;
 
@@ -125,7 +134,7 @@ void selftest::runClipboardShortcutTests(Context& ctx)
         ctx.check(findActionByText(&shortcutWindow, QStringLiteral("编辑模式")) &&
                       findActionByText(&shortcutWindow, QStringLiteral("编辑模式"))->shortcut() ==
                           QKeySequence(QStringLiteral("V")),
-                  QStringLiteral("选择/编辑模式绑定 V"));
+                  QStringLiteral("选择/编辑模式绑定 V（PS / Figma 指针工具）"));
         ctx.check(findActionByText(&shortcutWindow, QStringLiteral("画笔模式")) &&
                       findActionByText(&shortcutWindow, QStringLiteral("画笔模式"))->shortcut() ==
                           QKeySequence(QStringLiteral("B")),
@@ -136,24 +145,26 @@ void selftest::runClipboardShortcutTests(Context& ctx)
                   QStringLiteral("文字模式绑定 T"));
 
         QAction* insertAction = findActionByText(&shortcutWindow, QStringLiteral("插入图片…"));
-        ctx.check(insertAction && insertAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+P")) &&
-                      hasShortcut(insertAction, QStringLiteral("Ctrl+I")),
-                  QStringLiteral("插入图片主键 Ctrl+P、副键 Ctrl+I"));
+        ctx.check(hasOnlyShortcut(insertAction, QStringLiteral("Ctrl+I")),
+                  QStringLiteral("插入图片只用 Ctrl+I 一个键"));
 
         QAction* redoAction = findActionByText(&shortcutWindow, QStringLiteral("重做"));
-        ctx.check(redoAction && redoAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+Y")) &&
-                      hasShortcut(redoAction, QStringLiteral("Ctrl+Shift+Z")),
-                  QStringLiteral("重做主键 Ctrl+Y、副键 Ctrl+Shift+Z"));
+        ctx.check(hasExactShortcuts(redoAction, {QStringLiteral("Ctrl+Y"), QStringLiteral("Ctrl+Shift+Z")}),
+                  QStringLiteral("重做主键 Ctrl+Y，副键 Ctrl+Shift+Z"));
 
         QAction* zoomInAction = findActionByText(&shortcutWindow, QStringLiteral("放大"));
-        ctx.check(zoomInAction && zoomInAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+=")) &&
-                      hasShortcut(zoomInAction, QStringLiteral("Ctrl++")),
-                  QStringLiteral("放大主键 Ctrl+=、副键 Ctrl++"));
+        ctx.check(hasExactShortcuts(zoomInAction, {QStringLiteral("Ctrl+="), QStringLiteral("Ctrl++")}),
+                  QStringLiteral("放大主键 Ctrl+=，副键 Ctrl++"));
 
         QAction* deleteAction = findActionByText(&shortcutWindow, QStringLiteral("删除选中图元"));
-        ctx.check(deleteAction && hasShortcut(deleteAction, QStringLiteral("Delete")) &&
-                      hasShortcut(deleteAction, QStringLiteral("Backspace")),
-                  QStringLiteral("删除同时绑定 Delete 与 Backspace"));
+        ctx.check(hasOnlyShortcut(deleteAction, QStringLiteral("Delete")), QStringLiteral("删除只用 Delete 一个键"));
+
+        QAction* fitAction = findActionByText(&shortcutWindow, QStringLiteral("回到全景视图"));
+        ctx.check(hasOnlyShortcut(fitAction, QStringLiteral("Ctrl+0")), QStringLiteral("回到全景只用 Ctrl+0 一个键"));
+
+        QAction* quitAction = findActionByText(&shortcutWindow, QStringLiteral("退出"));
+        ctx.check(hasExactShortcuts(quitAction, {QStringLiteral("Alt+F4"), QStringLiteral("Ctrl+Q")}),
+                  QStringLiteral("退出主键 Alt+F4，副键 Ctrl+Q"));
 
         QAction* gridAction = findActionByText(&shortcutWindow, QStringLiteral("辅助网格"));
         ctx.check(gridAction && gridAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+'")),

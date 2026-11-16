@@ -30,12 +30,39 @@ struct Participant {
     FillStyle fillStyle = FillStyle::Solid;
     Qt::PenStyle strokeStyle = Qt::SolidLine;
     bool filled = true;
+    bool fillSpace = false; // 代表图元是否有填充空间（闭合图形 / 含面积层的多边形）
     int layerIndex = 0;
     int height = -1;
 };
 
+// 判定图元是否「有填充空间」：闭合图形与含面积层的多边形算有，直线 / 曲线 /
+// 文字是零面积描线，算没有。只看几何类型，不看当前填充样式——无填充的闭合
+// 图形仍按完整轮廓参与布尔运算，也应优先决定合并结果的样式。
+bool hasFillSpace(CanvasItem* item)
+{
+    if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+        return !shapeTypeIsStrokeOnly(shape->shapeType());
+    }
+    if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+        for (const CompositeShapeItem::Layer& layer : composite->layers()) {
+            if (layer.role == CompositeShapeItem::LayerRole::FilledArea && !layer.path.isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+    return !dynamic_cast<CurveItem*>(item) && !dynamic_cast<TextItem*>(item);
+}
+
+// 合并优先级：有填充空间的图元整体高于零面积描线图元（矩形 > 曲线），同类
+// 内部再按图层顺序、同层 height、最后 zValue 比较；排序为升序，末位即 donor。
 bool priorityLess(CanvasScene* scene, CanvasItem* left, CanvasItem* right)
 {
+    const bool leftFilled = hasFillSpace(left);
+    const bool rightFilled = hasFillSpace(right);
+    if (leftFilled != rightFilled) {
+        return !leftFilled;
+    }
     const int leftLayer = scene->layerIndex(left->layerId());
     const int rightLayer = scene->layerIndex(right->layerId());
     if (leftLayer != rightLayer) {
@@ -74,6 +101,7 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
 
     Participant participant;
     participant.item = vectorMembers.constLast();
+    participant.fillSpace = hasFillSpace(participant.item);
     participant.members = editable;
     for (CanvasItem* vectorMember : std::as_const(vectorMembers)) {
         QPainterPath memberPath;
@@ -183,8 +211,9 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
     return true;
 }
 
-// 收集参与运算的参与者，并按优先级从低到高排序（图层先比，再比同层 height、
-// 最后比 zValue）。整组只算一个参与者，避免组内成员被拆开重复参与。
+// 收集参与运算的参与者，并按优先级从低到高排序：先比有无填充空间（有填充
+// 空间的整体靠后、优先级高），再比图层顺序、同层 height，最后比 zValue。
+// 整组只算一个参与者，避免组内成员被拆开重复参与。
 QList<Participant> collect(CanvasScene* scene)
 {
     QList<Participant> participants;
@@ -212,6 +241,9 @@ QList<Participant> collect(CanvasScene* scene)
         appendParticipant(scene, QList<CanvasItem*>{item}, false, &participants);
     }
     std::sort(participants.begin(), participants.end(), [](const Participant& left, const Participant& right) {
+        if (left.fillSpace != right.fillSpace) {
+            return !left.fillSpace;
+        }
         if (left.layerIndex != right.layerIndex) {
             return left.layerIndex < right.layerIndex;
         }
@@ -327,7 +359,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         return false;
     }
 
-    // 顶层图元（优先级最高的那个）决定结果的颜色与落点。
+    // 优先级最高的图元决定结果的颜色与落点（有填充空间者优先，其次叠放顺序）。
     const Participant top = participants.constLast();
     // 除拆分外的运算都只产出一个多边形；拆分产出多个互不重叠的独立图元。
     QList<QList<CompositeShapeItem::Layer>> results;

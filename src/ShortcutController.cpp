@@ -9,6 +9,8 @@
 #include <QGridLayout>
 #include <QKeySequenceEdit>
 #include <QLabel>
+#include <QMenu>
+#include <QMenuBar>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QRegularExpression>
@@ -30,6 +32,27 @@ void reportWarning(QWidget* parent, const QString& title, const QString& text)
         return;
     }
     QMessageBox::warning(parent, title, text);
+}
+
+// 一览窗口按功能分组：顺着菜单栏的顺序递归收集动作，同一菜单下的快捷键自然挨在一起，
+// 顺序与用户平时找入口的顺序一致，语言切换或改键都不影响分组。
+void collectMenuActions(QMenu* menu, QList<QAction*>& ordered)
+{
+    if (!menu) {
+        return;
+    }
+    for (QAction* action : menu->actions()) {
+        if (!action) {
+            continue;
+        }
+        if (action->menu()) {
+            collectMenuActions(action->menu(), ordered);
+            continue;
+        }
+        if (!ordered.contains(action)) {
+            ordered.append(action);
+        }
+    }
 }
 
 } // namespace
@@ -158,8 +181,31 @@ void ShortcutController::showShortcuts()
         QString text;
         QString keys;
     };
-    QList<Entry> entries;
+    // 菜单栏顺序就是功能分组顺序：文件 → 视图 → 编辑 → 插入 → 帮助；
+    // 只有工具栏 / 卡片入口、没有菜单项的动作按文字顺序补在末尾。
+    QList<QAction*> orderedActions;
+    QMenuBar* menuBar = m_window->menuBar();
+    if (menuBar) {
+        for (QAction* top : menuBar->actions()) {
+            if (top && top->menu()) {
+                collectMenuActions(top->menu(), orderedActions);
+            }
+        }
+    }
+    QList<QAction*> menuLessActions;
     for (QAction* action : m_window->findChildren<QAction*>()) {
+        if (!action || orderedActions.contains(action)) {
+            continue;
+        }
+        menuLessActions.append(action);
+    }
+    std::sort(menuLessActions.begin(), menuLessActions.end(), [](QAction* left, QAction* right) {
+        return left->text().compare(right->text(), Qt::CaseInsensitive) < 0;
+    });
+    orderedActions.append(menuLessActions);
+
+    QList<Entry> entries;
+    for (QAction* action : orderedActions) {
         if (!action || action->shortcut().isEmpty()) {
             continue;
         }
@@ -180,9 +226,6 @@ void ShortcutController::showShortcuts()
             entries.append({action, text, keys});
         }
     }
-    std::sort(entries.begin(), entries.end(), [](const Entry& left, const Entry& right) {
-        return left.text.compare(right.text, Qt::CaseInsensitive) < 0;
-    });
 
     QDialog dialog(m_window);
     dialog.setWindowTitle(MainWindow::tr("Keyboard shortcuts"));

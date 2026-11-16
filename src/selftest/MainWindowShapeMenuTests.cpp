@@ -320,7 +320,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                 smoothAction = action;
             }
         }
-        ctx.check(smoothAction && smoothAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+Shift+M")),
+        ctx.check(smoothAction && smoothAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+B")),
                   QStringLiteral("菜单提供简化曲线入口与快捷键"));
         QToolButton* iconFillButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("FillButton"));
         QToolButton* iconFillColorButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("FillColorButton"));

@@ -153,11 +153,13 @@ void selftest::runAlignmentMenuTests(Context& ctx)
                 zoomInAction = action;
             }
         }
-        ctx.check(redoAction && redoAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+Y")),
-                  QStringLiteral("重做主键为 Ctrl+Y（可带副键 Ctrl+Shift+Z）"),
+        ctx.check(redoAction && redoAction->shortcuts().size() == 2 &&
+                      redoAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+Y")),
+                  QStringLiteral("重做主键 Ctrl+Y，副键 Ctrl+Shift+Z"),
                   redoAction ? redoAction->shortcut().toString() : QString());
-        ctx.check(zoomInAction && zoomInAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+=")),
-                  QStringLiteral("放大主键为 Ctrl+=（可带副键 Ctrl++）"),
+        ctx.check(zoomInAction && zoomInAction->shortcuts().size() == 2 &&
+                      zoomInAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+=")),
+                  QStringLiteral("放大主键 Ctrl+=，副键 Ctrl++"),
                   zoomInAction ? zoomInAction->shortcut().toString() : QString());
     }
 }
@@ -294,6 +296,35 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                       QStringLiteral("layers=%1 band=%2")
                           .arg(lineShell ? lineShell->layerCount() : -1)
                           .arg(bandLayerFound ? 1 : 0));
+        }
+
+        // 有填充空间的图元优先于零面积描线图元：曲线叠在矩形上方（height 更大），
+        // 合并 donor 仍取矩形的填充与描线样式。
+        {
+            QUndoStack undo;
+            CanvasScene scene;
+            scene.setUndoStack(&undo);
+            scene.setMode(ToolMode::Edit);
+            scene.applyCanvasSize(QSizeF(320.0, 220.0));
+            auto* rect = new ShapeItem();
+            rect->setShapeType(ShapeType::Rectangle);
+            rect->setPos(QPointF(60.0, 50.0));
+            rect->setContentSize(QSizeF(160.0, 120.0));
+            rect->setStyle(QColor(20, 20, 20), QColor(255, 255, 255), 4.0);
+            rect->setFill(QColor(200, 40, 40), FillStyle::Solid);
+            auto* curve = new CurveItem();
+            curve->setStrokePoints({QPointF(30.0, 110.0), QPointF(290.0, 110.0)}, QColor(30, 90, 200), 6.0);
+            scene.addItemsWithUndo({rect, curve}, QStringLiteral("Add rect and curve"));
+            rect->setSelected(true);
+            curve->setSelected(true);
+            const bool merged = BoolOps::apply(&scene, BoolOps::Operation::Union, QStringLiteral("合并"));
+            const QList<CanvasItem*> mergedItems = scene.selectedCanvasItems();
+            auto* shell = mergedItems.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(mergedItems.constFirst());
+            ctx.check(merged && shell && shell->fillColor() == QColor(200, 40, 40),
+                      QStringLiteral("合并优先采用有填充空间图元的样式（矩形>曲线）"),
+                      QStringLiteral("ok=%1 fill=%2")
+                          .arg(merged ? 1 : 0)
+                          .arg(shell ? shell->fillColor().name() : QStringLiteral("none")));
         }
 
         // 文字参与合并：只填字形、不描边；不透明层直接覆盖，避免抗锯齿边缘露出白色重影。

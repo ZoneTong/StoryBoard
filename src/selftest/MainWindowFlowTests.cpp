@@ -236,11 +236,11 @@ void selftest::runMainWindowFlowTests(Context& ctx)
                     AppSettings shortcutSettings;
                     shortcutSettings.load();
                     const QMap<QString, QString> originalShortcuts = shortcutSettings.shortcutOverrides;
-                    shortcutSettings.shortcutOverrides.insert(QStringLiteral("Ctrl+Q"), QStringLiteral("Ctrl+Alt+Q"));
+                    shortcutSettings.shortcutOverrides.insert(QStringLiteral("Alt+F4"), QStringLiteral("Ctrl+Alt+Q"));
                     ctx.check(shortcutSettings.save(), QStringLiteral("自定义快捷键写入配置文件"));
                     AppSettings shortcutReloaded;
                     shortcutReloaded.load();
-                    ctx.check(shortcutReloaded.shortcutOverrides.value(QStringLiteral("Ctrl+Q")) ==
+                    ctx.check(shortcutReloaded.shortcutOverrides.value(QStringLiteral("Alt+F4")) ==
                                   QStringLiteral("Ctrl+Alt+Q"),
                               QStringLiteral("自定义快捷键能重新读回"));
                     {

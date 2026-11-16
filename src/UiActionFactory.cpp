@@ -56,35 +56,35 @@ void UiActionFactory::build()
     m_window->m_saveAsAct = makeAction(m_window, IconId::Save, MainWindow::tr("Save canvas as…"),
                                        QKeySequence(QStringLiteral("Ctrl+Shift+S")),
                                        MainWindow::tr("Save the current canvas to a new file (Ctrl+Shift+S)"));
+    // 只留一个主键：Ctrl+I 取 I（image / insert）的直觉，Ctrl+P 留给打印这类通用标准键。
     m_window->m_importAct =
-        makeAction(m_window, IconId::Image, MainWindow::tr("Insert images…"), QKeySequence(QStringLiteral("Ctrl+P")),
-                   MainWindow::tr("Insert images as movable, resizable items (Ctrl+P)"));
-    m_window->m_importAct->setShortcuts(
-        {QKeySequence(QStringLiteral("Ctrl+P")), QKeySequence(QStringLiteral("Ctrl+I"))});
+        makeAction(m_window, IconId::Image, MainWindow::tr("Insert images…"), QKeySequence(QStringLiteral("Ctrl+I")),
+                   MainWindow::tr("Insert images as movable, resizable items (Ctrl+I)"));
     m_window->m_lineArtAct = makeAction(
-        m_window, IconId::LineArt, MainWindow::tr("Import outline image"), QKeySequence(QStringLiteral("Ctrl+Shift+I")),
+        m_window, IconId::LineArt, MainWindow::tr("Import outline image"), QKeySequence(QStringLiteral("Ctrl+L")),
         MainWindow::tr(
             "Trace an image's color-block outlines into strokes (line width 1); a parameter dialog opens first and "
-            "only Save to configuration file writes StoryBoard.ini (Ctrl+Shift+I)"));
+            "only Save to configuration file writes StoryBoard.ini (Ctrl+L)"));
     m_window->m_exportAct =
         makeAction(m_window, IconId::Export, MainWindow::tr("Export canvas…"), QKeySequence(QStringLiteral("Ctrl+E")),
                    MainWindow::tr("Export as PNG / JPEG / PDF (Ctrl+E)"));
+    // 主键取 Windows 关闭标准 Alt+F4；副键 Ctrl+Q 是 Linux / macOS 级的退出标准。
     m_window->m_quitAct = new QAction(MainWindow::tr("Quit"), m_window);
-    m_window->m_quitAct->setShortcuts({QKeySequence(QStringLiteral("Ctrl+Q")), QKeySequence(Qt::ALT | Qt::Key_F4)});
-    m_window->m_quitAct->setStatusTip(MainWindow::tr("Quit StoryBoard (Ctrl+Q / Alt+F4)"));
+    m_window->m_quitAct->setShortcuts({QKeySequence(Qt::ALT | Qt::Key_F4), QKeySequence(QStringLiteral("Ctrl+Q"))});
+    m_window->m_quitAct->setStatusTip(MainWindow::tr("Quit StoryBoard (Alt+F4)"));
 
     m_window->m_undoAct = makeAction(m_window, IconId::Undo, MainWindow::tr("Undo"), QKeySequence::Undo,
                                      MainWindow::tr("Undo the last step (Ctrl+Z)"));
     m_window->m_undoAct->setEnabled(false);
     m_window->m_redoAct = makeAction(m_window, IconId::Redo, MainWindow::tr("Redo"),
                                      QKeySequence(QStringLiteral("Ctrl+Y")), MainWindow::tr("Redo (Ctrl+Y)"));
+    // 副键 Ctrl+Shift+Z 是 macOS / GNOME 级的重做标准。
     m_window->m_redoAct->setShortcuts(
         {QKeySequence(QStringLiteral("Ctrl+Y")), QKeySequence(QStringLiteral("Ctrl+Shift+Z"))});
     m_window->m_redoAct->setEnabled(false);
 
     m_window->m_deleteAct = makeAction(m_window, IconId::Delete, MainWindow::tr("Delete selected items"),
                                        QKeySequence::Delete, MainWindow::tr("Delete the selected items (Delete)"));
-    m_window->m_deleteAct->setShortcuts({QKeySequence::Delete, QKeySequence(Qt::Key_Backspace)});
     m_window->m_duplicateAct = new QAction(MainWindow::tr("Duplicate selected items"), m_window);
     m_window->m_duplicateAct->setIcon(makeIcon(IconId::Copy, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
     m_window->m_duplicateAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+D")));
@@ -146,9 +146,9 @@ void UiActionFactory::build()
             m_window->updateActions();
         }
     });
-    m_window->m_smoothAct = makeAction(
-        m_window, IconId::Smooth, MainWindow::tr("Simplify curve"), QKeySequence(QStringLiteral("Ctrl+Shift+M")),
-        MainWindow::tr("Simplify the selected curve once using the current brush tolerance (Ctrl+Shift+M)"));
+    m_window->m_smoothAct =
+        makeAction(m_window, IconId::Smooth, MainWindow::tr("Simplify curve"), QKeySequence(QStringLiteral("Ctrl+B")),
+                   MainWindow::tr("Simplify the selected curve once using the current brush tolerance (Ctrl+B)"));
     m_window->m_smoothAct->setEnabled(false);
     QObject::connect(m_window->m_smoothAct, &QAction::triggered, m_window, [this]() {
         if (!m_window->m_scene || !m_window->m_view) {
@@ -202,12 +202,11 @@ void UiActionFactory::build()
     m_window->m_editModeAct->setData(static_cast<int>(ToolMode::Edit));
     m_window->m_textModeAct->setData(static_cast<int>(ToolMode::Text));
 
-    m_window->m_fitAct =
-        makeAction(m_window, IconId::Fit, MainWindow::tr("Back to overview"), QKeySequence(QStringLiteral("Ctrl+0")),
-                   MainWindow::tr("Fit all items (Ctrl+0 / Home)"));
-    m_window->m_fitAct->setShortcuts({QKeySequence(QStringLiteral("Ctrl+0")), QKeySequence(Qt::Key_Home)});
+    m_window->m_fitAct = makeAction(m_window, IconId::Fit, MainWindow::tr("Back to overview"),
+                                    QKeySequence(QStringLiteral("Ctrl+0")), MainWindow::tr("Fit all items (Ctrl+0)"));
     m_window->m_zoomInAct = makeAction(m_window, IconId::ZoomIn, MainWindow::tr("Zoom in"),
                                        QKeySequence(QStringLiteral("Ctrl+=")), MainWindow::tr("Zoom in (Ctrl+=)"));
+    // 副键 Ctrl++（含小键盘加号同码）与 Ctrl+= 同属系统级放大标准绑定。
     m_window->m_zoomInAct->setShortcuts(
         {QKeySequence(QStringLiteral("Ctrl+=")), QKeySequence(QStringLiteral("Ctrl++"))});
     m_window->m_zoomOutAct = makeAction(m_window, IconId::ZoomOut, MainWindow::tr("Zoom out"),
