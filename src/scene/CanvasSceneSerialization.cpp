@@ -113,6 +113,9 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
         return false;
     };
 
+    // 打开失败绝不许动当前文档：下面所有校验与预解析都通过之前不调用
+    // resetDocument()，任何一步失败都直接返回。否则「打开失败清空用户正在
+    // 编辑的内容、m_filePath 仍指旧文件、一次保存把空画布写回原文件」。
     if (root.value(QStringLiteral("format")).toString() != QStringLiteral("StoryBoardCanvas")) {
         return fail(tr("This is not a valid StoryBoard canvas file."));
     }
@@ -125,9 +128,44 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
         return fail(tr("The canvas size in the canvas file is invalid."));
     }
 
+    const QJsonArray layerArray = root.value(QStringLiteral("layers")).toArray();
+    if (!root.value(QStringLiteral("layers")).isArray() || layerArray.isEmpty()) {
+        return fail(tr("This is not a valid StoryBoard canvas file."));
+    }
+
+    const QJsonArray rawItems = root.value(QStringLiteral("items")).toArray();
+    QList<QJsonObject> itemObjects;
+    itemObjects.reserve(rawItems.size());
+    for (const QJsonValue& value : rawItems) {
+        itemObjects.append(value.toObject());
+    }
+
+    // 预创建全部图元，把未知类型拦在动文档之前；失败时释放已创建的副本。
+    QList<CanvasItem*> parsedItems;
+    for (const QJsonObject& itemJson : std::as_const(itemObjects)) {
+        const QString kind = itemJson.value(QStringLiteral("type")).toString();
+        if (kind == QStringLiteral("stroke")) {
+            // 旧笔画图元不兼容新曲线：跳过，不因单个旧图元阻断整份画布。
+            continue;
+        }
+        CanvasItem* item = createItem(kind);
+        if (!item) {
+            qDeleteAll(parsedItems);
+            return fail(tr("The canvas contains an unknown item type: %1").arg(kind));
+        }
+        item->fromJson(itemJson);
+        item->setItemOpacity(itemJson.value(QStringLiteral("opacity")).toDouble(1.0));
+        parsedItems.append(item);
+    }
+
+    // ---- 校验全部通过，从这里开始才清空重建 ----
     resetDocument();
-    applyCanvasRect(QRectF(canvas.value(QStringLiteral("x")).toDouble(0.0),
-                           canvas.value(QStringLiteral("y")).toDouble(0.0), width, height));
+
+    // 画布尺寸按文件原值恢复，不做 200–12000 钳位：钳位只应发生在编辑操作里，
+    // 否则超出范围的旧文件一打开、再保存就被静默改写。
+    m_canvasOrigin = QPointF(canvas.value(QStringLiteral("x")).toDouble(0.0),
+                             canvas.value(QStringLiteral("y")).toDouble(0.0));
+    m_canvasSize = QSizeF(width, height);
 
     BackgroundState background;
     const QJsonObject backgroundJson = root.value(QStringLiteral("background")).toObject();
@@ -145,18 +183,6 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
         }
     }
     applyBackground(background);
-
-    const QJsonArray rawItems = root.value(QStringLiteral("items")).toArray();
-    QList<QJsonObject> itemObjects;
-    itemObjects.reserve(rawItems.size());
-    for (const QJsonValue& value : rawItems) {
-        itemObjects.append(value.toObject());
-    }
-
-    const QJsonArray layerArray = root.value(QStringLiteral("layers")).toArray();
-    if (!root.value(QStringLiteral("layers")).isArray() || layerArray.isEmpty()) {
-        return fail(tr("This is not a valid StoryBoard canvas file."));
-    }
 
     LayerStackState state;
     bool backgroundVisible = true;
@@ -202,20 +228,7 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
 
     applyLayerStateInternal(sanitizedLayerState(state), false);
 
-    for (int i = 0; i < itemObjects.size(); ++i) {
-        const QJsonObject itemJson = itemObjects.at(i);
-        const QString kind = itemJson.value(QStringLiteral("type")).toString();
-        if (kind == QStringLiteral("stroke")) {
-            // 旧笔画图元不兼容新曲线：跳过，不因单个旧图元阻断整份画布。
-            continue;
-        }
-        CanvasItem* item = createItem(kind);
-        if (!item) {
-            resetDocument();
-            return fail(tr("The canvas contains an unknown item type: %1").arg(kind));
-        }
-        item->fromJson(itemJson);
-        item->setItemOpacity(itemJson.value(QStringLiteral("opacity")).toDouble(1.0));
+    for (CanvasItem* item : std::as_const(parsedItems)) {
         if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId) {
             item->setLayerId(m_activeLayerId);
         }
@@ -244,7 +257,11 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
     // Assign heights for new-format items that omitted the property, then
     // normalize any duplicate heights in a layer while keeping their order.
     QHash<int, int> nextHeights;
+    QHash<int, QSet<int>> usedHeights;
     const QList<CanvasItem*> items = canvasItems();
+    for (const CanvasItem* item : items) {
+        usedHeights[item->layerId()].insert(item->height());
+    }
     for (CanvasItem* item : items) {
         if (item->height() >= 0) {
             continue;
@@ -257,8 +274,18 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
         } else {
             next = it.value();
         }
+        // 层满时 nextHeight 返回 -1：退化为取同层已用最大高度 +1；只有
+        // 0–999999 真排满才会继续失败，那时交给下面的 normalize 修复，
+        // 不再把非法值写进图元。
+        if (next < 0) {
+            next = 0;
+            for (const int height : std::as_const(usedHeights[item->layerId()])) {
+                next = qMax(next, height + 1);
+            }
+        }
         item->setHeight(qMin(scene_constants::kMaxItemHeight, next));
         nextHeights[item->layerId()] = qMin(scene_constants::kMaxItemHeight, next + 1);
+        usedHeights[item->layerId()].insert(item->height());
     }
 
     // Enforce the canvas invariant: every layer has one item per height.

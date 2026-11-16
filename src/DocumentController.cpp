@@ -67,6 +67,16 @@ bool validateCanvasRoot(const QJsonObject& root, QString* error)
         return false;
     }
 
+    // layers 必须是非空数组：缺失 / 置空的「半坏」文件在这里就拦下，
+    // 不进 maybeSave() 消耗用户的未保存内容。
+    if (!root.value(QStringLiteral("layers")).isArray() ||
+        root.value(QStringLiteral("layers")).toArray().isEmpty()) {
+        if (error) {
+            *error = MainWindow::tr("This is not a valid StoryBoard canvas file.");
+        }
+        return false;
+    }
+
     const QJsonArray items = root.value(QStringLiteral("items")).toArray();
     for (const QJsonValue& value : items) {
         const QString kind = value.toObject().value(QStringLiteral("type")).toString();
