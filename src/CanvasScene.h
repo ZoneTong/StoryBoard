@@ -218,6 +218,9 @@ class CanvasScene : public QGraphicsScene {
     BackgroundState m_background;
     bool m_showGrid = false;
     bool m_exporting = false;
+    // fromJson 加载重建期间为 true：这期间的归一化修复不算用户操作，
+    // 不往撤销栈压命令（否则打开文件就会产生一条脏的历史记录）。
+    bool m_restoringDocument = false;
     QList<CanvasLayer> m_layers;
     int m_activeLayerId = 1;
     int m_nextLayerId = 2;

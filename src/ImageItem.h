@@ -26,4 +26,7 @@ class ImageItem : public CanvasItem {
   private:
     QPixmap m_pixmap;
     QString m_name;
+    // 文件里的原始图片字节：解码失败（损坏/格式不支持）时仍保留，重新保存
+    // 时原样写回，避免「打开→保存」把还没丢的原始数据彻底抹掉。
+    QByteArray m_sourceBytes;
 };

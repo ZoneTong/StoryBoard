@@ -302,6 +302,12 @@ QPainterPath CompositeShapeItem::pathFromJson(const QJsonArray& elements)
     auto flushCurve = [&path, &curvePoints]() {
         if (curvePoints.size() >= 3) {
             path.cubicTo(curvePoints.at(0), curvePoints.at(1), curvePoints.at(2));
+        } else {
+            // 段不足三个控制点（文件被截断或手改）：降级为折线段接上，
+            // 不整段丢弃，否则曲线开头或结尾会凭空缺一块。
+            for (const QPointF& point : curvePoints) {
+                path.lineTo(point);
+            }
         }
         curvePoints.clear();
     };

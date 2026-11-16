@@ -58,6 +58,10 @@ QJsonObject ImageItem::toJson() const
         buffer.open(QIODevice::WriteOnly);
         m_pixmap.save(&buffer, "PNG");
         json.insert(QStringLiteral("image"), QString::fromLatin1(bytes.toBase64()));
+    } else if (!m_sourceBytes.isEmpty()) {
+        // 位图解码失败但原始字节还在（损坏 / 暂不支持的格式）：原样写回，
+        // 不把文件里仅存的图片数据替换成空值。
+        json.insert(QStringLiteral("image"), QString::fromLatin1(m_sourceBytes.toBase64()));
     }
     return json;
 }
@@ -65,11 +69,11 @@ QJsonObject ImageItem::toJson() const
 void ImageItem::fromJson(const QJsonObject& json)
 {
     m_name = json.value(QStringLiteral("name")).toString();
-    const QByteArray bytes = QByteArray::fromBase64(json.value(QStringLiteral("image")).toString().toLatin1());
+    m_sourceBytes = QByteArray::fromBase64(json.value(QStringLiteral("image")).toString().toLatin1());
 
     QPixmap pixmap;
-    if (!bytes.isEmpty()) {
-        pixmap.loadFromData(bytes, "PNG");
+    if (!m_sourceBytes.isEmpty()) {
+        pixmap.loadFromData(m_sourceBytes, "PNG");
     }
     m_pixmap = pixmap;
     applyBaseJson(json);

@@ -71,6 +71,12 @@ bool CanvasScene::normalizeLayerHeights(int layerId)
         return false;
     }
 
+    ItemStackList before;
+    before.reserve(items.size());
+    for (const CanvasItem* item : std::as_const(items)) {
+        before.append({item, item->layerId(), item->height()});
+    }
+
     std::stable_sort(items.begin(), items.end(), [](const CanvasItem* a, const CanvasItem* b) {
         if (a->height() != b->height()) {
             return a->height() < b->height();
@@ -82,6 +88,17 @@ bool CanvasScene::normalizeLayerHeights(int layerId)
         item->setHeight(i + 1);
         applyItemStacking(item);
         item->update();
+    }
+
+    // 归一化是真实的状态修复，必须能被撤销；fromJson 加载期间的修复不算
+    // 用户操作（m_restoringDocument 守卫），不往刚清空的撤销栈里压命令。
+    if (m_undoStack && !m_restoringDocument) {
+        ItemStackList after;
+        after.reserve(items.size());
+        for (CanvasItem* item : std::as_const(items)) {
+            after.append({item, item->layerId(), item->height()});
+        }
+        m_undoStack->push(new ItemStackCommand(this, before, after, tr("Repair item stacking")));
     }
     return true;
 }
@@ -161,22 +178,58 @@ int CanvasScene::adjustSelectedHeights(int delta)
         return 0;
     }
 
-    const bool grouped = m_undoStack && targets.size() > 1;
-    if (grouped) {
-        m_undoStack->beginMacro(delta > 0 ? tr("Move item up") : tr("Move item down"));
-    }
-
-    int changed = 0;
-    for (CanvasItem* item : targets) {
-        if (adjustItemHeight(item, delta)) {
-            ++changed;
+    // 多选整块移动「全或不动」：任一目标越出 0–kMaxItemHeight 边界，或目标
+    // 的新高度撞上未选中的图元，就整体不动。否则逐个 swap 会出现「底部两项
+    // 按下移，被互相换位顶到最上面」的错乱结果。
+    if (targets.size() > 1) {
+        QHash<int, QSet<CanvasItem*>> targetsByLayer;
+        QHash<int, QSet<int>> newHeightsByLayer;
+        for (CanvasItem* item : targets) {
+            targetsByLayer[item->layerId()].insert(item);
+            newHeightsByLayer[item->layerId()].insert(item->height() + delta);
         }
+        bool blocked = false;
+        for (auto it = targetsByLayer.constBegin(); it != targetsByLayer.constEnd(); ++it) {
+            const QSet<int>& newHeights = newHeightsByLayer[it.key()];
+            for (CanvasItem* peer : layerItems(it.key())) {
+                if (!peer) {
+                    continue;
+                }
+                if (it.value().contains(peer)) {
+                    const int targetHeight = peer->height() + delta;
+                    if (targetHeight < 0 || targetHeight > scene_constants::kMaxItemHeight) {
+                        blocked = true;
+                        break;
+                    }
+                } else if (newHeights.contains(peer->height())) {
+                    blocked = true;
+                    break;
+                }
+            }
+            if (blocked) {
+                break;
+            }
+        }
+        if (blocked) {
+            return 0;
+        }
+        const ItemStackList before = itemStackSnapshot(targets);
+        ItemStackList after;
+        after.reserve(targets.size());
+        for (CanvasItem* item : targets) {
+            after.append({item, item->layerId(), item->height() + delta});
+        }
+        const QString commandText = delta > 0 ? tr("Move items up") : tr("Move items down");
+        if (m_undoStack) {
+            m_undoStack->push(new ItemStackCommand(this, before, after, commandText));
+        } else {
+            applyItemStack(after);
+        }
+        return targets.size();
     }
 
-    if (grouped) {
-        m_undoStack->endMacro();
-    }
-    return changed;
+    // 单选保持原有「与相邻图元互换」语义。
+    return adjustItemHeight(targets.first(), delta) ? 1 : 0;
 }
 
 int CanvasScene::moveSelectedItemsToAdjacentLayer(int delta)

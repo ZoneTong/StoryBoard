@@ -42,7 +42,9 @@ QJsonObject CanvasScene::toJson() const
     QJsonObject root;
     root.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
     root.insert(QStringLiteral("version"), 2);
-    root.insert(QStringLiteral("generator"), QStringLiteral("StoryBoard 0.2"));
+    // 版本号随 CMake project VERSION 注入（STORYBOARD_VERSION），不再手写漂移。
+    root.insert(QStringLiteral("generator"),
+                QStringLiteral("StoryBoard %1").arg(QString::fromLatin1(STORYBOARD_VERSION)));
 
     QJsonObject canvas;
     canvas.insert(QStringLiteral("x"), m_canvasOrigin.x());
@@ -159,6 +161,7 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
     }
 
     // ---- 校验全部通过，从这里开始才清空重建 ----
+    m_restoringDocument = true;
     resetDocument();
 
     // 画布尺寸按文件原值恢复，不做 200–12000 钳位：钳位只应发生在编辑操作里，
@@ -298,6 +301,7 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
         m_nextLayerId = qMax(m_nextLayerId, entry.id + 1);
     }
 
+    m_restoringDocument = false;
     ensureLayerState();
     applyAllItemStacking();
     updateItemFlags();
