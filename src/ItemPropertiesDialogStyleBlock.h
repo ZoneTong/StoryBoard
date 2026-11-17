@@ -53,6 +53,10 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     qreal initialBottomAngle1() const { return m_initialBottomAngle1; }
     qreal initialBottomAngle2() const { return m_initialBottomAngle2; }
 
+    // 直线两端箭头样式下拉（一行两个）。
+    QComboBox* startArrowCombo() const { return m_startArrowCombo; }
+    QComboBox* endArrowCombo() const { return m_endArrowCombo; }
+
     // 尺寸框变化时同步圆角上限；用户尚未改过圆角时，圆角矩形的默认值
     // 按新短边重新计算，保证对话框显示值与最终轮廓一致。
     void setContentSize(const QSizeF& size);
@@ -89,4 +93,8 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     QSpinBox* m_bottomAngle2Spin = nullptr;
     qreal m_initialBottomAngle1 = 60.0;
     qreal m_initialBottomAngle2 = 60.0;
+
+    QComboBox* m_startArrowCombo = nullptr;
+    QComboBox* m_endArrowCombo = nullptr;
+    QWidget* m_arrowRow = nullptr;
 };

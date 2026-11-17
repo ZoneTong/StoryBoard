@@ -43,6 +43,19 @@ void UiMenuBuilder::buildShapeMenu()
         action->setToolTip(MainWindow::tr("Insert %1 (uses the current brush color)").arg(shapeTypeName(type)));
         QObject::connect(action, &QAction::triggered, m_window, [this, type]() { m_window->insertShape(type); });
 
+        // 需求 6：直线箭头紧跟在「直线」之后，复用直线类，默认末端开口箭头，
+        // 长边 64（与其它常见图形的基准边长一致）。
+        if (type == ShapeType::Line) {
+            QAction* lineArrow = m_window->m_shapeMenu->addAction(
+                makeShapeIcon(type, QColor(58, 64, 80), 18), MainWindow::tr("Line arrow"));
+            lineArrow->setObjectName(QStringLiteral("ShapePreset_lineArrow"));
+            lineArrow->setData(static_cast<int>(type));
+            lineArrow->setToolTip(MainWindow::tr("Insert a line with an open arrow head at its end"));
+            QObject::connect(lineArrow, &QAction::triggered, m_window, [this]() {
+                m_window->insertShape(ShapeType::Line, -1.0, -1.0, ArrowStyle::None, ArrowStyle::OpenArrow);
+            });
+        }
+
         // 需求 1：三角形后追加 45° / 60° 直角三角形预置项。短边沿水平方向，
         // 即底边（水平边）两侧的内角为 90° 与 45° / 60°；底边可调，角度锁定。
         // 预置项用 ShapePreset_ 前缀，工具栏那一排按钮只认 ShapeAction_，不会多出按钮。

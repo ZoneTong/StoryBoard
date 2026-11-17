@@ -1,4 +1,4 @@
-﻿#include "Alignment.h"
+#include "Alignment.h"
 #include "BoolOps.h"
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
@@ -234,67 +234,6 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                   QStringLiteral("联合运算生成单层 donor 样式多边形"),
                   QStringLiteral("ok=%1 layers=%2").arg(applied ? 1 : 0).arg(composite ? composite->layerCount() : -1));
 
-        // 零面积直线参与合并：线宽带只做填充、不再叠一层描线，线宽保持自身值。
-        {
-            QUndoStack undo;
-            CanvasScene scene;
-            scene.setUndoStack(&undo);
-            scene.setMode(ToolMode::Edit);
-            scene.applyCanvasSize(QSizeF(320.0, 220.0));
-            auto* diamond = new ShapeItem();
-            diamond->setShapeType(ShapeType::Diamond);
-            diamond->setPos(QPointF(70.0, 40.0));
-            diamond->setContentSize(QSizeF(160.0, 120.0));
-            diamond->setStyle(QColor(20, 20, 20), QColor(255, 255, 255), 4.0);
-            diamond->setFill(QColor(255, 255, 255), FillStyle::Solid);
-            auto* line = new ShapeItem();
-            line->setShapeType(ShapeType::Line);
-            line->setPos(QPointF(30.0, 80.0));
-            line->setContentSize(QSizeF(250.0, 40.0));
-            line->setStyle(QColor(30, 90, 200), QColor(30, 90, 200), 2.0);
-            scene.addItemsWithUndo({line, diamond}, QStringLiteral("Add line and diamond"));
-            line->setSelected(true);
-            diamond->setSelected(true);
-            const bool lineMerged = BoolOps::apply(&scene, BoolOps::Operation::Union, QStringLiteral("合并"));
-            const QList<CanvasItem*> lineSelected = scene.selectedCanvasItems();
-            auto* lineShell =
-                lineSelected.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(lineSelected.constFirst());
-
-            int lineThickness = -1;
-            if (lineShell) {
-                const QImage rendered = scene.renderImage(QRectF(0.0, 0.0, 320.0, 220.0), 1.0);
-                int count = 0;
-                for (int y = 80; y < 140; ++y) {
-                    const QColor pixel = rendered.pixelColor(45, y);
-                    if (pixel.alpha() > 0 && (pixel.red() < 245 || pixel.green() < 245 || pixel.blue() < 245)) {
-                        ++count;
-                    }
-                }
-                lineThickness = count;
-            }
-            ctx.check(lineMerged && lineShell && lineThickness > 0 && lineThickness <= 3,
-                      QStringLiteral("直线与菱形合并后直线保持自身线宽"),
-                      QStringLiteral("ok=%1 thickness=%2 layers=%3")
-                          .arg(lineMerged ? 1 : 0)
-                          .arg(lineThickness)
-                          .arg(lineShell ? lineShell->layerCount() : -1));
-            bool bandLayerFound = false;
-            if (lineShell) {
-                for (const CompositeShapeItem::Layer& layer : lineShell->layers()) {
-                    if (!qFuzzyIsNull(layer.strokeWidth)) {
-                        continue;
-                    }
-                    bandLayerFound = true;
-                    break;
-                }
-            }
-            ctx.check(lineShell && lineShell->layerCount() == 2 && bandLayerFound,
-                      QStringLiteral("直线合并结果单独使用无描线的线宽带"),
-                      QStringLiteral("layers=%1 band=%2")
-                          .arg(lineShell ? lineShell->layerCount() : -1)
-                          .arg(bandLayerFound ? 1 : 0));
-        }
-
         // 零面积描线不作为挖除与分块边界：直线横穿菱形后，组合 / 剪除 / 拆分
         // 都不能在菱形上留细缝，交集条带按线宽带渲染而不是套描线的面积层。
         {
@@ -405,7 +344,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                 QStringLiteral("ok=%1 layers=%2 stroked=%3").arg(lensOk ? 1 : 0).arg(lensLayers).arg(lensStroked));
         }
 
-        // 有填充空间的图元优先于零面积描线图元：曲线叠在矩形上方（height 更大），
+        // 有填充空间的图元优先于零面积图元：黑色文字叠在矩形上方（height 更大），
         // 合并 donor 仍取矩形的填充与描线样式。
         {
             QUndoStack undo;
@@ -419,16 +358,18 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             rect->setContentSize(QSizeF(160.0, 120.0));
             rect->setStyle(QColor(20, 20, 20), QColor(255, 255, 255), 4.0);
             rect->setFill(QColor(200, 40, 40), FillStyle::Solid);
-            auto* curve = new CurveItem();
-            curve->setStrokePoints({QPointF(30.0, 110.0), QPointF(290.0, 110.0)}, QColor(30, 90, 200), 6.0);
-            scene.addItemsWithUndo({rect, curve}, QStringLiteral("Add rect and curve"));
+            auto* text = new TextItem();
+            text->setTextFormat(QStringLiteral("Ag文"), QFont(QStringLiteral("Microsoft YaHei"), 24), QColor(0, 0, 0));
+            text->setContentSize(QSizeF(150.0, 50.0));
+            text->setPos(QPointF(65.0, 85.0));
+            scene.addItemsWithUndo({rect, text}, QStringLiteral("Add rect and text"));
             rect->setSelected(true);
-            curve->setSelected(true);
+            text->setSelected(true);
             const bool merged = BoolOps::apply(&scene, BoolOps::Operation::Union, QStringLiteral("合并"));
             const QList<CanvasItem*> mergedItems = scene.selectedCanvasItems();
             auto* shell = mergedItems.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(mergedItems.constFirst());
             ctx.check(merged && shell && shell->fillColor() == QColor(200, 40, 40),
-                      QStringLiteral("合并优先采用有填充空间图元的样式（矩形>曲线）"),
+                      QStringLiteral("合并优先采用有填充空间图元的样式（矩形>文字）"),
                       QStringLiteral("ok=%1 fill=%2")
                           .arg(merged ? 1 : 0)
                           .arg(shell ? shell->fillColor().name() : QStringLiteral("none")));

@@ -5,6 +5,7 @@
 #include "ItemDockPanel.h"
 #include "ShapeItem.h"
 
+#include <QComboBox>
 #include <QHBoxLayout>
 #include <QSpinBox>
 #include <QToolButton>
@@ -201,6 +202,42 @@ ItemDockPanelValueCard::ItemDockPanelValueCard(QWidget* parent) : QWidget(parent
 
     m_triangleSection->setVisible(false);
     outer->addWidget(m_triangleSection);
+
+    // 需求 6：直线两端箭头样式，两行下拉（起始 / 末端）。
+    m_arrowSection = new QWidget(this);
+    auto* arrowOuter = new QVBoxLayout(m_arrowSection);
+    arrowOuter->setContentsMargins(0, 0, 0, 0);
+    arrowOuter->setSpacing(2);
+
+    auto makeArrowRow = [this, arrowOuter](const QString& tooltip, QComboBox** target, void (ItemDockPanelValueCard::*signal)(int)) {
+        auto* row = new QWidget(m_arrowSection);
+        auto* rowLayout = new QHBoxLayout(row);
+        rowLayout->setContentsMargins(0, 0, 0, 0);
+        rowLayout->setSpacing(4);
+        QToolButton* icon = makeRowIcon(IconId::RotateCcw, row);
+        icon->setToolTip(tooltip);
+        rowLayout->addWidget(icon);
+        QComboBox* combo = new QComboBox(row);
+        combo->setObjectName(QStringLiteral("ItemArrowCombo"));
+        combo->setToolTip(tooltip);
+        for (ArrowStyle style : allArrowStyles()) {
+            combo->addItem(arrowStyleName(style), static_cast<int>(style));
+        }
+        connect(combo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, combo, signal](int) {
+            if (!m_refreshing) {
+                (this->*signal)(combo->currentData().toInt());
+            }
+        });
+        rowLayout->addWidget(combo, 1);
+        arrowOuter->addWidget(row);
+        *target = combo;
+    };
+    makeArrowRow(ItemDockPanel::tr("Start arrow"), &m_startArrowCombo,
+                 static_cast<void (ItemDockPanelValueCard::*)(int)>(&ItemDockPanelValueCard::arrowStartChosen));
+    makeArrowRow(ItemDockPanel::tr("End arrow"), &m_endArrowCombo,
+                 static_cast<void (ItemDockPanelValueCard::*)(int)>(&ItemDockPanelValueCard::arrowEndChosen));
+    m_arrowSection->setVisible(false);
+    outer->addWidget(m_arrowSection);
 }
 
 void ItemDockPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QList<CanvasItem*>& items)
@@ -250,7 +287,31 @@ void ItemDockPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QLis
         m_triangleAngle2Spin->setValue(triangleOn ? qRound(triangle->bottomAngle2()) : 60);
     }
 
+    if (m_startArrowCombo && m_endArrowCombo) {
+        ShapeItem* line = nullptr;
+        for (ShapeItem* shape : shapes) {
+            if (shape && shape->shapeType() == ShapeType::Line && !shape->isCustomShape()) {
+                line = shape;
+                break;
+            }
+        }
+        const bool lineOn = line != nullptr;
+        m_startArrowCombo->setEnabled(lineOn);
+        m_endArrowCombo->setEnabled(lineOn);
+        m_startArrowCombo->setCurrentIndex(
+            qMax(0, m_startArrowCombo->findData(static_cast<int>(lineOn ? line->startArrow() : ArrowStyle::None))));
+        m_endArrowCombo->setCurrentIndex(
+            qMax(0, m_endArrowCombo->findData(static_cast<int>(lineOn ? line->endArrow() : ArrowStyle::None))));
+    }
+
     m_refreshing = false;
+}
+
+void ItemDockPanelValueCard::setArrowVisible(bool visible)
+{
+    if (m_arrowSection) {
+        m_arrowSection->setVisible(visible);
+    }
 }
 
 void ItemDockPanelValueCard::setTriangleVisible(bool visible)

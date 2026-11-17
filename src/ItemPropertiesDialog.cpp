@@ -423,6 +423,13 @@ void ItemPropertiesDialog::applyChanges()
             after.shapeState.bottomAngle2 =
                 value == qRound(style->initialBottomAngle2()) ? style->initialBottomAngle2() : value;
         }
+        // 需求 6：直线两端箭头样式。
+        if (style && style->startArrowCombo()) {
+            after.shapeState.startArrow = static_cast<ArrowStyle>(style->startArrowCombo()->currentData().toInt());
+        }
+        if (style && style->endArrowCombo()) {
+            after.shapeState.endArrow = static_cast<ArrowStyle>(style->endArrowCombo()->currentData().toInt());
+        }
         if (m_hasFill) {
             if (style && style->fillStyleCombo() && style->fillStyleCombo()->currentData().toInt() >= 0) {
                 after.shapeState.fillStyle = static_cast<FillStyle>(style->fillStyleCombo()->currentData().toInt());

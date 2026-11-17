@@ -65,7 +65,8 @@ void MainWindowInsertController::insertTextAt(const QPointF& scenePos)
     m_window->showItemProperties(item);
 }
 
-void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle1, qreal triangleAngle2)
+void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle1, qreal triangleAngle2,
+                                             ArrowStyle startArrow, ArrowStyle endArrow)
 {
     if (m_window->m_view->mode() != ToolMode::Edit) {
         m_window->setToolMode(ToolMode::Edit);
@@ -111,6 +112,10 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
     // 三角形预置项：底边保持默认 64，按预置角度重算高度（角度是真相）。
     if (type == ShapeType::Triangle && triangleAngle1 > 0.0 && triangleAngle2 > 0.0) {
         item->setTriangleAngles(triangleAngle1, triangleAngle2);
+    }
+    // 直线箭头预置项：复用直线，默认末端开口箭头。
+    if (type == ShapeType::Line && (arrowStyleIsHead(startArrow) || arrowStyleIsHead(endArrow))) {
+        item->setArrowStyles(startArrow, endArrow);
     }
 
     m_window->m_scene->clearSelection();

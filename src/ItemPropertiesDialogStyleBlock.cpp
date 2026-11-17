@@ -9,6 +9,7 @@
 
 #include <QComboBox>
 #include <QFormLayout>
+#include <QHBoxLayout>
 #include <QSpinBox>
 #include <QToolButton>
 
@@ -164,6 +165,32 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_bottomAngle2Spin->setMinimumWidth(88);
             m_bottomAngle2Spin->setValue(qRound(m_initialBottomAngle2));
         }
+
+        // 需求 6：直线两端箭头样式，属性窗里一行两个下拉。
+        if (!shape->isCustomShape() && type == ShapeType::Line) {
+            m_arrowRow = new QWidget(this);
+            auto* arrowLayout = new QHBoxLayout(m_arrowRow);
+            arrowLayout->setContentsMargins(0, 0, 0, 0);
+            arrowLayout->setSpacing(6);
+            m_startArrowCombo = new QComboBox(m_arrowRow);
+            m_startArrowCombo->setObjectName(QStringLiteral("ItemPropertiesStartArrowValue"));
+            m_startArrowCombo->setMinimumWidth(120);
+            m_startArrowCombo->setToolTip(ItemPropertiesDialog::tr("Start arrow"));
+            m_endArrowCombo = new QComboBox(m_arrowRow);
+            m_endArrowCombo->setObjectName(QStringLiteral("ItemPropertiesEndArrowValue"));
+            m_endArrowCombo->setMinimumWidth(120);
+            m_endArrowCombo->setToolTip(ItemPropertiesDialog::tr("End arrow"));
+            for (QComboBox* combo : {m_startArrowCombo, m_endArrowCombo}) {
+                for (ArrowStyle style : allArrowStyles()) {
+                    combo->addItem(arrowStyleName(style), static_cast<int>(style));
+                }
+            }
+            m_startArrowCombo->setCurrentIndex(
+                qMax(0, m_startArrowCombo->findData(static_cast<int>(shape->startArrow()))));
+            m_endArrowCombo->setCurrentIndex(qMax(0, m_endArrowCombo->findData(static_cast<int>(shape->endArrow()))));
+            arrowLayout->addWidget(m_startArrowCombo, 1);
+            arrowLayout->addWidget(m_endArrowCombo, 1);
+        }
     } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
         m_hasFill = true;
 
@@ -262,6 +289,9 @@ void ItemPropertiesDialogStyleBlock::addRows(QFormLayout* form)
     }
     if (m_bottomAngle2Spin) {
         form->addRow(ItemPropertiesDialog::tr("Triangle base angle B"), m_bottomAngle2Spin);
+    }
+    if (m_arrowRow) {
+        form->addRow(ItemPropertiesDialog::tr("Arrow heads"), m_arrowRow);
     }
     if (m_startAngleSpin) {
         form->addRow(ItemPropertiesDialog::tr("Start angle"), m_startAngleSpin);

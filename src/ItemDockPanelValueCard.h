@@ -6,6 +6,7 @@
 #include <QWidget>
 
 class CanvasItem;
+class QComboBox;
 class QSpinBox;
 
 // 编辑图元卡的透明度、圆角半径、扇形 / 弧线扫过角与半径各行：圆角行只在矩形类
@@ -24,6 +25,8 @@ class ItemDockPanelValueCard : public QWidget {
     void setArcRadiusVisible(bool visible);
     // 三角形的底边 / 角 A / 角 B 三行是否可见。
     void setTriangleVisible(bool visible);
+    // 直线（含直线箭头）的两端箭头行是否可见。
+    void setArrowVisible(bool visible);
 
   signals:
     void opacityChosen(int percent);
@@ -34,6 +37,9 @@ class ItemDockPanelValueCard : public QWidget {
     void triangleBaseChosen(int base);
     void triangleAngle1Chosen(int degrees);
     void triangleAngle2Chosen(int degrees);
+    // 直线两端箭头样式（ArrowStyle 的整数值）。
+    void arrowStartChosen(int style);
+    void arrowEndChosen(int style);
 
   private:
     bool m_refreshing = false;
@@ -48,4 +54,7 @@ class ItemDockPanelValueCard : public QWidget {
     QSpinBox* m_triangleBaseSpin = nullptr;
     QSpinBox* m_triangleAngle1Spin = nullptr;
     QSpinBox* m_triangleAngle2Spin = nullptr;
+    QWidget* m_arrowSection = nullptr;
+    QComboBox* m_startArrowCombo = nullptr;
+    QComboBox* m_endArrowCombo = nullptr;
 };

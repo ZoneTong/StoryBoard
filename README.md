@@ -263,3 +263,12 @@ find src -type f \( -name '*.cpp' -o -name '*.h' \) -print0 | xargs -0 clang-for
 - 画布内嵌图片，包含大图时 `.sbcanvas` 会相应变大；撤销历史上限 300 步。
 - 图片线稿化只按颜色切块，纯色或渐变背景也会被描出，需要时先裁掉或替换背景。
 - macOS / Linux 的构建与打包分支已提供，但尚未在对应主机实机验证。
+
+## 许可证
+
+本项目采用 [PolyForm Noncommercial License 1.0.0](LICENSE)（SPDX 标识 `PolyForm-Noncommercial-1.0.0`，全文见仓库根目录 `LICENSE`，官方原文 <https://polyformproject.org/licenses/noncommercial/1.0.0>）。
+
+- 允许：个人研究、实验、学习、私人娱乐与业余爱好等任何非商业用途，以及慈善机构、教育机构、公共研究机构、公共安全与卫生机构、环保组织和政府机构的使用，不区分其资金来源。
+- 商业用途需另行取得书面授权；分发时须随附本许可证全文或其链接，以及下面的 Required Notice 行。
+
+Required Notice: Copyright 2026 ZoneTong (https://github.com/ZoneTong/StoryBoard)

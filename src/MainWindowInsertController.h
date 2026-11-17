@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ArrowStyle.h"
+
 #include <QPointF>
 #include <QString>
 
@@ -13,7 +15,7 @@ class MainWindowInsertController {
     explicit MainWindowInsertController(MainWindow* window);
 
     void insertTextAt(const QPointF& scenePos);
-    void insertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0);
+    void insertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0, ArrowStyle startArrow = ArrowStyle::None, ArrowStyle endArrow = ArrowStyle::None);
     void insertCustomShape(const QString& filePath);
     void openShapesFolder();
     void updateCustomShapeMenu();

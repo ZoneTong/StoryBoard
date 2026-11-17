@@ -109,6 +109,8 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     connect(m_valueCard, &ItemDockPanelValueCard::triangleBaseChosen, this, &ItemDockPanel::applyTriangleBase);
     connect(m_valueCard, &ItemDockPanelValueCard::triangleAngle1Chosen, this, &ItemDockPanel::applyTriangleAngle1);
     connect(m_valueCard, &ItemDockPanelValueCard::triangleAngle2Chosen, this, &ItemDockPanel::applyTriangleAngle2);
+    connect(m_valueCard, &ItemDockPanelValueCard::arrowStartChosen, this, &ItemDockPanel::applyArrowStart);
+    connect(m_valueCard, &ItemDockPanelValueCard::arrowEndChosen, this, &ItemDockPanel::applyArrowEnd);
     connect(m_arrangeCard, &ItemDockPanelArrangeCard::layerAdjusted, this, &ItemDockPanel::adjustLayer);
     connect(m_arrangeCard, &ItemDockPanelArrangeCard::heightAdjusted, this, &ItemDockPanel::adjustHeight);
 
@@ -273,6 +275,7 @@ void ItemDockPanel::refresh()
     bool hasCorner = false;
     bool hasArc = false;
     bool hasTriangle = false;
+    bool hasArrow = false;
     for (ShapeItem* shape : shapes) {
         if (shape->shapeType() == ShapeType::Rectangle || shape->shapeType() == ShapeType::RoundedRectangle) {
             hasCorner = true;
@@ -283,10 +286,14 @@ void ItemDockPanel::refresh()
         if (shape->shapeType() == ShapeType::Triangle && !shape->isCustomShape()) {
             hasTriangle = true;
         }
+        if (shape->shapeType() == ShapeType::Line && !shape->isCustomShape()) {
+            hasArrow = true;
+        }
     }
     m_valueCard->setCornerVisible(hasCorner);
     m_valueCard->setArcRadiusVisible(hasArc);
     m_valueCard->setTriangleVisible(hasTriangle);
+    m_valueCard->setArrowVisible(hasArrow);
 
     // 没有选中图元时隐藏全部图元编辑项，停靠卡片本身保持常驻。
     const bool hasSelection = !items.isEmpty();
@@ -814,6 +821,26 @@ void ItemDockPanel::applyTriangleAngle2(int degrees)
             return;
         }
         shape->setTriangleAngles(shape->bottomAngle1(), degrees);
+    });
+}
+
+void ItemDockPanel::applyArrowStart(int style)
+{
+    changeSelectedShapes(tr("Change line start arrow"), [style](ShapeItem* shape) {
+        if (!shape || shape->shapeType() != ShapeType::Line || shape->isCustomShape()) {
+            return;
+        }
+        shape->setArrowStyles(static_cast<ArrowStyle>(style), shape->endArrow());
+    });
+}
+
+void ItemDockPanel::applyArrowEnd(int style)
+{
+    changeSelectedShapes(tr("Change line end arrow"), [style](ShapeItem* shape) {
+        if (!shape || shape->shapeType() != ShapeType::Line || shape->isCustomShape()) {
+            return;
+        }
+        shape->setArrowStyles(shape->startArrow(), static_cast<ArrowStyle>(style));
     });
 }
 

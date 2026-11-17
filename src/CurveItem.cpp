@@ -296,6 +296,32 @@ void CurveItem::rebuildPath()
 void CurveItem::paintContent(QPainter* painter)
 {
     StrokeGeometry::render(painter, m_path, m_baseSize, contentSize(), m_color, m_penWidth, m_penStyle);
+
+    // 需求 3.12：曲线两端也可带箭头。端点取贝塞尔段的首尾节点，
+    // 与描线共用同一套基坐标 → 内容尺寸缩放，箭头随曲线一起缩放。
+    if ((arrowStyleIsHead(m_startArrow) || arrowStyleIsHead(m_endArrow)) && !m_dot && m_segments.size() >= 1 &&
+        !m_baseSize.isEmpty()) {
+        const QVector<QPointF> knots = CurveGeometry::knots(m_segments);
+        if (knots.size() >= 2) {
+            const qreal scaleX = contentSize().width() / m_baseSize.width();
+            const qreal scaleY = contentSize().height() / m_baseSize.height();
+            painter->save();
+            painter->scale(scaleX, scaleY);
+            paintArrowHead(painter, knots.constFirst(), knots.at(1), m_penWidth, m_color, m_startArrow);
+            paintArrowHead(painter, knots.constLast(), knots.at(knots.size() - 2), m_penWidth, m_color, m_endArrow);
+            painter->restore();
+        }
+    }
+}
+
+void CurveItem::setArrowStyles(ArrowStyle start, ArrowStyle end)
+{
+    if (m_startArrow == start && m_endArrow == end) {
+        return;
+    }
+    m_startArrow = start;
+    m_endArrow = end;
+    update();
 }
 
 QPainterPath CurveItem::outlineShape() const
@@ -337,6 +363,8 @@ QJsonObject CurveItem::toJson() const
     json.insert(QStringLiteral("baseWidth"), m_baseSize.width());
     json.insert(QStringLiteral("baseHeight"), m_baseSize.height());
     json.insert(QStringLiteral("dot"), m_dot);
+    json.insert(QStringLiteral("startArrow"), arrowStyleToString(m_startArrow));
+    json.insert(QStringLiteral("endArrow"), arrowStyleToString(m_endArrow));
     if (m_linearPath) {
         json.insert(QStringLiteral("linear"), true);
     }
@@ -375,6 +403,8 @@ void CurveItem::fromJson(const QJsonObject& json)
     m_penStyle = static_cast<Qt::PenStyle>(json.value(QStringLiteral("strokeStyle")).toInt(Qt::SolidLine));
     m_pad = m_penWidth / 2.0 + 2.0;
     m_dot = json.value(QStringLiteral("dot")).toBool(false);
+    m_startArrow = arrowStyleFromString(json.value(QStringLiteral("startArrow")).toString());
+    m_endArrow = arrowStyleFromString(json.value(QStringLiteral("endArrow")).toString());
     m_linearPath = json.value(QStringLiteral("linear")).toBool(false);
     m_segments.clear();
     m_rawPoints.clear();

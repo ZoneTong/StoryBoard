@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ArrowStyle.h"
 #include "CanvasItem.h"
 #include "CurveGeometry.h"
 #include "I18n.h"
@@ -54,6 +55,10 @@ class CurveItem : public CanvasItem {
     bool isLinearPath() const { return m_linearPath; }
     void setStyle(const QColor& color, qreal width);
     void setStrokeStyle(Qt::PenStyle style);
+    // 需求 3.12：曲线也支持两端箭头样式，几何与描线宽度不变。
+    ArrowStyle startArrow() const { return m_startArrow; }
+    ArrowStyle endArrow() const { return m_endArrow; }
+    void setArrowStyles(ArrowStyle start, ArrowStyle end);
 
     int segmentCount() const { return m_segments.size(); }
     // 曲线段的端点序列，供只读检查与撤销比较；不再暴露原始采样点。
@@ -88,4 +93,6 @@ class CurveItem : public CanvasItem {
     // 折线曲线：每段退化成直线，方角不会被拟合成圆角（图片线稿化使用）。
     bool m_linearPath = false;
     qreal m_pad = 4.0;
+    ArrowStyle m_startArrow = ArrowStyle::None;
+    ArrowStyle m_endArrow = ArrowStyle::None;
 };

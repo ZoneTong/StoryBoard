@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ArrowStyle.h"
 #include "CanvasItem.h"
 
 #include <QColor>
@@ -59,6 +60,9 @@ struct ShapeItemState {
     qreal bottomAngle2 = 60.0;
     // 扇形 / 弧线的椭圆半径（像素，横向）；< 0 表示按内容矩形宽度的一半自动取值。
     qreal shapeRadius = -1.0;
+    // 直线 / 直线箭头 / 曲线两端的箭头样式（旧文件缺字段时按「无」）。
+    ArrowStyle startArrow = ArrowStyle::None;
+    ArrowStyle endArrow = ArrowStyle::None;
     QPointF pos;
     QSizeF size;
 
@@ -72,7 +76,8 @@ struct ShapeItemState {
                qFuzzyCompare(sweepAngle + 2.0, other.sweepAngle + 2.0) &&
                qFuzzyCompare(bottomAngle1 + 2.0, other.bottomAngle1 + 2.0) &&
                qFuzzyCompare(bottomAngle2 + 2.0, other.bottomAngle2 + 2.0) &&
-               qFuzzyCompare(shapeRadius + 2.0, other.shapeRadius + 2.0) && pos == other.pos && size == other.size;
+               qFuzzyCompare(shapeRadius + 2.0, other.shapeRadius + 2.0) && startArrow == other.startArrow &&
+               endArrow == other.endArrow && pos == other.pos && size == other.size;
     }
 
     bool operator!=(const ShapeItemState& other) const { return !(*this == other); }
@@ -107,6 +112,8 @@ class ShapeItem : public CanvasItem {
     qreal shapeRadius() const { return m_shapeRadius; }
     qreal bottomAngle1() const { return m_bottomAngle1; }
     qreal bottomAngle2() const { return m_bottomAngle2; }
+    ArrowStyle startArrow() const { return m_startArrow; }
+    ArrowStyle endArrow() const { return m_endArrow; }
     void setStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth);
     void setFill(const QColor& fillColor, FillStyle style);
     void setFillStyle(FillStyle style);
@@ -118,6 +125,8 @@ class ShapeItem : public CanvasItem {
     // 三角形：设置底边两侧的底角（度）。角度优先，高度按底边与角度重算；
     // 两角和被钳制在 175° 以内，保证顶点不会跑出内容矩形。
     void setTriangleAngles(qreal angle1, qreal angle2);
+    // 直线 / 直线箭头：两端箭头样式，只影响描线绘制，不改变内容矩形。
+    void setArrowStyles(ArrowStyle start, ArrowStyle end);
 
     // 自定义图形：轮廓来自画布模板，存的是 0–1 单位坐标；没有自定义轮廓时按 shapeType 画。
     bool isCustomShape() const { return !m_customPath.isEmpty(); }
@@ -156,6 +165,8 @@ class ShapeItem : public CanvasItem {
     qreal m_shapeRadius = -1.0;
     qreal m_bottomAngle1 = 60.0;
     qreal m_bottomAngle2 = 60.0;
+    ArrowStyle m_startArrow = ArrowStyle::None;
+    ArrowStyle m_endArrow = ArrowStyle::None;
     // 上一次同步后的尺寸，用于区分"拖高"与"拖底边"，避免互相覆盖。
     QSizeF m_triangleSyncSize;
     bool m_syncingTriangle = false;

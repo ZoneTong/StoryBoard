@@ -90,6 +90,9 @@ class ItemDockPanel : public QWidget {
     void applyTriangleBase(int base);
     void applyTriangleAngle1(int degrees);
     void applyTriangleAngle2(int degrees);
+    // 直线两端箭头样式（ArrowStyle 整数值）。
+    void applyArrowStart(int style);
+    void applyArrowEnd(int style);
     void adjustLayer(int delta);
     void adjustHeight(int delta);
 

@@ -314,9 +314,10 @@ void MainWindow::importOutlineImageDialog()
     m_io->importOutlineImageDialog();
 }
 
-void MainWindow::insertShape(ShapeType type, qreal triangleAngle1, qreal triangleAngle2)
+void MainWindow::insertShape(ShapeType type, qreal triangleAngle1, qreal triangleAngle2, ArrowStyle startArrow,
+                             ArrowStyle endArrow)
 {
-    m_insert->insertShape(type, triangleAngle1, triangleAngle2);
+    m_insert->insertShape(type, triangleAngle1, triangleAngle2, startArrow, endArrow);
 }
 
 void MainWindow::insertCustomShape(const QString& filePath)

@@ -183,12 +183,24 @@ void ShapeItem::setShapeType(ShapeType type)
     m_shapeRadius = -1.0;
     m_bottomAngle1 = 60.0;
     m_bottomAngle2 = 60.0;
+    m_startArrow = ArrowStyle::None;
+    m_endArrow = ArrowStyle::None;
     m_triangleSyncSize = contentSize();
     update();
 }
 
-void ShapeItem::setTriangleAngles(qreal angle1, qreal angle2)
+void ShapeItem::setArrowStyles(ArrowStyle start, ArrowStyle end)
 {
+    if (m_startArrow == start && m_endArrow == end) {
+        return;
+    }
+    m_startArrow = start;
+    m_endArrow = end;
+    // 箭头只改描线外观，不参与内容矩形；更新重绘范围即可。
+    update();
+}
+
+void ShapeItem::setTriangleAngles(qreal angle1, qreal angle2){
     const qreal a1 = qBound<qreal>(1.0, angle1, 174.0);
     const qreal a2 = qBound<qreal>(1.0, angle2, 175.0 - a1);
     if (qFuzzyCompare(m_bottomAngle1 + 2.0, a1 + 2.0) && qFuzzyCompare(m_bottomAngle2 + 2.0, a2 + 2.0)) {
@@ -345,6 +357,8 @@ ShapeItemState ShapeItem::state() const
     result.sweepAngle = m_sweepAngle;
     result.bottomAngle1 = m_bottomAngle1;
     result.bottomAngle2 = m_bottomAngle2;
+    result.startArrow = m_startArrow;
+    result.endArrow = m_endArrow;
     result.shapeRadius = m_shapeRadius;
     result.pos = pos();
     result.size = contentSize();
@@ -362,6 +376,8 @@ void ShapeItem::applyState(const ShapeItemState& state)
     m_sweepAngle = state.sweepAngle;
     m_bottomAngle1 = state.bottomAngle1;
     m_bottomAngle2 = state.bottomAngle2;
+    m_startArrow = state.startArrow;
+    m_endArrow = state.endArrow;
     m_shapeRadius = state.shapeRadius;
     setStyle(state.strokeColor, state.fillColor, state.strokeWidth);
     setPos(state.pos);
@@ -436,6 +452,18 @@ void ShapeItem::paintContent(QPainter* painter)
 
     ShapePainter::paintShape(painter, path, rect, m_type, m_strokeColor, m_fillColor, m_strokeWidth, m_strokeStyle,
                              m_fillStyle, m_opacity);
+
+    // 直线 / 直线箭头：两端箭头按 4 倍线宽画在中心线端点上，允许超出内容矩形。
+    if (m_type == ShapeType::Line && (arrowStyleIsHead(m_startArrow) || arrowStyleIsHead(m_endArrow))) {
+        painter->save();
+        painter->setRenderHint(QPainter::Antialiasing, true);
+        const QPointF left(rect.left(), rect.center().y());
+        const QPointF right(rect.right(), rect.center().y());
+        const QPointF center = rect.center();
+        paintArrowHead(painter, left, center, m_strokeWidth, m_strokeColor, m_startArrow);
+        paintArrowHead(painter, right, center, m_strokeWidth, m_strokeColor, m_endArrow);
+        painter->restore();
+    }
 }
 
 QJsonObject ShapeItem::toJson() const
@@ -457,6 +485,9 @@ QJsonObject ShapeItem::toJson() const
         json.insert(QStringLiteral("bottomAngle1"), m_bottomAngle1);
         json.insert(QStringLiteral("bottomAngle2"), m_bottomAngle2);
     }
+    // 直线 / 直线箭头两端箭头样式：旧文件没有这两个字段时按「无」载入。
+    json.insert(QStringLiteral("startArrow"), arrowStyleToString(m_startArrow));
+    json.insert(QStringLiteral("endArrow"), arrowStyleToString(m_endArrow));
     if (!m_customPath.isEmpty()) {
         json.insert(QStringLiteral("shapeType"), QStringLiteral("custom"));
         json.insert(QStringLiteral("customName"), m_customName);
@@ -506,6 +537,8 @@ void ShapeItem::fromJson(const QJsonObject& json)
     m_startAngle = json.value(QStringLiteral("startAngle")).toDouble(30.0);
     m_sweepAngle = json.value(QStringLiteral("sweepAngle")).toDouble(120.0);
     m_shapeRadius = json.value(QStringLiteral("shapeRadius")).toDouble(-1.0);
+    m_startArrow = arrowStyleFromString(json.value(QStringLiteral("startArrow")).toString());
+    m_endArrow = arrowStyleFromString(json.value(QStringLiteral("endArrow")).toString());
     const bool hasAngles = json.contains(QStringLiteral("bottomAngle1"));
 
     // 载入期间先屏蔽三角形尺寸联动，避免 baseJson 恢复尺寸时反推高度、改动旧文件外观。

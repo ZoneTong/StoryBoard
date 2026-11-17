@@ -117,7 +117,7 @@ class MainWindow : public QMainWindow {
     // 合并形状：联合 / 组合 / 拆分 / 相交 / 剪除，结果替换为一个多边形，只记一条撤销。
     void applyBoolOperation(BoolOps::Operation operation);
 
-    void insertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0);
+    void insertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0, ArrowStyle startArrow = ArrowStyle::None, ArrowStyle endArrow = ArrowStyle::None);
     void insertCustomShape(const QString& filePath);
     void openShapesFolder();
     void updateItemDockVisibility();
