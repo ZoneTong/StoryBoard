@@ -159,7 +159,7 @@ if [ -n "$EXPECTED_PASSED" ]; then
         ''|*[!0-9]*) die "--expected-passed must be a number" ;;
     esac
 elif [ "$PLATFORM" = windows ]; then
-    EXPECTED_PASSED=903
+    EXPECTED_PASSED=904
 else
     EXPECTED_PASSED=0
 fi
