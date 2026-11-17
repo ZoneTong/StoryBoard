@@ -255,15 +255,17 @@ void UiMenuBuilder::buildMenus()
     // 合并图元：与 PPT「合并形状」同一套子操作命名与顺序——
     // 联合 / 异或（XOR，并集减重叠）/ 相交 / 剪除 / 拆分；
     // 主入口用独立图标（形变图形），五项子操作继续用两圆交叠的运算图标。
-    QMenu* boolMenu = editMenu->addMenu(MainWindow::tr("Merge items"));
+    QMenu* boolMenu = editMenu->addMenu(MainWindow::tr("Merge items") + QStringLiteral(" (Ctrl+M)"));
     boolMenu->setObjectName(QStringLiteral("BoolMenu"));
     boolMenu->setIcon(makeIcon(IconId::Morph, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
+    // 和弦键（Ctrl+M 之后 1 秒内按字母）不是 QAction 的快捷键，菜单里不会自动显示，
+    // 所以直接把键名缀在条目文字后面，跟状态栏提示保持一致。
     const QList<QPair<BoolOps::Operation, QString>> boolEntries = {
-        {BoolOps::Operation::Union, MainWindow::tr("Union")},
-        {BoolOps::Operation::Xor, MainWindow::tr("Xor")},
-        {BoolOps::Operation::Intersect, MainWindow::tr("Intersect")},
-        {BoolOps::Operation::Subtract, MainWindow::tr("Subtract")},
-        {BoolOps::Operation::Fragment, MainWindow::tr("Fragment")},
+        {BoolOps::Operation::Union, MainWindow::tr("Union") + QStringLiteral(" (U)")},
+        {BoolOps::Operation::Xor, MainWindow::tr("Xor") + QStringLiteral(" (X)")},
+        {BoolOps::Operation::Intersect, MainWindow::tr("Intersect") + QStringLiteral(" (I)")},
+        {BoolOps::Operation::Subtract, MainWindow::tr("Subtract") + QStringLiteral(" (S)")},
+        {BoolOps::Operation::Fragment, MainWindow::tr("Fragment") + QStringLiteral(" (F)")},
     };
     const QList<QString> boolTips = {
         MainWindow::tr("Merge the selected items into one polygon"),

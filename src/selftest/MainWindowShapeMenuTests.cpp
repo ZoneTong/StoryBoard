@@ -156,6 +156,26 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         ctx.check(shapeButtonsShareMenu && !shapeButton, QStringLiteral("主工具栏把常见图形与预置项展开成一排按钮"),
                   QStringLiteral("buttons=%1 expected=%2").arg(toolbarShapeButtons.size()).arg(toolbarExpected));
 
+        // 工具栏顺序是产品口径：气泡/扇形/弧线排在双向箭头之后，直线与花括号收尾。
+        const QStringList expectedToolBarOrder = {
+            QStringLiteral("ShapeAction_rectangle"),   QStringLiteral("ShapePreset_roundedRect"),
+            QStringLiteral("ShapeAction_ellipse"),     QStringLiteral("ShapeAction_triangle"),
+            QStringLiteral("ShapePreset_triangle45"),  QStringLiteral("ShapePreset_triangle60"),
+            QStringLiteral("ShapeAction_diamond"),     QStringLiteral("ShapeAction_star"),
+            QStringLiteral("ShapeAction_arrow"),       QStringLiteral("ShapeAction_double_arrow"),
+            QStringLiteral("ShapeAction_callout"),     QStringLiteral("ShapeAction_sector"),
+            QStringLiteral("ShapeAction_arc"),         QStringLiteral("ShapeAction_line"),
+            QStringLiteral("ShapePreset_lineArrow"),   QStringLiteral("ShapeAction_brace_left"),
+            QStringLiteral("ShapeAction_brace_right"),
+        };
+        QStringList actualToolBarOrder;
+        for (QToolButton* button : std::as_const(toolbarShapeButtons)) {
+            actualToolBarOrder.append(button->property("shapeActionName").toString());
+        }
+        ctx.check(actualToolBarOrder == expectedToolBarOrder,
+                  QStringLiteral("工具栏图形顺序：气泡/扇形/弧线紧跟双向箭头，直线与花括号在末尾"),
+                  actualToolBarOrder.join(QLatin1Char(',')));
+
         QToolBar* mainToolBar = shapeWindow.findChild<QToolBar*>(QStringLiteral("MainToolBar"));
         QAction* exportAction = nullptr;
         for (QAction* action : shapeWindow.findChildren<QAction*>()) {
@@ -512,8 +532,9 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
             ctx.check(inserted && shapeWindow.scene()->canvasRect().contains(inserted->sceneContentRect()),
                       QStringLiteral("快速插入图形位于画板范围内"),
                       inserted ? geometryText(inserted->pos(), inserted->contentSize()) : QString());
-            ctx.check(inserted && inserted->fillColor().alpha() > 0 && inserted->strokeWidth() > 0.0,
-                      QStringLiteral("快速插入图形带有默认描边与填充"));
+            ctx.check(inserted && inserted->fillStyle() == FillStyle::None && inserted->fillColor().alpha() == 0 &&
+                          inserted->strokeWidth() > 0.0,
+                      QStringLiteral("快速插入图形默认空心描边（与工具栏图标一致）"));
         }
 
         QAction* arrowInsertAction =
@@ -530,9 +551,9 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                 }
             }
             ctx.check(insertedArrow != nullptr, QStringLiteral("快速插入的图元类型为箭头"));
-            ctx.check(insertedArrow && insertedArrow->fillStyle() != FillStyle::None &&
-                          insertedArrow->fillColor().alpha() > 0,
-                      QStringLiteral("新插入箭头默认填充"));
+            ctx.check(insertedArrow && insertedArrow->fillStyle() == FillStyle::None &&
+                          insertedArrow->fillColor().alpha() == 0,
+                      QStringLiteral("新插入箭头默认空心描边（与工具栏图标一致）"));
         }
     }
 

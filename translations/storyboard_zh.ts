@@ -2346,6 +2346,10 @@ Use the checkbox to show or hide it.</source>
       <translation>插入圆角按短边 16% 自适应的矩形</translation>
     </message>
     <message>
+      <source>Rounded rectangle</source>
+      <translation>圆角矩形</translation>
+    </message>
+    <message>
       <source>Xor</source>
       <translation>异或</translation>
     </message>

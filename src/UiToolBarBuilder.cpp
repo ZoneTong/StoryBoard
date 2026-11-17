@@ -8,6 +8,7 @@
 #include <QColor>
 #include <QDoubleSpinBox>
 #include <QLabel>
+#include <QList>
 #include <QMenu>
 #include <QSize>
 #include <QSpinBox>
@@ -101,24 +102,35 @@ void UiToolBarBuilder::createSmoothingToolbar(QToolBar* mainBar)
 void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
 {
     // 「图形」区：常见图形与紧随其后的预置项（圆角矩形、45°/60° 直角三角、直线箭头）
-    // 按菜单顺序平铺成一排，复用「插入 → 常见图形」同一批动作，避免两套插入逻辑。
-    for (QAction* action : m_window->m_shapeMenu->actions()) {
-        if (!action || action->isSeparator()) {
-            continue;
+    // 按下面的固定顺序平铺成一排，复用「插入 → 常见图形」同一批动作，避免两套插入逻辑。
+    // 顺序：矩形、椭圆、三角形、菱形、星形、箭头、双向箭头、对话气泡、扇形、弧线、直线、左右花括号。
+    const QList<ShapeType> shapeOrder = {
+        ShapeType::Rectangle, ShapeType::Ellipse,     ShapeType::Triangle,   ShapeType::Diamond, ShapeType::Star,
+        ShapeType::Arrow,     ShapeType::DoubleArrow, ShapeType::Callout,    ShapeType::Sector,  ShapeType::Arc,
+        ShapeType::Line,      ShapeType::BraceLeft,   ShapeType::BraceRight,
+    };
+    for (ShapeType type : shapeOrder) {
+        for (QAction* action : m_window->m_shapeMenu->actions()) {
+            if (!action || action->isSeparator()) {
+                continue;
+            }
+            const QString name = action->objectName();
+            if (!name.startsWith(QStringLiteral("ShapeAction_")) && !name.startsWith(QStringLiteral("ShapePreset_"))) {
+                continue;
+            }
+            if (action->data().toInt() != static_cast<int>(type)) {
+                continue;
+            }
+            auto* shapeButton = new QToolButton(mainBar);
+            shapeButton->setObjectName(QStringLiteral("ToolBarShapeButton"));
+            shapeButton->setProperty("shapeActionName", action->objectName());
+            shapeButton->setIcon(action->icon());
+            shapeButton->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
+            shapeButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+            shapeButton->setToolTip(action->toolTip());
+            QObject::connect(shapeButton, &QToolButton::clicked, action, &QAction::trigger);
+            mainBar->addWidget(shapeButton);
         }
-        const QString name = action->objectName();
-        if (!name.startsWith(QStringLiteral("ShapeAction_")) && !name.startsWith(QStringLiteral("ShapePreset_"))) {
-            continue;
-        }
-        auto* shapeButton = new QToolButton(mainBar);
-        shapeButton->setObjectName(QStringLiteral("ToolBarShapeButton"));
-        shapeButton->setProperty("shapeActionName", action->objectName());
-        shapeButton->setIcon(action->icon());
-        shapeButton->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
-        shapeButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
-        shapeButton->setToolTip(action->toolTip());
-        QObject::connect(shapeButton, &QToolButton::clicked, action, &QAction::trigger);
-        mainBar->addWidget(shapeButton);
     }
 
     // 常见图形之后追加自定义图形下拉，和「插入 → 常见图形」里的同一份目录菜单。

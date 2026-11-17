@@ -169,21 +169,27 @@ QIcon makeShapePresetIcon(const QString& preset, const QColor& color, int logica
 
     const QRectF box(3.0, 4.0, 18.0, 16.0);
     if (preset == QStringLiteral("roundedRect")) {
-        painter.drawRoundedRect(box, qMin(box.height(), box.width()) * 0.32, qMin(box.height(), box.width()) * 0.32);
+        // 与插入值一致：圆角取短边的 16%。
+        const qreal radius = qMin(box.height(), box.width()) * 0.16;
+        painter.drawRoundedRect(box, radius, radius);
     } else if (preset == QStringLiteral("triangle45")) {
-        // 直角在右下，左侧 45°：底边水平，两腰一竖一斜。
+        // 45° 预置：底角 90° 在左下、45° 在右下，顶点落在左上角，画成等腰直角三角形。
+        const QRectF square(5.0, 5.0, 14.0, 14.0);
         QPainterPath path;
-        path.moveTo(box.left(), box.bottom());
-        path.lineTo(box.right(), box.bottom());
-        path.lineTo(box.right(), box.top());
+        path.moveTo(square.left(), square.top());
+        path.lineTo(square.left(), square.bottom());
+        path.lineTo(square.right(), square.bottom());
         path.closeSubpath();
         painter.drawPath(path);
     } else if (preset == QStringLiteral("triangle60")) {
-        // 直角在右下，左侧 60°：顶点沿底边按 cot(60°) 内收，三角形更窄。
+        // 60° 预置：同一条竖边，底角 60° 让底边更短，整体更瘦高。
+        const qreal height = 15.0;
+        const qreal width = height / qTan(qDegreesToRadians(60.0));
+        const QRectF tall(6.0, 4.5, width, height);
         QPainterPath path;
-        path.moveTo(box.left(), box.bottom());
-        path.lineTo(box.right(), box.bottom());
-        path.lineTo(box.right() - box.height() / qTan(qDegreesToRadians(60.0)), box.top());
+        path.moveTo(tall.left(), tall.top());
+        path.lineTo(tall.left(), tall.bottom());
+        path.lineTo(tall.right(), tall.bottom());
         path.closeSubpath();
         painter.drawPath(path);
     } else if (preset == QStringLiteral("lineArrow")) {

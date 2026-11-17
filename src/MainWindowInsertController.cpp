@@ -84,13 +84,12 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
     auto* item = new ShapeItem(type);
     const QColor stroke =
         m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
-    QColor fill = stroke;
-    fill.setAlpha(36);
-    if (m_window->m_fillColor.isValid()) {
-        fill = m_window->m_fillColor;
-    }
-    const bool filled = shapeTypeIsFilled(type) && m_window->m_fillStyle != FillStyle::None;
-    item->setStyle(stroke, filled ? fill : QColor(Qt::transparent), qBound<qreal>(2.5, m_window->m_brushWidth, 10.0));
+    // 与工具栏图标一致：没显式挑过填充色时，插入的常见图形是空心描边，
+    // 只给描线颜色；用户选了填充色（m_fillColor 有效）才按当前填充样式填色。
+    const bool filled =
+        shapeTypeIsFilled(type) && m_window->m_fillStyle != FillStyle::None && m_window->m_fillColor.isValid();
+    item->setStyle(stroke, filled ? m_window->m_fillColor : QColor(Qt::transparent),
+                   qBound<qreal>(2.5, m_window->m_brushWidth, 10.0));
     item->setFillStyle(filled ? m_window->m_fillStyle : FillStyle::None);
 
     const QRectF canvas = m_window->m_scene->canvasRect();

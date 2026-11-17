@@ -153,16 +153,12 @@ QIcon ShapePainter::makeIcon(ShapeType type, const QColor& color, int logicalSiz
         rect = QRectF(6.0, 2.0, 12.0, 20.0);
     } else if (type == ShapeType::Arrow || type == ShapeType::DoubleArrow || type == ShapeType::Line) {
         rect = QRectF(2.0, 7.0, 20.0, 10.0);
-    } else if (type == ShapeType::Sector) {
-        // 扇形 / 弧线只占内容矩形的一部分，图标里换成整格与更大的扫过角，
-        // 否则在工具栏那一排里明显比别的图标小一圈。扇形取 270°，是饱满的圆形切片。
-        rect = QRectF(2.0, 2.0, 20.0, 20.0);
-        iconStartAngle = 90.0;
-        iconSweepAngle = 270.0;
-    } else if (type == ShapeType::Arc) {
-        rect = QRectF(2.0, 2.0, 20.0, 20.0);
-        iconStartAngle = 0.0;
-        iconSweepAngle = 180.0;
+    } else if (type == ShapeType::Sector || type == ShapeType::Arc) {
+        // 扇形 / 弧线的图标必须与插入后的默认形态同一套角度（30° 起、120° 扫过），
+        // 否则“点图标得到另一个形状”。只把椭圆放大到整格，避免在这排里显得过小。
+        rect = QRectF(1.0, 1.0, 22.0, 22.0);
+        iconStartAngle = 30.0;
+        iconSweepAngle = 120.0;
     }
 
     const QPainterPath path = ShapeItem::pathFor(type, rect, -1.0, iconStartAngle, iconSweepAngle, -1.0);
