@@ -175,3 +175,16 @@ if(WIN32 AND WINDEPLOYQT_EXECUTABLE)
 endif()
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION .)
+
+# 需求 8：把示例模板（含四个子目录与顺序.txt）放到可执行文件旁的 shapes/，
+# 自定义图形面板按子目录分页显示；用户自己往这个目录里加文件同样会被扫到。
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/shapes")
+    add_custom_command(
+        TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory
+                "${CMAKE_CURRENT_SOURCE_DIR}/examples/shapes"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>/shapes"
+        COMMENT "Copying example shapes next to ${PROJECT_NAME}"
+    )
+    install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/examples/shapes/" DESTINATION shapes)
+endif()

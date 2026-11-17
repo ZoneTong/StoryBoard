@@ -1521,8 +1521,8 @@ Second line caption</source>
       <translation>故事板画布 (*.sbcanvas)</translation>
     </message>
     <message>
-      <source>StoryBoard canvases (*.sbcanvas);;All files (*.*)</source>
-      <translation>故事板画布 (*.sbcanvas);;所有文件 (*.*)</translation>
+      <source>StoryBoard canvases (*.sbcanvas);;Excalidraw scenes (*.excalidraw);;All files (*.*)</source>
+      <translation>故事板画布 (*.sbcanvas);;Excalidraw 场景 (*.excalidraw);;所有文件 (*.*)</translation>
     </message>
     <message>
       <source>Stretch to fill</source>
@@ -2402,8 +2402,8 @@ Use the checkbox to show or hide it.</source>
       <translation>图片文件 (*.png *.jpg *.jpeg *.bmp *.gif);;所有文件 (*.*)</translation>
     </message>
     <message>
-      <source>StoryBoard canvases (*.sbcanvas);;All files (*.*)</source>
-      <translation>故事板画布 (*.sbcanvas);;所有文件 (*.*)</translation>
+      <source>StoryBoard canvases (*.sbcanvas);;Excalidraw scenes (*.excalidraw);;All files (*.*)</source>
+      <translation>故事板画布 (*.sbcanvas);;Excalidraw 场景 (*.excalidraw);;所有文件 (*.*)</translation>
     </message>
     <message>
       <source>This is not a valid StoryBoard canvas file.</source>
@@ -3812,6 +3812,48 @@ Use the checkbox to show or hide it.</source>
     <message>
         <source>Merge items is available in edit mode only</source>
         <translation>合并图元只在编辑模式可用</translation>
+    </message>
+    <message>
+        <source>Export Excalidraw…</source>
+        <translation>导出 Excalidraw…</translation>
+    </message>
+    <message>
+        <source>Save this canvas as an .excalidraw scene that excalidraw.com can open</source>
+        <translation>把当前画板存成 excalidraw.com 能打开的 .excalidraw 场景</translation>
+    </message>
+    <message>
+        <source>Excalidraw scenes (*.excalidraw)</source>
+        <translation>Excalidraw 场景 (*.excalidraw)</translation>
+    </message>
+    <message>
+        <source>Import Excalidraw</source>
+        <translation>导入 Excalidraw</translation>
+    </message>
+    <message>
+        <source>This Excalidraw scene has no supported elements.</source>
+        <translation>该 Excalidraw 场景里没有受支持的元素。</translation>
+    </message>
+    <message>
+        <source>Imported an Excalidraw scene as a new canvas</source>
+        <translation>已把 Excalidraw 场景导入为新画板</translation>
+    </message>
+    <message>
+        <source>Export Excalidraw</source>
+        <translation>导出 Excalidraw</translation>
+    </message>
+    <message>
+        <source>Excalidraw scene exported: %1</source>
+        <translation>Excalidraw 场景已导出：%1</translation>
+    </message>
+    <message>
+        <source>Failed to save the file:
+%1</source>
+        <translation>文件保存失败：
+%1</translation>
+    </message>
+    <message>
+        <source>Pasted %1 Excalidraw item(s)</source>
+        <translation>已粘贴 %1 个 Excalidraw 图元</translation>
     </message>
 </context>
   <context>
