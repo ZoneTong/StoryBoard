@@ -46,6 +46,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QKeyEvent>
 #include <QLabel>
 #include <QLayout>
 #include <QLineEdit>
@@ -393,6 +394,25 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             menuTemplate.write(QJsonDocument(menuRoot).toJson(QJsonDocument::Indented));
             menuTemplate.close();
         }
+        // 面板的三种边界：空目录不出页、坏文件保留页并灰字提示、方向键 + 回车能直接插入。
+        const QString emptyFolder = QDir(dockShapesDir).filePath(QStringLiteral("空目录"));
+        QDir().mkpath(emptyFolder);
+        const QString brokenFolder = QDir(dockShapesDir).filePath(QStringLiteral("坏文件"));
+        QDir().mkpath(brokenFolder);
+        QFile brokenFile(QDir(brokenFolder).filePath(QStringLiteral("broken.sbcanvas")));
+        if (brokenFile.open(QIODevice::WriteOnly)) {
+            brokenFile.write("not a canvas");
+            brokenFile.close();
+        }
+        const QString keyFolder = QDir(dockShapesDir).filePath(QStringLiteral("方向键"));
+        QDir().mkpath(keyFolder);
+        for (const QString& keyName : {QStringLiteral("key-one"), QStringLiteral("key-two")}) {
+            QFile keyFile(QDir(keyFolder).filePath(keyName + QStringLiteral(".sbcanvas")));
+            if (keyFile.open(QIODevice::WriteOnly)) {
+                keyFile.write(QJsonDocument(menuRoot).toJson(QJsonDocument::Indented));
+                keyFile.close();
+            }
+        }
 
         MainWindow dockWindow;
         dockWindow.resize(1200, 800);
@@ -438,6 +458,63 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                   QStringLiteral("actions=%1").arg(dockCustomMenu ? dockCustomMenu->actions().size() : -1));
         if (shapePanel) {
             shapePanel->hide();
+        }
+        // 三条边界断言：空目录不出页、坏文件灰字、方向键 + 回车插入。
+        QStringList panelTitles;
+        QWidget* brokenPage = nullptr;
+        int keyTabIndex = -1;
+        for (int i = 0; shapeTabs && i < shapeTabs->count(); ++i) {
+            const QString title = shapeTabs->tabText(i);
+            panelTitles.append(title);
+            if (title == QStringLiteral("坏文件")) {
+                brokenPage = shapeTabs->widget(i);
+            }
+            if (title == QStringLiteral("方向键")) {
+                keyTabIndex = i;
+            }
+        }
+        QLabel* brokenLabel =
+            brokenPage ? brokenPage->findChild<QLabel*>(QStringLiteral("CustomShapeBrokenLabel")) : nullptr;
+        ctx.check(!panelTitles.contains(QStringLiteral("空目录")) && panelTitles.contains(QStringLiteral("坏文件")),
+                  QStringLiteral("空目录不出页、有坏文件的目录保留页"),
+                  QStringLiteral("titles=%1").arg(panelTitles.join(QStringLiteral("|"))));
+        ctx.check(brokenLabel && brokenLabel->styleSheet().contains(QStringLiteral("#9CA3AF")),
+                  QStringLiteral("坏文件在页底以灰字提示"),
+                  QStringLiteral("label=%1 style=%2")
+                      .arg(brokenLabel ? QStringLiteral("yes") : QStringLiteral("no"))
+                      .arg(brokenLabel ? brokenLabel->styleSheet() : QString()));
+        const int itemsBeforeKey = dockWindow.scene()->canvasItemCount();
+        bool keyInserted = false;
+        if (shapePanel && keyTabIndex >= 0) {
+            shapePanel->tabWidget()->setCurrentIndex(keyTabIndex);
+            QApplication::processEvents();
+            QList<QToolButton*> keyButtons = shapePanel->tabWidget()->currentWidget()->findChildren<QToolButton*>(
+                QStringLiteral("CustomShapeTemplateButton"));
+            if (!keyButtons.isEmpty()) {
+                shapePanel->activateWindow();
+                keyButtons.constFirst()->setFocus(Qt::OtherFocusReason);
+                QApplication::processEvents();
+                QKeyEvent arrowEvent(QKeyEvent::KeyPress, Qt::Key_Right, Qt::NoModifier);
+                QApplication::sendEvent(shapePanel, &arrowEvent);
+                QWidget* focusedAfterArrow = shapePanel->focusWidget();
+                QKeyEvent enterEvent(QKeyEvent::KeyPress, Qt::Key_Return, Qt::NoModifier);
+                QApplication::sendEvent(shapePanel, &enterEvent);
+                QApplication::processEvents();
+                keyInserted = focusedAfterArrow &&
+                              focusedAfterArrow->objectName() == QStringLiteral("CustomShapeTemplateButton") &&
+                              dockWindow.scene()->canvasItemCount() > itemsBeforeKey;
+            }
+        }
+        ctx.check(keyInserted, QStringLiteral("方向键移动焦点、回车插入模板"),
+                  QStringLiteral("items %1->%2").arg(itemsBeforeKey).arg(dockWindow.scene()->canvasItemCount()));
+        // 插入会落到画布上，断言后立刻撤回，免得影响后面按选中项数量走的检查。
+        if (keyInserted) {
+            while (dockWindow.scene()->canvasItemCount() > itemsBeforeKey &&
+                   dockWindow.scene()->undoStack()->canUndo()) {
+                dockWindow.scene()->undoStack()->undo();
+            }
+            dockWindow.scene()->clearSelection();
+            QApplication::processEvents();
         }
         ctx.check(dockWindow.findChild<QAction*>(QStringLiteral("ItemDockToggleAction")) != nullptr,
                   QStringLiteral("视图菜单提供编辑图元卡开关"));
@@ -1220,6 +1297,9 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
 
         for (const QString& stale : QDir(dockShapesDir).entryList({QStringLiteral("*.sbcanvas")}, QDir::Files)) {
             QFile::remove(QDir(dockShapesDir).filePath(stale));
+        }
+        for (const QString& staleDir : {QStringLiteral("空目录"), QStringLiteral("坏文件"), QStringLiteral("方向键")}) {
+            QDir(QDir(dockShapesDir).filePath(staleDir)).removeRecursively();
         }
         qunsetenv("STORYBOARD_CONFIG");
     }

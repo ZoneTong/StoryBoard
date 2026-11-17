@@ -15,10 +15,13 @@ bool isScene(const QJsonObject& root);
 bool isClipboard(const QJsonObject& root);
 
 // 元素数组 -> StoryBoard items 数组（粘贴用）。不支持的元素跳过并写 warning。
-QJsonArray elementsToItems(const QJsonArray& elements, QStringList* warnings = nullptr);
+// layers 非空时回填每个 frame 对应的一层；files 提供 image 元素的 dataURL；
+// keepImages 决定 image 元素是转成位图图元还是跳过。
+QJsonArray elementsToItems(const QJsonArray& elements, QStringList* warnings = nullptr, QJsonArray* layers = nullptr,
+                           const QJsonObject& files = QJsonObject(), bool keepImages = false);
 
 // .excalidraw 场景 -> StoryBoard 画板根 JSON（导入用）。
-QJsonObject sceneToStoryBoard(const QJsonObject& scene, QStringList* warnings = nullptr);
+QJsonObject sceneToStoryBoard(const QJsonObject& scene, QStringList* warnings = nullptr, bool keepImages = false);
 
 // StoryBoard 画板根 JSON -> .excalidraw 场景（导出用）。
 QJsonObject storyBoardToScene(const QJsonObject& document, QStringList* warnings = nullptr);

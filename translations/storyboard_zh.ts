@@ -3842,6 +3842,14 @@ Use the checkbox to show or hide it.</source>
         <translation>该 Excalidraw 场景里没有受支持的元素。</translation>
     </message>
     <message>
+        <source>This scene contains images. Keep them as bitmaps?</source>
+        <translation>该场景包含图片，是否作为位图保留？</translation>
+    </message>
+    <message>
+        <source>Keep images as bitmaps</source>
+        <translation>图片作为位图保留</translation>
+    </message>
+    <message>
         <source>Imported an Excalidraw scene as a new canvas</source>
         <translation>已把 Excalidraw 场景导入为新画板</translation>
     </message>

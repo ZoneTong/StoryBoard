@@ -73,7 +73,10 @@ void ImageItem::fromJson(const QJsonObject& json)
 
     QPixmap pixmap;
     if (!m_sourceBytes.isEmpty()) {
-        pixmap.loadFromData(m_sourceBytes, "PNG");
+        // 画板自己存的是 PNG；Excalidraw 的 dataURL 可能是 JPEG / WebP，PNG 解不动时交给 Qt 自识别。
+        if (!pixmap.loadFromData(m_sourceBytes, "PNG")) {
+            pixmap.loadFromData(m_sourceBytes);
+        }
     }
     m_pixmap = pixmap;
     applyBaseJson(json);

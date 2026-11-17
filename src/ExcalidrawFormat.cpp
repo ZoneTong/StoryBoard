@@ -1,6 +1,7 @@
 #include "ExcalidrawFormat.h"
 
 #include <QColor>
+#include <QHash>
 #include <QJsonDocument>
 #include <QPointF>
 #include <QRectF>
@@ -48,7 +49,7 @@ QString headStyle(const QJsonValue& value)
     return QStringLiteral("none");
 }
 
-QJsonObject itemBase(const QString& type, const QRectF& bounds, int z)
+QJsonObject itemBase(const QString& type, const QRectF& bounds, int z, int layer)
 {
     QJsonObject item;
     item.insert(QStringLiteral("type"), type);
@@ -56,16 +57,20 @@ QJsonObject itemBase(const QString& type, const QRectF& bounds, int z)
     item.insert(QStringLiteral("y"), bounds.y());
     item.insert(QStringLiteral("w"), bounds.width());
     item.insert(QStringLiteral("h"), bounds.height());
-    item.insert(QStringLiteral("layer"), 1);
+    item.insert(QStringLiteral("layer"), layer);
     item.insert(QStringLiteral("height"), 1);
     item.insert(QStringLiteral("z"), z);
     return item;
 }
 
+// 单条折线最多保留的点数：再多对画板没有意义，只会把曲线图元撑爆。
+constexpr int kMaxPoints = 10000;
+
 QJsonArray polylineSegments(const QList<QPointF>& points)
 {
     QJsonArray segments;
-    for (int i = 1; i < points.size(); ++i) {
+    const int last = qMin(points.size() - 1, kMaxPoints - 1);
+    for (int i = 1; i <= last; ++i) {
         const QPointF p0 = points.at(i - 1);
         const QPointF p1 = points.at(i);
         QJsonArray values;
@@ -82,11 +87,18 @@ QJsonArray polylineSegments(const QList<QPointF>& points)
     return segments;
 }
 
-QList<QPointF> absolutePoints(const QJsonObject& element)
+QList<QPointF> absolutePoints(const QJsonObject& element, QStringList* warnings)
 {
     QList<QPointF> points;
     const QJsonArray raw = element.value(QStringLiteral("points")).toArray();
     for (const QJsonValue& value : raw) {
+        // freedraw 的点可能成千上万，超出上限后不再解析。
+        if (points.size() >= kMaxPoints) {
+            if (warnings) {
+                warnings->append(QStringLiteral("点过多（%1），只取前 %2 个").arg(raw.size()).arg(kMaxPoints));
+            }
+            break;
+        }
         const QJsonArray pair = value.toArray();
         if (pair.size() < 2) {
             continue;
@@ -106,30 +118,95 @@ QRectF boundsOf(const QList<QPointF>& points)
     return bounds;
 }
 
-QJsonObject elementToItem(const QJsonObject& element, int z, QStringList* warnings)
+// 导出时写进 customData 的原样式字段；导入先读这里，读不到再按 Excalidraw 语义近似。
+QString customText(const QJsonObject& element, const QString& key)
+{
+    return element.value(QStringLiteral("customData")).toObject().value(key).toString();
+}
+
+qreal customNumber(const QJsonObject& element, const QString& key, qreal fallback)
+{
+    return numberOr(element.value(QStringLiteral("customData")).toObject(), key, fallback);
+}
+
+// 箭头样式：空心三角在 Excalidraw 里只能写成 triangle，靠 customData 还原。
+QString importHeadStyle(const QJsonObject& element, const QString& key)
+{
+    const QString restored = customText(element, key + QStringLiteral("Style"));
+    if (restored == QStringLiteral("hollow-triangle")) {
+        return restored;
+    }
+    return headStyle(element.value(key + QStringLiteral("head")));
+}
+
+QJsonObject elementToItem(const QJsonObject& element, int z, int layer, QStringList* warnings, const QJsonObject& files,
+                          bool keepImages)
 {
     const QString type = element.value(QStringLiteral("type")).toString();
     const QRectF bounds(numberOr(element, QStringLiteral("x"), 0.0), numberOr(element, QStringLiteral("y"), 0.0),
                         numberOr(element, QStringLiteral("width"), 0.0),
                         numberOr(element, QStringLiteral("height"), 0.0));
 
+    if (type == QStringLiteral("image")) {
+        // 勾选位图保留时，按 Excalidraw 的 dataURL 落成图片图元；否则跳过并提示。
+        if (!keepImages) {
+            if (warnings) {
+                warnings->append(QStringLiteral("跳过 image 元素（未勾选位图保留）"));
+            }
+            return {};
+        }
+        const QString dataUrl = files.value(element.value(QStringLiteral("fileId")).toString())
+                                    .toObject()
+                                    .value(QStringLiteral("dataURL"))
+                                    .toString();
+        const int comma = dataUrl.indexOf(QLatin1Char(','));
+        if (comma < 0) {
+            if (warnings) {
+                warnings->append(QStringLiteral("image 元素缺少 dataURL，已跳过"));
+            }
+            return {};
+        }
+        QJsonObject item = itemBase(QStringLiteral("image"), bounds, z, layer);
+        item.insert(QStringLiteral("name"), element.value(QStringLiteral("id")).toString());
+        item.insert(QStringLiteral("image"), dataUrl.mid(comma + 1));
+        return item;
+    }
+
     if (type == QStringLiteral("rectangle") || type == QStringLiteral("ellipse") || type == QStringLiteral("diamond")) {
-        QJsonObject item = itemBase(QStringLiteral("shape"), bounds, z);
-        item.insert(
-            QStringLiteral("shapeType"),
+        QJsonObject item = itemBase(QStringLiteral("shape"), bounds, z, layer);
+        // 导出时记下的原图形类型优先，三角形 / 星形之类才不会退回矩形。
+        const QString restoredType = customText(element, QStringLiteral("storyboardShapeType"));
+        QString shapeType =
             type == QStringLiteral("ellipse")
                 ? QStringLiteral("ellipse")
-                : (type == QStringLiteral("diamond") ? QStringLiteral("diamond") : QStringLiteral("rectangle")));
-        const QColor stroke = colorOr(element, QStringLiteral("strokeColor"), QColor(30, 41, 59));
+                : (type == QStringLiteral("diamond") ? QStringLiteral("diamond") : QStringLiteral("rectangle"));
+        if (!restoredType.isEmpty()) {
+            shapeType = restoredType;
+        }
+        item.insert(QStringLiteral("shapeType"), shapeType);
+        QColor stroke = colorOr(element, QStringLiteral("strokeColor"), QColor(30, 41, 59));
         QColor fill = colorOr(element, QStringLiteral("backgroundColor"), QColor(Qt::transparent));
         QString fillStyle = QStringLiteral("none");
         if (fill.alpha() > 0) {
-            const QString sourceStyle = element.value(QStringLiteral("fillStyle")).toString();
-            fillStyle = QStringLiteral("solid");
-            if (!sourceStyle.isEmpty() && sourceStyle != QStringLiteral("solid") && warnings) {
-                warnings->append(QStringLiteral("fillStyle %1 降级为实心填充").arg(sourceStyle));
+            // 原填充样式（斜纹 / 网格 / 蜂窝等）在 customData 里，取不到才降级为实心。
+            const QString restoredStyle = customText(element, QStringLiteral("fillStyle"));
+            if (!restoredStyle.isEmpty()) {
+                fillStyle = restoredStyle;
+            } else {
+                const QString sourceStyle = element.value(QStringLiteral("fillStyle")).toString();
+                fillStyle = QStringLiteral("solid");
+                if (!sourceStyle.isEmpty() && sourceStyle != QStringLiteral("solid") && warnings) {
+                    warnings->append(QStringLiteral("fillStyle %1 降级为实心填充").arg(sourceStyle));
+                }
             }
         }
+        // 透明度：画板把透明度放在颜色 alpha 上，Excalidraw 的颜色不带 alpha，靠 customData 还原。
+        const qreal fillAlpha = customNumber(element, QStringLiteral("fillAlpha"), fill.alpha());
+        if (fill.alpha() > 0) {
+            fill.setAlpha(static_cast<int>(qBound<qreal>(0.0, fillAlpha, 255.0)));
+        }
+        const qreal strokeAlpha = customNumber(element, QStringLiteral("strokeAlpha"), stroke.alpha());
+        stroke.setAlpha(static_cast<int>(qBound<qreal>(1.0, strokeAlpha, 255.0)));
         item.insert(QStringLiteral("strokeColor"), stroke.name(QColor::HexArgb));
         item.insert(QStringLiteral("fillColor"), fill.name(QColor::HexArgb));
         item.insert(QStringLiteral("fillStyle"), fillStyle);
@@ -145,7 +222,7 @@ QJsonObject elementToItem(const QJsonObject& element, int z, QStringList* warnin
     }
 
     if (type == QStringLiteral("text")) {
-        QJsonObject item = itemBase(QStringLiteral("text"), bounds, z);
+        QJsonObject item = itemBase(QStringLiteral("text"), bounds, z, layer);
         item.insert(QStringLiteral("text"), element.value(QStringLiteral("text")).toString());
         item.insert(QStringLiteral("color"),
                     colorOr(element, QStringLiteral("strokeColor"), QColor(30, 41, 59)).name(QColor::HexArgb));
@@ -159,7 +236,7 @@ QJsonObject elementToItem(const QJsonObject& element, int z, QStringList* warnin
     }
 
     if (type == QStringLiteral("line") || type == QStringLiteral("arrow") || type == QStringLiteral("freedraw")) {
-        const QList<QPointF> points = absolutePoints(element);
+        const QList<QPointF> points = absolutePoints(element, warnings);
         if (points.size() < 2) {
             return {};
         }
@@ -170,7 +247,7 @@ QJsonObject elementToItem(const QJsonObject& element, int z, QStringList* warnin
             QJsonObject item = itemBase(QStringLiteral("shape"),
                                         QRectF(QPointF(qMin(start.x(), end.x()), qMin(start.y(), end.y())),
                                                QSizeF(qAbs(end.x() - start.x()), qAbs(end.y() - start.y()))),
-                                        z);
+                                        z, layer);
             item.insert(QStringLiteral("shapeType"), QStringLiteral("line"));
             item.insert(QStringLiteral("strokeColor"),
                         colorOr(element, QStringLiteral("strokeColor"), QColor(30, 41, 59)).name(QColor::HexArgb));
@@ -180,13 +257,13 @@ QJsonObject elementToItem(const QJsonObject& element, int z, QStringList* warnin
                         qMax<qreal>(0.5, numberOr(element, QStringLiteral("strokeWidth"), 2.0)));
             item.insert(QStringLiteral("strokeStyle"), 1);
             item.insert(QStringLiteral("opacity"), numberOr(element, QStringLiteral("opacity"), 100.0) / 100.0);
-            item.insert(QStringLiteral("startArrow"), headStyle(element.value(QStringLiteral("startArrowhead"))));
-            item.insert(QStringLiteral("endArrow"), headStyle(element.value(QStringLiteral("endArrowhead"))));
+            item.insert(QStringLiteral("startArrow"), importHeadStyle(element, QStringLiteral("startArrow")));
+            item.insert(QStringLiteral("endArrow"), importHeadStyle(element, QStringLiteral("endArrow")));
             return item;
         }
         // 多点折线：保留拐点与两端箭头，落到曲线图元。
         const QRectF lineBounds = boundsOf(points);
-        QJsonObject item = itemBase(QStringLiteral("curve"), lineBounds, z);
+        QJsonObject item = itemBase(QStringLiteral("curve"), lineBounds, z, layer);
         item.insert(QStringLiteral("color"),
                     colorOr(element, QStringLiteral("strokeColor"), QColor(30, 41, 59)).name(QColor::HexArgb));
         item.insert(QStringLiteral("width"), qMax<qreal>(0.5, numberOr(element, QStringLiteral("strokeWidth"), 2.0)));
@@ -195,8 +272,8 @@ QJsonObject elementToItem(const QJsonObject& element, int z, QStringList* warnin
         item.insert(QStringLiteral("baseHeight"), lineBounds.height());
         item.insert(QStringLiteral("dot"), false);
         item.insert(QStringLiteral("linear"), true);
-        item.insert(QStringLiteral("startArrow"), headStyle(element.value(QStringLiteral("startArrowhead"))));
-        item.insert(QStringLiteral("endArrow"), headStyle(element.value(QStringLiteral("endArrowhead"))));
+        item.insert(QStringLiteral("startArrow"), importHeadStyle(element, QStringLiteral("startArrow")));
+        item.insert(QStringLiteral("endArrow"), importHeadStyle(element, QStringLiteral("endArrow")));
         item.insert(QStringLiteral("segments"), polylineSegments(points));
         return item;
     }
@@ -273,6 +350,30 @@ QString headValue(const QJsonObject& item, const QString& key)
     return QString();
 }
 
+// 导出时把画板独有的样式塞进 customData：填充样式、填充/描线 alpha、空心三角箭头标记。
+QJsonObject styleCustomData(const QJsonObject& item)
+{
+    QJsonObject custom;
+    custom.insert(QStringLiteral("fillStyle"), item.value(QStringLiteral("fillStyle")).toString());
+    custom.insert(QStringLiteral("fillAlpha"),
+                  colorOr(item, QStringLiteral("fillColor"), QColor(Qt::transparent)).alpha());
+    custom.insert(QStringLiteral("strokeAlpha"),
+                  colorOr(item, QStringLiteral("strokeColor"), QColor(30, 41, 59)).alpha());
+    return custom;
+}
+
+QJsonObject headCustomData(const QJsonObject& item)
+{
+    QJsonObject custom;
+    if (item.value(QStringLiteral("startArrow")).toString() == QStringLiteral("hollow-triangle")) {
+        custom.insert(QStringLiteral("startArrowStyle"), QStringLiteral("hollow-triangle"));
+    }
+    if (item.value(QStringLiteral("endArrow")).toString() == QStringLiteral("hollow-triangle")) {
+        custom.insert(QStringLiteral("endArrowStyle"), QStringLiteral("hollow-triangle"));
+    }
+    return custom;
+}
+
 QJsonArray relativePoints(const QJsonArray& segments, qreal originX, qreal originY)
 {
     QList<QPointF> points;
@@ -310,7 +411,8 @@ bool isClipboard(const QJsonObject& root)
            root.value(QStringLiteral("elements")).isArray();
 }
 
-QJsonArray elementsToItems(const QJsonArray& elements, QStringList* warnings)
+QJsonArray elementsToItems(const QJsonArray& elements, QStringList* warnings, QJsonArray* layers,
+                           const QJsonObject& files, bool keepImages)
 {
     QJsonArray items;
     int z = 1000001;
@@ -323,6 +425,35 @@ QJsonArray elementsToItems(const QJsonArray& elements, QStringList* warnings)
                                  .arg(elements.size()));
         }
     }
+
+    // frame -> 图层号。1 号层留给不属于任何 frame 的元素，frame 从 2 号开始依次编号。
+    QHash<QString, int> frameLayer;
+    QJsonArray frameLayers;
+    int nextLayer = 2;
+    int frameIndex = 0;
+    for (const QJsonValue& value : elements) {
+        const QJsonObject element = value.toObject();
+        if (element.value(QStringLiteral("type")).toString() != QLatin1String("frame") ||
+            element.value(QStringLiteral("isDeleted")).toBool(false)) {
+            continue;
+        }
+        const QString id = element.value(QStringLiteral("id")).toString();
+        if (id.isEmpty() || frameLayer.contains(id)) {
+            continue;
+        }
+        ++frameIndex;
+        QJsonObject layer;
+        layer.insert(QStringLiteral("id"), nextLayer);
+        const QString name = element.value(QStringLiteral("name")).toString();
+        // 无名称的 frame 用 frame-<n>，n 按 frame 在场景里出现的次序。
+        layer.insert(QStringLiteral("name"), name.isEmpty() ? QStringLiteral("frame-%1").arg(frameIndex) : name);
+        layer.insert(QStringLiteral("visible"), true);
+        layer.insert(QStringLiteral("locked"), false);
+        frameLayers.append(layer);
+        frameLayer.insert(id, nextLayer);
+        ++nextLayer;
+    }
+
     for (const QJsonValue& value : elements) {
         if (items.size() >= kMaxElements) {
             break;
@@ -331,19 +462,40 @@ QJsonArray elementsToItems(const QJsonArray& elements, QStringList* warnings)
         if (element.value(QStringLiteral("isDeleted")).toBool(false)) {
             continue;
         }
-        const QJsonObject item = elementToItem(element, z, warnings);
+        if (element.value(QStringLiteral("type")).toString() == QLatin1String("frame")) {
+            // frame 本身只是分组容器，已经变成图层，不再生成图元。
+            continue;
+        }
+        const int layer = frameLayer.value(element.value(QStringLiteral("frameId")).toString(), 1);
+        const QJsonObject item = elementToItem(element, z, layer, warnings, files, keepImages);
         if (item.isEmpty()) {
             continue;
         }
         items.append(item);
         ++z;
     }
+
+    if (layers) {
+        QJsonObject base;
+        base.insert(QStringLiteral("id"), 1);
+        base.insert(QStringLiteral("name"), QStringLiteral("图层 1"));
+        base.insert(QStringLiteral("visible"), true);
+        base.insert(QStringLiteral("locked"), false);
+        // 按层号排序：默认层在最前，frame 层从 2 号起顺序追加。
+        QJsonArray sorted{base};
+        for (const QJsonValue& value : frameLayers) {
+            sorted.append(value);
+        }
+        *layers = sorted;
+    }
     return items;
 }
 
-QJsonObject sceneToStoryBoard(const QJsonObject& scene, QStringList* warnings)
+QJsonObject sceneToStoryBoard(const QJsonObject& scene, QStringList* warnings, bool keepImages)
 {
-    const QJsonArray items = elementsToItems(scene.value(QStringLiteral("elements")).toArray(), warnings);
+    QJsonArray layers;
+    const QJsonArray items = elementsToItems(scene.value(QStringLiteral("elements")).toArray(), warnings, &layers,
+                                             scene.value(QStringLiteral("files")).toObject(), keepImages);
     if (items.isEmpty()) {
         return {};
     }
@@ -379,12 +531,7 @@ QJsonObject sceneToStoryBoard(const QJsonObject& scene, QStringList* warnings)
     }
     document.insert(QStringLiteral("background"), backgroundObject);
 
-    QJsonObject layer;
-    layer.insert(QStringLiteral("id"), 1);
-    layer.insert(QStringLiteral("name"), QStringLiteral("图层 1"));
-    layer.insert(QStringLiteral("visible"), true);
-    layer.insert(QStringLiteral("locked"), false);
-    document.insert(QStringLiteral("layers"), QJsonArray{layer});
+    document.insert(QStringLiteral("layers"), layers);
     document.insert(QStringLiteral("activeLayer"), 1);
     document.insert(QStringLiteral("items"), items);
     return document;
@@ -422,6 +569,10 @@ QJsonObject storyBoardToScene(const QJsonObject& document, QStringList* warnings
                 points.append(
                     QJsonArray{item.value(QStringLiteral("w")).toDouble(), item.value(QStringLiteral("h")).toDouble()});
                 element.insert(QStringLiteral("points"), points);
+                const QJsonObject headCustom = headCustomData(item);
+                if (!headCustom.isEmpty()) {
+                    element.insert(QStringLiteral("customData"), headCustom);
+                }
             } else if (shapeType == QStringLiteral("rectangle") || shapeType == QStringLiteral("ellipse") ||
                        shapeType == QStringLiteral("diamond")) {
                 element = storyBoardShape(item);
@@ -432,6 +583,8 @@ QJsonObject storyBoardToScene(const QJsonObject& document, QStringList* warnings
                     }
                 }
                 element.insert(QStringLiteral("type"), shapeType);
+                // 斜纹 / 网格 / 蜂窝等填充样式与透明度 Excalidraw 表达不了，记进 customData 供再导入还原。
+                element.insert(QStringLiteral("customData"), styleCustomData(item));
             } else {
                 // 三角形/星形/多边形/自定义形状在 Excalidraw 里没有原生类型，落成矩形并记原类型。
                 element = storyBoardShape(item);
@@ -442,7 +595,7 @@ QJsonObject storyBoardToScene(const QJsonObject& document, QStringList* warnings
                     }
                 }
                 element.insert(QStringLiteral("type"), QStringLiteral("rectangle"));
-                QJsonObject custom;
+                QJsonObject custom = styleCustomData(item);
                 custom.insert(QStringLiteral("storyboardShapeType"), shapeType);
                 element.insert(QStringLiteral("customData"), custom);
                 degrade = QStringLiteral("%1 导出为矩形").arg(shapeType);
@@ -486,6 +639,10 @@ QJsonObject storyBoardToScene(const QJsonObject& document, QStringList* warnings
             element.insert(QStringLiteral("points"), relativePoints(item.value(QStringLiteral("segments")).toArray(),
                                                                     numberOr(item, QStringLiteral("x"), 0.0),
                                                                     numberOr(item, QStringLiteral("y"), 0.0)));
+            const QJsonObject headCustom = headCustomData(item);
+            if (!headCustom.isEmpty()) {
+                element.insert(QStringLiteral("customData"), headCustom);
+            }
         } else {
             continue;
         }

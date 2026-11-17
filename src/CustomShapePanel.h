@@ -40,6 +40,8 @@ class CustomShapePanel : public QWidget {
     QList<Folder> scanFolders() const;
     void rebuild(const QList<Folder>& folders);
     void insertTemplate(const QString& filePath);
+    // 方向键在模板按钮间移动焦点（左右 ±1，上下 ±列数），回车插入焦点所在模板。
+    void moveFocusByStep(int step);
     void restoreGeometryFromSettings();
     void saveGeometryToSettings();
 

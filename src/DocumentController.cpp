@@ -8,7 +8,10 @@
 #include "Settings.h"
 
 #include <QAction>
+#include <QCheckBox>
 #include <QDesktopServices>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QDir>
 #include <QFile>
 #include <QFileDialog>
@@ -16,6 +19,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLabel>
 #include <QMenu>
 #include <QMessageBox>
 #include <QObject>
@@ -24,6 +28,7 @@
 #include <QStatusBar>
 #include <QUndoStack>
 #include <QUrl>
+#include <QVBoxLayout>
 
 namespace {
 
@@ -45,6 +50,38 @@ void reportWarning(QWidget* parent, const QString& title, const QString& text)
 QString canvasFilter()
 {
     return MainWindow::tr("StoryBoard canvases (*.sbcanvas);;Excalidraw scenes (*.excalidraw);;All files (*.*)");
+}
+
+bool sceneHasImages(const QJsonObject& scene)
+{
+    for (const QJsonValue& value : scene.value(QStringLiteral("elements")).toArray()) {
+        const QJsonObject element = value.toObject();
+        if (element.value(QStringLiteral("type")).toString() == QStringLiteral("image") &&
+            !element.value(QStringLiteral("isDeleted")).toBool(false)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// 导入含图片的 Excalidraw 场景时给一次选择：默认跳过图片，勾选后按 dataURL 保留成位图图元。
+bool askKeepImagesAsBitmap(QWidget* parent)
+{
+    if (selfTestMode()) {
+        return false;
+    }
+    QDialog dialog(parent);
+    dialog.setWindowTitle(MainWindow::tr("Import Excalidraw"));
+    auto* layout = new QVBoxLayout(&dialog);
+    auto* text = new QLabel(MainWindow::tr("This scene contains images. Keep them as bitmaps?"), &dialog);
+    auto* keep = new QCheckBox(MainWindow::tr("Keep images as bitmaps"), &dialog);
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+    layout->addWidget(text);
+    layout->addWidget(keep);
+    layout->addWidget(buttons);
+    QObject::connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    return dialog.exec() == QDialog::Accepted && keep->isChecked();
 }
 
 bool validateCanvasRoot(const QJsonObject& root, QString* error)
@@ -179,7 +216,9 @@ bool DocumentController::loadCanvasFile(const QString& path, bool showErrors)
     QJsonObject usableRoot = root;
     QStringList excalidrawNotes;
     if (Excalidraw::isScene(root)) {
-        usableRoot = Excalidraw::sceneToStoryBoard(root, &excalidrawNotes);
+        // 含图片的场景先问一次是否保留位图，默认按老行为跳过图片。
+        const bool keepImages = sceneHasImages(root) && askKeepImagesAsBitmap(m_window);
+        usableRoot = Excalidraw::sceneToStoryBoard(root, &excalidrawNotes, keepImages);
         if (usableRoot.isEmpty()) {
             if (showErrors) {
                 reportWarning(m_window, MainWindow::tr("Import Excalidraw"),

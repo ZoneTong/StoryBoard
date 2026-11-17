@@ -266,6 +266,8 @@ void CustomShapePanel::rebuild(const QList<Folder>& folders)
             button->setToolTip(tr("Insert “%1” from %2").arg(entry.name, QFileInfo(entry.filePath).fileName()));
             button->setAutoRaise(true);
             button->setMinimumWidth(kIconSize + 28);
+            // 方向键 / 回车要能落到模板按钮上，焦点策略不能是 NoFocus。
+            button->setFocusPolicy(Qt::StrongFocus);
             const QString filePath = entry.filePath;
             connect(button, &QToolButton::clicked, this, [this, filePath]() { insertTemplate(filePath); });
             grid->addWidget(button, index / kColumns, index % kColumns, Qt::AlignLeft | Qt::AlignTop);
@@ -367,7 +369,55 @@ void CustomShapePanel::keyPressEvent(QKeyEvent* event)
         event->accept();
         return;
     }
+    // 回车触发当前焦点模板；方向键在模板按钮间移动焦点，键盘也能整页挑模板。
+    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+        if (auto* button = qobject_cast<QToolButton*>(focusWidget());
+            button && button->objectName() == QStringLiteral("CustomShapeTemplateButton")) {
+            button->click();
+            event->accept();
+            return;
+        }
+    }
+    switch (event->key()) {
+    case Qt::Key_Left:
+        moveFocusByStep(-1);
+        event->accept();
+        return;
+    case Qt::Key_Right:
+        moveFocusByStep(1);
+        event->accept();
+        return;
+    case Qt::Key_Up:
+        moveFocusByStep(-kColumns);
+        event->accept();
+        return;
+    case Qt::Key_Down:
+        moveFocusByStep(kColumns);
+        event->accept();
+        return;
+    default:
+        break;
+    }
     QWidget::keyPressEvent(event);
+}
+
+void CustomShapePanel::moveFocusByStep(int step)
+{
+    QWidget* page = m_tabs ? m_tabs->currentWidget() : nullptr;
+    if (!page) {
+        return;
+    }
+    const QList<QToolButton*> buttons = page->findChildren<QToolButton*>(QStringLiteral("CustomShapeTemplateButton"));
+    if (buttons.isEmpty()) {
+        return;
+    }
+    int index = buttons.indexOf(qobject_cast<QToolButton*>(focusWidget()));
+    if (index < 0) {
+        index = 0;
+    } else {
+        index = qBound(0, index + step, buttons.size() - 1);
+    }
+    buttons.at(index)->setFocus(Qt::OtherFocusReason);
 }
 
 void CustomShapePanel::closeEvent(QCloseEvent* event)
