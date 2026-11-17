@@ -133,15 +133,36 @@ void drawTriangleBase(QPainter& painter, IconId)
     painter.drawLine(QPointF(21.0, 18.5), QPointF(16.0, 9.5));
 }
 
+void drawAngleRight(QPainter& painter, IconId)
+{
+    // 底角 A：顶点在左下，一条边沿底边向右、另一条斜向右上，开口朝右。
+    painter.drawLine(QPointF(4.0, 18.0), QPointF(20.0, 18.0));
+    painter.drawLine(QPointF(4.0, 18.0), QPointF(18.5, 6.0));
+}
+
+void drawAngleLeft(QPainter& painter, IconId)
+{
+    // 底角 B：顶点在右下，一条边沿底边向左、另一条斜向左上，开口朝左。
+    painter.drawLine(QPointF(20.0, 18.0), QPointF(4.0, 18.0));
+    painter.drawLine(QPointF(20.0, 18.0), QPointF(5.5, 6.0));
+}
+
 constexpr struct IconEntry {
     IconId id;
     void (*draw)(QPainter&, IconId);
 } kEntries[] = {
-    {IconId::Shapes, drawShapes},   {IconId::Image, drawImage},
-    {IconId::LineArt, drawLineArt}, {IconId::Background, drawBackground},
-    {IconId::Grid, drawGrid},       {IconId::Palette, drawPalette},
-    {IconId::Corner, drawCorner},   {IconId::Smooth, drawSmooth},
-    {IconId::Opacity, drawOpacity}, {IconId::TriangleBase, drawTriangleBase},
+    {IconId::Shapes, drawShapes},
+    {IconId::Image, drawImage},
+    {IconId::LineArt, drawLineArt},
+    {IconId::Background, drawBackground},
+    {IconId::Grid, drawGrid},
+    {IconId::Palette, drawPalette},
+    {IconId::Corner, drawCorner},
+    {IconId::Smooth, drawSmooth},
+    {IconId::Opacity, drawOpacity},
+    {IconId::TriangleBase, drawTriangleBase},
+    {IconId::AngleRight, drawAngleRight},
+    {IconId::AngleLeft, drawAngleLeft},
 };
 
 } // namespace

@@ -11,6 +11,7 @@
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
+#include "IconFactory.h"
 #include "ImageItem.h"
 #include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
@@ -305,6 +306,27 @@ void selftest::runShapeItemTests(Context& ctx)
                       .arg(cornerAfter.y())
                       .arg(cornerRatioBefore)
                       .arg(cornerRatioAfter));
+    }
+    {
+        // 底角 A / B 的图标：开口方向不同（A 朝右、B 朝左），且都不是空白图标。
+        const auto iconImage = [](IconId id) {
+            const QIcon icon = makeIcon(id, QColor(0, 0, 0), 22);
+            return icon.pixmap(QSize(44, 44)).toImage();
+        };
+        const QImage right = iconImage(IconId::AngleRight);
+        const QImage left = iconImage(IconId::AngleLeft);
+        const auto hasInk = [](const QImage& image) {
+            for (int y = 0; y < image.height(); ++y) {
+                for (int x = 0; x < image.width(); ++x) {
+                    if (image.pixelColor(x, y).alpha() > 0) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+        ctx.check(hasInk(right) && hasInk(left) && right != left,
+                  QStringLiteral("底角 A / B 图标分别为开口朝右、朝左且都不是空白"));
     }
 
     QList<ShapeItem*> shapeItems;

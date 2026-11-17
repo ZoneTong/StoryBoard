@@ -162,7 +162,7 @@ ItemDockPanelValueCard::ItemDockPanelValueCard(QWidget* parent) : QWidget(parent
     auto* angle1Layout = new QHBoxLayout(angle1Row);
     angle1Layout->setContentsMargins(0, 0, 0, 0);
     angle1Layout->setSpacing(4);
-    QToolButton* angle1Icon = makeRowIcon(IconId::RotateCcw, angle1Row);
+    QToolButton* angle1Icon = makeRowIcon(IconId::AngleRight, angle1Row);
     angle1Icon->setToolTip(ItemDockPanel::tr("Triangle base angle A"));
     angle1Layout->addWidget(angle1Icon);
     m_triangleAngle1Spin = new QSpinBox(angle1Row);
@@ -183,7 +183,7 @@ ItemDockPanelValueCard::ItemDockPanelValueCard(QWidget* parent) : QWidget(parent
     auto* angle2Layout = new QHBoxLayout(angle2Row);
     angle2Layout->setContentsMargins(0, 0, 0, 0);
     angle2Layout->setSpacing(4);
-    QToolButton* angle2Icon = makeRowIcon(IconId::RotateCcw, angle2Row);
+    QToolButton* angle2Icon = makeRowIcon(IconId::AngleLeft, angle2Row);
     angle2Icon->setToolTip(ItemDockPanel::tr("Triangle base angle B"));
     angle2Layout->addWidget(angle2Icon);
     m_triangleAngle2Spin = new QSpinBox(angle2Row);

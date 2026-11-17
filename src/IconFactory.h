@@ -39,6 +39,9 @@ enum class IconId {
     Opacity,
     // 三角形底边长度：底边加两端内角、不闭合的开口轮廓。
     TriangleBase,
+    // 三角形两个底角：开口朝右的角（底角 A）与开口朝左的角（底角 B）。
+    AngleRight,
+    AngleLeft,
     // 合并形状五项操作，图形参照 PPT「合并形状」菜单。
     MergeUnion,
     MergeCombine,
