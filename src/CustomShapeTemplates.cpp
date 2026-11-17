@@ -1,8 +1,8 @@
 #include "CustomShapeTemplates.h"
 
 #include "CompositeShapeItem.h"
-#include "ShapeItem.h"
 #include "CurveItem.h"
+#include "ShapeItem.h"
 
 #include <QDir>
 #include <QFile>
@@ -118,6 +118,11 @@ bool loadCustomShapeTemplate(const QString& filePath, CustomShapeTemplate* resul
     normalize.translate(-bounds.left(), -bounds.top());
 
     result->name = QFileInfo(filePath).completeBaseName().trimmed();
+    // 需求 8：模板文件里显式写了 name 时优先用它，否则按文件名命名。
+    const QString explicitName = root.value(QStringLiteral("name")).toString().trimmed();
+    if (!explicitName.isEmpty()) {
+        result->name = explicitName;
+    }
     if (result->name.isEmpty()) {
         result->name = QFileInfo(filePath).fileName();
     }

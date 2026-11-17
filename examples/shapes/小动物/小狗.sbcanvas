@@ -1,0 +1,137 @@
+{
+  "format": "StoryBoardCanvas",
+  "version": 2,
+  "generator": "StoryBoard 1.0",
+  "canvas": {
+    "x": 0,
+    "y": 0,
+    "width": 200,
+    "height": 200
+  },
+  "background": {
+    "type": "none"
+  },
+  "layers": [
+    {
+      "id": 1,
+      "name": "图层 1",
+      "visible": true,
+      "locked": false
+    }
+  ],
+  "activeLayer": 1,
+  "items": [
+    {
+      "type": "shape",
+      "shapeType": "ellipse",
+      "x": 38.0,
+      "y": 45.0,
+      "w": 28.0,
+      "h": 60.0,
+      "layer": 1,
+      "height": 1,
+      "strokeColor": "#ff1f2937",
+      "fillColor": "#00000000",
+      "fillStyle": "none",
+      "strokeWidth": 6,
+      "opacity": 1,
+      "z": 1000001
+    },
+    {
+      "type": "shape",
+      "shapeType": "ellipse",
+      "x": 132.0,
+      "y": 45.0,
+      "w": 28.0,
+      "h": 60.0,
+      "layer": 1,
+      "height": 1,
+      "strokeColor": "#ff1f2937",
+      "fillColor": "#00000000",
+      "fillStyle": "none",
+      "strokeWidth": 6,
+      "opacity": 1,
+      "z": 1000002
+    },
+    {
+      "type": "shape",
+      "shapeType": "ellipse",
+      "x": 50.0,
+      "y": 55.0,
+      "w": 100.0,
+      "h": 85.0,
+      "layer": 1,
+      "height": 1,
+      "strokeColor": "#ff1f2937",
+      "fillColor": "#00000000",
+      "fillStyle": "none",
+      "strokeWidth": 6,
+      "opacity": 1,
+      "z": 1000003
+    },
+    {
+      "type": "shape",
+      "shapeType": "ellipse",
+      "x": 72.0,
+      "y": 80.0,
+      "w": 12.0,
+      "h": 14.0,
+      "layer": 1,
+      "height": 1,
+      "strokeColor": "#ff1f2937",
+      "fillColor": "#00000000",
+      "fillStyle": "none",
+      "strokeWidth": 6,
+      "opacity": 1,
+      "z": 1000004
+    },
+    {
+      "type": "shape",
+      "shapeType": "ellipse",
+      "x": 116.0,
+      "y": 80.0,
+      "w": 12.0,
+      "h": 14.0,
+      "layer": 1,
+      "height": 1,
+      "strokeColor": "#ff1f2937",
+      "fillColor": "#00000000",
+      "fillStyle": "none",
+      "strokeWidth": 6,
+      "opacity": 1,
+      "z": 1000005
+    },
+    {
+      "type": "shape",
+      "shapeType": "ellipse",
+      "x": 55.0,
+      "y": 135.0,
+      "w": 95.0,
+      "h": 50.0,
+      "layer": 1,
+      "height": 1,
+      "strokeColor": "#ff1f2937",
+      "fillColor": "#00000000",
+      "fillStyle": "none",
+      "strokeWidth": 6,
+      "opacity": 1,
+      "z": 1000006
+    },
+    {
+      "type": "shape",
+      "shapeType": "line",
+      "x": 145.0,
+      "y": 158.0,
+      "w": 40.0,
+      "h": 10.0,
+      "layer": 1,
+      "height": 1,
+      "strokeColor": "#ff1f2937",
+      "fillColor": "#00000000",
+      "fillStyle": "none",
+      "strokeWidth": 6,
+      "opacity": 1,
+      "z": 1000007
+    }
+  ]
+}

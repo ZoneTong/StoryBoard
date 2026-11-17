@@ -1,0 +1,121 @@
+{
+  "format": "StoryBoardCanvas",
+  "version": 2,
+  "generator": "StoryBoard 1.0",
+  "canvas": {
+    "x": 0,
+    "y": 0,
+    "width": 200,
+    "height": 200
+  },
+  "background": {
+    "type": "none"
+  },
+  "layers": [
+    {
+      "id": 1,
+      "name": "图层 1",
+      "visible": true,
+      "locked": false
+    }
+  ],
+  "activeLayer": 1,
+  "items": [
+    {
+      "type": "shape",
+      "shapeType": "ellipse",
+      "x": 85.0,
+      "y": 40.0,
+      "w": 32.0,
+      "h": 32.0,
+      "layer": 1,
+      "height": 1,
+      "strokeColor": "#ff1f2937",
+      "fillColor": "#00000000",
+      "fillStyle": "none",
+      "strokeWidth": 6,
+      "opacity": 1,
+      "z": 1000001
+    },
+    {
+      "type": "shape",
+      "shapeType": "triangle",
+      "x": 55.0,
+      "y": 30.0,
+      "w": 30.0,
+      "h": 45.0,
+      "layer": 1,
+      "height": 1,
+      "strokeColor": "#ff1f2937",
+      "fillColor": "#00000000",
+      "fillStyle": "none",
+      "strokeWidth": 6,
+      "opacity": 1,
+      "z": 1000002
+    },
+    {
+      "type": "shape",
+      "shapeType": "triangle",
+      "x": 118.0,
+      "y": 30.0,
+      "w": 30.0,
+      "h": 45.0,
+      "layer": 1,
+      "height": 1,
+      "strokeColor": "#ff1f2937",
+      "fillColor": "#00000000",
+      "fillStyle": "none",
+      "strokeWidth": 6,
+      "opacity": 1,
+      "z": 1000003
+    },
+    {
+      "type": "shape",
+      "shapeType": "triangle",
+      "x": 75.0,
+      "y": 72.0,
+      "w": 55.0,
+      "h": 55.0,
+      "layer": 1,
+      "height": 1,
+      "strokeColor": "#ff1f2937",
+      "fillColor": "#00000000",
+      "fillStyle": "none",
+      "strokeWidth": 6,
+      "opacity": 1,
+      "z": 1000004
+    },
+    {
+      "type": "shape",
+      "shapeType": "line",
+      "x": 130.0,
+      "y": 80.0,
+      "w": 40.0,
+      "h": 10.0,
+      "layer": 1,
+      "height": 1,
+      "strokeColor": "#ff1f2937",
+      "fillColor": "#00000000",
+      "fillStyle": "none",
+      "strokeWidth": 6,
+      "opacity": 1,
+      "z": 1000005
+    },
+    {
+      "type": "shape",
+      "shapeType": "star",
+      "x": 152.0,
+      "y": 58.0,
+      "w": 20.0,
+      "h": 20.0,
+      "layer": 1,
+      "height": 1,
+      "strokeColor": "#ff1f2937",
+      "fillColor": "#00000000",
+      "fillStyle": "none",
+      "strokeWidth": 6,
+      "opacity": 1,
+      "z": 1000006
+    }
+  ]
+}

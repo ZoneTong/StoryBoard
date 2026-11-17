@@ -1,0 +1,105 @@
+{
+  "format": "StoryBoardCanvas",
+  "version": 2,
+  "generator": "StoryBoard 1.0",
+  "canvas": {
+    "x": 0,
+    "y": 0,
+    "width": 200,
+    "height": 200
+  },
+  "background": {
+    "type": "none"
+  },
+  "layers": [
+    {
+      "id": 1,
+      "name": "图层 1",
+      "visible": true,
+      "locked": false
+    }
+  ],
+  "activeLayer": 1,
+  "items": [
+    {
+      "type": "shape",
+      "shapeType": "ellipse",
+      "x": 85.0,
+      "y": 35.0,
+      "w": 32.0,
+      "h": 32.0,
+      "layer": 1,
+      "height": 1,
+      "strokeColor": "#ff1f2937",
+      "fillColor": "#00000000",
+      "fillStyle": "none",
+      "strokeWidth": 6,
+      "opacity": 1,
+      "z": 1000001
+    },
+    {
+      "type": "shape",
+      "shapeType": "line",
+      "x": 100.0,
+      "y": 68.0,
+      "w": 8.0,
+      "h": 50.0,
+      "layer": 1,
+      "height": 1,
+      "strokeColor": "#ff1f2937",
+      "fillColor": "#00000000",
+      "fillStyle": "none",
+      "strokeWidth": 6,
+      "opacity": 1,
+      "z": 1000002
+    },
+    {
+      "type": "shape",
+      "shapeType": "line",
+      "x": 68.0,
+      "y": 85.0,
+      "w": 64.0,
+      "h": 10.0,
+      "layer": 1,
+      "height": 1,
+      "strokeColor": "#ff1f2937",
+      "fillColor": "#00000000",
+      "fillStyle": "none",
+      "strokeWidth": 6,
+      "opacity": 1,
+      "z": 1000003
+    },
+    {
+      "type": "shape",
+      "shapeType": "line",
+      "x": 90.0,
+      "y": 118.0,
+      "w": 6.0,
+      "h": 50.0,
+      "layer": 1,
+      "height": 1,
+      "strokeColor": "#ff1f2937",
+      "fillColor": "#00000000",
+      "fillStyle": "none",
+      "strokeWidth": 6,
+      "opacity": 1,
+      "z": 1000004
+    },
+    {
+      "type": "shape",
+      "shapeType": "line",
+      "x": 108.0,
+      "y": 118.0,
+      "w": 6.0,
+      "h": 50.0,
+      "layer": 1,
+      "height": 1,
+      "strokeColor": "#ff1f2937",
+      "fillColor": "#00000000",
+      "fillStyle": "none",
+      "strokeWidth": 6,
+      "opacity": 1,
+      "z": 1000005
+    }
+  ]
+}

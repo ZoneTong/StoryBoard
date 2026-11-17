@@ -191,6 +191,43 @@ void selftest::runCustomShapeDockTests(Context& ctx)
             ctx.check(
                 !samples.isEmpty() && sampleErrors.isEmpty(), QStringLiteral("随包示例模板可解析并出现在自定义图形里"),
                 QStringLiteral("count=%1 errors=%2").arg(samples.size()).arg(sampleErrors.join(QStringLiteral(";"))));
+
+            // 需求 8：25 个儿童故事简笔画模板分四个子目录随包分发。
+            const QStringList expectedFolders = {QStringLiteral("小动物"), QStringLiteral("自然"),
+                                                 QStringLiteral("物件"), QStringLiteral("人物与精灵")};
+            QStringList allNames;
+            QStringList childErrors;
+            int folderCount = 0;
+            for (const QString& folder : expectedFolders) {
+                const QString childDir = QDir(sampleDir).filePath(folder);
+                if (!QDir(childDir).exists()) {
+                    continue;
+                }
+                ++folderCount;
+                for (const CustomShapeTemplate& entry : loadCustomShapeTemplates(childDir, &childErrors)) {
+                    allNames.append(entry.name);
+                }
+            }
+            const QStringList expectedNames = {
+                QStringLiteral("兔子"),    QStringLiteral("小猫"),   QStringLiteral("小狗"),    QStringLiteral("小鸭"),
+                QStringLiteral("小鱼"),    QStringLiteral("小鸟"),   QStringLiteral("蝴蝶"),    QStringLiteral("云"),
+                QStringLiteral("太阳"),    QStringLiteral("月亮"),   QStringLiteral("星星"),    QStringLiteral("山"),
+                QStringLiteral("树"),      QStringLiteral("小树苗"), QStringLiteral("小船"),    QStringLiteral("帆船"),
+                QStringLiteral("房子"),    QStringLiteral("火箭"),   QStringLiteral("爱心"),    QStringLiteral("瓶子"),
+                QStringLiteral("花朵"),    QStringLiteral("小人"),   QStringLiteral("小人-跑"), QStringLiteral("精灵"),
+                QStringLiteral("星星精灵")};
+            bool namesMatch = allNames.size() == expectedNames.size();
+            for (const QString& name : expectedNames) {
+                if (!allNames.contains(name)) {
+                    namesMatch = false;
+                }
+            }
+            ctx.check(folderCount == 4 && namesMatch && childErrors.isEmpty(),
+                      QStringLiteral("四个子目录共 25 个儿童故事模板且名称齐全"),
+                      QStringLiteral("folders=%1 count=%2 errors=%3")
+                          .arg(folderCount)
+                          .arg(allNames.size())
+                          .arg(childErrors.join(QStringLiteral(";"))));
         }
         const QStringList scanDirs = AppSettings::shapesDirs();
         ctx.check(!scanDirs.isEmpty() && scanDirs.contains(shapesDirectory) && scanDirs.contains(bundledDir),
