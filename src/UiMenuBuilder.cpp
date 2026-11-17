@@ -43,6 +43,19 @@ void UiMenuBuilder::buildShapeMenu()
         action->setToolTip(MainWindow::tr("Insert %1 (uses the current brush color)").arg(shapeTypeName(type)));
         QObject::connect(action, &QAction::triggered, m_window, [this, type]() { m_window->insertShape(type); });
 
+        // 需求 5：圆角矩形已并入矩形，菜单保留两个入口——矩形（直角）与紧跟其后的
+        // 圆角矩形（短边 16% 自动圆角），底层同为 rectangle，仅圆角状态不同。
+        if (type == ShapeType::Rectangle) {
+            QAction* roundedPreset = m_window->m_shapeMenu->addAction(makeShapeIcon(type, QColor(58, 64, 80), 18),
+                                                                      MainWindow::tr("Rounded rectangle"));
+            roundedPreset->setObjectName(QStringLiteral("ShapePreset_roundedRect"));
+            roundedPreset->setData(static_cast<int>(type));
+            roundedPreset->setToolTip(MainWindow::tr("Insert a rectangle whose corners follow 16% of the short side"));
+            QObject::connect(roundedPreset, &QAction::triggered, m_window, [this]() {
+                m_window->insertShape(ShapeType::Rectangle, -1.0, -1.0, ArrowStyle::None, ArrowStyle::None, true);
+            });
+        }
+
         // 需求 6：直线箭头紧跟在「直线」之后，复用直线类，默认末端开口箭头，
         // 长边 64（与其它常见图形的基准边长一致）。
         if (type == ShapeType::Line) {

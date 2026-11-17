@@ -2293,6 +2293,10 @@ Use the checkbox to show or hide it.</source>
   <context>
     <name>MainWindow</name>
     <message>
+      <source>Insert a rectangle whose corners follow 16% of the short side</source>
+      <translation>插入圆角按短边 16% 自适应的矩形</translation>
+    </message>
+    <message>
       <source>Xor (XOR)</source>
       <translation>异或（XOR）</translation>
     </message>

@@ -27,7 +27,9 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
     CanvasView& view = *ctx.view;
     int& itemPropertyRequests = ctx.itemPropertyRequests;
 
-    auto* propertyShape = new ShapeItem(ShapeType::RoundedRectangle);
+    // 需求 5：圆角矩形并入矩形，这里用「矩形 + 自动圆角」覆盖原来的圆角形态。
+    auto* propertyShape = new ShapeItem(ShapeType::Rectangle);
+    propertyShape->setAutoCorner(true);
     propertyShape->setStyle(QColor(QStringLiteral("#1D4ED8")), QColor(QStringLiteral("#BFDBFE")), 6.0);
     propertyShape->setFill(QColor(QStringLiteral("#BFDBFE")), FillStyle::GridHatch);
     propertyShape->setContentSize(QSizeF(180.0, 120.0));

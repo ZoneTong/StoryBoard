@@ -277,7 +277,7 @@ void ItemDockPanel::refresh()
     bool hasTriangle = false;
     bool hasArrow = false;
     for (ShapeItem* shape : shapes) {
-        if (shape->shapeType() == ShapeType::Rectangle || shape->shapeType() == ShapeType::RoundedRectangle) {
+        if (shape->shapeType() == ShapeType::Rectangle) {
             hasCorner = true;
         }
         if (shape->shapeType() == ShapeType::Sector || shape->shapeType() == ShapeType::Arc) {

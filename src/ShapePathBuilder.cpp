@@ -153,18 +153,18 @@ QPainterPath ShapePathBuilder::pathFor(ShapeType type, const QRectF& rect, qreal
 
     QPainterPath path;
     switch (type) {
-    case ShapeType::Rectangle:
+    case ShapeType::Rectangle: {
+        // 圆角：正数按 px（上限短边一半）；-2 为自动态（短边 16%，旧圆角矩形）；
+        // 其余 <= 0 保持直角。
         if (cornerRadius > 0.0) {
             const qreal radius = qMin(cornerRadius, qMin(r.width(), r.height()) / 2.0);
+            path.addRoundedRect(r, radius, radius);
+        } else if (cornerRadius <= -2.0) {
+            const qreal radius = qMin(r.width(), r.height()) * 0.16;
             path.addRoundedRect(r, radius, radius);
         } else {
             path.addRect(r);
         }
-        break;
-    case ShapeType::RoundedRectangle: {
-        const qreal radius = cornerRadius >= 0.0 ? qMin(cornerRadius, qMin(r.width(), r.height()) / 2.0)
-                                                 : qMin(r.width(), r.height()) * 0.16;
-        path.addRoundedRect(r, radius, radius);
         break;
     }
     case ShapeType::Ellipse:

@@ -234,6 +234,150 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                   QStringLiteral("联合运算生成单层 donor 样式多边形"),
                   QStringLiteral("ok=%1 layers=%2").arg(applied ? 1 : 0).arg(composite ? composite->layerCount() : -1));
 
+        // 3 个及以上图元的合并：五项运算都要真正落到结果，不能只处理前两个。
+        auto addRect = [](CanvasScene& scene, qreal x, qreal y, qreal w, qreal h) {
+            auto* item = new ShapeItem();
+            item->setShapeType(ShapeType::Rectangle);
+            item->setPos(QPointF(x, y));
+            item->setContentSize(QSizeF(w, h));
+            item->setStyle(QColor(20, 20, 20), QColor(200, 60, 60), 2.0);
+            item->setFill(QColor(200, 60, 60), FillStyle::Solid);
+            scene.addItemsWithUndo({item}, QStringLiteral("Add rect"));
+            return item;
+        };
+        {
+            // 联合：3 个互相重叠的矩形合成一个图元。
+            QUndoStack undo;
+            CanvasScene scene;
+            scene.setUndoStack(&undo);
+            scene.setMode(ToolMode::Edit);
+            scene.applyCanvasSize(QSizeF(600.0, 400.0));
+            CanvasItem* a = addRect(scene, 20, 20, 80, 60);
+            CanvasItem* b = addRect(scene, 60, 50, 80, 60);
+            CanvasItem* c = addRect(scene, 100, 20, 80, 60);
+            a->setSelected(true);
+            b->setSelected(true);
+            c->setSelected(true);
+            const bool ok = BoolOps::apply(&scene, BoolOps::Operation::Union, QStringLiteral("合并"));
+            const QList<CanvasItem*> sel = scene.selectedCanvasItems();
+            const bool covers =
+                sel.size() == 1 && sel.constFirst()->sceneBoundingRect().contains(QRectF(20, 20, 160, 90));
+            ctx.check(ok && sel.size() == 1 && scene.canvasItemCount() == 1 && covers,
+                      QStringLiteral("3 个图元联合成功并覆盖全部原始范围"),
+                      QStringLiteral("ok=%1 selected=%2 items=%3 covers=%4")
+                          .arg(ok ? 1 : 0)
+                          .arg(sel.size())
+                          .arg(scene.canvasItemCount())
+                          .arg(covers ? 1 : 0));
+        }
+        {
+            // 联合：4 个图元（3 个及以上含 4 个的情形）。
+            QUndoStack undo;
+            CanvasScene scene;
+            scene.setUndoStack(&undo);
+            scene.setMode(ToolMode::Edit);
+            scene.applyCanvasSize(QSizeF(600.0, 400.0));
+            CanvasItem* a = addRect(scene, 20, 20, 70, 50);
+            CanvasItem* b = addRect(scene, 50, 40, 70, 50);
+            CanvasItem* c = addRect(scene, 80, 20, 70, 50);
+            CanvasItem* d = addRect(scene, 60, 80, 70, 50);
+            a->setSelected(true);
+            b->setSelected(true);
+            c->setSelected(true);
+            d->setSelected(true);
+            const bool ok = BoolOps::apply(&scene, BoolOps::Operation::Union, QStringLiteral("合并"));
+            ctx.check(ok && scene.selectedCanvasItems().size() == 1 && scene.canvasItemCount() == 1,
+                      QStringLiteral("4 个图元联合成功"),
+                      QStringLiteral("ok=%1 selected=%2 items=%3")
+                          .arg(ok ? 1 : 0)
+                          .arg(scene.selectedCanvasItems().size())
+                          .arg(scene.canvasItemCount()));
+        }
+        {
+            // 异或：3 个矩形，并集减重叠，结果仍是单个图元。
+            QUndoStack undo;
+            CanvasScene scene;
+            scene.setUndoStack(&undo);
+            scene.setMode(ToolMode::Edit);
+            scene.applyCanvasSize(QSizeF(600.0, 400.0));
+            CanvasItem* a = addRect(scene, 20, 20, 80, 60);
+            CanvasItem* b = addRect(scene, 60, 50, 80, 60);
+            CanvasItem* c = addRect(scene, 100, 20, 80, 60);
+            a->setSelected(true);
+            b->setSelected(true);
+            c->setSelected(true);
+            const bool ok = BoolOps::apply(&scene, BoolOps::Operation::Xor, QStringLiteral("异或"));
+            ctx.check(ok && scene.selectedCanvasItems().size() == 1 && scene.canvasItemCount() == 1,
+                      QStringLiteral("3 个图元异或成功"),
+                      QStringLiteral("ok=%1 selected=%2 items=%3")
+                          .arg(ok ? 1 : 0)
+                          .arg(scene.selectedCanvasItems().size())
+                          .arg(scene.canvasItemCount()));
+        }
+        {
+            // 相交：3 个矩形取公共重叠区。
+            QUndoStack undo;
+            CanvasScene scene;
+            scene.setUndoStack(&undo);
+            scene.setMode(ToolMode::Edit);
+            scene.applyCanvasSize(QSizeF(600.0, 400.0));
+            CanvasItem* a = addRect(scene, 20, 20, 100, 80);
+            CanvasItem* b = addRect(scene, 60, 40, 100, 80);
+            CanvasItem* c = addRect(scene, 80, 20, 100, 80);
+            a->setSelected(true);
+            b->setSelected(true);
+            c->setSelected(true);
+            const bool ok = BoolOps::apply(&scene, BoolOps::Operation::Intersect, QStringLiteral("相交"));
+            const QList<CanvasItem*> sel = scene.selectedCanvasItems();
+            ctx.check(ok && sel.size() == 1 && sel.constFirst()->sceneBoundingRect().width() <= 160.0,
+                      QStringLiteral("3 个图元相交成功"),
+                      QStringLiteral("ok=%1 selected=%2 width=%3")
+                          .arg(ok ? 1 : 0)
+                          .arg(sel.size())
+                          .arg(sel.isEmpty() ? -1.0 : sel.constFirst()->sceneBoundingRect().width()));
+        }
+        {
+            // 剪除：首个选中的大矩形为底，另外两个矩形从它里面挖掉。
+            QUndoStack undo;
+            CanvasScene scene;
+            scene.setUndoStack(&undo);
+            scene.setMode(ToolMode::Edit);
+            scene.applyCanvasSize(QSizeF(600.0, 400.0));
+            CanvasItem* base = addRect(scene, 20, 20, 240, 180);
+            CanvasItem* cut1 = addRect(scene, 60, 60, 80, 60);
+            CanvasItem* cut2 = addRect(scene, 150, 90, 80, 60);
+            base->setSelected(true);
+            cut1->setSelected(true);
+            cut2->setSelected(true);
+            const bool ok = BoolOps::apply(&scene, BoolOps::Operation::Subtract, QStringLiteral("剪除"));
+            ctx.check(ok && scene.selectedCanvasItems().size() == 1 && scene.canvasItemCount() == 1,
+                      QStringLiteral("3 个图元剪除成功（首个选中为底）"),
+                      QStringLiteral("ok=%1 selected=%2 items=%3")
+                          .arg(ok ? 1 : 0)
+                          .arg(scene.selectedCanvasItems().size())
+                          .arg(scene.canvasItemCount()));
+        }
+        {
+            // 拆分：3 个填充图元互相重叠，拆成多块且总数守恒（原 3 个消失）。
+            QUndoStack undo;
+            CanvasScene scene;
+            scene.setUndoStack(&undo);
+            scene.setMode(ToolMode::Edit);
+            scene.applyCanvasSize(QSizeF(600.0, 400.0));
+            CanvasItem* a = addRect(scene, 20, 20, 80, 60);
+            CanvasItem* b = addRect(scene, 60, 50, 80, 60);
+            CanvasItem* c = addRect(scene, 100, 20, 80, 60);
+            a->setSelected(true);
+            b->setSelected(true);
+            c->setSelected(true);
+            const bool ok = BoolOps::apply(&scene, BoolOps::Operation::Fragment, QStringLiteral("拆分"));
+            const int pieces = scene.selectedCanvasItems().size();
+            ctx.check(
+                ok && pieces >= 2 && pieces <= 8 && scene.canvasItemCount() == pieces,
+                QStringLiteral("3 个图元拆分成功且分块数在 2–8 之间"),
+                QStringLiteral("ok=%1 pieces=%2 items=%3").arg(ok ? 1 : 0).arg(pieces).arg(scene.canvasItemCount()));
+        }
+
         // 零面积描线不作为挖除与分块边界：直线横穿菱形后，组合 / 剪除 / 拆分
         // 都不能在菱形上留细缝，交集条带按线宽带渲染而不是套描线的面积层。
         {

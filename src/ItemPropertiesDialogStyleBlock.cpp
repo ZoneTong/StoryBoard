@@ -14,12 +14,9 @@
 #include <QToolButton>
 
 namespace {
-qreal defaultCornerRadius(ShapeType type, const QSizeF& size)
+qreal defaultCornerRadius(const QSizeF& size, bool autoCorner)
 {
-    if (type == ShapeType::RoundedRectangle) {
-        return qMin(size.width(), size.height()) * 0.16;
-    }
-    return 0.0;
+    return autoCorner ? qMin(size.width(), size.height()) * 0.16 : 0.0;
 }
 } // namespace
 
@@ -123,12 +120,13 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
                     [this](int value) { m_shapeRadiusEdited = value != m_initialShapeRadius; });
         }
 
-        if (!shape->isCustomShape() && (type == ShapeType::Rectangle || type == ShapeType::RoundedRectangle)) {
-            m_defaultCornerRatio = type == ShapeType::RoundedRectangle ? 0.16 : 0.0;
+        if (!shape->isCustomShape() && type == ShapeType::Rectangle) {
+            m_defaultCornerRatio = shape->autoCorner() ? 0.16 : 0.0;
             m_contentSize = shape->contentSize();
             m_initialStoredCornerRadius = shape->cornerRadius();
-            const qreal radius = m_initialStoredCornerRadius >= 0.0 ? m_initialStoredCornerRadius
-                                                                    : defaultCornerRadius(type, m_contentSize);
+            const qreal radius = m_initialStoredCornerRadius >= 0.0
+                                     ? m_initialStoredCornerRadius
+                                     : defaultCornerRadius(m_contentSize, shape->autoCorner());
             m_initialCornerRadius = qRound(radius);
 
             m_cornerRadiusSpin = new QSpinBox(this);

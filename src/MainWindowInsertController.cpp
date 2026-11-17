@@ -66,7 +66,7 @@ void MainWindowInsertController::insertTextAt(const QPointF& scenePos)
 }
 
 void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle1, qreal triangleAngle2,
-                                             ArrowStyle startArrow, ArrowStyle endArrow)
+                                             ArrowStyle startArrow, ArrowStyle endArrow, bool autoCorner)
 {
     if (m_window->m_view->mode() != ToolMode::Edit) {
         m_window->setToolMode(ToolMode::Edit);
@@ -116,6 +116,10 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
     // 直线箭头预置项：复用直线，默认末端开口箭头。
     if (type == ShapeType::Line && (arrowStyleIsHead(startArrow) || arrowStyleIsHead(endArrow))) {
         item->setArrowStyles(startArrow, endArrow);
+    }
+    // 圆角矩形预置项：矩形按短边 16% 自动圆角（<0 自动态），尺寸变化时比例保持。
+    if (type == ShapeType::Rectangle && autoCorner) {
+        item->setAutoCorner(true);
     }
 
     m_window->m_scene->clearSelection();

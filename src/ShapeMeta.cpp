@@ -2,13 +2,10 @@
 
 QList<ShapeType> ShapeMeta::allTypes()
 {
-    return {ShapeType::Rectangle,  ShapeType::RoundedRectangle,
-            ShapeType::Ellipse,    ShapeType::Triangle,
-            ShapeType::Diamond,    ShapeType::Star,
-            ShapeType::Arrow,      ShapeType::DoubleArrow,
-            ShapeType::Line,       ShapeType::BraceLeft,
-            ShapeType::BraceRight, ShapeType::Callout,
-            ShapeType::Sector,     ShapeType::Arc};
+    return {ShapeType::Rectangle, ShapeType::Ellipse,    ShapeType::Triangle,    ShapeType::Diamond,
+            ShapeType::Star,      ShapeType::Arrow,      ShapeType::DoubleArrow, ShapeType::Line,
+            ShapeType::BraceLeft, ShapeType::BraceRight, ShapeType::Callout,     ShapeType::Sector,
+            ShapeType::Arc};
 }
 
 QString ShapeMeta::typeToString(ShapeType type)
@@ -16,8 +13,6 @@ QString ShapeMeta::typeToString(ShapeType type)
     switch (type) {
     case ShapeType::Rectangle:
         return QStringLiteral("rectangle");
-    case ShapeType::RoundedRectangle:
-        return QStringLiteral("rounded_rectangle");
     case ShapeType::Ellipse:
         return QStringLiteral("ellipse");
     case ShapeType::Triangle:
@@ -51,7 +46,8 @@ ShapeType ShapeMeta::typeFromString(const QString& value)
     const QString normalized = value.trimmed().toLower();
     if (normalized == QStringLiteral("rounded_rectangle") || normalized == QStringLiteral("roundedrect") ||
         normalized == QStringLiteral("roundrect")) {
-        return ShapeType::RoundedRectangle;
+        // 需求 5：圆角矩形已并入矩形，旧字符串统一读成矩形（由 ShapeItem 记为自动圆角态）。
+        return ShapeType::Rectangle;
     }
     if (normalized == QStringLiteral("ellipse") || normalized == QStringLiteral("circle") ||
         normalized == QStringLiteral("oval")) {
@@ -106,7 +102,6 @@ QSizeF ShapeMeta::defaultSize(ShapeType type)
     // 所有常见图形的默认尺寸由 64 派生，长边或基准边为 64，圆 / 正方形直接 64×64。
     switch (type) {
     case ShapeType::Rectangle:
-    case ShapeType::RoundedRectangle:
         // 插入即为 2 格的正方形，需要长方形再拖控制点拉伸。
         return QSizeF(64.0, 64.0);
     case ShapeType::Ellipse:
@@ -143,7 +138,6 @@ bool ShapeMeta::isFilled(ShapeType type)
 {
     switch (type) {
     case ShapeType::Rectangle:
-    case ShapeType::RoundedRectangle:
     case ShapeType::Ellipse:
     case ShapeType::Triangle:
     case ShapeType::Diamond:

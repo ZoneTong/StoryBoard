@@ -96,16 +96,29 @@ void selftest::runShapeItemTests(Context& ctx)
     shapeScene.setShowGrid(false);
 
     const QList<ShapeType> shapeTypes = allShapeTypes();
-    ctx.check(shapeTypes.size() == 14, QStringLiteral("提供 14 种常见图形"),
+    ctx.check(shapeTypes.size() == 13, QStringLiteral("提供 13 种常见图形"),
               QStringLiteral("count=%1").arg(shapeTypes.size()));
     ctx.check(shapeTypeFromString(QStringLiteral("circle")) == ShapeType::Ellipse &&
-                  shapeTypeFromString(QStringLiteral("roundrect")) == ShapeType::RoundedRectangle &&
+                  shapeTypeFromString(QStringLiteral("roundrect")) == ShapeType::Rectangle &&
                   shapeTypeFromString(QStringLiteral("double_arrow")) == ShapeType::DoubleArrow &&
                   shapeTypeFromString(QStringLiteral("leftbrace")) == ShapeType::BraceLeft &&
                   shapeTypeFromString(QStringLiteral("speech")) == ShapeType::Callout,
-              QStringLiteral("图形类型字符串兼容常见别名"));
+              QStringLiteral("图形类型字符串兼容常见别名（圆角矩形读成矩形）"));
     ctx.check(shapeTypeFromString(QStringLiteral("does-not-exist")) == ShapeType::Rectangle,
               QStringLiteral("未知图形类型回退为矩形"));
+
+    // 需求 5：圆角矩形并入矩形后，旧 rounded_rectangle 文件读成「矩形 + 自动圆角」。
+    {
+        ShapeItem legacyRounded;
+        QJsonObject legacyJson = legacyRounded.toJson();
+        legacyJson.insert(QStringLiteral("shapeType"), QStringLiteral("rounded_rectangle"));
+        legacyJson.remove(QStringLiteral("cornerRadius"));
+        legacyJson.remove(QStringLiteral("cornerAuto"));
+        ShapeItem loadedRounded;
+        loadedRounded.fromJson(legacyJson);
+        ctx.check(loadedRounded.shapeType() == ShapeType::Rectangle && loadedRounded.autoCorner(),
+                  QStringLiteral("旧 rounded_rectangle 读成矩形自动圆角"));
+    }
 
     bool shapePathsOk = true;
     bool shapeIconsOk = true;
@@ -123,10 +136,8 @@ void selftest::runShapeItemTests(Context& ctx)
     ctx.check(shapePathsOk, QStringLiteral("每种图形都能生成有效路径与名称"));
     ctx.check(shapeIconsOk, QStringLiteral("每种图形都能生成菜单图标"));
 
-    ctx.check(defaultShapeSize(ShapeType::Rectangle).width() == defaultShapeSize(ShapeType::Rectangle).height() &&
-                  defaultShapeSize(ShapeType::RoundedRectangle).width() ==
-                      defaultShapeSize(ShapeType::RoundedRectangle).height(),
-              QStringLiteral("矩形与圆角矩形默认插入为正方形"));
+    ctx.check(defaultShapeSize(ShapeType::Rectangle).width() == defaultShapeSize(ShapeType::Rectangle).height(),
+              QStringLiteral("矩形默认插入为正方形"));
     ctx.check(shapeTypeFromString(QStringLiteral("sector")) == ShapeType::Sector &&
                   shapeTypeFromString(QStringLiteral("arc")) == ShapeType::Arc &&
                   shapeTypeIsFilled(ShapeType::Sector) && shapeTypeIsStrokeOnly(ShapeType::Arc),
@@ -321,8 +332,7 @@ void selftest::runShapeItemTests(Context& ctx)
         const QJsonObject curveJson = arrowCurve.toJson();
         CurveItem reloadedCurve;
         reloadedCurve.fromJson(curveJson);
-        ctx.check(reloadedCurve.endArrow() == ArrowStyle::TriangleFilled,
-                  QStringLiteral("曲线箭头 JSON 往返"));
+        ctx.check(reloadedCurve.endArrow() == ArrowStyle::TriangleFilled, QStringLiteral("曲线箭头 JSON 往返"));
 
         const int headLength = qRound(qMax(4.0, 3.0 * 4.0));
         const QPainterPath filledHead =

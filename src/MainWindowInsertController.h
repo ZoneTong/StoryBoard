@@ -16,7 +16,8 @@ class MainWindowInsertController {
 
     void insertTextAt(const QPointF& scenePos);
     void insertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0,
-                     ArrowStyle startArrow = ArrowStyle::None, ArrowStyle endArrow = ArrowStyle::None);
+                     ArrowStyle startArrow = ArrowStyle::None, ArrowStyle endArrow = ArrowStyle::None,
+                     bool autoCorner = false);
     void insertCustomShape(const QString& filePath);
     void openShapesFolder();
     void updateCustomShapeMenu();

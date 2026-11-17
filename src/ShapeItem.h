@@ -10,7 +10,6 @@
 
 enum class ShapeType {
     Rectangle = 0,
-    RoundedRectangle,
     Ellipse,
     Triangle,
     Diamond,
@@ -52,6 +51,8 @@ struct ShapeItemState {
     Qt::PenStyle strokeStyle = Qt::SolidLine;
     qreal opacity = 1.0;
     qreal cornerRadius = -1.0;
+    // 圆角自动态：矩形按短边 16% 取圆角（旧 rounded_rectangle 读入后的形态）。
+    bool autoCorner = false;
     // 扇形 / 弧线：起始角与扫过角（度，Qt 坐标：0° 在三点钟方向，逆时针为正）。
     qreal startAngle = 30.0;
     qreal sweepAngle = 120.0;
@@ -71,7 +72,7 @@ struct ShapeItemState {
         return type == other.type && strokeColor == other.strokeColor && fillColor == other.fillColor &&
                fillStyle == other.fillStyle && qFuzzyCompare(strokeWidth, other.strokeWidth) &&
                strokeStyle == other.strokeStyle && qFuzzyCompare(opacity, other.opacity) &&
-               qFuzzyCompare(cornerRadius + 2.0, other.cornerRadius + 2.0) &&
+               qFuzzyCompare(cornerRadius + 2.0, other.cornerRadius + 2.0) && autoCorner == other.autoCorner &&
                qFuzzyCompare(startAngle + 2.0, other.startAngle + 2.0) &&
                qFuzzyCompare(sweepAngle + 2.0, other.sweepAngle + 2.0) &&
                qFuzzyCompare(bottomAngle1 + 2.0, other.bottomAngle1 + 2.0) &&
@@ -107,6 +108,10 @@ class ShapeItem : public CanvasItem {
     qreal itemOpacity() const override { return m_opacity; }
     void setItemOpacity(qreal opacity) override;
     qreal cornerRadius() const { return m_cornerRadius; }
+    // 需求 5：矩形用 cornerRadius（px，上限短边一半）；autoCorner 表示按短边 16% 自动取值，
+    // 圆角矩形已并入矩形，旧的 rounded_rectangle 读入后即落在这条自动路径上。
+    bool autoCorner() const { return m_autoCorner; }
+    void setAutoCorner(bool enabled);
     qreal startAngle() const { return m_startAngle; }
     qreal sweepAngle() const { return m_sweepAngle; }
     qreal shapeRadius() const { return m_shapeRadius; }
@@ -158,8 +163,9 @@ class ShapeItem : public CanvasItem {
     qreal m_strokeWidth = 4.0;
     Qt::PenStyle m_strokeStyle = Qt::SolidLine;
     qreal m_opacity = 1.0;
-    // < 0 表示用该图形类型的默认圆角（只有矩形 / 圆角矩形生效）。
+    // < 0 表示未显式指定圆角；矩形在 autoCorner 打开时按短边 16% 自动取值。
     qreal m_cornerRadius = -1.0;
+    bool m_autoCorner = false;
     qreal m_startAngle = 30.0;
     qreal m_sweepAngle = 120.0;
     qreal m_shapeRadius = -1.0;

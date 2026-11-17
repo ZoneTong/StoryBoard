@@ -57,8 +57,6 @@ QString shapeTypeName(ShapeType type)
     switch (type) {
     case ShapeType::Rectangle:
         return ShapeItem::tr("Rectangle");
-    case ShapeType::RoundedRectangle:
-        return ShapeItem::tr("Rounded rectangle");
     case ShapeType::Ellipse:
         return ShapeItem::tr("Ellipse");
     case ShapeType::Triangle:
@@ -183,6 +181,7 @@ void ShapeItem::setShapeType(ShapeType type)
     m_customPath = QPainterPath();
     m_customName.clear();
     m_cornerRadius = -1.0;
+    m_autoCorner = false;
     m_startAngle = 30.0;
     m_sweepAngle = 120.0;
     m_shapeRadius = -1.0;
@@ -316,13 +315,26 @@ void ShapeItem::setItemOpacity(qreal opacity)
 
 void ShapeItem::setCornerRadius(qreal radius)
 {
-    // 负数表示恢复该类型的默认圆角；正数按画布像素处理，不超过短边的一半。
+    // 正数按画布像素处理，不超过短边的一半；负数恢复为「未显式指定」。
     const qreal clamped =
         radius < 0.0 ? -1.0 : qBound<qreal>(0.0, radius, qMin(contentRect().width(), contentRect().height()) / 2.0);
-    if (qFuzzyCompare(m_cornerRadius + 2.0, clamped + 2.0)) {
+    if (qFuzzyCompare(m_cornerRadius + 2.0, clamped + 2.0) && !m_autoCorner) {
         return;
     }
     m_cornerRadius = clamped;
+    m_autoCorner = false;
+    update();
+}
+
+void ShapeItem::setAutoCorner(bool enabled)
+{
+    if (m_autoCorner == enabled && (enabled ? m_cornerRadius < 0.0 : true)) {
+        return;
+    }
+    m_autoCorner = enabled;
+    if (enabled) {
+        m_cornerRadius = -1.0;
+    }
     update();
 }
 
@@ -359,6 +371,7 @@ ShapeItemState ShapeItem::state() const
     result.strokeStyle = m_strokeStyle;
     result.opacity = m_opacity;
     result.cornerRadius = m_cornerRadius;
+    result.autoCorner = m_autoCorner;
     result.startAngle = m_startAngle;
     result.sweepAngle = m_sweepAngle;
     result.bottomAngle1 = m_bottomAngle1;
@@ -378,6 +391,7 @@ void ShapeItem::applyState(const ShapeItemState& state)
     m_strokeStyle = state.strokeStyle;
     m_opacity = state.opacity;
     m_cornerRadius = state.cornerRadius;
+    m_autoCorner = state.autoCorner;
     m_startAngle = state.startAngle;
     m_sweepAngle = state.sweepAngle;
     m_bottomAngle1 = state.bottomAngle1;
@@ -425,7 +439,10 @@ QPainterPath ShapeItem::currentPath(const QRectF& rect) const
     if (m_type == ShapeType::Triangle) {
         return ShapePathBuilder::trianglePath(rect, m_bottomAngle1, m_bottomAngle2);
     }
-    return pathFor(m_type, rect, m_cornerRadius, m_startAngle, m_sweepAngle, m_shapeRadius);
+    // -2.0 是「矩形圆角自动态（短边 16%）」的哨兵值，其余负值仍表示未指定圆角。
+    const qreal corner =
+        (m_type == ShapeType::Rectangle && m_cornerRadius < 0.0 && m_autoCorner) ? -2.0 : m_cornerRadius;
+    return pathFor(m_type, rect, corner, m_startAngle, m_sweepAngle, m_shapeRadius);
 }
 
 QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect)
@@ -483,6 +500,10 @@ QJsonObject ShapeItem::toJson() const
     json.insert(QStringLiteral("strokeStyle"), static_cast<int>(m_strokeStyle));
     json.insert(QStringLiteral("opacity"), m_opacity);
     json.insert(QStringLiteral("cornerRadius"), m_cornerRadius);
+    // 需求 5：圆角存 px；自动态（旧圆角矩形）额外记一个布尔，重开文件仍按短边 16% 缩放。
+    if (m_autoCorner) {
+        json.insert(QStringLiteral("cornerAuto"), true);
+    }
     json.insert(QStringLiteral("startAngle"), m_startAngle);
     json.insert(QStringLiteral("sweepAngle"), m_sweepAngle);
     json.insert(QStringLiteral("shapeRadius"), m_shapeRadius);
@@ -510,9 +531,17 @@ void ShapeItem::fromJson(const QJsonObject& json)
         m_customPath = decodePathData(json.value(QStringLiteral("pathData")).toString());
         m_type = ShapeType::Rectangle;
     } else {
+        // 需求 5：旧的 rounded_rectangle 读成「矩形 + 自动圆角」，不向后写兼容。
+        const QString normalizedType = typeName.trimmed().toLower();
+        const bool legacyRounded = normalizedType == QStringLiteral("rounded_rectangle") ||
+                                   normalizedType == QStringLiteral("roundedrect") ||
+                                   normalizedType == QStringLiteral("roundrect");
         m_type = shapeTypeFromString(typeName);
         m_customName.clear();
         m_customPath = QPainterPath();
+        if (legacyRounded) {
+            m_autoCorner = true;
+        }
     }
 
     m_strokeColor = QColor(json.value(QStringLiteral("strokeColor")).toString(QStringLiteral("#ff1e293b")));
@@ -540,6 +569,11 @@ void ShapeItem::fromJson(const QJsonObject& json)
     m_strokeStyle = static_cast<Qt::PenStyle>(qBound(0, json.value(QStringLiteral("strokeStyle")).toInt(1), 5));
     m_opacity = qBound<qreal>(0.0, json.value(QStringLiteral("opacity")).toDouble(1.0), 1.0);
     m_cornerRadius = json.value(QStringLiteral("cornerRadius")).toDouble(-1.0);
+    if (json.contains(QStringLiteral("cornerAuto"))) {
+        m_autoCorner = json.value(QStringLiteral("cornerAuto")).toBool(false);
+    } else if (m_type != ShapeType::Rectangle || !m_autoCorner) {
+        m_autoCorner = false;
+    }
     m_startAngle = json.value(QStringLiteral("startAngle")).toDouble(30.0);
     m_sweepAngle = json.value(QStringLiteral("sweepAngle")).toDouble(120.0);
     m_shapeRadius = json.value(QStringLiteral("shapeRadius")).toDouble(-1.0);
