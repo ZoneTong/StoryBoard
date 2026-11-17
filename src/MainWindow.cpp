@@ -23,6 +23,7 @@
 #include <QDropEvent>
 #include <QEvent>
 #include <QIcon>
+#include <QKeyEvent>
 #include <QLabel>
 #include <QStatusBar>
 #include <QTimer>
@@ -386,6 +387,40 @@ void MainWindow::applyAlignment(Alignment::Mode mode)
 void MainWindow::applyBoolOperation(BoolOps::Operation operation)
 {
     m_editActions->applyBoolOperation(operation);
+}
+
+void MainWindow::keyPressEvent(QKeyEvent* event)
+{
+    // 合并图元和弦：Ctrl+M 之后 1 秒内按 U / X / I / S / F 直接执行对应子命令。
+    if (m_boolChordPending) {
+        m_boolChordPending = false;
+        switch (event->key()) {
+        case Qt::Key_U:
+            applyBoolOperation(BoolOps::Operation::Union);
+            return;
+        case Qt::Key_X:
+            applyBoolOperation(BoolOps::Operation::Xor);
+            return;
+        case Qt::Key_I:
+            applyBoolOperation(BoolOps::Operation::Intersect);
+            return;
+        case Qt::Key_S:
+            applyBoolOperation(BoolOps::Operation::Subtract);
+            return;
+        case Qt::Key_F:
+            applyBoolOperation(BoolOps::Operation::Fragment);
+            return;
+        default:
+            break;
+        }
+    }
+    if (event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_M) {
+        m_boolChordPending = true;
+        statusBar()->showMessage(tr("Merge items: press U / X / I / S / F within 1 second"), 1000);
+        QTimer::singleShot(1000, this, [this]() { m_boolChordPending = false; });
+        return;
+    }
+    QMainWindow::keyPressEvent(event);
 }
 
 void MainWindow::replaceBackgroundImage()

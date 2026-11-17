@@ -61,6 +61,9 @@ class CanvasScene : public QGraphicsScene {
     // 同时修复载入文件里已有的重名条目，保证画布内名称唯一。
     void assignAutoItemNames();
     QList<CanvasItem*> selectedCanvasItems() const;
+    // 选择顺序：先选中的在前，框选时按场景叠放顺序（最底层在前）记录。
+    // 合并图元的「剪除」以最先选中的图元为底，框选时以最底层为底。
+    QList<CanvasItem*> selectionOrder() const;
     // 名称只按画布内图元的 name() 比较；空名称不占用唯一名额。
     bool isItemNameAvailable(const QString& name, const CanvasItem* except = nullptr) const;
     // 按“类型 1 / 类型 2 …”生成类型专属的自动名称；用于新建图元与空名称补名。
@@ -200,6 +203,8 @@ class CanvasScene : public QGraphicsScene {
     void updateItemFlags();
     void applyItemInteraction(CanvasItem* item);
     void clearOrphans();
+    // 维护选择顺序：新增的选中项追加到末尾，撤销选中或删除的被移除。
+    void refreshSelectionOrder();
 
     void ensureLayerState();
     LayerStackState sanitizedLayerState(const LayerStackState& state) const;
@@ -229,6 +234,7 @@ class CanvasScene : public QGraphicsScene {
     int m_nextGroupId = 1;
     // 组 → 父组。组本身可以被更外层的组包住，成员通过 groupId 指到自己所在的那一层组。
     QHash<int, int> m_groupParents;
+    QList<QPointer<CanvasItem>> m_selectionOrder;
     QList<int> m_preferredLayerIds;
     QList<CanvasItem*> m_orphans;
 };

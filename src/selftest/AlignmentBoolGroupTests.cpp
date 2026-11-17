@@ -298,16 +298,18 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         // 零面积描线不作为挖除与分块边界：直线横穿菱形后，组合 / 剪除 / 拆分
         // 都不能在菱形上留细缝，交集条带按线宽带渲染而不是套描线的面积层。
         {
-            struct LineMerge {
-                bool ok = false;
+            // 线条类图元（直线 / 曲线 / 括号 / 弧 / 纯描线多边形）不参与合并：
+            // 只选中一条直线与一个菱形时，参与者只有菱形一个，合并直接失败，
+            // 两个图元都保持原样留在画布上。
+            struct LineSkip {
+                bool applied = false;
+                int composites = 0;
                 int items = 0;
-                int layerCount = 0;
-                int strokedLayers = 0;
                 QColor diamondTop;
                 QColor slit;
             };
-            auto runLineMerge = [](BoolOps::Operation operation) {
-                LineMerge result;
+            auto runLineSkip = [](BoolOps::Operation operation) {
+                LineSkip result;
                 QUndoStack undo;
                 CanvasScene scene;
                 scene.setUndoStack(&undo);
@@ -328,20 +330,14 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                 line->setPos(QPointF(30.0, 80.0));
                 line->setContentSize(QSizeF(250.0, 40.0));
                 line->setStyle(QColor(30, 90, 200), QColor(30, 90, 200), 6.0);
-                scene.addItemsWithUndo({line, diamond}, QStringLiteral("Add line merge"));
+                scene.addItemsWithUndo({line, diamond}, QStringLiteral("Add line skip"));
                 line->setSelected(true);
                 diamond->setSelected(true);
-                result.ok = BoolOps::apply(&scene, operation, QStringLiteral("Line merge"));
-                const QList<CanvasItem*> selected = scene.selectedCanvasItems();
-                result.items = selected.size();
-                for (CanvasItem* item : selected) {
-                    if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
-                        result.layerCount += composite->layerCount();
-                        for (const CompositeShapeItem::Layer& layer : composite->layers()) {
-                            if (layer.strokeWidth > 0.0) {
-                                ++result.strokedLayers;
-                            }
-                        }
+                result.applied = BoolOps::apply(&scene, operation, QStringLiteral("Line skip"));
+                result.items = scene.canvasItems().size();
+                for (CanvasItem* item : scene.canvasItems()) {
+                    if (dynamic_cast<CompositeShapeItem*>(item)) {
+                        ++result.composites;
                     }
                 }
                 const QImage rendered = scene.renderImage(QRectF(0.0, 0.0, 320.0, 220.0), 1.0);
@@ -350,46 +346,25 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                 return result;
             };
             const QColor diamondFill(200, 40, 40);
-            const QColor donorStroke(20, 20, 20);
-
-            const LineMerge lineCombine = runLineMerge(BoolOps::Operation::Combine);
-            ctx.check(lineCombine.ok && lineCombine.items == 1 && lineCombine.diamondTop == diamondFill &&
-                          lineCombine.slit == diamondFill,
-                      QStringLiteral("直线与菱形组合不挖出细缝"),
-                      QStringLiteral("ok=%1 items=%2 top=%3 slit=%4")
-                          .arg(lineCombine.ok ? 1 : 0)
-                          .arg(lineCombine.items)
-                          .arg(lineCombine.diamondTop.name())
-                          .arg(lineCombine.slit.name()));
-
-            const LineMerge lineSubtract = runLineMerge(BoolOps::Operation::Subtract);
-            ctx.check(lineSubtract.ok && lineSubtract.items == 1 && lineSubtract.slit == diamondFill,
-                      QStringLiteral("直线与菱形剪除后菱形保持完整"),
-                      QStringLiteral("ok=%1 items=%2 slit=%3")
-                          .arg(lineSubtract.ok ? 1 : 0)
-                          .arg(lineSubtract.items)
-                          .arg(lineSubtract.slit.name()));
-
-            const LineMerge lineIntersect = runLineMerge(BoolOps::Operation::Intersect);
-            ctx.check(lineIntersect.ok && lineIntersect.items == 1 && lineIntersect.layerCount == 1 &&
-                          lineIntersect.strokedLayers == 0 && lineIntersect.slit == donorStroke &&
-                          lineIntersect.diamondTop == QColor(Qt::white),
-                      QStringLiteral("直线与菱形相交得到单层线宽带条带"),
-                      QStringLiteral("ok=%1 items=%2 layers=%3 stroked=%4 slit=%5 top=%6")
-                          .arg(lineIntersect.ok ? 1 : 0)
-                          .arg(lineIntersect.items)
-                          .arg(lineIntersect.layerCount)
-                          .arg(lineIntersect.strokedLayers)
-                          .arg(lineIntersect.slit.name())
-                          .arg(lineIntersect.diamondTop.name()));
-
-            const LineMerge lineFragment = runLineMerge(BoolOps::Operation::Fragment);
-            ctx.check(lineFragment.ok && lineFragment.items == 2 && lineFragment.slit == diamondFill,
-                      QStringLiteral("直线与菱形拆分得到菱形块与线宽带块"),
-                      QStringLiteral("ok=%1 items=%2 slit=%3")
-                          .arg(lineFragment.ok ? 1 : 0)
-                          .arg(lineFragment.items)
-                          .arg(lineFragment.slit.name()));
+            const QList<QPair<BoolOps::Operation, QString>> lineOps = {
+                {BoolOps::Operation::Union, QStringLiteral("联合")},
+                {BoolOps::Operation::Xor, QStringLiteral("异或")},
+                {BoolOps::Operation::Intersect, QStringLiteral("相交")},
+                {BoolOps::Operation::Subtract, QStringLiteral("剪除")},
+                {BoolOps::Operation::Fragment, QStringLiteral("拆分")},
+            };
+            for (const auto& entry : lineOps) {
+                const LineSkip result = runLineSkip(entry.first);
+                ctx.check(!result.applied && result.items == 2 && result.composites == 0 &&
+                              result.diamondTop == diamondFill && result.slit == diamondFill,
+                          QStringLiteral("%1：直线不参与合并，画布保持原样").arg(entry.second),
+                          QStringLiteral("applied=%1 items=%2 composites=%3 top=%4 slit=%5")
+                              .arg(result.applied ? 1 : 0)
+                              .arg(result.items)
+                              .arg(result.composites)
+                              .arg(result.diamondTop.name())
+                              .arg(result.slit.name()));
+            }
 
             // 细窄交集降级为线宽带：菱形与五角星边角相错形成的窄透镜交集只填充
             // 不描边，不会被描线吞成黑块。
@@ -558,10 +533,10 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         int combineLayers = 0;
         qreal combineWidth = 0.0;
         int combineItems = 0;
-        const bool combineOk = runOperation(BoolOps::Operation::Combine, combineLayers, combineWidth, combineItems);
+        const bool combineOk = runOperation(BoolOps::Operation::Xor, combineLayers, combineWidth, combineItems);
         ctx.check(
             combineOk && combineLayers == 1 && combineItems == 1,
-            QStringLiteral("组合运算生成单个单层结果，重叠区被挖空"),
+            QStringLiteral("异或运算生成单个单层结果，重叠区被挖空"),
             QStringLiteral("ok=%1 layers=%2 items=%3").arg(combineOk ? 1 : 0).arg(combineLayers).arg(combineItems));
 
         int fragmentLayers = 0;
@@ -726,10 +701,10 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                       .arg(hollowUnion.path.contains(diamondCenter) ? 1 : 0)
                       .arg(hollowUnion.path.contains(starCenter) ? 1 : 0));
 
-        const PairResult combine = runPair(BoolOps::Operation::Combine, true, true);
+        const PairResult combine = runPair(BoolOps::Operation::Xor, true, true);
         ctx.check(combine.ok && combine.path.contains(diamondCenter) && combine.path.contains(starCenter) &&
                       !combine.path.contains(combine.overlapPoint),
-                  QStringLiteral("菱形与五角星组合后重叠区被挖空"),
+                  QStringLiteral("菱形与五角星异或后重叠区被挖空"),
                   QStringLiteral("ok=%1 overlap=%2")
                       .arg(combine.ok ? 1 : 0)
                       .arg(combine.path.contains(combine.overlapPoint) ? 1 : 0));
@@ -745,10 +720,12 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                       .arg(intersect.path.contains(starCenter) ? 1 : 0));
 
         const PairResult subtract = runPair(BoolOps::Operation::Subtract, true, true);
-        ctx.check(subtract.ok && subtract.path.contains(starCenter) && !subtract.path.contains(subtract.overlapPoint),
-                  QStringLiteral("菱形与五角星相减按顶层保留五角星并挖掉重叠区"),
-                  QStringLiteral("ok=%1 star=%2 overlap=%3")
+        ctx.check(subtract.ok && subtract.path.contains(diamondCenter) && !subtract.path.contains(starCenter) &&
+                      !subtract.path.contains(subtract.overlapPoint),
+                  QStringLiteral("菱形与五角星剪除以先选中的菱形为底，挖掉五角星"),
+                  QStringLiteral("ok=%1 diamond=%2 star=%3 overlap=%4")
                       .arg(subtract.ok ? 1 : 0)
+                      .arg(subtract.path.contains(diamondCenter) ? 1 : 0)
                       .arg(subtract.path.contains(starCenter) ? 1 : 0)
                       .arg(subtract.path.contains(subtract.overlapPoint) ? 1 : 0));
 

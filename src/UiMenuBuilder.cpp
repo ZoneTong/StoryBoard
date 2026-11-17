@@ -221,28 +221,29 @@ void UiMenuBuilder::buildMenus()
         m_window->m_alignActions.append(action);
     }
 
-    // 合并图元：与 PPT「合并形状」同一套子操作命名——联合 / 组合 / 拆分 / 相交 / 剪除；
+    // 合并图元：与 PPT「合并形状」同一套子操作命名与顺序——
+    // 联合 / 异或（XOR，并集减重叠）/ 相交 / 剪除 / 拆分；
     // 主入口用独立图标（形变图形），五项子操作继续用两圆交叠的运算图标。
     QMenu* boolMenu = editMenu->addMenu(MainWindow::tr("Merge items"));
     boolMenu->setObjectName(QStringLiteral("BoolMenu"));
     boolMenu->setIcon(makeIcon(IconId::Morph, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
     const QList<QPair<BoolOps::Operation, QString>> boolEntries = {
         {BoolOps::Operation::Union, MainWindow::tr("Union")},
-        {BoolOps::Operation::Combine, MainWindow::tr("Combine")},
-        {BoolOps::Operation::Fragment, MainWindow::tr("Fragment")},
+        {BoolOps::Operation::Xor, MainWindow::tr("Xor (XOR)")},
         {BoolOps::Operation::Intersect, MainWindow::tr("Intersect")},
         {BoolOps::Operation::Subtract, MainWindow::tr("Subtract")},
+        {BoolOps::Operation::Fragment, MainWindow::tr("Fragment")},
     };
     const QList<QString> boolTips = {
         MainWindow::tr("Merge the selected items into one polygon"),
-        MainWindow::tr("Merge the outlines and cut out the overlapping part"),
-        MainWindow::tr("Split the selected items into separate pieces at every overlap"),
+        MainWindow::tr("Union minus the overlapping part (XOR)"),
         MainWindow::tr("Keep only the overlapping part"),
-        MainWindow::tr("Cut the lower items out of the topmost item"),
+        MainWindow::tr("Cut the other items out of the first selected item"),
+        MainWindow::tr("Split the selected items into separate pieces at every overlap"),
     };
     // 图标与 PPT「合并形状」一致：两个交叠圆表示各运算的结果区域。
-    const QList<IconId> boolIcons = {IconId::MergeUnion, IconId::MergeCombine, IconId::MergeFragment,
-                                     IconId::MergeIntersect, IconId::MergeSubtract};
+    const QList<IconId> boolIcons = {IconId::MergeUnion, IconId::MergeCombine, IconId::MergeIntersect,
+                                     IconId::MergeSubtract, IconId::MergeFragment};
     for (int i = 0; i < boolEntries.size(); ++i) {
         QAction* action = boolMenu->addAction(boolEntries.at(i).second);
         action->setIcon(

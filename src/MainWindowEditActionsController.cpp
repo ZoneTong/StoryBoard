@@ -126,8 +126,8 @@ void MainWindowEditActionsController::applyBoolOperation(BoolOps::Operation oper
     case BoolOps::Operation::Union:
         commandText = MainWindow::tr("Union shapes");
         break;
-    case BoolOps::Operation::Combine:
-        commandText = MainWindow::tr("Combine shapes and cut the overlap");
+    case BoolOps::Operation::Xor:
+        commandText = MainWindow::tr("Xor shapes");
         break;
     case BoolOps::Operation::Fragment:
         commandText = MainWindow::tr("Fragment shapes");

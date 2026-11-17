@@ -4,13 +4,15 @@
 
 class CanvasScene;
 
-// 多图元合并形状，语义参照 PPT 的「合并形状」五个命令：
-// 联合 / 组合（去重叠）/ 拆分 / 相交 / 剪除。
-// 除拆分外生成一个多边形；拆分按块生成多个可分别选中的多边形。
-// 原图元被替换，整个过程只占一条撤销记录；运算本身不可逆，只能撤销 / 重做。
+// 多图元合并形状，语义与 PPT 的「合并形状」一致，子命令顺序也保持一致：
+// 联合 / 异或（XOR，并集减重叠）/ 相交 / 剪除 / 拆分。
+// 参与者只有填充图形与文字；直线、直线箭头、曲线、括号、弧与纯描线多边形
+// 都属于线条类，不参与合并。除拆分外生成一个多边形；拆分只在填充图形之间
+// 按重叠关系切成最多 8 块可分别选中的多边形。原图元被替换，整个过程只占
+// 一条撤销记录；运算本身不可逆，只能撤销 / 重做。
 namespace BoolOps {
 
-enum class Operation { Union, Combine, Fragment, Intersect, Subtract };
+enum class Operation { Union, Xor, Intersect, Subtract, Fragment };
 
 // 至少两个可编辑图元才能做合并形状。
 bool supports(CanvasScene* scene);

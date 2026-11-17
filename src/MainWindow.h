@@ -21,6 +21,7 @@
 class CanvasScene;
 class CanvasView;
 class CanvasItem;
+class QKeyEvent;
 class ItemPropertiesDialog;
 class ItemDockPanel;
 class LayerPanel;
@@ -74,6 +75,8 @@ class MainWindow : public QMainWindow {
 
   protected:
     void closeEvent(QCloseEvent* event) override;
+    // 合并图元和弦：Ctrl+M 之后 1 秒内 U / X / I / S / F 触发对应子命令。
+    void keyPressEvent(QKeyEvent* event) override;
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dropEvent(QDropEvent* event) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
@@ -162,6 +165,8 @@ class MainWindow : public QMainWindow {
     QColor m_fillColor;
     FillStyle m_fillStyle = FillStyle::Solid;
     int m_brushWidth = 4;
+    // 合并图元和弦进行中：Ctrl+M 已按下，等 1 秒内的子命令字母。
+    bool m_boolChordPending = false;
 
     QAction* m_newAct = nullptr;
     QAction* m_openAct = nullptr;
