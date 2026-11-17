@@ -266,9 +266,10 @@ find src -type f \( -name '*.cpp' -o -name '*.h' \) -print0 | xargs -0 clang-for
 
 ## 许可证
 
-本项目采用 [PolyForm Noncommercial License 1.0.0](LICENSE)（SPDX 标识 `PolyForm-Noncommercial-1.0.0`，全文见仓库根目录 `LICENSE`，官方原文 <https://polyformproject.org/licenses/noncommercial/1.0.0>）。
+本项目采用 [GNU General Public License v3.0](LICENSE)（SPDX 标识 `GPL-3.0-only`，全文见仓库根目录 `LICENSE`，官方原文 <https://www.gnu.org/licenses/gpl-3.0>）。
 
-- 允许：个人研究、实验、学习、私人娱乐与业余爱好等任何非商业用途，以及慈善机构、教育机构、公共研究机构、公共安全与卫生机构、环保组织和政府机构的使用，不区分其资金来源。
-- 商业用途需另行取得书面授权；分发时须随附本许可证全文或其链接，以及下面的 Required Notice 行。
+- 可以自由使用、修改、分发本项目，包括商业使用；分发（含修改后的版本）时须以同一许可证公开对应的完整源码，并保留版权与许可证声明。
+- 本项目以动态链接方式使用 Qt 6，Qt 的 LGPLv3 归属、源码与替换方式见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)；LGPLv3 全文见 `LICENSE-LGPL-3.0`。
 
-Required Notice: Copyright 2026 ZoneTong (https://github.com/ZoneTong/StoryBoard)
+Copyright (C) 2026 ZoneTong
+

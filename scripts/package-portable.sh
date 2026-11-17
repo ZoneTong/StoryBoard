@@ -531,10 +531,12 @@ case "$PLATFORM" in
     macos) bundle_macos ;;
 esac
 
-# 许可证要求分发时随附条款与 Required Notice，便携包固定带上仓库根目录的 LICENSE。
-if [ -f "$ROOT/LICENSE" ]; then
-    cp "$ROOT/LICENSE" "$PACKAGE_DIR/LICENSE"
-fi
+# 许可证要求分发时随附条款与第三方声明，便携包固定带上仓库根目录的这三份文件。
+for doc in LICENSE LICENSE-LGPL-3.0 THIRD-PARTY-NOTICES.md; do
+    if [ -f "$ROOT/$doc" ]; then
+        cp "$ROOT/$doc" "$PACKAGE_DIR/$doc"
+    fi
+done
 
 if [ "$SKIP_SELF_TEST" -eq 0 ]; then
     run_self_test "$PACKAGE_DIR"
