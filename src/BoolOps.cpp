@@ -304,25 +304,25 @@ QList<CompositeShapeItem::Layer> buildLayers(const QPainterPath& result, const Q
     int textRank = -1;
     for (int i = 0; i < participants.size(); ++i) {
         const Participant& participant = participants.at(i);
-        auto append = [&result, intersectMode, &bandUnion](QPainterPath& target, const QPainterPath& source) {
+        auto append = [&result](QPainterPath& target, const QPainterPath& source) {
             if (source.isEmpty()) {
                 return;
             }
-            // 相交模式：填充轮廓先挖掉线宽带，交集条带整体交给线宽带层。
-            const QPainterPath usable = intersectMode ? source.subtracted(bandUnion) : source;
-            if (usable.isEmpty()) {
-                return;
-            }
-            const QPainterPath clipped = usable.intersected(result);
+            const QPainterPath clipped = source.intersected(result);
             if (clipped.isEmpty()) {
                 return;
             }
             target = target.isEmpty() ? clipped : target.united(clipped);
         };
+        // 相交模式：填充轮廓先挖掉线宽带，交集条带整体交给线宽带层渲染；
+        // 线宽带与文字来源本身就要保留，不做挖除。
+        auto appendFill = [&append, intersectMode, &bandUnion](QPainterPath& target, const QPainterPath& source) {
+            append(target, intersectMode ? source.subtracted(bandUnion) : source);
+        };
         // 每个角色层的绘制序号取该角色贡献者中叠放序号最大者（最靠上的），
         // 保持合并前的遮挡关系；participants 已按优先级排序，不能用下标 i。
         if (!participant.fillPath.isEmpty()) {
-            append(areas, participant.fillPath);
+            appendFill(areas, participant.fillPath);
             areaRank = areaRank < 0 ? participant.stackRank : qMax(areaRank, participant.stackRank);
         }
         if (!participant.strokePath.isEmpty()) {
@@ -350,12 +350,13 @@ QList<CompositeShapeItem::Layer> buildLayers(const QPainterPath& result, const Q
         layer.strokeWidth = qMax(0.0, top.strokeWidth);
         layer.filled = true;
         layer.role = CompositeShapeItem::LayerRole::FilledArea;
-        // 区域整体落在自身 2×描线宽的描边带内（细窄交集 / 窄条）时降级为线宽带：
-        // 只填充不描边，避免被描线吞成黑块；描线宽为 0 时无需降级。
+        // 区域整体落在自身 3×描线宽的描边带内（最大内切半径不足 1.5 倍线宽，
+        // 描边后剩余可见填充不足半条线宽）时降级为线宽带：只填充不描边，
+        // 避免细窄交集 / 窄条被描线吞成黑块；描线宽为 0 时无需降级。
         if (layer.strokeWidth > 0.0) {
             QPainterPathStroker stroker;
             stroker.setJoinStyle(Qt::MiterJoin);
-            stroker.setWidth(layer.strokeWidth * 2.0);
+            stroker.setWidth(layer.strokeWidth * 3.0);
             if (areas.subtracted(stroker.createStroke(areas)).isEmpty()) {
                 layer.strokeWidth = 0.0;
                 layer.role = CompositeShapeItem::LayerRole::StrokeBand;
