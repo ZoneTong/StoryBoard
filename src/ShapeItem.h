@@ -54,6 +54,9 @@ struct ShapeItemState {
     // 扇形 / 弧线：起始角与扫过角（度，Qt 坐标：0° 在三点钟方向，逆时针为正）。
     qreal startAngle = 30.0;
     qreal sweepAngle = 120.0;
+    // 三角形：底边（内容矩形宽度）两侧的底角，单位为度。角度是真相，高度由两者派生。
+    qreal bottomAngle1 = 60.0;
+    qreal bottomAngle2 = 60.0;
     // 扇形 / 弧线的椭圆半径（像素，横向）；< 0 表示按内容矩形宽度的一半自动取值。
     qreal shapeRadius = -1.0;
     QPointF pos;
@@ -67,6 +70,8 @@ struct ShapeItemState {
                qFuzzyCompare(cornerRadius + 2.0, other.cornerRadius + 2.0) &&
                qFuzzyCompare(startAngle + 2.0, other.startAngle + 2.0) &&
                qFuzzyCompare(sweepAngle + 2.0, other.sweepAngle + 2.0) &&
+               qFuzzyCompare(bottomAngle1 + 2.0, other.bottomAngle1 + 2.0) &&
+               qFuzzyCompare(bottomAngle2 + 2.0, other.bottomAngle2 + 2.0) &&
                qFuzzyCompare(shapeRadius + 2.0, other.shapeRadius + 2.0) && pos == other.pos && size == other.size;
     }
 
@@ -100,6 +105,8 @@ class ShapeItem : public CanvasItem {
     qreal startAngle() const { return m_startAngle; }
     qreal sweepAngle() const { return m_sweepAngle; }
     qreal shapeRadius() const { return m_shapeRadius; }
+    qreal bottomAngle1() const { return m_bottomAngle1; }
+    qreal bottomAngle2() const { return m_bottomAngle2; }
     void setStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth);
     void setFill(const QColor& fillColor, FillStyle style);
     void setFillStyle(FillStyle style);
@@ -108,6 +115,9 @@ class ShapeItem : public CanvasItem {
     void setCornerRadius(qreal radius);
     void setArcAngles(qreal startAngle, qreal sweepAngle);
     void setShapeRadius(qreal radius);
+    // 三角形：设置底边两侧的底角（度）。角度优先，高度按底边与角度重算；
+    // 两角和被钳制在 175° 以内，保证顶点不会跑出内容矩形。
+    void setTriangleAngles(qreal angle1, qreal angle2);
 
     // 自定义图形：轮廓来自画布模板，存的是 0–1 单位坐标；没有自定义轮廓时按 shapeType 画。
     bool isCustomShape() const { return !m_customPath.isEmpty(); }
@@ -127,6 +137,8 @@ class ShapeItem : public CanvasItem {
 
   protected:
     void paintContent(QPainter* painter) override;
+    // 三角形拉伸时保持"角度为真相"：拖高等价于等比改底边，拖底边则反推高度。
+    void contentResized() override;
     qreal framePadding() const override { return qMax<qreal>(22.0, m_strokeWidth + 6.0); }
 
   private:
@@ -142,6 +154,11 @@ class ShapeItem : public CanvasItem {
     qreal m_startAngle = 30.0;
     qreal m_sweepAngle = 120.0;
     qreal m_shapeRadius = -1.0;
+    qreal m_bottomAngle1 = 60.0;
+    qreal m_bottomAngle2 = 60.0;
+    // 上一次同步后的尺寸，用于区分"拖高"与"拖底边"，避免互相覆盖。
+    QSizeF m_triangleSyncSize;
+    bool m_syncingTriangle = false;
     QString m_customName;
     QPainterPath m_customPath;
 };

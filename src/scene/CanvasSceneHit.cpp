@@ -1,5 +1,6 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
+#include "ShapeItem.h"
 #include "scene/ObscurationAnalyzer.h"
 
 #include <QPainter>
@@ -9,6 +10,7 @@
 #include <QStyleOptionGraphicsItem>
 #include <QVector>
 #include <algorithm>
+#include <cmath>
 
 QList<CanvasItem*> CanvasScene::obscuredItems(const QRectF& area) const
 {
@@ -22,42 +24,99 @@ QList<CanvasItem*> CanvasScene::obscuredItems(const QRectF& area) const
 void CanvasScene::drawForeground(QPainter* painter, const QRectF& rect)
 {
     QGraphicsScene::drawForeground(painter, rect);
+    if (!painter) {
+        return;
+    }
 
     // 非查看模式下，被高层级/更高 height 图元遮住的图元补画一圈虚线轮廓，
     // 让用户仍能看出那里有东西（查看模式与导出不画）。
     const QList<CanvasItem*> obscured = obscuredItems(rect);
-    if (!painter || obscured.isEmpty()) {
+    if (!obscured.isEmpty()) {
+        painter->save();
+        painter->setClipRect(rect);
+        painter->setRenderHint(QPainter::Antialiasing, true);
+
+        // 两层描边：先铺一圈半透明白色柔光，再压深色虚线。无论被遮住的是浅色
+        // 画板还是深色图元，虚线轮廓都能看清。
+        QPen haloPen(QColor(255, 255, 255, 120));
+        haloPen.setWidthF(2.6);
+        haloPen.setCosmetic(true);
+        haloPen.setStyle(Qt::SolidLine);
+
+        QPen dashPen(QColor(30, 41, 59, 205));
+        dashPen.setWidthF(1.2);
+        dashPen.setCosmetic(true);
+        dashPen.setStyle(Qt::DashLine);
+        dashPen.setDashPattern({5.0, 4.0});
+
+        for (CanvasItem* item : obscured) {
+            const QPainterPath path = item->sceneTransform().map(item->outlineShape());
+            if (path.isEmpty()) {
+                continue;
+            }
+            painter->setPen(haloPen);
+            painter->setBrush(Qt::NoBrush);
+            painter->drawPath(path);
+            painter->setPen(dashPen);
+            painter->drawPath(path);
+        }
+        painter->restore();
+    }
+
+    drawTriangleBaseTick(painter, rect);
+}
+
+void CanvasScene::drawTriangleBaseTick(QPainter* painter, const QRectF& rect)
+{
+    // 需求 8：三角形 A 边（底边）中点画一条短刻度线，标记可调底边与两侧内角。
+    // 只在编辑侧、单选、非导出时出现；查看模式与导出图里没有任何提示线。
+    if (m_mode == ToolMode::View || m_exporting) {
         return;
     }
+    const QList<QGraphicsItem*> selection = selectedItems();
+    if (selection.size() != 1) {
+        return;
+    }
+    ShapeItem* shape = dynamic_cast<ShapeItem*>(selection.constFirst());
+    if (!shape || shape->shapeType() != ShapeType::Triangle || shape->isCustomShape()) {
+        return;
+    }
+
+    const QRectF content = shape->contentRect();
+    if (content.isEmpty()) {
+        return;
+    }
+    const QTransform transform = shape->sceneTransform();
+    const QPointF left = transform.map(QPointF(content.left(), content.bottom()));
+    const QPointF right = transform.map(QPointF(content.right(), content.bottom()));
+    const QPointF mid = (left + right) / 2.0;
+    const QPointF edge = right - left;
+    const qreal edgeLength = std::hypot(edge.x(), edge.y());
+    if (edgeLength < 1.0) {
+        return;
+    }
+    // 法线方向取朝顶点（内容中心）一侧，刻度线画进三角形内部。
+    QPointF normal(-edge.y() / edgeLength, edge.x() / edgeLength);
+    const QPointF center = transform.map(content.center());
+    if (QPointF::dotProduct(normal, center - mid) < 0.0) {
+        normal = -normal;
+    }
+
+    const qreal zoom = painter->worldTransform().m11();
+    if (zoom <= 0.0) {
+        return;
+    }
+    // 屏幕恒定 8px：场景长度按当前缩放换算。
+    const qreal tickLength = 8.0 / zoom;
 
     painter->save();
     painter->setClipRect(rect);
     painter->setRenderHint(QPainter::Antialiasing, true);
-
-    // 两层描边：先铺一圈半透明白色柔光，再压深色虚线。无论被遮住的是浅色
-    // 画板还是深色图元，虚线轮廓都能看清。
-    QPen haloPen(QColor(255, 255, 255, 120));
-    haloPen.setWidthF(2.6);
-    haloPen.setCosmetic(true);
-    haloPen.setStyle(Qt::SolidLine);
-
-    QPen dashPen(QColor(30, 41, 59, 205));
-    dashPen.setWidthF(1.2);
-    dashPen.setCosmetic(true);
-    dashPen.setStyle(Qt::DashLine);
-    dashPen.setDashPattern({5.0, 4.0});
-
-    for (CanvasItem* item : obscured) {
-        const QPainterPath path = item->sceneTransform().map(item->outlineShape());
-        if (path.isEmpty()) {
-            continue;
-        }
-        painter->setPen(haloPen);
-        painter->setBrush(Qt::NoBrush);
-        painter->drawPath(path);
-        painter->setPen(dashPen);
-        painter->drawPath(path);
-    }
+    QPen pen(QColor(30, 41, 59, 205));
+    pen.setWidthF(1.6);
+    pen.setCosmetic(true);
+    painter->setPen(pen);
+    painter->drawLine(mid, mid + normal * tickLength);
     painter->restore();
 }
 

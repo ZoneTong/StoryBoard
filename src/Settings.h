@@ -13,7 +13,8 @@ class AppSettings {
     int brushWidth = 4;
     // 画笔拟合容差，单位为画布像素，支持 0.1 精度；0 表示关闭拟合。
     qreal strokeSmoothing = 2.0;
-    QSizeF canvasSize = QSizeF(1920.0, 1080.0);
+    // 默认画布 48×32 个棋盘格（棋盘格边长 32 逻辑像素），宽高都是 32 的整数倍。
+    QSizeF canvasSize = QSizeF(1536.0, 1024.0);
     // 初始设置默认不显示辅助网格，需要时从视图菜单或设置里手动打开。
     bool showGrid = false;
     QColor canvasColor = QColor(43, 47, 54);

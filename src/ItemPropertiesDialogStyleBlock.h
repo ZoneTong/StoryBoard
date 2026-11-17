@@ -47,6 +47,12 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     int initialCornerRadius() const { return m_initialCornerRadius; }
     qreal initialStoredCornerRadius() const { return m_initialStoredCornerRadius; }
 
+    // 三角形：底边由几何区的宽度表示，这里只放两个底角；角度优先，高度随后派生。
+    QSpinBox* bottomAngle1Spin() const { return m_bottomAngle1Spin; }
+    QSpinBox* bottomAngle2Spin() const { return m_bottomAngle2Spin; }
+    qreal initialBottomAngle1() const { return m_initialBottomAngle1; }
+    qreal initialBottomAngle2() const { return m_initialBottomAngle2; }
+
     // 尺寸框变化时同步圆角上限；用户尚未改过圆角时，圆角矩形的默认值
     // 按新短边重新计算，保证对话框显示值与最终轮廓一致。
     void setContentSize(const QSizeF& size);
@@ -78,4 +84,9 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     int m_initialCornerRadius = 0;
     qreal m_initialStoredCornerRadius = -1.0;
     bool m_cornerEdited = false;
+
+    QSpinBox* m_bottomAngle1Spin = nullptr;
+    QSpinBox* m_bottomAngle2Spin = nullptr;
+    qreal m_initialBottomAngle1 = 60.0;
+    qreal m_initialBottomAngle2 = 60.0;
 };

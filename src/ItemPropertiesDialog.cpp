@@ -412,6 +412,17 @@ void ItemPropertiesDialog::applyChanges()
             after.shapeState.cornerRadius =
                 value == style->initialCornerRadius() ? style->initialStoredCornerRadius() : value;
         }
+        // 需求 1：三角形的两个底角为真相，未改动时保留原值（含非整数角度）。
+        if (style && style->bottomAngle1Spin()) {
+            const int value = style->bottomAngle1Spin()->value();
+            after.shapeState.bottomAngle1 =
+                value == qRound(style->initialBottomAngle1()) ? style->initialBottomAngle1() : value;
+        }
+        if (style && style->bottomAngle2Spin()) {
+            const int value = style->bottomAngle2Spin()->value();
+            after.shapeState.bottomAngle2 =
+                value == qRound(style->initialBottomAngle2()) ? style->initialBottomAngle2() : value;
+        }
         if (m_hasFill) {
             if (style && style->fillStyleCombo() && style->fillStyleCombo()->currentData().toInt() >= 0) {
                 after.shapeState.fillStyle = static_cast<FillStyle>(style->fillStyleCombo()->currentData().toInt());

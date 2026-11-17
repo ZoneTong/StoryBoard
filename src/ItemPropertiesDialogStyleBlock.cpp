@@ -140,6 +140,30 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             connect(m_cornerRadiusSpin, &QSpinBox::valueChanged, this,
                     [this](int value) { m_cornerEdited = value != m_initialCornerRadius; });
         }
+
+        // 需求 1：三角形两个底角在属性窗里也可编辑；底边长度由几何区的宽度承担。
+        if (!shape->isCustomShape() && type == ShapeType::Triangle) {
+            m_initialBottomAngle1 = shape->bottomAngle1();
+            m_initialBottomAngle2 = shape->bottomAngle2();
+
+            m_bottomAngle1Spin = new QSpinBox(this);
+            m_bottomAngle1Spin->setObjectName(QStringLiteral("ItemPropertiesBottomAngle1Value"));
+            m_bottomAngle1Spin->setRange(1, 174);
+            m_bottomAngle1Spin->setSingleStep(1);
+            m_bottomAngle1Spin->setSuffix(QStringLiteral("°"));
+            m_bottomAngle1Spin->setToolTip(ItemPropertiesDialog::tr("Triangle base angle A (A edge)"));
+            m_bottomAngle1Spin->setMinimumWidth(88);
+            m_bottomAngle1Spin->setValue(qRound(m_initialBottomAngle1));
+
+            m_bottomAngle2Spin = new QSpinBox(this);
+            m_bottomAngle2Spin->setObjectName(QStringLiteral("ItemPropertiesBottomAngle2Value"));
+            m_bottomAngle2Spin->setRange(1, 174);
+            m_bottomAngle2Spin->setSingleStep(1);
+            m_bottomAngle2Spin->setSuffix(QStringLiteral("°"));
+            m_bottomAngle2Spin->setToolTip(ItemPropertiesDialog::tr("Triangle base angle B (A edge)"));
+            m_bottomAngle2Spin->setMinimumWidth(88);
+            m_bottomAngle2Spin->setValue(qRound(m_initialBottomAngle2));
+        }
     } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
         m_hasFill = true;
 
@@ -232,6 +256,12 @@ void ItemPropertiesDialogStyleBlock::addRows(QFormLayout* form)
     }
     if (m_cornerRadiusSpin) {
         form->addRow(ItemPropertiesDialog::tr("Corner radius"), m_cornerRadiusSpin);
+    }
+    if (m_bottomAngle1Spin) {
+        form->addRow(ItemPropertiesDialog::tr("Triangle base angle A"), m_bottomAngle1Spin);
+    }
+    if (m_bottomAngle2Spin) {
+        form->addRow(ItemPropertiesDialog::tr("Triangle base angle B"), m_bottomAngle2Spin);
     }
     if (m_startAngleSpin) {
         form->addRow(ItemPropertiesDialog::tr("Start angle"), m_startAngleSpin);

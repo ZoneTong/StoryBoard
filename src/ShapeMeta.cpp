@@ -102,37 +102,41 @@ ShapeType ShapeMeta::typeFromString(const QString& value)
 
 QSizeF ShapeMeta::defaultSize(ShapeType type)
 {
+    // 统一基准：1 格 = 32px，基准边长 = 2 格 = 64px。
+    // 所有常见图形的默认尺寸由 64 派生，长边或基准边为 64，圆 / 正方形直接 64×64。
     switch (type) {
     case ShapeType::Rectangle:
     case ShapeType::RoundedRectangle:
-        // 在编辑区插入时默认是正方形，需要长方形再拖控制点拉伸。
-        return QSizeF(200.0, 200.0);
+        // 插入即为 2 格的正方形，需要长方形再拖控制点拉伸。
+        return QSizeF(64.0, 64.0);
     case ShapeType::Ellipse:
-        // 插入即为标准圆形；编辑模式下拖动控制点可拉伸成椭圆。
-        return QSizeF(200.0, 200.0);
+        // 插入即为标准圆：直径 = 基准边长 64。
+        return QSizeF(64.0, 64.0);
     case ShapeType::Triangle:
-        return QSizeF(260.0, 210.0);
+        // 正三角形：底 64，高 = √3/2 × 64。
+        return QSizeF(64.0, 55.0);
     case ShapeType::Diamond:
-        return QSizeF(230.0, 180.0);
+        return QSizeF(64.0, 50.0);
     case ShapeType::Star:
-        return QSizeF(190.0, 190.0);
+        return QSizeF(64.0, 64.0);
     case ShapeType::Arrow:
-        return QSizeF(340.0, 120.0);
+        return QSizeF(64.0, 23.0);
     case ShapeType::DoubleArrow:
-        return QSizeF(380.0, 120.0);
+        return QSizeF(64.0, 20.0);
     case ShapeType::Line:
-        return QSizeF(320.0, 72.0);
+        // 线长 = 基准边长 64，格高取半格 32，避免默认高度大于长度。
+        return QSizeF(64.0, 32.0);
     case ShapeType::BraceLeft:
     case ShapeType::BraceRight:
-        return QSizeF(100.0, 300.0);
+        return QSizeF(21.0, 64.0);
     case ShapeType::Callout:
-        return QSizeF(300.0, 200.0);
+        return QSizeF(64.0, 43.0);
     case ShapeType::Sector:
-        return QSizeF(200.0, 200.0);
+        return QSizeF(64.0, 64.0);
     case ShapeType::Arc:
-        return QSizeF(220.0, 160.0);
+        return QSizeF(64.0, 47.0);
     }
-    return QSizeF(300.0, 190.0);
+    return QSizeF(64.0, 64.0);
 }
 
 bool ShapeMeta::isFilled(ShapeType type)

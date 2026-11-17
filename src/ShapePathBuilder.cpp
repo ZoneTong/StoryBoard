@@ -10,6 +10,36 @@ QRectF normalizedRect(const QRectF& rect)
     return rect.normalized();
 }
 
+// 底角换算成"高 / 底边"系数：cot(α)。角度先做安全钳制，两角和不超过 175°。
+qreal cotDegrees(qreal degrees)
+{
+    const qreal clamped = qBound<qreal>(1.0, degrees, 174.0);
+    return 1.0 / qTan(qDegreesToRadians(clamped));
+}
+
+QPainterPath trianglePathWithAngles(const QRectF& rect, qreal angle1, qreal angle2)
+{
+    const QRectF r = rect.normalized();
+    QPainterPath path;
+    if (r.width() <= 0.0 || r.height() <= 0.0) {
+        return path;
+    }
+    const qreal a1 = qBound<qreal>(1.0, angle1, 174.0);
+    const qreal a2 = qBound<qreal>(1.0, angle2, 175.0 - a1);
+    // 两侧水平投影之和应等于宽度；尺寸与角度暂时不自洽时按比例压缩，顶点不会跑出矩形。
+    const qreal fromLeft = r.height() * cotDegrees(a1);
+    const qreal fromRight = r.height() * cotDegrees(a2);
+    const qreal sum = fromLeft + fromRight;
+    const qreal apexOffset =
+        sum > r.width() && sum > 0.0 ? qBound<qreal>(0.0, fromLeft * r.width() / sum, r.width())
+                                     : qBound<qreal>(0.0, fromLeft, r.width());
+    path.moveTo(r.left() + apexOffset, r.top());
+    path.lineTo(r.right(), r.bottom());
+    path.lineTo(r.left(), r.bottom());
+    path.closeSubpath();
+    return path;
+}
+
 QPainterPath bracePath(const QRectF& rect)
 {
     const QRectF r = normalizedRect(rect);
@@ -142,10 +172,8 @@ QPainterPath ShapePathBuilder::pathFor(ShapeType type, const QRectF& rect, qreal
         path.addEllipse(r);
         break;
     case ShapeType::Triangle:
-        path.moveTo(r.center().x(), r.top());
-        path.lineTo(r.right(), r.bottom());
-        path.lineTo(r.left(), r.bottom());
-        path.closeSubpath();
+        // 默认按 60°/60° 的等腰三角形生成；具体图元用带角度参数的重载。
+        path = trianglePathWithAngles(r, 60.0, 60.0);
         break;
     case ShapeType::Diamond:
         path.moveTo(r.center().x(), r.top());
@@ -222,4 +250,9 @@ QPainterPath ShapePathBuilder::pathFor(ShapeType type, const QRectF& rect, qreal
         break;
     }
     return path;
+}
+
+QPainterPath ShapePathBuilder::trianglePath(const QRectF& rect, qreal bottomAngle1, qreal bottomAngle2)
+{
+    return trianglePathWithAngles(rect, bottomAngle1, bottomAngle2);
 }

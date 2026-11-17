@@ -106,6 +106,9 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     connect(m_valueCard, &ItemDockPanelValueCard::cornerRadiusChosen, this, &ItemDockPanel::applyCornerRadius);
     connect(m_valueCard, &ItemDockPanelValueCard::sweepAngleChosen, this, &ItemDockPanel::applySweepAngle);
     connect(m_valueCard, &ItemDockPanelValueCard::shapeRadiusChosen, this, &ItemDockPanel::applyShapeRadius);
+    connect(m_valueCard, &ItemDockPanelValueCard::triangleBaseChosen, this, &ItemDockPanel::applyTriangleBase);
+    connect(m_valueCard, &ItemDockPanelValueCard::triangleAngle1Chosen, this, &ItemDockPanel::applyTriangleAngle1);
+    connect(m_valueCard, &ItemDockPanelValueCard::triangleAngle2Chosen, this, &ItemDockPanel::applyTriangleAngle2);
     connect(m_arrangeCard, &ItemDockPanelArrangeCard::layerAdjusted, this, &ItemDockPanel::adjustLayer);
     connect(m_arrangeCard, &ItemDockPanelArrangeCard::heightAdjusted, this, &ItemDockPanel::adjustHeight);
 
@@ -269,6 +272,7 @@ void ItemDockPanel::refresh()
 
     bool hasCorner = false;
     bool hasArc = false;
+    bool hasTriangle = false;
     for (ShapeItem* shape : shapes) {
         if (shape->shapeType() == ShapeType::Rectangle || shape->shapeType() == ShapeType::RoundedRectangle) {
             hasCorner = true;
@@ -276,9 +280,13 @@ void ItemDockPanel::refresh()
         if (shape->shapeType() == ShapeType::Sector || shape->shapeType() == ShapeType::Arc) {
             hasArc = true;
         }
+        if (shape->shapeType() == ShapeType::Triangle && !shape->isCustomShape()) {
+            hasTriangle = true;
+        }
     }
     m_valueCard->setCornerVisible(hasCorner);
     m_valueCard->setArcRadiusVisible(hasArc);
+    m_valueCard->setTriangleVisible(hasTriangle);
 
     // 没有选中图元时隐藏全部图元编辑项，停靠卡片本身保持常驻。
     const bool hasSelection = !items.isEmpty();
@@ -775,6 +783,38 @@ void ItemDockPanel::applySweepAngle(int angle)
 void ItemDockPanel::applyShapeRadius(int radius)
 {
     changeSelectedShapes(tr("Change shape radius"), [radius](ShapeItem* shape) { shape->setShapeRadius(radius); });
+}
+
+void ItemDockPanel::applyTriangleBase(int base)
+{
+    // 底边即 A 边；改底边后高度由两个底角派生（contentResized 内完成）。
+    changeSelectedShapes(tr("Change triangle base"), [base](ShapeItem* shape) {
+        if (!shape || shape->shapeType() != ShapeType::Triangle || shape->isCustomShape()) {
+            return;
+        }
+        const QSizeF current = shape->contentSize();
+        shape->setContentSize(QSizeF(qMax<qreal>(8.0, base), current.height()));
+    });
+}
+
+void ItemDockPanel::applyTriangleAngle1(int degrees)
+{
+    changeSelectedShapes(tr("Change triangle base angle"), [degrees](ShapeItem* shape) {
+        if (!shape || shape->shapeType() != ShapeType::Triangle || shape->isCustomShape()) {
+            return;
+        }
+        shape->setTriangleAngles(degrees, shape->bottomAngle2());
+    });
+}
+
+void ItemDockPanel::applyTriangleAngle2(int degrees)
+{
+    changeSelectedShapes(tr("Change triangle base angle"), [degrees](ShapeItem* shape) {
+        if (!shape || shape->shapeType() != ShapeType::Triangle || shape->isCustomShape()) {
+            return;
+        }
+        shape->setTriangleAngles(shape->bottomAngle1(), degrees);
+    });
 }
 
 void ItemDockPanel::adjustLayer(int delta)

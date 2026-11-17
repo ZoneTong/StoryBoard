@@ -26,19 +26,24 @@ SettingsDialogCanvasPage::SettingsDialogCanvasPage(const AppSettings& settings, 
     sizeRow->setSpacing(8);
     m_canvasWidthSpin = new QSpinBox(m_group);
     m_canvasWidthSpin->setRange(200, 12000);
+    // 棋盘格边长固定 32px，画布宽高按格对齐；输入任意值也会在应用时吸附到 32 的整数倍。
+    m_canvasWidthSpin->setSingleStep(32);
     m_canvasWidthSpin->setValue(static_cast<int>(settings.canvasSize.width()));
     m_canvasWidthSpin->setSuffix(QStringLiteral(" px"));
     m_canvasWidthSpin->setFixedHeight(30);
     m_canvasWidthSpin->setToolTip(
-        SettingsDialog::tr("Changing the canvas size does not move existing items; undo restores it."));
+        SettingsDialog::tr("Changing the canvas size does not move existing items; undo restores it. "
+                           "The width is snapped to a multiple of the 32 px checkerboard cell."));
     auto* multiply = new QLabel(QStringLiteral("×"), m_group);
     m_canvasHeightSpin = new QSpinBox(m_group);
     m_canvasHeightSpin->setRange(200, 12000);
+    m_canvasHeightSpin->setSingleStep(32);
     m_canvasHeightSpin->setValue(static_cast<int>(settings.canvasSize.height()));
     m_canvasHeightSpin->setSuffix(QStringLiteral(" px"));
     m_canvasHeightSpin->setFixedHeight(30);
     m_canvasHeightSpin->setToolTip(
-        SettingsDialog::tr("Changing the canvas size does not move existing items; undo restores it."));
+        SettingsDialog::tr("Changing the canvas size does not move existing items; undo restores it. "
+                           "The height is snapped to a multiple of the 32 px checkerboard cell."));
     sizeRow->addWidget(m_canvasWidthSpin, 1);
     sizeRow->addWidget(multiply);
     sizeRow->addWidget(m_canvasHeightSpin, 1);
@@ -76,7 +81,11 @@ SettingsDialogCanvasPage::SettingsDialogCanvasPage(const AppSettings& settings, 
 
 void SettingsDialogCanvasPage::writeTo(AppSettings& settings) const
 {
-    settings.canvasSize = QSizeF(m_canvasWidthSpin->value(), m_canvasHeightSpin->value());
+    // 需求 1：画布宽高必须是棋盘格的整数倍，不接受半格；这里吸附到最近的 32 倍数。
+    constexpr int cell = 32;
+    const int width = qMax(cell, qRound(m_canvasWidthSpin->value() / static_cast<qreal>(cell)) * cell);
+    const int height = qMax(cell, qRound(m_canvasHeightSpin->value() / static_cast<qreal>(cell)) * cell);
+    settings.canvasSize = QSizeF(width, height);
 }
 
 void SettingsDialogCanvasPage::reset(const AppSettings& defaults)

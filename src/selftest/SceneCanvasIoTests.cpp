@@ -308,13 +308,15 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
         QApplication::processEvents();
 
         const QImage viewImage = checkerView.viewport()->grab().toImage();
-        // 画布按 16×16 等分：首行 16 个格心与首列 16 个格心都必须白 / 灰交替，
-        // 横向或纵向格子数多于、少于 16 都会在同一批采样点上失配。
+        // 棋盘格按固定 32px 铺格（长度单位基准），不再按画布等分：
+        // 首行 / 首列各取前 16 个格心采样，格数与步长任一不符都会失配。
         const QRectF checkerCanvas = checkerScene.canvasRect();
-        const qreal tileWidth = checkerCanvas.width() / 16.0;
-        const qreal tileHeight = checkerCanvas.height() / 16.0;
+        constexpr qreal tileWidth = 32.0;
+        constexpr qreal tileHeight = 32.0;
+        const int sampleCount = qMin(16, qMin(qFloor(checkerCanvas.width() / tileWidth),
+                                             qFloor(checkerCanvas.height() / tileHeight)));
         int mismatchedCells = 0;
-        for (int index = 0; index < 16; ++index) {
+        for (int index = 0; index < sampleCount; ++index) {
             const bool expectWhite = (index % 2) == 0;
             const QPoint columnPoint = checkerView.mapFromScene(
                 QPointF(checkerCanvas.left() + tileWidth * (index + 0.5), checkerCanvas.top() + tileHeight * 0.5));

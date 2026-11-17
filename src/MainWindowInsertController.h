@@ -13,7 +13,7 @@ class MainWindowInsertController {
     explicit MainWindowInsertController(MainWindow* window);
 
     void insertTextAt(const QPointF& scenePos);
-    void insertShape(ShapeType type);
+    void insertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0);
     void insertCustomShape(const QString& filePath);
     void openShapesFolder();
     void updateCustomShapeMenu();

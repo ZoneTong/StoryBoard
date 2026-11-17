@@ -95,6 +95,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     QTimer::singleShot(0, this, [this]() {
         if (m_view) {
             m_view->fitAll();
+            // 需求 1：启动保持 fitAll 的缩放不变，只把视口居中到画布中心，
+            // 让首屏优先落在画布最中间的区域。
+            if (m_scene) {
+                m_view->centerOn(m_scene->canvasRect().center());
+            }
         }
     });
 }
@@ -308,9 +313,9 @@ void MainWindow::importOutlineImageDialog()
     m_io->importOutlineImageDialog();
 }
 
-void MainWindow::insertShape(ShapeType type)
+void MainWindow::insertShape(ShapeType type, qreal triangleAngle1, qreal triangleAngle2)
 {
-    m_insert->insertShape(type);
+    m_insert->insertShape(type, triangleAngle1, triangleAngle2);
 }
 
 void MainWindow::insertCustomShape(const QString& filePath)

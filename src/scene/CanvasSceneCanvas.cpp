@@ -240,7 +240,10 @@ void CanvasScene::drawCanvasBackground(QPainter* painter, const QRectF& area, bo
         drawCheckerboard(painter, canvas);
     }
 
-    if (!includeGrid) {
+    // 有色背景或背景图时，棋盘格被遮住，长度参照改为 32px 参考网格（主网格 160px），
+    // 不依赖用户是否手动打开辅助网格，保证任何背景都有统一的 1 格 = 32px 参照。
+    const bool backgroundGrid = m_background.type != BackgroundType::None && isLayerVisible(BackgroundLayerId);
+    if (!includeGrid && !backgroundGrid) {
         return;
     }
 
@@ -249,7 +252,8 @@ void CanvasScene::drawCanvasBackground(QPainter* painter, const QRectF& area, bo
         return;
     }
     const bool drawMinor = zoom >= 0.32;
-    constexpr qreal step = 40.0;
+    // 网格步长与棋盘格一致：1 格 = 32px，每 5 格一条主网格线（160px）。
+    constexpr qreal step = 32.0;
 
     QPen minorPen(QColor(15, 23, 42, 13));
     minorPen.setCosmetic(true);
@@ -290,11 +294,13 @@ void CanvasScene::drawCheckerboard(QPainter* painter, const QRectF& canvas) cons
         return;
     }
 
-    // 格子随画布缩放：整张画布按 16×16 等分，每格为画布的 1/16。
-    constexpr int columnsCount = 16;
-    constexpr int rowsCount = 16;
-    const qreal tileWidth = canvas.width() / columnsCount;
-    const qreal tileHeight = canvas.height() / rowsCount;
+    // 棋盘格是长度单位基准：每格固定 32 逻辑像素，从画布左上角铺起，
+    // 不再随画布尺寸等分；画布宽高不是 32 倍数时，右 / 下边缘保留残格。
+    constexpr qreal tileSize = 32.0;
+    const int columnsCount = qMax(1, qCeil(canvas.width() / tileSize));
+    const int rowsCount = qMax(1, qCeil(canvas.height() / tileSize));
+    const qreal tileWidth = tileSize;
+    const qreal tileHeight = tileSize;
     const QColor white(255, 255, 255);
     const QColor lightGray(229, 231, 235);
 

@@ -128,6 +128,79 @@ ItemDockPanelValueCard::ItemDockPanelValueCard(QWidget* parent) : QWidget(parent
     });
     radiusLayout->addWidget(m_radiusSpin, 1);
     outer->addWidget(m_radiusSection);
+
+    // 需求 1：三角形以角度为真相——底边长度、角 A、角 B 三行
+    // 直接决定当前几何，高度由底边与两个底角派生（拖高等价于等比改底边）。
+    m_triangleSection = new QWidget(this);
+    auto* triangleOuter = new QVBoxLayout(m_triangleSection);
+    triangleOuter->setContentsMargins(0, 0, 0, 0);
+    triangleOuter->setSpacing(2);
+
+    auto* baseRow = new QWidget(m_triangleSection);
+    auto* baseLayout = new QHBoxLayout(baseRow);
+    baseLayout->setContentsMargins(0, 0, 0, 0);
+    baseLayout->setSpacing(4);
+    QToolButton* baseIcon = makeRowIcon(IconId::Corner, baseRow);
+    baseIcon->setToolTip(ItemDockPanel::tr("Triangle base length (A edge)"));
+    baseLayout->addWidget(baseIcon);
+    m_triangleBaseSpin = new QSpinBox(baseRow);
+    m_triangleBaseSpin->setObjectName(QStringLiteral("ItemValueSpin"));
+    m_triangleBaseSpin->setRange(8, 2000);
+    m_triangleBaseSpin->setSuffix(QStringLiteral(" px"));
+    m_triangleBaseSpin->setToolTip(ItemDockPanel::tr("Triangle base length (A edge)"));
+    m_triangleBaseSpin->setKeyboardTracking(false);
+    connect(m_triangleBaseSpin, &QSpinBox::valueChanged, this, [this](int value) {
+        if (!m_refreshing) {
+            emit triangleBaseChosen(value);
+        }
+    });
+    baseLayout->addWidget(m_triangleBaseSpin, 1);
+    triangleOuter->addWidget(baseRow);
+
+    auto* angle1Row = new QWidget(m_triangleSection);
+    auto* angle1Layout = new QHBoxLayout(angle1Row);
+    angle1Layout->setContentsMargins(0, 0, 0, 0);
+    angle1Layout->setSpacing(4);
+    QToolButton* angle1Icon = makeRowIcon(IconId::RotateCcw, angle1Row);
+    angle1Icon->setToolTip(ItemDockPanel::tr("Triangle base angle A"));
+    angle1Layout->addWidget(angle1Icon);
+    m_triangleAngle1Spin = new QSpinBox(angle1Row);
+    m_triangleAngle1Spin->setObjectName(QStringLiteral("ItemValueSpin"));
+    m_triangleAngle1Spin->setRange(1, 174);
+    m_triangleAngle1Spin->setSuffix(QStringLiteral("°"));
+    m_triangleAngle1Spin->setToolTip(ItemDockPanel::tr("Triangle base angle A"));
+    m_triangleAngle1Spin->setKeyboardTracking(false);
+    connect(m_triangleAngle1Spin, &QSpinBox::valueChanged, this, [this](int value) {
+        if (!m_refreshing) {
+            emit triangleAngle1Chosen(value);
+        }
+    });
+    angle1Layout->addWidget(m_triangleAngle1Spin, 1);
+    triangleOuter->addWidget(angle1Row);
+
+    auto* angle2Row = new QWidget(m_triangleSection);
+    auto* angle2Layout = new QHBoxLayout(angle2Row);
+    angle2Layout->setContentsMargins(0, 0, 0, 0);
+    angle2Layout->setSpacing(4);
+    QToolButton* angle2Icon = makeRowIcon(IconId::RotateCcw, angle2Row);
+    angle2Icon->setToolTip(ItemDockPanel::tr("Triangle base angle B"));
+    angle2Layout->addWidget(angle2Icon);
+    m_triangleAngle2Spin = new QSpinBox(angle2Row);
+    m_triangleAngle2Spin->setObjectName(QStringLiteral("ItemValueSpin"));
+    m_triangleAngle2Spin->setRange(1, 174);
+    m_triangleAngle2Spin->setSuffix(QStringLiteral("°"));
+    m_triangleAngle2Spin->setToolTip(ItemDockPanel::tr("Triangle base angle B"));
+    m_triangleAngle2Spin->setKeyboardTracking(false);
+    connect(m_triangleAngle2Spin, &QSpinBox::valueChanged, this, [this](int value) {
+        if (!m_refreshing) {
+            emit triangleAngle2Chosen(value);
+        }
+    });
+    angle2Layout->addWidget(m_triangleAngle2Spin, 1);
+    triangleOuter->addWidget(angle2Row);
+
+    m_triangleSection->setVisible(false);
+    outer->addWidget(m_triangleSection);
 }
 
 void ItemDockPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QList<CanvasItem*>& items)
@@ -159,7 +232,32 @@ void ItemDockPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QLis
         m_radiusSpin->setValue(qMax(1, qRound(radius)));
     }
 
+    ShapeItem* triangle = nullptr;
+    for (ShapeItem* shape : shapes) {
+        if (shape && shape->shapeType() == ShapeType::Triangle && !shape->isCustomShape()) {
+            triangle = shape;
+            break;
+        }
+    }
+    if (m_triangleBaseSpin && m_triangleAngle1Spin && m_triangleAngle2Spin) {
+        const bool triangleOn = triangle != nullptr;
+        m_triangleBaseSpin->setEnabled(triangleOn);
+        m_triangleAngle1Spin->setEnabled(triangleOn);
+        m_triangleAngle2Spin->setEnabled(triangleOn);
+        // 底边即内容矩形宽度；角度直接回显当前值，未选中三角形时给默认 64 / 60° / 60°。
+        m_triangleBaseSpin->setValue(triangleOn ? qRound(triangle->contentSize().width()) : 64);
+        m_triangleAngle1Spin->setValue(triangleOn ? qRound(triangle->bottomAngle1()) : 60);
+        m_triangleAngle2Spin->setValue(triangleOn ? qRound(triangle->bottomAngle2()) : 60);
+    }
+
     m_refreshing = false;
+}
+
+void ItemDockPanelValueCard::setTriangleVisible(bool visible)
+{
+    if (m_triangleSection) {
+        m_triangleSection->setVisible(visible);
+    }
 }
 
 void ItemDockPanelValueCard::setCornerVisible(bool visible)

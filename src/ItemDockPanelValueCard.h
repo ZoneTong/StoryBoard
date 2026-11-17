@@ -22,12 +22,18 @@ class ItemDockPanelValueCard : public QWidget {
     void setCornerVisible(bool visible);
     // 扫过角与半径两行是否可见：只有扇形 / 弧线才显示角度与半径编辑。
     void setArcRadiusVisible(bool visible);
+    // 三角形的底边 / 角 A / 角 B 三行是否可见。
+    void setTriangleVisible(bool visible);
 
   signals:
     void opacityChosen(int percent);
     void cornerRadiusChosen(int radius);
     void sweepAngleChosen(int angle);
     void shapeRadiusChosen(int radius);
+    // 三角形：底边长度（px）、底角 1 / 底角 2（度）。
+    void triangleBaseChosen(int base);
+    void triangleAngle1Chosen(int degrees);
+    void triangleAngle2Chosen(int degrees);
 
   private:
     bool m_refreshing = false;
@@ -38,4 +44,8 @@ class ItemDockPanelValueCard : public QWidget {
     QSpinBox* m_radiusSpin = nullptr;
     QWidget* m_angleSection = nullptr;
     QWidget* m_radiusSection = nullptr;
+    QWidget* m_triangleSection = nullptr;
+    QSpinBox* m_triangleBaseSpin = nullptr;
+    QSpinBox* m_triangleAngle1Spin = nullptr;
+    QSpinBox* m_triangleAngle2Spin = nullptr;
 };
