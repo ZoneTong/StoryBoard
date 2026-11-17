@@ -313,8 +313,8 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
         const QRectF checkerCanvas = checkerScene.canvasRect();
         constexpr qreal tileWidth = 32.0;
         constexpr qreal tileHeight = 32.0;
-        const int sampleCount = qMin(16, qMin(qFloor(checkerCanvas.width() / tileWidth),
-                                             qFloor(checkerCanvas.height() / tileHeight)));
+        const int sampleCount =
+            qMin(16, qMin(qFloor(checkerCanvas.width() / tileWidth), qFloor(checkerCanvas.height() / tileHeight)));
         int mismatchedCells = 0;
         for (int index = 0; index < sampleCount; ++index) {
             const bool expectWhite = (index % 2) == 0;

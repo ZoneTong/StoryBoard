@@ -110,6 +110,24 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                 }
             }
         }
+        // 需求 1/6：预置项（45°/60° 直角三角、直线箭头）紧随其基础图形之后，且不计入内建图形数量。
+        QAction* lineAction = shapeWindow.findChild<QAction*>(QStringLiteral("ShapeAction_line"));
+        QAction* triangleAction = shapeWindow.findChild<QAction*>(QStringLiteral("ShapeAction_triangle"));
+        QAction* lineArrowPreset = shapeWindow.findChild<QAction*>(QStringLiteral("ShapePreset_lineArrow"));
+        QAction* triangle45Preset = shapeWindow.findChild<QAction*>(QStringLiteral("ShapePreset_triangle45"));
+        QAction* triangle60Preset = shapeWindow.findChild<QAction*>(QStringLiteral("ShapePreset_triangle60"));
+        bool presetOrderOk =
+            shapeMenu && lineAction && triangleAction && lineArrowPreset && triangle45Preset && triangle60Preset;
+        if (presetOrderOk) {
+            const QList<QAction*> menuActions = shapeMenu->actions();
+            const int lineIndex = menuActions.indexOf(lineAction);
+            const int triangleIndex = menuActions.indexOf(triangleAction);
+            presetOrderOk = menuActions.indexOf(lineArrowPreset) == lineIndex + 1 &&
+                            menuActions.indexOf(triangle45Preset) == triangleIndex + 1 &&
+                            menuActions.indexOf(triangle60Preset) == triangleIndex + 2;
+        }
+        ctx.check(presetOrderOk, QStringLiteral("图形菜单内预置项紧跟基础图形（三角形 45°/60°、直线箭头）"));
+
         QMenu* customShapeMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("CustomShapeMenu"));
         ctx.check(shapeMenu && builtInShapeActions == shapeTypes.size() && customShapeMenu &&
                       shapeMenu->actions().contains(customShapeMenu->menuAction()),

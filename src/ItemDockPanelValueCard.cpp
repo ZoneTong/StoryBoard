@@ -209,7 +209,8 @@ ItemDockPanelValueCard::ItemDockPanelValueCard(QWidget* parent) : QWidget(parent
     arrowOuter->setContentsMargins(0, 0, 0, 0);
     arrowOuter->setSpacing(2);
 
-    auto makeArrowRow = [this, arrowOuter](const QString& tooltip, QComboBox** target, void (ItemDockPanelValueCard::*signal)(int)) {
+    auto makeArrowRow = [this, arrowOuter](const QString& tooltip, QComboBox** target,
+                                           void (ItemDockPanelValueCard::*signal)(int)) {
         auto* row = new QWidget(m_arrowSection);
         auto* rowLayout = new QHBoxLayout(row);
         rowLayout->setContentsMargins(0, 0, 0, 0);

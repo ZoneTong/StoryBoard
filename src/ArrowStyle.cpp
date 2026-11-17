@@ -1,5 +1,6 @@
 #include "ArrowStyle.h"
 
+#include <QCoreApplication>
 #include <QPainter>
 #include <QPen>
 #include <QPointF>
@@ -28,27 +29,32 @@ QPointF normalizedDir(const QPointF& tip, const QPointF& toward)
 
 QList<ArrowStyle> allArrowStyles()
 {
-    return {ArrowStyle::None, ArrowStyle::TriangleFilled, ArrowStyle::TriangleHollow,
-            ArrowStyle::OpenArrow, ArrowStyle::Dot, ArrowStyle::Bar};
+    return {ArrowStyle::None,
+            ArrowStyle::TriangleFilled,
+            ArrowStyle::TriangleHollow,
+            ArrowStyle::OpenArrow,
+            ArrowStyle::Dot,
+            ArrowStyle::Bar};
 }
 
 QString arrowStyleName(ArrowStyle style)
 {
+    auto translate = [](const char* text) { return QCoreApplication::translate("ArrowStyle", text); };
     switch (style) {
     case ArrowStyle::None:
-        return QStringLiteral("无");
+        return translate("None");
     case ArrowStyle::TriangleFilled:
-        return QStringLiteral("实心三角");
+        return translate("Filled triangle");
     case ArrowStyle::TriangleHollow:
-        return QStringLiteral("空心三角");
+        return translate("Hollow triangle");
     case ArrowStyle::OpenArrow:
-        return QStringLiteral("开口箭头");
+        return translate("Open arrow");
     case ArrowStyle::Dot:
-        return QStringLiteral("圆点");
+        return translate("Dot");
     case ArrowStyle::Bar:
-        return QStringLiteral("竖杠");
+        return translate("Bar");
     }
-    return QStringLiteral("无");
+    return translate("None");
 }
 
 QString arrowStyleToString(ArrowStyle style)

@@ -423,6 +423,13 @@ void ItemPropertiesDialog::applyChanges()
             after.shapeState.bottomAngle2 =
                 value == qRound(style->initialBottomAngle2()) ? style->initialBottomAngle2() : value;
         }
+        // 需求 1：底边长度独立字段，写入内容矩形宽度（高度由角度派生）。
+        if (style && style->triangleBaseSpin()) {
+            const int value = style->triangleBaseSpin()->value();
+            if (value != style->initialTriangleBase()) {
+                after.size.setWidth(qMax<qreal>(8.0, static_cast<qreal>(value)));
+            }
+        }
         // 需求 6：直线两端箭头样式。
         if (style && style->startArrowCombo()) {
             after.shapeState.startArrow = static_cast<ArrowStyle>(style->startArrowCombo()->currentData().toInt());

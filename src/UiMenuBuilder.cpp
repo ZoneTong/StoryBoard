@@ -46,8 +46,8 @@ void UiMenuBuilder::buildShapeMenu()
         // 需求 6：直线箭头紧跟在「直线」之后，复用直线类，默认末端开口箭头，
         // 长边 64（与其它常见图形的基准边长一致）。
         if (type == ShapeType::Line) {
-            QAction* lineArrow = m_window->m_shapeMenu->addAction(
-                makeShapeIcon(type, QColor(58, 64, 80), 18), MainWindow::tr("Line arrow"));
+            QAction* lineArrow = m_window->m_shapeMenu->addAction(makeShapeIcon(type, QColor(58, 64, 80), 18),
+                                                                  MainWindow::tr("Line arrow"));
             lineArrow->setObjectName(QStringLiteral("ShapePreset_lineArrow"));
             lineArrow->setData(static_cast<int>(type));
             lineArrow->setToolTip(MainWindow::tr("Insert a line with an open arrow head at its end"));
@@ -60,8 +60,8 @@ void UiMenuBuilder::buildShapeMenu()
         // 即底边（水平边）两侧的内角为 90° 与 45° / 60°；底边可调，角度锁定。
         // 预置项用 ShapePreset_ 前缀，工具栏那一排按钮只认 ShapeAction_，不会多出按钮。
         if (type == ShapeType::Triangle) {
-            QAction* preset45 = m_window->m_shapeMenu->addAction(
-                makeShapeIcon(type, QColor(58, 64, 80), 18), MainWindow::tr("Right triangle 45°"));
+            QAction* preset45 = m_window->m_shapeMenu->addAction(makeShapeIcon(type, QColor(58, 64, 80), 18),
+                                                                 MainWindow::tr("Right triangle 45°"));
             preset45->setObjectName(QStringLiteral("ShapePreset_triangle45"));
             preset45->setData(static_cast<int>(type));
             preset45->setToolTip(MainWindow::tr("Right triangle 45°: short side horizontal, base adjustable, "
@@ -69,8 +69,8 @@ void UiMenuBuilder::buildShapeMenu()
             QObject::connect(preset45, &QAction::triggered, m_window,
                              [this]() { m_window->insertShape(ShapeType::Triangle, 90.0, 45.0); });
 
-            QAction* preset60 = m_window->m_shapeMenu->addAction(
-                makeShapeIcon(type, QColor(58, 64, 80), 18), MainWindow::tr("Right triangle 60°"));
+            QAction* preset60 = m_window->m_shapeMenu->addAction(makeShapeIcon(type, QColor(58, 64, 80), 18),
+                                                                 MainWindow::tr("Right triangle 60°"));
             preset60->setObjectName(QStringLiteral("ShapePreset_triangle60"));
             preset60->setData(static_cast<int>(type));
             preset60->setToolTip(MainWindow::tr("Right triangle 60°: short side horizontal, base adjustable, "

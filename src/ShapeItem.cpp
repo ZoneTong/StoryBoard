@@ -165,6 +165,11 @@ QString ShapeItem::displayName() const
     if (!m_customName.isEmpty()) {
         return m_customName;
     }
+    // 需求 6：带箭头的直线在名称上显示为「直线箭头」，底层仍是直线类型。
+    if (m_type == ShapeType::Line && m_customPath.isEmpty() &&
+        (arrowStyleIsHead(m_startArrow) || arrowStyleIsHead(m_endArrow))) {
+        return tr("Line arrow");
+    }
     return shapeTypeName(m_type);
 }
 
@@ -200,7 +205,8 @@ void ShapeItem::setArrowStyles(ArrowStyle start, ArrowStyle end)
     update();
 }
 
-void ShapeItem::setTriangleAngles(qreal angle1, qreal angle2){
+void ShapeItem::setTriangleAngles(qreal angle1, qreal angle2)
+{
     const qreal a1 = qBound<qreal>(1.0, angle1, 174.0);
     const qreal a2 = qBound<qreal>(1.0, angle2, 175.0 - a1);
     if (qFuzzyCompare(m_bottomAngle1 + 2.0, a1 + 2.0) && qFuzzyCompare(m_bottomAngle2 + 2.0, a2 + 2.0)) {
@@ -385,8 +391,8 @@ void ShapeItem::applyState(const ShapeItemState& state)
     setContentSize(state.size.isEmpty() ? defaultShapeSize(state.type) : state.size);
     // 角度优先：应用状态时按角度重算三角形高度（旧尺寸与角度自洽，不会造成视觉变化）。
     if (m_type == ShapeType::Triangle && !isCustomShape()) {
-        const qreal factor = 1.0 / qTan(qDegreesToRadians(m_bottomAngle1)) +
-                             1.0 / qTan(qDegreesToRadians(m_bottomAngle2));
+        const qreal factor =
+            1.0 / qTan(qDegreesToRadians(m_bottomAngle1)) + 1.0 / qTan(qDegreesToRadians(m_bottomAngle2));
         const QSizeF size = contentSize();
         setContentSize(QSizeF(size.width(), size.width() / qMax<qreal>(0.02, factor)));
     }

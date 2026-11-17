@@ -142,10 +142,20 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
                     [this](int value) { m_cornerEdited = value != m_initialCornerRadius; });
         }
 
-        // 需求 1：三角形两个底角在属性窗里也可编辑；底边长度由几何区的宽度承担。
+        // 需求 1：三角形两个底角在属性窗里也可编辑；底边长度同样给出独立字段，
+        // 与卡片上的「底边」一致，写入内容矩形宽度后高度按角度派生。
         if (!shape->isCustomShape() && type == ShapeType::Triangle) {
             m_initialBottomAngle1 = shape->bottomAngle1();
             m_initialBottomAngle2 = shape->bottomAngle2();
+            m_initialTriangleBase = qMax(8, qRound(shape->contentSize().width()));
+
+            m_triangleBaseSpin = new QSpinBox(this);
+            m_triangleBaseSpin->setObjectName(QStringLiteral("ItemPropertiesTriangleBaseValue"));
+            m_triangleBaseSpin->setRange(8, 2000);
+            m_triangleBaseSpin->setSuffix(QStringLiteral(" px"));
+            m_triangleBaseSpin->setToolTip(ItemPropertiesDialog::tr("Triangle base length (A edge)"));
+            m_triangleBaseSpin->setMinimumWidth(88);
+            m_triangleBaseSpin->setValue(m_initialTriangleBase);
 
             m_bottomAngle1Spin = new QSpinBox(this);
             m_bottomAngle1Spin->setObjectName(QStringLiteral("ItemPropertiesBottomAngle1Value"));
@@ -285,6 +295,7 @@ void ItemPropertiesDialogStyleBlock::addRows(QFormLayout* form)
         form->addRow(ItemPropertiesDialog::tr("Corner radius"), m_cornerRadiusSpin);
     }
     if (m_bottomAngle1Spin) {
+        form->addRow(ItemPropertiesDialog::tr("Triangle base length (A edge)"), m_triangleBaseSpin);
         form->addRow(ItemPropertiesDialog::tr("Triangle base angle A"), m_bottomAngle1Spin);
     }
     if (m_bottomAngle2Spin) {

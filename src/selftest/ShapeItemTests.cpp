@@ -1,10 +1,12 @@
 #include "Alignment.h"
+#include "ArrowStyle.h"
 #include "BoolOps.h"
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
 #include "CanvasView.h"
 #include "Commands.h"
 #include "CompositeShapeItem.h"
+#include "CurveItem.h"
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
@@ -19,7 +21,6 @@
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -273,4 +274,63 @@ void selftest::runShapeItemTests(Context& ctx)
               QStringLiteral("画布恢复图形描边、填充和线宽"));
 
     ctx.shapeRoot = shapeRoot;
+
+    // 需求 6：箭头样式枚举、直线与曲线的两端箭头，以及 JSON 兼容。
+    {
+        bool stringRoundTrip = true;
+        for (ArrowStyle style : allArrowStyles()) {
+            if (arrowStyleFromString(arrowStyleToString(style)) != style) {
+                stringRoundTrip = false;
+                break;
+            }
+        }
+        ctx.check(stringRoundTrip && !arrowStyleIsHead(ArrowStyle::None) && arrowStyleIsHead(ArrowStyle::OpenArrow) &&
+                      allArrowStyles().size() == 6,
+                  QStringLiteral("箭头样式字符串往返且共 6 种"));
+
+        ShapeItem arrowLine;
+        arrowLine.setShapeType(ShapeType::Line);
+        ctx.check(arrowLine.startArrow() == ArrowStyle::None && arrowLine.endArrow() == ArrowStyle::None,
+                  QStringLiteral("直线默认两端无箭头"));
+        arrowLine.setArrowStyles(ArrowStyle::Bar, ArrowStyle::OpenArrow);
+        const ShapeItemState arrowState = arrowLine.state();
+        ctx.check(arrowState.startArrow == ArrowStyle::Bar && arrowState.endArrow == ArrowStyle::OpenArrow,
+                  QStringLiteral("直线两端箭头写入 state"));
+        ctx.check(arrowLine.displayName() != shapeTypeName(ShapeType::Line),
+                  QStringLiteral("带箭头直线显示名与直线类型名区分"));
+
+        arrowLine.setContentSize(QSizeF(200.0, 40.0));
+        arrowLine.setStyle(QColor(20, 20, 20), QColor(20, 20, 20), 3.0);
+        const QJsonObject arrowJson = arrowLine.toJson();
+        ShapeItem reloadedLine;
+        reloadedLine.fromJson(arrowJson);
+        ctx.check(reloadedLine.startArrow() == ArrowStyle::Bar && reloadedLine.endArrow() == ArrowStyle::OpenArrow,
+                  QStringLiteral("直线箭头 JSON 往返"));
+        QJsonObject legacyLineJson = arrowJson;
+        legacyLineJson.remove(QStringLiteral("startArrow"));
+        legacyLineJson.remove(QStringLiteral("endArrow"));
+        ShapeItem legacyLine;
+        legacyLine.fromJson(legacyLineJson);
+        ctx.check(legacyLine.startArrow() == ArrowStyle::None && legacyLine.endArrow() == ArrowStyle::None,
+                  QStringLiteral("旧直线文件读入后默认无箭头"));
+
+        CurveItem arrowCurve;
+        arrowCurve.setStrokePoints({QPointF(0.0, 100.0), QPointF(80.0, 20.0), QPointF(160.0, 100.0)},
+                                   QColor(20, 20, 20), 3.0);
+        arrowCurve.setArrowStyles(ArrowStyle::None, ArrowStyle::TriangleFilled);
+        const QJsonObject curveJson = arrowCurve.toJson();
+        CurveItem reloadedCurve;
+        reloadedCurve.fromJson(curveJson);
+        ctx.check(reloadedCurve.endArrow() == ArrowStyle::TriangleFilled,
+                  QStringLiteral("曲线箭头 JSON 往返"));
+
+        const int headLength = qRound(qMax(4.0, 3.0 * 4.0));
+        const QPainterPath filledHead =
+            arrowHeadPath(QPointF(0.0, 0.0), QPointF(-1.0, 0.0), 3.0, ArrowStyle::TriangleFilled);
+        ctx.check(!filledHead.isEmpty() && qAbs(filledHead.boundingRect().width() - headLength) < 1.0,
+                  QStringLiteral("箭头头长等于 4 倍线宽"),
+                  QStringLiteral("width=%1 expected=%2").arg(filledHead.boundingRect().width()).arg(headLength));
+        ctx.check(arrowHeadPath(QPointF(0.0, 0.0), QPointF(-1.0, 0.0), 3.0, ArrowStyle::None).isEmpty(),
+                  QStringLiteral("无样式不生成箭头几何"));
+    }
 }

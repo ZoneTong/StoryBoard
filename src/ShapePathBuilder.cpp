@@ -30,9 +30,8 @@ QPainterPath trianglePathWithAngles(const QRectF& rect, qreal angle1, qreal angl
     const qreal fromLeft = r.height() * cotDegrees(a1);
     const qreal fromRight = r.height() * cotDegrees(a2);
     const qreal sum = fromLeft + fromRight;
-    const qreal apexOffset =
-        sum > r.width() && sum > 0.0 ? qBound<qreal>(0.0, fromLeft * r.width() / sum, r.width())
-                                     : qBound<qreal>(0.0, fromLeft, r.width());
+    const qreal apexOffset = sum > r.width() && sum > 0.0 ? qBound<qreal>(0.0, fromLeft * r.width() / sum, r.width())
+                                                          : qBound<qreal>(0.0, fromLeft, r.width());
     path.moveTo(r.left() + apexOffset, r.top());
     path.lineTo(r.right(), r.bottom());
     path.lineTo(r.left(), r.bottom());

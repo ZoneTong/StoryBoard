@@ -2293,6 +2293,50 @@ Use the checkbox to show or hide it.</source>
   <context>
     <name>MainWindow</name>
     <message>
+      <source>Xor (XOR)</source>
+      <translation>异或（XOR）</translation>
+    </message>
+    <message>
+      <source>Xor shapes</source>
+      <translation>异或图形</translation>
+    </message>
+    <message>
+      <source>Union minus the overlapping part (XOR)</source>
+      <translation>并集减重叠（异或）</translation>
+    </message>
+    <message>
+      <source>Cut the other items out of the first selected item</source>
+      <translation>从首个选中图元中剪除其他图元</translation>
+    </message>
+    <message>
+      <source>Merge items: press U / X / I / S / F within 1 second</source>
+      <translation>合并图元：1 秒内按 U / X / I / S / F</translation>
+    </message>
+    <message>
+      <source>Right triangle 45°</source>
+      <translation>直角三角形 45°</translation>
+    </message>
+    <message>
+      <source>Right triangle 60°</source>
+      <translation>直角三角形 60°</translation>
+    </message>
+    <message>
+      <source>Right triangle 45°: short side horizontal, base adjustable, angles locked at 90° / 45°</source>
+      <translation>直角三角形 45°：短边水平，底边可调，角度锁定 90° / 45°</translation>
+    </message>
+    <message>
+      <source>Right triangle 60°: short side horizontal, base adjustable, angles locked at 90° / 60°</source>
+      <translation>直角三角形 60°：短边水平，底边可调，角度锁定 90° / 60°</translation>
+    </message>
+    <message>
+      <source>Insert a line with an open arrow head at its end</source>
+      <translation>插入一条末端为开口箭头的直线</translation>
+    </message>
+    <message>
+      <source>Line arrow</source>
+      <translation>直线箭头</translation>
+    </message>
+    <message>
       <source>&amp;Brush</source>
       <translation>画笔(&amp;B)</translation>
     </message>
@@ -4255,6 +4299,38 @@ In edit mode, items on visible, unlocked layers can be edited</source>
   <context>
     <name>ItemPropertiesDialog</name>
     <message>
+      <source>Triangle base length (A edge)</source>
+      <translation>底边长度（A 边）</translation>
+    </message>
+    <message>
+      <source>Triangle base angle A</source>
+      <translation>底角 A</translation>
+    </message>
+    <message>
+      <source>Triangle base angle B</source>
+      <translation>底角 B</translation>
+    </message>
+    <message>
+      <source>Triangle base angle A (A edge)</source>
+      <translation>底角 A（A 边）</translation>
+    </message>
+    <message>
+      <source>Triangle base angle B (A edge)</source>
+      <translation>底角 B（A 边）</translation>
+    </message>
+    <message>
+      <source>Start arrow</source>
+      <translation>起点箭头</translation>
+    </message>
+    <message>
+      <source>End arrow</source>
+      <translation>端点箭头</translation>
+    </message>
+    <message>
+      <source>Arrow heads</source>
+      <translation>箭头样式</translation>
+    </message>
+    <message>
       <source>%1 pt</source>
       <translation>%1 磅</translation>
     </message>
@@ -4672,6 +4748,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
   <context>
     <name>ShapeItem</name>
     <message>
+      <source>Line arrow</source>
+      <translation>直线箭头</translation>
+    </message>
+    <message>
       <source>Rectangle</source>
       <translation>矩形</translation>
     </message>
@@ -4831,6 +4911,42 @@ In edit mode, items on visible, unlocked layers can be edited</source>
 
 <context>
     <name>ItemDockPanel</name>
+    <message>
+      <source>Change triangle base</source>
+      <translation>修改三角形底边</translation>
+    </message>
+    <message>
+      <source>Change triangle base angle</source>
+      <translation>修改三角形底角</translation>
+    </message>
+    <message>
+      <source>Change line start arrow</source>
+      <translation>修改直线起点箭头</translation>
+    </message>
+    <message>
+      <source>Change line end arrow</source>
+      <translation>修改直线端点箭头</translation>
+    </message>
+    <message>
+      <source>Triangle base length (A edge)</source>
+      <translation>底边长度（A 边）</translation>
+    </message>
+    <message>
+      <source>Triangle base angle A</source>
+      <translation>底角 A</translation>
+    </message>
+    <message>
+      <source>Triangle base angle B</source>
+      <translation>底角 B</translation>
+    </message>
+    <message>
+      <source>Start arrow</source>
+      <translation>起点箭头</translation>
+    </message>
+    <message>
+      <source>End arrow</source>
+      <translation>端点箭头</translation>
+    </message>
     <message>
         <source>Common shapes</source>
         <translation>常见图形</translation>
@@ -5116,6 +5232,33 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>Dash-dot</source>
       <translation>点划线</translation>
+    </message>
+  </context>
+<context>
+    <name>ArrowStyle</name>
+    <message>
+      <source>None</source>
+      <translation>无</translation>
+    </message>
+    <message>
+      <source>Filled triangle</source>
+      <translation>实心三角</translation>
+    </message>
+    <message>
+      <source>Hollow triangle</source>
+      <translation>空心三角</translation>
+    </message>
+    <message>
+      <source>Open arrow</source>
+      <translation>开口箭头</translation>
+    </message>
+    <message>
+      <source>Dot</source>
+      <translation>圆点</translation>
+    </message>
+    <message>
+      <source>Bar</source>
+      <translation>竖杠</translation>
     </message>
   </context>
 </TS>
