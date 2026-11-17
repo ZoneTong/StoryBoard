@@ -104,6 +104,11 @@ void MainWindowAppController::showAbout()
     html += QStringLiteral("<p>%1</p>")
                 .arg(MainWindow::tr("A lightweight canvas app for freehand strokes, image items, overview "
                                     "navigation, canvas files and export."));
+    // GPLv3 第 5 条：程序与用户交互时要给出许可与版权提示；许可证全文随程序目录分发。
+    html += QStringLiteral("<p>%1<br>%2</p>")
+                .arg(MainWindow::tr("License: GPL-3.0-only (see LICENSE); Qt 6 is distributed under LGPLv3 "
+                                    "(see THIRD-PARTY-NOTICES.md)."),
+                     MainWindow::tr("Copyright (C) 2026 ZoneTong"));
     // 关于窗口的线稿化备注：说明入口、参数顺序和输出，和功能实际行为保持一致。
     html += QStringLiteral("<p><b>%1</b></p><ul>").arg(MainWindow::tr("Image outline tracing"));
     html +=

@@ -3334,6 +3334,14 @@ Use the checkbox to show or hide it.</source>
       <translation>基于 Qt %1 构建。</translation>
     </message>
     <message>
+      <source>License: GPL-3.0-only (see LICENSE); Qt 6 is distributed under LGPLv3 (see THIRD-PARTY-NOTICES.md).</source>
+      <translation>许可证：GPL-3.0-only（见 LICENSE）；Qt 6 按 LGPLv3 分发（见 THIRD-PARTY-NOTICES.md）。</translation>
+    </message>
+    <message>
+      <source>Copyright (C) 2026 ZoneTong</source>
+      <translation>版权所有 (C) 2026 ZoneTong</translation>
+    </message>
+    <message>
       <source>About StoryBoard Canvas</source>
       <translation>关于故事板</translation>
     </message>
