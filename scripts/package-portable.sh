@@ -531,6 +531,11 @@ case "$PLATFORM" in
     macos) bundle_macos ;;
 esac
 
+# 许可证要求分发时随附条款与 Required Notice，便携包固定带上仓库根目录的 LICENSE。
+if [ -f "$ROOT/LICENSE" ]; then
+    cp "$ROOT/LICENSE" "$PACKAGE_DIR/LICENSE"
+fi
+
 if [ "$SKIP_SELF_TEST" -eq 0 ]; then
     run_self_test "$PACKAGE_DIR"
     work_dir="$PACKAGE_DIR/storyboard-selftest-work"
