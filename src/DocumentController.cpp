@@ -300,6 +300,85 @@ bool DocumentController::saveToFile(const QString& path)
     return true;
 }
 
+void DocumentController::exportCustomShape()
+{
+    const QJsonArray items = m_window->m_scene->clipboardItems();
+    if (items.isEmpty()) {
+        m_window->statusBar()->showMessage(MainWindow::tr("Select at least one editable item first"), 3000);
+        return;
+    }
+
+    // 选区归一化：坐标平移到包围盒原点，画布尺寸等于包围盒，单层、无背景，
+    // 这样插到画布时按长边 64 重绘，不会带着原文档的坐标跑偏。
+    QRectF bounds;
+    for (const QJsonValue& value : items) {
+        const QJsonObject item = value.toObject();
+        const QRectF rect(item.value(QStringLiteral("x")).toDouble(), item.value(QStringLiteral("y")).toDouble(),
+                          item.value(QStringLiteral("w")).toDouble(), item.value(QStringLiteral("h")).toDouble());
+        bounds = bounds.isNull() ? rect : bounds.united(rect);
+    }
+    if (bounds.width() <= 0.0 || bounds.height() <= 0.0) {
+        m_window->statusBar()->showMessage(MainWindow::tr("The selection has no visible outline"), 3000);
+        return;
+    }
+
+    QString suggestion = QDir(AppSettings::shapesDir()).filePath(documentName() + QStringLiteral(".sbcanvas"));
+    QString path = QFileDialog::getSaveFileName(m_window, MainWindow::tr("Export custom shape"), suggestion,
+                                                MainWindow::tr("StoryBoard canvases (*.sbcanvas)"));
+    if (path.isEmpty()) {
+        return;
+    }
+    if (!path.endsWith(QStringLiteral(".sbcanvas"), Qt::CaseInsensitive)) {
+        path += QStringLiteral(".sbcanvas");
+    }
+
+    QJsonArray shifted;
+    for (const QJsonValue& value : items) {
+        QJsonObject item = value.toObject();
+        item.insert(QStringLiteral("x"), item.value(QStringLiteral("x")).toDouble() - bounds.left());
+        item.insert(QStringLiteral("y"), item.value(QStringLiteral("y")).toDouble() - bounds.top());
+        item.insert(QStringLiteral("layer"), 1);
+        item.remove(QStringLiteral("group"));
+        shifted.append(item);
+    }
+
+    QJsonObject root;
+    root.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
+    root.insert(QStringLiteral("version"), 2);
+    QJsonObject canvas;
+    canvas.insert(QStringLiteral("x"), 0);
+    canvas.insert(QStringLiteral("y"), 0);
+    canvas.insert(QStringLiteral("width"), bounds.width());
+    canvas.insert(QStringLiteral("height"), bounds.height());
+    root.insert(QStringLiteral("canvas"), canvas);
+    QJsonObject background;
+    background.insert(QStringLiteral("type"), QStringLiteral("none"));
+    root.insert(QStringLiteral("background"), background);
+    QJsonObject layer;
+    layer.insert(QStringLiteral("id"), 1);
+    layer.insert(QStringLiteral("name"), QStringLiteral("图层 1"));
+    layer.insert(QStringLiteral("visible"), true);
+    layer.insert(QStringLiteral("locked"), false);
+    root.insert(QStringLiteral("layers"), QJsonArray{layer});
+    root.insert(QStringLiteral("activeLayer"), 1);
+    root.insert(QStringLiteral("items"), shifted);
+
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly)) {
+        reportWarning(m_window, MainWindow::tr("Export custom shape"),
+                      MainWindow::tr("Could not write the file:\n%1").arg(QDir::toNativeSeparators(path)));
+        return;
+    }
+    file.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
+    if (!file.commit()) {
+        reportWarning(m_window, MainWindow::tr("Export custom shape"),
+                      MainWindow::tr("Failed to save the file:\n%1").arg(QDir::toNativeSeparators(path)));
+        return;
+    }
+
+    m_window->statusBar()->showMessage(MainWindow::tr("Custom shape saved: %1").arg(QFileInfo(path).fileName()), 4000);
+}
+
 void DocumentController::exportExcalidraw()
 {
     m_window->m_view->finishCurrentStroke();

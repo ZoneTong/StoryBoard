@@ -319,6 +319,11 @@ void MainWindow::exportExcalidraw()
     m_document->exportExcalidraw();
 }
 
+void MainWindow::exportCustomShape()
+{
+    m_document->exportCustomShape();
+}
+
 void MainWindow::importImagesDialog()
 {
     m_io->importImagesDialog();

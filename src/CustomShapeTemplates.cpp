@@ -111,11 +111,14 @@ bool loadCustomShapeTemplate(const QString& filePath, CustomShapeTemplate* resul
         return false;
     }
 
+    // 需求 7：归一化时预留 2% 内边距，描线不会贴着模板边缘被裁掉。
+    const QRectF padded =
+        bounds.adjusted(-bounds.width() * 0.02, -bounds.height() * 0.02, bounds.width() * 0.02, bounds.height() * 0.02);
     QTransform normalize;
     // QTransform 的组合顺序是“后写的先作用于点”，先缩放再平移才能把轮廓
     // 精确压进 0–1 的单位框（左上角对齐）。
-    normalize.scale(1.0 / bounds.width(), 1.0 / bounds.height());
-    normalize.translate(-bounds.left(), -bounds.top());
+    normalize.scale(1.0 / padded.width(), 1.0 / padded.height());
+    normalize.translate(-padded.left(), -padded.top());
 
     result->name = QFileInfo(filePath).completeBaseName().trimmed();
     // 需求 8：模板文件里显式写了 name 时优先用它，否则按文件名命名。

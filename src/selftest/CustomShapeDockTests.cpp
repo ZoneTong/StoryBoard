@@ -164,10 +164,12 @@ void selftest::runCustomShapeDockTests(Context& ctx)
         }
         const bool templateOk = probeTemplate != nullptr && templateErrors.isEmpty();
         const QRectF unitBounds = templateOk ? probeTemplate->unitPath.boundingRect() : QRectF();
-        ctx.check(templateOk && probeTemplate->aspectRatio > 1.0 && qAbs(unitBounds.left()) < 0.01 &&
-                      qAbs(unitBounds.top()) < 0.01 && qAbs(unitBounds.width() - 1.0) < 0.01 &&
-                      qAbs(unitBounds.height() - 1.0) < 0.01,
-                  QStringLiteral("自定义图形模板按文件名命名并归一化到单位坐标"),
+        // 需求 7：归一化预留 2% 内边距，轮廓落在 0.02–0.98 之间而不是贴边。
+        ctx.check(templateOk && probeTemplate->aspectRatio > 1.0 && unitBounds.left() > 0.0 &&
+                      unitBounds.left() < 0.03 && unitBounds.top() > 0.0 && unitBounds.top() < 0.03 &&
+                      unitBounds.right() > 0.97 && unitBounds.right() < 1.0 && unitBounds.bottom() > 0.97 &&
+                      unitBounds.bottom() < 1.0,
+                  QStringLiteral("自定义图形模板按文件名命名并归一化到单位坐标（含 2% 内边距）"),
                   QStringLiteral("count=%1 name=%2 bounds=%3,%4 %5x%6")
                       .arg(templates.size())
                       .arg(templateOk ? probeTemplate->name : QString())

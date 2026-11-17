@@ -82,6 +82,9 @@ void UiActionFactory::build()
     m_window->m_exportExcalidrawAct =
         makeAction(m_window, IconId::Export, MainWindow::tr("Export Excalidraw…"), QKeySequence(),
                    MainWindow::tr("Save this canvas as an .excalidraw scene that excalidraw.com can open"));
+    m_window->m_exportCustomShapeAct =
+        makeAction(m_window, IconId::Shapes, MainWindow::tr("Export custom shape…"), QKeySequence(),
+                   MainWindow::tr("Save the selected items into the shapes folder as a reusable template"));
     // 主键取 Windows 关闭标准 Alt+F4；副键 Ctrl+Q 是 Linux / macOS 级的退出标准。
     m_window->m_quitAct = new QAction(MainWindow::tr("Quit"), m_window);
     m_window->m_quitAct->setShortcuts({QKeySequence(Qt::ALT | Qt::Key_F4), QKeySequence(QStringLiteral("Ctrl+Q"))});
@@ -282,6 +285,7 @@ void UiActionFactory::build()
     QObject::connect(m_window->m_lineArtAct, &QAction::triggered, m_window, &MainWindow::importOutlineImageDialog);
     QObject::connect(m_window->m_exportAct, &QAction::triggered, m_window, &MainWindow::exportCanvas);
     QObject::connect(m_window->m_exportExcalidrawAct, &QAction::triggered, m_window, &MainWindow::exportExcalidraw);
+    QObject::connect(m_window->m_exportCustomShapeAct, &QAction::triggered, m_window, &MainWindow::exportCustomShape);
     QObject::connect(m_window->m_quitAct, &QAction::triggered, m_window, &QWidget::close);
 
     QObject::connect(m_window->m_undoAct, &QAction::triggered, m_window->m_undo, &QUndoStack::undo);
