@@ -123,9 +123,12 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
     customShapeButton->setIcon(makeIcon(IconId::Shapes, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
     customShapeButton->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
     customShapeButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
-    customShapeButton->setPopupMode(QToolButton::InstantPopup);
+    customShapeButton->setPopupMode(QToolButton::DelayedPopup);
     customShapeButton->setToolTip(MainWindow::tr("Custom shapes"));
     customShapeButton->setMenu(m_window->m_customShapeMenu);
+    // 需求 7：按钮是浮动面板的触发器；菜单保留给键盘与辅助入口。
+    QObject::connect(customShapeButton, &QToolButton::clicked, m_window,
+                     [this, customShapeButton]() { m_window->openCustomShapePanel(customShapeButton); });
     mainBar->addWidget(customShapeButton);
 
     m_window->m_fillButton = new QToolButton(mainBar);

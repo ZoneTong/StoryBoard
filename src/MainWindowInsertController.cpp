@@ -17,6 +17,7 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QStatusBar>
+#include <QTimer>
 #include <QUrl>
 #include <QtMath>
 
@@ -224,29 +225,12 @@ void MainWindowInsertController::updateCustomShapeMenu()
     }
     m_window->m_customShapeMenu->clear();
 
-    QStringList errors;
-    const QList<CustomShapeTemplate> templates = loadCustomShapeTemplatesFromDirs(AppSettings::shapesDirs(), &errors);
-    if (templates.isEmpty()) {
-        QAction* empty =
-            m_window->m_customShapeMenu->addAction(MainWindow::tr("(No custom shapes in the shapes folder)"));
-        empty->setEnabled(false);
-    } else {
-        for (const CustomShapeTemplate& entry : templates) {
-            QAction* action = m_window->m_customShapeMenu->addAction(
-                makeCustomShapeIcon(entry.unitPath, QColor(58, 64, 80), 18), entry.name);
-            const QString filePath = entry.filePath;
-            action->setToolTip(MainWindow::tr("Insert the custom shape from %1").arg(QFileInfo(filePath).fileName()));
-            QObject::connect(action, &QAction::triggered, m_window,
-                             [this, filePath]() { m_window->insertCustomShape(filePath); });
-        }
-    }
-    m_window->m_customShapeMenu->addSeparator();
-    QObject::connect(m_window->m_customShapeMenu->addAction(MainWindow::tr("Open shapes folder…")), &QAction::triggered,
-                     m_window, &MainWindow::openShapesFolder);
-    if (!errors.isEmpty()) {
-        QAction* broken = m_window->m_customShapeMenu->addAction(
-            MainWindow::tr("%1 shape file(s) could not be read").arg(errors.size()));
-        broken->setEnabled(false);
-        broken->setToolTip(errors.join(QLatin1Char('\n')));
-    }
+    // 需求 7：自定义图形改为独立浮动面板（按目录分标签页），菜单只保留一个触发器。
+    // 菜单项被点击时菜单马上关闭，用 singleShot(0) 延迟一拍再展开面板，否则面板拿不到焦点。
+    QAction* trigger = m_window->m_customShapeMenu->addAction(MainWindow::tr("Custom shapes…"));
+    trigger->setObjectName(QStringLiteral("CustomShapePanelTrigger"));
+    trigger->setToolTip(MainWindow::tr("Open the custom shape panel, one tab per folder in the shapes directory"));
+    QObject::connect(trigger, &QAction::triggered, m_window, [this]() {
+        QTimer::singleShot(0, m_window, [this]() { m_window->openCustomShapePanel(nullptr); });
+    });
 }

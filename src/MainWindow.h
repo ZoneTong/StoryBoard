@@ -21,6 +21,7 @@
 class CanvasScene;
 class CanvasView;
 class CanvasItem;
+class CustomShapePanel;
 class QKeyEvent;
 class ItemPropertiesDialog;
 class ItemDockPanel;
@@ -53,6 +54,9 @@ enum class ShapeType;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
+    // 需求 7：自定义图形面板负责插入模板，需要访问 insertCustomShape。
+    friend class CustomShapePanel;
+
   public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow() override;
@@ -103,6 +107,10 @@ class MainWindow : public QMainWindow {
     void updateStatusBar();
     void updateModeUi();
     void openCanvasesFolder();
+
+  public:
+    // 需求 7：展开自定义图形浮动面板（按目录分标签页）；anchor 为空时沿用上次位置。
+    void openCustomShapePanel(QWidget* anchor);
 
   private:
     void createActions();
@@ -239,6 +247,7 @@ class MainWindow : public QMainWindow {
     QAction* m_boardSectionSeparator = nullptr;
     QMenu* m_shapeMenu = nullptr;
     QMenu* m_customShapeMenu = nullptr;
+    CustomShapePanel* m_customShapePanel = nullptr;
 
     QToolButton* m_fillButton = nullptr;
     QToolButton* m_fillColorButton = nullptr;

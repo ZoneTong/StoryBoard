@@ -3,6 +3,7 @@
 #include "BackgroundController.h"
 #include "CanvasScene.h"
 #include "CanvasView.h"
+#include "CustomShapePanel.h"
 #include "DockPanelController.h"
 #include "DocumentController.h"
 #include "ImportExportController.h"
@@ -144,6 +145,15 @@ void MainWindow::createShapeMenu()
 void MainWindow::updateCustomShapeMenu()
 {
     m_insert->updateCustomShapeMenu();
+}
+
+// 需求 7：自定义图形面板是独立浮动窗口，按钮/菜单只负责把它展开。
+void MainWindow::openCustomShapePanel(QWidget* anchor)
+{
+    if (!m_customShapePanel) {
+        m_customShapePanel = new CustomShapePanel(this);
+    }
+    m_customShapePanel->showAt(anchor);
 }
 
 bool MainWindow::eventFilter(QObject* watched, QEvent* event)

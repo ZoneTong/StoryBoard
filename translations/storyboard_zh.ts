@@ -2293,6 +2293,39 @@ Use the checkbox to show or hide it.</source>
   <context>
     <name>MainWindow</name>
     <message>
+      <source>Custom shapes…</source>
+      <translation>自定义图形…</translation>
+    </message>
+    <message>
+      <source>Open the custom shape panel, one tab per folder in the shapes directory</source>
+      <translation>打开自定义图形面板，shapes 目录下每个文件夹一个标签页</translation>
+    </message>
+    <message>
+      <source>Insert “%1” from %2</source>
+      <translation>插入来自 %2 的“%1”</translation>
+    </message>
+    <message>
+      <source>%1 template(s)</source>
+      <translation>%1 个模板</translation>
+    </message>
+    <message>
+      <source>Refresh</source>
+      <translation>刷新</translation>
+    </message>
+    <message>
+      <source>Could not open the shapes folder</source>
+      <translation>无法打开 shapes 目录</translation>
+    </message>
+    <message numerus="yes">
+      <source>%n shape file(s) could not be read</source>
+      <translation>
+        <numerusform>%n 个图形文件无法读取</numerusform>
+      </translation>
+    </message>
+    <message>
+      <source>其它</source>
+      <translation>其它</translation>
+    </message>    <message>
       <source>Insert a rectangle whose corners follow 16% of the short side</source>
       <translation>插入圆角按短边 16% 自适应的矩形</translation>
     </message>
@@ -5265,4 +5298,40 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>竖杠</translation>
     </message>
   </context>
+<context>
+    <name>CustomShapePanel</name>
+    <message>
+      <source>Custom shapes…</source>
+      <translation>自定义图形…</translation>
+    </message>
+    <message>
+      <source>Open the custom shape panel, one tab per folder in the shapes directory</source>
+      <translation>打开自定义图形面板，shapes 目录下每个文件夹一个标签页</translation>
+    </message>
+    <message>
+      <source>Insert “%1” from %2</source>
+      <translation>插入来自 %2 的“%1”</translation>
+    </message>
+    <message>
+      <source>%1 template(s)</source>
+      <translation>%1 个模板</translation>
+    </message>
+    <message>
+      <source>Refresh</source>
+      <translation>刷新</translation>
+    </message>
+    <message>
+      <source>Could not open the shapes folder</source>
+      <translation>无法打开 shapes 目录</translation>
+    </message>
+    <message numerus="yes">
+      <source>%n shape file(s) could not be read</source>
+      <translation>
+        <numerusform>%n 个图形文件无法读取</numerusform>
+      </translation>
+    </message>
+    <message>
+      <source>其它</source>
+      <translation>其它</translation>
+    </message>  </context>
 </TS>

@@ -6,6 +6,7 @@
 #include "Commands.h"
 #include "CompositeShapeItem.h"
 #include "CurveItem.h"
+#include "CustomShapePanel.h"
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
@@ -72,6 +73,7 @@
 #include <QSpinBox>
 #include <QStandardPaths>
 #include <QStringConverter>
+#include <QTabWidget>
 #include <QTextStream>
 #include <QTimer>
 #include <QToolBar>
@@ -362,12 +364,6 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
         ItemDockPanel* dockPanel =
             itemDock ? itemDock->findChild<ItemDockPanel*>(QStringLiteral("ItemPanel")) : nullptr;
         QMenu* dockCustomMenu = dockWindow.findChild<QMenu*>(QStringLiteral("CustomShapeMenu"));
-        QStringList customTexts;
-        if (dockCustomMenu) {
-            for (QAction* action : dockCustomMenu->actions()) {
-                customTexts.append(action->text());
-            }
-        }
         ctx.check(itemDock && dockPanel && !itemDock->isFloating() &&
                       dockWindow.dockWidgetArea(itemDock) == Qt::LeftDockWidgetArea && itemDock->isVisible(),
                   QStringLiteral("编辑图元卡首次启动显示并固定在窗口左侧"));
@@ -379,8 +375,31 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
         ctx.check(itemDock && dockPanel && preferredCardWidth >= 260 && preferredCardWidth <= 320 && dockWidthFits,
                   QStringLiteral("编辑图元卡宽度贴合内容且不超出 320px"),
                   QStringLiteral("preferred=%1 actual=%2").arg(preferredCardWidth).arg(actualCardWidth));
-        ctx.check(dockCustomMenu && customTexts.contains(QStringLiteral("dock-probe")),
-                  QStringLiteral("自定义图形追加到常见图形下方的下拉菜单"), customTexts.join(QStringLiteral("|")));
+        // 需求 7：自定义图形改为浮动面板，模板以按钮形式出现在标签页里；菜单只留触发器。
+        dockWindow.openCustomShapePanel(nullptr);
+        QApplication::processEvents();
+        auto* shapePanel = dockWindow.findChild<CustomShapePanel*>(QStringLiteral("CustomShapePanel"));
+        QStringList panelTexts;
+        QTabWidget* shapeTabs = shapePanel ? shapePanel->tabWidget() : nullptr;
+        if (shapePanel) {
+            for (QToolButton* button :
+                 shapePanel->findChildren<QToolButton*>(QStringLiteral("CustomShapeTemplateButton"))) {
+                panelTexts.append(button->text());
+            }
+        }
+        ctx.check(shapePanel && shapeTabs && shapeTabs->count() >= 1 &&
+                      panelTexts.contains(QStringLiteral("dock-probe")),
+                  QStringLiteral("自定义图形浮动面板按文件夹出标签页并列出模板"),
+                  QStringLiteral("tabs=%1 texts=%2")
+                      .arg(shapeTabs ? shapeTabs->count() : -1)
+                      .arg(panelTexts.join(QStringLiteral("|"))));
+        ctx.check(dockCustomMenu && dockCustomMenu->actions().size() == 1 &&
+                      dockCustomMenu->actions().constFirst()->objectName() == QStringLiteral("CustomShapePanelTrigger"),
+                  QStringLiteral("自定义图形菜单只保留面板触发器"),
+                  QStringLiteral("actions=%1").arg(dockCustomMenu ? dockCustomMenu->actions().size() : -1));
+        if (shapePanel) {
+            shapePanel->hide();
+        }
         ctx.check(dockWindow.findChild<QAction*>(QStringLiteral("ItemDockToggleAction")) != nullptr,
                   QStringLiteral("视图菜单提供编辑图元卡开关"));
 
