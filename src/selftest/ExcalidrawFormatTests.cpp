@@ -3,6 +3,7 @@
 #include "SelftestEntries.h"
 #include "SelftestHelpers.h"
 
+#include <QColor>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -240,5 +241,92 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
                       roundTrip.value(QStringLiteral("items")).toArray().size() == 3,
                   QStringLiteral("导出结果可再次导入（往返 3 个图元）"),
                   QStringLiteral("items=%1").arg(roundTrip.value(QStringLiteral("items")).toArray().size()));
+    }
+
+    // frame 变成图层：frameId 命中的元素归该层，层名取 frame name。
+    {
+        QJsonObject frameElement = element(QStringLiteral("frame"), 0, 0, 300, 200);
+        frameElement.insert(QStringLiteral("id"), QStringLiteral("f1"));
+        frameElement.insert(QStringLiteral("name"), QStringLiteral("分镜一"));
+        QJsonObject inside = element(QStringLiteral("rectangle"), 10, 10, 100, 40);
+        inside.insert(QStringLiteral("frameId"), QStringLiteral("f1"));
+        QJsonObject outside = element(QStringLiteral("rectangle"), 400, 10, 100, 40);
+        QJsonArray layers;
+        const QJsonArray framedItems =
+            Excalidraw::elementsToItems(QJsonArray{frameElement, inside, outside}, nullptr, &layers);
+        const bool layerNamesOk =
+            layers.size() == 2 &&
+            layers.at(0).toObject().value(QStringLiteral("name")).toString() == QStringLiteral("图层 1") &&
+            layers.at(1).toObject().value(QStringLiteral("name")).toString() == QStringLiteral("分镜一");
+        ctx.check(framedItems.size() == 2 && layerNamesOk &&
+                      framedItems.at(0).toObject().value(QStringLiteral("layer")).toInt() == 2 &&
+                      framedItems.at(1).toObject().value(QStringLiteral("layer")).toInt() == 1,
+                  QStringLiteral("frame 建一层，frameId 命中的元素归该层"),
+                  QStringLiteral("items=%1 layers=%2 in=%3 out=%4")
+                      .arg(framedItems.size())
+                      .arg(layers.size())
+                      .arg(framedItems.at(0).toObject().value(QStringLiteral("layer")).toInt())
+                      .arg(framedItems.at(1).toObject().value(QStringLiteral("layer")).toInt()));
+    }
+
+    // 样式 customData：填充样式与填充 / 描线透明度导出后能原样导入回来。
+    {
+        QJsonObject styled;
+        styled.insert(QStringLiteral("type"), QStringLiteral("shape"));
+        styled.insert(QStringLiteral("shapeType"), QStringLiteral("rectangle"));
+        styled.insert(QStringLiteral("x"), 0.0);
+        styled.insert(QStringLiteral("y"), 0.0);
+        styled.insert(QStringLiteral("w"), 100.0);
+        styled.insert(QStringLiteral("h"), 60.0);
+        styled.insert(QStringLiteral("strokeColor"), QStringLiteral("#c8ff0000"));
+        styled.insert(QStringLiteral("fillColor"), QStringLiteral("#8000ff00"));
+        styled.insert(QStringLiteral("fillStyle"), QStringLiteral("cross_hatch"));
+        styled.insert(QStringLiteral("strokeWidth"), 2.0);
+        QJsonObject document;
+        document.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
+        document.insert(QStringLiteral("items"), QJsonArray{styled});
+        const QJsonObject exportedStyled = Excalidraw::storyBoardToScene(document, nullptr);
+        const QJsonObject exportedElement = exportedStyled.value(QStringLiteral("elements")).toArray().at(0).toObject();
+        const QJsonObject custom = exportedElement.value(QStringLiteral("customData")).toObject();
+        const QJsonObject reimported = Excalidraw::sceneToStoryBoard(exportedStyled, nullptr);
+        const QJsonObject reimportedItem = reimported.value(QStringLiteral("items")).toArray().at(0).toObject();
+        const QColor reimportedFill(reimportedItem.value(QStringLiteral("fillColor")).toString());
+        const QColor reimportedStroke(reimportedItem.value(QStringLiteral("strokeColor")).toString());
+        ctx.check(custom.value(QStringLiteral("fillStyle")).toString() == QStringLiteral("cross_hatch") &&
+                      custom.value(QStringLiteral("fillAlpha")).toInt() == 128 &&
+                      custom.value(QStringLiteral("strokeAlpha")).toInt() == 200 &&
+                      reimportedItem.value(QStringLiteral("fillStyle")).toString() == QStringLiteral("cross_hatch") &&
+                      reimportedFill.alpha() == 128 && reimportedStroke.alpha() == 200,
+                  QStringLiteral("填充样式与透明度经 customData 原样往返"),
+                  QStringLiteral("style=%1 fillAlpha=%2 strokeAlpha=%3 back=%4/%5")
+                      .arg(custom.value(QStringLiteral("fillStyle")).toString())
+                      .arg(custom.value(QStringLiteral("fillAlpha")).toInt())
+                      .arg(custom.value(QStringLiteral("strokeAlpha")).toInt())
+                      .arg(reimportedFill.alpha())
+                      .arg(reimportedStroke.alpha()));
+    }
+
+    // 位图选项：默认跳过 image 并留 warning，勾选后按 dataURL 落成图片图元。
+    {
+        QJsonObject imageElement = element(QStringLiteral("image"), 0, 0, 40, 40);
+        imageElement.insert(QStringLiteral("fileId"), QStringLiteral("img1"));
+        QJsonObject file;
+        file.insert(QStringLiteral("dataURL"), QStringLiteral("data:image/png;base64,QUJD"));
+        QJsonObject files;
+        files.insert(QStringLiteral("img1"), file);
+        QJsonObject withImage = scene(QJsonArray{imageElement});
+        withImage.insert(QStringLiteral("files"), files);
+        QStringList skippedWarnings;
+        const QJsonObject skipped = Excalidraw::sceneToStoryBoard(withImage, &skippedWarnings, false);
+        const QJsonObject kept = Excalidraw::sceneToStoryBoard(withImage, nullptr, true);
+        const QJsonObject keptItem = kept.value(QStringLiteral("items")).toArray().at(0).toObject();
+        ctx.check(skipped.isEmpty() && !skippedWarnings.isEmpty() &&
+                      keptItem.value(QStringLiteral("type")).toString() == QStringLiteral("image") &&
+                      keptItem.value(QStringLiteral("image")).toString() == QStringLiteral("QUJD"),
+                  QStringLiteral("位图保留选项：不勾选跳过并提示，勾选后按 dataURL 保真"),
+                  QStringLiteral("skipped=%1 keptType=%2 payload=%3")
+                      .arg(skipped.isEmpty() ? QStringLiteral("empty") : QStringLiteral("value"))
+                      .arg(keptItem.value(QStringLiteral("type")).toString())
+                      .arg(keptItem.value(QStringLiteral("image")).toString()));
     }
 }
