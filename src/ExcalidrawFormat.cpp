@@ -314,7 +314,19 @@ QJsonArray elementsToItems(const QJsonArray& elements, QStringList* warnings)
 {
     QJsonArray items;
     int z = 1000001;
+    // 需求 2：导入闸门。元素数超上限时只取前 20000 个，避免恶意或超大场景卡死界面。
+    constexpr int kMaxElements = 20000;
+    if (elements.size() > kMaxElements) {
+        if (warnings) {
+            warnings->append(QStringLiteral("Excalidraw 元素过多，只导入前 %1 个（共 %2 个）")
+                                 .arg(kMaxElements)
+                                 .arg(elements.size()));
+        }
+    }
     for (const QJsonValue& value : elements) {
+        if (items.size() >= kMaxElements) {
+            break;
+        }
         const QJsonObject element = value.toObject();
         if (element.value(QStringLiteral("isDeleted")).toBool(false)) {
             continue;

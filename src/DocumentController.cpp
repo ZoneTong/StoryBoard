@@ -144,6 +144,16 @@ bool DocumentController::openCanvasFile(const QString& path)
 
 bool DocumentController::loadCanvasFile(const QString& path, bool showErrors)
 {
+    // 需求 2：文件体积闸门，20MB 以上的场景不读进内存，避免崩溃或长时间假死。
+    constexpr qint64 kMaxSceneBytes = 20LL * 1024 * 1024;
+    if (QFileInfo(path).size() > kMaxSceneBytes) {
+        if (showErrors) {
+            reportWarning(m_window, MainWindow::tr("Open canvas"),
+                          MainWindow::tr("This file is larger than 20MB and was not opened:\n%1")
+                              .arg(QDir::toNativeSeparators(path)));
+        }
+        return false;
+    }
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
         if (showErrors) {
