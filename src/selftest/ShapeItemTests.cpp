@@ -1,6 +1,7 @@
 #include "Alignment.h"
 #include "ArrowStyle.h"
 #include "BoolOps.h"
+#include "CanvasItemInteraction.h"
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
 #include "CanvasView.h"
@@ -205,6 +206,62 @@ void selftest::runShapeItemTests(Context& ctx)
                       .arg(first.height())
                       .arg(second.width())
                       .arg(second.height()));
+    }
+    {
+        // 三角形拖上 / 下边的锚点：拖底边顶点不动，拖上边底边两端不动。
+        ShapeItem triangle(ShapeType::Triangle);
+        triangle.setPos(QPointF(60.0, 40.0));
+        triangle.setContentSize(QSizeF(120.0, 90.0));
+        const qreal cot1 = 1.0 / qTan(qDegreesToRadians(triangle.bottomAngle1()));
+        const auto apexScene = [&triangle, cot1]() {
+            return triangle.pos() + QPointF(triangle.contentSize().height() * cot1, 0.0);
+        };
+        const auto baseScene = [&triangle]() {
+            const QSizeF size = triangle.contentSize();
+            return QRectF(triangle.pos() + QPointF(0.0, size.height()), QSizeF(size.width(), 0.0));
+        };
+        const QPointF apexBefore = apexScene();
+        const QRectF baseBefore = baseScene();
+        const qreal startHeight = triangle.contentSize().height();
+
+        CanvasItemInteraction bottomDrag(&triangle);
+        bottomDrag.beginResize(CanvasItem::Bottom, triangle.pos() + QPointF(60.0, startHeight));
+        bottomDrag.applyResize(triangle.pos() + QPointF(60.0, startHeight + 30.0), Qt::NoModifier);
+        const QPointF apexAfter = apexScene();
+        const QRectF baseAfter = baseScene();
+        ctx.check(qAbs(apexAfter.x() - apexBefore.x()) < 0.5 && qAbs(apexAfter.y() - apexBefore.y()) < 0.5 &&
+                      qAbs(baseAfter.top() - (baseBefore.top() + 30.0)) < 0.5,
+                  QStringLiteral("拖三角形底边时顶点不动、底边随拖动下移"),
+                  QStringLiteral("apex=%1,%2->%3,%4 baseTop=%5->%6")
+                      .arg(apexBefore.x())
+                      .arg(apexBefore.y())
+                      .arg(apexAfter.x())
+                      .arg(apexAfter.y())
+                      .arg(baseBefore.top())
+                      .arg(baseAfter.top()));
+
+        ShapeItem topTriangle(ShapeType::Triangle);
+        topTriangle.setPos(QPointF(60.0, 40.0));
+        topTriangle.setContentSize(QSizeF(120.0, 90.0));
+        const qreal topStartHeight = topTriangle.contentSize().height();
+        const QRectF baseFixed =
+            QRectF(topTriangle.pos() + QPointF(0.0, topStartHeight), QSizeF(topTriangle.contentSize().width(), 0.0));
+        CanvasItemInteraction topDrag(&topTriangle);
+        topDrag.beginResize(CanvasItem::Top, topTriangle.pos() + QPointF(60.0, 0.0));
+        topDrag.applyResize(topTriangle.pos() + QPointF(60.0, -30.0), Qt::NoModifier);
+        const QRectF baseKept = QRectF(topTriangle.pos() + QPointF(0.0, topTriangle.contentSize().height()),
+                                       QSizeF(topTriangle.contentSize().width(), 0.0));
+        ctx.check(qAbs(baseKept.left() - baseFixed.left()) < 0.5 && qAbs(baseKept.right() - baseFixed.right()) < 0.5 &&
+                      qAbs(baseKept.top() - baseFixed.top()) < 0.5 &&
+                      topTriangle.contentSize().height() > topStartHeight + 1.0,
+                  QStringLiteral("拖三角形上边时底边位置与宽度都不动、高度变大"),
+                  QStringLiteral("base=%1,%2,%3->%4,%5,%6")
+                      .arg(baseFixed.left())
+                      .arg(baseFixed.right())
+                      .arg(baseFixed.top())
+                      .arg(baseKept.left())
+                      .arg(baseKept.right())
+                      .arg(baseKept.top()));
     }
 
     QList<ShapeItem*> shapeItems;

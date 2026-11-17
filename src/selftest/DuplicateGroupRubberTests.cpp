@@ -5,6 +5,7 @@
 #include "CanvasView.h"
 #include "Commands.h"
 #include "CompositeShapeItem.h"
+#include "CurveItem.h"
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
@@ -19,7 +20,6 @@
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -357,6 +357,21 @@ void selftest::runRubberBandTests(Context& ctx)
         sendMouseEvent(rubberView.viewport(), QEvent::MouseButtonRelease, fullEnd, Qt::LeftButton, Qt::NoButton);
         QApplication::processEvents();
         ctx.check(target->isSelected(), QStringLiteral("图元完整落在框内时选中"));
+
+        // 近处框选：框线离开图形只有一两个像素时，Qt 按 shape()（含描边外扩）会判「没框全」，
+        // 补漏按 frameRect 再判一次必须仍然选中；这条同时守住「补漏要放在基类之后」的顺序。
+        rubberScene.clearSelection();
+        rubberView.resetTransform();
+        rubberView.centerOn(target);
+        QApplication::processEvents();
+        const QRectF frame = target->mapRectToScene(target->frameRect());
+        const QPoint nearStart = rubberView.mapFromScene(frame.topLeft() - QPointF(1.5, 1.5));
+        const QPoint nearEnd = rubberView.mapFromScene(frame.bottomRight() + QPointF(1.5, 1.5));
+        sendMouseEvent(rubberView.viewport(), QEvent::MouseButtonPress, nearStart, Qt::LeftButton, Qt::LeftButton);
+        sendMouseEvent(rubberView.viewport(), QEvent::MouseMove, nearEnd, Qt::NoButton, Qt::LeftButton);
+        sendMouseEvent(rubberView.viewport(), QEvent::MouseButtonRelease, nearEnd, Qt::LeftButton, Qt::NoButton);
+        QApplication::processEvents();
+        ctx.check(target->isSelected(), QStringLiteral("框线紧贴图形（一两个像素余量）时也能框选选中"));
 
         rubberView.close();
         QApplication::processEvents();

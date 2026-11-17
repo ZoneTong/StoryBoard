@@ -2,6 +2,7 @@
 
 #include "CanvasItem.h"
 #include "CanvasScene.h"
+#include "ShapeItem.h"
 
 #include <QCursor>
 #include <QGraphicsScene>
@@ -122,6 +123,33 @@ void CanvasItemInteraction::applyResize(const QPointF& scenePos, Qt::KeyboardMod
     const QPointF delta = scenePos - m_item->m_dragStartScene;
     QRectF rect(m_item->m_dragStartPos, m_item->m_dragStartSize);
     const int handle = m_item->m_resizeHandle;
+
+    // 三角形拖上 / 下边是「锚点缩放」：拖底边时顶点不动，拖上边时底边（含两端）不动。
+    // 高度是本次输入，底边按角度系数跟随，所以推位置时必须把顶点 / 底边钉回原位。
+    if (auto* triangle = dynamic_cast<ShapeItem*>(m_item); triangle && triangle->shapeType() == ShapeType::Triangle &&
+                                                           !triangle->isCustomShape() && !isLeftHandle(handle) &&
+                                                           !isRightHandle(handle)) {
+        const qreal cot1 = 1.0 / qTan(qDegreesToRadians(triangle->bottomAngle1()));
+        const qreal cot2 = 1.0 / qTan(qDegreesToRadians(triangle->bottomAngle2()));
+        const QSizeF startSize = m_item->m_dragStartSize;
+        const qreal apexOffset = startSize.height() * cot1; // 顶点相对内容矩形左边的偏移
+        if (isBottomHandle(handle)) {
+            const qreal newHeight = qMax(kMinimumSide, startSize.height() + delta.y());
+            m_item->setPos(
+                QPointF(m_item->m_dragStartPos.x() + apexOffset - newHeight * cot1, m_item->m_dragStartPos.y()));
+            m_item->setContentSize(QSizeF(newHeight * (cot1 + cot2), newHeight));
+        } else {
+            const qreal newHeight = qMax(kMinimumSide, startSize.height() - delta.y());
+            const qreal width = startSize.width();
+            m_item->setPos(
+                QPointF(m_item->m_dragStartPos.x(), m_item->m_dragStartPos.y() + startSize.height() - newHeight));
+            // 底边两端钉住、顶点竖线也钉住，两个底角只能按新高度反推。
+            triangle->setTriangleAngles(qRadiansToDegrees(qAtan2(newHeight, qMax<qreal>(0.5, apexOffset))),
+                                        qRadiansToDegrees(qAtan2(newHeight, qMax<qreal>(0.5, width - apexOffset))));
+            m_item->setContentSize(QSizeF(width, newHeight));
+        }
+        return;
+    }
 
     if (isLeftHandle(handle)) {
         rect.setLeft(rect.left() + delta.x());

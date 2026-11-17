@@ -324,14 +324,17 @@ void CanvasView::mouseReleaseEvent(QMouseEvent* event)
         return;
     }
 
-    if (m_bandCandidate) {
-        m_bandCandidate = false;
-        if (event->button() == Qt::LeftButton) {
-            selectItemsInsideBand(m_bandOrigin, event->position().toPoint());
-        }
-    }
+    // 基类先按 Qt 的口径（shape()，含描边外扩与手柄）完成一次框选，并把落选图元取消选中；
+    // 补漏必须放在它之后，否则刚补选中的图元会被基类的 ReplaceSelection 再清掉。
+    const QPoint bandEnd = event->position().toPoint();
+    const bool applyBandFix = m_bandCandidate && event->button() == Qt::LeftButton;
+    m_bandCandidate = false;
 
     QGraphicsView::mouseReleaseEvent(event);
+
+    if (applyBandFix) {
+        selectItemsInsideBand(m_bandOrigin, bandEnd);
+    }
 }
 
 void CanvasView::selectItemsInsideBand(const QPoint& from, const QPoint& to)
