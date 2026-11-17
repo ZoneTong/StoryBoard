@@ -260,6 +260,13 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
         }
     }
 
+    // 空白处按下即视为一次可能的框选起点：交给基类开橡皮筋，松手时再补判定。
+    m_bandCandidate = m_mode == ToolMode::Edit && event->button() == Qt::LeftButton &&
+                      !event->modifiers().testFlag(Qt::ControlModifier) && !m_hits->editableItemAt(position);
+    if (m_bandCandidate) {
+        m_bandOrigin = position;
+    }
+
     QGraphicsView::mousePressEvent(event);
 
     // 基类按下时可能把多选收成单选，按完再补一次整组选择。
@@ -317,7 +324,38 @@ void CanvasView::mouseReleaseEvent(QMouseEvent* event)
         return;
     }
 
+    if (m_bandCandidate) {
+        m_bandCandidate = false;
+        if (event->button() == Qt::LeftButton) {
+            selectItemsInsideBand(m_bandOrigin, event->position().toPoint());
+        }
+    }
+
     QGraphicsView::mouseReleaseEvent(event);
+}
+
+void CanvasView::selectItemsInsideBand(const QPoint& from, const QPoint& to)
+{
+    const QRect viewRect = QRect(from, to).normalized();
+    if (viewRect.width() < 3 && viewRect.height() < 3) {
+        return;
+    }
+    // Qt 的框选判定用 shape()，含描边外扩与手柄；框线贴着图形时会被判成“没框全”。
+    // 这里按图元实际外框（frameRect）再判一次“整框包含”，作为补漏。
+    const QRectF sceneRect = mapToScene(viewRect).boundingRect();
+    for (QGraphicsItem* graphicsItem : m_scene->items()) {
+        auto* item = qgraphicsitem_cast<CanvasItem*>(graphicsItem);
+        if (!item || !item->isVisible() || !item->isEditable()) {
+            continue;
+        }
+        if (!item->flags().testFlag(QGraphicsItem::ItemIsSelectable)) {
+            continue;
+        }
+        const QRectF itemRect = item->mapRectToScene(item->frameRect());
+        if (sceneRect.contains(itemRect)) {
+            item->setSelected(true);
+        }
+    }
 }
 
 void CanvasView::mouseDoubleClickEvent(QMouseEvent* event)

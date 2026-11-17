@@ -46,8 +46,9 @@ void UiMenuBuilder::buildShapeMenu()
         // 需求 5：圆角矩形已并入矩形，菜单保留两个入口——矩形（直角）与紧跟其后的
         // 圆角矩形（短边 16% 自动圆角），底层同为 rectangle，仅圆角状态不同。
         if (type == ShapeType::Rectangle) {
-            QAction* roundedPreset = m_window->m_shapeMenu->addAction(makeShapeIcon(type, QColor(58, 64, 80), 18),
-                                                                      MainWindow::tr("Rounded rectangle"));
+            QAction* roundedPreset = m_window->m_shapeMenu->addAction(
+                makeShapePresetIcon(QStringLiteral("roundedRect"), QColor(58, 64, 80), 18),
+                MainWindow::tr("Rounded rectangle"));
             roundedPreset->setObjectName(QStringLiteral("ShapePreset_roundedRect"));
             roundedPreset->setData(static_cast<int>(type));
             roundedPreset->setToolTip(MainWindow::tr("Insert a rectangle whose corners follow 16% of the short side"));
@@ -59,8 +60,8 @@ void UiMenuBuilder::buildShapeMenu()
         // 需求 6：直线箭头紧跟在「直线」之后，复用直线类，默认末端开口箭头，
         // 长边 64（与其它常见图形的基准边长一致）。
         if (type == ShapeType::Line) {
-            QAction* lineArrow = m_window->m_shapeMenu->addAction(makeShapeIcon(type, QColor(58, 64, 80), 18),
-                                                                  MainWindow::tr("Line arrow"));
+            QAction* lineArrow = m_window->m_shapeMenu->addAction(
+                makeShapePresetIcon(QStringLiteral("lineArrow"), QColor(58, 64, 80), 18), MainWindow::tr("Line arrow"));
             lineArrow->setObjectName(QStringLiteral("ShapePreset_lineArrow"));
             lineArrow->setData(static_cast<int>(type));
             lineArrow->setToolTip(MainWindow::tr("Insert a line with an open arrow head at its end"));
@@ -73,8 +74,9 @@ void UiMenuBuilder::buildShapeMenu()
         // 即底边（水平边）两侧的内角为 90° 与 45° / 60°；底边可调，角度锁定。
         // 预置项用 ShapePreset_ 前缀，工具栏那一排按钮只认 ShapeAction_，不会多出按钮。
         if (type == ShapeType::Triangle) {
-            QAction* preset45 = m_window->m_shapeMenu->addAction(makeShapeIcon(type, QColor(58, 64, 80), 18),
-                                                                 MainWindow::tr("Right triangle 45°"));
+            QAction* preset45 = m_window->m_shapeMenu->addAction(
+                makeShapePresetIcon(QStringLiteral("triangle45"), QColor(58, 64, 80), 18),
+                MainWindow::tr("Right triangle 45°"));
             preset45->setObjectName(QStringLiteral("ShapePreset_triangle45"));
             preset45->setData(static_cast<int>(type));
             preset45->setToolTip(MainWindow::tr("Right triangle 45°: short side horizontal, base adjustable, "
@@ -82,8 +84,9 @@ void UiMenuBuilder::buildShapeMenu()
             QObject::connect(preset45, &QAction::triggered, m_window,
                              [this]() { m_window->insertShape(ShapeType::Triangle, 90.0, 45.0); });
 
-            QAction* preset60 = m_window->m_shapeMenu->addAction(makeShapeIcon(type, QColor(58, 64, 80), 18),
-                                                                 MainWindow::tr("Right triangle 60°"));
+            QAction* preset60 = m_window->m_shapeMenu->addAction(
+                makeShapePresetIcon(QStringLiteral("triangle60"), QColor(58, 64, 80), 18),
+                MainWindow::tr("Right triangle 60°"));
             preset60->setObjectName(QStringLiteral("ShapePreset_triangle60"));
             preset60->setData(static_cast<int>(type));
             preset60->setToolTip(MainWindow::tr("Right triangle 60°: short side horizontal, base adjustable, "
@@ -93,10 +96,10 @@ void UiMenuBuilder::buildShapeMenu()
         }
     }
 
-    // 需求：画布格式的自定义图形追加在“常见图形”下方的下拉菜单里，每次展开时重扫目录，
-    // 用户新放进 shapes 目录的文件不用重启就能出现。
+    // 需求：自定义图形不再挂在「常见图形」下面做二级子菜单，直接作为同一层的一项，
+    // 点击就打开自定义图形面板。工具栏下拉仍复用同一批动作，见 UiToolBarBuilder。
     m_window->m_shapeMenu->addSeparator();
-    m_window->m_customShapeMenu = m_window->m_shapeMenu->addMenu(MainWindow::tr("Custom shapes"));
+    m_window->m_customShapeMenu = new QMenu(MainWindow::tr("Custom shapes"), m_window);
     m_window->m_customShapeMenu->setObjectName(QStringLiteral("CustomShapeMenu"));
     QObject::connect(m_window->m_shapeMenu, &QMenu::aboutToShow, m_window, &MainWindow::updateCustomShapeMenu);
     QObject::connect(m_window->m_customShapeMenu, &QMenu::aboutToShow, m_window, &MainWindow::updateCustomShapeMenu);
@@ -257,7 +260,7 @@ void UiMenuBuilder::buildMenus()
     boolMenu->setIcon(makeIcon(IconId::Morph, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
     const QList<QPair<BoolOps::Operation, QString>> boolEntries = {
         {BoolOps::Operation::Union, MainWindow::tr("Union")},
-        {BoolOps::Operation::Xor, MainWindow::tr("Xor (XOR)")},
+        {BoolOps::Operation::Xor, MainWindow::tr("Xor")},
         {BoolOps::Operation::Intersect, MainWindow::tr("Intersect")},
         {BoolOps::Operation::Subtract, MainWindow::tr("Subtract")},
         {BoolOps::Operation::Fragment, MainWindow::tr("Fragment")},

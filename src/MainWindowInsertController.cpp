@@ -218,13 +218,25 @@ void MainWindowInsertController::updateCustomShapeMenu()
         return;
     }
     m_window->m_customShapeMenu->clear();
+    if (m_customShapeTrigger) {
+        // 上一轮挂在「常见图形」末尾的同一项先摘掉，再加入新的。
+        m_window->m_shapeMenu->removeAction(m_customShapeTrigger);
+        delete m_customShapeTrigger;
+        m_customShapeTrigger = nullptr;
+    }
 
-    // 需求 7：自定义图形改为独立浮动面板（按目录分标签页），菜单只保留一个触发器。
+    // 需求：自定义图形不再是「常见图形」下的二级子菜单，菜单末尾直接给出这一项；
+    // 工具栏下拉（m_customShapeMenu）复用同一个动作，两边看到的是同一入口。
     // 菜单项被点击时菜单马上关闭，用 singleShot(0) 延迟一拍再展开面板，否则面板拿不到焦点。
-    QAction* trigger = m_window->m_customShapeMenu->addAction(MainWindow::tr("Custom shapes…"));
+    QAction* trigger = new QAction(MainWindow::tr("Custom shapes…"), m_window);
     trigger->setObjectName(QStringLiteral("CustomShapePanelTrigger"));
     trigger->setToolTip(MainWindow::tr("Open the custom shape panel, one tab per folder in the shapes directory"));
     QObject::connect(trigger, &QAction::triggered, m_window, [this]() {
         QTimer::singleShot(0, m_window, [this]() { m_window->openCustomShapePanel(nullptr); });
     });
+    m_customShapeTrigger = trigger;
+    m_window->m_customShapeMenu->addAction(trigger);
+    if (m_window->m_shapeMenu) {
+        m_window->m_shapeMenu->addAction(trigger);
+    }
 }

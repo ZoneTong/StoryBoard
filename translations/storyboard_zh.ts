@@ -2297,6 +2297,18 @@ Use the checkbox to show or hide it.</source>
       <translation>自定义图形…</translation>
     </message>
     <message>
+      <source>Export custom shape</source>
+      <translation>导出自定义图形</translation>
+    </message>
+    <message>
+      <source>Export custom shape…</source>
+      <translation>导出自定义图形…</translation>
+    </message>
+    <message>
+      <source>Open shapes folder…</source>
+      <translation>打开 shapes 目录…</translation>
+    </message>
+    <message>
       <source>Open the custom shape panel, one tab per folder in the shapes directory</source>
       <translation>打开自定义图形面板，shapes 目录下每个文件夹一个标签页</translation>
     </message>
@@ -2311,6 +2323,10 @@ Use the checkbox to show or hide it.</source>
     <message>
       <source>Refresh</source>
       <translation>刷新</translation>
+    </message>
+    <message>
+      <source>Open shapes folder…</source>
+      <translation>打开 shapes 目录…</translation>
     </message>
     <message>
       <source>Could not open the shapes folder</source>
@@ -2330,8 +2346,8 @@ Use the checkbox to show or hide it.</source>
       <translation>插入圆角按短边 16% 自适应的矩形</translation>
     </message>
     <message>
-      <source>Xor (XOR)</source>
-      <translation>异或（XOR）</translation>
+      <source>Xor</source>
+      <translation>异或</translation>
     </message>
     <message>
       <source>Xor shapes</source>
@@ -4394,8 +4410,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
   <context>
     <name>ItemPropertiesDialog</name>
     <message>
-      <source>Triangle base length (A edge)</source>
-      <translation>底边长度（A 边）</translation>
+      <source>Triangle base length</source>
+      <translation>底边长度</translation>
     </message>
     <message>
       <source>Triangle base angle A</source>
@@ -5023,8 +5039,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>修改直线端点箭头</translation>
     </message>
     <message>
-      <source>Triangle base length (A edge)</source>
-      <translation>底边长度（A 边）</translation>
+      <source>Triangle base length</source>
+      <translation>底边长度</translation>
     </message>
     <message>
       <source>Triangle base angle A</source>
@@ -5377,6 +5393,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>Refresh</source>
       <translation>刷新</translation>
+    </message>
+    <message>
+      <source>Open shapes folder…</source>
+      <translation>打开 shapes 目录…</translation>
     </message>
     <message>
       <source>Could not open the shapes folder</source>

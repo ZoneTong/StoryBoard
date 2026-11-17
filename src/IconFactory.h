@@ -37,6 +37,8 @@ enum class IconId {
     OrderDown,
     Corner,
     Opacity,
+    // 三角形底边长度：底边加两端内角、不闭合的开口轮廓。
+    TriangleBase,
     // 合并形状五项操作，图形参照 PPT「合并形状」菜单。
     MergeUnion,
     MergeCombine,

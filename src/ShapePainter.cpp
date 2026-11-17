@@ -145,28 +145,32 @@ QIcon ShapePainter::makeIcon(ShapeType type, const QColor& color, int logicalSiz
     painter.scale(logicalSize / 24.0, logicalSize / 24.0);
 
     QRectF rect(3.0, 4.0, 18.0, 16.0);
+    qreal iconStartAngle = 30.0;
+    qreal iconSweepAngle = 120.0;
     if (type == ShapeType::Ellipse) {
         rect = QRectF(4.0, 4.0, 16.0, 16.0);
     } else if (type == ShapeType::BraceLeft || type == ShapeType::BraceRight) {
         rect = QRectF(6.0, 2.0, 12.0, 20.0);
     } else if (type == ShapeType::Arrow || type == ShapeType::DoubleArrow || type == ShapeType::Line) {
         rect = QRectF(2.0, 7.0, 20.0, 10.0);
-    } else if (type == ShapeType::Sector || type == ShapeType::Arc) {
-        rect = QRectF(4.0, 4.0, 16.0, 16.0);
+    } else if (type == ShapeType::Sector) {
+        // 扇形 / 弧线只占内容矩形的一部分，图标里换成整格与更大的扫过角，
+        // 否则在工具栏那一排里明显比别的图标小一圈。扇形取 270°，是饱满的圆形切片。
+        rect = QRectF(2.0, 2.0, 20.0, 20.0);
+        iconStartAngle = 90.0;
+        iconSweepAngle = 270.0;
+    } else if (type == ShapeType::Arc) {
+        rect = QRectF(2.0, 2.0, 20.0, 20.0);
+        iconStartAngle = 0.0;
+        iconSweepAngle = 180.0;
     }
 
-    const QPainterPath path = ShapeItem::pathFor(type, rect);
+    const QPainterPath path = ShapeItem::pathFor(type, rect, -1.0, iconStartAngle, iconSweepAngle, -1.0);
     QPen pen(color, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
 
-    if (shapeTypeIsStrokeOnly(type)) {
-        painter.setPen(pen);
-        painter.setBrush(Qt::NoBrush);
-    } else {
-        painter.setPen(pen);
-        QColor fill = color;
-        fill.setAlpha(50);
-        painter.setBrush(fill);
-    }
+    // 常见图形图标统一画成空心轮廓：只有描边，不填底色。
+    painter.setPen(pen);
+    painter.setBrush(Qt::NoBrush);
     painter.drawPath(path);
     painter.end();
 

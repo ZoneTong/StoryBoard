@@ -151,7 +151,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_triangleBaseSpin->setObjectName(QStringLiteral("ItemPropertiesTriangleBaseValue"));
             m_triangleBaseSpin->setRange(8, 2000);
             m_triangleBaseSpin->setSuffix(QStringLiteral(" px"));
-            m_triangleBaseSpin->setToolTip(ItemPropertiesDialog::tr("Triangle base length (A edge)"));
+            m_triangleBaseSpin->setToolTip(ItemPropertiesDialog::tr("Triangle base length"));
             m_triangleBaseSpin->setMinimumWidth(88);
             m_triangleBaseSpin->setValue(m_initialTriangleBase);
 
@@ -293,7 +293,7 @@ void ItemPropertiesDialogStyleBlock::addRows(QFormLayout* form)
         form->addRow(ItemPropertiesDialog::tr("Corner radius"), m_cornerRadiusSpin);
     }
     if (m_bottomAngle1Spin) {
-        form->addRow(ItemPropertiesDialog::tr("Triangle base length (A edge)"), m_triangleBaseSpin);
+        form->addRow(ItemPropertiesDialog::tr("Triangle base length"), m_triangleBaseSpin);
         form->addRow(ItemPropertiesDialog::tr("Triangle base angle A"), m_bottomAngle1Spin);
     }
     if (m_bottomAngle2Spin) {

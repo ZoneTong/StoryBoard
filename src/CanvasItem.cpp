@@ -63,9 +63,15 @@ QRectF CanvasItem::contentRect() const
     return CanvasItemGeometry::contentRect(m_size);
 }
 
+QRectF CanvasItem::frameRect() const
+{
+    return contentRect();
+}
+
 void CanvasItem::setContentSize(const QSizeF& size)
 {
-    const QSizeF clamped(qMax(kMinimumSide, size.width()), qMax(kMinimumSide, size.height()));
+    const QSizeF requested = adjustedContentSize(size);
+    const QSizeF clamped(qMax(kMinimumSide, requested.width()), qMax(kMinimumSide, requested.height()));
     if (qFuzzyCompare(clamped.width(), m_size.width()) && qFuzzyCompare(clamped.height(), m_size.height())) {
         return;
     }
@@ -129,7 +135,9 @@ QRectF CanvasItem::sceneContentRect() const
 
 QRectF CanvasItem::boundingRect() const
 {
-    return CanvasItemGeometry::boundingRect(contentRect(), framePadding(), isSelected(), viewScale(), m_handles->size(),
+    // 绘制区域仍是内容矩形；选中框可能更小（扇形 / 弧线），两者取并集。
+    const QRectF area = contentRect().united(frameRect());
+    return CanvasItemGeometry::boundingRect(area, framePadding(), isSelected(), viewScale(), m_handles->size(),
                                             m_handles->rotationOffset());
 }
 

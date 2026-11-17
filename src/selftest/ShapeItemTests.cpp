@@ -168,6 +168,44 @@ void selftest::runShapeItemTests(Context& ctx)
                       qFuzzyCompare(copy.shapeRadius() + 2.0, 62.0),
                   QStringLiteral("扇形角度与半径随画布保存和恢复"));
     }
+    {
+        // 扇形 / 弧线的选中框贴着实际轮廓，而不是整个内容矩形。
+        ShapeItem sector(ShapeType::Sector);
+        sector.setContentSize(QSizeF(200.0, 200.0));
+        sector.setArcAngles(0.0, 90.0);
+        const QRectF sectorFrame = sector.frameRect();
+        const QRectF sectorBounds = sector.currentPath(sector.contentRect()).boundingRect();
+        ShapeItem arc(ShapeType::Arc);
+        arc.setContentSize(QSizeF(200.0, 200.0));
+        arc.setArcAngles(15.0, 140.0);
+        const QRectF arcFrame = arc.frameRect();
+        ctx.check(sectorFrame.width() < 200.0 && arcFrame.width() < 200.0 &&
+                      qAbs(sectorFrame.right() - sectorBounds.right()) < 0.5 &&
+                      qAbs(sectorFrame.top() - sectorBounds.top()) < 0.5,
+                  QStringLiteral("扇形与弧线的包围框按轮廓最小覆盖矩形"),
+                  QStringLiteral("sector=%1x%2 arc=%3x%4")
+                      .arg(sectorFrame.width())
+                      .arg(sectorFrame.height())
+                      .arg(arcFrame.width())
+                      .arg(arcFrame.height()));
+    }
+    {
+        // 三角形一次性折算尺寸：拖宽即派生高度，不再二次改尺寸（原先的来回抖动来源）。
+        ShapeItem triangle(ShapeType::Triangle);
+        triangle.setContentSize(QSizeF(120.0, 90.0));
+        const qreal derived = 120.0 / (2.0 / qTan(qDegreesToRadians(60.0)));
+        const QSizeF first = triangle.contentSize();
+        triangle.setContentSize(QSizeF(160.0, first.height()));
+        const QSizeF second = triangle.contentSize();
+        ctx.check(qAbs(first.height() - derived) < 0.6 && qAbs(second.width() - 160.0) < 0.01 &&
+                      second.height() > first.height(),
+                  QStringLiteral("三角形宽度变化时一次折算派生高度并等比增长"),
+                  QStringLiteral("first=%1x%2 second=%3x%4")
+                      .arg(first.width())
+                      .arg(first.height())
+                      .arg(second.width())
+                      .arg(second.height()));
+    }
 
     QList<ShapeItem*> shapeItems;
     const QColor shapeStroke(QStringLiteral("#1D4ED8"));

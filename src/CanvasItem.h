@@ -38,7 +38,13 @@ class CanvasItem : public QGraphicsObject {
     void setName(const QString& name);
 
     QRectF contentRect() const;
+    // 选中框与缩放手柄的锚定矩形。默认就是内容矩形；扇形 / 弧线这类
+    // 只占内容矩形一部分的图元会覆盖成实际轮廓的最小覆盖矩形。
+    virtual QRectF frameRect() const;
     QSizeF contentSize() const { return m_size; }
+    // 外部请求的尺寸先经过图元自己的规则折算（例如三角形按角度派生高度），
+    // 由 setContentSize 一次性应用，避免在一次拖拽里反复改动几何。
+    virtual QSizeF adjustedContentSize(const QSizeF& size) const { return size; }
     void setContentSize(const QSizeF& size);
     QRectF sceneContentRect() const;
 
@@ -108,7 +114,7 @@ class CanvasItem : public QGraphicsObject {
     // Handles are centred on the content corners, so half of every handle sits
     // outside shape(); item hit tests must include it explicitly.
     QPainterPath selectionHandleShape() const;
-    void drawSelectionOverlay(QPainter* painter);
+    virtual void drawSelectionOverlay(QPainter* painter);
     QCursor cursorForHandle(Handle handle) const;
 
   private:

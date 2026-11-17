@@ -129,18 +129,22 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         ctx.check(presetOrderOk, QStringLiteral("图形菜单内预置项紧跟基础图形（三角形 45°/60°、直线箭头）"));
 
         QMenu* customShapeMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("CustomShapeMenu"));
-        ctx.check(shapeMenu && builtInShapeActions == shapeTypes.size() && customShapeMenu &&
-                      shapeMenu->actions().contains(customShapeMenu->menuAction()),
-                  QStringLiteral("图形菜单包含全部图形并在下方追加自定义图形子菜单"),
+        QAction* customTrigger = shapeWindow.findChild<QAction*>(QStringLiteral("CustomShapePanelTrigger"));
+        // 自定义图形不再是二级子菜单：入口直接平铺在「常见图形」末尾。
+        ctx.check(shapeMenu && builtInShapeActions == shapeTypes.size() && customShapeMenu && customTrigger &&
+                      shapeMenu->actions().contains(customTrigger) &&
+                      !shapeMenu->actions().contains(customShapeMenu->menuAction()),
+                  QStringLiteral("图形菜单包含全部图形，自定义图形入口与常见图形同层"),
                   QStringLiteral("actions=%1 builtIn=%2 custom=%3")
                       .arg(shapeMenu ? shapeMenu->actions().size() : 0)
                       .arg(builtInShapeActions)
-                      .arg(customShapeMenu ? 1 : 0));
-        // 工具栏在原「图形」入口处把常见图形直接平铺成一排，复用菜单里的同一批动作。
+                      .arg(customTrigger ? 1 : 0));
+        // 工具栏在原「图形」入口处把常见图形与预置项直接平铺成一排，复用菜单里的同一批动作。
+        const int toolbarExpected = builtInShapeActions + 4;
         QToolButton* shapeButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("ShapeButton"));
         QList<QToolButton*> toolbarShapeButtons =
             shapeWindow.findChildren<QToolButton*>(QStringLiteral("ToolBarShapeButton"));
-        bool shapeButtonsShareMenu = toolbarShapeButtons.size() == builtInShapeActions && shapeMenu;
+        bool shapeButtonsShareMenu = toolbarShapeButtons.size() == toolbarExpected && shapeMenu;
         for (QToolButton* button : std::as_const(toolbarShapeButtons)) {
             const QString actionName = button->property("shapeActionName").toString();
             QAction* boundAction = actionName.isEmpty() ? nullptr : shapeWindow.findChild<QAction*>(actionName);
@@ -149,8 +153,8 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                 break;
             }
         }
-        ctx.check(shapeButtonsShareMenu && !shapeButton, QStringLiteral("主工具栏把常见图形展开成一排按钮"),
-                  QStringLiteral("buttons=%1 builtIn=%2").arg(toolbarShapeButtons.size()).arg(builtInShapeActions));
+        ctx.check(shapeButtonsShareMenu && !shapeButton, QStringLiteral("主工具栏把常见图形与预置项展开成一排按钮"),
+                  QStringLiteral("buttons=%1 expected=%2").arg(toolbarShapeButtons.size()).arg(toolbarExpected));
 
         QToolBar* mainToolBar = shapeWindow.findChild<QToolBar*>(QStringLiteral("MainToolBar"));
         QAction* exportAction = nullptr;

@@ -12,6 +12,7 @@
 #include <QColor>
 #include <QGraphicsView>
 #include <QList>
+#include <QPoint>
 #include <memory>
 
 class CanvasItem;
@@ -83,12 +84,18 @@ class CanvasView : public QGraphicsView {
     friend class CanvasContextMenuController;
 
     void updateCursor();
+    // 框选补判定：把整框落在选区内的图元选上（判定用图元实际外框，不含描边外扩）。
+    void selectItemsInsideBand(const QPoint& from, const QPoint& to);
     void baseContextMenuEvent(QContextMenuEvent* event) { QGraphicsView::contextMenuEvent(event); }
 
     CanvasScene* m_scene = nullptr;
     ToolMode m_mode = ToolMode::View;
     QColor m_canvasColor = QColor(43, 47, 54);
     bool m_spaceDown = false;
+    // 空白处起手的框选：记下起点，松手时按图元实际外框补一次「整框包含」判定。
+    // Qt 自带判定用的是含描边与手柄的 shape()，框线贴着图形时会被判为没框全。
+    bool m_bandCandidate = false;
+    QPoint m_bandOrigin;
 
     std::unique_ptr<CanvasZoomController> m_zoom;
     std::unique_ptr<CanvasPanController> m_pan;

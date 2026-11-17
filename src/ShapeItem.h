@@ -34,6 +34,9 @@ QSizeF defaultShapeSize(ShapeType type);
 bool shapeTypeIsFilled(ShapeType type);
 bool shapeTypeIsStrokeOnly(ShapeType type);
 QIcon makeShapeIcon(ShapeType type, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);
+// 预置项（圆角矩形 / 45°·60° 直角三角 / 直线箭头）单独画图标，
+// 和基础图形并排放在菜单与工具栏时能一眼区分。
+QIcon makeShapePresetIcon(const QString& preset, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);
 
 QList<FillStyle> allFillStyles();
 QString fillStyleName(FillStyle style);
@@ -96,6 +99,10 @@ class ShapeItem : public CanvasItem {
     QPainterPath shape() const override;
     QPainterPath outlineShape() const override;
     QPainterPath paintedShape() const override;
+    // 扇形 / 弧线只占内容矩形的一部分，选中框与手柄改按实际轮廓的最小覆盖矩形摆放。
+    QRectF frameRect() const override;
+    // 三角形"角度为真相"，把外部请求的尺寸先折算成派生尺寸，交给基类一次性应用。
+    QSizeF adjustedContentSize(const QSizeF& size) const override;
 
     ShapeType shapeType() const { return m_type; }
     void setShapeType(ShapeType type);
@@ -153,6 +160,8 @@ class ShapeItem : public CanvasItem {
     void paintContent(QPainter* painter) override;
     // 三角形拉伸时保持"角度为真相"：拖高等价于等比改底边，拖底边则反推高度。
     void contentResized() override;
+    // 三角形选中时在底边中点两侧补一对短刻度线，提示这里是底边长度手柄。
+    void drawSelectionOverlay(QPainter* painter) override;
     qreal framePadding() const override { return qMax<qreal>(22.0, m_strokeWidth + 6.0); }
 
   private:

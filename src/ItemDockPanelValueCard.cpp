@@ -141,14 +141,14 @@ ItemDockPanelValueCard::ItemDockPanelValueCard(QWidget* parent) : QWidget(parent
     auto* baseLayout = new QHBoxLayout(baseRow);
     baseLayout->setContentsMargins(0, 0, 0, 0);
     baseLayout->setSpacing(4);
-    QToolButton* baseIcon = makeRowIcon(IconId::Corner, baseRow);
-    baseIcon->setToolTip(ItemDockPanel::tr("Triangle base length (A edge)"));
+    QToolButton* baseIcon = makeRowIcon(IconId::TriangleBase, baseRow);
+    baseIcon->setToolTip(ItemDockPanel::tr("Triangle base length"));
     baseLayout->addWidget(baseIcon);
     m_triangleBaseSpin = new QSpinBox(baseRow);
     m_triangleBaseSpin->setObjectName(QStringLiteral("ItemValueSpin"));
     m_triangleBaseSpin->setRange(8, 2000);
     m_triangleBaseSpin->setSuffix(QStringLiteral(" px"));
-    m_triangleBaseSpin->setToolTip(ItemDockPanel::tr("Triangle base length (A edge)"));
+    m_triangleBaseSpin->setToolTip(ItemDockPanel::tr("Triangle base length"));
     m_triangleBaseSpin->setKeyboardTracking(false);
     connect(m_triangleBaseSpin, &QSpinBox::valueChanged, this, [this](int value) {
         if (!m_refreshing) {

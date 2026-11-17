@@ -125,13 +125,23 @@ void drawOpacity(QPainter& painter, IconId)
     painter.drawArc(QRectF(3.5, 3.5, 17.0, 17.0), -90 * 16, 180 * 16);
 }
 
+void drawTriangleBase(QPainter& painter, IconId)
+{
+    // 只有底线与两条向内收的短斜边，不闭合顶点，读作“三角形底边”。
+    painter.drawLine(QPointF(3.0, 18.5), QPointF(21.0, 18.5));
+    painter.drawLine(QPointF(3.0, 18.5), QPointF(8.0, 9.5));
+    painter.drawLine(QPointF(21.0, 18.5), QPointF(16.0, 9.5));
+}
+
 constexpr struct IconEntry {
     IconId id;
     void (*draw)(QPainter&, IconId);
 } kEntries[] = {
-    {IconId::Shapes, drawShapes},         {IconId::Image, drawImage},   {IconId::LineArt, drawLineArt},
-    {IconId::Background, drawBackground}, {IconId::Grid, drawGrid},     {IconId::Palette, drawPalette},
-    {IconId::Corner, drawCorner},         {IconId::Smooth, drawSmooth}, {IconId::Opacity, drawOpacity},
+    {IconId::Shapes, drawShapes},   {IconId::Image, drawImage},
+    {IconId::LineArt, drawLineArt}, {IconId::Background, drawBackground},
+    {IconId::Grid, drawGrid},       {IconId::Palette, drawPalette},
+    {IconId::Corner, drawCorner},   {IconId::Smooth, drawSmooth},
+    {IconId::Opacity, drawOpacity}, {IconId::TriangleBase, drawTriangleBase},
 };
 
 } // namespace

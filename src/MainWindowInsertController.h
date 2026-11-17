@@ -5,6 +5,7 @@
 #include <QPointF>
 #include <QString>
 
+class QAction;
 class MainWindow;
 enum class ShapeType;
 
@@ -24,4 +25,7 @@ class MainWindowInsertController {
 
   private:
     MainWindow* m_window = nullptr;
+    // 「自定义图形…」这一项同时挂在常见图形菜单末尾与工具栏下拉里，
+    // 每次重建前先删掉上一份，避免重复出现。
+    QAction* m_customShapeTrigger = nullptr;
 };

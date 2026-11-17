@@ -13,6 +13,7 @@
 #include <QJsonObject>
 #include <QPainter>
 #include <QPainterPathStroker>
+#include <QPixmap>
 #include <QtMath>
 
 namespace {
@@ -153,6 +154,49 @@ QIcon makeShapeIcon(ShapeType type, const QColor& color, int logicalSize)
     return ShapePainter::makeIcon(type, color, logicalSize);
 }
 
+QIcon makeShapePresetIcon(const QString& preset, const QColor& color, int logicalSize)
+{
+    constexpr qreal scale = 2.0;
+    QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
+    pixmap.fill(Qt::transparent);
+    pixmap.setDevicePixelRatio(scale);
+
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.scale(logicalSize / 24.0, logicalSize / 24.0);
+    painter.setPen(QPen(color, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter.setBrush(Qt::NoBrush);
+
+    const QRectF box(3.0, 4.0, 18.0, 16.0);
+    if (preset == QStringLiteral("roundedRect")) {
+        painter.drawRoundedRect(box, qMin(box.height(), box.width()) * 0.32, qMin(box.height(), box.width()) * 0.32);
+    } else if (preset == QStringLiteral("triangle45")) {
+        // 直角在右下，左侧 45°：底边水平，两腰一竖一斜。
+        QPainterPath path;
+        path.moveTo(box.left(), box.bottom());
+        path.lineTo(box.right(), box.bottom());
+        path.lineTo(box.right(), box.top());
+        path.closeSubpath();
+        painter.drawPath(path);
+    } else if (preset == QStringLiteral("triangle60")) {
+        // 直角在右下，左侧 60°：顶点沿底边按 cot(60°) 内收，三角形更窄。
+        QPainterPath path;
+        path.moveTo(box.left(), box.bottom());
+        path.lineTo(box.right(), box.bottom());
+        path.lineTo(box.right() - box.height() / qTan(qDegreesToRadians(60.0)), box.top());
+        path.closeSubpath();
+        painter.drawPath(path);
+    } else if (preset == QStringLiteral("lineArrow")) {
+        const qreal y = box.center().y();
+        painter.drawLine(QPointF(box.left(), y), QPointF(box.right(), y));
+        painter.drawLine(QPointF(box.right() - 4.5, y - 4.0), QPointF(box.right(), y));
+        painter.drawLine(QPointF(box.right() - 4.5, y + 4.0), QPointF(box.right(), y));
+    }
+    painter.end();
+
+    return QIcon(pixmap);
+}
+
 ShapeItem::ShapeItem(ShapeType type, QGraphicsItem* parent) : CanvasItem(parent), m_type(type)
 {
     m_fillColor = m_strokeColor;
@@ -229,17 +273,28 @@ void ShapeItem::setTriangleAngles(qreal angle1, qreal angle2)
 
 void ShapeItem::contentResized()
 {
-    if (m_type != ShapeType::Triangle || isCustomShape() || m_syncingTriangle) {
+    if (m_type != ShapeType::Triangle || isCustomShape()) {
         return;
     }
-    const QSizeF size = contentSize();
+    // 尺寸折算已经在 adjustedContentSize() 里做完，这里只记一次同步基准，
+    // 不再在 resize 过程中二次改尺寸，避免拖动底边时反复重排导致闪烁。
+    if (!m_syncingTriangle) {
+        m_triangleSyncSize = contentSize();
+    }
+}
+
+QSizeF ShapeItem::adjustedContentSize(const QSizeF& size) const
+{
+    if (m_type != ShapeType::Triangle || isCustomShape()) {
+        return size;
+    }
+    const QSizeF current = contentSize();
     const qreal cot1 = 1.0 / qTan(qDegreesToRadians(m_bottomAngle1));
     const qreal cot2 = 1.0 / qTan(qDegreesToRadians(m_bottomAngle2));
     const qreal factor = qMax<qreal>(0.02, cot1 + cot2);
-
+    const bool widthChanged = !qFuzzyCompare(size.width() + 0.01, current.width() + 0.01);
+    const bool heightChanged = !qFuzzyCompare(size.height() + 0.01, current.height() + 0.01);
     QSizeF target = size;
-    const bool widthChanged = !qFuzzyCompare(size.width() + 0.01, m_triangleSyncSize.width() + 0.01);
-    const bool heightChanged = !qFuzzyCompare(size.height() + 0.01, m_triangleSyncSize.height() + 0.01);
     if (heightChanged && !widthChanged) {
         // 拖高等价于等比改底边：高度是本次输入，底边按角度系数放大 / 缩小。
         target.setWidth(size.height() * factor);
@@ -247,14 +302,42 @@ void ShapeItem::contentResized()
         // 拖底边：高度由底边与角度派生。
         target.setHeight(size.width() / factor);
     }
-    m_triangleSyncSize = target;
-    if (!qFuzzyCompare(target.width() + 0.01, size.width() + 0.01) ||
-        !qFuzzyCompare(target.height() + 0.01, size.height() + 0.01)) {
-        m_syncingTriangle = true;
-        setContentSize(target);
-        m_syncingTriangle = false;
-        m_triangleSyncSize = contentSize();
+    return target;
+}
+
+QRectF ShapeItem::frameRect() const
+{
+    // 扇形与弧线只画了内容矩形里的一小块，选中框与手柄改贴在轮廓的最小覆盖矩形上。
+    if (m_customPath.isEmpty() && (m_type == ShapeType::Sector || m_type == ShapeType::Arc)) {
+        const QPainterPath path = currentPath(contentRect());
+        const QRectF bounds = path.boundingRect();
+        if (!bounds.isEmpty()) {
+            return bounds;
+        }
     }
+    return CanvasItem::frameRect();
+}
+
+void ShapeItem::drawSelectionOverlay(QPainter* painter)
+{
+    CanvasItem::drawSelectionOverlay(painter);
+    if (m_type != ShapeType::Triangle || isCustomShape() || !isSelected() || !isEditable() || !hasSingleSelection()) {
+        return;
+    }
+    // 底边中点的底边长度手柄两侧各补一根短刻度线，提示这里拖的是底边。
+    const QRectF frame = frameRect();
+    const qreal gap = qMax<qreal>(4.0, 6.0 / qMax<qreal>(viewScale(), 0.001));
+    const qreal tick = qMax<qreal>(4.0, 7.0 / qMax<qreal>(viewScale(), 0.001));
+    QPen tickPen(QColor(79, 124, 255));
+    tickPen.setWidthF(1.2);
+    tickPen.setCosmetic(true);
+    painter->save();
+    painter->setPen(tickPen);
+    painter->setBrush(Qt::NoBrush);
+    const QPointF center(frame.center().x(), frame.bottom());
+    painter->drawLine(QPointF(center.x() - gap, center.y()), QPointF(center.x() - gap, center.y() - tick));
+    painter->drawLine(QPointF(center.x() + gap, center.y()), QPointF(center.x() + gap, center.y() - tick));
+    painter->restore();
 }
 
 void ShapeItem::setCustomShape(const QString& name, const QPainterPath& unitPath)

@@ -25,7 +25,7 @@ qreal CanvasItemHandles::rotationOffset() const
 
 QPointF CanvasItemHandles::center(int handle) const
 {
-    const QRectF rect = m_item->contentRect();
+    const QRectF rect = m_item->frameRect();
     switch (static_cast<CanvasItem::Handle>(handle)) {
     case CanvasItem::TopLeft:
         return rect.topLeft();
@@ -98,7 +98,7 @@ void CanvasItemHandles::drawOverlay(QPainter* painter) const
     borderPen.setDashPattern({5.0, 4.0});
     painter->setPen(borderPen);
     painter->setBrush(Qt::NoBrush);
-    painter->drawRect(m_item->contentRect());
+    painter->drawRect(m_item->frameRect());
 
     if (!m_item->isEditable() || !m_item->hasSingleSelection()) {
         return;
@@ -114,7 +114,7 @@ void CanvasItemHandles::drawOverlay(QPainter* painter) const
     }
 
     // Rotation handle: a circular knob above the frame, connected by a thin line.
-    const QPointF topCenter(center(CanvasItem::Top).x(), m_item->contentRect().top());
+    const QPointF topCenter(center(CanvasItem::Top).x(), m_item->frameRect().top());
     const QPointF rotationCenter = center(CanvasItem::Rotation);
     painter->drawLine(topCenter, rotationCenter);
     painter->setBrush(QColor(79, 124, 255));

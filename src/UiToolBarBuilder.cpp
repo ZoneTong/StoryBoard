@@ -100,10 +100,14 @@ void UiToolBarBuilder::createSmoothingToolbar(QToolBar* mainBar)
 
 void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
 {
-    // 「图形」区：常见图形在原下拉入口的位置直接平铺成一排按钮，
-    // 复用「插入 → 常见图形」同一批动作，避免两套插入逻辑。
+    // 「图形」区：常见图形与紧随其后的预置项（圆角矩形、45°/60° 直角三角、直线箭头）
+    // 按菜单顺序平铺成一排，复用「插入 → 常见图形」同一批动作，避免两套插入逻辑。
     for (QAction* action : m_window->m_shapeMenu->actions()) {
-        if (!action || action->isSeparator() || !action->objectName().startsWith(QStringLiteral("ShapeAction_"))) {
+        if (!action || action->isSeparator()) {
+            continue;
+        }
+        const QString name = action->objectName();
+        if (!name.startsWith(QStringLiteral("ShapeAction_")) && !name.startsWith(QStringLiteral("ShapePreset_"))) {
             continue;
         }
         auto* shapeButton = new QToolButton(mainBar);
