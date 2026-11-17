@@ -358,6 +358,32 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                           .arg(scene.canvasItemCount()));
         }
         {
+            // 剪除把底图切成两半时，每一块都要成为独立图元，而不是一个图元里藏着两块。
+            QUndoStack undo;
+            CanvasScene scene;
+            scene.setUndoStack(&undo);
+            scene.setMode(ToolMode::Edit);
+            scene.applyCanvasSize(QSizeF(600.0, 400.0));
+            CanvasItem* base = addRect(scene, 20, 20, 300, 120);
+            CanvasItem* cutter = addRect(scene, 150, 10, 40, 140);
+            base->setSelected(true);
+            cutter->setSelected(true);
+            const bool ok = BoolOps::apply(&scene, BoolOps::Operation::Subtract, QStringLiteral("剪除"));
+            const QList<CanvasItem*> pieces = scene.selectedCanvasItems();
+            bool eachNarrower = pieces.size() == 2;
+            for (CanvasItem* piece : std::as_const(pieces)) {
+                if (piece->sceneBoundingRect().width() >= 250.0) {
+                    eachNarrower = false;
+                }
+            }
+            ctx.check(ok && pieces.size() == 2 && scene.canvasItemCount() == 2 && eachNarrower,
+                      QStringLiteral("剪除把底图切成互不相连的两块，各自成为独立图元"),
+                      QStringLiteral("ok=%1 pieces=%2 items=%3")
+                          .arg(ok ? 1 : 0)
+                          .arg(pieces.size())
+                          .arg(scene.canvasItemCount()));
+        }
+        {
             // 拆分：3 个填充图元互相重叠，拆成多块且总数守恒（原 3 个消失）。
             QUndoStack undo;
             CanvasScene scene;
@@ -942,13 +968,19 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         const bool groupedSubtract =
             BoolOps::apply(&groupBoolScene, BoolOps::Operation::Subtract, QStringLiteral("相减"));
         const QList<CanvasItem*> groupedSelection = groupBoolScene.selectedCanvasItems();
+        QRectF groupedExtent;
+        for (CanvasItem* item : std::as_const(groupedSelection)) {
+            groupedExtent =
+                groupedExtent.isNull() ? item->sceneBoundingRect() : groupedExtent.united(item->sceneBoundingRect());
+        }
         auto* groupedResult =
             groupedSelection.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(groupedSelection.constFirst());
-        ctx.check(groupedSubtract && groupedResult && groupedResult->outlineShape().boundingRect().width() > 100.0,
+        ctx.check(groupedSubtract && groupedResult && groupedExtent.width() > 100.0,
                   QStringLiteral("整组作为一个参与者参与合并"),
-                  QStringLiteral("ok=%1 width=%2")
+                  QStringLiteral("ok=%1 width=%2 pieces=%3")
                       .arg(groupedSubtract ? 1 : 0)
-                      .arg(groupedResult ? groupedResult->outlineShape().boundingRect().width() : -1.0));
+                      .arg(groupedExtent.width())
+                      .arg(groupedSelection.size()));
         ctx.check(groupedResult && !groupedResult->layers().isEmpty() &&
                       groupedResult->layers().constFirst().fill == QColor(30, 160, 90),
                   QStringLiteral("整组结果采用组内最高优先级图元的样式"));

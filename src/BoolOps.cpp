@@ -6,6 +6,7 @@
 #include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "ImageItem.h"
+#include "PathRegions.h"
 #include "ShapeItem.h"
 #include "TextItem.h"
 
@@ -617,7 +618,18 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         if (result.isEmpty()) {
             return false;
         }
-        results.append(buildLayers(result, participants, top, false));
+        // 剪除可能把底图切成互不相连的多块：每块单独成一个图元，
+        // 这样每一块都能自己选中、拖动，而不是藏在一个图元里只能整体移动。
+        const QList<QPainterPath> pieces = PathRegions::splitDisjoint(result);
+        for (const QPainterPath& piece : pieces) {
+            const QList<CompositeShapeItem::Layer> layers = buildLayers(piece, participants, top, false);
+            if (!layers.isEmpty()) {
+                results.append(layers);
+            }
+        }
+        if (results.isEmpty()) {
+            return false;
+        }
         break;
     }
     }
