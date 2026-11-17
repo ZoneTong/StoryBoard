@@ -6,12 +6,18 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QMap>
-#include <QProcess>
 #include <QSaveFile>
 #include <QStandardPaths>
 #include <QStringConverter>
 #include <QTextStream>
 #include <QUrl>
+
+#ifdef Q_OS_WIN
+// clang-format off
+#include <windows.h>
+#include <shellapi.h>
+// clang-format on
+#endif
 
 namespace {
 
@@ -401,17 +407,16 @@ bool AppSettings::openShapesFolder()
 {
     const QString directory = QDir::cleanPath(shapesDir());
     QDir().mkpath(directory);
-    // Windows 的 ShellExecute 只在 URL 以分隔符结尾时把目标当目录处理，
-    // 少了尾斜杠会被当成“要打开的文件”，于是静默失败；这里显式补上。
-    const QUrl url = QUrl::fromLocalFile(directory + QLatin1Char('/'));
-    if (QDesktopServices::openUrl(url)) {
-        return true;
-    }
 #ifdef Q_OS_WIN
-    // 兜底：直接拉起资源管理器，避免外壳关联损坏时按钮完全没反应。
-    return QProcess::startDetached(QStringLiteral("explorer.exe"), {QDir::toNativeSeparators(directory)});
+    // 交给已在运行的资源管理器处理：ShellExecute 走外壳通道，能把“打开目录”转发给
+    // 现有 explorer 窗口。不要改成自己 CreateProcess 起 explorer.exe——在提权或受限
+    // 会话里那样起 explorer 会以 0xc0000142 启动失败，弹“应用程序错误”对话框。
+    const std::wstring native = QDir::toNativeSeparators(directory).toStdWString();
+    const HINSTANCE result = ShellExecuteW(nullptr, L"open", native.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+    return reinterpret_cast<qintptr>(result) > 32;
 #else
-    return false;
+    // 非 Windows：目录 URL 必须以分隔符结尾，否则会被当成要打开的文件。
+    return QDesktopServices::openUrl(QUrl::fromLocalFile(directory + QLatin1Char('/')));
 #endif
 }
 
