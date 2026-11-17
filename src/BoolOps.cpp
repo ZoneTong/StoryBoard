@@ -10,6 +10,7 @@
 #include "TextItem.h"
 
 #include <QPainterPath>
+#include <QPainterPathStroker>
 #include <QSet>
 #include <QUndoStack>
 #include <algorithm>
@@ -283,9 +284,17 @@ QList<Participant> collect(CanvasScene* scene)
 // 按绘制方式分层，避免同一块结果既填充又重复描线：
 // 有面积图形一层（填充 + 外轮廓描线），直线 / 曲线一层（已是线宽带，只填充不描线），
 // 文字一层（只填字形，不描边）。分层只在结果包含零面积图元或文字时出现。
+// intersectMode：相交结果的填充轮廓先挖掉线宽带（条带区域直接归线宽带层渲染），
+// 避免细窄交集条带被当成面积层套上描线后变成黑块。
 QList<CompositeShapeItem::Layer> buildLayers(const QPainterPath& result, const QList<Participant>& participants,
-                                             const Participant& top)
+                                             const Participant& top, bool intersectMode)
 {
+    QPainterPath bandUnion;
+    for (const Participant& participant : participants) {
+        if (!participant.strokePath.isEmpty()) {
+            bandUnion = bandUnion.isEmpty() ? participant.strokePath : bandUnion.united(participant.strokePath);
+        }
+    }
     QPainterPath areas;
     QPainterPath strokes;
     QPainterPath texts;
@@ -295,11 +304,16 @@ QList<CompositeShapeItem::Layer> buildLayers(const QPainterPath& result, const Q
     int textRank = -1;
     for (int i = 0; i < participants.size(); ++i) {
         const Participant& participant = participants.at(i);
-        auto append = [&result](QPainterPath& target, const QPainterPath& source) {
+        auto append = [&result, intersectMode, &bandUnion](QPainterPath& target, const QPainterPath& source) {
             if (source.isEmpty()) {
                 return;
             }
-            const QPainterPath clipped = source.intersected(result);
+            // 相交模式：填充轮廓先挖掉线宽带，交集条带整体交给线宽带层。
+            const QPainterPath usable = intersectMode ? source.subtracted(bandUnion) : source;
+            if (usable.isEmpty()) {
+                return;
+            }
+            const QPainterPath clipped = usable.intersected(result);
             if (clipped.isEmpty()) {
                 return;
             }
@@ -336,6 +350,17 @@ QList<CompositeShapeItem::Layer> buildLayers(const QPainterPath& result, const Q
         layer.strokeWidth = qMax(0.0, top.strokeWidth);
         layer.filled = true;
         layer.role = CompositeShapeItem::LayerRole::FilledArea;
+        // 区域整体落在自身 2×描线宽的描边带内（细窄交集 / 窄条）时降级为线宽带：
+        // 只填充不描边，避免被描线吞成黑块；描线宽为 0 时无需降级。
+        if (layer.strokeWidth > 0.0) {
+            QPainterPathStroker stroker;
+            stroker.setJoinStyle(Qt::MiterJoin);
+            stroker.setWidth(layer.strokeWidth * 2.0);
+            if (areas.subtracted(stroker.createStroke(areas)).isEmpty()) {
+                layer.strokeWidth = 0.0;
+                layer.role = CompositeShapeItem::LayerRole::StrokeBand;
+            }
+        }
         ranked.append(RankedLayer{areaRank, 0, layer});
     }
     if (!strokes.isEmpty()) {
@@ -391,6 +416,26 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
     // 除拆分外的运算都只产出一个多边形；拆分产出多个互不重叠的独立图元。
     QList<QList<CompositeShapeItem::Layer>> results;
 
+    // 零面积描线（直线 / 曲线 / 文字）只做覆盖着色，不作为挖除与分块的边界：
+    // 否则菱形挖直线会在图形上留细缝、交集条带被当成面积层套上描线后变成黑块。
+    // 没有任何填充参与者时退回按线宽带运算的旧行为。
+    QPainterPath fillUnion;
+    QPainterPath bandUnion;
+    QPainterPath textUnion;
+    bool hasFillParticipant = false;
+    for (const Participant& participant : participants) {
+        if (!participant.fillPath.isEmpty()) {
+            fillUnion = fillUnion.isEmpty() ? participant.fillPath : fillUnion.united(participant.fillPath);
+            hasFillParticipant = true;
+        }
+        if (!participant.strokePath.isEmpty()) {
+            bandUnion = bandUnion.isEmpty() ? participant.strokePath : bandUnion.united(participant.strokePath);
+        }
+        if (!participant.textPath.isEmpty()) {
+            textUnion = textUnion.isEmpty() ? participant.textPath : textUnion.united(participant.textPath);
+        }
+    }
+
     switch (operation) {
     case Operation::Union: {
         // 联合：内部共边不描线，整块结果统一采用最高优先级图元的填充与描线。
@@ -401,27 +446,92 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         if (result.isEmpty()) {
             return false;
         }
-        results.append(buildLayers(result, participants, top));
+        results.append(buildLayers(result, participants, top, false));
         break;
     }
     case Operation::Combine: {
-        // 组合：并集挖掉重叠区，重叠部分变成空洞，整体仍是单层、用顶层颜色。
-        QPainterPath result = participants.constFirst().path;
-        for (int i = 1; i < participants.size() && !result.isEmpty(); ++i) {
-            const QPainterPath& other = participants.at(i).path;
-            result = result.united(other).subtracted(result.intersected(other));
+        if (!hasFillParticipant) {
+            // 组合：并集挖掉重叠区，重叠部分变成空洞，整体仍是单层、用顶层颜色。
+            QPainterPath result = participants.constFirst().path;
+            for (int i = 1; i < participants.size() && !result.isEmpty(); ++i) {
+                const QPainterPath& other = participants.at(i).path;
+                result = result.united(other).subtracted(result.intersected(other));
+            }
+            if (result.isEmpty()) {
+                return false;
+            }
+            results.append(buildLayers(result, participants, top, false));
+            break;
         }
+        // 只在有填充空间的图元之间挖重叠区；线宽带与文字不参与挖除，
+        // 未被填充覆盖的部分作为覆盖层保留。
+        QPainterPath punched;
+        bool started = false;
+        for (const Participant& participant : participants) {
+            if (participant.fillPath.isEmpty()) {
+                continue;
+            }
+            punched = started
+                          ? punched.united(participant.fillPath).subtracted(punched.intersected(participant.fillPath))
+                          : participant.fillPath;
+            started = true;
+        }
+        QPainterPath result = punched.united(bandUnion.subtracted(fillUnion)).united(textUnion);
         if (result.isEmpty()) {
             return false;
         }
-        results.append(buildLayers(result, participants, top));
+        results.append(buildLayers(result, participants, top, false));
         break;
     }
     case Operation::Fragment: {
-        // 拆分：按“被哪些图元覆盖”把重叠区切成互不重叠的多块，每块沿用覆盖它
-        // 的最高优先级图元的颜色；每块单独生成一个多边形图元，可分别选中和拖动。
-        // 图元数超过 8 个时 2^n 组合过大，取前 8 个参与。
-        const int count = qMin(participants.size(), 8);
+        // 拆分：按「被哪些有填充空间的图元覆盖」把重叠区切成互不重叠的多块，
+        // 每块单独生成一个多边形图元，可分别选中和拖动；线宽带与文字不参与
+        // 分块，未被任何填充块覆盖的部分单独成块。图元数超过 8 个时 2^n 组合
+        // 过大，取前 8 个填充参与者。
+        if (!hasFillParticipant) {
+            const int count = qMin(participants.size(), 8);
+            for (int mask = 1; mask < (1 << count); ++mask) {
+                QPainterPath region;
+                bool started = false;
+                for (int i = 0; i < count; ++i) {
+                    if (!(mask & (1 << i))) {
+                        continue;
+                    }
+                    region = started ? region.intersected(participants.at(i).path) : participants.at(i).path;
+                    started = true;
+                }
+                if (region.isEmpty()) {
+                    continue;
+                }
+                // 挖掉不在本组合里的图元，得到只在 mask 覆盖下的那一块。
+                for (int i = 0; i < participants.size(); ++i) {
+                    if (i < count && (mask & (1 << i))) {
+                        continue;
+                    }
+                    region = region.subtracted(participants.at(i).path);
+                    if (region.isEmpty()) {
+                        break;
+                    }
+                }
+                if (region.isEmpty()) {
+                    continue;
+                }
+                // 拆分出的每一块都沿用同一个 donor（全局最高优先级图元）的样式。
+                results.append(buildLayers(region, participants, top, false));
+            }
+            if (results.isEmpty()) {
+                return false;
+            }
+            break;
+        }
+        QList<const Participant*> fillers;
+        for (const Participant& participant : participants) {
+            if (!participant.fillPath.isEmpty()) {
+                fillers.append(&participant);
+            }
+        }
+        const int count = qMin(fillers.size(), 8);
+        QPainterPath covered;
         for (int mask = 1; mask < (1 << count); ++mask) {
             QPainterPath region;
             bool started = false;
@@ -429,18 +539,17 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
                 if (!(mask & (1 << i))) {
                     continue;
                 }
-                region = started ? region.intersected(participants.at(i).path) : participants.at(i).path;
+                region = started ? region.intersected(fillers.at(i)->fillPath) : fillers.at(i)->fillPath;
                 started = true;
             }
             if (region.isEmpty()) {
                 continue;
             }
-            // 挖掉不在本组合里的图元，得到只在 mask 覆盖下的那一块。
-            for (int i = 0; i < participants.size(); ++i) {
-                if (i < count && (mask & (1 << i))) {
+            for (int i = 0; i < count; ++i) {
+                if ((mask & (1 << i))) {
                     continue;
                 }
-                region = region.subtracted(participants.at(i).path);
+                region = region.subtracted(fillers.at(i)->fillPath);
                 if (region.isEmpty()) {
                     break;
                 }
@@ -448,8 +557,12 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
             if (region.isEmpty()) {
                 continue;
             }
-            // 拆分出的每一块都沿用同一个 donor（全局最高优先级图元）的样式。
-            results.append(buildLayers(region, participants, top));
+            covered = covered.isEmpty() ? region : covered.united(region);
+            results.append(buildLayers(region, participants, top, false));
+        }
+        QPainterPath leftover = bandUnion.united(textUnion).subtracted(covered);
+        if (!leftover.isEmpty()) {
+            results.append(buildLayers(leftover, participants, top, false));
         }
         if (results.isEmpty()) {
             return false;
@@ -464,20 +577,36 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         if (result.isEmpty()) {
             return false;
         }
-        // 相交结果同样统一采用最高优先级图元的样式。
-        results.append(buildLayers(result, participants, top));
+        // 相交结果同样统一采用最高优先级图元的样式；条带区域交给线宽带层渲染。
+        results.append(buildLayers(result, participants, top, true));
         break;
     }
     case Operation::Subtract: {
         // 相减：以最上层图元为底，依次挖掉其余图元。
-        QPainterPath result = top.path;
-        for (int i = 0; i < participants.size() - 1 && !result.isEmpty(); ++i) {
-            result = result.subtracted(participants.at(i).path);
+        if (!hasFillParticipant) {
+            QPainterPath result = top.path;
+            for (int i = 0; i < participants.size() - 1 && !result.isEmpty(); ++i) {
+                result = result.subtracted(participants.at(i).path);
+            }
+            if (result.isEmpty()) {
+                return false;
+            }
+            results.append(buildLayers(result, participants, top, false));
+            break;
         }
+        // 底图只被其余有填充空间的图元挖除；线宽带与文字不参与裁剪。
+        QPainterPath otherFills;
+        for (int i = 0; i < participants.size() - 1; ++i) {
+            const Participant& participant = participants.at(i);
+            if (!participant.fillPath.isEmpty()) {
+                otherFills = otherFills.isEmpty() ? participant.fillPath : otherFills.united(participant.fillPath);
+            }
+        }
+        QPainterPath result = top.path.subtracted(otherFills);
         if (result.isEmpty()) {
             return false;
         }
-        results.append(buildLayers(result, participants, top));
+        results.append(buildLayers(result, participants, top, false));
         break;
     }
     }

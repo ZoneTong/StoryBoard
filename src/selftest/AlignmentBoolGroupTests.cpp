@@ -1,4 +1,4 @@
-#include "Alignment.h"
+﻿#include "Alignment.h"
 #include "BoolOps.h"
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
@@ -155,11 +155,9 @@ void selftest::runAlignmentMenuTests(Context& ctx)
         }
         // 功能键只看绑定键生效；副键不整组断言，改键窗口会兜底冲突提示。
         ctx.check(redoAction && redoAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+Y")),
-                  QStringLiteral("重做绑定 Ctrl+Y"),
-                  redoAction ? redoAction->shortcut().toString() : QString());
+                  QStringLiteral("重做绑定 Ctrl+Y"), redoAction ? redoAction->shortcut().toString() : QString());
         ctx.check(zoomInAction && zoomInAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+=")),
-                  QStringLiteral("放大绑定 Ctrl+="),
-                  zoomInAction ? zoomInAction->shortcut().toString() : QString());
+                  QStringLiteral("放大绑定 Ctrl+="), zoomInAction ? zoomInAction->shortcut().toString() : QString());
     }
 }
 
@@ -295,6 +293,141 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                       QStringLiteral("layers=%1 band=%2")
                           .arg(lineShell ? lineShell->layerCount() : -1)
                           .arg(bandLayerFound ? 1 : 0));
+        }
+
+        // 零面积描线不作为挖除与分块边界：直线横穿菱形后，组合 / 剪除 / 拆分
+        // 都不能在菱形上留细缝，交集条带按线宽带渲染而不是套描线的面积层。
+        {
+            struct LineMerge {
+                bool ok = false;
+                int items = 0;
+                int layerCount = 0;
+                int strokedLayers = 0;
+                QColor diamondTop;
+                QColor slit;
+            };
+            auto runLineMerge = [](BoolOps::Operation operation) {
+                LineMerge result;
+                QUndoStack undo;
+                CanvasScene scene;
+                scene.setUndoStack(&undo);
+                scene.setMode(ToolMode::Edit);
+                scene.applyCanvasSize(QSizeF(320.0, 220.0));
+                BackgroundState background;
+                background.type = BackgroundType::Color;
+                background.color = QColor(Qt::white);
+                scene.applyBackground(background);
+                auto* diamond = new ShapeItem();
+                diamond->setShapeType(ShapeType::Diamond);
+                diamond->setPos(QPointF(70.0, 40.0));
+                diamond->setContentSize(QSizeF(160.0, 120.0));
+                diamond->setStyle(QColor(20, 20, 20), QColor(200, 40, 40), 4.0);
+                diamond->setFill(QColor(200, 40, 40), FillStyle::Solid);
+                auto* line = new ShapeItem();
+                line->setShapeType(ShapeType::Line);
+                line->setPos(QPointF(30.0, 80.0));
+                line->setContentSize(QSizeF(250.0, 40.0));
+                line->setStyle(QColor(30, 90, 200), QColor(30, 90, 200), 6.0);
+                scene.addItemsWithUndo({line, diamond}, QStringLiteral("Add line merge"));
+                line->setSelected(true);
+                diamond->setSelected(true);
+                result.ok = BoolOps::apply(&scene, operation, QStringLiteral("Line merge"));
+                const QList<CanvasItem*> selected = scene.selectedCanvasItems();
+                result.items = selected.size();
+                for (CanvasItem* item : selected) {
+                    if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+                        result.layerCount += composite->layerCount();
+                        for (const CompositeShapeItem::Layer& layer : composite->layers()) {
+                            if (layer.strokeWidth > 0.0) {
+                                ++result.strokedLayers;
+                            }
+                        }
+                    }
+                }
+                const QImage rendered = scene.renderImage(QRectF(0.0, 0.0, 320.0, 220.0), 1.0);
+                result.diamondTop = rendered.pixelColor(150, 60);
+                result.slit = rendered.pixelColor(150, 100);
+                return result;
+            };
+            const QColor diamondFill(200, 40, 40);
+            const QColor donorStroke(20, 20, 20);
+
+            const LineMerge lineCombine = runLineMerge(BoolOps::Operation::Combine);
+            ctx.check(lineCombine.ok && lineCombine.items == 1 && lineCombine.diamondTop == diamondFill &&
+                          lineCombine.slit == diamondFill,
+                      QStringLiteral("直线与菱形组合不挖出细缝"),
+                      QStringLiteral("ok=%1 items=%2 top=%3 slit=%4")
+                          .arg(lineCombine.ok ? 1 : 0)
+                          .arg(lineCombine.items)
+                          .arg(lineCombine.diamondTop.name())
+                          .arg(lineCombine.slit.name()));
+
+            const LineMerge lineSubtract = runLineMerge(BoolOps::Operation::Subtract);
+            ctx.check(lineSubtract.ok && lineSubtract.items == 1 && lineSubtract.slit == diamondFill,
+                      QStringLiteral("直线与菱形剪除后菱形保持完整"),
+                      QStringLiteral("ok=%1 items=%2 slit=%3")
+                          .arg(lineSubtract.ok ? 1 : 0)
+                          .arg(lineSubtract.items)
+                          .arg(lineSubtract.slit.name()));
+
+            const LineMerge lineIntersect = runLineMerge(BoolOps::Operation::Intersect);
+            ctx.check(lineIntersect.ok && lineIntersect.items == 1 && lineIntersect.layerCount == 1 &&
+                          lineIntersect.strokedLayers == 0 && lineIntersect.slit == donorStroke &&
+                          lineIntersect.diamondTop == QColor(Qt::white),
+                      QStringLiteral("直线与菱形相交得到单层线宽带条带"),
+                      QStringLiteral("ok=%1 items=%2 layers=%3 stroked=%4 slit=%5 top=%6")
+                          .arg(lineIntersect.ok ? 1 : 0)
+                          .arg(lineIntersect.items)
+                          .arg(lineIntersect.layerCount)
+                          .arg(lineIntersect.strokedLayers)
+                          .arg(lineIntersect.slit.name())
+                          .arg(lineIntersect.diamondTop.name()));
+
+            const LineMerge lineFragment = runLineMerge(BoolOps::Operation::Fragment);
+            ctx.check(lineFragment.ok && lineFragment.items == 2 && lineFragment.slit == diamondFill,
+                      QStringLiteral("直线与菱形拆分得到菱形块与线宽带块"),
+                      QStringLiteral("ok=%1 items=%2 slit=%3")
+                          .arg(lineFragment.ok ? 1 : 0)
+                          .arg(lineFragment.items)
+                          .arg(lineFragment.slit.name()));
+
+            // 细窄交集降级为线宽带：菱形与五角星边角相错形成的窄透镜交集只填充
+            // 不描边，不会被描线吞成黑块。
+            QUndoStack lensUndo;
+            CanvasScene lensScene;
+            lensScene.setUndoStack(&lensUndo);
+            lensScene.setMode(ToolMode::Edit);
+            lensScene.applyCanvasSize(QSizeF(420.0, 320.0));
+            BackgroundState lensBackground;
+            lensBackground.type = BackgroundType::Color;
+            lensBackground.color = QColor(Qt::white);
+            lensScene.applyBackground(lensBackground);
+            auto* lensDiamond = new ShapeItem(ShapeType::Diamond);
+            lensDiamond->setPos(QPointF(60.0, 70.0));
+            lensDiamond->setContentSize(QSizeF(180.0, 180.0));
+            auto* lensStar = new ShapeItem(ShapeType::Star);
+            lensStar->setPos(QPointF(180.0, 60.0));
+            lensStar->setContentSize(QSizeF(180.0, 180.0));
+            lensScene.addItemsWithUndo({lensDiamond, lensStar}, QStringLiteral("Add lens pair"));
+            lensDiamond->setSelected(true);
+            lensStar->setSelected(true);
+            const bool lensOk =
+                BoolOps::apply(&lensScene, BoolOps::Operation::Intersect, QStringLiteral("Lens intersect"));
+            int lensLayers = 0;
+            int lensStroked = 0;
+            for (CanvasItem* item : lensScene.selectedCanvasItems()) {
+                if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+                    lensLayers += composite->layerCount();
+                    for (const CompositeShapeItem::Layer& layer : composite->layers()) {
+                        if (layer.strokeWidth > 0.0) {
+                            ++lensStroked;
+                        }
+                    }
+                }
+            }
+            ctx.check(
+                lensOk && lensLayers == 1 && lensStroked == 0, QStringLiteral("细窄交集区域降级为线宽带只填充不描边"),
+                QStringLiteral("ok=%1 layers=%2 stroked=%3").arg(lensOk ? 1 : 0).arg(lensLayers).arg(lensStroked));
         }
 
         // 有填充空间的图元优先于零面积描线图元：曲线叠在矩形上方（height 更大），
