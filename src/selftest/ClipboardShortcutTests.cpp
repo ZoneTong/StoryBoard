@@ -70,9 +70,13 @@ void selftest::runClipboardShortcutTests(Context& ctx)
         for (CanvasItem* item : pasteScene.canvasItems()) {
             copy = item;
         }
-        ctx.check(
-            copy && copy->pos() == source->pos() + QPointF(20.0, 20.0), QStringLiteral("粘贴副本相对源图元偏移 20,20"),
-            copy ? QStringLiteral("%1,%2").arg(copy->pos().x()).arg(copy->pos().y()) : QStringLiteral("<missing>"));
+        // 需求 2：粘贴落点重新计算到视图/画布中心区域，不再固定叠在源图元旁边。
+        const QPointF pastedCenter = copy ? copy->sceneBoundingRect().center() : QPointF();
+        const bool insideCanvas = pasteScene.canvasRect().contains(pastedCenter);
+        const bool movedAwayFromSource =
+            copy && (pastedCenter - source->sceneBoundingRect().center()).manhattanLength() > 1.0;
+        ctx.check(copy && insideCanvas && movedAwayFromSource, QStringLiteral("粘贴副本落在画布内并离开源图元位置"),
+                  QStringLiteral("%1,%2").arg(pastedCenter.x()).arg(pastedCenter.y()));
         ctx.check(copy && copy->groupId() == 0, QStringLiteral("粘贴副本不带原分组关系"));
         ctx.check(pasteUndo.count() == 1, QStringLiteral("粘贴只产生一条撤销记录"));
 

@@ -498,12 +498,11 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
         if (selectedShape && dockPanel) {
             QList<QSpinBox*> valueSpins = dockPanel->findChildren<QSpinBox*>(QStringLiteral("ItemValueSpin"));
             QSpinBox* opacitySpin = nullptr;
-            QSpinBox* cornerSpin = nullptr;
+            // 需求 4：圆角上限改为短边一半，不能再按固定的 400 识别，按对象名取。
+            QSpinBox* cornerSpin = dockPanel->findChild<QSpinBox*>(QStringLiteral("ItemValueCornerSpin"));
             for (QSpinBox* spin : valueSpins) {
                 if (spin->maximum() == 100) {
                     opacitySpin = spin;
-                } else if (spin->maximum() == 400) {
-                    cornerSpin = spin;
                 }
             }
             const QList<QToolButton*> borderButtons =

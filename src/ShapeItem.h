@@ -156,6 +156,8 @@ class ShapeItem : public CanvasItem {
     qreal framePadding() const override { return qMax<qreal>(22.0, m_strokeWidth + 6.0); }
 
   private:
+    // 直线箭头：把两端箭头几何并入描带，命中与遮挡才算得上"头也是线的一部分"。
+    QPainterPath pathWithArrowHeads(const QPainterPath& base) const;
     ShapeType m_type = ShapeType::Rectangle;
     QColor m_strokeColor = QColor(30, 41, 59);
     QColor m_fillColor = QColor(30, 41, 59, 36);

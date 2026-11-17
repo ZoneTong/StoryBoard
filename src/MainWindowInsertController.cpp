@@ -172,22 +172,16 @@ void MainWindowInsertController::insertCustomShape(const QString& filePath)
     item->setStyle(stroke, filled ? fill : QColor(Qt::transparent), qBound<qreal>(2.5, m_window->m_brushWidth, 10.0));
     item->setFillStyle(filled ? m_window->m_fillStyle : FillStyle::None);
 
-    // 按模板原始宽高比插入，最长边不超过画布的 72%，小图形也不会被拉到画布大小。
+    // 需求 7：模板按原始宽高比插入，长边固定 64（2 格）；画布装不下时才等比缩到 72%。
     const QRectF canvas = m_window->m_scene->canvasRect();
     const qreal aspect = qMax<qreal>(0.05, customShape.aspectRatio);
-    qreal designWidth = 320.0;
-    qreal designHeight = 320.0;
-    if (aspect >= 1.0) {
-        designHeight = 320.0 / aspect;
-    } else {
-        designWidth = 320.0 * aspect;
-    }
-    QSizeF size(designWidth, designHeight);
+    const qreal longSide = 64.0;
+    QSizeF size = aspect >= 1.0 ? QSizeF(longSide, longSide / aspect) : QSizeF(longSide * aspect, longSide);
     const qreal fitScale = qMin<qreal>(1.0, qMin(canvas.width() * 0.72 / qMax<qreal>(1.0, size.width()),
                                                  canvas.height() * 0.72 / qMax<qreal>(1.0, size.height())));
     size *= fitScale;
-    size.setWidth(qMax<qreal>(24.0, size.width()));
-    size.setHeight(qMax<qreal>(24.0, size.height()));
+    size.setWidth(qMax<qreal>(16.0, size.width()));
+    size.setHeight(qMax<qreal>(16.0, size.height()));
 
     QPointF center = m_window->m_view->mapToScene(m_window->m_view->viewport()->rect().center());
     if (!canvas.contains(center)) {

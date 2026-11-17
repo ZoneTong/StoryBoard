@@ -2,10 +2,13 @@
 #include "CanvasScene.h"
 #include "ItemGeometry.h"
 
+#include <QGraphicsView>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QPointF>
+#include <QRectF>
 #include <QSet>
+#include <utility>
 
 // 剪贴板序列化与方向键微调：复制走图元自身的 toJson/fromJson，粘贴复用副本的
 // 命名、层高与撤销入口；微调只改位置，复用几何撤销命令，一次按键一条记录。
@@ -56,6 +59,40 @@ int CanvasScene::pasteClipboardItems(const QJsonArray& items)
     }
     if (copies.isEmpty()) {
         return 0;
+    }
+
+    // 需求 2：粘贴落点是视口中心；整块内容超过画布 72% 时先等比缩到 72%，再夹回画布内。
+    const QRectF canvas = canvasRect();
+    QRectF block;
+    for (CanvasItem* copy : std::as_const(copies)) {
+        const QRectF itemRect = copy->sceneBoundingRect();
+        block = block.isNull() ? itemRect : block.united(itemRect);
+    }
+    const qreal maxWidth = canvas.width() * 0.72;
+    const qreal maxHeight = canvas.height() * 0.72;
+    qreal scale = 1.0;
+    if (block.width() > 0.0 && block.height() > 0.0) {
+        scale = qMin<qreal>(1.0, qMin(maxWidth / block.width(), maxHeight / block.height()));
+    }
+    QPointF target = canvas.center();
+    const QList<QGraphicsView*> views = this->views();
+    if (!views.isEmpty() && views.constFirst() && views.constFirst()->viewport()) {
+        target = views.constFirst()->mapToScene(views.constFirst()->viewport()->rect().center());
+    }
+    if (!canvas.contains(target)) {
+        target = canvas.center();
+    }
+    if (!qFuzzyCompare(scale, 1.0) && !block.isEmpty()) {
+        for (CanvasItem* copy : std::as_const(copies)) {
+            const QPointF anchor = copy->pos();
+            copy->setContentSize(copy->contentSize() * scale);
+            copy->setPos(block.topLeft() + (anchor - block.topLeft()) * scale);
+        }
+        block = QRectF(block.topLeft(), block.size() * scale);
+    }
+    const QPointF delta = target - block.center();
+    for (CanvasItem* copy : std::as_const(copies)) {
+        copy->setPos(copy->pos() + delta);
     }
 
     addItemsWithUndo(copies, tr("Paste items"));

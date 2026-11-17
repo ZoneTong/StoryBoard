@@ -71,7 +71,7 @@ ItemDockPanelValueCard::ItemDockPanelValueCard(QWidget* parent) : QWidget(parent
     cornerLayout->addWidget(cornerIcon);
 
     m_cornerSpin = new QSpinBox(m_cornerSection);
-    m_cornerSpin->setObjectName(QStringLiteral("ItemValueSpin"));
+    m_cornerSpin->setObjectName(QStringLiteral("ItemValueCornerSpin"));
     m_cornerSpin->setRange(0, 400);
     m_cornerSpin->setSuffix(QStringLiteral(" px"));
     m_cornerSpin->setToolTip(ItemDockPanel::tr("Corner radius"));
@@ -252,8 +252,14 @@ void ItemDockPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QLis
     }
     if (m_cornerSpin) {
         m_cornerSpin->setEnabled(enabled);
+        // 需求 4：圆角上限统一为短边一半，不再写死 400。
+        const QSizeF size = shapes.isEmpty() ? QSizeF() : shapes.first()->contentSize();
+        const int limit = (size.width() > 0.0 && size.height() > 0.0)
+                              ? qMax(1, qRound(qMin(size.width(), size.height()) / 2.0))
+                              : 400;
+        m_cornerSpin->setMaximum(limit);
         const qreal radius = shapes.isEmpty() ? 0.0 : qMax<qreal>(0.0, shapes.first()->cornerRadius());
-        m_cornerSpin->setValue(qRound(radius));
+        m_cornerSpin->setValue(qBound(0, qRound(radius), limit));
     }
     if (m_angleSpin) {
         m_angleSpin->setEnabled(enabled);

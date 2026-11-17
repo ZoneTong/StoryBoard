@@ -1,5 +1,6 @@
 #include "ShapeItem.h"
 
+#include "ArrowStyle.h"
 #include "I18n.h"
 #include "ShapeHitGeometry.h"
 #include "ShapeMeta.h"
@@ -11,6 +12,7 @@
 #include <QIODevice>
 #include <QJsonObject>
 #include <QPainter>
+#include <QPainterPathStroker>
 #include <QtMath>
 
 namespace {
@@ -428,7 +430,33 @@ QPainterPath ShapeItem::outlineShape() const
 
 QPainterPath ShapeItem::paintedShape() const
 {
-    return ShapeHitGeometry::paintedShape(currentPath(contentRect()), m_type, m_fillStyle, m_fillColor, m_strokeWidth);
+    return pathWithArrowHeads(
+        ShapeHitGeometry::paintedShape(currentPath(contentRect()), m_type, m_fillStyle, m_fillColor, m_strokeWidth));
+}
+
+QPainterPath ShapeItem::pathWithArrowHeads(const QPainterPath& base) const
+{
+    if (m_type != ShapeType::Line || (!arrowStyleIsHead(m_startArrow) && !arrowStyleIsHead(m_endArrow))) {
+        return base;
+    }
+    const QRectF rect = contentRect();
+    if (rect.isEmpty()) {
+        return base;
+    }
+    QPainterPath path = base;
+    QPainterPathStroker stroker;
+    stroker.setWidth(qMax<qreal>(1.0, m_strokeWidth));
+    stroker.setJoinStyle(Qt::MiterJoin);
+    const QPointF left(rect.left(), rect.center().y());
+    const QPointF right(rect.right(), rect.center().y());
+    const QPointF center = rect.center();
+    if (arrowStyleIsHead(m_startArrow)) {
+        path = path.united(stroker.createStroke(arrowHeadPath(left, center, m_strokeWidth, m_startArrow)));
+    }
+    if (arrowStyleIsHead(m_endArrow)) {
+        path = path.united(stroker.createStroke(arrowHeadPath(right, center, m_strokeWidth, m_endArrow)));
+    }
+    return path;
 }
 
 QPainterPath ShapeItem::currentPath(const QRectF& rect) const
