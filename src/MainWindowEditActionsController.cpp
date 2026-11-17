@@ -3,6 +3,7 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "CanvasView.h"
+#include "ExcalidrawFormat.h"
 #include "ItemPropertiesDialog.h"
 #include "MainWindow.h"
 
@@ -177,7 +178,27 @@ void MainWindowEditActionsController::pasteItems()
         return;
     }
     const QMimeData* mime = QApplication::clipboard()->mimeData();
-    if (!mime || !mime->hasFormat(QLatin1String(kClipboardMimeType))) {
+    if (!mime) {
+        m_window->statusBar()->showMessage(MainWindow::tr("Nothing to paste"), 3000);
+        return;
+    }
+    // 需求 9：从 excalidraw.com 复制的 JSON 也能直接粘到画板里。
+    if (!mime->hasFormat(QLatin1String(kClipboardMimeType))) {
+        const QJsonDocument external = QJsonDocument::fromJson(mime->data(QStringLiteral("text/plain")));
+        if (external.isObject() && Excalidraw::isClipboard(external.object())) {
+            QStringList notes;
+            const QJsonArray items =
+                Excalidraw::elementsToItems(external.object().value(QStringLiteral("elements")).toArray(), &notes);
+            const int pastedCount = m_window->m_scene->pasteClipboardItems(items);
+            if (pastedCount == 0) {
+                m_window->statusBar()->showMessage(MainWindow::tr("Nothing to paste"), 3000);
+                return;
+            }
+            m_window->statusBar()->showMessage(MainWindow::tr("Pasted %1 Excalidraw item(s)").arg(pastedCount), 3000);
+            return;
+        }
+    }
+    if (!mime->hasFormat(QLatin1String(kClipboardMimeType))) {
         m_window->statusBar()->showMessage(MainWindow::tr("Nothing to paste"), 3000);
         return;
     }

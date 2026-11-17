@@ -91,6 +91,7 @@ class MainWindow : public QMainWindow {
     bool saveCanvas();
     bool saveCanvasAs();
     void exportCanvas();
+    void exportExcalidraw();
     void importImagesDialog();
     void importOutlineImageDialog();
     void insertTextAt(const QPointF& scenePos);
@@ -185,6 +186,7 @@ class MainWindow : public QMainWindow {
     QAction* m_importAct = nullptr;
     QAction* m_lineArtAct = nullptr;
     QAction* m_exportAct = nullptr;
+    QAction* m_exportExcalidrawAct = nullptr;
     QAction* m_quitAct = nullptr;
 
     QAction* m_undoAct = nullptr;

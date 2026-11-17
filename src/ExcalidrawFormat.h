@@ -1,0 +1,27 @@
+#ifndef EXCALIDRAWFORMAT_H
+#define EXCALIDRAWFORMAT_H
+
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QStringList>
+
+// 需求 9：Excalidraw 兼容。
+// 只做「场景 JSON <-> 画板 JSON」的纯转换，不碰场景对象，方便单独自检。
+namespace Excalidraw {
+constexpr char SceneType[] = "excalidraw";
+constexpr char ClipboardType[] = "excalidraw/clipboard";
+
+bool isScene(const QJsonObject& root);
+bool isClipboard(const QJsonObject& root);
+
+// 元素数组 -> StoryBoard items 数组（粘贴用）。不支持的元素跳过并写 warning。
+QJsonArray elementsToItems(const QJsonArray& elements, QStringList* warnings = nullptr);
+
+// .excalidraw 场景 -> StoryBoard 画板根 JSON（导入用）。
+QJsonObject sceneToStoryBoard(const QJsonObject& scene, QStringList* warnings = nullptr);
+
+// StoryBoard 画板根 JSON -> .excalidraw 场景（导出用）。
+QJsonObject storyBoardToScene(const QJsonObject& document, QStringList* warnings = nullptr);
+} // namespace Excalidraw
+
+#endif // EXCALIDRAWFORMAT_H

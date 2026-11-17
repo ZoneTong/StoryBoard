@@ -117,6 +117,7 @@ void UiMenuBuilder::buildMenus()
     fileMenu->addSeparator();
     // 插入图片只留在“插入”菜单，导入图片线稿化只留在文件菜单，避免同一动作多处出现。
     fileMenu->addAction(m_window->m_exportAct);
+    fileMenu->addAction(m_window->m_exportExcalidrawAct);
     // 需求：原“画板”菜单不再作为父菜单存在，它的设置、最近画布与画布文件夹
     // 直接并入文件菜单，位于“退出”之上；这一段由 updateCanvasesMenu 动态重建。
     QAction* boardSectionSeparator = fileMenu->addSeparator();

@@ -314,6 +314,11 @@ void MainWindow::exportCanvas()
     m_io->exportCanvas();
 }
 
+void MainWindow::exportExcalidraw()
+{
+    m_document->exportExcalidraw();
+}
+
 void MainWindow::importImagesDialog()
 {
     m_io->importImagesDialog();

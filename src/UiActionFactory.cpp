@@ -79,6 +79,9 @@ void UiActionFactory::build()
     m_window->m_exportAct =
         makeAction(m_window, IconId::Export, MainWindow::tr("Export canvas…"), QKeySequence(QStringLiteral("Ctrl+E")),
                    MainWindow::tr("Export as PNG / JPEG / PDF (Ctrl+E)"));
+    m_window->m_exportExcalidrawAct =
+        makeAction(m_window, IconId::Export, MainWindow::tr("Export Excalidraw…"), QKeySequence(),
+                   MainWindow::tr("Save this canvas as an .excalidraw scene that excalidraw.com can open"));
     // 主键取 Windows 关闭标准 Alt+F4；副键 Ctrl+Q 是 Linux / macOS 级的退出标准。
     m_window->m_quitAct = new QAction(MainWindow::tr("Quit"), m_window);
     m_window->m_quitAct->setShortcuts({QKeySequence(Qt::ALT | Qt::Key_F4), QKeySequence(QStringLiteral("Ctrl+Q"))});
@@ -278,6 +281,7 @@ void UiActionFactory::build()
     QObject::connect(m_window->m_importAct, &QAction::triggered, m_window, &MainWindow::importImagesDialog);
     QObject::connect(m_window->m_lineArtAct, &QAction::triggered, m_window, &MainWindow::importOutlineImageDialog);
     QObject::connect(m_window->m_exportAct, &QAction::triggered, m_window, &MainWindow::exportCanvas);
+    QObject::connect(m_window->m_exportExcalidrawAct, &QAction::triggered, m_window, &MainWindow::exportExcalidraw);
     QObject::connect(m_window->m_quitAct, &QAction::triggered, m_window, &QWidget::close);
 
     QObject::connect(m_window->m_undoAct, &QAction::triggered, m_window->m_undo, &QUndoStack::undo);

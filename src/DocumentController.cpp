@@ -2,6 +2,7 @@
 
 #include "CanvasScene.h"
 #include "CanvasView.h"
+#include "ExcalidrawFormat.h"
 #include "IconFactory.h"
 #include "MainWindow.h"
 #include "Settings.h"
@@ -43,7 +44,7 @@ void reportWarning(QWidget* parent, const QString& title, const QString& text)
 
 QString canvasFilter()
 {
-    return MainWindow::tr("StoryBoard canvases (*.sbcanvas);;All files (*.*)");
+    return MainWindow::tr("StoryBoard canvases (*.sbcanvas);;Excalidraw scenes (*.excalidraw);;All files (*.*)");
 }
 
 bool validateCanvasRoot(const QJsonObject& root, QString* error)
@@ -69,8 +70,7 @@ bool validateCanvasRoot(const QJsonObject& root, QString* error)
 
     // layers 必须是非空数组：缺失 / 置空的「半坏」文件在这里就拦下，
     // 不进 maybeSave() 消耗用户的未保存内容。
-    if (!root.value(QStringLiteral("layers")).isArray() ||
-        root.value(QStringLiteral("layers")).toArray().isEmpty()) {
+    if (!root.value(QStringLiteral("layers")).isArray() || root.value(QStringLiteral("layers")).toArray().isEmpty()) {
         if (error) {
             *error = MainWindow::tr("This is not a valid StoryBoard canvas file.");
         }
@@ -164,8 +164,24 @@ bool DocumentController::loadCanvasFile(const QString& path, bool showErrors)
     }
 
     const QJsonObject root = document.object();
+    // 需求 9：直接打开 .excalidraw 时当成导入，转换成一个新的 StoryBoard 文档。
+    bool importedExcalidraw = false;
+    QJsonObject usableRoot = root;
+    QStringList excalidrawNotes;
+    if (Excalidraw::isScene(root)) {
+        usableRoot = Excalidraw::sceneToStoryBoard(root, &excalidrawNotes);
+        if (usableRoot.isEmpty()) {
+            if (showErrors) {
+                reportWarning(m_window, MainWindow::tr("Import Excalidraw"),
+                              MainWindow::tr("This Excalidraw scene has no supported elements."));
+            }
+            return false;
+        }
+        importedExcalidraw = true;
+    }
+
     QString validationError;
-    if (!validateCanvasRoot(root, &validationError)) {
+    if (!validateCanvasRoot(usableRoot, &validationError)) {
         if (showErrors) {
             reportWarning(m_window, MainWindow::tr("Open canvas"), validationError);
         }
@@ -173,7 +189,7 @@ bool DocumentController::loadCanvasFile(const QString& path, bool showErrors)
     }
 
     int legacyStrokes = 0;
-    for (const QJsonValue& value : root.value(QStringLiteral("items")).toArray()) {
+    for (const QJsonValue& value : usableRoot.value(QStringLiteral("items")).toArray()) {
         if (value.toObject().value(QStringLiteral("type")).toString() == QStringLiteral("stroke")) {
             ++legacyStrokes;
         }
@@ -185,14 +201,15 @@ bool DocumentController::loadCanvasFile(const QString& path, bool showErrors)
 
     m_window->m_view->finishCurrentStroke();
     QString loadError;
-    if (!m_window->m_scene->fromJson(root, &loadError)) {
+    if (!m_window->m_scene->fromJson(usableRoot, &loadError)) {
         if (showErrors) {
             reportWarning(m_window, MainWindow::tr("Open canvas"), loadError);
         }
         return false;
     }
 
-    m_window->m_filePath = QFileInfo(path).absoluteFilePath();
+    // 导入的 Excalidraw 场景作为一份新文档，原 .excalidraw 文件仍可再导入一次。
+    m_window->m_filePath = importedExcalidraw ? QString() : QFileInfo(path).absoluteFilePath();
     m_window->m_undo->setClean();
     if (m_window->m_view->mode() != ToolMode::View) {
         m_window->m_view->setMode(ToolMode::View);
@@ -200,17 +217,26 @@ bool DocumentController::loadCanvasFile(const QString& path, bool showErrors)
         m_window->m_view->fitAll();
     }
 
-    m_window->m_settings.lastCanvasPath = m_window->m_filePath;
+    if (!importedExcalidraw) {
+        m_window->m_settings.lastCanvasPath = m_window->m_filePath;
+    }
     m_window->updateModeUi();
     m_window->updateTitle();
     m_window->updateStatusBar();
     m_window->updateActions();
-    m_window->statusBar()->showMessage(
-        MainWindow::tr("Canvas opened: %1").arg(QFileInfo(m_window->m_filePath).fileName()), 4000);
+    if (importedExcalidraw) {
+        QString message = MainWindow::tr("Imported an Excalidraw scene as a new canvas");
+        if (!excalidrawNotes.isEmpty()) {
+            message += QStringLiteral(" (") + excalidrawNotes.join(QStringLiteral("; ")) + QStringLiteral(")");
+        }
+        m_window->statusBar()->showMessage(message, 6000);
+    } else {
+        m_window->statusBar()->showMessage(
+            MainWindow::tr("Canvas opened: %1").arg(QFileInfo(m_window->m_filePath).fileName()), 4000);
+    }
     if (legacyStrokes > 0) {
         m_window->statusBar()->showMessage(
-            MainWindow::tr("Skipped %1 legacy stroke item(s); curves are not backward compatible")
-                .arg(legacyStrokes),
+            MainWindow::tr("Skipped %1 legacy stroke item(s); curves are not backward compatible").arg(legacyStrokes),
             6000);
     }
     return true;
@@ -272,6 +298,48 @@ bool DocumentController::saveToFile(const QString& path)
     m_window->statusBar()->showMessage(
         MainWindow::tr("Canvas saved: %1").arg(QFileInfo(m_window->m_filePath).fileName()), 4000);
     return true;
+}
+
+void DocumentController::exportExcalidraw()
+{
+    m_window->m_view->finishCurrentStroke();
+    QString suggestion = m_window->m_filePath;
+    if (suggestion.isEmpty()) {
+        suggestion = QDir(AppSettings::canvasesDir()).filePath(documentName() + QStringLiteral(".excalidraw"));
+    } else {
+        suggestion = QFileInfo(suggestion).absolutePath() + QStringLiteral("/") +
+                     QFileInfo(suggestion).completeBaseName() + QStringLiteral(".excalidraw");
+    }
+
+    QString path = QFileDialog::getSaveFileName(m_window, MainWindow::tr("Export Excalidraw"), suggestion,
+                                                MainWindow::tr("Excalidraw scenes (*.excalidraw)"));
+    if (path.isEmpty()) {
+        return;
+    }
+    if (!path.endsWith(QStringLiteral(".excalidraw"), Qt::CaseInsensitive)) {
+        path += QStringLiteral(".excalidraw");
+    }
+
+    QStringList notes;
+    const QJsonObject scene = Excalidraw::storyBoardToScene(m_window->m_scene->toJson(), &notes);
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly)) {
+        reportWarning(m_window, MainWindow::tr("Export Excalidraw"),
+                      MainWindow::tr("Could not write the file:\n%1").arg(QDir::toNativeSeparators(path)));
+        return;
+    }
+    file.write(QJsonDocument(scene).toJson(QJsonDocument::Indented));
+    if (!file.commit()) {
+        reportWarning(m_window, MainWindow::tr("Export Excalidraw"),
+                      MainWindow::tr("Failed to save the file:\n%1").arg(QDir::toNativeSeparators(path)));
+        return;
+    }
+
+    QString message = MainWindow::tr("Excalidraw scene exported: %1").arg(QFileInfo(path).fileName());
+    if (!notes.isEmpty()) {
+        message += QStringLiteral(" (") + notes.join(QStringLiteral("; ")) + QStringLiteral(")");
+    }
+    m_window->statusBar()->showMessage(message, 5000);
 }
 
 bool DocumentController::maybeSave()
