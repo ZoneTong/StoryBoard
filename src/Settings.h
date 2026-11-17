@@ -71,6 +71,8 @@ class AppSettings {
     // 同名模板取前面的那份。两者不存在时不建目录，避免在只读安装目录里写入。
     static QStringList shapesDirs();
     static void ensureShapesDir();
+    // 在系统文件管理器里打开自定义图形目录；目录不存在时先创建。
+    static bool openShapesFolder();
     // 界面语言以 "system" / "zh" / "en" 存进同一个 ini，不再使用注册表。
     static QString languageSetting();
     static bool setLanguageSetting(const QString& stored);

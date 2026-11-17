@@ -4,7 +4,6 @@
 #include "MainWindow.h"
 #include "Settings.h"
 
-#include <QDesktopServices>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -20,7 +19,6 @@
 #include <QTabWidget>
 #include <QTextStream>
 #include <QToolButton>
-#include <QUrl>
 #include <QVBoxLayout>
 
 namespace {
@@ -136,7 +134,7 @@ CustomShapePanel::CustomShapePanel(MainWindow* window) : QWidget(window), m_wind
     layout->addLayout(footer);
 
     connect(openButton, &QPushButton::clicked, this, [this]() {
-        if (!QDesktopServices::openUrl(QUrl::fromLocalFile(AppSettings::shapesDir())) && m_status) {
+        if (!AppSettings::openShapesFolder() && m_status) {
             m_status->setText(tr("Could not open the shapes folder"));
         }
     });

@@ -1,14 +1,17 @@
 #include "Settings.h"
 
 #include <QCoreApplication>
+#include <QDesktopServices>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QMap>
+#include <QProcess>
 #include <QSaveFile>
 #include <QStandardPaths>
 #include <QStringConverter>
 #include <QTextStream>
+#include <QUrl>
 
 namespace {
 
@@ -392,6 +395,24 @@ QStringList AppSettings::shapesDirs()
 void AppSettings::ensureShapesDir()
 {
     QDir().mkpath(shapesDir());
+}
+
+bool AppSettings::openShapesFolder()
+{
+    const QString directory = QDir::cleanPath(shapesDir());
+    QDir().mkpath(directory);
+    // Windows 的 ShellExecute 只在 URL 以分隔符结尾时把目标当目录处理，
+    // 少了尾斜杠会被当成“要打开的文件”，于是静默失败；这里显式补上。
+    const QUrl url = QUrl::fromLocalFile(directory + QLatin1Char('/'));
+    if (QDesktopServices::openUrl(url)) {
+        return true;
+    }
+#ifdef Q_OS_WIN
+    // 兜底：直接拉起资源管理器，避免外壳关联损坏时按钮完全没反应。
+    return QProcess::startDetached(QStringLiteral("explorer.exe"), {QDir::toNativeSeparators(directory)});
+#else
+    return false;
+#endif
 }
 
 QString AppSettings::languageSetting()

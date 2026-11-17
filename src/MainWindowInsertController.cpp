@@ -11,14 +11,12 @@
 
 #include <QAction>
 #include <QApplication>
-#include <QDesktopServices>
 #include <QDir>
 #include <QFileInfo>
 #include <QMenu>
 #include <QMessageBox>
 #include <QStatusBar>
 #include <QTimer>
-#include <QUrl>
 #include <QtMath>
 
 namespace {
@@ -205,7 +203,7 @@ void MainWindowInsertController::insertCustomShape(const QString& filePath)
 void MainWindowInsertController::openShapesFolder()
 {
     const QString directory = AppSettings::shapesDir();
-    if (!QDesktopServices::openUrl(QUrl::fromLocalFile(directory))) {
+    if (!AppSettings::openShapesFolder()) {
         m_window->statusBar()->showMessage(
             MainWindow::tr("Could not open the shapes folder: %1").arg(QDir::toNativeSeparators(directory)), 5000);
     }
