@@ -124,30 +124,67 @@ void CanvasItemInteraction::applyResize(const QPointF& scenePos, Qt::KeyboardMod
     QRectF rect(m_item->m_dragStartPos, m_item->m_dragStartSize);
     const int handle = m_item->m_resizeHandle;
 
-    // 三角形拖上 / 下边是「锚点缩放」：拖底边时顶点不动，拖上边时底边（含两端）不动。
-    // 高度是本次输入，底边按角度系数跟随，所以推位置时必须把顶点 / 底边钉回原位。
-    if (auto* triangle = dynamic_cast<ShapeItem*>(m_item); triangle && triangle->shapeType() == ShapeType::Triangle &&
-                                                           !triangle->isCustomShape() && !isLeftHandle(handle) &&
-                                                           !isRightHandle(handle)) {
+    // 三角形拖动包围框只能等比缩放：三个内角保持不变，手柄对面的那个点钉住不动
+    // （角对手柄钉对角、边中点对手柄钉对边中点）。高度由底边与角度派生，缩放后
+    // 宽高比自然保持，所以只要按比例算新尺寸、再把锚点摆回原处。
+    if (auto* triangle = dynamic_cast<ShapeItem*>(m_item);
+        triangle && triangle->shapeType() == ShapeType::Triangle && !triangle->isCustomShape()) {
+        const QSizeF startSize = m_item->m_dragStartSize;
+        // 锚点在内容矩形里的归一化位置（0 = 左 / 上，1 = 右 / 下）。
+        qreal anchorX = 0.5;
+        qreal anchorY = 0.5;
+        switch (handle) {
+        case CanvasItem::TopLeft:
+            anchorX = 1.0;
+            anchorY = 1.0;
+            break;
+        case CanvasItem::Top:
+            anchorY = 1.0;
+            break;
+        case CanvasItem::TopRight:
+            anchorX = 0.0;
+            anchorY = 1.0;
+            break;
+        case CanvasItem::Left:
+            anchorX = 1.0;
+            break;
+        case CanvasItem::Right:
+            anchorX = 0.0;
+            break;
+        case CanvasItem::BottomLeft:
+            anchorX = 1.0;
+            anchorY = 0.0;
+            break;
+        case CanvasItem::Bottom:
+            anchorY = 0.0;
+            break;
+        case CanvasItem::BottomRight:
+            anchorX = 0.0;
+            anchorY = 0.0;
+            break;
+        default:
+            break;
+        }
+        const bool horizontal = isLeftHandle(handle) || isRightHandle(handle);
+        const bool vertical = isTopHandle(handle) || isBottomHandle(handle);
+        const qreal kx =
+            horizontal ? 1.0 + (isLeftHandle(handle) ? -delta.x() : delta.x()) / qMax<qreal>(1.0, startSize.width())
+                       : 1.0;
+        const qreal ky =
+            vertical ? 1.0 + (isTopHandle(handle) ? -delta.y() : delta.y()) / qMax<qreal>(1.0, startSize.height())
+                     : 1.0;
+        // 角手柄两维都有位移，跟位移更大的那一维走；边手柄只有一维。
+        qreal scale = horizontal && vertical ? (qAbs(kx - 1.0) >= qAbs(ky - 1.0) ? kx : ky) : (horizontal ? kx : ky);
+        scale = qMax(scale, qMax(kMinimumSide / qMax<qreal>(1.0, startSize.width()),
+                                 kMinimumSide / qMax<qreal>(1.0, startSize.height())));
+        const qreal newWidth = startSize.width() * scale;
         const qreal cot1 = 1.0 / qTan(qDegreesToRadians(triangle->bottomAngle1()));
         const qreal cot2 = 1.0 / qTan(qDegreesToRadians(triangle->bottomAngle2()));
-        const QSizeF startSize = m_item->m_dragStartSize;
-        const qreal apexOffset = startSize.height() * cot1; // 顶点相对内容矩形左边的偏移
-        if (isBottomHandle(handle)) {
-            const qreal newHeight = qMax(kMinimumSide, startSize.height() + delta.y());
-            m_item->setPos(
-                QPointF(m_item->m_dragStartPos.x() + apexOffset - newHeight * cot1, m_item->m_dragStartPos.y()));
-            m_item->setContentSize(QSizeF(newHeight * (cot1 + cot2), newHeight));
-        } else {
-            const qreal newHeight = qMax(kMinimumSide, startSize.height() - delta.y());
-            const qreal width = startSize.width();
-            m_item->setPos(
-                QPointF(m_item->m_dragStartPos.x(), m_item->m_dragStartPos.y() + startSize.height() - newHeight));
-            // 底边两端钉住、顶点竖线也钉住，两个底角只能按新高度反推。
-            triangle->setTriangleAngles(qRadiansToDegrees(qAtan2(newHeight, qMax<qreal>(0.5, apexOffset))),
-                                        qRadiansToDegrees(qAtan2(newHeight, qMax<qreal>(0.5, width - apexOffset))));
-            m_item->setContentSize(QSizeF(width, newHeight));
-        }
+        const qreal newHeight = newWidth / qMax<qreal>(0.02, cot1 + cot2);
+        const QPointF anchorScene =
+            m_item->m_dragStartPos + QPointF(anchorX * startSize.width(), anchorY * startSize.height());
+        m_item->setPos(anchorScene - QPointF(anchorX * newWidth, anchorY * newHeight));
+        m_item->setContentSize(QSizeF(newWidth, newHeight));
         return;
     }
 

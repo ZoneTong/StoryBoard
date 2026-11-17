@@ -208,60 +208,103 @@ void selftest::runShapeItemTests(Context& ctx)
                       .arg(second.height()));
     }
     {
-        // 三角形拖上 / 下边的锚点：拖底边顶点不动，拖上边底边两端不动。
+        // 三角形拖包围框：只能等比缩放，三个内角不变，手柄对面的点钉住。
         ShapeItem triangle(ShapeType::Triangle);
         triangle.setPos(QPointF(60.0, 40.0));
         triangle.setContentSize(QSizeF(120.0, 90.0));
         const qreal cot1 = 1.0 / qTan(qDegreesToRadians(triangle.bottomAngle1()));
+        const qreal angle1Before = triangle.bottomAngle1();
+        const qreal angle2Before = triangle.bottomAngle2();
         const auto apexScene = [&triangle, cot1]() {
             return triangle.pos() + QPointF(triangle.contentSize().height() * cot1, 0.0);
         };
-        const auto baseScene = [&triangle]() {
+        const auto baseMidScene = [&triangle]() {
             const QSizeF size = triangle.contentSize();
-            return QRectF(triangle.pos() + QPointF(0.0, size.height()), QSizeF(size.width(), 0.0));
+            return triangle.pos() + QPointF(size.width() / 2.0, size.height());
         };
         const QPointF apexBefore = apexScene();
-        const QRectF baseBefore = baseScene();
+        const QPointF baseMidBefore = baseMidScene();
         const qreal startHeight = triangle.contentSize().height();
+        const qreal startWidth = triangle.contentSize().width();
 
+        // 拖底边：对面点 = 上边中点（等腰三角时就是顶点）。
         CanvasItemInteraction bottomDrag(&triangle);
         bottomDrag.beginResize(CanvasItem::Bottom, triangle.pos() + QPointF(60.0, startHeight));
         bottomDrag.applyResize(triangle.pos() + QPointF(60.0, startHeight + 30.0), Qt::NoModifier);
         const QPointF apexAfter = apexScene();
-        const QRectF baseAfter = baseScene();
         ctx.check(qAbs(apexAfter.x() - apexBefore.x()) < 0.5 && qAbs(apexAfter.y() - apexBefore.y()) < 0.5 &&
-                      qAbs(baseAfter.top() - (baseBefore.top() + 30.0)) < 0.5,
-                  QStringLiteral("拖三角形底边时顶点不动、底边随拖动下移"),
-                  QStringLiteral("apex=%1,%2->%3,%4 baseTop=%5->%6")
+                      qAbs(triangle.bottomAngle1() - angle1Before) < 0.05 &&
+                      qAbs(triangle.bottomAngle2() - angle2Before) < 0.05 &&
+                      qAbs(triangle.contentSize().width() / startWidth -
+                           triangle.contentSize().height() / startHeight) < 0.01 &&
+                      triangle.contentSize().height() > startHeight + 1.0,
+                  QStringLiteral("拖三角形底边：顶点钉住、内角不变、宽高等比放大"),
+                  QStringLiteral("apex=%1,%2->%3,%4 angles=%5/%6->%7/%8")
                       .arg(apexBefore.x())
                       .arg(apexBefore.y())
                       .arg(apexAfter.x())
                       .arg(apexAfter.y())
-                      .arg(baseBefore.top())
-                      .arg(baseAfter.top()));
+                      .arg(angle1Before)
+                      .arg(angle2Before)
+                      .arg(triangle.bottomAngle1())
+                      .arg(triangle.bottomAngle2()));
 
+        // 拖上边：对面点 = 底边中点，钉住；底边两端随等比缩放外扩。
         ShapeItem topTriangle(ShapeType::Triangle);
         topTriangle.setPos(QPointF(60.0, 40.0));
         topTriangle.setContentSize(QSizeF(120.0, 90.0));
-        const qreal topStartHeight = topTriangle.contentSize().height();
-        const QRectF baseFixed =
-            QRectF(topTriangle.pos() + QPointF(0.0, topStartHeight), QSizeF(topTriangle.contentSize().width(), 0.0));
+        const qreal topA1 = topTriangle.bottomAngle1();
+        const qreal topA2 = topTriangle.bottomAngle2();
+        const auto topBaseMid = [&topTriangle]() {
+            const QSizeF size = topTriangle.contentSize();
+            return topTriangle.pos() + QPointF(size.width() / 2.0, size.height());
+        };
+        const QPointF topBaseMidBefore = topBaseMid();
         CanvasItemInteraction topDrag(&topTriangle);
         topDrag.beginResize(CanvasItem::Top, topTriangle.pos() + QPointF(60.0, 0.0));
         topDrag.applyResize(topTriangle.pos() + QPointF(60.0, -30.0), Qt::NoModifier);
-        const QRectF baseKept = QRectF(topTriangle.pos() + QPointF(0.0, topTriangle.contentSize().height()),
-                                       QSizeF(topTriangle.contentSize().width(), 0.0));
-        ctx.check(qAbs(baseKept.left() - baseFixed.left()) < 0.5 && qAbs(baseKept.right() - baseFixed.right()) < 0.5 &&
-                      qAbs(baseKept.top() - baseFixed.top()) < 0.5 &&
-                      topTriangle.contentSize().height() > topStartHeight + 1.0,
-                  QStringLiteral("拖三角形上边时底边位置与宽度都不动、高度变大"),
-                  QStringLiteral("base=%1,%2,%3->%4,%5,%6")
-                      .arg(baseFixed.left())
-                      .arg(baseFixed.right())
-                      .arg(baseFixed.top())
-                      .arg(baseKept.left())
-                      .arg(baseKept.right())
-                      .arg(baseKept.top()));
+        const QPointF topBaseMidAfter = topBaseMid();
+        ctx.check(qAbs(topBaseMidAfter.x() - topBaseMidBefore.x()) < 0.5 &&
+                      qAbs(topBaseMidAfter.y() - topBaseMidBefore.y()) < 0.5 &&
+                      qAbs(topTriangle.bottomAngle1() - topA1) < 0.05 &&
+                      qAbs(topTriangle.bottomAngle2() - topA2) < 0.05 && topTriangle.contentSize().width() > 120.0,
+                  QStringLiteral("拖三角形上边：底边中点钉住、内角不变、宽度等比放大"),
+                  QStringLiteral("baseMid=%1,%2->%3,%4 width=%5")
+                      .arg(topBaseMidBefore.x())
+                      .arg(topBaseMidBefore.y())
+                      .arg(topBaseMidAfter.x())
+                      .arg(topBaseMidAfter.y())
+                      .arg(topTriangle.contentSize().width()));
+
+        // 拖左上角：对面点 = 右下角，钉住；宽高比与内角都不变。
+        ShapeItem cornerTriangle(ShapeType::Triangle);
+        cornerTriangle.setPos(QPointF(60.0, 40.0));
+        cornerTriangle.setContentSize(QSizeF(120.0, 90.0));
+        const qreal cornerA1 = cornerTriangle.bottomAngle1();
+        const qreal cornerA2 = cornerTriangle.bottomAngle2();
+        const auto bottomRight = [&cornerTriangle]() {
+            const QSizeF size = cornerTriangle.contentSize();
+            return cornerTriangle.pos() + QPointF(size.width(), size.height());
+        };
+        const QPointF cornerBefore = bottomRight();
+        const qreal cornerRatioBefore = cornerTriangle.contentSize().width() / cornerTriangle.contentSize().height();
+        CanvasItemInteraction cornerDrag(&cornerTriangle);
+        cornerDrag.beginResize(CanvasItem::TopLeft, cornerTriangle.pos());
+        cornerDrag.applyResize(cornerTriangle.pos() + QPointF(-20.0, -20.0), Qt::NoModifier);
+        const QPointF cornerAfter = bottomRight();
+        const qreal cornerRatioAfter = cornerTriangle.contentSize().width() / cornerTriangle.contentSize().height();
+        ctx.check(qAbs(cornerAfter.x() - cornerBefore.x()) < 0.5 && qAbs(cornerAfter.y() - cornerBefore.y()) < 0.5 &&
+                      qAbs(cornerRatioAfter - cornerRatioBefore) < 0.01 &&
+                      qAbs(cornerTriangle.bottomAngle1() - cornerA1) < 0.05 &&
+                      qAbs(cornerTriangle.bottomAngle2() - cornerA2) < 0.05,
+                  QStringLiteral("拖三角形左上角：右下角钉住、宽高比与内角不变"),
+                  QStringLiteral("corner=%1,%2->%3,%4 ratio=%5->%6")
+                      .arg(cornerBefore.x())
+                      .arg(cornerBefore.y())
+                      .arg(cornerAfter.x())
+                      .arg(cornerAfter.y())
+                      .arg(cornerRatioBefore)
+                      .arg(cornerRatioAfter));
     }
 
     QList<ShapeItem*> shapeItems;
