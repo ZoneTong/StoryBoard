@@ -113,6 +113,10 @@ class MainWindow : public QMainWindow {
   public:
     // 需求 7：展开自定义图形浮动面板（按目录分标签页）；anchor 为空时沿用上次位置。
     void openCustomShapePanel(QWidget* anchor);
+    // 插入常见图形；自检需要直接驱动插入流程（含立方体 / 圆柱体的组合面插入）。
+    void insertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0,
+                     ArrowStyle startArrow = ArrowStyle::None, ArrowStyle endArrow = ArrowStyle::None,
+                     bool autoCorner = false);
 
   private:
     void createActions();
@@ -128,9 +132,6 @@ class MainWindow : public QMainWindow {
     void applyBoolOperation(BoolOps::Operation operation);
 
     void insertBrace(bool left);
-    void insertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0,
-                     ArrowStyle startArrow = ArrowStyle::None, ArrowStyle endArrow = ArrowStyle::None,
-                     bool autoCorner = false);
     void insertCustomShape(const QString& filePath);
     void openShapesFolder();
     void updateItemDockVisibility();
