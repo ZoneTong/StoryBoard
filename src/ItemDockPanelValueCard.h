@@ -6,6 +6,7 @@
 #include <QWidget>
 
 class CanvasItem;
+class CurveItem;
 class QComboBox;
 class QSpinBox;
 
@@ -18,7 +19,8 @@ class ItemDockPanelValueCard : public QWidget {
   public:
     explicit ItemDockPanelValueCard(QWidget* parent = nullptr);
 
-    void refresh(const QList<ShapeItem*>& shapes, const QList<CanvasItem*>& items);
+    // 需求 9b：曲线也要显示起点 / 终点箭头行，因此 refresh 同时接收选中的曲线。
+    void refresh(const QList<ShapeItem*>& shapes, const QList<CurveItem*>& strokes, const QList<CanvasItem*>& items);
     // 圆角行是否可见：只有矩形类图元才显示圆角编辑。
     void setCornerVisible(bool visible);
     // 扫过角与半径两行是否可见：只有扇形 / 弧线才显示角度与半径编辑。
@@ -31,8 +33,8 @@ class ItemDockPanelValueCard : public QWidget {
   signals:
     void opacityChosen(int percent);
     void cornerRadiusChosen(int radius);
+    void startAngleChosen(int angle);
     void sweepAngleChosen(int angle);
-    void shapeRadiusChosen(int radius);
     // 三角形：底边长度（px）、底角 1 / 底角 2（度）。
     void triangleBaseChosen(int base);
     void triangleAngle1Chosen(int degrees);
@@ -46,10 +48,10 @@ class ItemDockPanelValueCard : public QWidget {
     QSpinBox* m_opacitySpin = nullptr;
     QSpinBox* m_cornerSpin = nullptr;
     QWidget* m_cornerSection = nullptr;
+    QSpinBox* m_startAngleSpin = nullptr;
+    QWidget* m_startAngleSection = nullptr;
     QSpinBox* m_angleSpin = nullptr;
-    QSpinBox* m_radiusSpin = nullptr;
     QWidget* m_angleSection = nullptr;
-    QWidget* m_radiusSection = nullptr;
     QWidget* m_triangleSection = nullptr;
     QSpinBox* m_triangleBaseSpin = nullptr;
     QSpinBox* m_triangleAngle1Spin = nullptr;

@@ -147,6 +147,22 @@ void drawAngleLeft(QPainter& painter, IconId)
     painter.drawLine(QPointF(20.0, 18.0), QPointF(5.5, 6.0));
 }
 
+void drawArrowStart(QPainter& painter, IconId)
+{
+    // 起点箭头：箭头朝左，落在线的左端。
+    painter.drawLine(QPointF(4.0, 12.0), QPointF(19.0, 12.0));
+    painter.drawLine(QPointF(4.0, 12.0), QPointF(9.0, 7.5));
+    painter.drawLine(QPointF(4.0, 12.0), QPointF(9.0, 16.5));
+}
+
+void drawArrowEnd(QPainter& painter, IconId)
+{
+    // 终点箭头：与起点图标左右镜像，箭头朝右。
+    painter.drawLine(QPointF(5.0, 12.0), QPointF(20.0, 12.0));
+    painter.drawLine(QPointF(20.0, 12.0), QPointF(15.0, 7.5));
+    painter.drawLine(QPointF(20.0, 12.0), QPointF(15.0, 16.5));
+}
+
 constexpr struct IconEntry {
     IconId id;
     void (*draw)(QPainter&, IconId);
@@ -163,6 +179,8 @@ constexpr struct IconEntry {
     {IconId::TriangleBase, drawTriangleBase},
     {IconId::AngleRight, drawAngleRight},
     {IconId::AngleLeft, drawAngleLeft},
+    {IconId::ArrowStart, drawArrowStart},
+    {IconId::ArrowEnd, drawArrowEnd},
 };
 
 } // namespace

@@ -45,6 +45,9 @@ QString borderStyleName(Qt::PenStyle style)
 
 QIcon borderStyleIcon(Qt::PenStyle style, int logicalSize)
 {
+    // 需求 14：四种描线样式图标共用一套生成器，图案按逻辑像素手调（以 16px 为基准等比缩放），
+    // 不再依赖 Qt 笔宽倍数与圆头端点——那样 1.8px 的点会被糊成 3.6px 短划，点线与虚线难分。
+    // 图标只是示意图，画布实际描线仍用 Qt::PenStyle。
     constexpr qreal scale = 2.0;
     QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
     pixmap.fill(Qt::transparent);
@@ -52,8 +55,64 @@ QIcon borderStyleIcon(Qt::PenStyle style, int logicalSize)
 
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.setPen(QPen(QColor(58, 64, 80), 1.8, style, Qt::RoundCap, Qt::RoundJoin));
-    painter.drawLine(QPointF(4.0, logicalSize / 2.0), QPointF(logicalSize - 4.0, logicalSize / 2.0));
+
+    const QColor color(58, 64, 80);
+    const qreal k = logicalSize / 16.0;
+    const qreal penWidth = (logicalSize >= 16 ? 2.0 : 1.6) * k;
+    const qreal y = logicalSize / 2.0;
+    const qreal x0 = 1.9 * k;
+    const qreal x1 = logicalSize - 1.9 * k;
+    const qreal dash = 4.5 * k;
+    const qreal gap = 3.0 * k;
+    const qreal dotRadius = penWidth * 0.55;
+
+    QPen pen(color, penWidth, Qt::SolidLine, Qt::FlatCap, Qt::MiterJoin);
+    painter.setPen(pen);
+    painter.setBrush(Qt::NoBrush);
+
+    switch (style) {
+    case Qt::DashLine: {
+        qreal x = x0;
+        while (x < x1) {
+            painter.drawLine(QPointF(x, y), QPointF(qMin(x + dash, x1), y));
+            x += dash + gap;
+        }
+        break;
+    }
+    case Qt::DotLine: {
+        // 显式画圆点：16px 内约 4 个点，横向长度不超过 1.3 倍笔宽。
+        qreal x = x0;
+        painter.setBrush(color);
+        while (x <= x1) {
+            painter.drawEllipse(QPointF(x, y), dotRadius, dotRadius);
+            x += gap + dotRadius * 2.0;
+        }
+        break;
+    }
+    case Qt::DashDotLine: {
+        bool drawDash = true;
+        qreal x = x0;
+        while (x < x1) {
+            if (drawDash) {
+                painter.setBrush(Qt::NoBrush);
+                painter.drawLine(QPointF(x, y), QPointF(qMin(x + dash, x1), y));
+                x += dash + gap;
+            } else {
+                painter.setBrush(color);
+                if (x <= x1) {
+                    painter.drawEllipse(QPointF(x + dotRadius, y), dotRadius, dotRadius);
+                }
+                x += dotRadius * 2.0 + gap;
+            }
+            drawDash = !drawDash;
+        }
+        break;
+    }
+    case Qt::SolidLine:
+    default:
+        painter.drawLine(QPointF(x0, y), QPointF(x1, y));
+        break;
+    }
     painter.end();
     return QIcon(pixmap);
 }

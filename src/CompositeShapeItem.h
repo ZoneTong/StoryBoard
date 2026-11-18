@@ -1,12 +1,14 @@
 #pragma once
 
 #include "CanvasItem.h"
+#include "ImageFill.h"
 #include "ShapeItem.h"
 
 #include <QColor>
 #include <QJsonObject>
 #include <QList>
 #include <QPainterPath>
+#include <QPixmap>
 #include <Qt>
 
 // 合并图元得到的多边形：内部按“优先级从低到高”保存若干图层，
@@ -50,6 +52,12 @@ class CompositeShapeItem : public CanvasItem {
     void setFillStyle(FillStyle style);
     void setStroke(const QColor& color, qreal width);
     void setStrokeStyle(Qt::PenStyle style);
+    // 需求 15：图片填充只作用于 FilledArea 层围成的区域，孔洞留空；不参与合并与导出。
+    bool hasFillImage() const { return !m_fillImage.isNull(); }
+    QPixmap fillImage() const { return m_fillImage; }
+    ImageFill::Mode fillImageMode() const { return m_fillImageMode; }
+    void setFillImage(const QPixmap& image, ImageFill::Mode mode);
+    void clearFillImage();
 
     // 按当前内容尺寸缩放后的整体轮廓，供命中与遮挡判断使用。
     QPainterPath paintedShape() const override;
@@ -71,6 +79,8 @@ class CompositeShapeItem : public CanvasItem {
     QSizeF m_designSize{1.0, 1.0};
     FillStyle m_fillStyle = FillStyle::Solid;
     Qt::PenStyle m_strokeStyle = Qt::SolidLine;
+    QPixmap m_fillImage;
+    ImageFill::Mode m_fillImageMode = ImageFill::Mode::Stretch;
     // 内容尺寸变化时不改路径，绘制阶段按比例缩放，避免反复量化误差累积。
     QTransform layerTransform() const;
 };

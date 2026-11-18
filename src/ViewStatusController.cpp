@@ -53,11 +53,11 @@ void ViewStatusController::updateModeUi()
                 MainWindow::tr("Brush mode: left button to draw · wheel to zoom · Space / middle button to pan"));
             break;
         case ToolMode::Edit:
-            m_window->m_hintLabel->setText(
-                MainWindow::tr("Edit mode: items on visible, unlocked layers can be edited · "
-                               "drag or box-select · resize with handles · hold Ctrl to drag / "
-                               "wheel zoom the whole view · drag canvas edges to resize the "
-                               "canvas · Delete to remove"));
+            // 需求 1：只讲“哪些图元可编辑 + 属性入口（双击）+ 唯一一条反直觉视图操作”，
+            // 不再枚举拖动、缩放、滚轮、Delete 这类一看就会的操作，也不提 Ctrl（已改多选）。
+            m_window->m_hintLabel->setText(MainWindow::tr("Edit mode: items on visible, unlocked layers are editable · "
+                                                          "double-click to open item properties and change them · "
+                                                          "Space / middle button to pan the view"));
             break;
         case ToolMode::Text:
             m_window->m_hintLabel->setText(

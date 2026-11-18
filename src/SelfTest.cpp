@@ -78,6 +78,7 @@ int runSelfTest(const QString& reportPath)
     selftest::runAlignmentMenuTests(ctx);
     selftest::runGroupBoolOpsTests(ctx);
     selftest::runCustomShapeDockTests(ctx);
+    selftest::runShapesFolderTests(ctx);
     selftest::runDockPanelMainWindowTests(ctx);
     selftest::runDockOrderPersistenceTests(ctx);
     selftest::runClipboardShortcutTests(ctx);

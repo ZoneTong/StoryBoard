@@ -84,8 +84,8 @@ class ItemDockPanel : public QWidget {
     void applyBorderWidth(qreal width);
     void applyOpacity(int percent);
     void applyCornerRadius(int radius);
+    void applyStartAngle(int angle);
     void applySweepAngle(int angle);
-    void applyShapeRadius(int radius);
     // 三角形：底边长度与两个底角；角度优先，高度随底边派生。
     void applyTriangleBase(int base);
     void applyTriangleAngle1(int degrees);

@@ -134,8 +134,10 @@ CustomShapePanel::CustomShapePanel(MainWindow* window) : QWidget(window), m_wind
     layout->addLayout(footer);
 
     connect(openButton, &QPushButton::clicked, this, [this]() {
-        if (!AppSettings::openShapesFolder() && m_status) {
-            m_status->setText(tr("Could not open the shapes folder"));
+        const AppSettings::ShapesFolderOpenResult result = AppSettings::openShapesFolder();
+        if (!result.opened && m_status) {
+            // 与菜单项同一句：带目录路径与失败原因，便于直接判断是权限还是外壳问题。
+            m_status->setText(AppSettings::shapesFolderFailureText(result));
         }
     });
     connect(refreshButton, &QPushButton::clicked, this, [this]() { showAt(nullptr); });

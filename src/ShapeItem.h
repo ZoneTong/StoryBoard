@@ -2,11 +2,13 @@
 
 #include "ArrowStyle.h"
 #include "CanvasItem.h"
+#include "ImageFill.h"
 
 #include <QColor>
 #include <QIcon>
 #include <QList>
 #include <QPainterPath>
+#include <QPixmap>
 
 enum class ShapeType {
     Rectangle = 0,
@@ -17,11 +19,19 @@ enum class ShapeType {
     Arrow,
     DoubleArrow,
     Line,
-    BraceLeft,
-    BraceRight,
     Callout,
     Sector,
-    Arc
+    Arc,
+    // 需求 11：常见图形新增 8 种。花括号（BraceLeft/BraceRight）已改为曲线图元，
+    // 不再占用 ShapeType（需求 13）。
+    Star4,
+    Hexagram,
+    Heart,
+    SineWave,
+    FlagWave,
+    FlagCurl,
+    Cube,
+    Cylinder
 };
 
 enum class FillStyle { None = 0, Solid, Hachure, ReverseHachure, CrossHatch, GridHatch, Honeycomb };
@@ -62,11 +72,13 @@ struct ShapeItemState {
     // 三角形：底边（内容矩形宽度）两侧的底角，单位为度。角度是真相，高度由两者派生。
     qreal bottomAngle1 = 60.0;
     qreal bottomAngle2 = 60.0;
-    // 扇形 / 弧线的椭圆半径（像素，横向）；< 0 表示按内容矩形宽度的一半自动取值。
-    qreal shapeRadius = -1.0;
     // 直线 / 直线箭头 / 曲线两端的箭头样式（旧文件缺字段时按「无」）。
     ArrowStyle startArrow = ArrowStyle::None;
     ArrowStyle endArrow = ArrowStyle::None;
+    // 需求 15：图片填充参与撤销快照；QPixmap 隐式共享，不会额外拷贝像素。
+    bool hasFillImage = false;
+    QPixmap fillImage;
+    ImageFill::Mode fillImageMode = ImageFill::Mode::Stretch;
     QPointF pos;
     QSizeF size;
 
@@ -79,9 +91,10 @@ struct ShapeItemState {
                qFuzzyCompare(startAngle + 2.0, other.startAngle + 2.0) &&
                qFuzzyCompare(sweepAngle + 2.0, other.sweepAngle + 2.0) &&
                qFuzzyCompare(bottomAngle1 + 2.0, other.bottomAngle1 + 2.0) &&
-               qFuzzyCompare(bottomAngle2 + 2.0, other.bottomAngle2 + 2.0) &&
-               qFuzzyCompare(shapeRadius + 2.0, other.shapeRadius + 2.0) && startArrow == other.startArrow &&
-               endArrow == other.endArrow && pos == other.pos && size == other.size;
+               qFuzzyCompare(bottomAngle2 + 2.0, other.bottomAngle2 + 2.0) && startArrow == other.startArrow &&
+               endArrow == other.endArrow && hasFillImage == other.hasFillImage &&
+               fillImage.cacheKey() == other.fillImage.cacheKey() && fillImageMode == other.fillImageMode &&
+               pos == other.pos && size == other.size;
     }
 
     bool operator!=(const ShapeItemState& other) const { return !(*this == other); }
@@ -90,6 +103,8 @@ struct ShapeItemState {
 class ShapeItem : public CanvasItem {
     Q_OBJECT
   public:
+    // 需求 2：带短刻度线的底边是 AB（A 在左、B 在右），对面顶点是 C。
+    enum class TriangleVertex { A, B, C };
     explicit ShapeItem(ShapeType type = ShapeType::Rectangle, QGraphicsItem* parent = nullptr);
 
     QString kind() const override { return QStringLiteral("shape"); }
@@ -121,7 +136,6 @@ class ShapeItem : public CanvasItem {
     void setAutoCorner(bool enabled);
     qreal startAngle() const { return m_startAngle; }
     qreal sweepAngle() const { return m_sweepAngle; }
-    qreal shapeRadius() const { return m_shapeRadius; }
     qreal bottomAngle1() const { return m_bottomAngle1; }
     qreal bottomAngle2() const { return m_bottomAngle2; }
     ArrowStyle startArrow() const { return m_startArrow; }
@@ -133,7 +147,6 @@ class ShapeItem : public CanvasItem {
     void setOpacity(qreal opacity);
     void setCornerRadius(qreal radius);
     void setArcAngles(qreal startAngle, qreal sweepAngle);
-    void setShapeRadius(qreal radius);
     // 三角形：设置底边两侧的底角（度）。角度优先，高度按底边与角度重算；
     // 两角和被钳制在 175° 以内，保证顶点不会跑出内容矩形。
     void setTriangleAngles(qreal angle1, qreal angle2);
@@ -146,13 +159,18 @@ class ShapeItem : public CanvasItem {
     QPainterPath customShapePath() const { return m_customPath; }
     void setCustomShape(const QString& name, const QPainterPath& unitPath);
 
+    // 三角形三个顶点（内容矩形局部坐标）：A/B 为底边两端，C 为顶点。
+    QPointF triangleVertex(TriangleVertex vertex) const;
+    // 需求 2：顶点 C 的句柄位置由三角形几何给出，而不是包围框上边中点。
+    QPointF customHandleCenter(int handle, bool* ok) const override;
+
     ShapeItemState state() const;
     void applyState(const ShapeItemState& state);
 
     static QPainterPath pathFor(ShapeType type, const QRectF& rect);
     static QPainterPath pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius);
     static QPainterPath pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius, qreal startAngle,
-                                qreal sweepAngle, qreal shapeRadius);
+                                qreal sweepAngle);
     // 当前生效的轮廓：自定义图形按内容矩形缩放单位路径，普通图形带圆角参数。
     QPainterPath currentPath(const QRectF& rect) const;
 
@@ -179,7 +197,6 @@ class ShapeItem : public CanvasItem {
     bool m_autoCorner = false;
     qreal m_startAngle = 30.0;
     qreal m_sweepAngle = 120.0;
-    qreal m_shapeRadius = -1.0;
     qreal m_bottomAngle1 = 60.0;
     qreal m_bottomAngle2 = 60.0;
     ArrowStyle m_startArrow = ArrowStyle::None;

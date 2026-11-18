@@ -74,16 +74,28 @@ QString shapeTypeName(ShapeType type)
         return ShapeItem::tr("Double arrow");
     case ShapeType::Line:
         return ShapeItem::tr("Line");
-    case ShapeType::BraceLeft:
-        return ShapeItem::tr("Left brace");
-    case ShapeType::BraceRight:
-        return ShapeItem::tr("Right brace");
     case ShapeType::Callout:
         return ShapeItem::tr("Speech bubble");
     case ShapeType::Sector:
         return ShapeItem::tr("Sector");
     case ShapeType::Arc:
         return ShapeItem::tr("Arc");
+    case ShapeType::Star4:
+        return ShapeItem::tr("Four-point star");
+    case ShapeType::Hexagram:
+        return ShapeItem::tr("Six-point star");
+    case ShapeType::Heart:
+        return ShapeItem::tr("Heart");
+    case ShapeType::SineWave:
+        return ShapeItem::tr("Sine wave");
+    case ShapeType::FlagWave:
+        return ShapeItem::tr("Wavy flag");
+    case ShapeType::FlagCurl:
+        return ShapeItem::tr("Curled flag");
+    case ShapeType::Cube:
+        return ShapeItem::tr("Cube");
+    case ShapeType::Cylinder:
+        return ShapeItem::tr("Cylinder");
     }
     return ShapeItem::tr("Rectangle");
 }
@@ -192,6 +204,18 @@ QIcon makeShapePresetIcon(const QString& preset, const QColor& color, int logica
         path.lineTo(tall.right(), tall.bottom());
         path.closeSubpath();
         painter.drawPath(path);
+    } else if (preset == QStringLiteral("braceLeft") || preset == QStringLiteral("braceRight")) {
+        // 需求 13：花括号已是曲线图元，图标直接用它插入时的采样路径绘制。
+        QRectF braceBox(7.0, 2.0, 10.0, 20.0);
+        const QPainterPath brace = ShapePathBuilder::bracePath(braceBox);
+        if (preset == QStringLiteral("braceRight")) {
+            QTransform mirror;
+            mirror.translate(braceBox.left() + braceBox.right(), 0.0);
+            mirror.scale(-1.0, 1.0);
+            painter.drawPath(mirror.map(brace));
+        } else {
+            painter.drawPath(brace);
+        }
     } else if (preset == QStringLiteral("lineArrow")) {
         const qreal y = box.center().y();
         painter.drawLine(QPointF(box.left(), y), QPointF(box.right(), y));
@@ -236,7 +260,6 @@ void ShapeItem::setShapeType(ShapeType type)
     m_autoCorner = false;
     m_startAngle = 30.0;
     m_sweepAngle = 120.0;
-    m_shapeRadius = -1.0;
     m_bottomAngle1 = 60.0;
     m_bottomAngle2 = 60.0;
     m_startArrow = ArrowStyle::None;
@@ -254,6 +277,46 @@ void ShapeItem::setArrowStyles(ArrowStyle start, ArrowStyle end)
     m_endArrow = end;
     // 箭头只改描线外观，不参与内容矩形；更新重绘范围即可。
     update();
+}
+
+QPointF ShapeItem::triangleVertex(TriangleVertex vertex) const
+{
+    const QRectF rect = contentRect();
+    switch (vertex) {
+    case TriangleVertex::A:
+        return rect.bottomLeft();
+    case TriangleVertex::B:
+        return rect.bottomRight();
+    case TriangleVertex::C:
+    default: {
+        // 顶点位置与 ShapePathBuilder::trianglePath 同一套算法：高度由底边与两个底角派生。
+        const qreal cot1 = 1.0 / qTan(qDegreesToRadians(m_bottomAngle1));
+        const qreal cot2 = 1.0 / qTan(qDegreesToRadians(m_bottomAngle2));
+        qreal apexX = rect.left() + rect.height() * cot1;
+        const qreal offset = apexX - rect.left();
+        const qreal sum = rect.height() * (cot1 + cot2);
+        if (sum > rect.width() && sum > 0.0) {
+            apexX = rect.left() + qBound<qreal>(0.0, offset * rect.width() / sum, rect.width());
+        } else {
+            apexX = rect.left() + qBound<qreal>(0.0, offset, rect.width());
+        }
+        return QPointF(apexX, rect.top());
+    }
+    }
+}
+
+QPointF ShapeItem::customHandleCenter(int handle, bool* ok) const
+{
+    if (ok) {
+        *ok = false;
+    }
+    if (handle == CanvasItem::Apex && m_type == ShapeType::Triangle && !isCustomShape()) {
+        if (ok) {
+            *ok = true;
+        }
+        return triangleVertex(TriangleVertex::C);
+    }
+    return QPointF();
 }
 
 void ShapeItem::setTriangleAngles(qreal angle1, qreal angle2)
@@ -429,13 +492,23 @@ void ShapeItem::setAutoCorner(bool enabled)
     update();
 }
 
-void ShapeItem::setShapeRadius(qreal radius)
+void ShapeItem::setFillImage(const QPixmap& image, ImageFill::Mode mode)
 {
-    const qreal clamped = radius < 0.0 ? -1.0 : qMax<qreal>(0.0, radius);
-    if (qFuzzyCompare(m_shapeRadius + 2.0, clamped + 2.0)) {
+    if (image.isNull()) {
+        clearFillImage();
         return;
     }
-    m_shapeRadius = clamped;
+    m_fillImage = image;
+    m_fillImageMode = mode;
+    update();
+}
+
+void ShapeItem::clearFillImage()
+{
+    if (m_fillImage.isNull()) {
+        return;
+    }
+    m_fillImage = QPixmap();
     update();
 }
 
@@ -469,7 +542,9 @@ ShapeItemState ShapeItem::state() const
     result.bottomAngle2 = m_bottomAngle2;
     result.startArrow = m_startArrow;
     result.endArrow = m_endArrow;
-    result.shapeRadius = m_shapeRadius;
+    result.hasFillImage = hasFillImage();
+    result.fillImage = m_fillImage;
+    result.fillImageMode = m_fillImageMode;
     result.pos = pos();
     result.size = contentSize();
     return result;
@@ -489,7 +564,8 @@ void ShapeItem::applyState(const ShapeItemState& state)
     m_bottomAngle2 = state.bottomAngle2;
     m_startArrow = state.startArrow;
     m_endArrow = state.endArrow;
-    m_shapeRadius = state.shapeRadius;
+    m_fillImage = state.hasFillImage ? state.fillImage : QPixmap();
+    m_fillImageMode = state.fillImageMode;
     setStyle(state.strokeColor, state.fillColor, state.strokeWidth);
     setPos(state.pos);
     m_syncingTriangle = true;
@@ -559,23 +635,23 @@ QPainterPath ShapeItem::currentPath(const QRectF& rect) const
     // -2.0 是「矩形圆角自动态（短边 16%）」的哨兵值，其余负值仍表示未指定圆角。
     const qreal corner =
         (m_type == ShapeType::Rectangle && m_cornerRadius < 0.0 && m_autoCorner) ? -2.0 : m_cornerRadius;
-    return pathFor(m_type, rect, corner, m_startAngle, m_sweepAngle, m_shapeRadius);
+    return pathFor(m_type, rect, corner, m_startAngle, m_sweepAngle);
 }
 
 QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect)
 {
-    return pathFor(type, rect, -1.0, 30.0, 120.0, -1.0);
+    return pathFor(type, rect, -1.0, 30.0, 120.0);
 }
 
 QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius)
 {
-    return pathFor(type, rect, cornerRadius, 30.0, 120.0, -1.0);
+    return pathFor(type, rect, cornerRadius, 30.0, 120.0);
 }
 
 QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius, qreal startAngle,
-                                qreal sweepAngle, qreal shapeRadius)
+                                qreal sweepAngle)
 {
-    return ShapePathBuilder::pathFor(type, rect, cornerRadius, startAngle, sweepAngle, shapeRadius);
+    return ShapePathBuilder::pathFor(type, rect, cornerRadius, startAngle, sweepAngle);
 }
 
 void ShapeItem::paintContent(QPainter* painter)
@@ -592,6 +668,19 @@ void ShapeItem::paintContent(QPainter* painter)
 
     ShapePainter::paintShape(painter, path, rect, m_type, m_strokeColor, m_fillColor, m_strokeWidth, m_strokeStyle,
                              m_fillStyle, m_opacity);
+
+    // 需求 15：图片垫在填充色之上、描线之下；裁剪到填充区并避开描边带，
+    // 避免图片把描边的内半侧盖掉。图片透明处自然露出下面的填充色 / 图案。
+    if (!m_fillImage.isNull()) {
+        QPainterPath clip = path;
+        if (m_strokeWidth > 0.0 && m_strokeColor.alpha() > 0) {
+            QPainterPathStroker stroker;
+            stroker.setWidth(m_strokeWidth);
+            stroker.setJoinStyle(Qt::MiterJoin);
+            clip = path.subtracted(stroker.createStroke(path));
+        }
+        ImageFill::paint(painter, m_fillImage, m_fillImageMode, rect, clip);
+    }
 
     // 直线 / 直线箭头：两端箭头按 4 倍线宽画在中心线端点上，允许超出内容矩形。
     if (m_type == ShapeType::Line && (arrowStyleIsHead(m_startArrow) || arrowStyleIsHead(m_endArrow))) {
@@ -623,11 +712,15 @@ QJsonObject ShapeItem::toJson() const
     }
     json.insert(QStringLiteral("startAngle"), m_startAngle);
     json.insert(QStringLiteral("sweepAngle"), m_sweepAngle);
-    json.insert(QStringLiteral("shapeRadius"), m_shapeRadius);
     // 三角形以角度为真相，两个底角随画布保存；旧文件没有这两个字段时按 60°/60° 反算。
     if (m_type == ShapeType::Triangle) {
         json.insert(QStringLiteral("bottomAngle1"), m_bottomAngle1);
         json.insert(QStringLiteral("bottomAngle2"), m_bottomAngle2);
+    }
+    // 需求 15：图片填充独立属性，无图时不写键，旧版本忽略该键即退回纯色。
+    const QJsonObject fillImageJson = ImageFill::toJson(m_fillImage, m_fillImageMode);
+    if (!fillImageJson.isEmpty()) {
+        json.insert(QStringLiteral("fillImage"), fillImageJson);
     }
     // 直线 / 直线箭头两端箭头样式：旧文件没有这两个字段时按「无」载入。
     json.insert(QStringLiteral("startArrow"), arrowStyleToString(m_startArrow));
@@ -693,7 +786,14 @@ void ShapeItem::fromJson(const QJsonObject& json)
     }
     m_startAngle = json.value(QStringLiteral("startAngle")).toDouble(30.0);
     m_sweepAngle = json.value(QStringLiteral("sweepAngle")).toDouble(120.0);
-    m_shapeRadius = json.value(QStringLiteral("shapeRadius")).toDouble(-1.0);
+    // 需求 6：旧文件可能还带 shapeRadius；先记下原值，等尺寸恢复后再折算（见下方迁移）。
+    const qreal legacyRadius = json.value(QStringLiteral("shapeRadius")).toDouble(-1.0);
+    if (json.contains(QStringLiteral("fillImage"))) {
+        m_fillImage = ImageFill::pixmapFromJson(json.value(QStringLiteral("fillImage")).toObject(), &m_fillImageMode);
+    } else {
+        m_fillImage = QPixmap();
+        m_fillImageMode = ImageFill::Mode::Stretch;
+    }
     m_startArrow = arrowStyleFromString(json.value(QStringLiteral("startArrow")).toString());
     m_endArrow = arrowStyleFromString(json.value(QStringLiteral("endArrow")).toString());
     const bool hasAngles = json.contains(QStringLiteral("bottomAngle1"));
@@ -705,6 +805,17 @@ void ShapeItem::fromJson(const QJsonObject& json)
         setContentSize(defaultShapeSize(m_type));
     }
     m_syncingTriangle = false;
+
+    // 需求 6：扇形 / 弧线旧半径 < 内容宽的一半时，把椭圆外接框改成新内容矩形：
+    // k = 2r、ry = r·h/w，位置按椭圆中心不动补偿，轮廓逐点不变；r<0 或 r≥w/2 无需迁移。
+    if ((m_type == ShapeType::Sector || m_type == ShapeType::Arc) && legacyRadius >= 0.0 && !isCustomShape()) {
+        const QSizeF size = contentSize();
+        if (size.width() > 0.0 && legacyRadius < size.width() / 2.0) {
+            const qreal ry = legacyRadius * size.height() / size.width();
+            setContentSize(QSizeF(legacyRadius * 2.0, ry * 2.0));
+            setPos(pos() + QPointF(size.width() / 2.0 - legacyRadius, size.height() / 2.0 - ry));
+        }
+    }
 
     // 旧文件没有角度字段：按原三角形的顶点位置（内容矩形上边中点）反算两个底角，
     // 使角度与恢复后的尺寸自洽，外观零变化。

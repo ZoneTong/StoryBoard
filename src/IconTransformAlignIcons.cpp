@@ -140,15 +140,16 @@ void drawGroup(QPainter& p, IconId id)
         p.setPen(QPen(c, 1.2, Qt::DashLine, Qt::RoundCap, Qt::RoundJoin));
         p.drawRoundedRect(QRectF(2.5, 2.5, 19.0, 19.0), 2.5, 2.5);
     } else {
-        p.setPen(QPen(c, 1.2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-        p.drawLine(QPointF(2.5, 2.5), QPointF(2.5, 7.0));
-        p.drawLine(QPointF(2.5, 2.5), QPointF(7.0, 2.5));
-        p.drawLine(QPointF(21.5, 2.5), QPointF(21.5, 7.0));
-        p.drawLine(QPointF(21.5, 2.5), QPointF(17.0, 2.5));
-        p.drawLine(QPointF(2.5, 21.5), QPointF(2.5, 17.0));
-        p.drawLine(QPointF(2.5, 21.5), QPointF(7.0, 21.5));
-        p.drawLine(QPointF(21.5, 21.5), QPointF(21.5, 17.0));
-        p.drawLine(QPointF(21.5, 21.5), QPointF(17.0, 21.5));
+        // 需求 10：四角 L 形角框改为四个圆点（半径 1.9，线宽同族），
+        // 与「组合」的虚线框明确区分。
+    }
+    if (id == IconId::Ungroup) {
+        p.setPen(Qt::NoPen);
+        p.setBrush(c);
+        const qreal dotRadius = 1.7;
+        for (const QPointF& center : {QPointF(3.0, 3.0), QPointF(21.0, 3.0), QPointF(3.0, 21.0), QPointF(21.0, 21.0)}) {
+            p.drawEllipse(center, dotRadius, dotRadius);
+        }
     }
     p.setPen(Qt::NoPen);
     p.setBrush(c);

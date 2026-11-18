@@ -371,7 +371,12 @@ void DocumentController::exportCustomShape()
         return;
     }
 
-    QString suggestion = QDir(AppSettings::shapesDir()).filePath(documentName() + QStringLiteral(".sbcanvas"));
+    // 默认存到可写模板目录：配置同级不可写时（装在 Program Files）不会把文件丢到只读路径。
+    QString shapesDir = AppSettings::writableShapesDir();
+    if (shapesDir.isEmpty()) {
+        shapesDir = AppSettings::shapesDir();
+    }
+    QString suggestion = QDir(shapesDir).filePath(documentName() + QStringLiteral(".sbcanvas"));
     QString path = QFileDialog::getSaveFileName(m_window, MainWindow::tr("Export custom shape"), suggestion,
                                                 MainWindow::tr("StoryBoard canvases (*.sbcanvas)"));
     if (path.isEmpty()) {

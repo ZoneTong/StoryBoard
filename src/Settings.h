@@ -71,8 +71,22 @@ class AppSettings {
     // 同名模板取前面的那份。两者不存在时不建目录，避免在只读安装目录里写入。
     static QStringList shapesDirs();
     static void ensureShapesDir();
-    // 在系统文件管理器里打开自定义图形目录；目录不存在时先创建。
-    static bool openShapesFolder();
+    // 可写的模板目录：配置文件同级 → 部署目录旁 → 用户配置目录，取第一个「能建且可写」的。
+    // 安装到 Program Files 等只读位置时，配置同级目录建不出来，这里会自动降级；
+    // 三个候选全都不可写时返回空串，调用方据此给出明确失败原因，而不是去开一个不存在的目录。
+    static QString writableShapesDir();
+    // 打开模板目录的失败原因：都按「找不到目录 / 建不出来 / 外壳打不开 / 没有文件管理器」分开报。
+    enum class ShapesFolderError { None = 0, CreateFailed, ShellFailed, DesktopFailed };
+    struct ShapesFolderOpenResult {
+        bool opened = false;
+        ShapesFolderError error = ShapesFolderError::None;
+        QString directory;
+        int shellCode = 0;
+    };
+    // 在系统文件管理器里打开自定义图形目录；目录不存在时先在可写位置创建。
+    static ShapesFolderOpenResult openShapesFolder();
+    // 失败文案：带目录路径与原因，面板按钮与菜单项共用同一句，避免两处说法不一样。
+    static QString shapesFolderFailureText(const ShapesFolderOpenResult& result);
     // 界面语言以 "system" / "zh" / "en" 存进同一个 ini，不再使用注册表。
     static QString languageSetting();
     static bool setLanguageSetting(const QString& stored);

@@ -98,12 +98,14 @@ void selftest::runShapeItemTests(Context& ctx)
     shapeScene.setShowGrid(false);
 
     const QList<ShapeType> shapeTypes = allShapeTypes();
-    ctx.check(shapeTypes.size() == 13, QStringLiteral("提供 13 种常见图形"),
+    // 需求 11/13/16：13 − 2（花括号改曲线）+ 8（新图形）= 19 种。
+    ctx.check(shapeTypes.size() == 19, QStringLiteral("提供 19 种常见图形"),
               QStringLiteral("count=%1").arg(shapeTypes.size()));
     ctx.check(shapeTypeFromString(QStringLiteral("circle")) == ShapeType::Ellipse &&
                   shapeTypeFromString(QStringLiteral("roundrect")) == ShapeType::Rectangle &&
                   shapeTypeFromString(QStringLiteral("double_arrow")) == ShapeType::DoubleArrow &&
-                  shapeTypeFromString(QStringLiteral("leftbrace")) == ShapeType::BraceLeft &&
+                  shapeTypeFromString(QStringLiteral("four_point_star")) == ShapeType::Star4 &&
+                  shapeTypeFromString(QStringLiteral("love")) == ShapeType::Heart &&
                   shapeTypeFromString(QStringLiteral("speech")) == ShapeType::Callout,
               QStringLiteral("图形类型字符串兼容常见别名（圆角矩形读成矩形）"));
     ctx.check(shapeTypeFromString(QStringLiteral("does-not-exist")) == ShapeType::Rectangle,
@@ -148,16 +150,14 @@ void selftest::runShapeItemTests(Context& ctx)
         ShapeItem sector(ShapeType::Sector);
         sector.setContentSize(QSizeF(200.0, 200.0));
         sector.setArcAngles(0.0, 90.0);
-        sector.setShapeRadius(60.0);
         const QPainterPath sectorPath = sector.currentPath(sector.contentRect());
         ShapeItem arc(ShapeType::Arc);
         arc.setContentSize(QSizeF(200.0, 200.0));
         arc.setArcAngles(15.0, 140.0);
-        arc.setShapeRadius(55.0);
         const QPainterPath arcPath = arc.currentPath(arc.contentRect());
-        ctx.check(!sectorPath.isEmpty() && !arcPath.isEmpty() && sectorPath.boundingRect().width() <= 122.0 &&
-                      arcPath.boundingRect().width() <= 112.0,
-                  QStringLiteral("扇形与弧线按角度和半径生成路径"));
+        ctx.check(!sectorPath.isEmpty() && !arcPath.isEmpty() && sectorPath.boundingRect().width() <= 202.0 &&
+                      arcPath.boundingRect().width() <= 202.0,
+                  QStringLiteral("扇形与弧线按角度生成路径，外接框由内容矩形决定"));
         ShapeItem ovalArc(ShapeType::Arc);
         ovalArc.setContentSize(QSizeF(240.0, 120.0));
         ovalArc.setArcAngles(0.0, 90.0);
@@ -166,9 +166,8 @@ void selftest::runShapeItemTests(Context& ctx)
                   QStringLiteral("扇形与弧线由椭圆派生并跟随图元拉伸"));
         ShapeItem copy;
         copy.fromJson(sector.toJson());
-        ctx.check(copy.shapeType() == ShapeType::Sector && qFuzzyCompare(copy.sweepAngle() + 2.0, 92.0) &&
-                      qFuzzyCompare(copy.shapeRadius() + 2.0, 62.0),
-                  QStringLiteral("扇形角度与半径随画布保存和恢复"));
+        ctx.check(copy.shapeType() == ShapeType::Sector && qFuzzyCompare(copy.sweepAngle() + 2.0, 92.0),
+                  QStringLiteral("扇形角度随画布保存和恢复，半径字段已移除"));
     }
     {
         // 扇形 / 弧线的选中框贴着实际轮廓，而不是整个内容矩形。
@@ -337,9 +336,7 @@ void selftest::runShapeItemTests(Context& ctx)
         auto* item = new ShapeItem(type);
 
         QSizeF size(150, 90);
-        if (type == ShapeType::BraceLeft || type == ShapeType::BraceRight) {
-            size = QSizeF(60, 160);
-        } else if (type == ShapeType::Line) {
+        if (type == ShapeType::Line) {
             size = QSizeF(160, 50);
         } else if (type == ShapeType::Arrow || type == ShapeType::DoubleArrow) {
             size = QSizeF(180, 80);

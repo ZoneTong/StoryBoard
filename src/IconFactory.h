@@ -42,6 +42,9 @@ enum class IconId {
     // 三角形两个底角：开口朝右的角（底角 A）与开口朝左的角（底角 B）。
     AngleRight,
     AngleLeft,
+    // 直线两端箭头：起点朝左、终点朝右，避免两行都用旋转图标而分不清。
+    ArrowStart,
+    ArrowEnd,
     // 合并形状五项操作，图形参照 PPT「合并形状」菜单。
     MergeUnion,
     MergeCombine,

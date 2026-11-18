@@ -101,13 +101,29 @@ void UiToolBarBuilder::createSmoothingToolbar(QToolBar* mainBar)
 
 void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
 {
-    // 「图形」区：常见图形与紧随其后的预置项（圆角矩形、45°/60° 直角三角、直线箭头）
-    // 按下面的固定顺序平铺成一排，复用「插入 → 常见图形」同一批动作，避免两套插入逻辑。
-    // 顺序：矩形、椭圆、三角形、菱形、星形、箭头、双向箭头、对话气泡、扇形、弧线、直线、左右花括号。
+    // 「图形」区：常见图形与紧随其后的预置项（圆角矩形、45°/60° 直角三角、直线箭头、
+    // 左右花括号）按下面的固定顺序平铺成一排，复用「插入 → 常见图形」同一批动作，
+    // 避免两套插入逻辑。新图形（需求 11）追加在弧线之后、直线之前；花括号（需求 13）
+    // 已改为曲线，菜单里只剩两个预置动作，工具栏按名字显式补在直线之后。
     const QList<ShapeType> shapeOrder = {
-        ShapeType::Rectangle, ShapeType::Ellipse,     ShapeType::Triangle,   ShapeType::Diamond, ShapeType::Star,
-        ShapeType::Arrow,     ShapeType::DoubleArrow, ShapeType::Callout,    ShapeType::Sector,  ShapeType::Arc,
-        ShapeType::Line,      ShapeType::BraceLeft,   ShapeType::BraceRight,
+        ShapeType::Rectangle, ShapeType::Ellipse,  ShapeType::Triangle, ShapeType::Diamond,  ShapeType::Star,
+        ShapeType::Star4,     ShapeType::Hexagram, ShapeType::Heart,    ShapeType::Arrow,    ShapeType::DoubleArrow,
+        ShapeType::Callout,   ShapeType::Sector,   ShapeType::Arc,      ShapeType::SineWave, ShapeType::FlagWave,
+        ShapeType::FlagCurl,  ShapeType::Cube,     ShapeType::Cylinder, ShapeType::Line,
+    };
+    auto addShapeButton = [mainBar](QAction* action) {
+        if (!action) {
+            return;
+        }
+        auto* shapeButton = new QToolButton(mainBar);
+        shapeButton->setObjectName(QStringLiteral("ToolBarShapeButton"));
+        shapeButton->setProperty("shapeActionName", action->objectName());
+        shapeButton->setIcon(action->icon());
+        shapeButton->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
+        shapeButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+        shapeButton->setToolTip(action->toolTip());
+        QObject::connect(shapeButton, &QToolButton::clicked, action, &QAction::trigger);
+        mainBar->addWidget(shapeButton);
     };
     for (ShapeType type : shapeOrder) {
         for (QAction* action : m_window->m_shapeMenu->actions()) {
@@ -121,16 +137,13 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
             if (action->data().toInt() != static_cast<int>(type)) {
                 continue;
             }
-            auto* shapeButton = new QToolButton(mainBar);
-            shapeButton->setObjectName(QStringLiteral("ToolBarShapeButton"));
-            shapeButton->setProperty("shapeActionName", action->objectName());
-            shapeButton->setIcon(action->icon());
-            shapeButton->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
-            shapeButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
-            shapeButton->setToolTip(action->toolTip());
-            QObject::connect(shapeButton, &QToolButton::clicked, action, &QAction::trigger);
-            mainBar->addWidget(shapeButton);
+            addShapeButton(action);
         }
+    }
+    // 花括号预置动作没有 ShapeType（data 为 -1），按 objectName 显式补在直线之后。
+    for (const QString& braceAction :
+         {QStringLiteral("ShapePreset_braceLeft"), QStringLiteral("ShapePreset_braceRight")}) {
+        addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(braceAction));
     }
 
     // 常见图形之后追加自定义图形下拉，和「插入 → 常见图形」里的同一份目录菜单。

@@ -70,6 +70,25 @@ void UiMenuBuilder::buildShapeMenu()
             });
         }
 
+        // 需求 13：左右花括号改为曲线图元（右括号 = 左括号旋转 180°），
+        // 菜单里没有 ShapeAction_ 入口，改为两个预置动作，紧跟直线箭头之后。
+        if (type == ShapeType::Line) {
+            QAction* braceLeft = m_window->m_shapeMenu->addAction(
+                makeShapePresetIcon(QStringLiteral("braceLeft"), QColor(58, 64, 80), 18), MainWindow::tr("Left brace"));
+            braceLeft->setObjectName(QStringLiteral("ShapePreset_braceLeft"));
+            braceLeft->setData(-1);
+            braceLeft->setToolTip(MainWindow::tr("Insert a left brace as a curve (draggable and resizable)"));
+            QObject::connect(braceLeft, &QAction::triggered, m_window, [this]() { m_window->insertBrace(true); });
+
+            QAction* braceRight = m_window->m_shapeMenu->addAction(
+                makeShapePresetIcon(QStringLiteral("braceRight"), QColor(58, 64, 80), 18),
+                MainWindow::tr("Right brace"));
+            braceRight->setObjectName(QStringLiteral("ShapePreset_braceRight"));
+            braceRight->setData(-1);
+            braceRight->setToolTip(MainWindow::tr("Insert a right brace as a curve (left brace rotated 180°)"));
+            QObject::connect(braceRight, &QAction::triggered, m_window, [this]() { m_window->insertBrace(false); });
+        }
+
         // 需求 1：三角形后追加 45° / 60° 直角三角形预置项。短边沿水平方向，
         // 即底边（水平边）两侧的内角为 90° 与 45° / 60°；底边可调，角度锁定。
         // 预置项用 ShapePreset_ 前缀，工具栏那一排按钮只认 ShapeAction_，不会多出按钮。

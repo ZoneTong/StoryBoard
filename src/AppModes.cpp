@@ -34,7 +34,6 @@
 #include <QStandardPaths>
 #include <QTimer>
 #include <QWidget>
-
 #include <cstdio>
 
 namespace {
@@ -346,6 +345,7 @@ int runLineArt(const CommandLineOptions& options)
         // 与「导入图片线稿化」一致：不额外平滑，折线模式保持方角。
         auto* stroke = new CurveItem();
         stroke->setStrokePoints(scenePoints, outline.color, lineArtOptions.strokeWidth, 0.0, true);
+        stroke->setSource(CurveSource::LineArt);
         items.append(stroke);
     }
     if (items.isEmpty()) {

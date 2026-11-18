@@ -662,7 +662,7 @@ QJsonObject storyBoardToScene(const QJsonObject& document, QStringList* warnings
 
     const QJsonObject canvas = document.value(QStringLiteral("canvas")).toObject();
     QJsonObject appState;
-    appState.insert(QStringLiteral("gridSize"), 32);
+    appState.insert(QStringLiteral("gridSize"), 64);
     appState.insert(QStringLiteral("viewBackgroundColor"), document.value(QStringLiteral("background"))
                                                                .toObject()
                                                                .value(QStringLiteral("color"))

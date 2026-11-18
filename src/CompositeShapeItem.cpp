@@ -97,6 +97,26 @@ void CompositeShapeItem::setStroke(const QColor& color, qreal width)
     update();
 }
 
+void CompositeShapeItem::setFillImage(const QPixmap& image, ImageFill::Mode mode)
+{
+    if (image.isNull()) {
+        clearFillImage();
+        return;
+    }
+    m_fillImage = image;
+    m_fillImageMode = mode;
+    update();
+}
+
+void CompositeShapeItem::clearFillImage()
+{
+    if (m_fillImage.isNull()) {
+        return;
+    }
+    m_fillImage = QPixmap();
+    update();
+}
+
 void CompositeShapeItem::setStrokeStyle(Qt::PenStyle style)
 {
     m_strokeStyle = style;
@@ -214,6 +234,28 @@ void CompositeShapeItem::paintContent(QPainter* painter)
         } else {
             painter->setBrush(layer.fill);
             painter->drawPath(visible);
+        }
+    }
+
+    // 需求 15：图片填充只铺在有面积层围成的区域内，孔洞与描线带外自然留空。
+    if (!m_fillImage.isNull()) {
+        QPainterPath area;
+        qreal borderWidth = 0.0;
+        for (const Layer& layer : m_layers) {
+            if (layer.role != LayerRole::FilledArea || !layer.filled) {
+                continue;
+            }
+            area = area.isEmpty() ? layer.path : area.united(layer.path);
+            borderWidth = qMax(borderWidth, layer.strokeWidth);
+        }
+        if (!area.isEmpty()) {
+            if (borderWidth > 0.0) {
+                QPainterPathStroker stroker;
+                stroker.setJoinStyle(Qt::MiterJoin);
+                stroker.setWidth(borderWidth);
+                area = area.subtracted(stroker.createStroke(area));
+            }
+            ImageFill::paint(painter, m_fillImage, m_fillImageMode, QRectF(QPointF(0.0, 0.0), m_designSize), area);
         }
     }
 
@@ -352,6 +394,10 @@ QJsonObject CompositeShapeItem::toJson() const
     json.insert(QStringLiteral("strokeStyle"), static_cast<int>(m_strokeStyle));
     json.insert(QStringLiteral("designWidth"), m_designSize.width());
     json.insert(QStringLiteral("designHeight"), m_designSize.height());
+    const QJsonObject fillImageJson = ImageFill::toJson(m_fillImage, m_fillImageMode);
+    if (!fillImageJson.isEmpty()) {
+        json.insert(QStringLiteral("fillImage"), fillImageJson);
+    }
     return json;
 }
 
@@ -385,4 +431,10 @@ void CompositeShapeItem::fromJson(const QJsonObject& json)
     m_designSize = QSizeF(qMax(1.0, json.value(QStringLiteral("designWidth")).toDouble(1.0)),
                           qMax(1.0, json.value(QStringLiteral("designHeight")).toDouble(1.0)));
     setContentSize(m_designSize);
+    if (json.contains(QStringLiteral("fillImage"))) {
+        m_fillImage = ImageFill::pixmapFromJson(json.value(QStringLiteral("fillImage")).toObject(), &m_fillImageMode);
+    } else {
+        m_fillImage = QPixmap();
+        m_fillImageMode = ImageFill::Mode::Stretch;
+    }
 }

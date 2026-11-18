@@ -17,7 +17,20 @@ class CanvasItem : public QGraphicsObject {
     Q_OBJECT
   public:
     enum { Type = QGraphicsItem::UserType + 1 };
-    enum Handle { NoHandle = -1, TopLeft = 0, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left, Rotation };
+    // 需求 2：Apex 是三角形顶点 C 的专用句柄，数值排在 Rotation 之后，旧值不受影响。
+    enum Handle {
+        NoHandle = -1,
+        TopLeft = 0,
+        Top,
+        TopRight,
+        Right,
+        BottomRight,
+        Bottom,
+        BottomLeft,
+        Left,
+        Rotation,
+        Apex
+    };
 
     explicit CanvasItem(QGraphicsItem* parent = nullptr);
     ~CanvasItem() override;
@@ -28,6 +41,8 @@ class CanvasItem : public QGraphicsObject {
     virtual QString displayName() const = 0;
     // 用于自动命名的类型名：文字/图片不取内容摘要或文件名，而是稳定的类型称呼。
     virtual QString typeDisplayName() const { return displayName(); }
+    // 需求 2：非矩形句柄（三角形顶点 C）由图元给出本地坐标；默认不支持。
+    virtual QPointF customHandleCenter(int handle, bool* ok) const;
     virtual QJsonObject toJson() const = 0;
     virtual void fromJson(const QJsonObject& json) = 0;
 
