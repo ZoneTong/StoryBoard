@@ -261,6 +261,49 @@ QIcon fillStyleIcon(FillStyle style, const QColor& color, int logicalSize)
         }
         break;
     }
+    case FillStyle::HorizontalHatch: {
+        painter.setPen(QPen(ink, 1.4));
+        for (qreal y = box.top() + 4.0; y < box.bottom(); y += 4.5) {
+            painter.drawLine(QPointF(box.left(), y), QPointF(box.right(), y));
+        }
+        break;
+    }
+    case FillStyle::VerticalHatch: {
+        painter.setPen(QPen(ink, 1.4));
+        for (qreal x = box.left() + 4.0; x < box.right(); x += 4.5) {
+            painter.drawLine(QPointF(x, box.top()), QPointF(x, box.bottom()));
+        }
+        break;
+    }
+    case FillStyle::Brick: {
+        // 砖纹：三行横线，竖缝在行间交错。
+        painter.setPen(QPen(ink, 1.4));
+        const qreal rowHeight = box.height() / 3.0;
+        for (int row = 0; row <= 3; ++row) {
+            const qreal y = box.top() + row * rowHeight;
+            painter.drawLine(QPointF(box.left(), y), QPointF(box.right(), y));
+            if (row < 3) {
+                const qreal offset = (row % 2) ? box.width() * 0.25 : box.width() * 0.5;
+                const qreal nextY = y + rowHeight;
+                painter.drawLine(QPointF(box.left() + offset, y), QPointF(box.left() + offset, nextY));
+                painter.drawLine(QPointF(box.left() + offset + box.width() * 0.5, y),
+                                 QPointF(box.left() + offset + box.width() * 0.5, nextY));
+            }
+        }
+        break;
+    }
+    case FillStyle::Dots: {
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(ink);
+        for (int row = 0; row < 3; ++row) {
+            for (int column = 0; column < 4; ++column) {
+                const QPointF center(box.left() + 3.0 + column * 4.0 + (row % 2 ? 2.0 : 0.0),
+                                     box.top() + 3.5 + row * 4.5);
+                painter.drawEllipse(center, 1.1, 1.1);
+            }
+        }
+        break;
+    }
     case FillStyle::Honeycomb: {
         painter.setPen(QPen(ink, 1.2));
         for (int row = 0; row < 3; ++row) {

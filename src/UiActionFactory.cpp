@@ -325,9 +325,14 @@ void UiActionFactory::build()
     m_window->m_fillCrossAct = new QAction(MainWindow::tr("Cross hatch fill"), m_window);
     m_window->m_fillGridAct = new QAction(MainWindow::tr("Grid hatch fill"), m_window);
     m_window->m_fillHoneycombAct = new QAction(MainWindow::tr("Hexagon fill"), m_window);
-    for (QAction* action :
-         {m_window->m_fillNoneAct, m_window->m_fillSolidAct, m_window->m_fillHachureAct, m_window->m_fillReverseAct,
-          m_window->m_fillCrossAct, m_window->m_fillGridAct, m_window->m_fillHoneycombAct}) {
+    m_window->m_fillHorizontalAct = new QAction(MainWindow::tr("Horizontal lines fill"), m_window);
+    m_window->m_fillVerticalAct = new QAction(MainWindow::tr("Vertical lines fill"), m_window);
+    m_window->m_fillBrickAct = new QAction(MainWindow::tr("Brick fill"), m_window);
+    m_window->m_fillDotsAct = new QAction(MainWindow::tr("Dots fill"), m_window);
+    for (QAction* action : {m_window->m_fillNoneAct, m_window->m_fillSolidAct, m_window->m_fillHachureAct,
+                            m_window->m_fillReverseAct, m_window->m_fillCrossAct, m_window->m_fillGridAct,
+                            m_window->m_fillHoneycombAct, m_window->m_fillHorizontalAct, m_window->m_fillVerticalAct,
+                            m_window->m_fillBrickAct, m_window->m_fillDotsAct}) {
         action->setCheckable(true);
     }
     m_window->m_fillStyleGroup = new QActionGroup(m_window);
@@ -339,6 +344,10 @@ void UiActionFactory::build()
     m_window->m_fillStyleGroup->addAction(m_window->m_fillCrossAct);
     m_window->m_fillStyleGroup->addAction(m_window->m_fillGridAct);
     m_window->m_fillStyleGroup->addAction(m_window->m_fillHoneycombAct);
+    m_window->m_fillStyleGroup->addAction(m_window->m_fillHorizontalAct);
+    m_window->m_fillStyleGroup->addAction(m_window->m_fillVerticalAct);
+    m_window->m_fillStyleGroup->addAction(m_window->m_fillBrickAct);
+    m_window->m_fillStyleGroup->addAction(m_window->m_fillDotsAct);
     m_window->m_fillSolidAct->setChecked(true);
     QObject::connect(m_window->m_fillNoneAct, &QAction::triggered, m_window,
                      [this]() { m_window->setFillStyle(FillStyle::None); });
@@ -354,6 +363,14 @@ void UiActionFactory::build()
                      [this]() { m_window->setFillStyle(FillStyle::GridHatch); });
     QObject::connect(m_window->m_fillHoneycombAct, &QAction::triggered, m_window,
                      [this]() { m_window->setFillStyle(FillStyle::Honeycomb); });
+    QObject::connect(m_window->m_fillHorizontalAct, &QAction::triggered, m_window,
+                     [this]() { m_window->setFillStyle(FillStyle::HorizontalHatch); });
+    QObject::connect(m_window->m_fillVerticalAct, &QAction::triggered, m_window,
+                     [this]() { m_window->setFillStyle(FillStyle::VerticalHatch); });
+    QObject::connect(m_window->m_fillBrickAct, &QAction::triggered, m_window,
+                     [this]() { m_window->setFillStyle(FillStyle::Brick); });
+    QObject::connect(m_window->m_fillDotsAct, &QAction::triggered, m_window,
+                     [this]() { m_window->setFillStyle(FillStyle::Dots); });
     m_window->m_fillColorAct = new QAction(MainWindow::tr("Fill color…"), m_window);
     m_window->m_fillColorAct->setObjectName(QStringLiteral("FillColorAction"));
     m_window->m_fillColorAct->setIcon(m_window->m_style->fillColorIcon(

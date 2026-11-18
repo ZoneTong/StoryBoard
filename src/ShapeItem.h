@@ -35,7 +35,19 @@ enum class ShapeType {
     Cylinder
 };
 
-enum class FillStyle { None = 0, Solid, Hachure, ReverseHachure, CrossHatch, GridHatch, Honeycomb };
+enum class FillStyle {
+    None = 0,
+    Solid,
+    Hachure,
+    ReverseHachure,
+    CrossHatch,
+    GridHatch,
+    Honeycomb,
+    HorizontalHatch,
+    VerticalHatch,
+    Brick,
+    Dots
+};
 
 QList<ShapeType> allShapeTypes();
 QString shapeTypeName(ShapeType type);

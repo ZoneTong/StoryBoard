@@ -49,20 +49,34 @@ void selftest::runFillStylePatternTests(Context& ctx)
               QStringLiteral("交叉线填充均匀铺满整个图形，不只出现在右上角"),
               QStringLiteral("topRight=%1 bottomLeft=%2").arg(hatchTopRight).arg(hatchBottomLeft));
 
-    // 填充样式扩展：反斜线、正交叉线、六边形。
+    // 填充样式扩展：反斜线、十字线、六边形、水平线、竖线、砖纹、点阵。
     ctx.check(fillStyleName(FillStyle::ReverseHachure) == QStringLiteral("反斜线") &&
-                  fillStyleName(FillStyle::GridHatch) == QStringLiteral("正交叉线") &&
-                  fillStyleName(FillStyle::Honeycomb) == QStringLiteral("六边形"),
+                  fillStyleName(FillStyle::GridHatch) == QStringLiteral("十字线") &&
+                  fillStyleName(FillStyle::Honeycomb) == QStringLiteral("六边形") &&
+                  fillStyleName(FillStyle::HorizontalHatch) == QStringLiteral("水平线") &&
+                  fillStyleName(FillStyle::VerticalHatch) == QStringLiteral("竖线") &&
+                  fillStyleName(FillStyle::Brick) == QStringLiteral("砖纹") &&
+                  fillStyleName(FillStyle::Dots) == QStringLiteral("点阵"),
               QStringLiteral("新增填充样式名称齐全"));
-    ctx.check(allFillStyles().size() == 7 && allFillStyles().at(0) == FillStyle::None &&
-                  allFillStyles().at(1) == FillStyle::Solid && allFillStyles().at(2) == FillStyle::Hachure &&
-                  allFillStyles().at(3) == FillStyle::ReverseHachure &&
-                  allFillStyles().at(4) == FillStyle::CrossHatch && allFillStyles().at(5) == FillStyle::GridHatch &&
-                  allFillStyles().at(6) == FillStyle::Honeycomb,
-              QStringLiteral("填充样式列表包含全部 7 种且顺序稳定"));
+    ctx.check(
+        allFillStyles().size() == 11 && allFillStyles().at(0) == FillStyle::None &&
+            allFillStyles().at(1) == FillStyle::Solid && allFillStyles().at(2) == FillStyle::Hachure &&
+            allFillStyles().at(3) == FillStyle::ReverseHachure && allFillStyles().at(4) == FillStyle::CrossHatch &&
+            allFillStyles().at(5) == FillStyle::GridHatch && allFillStyles().at(6) == FillStyle::Honeycomb &&
+            allFillStyles().at(7) == FillStyle::HorizontalHatch && allFillStyles().at(8) == FillStyle::VerticalHatch &&
+            allFillStyles().at(9) == FillStyle::Brick && allFillStyles().at(10) == FillStyle::Dots,
+        QStringLiteral("填充样式列表包含全部 11 种且顺序稳定"));
     ctx.check(fillStyleFromString(fillStyleToString(FillStyle::ReverseHachure)) == FillStyle::ReverseHachure &&
                   fillStyleFromString(fillStyleToString(FillStyle::GridHatch)) == FillStyle::GridHatch &&
-                  fillStyleFromString(fillStyleToString(FillStyle::Honeycomb)) == FillStyle::Honeycomb,
+                  fillStyleFromString(fillStyleToString(FillStyle::Honeycomb)) == FillStyle::Honeycomb &&
+                  fillStyleFromString(fillStyleToString(FillStyle::HorizontalHatch)) == FillStyle::HorizontalHatch &&
+                  fillStyleFromString(fillStyleToString(FillStyle::VerticalHatch)) == FillStyle::VerticalHatch &&
+                  fillStyleFromString(fillStyleToString(FillStyle::Brick)) == FillStyle::Brick &&
+                  fillStyleFromString(fillStyleToString(FillStyle::Dots)) == FillStyle::Dots &&
+                  fillStyleFromString(QStringLiteral("horizontal")) == FillStyle::HorizontalHatch &&
+                  fillStyleFromString(QStringLiteral("vertical")) == FillStyle::VerticalHatch &&
+                  fillStyleFromString(QStringLiteral("brickwall")) == FillStyle::Brick &&
+                  fillStyleFromString(QStringLiteral("dot")) == FillStyle::Dots,
               QStringLiteral("新增填充样式可序列化往返"));
 
     auto renderPatternFill = [](FillStyle style, QImage& image) {
@@ -162,4 +176,88 @@ void selftest::runFillStylePatternTests(Context& ctx)
                   .arg(honeycombCellEmpty ? 1 : 0)
                   .arg(honeycombEdgeDrawn ? 1 : 0)
                   .arg(honeycombRatio, 0, 'f', 3));
+
+    // 需求 14：水平线 / 竖线 / 砖纹 / 点阵四种新图案。
+    // 水平线：存在整行被红像素贯穿的扫描行（纹线行），且没有竖线方向的整列贯穿。
+    QImage horizontalImage;
+    renderPatternFill(FillStyle::HorizontalHatch, horizontalImage);
+    int horizontalBestRow = 0;
+    int horizontalBestColumn = 0;
+    for (int y = 55; y < 240; ++y) {
+        int run = 0;
+        for (int x = 60; x < 340; ++x) {
+            if (patternLinePixel(horizontalImage, x, y)) {
+                ++run;
+            }
+        }
+        horizontalBestRow = qMax(horizontalBestRow, run);
+    }
+    for (int x = 60; x < 340; ++x) {
+        int run = 0;
+        for (int y = 55; y < 240; ++y) {
+            if (patternLinePixel(horizontalImage, x, y)) {
+                ++run;
+            }
+        }
+        horizontalBestColumn = qMax(horizontalBestColumn, run);
+    }
+    ctx.check(horizontalBestRow >= 150 && horizontalBestColumn < horizontalBestRow / 3,
+              QStringLiteral("水平线填充沿水平方向铺满"),
+              QStringLiteral("row=%1 column=%2").arg(horizontalBestRow).arg(horizontalBestColumn));
+
+    // 竖线：存在整列被红像素贯穿的扫描列，且没有水平方向的整行贯穿。
+    QImage verticalImage;
+    renderPatternFill(FillStyle::VerticalHatch, verticalImage);
+    int verticalBestRow = 0;
+    int verticalBestColumn = 0;
+    for (int y = 55; y < 240; ++y) {
+        int run = 0;
+        for (int x = 60; x < 340; ++x) {
+            if (patternLinePixel(verticalImage, x, y)) {
+                ++run;
+            }
+        }
+        verticalBestRow = qMax(verticalBestRow, run);
+    }
+    for (int x = 60; x < 340; ++x) {
+        int run = 0;
+        for (int y = 55; y < 240; ++y) {
+            if (patternLinePixel(verticalImage, x, y)) {
+                ++run;
+            }
+        }
+        verticalBestColumn = qMax(verticalBestColumn, run);
+    }
+    // 竖线：存在整列被红像素贯穿的扫描列；扫描行只会"穿过"竖线，
+    // 累计长度约为线条数 × 线宽（~60px），远小于整列贯穿。
+    ctx.check(verticalBestColumn >= 110 && verticalBestRow < 100, QStringLiteral("竖线填充沿竖直方向铺满"),
+              QStringLiteral("row=%1 column=%2").arg(verticalBestRow).arg(verticalBestColumn));
+
+    // 砖纹：有横线也有竖缝，竖缝在行间出现（比纯水平线多出竖直方向像素）。
+    QImage brickImage;
+    renderPatternFill(FillStyle::Brick, brickImage);
+    int brickPixels = 0;
+    for (int y = 55; y < 240; ++y) {
+        for (int x = 55; x < 345; ++x) {
+            if (patternLinePixel(brickImage, x, y)) {
+                ++brickPixels;
+            }
+        }
+    }
+    ctx.check(brickPixels > 0, QStringLiteral("砖纹填充画出砖块网格"));
+
+    // 点阵：50% 圆点，点像素占比小且中心离散（取样窗口里既有像素也有空白）。
+    QImage dotsImage;
+    renderPatternFill(FillStyle::Dots, dotsImage);
+    int dotPixels = 0;
+    for (int y = 55; y < 240; ++y) {
+        for (int x = 55; x < 345; ++x) {
+            if (patternLinePixel(dotsImage, x, y)) {
+                ++dotPixels;
+            }
+        }
+    }
+    const double dotsRatio = static_cast<double>(dotPixels) / (290.0 * 185.0);
+    ctx.check(dotPixels > 100 && dotsRatio > 0.1 && dotsRatio < 0.6, QStringLiteral("点阵填充画出离散圆点"),
+              QStringLiteral("pixels=%1 ratio=%2").arg(dotPixels).arg(dotsRatio, 0, 'f', 3));
 }

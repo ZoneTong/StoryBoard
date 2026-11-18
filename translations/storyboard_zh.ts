@@ -1862,11 +1862,23 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message><message>
         <location filename="../src/UiActionFactory.cpp" line="326"/>
         <source>Grid hatch fill</source>
-        <translation>正交叉线填充</translation>
+        <translation>十字线填充</translation>
     </message><message>
         <location filename="../src/UiActionFactory.cpp" line="327"/>
         <source>Hexagon fill</source>
         <translation>六边形填充</translation>
+    </message><message>
+        <source>Horizontal lines fill</source>
+        <translation>水平线填充</translation>
+    </message><message>
+        <source>Vertical lines fill</source>
+        <translation>竖线填充</translation>
+    </message><message>
+        <source>Brick fill</source>
+        <translation>砖纹填充</translation>
+    </message><message>
+        <source>Dots fill</source>
+        <translation>点阵填充</translation>
     </message><message>
         <location filename="../src/UiActionFactory.cpp" line="357"/>
         <source>Fill color…</source>
@@ -3367,11 +3379,23 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message><message>
         <location filename="../src/ShapeItem.cpp" line="147"/>
         <source>Grid hatch</source>
-        <translation>正交叉线</translation>
+        <translation>十字线</translation>
     </message><message>
         <location filename="../src/ShapeItem.cpp" line="149"/>
         <source>Hexagon</source>
         <translation>六边形</translation>
+    </message><message>
+        <source>Horizontal lines</source>
+        <translation>水平线</translation>
+    </message><message>
+        <source>Vertical lines</source>
+        <translation>竖线</translation>
+    </message><message>
+        <source>Brick</source>
+        <translation>砖纹</translation>
+    </message><message>
+        <source>Dots</source>
+        <translation>点阵</translation>
     </message><message>
         <location filename="../src/ShapeItem.cpp" line="80"/>
         <source>Sector</source>
@@ -3896,10 +3920,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <translation>绿色</translation>
     </message><message>
         <source>Grid hatch</source>
-        <translation>正交叉线</translation>
+        <translation>十字线</translation>
     </message><message>
         <source>Grid hatch fill</source>
-        <translation>正交叉线填充</translation>
+        <translation>十字线填充</translation>
     </message><message>
         <source>Hatch</source>
         <translation>斜线</translation>
@@ -3922,8 +3946,32 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Hexagon</source>
         <translation>六边形</translation>
     </message><message>
+        <source>Horizontal lines</source>
+        <translation>水平线</translation>
+    </message><message>
+        <source>Vertical lines</source>
+        <translation>竖线</translation>
+    </message><message>
+        <source>Brick</source>
+        <translation>砖纹</translation>
+    </message><message>
+        <source>Dots</source>
+        <translation>点阵</translation>
+    </message><message>
         <source>Hexagon fill</source>
         <translation>六边形填充</translation>
+    </message><message>
+        <source>Horizontal lines fill</source>
+        <translation>水平线填充</translation>
+    </message><message>
+        <source>Vertical lines fill</source>
+        <translation>竖线填充</translation>
+    </message><message>
+        <source>Brick fill</source>
+        <translation>砖纹填充</translation>
+    </message><message>
+        <source>Dots fill</source>
+        <translation>点阵填充</translation>
     </message><message>
         <source>Hidden</source>
         <translation>当前隐藏</translation>

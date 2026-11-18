@@ -286,7 +286,7 @@ void selftest::runCustomShapeDockTests(Context& ctx)
                       panel.findChildren<QToolButton*>(QStringLiteral("ItemCustomShapeButton")).isEmpty(),
                   QStringLiteral("编辑图元卡已移除常见图形展开行"));
         ctx.check(panel.findChildren<QToolButton*>(QStringLiteral("ItemColorSwatch")).size() >= 16 &&
-                      panel.findChildren<QToolButton*>(QStringLiteral("ItemFillStyleButton")).size() == 7 &&
+                      panel.findChildren<QToolButton*>(QStringLiteral("ItemFillStyleButton")).size() == 11 &&
                       panel.findChildren<QToolButton*>(QStringLiteral("ItemBorderStyleButton")).size() == 4,
                   QStringLiteral("编辑图元卡平铺颜色 / 填充 / 边框等工具"),
                   QStringLiteral("colors=%1 fills=%2 borders=%3")

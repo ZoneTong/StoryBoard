@@ -147,6 +147,14 @@ QString fillStyleName(FillStyle style)
         return ShapeItem::tr("Grid hatch");
     case FillStyle::Honeycomb:
         return ShapeItem::tr("Hexagon");
+    case FillStyle::HorizontalHatch:
+        return ShapeItem::tr("Horizontal lines");
+    case FillStyle::VerticalHatch:
+        return ShapeItem::tr("Vertical lines");
+    case FillStyle::Brick:
+        return ShapeItem::tr("Brick");
+    case FillStyle::Dots:
+        return ShapeItem::tr("Dots");
     }
     return ShapeItem::tr("Solid");
 }

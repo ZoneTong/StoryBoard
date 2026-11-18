@@ -233,6 +233,10 @@ class MainWindow : public QMainWindow {
     QAction* m_fillCrossAct = nullptr;
     QAction* m_fillGridAct = nullptr;
     QAction* m_fillHoneycombAct = nullptr;
+    QAction* m_fillHorizontalAct = nullptr;
+    QAction* m_fillVerticalAct = nullptr;
+    QAction* m_fillBrickAct = nullptr;
+    QAction* m_fillDotsAct = nullptr;
     QAction* m_fillColorAct = nullptr;
     QAction* m_strokeColorAct = nullptr;
 
