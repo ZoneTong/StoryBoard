@@ -315,9 +315,9 @@ void selftest::runCustomShapeDockTests(Context& ctx)
             content && content->layout() && borderWidthRow ? content->layout()->indexOf(borderWidthRow) : -1;
         const int borderColorIndex =
             content && content->layout() && borderColorRow ? content->layout()->indexOf(borderColorRow) : -1;
-        ctx.check(fillStyleIndex >= 0 && fillColorIndex > fillStyleIndex && borderStyleIndex > fillColorIndex &&
-                      borderColorIndex > borderStyleIndex && borderWidthIndex > borderColorIndex,
-                  QStringLiteral("编辑图元卡按填充样式、填充颜色、边框样式、边框颜色、边框宽度排列"),
+        ctx.check(fillStyleIndex >= 0 && fillColorIndex > fillStyleIndex && borderColorIndex > fillColorIndex &&
+                      borderStyleIndex > borderColorIndex && borderWidthIndex > borderStyleIndex,
+                  QStringLiteral("编辑图元卡按填充样式、填充颜色、描线颜色、描线样式、描线宽度排列"),
                   QStringLiteral("%1/%2/%3/%4/%5")
                       .arg(fillStyleIndex)
                       .arg(fillColorIndex)

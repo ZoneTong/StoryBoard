@@ -191,7 +191,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_bottomAngle1Spin->setRange(1, 174);
             m_bottomAngle1Spin->setSingleStep(1);
             m_bottomAngle1Spin->setSuffix(QStringLiteral("°"));
-            m_bottomAngle1Spin->setToolTip(ItemPropertiesDialog::tr("Triangle base angle A (A edge)"));
+            m_bottomAngle1Spin->setToolTip(ItemPropertiesDialog::tr("Triangle base angle A"));
             m_bottomAngle1Spin->setMinimumWidth(88);
             m_bottomAngle1Spin->setValue(qRound(m_initialBottomAngle1));
 
@@ -200,7 +200,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_bottomAngle2Spin->setRange(1, 174);
             m_bottomAngle2Spin->setSingleStep(1);
             m_bottomAngle2Spin->setSuffix(QStringLiteral("°"));
-            m_bottomAngle2Spin->setToolTip(ItemPropertiesDialog::tr("Triangle base angle B (A edge)"));
+            m_bottomAngle2Spin->setToolTip(ItemPropertiesDialog::tr("Triangle base angle B"));
             m_bottomAngle2Spin->setMinimumWidth(88);
             m_bottomAngle2Spin->setValue(qRound(m_initialBottomAngle2));
         }

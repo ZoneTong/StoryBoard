@@ -542,9 +542,14 @@ QJsonObject storyBoardToScene(const QJsonObject& document, QStringList* warnings
     const QJsonArray items = document.value(QStringLiteral("items")).toArray();
     QJsonArray elements;
     int index = 0;
+    // 需求 15：Excalidraw 表达不了图片填充，含 fillImage 的图元按纯色导出并汇总一条提示。
+    int fillImageCount = 0;
     for (const QJsonValue& value : items) {
         const QJsonObject item = value.toObject();
         const QString kind = item.value(QStringLiteral("type")).toString();
+        if (item.value(QStringLiteral("fillImage")).isObject()) {
+            ++fillImageCount;
+        }
         QString degrade;
         QJsonObject element;
         if (kind == QStringLiteral("shape")) {
@@ -651,6 +656,9 @@ QJsonObject storyBoardToScene(const QJsonObject& document, QStringList* warnings
         }
         elements.append(element);
         ++index;
+    }
+    if (fillImageCount > 0 && warnings) {
+        warnings->append(QStringLiteral("%1 个图元的图片填充导出为纯色").arg(fillImageCount));
     }
 
     QJsonObject scene;

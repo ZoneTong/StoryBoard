@@ -42,5 +42,6 @@ void runClipboardShortcutTests(Context& ctx);
 void runExcalidrawFormatTests(Context& ctx);
 void runLineSplitTests(Context& ctx);
 void runShapesClusterTests(Context& ctx);
+void runImageFillTests(Context& ctx);
 
 } // namespace selftest

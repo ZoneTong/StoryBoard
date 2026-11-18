@@ -768,14 +768,6 @@
         <source>Triangle base angle B</source>
         <translation>底角 B</translation>
     </message><message>
-        <location filename="../src/ItemPropertiesDialogStyleBlock.cpp" line="194"/>
-        <source>Triangle base angle A (A edge)</source>
-        <translation>底角 A（A 边）</translation>
-    </message><message>
-        <location filename="../src/ItemPropertiesDialogStyleBlock.cpp" line="203"/>
-        <source>Triangle base angle B (A edge)</source>
-        <translation>底角 B（A 边）</translation>
-    </message><message>
         <location filename="../src/ItemPropertiesDialogStyleBlock.cpp" line="217"/>
         <source>Start arrow</source>
         <translation>起点箭头</translation>

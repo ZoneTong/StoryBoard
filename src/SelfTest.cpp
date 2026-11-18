@@ -97,6 +97,7 @@ int runSelfTest(const QString& reportPath)
     selftest::runExcalidrawFormatTests(ctx);
     selftest::runLineSplitTests(ctx);
     selftest::runShapesClusterTests(ctx);
+    selftest::runImageFillTests(ctx);
 
     int passCount = 0;
     for (const QString& line : ctx.lines) {
