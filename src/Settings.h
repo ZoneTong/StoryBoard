@@ -82,6 +82,8 @@ class AppSettings {
         ShapesFolderError error = ShapesFolderError::None;
         QString directory;
         int shellCode = 0;
+        // 诊断用：进程完整性级别与各外壳通道的返回值，排查「打不开目录」时直接看现场。
+        QString diagnostics;
     };
     // 在系统文件管理器里打开自定义图形目录；目录不存在时先在可写位置创建。
     static ShapesFolderOpenResult openShapesFolder();
