@@ -137,6 +137,9 @@ qt_add_resources(${PROJECT_NAME} "storyboard_translations"
 
 if(WIN32)
     target_sources(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/app.rc")
+    # 需求 31：打开 shapes 目录改走 Shell.Application（CLSID_Shell）COM 通道，
+    # 需要显式链接 ole32 / oleaut32；shell32 与 uuid 供外壳与 CLSID 使用。
+    target_link_libraries(${PROJECT_NAME} PRIVATE ole32 oleaut32 shell32 uuid)
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")

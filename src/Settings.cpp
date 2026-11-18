@@ -8,7 +8,6 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QMap>
-#include <QProcess>
 #include <QSaveFile>
 #include <QStandardPaths>
 #include <QStringConverter>
@@ -18,6 +17,9 @@
 #ifdef Q_OS_WIN
 // clang-format off
 #include <windows.h>
+#include <ole2.h>
+#include <oleauto.h>
+#include <shldisp.h>
 #include <shellapi.h>
 #include <shlobj.h>
 // clang-format on
@@ -25,10 +27,44 @@
 
 namespace {
 
+// 需求 31：走 Shell.Application（CLSID_Shell）的 Explore 动词，把开目录的活交给
+// 已经在跑的外壳进程。提权（High IL）会话里 ShellExecuteW 会因为 UIPI 拿不到
+// 中完整性外壳而返回 5，直接起 explorer.exe 子进程又会在部分会话里以
+// 0xc0000142（STATUS_DLL_INIT_FAILED）退出并弹“应用程序错误”；COM 本地服务器
+// 激活只是跨进程调用，不会新建进程，实测在提权上下文可正常开窗。
+bool openFolderViaShellAutomation(const QString& directory)
+{
+    const std::wstring native = QDir::toNativeSeparators(directory).toStdWString();
+    // 线程若已按套间模型初始化，CoInitializeEx 会返回 RPC_E_CHANGED_MODE；
+    // 那时 COM 仍然可用，只是不需要（也不该）在结束时反初始化。
+    const HRESULT initHr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+    const bool comInitialized = SUCCEEDED(initHr);
+
+    IShellDispatch* shell = nullptr;
+    bool opened = false;
+    const HRESULT createHr = CoCreateInstance(CLSID_Shell, nullptr, CLSCTX_LOCAL_SERVER, IID_IShellDispatch,
+                                              reinterpret_cast<void**>(&shell));
+    if (SUCCEEDED(createHr) && shell) {
+        VARIANT folder;
+        VariantInit(&folder);
+        folder.vt = VT_BSTR;
+        folder.bstrVal = SysAllocString(native.c_str());
+        if (folder.bstrVal) {
+            opened = SUCCEEDED(shell->Explore(folder));
+            VariantClear(&folder);
+        }
+        shell->Release();
+    }
+    if (comInitialized) {
+        CoUninitialize();
+    }
+    return opened;
+}
+
 // 需求 19：在已有外壳进程里打开目录（COM 通道）。优先委托现有外壳，而不是直接
 // 起新的 explorer.exe 进程——提权 / 受限会话里子进程可能以 0xc0000142 启动失败
 // 并弹“应用程序错误”对话框。需求 24 实测部分进程上下文里 ShellExecute 与本通道
-// 都会被系统拒绝（5 / E_ACCESSDENIED），此时由调用方降级为直启 explorer.exe。
+// 都会被系统拒绝（5 / E_ACCESSDENIED），需求 31 改为再走 Shell.Application。
 bool openFolderViaShellItem(const QString& directory)
 {
     const std::wstring native = QDir::toNativeSeparators(directory).toStdWString();
@@ -488,24 +524,25 @@ AppSettings::ShapesFolderOpenResult AppSettings::openShapesFolder()
     }
     qWarning("ShellExecute failed to open shapes folder [%s]: code=%d", qUtf8Printable(directory),
              static_cast<int>(shellCode));
-    // 需求 19：LocalLow 等目录 "open" 动词可能返回 5（拒绝访问）。改用 COM 的
-    // SHOpenFolderAndSelectItems，在现有外壳进程里打开目录，不再新建 explorer.exe
-    // 进程（那在提权会话里会以 0xc0000142 启动失败弹错误对话框）。
-    if (openFolderViaShellItem(directory)) {
-        result.opened = true;
-        return result;
-    }
-    qWarning("SHOpenFolderAndSelectItems failed to open shapes folder [%s]", qUtf8Printable(directory));
-    // 需求 24：外壳激活 API（ShellExecute / SHOpenFolderAndSelectItems）在部分进程
-    // 上下文里会被系统整体拒绝（实测返回 5 / E_ACCESSDENIED，而控制台进程同样调用
-    // 却能正常开窗）。改走 CreateProcess 直启 explorer.exe 子进程——与
-    // Start-Process explorer 同一条路径，实测可用；由它自己委托给现有外壳进程开窗。
-    if (QProcess::startDetached(QStringLiteral("explorer.exe"), QStringList{QString::fromStdWString(native)})) {
+    // 需求 31：提权会话里 ShellExecute 会被 UIPI 挡住（这里实测 5 / E_ACCESSDENIED）。
+    // 改由 Shell.Application 的 Explore 委托已在运行的外壳进程开窗——不新建进程，
+    // 也就不会再出现 0xc0000142 的“应用程序错误”弹窗。
+    if (openFolderViaShellAutomation(directory)) {
         result.opened = true;
         result.error = ShapesFolderError::None;
         return result;
     }
-    qWarning("explorer.exe startDetached failed to open shapes folder [%s]", qUtf8Printable(directory));
+    qWarning("Shell.Application Explore failed to open shapes folder [%s]", qUtf8Printable(directory));
+    // 需求 19：LocalLow 等目录 "open" 动词可能返回 5（拒绝访问）。再用 COM 的
+    // SHOpenFolderAndSelectItems 兜一次底，同样不新建 explorer.exe 进程。
+    if (openFolderViaShellItem(directory)) {
+        result.opened = true;
+        result.error = ShapesFolderError::None;
+        return result;
+    }
+    qWarning("SHOpenFolderAndSelectItems failed to open shapes folder [%s]", qUtf8Printable(directory));
+    // 需求 24/31：直启 explorer.exe 的通道整体移除——它在提权 / 受限会话里正是
+    // 0xc0000142 的来源，而上面的 COM 通道已覆盖同一场景。
     result.shellCode = static_cast<int>(shellCode);
 #endif
     // Windows 外壳失败或非 Windows 平台：退到桌面服务再试一次，目录 URL 必须以分隔符结尾。
