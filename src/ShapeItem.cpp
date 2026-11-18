@@ -90,8 +90,8 @@ QString shapeTypeName(ShapeType type)
         return ShapeItem::tr("Sine wave");
     case ShapeType::FlagWave:
         return ShapeItem::tr("Wavy flag");
-    case ShapeType::FlagCurl:
-        return ShapeItem::tr("Curled flag");
+    case ShapeType::Scroll:
+        return ShapeItem::tr("Scroll");
     case ShapeType::Cube:
         return ShapeItem::tr("Cube");
     case ShapeType::Cylinder:

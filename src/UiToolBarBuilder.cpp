@@ -109,7 +109,7 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
         ShapeType::Rectangle, ShapeType::Ellipse,  ShapeType::Triangle, ShapeType::Diamond,  ShapeType::Star,
         ShapeType::Star4,     ShapeType::Hexagram, ShapeType::Heart,    ShapeType::Arrow,    ShapeType::DoubleArrow,
         ShapeType::Callout,   ShapeType::Sector,   ShapeType::Arc,      ShapeType::SineWave, ShapeType::FlagWave,
-        ShapeType::FlagCurl,  ShapeType::Cube,     ShapeType::Cylinder, ShapeType::Line,
+        ShapeType::Scroll,  ShapeType::Cube,     ShapeType::Cylinder, ShapeType::Line,
     };
     auto addShapeButton = [mainBar](QAction* action) {
         if (!action) {

@@ -29,7 +29,8 @@ enum class ShapeType {
     Heart,
     SineWave,
     FlagWave,
-    FlagCurl,
+    // 卷形旗帜已替换为卷轴（需求 3），序列化字符串沿用新名 scroll，旧文件 flag_curl 兼容读入。
+    Scroll,
     Cube,
     Cylinder
 };

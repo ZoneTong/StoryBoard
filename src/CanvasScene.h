@@ -97,6 +97,9 @@ class CanvasScene : public QGraphicsScene {
     QHash<int, int> groupParents() const { return m_groupParents; }
     void applyGroupParents(const QHash<int, int>& parents);
     void applyGroupIds(const QList<CanvasItem*>& items, const QList<int>& groupIds);
+    // 插入即成组（立方体 / 圆柱体的面图元）：给 items 分配新组号并落组，
+    // 不占撤销记录——插入本身的 addItemsWithUndo 已经是一条撤销。
+    int assignNewGroup(const QList<CanvasItem*>& items);
 
     // 手动平滑：只处理编辑模式下选中的自由笔画，一次操作只占一条撤销记录。
     bool canSmoothSelectedStrokes() const;

@@ -6,7 +6,7 @@ QList<ShapeType> ShapeMeta::allTypes()
     return {ShapeType::Rectangle, ShapeType::Ellipse,     ShapeType::Triangle, ShapeType::Diamond, ShapeType::Star,
             ShapeType::Arrow,     ShapeType::DoubleArrow, ShapeType::Line,     ShapeType::Callout, ShapeType::Sector,
             ShapeType::Arc,       ShapeType::Star4,       ShapeType::Hexagram, ShapeType::Heart,   ShapeType::SineWave,
-            ShapeType::FlagWave,  ShapeType::FlagCurl,    ShapeType::Cube,     ShapeType::Cylinder};
+            ShapeType::FlagWave,  ShapeType::Scroll,      ShapeType::Cube,     ShapeType::Cylinder};
 }
 
 QString ShapeMeta::typeToString(ShapeType type)
@@ -44,8 +44,9 @@ QString ShapeMeta::typeToString(ShapeType type)
         return QStringLiteral("sine_wave");
     case ShapeType::FlagWave:
         return QStringLiteral("flag_wave");
-    case ShapeType::FlagCurl:
-        return QStringLiteral("flag_curl");
+    case ShapeType::Scroll:
+        // 需求 3：卷形旗帜替换为卷轴；旧文件的 flag_curl / banner 兼容读入。
+        return QStringLiteral("scroll");
     case ShapeType::Cube:
         return QStringLiteral("cube");
     case ShapeType::Cylinder:
@@ -113,8 +114,9 @@ ShapeType ShapeMeta::typeFromString(const QString& value)
     if (normalized == QStringLiteral("flag_wave") || normalized == QStringLiteral("wavy_flag")) {
         return ShapeType::FlagWave;
     }
-    if (normalized == QStringLiteral("flag_curl") || normalized == QStringLiteral("banner")) {
-        return ShapeType::FlagCurl;
+    if (normalized == QStringLiteral("scroll") || normalized == QStringLiteral("flag_curl") ||
+        normalized == QStringLiteral("banner")) {
+        return ShapeType::Scroll;
     }
     if (normalized == QStringLiteral("cube")) {
         return ShapeType::Cube;
@@ -166,12 +168,13 @@ QSizeF ShapeMeta::defaultSize(ShapeType type)
     case ShapeType::Heart:
         return QSizeF(128.0, 112.0);
     case ShapeType::SineWave:
-        // 波线：一段约 1.5 个周期，振幅 20% 高。
+        // 波线：一个完整周期，振幅 20% 高。
         return QSizeF(128.0, 40.0);
     case ShapeType::FlagWave:
         return QSizeF(128.0, 86.0);
-    case ShapeType::FlagCurl:
-        return QSizeF(128.0, 104.0);
+    case ShapeType::Scroll:
+        // 卷轴：横长比例，左右卷筒占宽约 14%。
+        return QSizeF(128.0, 96.0);
     case ShapeType::Cube:
         return QSizeF(128.0, 128.0);
     case ShapeType::Cylinder:
@@ -196,7 +199,7 @@ bool ShapeMeta::isFilled(ShapeType type)
     case ShapeType::Hexagram:
     case ShapeType::Heart:
     case ShapeType::FlagWave:
-    case ShapeType::FlagCurl:
+    case ShapeType::Scroll:
     case ShapeType::Cube:
     case ShapeType::Cylinder:
         return true;

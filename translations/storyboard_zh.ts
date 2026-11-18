@@ -1529,8 +1529,8 @@ Second line caption</source>
         <translation>波形旗帜</translation>
     </message>
     <message>
-        <source>Curled flag</source>
-        <translation>卷形旗帜</translation>
+        <source>Scroll</source>
+        <translation>卷轴</translation>
     </message>
     <message>
         <source>Cube</source>
@@ -3228,6 +3228,26 @@ Use the checkbox to show or hide it.</source>
     <message>
       <source>Inserted a circle; in edit mode drag a handle to stretch it into an ellipse</source>
       <translation>已插入正圆；编辑模式下拖动控制点可把它拉伸成椭圆</translation>
+    </message>
+    <message>
+      <source>Cube top</source>
+      <translation>立方体顶面</translation>
+    </message>
+    <message>
+      <source>Cube left</source>
+      <translation>立方体左面</translation>
+    </message>
+    <message>
+      <source>Cube right</source>
+      <translation>立方体右面</translation>
+    </message>
+    <message>
+      <source>Cylinder body</source>
+      <translation>圆柱柱身</translation>
+    </message>
+    <message>
+      <source>Insert %1 as a grouped set of faces; drag to move the whole shape</source>
+      <translation>已插入%1（面图元组成的分组）；拖动即整体移动</translation>
     </message>
     <message>
       <source>Inserted %1; drag to move, drag handles to resize, color follows the current brush</source>
@@ -5015,8 +5035,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>波形旗帜</translation>
     </message>
     <message>
-      <source>Curled flag</source>
-      <translation>卷形旗帜</translation>
+      <source>Scroll</source>
+      <translation>卷轴</translation>
     </message>
     <message>
       <source>Cube</source>

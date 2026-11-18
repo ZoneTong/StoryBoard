@@ -147,6 +147,24 @@ int CanvasScene::groupSelectedItems()
     return items.size();
 }
 
+int CanvasScene::assignNewGroup(const QList<CanvasItem*>& items)
+{
+    if (items.size() < 2) {
+        return 0;
+    }
+    const int groupId = m_nextGroupId++;
+    QList<int> groupIds;
+    groupIds.reserve(items.size());
+    for (CanvasItem* item : items) {
+        if (!item) {
+            return 0;
+        }
+        groupIds.append(groupId);
+    }
+    applyGroupIds(items, groupIds);
+    return groupId;
+}
+
 int CanvasScene::ungroupSelectedItems()
 {
     if (!canUngroupSelectedItems()) {

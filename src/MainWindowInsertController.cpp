@@ -82,6 +82,12 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
         return;
     }
 
+    // 需求 4/5：立方体与圆柱体插入即分组，走组合面图元的专用通道。
+    if (type == ShapeType::Cube || type == ShapeType::Cylinder) {
+        insertCompositeShape(type);
+        return;
+    }
+
     auto* item = new ShapeItem(type);
     const QColor stroke =
         m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
@@ -136,6 +142,106 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
                 .arg(shapeTypeName(type)),
             5000);
     }
+}
+
+void MainWindowInsertController::insertCompositeShape(ShapeType type)
+{
+    const QColor stroke =
+        m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
+    const qreal width = qBound<qreal>(2.5, m_window->m_brushWidth, 10.0);
+    const bool filled = m_window->m_fillStyle != FillStyle::None && m_window->m_fillColor.isValid();
+    const QColor fill = filled ? m_window->m_fillColor : QColor(Qt::transparent);
+    const FillStyle fillStyle = filled ? m_window->m_fillStyle : FillStyle::None;
+
+    auto makeFace = [&stroke, &fill, fillStyle, width](const QString& name, const QPainterPath& unitPath,
+                                                       const QPointF& topLeft, const QSizeF& size) {
+        auto* face = new ShapeItem(ShapeType::Rectangle);
+        face->setCustomShape(name, unitPath);
+        face->setStyle(stroke, fill, width);
+        face->setFillStyle(fillStyle);
+        face->setPos(topLeft);
+        face->setContentSize(size);
+        return face;
+    };
+
+    const QRectF canvas = m_window->m_scene->canvasRect();
+    QSizeF size = defaultShapeSize(type);
+    const qreal fitScale = qMin<qreal>(1.0, qMin(canvas.width() * 0.72 / qMax<qreal>(1.0, size.width()),
+                                                 canvas.height() * 0.72 / qMax<qreal>(1.0, size.height())));
+    size *= fitScale;
+
+    QPointF center = m_window->m_view->mapToScene(m_window->m_view->viewport()->rect().center());
+    if (!canvas.contains(center)) {
+        center = canvas.center();
+    }
+    const qreal cascade = (m_window->m_scene->canvasItemCount() % 5) * 18.0;
+    center += QPointF(cascade, cascade);
+    center.setX(qBound(canvas.left() + size.width() / 2.0, center.x(), canvas.right() - size.width() / 2.0));
+    center.setY(qBound(canvas.top() + size.height() / 2.0, center.y(), canvas.bottom() - size.height() / 2.0));
+    const QPointF topLeft = center - QPointF(size.width() / 2.0, size.height() / 2.0);
+
+    QList<CanvasItem*> faces;
+    if (type == ShapeType::Cube) {
+        // 等轴测立方体拆成三个菱形面：顶面、左面、右面，轮廓沿用原 cubePath 的六边形切分。
+        const qreal w = size.width();
+        const qreal h = size.height();
+        QPainterPath top;
+        top.moveTo(0.5, 0.0);
+        top.lineTo(1.0, 0.5);
+        top.lineTo(0.5, 1.0);
+        top.lineTo(0.0, 0.5);
+        top.closeSubpath();
+        QPainterPath leftFace;
+        leftFace.moveTo(0.0, 0.0);
+        leftFace.lineTo(1.0, 1.0 / 3.0);
+        leftFace.lineTo(1.0, 1.0);
+        leftFace.lineTo(0.0, 2.0 / 3.0);
+        leftFace.closeSubpath();
+        QPainterPath rightFace;
+        rightFace.moveTo(0.0, 1.0 / 3.0);
+        rightFace.lineTo(1.0, 0.0);
+        rightFace.lineTo(1.0, 2.0 / 3.0);
+        rightFace.lineTo(0.0, 1.0);
+        rightFace.closeSubpath();
+        faces.append(makeFace(MainWindow::tr("Cube top"), top, topLeft, QSizeF(w, h * 0.5)));
+        faces.append(makeFace(MainWindow::tr("Cube left"), leftFace, topLeft + QPointF(0.0, h * 0.25),
+                              QSizeF(w * 0.5, h * 0.75)));
+        faces.append(makeFace(MainWindow::tr("Cube right"), rightFace, topLeft + QPointF(w * 0.5, h * 0.25),
+                              QSizeF(w * 0.5, h * 0.75)));
+    } else {
+        // 圆柱体 = 顶椭圆 + 柱身（柱身底缘带下半椭圆弧），两个图元成组。
+        const qreal w = size.width();
+        const qreal h = size.height();
+        const qreal ry = qMin(h * 0.16, w * 0.30);
+        auto* top = new ShapeItem(ShapeType::Ellipse);
+        top->setStyle(stroke, fill, width);
+        top->setFillStyle(fillStyle);
+        top->setPos(topLeft);
+        top->setContentSize(QSizeF(w, ry * 2.0));
+        faces.append(top);
+
+        const qreal bodyH = h - ry;
+        QPainterPath body;
+        const qreal cy = (h - 2.0 * ry) / bodyH;
+        const qreal ryUnit = ry / bodyH;
+        body.moveTo(0.0, 0.0);
+        body.lineTo(1.0, 0.0);
+        body.lineTo(1.0, cy);
+        body.arcTo(QRectF(0.0, cy - ryUnit, 1.0, ryUnit * 2.0), 0.0, -180.0);
+        body.closeSubpath();
+        faces.append(makeFace(MainWindow::tr("Cylinder body"), body, topLeft + QPointF(0.0, ry), QSizeF(w, bodyH)));
+    }
+
+    m_window->m_scene->clearSelection();
+    m_window->m_scene->addItemsWithUndo(faces, MainWindow::tr("Insert %1").arg(shapeTypeName(type)));
+    m_window->m_scene->assignNewGroup(faces);
+    for (CanvasItem* face : faces) {
+        face->setSelected(true);
+    }
+    m_window->m_view->setFocus();
+    m_window->statusBar()->showMessage(
+        MainWindow::tr("Inserted %1 as a grouped set of faces; drag to move the whole shape").arg(shapeTypeName(type)),
+        5000);
 }
 
 void MainWindowInsertController::insertBrace(bool left)

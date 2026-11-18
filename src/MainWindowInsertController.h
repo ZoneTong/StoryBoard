@@ -27,6 +27,8 @@ class MainWindowInsertController {
 
   private:
     MainWindow* m_window = nullptr;
+    // 立方体 = 3 面菱形图元组成的分组，圆柱体 = 顶椭圆 + 柱身组成的分组（需求 4/5）。
+    void insertCompositeShape(ShapeType type);
     // 「自定义图形…」这一项同时挂在常见图形菜单末尾与工具栏下拉里，
     // 每次重建前先删掉上一份，避免重复出现。
     QAction* m_customShapeTrigger = nullptr;

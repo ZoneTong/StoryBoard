@@ -170,14 +170,14 @@ QPainterPath sineWavePath(const QRectF& rect)
         return QPainterPath();
     }
 
-    // 1.5 个周期（0…3π），振幅取内容高度的 20%，与 64px 基准下的可辨识度一致。
+    // 需求：一个完整周期（0…2π），振幅取内容高度的 20%，与 64px 基准下的可辨识度一致。
     constexpr int steps = 64;
     const qreal amplitude = r.height() * 0.20;
     const qreal cy = r.center().y();
     QPainterPath path;
     for (int i = 0; i <= steps; ++i) {
         const qreal t = qreal(i) / qreal(steps);
-        const QPointF point(r.left() + t * r.width(), cy - qSin(t * 3.0 * M_PI) * amplitude);
+        const QPointF point(r.left() + t * r.width(), cy - qSin(t * 2.0 * M_PI) * amplitude);
         if (i == 0) {
             path.moveTo(point);
         } else {
@@ -194,7 +194,6 @@ QPainterPath flagWavePath(const QRectF& rect)
         return QPainterPath();
     }
 
-    const qreal poleX = r.left() + r.width() * 0.10;
     const qreal x0 = r.left() + r.width() * 0.16;
     const qreal topBase = r.top() + r.height() * 0.10;
     const qreal flagHeight = r.height() * 0.46;
@@ -213,38 +212,33 @@ QPainterPath flagWavePath(const QRectF& rect)
     }
     path.closeSubpath();
 
-    // 旗杆：零面积线段，填充不受影响。
-    path.moveTo(poleX, r.top());
-    path.lineTo(poleX, r.top() + flagHeight + amplitude * 2.0);
+    // 需求：去掉左边旗杆竖线，只保留波形旗面。
     return path;
 }
 
-QPainterPath flagCurlPath(const QRectF& rect)
+QPainterPath scrollPath(const QRectF& rect)
 {
     const QRectF r = normalizedRect(rect);
     if (r.width() <= 0.0 || r.height() <= 0.0) {
         return QPainterPath();
     }
 
-    const qreal x0 = r.left() + r.width() * 0.18;
-    const qreal notch = r.width() * 0.12;
-    QPainterPath path;
-    path.moveTo(x0, r.top() + r.height() * 0.04);
-    path.lineTo(r.right(), r.top() + r.height() * 0.20);
-    // 右侧燕尾缺角
-    path.lineTo(r.right() - notch, r.top() + r.height() * 0.38);
-    path.lineTo(r.right(), r.top() + r.height() * 0.56);
-    path.lineTo(x0, r.top() + r.height() * 0.74);
-    path.closeSubpath();
+    // 卷轴：左右两根卷筒 + 中间展开的纸面，纸面与卷筒同为可填充区域。
+    const qreal rollW = r.width() * 0.14;
+    const qreal rollH = r.height() * 0.84;
+    const qreal rollTop = r.top() + (r.height() - rollH) / 2.0;
 
-    // 旗杆
-    path.moveTo(x0 - r.width() * 0.06, r.top());
-    path.lineTo(x0 - r.width() * 0.06, r.top() + r.height() * 0.86);
-    // 左下角卷边：零面积曲线，描线时出现
-    path.moveTo(x0, r.top() + r.height() * 0.74);
-    path.cubicTo(x0 + r.width() * 0.10, r.top() + r.height() * 0.82, x0 + r.width() * 0.16, r.top() + r.height() * 0.62,
-                 x0 + r.width() * 0.08, r.top() + r.height() * 0.58);
-    return path;
+    QPainterPath leftRoll;
+    leftRoll.addRoundedRect(QRectF(r.left(), rollTop, rollW, rollH), rollW / 2.0, rollW / 2.0);
+    QPainterPath rightRoll;
+    rightRoll.addRoundedRect(QRectF(r.right() - rollW, rollTop, rollW, rollH), rollW / 2.0, rollW / 2.0);
+
+    const qreal paperTop = rollTop + rollH * 0.10;
+    const qreal paperH = rollH * 0.80;
+    QPainterPath paper;
+    paper.addRect(QRectF(r.left() + rollW * 0.72, paperTop, r.width() - rollW * 1.44, paperH));
+
+    return leftRoll.united(paper).united(rightRoll);
 }
 
 QPainterPath cubePath(const QRectF& rect)
@@ -469,8 +463,8 @@ QPainterPath ShapePathBuilder::pathFor(ShapeType type, const QRectF& rect, qreal
     case ShapeType::FlagWave:
         path = flagWavePath(r);
         break;
-    case ShapeType::FlagCurl:
-        path = flagCurlPath(r);
+    case ShapeType::Scroll:
+        path = scrollPath(r);
         break;
     case ShapeType::Cube:
         path = cubePath(r);

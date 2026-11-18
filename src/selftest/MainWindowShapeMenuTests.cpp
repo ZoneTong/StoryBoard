@@ -168,7 +168,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
             QStringLiteral("ShapeAction_double_arrow"), QStringLiteral("ShapeAction_callout"),
             QStringLiteral("ShapeAction_sector"),       QStringLiteral("ShapeAction_arc"),
             QStringLiteral("ShapeAction_sine_wave"),    QStringLiteral("ShapeAction_flag_wave"),
-            QStringLiteral("ShapeAction_flag_curl"),    QStringLiteral("ShapeAction_cube"),
+            QStringLiteral("ShapeAction_scroll"),       QStringLiteral("ShapeAction_cube"),
             QStringLiteral("ShapeAction_cylinder"),     QStringLiteral("ShapeAction_line"),
             QStringLiteral("ShapePreset_lineArrow"),    QStringLiteral("ShapePreset_braceLeft"),
             QStringLiteral("ShapePreset_braceRight"),
