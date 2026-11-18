@@ -27,12 +27,42 @@
 
 namespace {
 
+// 诊断：当前进程的完整性级别（0x1000 低 / 0x2000 中 / 0x3000 高）。外壳"open"通道
+// 被 UIPI 挡住时，先看这个数就知道是不是级别不匹配，而不是把每种拒绝都当成权限问题。
+int processIntegrityLevel()
+{
+    HANDLE token = nullptr;
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) {
+        return 0;
+    }
+    DWORD size = 0;
+    GetTokenInformation(token, TokenIntegrityLevel, nullptr, 0, &size);
+    QByteArray buffer(static_cast<int>(size), Qt::Uninitialized);
+    int level = 0;
+    if (GetTokenInformation(token, TokenIntegrityLevel, buffer.data(), size, &size)) {
+        const TOKEN_MANDATORY_LABEL* label = reinterpret_cast<const TOKEN_MANDATORY_LABEL*>(buffer.constData());
+        const DWORD* rid = GetSidSubAuthority(label->Label.Sid, *GetSidSubAuthorityCount(label->Label.Sid) - 1);
+        if (rid) {
+            level = static_cast<int>(*rid);
+        }
+    }
+    CloseHandle(token);
+    return level;
+}
+
+// 每条外壳通道都回一个 HRESULT，失败原因（5 / E_ACCESSDENIED / 类未注册）才能落到诊断里。
+struct ShellChannelResult {
+    bool opened = false;
+    HRESULT code = E_FAIL;
+    HRESULT prepareCode = S_OK;
+};
+
 // 需求 31：走 Shell.Application（CLSID_Shell）的 Explore 动词，把开目录的活交给
 // 已经在跑的外壳进程。提权（High IL）会话里 ShellExecuteW 会因为 UIPI 拿不到
 // 中完整性外壳而返回 5，直接起 explorer.exe 子进程又会在部分会话里以
 // 0xc0000142（STATUS_DLL_INIT_FAILED）退出并弹“应用程序错误”；COM 本地服务器
 // 激活只是跨进程调用，不会新建进程，实测在提权上下文可正常开窗。
-bool openFolderViaShellAutomation(const QString& directory)
+ShellChannelResult openFolderViaShellAutomation(const QString& directory)
 {
     const std::wstring native = QDir::toNativeSeparators(directory).toStdWString();
     // 线程若已按套间模型初始化，CoInitializeEx 会返回 RPC_E_CHANGED_MODE；
@@ -40,17 +70,20 @@ bool openFolderViaShellAutomation(const QString& directory)
     const HRESULT initHr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     const bool comInitialized = SUCCEEDED(initHr);
 
+    ShellChannelResult result;
+    result.prepareCode = initHr;
     IShellDispatch* shell = nullptr;
-    bool opened = false;
     const HRESULT createHr = CoCreateInstance(CLSID_Shell, nullptr, CLSCTX_LOCAL_SERVER, IID_IShellDispatch,
                                               reinterpret_cast<void**>(&shell));
+    result.code = createHr;
     if (SUCCEEDED(createHr) && shell) {
         VARIANT folder;
         VariantInit(&folder);
         folder.vt = VT_BSTR;
         folder.bstrVal = SysAllocString(native.c_str());
         if (folder.bstrVal) {
-            opened = SUCCEEDED(shell->Explore(folder));
+            result.code = shell->Explore(folder);
+            result.opened = SUCCEEDED(result.code);
             VariantClear(&folder);
         }
         shell->Release();
@@ -58,31 +91,34 @@ bool openFolderViaShellAutomation(const QString& directory)
     if (comInitialized) {
         CoUninitialize();
     }
-    return opened;
+    return result;
 }
 
 // 需求 19：在已有外壳进程里打开目录（COM 通道）。优先委托现有外壳，而不是直接
 // 起新的 explorer.exe 进程——提权 / 受限会话里子进程可能以 0xc0000142 启动失败
 // 并弹“应用程序错误”对话框。需求 24 实测部分进程上下文里 ShellExecute 与本通道
 // 都会被系统拒绝（5 / E_ACCESSDENIED），需求 31 改为再走 Shell.Application。
-bool openFolderViaShellItem(const QString& directory)
+ShellChannelResult openFolderViaShellItem(const QString& directory)
 {
     const std::wstring native = QDir::toNativeSeparators(directory).toStdWString();
     // SHOpenFolderAndSelectItems 要求调用线程已初始化 COM；已初始化（含模式
     // 不同）时直接沿用现有初始化。
     const HRESULT initHr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     const bool comInitialized = SUCCEEDED(initHr);
+    ShellChannelResult result;
+    result.prepareCode = initHr;
     PIDLIST_ABSOLUTE pidl = nullptr;
     const HRESULT parseHr = SHParseDisplayName(native.c_str(), nullptr, &pidl, 0, nullptr);
-    bool opened = false;
+    result.code = parseHr;
     if (SUCCEEDED(parseHr) && pidl) {
-        opened = SUCCEEDED(SHOpenFolderAndSelectItems(pidl, 0, nullptr, 0));
+        result.code = SHOpenFolderAndSelectItems(pidl, 0, nullptr, 0);
+        result.opened = SUCCEEDED(result.code);
         ILFree(pidl);
     }
     if (comInitialized) {
         CoUninitialize();
     }
-    return opened;
+    return result;
 }
 
 constexpr int kMinCanvasSide = 200;
@@ -518,16 +554,23 @@ AppSettings::ShapesFolderOpenResult AppSettings::openShapesFolder()
     const std::wstring native = QDir::toNativeSeparators(directory).toStdWString();
     const HINSTANCE handle = ShellExecuteW(nullptr, L"open", native.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
     const qintptr shellCode = reinterpret_cast<qintptr>(handle);
+    const int integrity = processIntegrityLevel();
     if (shellCode > 32) {
         result.opened = true;
         return result;
     }
+    // 诊断：把级别与各通道返回值攒进一句话，探针会原样写出来，省得再猜是哪条被拦。
+    QString channelDiagnostics =
+        QStringLiteral("integrity=0x%1 se=%2").arg(integrity, 4, 16, QLatin1Char('0')).arg(shellCode);
     qWarning("ShellExecute failed to open shapes folder [%s]: code=%d", qUtf8Printable(directory),
              static_cast<int>(shellCode));
     // 需求 31：提权会话里 ShellExecute 会被 UIPI 挡住（这里实测 5 / E_ACCESSDENIED）。
     // 改由 Shell.Application 的 Explore 委托已在运行的外壳进程开窗——不新建进程，
     // 也就不会再出现 0xc0000142 的“应用程序错误”弹窗。
-    if (openFolderViaShellAutomation(directory)) {
+    const ShellChannelResult automation = openFolderViaShellAutomation(directory);
+    channelDiagnostics +=
+        QStringLiteral(" auto=0x%1").arg(static_cast<quint32>(automation.code), 8, 16, QLatin1Char('0'));
+    if (automation.opened) {
         result.opened = true;
         result.error = ShapesFolderError::None;
         return result;
@@ -535,7 +578,11 @@ AppSettings::ShapesFolderOpenResult AppSettings::openShapesFolder()
     qWarning("Shell.Application Explore failed to open shapes folder [%s]", qUtf8Printable(directory));
     // 需求 19：LocalLow 等目录 "open" 动词可能返回 5（拒绝访问）。再用 COM 的
     // SHOpenFolderAndSelectItems 兜一次底，同样不新建 explorer.exe 进程。
-    if (openFolderViaShellItem(directory)) {
+    const ShellChannelResult shellItem = openFolderViaShellItem(directory);
+    channelDiagnostics +=
+        QStringLiteral(" item=0x%1").arg(static_cast<quint32>(shellItem.code), 8, 16, QLatin1Char('0'));
+    result.diagnostics = channelDiagnostics;
+    if (shellItem.opened) {
         result.opened = true;
         result.error = ShapesFolderError::None;
         return result;

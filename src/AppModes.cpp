@@ -122,6 +122,9 @@ int runOpenShapesProbe(const CommandLineOptions& options)
     stream << "error=" << static_cast<int>(result.error) << "\n";
     stream << "shellCode=" << result.shellCode << "\n";
     stream << "directory=" << result.directory << "\n";
+    if (!result.diagnostics.isEmpty()) {
+        stream << "diagnostics=" << result.diagnostics << "\n";
+    }
     return 0;
 }
 
