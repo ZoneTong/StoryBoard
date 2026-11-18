@@ -54,6 +54,10 @@ void checkFlagWaveNoPole(selftest::Context& ctx)
     ctx.check(qAbs(bounds.center().y() - rect.center().y()) < rect.height() * 0.05,
               QStringLiteral("波形旗帜重心纵向居中"),
               QStringLiteral("center=%1 want=%2").arg(bounds.center().y()).arg(rect.center().y()));
+    // 需求 22：选择框为最小包围盒——路径上下缘触及内容矩形上下缘。
+    ctx.check(qAbs(bounds.top() - rect.top()) < 1.0 && qAbs(bounds.bottom() - rect.bottom()) < 1.0,
+              QStringLiteral("波形旗帜包围盒为最小包围盒"),
+              QStringLiteral("top=%1 bottom=%2").arg(bounds.top()).arg(bounds.bottom()));
 }
 
 void checkScrollShape(selftest::Context& ctx)
@@ -67,6 +71,16 @@ void checkScrollShape(selftest::Context& ctx)
     const QPainterPath path = ShapePathBuilder::pathFor(ShapeType::Scroll, rect, -1.0);
     ctx.check(path.intersects(QRectF(rect.center().x() - 2.0, rect.center().y() - 2.0, 4.0, 4.0)),
               QStringLiteral("卷轴中段有可填充纸面"));
+    // 需求 22：卷筒纵向撑满内容高度，路径包围盒与内容矩形一致。
+    const QRectF scrollBounds = path.boundingRect();
+    ctx.check(qAbs(scrollBounds.top() - rect.top()) < 1.0 && qAbs(scrollBounds.bottom() - rect.bottom()) < 1.0 &&
+                  qAbs(scrollBounds.left() - rect.left()) < 1.0 && qAbs(scrollBounds.right() - rect.right()) < 1.0,
+              QStringLiteral("卷轴包围盒为最小包围盒"),
+              QStringLiteral("bounds=(%1,%2,%3,%4)")
+                  .arg(scrollBounds.top())
+                  .arg(scrollBounds.bottom())
+                  .arg(scrollBounds.left())
+                  .arg(scrollBounds.right()));
 }
 
 } // namespace

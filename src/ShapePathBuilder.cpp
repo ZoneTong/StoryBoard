@@ -195,11 +195,12 @@ QPainterPath flagWavePath(const QRectF& rect)
         return QPainterPath();
     }
 
-    // 需求 17：旗面横向占满整个内容宽度（插入后宽度就是两棋盘格 64px），
-    // 纵向以内容中线为对称轴，重心不再偏上。
-    const qreal flagHeight = r.height() * 0.60;
-    const qreal topBase = r.center().y() - flagHeight * 0.5;
+    // 需求 17：旗面横向占满整个内容宽度（插入后宽度就是两棋盘格 64px）。
+    // 需求 22：纵向也撑满内容高度——上下边随波动正好触及内容矩形上下缘，
+    // 选择框就是路径的最小包围盒。
     const qreal amplitude = r.height() * 0.07;
+    const qreal flagHeight = r.height() - amplitude * 2.0;
+    const qreal topBase = r.top() + amplitude;
     constexpr int steps = 24;
 
     QPainterPath path;
@@ -226,9 +227,10 @@ QPainterPath scrollPath(const QRectF& rect)
     }
 
     // 卷轴：左右两根卷筒 + 中间展开的纸面，纸面与卷筒同为可填充区域。
+    // 需求 22：卷筒纵向撑满内容高度，路径包围盒与内容矩形一致。
     const qreal rollW = r.width() * 0.14;
-    const qreal rollH = r.height() * 0.84;
-    const qreal rollTop = r.top() + (r.height() - rollH) / 2.0;
+    const qreal rollH = r.height();
+    const qreal rollTop = r.top();
 
     QPainterPath leftRoll;
     leftRoll.addRoundedRect(QRectF(r.left(), rollTop, rollW, rollH), rollW / 2.0, rollW / 2.0);
