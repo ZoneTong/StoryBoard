@@ -25,6 +25,9 @@ class CanvasItemHandles {
     void drawOverlay(QPainter* painter) const;
     QCursor cursor(int handle) const;
 
+    // 需求 2：单选三角形时顶点 C 取代 Top 句柄（类内才能访问受保护的单选判定）。
+    bool usesApexHandle() const;
+
   private:
     CanvasItem* m_item = nullptr;
 };

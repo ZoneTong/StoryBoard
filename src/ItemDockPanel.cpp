@@ -78,8 +78,8 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
 
     layout->addWidget(m_fillBorderCard->fillStyleRow());
     layout->addWidget(m_colorsCard->fillColorRow());
-    layout->addWidget(m_colorsCard->borderColorRow());
     layout->addWidget(m_fillBorderCard->borderStyleRow());
+    layout->addWidget(m_colorsCard->borderColorRow());
     layout->addWidget(m_fillBorderCard->borderWidthRow());
 
     m_valueCard = new ItemDockPanelValueCard(content);

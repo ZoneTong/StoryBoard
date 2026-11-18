@@ -344,9 +344,10 @@ void selftest::runShapeItemTests(Context& ctx)
             size = QSizeF(120, 110);
         }
 
+        // 图形增多到 19 种后 4 列要排 5 行，行距压到 190 保证最后一行仍落在 1000 高的测试画布内。
         const int column = i % 4;
         const int row = i / 4;
-        const QPointF cell(40.0 + column * 240.0, 40.0 + row * 240.0);
+        const QPointF cell(40.0 + column * 240.0, 40.0 + row * 190.0);
         item->setPos(cell + QPointF((220.0 - size.width()) / 2.0, (220.0 - size.height()) / 2.0));
         item->setContentSize(size);
         item->setStyle(shapeStroke, shapeTypeIsFilled(type) ? shapeFill : QColor(Qt::transparent), 4.0);

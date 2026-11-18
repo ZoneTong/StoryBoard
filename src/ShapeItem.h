@@ -139,6 +139,12 @@ class ShapeItem : public CanvasItem {
     qreal bottomAngle1() const { return m_bottomAngle1; }
     qreal bottomAngle2() const { return m_bottomAngle2; }
     ArrowStyle startArrow() const { return m_startArrow; }
+    // 需求 15：可填充图元支持一张图片垫在填充色之上，独立于 FillStyle。
+    bool hasFillImage() const { return !m_fillImage.isNull(); }
+    QPixmap fillImage() const { return m_fillImage; }
+    ImageFill::Mode fillImageMode() const { return m_fillImageMode; }
+    void setFillImage(const QPixmap& image, ImageFill::Mode mode);
+    void clearFillImage();
     ArrowStyle endArrow() const { return m_endArrow; }
     void setStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth);
     void setFill(const QColor& fillColor, FillStyle style);
@@ -199,6 +205,8 @@ class ShapeItem : public CanvasItem {
     qreal m_sweepAngle = 120.0;
     qreal m_bottomAngle1 = 60.0;
     qreal m_bottomAngle2 = 60.0;
+    QPixmap m_fillImage;
+    ImageFill::Mode m_fillImageMode = ImageFill::Mode::Stretch;
     ArrowStyle m_startArrow = ArrowStyle::None;
     ArrowStyle m_endArrow = ArrowStyle::None;
     // 上一次同步后的尺寸，用于区分"拖高"与"拖底边"，避免互相覆盖。

@@ -1841,10 +1841,6 @@ Use the checkbox to show or hide it.</source>
       <translation>画笔拟合容差</translation>
     </message>
     <message>
-      <source>Brush fit tolerance</source>
-      <translation>画笔拟合容差</translation>
-    </message>
-    <message>
       <source>Brush fit tolerance in pixels (0–20, 0.1 px steps); 0 disables curve fitting</source>
       <translation>画笔拟合容差（0–20，0.1 px 步进）；0 表示关闭曲线拟合。</translation>
     </message>
@@ -2367,10 +2363,6 @@ Use the checkbox to show or hide it.</source>
     <message>
       <source>Refresh</source>
       <translation>刷新</translation>
-    </message>
-    <message>
-      <source>Open shapes folder…</source>
-      <translation>打开 shapes 目录…</translation>
     </message>
     <message>
       <source>Could not open the shapes folder</source>
@@ -3763,10 +3755,6 @@ Use the checkbox to show or hide it.</source>
         <translation>插入来自 %1 的自定义图形</translation>
     </message>
     <message>
-        <source>Open shapes folder…</source>
-        <translation>打开 shapes 目录…</translation>
-    </message>
-    <message>
         <source>%1 shape file(s) could not be read</source>
         <translation>有 %1 个图形文件无法读取</translation>
     </message>
@@ -4576,10 +4564,6 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>Choose fill image</source>
       <translation>选择填充图片</translation>
-    </message>
-    <message>
-      <source>Start angle</source>
-      <translation>起始角</translation>
     </message>
     <message>
       <source>Border color</source>

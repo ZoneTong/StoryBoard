@@ -382,20 +382,21 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                   QStringLiteral("填充样式、填充颜色与边框颜色使用彼此不同的图标"));
 
         // 画笔颜色按钮与画笔宽度按钮已从工具栏移除；描线宽度改为描线颜色按钮后的 SpinBox。
+        // 图形数量增多后窗口宽度可能触发工具栏溢出扩展，隐藏控件的几何坐标恒为 0，
+        // 因此用 MainToolBar 的动作序号（与上文同一套判定）代替像素位置。
         QToolButton* removedBrushColorButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("ColorButton"));
         QAction* removedBrushColorAction = shapeWindow.findChild<QAction*>(QStringLiteral("BrushColorAction"));
         QSpinBox* strokeWidthSpin = shapeWindow.findChild<QSpinBox*>(QStringLiteral("StrokeWidthSpin"));
-        const int strokeButtonX =
-            iconStrokeColorButton ? iconStrokeColorButton->mapTo(&shapeWindow, QPoint(0, 0)).x() : -1;
-        const int widthSpinX = strokeWidthSpin ? strokeWidthSpin->mapTo(&shapeWindow, QPoint(0, 0)).x() : -1;
+        const int strokeButtonIndex = toolbarActionIndex(iconStrokeColorButton);
+        const int widthSpinIndex = toolbarActionIndex(strokeWidthSpin);
         ctx.check(!removedBrushColorButton && !removedBrushColorAction && strokeWidthSpin && iconStrokeColorButton &&
-                      widthSpinX > strokeButtonX && strokeWidthSpin->singleStep() == 1,
+                      widthSpinIndex > strokeButtonIndex && strokeWidthSpin->singleStep() == 1,
                   QStringLiteral("工具栏去掉画笔颜色按钮并在描线按钮后追加描线宽度 SpinBox"),
-                  QStringLiteral("color=%1 action=%2 spinX=%3 strokeX=%4 step=%5")
+                  QStringLiteral("color=%1 action=%2 spinIdx=%3 strokeIdx=%4 step=%5")
                       .arg(removedBrushColorButton ? 1 : 0)
                       .arg(removedBrushColorAction ? 1 : 0)
-                      .arg(widthSpinX)
-                      .arg(strokeButtonX)
+                      .arg(widthSpinIndex)
+                      .arg(strokeButtonIndex)
                       .arg(strokeWidthSpin ? strokeWidthSpin->singleStep() : 0));
 
         QSpinBox* menuWidthSpin = shapeWindow.findChild<QSpinBox*>(QStringLiteral("MenuStrokeWidthSpin"));
