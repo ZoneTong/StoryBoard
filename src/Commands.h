@@ -208,6 +208,10 @@ struct ItemPropertiesState {
     QColor strokeColor;
     qreal strokeWidth = 4.0;
     Qt::PenStyle strokeStyle = Qt::SolidLine;
+    // 需求 27：曲线（花括号除外）两端箭头与直线同一套属性窗提交流程。
+    bool hasCurveArrows = false;
+    ArrowStyle curveStartArrow = ArrowStyle::None;
+    ArrowStyle curveEndArrow = ArrowStyle::None;
     // 需求 39：图片本体也是可编辑属性，替换图片与改名一起进入同一条撤销记录。
     bool hasImageState = false;
     QPixmap image;

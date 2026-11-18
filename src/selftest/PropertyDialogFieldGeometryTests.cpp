@@ -1,6 +1,7 @@
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
 #include "CanvasView.h"
+#include "CurveItem.h"
 #include "I18n.h"
 #include "ItemPropertiesDialog.h"
 #include "ShapeItem.h"
@@ -19,6 +20,7 @@
 #include <QSpinBox>
 #include <QToolButton>
 #include <QUndoStack>
+#include <QtMath>
 
 
 void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
@@ -271,5 +273,67 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
                   QStringLiteral("属性窗修改可整体重做"));
         ctx.check(firstShape->rawName() == QStringLiteral("Hero panel"), QStringLiteral("属性窗修改可重做图元名称"));
         ctx.check(qFuzzyCompare(firstShape->rotationAngle(), 30.0), QStringLiteral("属性窗修改可重做旋转角度"));
+    }
+
+    {
+        // 需求 27：曲线（花括号除外）与直线一样，属性窗可设置两端箭头样式，
+        // 修改进同一条撤销记录并支持撤销 / 重做。
+        CanvasScene arrowScene;
+        arrowScene.applyCanvasSize(QSizeF(800, 600));
+        arrowScene.setMode(ToolMode::Edit);
+        QUndoStack arrowUndo;
+        arrowScene.setUndoStack(&arrowUndo);
+        auto* curve = new CurveItem();
+        curve->setLayerId(arrowScene.activeLayerId());
+        curve->beginStroke(QPointF(100, 100), QColor(QStringLiteral("#111827")), 4.0);
+        for (int i = 0; i < 20; ++i) {
+            curve->appendScenePoint(QPointF(100.0 + i * 6.0, 100.0 + 10.0 * qSin(i * 0.6)));
+        }
+        curve->endStroke(0.0);
+        arrowScene.attachItem(curve);
+        curve->setSelected(true);
+
+        ItemPropertiesDialog dialog(&arrowScene, curve);
+        dialog.show();
+        QApplication::processEvents();
+        QComboBox* startArrow = dialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesStartArrowValue"));
+        QComboBox* endArrow = dialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesEndArrowValue"));
+        ctx.check(startArrow && endArrow && startArrow->isEnabled() && endArrow->isEnabled(),
+                  QStringLiteral("曲线属性窗两端箭头可用"));
+        ctx.check(startArrow && endArrow &&
+                      startArrow->currentData().toInt() == static_cast<int>(curve->startArrow()) &&
+                      endArrow->currentData().toInt() == static_cast<int>(curve->endArrow()),
+                  QStringLiteral("曲线属性窗箭头回显当前样式"));
+        if (startArrow) {
+            startArrow->setCurrentIndex(startArrow->findData(static_cast<int>(ArrowStyle::TriangleFilled)));
+        }
+        if (endArrow) {
+            endArrow->setCurrentIndex(endArrow->findData(static_cast<int>(ArrowStyle::OpenArrow)));
+        }
+        dialog.accept();
+        QApplication::processEvents();
+        ctx.check(curve->startArrow() == ArrowStyle::TriangleFilled && curve->endArrow() == ArrowStyle::OpenArrow,
+                  QStringLiteral("曲线属性窗修改可落到两端箭头"));
+        arrowUndo.undo();
+        ctx.check(curve->startArrow() == ArrowStyle::None && curve->endArrow() == ArrowStyle::None,
+                  QStringLiteral("曲线属性窗箭头修改可撤销"));
+        arrowUndo.redo();
+        ctx.check(curve->startArrow() == ArrowStyle::TriangleFilled && curve->endArrow() == ArrowStyle::OpenArrow,
+                  QStringLiteral("曲线属性窗箭头修改可重做"));
+
+        // 花括号曲线沿用需求 9b 口径：不开放两端箭头，属性窗不建箭头行。
+        auto* braceCurve = new CurveItem();
+        braceCurve->setSource(CurveSource::Brace);
+        braceCurve->setLayerId(arrowScene.activeLayerId());
+        braceCurve->setStrokePoints(QVector<QPointF>{QPointF(100, 200), QPointF(130, 240), QPointF(100, 300)},
+                                    QColor(QStringLiteral("#111827")), 4.0);
+        arrowScene.attachItem(braceCurve);
+        braceCurve->setSelected(true);
+        ItemPropertiesDialog braceDialog(&arrowScene, braceCurve);
+        braceDialog.show();
+        QApplication::processEvents();
+        ctx.check(braceDialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesStartArrowValue")) == nullptr &&
+                      braceDialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesEndArrowValue")) == nullptr,
+                  QStringLiteral("花括号曲线属性窗不提供箭头设置"));
     }
 }

@@ -300,6 +300,32 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
         m_strokeWidthSpin->setValue(qRound(stroke->strokeWidth()));
         m_initialStrokeWidth = stroke->strokeWidth();
         m_strokeWidthSpin->setMinimumWidth(88);
+
+        // 需求 27：曲线（花括号除外）与直线一样，属性窗提供两端箭头样式。
+        if (stroke->source() != CurveSource::Brace) {
+            m_arrowRow = new QWidget(this);
+            auto* arrowLayout = new QHBoxLayout(m_arrowRow);
+            arrowLayout->setContentsMargins(0, 0, 0, 0);
+            arrowLayout->setSpacing(6);
+            m_startArrowCombo = new QComboBox(m_arrowRow);
+            m_startArrowCombo->setObjectName(QStringLiteral("ItemPropertiesStartArrowValue"));
+            m_startArrowCombo->setMinimumWidth(120);
+            m_startArrowCombo->setToolTip(ItemPropertiesDialog::tr("Start arrow"));
+            m_endArrowCombo = new QComboBox(m_arrowRow);
+            m_endArrowCombo->setObjectName(QStringLiteral("ItemPropertiesEndArrowValue"));
+            m_endArrowCombo->setMinimumWidth(120);
+            m_endArrowCombo->setToolTip(ItemPropertiesDialog::tr("End arrow"));
+            for (QComboBox* combo : {m_startArrowCombo, m_endArrowCombo}) {
+                for (ArrowStyle arrowStyle : allArrowStyles()) {
+                    combo->addItem(arrowStyleName(arrowStyle), static_cast<int>(arrowStyle));
+                }
+            }
+            m_startArrowCombo->setCurrentIndex(
+                qMax(0, m_startArrowCombo->findData(static_cast<int>(stroke->startArrow()))));
+            m_endArrowCombo->setCurrentIndex(qMax(0, m_endArrowCombo->findData(static_cast<int>(stroke->endArrow()))));
+            arrowLayout->addWidget(m_startArrowCombo, 1);
+            arrowLayout->addWidget(m_endArrowCombo, 1);
+        }
     }
 }
 
