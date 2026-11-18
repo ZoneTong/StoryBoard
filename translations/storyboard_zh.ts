@@ -2402,7 +2402,7 @@ Use the checkbox to show or hide it.</source>
       <translation>从首个选中图元中剪除其他图元</translation>
     </message>
     <message>
-      <source>Merge items: press U / X / I / S / F within 1 second</source>
+      <source>Merge items: press U / X / I / S / F / L within 1 second</source>
       <translation>合并图元：1 秒内按 U / X / I / S / F</translation>
     </message>
     <message>
@@ -3716,6 +3716,22 @@ Use the checkbox to show or hide it.</source>
     <message>
       <source>Split the selected items into separate pieces at every overlap</source>
       <translation>在每个重叠处把选中图元切成多块</translation>
+    </message>
+    <message>
+      <source>Split along line</source>
+      <translation>线条分割</translation>
+    </message>
+    <message>
+      <source>Cut the filled items along the selected line or curve</source>
+      <translation>以选中的直线或曲线为刀线切开填充图形</translation>
+    </message>
+    <message>
+      <source>Select filled shapes and exactly one line or curve that crosses them</source>
+      <translation>请选择填充图形和一条与它们相交的直线或曲线</translation>
+    </message>
+    <message>
+      <source>Split along the line (undo to restore)</source>
+      <translation>已按刀线分割（可撤销恢复）</translation>
     </message>
     <message>
       <source>Keep only the overlapping part</source>

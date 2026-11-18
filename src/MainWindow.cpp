@@ -436,13 +436,16 @@ void MainWindow::keyPressEvent(QKeyEvent* event)
         case Qt::Key_F:
             applyBoolOperation(BoolOps::Operation::Fragment);
             return;
+        case Qt::Key_L:
+            applyBoolOperation(BoolOps::Operation::LineSplit);
+            return;
         default:
             break;
         }
     }
     if (event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_M) {
         m_boolChordPending = true;
-        statusBar()->showMessage(tr("Merge items: press U / X / I / S / F within 1 second"), 1000);
+        statusBar()->showMessage(tr("Merge items: press U / X / I / S / F / L within 1 second"), 1000);
         QTimer::singleShot(1000, this, [this]() { m_boolChordPending = false; });
         return;
     }

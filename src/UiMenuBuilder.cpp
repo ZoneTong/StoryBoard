@@ -285,6 +285,7 @@ void UiMenuBuilder::buildMenus()
         {BoolOps::Operation::Intersect, MainWindow::tr("Intersect") + QStringLiteral(" (I)")},
         {BoolOps::Operation::Subtract, MainWindow::tr("Subtract") + QStringLiteral(" (S)")},
         {BoolOps::Operation::Fragment, MainWindow::tr("Fragment") + QStringLiteral(" (F)")},
+        {BoolOps::Operation::LineSplit, MainWindow::tr("Split along line") + QStringLiteral(" (L)")},
     };
     const QList<QString> boolTips = {
         MainWindow::tr("Merge the selected items into one polygon"),
@@ -292,15 +293,18 @@ void UiMenuBuilder::buildMenus()
         MainWindow::tr("Keep only the overlapping part"),
         MainWindow::tr("Cut the other items out of the first selected item"),
         MainWindow::tr("Split the selected items into separate pieces at every overlap"),
+        MainWindow::tr("Cut the filled items along the selected line or curve"),
     };
     // 图标与 PPT「合并形状」一致：两个交叠圆表示各运算的结果区域。
-    const QList<IconId> boolIcons = {IconId::MergeUnion, IconId::MergeCombine, IconId::MergeIntersect,
-                                     IconId::MergeSubtract, IconId::MergeFragment};
+    const QList<IconId> boolIcons = {IconId::MergeUnion,    IconId::MergeCombine,  IconId::MergeIntersect,
+                                     IconId::MergeSubtract, IconId::MergeFragment, IconId::MergeLineSplit};
     for (int i = 0; i < boolEntries.size(); ++i) {
         QAction* action = boolMenu->addAction(boolEntries.at(i).second);
         action->setIcon(
             makeIcon(boolIcons.at(qMin(i, boolIcons.size() - 1)), QColor(58, 64, 80), MainWindow::kToolBarIconSize));
         action->setStatusTip(boolTips.at(qMin(i, boolTips.size() - 1)));
+        // 线条分割的参与者规则不同（填充图元 + 恰一条切刀），打上标记供启用状态单独判定。
+        action->setProperty("lineSplitAction", boolEntries.at(i).first == BoolOps::Operation::LineSplit);
         QObject::connect(action, &QAction::triggered, m_window,
                          [this, operation = boolEntries.at(i).first]() { m_window->applyBoolOperation(operation); });
         m_window->m_boolActions.append(action);

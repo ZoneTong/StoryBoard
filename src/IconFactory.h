@@ -51,6 +51,8 @@ enum class IconId {
     MergeFragment,
     MergeIntersect,
     MergeSubtract,
+    // 线条分割：两个交叠圆被一条斜刀线切开，一侧实心表示分割结果。
+    MergeLineSplit,
     // 多选工具卡里的对齐入口。
     Align,
     // 对齐展开后的 8 个按钮：左 / 水平居中 / 右 / 上 / 垂直居中 / 下 / 水平等距 / 垂直等距。

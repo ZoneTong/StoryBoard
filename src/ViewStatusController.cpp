@@ -6,6 +6,7 @@
 #include "CanvasScene.h"
 #include "CanvasView.h"
 #include "DockPanelController.h"
+#include "LineSplitOps.h"
 #include "MainWindow.h"
 #include "MainWindowEditActionsController.h"
 
@@ -109,10 +110,12 @@ void ViewStatusController::updateActions()
         m_window->m_alignButton->setEnabled(alignAny);
     }
 
-    // 布尔运算要选中至少两个可编辑图元。
+    // 布尔运算要选中至少两个可编辑图元；线条分割是填充图元 + 恰一条切刀，
+    // 按自己的参与者规则单独判定启用状态。
     const bool boolReady = editing && BoolOps::supports(m_window->m_scene);
+    const bool lineSplitReady = editing && LineSplitOps::supports(m_window->m_scene);
     for (QAction* action : std::as_const(m_window->m_boolActions)) {
-        action->setEnabled(boolReady);
+        action->setEnabled(action->property("lineSplitAction").toBool() ? lineSplitReady : boolReady);
     }
     if (m_window->m_boolButton) {
         m_window->m_boolButton->setEnabled(boolReady);

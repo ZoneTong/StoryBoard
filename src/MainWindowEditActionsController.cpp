@@ -139,12 +139,25 @@ void MainWindowEditActionsController::applyBoolOperation(BoolOps::Operation oper
     case BoolOps::Operation::Subtract:
         commandText = MainWindow::tr("Subtract shapes");
         break;
+    case BoolOps::Operation::LineSplit:
+        commandText = MainWindow::tr("Split along line");
+        break;
     }
     if (!BoolOps::apply(m_window->m_scene, operation, commandText)) {
+        // 线条分割的常见失败是切刀没碰到填充图形，提示比通用文案更具体。
+        if (operation == BoolOps::Operation::LineSplit) {
+            m_window->statusBar()->showMessage(
+                MainWindow::tr("Select filled shapes and exactly one line or curve that crosses them"), 3000);
+            return;
+        }
         m_window->statusBar()->showMessage(MainWindow::tr("Select at least two shapes with a visible outline"), 3000);
         return;
     }
-    m_window->statusBar()->showMessage(MainWindow::tr("Merged into one polygon (undo to restore)"), 3000);
+    if (operation == BoolOps::Operation::LineSplit) {
+        m_window->statusBar()->showMessage(MainWindow::tr("Split along the line (undo to restore)"), 3000);
+    } else {
+        m_window->statusBar()->showMessage(MainWindow::tr("Merged into one polygon (undo to restore)"), 3000);
+    }
     m_window->updateActions();
 }
 

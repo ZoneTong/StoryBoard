@@ -40,5 +40,6 @@ void runDockPanelMainWindowTests(Context& ctx);
 void runDockOrderPersistenceTests(Context& ctx);
 void runClipboardShortcutTests(Context& ctx);
 void runExcalidrawFormatTests(Context& ctx);
+void runLineSplitTests(Context& ctx);
 
 } // namespace selftest

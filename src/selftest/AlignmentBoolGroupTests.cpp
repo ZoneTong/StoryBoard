@@ -991,12 +991,12 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         QToolButton* boolButton = boolWindow.findChild<QToolButton*>(QStringLiteral("BoolToolButton"));
         QMenu* boolMenu = boolWindow.findChild<QMenu*>(QStringLiteral("BoolMenu"));
         CanvasView* boolView = boolWindow.findChild<CanvasView*>();
-        ctx.check(boolMenu && boolMenu->actions().size() == 5, QStringLiteral("编辑菜单提供 5 项合并图元操作"),
+        ctx.check(boolMenu && boolMenu->actions().size() == 6, QStringLiteral("编辑菜单提供 6 项合并图元操作"),
                   boolMenu ? QString::number(boolMenu->actions().size()) : QString());
         ctx.check(!boolButton, QStringLiteral("工具栏不再显示合并图元按钮"));
         ctx.check(boolView && boolView->contextMenuGroupCount() >= 1, QStringLiteral("画布右键菜单挂上了合并图元分组"),
                   boolView ? QString::number(boolView->contextMenuGroupCount()) : QString());
-        bool iconsOk = boolMenu && boolMenu->actions().size() == 5;
+        bool iconsOk = boolMenu && boolMenu->actions().size() == 6;
         if (iconsOk) {
             for (QAction* action : boolMenu->actions()) {
                 if (action->icon().isNull()) {
@@ -1005,8 +1005,8 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                 }
             }
         }
-        ctx.check(iconsOk, QStringLiteral("合并图元五项操作都带参照 PPT 的图标"));
-        // 合并图元主入口（菜单项）图标必须与 5 项子操作不同，否则看起来像同一项操作。
+        ctx.check(iconsOk, QStringLiteral("合并图元六项操作都带参照 PPT 的图标"));
+        // 合并图元主入口（菜单项）图标必须与 6 项子操作不同，否则看起来像同一项操作。
         bool morphIconDistinct = boolMenu && !boolMenu->icon().isNull();
         if (morphIconDistinct) {
             for (QAction* action : boolMenu->actions()) {
@@ -1016,7 +1016,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                 }
             }
         }
-        ctx.check(morphIconDistinct, QStringLiteral("合并图元主入口图标与五项子操作图标不同"));
+        ctx.check(morphIconDistinct, QStringLiteral("合并图元主入口图标与六项子操作图标不同"));
         QAction* heightUp = boolWindow.findChild<QAction*>(QStringLiteral("HeightUpAction"));
         QAction* heightDown = boolWindow.findChild<QAction*>(QStringLiteral("HeightDownAction"));
         QMenu* shapeMenu = boolWindow.findChild<QMenu*>(QStringLiteral("ShapeMenu"));

@@ -6,6 +6,7 @@
 #include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "ImageItem.h"
+#include "LineSplitOps.h"
 #include "PathRegions.h"
 #include "ShapeItem.h"
 #include "TextItem.h"
@@ -451,6 +452,11 @@ bool supports(CanvasScene* scene)
 
 bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
 {
+    if (operation == Operation::LineSplit) {
+        // 需求 12 方案 2：线条分割有自己的参与者规则（≥1 填充图元 + 恰 1 条切刀），
+        // 交给独立实现，避免共用 collect 的「线条不参与」过滤。
+        return LineSplitOps::apply(scene, commandText);
+    }
     QList<Participant> participants = collect(scene);
     if (participants.size() < 2) {
         return false;
@@ -632,6 +638,9 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         }
         break;
     }
+    case Operation::LineSplit:
+        // 已在函数入口转交 LineSplitOps 处理，不会走到这里。
+        break;
     }
 
     QList<CanvasItem*> originals;

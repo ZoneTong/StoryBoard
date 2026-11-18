@@ -83,6 +83,7 @@ int runSelfTest(const QString& reportPath)
     selftest::runDockOrderPersistenceTests(ctx);
     selftest::runClipboardShortcutTests(ctx);
     selftest::runExcalidrawFormatTests(ctx);
+    selftest::runLineSplitTests(ctx);
 
     int passCount = 0;
     for (const QString& line : ctx.lines) {

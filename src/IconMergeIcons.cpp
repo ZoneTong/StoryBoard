@@ -37,6 +37,26 @@ void drawMerge(QPainter& painter, IconId id)
         outline(lens, 1.2);
     } else if (id == IconId::MergeIntersect) {
         fillSolid(lens);
+    } else if (id == IconId::MergeLineSplit) {
+        // 线条分割：一条斜刀线把图形切开，只实心刀线一侧的结果。
+        QPainterPath knifeLine;
+        knifeLine.moveTo(2.0, 21.0);
+        knifeLine.lineTo(22.0, 3.0);
+        QPainterPath belowKnife;
+        belowKnife.moveTo(2.0, 21.0);
+        belowKnife.lineTo(22.0, 3.0);
+        belowKnife.lineTo(26.0, 7.5);
+        belowKnife.lineTo(26.0, 26.0);
+        belowKnife.lineTo(-2.0, 26.0);
+        belowKnife.closeSubpath();
+        painter.save();
+        painter.setClipPath(belowKnife);
+        fillSolid(left);
+        painter.restore();
+        outline(right, 1.4);
+        painter.setPen(QPen(color, 1.9, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawPath(knifeLine);
     } else {
         fillSolid(left.subtracted(right));
         outline(right, 1.4);
@@ -50,7 +70,7 @@ constexpr struct IconEntry {
     void (*draw)(QPainter&, IconId);
 } kEntries[] = {
     {IconId::MergeUnion, drawMerge},     {IconId::MergeCombine, drawMerge},  {IconId::MergeFragment, drawMerge},
-    {IconId::MergeIntersect, drawMerge}, {IconId::MergeSubtract, drawMerge},
+    {IconId::MergeIntersect, drawMerge}, {IconId::MergeSubtract, drawMerge}, {IconId::MergeLineSplit, drawMerge},
 };
 
 } // namespace
