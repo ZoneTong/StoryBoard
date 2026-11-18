@@ -115,18 +115,22 @@ void CanvasStrokeController::finishStroke()
     }
 
     // 需求 8：画笔模式画出的近似直线的笔画直接落成直线类型图元。
+    // 需求 20：笔画收尾后节点已被平移到图元局部坐标，必须经 mapToScene
+    // 换回场景坐标再落位，否则直线会跑到画布原点附近"消失"。
     if (stroke->source() == CurveSource::HandDrawn && strokeLooksLinear(stroke)) {
         const QVector<QPointF> knots = stroke->strokePoints();
-        const QPointF a = knots.first();
-        const QPointF b = knots.last();
+        const QPointF a = stroke->mapToScene(knots.first());
+        const QPointF b = stroke->mapToScene(knots.last());
         QLineF axis(a, b);
         const qreal length = axis.length();
         auto* line = new ShapeItem(ShapeType::Line);
-        const qreal contentHeight = 1.0;
         const qreal angle = qRadiansToDegrees(qAtan2(axis.dy(), axis.dx()));
         const QPointF center = (a + b) / 2.0;
+        // 直线内容高度是细长条：先设内容尺寸（会被最小边钳制），再用真实
+        // 内容矩形中心定位，保证旋转后仍落在落笔位置。
+        line->setContentSize(QSizeF(length, 1.0));
+        const qreal contentHeight = line->contentSize().height();
         line->setPos(center - QPointF(length / 2.0, contentHeight / 2.0));
-        line->setContentSize(QSizeF(length, contentHeight));
         line->setStyle(stroke->strokeColor(), QColor(Qt::transparent), stroke->strokeWidth());
         if (qAbs(angle) > 1e-9) {
             line->setRotationAngle(angle);

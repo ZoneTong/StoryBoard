@@ -23,6 +23,11 @@ class CanvasView;
 class CanvasItem;
 class CustomShapePanel;
 class QKeyEvent;
+
+namespace selftest {
+class Context;
+void runFillStyleBasicTests(Context& ctx);
+} // namespace selftest
 class ItemPropertiesDialog;
 class ItemDockPanel;
 class LayerPanel;
@@ -117,6 +122,8 @@ class MainWindow : public QMainWindow {
     void insertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0,
                      ArrowStyle startArrow = ArrowStyle::None, ArrowStyle endArrow = ArrowStyle::None,
                      bool autoCorner = false);
+    // 需求 16：自检需要直接驱动工具栏样式取值（填充样式 / 画笔色 / 描线宽度）验证新图元生成。
+    friend void selftest::runFillStyleBasicTests(selftest::Context&);
 
   private:
     void createActions();

@@ -89,14 +89,13 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
     }
 
     auto* item = new ShapeItem(type);
+    // 需求 16：新图元按工具栏当前选择生成——描线颜色（画笔色未选过时与工具栏
+    // 展示一致取深灰）、描线宽度不再钳制、填充颜色未选过时跟随画笔色。
     const QColor stroke =
         m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
-    // 与工具栏图标一致：没显式挑过填充色时，插入的常见图形是空心描边，
-    // 只给描线颜色；用户选了填充色（m_fillColor 有效）才按当前填充样式填色。
-    const bool filled =
-        shapeTypeIsFilled(type) && m_window->m_fillStyle != FillStyle::None && m_window->m_fillColor.isValid();
-    item->setStyle(stroke, filled ? m_window->m_fillColor : QColor(Qt::transparent),
-                   qBound<qreal>(2.5, m_window->m_brushWidth, 10.0));
+    const bool filled = shapeTypeIsFilled(type) && m_window->m_fillStyle != FillStyle::None;
+    const QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : stroke;
+    item->setStyle(stroke, filled ? fill : QColor(Qt::transparent), qMax<qreal>(0.5, m_window->m_brushWidth));
     item->setFillStyle(filled ? m_window->m_fillStyle : FillStyle::None);
 
     const QRectF canvas = m_window->m_scene->canvasRect();
@@ -146,11 +145,12 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
 
 void MainWindowInsertController::insertCompositeShape(ShapeType type)
 {
+    // 需求 16：与常见图形同一套工具栏取值规则（描线宽度不再钳制、填充跟随画笔色）。
     const QColor stroke =
         m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
-    const qreal width = qBound<qreal>(2.5, m_window->m_brushWidth, 10.0);
-    const bool filled = m_window->m_fillStyle != FillStyle::None && m_window->m_fillColor.isValid();
-    const QColor fill = filled ? m_window->m_fillColor : QColor(Qt::transparent);
+    const qreal width = qMax<qreal>(0.5, m_window->m_brushWidth);
+    const bool filled = m_window->m_fillStyle != FillStyle::None;
+    const QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : stroke;
     const FillStyle fillStyle = filled ? m_window->m_fillStyle : FillStyle::None;
 
     auto makeFace = [&stroke, &fill, fillStyle, width](const QString& name, const QPainterPath& unitPath,
@@ -261,7 +261,7 @@ void MainWindowInsertController::insertBrace(bool left)
 
     const QColor stroke =
         m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
-    const qreal width = qBound<qreal>(2.5, m_window->m_brushWidth, 10.0);
+    const qreal width = qMax<qreal>(0.5, m_window->m_brushWidth);
 
     // 花括号沿用原默认尺寸（21×64，2 格基准）在 64px 格下放大一倍：42×128。
     const QRectF canvas = m_window->m_scene->canvasRect();
@@ -330,14 +330,12 @@ void MainWindowInsertController::insertCustomShape(const QString& filePath)
 
     auto* item = new ShapeItem();
     item->setCustomShape(customShape.name, customShape.unitPath);
+    // 需求 16：与常见图形一致，按工具栏当前选择取样式（填充未选色跟随画笔色）。
     const QColor stroke =
         m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
-    QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : stroke;
-    if (!m_window->m_fillColor.isValid()) {
-        fill.setAlpha(36);
-    }
+    const QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : stroke;
     const bool filled = m_window->m_fillStyle != FillStyle::None;
-    item->setStyle(stroke, filled ? fill : QColor(Qt::transparent), qBound<qreal>(2.5, m_window->m_brushWidth, 10.0));
+    item->setStyle(stroke, filled ? fill : QColor(Qt::transparent), qMax<qreal>(0.5, m_window->m_brushWidth));
     item->setFillStyle(filled ? m_window->m_fillStyle : FillStyle::None);
 
     // 需求 7：模板按原始宽高比插入，长边固定 64（2 格）；画布装不下时才等比缩到 72%。

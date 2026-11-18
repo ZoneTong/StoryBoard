@@ -1,6 +1,7 @@
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
 #include "Commands.h"
+#include "MainWindow.h"
 #include "ShapeItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -122,5 +123,48 @@ void selftest::runFillStyleBasicTests(Context& ctx)
                   QStringLiteral("填充样式可撤销"));
         styleUndo.redo();
         ctx.check(styleShape->fillStyle() == FillStyle::CrossHatch, QStringLiteral("填充样式可重做"));
+    }
+
+    // 需求 16：常见图形按工具栏已选择的填充样式 / 描线颜色 / 描线宽度生成；
+    // 填充色未单独选过时跟随画笔色（工具栏"跟随画笔色"语义）。
+    {
+        qreal insertedWidth = -1.0;
+        QString fillColorText;
+        QString strokeColorText;
+        FillStyle insertedFillStyle = FillStyle::None;
+        {
+            MainWindow window;
+            window.setFillStyle(FillStyle::Hachure);
+            window.setBrushColor(QColor(37, 99, 235), false);
+            window.setBrushWidthUi(1);
+            window.insertShape(ShapeType::Rectangle);
+            CanvasScene* scene = window.findChild<CanvasScene*>();
+            if (auto* shape = qgraphicsitem_cast<ShapeItem*>(scene->canvasItems().value(0))) {
+                insertedWidth = shape->strokeWidth();
+                fillColorText = shape->fillColor().name();
+                strokeColorText = shape->strokeColor().name();
+                insertedFillStyle = shape->fillStyle();
+            }
+        }
+        ctx.check(
+            insertedFillStyle == FillStyle::Hachure && fillColorText == QStringLiteral("#2563eb") &&
+                strokeColorText == QStringLiteral("#2563eb") && qAbs(insertedWidth - 1.0) < 0.01,
+            QStringLiteral("常见图形按工具栏样式生成"),
+            QStringLiteral("fill=%1 stroke=%2 width=%3").arg(fillColorText).arg(strokeColorText).arg(insertedWidth));
+        // 宽度偏大时同样不再被钳到 10。
+        {
+            MainWindow wideWindow;
+            wideWindow.setFillStyle(FillStyle::None);
+            wideWindow.setBrushColor(QColor(37, 99, 235), false);
+            wideWindow.setBrushWidthUi(18);
+            wideWindow.insertShape(ShapeType::Ellipse);
+            CanvasScene* wideScene = wideWindow.findChild<CanvasScene*>();
+            if (auto* wideShape = qgraphicsitem_cast<ShapeItem*>(wideScene->canvasItems().value(0))) {
+                insertedWidth = wideShape->strokeWidth();
+                insertedFillStyle = wideShape->fillStyle();
+            }
+        }
+        ctx.check(qAbs(insertedWidth - 18.0) < 0.01 && insertedFillStyle == FillStyle::None,
+                  QStringLiteral("插入图形描线宽度按工具栏取值不钳制"), QString::number(insertedWidth));
     }
 }
