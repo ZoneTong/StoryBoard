@@ -9,6 +9,42 @@
 #include <QPainterPathStroker>
 #include <QTransform>
 
+// 把路径里每个子路径显式闭合：布尔运算（交集 / 拆块）产生的路径与序列化
+// 重建的路径都不带 closeSubpath 标记，描边时收尾一条边会缺失（需求 11）。
+QPainterPath CompositeShapeItem::closedSubpaths(const QPainterPath& path)
+{
+    QPainterPath closed;
+    bool hasDraw = false;
+    for (int i = 0; i < path.elementCount(); ++i) {
+        const QPainterPath::Element element = path.elementAt(i);
+        switch (element.type) {
+        case QPainterPath::MoveToElement:
+            if (hasDraw) {
+                closed.closeSubpath();
+            }
+            closed.moveTo(element);
+            hasDraw = false;
+            break;
+        case QPainterPath::LineToElement:
+            closed.lineTo(element);
+            hasDraw = true;
+            break;
+        case QPainterPath::CurveToElement:
+            // 曲线段占三个元素：c1 在 i，c2 / 终点紧随其后。
+            closed.cubicTo(element, path.elementAt(i + 1), path.elementAt(i + 2));
+            i += 2;
+            hasDraw = true;
+            break;
+        default:
+            break;
+        }
+    }
+    if (hasDraw) {
+        closed.closeSubpath();
+    }
+    return closed;
+}
+
 CompositeShapeItem::CompositeShapeItem(const QList<Layer>& layers, FillStyle fillStyle, Qt::PenStyle strokeStyle)
     : CanvasItem(), m_layers(layers), m_fillStyle(fillStyle), m_strokeStyle(strokeStyle)
 {
@@ -307,7 +343,9 @@ void CompositeShapeItem::paintContent(QPainter* painter)
         pen.setJoinStyle(Qt::MiterJoin);
         painter->setPen(pen);
         painter->setBrush(Qt::NoBrush);
-        painter->drawPath(layer.path);
+        // 需求 11：有面积层与文字字形必须按闭合轮廓描边（收尾边不能缺）；
+        // 线宽带本身是开放笔画，保持原样。
+        painter->drawPath(layer.role == LayerRole::StrokeBand ? layer.path : closedSubpaths(layer.path));
     }
 
     painter->restore();

@@ -417,7 +417,7 @@ void MainWindow::applyBoolOperation(BoolOps::Operation operation)
 
 void MainWindow::keyPressEvent(QKeyEvent* event)
 {
-    // 合并图元和弦：Ctrl+M 之后 1 秒内按 U / X / I / S / F 直接执行对应子命令。
+    // 合并图元和弦：Ctrl+M 之后 1 秒内按 U / X / I / S / F / L 直接执行对应子命令。
     if (m_boolChordPending) {
         m_boolChordPending = false;
         switch (event->key()) {

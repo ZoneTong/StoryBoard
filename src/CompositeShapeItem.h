@@ -41,6 +41,10 @@ class CompositeShapeItem : public CanvasItem {
     int layerCount() const { return m_layers.size(); }
     const QList<Layer>& layers() const { return m_layers; }
 
+    // 需求 11：把路径里每个子路径显式闭合（布尔交集 / 拆块与序列化重建的
+    // 路径不带 closeSubpath 标记，描边时收尾一条边会缺失）。开放笔画请勿使用。
+    static QPainterPath closedSubpaths(const QPainterPath& path);
+
     // 多边形共用的填充 / 描线属性：填充作用于有面积图形与文字字形，
     // 描线颜色同时同步直线 / 曲线的线宽带颜色；样式与宽度只作用于有面积轮廓。
     QColor fillColor() const;

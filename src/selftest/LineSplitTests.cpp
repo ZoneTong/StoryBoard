@@ -3,13 +3,17 @@
 #include "CanvasTypes.h"
 #include "CompositeShapeItem.h"
 #include "CurveItem.h"
+#include "ItemDockPanel.h"
 #include "LineSplitOps.h"
+#include "MainWindow.h"
 #include "ShapeItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
 
+#include <QApplication>
 #include <QPainterPath>
 #include <QPointF>
+#include <QToolButton>
 #include <QUndoStack>
 #include <QVector>
 #include <QtMath>
@@ -40,7 +44,7 @@ void selftest::runLineSplitTests(Context& ctx)
 
         scene.clearSelection();
         rect->setSelected(true);
-        ctx.check(!LineSplitOps::supports(&scene), QStringLiteral("没有切刀时线条分割不可用"));
+        ctx.check(!LineSplitOps::supports(&scene), QStringLiteral("没有切刀时分割不可用"));
 
         auto* knife = new ShapeItem(ShapeType::Line);
         knife->setContentSize(QSizeF(200.0, 10.0));
@@ -83,7 +87,7 @@ void selftest::runLineSplitTests(Context& ctx)
         rect->setSelected(true);
         knife->setSelected(true);
         const int before = itemCount(scene);
-        ctx.check(LineSplitOps::apply(&scene, QStringLiteral("线条分割")), QStringLiteral("直线可以切分矩形"));
+        ctx.check(LineSplitOps::apply(&scene, QStringLiteral("分割")), QStringLiteral("直线可以切分矩形"));
         const int after = itemCount(scene);
         ctx.check(after == before + 1, QStringLiteral("切分后切刀保留并多出两块碎片"),
                   QStringLiteral("before=%1 after=%2").arg(before).arg(after));
@@ -118,6 +122,52 @@ void selftest::runLineSplitTests(Context& ctx)
         ctx.check(fragments.at(0)->isSelected() && fragments.at(1)->isSelected(),
                   QStringLiteral("切分后碎片处于选中状态"));
 
+        // 需求 11：碎片轮廓按闭合子路径描边，收尾边不能缺。
+        bool closureOk = fragments.size() == 2;
+        for (const CompositeShapeItem* fragment : fragments) {
+            const QPainterPath& piece = fragment->layers().constFirst().path;
+            const QPainterPath closed = CompositeShapeItem::closedSubpaths(piece);
+            closureOk = closureOk && closed.elementCount() >= piece.elementCount();
+            // 闭合后的路径终点回到子路径起点：首元素与最后一个绘制元素重合。
+            const QPointF first = closed.elementAt(0);
+            const QPointF last = closed.elementAt(closed.elementCount() - 1);
+            closureOk = closureOk && qFuzzyCompare(first.x(), last.x()) && qFuzzyCompare(first.y(), last.y());
+        }
+        ctx.check(closureOk, QStringLiteral("分割碎片的每条子路径都显式闭合"));
+
+        // 需求 12：选中填充图元 + 切刀时，编辑图元面板也展开分割按钮（6 项都可见）。
+        {
+            MainWindow window;
+            window.show();
+            QApplication::processEvents();
+            window.insertShape(ShapeType::Rectangle);
+            window.insertShape(ShapeType::Line);
+            CanvasScene* mainScene = window.findChild<CanvasScene*>();
+            QList<CanvasItem*> items = mainScene->canvasItems();
+            mainScene->clearSelection();
+            for (CanvasItem* item : items) {
+                item->setSelected(true);
+            }
+            mainScene->update();
+            if (auto* dockPanel = window.findChild<ItemDockPanel*>()) {
+                dockPanel->refresh();
+                QApplication::processEvents();
+                const QList<QToolButton*> morphButtons =
+                    dockPanel->findChildren<QToolButton*>(QStringLiteral("ItemMorphButton"));
+                int visibleMorph = 0;
+                for (const QToolButton* button : morphButtons) {
+                    if (button->isVisible()) {
+                        ++visibleMorph;
+                    }
+                }
+                ctx.check(morphButtons.size() == 6 && visibleMorph == 6,
+                          QStringLiteral("选中填充图元与切刀时面板展开分割按钮"),
+                          QStringLiteral("total=%1 visible=%2").arg(morphButtons.size()).arg(visibleMorph));
+            } else {
+                ctx.check(false, QStringLiteral("编辑图元面板存在"));
+            }
+        }
+
         undo.undo();
         ctx.check(itemCount(scene) == before, QStringLiteral("撤销一次还原为矩形加切刀"));
         undo.redo();
@@ -144,7 +194,7 @@ void selftest::runLineSplitTests(Context& ctx)
         ellipse->setSelected(true);
         curve->setSelected(true);
         ctx.check(LineSplitOps::supports(&scene), QStringLiteral("曲线作为切刀时可用"));
-        ctx.check(LineSplitOps::apply(&scene, QStringLiteral("线条分割")), QStringLiteral("曲线可以切分椭圆"));
+        ctx.check(LineSplitOps::apply(&scene, QStringLiteral("分割")), QStringLiteral("曲线可以切分椭圆"));
 
         int fragments = 0;
         for (CanvasItem* item : scene.canvasItems()) {
@@ -177,7 +227,7 @@ void selftest::runLineSplitTests(Context& ctx)
         knife->setSelected(true);
         const int before = itemCount(scene);
         const int undoCount = undo.count();
-        ctx.check(!LineSplitOps::apply(&scene, QStringLiteral("线条分割")),
+        ctx.check(!LineSplitOps::apply(&scene, QStringLiteral("分割")),
                   QStringLiteral("切刀不与填充图形相交时返回失败"));
         ctx.check(itemCount(scene) == before && undo.count() == undoCount, QStringLiteral("切空时不产生图元与撤销记录"),
                   QStringLiteral("items=%1 undo=%2").arg(itemCount(scene)).arg(undo.count()));

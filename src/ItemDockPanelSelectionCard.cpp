@@ -11,7 +11,7 @@ namespace {
 constexpr int kButtonSize = 32;
 constexpr int kIconSize = 20;
 constexpr int kAlignButtonCount = 8;
-constexpr int kBoolButtonCount = 5;
+constexpr int kBoolButtonCount = 6;
 
 // 每一行都是独立容器，行内按钮平铺；行容器负责整行的显隐，避免逐排撑开空行。
 QWidget* makeRow(QWidget* parent, QHBoxLayout** layout)
@@ -55,7 +55,7 @@ ItemDockPanelSelectionCard::ItemDockPanelSelectionCard(QWidget* parent) : QWidge
     basicLayout->addWidget(m_smoothButton);
     basicLayout->addStretch(1);
 
-    // 对齐 8 项与合并图元 5 项各占一行：多选时直接平铺，不再收进下拉菜单。
+    // 对齐 8 项与合并图元 6 项各占一行：多选时直接平铺，不再收进下拉菜单。
     for (int i = 0; i < kAlignButtonCount; ++i) {
         auto* button = makeButton(QStringLiteral("ItemAlignRowButton"));
         m_alignButtons.append(button);

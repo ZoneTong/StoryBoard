@@ -755,7 +755,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 QApplication::processEvents();
             }
 
-            // 多选时卡片把对齐 8 项与合并图元 5 项直接展开成图标按钮行，并复用菜单栏同一批动作。
+            // 多选时卡片把对齐 8 项与合并图元 6 项直接展开成图标按钮行，并复用菜单栏同一批动作。
             auto* secondShape = new ShapeItem(ShapeType::Rectangle);
             secondShape->setPos(QPointF(420.0, 240.0));
             secondShape->setContentSize(QSizeF(120.0, 90.0));

@@ -1418,7 +1418,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message><message>
         <location filename="../src/MainWindow.cpp" line="448"/>
         <source>Merge items: press U / X / I / S / F / L within 1 second</source>
-        <translation>合并图元：1 秒内按 U / X / I / S / F</translation>
+        <translation>合并图元：1 秒内按 U / X / I / S / F / L</translation>
     </message><message>
         <location filename="../src/UiMenuBuilder.cpp" line="98"/>
         <source>Right triangle 45°</source>
@@ -2816,7 +2816,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <location filename="../src/MainWindowEditActionsController.cpp" line="143"/>
         <location filename="../src/UiMenuBuilder.cpp" line="288"/>
         <source>Split along line</source>
-        <translation>线条分割</translation>
+        <translation>分割</translation>
     </message><message>
         <location filename="../src/UiMenuBuilder.cpp" line="296"/>
         <source>Cut the filled items along the selected line or curve</source>

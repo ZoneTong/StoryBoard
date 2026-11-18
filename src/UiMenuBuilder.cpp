@@ -303,7 +303,7 @@ void UiMenuBuilder::buildMenus()
         action->setIcon(
             makeIcon(boolIcons.at(qMin(i, boolIcons.size() - 1)), QColor(58, 64, 80), MainWindow::kToolBarIconSize));
         action->setStatusTip(boolTips.at(qMin(i, boolTips.size() - 1)));
-        // 线条分割的参与者规则不同（填充图元 + 恰一条切刀），打上标记供启用状态单独判定。
+        // 分割的参与者规则不同（填充图元 + 恰一条切刀），打上标记供启用状态单独判定。
         action->setProperty("lineSplitAction", boolEntries.at(i).first == BoolOps::Operation::LineSplit);
         QObject::connect(action, &QAction::triggered, m_window,
                          [this, operation = boolEntries.at(i).first]() { m_window->applyBoolOperation(operation); });
