@@ -595,8 +595,9 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
         !qFuzzyCompare(rotation, other.rotation) || !qFuzzyCompare(1.0 + opacity, 1.0 + other.opacity) ||
         itemName != other.itemName || hasShapeState != other.hasShapeState ||
         hasCompositeStyle != other.hasCompositeStyle || hasTextState != other.hasTextState ||
-        hasStrokeStyle != other.hasStrokeStyle || hasImageState != other.hasImageState ||
-        hasImageName != other.hasImageName || hasFillImageState != other.hasFillImageState) {
+        hasStrokeStyle != other.hasStrokeStyle || hasCurveArrows != other.hasCurveArrows ||
+        hasImageState != other.hasImageState || hasImageName != other.hasImageName ||
+        hasFillImageState != other.hasFillImageState) {
         return false;
     }
     if (hasShapeState && shapeState != other.shapeState) {
@@ -611,6 +612,9 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
     }
     if (hasStrokeStyle && (strokeColor != other.strokeColor || !qFuzzyCompare(strokeWidth, other.strokeWidth) ||
                            strokeStyle != other.strokeStyle)) {
+        return false;
+    }
+    if (hasCurveArrows && (curveStartArrow != other.curveStartArrow || curveEndArrow != other.curveEndArrow)) {
         return false;
     }
     if (hasImageState && (image.cacheKey() != other.image.cacheKey() || image.size() != other.image.size())) {
@@ -679,6 +683,10 @@ void ItemPropertiesCommand::apply(const ItemPropertiesState& state)
         if (auto* stroke = dynamic_cast<CurveItem*>(m_item.data())) {
             stroke->setStyle(state.strokeColor, state.strokeWidth);
             stroke->setStrokeStyle(state.strokeStyle);
+            // 需求 27：曲线两端箭头随同一条撤销记录一起应用。
+            if (state.hasCurveArrows) {
+                stroke->setArrowStyles(state.curveStartArrow, state.curveEndArrow);
+            }
         } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(m_item.data())) {
             composite->setStroke(state.strokeColor, state.strokeWidth);
             composite->setStrokeStyle(state.strokeStyle);
