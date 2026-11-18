@@ -18,10 +18,34 @@
 // clang-format off
 #include <windows.h>
 #include <shellapi.h>
+#include <shlobj.h>
 // clang-format on
 #endif
 
 namespace {
+
+// 需求 19：在已有外壳进程里打开目录（COM 通道）。直接起新的 explorer.exe
+// 进程在提权 / 受限会话里会以 0xc0000142 启动失败并弹“应用程序错误”对话框，
+// 所以任何分支都不再自己去启动 explorer.exe。
+bool openFolderViaShellItem(const QString& directory)
+{
+    const std::wstring native = QDir::toNativeSeparators(directory).toStdWString();
+    // SHOpenFolderAndSelectItems 要求调用线程已初始化 COM；已初始化（含模式
+    // 不同）时直接沿用现有初始化。
+    const HRESULT initHr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+    const bool comInitialized = SUCCEEDED(initHr);
+    PIDLIST_ABSOLUTE pidl = nullptr;
+    const HRESULT parseHr = SHParseDisplayName(native.c_str(), nullptr, &pidl, 0, nullptr);
+    bool opened = false;
+    if (SUCCEEDED(parseHr) && pidl) {
+        opened = SUCCEEDED(SHOpenFolderAndSelectItems(pidl, 0, nullptr, 0));
+        ILFree(pidl);
+    }
+    if (comInitialized) {
+        CoUninitialize();
+    }
+    return opened;
+}
 
 constexpr int kMinCanvasSide = 200;
 constexpr int kMaxCanvasSide = 12000;
@@ -452,9 +476,7 @@ AppSettings::ShapesFolderOpenResult AppSettings::openShapesFolder()
         return result;
     }
 #ifdef Q_OS_WIN
-    // 交给已在运行的资源管理器处理：ShellExecute 走外壳通道，能把“打开目录”转发给
-    // 现有 explorer 窗口。不要改成自己 CreateProcess 起 explorer.exe——在提权或受限
-    // 会话里那样起 explorer 会以 0xc0000142 启动失败，弹“应用程序错误”对话框。
+    // 先走外壳"open"动词：正常会话里它会转发给已在运行的资源管理器。
     const std::wstring native = QDir::toNativeSeparators(directory).toStdWString();
     const HINSTANCE handle = ShellExecuteW(nullptr, L"open", native.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
     const qintptr shellCode = reinterpret_cast<qintptr>(handle);
@@ -464,19 +486,15 @@ AppSettings::ShapesFolderOpenResult AppSettings::openShapesFolder()
     }
     qWarning("ShellExecute failed to open shapes folder [%s]: code=%d", qUtf8Printable(directory),
              static_cast<int>(shellCode));
-    // 需求 9：部分目录（如 LocalLow）直接 open 会返回 5（拒绝访问）。仍走外壳通道，
-    // 把目录作为参数交给 explorer.exe 打开——这不是自己 CreateProcess 起 explorer，
-    // 外壳会把它转发给已在运行的资源管理器进程，不受提权会话 0xc0000142 的影响。
-    const HINSTANCE explorerHandle =
-        ShellExecuteW(nullptr, L"open", L"explorer.exe", native.c_str(), nullptr, SW_SHOWNORMAL);
-    const qintptr explorerCode = reinterpret_cast<qintptr>(explorerHandle);
-    if (explorerCode > 32) {
+    // 需求 19：LocalLow 等目录 "open" 动词可能返回 5（拒绝访问）。改用 COM 的
+    // SHOpenFolderAndSelectItems，在现有外壳进程里打开目录，不再新建 explorer.exe
+    // 进程（那在提权会话里会以 0xc0000142 启动失败弹错误对话框）。
+    if (openFolderViaShellItem(directory)) {
         result.opened = true;
         return result;
     }
+    qWarning("SHOpenFolderAndSelectItems failed to open shapes folder [%s]", qUtf8Printable(directory));
     result.shellCode = static_cast<int>(shellCode);
-    qWarning("explorer fallback failed to open shapes folder [%s]: code=%d", qUtf8Printable(directory),
-             static_cast<int>(explorerCode));
 #endif
     // Windows 外壳失败或非 Windows 平台：退到桌面服务再试一次，目录 URL 必须以分隔符结尾。
     if (QDesktopServices::openUrl(QUrl::fromLocalFile(directory + QLatin1Char('/')))) {
