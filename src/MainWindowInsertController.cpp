@@ -1,7 +1,9 @@
 #include "MainWindowInsertController.h"
 
+#include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "CanvasView.h"
+#include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "CustomShapeTemplates.h"
 #include "IconFactory.h"
@@ -88,15 +90,21 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
         return;
     }
 
-    auto* item = new ShapeItem(type);
     // 需求 16：新图元按工具栏当前选择生成——描线颜色（画笔色未选过时与工具栏
     // 展示一致取深灰）、描线宽度不再钳制、填充颜色未选过时跟随画笔色。
     const QColor stroke =
         m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
+    const qreal strokeWidth = qMax<qreal>(0.5, m_window->m_brushWidth);
     const bool filled = shapeTypeIsFilled(type) && m_window->m_fillStyle != FillStyle::None;
     const QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : stroke;
-    item->setStyle(stroke, filled ? fill : QColor(Qt::transparent), qMax<qreal>(0.5, m_window->m_brushWidth));
-    item->setFillStyle(filled ? m_window->m_fillStyle : FillStyle::None);
+    const FillStyle fillStyle = filled ? m_window->m_fillStyle : FillStyle::None;
+
+    // 需求 26：正弦波是零面积波线，插入即生成曲线图元；今日新增的其余填充
+    // 图形（十字星/六芒星/心形/旗帜/卷轴）插入即归类为多边形图元——与合并、
+    // 分割的产物同型，只保留填充与描线，不开放形状类型与圆角。
+    const bool asCurve = type == ShapeType::SineWave;
+    const bool asPolygon = type == ShapeType::Star4 || type == ShapeType::Hexagram || type == ShapeType::Heart ||
+                           type == ShapeType::FlagWave || type == ShapeType::Scroll;
 
     const QRectF canvas = m_window->m_scene->canvasRect();
     QSizeF size = defaultShapeSize(type);
@@ -112,20 +120,51 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
     center += QPointF(cascade, cascade);
     center.setX(qBound(canvas.left() + size.width() / 2.0, center.x(), canvas.right() - size.width() / 2.0));
     center.setY(qBound(canvas.top() + size.height() / 2.0, center.y(), canvas.bottom() - size.height() / 2.0));
+    const QPointF topLeft = center - QPointF(size.width() / 2.0, size.height() / 2.0);
 
-    item->setPos(center - QPointF(size.width() / 2.0, size.height() / 2.0));
-    item->setContentSize(size);
-    // 三角形预置项：底边保持默认 64，按预置角度重算高度（角度是真相）。
-    if (type == ShapeType::Triangle && triangleAngle1 > 0.0 && triangleAngle2 > 0.0) {
-        item->setTriangleAngles(triangleAngle1, triangleAngle2);
-    }
-    // 直线箭头预置项：复用直线，默认末端开口箭头。
-    if (type == ShapeType::Line && (arrowStyleIsHead(startArrow) || arrowStyleIsHead(endArrow))) {
-        item->setArrowStyles(startArrow, endArrow);
-    }
-    // 圆角矩形预置项：矩形按短边 16% 自动圆角（<0 自动态），尺寸变化时比例保持。
-    if (type == ShapeType::Rectangle && autoCorner) {
-        item->setAutoCorner(true);
+    CanvasItem* item = nullptr;
+    if (asCurve) {
+        // 波线采样成曲线图元：与花括号同一套采样构点方式，样式取工具栏描线。
+        auto* curve = new CurveItem();
+        const QPainterPath wavePath =
+            ShapePathBuilder::pathFor(ShapeType::SineWave, QRectF(QPointF(0.0, 0.0), size), -1.0);
+        constexpr int sampleCount = 64;
+        QVector<QPointF> points;
+        points.reserve(sampleCount + 1);
+        for (int i = 0; i <= sampleCount; ++i) {
+            points.append(topLeft + wavePath.pointAtPercent(qreal(i) / qreal(sampleCount)));
+        }
+        curve->setStrokePoints(points, stroke, strokeWidth);
+        item = curve;
+    } else if (asPolygon) {
+        // 填充图形采样成单层多边形图元：路径即有面积层，样式取工具栏填充与描线。
+        CompositeShapeItem::Layer layer;
+        layer.path = ShapePathBuilder::pathFor(type, QRectF(topLeft, size), -1.0);
+        layer.fill = filled ? fill : QColor(Qt::transparent);
+        layer.stroke = stroke;
+        layer.strokeWidth = strokeWidth;
+        layer.filled = true;
+        layer.role = CompositeShapeItem::LayerRole::FilledArea;
+        item = new CompositeShapeItem(QList<CompositeShapeItem::Layer>{layer}, fillStyle, Qt::SolidLine);
+    } else {
+        auto* shape = new ShapeItem(type);
+        shape->setStyle(stroke, filled ? fill : QColor(Qt::transparent), strokeWidth);
+        shape->setFillStyle(fillStyle);
+        shape->setPos(topLeft);
+        shape->setContentSize(size);
+        // 三角形预置项：底边保持默认 64，按预置角度重算高度（角度是真相）。
+        if (type == ShapeType::Triangle && triangleAngle1 > 0.0 && triangleAngle2 > 0.0) {
+            shape->setTriangleAngles(triangleAngle1, triangleAngle2);
+        }
+        // 直线箭头预置项：复用直线，默认末端开口箭头。
+        if (type == ShapeType::Line && (arrowStyleIsHead(startArrow) || arrowStyleIsHead(endArrow))) {
+            shape->setArrowStyles(startArrow, endArrow);
+        }
+        // 圆角矩形预置项：矩形按短边 16% 自动圆角（<0 自动态），尺寸变化时比例保持。
+        if (type == ShapeType::Rectangle && autoCorner) {
+            shape->setAutoCorner(true);
+        }
+        item = shape;
     }
 
     m_window->m_scene->clearSelection();

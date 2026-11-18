@@ -1,5 +1,7 @@
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
+#include "CompositeShapeItem.h"
+#include "CurveItem.h"
 #include "MainWindow.h"
 #include "ShapeItem.h"
 #include "ShapeMeta.h"
@@ -134,5 +136,53 @@ void selftest::runShapesClusterTests(Context& ctx)
         auto* lastFace = qgraphicsitem_cast<ShapeItem*>(items.last());
         ctx.check(lastFace && lastFace->shapeType() == ShapeType::Ellipse && lastFace->groupId() == cylGroup,
                   QStringLiteral("圆柱体顶椭圆叠在柱身上方"));
+    }
+
+    // 需求 26：正弦波形插入即生成曲线图元；今日新增的其余填充图形插入后
+    // 归类为多边形图元（与合并、分割产物同型）。
+    {
+        MainWindow window;
+        window.insertShape(ShapeType::SineWave);
+        CanvasScene* scene = window.findChild<CanvasScene*>();
+        const QList<CanvasItem*> items = scene->canvasItems();
+        bool sineIsCurve = items.size() == 1 && dynamic_cast<CurveItem*>(items.constFirst()) != nullptr;
+        ctx.check(sineIsCurve, QStringLiteral("正弦波形插入为曲线图元"), QStringLiteral("items=%1").arg(items.size()));
+
+        const QList<ShapeType> polygonShapes = {ShapeType::Star4, ShapeType::Hexagram, ShapeType::Heart,
+                                                ShapeType::FlagWave, ShapeType::Scroll};
+        for (ShapeType type : polygonShapes) {
+            window.insertShape(type);
+        }
+        const QList<CanvasItem*> after = scene->canvasItems();
+        int polygonCount = 0;
+        int nonPolygon = 0;
+        for (int i = 1; i < after.size(); ++i) {
+            if (dynamic_cast<CompositeShapeItem*>(after.at(i)) != nullptr) {
+                ++polygonCount;
+            } else {
+                ++nonPolygon;
+            }
+        }
+        ctx.check(polygonCount == polygonShapes.size() && nonPolygon == 0,
+                  QStringLiteral("新增填充图形插入后归类为多边形图元"),
+                  QStringLiteral("polygon=%1 other=%2").arg(polygonCount).arg(nonPolygon));
+    }
+
+    // 需求 28：几个星星按角的个数顺序排在一起（四角/十字星 → 五角星 → 六芒星）。
+    {
+        const QList<ShapeType> order = ShapeMeta::allTypes();
+        const int star4 = order.indexOf(ShapeType::Star4);
+        const int star = order.indexOf(ShapeType::Star);
+        const int hexagram = order.indexOf(ShapeType::Hexagram);
+        ctx.check(star4 >= 0 && star == star4 + 1 && hexagram == star + 1,
+                  QStringLiteral("星星按角的个数排序：十字星、五角星、六芒星"),
+                  QStringLiteral("star4=%1 star=%2 hexagram=%3").arg(star4).arg(star).arg(hexagram));
+        // 更名走 storyboard_zh.ts 手工翻译：源串不变，译文按需求更新。
+        ctx.check(ShapeItem::tr("Four-point star") == QStringLiteral("十字星") &&
+                      ShapeItem::tr("Sine wave") == QStringLiteral("正弦波") &&
+                      ShapeItem::tr("Wavy flag") == QStringLiteral("旗帜"),
+                  QStringLiteral("四角星/正弦波形/波形旗帜已更名为十字星/正弦波/旗帜"),
+                  QStringLiteral("%1/%2/%3")
+                      .arg(ShapeItem::tr("Four-point star"), ShapeItem::tr("Sine wave"), ShapeItem::tr("Wavy flag")));
     }
 }

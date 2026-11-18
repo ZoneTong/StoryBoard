@@ -106,8 +106,8 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
     // 避免两套插入逻辑。新图形（需求 11）追加在弧线之后、直线之前；花括号（需求 13）
     // 已改为曲线，菜单里只剩两个预置动作，工具栏按名字显式补在直线之后。
     const QList<ShapeType> shapeOrder = {
-        ShapeType::Rectangle, ShapeType::Ellipse,  ShapeType::Triangle, ShapeType::Diamond,  ShapeType::Star,
-        ShapeType::Star4,     ShapeType::Hexagram, ShapeType::Heart,    ShapeType::Arrow,    ShapeType::DoubleArrow,
+        ShapeType::Rectangle, ShapeType::Ellipse,  ShapeType::Triangle, ShapeType::Diamond,  ShapeType::Star4,
+        ShapeType::Star,      ShapeType::Hexagram, ShapeType::Heart,    ShapeType::Arrow,    ShapeType::DoubleArrow,
         ShapeType::Callout,   ShapeType::Sector,   ShapeType::Arc,      ShapeType::SineWave, ShapeType::FlagWave,
         ShapeType::Scroll,    ShapeType::Cube,     ShapeType::Cylinder, ShapeType::Line,
     };

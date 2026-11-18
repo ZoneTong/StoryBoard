@@ -3326,7 +3326,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message><message>
         <location filename="../src/ShapeItem.cpp" line="84"/>
         <source>Four-point star</source>
-        <translation>四角星形</translation>
+        <translation>十字星</translation>
     </message><message>
         <location filename="../src/ShapeItem.cpp" line="86"/>
         <source>Six-point star</source>
@@ -3338,11 +3338,11 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message><message>
         <location filename="../src/ShapeItem.cpp" line="90"/>
         <source>Sine wave</source>
-        <translation>正弦波形</translation>
+        <translation>正弦波</translation>
     </message><message>
         <location filename="../src/ShapeItem.cpp" line="92"/>
         <source>Wavy flag</source>
-        <translation>波形旗帜</translation>
+        <translation>旗帜</translation>
     </message><message>
         <location filename="../src/ShapeItem.cpp" line="94"/>
         <source>Scroll</source>
@@ -4570,7 +4570,7 @@ Second line caption</source>
         <translation>对话气泡</translation>
     </message><message>
         <source>Four-point star</source>
-        <translation>四角星形</translation>
+        <translation>十字星</translation>
     </message><message>
         <source>Six-point star</source>
         <translation>六芒星</translation>
@@ -4579,10 +4579,10 @@ Second line caption</source>
         <translation>心形</translation>
     </message><message>
         <source>Sine wave</source>
-        <translation>正弦波形</translation>
+        <translation>正弦波</translation>
     </message><message>
         <source>Wavy flag</source>
-        <translation>波形旗帜</translation>
+        <translation>旗帜</translation>
     </message><message>
         <source>Scroll</source>
         <translation>卷轴</translation>
