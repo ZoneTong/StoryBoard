@@ -160,7 +160,8 @@ void selftest::runLineSplitTests(Context& ctx)
                         ++visibleMorph;
                     }
                 }
-                ctx.check(morphButtons.size() == 6 && visibleMorph == 6,
+                // 矩形 + 直线只有分割可用：6 颗按钮里只有最后一颗（分割）可见。
+                ctx.check(morphButtons.size() == 6 && visibleMorph == 1 && morphButtons.last()->isVisible(),
                           QStringLiteral("选中填充图元与切刀时面板展开分割按钮"),
                           QStringLiteral("total=%1 visible=%2").arg(morphButtons.size()).arg(visibleMorph));
             } else {

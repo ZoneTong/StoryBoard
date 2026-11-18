@@ -680,7 +680,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             ctx.check(copyButton && deleteButton && rotateCwButton && rotateCcwButton && copyButton->isVisible() &&
                           deleteButton->isVisible() && rotateCwButton->isVisible() && rotateCcwButton->isVisible(),
                       QStringLiteral("单选时编辑图元卡列出复制 / 删除 / 旋转按钮"));
-            ctx.check(alignRowButtons.size() == 8 && morphButtons.size() == 5 && groupButton && ungroupButton &&
+            ctx.check(alignRowButtons.size() == 8 && morphButtons.size() == 6 && groupButton && ungroupButton &&
                           !alignRowButtons.first()->isVisible() && !morphButtons.first()->isVisible() &&
                           !groupButton->isVisible() && !ungroupButton->isVisible(),
                       QStringLiteral("单选时不显示对齐 / 合并图元 / 组合按钮行"));
