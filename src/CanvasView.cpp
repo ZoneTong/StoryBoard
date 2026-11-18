@@ -409,6 +409,17 @@ void CanvasView::keyPressEvent(QKeyEvent* event)
         return;
     }
 
+    // 需求 7：画笔模式下按 Esc 退出回编辑模式；正在画的笔画先取消，不落库。
+    if (event->key() == Qt::Key_Escape && m_mode == ToolMode::Brush) {
+        if (m_stroke->hasActiveStroke()) {
+            m_stroke->cancelStroke();
+        }
+        setMode(ToolMode::Edit);
+        emit statusMessage(tr("Brush mode exited; back to edit mode"));
+        event->accept();
+        return;
+    }
+
     if (event->key() == Qt::Key_Escape && m_stroke->hasActiveStroke()) {
         m_stroke->cancelStroke();
         emit statusMessage(tr("Current stroke canceled"));

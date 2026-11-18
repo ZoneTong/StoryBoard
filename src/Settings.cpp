@@ -462,8 +462,21 @@ AppSettings::ShapesFolderOpenResult AppSettings::openShapesFolder()
         result.opened = true;
         return result;
     }
+    qWarning("ShellExecute failed to open shapes folder [%s]: code=%d", qUtf8Printable(directory),
+             static_cast<int>(shellCode));
+    // 需求 9：部分目录（如 LocalLow）直接 open 会返回 5（拒绝访问）。仍走外壳通道，
+    // 把目录作为参数交给 explorer.exe 打开——这不是自己 CreateProcess 起 explorer，
+    // 外壳会把它转发给已在运行的资源管理器进程，不受提权会话 0xc0000142 的影响。
+    const HINSTANCE explorerHandle =
+        ShellExecuteW(nullptr, L"open", L"explorer.exe", native.c_str(), nullptr, SW_SHOWNORMAL);
+    const qintptr explorerCode = reinterpret_cast<qintptr>(explorerHandle);
+    if (explorerCode > 32) {
+        result.opened = true;
+        return result;
+    }
     result.shellCode = static_cast<int>(shellCode);
-    qWarning("ShellExecute failed to open shapes folder [%s]: code=%d", qUtf8Printable(directory), result.shellCode);
+    qWarning("explorer fallback failed to open shapes folder [%s]: code=%d", qUtf8Printable(directory),
+             static_cast<int>(explorerCode));
 #endif
     // Windows 外壳失败或非 Windows 平台：退到桌面服务再试一次，目录 URL 必须以分隔符结尾。
     if (QDesktopServices::openUrl(QUrl::fromLocalFile(directory + QLatin1Char('/')))) {

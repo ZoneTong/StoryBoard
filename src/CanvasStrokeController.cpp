@@ -3,13 +3,49 @@
 #include "CanvasScene.h"
 #include "CanvasView.h"
 #include "CurveItem.h"
+#include "ShapeItem.h"
 
 #include <QCoreApplication>
+#include <QLineF>
+#include <QVector>
+#include <QtMath>
 
 namespace {
 QString trView(const char* text)
 {
     return QCoreApplication::translate("CanvasView", text);
+}
+
+// 需求 8：笔画拟合出的节点几乎共线时视作直线。阈值放宽到约笔画宽度的一半，
+// 手绘轻微抖动的直线不会被误判成曲线；折返笔画（来回描）按曲线保留。
+bool strokeLooksLinear(const CurveItem* stroke)
+{
+    const QVector<QPointF> knots = stroke->strokePoints();
+    if (knots.size() < 2) {
+        return false;
+    }
+    const QLineF axis(knots.first(), knots.last());
+    const qreal length = axis.length();
+    if (length < 2.0) {
+        return false;
+    }
+    const qreal tolerance = qMax(1.5, stroke->strokeWidth() * 0.5);
+    qreal drawn = 0.0;
+    for (const QPointF& knot : knots) {
+        if (axis.dx() == 0.0 && axis.dy() == 0.0) {
+            return false;
+        }
+        // 点到首尾连线的距离：叉积除以底边长。
+        const qreal cross = axis.dx() * (knot.y() - knots.first().y()) - axis.dy() * (knot.x() - knots.first().x());
+        if (qAbs(cross) / length > tolerance) {
+            return false;
+        }
+    }
+    for (int i = 1; i < knots.size(); ++i) {
+        drawn += QLineF(knots.at(i - 1), knots.at(i)).length();
+    }
+    // 累计弧长明显超过首尾距（≥1.15 倍）说明笔画有折返或绕行，不算直线。
+    return drawn <= length * 1.15;
 }
 } // namespace
 
@@ -74,6 +110,30 @@ void CanvasStrokeController::finishStroke()
     if (stroke->isEmpty()) {
         m_scene->removeItem(stroke);
         delete stroke;
+        m_view->updateCursor();
+        return;
+    }
+
+    // 需求 8：画笔模式画出的近似直线的笔画直接落成直线类型图元。
+    if (stroke->source() == CurveSource::HandDrawn && strokeLooksLinear(stroke)) {
+        const QVector<QPointF> knots = stroke->strokePoints();
+        const QPointF a = knots.first();
+        const QPointF b = knots.last();
+        QLineF axis(a, b);
+        const qreal length = axis.length();
+        auto* line = new ShapeItem(ShapeType::Line);
+        const qreal contentHeight = 1.0;
+        const qreal angle = qRadiansToDegrees(qAtan2(axis.dy(), axis.dx()));
+        const QPointF center = (a + b) / 2.0;
+        line->setPos(center - QPointF(length / 2.0, contentHeight / 2.0));
+        line->setContentSize(QSizeF(length, contentHeight));
+        line->setStyle(stroke->strokeColor(), QColor(Qt::transparent), stroke->strokeWidth());
+        if (qAbs(angle) > 1e-9) {
+            line->setRotationAngle(angle);
+        }
+        m_scene->removeItem(stroke);
+        delete stroke;
+        m_scene->commitNewItem(line, trView("Add stroke"));
         m_view->updateCursor();
         return;
     }

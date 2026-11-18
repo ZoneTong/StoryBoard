@@ -45,6 +45,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
 #include <QLineF>
@@ -112,8 +113,10 @@ void selftest::runViewInteractionTests(Context& ctx)
     const QPoint brushEnd = view.mapFromScene(QPointF(700, 500));
     sendMouseEvent(view.viewport(), QEvent::MouseButtonPress, brushStart, Qt::LeftButton, Qt::LeftButton);
     for (int i = 1; i <= 12; ++i) {
+        // 加一点手抖，保持这条笔画是「曲线」样本（笔直笔画按需求 8 会归为直线图元）。
+        const int jitter = (i % 2 == 0) ? 3 : -3;
         const QPoint point(brushStart.x() + (brushEnd.x() - brushStart.x()) * i / 12,
-                           brushStart.y() + (brushEnd.y() - brushStart.y()) * i / 12);
+                           brushStart.y() + (brushEnd.y() - brushStart.y()) * i / 12 + jitter);
         sendMouseEvent(view.viewport(), QEvent::MouseMove, point, Qt::NoButton, Qt::LeftButton);
     }
     sendMouseEvent(view.viewport(), QEvent::MouseButtonRelease, brushEnd, Qt::LeftButton, Qt::NoButton);
@@ -138,6 +141,57 @@ void selftest::runViewInteractionTests(Context& ctx)
     ctx.check(viewScene.canvasItemCount() == 0, QStringLiteral("撤销鼠标绘制"));
     viewUndo.redo();
     ctx.check(viewScene.canvasItemCount() == 1, QStringLiteral("重做鼠标绘制"));
+
+    {
+        // 需求 8：笔直的笔画收笔后直接落成直线类型图元。
+        view.setBrushColor(QColor(QStringLiteral("#DC2626")));
+        view.setBrushWidth(5.0);
+        const QPoint lineStart = view.mapFromScene(QPointF(120, 620));
+        const QPoint lineEnd = view.mapFromScene(QPointF(520, 620));
+        sendMouseEvent(view.viewport(), QEvent::MouseButtonPress, lineStart, Qt::LeftButton, Qt::LeftButton);
+        for (int i = 1; i <= 10; ++i) {
+            const QPoint point(lineStart.x() + (lineEnd.x() - lineStart.x()) * i / 10, lineStart.y());
+            sendMouseEvent(view.viewport(), QEvent::MouseMove, point, Qt::NoButton, Qt::LeftButton);
+        }
+        sendMouseEvent(view.viewport(), QEvent::MouseButtonRelease, lineEnd, Qt::LeftButton, Qt::NoButton);
+        QApplication::processEvents();
+
+        ctx.check(viewScene.canvasItemCount() == 2, QStringLiteral("笔直笔画收笔后新增一个图元"),
+                  QString::number(viewScene.canvasItemCount()));
+        CanvasItem* straightItem = viewScene.canvasItems().value(1);
+        auto* lineShape = dynamic_cast<ShapeItem*>(straightItem);
+        ctx.check(lineShape != nullptr && lineShape->shapeType() == ShapeType::Line,
+                  QStringLiteral("笔直笔画归为直线类型图元"));
+        if (lineShape) {
+            ctx.check(lineShape->strokeColor() == QColor(QStringLiteral("#DC2626")) &&
+                          qAbs(lineShape->strokeWidth() - 5.0) < 0.01,
+                      QStringLiteral("直线图元沿用画笔颜色与粗细"));
+        }
+        viewUndo.undo();
+        ctx.check(viewScene.canvasItemCount() == 1, QStringLiteral("直线图元可撤销"));
+    }
+
+    {
+        // 需求 7：画笔模式按 Esc 退出回编辑模式，正在画的笔画被取消不落库。
+        view.setMode(ToolMode::Brush);
+        const QPoint escStrokeStart = view.mapFromScene(QPointF(200, 200));
+        sendMouseEvent(view.viewport(), QEvent::MouseButtonPress, escStrokeStart, Qt::LeftButton, Qt::LeftButton);
+        QApplication::processEvents();
+        QKeyEvent escWhileStroke(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+        QApplication::sendEvent(&view, &escWhileStroke);
+        QApplication::processEvents();
+        ctx.check(view.mode() == ToolMode::Edit, QStringLiteral("画笔模式按 Esc 退出到编辑模式"),
+                  QStringLiteral("mode=%1").arg(static_cast<int>(view.mode())));
+        ctx.check(viewScene.canvasItemCount() == 1, QStringLiteral("Esc 取消进行中的笔画不落库"),
+                  QString::number(viewScene.canvasItemCount()));
+
+        // 空闲画笔模式按 Esc 同样退出。
+        view.setMode(ToolMode::Brush);
+        QKeyEvent escIdle(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+        QApplication::sendEvent(&view, &escIdle);
+        QApplication::processEvents();
+        ctx.check(view.mode() == ToolMode::Edit, QStringLiteral("空闲画笔模式按 Esc 也退出到编辑模式"));
+    }
 
     {
         // 画笔收尾自动平滑：轻微手抖的直线收敛成两点，曲线保留形状但点集被简化。
