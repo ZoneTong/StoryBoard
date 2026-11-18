@@ -3,10 +3,11 @@
 QList<ShapeType> ShapeMeta::allTypes()
 {
     // 需求 11：新增 8 种；需求 13：花括号改为曲线，不再列入常见图形。
-    return {ShapeType::Rectangle, ShapeType::Ellipse,     ShapeType::Triangle, ShapeType::Diamond, ShapeType::Star,
-            ShapeType::Arrow,     ShapeType::DoubleArrow, ShapeType::Line,     ShapeType::Callout, ShapeType::Sector,
-            ShapeType::Arc,       ShapeType::Star4,       ShapeType::Hexagram, ShapeType::Heart,   ShapeType::SineWave,
-            ShapeType::FlagWave,  ShapeType::Scroll,      ShapeType::Cube,     ShapeType::Cylinder};
+    // 需求 28：几个星星按角的个数排在一起（四角/十字星 → 五角星 → 六芒星）。
+    return {ShapeType::Rectangle, ShapeType::Ellipse,  ShapeType::Triangle, ShapeType::Diamond,     ShapeType::Star4,
+            ShapeType::Star,      ShapeType::Hexagram, ShapeType::Arrow,    ShapeType::DoubleArrow, ShapeType::Line,
+            ShapeType::Callout,   ShapeType::Sector,   ShapeType::Arc,      ShapeType::Heart,       ShapeType::SineWave,
+            ShapeType::FlagWave,  ShapeType::Scroll,   ShapeType::Cube,     ShapeType::Cylinder};
 }
 
 QString ShapeMeta::typeToString(ShapeType type)
