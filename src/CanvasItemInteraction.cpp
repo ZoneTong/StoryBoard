@@ -418,8 +418,11 @@ void CanvasItemInteraction::onMouseMove(QGraphicsSceneMouseEvent* event)
 
 void CanvasItemInteraction::onMouseRelease(QGraphicsSceneMouseEvent* event)
 {
+    // 需求 23：图元点击的选择逻辑在 mousePress 已完整处理（含 Ctrl 加减选）。
+    // 未进入拖拽时不要放行给 QGraphicsItem 默认 release——它会在松开时再做一次
+    // “点击选择”（Ctrl 下重复切换、无 Ctrl 下替换多选），把按下时的选择结果破坏掉。
     if (m_item->m_drag == CanvasItem::DragKind::None) {
-        m_item->QGraphicsObject::mouseReleaseEvent(event);
+        event->accept();
         return;
     }
 

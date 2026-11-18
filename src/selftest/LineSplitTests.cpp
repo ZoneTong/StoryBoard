@@ -1,6 +1,7 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
+#include "CanvasView.h"
 #include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "ItemDockPanel.h"
@@ -9,7 +10,9 @@
 #include "ShapeItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
+#include "selftest/SelftestHelpers.h"
 
+#include <QAction>
 #include <QApplication>
 #include <QPainterPath>
 #include <QPointF>
@@ -17,6 +20,7 @@
 #include <QUndoStack>
 #include <QVector>
 #include <QtMath>
+#include <algorithm>
 
 namespace {
 
@@ -173,6 +177,82 @@ void selftest::runLineSplitTests(Context& ctx)
         ctx.check(itemCount(scene) == before, QStringLiteral("撤销一次还原为矩形加切刀"));
         undo.redo();
         ctx.check(itemCount(scene) == after, QStringLiteral("重做恢复切分结果"));
+    }
+
+    // 需求 23：真机流程复现——画笔曲线 + 矩形双选时，分割动作必须使能。
+    {
+        MainWindow window;
+        window.show();
+        QApplication::processEvents();
+        window.insertShape(ShapeType::Rectangle);
+        CanvasView* view = window.view();
+        // 画一条横穿矩形本体的画笔曲线（起终点在矩形两侧之外）。
+        const QRectF rectBounds = window.scene()->canvasItems().constFirst()->sceneContentRect();
+        const QPointF crossStart = rectBounds.center() + QPointF(-rectBounds.width(), 0.0);
+        view->setMode(ToolMode::Brush);
+        const QPoint brushStart = view->mapFromScene(crossStart);
+        sendMouseEvent(view->viewport(), QEvent::MouseButtonPress, brushStart, Qt::LeftButton, Qt::LeftButton);
+        for (int i = 1; i <= 8; ++i) {
+            const QPoint point(brushStart.x() + i * (rectBounds.width() / 4.0),
+                               brushStart.y() + (i % 2 == 0 ? 12 : -10));
+            sendMouseEvent(view->viewport(), QEvent::MouseMove, point, Qt::NoButton, Qt::LeftButton);
+        }
+        const QPoint brushEnd(brushStart.x() + int(rectBounds.width() * 2.0), brushStart.y() + 6);
+        sendMouseEvent(view->viewport(), QEvent::MouseButtonRelease, brushEnd, Qt::LeftButton, Qt::NoButton);
+        QApplication::processEvents();
+        view->setMode(ToolMode::Edit);
+        QApplication::processEvents();
+
+        CanvasScene* mainScene = window.findChild<CanvasScene*>();
+        mainScene->clearSelection();
+        QApplication::processEvents();
+        // 按真机操作路径选择：先点选矩形（取角落，避开横穿曲线的命中容差带），
+        // 再 Ctrl+点选画笔曲线的顶点，两个图元必须同时处于选中状态。
+        const QPoint rectClick = view->mapFromScene(QPointF(rectBounds.left() + 12.0, rectBounds.top() + 12.0));
+        sendMouseEvent(view->viewport(), QEvent::MouseButtonPress, rectClick, Qt::LeftButton, Qt::LeftButton);
+        sendMouseEvent(view->viewport(), QEvent::MouseButtonRelease, rectClick, Qt::LeftButton, Qt::NoButton);
+        QApplication::processEvents();
+        {
+            const QList<CanvasItem*> selected = mainScene->selectedCanvasItems();
+            ctx.check(selected.size() == 1 && dynamic_cast<ShapeItem*>(selected.value(0)) != nullptr,
+                      QStringLiteral("点选矩形内部仅选中矩形"), QStringLiteral("size=%1").arg(selected.size()));
+        }
+        const QPointF curveScenePos = QPointF(crossStart.x() + rectBounds.width() / 2.0, crossStart.y() - 10.0);
+        const QPoint curveClick = view->mapFromScene(curveScenePos);
+        sendMouseEvent(view->viewport(), QEvent::MouseButtonPress, curveClick, Qt::LeftButton, Qt::LeftButton,
+                       Qt::ControlModifier);
+        QApplication::processEvents();
+        {
+            const QList<CanvasItem*> pressed = mainScene->selectedCanvasItems();
+            ctx.check(pressed.size() == 2, QStringLiteral("Ctrl 按下即同时选中矩形与曲线"),
+                      QStringLiteral("pressed=%1").arg(pressed.size()));
+        }
+        sendMouseEvent(view->viewport(), QEvent::MouseButtonRelease, curveClick, Qt::LeftButton, Qt::NoButton,
+                       Qt::ControlModifier);
+        QApplication::processEvents();
+        {
+            const QList<CanvasItem*> selected = mainScene->selectedCanvasItems();
+            const bool hasShape = std::any_of(selected.cbegin(), selected.cend(), [](CanvasItem* item) {
+                return dynamic_cast<ShapeItem*>(item) != nullptr;
+            });
+            const bool hasCurve = std::any_of(selected.cbegin(), selected.cend(), [](CanvasItem* item) {
+                return dynamic_cast<CurveItem*>(item) != nullptr;
+            });
+            ctx.check(selected.size() == 2 && hasShape && hasCurve, QStringLiteral("松开后矩形与画笔曲线同时选中"),
+                      QStringLiteral("size=%1").arg(selected.size()));
+        }
+        ctx.check(LineSplitOps::supports(mainScene), QStringLiteral("矩形加画笔曲线双选时分割判定可用"),
+                  QStringLiteral("items=%1").arg(mainScene->canvasItemCount()));
+        QAction* splitAction = nullptr;
+        for (QAction* action : window.findChildren<QAction*>()) {
+            if (action->property("lineSplitAction").toBool()) {
+                splitAction = action;
+            }
+        }
+        ctx.check(splitAction && splitAction->isEnabled(), QStringLiteral("分割动作在双选后使能"),
+                  splitAction ? QStringLiteral("enabled=%1").arg(splitAction->isEnabled()) : QStringLiteral("missing"));
+        // 再验证整条链路能真正执行切分：画笔曲线必须穿过矩形本体。
+        ctx.check(LineSplitOps::apply(mainScene, QStringLiteral("分割")), QStringLiteral("画笔曲线可以切分矩形"));
     }
 
     // 曲线切椭圆：中心线延伸后同样分成两块。

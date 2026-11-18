@@ -9,7 +9,9 @@
 #include "CanvasViewCursor.h"
 #include "CanvasViewHitTester.h"
 #include "CanvasZoomController.h"
+#include "CurveItem.h"
 #include "I18n.h"
+#include "ShapeItem.h"
 
 #include <QAction>
 #include <QApplication>
@@ -25,6 +27,30 @@
 #include <QTimer>
 #include <QWheelEvent>
 #include <QtMath>
+
+namespace {
+
+// 零面积描线图元：曲线，以及直线等描线类图形。
+bool isStrokeItem(CanvasItem* item)
+{
+    if (dynamic_cast<CurveItem*>(item)) {
+        return true;
+    }
+    auto* shape = dynamic_cast<ShapeItem*>(item);
+    return shape && shapeTypeIsStrokeOnly(shape->shapeType());
+}
+
+// 需求 23：描线图元的 shape() 含命中容差外扩。若“实际笔迹”（paintedShape）没盖住
+// 点击点、只是靠容差擦边命中，点击意图更可能是下方被横穿的填充图形。
+bool isStrokeHitToleranceOnly(CanvasItem* item, const QPointF& scenePos)
+{
+    if (!isStrokeItem(item)) {
+        return false;
+    }
+    return !item->paintedShape().contains(item->mapFromScene(scenePos));
+}
+
+} // namespace
 
 CanvasView::CanvasView(CanvasScene* scene, QWidget* parent) : QGraphicsView(scene, parent), m_scene(scene)
 {
@@ -187,6 +213,49 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
     if (m_mode == ToolMode::Edit && event->button() == Qt::LeftButton && m_resize->beginResize(position)) {
         event->accept();
         return;
+    }
+
+    // 需求 23：点击落在填充图形内部时，最上层描线图元（曲线/直线）若只是靠命中
+    // 容差“擦边”够到点击点、笔迹本体没压住该点，就让下方填充图形优先接收本次
+    // 点击，避免点矩形内部却选中了横穿矩形的曲线。Ctrl 加选与已选中图元不受影响
+    // （后者点击的可能是它的控制手柄）。
+    if (m_mode == ToolMode::Edit && event->button() == Qt::LeftButton &&
+        !event->modifiers().testFlag(Qt::ControlModifier)) {
+        const QPointF scenePos = mapToScene(position);
+        const QList<QGraphicsItem*> clickCandidates = m_scene->items(scenePos);
+        CanvasItem* strokeTop = nullptr;
+        for (QGraphicsItem* graphicsItem : clickCandidates) {
+            auto* canvasItem = qgraphicsitem_cast<CanvasItem*>(graphicsItem);
+            if (!canvasItem || !canvasItem->isVisible() || !m_scene->isItemEditable(canvasItem)) {
+                continue;
+            }
+            strokeTop = canvasItem;
+            break;
+        }
+        if (strokeTop && !strokeTop->isSelected() && isStrokeHitToleranceOnly(strokeTop, scenePos)) {
+            CanvasItem* fillBelow = nullptr;
+            for (QGraphicsItem* graphicsItem : clickCandidates) {
+                auto* canvasItem = qgraphicsitem_cast<CanvasItem*>(graphicsItem);
+                if (canvasItem == strokeTop || !canvasItem || !canvasItem->isVisible() ||
+                    !m_scene->isItemEditable(canvasItem) || isStrokeItem(canvasItem)) {
+                    continue;
+                }
+                if (canvasItem->shape().contains(canvasItem->mapFromScene(scenePos))) {
+                    fillBelow = canvasItem;
+                    break;
+                }
+            }
+            if (fillBelow) {
+                const Qt::MouseButtons savedButtons = strokeTop->acceptedMouseButtons();
+                const bool savedSelectable = strokeTop->flags().testFlag(QGraphicsItem::ItemIsSelectable);
+                strokeTop->setFlag(QGraphicsItem::ItemIsSelectable, false);
+                strokeTop->setAcceptedMouseButtons(Qt::NoButton);
+                QGraphicsView::mousePressEvent(event);
+                strokeTop->setAcceptedMouseButtons(savedButtons);
+                strokeTop->setFlag(QGraphicsItem::ItemIsSelectable, savedSelectable);
+                return;
+            }
+        }
     }
 
     // 需求 15：重叠图元优先命中图层面板里已选图层中的图元。

@@ -117,9 +117,6 @@ void ViewStatusController::updateActions()
     for (QAction* action : std::as_const(m_window->m_boolActions)) {
         action->setEnabled(action->property("lineSplitAction").toBool() ? lineSplitReady : boolReady);
     }
-    if (m_window->m_boolButton) {
-        m_window->m_boolButton->setEnabled(boolReady);
-    }
 
     updateBackgroundModeActions();
 }
