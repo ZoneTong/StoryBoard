@@ -47,6 +47,18 @@ int runSelfTest(const QString& reportPath)
     QDir().mkpath(ctx.workDirectory);
     ctx.check(QDir(ctx.workDirectory).exists(), QStringLiteral("准备自检工作目录"), ctx.workDirectory);
 
+    // 增量落盘：每条断言后重写报告，进程崩溃时也能看到最后的断言位置。
+    ctx.progressHook = [&ctx, resolvedReportPath]() {
+        QFile progress(resolvedReportPath);
+        if (progress.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+            QTextStream stream(&progress);
+            stream.setEncoding(QStringConverter::Utf8);
+            for (const QString& line : ctx.lines) {
+                stream << line << "\n";
+            }
+        }
+    };
+
     // 各功能段按历史断言顺序依次执行；段间共享状态放在 selftest::Context 里。
     selftest::runSceneCanvasIoTests(ctx);
     selftest::runLayerModelTests(ctx);

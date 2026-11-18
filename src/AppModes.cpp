@@ -32,6 +32,7 @@
 #include <QSaveFile>
 #include <QScrollArea>
 #include <QStandardPaths>
+#include <QTextStream>
 #include <QTimer>
 #include <QWidget>
 #include <cstdio>
@@ -105,6 +106,23 @@ int runSettingsScreenshot(const CommandLineOptions& options)
         }
     }
     return dialog.grab().save(outputPath) ? 0 : 1;
+}
+
+// 诊断：用与面板按钮完全相同的代码路径跑一次“打开 shapes 目录”，把结果
+// 写到指定文件（opened / error / shellCode / 目录），用于真机排查外壳通道。
+int runOpenShapesProbe(const CommandLineOptions& options)
+{
+    QFile output(options.openShapesProbePath);
+    if (!output.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+        return 2;
+    }
+    const AppSettings::ShapesFolderOpenResult result = AppSettings::openShapesFolder();
+    QTextStream stream(&output);
+    stream << "opened=" << (result.opened ? 1 : 0) << "\n";
+    stream << "error=" << static_cast<int>(result.error) << "\n";
+    stream << "shellCode=" << result.shellCode << "\n";
+    stream << "directory=" << result.directory << "\n";
+    return 0;
 }
 
 int runSettingsApplyProbe()
@@ -415,6 +433,9 @@ int run(QApplication& app, const CommandLineOptions& options)
     }
     if (options.settingsApplyProbe) {
         return runSettingsApplyProbe();
+    }
+    if (options.openShapesProbe) {
+        return runOpenShapesProbe(options);
     }
     if (options.setLanguage) {
         return runSetLanguage(options);

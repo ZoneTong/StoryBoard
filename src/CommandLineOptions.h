@@ -17,6 +17,8 @@ class CommandLineOptions {
     bool settingsApplyProbe = false;
     bool setLanguage = false;
     bool settingsProbe = false;
+    // 诊断：调用一次 AppSettings::openShapesFolder 并把结果写到指定文件。
+    bool openShapesProbe = false;
     bool aboutScreenshot = false;
     bool itemPropertiesScreenshot = false;
     bool shapeMenuScreenshot = false;
@@ -35,6 +37,7 @@ class CommandLineOptions {
     QString settingsScreenshotPath;
     QString setLanguageValue;
     QString settingsProbePath;
+    QString openShapesProbePath;
     QString aboutScreenshotPath;
     QString itemPropertiesScreenshotPath;
     QString shapeMenuScreenshotPath;

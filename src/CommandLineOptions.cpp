@@ -14,6 +14,7 @@ const QString kSettingsScreenshot = QStringLiteral("--settings-screenshot");
 const QString kSettingsApplyProbe = QStringLiteral("--settings-apply-probe");
 const QString kSetLanguage = QStringLiteral("--set-language");
 const QString kSettingsProbe = QStringLiteral("--settings-probe");
+const QString kOpenShapesProbe = QStringLiteral("--open-shapes-probe");
 const QString kAboutScreenshot = QStringLiteral("--about-screenshot");
 const QString kItemPropertiesScreenshot = QStringLiteral("--item-properties-screenshot");
 const QString kShapeMenuScreenshot = QStringLiteral("--shape-menu-screenshot");
@@ -52,6 +53,7 @@ CommandLineOptions CommandLineOptions::parse(const QStringList& arguments)
     options.settingsApplyProbe = arguments.contains(kSettingsApplyProbe);
     options.setLanguage = arguments.contains(kSetLanguage);
     options.settingsProbe = arguments.contains(kSettingsProbe);
+    options.openShapesProbe = arguments.contains(kOpenShapesProbe);
     options.aboutScreenshot = arguments.contains(kAboutScreenshot);
     options.itemPropertiesScreenshot = arguments.contains(kItemPropertiesScreenshot);
     options.shapeMenuScreenshot = arguments.contains(kShapeMenuScreenshot);
@@ -69,6 +71,7 @@ CommandLineOptions CommandLineOptions::parse(const QStringList& arguments)
     options.settingsScreenshotPath = takeOptionPath(arguments, kSettingsScreenshot);
     options.setLanguageValue = takeOptionPath(arguments, kSetLanguage);
     options.settingsProbePath = takeOptionPath(arguments, kSettingsProbe);
+    options.openShapesProbePath = takeOptionPath(arguments, kOpenShapesProbe);
     options.aboutScreenshotPath = takeOptionPath(arguments, kAboutScreenshot);
     options.itemPropertiesScreenshotPath = takeOptionPath(arguments, kItemPropertiesScreenshot);
     options.shapeMenuScreenshotPath = takeOptionPath(arguments, kShapeMenuScreenshot);

@@ -11,6 +11,9 @@ void Context::check(bool condition, const QString& name, const QString& detail)
         lines.append(QStringLiteral("FAIL  %1%2")
                          .arg(name, detail.isEmpty() ? QString() : QStringLiteral("  [") + detail + QLatin1Char(']')));
     }
+    if (progressHook) {
+        progressHook();
+    }
 }
 
 } // namespace selftest

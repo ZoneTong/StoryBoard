@@ -7,6 +7,7 @@
 #include <QString>
 #include <QStringList>
 #include <QUndoStack>
+#include <functional>
 #include <memory>
 
 class ShapeItem;
@@ -23,6 +24,9 @@ class Context {
     QStringList lines;
     int failures = 0;
     QString workDirectory;
+    // 每条断言记录后回调一次：自检入口用它增量落盘报告，崩溃时也能看到
+    // 最后执行的断言，便于定位崩溃点。
+    std::function<void()> progressHook;
 
     // 记录一条断言：条件成立追加 PASS，否则计入失败并追加 FAIL（文案与历史自检保持一致）。
     void check(bool condition, const QString& name, const QString& detail = QString());
