@@ -93,7 +93,8 @@ void selftest::runShapesClusterTests(Context& ctx)
     checkFlagWaveNoPole(ctx);
     checkScrollShape(ctx);
 
-    // 需求 4/5：立方体与圆柱体插入即得到分组面图元。
+    // 需求 4/5 + 需求 30：立方体 = 3 个菱形图元组成的组；圆柱体 = 顶椭圆 +
+    // 有面积的多边形柱身，椭圆叠在多边形之上。
     {
         MainWindow window;
         window.insertShape(ShapeType::Cube);
@@ -102,15 +103,22 @@ void selftest::runShapesClusterTests(Context& ctx)
         bool threeFaces = items.size() == 3;
         int groupId = 0;
         bool sameGroup = threeFaces;
+        int diamondFaces = 0;
         for (CanvasItem* item : items) {
             if (groupId == 0) {
                 groupId = item->groupId();
             } else if (item->groupId() != groupId) {
                 sameGroup = false;
             }
+            auto* face = qgraphicsitem_cast<ShapeItem*>(item);
+            if (face && face->shapeType() == ShapeType::Diamond) {
+                ++diamondFaces;
+            }
         }
         ctx.check(sameGroup && groupId > 0, QStringLiteral("立方体插入为 3 面图元组成的分组"),
                   QStringLiteral("items=%1 group=%2").arg(items.size()).arg(groupId));
+        ctx.check(diamondFaces == 3, QStringLiteral("立方体的三个面都是菱形类型图元"),
+                  QStringLiteral("diamonds=%1").arg(diamondFaces));
 
         window.insertShape(ShapeType::Cylinder);
         items = scene->canvasItems();
@@ -132,10 +140,19 @@ void selftest::runShapesClusterTests(Context& ctx)
         ctx.check(cylinderGrouped && cylGroup > 0 && ellipseCount == 1,
                   QStringLiteral("圆柱体插入为顶椭圆加柱身组成的分组"),
                   QStringLiteral("items=%1 group=%2 ellipse=%3").arg(items.size()).arg(cylGroup).arg(ellipseCount));
-        // 需求 18：顶椭圆叠在柱身上层（分组内最后加入的图元在上）。
+        // 需求 30：柱身是带面积层的多边形图元（与合并 / 分割产物同型），不是矩形。
+        auto* body = twoMore ? dynamic_cast<CompositeShapeItem*>(items.at(3)) : nullptr;
+        ctx.check(body != nullptr && body->layerCount() == 1, QStringLiteral("圆柱体柱身是有面积的多边形图元"),
+                  QStringLiteral("layers=%1").arg(body ? body->layerCount() : -1));
+        // 需求 18/30：顶椭圆叠在柱身上层（分组内后加入的图元高度更高）。
         auto* lastFace = qgraphicsitem_cast<ShapeItem*>(items.last());
         ctx.check(lastFace && lastFace->shapeType() == ShapeType::Ellipse && lastFace->groupId() == cylGroup,
                   QStringLiteral("圆柱体顶椭圆叠在柱身上方"));
+        ctx.check(body && lastFace && lastFace->height() > body->height(),
+                  QStringLiteral("顶椭圆的层内高度高于柱身多边形"),
+                  QStringLiteral("ellipse=%1 body=%2")
+                      .arg(lastFace ? lastFace->height() : -1)
+                      .arg(body ? body->height() : -1));
     }
 
     // 需求 26：正弦波形插入即生成曲线图元；今日新增的其余填充图形插入后

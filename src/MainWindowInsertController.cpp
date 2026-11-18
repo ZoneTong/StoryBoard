@@ -192,9 +192,11 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
     const QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : stroke;
     const FillStyle fillStyle = filled ? m_window->m_fillStyle : FillStyle::None;
 
+    // 需求 30：立方体的面是菱形图元（顶面用菱形自身轮廓，左右两面用同一个
+    // 菱形类型承载斜置轮廓）；带名字的自定义轮廓只在有空路径时才回到菱形本体。
     auto makeFace = [&stroke, &fill, fillStyle, width](const QString& name, const QPainterPath& unitPath,
                                                        const QPointF& topLeft, const QSizeF& size) {
-        auto* face = new ShapeItem(ShapeType::Rectangle);
+        auto* face = new ShapeItem(ShapeType::Diamond);
         face->setCustomShape(name, unitPath);
         face->setStyle(stroke, fill, width);
         face->setFillStyle(fillStyle);
@@ -221,15 +223,11 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
 
     QList<CanvasItem*> faces;
     if (type == ShapeType::Cube) {
-        // 等轴测立方体拆成三个菱形面：顶面、左面、右面，轮廓沿用原 cubePath 的六边形切分。
+        // 需求 30：等轴测立方体 = 三个菱形图元的组。顶面直接取菱形本体的轮廓
+        // （两条对角线沿坐标轴，正对等轴测顶面）；左右两面斜置，用菱形类型承载
+        // 自定义轮廓，填充 / 描线 / 缩放行为与普通菱形一致。
         const qreal w = size.width();
         const qreal h = size.height();
-        QPainterPath top;
-        top.moveTo(0.5, 0.0);
-        top.lineTo(1.0, 0.5);
-        top.lineTo(0.5, 1.0);
-        top.lineTo(0.0, 0.5);
-        top.closeSubpath();
         QPainterPath leftFace;
         leftFace.moveTo(0.0, 0.0);
         leftFace.lineTo(1.0, 1.0 / 3.0);
@@ -242,18 +240,20 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
         rightFace.lineTo(1.0, 2.0 / 3.0);
         rightFace.lineTo(0.0, 1.0);
         rightFace.closeSubpath();
-        faces.append(makeFace(MainWindow::tr("Cube top"), top, topLeft, QSizeF(w, h * 0.5)));
+        faces.append(makeFace(MainWindow::tr("Cube top"), QPainterPath(), topLeft, QSizeF(w, h * 0.5)));
         faces.append(makeFace(MainWindow::tr("Cube left"), leftFace, topLeft + QPointF(0.0, h * 0.25),
                               QSizeF(w * 0.5, h * 0.75)));
         faces.append(makeFace(MainWindow::tr("Cube right"), rightFace, topLeft + QPointF(w * 0.5, h * 0.25),
                               QSizeF(w * 0.5, h * 0.75)));
     } else {
-        // 需求 18：圆柱体 = 柱身（底缘带下半椭圆弧）+ 顶椭圆，顶椭圆叠在柱身上层。
+        // 需求 30：圆柱体 = 一个有面积的多边形柱身 + 顶椭圆；先加柱身再加椭圆，
+        // 层内高度递增，椭圆因此叠在多边形之上。
         const qreal w = size.width();
         const qreal h = size.height();
         const qreal ry = qMin(h * 0.16, w * 0.30);
 
         const qreal bodyH = h - ry;
+        const QRectF bodyRect(topLeft + QPointF(0.0, ry), QSizeF(w, bodyH));
         QPainterPath body;
         const qreal cy = (h - 2.0 * ry) / bodyH;
         const qreal ryUnit = ry / bodyH;
@@ -262,7 +262,20 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
         body.lineTo(1.0, cy);
         body.arcTo(QRectF(0.0, cy - ryUnit, 1.0, ryUnit * 2.0), 0.0, -180.0);
         body.closeSubpath();
-        faces.append(makeFace(MainWindow::tr("Cylinder body"), body, topLeft + QPointF(0.0, ry), QSizeF(w, bodyH)));
+        QTransform toScene;
+        toScene.translate(bodyRect.left(), bodyRect.top());
+        toScene.scale(bodyRect.width(), bodyRect.height());
+
+        CompositeShapeItem::Layer bodyLayer;
+        bodyLayer.path = toScene.map(body);
+        bodyLayer.fill = filled ? fill : QColor(Qt::transparent);
+        bodyLayer.stroke = stroke;
+        bodyLayer.strokeWidth = width;
+        bodyLayer.filled = true;
+        bodyLayer.role = CompositeShapeItem::LayerRole::FilledArea;
+        auto* bodyItem = new CompositeShapeItem(QList<CompositeShapeItem::Layer>{bodyLayer}, fillStyle, Qt::SolidLine);
+        bodyItem->setName(MainWindow::tr("Cylinder body"));
+        faces.append(bodyItem);
 
         auto* top = new ShapeItem(ShapeType::Ellipse);
         top->setStyle(stroke, fill, width);
