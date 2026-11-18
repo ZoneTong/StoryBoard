@@ -79,13 +79,22 @@ bool knifeFromPath(const QPainterPath& path, Knife* out)
 }
 
 // 收集切刀几何（场景坐标）：直线图元取 outlineShape 的线段，曲线取中心线。
-bool collectKnife(CanvasItem* item, Knife* out)
+// 需求 21：曲线同时返回完整轨迹路径，供按轨迹切分使用。
+bool collectKnife(CanvasItem* item, Knife* out, QPainterPath* trajectoryPath)
 {
     if (auto* curve = dynamic_cast<CurveItem*>(item)) {
-        return knifeFromPath(curve->mapToScene(curve->outlineShape()), out);
+        const QPainterPath scenePath = curve->mapToScene(curve->outlineShape());
+        if (trajectoryPath) {
+            *trajectoryPath = scenePath;
+        }
+        return knifeFromPath(scenePath, out);
     }
     if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
-        return knifeFromPath(shape->mapToScene(shape->outlineShape()), out);
+        const QPainterPath scenePath = shape->mapToScene(shape->outlineShape());
+        if (trajectoryPath) {
+            *trajectoryPath = scenePath;
+        }
+        return knifeFromPath(scenePath, out);
     }
     return false;
 }
@@ -249,6 +258,8 @@ bool apply(CanvasScene* scene, const QString& commandText)
     }
     Knife knife;
     CanvasItem* knifeItem = nullptr;
+    QPainterPath knifeTrajectory;
+    bool trajectoryKnife = false;
     struct Target {
         CanvasItem* item = nullptr;
         QPainterPath fill;
@@ -265,16 +276,34 @@ bool apply(CanvasScene* scene, const QString& commandText)
             if (!target.fill.isEmpty()) {
                 targets.append(target);
             }
-        } else if (isKnifeItem(item) && !knifeItem && collectKnife(item, &knife)) {
+        } else if (isKnifeItem(item) && !knifeItem && collectKnife(item, &knife, &knifeTrajectory)) {
             knifeItem = item;
+            trajectoryKnife = dynamic_cast<CurveItem*>(item) != nullptr;
         }
     }
     if (targets.isEmpty() || !knifeItem) {
         return false;
     }
-    const QList<QPainterPath> regions = canvasHalfRegions(scene->canvasRect(), knife);
-    if (regions.isEmpty()) {
-        return false;
+    // 需求 21：直线刀线沿用"端点切向延伸到画布边界"的半区切法，切口是笔直
+    // 的直线；曲线刀线按完整轨迹切——沿刀线中心线取一条与刀线同宽的条带，
+    // 从被切填充里挖掉条带后按互不相连拆块，切口贴合曲线走向。
+    QList<QPainterPath> regions;
+    QPainterPath knifeBand;
+    if (trajectoryKnife) {
+        auto* curveKnife = dynamic_cast<CurveItem*>(knifeItem);
+        QPainterPathStroker stroker;
+        stroker.setWidth(qMax<qreal>(1.0, curveKnife ? curveKnife->strokeWidth() : 1.0));
+        stroker.setCapStyle(Qt::RoundCap);
+        stroker.setJoinStyle(Qt::RoundJoin);
+        knifeBand = stroker.createStroke(knifeTrajectory);
+        if (knifeBand.isEmpty()) {
+            return false;
+        }
+    } else {
+        regions = canvasHalfRegions(scene->canvasRect(), knife);
+        if (regions.isEmpty()) {
+            return false;
+        }
     }
 
     QUndoStack* undo = scene->undoStack();
@@ -282,9 +311,11 @@ bool apply(CanvasScene* scene, const QString& commandText)
         return false;
     }
 
-    // 先离线算出全部碎片：每个被切图元的两块区域交集再按互不相连拆块，
+    // 先离线算出全部碎片。直线刀线：每个被切图元的两块画布半区交集再按
+    // 互不相连拆块；曲线刀线：从填充里挖掉刀线条带后按互不相连拆块。
     // 碎片样式沿用被切图元自身的填充与描线。刀线必须真的穿过填充图形
-    // （两块区域交集都非空）才算切到，整块落在刀线一侧的图元原样保留。
+    // （曲线至少拆出两块；直线两块半区交集都非空）才算切到，整块落在
+    // 刀线一侧的图元原样保留。
     struct Fragment {
         CanvasItem* source = nullptr;
         QPainterPath piece;
@@ -293,13 +324,20 @@ bool apply(CanvasScene* scene, const QString& commandText)
     for (const Target& target : targets) {
         QList<QPainterPath> pieces;
         bool straddles = true;
-        for (const QPainterPath& region : regions) {
-            const QList<QPainterPath> parts = PathRegions::splitDisjoint(region.intersected(target.fill));
-            if (parts.isEmpty()) {
+        if (trajectoryKnife) {
+            pieces = PathRegions::splitDisjoint(target.fill.subtracted(knifeBand));
+            if (pieces.size() < 2) {
                 straddles = false;
-                break;
             }
-            pieces.append(parts);
+        } else {
+            for (const QPainterPath& region : regions) {
+                const QList<QPainterPath> parts = PathRegions::splitDisjoint(region.intersected(target.fill));
+                if (parts.isEmpty()) {
+                    straddles = false;
+                    break;
+                }
+                pieces.append(parts);
+            }
         }
         if (!straddles) {
             continue;

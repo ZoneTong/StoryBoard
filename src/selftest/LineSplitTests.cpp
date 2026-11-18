@@ -206,6 +206,79 @@ void selftest::runLineSplitTests(Context& ctx)
         ctx.check(fragments == 2, QStringLiteral("椭圆被曲线切成两块"), QStringLiteral("fragments=%1").arg(fragments));
     }
 
+    // 需求 21：弯曲曲线按完整轨迹切分，切口贴合曲线走向而不是端点连线。
+    {
+        CanvasScene scene;
+        scene.applyCanvasSize(QSizeF(800.0, 600.0));
+        scene.setMode(ToolMode::Edit);
+        QUndoStack undo;
+        scene.setUndoStack(&undo);
+
+        auto* rect = new ShapeItem(ShapeType::Rectangle);
+        rect->setContentSize(QSizeF(200.0, 200.0));
+        rect->setPos(QPointF(110.0, 150.0));
+        scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
+        // 下凹的曲线：从矩形左缘进入、中部下探到 y≈300、右缘出去；
+        // 端点连线（y≈200 的水平线）与轨迹明显不同。
+        auto* curve = new CurveItem();
+        curve->setStrokePoints({QPointF(80.0, 200.0), QPointF(200.0, 300.0), QPointF(320.0, 200.0)},
+                               QColor(QStringLiteral("#334155")), 4.0);
+        scene.addItemsWithUndo({curve}, QStringLiteral("Add curve"));
+
+        scene.clearSelection();
+        rect->setSelected(true);
+        curve->setSelected(true);
+        ctx.check(LineSplitOps::supports(&scene), QStringLiteral("弯曲曲线作为切刀时可用"));
+        ctx.check(LineSplitOps::apply(&scene, QStringLiteral("分割")), QStringLiteral("弯曲曲线可以按轨迹切分矩形"));
+
+        int fragments = 0;
+        bool upperFound = false;
+        bool lowerFound = false;
+        for (CanvasItem* item : scene.canvasItems()) {
+            if (auto* fragment = dynamic_cast<CompositeShapeItem*>(item)) {
+                ++fragments;
+                const QPainterPath painted =
+                    fragment->mapToScene(fragment->mapLayerPath(fragment->layers().constFirst().path));
+                upperFound = upperFound || painted.contains(QPointF(200.0, 160.0));
+                lowerFound = lowerFound || painted.contains(QPointF(200.0, 340.0));
+            }
+        }
+        ctx.check(fragments == 2, QStringLiteral("矩形被弯曲曲线切成两块"),
+                  QStringLiteral("fragments=%1").arg(fragments));
+        ctx.check(upperFound && lowerFound, QStringLiteral("切口贴合曲线轨迹（上/下两块沿曲线分布）"),
+                  QStringLiteral("upper=%1 lower=%2").arg(upperFound).arg(lowerFound));
+    }
+
+    // 需求 21：曲线刀线未穿过填充图形（整条落在内部）时不切分。
+    {
+        CanvasScene scene;
+        scene.applyCanvasSize(QSizeF(800.0, 600.0));
+        scene.setMode(ToolMode::Edit);
+        QUndoStack undo;
+        scene.setUndoStack(&undo);
+
+        auto* rect = new ShapeItem(ShapeType::Rectangle);
+        rect->setContentSize(QSizeF(200.0, 200.0));
+        rect->setPos(QPointF(110.0, 150.0));
+        scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
+        auto* curve = new CurveItem();
+        curve->setStrokePoints({QPointF(150.0, 200.0), QPointF(200.0, 260.0), QPointF(250.0, 200.0)},
+                               QColor(QStringLiteral("#334155")), 4.0);
+        scene.addItemsWithUndo({curve}, QStringLiteral("Add curve"));
+
+        scene.clearSelection();
+        rect->setSelected(true);
+        curve->setSelected(true);
+        ctx.check(!LineSplitOps::apply(&scene, QStringLiteral("分割")), QStringLiteral("内部曲线不切分填充图形"));
+        bool originalKept = false;
+        for (CanvasItem* item : scene.canvasItems()) {
+            if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+                originalKept = originalKept || shape == rect;
+            }
+        }
+        ctx.check(originalKept, QStringLiteral("未切到时原图元保留"));
+    }
+
     // 刀线没碰到填充图形：不入栈、场景不变。
     {
         CanvasScene scene;
