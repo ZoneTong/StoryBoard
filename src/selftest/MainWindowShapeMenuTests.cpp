@@ -542,9 +542,11 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
             ctx.check(inserted && shapeWindow.scene()->canvasRect().contains(inserted->sceneContentRect()),
                       QStringLiteral("快速插入图形位于画板范围内"),
                       inserted ? geometryText(inserted->pos(), inserted->contentSize()) : QString());
-            ctx.check(inserted && inserted->fillStyle() == FillStyle::None && inserted->fillColor().alpha() == 0 &&
-                          inserted->strokeWidth() > 0.0,
-                      QStringLiteral("快速插入图形默认空心描边（与工具栏图标一致）"));
+            // 需求 16：新图元按工具栏当前选择生成——默认纯色填充、未选填充色时
+            // 跟随画笔色（与描线同色），描线宽度沿用工具栏取值。
+            ctx.check(inserted && inserted->fillStyle() == FillStyle::Solid &&
+                          inserted->fillColor() == inserted->strokeColor() && inserted->strokeWidth() > 0.0,
+                      QStringLiteral("快速插入图形按工具栏默认样式生成（纯色填充跟随画笔色）"));
         }
 
         QAction* arrowInsertAction =
@@ -561,9 +563,10 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                 }
             }
             ctx.check(insertedArrow != nullptr, QStringLiteral("快速插入的图元类型为箭头"));
-            ctx.check(insertedArrow && insertedArrow->fillStyle() == FillStyle::None &&
-                          insertedArrow->fillColor().alpha() == 0,
-                      QStringLiteral("新插入箭头默认空心描边（与工具栏图标一致）"));
+            // 需求 16：箭头同样按工具栏样式生成（纯色填充跟随画笔色）。
+            ctx.check(insertedArrow && insertedArrow->fillStyle() == FillStyle::Solid &&
+                          insertedArrow->fillColor() == insertedArrow->strokeColor(),
+                      QStringLiteral("新插入箭头按工具栏默认样式生成"));
         }
     }
 

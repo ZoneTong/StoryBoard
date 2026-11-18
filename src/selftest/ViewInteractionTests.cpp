@@ -166,6 +166,20 @@ void selftest::runViewInteractionTests(Context& ctx)
             ctx.check(lineShape->strokeColor() == QColor(QStringLiteral("#DC2626")) &&
                           qAbs(lineShape->strokeWidth() - 5.0) < 0.01,
                       QStringLiteral("直线图元沿用画笔颜色与粗细"));
+            // 需求 20：直线必须落在落笔位置——包围盒中心对齐起笔/收笔中点，
+            // 且完整覆盖两端（包围盒含描边与内边距，留出余量）。
+            const QRectF lineBounds = lineShape->sceneBoundingRect();
+            const QPointF boundsCenter = lineBounds.center();
+            ctx.check(qAbs(boundsCenter.x() - 320.0) < 8.0 && qAbs(boundsCenter.y() - 620.0) < 8.0 &&
+                          lineBounds.left() <= 122.0 && lineBounds.right() >= 518.0 && lineBounds.height() < 60.0,
+                      QStringLiteral("直线图元落在落笔位置"),
+                      QStringLiteral("center=(%1,%2) bounds=(%3,%4,%5,%6)")
+                          .arg(boundsCenter.x())
+                          .arg(boundsCenter.y())
+                          .arg(lineBounds.left())
+                          .arg(lineBounds.top())
+                          .arg(lineBounds.right())
+                          .arg(lineBounds.bottom()));
         }
         viewUndo.undo();
         ctx.check(viewScene.canvasItemCount() == 1, QStringLiteral("直线图元可撤销"));
