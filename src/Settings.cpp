@@ -8,6 +8,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QMap>
+#include <QProcess>
 #include <QSaveFile>
 #include <QStandardPaths>
 #include <QStringConverter>
@@ -24,9 +25,10 @@
 
 namespace {
 
-// 需求 19：在已有外壳进程里打开目录（COM 通道）。直接起新的 explorer.exe
-// 进程在提权 / 受限会话里会以 0xc0000142 启动失败并弹“应用程序错误”对话框，
-// 所以任何分支都不再自己去启动 explorer.exe。
+// 需求 19：在已有外壳进程里打开目录（COM 通道）。优先委托现有外壳，而不是直接
+// 起新的 explorer.exe 进程——提权 / 受限会话里子进程可能以 0xc0000142 启动失败
+// 并弹“应用程序错误”对话框。需求 24 实测部分进程上下文里 ShellExecute 与本通道
+// 都会被系统拒绝（5 / E_ACCESSDENIED），此时由调用方降级为直启 explorer.exe。
 bool openFolderViaShellItem(const QString& directory)
 {
     const std::wstring native = QDir::toNativeSeparators(directory).toStdWString();
@@ -494,6 +496,16 @@ AppSettings::ShapesFolderOpenResult AppSettings::openShapesFolder()
         return result;
     }
     qWarning("SHOpenFolderAndSelectItems failed to open shapes folder [%s]", qUtf8Printable(directory));
+    // 需求 24：外壳激活 API（ShellExecute / SHOpenFolderAndSelectItems）在部分进程
+    // 上下文里会被系统整体拒绝（实测返回 5 / E_ACCESSDENIED，而控制台进程同样调用
+    // 却能正常开窗）。改走 CreateProcess 直启 explorer.exe 子进程——与
+    // Start-Process explorer 同一条路径，实测可用；由它自己委托给现有外壳进程开窗。
+    if (QProcess::startDetached(QStringLiteral("explorer.exe"), QStringList{QString::fromStdWString(native)})) {
+        result.opened = true;
+        result.error = ShapesFolderError::None;
+        return result;
+    }
+    qWarning("explorer.exe startDetached failed to open shapes folder [%s]", qUtf8Printable(directory));
     result.shellCode = static_cast<int>(shellCode);
 #endif
     // Windows 外壳失败或非 Windows 平台：退到桌面服务再试一次，目录 URL 必须以分隔符结尾。
