@@ -51,7 +51,11 @@ bool isKnifeItem(CanvasItem* item)
         return true;
     }
     if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
-        return shape->shapeType() == ShapeType::Line;
+        // 需求 29：弧线由椭圆类派生几何、由曲线类派生行为——它没有填充区域，
+        // 归类为线条，和直线一样可作切刀；正弦波形插入即曲线图元，这里兼容
+        // 旧文件里尚未迁移的图形形态，同样按线条对待。
+        const ShapeType type = shape->shapeType();
+        return type == ShapeType::Line || type == ShapeType::Arc || type == ShapeType::SineWave;
     }
     return false;
 }
@@ -283,7 +287,11 @@ bool apply(CanvasScene* scene, const QString& commandText)
             }
         } else if (isKnifeItem(item) && !knifeItem && collectKnife(item, &knife, &knifeTrajectory)) {
             knifeItem = item;
-            trajectoryKnife = dynamic_cast<CurveItem*>(item) != nullptr;
+            // 需求 29：弧线/正弦波的刀线轨迹是弯曲的，与曲线一样按轨迹条带切，
+            // 只有直线刀线才沿用端点切向的画布半区切法。
+            const auto* knifeShape = dynamic_cast<ShapeItem*>(item);
+            trajectoryKnife =
+                dynamic_cast<CurveItem*>(item) != nullptr || (knifeShape && knifeShape->shapeType() != ShapeType::Line);
         }
     }
     if (targets.isEmpty() || !knifeItem) {
@@ -296,8 +304,10 @@ bool apply(CanvasScene* scene, const QString& commandText)
     QPainterPath knifeBand;
     if (trajectoryKnife) {
         auto* curveKnife = dynamic_cast<CurveItem*>(knifeItem);
+        auto* shapeKnife = dynamic_cast<ShapeItem*>(knifeItem);
         QPainterPathStroker stroker;
-        stroker.setWidth(qMax<qreal>(1.0, curveKnife ? curveKnife->strokeWidth() : 1.0));
+        stroker.setWidth(
+            qMax<qreal>(1.0, curveKnife ? curveKnife->strokeWidth() : (shapeKnife ? shapeKnife->strokeWidth() : 1.0)));
         stroker.setCapStyle(Qt::RoundCap);
         stroker.setJoinStyle(Qt::RoundJoin);
         knifeBand = stroker.createStroke(knifeTrajectory);

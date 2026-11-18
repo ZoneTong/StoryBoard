@@ -281,7 +281,9 @@ void CustomShapePanel::rebuild(const QList<Folder>& folders)
         pageLayout->addWidget(scroll, 1);
 
         if (!folder.errors.isEmpty()) {
-            QLabel* broken = new QLabel(tr("%n shape file(s) could not be read", "", folder.errors.size()), page);
+            // 需求 29：ts 是手工维护的，没有 numerusform 条目；用 %1 形式，中文译文
+            // 才能命中（原来的 %n 复数形式在中文里会直接退回英文原文）。
+            QLabel* broken = new QLabel(tr("%1 shape file(s) could not be read").arg(folder.errors.size()), page);
             broken->setObjectName(QStringLiteral("CustomShapeBrokenLabel"));
             broken->setStyleSheet(QStringLiteral("color: #9CA3AF;"));
             broken->setWordWrap(true);
