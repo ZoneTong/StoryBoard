@@ -25,7 +25,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
 TS = ROOT / "translations" / "storyboard_zh.ts"
-
 CALL_RE = re.compile(r"(?:([A-Za-z_][A-Za-z0-9_]*)\s*::\s*)?(uiText|tr|translate)\s*\(")
 LITERAL_RE = re.compile(r'"((?:[^"\\]|\\.)*)"')
 # 只认行首的成员定义（`void CanvasScene::foo()`），避免把局部变量调用当成所属类。
@@ -133,7 +132,13 @@ def code_calls() -> list[tuple[str, int, str, str]]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--quiet", action="store_true", help="只打印汇总")
+    parser.add_argument("--root", help="仓库根目录（默认取脚本所在仓库，便于跨工作树对账）")
     args = parser.parse_args()
+    global ROOT, SRC, TS
+    if args.root:
+        ROOT = Path(args.root).resolve()
+        SRC = ROOT / "src"
+        TS = ROOT / "translations" / "storyboard_zh.ts"
 
     known = parse_ts()
     sources_by_context: dict[str, set[str]] = defaultdict(set)

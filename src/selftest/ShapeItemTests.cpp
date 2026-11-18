@@ -428,15 +428,22 @@ void selftest::runShapeItemTests(Context& ctx)
               QStringLiteral("画布恢复图形后 height 唯一"));
     QSet<QString> loadedShapeTypes;
     ShapeItem* loadedRectangle = nullptr;
+    int loadedSineCurves = 0;
     for (CanvasItem* item : shapeLoaded.canvasItems()) {
         if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
             loadedShapeTypes.insert(shapeTypeToString(shape->shapeType()));
             if (shape->shapeType() == ShapeType::Rectangle && !loadedRectangle) {
                 loadedRectangle = shape;
             }
+        } else if (dynamic_cast<CurveItem*>(item)) {
+            ++loadedSineCurves;
         }
     }
-    ctx.check(loadedShapeTypes.size() == shapeTypes.size(), QStringLiteral("画布恢复全部 14 种图形类型"));
+    // 需求 29：正弦波形读入即迁移为曲线图元，所以恢复出的图形类型比其他 18 种少一个，
+    // 多出来的一条曲线就是它。
+    ctx.check(loadedShapeTypes.size() == shapeTypes.size() - 1 && loadedSineCurves == 1,
+              QStringLiteral("画布恢复全部 14 种图形类型"),
+              QStringLiteral("shapes=%1 curves=%2").arg(loadedShapeTypes.size()).arg(loadedSineCurves));
     ctx.check(loadedRectangle && loadedRectangle->strokeColor() == shapeStroke &&
                   loadedRectangle->fillColor().alpha() == shapeFill.alpha() &&
                   qAbs(loadedRectangle->strokeWidth() - 4.0) < 0.01,
