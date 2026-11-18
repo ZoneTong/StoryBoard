@@ -170,9 +170,10 @@ QPainterPath sineWavePath(const QRectF& rect)
         return QPainterPath();
     }
 
-    // 需求：一个完整周期（0…2π），振幅取内容高度的 20%，与 64px 基准下的可辨识度一致。
+    // 需求 15：一个完整周期（0…2π），振幅充满整个内容高度，波形的包围盒
+    // 就是内容矩形，选择框不再比波形本身大一圈。
     constexpr int steps = 64;
-    const qreal amplitude = r.height() * 0.20;
+    const qreal amplitude = r.height() * 0.5;
     const qreal cy = r.center().y();
     QPainterPath path;
     for (int i = 0; i <= steps; ++i) {
@@ -194,21 +195,22 @@ QPainterPath flagWavePath(const QRectF& rect)
         return QPainterPath();
     }
 
-    const qreal x0 = r.left() + r.width() * 0.16;
-    const qreal topBase = r.top() + r.height() * 0.10;
-    const qreal flagHeight = r.height() * 0.46;
+    // 需求 17：旗面横向占满整个内容宽度（插入后宽度就是两棋盘格 64px），
+    // 纵向以内容中线为对称轴，重心不再偏上。
+    const qreal flagHeight = r.height() * 0.60;
+    const qreal topBase = r.center().y() - flagHeight * 0.5;
     const qreal amplitude = r.height() * 0.07;
     constexpr int steps = 24;
 
     QPainterPath path;
-    path.moveTo(x0, topBase);
+    path.moveTo(r.left(), topBase);
     for (int i = 1; i <= steps; ++i) {
         const qreal t = qreal(i) / qreal(steps);
-        path.lineTo(x0 + t * (r.right() - x0), topBase + qSin(t * 3.0 * M_PI) * amplitude);
+        path.lineTo(r.left() + t * r.width(), topBase + qSin(t * 3.0 * M_PI) * amplitude);
     }
     for (int i = steps; i >= 0; --i) {
         const qreal t = qreal(i) / qreal(steps);
-        path.lineTo(x0 + t * (r.right() - x0), topBase + flagHeight + qSin(t * 3.0 * M_PI) * amplitude);
+        path.lineTo(r.left() + t * r.width(), topBase + flagHeight + qSin(t * 3.0 * M_PI) * amplitude);
     }
     path.closeSubpath();
 

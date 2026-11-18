@@ -209,16 +209,10 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
         faces.append(makeFace(MainWindow::tr("Cube right"), rightFace, topLeft + QPointF(w * 0.5, h * 0.25),
                               QSizeF(w * 0.5, h * 0.75)));
     } else {
-        // 圆柱体 = 顶椭圆 + 柱身（柱身底缘带下半椭圆弧），两个图元成组。
+        // 需求 18：圆柱体 = 柱身（底缘带下半椭圆弧）+ 顶椭圆，顶椭圆叠在柱身上层。
         const qreal w = size.width();
         const qreal h = size.height();
         const qreal ry = qMin(h * 0.16, w * 0.30);
-        auto* top = new ShapeItem(ShapeType::Ellipse);
-        top->setStyle(stroke, fill, width);
-        top->setFillStyle(fillStyle);
-        top->setPos(topLeft);
-        top->setContentSize(QSizeF(w, ry * 2.0));
-        faces.append(top);
 
         const qreal bodyH = h - ry;
         QPainterPath body;
@@ -230,6 +224,13 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
         body.arcTo(QRectF(0.0, cy - ryUnit, 1.0, ryUnit * 2.0), 0.0, -180.0);
         body.closeSubpath();
         faces.append(makeFace(MainWindow::tr("Cylinder body"), body, topLeft + QPointF(0.0, ry), QSizeF(w, bodyH)));
+
+        auto* top = new ShapeItem(ShapeType::Ellipse);
+        top->setStyle(stroke, fill, width);
+        top->setFillStyle(fillStyle);
+        top->setPos(topLeft);
+        top->setContentSize(QSizeF(w, ry * 2.0));
+        faces.append(top);
     }
 
     m_window->m_scene->clearSelection();
