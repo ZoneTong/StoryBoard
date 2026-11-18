@@ -693,12 +693,18 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         ctx.check(shapeCanvasWindow.scene()->canvasItemCount() == shapeTypes.size(),
                   QStringLiteral("主窗口载入含图形画布完整内容"));
         int loadedShapeCount = 0;
+        int loadedSineCurves = 0;
         for (CanvasItem* item : shapeCanvasWindow.scene()->canvasItems()) {
             if (dynamic_cast<ShapeItem*>(item)) {
                 ++loadedShapeCount;
+            } else if (dynamic_cast<CurveItem*>(item)) {
+                ++loadedSineCurves;
             }
         }
-        ctx.check(loadedShapeCount == shapeTypes.size(), QStringLiteral("主窗口识别画布中的图形图元"));
+        // 需求 29：正弦波形载入即迁移成曲线，图形图元因此比其他 18 种少一个。
+        ctx.check(loadedShapeCount == shapeTypes.size() - 1 && loadedSineCurves == 1,
+                  QStringLiteral("主窗口识别画布中的图形图元"),
+                  QStringLiteral("shapes=%1 curves=%2").arg(loadedShapeCount).arg(loadedSineCurves));
     }
 
     {

@@ -385,6 +385,8 @@ void selftest::runLineSplitTests(Context& ctx)
         CanvasScene loaded;
         QUndoStack loadedUndo;
         loaded.setUndoStack(&loadedUndo);
+        // 判定与切分都要求编辑模式（isItemEditable 只看模式与图层状态）。
+        loaded.setMode(ToolMode::Edit);
         QString loadError;
         ctx.check(loaded.fromJson(legacyRoot, &loadError), QStringLiteral("旧正弦波形画布载入"), loadError);
         auto* migrated =
