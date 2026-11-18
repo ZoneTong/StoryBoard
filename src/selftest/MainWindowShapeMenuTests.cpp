@@ -345,9 +345,13 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                 }
             }
         }
-        ctx.check(fillActionTexts.size() == 7 && fillActionTexts.contains(QStringLiteral("反斜线填充")) &&
-                      fillActionTexts.contains(QStringLiteral("正交叉线填充")) &&
-                      fillActionTexts.contains(QStringLiteral("六边形填充")),
+        ctx.check(fillActionTexts.size() == 11 && fillActionTexts.contains(QStringLiteral("反斜线填充")) &&
+                      fillActionTexts.contains(QStringLiteral("十字线填充")) &&
+                      fillActionTexts.contains(QStringLiteral("六边形填充")) &&
+                      fillActionTexts.contains(QStringLiteral("水平线填充")) &&
+                      fillActionTexts.contains(QStringLiteral("竖线填充")) &&
+                      fillActionTexts.contains(QStringLiteral("砖纹填充")) &&
+                      fillActionTexts.contains(QStringLiteral("点阵填充")),
                   QStringLiteral("填充菜单只保留填充样式"), fillActionTexts.join(QStringLiteral("|")));
 
         QDoubleSpinBox* toolbarSmoothing = shapeWindow.findChild<QDoubleSpinBox*>(QStringLiteral("BrushSmoothingSpin"));
@@ -477,7 +481,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                 fillHasColor = true;
             }
         }
-        ctx.check(fillStyleMenu && fillMenuItemCount == 7 && !fillHasColor,
+        ctx.check(fillStyleMenu && fillMenuItemCount == 11 && !fillHasColor,
                   QStringLiteral("填充样式子菜单只保留填充样式"), QStringLiteral("actions=%1").arg(fillMenuItemCount));
 
         QMenu* insertMenu = nullptr;

@@ -459,7 +459,7 @@ void CompositeShapeItem::fromJson(const QJsonObject& json)
         m_layers.append(layer);
     }
     const int fillStyle = json.value(QStringLiteral("fillStyle")).toInt(static_cast<int>(FillStyle::Solid));
-    m_fillStyle = fillStyle >= static_cast<int>(FillStyle::None) && fillStyle <= static_cast<int>(FillStyle::Honeycomb)
+    m_fillStyle = fillStyle >= static_cast<int>(FillStyle::None) && fillStyle <= static_cast<int>(FillStyle::Dots)
                       ? static_cast<FillStyle>(fillStyle)
                       : FillStyle::Solid;
     const int strokeStyle = json.value(QStringLiteral("strokeStyle")).toInt(static_cast<int>(Qt::SolidLine));

@@ -109,7 +109,7 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
         ShapeType::Rectangle, ShapeType::Ellipse,  ShapeType::Triangle, ShapeType::Diamond,  ShapeType::Star,
         ShapeType::Star4,     ShapeType::Hexagram, ShapeType::Heart,    ShapeType::Arrow,    ShapeType::DoubleArrow,
         ShapeType::Callout,   ShapeType::Sector,   ShapeType::Arc,      ShapeType::SineWave, ShapeType::FlagWave,
-        ShapeType::Scroll,  ShapeType::Cube,     ShapeType::Cylinder, ShapeType::Line,
+        ShapeType::Scroll,    ShapeType::Cube,     ShapeType::Cylinder, ShapeType::Line,
     };
     auto addShapeButton = [mainBar](QAction* action) {
         if (!action) {
@@ -172,6 +172,10 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
     fillMenu->addAction(m_window->m_fillCrossAct);
     fillMenu->addAction(m_window->m_fillGridAct);
     fillMenu->addAction(m_window->m_fillHoneycombAct);
+    fillMenu->addAction(m_window->m_fillHorizontalAct);
+    fillMenu->addAction(m_window->m_fillVerticalAct);
+    fillMenu->addAction(m_window->m_fillBrickAct);
+    fillMenu->addAction(m_window->m_fillDotsAct);
     m_window->m_fillButton->setMenu(fillMenu);
     m_window->updateFillActions();
 

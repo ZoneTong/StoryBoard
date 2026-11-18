@@ -292,6 +292,18 @@ void StyleController::updateFillActions()
     if (m_window->m_fillHoneycombAct) {
         m_window->m_fillHoneycombAct->setChecked(m_window->m_fillStyle == FillStyle::Honeycomb);
     }
+    if (m_window->m_fillHorizontalAct) {
+        m_window->m_fillHorizontalAct->setChecked(m_window->m_fillStyle == FillStyle::HorizontalHatch);
+    }
+    if (m_window->m_fillVerticalAct) {
+        m_window->m_fillVerticalAct->setChecked(m_window->m_fillStyle == FillStyle::VerticalHatch);
+    }
+    if (m_window->m_fillBrickAct) {
+        m_window->m_fillBrickAct->setChecked(m_window->m_fillStyle == FillStyle::Brick);
+    }
+    if (m_window->m_fillDotsAct) {
+        m_window->m_fillDotsAct->setChecked(m_window->m_fillStyle == FillStyle::Dots);
+    }
 
     const QColor swatch = m_window->m_fillColor.isValid() ? m_window->m_fillColor : m_window->m_brushColor;
     m_window->m_fillButton->setIcon(
@@ -316,6 +328,18 @@ void StyleController::updateFillActions()
     }
     if (m_window->m_fillHoneycombAct) {
         m_window->m_fillHoneycombAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::Honeycomb, swatch, 16));
+    }
+    if (m_window->m_fillHorizontalAct) {
+        m_window->m_fillHorizontalAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::HorizontalHatch, swatch, 16));
+    }
+    if (m_window->m_fillVerticalAct) {
+        m_window->m_fillVerticalAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::VerticalHatch, swatch, 16));
+    }
+    if (m_window->m_fillBrickAct) {
+        m_window->m_fillBrickAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::Brick, swatch, 16));
+    }
+    if (m_window->m_fillDotsAct) {
+        m_window->m_fillDotsAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::Dots, swatch, 16));
     }
     const QString colorText = m_window->m_fillColor.isValid() ? m_window->m_fillColor.name(QColor::HexArgb).toUpper()
                                                               : MainWindow::tr("Follow brush color");

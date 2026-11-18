@@ -60,6 +60,51 @@ QPainterPath ShapePainter::centerLines(FillStyle style, const QRectF& rect)
         return path;
     }
 
+    if (style == FillStyle::HorizontalHatch) {
+        for (qreal y = rect.top() - spacing; y < rect.bottom() + spacing; y += spacing) {
+            path.moveTo(rect.left() - spacing, y);
+            path.lineTo(rect.right() + spacing, y);
+        }
+        return path;
+    }
+
+    if (style == FillStyle::VerticalHatch) {
+        for (qreal x = rect.left() - spacing; x < rect.right() + spacing; x += spacing) {
+            path.moveTo(x, rect.top() - spacing);
+            path.lineTo(x, rect.bottom() + spacing);
+        }
+        return path;
+    }
+
+    if (style == FillStyle::Brick) {
+        // 砖纹：逐行横线，竖缝只在行与行之间出现，奇偶行错开半块砖。
+        const qreal brickWidth = spacing * 2.0;
+        int row = 0;
+        for (qreal y = rect.top() - spacing; y < rect.bottom() + spacing; y += spacing, ++row) {
+            path.moveTo(rect.left() - spacing, y);
+            path.lineTo(rect.right() + spacing, y);
+            const qreal offset = (row % 2) ? brickWidth * 0.5 : 0.0;
+            for (qreal x = rect.left() - spacing + offset; x < rect.right() + spacing; x += brickWidth) {
+                path.moveTo(x, y);
+                path.lineTo(x, y + spacing);
+            }
+        }
+        return path;
+    }
+
+    if (style == FillStyle::Dots) {
+        // 点阵（50%）：圆点半径取间距的 1/4，圆心按棋盘交错排布。
+        const qreal radius = qMax<qreal>(1.2, spacing * 0.25);
+        int row = 0;
+        for (qreal cy = rect.top() - spacing * 0.5; cy < rect.bottom() + spacing; cy += spacing, ++row) {
+            const qreal offset = (row % 2) ? spacing * 0.5 : 0.0;
+            for (qreal cx = rect.left() - spacing + offset; cx < rect.right() + spacing; cx += spacing) {
+                path.addEllipse(QPointF(cx, cy), radius, radius);
+            }
+        }
+        return path;
+    }
+
     // 斜线 / 反斜线 / 交叉线。两组线都从左边外一个“高度”开始，才能铺满左下与右上角。
     const bool forward = style == FillStyle::Hachure || style == FillStyle::CrossHatch;
     const bool reverse = style == FillStyle::ReverseHachure || style == FillStyle::CrossHatch;
@@ -81,7 +126,8 @@ QPainterPath ShapePainter::centerLines(FillStyle style, const QRectF& rect)
 bool ShapePainter::isPatternFill(FillStyle style)
 {
     return style == FillStyle::Hachure || style == FillStyle::ReverseHachure || style == FillStyle::CrossHatch ||
-           style == FillStyle::GridHatch || style == FillStyle::Honeycomb;
+           style == FillStyle::GridHatch || style == FillStyle::Honeycomb || style == FillStyle::HorizontalHatch ||
+           style == FillStyle::VerticalHatch || style == FillStyle::Brick || style == FillStyle::Dots;
 }
 
 void ShapePainter::paintPatternFill(QPainter* painter, const QPainterPath& clip, const QRectF& rect,
@@ -98,7 +144,8 @@ void ShapePainter::paintPatternFill(QPainter* painter, const QPainterPath& clip,
     painter->setClipPath(clip, Qt::IntersectClip);
     QPen pen(lineColor, kPatternPenWidth, Qt::SolidLine, Qt::FlatCap);
     painter->setPen(pen);
-    painter->setBrush(Qt::NoBrush);
+    // 点阵需要实心圆点，其余图案只描线。
+    painter->setBrush(style == FillStyle::Dots ? QBrush(lineColor) : QBrush(Qt::NoBrush));
     painter->drawPath(centerLines(style, rect));
     painter->restore();
 }

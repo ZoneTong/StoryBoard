@@ -219,8 +219,9 @@ bool ShapeMeta::isStrokeOnly(ShapeType type)
 
 QList<FillStyle> ShapeMeta::allStyles()
 {
-    return {FillStyle::None,       FillStyle::Solid,     FillStyle::Hachure,  FillStyle::ReverseHachure,
-            FillStyle::CrossHatch, FillStyle::GridHatch, FillStyle::Honeycomb};
+    return {FillStyle::None,          FillStyle::Solid,     FillStyle::Hachure,   FillStyle::ReverseHachure,
+            FillStyle::CrossHatch,    FillStyle::GridHatch, FillStyle::Honeycomb, FillStyle::HorizontalHatch,
+            FillStyle::VerticalHatch, FillStyle::Brick,     FillStyle::Dots};
 }
 
 QString ShapeMeta::styleToString(FillStyle style)
@@ -240,6 +241,14 @@ QString ShapeMeta::styleToString(FillStyle style)
         return QStringLiteral("grid_hatch");
     case FillStyle::Honeycomb:
         return QStringLiteral("honeycomb");
+    case FillStyle::HorizontalHatch:
+        return QStringLiteral("horizontal_lines");
+    case FillStyle::VerticalHatch:
+        return QStringLiteral("vertical_lines");
+    case FillStyle::Brick:
+        return QStringLiteral("brick");
+    case FillStyle::Dots:
+        return QStringLiteral("dots");
     }
     return QStringLiteral("solid");
 }
@@ -269,6 +278,19 @@ FillStyle ShapeMeta::styleFromString(const QString& value)
     if (normalized == QStringLiteral("honeycomb") || normalized == QStringLiteral("hexagon") ||
         normalized == QStringLiteral("hex")) {
         return FillStyle::Honeycomb;
+    }
+    if (normalized == QStringLiteral("horizontal_lines") || normalized == QStringLiteral("horizontal")) {
+        return FillStyle::HorizontalHatch;
+    }
+    if (normalized == QStringLiteral("vertical_lines") || normalized == QStringLiteral("vertical")) {
+        return FillStyle::VerticalHatch;
+    }
+    if (normalized == QStringLiteral("brick") || normalized == QStringLiteral("brickwall")) {
+        return FillStyle::Brick;
+    }
+    if (normalized == QStringLiteral("dots") || normalized == QStringLiteral("dot") ||
+        normalized == QStringLiteral("point")) {
+        return FillStyle::Dots;
     }
     if (normalized == QStringLiteral("solid") || normalized == QStringLiteral("color")) {
         return FillStyle::Solid;

@@ -338,6 +338,10 @@ void UiMenuBuilder::buildMenus()
     fillStyleMenu->addAction(m_window->m_fillCrossAct);
     fillStyleMenu->addAction(m_window->m_fillGridAct);
     fillStyleMenu->addAction(m_window->m_fillHoneycombAct);
+    fillStyleMenu->addAction(m_window->m_fillHorizontalAct);
+    fillStyleMenu->addAction(m_window->m_fillVerticalAct);
+    fillStyleMenu->addAction(m_window->m_fillBrickAct);
+    fillStyleMenu->addAction(m_window->m_fillDotsAct);
 
     // 需求 29：颜色从填充样式里分离出来，放在填充样式之后。
     insertMenu->addAction(m_window->m_fillColorAct);
