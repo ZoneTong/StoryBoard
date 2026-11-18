@@ -149,8 +149,6 @@ QIcon ShapePainter::makeIcon(ShapeType type, const QColor& color, int logicalSiz
     qreal iconSweepAngle = 120.0;
     if (type == ShapeType::Ellipse) {
         rect = QRectF(4.0, 4.0, 16.0, 16.0);
-    } else if (type == ShapeType::BraceLeft || type == ShapeType::BraceRight) {
-        rect = QRectF(6.0, 2.0, 12.0, 20.0);
     } else if (type == ShapeType::Arrow || type == ShapeType::DoubleArrow || type == ShapeType::Line) {
         rect = QRectF(2.0, 7.0, 20.0, 10.0);
     } else if (type == ShapeType::Sector || type == ShapeType::Arc) {
@@ -161,7 +159,22 @@ QIcon ShapePainter::makeIcon(ShapeType type, const QColor& color, int logicalSiz
         iconSweepAngle = 120.0;
     }
 
-    const QPainterPath path = ShapeItem::pathFor(type, rect, -1.0, iconStartAngle, iconSweepAngle, -1.0);
+    QPainterPath path = ShapeItem::pathFor(type, rect, -1.0, iconStartAngle, iconSweepAngle);
+    // 需求 7：扇形 / 弧线的图标按包围盒重新居中，视觉重心落在 (12,12)，
+    // 并等比缩到不超过 18×18；笔宽不跟缩放走，保持与同排图标一致。
+    if (type == ShapeType::Sector || type == ShapeType::Arc) {
+        const QRectF bounds = path.boundingRect();
+        if (!bounds.isEmpty()) {
+            qreal scale =
+                qMin<qreal>(18.0 / qMax<qreal>(bounds.width(), 1.0), 18.0 / qMax<qreal>(bounds.height(), 1.0));
+            scale = qBound<qreal>(0.5, scale, 1.4);
+            QTransform transform;
+            transform.translate(12.0, 12.0);
+            transform.scale(scale, scale);
+            transform.translate(-bounds.center().x(), -bounds.center().y());
+            path = transform.map(path);
+        }
+    }
     QPen pen(color, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
 
     // 常见图形图标统一画成空心轮廓：只有描边，不填底色。

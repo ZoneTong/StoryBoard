@@ -1,8 +1,10 @@
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
+#include "CurveItem.h"
 #include "ImageItem.h"
 #include "SelfTest.h"
 #include "ShapeItem.h"
+#include "ShapePathBuilder.h"
 #include "TextItem.h"
 #include "selftest/SelftestHelpers.h"
 
@@ -179,11 +181,20 @@ void populateDemoScene(CanvasScene& scene)
     star->setContentSize(QSizeF(54, 54));
     scene.attachItem(star);
 
-    auto* brace = new ShapeItem(ShapeType::BraceLeft);
+    // 需求 13：花括号改为曲线图元，演示场景按同一几何采样构造。
+    auto* brace = new CurveItem();
+    {
+        constexpr int braceSamples = 48;
+        const QPainterPath braceShape = ShapePathBuilder::bracePath(QRectF(0.0, 0.0, 44.0, 92.0));
+        QVector<QPointF> bracePoints;
+        bracePoints.reserve(braceSamples + 1);
+        for (int i = 0; i <= braceSamples; ++i) {
+            bracePoints.append(QPointF(1040, 884) + braceShape.pointAtPercent(qreal(i) / qreal(braceSamples)));
+        }
+        brace->setStrokePoints(bracePoints, accent, 5.0, 0.0, true);
+    }
     brace->setLayerId(inkLayer);
-    brace->setStyle(accent, QColor(Qt::transparent), 5.0);
-    brace->setPos(QPointF(1040, 884));
-    brace->setContentSize(QSizeF(44, 92));
+    brace->setSource(CurveSource::Brace);
     scene.attachItem(brace);
 
     QVector<QPointF> figure;

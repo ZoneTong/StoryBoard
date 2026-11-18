@@ -124,6 +124,36 @@ void CanvasItemInteraction::applyResize(const QPointF& scenePos, Qt::KeyboardMod
     QRectF rect(m_item->m_dragStartPos, m_item->m_dragStartSize);
     const int handle = m_item->m_resizeHandle;
 
+    // 需求 2：拖顶点 C 只改三角形，AB 两端在场景中固定；底边宽度不变，
+    // 顶点高度由落点反推两个底角，角度是真相、高度再按角度派生。
+    if (auto* triangle = dynamic_cast<ShapeItem*>(m_item); triangle && triangle->shapeType() == ShapeType::Triangle &&
+                                                           !triangle->isCustomShape() && handle == CanvasItem::Apex) {
+        const qreal startWidth = m_item->m_dragStartSize.width();
+        const qreal startHeight = m_item->m_dragStartSize.height();
+        QPointF local = scenePos - m_item->m_dragStartPos;
+        const qreal rotation = m_item->rotationAngle();
+        if (!qFuzzyIsNull(rotation)) {
+            QTransform transform;
+            transform.rotate(-rotation);
+            local = transform.map(local);
+        }
+        const qreal x = qBound<qreal>(1.0, local.x(), qMax<qreal>(1.0, startWidth - 1.0));
+        const qreal h = qMax<qreal>(1.0, startHeight - local.y());
+        const qreal angleA = qRadiansToDegrees(qAtan2(h, x));
+        const qreal angleB = qRadiansToDegrees(qAtan2(h, qMax<qreal>(1.0, startWidth - x)));
+        triangle->setTriangleAngles(angleA, angleB);
+        const qreal newHeight = triangle->contentSize().height();
+        // 底边在场景中固定：内容矩形上边随高度变化下移/上移，旋转时按同一角度补偿。
+        QPointF shift(0.0, startHeight - newHeight);
+        if (!qFuzzyIsNull(rotation)) {
+            QTransform transform;
+            transform.rotate(rotation);
+            shift = transform.map(shift);
+        }
+        m_item->setPos(m_item->m_dragStartPos + shift);
+        return;
+    }
+
     // 三角形拖动包围框只能等比缩放：三个内角保持不变，手柄对面的那个点钉住不动
     // （角对手柄钉对角、边中点对手柄钉对边中点）。高度由底边与角度派生，缩放后
     // 宽高比自然保持，所以只要按比例算新尺寸、再把锚点摆回原处。

@@ -2,11 +2,13 @@
 
 #include "CanvasScene.h"
 #include "CanvasView.h"
+#include "CurveItem.h"
 #include "CustomShapeTemplates.h"
 #include "IconFactory.h"
 #include "MainWindow.h"
 #include "Settings.h"
 #include "ShapeItem.h"
+#include "ShapePathBuilder.h"
 #include "TextItem.h"
 
 #include <QAction>
@@ -17,6 +19,7 @@
 #include <QMessageBox>
 #include <QStatusBar>
 #include <QTimer>
+#include <QVector>
 #include <QtMath>
 
 namespace {
@@ -135,6 +138,67 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
     }
 }
 
+void MainWindowInsertController::insertBrace(bool left)
+{
+    if (m_window->m_view->mode() != ToolMode::Edit) {
+        m_window->setToolMode(ToolMode::Edit);
+    }
+
+    if (!m_window->m_scene->isActiveLayerWritable()) {
+        m_window->statusBar()->showMessage(
+            MainWindow::tr("The current layer is locked or hidden; shapes cannot be "
+                           "inserted. Unlock or switch layers in the layer panel first."),
+            5000);
+        return;
+    }
+
+    const QColor stroke =
+        m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
+    const qreal width = qBound<qreal>(2.5, m_window->m_brushWidth, 10.0);
+
+    // 花括号沿用原默认尺寸（21×64，2 格基准）在 64px 格下放大一倍：42×128。
+    const QRectF canvas = m_window->m_scene->canvasRect();
+    QSizeF size(42.0, 128.0);
+    const qreal fitScale = qMin<qreal>(1.0, qMin(canvas.width() * 0.72 / qMax<qreal>(1.0, size.width()),
+                                                 canvas.height() * 0.72 / qMax<qreal>(1.0, size.height())));
+    size *= fitScale;
+
+    QPointF center = m_window->m_view->mapToScene(m_window->m_view->viewport()->rect().center());
+    if (!canvas.contains(center)) {
+        center = canvas.center();
+    }
+    const qreal cascade = (m_window->m_scene->canvasItemCount() % 5) * 18.0;
+    center += QPointF(cascade, cascade);
+    center.setX(qBound(canvas.left() + size.width() / 2.0, center.x(), canvas.right() - size.width() / 2.0));
+    center.setY(qBound(canvas.top() + size.height() / 2.0, center.y(), canvas.bottom() - size.height() / 2.0));
+
+    const QPointF topLeft = center - QPointF(size.width() / 2.0, size.height() / 2.0);
+    const QPainterPath braceShape = ShapePathBuilder::bracePath(QRectF(QPointF(0.0, 0.0), size));
+    constexpr int sampleCount = 64;
+    QVector<QPointF> points;
+    points.reserve(sampleCount + 1);
+    for (int i = 0; i <= sampleCount; ++i) {
+        points.append(topLeft + braceShape.pointAtPercent(qreal(i) / qreal(sampleCount)));
+    }
+
+    auto* item = new CurveItem();
+    item->setStrokePoints(points, stroke, width, 0.0, true);
+    item->setSource(CurveSource::Brace);
+    // 右括号 = 左括号旋转 180°（旋转绕内容中心，几何不复制第二套）。
+    if (!left) {
+        item->setRotationAngle(180.0);
+    }
+
+    m_window->m_scene->clearSelection();
+    m_window->m_scene->addItemsWithUndo(
+        {item}, MainWindow::tr("Insert %1").arg(left ? MainWindow::tr("Left brace") : MainWindow::tr("Right brace")));
+    item->setSelected(true);
+    m_window->m_view->setFocus();
+    m_window->statusBar()->showMessage(MainWindow::tr("Inserted %1 as a curve; drag to move, drag handles to resize")
+                                           .arg(left ? MainWindow::tr("Left brace") : MainWindow::tr("Right brace")),
+                                       5000);
+}
+
 void MainWindowInsertController::insertCustomShape(const QString& filePath)
 {
     if (m_window->m_view->mode() != ToolMode::Edit) {
@@ -202,10 +266,9 @@ void MainWindowInsertController::insertCustomShape(const QString& filePath)
 
 void MainWindowInsertController::openShapesFolder()
 {
-    const QString directory = AppSettings::shapesDir();
-    if (!AppSettings::openShapesFolder()) {
-        m_window->statusBar()->showMessage(
-            MainWindow::tr("Could not open the shapes folder: %1").arg(QDir::toNativeSeparators(directory)), 5000);
+    const AppSettings::ShapesFolderOpenResult result = AppSettings::openShapesFolder();
+    if (!result.opened) {
+        m_window->statusBar()->showMessage(AppSettings::shapesFolderFailureText(result), 6000);
     }
 }
 

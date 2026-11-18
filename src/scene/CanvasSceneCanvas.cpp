@@ -294,9 +294,9 @@ void CanvasScene::drawCheckerboard(QPainter* painter, const QRectF& canvas) cons
         return;
     }
 
-    // 棋盘格是长度单位基准：每格固定 32 逻辑像素，从画布左上角铺起，
-    // 不再随画布尺寸等分；画布宽高不是 32 倍数时，右 / 下边缘保留残格。
-    constexpr qreal tileSize = 32.0;
+    // 棋盘格是长度单位基准：每格固定 64 逻辑像素（需求 16：由 32 扩大一倍），从画布左上角铺起，
+    // 不再随画布尺寸等分；画布宽高不是 64 倍数时，右 / 下边缘保留残格。
+    constexpr qreal tileSize = 64.0;
     const int columnsCount = qMax(1, qCeil(canvas.width() / tileSize));
     const int rowsCount = qMax(1, qCeil(canvas.height() / tileSize));
     const qreal tileWidth = tileSize;

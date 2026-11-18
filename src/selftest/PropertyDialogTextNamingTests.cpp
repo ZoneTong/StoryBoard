@@ -239,14 +239,14 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
             dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesMajorAxisValue"));
         QDoubleSpinBox* minorAxisValue =
             dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesMinorAxisValue"));
-        ctx.check(startAngleValue && sweepAngleValue && shapeRadiusValue && startAngleValue->isEnabled() &&
-                      sweepAngleValue->isEnabled() && shapeRadiusValue->isEnabled() && startAngleValue->value() == 30 &&
-                      sweepAngleValue->value() == 120 && shapeRadiusValue->value() == 100,
-                  QStringLiteral("扇形属性窗提供起始角 / 扫过角 / 半径"),
-                  QStringLiteral("start=%1 sweep=%2 radius=%3")
+        // 需求 6：半径行已删除，扇形只保留起始角 / 扫过角，椭圆由内容矩形派生。
+        ctx.check(startAngleValue && sweepAngleValue && !shapeRadiusValue && startAngleValue->isEnabled() &&
+                      sweepAngleValue->isEnabled() && startAngleValue->value() == 30 && sweepAngleValue->value() == 120,
+                  QStringLiteral("扇形属性窗提供起始角 / 扫过角且不再有半径行"),
+                  QStringLiteral("start=%1 sweep=%2 radiusRow=%3")
                       .arg(startAngleValue ? startAngleValue->value() : -999)
                       .arg(sweepAngleValue ? sweepAngleValue->value() : -999)
-                      .arg(shapeRadiusValue ? shapeRadiusValue->value() : -999));
+                      .arg(shapeRadiusValue ? 1 : 0));
         ctx.check(majorAxisValue && minorAxisValue && qAbs(majorAxisValue->value() - 100.0) < 0.01 &&
                       qAbs(minorAxisValue->value() - 100.0) < 0.01,
                   QStringLiteral("扇形保持椭圆派生并显示长短半轴"));
@@ -256,17 +256,10 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
         if (sweepAngleValue) {
             sweepAngleValue->setValue(200);
         }
-        if (shapeRadiusValue) {
-            shapeRadiusValue->setValue(70);
-        }
         dialog.accept();
         QApplication::processEvents();
     }
-    ctx.check(qAbs(sector->startAngle() - 60.0) < 0.01 && qAbs(sector->sweepAngle() - 200.0) < 0.01 &&
-                  qAbs(sector->shapeRadius() - 70.0) < 0.01,
-              QStringLiteral("属性窗修改可落到扇形角度和半径"),
-              QStringLiteral("start=%1 sweep=%2 radius=%3")
-                  .arg(sector->startAngle())
-                  .arg(sector->sweepAngle())
-                  .arg(sector->shapeRadius()));
+    ctx.check(qAbs(sector->startAngle() - 60.0) < 0.01 && qAbs(sector->sweepAngle() - 200.0) < 0.01,
+              QStringLiteral("属性窗修改可落到扇形角度"),
+              QStringLiteral("start=%1 sweep=%2").arg(sector->startAngle()).arg(sector->sweepAngle()));
 }

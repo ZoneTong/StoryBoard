@@ -308,11 +308,11 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
         QApplication::processEvents();
 
         const QImage viewImage = checkerView.viewport()->grab().toImage();
-        // 棋盘格按固定 32px 铺格（长度单位基准），不再按画布等分：
+        // 棋盘格按固定 64px 铺格（长度单位基准），不再按画布等分：
         // 首行 / 首列各取前 16 个格心采样，格数与步长任一不符都会失配。
         const QRectF checkerCanvas = checkerScene.canvasRect();
-        constexpr qreal tileWidth = 32.0;
-        constexpr qreal tileHeight = 32.0;
+        constexpr qreal tileWidth = 64.0;
+        constexpr qreal tileHeight = 64.0;
         const int sampleCount =
             qMin(16, qMin(qFloor(checkerCanvas.width() / tileWidth), qFloor(checkerCanvas.height() / tileHeight)));
         int mismatchedCells = 0;

@@ -432,6 +432,46 @@ void CompositeFillStyleCommand::apply(const QList<QColor>& colors, const QList<F
     }
 }
 
+ArrowStyleCommand::ArrowStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
+                                     const QList<QPair<ArrowStyle, ArrowStyle>>& before,
+                                     const QList<QPair<ArrowStyle, ArrowStyle>>& after, const QString& text)
+    : m_scene(scene), m_before(before), m_after(after)
+{
+    setText(text);
+    for (CanvasItem* item : items) {
+        m_items.append(QPointer<CanvasItem>(item));
+    }
+}
+
+void ArrowStyleCommand::undo()
+{
+    apply(m_before);
+}
+
+void ArrowStyleCommand::redo()
+{
+    apply(m_after);
+}
+
+void ArrowStyleCommand::apply(const QList<QPair<ArrowStyle, ArrowStyle>>& states)
+{
+    for (int i = 0; i < m_items.size() && i < states.size(); ++i) {
+        CanvasItem* item = m_items.at(i);
+        if (!item) {
+            continue;
+        }
+        const QPair<ArrowStyle, ArrowStyle> state = states.at(i);
+        if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+            shape->setArrowStyles(state.first, state.second);
+        } else if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
+            stroke->setArrowStyles(state.first, state.second);
+        }
+    }
+    if (m_scene) {
+        m_scene->update();
+    }
+}
+
 ItemStrokeStyleCommand::ItemStrokeStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
                                                const QList<QColor>& beforeColors, const QList<qreal>& beforeWidths,
                                                const QList<QColor>& afterColors, const QList<qreal>& afterWidths,
@@ -556,7 +596,7 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
         itemName != other.itemName || hasShapeState != other.hasShapeState ||
         hasCompositeStyle != other.hasCompositeStyle || hasTextState != other.hasTextState ||
         hasStrokeStyle != other.hasStrokeStyle || hasImageState != other.hasImageState ||
-        hasImageName != other.hasImageName) {
+        hasImageName != other.hasImageName || hasFillImageState != other.hasFillImageState) {
         return false;
     }
     if (hasShapeState && shapeState != other.shapeState) {
@@ -577,6 +617,11 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
         return false;
     }
     if (hasImageName && imageName != other.imageName) {
+        return false;
+    }
+    if (hasFillImageState &&
+        (fillImagePresent != other.fillImagePresent || fillImage.cacheKey() != other.fillImage.cacheKey() ||
+         fillImageMode != other.fillImageMode)) {
         return false;
     }
     return true;
@@ -647,6 +692,15 @@ void ItemPropertiesCommand::apply(const ItemPropertiesState& state)
     if (state.hasImageState) {
         if (auto* image = dynamic_cast<ImageItem*>(m_item.data())) {
             image->setImage(state.image, state.imageName);
+        }
+    }
+    if (state.hasFillImageState) {
+        if (auto* composite = dynamic_cast<CompositeShapeItem*>(m_item.data())) {
+            if (state.fillImagePresent) {
+                composite->setFillImage(state.fillImage, state.fillImageMode);
+            } else {
+                composite->clearFillImage();
+            }
         }
     }
 

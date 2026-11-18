@@ -35,6 +35,7 @@ void runAlignmentTests(Context& ctx);
 void runAlignmentMenuTests(Context& ctx);
 void runGroupBoolOpsTests(Context& ctx);
 void runCustomShapeDockTests(Context& ctx);
+void runShapesFolderTests(Context& ctx);
 void runDockPanelMainWindowTests(Context& ctx);
 void runDockOrderPersistenceTests(Context& ctx);
 void runClipboardShortcutTests(Context& ctx);

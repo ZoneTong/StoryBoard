@@ -28,8 +28,10 @@
 #include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QShowEvent>
 #include <QSpinBox>
 #include <QStandardPaths>
+#include <QTextCursor>
 #include <QToolButton>
 #include <QVBoxLayout>
 #include <utility>
@@ -126,7 +128,7 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
 
         m_geometryBlock = new ItemPropertiesDialogGeometryBlock(item, this);
         m_geometryBlock->addRows(form);
-        if (m_styleBlock && (m_styleBlock->cornerRadiusSpin() || m_styleBlock->shapeRadiusSpin())) {
+        if (m_styleBlock && m_styleBlock->cornerRadiusSpin()) {
             auto syncCornerRange = [this]() {
                 if (!m_geometryBlock) {
                     return;
@@ -177,6 +179,19 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
     }
 }
 
+void ItemPropertiesDialog::showEvent(QShowEvent* event)
+{
+    QDialog::showEvent(event);
+    // 只做一次，且只读模式不抢焦点；光标停在正文末尾，不整段选中。
+    if (m_textFocusApplied || !m_editable || !m_textBlock || !m_textBlock->textEdit()) {
+        return;
+    }
+    m_textFocusApplied = true;
+    QPlainTextEdit* edit = m_textBlock->textEdit();
+    edit->moveCursor(QTextCursor::End);
+    edit->setFocus(Qt::OtherFocusReason);
+}
+
 void ItemPropertiesDialog::applyEditableState()
 {
     if (m_editable) {
@@ -191,7 +206,7 @@ void ItemPropertiesDialog::applyEditableState()
         widgets << m_styleBlock->fillStyleCombo() << m_styleBlock->fillColorButton()
                 << m_styleBlock->strokeColorButton() << m_styleBlock->borderStyleCombo()
                 << m_styleBlock->strokeWidthSpin() << m_styleBlock->opacitySpin() << m_styleBlock->cornerRadiusSpin()
-                << m_styleBlock->startAngleSpin() << m_styleBlock->sweepAngleSpin() << m_styleBlock->shapeRadiusSpin();
+                << m_styleBlock->startAngleSpin() << m_styleBlock->sweepAngleSpin();
     }
     if (m_opacitySpin) {
         widgets << m_opacitySpin;
@@ -400,11 +415,6 @@ void ItemPropertiesDialog::applyChanges()
             after.shapeState.sweepAngle =
                 value == qRound(style->initialSweepAngle()) ? style->initialSweepAngle() : value;
         }
-        if (style && style->shapeRadiusSpin()) {
-            const int value = style->shapeRadiusSpin()->value();
-            after.shapeState.shapeRadius =
-                value == style->initialShapeRadius() ? style->initialStoredShapeRadius() : value;
-        }
         if (style && style->cornerRadiusSpin()) {
             const int value = style->cornerRadiusSpin()->value();
             // 圆角矩形默认值来自短边的 16%，对话框里显示为非 0；
@@ -443,6 +453,12 @@ void ItemPropertiesDialog::applyChanges()
             }
             if (style && style->fillColorButton()) {
                 after.shapeState.fillColor = style->fillColorButton()->property("itemColor").value<QColor>();
+            }
+            // 需求 15：图片填充是独立属性，ShapeItemState 直接快照。
+            if (style && style->hasFillImageRow()) {
+                after.shapeState.hasFillImage = style->fillImagePresent();
+                after.shapeState.fillImage = style->fillImage();
+                after.shapeState.fillImageMode = style->fillImageMode();
             }
         }
     } else if (auto* textItem = dynamic_cast<TextItem*>(m_item.data())) {
@@ -510,6 +526,16 @@ void ItemPropertiesDialog::applyChanges()
         after.strokeStyle = (style && style->borderStyleCombo())
                                 ? static_cast<Qt::PenStyle>(style->borderStyleCombo()->currentData().toInt())
                                 : before.strokeStyle;
+        // 需求 15：多边形的图片填充快照。
+        before.hasFillImageState = true;
+        before.fillImagePresent = composite->hasFillImage();
+        before.fillImage = composite->fillImage();
+        before.fillImageMode = composite->fillImageMode();
+        after.hasFillImageState = true;
+        after.fillImagePresent =
+            (style && style->hasFillImageRow()) ? style->fillImagePresent() : before.fillImagePresent;
+        after.fillImage = (style && style->hasFillImageRow()) ? style->fillImage() : before.fillImage;
+        after.fillImageMode = (style && style->hasFillImageRow()) ? style->fillImageMode() : before.fillImageMode;
     } else if (auto* imageItem = dynamic_cast<ImageItem*>(m_item.data())) {
         before.hasImageState = true;
         before.image = imageItem->image();

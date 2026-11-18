@@ -550,11 +550,11 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
       <source>Edit mode: items on visible, unlocked layers can be edited · drag or box-select · resize with handles · hold Ctrl to drag / wheel zoom the whole view · drag canvas edges to resize the canvas · Delete to remove</source>
-      <translation>编辑模式：可见且未锁定图层的图元均可编辑 · 拖拽/框选 · 控制点缩放 · 按住 Ctrl 拖动/滚轮平移缩放整体视图 · 拖动画布边缘调整画布 · Delete 删除</translation>
+      <translation>编辑模式：可见且未锁定图层的图元均可编辑 · 双击打开图元属性窗修改图元 · 空格/中键平移视图</translation>
     </message>
     <message>
       <source>Edit mode: select, move and resize items; hold Ctrl to pan the view (V)</source>
-      <translation>编辑模式：选择、移动、缩放图元；按住 Ctrl 平移视图 (V)</translation>
+      <translation>编辑模式：可见且未锁定图层的图元均可编辑 · 双击打开图元属性窗修改图元 · 空格/中键平移视图（V）</translation>
     </message>
     <message>
       <source>Edit text</source>
@@ -1509,6 +1509,38 @@ Second line caption</source>
       <translation>对话气泡</translation>
     </message>
     <message>
+        <source>Four-point star</source>
+        <translation>四角星形</translation>
+    </message>
+    <message>
+        <source>Six-point star</source>
+        <translation>六芒星</translation>
+    </message>
+    <message>
+        <source>Heart</source>
+        <translation>心形</translation>
+    </message>
+    <message>
+        <source>Sine wave</source>
+        <translation>正弦波形</translation>
+    </message>
+    <message>
+        <source>Wavy flag</source>
+        <translation>波形旗帜</translation>
+    </message>
+    <message>
+        <source>Curled flag</source>
+        <translation>卷形旗帜</translation>
+    </message>
+    <message>
+        <source>Cube</source>
+        <translation>正方体</translation>
+    </message>
+    <message>
+        <source>Cylinder</source>
+        <translation>圆柱体</translation>
+    </message>
+    <message>
       <source>Star</source>
       <translation>五角星</translation>
     </message>
@@ -1809,10 +1841,6 @@ Use the checkbox to show or hide it.</source>
       <translation>画笔拟合容差</translation>
     </message>
     <message>
-      <source>Brush fit tolerance</source>
-      <translation>画笔拟合容差</translation>
-    </message>
-    <message>
       <source>Brush fit tolerance in pixels (0–20, 0.1 px steps); 0 disables curve fitting</source>
       <translation>画笔拟合容差（0–20，0.1 px 步进）；0 表示关闭曲线拟合。</translation>
     </message>
@@ -2058,6 +2086,18 @@ Use the checkbox to show or hide it.</source>
     <message>
         <source>Could not open the shapes folder: %1</source>
         <translation>无法打开 shapes 目录：%1</translation>
+    </message>
+    <message>
+        <source>Could not open the shapes folder: %1 (cannot create the directory; check write permission)</source>
+        <translation>无法打开 shapes 目录：%1（无法创建目录，请检查写权限）</translation>
+    </message>
+    <message>
+        <source>Could not open the shapes folder: %1 (Windows shell returned %2)</source>
+        <translation>无法打开 shapes 目录：%1（Windows 外壳返回 %2）</translation>
+    </message>
+    <message>
+        <source>Could not open the shapes folder: %1 (no file manager available)</source>
+        <translation>无法打开 shapes 目录：%1（没有可用的文件管理器）</translation>
     </message>
     <message>
         <source>Fill set to &amp;quot;%1&amp;quot;; it will be used for newly inserted shapes</source>
@@ -2323,10 +2363,6 @@ Use the checkbox to show or hide it.</source>
     <message>
       <source>Refresh</source>
       <translation>刷新</translation>
-    </message>
-    <message>
-      <source>Open shapes folder…</source>
-      <translation>打开 shapes 目录…</translation>
     </message>
     <message>
       <source>Could not open the shapes folder</source>
@@ -2671,7 +2707,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Edit mode: select, move and resize items; hold Ctrl to pan the view (V)</source>
-      <translation>编辑模式：选择、移动、缩放图元；按住 Ctrl 平移视图 (V)</translation>
+      <translation>编辑模式：可见且未锁定图层的图元均可编辑 · 双击打开图元属性窗修改图元 · 空格/中键平移视图（V）</translation>
     </message>
     <message>
       <source>Text mode</source>
@@ -2983,7 +3019,7 @@ Use the checkbox to show or hide it.</source>
     </message>
     <message>
       <source>Edit mode: items on visible, unlocked layers can be edited · drag or box-select · resize with handles · hold Ctrl to drag / wheel zoom the whole view · drag canvas edges to resize the canvas · Delete to remove</source>
-      <translation>编辑模式：可见且未锁定图层的图元均可编辑 · 拖拽/框选 · 控制点缩放 · 按住 Ctrl 拖动/滚轮平移缩放整体视图 · 拖动画布边缘调整画布 · Delete 删除</translation>
+      <translation>编辑模式：可见且未锁定图层的图元均可编辑 · 双击打开图元属性窗修改图元 · 空格/中键平移视图</translation>
     </message>
     <message>
       <source>Text mode: click the canvas to place text · set font, size, color and bold/italic</source>
@@ -3719,10 +3755,6 @@ Use the checkbox to show or hide it.</source>
         <translation>插入来自 %1 的自定义图形</translation>
     </message>
     <message>
-        <source>Open shapes folder…</source>
-        <translation>打开 shapes 目录…</translation>
-    </message>
-    <message>
         <source>%1 shape file(s) could not be read</source>
         <translation>有 %1 个图形文件无法读取</translation>
     </message>
@@ -4439,7 +4471,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
       <source>End arrow</source>
-      <translation>端点箭头</translation>
+      <translation>终点箭头</translation>
     </message>
     <message>
       <source>Arrow heads</source>
@@ -4500,6 +4532,38 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
       <source>Fill color</source>
       <translation>填充颜色</translation>
+    </message>
+    <message>
+      <source>Fill image</source>
+      <translation>填充图片</translation>
+    </message>
+    <message>
+      <source>Choose image…</source>
+      <translation>选择图片…</translation>
+    </message>
+    <message>
+      <source>Change image…</source>
+      <translation>更换图片…</translation>
+    </message>
+    <message>
+      <source>Clear</source>
+      <translation>清除</translation>
+    </message>
+    <message>
+      <source>Stretch</source>
+      <translation>拉伸</translation>
+    </message>
+    <message>
+      <source>Fit</source>
+      <translation>适应</translation>
+    </message>
+    <message>
+      <source>Tile</source>
+      <translation>平铺</translation>
+    </message>
+    <message>
+      <source>Choose fill image</source>
+      <translation>选择填充图片</translation>
     </message>
     <message>
       <source>Border color</source>
@@ -4915,6 +4979,38 @@ In edit mode, items on visible, unlocked layers can be edited</source>
       <translation>对话气泡</translation>
     </message>
     <message>
+      <source>Four-point star</source>
+      <translation>四角星形</translation>
+    </message>
+    <message>
+      <source>Six-point star</source>
+      <translation>六芒星</translation>
+    </message>
+    <message>
+      <source>Heart</source>
+      <translation>心形</translation>
+    </message>
+    <message>
+      <source>Sine wave</source>
+      <translation>正弦波形</translation>
+    </message>
+    <message>
+      <source>Wavy flag</source>
+      <translation>波形旗帜</translation>
+    </message>
+    <message>
+      <source>Curled flag</source>
+      <translation>卷形旗帜</translation>
+    </message>
+    <message>
+      <source>Cube</source>
+      <translation>正方体</translation>
+    </message>
+    <message>
+      <source>Cylinder</source>
+      <translation>圆柱体</translation>
+    </message>
+    <message>
       <source>No fill</source>
       <translation>无填充</translation>
     </message>
@@ -5060,7 +5156,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message>
     <message>
       <source>End arrow</source>
-      <translation>端点箭头</translation>
+      <translation>终点箭头</translation>
     </message>
     <message>
         <source>Common shapes</source>
@@ -5237,6 +5333,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
             <source>Sweep angle</source>
             <translation>扫过角度</translation>
         </message>
+    <message>
+      <source>Start angle</source>
+      <translation>起始角</translation>
+    </message>
         <message>
             <source>Shape radius</source>
             <translation>图形半径</translation>

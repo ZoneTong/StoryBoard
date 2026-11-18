@@ -159,6 +159,10 @@ bool CurveItem::isEmpty() const
 
 bool CurveItem::simplifyCurve(qreal tolerance)
 {
+    // 括号是按几何精确采样的曲线，简化会把尖角拍散，直接跳过。
+    if (m_source == CurveSource::Brace) {
+        return false;
+    }
     if (m_dot || m_segments.isEmpty() || tolerance <= 0.0) {
         return false;
     }
@@ -314,6 +318,15 @@ void CurveItem::paintContent(QPainter* painter)
     }
 }
 
+void CurveItem::setSource(CurveSource source)
+{
+    if (m_source == source) {
+        return;
+    }
+    m_source = source;
+    update();
+}
+
 void CurveItem::setArrowStyles(ArrowStyle start, ArrowStyle end)
 {
     if (m_startArrow == start && m_endArrow == end) {
@@ -368,6 +381,10 @@ QJsonObject CurveItem::toJson() const
     if (m_linearPath) {
         json.insert(QStringLiteral("linear"), true);
     }
+    if (m_source != CurveSource::HandDrawn) {
+        json.insert(QStringLiteral("source"),
+                    m_source == CurveSource::Brace ? QStringLiteral("brace") : QStringLiteral("line_art"));
+    }
 
     if (m_dot && !m_rawPoints.isEmpty()) {
         QJsonArray center;
@@ -406,6 +423,10 @@ void CurveItem::fromJson(const QJsonObject& json)
     m_startArrow = arrowStyleFromString(json.value(QStringLiteral("startArrow")).toString());
     m_endArrow = arrowStyleFromString(json.value(QStringLiteral("endArrow")).toString());
     m_linearPath = json.value(QStringLiteral("linear")).toBool(false);
+    const QString sourceName = json.value(QStringLiteral("source")).toString();
+    m_source = sourceName == QStringLiteral("brace")      ? CurveSource::Brace
+               : sourceName == QStringLiteral("line_art") ? CurveSource::LineArt
+                                                          : CurveSource::HandDrawn;
     m_segments.clear();
     m_rawPoints.clear();
     m_drawing = false;

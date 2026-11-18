@@ -140,7 +140,8 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                       .arg(builtInShapeActions)
                       .arg(customTrigger ? 1 : 0));
         // 工具栏在原「图形」入口处把常见图形与预置项直接平铺成一排，复用菜单里的同一批动作。
-        const int toolbarExpected = builtInShapeActions + 4;
+        // 预置项：圆角矩形、直线箭头、45°/60° 三角、左右花括号（需求 13 花括号改曲线后仍是 2 枚按钮）。
+        const int toolbarExpected = builtInShapeActions + 6;
         QToolButton* shapeButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("ShapeButton"));
         QList<QToolButton*> toolbarShapeButtons =
             shapeWindow.findChildren<QToolButton*>(QStringLiteral("ToolBarShapeButton"));
@@ -158,22 +159,26 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
 
         // 工具栏顺序是产品口径：气泡/扇形/弧线排在双向箭头之后，直线与花括号收尾。
         const QStringList expectedToolBarOrder = {
-            QStringLiteral("ShapeAction_rectangle"),   QStringLiteral("ShapePreset_roundedRect"),
-            QStringLiteral("ShapeAction_ellipse"),     QStringLiteral("ShapeAction_triangle"),
-            QStringLiteral("ShapePreset_triangle45"),  QStringLiteral("ShapePreset_triangle60"),
-            QStringLiteral("ShapeAction_diamond"),     QStringLiteral("ShapeAction_star"),
-            QStringLiteral("ShapeAction_arrow"),       QStringLiteral("ShapeAction_double_arrow"),
-            QStringLiteral("ShapeAction_callout"),     QStringLiteral("ShapeAction_sector"),
-            QStringLiteral("ShapeAction_arc"),         QStringLiteral("ShapeAction_line"),
-            QStringLiteral("ShapePreset_lineArrow"),   QStringLiteral("ShapeAction_brace_left"),
-            QStringLiteral("ShapeAction_brace_right"),
+            QStringLiteral("ShapeAction_rectangle"),    QStringLiteral("ShapePreset_roundedRect"),
+            QStringLiteral("ShapeAction_ellipse"),      QStringLiteral("ShapeAction_triangle"),
+            QStringLiteral("ShapePreset_triangle45"),   QStringLiteral("ShapePreset_triangle60"),
+            QStringLiteral("ShapeAction_diamond"),      QStringLiteral("ShapeAction_star"),
+            QStringLiteral("ShapeAction_star4"),        QStringLiteral("ShapeAction_hexagram"),
+            QStringLiteral("ShapeAction_heart"),        QStringLiteral("ShapeAction_arrow"),
+            QStringLiteral("ShapeAction_double_arrow"), QStringLiteral("ShapeAction_callout"),
+            QStringLiteral("ShapeAction_sector"),       QStringLiteral("ShapeAction_arc"),
+            QStringLiteral("ShapeAction_sine_wave"),    QStringLiteral("ShapeAction_flag_wave"),
+            QStringLiteral("ShapeAction_flag_curl"),    QStringLiteral("ShapeAction_cube"),
+            QStringLiteral("ShapeAction_cylinder"),     QStringLiteral("ShapeAction_line"),
+            QStringLiteral("ShapePreset_lineArrow"),    QStringLiteral("ShapePreset_braceLeft"),
+            QStringLiteral("ShapePreset_braceRight"),
         };
         QStringList actualToolBarOrder;
         for (QToolButton* button : std::as_const(toolbarShapeButtons)) {
             actualToolBarOrder.append(button->property("shapeActionName").toString());
         }
         ctx.check(actualToolBarOrder == expectedToolBarOrder,
-                  QStringLiteral("工具栏图形顺序：气泡/扇形/弧线紧跟双向箭头，直线与花括号在末尾"),
+                  QStringLiteral("工具栏图形顺序：新图形插在弧线之后，直线与花括号在末尾"),
                   actualToolBarOrder.join(QLatin1Char(',')));
 
         QToolBar* mainToolBar = shapeWindow.findChild<QToolBar*>(QStringLiteral("MainToolBar"));
@@ -377,20 +382,21 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                   QStringLiteral("填充样式、填充颜色与边框颜色使用彼此不同的图标"));
 
         // 画笔颜色按钮与画笔宽度按钮已从工具栏移除；描线宽度改为描线颜色按钮后的 SpinBox。
+        // 图形数量增多后窗口宽度可能触发工具栏溢出扩展，隐藏控件的几何坐标恒为 0，
+        // 因此用 MainToolBar 的动作序号（与上文同一套判定）代替像素位置。
         QToolButton* removedBrushColorButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("ColorButton"));
         QAction* removedBrushColorAction = shapeWindow.findChild<QAction*>(QStringLiteral("BrushColorAction"));
         QSpinBox* strokeWidthSpin = shapeWindow.findChild<QSpinBox*>(QStringLiteral("StrokeWidthSpin"));
-        const int strokeButtonX =
-            iconStrokeColorButton ? iconStrokeColorButton->mapTo(&shapeWindow, QPoint(0, 0)).x() : -1;
-        const int widthSpinX = strokeWidthSpin ? strokeWidthSpin->mapTo(&shapeWindow, QPoint(0, 0)).x() : -1;
+        const int strokeButtonIndex = toolbarActionIndex(iconStrokeColorButton);
+        const int widthSpinIndex = toolbarActionIndex(strokeWidthSpin);
         ctx.check(!removedBrushColorButton && !removedBrushColorAction && strokeWidthSpin && iconStrokeColorButton &&
-                      widthSpinX > strokeButtonX && strokeWidthSpin->singleStep() == 1,
+                      widthSpinIndex > strokeButtonIndex && strokeWidthSpin->singleStep() == 1,
                   QStringLiteral("工具栏去掉画笔颜色按钮并在描线按钮后追加描线宽度 SpinBox"),
-                  QStringLiteral("color=%1 action=%2 spinX=%3 strokeX=%4 step=%5")
+                  QStringLiteral("color=%1 action=%2 spinIdx=%3 strokeIdx=%4 step=%5")
                       .arg(removedBrushColorButton ? 1 : 0)
                       .arg(removedBrushColorAction ? 1 : 0)
-                      .arg(widthSpinX)
-                      .arg(strokeButtonX)
+                      .arg(widthSpinIndex)
+                      .arg(strokeButtonIndex)
                       .arg(strokeWidthSpin ? strokeWidthSpin->singleStep() : 0));
 
         QSpinBox* menuWidthSpin = shapeWindow.findChild<QSpinBox*>(QStringLiteral("MenuStrokeWidthSpin"));

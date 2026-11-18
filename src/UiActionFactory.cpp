@@ -199,7 +199,9 @@ void UiActionFactory::build()
                    MainWindow::tr("Brush mode: hold the left button to draw freely (B)"));
     m_window->m_editModeAct =
         makeAction(m_window, IconId::Edit, MainWindow::tr("Edit mode"), QKeySequence(QStringLiteral("V")),
-                   MainWindow::tr("Edit mode: select, move and resize items; hold Ctrl to pan the view (V)"));
+                   MainWindow::tr("Edit mode: items on visible, unlocked layers are editable · "
+                                  "double-click to open item properties and change them · "
+                                  "Space / middle button to pan the view (V)"));
     m_window->m_textModeAct =
         makeAction(m_window, IconId::Text, MainWindow::tr("Text mode"), QKeySequence(QStringLiteral("T")),
                    MainWindow::tr("Text mode: click the canvas to place a text item (T)"));

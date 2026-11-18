@@ -3,6 +3,7 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "CanvasView.h"
+#include "CurveItem.h"
 #include "DocumentController.h"
 #include "ExportDialog.h"
 #include "I18n.h"
@@ -10,7 +11,6 @@
 #include "LineArtDialog.h"
 #include "MainWindow.h"
 #include "Settings.h"
-#include "CurveItem.h"
 
 #include <QApplication>
 #include <QDesktopServices>
@@ -339,6 +339,7 @@ void ImportExportController::importOutlineImageFile(const QString& file, const L
         // 折线模式让路径按直线段绘制，方角保持方正。
         auto* stroke = new CurveItem();
         stroke->setStrokePoints(scenePoints, outline.color, options.strokeWidth, 0.0, true);
+        stroke->setSource(CurveSource::LineArt);
         items.append(stroke);
     }
 

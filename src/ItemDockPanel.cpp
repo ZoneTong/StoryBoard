@@ -64,26 +64,26 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     m_fillBorderCard = new ItemDockPanelFillBorderCard(content);
     m_contentCard = new ItemDockPanelContentCard(content);
 
-    // 图层与高度保持靠上，文字 / 图片内容行及填充、描线样式行统一排在其下方；
-    // 选中后的操作行仍放在卡片底部。
-    m_valueCard = new ItemDockPanelValueCard(content);
-    layout->addWidget(m_valueCard);
-
+    // 需求 9c 行序定稿（与属性窗同序）：
+    // 图层/高度 → 文字内容/颜色/字体、图片 → 填充样式 → 填充色 →
+    // 描边颜色 → 描边样式 → 描边宽度 → 透明度/圆角/角度/三角形/箭头 → 选择操作行。
     m_arrangeCard = new ItemDockPanelArrangeCard(content);
     m_arrangeCard->setObjectName(QStringLiteral("ItemArrangeCard"));
     layout->addWidget(m_arrangeCard);
 
     layout->addWidget(m_contentCard->textContentRow());
-    layout->addWidget(m_contentCard->textFontRow());
     layout->addWidget(m_contentCard->textColorRow());
+    layout->addWidget(m_contentCard->textFontRow());
     layout->addWidget(m_contentCard->imageRow());
 
-    // 各行按功能顺序平铺：填充样式 → 填充颜色 → 边框样式 → 边框颜色 → 边框宽度。
     layout->addWidget(m_fillBorderCard->fillStyleRow());
     layout->addWidget(m_colorsCard->fillColorRow());
     layout->addWidget(m_fillBorderCard->borderStyleRow());
     layout->addWidget(m_colorsCard->borderColorRow());
     layout->addWidget(m_fillBorderCard->borderWidthRow());
+
+    m_valueCard = new ItemDockPanelValueCard(content);
+    layout->addWidget(m_valueCard);
 
     layout->addWidget(m_selectionCard);
     layout->addStretch(1);
@@ -104,8 +104,8 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
             &ItemDockPanel::chooseReplacementImage);
     connect(m_valueCard, &ItemDockPanelValueCard::opacityChosen, this, &ItemDockPanel::applyOpacity);
     connect(m_valueCard, &ItemDockPanelValueCard::cornerRadiusChosen, this, &ItemDockPanel::applyCornerRadius);
+    connect(m_valueCard, &ItemDockPanelValueCard::startAngleChosen, this, &ItemDockPanel::applyStartAngle);
     connect(m_valueCard, &ItemDockPanelValueCard::sweepAngleChosen, this, &ItemDockPanel::applySweepAngle);
-    connect(m_valueCard, &ItemDockPanelValueCard::shapeRadiusChosen, this, &ItemDockPanel::applyShapeRadius);
     connect(m_valueCard, &ItemDockPanelValueCard::triangleBaseChosen, this, &ItemDockPanel::applyTriangleBase);
     connect(m_valueCard, &ItemDockPanelValueCard::triangleAngle1Chosen, this, &ItemDockPanel::applyTriangleAngle1);
     connect(m_valueCard, &ItemDockPanelValueCard::triangleAngle2Chosen, this, &ItemDockPanel::applyTriangleAngle2);
@@ -290,6 +290,13 @@ void ItemDockPanel::refresh()
             hasArrow = true;
         }
     }
+    // 需求 9b：曲线（花括号除外）也提供起点 / 终点箭头。
+    for (CurveItem* stroke : strokes) {
+        if (stroke && stroke->source() != CurveSource::Brace) {
+            hasArrow = true;
+            break;
+        }
+    }
     m_valueCard->setCornerVisible(hasCorner);
     m_valueCard->setArcRadiusVisible(hasArc);
     m_valueCard->setTriangleVisible(hasTriangle);
@@ -324,7 +331,7 @@ void ItemDockPanel::refresh()
     m_contentCard->refresh(texts, images);
     m_colorsCard->refresh(shapes, strokes, composites);
     m_fillBorderCard->refresh(shapes, strokes, composites);
-    m_valueCard->refresh(shapes, items);
+    m_valueCard->refresh(shapes, strokes, items);
     m_arrangeCard->refresh(!selectedItems().isEmpty());
 
     m_refreshing = false;
@@ -781,15 +788,16 @@ void ItemDockPanel::applyCornerRadius(int radius)
                          [radius](ShapeItem* shape) { shape->setCornerRadius(radius); });
 }
 
+void ItemDockPanel::applyStartAngle(int angle)
+{
+    changeSelectedShapes(tr("Change start angle"),
+                         [angle](ShapeItem* shape) { shape->setArcAngles(angle, shape->sweepAngle()); });
+}
+
 void ItemDockPanel::applySweepAngle(int angle)
 {
     changeSelectedShapes(tr("Change sector angle"),
                          [angle](ShapeItem* shape) { shape->setArcAngles(shape->startAngle(), angle); });
-}
-
-void ItemDockPanel::applyShapeRadius(int radius)
-{
-    changeSelectedShapes(tr("Change shape radius"), [radius](ShapeItem* shape) { shape->setShapeRadius(radius); });
 }
 
 void ItemDockPanel::applyTriangleBase(int base)
@@ -826,22 +834,63 @@ void ItemDockPanel::applyTriangleAngle2(int degrees)
 
 void ItemDockPanel::applyArrowStart(int style)
 {
-    changeSelectedShapes(tr("Change line start arrow"), [style](ShapeItem* shape) {
+    // 需求 9b/9d：直线与曲线共用一条箭头撤销记录，只改箭头样式。
+    const QList<ShapeItem*> shapes = selectedShapes();
+    const QList<CurveItem*> curves = selectedStrokes();
+    QList<CanvasItem*> targets;
+    QList<QPair<ArrowStyle, ArrowStyle>> before;
+    QList<QPair<ArrowStyle, ArrowStyle>> after;
+    for (ShapeItem* shape : shapes) {
         if (!shape || shape->shapeType() != ShapeType::Line || shape->isCustomShape()) {
-            return;
+            continue;
         }
-        shape->setArrowStyles(static_cast<ArrowStyle>(style), shape->endArrow());
-    });
+        targets.append(shape);
+        before.append(qMakePair(shape->startArrow(), shape->endArrow()));
+        after.append(qMakePair(static_cast<ArrowStyle>(style), shape->endArrow()));
+    }
+    for (CurveItem* curve : curves) {
+        if (!curve || curve->source() == CurveSource::Brace) {
+            continue;
+        }
+        targets.append(curve);
+        before.append(qMakePair(curve->startArrow(), curve->endArrow()));
+        after.append(qMakePair(static_cast<ArrowStyle>(style), curve->endArrow()));
+    }
+    if (targets.isEmpty() || !m_scene || !m_scene->undoStack()) {
+        return;
+    }
+    m_scene->undoStack()->push(new ArrowStyleCommand(m_scene, targets, before, after, tr("Change line start arrow")));
+    refresh();
 }
 
 void ItemDockPanel::applyArrowEnd(int style)
 {
-    changeSelectedShapes(tr("Change line end arrow"), [style](ShapeItem* shape) {
+    const QList<ShapeItem*> shapes = selectedShapes();
+    const QList<CurveItem*> curves = selectedStrokes();
+    QList<CanvasItem*> targets;
+    QList<QPair<ArrowStyle, ArrowStyle>> before;
+    QList<QPair<ArrowStyle, ArrowStyle>> after;
+    for (ShapeItem* shape : shapes) {
         if (!shape || shape->shapeType() != ShapeType::Line || shape->isCustomShape()) {
-            return;
+            continue;
         }
-        shape->setArrowStyles(shape->startArrow(), static_cast<ArrowStyle>(style));
-    });
+        targets.append(shape);
+        before.append(qMakePair(shape->startArrow(), shape->endArrow()));
+        after.append(qMakePair(shape->startArrow(), static_cast<ArrowStyle>(style)));
+    }
+    for (CurveItem* curve : curves) {
+        if (!curve || curve->source() == CurveSource::Brace) {
+            continue;
+        }
+        targets.append(curve);
+        before.append(qMakePair(curve->startArrow(), curve->endArrow()));
+        after.append(qMakePair(curve->startArrow(), static_cast<ArrowStyle>(style)));
+    }
+    if (targets.isEmpty() || !m_scene || !m_scene->undoStack()) {
+        return;
+    }
+    m_scene->undoStack()->push(new ArrowStyleCommand(m_scene, targets, before, after, tr("Change line end arrow")));
+    refresh();
 }
 
 void ItemDockPanel::adjustLayer(int delta)

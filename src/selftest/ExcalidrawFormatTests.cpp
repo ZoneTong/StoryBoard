@@ -214,10 +214,11 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
                       .arg(exported.value(QStringLiteral("type")).toString())
                       .arg(exported.value(QStringLiteral("version")).toInt())
                       .arg(exportedElements.size()));
+        // 需求 16：棋盘格边长从 32px 扩大到 64px，导出的 appState.gridSize 跟随画板网格。
         ctx.check(exported.value(QStringLiteral("appState")).toObject().value(QStringLiteral("gridSize")).toInt() ==
-                          32 &&
+                          64 &&
                       exported.value(QStringLiteral("files")).isObject(),
-                  QStringLiteral("导出场景 appState.gridSize=32 且带 files"),
+                  QStringLiteral("导出场景 appState.gridSize=64 且带 files"),
                   exported.value(QStringLiteral("appState")).toObject().value(QStringLiteral("gridSize")).toString());
         const QJsonObject exportedLine = exportedElements.at(1).toObject();
         ctx.check(exportedLine.value(QStringLiteral("type")).toString() == QStringLiteral("arrow") &&

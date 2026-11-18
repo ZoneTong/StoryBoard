@@ -1,5 +1,7 @@
 #include "Settings.h"
 
+#include "I18n.h"
+
 #include <QCoreApplication>
 #include <QDesktopServices>
 #include <QDir>
@@ -380,6 +382,39 @@ QString AppSettings::shapesDir()
     return dir;
 }
 
+QString AppSettings::writableShapesDir()
+{
+    // 与扫描顺序一致：配置文件同级最优先，其次是部署目录旁的 shapes，
+    // 最后退到用户配置目录——这样装在 Program Files 里也能正常打开模板目录。
+    QStringList candidates{shapesDir(), bundledShapesDir()};
+    const QString userBase = userConfigDirectory();
+    if (!userBase.isEmpty()) {
+        candidates.append(QDir(userBase).filePath(QStringLiteral("shapes")));
+    }
+
+    QStringList seen;
+    for (const QString& candidate : candidates) {
+        if (candidate.isEmpty()) {
+            continue;
+        }
+        const QString dir = QDir::cleanPath(candidate);
+        if (seen.contains(dir)) {
+            continue;
+        }
+        seen.append(dir);
+        // mkpath 的结果必须看：只读安装目录里建不出来时继续往下一个候选降级。
+        const bool created = QDir().mkpath(dir);
+        const QFileInfo info(dir);
+        if (info.isDir() && info.isWritable()) {
+            return dir;
+        }
+        if (!created) {
+            qWarning("shapes directory candidate not usable [%s]: mkpath failed", qUtf8Printable(dir));
+        }
+    }
+    return QString();
+}
+
 QString AppSettings::bundledShapesDir()
 {
     // 部署目录旁的 shapes：便携包解压后把模板丢这里就能被扫到，不必去用户配置目录翻。
@@ -403,21 +438,68 @@ void AppSettings::ensureShapesDir()
     QDir().mkpath(shapesDir());
 }
 
-bool AppSettings::openShapesFolder()
+AppSettings::ShapesFolderOpenResult AppSettings::openShapesFolder()
 {
-    const QString directory = QDir::cleanPath(shapesDir());
-    QDir().mkpath(directory);
+    ShapesFolderOpenResult result;
+    // 先找一个「能建且可写」的目录：只读安装目录里配置同级目录建不出来时自动降级，
+    // 不再像以前那样对一个不存在的目录发起打开，失败原因也就说不清了。
+    const QString directory = writableShapesDir();
+    result.directory = directory;
+    if (directory.isEmpty()) {
+        result.error = ShapesFolderError::CreateFailed;
+        qWarning("shapes folder unavailable: no writable candidate (settings=%s, bundled=%s)",
+                 qUtf8Printable(shapesDir()), qUtf8Printable(bundledShapesDir()));
+        return result;
+    }
 #ifdef Q_OS_WIN
     // 交给已在运行的资源管理器处理：ShellExecute 走外壳通道，能把“打开目录”转发给
     // 现有 explorer 窗口。不要改成自己 CreateProcess 起 explorer.exe——在提权或受限
     // 会话里那样起 explorer 会以 0xc0000142 启动失败，弹“应用程序错误”对话框。
     const std::wstring native = QDir::toNativeSeparators(directory).toStdWString();
-    const HINSTANCE result = ShellExecuteW(nullptr, L"open", native.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-    return reinterpret_cast<qintptr>(result) > 32;
-#else
-    // 非 Windows：目录 URL 必须以分隔符结尾，否则会被当成要打开的文件。
-    return QDesktopServices::openUrl(QUrl::fromLocalFile(directory + QLatin1Char('/')));
+    const HINSTANCE handle = ShellExecuteW(nullptr, L"open", native.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+    const qintptr shellCode = reinterpret_cast<qintptr>(handle);
+    if (shellCode > 32) {
+        result.opened = true;
+        return result;
+    }
+    result.shellCode = static_cast<int>(shellCode);
+    qWarning("ShellExecute failed to open shapes folder [%s]: code=%d", qUtf8Printable(directory), result.shellCode);
 #endif
+    // Windows 外壳失败或非 Windows 平台：退到桌面服务再试一次，目录 URL 必须以分隔符结尾。
+    if (QDesktopServices::openUrl(QUrl::fromLocalFile(directory + QLatin1Char('/')))) {
+        result.opened = true;
+        result.error = ShapesFolderError::None;
+        return result;
+    }
+#ifdef Q_OS_WIN
+    result.error = ShapesFolderError::ShellFailed;
+#else
+    result.error = ShapesFolderError::DesktopFailed;
+#endif
+    qWarning("desktop service failed to open shapes folder [%s]", qUtf8Printable(directory));
+    return result;
+}
+
+QString AppSettings::shapesFolderFailureText(const ShapesFolderOpenResult& result)
+{
+    const QString directory = result.directory.isEmpty() ? QStringLiteral("(unresolved directory)")
+                                                         : QDir::toNativeSeparators(result.directory);
+    switch (result.error) {
+    case ShapesFolderError::CreateFailed:
+        return uiText(QStringLiteral(
+                          "Could not open the shapes folder: %1 (cannot create the directory; check write permission)"))
+            .arg(directory);
+    case ShapesFolderError::ShellFailed:
+        return uiText(QStringLiteral("Could not open the shapes folder: %1 (Windows shell returned %2)"))
+            .arg(directory)
+            .arg(result.shellCode);
+    case ShapesFolderError::DesktopFailed:
+        return uiText(QStringLiteral("Could not open the shapes folder: %1 (no file manager available)"))
+            .arg(directory);
+    case ShapesFolderError::None:
+        break;
+    }
+    return QString();
 }
 
 QString AppSettings::languageSetting()

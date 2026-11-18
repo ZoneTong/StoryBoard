@@ -8,6 +8,7 @@
 
 #include <QColor>
 #include <QList>
+#include <QPair>
 #include <QPixmap>
 #include <QPointer>
 #include <QUndoCommand>
@@ -212,6 +213,11 @@ struct ItemPropertiesState {
     QPixmap image;
     bool hasImageName = false;
     QString imageName;
+    // 需求 15：多边形的图片填充（图形走 ShapeItemState，不需要这一份）。
+    bool hasFillImageState = false;
+    bool fillImagePresent = false;
+    QPixmap fillImage;
+    ImageFill::Mode fillImageMode = ImageFill::Mode::Stretch;
 
     bool operator==(const ItemPropertiesState& other) const;
     bool operator!=(const ItemPropertiesState& other) const { return !(*this == other); }
@@ -254,6 +260,25 @@ class CompositeFillStyleCommand : public QUndoCommand {
 };
 
 // 描线颜色 / 宽度同时作用于选中的图形、笔画和多边形，一次修改只占一条撤销记录。
+// 需求 9b/9d：直线与曲线的起点 / 终点箭头改动走一条专用命令，
+// 不复用整份 shape 状态，也不改名称、尺寸等无关字段。
+class ArrowStyleCommand : public QUndoCommand {
+  public:
+    ArrowStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
+                      const QList<QPair<ArrowStyle, ArrowStyle>>& before,
+                      const QList<QPair<ArrowStyle, ArrowStyle>>& after, const QString& text);
+    void undo() override;
+    void redo() override;
+
+  private:
+    void apply(const QList<QPair<ArrowStyle, ArrowStyle>>& states);
+
+    CanvasScene* m_scene = nullptr;
+    QList<QPointer<CanvasItem>> m_items;
+    QList<QPair<ArrowStyle, ArrowStyle>> m_before;
+    QList<QPair<ArrowStyle, ArrowStyle>> m_after;
+};
+
 class ItemStrokeStyleCommand : public QUndoCommand {
   public:
     ItemStrokeStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<QColor>& beforeColors,

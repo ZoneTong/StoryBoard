@@ -334,6 +334,11 @@ void MainWindow::importOutlineImageDialog()
     m_io->importOutlineImageDialog();
 }
 
+void MainWindow::insertBrace(bool left)
+{
+    m_insert->insertBrace(left);
+}
+
 void MainWindow::insertShape(ShapeType type, qreal triangleAngle1, qreal triangleAngle2, ArrowStyle startArrow,
                              ArrowStyle endArrow, bool autoCorner)
 {

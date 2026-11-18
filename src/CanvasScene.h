@@ -196,7 +196,7 @@ class CanvasScene : public QGraphicsScene {
     // reserved 里是尚未挂到场景、但已经保留给其它副本的名称。
     QString uniqueItemNameFor(const QString& requested, const CanvasItem* except, const QSet<QString>& reserved) const;
     void drawCanvasBackground(QPainter* painter, const QRectF& area, bool includeGrid) const;
-    // 透明背景（None）在视图里画浅灰 / 白棋盘格作为透明标识，每格固定 32 逻辑像素；导出图不画。
+    // 透明背景（None）在视图里画浅灰 / 白棋盘格作为透明标识，每格固定 64 逻辑像素；导出图不画。
     void drawCheckerboard(QPainter* painter, const QRectF& canvas) const;
     // 单选三角形时在 A 边（底边）中点画 8px 刻度线，标记可调底边与两侧内角；查看模式与导出不画。
     void drawTriangleBaseTick(QPainter* painter, const QRectF& rect);

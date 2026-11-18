@@ -17,6 +17,7 @@ class ItemPropertiesDialogImageBlock;
 class ItemPropertiesDialogStyleBlock;
 class ItemPropertiesDialogTextBlock;
 class QSpinBox;
+class QShowEvent;
 
 // 编辑单个图元的属性。图元类型只读，其余字段（名称、图层、层内高度、填充、
 // 描边、位置尺寸、文字字体颜色、图片名称）由对应区块类构建与收集，确认后
@@ -36,6 +37,10 @@ class ItemPropertiesDialog : public QDialog {
     void setReplacementImage(const QPixmap& image);
     static QString layerDescription(const CanvasScene* scene, int layerId);
     void accept() override;
+
+  protected:
+    // 需求 3：属性窗首次显示时，可编辑文字图元的输入焦点直接落到正文尾部。
+    void showEvent(QShowEvent* event) override;
 
   private:
     void applyChanges();
@@ -58,6 +63,7 @@ class ItemPropertiesDialog : public QDialog {
     int m_initialOpacityPercent = 100;
 
     QPixmap m_newImage;
+    bool m_textFocusApplied = false;
     bool m_imageChanged = false;
 
     QPointF m_initialPos;

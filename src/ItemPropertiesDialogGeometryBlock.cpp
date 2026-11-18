@@ -36,10 +36,10 @@ ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(CanvasItem*
     if (shape && !shape->isCustomShape() &&
         (shape->shapeType() == ShapeType::Ellipse || shape->shapeType() == ShapeType::Sector ||
          shape->shapeType() == ShapeType::Arc)) {
-        m_majorAxisSpin = ItemPropertiesFields::makeSpin(
-            this, QStringLiteral("ItemPropertiesMajorAxisValue"), 0.5, 500000.0);
-        m_minorAxisSpin = ItemPropertiesFields::makeSpin(
-            this, QStringLiteral("ItemPropertiesMinorAxisValue"), 0.5, 500000.0);
+        m_majorAxisSpin =
+            ItemPropertiesFields::makeSpin(this, QStringLiteral("ItemPropertiesMajorAxisValue"), 0.5, 500000.0);
+        m_minorAxisSpin =
+            ItemPropertiesFields::makeSpin(this, QStringLiteral("ItemPropertiesMinorAxisValue"), 0.5, 500000.0);
         m_majorAxisSpin->setSuffix(QStringLiteral(" px"));
         m_minorAxisSpin->setSuffix(QStringLiteral(" px"));
         syncAxesFromSize();
@@ -52,6 +52,15 @@ ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(CanvasItem*
 
 void ItemPropertiesDialogGeometryBlock::addRows(QFormLayout* form)
 {
+    // 需求 8 行序定稿：长半轴 → 短半轴 → 旋转 → 位置 → 图元尺寸。
+    // 位置与尺寸固定在最后两行，旋转保持在位置之前。
+    if (m_majorAxisSpin && m_minorAxisSpin) {
+        form->addRow(ItemPropertiesDialog::tr("Semi-major axis"), m_majorAxisSpin);
+        form->addRow(ItemPropertiesDialog::tr("Semi-minor axis"), m_minorAxisSpin);
+    }
+    if (m_rotationSpin) {
+        form->addRow(ItemPropertiesDialog::tr("Rotation"), m_rotationSpin);
+    }
     if (m_positionXSpin && m_positionYSpin) {
         form->addRow(ItemPropertiesDialog::tr("Position"),
                      ItemPropertiesFields::makePairField(this, QStringLiteral("ItemPropertiesPositionValue"),
@@ -61,13 +70,6 @@ void ItemPropertiesDialogGeometryBlock::addRows(QFormLayout* form)
         form->addRow(ItemPropertiesDialog::tr("Item size"),
                      ItemPropertiesFields::makePairField(this, QStringLiteral("ItemPropertiesSizeValue"), m_widthSpin,
                                                          m_heightSizeSpin, QStringLiteral("×")));
-    }
-    if (m_majorAxisSpin && m_minorAxisSpin) {
-        form->addRow(ItemPropertiesDialog::tr("Semi-major axis"), m_majorAxisSpin);
-        form->addRow(ItemPropertiesDialog::tr("Semi-minor axis"), m_minorAxisSpin);
-    }
-    if (m_rotationSpin) {
-        form->addRow(ItemPropertiesDialog::tr("Rotation"), m_rotationSpin);
     }
 }
 
@@ -119,8 +121,7 @@ void ItemPropertiesDialogGeometryBlock::applyAxesToSize(bool majorChanged)
     const bool widthIsMajor = oldWidth >= oldHeight;
     const qreal newWidth = widthIsMajor ? major * 2.0 : minor * 2.0;
     const qreal newHeight = widthIsMajor ? minor * 2.0 : major * 2.0;
-    const QPointF center(m_positionXSpin->value() + oldWidth / 2.0,
-                         m_positionYSpin->value() + oldHeight / 2.0);
+    const QPointF center(m_positionXSpin->value() + oldWidth / 2.0, m_positionYSpin->value() + oldHeight / 2.0);
 
     m_widthSpin->setValue(newWidth);
     m_heightSizeSpin->setValue(newHeight);

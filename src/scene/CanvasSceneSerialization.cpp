@@ -1,5 +1,7 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
+#include "CurveItem.h"
+#include "ShapePathBuilder.h"
 #include "scene/SceneConstants.h"
 
 #include <QBuffer>
@@ -34,6 +36,66 @@ QPixmap decodePixmap(const QString& base64)
     }
     return pixmap;
 }
+
+
+// 需求 13：旧画布里的花括号仍是 shape 图元（brace_left / brace_right）。
+// 载入时改成曲线：采样原 bracePath、沿用描线样式与基础属性，右括号整体旋转 180°。
+// 新文件不会再写出花括号 shape，旧版本打开新文件则看到一条普通曲线。
+bool isLegacyBraceShape(const QJsonObject& json)
+{
+    if (json.value(QStringLiteral("type")).toString() != QStringLiteral("shape")) {
+        return false;
+    }
+    const QString type = json.value(QStringLiteral("shapeType")).toString().trimmed().toLower();
+    return type == QStringLiteral("brace_left") || type == QStringLiteral("leftbrace") ||
+           type == QStringLiteral("braceleft") || type == QStringLiteral("brace_right") ||
+           type == QStringLiteral("rightbrace") || type == QStringLiteral("braceright");
+}
+
+CanvasItem* createBraceCurve(const QJsonObject& json)
+{
+    const QString type = json.value(QStringLiteral("shapeType")).toString().trimmed().toLower();
+    const bool right = type == QStringLiteral("brace_right") || type == QStringLiteral("rightbrace") ||
+                       type == QStringLiteral("braceright");
+    const QPointF pos(json.value(QStringLiteral("x")).toDouble(0.0), json.value(QStringLiteral("y")).toDouble(0.0));
+    const QSizeF size(json.value(QStringLiteral("w")).toDouble(42.0), json.value(QStringLiteral("h")).toDouble(128.0));
+
+    QColor stroke(json.value(QStringLiteral("strokeColor")).toString());
+    if (!stroke.isValid()) {
+        stroke = QColor(30, 41, 59);
+    }
+    const qreal width = qBound<qreal>(0.5, json.value(QStringLiteral("strokeWidth")).toDouble(4.0), 48.0);
+    const Qt::PenStyle penStyle =
+        static_cast<Qt::PenStyle>(qBound(0, json.value(QStringLiteral("strokeStyle")).toInt(1), 5));
+
+    const QPainterPath brace = ShapePathBuilder::bracePath(QRectF(QPointF(0.0, 0.0), size));
+    constexpr int sampleCount = 64;
+    QVector<QPointF> points;
+    points.reserve(sampleCount + 1);
+    for (int i = 0; i <= sampleCount; ++i) {
+        points.append(pos + brace.pointAtPercent(qreal(i) / qreal(sampleCount)));
+    }
+
+    auto* curve = new CurveItem();
+    curve->setStrokePoints(points, stroke, width, 0.0, true);
+    curve->setStrokeStyle(penStyle);
+    curve->setSource(CurveSource::Brace);
+    curve->setArrowStyles(ArrowStyle::None, ArrowStyle::None);
+    if (right) {
+        curve->setRotationAngle(180.0);
+    }
+    curve->setLayerId(qMax(0, json.value(QStringLiteral("layer")).toInt(0)));
+    curve->setGroupId(qMax(0, json.value(QStringLiteral("group")).toInt(0)));
+    curve->setHeight(json.contains(QStringLiteral("height")) ? qMax(0, json.value(QStringLiteral("height")).toInt(0))
+                                                             : -1);
+    const QString name = json.value(QStringLiteral("itemName")).toString().trimmed();
+    if (!name.isEmpty()) {
+        curve->setName(name);
+    }
+    curve->setItemOpacity(qBound<qreal>(0.0, json.value(QStringLiteral("opacity")).toDouble(1.0), 1.0));
+    return curve;
+}
+
 
 } // namespace
 
@@ -150,13 +212,15 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
             // 旧笔画图元不兼容新曲线：跳过，不因单个旧图元阻断整份画布。
             continue;
         }
-        CanvasItem* item = createItem(kind);
+        CanvasItem* item = isLegacyBraceShape(itemJson) ? createBraceCurve(itemJson) : createItem(kind);
         if (!item) {
             qDeleteAll(parsedItems);
             return fail(tr("The canvas contains an unknown item type: %1").arg(kind));
         }
-        item->fromJson(itemJson);
-        item->setItemOpacity(itemJson.value(QStringLiteral("opacity")).toDouble(1.0));
+        if (!isLegacyBraceShape(itemJson)) {
+            item->fromJson(itemJson);
+            item->setItemOpacity(itemJson.value(QStringLiteral("opacity")).toDouble(1.0));
+        }
         parsedItems.append(item);
     }
 
@@ -166,8 +230,8 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
 
     // 画布尺寸按文件原值恢复，不做 200–12000 钳位：钳位只应发生在编辑操作里，
     // 否则超出范围的旧文件一打开、再保存就被静默改写。
-    m_canvasOrigin = QPointF(canvas.value(QStringLiteral("x")).toDouble(0.0),
-                             canvas.value(QStringLiteral("y")).toDouble(0.0));
+    m_canvasOrigin =
+        QPointF(canvas.value(QStringLiteral("x")).toDouble(0.0), canvas.value(QStringLiteral("y")).toDouble(0.0));
     m_canvasSize = QSizeF(width, height);
 
     BackgroundState background;

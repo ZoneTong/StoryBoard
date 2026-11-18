@@ -1,6 +1,7 @@
 #include "CanvasItemHandles.h"
 
 #include "CanvasItem.h"
+#include "ShapeItem.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -10,6 +11,16 @@ constexpr qreal kHandleHitPadding = 2.0;
 } // namespace
 
 CanvasItemHandles::CanvasItemHandles(CanvasItem* item) : m_item(item) {}
+
+// 需求 2：单选三角形时顶点 C 取代 Top 句柄；其它情况仍用八向包围框。
+bool CanvasItemHandles::usesApexHandle() const
+{
+    if (!m_item || !m_item->isSelected() || !m_item->isEditable() || !m_item->hasSingleSelection()) {
+        return false;
+    }
+    const auto* shape = dynamic_cast<const ShapeItem*>(m_item);
+    return shape && shape->shapeType() == ShapeType::Triangle && !shape->isCustomShape();
+}
 
 qreal CanvasItemHandles::size() const
 {
@@ -45,6 +56,14 @@ QPointF CanvasItemHandles::center(int handle) const
         return QPointF(rect.left(), rect.center().y());
     case CanvasItem::Rotation:
         return QPointF(rect.center().x(), rect.top() - rotationOffset());
+    case CanvasItem::Apex: {
+        bool ok = false;
+        const QPointF custom = m_item->customHandleCenter(CanvasItem::Apex, &ok);
+        if (ok) {
+            return custom;
+        }
+        break;
+    }
     case CanvasItem::NoHandle:
         break;
     }
@@ -62,9 +81,18 @@ int CanvasItemHandles::hitAt(const QPointF& pos) const
 {
     const qreal hitPadding = qMin<qreal>(10.0 / m_item->viewScale(), 14.0);
     for (int handle = CanvasItem::TopLeft; handle <= CanvasItem::Rotation; ++handle) {
+        if (handle == CanvasItem::Top && usesApexHandle()) {
+            continue;
+        }
         const QRectF handleRect = rect(handle).adjusted(-hitPadding, -hitPadding, hitPadding, hitPadding);
         if (handleRect.contains(pos)) {
             return handle;
+        }
+    }
+    if (usesApexHandle()) {
+        const QRectF handleRect = rect(CanvasItem::Apex).adjusted(-hitPadding, -hitPadding, hitPadding, hitPadding);
+        if (handleRect.contains(pos)) {
+            return CanvasItem::Apex;
         }
     }
     return CanvasItem::NoHandle;
@@ -83,8 +111,15 @@ QPainterPath CanvasItemHandles::selectionShape() const
     // reach the corner (ellipse, triangle, diamond, star) the handle could not
     // be grabbed at all.
     for (int handle = CanvasItem::TopLeft; handle <= CanvasItem::Rotation; ++handle) {
+        if (handle == CanvasItem::Top && usesApexHandle()) {
+            continue;
+        }
         path.addRect(
             rect(handle).adjusted(-kHandleHitPadding, -kHandleHitPadding, kHandleHitPadding, kHandleHitPadding));
+    }
+    if (usesApexHandle()) {
+        path.addRect(rect(CanvasItem::Apex)
+                         .adjusted(-kHandleHitPadding, -kHandleHitPadding, kHandleHitPadding, kHandleHitPadding));
     }
     return path;
 }
@@ -110,7 +145,13 @@ void CanvasItemHandles::drawOverlay(QPainter* painter) const
     painter->setPen(handlePen);
     painter->setBrush(Qt::white);
     for (int handle = CanvasItem::TopLeft; handle <= CanvasItem::Left; ++handle) {
+        if (handle == CanvasItem::Top && usesApexHandle()) {
+            continue;
+        }
         painter->drawRect(rect(handle));
+    }
+    if (usesApexHandle()) {
+        painter->drawRect(rect(CanvasItem::Apex));
     }
 
     // Rotation handle: a circular knob above the frame, connected by a thin line.
@@ -136,6 +177,8 @@ QCursor CanvasItemHandles::cursor(int handle) const
     case CanvasItem::Left:
     case CanvasItem::Right:
         return QCursor(Qt::SizeHorCursor);
+    case CanvasItem::Apex:
+        return QCursor(Qt::SizeAllCursor);
     case CanvasItem::Rotation:
         return QCursor(Qt::PointingHandCursor);
     case CanvasItem::NoHandle:

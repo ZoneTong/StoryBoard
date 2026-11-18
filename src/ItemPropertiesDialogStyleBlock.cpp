@@ -8,8 +8,10 @@
 #include "ShapeItem.h"
 
 #include <QComboBox>
+#include <QFileDialog>
 #include <QFormLayout>
 #include <QHBoxLayout>
+#include <QPushButton>
 #include <QSpinBox>
 #include <QToolButton>
 
@@ -22,14 +24,62 @@ qreal defaultCornerRadius(const QSizeF& size, bool autoCorner)
 
 ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item, QWidget* parent) : QWidget(parent)
 {
+    auto buildFillImageRow = [this](const QPixmap& initial, ImageFill::Mode mode) {
+        m_fillImage = initial;
+        m_fillImageRow = new QWidget(this);
+        auto* rowLayout = new QHBoxLayout(m_fillImageRow);
+        rowLayout->setContentsMargins(0, 0, 0, 0);
+        rowLayout->setSpacing(4);
+
+        m_fillImageButton = new QPushButton(m_fillImageRow);
+        m_fillImageButton->setObjectName(QStringLiteral("ItemPropertiesFillImageValue"));
+        m_fillImageButton->setText(initial.isNull() ? ItemPropertiesDialog::tr("Choose image…")
+                                                    : ItemPropertiesDialog::tr("Change image…"));
+
+        m_fillImageModeCombo = new QComboBox(m_fillImageRow);
+        m_fillImageModeCombo->setObjectName(QStringLiteral("ItemPropertiesFillImageModeValue"));
+        m_fillImageModeCombo->addItem(ItemPropertiesDialog::tr("Stretch"), static_cast<int>(ImageFill::Mode::Stretch));
+        m_fillImageModeCombo->addItem(ItemPropertiesDialog::tr("Fit"), static_cast<int>(ImageFill::Mode::Fit));
+        m_fillImageModeCombo->addItem(ItemPropertiesDialog::tr("Tile"), static_cast<int>(ImageFill::Mode::Tile));
+        m_fillImageModeCombo->setCurrentIndex(qMax(0, m_fillImageModeCombo->findData(static_cast<int>(mode))));
+
+        m_fillImageClearButton = new QPushButton(ItemPropertiesDialog::tr("Clear"), m_fillImageRow);
+        m_fillImageClearButton->setObjectName(QStringLiteral("ItemPropertiesFillImageClear"));
+
+        rowLayout->addWidget(m_fillImageButton, 1);
+        rowLayout->addWidget(m_fillImageModeCombo);
+        rowLayout->addWidget(m_fillImageClearButton);
+
+        connect(m_fillImageButton, &QPushButton::clicked, this, [this]() {
+            const QString path = QFileDialog::getOpenFileName(
+                this, ItemPropertiesDialog::tr("Choose fill image"), QString(),
+                ItemPropertiesDialog::tr("Images (*.png *.jpg *.jpeg *.bmp *.webp *.gif)"));
+            if (path.isEmpty()) {
+                return;
+            }
+            QPixmap image(path);
+            if (image.isNull()) {
+                return;
+            }
+            m_fillImage = image;
+            m_fillImageButton->setText(ItemPropertiesDialog::tr("Change image…"));
+        });
+        connect(m_fillImageClearButton, &QPushButton::clicked, this, [this]() {
+            m_fillImage = QPixmap();
+            m_fillImageButton->setText(ItemPropertiesDialog::tr("Choose image…"));
+        });
+    };
+
     if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
         const bool filled = shapeTypeIsFilled(shape->shapeType());
         m_hasFill = filled;
 
-        m_fillStyleCombo = new QComboBox(this);
-        m_fillStyleCombo->setObjectName(QStringLiteral("ItemPropertiesFillStyleValue"));
-        m_fillStyleCombo->setMinimumWidth(180);
+        // 需求 5/9a：直线、弧线这类只描线的图形根本没有填充属性，
+        // 不建行也不留“Not applicable”占位。
         if (filled) {
+            m_fillStyleCombo = new QComboBox(this);
+            m_fillStyleCombo->setObjectName(QStringLiteral("ItemPropertiesFillStyleValue"));
+            m_fillStyleCombo->setMinimumWidth(180);
             for (FillStyle style : allFillStyles()) {
                 m_fillStyleCombo->addItem(ItemStyleVisuals::fillStyleIcon(style, 16), fillStyleName(style),
                                           static_cast<int>(style));
@@ -38,15 +88,13 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             if (index >= 0) {
                 m_fillStyleCombo->setCurrentIndex(index);
             }
-        } else {
-            m_fillStyleCombo->addItem(ItemPropertiesDialog::tr("Not applicable"), -1);
-            m_fillStyleCombo->setEnabled(false);
-        }
 
-        m_fillColorButton = ItemPropertiesFields::makeColorField(this, shape->fillColor(),
-                                                                 QStringLiteral("ItemPropertiesFillColorValue"),
-                                                                 ItemPropertiesFields::ColorIconRole::Fill);
-        m_fillColorButton->setEnabled(filled);
+            m_fillColorButton = ItemPropertiesFields::makeColorField(this, shape->fillColor(),
+                                                                     QStringLiteral("ItemPropertiesFillColorValue"),
+                                                                     ItemPropertiesFields::ColorIconRole::Fill);
+            // 需求 15：独立「填充图片」属性，不进 FillStyle；图片透明处露出填充色 / 图案。
+            buildFillImageRow(shape->fillImage(), shape->fillImageMode());
+        }
 
         m_strokeColorButton = ItemPropertiesFields::makeColorField(this, shape->strokeColor(),
                                                                    QStringLiteral("ItemPropertiesStrokeColorValue"),
@@ -86,14 +134,6 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
         if (type == ShapeType::Sector || type == ShapeType::Arc) {
             m_initialStartAngle = shape->startAngle();
             m_initialSweepAngle = shape->sweepAngle();
-            m_initialStoredShapeRadius = shape->shapeRadius();
-            const int maximumRadius = qMax(1, qRound(shape->contentSize().width() / 2.0));
-            m_initialShapeRadius =
-                qBound(1,
-                       qRound(m_initialStoredShapeRadius >= 0.0 ? m_initialStoredShapeRadius
-                                                                : shape->contentSize().width() / 2.0),
-                       maximumRadius);
-
             m_startAngleSpin = new QSpinBox(this);
             m_startAngleSpin->setObjectName(QStringLiteral("ItemPropertiesStartAngleValue"));
             m_startAngleSpin->setRange(-360, 360);
@@ -109,15 +149,6 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_sweepAngleSpin->setSuffix(QStringLiteral("°"));
             m_sweepAngleSpin->setValue(qRound(m_initialSweepAngle));
             m_sweepAngleSpin->setMinimumWidth(88);
-
-            m_shapeRadiusSpin = new QSpinBox(this);
-            m_shapeRadiusSpin->setObjectName(QStringLiteral("ItemPropertiesShapeRadiusValue"));
-            m_shapeRadiusSpin->setRange(1, maximumRadius);
-            m_shapeRadiusSpin->setSuffix(QStringLiteral(" px"));
-            m_shapeRadiusSpin->setValue(m_initialShapeRadius);
-            m_shapeRadiusSpin->setMinimumWidth(88);
-            connect(m_shapeRadiusSpin, &QSpinBox::valueChanged, this,
-                    [this](int value) { m_shapeRadiusEdited = value != m_initialShapeRadius; });
         }
 
         if (!shape->isCustomShape() && type == ShapeType::Rectangle) {
@@ -214,6 +245,9 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_fillStyleCombo->setCurrentIndex(fillIndex);
         }
 
+        // 需求 15：多边形同样支持图片填充，裁剪到 FilledArea 层并集（孔洞留空）。
+        buildFillImageRow(composite->fillImage(), composite->fillImageMode());
+
         m_fillColorButton = ItemPropertiesFields::makeColorField(this, composite->fillColor(),
                                                                  QStringLiteral("ItemPropertiesFillColorValue"),
                                                                  ItemPropertiesFields::ColorIconRole::Fill);
@@ -277,6 +311,9 @@ void ItemPropertiesDialogStyleBlock::addRows(QFormLayout* form)
     if (m_fillColorButton) {
         form->addRow(ItemPropertiesDialog::tr("Fill color"), m_fillColorButton);
     }
+    if (m_fillImageRow) {
+        form->addRow(ItemPropertiesDialog::tr("Fill image"), m_fillImageRow);
+    }
     if (m_strokeColorButton) {
         form->addRow(ItemPropertiesDialog::tr("Border color"), m_strokeColorButton);
     }
@@ -308,9 +345,14 @@ void ItemPropertiesDialogStyleBlock::addRows(QFormLayout* form)
     if (m_sweepAngleSpin) {
         form->addRow(ItemPropertiesDialog::tr("Sweep angle"), m_sweepAngleSpin);
     }
-    if (m_shapeRadiusSpin) {
-        form->addRow(ItemPropertiesDialog::tr("Shape radius"), m_shapeRadiusSpin);
+}
+
+ImageFill::Mode ItemPropertiesDialogStyleBlock::fillImageMode() const
+{
+    if (!m_fillImageModeCombo) {
+        return ImageFill::Mode::Stretch;
     }
+    return static_cast<ImageFill::Mode>(m_fillImageModeCombo->currentData().toInt());
 }
 
 void ItemPropertiesDialogStyleBlock::setContentSize(const QSizeF& size)
@@ -325,15 +367,5 @@ void ItemPropertiesDialogStyleBlock::setContentSize(const QSizeF& size)
             m_cornerRadiusSpin->setValue(m_initialCornerRadius);
         }
         m_cornerRadiusSpin->blockSignals(blocked);
-    }
-    if (m_shapeRadiusSpin) {
-        const int maximum = qMax(1, qRound(size.width() / 2.0));
-        const bool blocked = m_shapeRadiusSpin->blockSignals(true);
-        m_shapeRadiusSpin->setMaximum(maximum);
-        if (!m_shapeRadiusEdited && m_initialStoredShapeRadius < 0.0) {
-            m_initialShapeRadius = maximum;
-            m_shapeRadiusSpin->setValue(m_initialShapeRadius);
-        }
-        m_shapeRadiusSpin->blockSignals(blocked);
     }
 }

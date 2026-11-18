@@ -1,6 +1,7 @@
 #include "ItemDockPanelValueCard.h"
 
 #include "CanvasItem.h"
+#include "CurveItem.h"
 #include "IconFactory.h"
 #include "ItemDockPanel.h"
 #include "ShapeItem.h"
@@ -84,6 +85,28 @@ ItemDockPanelValueCard::ItemDockPanelValueCard(QWidget* parent) : QWidget(parent
     cornerLayout->addWidget(m_cornerSpin, 1);
     outer->addWidget(m_cornerSection);
 
+    // 需求 9b/9c：起始角在上、扫过角在下，与属性窗的相对次序一致。
+    m_startAngleSection = new QWidget(this);
+    auto* startLayout = new QHBoxLayout(m_startAngleSection);
+    startLayout->setContentsMargins(0, 0, 0, 0);
+    startLayout->setSpacing(4);
+    QToolButton* startIcon = makeRowIcon(IconId::RotateCcw, m_startAngleSection);
+    startIcon->setToolTip(ItemDockPanel::tr("Start angle"));
+    startLayout->addWidget(startIcon);
+    m_startAngleSpin = new QSpinBox(m_startAngleSection);
+    m_startAngleSpin->setObjectName(QStringLiteral("ItemValueSpin"));
+    m_startAngleSpin->setRange(-360, 360);
+    m_startAngleSpin->setSuffix(QStringLiteral("°"));
+    m_startAngleSpin->setToolTip(ItemDockPanel::tr("Start angle"));
+    m_startAngleSpin->setKeyboardTracking(false);
+    connect(m_startAngleSpin, &QSpinBox::valueChanged, this, [this](int value) {
+        if (!m_refreshing) {
+            emit startAngleChosen(value);
+        }
+    });
+    startLayout->addWidget(m_startAngleSpin, 1);
+    outer->addWidget(m_startAngleSection);
+
     m_angleSection = new QWidget(this);
     auto* angleLayout = new QHBoxLayout(m_angleSection);
     angleLayout->setContentsMargins(0, 0, 0, 0);
@@ -106,29 +129,6 @@ ItemDockPanelValueCard::ItemDockPanelValueCard(QWidget* parent) : QWidget(parent
     });
     angleLayout->addWidget(m_angleSpin, 1);
     outer->addWidget(m_angleSection);
-
-    m_radiusSection = new QWidget(this);
-    auto* radiusLayout = new QHBoxLayout(m_radiusSection);
-    radiusLayout->setContentsMargins(0, 0, 0, 0);
-    radiusLayout->setSpacing(4);
-
-    QToolButton* radiusIcon = makeRowIcon(IconId::Corner, m_radiusSection);
-    radiusIcon->setToolTip(ItemDockPanel::tr("Shape radius"));
-    radiusLayout->addWidget(radiusIcon);
-
-    m_radiusSpin = new QSpinBox(m_radiusSection);
-    m_radiusSpin->setObjectName(QStringLiteral("ItemValueSpin"));
-    m_radiusSpin->setRange(1, 1000);
-    m_radiusSpin->setSuffix(QStringLiteral(" px"));
-    m_radiusSpin->setToolTip(ItemDockPanel::tr("Shape radius"));
-    m_radiusSpin->setKeyboardTracking(false);
-    connect(m_radiusSpin, &QSpinBox::valueChanged, this, [this](int value) {
-        if (!m_refreshing) {
-            emit shapeRadiusChosen(value);
-        }
-    });
-    radiusLayout->addWidget(m_radiusSpin, 1);
-    outer->addWidget(m_radiusSection);
 
     // 需求 1：三角形以角度为真相——底边长度、角 A、角 B 三行
     // 直接决定当前几何，高度由底边与两个底角派生（拖高等价于等比改底边）。
@@ -209,13 +209,13 @@ ItemDockPanelValueCard::ItemDockPanelValueCard(QWidget* parent) : QWidget(parent
     arrowOuter->setContentsMargins(0, 0, 0, 0);
     arrowOuter->setSpacing(2);
 
-    auto makeArrowRow = [this, arrowOuter](const QString& tooltip, QComboBox** target,
+    auto makeArrowRow = [this, arrowOuter](IconId iconId, const QString& tooltip, QComboBox** target,
                                            void (ItemDockPanelValueCard::*signal)(int)) {
         auto* row = new QWidget(m_arrowSection);
         auto* rowLayout = new QHBoxLayout(row);
         rowLayout->setContentsMargins(0, 0, 0, 0);
         rowLayout->setSpacing(4);
-        QToolButton* icon = makeRowIcon(IconId::RotateCcw, row);
+        QToolButton* icon = makeRowIcon(iconId, row);
         icon->setToolTip(tooltip);
         rowLayout->addWidget(icon);
         QComboBox* combo = new QComboBox(row);
@@ -233,15 +233,16 @@ ItemDockPanelValueCard::ItemDockPanelValueCard(QWidget* parent) : QWidget(parent
         arrowOuter->addWidget(row);
         *target = combo;
     };
-    makeArrowRow(ItemDockPanel::tr("Start arrow"), &m_startArrowCombo,
+    makeArrowRow(IconId::ArrowStart, ItemDockPanel::tr("Start arrow"), &m_startArrowCombo,
                  static_cast<void (ItemDockPanelValueCard::*)(int)>(&ItemDockPanelValueCard::arrowStartChosen));
-    makeArrowRow(ItemDockPanel::tr("End arrow"), &m_endArrowCombo,
+    makeArrowRow(IconId::ArrowEnd, ItemDockPanel::tr("End arrow"), &m_endArrowCombo,
                  static_cast<void (ItemDockPanelValueCard::*)(int)>(&ItemDockPanelValueCard::arrowEndChosen));
     m_arrowSection->setVisible(false);
     outer->addWidget(m_arrowSection);
 }
 
-void ItemDockPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QList<CanvasItem*>& items)
+void ItemDockPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QList<CurveItem*>& strokes,
+                                     const QList<CanvasItem*>& items)
 {
     m_refreshing = true;
 
@@ -261,19 +262,13 @@ void ItemDockPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QLis
         const qreal radius = shapes.isEmpty() ? 0.0 : qMax<qreal>(0.0, shapes.first()->cornerRadius());
         m_cornerSpin->setValue(qBound(0, qRound(radius), limit));
     }
+    if (m_startAngleSpin) {
+        m_startAngleSpin->setEnabled(enabled);
+        m_startAngleSpin->setValue(shapes.isEmpty() ? 30 : qRound(shapes.first()->startAngle()));
+    }
     if (m_angleSpin) {
         m_angleSpin->setEnabled(enabled);
         m_angleSpin->setValue(shapes.isEmpty() ? 120 : qRound(shapes.first()->sweepAngle()));
-    }
-    if (m_radiusSpin) {
-        m_radiusSpin->setEnabled(enabled);
-        // 自动半径（<0）显示为实际生效的短边一半，用户改一下即成为显式半径。
-        qreal radius = 100.0;
-        if (!shapes.isEmpty()) {
-            const qreal stored = shapes.first()->shapeRadius();
-            radius = stored >= 0.0 ? stored : shapes.first()->contentSize().width() / 2.0;
-        }
-        m_radiusSpin->setValue(qMax(1, qRound(radius)));
     }
 
     ShapeItem* triangle = nullptr;
@@ -302,13 +297,22 @@ void ItemDockPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QLis
                 break;
             }
         }
+        // 需求 9b：直线与曲线共用这两行；花括号是精确采样曲线，不显示箭头。
+        CurveItem* curve = nullptr;
+        for (CurveItem* stroke : strokes) {
+            if (stroke && stroke->source() != CurveSource::Brace) {
+                curve = stroke;
+                break;
+            }
+        }
         const bool lineOn = line != nullptr;
-        m_startArrowCombo->setEnabled(lineOn);
-        m_endArrowCombo->setEnabled(lineOn);
-        m_startArrowCombo->setCurrentIndex(
-            qMax(0, m_startArrowCombo->findData(static_cast<int>(lineOn ? line->startArrow() : ArrowStyle::None))));
-        m_endArrowCombo->setCurrentIndex(
-            qMax(0, m_endArrowCombo->findData(static_cast<int>(lineOn ? line->endArrow() : ArrowStyle::None))));
+        const bool curveOn = curve != nullptr;
+        m_startArrowCombo->setEnabled(lineOn || curveOn);
+        m_endArrowCombo->setEnabled(lineOn || curveOn);
+        const ArrowStyle startStyle = lineOn ? line->startArrow() : (curveOn ? curve->startArrow() : ArrowStyle::None);
+        const ArrowStyle endStyle = lineOn ? line->endArrow() : (curveOn ? curve->endArrow() : ArrowStyle::None);
+        m_startArrowCombo->setCurrentIndex(qMax(0, m_startArrowCombo->findData(static_cast<int>(startStyle))));
+        m_endArrowCombo->setCurrentIndex(qMax(0, m_endArrowCombo->findData(static_cast<int>(endStyle))));
     }
 
     m_refreshing = false;
@@ -337,10 +341,10 @@ void ItemDockPanelValueCard::setCornerVisible(bool visible)
 
 void ItemDockPanelValueCard::setArcRadiusVisible(bool visible)
 {
+    if (m_startAngleSection) {
+        m_startAngleSection->setVisible(visible);
+    }
     if (m_angleSection) {
         m_angleSection->setVisible(visible);
-    }
-    if (m_radiusSection) {
-        m_radiusSection->setVisible(visible);
     }
 }

@@ -13,6 +13,9 @@
 // 曲线图元：内部几何是分段三次贝塞尔，绘制期的采样点只在收笔拟合时短暂存在，
 // 不写入画布文件。属性与直线对齐：描线颜色 / 宽度 / 样式、透明度、位置尺寸、
 // 旋转、名称、图层与层内高度；没有填充与平滑度属性。
+// 需求 13：括号复用曲线类，需要知道曲线来源，才能对括号隐藏箭头行、跳过简化。
+enum class CurveSource { HandDrawn = 0, LineArt, Brace };
+
 class CurveItem : public CanvasItem {
     Q_OBJECT
   public:
@@ -60,6 +63,9 @@ class CurveItem : public CanvasItem {
     ArrowStyle endArrow() const { return m_endArrow; }
     void setArrowStyles(ArrowStyle start, ArrowStyle end);
 
+    CurveSource source() const { return m_source; }
+    void setSource(CurveSource source);
+
     int segmentCount() const { return m_segments.size(); }
     // 曲线段的端点序列，供只读检查与撤销比较；不再暴露原始采样点。
     int strokePointCount() const { return CurveGeometry::knots(m_segments).size(); }
@@ -95,4 +101,5 @@ class CurveItem : public CanvasItem {
     qreal m_pad = 4.0;
     ArrowStyle m_startArrow = ArrowStyle::None;
     ArrowStyle m_endArrow = ArrowStyle::None;
+    CurveSource m_source = CurveSource::HandDrawn;
 };

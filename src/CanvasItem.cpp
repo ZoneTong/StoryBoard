@@ -21,6 +21,15 @@ namespace {
 constexpr qreal kMinimumSide = 8.0;
 } // namespace
 
+QPointF CanvasItem::customHandleCenter(int handle, bool* ok) const
+{
+    Q_UNUSED(handle);
+    if (ok) {
+        *ok = false;
+    }
+    return QPointF();
+}
+
 CanvasItem::CanvasItem(QGraphicsItem* parent) : QGraphicsObject(parent)
 {
     setFlag(QGraphicsItem::ItemIsSelectable, false);
