@@ -332,6 +332,78 @@ void selftest::runLineSplitTests(Context& ctx)
                   QStringLiteral("upper=%1 lower=%2").arg(upperFound).arg(lowerFound));
     }
 
+    // 需求 29：弧线由椭圆类派生几何、由曲线类派生行为，无填充区域归类为线条
+    // ——与矩形双选时分割可用，并按弧线轨迹（而非端点连线）切分。
+    {
+        CanvasScene scene;
+        scene.applyCanvasSize(QSizeF(800.0, 600.0));
+        scene.setMode(ToolMode::Edit);
+        QUndoStack undo;
+        scene.setUndoStack(&undo);
+
+        auto* rect = new ShapeItem(ShapeType::Rectangle);
+        rect->setContentSize(QSizeF(128.0, 128.0));
+        rect->setPos(QPointF(500.0, 500.0));
+        scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
+        // 半椭圆弧：两端落在矩形左右两缘之外，弧底从矩形下部横穿。
+        auto* arc = new ShapeItem(ShapeType::Arc);
+        arc->setContentSize(QSizeF(268.0, 40.0));
+        arc->setPos(QPointF(430.0, 550.0));
+        arc->setArcAngles(0.0, 180.0);
+        scene.addItemsWithUndo({arc}, QStringLiteral("Add arc"));
+
+        scene.clearSelection();
+        rect->setSelected(true);
+        arc->setSelected(true);
+        ctx.check(LineSplitOps::supports(&scene), QStringLiteral("矩形加弧线双选时分割判定可用"));
+        ctx.check(LineSplitOps::apply(&scene, QStringLiteral("分割")), QStringLiteral("弧线可以按轨迹切分矩形"));
+
+        int fragments = 0;
+        for (CanvasItem* item : scene.canvasItems()) {
+            if (dynamic_cast<CompositeShapeItem*>(item)) {
+                ++fragments;
+            }
+        }
+        ctx.check(fragments == 2, QStringLiteral("矩形被弧线切成两块"), QStringLiteral("fragments=%1").arg(fragments));
+    }
+
+    // 需求 29：旧画布里的正弦波形是 shape 图元，载入即迁移为曲线图元，
+    // 迁移后与矩形双选同样可用弧线/曲线的轨迹切法分割。
+    {
+        CanvasScene oldScene;
+        oldScene.applyCanvasSize(QSizeF(1536.0, 1024.0));
+        oldScene.setMode(ToolMode::Edit);
+        QUndoStack oldUndo;
+        oldScene.setUndoStack(&oldUndo);
+        auto* legacySine = new ShapeItem(ShapeType::SineWave);
+        legacySine->setContentSize(QSizeF(128.0, 40.0));
+        legacySine->setPos(QPointF(300.0, 200.0));
+        legacySine->setStyle(QColor(QStringLiteral("#111827")), QColor(Qt::transparent), 4.0);
+        oldScene.addItemsWithUndo({legacySine}, QStringLiteral("Add legacy sine"));
+        const QJsonObject legacyRoot = oldScene.toJson();
+
+        CanvasScene loaded;
+        QUndoStack loadedUndo;
+        loaded.setUndoStack(&loadedUndo);
+        QString loadError;
+        ctx.check(loaded.fromJson(legacyRoot, &loadError), QStringLiteral("旧正弦波形画布载入"), loadError);
+        auto* migrated =
+            loaded.canvasItemCount() == 1 ? dynamic_cast<CurveItem*>(loaded.canvasItems().constFirst()) : nullptr;
+        ctx.check(migrated != nullptr, QStringLiteral("旧正弦波形载入后成为曲线图元"),
+                  QStringLiteral("items=%1").arg(loaded.canvasItemCount()));
+
+        auto* rect = new ShapeItem(ShapeType::Rectangle);
+        rect->setContentSize(QSizeF(80.0, 60.0));
+        rect->setPos(QPointF(320.0, 190.0));
+        loaded.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
+        loaded.clearSelection();
+        rect->setSelected(true);
+        if (migrated) {
+            migrated->setSelected(true);
+        }
+        ctx.check(LineSplitOps::supports(&loaded), QStringLiteral("迁移后的正弦波曲线可作为切刀"));
+    }
+
     // 需求 21：曲线刀线未穿过填充图形（整条落在内部）时不切分。
     {
         CanvasScene scene;
