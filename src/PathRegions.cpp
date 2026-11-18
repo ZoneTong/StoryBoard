@@ -106,4 +106,26 @@ QList<QPainterPath> splitDisjoint(const QPainterPath& path)
     return pieces;
 }
 
+qreal area(const QPainterPath& path)
+{
+    // toFillPolygons 已按填充规则把外轮廓与孔洞解成互不重叠的多边形，
+    // 各环鞋带公式面积取绝对值求和即填充面积。
+    qreal total = 0.0;
+    const QList<QPolygonF> polygons = path.toFillPolygons();
+    for (const QPolygonF& polygon : polygons) {
+        const int count = polygon.size();
+        if (count < 3) {
+            continue;
+        }
+        qreal sum = 0.0;
+        for (int i = 0; i < count; ++i) {
+            const QPointF& a = polygon.at(i);
+            const QPointF& b = polygon.at((i + 1) % count);
+            sum += a.x() * b.y() - b.x() * a.y();
+        }
+        total += qAbs(sum) / 2.0;
+    }
+    return total;
+}
+
 } // namespace PathRegions

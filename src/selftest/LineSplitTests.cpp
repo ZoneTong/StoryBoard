@@ -7,7 +7,9 @@
 #include "ItemDockPanel.h"
 #include "LineSplitOps.h"
 #include "MainWindow.h"
+#include "PathRegions.h"
 #include "ShapeItem.h"
+#include "ShapePathBuilder.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
 #include "selftest/SelftestHelpers.h"
@@ -21,6 +23,7 @@
 #include <QVector>
 #include <QtMath>
 #include <algorithm>
+#include <limits>
 
 namespace {
 
@@ -385,5 +388,72 @@ void selftest::runLineSplitTests(Context& ctx)
                   QStringLiteral("切刀不与填充图形相交时返回失败"));
         ctx.check(itemCount(scene) == before && undo.count() == undoCount, QStringLiteral("切空时不产生图元与撤销记录"),
                   QStringLiteral("items=%1 undo=%2").arg(itemCount(scene)).arg(undo.count()));
+    }
+
+    // 需求 25：左花括号分割波形旗帜时出现多余的奇怪色块。复现两种真机摆放：
+    // A. 括号比旗面高、尖端探出旗面左缘；B. 按默认插入尺寸 42×128 与旗面
+    // 128×86 中心层叠（真机默认插入即此摆放）。统计每块碎片的包围盒。
+    const struct Arrangement {
+        const char* label;
+        QRectF flagRect;
+        QRectF braceRect;
+    } arrangements[] = {
+        {"A-tip-outside", QRectF(300.0, 260.0, 128.0, 86.0), QRectF(280.0, 220.0, 110.0, 170.0)},
+        {"B-default-cascade", QRectF(722.0, 487.0, 128.0, 86.0), QRectF(747.0, 448.0, 42.0, 128.0)},
+    };
+    for (const Arrangement& arrangement : arrangements) {
+        CanvasScene scene;
+        scene.applyCanvasSize(QSizeF(1536.0, 1024.0));
+        scene.setMode(ToolMode::Edit);
+        QUndoStack undo;
+        scene.setUndoStack(&undo);
+
+        auto* flag = new ShapeItem(ShapeType::FlagWave);
+        flag->setContentSize(arrangement.flagRect.size());
+        flag->setPos(arrangement.flagRect.topLeft());
+        scene.addItemsWithUndo({flag}, QStringLiteral("Add flag"));
+
+        auto* brace = new CurveItem();
+        {
+            const QPainterPath braceShape = ShapePathBuilder::bracePath(
+                QRectF(0.0, 0.0, arrangement.braceRect.width(), arrangement.braceRect.height()));
+            QVector<QPointF> points;
+            points.reserve(49);
+            for (int i = 0; i <= 48; ++i) {
+                points.append(arrangement.braceRect.topLeft() + braceShape.pointAtPercent(qreal(i) / qreal(48)));
+            }
+            brace->setStrokePoints(points, QColor(QStringLiteral("#334155")), 4.0);
+        }
+        scene.addItemsWithUndo({brace}, QStringLiteral("Add brace"));
+
+        scene.clearSelection();
+        flag->setSelected(true);
+        brace->setSelected(true);
+        ctx.check(LineSplitOps::supports(&scene), QStringLiteral("波形旗加花括号双选时分割可用"));
+        ctx.check(LineSplitOps::apply(&scene, QStringLiteral("分割")), QStringLiteral("花括号可以切分波形旗"));
+
+        // 需求 25：布尔减法在条带与波面近切线处会留下面积趋近 0 的退化碎屑，
+        // 之前单独成图元渲染成孤立的“奇怪色块”。修复后所有碎片都是真实碎块。
+        int fragments = 0;
+        qreal minArea = std::numeric_limits<qreal>::max();
+        QString geometry;
+        for (CanvasItem* item : scene.canvasItems()) {
+            if (auto* fragment = dynamic_cast<CompositeShapeItem*>(item)) {
+                ++fragments;
+                const QPainterPath painted =
+                    fragment->mapToScene(fragment->mapLayerPath(fragment->layers().constFirst().path));
+                const qreal fillArea = PathRegions::area(painted);
+                minArea = qMin(minArea, fillArea);
+                const QRectF bounds = painted.boundingRect().normalized();
+                geometry += QStringLiteral("[area=%1 bbox=%2x%3]")
+                                .arg(QString::number(fillArea, 'f', 1))
+                                .arg(QString::number(bounds.width(), 'f', 1))
+                                .arg(QString::number(bounds.height(), 'f', 1));
+            }
+        }
+        ctx.check(fragments >= 2, QStringLiteral("需求25-%1：花括号切出真实碎块").arg(arrangement.label),
+                  QStringLiteral("fragments=%1 minArea=%2 %3").arg(fragments).arg(minArea, 0, 'f', 1).arg(geometry));
+        ctx.check(minArea >= 16.0, QStringLiteral("需求25-%1：不再产生退化色块碎片").arg(arrangement.label),
+                  QStringLiteral("minArea=%1").arg(minArea, 0, 'f', 1));
     }
 }

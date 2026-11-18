@@ -11,6 +11,9 @@ namespace PathRegions {
 // 返回的第一项与原始路径的填充面积一致，只是不再共用一个图元。
 QList<QPainterPath> splitDisjoint(const QPainterPath& path);
 
+// 填充面积：孔洞按偶奇规则扣除，供退化碎块（细条、纸屑）识别使用。
+qreal area(const QPainterPath& path);
+
 } // namespace PathRegions
 
 #endif // PATHREGIONS_H
