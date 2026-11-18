@@ -733,9 +733,13 @@ QJsonObject ShapeItem::toJson() const
     // 直线 / 直线箭头两端箭头样式：旧文件没有这两个字段时按「无」载入。
     json.insert(QStringLiteral("startArrow"), arrowStyleToString(m_startArrow));
     json.insert(QStringLiteral("endArrow"), arrowStyleToString(m_endArrow));
-    if (!m_customPath.isEmpty()) {
-        json.insert(QStringLiteral("shapeType"), QStringLiteral("custom"));
+    // 需求 30：自定义轮廓不再一律写成 "custom"（旧版读回会退化成矩形），真实
+    // 类型照常写进 shapeType；名字与轮廓单独存，只有名字的图元（立方体顶面）
+    // 也能在重开后保留名称。
+    if (!m_customName.isEmpty()) {
         json.insert(QStringLiteral("customName"), m_customName);
+    }
+    if (!m_customPath.isEmpty()) {
         json.insert(QStringLiteral("pathData"), encodePathData(m_customPath));
     }
     return json;
@@ -759,6 +763,16 @@ void ShapeItem::fromJson(const QJsonObject& json)
         m_customPath = QPainterPath();
         if (legacyRounded) {
             m_autoCorner = true;
+        }
+        // 需求 30：新文件把自定义轮廓挂在真实类型上（立方体的菱形面），
+        // 旧文件仍是 "custom" + 矩形底层。
+        const QString customName = json.value(QStringLiteral("customName")).toString();
+        if (!customName.isEmpty()) {
+            m_customName = customName;
+        }
+        const QString pathData = json.value(QStringLiteral("pathData")).toString();
+        if (!pathData.isEmpty()) {
+            m_customPath = decodePathData(pathData);
         }
     }
 
