@@ -43,6 +43,15 @@ CanvasItem::CanvasItem(QGraphicsItem* parent) : QGraphicsObject(parent)
 
 CanvasItem::~CanvasItem()
 {
+    // 场景的选中排序缓存按 QPointer 惰性清理，依赖图元销毁后发出
+    // selectionChanged 时再扫列表；多选中图元接连析构时，先析构者会触发
+    // 扫描并释放观测数据，后析构者对同一批悬垂条目的读取会段错误。
+    // 趁 QObject 部分仍完好时主动把自身清出缓存，杜绝这类悬垂读取。
+    if (QGraphicsScene* owner = scene()) {
+        if (auto* canvasScene = qobject_cast<CanvasScene*>(owner)) {
+            canvasScene->forgetItem(this);
+        }
+    }
     delete m_handles;
     delete m_interaction;
 }

@@ -61,6 +61,8 @@ class CanvasScene : public QGraphicsScene {
     // 同时修复载入文件里已有的重名条目，保证画布内名称唯一。
     void assignAutoItemNames();
     QList<CanvasItem*> selectedCanvasItems() const;
+    // 图元析构时把自身从选中排序缓存清出（QPointer 惰性清理在接连析构下不安全）。
+    void forgetItem(CanvasItem* item);
     // 选择顺序：先选中的在前，框选时按场景叠放顺序（最底层在前）记录。
     // 合并图元的「剪除」以最先选中的图元为底，框选时以最底层为底。
     QList<CanvasItem*> selectionOrder() const;

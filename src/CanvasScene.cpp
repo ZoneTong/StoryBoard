@@ -58,8 +58,22 @@ void CanvasScene::refreshSelectionOrder()
     }
 }
 
+void CanvasScene::forgetItem(CanvasItem* item)
+{
+    for (int i = m_selectionOrder.size() - 1; i >= 0; --i) {
+        if (m_selectionOrder.at(i).data() == item) {
+            m_selectionOrder.removeAt(i);
+        }
+    }
+}
+
 CanvasScene::~CanvasScene()
 {
+    // 场景销毁时 Qt 会逐一析构图元；选中图元被析构会发出 selectionChanged，
+    // 而槽内扫描排序缓存会触碰同批析构中图元的 QPointer 观测数据——此阶段
+    // 数据已不可靠。先断开信号并清空缓存，再交由基类清理图元。
+    disconnect(this, &QGraphicsScene::selectionChanged, this, nullptr);
+    m_selectionOrder.clear();
     clearOrphans();
 }
 
