@@ -31,7 +31,7 @@ void applyCurveParamState(CurveItem* item, const CurveParamState& state)
     } else if (auto* sine = dynamic_cast<SineItem*>(item)) {
         SineItem::Params params = sine->params();
         params.cycles = qBound(1, qRound(state.first), 12);
-        params.amplitude = qBound(0.05, state.second, 0.5);
+        params.amplitude = qBound<qreal>(1.0, state.second, 200.0);
         sine->setParams(params);
     }
 }

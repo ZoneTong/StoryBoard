@@ -59,7 +59,7 @@ QRectF SineItem::frameRect() const
 void SineItem::setParams(const Params& params)
 {
     const int cycles = qBound(1, params.cycles, 12);
-    const qreal amplitude = qBound<qreal>(0.05, params.amplitude, 0.5);
+    const qreal amplitude = qBound<qreal>(1.0, params.amplitude, 200.0);
     if (cycles == m_params.cycles && qFuzzyCompare(amplitude, m_params.amplitude)) {
         return;
     }
@@ -76,7 +76,8 @@ QVector<QPointF> SineItem::wavePoints(const QRectF& frameScene) const
     }
 
     const int steps = kStepsPerCycle * m_params.cycles;
-    const qreal amplitude = m_params.amplitude * frameScene.height();
+    // 振幅是相对中心线的像素高度，与内容框高度无关：框高由波高反推，不是振幅的来源。
+    const qreal amplitude = m_params.amplitude;
     const qreal centerY = frameScene.center().y();
 
     points.reserve(steps + 1);
@@ -106,6 +107,25 @@ void SineItem::setWaveGeometry(const QPointF& topLeftScene, const QSizeF& size, 
     }
 }
 
+void SineItem::contentResized()
+{
+    if (m_rebuilding) {
+        return;
+    }
+    // 内容框高度 = 波高 + 笔宽余量；拖高拖矮等价于改振幅，参数跟着几何走，面板回显也随之更新。
+    const qreal boxHeight = contentSize().height();
+    if (boxHeight <= 0.0) {
+        return;
+    }
+    const qreal padding = qMax<qreal>(6.0, strokeWidth() + 4.0);
+    const qreal amplitude = qBound<qreal>(1.0, qMax<qreal>(1.0, boxHeight - padding) / 2.0, 200.0);
+    if (qAbs(amplitude - m_params.amplitude) < 0.5) {
+        return;
+    }
+    m_params.amplitude = amplitude;
+    rebuild();
+}
+
 void SineItem::rebuild()
 {
     const QSizeF box = contentSize();
@@ -115,7 +135,9 @@ void SineItem::rebuild()
     const QRectF local(m_relFrame.x() * box.width(), m_relFrame.y() * box.height(),
                        m_relFrame.width() * box.width(), m_relFrame.height() * box.height());
     const QRectF frameScene = local.translated(pos());
+    m_rebuilding = true;
     setStrokePoints(wavePoints(frameScene), strokeColor(), strokeWidth(), 0.0, false);
+    m_rebuilding = false;
 
     const QPointF origin = pos();
     const QSizeF now = contentSize();
@@ -140,7 +162,7 @@ void SineItem::fromJson(const QJsonObject& json)
 {
     CurveItem::fromJson(json);
     m_params.cycles = qBound(1, json.value(QStringLiteral("sineCycles")).toInt(1), 12);
-    m_params.amplitude = qBound<qreal>(0.05, json.value(QStringLiteral("sineAmplitude")).toDouble(0.5), 0.5);
+    m_params.amplitude = qBound<qreal>(1.0, json.value(QStringLiteral("sineAmplitude")).toDouble(20.0), 200.0);
     m_relFrame = fromArray(json.value(QStringLiteral("sineFrame")).toArray(), QRectF(0.0, 0.0, 1.0, 1.0));
     setCurveKind(CurveKind::Sine);
     rebuild();

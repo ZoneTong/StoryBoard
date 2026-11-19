@@ -846,9 +846,9 @@ void ItemDockPanel::applySineCycles(int cycles)
     });
 }
 
-void ItemDockPanel::applySineAmplitude(int percent)
+void ItemDockPanel::applySineAmplitude(int pixels)
 {
-    const qreal amplitude = qBound(0.05, percent / 100.0, 0.5);
+    const qreal amplitude = qBound<qreal>(1.0, pixels, 200.0);
     changeSelectedSines(tr("Change sine amplitude"), [amplitude](SineItem* sine) {
         SineItem::Params params = sine->params();
         params.amplitude = amplitude;

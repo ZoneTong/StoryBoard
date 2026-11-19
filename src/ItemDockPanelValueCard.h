@@ -37,7 +37,7 @@ class ItemDockPanelValueCard : public QWidget {
     void cornerRadiusChosen(int radius);
     void startAngleChosen(int angle);
     void sweepAngleChosen(int angle);
-    // 正弦波形：周期数（1–12）、振幅（占内容高度的百分比，5–50）。
+    // 正弦波形：周期数（1–12）、振幅（相对中心线的像素高度，1–200）。
     void sineCyclesChosen(int cycles);
     void sineAmplitudeChosen(int percent);
     // 三角形：底边长度（px）、底角 1 / 底角 2（度）。

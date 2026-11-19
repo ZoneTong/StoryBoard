@@ -168,8 +168,9 @@ ItemDockPanelValueCard::ItemDockPanelValueCard(QWidget* parent) : QWidget(parent
     amplitudeLayout->addWidget(amplitudeIcon);
     m_sineAmplitudeSpin = new QSpinBox(amplitudeRow);
     m_sineAmplitudeSpin->setObjectName(QStringLiteral("ItemValueSpin"));
-    m_sineAmplitudeSpin->setRange(5, 50);
-    m_sineAmplitudeSpin->setSuffix(QStringLiteral("%"));
+    // 振幅是相对中心线的像素高度：1–200，与波高（2 倍振幅）一一对应。
+    m_sineAmplitudeSpin->setRange(1, 200);
+    m_sineAmplitudeSpin->setSuffix(QStringLiteral(" px"));
     m_sineAmplitudeSpin->setToolTip(ItemDockPanel::tr("Sine amplitude"));
     m_sineAmplitudeSpin->setKeyboardTracking(false);
     connect(m_sineAmplitudeSpin, &QSpinBox::valueChanged, this, [this](int value) {
@@ -348,7 +349,7 @@ void ItemDockPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QLis
         m_sineAmplitudeSpin->setEnabled(on);
         const SineItem::Params params = on ? sineCurve->params() : SineItem::Params{};
         m_sineCyclesSpin->setValue(qBound(1, params.cycles, 12));
-        m_sineAmplitudeSpin->setValue(qBound(5, qRound(params.amplitude * 100.0), 50));
+        m_sineAmplitudeSpin->setValue(qBound(1, qRound(params.amplitude), 200));
     }
 
     ShapeItem* triangle = nullptr;

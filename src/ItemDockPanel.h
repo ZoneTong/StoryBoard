@@ -88,7 +88,7 @@ class ItemDockPanel : public QWidget {
     void applyCornerRadius(int radius);
     void applyStartAngle(int angle);
     void applySweepAngle(int angle);
-    // 正弦波形：周期数（1–12）与振幅（内容高度的百分比，5–50）。
+    // 正弦波形：周期数（1–12）与振幅（相对中心线的像素高度，1–200）。
     void applySineCycles(int cycles);
     void applySineAmplitude(int percent);
     // 三角形：底边长度与两个底角；角度优先，高度随底边派生。
