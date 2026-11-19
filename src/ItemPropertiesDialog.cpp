@@ -440,6 +440,12 @@ void ItemPropertiesDialog::applyChanges()
                 after.size.setWidth(qMax<qreal>(8.0, static_cast<qreal>(value)));
             }
         }
+        // 需求 9：平行四边形左下内角，未改动时保留原值。
+        if (style && style->parallelogramAngleSpin()) {
+            const int value = style->parallelogramAngleSpin()->value();
+            after.shapeState.parallelogramAngle =
+                value == qRound(style->initialParallelogramAngle()) ? style->initialParallelogramAngle() : value;
+        }
         // 需求 6：直线两端箭头样式。
         if (style && style->startArrowCombo()) {
             after.shapeState.startArrow = static_cast<ArrowStyle>(style->startArrowCombo()->currentData().toInt());

@@ -23,6 +23,7 @@
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
+#include "ShapePathBuilder.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -98,9 +99,33 @@ void selftest::runShapeItemTests(Context& ctx)
     shapeScene.setShowGrid(false);
 
     const QList<ShapeType> shapeTypes = allShapeTypes();
-    // 需求 11/13/16：13 − 2（花括号改曲线）+ 8（新图形）= 19 种。
-    ctx.check(shapeTypes.size() == 19, QStringLiteral("提供 19 种常见图形"),
+    // 需求 9：常见图形 19 → 20（新增平行四边形）。
+    ctx.check(shapeTypes.size() == 20, QStringLiteral("提供 20 种常见图形"),
               QStringLiteral("count=%1").arg(shapeTypes.size()));
+    // 需求 9：平行四边形默认 60° 内角、内容尺寸 110.85×64，角度钳在 15–165°。
+    {
+        ShapeItem para(ShapeType::Parallelogram);
+        const QSizeF paraSize = defaultShapeSize(ShapeType::Parallelogram);
+        ctx.check(qAbs(paraSize.width() - 110.85) < 0.1 && qAbs(paraSize.height() - 64.0) < 0.1,
+                  QStringLiteral("平行四边形默认尺寸 110.85×64"),
+                  QStringLiteral("%1×%2").arg(paraSize.width()).arg(paraSize.height()));
+        ctx.check(qAbs(para.parallelogramAngle() - 60.0) < 0.01, QStringLiteral("平行四边形默认内角 60°"),
+                  QStringLiteral("angle=%1").arg(para.parallelogramAngle()));
+        para.setParallelogramAngle(20.0);
+        const QPainterPath acute = para.currentPath(QRectF(0.0, 0.0, paraSize.width(), paraSize.height()));
+        const QPainterPath blunt =
+            ShapePathBuilder::parallelogramPath(QRectF(0.0, 0.0, paraSize.width(), paraSize.height()), 120.0);
+        ctx.check(acute.elementCount() >= 4 && blunt.elementCount() >= 4 &&
+                      qAbs(acute.boundingRect().width() - paraSize.width()) < 1.0,
+                  QStringLiteral("平行四边形锐角/钝角都能画出闭合轮廓"),
+                  QStringLiteral("acute=%1 blunt=%2").arg(acute.elementCount()).arg(blunt.elementCount()));
+        para.setParallelogramAngle(170.0);
+        ctx.check(qAbs(para.parallelogramAngle() - 165.0) < 0.01, QStringLiteral("平行四边形内角钳在 15–165°"),
+                  QStringLiteral("angle=%1").arg(para.parallelogramAngle()));
+        const ShapeItemState paraState = para.state();
+        ctx.check(qAbs(paraState.parallelogramAngle - 165.0) < 0.01, QStringLiteral("平行四边形内角进入状态快照"),
+                  QStringLiteral("angle=%1").arg(paraState.parallelogramAngle));
+    }
     ctx.check(shapeTypeFromString(QStringLiteral("circle")) == ShapeType::Ellipse &&
                   shapeTypeFromString(QStringLiteral("roundrect")) == ShapeType::Rectangle &&
                   shapeTypeFromString(QStringLiteral("double_arrow")) == ShapeType::DoubleArrow &&

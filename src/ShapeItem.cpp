@@ -96,6 +96,8 @@ QString shapeTypeName(ShapeType type)
         return ShapeItem::tr("Cube");
     case ShapeType::Cylinder:
         return ShapeItem::tr("Cylinder");
+    case ShapeType::Parallelogram:
+        return ShapeItem::tr("Parallelogram");
     }
     return ShapeItem::tr("Rectangle");
 }
@@ -348,6 +350,18 @@ void ShapeItem::setTriangleAngles(qreal angle1, qreal angle2)
     update();
 }
 
+void ShapeItem::setParallelogramAngle(qreal angle)
+{
+    const qreal clamped = qBound<qreal>(15.0, angle, 165.0);
+    if (qFuzzyCompare(m_parallelogramAngle + 2.0, clamped + 2.0)) {
+        return;
+    }
+    m_parallelogramAngle = clamped;
+    // 角度只改上边相对底边的水平偏移，内容矩形宽高不变。
+    prepareGeometryChange();
+    update();
+}
+
 void ShapeItem::contentResized()
 {
     if (m_type != ShapeType::Triangle || isCustomShape()) {
@@ -548,6 +562,7 @@ ShapeItemState ShapeItem::state() const
     result.sweepAngle = m_sweepAngle;
     result.bottomAngle1 = m_bottomAngle1;
     result.bottomAngle2 = m_bottomAngle2;
+    result.parallelogramAngle = m_parallelogramAngle;
     result.startArrow = m_startArrow;
     result.endArrow = m_endArrow;
     result.hasFillImage = hasFillImage();
@@ -570,6 +585,7 @@ void ShapeItem::applyState(const ShapeItemState& state)
     m_sweepAngle = state.sweepAngle;
     m_bottomAngle1 = state.bottomAngle1;
     m_bottomAngle2 = state.bottomAngle2;
+    m_parallelogramAngle = qBound<qreal>(15.0, state.parallelogramAngle, 165.0);
     m_startArrow = state.startArrow;
     m_endArrow = state.endArrow;
     m_fillImage = state.hasFillImage ? state.fillImage : QPixmap();
@@ -639,6 +655,9 @@ QPainterPath ShapeItem::currentPath(const QRectF& rect) const
     }
     if (m_type == ShapeType::Triangle) {
         return ShapePathBuilder::trianglePath(rect, m_bottomAngle1, m_bottomAngle2);
+    }
+    if (m_type == ShapeType::Parallelogram) {
+        return ShapePathBuilder::parallelogramPath(rect, m_parallelogramAngle);
     }
     // -2.0 是「矩形圆角自动态（短边 16%）」的哨兵值，其余负值仍表示未指定圆角。
     const qreal corner =
@@ -725,6 +744,10 @@ QJsonObject ShapeItem::toJson() const
         json.insert(QStringLiteral("bottomAngle1"), m_bottomAngle1);
         json.insert(QStringLiteral("bottomAngle2"), m_bottomAngle2);
     }
+    // 需求 9：平行四边形的左下内角随画布保存；旧文件缺字段时按 60° 载入。
+    if (m_type == ShapeType::Parallelogram) {
+        json.insert(QStringLiteral("parallelogramAngle"), m_parallelogramAngle);
+    }
     // 需求 15：图片填充独立属性，无图时不写键，旧版本忽略该键即退回纯色。
     const QJsonObject fillImageJson = ImageFill::toJson(m_fillImage, m_fillImageMode);
     if (!fillImageJson.isEmpty()) {
@@ -808,6 +831,8 @@ void ShapeItem::fromJson(const QJsonObject& json)
     }
     m_startAngle = json.value(QStringLiteral("startAngle")).toDouble(30.0);
     m_sweepAngle = json.value(QStringLiteral("sweepAngle")).toDouble(120.0);
+    // 需求 9：平行四边形内角；旧文件没有这个键时按默认 60°。
+    m_parallelogramAngle = qBound<qreal>(15.0, json.value(QStringLiteral("parallelogramAngle")).toDouble(60.0), 165.0);
     // 需求 6：旧文件可能还带 shapeRadius；先记下原值，等尺寸恢复后再折算（见下方迁移）。
     const qreal legacyRadius = json.value(QStringLiteral("shapeRadius")).toDouble(-1.0);
     if (json.contains(QStringLiteral("fillImage"))) {

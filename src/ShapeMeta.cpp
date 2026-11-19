@@ -2,12 +2,13 @@
 
 QList<ShapeType> ShapeMeta::allTypes()
 {
-    // 需求 11：新增 8 种；需求 13：花括号改为曲线，不再列入常见图形。
-    // 需求 28：几个星星按角的个数排在一起（四角/十字星 → 五角星 → 六芒星）。
-    return {ShapeType::Rectangle, ShapeType::Ellipse,  ShapeType::Triangle, ShapeType::Diamond,     ShapeType::Star4,
-            ShapeType::Star,      ShapeType::Hexagram, ShapeType::Arrow,    ShapeType::DoubleArrow, ShapeType::Line,
-            ShapeType::Callout,   ShapeType::Sector,   ShapeType::Arc,      ShapeType::Heart,       ShapeType::SineWave,
-            ShapeType::FlagWave,  ShapeType::Scroll,   ShapeType::Cube,     ShapeType::Cylinder};
+    // 需求 7：菜单与工具栏「常见图形」共用这一份常用顺序表（唯一顺序源）。
+    // 需求 9：平行四边形紧跟菱形，方便和立方体三个面归在一处认图。
+    return {ShapeType::Rectangle,     ShapeType::Ellipse,  ShapeType::Line,     ShapeType::Arrow,
+            ShapeType::DoubleArrow,   ShapeType::Triangle, ShapeType::Callout,  ShapeType::Diamond,
+            ShapeType::Parallelogram, ShapeType::Sector,   ShapeType::Arc,      ShapeType::Cube,
+            ShapeType::Cylinder,      ShapeType::Star4,    ShapeType::Star,     ShapeType::Hexagram,
+            ShapeType::Heart,         ShapeType::SineWave, ShapeType::FlagWave, ShapeType::Scroll};
 }
 
 QString ShapeMeta::typeToString(ShapeType type)
@@ -52,6 +53,8 @@ QString ShapeMeta::typeToString(ShapeType type)
         return QStringLiteral("cube");
     case ShapeType::Cylinder:
         return QStringLiteral("cylinder");
+    case ShapeType::Parallelogram:
+        return QStringLiteral("parallelogram");
     }
     return QStringLiteral("rectangle");
 }
@@ -125,6 +128,9 @@ ShapeType ShapeMeta::typeFromString(const QString& value)
     if (normalized == QStringLiteral("cylinder")) {
         return ShapeType::Cylinder;
     }
+    if (normalized == QStringLiteral("parallelogram") || normalized == QStringLiteral("rhomboid")) {
+        return ShapeType::Parallelogram;
+    }
     if (normalized == QStringLiteral("rect") || normalized == QStringLiteral("rectangle")) {
         return ShapeType::Rectangle;
     }
@@ -180,6 +186,10 @@ QSizeF ShapeMeta::defaultSize(ShapeType type)
         return QSizeF(128.0, 128.0);
     case ShapeType::Cylinder:
         return QSizeF(104.0, 128.0);
+    case ShapeType::Parallelogram:
+        // 需求 9：60° 内角、高 64（1 格）时底边 73.90、上边水平偏移 36.95，
+        // 内容尺寸 110.85×64，与立方体单个面的比例一致。
+        return QSizeF(110.85, 64.0);
     }
     return QSizeF(128.0, 128.0);
 }
@@ -203,6 +213,7 @@ bool ShapeMeta::isFilled(ShapeType type)
     case ShapeType::Scroll:
     case ShapeType::Cube:
     case ShapeType::Cylinder:
+    case ShapeType::Parallelogram:
         return true;
     case ShapeType::Line:
     case ShapeType::Arc:

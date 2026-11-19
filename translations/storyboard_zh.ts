@@ -772,6 +772,10 @@
         <source>Triangle base angle B</source>
         <translation>底角 B</translation>
     </message><message>
+        <location filename="../src/ItemPropertiesDialogStyleBlock.cpp" line="206"/>
+        <source>Parallelogram bottom-left angle</source>
+        <translation>左下内角</translation>
+    </message><message>
         <location filename="../src/ItemPropertiesDialogStyleBlock.cpp" line="217"/>
         <source>Start arrow</source>
         <translation>起点箭头</translation>
@@ -3380,6 +3384,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Cylinder</source>
         <translation>圆柱体</translation>
     </message><message>
+        <location filename="../src/ShapeItem.cpp" line="100"/>
+        <source>Parallelogram</source>
+        <translation>平行四边形</translation>
+    </message><message>
         <location filename="../src/ShapeItem.cpp" line="137"/>
         <source>No fill</source>
         <translation>无填充</translation>
@@ -4616,6 +4624,9 @@ Second line caption</source>
     </message><message>
         <source>Cylinder</source>
         <translation>圆柱体</translation>
+    </message><message>
+        <source>Parallelogram</source>
+        <translation>平行四边形</translation>
     </message><message>
         <source>Star</source>
         <translation>五角星</translation>

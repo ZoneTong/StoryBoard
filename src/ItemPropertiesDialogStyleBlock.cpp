@@ -205,6 +205,20 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_bottomAngle2Spin->setValue(qRound(m_initialBottomAngle2));
         }
 
+        // 需求 9：平行四边形的左下内角可编辑；角度只影响上边相对底边的偏移。
+        if (!shape->isCustomShape() && type == ShapeType::Parallelogram) {
+            m_initialParallelogramAngle = shape->parallelogramAngle();
+
+            m_parallelogramAngleSpin = new QSpinBox(this);
+            m_parallelogramAngleSpin->setObjectName(QStringLiteral("ItemPropertiesParallelogramAngleValue"));
+            m_parallelogramAngleSpin->setRange(15, 165);
+            m_parallelogramAngleSpin->setSingleStep(1);
+            m_parallelogramAngleSpin->setSuffix(QStringLiteral("°"));
+            m_parallelogramAngleSpin->setToolTip(ItemPropertiesDialog::tr("Parallelogram bottom-left angle"));
+            m_parallelogramAngleSpin->setMinimumWidth(88);
+            m_parallelogramAngleSpin->setValue(qRound(m_initialParallelogramAngle));
+        }
+
         // 需求 6：直线两端箭头样式，属性窗里一行两个下拉。
         if (!shape->isCustomShape() && type == ShapeType::Line) {
             m_arrowRow = new QWidget(this);
@@ -364,6 +378,9 @@ void ItemPropertiesDialogStyleBlock::addRows(QFormLayout* form)
     }
     if (m_bottomAngle2Spin) {
         form->addRow(ItemPropertiesDialog::tr("Triangle base angle B"), m_bottomAngle2Spin);
+    }
+    if (m_parallelogramAngleSpin) {
+        form->addRow(ItemPropertiesDialog::tr("Parallelogram bottom-left angle"), m_parallelogramAngleSpin);
     }
     if (m_arrowRow) {
         form->addRow(ItemPropertiesDialog::tr("Arrow heads"), m_arrowRow);

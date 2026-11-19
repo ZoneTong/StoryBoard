@@ -32,7 +32,9 @@ enum class ShapeType {
     // 卷形旗帜已替换为卷轴（需求 3），序列化字符串沿用新名 scroll，旧文件 flag_curl 兼容读入。
     Scroll,
     Cube,
-    Cylinder
+    Cylinder,
+    // 需求 9：平行四边形（左下内角可编辑，默认 60°）。
+    Parallelogram
 };
 
 enum class FillStyle {
@@ -85,6 +87,8 @@ struct ShapeItemState {
     // 三角形：底边（内容矩形宽度）两侧的底角，单位为度。角度是真相，高度由两者派生。
     qreal bottomAngle1 = 60.0;
     qreal bottomAngle2 = 60.0;
+    // 需求 9：平行四边形左下内角（度）。角度是真相，上边水平偏移由高度与角度派生。
+    qreal parallelogramAngle = 60.0;
     // 直线 / 直线箭头 / 曲线两端的箭头样式（旧文件缺字段时按「无」）。
     ArrowStyle startArrow = ArrowStyle::None;
     ArrowStyle endArrow = ArrowStyle::None;
@@ -105,9 +109,9 @@ struct ShapeItemState {
                qFuzzyCompare(sweepAngle + 2.0, other.sweepAngle + 2.0) &&
                qFuzzyCompare(bottomAngle1 + 2.0, other.bottomAngle1 + 2.0) &&
                qFuzzyCompare(bottomAngle2 + 2.0, other.bottomAngle2 + 2.0) && startArrow == other.startArrow &&
-               endArrow == other.endArrow && hasFillImage == other.hasFillImage &&
-               fillImage.cacheKey() == other.fillImage.cacheKey() && fillImageMode == other.fillImageMode &&
-               pos == other.pos && size == other.size;
+               qFuzzyCompare(parallelogramAngle + 2.0, other.parallelogramAngle + 2.0) && endArrow == other.endArrow &&
+               hasFillImage == other.hasFillImage && fillImage.cacheKey() == other.fillImage.cacheKey() &&
+               fillImageMode == other.fillImageMode && pos == other.pos && size == other.size;
     }
 
     bool operator!=(const ShapeItemState& other) const { return !(*this == other); }
@@ -151,6 +155,9 @@ class ShapeItem : public CanvasItem {
     qreal sweepAngle() const { return m_sweepAngle; }
     qreal bottomAngle1() const { return m_bottomAngle1; }
     qreal bottomAngle2() const { return m_bottomAngle2; }
+    // 需求 9：平行四边形左下内角（度），钳在 15–165°，默认 60°。
+    qreal parallelogramAngle() const { return m_parallelogramAngle; }
+    void setParallelogramAngle(qreal angle);
     ArrowStyle startArrow() const { return m_startArrow; }
     // 需求 15：可填充图元支持一张图片垫在填充色之上，独立于 FillStyle。
     bool hasFillImage() const { return !m_fillImage.isNull(); }
@@ -218,6 +225,7 @@ class ShapeItem : public CanvasItem {
     qreal m_sweepAngle = 120.0;
     qreal m_bottomAngle1 = 60.0;
     qreal m_bottomAngle2 = 60.0;
+    qreal m_parallelogramAngle = 60.0;
     QPixmap m_fillImage;
     ImageFill::Mode m_fillImageMode = ImageFill::Mode::Stretch;
     ArrowStyle m_startArrow = ArrowStyle::None;

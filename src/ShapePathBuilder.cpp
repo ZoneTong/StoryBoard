@@ -39,6 +39,35 @@ QPainterPath trianglePathWithAngles(const QRectF& rect, qreal angle1, qreal angl
     return path;
 }
 
+QPainterPath parallelogramPathWithAngle(const QRectF& rect, qreal bottomLeftAngle)
+{
+    const QRectF r = rect.normalized();
+    QPainterPath path;
+    if (r.width() <= 0.0 || r.height() <= 0.0) {
+        return path;
+    }
+    const qreal angle = qBound<qreal>(15.0, bottomLeftAngle, 165.0);
+    const qreal cotValue = 1.0 / qTan(qDegreesToRadians(angle));
+    // 上边相对底边的水平偏移；留 1px 底边，避免钝角时把底边压没。
+    qreal shift = qAbs(r.height() * cotValue);
+    shift = qMin(shift, qMax<qreal>(0.0, r.width() - 1.0));
+    if (cotValue >= 0.0) {
+        // 锐角：上边向右移，底边贴着左下角。
+        path.moveTo(r.left(), r.bottom());
+        path.lineTo(r.right() - shift, r.bottom());
+        path.lineTo(r.right(), r.top());
+        path.lineTo(r.left() + shift, r.top());
+    } else {
+        // 钝角：上边向左移，底边贴着右下角。
+        path.moveTo(r.left() + shift, r.bottom());
+        path.lineTo(r.right(), r.bottom());
+        path.lineTo(r.right() - shift, r.top());
+        path.lineTo(r.left(), r.top());
+    }
+    path.closeSubpath();
+    return path;
+}
+
 QPainterPath starPath(const QRectF& rect)
 {
     const QRectF r = normalizedRect(rect);
@@ -476,6 +505,10 @@ QPainterPath ShapePathBuilder::pathFor(ShapeType type, const QRectF& rect, qreal
     case ShapeType::Cylinder:
         path = cylinderPath(r);
         break;
+    case ShapeType::Parallelogram:
+        // 默认按 60° 生成；具体图元用带角度参数的重载。
+        path = parallelogramPathWithAngle(r, 60.0);
+        break;
     }
     return path;
 }
@@ -483,4 +516,9 @@ QPainterPath ShapePathBuilder::pathFor(ShapeType type, const QRectF& rect, qreal
 QPainterPath ShapePathBuilder::trianglePath(const QRectF& rect, qreal bottomAngle1, qreal bottomAngle2)
 {
     return trianglePathWithAngles(rect, bottomAngle1, bottomAngle2);
+}
+
+QPainterPath ShapePathBuilder::parallelogramPath(const QRectF& rect, qreal bottomLeftAngle)
+{
+    return parallelogramPathWithAngle(rect, bottomLeftAngle);
 }

@@ -124,6 +124,36 @@ void CanvasItemInteraction::applyResize(const QPointF& scenePos, Qt::KeyboardMod
     QRectF rect(m_item->m_dragStartPos, m_item->m_dragStartSize);
     const int handle = m_item->m_resizeHandle;
 
+    // 需求 9：拖与平行四边形左上 / 右上顶点对齐的那个手柄，改的是左下内角，不是尺寸。
+    // 锐角时上边右移、右上顶点贴选择框右上；钝角时上边左移、左上顶点贴选择框左上。
+    if (auto* para = dynamic_cast<ShapeItem*>(m_item);
+        para && para->shapeType() == ShapeType::Parallelogram && !para->isCustomShape()) {
+        const qreal startAngle = para->parallelogramAngle();
+        const bool dragRight = handle == CanvasItem::TopRight && startAngle < 90.0;
+        const bool dragLeft = handle == CanvasItem::TopLeft && startAngle >= 90.0;
+        if (dragRight || dragLeft) {
+            const qreal startWidth = m_item->m_dragStartSize.width();
+            const qreal startHeight = m_item->m_dragStartSize.height();
+            QPointF local = scenePos - m_item->m_dragStartPos;
+            const qreal rotation = m_item->rotationAngle();
+            if (!qFuzzyIsNull(rotation)) {
+                QTransform transform;
+                transform.rotate(-rotation);
+                local = transform.map(local);
+            }
+            // 底边固定：锐角时底边右端 = 宽 - 上边偏移，钝角时上边偏移为负、左端贴住左下。
+            qreal dx = local.x();
+            if (dragRight) {
+                dx = startWidth - local.x();
+            }
+            const qreal limit = qMax<qreal>(1.0, startWidth - 0.5);
+            dx = dragRight ? qBound<qreal>(0.5, dx, limit) : qBound<qreal>(-limit, dx, -0.5);
+            const qreal angle = qRadiansToDegrees(qAtan2(startHeight, dx));
+            para->setParallelogramAngle(angle);
+            return;
+        }
+    }
+
     // 需求 2：拖顶点 C 只改三角形，AB 两端在场景中固定；底边宽度不变，
     // 顶点高度由落点反推两个底角，角度是真相、高度再按角度派生。
     if (auto* triangle = dynamic_cast<ShapeItem*>(m_item); triangle && triangle->shapeType() == ShapeType::Triangle &&

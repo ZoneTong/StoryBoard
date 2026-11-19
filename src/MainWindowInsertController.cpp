@@ -196,18 +196,20 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
     const QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : stroke;
     const FillStyle fillStyle = filled ? m_window->m_fillStyle : FillStyle::None;
 
-    // 需求 30：立方体的面是菱形图元（顶面用菱形自身轮廓，左右两面用同一个
-    // 菱形类型承载斜置轮廓）；带名字的自定义轮廓只在有空路径时才回到菱形本体。
-    auto makeFace = [&stroke, &fill, fillStyle, width, this](const QString& name, const QPainterPath& unitPath,
-                                                             const QPointF& topLeft, const QSizeF& size) {
-        auto* face = new ShapeItem(ShapeType::Diamond);
-        face->setCustomShape(name, unitPath);
+    // 需求 9：立方体的三个面都是平行四边形图元本体（默认 60° 内角），
+    // 靠各自的旋转角摆放成等轴测，不再用自定义轮廓冒充斜置的菱形。
+    auto makeFace = [&stroke, &fill, fillStyle, width, this](const QString& name, const QPointF& center,
+                                                             const QSizeF& faceSize, qreal rotation) {
+        auto* face = new ShapeItem(ShapeType::Parallelogram);
+        // 名字沿用旧行为（顶/左/右），只存名字不存轮廓，图元仍是平行四边形。
+        face->setCustomShape(name, QPainterPath());
         face->setStyle(stroke, fill, width);
         face->setFillStyle(fillStyle);
         // 需求 1：组内各面同样沿用工具栏描线样式。
         face->setStrokeStyle(m_window->m_strokeStyle);
-        face->setPos(topLeft);
-        face->setContentSize(size);
+        face->setContentSize(faceSize);
+        face->setPos(center - QPointF(faceSize.width() / 2.0, faceSize.height() / 2.0));
+        face->setRotationAngle(rotation);
         return face;
     };
 
@@ -229,28 +231,15 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
 
     QList<CanvasItem*> faces;
     if (type == ShapeType::Cube) {
-        // 需求 30：等轴测立方体 = 三个菱形图元的组。顶面直接取菱形本体的轮廓
-        // （两条对角线沿坐标轴，正对等轴测顶面）；左右两面斜置，用菱形类型承载
-        // 自定义轮廓，填充 / 描线 / 缩放行为与普通菱形一致。
+        // 需求 9：等轴测立方体 = 三个平行四边形图元的组。每个面都是 60° 平行四边形本体，
+        // 顶面旋转 30°、左面 90°、右面 -30°，三个面的中心落在外轮廓的 0.25/0.5/0.75 处。
         const qreal w = size.width();
         const qreal h = size.height();
-        QPainterPath leftFace;
-        leftFace.moveTo(0.0, 0.0);
-        leftFace.lineTo(1.0, 1.0 / 3.0);
-        leftFace.lineTo(1.0, 1.0);
-        leftFace.lineTo(0.0, 2.0 / 3.0);
-        leftFace.closeSubpath();
-        QPainterPath rightFace;
-        rightFace.moveTo(0.0, 1.0 / 3.0);
-        rightFace.lineTo(1.0, 0.0);
-        rightFace.lineTo(1.0, 2.0 / 3.0);
-        rightFace.lineTo(0.0, 1.0);
-        rightFace.closeSubpath();
-        faces.append(makeFace(MainWindow::tr("Cube top"), QPainterPath(), topLeft, QSizeF(w, h * 0.5)));
-        faces.append(makeFace(MainWindow::tr("Cube left"), leftFace, topLeft + QPointF(0.0, h * 0.25),
-                              QSizeF(w * 0.5, h * 0.75)));
-        faces.append(makeFace(MainWindow::tr("Cube right"), rightFace, topLeft + QPointF(w * 0.5, h * 0.25),
-                              QSizeF(w * 0.5, h * 0.75)));
+        const QSizeF faceSize(w * 0.86603, h * 0.43301);
+        const QPointF origin = topLeft;
+        faces.append(makeFace(MainWindow::tr("Cube top"), origin + QPointF(w * 0.5, h * 0.25), faceSize, 30.0));
+        faces.append(makeFace(MainWindow::tr("Cube left"), origin + QPointF(w * 0.25, h * 0.625), faceSize, 90.0));
+        faces.append(makeFace(MainWindow::tr("Cube right"), origin + QPointF(w * 0.75, h * 0.625), faceSize, -30.0));
     } else {
         // 需求 30：圆柱体 = 一个有面积的多边形柱身 + 顶椭圆；先加柱身再加椭圆，
         // 层内高度递增，椭圆因此叠在多边形之上。

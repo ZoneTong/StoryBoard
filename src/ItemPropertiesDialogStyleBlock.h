@@ -60,6 +60,10 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     qreal initialBottomAngle1() const { return m_initialBottomAngle1; }
     qreal initialBottomAngle2() const { return m_initialBottomAngle2; }
 
+    // 需求 9：平行四边形左下内角（度），未改动时保留原值。
+    QSpinBox* parallelogramAngleSpin() const { return m_parallelogramAngleSpin; }
+    qreal initialParallelogramAngle() const { return m_initialParallelogramAngle; }
+
     // 直线两端箭头样式下拉（一行两个）。
     QComboBox* startArrowCombo() const { return m_startArrowCombo; }
     QComboBox* endArrowCombo() const { return m_endArrowCombo; }
@@ -101,6 +105,8 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     QSpinBox* m_bottomAngle2Spin = nullptr;
     qreal m_initialBottomAngle1 = 60.0;
     qreal m_initialBottomAngle2 = 60.0;
+    qreal m_initialParallelogramAngle = 60.0;
+    QSpinBox* m_parallelogramAngleSpin = nullptr;
     QSpinBox* m_triangleBaseSpin = nullptr;
     int m_initialTriangleBase = 64;
 

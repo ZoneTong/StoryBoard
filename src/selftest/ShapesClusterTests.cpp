@@ -104,6 +104,7 @@ void selftest::runShapesClusterTests(Context& ctx)
         int groupId = 0;
         bool sameGroup = threeFaces;
         int diamondFaces = 0;
+        int rotatedFaces = 0;
         for (CanvasItem* item : items) {
             if (groupId == 0) {
                 groupId = item->groupId();
@@ -111,14 +112,19 @@ void selftest::runShapesClusterTests(Context& ctx)
                 sameGroup = false;
             }
             auto* face = qgraphicsitem_cast<ShapeItem*>(item);
-            if (face && face->shapeType() == ShapeType::Diamond) {
+            if (face && face->shapeType() == ShapeType::Parallelogram) {
                 ++diamondFaces;
+                if (!qFuzzyIsNull(face->rotationAngle())) {
+                    ++rotatedFaces;
+                }
             }
         }
         ctx.check(sameGroup && groupId > 0, QStringLiteral("立方体插入为 3 面图元组成的分组"),
                   QStringLiteral("items=%1 group=%2").arg(items.size()).arg(groupId));
-        ctx.check(diamondFaces == 3, QStringLiteral("立方体的三个面都是菱形类型图元"),
-                  QStringLiteral("diamonds=%1").arg(diamondFaces));
+        ctx.check(diamondFaces == 3, QStringLiteral("立方体的三个面都是平行四边形类型图元"),
+                  QStringLiteral("parallelograms=%1").arg(diamondFaces));
+        ctx.check(rotatedFaces == 3, QStringLiteral("立方体三个面都带旋转角度"),
+                  QStringLiteral("rotated=%1").arg(rotatedFaces));
 
         window.insertShape(ShapeType::Cylinder);
         items = scene->canvasItems();

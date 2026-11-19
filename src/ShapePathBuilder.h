@@ -17,6 +17,9 @@ class ShapePathBuilder {
     // 三角形按底边角度生成：底边 = 矩形宽，顶点横坐标 = 高 × cot(底角1)。
     // 角度是真相；调用方负责让矩形高与底边、角度保持自洽。
     static QPainterPath trianglePath(const QRectF& rect, qreal bottomAngle1, qreal bottomAngle2);
+    // 需求 9：平行四边形左下内角（度）。上边相对底边的水平偏移 = 高 × cot(角度)，
+    // 锐角向右移、钝角向左移，图形始终落在矩形内。
+    static QPainterPath parallelogramPath(const QRectF& rect, qreal bottomLeftAngle);
 
     // 需求 13：花括号曲线化后不再是 ShapeType，插入采样与图标绘制共用这份几何。
     static QPainterPath bracePath(const QRectF& rect);

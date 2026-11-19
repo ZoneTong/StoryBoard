@@ -157,29 +157,29 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         ctx.check(shapeButtonsShareMenu && !shapeButton, QStringLiteral("主工具栏把常见图形与预置项展开成一排按钮"),
                   QStringLiteral("buttons=%1 expected=%2").arg(toolbarShapeButtons.size()).arg(toolbarExpected));
 
-        // 工具栏顺序是产品口径：气泡/扇形/弧线排在双向箭头之后，直线与花括号收尾。
-        // 需求 28：星星按角的个数排在一起——十字星（4 角）在五角星（5 角）之前。
+        // 需求 7：工具栏顺序直接来自单一顺序源（常用顺序表），预置项紧随其主体图形，
+        // 直线箭头跟在直线后、45°/60° 直角三角跟在三角形后，两枚花括号收尾。
         const QStringList expectedToolBarOrder = {
-            QStringLiteral("ShapeAction_rectangle"),    QStringLiteral("ShapePreset_roundedRect"),
-            QStringLiteral("ShapeAction_ellipse"),      QStringLiteral("ShapeAction_triangle"),
-            QStringLiteral("ShapePreset_triangle45"),   QStringLiteral("ShapePreset_triangle60"),
-            QStringLiteral("ShapeAction_diamond"),      QStringLiteral("ShapeAction_star4"),
-            QStringLiteral("ShapeAction_star"),         QStringLiteral("ShapeAction_hexagram"),
-            QStringLiteral("ShapeAction_heart"),        QStringLiteral("ShapeAction_arrow"),
-            QStringLiteral("ShapeAction_double_arrow"), QStringLiteral("ShapeAction_callout"),
-            QStringLiteral("ShapeAction_sector"),       QStringLiteral("ShapeAction_arc"),
-            QStringLiteral("ShapeAction_sine_wave"),    QStringLiteral("ShapeAction_flag_wave"),
-            QStringLiteral("ShapeAction_scroll"),       QStringLiteral("ShapeAction_cube"),
-            QStringLiteral("ShapeAction_cylinder"),     QStringLiteral("ShapeAction_line"),
-            QStringLiteral("ShapePreset_lineArrow"),    QStringLiteral("ShapePreset_braceLeft"),
-            QStringLiteral("ShapePreset_braceRight"),
+            QStringLiteral("ShapeAction_rectangle"),     QStringLiteral("ShapePreset_roundedRect"),
+            QStringLiteral("ShapeAction_ellipse"),       QStringLiteral("ShapeAction_line"),
+            QStringLiteral("ShapePreset_lineArrow"),     QStringLiteral("ShapeAction_arrow"),
+            QStringLiteral("ShapeAction_double_arrow"),  QStringLiteral("ShapeAction_triangle"),
+            QStringLiteral("ShapePreset_triangle45"),    QStringLiteral("ShapePreset_triangle60"),
+            QStringLiteral("ShapeAction_callout"),       QStringLiteral("ShapeAction_diamond"),
+            QStringLiteral("ShapeAction_parallelogram"), QStringLiteral("ShapeAction_sector"),
+            QStringLiteral("ShapeAction_arc"),           QStringLiteral("ShapeAction_cube"),
+            QStringLiteral("ShapeAction_cylinder"),      QStringLiteral("ShapeAction_star4"),
+            QStringLiteral("ShapeAction_star"),          QStringLiteral("ShapeAction_hexagram"),
+            QStringLiteral("ShapeAction_heart"),         QStringLiteral("ShapeAction_sine_wave"),
+            QStringLiteral("ShapeAction_flag_wave"),     QStringLiteral("ShapeAction_scroll"),
+            QStringLiteral("ShapePreset_braceLeft"),     QStringLiteral("ShapePreset_braceRight"),
         };
         QStringList actualToolBarOrder;
         for (QToolButton* button : std::as_const(toolbarShapeButtons)) {
             actualToolBarOrder.append(button->property("shapeActionName").toString());
         }
         ctx.check(actualToolBarOrder == expectedToolBarOrder,
-                  QStringLiteral("工具栏图形顺序：星星按角的个数排列，直线与花括号在末尾"),
+                  QStringLiteral("工具栏图形顺序跟随单一顺序源（常用顺序表）"),
                   actualToolBarOrder.join(QLatin1Char(',')));
 
         QToolBar* mainToolBar = shapeWindow.findChild<QToolBar*>(QStringLiteral("MainToolBar"));
