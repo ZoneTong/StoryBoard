@@ -6,6 +6,7 @@
 #include "ItemPropertiesDialogFields.h"
 #include "ItemStyleVisuals.h"
 #include "ShapeItem.h"
+#include "ShapeMeta.h"
 
 #include <QComboBox>
 #include <QFileDialog>
@@ -219,8 +220,9 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_parallelogramAngleSpin->setValue(qRound(m_initialParallelogramAngle));
         }
 
-        // 需求 6：直线两端箭头样式，属性窗里一行两个下拉。
-        if (!shape->isCustomShape() && type == ShapeType::Line) {
+        // 需求 4：所有线条类图元（直线 / 弧线 / 正弦波 / 波线 / 卷轴）都能设两端箭头样式，
+        // 属性窗里一行两个下拉。
+        if (!shape->isCustomShape() && ShapeMeta::isLineLike(type)) {
             m_arrowRow = new QWidget(this);
             auto* arrowLayout = new QHBoxLayout(m_arrowRow);
             arrowLayout->setContentsMargins(0, 0, 0, 0);

@@ -13,6 +13,7 @@
 #include "ItemDockPanelSelectionCard.h"
 #include "ItemDockPanelValueCard.h"
 #include "ShapeItem.h"
+#include "ShapeMeta.h"
 #include "TextItem.h"
 
 #include <QFileDialog>
@@ -288,13 +289,13 @@ void ItemDockPanel::refresh()
         if (shape->shapeType() == ShapeType::Triangle && !shape->isCustomShape()) {
             hasTriangle = true;
         }
-        if (shape->shapeType() == ShapeType::Line && !shape->isCustomShape()) {
+        if (ShapeMeta::isLineLike(shape->shapeType()) && !shape->isCustomShape()) {
             hasArrow = true;
         }
     }
-    // 需求 9b：曲线（花括号除外）也提供起点 / 终点箭头。
+    // 需求 4：曲线与花括号同样提供起点 / 终点箭头。
     for (CurveItem* stroke : strokes) {
-        if (stroke && stroke->source() != CurveSource::Brace) {
+        if (stroke) {
             hasArrow = true;
             break;
         }
@@ -843,7 +844,7 @@ void ItemDockPanel::applyArrowStart(int style)
     QList<QPair<ArrowStyle, ArrowStyle>> before;
     QList<QPair<ArrowStyle, ArrowStyle>> after;
     for (ShapeItem* shape : shapes) {
-        if (!shape || shape->shapeType() != ShapeType::Line || shape->isCustomShape()) {
+        if (!shape || !ShapeMeta::isLineLike(shape->shapeType()) || shape->isCustomShape()) {
             continue;
         }
         targets.append(shape);
@@ -851,7 +852,7 @@ void ItemDockPanel::applyArrowStart(int style)
         after.append(qMakePair(static_cast<ArrowStyle>(style), shape->endArrow()));
     }
     for (CurveItem* curve : curves) {
-        if (!curve || curve->source() == CurveSource::Brace) {
+        if (!curve) {
             continue;
         }
         targets.append(curve);
@@ -873,7 +874,7 @@ void ItemDockPanel::applyArrowEnd(int style)
     QList<QPair<ArrowStyle, ArrowStyle>> before;
     QList<QPair<ArrowStyle, ArrowStyle>> after;
     for (ShapeItem* shape : shapes) {
-        if (!shape || shape->shapeType() != ShapeType::Line || shape->isCustomShape()) {
+        if (!shape || !ShapeMeta::isLineLike(shape->shapeType()) || shape->isCustomShape()) {
             continue;
         }
         targets.append(shape);
@@ -881,7 +882,7 @@ void ItemDockPanel::applyArrowEnd(int style)
         after.append(qMakePair(shape->startArrow(), static_cast<ArrowStyle>(style)));
     }
     for (CurveItem* curve : curves) {
-        if (!curve || curve->source() == CurveSource::Brace) {
+        if (!curve) {
             continue;
         }
         targets.append(curve);

@@ -625,27 +625,48 @@ QPainterPath ShapeItem::paintedShape() const
 
 QPainterPath ShapeItem::pathWithArrowHeads(const QPainterPath& base) const
 {
-    if (m_type != ShapeType::Line || (!arrowStyleIsHead(m_startArrow) && !arrowStyleIsHead(m_endArrow))) {
+    // 需求 4：线条类图元两端的箭头也是描线的一部分，命中与遮挡都要算进去。
+    if (!ShapeMeta::isLineLike(m_type) || isCustomShape() ||
+        (!arrowStyleIsHead(m_startArrow) && !arrowStyleIsHead(m_endArrow))) {
         return base;
     }
     const QRectF rect = contentRect();
     if (rect.isEmpty()) {
         return base;
     }
+    const QPainterPath centerline = currentPath(rect);
+    QPointF startTip;
+    QPointF startToward;
+    QPointF endTip;
+    QPointF endToward;
+    if (!lineEndpoints(centerline, &startTip, &startToward, &endTip, &endToward)) {
+        return base;
+    }
     QPainterPath path = base;
     QPainterPathStroker stroker;
     stroker.setWidth(qMax<qreal>(1.0, m_strokeWidth));
     stroker.setJoinStyle(Qt::MiterJoin);
-    const QPointF left(rect.left(), rect.center().y());
-    const QPointF right(rect.right(), rect.center().y());
-    const QPointF center = rect.center();
     if (arrowStyleIsHead(m_startArrow)) {
-        path = path.united(stroker.createStroke(arrowHeadPath(left, center, m_strokeWidth, m_startArrow)));
+        path = path.united(stroker.createStroke(arrowHeadPath(startTip, startToward, m_strokeWidth, m_startArrow)));
     }
     if (arrowStyleIsHead(m_endArrow)) {
-        path = path.united(stroker.createStroke(arrowHeadPath(right, center, m_strokeWidth, m_endArrow)));
+        path = path.united(stroker.createStroke(arrowHeadPath(endTip, endToward, m_strokeWidth, m_endArrow)));
     }
     return path;
+}
+
+bool ShapeItem::lineEndpoints(const QPainterPath& path, QPointF* startTip, QPointF* startToward, QPointF* endTip,
+                              QPointF* endToward)
+{
+    if (!startTip || !startToward || !endTip || !endToward || path.isEmpty() || path.elementCount() < 2) {
+        return false;
+    }
+    // 首点与相邻点：箭头由相邻点指向首点；末点与相邻点同理。
+    *startTip = QPointF(path.elementAt(0));
+    *startToward = QPointF(path.elementAt(1));
+    *endTip = QPointF(path.elementAt(path.elementCount() - 1));
+    *endToward = QPointF(path.elementAt(path.elementCount() - 2));
+    return true;
 }
 
 QPainterPath ShapeItem::currentPath(const QRectF& rect) const
@@ -709,16 +730,20 @@ void ShapeItem::paintContent(QPainter* painter)
         ImageFill::paint(painter, m_fillImage, m_fillImageMode, rect, clip);
     }
 
-    // 直线 / 直线箭头：两端箭头按 4 倍线宽画在中心线端点上，允许超出内容矩形。
-    if (m_type == ShapeType::Line && (arrowStyleIsHead(m_startArrow) || arrowStyleIsHead(m_endArrow))) {
-        painter->save();
-        painter->setRenderHint(QPainter::Antialiasing, true);
-        const QPointF left(rect.left(), rect.center().y());
-        const QPointF right(rect.right(), rect.center().y());
-        const QPointF center = rect.center();
-        paintArrowHead(painter, left, center, m_strokeWidth, m_strokeColor, m_startArrow);
-        paintArrowHead(painter, right, center, m_strokeWidth, m_strokeColor, m_endArrow);
-        painter->restore();
+    // 需求 4：所有线条类图元（直线 / 弧线 / 正弦波 / 波线 / 卷轴）两端都能挂箭头，
+    // 箭头沿描线首尾的切线方向画，允许超出内容矩形。
+    if (ShapeMeta::isLineLike(m_type) && (arrowStyleIsHead(m_startArrow) || arrowStyleIsHead(m_endArrow))) {
+        QPointF startTip;
+        QPointF startToward;
+        QPointF endTip;
+        QPointF endToward;
+        if (lineEndpoints(path, &startTip, &startToward, &endTip, &endToward)) {
+            painter->save();
+            painter->setRenderHint(QPainter::Antialiasing, true);
+            paintArrowHead(painter, startTip, startToward, m_strokeWidth, m_strokeColor, m_startArrow);
+            paintArrowHead(painter, endTip, endToward, m_strokeWidth, m_strokeColor, m_endArrow);
+            painter->restore();
+        }
     }
 }
 

@@ -194,6 +194,22 @@ QSizeF ShapeMeta::defaultSize(ShapeType type)
     return QSizeF(128.0, 128.0);
 }
 
+bool ShapeMeta::isLineLike(ShapeType type)
+{
+    // 需求 4：这些图元的轮廓是一条开放描线，两端都能挂箭头；
+    // 花括号属于曲线类（CurveItem），另行处理。
+    switch (type) {
+    case ShapeType::Line:
+    case ShapeType::Arc:
+    case ShapeType::SineWave:
+    case ShapeType::FlagWave:
+    case ShapeType::Scroll:
+        return true;
+    default:
+        return false;
+    }
+}
+
 bool ShapeMeta::isFilled(ShapeType type)
 {
     switch (type) {

@@ -211,6 +211,9 @@ class ShapeItem : public CanvasItem {
   private:
     // 直线箭头：把两端箭头几何并入描带，命中与遮挡才算得上"头也是线的一部分"。
     QPainterPath pathWithArrowHeads(const QPainterPath& base) const;
+    // 需求 4：取描线首尾点与各自的相邻点，用于沿切线方向摆箭头。
+    static bool lineEndpoints(const QPainterPath& path, QPointF* startTip, QPointF* startToward, QPointF* endTip,
+                              QPointF* endToward);
     ShapeType m_type = ShapeType::Rectangle;
     QColor m_strokeColor = QColor(30, 41, 59);
     QColor m_fillColor = QColor(30, 41, 59, 36);

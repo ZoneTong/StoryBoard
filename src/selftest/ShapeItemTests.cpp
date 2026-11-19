@@ -126,6 +126,25 @@ void selftest::runShapeItemTests(Context& ctx)
         ctx.check(qAbs(paraState.parallelogramAngle - 165.0) < 0.01, QStringLiteral("平行四边形内角进入状态快照"),
                   QStringLiteral("angle=%1").arg(paraState.parallelogramAngle));
     }
+    // 需求 4：弧线 / 正弦波 / 波线这些线条类图元同样能设两端箭头，箭头并入命中轮廓。
+    {
+        ShapeItem arc(ShapeType::Arc);
+        ShapeItem wave(ShapeType::SineWave);
+        for (ShapeItem* line : {&arc, &wave}) {
+            line->setContentSize(QSizeF(120.0, 80.0));
+            line->setArrowStyles(ArrowStyle::TriangleFilled, ArrowStyle::OpenArrow);
+            const QRectF hit = line->paintedShape().boundingRect();
+            const QRectF plain = line->outlineShape().boundingRect();
+            ctx.check(line->startArrow() == ArrowStyle::TriangleFilled && line->endArrow() == ArrowStyle::OpenArrow &&
+                          !hit.isEmpty() && hit.width() >= plain.width(),
+                      QStringLiteral("线条类图元可设两端箭头并计入命中轮廓"),
+                      QStringLiteral("hit=%1,%2 plain=%3,%4")
+                          .arg(hit.width())
+                          .arg(hit.height())
+                          .arg(plain.width())
+                          .arg(plain.height()));
+        }
+    }
     ctx.check(shapeTypeFromString(QStringLiteral("circle")) == ShapeType::Ellipse &&
                   shapeTypeFromString(QStringLiteral("roundrect")) == ShapeType::Rectangle &&
                   shapeTypeFromString(QStringLiteral("double_arrow")) == ShapeType::DoubleArrow &&

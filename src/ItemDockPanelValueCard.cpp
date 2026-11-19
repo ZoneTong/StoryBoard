@@ -5,6 +5,7 @@
 #include "IconFactory.h"
 #include "ItemDockPanel.h"
 #include "ShapeItem.h"
+#include "ShapeMeta.h"
 
 #include <QComboBox>
 #include <QHBoxLayout>
@@ -292,7 +293,7 @@ void ItemDockPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QLis
     if (m_startArrowCombo && m_endArrowCombo) {
         ShapeItem* line = nullptr;
         for (ShapeItem* shape : shapes) {
-            if (shape && shape->shapeType() == ShapeType::Line && !shape->isCustomShape()) {
+            if (shape && ShapeMeta::isLineLike(shape->shapeType()) && !shape->isCustomShape()) {
                 line = shape;
                 break;
             }
