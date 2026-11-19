@@ -384,7 +384,9 @@ run_self_test() {
     if [ "$PLATFORM" = windows ]; then
         (
             cd "$package_dir"
+            # offscreen 让自检不弹窗也能写出报告；桌面直接跑脚本时同样生效。
             env -u QT_PLUGIN_PATH -u QT_QPA_PLATFORM_PLUGIN_PATH -u STORYBOARD_LANG \
+                QT_QPA_PLATFORM=offscreen \
                 "./$APP_NAME.exe" --self-test "$REPORT_NAME"
         )
     elif [ "$PLATFORM" = macos ]; then
