@@ -3,6 +3,7 @@
 #include "CanvasScene.h"
 #include "CanvasView.h"
 #include "CurveItem.h"
+#include "LineItem.h"
 #include "ShapeItem.h"
 
 #include <QCoreApplication>
@@ -121,20 +122,10 @@ void CanvasStrokeController::finishStroke()
         const QVector<QPointF> knots = stroke->strokePoints();
         const QPointF a = stroke->mapToScene(knots.first());
         const QPointF b = stroke->mapToScene(knots.last());
-        QLineF axis(a, b);
-        const qreal length = axis.length();
-        auto* line = new ShapeItem(ShapeType::Line);
-        const qreal angle = qRadiansToDegrees(qAtan2(axis.dy(), axis.dx()));
-        const QPointF center = (a + b) / 2.0;
-        // 直线内容高度是细长条：先设内容尺寸（会被最小边钳制），再用真实
-        // 内容矩形中心定位，保证旋转后仍落在落笔位置。
-        line->setContentSize(QSizeF(length, 1.0));
-        const qreal contentHeight = line->contentSize().height();
-        line->setPos(center - QPointF(length / 2.0, contentHeight / 2.0));
-        line->setStyle(stroke->strokeColor(), QColor(Qt::transparent), stroke->strokeWidth());
-        if (qAbs(angle) > 1e-9) {
-            line->setRotationAngle(angle);
-        }
+        // 直线是曲线族的两点线性子型：端点直接决定几何，不再用旋转角摆放细长条。
+        auto* line = new LineItem();
+        line->setEndpoints(a, b, stroke->strokeColor(), stroke->strokeWidth());
+        line->setStrokeStyle(stroke->strokeStyle());
         m_scene->removeItem(stroke);
         delete stroke;
         m_scene->commitNewItem(line, trView("Add stroke"));

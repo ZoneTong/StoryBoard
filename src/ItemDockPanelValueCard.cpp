@@ -298,10 +298,10 @@ void ItemDockPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QLis
                 break;
             }
         }
-        // 需求 9b：直线与曲线共用这两行；花括号是精确采样曲线，不显示箭头。
+        // 需求 9b：直线与曲线共用这两行；箭头对全部曲线子型开放（含花括号）。
         CurveItem* curve = nullptr;
         for (CurveItem* stroke : strokes) {
-            if (stroke && stroke->source() != CurveSource::Brace) {
+            if (stroke) {
                 curve = stroke;
                 break;
             }

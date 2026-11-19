@@ -1,16 +1,19 @@
 #include "MainWindowInsertController.h"
 
 #include "CanvasItem.h"
+#include "ArcItem.h"
 #include "CanvasScene.h"
 #include "CanvasView.h"
 #include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "CustomShapeTemplates.h"
 #include "IconFactory.h"
+#include "LineItem.h"
 #include "MainWindow.h"
 #include "Settings.h"
 #include "ShapeItem.h"
 #include "ShapePathBuilder.h"
+#include "SineItem.h"
 #include "TextItem.h"
 
 #include <QAction>
@@ -99,10 +102,9 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
     const QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : stroke;
     const FillStyle fillStyle = filled ? m_window->m_fillStyle : FillStyle::None;
 
-    // 需求 26：正弦波是零面积波线，插入即生成曲线图元；今日新增的其余填充
+    // 需求 26：正弦波、直线、弧线都是曲线族（零面积描线）；今日新增的其余填充
     // 图形（十字星/六芒星/心形/旗帜/卷轴）插入即归类为多边形图元——与合并、
     // 分割的产物同型，只保留填充与描线，不开放形状类型与圆角。
-    const bool asCurve = type == ShapeType::SineWave;
     const bool asPolygon = type == ShapeType::Star4 || type == ShapeType::Hexagram || type == ShapeType::Heart ||
                            type == ShapeType::FlagWave || type == ShapeType::Scroll;
 
@@ -123,21 +125,27 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
     const QPointF topLeft = center - QPointF(size.width() / 2.0, size.height() / 2.0);
 
     CanvasItem* item = nullptr;
-    if (asCurve) {
-        // 波线采样成曲线图元：与花括号同一套采样构点方式，样式取工具栏描线。
-        auto* curve = new CurveItem();
-        const QPainterPath wavePath =
-            ShapePathBuilder::pathFor(ShapeType::SineWave, QRectF(QPointF(0.0, 0.0), size), -1.0);
-        constexpr int sampleCount = 64;
-        QVector<QPointF> points;
-        points.reserve(sampleCount + 1);
-        for (int i = 0; i <= sampleCount; ++i) {
-            points.append(topLeft + wavePath.pointAtPercent(qreal(i) / qreal(sampleCount)));
-        }
-        curve->setStrokePoints(points, stroke, strokeWidth);
-        // 需求 1：新图元沿用工具栏当前描线样式。
-        curve->setStrokeStyle(m_window->m_strokeStyle);
-        item = curve;
+    if (type == ShapeType::Line) {
+        // 直线 = 曲线族的两点线性子型；水平穿过内容框中线，箭头预置项沿用传入样式。
+        const QPointF start(topLeft.x(), topLeft.y() + size.height() / 2.0);
+        const QPointF end(topLeft.x() + size.width(), start.y());
+        auto* line = new LineItem();
+        line->setEndpoints(start, end, stroke, strokeWidth);
+        line->setStrokeStyle(m_window->m_strokeStyle);
+        line->setArrowStyles(startArrow, endArrow);
+        item = line;
+    } else if (type == ShapeType::Arc) {
+        auto* arc = new ArcItem();
+        arc->setArcGeometry(topLeft, size, 30.0, 120.0, stroke, strokeWidth);
+        arc->setStrokeStyle(m_window->m_strokeStyle);
+        arc->setArrowStyles(startArrow, endArrow);
+        item = arc;
+    } else if (type == ShapeType::SineWave) {
+        auto* sine = new SineItem();
+        sine->setWaveGeometry(topLeft, size, stroke, strokeWidth);
+        sine->setStrokeStyle(m_window->m_strokeStyle);
+        sine->setArrowStyles(startArrow, endArrow);
+        item = sine;
     } else if (asPolygon) {
         // 填充图形采样成单层多边形图元：路径即有面积层，样式取工具栏填充与描线。
         CompositeShapeItem::Layer layer;
@@ -160,10 +168,7 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
         if (type == ShapeType::Triangle && triangleAngle1 > 0.0 && triangleAngle2 > 0.0) {
             shape->setTriangleAngles(triangleAngle1, triangleAngle2);
         }
-        // 直线箭头预置项：复用直线，默认末端开口箭头。
-        if (type == ShapeType::Line && (arrowStyleIsHead(startArrow) || arrowStyleIsHead(endArrow))) {
-            shape->setArrowStyles(startArrow, endArrow);
-        }
+        // 直线箭头预置项由上面的 LineItem 分支处理，这里只剩有面积图形。
         // 圆角矩形预置项：矩形按短边 16% 自动圆角（<0 自动态），尺寸变化时比例保持。
         if (type == ShapeType::Rectangle && autoCorner) {
             shape->setAutoCorner(true);
@@ -339,7 +344,7 @@ void MainWindowInsertController::insertBrace(bool left)
 
     auto* item = new CurveItem();
     item->setStrokePoints(points, stroke, width, 0.0, true);
-    item->setSource(CurveSource::Brace);
+    item->setCurveKind(CurveKind::Brace);
     item->setStrokeStyle(m_window->m_strokeStyle);
     // 右括号 = 左括号旋转 180°（旋转绕内容中心，几何不复制第二套）。
     if (!left) {

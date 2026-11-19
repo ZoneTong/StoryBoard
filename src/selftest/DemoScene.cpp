@@ -190,7 +190,7 @@ void populateDemoScene(CanvasScene& scene)
         brace->setStrokePoints(bracePoints, accent, 5.0, 0.0, true);
     }
     brace->setLayerId(inkLayer);
-    brace->setSource(CurveSource::Brace);
+    brace->setCurveKind(CurveKind::Brace);
     scene.attachItem(brace);
 
     QVector<QPointF> figure;

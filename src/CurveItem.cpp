@@ -10,6 +10,44 @@
 #include <QPainter>
 #include <QtMath>
 
+namespace {
+
+QString curveKindToString(CurveKind kind)
+{
+    switch (kind) {
+    case CurveKind::Line:
+        return QStringLiteral("line");
+    case CurveKind::Arc:
+        return QStringLiteral("arc");
+    case CurveKind::Sine:
+        return QStringLiteral("sine");
+    case CurveKind::Brace:
+        return QStringLiteral("brace");
+    case CurveKind::Freehand:
+        break;
+    }
+    return QStringLiteral("freehand");
+}
+
+CurveKind curveKindFromString(const QString& name)
+{
+    if (name == QStringLiteral("line")) {
+        return CurveKind::Line;
+    }
+    if (name == QStringLiteral("arc")) {
+        return CurveKind::Arc;
+    }
+    if (name == QStringLiteral("sine")) {
+        return CurveKind::Sine;
+    }
+    if (name == QStringLiteral("brace")) {
+        return CurveKind::Brace;
+    }
+    return CurveKind::Freehand;
+}
+
+} // namespace
+
 bool CurveItem::GeometryState::operator==(const GeometryState& other) const
 {
     if (dot != other.dot || segments.size() != other.segments.size() ||
@@ -159,8 +197,9 @@ bool CurveItem::isEmpty() const
 
 bool CurveItem::simplifyCurve(qreal tolerance)
 {
-    // 括号是按几何精确采样的曲线，简化会把尖角拍散，直接跳过。
-    if (m_source == CurveSource::Brace) {
+    // 直线 / 弧线 / 正弦 / 花括号都是程序化几何，简化会改掉它们的定义，直接跳过。
+    // 手绘笔迹与图片线稿提取（source = LineArt）属于 Freehand 子型，放开简化。
+    if (m_curveKind != CurveKind::Freehand) {
         return false;
     }
     if (m_dot || m_segments.isEmpty() || tolerance <= 0.0) {
@@ -327,6 +366,15 @@ void CurveItem::setSource(CurveSource source)
     update();
 }
 
+void CurveItem::setCurveKind(CurveKind kind)
+{
+    if (m_curveKind == kind) {
+        return;
+    }
+    m_curveKind = kind;
+    update();
+}
+
 void CurveItem::setArrowStyles(ArrowStyle start, ArrowStyle end)
 {
     if (m_startArrow == start && m_endArrow == end) {
@@ -382,9 +430,9 @@ QJsonObject CurveItem::toJson() const
         json.insert(QStringLiteral("linear"), true);
     }
     if (m_source != CurveSource::HandDrawn) {
-        json.insert(QStringLiteral("source"),
-                    m_source == CurveSource::Brace ? QStringLiteral("brace") : QStringLiteral("line_art"));
+        json.insert(QStringLiteral("source"), QStringLiteral("line_art"));
     }
+    json.insert(QStringLiteral("curveKind"), curveKindToString(m_curveKind));
 
     if (m_dot && !m_rawPoints.isEmpty()) {
         QJsonArray center;
@@ -423,10 +471,11 @@ void CurveItem::fromJson(const QJsonObject& json)
     m_startArrow = arrowStyleFromString(json.value(QStringLiteral("startArrow")).toString());
     m_endArrow = arrowStyleFromString(json.value(QStringLiteral("endArrow")).toString());
     m_linearPath = json.value(QStringLiteral("linear")).toBool(false);
-    const QString sourceName = json.value(QStringLiteral("source")).toString();
-    m_source = sourceName == QStringLiteral("brace")      ? CurveSource::Brace
-               : sourceName == QStringLiteral("line_art") ? CurveSource::LineArt
-                                                          : CurveSource::HandDrawn;
+    m_curveKind = curveKindFromString(json.value(QStringLiteral("curveKind")).toString());
+    // 来源只剩“手绘 / 图片线稿提取”两种，花括号等程序化曲线不再借 source 兼职。
+    m_source =
+        json.value(QStringLiteral("source")).toString() == QStringLiteral("line_art") ? CurveSource::LineArt
+                                                                                      : CurveSource::HandDrawn;
     m_segments.clear();
     m_rawPoints.clear();
     m_drawing = false;

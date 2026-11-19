@@ -130,7 +130,7 @@ CanvasItem* createBraceCurve(const QJsonObject& json)
     auto* curve = new CurveItem();
     curve->setStrokePoints(points, stroke, width, 0.0, true);
     curve->setStrokeStyle(penStyle);
-    curve->setSource(CurveSource::Brace);
+    curve->setCurveKind(CurveKind::Brace);
     curve->setArrowStyles(ArrowStyle::None, ArrowStyle::None);
     if (right) {
         curve->setRotationAngle(180.0);
@@ -284,7 +284,7 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
         }
         CanvasItem* item = isLegacyBraceShape(itemJson)      ? createBraceCurve(itemJson)
                            : isLegacySineWaveShape(itemJson) ? createSineWaveCurve(itemJson)
-                                                             : createItem(kind);
+                                                             : createItemForJson(itemJson);
         if (!item) {
             qDeleteAll(parsedItems);
             return fail(tr("The canvas contains an unknown item type: %1").arg(kind));

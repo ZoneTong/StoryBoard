@@ -1,5 +1,7 @@
 #include "ShapePathBuilder.h"
 
+#include "EllipseShape.h"
+
 #include <QTransform>
 #include <QtMath>
 
@@ -389,12 +391,8 @@ QPainterPath ShapePathBuilder::pathFor(ShapeType type, const QRectF& rect, qreal
 
     // 需求 6：扇形 / 弧线的椭圆外接框就是内容矩形，长半轴 = 宽/2、短半轴 = 高/2，
     // 不再维护独立半径；想画扁弧直接改图元尺寸即可。
-    auto arcRect = [&r]() { return r; };
-    auto arcSweep = [sweepAngle]() {
-        const qreal sweep = qBound<qreal>(-360.0, sweepAngle, 360.0);
-        // 扫过角为 0 时画不出可见图形，退回默认 120°，避免插入后“什么都没有”。
-        return qFuzzyIsNull(sweep) ? 120.0 : sweep;
-    };
+    // 椭圆 / 扇形 / 弧线共用 EllipseShape，角度语义与扫过角兜底只有一份实现。
+    const EllipseShape ellipseShape(r);
 
     QPainterPath path;
     switch (type) {
@@ -413,7 +411,7 @@ QPainterPath ShapePathBuilder::pathFor(ShapeType type, const QRectF& rect, qreal
         break;
     }
     case ShapeType::Ellipse:
-        path.addEllipse(r);
+        path = ellipseShape.ellipse();
         break;
     case ShapeType::Triangle:
         // 默认按 60°/60° 的等腰三角形生成；具体图元用带角度参数的重载。
@@ -472,14 +470,10 @@ QPainterPath ShapePathBuilder::pathFor(ShapeType type, const QRectF& rect, qreal
         path = calloutPath(r);
         break;
     case ShapeType::Sector:
-        path.arcMoveTo(arcRect(), startAngle);
-        path.arcTo(arcRect(), startAngle, arcSweep());
-        path.lineTo(r.center());
-        path.closeSubpath();
+        path = ellipseShape.sector(startAngle, sweepAngle);
         break;
     case ShapeType::Arc:
-        path.arcMoveTo(arcRect(), startAngle);
-        path.arcTo(arcRect(), startAngle, arcSweep());
+        path = ellipseShape.arc(startAngle, sweepAngle);
         break;
     case ShapeType::Star4:
         path = fourPointStarPath(r);
