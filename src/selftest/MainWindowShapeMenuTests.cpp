@@ -428,8 +428,6 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
             QApplication::processEvents();
             // lineEdit() 是保护接口：取 SpinBox 内部编辑器（焦点代理）来校验光标位置。
             QLineEdit* widthEdit = strokeWidthSpin->findChild<QLineEdit*>();
-            const bool focused = strokeWidthSpin->hasFocus() || shapeWindow.focusWidget() == widthEdit ||
-                                 shapeWindow.focusWidget() == strokeWidthSpin;
             const bool focusable = strokeWidthSpin->focusPolicy() != Qt::NoFocus;
             ctx.check(widthEdit && focusable && widthEdit->cursorPosition() == widthEdit->text().length(),
                       QStringLiteral("触发菜单描线宽度后光标移到工具栏输入框末尾"),

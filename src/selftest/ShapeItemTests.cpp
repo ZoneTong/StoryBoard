@@ -232,14 +232,16 @@ void selftest::runShapeItemTests(Context& ctx)
         bottomDrag.beginResize(CanvasItem::Bottom, triangle.pos() + QPointF(60.0, startHeight));
         bottomDrag.applyResize(triangle.pos() + QPointF(60.0, startHeight + 30.0), Qt::NoModifier);
         const QPointF apexAfter = apexScene();
+        const QPointF baseMidAfter = baseMidScene();
         ctx.check(qAbs(apexAfter.x() - apexBefore.x()) < 0.5 && qAbs(apexAfter.y() - apexBefore.y()) < 0.5 &&
                       qAbs(triangle.bottomAngle1() - angle1Before) < 0.05 &&
                       qAbs(triangle.bottomAngle2() - angle2Before) < 0.05 &&
                       qAbs(triangle.contentSize().width() / startWidth -
                            triangle.contentSize().height() / startHeight) < 0.01 &&
-                      triangle.contentSize().height() > startHeight + 1.0,
+                      triangle.contentSize().height() > startHeight + 1.0 &&
+                      qAbs(baseMidAfter.x() - baseMidBefore.x()) < 0.5 && baseMidAfter.y() - baseMidBefore.y() > 1.0,
                   QStringLiteral("拖三角形底边：顶点钉住、内角不变、宽高等比放大"),
-                  QStringLiteral("apex=%1,%2->%3,%4 angles=%5/%6->%7/%8")
+                  QStringLiteral("apex=%1,%2->%3,%4 angles=%5/%6->%7/%8 baseMid=%9,%10->%11,%12")
                       .arg(apexBefore.x())
                       .arg(apexBefore.y())
                       .arg(apexAfter.x())
@@ -247,7 +249,11 @@ void selftest::runShapeItemTests(Context& ctx)
                       .arg(angle1Before)
                       .arg(angle2Before)
                       .arg(triangle.bottomAngle1())
-                      .arg(triangle.bottomAngle2()));
+                      .arg(triangle.bottomAngle2())
+                      .arg(baseMidBefore.x())
+                      .arg(baseMidBefore.y())
+                      .arg(baseMidAfter.x())
+                      .arg(baseMidAfter.y()));
 
         // 拖上边：对面点 = 底边中点，钉住；底边两端随等比缩放外扩。
         ShapeItem topTriangle(ShapeType::Triangle);
