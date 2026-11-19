@@ -5,10 +5,8 @@
 #include "Commands.h"
 #include "CompositeShapeItem.h"
 #include "CurveItem.h"
-#include "ImageItem.h"
 #include "ItemPropertiesDialogGeometryBlock.h"
 #include "ItemPropertiesDialogIdentityBlock.h"
-#include "ItemPropertiesDialogImageBlock.h"
 #include "ItemPropertiesDialogStyleBlock.h"
 #include "ItemPropertiesDialogTextBlock.h"
 #include "ShapeItem.h"
@@ -22,7 +20,6 @@
 #include <QFormLayout>
 #include <QFrame>
 #include <QImage>
-#include <QImageReader>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
@@ -30,7 +27,6 @@
 #include <QPushButton>
 #include <QShowEvent>
 #include <QSpinBox>
-#include <QStandardPaths>
 #include <QTextCursor>
 #include <QToolButton>
 #include <QVBoxLayout>
@@ -101,11 +97,6 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
             m_styleBlock->addRows(form);
             m_hasFill = m_styleBlock->hasFill();
             m_initialStrokeWidth = m_styleBlock->initialStrokeWidth();
-        } else if (dynamic_cast<ImageItem*>(item)) {
-            m_imageBlock = new ItemPropertiesDialogImageBlock(item, this);
-            m_imageBlock->addRows(form);
-            connect(m_imageBlock, &ItemPropertiesDialogImageBlock::chooseImageRequested, this,
-                    &ItemPropertiesDialog::chooseImage);
         } else if (dynamic_cast<TextItem*>(item)) {
             m_textBlock = new ItemPropertiesDialogTextBlock(item, this);
             m_textBlock->addRows(form);
@@ -214,9 +205,6 @@ void ItemPropertiesDialog::applyEditableState()
     if (m_textBlock) {
         widgets << m_textBlock->textColorButton() << m_textBlock->fontButton() << m_textBlock->textEdit();
     }
-    if (m_imageBlock) {
-        widgets << m_imageBlock->imageNameEdit() << m_imageBlock->imageButton();
-    }
     if (m_geometryBlock) {
         widgets << m_geometryBlock->positionXSpin() << m_geometryBlock->positionYSpin() << m_geometryBlock->widthSpin()
                 << m_geometryBlock->heightSizeSpin() << m_geometryBlock->majorAxisSpin()
@@ -263,57 +251,6 @@ void ItemPropertiesDialog::syncTextNaturalSize()
     }
 }
 
-void ItemPropertiesDialog::chooseImage()
-{
-    if (!m_editable) {
-        return;
-    }
-
-    const QString startDirectory = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
-    const QString path =
-        QFileDialog::getOpenFileName(this, tr("Replace image"), startDirectory,
-                                     tr("Image files (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;All files (*.*)"));
-    if (path.isEmpty()) {
-        return;
-    }
-
-    QString error;
-    if (!loadImageFromFile(path, &error)) {
-        QMessageBox::warning(this, tr("Replace image"), tr("Could not read the image:\n%1").arg(error));
-    }
-}
-
-bool ItemPropertiesDialog::loadImageFromFile(const QString& path, QString* errorMessage)
-{
-    QImageReader reader(path);
-    reader.setAutoTransform(true);
-    const QImage image = reader.read();
-    if (image.isNull()) {
-        if (errorMessage) {
-            *errorMessage = reader.errorString();
-        }
-        return false;
-    }
-
-    m_newImage = QPixmap::fromImage(image);
-    m_imageChanged = true;
-    if (m_geometryBlock && m_geometryBlock->widthSpin() && m_geometryBlock->heightSizeSpin()) {
-        m_geometryBlock->widthSpin()->setValue(m_newImage.width());
-        m_geometryBlock->heightSizeSpin()->setValue(m_newImage.height());
-    }
-    return true;
-}
-
-void ItemPropertiesDialog::setReplacementImage(const QPixmap& image)
-{
-    m_newImage = image;
-    m_imageChanged = !image.isNull();
-    if (m_imageChanged && m_geometryBlock && m_geometryBlock->widthSpin() && m_geometryBlock->heightSizeSpin()) {
-        m_geometryBlock->widthSpin()->setValue(image.width());
-        m_geometryBlock->heightSizeSpin()->setValue(image.height());
-    }
-}
-
 bool ItemPropertiesDialog::isItemInScene() const
 {
     return m_scene && m_item && m_item->scene() == m_scene;
@@ -328,7 +265,6 @@ void ItemPropertiesDialog::applyChanges()
     auto* identity = m_identityBlock;
     auto* style = m_styleBlock;
     auto* text = m_textBlock;
-    auto* image = m_imageBlock;
     auto* geometry = m_geometryBlock;
 
     const int oldLayer = m_item->layerId();
@@ -557,20 +493,6 @@ void ItemPropertiesDialog::applyChanges()
             (style && style->hasFillImageRow()) ? style->fillImagePresent() : before.fillImagePresent;
         after.fillImage = (style && style->hasFillImageRow()) ? style->fillImage() : before.fillImage;
         after.fillImageMode = (style && style->hasFillImageRow()) ? style->fillImageMode() : before.fillImageMode;
-    } else if (auto* imageItem = dynamic_cast<ImageItem*>(m_item.data())) {
-        before.hasImageState = true;
-        before.image = imageItem->image();
-        before.hasImageName = true;
-        before.imageName = imageItem->imageName();
-
-        after.hasImageState = true;
-        after.image = m_imageChanged ? m_newImage : before.image;
-        // 需求追加：替换图片本体后直接使用新图片的原始像素尺寸。
-        if (m_imageChanged && !after.image.isNull()) {
-            after.size = QSizeF(after.image.size());
-        }
-        after.hasImageName = true;
-        after.imageName = (image && image->imageNameEdit()) ? image->imageNameEdit()->text() : before.imageName;
     }
 
     if (m_opacitySpin) {

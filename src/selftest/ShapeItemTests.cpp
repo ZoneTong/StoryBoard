@@ -12,7 +12,6 @@
 #include "ExportDialog.h"
 #include "I18n.h"
 #include "IconFactory.h"
-#include "ImageItem.h"
 #include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"

@@ -10,7 +10,6 @@ class QLineEdit;
 class QSpinBox;
 class QToolButton;
 class TextItem;
-class ImageItem;
 
 // 编辑图元卡的内容属性行：文字正文 / 字体 / 文字颜色，以及图片名称与替换入口。
 // 这些行只在当前选中存在对应图元时显示，避免给图形、笔画展示无效控件。
@@ -20,18 +19,15 @@ class ItemDockPanelContentCard : public QWidget {
   public:
     explicit ItemDockPanelContentCard(QWidget* parent = nullptr);
 
-    void refresh(const QList<TextItem*>& texts, const QList<ImageItem*>& images);
+    void refresh(const QList<TextItem*>& texts);
     QWidget* textContentRow() const { return m_textContentRow; }
     QWidget* textFontRow() const { return m_textFontRow; }
     QWidget* textColorRow() const { return m_textColorRow; }
-    QWidget* imageRow() const { return m_imageRow; }
 
   signals:
     void textContentChosen(const QString& text);
     void textFontChosen(const QFont& font);
     void textColorChosen(const QColor& color);
-    void imageNameChosen(const QString& name);
-    void replaceImageRequested();
 
   private:
     QWidget* makeTextColorRow();
@@ -49,9 +45,6 @@ class ItemDockPanelContentCard : public QWidget {
     QToolButton* m_textColorButton = nullptr;
     QList<QToolButton*> m_textColorSwatches;
     QColor m_textColorFallback = QColor(30, 41, 59);
-    QWidget* m_imageRow = nullptr;
-    QLineEdit* m_imageNameEdit = nullptr;
-    QToolButton* m_replaceImageButton = nullptr;
     QFont m_textFont;
     bool m_refreshing = false;
 };

@@ -11,7 +11,6 @@ class CanvasItem;
 class CompositeShapeItem;
 class CurveItem;
 class TextItem;
-class ImageItem;
 struct TextItemState;
 class QPixmap;
 class QFont;
@@ -46,7 +45,6 @@ class ItemDockPanel : public QWidget {
     // 笔画平滑与图元属性窗也是选中项可用的操作，卡片沿用主窗口同一批 QAction。
     void setItemActions(QAction* smoothAction, QAction* propertiesAction);
     // 替换当前唯一选中的图片，保留原位置与图元名称；图片本体、尺寸和名称一起进入撤销记录。
-    void replaceSelectedImageWith(const QPixmap& pixmap, const QString& name = QString());
 
   signals:
     void statusMessage(const QString& message);
@@ -65,7 +63,6 @@ class ItemDockPanel : public QWidget {
     QList<CompositeShapeItem*> selectedComposites() const;
     QList<CurveItem*> selectedStrokes() const;
     QList<TextItem*> selectedTexts() const;
-    QList<ImageItem*> selectedImages() const;
     // 描线颜色 / 宽度可作用的对象：图形、笔画与多边形。
     QList<CanvasItem*> selectedStrokeTargets() const;
     void changeSelectedShapes(const QString& text, const std::function<void(ShapeItem*)>& mutate);
@@ -75,8 +72,6 @@ class ItemDockPanel : public QWidget {
     void applyTextContent(const QString& text);
     void applyTextFont(const QFont& font);
     void applyTextColor(const QColor& color);
-    void applyImageName(const QString& name);
-    void chooseReplacementImage();
     // 需求 13：给选中的所有可填充图元批量替换背景图片（多选也生效）。
     void chooseFillImage();
     void applyStrokeColor(const QColor& color);

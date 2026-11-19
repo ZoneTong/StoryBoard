@@ -212,11 +212,6 @@ struct ItemPropertiesState {
     bool hasCurveArrows = false;
     ArrowStyle curveStartArrow = ArrowStyle::None;
     ArrowStyle curveEndArrow = ArrowStyle::None;
-    // 需求 39：图片本体也是可编辑属性，替换图片与改名一起进入同一条撤销记录。
-    bool hasImageState = false;
-    QPixmap image;
-    bool hasImageName = false;
-    QString imageName;
     // 需求 15：多边形的图片填充（图形走 ShapeItemState，不需要这一份）。
     bool hasFillImageState = false;
     bool fillImagePresent = false;

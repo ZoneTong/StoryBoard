@@ -8,7 +8,6 @@
 #include "ExportDialog.h"
 #include "I18n.h"
 #include "ImageFill.h"
-#include "ImageItem.h"
 #include "LineArtDialog.h"
 #include "MainWindow.h"
 #include "Settings.h"

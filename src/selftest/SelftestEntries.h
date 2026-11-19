@@ -15,7 +15,6 @@ void runLayerPanelTests(Context& ctx);
 void runPaintOrderTests(Context& ctx);
 void runViewInteractionTests(Context& ctx);
 void runPropertyDialogFieldGeometryTests(Context& ctx);
-void runPropertyDialogImageTests(Context& ctx);
 void runPropertyDialogTextNamingTests(Context& ctx);
 void runDuplicateItemTests(Context& ctx);
 void runGroupTests(Context& ctx);

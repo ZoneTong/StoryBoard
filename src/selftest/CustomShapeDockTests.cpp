@@ -10,7 +10,6 @@
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
-#include "ImageItem.h"
 #include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
 #include "ItemStyleVisuals.h"
@@ -1119,13 +1118,13 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             QWidget* textContentRow = itemDock->findChild<QWidget*>(QStringLiteral("ItemTextContentRow"));
             QWidget* textFontRow = itemDock->findChild<QWidget*>(QStringLiteral("ItemTextFontRow"));
             QWidget* textColorRow = itemDock->findChild<QWidget*>(QStringLiteral("ItemTextColorRow"));
-            QWidget* imageRow = itemDock->findChild<QWidget*>(QStringLiteral("ItemImageRow"));
+            QWidget* fillImageRow = itemDock->findChild<QWidget*>(QStringLiteral("ItemFillImageRow"));
             QToolButton* propertiesButton = itemDock->findChild<QToolButton*>(QStringLiteral("ItemPropertiesButton"));
             QToolButton* smoothButton = itemDock->findChild<QToolButton*>(QStringLiteral("ItemSmoothButton"));
             ctx.check(textContentRow && textContentRow->isVisible() && textFontRow && textFontRow->isVisible() &&
                           textColorRow && textColorRow->isVisible(),
                       QStringLiteral("选中文字时显示正文 / 字体 / 颜色行"));
-            ctx.check(imageRow && !imageRow->isVisible(), QStringLiteral("选中文字时隐藏图片行"));
+            ctx.check(fillImageRow && !fillImageRow->isVisible(), QStringLiteral("选中文字时隐藏背景图片行"));
             ctx.check(propertiesButton && propertiesButton->isVisible(), QStringLiteral("选中文字时显示图元属性按钮"));
             ctx.check(smoothButton && !smoothButton->isVisible(), QStringLiteral("选中文字时隐藏简化曲线按钮"));
 
@@ -1193,59 +1192,32 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             ctx.check(cardText->textColor() == QColor(QStringLiteral("#1E293B")),
                       QStringLiteral("撤销文字颜色恢复原色"), cardText->textColor().name());
 
-            auto* cardImage = new ImageItem();
+            auto* cardImage = new ShapeItem(ShapeType::Rectangle);
             QPixmap imagePixmap(32, 24);
             imagePixmap.fill(QColor(QStringLiteral("#2563EB")));
-            cardImage->setImage(imagePixmap, QStringLiteral("图A"));
+            cardImage->setFillImage(imagePixmap, ImageFill::Mode::Stretch);
+            cardImage->setContentSize(QSizeF(32, 24));
             cardImage->setPos(QPointF(620.0, 430.0));
             dockScene->addItemsWithUndo({cardImage}, QStringLiteral("Add card image"));
             dockScene->clearSelection();
             cardImage->setSelected(true);
             QApplication::processEvents();
-            ctx.check(imageRow && imageRow->isVisible(), QStringLiteral("选中图片时显示图片行"));
+            ctx.check(fillImageRow && fillImageRow->isVisible(), QStringLiteral("选中带背景图的矩形时显示背景图片行"));
             ctx.check(textContentRow && !textContentRow->isVisible() && textFontRow && !textFontRow->isVisible() &&
                           textColorRow && !textColorRow->isVisible(),
-                      QStringLiteral("选中图片时隐藏文字行"));
+                      QStringLiteral("选中图形时隐藏文字行"));
 
-            auto* imageNameEdit = itemDock->findChild<QLineEdit*>(QStringLiteral("ItemImageNameEdit"));
-            if (imageNameEdit) {
-                imageNameEdit->setText(QStringLiteral("图B"));
-                QMetaObject::invokeMethod(imageNameEdit, "editingFinished", Qt::DirectConnection);
-                QApplication::processEvents();
-            }
-            ctx.check(cardImage->imageName() == QStringLiteral("图B"), QStringLiteral("卡片图片名称直接修改图元"),
-                      cardImage->imageName());
-            dockScene->undoStack()->undo();
+            // 线条类图元不参与合并：选中直线时合并图元入口隐藏。
+            auto* cardLine = new ShapeItem(ShapeType::Line);
+            cardLine->setStyle(QColor(QStringLiteral("#334155")), QColor(Qt::transparent), 3.0);
+            cardLine->setContentSize(QSizeF(90, 10));
+            cardLine->setPos(QPointF(620.0, 470.0));
+            dockScene->addItemsWithUndo({cardLine}, QStringLiteral("Add card line"));
+            dockScene->clearSelection();
+            cardLine->setSelected(true);
             QApplication::processEvents();
-            ctx.check(cardImage->imageName() == QStringLiteral("图A"), QStringLiteral("撤销图片名称恢复原名"),
-                      cardImage->imageName());
-
-            QPixmap replacement(64, 48);
-            replacement.fill(QColor(QStringLiteral("#16A34A")));
-            dockPanel->replaceSelectedImageWith(replacement, QStringLiteral("替换图"));
-            QApplication::processEvents();
-            ctx.check(cardImage->image().size() == QSize(64, 48) && cardImage->imageName() == QStringLiteral("替换图"),
-                      QStringLiteral("卡片替换图片同时更新像素与名称"),
-                      QStringLiteral("%1x%2 %3")
-                          .arg(cardImage->image().width())
-                          .arg(cardImage->image().height())
-                          .arg(cardImage->imageName()));
-            dockScene->undoStack()->undo();
-            QApplication::processEvents();
-            ctx.check(cardImage->image().size() == QSize(32, 24) && cardImage->imageName() == QStringLiteral("图A"),
-                      QStringLiteral("撤销替换图片恢复原像素与名称"),
-                      QStringLiteral("%1x%2 %3")
-                          .arg(cardImage->image().width())
-                          .arg(cardImage->image().height())
-                          .arg(cardImage->imageName()));
-
-            // 图片不参与合并图元：文字与图片混合选中时只保留对齐 / 分组，合并图元入口禁用。
-            cardText->setSelected(true);
-            cardImage->setSelected(true);
-            QApplication::processEvents();
-            ctx.check(!alignRowButtons.isEmpty() && alignRowButtons.first()->isVisible() && !morphButtons.isEmpty() &&
-                          !morphButtons.first()->isVisible() && groupButton && groupButton->isVisible(),
-                      QStringLiteral("文字与图片混合选中隐藏合并图元入口，保留对齐 / 分组"));
+            ctx.check(!morphButtons.isEmpty() && !morphButtons.first()->isVisible(),
+                      QStringLiteral("选中线条时隐藏合并图元入口"));
 
             // 只选曲线时显示简化曲线按钮，点击后平滑结果进入撤销栈。
             auto* smoothStroke = new CurveItem();

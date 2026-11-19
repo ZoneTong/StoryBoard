@@ -9,7 +9,6 @@
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
-#include "ImageItem.h"
 #include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
@@ -155,8 +154,10 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
 
     const QPixmap shot = makeShotImage(320, 200, QStringLiteral("SHOT 01"), QColor(QStringLiteral("#60A5FA")),
                                        QColor(QStringLiteral("#1D4ED8")));
-    auto* imageItem = new ImageItem();
-    imageItem->setImage(shot, QStringLiteral("shot-01.png"));
+    auto* imageItem = new ShapeItem(ShapeType::Rectangle);
+    imageItem->setStyle(QColor(Qt::transparent), QColor(Qt::transparent), 1.0);
+    imageItem->setFillStyle(FillStyle::None);
+    imageItem->setFillImage(shot, ImageFill::Mode::Stretch);
     imageItem->setContentSize(QSizeF(320, 200));
     imageItem->setPos(QPointF(400, 260));
     scene.addItemsWithUndo({imageItem}, QStringLiteral("插入图片"));
@@ -168,7 +169,8 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
 
     const QJsonObject root = scene.toJson();
     const QByteArray jsonBytes = QJsonDocument(root).toJson(QJsonDocument::Indented);
-    ctx.check(jsonBytes.contains("StoryBoard") && jsonBytes.contains("\"curve\"") && jsonBytes.contains("\"image\""),
+    ctx.check(jsonBytes.contains("StoryBoard") && jsonBytes.contains("\"curve\"") && jsonBytes.contains("\"shape\"") &&
+                  jsonBytes.contains("\"images\""),
               QStringLiteral("画布序列化为 JSON"));
 
     CanvasScene loaded;
@@ -181,13 +183,15 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
               QStringLiteral("画布背景恢复"));
 
     CurveItem* loadedStroke = nullptr;
-    ImageItem* loadedImage = nullptr;
+    ShapeItem* loadedImage = nullptr;
     const QList<CanvasItem*> loadedItems = loaded.canvasItems();
     for (CanvasItem* item : loadedItems) {
         if (item->kind() == QStringLiteral("curve")) {
             loadedStroke = static_cast<CurveItem*>(item);
-        } else if (item->kind() == QStringLiteral("image")) {
-            loadedImage = static_cast<ImageItem*>(item);
+        } else if (item->kind() == QStringLiteral("shape")) {
+            if (static_cast<ShapeItem*>(item)->hasFillImage()) {
+                loadedImage = static_cast<ShapeItem*>(item);
+            }
         }
     }
     ctx.check(loadedStroke != nullptr, QStringLiteral("画布包含曲线"));
@@ -200,7 +204,7 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
                       qAbs(loadedStroke->contentSize().height() - resized.height()) < 0.5,
                   QStringLiteral("曲线缩放状态恢复"));
     }
-    ctx.check(loadedImage != nullptr && !loadedImage->image().isNull(), QStringLiteral("图片内容恢复"));
+    ctx.check(loadedImage != nullptr && !loadedImage->fillImage().isNull(), QStringLiteral("图片内容恢复"));
     ctx.check(loadedStroke && qAbs(loadedStroke->itemOpacity() - 0.35) < 0.01 && loadedImage &&
                   qAbs(loadedImage->itemOpacity() - 0.6) < 0.01,
               QStringLiteral("曲线与图片的透明度随画布恢复"),

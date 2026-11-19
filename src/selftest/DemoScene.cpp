@@ -1,7 +1,6 @@
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
 #include "CurveItem.h"
-#include "ImageItem.h"
 #include "SelfTest.h"
 #include "ShapeItem.h"
 #include "ShapePathBuilder.h"
@@ -26,6 +25,23 @@
 #include <QVector>
 #include <QtMath>
 
+namespace {
+
+// 需求 14：插入图片统一为「矩形图元 + 背景图片」，演示场景沿用同一构造。
+ShapeItem* addImageRect(CanvasScene& scene, int layerId, const QPixmap& pixmap, const QSizeF& size, const QPointF& pos)
+{
+    auto* item = new ShapeItem(ShapeType::Rectangle);
+    item->setLayerId(layerId);
+    item->setStyle(QColor(Qt::transparent), QColor(Qt::transparent), 1.0);
+    item->setFillStyle(FillStyle::None);
+    item->setFillImage(pixmap, ImageFill::Mode::Stretch);
+    item->setPos(pos);
+    item->setContentSize(size);
+    scene.attachItem(item);
+    return item;
+}
+
+} // namespace
 using namespace selftest;
 
 bool renderDemoCanvas(const QString& outputPath)
@@ -90,12 +106,7 @@ void populateDemoScene(CanvasScene& scene)
     labelFont.setBold(true);
     const QPixmap subtitle = makeTextImage(QStringLiteral("三个镜头 · 一个下午的故事"),
                                            QColor(QStringLiteral("#78716C")), labelFont, 720, 40);
-    auto* subtitleItem = new ImageItem();
-    subtitleItem->setLayerId(inkLayer);
-    subtitleItem->setImage(subtitle, QStringLiteral("subtitle"));
-    subtitleItem->setContentSize(subtitle.size());
-    subtitleItem->setPos(QPointF(82, 126));
-    scene.attachItem(subtitleItem);
+    addImageRect(scene, inkLayer, subtitle, subtitle.size(), QPointF(82, 126));
 
     const QColor ink(QStringLiteral("#1F2937"));
     const QColor accent(QStringLiteral("#EA580C"));
@@ -118,23 +129,13 @@ void populateDemoScene(CanvasScene& scene)
         scene.attachItem(frame);
 
         const QPixmap shot = makeShotImage(380, 230, shotLabels.at(i), shotStarts.at(i), shotEnds.at(i));
-        auto* shotItem = new ImageItem();
-        shotItem->setLayerId(shotLayer);
-        shotItem->setImage(shot, QStringLiteral("shot-%1.png").arg(i + 1));
-        shotItem->setContentSize(QSizeF(380, 230));
-        shotItem->setPos(panel.left() + 30, panel.top() + 24);
-        scene.attachItem(shotItem);
+        addImageRect(scene, shotLayer, shot, QSizeF(380, 230), QPointF(panel.left() + 30, panel.top() + 24));
 
         QFont numberFont(QStringLiteral("Microsoft YaHei UI"));
         numberFont.setPointSize(26);
         numberFont.setBold(true);
         const QPixmap number = makeTextImage(QStringLiteral("0%1").arg(i + 1), ink, numberFont, 90, 44);
-        auto* numberItem = new ImageItem();
-        numberItem->setLayerId(shotLayer);
-        numberItem->setImage(number, QStringLiteral("number"));
-        numberItem->setContentSize(QSizeF(70, 40));
-        numberItem->setPos(panel.left() + 32, panel.bottom() - 84);
-        scene.attachItem(numberItem);
+        addImageRect(scene, shotLayer, number, QSizeF(70, 40), QPointF(panel.left() + 32, panel.bottom() - 84));
 
         QFont captionFont(QStringLiteral("Microsoft YaHei UI"));
         captionFont.setPointSize(16);
@@ -142,12 +143,7 @@ void populateDemoScene(CanvasScene& scene)
                                       QStringLiteral("发现桌上的旧照片，定格。"),
                                       QStringLiteral("转身离开，门缓缓合上。")};
         const QPixmap caption = makeTextImage(captions.at(i), QColor(QStringLiteral("#57534E")), captionFont, 420, 34);
-        auto* captionItem = new ImageItem();
-        captionItem->setLayerId(shotLayer);
-        captionItem->setImage(caption, QStringLiteral("caption"));
-        captionItem->setContentSize(QSizeF(376, 30));
-        captionItem->setPos(panel.left() + 32, panel.bottom() - 40);
-        scene.attachItem(captionItem);
+        addImageRect(scene, shotLayer, caption, QSizeF(376, 30), QPointF(panel.left() + 32, panel.bottom() - 40));
     }
 
     // Hand-drawn annotations: stick figure, arrows and a few accents.
@@ -223,10 +219,5 @@ void populateDemoScene(CanvasScene& scene)
     noteFont.setBold(true);
     const QPixmap note =
         makeTextImage(QStringLiteral("KEEP THE MOMENT"), QColor(QStringLiteral("#9A3412")), noteFont, 330, 40);
-    auto* noteItem = new ImageItem();
-    noteItem->setLayerId(inkLayer);
-    noteItem->setImage(note, QStringLiteral("note"));
-    noteItem->setContentSize(QSizeF(300, 36));
-    noteItem->setPos(QPointF(1098, 920));
-    scene.attachItem(noteItem);
+    addImageRect(scene, inkLayer, note, QSizeF(300, 36), QPointF(1098, 920));
 }

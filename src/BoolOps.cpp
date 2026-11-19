@@ -5,7 +5,6 @@
 #include "Commands.h"
 #include "CompositeShapeItem.h"
 #include "CurveItem.h"
-#include "ImageItem.h"
 #include "LineSplitOps.h"
 #include "PathRegions.h"
 #include "ShapeItem.h"
@@ -109,27 +108,23 @@ bool priorityLess(CanvasScene* scene, CanvasItem* left, CanvasItem* right)
     return stackLess(scene, left, right);
 }
 
-// 把一批图元合成一个参与者：组按整棵组树算一个轮廓，样式取组内最高优先级
-// 的矢量图元；含图片的整组直接跳过，图片不参与合并。
+// 把一批图元合成一个参与者：组按整棵组树算一个轮廓，样式取组内最高优先级的矢量图元。
+
 bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bool grouped, int selectionIndex,
                        QList<Participant>* out)
 {
+    Q_UNUSED(grouped);
     QList<CanvasItem*> editable;
     QList<CanvasItem*> vectorMembers;
-    bool hasImage = false;
     for (CanvasItem* member : members) {
         if (!member || !scene->isItemEditable(member)) {
             continue;
         }
         editable.append(member);
-        if (dynamic_cast<ImageItem*>(member)) {
-            hasImage = true;
-        } else {
-            vectorMembers.append(member);
-        }
+        vectorMembers.append(member);
     }
-    // 图片不参与合并：整组作为一个参与者时，含图片的组直接跳过，避免图片随组被替换。
-    if (editable.isEmpty() || vectorMembers.isEmpty() || (grouped && hasImage)) {
+    // 需求 14：图片类型图元已拆除（图片只作矩形背景），参与者只剩矢量图元。
+    if (editable.isEmpty() || vectorMembers.isEmpty()) {
         return false;
     }
     std::sort(vectorMembers.begin(), vectorMembers.end(),
@@ -295,8 +290,8 @@ QList<Participant> collect(CanvasScene* scene)
             appendParticipant(scene, members, true, order, &participants);
             continue;
         }
-        // 图片没有矢量轮廓，线条类图元不参与合并，两者都留在画布上不动。
-        if (dynamic_cast<ImageItem*>(item) || isLineClassItem(item)) {
+        // 线条类图元不参与合并，留在画布上不动。
+        if (isLineClassItem(item)) {
             continue;
         }
         appendParticipant(scene, QList<CanvasItem*>{item}, false, order, &participants);

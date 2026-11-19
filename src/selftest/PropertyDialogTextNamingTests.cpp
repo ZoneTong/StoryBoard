@@ -178,7 +178,6 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
     ctx.check(reloadedNameList.contains(QStringLiteral("Hero panel")) &&
                   reloadedNameList.contains(QStringLiteral("矩形 2")) &&
                   reloadedNameList.contains(QStringLiteral("椭圆 1")) &&
-                  reloadedNameList.contains(QStringLiteral("图片 1")) &&
                   reloadedNameList.contains(QStringLiteral("文字 1")),
               QStringLiteral("自动名称画布往返不重复编号"), reloadedNameList.join(QStringLiteral(" / ")));
 

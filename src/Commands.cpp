@@ -4,7 +4,6 @@
 #include "CanvasScene.h"
 #include "CompositeShapeItem.h"
 #include "CurveItem.h"
-#include "ImageItem.h"
 
 #include <QGraphicsScene>
 #include <utility>
@@ -596,7 +595,6 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
         itemName != other.itemName || hasShapeState != other.hasShapeState ||
         hasCompositeStyle != other.hasCompositeStyle || hasTextState != other.hasTextState ||
         hasStrokeStyle != other.hasStrokeStyle || hasCurveArrows != other.hasCurveArrows ||
-        hasImageState != other.hasImageState || hasImageName != other.hasImageName ||
         hasFillImageState != other.hasFillImageState) {
         return false;
     }
@@ -615,12 +613,6 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
         return false;
     }
     if (hasCurveArrows && (curveStartArrow != other.curveStartArrow || curveEndArrow != other.curveEndArrow)) {
-        return false;
-    }
-    if (hasImageState && (image.cacheKey() != other.image.cacheKey() || image.size() != other.image.size())) {
-        return false;
-    }
-    if (hasImageName && imageName != other.imageName) {
         return false;
     }
     if (hasFillImageState &&
@@ -690,16 +682,6 @@ void ItemPropertiesCommand::apply(const ItemPropertiesState& state)
         } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(m_item.data())) {
             composite->setStroke(state.strokeColor, state.strokeWidth);
             composite->setStrokeStyle(state.strokeStyle);
-        }
-    }
-    if (state.hasImageName) {
-        if (auto* image = dynamic_cast<ImageItem*>(m_item.data())) {
-            image->setImageName(state.imageName);
-        }
-    }
-    if (state.hasImageState) {
-        if (auto* image = dynamic_cast<ImageItem*>(m_item.data())) {
-            image->setImage(state.image, state.imageName);
         }
     }
     if (state.hasFillImageState) {

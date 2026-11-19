@@ -70,7 +70,6 @@ int runSelfTest(const QString& reportPath)
     selftest::runPaintOrderTests(ctx);
     selftest::runViewInteractionTests(ctx);
     selftest::runPropertyDialogFieldGeometryTests(ctx);
-    selftest::runPropertyDialogImageTests(ctx);
     selftest::runPropertyDialogTextNamingTests(ctx);
     selftest::runDuplicateItemTests(ctx);
     selftest::runGroupTests(ctx);

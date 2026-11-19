@@ -5,10 +5,10 @@
 #include "CanvasView.h"
 #include "Commands.h"
 #include "CompositeShapeItem.h"
+#include "CurveItem.h"
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
-#include "ImageItem.h"
 #include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
@@ -19,7 +19,6 @@
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -373,20 +372,18 @@ void selftest::runLayerVisibilityLockTests(Context& ctx)
     hiddenPaintScene.applyCanvasSize(QSizeF(120, 120));
     hiddenPaintScene.setShowGrid(false);
     hiddenPaintScene.setMode(ToolMode::Edit);
-    QPixmap redPaint(80, 80);
-    redPaint.fill(QColor(QStringLiteral("#DC2626")));
-    QPixmap bluePaint(80, 80);
-    bluePaint.fill(QColor(QStringLiteral("#2563EB")));
+    const QColor redColor(QStringLiteral("#DC2626"));
+    const QColor blueColor(QStringLiteral("#2563EB"));
 
-    auto* redImage = new ImageItem();
-    redImage->setImage(redPaint, QStringLiteral("red"));
+    auto* redImage = new ShapeItem(ShapeType::Rectangle);
+    redImage->setStyle(QColor(Qt::transparent), redColor, 1.0);
     redImage->setContentSize(QSizeF(80, 80));
     redImage->setPos(QPointF(10, 10));
     hiddenPaintScene.addItemsWithUndo({redImage}, QStringLiteral("添加红色图元"));
 
     ctx.check(hiddenPaintScene.addLayerWithUndo(QStringLiteral("蓝色层")), QStringLiteral("隐藏渲染测试新建上层"));
-    auto* blueImage = new ImageItem();
-    blueImage->setImage(bluePaint, QStringLiteral("blue"));
+    auto* blueImage = new ShapeItem(ShapeType::Rectangle);
+    blueImage->setStyle(QColor(Qt::transparent), blueColor, 1.0);
     blueImage->setContentSize(QSizeF(80, 80));
     blueImage->setPos(QPointF(20, 20));
     hiddenPaintScene.addItemsWithUndo({blueImage}, QStringLiteral("添加蓝色图元"));

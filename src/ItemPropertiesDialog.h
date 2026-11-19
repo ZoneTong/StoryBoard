@@ -13,7 +13,6 @@
 class CanvasScene;
 class ItemPropertiesDialogGeometryBlock;
 class ItemPropertiesDialogIdentityBlock;
-class ItemPropertiesDialogImageBlock;
 class ItemPropertiesDialogStyleBlock;
 class ItemPropertiesDialogTextBlock;
 class QSpinBox;
@@ -32,9 +31,6 @@ class ItemPropertiesDialog : public QDialog {
     CanvasItem* item() const { return m_item.data(); }
     bool isEditable() const { return m_editable; }
     bool isItemInScene() const;
-    // 需求 39：从文件载入替换图片；返回 false 时通过 errorMessage 给出原因。
-    bool loadImageFromFile(const QString& path, QString* errorMessage = nullptr);
-    void setReplacementImage(const QPixmap& image);
     static QString layerDescription(const CanvasScene* scene, int layerId);
     void accept() override;
 
@@ -45,7 +41,6 @@ class ItemPropertiesDialog : public QDialog {
   private:
     void applyChanges();
     void syncTextNaturalSize();
-    void chooseImage();
     void applyEditableState();
 
     CanvasScene* m_scene = nullptr;
@@ -55,16 +50,12 @@ class ItemPropertiesDialog : public QDialog {
     ItemPropertiesDialogIdentityBlock* m_identityBlock = nullptr;
     ItemPropertiesDialogStyleBlock* m_styleBlock = nullptr;
     ItemPropertiesDialogTextBlock* m_textBlock = nullptr;
-    ItemPropertiesDialogImageBlock* m_imageBlock = nullptr;
     ItemPropertiesDialogGeometryBlock* m_geometryBlock = nullptr;
     // 图形沿用样式区里的透明度行，其余图元由属性窗统一提供。
     QSpinBox* m_opacitySpin = nullptr;
     qreal m_initialOpacity = 1.0;
     int m_initialOpacityPercent = 100;
-
-    QPixmap m_newImage;
     bool m_textFocusApplied = false;
-    bool m_imageChanged = false;
 
     QPointF m_initialPos;
     QSizeF m_initialSize;

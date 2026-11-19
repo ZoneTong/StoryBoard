@@ -5,7 +5,6 @@
 #include "Commands.h"
 #include "CompositeShapeItem.h"
 #include "CurveItem.h"
-#include "ImageItem.h"
 #include "ImagePickerDialog.h"
 #include "ItemDockPanelArrangeCard.h"
 #include "ItemDockPanelColorsCard.h"
@@ -78,7 +77,6 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     layout->addWidget(m_contentCard->textContentRow());
     layout->addWidget(m_contentCard->textColorRow());
     layout->addWidget(m_contentCard->textFontRow());
-    layout->addWidget(m_contentCard->imageRow());
 
     // 需求 1 行序（与菜单、工具栏、属性窗统一）：
     // 填充样式 → 填充颜色 → （需求 13 引入的背景图片） → 描线样式 → 描线颜色 → 描线宽度。
@@ -124,9 +122,6 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     connect(m_contentCard, &ItemDockPanelContentCard::textContentChosen, this, &ItemDockPanel::applyTextContent);
     connect(m_contentCard, &ItemDockPanelContentCard::textFontChosen, this, &ItemDockPanel::applyTextFont);
     connect(m_contentCard, &ItemDockPanelContentCard::textColorChosen, this, &ItemDockPanel::applyTextColor);
-    connect(m_contentCard, &ItemDockPanelContentCard::imageNameChosen, this, &ItemDockPanel::applyImageName);
-    connect(m_contentCard, &ItemDockPanelContentCard::replaceImageRequested, this,
-            &ItemDockPanel::chooseReplacementImage);
     connect(m_valueCard, &ItemDockPanelValueCard::opacityChosen, this, &ItemDockPanel::applyOpacity);
     connect(m_valueCard, &ItemDockPanelValueCard::cornerRadiusChosen, this, &ItemDockPanel::applyCornerRadius);
     connect(m_valueCard, &ItemDockPanelValueCard::startAngleChosen, this, &ItemDockPanel::applyStartAngle);
@@ -231,17 +226,6 @@ QList<TextItem*> ItemDockPanel::selectedTexts() const
     return texts;
 }
 
-QList<ImageItem*> ItemDockPanel::selectedImages() const
-{
-    QList<ImageItem*> images;
-    for (CanvasItem* item : selectedItems()) {
-        if (auto* image = dynamic_cast<ImageItem*>(item)) {
-            images.append(image);
-        }
-    }
-    return images;
-}
-
 void ItemDockPanel::scheduleRefresh()
 {
     if (m_refreshing) {
@@ -294,7 +278,6 @@ void ItemDockPanel::refresh()
     const QList<CompositeShapeItem*> composites = selectedComposites();
     const QList<CurveItem*> strokes = selectedStrokes();
     const QList<TextItem*> texts = selectedTexts();
-    const QList<ImageItem*> images = selectedImages();
     m_selectionCard->setSelectionState(!items.isEmpty(), selectionGroupUseful(items));
 
     bool hasCorner = false;
@@ -359,7 +342,7 @@ void ItemDockPanel::refresh()
     m_fillBorderCard->setVisible(hasSelection);
     m_valueCard->setVisible(hasSelection);
     m_arrangeCard->setVisible(hasSelection);
-    m_contentCard->refresh(texts, images);
+    m_contentCard->refresh(texts);
     m_colorsCard->refresh(shapes, strokes, composites);
     m_fillBorderCard->refresh(shapes, strokes, composites);
     m_valueCard->refresh(shapes, strokes, items);
@@ -717,54 +700,6 @@ void ItemDockPanel::applyTextColor(const QColor& color)
     changeSelectedTexts(tr("Change text color"), [&color](TextItemState& state) { state.color = color; });
 }
 
-void ItemDockPanel::applyImageName(const QString& name)
-{
-    const QList<ImageItem*> images = selectedImages();
-    if (images.isEmpty() || !m_scene || !m_scene->undoStack()) {
-        return;
-    }
-
-    auto imageState = [](ImageItem* image) {
-        ItemPropertiesState state;
-        state.pos = image->pos();
-        state.size = image->contentSize();
-        state.rotation = image->rotationAngle();
-        state.itemName = image->rawName();
-        state.hasImageState = true;
-        state.image = image->image();
-        state.hasImageName = true;
-        state.imageName = image->imageName();
-        return state;
-    };
-
-    QList<ItemPropertiesState> beforeStates;
-    QList<ItemPropertiesState> afterStates;
-    bool changed = false;
-    for (ImageItem* image : images) {
-        ItemPropertiesState before = imageState(image);
-        if (before.imageName == name) {
-            continue;
-        }
-        ItemPropertiesState after = before;
-        after.imageName = name;
-        beforeStates.append(before);
-        afterStates.append(after);
-        changed = true;
-    }
-    if (!changed) {
-        return;
-    }
-
-    QUndoStack* undo = m_scene->undoStack();
-    undo->beginMacro(tr("Change image name"));
-    for (int i = 0; i < beforeStates.size(); ++i) {
-        undo->push(new ItemPropertiesCommand(m_scene, images.at(i), beforeStates.at(i), afterStates.at(i),
-                                             tr("Change image name")));
-    }
-    undo->endMacro();
-    refresh();
-}
-
 void ItemDockPanel::chooseFillImage()
 {
     // 需求 13：选中多个可填充图元时一次替换；图片从资源面板里选（也可以现场从本地加一张）。
@@ -795,54 +730,6 @@ void ItemDockPanel::chooseFillImage()
     }
     m_scene->undoStack()->push(new ShapeStyleCommand(m_scene, shapes, before, after, tr("Replace background image")));
     refresh();
-}
-
-void ItemDockPanel::replaceSelectedImageWith(const QPixmap& pixmap, const QString& name)
-{
-    const QList<ImageItem*> images = selectedImages();
-    if (images.size() != 1 || pixmap.isNull() || !m_scene || !m_scene->undoStack()) {
-        return;
-    }
-    ImageItem* image = images.first();
-
-    ItemPropertiesState before;
-    before.pos = image->pos();
-    before.size = image->contentSize();
-    before.rotation = image->rotationAngle();
-    before.itemName = image->rawName();
-    before.hasImageState = true;
-    before.image = image->image();
-    before.hasImageName = true;
-    before.imageName = image->imageName();
-
-    ItemPropertiesState after = before;
-    after.image = pixmap;
-    after.imageName = name.isEmpty() ? before.imageName : name;
-    // 替换图片后回到新图片的原始像素尺寸，与属性窗行为一致。
-    after.size = QSizeF(pixmap.size());
-
-    m_scene->undoStack()->push(new ItemPropertiesCommand(m_scene, image, before, after, tr("Replace image")));
-    refresh();
-}
-
-void ItemDockPanel::chooseReplacementImage()
-{
-    const QList<ImageItem*> images = selectedImages();
-    if (images.size() != 1) {
-        return;
-    }
-    const QString path = QFileDialog::getOpenFileName(
-        this, tr("Replace image"), QString(), tr("Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;All files (*)"));
-    if (path.isEmpty()) {
-        return;
-    }
-    const QPixmap pixmap(path);
-    if (pixmap.isNull()) {
-        statusMessage(tr("Unable to load the selected image."));
-        return;
-    }
-    const QString currentName = images.first()->imageName();
-    replaceSelectedImageWith(pixmap, currentName.isEmpty() ? QFileInfo(path).completeBaseName() : currentName);
 }
 
 void ItemDockPanel::applyCornerRadius(int radius)

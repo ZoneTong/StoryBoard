@@ -1,7 +1,6 @@
 #include "ItemDockPanelContentCard.h"
 
 #include "IconFactory.h"
-#include "ImageItem.h"
 #include "ItemDockPanel.h"
 #include "ItemStyleVisuals.h"
 #include "TextItem.h"
@@ -125,35 +124,6 @@ ItemDockPanelContentCard::ItemDockPanelContentCard(QWidget* parent) : QWidget(pa
     m_textColorRow = makeTextColorRow();
     outer->addWidget(m_textColorRow);
 
-    m_imageRow = new QWidget(this);
-    m_imageRow->setObjectName(QStringLiteral("ItemImageRow"));
-    auto* imageLayout = new QHBoxLayout(m_imageRow);
-    imageLayout->setContentsMargins(0, 0, 0, 0);
-    imageLayout->setSpacing(4);
-    QToolButton* imageIcon = makeRowIcon(IconId::Image, m_imageRow);
-    imageIcon->setToolTip(ItemDockPanel::tr("Image name"));
-    imageLayout->addWidget(imageIcon);
-    m_imageNameEdit = new QLineEdit(m_imageRow);
-    m_imageNameEdit->setObjectName(QStringLiteral("ItemImageNameEdit"));
-    m_imageNameEdit->setPlaceholderText(ItemDockPanel::tr("Image name"));
-    m_imageNameEdit->setToolTip(ItemDockPanel::tr("Image name"));
-    connect(m_imageNameEdit, &QLineEdit::editingFinished, this, [this]() {
-        if (!m_refreshing) {
-            emit imageNameChosen(m_imageNameEdit->text());
-        }
-    });
-    imageLayout->addWidget(m_imageNameEdit, 1);
-    m_replaceImageButton = new QToolButton(m_imageRow);
-    m_replaceImageButton->setObjectName(QStringLiteral("ItemReplaceImageButton"));
-    m_replaceImageButton->setIcon(makeIcon(IconId::Image, QColor(75, 85, 99), kSmallIconSize));
-    m_replaceImageButton->setIconSize(QSize(kSmallIconSize, kSmallIconSize));
-    m_replaceImageButton->setFixedSize(kButtonSize, kButtonSize);
-    m_replaceImageButton->setAutoRaise(true);
-    m_replaceImageButton->setToolTip(ItemDockPanel::tr("Replace image…"));
-    connect(m_replaceImageButton, &QToolButton::clicked, this, &ItemDockPanelContentCard::replaceImageRequested);
-    imageLayout->addWidget(m_replaceImageButton);
-    outer->addWidget(m_imageRow);
-
     hide();
 }
 
@@ -202,7 +172,7 @@ QWidget* ItemDockPanelContentCard::makeTextColorRow()
     return row;
 }
 
-void ItemDockPanelContentCard::refresh(const QList<TextItem*>& texts, const QList<ImageItem*>& images)
+void ItemDockPanelContentCard::refresh(const QList<TextItem*>& texts)
 {
     m_refreshing = true;
 
@@ -231,16 +201,7 @@ void ItemDockPanelContentCard::refresh(const QList<TextItem*>& texts, const QLis
         }
     }
 
-    const bool hasImage = !images.isEmpty();
-    m_imageRow->setVisible(hasImage);
-    if (hasImage) {
-        if (!m_imageNameEdit->hasFocus()) {
-            m_imageNameEdit->setText(images.first()->imageName());
-        }
-        m_replaceImageButton->setEnabled(images.size() == 1);
-    }
-
-    setVisible(hasText || hasImage);
+    setVisible(hasText);
     m_refreshing = false;
 }
 

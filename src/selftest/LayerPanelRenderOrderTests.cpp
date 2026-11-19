@@ -5,10 +5,10 @@
 #include "CanvasView.h"
 #include "Commands.h"
 #include "CompositeShapeItem.h"
+#include "CurveItem.h"
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
-#include "ImageItem.h"
 #include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
@@ -19,7 +19,6 @@
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
-#include "CurveItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -329,20 +328,18 @@ void selftest::runPaintOrderTests(Context& ctx)
     // Verify the actual paint order, not just the numeric z values.
     CanvasScene paintScene;
     paintScene.applyCanvasSize(QSizeF(100, 100));
-    QPixmap redPixmap(80, 80);
-    redPixmap.fill(QColor(QStringLiteral("#DC2626")));
-    QPixmap bluePixmap(80, 80);
-    bluePixmap.fill(QColor(QStringLiteral("#2563EB")));
+    const QColor redColor(QStringLiteral("#DC2626"));
+    const QColor blueColor(QStringLiteral("#2563EB"));
 
-    auto* redItem = new ImageItem();
-    redItem->setImage(redPixmap, QStringLiteral("red"));
+    auto* redItem = new ShapeItem(ShapeType::Rectangle);
+    redItem->setStyle(QColor(Qt::transparent), redColor, 1.0);
     redItem->setContentSize(QSizeF(80, 80));
     redItem->setPos(QPointF(10, 10));
     paintScene.addItemsWithUndo({redItem}, QStringLiteral("添加红色图元"));
 
     ctx.check(paintScene.addLayerWithUndo(QStringLiteral("蓝色层")), QStringLiteral("渲染测试新建上层"));
-    auto* blueItem = new ImageItem();
-    blueItem->setImage(bluePixmap, QStringLiteral("blue"));
+    auto* blueItem = new ShapeItem(ShapeType::Rectangle);
+    blueItem->setStyle(QColor(Qt::transparent), blueColor, 1.0);
     blueItem->setContentSize(QSizeF(80, 80));
     blueItem->setPos(QPointF(20, 20));
     paintScene.addItemsWithUndo({blueItem}, QStringLiteral("添加蓝色图元"));
