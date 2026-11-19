@@ -321,9 +321,9 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
         ctx.check(curve->startArrow() == ArrowStyle::TriangleFilled && curve->endArrow() == ArrowStyle::OpenArrow,
                   QStringLiteral("曲线属性窗箭头修改可重做"));
 
-        // 花括号曲线沿用需求 9b 口径：不开放两端箭头，属性窗不建箭头行。
+        // 箭头对全部曲线子型开放：花括号同样提供两端箭头行。
         auto* braceCurve = new CurveItem();
-        braceCurve->setSource(CurveSource::Brace);
+        braceCurve->setCurveKind(CurveKind::Brace);
         braceCurve->setLayerId(arrowScene.activeLayerId());
         braceCurve->setStrokePoints(QVector<QPointF>{QPointF(100, 200), QPointF(130, 240), QPointF(100, 300)},
                                     QColor(QStringLiteral("#111827")), 4.0);
@@ -332,8 +332,9 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
         ItemPropertiesDialog braceDialog(&arrowScene, braceCurve);
         braceDialog.show();
         QApplication::processEvents();
-        ctx.check(braceDialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesStartArrowValue")) == nullptr &&
-                      braceDialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesEndArrowValue")) == nullptr,
-                  QStringLiteral("花括号曲线属性窗不提供箭头设置"));
+        QComboBox* braceStart = braceDialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesStartArrowValue"));
+        QComboBox* braceEnd = braceDialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesEndArrowValue"));
+        ctx.check(braceStart && braceEnd && braceStart->isEnabled() && braceEnd->isEnabled(),
+                  QStringLiteral("花括号曲线属性窗也提供箭头设置"));
     }
 }

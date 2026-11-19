@@ -430,12 +430,9 @@ void ItemPropertiesDialog::applyChanges()
         before.strokeColor = stroke->strokeColor();
         before.strokeWidth = stroke->strokeWidth();
         before.strokeStyle = stroke->strokeStyle();
-        // 需求 27：曲线（花括号除外）两端箭头与描线一起进入同一条撤销记录。
-        before.hasCurveArrows = stroke->source() != CurveSource::Brace;
-        if (before.hasCurveArrows) {
-            before.curveStartArrow = stroke->startArrow();
-            before.curveEndArrow = stroke->endArrow();
-        }
+        // 需求 27：曲线两端箭头与描线一起进入同一条撤销记录；箭头对全部曲线子型开放。
+        before.curveStartArrow = stroke->startArrow();
+        before.curveEndArrow = stroke->endArrow();
 
         after.hasStrokeStyle = true;
         after.strokeColor = (style && style->strokeColorButton())
@@ -447,15 +444,12 @@ void ItemPropertiesDialog::applyChanges()
         after.strokeStyle = (style && style->borderStyleCombo())
                                 ? static_cast<Qt::PenStyle>(style->borderStyleCombo()->currentData().toInt())
                                 : before.strokeStyle;
-        after.hasCurveArrows = before.hasCurveArrows;
-        if (after.hasCurveArrows) {
-            after.curveStartArrow = (style && style->startArrowCombo())
-                                        ? static_cast<ArrowStyle>(style->startArrowCombo()->currentData().toInt())
-                                        : before.curveStartArrow;
-            after.curveEndArrow = (style && style->endArrowCombo())
-                                      ? static_cast<ArrowStyle>(style->endArrowCombo()->currentData().toInt())
-                                      : before.curveEndArrow;
-        }
+        after.curveStartArrow = (style && style->startArrowCombo())
+                                    ? static_cast<ArrowStyle>(style->startArrowCombo()->currentData().toInt())
+                                    : before.curveStartArrow;
+        after.curveEndArrow = (style && style->endArrowCombo())
+                                  ? static_cast<ArrowStyle>(style->endArrowCombo()->currentData().toInt())
+                                  : before.curveEndArrow;
     } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(m_item.data())) {
         before.hasCompositeStyle = true;
         before.compositeFillColor = composite->fillColor();

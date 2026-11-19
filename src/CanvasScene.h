@@ -198,6 +198,9 @@ class CanvasScene : public QGraphicsScene {
 
   private:
     CanvasItem* createItem(const QString& kind) const;
+    // 曲线族的子型共用 kind "curve"，只能按 JSON 里的 curveKind 还原具体类
+    // （直线 / 弧线 / 正弦）；其余类型仍按 kind 分派。
+    CanvasItem* createItemForJson(const QJsonObject& json) const;
     // reserved 里是尚未挂到场景、但已经保留给其它副本的名称。
     QString uniqueItemNameFor(const QString& requested, const CanvasItem* except, const QSet<QString>& reserved) const;
     void drawCanvasBackground(QPainter* painter, const QRectF& area, bool includeGrid) const;

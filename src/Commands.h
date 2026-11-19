@@ -208,8 +208,7 @@ struct ItemPropertiesState {
     QColor strokeColor;
     qreal strokeWidth = 4.0;
     Qt::PenStyle strokeStyle = Qt::SolidLine;
-    // 需求 27：曲线（花括号除外）两端箭头与直线同一套属性窗提交流程。
-    bool hasCurveArrows = false;
+    // 需求 27：曲线两端箭头与直线同一套属性窗提交流程（箭头对全部曲线子型开放）。
     ArrowStyle curveStartArrow = ArrowStyle::None;
     ArrowStyle curveEndArrow = ArrowStyle::None;
     // 需求 15：多边形的图片填充（图形走 ShapeItemState，不需要这一份）。

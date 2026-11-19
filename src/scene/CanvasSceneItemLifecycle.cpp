@@ -1,9 +1,12 @@
+#include "ArcItem.h"
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
 #include "CompositeShapeItem.h"
 #include "CurveItem.h"
+#include "LineItem.h"
 #include "ShapeItem.h"
+#include "SineItem.h"
 #include "TextItem.h"
 #include "scene/SceneConstants.h"
 
@@ -122,7 +125,7 @@ int CanvasScene::duplicateSelectedItems()
     QList<CanvasItem*> copies;
     QSet<QString> reservedNames;
     for (CanvasItem* source : sources) {
-        CanvasItem* copy = createItem(source->kind());
+        CanvasItem* copy = createItemForJson(source->toJson());
         if (!copy) {
             continue;
         }
@@ -256,4 +259,23 @@ CanvasItem* CanvasScene::createItem(const QString& kind) const
         return new CompositeShapeItem();
     }
     return nullptr;
+}
+
+CanvasItem* CanvasScene::createItemForJson(const QJsonObject& json) const
+{
+    if (json.value(QStringLiteral("type")).toString() != QStringLiteral("curve")) {
+        return createItem(json.value(QStringLiteral("type")).toString());
+    }
+    // 曲线子型靠 curveKind 还原；缺键 / 未知值退回泛型曲线（笔迹）。
+    const QString curveKind = json.value(QStringLiteral("curveKind")).toString();
+    if (curveKind == QStringLiteral("line")) {
+        return new LineItem();
+    }
+    if (curveKind == QStringLiteral("arc")) {
+        return new ArcItem();
+    }
+    if (curveKind == QStringLiteral("sine")) {
+        return new SineItem();
+    }
+    return new CurveItem();
 }

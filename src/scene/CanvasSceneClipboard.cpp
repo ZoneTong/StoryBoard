@@ -37,7 +37,7 @@ int CanvasScene::pasteClipboardItems(const QJsonArray& items)
     QSet<QString> reservedNames;
     for (const QJsonValue& value : items) {
         const QJsonObject json = value.toObject();
-        CanvasItem* copy = createItem(json.value(QStringLiteral("type")).toString());
+        CanvasItem* copy = createItemForJson(json);
         if (!copy) {
             continue;
         }

@@ -594,7 +594,7 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
         !qFuzzyCompare(rotation, other.rotation) || !qFuzzyCompare(1.0 + opacity, 1.0 + other.opacity) ||
         itemName != other.itemName || hasShapeState != other.hasShapeState ||
         hasCompositeStyle != other.hasCompositeStyle || hasTextState != other.hasTextState ||
-        hasStrokeStyle != other.hasStrokeStyle || hasCurveArrows != other.hasCurveArrows ||
+        hasStrokeStyle != other.hasStrokeStyle ||
         hasFillImageState != other.hasFillImageState) {
         return false;
     }
@@ -609,10 +609,8 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
         return false;
     }
     if (hasStrokeStyle && (strokeColor != other.strokeColor || !qFuzzyCompare(strokeWidth, other.strokeWidth) ||
-                           strokeStyle != other.strokeStyle)) {
-        return false;
-    }
-    if (hasCurveArrows && (curveStartArrow != other.curveStartArrow || curveEndArrow != other.curveEndArrow)) {
+                           strokeStyle != other.strokeStyle || curveStartArrow != other.curveStartArrow ||
+                           curveEndArrow != other.curveEndArrow)) {
         return false;
     }
     if (hasFillImageState &&
@@ -676,9 +674,7 @@ void ItemPropertiesCommand::apply(const ItemPropertiesState& state)
             stroke->setStyle(state.strokeColor, state.strokeWidth);
             stroke->setStrokeStyle(state.strokeStyle);
             // 需求 27：曲线两端箭头随同一条撤销记录一起应用。
-            if (state.hasCurveArrows) {
-                stroke->setArrowStyles(state.curveStartArrow, state.curveEndArrow);
-            }
+            stroke->setArrowStyles(state.curveStartArrow, state.curveEndArrow);
         } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(m_item.data())) {
             composite->setStroke(state.strokeColor, state.strokeWidth);
             composite->setStrokeStyle(state.strokeStyle);

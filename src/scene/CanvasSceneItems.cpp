@@ -73,7 +73,9 @@ bool CanvasScene::canSmoothSelectedStrokes() const
             continue;
         }
         if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
-            if (!stroke->isEmpty() && stroke->strokePointCount() >= 3) {
+            // 只有笔迹子型（含图片线稿提取）可简化；直线 / 弧线 / 正弦 / 花括号是程序化几何。
+            if (stroke->curveKind() == CurveKind::Freehand && !stroke->isEmpty() &&
+                stroke->strokePointCount() >= 3) {
                 return true;
             }
         }
@@ -97,7 +99,8 @@ int CanvasScene::smoothSelectedStrokes(qreal tolerance)
             continue;
         }
         auto* stroke = dynamic_cast<CurveItem*>(item);
-        if (!stroke || stroke->isEmpty() || stroke->strokePointCount() < 3) {
+        if (!stroke || stroke->curveKind() != CurveKind::Freehand || stroke->isEmpty() ||
+            stroke->strokePointCount() < 3) {
             continue;
         }
 
