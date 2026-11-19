@@ -26,6 +26,8 @@
 #include <QIcon>
 #include <QKeyEvent>
 #include <QLabel>
+#include <QLineEdit>
+#include <QSpinBox>
 #include <QStatusBar>
 #include <QTimer>
 #include <QUndoStack>
@@ -41,6 +43,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     m_lineArtSettings = m_settings;
     m_brushColor = m_settings.brushColor;
     m_brushWidth = m_settings.brushWidth;
+    // 需求 16：填充色默认取中灰（填充样式默认“无填充”，切到纯色时才可见）。
+    m_fillColor = QColor(0x9C, 0xA3, 0xAF);
 
     m_scene = new CanvasScene(this);
     m_scene->applyCanvasSize(m_settings.canvasSize);
@@ -277,6 +281,24 @@ void MainWindow::applyBrushWidth(int width)
 void MainWindow::setStrokeSmoothingUi(qreal tolerance)
 {
     m_style->setStrokeSmoothingUi(tolerance);
+}
+
+void MainWindow::setStrokeStyle(Qt::PenStyle style)
+{
+    m_style->setStrokeStyle(style);
+}
+
+void MainWindow::focusStrokeWidthSpin()
+{
+    if (!m_widthSpin) {
+        return;
+    }
+    // 需求 1：菜单“描线宽度”是普通菜单项，触发后把焦点放到工具栏宽度输入框末尾。
+    // lineEdit() 是保护接口，取当前焦点控件（SpinBox 的内部编辑器）来移动光标。
+    m_widthSpin->setFocus(Qt::ShortcutFocusReason);
+    if (auto* edit = qobject_cast<QLineEdit*>(QApplication::focusWidget())) {
+        edit->end(false);
+    }
 }
 
 void MainWindow::chooseBrushColor()

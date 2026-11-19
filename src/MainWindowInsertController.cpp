@@ -135,6 +135,8 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
             points.append(topLeft + wavePath.pointAtPercent(qreal(i) / qreal(sampleCount)));
         }
         curve->setStrokePoints(points, stroke, strokeWidth);
+        // 需求 1：新图元沿用工具栏当前描线样式。
+        curve->setStrokeStyle(m_window->m_strokeStyle);
         item = curve;
     } else if (asPolygon) {
         // 填充图形采样成单层多边形图元：路径即有面积层，样式取工具栏填充与描线。
@@ -145,11 +147,13 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
         layer.strokeWidth = strokeWidth;
         layer.filled = true;
         layer.role = CompositeShapeItem::LayerRole::FilledArea;
-        item = new CompositeShapeItem(QList<CompositeShapeItem::Layer>{layer}, fillStyle, Qt::SolidLine);
+        item = new CompositeShapeItem(QList<CompositeShapeItem::Layer>{layer}, fillStyle, m_window->m_strokeStyle);
     } else {
         auto* shape = new ShapeItem(type);
         shape->setStyle(stroke, filled ? fill : QColor(Qt::transparent), strokeWidth);
         shape->setFillStyle(fillStyle);
+        // 需求 1：新图元沿用工具栏当前描线样式。
+        shape->setStrokeStyle(m_window->m_strokeStyle);
         shape->setPos(topLeft);
         shape->setContentSize(size);
         // 三角形预置项：底边保持默认 64，按预置角度重算高度（角度是真相）。
@@ -194,12 +198,14 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
 
     // 需求 30：立方体的面是菱形图元（顶面用菱形自身轮廓，左右两面用同一个
     // 菱形类型承载斜置轮廓）；带名字的自定义轮廓只在有空路径时才回到菱形本体。
-    auto makeFace = [&stroke, &fill, fillStyle, width](const QString& name, const QPainterPath& unitPath,
-                                                       const QPointF& topLeft, const QSizeF& size) {
+    auto makeFace = [&stroke, &fill, fillStyle, width, this](const QString& name, const QPainterPath& unitPath,
+                                                             const QPointF& topLeft, const QSizeF& size) {
         auto* face = new ShapeItem(ShapeType::Diamond);
         face->setCustomShape(name, unitPath);
         face->setStyle(stroke, fill, width);
         face->setFillStyle(fillStyle);
+        // 需求 1：组内各面同样沿用工具栏描线样式。
+        face->setStrokeStyle(m_window->m_strokeStyle);
         face->setPos(topLeft);
         face->setContentSize(size);
         return face;
@@ -273,13 +279,15 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
         bodyLayer.strokeWidth = width;
         bodyLayer.filled = true;
         bodyLayer.role = CompositeShapeItem::LayerRole::FilledArea;
-        auto* bodyItem = new CompositeShapeItem(QList<CompositeShapeItem::Layer>{bodyLayer}, fillStyle, Qt::SolidLine);
+        auto* bodyItem =
+            new CompositeShapeItem(QList<CompositeShapeItem::Layer>{bodyLayer}, fillStyle, m_window->m_strokeStyle);
         bodyItem->setName(MainWindow::tr("Cylinder body"));
         faces.append(bodyItem);
 
         auto* top = new ShapeItem(ShapeType::Ellipse);
         top->setStyle(stroke, fill, width);
         top->setFillStyle(fillStyle);
+        top->setStrokeStyle(m_window->m_strokeStyle);
         top->setPos(topLeft);
         top->setContentSize(QSizeF(w, ry * 2.0));
         faces.append(top);
@@ -343,6 +351,7 @@ void MainWindowInsertController::insertBrace(bool left)
     auto* item = new CurveItem();
     item->setStrokePoints(points, stroke, width, 0.0, true);
     item->setSource(CurveSource::Brace);
+    item->setStrokeStyle(m_window->m_strokeStyle);
     // 右括号 = 左括号旋转 180°（旋转绕内容中心，几何不复制第二套）。
     if (!left) {
         item->setRotationAngle(180.0);
@@ -389,6 +398,7 @@ void MainWindowInsertController::insertCustomShape(const QString& filePath)
     const bool filled = m_window->m_fillStyle != FillStyle::None;
     item->setStyle(stroke, filled ? fill : QColor(Qt::transparent), qMax<qreal>(0.5, m_window->m_brushWidth));
     item->setFillStyle(filled ? m_window->m_fillStyle : FillStyle::None);
+    item->setStrokeStyle(m_window->m_strokeStyle);
 
     // 需求 7：模板按原始宽高比插入，长边固定 64（2 格）；画布装不下时才等比缩到 72%。
     const QRectF canvas = m_window->m_scene->canvasRect();

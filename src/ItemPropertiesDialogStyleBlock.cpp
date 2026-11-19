@@ -340,16 +340,19 @@ void ItemPropertiesDialogStyleBlock::addRows(QFormLayout* form)
     if (m_fillImageRow) {
         form->addRow(ItemPropertiesDialog::tr("Fill image"), m_fillImageRow);
     }
-    if (m_strokeColorButton) {
-        form->addRow(ItemPropertiesDialog::tr("Border color"), m_strokeColorButton);
-    }
+    // 需求 1 行序：描线样式排在描线颜色之前（与菜单、工具栏、编辑卡统一）。
     if (m_borderStyleCombo) {
         form->addRow(ItemPropertiesDialog::tr("Border style"), m_borderStyleCombo);
+    }
+    if (m_strokeColorButton) {
+        form->addRow(ItemPropertiesDialog::tr("Border color"), m_strokeColorButton);
     }
     if (m_strokeWidthSpin) {
         form->addRow(ItemPropertiesDialog::tr("Border width"), m_strokeWidthSpin);
     }
     if (m_opacitySpin) {
+        // 需求 5：该选项实际是“不透明度”（100% = 完全不透明），名称与提示一并纠正。
+        m_opacitySpin->setToolTip(ItemPropertiesDialog::tr("Opacity (100% = opaque)"));
         form->addRow(ItemPropertiesDialog::tr("Opacity"), m_opacitySpin);
     }
     if (m_cornerRadiusSpin) {

@@ -603,8 +603,8 @@ QPainterPath ShapeItem::outlineShape() const
 
 QPainterPath ShapeItem::paintedShape() const
 {
-    return pathWithArrowHeads(
-        ShapeHitGeometry::paintedShape(currentPath(contentRect()), m_type, m_fillStyle, m_fillColor, m_strokeWidth));
+    return pathWithArrowHeads(ShapeHitGeometry::paintedShape(currentPath(contentRect()), m_type, m_fillStyle,
+                                                             m_fillColor, m_strokeWidth, m_strokeStyle));
 }
 
 QPainterPath ShapeItem::pathWithArrowHeads(const QPainterPath& base) const

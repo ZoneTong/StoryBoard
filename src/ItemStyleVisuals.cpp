@@ -24,12 +24,15 @@ namespace ItemStyleVisuals {
 
 QList<Qt::PenStyle> borderStyles()
 {
-    return {Qt::SolidLine, Qt::DashLine, Qt::DotLine, Qt::DashDotLine};
+    // 需求 15：描线样式头部新增“无”（Qt::NoPen，即完全透明）。
+    return {Qt::NoPen, Qt::SolidLine, Qt::DashLine, Qt::DotLine, Qt::DashDotLine};
 }
 
 QString borderStyleName(Qt::PenStyle style)
 {
     switch (style) {
+    case Qt::NoPen:
+        return QCoreApplication::translate("ItemStyleVisuals", "None");
     case Qt::SolidLine:
         return QCoreApplication::translate("ItemStyleVisuals", "Solid");
     case Qt::DashLine:
@@ -71,6 +74,14 @@ QIcon borderStyleIcon(Qt::PenStyle style, int logicalSize)
     painter.setBrush(Qt::NoBrush);
 
     switch (style) {
+    case Qt::NoPen: {
+        // “无”样式：淡灰细线加一道斜杠，表示该图元不描线（透明）。
+        painter.setPen(QPen(QColor(148, 163, 184), penWidth * 0.75, Qt::SolidLine, Qt::FlatCap, Qt::MiterJoin));
+        painter.drawLine(QPointF(x0, y), QPointF(x1, y));
+        painter.setPen(QPen(color, penWidth, Qt::SolidLine, Qt::FlatCap, Qt::MiterJoin));
+        painter.drawLine(QPointF(x0 + 1.0 * k, y + 2.4 * k), QPointF(x1 - 1.0 * k, y - 2.4 * k));
+        break;
+    }
     case Qt::DashLine: {
         qreal x = x0;
         while (x < x1) {

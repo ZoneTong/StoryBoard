@@ -20,6 +20,9 @@ class StyleController {
     void chooseStrokeColor();
     void applyStrokeColorToSelection(const QColor& color);
     void applyStrokeWidthToSelection(qreal width);
+    // 描线样式（需求 1）：设置全局描线样式并同步到选中图元与各处图标。
+    void setStrokeStyle(Qt::PenStyle style);
+    void updateStrokeStyleActions();
     void applyFillToSelection();
     void updateFillActions();
 
@@ -36,6 +39,7 @@ class StyleController {
   private:
     int applyStrokeStyleToSelection(const QColor& color, qreal width, bool changeColor, bool changeWidth,
                                     const QString& text);
+    int applyPenStyleToSelection(Qt::PenStyle style, const QString& text);
 
     MainWindow* m_window = nullptr;
 };

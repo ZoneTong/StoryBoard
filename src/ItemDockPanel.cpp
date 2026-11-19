@@ -76,10 +76,12 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     layout->addWidget(m_contentCard->textFontRow());
     layout->addWidget(m_contentCard->imageRow());
 
+    // 需求 1 行序（与菜单、工具栏、属性窗统一）：
+    // 填充样式 → 填充颜色 → （需求 13 引入的背景图片） → 描线样式 → 描线颜色 → 描线宽度。
     layout->addWidget(m_fillBorderCard->fillStyleRow());
     layout->addWidget(m_colorsCard->fillColorRow());
-    layout->addWidget(m_colorsCard->borderColorRow());
     layout->addWidget(m_fillBorderCard->borderStyleRow());
+    layout->addWidget(m_colorsCard->borderColorRow());
     layout->addWidget(m_fillBorderCard->borderWidthRow());
 
     m_valueCard = new ItemDockPanelValueCard(content);

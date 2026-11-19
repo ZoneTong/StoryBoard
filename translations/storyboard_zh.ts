@@ -478,7 +478,7 @@
         <location filename="../src/ItemDockPanelValueCard.cpp" line="46"/>
         <location filename="../src/ItemDockPanelValueCard.cpp" line="53"/>
         <source>Opacity</source>
-        <translation>透明度</translation>
+        <translation>不透明度</translation>
     </message><message>
         <location filename="../src/ItemDockPanelValueCard.cpp" line="71"/>
         <location filename="../src/ItemDockPanelValueCard.cpp" line="78"/>
@@ -607,7 +607,7 @@
         <translation>修改图形描线宽度</translation>
     </message><message>
         <source>Change shape opacity</source>
-        <translation>修改图形透明度</translation>
+        <translation>修改图形不透明度</translation>
     </message><message>
         <location filename="../src/ItemDockPanel.cpp" line="787"/>
         <source>Change rectangle corner radius</source>
@@ -721,7 +721,7 @@
     </message><message>
         <location filename="../src/ItemDockPanel.cpp" line="560"/>
         <source>Change opacity</source>
-        <translation>修改透明度</translation>
+        <translation>修改不透明度</translation>
     </message><message>
         <location filename="../src/ItemDockPanel.cpp" line="659"/>
         <source>Change text content</source>
@@ -752,7 +752,11 @@
         <location filename="../src/ItemDockPanel.cpp" line="778"/>
         <source>Unable to load the selected image.</source>
         <translation>无法加载所选图片。</translation>
-    </message></context>
+    </message>    <message>
+        <source>Opacity (100% = opaque)</source>
+        <translation>不透明度（100% = 完全不透明）</translation>
+    </message>
+</context>
 <context>
     <name>ItemPropertiesDialog</name><message>
         <location filename="../src/ItemPropertiesDialogStyleBlock.cpp" line="185"/>
@@ -986,7 +990,7 @@
         <location filename="../src/ItemPropertiesDialog.cpp" line="126"/>
         <location filename="../src/ItemPropertiesDialogStyleBlock.cpp" line="327"/>
         <source>Opacity</source>
-        <translation>透明度</translation>
+        <translation>不透明度</translation>
     </message><message>
         <location filename="../src/ItemPropertiesDialogStyleBlock.cpp" line="343"/>
         <source>Start angle</source>
@@ -1006,7 +1010,11 @@
         <location filename="../src/ItemPropertiesDialogGeometryBlock.cpp" line="59"/>
         <source>Semi-minor axis</source>
         <translation>短半轴</translation>
-    </message></context>
+    </message>    <message>
+        <source>Opacity (100% = opaque)</source>
+        <translation>不透明度（100% = 完全不透明）</translation>
+    </message>
+</context>
 <context>
     <name>ItemStyleVisuals</name><message>
         <location filename="../src/ItemStyleVisuals.cpp" line="34"/>
@@ -1025,7 +1033,11 @@
         <location filename="../src/ItemStyleVisuals.cpp" line="40"/>
         <source>Dash-dot</source>
         <translation>点划线</translation>
-    </message></context>
+    </message>    <message>
+        <source>None</source>
+        <translation>无</translation>
+    </message>
+</context>
 <context>
     <name>LayerPanel</name><message>
         <location filename="../src/LayerPanel.cpp" line="48"/>
@@ -3019,7 +3031,27 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <location filename="../src/MainWindowEditActionsController.cpp" line="210"/>
         <source>Pasted %1 Excalidraw item(s)</source>
         <translation>已粘贴 %1 个 Excalidraw 图元</translation>
-    </message></context>
+    </message>    <message>
+        <source>Border style</source>
+        <translation>描线样式</translation>
+    </message>
+    <message>
+        <source>Border style set to &quot;%1&quot;; it will be used for newly inserted items</source>
+        <translation>描线样式设为“%1”，将用于新插入的图元</translation>
+    </message>
+    <message>
+        <source>Border style: %1 (click to choose)</source>
+        <translation>描线样式：%1（点击选择）</translation>
+    </message>
+    <message>
+        <source>Border width</source>
+        <translation>描线宽度</translation>
+    </message>
+    <message>
+        <source>Change border style</source>
+        <translation>修改描线样式</translation>
+    </message>
+</context>
 <context>
     <name>QCoreApplication</name><message>
         <location filename="../src/CanvasTypes.h" line="75"/>
@@ -4924,7 +4956,7 @@ Use the checkbox to show or hide it.</source>
         <translation>描线样式</translation>
     </message><message>
         <source>Opacity</source>
-        <translation>透明度</translation>
+        <translation>不透明度</translation>
     </message><message>
         <source>Corner radius</source>
         <translation>圆角</translation>
@@ -5079,7 +5111,7 @@ Use the checkbox to show or hide it.</source>
         <translation>修改图形描线宽度</translation>
     </message><message>
         <source>Change shape opacity</source>
-        <translation>修改图形透明度</translation>
+        <translation>修改图形不透明度</translation>
     </message><message>
         <source>Change rectangle corner radius</source>
         <translation>修改矩形圆角半径</translation>

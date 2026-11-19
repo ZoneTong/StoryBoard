@@ -9,8 +9,9 @@
 
 class AppSettings {
   public:
-    QColor brushColor = QColor(30, 41, 59);
-    int brushWidth = 4;
+    // 需求 16：首次运行的默认描线为“黑色实线 1px”（之后按用户在设置里改过的值记忆）。
+    QColor brushColor = QColor(0, 0, 0);
+    int brushWidth = 1;
     // 画笔拟合容差，单位为画布像素，支持 0.1 精度；0 表示关闭拟合。
     qreal strokeSmoothing = 2.0;
     // 默认画布 48×32 个棋盘格（棋盘格边长 32 逻辑像素），宽高都是 32 的整数倍。

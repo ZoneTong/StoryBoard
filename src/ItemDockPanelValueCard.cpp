@@ -43,14 +43,14 @@ ItemDockPanelValueCard::ItemDockPanelValueCard(QWidget* parent) : QWidget(parent
     opacityLayout->setSpacing(4);
 
     QToolButton* opacityIcon = makeRowIcon(IconId::Opacity, opacityRow);
-    opacityIcon->setToolTip(ItemDockPanel::tr("Opacity"));
+    opacityIcon->setToolTip(ItemDockPanel::tr("Opacity (100% = opaque)"));
     opacityLayout->addWidget(opacityIcon);
 
     m_opacitySpin = new QSpinBox(opacityRow);
     m_opacitySpin->setObjectName(QStringLiteral("ItemValueSpin"));
     m_opacitySpin->setRange(0, 100);
     m_opacitySpin->setSuffix(QStringLiteral(" %"));
-    m_opacitySpin->setToolTip(ItemDockPanel::tr("Opacity"));
+    m_opacitySpin->setToolTip(ItemDockPanel::tr("Opacity (100% = opaque)"));
     // 关闭键盘跟踪：输入过程不触发 valueChanged，回车或失焦才提交，
     // 选中变化触发的 refresh() 也就不会打断正在输入的值。
     m_opacitySpin->setKeyboardTracking(false);

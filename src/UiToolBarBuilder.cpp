@@ -179,7 +179,9 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
     m_window->m_fillButton->setMenu(fillMenu);
     m_window->updateFillActions();
 
-    // 需求 29：填充颜色、描边颜色作为独立按钮，排在填充样式按钮之后。
+    // 需求 1 行序：填充样式 → 填充颜色 → 描线样式 → 描线颜色 → 描线宽度。
+    mainBar->addWidget(m_window->m_fillButton);
+
     m_window->m_fillColorButton = new QToolButton(mainBar);
     m_window->m_fillColorButton->setObjectName(QStringLiteral("FillColorButton"));
     m_window->m_fillColorButton->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
@@ -189,8 +191,19 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
                                                          ? m_window->m_fillColor.name(QColor::HexArgb).toUpper()
                                                          : MainWindow::tr("Follow brush color")));
     mainBar->addWidget(m_window->m_fillColorButton);
-    // 填充颜色之后接填充样式，再是描线颜色与描线宽度。
-    mainBar->addWidget(m_window->m_fillButton);
+
+    // 需求 1/15：描线样式按钮，与填充样式按钮同构，弹出菜单列出候选（第一项是“无”）。
+    m_window->m_strokeStyleButton = new QToolButton(mainBar);
+    m_window->m_strokeStyleButton->setObjectName(QStringLiteral("StrokeStyleButton"));
+    m_window->m_strokeStyleButton->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
+    m_window->m_strokeStyleButton->setPopupMode(QToolButton::InstantPopup);
+    auto* strokeStyleMenu = new QMenu(m_window->m_strokeStyleButton);
+    for (QAction* action : m_window->m_strokeStyleActions) {
+        strokeStyleMenu->addAction(action);
+    }
+    m_window->m_strokeStyleButton->setMenu(strokeStyleMenu);
+    m_window->m_style->updateStrokeStyleActions();
+    mainBar->addWidget(m_window->m_strokeStyleButton);
 
     m_window->m_strokeColorButton = new QToolButton(mainBar);
     m_window->m_strokeColorButton->setObjectName(QStringLiteral("StrokeColorButton"));
@@ -211,7 +224,7 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
     m_window->m_widthSpin->setSuffix(QStringLiteral(" px"));
     m_window->m_widthSpin->setFixedWidth(74);
     m_window->m_widthSpin->setFixedHeight(MainWindow::kToolBarControlHeight);
-    m_window->m_widthSpin->setToolTip(MainWindow::tr("Brush width"));
+    m_window->m_widthSpin->setToolTip(MainWindow::tr("Border width"));
     QObject::connect(m_window->m_widthSpin, &QSpinBox::valueChanged, m_window, &MainWindow::applyBrushWidth);
     m_window->setBrushWidthUi(m_window->m_brushWidth);
     mainBar->addWidget(m_window->m_widthSpin);

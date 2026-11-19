@@ -287,7 +287,7 @@ void selftest::runCustomShapeDockTests(Context& ctx)
                   QStringLiteral("编辑图元卡已移除常见图形展开行"));
         ctx.check(panel.findChildren<QToolButton*>(QStringLiteral("ItemColorSwatch")).size() >= 16 &&
                       panel.findChildren<QToolButton*>(QStringLiteral("ItemFillStyleButton")).size() == 11 &&
-                      panel.findChildren<QToolButton*>(QStringLiteral("ItemBorderStyleButton")).size() == 4,
+                      panel.findChildren<QToolButton*>(QStringLiteral("ItemBorderStyleButton")).size() == 5,
                   QStringLiteral("编辑图元卡平铺颜色 / 填充 / 边框等工具"),
                   QStringLiteral("colors=%1 fills=%2 borders=%3")
                       .arg(panel.findChildren<QToolButton*>(QStringLiteral("ItemColorSwatch")).size())
@@ -315,9 +315,10 @@ void selftest::runCustomShapeDockTests(Context& ctx)
             content && content->layout() && borderWidthRow ? content->layout()->indexOf(borderWidthRow) : -1;
         const int borderColorIndex =
             content && content->layout() && borderColorRow ? content->layout()->indexOf(borderColorRow) : -1;
-        ctx.check(fillStyleIndex >= 0 && fillColorIndex > fillStyleIndex && borderColorIndex > fillColorIndex &&
-                      borderStyleIndex > borderColorIndex && borderWidthIndex > borderStyleIndex,
-                  QStringLiteral("编辑图元卡按填充样式、填充颜色、描线颜色、描线样式、描线宽度排列"),
+        // 需求 1 行序：填充样式 → 填充颜色 → 描线样式 → 描线颜色 → 描线宽度。
+        ctx.check(fillStyleIndex >= 0 && fillColorIndex > fillStyleIndex && borderStyleIndex > fillColorIndex &&
+                      borderColorIndex > borderStyleIndex && borderWidthIndex > borderColorIndex,
+                  QStringLiteral("编辑图元卡按填充样式、填充颜色、描线样式、描线颜色、描线宽度排列"),
                   QStringLiteral("%1/%2/%3/%4/%5")
                       .arg(fillStyleIndex)
                       .arg(fillColorIndex)

@@ -145,6 +145,10 @@ class MainWindow : public QMainWindow {
     void setFillStyle(FillStyle style);
     void chooseFillColor();
     void chooseStrokeColor();
+    // 描线样式（需求 1）：与填充样式同构的全局状态入口。
+    void setStrokeStyle(Qt::PenStyle style);
+    // 菜单“描线宽度”普通项触发后聚焦工具栏宽度输入框末尾（需求 1）。
+    void focusStrokeWidthSpin();
     void updateFillActions();
     void setBrushColor(const QColor& color, bool remember);
     void setBrushWidthUi(int width);
@@ -184,7 +188,10 @@ class MainWindow : public QMainWindow {
     QString m_filePath;
     QColor m_brushColor;
     QColor m_fillColor;
-    FillStyle m_fillStyle = FillStyle::Solid;
+    // 需求 16：首次打开默认“无填充 + 灰色填充色”，描线为黑色实线 1px（见 Settings 默认值）。
+    FillStyle m_fillStyle = FillStyle::None;
+    // 描线样式与填充样式一样是全局状态：新插入图元与选中图元都读它。
+    Qt::PenStyle m_strokeStyle = Qt::SolidLine;
     int m_brushWidth = 4;
     // 合并图元和弦进行中：Ctrl+M 已按下，等 1 秒内的子命令字母。
     bool m_boolChordPending = false;
@@ -261,6 +268,8 @@ class MainWindow : public QMainWindow {
     QActionGroup* m_backgroundModeGroup = nullptr;
     QActionGroup* m_fillStyleGroup = nullptr;
     QMenu* m_fileMenu = nullptr;
+    // 插入菜单里的“描线样式”子菜单：样式变化时同步它的图标。
+    QMenu* m_strokeStyleMenu = nullptr;
     QAction* m_boardSectionSeparator = nullptr;
     QMenu* m_shapeMenu = nullptr;
     QMenu* m_customShapeMenu = nullptr;
@@ -268,9 +277,15 @@ class MainWindow : public QMainWindow {
 
     QToolButton* m_fillButton = nullptr;
     QToolButton* m_fillColorButton = nullptr;
+    // 描线样式按钮（需求 1）：与填充样式按钮同构，弹出菜单列出 borderStyles()。
+    QToolButton* m_strokeStyleButton = nullptr;
     QToolButton* m_strokeColorButton = nullptr;
     QSpinBox* m_widthSpin = nullptr;
-    QSpinBox* m_menuWidthSpin = nullptr;
+    // 菜单里的“描线宽度”是普通菜单项（需求 1）：触发后把焦点放到工具栏宽度输入框末尾。
+    QAction* m_strokeWidthFocusAct = nullptr;
+    // 描线样式动作与分组（需求 1/15）：卡片、菜单、工具栏、属性窗共用同一候选表。
+    QList<QAction*> m_strokeStyleActions;
+    QActionGroup* m_strokeStyleGroup = nullptr;
     QDoubleSpinBox* m_smoothingSpin = nullptr;
     QPointer<ItemPropertiesDialog> m_itemPropertiesDialog;
     std::unique_ptr<BackgroundController> m_background;

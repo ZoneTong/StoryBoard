@@ -3,6 +3,7 @@
 #include "CanvasScene.h"
 #include "CanvasView.h"
 #include "IconFactory.h"
+#include "ItemStyleVisuals.h"
 #include "MainWindow.h"
 #include "MainWindowEditActionsController.h"
 #include "StyleController.h"
@@ -348,7 +349,8 @@ void UiActionFactory::build()
     m_window->m_fillStyleGroup->addAction(m_window->m_fillVerticalAct);
     m_window->m_fillStyleGroup->addAction(m_window->m_fillBrickAct);
     m_window->m_fillStyleGroup->addAction(m_window->m_fillDotsAct);
-    m_window->m_fillSolidAct->setChecked(true);
+    // 需求 16：默认“无填充”，勾选状态必须按当前全局状态刷新，不能写死纯色。
+    m_window->updateFillActions();
     QObject::connect(m_window->m_fillNoneAct, &QAction::triggered, m_window,
                      [this]() { m_window->setFillStyle(FillStyle::None); });
     QObject::connect(m_window->m_fillSolidAct, &QAction::triggered, m_window,
@@ -380,6 +382,27 @@ void UiActionFactory::build()
     m_window->m_strokeColorAct->setObjectName(QStringLiteral("BorderColorAction"));
     m_window->m_strokeColorAct->setIcon(m_window->m_style->strokeColorIcon(m_window->m_brushColor, 16));
     QObject::connect(m_window->m_strokeColorAct, &QAction::triggered, m_window, &MainWindow::chooseStrokeColor);
+
+    // 需求 1/15：描线样式动作组，候选表与编辑卡、属性窗共用 ItemStyleVisuals::borderStyles()。
+    m_window->m_strokeStyleGroup = new QActionGroup(m_window);
+    m_window->m_strokeStyleGroup->setExclusive(true);
+    for (Qt::PenStyle penStyle : ItemStyleVisuals::borderStyles()) {
+        QAction* action = new QAction(ItemStyleVisuals::borderStyleName(penStyle), m_window);
+        action->setCheckable(true);
+        action->setData(static_cast<int>(penStyle));
+        m_window->m_strokeStyleGroup->addAction(action);
+        m_window->m_strokeStyleActions.append(action);
+        QObject::connect(action, &QAction::triggered, m_window,
+                         [this, penStyle]() { m_window->setStrokeStyle(penStyle); });
+    }
+    m_window->m_style->updateStrokeStyleActions();
+
+    // 需求 1：菜单里的“描线宽度”改成普通菜单项，触发后把焦点放到工具栏宽度输入框末尾。
+    m_window->m_strokeWidthFocusAct = new QAction(MainWindow::tr("Border width"), m_window);
+    m_window->m_strokeWidthFocusAct->setObjectName(QStringLiteral("StrokeWidthFocusAction"));
+    m_window->m_strokeWidthFocusAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+W")));
+    m_window->m_strokeWidthFocusAct->setShortcutContext(Qt::ApplicationShortcut);
+    QObject::connect(m_window->m_strokeWidthFocusAct, &QAction::triggered, m_window, &MainWindow::focusStrokeWidthSpin);
 
     auto applyBackgroundMode = [this](BackgroundMode mode) {
         BackgroundState background = m_window->m_scene->background();

@@ -37,18 +37,21 @@ QPainterPath ShapeHitGeometry::hitShape(const QPainterPath& path, ShapeType type
 }
 
 QPainterPath ShapeHitGeometry::paintedShape(const QPainterPath& path, ShapeType type, FillStyle fillStyle,
-                                            const QColor& fillColor, qreal strokeWidth)
+                                            const QColor& fillColor, qreal strokeWidth, Qt::PenStyle strokeStyle)
 {
     if (path.isEmpty()) {
         return QPainterPath();
     }
 
-    // 描边本身也会遮挡下方图元。
-    QPainterPathStroker stroker;
-    stroker.setWidth(qMax<qreal>(1.0, strokeWidth));
-    stroker.setCapStyle(Qt::RoundCap);
-    stroker.setJoinStyle(Qt::RoundJoin);
-    QPainterPath result = stroker.createStroke(path);
+    // 描边本身也会遮挡下方图元；描线样式为“无”时整条描边不画，也就不参与遮挡。
+    QPainterPath result;
+    if (strokeStyle != Qt::NoPen) {
+        QPainterPathStroker stroker;
+        stroker.setWidth(qMax<qreal>(1.0, strokeWidth));
+        stroker.setCapStyle(Qt::RoundCap);
+        stroker.setJoinStyle(Qt::RoundJoin);
+        result = stroker.createStroke(path);
+    }
 
     // 有面积的图形只有“纯色填充”时才会完整遮住下层：纯色（含半透明纯色）的轮廓内部
     // 整个算作遮挡区，下层颜色完全不画，避免叠出混合色。

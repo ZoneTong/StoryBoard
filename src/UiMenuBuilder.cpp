@@ -7,6 +7,7 @@
 #include "DockPanelController.h"
 #include "IconFactory.h"
 #include "ItemDockPanel.h"
+#include "ItemStyleVisuals.h"
 #include "MainWindow.h"
 #include "ShapeItem.h"
 #include "StyleController.h"
@@ -14,17 +15,12 @@
 #include <QAction>
 #include <QActionGroup>
 #include <QDockWidget>
-#include <QHBoxLayout>
-#include <QLabel>
 #include <QList>
 #include <QMenu>
 #include <QMenuBar>
 #include <QPair>
-#include <QSpinBox>
 #include <QStatusBar>
-#include <QStyle>
 #include <QWidget>
-#include <QWidgetAction>
 
 UiMenuBuilder::UiMenuBuilder(MainWindow* window) : m_window(window) {}
 
@@ -345,34 +341,21 @@ void UiMenuBuilder::buildMenus()
 
     // 需求 29：颜色从填充样式里分离出来，放在填充样式之后。
     insertMenu->addAction(m_window->m_fillColorAct);
+
+    // 需求 1/15：描线样式子菜单，候选与工具栏、编辑卡、属性窗共用 borderStyles()（首项“无”）。
+    QMenu* strokeStyleMenu = insertMenu->addMenu(MainWindow::tr("Border style"));
+    strokeStyleMenu->setObjectName(QStringLiteral("BorderStyleMenu"));
+    strokeStyleMenu->setIcon(ItemStyleVisuals::borderStyleIcon(m_window->m_strokeStyle, 16));
+    for (QAction* action : m_window->m_strokeStyleActions) {
+        strokeStyleMenu->addAction(action);
+    }
+    m_window->m_strokeStyleMenu = strokeStyleMenu;
+
     insertMenu->addAction(m_window->m_strokeColorAct);
-    // 描线宽度在菜单、工具栏、卡片和属性窗统一使用同一种 SpinBox 控件。
-    auto* menuWidthWidget = new QWidget(insertMenu);
-    auto* menuWidthLayout = new QHBoxLayout(menuWidthWidget);
-    // 菜单项的图标列和勾选列会把文字推到固定缩进；宽度行的标签要与上下菜单项文字左对齐。
-    const int menuIconSize = insertMenu->style()->pixelMetric(QStyle::PM_SmallIconSize, nullptr, insertMenu);
-    const int menuTextInset =
-        2 * menuIconSize + insertMenu->style()->pixelMetric(QStyle::PM_MenuHMargin, nullptr, insertMenu) + 8;
-    menuWidthLayout->setContentsMargins(menuTextInset, 4, 12, 4);
-    menuWidthLayout->setSpacing(8);
-    auto* menuWidthLabel = new QLabel(MainWindow::tr("Brush width"), menuWidthWidget);
-    menuWidthLabel->setObjectName(QStringLiteral("MenuStrokeWidthLabel"));
-    menuWidthLayout->addWidget(menuWidthLabel);
-    m_window->m_menuWidthSpin = new QSpinBox(menuWidthWidget);
-    m_window->m_menuWidthSpin->setObjectName(QStringLiteral("MenuStrokeWidthSpin"));
-    m_window->m_menuWidthSpin->setRange(1, 64);
-    m_window->m_menuWidthSpin->setSingleStep(1);
-    m_window->m_menuWidthSpin->setSuffix(QStringLiteral(" px"));
-    m_window->m_menuWidthSpin->setFixedWidth(74);
-    m_window->m_menuWidthSpin->setToolTip(MainWindow::tr("Brush width"));
-    menuWidthLayout->addWidget(m_window->m_menuWidthSpin);
-    QObject::connect(m_window->m_menuWidthSpin, &QSpinBox::valueChanged, m_window, &MainWindow::applyBrushWidth);
-    auto* menuWidthAction = new QWidgetAction(insertMenu);
-    menuWidthAction->setObjectName(QStringLiteral("BrushWidthWidgetAction"));
-    menuWidthAction->setText(MainWindow::tr("Brush width"));
-    menuWidthAction->setDefaultWidget(menuWidthWidget);
-    insertMenu->addAction(menuWidthAction);
+    // 需求 1：描线宽度从 SpinBox 行改为普通菜单项，触发后把焦点放到工具栏宽度输入框末尾。
+    insertMenu->addAction(m_window->m_strokeWidthFocusAct);
     m_window->setBrushWidthUi(m_window->m_brushWidth);
+    m_window->m_style->updateStrokeStyleActions();
     insertMenu->addAction(m_window->m_smoothAct);
     // 需求：原“画布”菜单不再作为父菜单存在，背景相关项直接并入“插入”菜单；
     // 背景属于画布属性，排在“插入图片”之前，避免和插入类动作混在一段。

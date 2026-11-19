@@ -404,28 +404,28 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                       .arg(strokeButtonIndex)
                       .arg(strokeWidthSpin ? strokeWidthSpin->singleStep() : 0));
 
-        QSpinBox* menuWidthSpin = shapeWindow.findChild<QSpinBox*>(QStringLiteral("MenuStrokeWidthSpin"));
-        QAction* widthWidgetAction = shapeWindow.findChild<QAction*>(QStringLiteral("BrushWidthWidgetAction"));
-        ctx.check(menuWidthSpin && widthWidgetAction && strokeWidthSpin && menuWidthSpin->singleStep() == 1 &&
-                      menuWidthSpin->minimum() == strokeWidthSpin->minimum() &&
-                      menuWidthSpin->maximum() == strokeWidthSpin->maximum() &&
-                      menuWidthSpin->toolTip() == QStringLiteral("描线宽度"),
-                  QStringLiteral("菜单描线宽度与工具栏使用同一规格的 SpinBox"),
-                  QStringLiteral("menuSpin=%1 action=%2 step=%3 range=%4-%5 tip=%6")
-                      .arg(menuWidthSpin ? 1 : 0)
-                      .arg(widthWidgetAction ? 1 : 0)
-                      .arg(menuWidthSpin ? menuWidthSpin->singleStep() : 0)
-                      .arg(menuWidthSpin ? menuWidthSpin->minimum() : -1)
-                      .arg(menuWidthSpin ? menuWidthSpin->maximum() : -1)
-                      .arg(menuWidthSpin ? menuWidthSpin->toolTip() : QStringLiteral("-")));
-        if (menuWidthSpin && strokeWidthSpin) {
-            const int oldWidth = menuWidthSpin->value();
-            menuWidthSpin->setValue(2);
+        // 需求 1：菜单里的“描线宽度”改为普通菜单项，触发后把焦点放到工具栏宽度输入框末尾。
+        QAction* widthFocusAction = shapeWindow.findChild<QAction*>(QStringLiteral("StrokeWidthFocusAction"));
+        QSpinBox* removedMenuWidthSpin = shapeWindow.findChild<QSpinBox*>(QStringLiteral("MenuStrokeWidthSpin"));
+        ctx.check(widthFocusAction && !removedMenuWidthSpin && strokeWidthSpin &&
+                      widthFocusAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+W")),
+                  QStringLiteral("菜单描线宽度改为普通菜单项并带 Ctrl+W，不再内嵌 SpinBox"),
+                  QStringLiteral("action=%1 shortcut=%2 menuSpin=%3")
+                      .arg(widthFocusAction ? 1 : 0)
+                      .arg(widthFocusAction ? widthFocusAction->shortcut().toString() : QStringLiteral("-"))
+                      .arg(removedMenuWidthSpin ? 1 : 0));
+        if (widthFocusAction && strokeWidthSpin) {
+            widthFocusAction->trigger();
             QApplication::processEvents();
-            ctx.check(strokeWidthSpin->value() == 2, QStringLiteral("菜单描线宽度 SpinBox 同步工具栏"),
-                      QStringLiteral("toolbar=%1 menu=%2").arg(strokeWidthSpin->value()).arg(menuWidthSpin->value()));
-            menuWidthSpin->setValue(oldWidth);
-            QApplication::processEvents();
+            // lineEdit() 是保护接口：直接取当前焦点控件（SpinBox 的内部编辑器）来校验光标位置。
+            QLineEdit* widthEdit = qobject_cast<QLineEdit*>(QApplication::focusWidget());
+            ctx.check(strokeWidthSpin->hasFocus() && widthEdit &&
+                          widthEdit->cursorPosition() == widthEdit->text().length(),
+                      QStringLiteral("触发菜单描线宽度后焦点落在工具栏输入框末尾"),
+                      QStringLiteral("focus=%1 cursor=%2/%3")
+                          .arg(strokeWidthSpin->hasFocus() ? 1 : 0)
+                          .arg(widthEdit ? widthEdit->cursorPosition() : -1)
+                          .arg(widthEdit ? widthEdit->text().length() : -1));
         }
 
         // 一级「画笔」菜单已删除：描线宽度子菜单与平滑曲线并到「插入」的描线颜色之后，
@@ -439,7 +439,8 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         }
         const int strokeColorIndex =
             insertActionsForOrder.indexOf(shapeWindow.findChild<QAction*>(QStringLiteral("BorderColorAction")));
-        const int widthMenuIndex = insertActionsForOrder.indexOf(widthWidgetAction);
+        const int widthMenuIndex =
+            insertActionsForOrder.indexOf(shapeWindow.findChild<QAction*>(QStringLiteral("StrokeWidthFocusAction")));
         int smoothActionIndex = -1;
         for (int i = 0; i < insertActionsForOrder.size(); ++i) {
             if (insertActionsForOrder.at(i) && insertActionsForOrder.at(i)->text() == QStringLiteral("简化曲线")) {
@@ -586,32 +587,23 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         QApplication::processEvents();
 
         QSpinBox* widthSpin = strokeWindow.findChild<QSpinBox*>(QStringLiteral("StrokeWidthSpin"));
-        QSpinBox* menuWidthSpin = strokeWindow.findChild<QSpinBox*>(QStringLiteral("MenuStrokeWidthSpin"));
-        ctx.check(widthSpin && menuWidthSpin, QStringLiteral("工具栏与菜单提供描线宽度入口"),
-                  QStringLiteral("toolbar=%1 menu=%2").arg(widthSpin ? 1 : 0).arg(menuWidthSpin ? 1 : 0));
-        if (widthSpin && menuWidthSpin) {
-            const int originalWidth = menuWidthSpin->value();
-            menuWidthSpin->setValue(2);
+        QAction* widthFocusAction = strokeWindow.findChild<QAction*>(QStringLiteral("StrokeWidthFocusAction"));
+        ctx.check(widthSpin && widthFocusAction, QStringLiteral("工具栏与菜单提供描线宽度入口"),
+                  QStringLiteral("toolbar=%1 menu=%2").arg(widthSpin ? 1 : 0).arg(widthFocusAction ? 1 : 0));
+        if (widthSpin) {
+            widthSpin->setValue(2);
             QApplication::processEvents();
-            ctx.check(qAbs(stroke->strokeWidth() - 2.0) < 0.01 && widthSpin->value() == 2,
-                      QStringLiteral("菜单描线宽度改变选中曲线宽度"),
-                      QStringLiteral("stroke=%1 toolbar=%2 menu=%3")
-                          .arg(stroke->strokeWidth())
-                          .arg(widthSpin->value())
-                          .arg(menuWidthSpin->value()));
+            ctx.check(qAbs(stroke->strokeWidth() - 2.0) < 0.01, QStringLiteral("描线宽度 2px 同步选中曲线"),
+                      QStringLiteral("stroke=%1 toolbar=%2").arg(stroke->strokeWidth()).arg(widthSpin->value()));
 
             widthSpin->setValue(7);
             QApplication::processEvents();
-            ctx.check(qAbs(stroke->strokeWidth() - 7.0) < 0.01 && strokeWindow.view()->brushWidth() == 7.0 &&
-                          menuWidthSpin->value() == 7,
+            ctx.check(qAbs(stroke->strokeWidth() - 7.0) < 0.01 && strokeWindow.view()->brushWidth() == 7.0,
                       QStringLiteral("工具栏描线宽度 SpinBox 步进 1px 并改变选中曲线宽度"),
-                      QStringLiteral("stroke=%1 brush=%2 step=%3 menu=%4")
+                      QStringLiteral("stroke=%1 brush=%2 step=%3")
                           .arg(stroke->strokeWidth())
                           .arg(strokeWindow.view()->brushWidth())
-                          .arg(widthSpin->singleStep())
-                          .arg(menuWidthSpin->value()));
-            menuWidthSpin->setValue(originalWidth);
-            QApplication::processEvents();
+                          .arg(widthSpin->singleStep()));
         }
 
         StyleController styleController(&strokeWindow);

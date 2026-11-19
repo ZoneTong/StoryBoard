@@ -14,6 +14,8 @@ class ShapeHitGeometry {
                                  const QPainterPath& handleShape);
 
     // 遮挡区域：描边扫过的部分始终遮挡；仅纯色填充才把轮廓内部整体算作遮挡区。
+    // 描线样式为“无”（Qt::NoPen）时不加描边带，避免留下“看不见但点得到”的区域。
     static QPainterPath paintedShape(const QPainterPath& path, ShapeType type, FillStyle fillStyle,
-                                     const QColor& fillColor, qreal strokeWidth);
+                                     const QColor& fillColor, qreal strokeWidth,
+                                     Qt::PenStyle strokeStyle = Qt::SolidLine);
 };

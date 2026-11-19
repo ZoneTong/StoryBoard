@@ -13,6 +13,7 @@
 #include "ShapeItem.h"
 
 #include <QColorDialog>
+#include <QMenu>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
@@ -94,6 +95,80 @@ void StyleController::applyStrokeWidthToSelection(qreal width)
 {
     if (width > 0) {
         applyStrokeStyleToSelection(QColor(), width, false, true, MainWindow::tr("Change border width"));
+    }
+}
+
+void StyleController::setStrokeStyle(Qt::PenStyle style)
+{
+    m_window->m_strokeStyle = style;
+    updateStrokeStyleActions();
+    applyPenStyleToSelection(style, MainWindow::tr("Change border style"));
+}
+
+int StyleController::applyPenStyleToSelection(Qt::PenStyle style, const QString& text)
+{
+    if (!m_window->m_scene || !m_window->m_undo) {
+        return 0;
+    }
+
+    QList<CanvasItem*> items;
+    QList<Qt::PenStyle> before;
+    QList<Qt::PenStyle> after;
+    const QList<CanvasItem*> selected = m_window->m_scene->selectedCanvasItems();
+    for (CanvasItem* item : selected) {
+        Qt::PenStyle current = Qt::SolidLine;
+        if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+            current = shape->strokeStyle();
+        } else if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
+            current = stroke->strokeStyle();
+        } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+            current = composite->strokeStyle();
+        } else {
+            continue;
+        }
+        items.append(item);
+        before.append(current);
+        after.append(style);
+    }
+
+    if (items.isEmpty()) {
+        m_window->statusBar()->showMessage(
+            MainWindow::tr("Border style set to \"%1\"; it will be used for newly inserted items")
+                .arg(ItemStyleVisuals::borderStyleName(style)),
+            4000);
+        return 0;
+    }
+
+    if (before == after) {
+        m_window->statusBar()->showMessage(MainWindow::tr("The border style did not change"), 3000);
+        return items.size();
+    }
+
+    m_window->m_undo->push(new ItemPenStyleCommand(m_window->m_scene, items, before, after, text));
+    m_window->statusBar()->showMessage(MainWindow::tr("Applied border style to %1 item(s)").arg(items.size()), 4000);
+    return items.size();
+}
+
+void StyleController::updateStrokeStyleActions()
+{
+    for (QAction* action : m_window->m_strokeStyleActions) {
+        if (!action) {
+            continue;
+        }
+        const Qt::PenStyle style = static_cast<Qt::PenStyle>(action->data().toInt());
+        action->setChecked(style == m_window->m_strokeStyle);
+        action->setIcon(ItemStyleVisuals::borderStyleIcon(style, 16));
+        action->setToolTip(ItemStyleVisuals::borderStyleName(style));
+    }
+    if (m_window->m_strokeStyleButton) {
+        m_window->m_strokeStyleButton->setIcon(
+            ItemStyleVisuals::borderStyleIcon(m_window->m_strokeStyle, MainWindow::kToolBarIconSize));
+        m_window->m_strokeStyleButton->setToolTip(MainWindow::tr("Border style: %1 (click to choose)")
+                                                      .arg(ItemStyleVisuals::borderStyleName(m_window->m_strokeStyle)));
+    }
+    if (m_window->m_strokeStyleMenu) {
+        m_window->m_strokeStyleMenu->menuAction()->setIcon(
+            ItemStyleVisuals::borderStyleIcon(m_window->m_strokeStyle, 16));
     }
 }
 
@@ -387,7 +462,7 @@ void StyleController::setBrushWidthUi(int width)
     if (m_window->m_view) {
         m_window->m_view->setBrushWidth(width);
     }
-    for (QSpinBox* spin : {m_window->m_widthSpin, m_window->m_menuWidthSpin}) {
+    for (QSpinBox* spin : {m_window->m_widthSpin}) {
         if (spin) {
             const QSignalBlocker blocker(spin);
             spin->setValue(width);
