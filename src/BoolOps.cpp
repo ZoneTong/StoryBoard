@@ -47,9 +47,9 @@ bool isLineClassItem(CanvasItem* item)
     if (dynamic_cast<CurveItem*>(item)) {
         return true;
     }
-    if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
-        // 零面积图元已全部并入曲线族，形状类恒有填充面积。
-    return false;
+    // 零面积图元已全部并入曲线族，形状类恒有填充面积。
+    if (dynamic_cast<ShapeItem*>(item)) {
+        return false;
     }
     if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
         for (const CompositeShapeItem::Layer& layer : composite->layers()) {
@@ -67,7 +67,7 @@ bool isLineClassItem(CanvasItem* item)
 // 图形仍按完整轮廓参与布尔运算，也应优先决定合并结果的样式。
 bool hasFillSpace(CanvasItem* item)
 {
-    if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+    if (dynamic_cast<ShapeItem*>(item)) {
         return true;
     }
     if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {

@@ -110,15 +110,17 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
               QStringLiteral("文字字号按 pt≈px/1.333 换算"),
               QStringLiteral("fontSize=%1").arg(items.at(3).toObject().value(QStringLiteral("fontSize")).toDouble()));
 
-    // 两点箭头 → 直线图元 + 末端实心三角；起点无箭头。
+    // 两点箭头 → 曲线族的直线图元（curveKind=line）+ 末端实心三角；起点无箭头。
     {
         const QJsonObject line = items.at(4).toObject();
-        ctx.check(line.value(QStringLiteral("shapeType")).toString() == QStringLiteral("line") &&
+        ctx.check(line.value(QStringLiteral("type")).toString() == QStringLiteral("curve") &&
+                      line.value(QStringLiteral("curveKind")).toString() == QStringLiteral("line") &&
                       line.value(QStringLiteral("endArrow")).toString() == QStringLiteral("triangle") &&
                       line.value(QStringLiteral("startArrow")).toString() == QStringLiteral("none"),
-                  QStringLiteral("两点箭头导入为直线并保留三角箭头"),
-                  QStringLiteral("shapeType=%1 end=%2")
-                      .arg(line.value(QStringLiteral("shapeType")).toString(),
+                  QStringLiteral("两点箭头导入为直线曲线并保留三角箭头"),
+                  QStringLiteral("type=%1 kind=%2 end=%3")
+                      .arg(line.value(QStringLiteral("type")).toString(),
+                           line.value(QStringLiteral("curveKind")).toString(),
                            line.value(QStringLiteral("endArrow")).toString()));
     }
     // 多段箭头 → 曲线图元 + 折线段。

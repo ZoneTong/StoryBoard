@@ -251,6 +251,11 @@ QJsonObject elementToItem(const QJsonObject& element, int z, int layer, QStringL
         item.insert(QStringLiteral("baseHeight"), lineBounds.height());
         item.insert(QStringLiteral("dot"), false);
         item.insert(QStringLiteral("linear"), true);
+        // 曲线族判别：两点直落直线子型，多点为普通曲线，手绘为 Freehand。
+        item.insert(QStringLiteral("curveKind"), type == QStringLiteral("freedraw")
+                                                       ? QStringLiteral("freehand")
+                                                       : (points.size() == 2 ? QStringLiteral("line")
+                                                                             : QStringLiteral("curve")));
         item.insert(QStringLiteral("startArrow"), importHeadStyle(element, QStringLiteral("startArrow")));
         item.insert(QStringLiteral("endArrow"), importHeadStyle(element, QStringLiteral("endArrow")));
         item.insert(QStringLiteral("segments"), polylineSegments(points));

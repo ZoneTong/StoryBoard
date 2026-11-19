@@ -165,16 +165,23 @@ void selftest::runViewInteractionTests(Context& ctx)
             ctx.check(lineShape->strokeColor() == QColor(QStringLiteral("#DC2626")) &&
                           qAbs(lineShape->strokeWidth() - 5.0) < 0.01,
                       QStringLiteral("直线图元沿用画笔颜色与粗细"));
-            // 需求 20：直线必须落在落笔位置——包围盒中心对齐起笔/收笔中点，
-            // 且完整覆盖两端（包围盒含描边与内边距，留出余量）。
+            // 需求 20：直线必须落在落笔位置——两个端点回到场景坐标后要对上起笔 / 收笔点。
             const QRectF lineBounds = lineShape->sceneBoundingRect();
             const QPointF boundsCenter = lineBounds.center();
+            const QVector<QPointF> knots = lineShape->strokePoints();
+            const QPointF startScene = knots.isEmpty() ? QPointF() : lineShape->mapToScene(knots.constFirst());
+            const QPointF endScene = knots.isEmpty() ? startScene : lineShape->mapToScene(knots.constLast());
             ctx.check(qAbs(boundsCenter.x() - 320.0) < 8.0 && qAbs(boundsCenter.y() - 620.0) < 8.0 &&
-                          lineBounds.left() <= 122.0 && lineBounds.right() >= 518.0 && lineBounds.height() < 60.0,
+                          qAbs(startScene.x() - 120.0) < 6.0 && qAbs(startScene.y() - 620.0) < 6.0 &&
+                          qAbs(endScene.x() - 520.0) < 6.0 && qAbs(endScene.y() - 620.0) < 6.0,
                       QStringLiteral("直线图元落在落笔位置"),
-                      QStringLiteral("center=(%1,%2) bounds=(%3,%4,%5,%6)")
+                      QStringLiteral("center=(%1,%2) start=(%3,%4) end=(%5,%6) bounds=(%7,%8,%9,%10)")
                           .arg(boundsCenter.x())
                           .arg(boundsCenter.y())
+                          .arg(startScene.x())
+                          .arg(startScene.y())
+                          .arg(endScene.x())
+                          .arg(endScene.y())
                           .arg(lineBounds.left())
                           .arg(lineBounds.top())
                           .arg(lineBounds.right())

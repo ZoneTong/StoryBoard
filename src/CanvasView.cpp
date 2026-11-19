@@ -36,7 +36,6 @@ bool isStrokeItem(CanvasItem* item)
     if (dynamic_cast<CurveItem*>(item)) {
         return true;
     }
-    auto* shape = dynamic_cast<ShapeItem*>(item);
     // 直线 / 弧线 / 正弦已改为曲线图元，形状类里不再有零面积图元。
     return false;
 }

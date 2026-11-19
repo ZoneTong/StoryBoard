@@ -130,7 +130,8 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         QMenu* customShapeMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("CustomShapeMenu"));
         QAction* customTrigger = shapeWindow.findChild<QAction*>(QStringLiteral("CustomShapePanelTrigger"));
         // 自定义图形不再是二级子菜单：入口直接平铺在「常见图形」末尾。
-        ctx.check(shapeMenu && builtInShapeActions == shapeTypes.size() && customShapeMenu && customTrigger &&
+        // 内建图形动作 = 17 种有面积图形 + 曲线族三入口（直线 / 弧线 / 正弦）。
+        ctx.check(shapeMenu && builtInShapeActions == shapeTypes.size() + 3 && customShapeMenu && customTrigger &&
                       shapeMenu->actions().contains(customTrigger) &&
                       !shapeMenu->actions().contains(customShapeMenu->menuAction()),
                   QStringLiteral("图形菜单包含全部图形，自定义图形入口与常见图形同层"),
@@ -723,8 +724,8 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                 ++loadedSineCurves;
             }
         }
-        // 需求 29：正弦波形载入即迁移成曲线，图形图元因此比其他 18 种少一个。
-        ctx.check(loadedShapeCount == shapeTypes.size() - 1 && loadedSineCurves == 1,
+        // 形状类型只剩有面积图形，直线 / 弧线 / 正弦已并入曲线族，载入后不应出现曲线图元。
+        ctx.check(loadedShapeCount == shapeTypes.size() && loadedSineCurves == 0,
                   QStringLiteral("主窗口识别画布中的图形图元"),
                   QStringLiteral("shapes=%1 curves=%2").arg(loadedShapeCount).arg(loadedSineCurves));
     }

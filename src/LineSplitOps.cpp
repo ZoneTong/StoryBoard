@@ -32,7 +32,7 @@ struct Knife {
 
 bool isFillTarget(CanvasItem* item)
 {
-    if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+    if (dynamic_cast<ShapeItem*>(item)) {
         return true;
     }
     if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {

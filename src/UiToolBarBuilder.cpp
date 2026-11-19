@@ -137,6 +137,16 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
             }
             addShapeButton(action);
         }
+        // 曲线族三个入口不是 ShapeType（data 为 -1），按各自在图元顺序里的归属位置
+        // 显式补：直线与直线箭头跟在椭圆后、弧线跟在扇形后、正弦跟在心形后。
+        if (type == ShapeType::Ellipse) {
+            addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_line")));
+            addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(QStringLiteral("ShapePreset_lineArrow")));
+        } else if (type == ShapeType::Sector) {
+            addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_arc")));
+        } else if (type == ShapeType::Heart) {
+            addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_sine_wave")));
+        }
     }
     // 花括号预置动作没有 ShapeType（data 为 -1），按 objectName 显式补在直线之后。
     for (const QString& braceAction :

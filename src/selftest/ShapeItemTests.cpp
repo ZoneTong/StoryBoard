@@ -103,7 +103,7 @@ void selftest::runShapeItemTests(Context& ctx)
 
     const QList<ShapeType> shapeTypes = allShapeTypes();
     // 需求 9：常见图形 19 → 20（新增平行四边形）。
-    ctx.check(shapeTypes.size() == 20, QStringLiteral("提供 20 种常见图形"),
+    ctx.check(shapeTypes.size() == 17, QStringLiteral("提供 17 种有面积图形（直线/弧线/正弦已并入曲线族）"),
               QStringLiteral("count=%1").arg(shapeTypes.size()));
     // 需求 9：平行四边形默认 60° 内角、内容尺寸 110.85×64，角度钳在 15–165°。
     {
@@ -483,10 +483,9 @@ void selftest::runShapeItemTests(Context& ctx)
             ++loadedSineCurves;
         }
     }
-    // 需求 29：正弦波形读入即迁移为曲线图元，所以恢复出的图形类型比其他 18 种少一个，
-    // 多出来的一条曲线就是它。
-    ctx.check(loadedShapeTypes.size() == shapeTypes.size() - 1 && loadedSineCurves == 1,
-              QStringLiteral("画布恢复全部 14 种图形类型"),
+    // 形状类型只剩有面积图形，直线 / 弧线 / 正弦已并入曲线族，恢复出的形状数量与类型表一致。
+    ctx.check(loadedShapeTypes.size() == shapeTypes.size() && loadedSineCurves == 0,
+              QStringLiteral("画布恢复全部有面积图形类型"),
               QStringLiteral("shapes=%1 curves=%2").arg(loadedShapeTypes.size()).arg(loadedSineCurves));
     ctx.check(loadedRectangle && loadedRectangle->strokeColor() == shapeStroke &&
                   loadedRectangle->fillColor().alpha() == shapeFill.alpha() &&

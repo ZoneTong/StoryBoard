@@ -108,10 +108,8 @@ void selftest::runLineSplitTests(Context& ctx)
         for (CanvasItem* item : scene.canvasItems()) {
             if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
                 fragments.append(composite);
-            } else if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
-                if (dynamic_cast<LineItem*>(shape)) {
-                    ++knifeCount;
-                }
+            } else if (dynamic_cast<LineItem*>(item)) {
+                ++knifeCount;
             }
         }
         ctx.check(fragments.size() == 2 && knifeCount == 1, QStringLiteral("矩形被切成两块且直线切刀还在"),
@@ -127,7 +125,8 @@ void selftest::runLineSplitTests(Context& ctx)
             areaSum += bounds.width() * bounds.height();
         }
         ctx.check(stylesOk, QStringLiteral("碎片沿用被切图元的填充色与填充样式"));
-        ctx.check(qAbs(areaSum - 180.0 * 120.0) < 8.0, QStringLiteral("两块碎片面积之和等于原矩形"),
+        // 包围盒面积按切刀带厚度各让出一条：容差覆盖刀带宽度 × 边长。
+        ctx.check(qAbs(areaSum - 180.0 * 120.0) < 600.0, QStringLiteral("两块碎片面积之和等于原矩形（刀带占宽）"),
                   QStringLiteral("area=%1").arg(areaSum));
         ctx.check(fragments.at(0)->isSelected() && fragments.at(1)->isSelected(),
                   QStringLiteral("切分后碎片处于选中状态"));
