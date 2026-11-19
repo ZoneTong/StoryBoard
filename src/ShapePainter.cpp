@@ -1,5 +1,7 @@
 #include "ShapePainter.h"
 
+#include "EllipseShape.h"
+
 #include <QPixmap>
 #include <QtMath>
 
@@ -158,25 +160,18 @@ void ShapePainter::paintShape(QPainter* painter, const QPainterPath& path, const
     painter->setRenderHint(QPainter::Antialiasing, true);
     painter->setOpacity(painter->opacity() * opacity);
 
-    if (shapeTypeIsStrokeOnly(type)) {
-        QPen pen(strokeColor, strokeWidth, strokeStyle, Qt::RoundCap, Qt::RoundJoin);
-        painter->setPen(pen);
-        painter->setBrush(Qt::NoBrush);
-        painter->drawPath(path);
-    } else {
-        if (isPatternFill(fillStyle)) {
-            paintPatternFill(painter, path, rect, fillColor, fillStyle);
-        }
-
-        QPen pen(strokeColor, strokeWidth, strokeStyle, Qt::RoundCap, Qt::RoundJoin);
-        painter->setPen(pen);
-        if (fillStyle == FillStyle::Solid && fillColor.alpha() > 0) {
-            painter->setBrush(fillColor);
-        } else {
-            painter->setBrush(Qt::NoBrush);
-        }
-        painter->drawPath(path);
+    if (isPatternFill(fillStyle)) {
+        paintPatternFill(painter, path, rect, fillColor, fillStyle);
     }
+
+    QPen pen(strokeColor, strokeWidth, strokeStyle, Qt::RoundCap, Qt::RoundJoin);
+    painter->setPen(pen);
+    if (fillStyle == FillStyle::Solid && fillColor.alpha() > 0) {
+        painter->setBrush(fillColor);
+    } else {
+        painter->setBrush(Qt::NoBrush);
+    }
+    painter->drawPath(path);
     painter->restore();
 }
 
@@ -196,9 +191,9 @@ QIcon ShapePainter::makeIcon(ShapeType type, const QColor& color, int logicalSiz
     qreal iconSweepAngle = 120.0;
     if (type == ShapeType::Ellipse) {
         rect = QRectF(4.0, 4.0, 16.0, 16.0);
-    } else if (type == ShapeType::Arrow || type == ShapeType::DoubleArrow || type == ShapeType::Line) {
+    } else if (type == ShapeType::Arrow || type == ShapeType::DoubleArrow) {
         rect = QRectF(2.0, 7.0, 20.0, 10.0);
-    } else if (type == ShapeType::Sector || type == ShapeType::Arc) {
+    } else if (type == ShapeType::Sector) {
         // 扇形 / 弧线的图标必须与插入后的默认形态同一套角度（30° 起、120° 扫过），
         // 否则“点图标得到另一个形状”。只把椭圆放大到整格，避免在这排里显得过小。
         rect = QRectF(1.0, 1.0, 22.0, 22.0);
@@ -209,7 +204,7 @@ QIcon ShapePainter::makeIcon(ShapeType type, const QColor& color, int logicalSiz
     QPainterPath path = ShapeItem::pathFor(type, rect, -1.0, iconStartAngle, iconSweepAngle);
     // 需求 7：扇形 / 弧线的图标按包围盒重新居中，视觉重心落在 (12,12)，
     // 并等比缩到不超过 18×18；笔宽不跟缩放走，保持与同排图标一致。
-    if (type == ShapeType::Sector || type == ShapeType::Arc) {
+    if (type == ShapeType::Sector) {
         const QRectF bounds = path.boundingRect();
         if (!bounds.isEmpty()) {
             qreal scale =
@@ -230,5 +225,41 @@ QIcon ShapePainter::makeIcon(ShapeType type, const QColor& color, int logicalSiz
     painter.drawPath(path);
     painter.end();
 
+    return QIcon(pixmap);
+}
+
+QIcon ShapePainter::makeCurveIcon(CurveKind kind, const QColor& color, int logicalSize)
+{
+    constexpr qreal scale = 2.0;
+    QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
+    pixmap.fill(Qt::transparent);
+    pixmap.setDevicePixelRatio(scale);
+
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.scale(logicalSize / 24.0, logicalSize / 24.0);
+
+    // 24px 栅格里的一笔开放描线：与插入后的默认形态同一套角度 / 周期。
+    QPainterPath path;
+    if (kind == CurveKind::Arc) {
+        path = EllipseShape(QRectF(1.5, 1.5, 21.0, 21.0)).arc(30.0, 120.0);
+    } else if (kind == CurveKind::Sine) {
+        constexpr int steps = 64;
+        for (int i = 0; i <= steps; ++i) {
+            const qreal t = qreal(i) / qreal(steps);
+            const QPointF point(2.5 + t * 19.0, 12.0 - qSin(t * 2.0 * M_PI) * 6.0);
+            if (i == 0) {
+                path.moveTo(point);
+            } else {
+                path.lineTo(point);
+            }
+        }
+    } else {
+        path.moveTo(2.5, 12.0);
+        path.lineTo(21.5, 12.0);
+    }
+    painter.setPen(QPen(color, 1.6));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawPath(path);
     return QIcon(pixmap);
 }

@@ -4,12 +4,14 @@
 #include "BoolOps.h"
 #include "CanvasScene.h"
 #include "CanvasView.h"
+#include "CurveItem.h"
 #include "DockPanelController.h"
 #include "IconFactory.h"
 #include "ItemDockPanel.h"
 #include "ItemStyleVisuals.h"
 #include "MainWindow.h"
 #include "ShapeItem.h"
+#include "ShapePainter.h"
 #include "StyleController.h"
 
 #include <QAction>
@@ -53,22 +55,31 @@ void UiMenuBuilder::buildShapeMenu()
             });
         }
 
-        // 需求 6：直线箭头紧跟在「直线」之后，复用直线类，默认末端开口箭头，
-        // 长边 64（与其它常见图形的基准边长一致）。
-        if (type == ShapeType::Line) {
+        // 曲线族入口：直线 / 弧线 / 正弦都不是形状类型，按 curveKind 插入；整组放在
+        // 「椭圆」之后，保持原先直线、直线箭头、左右花括号的相对顺序。
+        if (type == ShapeType::Ellipse) {
+            QAction* line = m_window->m_shapeMenu->addAction(
+                ShapePainter::makeCurveIcon(CurveKind::Line, QColor(58, 64, 80), 18), MainWindow::tr("Line"));
+            line->setObjectName(QStringLiteral("ShapeAction_line"));
+            line->setData(-1);
+            line->setToolTip(MainWindow::tr("Insert a line (uses the current brush color)"));
+            QObject::connect(line, &QAction::triggered, m_window, [this]() {
+                m_window->insertCurve(CurveKind::Line);
+            });
+
+            // 需求 6：直线箭头紧跟在「直线」之后，复用直线类，默认末端开口箭头，
+            // 长边 128（与形状基准边长一致）。
             QAction* lineArrow = m_window->m_shapeMenu->addAction(
-                makeShapePresetIcon(QStringLiteral("lineArrow"), QColor(58, 64, 80), 18), MainWindow::tr("Line arrow"));
+                ShapePainter::makeCurveIcon(CurveKind::Line, QColor(58, 64, 80), 18), MainWindow::tr("Line arrow"));
             lineArrow->setObjectName(QStringLiteral("ShapePreset_lineArrow"));
-            lineArrow->setData(static_cast<int>(type));
+            lineArrow->setData(-1);
             lineArrow->setToolTip(MainWindow::tr("Insert a line with an open arrow head at its end"));
             QObject::connect(lineArrow, &QAction::triggered, m_window, [this]() {
-                m_window->insertShape(ShapeType::Line, -1.0, -1.0, ArrowStyle::None, ArrowStyle::OpenArrow);
+                m_window->insertCurve(CurveKind::Line, ArrowStyle::None, ArrowStyle::OpenArrow);
             });
-        }
 
-        // 需求 13：左右花括号改为曲线图元（右括号 = 左括号旋转 180°），
-        // 菜单里没有 ShapeAction_ 入口，改为两个预置动作，紧跟直线箭头之后。
-        if (type == ShapeType::Line) {
+            // 需求 13：左右花括号改为曲线图元（右括号 = 左括号旋转 180°），
+            // 对话里已定：花括号只是 CurveKind::Brace 的取值，不单独建类。
             QAction* braceLeft = m_window->m_shapeMenu->addAction(
                 makeShapePresetIcon(QStringLiteral("braceLeft"), QColor(58, 64, 80), 18), MainWindow::tr("Left brace"));
             braceLeft->setObjectName(QStringLiteral("ShapePreset_braceLeft"));
@@ -83,6 +94,25 @@ void UiMenuBuilder::buildShapeMenu()
             braceRight->setData(-1);
             braceRight->setToolTip(MainWindow::tr("Insert a right brace as a curve (left brace rotated 180°)"));
             QObject::connect(braceRight, &QAction::triggered, m_window, [this]() { m_window->insertBrace(false); });
+
+            QAction* arc = m_window->m_shapeMenu->addAction(
+                ShapePainter::makeCurveIcon(CurveKind::Arc, QColor(58, 64, 80), 18), MainWindow::tr("Arc"));
+            arc->setObjectName(QStringLiteral("ShapeAction_arc"));
+            arc->setData(-1);
+            arc->setToolTip(
+                MainWindow::tr("Insert an arc (start angle and sweep are editable in the properties card)"));
+            QObject::connect(arc, &QAction::triggered, m_window, [this]() {
+                m_window->insertCurve(CurveKind::Arc);
+            });
+
+            QAction* sine = m_window->m_shapeMenu->addAction(
+                ShapePainter::makeCurveIcon(CurveKind::Sine, QColor(58, 64, 80), 18), MainWindow::tr("Sine wave"));
+            sine->setObjectName(QStringLiteral("ShapeAction_sine_wave"));
+            sine->setData(-1);
+            sine->setToolTip(MainWindow::tr("Insert a sine wave (cycles and amplitude are editable in the properties card)"));
+            QObject::connect(sine, &QAction::triggered, m_window, [this]() {
+                m_window->insertCurve(CurveKind::Sine);
+            });
         }
 
         // 需求 1：三角形后追加 45° / 60° 直角三角形预置项。短边沿水平方向，

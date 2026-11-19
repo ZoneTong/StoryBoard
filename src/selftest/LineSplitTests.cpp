@@ -4,11 +4,14 @@
 #include "CanvasView.h"
 #include "CompositeShapeItem.h"
 #include "CurveItem.h"
+#include "ArcItem.h"
 #include "ItemDockPanel.h"
+#include "LineItem.h"
 #include "LineSplitOps.h"
 #include "MainWindow.h"
 #include "PathRegions.h"
 #include "ShapeItem.h"
+#include "SineItem.h"
 #include "ShapePathBuilder.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -53,8 +56,9 @@ void selftest::runLineSplitTests(Context& ctx)
         rect->setSelected(true);
         ctx.check(!LineSplitOps::supports(&scene), QStringLiteral("没有切刀时分割不可用"));
 
-        auto* knife = new ShapeItem(ShapeType::Line);
-        knife->setContentSize(QSizeF(200.0, 10.0));
+        // 切刀是曲线族的直线：两端落在画布内，水平横穿矩形中部。
+        auto* knife = new LineItem();
+        knife->setEndpoints(QPointF(100.0, 210.0), QPointF(300.0, 210.0), QColor(QStringLiteral("#1E293B")), 2.0);
         scene.addItemsWithUndo({knife}, QStringLiteral("Add knife"));
 
         scene.clearSelection();
@@ -85,9 +89,8 @@ void selftest::runLineSplitTests(Context& ctx)
         rect->setPos(QPointF(110.0, 150.0));
         rect->setFill(QColor(QStringLiteral("#2563EB")), FillStyle::Solid);
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
-        auto* knife = new ShapeItem(ShapeType::Line);
-        knife->setContentSize(QSizeF(200.0, 10.0));
-        knife->setPos(QPointF(100.0, 200.0));
+        auto* knife = new LineItem();
+        knife->setEndpoints(QPointF(100.0, 210.0), QPointF(300.0, 210.0), QColor(QStringLiteral("#1E293B")), 2.0);
         scene.addItemsWithUndo({knife}, QStringLiteral("Add knife"));
 
         scene.clearSelection();
@@ -106,7 +109,7 @@ void selftest::runLineSplitTests(Context& ctx)
             if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
                 fragments.append(composite);
             } else if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
-                if (shape->shapeType() == ShapeType::Line) {
+                if (dynamic_cast<LineItem*>(shape)) {
                     ++knifeCount;
                 }
             }
@@ -148,7 +151,7 @@ void selftest::runLineSplitTests(Context& ctx)
             window.show();
             QApplication::processEvents();
             window.insertShape(ShapeType::Rectangle);
-            window.insertShape(ShapeType::Line);
+            window.insertCurve(CurveKind::Line);
             CanvasScene* mainScene = window.findChild<CanvasScene*>();
             QList<CanvasItem*> items = mainScene->canvasItems();
             mainScene->clearSelection();
@@ -346,10 +349,9 @@ void selftest::runLineSplitTests(Context& ctx)
         rect->setPos(QPointF(500.0, 500.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
         // 半椭圆弧：两端落在矩形左右两缘之外，弧底从矩形下部横穿。
-        auto* arc = new ShapeItem(ShapeType::Arc);
-        arc->setContentSize(QSizeF(268.0, 40.0));
-        arc->setPos(QPointF(430.0, 550.0));
-        arc->setArcAngles(0.0, 180.0);
+        auto* arc = new ArcItem();
+        arc->setArcGeometry(QPointF(430.0, 550.0), QSizeF(268.0, 40.0), 0.0, 180.0,
+                            QColor(QStringLiteral("#1E293B")), 2.0);
         scene.addItemsWithUndo({arc}, QStringLiteral("Add arc"));
 
         scene.clearSelection();
@@ -367,43 +369,26 @@ void selftest::runLineSplitTests(Context& ctx)
         ctx.check(fragments == 2, QStringLiteral("矩形被弧线切成两块"), QStringLiteral("fragments=%1").arg(fragments));
     }
 
-    // 需求 29：旧画布里的正弦波形是 shape 图元，载入即迁移为曲线图元，
-    // 迁移后与矩形双选同样可用弧线/曲线的轨迹切法分割。
+    // 正弦波是曲线族里的一员：与矩形双选时同样按轨迹切分。
     {
-        CanvasScene oldScene;
-        oldScene.applyCanvasSize(QSizeF(1536.0, 1024.0));
-        oldScene.setMode(ToolMode::Edit);
-        QUndoStack oldUndo;
-        oldScene.setUndoStack(&oldUndo);
-        auto* legacySine = new ShapeItem(ShapeType::SineWave);
-        legacySine->setContentSize(QSizeF(128.0, 40.0));
-        legacySine->setPos(QPointF(300.0, 200.0));
-        legacySine->setStyle(QColor(QStringLiteral("#111827")), QColor(Qt::transparent), 4.0);
-        oldScene.addItemsWithUndo({legacySine}, QStringLiteral("Add legacy sine"));
-        const QJsonObject legacyRoot = oldScene.toJson();
-
-        CanvasScene loaded;
-        QUndoStack loadedUndo;
-        loaded.setUndoStack(&loadedUndo);
+        CanvasScene scene;
+        scene.applyCanvasSize(QSizeF(1536.0, 1024.0));
+        QUndoStack undo;
+        scene.setUndoStack(&undo);
         // 判定与切分都要求编辑模式（isItemEditable 只看模式与图层状态）。
-        loaded.setMode(ToolMode::Edit);
-        QString loadError;
-        ctx.check(loaded.fromJson(legacyRoot, &loadError), QStringLiteral("旧正弦波形画布载入"), loadError);
-        auto* migrated =
-            loaded.canvasItemCount() == 1 ? dynamic_cast<CurveItem*>(loaded.canvasItems().constFirst()) : nullptr;
-        ctx.check(migrated != nullptr, QStringLiteral("旧正弦波形载入后成为曲线图元"),
-                  QStringLiteral("items=%1").arg(loaded.canvasItemCount()));
+        scene.setMode(ToolMode::Edit);
+        auto* sine = new SineItem();
+        sine->setWaveGeometry(QPointF(300.0, 200.0), QSizeF(128.0, 40.0), QColor(QStringLiteral("#111827")), 4.0);
+        scene.addItemsWithUndo({sine}, QStringLiteral("Add sine"));
 
         auto* rect = new ShapeItem(ShapeType::Rectangle);
         rect->setContentSize(QSizeF(80.0, 60.0));
         rect->setPos(QPointF(320.0, 190.0));
-        loaded.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
-        loaded.clearSelection();
+        scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
+        scene.clearSelection();
         rect->setSelected(true);
-        if (migrated) {
-            migrated->setSelected(true);
-        }
-        ctx.check(LineSplitOps::supports(&loaded), QStringLiteral("迁移后的正弦波曲线可作为切刀"));
+        sine->setSelected(true);
+        ctx.check(LineSplitOps::supports(&scene), QStringLiteral("正弦波曲线可作为切刀"));
     }
 
     // 需求 21：曲线刀线未穿过填充图形（整条落在内部）时不切分。
@@ -448,9 +433,8 @@ void selftest::runLineSplitTests(Context& ctx)
         rect->setContentSize(QSizeF(120.0, 90.0));
         rect->setPos(QPointF(110.0, 150.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
-        auto* knife = new ShapeItem(ShapeType::Line);
-        knife->setContentSize(QSizeF(160.0, 10.0));
-        knife->setPos(QPointF(90.0, 300.0));
+        auto* knife = new LineItem();
+        knife->setEndpoints(QPointF(90.0, 300.0), QPointF(250.0, 300.0), QColor(QStringLiteral("#1E293B")), 2.0);
         scene.addItemsWithUndo({knife}, QStringLiteral("Add knife"));
 
         scene.clearSelection();

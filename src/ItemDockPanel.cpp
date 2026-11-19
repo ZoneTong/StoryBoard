@@ -298,7 +298,7 @@ void ItemDockPanel::refresh()
         if (ShapeMeta::isFilled(shape->shapeType()) && !shape->isCustomShape()) {
             hasFillable = true;
         }
-        if (shape->shapeType() == ShapeType::Sector || shape->shapeType() == ShapeType::Arc) {
+        if (shape->shapeType() == ShapeType::Sector) {
             hasArc = true;
         }
         if (shape->shapeType() == ShapeType::Triangle && !shape->isCustomShape()) {

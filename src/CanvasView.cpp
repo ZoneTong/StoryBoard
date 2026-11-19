@@ -37,7 +37,8 @@ bool isStrokeItem(CanvasItem* item)
         return true;
     }
     auto* shape = dynamic_cast<ShapeItem*>(item);
-    return shape && shapeTypeIsStrokeOnly(shape->shapeType());
+    // 直线 / 弧线 / 正弦已改为曲线图元，形状类里不再有零面积图元。
+    return false;
 }
 
 // 需求 23：描线图元的 shape() 含命中容差外扩。若“实际笔迹”（paintedShape）没盖住

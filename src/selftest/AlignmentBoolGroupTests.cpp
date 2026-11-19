@@ -15,6 +15,7 @@
 #include "LineArtConverter.h"
 #include "LineArtDialog.h"
 #include "LineArtPresets.h"
+#include "LineItem.h"
 #include "MainWindow.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
@@ -433,11 +434,8 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                 diamond->setContentSize(QSizeF(160.0, 120.0));
                 diamond->setStyle(QColor(20, 20, 20), QColor(200, 40, 40), 4.0);
                 diamond->setFill(QColor(200, 40, 40), FillStyle::Solid);
-                auto* line = new ShapeItem();
-                line->setShapeType(ShapeType::Line);
-                line->setPos(QPointF(30.0, 80.0));
-                line->setContentSize(QSizeF(250.0, 40.0));
-                line->setStyle(QColor(30, 90, 200), QColor(30, 90, 200), 6.0);
+                auto* line = new LineItem();
+                line->setEndpoints(QPointF(30.0, 100.0), QPointF(280.0, 100.0), QColor(30, 90, 200), 6.0);
                 scene.addItemsWithUndo({line, diamond}, QStringLiteral("Add line skip"));
                 line->setSelected(true);
                 diamond->setSelected(true);

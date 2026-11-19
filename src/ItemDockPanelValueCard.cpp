@@ -326,7 +326,7 @@ void ItemDockPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QLis
         }
     }
     for (ShapeItem* shape : shapes) {
-        if (shape && (shape->shapeType() == ShapeType::Sector || shape->shapeType() == ShapeType::Arc)) {
+        if (shape && shape->shapeType() == ShapeType::Sector) {
             arcShape = shape;
             break;
         }

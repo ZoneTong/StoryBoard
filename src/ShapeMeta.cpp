@@ -4,11 +4,11 @@ QList<ShapeType> ShapeMeta::allTypes()
 {
     // 需求 7：菜单与工具栏「常见图形」共用这一份常用顺序表（唯一顺序源）。
     // 需求 9：平行四边形紧跟菱形，方便和立方体三个面归在一处认图。
-    return {ShapeType::Rectangle,     ShapeType::Ellipse,  ShapeType::Line,     ShapeType::Arrow,
-            ShapeType::DoubleArrow,   ShapeType::Triangle, ShapeType::Callout,  ShapeType::Diamond,
-            ShapeType::Parallelogram, ShapeType::Sector,   ShapeType::Arc,      ShapeType::Cube,
-            ShapeType::Cylinder,      ShapeType::Star4,    ShapeType::Star,     ShapeType::Hexagram,
-            ShapeType::Heart,         ShapeType::SineWave, ShapeType::FlagWave, ShapeType::Scroll};
+    return {ShapeType::Rectangle,     ShapeType::Ellipse,  ShapeType::Arrow,    ShapeType::DoubleArrow,
+            ShapeType::Triangle,      ShapeType::Callout,  ShapeType::Diamond,  ShapeType::Parallelogram,
+            ShapeType::Sector,        ShapeType::Cube,     ShapeType::Cylinder, ShapeType::Star4,
+            ShapeType::Star,          ShapeType::Hexagram, ShapeType::Heart,    ShapeType::FlagWave,
+            ShapeType::Scroll};
 }
 
 QString ShapeMeta::typeToString(ShapeType type)
@@ -28,22 +28,19 @@ QString ShapeMeta::typeToString(ShapeType type)
         return QStringLiteral("arrow");
     case ShapeType::DoubleArrow:
         return QStringLiteral("double_arrow");
-    case ShapeType::Line:
-        return QStringLiteral("line");
+
     case ShapeType::Callout:
         return QStringLiteral("callout");
     case ShapeType::Sector:
         return QStringLiteral("sector");
-    case ShapeType::Arc:
-        return QStringLiteral("arc");
+
     case ShapeType::Star4:
         return QStringLiteral("star4");
     case ShapeType::Hexagram:
         return QStringLiteral("hexagram");
     case ShapeType::Heart:
         return QStringLiteral("heart");
-    case ShapeType::SineWave:
-        return QStringLiteral("sine_wave");
+
     case ShapeType::FlagWave:
         return QStringLiteral("flag_wave");
     case ShapeType::Scroll:
@@ -87,9 +84,7 @@ ShapeType ShapeMeta::typeFromString(const QString& value)
         normalized == QStringLiteral("bidirectional")) {
         return ShapeType::DoubleArrow;
     }
-    if (normalized == QStringLiteral("line")) {
-        return ShapeType::Line;
-    }
+
     if (normalized == QStringLiteral("callout") || normalized == QStringLiteral("bubble") ||
         normalized == QStringLiteral("speech")) {
         return ShapeType::Callout;
@@ -97,9 +92,7 @@ ShapeType ShapeMeta::typeFromString(const QString& value)
     if (normalized == QStringLiteral("sector") || normalized == QStringLiteral("pie")) {
         return ShapeType::Sector;
     }
-    if (normalized == QStringLiteral("arc") || normalized == QStringLiteral("curve")) {
-        return ShapeType::Arc;
-    }
+
     if (normalized == QStringLiteral("star4") || normalized == QStringLiteral("four_point_star") ||
         normalized == QStringLiteral("fourpointstar")) {
         return ShapeType::Star4;
@@ -111,10 +104,7 @@ ShapeType ShapeMeta::typeFromString(const QString& value)
     if (normalized == QStringLiteral("heart") || normalized == QStringLiteral("love")) {
         return ShapeType::Heart;
     }
-    if (normalized == QStringLiteral("sine_wave") || normalized == QStringLiteral("sine") ||
-        normalized == QStringLiteral("wave")) {
-        return ShapeType::SineWave;
-    }
+
     if (normalized == QStringLiteral("flag_wave") || normalized == QStringLiteral("wavy_flag")) {
         return ShapeType::FlagWave;
     }
@@ -159,24 +149,19 @@ QSizeF ShapeMeta::defaultSize(ShapeType type)
         return QSizeF(128.0, 46.0);
     case ShapeType::DoubleArrow:
         return QSizeF(128.0, 40.0);
-    case ShapeType::Line:
-        // 线长 = 基准边长 128，格高取半格 64，避免默认高度大于长度。
-        return QSizeF(128.0, 64.0);
+
     case ShapeType::Callout:
         return QSizeF(128.0, 86.0);
     case ShapeType::Sector:
         return QSizeF(128.0, 128.0);
-    case ShapeType::Arc:
-        return QSizeF(128.0, 94.0);
+
     case ShapeType::Star4:
         return QSizeF(128.0, 128.0);
     case ShapeType::Hexagram:
         return QSizeF(128.0, 112.0);
     case ShapeType::Heart:
         return QSizeF(128.0, 112.0);
-    case ShapeType::SineWave:
-        // 波线：一个完整周期，振幅 20% 高。
-        return QSizeF(128.0, 40.0);
+
     case ShapeType::FlagWave:
         return QSizeF(128.0, 86.0);
     case ShapeType::Scroll:
@@ -199,9 +184,6 @@ bool ShapeMeta::isLineLike(ShapeType type)
     // 需求 4：这些图元的轮廓是一条开放描线，两端都能挂箭头；
     // 花括号属于曲线类（CurveItem），另行处理。
     switch (type) {
-    case ShapeType::Line:
-    case ShapeType::Arc:
-    case ShapeType::SineWave:
     case ShapeType::FlagWave:
     case ShapeType::Scroll:
         return true;
@@ -231,18 +213,8 @@ bool ShapeMeta::isFilled(ShapeType type)
     case ShapeType::Cylinder:
     case ShapeType::Parallelogram:
         return true;
-    case ShapeType::Line:
-    case ShapeType::Arc:
-    case ShapeType::SineWave:
-        return false;
     }
     return false;
-}
-
-bool ShapeMeta::isStrokeOnly(ShapeType type)
-{
-    // 正弦波形是零面积波线，与直线、弧线同属纯描边。
-    return type == ShapeType::Line || type == ShapeType::Arc || type == ShapeType::SineWave;
 }
 
 QList<FillStyle> ShapeMeta::allStyles()

@@ -72,22 +72,19 @@ QString shapeTypeName(ShapeType type)
         return ShapeItem::tr("Arrow");
     case ShapeType::DoubleArrow:
         return ShapeItem::tr("Double arrow");
-    case ShapeType::Line:
-        return ShapeItem::tr("Line");
+
     case ShapeType::Callout:
         return ShapeItem::tr("Speech bubble");
     case ShapeType::Sector:
         return ShapeItem::tr("Sector");
-    case ShapeType::Arc:
-        return ShapeItem::tr("Arc");
+
     case ShapeType::Star4:
         return ShapeItem::tr("Four-point star");
     case ShapeType::Hexagram:
         return ShapeItem::tr("Six-point star");
     case ShapeType::Heart:
         return ShapeItem::tr("Heart");
-    case ShapeType::SineWave:
-        return ShapeItem::tr("Sine wave");
+
     case ShapeType::FlagWave:
         return ShapeItem::tr("Wavy flag");
     case ShapeType::Scroll:
@@ -122,10 +119,6 @@ bool shapeTypeIsFilled(ShapeType type)
     return ShapeMeta::isFilled(type);
 }
 
-bool shapeTypeIsStrokeOnly(ShapeType type)
-{
-    return ShapeMeta::isStrokeOnly(type);
-}
 
 QList<FillStyle> allFillStyles()
 {
@@ -248,11 +241,6 @@ QString ShapeItem::displayName() const
 {
     if (!m_customName.isEmpty()) {
         return m_customName;
-    }
-    // 需求 6：带箭头的直线在名称上显示为「直线箭头」，底层仍是直线类型。
-    if (m_type == ShapeType::Line && m_customPath.isEmpty() &&
-        (arrowStyleIsHead(m_startArrow) || arrowStyleIsHead(m_endArrow))) {
-        return tr("Line arrow");
     }
     return shapeTypeName(m_type);
 }
@@ -398,8 +386,8 @@ QSizeF ShapeItem::adjustedContentSize(const QSizeF& size) const
 
 QRectF ShapeItem::frameRect() const
 {
-    // 扇形与弧线只画了内容矩形里的一小块，选中框与手柄改贴在轮廓的最小覆盖矩形上。
-    if (m_customPath.isEmpty() && (m_type == ShapeType::Sector || m_type == ShapeType::Arc)) {
+    // 扇形只画了内容矩形里的一小块，选中框与手柄改贴在轮廓的最小覆盖矩形上。
+    if (m_customPath.isEmpty() && m_type == ShapeType::Sector) {
         const QPainterPath path = currentPath(contentRect());
         const QRectF bounds = path.boundingRect();
         if (!bounds.isEmpty()) {
@@ -900,7 +888,7 @@ void ShapeItem::fromJson(const QJsonObject& json)
 
     // 需求 6：扇形 / 弧线旧半径 < 内容宽的一半时，把椭圆外接框改成新内容矩形：
     // k = 2r、ry = r·h/w，位置按椭圆中心不动补偿，轮廓逐点不变；r<0 或 r≥w/2 无需迁移。
-    if ((m_type == ShapeType::Sector || m_type == ShapeType::Arc) && legacyRadius >= 0.0 && !isCustomShape()) {
+    if (m_type == ShapeType::Sector && legacyRadius >= 0.0 && !isCustomShape()) {
         const QSizeF size = contentSize();
         if (size.width() > 0.0 && legacyRadius < size.width() / 2.0) {
             const qreal ry = legacyRadius * size.height() / size.width();

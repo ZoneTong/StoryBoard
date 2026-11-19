@@ -125,28 +125,7 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
     const QPointF topLeft = center - QPointF(size.width() / 2.0, size.height() / 2.0);
 
     CanvasItem* item = nullptr;
-    if (type == ShapeType::Line) {
-        // 直线 = 曲线族的两点线性子型；水平穿过内容框中线，箭头预置项沿用传入样式。
-        const QPointF start(topLeft.x(), topLeft.y() + size.height() / 2.0);
-        const QPointF end(topLeft.x() + size.width(), start.y());
-        auto* line = new LineItem();
-        line->setEndpoints(start, end, stroke, strokeWidth);
-        line->setStrokeStyle(m_window->m_strokeStyle);
-        line->setArrowStyles(startArrow, endArrow);
-        item = line;
-    } else if (type == ShapeType::Arc) {
-        auto* arc = new ArcItem();
-        arc->setArcGeometry(topLeft, size, 30.0, 120.0, stroke, strokeWidth);
-        arc->setStrokeStyle(m_window->m_strokeStyle);
-        arc->setArrowStyles(startArrow, endArrow);
-        item = arc;
-    } else if (type == ShapeType::SineWave) {
-        auto* sine = new SineItem();
-        sine->setWaveGeometry(topLeft, size, stroke, strokeWidth);
-        sine->setStrokeStyle(m_window->m_strokeStyle);
-        sine->setArrowStyles(startArrow, endArrow);
-        item = sine;
-    } else if (asPolygon) {
+    if (asPolygon) {
         // 填充图形采样成单层多边形图元：路径即有面积层，样式取工具栏填充与描线。
         CompositeShapeItem::Layer layer;
         layer.path = ShapePathBuilder::pathFor(type, QRectF(topLeft, size), -1.0);
@@ -189,6 +168,58 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
                 .arg(shapeTypeName(type)),
             5000);
     }
+}
+
+void MainWindow::insertCurve(CurveKind kind, ArrowStyle startArrow, ArrowStyle endArrow)
+{
+    if (!m_view || !m_scene) {
+        return;
+    }
+    const QSizeF size = kind == CurveKind::Line ? QSizeF(128.0, 64.0)
+                         : kind == CurveKind::Arc ? QSizeF(128.0, 94.0)
+                                                  : QSizeF(128.0, 40.0);
+    const QRectF canvas = m_scene->canvasRect();
+    QPointF center = m_view->mapToScene(m_view->viewport()->rect().center());
+    if (!canvas.contains(center)) {
+        center = canvas.center();
+    }
+    const qreal cascade = (m_scene->canvasItemCount() % 5) * 18.0;
+    center += QPointF(cascade, cascade);
+    center.setX(qBound(canvas.left() + size.width() / 2.0, center.x(), canvas.right() - size.width() / 2.0));
+    center.setY(qBound(canvas.top() + size.height() / 2.0, center.y(), canvas.bottom() - size.height() / 2.0));
+    const QPointF topLeft = center - QPointF(size.width() / 2.0, size.height() / 2.0);
+
+    const QColor stroke = m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_brushColor;
+    const qreal width = qMax<qreal>(0.5, m_brushWidth);
+
+    CurveItem* curve = nullptr;
+    if (kind == CurveKind::Line) {
+        auto* line = new LineItem();
+        const QPointF start(topLeft.x(), topLeft.y() + size.height() / 2.0);
+        const QPointF end(topLeft.x() + size.width(), start.y());
+        line->setEndpoints(start, end, stroke, width);
+        curve = line;
+    } else if (kind == CurveKind::Arc) {
+        auto* arc = new ArcItem();
+        arc->setArcGeometry(topLeft, size, 30.0, 120.0, stroke, width);
+        curve = arc;
+    } else if (kind == CurveKind::Sine) {
+        auto* sine = new SineItem();
+        sine->setWaveGeometry(topLeft, size, stroke, width);
+        curve = sine;
+    } else {
+        return;
+    }
+    curve->setStrokeStyle(m_strokeStyle);
+    curve->setArrowStyles(startArrow, endArrow);
+
+    m_scene->clearSelection();
+    m_scene->addItemsWithUndo({curve}, tr("Insert %1").arg(curve->displayName()));
+    curve->setSelected(true);
+    m_view->setFocus();
+    statusBar()->showMessage(
+        tr("Inserted %1; drag to move, drag handles to resize, color follows the current brush").arg(curve->displayName()),
+        5000);
 }
 
 void MainWindowInsertController::insertCompositeShape(ShapeType type)

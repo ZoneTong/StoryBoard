@@ -3,6 +3,7 @@
 #include "Alignment.h"
 #include "BoolOps.h"
 #include "CanvasTypes.h"
+#include "CurveItem.h"
 #include "LineArtConverter.h"
 #include "Settings.h"
 #include "ShapeItem.h"
@@ -123,6 +124,8 @@ class MainWindow : public QMainWindow {
     void insertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0,
                      ArrowStyle startArrow = ArrowStyle::None, ArrowStyle endArrow = ArrowStyle::None,
                      bool autoCorner = false);
+    // 曲线族插入入口：直线 / 弧线 / 正弦都不是形状类型，按 curveKind 分派。
+    void insertCurve(CurveKind kind, ArrowStyle startArrow = ArrowStyle::None, ArrowStyle endArrow = ArrowStyle::None);
     // 需求 16：自检需要直接驱动工具栏样式取值（填充样式 / 画笔色 / 描线宽度）验证新图元生成。
     friend void selftest::runFillStyleBasicTests(selftest::Context&);
     friend void selftest::runMainWindowShapeMenuTests(selftest::Context&);

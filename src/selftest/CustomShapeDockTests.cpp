@@ -17,6 +17,7 @@
 #include "LineArtConverter.h"
 #include "LineArtDialog.h"
 #include "LineArtPresets.h"
+#include "LineItem.h"
 #include "MainWindow.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
@@ -345,8 +346,8 @@ void selftest::runCustomShapeDockTests(Context& ctx)
 
         // 选中只描边 / 非填充图元时隐藏填充两行，混入可填充图元再恢复。
         panelScene.setMode(ToolMode::Edit);
-        auto* strokeOnlyShape = new ShapeItem(ShapeType::Line);
-        strokeOnlyShape->setContentSize(QSizeF(140.0, 1.0));
+        auto* strokeOnlyShape = new LineItem();
+        strokeOnlyShape->setEndpoints(QPointF(40.0, 40.0), QPointF(180.0, 40.0), QColor(Qt::black), 1.0);
         panelScene.addItemsWithUndo({strokeOnlyShape}, QStringLiteral("Add line"));
         strokeOnlyShape->setSelected(true);
         QApplication::processEvents();
@@ -1208,10 +1209,8 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                       QStringLiteral("选中图形时隐藏文字行"));
 
             // 线条类图元不参与合并：选中直线时合并图元入口隐藏。
-            auto* cardLine = new ShapeItem(ShapeType::Line);
-            cardLine->setStyle(QColor(QStringLiteral("#334155")), QColor(Qt::transparent), 3.0);
-            cardLine->setContentSize(QSizeF(90, 10));
-            cardLine->setPos(QPointF(620.0, 470.0));
+            auto* cardLine = new LineItem();
+            cardLine->setEndpoints(QPointF(620.0, 470.0), QPointF(710.0, 480.0), QColor(QStringLiteral("#334155")), 3.0);
             dockScene->addItemsWithUndo({cardLine}, QStringLiteral("Add card line"));
             dockScene->clearSelection();
             cardLine->setSelected(true);

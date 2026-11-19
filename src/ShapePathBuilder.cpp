@@ -194,31 +194,6 @@ QPainterPath heartPath(const QRectF& rect)
     return path;
 }
 
-QPainterPath sineWavePath(const QRectF& rect)
-{
-    const QRectF r = normalizedRect(rect);
-    if (r.width() <= 0.0 || r.height() <= 0.0) {
-        return QPainterPath();
-    }
-
-    // 需求 15：一个完整周期（0…2π），振幅充满整个内容高度，波形的包围盒
-    // 就是内容矩形，选择框不再比波形本身大一圈。
-    constexpr int steps = 64;
-    const qreal amplitude = r.height() * 0.5;
-    const qreal cy = r.center().y();
-    QPainterPath path;
-    for (int i = 0; i <= steps; ++i) {
-        const qreal t = qreal(i) / qreal(steps);
-        const QPointF point(r.left() + t * r.width(), cy - qSin(t * 2.0 * M_PI) * amplitude);
-        if (i == 0) {
-            path.moveTo(point);
-        } else {
-            path.lineTo(point);
-        }
-    }
-    return path;
-}
-
 QPainterPath flagWavePath(const QRectF& rect)
 {
     const QRectF r = normalizedRect(rect);
@@ -462,19 +437,14 @@ QPainterPath ShapePathBuilder::pathFor(ShapeType type, const QRectF& rect, qreal
         path.closeSubpath();
         break;
     }
-    case ShapeType::Line:
-        path.moveTo(r.left(), r.center().y());
-        path.lineTo(r.right(), r.center().y());
-        break;
+
     case ShapeType::Callout:
         path = calloutPath(r);
         break;
     case ShapeType::Sector:
         path = ellipseShape.sector(startAngle, sweepAngle);
         break;
-    case ShapeType::Arc:
-        path = ellipseShape.arc(startAngle, sweepAngle);
-        break;
+
     case ShapeType::Star4:
         path = fourPointStarPath(r);
         break;
@@ -484,9 +454,7 @@ QPainterPath ShapePathBuilder::pathFor(ShapeType type, const QRectF& rect, qreal
     case ShapeType::Heart:
         path = heartPath(r);
         break;
-    case ShapeType::SineWave:
-        path = sineWavePath(r);
-        break;
+
     case ShapeType::FlagWave:
         path = flagWavePath(r);
         break;

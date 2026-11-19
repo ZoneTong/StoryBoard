@@ -652,6 +652,16 @@
         <source>Start angle</source>
         <translation>起始角</translation>
     </message><message>
+        <location filename="../src/ItemDockPanelValueCard.cpp" line="145"/>
+        <location filename="../src/ItemDockPanelValueCard.cpp" line="150"/>
+        <source>Sine cycles</source>
+        <translation>正弦周期数</translation>
+    </message><message>
+        <location filename="../src/ItemDockPanelValueCard.cpp" line="165"/>
+        <location filename="../src/ItemDockPanelValueCard.cpp" line="172"/>
+        <source>Sine amplitude</source>
+        <translation>正弦振幅</translation>
+    </message><message>
         <source>Shape radius</source>
         <translation>图形半径</translation>
     </message><message>
@@ -3454,6 +3464,9 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Curve</source>
         <translation>曲线</translation>
     </message><message>
+        <source>Arc</source>
+        <translation>弧线</translation>
+    </message><message>
         <source>  · Hidden</source>
         <translation>  · 隐藏</translation>
     </message><message>
@@ -4224,6 +4237,9 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message><message>
         <source>Line</source>
         <translation>直线</translation>
+    </message><message>
+        <source>Line arrow</source>
+        <translation>直线箭头</translation>
     </message><message>
         <source>Lock</source>
         <translation>锁定</translation>

@@ -18,16 +18,13 @@ enum class ShapeType {
     Star,
     Arrow,
     DoubleArrow,
-    Line,
     Callout,
     Sector,
-    Arc,
     // 需求 11：常见图形新增 8 种。花括号（BraceLeft/BraceRight）已改为曲线图元，
     // 不再占用 ShapeType（需求 13）。
     Star4,
     Hexagram,
     Heart,
-    SineWave,
     FlagWave,
     // 卷形旗帜已替换为卷轴（需求 3），序列化字符串沿用新名 scroll，旧文件 flag_curl 兼容读入。
     Scroll,
@@ -57,7 +54,7 @@ QString shapeTypeToString(ShapeType type);
 ShapeType shapeTypeFromString(const QString& value);
 QSizeF defaultShapeSize(ShapeType type);
 bool shapeTypeIsFilled(ShapeType type);
-bool shapeTypeIsStrokeOnly(ShapeType type);
+
 QIcon makeShapeIcon(ShapeType type, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);
 // 预置项（圆角矩形 / 45°·60° 直角三角 / 直线箭头）单独画图标，
 // 和基础图形并排放在菜单与工具栏时能一眼区分。

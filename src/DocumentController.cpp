@@ -119,7 +119,7 @@ bool validateCanvasRoot(const QJsonObject& root, QString* error)
         const QString kind = value.toObject().value(QStringLiteral("type")).toString();
         // 需求 14：图片类型图元已并入矩形（图片只作背景），"image" 不再是合法类型。
         if (kind != QStringLiteral("curve") && kind != QStringLiteral("text") && kind != QStringLiteral("shape") &&
-            kind != QStringLiteral("polygon") && kind != QStringLiteral("composite")) {
+            kind != QStringLiteral("polygon")) {
             if (kind == QStringLiteral("stroke")) {
                 // 旧笔画图元不做兼容：加载时整体跳过，由加载流程统一提示。
                 continue;

@@ -6,6 +6,7 @@
 #include "ShapeItem.h"
 #include "ShapeMeta.h"
 #include "ShapePathBuilder.h"
+#include "SineItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
 
@@ -21,23 +22,26 @@ namespace {
 // 该断言能击穿「周期数没改干净」的回归。
 void checkSineWaveOnePeriod(selftest::Context& ctx)
 {
+    SineItem sine;
+    sine.setWaveGeometry(QPointF(0.0, 0.0), QSizeF(128.0, 40.0), QColor(Qt::black), 2.0);
     const QRectF rect(0.0, 0.0, 128.0, 40.0);
-    const QPainterPath path = ShapePathBuilder::pathFor(ShapeType::SineWave, rect, -1.0);
     const qreal cy = rect.center().y();
-    const qreal amplitude = rect.height() * 0.5;
-    const QPointF mid = path.pointAtPercent(0.5);
-    ctx.check(qAbs(mid.y() - cy) < amplitude * 0.15, QStringLiteral("正弦波形为一个完整周期（中点回到轴线）"),
+    const qreal amplitude = sine.params().amplitude;
+    const QVector<QPointF> points = sine.strokePoints();
+    ctx.check(points.size() > 8, QStringLiteral("正弦波由采样点构成"),
+              QStringLiteral("points=%1").arg(points.size()));
+    const QPointF mid = points.value(points.size() / 2, QPointF(0.0, cy));
+    ctx.check(qAbs(mid.y() - cy) < amplitude * 0.15, QStringLiteral("正弦波为一个完整周期（中点回到轴线）"),
               QStringLiteral("mid=(%1,%2) cy=%3").arg(mid.x()).arg(mid.y()).arg(cy));
-    const QPointF start = path.pointAtPercent(0.0);
-    const QPointF end = path.pointAtPercent(1.0);
+    const QPointF start = points.value(0, QPointF(0.0, cy));
+    const QPointF end = points.value(points.size() - 1, QPointF(0.0, cy));
     ctx.check(qAbs(start.y() - cy) < amplitude * 0.15 && qAbs(end.y() - cy) < amplitude * 0.15,
-              QStringLiteral("正弦波形首尾都在轴线上"),
+              QStringLiteral("正弦波首尾都在轴线上"),
               QStringLiteral("start=(%1,%2) end=(%3,%4)").arg(start.x()).arg(start.y()).arg(end.x()).arg(end.y()));
-    // 需求 15：振幅充满内容高度，波形包围盒即选择框（最小包围盒）。
-    const QRectF bounds = path.boundingRect();
-    ctx.check(qAbs(bounds.top() - rect.top()) < 1.0 && qAbs(bounds.bottom() - rect.bottom()) < 1.0 &&
-                  qAbs(bounds.left() - rect.left()) < 1.0 && qAbs(bounds.right() - rect.right()) < 1.0,
-              QStringLiteral("正弦波形包围盒为最小包围盒"),
+    // 振幅是相对中心线的像素高度：默认 20px 时波高 40，正好填满 40 高的波形框。
+    const QRectF bounds = sine.outlineShape().boundingRect();
+    ctx.check(qAbs(bounds.height() - rect.height()) < 4.0 && qAbs(bounds.width() - rect.width()) < 4.0,
+              QStringLiteral("正弦波包围盒与波形框一致（像素振幅驱动波高）"),
               QStringLiteral("bounds=(%1,%2,%3,%4)")
                   .arg(bounds.left())
                   .arg(bounds.top())
@@ -165,7 +169,7 @@ void selftest::runShapesClusterTests(Context& ctx)
     // 归类为多边形图元（与合并、分割产物同型）。
     {
         MainWindow window;
-        window.insertShape(ShapeType::SineWave);
+        window.insertCurve(CurveKind::Sine);
         CanvasScene* scene = window.findChild<CanvasScene*>();
         const QList<CanvasItem*> items = scene->canvasItems();
         bool sineIsCurve = items.size() == 1 && dynamic_cast<CurveItem*>(items.constFirst()) != nullptr;

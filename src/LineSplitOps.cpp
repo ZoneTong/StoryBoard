@@ -33,7 +33,7 @@ struct Knife {
 bool isFillTarget(CanvasItem* item)
 {
     if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
-        return !shapeTypeIsStrokeOnly(shape->shapeType());
+        return true;
     }
     if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
         for (const CompositeShapeItem::Layer& layer : composite->layers()) {
@@ -49,13 +49,6 @@ bool isKnifeItem(CanvasItem* item)
 {
     if (dynamic_cast<CurveItem*>(item)) {
         return true;
-    }
-    if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
-        // 需求 29：弧线由椭圆类派生几何、由曲线类派生行为——它没有填充区域，
-        // 归类为线条，和直线一样可作切刀；正弦波形插入即曲线图元，这里兼容
-        // 旧文件里尚未迁移的图形形态，同样按线条对待。
-        const ShapeType type = shape->shapeType();
-        return type == ShapeType::Line || type == ShapeType::Arc || type == ShapeType::SineWave;
     }
     return false;
 }
@@ -287,12 +280,8 @@ bool apply(CanvasScene* scene, const QString& commandText)
             }
         } else if (isKnifeItem(item) && !knifeItem && collectKnife(item, &knife, &knifeTrajectory)) {
             knifeItem = item;
-            // 需求 29：弧线/正弦波的刀线轨迹是弯曲的，与曲线一样按轨迹条带切，
-            // 只有直线刀线才沿用端点切向的画布半区切法。
-            const auto* knifeShape = dynamic_cast<ShapeItem*>(item);
-            trajectoryKnife =
-                dynamic_cast<CurveItem*>(item) != nullptr || (knifeShape && knifeShape->shapeType() != ShapeType::Line);
-        }
+            // 刀线全部是曲线族：弧线、正弦的轨迹是弯的，统一按轨迹条带切。
+            trajectoryKnife = true;        }
     }
     if (targets.isEmpty() || !knifeItem) {
         return false;

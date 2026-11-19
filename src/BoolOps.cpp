@@ -48,7 +48,8 @@ bool isLineClassItem(CanvasItem* item)
         return true;
     }
     if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
-        return shapeTypeIsStrokeOnly(shape->shapeType());
+        // 零面积图元已全部并入曲线族，形状类恒有填充面积。
+    return false;
     }
     if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
         for (const CompositeShapeItem::Layer& layer : composite->layers()) {
@@ -67,7 +68,7 @@ bool isLineClassItem(CanvasItem* item)
 bool hasFillSpace(CanvasItem* item)
 {
     if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
-        return !shapeTypeIsStrokeOnly(shape->shapeType());
+        return true;
     }
     if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
         for (const CompositeShapeItem::Layer& layer : composite->layers()) {
@@ -155,10 +156,6 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
         } else if (auto* curve = dynamic_cast<CurveItem*>(vectorMember)) {
             Q_UNUSED(curve)
             memberPath = vectorMember->mapToScene(vectorMember->paintedShape());
-            strokePart = memberPath;
-        } else if (auto* shape = dynamic_cast<ShapeItem*>(vectorMember);
-                   shape && shapeTypeIsStrokeOnly(shape->shapeType())) {
-            memberPath = shape->mapToScene(shape->paintedShape());
             strokePart = memberPath;
         } else if (auto* shape = dynamic_cast<ShapeItem*>(vectorMember)) {
             memberPath = shape->mapToScene(shape->outlineShape());

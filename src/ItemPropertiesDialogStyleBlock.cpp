@@ -132,7 +132,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
         m_opacitySpin->setMinimumWidth(88);
 
         const ShapeType type = shape->shapeType();
-        if (type == ShapeType::Sector || type == ShapeType::Arc) {
+        if (type == ShapeType::Sector) {
             m_initialStartAngle = shape->startAngle();
             m_initialSweepAngle = shape->sweepAngle();
             m_startAngleSpin = new QSpinBox(this);

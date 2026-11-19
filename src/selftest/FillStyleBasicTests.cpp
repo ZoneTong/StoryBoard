@@ -53,9 +53,9 @@ void selftest::runFillStyleBasicTests(Context& ctx)
         reqScene.attachItem(filledShape);
 
         // 需求 23：箭头内部空心，可参与填充；只有纯色填充才整体遮挡下层。
-        ctx.check(shapeTypeIsFilled(ShapeType::Arrow) && shapeTypeIsFilled(ShapeType::DoubleArrow) &&
-                      !shapeTypeIsFilled(ShapeType::Line),
-                  QStringLiteral("箭头支持填充，直线仍只支持描边"));
+        // 直线已成为曲线族（零面积描线），不再出现在形状类型的填充判定里。
+        ctx.check(shapeTypeIsFilled(ShapeType::Arrow) && shapeTypeIsFilled(ShapeType::DoubleArrow),
+                  QStringLiteral("箭头支持填充，直线仍是零面积描线图元"));
 
         CanvasScene arrowScene;
         arrowScene.applyCanvasSize(QSizeF(400, 200));

@@ -15,6 +15,7 @@
 #include "LineArtConverter.h"
 #include "LineArtDialog.h"
 #include "LineArtPresets.h"
+#include "LineItem.h"
 #include "MainWindow.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
@@ -158,9 +159,8 @@ void selftest::runViewInteractionTests(Context& ctx)
         ctx.check(viewScene.canvasItemCount() == 2, QStringLiteral("笔直笔画收笔后新增一个图元"),
                   QString::number(viewScene.canvasItemCount()));
         CanvasItem* straightItem = viewScene.canvasItems().value(1);
-        auto* lineShape = dynamic_cast<ShapeItem*>(straightItem);
-        ctx.check(lineShape != nullptr && lineShape->shapeType() == ShapeType::Line,
-                  QStringLiteral("笔直笔画归为直线类型图元"));
+        auto* lineShape = dynamic_cast<LineItem*>(straightItem);
+        ctx.check(lineShape != nullptr, QStringLiteral("笔直笔画归为直线图元（曲线族的直线子型）"));
         if (lineShape) {
             ctx.check(lineShape->strokeColor() == QColor(QStringLiteral("#DC2626")) &&
                           qAbs(lineShape->strokeWidth() - 5.0) < 0.01,

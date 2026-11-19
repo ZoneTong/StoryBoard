@@ -14,12 +14,6 @@ QPainterPath ShapeHitGeometry::hitShape(const QPainterPath& path, ShapeType type
         // Hollow arrows still use the whole silhouette as the hit area, so the
         // empty interior remains easy to select and drag.
         result = path;
-    } else if (shapeTypeIsStrokeOnly(type)) {
-        QPainterPathStroker stroker;
-        stroker.setWidth(qMax<qreal>(5.0, strokeWidth + 6.0));
-        stroker.setCapStyle(Qt::RoundCap);
-        stroker.setJoinStyle(Qt::RoundJoin);
-        result = stroker.createStroke(path);
     } else {
         // Filled shapes are stroked with strokeWidth, which paints up to
         // strokeWidth/2 outside the path. Without this ring the visible border
@@ -57,11 +51,9 @@ QPainterPath ShapeHitGeometry::paintedShape(const QPainterPath& path, ShapeType 
     // 整个算作遮挡区，下层颜色完全不画，避免叠出混合色。
     // 无填充、斜线/交叉线/六边形等纹理填充不遮挡下层的轮廓，下层照常可见（查看模式也一样）；
     // 描边本身仍然遮挡笔画扫过的区域。
-    if (!shapeTypeIsStrokeOnly(type)) {
-        const bool solidFill = fillStyle == FillStyle::Solid && fillColor.alpha() > 0;
-        if (solidFill) {
-            result = result.united(path);
-        }
+    const bool solidFill = fillStyle == FillStyle::Solid && fillColor.alpha() > 0;
+    if (solidFill) {
+        result = result.united(path);
     }
     return result;
 }
