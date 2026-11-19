@@ -7,7 +7,7 @@
 #include <QWidget>
 
 class QToolButton;
-class CompositeShapeItem;
+class PolygonItem;
 class CurveItem;
 
 // 编辑图元卡的描边 / 填充颜色两行：每行 8 个预设色块加一个自定义颜色按钮，
@@ -20,7 +20,7 @@ class ItemDockPanelColorsCard : public QWidget {
     explicit ItemDockPanelColorsCard(QWidget* parent = nullptr);
 
     void refresh(const QList<ShapeItem*>& shapes, const QList<CurveItem*>& strokes,
-                 const QList<CompositeShapeItem*>& composites = QList<CompositeShapeItem*>());
+                 const QList<PolygonItem*>& composites = QList<PolygonItem*>());
     QWidget* fillColorRow() const { return m_fillColorRow; }
     QWidget* borderColorRow() const { return m_borderColorRow; }
 

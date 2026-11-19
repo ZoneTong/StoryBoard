@@ -1,7 +1,7 @@
 #include "CustomShapeTemplates.h"
 
-#include "CompositeShapeItem.h"
 #include "CurveItem.h"
+#include "PolygonItem.h"
 #include "ShapeItem.h"
 
 #include <QDir>
@@ -45,7 +45,7 @@ CanvasItem* createTemplateItem(const QString& kind)
         return new CurveItem();
     }
     if (kind == QStringLiteral("polygon")) {
-        return new CompositeShapeItem();
+        return new PolygonItem();
     }
     // 图片与文字不适合做矢量轮廓模板：图片会丢掉色彩层次，文字转轮廓还会依赖字体。
     return nullptr;

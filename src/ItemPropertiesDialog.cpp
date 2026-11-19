@@ -3,7 +3,6 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
-#include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "ItemPropertiesDialogGeometryBlock.h"
 #include "ItemPropertiesDialogIdentityBlock.h"
@@ -91,8 +90,7 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
         m_identityBlock = new ItemPropertiesDialogIdentityBlock(scene, item, this);
         m_identityBlock->addRows(form);
 
-        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<CurveItem*>(item) ||
-            dynamic_cast<CompositeShapeItem*>(item)) {
+        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<CurveItem*>(item)) {
             m_styleBlock = new ItemPropertiesDialogStyleBlock(item, this);
             m_styleBlock->addRows(form);
             m_hasFill = m_styleBlock->hasFill();
@@ -450,43 +448,6 @@ void ItemPropertiesDialog::applyChanges()
         after.curveEndArrow = (style && style->endArrowCombo())
                                   ? static_cast<ArrowStyle>(style->endArrowCombo()->currentData().toInt())
                                   : before.curveEndArrow;
-    } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(m_item.data())) {
-        before.hasCompositeStyle = true;
-        before.compositeFillColor = composite->fillColor();
-        before.compositeFillStyle = composite->fillStyle();
-        before.hasStrokeStyle = true;
-        before.strokeColor = composite->strokeColor();
-        before.strokeWidth = composite->strokeWidth();
-        before.strokeStyle = composite->strokeStyle();
-
-        after.hasCompositeStyle = true;
-        after.compositeFillColor = (style && style->fillColorButton())
-                                       ? style->fillColorButton()->property("itemColor").value<QColor>()
-                                       : before.compositeFillColor;
-        after.compositeFillStyle =
-            (style && style->fillStyleCombo() && style->fillStyleCombo()->currentData().toInt() >= 0)
-                ? static_cast<FillStyle>(style->fillStyleCombo()->currentData().toInt())
-                : before.compositeFillStyle;
-        after.hasStrokeStyle = true;
-        after.strokeColor = (style && style->strokeColorButton())
-                                ? style->strokeColorButton()->property("itemColor").value<QColor>()
-                                : before.strokeColor;
-        after.strokeWidth = (style && style->strokeWidthSpin())
-                                ? spinValue(style->strokeWidthSpin(), m_initialStrokeWidth)
-                                : before.strokeWidth;
-        after.strokeStyle = (style && style->borderStyleCombo())
-                                ? static_cast<Qt::PenStyle>(style->borderStyleCombo()->currentData().toInt())
-                                : before.strokeStyle;
-        // 需求 15：多边形的图片填充快照。
-        before.hasFillImageState = true;
-        before.fillImagePresent = composite->hasFillImage();
-        before.fillImage = composite->fillImage();
-        before.fillImageMode = composite->fillImageMode();
-        after.hasFillImageState = true;
-        after.fillImagePresent =
-            (style && style->hasFillImageRow()) ? style->fillImagePresent() : before.fillImagePresent;
-        after.fillImage = (style && style->hasFillImageRow()) ? style->fillImage() : before.fillImage;
-        after.fillImageMode = (style && style->hasFillImageRow()) ? style->fillImageMode() : before.fillImageMode;
     }
 
     if (m_opacitySpin) {

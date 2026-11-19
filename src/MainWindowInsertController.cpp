@@ -1,15 +1,15 @@
 #include "MainWindowInsertController.h"
 
-#include "CanvasItem.h"
 #include "ArcItem.h"
+#include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "CanvasView.h"
-#include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "CustomShapeTemplates.h"
 #include "IconFactory.h"
 #include "LineItem.h"
 #include "MainWindow.h"
+#include "PolygonItem.h"
 #include "Settings.h"
 #include "ShapeItem.h"
 #include "ShapePathBuilder.h"
@@ -127,14 +127,14 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
     CanvasItem* item = nullptr;
     if (asPolygon) {
         // 填充图形采样成单层多边形图元：路径即有面积层，样式取工具栏填充与描线。
-        CompositeShapeItem::Layer layer;
+        PolygonItem::Layer layer;
         layer.path = ShapePathBuilder::pathFor(type, QRectF(topLeft, size), -1.0);
         layer.fill = filled ? fill : QColor(Qt::transparent);
         layer.stroke = stroke;
         layer.strokeWidth = strokeWidth;
         layer.filled = true;
-        layer.role = CompositeShapeItem::LayerRole::FilledArea;
-        item = new CompositeShapeItem(QList<CompositeShapeItem::Layer>{layer}, fillStyle, m_window->m_strokeStyle);
+        layer.role = PolygonItem::LayerRole::FilledArea;
+        item = new PolygonItem(QList<PolygonItem::Layer>{layer}, fillStyle, m_window->m_strokeStyle);
     } else {
         auto* shape = new ShapeItem(type);
         shape->setStyle(stroke, filled ? fill : QColor(Qt::transparent), strokeWidth);
@@ -175,9 +175,9 @@ void MainWindow::insertCurve(CurveKind kind, ArrowStyle startArrow, ArrowStyle e
     if (!m_view || !m_scene) {
         return;
     }
-    const QSizeF size = kind == CurveKind::Line ? QSizeF(128.0, 64.0)
-                         : kind == CurveKind::Arc ? QSizeF(128.0, 94.0)
-                                                  : QSizeF(128.0, 40.0);
+    const QSizeF size = kind == CurveKind::Line  ? QSizeF(128.0, 64.0)
+                        : kind == CurveKind::Arc ? QSizeF(128.0, 94.0)
+                                                 : QSizeF(128.0, 40.0);
     const QRectF canvas = m_scene->canvasRect();
     QPointF center = m_view->mapToScene(m_view->viewport()->rect().center());
     if (!canvas.contains(center)) {
@@ -217,9 +217,9 @@ void MainWindow::insertCurve(CurveKind kind, ArrowStyle startArrow, ArrowStyle e
     m_scene->addItemsWithUndo({curve}, tr("Insert %1").arg(curve->displayName()));
     curve->setSelected(true);
     m_view->setFocus();
-    statusBar()->showMessage(
-        tr("Inserted %1; drag to move, drag handles to resize, color follows the current brush").arg(curve->displayName()),
-        5000);
+    statusBar()->showMessage(tr("Inserted %1; drag to move, drag handles to resize, color follows the current brush")
+                                 .arg(curve->displayName()),
+                             5000);
 }
 
 void MainWindowInsertController::insertCompositeShape(ShapeType type)
@@ -297,15 +297,14 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
         toScene.translate(bodyRect.left(), bodyRect.top());
         toScene.scale(bodyRect.width(), bodyRect.height());
 
-        CompositeShapeItem::Layer bodyLayer;
+        PolygonItem::Layer bodyLayer;
         bodyLayer.path = toScene.map(body);
         bodyLayer.fill = filled ? fill : QColor(Qt::transparent);
         bodyLayer.stroke = stroke;
         bodyLayer.strokeWidth = width;
         bodyLayer.filled = true;
-        bodyLayer.role = CompositeShapeItem::LayerRole::FilledArea;
-        auto* bodyItem =
-            new CompositeShapeItem(QList<CompositeShapeItem::Layer>{bodyLayer}, fillStyle, m_window->m_strokeStyle);
+        bodyLayer.role = PolygonItem::LayerRole::FilledArea;
+        auto* bodyItem = new PolygonItem(QList<PolygonItem::Layer>{bodyLayer}, fillStyle, m_window->m_strokeStyle);
         bodyItem->setName(MainWindow::tr("Cylinder body"));
         faces.append(bodyItem);
 

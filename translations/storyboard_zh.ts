@@ -2810,18 +2810,9 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Intersect</source>
         <translation>相交</translation>
     </message><message>
-        <source>Combine the selected items into one composite shape</source>
-        <translation>把选中图元合并成一个复合图元</translation>
-    </message><message>
-        <source>Combine shapes is available in edit mode only</source>
-        <translation>合并图元只在编辑模式可用</translation>
-    </message><message>
         <location filename="../src/MainWindowEditActionsController.cpp" line="153"/>
         <source>Select at least two shapes with a visible outline</source>
         <translation>请先选中至少两个有可见轮廓的图形</translation>
-    </message><message>
-        <source>Combined into one composite shape (undo to restore)</source>
-        <translation>已合并为一个多边形，撤销可还原</translation>
     </message><message>
         <location filename="../src/MainWindowEditActionsController.cpp" line="128"/>
         <source>Union shapes</source>
@@ -2841,9 +2832,6 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <location filename="../src/UiMenuBuilder.cpp" line="287"/>
         <source>Fragment</source>
         <translation>拆分</translation>
-    </message><message>
-        <source>Merge the selected items into one composite shape</source>
-        <translation>把选中图元合并成一个复合图元</translation>
     </message><message>
         <source>Merge the outlines and cut out the overlapping part</source>
         <translation>合并轮廓并挖掉重叠部分</translation>

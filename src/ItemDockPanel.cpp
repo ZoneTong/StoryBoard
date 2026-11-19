@@ -1,10 +1,9 @@
 #include "ItemDockPanel.h"
 
+#include "ArcItem.h"
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
-#include "ArcItem.h"
-#include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "CurveParamCommand.h"
 #include "ImagePickerDialog.h"
@@ -14,6 +13,7 @@
 #include "ItemDockPanelFillBorderCard.h"
 #include "ItemDockPanelSelectionCard.h"
 #include "ItemDockPanelValueCard.h"
+#include "PolygonItem.h"
 #include "ShapeItem.h"
 #include "ShapeMeta.h"
 #include "SineItem.h"
@@ -179,18 +179,19 @@ QList<ShapeItem*> ItemDockPanel::selectedShapes() const
 {
     QList<ShapeItem*> shapes;
     for (CanvasItem* item : selectedItems()) {
-        if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+        // 多边形派生自 ShapeItem，但它没有形状类型语义：圆角 / 角度等行只对普通图形开放。
+        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && !shape->isPolygon()) {
             shapes.append(shape);
         }
     }
     return shapes;
 }
 
-QList<CompositeShapeItem*> ItemDockPanel::selectedComposites() const
+QList<PolygonItem*> ItemDockPanel::selectedComposites() const
 {
-    QList<CompositeShapeItem*> composites;
+    QList<PolygonItem*> composites;
     for (CanvasItem* item : selectedItems()) {
-        if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+        if (auto* composite = dynamic_cast<PolygonItem*>(item)) {
             composites.append(composite);
         }
     }
@@ -212,8 +213,7 @@ QList<CanvasItem*> ItemDockPanel::selectedStrokeTargets() const
 {
     QList<CanvasItem*> targets;
     for (CanvasItem* item : selectedItems()) {
-        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<CurveItem*>(item) ||
-            dynamic_cast<CompositeShapeItem*>(item)) {
+        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<CurveItem*>(item)) {
             targets.append(item);
         }
     }
@@ -280,7 +280,7 @@ void ItemDockPanel::refresh()
 
     const QList<CanvasItem*> items = selectedItems();
     const QList<ShapeItem*> shapes = selectedShapes();
-    const QList<CompositeShapeItem*> composites = selectedComposites();
+    const QList<PolygonItem*> composites = selectedComposites();
     const QList<CurveItem*> strokes = selectedStrokes();
     const QList<TextItem*> texts = selectedTexts();
     m_selectionCard->setSelectionState(!items.isEmpty(), selectionGroupUseful(items));
@@ -326,7 +326,8 @@ void ItemDockPanel::refresh()
     m_valueCard->setTriangleVisible(hasTriangle);
     m_valueCard->setArrowVisible(hasArrow);
     // 需求 13：背景图片入口只对可填充图元显示；多选时依旧可用（批量替换）。
-    m_fillImageRow->setVisible(hasFillable);
+    // 多边形派生自 ShapeItem 但不在 selectedShapes 里，图片填充对它同样可用。
+    m_fillImageRow->setVisible(hasFillable || !composites.isEmpty());
 
     // 没有选中图元时隐藏全部图元编辑项，停靠卡片本身保持常驻。
     const bool hasSelection = !items.isEmpty();
@@ -460,12 +461,6 @@ void ItemDockPanel::applyStrokeColor(const QColor& color)
             stroke->setStyle(color, stroke->strokeWidth());
             afterColors.append(stroke->strokeColor());
             afterWidths.append(stroke->strokeWidth());
-        } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
-            beforeColors.append(composite->strokeColor());
-            beforeWidths.append(composite->strokeWidth());
-            composite->setStroke(color, composite->strokeWidth());
-            afterColors.append(composite->strokeColor());
-            afterWidths.append(composite->strokeWidth());
         }
     }
     m_refreshing = false;
@@ -485,7 +480,7 @@ void ItemDockPanel::applyFillColor(const QColor& color)
         [color](ShapeItem* shape) {
             shape->setFill(color, shape->fillStyle() == FillStyle::None ? FillStyle::Solid : shape->fillStyle());
         },
-        [color](CompositeShapeItem* composite) {
+        [color](PolygonItem* composite) {
             const FillStyle style =
                 composite->fillStyle() == FillStyle::None ? FillStyle::Solid : composite->fillStyle();
             composite->setFill(color, style);
@@ -496,7 +491,7 @@ void ItemDockPanel::applyFillStyle(FillStyle style)
 {
     changeSelectedFills(
         tr("Change shape fill style"), [style](ShapeItem* shape) { shape->setFillStyle(style); },
-        [style](CompositeShapeItem* composite) { composite->setFillStyle(style); });
+        [style](PolygonItem* composite) { composite->setFillStyle(style); });
 }
 
 void ItemDockPanel::applyBorderStyle(Qt::PenStyle style)
@@ -514,9 +509,6 @@ void ItemDockPanel::applyBorderStyle(Qt::PenStyle style)
             afterStyles.append(style);
         } else if (auto* curve = dynamic_cast<CurveItem*>(item)) {
             beforeStyles.append(curve->strokeStyle());
-            afterStyles.append(style);
-        } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
-            beforeStyles.append(composite->strokeStyle());
             afterStyles.append(style);
         }
     }
@@ -551,12 +543,6 @@ void ItemDockPanel::applyBorderWidth(qreal width)
             stroke->setStyle(stroke->strokeColor(), width);
             afterColors.append(stroke->strokeColor());
             afterWidths.append(stroke->strokeWidth());
-        } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
-            beforeColors.append(composite->strokeColor());
-            beforeWidths.append(composite->strokeWidth());
-            composite->setStroke(composite->strokeColor(), width);
-            afterColors.append(composite->strokeColor());
-            afterWidths.append(composite->strokeWidth());
         }
     }
     m_refreshing = false;
@@ -588,10 +574,10 @@ void ItemDockPanel::applyOpacity(int percent)
 }
 
 void ItemDockPanel::changeSelectedFills(const QString& text, const std::function<void(ShapeItem*)>& mutateShape,
-                                        const std::function<void(CompositeShapeItem*)>& mutateComposite)
+                                        const std::function<void(PolygonItem*)>& mutateComposite)
 {
     const QList<ShapeItem*> shapes = selectedShapes();
-    const QList<CompositeShapeItem*> composites = selectedComposites();
+    const QList<PolygonItem*> composites = selectedComposites();
     if ((shapes.isEmpty() && composites.isEmpty()) || !m_scene || !m_scene->undoStack()) {
         return;
     }
@@ -605,7 +591,7 @@ void ItemDockPanel::changeSelectedFills(const QString& text, const std::function
     for (ShapeItem* shape : shapes) {
         beforeShapes.append(shape->state());
     }
-    for (CompositeShapeItem* composite : composites) {
+    for (PolygonItem* composite : composites) {
         beforeCompositeColors.append(composite->fillColor());
         beforeCompositeStyles.append(composite->fillStyle());
     }
@@ -615,7 +601,7 @@ void ItemDockPanel::changeSelectedFills(const QString& text, const std::function
         mutateShape(shape);
         afterShapes.append(shape->state());
     }
-    for (CompositeShapeItem* composite : composites) {
+    for (PolygonItem* composite : composites) {
         mutateComposite(composite);
         afterCompositeColors.append(composite->fillColor());
         afterCompositeStyles.append(composite->fillStyle());
@@ -637,11 +623,11 @@ void ItemDockPanel::changeSelectedFills(const QString& text, const std::function
     }
     if (!composites.isEmpty()) {
         QList<CanvasItem*> compositeItems;
-        for (CompositeShapeItem* composite : composites) {
+        for (PolygonItem* composite : composites) {
             compositeItems.append(composite);
         }
-        undo->push(new CompositeFillStyleCommand(m_scene, compositeItems, beforeCompositeColors, beforeCompositeStyles,
-                                                 afterCompositeColors, afterCompositeStyles, text));
+        undo->push(new PolygonFillStyleCommand(m_scene, compositeItems, beforeCompositeColors, beforeCompositeStyles,
+                                               afterCompositeColors, afterCompositeStyles, text));
     }
     if (mixed) {
         undo->endMacro();
@@ -742,8 +728,8 @@ void ItemDockPanel::changeSelectedArcs(const QString& text, const std::function<
     }
     m_refreshing = false;
 
-    m_scene->undoStack()->push(new CurveParamCommand(m_scene, targets, paramsBefore, geometryBefore, paramsAfter,
-                                                    geometryAfter, text));
+    m_scene->undoStack()->push(
+        new CurveParamCommand(m_scene, targets, paramsBefore, geometryBefore, paramsAfter, geometryAfter, text));
     refresh();
 }
 
@@ -777,8 +763,8 @@ void ItemDockPanel::changeSelectedSines(const QString& text, const std::function
     }
     m_refreshing = false;
 
-    m_scene->undoStack()->push(new CurveParamCommand(m_scene, targets, paramsBefore, geometryBefore, paramsAfter,
-                                                    geometryAfter, text));
+    m_scene->undoStack()->push(
+        new CurveParamCommand(m_scene, targets, paramsBefore, geometryBefore, paramsAfter, geometryAfter, text));
     refresh();
 }
 
@@ -824,8 +810,7 @@ void ItemDockPanel::applyStartAngle(int angle)
 {
     changeSelectedShapes(tr("Change start angle"),
                          [angle](ShapeItem* shape) { shape->setArcAngles(angle, shape->sweepAngle()); });
-    changeSelectedArcs(tr("Change start angle"),
-                       [angle](ArcItem* arc) { arc->setAngles(angle, arc->sweepAngle()); });
+    changeSelectedArcs(tr("Change start angle"), [angle](ArcItem* arc) { arc->setAngles(angle, arc->sweepAngle()); });
 }
 
 void ItemDockPanel::applySweepAngle(int angle)

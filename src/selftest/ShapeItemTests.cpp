@@ -7,7 +7,6 @@
 #include "CanvasTypes.h"
 #include "CanvasView.h"
 #include "Commands.h"
-#include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "CustomShapeTemplates.h"
 #include "EllipseShape.h"
@@ -22,6 +21,7 @@
 #include "LineArtPresets.h"
 #include "LineItem.h"
 #include "MainWindow.h"
+#include "PolygonItem.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
@@ -190,7 +190,8 @@ void selftest::runShapeItemTests(Context& ctx)
 
     ctx.check(defaultShapeSize(ShapeType::Rectangle).width() == defaultShapeSize(ShapeType::Rectangle).height(),
               QStringLiteral("矩形默认插入为正方形"));
-    ctx.check(shapeTypeFromString(QStringLiteral("sector")) == ShapeType::Sector && shapeTypeIsFilled(ShapeType::Sector),
+    ctx.check(shapeTypeFromString(QStringLiteral("sector")) == ShapeType::Sector &&
+                  shapeTypeIsFilled(ShapeType::Sector),
               QStringLiteral("扇形可识别且可填充（弧线已并入曲线族，不再出现在形状类型表里）"));
     {
         ShapeItem sector(ShapeType::Sector);

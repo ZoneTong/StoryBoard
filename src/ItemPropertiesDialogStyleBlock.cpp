@@ -1,10 +1,10 @@
 #include "ItemPropertiesDialogStyleBlock.h"
 
-#include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "ItemPropertiesDialog.h"
 #include "ItemPropertiesDialogFields.h"
 #include "ItemStyleVisuals.h"
+#include "PolygonItem.h"
 #include "ShapeItem.h"
 #include "ShapeMeta.h"
 
@@ -72,7 +72,8 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
     };
 
     if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
-        const bool filled = shapeTypeIsFilled(shape->shapeType());
+        // 多边形派生自 ShapeItem 但没有形状类型：填充与描线照旧，圆角 / 角度等行不给。
+        const bool filled = shape->isPolygon() || shapeTypeIsFilled(shape->shapeType());
         m_hasFill = filled;
 
         // 需求 5/9a：直线、弧线这类只描线的图形根本没有填充属性，
@@ -132,7 +133,9 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
         m_opacitySpin->setMinimumWidth(88);
 
         const ShapeType type = shape->shapeType();
-        if (type == ShapeType::Sector) {
+        // 多边形没有形状类型：圆角 / 角度 / 箭头这些按类型出现的行一律不给。
+        const bool plainShape = !shape->isPolygon();
+        if (plainShape && type == ShapeType::Sector) {
             m_initialStartAngle = shape->startAngle();
             m_initialSweepAngle = shape->sweepAngle();
             m_startAngleSpin = new QSpinBox(this);
@@ -152,7 +155,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_sweepAngleSpin->setMinimumWidth(88);
         }
 
-        if (!shape->isCustomShape() && type == ShapeType::Rectangle) {
+        if (plainShape && !shape->isCustomShape() && type == ShapeType::Rectangle) {
             m_defaultCornerRatio = shape->autoCorner() ? 0.16 : 0.0;
             m_contentSize = shape->contentSize();
             m_initialStoredCornerRadius = shape->cornerRadius();
@@ -174,7 +177,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
 
         // 需求 1：三角形两个底角在属性窗里也可编辑；底边长度同样给出独立字段，
         // 与卡片上的「底边」一致，写入内容矩形宽度后高度按角度派生。
-        if (!shape->isCustomShape() && type == ShapeType::Triangle) {
+        if (plainShape && !shape->isCustomShape() && type == ShapeType::Triangle) {
             m_initialBottomAngle1 = shape->bottomAngle1();
             m_initialBottomAngle2 = shape->bottomAngle2();
             m_initialTriangleBase = qMax(8, qRound(shape->contentSize().width()));
@@ -207,7 +210,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
         }
 
         // 需求 9：平行四边形的左下内角可编辑；角度只影响上边相对底边的偏移。
-        if (!shape->isCustomShape() && type == ShapeType::Parallelogram) {
+        if (plainShape && !shape->isCustomShape() && type == ShapeType::Parallelogram) {
             m_initialParallelogramAngle = shape->parallelogramAngle();
 
             m_parallelogramAngleSpin = new QSpinBox(this);
@@ -222,7 +225,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
 
         // 需求 4：所有线条类图元（直线 / 弧线 / 正弦波 / 波线 / 卷轴）都能设两端箭头样式，
         // 属性窗里一行两个下拉。
-        if (!shape->isCustomShape() && ShapeMeta::isLineLike(type)) {
+        if (plainShape && !shape->isCustomShape() && ShapeMeta::isLineLike(type)) {
             m_arrowRow = new QWidget(this);
             auto* arrowLayout = new QHBoxLayout(m_arrowRow);
             arrowLayout->setContentsMargins(0, 0, 0, 0);
@@ -246,7 +249,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             arrowLayout->addWidget(m_startArrowCombo, 1);
             arrowLayout->addWidget(m_endArrowCombo, 1);
         }
-    } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+    } else if (auto* composite = dynamic_cast<PolygonItem*>(item)) {
         m_hasFill = true;
 
         m_fillStyleCombo = new QComboBox(this);

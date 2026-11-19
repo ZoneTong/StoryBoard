@@ -4,11 +4,11 @@
 #include "CanvasScene.h"
 #include "CanvasView.h"
 #include "Commands.h"
-#include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "IconFactory.h"
 #include "ItemStyleVisuals.h"
 #include "MainWindow.h"
+#include "PolygonItem.h"
 #include "Settings.h"
 #include "ShapeItem.h"
 
@@ -121,8 +121,6 @@ int StyleController::applyPenStyleToSelection(Qt::PenStyle style, const QString&
             current = shape->strokeStyle();
         } else if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
             current = stroke->strokeStyle();
-        } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
-            current = composite->strokeStyle();
         } else {
             continue;
         }
@@ -182,8 +180,7 @@ int StyleController::applyStrokeStyleToSelection(const QColor& color, qreal widt
     QList<CanvasItem*> items;
     const QList<CanvasItem*> selected = m_window->m_scene->selectedCanvasItems();
     for (CanvasItem* item : selected) {
-        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<CurveItem*>(item) ||
-            dynamic_cast<CompositeShapeItem*>(item)) {
+        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<CurveItem*>(item) || dynamic_cast<PolygonItem*>(item)) {
             items.append(item);
         }
     }
@@ -216,12 +213,6 @@ int StyleController::applyStrokeStyleToSelection(const QColor& color, qreal widt
             afterColor = changeColor ? color : beforeColor;
             afterWidth = changeWidth ? width : beforeWidth;
             stroke->setStyle(afterColor, afterWidth);
-        } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
-            beforeColor = composite->strokeColor();
-            beforeWidth = composite->strokeWidth();
-            afterColor = changeColor ? color : beforeColor;
-            afterWidth = changeWidth ? width : beforeWidth;
-            composite->setStroke(afterColor, afterWidth);
         }
         beforeColors.append(beforeColor);
         beforeWidths.append(beforeWidth);
@@ -247,11 +238,11 @@ void StyleController::applyFillToSelection()
     }
 
     QList<ShapeItem*> shapes;
-    QList<CompositeShapeItem*> composites;
+    QList<PolygonItem*> composites;
     int outlineOnlyCount = 0;
     const QList<CanvasItem*> selected = m_window->m_scene->selectedCanvasItems();
     for (CanvasItem* item : selected) {
-        if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+        if (auto* composite = dynamic_cast<PolygonItem*>(item)) {
             composites.append(composite);
             continue;
         }
@@ -296,7 +287,7 @@ void StyleController::applyFillToSelection()
         shape->setFill(fill, m_window->m_fillStyle);
         after.append(shape->state());
     }
-    for (CompositeShapeItem* composite : composites) {
+    for (PolygonItem* composite : composites) {
         beforeCompositeColors.append(composite->fillColor());
         beforeCompositeStyles.append(composite->fillStyle());
         QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : composite->fillColor();
@@ -324,12 +315,12 @@ void StyleController::applyFillToSelection()
     }
     if (!composites.isEmpty()) {
         QList<CanvasItem*> compositeItems;
-        for (CompositeShapeItem* composite : composites) {
+        for (PolygonItem* composite : composites) {
             compositeItems.append(composite);
         }
-        m_window->m_undo->push(new CompositeFillStyleCommand(
-            m_window->m_scene, compositeItems, beforeCompositeColors, beforeCompositeStyles, afterCompositeColors,
-            afterCompositeStyles, MainWindow::tr("Change fill style")));
+        m_window->m_undo->push(new PolygonFillStyleCommand(m_window->m_scene, compositeItems, beforeCompositeColors,
+                                                           beforeCompositeStyles, afterCompositeColors,
+                                                           afterCompositeStyles, MainWindow::tr("Change fill style")));
     }
     if (mixed) {
         m_window->m_undo->endMacro();

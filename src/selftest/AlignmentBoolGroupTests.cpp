@@ -4,7 +4,6 @@
 #include "CanvasTypes.h"
 #include "CanvasView.h"
 #include "Commands.h"
-#include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
@@ -17,6 +16,7 @@
 #include "LineArtPresets.h"
 #include "LineItem.h"
 #include "MainWindow.h"
+#include "PolygonItem.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
@@ -229,7 +229,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         ctx.check(BoolOps::supports(&boolScene), QStringLiteral("两个图元可以进行合并"), QStringLiteral("items=2"));
         const bool applied = BoolOps::apply(&boolScene, BoolOps::Operation::Union, QStringLiteral("合并"));
         const QList<CanvasItem*> selected = boolScene.selectedCanvasItems();
-        auto* composite = selected.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(selected.constFirst());
+        auto* composite = selected.isEmpty() ? nullptr : dynamic_cast<PolygonItem*>(selected.constFirst());
         ctx.check(applied && composite && composite->layerCount() == 1,
                   QStringLiteral("联合运算生成单层 donor 样式多边形"),
                   QStringLiteral("ok=%1 layers=%2").arg(applied ? 1 : 0).arg(composite ? composite->layerCount() : -1));
@@ -442,7 +442,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                 result.applied = BoolOps::apply(&scene, operation, QStringLiteral("Line skip"));
                 result.items = scene.canvasItems().size();
                 for (CanvasItem* item : scene.canvasItems()) {
-                    if (dynamic_cast<CompositeShapeItem*>(item)) {
+                    if (dynamic_cast<PolygonItem*>(item)) {
                         ++result.composites;
                     }
                 }
@@ -497,9 +497,9 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             int lensLayers = 0;
             int lensStroked = 0;
             for (CanvasItem* item : lensScene.selectedCanvasItems()) {
-                if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+                if (auto* composite = dynamic_cast<PolygonItem*>(item)) {
                     lensLayers += composite->layerCount();
-                    for (const CompositeShapeItem::Layer& layer : composite->layers()) {
+                    for (const PolygonItem::Layer& layer : composite->layers()) {
                         if (layer.strokeWidth > 0.0) {
                             ++lensStroked;
                         }
@@ -534,7 +534,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             text->setSelected(true);
             const bool merged = BoolOps::apply(&scene, BoolOps::Operation::Union, QStringLiteral("合并"));
             const QList<CanvasItem*> mergedItems = scene.selectedCanvasItems();
-            auto* shell = mergedItems.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(mergedItems.constFirst());
+            auto* shell = mergedItems.isEmpty() ? nullptr : dynamic_cast<PolygonItem*>(mergedItems.constFirst());
             ctx.check(merged && shell && shell->fillColor() == QColor(200, 40, 40),
                       QStringLiteral("合并优先采用有填充空间图元的样式（矩形>文字）"),
                       QStringLiteral("ok=%1 fill=%2")
@@ -564,8 +564,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             text->setSelected(true);
             const bool textMerged = BoolOps::apply(&scene, BoolOps::Operation::Union, QStringLiteral("合并"));
             const QList<CanvasItem*> textSelected = scene.selectedCanvasItems();
-            auto* textShell =
-                textSelected.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(textSelected.constFirst());
+            auto* textShell = textSelected.isEmpty() ? nullptr : dynamic_cast<PolygonItem*>(textSelected.constFirst());
 
             int inkPixels = -1;
             bool textLayerFound = false;
@@ -581,7 +580,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                     }
                 }
                 inkPixels = count;
-                for (const CompositeShapeItem::Layer& layer : textShell->layers()) {
+                for (const PolygonItem::Layer& layer : textShell->layers()) {
                     if (qFuzzyIsNull(layer.strokeWidth) && layer.fill == QColor(0, 0, 0)) {
                         textLayerFound = true;
                         break;
@@ -629,7 +628,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             const QList<CanvasItem*> selected = scene.selectedCanvasItems();
             itemCount = ok ? selected.size() : 0;
             for (CanvasItem* item : selected) {
-                if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+                if (auto* composite = dynamic_cast<PolygonItem*>(item)) {
                     layerCount += composite->layerCount();
                     if (area <= 0.0) {
                         area = composite->outlineShape().boundingRect().width();
@@ -768,7 +767,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             const QList<CanvasItem*> selected = scene.selectedCanvasItems();
             result.items = selected.size();
             for (CanvasItem* item : selected) {
-                if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+                if (auto* composite = dynamic_cast<PolygonItem*>(item)) {
                     const QPainterPath outline = composite->mapToScene(composite->outlineShape());
                     result.path = result.path.isEmpty() ? outline : result.path.united(outline);
                     result.layers += composite->layerCount();
@@ -876,8 +875,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         const bool firstUnion =
             BoolOps::apply(&compositeScene, BoolOps::Operation::Union, QStringLiteral("First union"));
         const QList<CanvasItem*> firstSelection = compositeScene.selectedCanvasItems();
-        auto* polygon =
-            firstSelection.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(firstSelection.constFirst());
+        auto* polygon = firstSelection.isEmpty() ? nullptr : dynamic_cast<PolygonItem*>(firstSelection.constFirst());
         auto* star = makeShape(ShapeType::Star, QPointF(260.0, 90.0), QColor(40, 90, 200));
         if (polygon) {
             polygon->setSelected(true);
@@ -971,7 +969,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                 groupedExtent.isNull() ? item->sceneBoundingRect() : groupedExtent.united(item->sceneBoundingRect());
         }
         auto* groupedResult =
-            groupedSelection.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(groupedSelection.constFirst());
+            groupedSelection.isEmpty() ? nullptr : dynamic_cast<PolygonItem*>(groupedSelection.constFirst());
         ctx.check(groupedSubtract && groupedResult && groupedExtent.width() > 100.0,
                   QStringLiteral("整组作为一个参与者参与合并"),
                   QStringLiteral("ok=%1 width=%2 pieces=%3")

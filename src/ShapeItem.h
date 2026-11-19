@@ -95,6 +95,9 @@ struct ShapeItemState {
     ImageFill::Mode fillImageMode = ImageFill::Mode::Stretch;
     QPointF pos;
     QSizeF size;
+    // 多边形（合并 / 分割产物）没有 ShapeType，用这一位与普通图形区分，
+    // 避免样式快照把矩形与多边形看成同一种状态。
+    bool polygon = false;
 
     bool operator==(const ShapeItemState& other) const
     {
@@ -108,7 +111,8 @@ struct ShapeItemState {
                qFuzzyCompare(bottomAngle2 + 2.0, other.bottomAngle2 + 2.0) && startArrow == other.startArrow &&
                qFuzzyCompare(parallelogramAngle + 2.0, other.parallelogramAngle + 2.0) && endArrow == other.endArrow &&
                hasFillImage == other.hasFillImage && fillImage.cacheKey() == other.fillImage.cacheKey() &&
-               fillImageMode == other.fillImageMode && pos == other.pos && size == other.size;
+               fillImageMode == other.fillImageMode && pos == other.pos && size == other.size &&
+               polygon == other.polygon;
     }
 
     bool operator!=(const ShapeItemState& other) const { return !(*this == other); }
@@ -122,6 +126,9 @@ class ShapeItem : public CanvasItem {
     explicit ShapeItem(ShapeType type = ShapeType::Rectangle, QGraphicsItem* parent = nullptr);
 
     QString kind() const override { return QStringLiteral("shape"); }
+    // 多边形（PolygonItem）派生自本类，但它没有 ShapeType：按 shapeType 分派的
+    // 入口都要先看这一位，否则会把它当成矩形处理。
+    virtual bool isPolygon() const { return false; }
     QString displayName() const override;
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& json) override;
@@ -135,11 +142,12 @@ class ShapeItem : public CanvasItem {
 
     ShapeType shapeType() const { return m_type; }
     void setShapeType(ShapeType type);
-    QColor strokeColor() const { return m_strokeColor; }
-    QColor fillColor() const { return m_fillColor; }
-    FillStyle fillStyle() const { return m_fillStyle; }
-    qreal strokeWidth() const { return m_strokeWidth; }
-    Qt::PenStyle strokeStyle() const { return m_strokeStyle; }
+    // 样式访问器对多边形开放覆写：多边形的颜色来自内部图层，而不是单一字段。
+    virtual QColor strokeColor() const { return m_strokeColor; }
+    virtual QColor fillColor() const { return m_fillColor; }
+    virtual FillStyle fillStyle() const { return m_fillStyle; }
+    virtual qreal strokeWidth() const { return m_strokeWidth; }
+    virtual Qt::PenStyle strokeStyle() const { return m_strokeStyle; }
     qreal opacity() const { return m_opacity; }
     qreal itemOpacity() const override { return m_opacity; }
     void setItemOpacity(qreal opacity) override;
@@ -157,19 +165,19 @@ class ShapeItem : public CanvasItem {
     void setParallelogramAngle(qreal angle);
     ArrowStyle startArrow() const { return m_startArrow; }
     // 需求 15：可填充图元支持一张图片垫在填充色之上，独立于 FillStyle。
-    bool hasFillImage() const { return !m_fillImage.isNull(); }
-    QPixmap fillImage() const { return m_fillImage; }
+    virtual bool hasFillImage() const { return !m_fillImage.isNull(); }
+    virtual QPixmap fillImage() const { return m_fillImage; }
     // 需求 11：画布级图片表里的引用 id；同图共享同一 id，保存时按引用重建表。
     QString fillImageId() const { return m_fillImageId; }
     void setFillImageId(const QString& id) { m_fillImageId = id; }
-    ImageFill::Mode fillImageMode() const { return m_fillImageMode; }
-    void setFillImage(const QPixmap& image, ImageFill::Mode mode);
-    void clearFillImage();
+    virtual ImageFill::Mode fillImageMode() const { return m_fillImageMode; }
+    virtual void setFillImage(const QPixmap& image, ImageFill::Mode mode);
+    virtual void clearFillImage();
     ArrowStyle endArrow() const { return m_endArrow; }
-    void setStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth);
-    void setFill(const QColor& fillColor, FillStyle style);
-    void setFillStyle(FillStyle style);
-    void setStrokeStyle(Qt::PenStyle style);
+    virtual void setStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth);
+    virtual void setFill(const QColor& fillColor, FillStyle style);
+    virtual void setFillStyle(FillStyle style);
+    virtual void setStrokeStyle(Qt::PenStyle style);
     void setOpacity(qreal opacity);
     void setCornerRadius(qreal radius);
     void setArcAngles(qreal startAngle, qreal sweepAngle);
@@ -190,15 +198,15 @@ class ShapeItem : public CanvasItem {
     // 需求 2：顶点 C 的句柄位置由三角形几何给出，而不是包围框上边中点。
     QPointF customHandleCenter(int handle, bool* ok) const override;
 
-    ShapeItemState state() const;
-    void applyState(const ShapeItemState& state);
-
+    // 样式撤销快照：多边形覆写后只记录样式与位置，不写 ShapeType。
+    virtual ShapeItemState state() const;
+    virtual void applyState(const ShapeItemState& state);
     static QPainterPath pathFor(ShapeType type, const QRectF& rect);
     static QPainterPath pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius);
     static QPainterPath pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius, qreal startAngle,
                                 qreal sweepAngle);
     // 当前生效的轮廓：自定义图形按内容矩形缩放单位路径，普通图形带圆角参数。
-    QPainterPath currentPath(const QRectF& rect) const;
+    virtual QPainterPath currentPath(const QRectF& rect) const;
 
   protected:
     void paintContent(QPainter* painter) override;

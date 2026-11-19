@@ -2,9 +2,9 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
-#include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "LineItem.h"
+#include "PolygonItem.h"
 #include "ShapeItem.h"
 #include "SineItem.h"
 #include "TextItem.h"
@@ -255,8 +255,8 @@ CanvasItem* CanvasScene::createItem(const QString& kind) const
     if (kind == QStringLiteral("shape")) {
         return new ShapeItem();
     }
-    if (kind == QStringLiteral("polygon") || kind == QStringLiteral("composite")) {
-        return new CompositeShapeItem();
+    if (kind == QStringLiteral("polygon")) {
+        return new PolygonItem();
     }
     return nullptr;
 }

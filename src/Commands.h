@@ -15,7 +15,7 @@
 
 class CanvasItem;
 class CanvasScene;
-class CompositeShapeItem;
+class PolygonItem;
 
 class AddItemCommand : public QUndoCommand {
   public:
@@ -196,12 +196,9 @@ struct ItemPropertiesState {
     // 透明度是所有图元共有的属性，属性窗统一按这个字段提交。
     qreal opacity = 1.0;
     QString itemName;
+    // 多边形也是 ShapeItem，填充、描线与图片填充都走这一份快照。
     bool hasShapeState = false;
     ShapeItemState shapeState;
-    // 多边形没有 ShapeItemState，填充与描线单独记一份快照。
-    bool hasCompositeStyle = false;
-    QColor compositeFillColor;
-    FillStyle compositeFillStyle = FillStyle::Solid;
     bool hasTextState = false;
     TextItemState textState;
     bool hasStrokeStyle = false;
@@ -211,11 +208,6 @@ struct ItemPropertiesState {
     // 需求 27：曲线两端箭头与直线同一套属性窗提交流程（箭头对全部曲线子型开放）。
     ArrowStyle curveStartArrow = ArrowStyle::None;
     ArrowStyle curveEndArrow = ArrowStyle::None;
-    // 需求 15：多边形的图片填充（图形走 ShapeItemState，不需要这一份）。
-    bool hasFillImageState = false;
-    bool fillImagePresent = false;
-    QPixmap fillImage;
-    ImageFill::Mode fillImageMode = ImageFill::Mode::Stretch;
 
     bool operator==(const ItemPropertiesState& other) const;
     bool operator!=(const ItemPropertiesState& other) const { return !(*this == other); }
@@ -238,11 +230,11 @@ class ItemPropertiesCommand : public QUndoCommand {
 };
 
 // 多边形填充色 / 填充样式一起改；内部按层记录，撤销可完整恢复原色。
-class CompositeFillStyleCommand : public QUndoCommand {
+class PolygonFillStyleCommand : public QUndoCommand {
   public:
-    CompositeFillStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<QColor>& beforeColors,
-                              const QList<FillStyle>& beforeStyles, const QList<QColor>& afterColors,
-                              const QList<FillStyle>& afterStyles, const QString& text);
+    PolygonFillStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<QColor>& beforeColors,
+                            const QList<FillStyle>& beforeStyles, const QList<QColor>& afterColors,
+                            const QList<FillStyle>& afterStyles, const QString& text);
     void undo() override;
     void redo() override;
 

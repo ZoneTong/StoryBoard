@@ -4,7 +4,6 @@
 #include "CanvasTypes.h"
 #include "CanvasView.h"
 #include "Commands.h"
-#include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
@@ -16,6 +15,7 @@
 #include "LineArtDialog.h"
 #include "LineArtPresets.h"
 #include "MainWindow.h"
+#include "PolygonItem.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
@@ -653,13 +653,13 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         polygonWindow.show();
         QApplication::processEvents();
 
-        CompositeShapeItem::Layer layer;
+        PolygonItem::Layer layer;
         layer.path.addRect(0.0, 0.0, 120.0, 80.0);
         layer.fill = QColor(QStringLiteral("#3B82F6"));
         layer.stroke = QColor(QStringLiteral("#1E293B"));
         layer.strokeWidth = 4.0;
-        layer.role = CompositeShapeItem::LayerRole::FilledArea;
-        auto* polygon = new CompositeShapeItem({layer});
+        layer.role = PolygonItem::LayerRole::FilledArea;
+        auto* polygon = new PolygonItem({layer});
         polygonWindow.scene()->addItemsWithUndo({polygon}, QStringLiteral("Add toolbar polygon"));
         polygonWindow.view()->setMode(ToolMode::Edit);
         polygonWindow.scene()->clearSelection();

@@ -1,10 +1,10 @@
 #include "ItemDockPanelFillBorderCard.h"
 
-#include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "IconFactory.h"
 #include "ItemDockPanel.h"
 #include "ItemStyleVisuals.h"
+#include "PolygonItem.h"
 #include "ShapeItem.h"
 
 #include <QHBoxLayout>
@@ -119,7 +119,7 @@ ItemDockPanelFillBorderCard::ItemDockPanelFillBorderCard(QWidget* parent) : QWid
 }
 
 void ItemDockPanelFillBorderCard::refresh(const QList<ShapeItem*>& shapes, const QList<CurveItem*>& strokes,
-                                          const QList<CompositeShapeItem*>& composites)
+                                          const QList<PolygonItem*>& composites)
 {
     m_refreshing = true;
 

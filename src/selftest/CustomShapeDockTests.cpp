@@ -4,7 +4,6 @@
 #include "CanvasTypes.h"
 #include "CanvasView.h"
 #include "Commands.h"
-#include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "CustomShapePanel.h"
 #include "CustomShapeTemplates.h"
@@ -19,6 +18,7 @@
 #include "LineArtPresets.h"
 #include "LineItem.h"
 #include "MainWindow.h"
+#include "PolygonItem.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
@@ -811,7 +811,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 QApplication::processEvents();
                 bool hasComposite = false;
                 for (CanvasItem* item : dockScene->canvasItems()) {
-                    if (dynamic_cast<CompositeShapeItem*>(item)) {
+                    if (dynamic_cast<PolygonItem*>(item)) {
                         hasComposite = true;
                         break;
                     }
@@ -959,13 +959,13 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                       QStringLiteral("撤销透明度同时恢复图形和曲线"));
 
             // 多边形也要有填充 / 描线属性：选中后五行可见，按钮改动真正落到图层并可撤销。
-            CompositeShapeItem::Layer polygonLayer;
+            PolygonItem::Layer polygonLayer;
             polygonLayer.path.addRect(0.0, 0.0, 140.0, 90.0);
             polygonLayer.fill = QColor(QStringLiteral("#3B82F6"));
             polygonLayer.stroke = QColor(QStringLiteral("#1E293B"));
             polygonLayer.strokeWidth = 4.0;
-            polygonLayer.role = CompositeShapeItem::LayerRole::FilledArea;
-            auto* polygon = new CompositeShapeItem({polygonLayer});
+            polygonLayer.role = PolygonItem::LayerRole::FilledArea;
+            auto* polygon = new PolygonItem({polygonLayer});
             polygon->setPos(QPointF(240.0, 240.0));
             dockScene->addItemsWithUndo({polygon}, QStringLiteral("Add polygon"));
             dockScene->clearSelection();
@@ -1210,7 +1210,8 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
 
             // 线条类图元不参与合并：选中直线时合并图元入口隐藏。
             auto* cardLine = new LineItem();
-            cardLine->setEndpoints(QPointF(620.0, 470.0), QPointF(710.0, 480.0), QColor(QStringLiteral("#334155")), 3.0);
+            cardLine->setEndpoints(QPointF(620.0, 470.0), QPointF(710.0, 480.0), QColor(QStringLiteral("#334155")),
+                                   3.0);
             dockScene->addItemsWithUndo({cardLine}, QStringLiteral("Add card line"));
             dockScene->clearSelection();
             cardLine->setSelected(true);

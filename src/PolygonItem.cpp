@@ -1,17 +1,15 @@
-#include "CompositeShapeItem.h"
+#include "PolygonItem.h"
 
 #include "I18n.h"
 #include "ShapePainter.h"
 
-#include <QJsonArray>
-#include <QJsonObject>
 #include <QPainter>
 #include <QPainterPathStroker>
 #include <QTransform>
 
 // 把路径里每个子路径显式闭合：布尔运算（交集 / 拆块）产生的路径与序列化
 // 重建的路径都不带 closeSubpath 标记，描边时收尾一条边会缺失（需求 11）。
-QPainterPath CompositeShapeItem::closedSubpaths(const QPainterPath& path)
+QPainterPath PolygonItem::closedSubpaths(const QPainterPath& path)
 {
     QPainterPath closed;
     bool hasDraw = false;
@@ -45,13 +43,13 @@ QPainterPath CompositeShapeItem::closedSubpaths(const QPainterPath& path)
     return closed;
 }
 
-CompositeShapeItem::CompositeShapeItem(const QList<Layer>& layers, FillStyle fillStyle, Qt::PenStyle strokeStyle)
-    : CanvasItem(), m_layers(layers), m_fillStyle(fillStyle), m_strokeStyle(strokeStyle)
+PolygonItem::PolygonItem(const QList<Layer>& layers, FillStyle fillStyle, Qt::PenStyle strokeStyle)
+    : ShapeItem(ShapeType::Rectangle), m_layers(layers), m_fillStyle(fillStyle), m_strokeStyle(strokeStyle)
 {
     updateBoundsFromLayers();
 }
 
-QColor CompositeShapeItem::fillColor() const
+QColor PolygonItem::fillColor() const
 {
     for (const Layer& layer : m_layers) {
         if (layer.role == LayerRole::FilledArea && layer.filled) {
@@ -66,7 +64,7 @@ QColor CompositeShapeItem::fillColor() const
     return QColor();
 }
 
-QColor CompositeShapeItem::strokeColor() const
+QColor PolygonItem::strokeColor() const
 {
     for (const Layer& layer : m_layers) {
         if (layer.role == LayerRole::FilledArea && layer.strokeWidth > 0.0) {
@@ -82,7 +80,7 @@ QColor CompositeShapeItem::strokeColor() const
     return fillColor();
 }
 
-qreal CompositeShapeItem::strokeWidth() const
+qreal PolygonItem::strokeWidth() const
 {
     for (const Layer& layer : m_layers) {
         if (layer.role == LayerRole::FilledArea && layer.strokeWidth > 0.0) {
@@ -92,7 +90,7 @@ qreal CompositeShapeItem::strokeWidth() const
     return 0.0;
 }
 
-void CompositeShapeItem::setFill(const QColor& color, FillStyle style)
+void PolygonItem::setFill(const QColor& color, FillStyle style)
 {
     if (!color.isValid()) {
         return;
@@ -107,13 +105,13 @@ void CompositeShapeItem::setFill(const QColor& color, FillStyle style)
     update();
 }
 
-void CompositeShapeItem::setFillStyle(FillStyle style)
+void PolygonItem::setFillStyle(FillStyle style)
 {
     m_fillStyle = style;
     update();
 }
 
-void CompositeShapeItem::setStroke(const QColor& color, qreal width)
+void PolygonItem::setStroke(const QColor& color, qreal width)
 {
     if (!color.isValid()) {
         return;
@@ -133,7 +131,7 @@ void CompositeShapeItem::setStroke(const QColor& color, qreal width)
     update();
 }
 
-void CompositeShapeItem::setFillImage(const QPixmap& image, ImageFill::Mode mode)
+void PolygonItem::setFillImage(const QPixmap& image, ImageFill::Mode mode)
 {
     if (image.isNull()) {
         clearFillImage();
@@ -144,7 +142,7 @@ void CompositeShapeItem::setFillImage(const QPixmap& image, ImageFill::Mode mode
     update();
 }
 
-void CompositeShapeItem::clearFillImage()
+void PolygonItem::clearFillImage()
 {
     if (m_fillImage.isNull()) {
         return;
@@ -153,23 +151,23 @@ void CompositeShapeItem::clearFillImage()
     update();
 }
 
-void CompositeShapeItem::setStrokeStyle(Qt::PenStyle style)
+void PolygonItem::setStrokeStyle(Qt::PenStyle style)
 {
     m_strokeStyle = style;
     update();
 }
 
-QString CompositeShapeItem::displayName() const
+QString PolygonItem::displayName() const
 {
     return uiText(QStringLiteral("Polygon"));
 }
 
-QString CompositeShapeItem::typeDisplayName() const
+QString PolygonItem::typeDisplayName() const
 {
     return uiText(QStringLiteral("Polygon"));
 }
 
-void CompositeShapeItem::updateBoundsFromLayers()
+void PolygonItem::updateBoundsFromLayers()
 {
     QRectF bounds;
     for (const Layer& layer : m_layers) {
@@ -195,7 +193,7 @@ void CompositeShapeItem::updateBoundsFromLayers()
     setPos(bounds.topLeft());
 }
 
-QTransform CompositeShapeItem::layerTransform() const
+QTransform PolygonItem::layerTransform() const
 {
     QTransform transform;
     const QRectF rect = contentRect();
@@ -206,12 +204,12 @@ QTransform CompositeShapeItem::layerTransform() const
     return transform;
 }
 
-QPainterPath CompositeShapeItem::mapLayerPath(const QPainterPath& localPath) const
+QPainterPath PolygonItem::mapLayerPath(const QPainterPath& localPath) const
 {
     return layerTransform().map(localPath);
 }
 
-QPainterPath CompositeShapeItem::paintedShape() const
+QPainterPath PolygonItem::paintedShape() const
 {
     QPainterPath shape;
     for (const Layer& layer : m_layers) {
@@ -222,7 +220,7 @@ QPainterPath CompositeShapeItem::paintedShape() const
     return layerTransform().map(shape);
 }
 
-QPainterPath CompositeShapeItem::outlineShape() const
+QPainterPath PolygonItem::outlineShape() const
 {
     QPainterPath shape;
     for (const Layer& layer : m_layers) {
@@ -231,7 +229,70 @@ QPainterPath CompositeShapeItem::outlineShape() const
     return layerTransform().map(shape);
 }
 
-void CompositeShapeItem::paintContent(QPainter* painter)
+QPainterPath PolygonItem::shape() const
+{
+    // 命中范围沿用画布图元的规则（内容矩形 + 手柄），不用单一形状类型的轮廓。
+    return CanvasItem::shape();
+}
+
+QPainterPath PolygonItem::currentPath(const QRectF& rect) const
+{
+    QPainterPath unionPath;
+    for (const Layer& layer : m_layers) {
+        unionPath.addPath(layer.path);
+    }
+    const QRectF content = contentRect();
+    if (content.isEmpty() || m_designSize.isEmpty() || rect == content) {
+        return layerTransform().map(unionPath);
+    }
+    QTransform transform;
+    transform.translate(rect.center().x(), rect.center().y());
+    transform.scale(rect.width() / content.width(), rect.height() / content.height());
+    transform.translate(-content.center().x(), -content.center().y());
+    return transform.map(layerTransform().map(unionPath));
+}
+
+void PolygonItem::setStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth)
+{
+    setStroke(strokeColor, strokeWidth);
+    setFill(fillColor, fillStyle());
+}
+
+ShapeItemState PolygonItem::state() const
+{
+    ShapeItemState result;
+    // 多边形没有 ShapeType，用 polygon 位区分；其余字段与普通图形同口径。
+    result.polygon = true;
+    result.strokeColor = strokeColor();
+    result.fillColor = fillColor();
+    result.fillStyle = m_fillStyle;
+    result.strokeWidth = strokeWidth();
+    result.strokeStyle = m_strokeStyle;
+    result.opacity = itemOpacity();
+    result.hasFillImage = hasFillImage();
+    result.fillImage = m_fillImage;
+    result.fillImageMode = m_fillImageMode;
+    result.pos = pos();
+    result.size = contentSize();
+    return result;
+}
+
+void PolygonItem::applyState(const ShapeItemState& state)
+{
+    m_fillStyle = state.fillStyle;
+    m_strokeStyle = state.strokeStyle;
+    m_fillImage = state.hasFillImage ? state.fillImage : QPixmap();
+    m_fillImageMode = state.fillImageMode;
+    setItemOpacity(state.opacity);
+    setPos(state.pos);
+    setContentSize(state.size.isEmpty() ? contentSize() : state.size);
+    setFill(state.fillColor, state.fillStyle);
+    setStroke(state.strokeColor, state.strokeWidth);
+    setStrokeStyle(state.strokeStyle);
+    update();
+}
+
+void PolygonItem::paintContent(QPainter* painter)
 {
     if (m_layers.isEmpty()) {
         return;
@@ -349,130 +410,4 @@ void CompositeShapeItem::paintContent(QPainter* painter)
     }
 
     painter->restore();
-}
-
-QJsonArray CompositeShapeItem::pathToJson(const QPainterPath& path)
-{
-    QJsonArray elements;
-    for (int i = 0; i < path.elementCount(); ++i) {
-        const QPainterPath::Element element = path.elementAt(i);
-        QJsonObject entry;
-        switch (element.type) {
-        case QPainterPath::MoveToElement:
-            entry.insert(QStringLiteral("t"), QStringLiteral("m"));
-            break;
-        case QPainterPath::LineToElement:
-            entry.insert(QStringLiteral("t"), QStringLiteral("l"));
-            break;
-        default:
-            entry.insert(QStringLiteral("t"), QStringLiteral("c"));
-            break;
-        }
-        entry.insert(QStringLiteral("x"), element.x);
-        entry.insert(QStringLiteral("y"), element.y);
-        elements.append(entry);
-    }
-    return elements;
-}
-
-QPainterPath CompositeShapeItem::pathFromJson(const QJsonArray& elements)
-{
-    QPainterPath path;
-    QList<QPointF> curvePoints;
-    auto flushCurve = [&path, &curvePoints]() {
-        if (curvePoints.size() >= 3) {
-            path.cubicTo(curvePoints.at(0), curvePoints.at(1), curvePoints.at(2));
-        } else {
-            // 段不足三个控制点（文件被截断或手改）：降级为折线段接上，
-            // 不整段丢弃，否则曲线开头或结尾会凭空缺一块。
-            for (const QPointF& point : curvePoints) {
-                path.lineTo(point);
-            }
-        }
-        curvePoints.clear();
-    };
-    for (const QJsonValue& value : elements) {
-        const QJsonObject entry = value.toObject();
-        const QString type = entry.value(QStringLiteral("t")).toString();
-        const QPointF point(entry.value(QStringLiteral("x")).toDouble(), entry.value(QStringLiteral("y")).toDouble());
-        if (type == QStringLiteral("m")) {
-            flushCurve();
-            path.moveTo(point);
-        } else if (type == QStringLiteral("l")) {
-            flushCurve();
-            path.lineTo(point);
-        } else {
-            curvePoints.append(point);
-            if (curvePoints.size() == 3) {
-                flushCurve();
-            }
-        }
-    }
-    flushCurve();
-    return path;
-}
-
-QJsonObject CompositeShapeItem::toJson() const
-{
-    QJsonObject json = baseJson();
-    json.insert(QStringLiteral("kind"), kind());
-    QJsonArray layers;
-    for (const Layer& layer : m_layers) {
-        QJsonObject entry;
-        entry.insert(QStringLiteral("path"), pathToJson(layer.path));
-        entry.insert(QStringLiteral("fill"), layer.fill.name(QColor::HexArgb));
-        entry.insert(QStringLiteral("stroke"), layer.stroke.name(QColor::HexArgb));
-        entry.insert(QStringLiteral("width"), layer.strokeWidth);
-        entry.insert(QStringLiteral("filled"), layer.filled);
-        entry.insert(QStringLiteral("role"), static_cast<int>(layer.role));
-        layers.append(entry);
-    }
-    json.insert(QStringLiteral("layers"), layers);
-    json.insert(QStringLiteral("fillStyle"), static_cast<int>(m_fillStyle));
-    json.insert(QStringLiteral("strokeStyle"), static_cast<int>(m_strokeStyle));
-    json.insert(QStringLiteral("designWidth"), m_designSize.width());
-    json.insert(QStringLiteral("designHeight"), m_designSize.height());
-    const QJsonObject fillImageJson = ImageFill::toJson(m_fillImage, m_fillImageMode);
-    if (!fillImageJson.isEmpty()) {
-        json.insert(QStringLiteral("fillImage"), fillImageJson);
-    }
-    return json;
-}
-
-void CompositeShapeItem::fromJson(const QJsonObject& json)
-{
-    applyBaseJson(json);
-    m_layers.clear();
-    const QJsonArray layers = json.value(QStringLiteral("layers")).toArray();
-    for (const QJsonValue& value : layers) {
-        const QJsonObject entry = value.toObject();
-        Layer layer;
-        layer.path = pathFromJson(entry.value(QStringLiteral("path")).toArray());
-        layer.fill = QColor(entry.value(QStringLiteral("fill")).toString());
-        layer.stroke = QColor(entry.value(QStringLiteral("stroke")).toString());
-        layer.strokeWidth = entry.value(QStringLiteral("width")).toDouble(1.0);
-        layer.filled = entry.value(QStringLiteral("filled")).toBool(true);
-        const int role = entry.value(QStringLiteral("role")).toInt(static_cast<int>(LayerRole::FilledArea));
-        if (role >= static_cast<int>(LayerRole::FilledArea) && role <= static_cast<int>(LayerRole::Text)) {
-            layer.role = static_cast<LayerRole>(role);
-        }
-        m_layers.append(layer);
-    }
-    const int fillStyle = json.value(QStringLiteral("fillStyle")).toInt(static_cast<int>(FillStyle::Solid));
-    m_fillStyle = fillStyle >= static_cast<int>(FillStyle::None) && fillStyle <= static_cast<int>(FillStyle::Dots)
-                      ? static_cast<FillStyle>(fillStyle)
-                      : FillStyle::Solid;
-    const int strokeStyle = json.value(QStringLiteral("strokeStyle")).toInt(static_cast<int>(Qt::SolidLine));
-    m_strokeStyle = strokeStyle >= static_cast<int>(Qt::NoPen) && strokeStyle <= static_cast<int>(Qt::CustomDashLine)
-                        ? static_cast<Qt::PenStyle>(strokeStyle)
-                        : Qt::SolidLine;
-    m_designSize = QSizeF(qMax(1.0, json.value(QStringLiteral("designWidth")).toDouble(1.0)),
-                          qMax(1.0, json.value(QStringLiteral("designHeight")).toDouble(1.0)));
-    setContentSize(m_designSize);
-    if (json.contains(QStringLiteral("fillImage"))) {
-        m_fillImage = ImageFill::pixmapFromJson(json.value(QStringLiteral("fillImage")).toObject(), &m_fillImageMode);
-    } else {
-        m_fillImage = QPixmap();
-        m_fillImageMode = ImageFill::Mode::Stretch;
-    }
 }

@@ -2,8 +2,8 @@
 
 #include "CanvasItem.h"
 #include "CanvasScene.h"
-#include "CompositeShapeItem.h"
 #include "CurveItem.h"
+#include "PolygonItem.h"
 
 #include <QGraphicsScene>
 #include <utility>
@@ -395,11 +395,10 @@ void ShapeStyleCommand::apply(const QList<ShapeItemState>& states)
     }
 }
 
-CompositeFillStyleCommand::CompositeFillStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
-                                                     const QList<QColor>& beforeColors,
-                                                     const QList<FillStyle>& beforeStyles,
-                                                     const QList<QColor>& afterColors,
-                                                     const QList<FillStyle>& afterStyles, const QString& text)
+PolygonFillStyleCommand::PolygonFillStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
+                                                 const QList<QColor>& beforeColors,
+                                                 const QList<FillStyle>& beforeStyles, const QList<QColor>& afterColors,
+                                                 const QList<FillStyle>& afterStyles, const QString& text)
     : m_scene(scene), m_beforeColors(beforeColors), m_beforeStyles(beforeStyles), m_afterColors(afterColors),
       m_afterStyles(afterStyles)
 {
@@ -409,20 +408,20 @@ CompositeFillStyleCommand::CompositeFillStyleCommand(CanvasScene* scene, const Q
     }
 }
 
-void CompositeFillStyleCommand::undo()
+void PolygonFillStyleCommand::undo()
 {
     apply(m_beforeColors, m_beforeStyles);
 }
 
-void CompositeFillStyleCommand::redo()
+void PolygonFillStyleCommand::redo()
 {
     apply(m_afterColors, m_afterStyles);
 }
 
-void CompositeFillStyleCommand::apply(const QList<QColor>& colors, const QList<FillStyle>& styles)
+void PolygonFillStyleCommand::apply(const QList<QColor>& colors, const QList<FillStyle>& styles)
 {
     for (int i = 0; i < m_items.size() && i < colors.size() && i < styles.size(); ++i) {
-        if (auto* composite = dynamic_cast<CompositeShapeItem*>(m_items.at(i).data())) {
+        if (auto* composite = dynamic_cast<PolygonItem*>(m_items.at(i).data())) {
             composite->setFill(colors.at(i), styles.at(i));
         }
     }
@@ -505,8 +504,6 @@ void ItemStrokeStyleCommand::apply(const QList<QColor>& colors, const QList<qrea
             shape->setStyle(colors.at(i), shape->fillColor(), widths.at(i));
         } else if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
             stroke->setStyle(colors.at(i), widths.at(i));
-        } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
-            composite->setStroke(colors.at(i), widths.at(i));
         }
     }
     if (m_scene) {
@@ -547,8 +544,6 @@ void ItemPenStyleCommand::apply(const QList<Qt::PenStyle>& styles)
             shape->setStrokeStyle(style);
         } else if (auto* curve = dynamic_cast<CurveItem*>(item)) {
             curve->setStrokeStyle(style);
-        } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
-            composite->setStrokeStyle(style);
         }
     }
     if (m_scene) {
@@ -592,17 +587,11 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
 {
     if (!sameStack(stack, other.stack) || pos != other.pos || size != other.size ||
         !qFuzzyCompare(rotation, other.rotation) || !qFuzzyCompare(1.0 + opacity, 1.0 + other.opacity) ||
-        itemName != other.itemName || hasShapeState != other.hasShapeState ||
-        hasCompositeStyle != other.hasCompositeStyle || hasTextState != other.hasTextState ||
-        hasStrokeStyle != other.hasStrokeStyle ||
-        hasFillImageState != other.hasFillImageState) {
+        itemName != other.itemName || hasShapeState != other.hasShapeState || hasTextState != other.hasTextState ||
+        hasStrokeStyle != other.hasStrokeStyle) {
         return false;
     }
     if (hasShapeState && shapeState != other.shapeState) {
-        return false;
-    }
-    if (hasCompositeStyle &&
-        (compositeFillColor != other.compositeFillColor || compositeFillStyle != other.compositeFillStyle)) {
         return false;
     }
     if (hasTextState && textState != other.textState) {
@@ -611,11 +600,6 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
     if (hasStrokeStyle && (strokeColor != other.strokeColor || !qFuzzyCompare(strokeWidth, other.strokeWidth) ||
                            strokeStyle != other.strokeStyle || curveStartArrow != other.curveStartArrow ||
                            curveEndArrow != other.curveEndArrow)) {
-        return false;
-    }
-    if (hasFillImageState &&
-        (fillImagePresent != other.fillImagePresent || fillImage.cacheKey() != other.fillImage.cacheKey() ||
-         fillImageMode != other.fillImageMode)) {
         return false;
     }
     return true;
@@ -663,30 +647,12 @@ void ItemPropertiesCommand::apply(const ItemPropertiesState& state)
     m_item->setRotationAngle(state.rotation);
     m_item->setItemOpacity(state.opacity);
 
-    if (state.hasCompositeStyle) {
-        if (auto* composite = dynamic_cast<CompositeShapeItem*>(m_item.data())) {
-            composite->setFill(state.compositeFillColor, state.compositeFillStyle);
-        }
-    }
-
     if (state.hasStrokeStyle) {
         if (auto* stroke = dynamic_cast<CurveItem*>(m_item.data())) {
             stroke->setStyle(state.strokeColor, state.strokeWidth);
             stroke->setStrokeStyle(state.strokeStyle);
             // 需求 27：曲线两端箭头随同一条撤销记录一起应用。
             stroke->setArrowStyles(state.curveStartArrow, state.curveEndArrow);
-        } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(m_item.data())) {
-            composite->setStroke(state.strokeColor, state.strokeWidth);
-            composite->setStrokeStyle(state.strokeStyle);
-        }
-    }
-    if (state.hasFillImageState) {
-        if (auto* composite = dynamic_cast<CompositeShapeItem*>(m_item.data())) {
-            if (state.fillImagePresent) {
-                composite->setFillImage(state.fillImage, state.fillImageMode);
-            } else {
-                composite->clearFillImage();
-            }
         }
     }
 

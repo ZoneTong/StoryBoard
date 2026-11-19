@@ -10,7 +10,7 @@ class CanvasScene;
 class CanvasItem;
 class ArcItem;
 class SineItem;
-class CompositeShapeItem;
+class PolygonItem;
 class CurveItem;
 class TextItem;
 struct TextItemState;
@@ -62,7 +62,7 @@ class ItemDockPanel : public QWidget {
 
     QList<CanvasItem*> selectedItems() const;
     QList<ShapeItem*> selectedShapes() const;
-    QList<CompositeShapeItem*> selectedComposites() const;
+    QList<PolygonItem*> selectedComposites() const;
     QList<CurveItem*> selectedStrokes() const;
     QList<TextItem*> selectedTexts() const;
     // 描线颜色 / 宽度可作用的对象：图形、笔画与多边形。
@@ -72,7 +72,7 @@ class ItemDockPanel : public QWidget {
     void changeSelectedArcs(const QString& text, const std::function<void(ArcItem*)>& mutate);
     void changeSelectedSines(const QString& text, const std::function<void(SineItem*)>& mutate);
     void changeSelectedFills(const QString& text, const std::function<void(ShapeItem*)>& mutateShape,
-                             const std::function<void(CompositeShapeItem*)>& mutateComposite);
+                             const std::function<void(PolygonItem*)>& mutateComposite);
     void changeSelectedTexts(const QString& text, const std::function<void(TextItemState&)>& mutate);
     void applyTextContent(const QString& text);
     void applyTextFont(const QFont& font);

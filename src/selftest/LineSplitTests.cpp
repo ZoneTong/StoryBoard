@@ -1,18 +1,18 @@
+#include "ArcItem.h"
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
 #include "CanvasView.h"
-#include "CompositeShapeItem.h"
 #include "CurveItem.h"
-#include "ArcItem.h"
 #include "ItemDockPanel.h"
 #include "LineItem.h"
 #include "LineSplitOps.h"
 #include "MainWindow.h"
 #include "PathRegions.h"
+#include "PolygonItem.h"
 #include "ShapeItem.h"
-#include "SineItem.h"
 #include "ShapePathBuilder.h"
+#include "SineItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
 #include "selftest/SelftestHelpers.h"
@@ -103,10 +103,10 @@ void selftest::runLineSplitTests(Context& ctx)
                   QStringLiteral("before=%1 after=%2").arg(before).arg(after));
 
         // 碎片样式沿用被切图元，且刚好两块、互不重叠。
-        QList<CompositeShapeItem*> fragments;
+        QList<PolygonItem*> fragments;
         int knifeCount = 0;
         for (CanvasItem* item : scene.canvasItems()) {
-            if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
+            if (auto* composite = dynamic_cast<PolygonItem*>(item)) {
                 fragments.append(composite);
             } else if (dynamic_cast<LineItem*>(item)) {
                 ++knifeCount;
@@ -116,11 +116,10 @@ void selftest::runLineSplitTests(Context& ctx)
                   QStringLiteral("fragments=%1 knives=%2").arg(fragments.size()).arg(knifeCount));
         qreal areaSum = 0.0;
         bool stylesOk = fragments.size() == 2;
-        for (const CompositeShapeItem* fragment : fragments) {
-            const CompositeShapeItem::Layer& layer = fragment->layers().constFirst();
+        for (const PolygonItem* fragment : fragments) {
+            const PolygonItem::Layer& layer = fragment->layers().constFirst();
             stylesOk = stylesOk && layer.fill == QColor(QStringLiteral("#2563EB")) &&
-                       layer.role == CompositeShapeItem::LayerRole::FilledArea &&
-                       fragment->fillStyle() == FillStyle::Solid;
+                       layer.role == PolygonItem::LayerRole::FilledArea && fragment->fillStyle() == FillStyle::Solid;
             const QRectF bounds = layer.path.boundingRect();
             areaSum += bounds.width() * bounds.height();
         }
@@ -133,9 +132,9 @@ void selftest::runLineSplitTests(Context& ctx)
 
         // 需求 11：碎片轮廓按闭合子路径描边，收尾边不能缺。
         bool closureOk = fragments.size() == 2;
-        for (const CompositeShapeItem* fragment : fragments) {
+        for (const PolygonItem* fragment : fragments) {
             const QPainterPath& piece = fragment->layers().constFirst().path;
-            const QPainterPath closed = CompositeShapeItem::closedSubpaths(piece);
+            const QPainterPath closed = PolygonItem::closedSubpaths(piece);
             closureOk = closureOk && closed.elementCount() >= piece.elementCount();
             // 闭合后的路径终点回到子路径起点：首元素与最后一个绘制元素重合。
             const QPointF first = closed.elementAt(0);
@@ -284,7 +283,7 @@ void selftest::runLineSplitTests(Context& ctx)
 
         int fragments = 0;
         for (CanvasItem* item : scene.canvasItems()) {
-            if (dynamic_cast<CompositeShapeItem*>(item)) {
+            if (dynamic_cast<PolygonItem*>(item)) {
                 ++fragments;
             }
         }
@@ -320,7 +319,7 @@ void selftest::runLineSplitTests(Context& ctx)
         bool upperFound = false;
         bool lowerFound = false;
         for (CanvasItem* item : scene.canvasItems()) {
-            if (auto* fragment = dynamic_cast<CompositeShapeItem*>(item)) {
+            if (auto* fragment = dynamic_cast<PolygonItem*>(item)) {
                 ++fragments;
                 const QPainterPath painted =
                     fragment->mapToScene(fragment->mapLayerPath(fragment->layers().constFirst().path));
@@ -349,8 +348,8 @@ void selftest::runLineSplitTests(Context& ctx)
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
         // 半椭圆弧：两端落在矩形左右两缘之外，弧底从矩形下部横穿。
         auto* arc = new ArcItem();
-        arc->setArcGeometry(QPointF(430.0, 550.0), QSizeF(268.0, 40.0), 0.0, 180.0,
-                            QColor(QStringLiteral("#1E293B")), 2.0);
+        arc->setArcGeometry(QPointF(430.0, 550.0), QSizeF(268.0, 40.0), 0.0, 180.0, QColor(QStringLiteral("#1E293B")),
+                            2.0);
         scene.addItemsWithUndo({arc}, QStringLiteral("Add arc"));
 
         scene.clearSelection();
@@ -361,7 +360,7 @@ void selftest::runLineSplitTests(Context& ctx)
 
         int fragments = 0;
         for (CanvasItem* item : scene.canvasItems()) {
-            if (dynamic_cast<CompositeShapeItem*>(item)) {
+            if (dynamic_cast<PolygonItem*>(item)) {
                 ++fragments;
             }
         }
@@ -495,7 +494,7 @@ void selftest::runLineSplitTests(Context& ctx)
         qreal minArea = std::numeric_limits<qreal>::max();
         QString geometry;
         for (CanvasItem* item : scene.canvasItems()) {
-            if (auto* fragment = dynamic_cast<CompositeShapeItem*>(item)) {
+            if (auto* fragment = dynamic_cast<PolygonItem*>(item)) {
                 ++fragments;
                 const QPainterPath painted =
                     fragment->mapToScene(fragment->mapLayerPath(fragment->layers().constFirst().path));

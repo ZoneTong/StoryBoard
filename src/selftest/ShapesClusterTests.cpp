@@ -1,8 +1,8 @@
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
-#include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "MainWindow.h"
+#include "PolygonItem.h"
 #include "ShapeItem.h"
 #include "ShapeMeta.h"
 #include "ShapePathBuilder.h"
@@ -26,8 +26,7 @@ void checkSineWaveOnePeriod(selftest::Context& ctx)
     SineItem sine;
     sine.setWaveGeometry(QPointF(0.0, 0.0), QSizeF(128.0, 40.0), QColor(Qt::black), 2.0);
     const QVector<QPointF> points = sine.strokePoints();
-    ctx.check(points.size() > 8, QStringLiteral("正弦波由采样点构成"),
-              QStringLiteral("points=%1").arg(points.size()));
+    ctx.check(points.size() > 8, QStringLiteral("正弦波由采样点构成"), QStringLiteral("points=%1").arg(points.size()));
     qreal minY = std::numeric_limits<qreal>::max();
     qreal maxY = std::numeric_limits<qreal>::lowest();
     for (const QPointF& point : points) {
@@ -36,8 +35,7 @@ void checkSineWaveOnePeriod(selftest::Context& ctx)
     }
     const qreal cy = (minY + maxY) / 2.0;
     const qreal amplitude = (maxY - minY) / 2.0;
-    ctx.check(qAbs(amplitude - sine.params().amplitude) < 1.5,
-              QStringLiteral("波峰到中心线的距离等于设定的像素振幅"),
+    ctx.check(qAbs(amplitude - sine.params().amplitude) < 1.5, QStringLiteral("波峰到中心线的距离等于设定的像素振幅"),
               QStringLiteral("amp=%1 param=%2").arg(amplitude).arg(sine.params().amplitude));
     const QPointF mid = points.value(points.size() / 2, QPointF(0.0, cy));
     ctx.check(qAbs(mid.y() - cy) < amplitude * 0.15, QStringLiteral("正弦波为一个完整周期（中点回到中心线）"),
@@ -153,7 +151,7 @@ void selftest::runShapesClusterTests(Context& ctx)
                   QStringLiteral("圆柱体插入为顶椭圆加柱身组成的分组"),
                   QStringLiteral("items=%1 group=%2 ellipse=%3").arg(items.size()).arg(cylGroup).arg(ellipseCount));
         // 需求 30：柱身是带面积层的多边形图元（与合并 / 分割产物同型），不是矩形。
-        auto* body = twoMore ? dynamic_cast<CompositeShapeItem*>(items.at(3)) : nullptr;
+        auto* body = twoMore ? dynamic_cast<PolygonItem*>(items.at(3)) : nullptr;
         ctx.check(body != nullptr && body->layerCount() == 1, QStringLiteral("圆柱体柱身是有面积的多边形图元"),
                   QStringLiteral("layers=%1").arg(body ? body->layerCount() : -1));
         // 需求 18/30：顶椭圆叠在柱身上层（分组内后加入的图元高度更高）。
@@ -186,7 +184,7 @@ void selftest::runShapesClusterTests(Context& ctx)
         int polygonCount = 0;
         int nonPolygon = 0;
         for (int i = 1; i < after.size(); ++i) {
-            if (dynamic_cast<CompositeShapeItem*>(after.at(i)) != nullptr) {
+            if (dynamic_cast<PolygonItem*>(after.at(i)) != nullptr) {
                 ++polygonCount;
             } else {
                 ++nonPolygon;

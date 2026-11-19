@@ -2,9 +2,9 @@
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
 #include "Commands.h"
-#include "CompositeShapeItem.h"
 #include "ExcalidrawFormat.h"
 #include "ImageFill.h"
+#include "PolygonItem.h"
 #include "ShapeItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -156,13 +156,13 @@ void selftest::runImageFillTests(Context& ctx)
         outer.addRect(QRectF(0, 0, 200, 200));
         QPainterPath inner;
         inner.addRect(QRectF(70, 70, 60, 60));
-        CompositeShapeItem::Layer ring;
+        PolygonItem::Layer ring;
         ring.path = outer.subtracted(inner);
         ring.fill = QColor(0, 0, 0, 0);
         ring.stroke = QColor(0, 0, 0, 0);
         ring.strokeWidth = 0.0;
         ring.filled = true;
-        auto* polygon = new CompositeShapeItem({ring}, FillStyle::Solid, Qt::SolidLine);
+        auto* polygon = new PolygonItem({ring}, FillStyle::Solid, Qt::SolidLine);
         polygon->setFillImage(solidImage(kGreen, 32), ImageFill::Mode::Stretch);
         holeScene.attachItem(polygon);
 
@@ -370,7 +370,7 @@ void selftest::runImageFillTests(Context& ctx)
         rightRect->setSelected(true);
         const bool merged = BoolOps::apply(&mergeScene, BoolOps::Operation::Union, QStringLiteral("合并"));
         const QList<CanvasItem*> selected = mergeScene.selectedCanvasItems();
-        auto* composite = selected.isEmpty() ? nullptr : dynamic_cast<CompositeShapeItem*>(selected.constFirst());
+        auto* composite = selected.isEmpty() ? nullptr : dynamic_cast<PolygonItem*>(selected.constFirst());
         ctx.check(merged && composite && !composite->hasFillImage(), QStringLiteral("合并图元的结果不继承图片填充"),
                   QStringLiteral("merged=%1 composite=%2 hasImage=%3")
                       .arg(merged ? 1 : 0)

@@ -3,10 +3,10 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
-#include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "LineSplitOps.h"
 #include "PathRegions.h"
+#include "PolygonItem.h"
 #include "ShapeItem.h"
 #include "TextItem.h"
 
@@ -47,13 +47,13 @@ bool isLineClassItem(CanvasItem* item)
     if (dynamic_cast<CurveItem*>(item)) {
         return true;
     }
-    // 零面积图元已全部并入曲线族，形状类恒有填充面积。
-    if (dynamic_cast<ShapeItem*>(item)) {
+    // 零面积图元已全部并入曲线族，普通形状类恒有填充面积；多边形要看图层。
+    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && !shape->isPolygon()) {
         return false;
     }
-    if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
-        for (const CompositeShapeItem::Layer& layer : composite->layers()) {
-            if (layer.role == CompositeShapeItem::LayerRole::FilledArea && !layer.path.isEmpty()) {
+    if (auto* composite = dynamic_cast<PolygonItem*>(item)) {
+        for (const PolygonItem::Layer& layer : composite->layers()) {
+            if (layer.role == PolygonItem::LayerRole::FilledArea && !layer.path.isEmpty()) {
                 return false;
             }
         }
@@ -67,12 +67,12 @@ bool isLineClassItem(CanvasItem* item)
 // 图形仍按完整轮廓参与布尔运算，也应优先决定合并结果的样式。
 bool hasFillSpace(CanvasItem* item)
 {
-    if (dynamic_cast<ShapeItem*>(item)) {
+    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && !shape->isPolygon()) {
         return true;
     }
-    if (auto* composite = dynamic_cast<CompositeShapeItem*>(item)) {
-        for (const CompositeShapeItem::Layer& layer : composite->layers()) {
-            if (layer.role == CompositeShapeItem::LayerRole::FilledArea && !layer.path.isEmpty()) {
+    if (auto* composite = dynamic_cast<PolygonItem*>(item)) {
+        for (const PolygonItem::Layer& layer : composite->layers()) {
+            if (layer.role == PolygonItem::LayerRole::FilledArea && !layer.path.isEmpty()) {
                 return true;
             }
         }
@@ -157,20 +157,20 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
             Q_UNUSED(curve)
             memberPath = vectorMember->mapToScene(vectorMember->paintedShape());
             strokePart = memberPath;
-        } else if (auto* shape = dynamic_cast<ShapeItem*>(vectorMember)) {
+        } else if (auto* shape = dynamic_cast<ShapeItem*>(vectorMember); shape && !shape->isPolygon()) {
             memberPath = shape->mapToScene(shape->outlineShape());
             fillPart = memberPath;
-        } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(vectorMember)) {
-            for (const CompositeShapeItem::Layer& layer : composite->layers()) {
+        } else if (auto* composite = dynamic_cast<PolygonItem*>(vectorMember)) {
+            for (const PolygonItem::Layer& layer : composite->layers()) {
                 if (layer.path.isEmpty()) {
                     continue;
                 }
                 const QPainterPath part = composite->mapToScene(composite->mapLayerPath(layer.path));
-                if (layer.role == CompositeShapeItem::LayerRole::FilledArea) {
+                if (layer.role == PolygonItem::LayerRole::FilledArea) {
                     fillPart = fillPart.isEmpty() ? part : fillPart.united(part);
-                } else if (layer.role == CompositeShapeItem::LayerRole::StrokeBand) {
+                } else if (layer.role == PolygonItem::LayerRole::StrokeBand) {
                     strokePart = strokePart.isEmpty() ? part : strokePart.united(part);
-                } else if (layer.role == CompositeShapeItem::LayerRole::Text) {
+                } else if (layer.role == PolygonItem::LayerRole::Text) {
                     textPart = textPart.isEmpty() ? part : textPart.united(part);
                     participant.textColor = layer.fill;
                 }
@@ -207,14 +207,14 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
     }
 
     CanvasItem* styleItem = participant.item;
-    if (auto* shape = dynamic_cast<ShapeItem*>(styleItem)) {
+    if (auto* shape = dynamic_cast<ShapeItem*>(styleItem); shape && !shape->isPolygon()) {
         participant.fill = shape->fillColor();
         participant.stroke = shape->strokeColor();
         participant.strokeWidth = shape->strokeWidth();
         participant.fillStyle = shape->fillStyle();
         participant.strokeStyle = shape->strokeStyle();
         participant.filled = shape->fillStyle() != FillStyle::None;
-    } else if (auto* composite = dynamic_cast<CompositeShapeItem*>(styleItem)) {
+    } else if (auto* composite = dynamic_cast<PolygonItem*>(styleItem)) {
         participant.fill = composite->fillColor();
         participant.stroke = composite->strokeColor();
         participant.strokeWidth = composite->strokeWidth();
@@ -323,8 +323,8 @@ QList<Participant> collect(CanvasScene* scene)
 // 文字一层（只填字形，不描边）。分层只在结果包含零面积图元或文字时出现。
 // intersectMode：相交结果的填充轮廓先挖掉线宽带（条带区域直接归线宽带层渲染），
 // 避免细窄交集条带被当成面积层套上描线后变成黑块。
-QList<CompositeShapeItem::Layer> buildLayers(const QPainterPath& result, const QList<Participant>& participants,
-                                             const Participant& top, bool intersectMode)
+QList<PolygonItem::Layer> buildLayers(const QPainterPath& result, const QList<Participant>& participants,
+                                      const Participant& top, bool intersectMode)
 {
     QPainterPath bandUnion;
     for (const Participant& participant : participants) {
@@ -376,17 +376,17 @@ QList<CompositeShapeItem::Layer> buildLayers(const QPainterPath& result, const Q
     struct RankedLayer {
         int rank = 0;
         int order = 0;
-        CompositeShapeItem::Layer layer;
+        PolygonItem::Layer layer;
     };
     QList<RankedLayer> ranked;
     if (!areas.isEmpty()) {
-        CompositeShapeItem::Layer layer;
+        PolygonItem::Layer layer;
         layer.path = areas;
         layer.fill = top.fill;
         layer.stroke = top.stroke;
         layer.strokeWidth = qMax(0.0, top.strokeWidth);
         layer.filled = true;
-        layer.role = CompositeShapeItem::LayerRole::FilledArea;
+        layer.role = PolygonItem::LayerRole::FilledArea;
         // 区域整体落在自身 3×描线宽的描边带内（最大内切半径不足 1.5 倍线宽，
         // 描边后剩余可见填充不足半条线宽）时降级为线宽带：只填充不描边，
         // 避免细窄交集 / 窄条被描线吞成黑块；描线宽为 0 时无需降级。
@@ -396,27 +396,27 @@ QList<CompositeShapeItem::Layer> buildLayers(const QPainterPath& result, const Q
             stroker.setWidth(layer.strokeWidth * 3.0);
             if (areas.subtracted(stroker.createStroke(areas)).isEmpty()) {
                 layer.strokeWidth = 0.0;
-                layer.role = CompositeShapeItem::LayerRole::StrokeBand;
+                layer.role = PolygonItem::LayerRole::StrokeBand;
             }
         }
         ranked.append(RankedLayer{areaRank, 0, layer});
     }
     if (!strokes.isEmpty()) {
-        CompositeShapeItem::Layer layer;
+        PolygonItem::Layer layer;
         layer.path = strokes;
         layer.fill = top.stroke;
         layer.strokeWidth = 0.0;
         layer.filled = true;
-        layer.role = CompositeShapeItem::LayerRole::StrokeBand;
+        layer.role = PolygonItem::LayerRole::StrokeBand;
         ranked.append(RankedLayer{strokeRank, 1, layer});
     }
     if (!texts.isEmpty()) {
-        CompositeShapeItem::Layer layer;
+        PolygonItem::Layer layer;
         layer.path = texts;
         layer.fill = textColor;
         layer.strokeWidth = 0.0;
         layer.filled = true;
-        layer.role = CompositeShapeItem::LayerRole::Text;
+        layer.role = PolygonItem::LayerRole::Text;
         ranked.append(RankedLayer{textRank, 2, layer});
     }
 
@@ -426,7 +426,7 @@ QList<CompositeShapeItem::Layer> buildLayers(const QPainterPath& result, const Q
         }
         return left.order < right.order;
     });
-    QList<CompositeShapeItem::Layer> layers;
+    QList<PolygonItem::Layer> layers;
     for (const RankedLayer& entry : std::as_const(ranked)) {
         layers.append(entry.layer);
     }
@@ -457,7 +457,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
     // 优先级最高的图元决定结果的颜色与落点（有填充空间者优先，其次叠放顺序）。
     const Participant top = participants.constLast();
     // 除拆分外的运算都只产出一个多边形；拆分产出多个互不重叠的独立图元。
-    QList<QList<CompositeShapeItem::Layer>> results;
+    QList<QList<PolygonItem::Layer>> results;
 
     // 零面积描线（直线 / 曲线 / 文字）只做覆盖着色，不作为挖除与分块的边界：
     // 否则菱形挖直线会在图形上留细缝、交集条带被当成面积层套上描线后变成黑块。
@@ -620,7 +620,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         // 这样每一块都能自己选中、拖动，而不是藏在一个图元里只能整体移动。
         const QList<QPainterPath> pieces = PathRegions::splitDisjoint(result);
         for (const QPainterPath& piece : pieces) {
-            const QList<CompositeShapeItem::Layer> layers = buildLayers(piece, participants, top, false);
+            const QList<PolygonItem::Layer> layers = buildLayers(piece, participants, top, false);
             if (!layers.isEmpty()) {
                 results.append(layers);
             }
@@ -655,8 +655,8 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
     QList<CanvasItem*> created;
     undo->beginMacro(commandText);
     undo->push(new RemoveItemsCommand(scene, originals, commandText));
-    for (const QList<CompositeShapeItem::Layer>& block : results) {
-        auto* composite = new CompositeShapeItem(block, top.fillStyle, top.strokeStyle);
+    for (const QList<PolygonItem::Layer>& block : results) {
+        auto* composite = new PolygonItem(block, top.fillStyle, top.strokeStyle);
         composite->setName(scene->uniqueItemName(composite->typeDisplayName()));
         composite->setLayerId(top.item->layerId());
         composite->setHeight(scene->nextHeight(top.item->layerId()));
