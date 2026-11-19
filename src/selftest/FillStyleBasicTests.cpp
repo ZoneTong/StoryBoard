@@ -126,7 +126,7 @@ void selftest::runFillStyleBasicTests(Context& ctx)
     }
 
     // 需求 16：常见图形按工具栏已选择的填充样式 / 描线颜色 / 描线宽度生成；
-    // 填充色未单独选过时跟随画笔色（工具栏"跟随画笔色"语义）。
+    // 填充色默认是工具栏灰 #9CA3AF（首启初值），不再回退到画笔色。
     {
         qreal insertedWidth = -1.0;
         QString fillColorText;
@@ -147,7 +147,7 @@ void selftest::runFillStyleBasicTests(Context& ctx)
             }
         }
         ctx.check(
-            insertedFillStyle == FillStyle::Hachure && fillColorText == QStringLiteral("#2563eb") &&
+            insertedFillStyle == FillStyle::Hachure && fillColorText == QStringLiteral("#9ca3af") &&
                 strokeColorText == QStringLiteral("#2563eb") && qAbs(insertedWidth - 1.0) < 0.01,
             QStringLiteral("常见图形按工具栏样式生成"),
             QStringLiteral("fill=%1 stroke=%2 width=%3").arg(fillColorText).arg(strokeColorText).arg(insertedWidth));

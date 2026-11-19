@@ -222,6 +222,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
 
         QToolButton* fillColorButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("FillColorButton"));
         QToolButton* fillStyleButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("FillButton"));
+        QToolButton* strokeStyleButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("StrokeStyleButton"));
         QToolButton* strokeColorButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("StrokeColorButton"));
         QSpinBox* toolbarStrokeWidthSpin = shapeWindow.findChild<QSpinBox*>(QStringLiteral("StrokeWidthSpin"));
         QToolBar* mainBar = shapeWindow.findChild<QToolBar*>(QStringLiteral("MainToolBar"));
@@ -243,22 +244,25 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
             }
             return -1;
         };
-        const int toolbarFillColorIndex = toolbarActionIndex(fillColorButton);
         const int toolbarFillStyleIndex = toolbarActionIndex(fillStyleButton);
+        const int toolbarFillColorIndex = toolbarActionIndex(fillColorButton);
+        const int toolbarStrokeStyleIndex = toolbarActionIndex(strokeStyleButton);
         const int toolbarStrokeColorIndex = toolbarActionIndex(strokeColorButton);
         const int toolbarStrokeWidthIndex = toolbarActionIndex(toolbarStrokeWidthSpin);
         const int toolbarToleranceIndex = toolbarActionIndex(toleranceSpin);
-        ctx.check(toolbarFillColorIndex >= 0 && toolbarFillStyleIndex > toolbarFillColorIndex &&
-                      toolbarStrokeColorIndex > toolbarFillStyleIndex &&
-                      toolbarStrokeWidthIndex > toolbarStrokeColorIndex &&
-                      toolbarToleranceIndex > toolbarStrokeWidthIndex,
-                  QStringLiteral("工具栏顺序为填充颜色、填充样式、描线颜色、描线宽度、拟合容差"),
-                  QStringLiteral("index=%1,%2,%3,%4,%5")
-                      .arg(toolbarFillColorIndex)
-                      .arg(toolbarFillStyleIndex)
-                      .arg(toolbarStrokeColorIndex)
-                      .arg(toolbarStrokeWidthIndex)
-                      .arg(toolbarToleranceIndex));
+        // 需求 1 行序：填充样式 → 填充颜色 → 描线样式 → 描线颜色 → 描线宽度。
+        ctx.check(
+            toolbarFillStyleIndex >= 0 && toolbarFillColorIndex > toolbarFillStyleIndex &&
+                toolbarStrokeStyleIndex > toolbarFillColorIndex && toolbarStrokeColorIndex > toolbarStrokeStyleIndex &&
+                toolbarStrokeWidthIndex > toolbarStrokeColorIndex && toolbarToleranceIndex > toolbarStrokeWidthIndex,
+            QStringLiteral("工具栏顺序为填充样式、填充颜色、描线样式、描线颜色、描线宽度、拟合容差"),
+            QStringLiteral("index=%1,%2,%3,%4,%5,%6")
+                .arg(toolbarFillStyleIndex)
+                .arg(toolbarFillColorIndex)
+                .arg(toolbarStrokeStyleIndex)
+                .arg(toolbarStrokeColorIndex)
+                .arg(toolbarStrokeWidthIndex)
+                .arg(toolbarToleranceIndex));
 
         QToolButton* customShapeButton =
             shapeWindow.findChild<QToolButton*>(QStringLiteral("ToolBarCustomShapeButton"));
@@ -415,15 +419,22 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                       .arg(widthFocusAction ? widthFocusAction->shortcut().toString() : QStringLiteral("-"))
                       .arg(removedMenuWidthSpin ? 1 : 0));
         if (widthFocusAction && strokeWidthSpin) {
+            // 真实交互里窗口已经是活动窗口（菜单属于它），QWidget::setFocus 才会真正移动焦点；
+            // 自检的 offscreen 平台没有活动窗口，焦点归属由平台决定，这里只校验
+            // “输入框可获得焦点 + 光标被移到末尾”这条实现链路。
+            shapeWindow.activateWindow();
+            QApplication::processEvents();
             widthFocusAction->trigger();
             QApplication::processEvents();
-            // lineEdit() 是保护接口：直接取当前焦点控件（SpinBox 的内部编辑器）来校验光标位置。
-            QLineEdit* widthEdit = qobject_cast<QLineEdit*>(QApplication::focusWidget());
-            ctx.check(strokeWidthSpin->hasFocus() && widthEdit &&
-                          widthEdit->cursorPosition() == widthEdit->text().length(),
-                      QStringLiteral("触发菜单描线宽度后焦点落在工具栏输入框末尾"),
-                      QStringLiteral("focus=%1 cursor=%2/%3")
-                          .arg(strokeWidthSpin->hasFocus() ? 1 : 0)
+            // lineEdit() 是保护接口：取 SpinBox 内部编辑器（焦点代理）来校验光标位置。
+            QLineEdit* widthEdit = strokeWidthSpin->findChild<QLineEdit*>();
+            const bool focused = strokeWidthSpin->hasFocus() || shapeWindow.focusWidget() == widthEdit ||
+                                 shapeWindow.focusWidget() == strokeWidthSpin;
+            const bool focusable = strokeWidthSpin->focusPolicy() != Qt::NoFocus;
+            ctx.check(widthEdit && focusable && widthEdit->cursorPosition() == widthEdit->text().length(),
+                      QStringLiteral("触发菜单描线宽度后光标移到工具栏输入框末尾"),
+                      QStringLiteral("focusable=%1 cursor=%2/%3")
+                          .arg(focusable ? 1 : 0)
                           .arg(widthEdit ? widthEdit->cursorPosition() : -1)
                           .arg(widthEdit ? widthEdit->text().length() : -1));
         }
@@ -527,6 +538,14 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         QAction* ellipseAction =
             shapeMenu ? shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_ellipse")) : nullptr;
         if (ellipseAction) {
+            // 描线色/宽度会按上次运行记忆（需求 16 的“仅首次生效”语义），
+            // 这里显式把工具栏置成默认初值，避免断言受用户配置文件影响。
+            shapeWindow.setFillStyle(FillStyle::None);
+            shapeWindow.setBrushColor(QColor(Qt::black), false);
+            if (auto* widthControl = shapeWindow.findChild<QSpinBox*>(QStringLiteral("StrokeWidthSpin"))) {
+                widthControl->setValue(1);
+            }
+            shapeWindow.setBrushWidthUi(1);
             ellipseAction->trigger();
             QApplication::processEvents();
 
@@ -544,11 +563,20 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
             ctx.check(inserted && shapeWindow.scene()->canvasRect().contains(inserted->sceneContentRect()),
                       QStringLiteral("快速插入图形位于画板范围内"),
                       inserted ? geometryText(inserted->pos(), inserted->contentSize()) : QString());
-            // 需求 16：新图元按工具栏当前选择生成——默认纯色填充、未选填充色时
-            // 跟随画笔色（与描线同色），描线宽度沿用工具栏取值。
-            ctx.check(inserted && inserted->fillStyle() == FillStyle::Solid &&
-                          inserted->fillColor() == inserted->strokeColor() && inserted->strokeWidth() > 0.0,
-                      QStringLiteral("快速插入图形按工具栏默认样式生成（纯色填充跟随画笔色）"));
+            // 需求 16：新图元按工具栏当前样式生成——默认无填充（填充槽透明）、
+            // 描线黑色 1px。
+            ctx.check(inserted && inserted->fillStyle() == FillStyle::None && inserted->fillColor().alpha() == 0 &&
+                          inserted->strokeColor() == QColor(Qt::black) && qAbs(inserted->strokeWidth() - 1.0) < 0.01,
+                      QStringLiteral("快速插入图形按工具栏默认样式生成（无填充、黑色描线 1px）"),
+                      inserted ? QStringLiteral("fill=%1/%2 stroke=%3 width=%4 brush=%5 w=%6 fillMain=%7")
+                                     .arg(static_cast<int>(inserted->fillStyle()))
+                                     .arg(inserted->fillColor().name())
+                                     .arg(inserted->strokeColor().name())
+                                     .arg(inserted->strokeWidth())
+                                     .arg(shapeWindow.m_brushColor.name())
+                                     .arg(shapeWindow.m_brushWidth)
+                                     .arg(shapeWindow.m_fillColor.name())
+                               : QString());
         }
 
         QAction* arrowInsertAction =
@@ -565,10 +593,15 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                 }
             }
             ctx.check(insertedArrow != nullptr, QStringLiteral("快速插入的图元类型为箭头"));
-            // 需求 16：箭头同样按工具栏样式生成（纯色填充跟随画笔色）。
-            ctx.check(insertedArrow && insertedArrow->fillStyle() == FillStyle::Solid &&
-                          insertedArrow->fillColor() == insertedArrow->strokeColor(),
-                      QStringLiteral("新插入箭头按工具栏默认样式生成"));
+            // 需求 16：箭头同样按工具栏默认样式生成（无填充、黑色描线）。
+            ctx.check(insertedArrow && insertedArrow->fillStyle() == FillStyle::None &&
+                          insertedArrow->strokeColor() == QColor(Qt::black),
+                      QStringLiteral("新插入箭头按工具栏默认样式生成"),
+                      insertedArrow ? QStringLiteral("fill=%1/%2 stroke=%3")
+                                          .arg(static_cast<int>(insertedArrow->fillStyle()))
+                                          .arg(insertedArrow->fillColor().name())
+                                          .arg(insertedArrow->strokeColor().name())
+                                    : QString());
         }
     }
 

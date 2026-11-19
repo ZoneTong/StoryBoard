@@ -183,6 +183,16 @@ void selftest::runMainWindowFlowTests(Context& ctx)
                 const QString configPath = AppSettings::settingsFilePath();
                 ctx.check(configPath.endsWith(QStringLiteral("StoryBoard.ini")),
                           QStringLiteral("配置文件是纯文本 StoryBoard.ini"), configPath);
+                // 本段会真写磁盘配置：先备份原文件，结束时还原，
+                // 否则会污染同进程后续用例与用户自己的设置（画笔色、宽度等）。
+                QByteArray originalConfig;
+                const bool hadOriginalConfig = QFile::exists(configPath);
+                {
+                    QFile backup(configPath);
+                    if (hadOriginalConfig && backup.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                        originalConfig = backup.readAll();
+                    }
+                }
 
                 AppSettings written;
                 written.brushColor = QColor(255, 128, 0, 255);
@@ -325,6 +335,17 @@ void selftest::runMainWindowFlowTests(Context& ctx)
                     ctx.check(closed && !afterClose.windowGeometry.isEmpty(),
                               QStringLiteral("关闭窗口时把窗口几何写进配置文件"),
                               QStringLiteral("closed=%1 bytes=%2").arg(closed).arg(afterClose.windowGeometry.size()));
+                }
+
+                // 还原自检前的配置文件（没有就删掉本次新建的），保持用例间与用户环境干净。
+                if (hadOriginalConfig) {
+                    QFile restore(configPath);
+                    if (restore.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+                        restore.write(originalConfig);
+                        restore.close();
+                    }
+                } else {
+                    QFile::remove(configPath);
                 }
             }
         }

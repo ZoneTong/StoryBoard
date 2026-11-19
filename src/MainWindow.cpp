@@ -294,9 +294,11 @@ void MainWindow::focusStrokeWidthSpin()
         return;
     }
     // 需求 1：菜单“描线宽度”是普通菜单项，触发后把焦点放到工具栏宽度输入框末尾。
-    // lineEdit() 是保护接口，取当前焦点控件（SpinBox 的内部编辑器）来移动光标。
+    // 窗口已激活时 activateWindow() 无副作用；未激活时先激活再 setFocus，避免焦点丢失。
+    activateWindow();
     m_widthSpin->setFocus(Qt::ShortcutFocusReason);
-    if (auto* edit = qobject_cast<QLineEdit*>(QApplication::focusWidget())) {
+    // lineEdit() 是保护接口，直接取 SpinBox 内部的编辑器来移动光标。
+    if (auto* edit = m_widthSpin->findChild<QLineEdit*>()) {
         edit->end(false);
     }
 }

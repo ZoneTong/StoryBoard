@@ -27,6 +27,7 @@ class QKeyEvent;
 namespace selftest {
 class Context;
 void runFillStyleBasicTests(Context& ctx);
+void runMainWindowShapeMenuTests(Context& ctx);
 } // namespace selftest
 class ItemPropertiesDialog;
 class ItemDockPanel;
@@ -124,6 +125,7 @@ class MainWindow : public QMainWindow {
                      bool autoCorner = false);
     // 需求 16：自检需要直接驱动工具栏样式取值（填充样式 / 画笔色 / 描线宽度）验证新图元生成。
     friend void selftest::runFillStyleBasicTests(selftest::Context&);
+    friend void selftest::runMainWindowShapeMenuTests(selftest::Context&);
 
   private:
     void createActions();

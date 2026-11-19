@@ -13,6 +13,7 @@
 #include "ImageItem.h"
 #include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
+#include "ItemStyleVisuals.h"
 #include "LayerPanel.h"
 #include "LineArtConverter.h"
 #include "LineArtDialog.h"
@@ -587,6 +588,9 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             }
             const QList<QToolButton*> borderButtons =
                 dockPanel->findChildren<QToolButton*>(QStringLiteral("ItemBorderStyleButton"));
+            // 需求 15 在候选头部插入“无”，按钮顺序跟随 ItemStyleVisuals::borderStyles()，
+            // 断言不能再按位置取“虚线”，必须按候选表定位。
+            const int dashedBorderButtonIndex = ItemStyleVisuals::borderStyles().indexOf(Qt::DashLine);
             const QList<QToolButton*> fillButtons =
                 dockPanel->findChildren<QToolButton*>(QStringLiteral("ItemFillStyleButton"));
             QToolButton* heightUp = dockPanel->findChild<QToolButton*>(QStringLiteral("ItemHeightUpButton"));
@@ -611,8 +615,8 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             ctx.check(qAbs(selectedShape->opacity() - 1.0) < 0.01, QStringLiteral("撤销透明度修改恢复原值"),
                       QString::number(selectedShape->opacity()));
 
-            if (borderButtons.size() > 1) {
-                borderButtons.at(1)->click();
+            if (dashedBorderButtonIndex >= 0 && borderButtons.size() > dashedBorderButtonIndex) {
+                borderButtons.at(dashedBorderButtonIndex)->click();
                 QApplication::processEvents();
             }
             ctx.check(selectedShape->strokeStyle() == Qt::DashLine, QStringLiteral("工具卡边框样式作用到图形"));
@@ -915,9 +919,9 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             ctx.check(qAbs(selectedStroke->strokeWidth() - 6.0) < 0.01, QStringLiteral("撤销描线宽度恢复曲线原宽度"),
                       QString::number(selectedStroke->strokeWidth()));
 
-            if (borderButtons.size() > 1) {
+            if (dashedBorderButtonIndex >= 0 && borderButtons.size() > dashedBorderButtonIndex) {
                 const Qt::PenStyle styleBefore = selectedStroke->strokeStyle();
-                borderButtons.at(1)->click();
+                borderButtons.at(dashedBorderButtonIndex)->click();
                 QApplication::processEvents();
                 ctx.check(selectedStroke->strokeStyle() != styleBefore, QStringLiteral("曲线可通过编辑卡切换描线样式"));
                 dockScene->undoStack()->undo();
@@ -1004,8 +1008,8 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                       polygon->fillColor().name());
 
             const Qt::PenStyle polygonPenBefore = polygon->strokeStyle();
-            if (borderButtons.size() > 1) {
-                borderButtons.at(1)->click();
+            if (dashedBorderButtonIndex >= 0 && borderButtons.size() > dashedBorderButtonIndex) {
+                borderButtons.at(dashedBorderButtonIndex)->click();
                 QApplication::processEvents();
             }
             ctx.check(polygon->strokeStyle() != polygonPenBefore, QStringLiteral("编辑卡描线样式作用到多边形"));
