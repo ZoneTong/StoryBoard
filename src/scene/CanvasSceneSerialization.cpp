@@ -1,6 +1,8 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "CurveItem.h"
+#include "ImageStore.h"
+#include "ShapeItem.h"
 #include "ShapePathBuilder.h"
 #include "scene/SceneConstants.h"
 
@@ -205,12 +207,30 @@ QJsonObject CanvasScene::toJson() const
     root.insert(QStringLiteral("activeLayer"), m_activeLayerId);
 
     QJsonArray itemsArray;
+    // 需求 11：同一张图片在文件里只存一份。保存前按内容哈希收集本画布用到的图片，
+    // 表里只留仍被引用的项，零引用的图片在保存后自然消失。
+    QJsonObject imagesTable;
+    QSet<QString> usedImageIds;
     const QList<CanvasItem*> items = canvasItems();
     for (CanvasItem* item : items) {
         QJsonObject itemJson = item->toJson();
         // 旧画布只有图形自带 opacity，这里统一给所有图元写入透明度。
         itemJson.insert(QStringLiteral("opacity"), item->itemOpacity());
+        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->hasFillImage()) {
+            // 以图元当前像素重新签发 id：复制 / 粘贴 / 换图后内容与 id 必然一致。
+            const QString id = ImageStore::store(&imagesTable, shape->fillImage());
+            if (!id.isEmpty()) {
+                usedImageIds.insert(id);
+                itemJson.insert(QStringLiteral("fillImageId"), id);
+                itemJson.insert(QStringLiteral("fillImageMode"),
+                                ImageFill::modeToString(shape->fillImageMode()));
+                itemJson.remove(QStringLiteral("fillImage"));
+            }
+        }
         itemsArray.append(itemJson);
+    }
+    if (!usedImageIds.isEmpty()) {
+        root.insert(QStringLiteral("images"), ImageStore::compact(imagesTable, usedImageIds));
     }
     root.insert(QStringLiteral("items"), itemsArray);
 
@@ -254,6 +274,8 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
     }
 
     // 预创建全部图元，把未知类型拦在动文档之前；失败时释放已创建的副本。
+    // 需求 11：画布级图片表先解出来，图元只带 id，图片本体从这里取。
+    const QJsonObject imagesTable = root.value(QStringLiteral("images")).toObject();
     QList<CanvasItem*> parsedItems;
     for (const QJsonObject& itemJson : std::as_const(itemObjects)) {
         const QString kind = itemJson.value(QStringLiteral("type")).toString();
@@ -271,6 +293,15 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
         if (!isLegacyBraceShape(itemJson) && !isLegacySineWaveShape(itemJson)) {
             item->fromJson(itemJson);
             item->setItemOpacity(itemJson.value(QStringLiteral("opacity")).toDouble(1.0));
+        }
+        // 需求 11：引用式背景图片；表里缺项（例如手工改过文件）时按无图处理，不阻断打开。
+        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && !shape->fillImageId().isEmpty()) {
+            const QPixmap pixmap =
+                ImageStore::pixmapFromEntry(imagesTable.value(shape->fillImageId()).toObject());
+            if (!pixmap.isNull()) {
+                shape->setFillImage(pixmap, shape->fillImageMode());
+                shape->setFillImageId(itemJson.value(QStringLiteral("fillImageId")).toString());
+            }
         }
         parsedItems.append(item);
     }

@@ -174,8 +174,9 @@ void selftest::runImageFillTests(Context& ctx)
                   QStringLiteral("ring=%1 hole=%2").arg(ringPixel.name()).arg(holePixel.name()));
     }
 
-    // 4) Fit：宽图放进竖长矩形，上下空边露填充色、中段是图片。
-    {
+        // 4) 需求 10：背景图片在填充样式之下，纯色不透明填充会把它整片盖住，
+        // Fit 留边与中段都只能看到填充色。
+        {
         CanvasScene fitScene;
         fitScene.setMode(ToolMode::Edit);
         fitScene.setShowGrid(false);
@@ -187,9 +188,39 @@ void selftest::runImageFillTests(Context& ctx)
         const QImage fitImage = renderCanvas(fitScene, QSize(100, 200));
         const QColor topBand = fitImage.pixelColor(50, 20);
         const QColor middle = fitImage.pixelColor(50, 100);
-        ctx.check(colorNear(topBand, kBlue) && colorNear(middle, kGreen),
-                  QStringLiteral("Fit 摆放的宽图在竖长矩形中上下露出填充色"),
+        ctx.check(colorNear(topBand, kBlue) && colorNear(middle, kBlue),
+                  QStringLiteral("背景图片在填充样式之下，纯色填充将它完全遮挡"),
                   QStringLiteral("top=%1 middle=%2").arg(topBand.name()).arg(middle.name()));
+    }
+
+    // 需求 11/12：同一张图片被多个图元共用时，画布文件里只存一份；图元只记 id 引用。
+    {
+        CanvasScene storeScene;
+        storeScene.setMode(ToolMode::Edit);
+        storeScene.setShowGrid(false);
+        storeScene.applyCanvasSize(QSizeF(300, 200));
+        const QPixmap shared = solidImage(kGreen, 40);
+        auto* first = makePlainShape(ShapeType::Rectangle, QSizeF(80, 80), kBlue);
+        auto* second = makePlainShape(ShapeType::Ellipse, QSizeF(80, 80), kBlue);
+        first->setFillImage(shared, ImageFill::Mode::Stretch);
+        second->setFillImage(shared, ImageFill::Mode::Stretch);
+        second->setPos(100.0, 0.0);
+        storeScene.attachItem(first);
+        storeScene.attachItem(second);
+
+        const QJsonObject root = storeScene.toJson();
+        const QJsonObject images = root.value(QStringLiteral("images")).toObject();
+        const QJsonArray items = root.value(QStringLiteral("items")).toArray();
+        const QString firstId = items.at(0).toObject().value(QStringLiteral("fillImageId")).toString();
+        const QString secondId = items.at(1).toObject().value(QStringLiteral("fillImageId")).toString();
+        const bool noInline = !items.at(0).toObject().contains(QStringLiteral("fillImage")) &&
+                              !items.at(1).toObject().contains(QStringLiteral("fillImage"));
+        ctx.check(images.size() == 1 && firstId == secondId && !firstId.isEmpty() && noInline,
+                  QStringLiteral("同一张背景图片在画布文件里只存一份、图元只记引用"),
+                  QStringLiteral("images=%1 sameId=%2 inline=%3")
+                      .arg(images.size())
+                      .arg(firstId == secondId ? QStringLiteral("yes") : QStringLiteral("no"))
+                      .arg(noInline ? QStringLiteral("yes") : QStringLiteral("no")));
     }
 
     // 5) Tile：按原图像素 1:1 平铺，出现 ≥2×2 周期且步长等于图片宽度。

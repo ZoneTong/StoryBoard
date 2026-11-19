@@ -522,6 +522,8 @@ void ShapeItem::setFillImage(const QPixmap& image, ImageFill::Mode mode)
     }
     m_fillImage = image;
     m_fillImageMode = mode;
+    // 图片内容变了，旧的内容哈希 id 失效，由保存时按新内容重新签发。
+    m_fillImageId.clear();
     update();
 }
 
@@ -531,6 +533,7 @@ void ShapeItem::clearFillImage()
         return;
     }
     m_fillImage = QPixmap();
+    m_fillImageId.clear();
     update();
 }
 
@@ -714,12 +717,11 @@ void ShapeItem::paintContent(QPainter* painter)
         return;
     }
 
-    ShapePainter::paintShape(painter, path, rect, m_type, m_strokeColor, m_fillColor, m_strokeWidth, m_strokeStyle,
-                             m_fillStyle, m_opacity);
-
-    // 需求 15：图片垫在填充色之上、描线之下；裁剪到填充区并避开描边带，
-    // 避免图片把描边的内半侧盖掉。图片透明处自然露出下面的填充色 / 图案。
+    // 需求 10：背景图片在填充样式之下：先铺图片，再由填充色 / 图案遮挡它。
+    // 图片仍然裁剪到填充区并避开描边带，描线不会被打断。
     if (!m_fillImage.isNull()) {
+        painter->save();
+        painter->setOpacity(painter->opacity() * m_opacity);
         QPainterPath clip = path;
         if (m_strokeWidth > 0.0 && m_strokeColor.alpha() > 0) {
             QPainterPathStroker stroker;
@@ -728,7 +730,11 @@ void ShapeItem::paintContent(QPainter* painter)
             clip = path.subtracted(stroker.createStroke(path));
         }
         ImageFill::paint(painter, m_fillImage, m_fillImageMode, rect, clip);
+        painter->restore();
     }
+
+    ShapePainter::paintShape(painter, path, rect, m_type, m_strokeColor, m_fillColor, m_strokeWidth, m_strokeStyle,
+                             m_fillStyle, m_opacity);
 
     // 需求 4：所有线条类图元（直线 / 弧线 / 正弦波 / 波线 / 卷轴）两端都能挂箭头，
     // 箭头沿描线首尾的切线方向画，允许超出内容矩形。
@@ -774,9 +780,16 @@ QJsonObject ShapeItem::toJson() const
         json.insert(QStringLiteral("parallelogramAngle"), m_parallelogramAngle);
     }
     // 需求 15：图片填充独立属性，无图时不写键，旧版本忽略该键即退回纯色。
-    const QJsonObject fillImageJson = ImageFill::toJson(m_fillImage, m_fillImageMode);
-    if (!fillImageJson.isEmpty()) {
-        json.insert(QStringLiteral("fillImage"), fillImageJson);
+    // 需求 11：有内容哈希 id 时只写引用（与图片模式），图片本体由画布级 images 表承载；
+    // 没有 id（模板 / 剪贴板这类自包含文件）仍写内联 data。
+    if (!m_fillImage.isNull() && !m_fillImageId.isEmpty()) {
+        json.insert(QStringLiteral("fillImageId"), m_fillImageId);
+        json.insert(QStringLiteral("fillImageMode"), ImageFill::modeToString(m_fillImageMode));
+    } else {
+        const QJsonObject fillImageJson = ImageFill::toJson(m_fillImage, m_fillImageMode);
+        if (!fillImageJson.isEmpty()) {
+            json.insert(QStringLiteral("fillImage"), fillImageJson);
+        }
     }
     // 直线 / 直线箭头两端箭头样式：旧文件没有这两个字段时按「无」载入。
     json.insert(QStringLiteral("startArrow"), arrowStyleToString(m_startArrow));
@@ -862,8 +875,15 @@ void ShapeItem::fromJson(const QJsonObject& json)
     const qreal legacyRadius = json.value(QStringLiteral("shapeRadius")).toDouble(-1.0);
     if (json.contains(QStringLiteral("fillImage"))) {
         m_fillImage = ImageFill::pixmapFromJson(json.value(QStringLiteral("fillImage")).toObject(), &m_fillImageMode);
+        m_fillImageId.clear();
+    } else if (json.contains(QStringLiteral("fillImageId"))) {
+        // 需求 11：图片本体在画布级 images 表里，先记下 id，由加载层解析成 pixmap。
+        m_fillImageId = json.value(QStringLiteral("fillImageId")).toString();
+        m_fillImageMode = ImageFill::modeFromString(json.value(QStringLiteral("fillImageMode")).toString());
+        m_fillImage = QPixmap();
     } else {
         m_fillImage = QPixmap();
+        m_fillImageId.clear();
         m_fillImageMode = ImageFill::Mode::Stretch;
     }
     m_startArrow = arrowStyleFromString(json.value(QStringLiteral("startArrow")).toString());

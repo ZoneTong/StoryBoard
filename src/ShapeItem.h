@@ -162,6 +162,9 @@ class ShapeItem : public CanvasItem {
     // 需求 15：可填充图元支持一张图片垫在填充色之上，独立于 FillStyle。
     bool hasFillImage() const { return !m_fillImage.isNull(); }
     QPixmap fillImage() const { return m_fillImage; }
+    // 需求 11：画布级图片表里的引用 id；同图共享同一 id，保存时按引用重建表。
+    QString fillImageId() const { return m_fillImageId; }
+    void setFillImageId(const QString& id) { m_fillImageId = id; }
     ImageFill::Mode fillImageMode() const { return m_fillImageMode; }
     void setFillImage(const QPixmap& image, ImageFill::Mode mode);
     void clearFillImage();
@@ -230,6 +233,7 @@ class ShapeItem : public CanvasItem {
     qreal m_bottomAngle2 = 60.0;
     qreal m_parallelogramAngle = 60.0;
     QPixmap m_fillImage;
+    QString m_fillImageId;
     ImageFill::Mode m_fillImageMode = ImageFill::Mode::Stretch;
     ArrowStyle m_startArrow = ArrowStyle::None;
     ArrowStyle m_endArrow = ArrowStyle::None;
