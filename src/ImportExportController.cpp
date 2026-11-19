@@ -7,10 +7,12 @@
 #include "DocumentController.h"
 #include "ExportDialog.h"
 #include "I18n.h"
+#include "ImageFill.h"
 #include "ImageItem.h"
 #include "LineArtDialog.h"
 #include "MainWindow.h"
 #include "Settings.h"
+#include "ShapeItem.h"
 
 #include <QApplication>
 #include <QDesktopServices>
@@ -407,8 +409,13 @@ void ImportExportController::importImageFiles(const QStringList& files)
         size.setWidth(qMax<qreal>(16.0, size.width()));
         size.setHeight(qMax<qreal>(16.0, size.height()));
 
-        auto* item = new ImageItem();
-        item->setImage(pixmap, QFileInfo(file).fileName());
+        // 需求 14：插入图片生成的是矩形图元，图片只作为它的背景（在填充样式之下）。
+        // 填充与描线都是透明无色，图片本身承担视觉；不再产生图片类型图元。
+        auto* item = new ShapeItem(ShapeType::Rectangle);
+        item->setFillImage(pixmap, ImageFill::Mode::Stretch);
+        item->setStyle(QColor(Qt::transparent), QColor(Qt::transparent), 1.0);
+        item->setFillStyle(FillStyle::None);
+        item->setName(QFileInfo(file).fileName());
         item->setContentSize(size);
         item->setPos(viewCenter - QPointF(size.width() / 2.0, size.height() / 2.0) +
                      QPointF(offsetIndex * 26.0, offsetIndex * 26.0));

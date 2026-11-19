@@ -222,8 +222,7 @@ QJsonObject CanvasScene::toJson() const
             if (!id.isEmpty()) {
                 usedImageIds.insert(id);
                 itemJson.insert(QStringLiteral("fillImageId"), id);
-                itemJson.insert(QStringLiteral("fillImageMode"),
-                                ImageFill::modeToString(shape->fillImageMode()));
+                itemJson.insert(QStringLiteral("fillImageMode"), ImageFill::modeToString(shape->fillImageMode()));
                 itemJson.remove(QStringLiteral("fillImage"));
             }
         }
@@ -296,8 +295,7 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
         }
         // 需求 11：引用式背景图片；表里缺项（例如手工改过文件）时按无图处理，不阻断打开。
         if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && !shape->fillImageId().isEmpty()) {
-            const QPixmap pixmap =
-                ImageStore::pixmapFromEntry(imagesTable.value(shape->fillImageId()).toObject());
+            const QPixmap pixmap = ImageStore::pixmapFromEntry(imagesTable.value(shape->fillImageId()).toObject());
             if (!pixmap.isNull()) {
                 shape->setFillImage(pixmap, shape->fillImageMode());
                 shape->setFillImageId(itemJson.value(QStringLiteral("fillImageId")).toString());

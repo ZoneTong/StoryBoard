@@ -174,9 +174,9 @@ void selftest::runImageFillTests(Context& ctx)
                   QStringLiteral("ring=%1 hole=%2").arg(ringPixel.name()).arg(holePixel.name()));
     }
 
-        // 4) 需求 10：背景图片在填充样式之下，纯色不透明填充会把它整片盖住，
-        // Fit 留边与中段都只能看到填充色。
-        {
+    // 4) 需求 10：背景图片在填充样式之下，纯色不透明填充会把它整片盖住，
+    // Fit 留边与中段都只能看到填充色。
+    {
         CanvasScene fitScene;
         fitScene.setMode(ToolMode::Edit);
         fitScene.setShowGrid(false);

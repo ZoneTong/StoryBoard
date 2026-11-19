@@ -28,8 +28,8 @@ QString ImageStore::idFor(const QPixmap& image)
     if (bytes.isEmpty()) {
         return QString();
     }
-    const QString digest = QString::fromLatin1(
-        QCryptographicHash::hash(bytes, QCryptographicHash::Sha1).toHex().left(16));
+    const QString digest =
+        QString::fromLatin1(QCryptographicHash::hash(bytes, QCryptographicHash::Sha1).toHex().left(16));
     return QStringLiteral("img-") + digest;
 }
 

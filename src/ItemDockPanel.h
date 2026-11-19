@@ -77,6 +77,8 @@ class ItemDockPanel : public QWidget {
     void applyTextColor(const QColor& color);
     void applyImageName(const QString& name);
     void chooseReplacementImage();
+    // 需求 13：给选中的所有可填充图元批量替换背景图片（多选也生效）。
+    void chooseFillImage();
     void applyStrokeColor(const QColor& color);
     void applyFillColor(const QColor& color);
     void applyFillStyle(FillStyle style);
@@ -100,6 +102,8 @@ class ItemDockPanel : public QWidget {
     QLabel* m_titleLabel = nullptr;
     QLabel* m_metaLabel = nullptr;
     QWidget* m_contentWidget = nullptr;
+    // 需求 13：背景图片行（填充颜色之后），多选可填充图元时可用。
+    QWidget* m_fillImageRow = nullptr;
 
     ItemDockPanelSelectionCard* m_selectionCard = nullptr;
     ItemDockPanelContentCard* m_contentCard = nullptr;

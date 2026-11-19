@@ -6,6 +6,7 @@
 #include "CompositeShapeItem.h"
 #include "CurveItem.h"
 #include "ImageItem.h"
+#include "ImagePickerDialog.h"
 #include "ItemDockPanelArrangeCard.h"
 #include "ItemDockPanelColorsCard.h"
 #include "ItemDockPanelContentCard.h"
@@ -19,11 +20,13 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFont>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QLayout>
 #include <QScrollArea>
 #include <QStyle>
 #include <QTimer>
+#include <QToolButton>
 #include <QUndoStack>
 #include <QVBoxLayout>
 
@@ -81,6 +84,25 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     // 填充样式 → 填充颜色 → （需求 13 引入的背景图片） → 描线样式 → 描线颜色 → 描线宽度。
     layout->addWidget(m_fillBorderCard->fillStyleRow());
     layout->addWidget(m_colorsCard->fillColorRow());
+
+    // 需求 13：背景图片行排在填充颜色之后、描线样式之前；多选时一次套到所有可填充图元。
+    m_fillImageRow = new QWidget(content);
+    m_fillImageRow->setObjectName(QStringLiteral("ItemFillImageRow"));
+    auto* fillImageLayout = new QHBoxLayout(m_fillImageRow);
+    fillImageLayout->setContentsMargins(0, 0, 0, 0);
+    fillImageLayout->setSpacing(6);
+    auto* fillImageIcon = new QLabel(m_fillImageRow);
+    fillImageIcon->setPixmap(makeIcon(IconId::Image, QColor(58, 64, 80), 16).pixmap(16, 16));
+    fillImageLayout->addWidget(fillImageIcon);
+    auto* fillImageButton = new QToolButton(m_fillImageRow);
+    fillImageButton->setObjectName(QStringLiteral("FillImageButton"));
+    fillImageButton->setText(tr("Background image"));
+    fillImageButton->setToolTip(tr("Replace the background image of the selected fillable items"));
+    fillImageButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    connect(fillImageButton, &QToolButton::clicked, this, &ItemDockPanel::chooseFillImage);
+    fillImageLayout->addWidget(fillImageButton, 1);
+    layout->addWidget(m_fillImageRow);
+
     layout->addWidget(m_fillBorderCard->borderStyleRow());
     layout->addWidget(m_colorsCard->borderColorRow());
     layout->addWidget(m_fillBorderCard->borderWidthRow());
@@ -279,9 +301,13 @@ void ItemDockPanel::refresh()
     bool hasArc = false;
     bool hasTriangle = false;
     bool hasArrow = false;
+    bool hasFillable = false;
     for (ShapeItem* shape : shapes) {
         if (shape->shapeType() == ShapeType::Rectangle) {
             hasCorner = true;
+        }
+        if (ShapeMeta::isFilled(shape->shapeType()) && !shape->isCustomShape()) {
+            hasFillable = true;
         }
         if (shape->shapeType() == ShapeType::Sector || shape->shapeType() == ShapeType::Arc) {
             hasArc = true;
@@ -304,6 +330,8 @@ void ItemDockPanel::refresh()
     m_valueCard->setArcRadiusVisible(hasArc);
     m_valueCard->setTriangleVisible(hasTriangle);
     m_valueCard->setArrowVisible(hasArrow);
+    // 需求 13：背景图片入口只对可填充图元显示；多选时依旧可用（批量替换）。
+    m_fillImageRow->setVisible(hasFillable);
 
     // 没有选中图元时隐藏全部图元编辑项，停靠卡片本身保持常驻。
     const bool hasSelection = !items.isEmpty();
@@ -734,6 +762,38 @@ void ItemDockPanel::applyImageName(const QString& name)
                                              tr("Change image name")));
     }
     undo->endMacro();
+    refresh();
+}
+
+void ItemDockPanel::chooseFillImage()
+{
+    // 需求 13：选中多个可填充图元时一次替换；图片从资源面板里选（也可以现场从本地加一张）。
+    QList<ShapeItem*> shapes;
+    for (CanvasItem* item : selectedItems()) {
+        if (auto* shape = dynamic_cast<ShapeItem*>(item);
+            shape && !shape->isCustomShape() && ShapeMeta::isFilled(shape->shapeType())) {
+            shapes.append(shape);
+        }
+    }
+    if (shapes.isEmpty()) {
+        return;
+    }
+    const QPixmap pixmap = ImagePickerDialog::pick(this, collectCanvasImages(m_scene), tr("Background image"));
+    if (pixmap.isNull() || !m_scene || !m_scene->undoStack()) {
+        return;
+    }
+    QList<ShapeItemState> before;
+    QList<ShapeItemState> after;
+    for (ShapeItem* shape : shapes) {
+        const ShapeItemState state = shape->state();
+        before.append(state);
+        ShapeItemState next = state;
+        next.hasFillImage = true;
+        next.fillImage = pixmap;
+        next.fillImageMode = ImageFill::Mode::Stretch;
+        after.append(next);
+    }
+    m_scene->undoStack()->push(new ShapeStyleCommand(m_scene, shapes, before, after, tr("Replace background image")));
     refresh();
 }
 
