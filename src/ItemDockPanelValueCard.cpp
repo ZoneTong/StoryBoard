@@ -1,11 +1,13 @@
 #include "ItemDockPanelValueCard.h"
 
 #include "CanvasItem.h"
+#include "ArcItem.h"
 #include "CurveItem.h"
 #include "IconFactory.h"
 #include "ItemDockPanel.h"
 #include "ShapeItem.h"
 #include "ShapeMeta.h"
+#include "SineItem.h"
 
 #include <QComboBox>
 #include <QHBoxLayout>
@@ -130,6 +132,54 @@ ItemDockPanelValueCard::ItemDockPanelValueCard(QWidget* parent) : QWidget(parent
     });
     angleLayout->addWidget(m_angleSpin, 1);
     outer->addWidget(m_angleSection);
+
+    // 正弦波形：周期数与振幅是几何真相，改参数即按新参数重采样（拉伸不改参数）。
+    m_sineSection = new QWidget(this);
+    auto* sineOuter = new QVBoxLayout(m_sineSection);
+    sineOuter->setContentsMargins(0, 0, 0, 0);
+    sineOuter->setSpacing(2);
+
+    auto* cyclesRow = new QWidget(m_sineSection);
+    auto* cyclesLayout = new QHBoxLayout(cyclesRow);
+    cyclesLayout->setContentsMargins(0, 0, 0, 0);
+    cyclesLayout->setSpacing(4);
+    QToolButton* cyclesIcon = makeRowIcon(IconId::RotateCcw, cyclesRow);
+    cyclesIcon->setToolTip(ItemDockPanel::tr("Sine cycles"));
+    cyclesLayout->addWidget(cyclesIcon);
+    m_sineCyclesSpin = new QSpinBox(cyclesRow);
+    m_sineCyclesSpin->setObjectName(QStringLiteral("ItemValueSpin"));
+    m_sineCyclesSpin->setRange(1, 12);
+    m_sineCyclesSpin->setToolTip(ItemDockPanel::tr("Sine cycles"));
+    m_sineCyclesSpin->setKeyboardTracking(false);
+    connect(m_sineCyclesSpin, &QSpinBox::valueChanged, this, [this](int value) {
+        if (!m_refreshing) {
+            emit sineCyclesChosen(value);
+        }
+    });
+    cyclesLayout->addWidget(m_sineCyclesSpin, 1);
+    sineOuter->addWidget(cyclesRow);
+
+    auto* amplitudeRow = new QWidget(m_sineSection);
+    auto* amplitudeLayout = new QHBoxLayout(amplitudeRow);
+    amplitudeLayout->setContentsMargins(0, 0, 0, 0);
+    amplitudeLayout->setSpacing(4);
+    QToolButton* amplitudeIcon = makeRowIcon(IconId::RotateCcw, amplitudeRow);
+    amplitudeIcon->setToolTip(ItemDockPanel::tr("Sine amplitude"));
+    amplitudeLayout->addWidget(amplitudeIcon);
+    m_sineAmplitudeSpin = new QSpinBox(amplitudeRow);
+    m_sineAmplitudeSpin->setObjectName(QStringLiteral("ItemValueSpin"));
+    m_sineAmplitudeSpin->setRange(5, 50);
+    m_sineAmplitudeSpin->setSuffix(QStringLiteral("%"));
+    m_sineAmplitudeSpin->setToolTip(ItemDockPanel::tr("Sine amplitude"));
+    m_sineAmplitudeSpin->setKeyboardTracking(false);
+    connect(m_sineAmplitudeSpin, &QSpinBox::valueChanged, this, [this](int value) {
+        if (!m_refreshing) {
+            emit sineAmplitudeChosen(value);
+        }
+    });
+    amplitudeLayout->addWidget(m_sineAmplitudeSpin, 1);
+    sineOuter->addWidget(amplitudeRow);
+    outer->addWidget(m_sineSection);
 
     // 需求 1：三角形以角度为真相——底边长度、角 A、角 B 三行
     // 直接决定当前几何，高度由底边与两个底角派生（拖高等价于等比改底边）。
@@ -263,13 +313,42 @@ void ItemDockPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QLis
         const qreal radius = shapes.isEmpty() ? 0.0 : qMax<qreal>(0.0, shapes.first()->cornerRadius());
         m_cornerSpin->setValue(qBound(0, qRound(radius), limit));
     }
+    // 弧线角度：扇形等形状与曲线族里的弧线共用这两行，优先回显当前选中的弧线曲线。
+    ArcItem* arcCurve = nullptr;
+    ShapeItem* arcShape = nullptr;
+    SineItem* sineCurve = nullptr;
+    for (CurveItem* stroke : strokes) {
+        if (auto* arc = dynamic_cast<ArcItem*>(stroke); arc && !arcCurve) {
+            arcCurve = arc;
+        } else if (auto* sine = dynamic_cast<SineItem*>(stroke); sine && !sineCurve) {
+            sineCurve = sine;
+        }
+    }
+    for (ShapeItem* shape : shapes) {
+        if (shape && (shape->shapeType() == ShapeType::Sector || shape->shapeType() == ShapeType::Arc)) {
+            arcShape = shape;
+            break;
+        }
+    }
     if (m_startAngleSpin) {
-        m_startAngleSpin->setEnabled(enabled);
-        m_startAngleSpin->setValue(shapes.isEmpty() ? 30 : qRound(shapes.first()->startAngle()));
+        const bool on = arcCurve || arcShape;
+        m_startAngleSpin->setEnabled(on);
+        const qreal start = arcCurve ? arcCurve->startAngle() : (arcShape ? arcShape->startAngle() : 30.0);
+        m_startAngleSpin->setValue(qRound(start));
     }
     if (m_angleSpin) {
-        m_angleSpin->setEnabled(enabled);
-        m_angleSpin->setValue(shapes.isEmpty() ? 120 : qRound(shapes.first()->sweepAngle()));
+        const bool on = arcCurve || arcShape;
+        m_angleSpin->setEnabled(on);
+        const qreal sweep = arcCurve ? arcCurve->sweepAngle() : (arcShape ? arcShape->sweepAngle() : 120.0);
+        m_angleSpin->setValue(qMax(1, qRound(sweep)));
+    }
+    if (m_sineCyclesSpin && m_sineAmplitudeSpin) {
+        const bool on = sineCurve != nullptr;
+        m_sineCyclesSpin->setEnabled(on);
+        m_sineAmplitudeSpin->setEnabled(on);
+        const SineItem::Params params = on ? sineCurve->params() : SineItem::Params{};
+        m_sineCyclesSpin->setValue(qBound(1, params.cycles, 12));
+        m_sineAmplitudeSpin->setValue(qBound(5, qRound(params.amplitude * 100.0), 50));
     }
 
     ShapeItem* triangle = nullptr;
@@ -337,6 +416,13 @@ void ItemDockPanelValueCard::setCornerVisible(bool visible)
 {
     if (m_cornerSection) {
         m_cornerSection->setVisible(visible);
+    }
+}
+
+void ItemDockPanelValueCard::setSineVisible(bool visible)
+{
+    if (m_sineSection) {
+        m_sineSection->setVisible(visible);
     }
 }
 

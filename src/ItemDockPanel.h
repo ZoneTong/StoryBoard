@@ -8,6 +8,8 @@
 
 class CanvasScene;
 class CanvasItem;
+class ArcItem;
+class SineItem;
 class CompositeShapeItem;
 class CurveItem;
 class TextItem;
@@ -66,6 +68,9 @@ class ItemDockPanel : public QWidget {
     // 描线颜色 / 宽度可作用的对象：图形、笔画与多边形。
     QList<CanvasItem*> selectedStrokeTargets() const;
     void changeSelectedShapes(const QString& text, const std::function<void(ShapeItem*)>& mutate);
+    // 弧线角度与正弦参数：几何由参数派生，改动按参数快照入撤销栈。
+    void changeSelectedArcs(const QString& text, const std::function<void(ArcItem*)>& mutate);
+    void changeSelectedSines(const QString& text, const std::function<void(SineItem*)>& mutate);
     void changeSelectedFills(const QString& text, const std::function<void(ShapeItem*)>& mutateShape,
                              const std::function<void(CompositeShapeItem*)>& mutateComposite);
     void changeSelectedTexts(const QString& text, const std::function<void(TextItemState&)>& mutate);
@@ -83,6 +88,9 @@ class ItemDockPanel : public QWidget {
     void applyCornerRadius(int radius);
     void applyStartAngle(int angle);
     void applySweepAngle(int angle);
+    // 正弦波形：周期数（1–12）与振幅（内容高度的百分比，5–50）。
+    void applySineCycles(int cycles);
+    void applySineAmplitude(int percent);
     // 三角形：底边长度与两个底角；角度优先，高度随底边派生。
     void applyTriangleBase(int base);
     void applyTriangleAngle1(int degrees);

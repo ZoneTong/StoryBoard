@@ -25,6 +25,8 @@ class ItemDockPanelValueCard : public QWidget {
     void setCornerVisible(bool visible);
     // 扫过角与半径两行是否可见：只有扇形 / 弧线才显示角度与半径编辑。
     void setArcRadiusVisible(bool visible);
+    // 正弦波形：周期数与振幅两行是否可见（只对正弦曲线开放）。
+    void setSineVisible(bool visible);
     // 三角形的底边 / 角 A / 角 B 三行是否可见。
     void setTriangleVisible(bool visible);
     // 直线（含直线箭头）的两端箭头行是否可见。
@@ -35,6 +37,9 @@ class ItemDockPanelValueCard : public QWidget {
     void cornerRadiusChosen(int radius);
     void startAngleChosen(int angle);
     void sweepAngleChosen(int angle);
+    // 正弦波形：周期数（1–12）、振幅（占内容高度的百分比，5–50）。
+    void sineCyclesChosen(int cycles);
+    void sineAmplitudeChosen(int percent);
     // 三角形：底边长度（px）、底角 1 / 底角 2（度）。
     void triangleBaseChosen(int base);
     void triangleAngle1Chosen(int degrees);
@@ -52,6 +57,9 @@ class ItemDockPanelValueCard : public QWidget {
     QWidget* m_startAngleSection = nullptr;
     QSpinBox* m_angleSpin = nullptr;
     QWidget* m_angleSection = nullptr;
+    QWidget* m_sineSection = nullptr;
+    QSpinBox* m_sineCyclesSpin = nullptr;
+    QSpinBox* m_sineAmplitudeSpin = nullptr;
     QWidget* m_triangleSection = nullptr;
     QSpinBox* m_triangleBaseSpin = nullptr;
     QSpinBox* m_triangleAngle1Spin = nullptr;

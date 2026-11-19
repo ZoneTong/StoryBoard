@@ -3,8 +3,10 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
+#include "ArcItem.h"
 #include "CompositeShapeItem.h"
 #include "CurveItem.h"
+#include "CurveParamCommand.h"
 #include "ImagePickerDialog.h"
 #include "ItemDockPanelArrangeCard.h"
 #include "ItemDockPanelColorsCard.h"
@@ -14,6 +16,7 @@
 #include "ItemDockPanelValueCard.h"
 #include "ShapeItem.h"
 #include "ShapeMeta.h"
+#include "SineItem.h"
 #include "TextItem.h"
 
 #include <QFileDialog>
@@ -126,6 +129,8 @@ ItemDockPanel::ItemDockPanel(CanvasScene* scene, QWidget* parent) : QWidget(pare
     connect(m_valueCard, &ItemDockPanelValueCard::cornerRadiusChosen, this, &ItemDockPanel::applyCornerRadius);
     connect(m_valueCard, &ItemDockPanelValueCard::startAngleChosen, this, &ItemDockPanel::applyStartAngle);
     connect(m_valueCard, &ItemDockPanelValueCard::sweepAngleChosen, this, &ItemDockPanel::applySweepAngle);
+    connect(m_valueCard, &ItemDockPanelValueCard::sineCyclesChosen, this, &ItemDockPanel::applySineCycles);
+    connect(m_valueCard, &ItemDockPanelValueCard::sineAmplitudeChosen, this, &ItemDockPanel::applySineAmplitude);
     connect(m_valueCard, &ItemDockPanelValueCard::triangleBaseChosen, this, &ItemDockPanel::applyTriangleBase);
     connect(m_valueCard, &ItemDockPanelValueCard::triangleAngle1Chosen, this, &ItemDockPanel::applyTriangleAngle1);
     connect(m_valueCard, &ItemDockPanelValueCard::triangleAngle2Chosen, this, &ItemDockPanel::applyTriangleAngle2);
@@ -282,6 +287,7 @@ void ItemDockPanel::refresh()
 
     bool hasCorner = false;
     bool hasArc = false;
+    bool hasSine = false;
     bool hasTriangle = false;
     bool hasArrow = false;
     bool hasFillable = false;
@@ -302,15 +308,21 @@ void ItemDockPanel::refresh()
             hasArrow = true;
         }
     }
-    // 需求 4：曲线与花括号同样提供起点 / 终点箭头。
+    // 需求 4：曲线与花括号同样提供起点 / 终点箭头；弧线与正弦另有角度 / 波形参数行。
     for (CurveItem* stroke : strokes) {
         if (stroke) {
             hasArrow = true;
-            break;
+            if (dynamic_cast<ArcItem*>(stroke)) {
+                hasArc = true;
+            }
+            if (dynamic_cast<SineItem*>(stroke)) {
+                hasSine = true;
+            }
         }
     }
     m_valueCard->setCornerVisible(hasCorner);
     m_valueCard->setArcRadiusVisible(hasArc);
+    m_valueCard->setSineVisible(hasSine);
     m_valueCard->setTriangleVisible(hasTriangle);
     m_valueCard->setArrowVisible(hasArrow);
     // 需求 13：背景图片入口只对可填充图元显示；多选时依旧可用（批量替换）。
@@ -700,6 +712,76 @@ void ItemDockPanel::applyTextColor(const QColor& color)
     changeSelectedTexts(tr("Change text color"), [&color](TextItemState& state) { state.color = color; });
 }
 
+void ItemDockPanel::changeSelectedArcs(const QString& text, const std::function<void(ArcItem*)>& mutate)
+{
+    QList<ArcItem*> arcs;
+    for (CurveItem* stroke : selectedStrokes()) {
+        if (auto* arc = dynamic_cast<ArcItem*>(stroke)) {
+            arcs.append(arc);
+        }
+    }
+    if (arcs.isEmpty() || !m_scene || !m_scene->undoStack()) {
+        return;
+    }
+
+    QList<CurveParamState> paramsBefore;
+    QList<CurveItem::GeometryState> geometryBefore;
+    QList<CurveParamState> paramsAfter;
+    QList<CurveItem::GeometryState> geometryAfter;
+    QList<CurveItem*> targets;
+    for (ArcItem* arc : arcs) {
+        targets.append(arc);
+        paramsBefore.append(curveParamState(arc));
+        geometryBefore.append(arc->geometryState());
+    }
+    m_refreshing = true;
+    for (ArcItem* arc : arcs) {
+        mutate(arc);
+        paramsAfter.append(curveParamState(arc));
+        geometryAfter.append(arc->geometryState());
+    }
+    m_refreshing = false;
+
+    m_scene->undoStack()->push(new CurveParamCommand(m_scene, targets, paramsBefore, geometryBefore, paramsAfter,
+                                                    geometryAfter, text));
+    refresh();
+}
+
+void ItemDockPanel::changeSelectedSines(const QString& text, const std::function<void(SineItem*)>& mutate)
+{
+    QList<SineItem*> sines;
+    for (CurveItem* stroke : selectedStrokes()) {
+        if (auto* sine = dynamic_cast<SineItem*>(stroke)) {
+            sines.append(sine);
+        }
+    }
+    if (sines.isEmpty() || !m_scene || !m_scene->undoStack()) {
+        return;
+    }
+
+    QList<CurveParamState> paramsBefore;
+    QList<CurveItem::GeometryState> geometryBefore;
+    QList<CurveParamState> paramsAfter;
+    QList<CurveItem::GeometryState> geometryAfter;
+    QList<CurveItem*> targets;
+    for (SineItem* sine : sines) {
+        targets.append(sine);
+        paramsBefore.append(curveParamState(sine));
+        geometryBefore.append(sine->geometryState());
+    }
+    m_refreshing = true;
+    for (SineItem* sine : sines) {
+        mutate(sine);
+        paramsAfter.append(curveParamState(sine));
+        geometryAfter.append(sine->geometryState());
+    }
+    m_refreshing = false;
+
+    m_scene->undoStack()->push(new CurveParamCommand(m_scene, targets, paramsBefore, geometryBefore, paramsAfter,
+                                                    geometryAfter, text));
+    refresh();
+}
+
 void ItemDockPanel::chooseFillImage()
 {
     // 需求 13：选中多个可填充图元时一次替换；图片从资源面板里选（也可以现场从本地加一张）。
@@ -742,12 +824,36 @@ void ItemDockPanel::applyStartAngle(int angle)
 {
     changeSelectedShapes(tr("Change start angle"),
                          [angle](ShapeItem* shape) { shape->setArcAngles(angle, shape->sweepAngle()); });
+    changeSelectedArcs(tr("Change start angle"),
+                       [angle](ArcItem* arc) { arc->setAngles(angle, arc->sweepAngle()); });
 }
 
 void ItemDockPanel::applySweepAngle(int angle)
 {
     changeSelectedShapes(tr("Change sector angle"),
                          [angle](ShapeItem* shape) { shape->setArcAngles(shape->startAngle(), angle); });
+    changeSelectedArcs(tr("Change arc sweep angle"),
+                       [angle](ArcItem* arc) { arc->setAngles(arc->startAngle(), angle); });
+}
+
+void ItemDockPanel::applySineCycles(int cycles)
+{
+    const int bounded = qBound(1, cycles, 12);
+    changeSelectedSines(tr("Change sine cycles"), [bounded](SineItem* sine) {
+        SineItem::Params params = sine->params();
+        params.cycles = bounded;
+        sine->setParams(params);
+    });
+}
+
+void ItemDockPanel::applySineAmplitude(int percent)
+{
+    const qreal amplitude = qBound(0.05, percent / 100.0, 0.5);
+    changeSelectedSines(tr("Change sine amplitude"), [amplitude](SineItem* sine) {
+        SineItem::Params params = sine->params();
+        params.amplitude = amplitude;
+        sine->setParams(params);
+    });
 }
 
 void ItemDockPanel::applyTriangleBase(int base)
