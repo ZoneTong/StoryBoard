@@ -39,115 +39,6 @@ QPixmap decodePixmap(const QString& base64)
     return pixmap;
 }
 
-
-// 需求 13：旧画布里的花括号仍是 shape 图元（brace_left / brace_right）。
-// 载入时改成曲线：采样原 bracePath、沿用描线样式与基础属性，右括号整体旋转 180°。
-// 新文件不会再写出花括号 shape，旧版本打开新文件则看到一条普通曲线。
-bool isLegacyBraceShape(const QJsonObject& json)
-{
-    if (json.value(QStringLiteral("type")).toString() != QStringLiteral("shape")) {
-        return false;
-    }
-    const QString type = json.value(QStringLiteral("shapeType")).toString().trimmed().toLower();
-    return type == QStringLiteral("brace_left") || type == QStringLiteral("leftbrace") ||
-           type == QStringLiteral("braceleft") || type == QStringLiteral("brace_right") ||
-           type == QStringLiteral("rightbrace") || type == QStringLiteral("braceright");
-}
-
-// 需求 29：旧画布里的正弦波形仍是 shape 图元（sine_wave / sine）。载入时改成
-// 曲线：采样原 sineWavePath、沿用描线样式与基础属性。新文件的正弦波形插入即
-// 曲线；旧版本打开新文件则看到一条普通曲线。
-bool isLegacySineWaveShape(const QJsonObject& json)
-{
-    if (json.value(QStringLiteral("type")).toString() != QStringLiteral("shape")) {
-        return false;
-    }
-    const QString type = json.value(QStringLiteral("shapeType")).toString().trimmed().toLower();
-    return type == QStringLiteral("sine_wave") || type == QStringLiteral("sine");
-}
-
-CanvasItem* createSineWaveCurve(const QJsonObject& json)
-{
-    const QPointF pos(json.value(QStringLiteral("x")).toDouble(0.0), json.value(QStringLiteral("y")).toDouble(0.0));
-    const QSizeF size(json.value(QStringLiteral("w")).toDouble(128.0), json.value(QStringLiteral("h")).toDouble(40.0));
-
-    QColor stroke(json.value(QStringLiteral("strokeColor")).toString());
-    if (!stroke.isValid()) {
-        stroke = QColor(30, 41, 59);
-    }
-    const qreal width = qBound<qreal>(0.5, json.value(QStringLiteral("strokeWidth")).toDouble(4.0), 48.0);
-    const Qt::PenStyle penStyle =
-        static_cast<Qt::PenStyle>(qBound(0, json.value(QStringLiteral("strokeStyle")).toInt(1), 5));
-
-    const QPainterPath wave = ShapePathBuilder::pathFor(ShapeType::SineWave, QRectF(QPointF(0.0, 0.0), size), -1.0);
-    constexpr int sampleCount = 64;
-    QVector<QPointF> points;
-    points.reserve(sampleCount + 1);
-    for (int i = 0; i <= sampleCount; ++i) {
-        points.append(pos + wave.pointAtPercent(qreal(i) / qreal(sampleCount)));
-    }
-
-    auto* curve = new CurveItem();
-    curve->setStrokePoints(points, stroke, width, 0.0, true);
-    curve->setStrokeStyle(penStyle);
-    curve->setRotationAngle(json.value(QStringLiteral("rotation")).toDouble(0.0));
-    curve->setLayerId(qMax(0, json.value(QStringLiteral("layer")).toInt(0)));
-    curve->setGroupId(qMax(0, json.value(QStringLiteral("group")).toInt(0)));
-    curve->setHeight(json.contains(QStringLiteral("height")) ? qMax(0, json.value(QStringLiteral("height")).toInt(0))
-                                                             : -1);
-    const QString name = json.value(QStringLiteral("itemName")).toString().trimmed();
-    if (!name.isEmpty()) {
-        curve->setName(name);
-    }
-    curve->setItemOpacity(qBound<qreal>(0.0, json.value(QStringLiteral("opacity")).toDouble(1.0), 1.0));
-    return curve;
-}
-
-CanvasItem* createBraceCurve(const QJsonObject& json)
-{
-    const QString type = json.value(QStringLiteral("shapeType")).toString().trimmed().toLower();
-    const bool right = type == QStringLiteral("brace_right") || type == QStringLiteral("rightbrace") ||
-                       type == QStringLiteral("braceright");
-    const QPointF pos(json.value(QStringLiteral("x")).toDouble(0.0), json.value(QStringLiteral("y")).toDouble(0.0));
-    const QSizeF size(json.value(QStringLiteral("w")).toDouble(42.0), json.value(QStringLiteral("h")).toDouble(128.0));
-
-    QColor stroke(json.value(QStringLiteral("strokeColor")).toString());
-    if (!stroke.isValid()) {
-        stroke = QColor(30, 41, 59);
-    }
-    const qreal width = qBound<qreal>(0.5, json.value(QStringLiteral("strokeWidth")).toDouble(4.0), 48.0);
-    const Qt::PenStyle penStyle =
-        static_cast<Qt::PenStyle>(qBound(0, json.value(QStringLiteral("strokeStyle")).toInt(1), 5));
-
-    const QPainterPath brace = ShapePathBuilder::bracePath(QRectF(QPointF(0.0, 0.0), size));
-    constexpr int sampleCount = 64;
-    QVector<QPointF> points;
-    points.reserve(sampleCount + 1);
-    for (int i = 0; i <= sampleCount; ++i) {
-        points.append(pos + brace.pointAtPercent(qreal(i) / qreal(sampleCount)));
-    }
-
-    auto* curve = new CurveItem();
-    curve->setStrokePoints(points, stroke, width, 0.0, true);
-    curve->setStrokeStyle(penStyle);
-    curve->setCurveKind(CurveKind::Brace);
-    curve->setArrowStyles(ArrowStyle::None, ArrowStyle::None);
-    if (right) {
-        curve->setRotationAngle(180.0);
-    }
-    curve->setLayerId(qMax(0, json.value(QStringLiteral("layer")).toInt(0)));
-    curve->setGroupId(qMax(0, json.value(QStringLiteral("group")).toInt(0)));
-    curve->setHeight(json.contains(QStringLiteral("height")) ? qMax(0, json.value(QStringLiteral("height")).toInt(0))
-                                                             : -1);
-    const QString name = json.value(QStringLiteral("itemName")).toString().trimmed();
-    if (!name.isEmpty()) {
-        curve->setName(name);
-    }
-    curve->setItemOpacity(qBound<qreal>(0.0, json.value(QStringLiteral("opacity")).toDouble(1.0), 1.0));
-    return curve;
-}
-
-
 } // namespace
 
 QJsonObject CanvasScene::toJson() const
@@ -282,17 +173,14 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
             // 旧笔画图元不兼容新曲线：跳过，不因单个旧图元阻断整份画布。
             continue;
         }
-        CanvasItem* item = isLegacyBraceShape(itemJson)      ? createBraceCurve(itemJson)
-                           : isLegacySineWaveShape(itemJson) ? createSineWaveCurve(itemJson)
-                                                             : createItemForJson(itemJson);
+        // 不兼容任何旧画布格式：曲线族（含花括号、正弦）统一走工厂。
+        CanvasItem* item = createItemForJson(itemJson);
         if (!item) {
             qDeleteAll(parsedItems);
             return fail(tr("The canvas contains an unknown item type: %1").arg(kind));
         }
-        if (!isLegacyBraceShape(itemJson) && !isLegacySineWaveShape(itemJson)) {
-            item->fromJson(itemJson);
-            item->setItemOpacity(itemJson.value(QStringLiteral("opacity")).toDouble(1.0));
-        }
+        item->fromJson(itemJson);
+        item->setItemOpacity(itemJson.value(QStringLiteral("opacity")).toDouble(1.0));
         // 需求 11：引用式背景图片；表里缺项（例如手工改过文件）时按无图处理，不阻断打开。
         if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && !shape->fillImageId().isEmpty()) {
             const QPixmap pixmap = ImageStore::pixmapFromEntry(imagesTable.value(shape->fillImageId()).toObject());

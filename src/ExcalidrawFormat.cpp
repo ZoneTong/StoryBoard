@@ -240,27 +240,6 @@ QJsonObject elementToItem(const QJsonObject& element, int z, int layer, QStringL
         if (points.size() < 2) {
             return {};
         }
-        if (points.size() == 2 && type != QStringLiteral("freedraw")) {
-            // 两点直线/箭头：用画板直线图元，两端箭头按 Excalidraw 的 head 映射。
-            const QPointF start = points.constFirst();
-            const QPointF end = points.constLast();
-            QJsonObject item = itemBase(QStringLiteral("shape"),
-                                        QRectF(QPointF(qMin(start.x(), end.x()), qMin(start.y(), end.y())),
-                                               QSizeF(qAbs(end.x() - start.x()), qAbs(end.y() - start.y()))),
-                                        z, layer);
-            item.insert(QStringLiteral("shapeType"), QStringLiteral("line"));
-            item.insert(QStringLiteral("strokeColor"),
-                        colorOr(element, QStringLiteral("strokeColor"), QColor(30, 41, 59)).name(QColor::HexArgb));
-            item.insert(QStringLiteral("fillColor"), QStringLiteral("#00000000"));
-            item.insert(QStringLiteral("fillStyle"), QStringLiteral("none"));
-            item.insert(QStringLiteral("strokeWidth"),
-                        qMax<qreal>(0.5, numberOr(element, QStringLiteral("strokeWidth"), 2.0)));
-            item.insert(QStringLiteral("strokeStyle"), 1);
-            item.insert(QStringLiteral("opacity"), numberOr(element, QStringLiteral("opacity"), 100.0) / 100.0);
-            item.insert(QStringLiteral("startArrow"), importHeadStyle(element, QStringLiteral("startArrow")));
-            item.insert(QStringLiteral("endArrow"), importHeadStyle(element, QStringLiteral("endArrow")));
-            return item;
-        }
         // 多点折线：保留拐点与两端箭头，落到曲线图元。
         const QRectF lineBounds = boundsOf(points);
         QJsonObject item = itemBase(QStringLiteral("curve"), lineBounds, z, layer);
