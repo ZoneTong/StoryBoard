@@ -2,9 +2,9 @@
 #include "CanvasScene.h"
 #include "Commands.h"
 #include "CompositeShapeItem.h"
-#include "ImageItem.h"
 #include "ShapeItem.h"
 #include "CurveItem.h"
+#include "ImageItem.h"
 #include "TextItem.h"
 #include "scene/SceneConstants.h"
 
@@ -247,6 +247,8 @@ CanvasItem* CanvasScene::createItem(const QString& kind) const
     if (kind == QStringLiteral("curve")) {
         return new CurveItem();
     }
+    // 需求 14 过渡：插入图片已改为矩形 + 背景图，但旧画布里的 image 图元仍按原类型加载；
+    // 等 ImageItem 类型整体拆除时，这一分支与测试用例一并移除。
     if (kind == QStringLiteral("image")) {
         return new ImageItem();
     }

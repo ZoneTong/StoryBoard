@@ -421,6 +421,15 @@
     </message></context>
 <context>
     <name>ItemDockPanel</name><message>
+        <source>Background image</source>
+        <translation>背景图片</translation>
+    </message><message>
+        <source>Replace the background image of the selected fillable items</source>
+        <translation>替换选中可填充图元的背景图片</translation>
+    </message><message>
+        <source>Replace background image</source>
+        <translation>替换背景图片</translation>
+    </message><message>
         <location filename="../src/ItemDockPanel.cpp" line="806"/>
         <source>Change triangle base</source>
         <translation>修改三角形底边</translation>
@@ -5219,4 +5228,16 @@ Use the checkbox to show or hide it.</source>
         <source>Space the selected items evenly from top to bottom (needs 3 or more)</source>
         <translation>把选中图元从上到下等间距排开（至少 3 个）</translation>
     </message></context>
+  <context>
+    <name>ImagePickerDialog</name><message>
+        <source>From file…</source>
+        <translation>从文件…</translation>
+    </message><message>
+        <source>Canvas image</source>
+        <translation>画布图片</translation>
+    </message><message>
+        <source>Choose image</source>
+        <translation>选择图片</translation>
+    </message>
+  </context>
 </TS>
