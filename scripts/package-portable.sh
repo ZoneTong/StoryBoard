@@ -32,7 +32,7 @@ Usage: package-portable.sh [options]
 
 Options:
   --build                 Build the configured build directory before packaging
-  --build-dir <dir>      Build directory (default: out)
+  --build-dir <dir>      Build directory (default: build)
   --qt-dir <dir>         Qt installation directory (default: auto-detect qmake/Qt roots)
   --version <version>    Assert version matches CMakeLists.txt (optional)
   --output-dir <dir>     Directory that receives the package/zip (default: project root)
@@ -116,7 +116,8 @@ fi
 VERSION="$CMAKE_VERSION"
 
 if [ -z "$BUILD_DIR" ]; then
-    BUILD_DIR="$ROOT/out"
+    # 默认与 CMake 预设 / 日常构建目录保持一致，避免误拿旧 out 里的二进制打包。
+    BUILD_DIR="$ROOT/build"
 fi
 [ -n "$OUTPUT_DIR" ] || die "output directory must not be empty"
 BUILD_DIR="$(cd "$(dirname "$BUILD_DIR")" 2>/dev/null && pwd)/$(basename "$BUILD_DIR")" || die "invalid build directory"
