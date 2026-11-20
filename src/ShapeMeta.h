@@ -3,7 +3,6 @@
 #include "ShapeItem.h"
 
 #include <QList>
-#include <QSizeF>
 #include <QString>
 
 // 形状 / 填充样式的元数据映射：枚举与持久化字符串互转、默认尺寸、是否有面积 /
@@ -13,7 +12,6 @@ class ShapeMeta {
     static QList<ShapeType> allTypes();
     static QString typeToString(ShapeType type);
     static ShapeType typeFromString(const QString& value);
-    static QSizeF defaultSize(ShapeType type);
     static bool isFilled(ShapeType type);
 
     // 需求 4：线条类图元（零面积、只有一条开放描线）两端可设箭头样式。

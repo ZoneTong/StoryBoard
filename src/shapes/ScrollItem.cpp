@@ -4,10 +4,15 @@
 
 ScrollItem::ScrollItem()
 {
-    setContentSize(defaultShapeSize(ShapeType::Scroll));
+    setContentSize(defaultContentSize());
+}
+
+QSizeF ScrollItem::defaultContentSize() const
+{
+    return QSizeF(128.0, 96.0);
 }
 
 QPainterPath ScrollItem::shapePath(const QRectF& rect) const
 {
-    return ShapePathBuilder::pathFor(ShapeType::Scroll, rect, -1.0);
+    return ShapePathBuilder::scrollPath(rect);
 }

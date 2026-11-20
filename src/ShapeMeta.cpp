@@ -127,58 +127,6 @@ ShapeType ShapeMeta::typeFromString(const QString& value)
     return ShapeType::Rectangle;
 }
 
-QSizeF ShapeMeta::defaultSize(ShapeType type)
-{
-    // 统一基准（需求 16）：棋盘格 1 格 = 64px，基准边长 = 2 格 = 128px。
-    // 所有常见图形都由 128 派生：正方形 / 圆直接 128×128，其它按原比例放大一倍。
-    switch (type) {
-    case ShapeType::Rectangle:
-        // 插入即为 2 格的正方形，需要长方形再拖控制点拉伸。
-        return QSizeF(128.0, 128.0);
-    case ShapeType::Ellipse:
-        // 插入即为标准圆：直径 = 基准边长 128。
-        return QSizeF(128.0, 128.0);
-    case ShapeType::Triangle:
-        // 正三角形：底 128，高 = √3/2 × 128。
-        return QSizeF(128.0, 111.0);
-    case ShapeType::Diamond:
-        return QSizeF(128.0, 100.0);
-    case ShapeType::Star:
-        return QSizeF(128.0, 128.0);
-    case ShapeType::Arrow:
-        return QSizeF(128.0, 46.0);
-    case ShapeType::DoubleArrow:
-        return QSizeF(128.0, 40.0);
-
-    case ShapeType::Callout:
-        return QSizeF(128.0, 86.0);
-    case ShapeType::Sector:
-        return QSizeF(128.0, 128.0);
-
-    case ShapeType::Star4:
-        return QSizeF(128.0, 128.0);
-    case ShapeType::Hexagram:
-        return QSizeF(128.0, 112.0);
-    case ShapeType::Heart:
-        return QSizeF(128.0, 112.0);
-
-    case ShapeType::FlagWave:
-        return QSizeF(128.0, 86.0);
-    case ShapeType::Scroll:
-        // 卷轴：横长比例，左右卷筒占宽约 14%。
-        return QSizeF(128.0, 96.0);
-    case ShapeType::Cube:
-        return QSizeF(128.0, 128.0);
-    case ShapeType::Cylinder:
-        return QSizeF(104.0, 128.0);
-    case ShapeType::Parallelogram:
-        // 需求 9：60° 内角、高 64（1 格）时底边 73.90、上边水平偏移 36.95，
-        // 内容尺寸 110.85×64，与立方体单个面的比例一致。
-        return QSizeF(110.85, 64.0);
-    }
-    return QSizeF(128.0, 128.0);
-}
-
 bool ShapeMeta::isFilled(ShapeType type)
 {
     switch (type) {

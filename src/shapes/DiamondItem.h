@@ -6,6 +6,7 @@
 class DiamondItem : public ShapeItem {
   public:
     DiamondItem();
+    QSizeF defaultContentSize() const override;
     ShapeType shapeType() const override { return ShapeType::Diamond; }
 
   protected:

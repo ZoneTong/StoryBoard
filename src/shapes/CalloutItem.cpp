@@ -4,10 +4,15 @@
 
 CalloutItem::CalloutItem()
 {
-    setContentSize(defaultShapeSize(ShapeType::Callout));
+    setContentSize(defaultContentSize());
+}
+
+QSizeF CalloutItem::defaultContentSize() const
+{
+    return QSizeF(128.0, 86.0);
 }
 
 QPainterPath CalloutItem::shapePath(const QRectF& rect) const
 {
-    return ShapePathBuilder::pathFor(ShapeType::Callout, rect, -1.0);
+    return ShapePathBuilder::calloutPath(rect);
 }

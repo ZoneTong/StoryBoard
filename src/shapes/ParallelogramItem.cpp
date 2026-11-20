@@ -7,7 +7,12 @@
 
 ParallelogramItem::ParallelogramItem()
 {
-    setContentSize(defaultShapeSize(ShapeType::Parallelogram));
+    setContentSize(defaultContentSize());
+}
+
+QSizeF ParallelogramItem::defaultContentSize() const
+{
+    return QSizeF(110.85, 64.0);
 }
 
 ItemPropertySet ParallelogramItem::properties() const

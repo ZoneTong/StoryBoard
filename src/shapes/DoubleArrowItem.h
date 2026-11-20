@@ -6,6 +6,7 @@
 class DoubleArrowItem : public ShapeItem {
   public:
     DoubleArrowItem();
+    QSizeF defaultContentSize() const override;
     ShapeType shapeType() const override { return ShapeType::DoubleArrow; }
 
   protected:

@@ -4,10 +4,15 @@
 
 HeartItem::HeartItem()
 {
-    setContentSize(defaultShapeSize(ShapeType::Heart));
+    setContentSize(defaultContentSize());
+}
+
+QSizeF HeartItem::defaultContentSize() const
+{
+    return QSizeF(128.0, 112.0);
 }
 
 QPainterPath HeartItem::shapePath(const QRectF& rect) const
 {
-    return ShapePathBuilder::pathFor(ShapeType::Heart, rect, -1.0);
+    return ShapePathBuilder::heartPath(rect);
 }

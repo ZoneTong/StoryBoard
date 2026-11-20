@@ -6,6 +6,7 @@
 class ArrowItem : public ShapeItem {
   public:
     ArrowItem();
+    QSizeF defaultContentSize() const override;
     ShapeType shapeType() const override { return ShapeType::Arrow; }
 
   protected:

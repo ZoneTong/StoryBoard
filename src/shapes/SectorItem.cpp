@@ -4,7 +4,7 @@
 
 SectorItem::SectorItem()
 {
-    setContentSize(defaultShapeSize(ShapeType::Sector));
+    setContentSize(defaultContentSize());
 }
 
 ItemPropertySet SectorItem::properties() const
@@ -17,5 +17,5 @@ ItemPropertySet SectorItem::properties() const
 
 QPainterPath SectorItem::shapePath(const QRectF& rect) const
 {
-    return ShapePathBuilder::pathFor(ShapeType::Sector, rect, -1.0, startAngle(), sweepAngle());
+    return ShapePathBuilder::sectorPath(rect, startAngle(), sweepAngle());
 }

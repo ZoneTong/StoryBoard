@@ -191,7 +191,10 @@ void selftest::runShapeItemTests(Context& ctx)
     ctx.check(shapeIconsOk, QStringLiteral("每种图形都能生成菜单图标"));
 
     ctx.check(defaultShapeSize(ShapeType::Rectangle).width() == defaultShapeSize(ShapeType::Rectangle).height(),
-              QStringLiteral("矩形默认插入为正方形"));
+              QStringLiteral("矩形默认插入为正方形"),
+              QStringLiteral("size=%1x%2")
+                  .arg(defaultShapeSize(ShapeType::Rectangle).width())
+                  .arg(defaultShapeSize(ShapeType::Rectangle).height()));
     ctx.check(shapeTypeFromString(QStringLiteral("sector")) == ShapeType::Sector &&
                   shapeTypeIsFilled(ShapeType::Sector),
               QStringLiteral("扇形可识别且可填充（弧线已并入曲线族，不再出现在形状类型表里）"));

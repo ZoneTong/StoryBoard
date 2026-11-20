@@ -6,6 +6,7 @@
 class FlagWaveItem : public ShapeItem {
   public:
     FlagWaveItem();
+    QSizeF defaultContentSize() const override;
     ShapeType shapeType() const override { return ShapeType::FlagWave; }
 
   protected:

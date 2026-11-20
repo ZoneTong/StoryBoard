@@ -4,10 +4,10 @@
 
 EllipseItem::EllipseItem()
 {
-    setContentSize(defaultShapeSize(ShapeType::Ellipse));
+    setContentSize(defaultContentSize());
 }
 
 QPainterPath EllipseItem::shapePath(const QRectF& rect) const
 {
-    return ShapePathBuilder::pathFor(ShapeType::Ellipse, rect, -1.0);
+    return ShapePathBuilder::ellipsePath(rect);
 }

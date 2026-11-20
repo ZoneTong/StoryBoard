@@ -4,7 +4,7 @@
 
 RectangleItem::RectangleItem()
 {
-    setContentSize(defaultShapeSize(ShapeType::Rectangle));
+    setContentSize(defaultContentSize());
     setParallelogramAngle(90.0);
 }
 
@@ -33,5 +33,5 @@ QPointF RectangleItem::customHandleCenter(int handle, bool* ok) const
 
 QPainterPath RectangleItem::shapePath(const QRectF& rect) const
 {
-    return ShapePathBuilder::pathFor(ShapeType::Rectangle, rect, cornerRadius());
+    return ShapePathBuilder::roundedRectPath(rect, cornerRadius());
 }

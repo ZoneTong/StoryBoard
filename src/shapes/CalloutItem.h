@@ -6,6 +6,7 @@
 class CalloutItem : public ShapeItem {
   public:
     CalloutItem();
+    QSizeF defaultContentSize() const override;
     ShapeType shapeType() const override { return ShapeType::Callout; }
 
   protected:

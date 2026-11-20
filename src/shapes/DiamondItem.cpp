@@ -4,10 +4,15 @@
 
 DiamondItem::DiamondItem()
 {
-    setContentSize(defaultShapeSize(ShapeType::Diamond));
+    setContentSize(defaultContentSize());
+}
+
+QSizeF DiamondItem::defaultContentSize() const
+{
+    return QSizeF(128.0, 100.0);
 }
 
 QPainterPath DiamondItem::shapePath(const QRectF& rect) const
 {
-    return ShapePathBuilder::pathFor(ShapeType::Diamond, rect, -1.0);
+    return ShapePathBuilder::diamondPath(rect);
 }

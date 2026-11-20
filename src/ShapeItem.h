@@ -217,6 +217,8 @@ class ShapeItem : public CanvasItem {
                                 qreal sweepAngle);
     // 当前生效的轮廓：自定义图形按内容矩形缩放单位路径，普通图形交给具体类实现。
     virtual QPainterPath currentPath(const QRectF& rect) const;
+    // 插入 / 状态与 JSON 缺省时的初始内容尺寸；数值只存在于各子类，基类默认 2 格正方形。
+    virtual QSizeF defaultContentSize() const;
 
   protected:
     // 具体图形的内置轮廓（不含自定义模板与矩形圆角自动态哨兵）。

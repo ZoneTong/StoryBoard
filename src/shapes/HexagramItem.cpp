@@ -4,10 +4,15 @@
 
 HexagramItem::HexagramItem()
 {
-    setContentSize(defaultShapeSize(ShapeType::Hexagram));
+    setContentSize(defaultContentSize());
+}
+
+QSizeF HexagramItem::defaultContentSize() const
+{
+    return QSizeF(128.0, 112.0);
 }
 
 QPainterPath HexagramItem::shapePath(const QRectF& rect) const
 {
-    return ShapePathBuilder::pathFor(ShapeType::Hexagram, rect, -1.0);
+    return ShapePathBuilder::hexagramPath(rect);
 }

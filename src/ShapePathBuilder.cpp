@@ -70,7 +70,13 @@ QPainterPath parallelogramPathWithAngle(const QRectF& rect, qreal bottomLeftAngl
     return path;
 }
 
-QPainterPath starPath(const QRectF& rect)
+
+// 需求 11 的 8 种新图形。全部在内容矩形内构造；需要“轮廓 + 内部棱线 / 旗杆”的
+// 形状用零面积子路径承载细线：填充不受影响，描线时一并描出。
+
+
+} // namespace
+QPainterPath ShapePathBuilder::starPath(const QRectF& rect)
 {
     const QRectF r = normalizedRect(rect);
     const QPointF center = r.center();
@@ -95,8 +101,7 @@ QPainterPath starPath(const QRectF& rect)
     path.closeSubpath();
     return path;
 }
-
-QPainterPath calloutPath(const QRectF& rect)
+QPainterPath ShapePathBuilder::calloutPath(const QRectF& rect)
 {
     const QRectF r = normalizedRect(rect);
     const qreal w = r.width();
@@ -118,10 +123,7 @@ QPainterPath calloutPath(const QRectF& rect)
 
     return bodyPath.united(tail);
 }
-
-// 需求 11 的 8 种新图形。全部在内容矩形内构造；需要“轮廓 + 内部棱线 / 旗杆”的
-// 形状用零面积子路径承载细线：填充不受影响，描线时一并描出。
-QPainterPath fourPointStarPath(const QRectF& rect)
+QPainterPath ShapePathBuilder::fourPointStarPath(const QRectF& rect)
 {
     const QRectF r = normalizedRect(rect);
     const QPointF center = r.center();
@@ -145,8 +147,7 @@ QPainterPath fourPointStarPath(const QRectF& rect)
     path.closeSubpath();
     return path;
 }
-
-QPainterPath hexagramPath(const QRectF& rect)
+QPainterPath ShapePathBuilder::hexagramPath(const QRectF& rect)
 {
     const QRectF r = normalizedRect(rect);
     const QPointF center = r.center();
@@ -173,8 +174,7 @@ QPainterPath hexagramPath(const QRectF& rect)
 
     return triangleAt(-90.0).united(triangleAt(90.0));
 }
-
-QPainterPath heartPath(const QRectF& rect)
+QPainterPath ShapePathBuilder::heartPath(const QRectF& rect)
 {
     const QRectF r = normalizedRect(rect);
     const qreal w = r.width();
@@ -193,8 +193,7 @@ QPainterPath heartPath(const QRectF& rect)
     path.closeSubpath();
     return path;
 }
-
-QPainterPath flagWavePath(const QRectF& rect)
+QPainterPath ShapePathBuilder::flagWavePath(const QRectF& rect)
 {
     const QRectF r = normalizedRect(rect);
     if (r.width() <= 0.0 || r.height() <= 0.0) {
@@ -224,8 +223,7 @@ QPainterPath flagWavePath(const QRectF& rect)
     // 需求：去掉左边旗杆竖线，只保留波形旗面。
     return path;
 }
-
-QPainterPath scrollPath(const QRectF& rect)
+QPainterPath ShapePathBuilder::scrollPath(const QRectF& rect)
 {
     const QRectF r = normalizedRect(rect);
     if (r.width() <= 0.0 || r.height() <= 0.0) {
@@ -250,8 +248,7 @@ QPainterPath scrollPath(const QRectF& rect)
 
     return leftRoll.united(paper).united(rightRoll);
 }
-
-QPainterPath cubePath(const QRectF& rect)
+QPainterPath ShapePathBuilder::cubePath(const QRectF& rect)
 {
     const QRectF r = normalizedRect(rect);
     if (r.width() <= 0.0 || r.height() <= 0.0) {
@@ -284,8 +281,7 @@ QPainterPath cubePath(const QRectF& rect)
     path.lineTo(upperLeft);
     return path;
 }
-
-QPainterPath cylinderPath(const QRectF& rect)
+QPainterPath ShapePathBuilder::cylinderPath(const QRectF& rect)
 {
     const QRectF r = normalizedRect(rect);
     if (r.width() <= 0.0 || r.height() <= 0.0) {
@@ -316,8 +312,6 @@ QPainterPath cylinderPath(const QRectF& rect)
     result.addPath(frontArc);
     return result;
 }
-
-} // namespace
 
 QPainterPath ShapePathBuilder::bracePath(const QRectF& rect)
 {
@@ -355,6 +349,107 @@ QPainterPath ShapePathBuilder::mapUnitPath(const QPainterPath& unitPath, const Q
     return transform.map(unitPath);
 }
 
+QPainterPath ShapePathBuilder::roundedRectPath(const QRectF& rect, qreal cornerRadius)
+{
+    const QRectF r = normalizedRect(rect);
+    if (r.width() <= 0.0 || r.height() <= 0.0) {
+        return QPainterPath();
+    }
+    QPainterPath path;
+    // 圆角：正数按 px（上限短边一半），0 表示直角。
+    if (cornerRadius > 0.0) {
+        const qreal radius = qMin(cornerRadius, qMin(r.width(), r.height()) / 2.0);
+        path.addRoundedRect(r, radius, radius);
+    } else {
+        path.addRect(r);
+    }
+    return path;
+}
+
+QPainterPath ShapePathBuilder::ellipsePath(const QRectF& rect)
+{
+    const QRectF r = normalizedRect(rect);
+    if (r.width() <= 0.0 || r.height() <= 0.0) {
+        return QPainterPath();
+    }
+    // 椭圆 / 扇形 / 弧线共用 EllipseShape，角度语义与扫过角兜底只有一份实现。
+    const EllipseShape ellipseShape(r);
+    return ellipseShape.ellipse();
+}
+
+QPainterPath ShapePathBuilder::sectorPath(const QRectF& rect, qreal startAngle, qreal sweepAngle)
+{
+    const QRectF r = normalizedRect(rect);
+    if (r.width() <= 0.0 || r.height() <= 0.0) {
+        return QPainterPath();
+    }
+    const EllipseShape ellipseShape(r);
+    return ellipseShape.sector(startAngle, sweepAngle);
+}
+
+QPainterPath ShapePathBuilder::diamondPath(const QRectF& rect)
+{
+    const QRectF r = normalizedRect(rect);
+    if (r.width() <= 0.0 || r.height() <= 0.0) {
+        return QPainterPath();
+    }
+    QPainterPath path;
+    path.moveTo(r.center().x(), r.top());
+    path.lineTo(r.right(), r.center().y());
+    path.lineTo(r.center().x(), r.bottom());
+    path.lineTo(r.left(), r.center().y());
+    path.closeSubpath();
+    return path;
+}
+
+QPainterPath ShapePathBuilder::arrowPath(const QRectF& rect)
+{
+    const QRectF r = normalizedRect(rect);
+    if (r.width() <= 0.0 || r.height() <= 0.0) {
+        return QPainterPath();
+    }
+    const qreal headLength = qMin(r.width() * 0.45, qMax(r.height() * 0.75, r.width() * 0.22));
+    const qreal shaftHalf = qMin(r.height() * 0.17, headLength * 0.45);
+    const qreal cy = r.center().y();
+    const qreal headBase = r.right() - headLength;
+    QPainterPath path;
+    path.moveTo(r.left(), cy - shaftHalf);
+    path.lineTo(headBase, cy - shaftHalf);
+    path.lineTo(headBase, r.top());
+    path.lineTo(r.right(), cy);
+    path.lineTo(headBase, r.bottom());
+    path.lineTo(headBase, cy + shaftHalf);
+    path.lineTo(r.left(), cy + shaftHalf);
+    path.closeSubpath();
+    return path;
+}
+
+QPainterPath ShapePathBuilder::doubleArrowPath(const QRectF& rect)
+{
+    const QRectF r = normalizedRect(rect);
+    if (r.width() <= 0.0 || r.height() <= 0.0) {
+        return QPainterPath();
+    }
+    const qreal headLength = qMin(r.width() * 0.45, qMin(r.width() * 0.30, qMax(r.height() * 0.70, r.width() * 0.16)));
+    const qreal shaftHalf = qMin(r.height() * 0.17, headLength * 0.45);
+    const qreal cy = r.center().y();
+    const qreal leftBase = r.left() + headLength;
+    const qreal rightBase = r.right() - headLength;
+    QPainterPath path;
+    path.moveTo(r.left(), cy);
+    path.lineTo(leftBase, r.top());
+    path.lineTo(leftBase, cy - shaftHalf);
+    path.lineTo(rightBase, cy - shaftHalf);
+    path.lineTo(rightBase, r.top());
+    path.lineTo(r.right(), cy);
+    path.lineTo(rightBase, r.bottom());
+    path.lineTo(rightBase, cy + shaftHalf);
+    path.lineTo(leftBase, cy + shaftHalf);
+    path.lineTo(leftBase, r.bottom());
+    path.closeSubpath();
+    return path;
+}
+
 QPainterPath ShapePathBuilder::pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius)
 {
     return pathFor(type, rect, cornerRadius, 30.0, 120.0);
@@ -363,118 +458,47 @@ QPainterPath ShapePathBuilder::pathFor(ShapeType type, const QRectF& rect, qreal
 QPainterPath ShapePathBuilder::pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius, qreal startAngle,
                                        qreal sweepAngle)
 {
-    const QRectF r = normalizedRect(rect);
-    if (r.width() <= 0.0 || r.height() <= 0.0) {
-        return QPainterPath();
-    }
-
-    // 需求 6：扇形 / 弧线的椭圆外接框就是内容矩形，长半轴 = 宽/2、短半轴 = 高/2，
-    // 不再维护独立半径；想画扁弧直接改图元尺寸即可。
-    // 椭圆 / 扇形 / 弧线共用 EllipseShape，角度语义与扫过角兜底只有一份实现。
-    const EllipseShape ellipseShape(r);
-
-    QPainterPath path;
     switch (type) {
-    case ShapeType::Rectangle: {
-        // 圆角：正数按 px（上限短边一半），0 表示直角。
-        if (cornerRadius > 0.0) {
-            const qreal radius = qMin(cornerRadius, qMin(r.width(), r.height()) / 2.0);
-            path.addRoundedRect(r, radius, radius);
-        } else {
-            path.addRect(r);
-        }
-        break;
-    }
+    case ShapeType::Rectangle:
+        return roundedRectPath(rect, cornerRadius);
     case ShapeType::Ellipse:
-        path = ellipseShape.ellipse();
-        break;
+        return ellipsePath(rect);
     case ShapeType::Triangle:
         // 默认按 60°/60° 的等腰三角形生成；具体图元用带角度参数的重载。
-        path = trianglePathWithAngles(r, 60.0, 60.0);
-        break;
+        return trianglePath(rect, 60.0, 60.0);
     case ShapeType::Diamond:
-        path.moveTo(r.center().x(), r.top());
-        path.lineTo(r.right(), r.center().y());
-        path.lineTo(r.center().x(), r.bottom());
-        path.lineTo(r.left(), r.center().y());
-        path.closeSubpath();
-        break;
+        return diamondPath(rect);
     case ShapeType::Star:
-        path = starPath(r);
-        break;
-    case ShapeType::Arrow: {
-        const qreal headLength = qMin(r.width() * 0.45, qMax(r.height() * 0.75, r.width() * 0.22));
-        const qreal shaftHalf = qMin(r.height() * 0.17, headLength * 0.45);
-        const qreal cy = r.center().y();
-        const qreal headBase = r.right() - headLength;
-        path.moveTo(r.left(), cy - shaftHalf);
-        path.lineTo(headBase, cy - shaftHalf);
-        path.lineTo(headBase, r.top());
-        path.lineTo(r.right(), cy);
-        path.lineTo(headBase, r.bottom());
-        path.lineTo(headBase, cy + shaftHalf);
-        path.lineTo(r.left(), cy + shaftHalf);
-        path.closeSubpath();
-        break;
-    }
-    case ShapeType::DoubleArrow: {
-        const qreal headLength =
-            qMin(r.width() * 0.45, qMin(r.width() * 0.30, qMax(r.height() * 0.70, r.width() * 0.16)));
-        const qreal shaftHalf = qMin(r.height() * 0.17, headLength * 0.45);
-        const qreal cy = r.center().y();
-        const qreal leftBase = r.left() + headLength;
-        const qreal rightBase = r.right() - headLength;
-        path.moveTo(r.left(), cy);
-        path.lineTo(leftBase, r.top());
-        path.lineTo(leftBase, cy - shaftHalf);
-        path.lineTo(rightBase, cy - shaftHalf);
-        path.lineTo(rightBase, r.top());
-        path.lineTo(r.right(), cy);
-        path.lineTo(rightBase, r.bottom());
-        path.lineTo(rightBase, cy + shaftHalf);
-        path.lineTo(leftBase, cy + shaftHalf);
-        path.lineTo(leftBase, r.bottom());
-        path.closeSubpath();
-        break;
-    }
-
+        return starPath(rect);
+    case ShapeType::Arrow:
+        return arrowPath(rect);
+    case ShapeType::DoubleArrow:
+        return doubleArrowPath(rect);
     case ShapeType::Callout:
-        path = calloutPath(r);
-        break;
+        return calloutPath(rect);
     case ShapeType::Sector:
-        path = ellipseShape.sector(startAngle, sweepAngle);
-        break;
-
+        return sectorPath(rect, startAngle, sweepAngle);
     case ShapeType::Star4:
-        path = fourPointStarPath(r);
-        break;
+        return fourPointStarPath(rect);
     case ShapeType::Hexagram:
-        path = hexagramPath(r);
-        break;
+        return hexagramPath(rect);
     case ShapeType::Heart:
-        path = heartPath(r);
-        break;
-
+        return heartPath(rect);
     case ShapeType::FlagWave:
-        path = flagWavePath(r);
-        break;
+        return flagWavePath(rect);
     case ShapeType::Scroll:
-        path = scrollPath(r);
-        break;
+        return scrollPath(rect);
     case ShapeType::Cube:
-        path = cubePath(r);
-        break;
+        return cubePath(rect);
     case ShapeType::Cylinder:
-        path = cylinderPath(r);
-        break;
+        return cylinderPath(rect);
     case ShapeType::Parallelogram:
         // 默认按 60° 生成；具体图元用带角度参数的重载。
-        path = parallelogramPathWithAngle(r, 60.0);
-        break;
+        return parallelogramPath(rect, 60.0);
     }
-    return path;
+    // 多边形（合并产物）没有内置轮廓。
+    return QPainterPath();
 }
-
 QPainterPath ShapePathBuilder::trianglePath(const QRectF& rect, qreal bottomAngle1, qreal bottomAngle2)
 {
     return trianglePathWithAngles(rect, bottomAngle1, bottomAngle2);

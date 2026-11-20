@@ -6,6 +6,7 @@
 class HexagramItem : public ShapeItem {
   public:
     HexagramItem();
+    QSizeF defaultContentSize() const override;
     ShapeType shapeType() const override { return ShapeType::Hexagram; }
 
   protected:

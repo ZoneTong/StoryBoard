@@ -4,7 +4,12 @@
 
 TriangleItem::TriangleItem()
 {
-    setContentSize(defaultShapeSize(ShapeType::Triangle));
+    setContentSize(defaultContentSize());
+}
+
+QSizeF TriangleItem::defaultContentSize() const
+{
+    return QSizeF(128.0, 111.0);
 }
 
 ItemPropertySet TriangleItem::properties() const

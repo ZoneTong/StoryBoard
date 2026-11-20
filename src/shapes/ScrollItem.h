@@ -6,6 +6,7 @@
 class ScrollItem : public ShapeItem {
   public:
     ScrollItem();
+    QSizeF defaultContentSize() const override;
     ShapeType shapeType() const override { return ShapeType::Scroll; }
 
   protected:

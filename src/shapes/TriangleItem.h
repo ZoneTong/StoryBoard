@@ -7,6 +7,7 @@
 class TriangleItem : public ShapeItem {
   public:
     TriangleItem();
+    QSizeF defaultContentSize() const override;
     ShapeType shapeType() const override { return ShapeType::Triangle; }
     ItemPropertySet properties() const override;
     bool apexAngleHandle() const override { return true; }

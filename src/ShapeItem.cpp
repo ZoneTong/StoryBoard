@@ -6,6 +6,7 @@
 #include "ShapeMeta.h"
 #include "ShapePainter.h"
 #include "ShapePathBuilder.h"
+#include "shapes/ShapeFactory.h"
 
 #include <QByteArray>
 #include <QDataStream>
@@ -111,7 +112,12 @@ ShapeType shapeTypeFromString(const QString& value)
 
 QSizeF defaultShapeSize(ShapeType type)
 {
-    return ShapeMeta::defaultSize(type);
+    // 单一来源在子类 defaultContentSize()：按需构造原型图元取默认尺寸，
+    // 构造函数走 setContentSize(defaultContentSize())，不会递归。
+    ShapeItem* prototype = createShapeItem(type);
+    const QSizeF size = prototype->defaultContentSize();
+    delete prototype;
+    return size;
 }
 
 bool shapeTypeIsFilled(ShapeType type)
@@ -242,6 +248,13 @@ ItemPropertySet ShapeItem::properties() const
     return CanvasItem::properties().united(ItemPropertySet{ItemProperty::FILL_STYLE, ItemProperty::FILL_COLOR,
                                                            ItemProperty::FILL_IMAGE, ItemProperty::STROKE_STYLE,
                                                            ItemProperty::STROKE_COLOR, ItemProperty::STROKE_WIDTH});
+}
+
+QSizeF ShapeItem::defaultContentSize() const
+{
+    // 统一基准（需求 16）：棋盘格 1 格 = 64px，基准边长 = 2 格 = 128px。
+    // 正方形 / 圆等直接用 128×128，异形比例由具体子类覆写。
+    return QSizeF(128.0, 128.0);
 }
 
 QVariant ShapeItem::propertyValue(ItemProperty property) const
@@ -638,7 +651,7 @@ void ShapeItem::applyState(const ShapeItemState& state)
     setStyle(state.strokeColor, state.fillColor, state.strokeWidth);
     setPos(state.pos);
     m_syncingTriangle = true;
-    setContentSize(state.size.isEmpty() ? defaultShapeSize(shapeType()) : state.size);
+    setContentSize(state.size.isEmpty() ? defaultContentSize() : state.size);
     // 角度优先：应用状态时按角度重算三角形高度（旧尺寸与角度自洽，不会造成视觉变化）。
     if (shapeType() == ShapeType::Triangle && !isCustomShape()) {
         const qreal factor =
@@ -855,7 +868,7 @@ void ShapeItem::fromJson(const QJsonObject& json)
     m_syncingTriangle = true;
     applyBaseJson(json);
     if (contentSize().isEmpty()) {
-        setContentSize(defaultShapeSize(shapeType()));
+        setContentSize(defaultContentSize());
     }
     m_syncingTriangle = false;
 
