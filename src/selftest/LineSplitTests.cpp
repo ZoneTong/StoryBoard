@@ -4,15 +4,15 @@
 #include "CanvasTypes.h"
 #include "CanvasView.h"
 #include "CurveItem.h"
-#include "ItemDockPanel.h"
-#include "LineItem.h"
 #include "LineSplitOps.h"
 #include "MainWindow.h"
 #include "PathRegions.h"
 #include "PolygonItem.h"
+#include "PropertiesPanel.h"
 #include "ShapeItem.h"
 #include "ShapePathBuilder.h"
 #include "SineItem.h"
+#include "StraightLineItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
 #include "selftest/SelftestHelpers.h"
@@ -48,7 +48,7 @@ void selftest::runLineSplitTests(Context& ctx)
         QUndoStack undo;
         scene.setUndoStack(&undo);
 
-        auto* rect = new ShapeItem(ShapeType::Rectangle);
+        auto* rect = createShapeItem(ShapeType::Rectangle);
         rect->setContentSize(QSizeF(180.0, 120.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
 
@@ -57,7 +57,7 @@ void selftest::runLineSplitTests(Context& ctx)
         ctx.check(!LineSplitOps::supports(&scene), QStringLiteral("没有切刀时分割不可用"));
 
         // 切刀是曲线族的直线：两端落在画布内，水平横穿矩形中部。
-        auto* knife = new LineItem();
+        auto* knife = new StraightLineItem();
         knife->setEndpoints(QPointF(100.0, 210.0), QPointF(300.0, 210.0), QColor(QStringLiteral("#1E293B")), 2.0);
         scene.addItemsWithUndo({knife}, QStringLiteral("Add knife"));
 
@@ -66,7 +66,7 @@ void selftest::runLineSplitTests(Context& ctx)
         knife->setSelected(true);
         ctx.check(LineSplitOps::supports(&scene), QStringLiteral("填充图元加一条直线切刀时可用"));
 
-        auto* secondRect = new ShapeItem(ShapeType::Rectangle);
+        auto* secondRect = createShapeItem(ShapeType::Rectangle);
         secondRect->setContentSize(QSizeF(80.0, 80.0));
         scene.addItemsWithUndo({secondRect}, QStringLiteral("Add second rect"));
         scene.clearSelection();
@@ -84,12 +84,12 @@ void selftest::runLineSplitTests(Context& ctx)
         QUndoStack undo;
         scene.setUndoStack(&undo);
 
-        auto* rect = new ShapeItem(ShapeType::Rectangle);
+        auto* rect = createShapeItem(ShapeType::Rectangle);
         rect->setContentSize(QSizeF(180.0, 120.0));
         rect->setPos(QPointF(110.0, 150.0));
         rect->setFill(QColor(QStringLiteral("#2563EB")), FillStyle::Solid);
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
-        auto* knife = new LineItem();
+        auto* knife = new StraightLineItem();
         knife->setEndpoints(QPointF(100.0, 210.0), QPointF(300.0, 210.0), QColor(QStringLiteral("#1E293B")), 2.0);
         scene.addItemsWithUndo({knife}, QStringLiteral("Add knife"));
 
@@ -108,7 +108,7 @@ void selftest::runLineSplitTests(Context& ctx)
         for (CanvasItem* item : scene.canvasItems()) {
             if (auto* composite = dynamic_cast<PolygonItem*>(item)) {
                 fragments.append(composite);
-            } else if (dynamic_cast<LineItem*>(item)) {
+            } else if (dynamic_cast<StraightLineItem*>(item)) {
                 ++knifeCount;
             }
         }
@@ -149,7 +149,7 @@ void selftest::runLineSplitTests(Context& ctx)
             window.show();
             QApplication::processEvents();
             window.insertShape(ShapeType::Rectangle);
-            window.insertCurve(CurveKind::Line);
+            window.insertCurve(LineGlyph::STRAIGHT);
             CanvasScene* mainScene = window.findChild<CanvasScene*>();
             QList<CanvasItem*> items = mainScene->canvasItems();
             mainScene->clearSelection();
@@ -157,7 +157,7 @@ void selftest::runLineSplitTests(Context& ctx)
                 item->setSelected(true);
             }
             mainScene->update();
-            if (auto* dockPanel = window.findChild<ItemDockPanel*>()) {
+            if (auto* dockPanel = window.findChild<PropertiesPanel*>()) {
                 dockPanel->refresh();
                 QApplication::processEvents();
                 const QList<QToolButton*> morphButtons =
@@ -267,7 +267,7 @@ void selftest::runLineSplitTests(Context& ctx)
         QUndoStack undo;
         scene.setUndoStack(&undo);
 
-        auto* ellipse = new ShapeItem(ShapeType::Ellipse);
+        auto* ellipse = createShapeItem(ShapeType::Ellipse);
         ellipse->setContentSize(QSizeF(160.0, 120.0));
         ellipse->setPos(QPointF(120.0, 180.0));
         scene.addItemsWithUndo({ellipse}, QStringLiteral("Add ellipse"));
@@ -298,7 +298,7 @@ void selftest::runLineSplitTests(Context& ctx)
         QUndoStack undo;
         scene.setUndoStack(&undo);
 
-        auto* rect = new ShapeItem(ShapeType::Rectangle);
+        auto* rect = createShapeItem(ShapeType::Rectangle);
         rect->setContentSize(QSizeF(200.0, 200.0));
         rect->setPos(QPointF(110.0, 150.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
@@ -342,7 +342,7 @@ void selftest::runLineSplitTests(Context& ctx)
         QUndoStack undo;
         scene.setUndoStack(&undo);
 
-        auto* rect = new ShapeItem(ShapeType::Rectangle);
+        auto* rect = createShapeItem(ShapeType::Rectangle);
         rect->setContentSize(QSizeF(128.0, 128.0));
         rect->setPos(QPointF(500.0, 500.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
@@ -379,7 +379,7 @@ void selftest::runLineSplitTests(Context& ctx)
         sine->setWaveGeometry(QPointF(300.0, 200.0), QSizeF(128.0, 40.0), QColor(QStringLiteral("#111827")), 4.0);
         scene.addItemsWithUndo({sine}, QStringLiteral("Add sine"));
 
-        auto* rect = new ShapeItem(ShapeType::Rectangle);
+        auto* rect = createShapeItem(ShapeType::Rectangle);
         rect->setContentSize(QSizeF(80.0, 60.0));
         rect->setPos(QPointF(320.0, 190.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
@@ -397,7 +397,7 @@ void selftest::runLineSplitTests(Context& ctx)
         QUndoStack undo;
         scene.setUndoStack(&undo);
 
-        auto* rect = new ShapeItem(ShapeType::Rectangle);
+        auto* rect = createShapeItem(ShapeType::Rectangle);
         rect->setContentSize(QSizeF(200.0, 200.0));
         rect->setPos(QPointF(110.0, 150.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
@@ -427,11 +427,11 @@ void selftest::runLineSplitTests(Context& ctx)
         QUndoStack undo;
         scene.setUndoStack(&undo);
 
-        auto* rect = new ShapeItem(ShapeType::Rectangle);
+        auto* rect = createShapeItem(ShapeType::Rectangle);
         rect->setContentSize(QSizeF(120.0, 90.0));
         rect->setPos(QPointF(110.0, 150.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
-        auto* knife = new LineItem();
+        auto* knife = new StraightLineItem();
         knife->setEndpoints(QPointF(90.0, 300.0), QPointF(250.0, 300.0), QColor(QStringLiteral("#1E293B")), 2.0);
         scene.addItemsWithUndo({knife}, QStringLiteral("Add knife"));
 
@@ -464,7 +464,7 @@ void selftest::runLineSplitTests(Context& ctx)
         QUndoStack undo;
         scene.setUndoStack(&undo);
 
-        auto* flag = new ShapeItem(ShapeType::FlagWave);
+        auto* flag = createShapeItem(ShapeType::FlagWave);
         flag->setContentSize(arrangement.flagRect.size());
         flag->setPos(arrangement.flagRect.topLeft());
         scene.addItemsWithUndo({flag}, QStringLiteral("Add flag"));

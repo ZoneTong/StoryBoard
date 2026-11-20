@@ -295,12 +295,16 @@ QPainterPath cylinderPath(const QRectF& rect)
     const qreal ry = qMin(r.height() * 0.16, r.width() * 0.30);
     const QRectF topEllipse(r.left(), r.top(), r.width(), ry * 2.0);
     const QRectF bottomEllipse(r.left(), r.bottom() - ry * 2.0, r.width(), ry * 2.0);
-    const QRectF body(r.left(), r.top() + ry, r.width(), r.height() - ry * 2.0);
 
     QPainterPath topPath;
     topPath.addEllipse(topEllipse);
+    // 柱身顶边取顶椭圆的下半弧：加矩形会把椭圆中线的弦也画出来，看起来像一条直径。
     QPainterPath bodyPath;
-    bodyPath.addRect(body);
+    bodyPath.arcMoveTo(topEllipse, 180.0);
+    bodyPath.arcTo(topEllipse, 180.0, -180.0);
+    bodyPath.lineTo(bottomEllipse.right(), bottomEllipse.center().y());
+    bodyPath.arcTo(bottomEllipse, 0.0, -180.0);
+    bodyPath.closeSubpath();
     QPainterPath bottomPath;
     bottomPath.addEllipse(bottomEllipse);
     QPainterPath result = topPath.united(bodyPath).united(bottomPath);
@@ -372,13 +376,9 @@ QPainterPath ShapePathBuilder::pathFor(ShapeType type, const QRectF& rect, qreal
     QPainterPath path;
     switch (type) {
     case ShapeType::Rectangle: {
-        // 圆角：正数按 px（上限短边一半）；-2 为自动态（短边 16%，旧圆角矩形）；
-        // 其余 <= 0 保持直角。
+        // 圆角：正数按 px（上限短边一半），0 表示直角。
         if (cornerRadius > 0.0) {
             const qreal radius = qMin(cornerRadius, qMin(r.width(), r.height()) / 2.0);
-            path.addRoundedRect(r, radius, radius);
-        } else if (cornerRadius <= -2.0) {
-            const qreal radius = qMin(r.width(), r.height()) * 0.16;
             path.addRoundedRect(r, radius, radius);
         } else {
             path.addRect(r);

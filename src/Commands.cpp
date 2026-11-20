@@ -2,7 +2,7 @@
 
 #include "CanvasItem.h"
 #include "CanvasScene.h"
-#include "CurveItem.h"
+#include "LineItemAbstract.h"
 #include "PolygonItem.h"
 
 #include <QGraphicsScene>
@@ -219,14 +219,14 @@ void GroupCommand::apply(const QList<int>& groupIds, const QHash<int, int>& pare
     m_scene->applyGroupParents(parents);
 }
 
-StrokeSmoothCommand::StrokeSmoothCommand(CanvasScene* scene, const QList<CurveItem*>& items,
-                                         const QList<CurveItem::GeometryState>& before,
-                                         const QList<CurveItem::GeometryState>& after, const QString& text)
+StrokeSmoothCommand::StrokeSmoothCommand(CanvasScene* scene, const QList<LineItemAbstract*>& items,
+                                         const QList<LineItemAbstract::GeometryState>& before,
+                                         const QList<LineItemAbstract::GeometryState>& after, const QString& text)
     : m_scene(scene), m_before(before), m_after(after)
 {
     setText(text);
-    for (CurveItem* item : items) {
-        m_items.append(QPointer<CurveItem>(item));
+    for (LineItemAbstract* item : items) {
+        m_items.append(QPointer<LineItemAbstract>(item));
     }
 }
 
@@ -240,7 +240,7 @@ void StrokeSmoothCommand::redo()
     apply(m_after);
 }
 
-void StrokeSmoothCommand::apply(const QList<CurveItem::GeometryState>& states)
+void StrokeSmoothCommand::apply(const QList<LineItemAbstract::GeometryState>& states)
 {
     if (states.size() != m_items.size()) {
         return;
@@ -256,7 +256,7 @@ void StrokeSmoothCommand::apply(const QList<CurveItem::GeometryState>& states)
     }
 }
 
-BackgroundCommand::BackgroundCommand(CanvasScene* scene, const BackgroundState& before, const BackgroundState& after,
+BackgroundCommand::BackgroundCommand(CanvasScene* scene, const CanvasBackground& before, const CanvasBackground& after,
                                      const QString& text)
     : m_scene(scene), m_before(before), m_after(after)
 {
@@ -266,14 +266,14 @@ BackgroundCommand::BackgroundCommand(CanvasScene* scene, const BackgroundState& 
 void BackgroundCommand::undo()
 {
     if (m_scene) {
-        m_scene->applyBackground(m_before);
+        m_scene->setCanvasBackground(m_before);
     }
 }
 
 void BackgroundCommand::redo()
 {
     if (m_scene) {
-        m_scene->applyBackground(m_after);
+        m_scene->setCanvasBackground(m_after);
     }
 }
 
@@ -318,7 +318,7 @@ void ItemStackCommand::redo()
     }
 }
 
-TextItemCommand::TextItemCommand(CanvasScene* scene, TextItem* item, const TextItemState& before,
+TextItemCommand::TextItemCommand(CanvasScene* scene, CanvasItem* item, const TextItemState& before,
                                  const TextItemState& after, const QString& text)
     : m_scene(scene), m_item(item), m_before(before), m_after(after)
 {
@@ -421,7 +421,7 @@ void PolygonFillStyleCommand::redo()
 void PolygonFillStyleCommand::apply(const QList<QColor>& colors, const QList<FillStyle>& styles)
 {
     for (int i = 0; i < m_items.size() && i < colors.size() && i < styles.size(); ++i) {
-        if (auto* composite = dynamic_cast<PolygonItem*>(m_items.at(i).data())) {
+        if (auto* composite = dynamic_cast<ShapeItem*>(m_items.at(i).data()); composite && composite->isPolygon()) {
             composite->setFill(colors.at(i), styles.at(i));
         }
     }
@@ -459,9 +459,7 @@ void ArrowStyleCommand::apply(const QList<QPair<ArrowStyle, ArrowStyle>>& states
             continue;
         }
         const QPair<ArrowStyle, ArrowStyle> state = states.at(i);
-        if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
-            shape->setArrowStyles(state.first, state.second);
-        } else if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
+        if (auto* stroke = dynamic_cast<LineItemAbstract*>(item)) {
             stroke->setArrowStyles(state.first, state.second);
         }
     }
@@ -502,8 +500,9 @@ void ItemStrokeStyleCommand::apply(const QList<QColor>& colors, const QList<qrea
         }
         if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
             shape->setStyle(colors.at(i), shape->fillColor(), widths.at(i));
-        } else if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
-            stroke->setStyle(colors.at(i), widths.at(i));
+        } else if (auto* stroke = dynamic_cast<LineItemAbstract*>(item)) {
+            stroke->setStrokeColor(colors.at(i));
+            stroke->setStrokeWidth(widths.at(i));
         }
     }
     if (m_scene) {
@@ -542,8 +541,46 @@ void ItemPenStyleCommand::apply(const QList<Qt::PenStyle>& styles)
         const Qt::PenStyle style = styles.at(i);
         if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
             shape->setStrokeStyle(style);
-        } else if (auto* curve = dynamic_cast<CurveItem*>(item)) {
-            curve->setStrokeStyle(style);
+        } else if (auto* line = dynamic_cast<LineItemAbstract*>(item)) {
+            line->setStrokePattern(style);
+        }
+    }
+    if (m_scene) {
+        m_scene->update();
+    }
+}
+
+ItemPropertyCommand::ItemPropertyCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
+                                         const QList<QMap<ItemProperty, QVariant>>& before,
+                                         const QList<QMap<ItemProperty, QVariant>>& after, const QString& text)
+    : m_scene(scene), m_before(before), m_after(after)
+{
+    setText(text);
+    for (CanvasItem* item : items) {
+        m_items.append(QPointer<CanvasItem>(item));
+    }
+}
+
+void ItemPropertyCommand::undo()
+{
+    apply(m_before);
+}
+
+void ItemPropertyCommand::redo()
+{
+    apply(m_after);
+}
+
+void ItemPropertyCommand::apply(const QList<QMap<ItemProperty, QVariant>>& states)
+{
+    for (int index = 0; index < m_items.size() && index < states.size(); ++index) {
+        CanvasItem* item = m_items.at(index);
+        if (!item) {
+            continue;
+        }
+        const QMap<ItemProperty, QVariant>& values = states.at(index);
+        for (auto it = values.constBegin(); it != values.constEnd(); ++it) {
+            item->setPropertyValue(it.key(), it.value());
         }
     }
     if (m_scene) {
@@ -635,9 +672,7 @@ void ItemPropertiesCommand::apply(const ItemPropertiesState& state)
             shape->applyState(state.shapeState);
         }
     } else if (state.hasTextState) {
-        if (auto* text = dynamic_cast<TextItem*>(m_item.data())) {
-            text->applyState(state.textState);
-        }
+        m_item->applyTextState(state.textState);
     } else {
         m_item->setPos(state.pos);
         m_item->setContentSize(state.size);
@@ -648,9 +683,10 @@ void ItemPropertiesCommand::apply(const ItemPropertiesState& state)
     m_item->setItemOpacity(state.opacity);
 
     if (state.hasStrokeStyle) {
-        if (auto* stroke = dynamic_cast<CurveItem*>(m_item.data())) {
-            stroke->setStyle(state.strokeColor, state.strokeWidth);
-            stroke->setStrokeStyle(state.strokeStyle);
+        if (auto* stroke = dynamic_cast<LineItemAbstract*>(m_item.data())) {
+            stroke->setStrokeColor(state.strokeColor);
+            stroke->setStrokeWidth(state.strokeWidth);
+            stroke->setStrokePattern(state.strokeStyle);
             // 需求 27：曲线两端箭头随同一条撤销记录一起应用。
             stroke->setArrowStyles(state.curveStartArrow, state.curveEndArrow);
         }

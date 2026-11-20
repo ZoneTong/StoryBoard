@@ -28,18 +28,18 @@ void selftest::runCanvasOcclusionBoundaryTests(Context& ctx)
     blendScene.applyCanvasSize(QSizeF(300, 200));
     blendScene.setShowGrid(false);
     // 真实视图截图路径与离屏 render 路径对齐：显式铺白底，避免默认透明衬底参与取色。
-    BackgroundState blendBackground;
+    CanvasBackground blendBackground;
     blendBackground.type = BackgroundType::Color;
     blendBackground.color = QColor(Qt::white);
-    blendScene.applyBackground(blendBackground);
-    auto* lowerBand = new ShapeItem(ShapeType::Rectangle);
+    blendScene.setCanvasBackground(blendBackground);
+    auto* lowerBand = createShapeItem(ShapeType::Rectangle);
     lowerBand->setPos(QPointF(20, 20));
     lowerBand->setContentSize(QSizeF(160, 120));
     lowerBand->setStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 1.0);
     lowerBand->setFill(QColor(255, 0, 0, 255), FillStyle::Solid);
     blendScene.attachItem(lowerBand);
 
-    auto* upperBand = new ShapeItem(ShapeType::Rectangle);
+    auto* upperBand = createShapeItem(ShapeType::Rectangle);
     upperBand->setPos(QPointF(100, 50));
     upperBand->setContentSize(QSizeF(160, 120));
     upperBand->setStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 1.0);
@@ -69,12 +69,12 @@ void selftest::runCanvasOcclusionBoundaryTests(Context& ctx)
         CanvasScene textScene;
         textScene.applyCanvasSize(QSizeF(300, 240));
         textScene.setShowGrid(false);
-        BackgroundState textBackground;
+        CanvasBackground textBackground;
         textBackground.type = BackgroundType::Color;
         textBackground.color = QColor(Qt::white);
-        textScene.applyBackground(textBackground);
+        textScene.setCanvasBackground(textBackground);
 
-        auto* rectangle = new ShapeItem(ShapeType::Rectangle);
+        auto* rectangle = createShapeItem(ShapeType::Rectangle);
         rectangle->setPos(QPointF(30, 30));
         rectangle->setContentSize(QSizeF(200, 150));
         rectangle->setStyle(QColor(QStringLiteral("#1E293B")), QColor(QStringLiteral("#1E293B")), 2.0);
@@ -156,14 +156,14 @@ void selftest::runCanvasOcclusionBoundaryTests(Context& ctx)
         CanvasScene hollowScene;
         hollowScene.applyCanvasSize(QSizeF(300, 200));
         hollowScene.setShowGrid(false);
-        auto* lower = new ShapeItem(ShapeType::Rectangle);
+        auto* lower = createShapeItem(ShapeType::Rectangle);
         lower->setPos(QPointF(40, 40));
         lower->setContentSize(QSizeF(220, 120));
         lower->setStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 1.0);
         lower->setFill(QColor(239, 68, 68), FillStyle::Solid);
         hollowScene.attachItem(lower);
 
-        auto* hollow = new ShapeItem(ShapeType::Rectangle);
+        auto* hollow = createShapeItem(ShapeType::Rectangle);
         hollow->setPos(QPointF(80, 60));
         hollow->setContentSize(QSizeF(140, 100));
         hollow->setStyle(QColor(37, 99, 235), QColor(Qt::transparent), 2.0);
@@ -181,7 +181,7 @@ void selftest::runCanvasOcclusionBoundaryTests(Context& ctx)
             QStringLiteral("无填充图形的内部不遮挡下层，下层颜色照常可见"),
             QStringLiteral("pixel=%1,%2,%3").arg(hollowPixel.red()).arg(hollowPixel.green()).arg(hollowPixel.blue()));
 
-        auto* pattern = new ShapeItem(ShapeType::Rectangle);
+        auto* pattern = createShapeItem(ShapeType::Rectangle);
         pattern->setPos(QPointF(80, 60));
         pattern->setContentSize(QSizeF(140, 100));
         pattern->setStyle(QColor(37, 99, 235), QColor(37, 99, 235, 200), 2.0);
@@ -190,7 +190,7 @@ void selftest::runCanvasOcclusionBoundaryTests(Context& ctx)
         CanvasScene patternScene;
         patternScene.applyCanvasSize(QSizeF(300, 200));
         patternScene.setShowGrid(false);
-        auto* patternLower = new ShapeItem(ShapeType::Rectangle);
+        auto* patternLower = createShapeItem(ShapeType::Rectangle);
         patternLower->setPos(QPointF(40, 40));
         patternLower->setContentSize(QSizeF(220, 120));
         patternLower->setStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 1.0);
@@ -224,14 +224,14 @@ void selftest::runCanvasOcclusionBoundaryTests(Context& ctx)
         CanvasScene solidOverTexture;
         solidOverTexture.applyCanvasSize(QSizeF(300, 200));
         solidOverTexture.setShowGrid(false);
-        auto* texturedLower = new ShapeItem(ShapeType::Rectangle);
+        auto* texturedLower = createShapeItem(ShapeType::Rectangle);
         texturedLower->setPos(QPointF(40, 40));
         texturedLower->setContentSize(QSizeF(220, 120));
         texturedLower->setStyle(QColor(239, 68, 68), QColor(239, 68, 68, 200), 1.0);
         texturedLower->setFill(QColor(239, 68, 68, 200), FillStyle::Honeycomb);
         solidOverTexture.attachItem(texturedLower);
 
-        auto* solidCover = new ShapeItem(ShapeType::Rectangle);
+        auto* solidCover = createShapeItem(ShapeType::Rectangle);
         solidCover->setPos(QPointF(80, 60));
         solidCover->setContentSize(QSizeF(140, 100));
         solidCover->setStyle(QColor(37, 99, 235), QColor(37, 99, 235, 128), 2.0);

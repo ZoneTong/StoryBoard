@@ -28,7 +28,7 @@ void selftest::runSettingsDialogBasicTests(Context& ctx)
         QUndoStack handleUndo;
         handleScene.setUndoStack(&handleUndo);
 
-        auto* handleEllipse = new ShapeItem(ShapeType::Ellipse);
+        auto* handleEllipse = createShapeItem(ShapeType::Ellipse);
         handleEllipse->setStyle(QColor(QStringLiteral("#0F172A")), QColor(Qt::transparent), 4.0);
         handleEllipse->setContentSize(QSizeF(200, 120));
         handleEllipse->setPos(QPointF(60, 40));
@@ -44,7 +44,7 @@ void selftest::runSettingsDialogBasicTests(Context& ctx)
         handleEllipse->setSelected(false);
         ctx.check(!handleEllipse->shape().contains(QPointF(-3.0, -3.0)), QStringLiteral("未选中时控制点不参与命中"));
 
-        auto* thickRect = new ShapeItem(ShapeType::Rectangle);
+        auto* thickRect = createShapeItem(ShapeType::Rectangle);
         thickRect->setStyle(QColor(QStringLiteral("#1D4ED8")), QColor(29, 78, 216, 40), 40.0);
         thickRect->setContentSize(QSizeF(200, 120));
         thickRect->setPos(QPointF(400, 40));
@@ -60,10 +60,10 @@ void selftest::runSettingsDialogBasicTests(Context& ctx)
         QPixmap secondBackground(40, 30);
         secondBackground.fill(QColor(QStringLiteral("#0EA5E9")));
 
-        BackgroundState firstState;
+        CanvasBackground firstState;
         firstState.type = BackgroundType::Image;
         firstState.image = firstBackground;
-        BackgroundState secondState = firstState;
+        CanvasBackground secondState = firstState;
         secondState.image = secondBackground;
 
         ctx.check(firstState == secondState, QStringLiteral("内容相同的背景图片判定为相等"));
@@ -71,9 +71,9 @@ void selftest::runSettingsDialogBasicTests(Context& ctx)
         CanvasScene dedupeScene;
         QUndoStack dedupeUndo;
         dedupeScene.setUndoStack(&dedupeUndo);
-        dedupeScene.replaceBackground(firstState);
+        dedupeScene.replaceCanvasBackground(firstState);
         const int stepsAfterFirst = dedupeUndo.count();
-        dedupeScene.replaceBackground(secondState);
+        dedupeScene.replaceCanvasBackground(secondState);
         ctx.check(dedupeUndo.count() == stepsAfterFirst, QStringLiteral("重复应用同一背景图片不增加撤销步骤"),
                   QString::number(dedupeUndo.count()));
     }

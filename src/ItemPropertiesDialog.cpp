@@ -3,11 +3,11 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
-#include "CurveItem.h"
 #include "ItemPropertiesDialogGeometryBlock.h"
 #include "ItemPropertiesDialogIdentityBlock.h"
 #include "ItemPropertiesDialogStyleBlock.h"
 #include "ItemPropertiesDialogTextBlock.h"
+#include "LineItemAbstract.h"
 #include "ShapeItem.h"
 #include "TextItem.h"
 
@@ -90,12 +90,12 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
         m_identityBlock = new ItemPropertiesDialogIdentityBlock(scene, item, this);
         m_identityBlock->addRows(form);
 
-        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<CurveItem*>(item)) {
+        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<LineItemAbstract*>(item)) {
             m_styleBlock = new ItemPropertiesDialogStyleBlock(item, this);
             m_styleBlock->addRows(form);
             m_hasFill = m_styleBlock->hasFill();
             m_initialStrokeWidth = m_styleBlock->initialStrokeWidth();
-        } else if (dynamic_cast<TextItem*>(item)) {
+        } else if (item->hasTextFacet()) {
             m_textBlock = new ItemPropertiesDialogTextBlock(item, this);
             m_textBlock->addRows(form);
             connect(m_textBlock, &ItemPropertiesDialogTextBlock::fontChanged, this,
@@ -240,8 +240,7 @@ void ItemPropertiesDialog::syncTextNaturalSize()
     if (!m_editable || !m_textBlock || !m_textBlock->textEdit()) {
         return;
     }
-    if (auto* text = dynamic_cast<TextItem*>(m_item.data())) {
-        Q_UNUSED(text);
+    if (m_item->hasTextFacet()) {
         const QSizeF natural = TextItem::measure(m_textBlock->textEdit()->toPlainText(), m_textBlock->textFont());
         if (m_geometryBlock) {
             m_geometryBlock->setNaturalSize(natural);
@@ -380,13 +379,6 @@ void ItemPropertiesDialog::applyChanges()
             after.shapeState.parallelogramAngle =
                 value == qRound(style->initialParallelogramAngle()) ? style->initialParallelogramAngle() : value;
         }
-        // 需求 6：直线两端箭头样式。
-        if (style && style->startArrowCombo()) {
-            after.shapeState.startArrow = static_cast<ArrowStyle>(style->startArrowCombo()->currentData().toInt());
-        }
-        if (style && style->endArrowCombo()) {
-            after.shapeState.endArrow = static_cast<ArrowStyle>(style->endArrowCombo()->currentData().toInt());
-        }
         if (m_hasFill) {
             if (style && style->fillStyleCombo() && style->fillStyleCombo()->currentData().toInt() >= 0) {
                 after.shapeState.fillStyle = static_cast<FillStyle>(style->fillStyleCombo()->currentData().toInt());
@@ -401,15 +393,15 @@ void ItemPropertiesDialog::applyChanges()
                 after.shapeState.fillImageMode = style->fillImageMode();
             }
         }
-    } else if (auto* textItem = dynamic_cast<TextItem*>(m_item.data())) {
+    } else if (m_item->hasTextFacet()) {
         before.hasTextState = true;
-        before.textState = textItem->state();
+        before.textState = m_item->textState();
 
         after.hasTextState = true;
-        after.textState = textItem->state();
+        after.textState = m_item->textState();
         after.textState.pos = after.pos;
         after.textState.size = after.size;
-        after.textState.font = text ? text->textFont() : QFont();
+        after.textState.font = text ? text->textFont() : m_item->textFont();
         if (text && text->textEdit()) {
             after.textState.text = text->textEdit()->toPlainText();
         }
@@ -423,11 +415,11 @@ void ItemPropertiesDialog::applyChanges()
         if (text && text->textColorButton()) {
             after.textState.color = text->textColorButton()->property("itemColor").value<QColor>();
         }
-    } else if (auto* stroke = dynamic_cast<CurveItem*>(m_item.data())) {
+    } else if (auto* stroke = dynamic_cast<LineItemAbstract*>(m_item.data())) {
         before.hasStrokeStyle = true;
         before.strokeColor = stroke->strokeColor();
         before.strokeWidth = stroke->strokeWidth();
-        before.strokeStyle = stroke->strokeStyle();
+        before.strokeStyle = stroke->strokePattern();
         // 需求 27：曲线两端箭头与描线一起进入同一条撤销记录；箭头对全部曲线子型开放。
         before.curveStartArrow = stroke->startArrow();
         before.curveEndArrow = stroke->endArrow();

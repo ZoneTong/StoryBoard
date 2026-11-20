@@ -17,7 +17,6 @@ class CanvasItem;
 class QFont;
 class QPainter;
 class QStyleOptionGraphicsItem;
-class TextItem;
 struct TextItemState;
 
 class CanvasScene : public QGraphicsScene {
@@ -43,9 +42,9 @@ class CanvasScene : public QGraphicsScene {
     void setCanvasRectWithUndo(const QRectF& rect);
     void commitCanvasRect(const QRectF& before);
 
-    BackgroundState background() const { return m_background; }
-    void applyBackground(const BackgroundState& background);
-    void replaceBackground(const BackgroundState& background, const QString& text = QString());
+    CanvasBackground canvasBackground() const { return m_background; }
+    void setCanvasBackground(const CanvasBackground& background);
+    void replaceCanvasBackground(const CanvasBackground& background, const QString& text = QString());
 
     bool showGrid() const { return m_showGrid; }
     void setShowGrid(bool enabled);
@@ -150,9 +149,9 @@ class CanvasScene : public QGraphicsScene {
     QList<int> preferredLayerIds() const { return m_preferredLayerIds; }
     void applyItemStack(const ItemStackList& stack);
 
-    bool changeTextWithUndo(TextItem* item, const QString& text, const QFont& font, const QColor& color,
+    bool changeTextWithUndo(CanvasItem* item, const QString& text, const QFont& font, const QColor& color,
                             const QString& commandText = QString());
-    void applyTextState(TextItem* item, const TextItemState& state);
+    void applyTextState(CanvasItem* item, const TextItemState& state);
 
     void addItemsWithUndo(const QList<CanvasItem*>& items, const QString& text);
     void commitNewItem(CanvasItem* item, const QString& text);
@@ -197,9 +196,9 @@ class CanvasScene : public QGraphicsScene {
                    QWidget* widget = nullptr) override;
 
   private:
-    CanvasItem* createItem(const QString& kind) const;
-    // 曲线族的子型共用 kind "curve"，只能按 JSON 里的 curveKind 还原具体类
-    // （直线 / 弧线 / 正弦）；其余类型仍按 kind 分派。
+    CanvasItem* createItem(const QString& kind, const QString& shapeType = QString()) const;
+    // 图元类型标识只按 JSON 里的 kind 分派：线条族五个形态各自一个类，
+    // 图形 / 多边形 / 文字各一个族。
     CanvasItem* createItemForJson(const QJsonObject& json) const;
     // reserved 里是尚未挂到场景、但已经保留给其它副本的名称。
     QString uniqueItemNameFor(const QString& requested, const CanvasItem* except, const QSet<QString>& reserved) const;
@@ -230,7 +229,7 @@ class CanvasScene : public QGraphicsScene {
     ToolMode m_mode = ToolMode::View;
     QSizeF m_canvasSize{1536.0, 1024.0};
     QPointF m_canvasOrigin{0.0, 0.0};
-    BackgroundState m_background;
+    CanvasBackground m_background;
     bool m_showGrid = false;
     bool m_exporting = false;
     // fromJson 加载重建期间为 true：这期间的归一化修复不算用户操作，

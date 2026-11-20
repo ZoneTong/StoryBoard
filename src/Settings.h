@@ -25,14 +25,14 @@ class AppSettings {
     QString canvasesDirectory;
     QByteArray windowGeometry;
     // 右侧卡片的上下顺序（QDockWidget 的 objectName：视图模式卡 / 图层卡）。
-    // 编辑图元卡的位置单独记录，右侧两张卡由用户拖拽换位后自动写回，启动时恢复。
+    // 属性编辑面板的位置单独记录，右侧两张卡由用户拖拽换位后自动写回，启动时恢复。
     QStringList dockOrder;
-    // 编辑图元卡的位置。首次启动没有保存过位置时停在窗口左侧；
+    // 属性编辑面板的位置。首次启动没有保存过位置时停在窗口左侧；
     // 用户拖动或悬浮后写入这里，下次启动按保存的区域 / 悬浮几何恢复。
-    bool itemDockStateSaved = false;
-    bool itemDockFloating = false;
-    QString itemDockArea = QStringLiteral("left");
-    QByteArray itemDockGeometry;
+    bool propertiesDockStateSaved = false;
+    bool propertiesDockFloating = false;
+    QString propertiesDockArea = QStringLiteral("left");
+    QByteArray propertiesDockGeometry;
     // 自定义快捷键：键是动作的默认组合键（便携文本），值是新组合键；
     // 没有条目就用代码里的默认值。
     QMap<QString, QString> shortcutOverrides;

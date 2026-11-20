@@ -8,18 +8,18 @@
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
-#include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
 #include "LineArtConverter.h"
 #include "LineArtDialog.h"
 #include "LineArtPresets.h"
-#include "LineItem.h"
 #include "MainWindow.h"
 #include "PolygonItem.h"
+#include "PropertiesPanel.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
+#include "StraightLineItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -93,10 +93,10 @@ void selftest::runAlignmentTests(Context& ctx)
         QUndoStack alignUndo;
         alignScene.setUndoStack(&alignUndo);
 
-        auto* leftItem = new ShapeItem(ShapeType::Rectangle);
+        auto* leftItem = createShapeItem(ShapeType::Rectangle);
         leftItem->setContentSize(QSizeF(120.0, 90.0));
         alignScene.addItemsWithUndo({leftItem}, QStringLiteral("Add align item"));
-        auto* rightItem = new ShapeItem(ShapeType::Ellipse);
+        auto* rightItem = createShapeItem(ShapeType::Ellipse);
         rightItem->setContentSize(QSizeF(80.0, 60.0));
         alignScene.addItemsWithUndo({rightItem}, QStringLiteral("Add align item"));
         leftItem->setPos(QPointF(40.0, 60.0));
@@ -120,7 +120,7 @@ void selftest::runAlignmentTests(Context& ctx)
         ctx.check(qAbs(rightItem->pos().x() - 240.0) < 0.01, QStringLiteral("对齐可撤销"));
 
         // 等间距：三个图元按空隙均分。
-        auto* thirdItem = new ShapeItem(ShapeType::Rectangle);
+        auto* thirdItem = createShapeItem(ShapeType::Rectangle);
         thirdItem->setContentSize(QSizeF(60.0, 40.0));
         alignScene.addItemsWithUndo({thirdItem}, QStringLiteral("Add align item"));
         thirdItem->setPos(QPointF(620.0, 300.0));
@@ -135,7 +135,7 @@ void selftest::runAlignmentTests(Context& ctx)
 
 void selftest::runAlignmentMenuTests(Context& ctx)
 {
-    // 菜单保留对齐下拉；主工具栏不再放对齐按钮，入口集中到菜单与编辑图元卡。
+    // 菜单保留对齐下拉；主工具栏不再放对齐按钮，入口集中到菜单与属性编辑面板。
     {
         MainWindow alignWindow;
         QMenu* alignMenu = alignWindow.findChild<QMenu*>(QStringLiteral("AlignMenu"));
@@ -171,8 +171,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         groupScene.setMode(ToolMode::Edit);
         groupScene.applyCanvasSize(QSizeF(400.0, 300.0));
         auto makeRect = [&groupScene](qreal x, qreal y) {
-            auto* item = new ShapeItem();
-            item->setShapeType(ShapeType::Rectangle);
+            auto* item = createShapeItem(ShapeType::Rectangle);
             item->setPos(QPointF(x, y));
             item->setContentSize(QSizeF(40.0, 40.0));
             item->setStyle(QColor(30, 41, 59), QColor(30, 41, 59, 36), 1.0);
@@ -214,8 +213,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         boolScene.setMode(ToolMode::Edit);
         boolScene.applyCanvasSize(QSizeF(400.0, 300.0));
         auto makeRect = [&boolScene](qreal x, const QColor& color) {
-            auto* item = new ShapeItem();
-            item->setShapeType(ShapeType::Rectangle);
+            auto* item = createShapeItem(ShapeType::Rectangle);
             item->setPos(QPointF(x, 40.0));
             item->setContentSize(QSizeF(60.0, 60.0));
             item->setStyle(color, color.lighter(160), 1.0);
@@ -236,8 +234,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
 
         // 3 个及以上图元的合并：五项运算都要真正落到结果，不能只处理前两个。
         auto addRect = [](CanvasScene& scene, qreal x, qreal y, qreal w, qreal h) {
-            auto* item = new ShapeItem();
-            item->setShapeType(ShapeType::Rectangle);
+            auto* item = createShapeItem(ShapeType::Rectangle);
             item->setPos(QPointF(x, y));
             item->setContentSize(QSizeF(w, h));
             item->setStyle(QColor(20, 20, 20), QColor(200, 60, 60), 2.0);
@@ -424,17 +421,16 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                 scene.setUndoStack(&undo);
                 scene.setMode(ToolMode::Edit);
                 scene.applyCanvasSize(QSizeF(320.0, 220.0));
-                BackgroundState background;
+                CanvasBackground background;
                 background.type = BackgroundType::Color;
                 background.color = QColor(Qt::white);
-                scene.applyBackground(background);
-                auto* diamond = new ShapeItem();
-                diamond->setShapeType(ShapeType::Diamond);
+                scene.setCanvasBackground(background);
+                auto* diamond = createShapeItem(ShapeType::Diamond);
                 diamond->setPos(QPointF(70.0, 40.0));
                 diamond->setContentSize(QSizeF(160.0, 120.0));
                 diamond->setStyle(QColor(20, 20, 20), QColor(200, 40, 40), 4.0);
                 diamond->setFill(QColor(200, 40, 40), FillStyle::Solid);
-                auto* line = new LineItem();
+                auto* line = new StraightLineItem();
                 line->setEndpoints(QPointF(30.0, 100.0), QPointF(280.0, 100.0), QColor(30, 90, 200), 6.0);
                 scene.addItemsWithUndo({line, diamond}, QStringLiteral("Add line skip"));
                 line->setSelected(true);
@@ -479,14 +475,14 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             lensScene.setUndoStack(&lensUndo);
             lensScene.setMode(ToolMode::Edit);
             lensScene.applyCanvasSize(QSizeF(420.0, 320.0));
-            BackgroundState lensBackground;
+            CanvasBackground lensBackground;
             lensBackground.type = BackgroundType::Color;
             lensBackground.color = QColor(Qt::white);
-            lensScene.applyBackground(lensBackground);
-            auto* lensDiamond = new ShapeItem(ShapeType::Diamond);
+            lensScene.setCanvasBackground(lensBackground);
+            auto* lensDiamond = createShapeItem(ShapeType::Diamond);
             lensDiamond->setPos(QPointF(60.0, 70.0));
             lensDiamond->setContentSize(QSizeF(180.0, 180.0));
-            auto* lensStar = new ShapeItem(ShapeType::Star);
+            auto* lensStar = createShapeItem(ShapeType::Star);
             lensStar->setPos(QPointF(180.0, 60.0));
             lensStar->setContentSize(QSizeF(180.0, 180.0));
             lensScene.addItemsWithUndo({lensDiamond, lensStar}, QStringLiteral("Add lens pair"));
@@ -519,8 +515,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             scene.setUndoStack(&undo);
             scene.setMode(ToolMode::Edit);
             scene.applyCanvasSize(QSizeF(320.0, 220.0));
-            auto* rect = new ShapeItem();
-            rect->setShapeType(ShapeType::Rectangle);
+            auto* rect = createShapeItem(ShapeType::Rectangle);
             rect->setPos(QPointF(60.0, 50.0));
             rect->setContentSize(QSizeF(160.0, 120.0));
             rect->setStyle(QColor(20, 20, 20), QColor(255, 255, 255), 4.0);
@@ -549,8 +544,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             scene.setUndoStack(&undo);
             scene.setMode(ToolMode::Edit);
             scene.applyCanvasSize(QSizeF(320.0, 220.0));
-            auto* diamond = new ShapeItem();
-            diamond->setShapeType(ShapeType::Diamond);
+            auto* diamond = createShapeItem(ShapeType::Diamond);
             diamond->setPos(QPointF(60.0, 30.0));
             diamond->setContentSize(QSizeF(180.0, 140.0));
             diamond->setStyle(QColor(20, 20, 20), QColor(255, 255, 255), 4.0);
@@ -610,8 +604,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             scene.setMode(ToolMode::Edit);
             scene.applyCanvasSize(QSizeF(400.0, 300.0));
             auto makeRect = [&scene](qreal x, const QColor& color) {
-                auto* item = new ShapeItem();
-                item->setShapeType(ShapeType::Rectangle);
+                auto* item = createShapeItem(ShapeType::Rectangle);
                 item->setPos(QPointF(x, 40.0));
                 item->setContentSize(QSizeF(60.0, 60.0));
                 item->setStyle(color, color.lighter(160), 1.0);
@@ -668,8 +661,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         const QColor upperFill(40, 90, 200);
         const QColor upperStroke(40, 90, 200);
         auto makeRect = [&unionScene](qreal x, const QColor& fill, const QColor& stroke) {
-            auto* item = new ShapeItem();
-            item->setShapeType(ShapeType::Rectangle);
+            auto* item = createShapeItem(ShapeType::Rectangle);
             item->setPos(QPointF(x, 60.0));
             item->setContentSize(QSizeF(80.0, 80.0));
             item->setStyle(stroke, fill, 6.0);
@@ -740,13 +732,13 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             scene.setMode(ToolMode::Edit);
             scene.applyCanvasSize(QSizeF(420.0, 320.0));
             scene.setShowGrid(false);
-            BackgroundState background;
+            CanvasBackground background;
             background.type = BackgroundType::Color;
             background.color = QColor(Qt::white);
-            scene.applyBackground(background);
+            scene.setCanvasBackground(background);
 
             auto makeShape = [&scene](ShapeType type, QPointF pos, const QColor& fill, bool filled) {
-                auto* shape = new ShapeItem(type);
+                auto* shape = createShapeItem(type);
                 shape->setPos(pos);
                 shape->setContentSize(QSizeF(180.0, 180.0));
                 shape->setStyle(QColor(20, 20, 20), filled ? fill : QColor(Qt::transparent), 8.0);
@@ -854,13 +846,13 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         compositeScene.setMode(ToolMode::Edit);
         compositeScene.applyCanvasSize(QSizeF(460.0, 320.0));
         compositeScene.setShowGrid(false);
-        BackgroundState compositeBackground;
+        CanvasBackground compositeBackground;
         compositeBackground.type = BackgroundType::Color;
         compositeBackground.color = QColor(Qt::white);
-        compositeScene.applyBackground(compositeBackground);
+        compositeScene.setCanvasBackground(compositeBackground);
 
         auto makeShape = [&compositeScene](ShapeType type, QPointF pos, QColor fill) {
-            auto* shape = new ShapeItem(type);
+            auto* shape = createShapeItem(type);
             shape->setPos(pos);
             shape->setContentSize(QSizeF(140.0, 140.0));
             shape->setStyle(fill, fill, 4.0);
@@ -906,8 +898,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         const QColor upperFill(40, 90, 200);
         const QColor upperStroke(220, 40, 40);
         auto makeRect = [&fallbackScene](qreal x, const QColor& fill, const QColor& stroke, qreal width) {
-            auto* item = new ShapeItem();
-            item->setShapeType(ShapeType::Rectangle);
+            auto* item = createShapeItem(ShapeType::Rectangle);
             item->setPos(QPointF(x, 60.0));
             item->setContentSize(QSizeF(80.0, 80.0));
             item->setStyle(stroke, fill, width);
@@ -941,8 +932,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         groupBoolScene.setMode(ToolMode::Edit);
         groupBoolScene.applyCanvasSize(QSizeF(300.0, 200.0));
         auto makeRect = [&groupBoolScene](qreal x, const QColor& color) {
-            auto* item = new ShapeItem();
-            item->setShapeType(ShapeType::Rectangle);
+            auto* item = createShapeItem(ShapeType::Rectangle);
             item->setPos(QPointF(x, 100.0));
             item->setContentSize(QSizeF(40.0, 40.0));
             item->setStyle(color, color, 2.0);
@@ -981,7 +971,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                   QStringLiteral("整组结果采用组内最高优先级图元的样式"));
     }
     {
-        // 合并图元仍然能从菜单、右键菜单和编辑图元卡进入，但主工具栏不再放合并图元按钮。
+        // 合并图元仍然能从菜单、右键菜单和属性编辑面板进入，但主工具栏不再放合并图元按钮。
         MainWindow boolWindow;
         QToolButton* boolButton = boolWindow.findChild<QToolButton*>(QStringLiteral("BoolToolButton"));
         QMenu* boolMenu = boolWindow.findChild<QMenu*>(QStringLiteral("BoolMenu"));
@@ -1034,8 +1024,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             scene->setMode(ToolMode::Edit);
             scene->applyCanvasSize(QSizeF(300.0, 200.0));
             auto makeRect = [scene](qreal x, const QColor& fill, const QColor& stroke) {
-                auto* item = new ShapeItem();
-                item->setShapeType(ShapeType::Rectangle);
+                auto* item = createShapeItem(ShapeType::Rectangle);
                 item->setPos(QPointF(x, 40.0));
                 item->setContentSize(QSizeF(60.0, 60.0));
                 item->setStyle(stroke, fill, 2.0);

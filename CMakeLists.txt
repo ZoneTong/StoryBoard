@@ -87,6 +87,7 @@ endfunction()
 set(STORYBOARD_SOURCE_FOLDERS
     src
     src/scene
+    src/shapes
     src/selftest
     resources
 )

@@ -7,9 +7,9 @@
 #include "CurveItem.h"
 #include "DockPanelController.h"
 #include "IconFactory.h"
-#include "ItemDockPanel.h"
 #include "ItemStyleVisuals.h"
 #include "MainWindow.h"
+#include "PropertiesPanel.h"
 #include "ShapeItem.h"
 #include "ShapePainter.h"
 #include "StyleController.h"
@@ -50,41 +50,39 @@ void UiMenuBuilder::buildShapeMenu()
             roundedPreset->setObjectName(QStringLiteral("ShapePreset_roundedRect"));
             roundedPreset->setData(static_cast<int>(type));
             roundedPreset->setToolTip(MainWindow::tr("Insert a rectangle whose corners follow 16% of the short side"));
-            QObject::connect(roundedPreset, &QAction::triggered, m_window, [this]() {
-                m_window->insertShape(ShapeType::Rectangle, -1.0, -1.0, ArrowStyle::None, ArrowStyle::None, true);
-            });
+            QObject::connect(roundedPreset, &QAction::triggered, m_window,
+                             [this]() { m_window->insertShape(ShapeType::Rectangle, -1.0, -1.0, 0.16); });
         }
 
-        // 曲线族入口：直线 / 弧线 / 正弦都不是形状类型，按 curveKind 插入；整组放在
+        // 线条入口：直线 / 弧线 / 正弦都不是形状类型，按 LineGlyph 插入；整组放在
         // 「椭圆」之后，保持原先直线、直线箭头、左右花括号的相对顺序。
         if (type == ShapeType::Ellipse) {
             QAction* line = m_window->m_shapeMenu->addAction(
-                ShapePainter::makeCurveIcon(CurveKind::Line, QColor(58, 64, 80), 18), MainWindow::tr("Line"));
+                ShapePainter::makeCurveIcon(LineGlyph::STRAIGHT, QColor(58, 64, 80), 18),
+                MainWindow::tr("Straight Line"));
             line->setObjectName(QStringLiteral("ShapeAction_line"));
             line->setData(-1);
             line->setToolTip(MainWindow::tr("Insert a line (uses the current brush color)"));
-            QObject::connect(line, &QAction::triggered, m_window, [this]() {
-                m_window->insertCurve(CurveKind::Line);
-            });
+            QObject::connect(line, &QAction::triggered, m_window,
+                             [this]() { m_window->insertCurve(LineGlyph::STRAIGHT); });
 
             // 需求 6：直线箭头紧跟在「直线」之后，复用直线类，默认末端开口箭头，
             // 长边 128（与形状基准边长一致）。
             QAction* lineArrow = m_window->m_shapeMenu->addAction(
-                ShapePainter::makeCurveIcon(CurveKind::Line, QColor(58, 64, 80), 18), MainWindow::tr("Line arrow"));
+                ShapePainter::makeCurveIcon(LineGlyph::STRAIGHT, QColor(58, 64, 80), 18), MainWindow::tr("Line Arrow"));
             lineArrow->setObjectName(QStringLiteral("ShapePreset_lineArrow"));
             lineArrow->setData(-1);
             lineArrow->setToolTip(MainWindow::tr("Insert a line with an open arrow head at its end"));
             QObject::connect(lineArrow, &QAction::triggered, m_window, [this]() {
-                m_window->insertCurve(CurveKind::Line, ArrowStyle::None, ArrowStyle::OpenArrow);
+                m_window->insertCurve(LineGlyph::STRAIGHT, ArrowStyle::None, ArrowStyle::OpenArrow);
             });
 
-            // 需求 13：左右花括号改为曲线图元（右括号 = 左括号旋转 180°），
-            // 对话里已定：花括号只是 CurveKind::Brace 的取值，不单独建类。
+            // 需求 13：左右花括号是独立的花括号图元（右括号 = 左括号旋转 180°）。
             QAction* braceLeft = m_window->m_shapeMenu->addAction(
                 makeShapePresetIcon(QStringLiteral("braceLeft"), QColor(58, 64, 80), 18), MainWindow::tr("Left brace"));
             braceLeft->setObjectName(QStringLiteral("ShapePreset_braceLeft"));
             braceLeft->setData(-1);
-            braceLeft->setToolTip(MainWindow::tr("Insert a left brace as a curve (draggable and resizable)"));
+            braceLeft->setToolTip(MainWindow::tr("Insert a left brace (draggable and resizable)"));
             QObject::connect(braceLeft, &QAction::triggered, m_window, [this]() { m_window->insertBrace(true); });
 
             QAction* braceRight = m_window->m_shapeMenu->addAction(
@@ -92,27 +90,24 @@ void UiMenuBuilder::buildShapeMenu()
                 MainWindow::tr("Right brace"));
             braceRight->setObjectName(QStringLiteral("ShapePreset_braceRight"));
             braceRight->setData(-1);
-            braceRight->setToolTip(MainWindow::tr("Insert a right brace as a curve (left brace rotated 180°)"));
+            braceRight->setToolTip(MainWindow::tr("Insert a right brace (left brace rotated 180°)"));
             QObject::connect(braceRight, &QAction::triggered, m_window, [this]() { m_window->insertBrace(false); });
 
             QAction* arc = m_window->m_shapeMenu->addAction(
-                ShapePainter::makeCurveIcon(CurveKind::Arc, QColor(58, 64, 80), 18), MainWindow::tr("Arc"));
+                ShapePainter::makeCurveIcon(LineGlyph::ARC, QColor(58, 64, 80), 18), MainWindow::tr("Arc"));
             arc->setObjectName(QStringLiteral("ShapeAction_arc"));
             arc->setData(-1);
             arc->setToolTip(
-                MainWindow::tr("Insert an arc (start angle and sweep are editable in the properties card)"));
-            QObject::connect(arc, &QAction::triggered, m_window, [this]() {
-                m_window->insertCurve(CurveKind::Arc);
-            });
+                MainWindow::tr("Insert an arc (start angle and sweep are editable in the Properties Editing panel)"));
+            QObject::connect(arc, &QAction::triggered, m_window, [this]() { m_window->insertCurve(LineGlyph::ARC); });
 
             QAction* sine = m_window->m_shapeMenu->addAction(
-                ShapePainter::makeCurveIcon(CurveKind::Sine, QColor(58, 64, 80), 18), MainWindow::tr("Sine wave"));
+                ShapePainter::makeCurveIcon(LineGlyph::SINE, QColor(58, 64, 80), 18), MainWindow::tr("Sine wave"));
             sine->setObjectName(QStringLiteral("ShapeAction_sine_wave"));
             sine->setData(-1);
-            sine->setToolTip(MainWindow::tr("Insert a sine wave (cycles and amplitude are editable in the properties card)"));
-            QObject::connect(sine, &QAction::triggered, m_window, [this]() {
-                m_window->insertCurve(CurveKind::Sine);
-            });
+            sine->setToolTip(MainWindow::tr(
+                "Insert a sine wave (cycles and amplitude are editable in the Properties Editing panel)"));
+            QObject::connect(sine, &QAction::triggered, m_window, [this]() { m_window->insertCurve(LineGlyph::SINE); });
         }
 
         // 需求 1：三角形后追加 45° / 60° 直角三角形预置项。短边沿水平方向，
@@ -196,14 +191,14 @@ void UiMenuBuilder::buildMenus()
     layerDockAction->setStatusTip(MainWindow::tr("Show or hide the layer panel"));
     viewMenu->addAction(layerDockAction);
 
-    QAction* itemDockAction = m_window->m_docks->itemDock()->toggleViewAction();
-    itemDockAction->setObjectName(QStringLiteral("ItemDockToggleAction"));
-    itemDockAction->setText(MainWindow::tr("Edit item panel"));
-    itemDockAction->setShortcut(QKeySequence(QStringLiteral("Alt+2")));
-    itemDockAction->setStatusTip(MainWindow::tr(
-        "Show or hide the edit item panel (it stays visible while docked and follows the item selection while "
-        "floating)"));
-    viewMenu->addAction(itemDockAction);
+    QAction* propertiesDockAction = m_window->m_docks->propertiesDock()->toggleViewAction();
+    propertiesDockAction->setObjectName(QStringLiteral("PropertiesPanelToggleAction"));
+    propertiesDockAction->setText(MainWindow::tr("Properties Editing panel"));
+    propertiesDockAction->setShortcut(QKeySequence(QStringLiteral("Alt+2")));
+    propertiesDockAction->setStatusTip(MainWindow::tr(
+        "Show or hide the Properties Editing panel (it stays visible while docked and follows the item selection "
+        "while floating)"));
+    viewMenu->addAction(propertiesDockAction);
 
     QMenu* editMenu = m_window->menuBar()->addMenu(MainWindow::tr("&Edit"));
     editMenu->addAction(m_window->m_undoAct);
@@ -335,14 +330,14 @@ void UiMenuBuilder::buildMenus()
                          [this, operation = boolEntries.at(i).first]() { m_window->applyBoolOperation(operation); });
         m_window->m_boolActions.append(action);
     }
-    // 多选时编辑图元卡直接复用同一批对齐 / 合并图元 / 复制 / 删除 / 旋转 / 组合动作，
+    // 多选时属性编辑面板直接复用同一批对齐 / 合并图元 / 复制 / 删除 / 旋转 / 组合动作，
     // 快捷键与启用状态不用再维护一份。
-    if (m_window->m_docks && m_window->m_docks->itemPanel()) {
-        m_window->m_docks->itemPanel()->setSelectionActions(
+    if (m_window->m_docks && m_window->m_docks->propertiesPanel()) {
+        m_window->m_docks->propertiesPanel()->setSelectionActions(
             m_window->m_alignActions, m_window->m_boolActions, m_window->m_duplicateAct, m_window->m_deleteAct,
             m_window->m_rotateCwAct, m_window->m_rotateCcwAct, m_window->m_groupAct, m_window->m_ungroupAct);
-        m_window->m_docks->itemPanel()->setItemActions(m_window->m_smoothAct, m_window->m_itemPropsAct);
-        m_window->m_docks->itemPanel()->refresh();
+        m_window->m_docks->propertiesPanel()->setItemActions(m_window->m_smoothAct, m_window->m_itemPropsAct);
+        m_window->m_docks->propertiesPanel()->refresh();
     }
 
     // 需求：原“样式”菜单拆开——“画笔样式”独立为一级菜单“画笔”，

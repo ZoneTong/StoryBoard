@@ -19,7 +19,7 @@ bool CanvasItemHandles::usesApexHandle() const
         return false;
     }
     const auto* shape = dynamic_cast<const ShapeItem*>(m_item);
-    return shape && shape->shapeType() == ShapeType::Triangle && !shape->isCustomShape();
+    return shape && shape->apexAngleHandle() && !shape->isCustomShape();
 }
 
 qreal CanvasItemHandles::size() const

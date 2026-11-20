@@ -19,6 +19,10 @@ class PolygonItem : public ShapeItem {
     // 图层来源决定填充 / 描线的应用方式：
     // 有面积图形参与填充与描边；直线 / 曲线只保留线宽带，不再二次描线；文字只填字形。
     enum class LayerRole { FilledArea = 0, StrokeBand = 1, Text = 2 };
+    // 基类只读视图的覆写：把内部 Layer 映射成 ShapeLayer。
+    int shapeLayerCount() const override { return m_layers.size(); }
+    ShapeLayer shapeLayer(int index) const override;
+    QPainterPath mapShapeLayerPath(const ShapeLayer& layer) const override;
 
     struct Layer {
         QPainterPath path; // 内容区局部坐标（0,0 为左上角）
@@ -33,6 +37,8 @@ class PolygonItem : public ShapeItem {
                          Qt::PenStyle strokeStyle = Qt::SolidLine);
 
     QString kind() const override { return QStringLiteral("polygon"); }
+    // 多边形没有内置轮廓，shapeType 只用于形状派生的公共分支（填充、命中已单独覆写）。
+    ShapeType shapeType() const override { return ShapeType::Polygon; }
     // 派生自 ShapeItem 但不受形状类型语义约束：凡按 shapeType 分派的入口都先看这一位。
     bool isPolygon() const override { return true; }
     QString displayName() const override;
@@ -84,6 +90,12 @@ class PolygonItem : public ShapeItem {
     static QPainterPath pathFromJson(const QJsonArray& elements);
 
   protected:
+    // 基类纯虚钩子：多边形的轮廓来自图层，currentPath 已覆写。
+    QPainterPath shapePath(const QRectF& rect) const override
+    {
+        Q_UNUSED(rect);
+        return QPainterPath();
+    }
     void paintContent(QPainter* painter) override;
     // 选中框就是内容矩形，取景余量沿用画布图元的默认值（不跟着形状类型的 22px）。
     QRectF frameRect() const override { return CanvasItem::frameRect(); }

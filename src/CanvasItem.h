@@ -1,11 +1,34 @@
 #pragma once
 
 #include "ItemGeometry.h"
+#include "ItemProperties.h"
 
+#include <QColor>
 #include <QCursor>
+#include <QFont>
 #include <QGraphicsObject>
 #include <QJsonObject>
 #include <QSizeF>
+#include <QString>
+
+// 文字图元的状态快照（撤销 / 属性窗共用）；放在基类头里，任何图元都能持有，
+// 上层不必为了读写文字而强转到 TextItem。
+struct TextItemState {
+    QString text;
+    QFont font;
+    QColor color;
+    QPointF pos;
+    QSizeF size;
+    QSizeF baseSize;
+
+    bool operator==(const TextItemState& other) const
+    {
+        return text == other.text && font == other.font && color == other.color && pos == other.pos &&
+               size == other.size && baseSize == other.baseSize;
+    }
+
+    bool operator!=(const TextItemState& other) const { return !(*this == other); }
+};
 
 class CanvasScene;
 class CanvasItemHandles;
@@ -39,6 +62,11 @@ class CanvasItem : public QGraphicsObject {
 
     virtual QString kind() const = 0;
     virtual QString displayName() const = 0;
+    // 属性表：各图元只上报自己真正拥有的属性，面板按选中集合求交后逐行显隐。
+    // 取值与写回都走同一份标识，界面不再按叶子类强转去读专属字段。
+    virtual ItemPropertySet properties() const;
+    virtual QVariant propertyValue(ItemProperty property) const;
+    virtual void setPropertyValue(ItemProperty property, const QVariant& value);
     // 用于自动命名的类型名：文字/图片不取内容摘要或文件名，而是稳定的类型称呼。
     virtual QString typeDisplayName() const { return displayName(); }
     // 需求 2：非矩形句柄（三角形顶点 C）由图元给出本地坐标；默认不支持。
@@ -64,6 +92,15 @@ class CanvasItem : public QGraphicsObject {
     QRectF sceneContentRect() const;
 
     // 透明度是所有图元共有的属性；图形因为有自绘填充，单独覆盖这两个接口。
+    // 文字能力查询：非文字图元返回 false / 空值，文字图元由 TextItem 覆写。
+    virtual bool hasTextFacet() const { return false; }
+    virtual QString textContent() const { return QString(); }
+    virtual QFont textFont() const { return QFont(); }
+    virtual QColor textColor() const { return QColor(); }
+    virtual QSizeF textNaturalSize() const { return QSizeF(); }
+    virtual TextItemState textState() const { return TextItemState(); }
+    virtual void applyTextState(const TextItemState& state) { Q_UNUSED(state) }
+
     virtual qreal itemOpacity() const { return QGraphicsItem::opacity(); }
     virtual void setItemOpacity(qreal opacity);
 

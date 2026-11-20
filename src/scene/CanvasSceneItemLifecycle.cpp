@@ -1,14 +1,16 @@
 #include "ArcItem.h"
+#include "BraceItem.h"
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
 #include "CurveItem.h"
-#include "LineItem.h"
 #include "PolygonItem.h"
 #include "ShapeItem.h"
 #include "SineItem.h"
+#include "StraightLineItem.h"
 #include "TextItem.h"
 #include "scene/SceneConstants.h"
+#include "shapes/ShapeFactory.h"
 
 #include <QHash>
 #include <QSet>
@@ -244,16 +246,29 @@ void CanvasScene::commitNewItem(CanvasItem* item, const QString& text)
     addItemsWithUndo({item}, text);
 }
 
-CanvasItem* CanvasScene::createItem(const QString& kind) const
+CanvasItem* CanvasScene::createItem(const QString& kind, const QString& shapeType) const
 {
-    if (kind == QStringLiteral("curve")) {
+    // 类型标识只按 kind 建类：线条族五个形态各自一个类，图形 / 多边形 / 文字各一个族。
+    if (kind == QStringLiteral("straightline")) {
+        return new StraightLineItem();
+    }
+    if (kind == QStringLiteral("arc")) {
+        return new ArcItem();
+    }
+    if (kind == QStringLiteral("sine")) {
+        return new SineItem();
+    }
+    if (kind == QStringLiteral("freehand")) {
         return new CurveItem();
+    }
+    if (kind == QStringLiteral("brace")) {
+        return new BraceItem();
     }
     if (kind == QStringLiteral("text")) {
         return new TextItem();
     }
     if (kind == QStringLiteral("shape")) {
-        return new ShapeItem();
+        return createShapeItem(shapeTypeFromString(shapeType));
     }
     if (kind == QStringLiteral("polygon")) {
         return new PolygonItem();
@@ -263,19 +278,16 @@ CanvasItem* CanvasScene::createItem(const QString& kind) const
 
 CanvasItem* CanvasScene::createItemForJson(const QJsonObject& json) const
 {
-    if (json.value(QStringLiteral("type")).toString() != QStringLiteral("curve")) {
-        return createItem(json.value(QStringLiteral("type")).toString());
+    // 旧画布把类型写在 type 里，kind 是 0.1.4 起的键；曲线族改名前的
+    // curve / line 也在这里折到新 kind，保证示例画布与自定义模板能直接打开。
+    QString kind = json.value(QStringLiteral("kind")).toString();
+    if (kind.isEmpty()) {
+        kind = json.value(QStringLiteral("type")).toString();
     }
-    // 曲线子型靠 curveKind 还原；缺键 / 未知值退回泛型曲线（笔迹）。
-    const QString curveKind = json.value(QStringLiteral("curveKind")).toString();
-    if (curveKind == QStringLiteral("line")) {
-        return new LineItem();
+    if (kind == QStringLiteral("curve")) {
+        kind = QStringLiteral("freehand");
+    } else if (kind == QStringLiteral("line")) {
+        kind = QStringLiteral("straightline");
     }
-    if (curveKind == QStringLiteral("arc")) {
-        return new ArcItem();
-    }
-    if (curveKind == QStringLiteral("sine")) {
-        return new SineItem();
-    }
-    return new CurveItem();
+    return createItem(kind, json.value(QStringLiteral("shapeType")).toString());
 }

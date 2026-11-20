@@ -31,7 +31,9 @@ enum class ShapeType {
     Cube,
     Cylinder,
     // 需求 9：平行四边形（左下内角可编辑，默认 60°）。
-    Parallelogram
+    Parallelogram,
+    // 多边形（合并 / 分割产物）没有内置轮廓，仅为满足 shapeType() 的返回值占位。
+    Polygon
 };
 
 enum class FillStyle {
@@ -64,8 +66,21 @@ QList<FillStyle> allFillStyles();
 QString fillStyleName(FillStyle style);
 QString fillStyleToString(FillStyle style);
 FillStyle fillStyleFromString(const QString& value);
-// 填充纹理的中心线几何，编辑图元卡的工具按钮缩略图与图元绘制共用这一份。
+// 填充纹理的中心线几何，属性编辑面板的工具按钮缩略图与图元绘制共用这一份。
 QPainterPath fillPatternCenterLines(FillStyle style, const QRectF& rect);
+
+// 多边形图元的内部图层（合并 / 分割产物）：基类只暴露只读视图，
+// 具体存储仍在 PolygonItem，避免上层按叶子类强转。
+enum class ShapeLayerRole { FILL_AREA = 0, STROKE_BAND = 1, TEXT = 2 };
+
+struct ShapeLayer {
+    QPainterPath path; // 内容区局部坐标（0,0 为左上角）
+    QColor fill;
+    QColor stroke;
+    qreal strokeWidth = 1.0;
+    bool filled = true;
+    ShapeLayerRole role = ShapeLayerRole::FILL_AREA;
+};
 
 struct ShapeItemState {
     ShapeType type = ShapeType::Rectangle;
@@ -75,9 +90,7 @@ struct ShapeItemState {
     qreal strokeWidth = 4.0;
     Qt::PenStyle strokeStyle = Qt::SolidLine;
     qreal opacity = 1.0;
-    qreal cornerRadius = -1.0;
-    // 圆角自动态：矩形按短边 16% 取圆角（旧 rounded_rectangle 读入后的形态）。
-    bool autoCorner = false;
+    qreal cornerRadius = 0.0;
     // 扇形 / 弧线：起始角与扫过角（度，Qt 坐标：0° 在三点钟方向，逆时针为正）。
     qreal startAngle = 30.0;
     qreal sweepAngle = 120.0;
@@ -87,8 +100,6 @@ struct ShapeItemState {
     // 需求 9：平行四边形左下内角（度）。角度是真相，上边水平偏移由高度与角度派生。
     qreal parallelogramAngle = 60.0;
     // 直线 / 直线箭头 / 曲线两端的箭头样式（旧文件缺字段时按「无」）。
-    ArrowStyle startArrow = ArrowStyle::None;
-    ArrowStyle endArrow = ArrowStyle::None;
     // 需求 15：图片填充参与撤销快照；QPixmap 隐式共享，不会额外拷贝像素。
     bool hasFillImage = false;
     QPixmap fillImage;
@@ -104,12 +115,12 @@ struct ShapeItemState {
         return type == other.type && strokeColor == other.strokeColor && fillColor == other.fillColor &&
                fillStyle == other.fillStyle && qFuzzyCompare(strokeWidth, other.strokeWidth) &&
                strokeStyle == other.strokeStyle && qFuzzyCompare(opacity, other.opacity) &&
-               qFuzzyCompare(cornerRadius + 2.0, other.cornerRadius + 2.0) && autoCorner == other.autoCorner &&
+               qFuzzyCompare(cornerRadius + 2.0, other.cornerRadius + 2.0) &&
                qFuzzyCompare(startAngle + 2.0, other.startAngle + 2.0) &&
                qFuzzyCompare(sweepAngle + 2.0, other.sweepAngle + 2.0) &&
                qFuzzyCompare(bottomAngle1 + 2.0, other.bottomAngle1 + 2.0) &&
-               qFuzzyCompare(bottomAngle2 + 2.0, other.bottomAngle2 + 2.0) && startArrow == other.startArrow &&
-               qFuzzyCompare(parallelogramAngle + 2.0, other.parallelogramAngle + 2.0) && endArrow == other.endArrow &&
+               qFuzzyCompare(bottomAngle2 + 2.0, other.bottomAngle2 + 2.0) &&
+               qFuzzyCompare(parallelogramAngle + 2.0, other.parallelogramAngle + 2.0) &&
                hasFillImage == other.hasFillImage && fillImage.cacheKey() == other.fillImage.cacheKey() &&
                fillImageMode == other.fillImageMode && pos == other.pos && size == other.size &&
                polygon == other.polygon;
@@ -123,71 +134,70 @@ class ShapeItem : public CanvasItem {
   public:
     // 需求 2：带短刻度线的底边是 AB（A 在左、B 在右），对面顶点是 C。
     enum class TriangleVertex { A, B, C };
-    explicit ShapeItem(ShapeType type = ShapeType::Rectangle, QGraphicsItem* parent = nullptr);
+    explicit ShapeItem(QGraphicsItem* parent = nullptr);
 
     QString kind() const override { return QStringLiteral("shape"); }
-    // 多边形（PolygonItem）派生自本类，但它没有 ShapeType：按 shapeType 分派的
-    // 入口都要先看这一位，否则会把它当成矩形处理。
+    // 每种图形由 src/shapes/ 下的具体类给出身份；基类不再保存 ShapeType。
+    virtual ShapeType shapeType() const = 0;
+    // 属性表：填充 / 描线六件套为图形族公共项，各子类再按需要追加。
+    ItemPropertySet properties() const override;
+    QVariant propertyValue(ItemProperty property) const override;
+    void setPropertyValue(ItemProperty property, const QVariant& value) override;
+    // 多边形（PolygonItem）派生自本类，但没有内置轮廓：按 shapeType 分派的入口
+    // 都要先看这一位。
     virtual bool isPolygon() const { return false; }
+    // 内部图层视图：普通图形没有图层（0 层），多边形返回自己的层。
+    virtual int shapeLayerCount() const { return 0; }
+    virtual ShapeLayer shapeLayer(int index) const;
+    // 图层路径映射到图元坐标；多边形按内容尺寸缩放，普通图形默认恒等。
+    virtual QPainterPath mapShapeLayerPath(const ShapeLayer& layer) const;
+    // 是否有可填充的区域层（孔洞不算）。
+    bool hasShapeFillArea() const;
     QString displayName() const override;
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& json) override;
     QPainterPath shape() const override;
     QPainterPath outlineShape() const override;
     QPainterPath paintedShape() const override;
-    // 扇形 / 弧线只占内容矩形的一部分，选中框与手柄改按实际轮廓的最小覆盖矩形摆放。
     QRectF frameRect() const override;
-    // 三角形"角度为真相"，把外部请求的尺寸先折算成派生尺寸，交给基类一次性应用。
     QSizeF adjustedContentSize(const QSizeF& size) const override;
 
-    ShapeType shapeType() const { return m_type; }
-    void setShapeType(ShapeType type);
     // 样式访问器对多边形开放覆写：多边形的颜色来自内部图层，而不是单一字段。
     virtual QColor strokeColor() const { return m_strokeColor; }
     virtual QColor fillColor() const { return m_fillColor; }
     virtual FillStyle fillStyle() const { return m_fillStyle; }
     virtual qreal strokeWidth() const { return m_strokeWidth; }
     virtual Qt::PenStyle strokeStyle() const { return m_strokeStyle; }
-    qreal opacity() const { return m_opacity; }
     qreal itemOpacity() const override { return m_opacity; }
     void setItemOpacity(qreal opacity) override;
     qreal cornerRadius() const { return m_cornerRadius; }
-    // 需求 5：矩形用 cornerRadius（px，上限短边一半）；autoCorner 表示按短边 16% 自动取值，
-    // 圆角矩形已并入矩形，旧的 rounded_rectangle 读入后即落在这条自动路径上。
-    bool autoCorner() const { return m_autoCorner; }
-    void setAutoCorner(bool enabled);
     qreal startAngle() const { return m_startAngle; }
     qreal sweepAngle() const { return m_sweepAngle; }
     qreal bottomAngle1() const { return m_bottomAngle1; }
     qreal bottomAngle2() const { return m_bottomAngle2; }
-    // 需求 9：平行四边形左下内角（度），钳在 15–165°，默认 60°。
     qreal parallelogramAngle() const { return m_parallelogramAngle; }
-    void setParallelogramAngle(qreal angle);
-    ArrowStyle startArrow() const { return m_startArrow; }
-    // 需求 15：可填充图元支持一张图片垫在填充色之上，独立于 FillStyle。
+    virtual void setParallelogramAngle(qreal angle);
+    // 平行四边形用 Apex 句柄改内角；矩形锁 90°，不提供该句柄。
+    virtual bool apexAngleHandle() const { return false; }
+    void setAngleReadoutVisible(bool visible);
+    bool angleReadoutVisible() const { return m_angleReadoutVisible; }
     virtual bool hasFillImage() const { return !m_fillImage.isNull(); }
     virtual QPixmap fillImage() const { return m_fillImage; }
-    // 需求 11：画布级图片表里的引用 id；同图共享同一 id，保存时按引用重建表。
     QString fillImageId() const { return m_fillImageId; }
     void setFillImageId(const QString& id) { m_fillImageId = id; }
     virtual ImageFill::Mode fillImageMode() const { return m_fillImageMode; }
     virtual void setFillImage(const QPixmap& image, ImageFill::Mode mode);
     virtual void clearFillImage();
-    ArrowStyle endArrow() const { return m_endArrow; }
     virtual void setStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth);
     virtual void setFill(const QColor& fillColor, FillStyle style);
     virtual void setFillStyle(FillStyle style);
     virtual void setStrokeStyle(Qt::PenStyle style);
-    void setOpacity(qreal opacity);
     void setCornerRadius(qreal radius);
     void setArcAngles(qreal startAngle, qreal sweepAngle);
     // 三角形：设置底边两侧的底角（度）。角度优先，高度按底边与角度重算；
     // 两角和被钳制在 175° 以内，保证顶点不会跑出内容矩形。
     void setTriangleAngles(qreal angle1, qreal angle2);
-    // 直线 / 直线箭头：两端箭头样式，只影响描线绘制，不改变内容矩形。
-    void setArrowStyles(ArrowStyle start, ArrowStyle end);
-
-    // 自定义图形：轮廓来自画布模板，存的是 0–1 单位坐标；没有自定义轮廓时按 shapeType 画。
+    // 自定义图形：轮廓来自画布模板，存的是 0–1 单位坐标；没有自定义轮廓时按子类轮廓画。
     bool isCustomShape() const { return !m_customPath.isEmpty(); }
     QString customShapeName() const { return m_customName; }
     QPainterPath customShapePath() const { return m_customPath; }
@@ -205,33 +215,31 @@ class ShapeItem : public CanvasItem {
     static QPainterPath pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius);
     static QPainterPath pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius, qreal startAngle,
                                 qreal sweepAngle);
-    // 当前生效的轮廓：自定义图形按内容矩形缩放单位路径，普通图形带圆角参数。
+    // 当前生效的轮廓：自定义图形按内容矩形缩放单位路径，普通图形交给具体类实现。
     virtual QPainterPath currentPath(const QRectF& rect) const;
 
   protected:
+    // 具体图形的内置轮廓（不含自定义模板与矩形圆角自动态哨兵）。
+    virtual QPainterPath shapePath(const QRectF& rect) const = 0;
+    // 子类可覆写的状态 / JSON 增量。
+    virtual void writeState(ShapeItemState& state) const;
+    virtual void readState(const ShapeItemState& state);
+    virtual void writeJsonExtra(QJsonObject& json) const;
+    virtual void readJsonExtra(const QJsonObject& json);
     void paintContent(QPainter* painter) override;
-    // 三角形拉伸时保持"角度为真相"：拖高等价于等比改底边，拖底边则反推高度。
     void contentResized() override;
-    // 三角形选中时在底边中点两侧补一对短刻度线，提示这里是底边长度手柄。
     void drawSelectionOverlay(QPainter* painter) override;
     qreal framePadding() const override { return qMax<qreal>(22.0, m_strokeWidth + 6.0); }
 
   private:
-    // 直线箭头：把两端箭头几何并入描带，命中与遮挡才算得上"头也是线的一部分"。
-    QPainterPath pathWithArrowHeads(const QPainterPath& base) const;
-    // 需求 4：取描线首尾点与各自的相邻点，用于沿切线方向摆箭头。
-    static bool lineEndpoints(const QPainterPath& path, QPointF* startTip, QPointF* startToward, QPointF* endTip,
-                              QPointF* endToward);
-    ShapeType m_type = ShapeType::Rectangle;
     QColor m_strokeColor = QColor(30, 41, 59);
     QColor m_fillColor = QColor(30, 41, 59, 36);
     FillStyle m_fillStyle = FillStyle::Solid;
     qreal m_strokeWidth = 4.0;
     Qt::PenStyle m_strokeStyle = Qt::SolidLine;
     qreal m_opacity = 1.0;
-    // < 0 表示未显式指定圆角；矩形在 autoCorner 打开时按短边 16% 自动取值。
-    qreal m_cornerRadius = -1.0;
-    bool m_autoCorner = false;
+    // 圆角半径，单位画布 px；0 表示直角。
+    qreal m_cornerRadius = 0.0;
     qreal m_startAngle = 30.0;
     qreal m_sweepAngle = 120.0;
     qreal m_bottomAngle1 = 60.0;
@@ -240,11 +248,13 @@ class ShapeItem : public CanvasItem {
     QPixmap m_fillImage;
     QString m_fillImageId;
     ImageFill::Mode m_fillImageMode = ImageFill::Mode::Stretch;
-    ArrowStyle m_startArrow = ArrowStyle::None;
-    ArrowStyle m_endArrow = ArrowStyle::None;
-    // 上一次同步后的尺寸，用于区分"拖高"与"拖底边"，避免互相覆盖。
+    // 上一次同步后的尺寸，用于区分「拖高」与「拖底边」，避免互相覆盖。
     QSizeF m_triangleSyncSize;
     bool m_syncingTriangle = false;
+    bool m_angleReadoutVisible = false;
     QString m_customName;
     QPainterPath m_customPath;
 };
+
+// 图形工厂（定义在 shapes/ShapeFactory.cpp）：按 ShapeType 建出具体子类。
+ShapeItem* createShapeItem(ShapeType type);

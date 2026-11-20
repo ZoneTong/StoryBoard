@@ -92,7 +92,7 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
     ctx.check(items.size() == 7, QStringLiteral("Excalidraw 元素的导入条数正确（画片图跳过）"),
               QStringLiteral("count=%1 warnings=%2").arg(items.size()).arg(warnings.join(QStringLiteral(";"))));
 
-    auto typeAt = [&items](int index) { return items.at(index).toObject().value(QStringLiteral("type")).toString(); };
+    auto typeAt = [&items](int index) { return items.at(index).toObject().value(QStringLiteral("kind")).toString(); };
     auto shapeTypeAt = [&items](int index) {
         return items.at(index).toObject().value(QStringLiteral("shapeType")).toString();
     };
@@ -110,35 +110,33 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
               QStringLiteral("文字字号按 pt≈px/1.333 换算"),
               QStringLiteral("fontSize=%1").arg(items.at(3).toObject().value(QStringLiteral("fontSize")).toDouble()));
 
-    // 两点箭头 → 曲线族的直线图元（curveKind=line）+ 末端实心三角；起点无箭头。
+    // 两点箭头 → 直线图元（kind=straightline）+ 末端实心三角；起点无箭头。
     {
         const QJsonObject line = items.at(4).toObject();
-        ctx.check(line.value(QStringLiteral("type")).toString() == QStringLiteral("curve") &&
-                      line.value(QStringLiteral("curveKind")).toString() == QStringLiteral("line") &&
-                      line.value(QStringLiteral("endArrow")).toString() == QStringLiteral("triangle") &&
-                      line.value(QStringLiteral("startArrow")).toString() == QStringLiteral("none"),
-                  QStringLiteral("两点箭头导入为直线曲线并保留三角箭头"),
-                  QStringLiteral("type=%1 kind=%2 end=%3")
-                      .arg(line.value(QStringLiteral("type")).toString(),
-                           line.value(QStringLiteral("curveKind")).toString(),
-                           line.value(QStringLiteral("endArrow")).toString()));
+        ctx.check(
+            line.value(QStringLiteral("kind")).toString() == QStringLiteral("straightline") &&
+                line.value(QStringLiteral("endArrow")).toString() == QStringLiteral("triangle") &&
+                line.value(QStringLiteral("startArrow")).toString() == QStringLiteral("none"),
+            QStringLiteral("两点箭头导入为直线图元并保留三角箭头"),
+            QStringLiteral("kind=%1 end=%2")
+                .arg(line.value(QStringLiteral("kind")).toString(), line.value(QStringLiteral("endArrow")).toString()));
     }
-    // 多段箭头 → 曲线图元 + 折线段。
+    // 多段箭头 → 直线图元 + 折线段。
     {
         const QJsonObject curve = items.at(5).toObject();
-        ctx.check(curve.value(QStringLiteral("type")).toString() == QStringLiteral("curve") &&
+        ctx.check(curve.value(QStringLiteral("kind")).toString() == QStringLiteral("straightline") &&
                       curve.value(QStringLiteral("endArrow")).toString() == QStringLiteral("dot") &&
                       curve.value(QStringLiteral("segments")).toArray().size() == 2,
-                  QStringLiteral("多段箭头导入为曲线并保留拐点与圆点箭头"),
-                  QStringLiteral("type=%1 segs=%2")
-                      .arg(curve.value(QStringLiteral("type")).toString())
+                  QStringLiteral("多段箭头导入为描线图元并保留拐点与圆点箭头"),
+                  QStringLiteral("kind=%1 segs=%2")
+                      .arg(curve.value(QStringLiteral("kind")).toString())
                       .arg(curve.value(QStringLiteral("segments")).toArray().size()));
     }
     {
         const QJsonObject freehand = items.at(6).toObject();
-        ctx.check(freehand.value(QStringLiteral("type")).toString() == QStringLiteral("curve"),
-                  QStringLiteral("freedraw 导入为曲线"),
-                  QStringLiteral("type=%1").arg(freehand.value(QStringLiteral("type")).toString()));
+        ctx.check(freehand.value(QStringLiteral("kind")).toString() == QStringLiteral("freehand"),
+                  QStringLiteral("freedraw 导入为手绘曲线"),
+                  QStringLiteral("kind=%1").arg(freehand.value(QStringLiteral("kind")).toString()));
     }
     ctx.check(!warnings.isEmpty(), QStringLiteral("不支持的元素会留下降级说明"),
               QStringLiteral("count=%1").arg(warnings.size()));
@@ -170,7 +168,7 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
     // 导出：合法场景骨架 + 直线 / 矩形 / 文字 往返可读。
     {
         QJsonObject item;
-        item.insert(QStringLiteral("type"), QStringLiteral("shape"));
+        item.insert(QStringLiteral("kind"), QStringLiteral("shape"));
         item.insert(QStringLiteral("shapeType"), QStringLiteral("rectangle"));
         item.insert(QStringLiteral("x"), 32.0);
         item.insert(QStringLiteral("y"), 32.0);
@@ -181,11 +179,13 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
         item.insert(QStringLiteral("fillStyle"), QStringLiteral("none"));
         item.insert(QStringLiteral("strokeWidth"), 4.0);
         QJsonObject line = item;
-        line.insert(QStringLiteral("shapeType"), QStringLiteral("line"));
+        line.insert(QStringLiteral("kind"), QStringLiteral("straightline"));
+        line.insert(QStringLiteral("segments"), QJsonArray{QJsonArray{32.0, 32.0, 32.0, 32.0, 96.0, 96.0, 96.0, 96.0}});
+        line.insert(QStringLiteral("width"), 4.0);
         line.insert(QStringLiteral("startArrow"), QStringLiteral("none"));
         line.insert(QStringLiteral("endArrow"), QStringLiteral("open"));
         QJsonObject text;
-        text.insert(QStringLiteral("type"), QStringLiteral("text"));
+        text.insert(QStringLiteral("kind"), QStringLiteral("text"));
         text.insert(QStringLiteral("x"), 10.0);
         text.insert(QStringLiteral("y"), 120.0);
         text.insert(QStringLiteral("w"), 100.0);
@@ -275,7 +275,7 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
     // 样式 customData：填充样式与填充 / 描线透明度导出后能原样导入回来。
     {
         QJsonObject styled;
-        styled.insert(QStringLiteral("type"), QStringLiteral("shape"));
+        styled.insert(QStringLiteral("kind"), QStringLiteral("shape"));
         styled.insert(QStringLiteral("shapeType"), QStringLiteral("rectangle"));
         styled.insert(QStringLiteral("x"), 0.0);
         styled.insert(QStringLiteral("y"), 0.0);
@@ -324,12 +324,12 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
         const QJsonObject kept = Excalidraw::sceneToStoryBoard(withImage, nullptr, true);
         const QJsonObject keptItem = kept.value(QStringLiteral("items")).toArray().at(0).toObject();
         ctx.check(skipped.isEmpty() && !skippedWarnings.isEmpty() &&
-                      keptItem.value(QStringLiteral("type")).toString() == QStringLiteral("image") &&
+                      keptItem.value(QStringLiteral("kind")).toString() == QStringLiteral("image") &&
                       keptItem.value(QStringLiteral("image")).toString() == QStringLiteral("QUJD"),
                   QStringLiteral("位图保留选项：不勾选跳过并提示，勾选后按 dataURL 保真"),
                   QStringLiteral("skipped=%1 keptType=%2 payload=%3")
                       .arg(skipped.isEmpty() ? QStringLiteral("empty") : QStringLiteral("value"))
-                      .arg(keptItem.value(QStringLiteral("type")).toString())
+                      .arg(keptItem.value(QStringLiteral("kind")).toString())
                       .arg(keptItem.value(QStringLiteral("image")).toString()));
     }
 }

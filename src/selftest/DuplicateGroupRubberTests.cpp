@@ -8,7 +8,6 @@
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
-#include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
 #include "LineArtConverter.h"
@@ -16,6 +15,7 @@
 #include "LineArtPresets.h"
 #include "MainWindow.h"
 #include "PolygonItem.h"
+#include "PropertiesPanel.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
@@ -92,7 +92,7 @@ void selftest::runDuplicateItemTests(Context& ctx)
         QUndoStack duplicateUndo;
         duplicateScene.setUndoStack(&duplicateUndo);
 
-        auto* source = new ShapeItem(ShapeType::Rectangle);
+        auto* source = createShapeItem(ShapeType::Rectangle);
         source->setContentSize(QSizeF(120.0, 80.0));
         source->setPos(QPointF(40.0, 50.0));
         duplicateScene.addItemsWithUndo({source}, QStringLiteral("Add duplicate source"));
@@ -139,12 +139,12 @@ void selftest::runDuplicateItemTests(Context& ctx)
         QUndoStack customNameUndo;
         customNameScene.setUndoStack(&customNameUndo);
 
-        auto* first = new ShapeItem(ShapeType::Rectangle);
+        auto* first = createShapeItem(ShapeType::Rectangle);
         first->setContentSize(QSizeF(100.0, 60.0));
         customNameScene.addItemsWithUndo({first}, QStringLiteral("Add first custom item"));
         first->setName(QStringLiteral("Hero panel"));
 
-        auto* second = new ShapeItem(ShapeType::Ellipse);
+        auto* second = createShapeItem(ShapeType::Ellipse);
         second->setContentSize(QSizeF(90.0, 90.0));
         customNameScene.addItemsWithUndo({second}, QStringLiteral("Add second custom item"));
         second->setName(QStringLiteral("Hero panel 2"));
@@ -163,10 +163,10 @@ void selftest::runDuplicateItemTests(Context& ctx)
     // 载入或旧文件里已有的重名，在补名时一并修复。
     {
         CanvasScene repairScene;
-        auto* first = new ShapeItem(ShapeType::Rectangle);
+        auto* first = createShapeItem(ShapeType::Rectangle);
         first->setContentSize(QSizeF(80.0, 60.0));
         repairScene.addItemsWithUndo({first}, QStringLiteral("Add repair item"));
-        auto* second = new ShapeItem(ShapeType::Rectangle);
+        auto* second = createShapeItem(ShapeType::Rectangle);
         second->setContentSize(QSizeF(70.0, 50.0));
         repairScene.addItemsWithUndo({second}, QStringLiteral("Add repair item"));
         first->setName(QStringLiteral("Same name"));
@@ -192,10 +192,10 @@ void selftest::runGroupTests(Context& ctx)
         groupScene.applyCanvasSize(QSizeF(800.0, 600.0));
         groupScene.setMode(ToolMode::Edit);
 
-        auto* first = new ShapeItem(ShapeType::Rectangle);
+        auto* first = createShapeItem(ShapeType::Rectangle);
         first->setContentSize(QSizeF(90.0, 70.0));
         first->setPos(QPointF(80.0, 90.0));
-        auto* second = new ShapeItem(ShapeType::Ellipse);
+        auto* second = createShapeItem(ShapeType::Ellipse);
         second->setContentSize(QSizeF(90.0, 70.0));
         second->setPos(QPointF(320.0, 260.0));
         groupScene.addItemsWithUndo({first, second}, QStringLiteral("Add grouped sources"));
@@ -320,7 +320,7 @@ void selftest::runRubberBandTests(Context& ctx)
         CanvasScene rubberScene;
         rubberScene.applyCanvasSize(QSizeF(800.0, 600.0));
         rubberScene.setMode(ToolMode::Edit);
-        auto* target = new ShapeItem(ShapeType::Rectangle);
+        auto* target = createShapeItem(ShapeType::Rectangle);
         target->setContentSize(QSizeF(120.0, 80.0));
         target->setPos(QPointF(300.0, 250.0));
         rubberScene.addItemsWithUndo({target}, QStringLiteral("Add rubber-band target"));

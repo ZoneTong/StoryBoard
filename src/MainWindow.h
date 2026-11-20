@@ -3,8 +3,8 @@
 #include "Alignment.h"
 #include "BoolOps.h"
 #include "CanvasTypes.h"
-#include "CurveItem.h"
 #include "LineArtConverter.h"
+#include "LineGlyph.h"
 #include "Settings.h"
 #include "ShapeItem.h"
 
@@ -31,9 +31,9 @@ void runFillStyleBasicTests(Context& ctx);
 void runMainWindowShapeMenuTests(Context& ctx);
 } // namespace selftest
 class ItemPropertiesDialog;
-class ItemDockPanel;
+class PropertiesPanel;
 class LayerPanel;
-class BackgroundController;
+class CanvasBackgroundController;
 class DockPanelController;
 class ShortcutController;
 class DocumentController;
@@ -104,7 +104,7 @@ class MainWindow : public QMainWindow {
     void importOutlineImageDialog();
     void insertTextAt(const QPointF& scenePos);
     void chooseBrushColor();
-    void replaceBackgroundImage();
+    void replaceCanvasBackgroundImage();
     void setBackgroundColor();
     void clearBackground();
     void showSettings();
@@ -121,11 +121,9 @@ class MainWindow : public QMainWindow {
     // 需求 7：展开自定义图形浮动面板（按目录分标签页）；anchor 为空时沿用上次位置。
     void openCustomShapePanel(QWidget* anchor);
     // 插入常见图形；自检需要直接驱动插入流程（含立方体 / 圆柱体的组合面插入）。
-    void insertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0,
-                     ArrowStyle startArrow = ArrowStyle::None, ArrowStyle endArrow = ArrowStyle::None,
-                     bool autoCorner = false);
-    // 曲线族插入入口：直线 / 弧线 / 正弦都不是形状类型，按 curveKind 分派。
-    void insertCurve(CurveKind kind, ArrowStyle startArrow = ArrowStyle::None, ArrowStyle endArrow = ArrowStyle::None);
+    void insertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0, qreal cornerRatio = 0.0);
+    // 线条插入入口：直线 / 弧线 / 正弦都不是形状类型，按形态分派。
+    void insertCurve(LineGlyph glyph, ArrowStyle startArrow = ArrowStyle::None, ArrowStyle endArrow = ArrowStyle::None);
     // 需求 16：自检需要直接驱动工具栏样式取值（填充样式 / 画笔色 / 描线宽度）验证新图元生成。
     friend void selftest::runFillStyleBasicTests(selftest::Context&);
     friend void selftest::runMainWindowShapeMenuTests(selftest::Context&);
@@ -146,7 +144,7 @@ class MainWindow : public QMainWindow {
     void insertBrace(bool left);
     void insertCustomShape(const QString& filePath);
     void openShapesFolder();
-    void updateItemDockVisibility();
+    void updatePropertiesPanelDockVisibility();
     void setFillStyle(FillStyle style);
     void chooseFillColor();
     void chooseStrokeColor();
@@ -167,7 +165,7 @@ class MainWindow : public QMainWindow {
     void closeItemProperties();
 
   private:
-    friend class BackgroundController;
+    friend class CanvasBackgroundController;
     friend class DockPanelController;
     friend class ShortcutController;
     friend class DocumentController;
@@ -293,7 +291,7 @@ class MainWindow : public QMainWindow {
     QActionGroup* m_strokeStyleGroup = nullptr;
     QDoubleSpinBox* m_smoothingSpin = nullptr;
     QPointer<ItemPropertiesDialog> m_itemPropertiesDialog;
-    std::unique_ptr<BackgroundController> m_background;
+    std::unique_ptr<CanvasBackgroundController> m_background;
     std::unique_ptr<DockPanelController> m_docks;
     std::unique_ptr<ShortcutController> m_shortcuts;
     std::unique_ptr<DocumentController> m_document;

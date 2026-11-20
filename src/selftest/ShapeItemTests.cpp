@@ -13,24 +13,26 @@
 #include "ExportDialog.h"
 #include "I18n.h"
 #include "IconFactory.h"
-#include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
 #include "LineArtConverter.h"
 #include "LineArtDialog.h"
 #include "LineArtPresets.h"
-#include "LineItem.h"
+#include "LineItemAbstract.h"
 #include "MainWindow.h"
 #include "PolygonItem.h"
+#include "PropertiesPanel.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
 #include "ShapePathBuilder.h"
 #include "SineItem.h"
+#include "StraightLineItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
 #include "selftest/SelftestHelpers.h"
+#include "shapes/AllShapes.h"
 
 #include <QAction>
 #include <QApplication>
@@ -107,7 +109,7 @@ void selftest::runShapeItemTests(Context& ctx)
               QStringLiteral("count=%1").arg(shapeTypes.size()));
     // 需求 9：平行四边形默认 60° 内角、内容尺寸 110.85×64，角度钳在 15–165°。
     {
-        ShapeItem para(ShapeType::Parallelogram);
+        ParallelogramItem para;
         const QSizeF paraSize = defaultShapeSize(ShapeType::Parallelogram);
         ctx.check(qAbs(paraSize.width() - 110.85) < 0.1 && qAbs(paraSize.height() - 64.0) < 0.1,
                   QStringLiteral("平行四边形默认尺寸 110.85×64"),
@@ -135,7 +137,7 @@ void selftest::runShapeItemTests(Context& ctx)
         SineItem wave;
         arc.setArcGeometry(QPointF(0.0, 0.0), QSizeF(120.0, 80.0), 15.0, 140.0, QColor(Qt::black), 2.0);
         wave.setWaveGeometry(QPointF(0.0, 0.0), QSizeF(120.0, 80.0), QColor(Qt::black), 2.0);
-        for (CurveItem* line : {static_cast<CurveItem*>(&arc), static_cast<CurveItem*>(&wave)}) {
+        for (LineItemAbstract* line : {static_cast<LineItemAbstract*>(&arc), static_cast<LineItemAbstract*>(&wave)}) {
             line->setArrowStyles(ArrowStyle::TriangleFilled, ArrowStyle::OpenArrow);
             const QRectF hit = line->paintedShape().boundingRect();
             const QRectF plain = line->outlineShape().boundingRect();
@@ -161,15 +163,15 @@ void selftest::runShapeItemTests(Context& ctx)
 
     // 需求 5：圆角矩形并入矩形后，旧 rounded_rectangle 文件读成「矩形 + 自动圆角」。
     {
-        ShapeItem legacyRounded;
+        RectangleItem legacyRounded;
         QJsonObject legacyJson = legacyRounded.toJson();
         legacyJson.insert(QStringLiteral("shapeType"), QStringLiteral("rounded_rectangle"));
         legacyJson.remove(QStringLiteral("cornerRadius"));
         legacyJson.remove(QStringLiteral("cornerAuto"));
-        ShapeItem loadedRounded;
+        RectangleItem loadedRounded;
         loadedRounded.fromJson(legacyJson);
-        ctx.check(loadedRounded.shapeType() == ShapeType::Rectangle && loadedRounded.autoCorner(),
-                  QStringLiteral("旧 rounded_rectangle 读成矩形自动圆角"));
+        ctx.check(loadedRounded.shapeType() == ShapeType::Rectangle && loadedRounded.cornerRadius() > 0.0,
+                  QStringLiteral("旧 rounded_rectangle 读成矩形显式圆角"));
     }
 
     bool shapePathsOk = true;
@@ -194,7 +196,7 @@ void selftest::runShapeItemTests(Context& ctx)
                   shapeTypeIsFilled(ShapeType::Sector),
               QStringLiteral("扇形可识别且可填充（弧线已并入曲线族，不再出现在形状类型表里）"));
     {
-        ShapeItem sector(ShapeType::Sector);
+        SectorItem sector;
         sector.setContentSize(QSizeF(200.0, 200.0));
         sector.setArcAngles(0.0, 90.0);
         const QPainterPath sectorPath = sector.currentPath(sector.contentRect());
@@ -206,14 +208,14 @@ void selftest::runShapeItemTests(Context& ctx)
         const QRectF ovalBounds = EllipseShape(QRectF(0.0, 0.0, 240.0, 120.0)).arc(0.0, 90.0).boundingRect();
         ctx.check(qAbs(ovalBounds.width() - 120.0) < 2.0 && qAbs(ovalBounds.height() - 60.0) < 2.0,
                   QStringLiteral("扇形与弧线由椭圆派生并跟随图元拉伸"));
-        ShapeItem copy;
+        SectorItem copy;
         copy.fromJson(sector.toJson());
         ctx.check(copy.shapeType() == ShapeType::Sector && qFuzzyCompare(copy.sweepAngle() + 2.0, 92.0),
                   QStringLiteral("扇形角度随画布保存和恢复，半径字段已移除"));
     }
     {
         // 扇形 / 弧线的选中框贴着实际轮廓，而不是整个内容矩形。
-        ShapeItem sector(ShapeType::Sector);
+        SectorItem sector;
         sector.setContentSize(QSizeF(200.0, 200.0));
         sector.setArcAngles(0.0, 90.0);
         const QRectF sectorFrame = sector.frameRect();
@@ -233,7 +235,7 @@ void selftest::runShapeItemTests(Context& ctx)
     }
     {
         // 三角形一次性折算尺寸：拖宽即派生高度，不再二次改尺寸（原先的来回抖动来源）。
-        ShapeItem triangle(ShapeType::Triangle);
+        TriangleItem triangle;
         triangle.setContentSize(QSizeF(120.0, 90.0));
         const qreal derived = 120.0 / (2.0 / qTan(qDegreesToRadians(60.0)));
         const QSizeF first = triangle.contentSize();
@@ -250,7 +252,7 @@ void selftest::runShapeItemTests(Context& ctx)
     }
     {
         // 三角形拖包围框：只能等比缩放，三个内角不变，手柄对面的点钉住。
-        ShapeItem triangle(ShapeType::Triangle);
+        TriangleItem triangle;
         triangle.setPos(QPointF(60.0, 40.0));
         triangle.setContentSize(QSizeF(120.0, 90.0));
         const qreal cot1 = 1.0 / qTan(qDegreesToRadians(triangle.bottomAngle1()));
@@ -297,7 +299,7 @@ void selftest::runShapeItemTests(Context& ctx)
                       .arg(baseMidAfter.y()));
 
         // 拖上边：对面点 = 底边中点，钉住；底边两端随等比缩放外扩。
-        ShapeItem topTriangle(ShapeType::Triangle);
+        TriangleItem topTriangle;
         topTriangle.setPos(QPointF(60.0, 40.0));
         topTriangle.setContentSize(QSizeF(120.0, 90.0));
         const qreal topA1 = topTriangle.bottomAngle1();
@@ -324,7 +326,7 @@ void selftest::runShapeItemTests(Context& ctx)
                       .arg(topTriangle.contentSize().width()));
 
         // 拖左上角：对面点 = 右下角，钉住；宽高比与内角都不变。
-        ShapeItem cornerTriangle(ShapeType::Triangle);
+        TriangleItem cornerTriangle;
         cornerTriangle.setPos(QPointF(60.0, 40.0));
         cornerTriangle.setContentSize(QSizeF(120.0, 90.0));
         const qreal cornerA1 = cornerTriangle.bottomAngle1();
@@ -380,7 +382,7 @@ void selftest::runShapeItemTests(Context& ctx)
     const QColor shapeFill(29, 78, 216, 40);
     for (int i = 0; i < shapeTypes.size(); ++i) {
         const ShapeType type = shapeTypes.at(i);
-        auto* item = new ShapeItem(type);
+        auto* item = createShapeItem(type);
 
         QSizeF size(150, 90);
         if (type == ShapeType::Arrow || type == ShapeType::DoubleArrow) {
@@ -459,7 +461,7 @@ void selftest::runShapeItemTests(Context& ctx)
 
     const QJsonObject shapeRoot = shapeScene.toJson();
     const QByteArray shapeBytes = QJsonDocument(shapeRoot).toJson(QJsonDocument::Compact);
-    ctx.check(shapeBytes.contains("\"type\":\"shape\"") && shapeBytes.contains("\"shapeType\":\"rectangle\"") &&
+    ctx.check(shapeBytes.contains("\"kind\":\"shape\"") && shapeBytes.contains("\"shapeType\":\"rectangle\"") &&
                   shapeBytes.contains("\"strokeColor\"") && shapeBytes.contains("\"fillColor\""),
               QStringLiteral("画布保存图形类型、描边与填充"));
 
@@ -508,25 +510,25 @@ void selftest::runShapeItemTests(Context& ctx)
                       allArrowStyles().size() == 6,
                   QStringLiteral("箭头样式字符串往返且共 6 种"));
 
-        LineItem arrowLine;
+        StraightLineItem arrowLine;
         arrowLine.setEndpoints(QPointF(0.0, 0.0), QPointF(200.0, 0.0), QColor(20, 20, 20), 3.0);
         ctx.check(arrowLine.startArrow() == ArrowStyle::None && arrowLine.endArrow() == ArrowStyle::None,
                   QStringLiteral("直线默认两端无箭头"));
         arrowLine.setArrowStyles(ArrowStyle::Bar, ArrowStyle::OpenArrow);
         ctx.check(arrowLine.startArrow() == ArrowStyle::Bar && arrowLine.endArrow() == ArrowStyle::OpenArrow,
                   QStringLiteral("直线两端箭头写入曲线属性"));
-        ctx.check(arrowLine.displayName() != MainWindow::tr("Line"),
+        ctx.check(arrowLine.displayName() != MainWindow::tr("Straight Line"),
                   QStringLiteral("带箭头直线显示名与直线类型名区分"));
 
         const QJsonObject arrowJson = arrowLine.toJson();
-        LineItem reloadedLine;
+        StraightLineItem reloadedLine;
         reloadedLine.fromJson(arrowJson);
         ctx.check(reloadedLine.startArrow() == ArrowStyle::Bar && reloadedLine.endArrow() == ArrowStyle::OpenArrow,
                   QStringLiteral("直线箭头 JSON 往返"));
         QJsonObject legacyLineJson = arrowJson;
         legacyLineJson.remove(QStringLiteral("startArrow"));
         legacyLineJson.remove(QStringLiteral("endArrow"));
-        LineItem legacyLine;
+        StraightLineItem legacyLine;
         legacyLine.fromJson(legacyLineJson);
         ctx.check(legacyLine.startArrow() == ArrowStyle::None && legacyLine.endArrow() == ArrowStyle::None,
                   QStringLiteral("缺箭头字段的直线 JSON 读入后默认无箭头"));

@@ -49,10 +49,17 @@ QString headStyle(const QJsonValue& value)
     return QStringLiteral("none");
 }
 
-QJsonObject itemBase(const QString& type, const QRectF& bounds, int z, int layer)
+// 线条族的五个 kind：直线 / 弧线 / 正弦 / 手绘曲线 / 花括号。
+bool isLineKind(const QString& kind)
+{
+    return kind == QStringLiteral("straightline") || kind == QStringLiteral("arc") || kind == QStringLiteral("sine") ||
+           kind == QStringLiteral("freehand") || kind == QStringLiteral("brace");
+}
+
+QJsonObject itemBase(const QString& kind, const QRectF& bounds, int z, int layer)
 {
     QJsonObject item;
-    item.insert(QStringLiteral("type"), type);
+    item.insert(QStringLiteral("kind"), kind);
     item.insert(QStringLiteral("x"), bounds.x());
     item.insert(QStringLiteral("y"), bounds.y());
     item.insert(QStringLiteral("w"), bounds.width());
@@ -240,9 +247,11 @@ QJsonObject elementToItem(const QJsonObject& element, int z, int layer, QStringL
         if (points.size() < 2) {
             return {};
         }
-        // 多点折线：保留拐点与两端箭头，落到曲线图元。
+        // 多点折线：保留拐点与两端箭头，落到直线图元（自由笔画落到曲线图元）。
         const QRectF lineBounds = boundsOf(points);
-        QJsonObject item = itemBase(QStringLiteral("curve"), lineBounds, z, layer);
+        const QString lineKind =
+            type == QStringLiteral("freedraw") ? QStringLiteral("freehand") : QStringLiteral("straightline");
+        QJsonObject item = itemBase(lineKind, lineBounds, z, layer);
         item.insert(QStringLiteral("color"),
                     colorOr(element, QStringLiteral("strokeColor"), QColor(30, 41, 59)).name(QColor::HexArgb));
         item.insert(QStringLiteral("width"), qMax<qreal>(0.5, numberOr(element, QStringLiteral("strokeWidth"), 2.0)));
@@ -251,11 +260,7 @@ QJsonObject elementToItem(const QJsonObject& element, int z, int layer, QStringL
         item.insert(QStringLiteral("baseHeight"), lineBounds.height());
         item.insert(QStringLiteral("dot"), false);
         item.insert(QStringLiteral("linear"), true);
-        // 曲线族判别：两点直落直线子型，多点为普通曲线，手绘为 Freehand。
-        item.insert(QStringLiteral("curveKind"), type == QStringLiteral("freedraw")
-                                                       ? QStringLiteral("freehand")
-                                                       : (points.size() == 2 ? QStringLiteral("line")
-                                                                             : QStringLiteral("curve")));
+        // 类型标识只写一次：手绘笔迹为 freehand，其余折线为 straightline。
         item.insert(QStringLiteral("startArrow"), importHeadStyle(element, QStringLiteral("startArrow")));
         item.insert(QStringLiteral("endArrow"), importHeadStyle(element, QStringLiteral("endArrow")));
         item.insert(QStringLiteral("segments"), polylineSegments(points));
@@ -530,7 +535,7 @@ QJsonObject storyBoardToScene(const QJsonObject& document, QStringList* warnings
     int fillImageCount = 0;
     for (const QJsonValue& value : items) {
         const QJsonObject item = value.toObject();
-        const QString kind = item.value(QStringLiteral("type")).toString();
+        const QString kind = item.value(QStringLiteral("kind")).toString();
         if (item.value(QStringLiteral("fillImage")).isObject()) {
             ++fillImageCount;
         }
@@ -538,32 +543,8 @@ QJsonObject storyBoardToScene(const QJsonObject& document, QStringList* warnings
         QJsonObject element;
         if (kind == QStringLiteral("shape")) {
             const QString shapeType = item.value(QStringLiteral("shapeType")).toString();
-            if (shapeType == QStringLiteral("line")) {
-                element = baseElement(item, QStringLiteral("sb%1").arg(index, 6, 10, QLatin1Char('0')));
-                element.insert(QStringLiteral("type"), headValue(item, QStringLiteral("endArrow")).isEmpty() &&
-                                                               headValue(item, QStringLiteral("startArrow")).isEmpty()
-                                                           ? QStringLiteral("line")
-                                                           : QStringLiteral("arrow"));
-                const QString startHead = headValue(item, QStringLiteral("startArrow"));
-                const QString endHead = headValue(item, QStringLiteral("endArrow"));
-                element.insert(QStringLiteral("startArrowhead"),
-                               startHead.isEmpty() ? QJsonValue(QJsonValue::Null) : QJsonValue(startHead));
-                element.insert(QStringLiteral("endArrowhead"),
-                               endHead.isEmpty() ? QJsonValue(QJsonValue::Null) : QJsonValue(endHead));
-                element.insert(QStringLiteral("lastCommittedPoint"), QJsonValue::Null);
-                element.insert(QStringLiteral("startBinding"), QJsonValue::Null);
-                element.insert(QStringLiteral("endBinding"), QJsonValue::Null);
-                QJsonArray points;
-                points.append(QJsonArray{0.0, 0.0});
-                points.append(
-                    QJsonArray{item.value(QStringLiteral("w")).toDouble(), item.value(QStringLiteral("h")).toDouble()});
-                element.insert(QStringLiteral("points"), points);
-                const QJsonObject headCustom = headCustomData(item);
-                if (!headCustom.isEmpty()) {
-                    element.insert(QStringLiteral("customData"), headCustom);
-                }
-            } else if (shapeType == QStringLiteral("rectangle") || shapeType == QStringLiteral("ellipse") ||
-                       shapeType == QStringLiteral("diamond")) {
+            if (shapeType == QStringLiteral("rectangle") || shapeType == QStringLiteral("ellipse") ||
+                shapeType == QStringLiteral("diamond")) {
                 element = storyBoardShape(item);
                 const QJsonObject base = baseElement(item, QStringLiteral("sb%1").arg(index, 6, 10, QLatin1Char('0')));
                 for (auto it = base.constBegin(); it != base.constEnd(); ++it) {
@@ -606,7 +587,7 @@ QJsonObject storyBoardToScene(const QJsonObject& document, QStringList* warnings
             element.insert(QStringLiteral("originalText"), item.value(QStringLiteral("text")).toString());
             element.insert(QStringLiteral("lineHeight"), 1.25);
             element.insert(QStringLiteral("autoResize"), true);
-        } else if (kind == QStringLiteral("curve")) {
+        } else if (isLineKind(kind)) {
             element = baseElement(item, QStringLiteral("sb%1").arg(index, 6, 10, QLatin1Char('0')));
             const QString startHead = headValue(item, QStringLiteral("startArrow"));
             const QString endHead = headValue(item, QStringLiteral("endArrow"));

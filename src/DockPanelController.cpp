@@ -1,9 +1,9 @@
 #include "DockPanelController.h"
 
 #include "CanvasScene.h"
-#include "ItemDockPanel.h"
 #include "LayerPanel.h"
 #include "MainWindow.h"
+#include "PropertiesPanel.h"
 
 #include <QColor>
 #include <QDockWidget>
@@ -14,10 +14,11 @@
 
 DockPanelController::DockPanelController(MainWindow* window) : m_window(window)
 {
-    m_itemDockStateTimer = new QTimer(window);
-    m_itemDockStateTimer->setSingleShot(true);
-    m_itemDockStateTimer->setInterval(300);
-    QObject::connect(m_itemDockStateTimer, &QTimer::timeout, window, [this]() { rememberItemDockState(); });
+    m_propertiesDockStateTimer = new QTimer(window);
+    m_propertiesDockStateTimer->setSingleShot(true);
+    m_propertiesDockStateTimer->setInterval(300);
+    QObject::connect(m_propertiesDockStateTimer, &QTimer::timeout, window,
+                     [this]() { rememberPropertiesPanelDockState(); });
 }
 
 void DockPanelController::createLayerDock()
@@ -38,46 +39,47 @@ void DockPanelController::createLayerDock()
                      [this](const QString& message) { m_window->statusBar()->showMessage(message, 3000); });
 }
 
-void DockPanelController::createItemDock()
+void DockPanelController::createPropertiesPanelDock()
 {
-    m_itemDock = new QDockWidget(MainWindow::tr("Edit item"), m_window);
-    m_itemDock->setObjectName(QStringLiteral("ItemDock"));
-    m_itemDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    m_itemDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable |
-                            QDockWidget::DockWidgetClosable);
+    m_propertiesDock = new QDockWidget(MainWindow::tr("Properties Editing panel"), m_window);
+    m_propertiesDock->setObjectName(QStringLiteral("PropertiesPanelDock"));
+    m_propertiesDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    m_propertiesDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable |
+                                  QDockWidget::DockWidgetClosable);
 
-    m_itemPanel = new ItemDockPanel(m_window->m_scene, m_itemDock);
-    m_itemDock->setWidget(m_itemPanel);
-    m_window->addDockWidget(Qt::LeftDockWidgetArea, m_itemDock);
-    // 编辑图元卡固定在左侧，高度限定在合适区间，避免单独占满整列。
-    m_itemDock->setMinimumHeight(240);
-    m_itemDock->setMaximumHeight(620);
+    m_propertiesPanel = new PropertiesPanel(m_window->m_scene, m_propertiesDock);
+    m_propertiesDock->setWidget(m_propertiesPanel);
+    m_window->addDockWidget(Qt::LeftDockWidgetArea, m_propertiesDock);
+    // 属性编辑面板固定在左侧，高度限定在合适区间，避免单独占满整列。
+    m_propertiesDock->setMinimumHeight(240);
+    m_propertiesDock->setMaximumHeight(620);
     // 宽度按内容算一次作为启动宽度；之后不随选中项增减自动变化，用户可手动拖拽调整。
-    applyItemDockWidth(m_itemPanel->preferredWidth(), true);
+    applyPropertiesPanelDockWidth(m_propertiesPanel->preferredWidth(), true);
 
-    QObject::connect(m_itemPanel, &ItemDockPanel::statusMessage, m_window,
+    QObject::connect(m_propertiesPanel, &PropertiesPanel::statusMessage, m_window,
                      [this](const QString& message) { m_window->statusBar()->showMessage(message, 3000); });
     // 卡片宽度只在启动时确定一次，选中变化不再联动，避免卡片来回跳动。
     // 画笔与描边共用同一套颜色 / 宽度：卡片里改描边后，之后画出的笔画立即沿用新值。
-    QObject::connect(m_itemPanel, &ItemDockPanel::strokeColorPicked, m_window,
+    QObject::connect(m_propertiesPanel, &PropertiesPanel::strokeColorPicked, m_window,
                      [this](const QColor& color) { m_window->setBrushColor(color, true); });
-    QObject::connect(m_itemPanel, &ItemDockPanel::borderWidthPicked, m_window,
+    QObject::connect(m_propertiesPanel, &PropertiesPanel::borderWidthPicked, m_window,
                      [this](qreal width) { m_window->setBrushWidthUi(qBound(1, qRound(width), 64)); });
 
-    // 编辑图元卡默认停靠左侧并常驻显示；首次启动没有保存位置时由 applyDockLayout 固定到左侧。
-    m_itemDock->setVisible(true);
-    m_itemDock->installEventFilter(m_window);
-    QObject::connect(m_itemDock, &QDockWidget::topLevelChanged, m_window, [this](bool floating) {
+    // 属性编辑面板默认停靠左侧并常驻显示；首次启动没有保存位置时由 applyDockLayout 固定到左侧。
+    m_propertiesDock->setVisible(true);
+    m_propertiesDock->installEventFilter(m_window);
+    QObject::connect(m_propertiesDock, &QDockWidget::topLevelChanged, m_window, [this](bool floating) {
         if (!floating) {
             // 悬浮卡拖回主窗口后重新固定，恢复常驻显示。
-            m_itemDock->setVisible(true);
+            m_propertiesDock->setVisible(true);
         }
         // 停靠 / 悬浮切换后只约束宽度范围，保持用户当前宽度。
-        applyItemDockWidth(m_itemPanel ? m_itemPanel->preferredWidth() : m_itemDock->minimumWidth(), false);
-        scheduleItemDockStateSave();
+        applyPropertiesPanelDockWidth(
+            m_propertiesPanel ? m_propertiesPanel->preferredWidth() : m_propertiesDock->minimumWidth(), false);
+        schedulePropertiesPanelDockStateSave();
     });
-    QObject::connect(m_itemDock, &QDockWidget::dockLocationChanged, m_window,
-                     [this](Qt::DockWidgetArea) { scheduleItemDockStateSave(); });
+    QObject::connect(m_propertiesDock, &QDockWidget::dockLocationChanged, m_window,
+                     [this](Qt::DockWidgetArea) { schedulePropertiesPanelDockStateSave(); });
 }
 
 void DockPanelController::createViewModeDock()
@@ -136,7 +138,7 @@ QStringList DockPanelController::currentDockOrder() const
 
 void DockPanelController::applyDockLayout()
 {
-    if (!m_viewModeDock || !m_layerDock || !m_itemDock) {
+    if (!m_viewModeDock || !m_layerDock || !m_propertiesDock) {
         return;
     }
     m_applyingDockLayout = true;
@@ -157,8 +159,8 @@ void DockPanelController::applyDockLayout()
     QDockWidget* first = order.first() == QStringLiteral("ViewModeDock") ? m_viewModeDock : m_layerDock;
     QDockWidget* second = first == m_viewModeDock ? m_layerDock : m_viewModeDock;
 
-    // 编辑图元卡由 restoreItemDockState 按设置恢复：首次启动没有保存位置时停靠左侧。
-    m_window->removeDockWidget(m_itemDock);
+    // 属性编辑面板由 restorePropertiesPanelDockState 按设置恢复：首次启动没有保存位置时停靠左侧。
+    m_window->removeDockWidget(m_propertiesDock);
     m_window->removeDockWidget(m_viewModeDock);
     m_window->removeDockWidget(m_layerDock);
     m_window->addDockWidget(Qt::RightDockWidgetArea, first);
@@ -185,101 +187,105 @@ void DockPanelController::applyDockLayout()
     m_viewModeDock->setVisible(true);
     m_layerDock->setVisible(true);
 
-    // 编辑图元卡：首次启动固定左侧；之后按设置恢复停靠侧或悬浮位置。
-    restoreItemDockState();
+    // 属性编辑面板：首次启动固定左侧；之后按设置恢复停靠侧或悬浮位置。
+    restorePropertiesPanelDockState();
 
     m_applyingDockLayout = false;
 }
 
-void DockPanelController::applyItemDockWidth(int width, bool resizeNow)
+void DockPanelController::applyPropertiesPanelDockWidth(int width, bool resizeNow)
 {
-    if (!m_itemDock || !m_itemPanel) {
+    if (!m_propertiesDock || !m_propertiesPanel) {
         return;
     }
     // 宽度只在启动时按内容确定一次；之后保留用户手动拖拽的结果，只约束上下限。
     const int bounded = qBound(260, width, 360);
-    m_itemDock->setMinimumWidth(260);
-    m_itemDock->setMaximumWidth(360);
+    m_propertiesDock->setMinimumWidth(260);
+    m_propertiesDock->setMaximumWidth(360);
     if (!resizeNow) {
         return;
     }
-    if (m_itemDock->isFloating()) {
-        if (m_itemDock->width() < bounded) {
-            m_itemDock->resize(bounded, m_itemDock->height());
+    if (m_propertiesDock->isFloating()) {
+        if (m_propertiesDock->width() < bounded) {
+            m_propertiesDock->resize(bounded, m_propertiesDock->height());
         }
         return;
     }
-    if (m_itemDock->width() != bounded) {
-        m_window->resizeDocks({m_itemDock}, {bounded}, Qt::Horizontal);
+    if (m_propertiesDock->width() != bounded) {
+        m_window->resizeDocks({m_propertiesDock}, {bounded}, Qt::Horizontal);
     }
 }
 
-void DockPanelController::restoreItemDockState()
+void DockPanelController::restorePropertiesPanelDockState()
 {
-    if (!m_itemDock) {
+    if (!m_propertiesDock) {
         return;
     }
     const AppSettings& settings = m_window->m_settings;
-    const bool saved = settings.itemDockStateSaved;
-    const bool floating = saved && settings.itemDockFloating;
-    const Qt::DockWidgetArea area =
-        saved && settings.itemDockArea == QLatin1String("right") ? Qt::RightDockWidgetArea : Qt::LeftDockWidgetArea;
+    const bool saved = settings.propertiesDockStateSaved;
+    const bool floating = saved && settings.propertiesDockFloating;
+    const Qt::DockWidgetArea area = saved && settings.propertiesDockArea == QLatin1String("right")
+                                        ? Qt::RightDockWidgetArea
+                                        : Qt::LeftDockWidgetArea;
 
     // 先固定回停靠区，再决定是否摘成悬浮窗口；首次没有保存记录时这就是最终状态。
-    m_itemDock->setFloating(false);
-    m_window->addDockWidget(area, m_itemDock);
+    m_propertiesDock->setFloating(false);
+    m_window->addDockWidget(area, m_propertiesDock);
 
     if (!floating) {
-        m_itemDock->setVisible(true);
-        applyItemDockWidth(m_itemPanel ? m_itemPanel->preferredWidth() : m_itemDock->width(), false);
+        m_propertiesDock->setVisible(true);
+        applyPropertiesPanelDockWidth(
+            m_propertiesPanel ? m_propertiesPanel->preferredWidth() : m_propertiesDock->width(), false);
         return;
     }
 
-    m_itemDock->setFloating(true);
-    const bool geometryRestored =
-        !settings.itemDockGeometry.isEmpty() && m_itemDock->restoreGeometry(settings.itemDockGeometry);
+    m_propertiesDock->setFloating(true);
+    const bool geometryRestored = !settings.propertiesDockGeometry.isEmpty() &&
+                                  m_propertiesDock->restoreGeometry(settings.propertiesDockGeometry);
     // 恢复的悬浮几何只做宽度范围约束，保留用户上次的宽度。
-    applyItemDockWidth(m_itemPanel ? m_itemPanel->preferredWidth() : m_itemDock->width(), false);
+    applyPropertiesPanelDockWidth(m_propertiesPanel ? m_propertiesPanel->preferredWidth() : m_propertiesDock->width(),
+                                  false);
     QTimer::singleShot(0, m_window, [this, geometryRestored]() {
-        if (!m_itemDock || !m_itemDock->isFloating() || geometryRestored) {
+        if (!m_propertiesDock || !m_propertiesDock->isFloating() || geometryRestored) {
             return;
         }
         // 没有可用的悬浮几何时落在画布左上角，尺寸限制在卡片自身区间。
         const QRect frame = m_window->frameGeometry();
         const int width = qBound(260, frame.width() / 4, 360);
         const int height = qBound(320, frame.height() - 200, 560);
-        m_itemDock->resize(width, height);
-        m_itemDock->move(frame.left() + 24, frame.top() + 88);
+        m_propertiesDock->resize(width, height);
+        m_propertiesDock->move(frame.left() + 24, frame.top() + 88);
     });
-    m_itemDock->setVisible(true);
-    updateItemDockVisibility();
+    m_propertiesDock->setVisible(true);
+    updatePropertiesPanelDockVisibility();
 }
 
-void DockPanelController::rememberItemDockState()
+void DockPanelController::rememberPropertiesPanelDockState()
 {
-    if (!m_itemDock || m_applyingDockLayout) {
+    if (!m_propertiesDock || m_applyingDockLayout) {
         return;
     }
     AppSettings& settings = m_window->m_settings;
-    settings.itemDockStateSaved = true;
-    settings.itemDockFloating = m_itemDock->isFloating();
-    settings.itemDockArea = m_window->dockWidgetArea(m_itemDock) == Qt::RightDockWidgetArea ? QStringLiteral("right")
-                                                                                            : QStringLiteral("left");
-    settings.itemDockGeometry = m_itemDock->saveGeometry();
+    settings.propertiesDockStateSaved = true;
+    settings.propertiesDockFloating = m_propertiesDock->isFloating();
+    settings.propertiesDockArea = m_window->dockWidgetArea(m_propertiesDock) == Qt::RightDockWidgetArea
+                                      ? QStringLiteral("right")
+                                      : QStringLiteral("left");
+    settings.propertiesDockGeometry = m_propertiesDock->saveGeometry();
     settings.save();
 }
 
-void DockPanelController::scheduleItemDockStateSave()
+void DockPanelController::schedulePropertiesPanelDockStateSave()
 {
-    if (!m_itemDockStateTimer || m_applyingDockLayout) {
+    if (!m_propertiesDockStateTimer || m_applyingDockLayout) {
         return;
     }
-    m_itemDockStateTimer->start();
+    m_propertiesDockStateTimer->start();
 }
 
 void DockPanelController::rememberDockOrder()
 {
-    if (m_applyingDockLayout || !m_layerDock || !m_itemDock) {
+    if (m_applyingDockLayout || !m_layerDock || !m_propertiesDock) {
         return;
     }
     const QStringList order = currentDockOrder();
@@ -296,25 +302,25 @@ void DockPanelController::handleMoveEvent(QObject* watched, QEvent* event)
     if ((watched == m_viewModeDock || watched == m_layerDock) && event->type() == QEvent::Move) {
         // 卡片被拖到新位置后，等布局稳定再读上下关系并落盘。
         QTimer::singleShot(0, m_window, [this]() { rememberDockOrder(); });
-    } else if (watched == m_itemDock && (event->type() == QEvent::Move || event->type() == QEvent::Resize) &&
-               m_itemDock->isFloating()) {
+    } else if (watched == m_propertiesDock && (event->type() == QEvent::Move || event->type() == QEvent::Resize) &&
+               m_propertiesDock->isFloating()) {
         // 悬浮卡拖动或缩放后延迟保存位置，避免拖动期间反复写文件。
-        scheduleItemDockStateSave();
+        schedulePropertiesPanelDockStateSave();
     }
 }
 
-void DockPanelController::updateItemDockVisibility()
+void DockPanelController::updatePropertiesPanelDockVisibility()
 {
-    if (!m_itemDock || !m_window->m_scene || !m_window->m_view) {
+    if (!m_propertiesDock || !m_window->m_scene || !m_window->m_view) {
         return;
     }
     // 停靠在主窗口里时卡片常驻，选中状态变化不动整张卡片；
     // 只有悬浮窗口才跟随选中状态：有选中显示、清空选中隐藏。
-    if (!m_itemDock->isFloating()) {
+    if (!m_propertiesDock->isFloating()) {
         return;
     }
     const bool hasSelection = !m_window->m_scene->selectedCanvasItems().isEmpty();
-    if (m_itemDock->isVisible() != hasSelection) {
-        m_itemDock->setVisible(hasSelection);
+    if (m_propertiesDock->isVisible() != hasSelection) {
+        m_propertiesDock->setVisible(hasSelection);
     }
 }

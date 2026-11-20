@@ -315,10 +315,68 @@ QVariant CanvasItem::itemChange(GraphicsItemChange change, const QVariant& value
     return QGraphicsObject::itemChange(change, value);
 }
 
+ItemPropertySet CanvasItem::properties() const
+{
+    // 所有图元共有的属性：名称 / 图层 / 层内叠放 / 位置 / 尺寸 / 旋转 / 不透明度。
+    return ItemPropertySet{ItemProperty::NAME, ItemProperty::LAYER,    ItemProperty::HEIGHT, ItemProperty::POSITION,
+                           ItemProperty::SIZE, ItemProperty::ROTATION, ItemProperty::OPACITY};
+}
+
+QVariant CanvasItem::propertyValue(ItemProperty property) const
+{
+    switch (property) {
+    case ItemProperty::NAME:
+        return name();
+    case ItemProperty::LAYER:
+        return layerId();
+    case ItemProperty::HEIGHT:
+        return height();
+    case ItemProperty::POSITION:
+        return pos();
+    case ItemProperty::SIZE:
+        return contentSize();
+    case ItemProperty::ROTATION:
+        return rotationAngle();
+    case ItemProperty::OPACITY:
+        return itemOpacity();
+    default:
+        return QVariant();
+    }
+}
+
+void CanvasItem::setPropertyValue(ItemProperty property, const QVariant& value)
+{
+    switch (property) {
+    case ItemProperty::NAME:
+        setName(value.toString());
+        break;
+    case ItemProperty::LAYER:
+        setLayerId(value.toInt());
+        break;
+    case ItemProperty::HEIGHT:
+        setHeight(value.toInt());
+        break;
+    case ItemProperty::POSITION:
+        setPos(value.toPointF());
+        break;
+    case ItemProperty::SIZE:
+        setContentSize(value.toSizeF());
+        break;
+    case ItemProperty::ROTATION:
+        setRotationAngle(value.toDouble());
+        break;
+    case ItemProperty::OPACITY:
+        setItemOpacity(value.toDouble());
+        break;
+    default:
+        break;
+    }
+}
+
 QJsonObject CanvasItem::baseJson() const
 {
     QJsonObject json;
-    json.insert(QStringLiteral("type"), kind());
+    json.insert(QStringLiteral("kind"), kind());
     json.insert(QStringLiteral("x"), pos().x());
     json.insert(QStringLiteral("y"), pos().y());
     json.insert(QStringLiteral("w"), m_size.width());
@@ -334,9 +392,7 @@ QJsonObject CanvasItem::baseJson() const
     if (!m_name.isEmpty()) {
         json.insert(QStringLiteral("itemName"), m_name);
     }
-    // Kept for readability and for older readers; the scene always derives
-    // the actual paint order from layer + height.
-    json.insert(QStringLiteral("z"), zValue());
+    // 绘制顺序由 layer + height 决定，不再写冗余的 z 键。
     return json;
 }
 

@@ -16,7 +16,7 @@ class ViewStatusController {
     void updateStatusBar();
     void updateBackgroundModeActions();
     void fitAll();
-    void updateItemDockVisibility();
+    void updatePropertiesPanelDockVisibility();
 
   private:
     MainWindow* m_window = nullptr;

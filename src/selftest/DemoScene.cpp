@@ -1,3 +1,4 @@
+#include "BraceItem.h"
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
 #include "CurveItem.h"
@@ -30,7 +31,7 @@ namespace {
 // 需求 14：插入图片统一为「矩形图元 + 背景图片」，演示场景沿用同一构造。
 ShapeItem* addImageRect(CanvasScene& scene, int layerId, const QPixmap& pixmap, const QSizeF& size, const QPointF& pos)
 {
-    auto* item = new ShapeItem(ShapeType::Rectangle);
+    auto* item = createShapeItem(ShapeType::Rectangle);
     item->setLayerId(layerId);
     item->setStyle(QColor(Qt::transparent), QColor(Qt::transparent), 1.0);
     item->setFillStyle(FillStyle::None);
@@ -80,10 +81,10 @@ void populateDemoScene(CanvasScene& scene)
 {
     scene.applyCanvasSize(QSizeF(1600, 1000));
 
-    BackgroundState background;
+    CanvasBackground background;
     background.type = BackgroundType::Color;
     background.color = QColor(QStringLiteral("#F7F3EA"));
-    scene.applyBackground(background);
+    scene.setCanvasBackground(background);
 
     const int frameLayer = scene.createLayer(QStringLiteral("分镜框"));
     const int shotLayer = scene.createLayer(QStringLiteral("镜头画面"));
@@ -121,7 +122,7 @@ void populateDemoScene(CanvasScene& scene)
 
     for (int i = 0; i < panels.size(); ++i) {
         const QRectF& panel = panels.at(i);
-        auto* frame = new ShapeItem(ShapeType::Rectangle);
+        auto* frame = createShapeItem(ShapeType::Rectangle);
         frame->setLayerId(frameLayer);
         frame->setStyle(ink, QColor(Qt::transparent), 5.0);
         frame->setPos(panel.topLeft());
@@ -147,28 +148,28 @@ void populateDemoScene(CanvasScene& scene)
     }
 
     // Hand-drawn annotations: stick figure, arrows and a few accents.
-    auto* firstArrow = new ShapeItem(ShapeType::Arrow);
+    auto* firstArrow = createShapeItem(ShapeType::Arrow);
     firstArrow->setLayerId(inkLayer);
     firstArrow->setStyle(accent, QColor(Qt::transparent), 5.0);
     firstArrow->setPos(QPointF(520, 522));
     firstArrow->setContentSize(QSizeF(66, 36));
     scene.attachItem(firstArrow);
 
-    auto* secondArrow = new ShapeItem(ShapeType::Arrow);
+    auto* secondArrow = createShapeItem(ShapeType::Arrow);
     secondArrow->setLayerId(inkLayer);
     secondArrow->setStyle(accent, QColor(Qt::transparent), 5.0);
     secondArrow->setPos(QPointF(1020, 522));
     secondArrow->setContentSize(QSizeF(66, 36));
     scene.attachItem(secondArrow);
 
-    auto* headRing = new ShapeItem(ShapeType::Ellipse);
+    auto* headRing = createShapeItem(ShapeType::Ellipse);
     headRing->setLayerId(inkLayer);
     headRing->setStyle(teal, QColor(Qt::transparent), 3.0);
     headRing->setPos(QPointF(258, 510));
     headRing->setContentSize(QSizeF(84, 84));
     scene.attachItem(headRing);
 
-    auto* star = new ShapeItem(ShapeType::Star);
+    auto* star = createShapeItem(ShapeType::Star);
     star->setLayerId(inkLayer);
     QColor starFill = accent;
     starFill.setAlpha(62);
@@ -177,20 +178,10 @@ void populateDemoScene(CanvasScene& scene)
     star->setContentSize(QSizeF(54, 54));
     scene.attachItem(star);
 
-    // 需求 13：花括号改为曲线图元，演示场景按同一几何采样构造。
-    auto* brace = new CurveItem();
-    {
-        constexpr int braceSamples = 48;
-        const QPainterPath braceShape = ShapePathBuilder::bracePath(QRectF(0.0, 0.0, 44.0, 92.0));
-        QVector<QPointF> bracePoints;
-        bracePoints.reserve(braceSamples + 1);
-        for (int i = 0; i <= braceSamples; ++i) {
-            bracePoints.append(QPointF(1040, 884) + braceShape.pointAtPercent(qreal(i) / qreal(braceSamples)));
-        }
-        brace->setStrokePoints(bracePoints, accent, 5.0, 0.0, true);
-    }
+    // 需求 13：花括号是独立的描线图元，几何采样下沉到 BraceItem::setBraceRect。
+    auto* brace = new BraceItem();
+    brace->setBraceRect(QRectF(1040, 884, 44, 92), accent, 5.0);
     brace->setLayerId(inkLayer);
-    brace->setCurveKind(CurveKind::Brace);
     scene.attachItem(brace);
 
     QVector<QPointF> figure;

@@ -29,6 +29,44 @@ TextItem::TextItem(QGraphicsItem* parent) : CanvasItem(parent)
     m_baseSize = measure(QString(), m_font);
 }
 
+ItemPropertySet TextItem::properties() const
+{
+    return CanvasItem::properties().united(
+        ItemPropertySet{ItemProperty::TEXT_CONTENT, ItemProperty::TEXT_COLOR, ItemProperty::TEXT_FONT});
+}
+
+QVariant TextItem::propertyValue(ItemProperty property) const
+{
+    switch (property) {
+    case ItemProperty::TEXT_CONTENT:
+        return m_text;
+    case ItemProperty::TEXT_COLOR:
+        return m_color;
+    case ItemProperty::TEXT_FONT:
+        return m_font;
+    default:
+        return CanvasItem::propertyValue(property);
+    }
+}
+
+void TextItem::setPropertyValue(ItemProperty property, const QVariant& value)
+{
+    switch (property) {
+    case ItemProperty::TEXT_CONTENT:
+        setTextFormat(value.toString(), m_font, m_color);
+        break;
+    case ItemProperty::TEXT_COLOR:
+        setTextFormat(m_text, m_font, value.value<QColor>());
+        break;
+    case ItemProperty::TEXT_FONT:
+        setTextFormat(m_text, value.value<QFont>(), m_color);
+        break;
+    default:
+        CanvasItem::setPropertyValue(property, value);
+        break;
+    }
+}
+
 QString TextItem::displayName() const
 {
     QString snippet = m_text.simplified();
@@ -69,6 +107,16 @@ void TextItem::setTextFormat(const QString& text, const QFont& font, const QColo
     m_baseSize = measure(m_text, m_font);
     setContentSize(m_baseSize);
     update();
+}
+
+TextItemState TextItem::textState() const
+{
+    return state();
+}
+
+void TextItem::applyTextState(const TextItemState& state)
+{
+    applyState(state);
 }
 
 TextItemState TextItem::state() const

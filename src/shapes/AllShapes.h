@@ -1,0 +1,20 @@
+#pragma once
+
+// 便于测试与工具代码一次性拿到全部图形类。
+#include "shapes/EllipseItem.h"
+#include "shapes/RectangleItem.h"
+#include "shapes/TriangleItem.h"
+#include "shapes/ParallelogramItem.h"
+#include "shapes/SectorItem.h"
+#include "shapes/DiamondItem.h"
+#include "shapes/StarItem.h"
+#include "shapes/ArrowItem.h"
+#include "shapes/DoubleArrowItem.h"
+#include "shapes/CalloutItem.h"
+#include "shapes/Star4Item.h"
+#include "shapes/HexagramItem.h"
+#include "shapes/HeartItem.h"
+#include "shapes/FlagWaveItem.h"
+#include "shapes/ScrollItem.h"
+#include "shapes/CubeItem.h"
+#include "shapes/CylinderItem.h"

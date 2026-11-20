@@ -42,7 +42,7 @@ void UiToolBarBuilder::buildToolBars()
     createShapeToolbar(mainBar);
     mainBar->addSeparator();
 
-    // 对齐与合并图元留在菜单栏与编辑图元卡里，主工具栏不再重复放置入口。
+    // 对齐与合并图元留在菜单栏与属性编辑面板里，主工具栏不再重复放置入口。
     // 画笔区只保留拟合容差输入；画笔颜色 / 粗细由图形描线区统一设置。
     createSmoothingToolbar(mainBar);
     // 布尔运算的右键菜单入口照旧保留，只是不再作为工具栏下拉按钮。

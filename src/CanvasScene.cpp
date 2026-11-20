@@ -107,7 +107,7 @@ void CanvasScene::resetDocument()
     clear();
     clearOrphans();
     m_selectionOrder.clear();
-    m_background = BackgroundState();
+    m_background = CanvasBackground();
     m_layers = {{BackgroundLayerId, scene_constants::kBackgroundLayerName, true, true},
                 {scene_constants::kFirstUserLayerId, QStringLiteral("图层 1"), true, false}};
     m_activeLayerId = scene_constants::kFirstUserLayerId;

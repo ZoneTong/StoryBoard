@@ -6,23 +6,6 @@
 #include <QFont>
 #include <QString>
 
-struct TextItemState {
-    QString text;
-    QFont font;
-    QColor color;
-    QPointF pos;
-    QSizeF size;
-    QSizeF baseSize;
-
-    bool operator==(const TextItemState& other) const
-    {
-        return text == other.text && font == other.font && color == other.color && pos == other.pos &&
-               size == other.size && baseSize == other.baseSize;
-    }
-
-    bool operator!=(const TextItemState& other) const { return !(*this == other); }
-};
-
 class TextItem : public CanvasItem {
     Q_OBJECT
   public:
@@ -33,14 +16,23 @@ class TextItem : public CanvasItem {
     QString typeDisplayName() const override;
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& json) override;
+    ItemPropertySet properties() const override;
+    QVariant propertyValue(ItemProperty property) const override;
+    void setPropertyValue(ItemProperty property, const QVariant& value) override;
     QPainterPath outlineShape() const override;
     QPainterPath paintedShape() const override;
     QPainterPath clippingShape() const override;
 
+    bool hasTextFacet() const override { return true; }
+    QString textContent() const override { return m_text; }
+    QFont textFont() const override { return m_font; }
+    QColor textColor() const override { return m_color; }
+    QSizeF textNaturalSize() const override { return m_baseSize; }
+    TextItemState textState() const override;
+    void applyTextState(const TextItemState& state) override;
+
     void setTextFormat(const QString& text, const QFont& font, const QColor& color);
     QString text() const { return m_text; }
-    QFont textFont() const { return m_font; }
-    QColor textColor() const { return m_color; }
 
     QSizeF naturalSize() const { return m_baseSize; }
     static QSizeF measure(const QString& text, const QFont& font);

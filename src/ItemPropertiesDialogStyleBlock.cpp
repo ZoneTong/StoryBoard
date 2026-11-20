@@ -1,9 +1,9 @@
 #include "ItemPropertiesDialogStyleBlock.h"
 
-#include "CurveItem.h"
 #include "ItemPropertiesDialog.h"
 #include "ItemPropertiesDialogFields.h"
 #include "ItemStyleVisuals.h"
+#include "LineItemAbstract.h"
 #include "PolygonItem.h"
 #include "ShapeItem.h"
 #include "ShapeMeta.h"
@@ -16,12 +16,6 @@
 #include <QSpinBox>
 #include <QToolButton>
 
-namespace {
-qreal defaultCornerRadius(const QSizeF& size, bool autoCorner)
-{
-    return autoCorner ? qMin(size.width(), size.height()) * 0.16 : 0.0;
-}
-} // namespace
 
 ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item, QWidget* parent) : QWidget(parent)
 {
@@ -127,8 +121,8 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
         m_opacitySpin->setObjectName(QStringLiteral("ItemPropertiesOpacityValue"));
         m_opacitySpin->setRange(0, 100);
         m_opacitySpin->setSuffix(QStringLiteral(" %"));
-        m_opacitySpin->setValue(qRound(shape->opacity() * 100.0));
-        m_initialOpacity = shape->opacity();
+        m_opacitySpin->setValue(qRound(shape->itemOpacity() * 100.0));
+        m_initialOpacity = shape->itemOpacity();
         m_initialOpacityPercent = m_opacitySpin->value();
         m_opacitySpin->setMinimumWidth(88);
 
@@ -156,12 +150,11 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
         }
 
         if (plainShape && !shape->isCustomShape() && type == ShapeType::Rectangle) {
-            m_defaultCornerRatio = shape->autoCorner() ? 0.16 : 0.0;
             m_contentSize = shape->contentSize();
+            const qreal radius = shape->cornerRadius();
+            const qreal minSide = qMin(m_contentSize.width(), m_contentSize.height());
+            m_defaultCornerRatio = minSide > 0.0 ? radius / minSide : 0.0;
             m_initialStoredCornerRadius = shape->cornerRadius();
-            const qreal radius = m_initialStoredCornerRadius >= 0.0
-                                     ? m_initialStoredCornerRadius
-                                     : defaultCornerRadius(m_contentSize, shape->autoCorner());
             m_initialCornerRadius = qRound(radius);
 
             m_cornerRadiusSpin = new QSpinBox(this);
@@ -223,33 +216,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_parallelogramAngleSpin->setValue(qRound(m_initialParallelogramAngle));
         }
 
-        // 需求 4：所有线条类图元（直线 / 弧线 / 正弦波 / 波线 / 卷轴）都能设两端箭头样式，
-        // 属性窗里一行两个下拉。
-        if (plainShape && !shape->isCustomShape() && ShapeMeta::isLineLike(type)) {
-            m_arrowRow = new QWidget(this);
-            auto* arrowLayout = new QHBoxLayout(m_arrowRow);
-            arrowLayout->setContentsMargins(0, 0, 0, 0);
-            arrowLayout->setSpacing(6);
-            m_startArrowCombo = new QComboBox(m_arrowRow);
-            m_startArrowCombo->setObjectName(QStringLiteral("ItemPropertiesStartArrowValue"));
-            m_startArrowCombo->setMinimumWidth(120);
-            m_startArrowCombo->setToolTip(ItemPropertiesDialog::tr("Start arrow"));
-            m_endArrowCombo = new QComboBox(m_arrowRow);
-            m_endArrowCombo->setObjectName(QStringLiteral("ItemPropertiesEndArrowValue"));
-            m_endArrowCombo->setMinimumWidth(120);
-            m_endArrowCombo->setToolTip(ItemPropertiesDialog::tr("End arrow"));
-            for (QComboBox* combo : {m_startArrowCombo, m_endArrowCombo}) {
-                for (ArrowStyle style : allArrowStyles()) {
-                    combo->addItem(arrowStyleName(style), static_cast<int>(style));
-                }
-            }
-            m_startArrowCombo->setCurrentIndex(
-                qMax(0, m_startArrowCombo->findData(static_cast<int>(shape->startArrow()))));
-            m_endArrowCombo->setCurrentIndex(qMax(0, m_endArrowCombo->findData(static_cast<int>(shape->endArrow()))));
-            arrowLayout->addWidget(m_startArrowCombo, 1);
-            arrowLayout->addWidget(m_endArrowCombo, 1);
-        }
-    } else if (auto* composite = dynamic_cast<PolygonItem*>(item)) {
+    } else if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->isPolygon()) {
         m_hasFill = true;
 
         m_fillStyleCombo = new QComboBox(this);
@@ -294,7 +261,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
         m_strokeWidthSpin->setValue(qRound(qMax<qreal>(1.0, composite->strokeWidth())));
         m_initialStrokeWidth = composite->strokeWidth();
         m_strokeWidthSpin->setMinimumWidth(88);
-    } else if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
+    } else if (auto* stroke = dynamic_cast<LineItemAbstract*>(item)) {
         m_strokeColorButton = ItemPropertiesFields::makeColorField(this, stroke->strokeColor(),
                                                                    QStringLiteral("ItemPropertiesStrokeColorValue"),
                                                                    ItemPropertiesFields::ColorIconRole::Border);
@@ -306,7 +273,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_borderStyleCombo->addItem(ItemStyleVisuals::borderStyleIcon(penStyle, 16),
                                         ItemStyleVisuals::borderStyleName(penStyle), static_cast<int>(penStyle));
         }
-        const int borderStyleIndex = m_borderStyleCombo->findData(static_cast<int>(stroke->strokeStyle()));
+        const int borderStyleIndex = m_borderStyleCombo->findData(static_cast<int>(stroke->strokePattern()));
         if (borderStyleIndex >= 0) {
             m_borderStyleCombo->setCurrentIndex(borderStyleIndex);
         }

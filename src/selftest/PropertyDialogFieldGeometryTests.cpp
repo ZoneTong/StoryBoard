@@ -1,3 +1,4 @@
+#include "BraceItem.h"
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
 #include "CanvasView.h"
@@ -29,9 +30,9 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
     CanvasView& view = *ctx.view;
     int& itemPropertyRequests = ctx.itemPropertyRequests;
 
-    // 需求 5：圆角矩形并入矩形，这里用「矩形 + 自动圆角」覆盖原来的圆角形态。
-    auto* propertyShape = new ShapeItem(ShapeType::Rectangle);
-    propertyShape->setAutoCorner(true);
+    // 需求 5：圆角矩形并入矩形，这里用「矩形 + 显式 px 圆角」覆盖原来的圆角形态。
+    auto* propertyShape = createShapeItem(ShapeType::Rectangle);
+    propertyShape->setCornerRadius(19.2);
     propertyShape->setStyle(QColor(QStringLiteral("#1D4ED8")), QColor(QStringLiteral("#BFDBFE")), 6.0);
     propertyShape->setFill(QColor(QStringLiteral("#BFDBFE")), FillStyle::GridHatch);
     propertyShape->setContentSize(QSizeF(180.0, 120.0));
@@ -116,11 +117,11 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
         QApplication::processEvents();
         ctx.check(qAbs(propertyShape->cornerRadius() - 40.0) < 0.01, QStringLiteral("圆角矩形属性窗可修改圆角"),
                   QString::number(propertyShape->cornerRadius()));
-        ctx.check(propertyShape->strokeStyle() == Qt::DashLine && qAbs(propertyShape->opacity() - 0.45) < 0.01,
+        ctx.check(propertyShape->strokeStyle() == Qt::DashLine && qAbs(propertyShape->itemOpacity() - 0.45) < 0.01,
                   QStringLiteral("属性窗修改可落到边框样式和透明度"),
                   QStringLiteral("style=%1 opacity=%2")
                       .arg(static_cast<int>(propertyShape->strokeStyle()))
-                      .arg(propertyShape->opacity()));
+                      .arg(propertyShape->itemOpacity()));
     }
 
     // 需求 24：除图元类型外，属性弹窗的修改要真正落到图元，并且一次提交只占一条撤销记录。
@@ -131,7 +132,7 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
         editScene.setMode(ToolMode::Edit);
         editScene.setUndoStack(&editUndo);
 
-        auto* firstShape = new ShapeItem(ShapeType::Rectangle);
+        auto* firstShape = createShapeItem(ShapeType::Rectangle);
         firstShape->setStyle(QColor(QStringLiteral("#1E293B")), QColor(QStringLiteral("#93C5FD")), 3.0);
         firstShape->setFill(QColor(QStringLiteral("#93C5FD")), FillStyle::Solid);
         firstShape->setContentSize(QSizeF(120.0, 80.0));
@@ -146,7 +147,7 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
 
         ctx.check(editScene.addLayerWithUndo(QStringLiteral("属性目标层")), QStringLiteral("创建属性编辑目标图层"));
         const int targetLayerId = editScene.activeLayerId();
-        auto* secondShape = new ShapeItem(ShapeType::Ellipse);
+        auto* secondShape = createShapeItem(ShapeType::Ellipse);
         secondShape->setStyle(QColor(QStringLiteral("#334155")), QColor(QStringLiteral("#FDE68A")), 2.0);
         secondShape->setContentSize(QSizeF(100.0, 100.0));
         secondShape->setPos(QPointF(240.0, 80.0));
@@ -154,7 +155,7 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
         ctx.check(secondShape->rawName() == QStringLiteral("椭圆 1"), QStringLiteral("不同图元类型各自从 1 编号"),
                   secondShape->rawName());
 
-        auto* thirdShape = new ShapeItem(ShapeType::Rectangle);
+        auto* thirdShape = createShapeItem(ShapeType::Rectangle);
         thirdShape->setContentSize(QSizeF(90.0, 60.0));
         thirdShape->setPos(QPointF(360.0, 200.0));
         editScene.addItemsWithUndo({thirdShape}, QStringLiteral("Add second rectangle"));
@@ -322,8 +323,7 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
                   QStringLiteral("曲线属性窗箭头修改可重做"));
 
         // 箭头对全部曲线子型开放：花括号同样提供两端箭头行。
-        auto* braceCurve = new CurveItem();
-        braceCurve->setCurveKind(CurveKind::Brace);
+        auto* braceCurve = new BraceItem();
         braceCurve->setLayerId(arrowScene.activeLayerId());
         braceCurve->setStrokePoints(QVector<QPointF>{QPointF(100, 200), QPointF(130, 240), QPointF(100, 300)},
                                     QColor(QStringLiteral("#111827")), 4.0);

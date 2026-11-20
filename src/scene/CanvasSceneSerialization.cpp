@@ -168,7 +168,7 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
     const QJsonObject imagesTable = root.value(QStringLiteral("images")).toObject();
     QList<CanvasItem*> parsedItems;
     for (const QJsonObject& itemJson : std::as_const(itemObjects)) {
-        const QString kind = itemJson.value(QStringLiteral("type")).toString();
+        const QString kind = itemJson.value(QStringLiteral("kind")).toString();
         if (kind == QStringLiteral("stroke")) {
             // 旧笔画图元不兼容新曲线：跳过，不因单个旧图元阻断整份画布。
             continue;
@@ -202,7 +202,7 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
         QPointF(canvas.value(QStringLiteral("x")).toDouble(0.0), canvas.value(QStringLiteral("y")).toDouble(0.0));
     m_canvasSize = QSizeF(width, height);
 
-    BackgroundState background;
+    CanvasBackground background;
     const QJsonObject backgroundJson = root.value(QStringLiteral("background")).toObject();
     const QString backgroundType = backgroundJson.value(QStringLiteral("type")).toString();
     if (backgroundType == QStringLiteral("color")) {
@@ -217,7 +217,7 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
             background.mode = backgroundModeFromString(backgroundJson.value(QStringLiteral("mode")).toString());
         }
     }
-    applyBackground(background);
+    setCanvasBackground(background);
 
     LayerStackState state;
     bool backgroundVisible = true;

@@ -408,65 +408,64 @@
         <translation>文件已存在，是否覆盖？
 %1</translation>
     </message></context>
+
 <context>
-    <name>ImageItem</name><message>
-        <location filename="../src/ImageItem.cpp" line="12"/>
-        <location filename="../src/ImageItem.cpp" line="17"/>
-        <source>Image</source>
-        <translation>图片</translation>
+    <name>PropertiesPanel</name><message>
+        <source>Choose fill image</source>
+        <translation>选择填充图片</translation>
     </message><message>
-        <location filename="../src/ImageItem.cpp" line="42"/>
-        <source>Missing image</source>
-        <translation>图片缺失</translation>
-    </message></context>
-<context>
-    <name>ItemDockPanel</name><message>
-        <source>Background image</source>
-        <translation>背景图片</translation>
+        <source>Change fill image</source>
+        <translation>更换填充图片</translation>
     </message><message>
-        <source>Replace the background image of the selected fillable items</source>
-        <translation>替换选中可填充图元的背景图片</translation>
+        <source>Choose an image to fill the selected items</source>
+        <translation>选择一张图片作为选中图元的填充</translation>
     </message><message>
-        <source>Replace background image</source>
-        <translation>替换背景图片</translation>
+        <source>Clear fill image</source>
+        <translation>清除填充图片</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="806"/>
+        <source>Replace fill image</source>
+        <translation>替换填充图片</translation>
+    </message><message>
+        <source>Replace canvas background image</source>
+        <translation>替换画布背景图片</translation>
+    </message><message>
+        <location filename="../src/PropertiesPanel.cpp" line="806"/>
         <source>Change triangle base</source>
         <translation>修改三角形底边</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="817"/>
-        <location filename="../src/ItemDockPanel.cpp" line="827"/>
+        <location filename="../src/PropertiesPanel.cpp" line="817"/>
+        <location filename="../src/PropertiesPanel.cpp" line="827"/>
         <source>Change triangle base angle</source>
         <translation>修改三角形底角</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="862"/>
+        <location filename="../src/PropertiesPanel.cpp" line="862"/>
         <source>Change line start arrow</source>
         <translation>修改直线起点箭头</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="892"/>
+        <location filename="../src/PropertiesPanel.cpp" line="892"/>
         <source>Change line end arrow</source>
         <translation>修改直线端点箭头</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="145"/>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="151"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="145"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="151"/>
         <source>Triangle base length</source>
         <translation>底边长度</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="166"/>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="172"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="166"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="172"/>
         <source>Triangle base angle A</source>
         <translation>底角 A</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="187"/>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="193"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="187"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="193"/>
         <source>Triangle base angle B</source>
         <translation>底角 B</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="236"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="236"/>
         <source>Start arrow</source>
         <translation>起点箭头</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="238"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="238"/>
         <source>End arrow</source>
         <translation>终点箭头</translation>
     </message><message>
@@ -476,28 +475,28 @@
         <source>Common colors</source>
         <translation>常用颜色</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelFillBorderCard.cpp" line="44"/>
+        <location filename="../src/PropertiesPanelFillBorderCard.cpp" line="44"/>
         <source>Fill style</source>
         <translation>填充样式</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelFillBorderCard.cpp" line="72"/>
+        <location filename="../src/PropertiesPanelFillBorderCard.cpp" line="72"/>
         <source>Border style</source>
         <translation>描线样式</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="46"/>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="53"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="46"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="53"/>
         <source>Opacity</source>
         <translation>不透明度</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="71"/>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="78"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="71"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="78"/>
         <source>Corner radius</source>
         <translation>圆角</translation>
     </message><message>
         <source>Custom shapes</source>
         <translation>自定义图形</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelColorsCard.cpp" line="71"/>
+        <location filename="../src/PropertiesPanelColorsCard.cpp" line="71"/>
         <source>Fill</source>
         <translation>填充</translation>
     </message><message>
@@ -507,19 +506,19 @@
         <source>Radius</source>
         <translation>半径</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelArrangeCard.cpp" line="43"/>
+        <location filename="../src/PropertiesPanelArrangeCard.cpp" line="43"/>
         <source>Layer -1</source>
         <translation>图层 -1</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelArrangeCard.cpp" line="41"/>
+        <location filename="../src/PropertiesPanelArrangeCard.cpp" line="41"/>
         <source>Layer +1</source>
         <translation>图层 +1</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="371"/>
+        <location filename="../src/PropertiesPanel.cpp" line="371"/>
         <source>No item selected</source>
         <translation>未选中图元</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="376"/>
+        <location filename="../src/PropertiesPanel.cpp" line="376"/>
         <source>%1 items selected</source>
         <translation>已选中 %1 个图元</translation>
     </message><message>
@@ -535,38 +534,38 @@
         <source>Change shape type</source>
         <translation>切换图形类型</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="37"/>
+        <location filename="../src/PropertiesPanel.cpp" line="37"/>
         <source>Selected item</source>
         <translation>编辑图元</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelArrangeCard.cpp" line="36"/>
+        <location filename="../src/PropertiesPanelArrangeCard.cpp" line="36"/>
         <location filename="../src/selftest/CustomShapeDockTests.cpp" line="339"/>
         <source>Layer and height</source>
         <translation>图层与高度</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelArrangeCard.cpp" line="47"/>
+        <location filename="../src/PropertiesPanelArrangeCard.cpp" line="47"/>
         <source>Height -1</source>
         <translation>高度 -1</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelArrangeCard.cpp" line="45"/>
+        <location filename="../src/PropertiesPanelArrangeCard.cpp" line="45"/>
         <location filename="../src/selftest/CustomShapeDockTests.cpp" line="338"/>
         <location filename="../src/selftest/CustomShapeDockTests.cpp" line="343"/>
         <source>Height +1</source>
         <translation>高度 +1</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="383"/>
+        <location filename="../src/PropertiesPanel.cpp" line="383"/>
         <source>%1 · layer %2 · height %3</source>
         <translation>%1 · 第 %2 层 · 高度 %3</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelColorsCard.cpp" line="98"/>
-        <location filename="../src/ItemDockPanelColorsCard.cpp" line="102"/>
+        <location filename="../src/PropertiesPanelColorsCard.cpp" line="98"/>
+        <location filename="../src/PropertiesPanelColorsCard.cpp" line="102"/>
         <location filename="../src/selftest/CustomShapeDockTests.cpp" line="336"/>
         <location filename="../src/selftest/CustomShapeDockTests.cpp" line="342"/>
         <source>Border color</source>
         <translation>描线颜色</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelColorsCard.cpp" line="98"/>
-        <location filename="../src/ItemDockPanelColorsCard.cpp" line="102"/>
+        <location filename="../src/PropertiesPanelColorsCard.cpp" line="98"/>
+        <location filename="../src/PropertiesPanelColorsCard.cpp" line="102"/>
         <source>Fill color</source>
         <translation>填充颜色</translation>
     </message><message>
@@ -585,30 +584,30 @@
         <source>Dash-dot</source>
         <translation>点划线</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelArrangeCard.cpp" line="37"/>
+        <location filename="../src/PropertiesPanelArrangeCard.cpp" line="37"/>
         <source>Priority: layer order first, then height within the same layer</source>
         <translation>优先级：先按图层顺序，同层再按层内高度</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="372"/>
+        <location filename="../src/PropertiesPanel.cpp" line="372"/>
         <source>Select an item on the canvas to edit its style here.</source>
         <translation>在画布上选中图元后，可在这里编辑它的样式。</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="377"/>
+        <location filename="../src/PropertiesPanel.cpp" line="377"/>
         <source>Changes apply to every selected shape.</source>
         <translation>修改会作用于所有选中的图形。</translation>
     </message><message>
         <source>Change shape border color</source>
         <translation>修改图形描线颜色</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="458"/>
+        <location filename="../src/PropertiesPanel.cpp" line="458"/>
         <source>Change shape fill color</source>
         <translation>修改图形填充颜色</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="472"/>
+        <location filename="../src/PropertiesPanel.cpp" line="472"/>
         <source>Change shape fill style</source>
         <translation>修改图形填充样式</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="498"/>
+        <location filename="../src/PropertiesPanel.cpp" line="498"/>
         <source>Change shape border style</source>
         <translation>修改图形描线样式</translation>
     </message><message>
@@ -618,54 +617,54 @@
         <source>Change shape opacity</source>
         <translation>修改图形不透明度</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="787"/>
+        <location filename="../src/PropertiesPanel.cpp" line="787"/>
         <source>Change rectangle corner radius</source>
         <translation>修改矩形圆角半径</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="793"/>
+        <location filename="../src/PropertiesPanel.cpp" line="793"/>
         <source>Change start angle</source>
         <translation>修改起始角度</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="900"/>
+        <location filename="../src/PropertiesPanel.cpp" line="900"/>
         <source>Moved %1 item(s) to another layer.</source>
         <translation>已把 %1 个图元移到其他图层。</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="901"/>
+        <location filename="../src/PropertiesPanel.cpp" line="901"/>
         <source>No layer to move to in that direction.</source>
         <translation>该方向没有可移动到的图层。</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="910"/>
+        <location filename="../src/PropertiesPanel.cpp" line="910"/>
         <source>Adjusted the height of %1 item(s).</source>
         <translation>已调整 %1 个图元的层内高度。</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="911"/>
+        <location filename="../src/PropertiesPanel.cpp" line="911"/>
         <source>The height did not change.</source>
         <translation>层内高度未变化。</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="116"/>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="123"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="116"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="123"/>
         <source>Sweep angle</source>
         <translation>扫过角度</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="94"/>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="100"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="94"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="100"/>
         <source>Start angle</source>
         <translation>起始角</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="145"/>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="150"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="145"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="150"/>
         <source>Sine cycles</source>
         <translation>正弦周期数</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="165"/>
-        <location filename="../src/ItemDockPanelValueCard.cpp" line="172"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="165"/>
+        <location filename="../src/PropertiesPanelValueCard.cpp" line="172"/>
         <source>Sine amplitude</source>
         <translation>正弦振幅</translation>
     </message><message>
         <source>Shape radius</source>
         <translation>图形半径</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="799"/>
+        <location filename="../src/PropertiesPanel.cpp" line="799"/>
         <source>Change sector angle</source>
         <translation>修改扇形角度</translation>
     </message><message>
@@ -678,104 +677,113 @@
         <source>Merge shapes</source>
         <translation>合并图元</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelColorsCard.cpp" line="71"/>
+        <location filename="../src/PropertiesPanelColorsCard.cpp" line="71"/>
         <source>Border</source>
         <translation>描线</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelFillBorderCard.cpp" line="100"/>
-        <location filename="../src/ItemDockPanelFillBorderCard.cpp" line="107"/>
+        <location filename="../src/PropertiesPanelFillBorderCard.cpp" line="100"/>
+        <location filename="../src/PropertiesPanelFillBorderCard.cpp" line="107"/>
         <location filename="../src/selftest/CustomShapeDockTests.cpp" line="337"/>
         <source>Border width</source>
         <translation>描线宽度</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelContentCard.cpp" line="65"/>
-        <location filename="../src/ItemDockPanelContentCard.cpp" line="69"/>
+        <location filename="../src/PropertiesPanelContentCard.cpp" line="65"/>
+        <location filename="../src/PropertiesPanelContentCard.cpp" line="69"/>
         <source>Text content</source>
         <translation>文字内容</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelContentCard.cpp" line="70"/>
+        <location filename="../src/PropertiesPanelContentCard.cpp" line="70"/>
         <source>Edit the selected text</source>
         <translation>编辑选中的文字</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelContentCard.cpp" line="85"/>
-        <location filename="../src/ItemDockPanelContentCard.cpp" line="89"/>
+        <location filename="../src/PropertiesPanelContentCard.cpp" line="85"/>
+        <location filename="../src/PropertiesPanelContentCard.cpp" line="89"/>
         <source>Font</source>
         <translation>字体</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelContentCard.cpp" line="96"/>
+        <location filename="../src/PropertiesPanelContentCard.cpp" line="96"/>
         <source>Font size</source>
         <translation>字号</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelContentCard.cpp" line="104"/>
+        <location filename="../src/PropertiesPanelContentCard.cpp" line="104"/>
         <source>Bold</source>
         <translation>粗体</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelContentCard.cpp" line="114"/>
+        <location filename="../src/PropertiesPanelContentCard.cpp" line="114"/>
         <source>Italic</source>
         <translation>斜体</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelContentCard.cpp" line="169"/>
-        <location filename="../src/ItemDockPanelContentCard.cpp" line="192"/>
-        <location filename="../src/ItemDockPanelContentCard.cpp" line="194"/>
+        <location filename="../src/PropertiesPanelContentCard.cpp" line="169"/>
+        <location filename="../src/PropertiesPanelContentCard.cpp" line="192"/>
+        <location filename="../src/PropertiesPanelContentCard.cpp" line="194"/>
         <source>Text color</source>
         <translation>文字颜色</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelContentCard.cpp" line="134"/>
-        <location filename="../src/ItemDockPanelContentCard.cpp" line="138"/>
-        <location filename="../src/ItemDockPanelContentCard.cpp" line="139"/>
+        <location filename="../src/PropertiesPanelContentCard.cpp" line="134"/>
+        <location filename="../src/PropertiesPanelContentCard.cpp" line="138"/>
+        <location filename="../src/PropertiesPanelContentCard.cpp" line="139"/>
         <source>Image name</source>
         <translation>图片名称</translation>
     </message><message>
-        <location filename="../src/ItemDockPanelContentCard.cpp" line="152"/>
+        <location filename="../src/PropertiesPanelContentCard.cpp" line="152"/>
         <source>Replace image…</source>
         <translation>替换图片…</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="448"/>
+        <location filename="../src/PropertiesPanel.cpp" line="448"/>
         <source>Change border color</source>
         <translation>修改描线颜色</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="539"/>
+        <location filename="../src/PropertiesPanel.cpp" line="539"/>
         <source>Change border width</source>
         <translation>修改描线宽度</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="560"/>
+        <location filename="../src/PropertiesPanel.cpp" line="560"/>
         <source>Change opacity</source>
         <translation>修改不透明度</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="659"/>
+        <location filename="../src/PropertiesPanel.cpp" line="659"/>
         <source>Change text content</source>
         <translation>修改文字内容</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="671"/>
+        <location filename="../src/PropertiesPanel.cpp" line="671"/>
         <source>Change text font</source>
         <translation>修改文字字体</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="686"/>
+        <location filename="../src/PropertiesPanel.cpp" line="686"/>
         <source>Change text color</source>
         <translation>修改文字颜色</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="728"/>
-        <location filename="../src/ItemDockPanel.cpp" line="731"/>
+        <location filename="../src/PropertiesPanel.cpp" line="728"/>
+        <location filename="../src/PropertiesPanel.cpp" line="731"/>
         <source>Change image name</source>
         <translation>修改图片名称</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="761"/>
-        <location filename="../src/ItemDockPanel.cpp" line="772"/>
+        <location filename="../src/PropertiesPanel.cpp" line="761"/>
+        <location filename="../src/PropertiesPanel.cpp" line="772"/>
         <source>Replace image</source>
         <translation>替换图片</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="772"/>
+        <location filename="../src/PropertiesPanel.cpp" line="772"/>
         <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;All files (*)</source>
         <translation>图片 (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;所有文件 (*)</translation>
     </message><message>
-        <location filename="../src/ItemDockPanel.cpp" line="778"/>
+        <location filename="../src/PropertiesPanel.cpp" line="778"/>
         <source>Unable to load the selected image.</source>
         <translation>无法加载所选图片。</translation>
     </message>    <message>
         <source>Opacity (100% = opaque)</source>
         <translation>不透明度（100% = 完全不透明）</translation>
     </message>
-</context>
+<message>
+        <source>Change arc sweep angle</source>
+        <translation>修改弧线扫过角</translation>
+    </message><message>
+        <source>Change sine cycles</source>
+        <translation>修改正弦周期数</translation>
+    </message><message>
+        <source>Change sine amplitude</source>
+        <translation>修改正弦振幅</translation>
+    </message></context>
 <context>
     <name>ItemPropertiesDialog</name><message>
         <location filename="../src/ItemPropertiesDialogStyleBlock.cpp" line="185"/>
@@ -909,19 +917,6 @@
         <source>Border width</source>
         <translation>描线宽度</translation>
     </message><message>
-        <location filename="../src/ItemPropertiesDialogImageBlock.cpp" line="20"/>
-        <location filename="../src/ItemPropertiesDialogImageBlock.cpp" line="34"/>
-        <source>Image</source>
-        <translation>图片</translation>
-    </message><message>
-        <location filename="../src/ItemPropertiesDialogImageBlock.cpp" line="31"/>
-        <source>Image name</source>
-        <translation>图片名称</translation>
-    </message><message>
-        <location filename="../src/ItemPropertiesDialogImageBlock.cpp" line="23"/>
-        <source>Replace image…</source>
-        <translation>替换图片…</translation>
-    </message><message>
         <location filename="../src/ItemPropertiesDialogTextBlock.cpp" line="41"/>
         <source>Text content</source>
         <translation>文字内容</translation>
@@ -969,21 +964,6 @@
         <location filename="../src/ItemPropertiesDialogTextBlock.cpp" line="63"/>
         <source>Choose font</source>
         <translation>选择字体</translation>
-    </message><message>
-        <location filename="../src/ItemPropertiesDialog.cpp" line="274"/>
-        <location filename="../src/ItemPropertiesDialog.cpp" line="282"/>
-        <source>Replace image</source>
-        <translation>替换图片</translation>
-    </message><message>
-        <location filename="../src/ItemPropertiesDialog.cpp" line="275"/>
-        <source>Image files (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;All files (*.*)</source>
-        <translation>图片文件 (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;所有文件 (*.*)</translation>
-    </message><message>
-        <location filename="../src/ItemPropertiesDialog.cpp" line="282"/>
-        <source>Could not read the image:
-%1</source>
-        <translation>无法读取图片：
-%1</translation>
     </message><message>
         <location filename="../src/ItemPropertiesDialog.cpp" line="564"/>
         <source>Edit item properties</source>
@@ -1807,8 +1787,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <translation>以 100% 显示 (Ctrl+1)</translation>
     </message><message>
         <location filename="../src/UiActionFactory.cpp" line="252"/>
-        <source>Replace background image…</source>
-        <translation>替换背景图片…</translation>
+        <source>Replace canvas background image…</source>
+        <translation>替换画布背景图片…</translation>
     </message><message>
         <location filename="../src/UiActionFactory.cpp" line="253"/>
         <source>Choose an image as the canvas background</source>
@@ -1824,8 +1804,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message><message>
         <location filename="../src/BackgroundController.cpp" line="98"/>
         <location filename="../src/UiActionFactory.cpp" line="256"/>
-        <source>Clear background</source>
-        <translation>清除背景</translation>
+        <source>Clear canvas background</source>
+        <translation>清除画布背景</translation>
     </message><message>
         <location filename="../src/UiActionFactory.cpp" line="186"/>
         <source>Show the selected item&apos;s properties</source>
@@ -2495,12 +2475,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message><message>
         <location filename="../src/BackgroundController.cpp" line="49"/>
         <location filename="../src/BackgroundController.cpp" line="70"/>
-        <source>Replace background image</source>
-        <translation>替换背景图片</translation>
-    </message><message>
-        <location filename="../src/BackgroundController.cpp" line="59"/>
-        <source>Replace background</source>
-        <translation>替换背景</translation>
+        <source>Replace canvas background image</source>
+        <translation>替换画布背景图片</translation>
     </message><message>
         <location filename="../src/BackgroundController.cpp" line="74"/>
         <source>Background replaced</source>
@@ -2895,10 +2871,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <translation>选中图元</translation>
     </message><message>
         <source>Selected item panel</source>
-        <translation>编辑图元卡</translation>
+        <translation>属性编辑面板</translation>
     </message><message>
         <source>Show or hide the selected item panel (it appears automatically when an item is selected)</source>
-        <translation>显示或隐藏编辑图元卡（选中图元时自动出现）</translation>
+        <translation>显示或隐藏属性编辑面板（选中图元时自动出现）</translation>
     </message><message>
         <source>Don&amp;apos;t save</source>
         <translation>不保存</translation>
@@ -2950,19 +2926,16 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <translation>曲线</translation>
     </message><message>
         <location filename="../src/DockPanelController.cpp" line="43"/>
-        <source>Edit item</source>
-        <translation>编辑图元</translation>
-    </message><message>
-        <location filename="../src/UiMenuBuilder.cpp" line="175"/>
-        <source>Edit item panel</source>
-        <translation>编辑图元卡</translation>
+        <location filename="../src/UiMenuBuilder.cpp" line="201"/>
+        <source>Properties Editing panel</source>
+        <translation>属性编辑面板</translation>
     </message><message>
         <location filename="../src/UiMenuBuilder.cpp" line="177"/>
-        <source>Show or hide the edit item panel (it stays visible while docked and follows the item selection while floating)</source>
-        <translation>显示或隐藏编辑图元卡（停靠时始终显示，悬浮时随图元选中状态显隐）</translation>
+        <source>Show or hide the Properties Editing panel (it stays visible while docked and follows the item selection while floating)</source>
+        <translation>显示或隐藏属性编辑面板（停靠时始终显示，悬浮时随图元选中状态显隐）</translation>
     </message><message>
         <source>Show or hide the edit item panel (it appears automatically when an item is selected)</source>
-        <translation>显示或隐藏编辑图元卡（选中图元时自动出现）</translation>
+        <translation>显示或隐藏属性编辑面板（选中图元时自动出现）</translation>
     </message><message>
         <source>Merge the selected shapes</source>
         <translation>合并选中的图形</translation>
@@ -3062,7 +3035,31 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Change border style</source>
         <translation>修改描线样式</translation>
     </message>
-</context>
+<message>
+        <source>Insert a line (uses the current brush color)</source>
+        <translation>插入直线（使用当前画笔颜色）</translation>
+    </message><message>
+        <source>Insert a left brace (draggable and resizable)</source>
+        <translation>插入左花括号（可拖动、可缩放）</translation>
+    </message><message>
+        <source>Insert a right brace (left brace rotated 180°)</source>
+        <translation>插入右花括号（左花括号旋转 180°）</translation>
+    </message><message>
+        <source>Insert an arc (start angle and sweep are editable in the Properties Editing panel)</source>
+        <translation>插入弧线（起始角与扫过角可在属性编辑面板修改）</translation>
+    </message><message>
+        <source>Insert a sine wave (cycles and amplitude are editable in the Properties Editing panel)</source>
+        <translation>插入正弦波（周期数与振幅可在属性编辑面板修改）</translation>
+    </message><message>
+        <source>Inserted %1 as a brace; drag to move, drag handles to resize</source>
+        <translation>已插入%1作为花括号，拖动可移动、拖手柄可缩放</translation>
+    </message><message>
+        <source>Straight Line</source>
+        <translation>直线</translation>
+    </message><message>
+        <source>Line Arrow</source>
+        <translation>直线箭头</translation>
+    </message></context>
 <context>
     <name>QCoreApplication</name><message>
         <location filename="../src/CanvasTypes.h" line="75"/>
@@ -3746,8 +3743,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Choose the export file path</source>
         <translation>选择导出文件路径</translation>
     </message><message>
-        <source>Clear background</source>
-        <translation>清除背景</translation>
+        <source>Clear canvas background</source>
+        <translation>清除画布背景</translation>
     </message><message>
         <source>Close</source>
         <translation>关闭</translation>
@@ -4224,10 +4221,16 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <translation>左大括号</translation>
     </message><message>
         <source>Line</source>
+        <translation>线条</translation>
+    </message><message>
+        <source>Straight Line</source>
         <translation>直线</translation>
     </message><message>
-        <source>Line arrow</source>
+        <source>Line Arrow</source>
         <translation>直线箭头</translation>
+    </message><message>
+        <source>Brace</source>
+        <translation>花括号</translation>
     </message><message>
         <source>Lock</source>
         <translation>锁定</translation>
@@ -4439,14 +4442,11 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Rendering the canvas failed: nothing to export.</source>
         <translation>渲染画布失败：没有可导出的内容。</translation>
     </message><message>
-        <source>Replace background</source>
-        <translation>替换背景</translation>
+        <source>Replace canvas background image</source>
+        <translation>替换画布背景图片</translation>
     </message><message>
-        <source>Replace background image</source>
-        <translation>替换背景图片</translation>
-    </message><message>
-        <source>Replace background image…</source>
-        <translation>替换背景图片…</translation>
+        <source>Replace canvas background image…</source>
+        <translation>替换画布背景图片…</translation>
     </message><message>
         <source>Replace image</source>
         <translation>替换图片</translation>
@@ -5028,10 +5028,10 @@ Use the checkbox to show or hide it.</source>
         <translation>选中图元</translation>
     </message><message>
         <source>Selected item panel</source>
-        <translation>编辑图元卡</translation>
+        <translation>属性编辑面板</translation>
     </message><message>
         <source>Show or hide the selected item panel (it appears automatically when an item is selected)</source>
-        <translation>显示或隐藏编辑图元卡（选中图元时自动出现）</translation>
+        <translation>显示或隐藏属性编辑面板（选中图元时自动出现）</translation>
     </message><message>
         <source>Don&amp;apos;t save</source>
         <translation>不保存</translation>
@@ -5068,14 +5068,8 @@ Use the checkbox to show or hide it.</source>
         <source>Applied &amp;quot;%2&amp;quot; to %1 shape(s)</source>
         <translation>已对 %1 个图形应用「%2」</translation>
     </message><message>
-        <source>Edit item</source>
-        <translation>编辑图元</translation>
-    </message><message>
-        <source>Edit item panel</source>
-        <translation>编辑图元卡</translation>
-    </message><message>
-        <source>Show or hide the edit item panel (it appears automatically when an item is selected)</source>
-        <translation>显示或隐藏编辑图元卡（选中图元时自动出现）</translation>
+        <source>Show or hide the Properties Editing panel (it appears automatically when an item is selected)</source>
+        <translation>显示或隐藏属性编辑面板（选中图元时自动出现）</translation>
     </message><message>
         <source>Merge the selected shapes</source>
         <translation>合并选中的图形</translation>

@@ -8,7 +8,6 @@
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
-#include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
 #include "LineArtConverter.h"
@@ -16,6 +15,7 @@
 #include "LineArtPresets.h"
 #include "MainWindow.h"
 #include "PolygonItem.h"
+#include "PropertiesPanel.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
@@ -88,7 +88,7 @@ void selftest::runStackingPriorityTests(Context& ctx)
     priorityScene.applyCanvasSize(QSizeF(600, 400));
 
     auto addPriorityRect = [&priorityScene](const QRectF& rect, const QColor& color) {
-        auto* shape = new ShapeItem(ShapeType::Rectangle);
+        auto* shape = createShapeItem(ShapeType::Rectangle);
         shape->setPos(rect.topLeft());
         shape->setContentSize(rect.size());
         shape->setStyle(color, color, 3.0);
@@ -157,7 +157,7 @@ void selftest::runStackingPriorityTests(Context& ctx)
     CanvasScene partialScene;
     partialScene.applyCanvasSize(QSizeF(500, 300));
     auto addPartialRect = [&partialScene](const QRectF& rect, const QColor& color) {
-        auto* shape = new ShapeItem(ShapeType::Rectangle);
+        auto* shape = createShapeItem(ShapeType::Rectangle);
         shape->setPos(rect.topLeft());
         shape->setContentSize(rect.size());
         shape->setStyle(color, color, 3.0);

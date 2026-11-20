@@ -3,7 +3,7 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
-#include "CurveItem.h"
+#include "LineItemAbstract.h"
 #include "LineSplitOps.h"
 #include "PathRegions.h"
 #include "PolygonItem.h"
@@ -44,16 +44,17 @@ struct Participant {
 // 线条类图元不参与合并：直线（含直线箭头）、括号、弧、曲线，以及纯描线多边形。
 bool isLineClassItem(CanvasItem* item)
 {
-    if (dynamic_cast<CurveItem*>(item)) {
+    if (dynamic_cast<LineItemAbstract*>(item)) {
         return true;
     }
     // 零面积图元已全部并入曲线族，普通形状类恒有填充面积；多边形要看图层。
     if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && !shape->isPolygon()) {
         return false;
     }
-    if (auto* composite = dynamic_cast<PolygonItem*>(item)) {
-        for (const PolygonItem::Layer& layer : composite->layers()) {
-            if (layer.role == PolygonItem::LayerRole::FilledArea && !layer.path.isEmpty()) {
+    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->isPolygon()) {
+        for (int index = 0; index < composite->shapeLayerCount(); ++index) {
+            const ShapeLayer layer = composite->shapeLayer(index);
+            if (layer.role == ShapeLayerRole::FILL_AREA && !layer.path.isEmpty()) {
                 return false;
             }
         }
@@ -70,15 +71,16 @@ bool hasFillSpace(CanvasItem* item)
     if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && !shape->isPolygon()) {
         return true;
     }
-    if (auto* composite = dynamic_cast<PolygonItem*>(item)) {
-        for (const PolygonItem::Layer& layer : composite->layers()) {
-            if (layer.role == PolygonItem::LayerRole::FilledArea && !layer.path.isEmpty()) {
+    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->isPolygon()) {
+        for (int index = 0; index < composite->shapeLayerCount(); ++index) {
+            const ShapeLayer layer = composite->shapeLayer(index);
+            if (layer.role == ShapeLayerRole::FILL_AREA && !layer.path.isEmpty()) {
                 return true;
             }
         }
         return false;
     }
-    return !dynamic_cast<CurveItem*>(item) && !dynamic_cast<TextItem*>(item);
+    return !dynamic_cast<LineItemAbstract*>(item) && !item->hasTextFacet();
 }
 
 // 合并前的叠放顺序（决定合并后各层的绘制顺序，保持遮挡关系）：
@@ -149,28 +151,29 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
         // 布尔运算使用图元的几何轮廓，而不是“可见涂色区域”：无填充、纹理填充的
         // 闭合图形也必须按完整轮廓参与联合 / 相交 / 相减，否则菱形与五角星这类
         // 图形联合后会只剩描线带，内部被错误地留空。
-        if (auto* text = dynamic_cast<TextItem*>(vectorMember)) {
-            memberPath = text->mapToScene(text->paintedShape());
+        if (vectorMember->hasTextFacet()) {
+            memberPath = vectorMember->mapToScene(vectorMember->paintedShape());
             textPart = memberPath;
-            participant.textColor = text->textColor();
-        } else if (auto* curve = dynamic_cast<CurveItem*>(vectorMember)) {
+            participant.textColor = vectorMember->textColor();
+        } else if (auto* curve = dynamic_cast<LineItemAbstract*>(vectorMember)) {
             Q_UNUSED(curve)
             memberPath = vectorMember->mapToScene(vectorMember->paintedShape());
             strokePart = memberPath;
         } else if (auto* shape = dynamic_cast<ShapeItem*>(vectorMember); shape && !shape->isPolygon()) {
             memberPath = shape->mapToScene(shape->outlineShape());
             fillPart = memberPath;
-        } else if (auto* composite = dynamic_cast<PolygonItem*>(vectorMember)) {
-            for (const PolygonItem::Layer& layer : composite->layers()) {
+        } else if (auto* composite = dynamic_cast<ShapeItem*>(vectorMember); composite && composite->isPolygon()) {
+            for (int index = 0; index < composite->shapeLayerCount(); ++index) {
+                const ShapeLayer layer = composite->shapeLayer(index);
                 if (layer.path.isEmpty()) {
                     continue;
                 }
-                const QPainterPath part = composite->mapToScene(composite->mapLayerPath(layer.path));
-                if (layer.role == PolygonItem::LayerRole::FilledArea) {
+                const QPainterPath part = composite->mapToScene(composite->mapShapeLayerPath(layer));
+                if (layer.role == ShapeLayerRole::FILL_AREA) {
                     fillPart = fillPart.isEmpty() ? part : fillPart.united(part);
-                } else if (layer.role == PolygonItem::LayerRole::StrokeBand) {
+                } else if (layer.role == ShapeLayerRole::STROKE_BAND) {
                     strokePart = strokePart.isEmpty() ? part : strokePart.united(part);
-                } else if (layer.role == PolygonItem::LayerRole::Text) {
+                } else if (layer.role == ShapeLayerRole::TEXT) {
                     textPart = textPart.isEmpty() ? part : textPart.united(part);
                     participant.textColor = layer.fill;
                 }
@@ -214,23 +217,23 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
         participant.fillStyle = shape->fillStyle();
         participant.strokeStyle = shape->strokeStyle();
         participant.filled = shape->fillStyle() != FillStyle::None;
-    } else if (auto* composite = dynamic_cast<PolygonItem*>(styleItem)) {
+    } else if (auto* composite = dynamic_cast<ShapeItem*>(styleItem); composite && composite->isPolygon()) {
         participant.fill = composite->fillColor();
         participant.stroke = composite->strokeColor();
         participant.strokeWidth = composite->strokeWidth();
         participant.fillStyle = composite->fillStyle();
         participant.strokeStyle = composite->strokeStyle();
         participant.filled = true;
-    } else if (auto* stroke = dynamic_cast<CurveItem*>(styleItem)) {
+    } else if (auto* stroke = dynamic_cast<LineItemAbstract*>(styleItem)) {
         participant.fill = stroke->strokeColor();
         participant.stroke = stroke->strokeColor();
         participant.strokeWidth = stroke->strokeWidth();
-        participant.strokeStyle = stroke->strokeStyle();
+        participant.strokeStyle = stroke->strokePattern();
         participant.filled = false;
-    } else if (auto* text = dynamic_cast<TextItem*>(styleItem)) {
+    } else if (styleItem->hasTextFacet()) {
         // 文字参照曲线：填充色等于字形描线色、纯色、面积按 0 参与。
-        participant.fill = text->textColor();
-        participant.stroke = text->textColor();
+        participant.fill = styleItem->textColor();
+        participant.stroke = styleItem->textColor();
         participant.strokeWidth = 1.0;
         participant.fillStyle = FillStyle::Solid;
         participant.filled = false;

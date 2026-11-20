@@ -70,7 +70,6 @@ QPainterPath PolygonItem::pathFromJson(const QJsonArray& elements)
 QJsonObject PolygonItem::toJson() const
 {
     QJsonObject json = baseJson();
-    json.insert(QStringLiteral("kind"), kind());
     QJsonArray layers;
     for (const Layer& layer : m_layers) {
         QJsonObject entry;

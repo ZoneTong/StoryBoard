@@ -1,8 +1,8 @@
 #include "ItemPropertiesDialogTextBlock.h"
 
+#include "CanvasItem.h"
 #include "ItemPropertiesDialog.h"
 #include "ItemPropertiesDialogFields.h"
-#include "TextItem.h"
 
 #include <QFontDialog>
 #include <QFormLayout>
@@ -12,21 +12,20 @@
 
 ItemPropertiesDialogTextBlock::ItemPropertiesDialogTextBlock(CanvasItem* item, QWidget* parent) : QWidget(parent)
 {
-    auto* text = dynamic_cast<TextItem*>(item);
-    if (!text) {
+    if (!item || !item->hasTextFacet()) {
         return;
     }
 
-    m_textFont = text->textFont();
+    m_textFont = item->textFont();
 
     // 需求 39：文字正文也是可编辑属性，直接在属性窗里改，不必先离开再开文字对话框。
     m_textEdit = new QPlainTextEdit(this);
     m_textEdit->setObjectName(QStringLiteral("ItemPropertiesTextValue"));
-    m_textEdit->setPlainText(text->text());
+    m_textEdit->setPlainText(item->textContent());
     m_textEdit->setMinimumHeight(88);
 
     m_textColorButton =
-        ItemPropertiesFields::makeColorField(this, text->textColor(), QStringLiteral("ItemPropertiesTextColorValue"));
+        ItemPropertiesFields::makeColorField(this, item->textColor(), QStringLiteral("ItemPropertiesTextColorValue"));
 
     m_fontButton = new QPushButton(this);
     m_fontButton->setObjectName(QStringLiteral("ItemPropertiesFontValue"));

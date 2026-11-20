@@ -15,13 +15,13 @@ enum class BackgroundType { None = 0, Color = 1, Image = 2 };
 
 enum class BackgroundMode { Stretch = 0, Fit = 1, Tile = 2 };
 
-struct BackgroundState {
+struct CanvasBackground {
     BackgroundType type = BackgroundType::None;
     QColor color = QColor(255, 255, 255);
     QPixmap image;
     BackgroundMode mode = BackgroundMode::Stretch;
 
-    bool operator==(const BackgroundState& other) const
+    bool operator==(const CanvasBackground& other) const
     {
         if (type != other.type || color != other.color || mode != other.mode) {
             return false;
@@ -39,7 +39,7 @@ struct BackgroundState {
         return image.toImage() == other.image.toImage();
     }
 
-    bool operator!=(const BackgroundState& other) const { return !(*this == other); }
+    bool operator!=(const CanvasBackground& other) const { return !(*this == other); }
 };
 
 struct CanvasLayer {
