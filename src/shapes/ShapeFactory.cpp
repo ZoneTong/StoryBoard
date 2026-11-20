@@ -4,7 +4,6 @@
 #include "shapes/CalloutItem.h"
 #include "shapes/CubeItem.h"
 #include "shapes/CylinderItem.h"
-#include "shapes/DiamondItem.h"
 #include "shapes/DoubleArrowItem.h"
 #include "shapes/EllipseItem.h"
 #include "shapes/FlagWaveItem.h"
@@ -25,8 +24,6 @@ ShapeItem* createShapeItem(ShapeType type)
         return new EllipseItem();
     case ShapeType::Triangle:
         return new TriangleItem();
-    case ShapeType::Diamond:
-        return new DiamondItem();
     case ShapeType::Star:
         return new StarItem();
     case ShapeType::Arrow:

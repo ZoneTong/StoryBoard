@@ -4,11 +4,10 @@ QList<ShapeType> ShapeMeta::allTypes()
 {
     // 需求 7：菜单与工具栏「常见图形」共用这一份常用顺序表（唯一顺序源）。
     // 需求 9：平行四边形紧跟菱形，方便和立方体三个面归在一处认图。
-    return {ShapeType::Rectangle, ShapeType::Ellipse,  ShapeType::Arrow,    ShapeType::DoubleArrow,
-            ShapeType::Triangle,  ShapeType::Callout,  ShapeType::Diamond,  ShapeType::Parallelogram,
-            ShapeType::Sector,    ShapeType::Cube,     ShapeType::Cylinder, ShapeType::Star4,
-            ShapeType::Star,      ShapeType::Hexagram, ShapeType::Heart,    ShapeType::FlagWave,
-            ShapeType::Scroll};
+    return {ShapeType::Rectangle, ShapeType::Ellipse,  ShapeType::Arrow,         ShapeType::DoubleArrow,
+            ShapeType::Triangle,  ShapeType::Callout,  ShapeType::Parallelogram, ShapeType::Sector,
+            ShapeType::Cube,      ShapeType::Cylinder, ShapeType::Star4,         ShapeType::Star,
+            ShapeType::Hexagram,  ShapeType::Heart,    ShapeType::FlagWave,      ShapeType::Scroll};
 }
 
 QString ShapeMeta::typeToString(ShapeType type)
@@ -20,8 +19,6 @@ QString ShapeMeta::typeToString(ShapeType type)
         return QStringLiteral("ellipse");
     case ShapeType::Triangle:
         return QStringLiteral("triangle");
-    case ShapeType::Diamond:
-        return QStringLiteral("diamond");
     case ShapeType::Star:
         return QStringLiteral("star");
     case ShapeType::Arrow:
@@ -72,7 +69,8 @@ ShapeType ShapeMeta::typeFromString(const QString& value)
         return ShapeType::Triangle;
     }
     if (normalized == QStringLiteral("diamond") || normalized == QStringLiteral("rhombus")) {
-        return ShapeType::Diamond;
+        // 菱形不再是类型：旧文件 / 别名统一落成平行四边形。
+        return ShapeType::Parallelogram;
     }
     if (normalized == QStringLiteral("star")) {
         return ShapeType::Star;
@@ -133,7 +131,6 @@ bool ShapeMeta::isFilled(ShapeType type)
     case ShapeType::Rectangle:
     case ShapeType::Ellipse:
     case ShapeType::Triangle:
-    case ShapeType::Diamond:
     case ShapeType::Star:
     case ShapeType::Arrow:
     case ShapeType::DoubleArrow:

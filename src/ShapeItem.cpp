@@ -65,8 +65,6 @@ QString shapeTypeName(ShapeType type)
         return ShapeItem::tr("Ellipse");
     case ShapeType::Triangle:
         return ShapeItem::tr("Triangle");
-    case ShapeType::Diamond:
-        return ShapeItem::tr("Diamond");
     case ShapeType::Star:
         return ShapeItem::tr("Star");
     case ShapeType::Arrow:
@@ -230,6 +228,15 @@ QIcon makeShapePresetIcon(const QString& preset, const QColor& color, int logica
         painter.drawLine(QPointF(box.left(), y), QPointF(box.right(), y));
         painter.drawLine(QPointF(box.right() - 4.5, y - 4.0), QPointF(box.right(), y));
         painter.drawLine(QPointF(box.right() - 4.5, y + 4.0), QPointF(box.right(), y));
+    } else if (preset == QStringLiteral("diamond")) {
+        // 菱形预置：平行四边形 90° + 旋转 45°，外接对角线撑满图标框。
+        QPainterPath path;
+        path.moveTo(box.center().x(), box.top());
+        path.lineTo(box.right(), box.center().y());
+        path.lineTo(box.center().x(), box.bottom());
+        path.lineTo(box.left(), box.center().y());
+        path.closeSubpath();
+        painter.drawPath(path);
     }
     painter.end();
 

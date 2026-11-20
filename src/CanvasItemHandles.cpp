@@ -108,7 +108,7 @@ QPainterPath CanvasItemHandles::selectionShape() const
     // Selection handles are centred on the content corners, so half of every
     // handle lies outside the item geometry. Drawing them without adding them
     // to shape() leaves the visible handle unclickable; for outlines that never
-    // reach the corner (ellipse, triangle, diamond, star) the handle could not
+    // reach the corner (ellipse, triangle, parallelogram, star) the handle could not
     // be grabbed at all.
     for (int handle = CanvasItem::TopLeft; handle <= CanvasItem::Rotation; ++handle) {
         if (handle == CanvasItem::Top && usesApexHandle()) {

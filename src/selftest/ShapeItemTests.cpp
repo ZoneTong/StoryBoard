@@ -104,8 +104,8 @@ void selftest::runShapeItemTests(Context& ctx)
     shapeScene.setShowGrid(false);
 
     const QList<ShapeType> shapeTypes = allShapeTypes();
-    // 需求 9：常见图形 19 → 20（新增平行四边形）。
-    ctx.check(shapeTypes.size() == 17, QStringLiteral("提供 17 种有面积图形（直线/弧线/正弦已并入曲线族）"),
+    // 菱形不再是独立类型，只剩平行四边形预置。
+    ctx.check(shapeTypes.size() == 16, QStringLiteral("提供 16 种有面积图形（直线/弧线/正弦已并入曲线族）"),
               QStringLiteral("count=%1").arg(shapeTypes.size()));
     // 需求 9：平行四边形默认 60° 内角、内容尺寸 110.85×64，角度钳在 15–165°。
     {
@@ -390,7 +390,7 @@ void selftest::runShapeItemTests(Context& ctx)
         QSizeF size(150, 90);
         if (type == ShapeType::Arrow || type == ShapeType::DoubleArrow) {
             size = QSizeF(180, 80);
-        } else if (type == ShapeType::Star || type == ShapeType::Triangle || type == ShapeType::Diamond) {
+        } else if (type == ShapeType::Star || type == ShapeType::Triangle) {
             size = QSizeF(120, 110);
         }
 

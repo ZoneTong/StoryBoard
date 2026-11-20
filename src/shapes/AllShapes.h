@@ -5,7 +5,6 @@
 #include "shapes/CalloutItem.h"
 #include "shapes/CubeItem.h"
 #include "shapes/CylinderItem.h"
-#include "shapes/DiamondItem.h"
 #include "shapes/DoubleArrowItem.h"
 #include "shapes/EllipseItem.h"
 #include "shapes/FlagWaveItem.h"

@@ -14,7 +14,6 @@ enum class ShapeType {
     Rectangle = 0,
     Ellipse,
     Triangle,
-    Diamond,
     Star,
     Arrow,
     DoubleArrow,

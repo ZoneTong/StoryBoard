@@ -401,11 +401,11 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                 QStringLiteral("ok=%1 pieces=%2 items=%3").arg(ok ? 1 : 0).arg(pieces).arg(scene.canvasItemCount()));
         }
 
-        // 零面积描线不作为挖除与分块边界：直线横穿菱形后，组合 / 剪除 / 拆分
-        // 都不能在菱形上留细缝，交集条带按线宽带渲染而不是套描线的面积层。
+        // 零面积描线不作为挖除与分块边界：直线横穿平行四边形后，组合 / 剪除 / 拆分
+        // 都不能在平行四边形上留细缝，交集条带按线宽带渲染而不是套描线的面积层。
         {
             // 线条类图元（直线 / 曲线 / 括号 / 弧 / 纯描线多边形）不参与合并：
-            // 只选中一条直线与一个菱形时，参与者只有菱形一个，合并直接失败，
+            // 只选中一条直线与一个平行四边形时，参与者只有平行四边形一个，合并直接失败，
             // 两个图元都保持原样留在画布上。
             struct LineSkip {
                 bool applied = false;
@@ -425,7 +425,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                 background.type = BackgroundType::Color;
                 background.color = QColor(Qt::white);
                 scene.setCanvasBackground(background);
-                auto* diamond = createShapeItem(ShapeType::Diamond);
+                auto* diamond = createShapeItem(ShapeType::Parallelogram);
                 diamond->setPos(QPointF(70.0, 40.0));
                 diamond->setContentSize(QSizeF(160.0, 120.0));
                 diamond->setStyle(QColor(20, 20, 20), QColor(200, 40, 40), 4.0);
@@ -468,7 +468,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                               .arg(result.slit.name()));
             }
 
-            // 细窄交集降级为线宽带：菱形与五角星边角相错形成的窄透镜交集只填充
+            // 细窄交集降级为线宽带：平行四边形与五角星边角相错形成的窄透镜交集只填充
             // 不描边，不会被描线吞成黑块。
             QUndoStack lensUndo;
             CanvasScene lensScene;
@@ -479,7 +479,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             lensBackground.type = BackgroundType::Color;
             lensBackground.color = QColor(Qt::white);
             lensScene.setCanvasBackground(lensBackground);
-            auto* lensDiamond = createShapeItem(ShapeType::Diamond);
+            auto* lensDiamond = createShapeItem(ShapeType::Parallelogram);
             lensDiamond->setPos(QPointF(60.0, 70.0));
             lensDiamond->setContentSize(QSizeF(180.0, 180.0));
             auto* lensStar = createShapeItem(ShapeType::Star);
@@ -544,7 +544,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             scene.setUndoStack(&undo);
             scene.setMode(ToolMode::Edit);
             scene.applyCanvasSize(QSizeF(320.0, 220.0));
-            auto* diamond = createShapeItem(ShapeType::Diamond);
+            auto* diamond = createShapeItem(ShapeType::Parallelogram);
             diamond->setPos(QPointF(60.0, 30.0));
             diamond->setContentSize(QSizeF(180.0, 140.0));
             diamond->setStyle(QColor(20, 20, 20), QColor(255, 255, 255), 4.0);
@@ -581,7 +581,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                     }
                 }
             }
-            // donor 换成有填充空间的菱形（白底）后，字形缝隙露出白底属合法；
+            // donor 换成有填充空间的平行四边形（白底）后，字形缝隙露出白底属合法；
             // 需要守住的是两条：黑色字形在合并后仍可见（遮挡语义：合并前在上层
             // 的文字合并后仍后画），以及文字层零描边（donor 白色描线不在字形外
             // 形成重影）。inkPixels > 0 即字形可见。
@@ -690,7 +690,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                   QStringLiteral("pixel=%1").arg(upperEdge.name()));
     }
     {
-        // 菱形与五角星都是凹多边形：联合必须按完整轮廓取并集，不能只取可见的
+        // 平行四边形与五角星都是凹多边形：联合必须按完整轮廓取并集，不能只取可见的
         // 描线带；同时覆盖无填充 / 有填充组合和五种布尔方式。
         struct PairResult {
             bool ok = false;
@@ -702,7 +702,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             FillStyle fillStyle = FillStyle::None;
             qreal strokeWidth = 0.0;
         };
-        const QPointF diamondCenter(150.0, 160.0);
+        const QPointF diamondCenter(170.0, 160.0);
         const QPointF starCenter(270.0, 150.0);
         const QColor diamondFill(30, 160, 90);
         const QColor starFill(40, 90, 200);
@@ -746,7 +746,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                 scene.addItemsWithUndo({shape}, QStringLiteral("Add pair shape"));
                 return shape;
             };
-            auto* lower = makeShape(ShapeType::Diamond, QPointF(60.0, 70.0), diamondFill, diamondFilled);
+            auto* lower = makeShape(ShapeType::Parallelogram, QPointF(100.0, 70.0), diamondFill, diamondFilled);
             auto* upper = makeShape(ShapeType::Star, QPointF(180.0, 60.0), starFill, starFilled);
             const QPainterPath lowerOutline = lower->mapToScene(lower->outlineShape());
             const QPainterPath upperOutline = upper->mapToScene(upper->outlineShape());
@@ -774,7 +774,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         ctx.check(unionBoth.ok && unionBoth.path.contains(diamondCenter) && unionBoth.path.contains(starCenter) &&
                       unionBoth.image.pixelColor(diamondCenter.toPoint()) == starFill &&
                       unionBoth.image.pixelColor(starCenter.toPoint()) == starFill,
-                  QStringLiteral("菱形与五角星联合保留完整轮廓并统一顶层填充"),
+                  QStringLiteral("平行四边形与五角星联合保留完整轮廓并统一顶层填充"),
                   QStringLiteral("ok=%1 diamond=%2 star=%3")
                       .arg(unionBoth.ok ? 1 : 0)
                       .arg(unionBoth.path.contains(diamondCenter) ? 1 : 0)
@@ -783,7 +783,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         const PairResult hollowDiamondUnion = runPair(BoolOps::Operation::Union, false, true);
         ctx.check(hollowDiamondUnion.ok && hollowDiamondUnion.path.contains(diamondCenter) &&
                       hollowDiamondUnion.image.pixelColor(diamondCenter.toPoint()) == starFill,
-                  QStringLiteral("无填充菱形与填充五角星联合仍按完整轮廓取并集"),
+                  QStringLiteral("无填充平行四边形与填充五角星联合仍按完整轮廓取并集"),
                   QStringLiteral("ok=%1 contains=%2 pixel=%3")
                       .arg(hollowDiamondUnion.ok ? 1 : 0)
                       .arg(hollowDiamondUnion.path.contains(diamondCenter) ? 1 : 0)
@@ -803,7 +803,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         const PairResult combine = runPair(BoolOps::Operation::Xor, true, true);
         ctx.check(combine.ok && combine.path.contains(diamondCenter) && combine.path.contains(starCenter) &&
                       !combine.path.contains(combine.overlapPoint),
-                  QStringLiteral("菱形与五角星异或后重叠区被挖空"),
+                  QStringLiteral("平行四边形与五角星异或后重叠区被挖空"),
                   QStringLiteral("ok=%1 overlap=%2")
                       .arg(combine.ok ? 1 : 0)
                       .arg(combine.path.contains(combine.overlapPoint) ? 1 : 0));
@@ -811,7 +811,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         const PairResult intersect = runPair(BoolOps::Operation::Intersect, true, true);
         ctx.check(intersect.ok && intersect.path.contains(intersect.overlapPoint) &&
                       !intersect.path.contains(diamondCenter) && !intersect.path.contains(starCenter),
-                  QStringLiteral("菱形与五角星相交只保留重叠区"),
+                  QStringLiteral("平行四边形与五角星相交只保留重叠区"),
                   QStringLiteral("ok=%1 overlap=%2 diamond=%3 star=%4")
                       .arg(intersect.ok ? 1 : 0)
                       .arg(intersect.path.contains(intersect.overlapPoint) ? 1 : 0)
@@ -821,7 +821,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         const PairResult subtract = runPair(BoolOps::Operation::Subtract, true, true);
         ctx.check(subtract.ok && subtract.path.contains(diamondCenter) && !subtract.path.contains(starCenter) &&
                       !subtract.path.contains(subtract.overlapPoint),
-                  QStringLiteral("菱形与五角星剪除以先选中的菱形为底，挖掉五角星"),
+                  QStringLiteral("平行四边形与五角星剪除以先选中的平行四边形为底，挖掉五角星"),
                   QStringLiteral("ok=%1 diamond=%2 star=%3 overlap=%4")
                       .arg(subtract.ok ? 1 : 0)
                       .arg(subtract.path.contains(diamondCenter) ? 1 : 0)
@@ -831,7 +831,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         const PairResult fragment = runPair(BoolOps::Operation::Fragment, true, true);
         ctx.check(fragment.ok && fragment.items == 3 && fragment.layers == 3 && fragment.path.contains(diamondCenter) &&
                       fragment.path.contains(starCenter),
-                  QStringLiteral("菱形与五角星拆分得到三块可分别选中的多边形"),
+                  QStringLiteral("平行四边形与五角星拆分得到三块可分别选中的多边形"),
                   QStringLiteral("ok=%1 items=%2 layers=%3")
                       .arg(fragment.ok ? 1 : 0)
                       .arg(fragment.items)
@@ -861,7 +861,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             return shape;
         };
         auto* rectangle = makeShape(ShapeType::Rectangle, QPointF(40.0, 60.0), QColor(30, 160, 90));
-        auto* diamond = makeShape(ShapeType::Diamond, QPointF(100.0, 100.0), QColor(230, 140, 40));
+        auto* diamond = makeShape(ShapeType::Parallelogram, QPointF(100.0, 100.0), QColor(230, 140, 40));
         rectangle->setSelected(true);
         diamond->setSelected(true);
         const bool firstUnion =

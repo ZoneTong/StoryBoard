@@ -387,21 +387,6 @@ QPainterPath ShapePathBuilder::sectorPath(const QRectF& rect, qreal startAngle, 
     return ellipseShape.sector(startAngle, sweepAngle);
 }
 
-QPainterPath ShapePathBuilder::diamondPath(const QRectF& rect)
-{
-    const QRectF r = normalizedRect(rect);
-    if (r.width() <= 0.0 || r.height() <= 0.0) {
-        return QPainterPath();
-    }
-    QPainterPath path;
-    path.moveTo(r.center().x(), r.top());
-    path.lineTo(r.right(), r.center().y());
-    path.lineTo(r.center().x(), r.bottom());
-    path.lineTo(r.left(), r.center().y());
-    path.closeSubpath();
-    return path;
-}
-
 QPainterPath ShapePathBuilder::arrowPath(const QRectF& rect)
 {
     const QRectF r = normalizedRect(rect);
@@ -466,8 +451,6 @@ QPainterPath ShapePathBuilder::pathFor(ShapeType type, const QRectF& rect, qreal
     case ShapeType::Triangle:
         // 默认按 60°/60° 的等腰三角形生成；具体图元用带角度参数的重载。
         return trianglePath(rect, 60.0, 60.0);
-    case ShapeType::Diamond:
-        return diamondPath(rect);
     case ShapeType::Star:
         return starPath(rect);
     case ShapeType::Arrow:

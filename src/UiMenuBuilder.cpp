@@ -134,6 +134,19 @@ void UiMenuBuilder::buildShapeMenu()
             QObject::connect(preset60, &QAction::triggered, m_window,
                              [this]() { m_window->insertShape(ShapeType::Triangle, 90.0, 60.0); });
         }
+
+        // 菱形不再是类型：作为平行四边形的 90° 内角 + 旋转 45° 预置插入，
+        // 外接对角线保持基准边长 128。
+        if (type == ShapeType::Parallelogram) {
+            QAction* diamondPreset = m_window->m_shapeMenu->addAction(
+                makeShapePresetIcon(QStringLiteral("diamond"), QColor(58, 64, 80), 18), MainWindow::tr("Diamond"));
+            diamondPreset->setObjectName(QStringLiteral("ShapePreset_diamond"));
+            diamondPreset->setData(static_cast<int>(type));
+            diamondPreset->setToolTip(MainWindow::tr("Insert a diamond: a 90° parallelogram rotated 45°, "
+                                                     "diagonal follows the base size"));
+            QObject::connect(diamondPreset, &QAction::triggered, m_window,
+                             [this]() { m_window->insertShape(ShapeType::Parallelogram, -1.0, -1.0, 0.0, 90.0); });
+        }
     }
 
     // 需求：自定义图形不再挂在「常见图形」下面做二级子菜单，直接作为同一层的一项，

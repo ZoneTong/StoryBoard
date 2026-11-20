@@ -3327,14 +3327,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <translation>三角形</translation>
     </message><message>
         <location filename="../src/ShapeItem.cpp" line="68"/>
-        <source>Diamond</source>
-        <translation>菱形</translation>
-    </message><message>
-        <location filename="../src/ShapeItem.cpp" line="70"/>
         <source>Star</source>
         <translation>五角星</translation>
     </message><message>
-        <location filename="../src/ShapeItem.cpp" line="72"/>
+        <location filename="../src/ShapeItem.cpp" line="70"/>
         <source>Arrow</source>
         <translation>箭头</translation>
     </message><message>

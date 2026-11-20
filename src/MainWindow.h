@@ -121,7 +121,9 @@ class MainWindow : public QMainWindow {
     // 需求 7：展开自定义图形浮动面板（按目录分标签页）；anchor 为空时沿用上次位置。
     void openCustomShapePanel(QWidget* anchor);
     // 插入常见图形；自检需要直接驱动插入流程（含立方体 / 圆柱体的组合面插入）。
-    void insertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0, qreal cornerRatio = 0.0);
+    // parallelogramAngle > 0 表示菱形预置：平行四边形锁该内角并旋转 45° 插入。
+    void insertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0, qreal cornerRatio = 0.0,
+                     qreal parallelogramAngle = 0.0);
     // 线条插入入口：直线 / 弧线 / 正弦都不是形状类型，按形态分派。
     void insertCurve(LineGlyph glyph, ArrowStyle startArrow = ArrowStyle::None, ArrowStyle endArrow = ArrowStyle::None);
     // 需求 16：自检需要直接驱动工具栏样式取值（填充样式 / 画笔色 / 描线宽度）验证新图元生成。

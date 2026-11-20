@@ -130,7 +130,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         QMenu* customShapeMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("CustomShapeMenu"));
         QAction* customTrigger = shapeWindow.findChild<QAction*>(QStringLiteral("CustomShapePanelTrigger"));
         // 自定义图形不再是二级子菜单：入口直接平铺在「常见图形」末尾。
-        // 内建图形动作 = 17 种有面积图形 + 曲线族三入口（直线 / 弧线 / 正弦）。
+        // 内建图形动作 = 16 种有面积图形 + 曲线族三入口（直线 / 弧线 / 正弦）。
         ctx.check(shapeMenu && builtInShapeActions == shapeTypes.size() + 3 && customShapeMenu && customTrigger &&
                       shapeMenu->actions().contains(customTrigger) &&
                       !shapeMenu->actions().contains(customShapeMenu->menuAction()),
@@ -140,8 +140,8 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                       .arg(builtInShapeActions)
                       .arg(customTrigger ? 1 : 0));
         // 工具栏在原「图形」入口处把常见图形与预置项直接平铺成一排，复用菜单里的同一批动作。
-        // 预置项：圆角矩形、直线箭头、45°/60° 三角、左右花括号（需求 13 花括号改曲线后仍是 2 枚按钮）。
-        const int toolbarExpected = builtInShapeActions + 6;
+        // 预置项：圆角矩形、直线箭头、45°/60° 三角、菱形、左右花括号（需求 13 花括号改曲线后仍是 2 枚按钮）。
+        const int toolbarExpected = builtInShapeActions + 7;
         QToolButton* shapeButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("ShapeButton"));
         QList<QToolButton*> toolbarShapeButtons =
             shapeWindow.findChildren<QToolButton*>(QStringLiteral("ToolBarShapeButton"));
@@ -160,19 +160,19 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         // 需求 7：工具栏顺序直接来自单一顺序源（常用顺序表），预置项紧随其主体图形，
         // 直线箭头跟在直线后、45°/60° 直角三角跟在三角形后，两枚花括号收尾。
         const QStringList expectedToolBarOrder = {
-            QStringLiteral("ShapeAction_rectangle"),     QStringLiteral("ShapePreset_roundedRect"),
-            QStringLiteral("ShapeAction_ellipse"),       QStringLiteral("ShapeAction_line"),
-            QStringLiteral("ShapePreset_lineArrow"),     QStringLiteral("ShapeAction_arrow"),
-            QStringLiteral("ShapeAction_double_arrow"),  QStringLiteral("ShapeAction_triangle"),
-            QStringLiteral("ShapePreset_triangle45"),    QStringLiteral("ShapePreset_triangle60"),
-            QStringLiteral("ShapeAction_callout"),       QStringLiteral("ShapeAction_diamond"),
-            QStringLiteral("ShapeAction_parallelogram"), QStringLiteral("ShapeAction_sector"),
-            QStringLiteral("ShapeAction_arc"),           QStringLiteral("ShapeAction_cube"),
-            QStringLiteral("ShapeAction_cylinder"),      QStringLiteral("ShapeAction_star4"),
-            QStringLiteral("ShapeAction_star"),          QStringLiteral("ShapeAction_hexagram"),
-            QStringLiteral("ShapeAction_heart"),         QStringLiteral("ShapeAction_sine_wave"),
-            QStringLiteral("ShapeAction_flag_wave"),     QStringLiteral("ShapeAction_scroll"),
-            QStringLiteral("ShapePreset_braceLeft"),     QStringLiteral("ShapePreset_braceRight"),
+            QStringLiteral("ShapeAction_rectangle"),    QStringLiteral("ShapePreset_roundedRect"),
+            QStringLiteral("ShapeAction_ellipse"),      QStringLiteral("ShapeAction_line"),
+            QStringLiteral("ShapePreset_lineArrow"),    QStringLiteral("ShapeAction_arrow"),
+            QStringLiteral("ShapeAction_double_arrow"), QStringLiteral("ShapeAction_triangle"),
+            QStringLiteral("ShapePreset_triangle45"),   QStringLiteral("ShapePreset_triangle60"),
+            QStringLiteral("ShapeAction_callout"),      QStringLiteral("ShapeAction_parallelogram"),
+            QStringLiteral("ShapePreset_diamond"),      QStringLiteral("ShapeAction_sector"),
+            QStringLiteral("ShapeAction_arc"),          QStringLiteral("ShapeAction_cube"),
+            QStringLiteral("ShapeAction_cylinder"),     QStringLiteral("ShapeAction_star4"),
+            QStringLiteral("ShapeAction_star"),         QStringLiteral("ShapeAction_hexagram"),
+            QStringLiteral("ShapeAction_heart"),        QStringLiteral("ShapeAction_sine_wave"),
+            QStringLiteral("ShapeAction_flag_wave"),    QStringLiteral("ShapeAction_scroll"),
+            QStringLiteral("ShapePreset_braceLeft"),    QStringLiteral("ShapePreset_braceRight"),
         };
         QStringList actualToolBarOrder;
         for (QToolButton* button : std::as_const(toolbarShapeButtons)) {

@@ -27,7 +27,6 @@ class ShapePathBuilder {
     static QPainterPath roundedRectPath(const QRectF& rect, qreal cornerRadius);
     static QPainterPath ellipsePath(const QRectF& rect);
     static QPainterPath sectorPath(const QRectF& rect, qreal startAngle, qreal sweepAngle);
-    static QPainterPath diamondPath(const QRectF& rect);
     static QPainterPath arrowPath(const QRectF& rect);
     static QPainterPath doubleArrowPath(const QRectF& rect);
     static QPainterPath starPath(const QRectF& rect);
