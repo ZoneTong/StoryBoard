@@ -719,16 +719,6 @@
         <source>Text color</source>
         <translation>文字颜色</translation>
     </message><message>
-        <location filename="../src/PropertiesPanelContentCard.cpp" line="134"/>
-        <location filename="../src/PropertiesPanelContentCard.cpp" line="138"/>
-        <location filename="../src/PropertiesPanelContentCard.cpp" line="139"/>
-        <source>Image name</source>
-        <translation>图片名称</translation>
-    </message><message>
-        <location filename="../src/PropertiesPanelContentCard.cpp" line="152"/>
-        <source>Replace image…</source>
-        <translation>替换图片…</translation>
-    </message><message>
         <location filename="../src/PropertiesPanel.cpp" line="448"/>
         <source>Change border color</source>
         <translation>修改描线颜色</translation>
@@ -752,16 +742,6 @@
         <location filename="../src/PropertiesPanel.cpp" line="686"/>
         <source>Change text color</source>
         <translation>修改文字颜色</translation>
-    </message><message>
-        <location filename="../src/PropertiesPanel.cpp" line="728"/>
-        <location filename="../src/PropertiesPanel.cpp" line="731"/>
-        <source>Change image name</source>
-        <translation>修改图片名称</translation>
-    </message><message>
-        <location filename="../src/PropertiesPanel.cpp" line="761"/>
-        <location filename="../src/PropertiesPanel.cpp" line="772"/>
-        <source>Replace image</source>
-        <translation>替换图片</translation>
     </message><message>
         <location filename="../src/PropertiesPanel.cpp" line="772"/>
         <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;All files (*)</source>
@@ -1446,10 +1426,6 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <location filename="../src/UiMenuBuilder.cpp" line="67"/>
         <source>Insert a line with an open arrow head at its end</source>
         <translation>插入一条末端为开口箭头的直线</translation>
-    </message><message>
-        <location filename="../src/UiMenuBuilder.cpp" line="64"/>
-        <source>Line arrow</source>
-        <translation>直线箭头</translation>
     </message><message>
         <source>&amp;Brush</source>
         <translation>画笔(&amp;B)</translation>
@@ -3306,10 +3282,6 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message></context>
 <context>
     <name>ShapeItem</name><message>
-        <location filename="../src/ShapeItem.cpp" line="245"/>
-        <source>Line arrow</source>
-        <translation>直线箭头</translation>
-    </message><message>
         <location filename="../src/ShapeItem.cpp" line="62"/>
         <location filename="../src/ShapeItem.cpp" line="100"/>
         <source>Rectangle</source>
@@ -4020,9 +3992,6 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Image files (*.png *.jpg *.jpeg *.bmp *.gif);;All files (*.*)</source>
         <translation>图片文件 (*.png *.jpg *.jpeg *.bmp *.gif);;所有文件 (*.*)</translation>
     </message><message>
-        <source>Image name</source>
-        <translation>图片名称</translation>
-    </message><message>
         <source>Import outline image</source>
         <translation>导入图片线稿化</translation>
     </message><message>
@@ -4246,9 +4215,6 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Merge visible layers (one image)</source>
         <translation>合并可见图层（一张图片）</translation>
     </message><message>
-        <source>Missing image</source>
-        <translation>图片缺失</translation>
-    </message><message>
         <source>Mode</source>
         <translation>模式</translation>
     </message><message>
@@ -4443,12 +4409,6 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message><message>
         <source>Replace canvas background image…</source>
         <translation>替换画布背景图片…</translation>
-    </message><message>
-        <source>Replace image</source>
-        <translation>替换图片</translation>
-    </message><message>
-        <source>Replace image…</source>
-        <translation>替换图片…</translation>
     </message><message>
         <source>Resize canvas</source>
         <translation>调整画布</translation>
