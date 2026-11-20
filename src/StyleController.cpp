@@ -112,21 +112,20 @@ int StyleController::applyPenStyleToSelection(Qt::PenStyle style, const QString&
     }
 
     QList<CanvasItem*> items;
-    QList<Qt::PenStyle> before;
-    QList<Qt::PenStyle> after;
+    QList<QMap<ItemProperty, QVariant>> before;
+    QList<QMap<ItemProperty, QVariant>> after;
     const QList<CanvasItem*> selected = m_window->m_scene->selectedCanvasItems();
     for (CanvasItem* item : selected) {
-        Qt::PenStyle current = Qt::SolidLine;
-        if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
-            current = shape->strokeStyle();
-        } else if (auto* stroke = dynamic_cast<LineItemAbstract*>(item)) {
-            current = stroke->strokePattern();
-        } else {
+        if (!item->properties().contains(ItemProperty::STROKE_STYLE)) {
             continue;
         }
+        QMap<ItemProperty, QVariant> beforeValues;
+        beforeValues.insert(ItemProperty::STROKE_STYLE, item->propertyValue(ItemProperty::STROKE_STYLE));
+        QMap<ItemProperty, QVariant> afterValues = beforeValues;
+        afterValues.insert(ItemProperty::STROKE_STYLE, static_cast<int>(style));
         items.append(item);
-        before.append(current);
-        after.append(style);
+        before.append(beforeValues);
+        after.append(afterValues);
     }
 
     if (items.isEmpty()) {
@@ -142,7 +141,10 @@ int StyleController::applyPenStyleToSelection(Qt::PenStyle style, const QString&
         return items.size();
     }
 
-    m_window->m_undo->push(new ItemPenStyleCommand(m_window->m_scene, items, before, after, text));
+    for (CanvasItem* item : items) {
+        item->setPropertyValue(ItemProperty::STROKE_STYLE, static_cast<int>(style));
+    }
+    m_window->m_undo->push(new ItemPropertyCommand(m_window->m_scene, items, before, after, text));
     m_window->statusBar()->showMessage(MainWindow::tr("Applied border style to %1 item(s)").arg(items.size()), 4000);
     return items.size();
 }
@@ -180,7 +182,8 @@ int StyleController::applyStrokeStyleToSelection(const QColor& color, qreal widt
     QList<CanvasItem*> items;
     const QList<CanvasItem*> selected = m_window->m_scene->selectedCanvasItems();
     for (CanvasItem* item : selected) {
-        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<LineItemAbstract*>(item)) {
+        const ItemPropertySet properties = item->properties();
+        if (properties.contains(ItemProperty::STROKE_COLOR) && properties.contains(ItemProperty::STROKE_WIDTH)) {
             items.append(item);
         }
     }
@@ -188,46 +191,36 @@ int StyleController::applyStrokeStyleToSelection(const QColor& color, qreal widt
         return 0;
     }
 
-    QList<QColor> beforeColors;
-    QList<qreal> beforeWidths;
-    QList<QColor> afterColors;
-    QList<qreal> afterWidths;
-    beforeColors.reserve(items.size());
-    beforeWidths.reserve(items.size());
-    afterColors.reserve(items.size());
-    afterWidths.reserve(items.size());
+    QList<QMap<ItemProperty, QVariant>> before;
+    QList<QMap<ItemProperty, QVariant>> after;
+    before.reserve(items.size());
+    after.reserve(items.size());
     for (CanvasItem* item : items) {
-        QColor beforeColor;
-        qreal beforeWidth = 0;
-        QColor afterColor;
-        qreal afterWidth = 0;
-        if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
-            beforeColor = shape->strokeColor();
-            beforeWidth = shape->strokeWidth();
-            afterColor = changeColor ? color : beforeColor;
-            afterWidth = changeWidth ? width : beforeWidth;
-            shape->setStyle(afterColor, shape->fillColor(), afterWidth);
-        } else if (auto* stroke = dynamic_cast<LineItemAbstract*>(item)) {
-            beforeColor = stroke->strokeColor();
-            beforeWidth = stroke->strokeWidth();
-            afterColor = changeColor ? color : beforeColor;
-            afterWidth = changeWidth ? width : beforeWidth;
-            stroke->setStrokeColor(afterColor);
-            stroke->setStrokeWidth(afterWidth);
+        QMap<ItemProperty, QVariant> beforeValues;
+        beforeValues.insert(ItemProperty::STROKE_COLOR, item->propertyValue(ItemProperty::STROKE_COLOR));
+        beforeValues.insert(ItemProperty::STROKE_WIDTH, item->propertyValue(ItemProperty::STROKE_WIDTH));
+        QMap<ItemProperty, QVariant> afterValues = beforeValues;
+        if (changeColor) {
+            afterValues.insert(ItemProperty::STROKE_COLOR, color);
         }
-        beforeColors.append(beforeColor);
-        beforeWidths.append(beforeWidth);
-        afterColors.append(afterColor);
-        afterWidths.append(afterWidth);
+        if (changeWidth) {
+            afterValues.insert(ItemProperty::STROKE_WIDTH, width);
+        }
+        before.append(beforeValues);
+        after.append(afterValues);
     }
 
-    if (beforeColors == afterColors && beforeWidths == afterWidths) {
+    if (before == after) {
         m_window->statusBar()->showMessage(MainWindow::tr("The border style did not change"), 3000);
         return items.size();
     }
 
-    m_window->m_undo->push(new ItemStrokeStyleCommand(m_window->m_scene, items, beforeColors, beforeWidths, afterColors,
-                                                      afterWidths, text));
+    for (int index = 0; index < items.size(); ++index) {
+        for (auto it = after.at(index).constBegin(); it != after.at(index).constEnd(); ++it) {
+            items.at(index)->setPropertyValue(it.key(), it.value());
+        }
+    }
+    m_window->m_undo->push(new ItemPropertyCommand(m_window->m_scene, items, before, after, text));
     m_window->statusBar()->showMessage(MainWindow::tr("Applied border style to %1 item(s)").arg(items.size()), 4000);
     return items.size();
 }
@@ -238,27 +231,23 @@ void StyleController::applyFillToSelection()
         return;
     }
 
-    QList<ShapeItem*> shapes;
-    QList<ShapeItem*> composites;
+    QList<ShapeItem*> targets;
     int outlineOnlyCount = 0;
     const QList<CanvasItem*> selected = m_window->m_scene->selectedCanvasItems();
     for (CanvasItem* item : selected) {
-        if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->isPolygon()) {
-            composites.append(composite);
-            continue;
-        }
         auto* shape = dynamic_cast<ShapeItem*>(item);
         if (!shape) {
             continue;
         }
-        if (shapeTypeIsFilled(shape->shapeType())) {
-            shapes.append(shape);
+        // 填充图形与多边形都可带填充；线、花括号等纯描线图元不参与。
+        if (shapeTypeIsFilled(shape->shapeType()) || shape->isPolygon()) {
+            targets.append(shape);
         } else {
             ++outlineOnlyCount;
         }
     }
 
-    if (shapes.isEmpty() && composites.isEmpty()) {
+    if (targets.isEmpty()) {
         if (outlineOnlyCount > 0) {
             m_window->statusBar()->showMessage(
                 MainWindow::tr("The selected shape is stroke-only (line, brace, etc.); fill is not supported"), 4000);
@@ -271,65 +260,42 @@ void StyleController::applyFillToSelection()
         return;
     }
 
-    QList<ShapeItemState> before;
-    QList<ShapeItemState> after;
-    QList<QColor> beforeCompositeColors;
-    QList<FillStyle> beforeCompositeStyles;
-    QList<QColor> afterCompositeColors;
-    QList<FillStyle> afterCompositeStyles;
-    before.reserve(shapes.size());
-    after.reserve(shapes.size());
-    for (ShapeItem* shape : shapes) {
-        before.append(shape->state());
+    QList<CanvasItem*> items;
+    QList<QMap<ItemProperty, QVariant>> before;
+    QList<QMap<ItemProperty, QVariant>> after;
+    before.reserve(targets.size());
+    after.reserve(targets.size());
+    for (ShapeItem* shape : targets) {
+        QMap<ItemProperty, QVariant> beforeValues;
+        beforeValues.insert(ItemProperty::FILL_COLOR, shape->propertyValue(ItemProperty::FILL_COLOR));
+        beforeValues.insert(ItemProperty::FILL_STYLE, shape->propertyValue(ItemProperty::FILL_STYLE));
         QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : shape->fillColor();
         if (fill.alpha() == 0) {
             fill = shape->strokeColor();
         }
-        shape->setFill(fill, m_window->m_fillStyle);
-        after.append(shape->state());
-    }
-    for (ShapeItem* composite : composites) {
-        beforeCompositeColors.append(composite->fillColor());
-        beforeCompositeStyles.append(composite->fillStyle());
-        QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : composite->fillColor();
-        if (fill.alpha() == 0) {
-            fill = composite->strokeColor();
-        }
-        composite->setFill(fill, m_window->m_fillStyle);
-        afterCompositeColors.append(composite->fillColor());
-        afterCompositeStyles.append(composite->fillStyle());
+        QMap<ItemProperty, QVariant> afterValues = beforeValues;
+        afterValues.insert(ItemProperty::FILL_COLOR, fill);
+        afterValues.insert(ItemProperty::FILL_STYLE, static_cast<int>(m_window->m_fillStyle));
+        items.append(shape);
+        before.append(beforeValues);
+        after.append(afterValues);
     }
 
-    if (before == after && beforeCompositeColors == afterCompositeColors &&
-        beforeCompositeStyles == afterCompositeStyles) {
+    if (before == after) {
         m_window->statusBar()->showMessage(MainWindow::tr("The fill style did not change"), 3000);
         return;
     }
 
-    const bool mixed = !shapes.isEmpty() && !composites.isEmpty();
-    if (mixed) {
-        m_window->m_undo->beginMacro(MainWindow::tr("Change fill style"));
-    }
-    if (!shapes.isEmpty()) {
-        m_window->m_undo->push(
-            new ShapeStyleCommand(m_window->m_scene, shapes, before, after, MainWindow::tr("Change fill style")));
-    }
-    if (!composites.isEmpty()) {
-        QList<CanvasItem*> compositeItems;
-        for (ShapeItem* composite : composites) {
-            compositeItems.append(composite);
+    for (int index = 0; index < items.size(); ++index) {
+        for (auto it = after.at(index).constBegin(); it != after.at(index).constEnd(); ++it) {
+            items.at(index)->setPropertyValue(it.key(), it.value());
         }
-        m_window->m_undo->push(new PolygonFillStyleCommand(m_window->m_scene, compositeItems, beforeCompositeColors,
-                                                           beforeCompositeStyles, afterCompositeColors,
-                                                           afterCompositeStyles, MainWindow::tr("Change fill style")));
     }
-    if (mixed) {
-        m_window->m_undo->endMacro();
-    }
-    m_window->statusBar()->showMessage(MainWindow::tr("Applied \"%2\" to %1 shape(s)")
-                                           .arg(shapes.size() + composites.size())
-                                           .arg(fillStyleName(m_window->m_fillStyle)),
-                                       4000);
+    m_window->m_undo->push(
+        new ItemPropertyCommand(m_window->m_scene, items, before, after, MainWindow::tr("Change fill style")));
+    m_window->statusBar()->showMessage(
+        MainWindow::tr("Applied \"%2\" to %1 shape(s)").arg(targets.size()).arg(fillStyleName(m_window->m_fillStyle)),
+        4000);
 }
 
 void StyleController::updateFillActions()

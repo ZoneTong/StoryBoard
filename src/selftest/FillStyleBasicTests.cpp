@@ -112,14 +112,21 @@ void selftest::runFillStyleBasicTests(Context& ctx)
         auto* styleShape = createShapeItem(ShapeType::Rectangle);
         styleShape->setContentSize(QSizeF(100, 60));
         styleScene.attachItem(styleShape);
-        const ShapeItemState styleBefore = styleShape->state();
+        const FillStyle styleBefore = styleShape->fillStyle();
+        const QColor styleBeforeColor = styleShape->fillColor();
         styleShape->setFill(QColor(239, 68, 68, 120), FillStyle::CrossHatch);
-        const ShapeItemState styleAfter = styleShape->state();
-        styleUndo.push(new ShapeStyleCommand(&styleScene, {styleShape}, {styleBefore}, {styleAfter},
-                                             QStringLiteral("调整填充样式")));
+        QMap<ItemProperty, QVariant> beforeValues;
+        beforeValues.insert(ItemProperty::FILL_COLOR, styleBeforeColor);
+        beforeValues.insert(ItemProperty::FILL_STYLE, static_cast<int>(styleBefore));
+        QMap<ItemProperty, QVariant> afterValues;
+        afterValues.insert(ItemProperty::FILL_COLOR, QColor(239, 68, 68, 120));
+        afterValues.insert(ItemProperty::FILL_STYLE, static_cast<int>(FillStyle::CrossHatch));
+        QList<CanvasItem*> styleItems{styleShape};
+        styleUndo.push(new ItemPropertyCommand(&styleScene, styleItems, {beforeValues}, {afterValues},
+                                               QStringLiteral("调整填充样式")));
         ctx.check(styleShape->fillStyle() == FillStyle::CrossHatch, QStringLiteral("填充样式命令立即生效"));
         styleUndo.undo();
-        ctx.check(styleShape->fillStyle() == styleBefore.fillStyle && styleShape->fillColor() == styleBefore.fillColor,
+        ctx.check(styleShape->fillStyle() == styleBefore && styleShape->fillColor() == styleBeforeColor,
                   QStringLiteral("填充样式可撤销"));
         styleUndo.redo();
         ctx.check(styleShape->fillStyle() == FillStyle::CrossHatch, QStringLiteral("填充样式可重做"));

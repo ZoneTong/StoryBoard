@@ -14,6 +14,7 @@ enum class ItemProperty {
     FILL_STYLE,
     FILL_COLOR,
     FILL_IMAGE,
+    FILL_IMAGE_MODE,
     STROKE_STYLE,
     STROKE_COLOR,
     STROKE_WIDTH,

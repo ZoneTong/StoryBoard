@@ -137,22 +137,6 @@ class TextItemCommand : public QUndoCommand {
     TextItemState m_after;
 };
 
-class ShapeStyleCommand : public QUndoCommand {
-  public:
-    ShapeStyleCommand(CanvasScene* scene, const QList<ShapeItem*>& items, const QList<ShapeItemState>& before,
-                      const QList<ShapeItemState>& after, const QString& text);
-    void undo() override;
-    void redo() override;
-
-  private:
-    void apply(const QList<ShapeItemState>& states);
-
-    CanvasScene* m_scene = nullptr;
-    QList<QPointer<ShapeItem>> m_items;
-    QList<ShapeItemState> m_before;
-    QList<ShapeItemState> m_after;
-};
-
 // 需求 35：旋转手柄与快捷键共用这一条命令，支持一次旋转多个选中图元。
 class RotationCommand : public QUndoCommand {
   public:
@@ -231,82 +215,6 @@ class ItemPropertiesCommand : public QUndoCommand {
     ItemPropertiesState m_after;
 };
 
-// 多边形填充色 / 填充样式一起改；内部按层记录，撤销可完整恢复原色。
-class PolygonFillStyleCommand : public QUndoCommand {
-  public:
-    PolygonFillStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<QColor>& beforeColors,
-                            const QList<FillStyle>& beforeStyles, const QList<QColor>& afterColors,
-                            const QList<FillStyle>& afterStyles, const QString& text);
-    void undo() override;
-    void redo() override;
-
-  private:
-    void apply(const QList<QColor>& colors, const QList<FillStyle>& styles);
-
-    CanvasScene* m_scene = nullptr;
-    QList<QPointer<CanvasItem>> m_items;
-    QList<QColor> m_beforeColors;
-    QList<FillStyle> m_beforeStyles;
-    QList<QColor> m_afterColors;
-    QList<FillStyle> m_afterStyles;
-};
-
-// 描线颜色 / 宽度同时作用于选中的图形、笔画和多边形，一次修改只占一条撤销记录。
-// 需求 9b/9d：直线与曲线的起点 / 终点箭头改动走一条专用命令，
-// 不复用整份 shape 状态，也不改名称、尺寸等无关字段。
-class ArrowStyleCommand : public QUndoCommand {
-  public:
-    ArrowStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
-                      const QList<QPair<ArrowStyle, ArrowStyle>>& before,
-                      const QList<QPair<ArrowStyle, ArrowStyle>>& after, const QString& text);
-    void undo() override;
-    void redo() override;
-
-  private:
-    void apply(const QList<QPair<ArrowStyle, ArrowStyle>>& states);
-
-    CanvasScene* m_scene = nullptr;
-    QList<QPointer<CanvasItem>> m_items;
-    QList<QPair<ArrowStyle, ArrowStyle>> m_before;
-    QList<QPair<ArrowStyle, ArrowStyle>> m_after;
-};
-
-class ItemStrokeStyleCommand : public QUndoCommand {
-  public:
-    ItemStrokeStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<QColor>& beforeColors,
-                           const QList<qreal>& beforeWidths, const QList<QColor>& afterColors,
-                           const QList<qreal>& afterWidths, const QString& text);
-    void undo() override;
-    void redo() override;
-
-  private:
-    void apply(const QList<QColor>& colors, const QList<qreal>& widths);
-
-    CanvasScene* m_scene = nullptr;
-    QList<QPointer<CanvasItem>> m_items;
-    QList<QColor> m_beforeColors;
-    QList<qreal> m_beforeWidths;
-    QList<QColor> m_afterColors;
-    QList<qreal> m_afterWidths;
-};
-
-// 描线样式对图形与曲线都生效；只改样式，不动颜色与宽度。
-class ItemPenStyleCommand : public QUndoCommand {
-  public:
-    ItemPenStyleCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<Qt::PenStyle>& before,
-                        const QList<Qt::PenStyle>& after, const QString& text);
-    void undo() override;
-    void redo() override;
-
-  private:
-    void apply(const QList<Qt::PenStyle>& styles);
-
-    CanvasScene* m_scene = nullptr;
-    QList<QPointer<CanvasItem>> m_items;
-    QList<Qt::PenStyle> m_before;
-    QList<Qt::PenStyle> m_after;
-};
-
 // 透明度对图形、笔画、文字、图片等所有图元都生效。
 // 属性表命令：一次编辑把同一组属性值写回所有目标图元，只占一条撤销记录。
 // 替代原先按图元类型分拆的样式命令，读写都走 properties()/propertyValue()/setPropertyValue()。
@@ -325,22 +233,6 @@ class ItemPropertyCommand : public QUndoCommand {
     QList<QPointer<CanvasItem>> m_items;
     QList<QMap<ItemProperty, QVariant>> m_before;
     QList<QMap<ItemProperty, QVariant>> m_after;
-};
-
-class ItemOpacityCommand : public QUndoCommand {
-  public:
-    ItemOpacityCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<qreal>& before,
-                       const QList<qreal>& after, const QString& text);
-    void undo() override;
-    void redo() override;
-
-  private:
-    void apply(const QList<qreal>& values);
-
-    CanvasScene* m_scene = nullptr;
-    QList<QPointer<CanvasItem>> m_items;
-    QList<qreal> m_before;
-    QList<qreal> m_after;
 };
 
 class LayerStateCommand : public QUndoCommand {

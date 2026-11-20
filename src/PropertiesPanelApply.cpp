@@ -40,21 +40,35 @@ void PropertiesPanel::changeSelectedShapes(const QString& text, const std::funct
         return;
     }
 
-    QList<ShapeItemState> before;
-    QList<ShapeItemState> after;
+    // 按各图形上报的属性全集做快照：角度 / 底边等编辑会连带派生尺寸，
+    // 全量快照保证撤销 / 重做与原整份状态命令等价。
+    QList<CanvasItem*> items;
+    QList<QMap<ItemProperty, QVariant>> before;
+    QList<QMap<ItemProperty, QVariant>> after;
     before.reserve(shapes.size());
     after.reserve(shapes.size());
     for (ShapeItem* shape : shapes) {
-        before.append(shape->state());
+        QMap<ItemProperty, QVariant> beforeValues;
+        for (ItemProperty property : shape->properties().values()) {
+            beforeValues.insert(property, shape->propertyValue(property));
+        }
+        items.append(shape);
+        before.append(beforeValues);
     }
     m_refreshing = true;
     for (ShapeItem* shape : shapes) {
         mutate(shape);
-        after.append(shape->state());
     }
     m_refreshing = false;
+    for (ShapeItem* shape : shapes) {
+        QMap<ItemProperty, QVariant> afterValues;
+        for (ItemProperty property : shape->properties().values()) {
+            afterValues.insert(property, shape->propertyValue(property));
+        }
+        after.append(afterValues);
+    }
 
-    m_scene->undoStack()->push(new ShapeStyleCommand(m_scene, shapes, before, after, text));
+    m_scene->undoStack()->push(new ItemPropertyCommand(m_scene, items, before, after, text));
     refresh();
 }
 
@@ -342,18 +356,27 @@ void PropertiesPanel::chooseFillImage()
     if (pixmap.isNull() || !m_scene || !m_scene->undoStack()) {
         return;
     }
-    QList<ShapeItemState> before;
-    QList<ShapeItemState> after;
+    QList<CanvasItem*> items;
+    QList<QMap<ItemProperty, QVariant>> before;
+    QList<QMap<ItemProperty, QVariant>> after;
     for (ShapeItem* shape : shapes) {
-        const ShapeItemState state = shape->state();
-        before.append(state);
-        ShapeItemState next = state;
-        next.hasFillImage = true;
-        next.fillImage = pixmap;
-        next.fillImageMode = ImageFill::Mode::Stretch;
-        after.append(next);
+        QMap<ItemProperty, QVariant> beforeValues;
+        beforeValues.insert(ItemProperty::FILL_IMAGE, shape->propertyValue(ItemProperty::FILL_IMAGE));
+        beforeValues.insert(ItemProperty::FILL_IMAGE_MODE, static_cast<int>(shape->fillImageMode()));
+        QMap<ItemProperty, QVariant> afterValues = beforeValues;
+        afterValues.insert(ItemProperty::FILL_IMAGE, QVariant::fromValue(pixmap));
+        // 替换图片同时重置为拉伸模式，与原整份状态命令语义一致。
+        afterValues.insert(ItemProperty::FILL_IMAGE_MODE, static_cast<int>(ImageFill::Mode::Stretch));
+        items.append(shape);
+        before.append(beforeValues);
+        after.append(afterValues);
     }
-    m_scene->undoStack()->push(new ShapeStyleCommand(m_scene, shapes, before, after, tr("Replace fill image")));
+    for (int index = 0; index < items.size(); ++index) {
+        for (auto it = after.at(index).constBegin(); it != after.at(index).constEnd(); ++it) {
+            items.at(index)->setPropertyValue(it.key(), it.value());
+        }
+    }
+    m_scene->undoStack()->push(new ItemPropertyCommand(m_scene, items, before, after, tr("Replace fill image")));
     refresh();
 }
 
@@ -450,20 +473,28 @@ void PropertiesPanel::applyArrowStart(int style)
     // 需求 9b/9d：直线与曲线共用一条箭头撤销记录，只改箭头样式。
     const QList<LineItemAbstract*> curves = selectedStrokes();
     QList<CanvasItem*> targets;
-    QList<QPair<ArrowStyle, ArrowStyle>> before;
-    QList<QPair<ArrowStyle, ArrowStyle>> after;
+    QList<QMap<ItemProperty, QVariant>> before;
+    QList<QMap<ItemProperty, QVariant>> after;
     for (LineItemAbstract* curve : curves) {
-        if (!curve) {
+        if (!curve || !curve->properties().contains(ItemProperty::ARROW_START)) {
             continue;
         }
+        QMap<ItemProperty, QVariant> beforeValues;
+        beforeValues.insert(ItemProperty::ARROW_START, curve->propertyValue(ItemProperty::ARROW_START));
+        beforeValues.insert(ItemProperty::ARROW_END, curve->propertyValue(ItemProperty::ARROW_END));
+        QMap<ItemProperty, QVariant> afterValues = beforeValues;
+        afterValues.insert(ItemProperty::ARROW_START, style);
         targets.append(curve);
-        before.append(qMakePair(curve->startArrow(), curve->endArrow()));
-        after.append(qMakePair(static_cast<ArrowStyle>(style), curve->endArrow()));
+        before.append(beforeValues);
+        after.append(afterValues);
     }
     if (targets.isEmpty() || !m_scene || !m_scene->undoStack()) {
         return;
     }
-    m_scene->undoStack()->push(new ArrowStyleCommand(m_scene, targets, before, after, tr("Change line start arrow")));
+    for (CanvasItem* target : targets) {
+        target->setPropertyValue(ItemProperty::ARROW_START, style);
+    }
+    m_scene->undoStack()->push(new ItemPropertyCommand(m_scene, targets, before, after, tr("Change line start arrow")));
     refresh();
 }
 
@@ -471,20 +502,28 @@ void PropertiesPanel::applyArrowEnd(int style)
 {
     const QList<LineItemAbstract*> curves = selectedStrokes();
     QList<CanvasItem*> targets;
-    QList<QPair<ArrowStyle, ArrowStyle>> before;
-    QList<QPair<ArrowStyle, ArrowStyle>> after;
+    QList<QMap<ItemProperty, QVariant>> before;
+    QList<QMap<ItemProperty, QVariant>> after;
     for (LineItemAbstract* curve : curves) {
-        if (!curve) {
+        if (!curve || !curve->properties().contains(ItemProperty::ARROW_END)) {
             continue;
         }
+        QMap<ItemProperty, QVariant> beforeValues;
+        beforeValues.insert(ItemProperty::ARROW_START, curve->propertyValue(ItemProperty::ARROW_START));
+        beforeValues.insert(ItemProperty::ARROW_END, curve->propertyValue(ItemProperty::ARROW_END));
+        QMap<ItemProperty, QVariant> afterValues = beforeValues;
+        afterValues.insert(ItemProperty::ARROW_END, style);
         targets.append(curve);
-        before.append(qMakePair(curve->startArrow(), curve->endArrow()));
-        after.append(qMakePair(curve->startArrow(), static_cast<ArrowStyle>(style)));
+        before.append(beforeValues);
+        after.append(afterValues);
     }
     if (targets.isEmpty() || !m_scene || !m_scene->undoStack()) {
         return;
     }
-    m_scene->undoStack()->push(new ArrowStyleCommand(m_scene, targets, before, after, tr("Change line end arrow")));
+    for (CanvasItem* target : targets) {
+        target->setPropertyValue(ItemProperty::ARROW_END, style);
+    }
+    m_scene->undoStack()->push(new ItemPropertyCommand(m_scene, targets, before, after, tr("Change line end arrow")));
     refresh();
 }
 

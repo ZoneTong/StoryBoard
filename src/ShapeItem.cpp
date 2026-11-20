@@ -253,6 +253,8 @@ QVariant ShapeItem::propertyValue(ItemProperty property) const
         return fillColor();
     case ItemProperty::FILL_IMAGE:
         return QVariant::fromValue(fillImage());
+    case ItemProperty::FILL_IMAGE_MODE:
+        return static_cast<int>(fillImageMode());
     case ItemProperty::STROKE_STYLE:
         return static_cast<int>(strokeStyle());
     case ItemProperty::STROKE_COLOR:
@@ -296,6 +298,9 @@ void ShapeItem::setPropertyValue(ItemProperty property, const QVariant& value)
         }
         break;
     }
+    case ItemProperty::FILL_IMAGE_MODE:
+        setFillImage(fillImage(), static_cast<ImageFill::Mode>(value.toInt()));
+        break;
     case ItemProperty::STROKE_STYLE:
         setStrokeStyle(static_cast<Qt::PenStyle>(value.toInt()));
         break;
