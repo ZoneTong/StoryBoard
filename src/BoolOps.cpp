@@ -48,10 +48,10 @@ bool isLineClassItem(CanvasItem* item)
         return true;
     }
     // 零面积图元已全部并入曲线族，普通形状类恒有填充面积；多边形要看图层。
-    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && !shape->isPolygon()) {
+    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->shapeLayerCount() == 0) {
         return false;
     }
-    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->isPolygon()) {
+    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->shapeLayerCount() > 0) {
         for (int index = 0; index < composite->shapeLayerCount(); ++index) {
             const ShapeLayer layer = composite->shapeLayer(index);
             if (layer.role == ShapeLayerRole::FILL_AREA && !layer.path.isEmpty()) {
@@ -68,10 +68,10 @@ bool isLineClassItem(CanvasItem* item)
 // 图形仍按完整轮廓参与布尔运算，也应优先决定合并结果的样式。
 bool hasFillSpace(CanvasItem* item)
 {
-    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && !shape->isPolygon()) {
+    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->shapeLayerCount() == 0) {
         return true;
     }
-    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->isPolygon()) {
+    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->shapeLayerCount() > 0) {
         for (int index = 0; index < composite->shapeLayerCount(); ++index) {
             const ShapeLayer layer = composite->shapeLayer(index);
             if (layer.role == ShapeLayerRole::FILL_AREA && !layer.path.isEmpty()) {
@@ -159,10 +159,11 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
             Q_UNUSED(curve)
             memberPath = vectorMember->mapToScene(vectorMember->paintedShape());
             strokePart = memberPath;
-        } else if (auto* shape = dynamic_cast<ShapeItem*>(vectorMember); shape && !shape->isPolygon()) {
+        } else if (auto* shape = dynamic_cast<ShapeItem*>(vectorMember); shape && shape->shapeLayerCount() == 0) {
             memberPath = shape->mapToScene(shape->outlineShape());
             fillPart = memberPath;
-        } else if (auto* composite = dynamic_cast<ShapeItem*>(vectorMember); composite && composite->isPolygon()) {
+        } else if (auto* composite = dynamic_cast<ShapeItem*>(vectorMember);
+                   composite && composite->shapeLayerCount() > 0) {
             for (int index = 0; index < composite->shapeLayerCount(); ++index) {
                 const ShapeLayer layer = composite->shapeLayer(index);
                 if (layer.path.isEmpty()) {
@@ -210,14 +211,14 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
     }
 
     CanvasItem* styleItem = participant.item;
-    if (auto* shape = dynamic_cast<ShapeItem*>(styleItem); shape && !shape->isPolygon()) {
+    if (auto* shape = dynamic_cast<ShapeItem*>(styleItem); shape && shape->shapeLayerCount() == 0) {
         participant.fill = shape->fillColor();
         participant.stroke = shape->strokeColor();
         participant.strokeWidth = shape->strokeWidth();
         participant.fillStyle = shape->fillStyle();
         participant.strokeStyle = shape->strokeStyle();
         participant.filled = shape->fillStyle() != FillStyle::None;
-    } else if (auto* composite = dynamic_cast<ShapeItem*>(styleItem); composite && composite->isPolygon()) {
+    } else if (auto* composite = dynamic_cast<ShapeItem*>(styleItem); composite && composite->shapeLayerCount() > 0) {
         participant.fill = composite->fillColor();
         participant.stroke = composite->strokeColor();
         participant.strokeWidth = composite->strokeWidth();

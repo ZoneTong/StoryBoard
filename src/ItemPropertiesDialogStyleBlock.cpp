@@ -67,7 +67,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
 
     if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
         // 多边形派生自 ShapeItem 但没有形状类型：填充与描线照旧，圆角 / 角度等行不给。
-        const bool filled = shape->isPolygon() || shapeTypeIsFilled(shape->shapeType());
+        const bool filled = shape->shapeLayerCount() > 0 || shapeTypeIsFilled(shape->shapeType());
         m_hasFill = filled;
 
         // 需求 5/9a：直线、弧线这类只描线的图形根本没有填充属性，
@@ -128,7 +128,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
 
         const ShapeType type = shape->shapeType();
         // 多边形没有形状类型：圆角 / 角度 / 箭头这些按类型出现的行一律不给。
-        const bool plainShape = !shape->isPolygon();
+        const bool plainShape = shape->shapeLayerCount() == 0;
         if (plainShape && type == ShapeType::Sector) {
             m_initialStartAngle = shape->startAngle();
             m_initialSweepAngle = shape->sweepAngle();
@@ -216,7 +216,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_parallelogramAngleSpin->setValue(qRound(m_initialParallelogramAngle));
         }
 
-    } else if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->isPolygon()) {
+    } else if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->shapeLayerCount() > 0) {
         m_hasFill = true;
 
         m_fillStyleCombo = new QComboBox(this);

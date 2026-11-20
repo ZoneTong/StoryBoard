@@ -32,10 +32,10 @@ struct Knife {
 
 bool isFillTarget(CanvasItem* item)
 {
-    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && !shape->isPolygon()) {
+    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->shapeLayerCount() == 0) {
         return true;
     }
-    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->isPolygon()) {
+    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->shapeLayerCount() > 0) {
         return composite->hasShapeFillArea();
     }
     return false;
@@ -87,7 +87,7 @@ bool collectKnife(CanvasItem* item, Knife* out, QPainterPath* trajectoryPath)
         }
         return knifeFromPath(scenePath, out);
     }
-    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && !shape->isPolygon()) {
+    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->shapeLayerCount() == 0) {
         const QPainterPath scenePath = shape->mapToScene(shape->outlineShape());
         if (trajectoryPath) {
             *trajectoryPath = scenePath;
@@ -209,10 +209,10 @@ QList<QPainterPath> canvasHalfRegions(const QRectF& canvas, const Knife& knife)
 // 被切图元的填充轮廓（场景坐标）。
 QPainterPath fillPathOf(CanvasItem* item)
 {
-    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && !shape->isPolygon()) {
+    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->shapeLayerCount() == 0) {
         return shape->mapToScene(shape->outlineShape());
     }
-    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->isPolygon()) {
+    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->shapeLayerCount() > 0) {
         QPainterPath fill;
         for (int index = 0; index < composite->shapeLayerCount(); ++index) {
             const ShapeLayer layer = composite->shapeLayer(index);
@@ -371,9 +371,9 @@ bool apply(CanvasScene* scene, const QString& commandText)
     for (const Fragment& fragment : fragments) {
         auto* source = fragment.source;
         auto* shapeSource = dynamic_cast<ShapeItem*>(source);
-        shapeSource = shapeSource && !shapeSource->isPolygon() ? shapeSource : nullptr;
+        shapeSource = shapeSource && shapeSource->shapeLayerCount() == 0 ? shapeSource : nullptr;
         auto* compositeSource = dynamic_cast<ShapeItem*>(source);
-        compositeSource = compositeSource && compositeSource->isPolygon() ? compositeSource : shapeSource;
+        compositeSource = compositeSource && compositeSource->shapeLayerCount() > 0 ? compositeSource : shapeSource;
         PolygonItem::Layer layer;
         layer.path = fragment.piece;
         layer.fill = compositeSource->fillColor();

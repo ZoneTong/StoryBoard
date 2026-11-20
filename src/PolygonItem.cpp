@@ -261,8 +261,6 @@ void PolygonItem::setStyle(const QColor& strokeColor, const QColor& fillColor, q
 ShapeItemState PolygonItem::state() const
 {
     ShapeItemState result;
-    // 多边形没有 ShapeType，用 polygon 位区分；其余字段与普通图形同口径。
-    result.polygon = true;
     result.strokeColor = strokeColor();
     result.fillColor = fillColor();
     result.fillStyle = m_fillStyle;

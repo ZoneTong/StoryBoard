@@ -240,7 +240,7 @@ void StyleController::applyFillToSelection()
             continue;
         }
         // 填充图形与多边形都可带填充；线、花括号等纯描线图元不参与。
-        if (shapeTypeIsFilled(shape->shapeType()) || shape->isPolygon()) {
+        if (shapeTypeIsFilled(shape->shapeType()) || shape->shapeLayerCount() > 0) {
             targets.append(shape);
         } else {
             ++outlineOnlyCount;

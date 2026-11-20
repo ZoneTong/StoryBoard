@@ -82,7 +82,6 @@ struct ShapeLayer {
 };
 
 struct ShapeItemState {
-    ShapeType type = ShapeType::Rectangle;
     QColor strokeColor = QColor(30, 41, 59);
     QColor fillColor = QColor(30, 41, 59, 36);
     FillStyle fillStyle = FillStyle::Solid;
@@ -105,24 +104,19 @@ struct ShapeItemState {
     ImageFill::Mode fillImageMode = ImageFill::Mode::Stretch;
     QPointF pos;
     QSizeF size;
-    // 多边形（合并 / 分割产物）没有 ShapeType，用这一位与普通图形区分，
-    // 避免样式快照把矩形与多边形看成同一种状态。
-    bool polygon = false;
 
     bool operator==(const ShapeItemState& other) const
     {
-        return type == other.type && strokeColor == other.strokeColor && fillColor == other.fillColor &&
-               fillStyle == other.fillStyle && qFuzzyCompare(strokeWidth, other.strokeWidth) &&
-               strokeStyle == other.strokeStyle && qFuzzyCompare(opacity, other.opacity) &&
-               qFuzzyCompare(cornerRadius + 2.0, other.cornerRadius + 2.0) &&
+        return strokeColor == other.strokeColor && fillColor == other.fillColor && fillStyle == other.fillStyle &&
+               qFuzzyCompare(strokeWidth, other.strokeWidth) && strokeStyle == other.strokeStyle &&
+               qFuzzyCompare(opacity, other.opacity) && qFuzzyCompare(cornerRadius + 2.0, other.cornerRadius + 2.0) &&
                qFuzzyCompare(startAngle + 2.0, other.startAngle + 2.0) &&
                qFuzzyCompare(sweepAngle + 2.0, other.sweepAngle + 2.0) &&
                qFuzzyCompare(bottomAngle1 + 2.0, other.bottomAngle1 + 2.0) &&
                qFuzzyCompare(bottomAngle2 + 2.0, other.bottomAngle2 + 2.0) &&
                qFuzzyCompare(parallelogramAngle + 2.0, other.parallelogramAngle + 2.0) &&
                hasFillImage == other.hasFillImage && fillImage.cacheKey() == other.fillImage.cacheKey() &&
-               fillImageMode == other.fillImageMode && pos == other.pos && size == other.size &&
-               polygon == other.polygon;
+               fillImageMode == other.fillImageMode && pos == other.pos && size == other.size;
     }
 
     bool operator!=(const ShapeItemState& other) const { return !(*this == other); }
@@ -142,9 +136,6 @@ class ShapeItem : public CanvasItem {
     ItemPropertySet properties() const override;
     QVariant propertyValue(ItemProperty property) const override;
     void setPropertyValue(ItemProperty property, const QVariant& value) override;
-    // 多边形（PolygonItem）派生自本类，但没有内置轮廓：按 shapeType 分派的入口
-    // 都要先看这一位。
-    virtual bool isPolygon() const { return false; }
     // 内部图层视图：普通图形没有图层（0 层），多边形返回自己的层。
     virtual int shapeLayerCount() const { return 0; }
     virtual ShapeLayer shapeLayer(int index) const;

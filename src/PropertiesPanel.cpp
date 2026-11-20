@@ -202,7 +202,7 @@ QList<ShapeItem*> PropertiesPanel::selectedShapes() const
     QList<ShapeItem*> shapes;
     for (CanvasItem* item : selectedItems()) {
         // 多边形派生自 ShapeItem，但它没有形状类型语义：圆角 / 角度等行只对普通图形开放。
-        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && !shape->isPolygon()) {
+        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->shapeLayerCount() == 0) {
             shapes.append(shape);
         }
     }
@@ -213,7 +213,7 @@ QList<ShapeItem*> PropertiesPanel::selectedComposites() const
 {
     QList<ShapeItem*> composites;
     for (CanvasItem* item : selectedItems()) {
-        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->isPolygon()) {
+        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->shapeLayerCount() > 0) {
             composites.append(shape);
         }
     }

@@ -619,7 +619,6 @@ void ShapeItem::setArcAngles(qreal startAngle, qreal sweepAngle)
 ShapeItemState ShapeItem::state() const
 {
     ShapeItemState result;
-    result.type = shapeType();
     result.strokeColor = m_strokeColor;
     result.fillColor = m_fillColor;
     result.fillStyle = m_fillStyle;
@@ -637,7 +636,6 @@ ShapeItemState ShapeItem::state() const
     result.fillImageMode = m_fillImageMode;
     result.pos = pos();
     result.size = contentSize();
-    result.polygon = isPolygon();
     writeState(result);
     return result;
 }
@@ -928,7 +926,7 @@ QPainterPath ShapeItem::mapShapeLayerPath(const ShapeLayer& layer) const
 bool ShapeItem::hasShapeFillArea() const
 {
     if (shapeLayerCount() == 0) {
-        return !isPolygon();
+        return true;
     }
     for (int index = 0; index < shapeLayerCount(); ++index) {
         const ShapeLayer layer = shapeLayer(index);

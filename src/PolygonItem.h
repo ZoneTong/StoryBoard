@@ -40,7 +40,6 @@ class PolygonItem : public ShapeItem {
     // 多边形没有内置轮廓，shapeType 只用于形状派生的公共分支（填充、命中已单独覆写）。
     ShapeType shapeType() const override { return ShapeType::Polygon; }
     // 派生自 ShapeItem 但不受形状类型语义约束：凡按 shapeType 分派的入口都先看这一位。
-    bool isPolygon() const override { return true; }
     QString displayName() const override;
     QString typeDisplayName() const override;
     QJsonObject toJson() const override;
