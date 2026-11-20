@@ -17,5 +17,7 @@ class RectangleItem : public ParallelogramItem {
     QPointF customHandleCenter(int handle, bool* ok) const override;
 
   protected:
+    // JSON 重载后锁回 90°：旧文件 / 复制粘贴带的 parallelogramAngle 不影响矩形。
+    void readJsonExtra(const QJsonObject& json) override;
     QPainterPath shapePath(const QRectF& rect) const override;
 };

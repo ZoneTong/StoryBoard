@@ -16,6 +16,12 @@ ItemPropertySet RectangleItem::properties() const
     return result;
 }
 
+void RectangleItem::readJsonExtra(const QJsonObject& json)
+{
+    ParallelogramItem::readJsonExtra(json);
+    setParallelogramAngle(90.0);
+}
+
 void RectangleItem::setParallelogramAngle(qreal angle)
 {
     Q_UNUSED(angle);

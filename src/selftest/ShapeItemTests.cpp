@@ -174,6 +174,19 @@ void selftest::runShapeItemTests(Context& ctx)
                   QStringLiteral("旧 rounded_rectangle 读成矩形显式圆角"));
     }
 
+    // 矩形 JSON 重载锁 90°：旧文件 / 复制粘贴带的 parallelogramAngle 不能把矩形拖成斜四边形。
+    {
+        RectangleItem legacyRect;
+        QJsonObject legacyJson = legacyRect.toJson();
+        legacyJson.insert(QStringLiteral("parallelogramAngle"), 60.0);
+        RectangleItem loadedRect;
+        loadedRect.fromJson(legacyJson);
+        ctx.check(loadedRect.shapeType() == ShapeType::Rectangle &&
+                      qFuzzyCompare(loadedRect.parallelogramAngle() + 2.0, 92.0),
+                  QStringLiteral("矩形 JSON 重载后内角仍锁 90°"),
+                  QStringLiteral("angle=%1").arg(loadedRect.parallelogramAngle()));
+    }
+
     bool shapePathsOk = true;
     bool shapeIconsOk = true;
     for (ShapeType type : shapeTypes) {
