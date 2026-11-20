@@ -3,8 +3,8 @@
 #include "CanvasScene.h"
 #include "CanvasView.h"
 #include "CurveItem.h"
-#include "LineItem.h"
 #include "ShapeItem.h"
+#include "StraightLineItem.h"
 
 #include <QCoreApplication>
 #include <QLineF>
@@ -19,7 +19,7 @@ QString trView(const char* text)
 
 // 需求 8：笔画拟合出的节点几乎共线时视作直线。阈值放宽到约笔画宽度的一半，
 // 手绘轻微抖动的直线不会被误判成曲线；折返笔画（来回描）按曲线保留。
-bool strokeLooksLinear(const CurveItem* stroke)
+bool strokeLooksLinear(const LineItemAbstract* stroke)
 {
     const QVector<QPointF> knots = stroke->strokePoints();
     if (knots.size() < 2) {
@@ -123,9 +123,9 @@ void CanvasStrokeController::finishStroke()
         const QPointF a = stroke->mapToScene(knots.first());
         const QPointF b = stroke->mapToScene(knots.last());
         // 直线是曲线族的两点线性子型：端点直接决定几何，不再用旋转角摆放细长条。
-        auto* line = new LineItem();
+        auto* line = new StraightLineItem();
         line->setEndpoints(a, b, stroke->strokeColor(), stroke->strokeWidth());
-        line->setStrokeStyle(stroke->strokeStyle());
+        line->setStrokePattern(stroke->strokePattern());
         m_scene->removeItem(stroke);
         delete stroke;
         m_scene->commitNewItem(line, trView("Add stroke"));

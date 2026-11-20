@@ -4,10 +4,10 @@ QList<ShapeType> ShapeMeta::allTypes()
 {
     // 需求 7：菜单与工具栏「常见图形」共用这一份常用顺序表（唯一顺序源）。
     // 需求 9：平行四边形紧跟菱形，方便和立方体三个面归在一处认图。
-    return {ShapeType::Rectangle,     ShapeType::Ellipse,  ShapeType::Arrow,    ShapeType::DoubleArrow,
-            ShapeType::Triangle,      ShapeType::Callout,  ShapeType::Diamond,  ShapeType::Parallelogram,
-            ShapeType::Sector,        ShapeType::Cube,     ShapeType::Cylinder, ShapeType::Star4,
-            ShapeType::Star,          ShapeType::Hexagram, ShapeType::Heart,    ShapeType::FlagWave,
+    return {ShapeType::Rectangle, ShapeType::Ellipse,  ShapeType::Arrow,    ShapeType::DoubleArrow,
+            ShapeType::Triangle,  ShapeType::Callout,  ShapeType::Diamond,  ShapeType::Parallelogram,
+            ShapeType::Sector,    ShapeType::Cube,     ShapeType::Cylinder, ShapeType::Star4,
+            ShapeType::Star,      ShapeType::Hexagram, ShapeType::Heart,    ShapeType::FlagWave,
             ShapeType::Scroll};
 }
 
@@ -177,19 +177,6 @@ QSizeF ShapeMeta::defaultSize(ShapeType type)
         return QSizeF(110.85, 64.0);
     }
     return QSizeF(128.0, 128.0);
-}
-
-bool ShapeMeta::isLineLike(ShapeType type)
-{
-    // 需求 4：这些图元的轮廓是一条开放描线，两端都能挂箭头；
-    // 花括号属于曲线类（CurveItem），另行处理。
-    switch (type) {
-    case ShapeType::FlagWave:
-    case ShapeType::Scroll:
-        return true;
-    default:
-        return false;
-    }
 }
 
 bool ShapeMeta::isFilled(ShapeType type)

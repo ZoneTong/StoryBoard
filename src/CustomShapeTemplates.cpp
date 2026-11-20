@@ -1,8 +1,12 @@
 #include "CustomShapeTemplates.h"
 
+#include "ArcItem.h"
+#include "BraceItem.h"
 #include "CurveItem.h"
 #include "PolygonItem.h"
 #include "ShapeItem.h"
+#include "SineItem.h"
+#include "StraightLineItem.h"
 
 #include <QDir>
 #include <QFile>
@@ -36,13 +40,35 @@ QPainterPath itemOutlinePath(CanvasItem* item)
     return translate.map(path);
 }
 
-CanvasItem* createTemplateItem(const QString& kind)
+CanvasItem* createTemplateItem(const QJsonObject& object)
 {
-    if (kind == QStringLiteral("shape")) {
-        return new ShapeItem();
+    // 旧模板把类型写在 type 里，曲线族也曾共用 curve；这里与画布加载保持同一套折算。
+    QString kind = object.value(QStringLiteral("kind")).toString();
+    if (kind.isEmpty()) {
+        kind = object.value(QStringLiteral("type")).toString();
     }
-    if (kind == QStringLiteral("stroke")) {
+    if (kind == QStringLiteral("curve")) {
+        kind = QStringLiteral("freehand");
+    } else if (kind == QStringLiteral("line")) {
+        kind = QStringLiteral("straightline");
+    }
+    if (kind == QStringLiteral("shape")) {
+        return createShapeItem(shapeTypeFromString(object.value(QStringLiteral("shapeType")).toString()));
+    }
+    if (kind == QStringLiteral("straightline")) {
+        return new StraightLineItem();
+    }
+    if (kind == QStringLiteral("arc")) {
+        return new ArcItem();
+    }
+    if (kind == QStringLiteral("sine")) {
+        return new SineItem();
+    }
+    if (kind == QStringLiteral("freehand")) {
         return new CurveItem();
+    }
+    if (kind == QStringLiteral("brace")) {
+        return new BraceItem();
     }
     if (kind == QStringLiteral("polygon")) {
         return new PolygonItem();
@@ -88,7 +114,7 @@ bool loadCustomShapeTemplate(const QString& filePath, CustomShapeTemplate* resul
     const QJsonArray items = root.value(QStringLiteral("items")).toArray();
     for (const QJsonValue& value : items) {
         const QJsonObject object = value.toObject();
-        std::unique_ptr<CanvasItem> item(createTemplateItem(object.value(QStringLiteral("type")).toString()));
+        std::unique_ptr<CanvasItem> item(createTemplateItem(object));
         if (!item) {
             continue;
         }

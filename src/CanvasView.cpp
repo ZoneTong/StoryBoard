@@ -9,8 +9,8 @@
 #include "CanvasViewCursor.h"
 #include "CanvasViewHitTester.h"
 #include "CanvasZoomController.h"
-#include "CurveItem.h"
 #include "I18n.h"
+#include "LineItemAbstract.h"
 #include "ShapeItem.h"
 
 #include <QAction>
@@ -33,7 +33,7 @@ namespace {
 // 零面积描线图元：曲线，以及直线等描线类图形。
 bool isStrokeItem(CanvasItem* item)
 {
-    if (dynamic_cast<CurveItem*>(item)) {
+    if (dynamic_cast<LineItemAbstract*>(item)) {
         return true;
     }
     // 直线 / 弧线 / 正弦已改为曲线图元，形状类里不再有零面积图元。

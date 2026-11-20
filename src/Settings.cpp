@@ -291,15 +291,15 @@ void mergeSettings(SettingsMap& values, const AppSettings& settings)
         values.remove(QStringLiteral("layout/dockOrder"));
     }
 
-    // 编辑图元卡位置：是否已经由用户移动过、当前停靠侧、是否悬浮以及悬浮几何。
+    // 属性编辑面板位置：是否已经由用户移动过、当前停靠侧、是否悬浮以及悬浮几何。
     values.insert(QStringLiteral("layout/itemDockSaved"),
-                  settings.itemDockStateSaved ? QStringLiteral("true") : QStringLiteral("false"));
+                  settings.propertiesDockStateSaved ? QStringLiteral("true") : QStringLiteral("false"));
     values.insert(QStringLiteral("layout/itemDockFloating"),
-                  settings.itemDockFloating ? QStringLiteral("true") : QStringLiteral("false"));
-    values.insert(QStringLiteral("layout/itemDockArea"), settings.itemDockArea);
-    if (!settings.itemDockGeometry.isEmpty()) {
+                  settings.propertiesDockFloating ? QStringLiteral("true") : QStringLiteral("false"));
+    values.insert(QStringLiteral("layout/itemDockArea"), settings.propertiesDockArea);
+    if (!settings.propertiesDockGeometry.isEmpty()) {
         values.insert(QStringLiteral("layout/itemDockGeometryBase64"),
-                      QString::fromLatin1(settings.itemDockGeometry.toBase64()));
+                      QString::fromLatin1(settings.propertiesDockGeometry.toBase64()));
     } else {
         values.remove(QStringLiteral("layout/itemDockGeometryBase64"));
     }
@@ -379,11 +379,14 @@ void AppSettings::load()
         name = name.trimmed();
     }
 
-    itemDockStateSaved = boolFromMap(values, QStringLiteral("layout/itemDockSaved"), itemDockStateSaved);
-    itemDockFloating = boolFromMap(values, QStringLiteral("layout/itemDockFloating"), itemDockFloating);
-    const QString savedItemDockArea = values.value(QStringLiteral("layout/itemDockArea")).trimmed().toLower();
-    itemDockArea = savedItemDockArea == QLatin1String("right") ? QStringLiteral("right") : QStringLiteral("left");
-    itemDockGeometry = QByteArray::fromBase64(values.value(QStringLiteral("layout/itemDockGeometryBase64")).toLatin1());
+    propertiesDockStateSaved = boolFromMap(values, QStringLiteral("layout/itemDockSaved"), propertiesDockStateSaved);
+    propertiesDockFloating = boolFromMap(values, QStringLiteral("layout/itemDockFloating"), propertiesDockFloating);
+    const QString savedPropertiesPanelDockArea =
+        values.value(QStringLiteral("layout/itemDockArea")).trimmed().toLower();
+    propertiesDockArea =
+        savedPropertiesPanelDockArea == QLatin1String("right") ? QStringLiteral("right") : QStringLiteral("left");
+    propertiesDockGeometry =
+        QByteArray::fromBase64(values.value(QStringLiteral("layout/itemDockGeometryBase64")).toLatin1());
 
     shortcutOverrides.clear();
     const QString shortcutPrefix = QStringLiteral("shortcuts/");

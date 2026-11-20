@@ -8,7 +8,6 @@
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
-#include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
 #include "LineArtConverter.h"
@@ -16,6 +15,7 @@
 #include "LineArtPresets.h"
 #include "MainWindow.h"
 #include "PolygonItem.h"
+#include "PropertiesPanel.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
@@ -107,12 +107,12 @@ void selftest::runLayerExportPanelTests(Context& ctx)
         CanvasScene overlapScene;
         overlapScene.setMode(ToolMode::Edit);
         const int upperLayerId = overlapScene.createLayer(QStringLiteral("上层"));
-        auto* lowerItem = new ShapeItem(ShapeType::Rectangle);
+        auto* lowerItem = createShapeItem(ShapeType::Rectangle);
         lowerItem->setLayerId(CanvasScene::BackgroundLayerId + 1);
         lowerItem->setStyle(QColor(QStringLiteral("#2563EB")), QColor(Qt::transparent), 4.0);
         lowerItem->setPos(QPointF(200, 170));
         lowerItem->setContentSize(QSizeF(200, 140));
-        auto* upperItem = new ShapeItem(ShapeType::Rectangle);
+        auto* upperItem = createShapeItem(ShapeType::Rectangle);
         upperItem->setLayerId(upperLayerId);
         upperItem->setStyle(QColor(QStringLiteral("#DC2626")), QColor(Qt::transparent), 4.0);
         upperItem->setPos(QPointF(200, 170));
@@ -166,13 +166,13 @@ void selftest::runLayerExportPanelTests(Context& ctx)
     {
         // 需求 27：合并可见图层导出 / 每个可见图层单独导出。
         CanvasScene layerExportScene;
-        BackgroundState exportBackground;
+        CanvasBackground exportBackground;
         exportBackground.type = BackgroundType::Color;
         exportBackground.color = QColor(Qt::white);
-        layerExportScene.applyBackground(exportBackground);
+        layerExportScene.setCanvasBackground(exportBackground);
 
         const int redLayer = layerExportScene.createLayer(QStringLiteral("红色层"));
-        auto* red = new ShapeItem(ShapeType::Rectangle);
+        auto* red = createShapeItem(ShapeType::Rectangle);
         red->setLayerId(redLayer);
         red->setStyle(QColor(QStringLiteral("#DC2626")), QColor(QStringLiteral("#DC2626")), 1.0);
         red->setPos(QPointF(10, 10));
@@ -180,7 +180,7 @@ void selftest::runLayerExportPanelTests(Context& ctx)
         layerExportScene.attachItem(red);
 
         const int blueLayer = layerExportScene.createLayer(QStringLiteral("蓝色层"));
-        auto* blue = new ShapeItem(ShapeType::Rectangle);
+        auto* blue = createShapeItem(ShapeType::Rectangle);
         blue->setLayerId(blueLayer);
         blue->setStyle(QColor(QStringLiteral("#2563EB")), QColor(QStringLiteral("#2563EB")), 1.0);
         blue->setPos(QPointF(100, 100));

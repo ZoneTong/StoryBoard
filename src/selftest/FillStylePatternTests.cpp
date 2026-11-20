@@ -18,7 +18,7 @@ void selftest::runFillStylePatternTests(Context& ctx)
     // 交叉线填充必须铺满整个图形：两个方向的斜线在左下角与右上角密度相当。
     CanvasScene hatchScene;
     hatchScene.applyCanvasSize(QSizeF(400, 300));
-    auto* crossShape = new ShapeItem(ShapeType::Rectangle);
+    auto* crossShape = createShapeItem(ShapeType::Rectangle);
     crossShape->setPos(QPointF(50, 45));
     crossShape->setContentSize(QSizeF(300, 200));
     crossShape->setStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 2.0);
@@ -82,7 +82,7 @@ void selftest::runFillStylePatternTests(Context& ctx)
     auto renderPatternFill = [](FillStyle style, QImage& image) {
         CanvasScene scene;
         scene.applyCanvasSize(QSizeF(400, 300));
-        auto* shape = new ShapeItem(ShapeType::Rectangle);
+        auto* shape = createShapeItem(ShapeType::Rectangle);
         shape->setPos(QPointF(50, 45));
         shape->setContentSize(QSizeF(300, 200));
         shape->setStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 2.0);

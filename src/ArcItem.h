@@ -1,15 +1,19 @@
 #pragma once
 
-#include "CurveItem.h"
 #include "EllipseShape.h"
+#include "I18n.h"
+#include "LineItemAbstract.h"
 
-// 弧线图元：同时派生自曲线（零面积描线）与椭圆几何（角度语义、采样）。
+#include <QRectF>
+
+// 弧线图元：同时派生自描线图元（零面积描线）与椭圆几何（角度语义、采样）。
 // 椭圆外接框即插入时给出的矩形；角度是几何真相，改角度按上次相对框重新采样。
-class ArcItem : public CurveItem, public EllipseShape {
+class ArcItem : public LineItemAbstract, public EllipseShape {
     Q_OBJECT
   public:
     explicit ArcItem(QGraphicsItem* parent = nullptr);
 
+    QString kind() const override { return QStringLiteral("arc"); }
     QString displayName() const override;
     QRectF frameRect() const override;
 
@@ -21,6 +25,13 @@ class ArcItem : public CurveItem, public EllipseShape {
     void setArcGeometry(const QPointF& topLeftScene, const QSizeF& size, qreal startDeg, qreal sweepDeg,
                         const QColor& color, qreal width);
 
+    bool supportsArcAngles() const override { return true; }
+    ParamState paramState() const override;
+    void applyParamState(const ParamState& state) override;
+    ItemPropertySet properties() const override;
+    QVariant propertyValue(ItemProperty property) const override;
+    void setPropertyValue(ItemProperty property, const QVariant& value) override;
+
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject& json) override;
 
@@ -30,5 +41,5 @@ class ArcItem : public CurveItem, public EllipseShape {
 
     qreal m_startAngle = 30.0;
     qreal m_sweepAngle = 120.0;
-    QRectF m_relFrame{0.0, 0.0, 1.0, 1.0};
+    QRectF m_refFrame{0.0, 0.0, 1.0, 1.0};
 };

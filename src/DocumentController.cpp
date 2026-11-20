@@ -116,10 +116,24 @@ bool validateCanvasRoot(const QJsonObject& root, QString* error)
 
     const QJsonArray items = root.value(QStringLiteral("items")).toArray();
     for (const QJsonValue& value : items) {
-        const QString kind = value.toObject().value(QStringLiteral("type")).toString();
+        const QJsonObject object = value.toObject();
+        QString kind = object.value(QStringLiteral("kind")).toString();
+        // 旧画布 / 旧模板用 type 记类型，曲线族还共用 curve；折算后再做白名单校验。
+        if (kind.isEmpty()) {
+            kind = object.value(QStringLiteral("type")).toString();
+        }
+        if (kind == QStringLiteral("curve")) {
+            kind = QStringLiteral("freehand");
+        } else if (kind == QStringLiteral("line")) {
+            kind = QStringLiteral("straightline");
+        }
         // 需求 14：图片类型图元已并入矩形（图片只作背景），"image" 不再是合法类型。
-        if (kind != QStringLiteral("curve") && kind != QStringLiteral("text") && kind != QStringLiteral("shape") &&
-            kind != QStringLiteral("polygon")) {
+        // 线条族的五个形态各有自己的 kind，不再共用族级 "curve"。
+        const bool known = kind == QStringLiteral("straightline") || kind == QStringLiteral("arc") ||
+                           kind == QStringLiteral("sine") || kind == QStringLiteral("freehand") ||
+                           kind == QStringLiteral("brace") || kind == QStringLiteral("text") ||
+                           kind == QStringLiteral("shape") || kind == QStringLiteral("polygon");
+        if (!known) {
             if (kind == QStringLiteral("stroke")) {
                 // 旧笔画图元不做兼容：加载时整体跳过，由加载流程统一提示。
                 continue;
@@ -147,7 +161,7 @@ void DocumentController::newCanvas()
     m_window->m_scene->resetDocument();
     m_window->m_scene->applyCanvasSize(m_window->m_settings.canvasSize);
     m_window->m_scene->setShowGrid(m_window->m_settings.showGrid);
-    m_window->m_scene->applyBackground(BackgroundState());
+    m_window->m_scene->setCanvasBackground(CanvasBackground());
     m_window->m_filePath.clear();
     m_window->m_undo->clear();
     m_window->m_undo->setClean();
@@ -239,7 +253,7 @@ bool DocumentController::loadCanvasFile(const QString& path, bool showErrors)
 
     int legacyStrokes = 0;
     for (const QJsonValue& value : usableRoot.value(QStringLiteral("items")).toArray()) {
-        if (value.toObject().value(QStringLiteral("type")).toString() == QStringLiteral("stroke")) {
+        if (value.toObject().value(QStringLiteral("kind")).toString() == QStringLiteral("stroke")) {
             ++legacyStrokes;
         }
     }

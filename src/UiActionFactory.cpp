@@ -250,12 +250,13 @@ void UiActionFactory::build()
             visible ? MainWindow::tr("Helper grid shown") : MainWindow::tr("Helper grid hidden"), 2000);
     });
 
-    m_window->m_replaceBgAct = makeAction(m_window, IconId::Background, MainWindow::tr("Replace background image…"),
-                                          QKeySequence(), MainWindow::tr("Choose an image as the canvas background"));
+    m_window->m_replaceBgAct =
+        makeAction(m_window, IconId::Background, MainWindow::tr("Replace canvas background image…"), QKeySequence(),
+                   MainWindow::tr("Choose an image as the canvas background"));
     m_window->m_bgColorAct = makeAction(m_window, IconId::Palette, MainWindow::tr("Set background color…"),
                                         QKeySequence(), MainWindow::tr("Use a solid color as the canvas background"));
-    m_window->m_clearBgAct = makeAction(m_window, IconId::Delete, MainWindow::tr("Clear background"), QKeySequence(),
-                                        MainWindow::tr("Restore a transparent background"));
+    m_window->m_clearBgAct = makeAction(m_window, IconId::Delete, MainWindow::tr("Clear canvas background"),
+                                        QKeySequence(), MainWindow::tr("Restore a transparent background"));
 
     m_window->m_bgStretchAct = new QAction(MainWindow::tr("Stretch to fill"), m_window);
     m_window->m_bgFitAct = new QAction(MainWindow::tr("Fit entirely"), m_window);
@@ -314,7 +315,8 @@ void UiActionFactory::build()
     QObject::connect(m_window->m_zoomOutAct, &QAction::triggered, m_window->m_view, &CanvasView::zoomOut);
     QObject::connect(m_window->m_actualSizeAct, &QAction::triggered, m_window->m_view, &CanvasView::actualSize);
 
-    QObject::connect(m_window->m_replaceBgAct, &QAction::triggered, m_window, &MainWindow::replaceBackgroundImage);
+    QObject::connect(m_window->m_replaceBgAct, &QAction::triggered, m_window,
+                     &MainWindow::replaceCanvasBackgroundImage);
     QObject::connect(m_window->m_bgColorAct, &QAction::triggered, m_window, &MainWindow::setBackgroundColor);
     QObject::connect(m_window->m_clearBgAct, &QAction::triggered, m_window, &MainWindow::clearBackground);
     QObject::connect(m_window->m_settingsAct, &QAction::triggered, m_window, &MainWindow::showSettings);
@@ -404,20 +406,20 @@ void UiActionFactory::build()
     m_window->m_strokeWidthFocusAct->setShortcutContext(Qt::ApplicationShortcut);
     QObject::connect(m_window->m_strokeWidthFocusAct, &QAction::triggered, m_window, &MainWindow::focusStrokeWidthSpin);
 
-    auto applyBackgroundMode = [this](BackgroundMode mode) {
-        BackgroundState background = m_window->m_scene->background();
+    auto setCanvasBackgroundMode = [this](BackgroundMode mode) {
+        CanvasBackground background = m_window->m_scene->canvasBackground();
         if (background.type != BackgroundType::Image) {
             return;
         }
         background.mode = mode;
-        m_window->m_scene->replaceBackground(background, MainWindow::tr("Adjust background fill mode"));
+        m_window->m_scene->replaceCanvasBackground(background, MainWindow::tr("Adjust background fill mode"));
     };
     QObject::connect(m_window->m_bgStretchAct, &QAction::triggered, m_window,
-                     [applyBackgroundMode]() { applyBackgroundMode(BackgroundMode::Stretch); });
+                     [setCanvasBackgroundMode]() { setCanvasBackgroundMode(BackgroundMode::Stretch); });
     QObject::connect(m_window->m_bgFitAct, &QAction::triggered, m_window,
-                     [applyBackgroundMode]() { applyBackgroundMode(BackgroundMode::Fit); });
+                     [setCanvasBackgroundMode]() { setCanvasBackgroundMode(BackgroundMode::Fit); });
     QObject::connect(m_window->m_bgTileAct, &QAction::triggered, m_window,
-                     [applyBackgroundMode]() { applyBackgroundMode(BackgroundMode::Tile); });
+                     [setCanvasBackgroundMode]() { setCanvasBackgroundMode(BackgroundMode::Tile); });
 
     QObject::connect(m_window->m_aboutAct, &QAction::triggered, m_window, &MainWindow::showAbout);
     QObject::connect(m_window->m_shortcutsAct, &QAction::triggered, m_window, &MainWindow::showShortcuts);

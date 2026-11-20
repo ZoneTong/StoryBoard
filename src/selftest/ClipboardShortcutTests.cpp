@@ -46,7 +46,7 @@ void selftest::runClipboardShortcutTests(Context& ctx)
         QUndoStack sourceUndo;
         sourceScene.setUndoStack(&sourceUndo);
 
-        auto* source = new ShapeItem(ShapeType::Rectangle);
+        auto* source = createShapeItem(ShapeType::Rectangle);
         source->setContentSize(QSizeF(120.0, 80.0));
         source->setPos(QPointF(40.0, 50.0));
         sourceScene.addItemsWithUndo({source}, QStringLiteral("Add clipboard source"));

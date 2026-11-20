@@ -17,7 +17,6 @@ class ShapeMeta {
     static bool isFilled(ShapeType type);
 
     // 需求 4：线条类图元（零面积、只有一条开放描线）两端可设箭头样式。
-    static bool isLineLike(ShapeType type);
 
     static QList<FillStyle> allStyles();
     static QString styleToString(FillStyle style);

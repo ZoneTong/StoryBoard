@@ -154,6 +154,26 @@ void CanvasItemInteraction::applyResize(const QPointF& scenePos, Qt::KeyboardMod
         }
     }
 
+    // 平行四边形：拖 Apex（左上顶点）改左下内角，底边与高度不变；拖动期间显示角度读数。
+    if (auto* para = dynamic_cast<ShapeItem*>(m_item); para && para->apexAngleHandle() &&
+                                                       para->shapeType() == ShapeType::Parallelogram &&
+                                                       !para->isCustomShape() && handle == CanvasItem::Apex) {
+        const qreal startHeight = m_item->m_dragStartSize.height();
+        QPointF local = scenePos - m_item->m_dragStartPos;
+        const qreal rotation = m_item->rotationAngle();
+        if (!qFuzzyIsNull(rotation)) {
+            QTransform transform;
+            transform.rotate(-rotation);
+            local = transform.map(local);
+        }
+        // 上边相对底边的水平偏移 = 高度 × cot(角度)：拖左顶点只改水平偏移。
+        const qreal dx = qBound<qreal>(0.5, local.x(), qMax<qreal>(0.5, m_item->m_dragStartSize.width() - 0.5));
+        const qreal angle = qRadiansToDegrees(qAtan2(startHeight, dx));
+        para->setParallelogramAngle(angle);
+        para->setAngleReadoutVisible(true);
+        return;
+    }
+
     // 需求 2：拖顶点 C 只改三角形，AB 两端在场景中固定；底边宽度不变，
     // 顶点高度由落点反推两个底角，角度是真相、高度再按角度派生。
     if (auto* triangle = dynamic_cast<ShapeItem*>(m_item); triangle && triangle->shapeType() == ShapeType::Triangle &&
@@ -326,6 +346,10 @@ void CanvasItemInteraction::finishInteraction()
 {
     if (m_item->m_drag == CanvasItem::DragKind::None) {
         return;
+    }
+
+    if (auto* shape = dynamic_cast<ShapeItem*>(m_item)) {
+        shape->setAngleReadoutVisible(false);
     }
 
     const bool wasResize = m_item->m_drag == CanvasItem::DragKind::Resize;

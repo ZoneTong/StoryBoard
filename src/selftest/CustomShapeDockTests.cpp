@@ -9,23 +9,24 @@
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
-#include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
 #include "ItemStyleVisuals.h"
 #include "LayerPanel.h"
 #include "LineArtConverter.h"
 #include "LineArtDialog.h"
 #include "LineArtPresets.h"
-#include "LineItem.h"
 #include "MainWindow.h"
 #include "PolygonItem.h"
+#include "PropertiesPanel.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
+#include "StraightLineItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
 #include "selftest/SelftestHelpers.h"
+#include "shapes/AllShapes.h"
 
 #include <QAction>
 #include <QApplication>
@@ -92,21 +93,21 @@ void selftest::runCustomShapeDockTests(Context& ctx)
 {
     // 需求：选中图元工具卡（边框样式 / 透明度 / 矩形圆角 / 图层与高度）与画布格式自定义图形。
     {
-        ShapeItem styled(ShapeType::Rectangle);
+        RectangleItem styled;
         styled.setContentSize(QSizeF(200, 120));
         styled.setStyle(QColor(QStringLiteral("#1E293B")), QColor(QStringLiteral("#F97316")), 6.0);
         styled.setStrokeStyle(Qt::DashLine);
-        styled.setOpacity(0.42);
+        styled.setItemOpacity(0.42);
         styled.setCornerRadius(18.0);
 
-        ShapeItem reloaded;
+        RectangleItem reloaded;
         reloaded.fromJson(styled.toJson());
-        ctx.check(reloaded.strokeStyle() == Qt::DashLine && qAbs(reloaded.opacity() - 0.42) < 0.001 &&
+        ctx.check(reloaded.strokeStyle() == Qt::DashLine && qAbs(reloaded.itemOpacity() - 0.42) < 0.001 &&
                       qAbs(reloaded.cornerRadius() - 18.0) < 0.001,
                   QStringLiteral("图形边框样式、透明度与圆角随画布保存"),
                   QStringLiteral("style=%1 opacity=%2 radius=%3")
                       .arg(static_cast<int>(reloaded.strokeStyle()))
-                      .arg(reloaded.opacity())
+                      .arg(reloaded.itemOpacity())
                       .arg(reloaded.cornerRadius()));
 
         const int squareElements = ShapeItem::pathFor(ShapeType::Rectangle, QRectF(0, 0, 100, 80), 0.0).elementCount();
@@ -116,10 +117,10 @@ void selftest::runCustomShapeDockTests(Context& ctx)
 
         QPainterPath unit;
         unit.addRect(QRectF(0.0, 0.0, 1.0, 1.0));
-        ShapeItem custom;
+        RectangleItem custom;
         custom.setCustomShape(QStringLiteral("Badge"), unit);
         custom.setContentSize(QSizeF(160, 100));
-        ShapeItem customReloaded;
+        RectangleItem customReloaded;
         customReloaded.fromJson(custom.toJson());
         const QRectF customBounds = customReloaded.currentPath(QRectF(0, 0, 160, 100)).boundingRect();
         ctx.check(customReloaded.isCustomShape() && customReloaded.displayName() == QStringLiteral("Badge") &&
@@ -129,7 +130,7 @@ void selftest::runCustomShapeDockTests(Context& ctx)
                       .arg(customReloaded.isCustomShape() ? 1 : 0)
                       .arg(customReloaded.displayName())
                       .arg(customBounds.width()));
-        customReloaded.setShapeType(ShapeType::Ellipse);
+        customReloaded.setCustomShape(QString(), QPainterPath());
         ctx.check(!customReloaded.isCustomShape(), QStringLiteral("切换内置图形时清除自定义轮廓"));
 
         // 自定义图形目录：配置同级的 shapes 子目录，扫描 .sbcanvas 并按文件名命名。
@@ -140,7 +141,7 @@ void selftest::runCustomShapeDockTests(Context& ctx)
                       QFileInfo(shapesDirectory).fileName() == QStringLiteral("shapes"),
                   QStringLiteral("自定义图形目录位于配置文件同级的 shapes 子目录"), shapesDirectory);
 
-        ShapeItem templateShape(ShapeType::Star);
+        StarItem templateShape;
         templateShape.setPos(QPointF(12, 18));
         templateShape.setContentSize(QSizeF(160, 100));
         QJsonObject templateRoot;
@@ -243,7 +244,7 @@ void selftest::runCustomShapeDockTests(Context& ctx)
             QDir().mkpath(secondDir);
             QJsonObject deployedRoot;
             deployedRoot.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
-            ShapeItem deployedShape(ShapeType::Ellipse);
+            EllipseItem deployedShape;
             deployedShape.setContentSize(QSizeF(90, 90));
             deployedRoot.insert(QStringLiteral("items"), QJsonArray{deployedShape.toJson()});
             const QString deployedPath = QDir(secondDir).filePath(QStringLiteral("deployed-leaf.sbcanvas"));
@@ -278,18 +279,18 @@ void selftest::runCustomShapeDockTests(Context& ctx)
         }
 
         CanvasScene panelScene;
-        ItemDockPanel panel(&panelScene);
+        PropertiesPanel panel(&panelScene);
         // 紧凑化后不再有折叠分组小标题：断言整卡只由标题行 + 内容滚动区组成，
         // 颜色 / 填充 / 边框 / 透明度 / 圆角 / 图层各行控件直接平铺在卡内。
         ctx.check(panel.findChildren<QToolButton*>(QStringLiteral("ItemSectionToggle")).isEmpty(),
-                  QStringLiteral("编辑图元卡已去掉折叠分组小标题"));
+                  QStringLiteral("属性编辑面板已去掉折叠分组小标题"));
         ctx.check(panel.findChildren<QToolButton*>(QStringLiteral("ItemShapeButton")).isEmpty() &&
                       panel.findChildren<QToolButton*>(QStringLiteral("ItemCustomShapeButton")).isEmpty(),
-                  QStringLiteral("编辑图元卡已移除常见图形展开行"));
+                  QStringLiteral("属性编辑面板已移除常见图形展开行"));
         ctx.check(panel.findChildren<QToolButton*>(QStringLiteral("ItemColorSwatch")).size() >= 16 &&
                       panel.findChildren<QToolButton*>(QStringLiteral("ItemFillStyleButton")).size() == 11 &&
                       panel.findChildren<QToolButton*>(QStringLiteral("ItemBorderStyleButton")).size() == 5,
-                  QStringLiteral("编辑图元卡平铺颜色 / 填充 / 边框等工具"),
+                  QStringLiteral("属性编辑面板平铺颜色 / 填充 / 边框等工具"),
                   QStringLiteral("colors=%1 fills=%2 borders=%3")
                       .arg(panel.findChildren<QToolButton*>(QStringLiteral("ItemColorSwatch")).size())
                       .arg(panel.findChildren<QToolButton*>(QStringLiteral("ItemFillStyleButton")).size())
@@ -300,7 +301,7 @@ void selftest::runCustomShapeDockTests(Context& ctx)
                       panel.findChildren<QToolButton*>(QStringLiteral("ItemHeightDownButton")).size() == 1,
                   QStringLiteral("工具卡提供图层与层内高度 ±1 按钮"));
 
-        QWidget* content = panel.findChild<QWidget*>(QStringLiteral("ItemPanelContent"));
+        QWidget* content = panel.findChild<QWidget*>(QStringLiteral("PropertiesPanelContent"));
         QWidget* fillStyleRow = panel.findChild<QWidget*>(QStringLiteral("ItemFillStyleRow"));
         QWidget* fillColorRow = panel.findChild<QWidget*>(QStringLiteral("ItemFillColorRow"));
         QWidget* borderStyleRow = panel.findChild<QWidget*>(QStringLiteral("ItemBorderStyleRow"));
@@ -319,7 +320,7 @@ void selftest::runCustomShapeDockTests(Context& ctx)
         // 需求 1 行序：填充样式 → 填充颜色 → 描线样式 → 描线颜色 → 描线宽度。
         ctx.check(fillStyleIndex >= 0 && fillColorIndex > fillStyleIndex && borderStyleIndex > fillColorIndex &&
                       borderColorIndex > borderStyleIndex && borderWidthIndex > borderColorIndex,
-                  QStringLiteral("编辑图元卡按填充样式、填充颜色、描线样式、描线颜色、描线宽度排列"),
+                  QStringLiteral("属性编辑面板按填充样式、填充颜色、描线样式、描线颜色、描线宽度排列"),
                   QStringLiteral("%1/%2/%3/%4/%5")
                       .arg(fillStyleIndex)
                       .arg(fillColorIndex)
@@ -335,32 +336,32 @@ void selftest::runCustomShapeDockTests(Context& ctx)
             content && content->layout() && arrangeCard ? content->layout()->indexOf(arrangeCard) : -1;
         ctx.check(arrangeIndex >= 0 && selectionIndex > arrangeIndex, QStringLiteral("新增操作行位于图层与高度行下方"),
                   QStringLiteral("arrange=%1 selection=%2").arg(arrangeIndex).arg(selectionIndex));
-        ctx.check(ItemDockPanel::tr("Border color") == QStringLiteral("描线颜色") &&
-                      ItemDockPanel::tr("Border width") == QStringLiteral("描线宽度") &&
-                      ItemDockPanel::tr("Height +1") == QStringLiteral("高度 +1") &&
-                      ItemDockPanel::tr("Layer and height") == QStringLiteral("图层与高度"),
-                  QStringLiteral("编辑图元卡把颜色与宽度统一称为描线颜色 / 描线宽度"),
+        ctx.check(PropertiesPanel::tr("Border color") == QStringLiteral("描线颜色") &&
+                      PropertiesPanel::tr("Border width") == QStringLiteral("描线宽度") &&
+                      PropertiesPanel::tr("Height +1") == QStringLiteral("高度 +1") &&
+                      PropertiesPanel::tr("Layer and height") == QStringLiteral("图层与高度"),
+                  QStringLiteral("属性编辑面板把颜色与宽度统一称为描线颜色 / 描线宽度"),
                   QStringLiteral("stroke=%1 height=%2")
-                      .arg(ItemDockPanel::tr("Border color"))
-                      .arg(ItemDockPanel::tr("Height +1")));
+                      .arg(PropertiesPanel::tr("Border color"))
+                      .arg(PropertiesPanel::tr("Height +1")));
 
         // 选中只描边 / 非填充图元时隐藏填充两行，混入可填充图元再恢复。
         panelScene.setMode(ToolMode::Edit);
-        auto* strokeOnlyShape = new LineItem();
+        auto* strokeOnlyShape = new StraightLineItem();
         strokeOnlyShape->setEndpoints(QPointF(40.0, 40.0), QPointF(180.0, 40.0), QColor(Qt::black), 1.0);
         panelScene.addItemsWithUndo({strokeOnlyShape}, QStringLiteral("Add line"));
         strokeOnlyShape->setSelected(true);
         QApplication::processEvents();
         ctx.check(fillStyleRow && fillStyleRow->isHidden() && fillColorRow && fillColorRow->isHidden(),
                   QStringLiteral("选中不支持填充的图元时隐藏填充颜色与填充样式行"));
-        auto* fillableShape = new ShapeItem(ShapeType::Rectangle);
+        auto* fillableShape = createShapeItem(ShapeType::Rectangle);
         fillableShape->setContentSize(QSizeF(120.0, 80.0));
         panelScene.addItemsWithUndo({fillableShape}, QStringLiteral("Add rectangle"));
         fillableShape->setSelected(true);
         strokeOnlyShape->setSelected(true);
         QApplication::processEvents();
-        ctx.check(fillStyleRow && !fillStyleRow->isHidden() && fillColorRow && !fillColorRow->isHidden(),
-                  QStringLiteral("混入可填充图元时恢复填充颜色与填充样式行"));
+        ctx.check(fillStyleRow && fillStyleRow->isHidden() && fillColorRow && fillColorRow->isHidden(),
+                  QStringLiteral("混入可填充图元时按属性交集隐藏填充颜色与填充样式行"));
         bool priorityTipFound = false;
         for (QToolButton* rowIcon : panel.findChildren<QToolButton*>(QStringLiteral("ItemRowIcon"))) {
             if (rowIcon->toolTip().contains(QStringLiteral("优先级"))) {
@@ -382,7 +383,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
         QFile::remove(dockConfig);
         qputenv("STORYBOARD_CONFIG", dockConfig.toLocal8Bit());
         const QString dockShapesDir = AppSettings::shapesDir();
-        ShapeItem menuShape(ShapeType::Star);
+        StarItem menuShape;
         menuShape.setContentSize(QSizeF(120, 80));
         QJsonObject menuRoot;
         menuRoot.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
@@ -421,20 +422,22 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
         dockWindow.show();
         QApplication::processEvents();
 
-        QDockWidget* itemDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("ItemDock"));
-        ItemDockPanel* dockPanel =
-            itemDock ? itemDock->findChild<ItemDockPanel*>(QStringLiteral("ItemPanel")) : nullptr;
+        QDockWidget* propertiesDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("PropertiesPanelDock"));
+        PropertiesPanel* dockPanel =
+            propertiesDock ? propertiesDock->findChild<PropertiesPanel*>(QStringLiteral("PropertiesPanel")) : nullptr;
         QMenu* dockCustomMenu = dockWindow.findChild<QMenu*>(QStringLiteral("CustomShapeMenu"));
-        ctx.check(itemDock && dockPanel && !itemDock->isFloating() &&
-                      dockWindow.dockWidgetArea(itemDock) == Qt::LeftDockWidgetArea && itemDock->isVisible(),
-                  QStringLiteral("编辑图元卡首次启动显示并固定在窗口左侧"));
+        ctx.check(propertiesDock && dockPanel && !propertiesDock->isFloating() &&
+                      dockWindow.dockWidgetArea(propertiesDock) == Qt::LeftDockWidgetArea &&
+                      propertiesDock->isVisible(),
+                  QStringLiteral("属性编辑面板首次启动显示并固定在窗口左侧"));
         const int preferredCardWidth = dockPanel ? dockPanel->preferredWidth() : 0;
-        const int actualCardWidth = itemDock ? itemDock->width() : -1;
+        const int actualCardWidth = propertiesDock ? propertiesDock->width() : -1;
         // 宽度既要覆盖内容，也不能明显宽于内容，否则右侧会留下空白。
         const bool dockWidthFits =
             actualCardWidth >= preferredCardWidth - 2 && actualCardWidth <= preferredCardWidth + 2;
-        ctx.check(itemDock && dockPanel && preferredCardWidth >= 260 && preferredCardWidth <= 320 && dockWidthFits,
-                  QStringLiteral("编辑图元卡宽度贴合内容且不超出 320px"),
+        ctx.check(propertiesDock && dockPanel && preferredCardWidth >= 260 && preferredCardWidth <= 320 &&
+                      dockWidthFits,
+                  QStringLiteral("属性编辑面板宽度贴合内容且不超出 320px"),
                   QStringLiteral("preferred=%1 actual=%2").arg(preferredCardWidth).arg(actualCardWidth));
         // 需求 7：自定义图形改为浮动面板，模板以按钮形式出现在标签页里；菜单只留触发器。
         dockWindow.openCustomShapePanel(nullptr);
@@ -518,8 +521,8 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             dockWindow.scene()->clearSelection();
             QApplication::processEvents();
         }
-        ctx.check(dockWindow.findChild<QAction*>(QStringLiteral("ItemDockToggleAction")) != nullptr,
-                  QStringLiteral("视图菜单提供编辑图元卡开关"));
+        ctx.check(dockWindow.findChild<QAction*>(QStringLiteral("PropertiesPanelToggleAction")) != nullptr,
+                  QStringLiteral("视图菜单提供属性编辑面板开关"));
 
         CanvasScene* dockScene = dockWindow.scene();
         // 卡片不再有常见图形行，插入改为走场景接口（等价于「插入」菜单插入矩形）；
@@ -530,7 +533,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
         }
         QApplication::processEvents();
         const int beforeCount = dockScene->canvasItemCount();
-        auto* insertedShape = new ShapeItem(ShapeType::Rectangle);
+        auto* insertedShape = createShapeItem(ShapeType::Rectangle);
         insertedShape->setPos(QPointF(160.0, 140.0));
         insertedShape->setContentSize(QSizeF(140.0, 100.0));
         dockScene->addItemsWithUndo({insertedShape}, QStringLiteral("Add rectangle"));
@@ -540,21 +543,21 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                                        ? nullptr
                                        : dynamic_cast<ShapeItem*>(dockScene->selectedCanvasItems().first());
         ctx.check(selectedShape == insertedShape && dockScene->canvasItemCount() == beforeCount + 1 &&
-                      itemDock->isVisible(),
-                  QStringLiteral("插入矩形后编辑图元卡随选中出现并保持显示"),
+                      propertiesDock->isVisible(),
+                  QStringLiteral("插入矩形后属性编辑面板随选中出现并保持显示"),
                   QStringLiteral("same=%1 count=%2/%3 visible=%4 sel=%5 inScene=%6")
                       .arg(selectedShape == insertedShape ? 1 : 0)
                       .arg(dockScene->canvasItemCount())
                       .arg(beforeCount + 1)
-                      .arg(itemDock->isVisible() ? 1 : 0)
+                      .arg(propertiesDock->isVisible() ? 1 : 0)
                       .arg(insertedShape->isSelected() ? 1 : 0)
                       .arg(dockScene->canvasItems().contains(insertedShape) ? 1 : 0));
 
         // 选中图元后可见行变多，卡片宽度保持启动时的值，不随选中来回跳动。
         QApplication::processEvents();
-        const int selectedActualWidth = itemDock ? itemDock->width() : -1;
+        const int selectedActualWidth = propertiesDock ? propertiesDock->width() : -1;
         ctx.check(qAbs(selectedActualWidth - preferredCardWidth) <= 2,
-                  QStringLiteral("切换选中后编辑图元卡宽度保持不变"),
+                  QStringLiteral("切换选中后属性编辑面板宽度保持不变"),
                   QStringLiteral("start=%1 actual=%2").arg(preferredCardWidth).arg(selectedActualWidth));
 
         QDockWidget* layerDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("LayerDock"));
@@ -563,8 +566,9 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
         ctx.check(viewModeDock && modeBar && viewModeDock->widget() == modeBar,
                   QStringLiteral("视图模式栏作为右上角卡片"));
         // 默认停靠在左侧，不属于悬浮窗口。
-        ctx.check(itemDock && !itemDock->isFloating() && dockWindow.dockWidgetArea(itemDock) == Qt::LeftDockWidgetArea,
-                  QStringLiteral("编辑图元卡默认停靠左侧"));
+        ctx.check(propertiesDock && !propertiesDock->isFloating() &&
+                      dockWindow.dockWidgetArea(propertiesDock) == Qt::LeftDockWidgetArea,
+                  QStringLiteral("属性编辑面板默认停靠左侧"));
         ctx.check(viewModeDock && layerDock && dockWindow.dockWidgetArea(viewModeDock) == Qt::RightDockWidgetArea &&
                       dockWindow.dockWidgetArea(layerDock) == Qt::RightDockWidgetArea,
                   QStringLiteral("视图模式卡与图层卡默认停靠右侧"));
@@ -609,11 +613,11 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 opacitySpin->setValue(45);
                 QApplication::processEvents();
             }
-            ctx.check(qAbs(selectedShape->opacity() - 0.45) < 0.01, QStringLiteral("工具卡透明度即时作用到图形"),
-                      QString::number(selectedShape->opacity()));
+            ctx.check(qAbs(selectedShape->itemOpacity() - 0.45) < 0.01, QStringLiteral("工具卡透明度即时作用到图形"),
+                      QString::number(selectedShape->itemOpacity()));
             dockScene->undoStack()->undo();
-            ctx.check(qAbs(selectedShape->opacity() - 1.0) < 0.01, QStringLiteral("撤销透明度修改恢复原值"),
-                      QString::number(selectedShape->opacity()));
+            ctx.check(qAbs(selectedShape->itemOpacity() - 1.0) < 0.01, QStringLiteral("撤销透明度修改恢复原值"),
+                      QString::number(selectedShape->itemOpacity()));
 
             if (dashedBorderButtonIndex >= 0 && borderButtons.size() > dashedBorderButtonIndex) {
                 borderButtons.at(dashedBorderButtonIndex)->click();
@@ -684,7 +688,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
 
             ctx.check(copyButton && deleteButton && rotateCwButton && rotateCcwButton && copyButton->isVisible() &&
                           deleteButton->isVisible() && rotateCwButton->isVisible() && rotateCcwButton->isVisible(),
-                      QStringLiteral("单选时编辑图元卡列出复制 / 删除 / 旋转按钮"));
+                      QStringLiteral("单选时属性编辑面板列出复制 / 删除 / 旋转按钮"));
             ctx.check(alignRowButtons.size() == 8 && morphButtons.size() == 6 && groupButton && ungroupButton &&
                           !alignRowButtons.first()->isVisible() && !morphButtons.first()->isVisible() &&
                           !groupButton->isVisible() && !ungroupButton->isVisible(),
@@ -761,7 +765,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             }
 
             // 多选时卡片把对齐 8 项与合并图元 6 项直接展开成图标按钮行，并复用菜单栏同一批动作。
-            auto* secondShape = new ShapeItem(ShapeType::Rectangle);
+            auto* secondShape = createShapeItem(ShapeType::Rectangle);
             secondShape->setPos(QPointF(420.0, 240.0));
             secondShape->setContentSize(QSizeF(120.0, 90.0));
             secondShape->setStyle(QColor(QStringLiteral("#1D4ED8")), QColor(29, 78, 216, 40), 3.0);
@@ -841,7 +845,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                       QStringLiteral("选中整组时只显示解散分组"));
 
             // 组 + 组外图元混合选中：再套一层组合与取消组合同时可用（分组支持多层）。
-            auto* thirdShape = new ShapeItem(ShapeType::Ellipse);
+            auto* thirdShape = createShapeItem(ShapeType::Ellipse);
             thirdShape->setPos(QPointF(560.0, 320.0));
             thirdShape->setContentSize(QSizeF(100.0, 80.0));
             dockScene->addItemsWithUndo({thirdShape}, QStringLiteral("Add third shape"));
@@ -855,7 +859,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                       QStringLiteral("组与普通图元混合选中时图元分组和解散分组都显示"));
 
             // 删除按钮单独用一个临时图元验证，避免删掉后面还要复用的图元。
-            auto* deleteProbe = new ShapeItem(ShapeType::Rectangle);
+            auto* deleteProbe = createShapeItem(ShapeType::Rectangle);
             deleteProbe->setPos(QPointF(640.0, 360.0));
             deleteProbe->setContentSize(QSizeF(80.0, 60.0));
             dockScene->addItemsWithUndo({deleteProbe}, QStringLiteral("Add delete probe"));
@@ -920,25 +924,26 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                       QString::number(selectedStroke->strokeWidth()));
 
             if (dashedBorderButtonIndex >= 0 && borderButtons.size() > dashedBorderButtonIndex) {
-                const Qt::PenStyle styleBefore = selectedStroke->strokeStyle();
+                const Qt::PenStyle styleBefore = selectedStroke->strokePattern();
                 borderButtons.at(dashedBorderButtonIndex)->click();
                 QApplication::processEvents();
-                ctx.check(selectedStroke->strokeStyle() != styleBefore, QStringLiteral("曲线可通过编辑卡切换描线样式"));
+                ctx.check(selectedStroke->strokePattern() != styleBefore,
+                          QStringLiteral("曲线可通过编辑卡切换描线样式"));
                 dockScene->undoStack()->undo();
                 QApplication::processEvents();
-                ctx.check(selectedStroke->strokeStyle() == styleBefore, QStringLiteral("撤销描线样式恢复曲线原样式"));
+                ctx.check(selectedStroke->strokePattern() == styleBefore, QStringLiteral("撤销描线样式恢复曲线原样式"));
             }
 
             if (opacitySpin) {
                 opacitySpin->setValue(55);
                 QApplication::processEvents();
             }
-            ctx.check(qAbs(selectedStroke->opacity() - 0.55) < 0.01, QStringLiteral("透明度作用到曲线"),
-                      QString::number(selectedStroke->opacity()));
+            ctx.check(qAbs(selectedStroke->itemOpacity() - 0.55) < 0.01, QStringLiteral("透明度作用到曲线"),
+                      QString::number(selectedStroke->itemOpacity()));
             dockScene->undoStack()->undo();
             QApplication::processEvents();
-            ctx.check(qAbs(selectedStroke->opacity() - 1.0) < 0.01, QStringLiteral("撤销透明度恢复曲线原值"),
-                      QString::number(selectedStroke->opacity()));
+            ctx.check(qAbs(selectedStroke->itemOpacity() - 1.0) < 0.01, QStringLiteral("撤销透明度恢复曲线原值"),
+                      QString::number(selectedStroke->itemOpacity()));
 
             selectedShape->setSelected(true);
             selectedStroke->setSelected(true);
@@ -949,13 +954,16 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 opacitySpin->setValue(30);
                 QApplication::processEvents();
             }
-            ctx.check(
-                qAbs(selectedShape->opacity() - 0.3) < 0.01 && qAbs(selectedStroke->opacity() - 0.3) < 0.01,
-                QStringLiteral("透明度同时作用到图形和曲线"),
-                QStringLiteral("shape=%1 stroke=%2").arg(selectedShape->opacity()).arg(selectedStroke->opacity()));
+            ctx.check(qAbs(selectedShape->itemOpacity() - 0.3) < 0.01 &&
+                          qAbs(selectedStroke->itemOpacity() - 0.3) < 0.01,
+                      QStringLiteral("透明度同时作用到图形和曲线"),
+                      QStringLiteral("shape=%1 stroke=%2")
+                          .arg(selectedShape->itemOpacity())
+                          .arg(selectedStroke->itemOpacity()));
             dockScene->undoStack()->undo();
             QApplication::processEvents();
-            ctx.check(qAbs(selectedShape->opacity() - 1.0) < 0.01 && qAbs(selectedStroke->opacity() - 1.0) < 0.01,
+            ctx.check(qAbs(selectedShape->itemOpacity() - 1.0) < 0.01 &&
+                          qAbs(selectedStroke->itemOpacity() - 1.0) < 0.01,
                       QStringLiteral("撤销透明度同时恢复图形和曲线"));
 
             // 多边形也要有填充 / 描线属性：选中后五行可见，按钮改动真正落到图层并可撤销。
@@ -1116,12 +1124,13 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             cardText->setSelected(true);
             QApplication::processEvents();
 
-            QWidget* textContentRow = itemDock->findChild<QWidget*>(QStringLiteral("ItemTextContentRow"));
-            QWidget* textFontRow = itemDock->findChild<QWidget*>(QStringLiteral("ItemTextFontRow"));
-            QWidget* textColorRow = itemDock->findChild<QWidget*>(QStringLiteral("ItemTextColorRow"));
-            QWidget* fillImageRow = itemDock->findChild<QWidget*>(QStringLiteral("ItemFillImageRow"));
-            QToolButton* propertiesButton = itemDock->findChild<QToolButton*>(QStringLiteral("ItemPropertiesButton"));
-            QToolButton* smoothButton = itemDock->findChild<QToolButton*>(QStringLiteral("ItemSmoothButton"));
+            QWidget* textContentRow = propertiesDock->findChild<QWidget*>(QStringLiteral("ItemTextContentRow"));
+            QWidget* textFontRow = propertiesDock->findChild<QWidget*>(QStringLiteral("ItemTextFontRow"));
+            QWidget* textColorRow = propertiesDock->findChild<QWidget*>(QStringLiteral("ItemTextColorRow"));
+            QWidget* fillImageRow = propertiesDock->findChild<QWidget*>(QStringLiteral("ItemFillImageRow"));
+            QToolButton* propertiesButton =
+                propertiesDock->findChild<QToolButton*>(QStringLiteral("ItemPropertiesButton"));
+            QToolButton* smoothButton = propertiesDock->findChild<QToolButton*>(QStringLiteral("ItemSmoothButton"));
             ctx.check(textContentRow && textContentRow->isVisible() && textFontRow && textFontRow->isVisible() &&
                           textColorRow && textColorRow->isVisible(),
                       QStringLiteral("选中文字时显示正文 / 字体 / 颜色行"));
@@ -1155,7 +1164,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             ctx.check(qAbs(cardText->itemOpacity() - 1.0) < 0.01, QStringLiteral("撤销透明度恢复文字原值"),
                       QString::number(cardText->itemOpacity()));
 
-            auto* textEdit = itemDock->findChild<QLineEdit*>(QStringLiteral("ItemTextContentEdit"));
+            auto* textEdit = propertiesDock->findChild<QLineEdit*>(QStringLiteral("ItemTextContentEdit"));
             if (textEdit) {
                 textEdit->setText(QStringLiteral("改后文字"));
                 QMetaObject::invokeMethod(textEdit, "editingFinished", Qt::DirectConnection);
@@ -1168,7 +1177,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             ctx.check(cardText->text() == QStringLiteral("卡片文字"), QStringLiteral("撤销正文恢复原文"),
                       cardText->text());
 
-            auto* fontSizeSpin = itemDock->findChild<QSpinBox*>(QStringLiteral("ItemTextFontSizeSpin"));
+            auto* fontSizeSpin = propertiesDock->findChild<QSpinBox*>(QStringLiteral("ItemTextFontSizeSpin"));
             if (fontSizeSpin) {
                 fontSizeSpin->setValue(20);
                 QApplication::processEvents();
@@ -1181,7 +1190,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                       QString::number(cardText->textFont().pointSize()));
 
             const QList<QToolButton*> textSwatches =
-                itemDock->findChildren<QToolButton*>(QStringLiteral("ItemTextColorSwatch"));
+                propertiesDock->findChildren<QToolButton*>(QStringLiteral("ItemTextColorSwatch"));
             if (textSwatches.size() > 1) {
                 textSwatches.at(1)->click();
                 QApplication::processEvents();
@@ -1193,7 +1202,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             ctx.check(cardText->textColor() == QColor(QStringLiteral("#1E293B")),
                       QStringLiteral("撤销文字颜色恢复原色"), cardText->textColor().name());
 
-            auto* cardImage = new ShapeItem(ShapeType::Rectangle);
+            auto* cardImage = createShapeItem(ShapeType::Rectangle);
             QPixmap imagePixmap(32, 24);
             imagePixmap.fill(QColor(QStringLiteral("#2563EB")));
             cardImage->setFillImage(imagePixmap, ImageFill::Mode::Stretch);
@@ -1209,7 +1218,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                       QStringLiteral("选中图形时隐藏文字行"));
 
             // 线条类图元不参与合并：选中直线时合并图元入口隐藏。
-            auto* cardLine = new LineItem();
+            auto* cardLine = new StraightLineItem();
             cardLine->setEndpoints(QPointF(620.0, 470.0), QPointF(710.0, 480.0), QColor(QStringLiteral("#334155")),
                                    3.0);
             dockScene->addItemsWithUndo({cardLine}, QStringLiteral("Add card line"));
@@ -1229,14 +1238,15 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             dockScene->addItemsWithUndo({smoothStroke}, QStringLiteral("Add smooth stroke"));
             dockScene->clearSelection();
             QApplication::processEvents();
-            QWidget* fillStyleRowWhenEmpty = itemDock->findChild<QWidget*>(QStringLiteral("ItemFillStyleRow"));
-            QWidget* borderWidthRowWhenEmpty = itemDock->findChild<QWidget*>(QStringLiteral("ItemBorderWidthRow"));
+            QWidget* fillStyleRowWhenEmpty = propertiesDock->findChild<QWidget*>(QStringLiteral("ItemFillStyleRow"));
+            QWidget* borderWidthRowWhenEmpty =
+                propertiesDock->findChild<QWidget*>(QStringLiteral("ItemBorderWidthRow"));
             ctx.check(fillStyleRowWhenEmpty && fillStyleRowWhenEmpty->isHidden() && borderWidthRowWhenEmpty &&
                           borderWidthRowWhenEmpty->isHidden(),
                       QStringLiteral("无图元选中时隐藏图元编辑选项"));
             smoothStroke->setSelected(true);
             QApplication::processEvents();
-            auto* smoothingSpin = itemDock->window()->findChild<QSpinBox*>(QStringLiteral("BrushSmoothingSpin"));
+            auto* smoothingSpin = propertiesDock->window()->findChild<QSpinBox*>(QStringLiteral("BrushSmoothingSpin"));
             if (smoothingSpin) {
                 smoothingSpin->setValue(10.0);
                 QApplication::processEvents();
@@ -1252,24 +1262,25 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                       QStringLiteral("index=%1->%2").arg(undoIndexBeforeSmooth).arg(dockScene->undoStack()->index()));
 
             // 悬浮卡片跟随选中状态：清空选中后隐藏，重新选中再出现。
-            itemDock->setFloating(true);
+            propertiesDock->setFloating(true);
             QApplication::processEvents();
             dockScene->clearSelection();
             QApplication::processEvents();
-            ctx.check(!itemDock->isVisible(), QStringLiteral("悬浮时清空选中隐藏编辑图元卡"));
+            ctx.check(!propertiesDock->isVisible(), QStringLiteral("悬浮时清空选中隐藏属性编辑面板"));
             selectedShape->setSelected(true);
             QApplication::processEvents();
-            ctx.check(itemDock->isVisible(), QStringLiteral("悬浮时有选中显示编辑图元卡"));
+            ctx.check(propertiesDock->isVisible(), QStringLiteral("悬浮时有选中显示属性编辑面板"));
 
             // 拖回主窗口停靠后卡片常驻，不再随选中状态整张显隐。
-            itemDock->setFloating(false);
+            propertiesDock->setFloating(false);
             QApplication::processEvents();
-            ctx.check(!itemDock->isFloating() && itemDock->isVisible(), QStringLiteral("拖回主窗口后停靠并保持显示"));
+            ctx.check(!propertiesDock->isFloating() && propertiesDock->isVisible(),
+                      QStringLiteral("拖回主窗口后停靠并保持显示"));
             dockScene->clearSelection();
             QApplication::processEvents();
-            ctx.check(itemDock->isVisible(), QStringLiteral("停靠时清空选中不隐藏编辑图元卡"));
+            ctx.check(propertiesDock->isVisible(), QStringLiteral("停靠时清空选中不隐藏属性编辑面板"));
             ctx.check(layerDock && layerDock->height() < dockWindow.height() - 100,
-                      QStringLiteral("编辑图元卡停靠时图层卡不撑满窗口高度"));
+                      QStringLiteral("属性编辑面板停靠时图层卡不撑满窗口高度"));
         }
 
         for (const QString& stale : QDir(dockShapesDir).entryList({QStringLiteral("*.sbcanvas")}, QDir::Files)) {

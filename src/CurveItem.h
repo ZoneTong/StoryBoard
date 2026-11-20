@@ -1,112 +1,60 @@
 #pragma once
 
-#include "ArrowStyle.h"
-#include "CanvasItem.h"
-#include "CurveGeometry.h"
 #include "I18n.h"
+#include "LineItemAbstract.h"
 
 #include <QColor>
-#include <QPainterPath>
+#include <QJsonObject>
+#include <QPointF>
 #include <QVector>
-#include <Qt>
 
-// 曲线图元：内部几何是分段三次贝塞尔，绘制期的采样点只在收笔拟合时短暂存在，
-// 不写入画布文件。属性与直线对齐：描线颜色 / 宽度 / 样式、透明度、位置尺寸、
-// 旋转、名称、图层与层内高度；没有填充与平滑度属性。
-// 曲线子型：描述曲线的几何族（笔迹 / 直线 / 弧线 / 正弦 / 花括号），与“来源”分开。
-// 判别只在 curveKind 一处，不再用 source 或 ShapeType 兼职。
-enum class CurveKind { Freehand = 0, Line, Arc, Sine, Brace };
-// 笔迹来源：只描述曲线怎么产生，不参与“是否程序化几何”的判断。
+// 笔迹来源：只描述曲线怎么产生（手绘 / 图片线稿提取），不参与类型判断。
 enum class CurveSource { HandDrawn = 0, LineArt };
 
-class CurveItem : public CanvasItem {
+// 手绘曲线图元：内部几何是分段三次贝塞尔，绘制期的采样点只在收笔拟合时短暂存在，
+// 不写入画布文件。直线 / 弧线 / 正弦 / 花括号已各自成类，本类只剩笔迹与线稿。
+class CurveItem : public LineItemAbstract {
     Q_OBJECT
   public:
-    // 拟合会同时改变贝塞尔段、内容尺寸和位置，撤销/重做需要完整快照。
-    struct GeometryState {
-        QVector<CurveSegment> segments;
-        QPointF pos;
-        QSizeF contentSize;
-        QSizeF baseSize;
-        bool dot = false;
-        QPointF dotCenter;
-
-        bool operator==(const GeometryState& other) const;
-        bool operator!=(const GeometryState& other) const { return !(*this == other); }
-    };
-
     explicit CurveItem(QGraphicsItem* parent = nullptr);
 
-    QString kind() const override { return QStringLiteral("curve"); }
+    QString kind() const override { return QStringLiteral("freehand"); }
     QString displayName() const override;
-
-    QJsonObject toJson() const override;
-    void fromJson(const QJsonObject& json) override;
-    QPainterPath shape() const override;
-    QPainterPath outlineShape() const override;
-    QPainterPath paintedShape() const override;
 
     void beginStroke(const QPointF& scenePos, const QColor& color, qreal width);
     void appendScenePoint(const QPointF& scenePos);
     // 用算好的场景坐标直接构造一条曲线（图片线稿化等程序化场景使用）。
     void setStrokePoints(const QVector<QPointF>& scenePoints, const QColor& color, qreal width, qreal tolerance = 0.0,
-                         bool linearPath = false);
+                         bool polyline = false) override;
     // tolerance 是绘制期拟合参数：0 表示按采样点直接连成曲线段，>0 时先抽点再拟合。
     void endStroke(qreal tolerance = 0.0);
     bool isEmpty() const;
 
-    QColor strokeColor() const { return m_color; }
-    qreal strokeWidth() const { return m_penWidth; }
-    Qt::PenStyle strokeStyle() const { return m_penStyle; }
-    bool isLinearPath() const { return m_linearPath; }
-    void setStyle(const QColor& color, qreal width);
-    void setStrokeStyle(Qt::PenStyle style);
-    // 需求 3.12：曲线也支持两端箭头样式，几何与描线宽度不变。
-    ArrowStyle startArrow() const { return m_startArrow; }
-    ArrowStyle endArrow() const { return m_endArrow; }
-    void setArrowStyles(ArrowStyle start, ArrowStyle end);
-
-    CurveSource source() const { return m_source; }
+    CurveSource source() const { return m_strokeSource; }
     void setSource(CurveSource source);
 
-    CurveKind curveKind() const { return m_curveKind; }
-    void setCurveKind(CurveKind kind);
-
-    int segmentCount() const { return m_segments.size(); }
-    // 曲线段的端点序列，供只读检查与撤销比较；不再暴露原始采样点。
-    int strokePointCount() const { return CurveGeometry::knots(m_segments).size(); }
-    QVector<QPointF> strokePoints() const { return CurveGeometry::knots(m_segments); }
-    GeometryState geometryState() const;
-    void applyGeometryState(const GeometryState& state);
+    GeometryState geometryState() const override;
+    void applyGeometryState(const GeometryState& state) override;
     // 简化曲线：把当前路径拍平后按容差抽点并重新拟合；返回是否改变了几何。
-    bool simplifyCurve(qreal tolerance);
-    // 兼容旧调用名，行为等同 simplifyCurve。
-    bool smoothStroke(qreal tolerance) { return simplifyCurve(tolerance); }
+    bool simplifyCurve(qreal tolerance) override;
+    bool supportsSimplify() const override { return true; }
+
+    QJsonObject toJson() const override;
+    ItemPropertySet properties() const override;
+    QVariant propertyValue(ItemProperty property) const override;
+    void setPropertyValue(ItemProperty property, const QVariant& value) override;
+    void fromJson(const QJsonObject& json) override;
 
   protected:
-    void paintContent(QPainter* painter) override;
+    void rebuildPath() override;
+    void normalizeGeometry() override;
+    bool isSinglePointGeometry() const override;
 
   private:
-    void rebuildPath();
-    void normalizeToContent();
-    QRectF geometryBounds() const;
-
-    QVector<CurveSegment> m_segments;
     // 仅绘制期存在：收笔前保存原始采样点，用于预览与拟合。
     QVector<QPointF> m_rawPoints;
-    QPainterPath m_path;
-    QColor m_color = QColor(30, 41, 59);
-    qreal m_penWidth = 4.0;
-    Qt::PenStyle m_penStyle = Qt::SolidLine;
-    QSizeF m_baseSize{1.0, 1.0};
-    bool m_dot = false;
+    bool m_hasDot = false;
     bool m_drawing = false;
     bool m_finished = false;
-    // 折线曲线：每段退化成直线，方角不会被拟合成圆角（图片线稿化使用）。
-    bool m_linearPath = false;
-    qreal m_pad = 4.0;
-    ArrowStyle m_startArrow = ArrowStyle::None;
-    ArrowStyle m_endArrow = ArrowStyle::None;
-    CurveSource m_source = CurveSource::HandDrawn;
-    CurveKind m_curveKind = CurveKind::Freehand;
+    CurveSource m_strokeSource = CurveSource::HandDrawn;
 };

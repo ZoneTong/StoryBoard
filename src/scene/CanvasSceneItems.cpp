@@ -1,7 +1,7 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
-#include "CurveItem.h"
+#include "LineItemAbstract.h"
 #include "scene/SceneConstants.h"
 
 #include <QSet>
@@ -72,10 +72,11 @@ bool CanvasScene::canSmoothSelectedStrokes() const
         if (!isItemEditable(item)) {
             continue;
         }
-        if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
-            // 只有笔迹子型（含图片线稿提取）可简化；直线 / 弧线 / 正弦 / 花括号是程序化几何。
-            if (stroke->curveKind() == CurveKind::Freehand && !stroke->isEmpty() &&
-                stroke->strokePointCount() >= 3) {
+        if (auto* line = dynamic_cast<LineItemAbstract*>(item)) {
+            // 只有具备简化能力的手绘笔迹（含图片线稿提取）可简化；
+            // 直线 / 弧线 / 正弦 / 花括号是程序化几何，能力位为 false。
+            const LineItemAbstract::GeometryState state = line->geometryState();
+            if (line->supportsSimplify() && !state.hasDot && line->strokePoints().size() >= 3) {
                 return true;
             }
         }
@@ -91,26 +92,27 @@ int CanvasScene::smoothSelectedStrokes(qreal tolerance)
 
     // 参数 0 只关闭“收尾自动平滑”；手动按钮即使在该设置下也执行一次轻量平滑。
     const qreal effectiveTolerance = qMax<qreal>(2.0, tolerance);
-    QList<CurveItem*> items;
-    QList<CurveItem::GeometryState> before;
-    QList<CurveItem::GeometryState> after;
+    QList<LineItemAbstract*> items;
+    QList<LineItemAbstract::GeometryState> before;
+    QList<LineItemAbstract::GeometryState> after;
     for (CanvasItem* item : selectedCanvasItems()) {
         if (!isItemEditable(item)) {
             continue;
         }
-        auto* stroke = dynamic_cast<CurveItem*>(item);
-        if (!stroke || stroke->curveKind() != CurveKind::Freehand || stroke->isEmpty() ||
-            stroke->strokePointCount() < 3) {
+        auto* line = dynamic_cast<LineItemAbstract*>(item);
+        if (!line || !line->supportsSimplify()) {
             continue;
         }
-
-        const CurveItem::GeometryState beforeState = stroke->geometryState();
-        if (!stroke->smoothStroke(effectiveTolerance)) {
+        const LineItemAbstract::GeometryState beforeState = line->geometryState();
+        if (beforeState.hasDot || line->strokePoints().size() < 3) {
             continue;
         }
-        items.append(stroke);
+        if (!line->simplifyCurve(effectiveTolerance)) {
+            continue;
+        }
+        items.append(line);
         before.append(beforeState);
-        after.append(stroke->geometryState());
+        after.append(line->geometryState());
     }
     if (items.isEmpty()) {
         return 0;

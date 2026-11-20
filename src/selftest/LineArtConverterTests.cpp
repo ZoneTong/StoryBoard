@@ -8,7 +8,6 @@
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
-#include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
 #include "LineArtConverter.h"
@@ -16,6 +15,7 @@
 #include "LineArtPresets.h"
 #include "MainWindow.h"
 #include "PolygonItem.h"
+#include "PropertiesPanel.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
@@ -157,7 +157,7 @@ void selftest::runLineArtConverterTests(Context& ctx)
 
         int linearStrokes = 0;
         for (CanvasItem* item : lineArtItems) {
-            if (auto* stroke = dynamic_cast<CurveItem*>(item); stroke && stroke->isLinearPath()) {
+            if (auto* stroke = dynamic_cast<CurveItem*>(item); stroke && stroke->isPolyline()) {
                 ++linearStrokes;
             }
         }
@@ -167,7 +167,7 @@ void selftest::runLineArtConverterTests(Context& ctx)
         if (auto* firstStroke = dynamic_cast<CurveItem*>(lineArtItems.constFirst())) {
             CurveItem reloadedStroke;
             reloadedStroke.fromJson(firstStroke->toJson());
-            linearPersisted = reloadedStroke.isLinearPath() && qFuzzyCompare(reloadedStroke.strokeWidth(), 1.0);
+            linearPersisted = reloadedStroke.isPolyline() && qFuzzyCompare(reloadedStroke.strokeWidth(), 1.0);
         }
         ctx.check(linearPersisted, QStringLiteral("折线线稿曲线可以存取还原"));
 

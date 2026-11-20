@@ -8,14 +8,15 @@
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
-#include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
 #include "LineArtConverter.h"
 #include "LineArtDialog.h"
 #include "LineArtPresets.h"
+#include "LineItemAbstract.h"
 #include "MainWindow.h"
 #include "PolygonItem.h"
+#include "PropertiesPanel.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
@@ -96,18 +97,19 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     const QImage defaultImage = scene.renderImage(scene.canvasRect(), 1.0);
     ctx.check(defaultImage.pixelColor(5, 5).alpha() == 0, QStringLiteral("默认背景层为无色纯透明"));
 
-    BackgroundState background;
+    CanvasBackground background;
     background.type = BackgroundType::Color;
     background.color = QColor(QStringLiteral("#FEF3C7"));
-    scene.replaceBackground(background);
-    ctx.check(scene.background().type == BackgroundType::Color && scene.background().color == background.color,
+    scene.replaceCanvasBackground(background);
+    ctx.check(scene.canvasBackground().type == BackgroundType::Color &&
+                  scene.canvasBackground().color == background.color,
               QStringLiteral("设置背景颜色"));
     ctx.check(undo.canUndo(), QStringLiteral("背景替换进入撤销栈"));
 
     undo.undo();
-    ctx.check(scene.background().type == BackgroundType::None, QStringLiteral("撤销背景替换"));
+    ctx.check(scene.canvasBackground().type == BackgroundType::None, QStringLiteral("撤销背景替换"));
     undo.redo();
-    ctx.check(scene.background().color == background.color, QStringLiteral("重做背景替换"));
+    ctx.check(scene.canvasBackground().color == background.color, QStringLiteral("重做背景替换"));
 
     auto* stroke = new CurveItem();
     stroke->beginStroke(QPointF(90, 120), QColor(QStringLiteral("#EF4444")), 6.0);
@@ -117,7 +119,7 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
         stroke->appendScenePoint(QPointF(x, y));
     }
     stroke->endStroke();
-    stroke->setStrokeStyle(Qt::DashLine);
+    stroke->setStrokePattern(Qt::DashLine);
     ctx.check(!stroke->isEmpty(), QStringLiteral("生成自由曲线"));
     scene.addItemsWithUndo({stroke}, QStringLiteral("添加曲线"));
     ctx.check(scene.canvasItemCount() == 1, QStringLiteral("曲线加入场景"));
@@ -154,7 +156,7 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
 
     const QPixmap shot = makeShotImage(320, 200, QStringLiteral("SHOT 01"), QColor(QStringLiteral("#60A5FA")),
                                        QColor(QStringLiteral("#1D4ED8")));
-    auto* imageItem = new ShapeItem(ShapeType::Rectangle);
+    auto* imageItem = createShapeItem(ShapeType::Rectangle);
     imageItem->setStyle(QColor(Qt::transparent), QColor(Qt::transparent), 1.0);
     imageItem->setFillStyle(FillStyle::None);
     imageItem->setFillImage(shot, ImageFill::Mode::Stretch);
@@ -169,8 +171,8 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
 
     const QJsonObject root = scene.toJson();
     const QByteArray jsonBytes = QJsonDocument(root).toJson(QJsonDocument::Indented);
-    ctx.check(jsonBytes.contains("StoryBoard") && jsonBytes.contains("\"curve\"") && jsonBytes.contains("\"shape\"") &&
-                  jsonBytes.contains("\"images\""),
+    ctx.check(jsonBytes.contains("StoryBoard") && jsonBytes.contains("\"freehand\"") &&
+                  jsonBytes.contains("\"shape\"") && jsonBytes.contains("\"images\""),
               QStringLiteral("画布序列化为 JSON"));
 
     CanvasScene loaded;
@@ -179,15 +181,16 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     QString loadError;
     ctx.check(loaded.fromJson(root, &loadError), QStringLiteral("反序列化画布"), loadError);
     ctx.check(loaded.canvasItemCount() == 2, QStringLiteral("画布图元数量一致"));
-    ctx.check(loaded.background().type == BackgroundType::Color && loaded.background().color == background.color,
+    ctx.check(loaded.canvasBackground().type == BackgroundType::Color &&
+                  loaded.canvasBackground().color == background.color,
               QStringLiteral("画布背景恢复"));
 
-    CurveItem* loadedStroke = nullptr;
+    LineItemAbstract* loadedStroke = nullptr;
     ShapeItem* loadedImage = nullptr;
     const QList<CanvasItem*> loadedItems = loaded.canvasItems();
     for (CanvasItem* item : loadedItems) {
-        if (item->kind() == QStringLiteral("curve")) {
-            loadedStroke = static_cast<CurveItem*>(item);
+        if (dynamic_cast<LineItemAbstract*>(item)) {
+            loadedStroke = static_cast<LineItemAbstract*>(item);
         } else if (item->kind() == QStringLiteral("shape")) {
             if (static_cast<ShapeItem*>(item)->hasFillImage()) {
                 loadedImage = static_cast<ShapeItem*>(item);
@@ -197,9 +200,9 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     ctx.check(loadedStroke != nullptr, QStringLiteral("画布包含曲线"));
     if (loadedStroke) {
         ctx.check(loadedStroke->strokeColor() == QColor(QStringLiteral("#EF4444")) &&
-                      loadedStroke->strokeStyle() == Qt::DashLine,
+                      loadedStroke->strokePattern() == Qt::DashLine,
                   QStringLiteral("曲线颜色与描线样式恢复"),
-                  QString::number(static_cast<int>(loadedStroke->strokeStyle())));
+                  QString::number(static_cast<int>(loadedStroke->strokePattern())));
         ctx.check(qAbs(loadedStroke->contentSize().width() - resized.width()) < 0.5 &&
                       qAbs(loadedStroke->contentSize().height() - resized.height()) < 0.5,
                   QStringLiteral("曲线缩放状态恢复"));
@@ -245,19 +248,19 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     CanvasScene imageBackgroundScene;
     QPixmap backgroundPixmap(64, 48);
     backgroundPixmap.fill(QColor(QStringLiteral("#10B981")));
-    BackgroundState imageBackground;
+    CanvasBackground imageBackground;
     imageBackground.type = BackgroundType::Image;
     imageBackground.image = backgroundPixmap;
     imageBackground.mode = BackgroundMode::Tile;
-    imageBackgroundScene.replaceBackground(imageBackground);
+    imageBackgroundScene.replaceCanvasBackground(imageBackground);
 
     CanvasScene imageBackgroundLoaded;
     QString imageBackgroundError;
     ctx.check(imageBackgroundLoaded.fromJson(imageBackgroundScene.toJson(), &imageBackgroundError),
               QStringLiteral("背景图片序列化"), imageBackgroundError);
-    ctx.check(imageBackgroundLoaded.background().type == BackgroundType::Image &&
-                  !imageBackgroundLoaded.background().image.isNull() &&
-                  imageBackgroundLoaded.background().mode == BackgroundMode::Tile,
+    ctx.check(imageBackgroundLoaded.canvasBackground().type == BackgroundType::Image &&
+                  !imageBackgroundLoaded.canvasBackground().image.isNull() &&
+                  imageBackgroundLoaded.canvasBackground().mode == BackgroundMode::Tile,
               QStringLiteral("反序列化背景图片与填充方式"));
 
     const QString canvasPath = QDir(ctx.workDirectory).filePath(QStringLiteral("selftest.sbcanvas"));

@@ -61,14 +61,14 @@ void CanvasScene::commitCanvasRect(const QRectF& before)
     }
 }
 
-void CanvasScene::applyBackground(const BackgroundState& background)
+void CanvasScene::setCanvasBackground(const CanvasBackground& background)
 {
     m_background = background;
     update();
     emit backgroundChanged();
 }
 
-void CanvasScene::replaceBackground(const BackgroundState& background, const QString& text)
+void CanvasScene::replaceCanvasBackground(const CanvasBackground& background, const QString& text)
 {
     if (background == m_background) {
         return;
@@ -78,7 +78,7 @@ void CanvasScene::replaceBackground(const BackgroundState& background, const QSt
         m_undoStack->push(
             new BackgroundCommand(this, m_background, background, text.isEmpty() ? tr("Change background") : text));
     } else {
-        applyBackground(background);
+        setCanvasBackground(background);
     }
 }
 

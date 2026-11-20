@@ -1,13 +1,15 @@
 #pragma once
 
 #include "CanvasTypes.h"
-#include "CurveItem.h"
 #include "ItemGeometry.h"
+#include "ItemProperties.h"
+#include "LineItemAbstract.h"
 #include "ShapeItem.h"
 #include "TextItem.h"
 
 #include <QColor>
 #include <QList>
+#include <QMap>
 #include <QPair>
 #include <QPixmap>
 #include <QPointer>
@@ -86,15 +88,15 @@ class GroupCommand : public QUndoCommand {
 
 class BackgroundCommand : public QUndoCommand {
   public:
-    BackgroundCommand(CanvasScene* scene, const BackgroundState& before, const BackgroundState& after,
+    BackgroundCommand(CanvasScene* scene, const CanvasBackground& before, const CanvasBackground& after,
                       const QString& text);
     void undo() override;
     void redo() override;
 
   private:
     CanvasScene* m_scene = nullptr;
-    BackgroundState m_before;
-    BackgroundState m_after;
+    CanvasBackground m_before;
+    CanvasBackground m_after;
 };
 
 class CanvasSizeCommand : public QUndoCommand {
@@ -123,14 +125,14 @@ class ItemStackCommand : public QUndoCommand {
 
 class TextItemCommand : public QUndoCommand {
   public:
-    TextItemCommand(CanvasScene* scene, TextItem* item, const TextItemState& before, const TextItemState& after,
+    TextItemCommand(CanvasScene* scene, CanvasItem* item, const TextItemState& before, const TextItemState& after,
                     const QString& text);
     void undo() override;
     void redo() override;
 
   private:
     CanvasScene* m_scene = nullptr;
-    QPointer<TextItem> m_item;
+    QPointer<CanvasItem> m_item;
     TextItemState m_before;
     TextItemState m_after;
 };
@@ -171,19 +173,19 @@ class RotationCommand : public QUndoCommand {
 // 手动平滑一次可能同时作用于多条选中笔画，整体只占一条撤销记录。
 class StrokeSmoothCommand : public QUndoCommand {
   public:
-    StrokeSmoothCommand(CanvasScene* scene, const QList<CurveItem*>& items,
-                        const QList<CurveItem::GeometryState>& before, const QList<CurveItem::GeometryState>& after,
-                        const QString& text);
+    StrokeSmoothCommand(CanvasScene* scene, const QList<LineItemAbstract*>& items,
+                        const QList<LineItemAbstract::GeometryState>& before,
+                        const QList<LineItemAbstract::GeometryState>& after, const QString& text);
     void undo() override;
     void redo() override;
 
   private:
-    void apply(const QList<CurveItem::GeometryState>& states);
+    void apply(const QList<LineItemAbstract::GeometryState>& states);
 
     CanvasScene* m_scene = nullptr;
-    QList<QPointer<CurveItem>> m_items;
-    QList<CurveItem::GeometryState> m_before;
-    QList<CurveItem::GeometryState> m_after;
+    QList<QPointer<LineItemAbstract>> m_items;
+    QList<LineItemAbstract::GeometryState> m_before;
+    QList<LineItemAbstract::GeometryState> m_after;
 };
 
 // 属性弹窗一次修改可能同时涉及层/高度、几何、填充、描边、文字或图片名，
@@ -306,6 +308,25 @@ class ItemPenStyleCommand : public QUndoCommand {
 };
 
 // 透明度对图形、笔画、文字、图片等所有图元都生效。
+// 属性表命令：一次编辑把同一组属性值写回所有目标图元，只占一条撤销记录。
+// 替代原先按图元类型分拆的样式命令，读写都走 properties()/propertyValue()/setPropertyValue()。
+class ItemPropertyCommand : public QUndoCommand {
+  public:
+    ItemPropertyCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
+                        const QList<QMap<ItemProperty, QVariant>>& before,
+                        const QList<QMap<ItemProperty, QVariant>>& after, const QString& text);
+    void undo() override;
+    void redo() override;
+
+  private:
+    void apply(const QList<QMap<ItemProperty, QVariant>>& states);
+
+    CanvasScene* m_scene = nullptr;
+    QList<QPointer<CanvasItem>> m_items;
+    QList<QMap<ItemProperty, QVariant>> m_before;
+    QList<QMap<ItemProperty, QVariant>> m_after;
+};
+
 class ItemOpacityCommand : public QUndoCommand {
   public:
     ItemOpacityCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<qreal>& before,

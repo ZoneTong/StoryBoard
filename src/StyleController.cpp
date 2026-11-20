@@ -4,9 +4,9 @@
 #include "CanvasScene.h"
 #include "CanvasView.h"
 #include "Commands.h"
-#include "CurveItem.h"
 #include "IconFactory.h"
 #include "ItemStyleVisuals.h"
+#include "LineItemAbstract.h"
 #include "MainWindow.h"
 #include "PolygonItem.h"
 #include "Settings.h"
@@ -119,8 +119,8 @@ int StyleController::applyPenStyleToSelection(Qt::PenStyle style, const QString&
         Qt::PenStyle current = Qt::SolidLine;
         if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
             current = shape->strokeStyle();
-        } else if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
-            current = stroke->strokeStyle();
+        } else if (auto* stroke = dynamic_cast<LineItemAbstract*>(item)) {
+            current = stroke->strokePattern();
         } else {
             continue;
         }
@@ -180,7 +180,7 @@ int StyleController::applyStrokeStyleToSelection(const QColor& color, qreal widt
     QList<CanvasItem*> items;
     const QList<CanvasItem*> selected = m_window->m_scene->selectedCanvasItems();
     for (CanvasItem* item : selected) {
-        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<CurveItem*>(item) || dynamic_cast<PolygonItem*>(item)) {
+        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<LineItemAbstract*>(item)) {
             items.append(item);
         }
     }
@@ -207,12 +207,13 @@ int StyleController::applyStrokeStyleToSelection(const QColor& color, qreal widt
             afterColor = changeColor ? color : beforeColor;
             afterWidth = changeWidth ? width : beforeWidth;
             shape->setStyle(afterColor, shape->fillColor(), afterWidth);
-        } else if (auto* stroke = dynamic_cast<CurveItem*>(item)) {
+        } else if (auto* stroke = dynamic_cast<LineItemAbstract*>(item)) {
             beforeColor = stroke->strokeColor();
             beforeWidth = stroke->strokeWidth();
             afterColor = changeColor ? color : beforeColor;
             afterWidth = changeWidth ? width : beforeWidth;
-            stroke->setStyle(afterColor, afterWidth);
+            stroke->setStrokeColor(afterColor);
+            stroke->setStrokeWidth(afterWidth);
         }
         beforeColors.append(beforeColor);
         beforeWidths.append(beforeWidth);
@@ -238,11 +239,11 @@ void StyleController::applyFillToSelection()
     }
 
     QList<ShapeItem*> shapes;
-    QList<PolygonItem*> composites;
+    QList<ShapeItem*> composites;
     int outlineOnlyCount = 0;
     const QList<CanvasItem*> selected = m_window->m_scene->selectedCanvasItems();
     for (CanvasItem* item : selected) {
-        if (auto* composite = dynamic_cast<PolygonItem*>(item)) {
+        if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->isPolygon()) {
             composites.append(composite);
             continue;
         }
@@ -287,7 +288,7 @@ void StyleController::applyFillToSelection()
         shape->setFill(fill, m_window->m_fillStyle);
         after.append(shape->state());
     }
-    for (PolygonItem* composite : composites) {
+    for (ShapeItem* composite : composites) {
         beforeCompositeColors.append(composite->fillColor());
         beforeCompositeStyles.append(composite->fillStyle());
         QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : composite->fillColor();
@@ -315,7 +316,7 @@ void StyleController::applyFillToSelection()
     }
     if (!composites.isEmpty()) {
         QList<CanvasItem*> compositeItems;
-        for (PolygonItem* composite : composites) {
+        for (ShapeItem* composite : composites) {
             compositeItems.append(composite);
         }
         m_window->m_undo->push(new PolygonFillStyleCommand(m_window->m_scene, compositeItems, beforeCompositeColors,

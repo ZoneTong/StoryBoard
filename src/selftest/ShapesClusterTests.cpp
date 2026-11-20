@@ -169,30 +169,32 @@ void selftest::runShapesClusterTests(Context& ctx)
     // 归类为多边形图元（与合并、分割产物同型）。
     {
         MainWindow window;
-        window.insertCurve(CurveKind::Sine);
+        window.insertCurve(LineGlyph::SINE);
         CanvasScene* scene = window.findChild<CanvasScene*>();
         const QList<CanvasItem*> items = scene->canvasItems();
-        bool sineIsCurve = items.size() == 1 && dynamic_cast<CurveItem*>(items.constFirst()) != nullptr;
-        ctx.check(sineIsCurve, QStringLiteral("正弦波形插入为曲线图元"), QStringLiteral("items=%1").arg(items.size()));
+        bool sineIsSineItem = items.size() == 1 && dynamic_cast<SineItem*>(items.constFirst()) != nullptr;
+        ctx.check(sineIsSineItem, QStringLiteral("正弦波形插入为独立正弦图元"),
+                  QStringLiteral("items=%1").arg(items.size()));
 
-        const QList<ShapeType> polygonShapes = {ShapeType::Star4, ShapeType::Hexagram, ShapeType::Heart,
-                                                ShapeType::FlagWave, ShapeType::Scroll};
-        for (ShapeType type : polygonShapes) {
+        const QList<ShapeType> insertedShapes = {ShapeType::Star4, ShapeType::Hexagram, ShapeType::Heart,
+                                                 ShapeType::FlagWave, ShapeType::Scroll};
+        for (ShapeType type : insertedShapes) {
             window.insertShape(type);
         }
         const QList<CanvasItem*> after = scene->canvasItems();
-        int polygonCount = 0;
-        int nonPolygon = 0;
+        int shapeCount = 0;
+        int mismatched = 0;
         for (int i = 1; i < after.size(); ++i) {
-            if (dynamic_cast<PolygonItem*>(after.at(i)) != nullptr) {
-                ++polygonCount;
+            auto* shape = dynamic_cast<ShapeItem*>(after.at(i));
+            if (shape && shape->shapeType() == insertedShapes.at(i - 1)) {
+                ++shapeCount;
             } else {
-                ++nonPolygon;
+                ++mismatched;
             }
         }
-        ctx.check(polygonCount == polygonShapes.size() && nonPolygon == 0,
-                  QStringLiteral("新增填充图形插入后归类为多边形图元"),
-                  QStringLiteral("polygon=%1 other=%2").arg(polygonCount).arg(nonPolygon));
+        ctx.check(shapeCount == insertedShapes.size() && mismatched == 0,
+                  QStringLiteral("新增填充图形插入后归类为各自的具体图形图元"),
+                  QStringLiteral("shape=%1 other=%2").arg(shapeCount).arg(mismatched));
     }
 
     // 需求 28：几个星星按角的个数顺序排在一起（四角/十字星 → 五角星 → 六芒星）。

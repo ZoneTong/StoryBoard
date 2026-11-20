@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CurveItem.h"
+#include "LineGlyph.h"
 #include "ShapeItem.h"
 
 #include <QColor>
@@ -27,6 +27,6 @@ class ShapePainter {
 
     // 工具按钮缩略图：按类型取默认轮廓，纯描边类型只落笔，其余叠加半透明填充。
     static QIcon makeIcon(ShapeType type, const QColor& color, int logicalSize);
-    // 曲线族缩略图：直线 / 弧线 / 正弦按各自几何画一条开放描线（与插入后的形态一致）。
-    static QIcon makeCurveIcon(CurveKind kind, const QColor& color, int logicalSize);
+    // 线条缩略图：直线 / 弧线 / 正弦按各自几何画一条开放描线（与插入后的形态一致）。
+    static QIcon makeCurveIcon(LineGlyph glyph, const QColor& color, int logicalSize);
 };

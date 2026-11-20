@@ -1,6 +1,6 @@
 #include "MainWindow.h"
 
-#include "BackgroundController.h"
+#include "CanvasBackgroundController.h"
 #include "CanvasScene.h"
 #include "CanvasView.h"
 #include "CustomShapePanel.h"
@@ -61,7 +61,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     m_view->setCanvasColor(m_settings.canvasColor);
     setCentralWidget(m_view);
 
-    m_background = std::make_unique<BackgroundController>(this);
+    m_background = std::make_unique<CanvasBackgroundController>(this);
     m_docks = std::make_unique<DockPanelController>(this);
     m_shortcuts = std::make_unique<ShortcutController>(this);
     m_document = std::make_unique<DocumentController>(this);
@@ -76,7 +76,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     createActions();
     createShapeMenu();
     m_docks->createLayerDock();
-    m_docks->createItemDock();
+    m_docks->createPropertiesPanelDock();
     m_docks->createViewModeDock();
     createMenus();
     createToolBars();
@@ -217,7 +217,7 @@ void MainWindow::connectSignals()
     connect(m_scene, &CanvasScene::layersChanged, this, &MainWindow::updateStatusBar);
     connect(m_scene, &CanvasScene::activeLayerChanged, this, [this](int) { updateStatusBar(); });
     connect(m_scene, &CanvasScene::selectionChanged, this, &MainWindow::updateActions);
-    connect(m_scene, &CanvasScene::selectionChanged, this, &MainWindow::updateItemDockVisibility);
+    connect(m_scene, &CanvasScene::selectionChanged, this, &MainWindow::updatePropertiesPanelDockVisibility);
     connect(QApplication::clipboard(), &QClipboard::dataChanged, this, &MainWindow::updateActions);
     connect(m_scene, &CanvasScene::backgroundChanged, this, [this]() {
         updateBackgroundModeActions();
@@ -363,10 +363,9 @@ void MainWindow::insertBrace(bool left)
     m_insert->insertBrace(left);
 }
 
-void MainWindow::insertShape(ShapeType type, qreal triangleAngle1, qreal triangleAngle2, ArrowStyle startArrow,
-                             ArrowStyle endArrow, bool autoCorner)
+void MainWindow::insertShape(ShapeType type, qreal triangleAngle1, qreal triangleAngle2, qreal cornerRatio)
 {
-    m_insert->insertShape(type, triangleAngle1, triangleAngle2, startArrow, endArrow, autoCorner);
+    m_insert->insertShape(type, triangleAngle1, triangleAngle2, cornerRatio);
 }
 
 void MainWindow::insertCustomShape(const QString& filePath)
@@ -379,9 +378,9 @@ void MainWindow::openShapesFolder()
     m_insert->openShapesFolder();
 }
 
-void MainWindow::updateItemDockVisibility()
+void MainWindow::updatePropertiesPanelDockVisibility()
 {
-    m_viewStatus->updateItemDockVisibility();
+    m_viewStatus->updatePropertiesPanelDockVisibility();
 }
 
 void MainWindow::setFillStyle(FillStyle style)
@@ -476,9 +475,9 @@ void MainWindow::keyPressEvent(QKeyEvent* event)
     QMainWindow::keyPressEvent(event);
 }
 
-void MainWindow::replaceBackgroundImage()
+void MainWindow::replaceCanvasBackgroundImage()
 {
-    m_background->replaceBackgroundImage();
+    m_background->replaceCanvasBackgroundImage();
 }
 
 void MainWindow::setBackgroundColor()

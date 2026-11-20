@@ -31,7 +31,7 @@ void selftest::runFillStyleBasicTests(Context& ctx)
         const QSizeF ellipseDefault = defaultShapeSize(ShapeType::Ellipse);
         ctx.check(qFuzzyCompare(ellipseDefault.width(), ellipseDefault.height()),
                   QStringLiteral("椭圆默认插入为标准圆形"));
-        auto* circleItem = new ShapeItem(ShapeType::Ellipse);
+        auto* circleItem = createShapeItem(ShapeType::Ellipse);
         circleItem->setContentSize(QSizeF(200, 200));
         circleItem->setContentSize(QSizeF(260, 140));
         ctx.check(circleItem->contentSize() == QSizeF(260, 140), QStringLiteral("圆形可在编辑模式拉伸成椭圆"));
@@ -44,7 +44,7 @@ void selftest::runFillStyleBasicTests(Context& ctx)
         ctx.check(fillStyleFromString(QStringLiteral("cross_hatch")) == FillStyle::CrossHatch,
                   QStringLiteral("交叉线填充样式可反序列化"));
 
-        auto* filledShape = new ShapeItem(ShapeType::Rectangle);
+        auto* filledShape = createShapeItem(ShapeType::Rectangle);
         filledShape->setContentSize(QSizeF(120, 80));
         filledShape->setPos(QPointF(30, 30));
         filledShape->setFill(QColor(59, 130, 246, 160), FillStyle::Hachure);
@@ -60,7 +60,7 @@ void selftest::runFillStyleBasicTests(Context& ctx)
         CanvasScene arrowScene;
         arrowScene.applyCanvasSize(QSizeF(400, 200));
         arrowScene.setShowGrid(false);
-        auto* hollowArrow = new ShapeItem(ShapeType::Arrow);
+        auto* hollowArrow = createShapeItem(ShapeType::Arrow);
         hollowArrow->setPos(QPointF(40, 50));
         hollowArrow->setContentSize(QSizeF(240, 100));
         hollowArrow->setStyle(QColor(QStringLiteral("#DC2626")), QColor(Qt::transparent), 6.0);
@@ -109,7 +109,7 @@ void selftest::runFillStyleBasicTests(Context& ctx)
         QUndoStack styleUndo;
         CanvasScene styleScene;
         styleScene.setUndoStack(&styleUndo);
-        auto* styleShape = new ShapeItem(ShapeType::Rectangle);
+        auto* styleShape = createShapeItem(ShapeType::Rectangle);
         styleShape->setContentSize(QSizeF(100, 60));
         styleScene.attachItem(styleShape);
         const ShapeItemState styleBefore = styleShape->state();

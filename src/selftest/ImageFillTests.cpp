@@ -80,7 +80,7 @@ QImage renderCanvas(CanvasScene& scene, const QSize& size)
 // 采样用的矩形：无描边、可带纯色填充，只留下图片本体参与像素比较。
 ShapeItem* makePlainShape(ShapeType type, const QSizeF& size, const QColor& fillColor)
 {
-    auto* shape = new ShapeItem(type);
+    auto* shape = createShapeItem(type);
     shape->setPos(QPointF(0, 0));
     shape->setContentSize(size);
     shape->setStyle(QColor(0, 0, 0, 0), fillColor, 0.0);
@@ -254,7 +254,7 @@ void selftest::runImageFillTests(Context& ctx)
         undoScene.setMode(ToolMode::Edit);
         QUndoStack undo;
         undoScene.setUndoStack(&undo);
-        auto* shape = new ShapeItem(ShapeType::Rectangle);
+        auto* shape = createShapeItem(ShapeType::Rectangle);
         shape->setPos(QPointF(10, 10));
         shape->setContentSize(QSizeF(120, 80));
         undoScene.attachItem(shape);
@@ -301,7 +301,7 @@ void selftest::runImageFillTests(Context& ctx)
 
     // 7) 序列化：往返后字节与模式一致；没有 fillImage 键的文件按纯色无图载入。
     {
-        auto* saved = new ShapeItem(ShapeType::Ellipse);
+        auto* saved = createShapeItem(ShapeType::Ellipse);
         saved->setContentSize(QSizeF(80, 60));
         saved->setFillImage(solidImage(kBlue, 24), ImageFill::Mode::Tile);
         const QJsonObject json = saved->toJson();
@@ -310,16 +310,16 @@ void selftest::runImageFillTests(Context& ctx)
                   QStringLiteral("图片填充按 data + mode 序列化"),
                   QStringLiteral("mode=%1").arg(fillJson.value(QStringLiteral("mode")).toString()));
 
-        auto* loaded = new ShapeItem();
+        auto* loaded = createShapeItem(ShapeType::Rectangle);
         loaded->fromJson(json);
         const QJsonObject loadedJson = ImageFill::toJson(loaded->fillImage(), loaded->fillImageMode());
         ctx.check(loaded->hasFillImage() && loaded->fillImageMode() == ImageFill::Mode::Tile &&
                       loadedJson.value(QStringLiteral("data")) == fillJson.value(QStringLiteral("data")),
                   QStringLiteral("图片填充保存往返后字节与模式一致"));
 
-        auto* plain = new ShapeItem(ShapeType::Rectangle);
+        auto* plain = createShapeItem(ShapeType::Rectangle);
         const QJsonObject plainJson = plain->toJson();
-        auto* plainLoaded = new ShapeItem();
+        auto* plainLoaded = createShapeItem(ShapeType::Rectangle);
         plainLoaded->fromJson(plainJson);
         ctx.check(!plainJson.contains(QStringLiteral("fillImage")) && !plainLoaded->hasFillImage(),
                   QStringLiteral("没有图片填充的图元不写 fillImage 键，载入按纯色无图"));

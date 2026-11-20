@@ -44,7 +44,7 @@ QPainterPath PolygonItem::closedSubpaths(const QPainterPath& path)
 }
 
 PolygonItem::PolygonItem(const QList<Layer>& layers, FillStyle fillStyle, Qt::PenStyle strokeStyle)
-    : ShapeItem(ShapeType::Rectangle), m_layers(layers), m_fillStyle(fillStyle), m_strokeStyle(strokeStyle)
+    : ShapeItem(), m_layers(layers), m_fillStyle(fillStyle), m_strokeStyle(strokeStyle)
 {
     updateBoundsFromLayers();
 }
@@ -410,4 +410,36 @@ void PolygonItem::paintContent(QPainter* painter)
     }
 
     painter->restore();
+}
+
+ShapeLayer PolygonItem::shapeLayer(int index) const
+{
+    if (index < 0 || index >= m_layers.size()) {
+        return ShapeLayer();
+    }
+    const Layer& layer = m_layers.at(index);
+    ShapeLayer view;
+    view.path = layer.path;
+    view.fill = layer.fill;
+    view.stroke = layer.stroke;
+    view.strokeWidth = layer.strokeWidth;
+    view.filled = layer.filled;
+    switch (layer.role) {
+    case LayerRole::StrokeBand:
+        view.role = ShapeLayerRole::STROKE_BAND;
+        break;
+    case LayerRole::Text:
+        view.role = ShapeLayerRole::TEXT;
+        break;
+    case LayerRole::FilledArea:
+    default:
+        view.role = ShapeLayerRole::FILL_AREA;
+        break;
+    }
+    return view;
+}
+
+QPainterPath PolygonItem::mapShapeLayerPath(const ShapeLayer& layer) const
+{
+    return layerTransform().map(layer.path);
 }

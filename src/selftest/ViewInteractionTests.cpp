@@ -8,18 +8,18 @@
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
-#include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
 #include "LineArtConverter.h"
 #include "LineArtDialog.h"
 #include "LineArtPresets.h"
-#include "LineItem.h"
 #include "MainWindow.h"
 #include "PolygonItem.h"
+#include "PropertiesPanel.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
+#include "StraightLineItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -159,7 +159,7 @@ void selftest::runViewInteractionTests(Context& ctx)
         ctx.check(viewScene.canvasItemCount() == 2, QStringLiteral("笔直笔画收笔后新增一个图元"),
                   QString::number(viewScene.canvasItemCount()));
         CanvasItem* straightItem = viewScene.canvasItems().value(1);
-        auto* lineShape = dynamic_cast<LineItem*>(straightItem);
+        auto* lineShape = dynamic_cast<StraightLineItem*>(straightItem);
         ctx.check(lineShape != nullptr, QStringLiteral("笔直笔画归为直线图元（曲线族的直线子型）"));
         if (lineShape) {
             ctx.check(lineShape->strokeColor() == QColor(QStringLiteral("#DC2626")) &&
@@ -223,8 +223,8 @@ void selftest::runViewInteractionTests(Context& ctx)
             jitterLine.appendScenePoint(QPointF(x, y));
         }
         jitterLine.endStroke(4.0);
-        ctx.check(jitterLine.strokePointCount() == 2, QStringLiteral("自动平滑将手绘直线收敛为两点"),
-                  QString::number(jitterLine.strokePointCount()));
+        ctx.check(jitterLine.strokePoints().size() == 2, QStringLiteral("自动平滑将手绘直线收敛为两点"),
+                  QString::number(jitterLine.strokePoints().size()));
 
         CurveItem rawLine;
         rawLine.beginStroke(QPointF(100, 100), QColor(QStringLiteral("#111827")), 4.0);
@@ -234,8 +234,8 @@ void selftest::runViewInteractionTests(Context& ctx)
             rawLine.appendScenePoint(QPointF(x, y));
         }
         rawLine.endStroke(0.0);
-        ctx.check(rawLine.strokePointCount() == 41, QStringLiteral("平滑参数为 0 时关闭自动平滑"),
-                  QString::number(rawLine.strokePointCount()));
+        ctx.check(rawLine.strokePoints().size() == 41, QStringLiteral("平滑参数为 0 时关闭自动平滑"),
+                  QString::number(rawLine.strokePoints().size()));
 
         CurveItem rawCurve;
         rawCurve.beginStroke(QPointF(100, 200), QColor(QStringLiteral("#111827")), 4.0);
@@ -249,11 +249,13 @@ void selftest::runViewInteractionTests(Context& ctx)
         }
         rawCurve.endStroke(0.0);
         smoothCurve.endStroke(4.0);
-        ctx.check(
-            smoothCurve.strokePointCount() >= 3 && (smoothCurve.strokePointCount() != rawCurve.strokePointCount() ||
-                                                    smoothCurve.strokePoints() != rawCurve.strokePoints()),
-            QStringLiteral("自动平滑保留曲线并简化采样点"),
-            QStringLiteral("raw=%1 smooth=%2").arg(rawCurve.strokePointCount()).arg(smoothCurve.strokePointCount()));
+        ctx.check(smoothCurve.strokePoints().size() >= 3 &&
+                      (smoothCurve.strokePoints().size() != rawCurve.strokePoints().size() ||
+                       smoothCurve.strokePoints() != rawCurve.strokePoints()),
+                  QStringLiteral("自动平滑保留曲线并简化采样点"),
+                  QStringLiteral("raw=%1 smooth=%2")
+                      .arg(rawCurve.strokePoints().size())
+                      .arg(smoothCurve.strokePoints().size()));
 
         CanvasScene manualScene;
         manualScene.applyCanvasSize(QSizeF(800, 600));

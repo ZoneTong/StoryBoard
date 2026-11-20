@@ -1,8 +1,8 @@
 #include "ViewStatusController.h"
 
 #include "Alignment.h"
-#include "BackgroundController.h"
 #include "BoolOps.h"
+#include "CanvasBackgroundController.h"
 #include "CanvasScene.h"
 #include "CanvasView.h"
 #include "DockPanelController.h"
@@ -69,7 +69,7 @@ void ViewStatusController::updateModeUi()
 
     updateStatusBar();
     updateActions();
-    updateItemDockVisibility();
+    updatePropertiesPanelDockVisibility();
 }
 
 void ViewStatusController::updateActions()
@@ -152,9 +152,9 @@ void ViewStatusController::fitAll()
     m_window->m_view->fitAll();
 }
 
-void ViewStatusController::updateItemDockVisibility()
+void ViewStatusController::updatePropertiesPanelDockVisibility()
 {
     if (m_window->m_docks) {
-        m_window->m_docks->updateItemDockVisibility();
+        m_window->m_docks->updatePropertiesPanelDockVisibility();
     }
 }

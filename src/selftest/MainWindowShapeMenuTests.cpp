@@ -8,7 +8,6 @@
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
-#include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
 #include "LineArtConverter.h"
@@ -16,6 +15,7 @@
 #include "LineArtPresets.h"
 #include "MainWindow.h"
 #include "PolygonItem.h"
+#include "PropertiesPanel.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
@@ -301,7 +301,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                 const QString text = action->text();
                 if (text == QStringLiteral("撤销") || text == QStringLiteral("重做") ||
                     text == QStringLiteral("放大") || text == QStringLiteral("缩小") ||
-                    text == QStringLiteral("适应画布") || text == QStringLiteral("替换背景图片…") ||
+                    text == QStringLiteral("适应画布") || text == QStringLiteral("替换画布背景图片…") ||
                     text == QStringLiteral("设置…")) {
                     hasRemovedToolbarEntry = true;
                     break;
@@ -517,9 +517,9 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
             ctx.check(insertEntries.contains(QStringLiteral("插入图片…")), QStringLiteral("插入菜单提供插入图片"),
                       insertEntries.join(QStringLiteral(" / ")));
             // 需求：原画布菜单的背景项已并入插入菜单。
-            ctx.check(insertEntries.contains(QStringLiteral("替换背景图片…")) &&
+            ctx.check(insertEntries.contains(QStringLiteral("替换画布背景图片…")) &&
                           insertEntries.contains(QStringLiteral("设置背景颜色…")) &&
-                          insertEntries.contains(QStringLiteral("清除背景")) &&
+                          insertEntries.contains(QStringLiteral("清除画布背景")) &&
                           insertEntries.contains(QStringLiteral("背景填充方式")),
                       QStringLiteral("插入菜单包含原画布菜单的背景项"), insertEntries.join(QStringLiteral(" / ")));
         }

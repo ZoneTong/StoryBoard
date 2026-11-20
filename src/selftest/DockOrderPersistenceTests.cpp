@@ -8,7 +8,6 @@
 #include "CustomShapeTemplates.h"
 #include "ExportDialog.h"
 #include "I18n.h"
-#include "ItemDockPanel.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
 #include "LineArtConverter.h"
@@ -16,6 +15,7 @@
 #include "LineArtPresets.h"
 #include "MainWindow.h"
 #include "PolygonItem.h"
+#include "PropertiesPanel.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
 #include "ShapeItem.h"
@@ -119,7 +119,7 @@ void selftest::runDockOrderPersistenceTests(Context& ctx)
         qunsetenv("STORYBOARD_CONFIG");
     }
 
-    // 编辑图元卡：首次启动停靠左侧并显示；拖动成悬浮窗口后保存位置，重启按保存的位置恢复。
+    // 属性编辑面板：首次启动停靠左侧并显示；拖动成悬浮窗口后保存位置，重启按保存的位置恢复。
     {
         const QString itemConfig =
             QDir(ctx.workDirectory)
@@ -133,22 +133,23 @@ void selftest::runDockOrderPersistenceTests(Context& ctx)
             itemWindow.resize(1200, 800);
             itemWindow.show();
             QApplication::processEvents();
-            QDockWidget* itemDock = itemWindow.findChild<QDockWidget*>(QStringLiteral("ItemDock"));
-            ctx.check(itemDock && !itemDock->isFloating() &&
-                          itemWindow.dockWidgetArea(itemDock) == Qt::LeftDockWidgetArea && itemDock->isVisible(),
-                      QStringLiteral("首次启动编辑图元卡显示并固定在窗口左侧"),
-                      itemDock ? QStringLiteral("floating=%1 area=%2 visible=%3")
-                                     .arg(itemDock->isFloating() ? 1 : 0)
-                                     .arg(static_cast<int>(itemWindow.dockWidgetArea(itemDock)))
-                                     .arg(itemDock->isVisible() ? 1 : 0)
-                               : QString());
+            QDockWidget* propertiesDock = itemWindow.findChild<QDockWidget*>(QStringLiteral("PropertiesPanelDock"));
+            ctx.check(propertiesDock && !propertiesDock->isFloating() &&
+                          itemWindow.dockWidgetArea(propertiesDock) == Qt::LeftDockWidgetArea &&
+                          propertiesDock->isVisible(),
+                      QStringLiteral("首次启动属性编辑面板显示并固定在窗口左侧"),
+                      propertiesDock ? QStringLiteral("floating=%1 area=%2 visible=%3")
+                                           .arg(propertiesDock->isFloating() ? 1 : 0)
+                                           .arg(static_cast<int>(itemWindow.dockWidgetArea(propertiesDock)))
+                                           .arg(propertiesDock->isVisible() ? 1 : 0)
+                                     : QString());
 
-            if (itemDock) {
-                itemDock->setFloating(true);
-                itemDock->resize(300, 480);
-                itemDock->move(320, 180);
+            if (propertiesDock) {
+                propertiesDock->setFloating(true);
+                propertiesDock->resize(300, 480);
+                propertiesDock->move(320, 180);
                 QApplication::processEvents();
-                movedPosition = itemDock->pos();
+                movedPosition = propertiesDock->pos();
                 QElapsedTimer saveWait;
                 saveWait.start();
                 while (saveWait.elapsed() < 500) {
@@ -156,9 +157,9 @@ void selftest::runDockOrderPersistenceTests(Context& ctx)
                 }
                 AppSettings movedSettings;
                 movedSettings.load();
-                ctx.check(movedSettings.itemDockStateSaved && movedSettings.itemDockFloating &&
-                              !movedSettings.itemDockGeometry.isEmpty(),
-                          QStringLiteral("编辑图元卡悬浮后把位置写入设置文件"));
+                ctx.check(movedSettings.propertiesDockStateSaved && movedSettings.propertiesDockFloating &&
+                              !movedSettings.propertiesDockGeometry.isEmpty(),
+                          QStringLiteral("属性编辑面板悬浮后把位置写入设置文件"));
             }
             itemWindow.close();
             QApplication::processEvents();
@@ -169,12 +170,14 @@ void selftest::runDockOrderPersistenceTests(Context& ctx)
             restoredWindow.resize(1200, 800);
             restoredWindow.show();
             QApplication::processEvents();
-            QDockWidget* itemDock = restoredWindow.findChild<QDockWidget*>(QStringLiteral("ItemDock"));
-            const bool positionRestored = itemDock && qAbs(itemDock->pos().x() - movedPosition.x()) <= 24 &&
-                                          qAbs(itemDock->pos().y() - movedPosition.y()) <= 24;
-            ctx.check(itemDock && itemDock->isFloating() && positionRestored,
-                      QStringLiteral("重启后按设置恢复编辑图元卡的悬浮位置"),
-                      itemDock ? QStringLiteral("%1,%2").arg(itemDock->pos().x()).arg(itemDock->pos().y()) : QString());
+            QDockWidget* propertiesDock = restoredWindow.findChild<QDockWidget*>(QStringLiteral("PropertiesPanelDock"));
+            const bool positionRestored = propertiesDock && qAbs(propertiesDock->pos().x() - movedPosition.x()) <= 24 &&
+                                          qAbs(propertiesDock->pos().y() - movedPosition.y()) <= 24;
+            ctx.check(propertiesDock && propertiesDock->isFloating() && positionRestored,
+                      QStringLiteral("重启后按设置恢复属性编辑面板的悬浮位置"),
+                      propertiesDock
+                          ? QStringLiteral("%1,%2").arg(propertiesDock->pos().x()).arg(propertiesDock->pos().y())
+                          : QString());
             restoredWindow.close();
             QApplication::processEvents();
         }
