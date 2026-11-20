@@ -1,10 +1,16 @@
 #include "shapes/SectorItem.h"
 
-#include "ShapePathBuilder.h"
-
 SectorItem::SectorItem()
 {
     setContentSize(defaultContentSize());
+    setFrame(contentRect());
+}
+
+void SectorItem::contentResized()
+{
+    ShapeItem::contentResized();
+    // 外接框与内容矩形保持一致，扇形只由 EllipseShape::sector() 出。
+    setFrame(contentRect());
 }
 
 ItemPropertySet SectorItem::properties() const
@@ -17,5 +23,6 @@ ItemPropertySet SectorItem::properties() const
 
 QPainterPath SectorItem::shapePath(const QRectF& rect) const
 {
-    return ShapePathBuilder::sectorPath(rect, startAngle(), sweepAngle());
+    Q_UNUSED(rect)
+    return sector(startAngle(), sweepAngle());
 }

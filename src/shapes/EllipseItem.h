@@ -1,13 +1,15 @@
 #pragma once
 
+#include "EllipseShape.h"
 #include "ShapeItem.h"
 
-// Ellipse：轮廓由 ShapePathBuilder 按 ShapeType::Ellipse 生成，没有额外参数。
-class EllipseItem : public ShapeItem {
+// 椭圆：第二基类 EllipseShape 提供几何（外接框即内容矩形），没有额外参数。
+class EllipseItem : public ShapeItem, public EllipseShape {
   public:
     EllipseItem();
     ShapeType shapeType() const override { return ShapeType::Ellipse; }
 
   protected:
+    void contentResized() override;
     QPainterPath shapePath(const QRectF& rect) const override;
 };
