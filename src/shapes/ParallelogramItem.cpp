@@ -21,10 +21,10 @@ ParallelogramItem::ParallelogramItem()
 
 QSizeF ParallelogramItem::DefaultContentSize() const
 {
-    // 底边固定为 2 格棋盘格（2×32=64px），高也取 2 格；60° 时上边右移 64·cot60，
-    // 内容框宽度 = 底边 + 上边偏移。
-    constexpr qreal BASE_LENGTH = 64.0;
-    constexpr qreal HEIGHT = 64.0;
+    // 底边固定为 2 格棋盘格（需求 16 起 1 格 = 64px，2 格 = 128px），高也取 2 格；
+    // 60° 时上边右移 128·cot60，内容框宽度 = 底边 + 上边偏移。
+    constexpr qreal BASE_LENGTH = 128.0;
+    constexpr qreal HEIGHT = 128.0;
     const qreal shift = BASE_LENGTH / qTan(qDegreesToRadians(60.0));
     return QSizeF(BASE_LENGTH + shift, HEIGHT);
 }

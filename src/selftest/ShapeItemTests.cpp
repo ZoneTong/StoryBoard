@@ -185,14 +185,14 @@ void selftest::RunShapeItemTests(Context& ctx)
                   QStringLiteral("三角形属性只剩两个底角（底边长度已移除）"),
                   QStringLiteral("size=%1").arg(properties.Size()));
     }
-    // 需求 9：平行四边形默认 60° 内角、底边 2 格 = 64px，角度钳在 5–175°。
+    // 需求 9：平行四边形默认 60° 内角、底边 2 格（需求 16 起 1 格 64px，2 格 = 128px）。
     {
         ParallelogramItem para;
         const QSizeF paraSize = DefaultShapeSize(ShapeType::PARALLELOGRAM);
         const QPainterPath defaultPath = para.CurrentPath(QRectF(0.0, 0.0, paraSize.width(), paraSize.height()));
         const qreal defaultBase = QLineF(defaultPath.elementAt(0), defaultPath.elementAt(1)).length();
-        ctx.Check(qAbs(defaultBase - 64.0) < 0.1 && qAbs(paraSize.height() - 64.0) < 0.1,
-                  QStringLiteral("平行四边形默认底边 64px、高 64px"),
+        ctx.Check(qAbs(defaultBase - 128.0) < 0.1 && qAbs(paraSize.height() - 128.0) < 0.1,
+                  QStringLiteral("平行四边形默认底边 128px、高 128px"),
                   QStringLiteral("%1×%2 base=%3").arg(paraSize.width()).arg(paraSize.height()).arg(defaultBase));
         ctx.Check(qAbs(para.ParallelogramAngle() - 60.0) < 0.01, QStringLiteral("平行四边形默认内角 60°"),
                   QStringLiteral("angle=%1").arg(para.ParallelogramAngle()));
