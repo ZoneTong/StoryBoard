@@ -32,7 +32,10 @@ enum class ShapeType {
     // 需求 9：平行四边形（左下内角可编辑，默认 60°）。
     PARALLELOGRAM,
     // 多边形（合并 / 分割产物）没有内置轮廓，仅为满足 shapeType() 的返回值占位。
-    POLYGON
+    POLYGON,
+    // 菱形：平行四边形家族里四边恒等的特例，由 DiamondItem 负责轮廓与固定角。
+    // 追加在末尾，避免既有枚举值发生位移。
+    DIAMOND
 };
 
 enum class FillStyle {
@@ -169,6 +172,8 @@ class ShapeItem : public CanvasItem {
     virtual void SetParallelogramAngle(qreal angle);
     // 平行四边形用 Apex 句柄改内角；矩形锁 90°，不提供该句柄。
     virtual bool ApexAngleHandle() const { return false; }
+    // 平行四边形用上边中点的倾斜旋钮连续改内角（可跨过 90°）；菱形四边恒等，不提供。
+    virtual bool SkewHandleEnabled() const { return false; }
     void SetAngleReadoutVisible(bool visible);
     bool AngleReadoutVisible() const { return m_angleReadoutVisible; }
     virtual bool HasFillImage() const { return !m_fillImage.isNull(); }

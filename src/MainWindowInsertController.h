@@ -18,8 +18,7 @@ class MainWindowInsertController {
     void InsertTextAt(const QPointF& scenePos);
     // 需求 13：花括号按曲线插入（右括号 = 左括号旋转 180°）。
     void InsertBrace(bool left);
-    void InsertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0, qreal cornerRatio = 0.0,
-                     qreal parallelogramAngle = 0.0);
+    void InsertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0, qreal cornerRatio = 0.0);
     void InsertCustomShape(const QString& filePath);
     void OpenShapesFolder();
     void UpdateCustomShapeMenu();

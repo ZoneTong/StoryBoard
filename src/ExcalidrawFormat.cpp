@@ -180,40 +180,17 @@ QJsonObject ElementToItem(const QJsonObject& element, int z, int layer, QStringL
     }
 
     if (type == QStringLiteral("rectangle") || type == QStringLiteral("ellipse") || type == QStringLiteral("diamond")) {
-        // 菱形（Excalidraw 原生类型）落成平行四边形：外接框 w×h、四顶点在框边中点。
-        // 等价平行四边形：边长 L=√(w²+h²)/2、内角 θ=acos((h²−w²)/(w²+h²))、
-        // 内容框 W=L(1+|cosθ|)×L，旋转补上边转到水平所需的角（Qt 正角为顺时针）。
-        QRectF shapeBounds = bounds;
-        qreal diamondInnerAngle = 0.0;
-        qreal diamondRotationFix = 0.0;
-        bool isDiamondImport = false;
-        if (type == QStringLiteral("diamond")) {
-            const qreal w = qMax<qreal>(1.0, bounds.width());
-            const qreal h = qMax<qreal>(1.0, bounds.height());
-            const qreal diag = qHypot(w, h);
-            const qreal side = diag / 2.0;
-            const qreal cosTheta = (h * h - w * w) / (diag * diag);
-            diamondInnerAngle = qRadiansToDegrees(qAcos(qBound<qreal>(-1.0, cosTheta, 1.0)));
-            const qreal frameWidth = side * (1.0 + qAbs(cosTheta));
-            shapeBounds =
-                QRectF(bounds.center().x() - frameWidth / 2.0, bounds.center().y() - side / 2.0, frameWidth, side);
-            diamondRotationFix = -qRadiansToDegrees(qAtan2(h, w));
-            isDiamondImport = true;
-        }
-        QJsonObject item = ItemBase(QStringLiteral("shape"), shapeBounds, z, layer);
+        // 菱形（Excalidraw 原生类型）直接落成独立菱形类型：外接框宽即水平对角线。
+        QJsonObject item = ItemBase(QStringLiteral("shape"), bounds, z, layer);
         // 导出时记下的原图形类型优先，三角形 / 星形之类才不会退回矩形。
         const QString restoredType = CustomText(element, QStringLiteral("storyboardShapeType"));
         QString shapeType = type == QStringLiteral("ellipse")   ? QStringLiteral("ellipse")
-                            : type == QStringLiteral("diamond") ? QStringLiteral("parallelogram")
+                            : type == QStringLiteral("diamond") ? QStringLiteral("diamond")
                                                                 : QStringLiteral("rectangle");
         if (!restoredType.isEmpty()) {
             shapeType = restoredType;
         }
         item.insert(QStringLiteral("shapeType"), shapeType);
-        // 菱形等价平行四边形：外接框换算已算好转角修正，公共回填点统一写入。
-        if (type == QStringLiteral("diamond") && restoredType.isEmpty()) {
-            item.insert(QStringLiteral("parallelogramAngle"), diamondInnerAngle);
-        }
         QColor stroke = ColorOr(element, QStringLiteral("strokeColor"), QColor(30, 41, 59));
         QColor fill = ColorOr(element, QStringLiteral("backgroundColor"), QColor(Qt::transparent));
         QString fillStyle = QStringLiteral("none");
@@ -247,9 +224,7 @@ QJsonObject ElementToItem(const QJsonObject& element, int z, int layer, QStringL
         item.insert(QStringLiteral("cornerRadius"),
                     qMax<qreal>(0.0, NumberOr(element.value(QStringLiteral("roundness")).toObject(),
                                               QStringLiteral("value"), 0.0)));
-        item.insert(QStringLiteral("rotation"),
-                    qRadiansToDegrees(NumberOr(element, QStringLiteral("angle"), 0.0)) +
-                        (isDiamondImport && restoredType.isEmpty() ? diamondRotationFix : 0.0));
+        item.insert(QStringLiteral("rotation"), qRadiansToDegrees(NumberOr(element, QStringLiteral("angle"), 0.0)));
         return item;
     }
 
@@ -566,12 +541,13 @@ QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings
         QJsonObject element;
         if (kind == QStringLiteral("shape")) {
             const QString shapeType = item.value(QStringLiteral("shapeType")).toString();
-            // 菱形预置（内角 90° 的平行四边形）映射回 Excalidraw 原生 diamond：
-            // 外接框按对角线展开，旋转角补上底边转到对角方向所需的角度。
+            // 菱形已是独立类型，外接框即两条对角线，直接导出 Excalidraw 原生 diamond；
+            // 旧的“90° 平行四边形 + 45° 旋转”预置仍按原换算兜底。
             const bool isDiamondPreset =
                 shapeType == QStringLiteral("parallelogram") &&
                 qFuzzyCompare(item.value(QStringLiteral("parallelogramAngle")).toDouble(60.0), 90.0);
-            if (shapeType == QStringLiteral("rectangle") || shapeType == QStringLiteral("ellipse") || isDiamondPreset) {
+            if (shapeType == QStringLiteral("rectangle") || shapeType == QStringLiteral("ellipse") ||
+                shapeType == QStringLiteral("diamond") || isDiamondPreset) {
                 element = StoryBoardShape(item);
                 const QJsonObject base = BaseElement(item, QStringLiteral("sb%1").arg(index, 6, 10, QLatin1Char('0')));
                 for (auto it = base.constBegin(); it != base.constEnd(); ++it) {

@@ -4,6 +4,7 @@
 #include "shapes/CalloutItem.h"
 #include "shapes/CubeItem.h"
 #include "shapes/CylinderItem.h"
+#include "shapes/DiamondItem.h"
 #include "shapes/DoubleArrowItem.h"
 #include "shapes/EllipseItem.h"
 #include "shapes/FlagWaveItem.h"
@@ -50,6 +51,8 @@ ShapeItem* CreateShapeItem(ShapeType type)
         return new CylinderItem();
     case ShapeType::PARALLELOGRAM:
         return new ParallelogramItem();
+    case ShapeType::DIAMOND:
+        return new DiamondItem();
     case ShapeType::RECTANGLE:
     case ShapeType::POLYGON:
     default:

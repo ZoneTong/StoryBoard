@@ -363,10 +363,9 @@ void MainWindow::InsertBrace(bool left)
     m_insert->InsertBrace(left);
 }
 
-void MainWindow::InsertShape(ShapeType type, qreal triangleAngle1, qreal triangleAngle2, qreal cornerRatio,
-                             qreal parallelogramAngle)
+void MainWindow::InsertShape(ShapeType type, qreal triangleAngle1, qreal triangleAngle2, qreal cornerRatio)
 {
-    m_insert->InsertShape(type, triangleAngle1, triangleAngle2, cornerRatio, parallelogramAngle);
+    m_insert->InsertShape(type, triangleAngle1, triangleAngle2, cornerRatio);
 }
 
 void MainWindow::InsertCustomShape(const QString& filePath)

@@ -3356,6 +3356,9 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Parallelogram</source>
         <translation>平行四边形</translation>
     </message><message>
+        <source>Diamond</source>
+        <translation>菱形</translation>
+    </message><message>
         <location filename="../src/ShapeItem.cpp" line="137"/>
         <source>No fill</source>
         <translation>无填充</translation>

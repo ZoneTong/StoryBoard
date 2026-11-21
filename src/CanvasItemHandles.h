@@ -8,7 +8,8 @@ class CanvasItem;
 class QPainter;
 class QPainterPath;
 
-// 选中手柄的几何、命中、光标与绘制：八个缩放手柄加一个旋转手柄。
+// 选中手柄的几何、命中、光标与绘制：八个缩放手柄、一个旋转手柄，
+// 以及平行四边形额外的内角倾斜旋钮。
 // 几何依据图元的内容矩形与当前视图缩放计算，本身不保存状态。
 class CanvasItemHandles {
   public:
@@ -27,6 +28,8 @@ class CanvasItemHandles {
 
     // 需求 2：单选三角形时顶点 C 取代 Top 句柄（类内才能访问受保护的单选判定）。
     bool UsesApexHandle() const;
+    // 单选平行四边形时显示上边中点的内角倾斜旋钮。
+    bool UsesSkewHandle() const;
 
   private:
     CanvasItem* m_item = nullptr;

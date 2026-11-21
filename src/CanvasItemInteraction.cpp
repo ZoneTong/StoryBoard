@@ -124,40 +124,13 @@ void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardMod
     QRectF rect(m_item->m_dragStartPos, m_item->m_dragStartSize);
     const int handle = m_item->m_resizeHandle;
 
-    // 需求 9：拖与平行四边形左上 / 右上顶点对齐的那个手柄，改的是左下内角，不是尺寸。
-    // 锐角时上边右移、右上顶点贴选择框右上；钝角时上边左移、左上顶点贴选择框左上。
-    if (auto* para = dynamic_cast<ShapeItem*>(m_item);
-        para && para->shapeType() == ShapeType::PARALLELOGRAM && !para->IsCustomShape()) {
-        const qreal startAngle = para->ParallelogramAngle();
-        const bool dragRight = handle == CanvasItem::TOP_RIGHT && startAngle < 90.0;
-        const bool dragLeft = handle == CanvasItem::TOP_LEFT && startAngle >= 90.0;
-        if (dragRight || dragLeft) {
-            const qreal startWidth = m_item->m_dragStartSize.width();
-            const qreal startHeight = m_item->m_dragStartSize.height();
-            QPointF local = scenePos - m_item->m_dragStartPos;
-            const qreal rotation = m_item->RotationAngle();
-            if (!qFuzzyIsNull(rotation)) {
-                QTransform transform;
-                transform.rotate(-rotation);
-                local = transform.map(local);
-            }
-            // 底边固定：锐角时底边右端 = 宽 - 上边偏移，钝角时上边偏移为负、左端贴住左下。
-            qreal dx = local.x();
-            if (dragRight) {
-                dx = startWidth - local.x();
-            }
-            const qreal limit = qMax<qreal>(1.0, startWidth - 0.5);
-            dx = dragRight ? qBound<qreal>(0.5, dx, limit) : qBound<qreal>(-limit, dx, -0.5);
-            const qreal angle = qRadiansToDegrees(qAtan2(startHeight, dx));
-            para->SetParallelogramAngle(angle);
-            return;
-        }
-    }
-
-    // 平行四边形：拖 Apex（左上顶点）改左下内角，底边与高度不变；拖动期间显示角度读数。
-    if (auto* para = dynamic_cast<ShapeItem*>(m_item); para && para->ApexAngleHandle() &&
-                                                       para->shapeType() == ShapeType::PARALLELOGRAM &&
-                                                       !para->IsCustomShape() && handle == CanvasItem::APEX) {
+    // 需求 3：平行四边形内角改由顶边中点的倾斜旋钮拖动，不再借顶点句柄。
+    // 旋钮相对框中心的有符号偏移 u = 2×(指针 x − 框中心 x)：u>0 锐角、u<0 钝角，
+    // 拖过中心即连续跨过 90°，不会像拖顶点那样在 90° 处断档。
+    if (auto* para = dynamic_cast<ShapeItem*>(m_item); para && para->shapeType() == ShapeType::PARALLELOGRAM &&
+                                                       para->SkewHandleEnabled() && !para->IsCustomShape() &&
+                                                       handle == CanvasItem::SKEW) {
+        const qreal startWidth = m_item->m_dragStartSize.width();
         const qreal startHeight = m_item->m_dragStartSize.height();
         QPointF local = scenePos - m_item->m_dragStartPos;
         const qreal rotation = m_item->RotationAngle();
@@ -166,9 +139,9 @@ void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardMod
             transform.rotate(-rotation);
             local = transform.map(local);
         }
-        // 上边相对底边的水平偏移 = 高度 × cot(角度)：拖左顶点只改水平偏移。
-        const qreal dx = qBound<qreal>(0.5, local.x(), qMax<qreal>(0.5, m_item->m_dragStartSize.width() - 0.5));
-        const qreal angle = qRadiansToDegrees(qAtan2(startHeight, dx));
+        const qreal limit = qMax<qreal>(1.0, startWidth - 0.5);
+        const qreal signedShift = qBound<qreal>(-limit, 2.0 * (local.x() - startWidth / 2.0), limit);
+        const qreal angle = qRadiansToDegrees(qAtan2(startHeight, signedShift));
         para->SetParallelogramAngle(angle);
         para->SetAngleReadoutVisible(true);
         return;
