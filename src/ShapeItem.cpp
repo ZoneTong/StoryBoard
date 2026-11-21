@@ -845,9 +845,6 @@ void ShapeItem::FromJson(const QJsonObject& json)
     m_strokeStyle = static_cast<Qt::PenStyle>(qBound(0, json.value(QStringLiteral("strokeStyle")).toInt(1), 5));
     m_opacity = qBound<qreal>(0.0, json.value(QStringLiteral("opacity")).toDouble(1.0), 1.0);
     m_cornerRadius = qMax<qreal>(0.0, json.value(QStringLiteral("cornerRadius")).toDouble(0.0));
-    // 旧文件的 cornerAuto / 负圆角按「短边 16%」折算成显式 px；新文件只存 px。
-    const bool legacyAutoCorner = json.value(QStringLiteral("cornerAuto")).toBool(false) ||
-                                  json.value(QStringLiteral("cornerRadius")).toDouble(0.0) < 0.0;
     m_startAngle = json.value(QStringLiteral("startAngle")).toDouble(30.0);
     m_sweepAngle = json.value(QStringLiteral("sweepAngle")).toDouble(120.0);
     // 需求 9：平行四边形内角；旧文件没有这个键时按默认 60°。
@@ -905,7 +902,7 @@ void ShapeItem::FromJson(const QJsonObject& json)
     }
 
     ReadJsonExtra(json);
-    if ((forceRoundedCorner || legacyAutoCorner) && !IsCustomShape()) {
+    if (forceRoundedCorner && !IsCustomShape()) {
         m_cornerRadius = qMin(ContentSize().width(), ContentSize().height()) * 0.16;
     }
     m_triangleSyncSize = ContentSize();

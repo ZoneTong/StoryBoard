@@ -167,7 +167,6 @@ void selftest::RunShapeItemTests(Context& ctx)
         QJsonObject legacyJson = legacyRounded.ToJson();
         legacyJson.insert(QStringLiteral("shapeType"), QStringLiteral("rounded_rectangle"));
         legacyJson.remove(QStringLiteral("cornerRadius"));
-        legacyJson.remove(QStringLiteral("cornerAuto"));
         RectangleItem loadedRounded;
         loadedRounded.FromJson(legacyJson);
         ctx.Check(loadedRounded.shapeType() == ShapeType::RECTANGLE && loadedRounded.CornerRadius() > 0.0,

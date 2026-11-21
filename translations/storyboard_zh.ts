@@ -3310,10 +3310,6 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Double arrow</source>
         <translation>双向箭头</translation>
     </message><message>
-        <location filename="../src/ShapeItem.cpp" line="76"/>
-        <source>Line</source>
-        <translation>直线</translation>
-    </message><message>
         <source>Left brace</source>
         <translation>左大括号</translation>
     </message><message>
@@ -4184,9 +4180,6 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message><message>
         <source>Left brace</source>
         <translation>左大括号</translation>
-    </message><message>
-        <source>Line</source>
-        <translation>线条</translation>
     </message><message>
         <source>Straight Line</source>
         <translation>直线</translation>
