@@ -6,11 +6,11 @@ namespace {
 
 // 一个环是否真的把另一个环包住：只取有限个顶点做包含测试，环的顶点数可能很大，
 // 但布尔运算的结果里，孔洞与它的外轮廓共享的顶点不会太多，抽样足够判嵌套。
-constexpr int kMaxProbePoints = 24;
+constexpr int MAX_PROBE_POINTS = 24;
 
 bool ringContains(const QPainterPath& ring, const QPolygonF& points)
 {
-    const int step = qMax(1, points.size() / kMaxProbePoints);
+    const int step = qMax(1, points.size() / MAX_PROBE_POINTS);
     for (int i = 0; i < points.size(); i += step) {
         if (ring.contains(points.at(i))) {
             return true;

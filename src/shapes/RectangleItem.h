@@ -7,7 +7,7 @@
 class RectangleItem : public ParallelogramItem {
   public:
     RectangleItem();
-    ShapeType shapeType() const override { return ShapeType::Rectangle; }
+    ShapeType shapeType() const override { return ShapeType::RECTANGLE; }
     // 覆写父类的平行四边形默认尺寸：矩形插入即为 2 格正方形。
     QSizeF defaultContentSize() const override { return QSizeF(128.0, 128.0); }
     ItemPropertySet properties() const override;

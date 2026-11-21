@@ -15,17 +15,17 @@
 
 namespace {
 
-constexpr int kIconSize = 20;
-constexpr int kSmallIconSize = 20;
-constexpr int kButtonSize = 32;
+constexpr int ICON_SIZE = 20;
+constexpr int SMALL_ICON_SIZE = 20;
+constexpr int BUTTON_SIZE = 32;
 
 QToolButton* makeRowIcon(IconId id, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
-    button->setIcon(makeIcon(id, QColor(139, 144, 156), kSmallIconSize));
-    button->setIconSize(QSize(kSmallIconSize, kSmallIconSize));
-    button->setFixedSize(kButtonSize, kButtonSize);
+    button->setIcon(makeIcon(id, QColor(139, 144, 156), SMALL_ICON_SIZE));
+    button->setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE));
+    button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
     button->setAutoRaise(true);
     button->setFocusPolicy(Qt::NoFocus);
     return button;
@@ -40,7 +40,7 @@ PropertiesPanelFillBorderCard::PropertiesPanelFillBorderCard(QWidget* parent) : 
     fillLayout->setContentsMargins(0, 0, 0, 0);
     fillLayout->setSpacing(2);
 
-    QToolButton* fillIcon = makeRowIcon(IconId::Palette, fillRow);
+    QToolButton* fillIcon = makeRowIcon(IconId::PALETTE, fillRow);
     fillIcon->setToolTip(PropertiesPanel::tr("Fill style"));
     fillLayout->addWidget(fillIcon);
 
@@ -50,9 +50,9 @@ PropertiesPanelFillBorderCard::PropertiesPanelFillBorderCard(QWidget* parent) : 
         button->setObjectName(QStringLiteral("ItemFillStyleButton"));
         button->setCheckable(true);
         button->setAutoRaise(true);
-        button->setIcon(ItemStyleVisuals::fillStyleIcon(style, kIconSize));
-        button->setIconSize(QSize(kIconSize, kIconSize));
-        button->setFixedSize(kButtonSize, kButtonSize);
+        button->setIcon(ItemStyleVisuals::fillStyleIcon(style, ICON_SIZE));
+        button->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
+        button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
         button->setToolTip(fillStyleName(style));
         button->setProperty("fillStyle", static_cast<int>(style));
         connect(button, &QToolButton::clicked, this, [this, style]() { emit fillStyleChosen(style); });
@@ -68,7 +68,7 @@ PropertiesPanelFillBorderCard::PropertiesPanelFillBorderCard(QWidget* parent) : 
     styleLayout->setContentsMargins(0, 0, 0, 0);
     styleLayout->setSpacing(2);
 
-    QToolButton* borderIcon = makeRowIcon(IconId::Brush, styleRow);
+    QToolButton* borderIcon = makeRowIcon(IconId::BRUSH, styleRow);
     borderIcon->setToolTip(PropertiesPanel::tr("Border style"));
     styleLayout->addWidget(borderIcon);
 
@@ -78,9 +78,9 @@ PropertiesPanelFillBorderCard::PropertiesPanelFillBorderCard(QWidget* parent) : 
         button->setObjectName(QStringLiteral("ItemBorderStyleButton"));
         button->setCheckable(true);
         button->setAutoRaise(true);
-        button->setIcon(ItemStyleVisuals::borderStyleIcon(penStyles.at(index), kIconSize));
-        button->setIconSize(QSize(kIconSize, kIconSize));
-        button->setFixedSize(kButtonSize, kButtonSize);
+        button->setIcon(ItemStyleVisuals::borderStyleIcon(penStyles.at(index), ICON_SIZE));
+        button->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
+        button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
         button->setToolTip(ItemStyleVisuals::borderStyleName(penStyles.at(index)));
         const Qt::PenStyle style = penStyles.at(index);
         connect(button, &QToolButton::clicked, this, [this, style]() { emit borderStyleChosen(style); });
@@ -95,7 +95,7 @@ PropertiesPanelFillBorderCard::PropertiesPanelFillBorderCard(QWidget* parent) : 
     auto* widthLayout = new QHBoxLayout(widthRow);
     widthLayout->setContentsMargins(0, 0, 0, 0);
     widthLayout->setSpacing(4);
-    QToolButton* widthIcon = makeRowIcon(IconId::Brush, widthRow);
+    QToolButton* widthIcon = makeRowIcon(IconId::BRUSH, widthRow);
     widthIcon->setObjectName(QStringLiteral("ItemBorderWidthIcon"));
     widthIcon->setToolTip(PropertiesPanel::tr("Border width"));
     widthLayout->addWidget(widthIcon);
@@ -124,7 +124,7 @@ void PropertiesPanelFillBorderCard::refresh(const QList<ShapeItem*>& shapes, con
     m_refreshing = true;
 
     const bool hasFillTargets = !shapes.isEmpty() || !composites.isEmpty();
-    FillStyle currentFill = FillStyle::None;
+    FillStyle currentFill = FillStyle::NONE;
     if (!shapes.isEmpty()) {
         currentFill = shapes.first()->fillStyle();
     } else if (!composites.isEmpty()) {

@@ -270,7 +270,7 @@ QJsonObject CurveItem::toJson() const
 {
     QJsonObject json = LineItemAbstract::toJson();
     json.insert(QStringLiteral("dot"), m_hasDot);
-    if (m_strokeSource != CurveSource::HandDrawn) {
+    if (m_strokeSource != CurveSource::HAND_DRAWN) {
         json.insert(QStringLiteral("source"), QStringLiteral("line_art"));
     }
     if (m_hasDot && !m_rawPoints.isEmpty()) {
@@ -287,8 +287,8 @@ void CurveItem::fromJson(const QJsonObject& json)
     m_hasDot = json.value(QStringLiteral("dot")).toBool(false);
     // 来源只剩“手绘 / 图片线稿提取”两种。
     m_strokeSource = json.value(QStringLiteral("source")).toString() == QStringLiteral("line_art")
-                         ? CurveSource::LineArt
-                         : CurveSource::HandDrawn;
+                         ? CurveSource::LINE_ART
+                         : CurveSource::HAND_DRAWN;
     m_rawPoints.clear();
 
     LineItemAbstract::fromJson(json);

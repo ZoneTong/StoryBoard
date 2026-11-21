@@ -7,7 +7,7 @@ class ParallelogramItem : public ShapeItem {
   public:
     ParallelogramItem();
     QSizeF defaultContentSize() const override;
-    ShapeType shapeType() const override { return ShapeType::Parallelogram; }
+    ShapeType shapeType() const override { return ShapeType::PARALLELOGRAM; }
     ItemPropertySet properties() const override;
     bool apexAngleHandle() const override { return true; }
     void setParallelogramAngle(qreal angle) override;

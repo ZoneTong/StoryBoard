@@ -59,40 +59,40 @@ QList<ShapeType> allShapeTypes()
 QString shapeTypeName(ShapeType type)
 {
     switch (type) {
-    case ShapeType::Rectangle:
+    case ShapeType::RECTANGLE:
         return ShapeItem::tr("Rectangle");
-    case ShapeType::Ellipse:
+    case ShapeType::ELLIPSE:
         return ShapeItem::tr("Ellipse");
-    case ShapeType::Triangle:
+    case ShapeType::TRIANGLE:
         return ShapeItem::tr("Triangle");
-    case ShapeType::Star:
+    case ShapeType::STAR:
         return ShapeItem::tr("Star");
-    case ShapeType::Arrow:
+    case ShapeType::ARROW:
         return ShapeItem::tr("Arrow");
-    case ShapeType::DoubleArrow:
+    case ShapeType::DOUBLE_ARROW:
         return ShapeItem::tr("Double arrow");
 
-    case ShapeType::Callout:
+    case ShapeType::CALLOUT:
         return ShapeItem::tr("Speech bubble");
-    case ShapeType::Sector:
+    case ShapeType::SECTOR:
         return ShapeItem::tr("Sector");
 
-    case ShapeType::Star4:
+    case ShapeType::STAR4:
         return ShapeItem::tr("Four-point star");
-    case ShapeType::Hexagram:
+    case ShapeType::HEXAGRAM:
         return ShapeItem::tr("Six-point star");
-    case ShapeType::Heart:
+    case ShapeType::HEART:
         return ShapeItem::tr("Heart");
 
-    case ShapeType::FlagWave:
+    case ShapeType::FLAG_WAVE:
         return ShapeItem::tr("Wavy flag");
-    case ShapeType::Scroll:
+    case ShapeType::SCROLL:
         return ShapeItem::tr("Scroll");
-    case ShapeType::Cube:
+    case ShapeType::CUBE:
         return ShapeItem::tr("Cube");
-    case ShapeType::Cylinder:
+    case ShapeType::CYLINDER:
         return ShapeItem::tr("Cylinder");
-    case ShapeType::Parallelogram:
+    case ShapeType::PARALLELOGRAM:
         return ShapeItem::tr("Parallelogram");
     }
     return ShapeItem::tr("Rectangle");
@@ -132,27 +132,27 @@ QList<FillStyle> allFillStyles()
 QString fillStyleName(FillStyle style)
 {
     switch (style) {
-    case FillStyle::None:
+    case FillStyle::NONE:
         return ShapeItem::tr("No fill");
-    case FillStyle::Solid:
+    case FillStyle::SOLID:
         return ShapeItem::tr("Solid");
-    case FillStyle::Hachure:
+    case FillStyle::HACHURE:
         return ShapeItem::tr("Hatch");
-    case FillStyle::ReverseHachure:
+    case FillStyle::REVERSE_HACHURE:
         return ShapeItem::tr("Reverse hatch");
-    case FillStyle::CrossHatch:
+    case FillStyle::CROSS_HATCH:
         return ShapeItem::tr("Cross hatch");
-    case FillStyle::GridHatch:
+    case FillStyle::GRID_HATCH:
         return ShapeItem::tr("Grid hatch");
-    case FillStyle::Honeycomb:
+    case FillStyle::HONEYCOMB:
         return ShapeItem::tr("Hexagon");
-    case FillStyle::HorizontalHatch:
+    case FillStyle::HORIZONTAL_HATCH:
         return ShapeItem::tr("Horizontal lines");
-    case FillStyle::VerticalHatch:
+    case FillStyle::VERTICAL_HATCH:
         return ShapeItem::tr("Vertical lines");
-    case FillStyle::Brick:
+    case FillStyle::BRICK:
         return ShapeItem::tr("Brick");
-    case FillStyle::Dots:
+    case FillStyle::DOTS:
         return ShapeItem::tr("Dots");
     }
     return ShapeItem::tr("Solid");
@@ -396,7 +396,7 @@ QPointF ShapeItem::customHandleCenter(int handle, bool* ok) const
     if (ok) {
         *ok = false;
     }
-    if (handle == CanvasItem::Apex && shapeType() == ShapeType::Triangle && !isCustomShape()) {
+    if (handle == CanvasItem::APEX && shapeType() == ShapeType::TRIANGLE && !isCustomShape()) {
         if (ok) {
             *ok = true;
         }
@@ -449,7 +449,7 @@ void ShapeItem::setParallelogramAngle(qreal angle)
 
 void ShapeItem::contentResized()
 {
-    if (shapeType() != ShapeType::Triangle || isCustomShape()) {
+    if (shapeType() != ShapeType::TRIANGLE || isCustomShape()) {
         return;
     }
     // 尺寸折算已经在 adjustedContentSize() 里做完，这里只记一次同步基准，
@@ -461,7 +461,7 @@ void ShapeItem::contentResized()
 
 QSizeF ShapeItem::adjustedContentSize(const QSizeF& size) const
 {
-    if (shapeType() != ShapeType::Triangle || isCustomShape()) {
+    if (shapeType() != ShapeType::TRIANGLE || isCustomShape()) {
         return size;
     }
     const QSizeF current = contentSize();
@@ -484,7 +484,7 @@ QSizeF ShapeItem::adjustedContentSize(const QSizeF& size) const
 QRectF ShapeItem::frameRect() const
 {
     // 扇形只画了内容矩形里的一小块，选中框与手柄改贴在轮廓的最小覆盖矩形上。
-    if (m_customPath.isEmpty() && shapeType() == ShapeType::Sector) {
+    if (m_customPath.isEmpty() && shapeType() == ShapeType::SECTOR) {
         const QPainterPath path = currentPath(contentRect());
         const QRectF bounds = path.boundingRect();
         if (!bounds.isEmpty()) {
@@ -497,7 +497,7 @@ QRectF ShapeItem::frameRect() const
 void ShapeItem::drawSelectionOverlay(QPainter* painter)
 {
     CanvasItem::drawSelectionOverlay(painter);
-    if (shapeType() != ShapeType::Triangle || isCustomShape() || !isSelected() || !isEditable() ||
+    if (shapeType() != ShapeType::TRIANGLE || isCustomShape() || !isSelected() || !isEditable() ||
         !hasSingleSelection()) {
         return;
     }
@@ -658,7 +658,7 @@ void ShapeItem::applyState(const ShapeItemState& state)
     m_syncingTriangle = true;
     setContentSize(state.size.isEmpty() ? defaultContentSize() : state.size);
     // 角度优先：应用状态时按角度重算三角形高度（旧尺寸与角度自洽，不会造成视觉变化）。
-    if (shapeType() == ShapeType::Triangle && !isCustomShape()) {
+    if (shapeType() == ShapeType::TRIANGLE && !isCustomShape()) {
         const qreal factor =
             1.0 / qTan(qDegreesToRadians(m_bottomAngle1)) + 1.0 / qTan(qDegreesToRadians(m_bottomAngle2));
         const QSizeF size = contentSize();
@@ -757,12 +757,12 @@ QJsonObject ShapeItem::toJson() const
     json.insert(QStringLiteral("startAngle"), m_startAngle);
     json.insert(QStringLiteral("sweepAngle"), m_sweepAngle);
     // 三角形以角度为真相，两个底角随画布保存；旧文件没有这两个字段时按 60°/60° 反算。
-    if (shapeType() == ShapeType::Triangle) {
+    if (shapeType() == ShapeType::TRIANGLE) {
         json.insert(QStringLiteral("bottomAngle1"), m_bottomAngle1);
         json.insert(QStringLiteral("bottomAngle2"), m_bottomAngle2);
     }
     // 需求 9：平行四边形的左下内角随画布保存；旧文件缺字段时按 60° 载入。
-    if (shapeType() == ShapeType::Parallelogram) {
+    if (shapeType() == ShapeType::PARALLELOGRAM) {
         json.insert(QStringLiteral("parallelogramAngle"), m_parallelogramAngle);
     }
     // 需求 15：图片填充独立属性，无图时不写键，旧版本忽略该键即退回纯色。
@@ -838,7 +838,7 @@ void ShapeItem::fromJson(const QJsonObject& json)
     if (json.contains(QStringLiteral("fillStyle"))) {
         m_fillStyle = fillStyleFromString(json.value(QStringLiteral("fillStyle")).toString());
     } else {
-        m_fillStyle = m_fillColor.alpha() > 0 ? FillStyle::Solid : FillStyle::None;
+        m_fillStyle = m_fillColor.alpha() > 0 ? FillStyle::SOLID : FillStyle::NONE;
     }
 
     m_strokeWidth = qBound<qreal>(0.5, json.value(QStringLiteral("strokeWidth")).toDouble(4.0), 48.0);
@@ -865,7 +865,7 @@ void ShapeItem::fromJson(const QJsonObject& json)
     } else {
         m_fillImage = QPixmap();
         m_fillImageId.clear();
-        m_fillImageMode = ImageFill::Mode::Stretch;
+        m_fillImageMode = ImageFill::Mode::STRETCH;
     }
     const bool hasAngles = json.contains(QStringLiteral("bottomAngle1"));
 
@@ -879,7 +879,7 @@ void ShapeItem::fromJson(const QJsonObject& json)
 
     // 需求 6：扇形 / 弧线旧半径 < 内容宽的一半时，把椭圆外接框改成新内容矩形：
     // k = 2r、ry = r·h/w，位置按椭圆中心不动补偿，轮廓逐点不变；r<0 或 r≥w/2 无需迁移。
-    if (shapeType() == ShapeType::Sector && legacyRadius >= 0.0 && !isCustomShape()) {
+    if (shapeType() == ShapeType::SECTOR && legacyRadius >= 0.0 && !isCustomShape()) {
         const QSizeF size = contentSize();
         if (size.width() > 0.0 && legacyRadius < size.width() / 2.0) {
             const qreal ry = legacyRadius * size.height() / size.width();
@@ -890,7 +890,7 @@ void ShapeItem::fromJson(const QJsonObject& json)
 
     // 旧文件没有角度字段：按原三角形的顶点位置（内容矩形上边中点）反算两个底角，
     // 使角度与恢复后的尺寸自洽，外观零变化。
-    if (shapeType() == ShapeType::Triangle && !isCustomShape()) {
+    if (shapeType() == ShapeType::TRIANGLE && !isCustomShape()) {
         if (hasAngles) {
             m_bottomAngle1 = qBound<qreal>(1.0, json.value(QStringLiteral("bottomAngle1")).toDouble(60.0), 174.0);
             m_bottomAngle2 =

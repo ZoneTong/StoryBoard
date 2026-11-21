@@ -8,10 +8,10 @@
 
 namespace {
 
-constexpr int kButtonSize = 32;
-constexpr int kIconSize = 20;
-constexpr int kAlignButtonCount = 8;
-constexpr int kBoolButtonCount = 6;
+constexpr int BUTTON_SIZE = 32;
+constexpr int ICON_SIZE = 20;
+constexpr int ALIGN_BUTTON_COUNT = 8;
+constexpr int BOOL_BUTTON_COUNT = 6;
 
 // 每一行都是独立容器，行内按钮平铺；行容器负责整行的显隐，避免逐排撑开空行。
 QWidget* makeRow(QWidget* parent, QHBoxLayout** layout)
@@ -56,13 +56,13 @@ PropertiesPanelSelectionCard::PropertiesPanelSelectionCard(QWidget* parent) : QW
     basicLayout->addStretch(1);
 
     // 对齐 8 项与合并图元 6 项各占一行：多选时直接平铺，不再收进下拉菜单。
-    for (int i = 0; i < kAlignButtonCount; ++i) {
+    for (int i = 0; i < ALIGN_BUTTON_COUNT; ++i) {
         auto* button = makeButton(QStringLiteral("ItemAlignRowButton"));
         m_alignButtons.append(button);
         alignLayout->addWidget(button);
     }
     alignLayout->addStretch(1);
-    for (int i = 0; i < kBoolButtonCount; ++i) {
+    for (int i = 0; i < BOOL_BUTTON_COUNT; ++i) {
         auto* button = makeButton(QStringLiteral("ItemMorphButton"));
         m_boolButtons.append(button);
         morphLayout->addWidget(button);
@@ -87,8 +87,8 @@ QToolButton* PropertiesPanelSelectionCard::makeButton(const QString& objectName)
 {
     auto* button = new QToolButton(this);
     button->setObjectName(objectName);
-    button->setIconSize(QSize(kIconSize, kIconSize));
-    button->setFixedSize(kButtonSize, kButtonSize);
+    button->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
+    button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
     button->setToolButtonStyle(Qt::ToolButtonIconOnly);
     button->hide();
     return button;

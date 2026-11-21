@@ -226,7 +226,7 @@ class CanvasScene : public QGraphicsScene {
     ItemStackList itemStackSnapshot(const QList<CanvasItem*>& items) const;
 
     QUndoStack* m_undoStack = nullptr;
-    ToolMode m_mode = ToolMode::View;
+    ToolMode m_mode = ToolMode::VIEW;
     QSizeF m_canvasSize{1536.0, 1024.0};
     QPointF m_canvasOrigin{0.0, 0.0};
     CanvasBackground m_background;

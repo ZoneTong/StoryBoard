@@ -11,11 +11,11 @@ namespace ImageFill {
 QString modeToString(Mode mode)
 {
     switch (mode) {
-    case Mode::Fit:
+    case Mode::FIT:
         return QStringLiteral("fit");
-    case Mode::Tile:
+    case Mode::TILE:
         return QStringLiteral("tile");
-    case Mode::Stretch:
+    case Mode::STRETCH:
     default:
         return QStringLiteral("stretch");
     }
@@ -25,12 +25,12 @@ Mode modeFromString(const QString& name)
 {
     const QString normalized = name.trimmed().toLower();
     if (normalized == QStringLiteral("fit")) {
-        return Mode::Fit;
+        return Mode::FIT;
     }
     if (normalized == QStringLiteral("tile")) {
-        return Mode::Tile;
+        return Mode::TILE;
     }
-    return Mode::Stretch;
+    return Mode::STRETCH;
 }
 
 QJsonObject toJson(const QPixmap& image, Mode mode)
@@ -72,7 +72,7 @@ void paint(QPainter* painter, const QPixmap& image, Mode mode, const QRectF& rec
     painter->setBrush(Qt::NoBrush);
 
     switch (mode) {
-    case Mode::Fit: {
+    case Mode::FIT: {
         const QSizeF imageSize(image.width(), image.height());
         const qreal scale = qMin(rect.width() / qMax<qreal>(1.0, imageSize.width()),
                                  rect.height() / qMax<qreal>(1.0, imageSize.height()));
@@ -82,7 +82,7 @@ void paint(QPainter* painter, const QPixmap& image, Mode mode, const QRectF& rec
         painter->drawPixmap(target, image, QRectF(image.rect()));
         break;
     }
-    case Mode::Tile: {
+    case Mode::TILE: {
         // 按原图像素 1:1 平铺：一个图片像素 = 一个画布单位，视图缩放时整体等比放大。
         const qreal tileWidth = qMax<qreal>(1.0, image.width());
         const qreal tileHeight = qMax<qreal>(1.0, image.height());
@@ -96,7 +96,7 @@ void paint(QPainter* painter, const QPixmap& image, Mode mode, const QRectF& rec
         }
         break;
     }
-    case Mode::Stretch:
+    case Mode::STRETCH:
     default:
         painter->drawPixmap(rect, image, QRectF(image.rect()));
         break;

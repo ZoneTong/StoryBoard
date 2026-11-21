@@ -166,28 +166,28 @@ void drawArrowEnd(QPainter& painter, IconId)
 constexpr struct IconEntry {
     IconId id;
     void (*draw)(QPainter&, IconId);
-} kEntries[] = {
-    {IconId::Shapes, drawShapes},
-    {IconId::Image, drawImage},
-    {IconId::LineArt, drawLineArt},
-    {IconId::Background, drawBackground},
-    {IconId::Grid, drawGrid},
-    {IconId::Palette, drawPalette},
-    {IconId::Corner, drawCorner},
-    {IconId::Smooth, drawSmooth},
-    {IconId::Opacity, drawOpacity},
-    {IconId::TriangleBase, drawTriangleBase},
-    {IconId::AngleRight, drawAngleRight},
-    {IconId::AngleLeft, drawAngleLeft},
-    {IconId::ArrowStart, drawArrowStart},
-    {IconId::ArrowEnd, drawArrowEnd},
+} ENTRIES[] = {
+    {IconId::SHAPES, drawShapes},
+    {IconId::IMAGE, drawImage},
+    {IconId::LINE_ART, drawLineArt},
+    {IconId::BACKGROUND, drawBackground},
+    {IconId::GRID, drawGrid},
+    {IconId::PALETTE, drawPalette},
+    {IconId::CORNER, drawCorner},
+    {IconId::SMOOTH, drawSmooth},
+    {IconId::OPACITY, drawOpacity},
+    {IconId::TRIANGLE_BASE, drawTriangleBase},
+    {IconId::ANGLE_RIGHT, drawAngleRight},
+    {IconId::ANGLE_LEFT, drawAngleLeft},
+    {IconId::ARROW_START, drawArrowStart},
+    {IconId::ARROW_END, drawArrowEnd},
 };
 
 } // namespace
 
 bool paintIconShapeGraphic(QPainter& painter, IconId id)
 {
-    for (const IconEntry& entry : kEntries) {
+    for (const IconEntry& entry : ENTRIES) {
         if (entry.id == id) {
             entry.draw(painter, id);
             return true;

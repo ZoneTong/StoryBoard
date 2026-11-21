@@ -98,16 +98,16 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     ctx.check(defaultImage.pixelColor(5, 5).alpha() == 0, QStringLiteral("默认背景层为无色纯透明"));
 
     CanvasBackground background;
-    background.type = BackgroundType::Color;
+    background.type = BackgroundType::COLOR;
     background.color = QColor(QStringLiteral("#FEF3C7"));
     scene.replaceCanvasBackground(background);
-    ctx.check(scene.canvasBackground().type == BackgroundType::Color &&
+    ctx.check(scene.canvasBackground().type == BackgroundType::COLOR &&
                   scene.canvasBackground().color == background.color,
               QStringLiteral("设置背景颜色"));
     ctx.check(undo.canUndo(), QStringLiteral("背景替换进入撤销栈"));
 
     undo.undo();
-    ctx.check(scene.canvasBackground().type == BackgroundType::None, QStringLiteral("撤销背景替换"));
+    ctx.check(scene.canvasBackground().type == BackgroundType::NONE, QStringLiteral("撤销背景替换"));
     undo.redo();
     ctx.check(scene.canvasBackground().color == background.color, QStringLiteral("重做背景替换"));
 
@@ -156,10 +156,10 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
 
     const QPixmap shot = makeShotImage(320, 200, QStringLiteral("SHOT 01"), QColor(QStringLiteral("#60A5FA")),
                                        QColor(QStringLiteral("#1D4ED8")));
-    auto* imageItem = createShapeItem(ShapeType::Rectangle);
+    auto* imageItem = createShapeItem(ShapeType::RECTANGLE);
     imageItem->setStyle(QColor(Qt::transparent), QColor(Qt::transparent), 1.0);
-    imageItem->setFillStyle(FillStyle::None);
-    imageItem->setFillImage(shot, ImageFill::Mode::Stretch);
+    imageItem->setFillStyle(FillStyle::NONE);
+    imageItem->setFillImage(shot, ImageFill::Mode::STRETCH);
     imageItem->setContentSize(QSizeF(320, 200));
     imageItem->setPos(QPointF(400, 260));
     scene.addItemsWithUndo({imageItem}, QStringLiteral("插入图片"));
@@ -181,7 +181,7 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     QString loadError;
     ctx.check(loaded.fromJson(root, &loadError), QStringLiteral("反序列化画布"), loadError);
     ctx.check(loaded.canvasItemCount() == 2, QStringLiteral("画布图元数量一致"));
-    ctx.check(loaded.canvasBackground().type == BackgroundType::Color &&
+    ctx.check(loaded.canvasBackground().type == BackgroundType::COLOR &&
                   loaded.canvasBackground().color == background.color,
               QStringLiteral("画布背景恢复"));
 
@@ -249,18 +249,18 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     QPixmap backgroundPixmap(64, 48);
     backgroundPixmap.fill(QColor(QStringLiteral("#10B981")));
     CanvasBackground imageBackground;
-    imageBackground.type = BackgroundType::Image;
+    imageBackground.type = BackgroundType::IMAGE;
     imageBackground.image = backgroundPixmap;
-    imageBackground.mode = BackgroundMode::Tile;
+    imageBackground.mode = BackgroundMode::TILE;
     imageBackgroundScene.replaceCanvasBackground(imageBackground);
 
     CanvasScene imageBackgroundLoaded;
     QString imageBackgroundError;
     ctx.check(imageBackgroundLoaded.fromJson(imageBackgroundScene.toJson(), &imageBackgroundError),
               QStringLiteral("背景图片序列化"), imageBackgroundError);
-    ctx.check(imageBackgroundLoaded.canvasBackground().type == BackgroundType::Image &&
+    ctx.check(imageBackgroundLoaded.canvasBackground().type == BackgroundType::IMAGE &&
                   !imageBackgroundLoaded.canvasBackground().image.isNull() &&
-                  imageBackgroundLoaded.canvasBackground().mode == BackgroundMode::Tile,
+                  imageBackgroundLoaded.canvasBackground().mode == BackgroundMode::TILE,
               QStringLiteral("反序列化背景图片与填充方式"));
 
     const QString canvasPath = QDir(ctx.workDirectory).filePath(QStringLiteral("selftest.sbcanvas"));
@@ -280,7 +280,7 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     ctx.check(reloaded.fromJson(reloadedDocument.object()), QStringLiteral("从文件载入画布"));
     ctx.check(reloaded.canvasItemCount() == 2, QStringLiteral("文件载入图元数量一致"));
 
-    reloaded.setMode(ToolMode::Edit);
+    reloaded.setMode(ToolMode::EDIT);
     const QList<CanvasItem*> reloadedItems = reloaded.canvasItems();
     if (!reloadedItems.isEmpty()) {
         reloadedItems.constFirst()->setSelected(true);
@@ -308,7 +308,7 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
 
         CanvasView checkerView(&checkerScene);
         checkerView.resize(260, 180);
-        checkerView.setMode(ToolMode::View);
+        checkerView.setMode(ToolMode::VIEW);
         checkerView.show();
         QApplication::processEvents();
         checkerView.viewport()->repaint();

@@ -77,10 +77,10 @@ class AppSettings {
     // 三个候选全都不可写时返回空串，调用方据此给出明确失败原因，而不是去开一个不存在的目录。
     static QString writableShapesDir();
     // 打开模板目录的失败原因：都按「找不到目录 / 建不出来 / 外壳打不开 / 没有文件管理器」分开报。
-    enum class ShapesFolderError { None = 0, CreateFailed, ShellFailed, DesktopFailed };
+    enum class ShapesFolderError { NONE = 0, CREATE_FAILED, SHELL_FAILED, DESKTOP_FAILED };
     struct ShapesFolderOpenResult {
         bool opened = false;
-        ShapesFolderError error = ShapesFolderError::None;
+        ShapesFolderError error = ShapesFolderError::NONE;
         QString directory;
         int shellCode = 0;
         // 诊断用：进程完整性级别与各外壳通道的返回值，排查「打不开目录」时直接看现场。

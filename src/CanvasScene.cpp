@@ -7,10 +7,10 @@
 
 CanvasScene::CanvasScene(QObject* parent) : QGraphicsScene(parent)
 {
-    m_layers = {{BackgroundLayerId, scene_constants::kBackgroundLayerName, true, true},
-                {scene_constants::kFirstUserLayerId, QStringLiteral("图层 1"), true, false}};
-    m_activeLayerId = scene_constants::kFirstUserLayerId;
-    m_nextLayerId = scene_constants::kFirstUserLayerId + 1;
+    m_layers = {{BackgroundLayerId, scene_constants::BACKGROUND_LAYER_NAME, true, true},
+                {scene_constants::FIRST_USER_LAYER_ID, QStringLiteral("图层 1"), true, false}};
+    m_activeLayerId = scene_constants::FIRST_USER_LAYER_ID;
+    m_nextLayerId = scene_constants::FIRST_USER_LAYER_ID + 1;
 
     setBackgroundBrush(Qt::NoBrush);
     setItemIndexMethod(QGraphicsScene::BspTreeIndex);
@@ -88,7 +88,7 @@ void CanvasScene::setMode(ToolMode mode)
         return;
     }
 
-    if (m_mode == ToolMode::Edit) {
+    if (m_mode == ToolMode::EDIT) {
         clearSelection();
     }
 
@@ -108,10 +108,10 @@ void CanvasScene::resetDocument()
     clearOrphans();
     m_selectionOrder.clear();
     m_background = CanvasBackground();
-    m_layers = {{BackgroundLayerId, scene_constants::kBackgroundLayerName, true, true},
-                {scene_constants::kFirstUserLayerId, QStringLiteral("图层 1"), true, false}};
-    m_activeLayerId = scene_constants::kFirstUserLayerId;
-    m_nextLayerId = scene_constants::kFirstUserLayerId + 1;
+    m_layers = {{BackgroundLayerId, scene_constants::BACKGROUND_LAYER_NAME, true, true},
+                {scene_constants::FIRST_USER_LAYER_ID, QStringLiteral("图层 1"), true, false}};
+    m_activeLayerId = scene_constants::FIRST_USER_LAYER_ID;
+    m_nextLayerId = scene_constants::FIRST_USER_LAYER_ID + 1;
     m_nextGroupId = 1;
     m_groupParents.clear();
     m_canvasOrigin = QPointF(0.0, 0.0);

@@ -31,10 +31,10 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
     int& itemPropertyRequests = ctx.itemPropertyRequests;
 
     // 需求 5：圆角矩形并入矩形，这里用「矩形 + 显式 px 圆角」覆盖原来的圆角形态。
-    auto* propertyShape = createShapeItem(ShapeType::Rectangle);
+    auto* propertyShape = createShapeItem(ShapeType::RECTANGLE);
     propertyShape->setCornerRadius(19.2);
     propertyShape->setStyle(QColor(QStringLiteral("#1D4ED8")), QColor(QStringLiteral("#BFDBFE")), 6.0);
-    propertyShape->setFill(QColor(QStringLiteral("#BFDBFE")), FillStyle::GridHatch);
+    propertyShape->setFill(QColor(QStringLiteral("#BFDBFE")), FillStyle::GRID_HATCH);
     propertyShape->setContentSize(QSizeF(180.0, 120.0));
     propertyShape->setPos(QPointF(360, 620));
     viewScene.addItemsWithUndo({propertyShape}, QStringLiteral("Add property shape"));
@@ -129,12 +129,12 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
         CanvasScene& editScene = ctx.propertyScene;
         QUndoStack& editUndo = ctx.propertyUndo;
         editScene.applyCanvasSize(QSizeF(800.0, 600.0));
-        editScene.setMode(ToolMode::Edit);
+        editScene.setMode(ToolMode::EDIT);
         editScene.setUndoStack(&editUndo);
 
-        auto* firstShape = createShapeItem(ShapeType::Rectangle);
+        auto* firstShape = createShapeItem(ShapeType::RECTANGLE);
         firstShape->setStyle(QColor(QStringLiteral("#1E293B")), QColor(QStringLiteral("#93C5FD")), 3.0);
-        firstShape->setFill(QColor(QStringLiteral("#93C5FD")), FillStyle::Solid);
+        firstShape->setFill(QColor(QStringLiteral("#93C5FD")), FillStyle::SOLID);
         firstShape->setContentSize(QSizeF(120.0, 80.0));
         firstShape->setPos(QPointF(40.0, 50.0));
         editScene.addItemsWithUndo({firstShape}, QStringLiteral("Add property test shape"));
@@ -147,7 +147,7 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
 
         ctx.check(editScene.addLayerWithUndo(QStringLiteral("属性目标层")), QStringLiteral("创建属性编辑目标图层"));
         const int targetLayerId = editScene.activeLayerId();
-        auto* secondShape = createShapeItem(ShapeType::Ellipse);
+        auto* secondShape = createShapeItem(ShapeType::ELLIPSE);
         secondShape->setStyle(QColor(QStringLiteral("#334155")), QColor(QStringLiteral("#FDE68A")), 2.0);
         secondShape->setContentSize(QSizeF(100.0, 100.0));
         secondShape->setPos(QPointF(240.0, 80.0));
@@ -155,7 +155,7 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
         ctx.check(secondShape->rawName() == QStringLiteral("椭圆 1"), QStringLiteral("不同图元类型各自从 1 编号"),
                   secondShape->rawName());
 
-        auto* thirdShape = createShapeItem(ShapeType::Rectangle);
+        auto* thirdShape = createShapeItem(ShapeType::RECTANGLE);
         thirdShape->setContentSize(QSizeF(90.0, 60.0));
         thirdShape->setPos(QPointF(360.0, 200.0));
         editScene.addItemsWithUndo({thirdShape}, QStringLiteral("Add second rectangle"));
@@ -214,7 +214,7 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
                 heightValue->setValue(2);
             }
             if (fillStyleValue) {
-                fillStyleValue->setCurrentIndex(fillStyleValue->findData(static_cast<int>(FillStyle::Honeycomb)));
+                fillStyleValue->setCurrentIndex(fillStyleValue->findData(static_cast<int>(FillStyle::HONEYCOMB)));
             }
             if (fillColorValue) {
                 fillColorValue->setProperty("itemColor", QColor(QStringLiteral("#22C55E")));
@@ -247,7 +247,7 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
         ctx.check(editUndo.count() == undoCountBeforeEdit + 1, QStringLiteral("属性窗修改只生成一条撤销记录"));
         ctx.check(firstShape->layerId() == targetLayerId && firstShape->height() == 2,
                   QStringLiteral("属性窗修改可落到图层和层内高度"));
-        ctx.check(firstShape->fillStyle() == FillStyle::Honeycomb &&
+        ctx.check(firstShape->fillStyle() == FillStyle::HONEYCOMB &&
                       firstShape->fillColor() == QColor(QStringLiteral("#22C55E")),
                   QStringLiteral("属性窗修改可落到填充样式和填充颜色"));
         ctx.check(firstShape->strokeColor() == QColor(QStringLiteral("#DC2626")) &&
@@ -281,7 +281,7 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
         // 修改进同一条撤销记录并支持撤销 / 重做。
         CanvasScene arrowScene;
         arrowScene.applyCanvasSize(QSizeF(800, 600));
-        arrowScene.setMode(ToolMode::Edit);
+        arrowScene.setMode(ToolMode::EDIT);
         QUndoStack arrowUndo;
         arrowScene.setUndoStack(&arrowUndo);
         auto* curve = new CurveItem();
@@ -306,20 +306,20 @@ void selftest::runPropertyDialogFieldGeometryTests(Context& ctx)
                       endArrow->currentData().toInt() == static_cast<int>(curve->endArrow()),
                   QStringLiteral("曲线属性窗箭头回显当前样式"));
         if (startArrow) {
-            startArrow->setCurrentIndex(startArrow->findData(static_cast<int>(ArrowStyle::TriangleFilled)));
+            startArrow->setCurrentIndex(startArrow->findData(static_cast<int>(ArrowStyle::TRIANGLE_FILLED)));
         }
         if (endArrow) {
-            endArrow->setCurrentIndex(endArrow->findData(static_cast<int>(ArrowStyle::OpenArrow)));
+            endArrow->setCurrentIndex(endArrow->findData(static_cast<int>(ArrowStyle::OPEN_ARROW)));
         }
         dialog.accept();
         QApplication::processEvents();
-        ctx.check(curve->startArrow() == ArrowStyle::TriangleFilled && curve->endArrow() == ArrowStyle::OpenArrow,
+        ctx.check(curve->startArrow() == ArrowStyle::TRIANGLE_FILLED && curve->endArrow() == ArrowStyle::OPEN_ARROW,
                   QStringLiteral("曲线属性窗修改可落到两端箭头"));
         arrowUndo.undo();
-        ctx.check(curve->startArrow() == ArrowStyle::None && curve->endArrow() == ArrowStyle::None,
+        ctx.check(curve->startArrow() == ArrowStyle::NONE && curve->endArrow() == ArrowStyle::NONE,
                   QStringLiteral("曲线属性窗箭头修改可撤销"));
         arrowUndo.redo();
-        ctx.check(curve->startArrow() == ArrowStyle::TriangleFilled && curve->endArrow() == ArrowStyle::OpenArrow,
+        ctx.check(curve->startArrow() == ArrowStyle::TRIANGLE_FILLED && curve->endArrow() == ArrowStyle::OPEN_ARROW,
                   QStringLiteral("曲线属性窗箭头修改可重做"));
 
         // 箭头对全部曲线子型开放：花括号同样提供两端箭头行。

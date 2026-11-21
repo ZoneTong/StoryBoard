@@ -102,19 +102,19 @@ void CanvasView::setMode(ToolMode mode)
     m_scene->setMode(mode);
 
     switch (mode) {
-    case ToolMode::View:
+    case ToolMode::VIEW:
         setDragMode(QGraphicsView::NoDrag);
         m_scene->clearSelection();
         fitAll();
         break;
-    case ToolMode::Brush:
+    case ToolMode::BRUSH:
         setDragMode(QGraphicsView::NoDrag);
         m_scene->clearSelection();
         break;
-    case ToolMode::Edit:
+    case ToolMode::EDIT:
         setDragMode(QGraphicsView::RubberBandDrag);
         break;
-    case ToolMode::Text:
+    case ToolMode::TEXT:
         setDragMode(QGraphicsView::NoDrag);
         m_scene->clearSelection();
         break;
@@ -194,7 +194,7 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
     const QPoint position = event->position().toPoint();
     // 右键点中已选图元时不要走默认选择逻辑：QGraphicsView 会先把多选收成单选，
     // 导致随后的右键菜单拿不到完整选择，“组合选中图元”被误禁用。
-    if (m_mode == ToolMode::Edit && event->button() == Qt::RightButton) {
+    if (m_mode == ToolMode::EDIT && event->button() == Qt::RightButton) {
         CanvasItem* item = m_hits->editableItemAt(position);
         if (item && item->isSelected()) {
             event->accept();
@@ -204,13 +204,13 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
 
     // 平移只保留中键与查看模式左键：编辑模式不再用 Ctrl+左键平移，把 Ctrl 留给多选。
     if (event->button() == Qt::MiddleButton ||
-        (event->button() == Qt::LeftButton && (m_mode == ToolMode::View || m_spaceDown))) {
+        (event->button() == Qt::LeftButton && (m_mode == ToolMode::VIEW || m_spaceDown))) {
         m_pan->beginPan(position);
         event->accept();
         return;
     }
 
-    if (m_mode == ToolMode::Edit && event->button() == Qt::LeftButton && m_resize->beginResize(position)) {
+    if (m_mode == ToolMode::EDIT && event->button() == Qt::LeftButton && m_resize->beginResize(position)) {
         event->accept();
         return;
     }
@@ -219,7 +219,7 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
     // 容差“擦边”够到点击点、笔迹本体没压住该点，就让下方填充图形优先接收本次
     // 点击，避免点矩形内部却选中了横穿矩形的曲线。Ctrl 加选与已选中图元不受影响
     // （后者点击的可能是它的控制手柄）。
-    if (m_mode == ToolMode::Edit && event->button() == Qt::LeftButton &&
+    if (m_mode == ToolMode::EDIT && event->button() == Qt::LeftButton &&
         !event->modifiers().testFlag(Qt::ControlModifier)) {
         const QPointF scenePos = mapToScene(position);
         const QList<QGraphicsItem*> clickCandidates = m_scene->items(scenePos);
@@ -261,7 +261,7 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
     // 需求 15：重叠图元优先命中图层面板里已选图层中的图元。
     // QGraphicsScene 的默认选择总是选最上层，这里在按下期间临时让“非优先图层”
     // 的图元不可选中，交给基类完成选择/拖拽后再恢复，避免改变真实可见顺序。
-    if (m_mode == ToolMode::Edit && event->button() == Qt::LeftButton) {
+    if (m_mode == ToolMode::EDIT && event->button() == Qt::LeftButton) {
         CanvasItem* preferred = m_hits->preferredEditableItemAt(position);
         const QList<QGraphicsItem*> candidates = m_scene->items(mapToScene(position));
         const bool preferredIsTop =
@@ -298,7 +298,7 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
         }
     }
 
-    if (event->button() == Qt::LeftButton && m_mode == ToolMode::Brush && !m_stroke->hasActiveStroke()) {
+    if (event->button() == Qt::LeftButton && m_mode == ToolMode::BRUSH && !m_stroke->hasActiveStroke()) {
         if (!m_stroke->beginStroke(position)) {
             event->accept();
             return;
@@ -307,7 +307,7 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
         return;
     }
 
-    if (event->button() == Qt::LeftButton && m_mode == ToolMode::Text) {
+    if (event->button() == Qt::LeftButton && m_mode == ToolMode::TEXT) {
         if (!m_scene->isActiveLayerWritable()) {
             emit statusMessage(tr("The current layer is locked or hidden; text cannot be placed. Unlock or switch "
                                   "layers in the layer panel first."));
@@ -321,7 +321,7 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
 
     // 分组层级：单击组内任意图元时先展开成整棵组树的选择，再交给基类开始拖拽，
     // 这样一拖就是整组移动；Ctrl 点击仍保留加选/减选。
-    if (m_mode == ToolMode::Edit && event->button() == Qt::LeftButton &&
+    if (m_mode == ToolMode::EDIT && event->button() == Qt::LeftButton &&
         !event->modifiers().testFlag(Qt::ControlModifier)) {
         CanvasItem* item = m_hits->editableItemAt(position);
         if (item && item->groupId() > 0) {
@@ -330,7 +330,7 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
     }
 
     // 空白处按下即视为一次可能的框选起点：交给基类开橡皮筋，松手时再补判定。
-    m_bandCandidate = m_mode == ToolMode::Edit && event->button() == Qt::LeftButton &&
+    m_bandCandidate = m_mode == ToolMode::EDIT && event->button() == Qt::LeftButton &&
                       !event->modifiers().testFlag(Qt::ControlModifier) && !m_hits->editableItemAt(position);
     if (m_bandCandidate) {
         m_bandOrigin = position;
@@ -339,7 +339,7 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
     QGraphicsView::mousePressEvent(event);
 
     // 基类按下时可能把多选收成单选，按完再补一次整组选择。
-    if (m_mode == ToolMode::Edit && event->button() == Qt::LeftButton &&
+    if (m_mode == ToolMode::EDIT && event->button() == Qt::LeftButton &&
         !event->modifiers().testFlag(Qt::ControlModifier)) {
         CanvasItem* item = m_hits->editableItemAt(position);
         if (item && item->groupId() > 0 && m_scene->selectedCanvasItems().size() > 1) {
@@ -435,7 +435,7 @@ void CanvasView::mouseDoubleClickEvent(QMouseEvent* event)
     if (event->button() == Qt::LeftButton) {
         // 需求 42：属性窗在查看/画笔/文字模式下也能打开（只读）；
         // 编辑模式仍要求图元可编辑，锁定图层维持原来的“先解锁”提示。
-        if (m_mode == ToolMode::Edit) {
+        if (m_mode == ToolMode::EDIT) {
             CanvasItem* canvasItem = m_hits->editableItemAt(event->position().toPoint());
             if (!canvasItem) {
                 if (m_hits->topItemAt(event->position().toPoint())) {
@@ -479,11 +479,11 @@ void CanvasView::keyPressEvent(QKeyEvent* event)
     }
 
     // 需求 7：画笔模式下按 Esc 退出回编辑模式；正在画的笔画先取消，不落库。
-    if (event->key() == Qt::Key_Escape && m_mode == ToolMode::Brush) {
+    if (event->key() == Qt::Key_Escape && m_mode == ToolMode::BRUSH) {
         if (m_stroke->hasActiveStroke()) {
             m_stroke->cancelStroke();
         }
-        setMode(ToolMode::Edit);
+        setMode(ToolMode::EDIT);
         emit statusMessage(tr("Brush mode exited; back to edit mode"));
         event->accept();
         return;
@@ -502,7 +502,7 @@ void CanvasView::keyPressEvent(QKeyEvent* event)
         return;
     }
 
-    if (m_mode == ToolMode::Edit) {
+    if (m_mode == ToolMode::EDIT) {
         const qreal step = (event->modifiers() & Qt::ShiftModifier) ? 10.0 : 1.0;
         QPointF delta;
         switch (event->key()) {
@@ -569,7 +569,7 @@ void CanvasView::cancelCurrentStroke()
 void CanvasView::paintEvent(QPaintEvent* event)
 {
     QGraphicsView::paintEvent(event);
-    if (m_mode != ToolMode::Edit) {
+    if (m_mode != ToolMode::EDIT) {
         return;
     }
     QPainter painter(viewport());

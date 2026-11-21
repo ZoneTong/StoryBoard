@@ -230,26 +230,26 @@ QIcon fillStyleIcon(FillStyle style, const QColor& color, int logicalSize)
     painter.save();
     painter.setClipPath(clipPath);
 
-    if (style != FillStyle::None) {
+    if (style != FillStyle::NONE) {
         QColor background = fill;
-        background.setAlpha(style == FillStyle::Solid ? 255 : 70);
+        background.setAlpha(style == FillStyle::SOLID ? 255 : 70);
         painter.fillRect(box, background);
     }
 
     switch (style) {
-    case FillStyle::None: {
+    case FillStyle::NONE: {
         painter.setPen(QPen(ink, 2.2, Qt::SolidLine, Qt::RoundCap));
         painter.drawLine(QPointF(5.5, 18.5), QPointF(18.5, 5.5));
         break;
     }
-    case FillStyle::Solid:
+    case FillStyle::SOLID:
         break;
-    case FillStyle::Hachure:
-    case FillStyle::ReverseHachure:
-    case FillStyle::CrossHatch: {
+    case FillStyle::HACHURE:
+    case FillStyle::REVERSE_HACHURE:
+    case FillStyle::CROSS_HATCH: {
         painter.setPen(QPen(ink, 1.5));
-        const bool forward = style != FillStyle::ReverseHachure;
-        const bool backward = style != FillStyle::Hachure;
+        const bool forward = style != FillStyle::REVERSE_HACHURE;
+        const bool backward = style != FillStyle::HACHURE;
         for (qreal offset = -box.height(); offset < box.width() + box.height(); offset += 4.2) {
             if (forward) {
                 painter.drawLine(QPointF(box.left() + offset, box.bottom()),
@@ -262,7 +262,7 @@ QIcon fillStyleIcon(FillStyle style, const QColor& color, int logicalSize)
         }
         break;
     }
-    case FillStyle::GridHatch: {
+    case FillStyle::GRID_HATCH: {
         painter.setPen(QPen(ink, 1.4));
         for (qreal x = box.left() + 4.0; x < box.right(); x += 4.5) {
             painter.drawLine(QPointF(x, box.top()), QPointF(x, box.bottom()));
@@ -272,21 +272,21 @@ QIcon fillStyleIcon(FillStyle style, const QColor& color, int logicalSize)
         }
         break;
     }
-    case FillStyle::HorizontalHatch: {
+    case FillStyle::HORIZONTAL_HATCH: {
         painter.setPen(QPen(ink, 1.4));
         for (qreal y = box.top() + 4.0; y < box.bottom(); y += 4.5) {
             painter.drawLine(QPointF(box.left(), y), QPointF(box.right(), y));
         }
         break;
     }
-    case FillStyle::VerticalHatch: {
+    case FillStyle::VERTICAL_HATCH: {
         painter.setPen(QPen(ink, 1.4));
         for (qreal x = box.left() + 4.0; x < box.right(); x += 4.5) {
             painter.drawLine(QPointF(x, box.top()), QPointF(x, box.bottom()));
         }
         break;
     }
-    case FillStyle::Brick: {
+    case FillStyle::BRICK: {
         // 砖纹：三行横线，竖缝在行间交错。
         painter.setPen(QPen(ink, 1.4));
         const qreal rowHeight = box.height() / 3.0;
@@ -303,7 +303,7 @@ QIcon fillStyleIcon(FillStyle style, const QColor& color, int logicalSize)
         }
         break;
     }
-    case FillStyle::Dots: {
+    case FillStyle::DOTS: {
         painter.setPen(Qt::NoPen);
         painter.setBrush(ink);
         for (int row = 0; row < 3; ++row) {
@@ -315,7 +315,7 @@ QIcon fillStyleIcon(FillStyle style, const QColor& color, int logicalSize)
         }
         break;
     }
-    case FillStyle::Honeycomb: {
+    case FillStyle::HONEYCOMB: {
         painter.setPen(QPen(ink, 1.2));
         for (int row = 0; row < 3; ++row) {
             for (int column = 0; column < 3; ++column) {

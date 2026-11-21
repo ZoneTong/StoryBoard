@@ -87,7 +87,7 @@ void MainWindowAppController::showSettings()
     }
     m_window->m_scene->setCanvasSizeWithUndo(m_window->m_settings.canvasSize);
 
-    if (m_window->m_view->mode() == ToolMode::View) {
+    if (m_window->m_view->mode() == ToolMode::VIEW) {
         m_window->m_view->fitAll();
     }
 

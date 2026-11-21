@@ -18,7 +18,7 @@ class PolygonItem : public ShapeItem {
   public:
     // 图层来源决定填充 / 描线的应用方式：
     // 有面积图形参与填充与描边；直线 / 曲线只保留线宽带，不再二次描线；文字只填字形。
-    enum class LayerRole { FilledArea = 0, StrokeBand = 1, Text = 2 };
+    enum class LayerRole { FILLED_AREA = 0, STROKE_BAND = 1, TEXT = 2 };
     // 基类只读视图的覆写：把内部 Layer 映射成 ShapeLayer。
     int shapeLayerCount() const override { return m_layers.size(); }
     ShapeLayer shapeLayer(int index) const override;
@@ -30,15 +30,15 @@ class PolygonItem : public ShapeItem {
         QColor stroke;
         qreal strokeWidth = 1.0;
         bool filled = true;
-        LayerRole role = LayerRole::FilledArea;
+        LayerRole role = LayerRole::FILLED_AREA;
     };
 
-    explicit PolygonItem(const QList<Layer>& layers = QList<Layer>(), FillStyle fillStyle = FillStyle::Solid,
+    explicit PolygonItem(const QList<Layer>& layers = QList<Layer>(), FillStyle fillStyle = FillStyle::SOLID,
                          Qt::PenStyle strokeStyle = Qt::SolidLine);
 
     QString kind() const override { return QStringLiteral("polygon"); }
     // 多边形没有内置轮廓，shapeType 只用于形状派生的公共分支（填充、命中已单独覆写）。
-    ShapeType shapeType() const override { return ShapeType::Polygon; }
+    ShapeType shapeType() const override { return ShapeType::POLYGON; }
     // 派生自 ShapeItem 但不受形状类型语义约束：凡按 shapeType 分派的入口都先看这一位。
     QString displayName() const override;
     QString typeDisplayName() const override;
@@ -105,10 +105,10 @@ class PolygonItem : public ShapeItem {
 
     QList<Layer> m_layers;
     QSizeF m_designSize{1.0, 1.0};
-    FillStyle m_fillStyle = FillStyle::Solid;
+    FillStyle m_fillStyle = FillStyle::SOLID;
     Qt::PenStyle m_strokeStyle = Qt::SolidLine;
     QPixmap m_fillImage;
-    ImageFill::Mode m_fillImageMode = ImageFill::Mode::Stretch;
+    ImageFill::Mode m_fillImageMode = ImageFill::Mode::STRETCH;
     // 内容尺寸变化时不改路径，绘制阶段按比例缩放，避免反复量化误差累积。
     QTransform layerTransform() const;
 };

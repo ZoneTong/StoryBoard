@@ -81,7 +81,7 @@ void CanvasScene::applyGroupParents(const QHash<int, int>& parents)
 
 bool CanvasScene::canGroupSelectedItems() const
 {
-    if (m_mode != ToolMode::Edit) {
+    if (m_mode != ToolMode::EDIT) {
         return false;
     }
     const QList<CanvasItem*> selected = selectedCanvasItems();
@@ -100,7 +100,7 @@ bool CanvasScene::canGroupSelectedItems() const
 
 bool CanvasScene::canUngroupSelectedItems() const
 {
-    if (m_mode != ToolMode::Edit) {
+    if (m_mode != ToolMode::EDIT) {
         return false;
     }
     for (CanvasItem* item : selectedCanvasItems()) {

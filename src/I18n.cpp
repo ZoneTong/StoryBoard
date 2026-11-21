@@ -24,15 +24,15 @@
 namespace {
 
 
-UiLanguage gOverride = UiLanguage::System;
+UiLanguage gOverride = UiLanguage::SYSTEM;
 bool gOverrideActive = false;
 
-const char* const kTranslationContext = "StoryBoard";
+const char* const TRANSLATION_CONTEXT = "StoryBoard";
 // 源语言是英文；中文等其它语种放在各自的 .ts/.qm 里。
-const char* const kTranslationResource = ":/i18n/storyboard_zh.qm";
-const char* const kTranslationSourceResource = ":/i18n/storyboard_zh.ts";
+const char* const TRANSLATION_RESOURCE = ":/i18n/storyboard_zh.qm";
+const char* const TRANSLATION_SOURCE_RESOURCE = ":/i18n/storyboard_zh.ts";
 // Qt 6 内置控件（QFontDialog、QMessageBox 等）的标准标签由 qtbase 翻译提供。
-const char* const kQtTranslationResource = ":/i18n/qtbase_zh_CN.qm";
+const char* const QT_TRANSLATION_RESOURCE = ":/i18n/qtbase_zh_CN.qm";
 
 QTranslator gTranslator;
 bool gTranslatorLoaded = false;
@@ -48,7 +48,7 @@ void loadReverseTranslations()
         return;
     }
 
-    QFile file(QString::fromLatin1(kTranslationSourceResource));
+    QFile file(QString::fromLatin1(TRANSLATION_SOURCE_RESOURCE));
     if (!file.open(QIODevice::ReadOnly)) {
         return;
     }
@@ -79,8 +79,8 @@ void ensureTranslatorLoaded()
     }
     gTranslatorLoaded = true;
     loadReverseTranslations();
-    (void)gTranslator.load(QString::fromLatin1(kTranslationResource));
-    gQtTranslationAvailable = gQtTranslator.load(QString::fromLatin1(kQtTranslationResource));
+    (void)gTranslator.load(QString::fromLatin1(TRANSLATION_RESOURCE));
+    gQtTranslationAvailable = gQtTranslator.load(QString::fromLatin1(QT_TRANSLATION_RESOURCE));
 }
 
 void installChineseTranslator(bool chinese)
@@ -115,10 +115,10 @@ void installChineseTranslator(bool chinese)
 
 QString translateToCurrent(const QString& source)
 {
-    return QCoreApplication::translate(kTranslationContext, source.toUtf8().constData());
+    return QCoreApplication::translate(TRANSLATION_CONTEXT, source.toUtf8().constData());
 }
 
-UiLanguage gExplicitLanguage = UiLanguage::System;
+UiLanguage gExplicitLanguage = UiLanguage::SYSTEM;
 bool gExplicitActive = false;
 
 // 旧版本把语言单独存在 StoryBoard-language.txt（注册表写不进去时的退路）。
@@ -208,12 +208,12 @@ bool persistLanguage(const QString& stored)
 UiLanguage languageFromStored(const QString& stored)
 {
     if (stored == QLatin1String("zh")) {
-        return UiLanguage::Chinese;
+        return UiLanguage::CHINESE;
     }
     if (stored == QLatin1String("en")) {
-        return UiLanguage::English;
+        return UiLanguage::ENGLISH;
     }
-    return UiLanguage::System;
+    return UiLanguage::SYSTEM;
 }
 
 } // namespace
@@ -228,14 +228,14 @@ UiLanguage uiLanguageSetting()
 
 void setUiLanguageSetting(UiLanguage language)
 {
-    const QString stored = language == UiLanguage::Chinese   ? QStringLiteral("zh")
-                           : language == UiLanguage::English ? QStringLiteral("en")
+    const QString stored = language == UiLanguage::CHINESE   ? QStringLiteral("zh")
+                           : language == UiLanguage::ENGLISH ? QStringLiteral("en")
                                                              : QStringLiteral("system");
 
     // 先记住本次运行的选择：即使磁盘/注册表写失败，当前窗口也能立即切换。
-    if (language == UiLanguage::System) {
+    if (language == UiLanguage::SYSTEM) {
         gExplicitActive = false;
-        gExplicitLanguage = UiLanguage::System;
+        gExplicitLanguage = UiLanguage::SYSTEM;
     } else {
         gExplicitActive = true;
         gExplicitLanguage = language;
@@ -245,14 +245,14 @@ void setUiLanguageSetting(UiLanguage language)
         storedLanguageCache() = stored;
     }
 
-    installChineseTranslator(uiEffectiveLanguage() == UiLanguage::Chinese);
+    installChineseTranslator(uiEffectiveLanguage() == UiLanguage::CHINESE);
 }
 
 void uiOverrideLanguage(UiLanguage language)
 {
-    gOverrideActive = language != UiLanguage::System;
+    gOverrideActive = language != UiLanguage::SYSTEM;
     gOverride = language;
-    installChineseTranslator(uiEffectiveLanguage() == UiLanguage::Chinese);
+    installChineseTranslator(uiEffectiveLanguage() == UiLanguage::CHINESE);
 }
 
 UiLanguage uiEffectiveLanguage()
@@ -262,27 +262,27 @@ UiLanguage uiEffectiveLanguage()
     }
     const QString fromEnv = qEnvironmentVariable("STORYBOARD_LANG").trimmed().toLower();
     if (fromEnv == QLatin1String("zh")) {
-        return UiLanguage::Chinese;
+        return UiLanguage::CHINESE;
     }
     if (fromEnv == QLatin1String("en")) {
-        return UiLanguage::English;
+        return UiLanguage::ENGLISH;
     }
     const UiLanguage setting = uiLanguageSetting();
-    if (setting != UiLanguage::System) {
+    if (setting != UiLanguage::SYSTEM) {
         return setting;
     }
-    return QLocale::system().language() == QLocale::Chinese ? UiLanguage::Chinese : UiLanguage::English;
+    return QLocale::system().language() == QLocale::Chinese ? UiLanguage::CHINESE : UiLanguage::ENGLISH;
 }
 
 bool uiIsEnglish()
 {
-    return uiEffectiveLanguage() == UiLanguage::English;
+    return uiEffectiveLanguage() == UiLanguage::ENGLISH;
 }
 
 void uiInitializeLanguage()
 {
     // 语言资源在窗口创建前就装好，首次构造出来的文字直接是目标语言。
-    installChineseTranslator(uiEffectiveLanguage() == UiLanguage::Chinese);
+    installChineseTranslator(uiEffectiveLanguage() == UiLanguage::CHINESE);
 }
 
 QString uiText(const QString& english)

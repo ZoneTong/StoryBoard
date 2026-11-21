@@ -270,7 +270,7 @@ QPainterPath LineItemAbstract::shape() const
     // Selection handles sit on the content corners; make them clickable even when
     // the stroke itself does not pass through those points.
     if (isSelected() && isEditable() && hasSingleSelection()) {
-        for (int handle = TopLeft; handle <= Left; ++handle) {
+        for (int handle = TOP_LEFT; handle <= LEFT; ++handle) {
             result.addRect(handleRect(static_cast<Handle>(handle)).adjusted(-2.0, -2.0, 2.0, 2.0));
         }
     }

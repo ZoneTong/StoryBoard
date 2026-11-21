@@ -94,7 +94,7 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     fillImageLayout->setSpacing(2);
     auto* fillImageIcon = new QToolButton(m_fillImageRow);
     fillImageIcon->setObjectName(QStringLiteral("ItemRowIcon"));
-    fillImageIcon->setIcon(makeIcon(IconId::Image, QColor(139, 144, 156), 20));
+    fillImageIcon->setIcon(makeIcon(IconId::IMAGE, QColor(139, 144, 156), 20));
     fillImageIcon->setIconSize(QSize(20, 20));
     fillImageIcon->setFixedSize(32, 32);
     fillImageIcon->setAutoRaise(true);
@@ -103,7 +103,7 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
 
     m_fillImageButton = new QToolButton(m_fillImageRow);
     m_fillImageButton->setObjectName(QStringLiteral("ItemFillImageButton"));
-    m_fillImageButton->setIcon(makeIcon(IconId::Image, QColor(58, 64, 80), 16));
+    m_fillImageButton->setIcon(makeIcon(IconId::IMAGE, QColor(58, 64, 80), 16));
     m_fillImageButton->setIconSize(QSize(16, 16));
     m_fillImageButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     m_fillImageButton->setText(tr("Choose fill image"));
@@ -114,7 +114,7 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
 
     m_clearFillImageButton = new QToolButton(m_fillImageRow);
     m_clearFillImageButton->setObjectName(QStringLiteral("ItemRowIcon"));
-    m_clearFillImageButton->setIcon(makeIcon(IconId::Delete, QColor(139, 144, 156), 20));
+    m_clearFillImageButton->setIcon(makeIcon(IconId::DELETE, QColor(139, 144, 156), 20));
     m_clearFillImageButton->setIconSize(QSize(20, 20));
     m_clearFillImageButton->setFixedSize(32, 32);
     m_clearFillImageButton->setAutoRaise(true);

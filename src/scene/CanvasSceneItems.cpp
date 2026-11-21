@@ -65,7 +65,7 @@ void CanvasScene::refreshViewDependentGeometry()
 
 bool CanvasScene::canSmoothSelectedStrokes() const
 {
-    if (m_mode != ToolMode::Edit) {
+    if (m_mode != ToolMode::EDIT) {
         return false;
     }
     for (CanvasItem* item : selectedCanvasItems()) {
@@ -86,7 +86,7 @@ bool CanvasScene::canSmoothSelectedStrokes() const
 
 int CanvasScene::smoothSelectedStrokes(qreal tolerance)
 {
-    if (m_mode != ToolMode::Edit) {
+    if (m_mode != ToolMode::EDIT) {
         return 0;
     }
 
@@ -256,7 +256,7 @@ void CanvasScene::assignAutoItemNames()
 
 void CanvasScene::selectAllItems()
 {
-    if (m_mode != ToolMode::Edit) {
+    if (m_mode != ToolMode::EDIT) {
         return;
     }
     const QList<CanvasItem*> allItems = canvasItems();

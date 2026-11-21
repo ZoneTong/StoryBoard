@@ -14,7 +14,7 @@ struct LineArtPreset {
     double tolerance;
 };
 
-inline constexpr LineArtPreset kLineArtPresets[] = {
+inline constexpr LineArtPreset LINE_ART_PRESETS[] = {
     {"Keep details", 6, 40, 44, 8, 0.5},
     {"Balanced", 6, 48, 48, 12, 0.6},
     {"Clean lines", 6, 64, 56, 20, 0.8},
@@ -23,7 +23,7 @@ inline constexpr LineArtPreset kLineArtPresets[] = {
 
 inline int lineArtPresetCount()
 {
-    return static_cast<int>(sizeof(kLineArtPresets) / sizeof(kLineArtPresets[0]));
+    return static_cast<int>(sizeof(LINE_ART_PRESETS) / sizeof(LINE_ART_PRESETS[0]));
 }
 
 inline LineArtPreset lineArtPreset(int index)
@@ -32,5 +32,5 @@ inline LineArtPreset lineArtPreset(int index)
     if (index < 0 || index >= lineArtPresetCount()) {
         return fallback;
     }
-    return kLineArtPresets[index];
+    return LINE_ART_PRESETS[index];
 }

@@ -97,7 +97,7 @@ void selftest::runMainWindowFlowTests(Context& ctx)
             // 需求：支持中英文界面，默认系统语言，可在设置里切换。
             ctx.check(uiText(QStringLiteral("New canvas")) == QStringLiteral("新建画布"),
                       QStringLiteral("中文界面下英文源串显示为中文"));
-            uiOverrideLanguage(UiLanguage::English);
+            uiOverrideLanguage(UiLanguage::ENGLISH);
             ctx.check(uiText(QStringLiteral("New canvas")) == QStringLiteral("New canvas") &&
                           uiText(QStringLiteral("Hexagon")) == QStringLiteral("Hexagon") &&
                           uiText(QStringLiteral("View mode")) == QStringLiteral("View mode"),
@@ -114,13 +114,13 @@ void selftest::runMainWindowFlowTests(Context& ctx)
                           englishOrder.contains(QStringLiteral("Brush mode")) &&
                           englishOrder.contains(QStringLiteral("Text mode")),
                       QStringLiteral("已存在的界面可以原地切换到英文"), englishOrder.join(QStringLiteral(" / ")));
-            uiOverrideLanguage(UiLanguage::Chinese);
+            uiOverrideLanguage(UiLanguage::CHINESE);
             uiRetranslateWidgetTree(&window);
 
             // 切换语言后，走真实刷新路径（写设置 + applyUiLanguage）立即生效。
-            uiOverrideLanguage(UiLanguage::System); // 取消测试用的强制语言，才能验证设置生效
+            uiOverrideLanguage(UiLanguage::SYSTEM); // 取消测试用的强制语言，才能验证设置生效
             const UiLanguage originalSetting = uiLanguageSetting();
-            setUiLanguageSetting(UiLanguage::English);
+            setUiLanguageSetting(UiLanguage::ENGLISH);
             window.applyUiLanguage();
             const QString firstModeText = modeBar->actions().isEmpty() ? QString() : modeBar->actions().at(0)->text();
             QMenu* shapeMenu = window.findChild<QMenu*>(QStringLiteral("ShapeMenu"));
@@ -130,7 +130,7 @@ void selftest::runMainWindowFlowTests(Context& ctx)
                       QStringLiteral("切换语言后主界面立即变为英文"),
                       QStringLiteral("%1 / %2").arg(firstModeText, firstShapeText));
             setUiLanguageSetting(originalSetting);
-            uiOverrideLanguage(UiLanguage::Chinese);
+            uiOverrideLanguage(UiLanguage::CHINESE);
             window.applyUiLanguage();
             ctx.check(modeBar->actions().at(0)->text() == QStringLiteral("查看模式"),
                       QStringLiteral("切回中文后界面恢复中文"));
@@ -158,9 +158,9 @@ void selftest::runMainWindowFlowTests(Context& ctx)
                 SettingsDialog dialog{AppSettings()};
                 QComboBox* combo = dialog.findChild<QComboBox*>();
                 if (combo) {
-                    const int englishIndex = combo->findData(static_cast<int>(UiLanguage::English));
+                    const int englishIndex = combo->findData(static_cast<int>(UiLanguage::ENGLISH));
                     combo->setCurrentIndex(englishIndex);
-                    ctx.check(dialog.language() == UiLanguage::English,
+                    ctx.check(dialog.language() == UiLanguage::ENGLISH,
                               QStringLiteral("设置弹窗可以选中 English 并返回该语言"),
                               QStringLiteral("index=%1 language=%2")
                                   .arg(englishIndex)
@@ -407,7 +407,7 @@ void selftest::runMainWindowFlowTests(Context& ctx)
                       entries.join(QStringLiteral(" / ")));
         }
 
-        window.view()->setMode(ToolMode::Text);
+        window.view()->setMode(ToolMode::TEXT);
         QTimer::singleShot(120, &window, [&]() {
             auto* dialog = qobject_cast<ItemPropertiesDialog*>(QApplication::activeModalWidget());
             if (!dialog) {
@@ -438,7 +438,7 @@ void selftest::runMainWindowFlowTests(Context& ctx)
                       createdText->layerId() == window.scene()->activeLayerId() &&
                       window.scene()->layerHeightsUnique(createdText->layerId()),
                   QStringLiteral("主窗口文字使用所选颜色且高度唯一"));
-        ctx.check(window.view()->mode() == ToolMode::Edit, QStringLiteral("主窗口添加文字后切回编辑模式"));
+        ctx.check(window.view()->mode() == ToolMode::EDIT, QStringLiteral("主窗口添加文字后切回编辑模式"));
 
         QAction* heightUpAction = nullptr;
         QAction* heightDownAction = nullptr;
@@ -482,7 +482,7 @@ void selftest::runMainWindowFlowTests(Context& ctx)
 
         // 需求 42 端到端：查看模式双击图元，MainWindow 以只读模态窗打开。
         if (createdText) {
-            window.view()->setMode(ToolMode::View);
+            window.view()->setMode(ToolMode::VIEW);
             QApplication::processEvents();
             bool readOnlyDialogSeen = false;
             QTimer::singleShot(80, &window, [&]() {
@@ -504,7 +504,7 @@ void selftest::runMainWindowFlowTests(Context& ctx)
             QApplication::sendEvent(window.view()->viewport(), &textDoubleClick);
             QApplication::processEvents();
             ctx.check(readOnlyDialogSeen, QStringLiteral("查看模式双击图元确实打开属性窗"));
-            window.view()->setMode(ToolMode::Edit);
+            window.view()->setMode(ToolMode::EDIT);
         }
     }
 }

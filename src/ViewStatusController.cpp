@@ -34,10 +34,10 @@ void ViewStatusController::updateModeUi()
     }
 
     const ToolMode mode = m_window->m_view->mode();
-    m_window->m_viewModeAct->setChecked(mode == ToolMode::View);
-    m_window->m_brushModeAct->setChecked(mode == ToolMode::Brush);
-    m_window->m_editModeAct->setChecked(mode == ToolMode::Edit);
-    m_window->m_textModeAct->setChecked(mode == ToolMode::Text);
+    m_window->m_viewModeAct->setChecked(mode == ToolMode::VIEW);
+    m_window->m_brushModeAct->setChecked(mode == ToolMode::BRUSH);
+    m_window->m_editModeAct->setChecked(mode == ToolMode::EDIT);
+    m_window->m_textModeAct->setChecked(mode == ToolMode::TEXT);
 
     if (m_window->m_modeBadge) {
         m_window->m_modeBadge->setText(toolModeName(mode));
@@ -45,22 +45,22 @@ void ViewStatusController::updateModeUi()
 
     if (m_window->m_hintLabel) {
         switch (mode) {
-        case ToolMode::View:
+        case ToolMode::VIEW:
             m_window->m_hintLabel->setText(
                 MainWindow::tr("View mode: drag to pan · wheel to zoom · switching modes returns to the overview"));
             break;
-        case ToolMode::Brush:
+        case ToolMode::BRUSH:
             m_window->m_hintLabel->setText(
                 MainWindow::tr("Brush mode: left button to draw · wheel to zoom · Space / middle button to pan"));
             break;
-        case ToolMode::Edit:
+        case ToolMode::EDIT:
             // 需求 1：只讲“哪些图元可编辑 + 属性入口（双击）+ 唯一一条反直觉视图操作”，
             // 不再枚举拖动、缩放、滚轮、Delete 这类一看就会的操作，也不提 Ctrl（已改多选）。
             m_window->m_hintLabel->setText(MainWindow::tr("Edit mode: items on visible, unlocked layers are editable · "
                                                           "double-click to open item properties and change them · "
                                                           "Space / middle button to pan the view"));
             break;
-        case ToolMode::Text:
+        case ToolMode::TEXT:
             m_window->m_hintLabel->setText(
                 MainWindow::tr("Text mode: click the canvas to place text · set font, size, color and bold/italic"));
             break;
@@ -81,14 +81,14 @@ void ViewStatusController::updateActions()
     m_window->m_undoAct->setEnabled(m_window->m_undo->canUndo());
     m_window->m_redoAct->setEnabled(m_window->m_undo->canRedo());
 
-    const bool editing = m_window->m_view->mode() == ToolMode::Edit;
+    const bool editing = m_window->m_view->mode() == ToolMode::EDIT;
     m_window->m_deleteAct->setEnabled(editing && !m_window->m_scene->selectedItems().isEmpty());
     const bool hasSelection = !m_window->m_scene->selectedCanvasItems().isEmpty();
     m_window->m_copyAct->setEnabled(editing && hasSelection);
     m_window->m_cutAct->setEnabled(editing && hasSelection);
     const QMimeData* mime = QApplication::clipboard()->mimeData();
     m_window->m_pasteAct->setEnabled(
-        editing && mime && mime->hasFormat(QLatin1String(MainWindowEditActionsController::kClipboardMimeType)));
+        editing && mime && mime->hasFormat(QLatin1String(MainWindowEditActionsController::CLIPBOARD_MIME_TYPE)));
     m_window->m_duplicateAct->setEnabled(editing && hasSelection);
     m_window->m_groupAct->setEnabled(editing && m_window->m_scene->canGroupSelectedItems());
     m_window->m_ungroupAct->setEnabled(editing && m_window->m_scene->canUngroupSelectedItems());

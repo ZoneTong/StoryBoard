@@ -37,7 +37,7 @@ QPointF ParallelogramItem::customHandleCenter(int handle, bool* ok) const
     if (ok) {
         *ok = false;
     }
-    if (handle != CanvasItem::Apex || isCustomShape()) {
+    if (handle != CanvasItem::APEX || isCustomShape()) {
         return QPointF();
     }
     // 左上顶点：锐角时上边右移，钝角时贴住左上角；与 parallelogramPath 同一套算法。
@@ -57,7 +57,7 @@ void ParallelogramItem::drawSelectionOverlay(QPainter* painter)
         return;
     }
     bool ok = false;
-    const QPointF apex = customHandleCenter(CanvasItem::Apex, &ok);
+    const QPointF apex = customHandleCenter(CanvasItem::APEX, &ok);
     if (!ok) {
         return;
     }

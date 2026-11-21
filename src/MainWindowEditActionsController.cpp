@@ -37,7 +37,7 @@ void MainWindowEditActionsController::showItemProperties(CanvasItem* item)
 
     // 需求 42：属性窗在任何模式都能打开，但只有编辑模式下且图层可见未锁定
     // 时才允许修改；查看/画笔/文字模式一律以只读方式展示。
-    const bool editable = m_window->m_view->mode() == ToolMode::Edit && m_window->m_scene->isItemEditable(item);
+    const bool editable = m_window->m_view->mode() == ToolMode::EDIT && m_window->m_scene->isItemEditable(item);
 
     closeItemProperties();
     ItemPropertiesDialog dialog(m_window->m_scene, item, m_window, editable);
@@ -60,7 +60,7 @@ void MainWindowEditActionsController::closeItemProperties()
 
 void MainWindowEditActionsController::rotateSelected(qreal degrees)
 {
-    if (m_window->m_view->mode() != ToolMode::Edit) {
+    if (m_window->m_view->mode() != ToolMode::EDIT) {
         m_window->statusBar()->showMessage(MainWindow::tr("Rotation is available in edit mode only"), 3000);
         return;
     }
@@ -77,34 +77,34 @@ void MainWindowEditActionsController::rotateSelected(qreal degrees)
 
 void MainWindowEditActionsController::applyAlignment(Alignment::Mode mode)
 {
-    if (m_window->m_view->mode() != ToolMode::Edit) {
+    if (m_window->m_view->mode() != ToolMode::EDIT) {
         m_window->statusBar()->showMessage(MainWindow::tr("Alignment is available in edit mode only"), 3000);
         return;
     }
     QString commandText;
     switch (mode) {
-    case Alignment::Mode::Left:
+    case Alignment::Mode::LEFT:
         commandText = MainWindow::tr("Align items left");
         break;
-    case Alignment::Mode::HorizontalCenter:
+    case Alignment::Mode::HORIZONTAL_CENTER:
         commandText = MainWindow::tr("Align items horizontal centers");
         break;
-    case Alignment::Mode::Right:
+    case Alignment::Mode::RIGHT:
         commandText = MainWindow::tr("Align items right");
         break;
-    case Alignment::Mode::Top:
+    case Alignment::Mode::TOP:
         commandText = MainWindow::tr("Align items top");
         break;
-    case Alignment::Mode::VerticalCenter:
+    case Alignment::Mode::VERTICAL_CENTER:
         commandText = MainWindow::tr("Align items vertical centers");
         break;
-    case Alignment::Mode::Bottom:
+    case Alignment::Mode::BOTTOM:
         commandText = MainWindow::tr("Align items bottom");
         break;
-    case Alignment::Mode::DistributeHorizontal:
+    case Alignment::Mode::DISTRIBUTE_HORIZONTAL:
         commandText = MainWindow::tr("Distribute items horizontally");
         break;
-    case Alignment::Mode::DistributeVertical:
+    case Alignment::Mode::DISTRIBUTE_VERTICAL:
         commandText = MainWindow::tr("Distribute items vertically");
         break;
     }
@@ -118,34 +118,34 @@ void MainWindowEditActionsController::applyAlignment(Alignment::Mode mode)
 
 void MainWindowEditActionsController::applyBoolOperation(BoolOps::Operation operation)
 {
-    if (m_window->m_view->mode() != ToolMode::Edit) {
+    if (m_window->m_view->mode() != ToolMode::EDIT) {
         m_window->statusBar()->showMessage(MainWindow::tr("Merge items is available in edit mode only"), 3000);
         return;
     }
     QString commandText;
     switch (operation) {
-    case BoolOps::Operation::Union:
+    case BoolOps::Operation::UNION:
         commandText = MainWindow::tr("Union shapes");
         break;
-    case BoolOps::Operation::Xor:
+    case BoolOps::Operation::XOR:
         commandText = MainWindow::tr("Xor shapes");
         break;
-    case BoolOps::Operation::Fragment:
+    case BoolOps::Operation::FRAGMENT:
         commandText = MainWindow::tr("Fragment shapes");
         break;
-    case BoolOps::Operation::Intersect:
+    case BoolOps::Operation::INTERSECT:
         commandText = MainWindow::tr("Intersect shapes");
         break;
-    case BoolOps::Operation::Subtract:
+    case BoolOps::Operation::SUBTRACT:
         commandText = MainWindow::tr("Subtract shapes");
         break;
-    case BoolOps::Operation::LineSplit:
+    case BoolOps::Operation::LINE_SPLIT:
         commandText = MainWindow::tr("Split along line");
         break;
     }
     if (!BoolOps::apply(m_window->m_scene, operation, commandText)) {
         // 线条分割的常见失败是切刀没碰到填充图形，提示比通用文案更具体。
-        if (operation == BoolOps::Operation::LineSplit) {
+        if (operation == BoolOps::Operation::LINE_SPLIT) {
             m_window->statusBar()->showMessage(
                 MainWindow::tr("Select filled shapes and exactly one line or curve that crosses them"), 3000);
             return;
@@ -153,7 +153,7 @@ void MainWindowEditActionsController::applyBoolOperation(BoolOps::Operation oper
         m_window->statusBar()->showMessage(MainWindow::tr("Select at least two shapes with a visible outline"), 3000);
         return;
     }
-    if (operation == BoolOps::Operation::LineSplit) {
+    if (operation == BoolOps::Operation::LINE_SPLIT) {
         m_window->statusBar()->showMessage(MainWindow::tr("Split along the line (undo to restore)"), 3000);
     } else {
         m_window->statusBar()->showMessage(MainWindow::tr("Merged into one polygon (undo to restore)"), 3000);
@@ -172,7 +172,7 @@ void MainWindowEditActionsController::copySelectedItems()
         return;
     }
     auto* mime = new QMimeData;
-    mime->setData(QLatin1String(kClipboardMimeType), QJsonDocument(items).toJson(QJsonDocument::Compact));
+    mime->setData(QLatin1String(CLIPBOARD_MIME_TYPE), QJsonDocument(items).toJson(QJsonDocument::Compact));
     QApplication::clipboard()->setMimeData(mime);
     m_window->statusBar()->showMessage(MainWindow::tr("Copied %1 item(s)").arg(items.size()), 3000);
 }
@@ -196,7 +196,7 @@ void MainWindowEditActionsController::pasteItems()
         return;
     }
     // 需求 9：从 excalidraw.com 复制的 JSON 也能直接粘到画板里。
-    if (!mime->hasFormat(QLatin1String(kClipboardMimeType))) {
+    if (!mime->hasFormat(QLatin1String(CLIPBOARD_MIME_TYPE))) {
         const QJsonDocument external = QJsonDocument::fromJson(mime->data(QStringLiteral("text/plain")));
         if (external.isObject() && Excalidraw::isClipboard(external.object())) {
             QStringList notes;
@@ -211,11 +211,11 @@ void MainWindowEditActionsController::pasteItems()
             return;
         }
     }
-    if (!mime->hasFormat(QLatin1String(kClipboardMimeType))) {
+    if (!mime->hasFormat(QLatin1String(CLIPBOARD_MIME_TYPE))) {
         m_window->statusBar()->showMessage(MainWindow::tr("Nothing to paste"), 3000);
         return;
     }
-    const QJsonDocument doc = QJsonDocument::fromJson(mime->data(QLatin1String(kClipboardMimeType)));
+    const QJsonDocument doc = QJsonDocument::fromJson(mime->data(QLatin1String(CLIPBOARD_MIME_TYPE)));
     const int pasted = m_window->m_scene->pasteClipboardItems(doc.array());
     if (pasted == 0) {
         m_window->statusBar()->showMessage(MainWindow::tr("Nothing to paste"), 3000);

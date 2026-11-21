@@ -13,32 +13,32 @@
 #include <utility>
 
 namespace {
-constexpr qreal kMinimumSide = 8.0;
+constexpr qreal MINIMUM_SIDE = 8.0;
 
 bool isLeftHandle(int handle)
 {
-    return handle == CanvasItem::TopLeft || handle == CanvasItem::Left || handle == CanvasItem::BottomLeft;
+    return handle == CanvasItem::TOP_LEFT || handle == CanvasItem::LEFT || handle == CanvasItem::BOTTOM_LEFT;
 }
 
 bool isRightHandle(int handle)
 {
-    return handle == CanvasItem::TopRight || handle == CanvasItem::Right || handle == CanvasItem::BottomRight;
+    return handle == CanvasItem::TOP_RIGHT || handle == CanvasItem::RIGHT || handle == CanvasItem::BOTTOM_RIGHT;
 }
 
 bool isTopHandle(int handle)
 {
-    return handle == CanvasItem::TopLeft || handle == CanvasItem::Top || handle == CanvasItem::TopRight;
+    return handle == CanvasItem::TOP_LEFT || handle == CanvasItem::TOP || handle == CanvasItem::TOP_RIGHT;
 }
 
 bool isBottomHandle(int handle)
 {
-    return handle == CanvasItem::BottomLeft || handle == CanvasItem::Bottom || handle == CanvasItem::BottomRight;
+    return handle == CanvasItem::BOTTOM_LEFT || handle == CanvasItem::BOTTOM || handle == CanvasItem::BOTTOM_RIGHT;
 }
 
 bool isCornerHandle(int handle)
 {
-    return handle == CanvasItem::TopLeft || handle == CanvasItem::TopRight || handle == CanvasItem::BottomLeft ||
-           handle == CanvasItem::BottomRight;
+    return handle == CanvasItem::TOP_LEFT || handle == CanvasItem::TOP_RIGHT || handle == CanvasItem::BOTTOM_LEFT ||
+           handle == CanvasItem::BOTTOM_RIGHT;
 }
 } // namespace
 
@@ -46,7 +46,7 @@ CanvasItemInteraction::CanvasItemInteraction(CanvasItem* item) : m_item(item) {}
 
 void CanvasItemInteraction::beginMove(const QPointF& scenePos)
 {
-    m_item->m_drag = CanvasItem::DragKind::Move;
+    m_item->m_drag = CanvasItem::DragKind::MOVE;
     m_item->m_dragStartScene = scenePos;
     m_item->m_dragStartPos = m_item->pos();
     m_item->m_dragStartSize = m_item->m_size;
@@ -110,7 +110,7 @@ void CanvasItemInteraction::applyMove(const QPointF& scenePos)
 
 void CanvasItemInteraction::beginResize(int handle, const QPointF& scenePos)
 {
-    m_item->m_drag = CanvasItem::DragKind::Resize;
+    m_item->m_drag = CanvasItem::DragKind::RESIZE;
     m_item->m_resizeHandle = static_cast<CanvasItem::Handle>(handle);
     m_item->m_dragStartScene = scenePos;
     m_item->m_dragStartPos = m_item->pos();
@@ -127,10 +127,10 @@ void CanvasItemInteraction::applyResize(const QPointF& scenePos, Qt::KeyboardMod
     // 需求 9：拖与平行四边形左上 / 右上顶点对齐的那个手柄，改的是左下内角，不是尺寸。
     // 锐角时上边右移、右上顶点贴选择框右上；钝角时上边左移、左上顶点贴选择框左上。
     if (auto* para = dynamic_cast<ShapeItem*>(m_item);
-        para && para->shapeType() == ShapeType::Parallelogram && !para->isCustomShape()) {
+        para && para->shapeType() == ShapeType::PARALLELOGRAM && !para->isCustomShape()) {
         const qreal startAngle = para->parallelogramAngle();
-        const bool dragRight = handle == CanvasItem::TopRight && startAngle < 90.0;
-        const bool dragLeft = handle == CanvasItem::TopLeft && startAngle >= 90.0;
+        const bool dragRight = handle == CanvasItem::TOP_RIGHT && startAngle < 90.0;
+        const bool dragLeft = handle == CanvasItem::TOP_LEFT && startAngle >= 90.0;
         if (dragRight || dragLeft) {
             const qreal startWidth = m_item->m_dragStartSize.width();
             const qreal startHeight = m_item->m_dragStartSize.height();
@@ -156,8 +156,8 @@ void CanvasItemInteraction::applyResize(const QPointF& scenePos, Qt::KeyboardMod
 
     // 平行四边形：拖 Apex（左上顶点）改左下内角，底边与高度不变；拖动期间显示角度读数。
     if (auto* para = dynamic_cast<ShapeItem*>(m_item); para && para->apexAngleHandle() &&
-                                                       para->shapeType() == ShapeType::Parallelogram &&
-                                                       !para->isCustomShape() && handle == CanvasItem::Apex) {
+                                                       para->shapeType() == ShapeType::PARALLELOGRAM &&
+                                                       !para->isCustomShape() && handle == CanvasItem::APEX) {
         const qreal startHeight = m_item->m_dragStartSize.height();
         QPointF local = scenePos - m_item->m_dragStartPos;
         const qreal rotation = m_item->rotationAngle();
@@ -176,8 +176,8 @@ void CanvasItemInteraction::applyResize(const QPointF& scenePos, Qt::KeyboardMod
 
     // 需求 2：拖顶点 C 只改三角形，AB 两端在场景中固定；底边宽度不变，
     // 顶点高度由落点反推两个底角，角度是真相、高度再按角度派生。
-    if (auto* triangle = dynamic_cast<ShapeItem*>(m_item); triangle && triangle->shapeType() == ShapeType::Triangle &&
-                                                           !triangle->isCustomShape() && handle == CanvasItem::Apex) {
+    if (auto* triangle = dynamic_cast<ShapeItem*>(m_item); triangle && triangle->shapeType() == ShapeType::TRIANGLE &&
+                                                           !triangle->isCustomShape() && handle == CanvasItem::APEX) {
         const qreal startWidth = m_item->m_dragStartSize.width();
         const qreal startHeight = m_item->m_dragStartSize.height();
         QPointF local = scenePos - m_item->m_dragStartPos;
@@ -208,37 +208,37 @@ void CanvasItemInteraction::applyResize(const QPointF& scenePos, Qt::KeyboardMod
     // （角对手柄钉对角、边中点对手柄钉对边中点）。高度由底边与角度派生，缩放后
     // 宽高比自然保持，所以只要按比例算新尺寸、再把锚点摆回原处。
     if (auto* triangle = dynamic_cast<ShapeItem*>(m_item);
-        triangle && triangle->shapeType() == ShapeType::Triangle && !triangle->isCustomShape()) {
+        triangle && triangle->shapeType() == ShapeType::TRIANGLE && !triangle->isCustomShape()) {
         const QSizeF startSize = m_item->m_dragStartSize;
         // 锚点在内容矩形里的归一化位置（0 = 左 / 上，1 = 右 / 下）。
         qreal anchorX = 0.5;
         qreal anchorY = 0.5;
         switch (handle) {
-        case CanvasItem::TopLeft:
+        case CanvasItem::TOP_LEFT:
             anchorX = 1.0;
             anchorY = 1.0;
             break;
-        case CanvasItem::Top:
+        case CanvasItem::TOP:
             anchorY = 1.0;
             break;
-        case CanvasItem::TopRight:
+        case CanvasItem::TOP_RIGHT:
             anchorX = 0.0;
             anchorY = 1.0;
             break;
-        case CanvasItem::Left:
+        case CanvasItem::LEFT:
             anchorX = 1.0;
             break;
-        case CanvasItem::Right:
+        case CanvasItem::RIGHT:
             anchorX = 0.0;
             break;
-        case CanvasItem::BottomLeft:
+        case CanvasItem::BOTTOM_LEFT:
             anchorX = 1.0;
             anchorY = 0.0;
             break;
-        case CanvasItem::Bottom:
+        case CanvasItem::BOTTOM:
             anchorY = 0.0;
             break;
-        case CanvasItem::BottomRight:
+        case CanvasItem::BOTTOM_RIGHT:
             anchorX = 0.0;
             anchorY = 0.0;
             break;
@@ -255,8 +255,8 @@ void CanvasItemInteraction::applyResize(const QPointF& scenePos, Qt::KeyboardMod
                      : 1.0;
         // 角手柄两维都有位移，跟位移更大的那一维走；边手柄只有一维。
         qreal scale = horizontal && vertical ? (qAbs(kx - 1.0) >= qAbs(ky - 1.0) ? kx : ky) : (horizontal ? kx : ky);
-        scale = qMax(scale, qMax(kMinimumSide / qMax<qreal>(1.0, startSize.width()),
-                                 kMinimumSide / qMax<qreal>(1.0, startSize.height())));
+        scale = qMax(scale, qMax(MINIMUM_SIDE / qMax<qreal>(1.0, startSize.width()),
+                                 MINIMUM_SIDE / qMax<qreal>(1.0, startSize.height())));
         const qreal newWidth = startSize.width() * scale;
         const qreal cot1 = 1.0 / qTan(qDegreesToRadians(triangle->bottomAngle1()));
         const qreal cot2 = 1.0 / qTan(qDegreesToRadians(triangle->bottomAngle2()));
@@ -281,7 +281,7 @@ void CanvasItemInteraction::applyResize(const QPointF& scenePos, Qt::KeyboardMod
         rect.setBottom(rect.bottom() + delta.y());
     }
 
-    const qreal minSide = kMinimumSide;
+    const qreal minSide = MINIMUM_SIDE;
     if (rect.width() < minSide) {
         if (isLeftHandle(handle)) {
             rect.setLeft(rect.right() - minSide);
@@ -325,7 +325,7 @@ void CanvasItemInteraction::applyResize(const QPointF& scenePos, Qt::KeyboardMod
 
 void CanvasItemInteraction::beginRotate(const QPointF& scenePos)
 {
-    m_item->m_drag = CanvasItem::DragKind::Rotate;
+    m_item->m_drag = CanvasItem::DragKind::ROTATE;
     m_item->m_dragStartScene = scenePos;
     m_item->m_dragStartRotation = m_item->m_rotation;
     const QPointF center = m_item->mapToScene(m_item->contentRect().center());
@@ -344,7 +344,7 @@ void CanvasItemInteraction::applyRotate(const QPointF& scenePos)
 
 void CanvasItemInteraction::finishInteraction()
 {
-    if (m_item->m_drag == CanvasItem::DragKind::None) {
+    if (m_item->m_drag == CanvasItem::DragKind::NONE) {
         return;
     }
 
@@ -352,10 +352,10 @@ void CanvasItemInteraction::finishInteraction()
         shape->setAngleReadoutVisible(false);
     }
 
-    const bool wasResize = m_item->m_drag == CanvasItem::DragKind::Resize;
-    const bool wasRotate = m_item->m_drag == CanvasItem::DragKind::Rotate;
-    m_item->m_drag = CanvasItem::DragKind::None;
-    m_item->m_resizeHandle = CanvasItem::NoHandle;
+    const bool wasResize = m_item->m_drag == CanvasItem::DragKind::RESIZE;
+    const bool wasRotate = m_item->m_drag == CanvasItem::DragKind::ROTATE;
+    m_item->m_drag = CanvasItem::DragKind::NONE;
+    m_item->m_resizeHandle = CanvasItem::NO_HANDLE;
 
     if (wasRotate) {
         if (CanvasScene* canvas = m_item->canvasScene()) {
@@ -402,7 +402,7 @@ void CanvasItemInteraction::updateHoverCursor(const QPointF& pos)
     }
     if (m_item->hasSingleSelection()) {
         const CanvasItem::Handle handle = m_item->handleAt(pos);
-        if (handle != CanvasItem::NoHandle) {
+        if (handle != CanvasItem::NO_HANDLE) {
             m_item->setCursor(m_item->cursorForHandle(handle));
             return;
         }
@@ -419,13 +419,13 @@ void CanvasItemInteraction::onMousePress(QGraphicsSceneMouseEvent* event)
 
     if (m_item->hasSingleSelection()) {
         const CanvasItem::Handle handle = m_item->handleAt(event->pos());
-        if (handle == CanvasItem::Rotation) {
+        if (handle == CanvasItem::ROTATION) {
             beginRotate(event->scenePos());
             m_item->setCursor(QCursor(Qt::PointingHandCursor));
             event->accept();
             return;
         }
-        if (handle != CanvasItem::NoHandle) {
+        if (handle != CanvasItem::NO_HANDLE) {
             beginResize(handle, event->scenePos());
             m_item->setCursor(m_item->cursorForHandle(handle));
             event->accept();
@@ -454,16 +454,16 @@ void CanvasItemInteraction::onMousePress(QGraphicsSceneMouseEvent* event)
 
 void CanvasItemInteraction::onMouseMove(QGraphicsSceneMouseEvent* event)
 {
-    if (m_item->m_drag == CanvasItem::DragKind::None) {
+    if (m_item->m_drag == CanvasItem::DragKind::NONE) {
         m_item->QGraphicsObject::mouseMoveEvent(event);
         return;
     }
 
-    if (m_item->m_drag == CanvasItem::DragKind::Move) {
+    if (m_item->m_drag == CanvasItem::DragKind::MOVE) {
         applyMove(event->scenePos());
-    } else if (m_item->m_drag == CanvasItem::DragKind::Resize) {
+    } else if (m_item->m_drag == CanvasItem::DragKind::RESIZE) {
         applyResize(event->scenePos(), event->modifiers());
-    } else if (m_item->m_drag == CanvasItem::DragKind::Rotate) {
+    } else if (m_item->m_drag == CanvasItem::DragKind::ROTATE) {
         applyRotate(event->scenePos());
     }
 
@@ -475,7 +475,7 @@ void CanvasItemInteraction::onMouseRelease(QGraphicsSceneMouseEvent* event)
     // 需求 23：图元点击的选择逻辑在 mousePress 已完整处理（含 Ctrl 加减选）。
     // 未进入拖拽时不要放行给 QGraphicsItem 默认 release——它会在松开时再做一次
     // “点击选择”（Ctrl 下重复切换、无 Ctrl 下替换多选），把按下时的选择结果破坏掉。
-    if (m_item->m_drag == CanvasItem::DragKind::None) {
+    if (m_item->m_drag == CanvasItem::DragKind::NONE) {
         event->accept();
         return;
     }

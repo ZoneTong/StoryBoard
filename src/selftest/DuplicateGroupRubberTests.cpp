@@ -88,11 +88,11 @@ void selftest::runDuplicateItemTests(Context& ctx)
     {
         CanvasScene duplicateScene;
         duplicateScene.applyCanvasSize(QSizeF(800.0, 600.0));
-        duplicateScene.setMode(ToolMode::Edit);
+        duplicateScene.setMode(ToolMode::EDIT);
         QUndoStack duplicateUndo;
         duplicateScene.setUndoStack(&duplicateUndo);
 
-        auto* source = createShapeItem(ShapeType::Rectangle);
+        auto* source = createShapeItem(ShapeType::RECTANGLE);
         source->setContentSize(QSizeF(120.0, 80.0));
         source->setPos(QPointF(40.0, 50.0));
         duplicateScene.addItemsWithUndo({source}, QStringLiteral("Add duplicate source"));
@@ -135,16 +135,16 @@ void selftest::runDuplicateItemTests(Context& ctx)
     {
         CanvasScene customNameScene;
         customNameScene.applyCanvasSize(QSizeF(800.0, 600.0));
-        customNameScene.setMode(ToolMode::Edit);
+        customNameScene.setMode(ToolMode::EDIT);
         QUndoStack customNameUndo;
         customNameScene.setUndoStack(&customNameUndo);
 
-        auto* first = createShapeItem(ShapeType::Rectangle);
+        auto* first = createShapeItem(ShapeType::RECTANGLE);
         first->setContentSize(QSizeF(100.0, 60.0));
         customNameScene.addItemsWithUndo({first}, QStringLiteral("Add first custom item"));
         first->setName(QStringLiteral("Hero panel"));
 
-        auto* second = createShapeItem(ShapeType::Ellipse);
+        auto* second = createShapeItem(ShapeType::ELLIPSE);
         second->setContentSize(QSizeF(90.0, 90.0));
         customNameScene.addItemsWithUndo({second}, QStringLiteral("Add second custom item"));
         second->setName(QStringLiteral("Hero panel 2"));
@@ -163,10 +163,10 @@ void selftest::runDuplicateItemTests(Context& ctx)
     // 载入或旧文件里已有的重名，在补名时一并修复。
     {
         CanvasScene repairScene;
-        auto* first = createShapeItem(ShapeType::Rectangle);
+        auto* first = createShapeItem(ShapeType::RECTANGLE);
         first->setContentSize(QSizeF(80.0, 60.0));
         repairScene.addItemsWithUndo({first}, QStringLiteral("Add repair item"));
-        auto* second = createShapeItem(ShapeType::Rectangle);
+        auto* second = createShapeItem(ShapeType::RECTANGLE);
         second->setContentSize(QSizeF(70.0, 50.0));
         repairScene.addItemsWithUndo({second}, QStringLiteral("Add repair item"));
         first->setName(QStringLiteral("Same name"));
@@ -190,12 +190,12 @@ void selftest::runGroupTests(Context& ctx)
         QUndoStack groupUndo;
         groupScene.setUndoStack(&groupUndo);
         groupScene.applyCanvasSize(QSizeF(800.0, 600.0));
-        groupScene.setMode(ToolMode::Edit);
+        groupScene.setMode(ToolMode::EDIT);
 
-        auto* first = createShapeItem(ShapeType::Rectangle);
+        auto* first = createShapeItem(ShapeType::RECTANGLE);
         first->setContentSize(QSizeF(90.0, 70.0));
         first->setPos(QPointF(80.0, 90.0));
-        auto* second = createShapeItem(ShapeType::Ellipse);
+        auto* second = createShapeItem(ShapeType::ELLIPSE);
         second->setContentSize(QSizeF(90.0, 70.0));
         second->setPos(QPointF(320.0, 260.0));
         groupScene.addItemsWithUndo({first, second}, QStringLiteral("Add grouped sources"));
@@ -226,7 +226,7 @@ void selftest::runGroupTests(Context& ctx)
         CanvasView groupView(&groupScene);
         groupView.resize(900, 700);
         groupView.show();
-        groupView.setMode(ToolMode::Edit);
+        groupView.setMode(ToolMode::EDIT);
         groupView.fitAll();
         QApplication::processEvents();
 
@@ -319,8 +319,8 @@ void selftest::runRubberBandTests(Context& ctx)
     {
         CanvasScene rubberScene;
         rubberScene.applyCanvasSize(QSizeF(800.0, 600.0));
-        rubberScene.setMode(ToolMode::Edit);
-        auto* target = createShapeItem(ShapeType::Rectangle);
+        rubberScene.setMode(ToolMode::EDIT);
+        auto* target = createShapeItem(ShapeType::RECTANGLE);
         target->setContentSize(QSizeF(120.0, 80.0));
         target->setPos(QPointF(300.0, 250.0));
         rubberScene.addItemsWithUndo({target}, QStringLiteral("Add rubber-band target"));
@@ -328,7 +328,7 @@ void selftest::runRubberBandTests(Context& ctx)
         CanvasView rubberView(&rubberScene);
         rubberView.resize(900, 700);
         rubberView.show();
-        rubberView.setMode(ToolMode::Edit);
+        rubberView.setMode(ToolMode::EDIT);
         rubberView.fitAll();
         QApplication::processEvents();
 

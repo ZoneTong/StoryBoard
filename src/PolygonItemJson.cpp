@@ -106,16 +106,16 @@ void PolygonItem::fromJson(const QJsonObject& json)
         layer.stroke = QColor(entry.value(QStringLiteral("stroke")).toString());
         layer.strokeWidth = entry.value(QStringLiteral("width")).toDouble(1.0);
         layer.filled = entry.value(QStringLiteral("filled")).toBool(true);
-        const int role = entry.value(QStringLiteral("role")).toInt(static_cast<int>(LayerRole::FilledArea));
-        if (role >= static_cast<int>(LayerRole::FilledArea) && role <= static_cast<int>(LayerRole::Text)) {
+        const int role = entry.value(QStringLiteral("role")).toInt(static_cast<int>(LayerRole::FILLED_AREA));
+        if (role >= static_cast<int>(LayerRole::FILLED_AREA) && role <= static_cast<int>(LayerRole::TEXT)) {
             layer.role = static_cast<LayerRole>(role);
         }
         m_layers.append(layer);
     }
-    const int fillStyle = json.value(QStringLiteral("fillStyle")).toInt(static_cast<int>(FillStyle::Solid));
-    m_fillStyle = fillStyle >= static_cast<int>(FillStyle::None) && fillStyle <= static_cast<int>(FillStyle::Dots)
+    const int fillStyle = json.value(QStringLiteral("fillStyle")).toInt(static_cast<int>(FillStyle::SOLID));
+    m_fillStyle = fillStyle >= static_cast<int>(FillStyle::NONE) && fillStyle <= static_cast<int>(FillStyle::DOTS)
                       ? static_cast<FillStyle>(fillStyle)
-                      : FillStyle::Solid;
+                      : FillStyle::SOLID;
     const int strokeStyle = json.value(QStringLiteral("strokeStyle")).toInt(static_cast<int>(Qt::SolidLine));
     m_strokeStyle = strokeStyle >= static_cast<int>(Qt::NoPen) && strokeStyle <= static_cast<int>(Qt::CustomDashLine)
                         ? static_cast<Qt::PenStyle>(strokeStyle)
@@ -127,6 +127,6 @@ void PolygonItem::fromJson(const QJsonObject& json)
         m_fillImage = ImageFill::pixmapFromJson(json.value(QStringLiteral("fillImage")).toObject(), &m_fillImageMode);
     } else {
         m_fillImage = QPixmap();
-        m_fillImageMode = ImageFill::Mode::Stretch;
+        m_fillImageMode = ImageFill::Mode::STRETCH;
     }
 }

@@ -29,29 +29,29 @@ QPointF normalizedDir(const QPointF& tip, const QPointF& toward)
 
 QList<ArrowStyle> allArrowStyles()
 {
-    return {ArrowStyle::None,
-            ArrowStyle::TriangleFilled,
-            ArrowStyle::TriangleHollow,
-            ArrowStyle::OpenArrow,
-            ArrowStyle::Dot,
-            ArrowStyle::Bar};
+    return {ArrowStyle::NONE,
+            ArrowStyle::TRIANGLE_FILLED,
+            ArrowStyle::TRIANGLE_HOLLOW,
+            ArrowStyle::OPEN_ARROW,
+            ArrowStyle::DOT,
+            ArrowStyle::BAR};
 }
 
 QString arrowStyleName(ArrowStyle style)
 {
     auto translate = [](const char* text) { return QCoreApplication::translate("ArrowStyle", text); };
     switch (style) {
-    case ArrowStyle::None:
+    case ArrowStyle::NONE:
         return translate("None");
-    case ArrowStyle::TriangleFilled:
+    case ArrowStyle::TRIANGLE_FILLED:
         return translate("Filled triangle");
-    case ArrowStyle::TriangleHollow:
+    case ArrowStyle::TRIANGLE_HOLLOW:
         return translate("Hollow triangle");
-    case ArrowStyle::OpenArrow:
+    case ArrowStyle::OPEN_ARROW:
         return translate("Open arrow");
-    case ArrowStyle::Dot:
+    case ArrowStyle::DOT:
         return translate("Dot");
-    case ArrowStyle::Bar:
+    case ArrowStyle::BAR:
         return translate("Bar");
     }
     return translate("None");
@@ -60,17 +60,17 @@ QString arrowStyleName(ArrowStyle style)
 QString arrowStyleToString(ArrowStyle style)
 {
     switch (style) {
-    case ArrowStyle::TriangleFilled:
+    case ArrowStyle::TRIANGLE_FILLED:
         return QStringLiteral("triangle");
-    case ArrowStyle::TriangleHollow:
+    case ArrowStyle::TRIANGLE_HOLLOW:
         return QStringLiteral("hollow-triangle");
-    case ArrowStyle::OpenArrow:
+    case ArrowStyle::OPEN_ARROW:
         return QStringLiteral("open");
-    case ArrowStyle::Dot:
+    case ArrowStyle::DOT:
         return QStringLiteral("dot");
-    case ArrowStyle::Bar:
+    case ArrowStyle::BAR:
         return QStringLiteral("bar");
-    case ArrowStyle::None:
+    case ArrowStyle::NONE:
         break;
     }
     return QStringLiteral("none");
@@ -79,27 +79,27 @@ QString arrowStyleToString(ArrowStyle style)
 ArrowStyle arrowStyleFromString(const QString& value)
 {
     if (value == QStringLiteral("triangle")) {
-        return ArrowStyle::TriangleFilled;
+        return ArrowStyle::TRIANGLE_FILLED;
     }
     if (value == QStringLiteral("hollow-triangle")) {
-        return ArrowStyle::TriangleHollow;
+        return ArrowStyle::TRIANGLE_HOLLOW;
     }
     if (value == QStringLiteral("open")) {
-        return ArrowStyle::OpenArrow;
+        return ArrowStyle::OPEN_ARROW;
     }
     if (value == QStringLiteral("dot")) {
-        return ArrowStyle::Dot;
+        return ArrowStyle::DOT;
     }
     if (value == QStringLiteral("bar")) {
-        return ArrowStyle::Bar;
+        return ArrowStyle::BAR;
     }
     // 旧文件没有箭头字段时按「无」处理，与历史外观一致。
-    return ArrowStyle::None;
+    return ArrowStyle::NONE;
 }
 
 bool arrowStyleIsHead(ArrowStyle style)
 {
-    return style != ArrowStyle::None;
+    return style != ArrowStyle::NONE;
 }
 
 QPainterPath arrowHeadPath(const QPointF& tip, const QPointF& toward, qreal strokeWidth, ArrowStyle style)
@@ -114,8 +114,8 @@ QPainterPath arrowHeadPath(const QPointF& tip, const QPointF& toward, qreal stro
     const QPointF base = tip - dir * length;
 
     switch (style) {
-    case ArrowStyle::TriangleFilled:
-    case ArrowStyle::TriangleHollow: {
+    case ArrowStyle::TRIANGLE_FILLED:
+    case ArrowStyle::TRIANGLE_HOLLOW: {
         // 张角 90°：两翼从中轴偏 ±45°，横向偏移等于头长。
         const QPointF wingA = base + perp * length;
         const QPointF wingB = base - perp * length;
@@ -125,7 +125,7 @@ QPainterPath arrowHeadPath(const QPointF& tip, const QPointF& toward, qreal stro
         path.closeSubpath();
         break;
     }
-    case ArrowStyle::OpenArrow: {
+    case ArrowStyle::OPEN_ARROW: {
         const QPointF wingA = base + perp * length;
         const QPointF wingB = base - perp * length;
         path.moveTo(wingA);
@@ -133,18 +133,18 @@ QPainterPath arrowHeadPath(const QPointF& tip, const QPointF& toward, qreal stro
         path.lineTo(wingB);
         break;
     }
-    case ArrowStyle::Dot: {
+    case ArrowStyle::DOT: {
         const qreal radius = qMax<qreal>(1.5, strokeWidth * 1.5);
         path.addEllipse(tip, radius, radius);
         break;
     }
-    case ArrowStyle::Bar: {
+    case ArrowStyle::BAR: {
         const qreal half = qMax<qreal>(2.0, length / 2.0);
         path.moveTo(tip + perp * half);
         path.lineTo(tip - perp * half);
         break;
     }
-    case ArrowStyle::None:
+    case ArrowStyle::NONE:
         break;
     }
     return path;
@@ -162,7 +162,7 @@ void paintArrowHead(QPainter* painter, const QPointF& tip, const QPointF& toward
     }
     QPen pen(color, qMax<qreal>(1.0, strokeWidth), Qt::SolidLine, Qt::FlatCap, Qt::MiterJoin);
     painter->setPen(pen);
-    const bool filled = style == ArrowStyle::TriangleFilled || style == ArrowStyle::Dot;
+    const bool filled = style == ArrowStyle::TRIANGLE_FILLED || style == ArrowStyle::DOT;
     painter->setBrush(filled ? QBrush(color) : QBrush(Qt::NoBrush));
     painter->drawPath(path);
 }

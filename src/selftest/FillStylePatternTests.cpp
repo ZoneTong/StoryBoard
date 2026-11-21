@@ -18,11 +18,11 @@ void selftest::runFillStylePatternTests(Context& ctx)
     // 交叉线填充必须铺满整个图形：两个方向的斜线在左下角与右上角密度相当。
     CanvasScene hatchScene;
     hatchScene.applyCanvasSize(QSizeF(400, 300));
-    auto* crossShape = createShapeItem(ShapeType::Rectangle);
+    auto* crossShape = createShapeItem(ShapeType::RECTANGLE);
     crossShape->setPos(QPointF(50, 45));
     crossShape->setContentSize(QSizeF(300, 200));
     crossShape->setStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 2.0);
-    crossShape->setFill(QColor(239, 68, 68, 255), FillStyle::CrossHatch);
+    crossShape->setFill(QColor(239, 68, 68, 255), FillStyle::CROSS_HATCH);
     hatchScene.attachItem(crossShape);
 
     QImage hatchImage(400, 300, QImage::Format_ARGB32_Premultiplied);
@@ -50,39 +50,40 @@ void selftest::runFillStylePatternTests(Context& ctx)
               QStringLiteral("topRight=%1 bottomLeft=%2").arg(hatchTopRight).arg(hatchBottomLeft));
 
     // 填充样式扩展：反斜线、十字线、六边形、水平线、竖线、砖纹、点阵。
-    ctx.check(fillStyleName(FillStyle::ReverseHachure) == QStringLiteral("反斜线") &&
-                  fillStyleName(FillStyle::GridHatch) == QStringLiteral("十字线") &&
-                  fillStyleName(FillStyle::Honeycomb) == QStringLiteral("六边形") &&
-                  fillStyleName(FillStyle::HorizontalHatch) == QStringLiteral("水平线") &&
-                  fillStyleName(FillStyle::VerticalHatch) == QStringLiteral("竖线") &&
-                  fillStyleName(FillStyle::Brick) == QStringLiteral("砖纹") &&
-                  fillStyleName(FillStyle::Dots) == QStringLiteral("点阵"),
+    ctx.check(fillStyleName(FillStyle::REVERSE_HACHURE) == QStringLiteral("反斜线") &&
+                  fillStyleName(FillStyle::GRID_HATCH) == QStringLiteral("十字线") &&
+                  fillStyleName(FillStyle::HONEYCOMB) == QStringLiteral("六边形") &&
+                  fillStyleName(FillStyle::HORIZONTAL_HATCH) == QStringLiteral("水平线") &&
+                  fillStyleName(FillStyle::VERTICAL_HATCH) == QStringLiteral("竖线") &&
+                  fillStyleName(FillStyle::BRICK) == QStringLiteral("砖纹") &&
+                  fillStyleName(FillStyle::DOTS) == QStringLiteral("点阵"),
               QStringLiteral("新增填充样式名称齐全"));
-    ctx.check(
-        allFillStyles().size() == 11 && allFillStyles().at(0) == FillStyle::None &&
-            allFillStyles().at(1) == FillStyle::Solid && allFillStyles().at(2) == FillStyle::Hachure &&
-            allFillStyles().at(3) == FillStyle::ReverseHachure && allFillStyles().at(4) == FillStyle::CrossHatch &&
-            allFillStyles().at(5) == FillStyle::GridHatch && allFillStyles().at(6) == FillStyle::Honeycomb &&
-            allFillStyles().at(7) == FillStyle::HorizontalHatch && allFillStyles().at(8) == FillStyle::VerticalHatch &&
-            allFillStyles().at(9) == FillStyle::Brick && allFillStyles().at(10) == FillStyle::Dots,
-        QStringLiteral("填充样式列表包含全部 11 种且顺序稳定"));
-    ctx.check(fillStyleFromString(fillStyleToString(FillStyle::ReverseHachure)) == FillStyle::ReverseHachure &&
-                  fillStyleFromString(fillStyleToString(FillStyle::GridHatch)) == FillStyle::GridHatch &&
-                  fillStyleFromString(fillStyleToString(FillStyle::Honeycomb)) == FillStyle::Honeycomb &&
-                  fillStyleFromString(fillStyleToString(FillStyle::HorizontalHatch)) == FillStyle::HorizontalHatch &&
-                  fillStyleFromString(fillStyleToString(FillStyle::VerticalHatch)) == FillStyle::VerticalHatch &&
-                  fillStyleFromString(fillStyleToString(FillStyle::Brick)) == FillStyle::Brick &&
-                  fillStyleFromString(fillStyleToString(FillStyle::Dots)) == FillStyle::Dots &&
-                  fillStyleFromString(QStringLiteral("horizontal")) == FillStyle::HorizontalHatch &&
-                  fillStyleFromString(QStringLiteral("vertical")) == FillStyle::VerticalHatch &&
-                  fillStyleFromString(QStringLiteral("brickwall")) == FillStyle::Brick &&
-                  fillStyleFromString(QStringLiteral("dot")) == FillStyle::Dots,
+    ctx.check(allFillStyles().size() == 11 && allFillStyles().at(0) == FillStyle::NONE &&
+                  allFillStyles().at(1) == FillStyle::SOLID && allFillStyles().at(2) == FillStyle::HACHURE &&
+                  allFillStyles().at(3) == FillStyle::REVERSE_HACHURE &&
+                  allFillStyles().at(4) == FillStyle::CROSS_HATCH && allFillStyles().at(5) == FillStyle::GRID_HATCH &&
+                  allFillStyles().at(6) == FillStyle::HONEYCOMB &&
+                  allFillStyles().at(7) == FillStyle::HORIZONTAL_HATCH &&
+                  allFillStyles().at(8) == FillStyle::VERTICAL_HATCH && allFillStyles().at(9) == FillStyle::BRICK &&
+                  allFillStyles().at(10) == FillStyle::DOTS,
+              QStringLiteral("填充样式列表包含全部 11 种且顺序稳定"));
+    ctx.check(fillStyleFromString(fillStyleToString(FillStyle::REVERSE_HACHURE)) == FillStyle::REVERSE_HACHURE &&
+                  fillStyleFromString(fillStyleToString(FillStyle::GRID_HATCH)) == FillStyle::GRID_HATCH &&
+                  fillStyleFromString(fillStyleToString(FillStyle::HONEYCOMB)) == FillStyle::HONEYCOMB &&
+                  fillStyleFromString(fillStyleToString(FillStyle::HORIZONTAL_HATCH)) == FillStyle::HORIZONTAL_HATCH &&
+                  fillStyleFromString(fillStyleToString(FillStyle::VERTICAL_HATCH)) == FillStyle::VERTICAL_HATCH &&
+                  fillStyleFromString(fillStyleToString(FillStyle::BRICK)) == FillStyle::BRICK &&
+                  fillStyleFromString(fillStyleToString(FillStyle::DOTS)) == FillStyle::DOTS &&
+                  fillStyleFromString(QStringLiteral("horizontal")) == FillStyle::HORIZONTAL_HATCH &&
+                  fillStyleFromString(QStringLiteral("vertical")) == FillStyle::VERTICAL_HATCH &&
+                  fillStyleFromString(QStringLiteral("brickwall")) == FillStyle::BRICK &&
+                  fillStyleFromString(QStringLiteral("dot")) == FillStyle::DOTS,
               QStringLiteral("新增填充样式可序列化往返"));
 
     auto renderPatternFill = [](FillStyle style, QImage& image) {
         CanvasScene scene;
         scene.applyCanvasSize(QSizeF(400, 300));
-        auto* shape = createShapeItem(ShapeType::Rectangle);
+        auto* shape = createShapeItem(ShapeType::RECTANGLE);
         shape->setPos(QPointF(50, 45));
         shape->setContentSize(QSizeF(300, 200));
         shape->setStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 2.0);
@@ -101,9 +102,9 @@ void selftest::runFillStylePatternTests(Context& ctx)
 
     // “\” 与 “/” 的方向判别：沿右下方向的相邻像素多，说明是反斜线。
     QImage reverseImage;
-    renderPatternFill(FillStyle::ReverseHachure, reverseImage);
+    renderPatternFill(FillStyle::REVERSE_HACHURE, reverseImage);
     QImage forwardImage;
-    renderPatternFill(FillStyle::Hachure, forwardImage);
+    renderPatternFill(FillStyle::HACHURE, forwardImage);
     int reverseDownRight = 0;
     int reverseUpRight = 0;
     int forwardDownRight = 0;
@@ -138,7 +139,7 @@ void selftest::runFillStylePatternTests(Context& ctx)
 
     // 正交叉线：水平线与竖直线同时存在（行/列方向都能扫到大量线条像素）。
     QImage gridImage;
-    renderPatternFill(FillStyle::GridHatch, gridImage);
+    renderPatternFill(FillStyle::GRID_HATCH, gridImage);
     int gridRowRun = 0;
     for (int x = 60; x < 340; ++x) {
         if (patternLinePixel(gridImage, x, 145)) {
@@ -158,7 +159,7 @@ void selftest::runFillStylePatternTests(Context& ctx)
     // 间距 = 高度 300 的 3%（上限 12）= 9，半径 = 1.15×间距 = 10.35，
     // 单元宽 √3r ≈ 17.93；第 3 行单元中心 (17.93, 20.7)，右侧竖边在 x≈26.89（局部坐标）。
     QImage honeycombImage;
-    renderPatternFill(FillStyle::Honeycomb, honeycombImage);
+    renderPatternFill(FillStyle::HONEYCOMB, honeycombImage);
     const bool honeycombCellEmpty = !patternLinePixel(honeycombImage, 50 + 18, 45 + 21);
     const bool honeycombEdgeDrawn = patternLinePixel(honeycombImage, 50 + 27, 45 + 21);
     int honeycombPixels = 0;
@@ -180,7 +181,7 @@ void selftest::runFillStylePatternTests(Context& ctx)
     // 需求 14：水平线 / 竖线 / 砖纹 / 点阵四种新图案。
     // 水平线：存在整行被红像素贯穿的扫描行（纹线行），且没有竖线方向的整列贯穿。
     QImage horizontalImage;
-    renderPatternFill(FillStyle::HorizontalHatch, horizontalImage);
+    renderPatternFill(FillStyle::HORIZONTAL_HATCH, horizontalImage);
     int horizontalBestRow = 0;
     int horizontalBestColumn = 0;
     for (int y = 55; y < 240; ++y) {
@@ -207,7 +208,7 @@ void selftest::runFillStylePatternTests(Context& ctx)
 
     // 竖线：存在整列被红像素贯穿的扫描列，且没有水平方向的整行贯穿。
     QImage verticalImage;
-    renderPatternFill(FillStyle::VerticalHatch, verticalImage);
+    renderPatternFill(FillStyle::VERTICAL_HATCH, verticalImage);
     int verticalBestRow = 0;
     int verticalBestColumn = 0;
     for (int y = 55; y < 240; ++y) {
@@ -235,7 +236,7 @@ void selftest::runFillStylePatternTests(Context& ctx)
 
     // 砖纹：有横线也有竖缝，竖缝在行间出现（比纯水平线多出竖直方向像素）。
     QImage brickImage;
-    renderPatternFill(FillStyle::Brick, brickImage);
+    renderPatternFill(FillStyle::BRICK, brickImage);
     int brickPixels = 0;
     for (int y = 55; y < 240; ++y) {
         for (int x = 55; x < 345; ++x) {
@@ -248,7 +249,7 @@ void selftest::runFillStylePatternTests(Context& ctx)
 
     // 点阵：50% 圆点，点像素占比小且中心离散（取样窗口里既有像素也有空白）。
     QImage dotsImage;
-    renderPatternFill(FillStyle::Dots, dotsImage);
+    renderPatternFill(FillStyle::DOTS, dotsImage);
     int dotPixels = 0;
     for (int y = 55; y < 240; ++y) {
         for (int x = 55; x < 345; ++x) {

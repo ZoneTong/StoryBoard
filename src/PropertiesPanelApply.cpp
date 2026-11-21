@@ -149,8 +149,8 @@ void PropertiesPanel::applyFillColor(const QColor& color)
         QMap<ItemProperty, QVariant> afterValues = beforeValues;
         afterValues.insert(ItemProperty::FILL_COLOR, color);
         if (properties.contains(ItemProperty::FILL_STYLE) &&
-            item->propertyValue(ItemProperty::FILL_STYLE).toInt() == static_cast<int>(FillStyle::None)) {
-            afterValues.insert(ItemProperty::FILL_STYLE, static_cast<int>(FillStyle::Solid));
+            item->propertyValue(ItemProperty::FILL_STYLE).toInt() == static_cast<int>(FillStyle::NONE)) {
+            afterValues.insert(ItemProperty::FILL_STYLE, static_cast<int>(FillStyle::SOLID));
         }
         targets.append(item);
         before.append(beforeValues);
@@ -366,7 +366,7 @@ void PropertiesPanel::chooseFillImage()
         QMap<ItemProperty, QVariant> afterValues = beforeValues;
         afterValues.insert(ItemProperty::FILL_IMAGE, QVariant::fromValue(pixmap));
         // 替换图片同时重置为拉伸模式，与原整份状态命令语义一致。
-        afterValues.insert(ItemProperty::FILL_IMAGE_MODE, static_cast<int>(ImageFill::Mode::Stretch));
+        afterValues.insert(ItemProperty::FILL_IMAGE_MODE, static_cast<int>(ImageFill::Mode::STRETCH));
         items.append(shape);
         before.append(beforeValues);
         after.append(afterValues);
@@ -440,7 +440,7 @@ void PropertiesPanel::applyTriangleBase(int base)
 {
     // 底边即 A 边；改底边后高度由两个底角派生（contentResized 内完成）。
     changeSelectedShapes(tr("Change triangle base"), [base](ShapeItem* shape) {
-        if (!shape || shape->shapeType() != ShapeType::Triangle || shape->isCustomShape()) {
+        if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->isCustomShape()) {
             return;
         }
         const QSizeF current = shape->contentSize();
@@ -451,7 +451,7 @@ void PropertiesPanel::applyTriangleBase(int base)
 void PropertiesPanel::applyTriangleAngle1(int degrees)
 {
     changeSelectedShapes(tr("Change triangle base angle"), [degrees](ShapeItem* shape) {
-        if (!shape || shape->shapeType() != ShapeType::Triangle || shape->isCustomShape()) {
+        if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->isCustomShape()) {
             return;
         }
         shape->setTriangleAngles(degrees, shape->bottomAngle2());
@@ -461,7 +461,7 @@ void PropertiesPanel::applyTriangleAngle1(int degrees)
 void PropertiesPanel::applyTriangleAngle2(int degrees)
 {
     changeSelectedShapes(tr("Change triangle base angle"), [degrees](ShapeItem* shape) {
-        if (!shape || shape->shapeType() != ShapeType::Triangle || shape->isCustomShape()) {
+        if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->isCustomShape()) {
             return;
         }
         shape->setTriangleAngles(shape->bottomAngle1(), degrees);

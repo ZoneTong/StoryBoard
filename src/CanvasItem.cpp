@@ -18,7 +18,7 @@
 #include <utility>
 
 namespace {
-constexpr qreal kMinimumSide = 8.0;
+constexpr qreal MINIMUM_SIDE = 8.0;
 } // namespace
 
 QPointF CanvasItem::customHandleCenter(int handle, bool* ok) const
@@ -73,7 +73,7 @@ void CanvasItem::setName(const QString& name)
 
 QSizeF CanvasItem::minimumSize()
 {
-    return QSizeF(kMinimumSide, kMinimumSide);
+    return QSizeF(MINIMUM_SIDE, MINIMUM_SIDE);
 }
 
 QRectF CanvasItem::contentRect() const
@@ -89,7 +89,7 @@ QRectF CanvasItem::frameRect() const
 void CanvasItem::setContentSize(const QSizeF& size)
 {
     const QSizeF requested = adjustedContentSize(size);
-    const QSizeF clamped(qMax(kMinimumSide, requested.width()), qMax(kMinimumSide, requested.height()));
+    const QSizeF clamped(qMax(MINIMUM_SIDE, requested.width()), qMax(MINIMUM_SIDE, requested.height()));
     if (qFuzzyCompare(clamped.width(), m_size.width()) && qFuzzyCompare(clamped.height(), m_size.height())) {
         return;
     }

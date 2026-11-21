@@ -331,14 +331,14 @@ void selftest::runPaintOrderTests(Context& ctx)
     const QColor redColor(QStringLiteral("#DC2626"));
     const QColor blueColor(QStringLiteral("#2563EB"));
 
-    auto* redItem = createShapeItem(ShapeType::Rectangle);
+    auto* redItem = createShapeItem(ShapeType::RECTANGLE);
     redItem->setStyle(QColor(Qt::transparent), redColor, 1.0);
     redItem->setContentSize(QSizeF(80, 80));
     redItem->setPos(QPointF(10, 10));
     paintScene.addItemsWithUndo({redItem}, QStringLiteral("添加红色图元"));
 
     ctx.check(paintScene.addLayerWithUndo(QStringLiteral("蓝色层")), QStringLiteral("渲染测试新建上层"));
-    auto* blueItem = createShapeItem(ShapeType::Rectangle);
+    auto* blueItem = createShapeItem(ShapeType::RECTANGLE);
     blueItem->setStyle(QColor(Qt::transparent), blueColor, 1.0);
     blueItem->setContentSize(QSizeF(80, 80));
     blueItem->setPos(QPointF(20, 20));

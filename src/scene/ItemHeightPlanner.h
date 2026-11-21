@@ -10,7 +10,7 @@ class CanvasItem;
 // 同层高度是否已唯一。不持有场景状态，只对传入的图元集合做纯计算，可在任意 TU 复用。
 class ItemHeightPlanner {
   public:
-    explicit ItemHeightPlanner(int maxHeight = scene_constants::kMaxItemHeight);
+    explicit ItemHeightPlanner(int maxHeight = scene_constants::MAX_ITEM_HEIGHT);
 
     // 取该图层下一个不与现有高度冲突的高度；图层接近满员时返回第一个空位，
     // 实在没有空位返回 -1。

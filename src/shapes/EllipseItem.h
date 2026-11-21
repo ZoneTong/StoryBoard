@@ -7,7 +7,7 @@
 class EllipseItem : public ShapeItem, public EllipseShape {
   public:
     EllipseItem();
-    ShapeType shapeType() const override { return ShapeType::Ellipse; }
+    ShapeType shapeType() const override { return ShapeType::ELLIPSE; }
 
   protected:
     void contentResized() override;

@@ -44,9 +44,9 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     m_languageCombo = new QComboBox(this);
     m_languageCombo->setFixedHeight(30);
     m_languageCombo->setMinimumWidth(150);
-    m_languageCombo->addItem(tr("Follow system"), static_cast<int>(UiLanguage::System));
-    m_languageCombo->addItem(tr("Simplified Chinese"), static_cast<int>(UiLanguage::Chinese));
-    m_languageCombo->addItem(QStringLiteral("English"), static_cast<int>(UiLanguage::English));
+    m_languageCombo->addItem(tr("Follow system"), static_cast<int>(UiLanguage::SYSTEM));
+    m_languageCombo->addItem(tr("Simplified Chinese"), static_cast<int>(UiLanguage::CHINESE));
+    m_languageCombo->addItem(QStringLiteral("English"), static_cast<int>(UiLanguage::ENGLISH));
     m_languageCombo->setCurrentIndex(m_languageCombo->findData(static_cast<int>(uiLanguageSetting())));
     m_languageCombo->setToolTip(tr("The interface updates immediately and this choice is remembered."));
     headerRow->addWidget(m_languageCombo);
@@ -162,7 +162,7 @@ void SettingsDialog::resetToDefaults()
 {
     const AppSettings defaults;
     if (m_languageCombo) {
-        m_languageCombo->setCurrentIndex(m_languageCombo->findData(static_cast<int>(UiLanguage::System)));
+        m_languageCombo->setCurrentIndex(m_languageCombo->findData(static_cast<int>(UiLanguage::SYSTEM)));
     }
     m_brushPage->reset(defaults);
     m_canvasPage->reset(defaults);

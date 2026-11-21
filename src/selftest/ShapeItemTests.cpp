@@ -110,7 +110,7 @@ void selftest::runShapeItemTests(Context& ctx)
     // 需求 9：平行四边形默认 60° 内角、内容尺寸 110.85×64，角度钳在 15–165°。
     {
         ParallelogramItem para;
-        const QSizeF paraSize = defaultShapeSize(ShapeType::Parallelogram);
+        const QSizeF paraSize = defaultShapeSize(ShapeType::PARALLELOGRAM);
         ctx.check(qAbs(paraSize.width() - 110.85) < 0.1 && qAbs(paraSize.height() - 64.0) < 0.1,
                   QStringLiteral("平行四边形默认尺寸 110.85×64"),
                   QStringLiteral("%1×%2").arg(paraSize.width()).arg(paraSize.height()));
@@ -138,10 +138,10 @@ void selftest::runShapeItemTests(Context& ctx)
         arc.setArcGeometry(QPointF(0.0, 0.0), QSizeF(120.0, 80.0), 15.0, 140.0, QColor(Qt::black), 2.0);
         wave.setWaveGeometry(QPointF(0.0, 0.0), QSizeF(120.0, 80.0), QColor(Qt::black), 2.0);
         for (LineItemAbstract* line : {static_cast<LineItemAbstract*>(&arc), static_cast<LineItemAbstract*>(&wave)}) {
-            line->setArrowStyles(ArrowStyle::TriangleFilled, ArrowStyle::OpenArrow);
+            line->setArrowStyles(ArrowStyle::TRIANGLE_FILLED, ArrowStyle::OPEN_ARROW);
             const QRectF hit = line->paintedShape().boundingRect();
             const QRectF plain = line->outlineShape().boundingRect();
-            ctx.check(line->startArrow() == ArrowStyle::TriangleFilled && line->endArrow() == ArrowStyle::OpenArrow &&
+            ctx.check(line->startArrow() == ArrowStyle::TRIANGLE_FILLED && line->endArrow() == ArrowStyle::OPEN_ARROW &&
                           !hit.isEmpty() && hit.width() >= plain.width(),
                       QStringLiteral("线条类图元可设两端箭头并计入命中轮廓"),
                       QStringLiteral("hit=%1,%2 plain=%3,%4")
@@ -151,14 +151,14 @@ void selftest::runShapeItemTests(Context& ctx)
                           .arg(plain.height()));
         }
     }
-    ctx.check(shapeTypeFromString(QStringLiteral("circle")) == ShapeType::Ellipse &&
-                  shapeTypeFromString(QStringLiteral("roundrect")) == ShapeType::Rectangle &&
-                  shapeTypeFromString(QStringLiteral("double_arrow")) == ShapeType::DoubleArrow &&
-                  shapeTypeFromString(QStringLiteral("four_point_star")) == ShapeType::Star4 &&
-                  shapeTypeFromString(QStringLiteral("love")) == ShapeType::Heart &&
-                  shapeTypeFromString(QStringLiteral("speech")) == ShapeType::Callout,
+    ctx.check(shapeTypeFromString(QStringLiteral("circle")) == ShapeType::ELLIPSE &&
+                  shapeTypeFromString(QStringLiteral("roundrect")) == ShapeType::RECTANGLE &&
+                  shapeTypeFromString(QStringLiteral("double_arrow")) == ShapeType::DOUBLE_ARROW &&
+                  shapeTypeFromString(QStringLiteral("four_point_star")) == ShapeType::STAR4 &&
+                  shapeTypeFromString(QStringLiteral("love")) == ShapeType::HEART &&
+                  shapeTypeFromString(QStringLiteral("speech")) == ShapeType::CALLOUT,
               QStringLiteral("图形类型字符串兼容常见别名（圆角矩形读成矩形）"));
-    ctx.check(shapeTypeFromString(QStringLiteral("does-not-exist")) == ShapeType::Rectangle,
+    ctx.check(shapeTypeFromString(QStringLiteral("does-not-exist")) == ShapeType::RECTANGLE,
               QStringLiteral("未知图形类型回退为矩形"));
 
     // 需求 5：圆角矩形并入矩形后，旧 rounded_rectangle 文件读成「矩形 + 自动圆角」。
@@ -170,7 +170,7 @@ void selftest::runShapeItemTests(Context& ctx)
         legacyJson.remove(QStringLiteral("cornerAuto"));
         RectangleItem loadedRounded;
         loadedRounded.fromJson(legacyJson);
-        ctx.check(loadedRounded.shapeType() == ShapeType::Rectangle && loadedRounded.cornerRadius() > 0.0,
+        ctx.check(loadedRounded.shapeType() == ShapeType::RECTANGLE && loadedRounded.cornerRadius() > 0.0,
                   QStringLiteral("旧 rounded_rectangle 读成矩形显式圆角"));
     }
 
@@ -181,7 +181,7 @@ void selftest::runShapeItemTests(Context& ctx)
         legacyJson.insert(QStringLiteral("parallelogramAngle"), 60.0);
         RectangleItem loadedRect;
         loadedRect.fromJson(legacyJson);
-        ctx.check(loadedRect.shapeType() == ShapeType::Rectangle &&
+        ctx.check(loadedRect.shapeType() == ShapeType::RECTANGLE &&
                       qFuzzyCompare(loadedRect.parallelogramAngle() + 2.0, 92.0),
                   QStringLiteral("矩形 JSON 重载后内角仍锁 90°"),
                   QStringLiteral("angle=%1").arg(loadedRect.parallelogramAngle()));
@@ -203,13 +203,13 @@ void selftest::runShapeItemTests(Context& ctx)
     ctx.check(shapePathsOk, QStringLiteral("每种图形都能生成有效路径与名称"));
     ctx.check(shapeIconsOk, QStringLiteral("每种图形都能生成菜单图标"));
 
-    ctx.check(defaultShapeSize(ShapeType::Rectangle).width() == defaultShapeSize(ShapeType::Rectangle).height(),
+    ctx.check(defaultShapeSize(ShapeType::RECTANGLE).width() == defaultShapeSize(ShapeType::RECTANGLE).height(),
               QStringLiteral("矩形默认插入为正方形"),
               QStringLiteral("size=%1x%2")
-                  .arg(defaultShapeSize(ShapeType::Rectangle).width())
-                  .arg(defaultShapeSize(ShapeType::Rectangle).height()));
-    ctx.check(shapeTypeFromString(QStringLiteral("sector")) == ShapeType::Sector &&
-                  shapeTypeIsFilled(ShapeType::Sector),
+                  .arg(defaultShapeSize(ShapeType::RECTANGLE).width())
+                  .arg(defaultShapeSize(ShapeType::RECTANGLE).height()));
+    ctx.check(shapeTypeFromString(QStringLiteral("sector")) == ShapeType::SECTOR &&
+                  shapeTypeIsFilled(ShapeType::SECTOR),
               QStringLiteral("扇形可识别且可填充（弧线已并入曲线族，不再出现在形状类型表里）"));
     {
         SectorItem sector;
@@ -226,7 +226,7 @@ void selftest::runShapeItemTests(Context& ctx)
                   QStringLiteral("扇形与弧线由椭圆派生并跟随图元拉伸"));
         SectorItem copy;
         copy.fromJson(sector.toJson());
-        ctx.check(copy.shapeType() == ShapeType::Sector && qFuzzyCompare(copy.sweepAngle() + 2.0, 92.0),
+        ctx.check(copy.shapeType() == ShapeType::SECTOR && qFuzzyCompare(copy.sweepAngle() + 2.0, 92.0),
                   QStringLiteral("扇形角度随画布保存和恢复，半径字段已移除"));
     }
     {
@@ -288,7 +288,7 @@ void selftest::runShapeItemTests(Context& ctx)
 
         // 拖底边：对面点 = 上边中点（等腰三角时就是顶点）。
         CanvasItemInteraction bottomDrag(&triangle);
-        bottomDrag.beginResize(CanvasItem::Bottom, triangle.pos() + QPointF(60.0, startHeight));
+        bottomDrag.beginResize(CanvasItem::BOTTOM, triangle.pos() + QPointF(60.0, startHeight));
         bottomDrag.applyResize(triangle.pos() + QPointF(60.0, startHeight + 30.0), Qt::NoModifier);
         const QPointF apexAfter = apexScene();
         const QPointF baseMidAfter = baseMidScene();
@@ -326,7 +326,7 @@ void selftest::runShapeItemTests(Context& ctx)
         };
         const QPointF topBaseMidBefore = topBaseMid();
         CanvasItemInteraction topDrag(&topTriangle);
-        topDrag.beginResize(CanvasItem::Top, topTriangle.pos() + QPointF(60.0, 0.0));
+        topDrag.beginResize(CanvasItem::TOP, topTriangle.pos() + QPointF(60.0, 0.0));
         topDrag.applyResize(topTriangle.pos() + QPointF(60.0, -30.0), Qt::NoModifier);
         const QPointF topBaseMidAfter = topBaseMid();
         ctx.check(qAbs(topBaseMidAfter.x() - topBaseMidBefore.x()) < 0.5 &&
@@ -354,7 +354,7 @@ void selftest::runShapeItemTests(Context& ctx)
         const QPointF cornerBefore = bottomRight();
         const qreal cornerRatioBefore = cornerTriangle.contentSize().width() / cornerTriangle.contentSize().height();
         CanvasItemInteraction cornerDrag(&cornerTriangle);
-        cornerDrag.beginResize(CanvasItem::TopLeft, cornerTriangle.pos());
+        cornerDrag.beginResize(CanvasItem::TOP_LEFT, cornerTriangle.pos());
         cornerDrag.applyResize(cornerTriangle.pos() + QPointF(-20.0, -20.0), Qt::NoModifier);
         const QPointF cornerAfter = bottomRight();
         const qreal cornerRatioAfter = cornerTriangle.contentSize().width() / cornerTriangle.contentSize().height();
@@ -377,8 +377,8 @@ void selftest::runShapeItemTests(Context& ctx)
             const QIcon icon = makeIcon(id, QColor(0, 0, 0), 22);
             return icon.pixmap(QSize(44, 44)).toImage();
         };
-        const QImage right = iconImage(IconId::AngleRight);
-        const QImage left = iconImage(IconId::AngleLeft);
+        const QImage right = iconImage(IconId::ANGLE_RIGHT);
+        const QImage left = iconImage(IconId::ANGLE_LEFT);
         const auto hasInk = [](const QImage& image) {
             for (int y = 0; y < image.height(); ++y) {
                 for (int x = 0; x < image.width(); ++x) {
@@ -401,9 +401,9 @@ void selftest::runShapeItemTests(Context& ctx)
         auto* item = createShapeItem(type);
 
         QSizeF size(150, 90);
-        if (type == ShapeType::Arrow || type == ShapeType::DoubleArrow) {
+        if (type == ShapeType::ARROW || type == ShapeType::DOUBLE_ARROW) {
             size = QSizeF(180, 80);
-        } else if (type == ShapeType::Star || type == ShapeType::Triangle) {
+        } else if (type == ShapeType::STAR || type == ShapeType::TRIANGLE) {
             size = QSizeF(120, 110);
         }
 
@@ -495,7 +495,7 @@ void selftest::runShapeItemTests(Context& ctx)
     for (CanvasItem* item : shapeLoaded.canvasItems()) {
         if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
             loadedShapeTypes.insert(shapeTypeToString(shape->shapeType()));
-            if (shape->shapeType() == ShapeType::Rectangle && !loadedRectangle) {
+            if (shape->shapeType() == ShapeType::RECTANGLE && !loadedRectangle) {
                 loadedRectangle = shape;
             }
         } else if (dynamic_cast<CurveItem*>(item)) {
@@ -522,16 +522,16 @@ void selftest::runShapeItemTests(Context& ctx)
                 break;
             }
         }
-        ctx.check(stringRoundTrip && !arrowStyleIsHead(ArrowStyle::None) && arrowStyleIsHead(ArrowStyle::OpenArrow) &&
+        ctx.check(stringRoundTrip && !arrowStyleIsHead(ArrowStyle::NONE) && arrowStyleIsHead(ArrowStyle::OPEN_ARROW) &&
                       allArrowStyles().size() == 6,
                   QStringLiteral("箭头样式字符串往返且共 6 种"));
 
         StraightLineItem arrowLine;
         arrowLine.setEndpoints(QPointF(0.0, 0.0), QPointF(200.0, 0.0), QColor(20, 20, 20), 3.0);
-        ctx.check(arrowLine.startArrow() == ArrowStyle::None && arrowLine.endArrow() == ArrowStyle::None,
+        ctx.check(arrowLine.startArrow() == ArrowStyle::NONE && arrowLine.endArrow() == ArrowStyle::NONE,
                   QStringLiteral("直线默认两端无箭头"));
-        arrowLine.setArrowStyles(ArrowStyle::Bar, ArrowStyle::OpenArrow);
-        ctx.check(arrowLine.startArrow() == ArrowStyle::Bar && arrowLine.endArrow() == ArrowStyle::OpenArrow,
+        arrowLine.setArrowStyles(ArrowStyle::BAR, ArrowStyle::OPEN_ARROW);
+        ctx.check(arrowLine.startArrow() == ArrowStyle::BAR && arrowLine.endArrow() == ArrowStyle::OPEN_ARROW,
                   QStringLiteral("直线两端箭头写入曲线属性"));
         ctx.check(arrowLine.displayName() != MainWindow::tr("Straight Line"),
                   QStringLiteral("带箭头直线显示名与直线类型名区分"));
@@ -539,32 +539,32 @@ void selftest::runShapeItemTests(Context& ctx)
         const QJsonObject arrowJson = arrowLine.toJson();
         StraightLineItem reloadedLine;
         reloadedLine.fromJson(arrowJson);
-        ctx.check(reloadedLine.startArrow() == ArrowStyle::Bar && reloadedLine.endArrow() == ArrowStyle::OpenArrow,
+        ctx.check(reloadedLine.startArrow() == ArrowStyle::BAR && reloadedLine.endArrow() == ArrowStyle::OPEN_ARROW,
                   QStringLiteral("直线箭头 JSON 往返"));
         QJsonObject legacyLineJson = arrowJson;
         legacyLineJson.remove(QStringLiteral("startArrow"));
         legacyLineJson.remove(QStringLiteral("endArrow"));
         StraightLineItem legacyLine;
         legacyLine.fromJson(legacyLineJson);
-        ctx.check(legacyLine.startArrow() == ArrowStyle::None && legacyLine.endArrow() == ArrowStyle::None,
+        ctx.check(legacyLine.startArrow() == ArrowStyle::NONE && legacyLine.endArrow() == ArrowStyle::NONE,
                   QStringLiteral("缺箭头字段的直线 JSON 读入后默认无箭头"));
 
         CurveItem arrowCurve;
         arrowCurve.setStrokePoints({QPointF(0.0, 100.0), QPointF(80.0, 20.0), QPointF(160.0, 100.0)},
                                    QColor(20, 20, 20), 3.0);
-        arrowCurve.setArrowStyles(ArrowStyle::None, ArrowStyle::TriangleFilled);
+        arrowCurve.setArrowStyles(ArrowStyle::NONE, ArrowStyle::TRIANGLE_FILLED);
         const QJsonObject curveJson = arrowCurve.toJson();
         CurveItem reloadedCurve;
         reloadedCurve.fromJson(curveJson);
-        ctx.check(reloadedCurve.endArrow() == ArrowStyle::TriangleFilled, QStringLiteral("曲线箭头 JSON 往返"));
+        ctx.check(reloadedCurve.endArrow() == ArrowStyle::TRIANGLE_FILLED, QStringLiteral("曲线箭头 JSON 往返"));
 
         const int headLength = qRound(qMax(4.0, 3.0 * 4.0));
         const QPainterPath filledHead =
-            arrowHeadPath(QPointF(0.0, 0.0), QPointF(-1.0, 0.0), 3.0, ArrowStyle::TriangleFilled);
+            arrowHeadPath(QPointF(0.0, 0.0), QPointF(-1.0, 0.0), 3.0, ArrowStyle::TRIANGLE_FILLED);
         ctx.check(!filledHead.isEmpty() && qAbs(filledHead.boundingRect().width() - headLength) < 1.0,
                   QStringLiteral("箭头头长等于 4 倍线宽"),
                   QStringLiteral("width=%1 expected=%2").arg(filledHead.boundingRect().width()).arg(headLength));
-        ctx.check(arrowHeadPath(QPointF(0.0, 0.0), QPointF(-1.0, 0.0), 3.0, ArrowStyle::None).isEmpty(),
+        ctx.check(arrowHeadPath(QPointF(0.0, 0.0), QPointF(-1.0, 0.0), 3.0, ArrowStyle::NONE).isEmpty(),
                   QStringLiteral("无样式不生成箭头几何"));
     }
 }

@@ -21,50 +21,50 @@ void selftest::runFillStyleBasicTests(Context& ctx)
     // 需求 10/11/12/13/14 回归：锁定、椭圆、填充样式、画板尺寸。
     {
         CanvasScene reqScene;
-        reqScene.setMode(ToolMode::Edit);
+        reqScene.setMode(ToolMode::EDIT);
         reqScene.setShowGrid(false);
         QUndoStack reqUndo;
         reqScene.setUndoStack(&reqUndo);
 
         // 需求 11：只保留椭圆，插入即标准圆形，可拉伸。
-        ctx.check(shapeTypeName(ShapeType::Ellipse) == QStringLiteral("椭圆"), QStringLiteral("图形名称统一为椭圆"));
-        const QSizeF ellipseDefault = defaultShapeSize(ShapeType::Ellipse);
+        ctx.check(shapeTypeName(ShapeType::ELLIPSE) == QStringLiteral("椭圆"), QStringLiteral("图形名称统一为椭圆"));
+        const QSizeF ellipseDefault = defaultShapeSize(ShapeType::ELLIPSE);
         ctx.check(qFuzzyCompare(ellipseDefault.width(), ellipseDefault.height()),
                   QStringLiteral("椭圆默认插入为标准圆形"));
-        auto* circleItem = createShapeItem(ShapeType::Ellipse);
+        auto* circleItem = createShapeItem(ShapeType::ELLIPSE);
         circleItem->setContentSize(QSizeF(200, 200));
         circleItem->setContentSize(QSizeF(260, 140));
         ctx.check(circleItem->contentSize() == QSizeF(260, 140), QStringLiteral("圆形可在编辑模式拉伸成椭圆"));
         delete circleItem;
 
         // 需求 14：填充样式（无/纯色/斜线/交叉线）。
-        ctx.check(fillStyleName(FillStyle::None) == QStringLiteral("无填充") &&
-                      fillStyleName(FillStyle::Hachure) == QStringLiteral("斜线"),
+        ctx.check(fillStyleName(FillStyle::NONE) == QStringLiteral("无填充") &&
+                      fillStyleName(FillStyle::HACHURE) == QStringLiteral("斜线"),
                   QStringLiteral("填充样式名称齐全"));
-        ctx.check(fillStyleFromString(QStringLiteral("cross_hatch")) == FillStyle::CrossHatch,
+        ctx.check(fillStyleFromString(QStringLiteral("cross_hatch")) == FillStyle::CROSS_HATCH,
                   QStringLiteral("交叉线填充样式可反序列化"));
 
-        auto* filledShape = createShapeItem(ShapeType::Rectangle);
+        auto* filledShape = createShapeItem(ShapeType::RECTANGLE);
         filledShape->setContentSize(QSizeF(120, 80));
         filledShape->setPos(QPointF(30, 30));
-        filledShape->setFill(QColor(59, 130, 246, 160), FillStyle::Hachure);
-        ctx.check(filledShape->fillStyle() == FillStyle::Hachure && filledShape->fillColor().alpha() == 160,
+        filledShape->setFill(QColor(59, 130, 246, 160), FillStyle::HACHURE);
+        ctx.check(filledShape->fillStyle() == FillStyle::HACHURE && filledShape->fillColor().alpha() == 160,
                   QStringLiteral("图形可设置填充颜色与斜线填充"));
         reqScene.attachItem(filledShape);
 
         // 需求 23：箭头内部空心，可参与填充；只有纯色填充才整体遮挡下层。
         // 直线已成为曲线族（零面积描线），不再出现在形状类型的填充判定里。
-        ctx.check(shapeTypeIsFilled(ShapeType::Arrow) && shapeTypeIsFilled(ShapeType::DoubleArrow),
+        ctx.check(shapeTypeIsFilled(ShapeType::ARROW) && shapeTypeIsFilled(ShapeType::DOUBLE_ARROW),
                   QStringLiteral("箭头支持填充，直线仍是零面积描线图元"));
 
         CanvasScene arrowScene;
         arrowScene.applyCanvasSize(QSizeF(400, 200));
         arrowScene.setShowGrid(false);
-        auto* hollowArrow = createShapeItem(ShapeType::Arrow);
+        auto* hollowArrow = createShapeItem(ShapeType::ARROW);
         hollowArrow->setPos(QPointF(40, 50));
         hollowArrow->setContentSize(QSizeF(240, 100));
         hollowArrow->setStyle(QColor(QStringLiteral("#DC2626")), QColor(Qt::transparent), 6.0);
-        hollowArrow->setFill(QColor(Qt::transparent), FillStyle::None);
+        hollowArrow->setFill(QColor(Qt::transparent), FillStyle::NONE);
         arrowScene.attachItem(hollowArrow);
 
         ctx.check(!hollowArrow->paintedShape().contains(QPointF(70, 50)),
@@ -79,7 +79,7 @@ void selftest::runFillStyleBasicTests(Context& ctx)
         ctx.check(hollowPixel.red() > 245 && hollowPixel.green() > 245 && hollowPixel.blue() > 245,
                   QStringLiteral("无填充箭头内部渲染为空心"), hollowPixel.name());
 
-        hollowArrow->setFill(QColor(QStringLiteral("#2563EB")), FillStyle::Solid);
+        hollowArrow->setFill(QColor(QStringLiteral("#2563EB")), FillStyle::SOLID);
         ctx.check(hollowArrow->paintedShape().contains(QPointF(70, 50)),
                   QStringLiteral("纯色填充箭头内部整体遮挡下层"));
         QImage filledArrowImage(400, 200, QImage::Format_ARGB32_Premultiplied);
@@ -102,34 +102,34 @@ void selftest::runFillStyleBasicTests(Context& ctx)
                 break;
             }
         }
-        ctx.check(loadedShape && loadedShape->fillStyle() == FillStyle::Hachure &&
+        ctx.check(loadedShape && loadedShape->fillStyle() == FillStyle::HACHURE &&
                       loadedShape->fillColor().alpha() == 160,
                   QStringLiteral("填充样式随画布保存与恢复"));
 
         QUndoStack styleUndo;
         CanvasScene styleScene;
         styleScene.setUndoStack(&styleUndo);
-        auto* styleShape = createShapeItem(ShapeType::Rectangle);
+        auto* styleShape = createShapeItem(ShapeType::RECTANGLE);
         styleShape->setContentSize(QSizeF(100, 60));
         styleScene.attachItem(styleShape);
         const FillStyle styleBefore = styleShape->fillStyle();
         const QColor styleBeforeColor = styleShape->fillColor();
-        styleShape->setFill(QColor(239, 68, 68, 120), FillStyle::CrossHatch);
+        styleShape->setFill(QColor(239, 68, 68, 120), FillStyle::CROSS_HATCH);
         QMap<ItemProperty, QVariant> beforeValues;
         beforeValues.insert(ItemProperty::FILL_COLOR, styleBeforeColor);
         beforeValues.insert(ItemProperty::FILL_STYLE, static_cast<int>(styleBefore));
         QMap<ItemProperty, QVariant> afterValues;
         afterValues.insert(ItemProperty::FILL_COLOR, QColor(239, 68, 68, 120));
-        afterValues.insert(ItemProperty::FILL_STYLE, static_cast<int>(FillStyle::CrossHatch));
+        afterValues.insert(ItemProperty::FILL_STYLE, static_cast<int>(FillStyle::CROSS_HATCH));
         QList<CanvasItem*> styleItems{styleShape};
         styleUndo.push(new ItemPropertyCommand(&styleScene, styleItems, {beforeValues}, {afterValues},
                                                QStringLiteral("调整填充样式")));
-        ctx.check(styleShape->fillStyle() == FillStyle::CrossHatch, QStringLiteral("填充样式命令立即生效"));
+        ctx.check(styleShape->fillStyle() == FillStyle::CROSS_HATCH, QStringLiteral("填充样式命令立即生效"));
         styleUndo.undo();
         ctx.check(styleShape->fillStyle() == styleBefore && styleShape->fillColor() == styleBeforeColor,
                   QStringLiteral("填充样式可撤销"));
         styleUndo.redo();
-        ctx.check(styleShape->fillStyle() == FillStyle::CrossHatch, QStringLiteral("填充样式可重做"));
+        ctx.check(styleShape->fillStyle() == FillStyle::CROSS_HATCH, QStringLiteral("填充样式可重做"));
     }
 
     // 需求 16：常见图形按工具栏已选择的填充样式 / 描线颜色 / 描线宽度生成；
@@ -138,13 +138,13 @@ void selftest::runFillStyleBasicTests(Context& ctx)
         qreal insertedWidth = -1.0;
         QString fillColorText;
         QString strokeColorText;
-        FillStyle insertedFillStyle = FillStyle::None;
+        FillStyle insertedFillStyle = FillStyle::NONE;
         {
             MainWindow window;
-            window.setFillStyle(FillStyle::Hachure);
+            window.setFillStyle(FillStyle::HACHURE);
             window.setBrushColor(QColor(37, 99, 235), false);
             window.setBrushWidthUi(1);
-            window.insertShape(ShapeType::Rectangle);
+            window.insertShape(ShapeType::RECTANGLE);
             CanvasScene* scene = window.findChild<CanvasScene*>();
             if (auto* shape = qgraphicsitem_cast<ShapeItem*>(scene->canvasItems().value(0))) {
                 insertedWidth = shape->strokeWidth();
@@ -154,24 +154,24 @@ void selftest::runFillStyleBasicTests(Context& ctx)
             }
         }
         ctx.check(
-            insertedFillStyle == FillStyle::Hachure && fillColorText == QStringLiteral("#9ca3af") &&
+            insertedFillStyle == FillStyle::HACHURE && fillColorText == QStringLiteral("#9ca3af") &&
                 strokeColorText == QStringLiteral("#2563eb") && qAbs(insertedWidth - 1.0) < 0.01,
             QStringLiteral("常见图形按工具栏样式生成"),
             QStringLiteral("fill=%1 stroke=%2 width=%3").arg(fillColorText).arg(strokeColorText).arg(insertedWidth));
         // 宽度偏大时同样不再被钳到 10。
         {
             MainWindow wideWindow;
-            wideWindow.setFillStyle(FillStyle::None);
+            wideWindow.setFillStyle(FillStyle::NONE);
             wideWindow.setBrushColor(QColor(37, 99, 235), false);
             wideWindow.setBrushWidthUi(18);
-            wideWindow.insertShape(ShapeType::Ellipse);
+            wideWindow.insertShape(ShapeType::ELLIPSE);
             CanvasScene* wideScene = wideWindow.findChild<CanvasScene*>();
             if (auto* wideShape = qgraphicsitem_cast<ShapeItem*>(wideScene->canvasItems().value(0))) {
                 insertedWidth = wideShape->strokeWidth();
                 insertedFillStyle = wideShape->fillStyle();
             }
         }
-        ctx.check(qAbs(insertedWidth - 18.0) < 0.01 && insertedFillStyle == FillStyle::None,
+        ctx.check(qAbs(insertedWidth - 18.0) < 0.01 && insertedFillStyle == FillStyle::NONE,
                   QStringLiteral("插入图形描线宽度按工具栏取值不钳制"), QString::number(insertedWidth));
     }
 }

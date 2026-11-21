@@ -35,7 +35,7 @@ void CanvasContextMenuController::addGroup(const QString& title, const QList<QAc
 
 void CanvasContextMenuController::showMenu(QContextMenuEvent* event)
 {
-    if (m_view->mode() != ToolMode::Edit) {
+    if (m_view->mode() != ToolMode::EDIT) {
         m_view->baseContextMenuEvent(event);
         return;
     }

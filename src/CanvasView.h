@@ -89,7 +89,7 @@ class CanvasView : public QGraphicsView {
     void baseContextMenuEvent(QContextMenuEvent* event) { QGraphicsView::contextMenuEvent(event); }
 
     CanvasScene* m_scene = nullptr;
-    ToolMode m_mode = ToolMode::View;
+    ToolMode m_mode = ToolMode::VIEW;
     QColor m_canvasColor = QColor(43, 47, 54);
     bool m_spaceDown = false;
     // 空白处起手的框选：记下起点，松手时按图元实际外框补一次「整框包含」判定。

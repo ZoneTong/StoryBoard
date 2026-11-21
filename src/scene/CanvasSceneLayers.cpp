@@ -17,7 +17,7 @@ void CanvasScene::applyItemInteraction(CanvasItem* item)
     }
 
     const bool layerVisible = isLayerVisible(item->layerId());
-    const bool editable = m_mode == ToolMode::Edit && layerVisible && !isLayerLocked(item->layerId());
+    const bool editable = m_mode == ToolMode::EDIT && layerVisible && !isLayerLocked(item->layerId());
 
     item->setVisible(layerVisible);
     item->setFlag(QGraphicsItem::ItemIsSelectable, editable);
@@ -201,7 +201,7 @@ bool CanvasScene::isItemEditable(const CanvasItem* item) const
 {
     // 需求变更后的口径：编辑模式下，只要图元所在图层可见且未锁定就能编辑，
     // 与“当前图层”无关。
-    return item && item->scene() == this && m_mode == ToolMode::Edit && isLayerVisible(item->layerId()) &&
+    return item && item->scene() == this && m_mode == ToolMode::EDIT && isLayerVisible(item->layerId()) &&
            !isLayerLocked(item->layerId());
 }
 

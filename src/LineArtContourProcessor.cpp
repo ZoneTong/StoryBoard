@@ -8,13 +8,13 @@
 namespace {
 
 // 8 邻域，从“右”开始顺时针排列。
-const int kDirX[8] = {1, 1, 0, -1, -1, -1, 0, 1};
-const int kDirY[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+const int DIR_X[8] = {1, 1, 0, -1, -1, -1, 0, 1};
+const int DIR_Y[8] = {0, 1, 1, 1, 0, -1, -1, -1};
 
 int directionIndex(int dx, int dy)
 {
     for (int i = 0; i < 8; ++i) {
-        if (kDirX[i] == dx && kDirY[i] == dy) {
+        if (DIR_X[i] == dx && DIR_Y[i] == dy) {
             return i;
         }
     }
@@ -118,8 +118,8 @@ QVector<QPointF> traceContour(const QVector<int>& labels, int width, int height,
         int nextDir = -1;
         for (int i = 0; i < 8; ++i) {
             const int d = (backDir + i) % 8;
-            const int nx = cx + kDirX[d];
-            const int ny = cy + kDirY[d];
+            const int nx = cx + DIR_X[d];
+            const int ny = cy + DIR_Y[d];
             if (isRegion(nx, ny)) {
                 nextDir = d;
                 break;
@@ -133,8 +133,8 @@ QVector<QPointF> traceContour(const QVector<int>& labels, int width, int height,
         }
 
         contour.append(QPointF(cx, cy));
-        cx += kDirX[nextDir];
-        cy += kDirY[nextDir];
+        cx += DIR_X[nextDir];
+        cy += DIR_Y[nextDir];
     }
     return contour;
 }

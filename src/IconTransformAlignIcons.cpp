@@ -7,7 +7,7 @@ namespace {
 
 void drawRotate(QPainter& painter, IconId id)
 {
-    const bool clockwise = id == IconId::RotateCw;
+    const bool clockwise = id == IconId::ROTATE_CW;
     const QRectF circle(3.5, 3.5, 17.0, 17.0);
     painter.drawArc(circle, clockwise ? 40 * 16 : 140 * 16, clockwise ? 280 * 16 : -280 * 16);
 
@@ -50,7 +50,7 @@ void drawZoom(QPainter& painter, IconId id)
     painter.drawEllipse(QPointF(10.5, 10.5), 6.2, 6.2);
     painter.drawLine(QPointF(15.2, 15.2), QPointF(20.5, 20.5));
     painter.drawLine(QPointF(7.6, 10.5), QPointF(13.4, 10.5));
-    if (id == IconId::ZoomIn) {
+    if (id == IconId::ZOOM_IN) {
         painter.drawLine(QPointF(10.5, 7.6), QPointF(10.5, 13.4));
     }
 }
@@ -83,31 +83,31 @@ void drawAlignMode(QPainter& painter, IconId id)
         painter.restore();
     };
 
-    if (id == IconId::AlignLeft) {
+    if (id == IconId::ALIGN_LEFT) {
         guideV(3.5);
         bar(QRectF(5.5, 6.0, 12.0, 4.0));
         bar(QRectF(5.5, 14.0, 8.0, 4.0));
-    } else if (id == IconId::AlignCenterH) {
+    } else if (id == IconId::ALIGN_CENTER_H) {
         guideV(12.0);
         bar(QRectF(4.0, 6.0, 16.0, 4.0));
         bar(QRectF(7.5, 14.0, 9.0, 4.0));
-    } else if (id == IconId::AlignRight) {
+    } else if (id == IconId::ALIGN_RIGHT) {
         guideV(20.5);
         bar(QRectF(6.5, 6.0, 12.0, 4.0));
         bar(QRectF(10.5, 14.0, 8.0, 4.0));
-    } else if (id == IconId::AlignTop) {
+    } else if (id == IconId::ALIGN_TOP) {
         guideH(3.5);
         bar(QRectF(6.0, 5.5, 4.0, 12.0));
         bar(QRectF(14.0, 5.5, 4.0, 8.0));
-    } else if (id == IconId::AlignCenterV) {
+    } else if (id == IconId::ALIGN_CENTER_V) {
         guideH(12.0);
         bar(QRectF(6.0, 4.0, 4.0, 16.0));
         bar(QRectF(14.0, 7.5, 4.0, 9.0));
-    } else if (id == IconId::AlignBottom) {
+    } else if (id == IconId::ALIGN_BOTTOM) {
         guideH(20.5);
         bar(QRectF(6.0, 6.5, 4.0, 12.0));
         bar(QRectF(14.0, 10.5, 4.0, 8.0));
-    } else if (id == IconId::DistributeH) {
+    } else if (id == IconId::DISTRIBUTE_H) {
         bar(QRectF(4.0, 5.0, 4.0, 14.0));
         bar(QRectF(10.0, 5.0, 4.0, 14.0));
         bar(QRectF(16.0, 5.0, 4.0, 14.0));
@@ -136,14 +136,14 @@ void drawGroup(QPainter& p, IconId id)
     QColor c = p.pen().color();
     p.save();
     p.setBrush(Qt::NoBrush);
-    if (id == IconId::Group) {
+    if (id == IconId::GROUP) {
         p.setPen(QPen(c, 1.2, Qt::DashLine, Qt::RoundCap, Qt::RoundJoin));
         p.drawRoundedRect(QRectF(2.5, 2.5, 19.0, 19.0), 2.5, 2.5);
     } else {
         // 需求 10：四角 L 形角框改为四个圆点（半径 1.9，线宽同族），
         // 与「组合」的虚线框明确区分。
     }
-    if (id == IconId::Ungroup) {
+    if (id == IconId::UNGROUP) {
         p.setPen(Qt::NoPen);
         p.setBrush(c);
         const qreal dotRadius = 1.7;
@@ -153,7 +153,7 @@ void drawGroup(QPainter& p, IconId id)
     }
     p.setPen(Qt::NoPen);
     p.setBrush(c);
-    if (id == IconId::Group) {
+    if (id == IconId::GROUP) {
         p.drawRect(QRectF(6.0, 6.0, 5.0, 5.0));
         p.drawRect(QRectF(13.0, 13.0, 5.0, 5.0));
     } else {
@@ -188,20 +188,32 @@ void drawMorph(QPainter& painter, IconId)
 constexpr struct IconEntry {
     IconId id;
     void (*draw)(QPainter&, IconId);
-} kEntries[] = {
-    {IconId::RotateCcw, drawRotate},      {IconId::RotateCw, drawRotate},        {IconId::Fit, drawFit},
-    {IconId::ZoomIn, drawZoom},           {IconId::ZoomOut, drawZoom},           {IconId::Align, drawAlign},
-    {IconId::AlignLeft, drawAlignMode},   {IconId::AlignCenterH, drawAlignMode}, {IconId::AlignRight, drawAlignMode},
-    {IconId::AlignTop, drawAlignMode},    {IconId::AlignCenterV, drawAlignMode}, {IconId::AlignBottom, drawAlignMode},
-    {IconId::DistributeH, drawAlignMode}, {IconId::DistributeV, drawAlignMode},  {IconId::Copy, drawCopy},
-    {IconId::Group, drawGroup},           {IconId::Ungroup, drawGroup},          {IconId::Morph, drawMorph},
+} ENTRIES[] = {
+    {IconId::ROTATE_CCW, drawRotate},
+    {IconId::ROTATE_CW, drawRotate},
+    {IconId::FIT, drawFit},
+    {IconId::ZOOM_IN, drawZoom},
+    {IconId::ZOOM_OUT, drawZoom},
+    {IconId::ALIGN, drawAlign},
+    {IconId::ALIGN_LEFT, drawAlignMode},
+    {IconId::ALIGN_CENTER_H, drawAlignMode},
+    {IconId::ALIGN_RIGHT, drawAlignMode},
+    {IconId::ALIGN_TOP, drawAlignMode},
+    {IconId::ALIGN_CENTER_V, drawAlignMode},
+    {IconId::ALIGN_BOTTOM, drawAlignMode},
+    {IconId::DISTRIBUTE_H, drawAlignMode},
+    {IconId::DISTRIBUTE_V, drawAlignMode},
+    {IconId::COPY, drawCopy},
+    {IconId::GROUP, drawGroup},
+    {IconId::UNGROUP, drawGroup},
+    {IconId::MORPH, drawMorph},
 };
 
 } // namespace
 
 bool paintIconTransformAlign(QPainter& painter, IconId id)
 {
-    for (const IconEntry& entry : kEntries) {
+    for (const IconEntry& entry : ENTRIES) {
         if (entry.id == id) {
             entry.draw(painter, id);
             return true;

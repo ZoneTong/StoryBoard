@@ -23,12 +23,12 @@ void selftest::runSettingsDialogBasicTests(Context& ctx)
 {
     {
         CanvasScene handleScene;
-        handleScene.setMode(ToolMode::Edit);
+        handleScene.setMode(ToolMode::EDIT);
         handleScene.setShowGrid(false);
         QUndoStack handleUndo;
         handleScene.setUndoStack(&handleUndo);
 
-        auto* handleEllipse = createShapeItem(ShapeType::Ellipse);
+        auto* handleEllipse = createShapeItem(ShapeType::ELLIPSE);
         handleEllipse->setStyle(QColor(QStringLiteral("#0F172A")), QColor(Qt::transparent), 4.0);
         handleEllipse->setContentSize(QSizeF(200, 120));
         handleEllipse->setPos(QPointF(60, 40));
@@ -44,7 +44,7 @@ void selftest::runSettingsDialogBasicTests(Context& ctx)
         handleEllipse->setSelected(false);
         ctx.check(!handleEllipse->shape().contains(QPointF(-3.0, -3.0)), QStringLiteral("未选中时控制点不参与命中"));
 
-        auto* thickRect = createShapeItem(ShapeType::Rectangle);
+        auto* thickRect = createShapeItem(ShapeType::RECTANGLE);
         thickRect->setStyle(QColor(QStringLiteral("#1D4ED8")), QColor(29, 78, 216, 40), 40.0);
         thickRect->setContentSize(QSizeF(200, 120));
         thickRect->setPos(QPointF(400, 40));
@@ -61,7 +61,7 @@ void selftest::runSettingsDialogBasicTests(Context& ctx)
         secondBackground.fill(QColor(QStringLiteral("#0EA5E9")));
 
         CanvasBackground firstState;
-        firstState.type = BackgroundType::Image;
+        firstState.type = BackgroundType::IMAGE;
         firstState.image = firstBackground;
         CanvasBackground secondState = firstState;
         secondState.image = secondBackground;

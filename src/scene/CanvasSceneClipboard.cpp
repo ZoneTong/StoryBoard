@@ -110,7 +110,7 @@ int CanvasScene::pasteClipboardItems(const QJsonArray& items)
 
 int CanvasScene::nudgeSelected(const QPointF& delta)
 {
-    if (m_mode != ToolMode::Edit || delta.isNull()) {
+    if (m_mode != ToolMode::EDIT || delta.isNull()) {
         return 0;
     }
 

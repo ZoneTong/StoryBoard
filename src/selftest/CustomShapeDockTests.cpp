@@ -110,8 +110,8 @@ void selftest::runCustomShapeDockTests(Context& ctx)
                       .arg(reloaded.itemOpacity())
                       .arg(reloaded.cornerRadius()));
 
-        const int squareElements = ShapeItem::pathFor(ShapeType::Rectangle, QRectF(0, 0, 100, 80), 0.0).elementCount();
-        const int roundElements = ShapeItem::pathFor(ShapeType::Rectangle, QRectF(0, 0, 100, 80), 20.0).elementCount();
+        const int squareElements = ShapeItem::pathFor(ShapeType::RECTANGLE, QRectF(0, 0, 100, 80), 0.0).elementCount();
+        const int roundElements = ShapeItem::pathFor(ShapeType::RECTANGLE, QRectF(0, 0, 100, 80), 20.0).elementCount();
         ctx.check(roundElements > squareElements, QStringLiteral("矩形圆角半径改变轮廓"),
                   QStringLiteral("square=%1 round=%2").arg(squareElements).arg(roundElements));
 
@@ -346,7 +346,7 @@ void selftest::runCustomShapeDockTests(Context& ctx)
                       .arg(PropertiesPanel::tr("Height +1")));
 
         // 选中只描边 / 非填充图元时隐藏填充两行，混入可填充图元再恢复。
-        panelScene.setMode(ToolMode::Edit);
+        panelScene.setMode(ToolMode::EDIT);
         auto* strokeOnlyShape = new StraightLineItem();
         strokeOnlyShape->setEndpoints(QPointF(40.0, 40.0), QPointF(180.0, 40.0), QColor(Qt::black), 1.0);
         panelScene.addItemsWithUndo({strokeOnlyShape}, QStringLiteral("Add line"));
@@ -354,7 +354,7 @@ void selftest::runCustomShapeDockTests(Context& ctx)
         QApplication::processEvents();
         ctx.check(fillStyleRow && fillStyleRow->isHidden() && fillColorRow && fillColorRow->isHidden(),
                   QStringLiteral("选中不支持填充的图元时隐藏填充颜色与填充样式行"));
-        auto* fillableShape = createShapeItem(ShapeType::Rectangle);
+        auto* fillableShape = createShapeItem(ShapeType::RECTANGLE);
         fillableShape->setContentSize(QSizeF(120.0, 80.0));
         panelScene.addItemsWithUndo({fillableShape}, QStringLiteral("Add rectangle"));
         fillableShape->setSelected(true);
@@ -529,11 +529,11 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
         // 默认是查看模式，先切到编辑模式，图元才可被选中。
         CanvasView* dockView = dockWindow.findChild<CanvasView*>();
         if (dockView) {
-            dockView->setMode(ToolMode::Edit);
+            dockView->setMode(ToolMode::EDIT);
         }
         QApplication::processEvents();
         const int beforeCount = dockScene->canvasItemCount();
-        auto* insertedShape = createShapeItem(ShapeType::Rectangle);
+        auto* insertedShape = createShapeItem(ShapeType::RECTANGLE);
         insertedShape->setPos(QPointF(160.0, 140.0));
         insertedShape->setContentSize(QSizeF(140.0, 100.0));
         dockScene->addItemsWithUndo({insertedShape}, QStringLiteral("Add rectangle"));
@@ -628,7 +628,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 fillButtons.at(2)->click();
                 QApplication::processEvents();
             }
-            ctx.check(selectedShape->fillStyle() == FillStyle::Hachure, QStringLiteral("工具卡填充样式作用到图形"));
+            ctx.check(selectedShape->fillStyle() == FillStyle::HACHURE, QStringLiteral("工具卡填充样式作用到图形"));
 
             if (cornerSpin) {
                 cornerSpin->setValue(24);
@@ -765,7 +765,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             }
 
             // 多选时卡片把对齐 8 项与合并图元 6 项直接展开成图标按钮行，并复用菜单栏同一批动作。
-            auto* secondShape = createShapeItem(ShapeType::Rectangle);
+            auto* secondShape = createShapeItem(ShapeType::RECTANGLE);
             secondShape->setPos(QPointF(420.0, 240.0));
             secondShape->setContentSize(QSizeF(120.0, 90.0));
             secondShape->setStyle(QColor(QStringLiteral("#1D4ED8")), QColor(29, 78, 216, 40), 3.0);
@@ -845,7 +845,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                       QStringLiteral("选中整组时只显示解散分组"));
 
             // 组 + 组外图元混合选中：再套一层组合与取消组合同时可用（分组支持多层）。
-            auto* thirdShape = createShapeItem(ShapeType::Ellipse);
+            auto* thirdShape = createShapeItem(ShapeType::ELLIPSE);
             thirdShape->setPos(QPointF(560.0, 320.0));
             thirdShape->setContentSize(QSizeF(100.0, 80.0));
             dockScene->addItemsWithUndo({thirdShape}, QStringLiteral("Add third shape"));
@@ -859,7 +859,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                       QStringLiteral("组与普通图元混合选中时图元分组和解散分组都显示"));
 
             // 删除按钮单独用一个临时图元验证，避免删掉后面还要复用的图元。
-            auto* deleteProbe = createShapeItem(ShapeType::Rectangle);
+            auto* deleteProbe = createShapeItem(ShapeType::RECTANGLE);
             deleteProbe->setPos(QPointF(640.0, 360.0));
             deleteProbe->setContentSize(QSizeF(80.0, 60.0));
             dockScene->addItemsWithUndo({deleteProbe}, QStringLiteral("Add delete probe"));
@@ -972,7 +972,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             polygonLayer.fill = QColor(QStringLiteral("#3B82F6"));
             polygonLayer.stroke = QColor(QStringLiteral("#1E293B"));
             polygonLayer.strokeWidth = 4.0;
-            polygonLayer.role = PolygonItem::LayerRole::FilledArea;
+            polygonLayer.role = PolygonItem::LayerRole::FILLED_AREA;
             auto* polygon = new PolygonItem({polygonLayer});
             polygon->setPos(QPointF(240.0, 240.0));
             dockScene->addItemsWithUndo({polygon}, QStringLiteral("Add polygon"));
@@ -994,7 +994,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 fillButtons.at(2)->click();
                 QApplication::processEvents();
             }
-            ctx.check(polygon->fillStyle() == FillStyle::Hachure, QStringLiteral("编辑卡填充样式作用到多边形"),
+            ctx.check(polygon->fillStyle() == FillStyle::HACHURE, QStringLiteral("编辑卡填充样式作用到多边形"),
                       QString::number(static_cast<int>(polygon->fillStyle())));
             dockScene->undoStack()->undo();
             QApplication::processEvents();
@@ -1063,7 +1063,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             const FillStyle dialogFillBefore = polygon->fillStyle();
             const qreal dialogWidthBefore = polygon->strokeWidth();
             if (dialogFillStyle) {
-                const int hachureIndex = dialogFillStyle->findData(static_cast<int>(FillStyle::Hachure));
+                const int hachureIndex = dialogFillStyle->findData(static_cast<int>(FillStyle::HACHURE));
                 if (hachureIndex >= 0) {
                     dialogFillStyle->setCurrentIndex(hachureIndex);
                 }
@@ -1073,7 +1073,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             }
             polygonDialog.accept();
             QApplication::processEvents();
-            ctx.check(polygon->fillStyle() == FillStyle::Hachure && qAbs(polygon->strokeWidth() - 12.0) < 0.01,
+            ctx.check(polygon->fillStyle() == FillStyle::HACHURE && qAbs(polygon->strokeWidth() - 12.0) < 0.01,
                       QStringLiteral("属性窗填充样式与描线宽度作用到多边形"),
                       QStringLiteral("fill=%1 width=%2")
                           .arg(static_cast<int>(polygon->fillStyle()))
@@ -1202,10 +1202,10 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             ctx.check(cardText->textColor() == QColor(QStringLiteral("#1E293B")),
                       QStringLiteral("撤销文字颜色恢复原色"), cardText->textColor().name());
 
-            auto* cardImage = createShapeItem(ShapeType::Rectangle);
+            auto* cardImage = createShapeItem(ShapeType::RECTANGLE);
             QPixmap imagePixmap(32, 24);
             imagePixmap.fill(QColor(QStringLiteral("#2563EB")));
-            cardImage->setFillImage(imagePixmap, ImageFill::Mode::Stretch);
+            cardImage->setFillImage(imagePixmap, ImageFill::Mode::STRETCH);
             cardImage->setContentSize(QSizeF(32, 24));
             cardImage->setPos(QPointF(620.0, 430.0));
             dockScene->addItemsWithUndo({cardImage}, QStringLiteral("Add card image"));

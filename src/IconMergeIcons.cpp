@@ -27,17 +27,17 @@ void drawMerge(QPainter& painter, IconId id)
         painter.drawPath(path);
     };
 
-    if (id == IconId::MergeUnion) {
+    if (id == IconId::MERGE_UNION) {
         fillSolid(merged);
-    } else if (id == IconId::MergeCombine) {
+    } else if (id == IconId::MERGE_COMBINE) {
         fillSolid(merged.subtracted(lens));
-    } else if (id == IconId::MergeFragment) {
+    } else if (id == IconId::MERGE_FRAGMENT) {
         outline(left, 1.5);
         outline(right, 1.5);
         outline(lens, 1.2);
-    } else if (id == IconId::MergeIntersect) {
+    } else if (id == IconId::MERGE_INTERSECT) {
         fillSolid(lens);
-    } else if (id == IconId::MergeLineSplit) {
+    } else if (id == IconId::MERGE_LINE_SPLIT) {
         // 线条分割：一条斜刀线把图形切开，只实心刀线一侧的结果。
         QPainterPath knifeLine;
         knifeLine.moveTo(2.0, 21.0);
@@ -68,16 +68,16 @@ void drawMerge(QPainter& painter, IconId id)
 constexpr struct IconEntry {
     IconId id;
     void (*draw)(QPainter&, IconId);
-} kEntries[] = {
-    {IconId::MergeUnion, drawMerge},     {IconId::MergeCombine, drawMerge},  {IconId::MergeFragment, drawMerge},
-    {IconId::MergeIntersect, drawMerge}, {IconId::MergeSubtract, drawMerge}, {IconId::MergeLineSplit, drawMerge},
+} ENTRIES[] = {
+    {IconId::MERGE_UNION, drawMerge},     {IconId::MERGE_COMBINE, drawMerge},  {IconId::MERGE_FRAGMENT, drawMerge},
+    {IconId::MERGE_INTERSECT, drawMerge}, {IconId::MERGE_SUBTRACT, drawMerge}, {IconId::MERGE_LINE_SPLIT, drawMerge},
 };
 
 } // namespace
 
 bool paintIconMerge(QPainter& painter, IconId id)
 {
-    for (const IconEntry& entry : kEntries) {
+    for (const IconEntry& entry : ENTRIES) {
         if (entry.id == id) {
             entry.draw(painter, id);
             return true;

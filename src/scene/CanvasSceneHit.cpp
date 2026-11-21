@@ -15,7 +15,7 @@
 QList<CanvasItem*> CanvasScene::obscuredItems(const QRectF& area) const
 {
     // 查看模式下要求完全遮盖（什么提示都不画）；导出同样不画提示轮廓。
-    if (m_mode == ToolMode::View || m_exporting) {
+    if (m_mode == ToolMode::VIEW || m_exporting) {
         return {};
     }
     return ObscurationAnalyzer().findObscured(canvasItems(), area);
@@ -70,7 +70,7 @@ void CanvasScene::drawTriangleBaseTick(QPainter* painter, const QRectF& rect)
 {
     // 需求 8：三角形 A 边（底边）中点画一条短刻度线，标记可调底边与两侧内角。
     // 只在编辑侧、单选、非导出时出现；查看模式与导出图里没有任何提示线。
-    if (m_mode == ToolMode::View || m_exporting) {
+    if (m_mode == ToolMode::VIEW || m_exporting) {
         return;
     }
     const QList<QGraphicsItem*> selection = selectedItems();
@@ -78,7 +78,7 @@ void CanvasScene::drawTriangleBaseTick(QPainter* painter, const QRectF& rect)
         return;
     }
     ShapeItem* shape = dynamic_cast<ShapeItem*>(selection.constFirst());
-    if (!shape || shape->shapeType() != ShapeType::Triangle || shape->isCustomShape()) {
+    if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->isCustomShape()) {
         return;
     }
 

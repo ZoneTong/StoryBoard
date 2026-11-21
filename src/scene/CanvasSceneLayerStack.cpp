@@ -152,7 +152,7 @@ LayerStackState CanvasScene::sanitizedLayerState(const LayerStackState& state) c
             break;
         }
     }
-    result.layers.append({BackgroundLayerId, scene_constants::kBackgroundLayerName, backgroundVisible, true});
+    result.layers.append({BackgroundLayerId, scene_constants::BACKGROUND_LAYER_NAME, backgroundVisible, true});
 
     QSet<int> used;
     used.insert(BackgroundLayerId);
@@ -169,7 +169,7 @@ LayerStackState CanvasScene::sanitizedLayerState(const LayerStackState& state) c
     }
 
     if (result.layers.size() == 1) {
-        int fallbackId = scene_constants::kFirstUserLayerId;
+        int fallbackId = scene_constants::FIRST_USER_LAYER_ID;
         while (used.contains(fallbackId)) {
             ++fallbackId;
         }

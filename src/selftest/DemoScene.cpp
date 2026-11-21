@@ -31,11 +31,11 @@ namespace {
 // 需求 14：插入图片统一为「矩形图元 + 背景图片」，演示场景沿用同一构造。
 ShapeItem* addImageRect(CanvasScene& scene, int layerId, const QPixmap& pixmap, const QSizeF& size, const QPointF& pos)
 {
-    auto* item = createShapeItem(ShapeType::Rectangle);
+    auto* item = createShapeItem(ShapeType::RECTANGLE);
     item->setLayerId(layerId);
     item->setStyle(QColor(Qt::transparent), QColor(Qt::transparent), 1.0);
-    item->setFillStyle(FillStyle::None);
-    item->setFillImage(pixmap, ImageFill::Mode::Stretch);
+    item->setFillStyle(FillStyle::NONE);
+    item->setFillImage(pixmap, ImageFill::Mode::STRETCH);
     item->setPos(pos);
     item->setContentSize(size);
     scene.attachItem(item);
@@ -82,7 +82,7 @@ void populateDemoScene(CanvasScene& scene)
     scene.applyCanvasSize(QSizeF(1600, 1000));
 
     CanvasBackground background;
-    background.type = BackgroundType::Color;
+    background.type = BackgroundType::COLOR;
     background.color = QColor(QStringLiteral("#F7F3EA"));
     scene.setCanvasBackground(background);
 
@@ -122,7 +122,7 @@ void populateDemoScene(CanvasScene& scene)
 
     for (int i = 0; i < panels.size(); ++i) {
         const QRectF& panel = panels.at(i);
-        auto* frame = createShapeItem(ShapeType::Rectangle);
+        auto* frame = createShapeItem(ShapeType::RECTANGLE);
         frame->setLayerId(frameLayer);
         frame->setStyle(ink, QColor(Qt::transparent), 5.0);
         frame->setPos(panel.topLeft());
@@ -148,28 +148,28 @@ void populateDemoScene(CanvasScene& scene)
     }
 
     // Hand-drawn annotations: stick figure, arrows and a few accents.
-    auto* firstArrow = createShapeItem(ShapeType::Arrow);
+    auto* firstArrow = createShapeItem(ShapeType::ARROW);
     firstArrow->setLayerId(inkLayer);
     firstArrow->setStyle(accent, QColor(Qt::transparent), 5.0);
     firstArrow->setPos(QPointF(520, 522));
     firstArrow->setContentSize(QSizeF(66, 36));
     scene.attachItem(firstArrow);
 
-    auto* secondArrow = createShapeItem(ShapeType::Arrow);
+    auto* secondArrow = createShapeItem(ShapeType::ARROW);
     secondArrow->setLayerId(inkLayer);
     secondArrow->setStyle(accent, QColor(Qt::transparent), 5.0);
     secondArrow->setPos(QPointF(1020, 522));
     secondArrow->setContentSize(QSizeF(66, 36));
     scene.attachItem(secondArrow);
 
-    auto* headRing = createShapeItem(ShapeType::Ellipse);
+    auto* headRing = createShapeItem(ShapeType::ELLIPSE);
     headRing->setLayerId(inkLayer);
     headRing->setStyle(teal, QColor(Qt::transparent), 3.0);
     headRing->setPos(QPointF(258, 510));
     headRing->setContentSize(QSizeF(84, 84));
     scene.attachItem(headRing);
 
-    auto* star = createShapeItem(ShapeType::Star);
+    auto* star = createShapeItem(ShapeType::STAR);
     star->setLayerId(inkLayer);
     QColor starFill = accent;
     starFill.setAlpha(62);

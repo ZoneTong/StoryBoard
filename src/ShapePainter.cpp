@@ -7,7 +7,7 @@
 
 namespace {
 
-constexpr qreal kPatternPenWidth = 1.6;
+constexpr qreal PATTERN_PEN_WIDTH = 1.6;
 
 // 图标墨迹归心：按包围盒（含描边外扩）把图形平移到 24px 栅格中心，并等比限幅，
 // 扇形与弧线共用一份，避免两条路各写一遍、下次只修一处。
@@ -44,7 +44,7 @@ QPainterPath ShapePainter::centerLines(FillStyle style, const QRectF& rect)
     const qreal spacing = patternSpacing(rect);
     const qreal h = rect.height();
 
-    if (style == FillStyle::Honeycomb) {
+    if (style == FillStyle::HONEYCOMB) {
         // 尖顶六边形蜂窝：行距 1.5r、列距 √3r，相邻行错开半个单元。
         const qreal radius = qMax<qreal>(4.0, spacing * 1.15);
         const qreal hexWidth = qSqrt(3.0) * radius;
@@ -68,7 +68,7 @@ QPainterPath ShapePainter::centerLines(FillStyle style, const QRectF& rect)
         return path;
     }
 
-    if (style == FillStyle::GridHatch) {
+    if (style == FillStyle::GRID_HATCH) {
         for (qreal y = rect.top() - spacing; y < rect.bottom() + spacing; y += spacing) {
             path.moveTo(rect.left() - spacing, y);
             path.lineTo(rect.right() + spacing, y);
@@ -80,7 +80,7 @@ QPainterPath ShapePainter::centerLines(FillStyle style, const QRectF& rect)
         return path;
     }
 
-    if (style == FillStyle::HorizontalHatch) {
+    if (style == FillStyle::HORIZONTAL_HATCH) {
         for (qreal y = rect.top() - spacing; y < rect.bottom() + spacing; y += spacing) {
             path.moveTo(rect.left() - spacing, y);
             path.lineTo(rect.right() + spacing, y);
@@ -88,7 +88,7 @@ QPainterPath ShapePainter::centerLines(FillStyle style, const QRectF& rect)
         return path;
     }
 
-    if (style == FillStyle::VerticalHatch) {
+    if (style == FillStyle::VERTICAL_HATCH) {
         for (qreal x = rect.left() - spacing; x < rect.right() + spacing; x += spacing) {
             path.moveTo(x, rect.top() - spacing);
             path.lineTo(x, rect.bottom() + spacing);
@@ -96,7 +96,7 @@ QPainterPath ShapePainter::centerLines(FillStyle style, const QRectF& rect)
         return path;
     }
 
-    if (style == FillStyle::Brick) {
+    if (style == FillStyle::BRICK) {
         // 砖纹：逐行横线，竖缝只在行与行之间出现，奇偶行错开半块砖。
         const qreal brickWidth = spacing * 2.0;
         int row = 0;
@@ -112,7 +112,7 @@ QPainterPath ShapePainter::centerLines(FillStyle style, const QRectF& rect)
         return path;
     }
 
-    if (style == FillStyle::Dots) {
+    if (style == FillStyle::DOTS) {
         // 点阵（50%）：圆点半径取间距的 1/4，圆心按棋盘交错排布。
         const qreal radius = qMax<qreal>(1.2, spacing * 0.25);
         int row = 0;
@@ -126,8 +126,8 @@ QPainterPath ShapePainter::centerLines(FillStyle style, const QRectF& rect)
     }
 
     // 斜线 / 反斜线 / 交叉线。两组线都从左边外一个“高度”开始，才能铺满左下与右上角。
-    const bool forward = style == FillStyle::Hachure || style == FillStyle::CrossHatch;
-    const bool reverse = style == FillStyle::ReverseHachure || style == FillStyle::CrossHatch;
+    const bool forward = style == FillStyle::HACHURE || style == FillStyle::CROSS_HATCH;
+    const bool reverse = style == FillStyle::REVERSE_HACHURE || style == FillStyle::CROSS_HATCH;
     if (forward) {
         for (qreal x = rect.left() - h; x < rect.right() + spacing; x += spacing) {
             path.moveTo(x, rect.bottom());
@@ -145,9 +145,9 @@ QPainterPath ShapePainter::centerLines(FillStyle style, const QRectF& rect)
 
 bool ShapePainter::isPatternFill(FillStyle style)
 {
-    return style == FillStyle::Hachure || style == FillStyle::ReverseHachure || style == FillStyle::CrossHatch ||
-           style == FillStyle::GridHatch || style == FillStyle::Honeycomb || style == FillStyle::HorizontalHatch ||
-           style == FillStyle::VerticalHatch || style == FillStyle::Brick || style == FillStyle::Dots;
+    return style == FillStyle::HACHURE || style == FillStyle::REVERSE_HACHURE || style == FillStyle::CROSS_HATCH ||
+           style == FillStyle::GRID_HATCH || style == FillStyle::HONEYCOMB || style == FillStyle::HORIZONTAL_HATCH ||
+           style == FillStyle::VERTICAL_HATCH || style == FillStyle::BRICK || style == FillStyle::DOTS;
 }
 
 void ShapePainter::paintPatternFill(QPainter* painter, const QPainterPath& clip, const QRectF& rect,
@@ -162,10 +162,10 @@ void ShapePainter::paintPatternFill(QPainter* painter, const QPainterPath& clip,
     // 必须用 IntersectClip：ReplaceClip 会把 drawItems() 里为“被遮挡裁剪”设置的区域
     // 整个替换掉，导致纹理线条画到本该被上层纯色图元遮住的地方。
     painter->setClipPath(clip, Qt::IntersectClip);
-    QPen pen(lineColor, kPatternPenWidth, Qt::SolidLine, Qt::FlatCap);
+    QPen pen(lineColor, PATTERN_PEN_WIDTH, Qt::SolidLine, Qt::FlatCap);
     painter->setPen(pen);
     // 点阵需要实心圆点，其余图案只描线。
-    painter->setBrush(style == FillStyle::Dots ? QBrush(lineColor) : QBrush(Qt::NoBrush));
+    painter->setBrush(style == FillStyle::DOTS ? QBrush(lineColor) : QBrush(Qt::NoBrush));
     painter->drawPath(centerLines(style, rect));
     painter->restore();
 }
@@ -184,7 +184,7 @@ void ShapePainter::paintShape(QPainter* painter, const QPainterPath& path, const
 
     QPen pen(strokeColor, strokeWidth, strokeStyle, Qt::RoundCap, Qt::RoundJoin);
     painter->setPen(pen);
-    if (fillStyle == FillStyle::Solid && fillColor.alpha() > 0) {
+    if (fillStyle == FillStyle::SOLID && fillColor.alpha() > 0) {
         painter->setBrush(fillColor);
     } else {
         painter->setBrush(Qt::NoBrush);
@@ -207,11 +207,11 @@ QIcon ShapePainter::makeIcon(ShapeType type, const QColor& color, int logicalSiz
     QRectF rect(3.0, 4.0, 18.0, 16.0);
     qreal iconStartAngle = 30.0;
     qreal iconSweepAngle = 120.0;
-    if (type == ShapeType::Ellipse) {
+    if (type == ShapeType::ELLIPSE) {
         rect = QRectF(4.0, 4.0, 16.0, 16.0);
-    } else if (type == ShapeType::Arrow || type == ShapeType::DoubleArrow) {
+    } else if (type == ShapeType::ARROW || type == ShapeType::DOUBLE_ARROW) {
         rect = QRectF(2.0, 7.0, 20.0, 10.0);
-    } else if (type == ShapeType::Sector) {
+    } else if (type == ShapeType::SECTOR) {
         // 扇形 / 弧线的图标必须与插入后的默认形态同一套角度（30° 起、120° 扫过），
         // 否则“点图标得到另一个形状”。只把椭圆放大到整格，避免在这排里显得过小。
         rect = QRectF(1.0, 1.0, 22.0, 22.0);
@@ -221,7 +221,7 @@ QIcon ShapePainter::makeIcon(ShapeType type, const QColor& color, int logicalSiz
 
     QPainterPath path = ShapeItem::pathFor(type, rect, -1.0, iconStartAngle, iconSweepAngle);
     // 需求 7：扇形图标的墨迹按包围盒重新居中到 (12,12) 并等比限幅；弧线走同一份 helper。
-    if (type == ShapeType::Sector) {
+    if (type == ShapeType::SECTOR) {
         path = centerIconPath(path, 1.8);
     }
     QPen pen(color, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);

@@ -59,14 +59,14 @@ QJsonObject CanvasScene::toJson() const
 
     QJsonObject background;
     switch (m_background.type) {
-    case BackgroundType::None:
+    case BackgroundType::NONE:
         background.insert(QStringLiteral("type"), QStringLiteral("none"));
         break;
-    case BackgroundType::Color:
+    case BackgroundType::COLOR:
         background.insert(QStringLiteral("type"), QStringLiteral("color"));
         background.insert(QStringLiteral("color"), m_background.color.name(QColor::HexArgb));
         break;
-    case BackgroundType::Image:
+    case BackgroundType::IMAGE:
         background.insert(QStringLiteral("type"), QStringLiteral("image"));
         background.insert(QStringLiteral("mode"), backgroundModeToString(m_background.mode));
         background.insert(QStringLiteral("image"), encodePixmap(m_background.image));
@@ -207,12 +207,12 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
     const QString backgroundType = backgroundJson.value(QStringLiteral("type")).toString();
     if (backgroundType == QStringLiteral("color")) {
         const QColor color(backgroundJson.value(QStringLiteral("color")).toString());
-        background.type = BackgroundType::Color;
+        background.type = BackgroundType::COLOR;
         background.color = color.isValid() ? color : QColor(255, 255, 255);
     } else if (backgroundType == QStringLiteral("image")) {
         const QPixmap pixmap = decodePixmap(backgroundJson.value(QStringLiteral("image")).toString());
         if (!pixmap.isNull()) {
-            background.type = BackgroundType::Image;
+            background.type = BackgroundType::IMAGE;
             background.image = pixmap;
             background.mode = backgroundModeFromString(backgroundJson.value(QStringLiteral("mode")).toString());
         }
@@ -221,7 +221,7 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
 
     LayerStackState state;
     bool backgroundVisible = true;
-    state.layers.append({BackgroundLayerId, scene_constants::kBackgroundLayerName, true, true});
+    state.layers.append({BackgroundLayerId, scene_constants::BACKGROUND_LAYER_NAME, true, true});
     QSet<int> used;
     used.insert(BackgroundLayerId);
     for (const QJsonValue& value : layerArray) {
@@ -246,7 +246,7 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
         used.insert(id);
     }
     state.layers[0].visible = backgroundVisible;
-    state.activeLayerId = root.value(QStringLiteral("activeLayer")).toInt(scene_constants::kFirstUserLayerId);
+    state.activeLayerId = root.value(QStringLiteral("activeLayer")).toInt(scene_constants::FIRST_USER_LAYER_ID);
 
     // 图元引用了未出现在图层数组中的图层时，补出该图层，避免图元丢失。
     for (const QJsonObject& itemJson : std::as_const(itemObjects)) {
@@ -318,8 +318,8 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
                 next = qMax(next, height + 1);
             }
         }
-        item->setHeight(qMin(scene_constants::kMaxItemHeight, next));
-        nextHeights[item->layerId()] = qMin(scene_constants::kMaxItemHeight, next + 1);
+        item->setHeight(qMin(scene_constants::MAX_ITEM_HEIGHT, next));
+        nextHeights[item->layerId()] = qMin(scene_constants::MAX_ITEM_HEIGHT, next + 1);
         usedHeights[item->layerId()].insert(item->height());
     }
 

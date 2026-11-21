@@ -13,14 +13,14 @@ class QWidget;
 namespace ItemPropertiesFields {
 
 // 颜色字段的图标语义：填充用色桶、边框用描边色板，其他文字等用通用色点。
-enum class ColorIconRole { Generic, Fill, Border };
+enum class ColorIconRole { GENERIC, FILL, BORDER };
 
 QString number(qreal value);
 QString colorText(const QColor& color);
 QString fontText(const QFont& font);
 void refreshColorButton(QToolButton* button);
 QToolButton* makeColorField(QWidget* parent, const QColor& color, const QString& objectName,
-                            ColorIconRole iconRole = ColorIconRole::Generic);
+                            ColorIconRole iconRole = ColorIconRole::GENERIC);
 QDoubleSpinBox* makeSpin(QWidget* parent, const QString& objectName, qreal minimum, qreal maximum);
 QWidget* makePairField(QWidget* parent, const QString& objectName, QDoubleSpinBox* first, QDoubleSpinBox* second,
                        const QString& separator);

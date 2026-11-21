@@ -12,7 +12,7 @@ class QPainter;
 // 悬停手柄光标与编辑模式下的手柄圆点 overlay。
 class CanvasResizeController {
   public:
-    enum class Handle { None, TopLeft, Top, TopRight, Right, BottomRight, Bottom, BottomLeft, Left };
+    enum class Handle { NONE, TOP_LEFT, TOP, TOP_RIGHT, RIGHT, BOTTOM_RIGHT, BOTTOM, BOTTOM_LEFT, LEFT };
 
     explicit CanvasResizeController(CanvasView* view, CanvasScene* scene);
 
@@ -34,7 +34,7 @@ class CanvasResizeController {
     CanvasView* m_view = nullptr;
     CanvasScene* m_scene = nullptr;
     bool m_resizingCanvas = false;
-    Handle m_canvasHandle = Handle::None;
-    Handle m_hoverHandle = Handle::None;
+    Handle m_canvasHandle = Handle::NONE;
+    Handle m_hoverHandle = Handle::NONE;
     QRectF m_resizeStartRect;
 };

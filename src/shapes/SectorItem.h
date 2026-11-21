@@ -8,7 +8,7 @@
 class SectorItem : public ShapeItem, public EllipseShape {
   public:
     SectorItem();
-    ShapeType shapeType() const override { return ShapeType::Sector; }
+    ShapeType shapeType() const override { return ShapeType::SECTOR; }
     ItemPropertySet properties() const override;
 
   protected:

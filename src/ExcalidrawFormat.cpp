@@ -71,12 +71,12 @@ QJsonObject itemBase(const QString& kind, const QRectF& bounds, int z, int layer
 }
 
 // 单条折线最多保留的点数：再多对画板没有意义，只会把曲线图元撑爆。
-constexpr int kMaxPoints = 10000;
+constexpr int MAX_POINTS = 10000;
 
 QJsonArray polylineSegments(const QList<QPointF>& points)
 {
     QJsonArray segments;
-    const int last = qMin(points.size() - 1, kMaxPoints - 1);
+    const int last = qMin(points.size() - 1, MAX_POINTS - 1);
     for (int i = 1; i <= last; ++i) {
         const QPointF p0 = points.at(i - 1);
         const QPointF p1 = points.at(i);
@@ -100,9 +100,9 @@ QList<QPointF> absolutePoints(const QJsonObject& element, QStringList* warnings)
     const QJsonArray raw = element.value(QStringLiteral("points")).toArray();
     for (const QJsonValue& value : raw) {
         // freedraw 的点可能成千上万，超出上限后不再解析。
-        if (points.size() >= kMaxPoints) {
+        if (points.size() >= MAX_POINTS) {
             if (warnings) {
-                warnings->append(QStringLiteral("点过多（%1），只取前 %2 个").arg(raw.size()).arg(kMaxPoints));
+                warnings->append(QStringLiteral("点过多（%1），只取前 %2 个").arg(raw.size()).arg(MAX_POINTS));
             }
             break;
         }
@@ -429,11 +429,11 @@ QJsonArray elementsToItems(const QJsonArray& elements, QStringList* warnings, QJ
     QJsonArray items;
     int z = 1000001;
     // 需求 2：导入闸门。元素数超上限时只取前 20000 个，避免恶意或超大场景卡死界面。
-    constexpr int kMaxElements = 20000;
-    if (elements.size() > kMaxElements) {
+    constexpr int MAX_ELEMENTS = 20000;
+    if (elements.size() > MAX_ELEMENTS) {
         if (warnings) {
             warnings->append(QStringLiteral("Excalidraw 元素过多，只导入前 %1 个（共 %2 个）")
-                                 .arg(kMaxElements)
+                                 .arg(MAX_ELEMENTS)
                                  .arg(elements.size()));
         }
     }
@@ -467,7 +467,7 @@ QJsonArray elementsToItems(const QJsonArray& elements, QStringList* warnings, QJ
     }
 
     for (const QJsonValue& value : elements) {
-        if (items.size() >= kMaxElements) {
+        if (items.size() >= MAX_ELEMENTS) {
             break;
         }
         const QJsonObject element = value.toObject();

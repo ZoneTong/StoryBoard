@@ -42,17 +42,17 @@ class CanvasItem : public QGraphicsObject {
     enum { Type = QGraphicsItem::UserType + 1 };
     // 需求 2：Apex 是三角形顶点 C 的专用句柄，数值排在 Rotation 之后，旧值不受影响。
     enum Handle {
-        NoHandle = -1,
-        TopLeft = 0,
-        Top,
-        TopRight,
-        Right,
-        BottomRight,
-        Bottom,
-        BottomLeft,
-        Left,
-        Rotation,
-        Apex
+        NO_HANDLE = -1,
+        TOP_LEFT = 0,
+        TOP,
+        TOP_RIGHT,
+        RIGHT,
+        BOTTOM_RIGHT,
+        BOTTOM,
+        BOTTOM_LEFT,
+        LEFT,
+        ROTATION,
+        APEX
     };
 
     explicit CanvasItem(QGraphicsItem* parent = nullptr);
@@ -173,7 +173,7 @@ class CanvasItem : public QGraphicsObject {
     friend class CanvasItemHandles;
     friend class CanvasItemInteraction;
 
-    enum class DragKind { None, Move, Resize, Rotate };
+    enum class DragKind { NONE, MOVE, RESIZE, ROTATE };
 
     QSizeF m_size{120.0, 90.0};
     int m_layerId = 0;
@@ -181,8 +181,8 @@ class CanvasItem : public QGraphicsObject {
     int m_height = -1;
     qreal m_rotation = 0.0;
     QString m_name;
-    DragKind m_drag = DragKind::None;
-    Handle m_resizeHandle = NoHandle;
+    DragKind m_drag = DragKind::NONE;
+    Handle m_resizeHandle = NO_HANDLE;
     QPointF m_dragStartScene;
     QPointF m_dragStartPos;
     QSizeF m_dragStartSize;

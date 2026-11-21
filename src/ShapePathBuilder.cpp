@@ -444,38 +444,38 @@ QPainterPath ShapePathBuilder::pathFor(ShapeType type, const QRectF& rect, qreal
                                        qreal sweepAngle)
 {
     switch (type) {
-    case ShapeType::Rectangle:
+    case ShapeType::RECTANGLE:
         return roundedRectPath(rect, cornerRadius);
-    case ShapeType::Ellipse:
+    case ShapeType::ELLIPSE:
         return ellipsePath(rect);
-    case ShapeType::Triangle:
+    case ShapeType::TRIANGLE:
         // 默认按 60°/60° 的等腰三角形生成；具体图元用带角度参数的重载。
         return trianglePath(rect, 60.0, 60.0);
-    case ShapeType::Star:
+    case ShapeType::STAR:
         return starPath(rect);
-    case ShapeType::Arrow:
+    case ShapeType::ARROW:
         return arrowPath(rect);
-    case ShapeType::DoubleArrow:
+    case ShapeType::DOUBLE_ARROW:
         return doubleArrowPath(rect);
-    case ShapeType::Callout:
+    case ShapeType::CALLOUT:
         return calloutPath(rect);
-    case ShapeType::Sector:
+    case ShapeType::SECTOR:
         return sectorPath(rect, startAngle, sweepAngle);
-    case ShapeType::Star4:
+    case ShapeType::STAR4:
         return fourPointStarPath(rect);
-    case ShapeType::Hexagram:
+    case ShapeType::HEXAGRAM:
         return hexagramPath(rect);
-    case ShapeType::Heart:
+    case ShapeType::HEART:
         return heartPath(rect);
-    case ShapeType::FlagWave:
+    case ShapeType::FLAG_WAVE:
         return flagWavePath(rect);
-    case ShapeType::Scroll:
+    case ShapeType::SCROLL:
         return scrollPath(rect);
-    case ShapeType::Cube:
+    case ShapeType::CUBE:
         return cubePath(rect);
-    case ShapeType::Cylinder:
+    case ShapeType::CYLINDER:
         return cylinderPath(rect);
-    case ShapeType::Parallelogram:
+    case ShapeType::PARALLELOGRAM:
         // 默认按 60° 生成；具体图元用带角度参数的重载。
         return parallelogramPath(rect, 60.0);
     }

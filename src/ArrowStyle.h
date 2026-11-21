@@ -10,7 +10,7 @@ class QPainter;
 // 直线 / 直线箭头 / 曲线的两端箭头样式：无 / 实心三角 / 空心三角 / 开口箭头 / 圆点 / 竖杠。
 // 箭头是描线的一部分：头长固定为 4 倍线宽、张角 90°，允许超出内容矩形，
 // 但不改变图元尺寸，也不参与合并图元。
-enum class ArrowStyle { None = 0, TriangleFilled, TriangleHollow, OpenArrow, Dot, Bar };
+enum class ArrowStyle { NONE = 0, TRIANGLE_FILLED, TRIANGLE_HOLLOW, OPEN_ARROW, DOT, BAR };
 
 QList<ArrowStyle> allArrowStyles();
 QString arrowStyleName(ArrowStyle style);

@@ -538,7 +538,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         if (ellipseAction) {
             // 描线色/宽度会按上次运行记忆（需求 16 的“仅首次生效”语义），
             // 这里显式把工具栏置成默认初值，避免断言受用户配置文件影响。
-            shapeWindow.setFillStyle(FillStyle::None);
+            shapeWindow.setFillStyle(FillStyle::NONE);
             shapeWindow.setBrushColor(QColor(Qt::black), false);
             if (auto* widthControl = shapeWindow.findChild<QSpinBox*>(QStringLiteral("StrokeWidthSpin"))) {
                 widthControl->setValue(1);
@@ -551,9 +551,9 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
             ShapeItem* inserted = shapeWindow.scene()->canvasItemCount() == 1
                                       ? dynamic_cast<ShapeItem*>(shapeWindow.scene()->canvasItems().constFirst())
                                       : nullptr;
-            ctx.check(inserted && inserted->shapeType() == ShapeType::Ellipse,
+            ctx.check(inserted && inserted->shapeType() == ShapeType::ELLIPSE,
                       QStringLiteral("快速插入的图元类型为圆形"));
-            ctx.check(inserted && inserted->isSelected() && shapeWindow.view()->mode() == ToolMode::Edit,
+            ctx.check(inserted && inserted->isSelected() && shapeWindow.view()->mode() == ToolMode::EDIT,
                       QStringLiteral("快速插入后自动进入编辑模式并选中图形"));
             ctx.check(inserted && inserted->layerId() == shapeWindow.scene()->activeLayerId() &&
                           shapeWindow.scene()->layerHeightsUnique(inserted->layerId()),
@@ -563,7 +563,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                       inserted ? geometryText(inserted->pos(), inserted->contentSize()) : QString());
             // 需求 16：新图元按工具栏当前样式生成——默认无填充（填充槽透明）、
             // 描线黑色 1px。
-            ctx.check(inserted && inserted->fillStyle() == FillStyle::None && inserted->fillColor().alpha() == 0 &&
+            ctx.check(inserted && inserted->fillStyle() == FillStyle::NONE && inserted->fillColor().alpha() == 0 &&
                           inserted->strokeColor() == QColor(Qt::black) && qAbs(inserted->strokeWidth() - 1.0) < 0.01,
                       QStringLiteral("快速插入图形按工具栏默认样式生成（无填充、黑色描线 1px）"),
                       inserted ? QStringLiteral("fill=%1/%2 stroke=%3 width=%4 brush=%5 w=%6 fillMain=%7")
@@ -585,14 +585,14 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
             ShapeItem* insertedArrow = nullptr;
             for (CanvasItem* item : shapeWindow.scene()->canvasItems()) {
                 if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
-                    if (shape->shapeType() == ShapeType::Arrow) {
+                    if (shape->shapeType() == ShapeType::ARROW) {
                         insertedArrow = shape;
                     }
                 }
             }
             ctx.check(insertedArrow != nullptr, QStringLiteral("快速插入的图元类型为箭头"));
             // 需求 16：箭头同样按工具栏默认样式生成（无填充、黑色描线）。
-            ctx.check(insertedArrow && insertedArrow->fillStyle() == FillStyle::None &&
+            ctx.check(insertedArrow && insertedArrow->fillStyle() == FillStyle::NONE &&
                           insertedArrow->strokeColor() == QColor(Qt::black),
                       QStringLiteral("新插入箭头按工具栏默认样式生成"),
                       insertedArrow ? QStringLiteral("fill=%1/%2 stroke=%3")
@@ -612,7 +612,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         const QColor initialColor(QStringLiteral("#1E293B"));
         stroke->setStrokePoints({QPointF(40, 40), QPointF(160, 120)}, initialColor, 4.0);
         strokeWindow.scene()->addItemsWithUndo({stroke}, QStringLiteral("Add width stroke"));
-        strokeWindow.view()->setMode(ToolMode::Edit);
+        strokeWindow.view()->setMode(ToolMode::EDIT);
         strokeWindow.scene()->clearSelection();
         stroke->setSelected(true);
         QApplication::processEvents();
@@ -658,10 +658,10 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         layer.fill = QColor(QStringLiteral("#3B82F6"));
         layer.stroke = QColor(QStringLiteral("#1E293B"));
         layer.strokeWidth = 4.0;
-        layer.role = PolygonItem::LayerRole::FilledArea;
+        layer.role = PolygonItem::LayerRole::FILLED_AREA;
         auto* polygon = new PolygonItem({layer});
         polygonWindow.scene()->addItemsWithUndo({polygon}, QStringLiteral("Add toolbar polygon"));
-        polygonWindow.view()->setMode(ToolMode::Edit);
+        polygonWindow.view()->setMode(ToolMode::EDIT);
         polygonWindow.scene()->clearSelection();
         polygon->setSelected(true);
         QApplication::processEvents();
@@ -680,7 +680,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
             hachureAction->trigger();
             QApplication::processEvents();
         }
-        ctx.check(polygon->fillStyle() == FillStyle::ReverseHachure, QStringLiteral("工具栏填充样式作用到多边形"),
+        ctx.check(polygon->fillStyle() == FillStyle::REVERSE_HACHURE, QStringLiteral("工具栏填充样式作用到多边形"),
                   QString::number(static_cast<int>(polygon->fillStyle())));
         polygonWindow.scene()->undoStack()->undo();
         QApplication::processEvents();

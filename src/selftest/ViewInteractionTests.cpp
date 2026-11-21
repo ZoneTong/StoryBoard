@@ -101,13 +101,13 @@ void selftest::runViewInteractionTests(Context& ctx)
 
     ctx.check(view.metaObject()->indexOfSignal("editTextRequested(TextItem*)") < 0,
               QStringLiteral("右键独立编辑文字入口信号已移除"));
-    ctx.check(view.mode() == ToolMode::View, QStringLiteral("默认模式为查看模式"));
+    ctx.check(view.mode() == ToolMode::VIEW, QStringLiteral("默认模式为查看模式"));
     view.fitAll();
     QApplication::processEvents();
 
     view.setBrushColor(QColor(QStringLiteral("#2563EB")));
     view.setBrushWidth(7.0);
-    view.setMode(ToolMode::Brush);
+    view.setMode(ToolMode::BRUSH);
 
     const QPoint brushStart = view.mapFromScene(QPointF(300, 300));
     const QPoint brushEnd = view.mapFromScene(QPointF(700, 500));
@@ -193,24 +193,24 @@ void selftest::runViewInteractionTests(Context& ctx)
 
     {
         // 需求 7：画笔模式按 Esc 退出回编辑模式，正在画的笔画被取消不落库。
-        view.setMode(ToolMode::Brush);
+        view.setMode(ToolMode::BRUSH);
         const QPoint escStrokeStart = view.mapFromScene(QPointF(200, 200));
         sendMouseEvent(view.viewport(), QEvent::MouseButtonPress, escStrokeStart, Qt::LeftButton, Qt::LeftButton);
         QApplication::processEvents();
         QKeyEvent escWhileStroke(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
         QApplication::sendEvent(&view, &escWhileStroke);
         QApplication::processEvents();
-        ctx.check(view.mode() == ToolMode::Edit, QStringLiteral("画笔模式按 Esc 退出到编辑模式"),
+        ctx.check(view.mode() == ToolMode::EDIT, QStringLiteral("画笔模式按 Esc 退出到编辑模式"),
                   QStringLiteral("mode=%1").arg(static_cast<int>(view.mode())));
         ctx.check(viewScene.canvasItemCount() == 1, QStringLiteral("Esc 取消进行中的笔画不落库"),
                   QString::number(viewScene.canvasItemCount()));
 
         // 空闲画笔模式按 Esc 同样退出。
-        view.setMode(ToolMode::Brush);
+        view.setMode(ToolMode::BRUSH);
         QKeyEvent escIdle(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
         QApplication::sendEvent(&view, &escIdle);
         QApplication::processEvents();
-        ctx.check(view.mode() == ToolMode::Edit, QStringLiteral("空闲画笔模式按 Esc 也退出到编辑模式"));
+        ctx.check(view.mode() == ToolMode::EDIT, QStringLiteral("空闲画笔模式按 Esc 也退出到编辑模式"));
     }
 
     {
@@ -260,7 +260,7 @@ void selftest::runViewInteractionTests(Context& ctx)
         CanvasScene manualScene;
         manualScene.applyCanvasSize(QSizeF(800, 600));
         manualScene.setShowGrid(false);
-        manualScene.setMode(ToolMode::Edit);
+        manualScene.setMode(ToolMode::EDIT);
         QUndoStack manualUndo;
         manualScene.setUndoStack(&manualUndo);
         auto* manualStroke = new CurveItem();
@@ -292,7 +292,7 @@ void selftest::runViewInteractionTests(Context& ctx)
                          ++textPlacementRequests;
                          requestedTextPosition = scenePos;
                      });
-    view.setMode(ToolMode::Text);
+    view.setMode(ToolMode::TEXT);
     const QPointF textClickScene(620.0, 330.0);
     const QPoint textClick = view.mapFromScene(textClickScene);
     sendMouseEvent(view.viewport(), QEvent::MouseButtonPress, textClick, Qt::LeftButton, Qt::LeftButton);
@@ -305,13 +305,13 @@ void selftest::runViewInteractionTests(Context& ctx)
                   QStringLiteral("requested=%1,%2").arg(requestedTextPosition.x()).arg(requestedTextPosition.y()));
     }
     ctx.check(viewScene.canvasItemCount() == 1, QStringLiteral("文字模式点击不会直接创建图元"));
-    view.setMode(ToolMode::View);
+    view.setMode(ToolMode::VIEW);
     QApplication::processEvents();
 
     const QPointF viewPosBefore = drawnStroke ? drawnStroke->pos() : QPointF();
     const QSizeF viewSizeBefore = drawnStroke ? drawnStroke->contentSize() : QSizeF();
 
-    view.setMode(ToolMode::View);
+    view.setMode(ToolMode::VIEW);
     QApplication::processEvents();
     const QRectF visibleScene = view.mapToScene(view.viewport()->rect()).boundingRect();
     ctx.check(visibleScene.contains(viewScene.contentRect()), QStringLiteral("查看模式自动包含全部图元"),
@@ -370,7 +370,7 @@ void selftest::runViewInteractionTests(Context& ctx)
                   QStringLiteral("查看模式缩放不修改图元坐标"));
     }
 
-    view.setMode(ToolMode::Edit);
+    view.setMode(ToolMode::EDIT);
     view.fitAll();
     QApplication::processEvents();
 
@@ -501,7 +501,7 @@ void selftest::runViewInteractionTests(Context& ctx)
     ctx.check(ctx.itemPropertyRequests == 1, QStringLiteral("双击文字请求属性弹窗"));
 
     // 需求 42：查看模式下双击图元也可以打开（只读）属性窗。
-    view.setMode(ToolMode::View);
+    view.setMode(ToolMode::VIEW);
     view.fitAll();
     QApplication::processEvents();
     const QPoint viewDoubleClickPoint = view.mapFromScene(doubleClickText->sceneContentRect().center());
@@ -511,7 +511,7 @@ void selftest::runViewInteractionTests(Context& ctx)
     QApplication::sendEvent(view.viewport(), &viewDoubleClickEvent);
     QApplication::processEvents();
     ctx.check(ctx.itemPropertyRequests == 2, QStringLiteral("查看模式双击文字仍请求属性弹窗"));
-    view.setMode(ToolMode::Edit);
+    view.setMode(ToolMode::EDIT);
 
     {
         ItemPropertiesDialog dialog(&viewScene, doubleClickText, &view);

@@ -95,7 +95,7 @@ ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QW
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     buttons->button(QDialogButtonBox::Ok)->setText(tr("Export"));
-    buttons->button(QDialogButtonBox::Ok)->setIcon(makeIcon(IconId::Export, QColor(255, 255, 255), 18));
+    buttons->button(QDialogButtonBox::Ok)->setIcon(makeIcon(IconId::EXPORT, QColor(255, 255, 255), 18));
     buttons->button(QDialogButtonBox::Cancel)->setText(tr("Cancel"));
     rootLayout->addWidget(buttons);
 

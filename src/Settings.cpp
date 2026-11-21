@@ -121,17 +121,17 @@ ShellChannelResult openFolderViaShellItem(const QString& directory)
     return result;
 }
 
-constexpr int kMinCanvasSide = 200;
-constexpr int kMaxCanvasSide = 12000;
+constexpr int MIN_CANVAS_SIDE = 200;
+constexpr int MAX_CANVAS_SIDE = 12000;
 
 using SettingsMap = QMap<QString, QString>;
 
-const QString kFileName = QStringLiteral("StoryBoard.ini");
-constexpr const char* kOverrideVariable = "STORYBOARD_CONFIG";
+const QString FILE_NAME = QStringLiteral("StoryBoard.ini");
+constexpr const char* OVERRIDE_VARIABLE = "STORYBOARD_CONFIG";
 
 QString applicationSettingsFile()
 {
-    return QDir(QCoreApplication::applicationDirPath()).filePath(kFileName);
+    return QDir(QCoreApplication::applicationDirPath()).filePath(FILE_NAME);
 }
 
 QString userConfigDirectory()
@@ -149,7 +149,7 @@ QString userConfigDirectory()
 // 3. 其余情况写用户配置目录，避免程序目录被写保护。
 QString resolveSettingsFile()
 {
-    const QString override = qEnvironmentVariable(kOverrideVariable).trimmed();
+    const QString override = qEnvironmentVariable(OVERRIDE_VARIABLE).trimmed();
     if (!override.isEmpty()) {
         return QDir::cleanPath(override);
     }
@@ -161,7 +161,7 @@ QString resolveSettingsFile()
 
     const QString directory = userConfigDirectory();
     if (!directory.isEmpty()) {
-        return QDir(directory).filePath(kFileName);
+        return QDir(directory).filePath(FILE_NAME);
     }
 
     return portable;
@@ -361,9 +361,9 @@ void AppSettings::load()
     strokeSmoothing = boundedDoubleFromMap(values, QStringLiteral("brush/smoothing"), strokeSmoothing, 0.0, 20.0);
 
     const int canvasWidth = boundedFromMap(values, QStringLiteral("canvas/width"), qRound(canvasSize.width()),
-                                           kMinCanvasSide, kMaxCanvasSide);
+                                           MIN_CANVAS_SIDE, MAX_CANVAS_SIDE);
     const int canvasHeight = boundedFromMap(values, QStringLiteral("canvas/height"), qRound(canvasSize.height()),
-                                            kMinCanvasSide, kMaxCanvasSide);
+                                            MIN_CANVAS_SIDE, MAX_CANVAS_SIDE);
     canvasSize = QSizeF(canvasWidth, canvasHeight);
 
     showGrid = boolFromMap(values, QStringLiteral("view/grid"), showGrid);
@@ -547,7 +547,7 @@ AppSettings::ShapesFolderOpenResult AppSettings::openShapesFolder()
     const QString directory = writableShapesDir();
     result.directory = directory;
     if (directory.isEmpty()) {
-        result.error = ShapesFolderError::CreateFailed;
+        result.error = ShapesFolderError::CREATE_FAILED;
         qWarning("shapes folder unavailable: no writable candidate (settings=%s, bundled=%s)",
                  qUtf8Printable(shapesDir()), qUtf8Printable(bundledShapesDir()));
         return result;
@@ -575,7 +575,7 @@ AppSettings::ShapesFolderOpenResult AppSettings::openShapesFolder()
         QStringLiteral(" auto=0x%1").arg(static_cast<quint32>(automation.code), 8, 16, QLatin1Char('0'));
     if (automation.opened) {
         result.opened = true;
-        result.error = ShapesFolderError::None;
+        result.error = ShapesFolderError::NONE;
         return result;
     }
     qWarning("Shell.Application Explore failed to open shapes folder [%s]", qUtf8Printable(directory));
@@ -587,7 +587,7 @@ AppSettings::ShapesFolderOpenResult AppSettings::openShapesFolder()
     result.diagnostics = channelDiagnostics;
     if (shellItem.opened) {
         result.opened = true;
-        result.error = ShapesFolderError::None;
+        result.error = ShapesFolderError::NONE;
         return result;
     }
     qWarning("SHOpenFolderAndSelectItems failed to open shapes folder [%s]", qUtf8Printable(directory));
@@ -598,13 +598,13 @@ AppSettings::ShapesFolderOpenResult AppSettings::openShapesFolder()
     // Windows 外壳失败或非 Windows 平台：退到桌面服务再试一次，目录 URL 必须以分隔符结尾。
     if (QDesktopServices::openUrl(QUrl::fromLocalFile(directory + QLatin1Char('/')))) {
         result.opened = true;
-        result.error = ShapesFolderError::None;
+        result.error = ShapesFolderError::NONE;
         return result;
     }
 #ifdef Q_OS_WIN
-    result.error = ShapesFolderError::ShellFailed;
+    result.error = ShapesFolderError::SHELL_FAILED;
 #else
-    result.error = ShapesFolderError::DesktopFailed;
+    result.error = ShapesFolderError::DESKTOP_FAILED;
 #endif
     qWarning("desktop service failed to open shapes folder [%s]", qUtf8Printable(directory));
     return result;
@@ -615,18 +615,18 @@ QString AppSettings::shapesFolderFailureText(const ShapesFolderOpenResult& resul
     const QString directory = result.directory.isEmpty() ? QStringLiteral("(unresolved directory)")
                                                          : QDir::toNativeSeparators(result.directory);
     switch (result.error) {
-    case ShapesFolderError::CreateFailed:
+    case ShapesFolderError::CREATE_FAILED:
         return uiText(QStringLiteral(
                           "Could not open the shapes folder: %1 (cannot create the directory; check write permission)"))
             .arg(directory);
-    case ShapesFolderError::ShellFailed:
+    case ShapesFolderError::SHELL_FAILED:
         return uiText(QStringLiteral("Could not open the shapes folder: %1 (Windows shell returned %2)"))
             .arg(directory)
             .arg(result.shellCode);
-    case ShapesFolderError::DesktopFailed:
+    case ShapesFolderError::DESKTOP_FAILED:
         return uiText(QStringLiteral("Could not open the shapes folder: %1 (no file manager available)"))
             .arg(directory);
-    case ShapesFolderError::None:
+    case ShapesFolderError::NONE:
         break;
     }
     return QString();

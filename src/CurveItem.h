@@ -9,7 +9,7 @@
 #include <QVector>
 
 // 笔迹来源：只描述曲线怎么产生（手绘 / 图片线稿提取），不参与类型判断。
-enum class CurveSource { HandDrawn = 0, LineArt };
+enum class CurveSource { HAND_DRAWN = 0, LINE_ART };
 
 // 手绘曲线图元：内部几何是分段三次贝塞尔，绘制期的采样点只在收笔拟合时短暂存在，
 // 不写入画布文件。直线 / 弧线 / 正弦 / 花括号已各自成类，本类只剩笔迹与线稿。
@@ -56,5 +56,5 @@ class CurveItem : public LineItemAbstract {
     bool m_hasDot = false;
     bool m_drawing = false;
     bool m_finished = false;
-    CurveSource m_strokeSource = CurveSource::HandDrawn;
+    CurveSource m_strokeSource = CurveSource::HAND_DRAWN;
 };

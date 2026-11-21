@@ -42,11 +42,11 @@ void selftest::runClipboardShortcutTests(Context& ctx)
     {
         CanvasScene sourceScene;
         sourceScene.applyCanvasSize(QSizeF(800.0, 600.0));
-        sourceScene.setMode(ToolMode::Edit);
+        sourceScene.setMode(ToolMode::EDIT);
         QUndoStack sourceUndo;
         sourceScene.setUndoStack(&sourceUndo);
 
-        auto* source = createShapeItem(ShapeType::Rectangle);
+        auto* source = createShapeItem(ShapeType::RECTANGLE);
         source->setContentSize(QSizeF(120.0, 80.0));
         source->setPos(QPointF(40.0, 50.0));
         sourceScene.addItemsWithUndo({source}, QStringLiteral("Add clipboard source"));
@@ -58,7 +58,7 @@ void selftest::runClipboardShortcutTests(Context& ctx)
 
         CanvasScene pasteScene;
         pasteScene.applyCanvasSize(QSizeF(800.0, 600.0));
-        pasteScene.setMode(ToolMode::Edit);
+        pasteScene.setMode(ToolMode::EDIT);
         QUndoStack pasteUndo;
         pasteScene.setUndoStack(&pasteUndo);
 

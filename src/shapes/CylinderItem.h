@@ -2,12 +2,12 @@
 
 #include "ShapeItem.h"
 
-// Cylinder：轮廓由 ShapePathBuilder 按 ShapeType::Cylinder 生成，没有额外参数。
+// Cylinder：轮廓由 ShapePathBuilder 按 ShapeType::CYLINDER 生成，没有额外参数。
 class CylinderItem : public ShapeItem {
   public:
     CylinderItem();
     QSizeF defaultContentSize() const override;
-    ShapeType shapeType() const override { return ShapeType::Cylinder; }
+    ShapeType shapeType() const override { return ShapeType::CYLINDER; }
 
   protected:
     QPainterPath shapePath(const QRectF& rect) const override;

@@ -282,8 +282,8 @@ void ImportExportController::importOutlineImageFile(const QString& file, const L
         return;
     }
 
-    if (m_window->m_view->mode() != ToolMode::Edit) {
-        m_window->setToolMode(ToolMode::Edit);
+    if (m_window->m_view->mode() != ToolMode::EDIT) {
+        m_window->setToolMode(ToolMode::EDIT);
     }
 
     if (!m_window->m_scene->isActiveLayerWritable()) {
@@ -340,7 +340,7 @@ void ImportExportController::importOutlineImageFile(const QString& file, const L
         // 折线模式让路径按直线段绘制，方角保持方正。
         auto* stroke = new CurveItem();
         stroke->setStrokePoints(scenePoints, outline.color, options.strokeWidth, 0.0, true);
-        stroke->setSource(CurveSource::LineArt);
+        stroke->setSource(CurveSource::LINE_ART);
         items.append(stroke);
     }
 
@@ -366,8 +366,8 @@ void ImportExportController::importImageFiles(const QStringList& files)
         return;
     }
 
-    if (m_window->m_view->mode() != ToolMode::Edit) {
-        m_window->setToolMode(ToolMode::Edit);
+    if (m_window->m_view->mode() != ToolMode::EDIT) {
+        m_window->setToolMode(ToolMode::EDIT);
     }
 
     if (!m_window->m_scene->isActiveLayerWritable()) {
@@ -410,10 +410,10 @@ void ImportExportController::importImageFiles(const QStringList& files)
 
         // 需求 14：插入图片生成的是矩形图元，图片只作为它的背景（在填充样式之下）。
         // 填充与描线都是透明无色，图片本身承担视觉；不再产生图片类型图元。
-        auto* item = createShapeItem(ShapeType::Rectangle);
-        item->setFillImage(pixmap, ImageFill::Mode::Stretch);
+        auto* item = createShapeItem(ShapeType::RECTANGLE);
+        item->setFillImage(pixmap, ImageFill::Mode::STRETCH);
         item->setStyle(QColor(Qt::transparent), QColor(Qt::transparent), 1.0);
-        item->setFillStyle(FillStyle::None);
+        item->setFillStyle(FillStyle::NONE);
         item->setName(QFileInfo(file).fileName());
         item->setContentSize(size);
         item->setPos(viewCenter - QPointF(size.width() / 2.0, size.height() / 2.0) +

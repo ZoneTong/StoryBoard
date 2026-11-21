@@ -34,12 +34,11 @@ QString fontText(const QFont& font)
 void refreshColorButton(QToolButton* button)
 {
     const QColor color = button->property("itemColor").value<QColor>();
-    const ColorIconRole role =
-        static_cast<ColorIconRole>(button->property("colorIconRole").toInt());
+    const ColorIconRole role = static_cast<ColorIconRole>(button->property("colorIconRole").toInt());
     QIcon icon;
-    if (role == ColorIconRole::Fill) {
+    if (role == ColorIconRole::FILL) {
         icon = ItemStyleVisuals::fillColorIcon(color.isValid() ? color : QColor(Qt::transparent), 18);
-    } else if (role == ColorIconRole::Border) {
+    } else if (role == ColorIconRole::BORDER) {
         icon = ItemStyleVisuals::borderColorIcon(color.isValid() ? color : QColor(Qt::transparent), 18);
     } else {
         icon = makeColorIcon(color.isValid() ? color : QColor(Qt::transparent), 18);
@@ -49,8 +48,7 @@ void refreshColorButton(QToolButton* button)
     button->setToolTip(colorText(color));
 }
 
-QToolButton* makeColorField(QWidget* parent, const QColor& color, const QString& objectName,
-                            ColorIconRole iconRole)
+QToolButton* makeColorField(QWidget* parent, const QColor& color, const QString& objectName, ColorIconRole iconRole)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(objectName);

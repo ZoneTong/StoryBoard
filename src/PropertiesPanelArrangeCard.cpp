@@ -8,17 +8,17 @@
 
 namespace {
 
-constexpr int kIconSize = 20;
-constexpr int kSmallIconSize = 20;
-constexpr int kButtonSize = 32;
+constexpr int ICON_SIZE = 20;
+constexpr int SMALL_ICON_SIZE = 20;
+constexpr int BUTTON_SIZE = 32;
 
 QToolButton* makeRowIcon(IconId id, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
-    button->setIcon(makeIcon(id, QColor(139, 144, 156), kSmallIconSize));
-    button->setIconSize(QSize(kSmallIconSize, kSmallIconSize));
-    button->setFixedSize(kButtonSize, kButtonSize);
+    button->setIcon(makeIcon(id, QColor(139, 144, 156), SMALL_ICON_SIZE));
+    button->setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE));
+    button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
     button->setAutoRaise(true);
     button->setFocusPolicy(Qt::NoFocus);
     return button;
@@ -32,18 +32,18 @@ PropertiesPanelArrangeCard::PropertiesPanelArrangeCard(QWidget* parent) : QWidge
     row->setContentsMargins(0, 0, 0, 0);
     row->setSpacing(2);
 
-    QToolButton* icon = makeRowIcon(IconId::OrderUp, this);
+    QToolButton* icon = makeRowIcon(IconId::ORDER_UP, this);
     icon->setToolTip(PropertiesPanel::tr("Layer and height") + QLatin1Char('\n') +
                      PropertiesPanel::tr("Priority: layer order first, then height within the same layer"));
     row->addWidget(icon);
 
     m_layerUpButton =
-        makeButton(IconId::LayerUp, PropertiesPanel::tr("Layer +1"), QStringLiteral("ItemLayerUpButton"), 1, false);
-    m_layerDownButton = makeButton(IconId::LayerDown, PropertiesPanel::tr("Layer -1"),
+        makeButton(IconId::LAYER_UP, PropertiesPanel::tr("Layer +1"), QStringLiteral("ItemLayerUpButton"), 1, false);
+    m_layerDownButton = makeButton(IconId::LAYER_DOWN, PropertiesPanel::tr("Layer -1"),
                                    QStringLiteral("ItemLayerDownButton"), -1, false);
     m_heightUpButton =
-        makeButton(IconId::OrderUp, PropertiesPanel::tr("Height +1"), QStringLiteral("ItemHeightUpButton"), 1, true);
-    m_heightDownButton = makeButton(IconId::OrderDown, PropertiesPanel::tr("Height -1"),
+        makeButton(IconId::ORDER_UP, PropertiesPanel::tr("Height +1"), QStringLiteral("ItemHeightUpButton"), 1, true);
+    m_heightDownButton = makeButton(IconId::ORDER_DOWN, PropertiesPanel::tr("Height -1"),
                                     QStringLiteral("ItemHeightDownButton"), -1, true);
     row->addWidget(m_layerUpButton);
     row->addWidget(m_layerDownButton);
@@ -57,9 +57,9 @@ QToolButton* PropertiesPanelArrangeCard::makeButton(IconId id, const QString& to
 {
     auto* button = new QToolButton(this);
     button->setObjectName(objectName);
-    button->setIcon(makeIcon(id, QColor(75, 85, 99), kIconSize));
-    button->setIconSize(QSize(kIconSize, kIconSize));
-    button->setFixedSize(kButtonSize, kButtonSize);
+    button->setIcon(makeIcon(id, QColor(75, 85, 99), ICON_SIZE));
+    button->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
+    button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
     button->setToolTip(toolTip);
     button->setAutoRaise(true);
     connect(button, &QToolButton::clicked, this, [this, delta, height]() {

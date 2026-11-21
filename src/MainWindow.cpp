@@ -224,7 +224,7 @@ void MainWindow::connectSignals()
         updateActions();
     });
     connect(m_scene, &CanvasScene::canvasSizeChanged, this, [this](const QSizeF&) {
-        if (m_view->mode() == ToolMode::View) {
+        if (m_view->mode() == ToolMode::VIEW) {
             m_view->fitAll();
         }
     });
@@ -446,22 +446,22 @@ void MainWindow::keyPressEvent(QKeyEvent* event)
         m_boolChordPending = false;
         switch (event->key()) {
         case Qt::Key_U:
-            applyBoolOperation(BoolOps::Operation::Union);
+            applyBoolOperation(BoolOps::Operation::UNION);
             return;
         case Qt::Key_X:
-            applyBoolOperation(BoolOps::Operation::Xor);
+            applyBoolOperation(BoolOps::Operation::XOR);
             return;
         case Qt::Key_I:
-            applyBoolOperation(BoolOps::Operation::Intersect);
+            applyBoolOperation(BoolOps::Operation::INTERSECT);
             return;
         case Qt::Key_S:
-            applyBoolOperation(BoolOps::Operation::Subtract);
+            applyBoolOperation(BoolOps::Operation::SUBTRACT);
             return;
         case Qt::Key_F:
-            applyBoolOperation(BoolOps::Operation::Fragment);
+            applyBoolOperation(BoolOps::Operation::FRAGMENT);
             return;
         case Qt::Key_L:
-            applyBoolOperation(BoolOps::Operation::LineSplit);
+            applyBoolOperation(BoolOps::Operation::LINE_SPLIT);
             return;
         default:
             break;

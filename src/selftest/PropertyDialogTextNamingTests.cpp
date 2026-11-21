@@ -184,7 +184,7 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
     CanvasScene ellipseScene;
     QUndoStack ellipseUndo;
     ellipseScene.setUndoStack(&ellipseUndo);
-    auto* ellipse = createShapeItem(ShapeType::Ellipse);
+    auto* ellipse = createShapeItem(ShapeType::ELLIPSE);
     ellipse->setContentSize(QSizeF(300.0, 100.0));
     ellipse->setPos(QPointF(100.0, 100.0));
     ellipseScene.addItemsWithUndo({ellipse}, QStringLiteral("Add ellipse"));
@@ -224,7 +224,7 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
     CanvasScene arcScene;
     QUndoStack arcUndo;
     arcScene.setUndoStack(&arcUndo);
-    auto* sector = createShapeItem(ShapeType::Sector);
+    auto* sector = createShapeItem(ShapeType::SECTOR);
     sector->setContentSize(QSizeF(200.0, 200.0));
     arcScene.addItemsWithUndo({sector}, QStringLiteral("Add sector"));
     {

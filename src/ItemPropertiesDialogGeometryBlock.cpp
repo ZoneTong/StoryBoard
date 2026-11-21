@@ -34,7 +34,7 @@ ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(CanvasItem*
 
     auto* shape = dynamic_cast<ShapeItem*>(item);
     if (shape && !shape->isCustomShape() &&
-        (shape->shapeType() == ShapeType::Ellipse || shape->shapeType() == ShapeType::Sector)) {
+        (shape->shapeType() == ShapeType::ELLIPSE || shape->shapeType() == ShapeType::SECTOR)) {
         m_majorAxisSpin =
             ItemPropertiesFields::makeSpin(this, QStringLiteral("ItemPropertiesMajorAxisValue"), 0.5, 500000.0);
         m_minorAxisSpin =

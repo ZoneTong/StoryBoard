@@ -166,8 +166,8 @@ void DocumentController::newCanvas()
     m_window->m_undo->clear();
     m_window->m_undo->setClean();
 
-    if (m_window->m_view->mode() != ToolMode::View) {
-        m_window->m_view->setMode(ToolMode::View);
+    if (m_window->m_view->mode() != ToolMode::VIEW) {
+        m_window->m_view->setMode(ToolMode::VIEW);
     } else {
         m_window->m_view->fitAll();
     }
@@ -196,8 +196,8 @@ bool DocumentController::openCanvasFile(const QString& path)
 bool DocumentController::loadCanvasFile(const QString& path, bool showErrors)
 {
     // 需求 2：文件体积闸门，20MB 以上的场景不读进内存，避免崩溃或长时间假死。
-    constexpr qint64 kMaxSceneBytes = 20LL * 1024 * 1024;
-    if (QFileInfo(path).size() > kMaxSceneBytes) {
+    constexpr qint64 MAX_SCENE_BYTES = 20LL * 1024 * 1024;
+    if (QFileInfo(path).size() > MAX_SCENE_BYTES) {
         if (showErrors) {
             reportWarning(m_window, MainWindow::tr("Open canvas"),
                           MainWindow::tr("This file is larger than 20MB and was not opened:\n%1")
@@ -274,8 +274,8 @@ bool DocumentController::loadCanvasFile(const QString& path, bool showErrors)
     // 导入的 Excalidraw 场景作为一份新文档，原 .excalidraw 文件仍可再导入一次。
     m_window->m_filePath = importedExcalidraw ? QString() : QFileInfo(path).absoluteFilePath();
     m_window->m_undo->setClean();
-    if (m_window->m_view->mode() != ToolMode::View) {
-        m_window->m_view->setMode(ToolMode::View);
+    if (m_window->m_view->mode() != ToolMode::VIEW) {
+        m_window->m_view->setMode(ToolMode::VIEW);
     } else {
         m_window->m_view->fitAll();
     }
@@ -552,7 +552,7 @@ void DocumentController::updateCanvasesMenu()
         const int maximum = qMin(15, static_cast<int>(files.size()));
         for (int i = 0; i < maximum; ++i) {
             const QFileInfo info = files.at(i);
-            QAction* action = new QAction(makeIcon(IconId::Save, QColor(90, 98, 112), 16), info.completeBaseName(),
+            QAction* action = new QAction(makeIcon(IconId::SAVE, QColor(90, 98, 112), 16), info.completeBaseName(),
                                           m_window->m_fileMenu);
             action->setCheckable(true);
             action->setChecked(info.absoluteFilePath() == m_window->m_filePath);

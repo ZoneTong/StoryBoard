@@ -118,7 +118,7 @@ void CanvasStrokeController::finishStroke()
     // 需求 8：画笔模式画出的近似直线的笔画直接落成直线类型图元。
     // 需求 20：笔画收尾后节点已被平移到图元局部坐标，必须经 mapToScene
     // 换回场景坐标再落位，否则直线会跑到画布原点附近"消失"。
-    if (stroke->source() == CurveSource::HandDrawn && strokeLooksLinear(stroke)) {
+    if (stroke->source() == CurveSource::HAND_DRAWN && strokeLooksLinear(stroke)) {
         const QVector<QPointF> knots = stroke->strokePoints();
         const QPointF a = stroke->mapToScene(knots.first());
         const QPointF b = stroke->mapToScene(knots.last());

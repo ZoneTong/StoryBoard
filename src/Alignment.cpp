@@ -66,7 +66,7 @@ namespace Alignment {
 bool supports(CanvasScene* scene, Mode mode)
 {
     const int count = alignmentTargets(scene).size();
-    if (mode == Mode::DistributeHorizontal || mode == Mode::DistributeVertical) {
+    if (mode == Mode::DISTRIBUTE_HORIZONTAL || mode == Mode::DISTRIBUTE_VERTICAL) {
         return count >= 3;
     }
     return count >= 2;
@@ -85,12 +85,12 @@ int apply(CanvasScene* scene, Mode mode, const QString& commandText)
 
     QList<qreal> dxs;
     QList<qreal> dys;
-    const bool distribute = mode == Mode::DistributeHorizontal || mode == Mode::DistributeVertical;
+    const bool distribute = mode == Mode::DISTRIBUTE_HORIZONTAL || mode == Mode::DISTRIBUTE_VERTICAL;
     if (distribute) {
         if (items.size() < 3) {
             return 0;
         }
-        const bool horizontal = mode == Mode::DistributeHorizontal;
+        const bool horizontal = mode == Mode::DISTRIBUTE_HORIZONTAL;
         items = [&items, horizontal]() {
             QList<CanvasItem*> sorted = items;
             std::sort(sorted.begin(), sorted.end(), [horizontal](CanvasItem* left, CanvasItem* right) {
@@ -111,26 +111,26 @@ int apply(CanvasScene* scene, Mode mode, const QString& commandText)
             qreal dx = 0.0;
             qreal dy = 0.0;
             switch (mode) {
-            case Mode::Left:
+            case Mode::LEFT:
                 dx = bounds.left() - rect.left();
                 break;
-            case Mode::HorizontalCenter:
+            case Mode::HORIZONTAL_CENTER:
                 dx = bounds.center().x() - rect.center().x();
                 break;
-            case Mode::Right:
+            case Mode::RIGHT:
                 dx = bounds.right() - rect.right();
                 break;
-            case Mode::Top:
+            case Mode::TOP:
                 dy = bounds.top() - rect.top();
                 break;
-            case Mode::VerticalCenter:
+            case Mode::VERTICAL_CENTER:
                 dy = bounds.center().y() - rect.center().y();
                 break;
-            case Mode::Bottom:
+            case Mode::BOTTOM:
                 dy = bounds.bottom() - rect.bottom();
                 break;
-            case Mode::DistributeHorizontal:
-            case Mode::DistributeVertical:
+            case Mode::DISTRIBUTE_HORIZONTAL:
+            case Mode::DISTRIBUTE_VERTICAL:
                 break;
             }
             dxs.append(dx);

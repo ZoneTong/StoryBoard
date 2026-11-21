@@ -106,16 +106,17 @@ void drawOrderDown(QPainter& painter, IconId)
 constexpr struct IconEntry {
     IconId id;
     void (*draw)(QPainter&, IconId);
-} kEntries[] = {
-    {IconId::View, drawView},           {IconId::Lock, drawLock},       {IconId::LayerUp, drawLayerUp},
-    {IconId::LayerDown, drawLayerDown}, {IconId::OrderUp, drawOrderUp}, {IconId::OrderDown, drawOrderDown},
+} ENTRIES[] = {
+    {IconId::VIEW, drawView},        {IconId::LOCK, drawLock},
+    {IconId::LAYER_UP, drawLayerUp}, {IconId::LAYER_DOWN, drawLayerDown},
+    {IconId::ORDER_UP, drawOrderUp}, {IconId::ORDER_DOWN, drawOrderDown},
 };
 
 } // namespace
 
 bool paintIconLayerView(QPainter& painter, IconId id)
 {
-    for (const IconEntry& entry : kEntries) {
+    for (const IconEntry& entry : ENTRIES) {
         if (entry.id == id) {
             entry.draw(painter, id);
             return true;

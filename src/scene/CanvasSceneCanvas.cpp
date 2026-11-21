@@ -19,8 +19,9 @@ QRectF CanvasScene::canvasRect() const
 void CanvasScene::applyCanvasRect(const QRectF& rect)
 {
     const QRectF normalized = rect.normalized();
-    const QSizeF bounded(qBound(scene_constants::kMinCanvasSide, normalized.width(), scene_constants::kMaxCanvasSide),
-                         qBound(scene_constants::kMinCanvasSide, normalized.height(), scene_constants::kMaxCanvasSide));
+    const QSizeF bounded(
+        qBound(scene_constants::MIN_CANVAS_SIDE, normalized.width(), scene_constants::MAX_CANVAS_SIDE),
+        qBound(scene_constants::MIN_CANVAS_SIDE, normalized.height(), scene_constants::MAX_CANVAS_SIDE));
     const QPointF origin(normalized.left(), normalized.top());
     if (qFuzzyCompare(bounded.width(), m_canvasSize.width()) &&
         qFuzzyCompare(bounded.height(), m_canvasSize.height()) && origin == m_canvasOrigin) {
@@ -134,9 +135,9 @@ QImage CanvasScene::renderImage(const QRectF& area, qreal scale)
     }
 
     QSizeF pixelSize(area.width() * scale, area.height() * scale);
-    constexpr qreal kMaxSide = 12000.0;
-    if (pixelSize.width() > kMaxSide || pixelSize.height() > kMaxSide) {
-        const qreal factor = qMin(kMaxSide / pixelSize.width(), kMaxSide / pixelSize.height());
+    constexpr qreal MAX_SIDE = 12000.0;
+    if (pixelSize.width() > MAX_SIDE || pixelSize.height() > MAX_SIDE) {
+        const qreal factor = qMin(MAX_SIDE / pixelSize.width(), MAX_SIDE / pixelSize.height());
         pixelSize *= factor;
     }
 
@@ -208,19 +209,19 @@ void CanvasScene::drawCanvasBackground(QPainter* painter, const QRectF& area, bo
     // 背景层隐藏时同样不绘制底，仅在设置了纯色或背景图时才覆盖画布。
     if (isLayerVisible(BackgroundLayerId)) {
         switch (m_background.type) {
-        case BackgroundType::None:
+        case BackgroundType::NONE:
             break;
-        case BackgroundType::Color:
+        case BackgroundType::COLOR:
             painter->fillRect(canvas, m_background.color);
             break;
-        case BackgroundType::Image: {
+        case BackgroundType::IMAGE: {
             const QPixmap& pixmap = m_background.image;
             if (pixmap.isNull()) {
                 break;
             }
-            if (m_background.mode == BackgroundMode::Stretch) {
+            if (m_background.mode == BackgroundMode::STRETCH) {
                 painter->drawPixmap(canvas, pixmap, QRectF(pixmap.rect()));
-            } else if (m_background.mode == BackgroundMode::Tile) {
+            } else if (m_background.mode == BackgroundMode::TILE) {
                 painter->drawTiledPixmap(canvas, pixmap);
             } else {
                 const qreal factor = qMin(canvas.width() / pixmap.width(), canvas.height() / pixmap.height());
@@ -236,13 +237,13 @@ void CanvasScene::drawCanvasBackground(QPainter* painter, const QRectF& area, bo
 
     // 透明背景：仅在屏幕视图上用白 / 浅灰棋盘格标识透明区域；离屏渲染与导出图保持纯透明，不画棋盘。
     const bool onScreen = dynamic_cast<const QWidget*>(painter->device()) != nullptr;
-    if (onScreen && !m_exporting && isLayerVisible(BackgroundLayerId) && m_background.type == BackgroundType::None) {
+    if (onScreen && !m_exporting && isLayerVisible(BackgroundLayerId) && m_background.type == BackgroundType::NONE) {
         drawCheckerboard(painter, canvas);
     }
 
     // 有色背景或背景图时，棋盘格被遮住，长度参照改为 32px 参考网格（主网格 160px），
     // 不依赖用户是否手动打开辅助网格，保证任何背景都有统一的 1 格 = 32px 参照。
-    const bool backgroundGrid = m_background.type != BackgroundType::None && isLayerVisible(BackgroundLayerId);
+    const bool backgroundGrid = m_background.type != BackgroundType::NONE && isLayerVisible(BackgroundLayerId);
     if (!includeGrid && !backgroundGrid) {
         return;
     }

@@ -15,11 +15,11 @@
 
 namespace {
 
-constexpr int kThumbSide = 96;
+constexpr int THUMB_SIDE = 96;
 
 QPixmap thumbnail(const QPixmap& image)
 {
-    return image.scaled(kThumbSide, kThumbSide, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    return image.scaled(THUMB_SIDE, THUMB_SIDE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 }
 
 } // namespace
@@ -33,10 +33,10 @@ ImagePickerDialog::ImagePickerDialog(const QVector<QPixmap>& images, QWidget* pa
     m_list = new QListWidget(this);
     m_list->setObjectName(QStringLiteral("ImagePickerList"));
     m_list->setViewMode(QListView::IconMode);
-    m_list->setIconSize(QSize(kThumbSide, kThumbSide));
+    m_list->setIconSize(QSize(THUMB_SIDE, THUMB_SIDE));
     m_list->setResizeMode(QListView::Adjust);
     m_list->setMovement(QListView::Static);
-    m_list->setGridSize(QSize(kThumbSide + 24, kThumbSide + 28));
+    m_list->setGridSize(QSize(THUMB_SIDE + 24, THUMB_SIDE + 28));
     layout->addWidget(m_list, 1);
 
     for (const QPixmap& image : images) {

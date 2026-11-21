@@ -9,13 +9,13 @@
 #include <QtMath>
 
 namespace {
-constexpr qreal kPadding = 12.0;
-constexpr qreal kDefaultPointSize = 32.0;
+constexpr qreal PADDING = 12.0;
+constexpr qreal DEFAULT_POINT_SIZE = 32.0;
 
 QFont normalizedFont(QFont font)
 {
     if (font.pointSizeF() <= 0.0) {
-        font.setPointSizeF(kDefaultPointSize);
+        font.setPointSizeF(DEFAULT_POINT_SIZE);
     }
     return font;
 }
@@ -25,7 +25,7 @@ QFont normalizedFont(QFont font)
 TextItem::TextItem(QGraphicsItem* parent) : CanvasItem(parent)
 {
     m_font.setFamily(QStringLiteral("Microsoft YaHei UI"));
-    m_font.setPointSizeF(kDefaultPointSize);
+    m_font.setPointSizeF(DEFAULT_POINT_SIZE);
     m_baseSize = measure(QString(), m_font);
 }
 
@@ -96,7 +96,7 @@ QSizeF TextItem::measure(const QString& text, const QFont& font)
         height = metrics.height();
     }
 
-    return QSizeF(qMax<qreal>(64.0, width + 2.0 * kPadding), qMax<qreal>(32.0, height + 2.0 * kPadding));
+    return QSizeF(qMax<qreal>(64.0, width + 2.0 * PADDING), qMax<qreal>(32.0, height + 2.0 * PADDING));
 }
 
 void TextItem::setTextFormat(const QString& text, const QFont& font, const QColor& color)
@@ -161,7 +161,7 @@ void TextItem::paintContent(QPainter* painter)
     // IntersectClip：保留 drawItems() 设置的“被遮挡裁剪”区域，不能整个替换。
     painter->setClipRect(contentRect(), Qt::IntersectClip);
     painter->scale(scaleX, scaleY);
-    painter->translate(kPadding, kPadding);
+    painter->translate(PADDING, PADDING);
     painter->setFont(m_font);
     painter->setPen(m_color);
 
@@ -204,7 +204,7 @@ QPainterPath TextItem::paintedShape() const
     for (const QString& line : lines) {
         if (!line.isEmpty()) {
             QPainterPath linePath;
-            linePath.addText(kPadding, baseline, m_font, line);
+            linePath.addText(PADDING, baseline, m_font, line);
             path = path.united(linePath);
         }
         baseline += metrics.lineSpacing();
@@ -251,7 +251,7 @@ void TextItem::fromJson(const QJsonObject& json)
     m_text = json.value(QStringLiteral("text")).toString();
 
     m_font.setFamily(json.value(QStringLiteral("fontFamily")).toString(QStringLiteral("Microsoft YaHei UI")));
-    const qreal pointSize = json.value(QStringLiteral("fontSize")).toDouble(kDefaultPointSize);
+    const qreal pointSize = json.value(QStringLiteral("fontSize")).toDouble(DEFAULT_POINT_SIZE);
     m_font.setPointSizeF(qBound<qreal>(6.0, pointSize, 400.0));
     const int weight = json.value(QStringLiteral("fontWeight")).toInt(static_cast<int>(QFont::Normal));
     m_font.setWeight(static_cast<QFont::Weight>(qBound(1, weight, 1000)));

@@ -18,7 +18,7 @@
 int runSelfTest(const QString& reportPath)
 {
     // 自检里的界面文案断言都按中文原文写，固定成中文，避免受机器语言影响。
-    uiOverrideLanguage(UiLanguage::Chinese);
+    uiOverrideLanguage(UiLanguage::CHINESE);
 
     // 看门狗：任何一步意外卡住（例如被别处弹出的模态框挡住），180 秒后直接结束，
     // 免得打包脚本或 CI 一直挂着等。定时器在嵌套事件循环里同样会触发。

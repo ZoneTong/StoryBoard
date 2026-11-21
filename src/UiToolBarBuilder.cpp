@@ -25,7 +25,7 @@ void UiToolBarBuilder::buildToolBars()
     mainBar->setObjectName(QStringLiteral("MainToolBar"));
     mainBar->setMovable(false);
     mainBar->setFloatable(false);
-    mainBar->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
+    mainBar->setIconSize(QSize(MainWindow::TOOL_BAR_ICON_SIZE, MainWindow::TOOL_BAR_ICON_SIZE));
     mainBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
     mainBar->setContextMenuPolicy(Qt::PreventContextMenu);
     m_window->addToolBar(Qt::TopToolBarArea, mainBar);
@@ -57,14 +57,14 @@ void UiToolBarBuilder::buildToolBars()
         if (button->toolButtonStyle() != Qt::ToolButtonIconOnly) {
             continue;
         }
-        button->setFixedSize(MainWindow::kToolBarButtonSize, MainWindow::kToolBarButtonSize);
+        button->setFixedSize(MainWindow::TOOL_BAR_BUTTON_SIZE, MainWindow::TOOL_BAR_BUTTON_SIZE);
     }
 
     auto* modeBar = new QToolBar(MainWindow::tr("Mode"), m_window);
     modeBar->setObjectName(QStringLiteral("ModeToolBar"));
     modeBar->setMovable(false);
     modeBar->setFloatable(false);
-    modeBar->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
+    modeBar->setIconSize(QSize(MainWindow::TOOL_BAR_ICON_SIZE, MainWindow::TOOL_BAR_ICON_SIZE));
     modeBar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     modeBar->setContextMenuPolicy(Qt::PreventContextMenu);
     modeBar->setMinimumWidth(80);
@@ -88,7 +88,7 @@ void UiToolBarBuilder::createSmoothingToolbar(QToolBar* mainBar)
     m_window->m_smoothingSpin->setDecimals(1);
     m_window->m_smoothingSpin->setSuffix(QStringLiteral(" px"));
     m_window->m_smoothingSpin->setFixedWidth(74);
-    m_window->m_smoothingSpin->setFixedHeight(MainWindow::kToolBarControlHeight);
+    m_window->m_smoothingSpin->setFixedHeight(MainWindow::TOOL_BAR_CONTROL_HEIGHT);
     m_window->m_smoothingSpin->setValue(m_window->m_settings.strokeSmoothing);
     m_window->m_smoothingSpin->setToolTip(
         MainWindow::tr("Brush fit tolerance in pixels (0–20, 0.1 px steps); 0 disables curve fitting"));
@@ -117,7 +117,7 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
         shapeButton->setObjectName(QStringLiteral("ToolBarShapeButton"));
         shapeButton->setProperty("shapeActionName", action->objectName());
         shapeButton->setIcon(action->icon());
-        shapeButton->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
+        shapeButton->setIconSize(QSize(MainWindow::TOOL_BAR_ICON_SIZE, MainWindow::TOOL_BAR_ICON_SIZE));
         shapeButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
         shapeButton->setToolTip(action->toolTip());
         QObject::connect(shapeButton, &QToolButton::clicked, action, &QAction::trigger);
@@ -139,12 +139,12 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
         }
         // 曲线族三个入口不是 ShapeType（data 为 -1），按各自在图元顺序里的归属位置
         // 显式补：直线与直线箭头跟在椭圆后、弧线跟在扇形后、正弦跟在心形后。
-        if (type == ShapeType::Ellipse) {
+        if (type == ShapeType::ELLIPSE) {
             addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_line")));
             addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(QStringLiteral("ShapePreset_lineArrow")));
-        } else if (type == ShapeType::Sector) {
+        } else if (type == ShapeType::SECTOR) {
             addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_arc")));
-        } else if (type == ShapeType::Heart) {
+        } else if (type == ShapeType::HEART) {
             addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_sine_wave")));
         }
     }
@@ -157,8 +157,8 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
     // 常见图形之后追加自定义图形下拉，和「插入 → 常见图形」里的同一份目录菜单。
     auto* customShapeButton = new QToolButton(mainBar);
     customShapeButton->setObjectName(QStringLiteral("ToolBarCustomShapeButton"));
-    customShapeButton->setIcon(makeIcon(IconId::Shapes, QColor(58, 64, 80), MainWindow::kToolBarIconSize));
-    customShapeButton->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
+    customShapeButton->setIcon(makeIcon(IconId::SHAPES, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
+    customShapeButton->setIconSize(QSize(MainWindow::TOOL_BAR_ICON_SIZE, MainWindow::TOOL_BAR_ICON_SIZE));
     customShapeButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
     customShapeButton->setPopupMode(QToolButton::DelayedPopup);
     customShapeButton->setToolTip(MainWindow::tr("Custom shapes"));
@@ -170,7 +170,7 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
 
     m_window->m_fillButton = new QToolButton(mainBar);
     m_window->m_fillButton->setObjectName(QStringLiteral("FillButton"));
-    m_window->m_fillButton->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
+    m_window->m_fillButton->setIconSize(QSize(MainWindow::TOOL_BAR_ICON_SIZE, MainWindow::TOOL_BAR_ICON_SIZE));
     m_window->m_fillButton->setPopupMode(QToolButton::InstantPopup);
     auto* fillMenu = new QMenu(m_window->m_fillButton);
     fillMenu->addAction(m_window->m_fillNoneAct);
@@ -192,7 +192,7 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
 
     m_window->m_fillColorButton = new QToolButton(mainBar);
     m_window->m_fillColorButton->setObjectName(QStringLiteral("FillColorButton"));
-    m_window->m_fillColorButton->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
+    m_window->m_fillColorButton->setIconSize(QSize(MainWindow::TOOL_BAR_ICON_SIZE, MainWindow::TOOL_BAR_ICON_SIZE));
     m_window->m_fillColorButton->setDefaultAction(m_window->m_fillColorAct);
     m_window->m_fillColorButton->setToolTip(MainWindow::tr("Fill color: %1 (click to choose)")
                                                 .arg(m_window->m_fillColor.isValid()
@@ -203,7 +203,7 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
     // 需求 1/15：描线样式按钮，与填充样式按钮同构，弹出菜单列出候选（第一项是“无”）。
     m_window->m_strokeStyleButton = new QToolButton(mainBar);
     m_window->m_strokeStyleButton->setObjectName(QStringLiteral("StrokeStyleButton"));
-    m_window->m_strokeStyleButton->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
+    m_window->m_strokeStyleButton->setIconSize(QSize(MainWindow::TOOL_BAR_ICON_SIZE, MainWindow::TOOL_BAR_ICON_SIZE));
     m_window->m_strokeStyleButton->setPopupMode(QToolButton::InstantPopup);
     auto* strokeStyleMenu = new QMenu(m_window->m_strokeStyleButton);
     for (QAction* action : m_window->m_strokeStyleActions) {
@@ -215,11 +215,11 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
 
     m_window->m_strokeColorButton = new QToolButton(mainBar);
     m_window->m_strokeColorButton->setObjectName(QStringLiteral("StrokeColorButton"));
-    m_window->m_strokeColorButton->setIconSize(QSize(MainWindow::kToolBarIconSize, MainWindow::kToolBarIconSize));
+    m_window->m_strokeColorButton->setIconSize(QSize(MainWindow::TOOL_BAR_ICON_SIZE, MainWindow::TOOL_BAR_ICON_SIZE));
     m_window->m_strokeColorButton->setDefaultAction(m_window->m_strokeColorAct);
     // 菜单项图标是 16px，工具栏按钮另画一份 20px 的，避免比旁边的图标小一圈。
     m_window->m_strokeColorButton->setIcon(
-        m_window->m_style->strokeColorIcon(m_window->m_brushColor, MainWindow::kToolBarIconSize));
+        m_window->m_style->strokeColorIcon(m_window->m_brushColor, MainWindow::TOOL_BAR_ICON_SIZE));
     m_window->m_strokeColorButton->setToolTip(MainWindow::tr("Border color: %1 (click to choose)")
                                                   .arg(m_window->m_brushColor.name(QColor::HexArgb).toUpper()));
     mainBar->addWidget(m_window->m_strokeColorButton);
@@ -231,7 +231,7 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
     m_window->m_widthSpin->setSingleStep(1);
     m_window->m_widthSpin->setSuffix(QStringLiteral(" px"));
     m_window->m_widthSpin->setFixedWidth(74);
-    m_window->m_widthSpin->setFixedHeight(MainWindow::kToolBarControlHeight);
+    m_window->m_widthSpin->setFixedHeight(MainWindow::TOOL_BAR_CONTROL_HEIGHT);
     m_window->m_widthSpin->setToolTip(MainWindow::tr("Border width"));
     QObject::connect(m_window->m_widthSpin, &QSpinBox::valueChanged, m_window, &MainWindow::applyBrushWidth);
     m_window->setBrushWidthUi(m_window->m_brushWidth);

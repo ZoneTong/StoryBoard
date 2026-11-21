@@ -4,50 +4,50 @@ QList<ShapeType> ShapeMeta::allTypes()
 {
     // 需求 7：菜单与工具栏「常见图形」共用这一份常用顺序表（唯一顺序源）。
     // 需求 9：平行四边形紧跟菱形，方便和立方体三个面归在一处认图。
-    return {ShapeType::Rectangle, ShapeType::Ellipse,  ShapeType::Arrow,         ShapeType::DoubleArrow,
-            ShapeType::Triangle,  ShapeType::Callout,  ShapeType::Parallelogram, ShapeType::Sector,
-            ShapeType::Cube,      ShapeType::Cylinder, ShapeType::Star4,         ShapeType::Star,
-            ShapeType::Hexagram,  ShapeType::Heart,    ShapeType::FlagWave,      ShapeType::Scroll};
+    return {ShapeType::RECTANGLE, ShapeType::ELLIPSE,  ShapeType::ARROW,         ShapeType::DOUBLE_ARROW,
+            ShapeType::TRIANGLE,  ShapeType::CALLOUT,  ShapeType::PARALLELOGRAM, ShapeType::SECTOR,
+            ShapeType::CUBE,      ShapeType::CYLINDER, ShapeType::STAR4,         ShapeType::STAR,
+            ShapeType::HEXAGRAM,  ShapeType::HEART,    ShapeType::FLAG_WAVE,     ShapeType::SCROLL};
 }
 
 QString ShapeMeta::typeToString(ShapeType type)
 {
     switch (type) {
-    case ShapeType::Rectangle:
+    case ShapeType::RECTANGLE:
         return QStringLiteral("rectangle");
-    case ShapeType::Ellipse:
+    case ShapeType::ELLIPSE:
         return QStringLiteral("ellipse");
-    case ShapeType::Triangle:
+    case ShapeType::TRIANGLE:
         return QStringLiteral("triangle");
-    case ShapeType::Star:
+    case ShapeType::STAR:
         return QStringLiteral("star");
-    case ShapeType::Arrow:
+    case ShapeType::ARROW:
         return QStringLiteral("arrow");
-    case ShapeType::DoubleArrow:
+    case ShapeType::DOUBLE_ARROW:
         return QStringLiteral("double_arrow");
 
-    case ShapeType::Callout:
+    case ShapeType::CALLOUT:
         return QStringLiteral("callout");
-    case ShapeType::Sector:
+    case ShapeType::SECTOR:
         return QStringLiteral("sector");
 
-    case ShapeType::Star4:
+    case ShapeType::STAR4:
         return QStringLiteral("star4");
-    case ShapeType::Hexagram:
+    case ShapeType::HEXAGRAM:
         return QStringLiteral("hexagram");
-    case ShapeType::Heart:
+    case ShapeType::HEART:
         return QStringLiteral("heart");
 
-    case ShapeType::FlagWave:
+    case ShapeType::FLAG_WAVE:
         return QStringLiteral("flag_wave");
-    case ShapeType::Scroll:
+    case ShapeType::SCROLL:
         // 需求 3：卷形旗帜替换为卷轴；旧文件的 flag_curl / banner 兼容读入。
         return QStringLiteral("scroll");
-    case ShapeType::Cube:
+    case ShapeType::CUBE:
         return QStringLiteral("cube");
-    case ShapeType::Cylinder:
+    case ShapeType::CYLINDER:
         return QStringLiteral("cylinder");
-    case ShapeType::Parallelogram:
+    case ShapeType::PARALLELOGRAM:
         return QStringLiteral("parallelogram");
     }
     return QStringLiteral("rectangle");
@@ -59,91 +59,91 @@ ShapeType ShapeMeta::typeFromString(const QString& value)
     if (normalized == QStringLiteral("rounded_rectangle") || normalized == QStringLiteral("roundedrect") ||
         normalized == QStringLiteral("roundrect")) {
         // 需求 5：圆角矩形已并入矩形，旧字符串统一读成矩形（由 ShapeItem 记为自动圆角态）。
-        return ShapeType::Rectangle;
+        return ShapeType::RECTANGLE;
     }
     if (normalized == QStringLiteral("ellipse") || normalized == QStringLiteral("circle") ||
         normalized == QStringLiteral("oval")) {
-        return ShapeType::Ellipse;
+        return ShapeType::ELLIPSE;
     }
     if (normalized == QStringLiteral("triangle")) {
-        return ShapeType::Triangle;
+        return ShapeType::TRIANGLE;
     }
     if (normalized == QStringLiteral("diamond") || normalized == QStringLiteral("rhombus")) {
         // 菱形不再是类型：旧文件 / 别名统一落成平行四边形。
-        return ShapeType::Parallelogram;
+        return ShapeType::PARALLELOGRAM;
     }
     if (normalized == QStringLiteral("star")) {
-        return ShapeType::Star;
+        return ShapeType::STAR;
     }
     if (normalized == QStringLiteral("arrow")) {
-        return ShapeType::Arrow;
+        return ShapeType::ARROW;
     }
     if (normalized == QStringLiteral("double_arrow") || normalized == QStringLiteral("doublearrow") ||
         normalized == QStringLiteral("bidirectional")) {
-        return ShapeType::DoubleArrow;
+        return ShapeType::DOUBLE_ARROW;
     }
 
     if (normalized == QStringLiteral("callout") || normalized == QStringLiteral("bubble") ||
         normalized == QStringLiteral("speech")) {
-        return ShapeType::Callout;
+        return ShapeType::CALLOUT;
     }
     if (normalized == QStringLiteral("sector") || normalized == QStringLiteral("pie")) {
-        return ShapeType::Sector;
+        return ShapeType::SECTOR;
     }
 
     if (normalized == QStringLiteral("star4") || normalized == QStringLiteral("four_point_star") ||
         normalized == QStringLiteral("fourpointstar")) {
-        return ShapeType::Star4;
+        return ShapeType::STAR4;
     }
     if (normalized == QStringLiteral("hexagram") || normalized == QStringLiteral("david_star") ||
         normalized == QStringLiteral("six_point_star")) {
-        return ShapeType::Hexagram;
+        return ShapeType::HEXAGRAM;
     }
     if (normalized == QStringLiteral("heart") || normalized == QStringLiteral("love")) {
-        return ShapeType::Heart;
+        return ShapeType::HEART;
     }
 
     if (normalized == QStringLiteral("flag_wave") || normalized == QStringLiteral("wavy_flag")) {
-        return ShapeType::FlagWave;
+        return ShapeType::FLAG_WAVE;
     }
     if (normalized == QStringLiteral("scroll") || normalized == QStringLiteral("flag_curl") ||
         normalized == QStringLiteral("banner")) {
-        return ShapeType::Scroll;
+        return ShapeType::SCROLL;
     }
     if (normalized == QStringLiteral("cube")) {
-        return ShapeType::Cube;
+        return ShapeType::CUBE;
     }
     if (normalized == QStringLiteral("cylinder")) {
-        return ShapeType::Cylinder;
+        return ShapeType::CYLINDER;
     }
     if (normalized == QStringLiteral("parallelogram") || normalized == QStringLiteral("rhomboid")) {
-        return ShapeType::Parallelogram;
+        return ShapeType::PARALLELOGRAM;
     }
     if (normalized == QStringLiteral("rect") || normalized == QStringLiteral("rectangle")) {
-        return ShapeType::Rectangle;
+        return ShapeType::RECTANGLE;
     }
-    return ShapeType::Rectangle;
+    return ShapeType::RECTANGLE;
 }
 
 bool ShapeMeta::isFilled(ShapeType type)
 {
     switch (type) {
-    case ShapeType::Rectangle:
-    case ShapeType::Ellipse:
-    case ShapeType::Triangle:
-    case ShapeType::Star:
-    case ShapeType::Arrow:
-    case ShapeType::DoubleArrow:
-    case ShapeType::Callout:
-    case ShapeType::Sector:
-    case ShapeType::Star4:
-    case ShapeType::Hexagram:
-    case ShapeType::Heart:
-    case ShapeType::FlagWave:
-    case ShapeType::Scroll:
-    case ShapeType::Cube:
-    case ShapeType::Cylinder:
-    case ShapeType::Parallelogram:
+    case ShapeType::RECTANGLE:
+    case ShapeType::ELLIPSE:
+    case ShapeType::TRIANGLE:
+    case ShapeType::STAR:
+    case ShapeType::ARROW:
+    case ShapeType::DOUBLE_ARROW:
+    case ShapeType::CALLOUT:
+    case ShapeType::SECTOR:
+    case ShapeType::STAR4:
+    case ShapeType::HEXAGRAM:
+    case ShapeType::HEART:
+    case ShapeType::FLAG_WAVE:
+    case ShapeType::SCROLL:
+    case ShapeType::CUBE:
+    case ShapeType::CYLINDER:
+    case ShapeType::PARALLELOGRAM:
         return true;
     }
     return false;
@@ -151,35 +151,35 @@ bool ShapeMeta::isFilled(ShapeType type)
 
 QList<FillStyle> ShapeMeta::allStyles()
 {
-    return {FillStyle::None,          FillStyle::Solid,     FillStyle::Hachure,   FillStyle::ReverseHachure,
-            FillStyle::CrossHatch,    FillStyle::GridHatch, FillStyle::Honeycomb, FillStyle::HorizontalHatch,
-            FillStyle::VerticalHatch, FillStyle::Brick,     FillStyle::Dots};
+    return {FillStyle::NONE,           FillStyle::SOLID,      FillStyle::HACHURE,   FillStyle::REVERSE_HACHURE,
+            FillStyle::CROSS_HATCH,    FillStyle::GRID_HATCH, FillStyle::HONEYCOMB, FillStyle::HORIZONTAL_HATCH,
+            FillStyle::VERTICAL_HATCH, FillStyle::BRICK,      FillStyle::DOTS};
 }
 
 QString ShapeMeta::styleToString(FillStyle style)
 {
     switch (style) {
-    case FillStyle::None:
+    case FillStyle::NONE:
         return QStringLiteral("none");
-    case FillStyle::Solid:
+    case FillStyle::SOLID:
         return QStringLiteral("solid");
-    case FillStyle::Hachure:
+    case FillStyle::HACHURE:
         return QStringLiteral("hachure");
-    case FillStyle::ReverseHachure:
+    case FillStyle::REVERSE_HACHURE:
         return QStringLiteral("reverse_hatch");
-    case FillStyle::CrossHatch:
+    case FillStyle::CROSS_HATCH:
         return QStringLiteral("cross_hatch");
-    case FillStyle::GridHatch:
+    case FillStyle::GRID_HATCH:
         return QStringLiteral("grid_hatch");
-    case FillStyle::Honeycomb:
+    case FillStyle::HONEYCOMB:
         return QStringLiteral("honeycomb");
-    case FillStyle::HorizontalHatch:
+    case FillStyle::HORIZONTAL_HATCH:
         return QStringLiteral("horizontal_lines");
-    case FillStyle::VerticalHatch:
+    case FillStyle::VERTICAL_HATCH:
         return QStringLiteral("vertical_lines");
-    case FillStyle::Brick:
+    case FillStyle::BRICK:
         return QStringLiteral("brick");
-    case FillStyle::Dots:
+    case FillStyle::DOTS:
         return QStringLiteral("dots");
     }
     return QStringLiteral("solid");
@@ -189,43 +189,43 @@ FillStyle ShapeMeta::styleFromString(const QString& value)
 {
     const QString normalized = value.trimmed().toLower();
     if (normalized == QStringLiteral("none") || normalized == QStringLiteral("transparent")) {
-        return FillStyle::None;
+        return FillStyle::NONE;
     }
     if (normalized == QStringLiteral("hachure") || normalized == QStringLiteral("hatch") ||
         normalized == QStringLiteral("diagonal")) {
-        return FillStyle::Hachure;
+        return FillStyle::HACHURE;
     }
     if (normalized == QStringLiteral("reverse_hatch") || normalized == QStringLiteral("reverse_hachure") ||
         normalized == QStringLiteral("reverse") || normalized == QStringLiteral("backslash")) {
-        return FillStyle::ReverseHachure;
+        return FillStyle::REVERSE_HACHURE;
     }
     if (normalized == QStringLiteral("cross_hatch") || normalized == QStringLiteral("crosshatch") ||
         normalized == QStringLiteral("cross") || normalized == QStringLiteral("zigzag")) {
-        return FillStyle::CrossHatch;
+        return FillStyle::CROSS_HATCH;
     }
     if (normalized == QStringLiteral("grid_hatch") || normalized == QStringLiteral("grid") ||
         normalized == QStringLiteral("cross_grid") || normalized == QStringLiteral("orthogonal")) {
-        return FillStyle::GridHatch;
+        return FillStyle::GRID_HATCH;
     }
     if (normalized == QStringLiteral("honeycomb") || normalized == QStringLiteral("hexagon") ||
         normalized == QStringLiteral("hex")) {
-        return FillStyle::Honeycomb;
+        return FillStyle::HONEYCOMB;
     }
     if (normalized == QStringLiteral("horizontal_lines") || normalized == QStringLiteral("horizontal")) {
-        return FillStyle::HorizontalHatch;
+        return FillStyle::HORIZONTAL_HATCH;
     }
     if (normalized == QStringLiteral("vertical_lines") || normalized == QStringLiteral("vertical")) {
-        return FillStyle::VerticalHatch;
+        return FillStyle::VERTICAL_HATCH;
     }
     if (normalized == QStringLiteral("brick") || normalized == QStringLiteral("brickwall")) {
-        return FillStyle::Brick;
+        return FillStyle::BRICK;
     }
     if (normalized == QStringLiteral("dots") || normalized == QStringLiteral("dot") ||
         normalized == QStringLiteral("point")) {
-        return FillStyle::Dots;
+        return FillStyle::DOTS;
     }
     if (normalized == QStringLiteral("solid") || normalized == QStringLiteral("color")) {
-        return FillStyle::Solid;
+        return FillStyle::SOLID;
     }
-    return FillStyle::Solid;
+    return FillStyle::SOLID;
 }

@@ -241,12 +241,12 @@ void ShortcutController::showShortcuts()
     QList<QPair<QAction*, QPushButton*>> keyButtons;
 
     // 分成三栏，条目多时也不至于拉成一条细长的竖列。
-    constexpr int kColumns = 3;
+    constexpr int COLUMNS = 3;
     auto* grid = new QGridLayout();
     grid->setContentsMargins(0, 0, 0, 0);
     grid->setHorizontalSpacing(18);
     grid->setVerticalSpacing(6);
-    const int rows = (entries.size() + kColumns - 1) / kColumns;
+    const int rows = (entries.size() + COLUMNS - 1) / COLUMNS;
     for (int i = 0; i < entries.size(); ++i) {
         const int column = i / qMax(1, rows);
         const int row = i % qMax(1, rows);
@@ -282,7 +282,7 @@ void ShortcutController::showShortcuts()
         grid->addWidget(name, row, column * 2);
         grid->addWidget(keys, row, column * 2 + 1);
     }
-    for (int column = 0; column < kColumns; ++column) {
+    for (int column = 0; column < COLUMNS; ++column) {
         grid->setColumnStretch(column * 2, 1);
     }
     layout->addLayout(grid);

@@ -53,7 +53,7 @@ void checkSineWaveOnePeriod(selftest::Context& ctx)
 void checkFlagWaveNoPole(selftest::Context& ctx)
 {
     const QRectF rect(0.0, 0.0, 128.0, 86.0);
-    const QPainterPath path = ShapePathBuilder::pathFor(ShapeType::FlagWave, rect, -1.0);
+    const QPainterPath path = ShapePathBuilder::pathFor(ShapeType::FLAG_WAVE, rect, -1.0);
     const QRectF bounds = path.boundingRect();
     ctx.check(qAbs(bounds.width() - rect.width()) < 1.0, QStringLiteral("波形旗帜宽度占满内容（两棋盘格）"),
               QStringLiteral("width=%1").arg(bounds.width()));
@@ -68,13 +68,13 @@ void checkFlagWaveNoPole(selftest::Context& ctx)
 
 void checkScrollShape(selftest::Context& ctx)
 {
-    ctx.check(ShapeMeta::typeToString(ShapeType::Scroll) == QStringLiteral("scroll"),
+    ctx.check(ShapeMeta::typeToString(ShapeType::SCROLL) == QStringLiteral("scroll"),
               QStringLiteral("卷轴序列化字符串为 scroll"));
-    ctx.check(ShapeMeta::typeFromString(QStringLiteral("flag_curl")) == ShapeType::Scroll &&
-                  ShapeMeta::typeFromString(QStringLiteral("banner")) == ShapeType::Scroll,
+    ctx.check(ShapeMeta::typeFromString(QStringLiteral("flag_curl")) == ShapeType::SCROLL &&
+                  ShapeMeta::typeFromString(QStringLiteral("banner")) == ShapeType::SCROLL,
               QStringLiteral("旧文件的 flag_curl / banner 兼容读成卷轴"));
     const QRectF rect(0.0, 0.0, 128.0, 96.0);
-    const QPainterPath path = ShapePathBuilder::pathFor(ShapeType::Scroll, rect, -1.0);
+    const QPainterPath path = ShapePathBuilder::pathFor(ShapeType::SCROLL, rect, -1.0);
     ctx.check(path.intersects(QRectF(rect.center().x() - 2.0, rect.center().y() - 2.0, 4.0, 4.0)),
               QStringLiteral("卷轴中段有可填充纸面"));
     // 需求 22：卷筒纵向撑满内容高度，路径包围盒与内容矩形一致。
@@ -101,7 +101,7 @@ void selftest::runShapesClusterTests(Context& ctx)
     // 有面积的多边形柱身，椭圆叠在多边形之上。
     {
         MainWindow window;
-        window.insertShape(ShapeType::Cube);
+        window.insertShape(ShapeType::CUBE);
         CanvasScene* scene = window.findChild<CanvasScene*>();
         QList<CanvasItem*> items = scene->canvasItems();
         bool threeFaces = items.size() == 3;
@@ -116,7 +116,7 @@ void selftest::runShapesClusterTests(Context& ctx)
                 sameGroup = false;
             }
             auto* face = qgraphicsitem_cast<ShapeItem*>(item);
-            if (face && face->shapeType() == ShapeType::Parallelogram) {
+            if (face && face->shapeType() == ShapeType::PARALLELOGRAM) {
                 ++diamondFaces;
                 if (!qFuzzyIsNull(face->rotationAngle())) {
                     ++rotatedFaces;
@@ -130,7 +130,7 @@ void selftest::runShapesClusterTests(Context& ctx)
         ctx.check(rotatedFaces == 3, QStringLiteral("立方体三个面都带旋转角度"),
                   QStringLiteral("rotated=%1").arg(rotatedFaces));
 
-        window.insertShape(ShapeType::Cylinder);
+        window.insertShape(ShapeType::CYLINDER);
         items = scene->canvasItems();
         bool twoMore = items.size() == 5;
         int cylGroup = 0;
@@ -143,7 +143,7 @@ void selftest::runShapesClusterTests(Context& ctx)
                 cylinderGrouped = false;
             }
             auto* shape = qgraphicsitem_cast<ShapeItem*>(items.at(i));
-            if (shape && shape->shapeType() == ShapeType::Ellipse) {
+            if (shape && shape->shapeType() == ShapeType::ELLIPSE) {
                 ++ellipseCount;
             }
         }
@@ -156,7 +156,7 @@ void selftest::runShapesClusterTests(Context& ctx)
                   QStringLiteral("layers=%1").arg(body ? body->layerCount() : -1));
         // 需求 18/30：顶椭圆叠在柱身上层（分组内后加入的图元高度更高）。
         auto* lastFace = qgraphicsitem_cast<ShapeItem*>(items.last());
-        ctx.check(lastFace && lastFace->shapeType() == ShapeType::Ellipse && lastFace->groupId() == cylGroup,
+        ctx.check(lastFace && lastFace->shapeType() == ShapeType::ELLIPSE && lastFace->groupId() == cylGroup,
                   QStringLiteral("圆柱体顶椭圆叠在柱身上方"));
         ctx.check(body && lastFace && lastFace->height() > body->height(),
                   QStringLiteral("顶椭圆的层内高度高于柱身多边形"),
@@ -176,8 +176,8 @@ void selftest::runShapesClusterTests(Context& ctx)
         ctx.check(sineIsSineItem, QStringLiteral("正弦波形插入为独立正弦图元"),
                   QStringLiteral("items=%1").arg(items.size()));
 
-        const QList<ShapeType> insertedShapes = {ShapeType::Star4, ShapeType::Hexagram, ShapeType::Heart,
-                                                 ShapeType::FlagWave, ShapeType::Scroll};
+        const QList<ShapeType> insertedShapes = {ShapeType::STAR4, ShapeType::HEXAGRAM, ShapeType::HEART,
+                                                 ShapeType::FLAG_WAVE, ShapeType::SCROLL};
         for (ShapeType type : insertedShapes) {
             window.insertShape(type);
         }
@@ -200,9 +200,9 @@ void selftest::runShapesClusterTests(Context& ctx)
     // 需求 28：几个星星按角的个数顺序排在一起（四角/十字星 → 五角星 → 六芒星）。
     {
         const QList<ShapeType> order = ShapeMeta::allTypes();
-        const int star4 = order.indexOf(ShapeType::Star4);
-        const int star = order.indexOf(ShapeType::Star);
-        const int hexagram = order.indexOf(ShapeType::Hexagram);
+        const int star4 = order.indexOf(ShapeType::STAR4);
+        const int star = order.indexOf(ShapeType::STAR);
+        const int hexagram = order.indexOf(ShapeType::HEXAGRAM);
         ctx.check(star4 >= 0 && star == star4 + 1 && hexagram == star + 1,
                   QStringLiteral("星星按角的个数排序：十字星、五角星、六芒星"),
                   QStringLiteral("star4=%1 star=%2 hexagram=%3").arg(star4).arg(star).arg(hexagram));

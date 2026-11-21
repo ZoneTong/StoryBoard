@@ -88,11 +88,11 @@ void selftest::runStackingPriorityTests(Context& ctx)
     priorityScene.applyCanvasSize(QSizeF(600, 400));
 
     auto addPriorityRect = [&priorityScene](const QRectF& rect, const QColor& color) {
-        auto* shape = createShapeItem(ShapeType::Rectangle);
+        auto* shape = createShapeItem(ShapeType::RECTANGLE);
         shape->setPos(rect.topLeft());
         shape->setContentSize(rect.size());
         shape->setStyle(color, color, 3.0);
-        shape->setFill(color, FillStyle::Solid);
+        shape->setFill(color, FillStyle::SOLID);
         priorityScene.attachItem(shape);
         return shape;
     };
@@ -102,7 +102,7 @@ void selftest::runStackingPriorityTests(Context& ctx)
     ctx.check(coverRect->zValue() > coveredRect->zValue() && coverRect->height() > coveredRect->height(),
               QStringLiteral("同层后加入的图元叠放优先级更高"));
 
-    priorityScene.setMode(ToolMode::Edit);
+    priorityScene.setMode(ToolMode::EDIT);
     QList<CanvasItem*> obscured = priorityScene.obscuredItems();
     ctx.check(obscured.size() == 1 && obscured.constFirst() == coveredRect,
               QStringLiteral("非查看模式下完全遮盖的低优先级图元会描出轮廓"),
@@ -117,7 +117,7 @@ void selftest::runStackingPriorityTests(Context& ctx)
         return image;
     };
     const QImage editRender = renderSceneImage(priorityScene);
-    priorityScene.setMode(ToolMode::View);
+    priorityScene.setMode(ToolMode::VIEW);
     const QImage viewRender = renderSceneImage(priorityScene);
     int changedPixels = 0;
     for (int y = 0; y < editRender.height(); ++y) {
@@ -133,7 +133,7 @@ void selftest::runStackingPriorityTests(Context& ctx)
               QStringLiteral("changed=%1").arg(changedPixels));
     ctx.check(priorityScene.obscuredItems().isEmpty(), QStringLiteral("查看模式下不再描被遮盖图元的轮廓"));
 
-    priorityScene.setMode(ToolMode::Edit);
+    priorityScene.setMode(ToolMode::EDIT);
     ctx.check(priorityScene.adjustItemHeight(coveredRect, 1), QStringLiteral("调整被遮盖图元的 height"));
     obscured = priorityScene.obscuredItems();
     ctx.check(coveredRect->zValue() > coverRect->zValue() && obscured.size() == 1 && obscured.constFirst() == coverRect,
@@ -157,21 +157,21 @@ void selftest::runStackingPriorityTests(Context& ctx)
     CanvasScene partialScene;
     partialScene.applyCanvasSize(QSizeF(500, 300));
     auto addPartialRect = [&partialScene](const QRectF& rect, const QColor& color) {
-        auto* shape = createShapeItem(ShapeType::Rectangle);
+        auto* shape = createShapeItem(ShapeType::RECTANGLE);
         shape->setPos(rect.topLeft());
         shape->setContentSize(rect.size());
         shape->setStyle(color, color, 3.0);
-        shape->setFill(color, FillStyle::Solid);
+        shape->setFill(color, FillStyle::SOLID);
         partialScene.attachItem(shape);
         return shape;
     };
     auto* partialLower = addPartialRect(QRectF(100.0, 100.0, 200.0, 100.0), QColor(QStringLiteral("#DC2626")));
     addPartialRect(QRectF(240.0, 140.0, 200.0, 100.0), QColor(QStringLiteral("#2563EB")));
-    partialScene.setMode(ToolMode::Edit);
+    partialScene.setMode(ToolMode::EDIT);
     obscured = partialScene.obscuredItems();
     ctx.check(obscured.size() == 1 && obscured.constFirst() == partialLower,
               QStringLiteral("只要有任何遮挡就描出被遮图元的轮廓"), QStringLiteral("count=%1").arg(obscured.size()));
-    partialScene.setMode(ToolMode::View);
+    partialScene.setMode(ToolMode::VIEW);
     ctx.check(partialScene.obscuredItems().isEmpty(), QStringLiteral("查看模式下小面积遮挡也不描轮廓"));
 
     // ---------------------------------------------------------------

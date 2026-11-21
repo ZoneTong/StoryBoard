@@ -11,42 +11,42 @@
 #include <QPixmap>
 
 enum class ShapeType {
-    Rectangle = 0,
-    Ellipse,
-    Triangle,
-    Star,
-    Arrow,
-    DoubleArrow,
-    Callout,
-    Sector,
+    RECTANGLE = 0,
+    ELLIPSE,
+    TRIANGLE,
+    STAR,
+    ARROW,
+    DOUBLE_ARROW,
+    CALLOUT,
+    SECTOR,
     // 需求 11：常见图形新增 8 种。花括号（BraceLeft/BraceRight）已改为曲线图元，
     // 不再占用 ShapeType（需求 13）。
-    Star4,
-    Hexagram,
-    Heart,
-    FlagWave,
+    STAR4,
+    HEXAGRAM,
+    HEART,
+    FLAG_WAVE,
     // 卷形旗帜已替换为卷轴（需求 3），序列化字符串沿用新名 scroll，旧文件 flag_curl 兼容读入。
-    Scroll,
-    Cube,
-    Cylinder,
+    SCROLL,
+    CUBE,
+    CYLINDER,
     // 需求 9：平行四边形（左下内角可编辑，默认 60°）。
-    Parallelogram,
+    PARALLELOGRAM,
     // 多边形（合并 / 分割产物）没有内置轮廓，仅为满足 shapeType() 的返回值占位。
-    Polygon
+    POLYGON
 };
 
 enum class FillStyle {
-    None = 0,
-    Solid,
-    Hachure,
-    ReverseHachure,
-    CrossHatch,
-    GridHatch,
-    Honeycomb,
-    HorizontalHatch,
-    VerticalHatch,
-    Brick,
-    Dots
+    NONE = 0,
+    SOLID,
+    HACHURE,
+    REVERSE_HACHURE,
+    CROSS_HATCH,
+    GRID_HATCH,
+    HONEYCOMB,
+    HORIZONTAL_HATCH,
+    VERTICAL_HATCH,
+    BRICK,
+    DOTS
 };
 
 QList<ShapeType> allShapeTypes();
@@ -84,7 +84,7 @@ struct ShapeLayer {
 struct ShapeItemState {
     QColor strokeColor = QColor(30, 41, 59);
     QColor fillColor = QColor(30, 41, 59, 36);
-    FillStyle fillStyle = FillStyle::Solid;
+    FillStyle fillStyle = FillStyle::SOLID;
     qreal strokeWidth = 4.0;
     Qt::PenStyle strokeStyle = Qt::SolidLine;
     qreal opacity = 1.0;
@@ -101,7 +101,7 @@ struct ShapeItemState {
     // 需求 15：图片填充参与撤销快照；QPixmap 隐式共享，不会额外拷贝像素。
     bool hasFillImage = false;
     QPixmap fillImage;
-    ImageFill::Mode fillImageMode = ImageFill::Mode::Stretch;
+    ImageFill::Mode fillImageMode = ImageFill::Mode::STRETCH;
     QPointF pos;
     QSizeF size;
 
@@ -226,7 +226,7 @@ class ShapeItem : public CanvasItem {
   private:
     QColor m_strokeColor = QColor(30, 41, 59);
     QColor m_fillColor = QColor(30, 41, 59, 36);
-    FillStyle m_fillStyle = FillStyle::Solid;
+    FillStyle m_fillStyle = FillStyle::SOLID;
     qreal m_strokeWidth = 4.0;
     Qt::PenStyle m_strokeStyle = Qt::SolidLine;
     qreal m_opacity = 1.0;
@@ -239,7 +239,7 @@ class ShapeItem : public CanvasItem {
     qreal m_parallelogramAngle = 60.0;
     QPixmap m_fillImage;
     QString m_fillImageId;
-    ImageFill::Mode m_fillImageMode = ImageFill::Mode::Stretch;
+    ImageFill::Mode m_fillImageMode = ImageFill::Mode::STRETCH;
     // 上一次同步后的尺寸，用于区分「拖高」与「拖底边」，避免互相覆盖。
     QSizeF m_triangleSyncSize;
     bool m_syncingTriangle = false;

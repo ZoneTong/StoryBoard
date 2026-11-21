@@ -4,13 +4,13 @@
 
 class QWidget;
 
-enum class UiLanguage { System = 0, Chinese = 1, English = 2 };
+enum class UiLanguage { SYSTEM = 0, CHINESE = 1, ENGLISH = 2 };
 
 // 读取/保存设置项 ui/language（system / zh / en），默认跟随系统语言。
 UiLanguage uiLanguageSetting();
 void setUiLanguageSetting(UiLanguage language);
 
-// 运行时强制语言（测试与截图用），不写入设置；UiLanguage::System 表示取消强制。
+// 运行时强制语言（测试与截图用），不写入设置；UiLanguage::SYSTEM 表示取消强制。
 void uiOverrideLanguage(UiLanguage language);
 UiLanguage uiEffectiveLanguage();
 bool uiIsEnglish();

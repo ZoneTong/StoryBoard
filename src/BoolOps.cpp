@@ -30,7 +30,7 @@ struct Participant {
     QColor fill;
     QColor stroke;
     qreal strokeWidth = 1.0;
-    FillStyle fillStyle = FillStyle::Solid;
+    FillStyle fillStyle = FillStyle::SOLID;
     Qt::PenStyle strokeStyle = Qt::SolidLine;
     bool filled = true;
     bool fillSpace = false; // 代表图元是否有填充空间（闭合图形 / 含面积层的多边形）
@@ -217,7 +217,7 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
         participant.strokeWidth = shape->strokeWidth();
         participant.fillStyle = shape->fillStyle();
         participant.strokeStyle = shape->strokeStyle();
-        participant.filled = shape->fillStyle() != FillStyle::None;
+        participant.filled = shape->fillStyle() != FillStyle::NONE;
     } else if (auto* composite = dynamic_cast<ShapeItem*>(styleItem); composite && composite->shapeLayerCount() > 0) {
         participant.fill = composite->fillColor();
         participant.stroke = composite->strokeColor();
@@ -236,7 +236,7 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
         participant.fill = styleItem->textColor();
         participant.stroke = styleItem->textColor();
         participant.strokeWidth = 1.0;
-        participant.fillStyle = FillStyle::Solid;
+        participant.fillStyle = FillStyle::SOLID;
         participant.filled = false;
     } else {
         participant.fill = QColor(30, 41, 59, 36);
@@ -390,7 +390,7 @@ QList<PolygonItem::Layer> buildLayers(const QPainterPath& result, const QList<Pa
         layer.stroke = top.stroke;
         layer.strokeWidth = qMax(0.0, top.strokeWidth);
         layer.filled = true;
-        layer.role = PolygonItem::LayerRole::FilledArea;
+        layer.role = PolygonItem::LayerRole::FILLED_AREA;
         // 区域整体落在自身 3×描线宽的描边带内（最大内切半径不足 1.5 倍线宽，
         // 描边后剩余可见填充不足半条线宽）时降级为线宽带：只填充不描边，
         // 避免细窄交集 / 窄条被描线吞成黑块；描线宽为 0 时无需降级。
@@ -400,7 +400,7 @@ QList<PolygonItem::Layer> buildLayers(const QPainterPath& result, const QList<Pa
             stroker.setWidth(layer.strokeWidth * 3.0);
             if (areas.subtracted(stroker.createStroke(areas)).isEmpty()) {
                 layer.strokeWidth = 0.0;
-                layer.role = PolygonItem::LayerRole::StrokeBand;
+                layer.role = PolygonItem::LayerRole::STROKE_BAND;
             }
         }
         ranked.append(RankedLayer{areaRank, 0, layer});
@@ -411,7 +411,7 @@ QList<PolygonItem::Layer> buildLayers(const QPainterPath& result, const QList<Pa
         layer.fill = top.stroke;
         layer.strokeWidth = 0.0;
         layer.filled = true;
-        layer.role = PolygonItem::LayerRole::StrokeBand;
+        layer.role = PolygonItem::LayerRole::STROKE_BAND;
         ranked.append(RankedLayer{strokeRank, 1, layer});
     }
     if (!texts.isEmpty()) {
@@ -420,7 +420,7 @@ QList<PolygonItem::Layer> buildLayers(const QPainterPath& result, const QList<Pa
         layer.fill = textColor;
         layer.strokeWidth = 0.0;
         layer.filled = true;
-        layer.role = PolygonItem::LayerRole::Text;
+        layer.role = PolygonItem::LayerRole::TEXT;
         ranked.append(RankedLayer{textRank, 2, layer});
     }
 
@@ -448,7 +448,7 @@ bool supports(CanvasScene* scene)
 
 bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
 {
-    if (operation == Operation::LineSplit) {
+    if (operation == Operation::LINE_SPLIT) {
         // 需求 12 方案 2：线条分割有自己的参与者规则（≥1 填充图元 + 恰 1 条切刀），
         // 交给独立实现，避免共用 collect 的「线条不参与」过滤。
         return LineSplitOps::apply(scene, commandText);
@@ -484,7 +484,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
     }
 
     switch (operation) {
-    case Operation::Union: {
+    case Operation::UNION: {
         // 联合：内部共边不描线，整块结果统一采用最高优先级图元的填充与描线。
         QPainterPath result = participants.constFirst().path;
         for (int i = 1; i < participants.size() && !result.isEmpty(); ++i) {
@@ -496,7 +496,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         results.append(buildLayers(result, participants, top, false));
         break;
     }
-    case Operation::Xor: {
+    case Operation::XOR: {
         if (!hasFillParticipant) {
             // 异或（XOR）：并集减重叠，重叠部分变成空洞，整体仍是单层、用顶层颜色。
             QPainterPath result = participants.constFirst().path;
@@ -530,7 +530,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         results.append(buildLayers(result, participants, top, false));
         break;
     }
-    case Operation::Fragment: {
+    case Operation::FRAGMENT: {
         // 拆分：只在填充图形之间按「被哪些图形覆盖」把重叠区切成互不重叠的多块，
         // 每块单独生成一个多边形图元，可分别选中和拖动；文字与线条类不参与拆分，
         // 也不单独成块。参与者超过 3 个时组合数超过 8，只取优先级最低的 3 个。
@@ -577,7 +577,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         }
         break;
     }
-    case Operation::Intersect: {
+    case Operation::INTERSECT: {
         QPainterPath result = participants.constFirst().path;
         for (int i = 1; i < participants.size() && !result.isEmpty(); ++i) {
             result = result.intersected(participants.at(i).path);
@@ -589,7 +589,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         results.append(buildLayers(result, participants, top, true));
         break;
     }
-    case Operation::Subtract: {
+    case Operation::SUBTRACT: {
         // 剪除：以最先选中的图元为底（框选多个时以最底层为底），依次挖掉其余图元。
         int baseIndex = 0;
         for (int i = 1; i < participants.size(); ++i) {
@@ -634,7 +634,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         }
         break;
     }
-    case Operation::LineSplit:
+    case Operation::LINE_SPLIT:
         // 已在函数入口转交 LineSplitOps 处理，不会走到这里。
         break;
     }

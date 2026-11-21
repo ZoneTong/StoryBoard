@@ -12,7 +12,7 @@ class CanvasScene;
 // 一条撤销记录；运算本身不可逆，只能撤销 / 重做。
 namespace BoolOps {
 
-enum class Operation { Union, Xor, Intersect, Subtract, Fragment, LineSplit };
+enum class Operation { UNION, XOR, INTERSECT, SUBTRACT, FRAGMENT, LINE_SPLIT };
 
 // 至少两个可编辑图元才能做合并形状。
 bool supports(CanvasScene* scene);

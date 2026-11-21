@@ -100,8 +100,8 @@ class LineItemAbstract : public CanvasItem {
     QColor m_strokeColor = QColor(30, 41, 59);
     qreal m_strokeWidth = 4.0;
     Qt::PenStyle m_strokePattern = Qt::SolidLine;
-    ArrowStyle m_startArrow = ArrowStyle::None;
-    ArrowStyle m_endArrow = ArrowStyle::None;
+    ArrowStyle m_startArrow = ArrowStyle::NONE;
+    ArrowStyle m_endArrow = ArrowStyle::NONE;
     QVector<CurveSegment> m_segments;
     QPainterPath m_path;
     QSizeF m_baseSize{1.0, 1.0};

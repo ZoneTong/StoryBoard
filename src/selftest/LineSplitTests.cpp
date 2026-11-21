@@ -44,11 +44,11 @@ void selftest::runLineSplitTests(Context& ctx)
     {
         CanvasScene scene;
         scene.applyCanvasSize(QSizeF(800.0, 600.0));
-        scene.setMode(ToolMode::Edit);
+        scene.setMode(ToolMode::EDIT);
         QUndoStack undo;
         scene.setUndoStack(&undo);
 
-        auto* rect = createShapeItem(ShapeType::Rectangle);
+        auto* rect = createShapeItem(ShapeType::RECTANGLE);
         rect->setContentSize(QSizeF(180.0, 120.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
 
@@ -66,7 +66,7 @@ void selftest::runLineSplitTests(Context& ctx)
         knife->setSelected(true);
         ctx.check(LineSplitOps::supports(&scene), QStringLiteral("填充图元加一条直线切刀时可用"));
 
-        auto* secondRect = createShapeItem(ShapeType::Rectangle);
+        auto* secondRect = createShapeItem(ShapeType::RECTANGLE);
         secondRect->setContentSize(QSizeF(80.0, 80.0));
         scene.addItemsWithUndo({secondRect}, QStringLiteral("Add second rect"));
         scene.clearSelection();
@@ -80,14 +80,14 @@ void selftest::runLineSplitTests(Context& ctx)
     {
         CanvasScene scene;
         scene.applyCanvasSize(QSizeF(800.0, 600.0));
-        scene.setMode(ToolMode::Edit);
+        scene.setMode(ToolMode::EDIT);
         QUndoStack undo;
         scene.setUndoStack(&undo);
 
-        auto* rect = createShapeItem(ShapeType::Rectangle);
+        auto* rect = createShapeItem(ShapeType::RECTANGLE);
         rect->setContentSize(QSizeF(180.0, 120.0));
         rect->setPos(QPointF(110.0, 150.0));
-        rect->setFill(QColor(QStringLiteral("#2563EB")), FillStyle::Solid);
+        rect->setFill(QColor(QStringLiteral("#2563EB")), FillStyle::SOLID);
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
         auto* knife = new StraightLineItem();
         knife->setEndpoints(QPointF(100.0, 210.0), QPointF(300.0, 210.0), QColor(QStringLiteral("#1E293B")), 2.0);
@@ -119,7 +119,7 @@ void selftest::runLineSplitTests(Context& ctx)
         for (const PolygonItem* fragment : fragments) {
             const PolygonItem::Layer& layer = fragment->layers().constFirst();
             stylesOk = stylesOk && layer.fill == QColor(QStringLiteral("#2563EB")) &&
-                       layer.role == PolygonItem::LayerRole::FilledArea && fragment->fillStyle() == FillStyle::Solid;
+                       layer.role == PolygonItem::LayerRole::FILLED_AREA && fragment->fillStyle() == FillStyle::SOLID;
             const QRectF bounds = layer.path.boundingRect();
             areaSum += bounds.width() * bounds.height();
         }
@@ -148,7 +148,7 @@ void selftest::runLineSplitTests(Context& ctx)
             MainWindow window;
             window.show();
             QApplication::processEvents();
-            window.insertShape(ShapeType::Rectangle);
+            window.insertShape(ShapeType::RECTANGLE);
             window.insertCurve(LineGlyph::STRAIGHT);
             CanvasScene* mainScene = window.findChild<CanvasScene*>();
             QList<CanvasItem*> items = mainScene->canvasItems();
@@ -188,12 +188,12 @@ void selftest::runLineSplitTests(Context& ctx)
         MainWindow window;
         window.show();
         QApplication::processEvents();
-        window.insertShape(ShapeType::Rectangle);
+        window.insertShape(ShapeType::RECTANGLE);
         CanvasView* view = window.view();
         // 画一条横穿矩形本体的画笔曲线（起终点在矩形两侧之外）。
         const QRectF rectBounds = window.scene()->canvasItems().constFirst()->sceneContentRect();
         const QPointF crossStart = rectBounds.center() + QPointF(-rectBounds.width(), 0.0);
-        view->setMode(ToolMode::Brush);
+        view->setMode(ToolMode::BRUSH);
         const QPoint brushStart = view->mapFromScene(crossStart);
         sendMouseEvent(view->viewport(), QEvent::MouseButtonPress, brushStart, Qt::LeftButton, Qt::LeftButton);
         for (int i = 1; i <= 8; ++i) {
@@ -204,7 +204,7 @@ void selftest::runLineSplitTests(Context& ctx)
         const QPoint brushEnd(brushStart.x() + int(rectBounds.width() * 2.0), brushStart.y() + 6);
         sendMouseEvent(view->viewport(), QEvent::MouseButtonRelease, brushEnd, Qt::LeftButton, Qt::NoButton);
         QApplication::processEvents();
-        view->setMode(ToolMode::Edit);
+        view->setMode(ToolMode::EDIT);
         QApplication::processEvents();
 
         CanvasScene* mainScene = window.findChild<CanvasScene*>();
@@ -263,11 +263,11 @@ void selftest::runLineSplitTests(Context& ctx)
     {
         CanvasScene scene;
         scene.applyCanvasSize(QSizeF(800.0, 600.0));
-        scene.setMode(ToolMode::Edit);
+        scene.setMode(ToolMode::EDIT);
         QUndoStack undo;
         scene.setUndoStack(&undo);
 
-        auto* ellipse = createShapeItem(ShapeType::Ellipse);
+        auto* ellipse = createShapeItem(ShapeType::ELLIPSE);
         ellipse->setContentSize(QSizeF(160.0, 120.0));
         ellipse->setPos(QPointF(120.0, 180.0));
         scene.addItemsWithUndo({ellipse}, QStringLiteral("Add ellipse"));
@@ -294,11 +294,11 @@ void selftest::runLineSplitTests(Context& ctx)
     {
         CanvasScene scene;
         scene.applyCanvasSize(QSizeF(800.0, 600.0));
-        scene.setMode(ToolMode::Edit);
+        scene.setMode(ToolMode::EDIT);
         QUndoStack undo;
         scene.setUndoStack(&undo);
 
-        auto* rect = createShapeItem(ShapeType::Rectangle);
+        auto* rect = createShapeItem(ShapeType::RECTANGLE);
         rect->setContentSize(QSizeF(200.0, 200.0));
         rect->setPos(QPointF(110.0, 150.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
@@ -338,11 +338,11 @@ void selftest::runLineSplitTests(Context& ctx)
     {
         CanvasScene scene;
         scene.applyCanvasSize(QSizeF(800.0, 600.0));
-        scene.setMode(ToolMode::Edit);
+        scene.setMode(ToolMode::EDIT);
         QUndoStack undo;
         scene.setUndoStack(&undo);
 
-        auto* rect = createShapeItem(ShapeType::Rectangle);
+        auto* rect = createShapeItem(ShapeType::RECTANGLE);
         rect->setContentSize(QSizeF(128.0, 128.0));
         rect->setPos(QPointF(500.0, 500.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
@@ -374,12 +374,12 @@ void selftest::runLineSplitTests(Context& ctx)
         QUndoStack undo;
         scene.setUndoStack(&undo);
         // 判定与切分都要求编辑模式（isItemEditable 只看模式与图层状态）。
-        scene.setMode(ToolMode::Edit);
+        scene.setMode(ToolMode::EDIT);
         auto* sine = new SineItem();
         sine->setWaveGeometry(QPointF(300.0, 200.0), QSizeF(128.0, 40.0), QColor(QStringLiteral("#111827")), 4.0);
         scene.addItemsWithUndo({sine}, QStringLiteral("Add sine"));
 
-        auto* rect = createShapeItem(ShapeType::Rectangle);
+        auto* rect = createShapeItem(ShapeType::RECTANGLE);
         rect->setContentSize(QSizeF(80.0, 60.0));
         rect->setPos(QPointF(320.0, 190.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
@@ -393,11 +393,11 @@ void selftest::runLineSplitTests(Context& ctx)
     {
         CanvasScene scene;
         scene.applyCanvasSize(QSizeF(800.0, 600.0));
-        scene.setMode(ToolMode::Edit);
+        scene.setMode(ToolMode::EDIT);
         QUndoStack undo;
         scene.setUndoStack(&undo);
 
-        auto* rect = createShapeItem(ShapeType::Rectangle);
+        auto* rect = createShapeItem(ShapeType::RECTANGLE);
         rect->setContentSize(QSizeF(200.0, 200.0));
         rect->setPos(QPointF(110.0, 150.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
@@ -423,11 +423,11 @@ void selftest::runLineSplitTests(Context& ctx)
     {
         CanvasScene scene;
         scene.applyCanvasSize(QSizeF(800.0, 600.0));
-        scene.setMode(ToolMode::Edit);
+        scene.setMode(ToolMode::EDIT);
         QUndoStack undo;
         scene.setUndoStack(&undo);
 
-        auto* rect = createShapeItem(ShapeType::Rectangle);
+        auto* rect = createShapeItem(ShapeType::RECTANGLE);
         rect->setContentSize(QSizeF(120.0, 90.0));
         rect->setPos(QPointF(110.0, 150.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
@@ -460,11 +460,11 @@ void selftest::runLineSplitTests(Context& ctx)
     for (const Arrangement& arrangement : arrangements) {
         CanvasScene scene;
         scene.applyCanvasSize(QSizeF(1536.0, 1024.0));
-        scene.setMode(ToolMode::Edit);
+        scene.setMode(ToolMode::EDIT);
         QUndoStack undo;
         scene.setUndoStack(&undo);
 
-        auto* flag = createShapeItem(ShapeType::FlagWave);
+        auto* flag = createShapeItem(ShapeType::FLAG_WAVE);
         flag->setContentSize(arrangement.flagRect.size());
         flag->setPos(arrangement.flagRect.topLeft());
         scene.addItemsWithUndo({flag}, QStringLiteral("Add flag"));

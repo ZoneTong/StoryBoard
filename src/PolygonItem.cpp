@@ -52,7 +52,7 @@ PolygonItem::PolygonItem(const QList<Layer>& layers, FillStyle fillStyle, Qt::Pe
 QColor PolygonItem::fillColor() const
 {
     for (const Layer& layer : m_layers) {
-        if (layer.role == LayerRole::FilledArea && layer.filled) {
+        if (layer.role == LayerRole::FILLED_AREA && layer.filled) {
             return layer.fill;
         }
     }
@@ -67,13 +67,13 @@ QColor PolygonItem::fillColor() const
 QColor PolygonItem::strokeColor() const
 {
     for (const Layer& layer : m_layers) {
-        if (layer.role == LayerRole::FilledArea && layer.strokeWidth > 0.0) {
+        if (layer.role == LayerRole::FILLED_AREA && layer.strokeWidth > 0.0) {
             return layer.stroke;
         }
     }
     for (const Layer& layer : m_layers) {
         // 纯直线 / 曲线合并没有面积层，线宽带的填充色就是描线色。
-        if (layer.role == LayerRole::StrokeBand) {
+        if (layer.role == LayerRole::STROKE_BAND) {
             return layer.fill;
         }
     }
@@ -83,7 +83,7 @@ QColor PolygonItem::strokeColor() const
 qreal PolygonItem::strokeWidth() const
 {
     for (const Layer& layer : m_layers) {
-        if (layer.role == LayerRole::FilledArea && layer.strokeWidth > 0.0) {
+        if (layer.role == LayerRole::FILLED_AREA && layer.strokeWidth > 0.0) {
             return layer.strokeWidth;
         }
     }
@@ -98,7 +98,7 @@ void PolygonItem::setFill(const QColor& color, FillStyle style)
     m_fillStyle = style;
     for (Layer& layer : m_layers) {
         // 文字字形跟多边形填充色一起变化；线宽带属于描线，不在这里改。
-        if (layer.role == LayerRole::FilledArea || layer.role == LayerRole::Text) {
+        if (layer.role == LayerRole::FILLED_AREA || layer.role == LayerRole::TEXT) {
             layer.fill = color;
         }
     }
@@ -118,12 +118,12 @@ void PolygonItem::setStroke(const QColor& color, qreal width)
     }
     const qreal effectiveWidth = qMax(0.0, width);
     for (Layer& layer : m_layers) {
-        if (layer.role == LayerRole::FilledArea) {
+        if (layer.role == LayerRole::FILLED_AREA) {
             layer.stroke = color;
             if (effectiveWidth > 0.0) {
                 layer.strokeWidth = effectiveWidth;
             }
-        } else if (layer.role == LayerRole::StrokeBand) {
+        } else if (layer.role == LayerRole::STROKE_BAND) {
             // 零面积图元的线宽由自身几何决定，换色只改填充，避免再次描边加粗。
             layer.fill = color;
         }
@@ -320,11 +320,11 @@ void PolygonItem::paintContent(QPainter* painter)
         if (visible.isEmpty()) {
             continue;
         }
-        if (layer.role == LayerRole::FilledArea && m_fillStyle == FillStyle::None) {
+        if (layer.role == LayerRole::FILLED_AREA && m_fillStyle == FillStyle::NONE) {
             continue;
         }
         painter->setPen(Qt::NoPen);
-        if (layer.role == LayerRole::FilledArea && ShapePainter::isPatternFill(m_fillStyle)) {
+        if (layer.role == LayerRole::FILLED_AREA && ShapePainter::isPatternFill(m_fillStyle)) {
             ShapePainter::paintPatternFill(painter, visible, visible.boundingRect(), layer.fill, m_fillStyle);
         } else {
             painter->setBrush(layer.fill);
@@ -337,7 +337,7 @@ void PolygonItem::paintContent(QPainter* painter)
         QPainterPath area;
         qreal borderWidth = 0.0;
         for (const Layer& layer : m_layers) {
-            if (layer.role != LayerRole::FilledArea || !layer.filled) {
+            if (layer.role != LayerRole::FILLED_AREA || !layer.filled) {
                 continue;
             }
             area = area.isEmpty() ? layer.path : area.united(layer.path);
@@ -404,7 +404,7 @@ void PolygonItem::paintContent(QPainter* painter)
         painter->setBrush(Qt::NoBrush);
         // 需求 11：有面积层与文字字形必须按闭合轮廓描边（收尾边不能缺）；
         // 线宽带本身是开放笔画，保持原样。
-        painter->drawPath(layer.role == LayerRole::StrokeBand ? layer.path : closedSubpaths(layer.path));
+        painter->drawPath(layer.role == LayerRole::STROKE_BAND ? layer.path : closedSubpaths(layer.path));
     }
 
     painter->restore();
@@ -423,13 +423,13 @@ ShapeLayer PolygonItem::shapeLayer(int index) const
     view.strokeWidth = layer.strokeWidth;
     view.filled = layer.filled;
     switch (layer.role) {
-    case LayerRole::StrokeBand:
+    case LayerRole::STROKE_BAND:
         view.role = ShapeLayerRole::STROKE_BAND;
         break;
-    case LayerRole::Text:
+    case LayerRole::TEXT:
         view.role = ShapeLayerRole::TEXT;
         break;
-    case LayerRole::FilledArea:
+    case LayerRole::FILLED_AREA:
     default:
         view.role = ShapeLayerRole::FILL_AREA;
         break;

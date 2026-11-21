@@ -66,13 +66,13 @@ void selftest::runShapesFolderTests(Context& ctx)
 
         // 文案里的目录会转成本地分隔符（Windows 反斜杠），断言前对 blockedDir 做同样归一化。
         const QString nativeBlockedDir = QDir::toNativeSeparators(blockedDir);
-        result.error = AppSettings::ShapesFolderError::CreateFailed;
+        result.error = AppSettings::ShapesFolderError::CREATE_FAILED;
         const QString createText = AppSettings::shapesFolderFailureText(result);
         ctx.check(createText.contains(nativeBlockedDir) && (createText.contains(QStringLiteral("写权限")) ||
                                                             createText.contains(QStringLiteral("write permission"))),
                   QStringLiteral("创建失败文案带目录与权限原因"), createText);
 
-        result.error = AppSettings::ShapesFolderError::ShellFailed;
+        result.error = AppSettings::ShapesFolderError::SHELL_FAILED;
         result.shellCode = 2;
         const QString shellText = AppSettings::shapesFolderFailureText(result);
         ctx.check(shellText.contains(nativeBlockedDir) &&
@@ -80,13 +80,13 @@ void selftest::runShapesFolderTests(Context& ctx)
                       shellText.contains(QStringLiteral("2")),
                   QStringLiteral("外壳失败文案带目录与返回码"), shellText);
 
-        result.error = AppSettings::ShapesFolderError::DesktopFailed;
+        result.error = AppSettings::ShapesFolderError::DESKTOP_FAILED;
         const QString desktopText = AppSettings::shapesFolderFailureText(result);
         ctx.check(desktopText.contains(nativeBlockedDir) && (desktopText.contains(QStringLiteral("文件管理器")) ||
                                                              desktopText.contains(QStringLiteral("file manager"))),
                   QStringLiteral("桌面服务失败文案带目录与原因"), desktopText);
 
-        result.error = AppSettings::ShapesFolderError::None;
+        result.error = AppSettings::ShapesFolderError::NONE;
         ctx.check(AppSettings::shapesFolderFailureText(result).isEmpty(),
                   QStringLiteral("没有失败原因时不产出多余文案"));
     }

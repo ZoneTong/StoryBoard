@@ -174,18 +174,18 @@ void drawSettings(QPainter& painter, IconId)
 constexpr struct IconEntry {
     IconId id;
     void (*draw)(QPainter&, IconId);
-} kEntries[] = {
-    {IconId::New, drawNew},       {IconId::Open, drawOpen},     {IconId::Save, drawSave},
-    {IconId::Export, drawExport}, {IconId::Undo, drawUndo},     {IconId::Redo, drawRedo},
-    {IconId::Brush, drawBrush},   {IconId::Edit, drawEdit},     {IconId::Text, drawText},
-    {IconId::Delete, drawDelete}, {IconId::Folder, drawFolder}, {IconId::Settings, drawSettings},
+} ENTRIES[] = {
+    {IconId::NEW, drawNew},       {IconId::OPEN, drawOpen},     {IconId::SAVE, drawSave},
+    {IconId::EXPORT, drawExport}, {IconId::UNDO, drawUndo},     {IconId::REDO, drawRedo},
+    {IconId::BRUSH, drawBrush},   {IconId::EDIT, drawEdit},     {IconId::TEXT, drawText},
+    {IconId::DELETE, drawDelete}, {IconId::FOLDER, drawFolder}, {IconId::SETTINGS, drawSettings},
 };
 
 } // namespace
 
 bool paintIconFileEdit(QPainter& painter, IconId id)
 {
-    for (const IconEntry& entry : kEntries) {
+    for (const IconEntry& entry : ENTRIES) {
         if (entry.id == id) {
             entry.draw(painter, id);
             return true;

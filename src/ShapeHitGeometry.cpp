@@ -10,7 +10,7 @@ QPainterPath ShapeHitGeometry::hitShape(const QPainterPath& path, ShapeType type
     }
 
     QPainterPath result;
-    if (type == ShapeType::Arrow || type == ShapeType::DoubleArrow) {
+    if (type == ShapeType::ARROW || type == ShapeType::DOUBLE_ARROW) {
         // Hollow arrows still use the whole silhouette as the hit area, so the
         // empty interior remains easy to select and drag.
         result = path;
@@ -51,7 +51,7 @@ QPainterPath ShapeHitGeometry::paintedShape(const QPainterPath& path, ShapeType 
     // 整个算作遮挡区，下层颜色完全不画，避免叠出混合色。
     // 无填充、斜线/交叉线/六边形等纹理填充不遮挡下层的轮廓，下层照常可见（查看模式也一样）；
     // 描边本身仍然遮挡笔画扫过的区域。
-    const bool solidFill = fillStyle == FillStyle::Solid && fillColor.alpha() > 0;
+    const bool solidFill = fillStyle == FillStyle::SOLID && fillColor.alpha() > 0;
     if (solidFill) {
         result = result.united(path);
     }

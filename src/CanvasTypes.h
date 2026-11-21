@@ -9,17 +9,17 @@
 #include <QPixmap>
 #include <QString>
 
-enum class ToolMode { View = 0, Brush = 1, Edit = 2, Text = 3 };
+enum class ToolMode { VIEW = 0, BRUSH = 1, EDIT = 2, TEXT = 3 };
 
-enum class BackgroundType { None = 0, Color = 1, Image = 2 };
+enum class BackgroundType { NONE = 0, COLOR = 1, IMAGE = 2 };
 
-enum class BackgroundMode { Stretch = 0, Fit = 1, Tile = 2 };
+enum class BackgroundMode { STRETCH = 0, FIT = 1, TILE = 2 };
 
 struct CanvasBackground {
-    BackgroundType type = BackgroundType::None;
+    BackgroundType type = BackgroundType::NONE;
     QColor color = QColor(255, 255, 255);
     QPixmap image;
-    BackgroundMode mode = BackgroundMode::Stretch;
+    BackgroundMode mode = BackgroundMode::STRETCH;
 
     bool operator==(const CanvasBackground& other) const
     {
@@ -71,13 +71,13 @@ struct LayerStackState {
 inline QString toolModeName(ToolMode mode)
 {
     switch (mode) {
-    case ToolMode::View:
+    case ToolMode::VIEW:
         return QCoreApplication::tr("View mode");
-    case ToolMode::Brush:
+    case ToolMode::BRUSH:
         return QCoreApplication::tr("Brush mode");
-    case ToolMode::Edit:
+    case ToolMode::EDIT:
         return QCoreApplication::tr("Edit mode");
-    case ToolMode::Text:
+    case ToolMode::TEXT:
         return QCoreApplication::tr("Text mode");
     }
     return QString();
@@ -86,11 +86,11 @@ inline QString toolModeName(ToolMode mode)
 inline QString backgroundModeName(BackgroundMode mode)
 {
     switch (mode) {
-    case BackgroundMode::Stretch:
+    case BackgroundMode::STRETCH:
         return QCoreApplication::tr("Stretch to fill");
-    case BackgroundMode::Fit:
+    case BackgroundMode::FIT:
         return QCoreApplication::tr("Fit entirely");
-    case BackgroundMode::Tile:
+    case BackgroundMode::TILE:
         return QCoreApplication::tr("Tile");
     }
     return QString();
@@ -99,11 +99,11 @@ inline QString backgroundModeName(BackgroundMode mode)
 inline QString backgroundModeToString(BackgroundMode mode)
 {
     switch (mode) {
-    case BackgroundMode::Stretch:
+    case BackgroundMode::STRETCH:
         return QStringLiteral("stretch");
-    case BackgroundMode::Fit:
+    case BackgroundMode::FIT:
         return QStringLiteral("fit");
-    case BackgroundMode::Tile:
+    case BackgroundMode::TILE:
         return QStringLiteral("tile");
     }
     return QStringLiteral("stretch");
@@ -112,10 +112,10 @@ inline QString backgroundModeToString(BackgroundMode mode)
 inline BackgroundMode backgroundModeFromString(const QString& value)
 {
     if (value == QStringLiteral("fit")) {
-        return BackgroundMode::Fit;
+        return BackgroundMode::FIT;
     }
     if (value == QStringLiteral("tile")) {
-        return BackgroundMode::Tile;
+        return BackgroundMode::TILE;
     }
-    return BackgroundMode::Stretch;
+    return BackgroundMode::STRETCH;
 }

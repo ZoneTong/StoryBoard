@@ -6,38 +6,38 @@
 
 namespace {
 
-const QString kSelfTest = QStringLiteral("--self-test");
-const QString kRenderDemo = QStringLiteral("--render-demo");
-const QString kDemoCanvas = QStringLiteral("--demo-canvas");
-const QString kUiScreenshot = QStringLiteral("--ui-screenshot");
-const QString kSettingsScreenshot = QStringLiteral("--settings-screenshot");
-const QString kSettingsApplyProbe = QStringLiteral("--settings-apply-probe");
-const QString kSetLanguage = QStringLiteral("--set-language");
-const QString kSettingsProbe = QStringLiteral("--settings-probe");
-const QString kOpenShapesProbe = QStringLiteral("--open-shapes-probe");
-const QString kAboutScreenshot = QStringLiteral("--about-screenshot");
-const QString kItemPropertiesScreenshot = QStringLiteral("--item-properties-screenshot");
-const QString kShapeMenuScreenshot = QStringLiteral("--shape-menu-screenshot");
-const QString kBrushStyleMenuScreenshot = QStringLiteral("--brush-style-menu-screenshot");
-const QString kBrushWidthMenuScreenshot = QStringLiteral("--brush-width-menu-screenshot");
-const QString kFillStyleMenuScreenshot = QStringLiteral("--fill-style-menu-screenshot");
-const QString kStyleMenuScreenshot = QStringLiteral("--style-menu-screenshot");
-const QString kExportScreenshot = QStringLiteral("--export-screenshot");
-const QString kLineArt = QStringLiteral("--lineart");
-const QString kLineArtOut = QStringLiteral("--lineart-out");
-const QString kLineArtPreset = QStringLiteral("--lineart-preset");
-const QString kLineArtMaxSide = QStringLiteral("--lineart-max-side");
-const QString kLineArtColorLevels = QStringLiteral("--lineart-color-levels");
-const QString kLineArtPaletteColors = QStringLiteral("--lineart-palette-colors");
-const QString kLineArtPaletteMerge = QStringLiteral("--lineart-palette-merge");
-const QString kLineArtAdjacentMerge = QStringLiteral("--lineart-adjacent-merge");
-const QString kLineArtMinArea = QStringLiteral("--lineart-min-area");
-const QString kLineArtMaxRegions = QStringLiteral("--lineart-max-regions");
-const QString kLineArtAdaptive = QStringLiteral("--lineart-adaptive");
-const QString kLineArtAdaptiveLimit = QStringLiteral("--lineart-adaptive-limit");
-const QString kLineArtMinAdaptiveSide = QStringLiteral("--lineart-min-adaptive-side");
-const QString kLineArtTolerance = QStringLiteral("--lineart-tolerance");
-const QString kLineArtMinThickness = QStringLiteral("--lineart-min-thickness");
+const QString SELF_TEST = QStringLiteral("--self-test");
+const QString RENDER_DEMO = QStringLiteral("--render-demo");
+const QString DEMO_CANVAS = QStringLiteral("--demo-canvas");
+const QString UI_SCREENSHOT = QStringLiteral("--ui-screenshot");
+const QString SETTINGS_SCREENSHOT = QStringLiteral("--settings-screenshot");
+const QString SETTINGS_APPLY_PROBE = QStringLiteral("--settings-apply-probe");
+const QString SET_LANGUAGE = QStringLiteral("--set-language");
+const QString SETTINGS_PROBE = QStringLiteral("--settings-probe");
+const QString OPEN_SHAPES_PROBE = QStringLiteral("--open-shapes-probe");
+const QString ABOUT_SCREENSHOT = QStringLiteral("--about-screenshot");
+const QString ITEM_PROPERTIES_SCREENSHOT = QStringLiteral("--item-properties-screenshot");
+const QString SHAPE_MENU_SCREENSHOT = QStringLiteral("--shape-menu-screenshot");
+const QString BRUSH_STYLE_MENU_SCREENSHOT = QStringLiteral("--brush-style-menu-screenshot");
+const QString BRUSH_WIDTH_MENU_SCREENSHOT = QStringLiteral("--brush-width-menu-screenshot");
+const QString FILL_STYLE_MENU_SCREENSHOT = QStringLiteral("--fill-style-menu-screenshot");
+const QString STYLE_MENU_SCREENSHOT = QStringLiteral("--style-menu-screenshot");
+const QString EXPORT_SCREENSHOT = QStringLiteral("--export-screenshot");
+const QString LINE_ART = QStringLiteral("--lineart");
+const QString LINE_ART_OUT = QStringLiteral("--lineart-out");
+const QString LINE_ART_PRESET = QStringLiteral("--lineart-preset");
+const QString LINE_ART_MAX_SIDE = QStringLiteral("--lineart-max-side");
+const QString LINE_ART_COLOR_LEVELS = QStringLiteral("--lineart-color-levels");
+const QString LINE_ART_PALETTE_COLORS = QStringLiteral("--lineart-palette-colors");
+const QString LINE_ART_PALETTE_MERGE = QStringLiteral("--lineart-palette-merge");
+const QString LINE_ART_ADJACENT_MERGE = QStringLiteral("--lineart-adjacent-merge");
+const QString LINE_ART_MIN_AREA = QStringLiteral("--lineart-min-area");
+const QString LINE_ART_MAX_REGIONS = QStringLiteral("--lineart-max-regions");
+const QString LINE_ART_ADAPTIVE = QStringLiteral("--lineart-adaptive");
+const QString LINE_ART_ADAPTIVE_LIMIT = QStringLiteral("--lineart-adaptive-limit");
+const QString LINE_ART_MIN_ADAPTIVE_SIDE = QStringLiteral("--lineart-min-adaptive-side");
+const QString LINE_ART_TOLERANCE = QStringLiteral("--lineart-tolerance");
+const QString LINE_ART_MIN_THICKNESS = QStringLiteral("--lineart-min-thickness");
 
 } // namespace
 
@@ -45,46 +45,46 @@ CommandLineOptions CommandLineOptions::parse(const QStringList& arguments)
 {
     CommandLineOptions options;
 
-    options.selfTest = arguments.contains(kSelfTest);
-    options.renderDemo = arguments.contains(kRenderDemo);
-    options.demoCanvas = arguments.contains(kDemoCanvas);
-    options.uiScreenshot = arguments.contains(kUiScreenshot);
-    options.settingsScreenshot = arguments.contains(kSettingsScreenshot);
-    options.settingsApplyProbe = arguments.contains(kSettingsApplyProbe);
-    options.setLanguage = arguments.contains(kSetLanguage);
-    options.settingsProbe = arguments.contains(kSettingsProbe);
-    options.openShapesProbe = arguments.contains(kOpenShapesProbe);
-    options.aboutScreenshot = arguments.contains(kAboutScreenshot);
-    options.itemPropertiesScreenshot = arguments.contains(kItemPropertiesScreenshot);
-    options.shapeMenuScreenshot = arguments.contains(kShapeMenuScreenshot);
-    options.brushStyleMenuScreenshot = arguments.contains(kBrushStyleMenuScreenshot);
-    options.brushWidthMenuScreenshot = arguments.contains(kBrushWidthMenuScreenshot);
-    options.fillStyleMenuScreenshot = arguments.contains(kFillStyleMenuScreenshot);
-    options.styleMenuScreenshot = arguments.contains(kStyleMenuScreenshot);
-    options.exportScreenshot = arguments.contains(kExportScreenshot);
-    options.lineArt = arguments.contains(kLineArt);
+    options.selfTest = arguments.contains(SELF_TEST);
+    options.renderDemo = arguments.contains(RENDER_DEMO);
+    options.demoCanvas = arguments.contains(DEMO_CANVAS);
+    options.uiScreenshot = arguments.contains(UI_SCREENSHOT);
+    options.settingsScreenshot = arguments.contains(SETTINGS_SCREENSHOT);
+    options.settingsApplyProbe = arguments.contains(SETTINGS_APPLY_PROBE);
+    options.setLanguage = arguments.contains(SET_LANGUAGE);
+    options.settingsProbe = arguments.contains(SETTINGS_PROBE);
+    options.openShapesProbe = arguments.contains(OPEN_SHAPES_PROBE);
+    options.aboutScreenshot = arguments.contains(ABOUT_SCREENSHOT);
+    options.itemPropertiesScreenshot = arguments.contains(ITEM_PROPERTIES_SCREENSHOT);
+    options.shapeMenuScreenshot = arguments.contains(SHAPE_MENU_SCREENSHOT);
+    options.brushStyleMenuScreenshot = arguments.contains(BRUSH_STYLE_MENU_SCREENSHOT);
+    options.brushWidthMenuScreenshot = arguments.contains(BRUSH_WIDTH_MENU_SCREENSHOT);
+    options.fillStyleMenuScreenshot = arguments.contains(FILL_STYLE_MENU_SCREENSHOT);
+    options.styleMenuScreenshot = arguments.contains(STYLE_MENU_SCREENSHOT);
+    options.exportScreenshot = arguments.contains(EXPORT_SCREENSHOT);
+    options.lineArt = arguments.contains(LINE_ART);
 
-    options.selfTestPath = takeOptionPath(arguments, kSelfTest);
-    options.renderDemoPath = takeOptionPath(arguments, kRenderDemo);
-    options.demoCanvasPath = takeOptionPath(arguments, kDemoCanvas);
-    options.uiScreenshotPath = takeOptionPath(arguments, kUiScreenshot);
-    options.settingsScreenshotPath = takeOptionPath(arguments, kSettingsScreenshot);
-    options.setLanguageValue = takeOptionPath(arguments, kSetLanguage);
-    options.settingsProbePath = takeOptionPath(arguments, kSettingsProbe);
-    options.openShapesProbePath = takeOptionPath(arguments, kOpenShapesProbe);
-    options.aboutScreenshotPath = takeOptionPath(arguments, kAboutScreenshot);
-    options.itemPropertiesScreenshotPath = takeOptionPath(arguments, kItemPropertiesScreenshot);
-    options.shapeMenuScreenshotPath = takeOptionPath(arguments, kShapeMenuScreenshot);
-    options.brushStyleMenuScreenshotPath = takeOptionPath(arguments, kBrushStyleMenuScreenshot);
-    options.brushWidthMenuScreenshotPath = takeOptionPath(arguments, kBrushWidthMenuScreenshot);
-    options.fillStyleMenuScreenshotPath = takeOptionPath(arguments, kFillStyleMenuScreenshot);
-    options.styleMenuScreenshotPath = takeOptionPath(arguments, kStyleMenuScreenshot);
-    options.exportScreenshotPath = takeOptionPath(arguments, kExportScreenshot);
+    options.selfTestPath = takeOptionPath(arguments, SELF_TEST);
+    options.renderDemoPath = takeOptionPath(arguments, RENDER_DEMO);
+    options.demoCanvasPath = takeOptionPath(arguments, DEMO_CANVAS);
+    options.uiScreenshotPath = takeOptionPath(arguments, UI_SCREENSHOT);
+    options.settingsScreenshotPath = takeOptionPath(arguments, SETTINGS_SCREENSHOT);
+    options.setLanguageValue = takeOptionPath(arguments, SET_LANGUAGE);
+    options.settingsProbePath = takeOptionPath(arguments, SETTINGS_PROBE);
+    options.openShapesProbePath = takeOptionPath(arguments, OPEN_SHAPES_PROBE);
+    options.aboutScreenshotPath = takeOptionPath(arguments, ABOUT_SCREENSHOT);
+    options.itemPropertiesScreenshotPath = takeOptionPath(arguments, ITEM_PROPERTIES_SCREENSHOT);
+    options.shapeMenuScreenshotPath = takeOptionPath(arguments, SHAPE_MENU_SCREENSHOT);
+    options.brushStyleMenuScreenshotPath = takeOptionPath(arguments, BRUSH_STYLE_MENU_SCREENSHOT);
+    options.brushWidthMenuScreenshotPath = takeOptionPath(arguments, BRUSH_WIDTH_MENU_SCREENSHOT);
+    options.fillStyleMenuScreenshotPath = takeOptionPath(arguments, FILL_STYLE_MENU_SCREENSHOT);
+    options.styleMenuScreenshotPath = takeOptionPath(arguments, STYLE_MENU_SCREENSHOT);
+    options.exportScreenshotPath = takeOptionPath(arguments, EXPORT_SCREENSHOT);
 
     // ---- 命令行线稿化参数 ----
-    options.lineArtInputPath = takeOptionPath(arguments, kLineArt);
-    options.lineArtOutputPath = takeOptionPath(arguments, kLineArtOut);
-    const QString presetValue = takeOptionPath(arguments, kLineArtPreset);
+    options.lineArtInputPath = takeOptionPath(arguments, LINE_ART);
+    options.lineArtOutputPath = takeOptionPath(arguments, LINE_ART_OUT);
+    const QString presetValue = takeOptionPath(arguments, LINE_ART_PRESET);
     if (!presetValue.isEmpty()) {
         bool presetOk = false;
         const int preset = presetValue.toInt(&presetOk);
@@ -116,20 +116,20 @@ CommandLineOptions CommandLineOptions::parse(const QStringList& arguments)
             value = parsed;
         }
     };
-    takeInt(kLineArtMaxSide, options.lineArtMaxSideSeen, options.lineArtMaxSide);
-    takeInt(kLineArtColorLevels, options.lineArtColorLevelsSeen, options.lineArtColorLevels);
-    takeInt(kLineArtPaletteColors, options.lineArtPaletteColorsSeen, options.lineArtPaletteColors);
-    takeDouble(kLineArtPaletteMerge, options.lineArtPaletteMergeSeen, options.lineArtPaletteMerge);
-    takeDouble(kLineArtAdjacentMerge, options.lineArtAdjacentMergeSeen, options.lineArtAdjacentMerge);
-    takeInt(kLineArtMinArea, options.lineArtMinAreaSeen, options.lineArtMinArea);
-    takeInt(kLineArtMaxRegions, options.lineArtMaxRegionsSeen, options.lineArtMaxRegions);
-    takeInt(kLineArtAdaptiveLimit, options.lineArtAdaptiveLimitSeen, options.lineArtAdaptiveLimit);
-    takeInt(kLineArtMinAdaptiveSide, options.lineArtMinAdaptiveSideSeen, options.lineArtMinAdaptiveSide);
-    takeDouble(kLineArtTolerance, options.lineArtToleranceSeen, options.lineArtTolerance);
-    takeDouble(kLineArtMinThickness, options.lineArtMinThicknessSeen, options.lineArtMinThickness);
+    takeInt(LINE_ART_MAX_SIDE, options.lineArtMaxSideSeen, options.lineArtMaxSide);
+    takeInt(LINE_ART_COLOR_LEVELS, options.lineArtColorLevelsSeen, options.lineArtColorLevels);
+    takeInt(LINE_ART_PALETTE_COLORS, options.lineArtPaletteColorsSeen, options.lineArtPaletteColors);
+    takeDouble(LINE_ART_PALETTE_MERGE, options.lineArtPaletteMergeSeen, options.lineArtPaletteMerge);
+    takeDouble(LINE_ART_ADJACENT_MERGE, options.lineArtAdjacentMergeSeen, options.lineArtAdjacentMerge);
+    takeInt(LINE_ART_MIN_AREA, options.lineArtMinAreaSeen, options.lineArtMinArea);
+    takeInt(LINE_ART_MAX_REGIONS, options.lineArtMaxRegionsSeen, options.lineArtMaxRegions);
+    takeInt(LINE_ART_ADAPTIVE_LIMIT, options.lineArtAdaptiveLimitSeen, options.lineArtAdaptiveLimit);
+    takeInt(LINE_ART_MIN_ADAPTIVE_SIDE, options.lineArtMinAdaptiveSideSeen, options.lineArtMinAdaptiveSide);
+    takeDouble(LINE_ART_TOLERANCE, options.lineArtToleranceSeen, options.lineArtTolerance);
+    takeDouble(LINE_ART_MIN_THICKNESS, options.lineArtMinThicknessSeen, options.lineArtMinThickness);
     // 自适应开关取 0/1；其它值一律视为未给出，保持默认开启。
     {
-        const QString text = takeOptionPath(arguments, kLineArtAdaptive);
+        const QString text = takeOptionPath(arguments, LINE_ART_ADAPTIVE);
         if (text == QStringLiteral("0") || text.compare(QLatin1String("false"), Qt::CaseInsensitive) == 0) {
             options.lineArtAdaptiveSeen = true;
             options.lineArtAdaptive = false;

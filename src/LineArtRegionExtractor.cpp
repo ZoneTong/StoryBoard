@@ -8,8 +8,8 @@
 namespace {
 
 // 8 邻域，从“右”开始顺时针排列。
-const int kDirX[8] = {1, 1, 0, -1, -1, -1, 0, 1};
-const int kDirY[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+const int DIR_X[8] = {1, 1, 0, -1, -1, -1, 0, 1};
+const int DIR_Y[8] = {0, 1, 1, 1, 0, -1, -1, -1};
 
 } // namespace
 
@@ -150,8 +150,8 @@ RegionMap buildRegions(const QImage& image, const LineArtConverter::Options& opt
             }
 
             for (int k = 0; k < 8; ++k) {
-                const int nx = x + kDirX[k];
-                const int ny = y + kDirY[k];
+                const int nx = x + DIR_X[k];
+                const int ny = y + DIR_Y[k];
                 if (nx < 0 || ny < 0 || nx >= width || ny >= height) {
                     continue;
                 }
@@ -186,8 +186,8 @@ RegionMap buildRegions(const QImage& image, const LineArtConverter::Options& opt
                 const int index = y * width + x;
                 const int label = labels.at(index);
                 for (int k = 0; k < 4; ++k) {
-                    const int nx = x + kDirX[k];
-                    const int ny = y + kDirY[k];
+                    const int nx = x + DIR_X[k];
+                    const int ny = y + DIR_Y[k];
                     if (nx < 0 || ny < 0 || nx >= width || ny >= height) {
                         continue;
                     }

@@ -8,9 +8,9 @@
 #include <QtMath>
 
 namespace {
-constexpr qreal kMinZoom = 0.02;
-constexpr qreal kMaxZoom = 40.0;
-const qreal kFitMaxZoom = 3.0;
+constexpr qreal MIN_ZOOM = 0.02;
+constexpr qreal MAX_ZOOM = 40.0;
+const qreal FIT_MAX_ZOOM = 3.0;
 } // namespace
 
 CanvasZoomController::CanvasZoomController(CanvasView* view, CanvasScene* scene) : m_view(view), m_scene(scene) {}
@@ -37,10 +37,10 @@ void CanvasZoomController::fitAll()
     m_view->fitInView(target, Qt::KeepAspectRatio);
 
     const qreal fitted = m_view->transform().m11();
-    const bool tooLarge = fitted > kFitMaxZoom;
-    const bool tooSmall = fitted < kMinZoom;
+    const bool tooLarge = fitted > FIT_MAX_ZOOM;
+    const bool tooSmall = fitted < MIN_ZOOM;
     if (tooLarge || tooSmall) {
-        const qreal clamped = qBound(kMinZoom, fitted, kFitMaxZoom);
+        const qreal clamped = qBound(MIN_ZOOM, fitted, FIT_MAX_ZOOM);
         m_view->setTransformationAnchor(QGraphicsView::NoAnchor);
         m_view->setTransform(QTransform::fromScale(clamped, clamped));
         m_view->centerOn(target.center());
@@ -79,7 +79,7 @@ void CanvasZoomController::applyScale(qreal factor)
         return;
     }
 
-    const qreal target = qBound(kMinZoom, current * factor, kMaxZoom);
+    const qreal target = qBound(MIN_ZOOM, current * factor, MAX_ZOOM);
     const qreal applied = target / current;
     if (qFuzzyCompare(applied, 1.0)) {
         return;
@@ -108,7 +108,7 @@ void CanvasZoomController::handleWheel(QWheelEvent* event)
 
     const qreal current = zoom();
     qreal factor = qPow(1.0015, delta);
-    const qreal target = qBound(kMinZoom, current * factor, kMaxZoom);
+    const qreal target = qBound(MIN_ZOOM, current * factor, MAX_ZOOM);
     factor = target / current;
 
     if (qFuzzyCompare(factor, 1.0)) {

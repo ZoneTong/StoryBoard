@@ -11,7 +11,7 @@ class CanvasItem;
 class MainWindowEditActionsController {
   public:
     // 剪贴板自定义 MIME：只在本应用进程间互贴，不向其它软件暴露图元格式。
-    static constexpr const char* kClipboardMimeType = "application/x-storyboard-items";
+    static constexpr const char* CLIPBOARD_MIME_TYPE = "application/x-storyboard-items";
 
     explicit MainWindowEditActionsController(MainWindow* window);
 

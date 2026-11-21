@@ -70,12 +70,12 @@ class MainWindow : public QMainWindow {
 
     // 工具栏的统一尺寸：图标 20px，图标按钮 30×30，下拉框/数字框高 30px，
     // 三者对齐同一条 30px 基线。自检按这些值校验，QSS 与代码的尺寸偏差会直接失败。
-    static constexpr int kToolBarIconSize = 20;
-    static constexpr int kToolBarButtonSize = 30;
-    static constexpr int kToolBarControlHeight = 30;
+    static constexpr int TOOL_BAR_ICON_SIZE = 20;
+    static constexpr int TOOL_BAR_BUTTON_SIZE = 30;
+    static constexpr int TOOL_BAR_CONTROL_HEIGHT = 30;
     // 画笔颜色是带下拉的分裂按钮（点色块直接调色、点箭头选预设），比纯图标按钮
     // 宽出一条箭头区，高度保持一致。
-    static constexpr int kToolBarSplitButtonWidth = 34;
+    static constexpr int TOOL_BAR_SPLIT_BUTTON_WIDTH = 34;
 
     bool openCanvasFile(const QString& path);
     CanvasScene* scene() const { return m_scene; }
@@ -125,7 +125,7 @@ class MainWindow : public QMainWindow {
     void insertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0, qreal cornerRatio = 0.0,
                      qreal parallelogramAngle = 0.0);
     // 线条插入入口：直线 / 弧线 / 正弦都不是形状类型，按形态分派。
-    void insertCurve(LineGlyph glyph, ArrowStyle startArrow = ArrowStyle::None, ArrowStyle endArrow = ArrowStyle::None);
+    void insertCurve(LineGlyph glyph, ArrowStyle startArrow = ArrowStyle::NONE, ArrowStyle endArrow = ArrowStyle::NONE);
     // 需求 16：自检需要直接驱动工具栏样式取值（填充样式 / 画笔色 / 描线宽度）验证新图元生成。
     friend void selftest::runFillStyleBasicTests(selftest::Context&);
     friend void selftest::runMainWindowShapeMenuTests(selftest::Context&);
@@ -194,7 +194,7 @@ class MainWindow : public QMainWindow {
     QColor m_brushColor;
     QColor m_fillColor;
     // 需求 16：首次打开默认“无填充 + 灰色填充色”，描线为黑色实线 1px（见 Settings 默认值）。
-    FillStyle m_fillStyle = FillStyle::None;
+    FillStyle m_fillStyle = FillStyle::NONE;
     // 描线样式与填充样式一样是全局状态：新插入图元与选中图元都读它。
     Qt::PenStyle m_strokeStyle = Qt::SolidLine;
     int m_brushWidth = 4;

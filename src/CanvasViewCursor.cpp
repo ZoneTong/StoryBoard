@@ -11,16 +11,16 @@ void CanvasViewCursor::refresh(ToolMode mode, bool panning)
         return;
     }
     switch (mode) {
-    case ToolMode::View:
+    case ToolMode::VIEW:
         m_view->viewport()->setCursor(Qt::OpenHandCursor);
         break;
-    case ToolMode::Brush:
+    case ToolMode::BRUSH:
         m_view->viewport()->setCursor(Qt::CrossCursor);
         break;
-    case ToolMode::Edit:
+    case ToolMode::EDIT:
         m_view->viewport()->setCursor(Qt::ArrowCursor);
         break;
-    case ToolMode::Text:
+    case ToolMode::TEXT:
         m_view->viewport()->setCursor(Qt::IBeamCursor);
         break;
     }

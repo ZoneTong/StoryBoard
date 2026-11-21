@@ -62,7 +62,7 @@ void MainWindowInsertController::insertTextAt(const QPointF& scenePos)
     y = qBound(canvas.top(), y, qMax(canvas.top(), canvas.bottom() - size.height()));
     item->setPos(QPointF(x, y));
 
-    m_window->setToolMode(ToolMode::Edit);
+    m_window->setToolMode(ToolMode::EDIT);
     m_window->m_scene->addItemsWithUndo({item}, MainWindow::tr("Add text"));
     item->setSelected(true);
     m_window->m_view->setFocus();
@@ -76,8 +76,8 @@ void MainWindowInsertController::insertTextAt(const QPointF& scenePos)
 void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle1, qreal triangleAngle2,
                                              qreal cornerRatio, qreal parallelogramAngle)
 {
-    if (m_window->m_view->mode() != ToolMode::Edit) {
-        m_window->setToolMode(ToolMode::Edit);
+    if (m_window->m_view->mode() != ToolMode::EDIT) {
+        m_window->setToolMode(ToolMode::EDIT);
     }
 
     if (!m_window->m_scene->isActiveLayerWritable()) {
@@ -89,7 +89,7 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
     }
 
     // 需求 4/5：立方体与圆柱体插入即分组，走组合面图元的专用通道。
-    if (type == ShapeType::Cube || type == ShapeType::Cylinder) {
+    if (type == ShapeType::CUBE || type == ShapeType::CYLINDER) {
         insertCompositeShape(type);
         return;
     }
@@ -99,9 +99,9 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
     const QColor stroke =
         m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
     const qreal strokeWidth = qMax<qreal>(0.5, m_window->m_brushWidth);
-    const bool filled = shapeTypeIsFilled(type) && m_window->m_fillStyle != FillStyle::None;
+    const bool filled = shapeTypeIsFilled(type) && m_window->m_fillStyle != FillStyle::NONE;
     const QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : stroke;
-    const FillStyle fillStyle = filled ? m_window->m_fillStyle : FillStyle::None;
+    const FillStyle fillStyle = filled ? m_window->m_fillStyle : FillStyle::NONE;
 
     // 图形族已按 ShapeType 拆成具体类：十字星 / 六芒星 / 心形 / 旗帜 / 卷轴
     // 与其余有面积图形一样直接建类，不再经多边形包装。
@@ -112,7 +112,7 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
     size *= fitScale;
     // 菱形预置：90° 平行四边形旋转 45° 后的外接对角线仍是基准边长，
     // 内容框按边长 = 对角线 / √2 取正方形（平行四边形默认框对菱形无意义）。
-    if (type == ShapeType::Parallelogram && parallelogramAngle > 0.0) {
+    if (type == ShapeType::PARALLELOGRAM && parallelogramAngle > 0.0) {
         const qreal diag = qMin<qreal>(128.0, qMin(canvas.width(), canvas.height()) * 0.72);
         size = QSizeF(diag / qSqrt(2.0), diag / qSqrt(2.0));
     }
@@ -137,16 +137,16 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
         shape->setPos(topLeft);
         shape->setContentSize(size);
         // 三角形预置项：底边保持默认 64，按预置角度重算高度（角度是真相）。
-        if (type == ShapeType::Triangle && triangleAngle1 > 0.0 && triangleAngle2 > 0.0) {
+        if (type == ShapeType::TRIANGLE && triangleAngle1 > 0.0 && triangleAngle2 > 0.0) {
             shape->setTriangleAngles(triangleAngle1, triangleAngle2);
         }
         // 直线箭头预置项由上面的 LineItem 分支处理，这里只剩有面积图形。
         // 圆角矩形预置项：按短边比例折算成显式 px 圆角。
-        if (type == ShapeType::Rectangle && cornerRatio > 0.0) {
+        if (type == ShapeType::RECTANGLE && cornerRatio > 0.0) {
             shape->setCornerRadius(qMin(size.width(), size.height()) * cornerRatio);
         }
         // 菱形预置项：锁内角并旋转 45°（数值只有 90° 一种，公式化以便扩展）。
-        if (type == ShapeType::Parallelogram && parallelogramAngle > 0.0) {
+        if (type == ShapeType::PARALLELOGRAM && parallelogramAngle > 0.0) {
             shape->setParallelogramAngle(parallelogramAngle);
             shape->setRotationAngle(45.0);
         }
@@ -157,7 +157,7 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
     m_window->m_scene->addItemsWithUndo({item}, MainWindow::tr("Insert %1").arg(shapeTypeName(type)));
     item->setSelected(true);
     m_window->m_view->setFocus();
-    if (type == ShapeType::Ellipse) {
+    if (type == ShapeType::ELLIPSE) {
         m_window->statusBar()->showMessage(
             MainWindow::tr("Inserted a circle; in edit mode drag a handle to stretch it into an ellipse"), 5000);
     } else {
@@ -226,15 +226,15 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
     const QColor stroke =
         m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
     const qreal width = qMax<qreal>(0.5, m_window->m_brushWidth);
-    const bool filled = m_window->m_fillStyle != FillStyle::None;
+    const bool filled = m_window->m_fillStyle != FillStyle::NONE;
     const QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : stroke;
-    const FillStyle fillStyle = filled ? m_window->m_fillStyle : FillStyle::None;
+    const FillStyle fillStyle = filled ? m_window->m_fillStyle : FillStyle::NONE;
 
     // 需求 9：立方体的三个面都是平行四边形图元本体（默认 60° 内角），
     // 靠各自的旋转角摆放成等轴测，不再用自定义轮廓冒充斜置的菱形。
     auto makeFace = [&stroke, &fill, fillStyle, width, this](const QString& name, const QPointF& center,
                                                              const QSizeF& faceSize, qreal rotation) {
-        auto* face = createShapeItem(ShapeType::Parallelogram);
+        auto* face = createShapeItem(ShapeType::PARALLELOGRAM);
         // 名字走图元名：customName 只留给真正的自定义轮廓，类型仍显示「平行四边形」。
         face->setName(name);
         face->setStyle(stroke, fill, width);
@@ -264,7 +264,7 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
     const QPointF topLeft = center - QPointF(size.width() / 2.0, size.height() / 2.0);
 
     QList<CanvasItem*> faces;
-    if (type == ShapeType::Cube) {
+    if (type == ShapeType::CUBE) {
         // 需求 9：等轴测立方体 = 三个平行四边形图元的组。每个面都是 60° 平行四边形本体，
         // 顶面旋转 30°、左面 90°、右面 -30°，三个面的中心落在外轮廓的 0.25/0.5/0.75 处。
         // 单一边长 s 生成共享顶点：内容框 W = 1.732s、H = 2s（默认 128 框 → s = 64），
@@ -309,12 +309,12 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
         bodyLayer.stroke = stroke;
         bodyLayer.strokeWidth = width;
         bodyLayer.filled = true;
-        bodyLayer.role = PolygonItem::LayerRole::FilledArea;
+        bodyLayer.role = PolygonItem::LayerRole::FILLED_AREA;
         auto* bodyItem = new PolygonItem(QList<PolygonItem::Layer>{bodyLayer}, fillStyle, m_window->m_strokeStyle);
         bodyItem->setName(MainWindow::tr("Cylinder body"));
         faces.append(bodyItem);
 
-        auto* top = createShapeItem(ShapeType::Ellipse);
+        auto* top = createShapeItem(ShapeType::ELLIPSE);
         top->setStyle(stroke, fill, width);
         top->setFillStyle(fillStyle);
         top->setStrokeStyle(m_window->m_strokeStyle);
@@ -337,8 +337,8 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
 
 void MainWindowInsertController::insertBrace(bool left)
 {
-    if (m_window->m_view->mode() != ToolMode::Edit) {
-        m_window->setToolMode(ToolMode::Edit);
+    if (m_window->m_view->mode() != ToolMode::EDIT) {
+        m_window->setToolMode(ToolMode::EDIT);
     }
 
     if (!m_window->m_scene->isActiveLayerWritable()) {
@@ -390,8 +390,8 @@ void MainWindowInsertController::insertBrace(bool left)
 
 void MainWindowInsertController::insertCustomShape(const QString& filePath)
 {
-    if (m_window->m_view->mode() != ToolMode::Edit) {
-        m_window->setToolMode(ToolMode::Edit);
+    if (m_window->m_view->mode() != ToolMode::EDIT) {
+        m_window->setToolMode(ToolMode::EDIT);
     }
 
     if (!m_window->m_scene->isActiveLayerWritable()) {
@@ -410,15 +410,15 @@ void MainWindowInsertController::insertCustomShape(const QString& filePath)
         return;
     }
 
-    auto* item = createShapeItem(ShapeType::Rectangle);
+    auto* item = createShapeItem(ShapeType::RECTANGLE);
     item->setCustomShape(customShape.name, customShape.unitPath);
     // 需求 16：与常见图形一致，按工具栏当前选择取样式（填充未选色跟随画笔色）。
     const QColor stroke =
         m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
     const QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : stroke;
-    const bool filled = m_window->m_fillStyle != FillStyle::None;
+    const bool filled = m_window->m_fillStyle != FillStyle::NONE;
     item->setStyle(stroke, filled ? fill : QColor(Qt::transparent), qMax<qreal>(0.5, m_window->m_brushWidth));
-    item->setFillStyle(filled ? m_window->m_fillStyle : FillStyle::None);
+    item->setFillStyle(filled ? m_window->m_fillStyle : FillStyle::NONE);
     item->setStrokeStyle(m_window->m_strokeStyle);
 
     // 需求 7：模板按原始宽高比插入，长边固定 64（2 格）；画布装不下时才等比缩到 72%。

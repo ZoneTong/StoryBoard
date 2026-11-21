@@ -32,7 +32,7 @@ void CanvasScene::attachItem(CanvasItem* item)
     if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId) {
         item->setLayerId(m_activeLayerId);
     }
-    if (item->height() < 0 || item->height() > scene_constants::kMaxItemHeight ||
+    if (item->height() < 0 || item->height() > scene_constants::MAX_ITEM_HEIGHT ||
         heightUsedByOther(item->layerId(), item->height(), item)) {
         const int height = nextHeight(item->layerId());
         item->setHeight(height >= 0 ? height : 0);
@@ -94,7 +94,7 @@ void CanvasScene::deleteSelected()
 
 int CanvasScene::duplicateSelectedItems()
 {
-    if (m_mode != ToolMode::Edit) {
+    if (m_mode != ToolMode::EDIT) {
         return 0;
     }
 
@@ -206,16 +206,16 @@ void CanvasScene::addItemsWithUndo(const QList<CanvasItem*>& items, const QStrin
 
         QSet<int>& used = usedHeights[item->layerId()];
         int height = item->height();
-        if (height < 0 || height > scene_constants::kMaxItemHeight || used.contains(height)) {
+        if (height < 0 || height > scene_constants::MAX_ITEM_HEIGHT || used.contains(height)) {
             height = nextHeight(item->layerId());
-            while (height >= 0 && height < scene_constants::kMaxItemHeight && used.contains(height)) {
+            while (height >= 0 && height < scene_constants::MAX_ITEM_HEIGHT && used.contains(height)) {
                 ++height;
             }
             if (height < 0 || used.contains(height)) {
                 height = 0;
             }
         }
-        item->setHeight(qBound(0, height, scene_constants::kMaxItemHeight));
+        item->setHeight(qBound(0, height, scene_constants::MAX_ITEM_HEIGHT));
         used.insert(item->height());
         if (item->groupId() > 0) {
             m_nextGroupId = qMax(m_nextGroupId, item->groupId() + 1);

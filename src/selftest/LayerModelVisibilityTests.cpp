@@ -251,7 +251,7 @@ void selftest::runLayerVisibilityLockTests(Context& ctx)
     const int& topLayerId = ctx.topLayerId;
 
     const int lowerLayerId = layerScene.layers().at(1).id;
-    layerScene.setMode(ToolMode::Edit);
+    layerScene.setMode(ToolMode::EDIT);
     ctx.check(layerScene.isItemEditable(topLine) && layerScene.isItemEditable(lower) &&
                   layerScene.isItemEditable(upper),
               QStringLiteral("编辑模式下可见且未锁定图层的图元都可编辑"));
@@ -312,7 +312,7 @@ void selftest::runLayerVisibilityLockTests(Context& ctx)
               QStringLiteral("选中隐藏图层时自动显示并允许编辑"));
 
     CanvasBackground visibilityBackground;
-    visibilityBackground.type = BackgroundType::Color;
+    visibilityBackground.type = BackgroundType::COLOR;
     visibilityBackground.color = QColor(QStringLiteral("#FEF3C7"));
     layerScene.setCanvasBackground(visibilityBackground);
     ctx.check(layerScene.setLayerVisible(CanvasScene::BackgroundLayerId, false), QStringLiteral("隐藏背景层"));
@@ -371,18 +371,18 @@ void selftest::runLayerVisibilityLockTests(Context& ctx)
     CanvasScene hiddenPaintScene;
     hiddenPaintScene.applyCanvasSize(QSizeF(120, 120));
     hiddenPaintScene.setShowGrid(false);
-    hiddenPaintScene.setMode(ToolMode::Edit);
+    hiddenPaintScene.setMode(ToolMode::EDIT);
     const QColor redColor(QStringLiteral("#DC2626"));
     const QColor blueColor(QStringLiteral("#2563EB"));
 
-    auto* redImage = createShapeItem(ShapeType::Rectangle);
+    auto* redImage = createShapeItem(ShapeType::RECTANGLE);
     redImage->setStyle(QColor(Qt::transparent), redColor, 1.0);
     redImage->setContentSize(QSizeF(80, 80));
     redImage->setPos(QPointF(10, 10));
     hiddenPaintScene.addItemsWithUndo({redImage}, QStringLiteral("添加红色图元"));
 
     ctx.check(hiddenPaintScene.addLayerWithUndo(QStringLiteral("蓝色层")), QStringLiteral("隐藏渲染测试新建上层"));
-    auto* blueImage = createShapeItem(ShapeType::Rectangle);
+    auto* blueImage = createShapeItem(ShapeType::RECTANGLE);
     blueImage->setStyle(QColor(Qt::transparent), blueColor, 1.0);
     blueImage->setContentSize(QSizeF(80, 80));
     blueImage->setPos(QPointF(20, 20));
@@ -410,7 +410,7 @@ void selftest::runLayerVisibilityLockTests(Context& ctx)
     ctx.check(hiddenPaintScene.isItemEditable(blueImage), QStringLiteral("解锁后图元恢复可编辑"));
 
     CanvasScene singleLayerScene;
-    singleLayerScene.setMode(ToolMode::Edit);
+    singleLayerScene.setMode(ToolMode::EDIT);
     const int singleLayerId = singleLayerScene.activeLayerId();
     ctx.check(!singleLayerScene.setLayerVisible(singleLayerId, false) && singleLayerScene.isLayerVisible(singleLayerId),
               QStringLiteral("最后一个可编辑图层不能被隐藏"));

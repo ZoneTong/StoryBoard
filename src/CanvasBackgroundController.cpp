@@ -62,11 +62,11 @@ void CanvasBackgroundController::replaceCanvasBackgroundImage()
     }
 
     CanvasBackground background;
-    background.type = BackgroundType::Image;
+    background.type = BackgroundType::IMAGE;
     background.image = QPixmap::fromImage(image);
-    background.mode = m_window->m_scene->canvasBackground().type == BackgroundType::Image
+    background.mode = m_window->m_scene->canvasBackground().type == BackgroundType::IMAGE
                           ? m_window->m_scene->canvasBackground().mode
-                          : BackgroundMode::Stretch;
+                          : BackgroundMode::STRETCH;
     m_window->m_scene->replaceCanvasBackground(background, MainWindow::tr("Replace canvas background image"));
 
     m_window->m_settings.lastImageDir = QFileInfo(path).absolutePath();
@@ -77,7 +77,7 @@ void CanvasBackgroundController::replaceCanvasBackgroundImage()
 void CanvasBackgroundController::setBackgroundColor()
 {
     QColor initial(255, 255, 255);
-    if (m_window->m_scene->canvasBackground().type == BackgroundType::Color) {
+    if (m_window->m_scene->canvasBackground().type == BackgroundType::COLOR) {
         initial = m_window->m_scene->canvasBackground().color;
     }
 
@@ -87,7 +87,7 @@ void CanvasBackgroundController::setBackgroundColor()
     }
 
     CanvasBackground background;
-    background.type = BackgroundType::Color;
+    background.type = BackgroundType::COLOR;
     background.color = color;
     m_window->m_scene->replaceCanvasBackground(background, MainWindow::tr("Set background color"));
     m_window->statusBar()->showMessage(MainWindow::tr("Background color updated"), 3000);
@@ -106,12 +106,12 @@ void CanvasBackgroundController::updateModeActions()
     }
 
     const CanvasBackground background = m_window->m_scene->canvasBackground();
-    const bool hasImage = background.type == BackgroundType::Image;
+    const bool hasImage = background.type == BackgroundType::IMAGE;
     m_window->m_bgStretchAct->setEnabled(hasImage);
     m_window->m_bgFitAct->setEnabled(hasImage);
     m_window->m_bgTileAct->setEnabled(hasImage);
-    m_window->m_bgStretchAct->setChecked(hasImage && background.mode == BackgroundMode::Stretch);
-    m_window->m_bgFitAct->setChecked(hasImage && background.mode == BackgroundMode::Fit);
-    m_window->m_bgTileAct->setChecked(hasImage && background.mode == BackgroundMode::Tile);
-    m_window->m_clearBgAct->setEnabled(background.type != BackgroundType::None);
+    m_window->m_bgStretchAct->setChecked(hasImage && background.mode == BackgroundMode::STRETCH);
+    m_window->m_bgFitAct->setChecked(hasImage && background.mode == BackgroundMode::FIT);
+    m_window->m_bgTileAct->setChecked(hasImage && background.mode == BackgroundMode::TILE);
+    m_window->m_clearBgAct->setEnabled(background.type != BackgroundType::NONE);
 }

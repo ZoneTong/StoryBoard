@@ -20,7 +20,7 @@ namespace {
 // 需求 25：刀线条带与波面等弯曲边界近切线相交时，布尔减法会留下面积趋近 0 的
 // 退化碎屑（细环、纸屑），单独成图元后渲染成孤立的“奇怪色块”。碎片填充面积
 // 低于该阈值视为碎屑直接丢弃；约 4×4px，肉眼可辨的最小碎块远大于此。
-constexpr qreal kMinFragmentArea = 16.0;
+constexpr qreal MIN_FRAGMENT_AREA = 16.0;
 
 // 刀线的几何描述：两端点与端点处的切向单位向量。
 struct Knife {
@@ -330,14 +330,14 @@ bool apply(CanvasScene* scene, const QString& commandText)
         if (trajectoryKnife) {
             pieces = PathRegions::splitDisjoint(target.fill.subtracted(knifeBand));
             // 需求 25：先丢弃退化碎屑，剩下的块数才是真实的切割块数。
-            pieces.removeIf([](const QPainterPath& piece) { return PathRegions::area(piece) < kMinFragmentArea; });
+            pieces.removeIf([](const QPainterPath& piece) { return PathRegions::area(piece) < MIN_FRAGMENT_AREA; });
             if (pieces.size() < 2) {
                 straddles = false;
             }
         } else {
             for (const QPainterPath& region : regions) {
                 QList<QPainterPath> parts = PathRegions::splitDisjoint(region.intersected(target.fill));
-                parts.removeIf([](const QPainterPath& piece) { return PathRegions::area(piece) < kMinFragmentArea; });
+                parts.removeIf([](const QPainterPath& piece) { return PathRegions::area(piece) < MIN_FRAGMENT_AREA; });
                 if (parts.isEmpty()) {
                     straddles = false;
                     break;
@@ -380,7 +380,7 @@ bool apply(CanvasScene* scene, const QString& commandText)
         layer.stroke = compositeSource->strokeColor();
         layer.strokeWidth = compositeSource->strokeWidth();
         layer.filled = true;
-        layer.role = PolygonItem::LayerRole::FilledArea;
+        layer.role = PolygonItem::LayerRole::FILLED_AREA;
         auto* item = new PolygonItem(QList<PolygonItem::Layer>{layer}, compositeSource->fillStyle(),
                                      compositeSource->strokeStyle());
         item->setName(scene->uniqueItemName(item->typeDisplayName()));

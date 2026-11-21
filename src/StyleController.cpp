@@ -162,7 +162,7 @@ void StyleController::updateStrokeStyleActions()
     }
     if (m_window->m_strokeStyleButton) {
         m_window->m_strokeStyleButton->setIcon(
-            ItemStyleVisuals::borderStyleIcon(m_window->m_strokeStyle, MainWindow::kToolBarIconSize));
+            ItemStyleVisuals::borderStyleIcon(m_window->m_strokeStyle, MainWindow::TOOL_BAR_ICON_SIZE));
         m_window->m_strokeStyleButton->setToolTip(MainWindow::tr("Border style: %1 (click to choose)")
                                                       .arg(ItemStyleVisuals::borderStyleName(m_window->m_strokeStyle)));
     }
@@ -305,74 +305,75 @@ void StyleController::updateFillActions()
     }
 
     if (m_window->m_fillNoneAct) {
-        m_window->m_fillNoneAct->setChecked(m_window->m_fillStyle == FillStyle::None);
+        m_window->m_fillNoneAct->setChecked(m_window->m_fillStyle == FillStyle::NONE);
     }
     if (m_window->m_fillSolidAct) {
-        m_window->m_fillSolidAct->setChecked(m_window->m_fillStyle == FillStyle::Solid);
+        m_window->m_fillSolidAct->setChecked(m_window->m_fillStyle == FillStyle::SOLID);
     }
     if (m_window->m_fillHachureAct) {
-        m_window->m_fillHachureAct->setChecked(m_window->m_fillStyle == FillStyle::Hachure);
+        m_window->m_fillHachureAct->setChecked(m_window->m_fillStyle == FillStyle::HACHURE);
     }
     if (m_window->m_fillReverseAct) {
-        m_window->m_fillReverseAct->setChecked(m_window->m_fillStyle == FillStyle::ReverseHachure);
+        m_window->m_fillReverseAct->setChecked(m_window->m_fillStyle == FillStyle::REVERSE_HACHURE);
     }
     if (m_window->m_fillCrossAct) {
-        m_window->m_fillCrossAct->setChecked(m_window->m_fillStyle == FillStyle::CrossHatch);
+        m_window->m_fillCrossAct->setChecked(m_window->m_fillStyle == FillStyle::CROSS_HATCH);
     }
     if (m_window->m_fillGridAct) {
-        m_window->m_fillGridAct->setChecked(m_window->m_fillStyle == FillStyle::GridHatch);
+        m_window->m_fillGridAct->setChecked(m_window->m_fillStyle == FillStyle::GRID_HATCH);
     }
     if (m_window->m_fillHoneycombAct) {
-        m_window->m_fillHoneycombAct->setChecked(m_window->m_fillStyle == FillStyle::Honeycomb);
+        m_window->m_fillHoneycombAct->setChecked(m_window->m_fillStyle == FillStyle::HONEYCOMB);
     }
     if (m_window->m_fillHorizontalAct) {
-        m_window->m_fillHorizontalAct->setChecked(m_window->m_fillStyle == FillStyle::HorizontalHatch);
+        m_window->m_fillHorizontalAct->setChecked(m_window->m_fillStyle == FillStyle::HORIZONTAL_HATCH);
     }
     if (m_window->m_fillVerticalAct) {
-        m_window->m_fillVerticalAct->setChecked(m_window->m_fillStyle == FillStyle::VerticalHatch);
+        m_window->m_fillVerticalAct->setChecked(m_window->m_fillStyle == FillStyle::VERTICAL_HATCH);
     }
     if (m_window->m_fillBrickAct) {
-        m_window->m_fillBrickAct->setChecked(m_window->m_fillStyle == FillStyle::Brick);
+        m_window->m_fillBrickAct->setChecked(m_window->m_fillStyle == FillStyle::BRICK);
     }
     if (m_window->m_fillDotsAct) {
-        m_window->m_fillDotsAct->setChecked(m_window->m_fillStyle == FillStyle::Dots);
+        m_window->m_fillDotsAct->setChecked(m_window->m_fillStyle == FillStyle::DOTS);
     }
 
     const QColor swatch = m_window->m_fillColor.isValid() ? m_window->m_fillColor : m_window->m_brushColor;
     m_window->m_fillButton->setIcon(
-        ItemStyleVisuals::fillStyleIcon(m_window->m_fillStyle, swatch, MainWindow::kToolBarIconSize));
+        ItemStyleVisuals::fillStyleIcon(m_window->m_fillStyle, swatch, MainWindow::TOOL_BAR_ICON_SIZE));
     if (m_window->m_fillNoneAct) {
-        m_window->m_fillNoneAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::None, swatch, 16));
+        m_window->m_fillNoneAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::NONE, swatch, 16));
     }
     if (m_window->m_fillSolidAct) {
-        m_window->m_fillSolidAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::Solid, swatch, 16));
+        m_window->m_fillSolidAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::SOLID, swatch, 16));
     }
     if (m_window->m_fillHachureAct) {
-        m_window->m_fillHachureAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::Hachure, swatch, 16));
+        m_window->m_fillHachureAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::HACHURE, swatch, 16));
     }
     if (m_window->m_fillReverseAct) {
-        m_window->m_fillReverseAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::ReverseHachure, swatch, 16));
+        m_window->m_fillReverseAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::REVERSE_HACHURE, swatch, 16));
     }
     if (m_window->m_fillCrossAct) {
-        m_window->m_fillCrossAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::CrossHatch, swatch, 16));
+        m_window->m_fillCrossAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::CROSS_HATCH, swatch, 16));
     }
     if (m_window->m_fillGridAct) {
-        m_window->m_fillGridAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::GridHatch, swatch, 16));
+        m_window->m_fillGridAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::GRID_HATCH, swatch, 16));
     }
     if (m_window->m_fillHoneycombAct) {
-        m_window->m_fillHoneycombAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::Honeycomb, swatch, 16));
+        m_window->m_fillHoneycombAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::HONEYCOMB, swatch, 16));
     }
     if (m_window->m_fillHorizontalAct) {
-        m_window->m_fillHorizontalAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::HorizontalHatch, swatch, 16));
+        m_window->m_fillHorizontalAct->setIcon(
+            ItemStyleVisuals::fillStyleIcon(FillStyle::HORIZONTAL_HATCH, swatch, 16));
     }
     if (m_window->m_fillVerticalAct) {
-        m_window->m_fillVerticalAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::VerticalHatch, swatch, 16));
+        m_window->m_fillVerticalAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::VERTICAL_HATCH, swatch, 16));
     }
     if (m_window->m_fillBrickAct) {
-        m_window->m_fillBrickAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::Brick, swatch, 16));
+        m_window->m_fillBrickAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::BRICK, swatch, 16));
     }
     if (m_window->m_fillDotsAct) {
-        m_window->m_fillDotsAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::Dots, swatch, 16));
+        m_window->m_fillDotsAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::DOTS, swatch, 16));
     }
     const QString colorText = m_window->m_fillColor.isValid() ? m_window->m_fillColor.name(QColor::HexArgb).toUpper()
                                                               : MainWindow::tr("Follow brush color");
@@ -383,7 +384,7 @@ void StyleController::updateFillActions()
     }
     if (m_window->m_fillColorButton) {
         // 工具栏按钮的色板图标单独按工具栏尺寸绘制，菜单项保持 16px。
-        m_window->m_fillColorButton->setIcon(fillColorIcon(swatch, MainWindow::kToolBarIconSize));
+        m_window->m_fillColorButton->setIcon(fillColorIcon(swatch, MainWindow::TOOL_BAR_ICON_SIZE));
         m_window->m_fillColorButton->setToolTip(MainWindow::tr("Fill color: %1 (click to choose)").arg(colorText));
     }
 }
@@ -400,7 +401,7 @@ void StyleController::setBrushColor(const QColor& color, bool remember)
         m_window->m_strokeColorAct->setIcon(strokeColorIcon(color, 16));
     }
     if (m_window->m_strokeColorButton) {
-        m_window->m_strokeColorButton->setIcon(strokeColorIcon(color, MainWindow::kToolBarIconSize));
+        m_window->m_strokeColorButton->setIcon(strokeColorIcon(color, MainWindow::TOOL_BAR_ICON_SIZE));
         m_window->m_strokeColorButton->setToolTip(
             MainWindow::tr("Border color: %1 (click to choose)").arg(color.name(QColor::HexArgb).toUpper()));
     }

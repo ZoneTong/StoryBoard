@@ -11,7 +11,7 @@ class QPainter;
 // 独立于 FillStyle 枚举：先画填充色 / 图案，图片铺在上面，图片透明区露出底层。
 namespace ImageFill {
 
-enum class Mode { Stretch = 0, Fit, Tile };
+enum class Mode { STRETCH = 0, FIT, TILE };
 
 QString modeToString(Mode mode);
 Mode modeFromString(const QString& name);

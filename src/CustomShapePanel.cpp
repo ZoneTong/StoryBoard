@@ -23,10 +23,10 @@
 
 namespace {
 
-constexpr int kColumns = 4;
-constexpr int kIconSize = 40;
-const QString kOtherTitle = QStringLiteral("其它");
-const QString kOrderFile = QStringLiteral("顺序.txt");
+constexpr int COLUMNS = 4;
+constexpr int ICON_SIZE = 40;
+const QString OTHER_TITLE = QStringLiteral("其它");
+const QString ORDER_FILE = QStringLiteral("顺序.txt");
 
 struct CachedTemplate {
     qint64 modified = 0;
@@ -63,7 +63,7 @@ bool loadTemplateCached(const QFileInfo& info, CustomShapeTemplate* entry, QStri
 // 「顺序.txt」每行一个文件夹名，空行与 # 注释忽略；未列出的目录按本地化名称排在后面。
 QStringList readOrderFile(const QString& rootPath)
 {
-    QFile file(QDir(rootPath).filePath(kOrderFile));
+    QFile file(QDir(rootPath).filePath(ORDER_FILE));
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         return {};
     }
@@ -224,8 +224,8 @@ QList<CustomShapePanel::Folder> CustomShapePanel::scanFolders() const
 
     if (!looseItems.isEmpty() || !looseErrors.isEmpty()) {
         Folder other;
-        other.key = QStringLiteral("|") + kOtherTitle;
-        other.title = kOtherTitle;
+        other.key = QStringLiteral("|") + OTHER_TITLE;
+        other.title = OTHER_TITLE;
         other.items = looseItems;
         other.errors = looseErrors;
         folders.append(other); // 根目录散文件固定最后一页
@@ -261,19 +261,19 @@ void CustomShapePanel::rebuild(const QList<Folder>& folders)
             button->setProperty("shapePath", entry.filePath);
             button->setText(entry.name);
             button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-            button->setIcon(makeCustomShapeIcon(entry.unitPath, QColor(58, 64, 80), kIconSize));
-            button->setIconSize(QSize(kIconSize, kIconSize));
+            button->setIcon(makeCustomShapeIcon(entry.unitPath, QColor(58, 64, 80), ICON_SIZE));
+            button->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
             button->setToolTip(tr("Insert “%1” from %2").arg(entry.name, QFileInfo(entry.filePath).fileName()));
             button->setAutoRaise(true);
-            button->setMinimumWidth(kIconSize + 28);
+            button->setMinimumWidth(ICON_SIZE + 28);
             // 方向键 / 回车要能落到模板按钮上，焦点策略不能是 NoFocus。
             button->setFocusPolicy(Qt::StrongFocus);
             const QString filePath = entry.filePath;
             connect(button, &QToolButton::clicked, this, [this, filePath]() { insertTemplate(filePath); });
-            grid->addWidget(button, index / kColumns, index % kColumns, Qt::AlignLeft | Qt::AlignTop);
+            grid->addWidget(button, index / COLUMNS, index % COLUMNS, Qt::AlignLeft | Qt::AlignTop);
             ++index;
         }
-        for (int column = 0; column < kColumns; ++column) {
+        for (int column = 0; column < COLUMNS; ++column) {
             grid->setColumnStretch(column, 1);
         }
         grid->setRowStretch(grid->rowCount(), 1);
@@ -390,11 +390,11 @@ void CustomShapePanel::keyPressEvent(QKeyEvent* event)
         event->accept();
         return;
     case Qt::Key_Up:
-        moveFocusByStep(-kColumns);
+        moveFocusByStep(-COLUMNS);
         event->accept();
         return;
     case Qt::Key_Down:
-        moveFocusByStep(kColumns);
+        moveFocusByStep(COLUMNS);
         event->accept();
         return;
     default:

@@ -12,7 +12,7 @@
 qreal CanvasScene::layerBaseZ(int layerId) const
 {
     const int index = layerIndex(layerId);
-    return index > 0 ? index * scene_constants::kLayerZStride : 0.0;
+    return index > 0 ? index * scene_constants::LAYER_Z_STRIDE : 0.0;
 }
 
 void CanvasScene::applyItemStacking(CanvasItem* item)
@@ -20,7 +20,7 @@ void CanvasScene::applyItemStacking(CanvasItem* item)
     if (!item) {
         return;
     }
-    const int maxHeight = scene_constants::kMaxItemHeight;
+    const int maxHeight = scene_constants::MAX_ITEM_HEIGHT;
     const int height = qBound(0, item->height(), maxHeight);
     if (height != item->height()) {
         item->setHeight(height);
@@ -61,7 +61,7 @@ bool CanvasScene::normalizeLayerHeights(int layerId)
     QSet<int> seen;
     bool needsNormalization = false;
     for (const CanvasItem* item : std::as_const(items)) {
-        if (item->height() < 0 || item->height() > scene_constants::kMaxItemHeight || seen.contains(item->height())) {
+        if (item->height() < 0 || item->height() > scene_constants::MAX_ITEM_HEIGHT || seen.contains(item->height())) {
             needsNormalization = true;
             break;
         }
@@ -130,7 +130,7 @@ bool CanvasScene::adjustItemHeight(CanvasItem* item, int delta, const QString& t
     }
 
     const int current = item->height();
-    const int target = qBound(0, current + delta, scene_constants::kMaxItemHeight);
+    const int target = qBound(0, current + delta, scene_constants::MAX_ITEM_HEIGHT);
     if (target == current) {
         return false;
     }
@@ -178,7 +178,7 @@ int CanvasScene::adjustSelectedHeights(int delta)
         return 0;
     }
 
-    // 多选整块移动「全或不动」：任一目标越出 0–kMaxItemHeight 边界，或目标
+    // 多选整块移动「全或不动」：任一目标越出 0–MAX_ITEM_HEIGHT 边界，或目标
     // 的新高度撞上未选中的图元，就整体不动。否则逐个 swap 会出现「底部两项
     // 按下移，被互相换位顶到最上面」的错乱结果。
     if (targets.size() > 1) {
@@ -197,7 +197,7 @@ int CanvasScene::adjustSelectedHeights(int delta)
                 }
                 if (it.value().contains(peer)) {
                     const int targetHeight = peer->height() + delta;
-                    if (targetHeight < 0 || targetHeight > scene_constants::kMaxItemHeight) {
+                    if (targetHeight < 0 || targetHeight > scene_constants::MAX_ITEM_HEIGHT) {
                         blocked = true;
                         break;
                     }
@@ -313,7 +313,7 @@ void CanvasScene::applyItemStack(const ItemStackList& stack)
         } else {
             entry.item->setLayerId(entry.layerId);
         }
-        entry.item->setHeight(qBound(0, entry.height, scene_constants::kMaxItemHeight));
+        entry.item->setHeight(qBound(0, entry.height, scene_constants::MAX_ITEM_HEIGHT));
         affectedLayers.insert(entry.item->layerId());
         applyItemStacking(entry.item);
         entry.item->update();
@@ -337,7 +337,7 @@ void CanvasScene::assignNewItemPlacement(CanvasItem* item)
     if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId) {
         item->setLayerId(m_activeLayerId);
     }
-    if (item->height() < 0 || item->height() > scene_constants::kMaxItemHeight ||
+    if (item->height() < 0 || item->height() > scene_constants::MAX_ITEM_HEIGHT ||
         heightUsedByOther(item->layerId(), item->height(), item)) {
         const int height = nextHeight(item->layerId());
         item->setHeight(height >= 0 ? height : 0);

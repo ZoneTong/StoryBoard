@@ -150,7 +150,7 @@ int runSettingsApplyProbe()
             auto* languageCombo = dialog->findChild<QComboBox*>();
             if (languageCombo) {
                 const UiLanguage target =
-                    originalLanguage == UiLanguage::Chinese ? UiLanguage::English : UiLanguage::Chinese;
+                    originalLanguage == UiLanguage::CHINESE ? UiLanguage::ENGLISH : UiLanguage::CHINESE;
                 languageCombo->setCurrentIndex(languageCombo->findData(static_cast<int>(target)));
             }
             dialog->accept();
@@ -164,11 +164,11 @@ int runSettingsApplyProbe()
 int runSetLanguage(const CommandLineOptions& options)
 {
     if (options.setLanguageValue == QLatin1String("en")) {
-        setUiLanguageSetting(UiLanguage::English);
+        setUiLanguageSetting(UiLanguage::ENGLISH);
     } else if (options.setLanguageValue == QLatin1String("zh")) {
-        setUiLanguageSetting(UiLanguage::Chinese);
+        setUiLanguageSetting(UiLanguage::CHINESE);
     } else {
-        setUiLanguageSetting(UiLanguage::System);
+        setUiLanguageSetting(UiLanguage::SYSTEM);
     }
     return 0;
 }
@@ -217,7 +217,7 @@ int runItemPropertiesScreenshot(const CommandLineOptions& options)
     CanvasScene demoScene;
     populateDemoScene(demoScene);
     demoScene.assignAutoItemNames();
-    demoScene.setMode(ToolMode::Edit);
+    demoScene.setMode(ToolMode::EDIT);
     CanvasItem* target = nullptr;
     for (CanvasItem* item : demoScene.canvasItems()) {
         if (dynamic_cast<ShapeItem*>(item)) {
@@ -366,7 +366,7 @@ int runLineArt(const CommandLineOptions& options)
         // 与「导入图片线稿化」一致：不额外平滑，折线模式保持方角。
         auto* stroke = new CurveItem();
         stroke->setStrokePoints(scenePoints, outline.color, lineArtOptions.strokeWidth, 0.0, true);
-        stroke->setSource(CurveSource::LineArt);
+        stroke->setSource(CurveSource::LINE_ART);
         items.append(stroke);
     }
     if (items.isEmpty()) {
