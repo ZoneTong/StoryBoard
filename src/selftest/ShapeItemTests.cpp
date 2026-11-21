@@ -782,9 +782,10 @@ void selftest::RunShapeItemTests(Context& ctx)
         ctx.Check(hasInk(axisMajor) && hasInk(axisMinor) && axisMajor != axisMinor && axisMajor != shapesIcon &&
                       axisMinor != shapesIcon,
                   QStringLiteral("长 / 短半轴使用独立的焦点半轴图标"));
-        // 长半轴图标在焦点右侧的横线上有墨迹，短半轴图标在焦点上方的竖线上有墨迹。
-        ctx.Check(hasInkIn(axisMajor, QRect(24, 18, 18, 10)) && hasInkIn(axisMinor, QRect(4, 10, 12, 12)),
-                  QStringLiteral("长半轴横向出焦点、短半轴纵向出焦点"));
+        // 长半轴图标在左焦点右侧的横线上有墨迹，短半轴图标在右焦点与右顶点
+        // 之间的横线上有墨迹（x=40 逻辑 20，既不在焦点圆点也不在椭圆轮廓上）。
+        ctx.Check(hasInkIn(axisMajor, QRect(24, 18, 18, 10)) && hasInkIn(axisMinor, QRect(40, 23, 1, 3)),
+                  QStringLiteral("长 / 短半轴图标分别为左、右焦点横线到右顶点"));
     }
 
     QList<ShapeItem*> shapeItems;
