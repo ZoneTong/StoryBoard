@@ -38,15 +38,15 @@ class PropertiesPanel : public QWidget {
   public:
     explicit PropertiesPanel(CanvasScene* scene, QWidget* parent = nullptr);
 
-    void refresh();
+    void Refresh();
     // 按卡片内最宽的一行（包括当前隐藏的行）计算启动宽度；之后不再随选中变化。
-    int preferredWidth() const;
+    int PreferredWidth() const;
     // 多选时复用主窗口的对齐 / 合并图元 / 复制 / 删除 / 旋转 / 组合动作，保证菜单、工具栏与卡片行为一致。
-    void setSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions,
+    void SetSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions,
                              QAction* copyAction, QAction* removeAction, QAction* rotateCwAction,
                              QAction* rotateCcwAction, QAction* groupAction, QAction* ungroupAction);
     // 笔画平滑与图元属性窗也是选中项可用的操作，卡片沿用主窗口同一批 QAction。
-    void setItemActions(QAction* smoothAction, QAction* propertiesAction);
+    void SetItemActions(QAction* smoothAction, QAction* propertiesAction);
     // 替换当前唯一选中的图片，保留原位置与图元名称；图片本体、尺寸和名称一起进入撤销记录。
 
   signals:
@@ -56,53 +56,53 @@ class PropertiesPanel : public QWidget {
     void borderWidthPicked(qreal width);
 
   private:
-    void scheduleRefresh();
-    void updateSummary();
+    void ScheduleRefresh();
+    void UpdateSummary();
     // 选中的是否还值得再套一层组合：正好选中的是一整棵组树时返回 false。
-    bool selectionGroupUseful(const QList<CanvasItem*>& items) const;
+    bool SelectionGroupUseful(const QList<CanvasItem*>& items) const;
 
     QList<CanvasItem*> selectedItems() const;
-    QList<ShapeItem*> selectedShapes() const;
-    QList<ShapeItem*> selectedComposites() const;
-    QList<LineItemAbstract*> selectedStrokes() const;
-    QList<CanvasItem*> selectedTexts() const;
+    QList<ShapeItem*> SelectedShapes() const;
+    QList<ShapeItem*> SelectedComposites() const;
+    QList<LineItemAbstract*> SelectedStrokes() const;
+    QList<CanvasItem*> SelectedTexts() const;
     // 描线颜色 / 宽度可作用的对象：图形、笔画与多边形。
-    QList<CanvasItem*> selectedStrokeTargets() const;
-    void changeSelectedShapes(const QString& text, const std::function<void(ShapeItem*)>& mutate);
+    QList<CanvasItem*> SelectedStrokeTargets() const;
+    void ChangeSelectedShapes(const QString& text, const std::function<void(ShapeItem*)>& mutate);
     // 弧线角度与正弦参数：几何由参数派生，改动按参数快照入撤销栈。
-    void changeSelectedArcs(const QString& text, const std::function<void(LineItemAbstract*)>& mutate);
-    void changeSelectedSines(const QString& text, const std::function<void(LineItemAbstract*)>& mutate);
-    void changeSelectedTexts(const QString& text, const std::function<void(TextItemState&)>& mutate);
-    void applyTextContent(const QString& text);
-    void applyTextFont(const QFont& font);
-    void applyTextColor(const QColor& color);
+    void ChangeSelectedArcs(const QString& text, const std::function<void(LineItemAbstract*)>& mutate);
+    void ChangeSelectedSines(const QString& text, const std::function<void(LineItemAbstract*)>& mutate);
+    void ChangeSelectedTexts(const QString& text, const std::function<void(TextItemState&)>& mutate);
+    void ApplyTextContent(const QString& text);
+    void ApplyTextFont(const QFont& font);
+    void ApplyTextColor(const QColor& color);
     // 需求 13：给选中的所有可填充图元批量替换背景图片（多选也生效）。
-    void chooseFillImage();
+    void ChooseFillImage();
     void ClearFillImage();
     // 属性表通道：同一组属性值写回所有目标图元，只占一条撤销记录。
-    void applyPropertyValues(const QMap<ItemProperty, QVariant>& values, const QString& text,
+    void ApplyPropertyValues(const QMap<ItemProperty, QVariant>& values, const QString& text,
                              const QList<CanvasItem*>& targets = QList<CanvasItem*>());
-    void applyStrokeColor(const QColor& color);
-    void applyFillColor(const QColor& color);
-    void applyFillStyle(FillStyle style);
-    void applyBorderStyle(Qt::PenStyle style);
-    void applyBorderWidth(qreal width);
-    void applyOpacity(int percent);
-    void applyCornerRadius(int radius);
-    void applyStartAngle(int angle);
-    void applySweepAngle(int angle);
+    void ApplyStrokeColor(const QColor& color);
+    void ApplyFillColor(const QColor& color);
+    void ApplyFillStyle(FillStyle style);
+    void ApplyBorderStyle(Qt::PenStyle style);
+    void ApplyBorderWidth(qreal width);
+    void ApplyOpacity(int percent);
+    void ApplyCornerRadius(int radius);
+    void ApplyStartAngle(int angle);
+    void ApplySweepAngle(int angle);
     // 正弦波形：周期数（1–12）与振幅（相对中心线的像素高度，1–200）。
-    void applySineCycles(int cycles);
-    void applySineAmplitude(int percent);
+    void ApplySineCycles(int cycles);
+    void ApplySineAmplitude(int percent);
     // 三角形：底边长度与两个底角；角度优先，高度随底边派生。
-    void applyTriangleBase(int base);
-    void applyTriangleAngle1(int degrees);
-    void applyTriangleAngle2(int degrees);
+    void ApplyTriangleBase(int base);
+    void ApplyTriangleAngle1(int degrees);
+    void ApplyTriangleAngle2(int degrees);
     // 直线两端箭头样式（ArrowStyle 整数值）。
-    void applyArrowStart(int style);
-    void applyArrowEnd(int style);
-    void adjustLayer(int delta);
-    void adjustHeight(int delta);
+    void ApplyArrowStart(int style);
+    void ApplyArrowEnd(int style);
+    void AdjustLayer(int delta);
+    void AdjustHeight(int delta);
 
     CanvasScene* m_scene = nullptr;
     QLabel* m_titleLabel = nullptr;

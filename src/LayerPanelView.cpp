@@ -19,13 +19,13 @@ LayerPanelView::LayerPanelView(CanvasScene* scene, QListWidget* list, QCheckBox*
 {
 }
 
-int LayerPanelView::currentLayerId() const
+int LayerPanelView::CurrentLayerId() const
 {
     const QListWidgetItem* current = m_list ? m_list->currentItem() : nullptr;
     return current ? current->data(Qt::UserRole).toInt() : 0;
 }
 
-QList<int> LayerPanelView::selectedLayerIds() const
+QList<int> LayerPanelView::SelectedLayerIds() const
 {
     QList<int> ids;
     if (!m_list) {
@@ -41,7 +41,7 @@ QList<int> LayerPanelView::selectedLayerIds() const
     return ids;
 }
 
-void LayerPanelView::refreshRowStyles()
+void LayerPanelView::RefreshRowStyles()
 {
     if (!m_list) {
         return;
@@ -50,18 +50,18 @@ void LayerPanelView::refreshRowStyles()
         QListWidgetItem* entry = m_list->item(row);
         auto* rowWidget = qobject_cast<LayerRow*>(m_list->itemWidget(entry));
         if (rowWidget) {
-            rowWidget->applySelectedStyle(entry->isSelected());
+            rowWidget->ApplySelectedStyle(entry->isSelected());
         }
     }
 }
 
-void LayerPanelView::refreshAllVisibleState()
+void LayerPanelView::RefreshAllVisibleState()
 {
     if (!m_allVisibleBox || !m_scene) {
         return;
     }
 
-    const QList<CanvasLayer> layers = m_scene->layers();
+    const QList<CanvasLayer> layers = m_scene->Layers();
     int visibleCount = 0;
     for (const CanvasLayer& layer : layers) {
         if (layer.visible) {
@@ -80,25 +80,25 @@ void LayerPanelView::refreshAllVisibleState()
     m_allVisibleBox->setCheckState(state);
 }
 
-void LayerPanelView::refreshButtons()
+void LayerPanelView::RefreshButtons()
 {
     if (!m_scene) {
         return;
     }
 
-    const int activeIndex = m_scene->layerIndex(m_scene->activeLayerId());
-    QList<int> ids = selectedLayerIds();
+    const int activeIndex = m_scene->LayerIndex(m_scene->ActiveLayerId());
+    QList<int> ids = SelectedLayerIds();
     if (ids.isEmpty()) {
-        if (m_scene->activeLayerId() > CanvasScene::BackgroundLayerId) {
-            ids.append(m_scene->activeLayerId());
+        if (m_scene->ActiveLayerId() > CanvasScene::BackgroundLayerId) {
+            ids.append(m_scene->ActiveLayerId());
         }
     }
 
     int removable = 0;
     bool removeable = true;
     for (int id : ids) {
-        const int index = m_scene->layerIndex(id);
-        if (index <= 0 || m_scene->layerItemCount(id) > 0) {
+        const int index = m_scene->LayerIndex(id);
+        if (index <= 0 || m_scene->LayerItemCount(id) > 0) {
             removeable = false;
             break;
         }
@@ -106,23 +106,23 @@ void LayerPanelView::refreshButtons()
     }
 
     m_addButton->setEnabled(true);
-    m_removeButton->setEnabled(removeable && !ids.isEmpty() && m_scene->userLayerCount() - removable >= 1);
-    m_upButton->setEnabled(activeIndex > 0 && activeIndex < m_scene->layerCount() - 1);
+    m_removeButton->setEnabled(removeable && !ids.isEmpty() && m_scene->UserLayerCount() - removable >= 1);
+    m_upButton->setEnabled(activeIndex > 0 && activeIndex < m_scene->LayerCount() - 1);
     m_downButton->setEnabled(activeIndex > 1);
 }
 
-void LayerPanelView::refreshSummary()
+void LayerPanelView::RefreshSummary()
 {
     if (!m_scene) {
         return;
     }
 
-    const QList<int> ids = selectedLayerIds();
+    const QList<int> ids = SelectedLayerIds();
     QString text;
     if (ids.size() > 1) {
         text = LayerPanel::tr("%1 layer(s) selected (items can be multi-selected)\n").arg(ids.size());
     } else {
-        const CanvasLayer active = m_scene->layer(m_scene->activeLayerId());
+        const CanvasLayer active = m_scene->layer(m_scene->ActiveLayerId());
         text = LayerPanel::tr("Current: %1\n").arg(active.name);
     }
     text += LayerPanel::tr(

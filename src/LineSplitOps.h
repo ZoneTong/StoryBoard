@@ -13,8 +13,8 @@ class CanvasScene;
 namespace LineSplitOps {
 
 // 选中集里必须有填充图元与恰好一条线类切刀。
-bool supports(CanvasScene* scene);
+bool Supports(CanvasScene* scene);
 // 返回 true 表示至少切出了一块碎片。
-bool apply(CanvasScene* scene, const QString& commandText);
+bool Apply(CanvasScene* scene, const QString& commandText);
 
 } // namespace LineSplitOps

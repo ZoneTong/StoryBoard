@@ -114,7 +114,7 @@ constexpr struct IconEntry {
 
 } // namespace
 
-bool paintIconLayerView(QPainter& painter, IconId id)
+bool PaintIconLayerView(QPainter& painter, IconId id)
 {
     for (const IconEntry& entry : ENTRIES) {
         if (entry.id == id) {

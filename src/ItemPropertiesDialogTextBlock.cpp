@@ -25,16 +25,16 @@ ItemPropertiesDialogTextBlock::ItemPropertiesDialogTextBlock(CanvasItem* item, Q
     m_textEdit->setMinimumHeight(88);
 
     m_textColorButton =
-        ItemPropertiesFields::makeColorField(this, item->TextColor(), QStringLiteral("ItemPropertiesTextColorValue"));
+        ItemPropertiesFields::MakeColorField(this, item->TextColor(), QStringLiteral("ItemPropertiesTextColorValue"));
 
     m_fontButton = new QPushButton(this);
     m_fontButton->setObjectName(QStringLiteral("ItemPropertiesFontValue"));
     m_fontButton->setMinimumWidth(180);
-    updateFontButton();
-    connect(m_fontButton, &QPushButton::clicked, this, &ItemPropertiesDialogTextBlock::chooseFont);
+    UpdateFontButton();
+    connect(m_fontButton, &QPushButton::clicked, this, &ItemPropertiesDialogTextBlock::ChooseFont);
 }
 
-void ItemPropertiesDialogTextBlock::addRows(QFormLayout* form)
+void ItemPropertiesDialogTextBlock::AddRows(QFormLayout* form)
 {
     if (m_textEdit) {
         form->addRow(ItemPropertiesDialog::tr("Text content"), m_textEdit);
@@ -47,14 +47,14 @@ void ItemPropertiesDialogTextBlock::addRows(QFormLayout* form)
     }
 }
 
-void ItemPropertiesDialogTextBlock::updateFontButton()
+void ItemPropertiesDialogTextBlock::UpdateFontButton()
 {
     if (m_fontButton) {
-        m_fontButton->setText(ItemPropertiesFields::fontText(m_textFont));
+        m_fontButton->setText(ItemPropertiesFields::FontText(m_textFont));
     }
 }
 
-void ItemPropertiesDialogTextBlock::chooseFont()
+void ItemPropertiesDialogTextBlock::ChooseFont()
 {
     bool ok = false;
     // 使用 Qt 自绘字体窗，避免 Windows 原生字体对话框跟随系统 UI 语言而
@@ -66,6 +66,6 @@ void ItemPropertiesDialogTextBlock::chooseFont()
     }
 
     m_textFont = font;
-    updateFontButton();
+    UpdateFontButton();
     emit fontChanged();
 }

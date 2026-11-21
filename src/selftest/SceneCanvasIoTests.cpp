@@ -83,87 +83,87 @@
 #include <cstdlib>
 
 
-void selftest::runSceneCanvasIoTests(Context& ctx)
+void selftest::RunSceneCanvasIoTests(Context& ctx)
 {
     CanvasScene scene;
     QUndoStack undo;
     undo.setUndoLimit(100);
-    scene.setUndoStack(&undo);
-    scene.applyCanvasSize(QSizeF(800, 600));
-    scene.setShowGrid(true);
-    ctx.check(qFuzzyCompare(scene.canvasSize().width(), 800.0) && qFuzzyCompare(scene.canvasSize().height(), 600.0),
-              QStringLiteral("设置画板尺寸"), geometryText(QPointF(), scene.canvasSize()));
+    scene.SetUndoStack(&undo);
+    scene.ApplyCanvasSize(QSizeF(800, 600));
+    scene.SetShowGrid(true);
+    ctx.Check(qFuzzyCompare(scene.CanvasSize().width(), 800.0) && qFuzzyCompare(scene.CanvasSize().height(), 600.0),
+              QStringLiteral("设置画板尺寸"), GeometryText(QPointF(), scene.CanvasSize()));
 
-    const QImage defaultImage = scene.renderImage(scene.canvasRect(), 1.0);
-    ctx.check(defaultImage.pixelColor(5, 5).alpha() == 0, QStringLiteral("默认背景层为无色纯透明"));
+    const QImage defaultImage = scene.RenderImage(scene.CanvasRect(), 1.0);
+    ctx.Check(defaultImage.pixelColor(5, 5).alpha() == 0, QStringLiteral("默认背景层为无色纯透明"));
 
     CanvasBackground background;
     background.type = BackgroundType::COLOR;
     background.color = QColor(QStringLiteral("#FEF3C7"));
-    scene.replaceCanvasBackground(background);
-    ctx.check(scene.canvasBackground().type == BackgroundType::COLOR &&
+    scene.ReplaceCanvasBackground(background);
+    ctx.Check(scene.canvasBackground().type == BackgroundType::COLOR &&
                   scene.canvasBackground().color == background.color,
               QStringLiteral("设置背景颜色"));
-    ctx.check(undo.canUndo(), QStringLiteral("背景替换进入撤销栈"));
+    ctx.Check(undo.canUndo(), QStringLiteral("背景替换进入撤销栈"));
 
     undo.undo();
-    ctx.check(scene.canvasBackground().type == BackgroundType::NONE, QStringLiteral("撤销背景替换"));
+    ctx.Check(scene.canvasBackground().type == BackgroundType::NONE, QStringLiteral("撤销背景替换"));
     undo.redo();
-    ctx.check(scene.canvasBackground().color == background.color, QStringLiteral("重做背景替换"));
+    ctx.Check(scene.canvasBackground().color == background.color, QStringLiteral("重做背景替换"));
 
     auto* stroke = new CurveItem();
-    stroke->beginStroke(QPointF(90, 120), QColor(QStringLiteral("#EF4444")), 6.0);
+    stroke->BeginStroke(QPointF(90, 120), QColor(QStringLiteral("#EF4444")), 6.0);
     for (int i = 1; i <= 60; ++i) {
         const qreal x = 90.0 + i * 7.0;
         const qreal y = 220.0 + qSin(i * 0.32) * 80.0;
-        stroke->appendScenePoint(QPointF(x, y));
+        stroke->AppendScenePoint(QPointF(x, y));
     }
-    stroke->endStroke();
-    stroke->setStrokePattern(Qt::DashLine);
-    ctx.check(!stroke->isEmpty(), QStringLiteral("生成自由曲线"));
-    scene.addItemsWithUndo({stroke}, QStringLiteral("添加曲线"));
-    ctx.check(scene.canvasItemCount() == 1, QStringLiteral("曲线加入场景"));
-    ctx.check(undo.canUndo(), QStringLiteral("添加曲线进入撤销栈"));
+    stroke->EndStroke();
+    stroke->SetStrokePattern(Qt::DashLine);
+    ctx.Check(!stroke->IsEmpty(), QStringLiteral("生成自由曲线"));
+    scene.AddItemsWithUndo({stroke}, QStringLiteral("添加曲线"));
+    ctx.Check(scene.CanvasItemCount() == 1, QStringLiteral("曲线加入场景"));
+    ctx.Check(undo.canUndo(), QStringLiteral("添加曲线进入撤销栈"));
 
     const QPointF strokePos = stroke->pos();
-    const QSizeF strokeSize = stroke->contentSize();
+    const QSizeF strokeSize = stroke->ContentSize();
 
     undo.undo();
-    ctx.check(scene.canvasItemCount() == 0, QStringLiteral("撤销添加曲线"));
+    ctx.Check(scene.CanvasItemCount() == 0, QStringLiteral("撤销添加曲线"));
     undo.redo();
-    ctx.check(scene.canvasItemCount() == 1, QStringLiteral("重做添加曲线"));
-    ctx.check(stroke->pos() == strokePos && stroke->contentSize() == strokeSize, QStringLiteral("重做后曲线几何一致"),
-              geometryText(stroke->pos(), stroke->contentSize()));
+    ctx.Check(scene.CanvasItemCount() == 1, QStringLiteral("重做添加曲线"));
+    ctx.Check(stroke->pos() == strokePos && stroke->ContentSize() == strokeSize, QStringLiteral("重做后曲线几何一致"),
+              GeometryText(stroke->pos(), stroke->ContentSize()));
 
-    ItemGeometry beforeMove{stroke, stroke->pos(), stroke->contentSize()};
+    ItemGeometry beforeMove{stroke, stroke->pos(), stroke->ContentSize()};
     stroke->setPos(stroke->pos() + QPointF(45.0, 30.0));
-    ItemGeometry afterMove{stroke, stroke->pos(), stroke->contentSize()};
-    scene.pushGeometry({beforeMove}, {afterMove}, QStringLiteral("移动图元"));
+    ItemGeometry afterMove{stroke, stroke->pos(), stroke->ContentSize()};
+    scene.PushGeometry({beforeMove}, {afterMove}, QStringLiteral("移动图元"));
     undo.undo();
-    ctx.check(stroke->pos() == strokePos, QStringLiteral("撤销移动图元"));
+    ctx.Check(stroke->pos() == strokePos, QStringLiteral("撤销移动图元"));
     undo.redo();
-    ctx.check(stroke->pos() == strokePos + QPointF(45.0, 30.0), QStringLiteral("重做移动图元"));
+    ctx.Check(stroke->pos() == strokePos + QPointF(45.0, 30.0), QStringLiteral("重做移动图元"));
 
-    ItemGeometry beforeResize{stroke, stroke->pos(), stroke->contentSize()};
-    stroke->SetContentSize(stroke->contentSize() * 1.35);
-    ItemGeometry afterResize{stroke, stroke->pos(), stroke->contentSize()};
-    scene.pushGeometry({beforeResize}, {afterResize}, QStringLiteral("缩放图元"));
-    const QSizeF resized = stroke->contentSize();
+    ItemGeometry beforeResize{stroke, stroke->pos(), stroke->ContentSize()};
+    stroke->SetContentSize(stroke->ContentSize() * 1.35);
+    ItemGeometry afterResize{stroke, stroke->pos(), stroke->ContentSize()};
+    scene.PushGeometry({beforeResize}, {afterResize}, QStringLiteral("缩放图元"));
+    const QSizeF resized = stroke->ContentSize();
     undo.undo();
-    ctx.check(stroke->contentSize() == strokeSize, QStringLiteral("撤销缩放图元"));
+    ctx.Check(stroke->ContentSize() == strokeSize, QStringLiteral("撤销缩放图元"));
     undo.redo();
-    ctx.check(stroke->contentSize() == resized, QStringLiteral("重做缩放图元"));
+    ctx.Check(stroke->ContentSize() == resized, QStringLiteral("重做缩放图元"));
 
-    const QPixmap shot = makeShotImage(320, 200, QStringLiteral("SHOT 01"), QColor(QStringLiteral("#60A5FA")),
+    const QPixmap shot = MakeShotImage(320, 200, QStringLiteral("SHOT 01"), QColor(QStringLiteral("#60A5FA")),
                                        QColor(QStringLiteral("#1D4ED8")));
-    auto* imageItem = createShapeItem(ShapeType::RECTANGLE);
-    imageItem->setStyle(QColor(Qt::transparent), QColor(Qt::transparent), 1.0);
+    auto* imageItem = CreateShapeItem(ShapeType::RECTANGLE);
+    imageItem->SetStyle(QColor(Qt::transparent), QColor(Qt::transparent), 1.0);
     imageItem->SetFillStyle(FillStyle::NONE);
     imageItem->SetFillImage(shot, ImageFill::Mode::STRETCH);
     imageItem->SetContentSize(QSizeF(320, 200));
     imageItem->setPos(QPointF(400, 260));
-    scene.addItemsWithUndo({imageItem}, QStringLiteral("插入图片"));
-    ctx.check(scene.canvasItemCount() == 2, QStringLiteral("插入图片图元"));
+    scene.AddItemsWithUndo({imageItem}, QStringLiteral("插入图片"));
+    ctx.Check(scene.CanvasItemCount() == 2, QStringLiteral("插入图片图元"));
 
     // 透明度是所有图元共有属性：曲线与图片都要随画布一起保存和恢复。
     stroke->SetItemOpacity(0.35);
@@ -171,23 +171,23 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
 
     const QJsonObject root = scene.ToJson();
     const QByteArray jsonBytes = QJsonDocument(root).toJson(QJsonDocument::Indented);
-    ctx.check(jsonBytes.contains("StoryBoard") && jsonBytes.contains("\"freehand\"") &&
+    ctx.Check(jsonBytes.contains("StoryBoard") && jsonBytes.contains("\"freehand\"") &&
                   jsonBytes.contains("\"shape\"") && jsonBytes.contains("\"images\""),
               QStringLiteral("画布序列化为 JSON"));
 
     CanvasScene loaded;
     QUndoStack loadedUndo;
-    loaded.setUndoStack(&loadedUndo);
+    loaded.SetUndoStack(&loadedUndo);
     QString loadError;
-    ctx.check(loaded.FromJson(root, &loadError), QStringLiteral("反序列化画布"), loadError);
-    ctx.check(loaded.canvasItemCount() == 2, QStringLiteral("画布图元数量一致"));
-    ctx.check(loaded.canvasBackground().type == BackgroundType::COLOR &&
+    ctx.Check(loaded.FromJson(root, &loadError), QStringLiteral("反序列化画布"), loadError);
+    ctx.Check(loaded.CanvasItemCount() == 2, QStringLiteral("画布图元数量一致"));
+    ctx.Check(loaded.canvasBackground().type == BackgroundType::COLOR &&
                   loaded.canvasBackground().color == background.color,
               QStringLiteral("画布背景恢复"));
 
     LineItemAbstract* loadedStroke = nullptr;
     ShapeItem* loadedImage = nullptr;
-    const QList<CanvasItem*> loadedItems = loaded.canvasItems();
+    const QList<CanvasItem*> loadedItems = loaded.CanvasItems();
     for (CanvasItem* item : loadedItems) {
         if (dynamic_cast<LineItemAbstract*>(item)) {
             loadedStroke = static_cast<LineItemAbstract*>(item);
@@ -197,32 +197,32 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
             }
         }
     }
-    ctx.check(loadedStroke != nullptr, QStringLiteral("画布包含曲线"));
+    ctx.Check(loadedStroke != nullptr, QStringLiteral("画布包含曲线"));
     if (loadedStroke) {
-        ctx.check(loadedStroke->StrokeColor() == QColor(QStringLiteral("#EF4444")) &&
+        ctx.Check(loadedStroke->StrokeColor() == QColor(QStringLiteral("#EF4444")) &&
                       loadedStroke->strokePattern() == Qt::DashLine,
                   QStringLiteral("曲线颜色与描线样式恢复"),
                   QString::number(static_cast<int>(loadedStroke->strokePattern())));
-        ctx.check(qAbs(loadedStroke->contentSize().width() - resized.width()) < 0.5 &&
-                      qAbs(loadedStroke->contentSize().height() - resized.height()) < 0.5,
+        ctx.Check(qAbs(loadedStroke->ContentSize().width() - resized.width()) < 0.5 &&
+                      qAbs(loadedStroke->ContentSize().height() - resized.height()) < 0.5,
                   QStringLiteral("曲线缩放状态恢复"));
     }
-    ctx.check(loadedImage != nullptr && !loadedImage->FillImage().isNull(), QStringLiteral("图片内容恢复"));
-    ctx.check(loadedStroke && qAbs(loadedStroke->ItemOpacity() - 0.35) < 0.01 && loadedImage &&
+    ctx.Check(loadedImage != nullptr && !loadedImage->FillImage().isNull(), QStringLiteral("图片内容恢复"));
+    ctx.Check(loadedStroke && qAbs(loadedStroke->ItemOpacity() - 0.35) < 0.01 && loadedImage &&
                   qAbs(loadedImage->ItemOpacity() - 0.6) < 0.01,
               QStringLiteral("曲线与图片的透明度随画布恢复"),
               QStringLiteral("stroke=%1 image=%2")
                   .arg(loadedStroke ? loadedStroke->ItemOpacity() : -1.0)
                   .arg(loadedImage ? loadedImage->ItemOpacity() : -1.0));
 
-    const QImage rendered = loaded.renderImage(loaded.canvasRect(), 1.0);
-    ctx.check(rendered.size() == QSize(800, 600), QStringLiteral("导出图像尺寸正确"));
-    ctx.check(!rendered.isNull() && rendered.pixelColor(8, 8) == background.color, QStringLiteral("导出包含背景颜色"));
+    const QImage rendered = loaded.RenderImage(loaded.CanvasRect(), 1.0);
+    ctx.Check(rendered.size() == QSize(800, 600), QStringLiteral("导出图像尺寸正确"));
+    ctx.Check(!rendered.isNull() && rendered.pixelColor(8, 8) == background.color, QStringLiteral("导出包含背景颜色"));
 
     const QString jpegPath = QDir(ctx.workDirectory).filePath(QStringLiteral("selftest.jpg"));
     QImageWriter jpegWriter(jpegPath, "JPEG");
     jpegWriter.setQuality(90);
-    ctx.check(jpegWriter.write(rendered), QStringLiteral("导出 JPEG"), jpegWriter.errorString());
+    ctx.Check(jpegWriter.write(rendered), QStringLiteral("导出 JPEG"), jpegWriter.errorString());
 
     const QString pdfPath = QDir(ctx.workDirectory).filePath(QStringLiteral("selftest.pdf"));
     bool pdfOk = false;
@@ -243,7 +243,7 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
             pdfOk = true;
         }
     }
-    ctx.check(pdfOk && QFileInfo(pdfPath).size() > 0, QStringLiteral("导出 PDF"));
+    ctx.Check(pdfOk && QFileInfo(pdfPath).size() > 0, QStringLiteral("导出 PDF"));
 
     CanvasScene imageBackgroundScene;
     QPixmap backgroundPixmap(64, 48);
@@ -252,13 +252,13 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     imageBackground.type = BackgroundType::IMAGE;
     imageBackground.image = backgroundPixmap;
     imageBackground.mode = BackgroundMode::TILE;
-    imageBackgroundScene.replaceCanvasBackground(imageBackground);
+    imageBackgroundScene.ReplaceCanvasBackground(imageBackground);
 
     CanvasScene imageBackgroundLoaded;
     QString imageBackgroundError;
-    ctx.check(imageBackgroundLoaded.FromJson(imageBackgroundScene.ToJson(), &imageBackgroundError),
+    ctx.Check(imageBackgroundLoaded.FromJson(imageBackgroundScene.ToJson(), &imageBackgroundError),
               QStringLiteral("背景图片序列化"), imageBackgroundError);
-    ctx.check(imageBackgroundLoaded.canvasBackground().type == BackgroundType::IMAGE &&
+    ctx.Check(imageBackgroundLoaded.canvasBackground().type == BackgroundType::IMAGE &&
                   !imageBackgroundLoaded.canvasBackground().image.isNull() &&
                   imageBackgroundLoaded.canvasBackground().mode == BackgroundMode::TILE,
               QStringLiteral("反序列化背景图片与填充方式"));
@@ -272,43 +272,43 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     }
     CanvasScene reloaded;
     QUndoStack reloadedUndo;
-    reloaded.setUndoStack(&reloadedUndo);
+    reloaded.SetUndoStack(&reloadedUndo);
     QFile canvasFile(canvasPath);
-    ctx.check(canvasFile.open(QIODevice::ReadOnly), QStringLiteral("读取画布文件"));
+    ctx.Check(canvasFile.open(QIODevice::ReadOnly), QStringLiteral("读取画布文件"));
     const QJsonDocument reloadedDocument = QJsonDocument::fromJson(canvasFile.readAll());
-    ctx.check(reloadedDocument.isObject(), QStringLiteral("画布文件 JSON 有效"));
-    ctx.check(reloaded.FromJson(reloadedDocument.object()), QStringLiteral("从文件载入画布"));
-    ctx.check(reloaded.canvasItemCount() == 2, QStringLiteral("文件载入图元数量一致"));
+    ctx.Check(reloadedDocument.isObject(), QStringLiteral("画布文件 JSON 有效"));
+    ctx.Check(reloaded.FromJson(reloadedDocument.object()), QStringLiteral("从文件载入画布"));
+    ctx.Check(reloaded.CanvasItemCount() == 2, QStringLiteral("文件载入图元数量一致"));
 
-    reloaded.setMode(ToolMode::EDIT);
-    const QList<CanvasItem*> reloadedItems = reloaded.canvasItems();
+    reloaded.SetMode(ToolMode::EDIT);
+    const QList<CanvasItem*> reloadedItems = reloaded.CanvasItems();
     if (!reloadedItems.isEmpty()) {
         reloadedItems.constFirst()->setSelected(true);
-        reloaded.deleteSelected();
-        ctx.check(reloaded.canvasItemCount() == 1, QStringLiteral("删除选中图元"));
+        reloaded.DeleteSelected();
+        ctx.Check(reloaded.CanvasItemCount() == 1, QStringLiteral("删除选中图元"));
         reloadedUndo.undo();
-        ctx.check(reloaded.canvasItemCount() == 2, QStringLiteral("撤销删除图元"));
+        ctx.Check(reloaded.CanvasItemCount() == 2, QStringLiteral("撤销删除图元"));
         reloadedUndo.redo();
-        ctx.check(reloaded.canvasItemCount() == 1, QStringLiteral("重做删除图元"));
+        ctx.Check(reloaded.CanvasItemCount() == 1, QStringLiteral("重做删除图元"));
     }
 
-    scene.setCanvasSizeWithUndo(QSizeF(1000, 700));
-    ctx.check(qFuzzyCompare(scene.canvasSize().width(), 1000.0), QStringLiteral("调整画板尺寸"));
+    scene.SetCanvasSizeWithUndo(QSizeF(1000, 700));
+    ctx.Check(qFuzzyCompare(scene.CanvasSize().width(), 1000.0), QStringLiteral("调整画板尺寸"));
     undo.undo();
-    ctx.check(qFuzzyCompare(scene.canvasSize().width(), 800.0), QStringLiteral("撤销调整画板尺寸"));
+    ctx.Check(qFuzzyCompare(scene.CanvasSize().width(), 800.0), QStringLiteral("撤销调整画板尺寸"));
 
     // 透明背景在屏幕视图上画白 / 浅灰棋盘格，离屏导出图仍保持纯透明。
     {
         CanvasScene checkerScene;
-        checkerScene.applyCanvasSize(QSizeF(200, 120));
-        checkerScene.setShowGrid(false);
+        checkerScene.ApplyCanvasSize(QSizeF(200, 120));
+        checkerScene.SetShowGrid(false);
 
-        const QImage checkerExport = checkerScene.renderImage(checkerScene.canvasRect(), 1.0);
-        ctx.check(checkerExport.pixelColor(5, 5).alpha() == 0, QStringLiteral("棋盘格不进入离屏导出图"));
+        const QImage checkerExport = checkerScene.RenderImage(checkerScene.CanvasRect(), 1.0);
+        ctx.Check(checkerExport.pixelColor(5, 5).alpha() == 0, QStringLiteral("棋盘格不进入离屏导出图"));
 
         CanvasView checkerView(&checkerScene);
         checkerView.resize(260, 180);
-        checkerView.setMode(ToolMode::VIEW);
+        checkerView.SetMode(ToolMode::VIEW);
         checkerView.show();
         QApplication::processEvents();
         checkerView.viewport()->repaint();
@@ -317,7 +317,7 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
         const QImage viewImage = checkerView.viewport()->grab().toImage();
         // 棋盘格按固定 64px 铺格（长度单位基准），不再按画布等分：
         // 首行 / 首列各取前 16 个格心采样，格数与步长任一不符都会失配。
-        const QRectF checkerCanvas = checkerScene.canvasRect();
+        const QRectF checkerCanvas = checkerScene.CanvasRect();
         constexpr qreal tileWidth = 64.0;
         constexpr qreal tileHeight = 64.0;
         const int sampleCount =
@@ -337,7 +337,7 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
                 }
             }
         }
-        ctx.check(mismatchedCells == 0, QStringLiteral("视图透明背景按画布 16×16 等分显示棋盘格"),
+        ctx.Check(mismatchedCells == 0, QStringLiteral("视图透明背景按画布 16×16 等分显示棋盘格"),
                   QStringLiteral("tile=%1x%2 mismatched=%3").arg(tileWidth).arg(tileHeight).arg(mismatchedCells));
     }
 

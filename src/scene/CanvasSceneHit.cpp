@@ -12,13 +12,13 @@
 #include <algorithm>
 #include <cmath>
 
-QList<CanvasItem*> CanvasScene::obscuredItems(const QRectF& area) const
+QList<CanvasItem*> CanvasScene::ObscuredItems(const QRectF& area) const
 {
     // 查看模式下要求完全遮盖（什么提示都不画）；导出同样不画提示轮廓。
     if (m_mode == ToolMode::VIEW || m_exporting) {
         return {};
     }
-    return ObscurationAnalyzer().findObscured(canvasItems(), area);
+    return ObscurationAnalyzer().FindObscured(CanvasItems(), area);
 }
 
 void CanvasScene::drawForeground(QPainter* painter, const QRectF& rect)
@@ -30,7 +30,7 @@ void CanvasScene::drawForeground(QPainter* painter, const QRectF& rect)
 
     // 非查看模式下，被高层级/更高 height 图元遮住的图元补画一圈虚线轮廓，
     // 让用户仍能看出那里有东西（查看模式与导出不画）。
-    const QList<CanvasItem*> obscured = obscuredItems(rect);
+    const QList<CanvasItem*> obscured = ObscuredItems(rect);
     if (!obscured.isEmpty()) {
         painter->save();
         painter->setClipRect(rect);
@@ -63,10 +63,10 @@ void CanvasScene::drawForeground(QPainter* painter, const QRectF& rect)
         painter->restore();
     }
 
-    drawTriangleBaseTick(painter, rect);
+    DrawTriangleBaseTick(painter, rect);
 }
 
-void CanvasScene::drawTriangleBaseTick(QPainter* painter, const QRectF& rect)
+void CanvasScene::DrawTriangleBaseTick(QPainter* painter, const QRectF& rect)
 {
     // 需求 8：三角形 A 边（底边）中点画一条短刻度线，标记可调底边与两侧内角。
     // 只在编辑侧、单选、非导出时出现；查看模式与导出图里没有任何提示线。
@@ -164,7 +164,7 @@ void CanvasScene::drawItems(QPainter* painter, int numItems, QGraphicsItem* item
         if (!regionReady.at(position)) {
             if (auto* canvasItem = qgraphicsitem_cast<CanvasItem*>(items[order.at(position)])) {
                 regions[position] =
-                    ObscurationAnalyzer::filledRegion(canvasItem->sceneTransform().map(canvasItem->ClippingShape()));
+                    ObscurationAnalyzer::FilledRegion(canvasItem->sceneTransform().map(canvasItem->ClippingShape()));
             } else {
                 regions[position] = QRegion(bounds.at(position).toAlignedRect());
             }

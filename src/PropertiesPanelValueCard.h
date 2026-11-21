@@ -20,18 +20,18 @@ class PropertiesPanelValueCard : public QWidget {
     explicit PropertiesPanelValueCard(QWidget* parent = nullptr);
 
     // 需求 9b：曲线也要显示起点 / 终点箭头行，因此 refresh 同时接收选中的曲线。
-    void refresh(const QList<ShapeItem*>& shapes, const QList<LineItemAbstract*>& strokes,
+    void Refresh(const QList<ShapeItem*>& shapes, const QList<LineItemAbstract*>& strokes,
                  const QList<CanvasItem*>& items);
     // 圆角行是否可见：只有矩形类图元才显示圆角编辑。
-    void setCornerVisible(bool visible);
+    void SetCornerVisible(bool visible);
     // 扫过角与半径两行是否可见：只有扇形 / 弧线才显示角度与半径编辑。
-    void setArcRadiusVisible(bool visible);
+    void SetArcRadiusVisible(bool visible);
     // 正弦波形：周期数与振幅两行是否可见（只对正弦曲线开放）。
-    void setSineVisible(bool visible);
+    void SetSineVisible(bool visible);
     // 三角形的底边 / 角 A / 角 B 三行是否可见。
-    void setTriangleVisible(bool visible);
+    void SetTriangleVisible(bool visible);
     // 直线（含直线箭头）的两端箭头行是否可见。
-    void setArrowVisible(bool visible);
+    void SetArrowVisible(bool visible);
 
   signals:
     void opacityChosen(int percent);

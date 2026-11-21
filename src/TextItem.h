@@ -31,11 +31,11 @@ class TextItem : public CanvasItem {
     TextItemState TextState() const override;
     void ApplyTextState(const TextItemState& state) override;
 
-    void setTextFormat(const QString& text, const QFont& font, const QColor& color);
-    QString text() const { return m_text; }
+    void SetTextFormat(const QString& text, const QFont& font, const QColor& color);
+    QString Text() const { return m_text; }
 
-    QSizeF naturalSize() const { return m_baseSize; }
-    static QSizeF measure(const QString& text, const QFont& font);
+    QSizeF NaturalSize() const { return m_baseSize; }
+    static QSizeF Measure(const QString& text, const QFont& font);
 
     TextItemState State() const;
     void ApplyState(const TextItemState& state);

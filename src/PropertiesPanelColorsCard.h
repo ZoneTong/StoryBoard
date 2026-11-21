@@ -18,17 +18,17 @@ class PropertiesPanelColorsCard : public QWidget {
   public:
     explicit PropertiesPanelColorsCard(QWidget* parent = nullptr);
 
-    void refresh(const QList<ShapeItem*>& shapes, const QList<LineItemAbstract*>& strokes,
+    void Refresh(const QList<ShapeItem*>& shapes, const QList<LineItemAbstract*>& strokes,
                  const QList<ShapeItem*>& composites = QList<ShapeItem*>());
-    QWidget* fillColorRow() const { return m_fillColorRow; }
-    QWidget* borderColorRow() const { return m_borderColorRow; }
+    QWidget* FillColorRow() const { return m_fillColorRow; }
+    QWidget* BorderColorRow() const { return m_borderColorRow; }
 
   signals:
     void strokeColorChosen(const QColor& color);
     void fillColorChosen(const QColor& color);
 
   private:
-    QWidget* makeColorRow(bool stroke);
+    QWidget* MakeColorRow(bool stroke);
 
     QWidget* m_fillColorRow = nullptr;
     QWidget* m_borderColorRow = nullptr;

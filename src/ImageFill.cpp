@@ -8,7 +8,7 @@
 
 namespace ImageFill {
 
-QString modeToString(Mode mode)
+QString ModeToString(Mode mode)
 {
     switch (mode) {
     case Mode::FIT:
@@ -21,7 +21,7 @@ QString modeToString(Mode mode)
     }
 }
 
-Mode modeFromString(const QString& name)
+Mode ModeFromString(const QString& name)
 {
     const QString normalized = name.trimmed().toLower();
     if (normalized == QStringLiteral("fit")) {
@@ -44,14 +44,14 @@ QJsonObject ToJson(const QPixmap& image, Mode mode)
     image.save(&buffer, "PNG");
     QJsonObject json;
     json.insert(QStringLiteral("data"), QString::fromLatin1(bytes.toBase64()));
-    json.insert(QStringLiteral("mode"), modeToString(mode));
+    json.insert(QStringLiteral("mode"), ModeToString(mode));
     return json;
 }
 
-QPixmap pixmapFromJson(const QJsonObject& json, Mode* mode)
+QPixmap PixmapFromJson(const QJsonObject& json, Mode* mode)
 {
     if (mode) {
-        *mode = modeFromString(json.value(QStringLiteral("mode")).toString());
+        *mode = ModeFromString(json.value(QStringLiteral("mode")).toString());
     }
     const QByteArray bytes = QByteArray::fromBase64(json.value(QStringLiteral("data")).toString().toLatin1());
     QPixmap pixmap;

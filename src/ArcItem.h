@@ -19,10 +19,10 @@ class ArcItem : public LineItemAbstract, public EllipseShape {
 
     qreal StartAngle() const { return m_startAngle; }
     qreal SweepAngle() const { return m_sweepAngle; }
-    void setAngles(qreal startDeg, qreal sweepDeg);
+    void SetAngles(qreal startDeg, qreal sweepDeg);
 
     // 插入入口：椭圆框 + 起始角 / 扫过角。
-    void setArcGeometry(const QPointF& topLeftScene, const QSizeF& size, qreal startDeg, qreal sweepDeg,
+    void SetArcGeometry(const QPointF& topLeftScene, const QSizeF& size, qreal startDeg, qreal sweepDeg,
                         const QColor& color, qreal width);
 
     bool SupportsArcAngles() const override { return true; }
@@ -37,7 +37,7 @@ class ArcItem : public LineItemAbstract, public EllipseShape {
 
   private:
     // 角度变化后按“上次椭圆框相对内容框的比例”重建，拉伸过再改角度不会跳。
-    void rebuild();
+    void Rebuild();
 
     qreal m_startAngle = 30.0;
     qreal m_sweepAngle = 120.0;

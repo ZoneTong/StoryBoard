@@ -16,11 +16,11 @@ int main(int argc, char** argv)
         arguments.append(QString::fromLocal8Bit(argv[i]));
     }
 
-    const CommandLineOptions options = CommandLineOptions::parse(arguments);
-    AppStartup::prepareEnvironment(options);
+    const CommandLineOptions options = CommandLineOptions::Parse(arguments);
+    AppStartup::PrepareEnvironment(options);
 
     QApplication app(argc, argv);
-    AppStartup::initialize(app);
+    AppStartup::Initialize(app);
 
-    return AppModes::run(app, options);
+    return AppModes::Run(app, options);
 }

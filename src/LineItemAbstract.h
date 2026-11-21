@@ -51,7 +51,7 @@ class LineItemAbstract : public CanvasItem {
     Qt::PenStyle strokePattern() const { return m_strokePattern; }
     void SetStrokeColor(const QColor& color);
     void SetStrokeWidth(qreal width);
-    void setStrokePattern(Qt::PenStyle style);
+    void SetStrokePattern(Qt::PenStyle style);
 
     // 折线模式：每段退化成直线，方角不会被拟合成圆角（图片线稿化使用）。
     bool IsPolyline() const { return m_polyline; }

@@ -21,8 +21,8 @@ enum class Mode {
 };
 
 // 当前选择是否够用：对齐要 2 个及以上，等间距要 3 个及以上。
-bool supports(CanvasScene* scene, Mode mode);
+bool Supports(CanvasScene* scene, Mode mode);
 // 执行对齐，返回被移动的图元数量（0 表示没有可动的图元）。
-int apply(CanvasScene* scene, Mode mode, const QString& commandText);
+int Apply(CanvasScene* scene, Mode mode, const QString& commandText);
 
 } // namespace Alignment

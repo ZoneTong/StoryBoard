@@ -15,19 +15,19 @@ ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(CanvasItem*
     }
 
     m_positionXSpin =
-        ItemPropertiesFields::makeSpin(this, QStringLiteral("ItemPropertiesPositionXValue"), -1000000.0, 1000000.0);
+        ItemPropertiesFields::MakeSpin(this, QStringLiteral("ItemPropertiesPositionXValue"), -1000000.0, 1000000.0);
     m_positionYSpin =
-        ItemPropertiesFields::makeSpin(this, QStringLiteral("ItemPropertiesPositionYValue"), -1000000.0, 1000000.0);
+        ItemPropertiesFields::MakeSpin(this, QStringLiteral("ItemPropertiesPositionYValue"), -1000000.0, 1000000.0);
     m_positionXSpin->setValue(item->pos().x());
     m_positionYSpin->setValue(item->pos().y());
 
-    m_widthSpin = ItemPropertiesFields::makeSpin(this, QStringLiteral("ItemPropertiesWidthValue"), 1.0, 1000000.0);
+    m_widthSpin = ItemPropertiesFields::MakeSpin(this, QStringLiteral("ItemPropertiesWidthValue"), 1.0, 1000000.0);
     m_heightSizeSpin =
-        ItemPropertiesFields::makeSpin(this, QStringLiteral("ItemPropertiesHeightSizeValue"), 1.0, 1000000.0);
-    m_widthSpin->setValue(item->contentSize().width());
-    m_heightSizeSpin->setValue(item->contentSize().height());
+        ItemPropertiesFields::MakeSpin(this, QStringLiteral("ItemPropertiesHeightSizeValue"), 1.0, 1000000.0);
+    m_widthSpin->setValue(item->ContentSize().width());
+    m_heightSizeSpin->setValue(item->ContentSize().height());
 
-    m_rotationSpin = ItemPropertiesFields::makeSpin(this, QStringLiteral("ItemPropertiesRotationValue"), -360.0, 360.0);
+    m_rotationSpin = ItemPropertiesFields::MakeSpin(this, QStringLiteral("ItemPropertiesRotationValue"), -360.0, 360.0);
     m_rotationSpin->setSingleStep(5.0);
     m_rotationSpin->setSuffix(QStringLiteral("°"));
     m_rotationSpin->setValue(item->RotationAngle());
@@ -36,20 +36,20 @@ ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(CanvasItem*
     if (shape && !shape->IsCustomShape() &&
         (shape->shapeType() == ShapeType::ELLIPSE || shape->shapeType() == ShapeType::SECTOR)) {
         m_majorAxisSpin =
-            ItemPropertiesFields::makeSpin(this, QStringLiteral("ItemPropertiesMajorAxisValue"), 0.5, 500000.0);
+            ItemPropertiesFields::MakeSpin(this, QStringLiteral("ItemPropertiesMajorAxisValue"), 0.5, 500000.0);
         m_minorAxisSpin =
-            ItemPropertiesFields::makeSpin(this, QStringLiteral("ItemPropertiesMinorAxisValue"), 0.5, 500000.0);
+            ItemPropertiesFields::MakeSpin(this, QStringLiteral("ItemPropertiesMinorAxisValue"), 0.5, 500000.0);
         m_majorAxisSpin->setSuffix(QStringLiteral(" px"));
         m_minorAxisSpin->setSuffix(QStringLiteral(" px"));
-        syncAxesFromSize();
-        connect(m_widthSpin, &QDoubleSpinBox::valueChanged, this, [this]() { syncAxesFromSize(); });
-        connect(m_heightSizeSpin, &QDoubleSpinBox::valueChanged, this, [this]() { syncAxesFromSize(); });
-        connect(m_majorAxisSpin, &QDoubleSpinBox::valueChanged, this, [this]() { applyAxesToSize(true); });
-        connect(m_minorAxisSpin, &QDoubleSpinBox::valueChanged, this, [this]() { applyAxesToSize(false); });
+        SyncAxesFromSize();
+        connect(m_widthSpin, &QDoubleSpinBox::valueChanged, this, [this]() { SyncAxesFromSize(); });
+        connect(m_heightSizeSpin, &QDoubleSpinBox::valueChanged, this, [this]() { SyncAxesFromSize(); });
+        connect(m_majorAxisSpin, &QDoubleSpinBox::valueChanged, this, [this]() { ApplyAxesToSize(true); });
+        connect(m_minorAxisSpin, &QDoubleSpinBox::valueChanged, this, [this]() { ApplyAxesToSize(false); });
     }
 }
 
-void ItemPropertiesDialogGeometryBlock::addRows(QFormLayout* form)
+void ItemPropertiesDialogGeometryBlock::AddRows(QFormLayout* form)
 {
     // 需求 8 行序定稿：长半轴 → 短半轴 → 旋转 → 位置 → 图元尺寸。
     // 位置与尺寸固定在最后两行，旋转保持在位置之前。
@@ -62,17 +62,17 @@ void ItemPropertiesDialogGeometryBlock::addRows(QFormLayout* form)
     }
     if (m_positionXSpin && m_positionYSpin) {
         form->addRow(ItemPropertiesDialog::tr("Position"),
-                     ItemPropertiesFields::makePairField(this, QStringLiteral("ItemPropertiesPositionValue"),
+                     ItemPropertiesFields::MakePairField(this, QStringLiteral("ItemPropertiesPositionValue"),
                                                          m_positionXSpin, m_positionYSpin, QStringLiteral(",")));
     }
     if (m_widthSpin && m_heightSizeSpin) {
         form->addRow(ItemPropertiesDialog::tr("Item size"),
-                     ItemPropertiesFields::makePairField(this, QStringLiteral("ItemPropertiesSizeValue"), m_widthSpin,
+                     ItemPropertiesFields::MakePairField(this, QStringLiteral("ItemPropertiesSizeValue"), m_widthSpin,
                                                          m_heightSizeSpin, QStringLiteral("×")));
     }
 }
 
-void ItemPropertiesDialogGeometryBlock::setNaturalSize(const QSizeF& size)
+void ItemPropertiesDialogGeometryBlock::SetNaturalSize(const QSizeF& size)
 {
     if (m_widthSpin) {
         m_widthSpin->setValue(size.width());
@@ -82,7 +82,7 @@ void ItemPropertiesDialogGeometryBlock::setNaturalSize(const QSizeF& size)
     }
 }
 
-void ItemPropertiesDialogGeometryBlock::syncAxesFromSize()
+void ItemPropertiesDialogGeometryBlock::SyncAxesFromSize()
 {
     if (m_syncingAxes || !m_widthSpin || !m_heightSizeSpin || !m_majorAxisSpin || !m_minorAxisSpin) {
         return;
@@ -95,7 +95,7 @@ void ItemPropertiesDialogGeometryBlock::syncAxesFromSize()
     m_syncingAxes = false;
 }
 
-void ItemPropertiesDialogGeometryBlock::applyAxesToSize(bool majorChanged)
+void ItemPropertiesDialogGeometryBlock::ApplyAxesToSize(bool majorChanged)
 {
     if (m_syncingAxes || !m_widthSpin || !m_heightSizeSpin || !m_majorAxisSpin || !m_minorAxisSpin ||
         !m_positionXSpin || !m_positionYSpin) {

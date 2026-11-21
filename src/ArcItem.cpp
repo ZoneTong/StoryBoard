@@ -46,7 +46,7 @@ ArcItem::ArcItem(QGraphicsItem* parent) : LineItemAbstract(parent) {}
 ItemPropertySet ArcItem::Properties() const
 {
     // 弧线只有角度参数，没有箭头行（与现状一致）。
-    return LineItemAbstract::Properties().united(ItemPropertySet{ItemProperty::START_ANGLE, ItemProperty::SWEEP_ANGLE});
+    return LineItemAbstract::Properties().United(ItemPropertySet{ItemProperty::START_ANGLE, ItemProperty::SWEEP_ANGLE});
 }
 
 QVariant ArcItem::PropertyValue(ItemProperty property) const
@@ -65,10 +65,10 @@ void ArcItem::SetPropertyValue(ItemProperty property, const QVariant& value)
 {
     switch (property) {
     case ItemProperty::START_ANGLE:
-        setAngles(value.toDouble(), m_sweepAngle);
+        SetAngles(value.toDouble(), m_sweepAngle);
         break;
     case ItemProperty::SWEEP_ANGLE:
-        setAngles(m_startAngle, value.toDouble());
+        SetAngles(m_startAngle, value.toDouble());
         break;
     default:
         LineItemAbstract::SetPropertyValue(property, value);
@@ -78,7 +78,7 @@ void ArcItem::SetPropertyValue(ItemProperty property, const QVariant& value)
 
 QString ArcItem::DisplayName() const
 {
-    return uiText(QStringLiteral("Arc"));
+    return UiText(QStringLiteral("Arc"));
 }
 
 QRectF ArcItem::FrameRect() const
@@ -93,32 +93,32 @@ ArcItem::ParamState ArcItem::paramState() const
 
 void ArcItem::ApplyParamState(const ParamState& state)
 {
-    setAngles(state.first, state.second);
+    SetAngles(state.first, state.second);
 }
 
-void ArcItem::setAngles(qreal startDeg, qreal sweepDeg)
+void ArcItem::SetAngles(qreal startDeg, qreal sweepDeg)
 {
-    const qreal sweep = EllipseShape::clampedSweep(sweepDeg);
+    const qreal sweep = EllipseShape::ClampedSweep(sweepDeg);
     if (qFuzzyCompare(startDeg + 1.0, m_startAngle + 1.0) && qFuzzyCompare(sweep + 1.0, m_sweepAngle + 1.0)) {
         return;
     }
     m_startAngle = startDeg;
     m_sweepAngle = sweep;
-    rebuild();
+    Rebuild();
 }
 
-void ArcItem::setArcGeometry(const QPointF& topLeftScene, const QSizeF& size, qreal startDeg, qreal sweepDeg,
+void ArcItem::SetArcGeometry(const QPointF& topLeftScene, const QSizeF& size, qreal startDeg, qreal sweepDeg,
                              const QColor& color, qreal width)
 {
     m_startAngle = startDeg;
-    m_sweepAngle = EllipseShape::clampedSweep(sweepDeg);
+    m_sweepAngle = EllipseShape::ClampedSweep(sweepDeg);
 
     const QRectF frameScene(topLeftScene, size);
-    setFrame(frameScene);
-    SetStrokePoints(sample(m_startAngle, m_sweepAngle, ARC_SAMPLES), color, width, 0.0, false);
+    SetFrame(frameScene);
+    SetStrokePoints(Sample(m_startAngle, m_sweepAngle, ARC_SAMPLES), color, width, 0.0, false);
 
     const QPointF origin = pos();
-    const QSizeF box = contentSize();
+    const QSizeF box = ContentSize();
     if (box.width() > 0.0 && box.height() > 0.0) {
         m_refFrame =
             QRectF((frameScene.left() - origin.x()) / box.width(), (frameScene.top() - origin.y()) / box.height(),
@@ -128,20 +128,20 @@ void ArcItem::setArcGeometry(const QPointF& topLeftScene, const QSizeF& size, qr
     }
 }
 
-void ArcItem::rebuild()
+void ArcItem::Rebuild()
 {
-    const QSizeF box = contentSize();
+    const QSizeF box = ContentSize();
     if (box.width() <= 0.0 || box.height() <= 0.0) {
         return;
     }
     const QRectF local(m_refFrame.x() * box.width(), m_refFrame.y() * box.height(), m_refFrame.width() * box.width(),
                        m_refFrame.height() * box.height());
     const QRectF frameScene = local.translated(pos());
-    setFrame(frameScene);
-    SetStrokePoints(sample(m_startAngle, m_sweepAngle, ARC_SAMPLES), StrokeColor(), StrokeWidth(), 0.0, false);
+    SetFrame(frameScene);
+    SetStrokePoints(Sample(m_startAngle, m_sweepAngle, ARC_SAMPLES), StrokeColor(), StrokeWidth(), 0.0, false);
 
     const QPointF origin = pos();
-    const QSizeF now = contentSize();
+    const QSizeF now = ContentSize();
     if (now.width() > 0.0 && now.height() > 0.0) {
         m_refFrame =
             QRectF((frameScene.left() - origin.x()) / now.width(), (frameScene.top() - origin.y()) / now.height(),
@@ -163,7 +163,7 @@ void ArcItem::FromJson(const QJsonObject& json)
 {
     LineItemAbstract::FromJson(json);
     m_startAngle = json.value(QStringLiteral("startAngle")).toDouble(30.0);
-    m_sweepAngle = EllipseShape::clampedSweep(json.value(QStringLiteral("sweepAngle")).toDouble(120.0));
+    m_sweepAngle = EllipseShape::ClampedSweep(json.value(QStringLiteral("sweepAngle")).toDouble(120.0));
     m_refFrame = arrayToRect(json.value(QStringLiteral("arcFrame")).toArray(), QRectF(0.0, 0.0, 1.0, 1.0));
-    rebuild();
+    Rebuild();
 }

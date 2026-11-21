@@ -46,7 +46,7 @@ SineItem::SineItem(QGraphicsItem* parent) : LineItemAbstract(parent) {}
 ItemPropertySet SineItem::Properties() const
 {
     // 正弦有箭头行，另有周期数与振幅两行参数。
-    return LineItemAbstract::Properties().united(ItemPropertySet{
+    return LineItemAbstract::Properties().United(ItemPropertySet{
         ItemProperty::ARROW_START, ItemProperty::ARROW_END, ItemProperty::SINE_CYCLES, ItemProperty::SINE_AMPLITUDE});
 }
 
@@ -78,13 +78,13 @@ void SineItem::SetPropertyValue(ItemProperty property, const QVariant& value)
     case ItemProperty::SINE_CYCLES: {
         Params params = m_params;
         params.cycles = value.toInt();
-        setParams(params);
+        SetParams(params);
         break;
     }
     case ItemProperty::SINE_AMPLITUDE: {
         Params params = m_params;
         params.amplitude = value.toDouble();
-        setParams(params);
+        SetParams(params);
         break;
     }
     default:
@@ -95,7 +95,7 @@ void SineItem::SetPropertyValue(ItemProperty property, const QVariant& value)
 
 QString SineItem::DisplayName() const
 {
-    return uiText(QStringLiteral("Sine wave"));
+    return UiText(QStringLiteral("Sine wave"));
 }
 
 QRectF SineItem::FrameRect() const
@@ -113,10 +113,10 @@ void SineItem::ApplyParamState(const ParamState& state)
     Params params = m_params;
     params.cycles = qBound(1, qRound(state.first), 12);
     params.amplitude = qBound<qreal>(1.0, state.second, 200.0);
-    setParams(params);
+    SetParams(params);
 }
 
-void SineItem::setParams(const Params& params)
+void SineItem::SetParams(const Params& params)
 {
     const int cycles = qBound(1, params.cycles, 12);
     const qreal amplitude = qBound<qreal>(1.0, params.amplitude, 200.0);
@@ -125,10 +125,10 @@ void SineItem::setParams(const Params& params)
     }
     m_params.cycles = cycles;
     m_params.amplitude = amplitude;
-    rebuild();
+    Rebuild();
 }
 
-QVector<QPointF> SineItem::wavePoints(const QRectF& frameScene) const
+QVector<QPointF> SineItem::WavePoints(const QRectF& frameScene) const
 {
     QVector<QPointF> points;
     if (frameScene.width() <= 0.0 || frameScene.height() <= 0.0) {
@@ -150,16 +150,16 @@ QVector<QPointF> SineItem::wavePoints(const QRectF& frameScene) const
     return points;
 }
 
-void SineItem::setWaveGeometry(const QPointF& topLeftScene, const QSizeF& size, const QColor& color, qreal width)
+void SineItem::SetWaveGeometry(const QPointF& topLeftScene, const QSizeF& size, const QColor& color, qreal width)
 {
     const QRectF frameScene(topLeftScene, size);
     // 程序化插入时按给定振幅采样，不让 contentResized 的“按高度反推振幅”插一脚。
     m_rebuilding = true;
-    SetStrokePoints(wavePoints(frameScene), color, width, 0.0, false);
+    SetStrokePoints(WavePoints(frameScene), color, width, 0.0, false);
     m_rebuilding = false;
 
     const QPointF origin = pos();
-    const QSizeF box = contentSize();
+    const QSizeF box = ContentSize();
     if (box.width() > 0.0 && box.height() > 0.0) {
         m_refFrame =
             QRectF((frameScene.left() - origin.x()) / box.width(), (frameScene.top() - origin.y()) / box.height(),
@@ -175,7 +175,7 @@ void SineItem::ContentResized()
         return;
     }
     // 内容框高度 = 波高 + 笔宽余量；拖高拖矮等价于改振幅，参数跟着几何走，面板回显也随之更新。
-    const qreal boxHeight = contentSize().height();
+    const qreal boxHeight = ContentSize().height();
     if (boxHeight <= 0.0) {
         return;
     }
@@ -185,12 +185,12 @@ void SineItem::ContentResized()
         return;
     }
     m_params.amplitude = amplitude;
-    rebuild();
+    Rebuild();
 }
 
-void SineItem::rebuild()
+void SineItem::Rebuild()
 {
-    const QSizeF box = contentSize();
+    const QSizeF box = ContentSize();
     if (box.width() <= 0.0 || box.height() <= 0.0) {
         return;
     }
@@ -198,11 +198,11 @@ void SineItem::rebuild()
                        m_refFrame.height() * box.height());
     const QRectF frameScene = local.translated(pos());
     m_rebuilding = true;
-    SetStrokePoints(wavePoints(frameScene), StrokeColor(), StrokeWidth(), 0.0, false);
+    SetStrokePoints(WavePoints(frameScene), StrokeColor(), StrokeWidth(), 0.0, false);
     m_rebuilding = false;
 
     const QPointF origin = pos();
-    const QSizeF now = contentSize();
+    const QSizeF now = ContentSize();
     if (now.width() > 0.0 && now.height() > 0.0) {
         m_refFrame =
             QRectF((frameScene.left() - origin.x()) / now.width(), (frameScene.top() - origin.y()) / now.height(),
@@ -226,5 +226,5 @@ void SineItem::FromJson(const QJsonObject& json)
     m_params.cycles = qBound(1, json.value(QStringLiteral("sineCycles")).toInt(1), 12);
     m_params.amplitude = qBound<qreal>(1.0, json.value(QStringLiteral("sineAmplitude")).toDouble(20.0), 200.0);
     m_refFrame = arrayToRect(json.value(QStringLiteral("sineFrame")).toArray(), QRectF(0.0, 0.0, 1.0, 1.0));
-    rebuild();
+    Rebuild();
 }

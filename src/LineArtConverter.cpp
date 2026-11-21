@@ -8,7 +8,7 @@
 
 namespace LineArtConverter {
 
-Result extract(const QImage& source, const Options& options)
+Result Extract(const QImage& source, const Options& options)
 {
     Result result;
     if (source.isNull()) {
@@ -17,11 +17,11 @@ Result extract(const QImage& source, const Options& options)
     }
 
     // 透明像素按白底处理：线稿化时透明区域不该被切成一堆看不见的色块。
-    const QImage base = LineArtInternal::composeOnWhite(source);
+    const QImage base = LineArtInternal::ComposeOnWhite(source);
 
     const int longEdge = qMax(base.width(), base.height());
     int side = qMin(qMax(64, options.maxProcessingSide), longEdge);
-    Result pass = LineArtInternal::extractAtSide(base, options, side);
+    Result pass = LineArtInternal::ExtractAtSide(base, options, side);
     if (!options.adaptiveDownscale || options.adaptiveRegionLimit <= 0 || !pass.ok) {
         return pass;
     }
@@ -37,7 +37,7 @@ Result extract(const QImage& source, const Options& options)
             break;
         }
         side = nextSide;
-        pass = LineArtInternal::extractAtSide(base, options, side);
+        pass = LineArtInternal::ExtractAtSide(base, options, side);
         if (!pass.ok) {
             break;
         }

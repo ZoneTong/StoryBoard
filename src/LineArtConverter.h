@@ -73,6 +73,6 @@ struct Result {
     int candidateCount = 0;
 };
 
-Result extract(const QImage& image, const Options& options = Options());
+Result Extract(const QImage& image, const Options& options = Options());
 
 } // namespace LineArtConverter

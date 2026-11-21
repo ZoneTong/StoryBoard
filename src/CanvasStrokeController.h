@@ -14,20 +14,20 @@ class CanvasStrokeController {
   public:
     explicit CanvasStrokeController(CanvasView* view, CanvasScene* scene);
 
-    QColor brushColor() const { return m_brushColor; }
-    qreal brushWidth() const { return m_brushWidth; }
-    qreal strokeSmoothing() const { return m_strokeSmoothing; }
-    bool hasActiveStroke() const { return m_activeStroke != nullptr; }
+    QColor BrushColor() const { return m_brushColor; }
+    qreal BrushWidth() const { return m_brushWidth; }
+    qreal StrokeSmoothing() const { return m_strokeSmoothing; }
+    bool HasActiveStroke() const { return m_activeStroke != nullptr; }
 
-    void setBrushColor(const QColor& color);
-    void setBrushWidth(qreal width);
-    void setStrokeSmoothing(qreal tolerance);
+    void SetBrushColor(const QColor& color);
+    void SetBrushWidth(qreal width);
+    void SetStrokeSmoothing(qreal tolerance);
 
     // 起笔；图层不可写时发状态栏提示并返回 false。
-    bool beginStroke(const QPoint& viewportPos);
-    void appendPoint(const QPoint& viewportPos);
-    void finishStroke();
-    void cancelStroke();
+    bool BeginStroke(const QPoint& viewportPos);
+    void AppendPoint(const QPoint& viewportPos);
+    void FinishStroke();
+    void CancelStroke();
 
   private:
     CanvasView* m_view = nullptr;

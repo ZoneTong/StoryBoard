@@ -53,7 +53,7 @@ CanvasItem* createTemplateItem(const QJsonObject& object)
         kind = QStringLiteral("straightline");
     }
     if (kind == QStringLiteral("shape")) {
-        return createShapeItem(shapeTypeFromString(object.value(QStringLiteral("shapeType")).toString()));
+        return CreateShapeItem(ShapeTypeFromString(object.value(QStringLiteral("shapeType")).toString()));
     }
     if (kind == QStringLiteral("straightline")) {
         return new StraightLineItem();
@@ -79,7 +79,7 @@ CanvasItem* createTemplateItem(const QJsonObject& object)
 
 } // namespace
 
-bool loadCustomShapeTemplate(const QString& filePath, CustomShapeTemplate* result, QString* error)
+bool LoadCustomShapeTemplate(const QString& filePath, CustomShapeTemplate* result, QString* error)
 {
     if (!result) {
         return false;
@@ -161,7 +161,7 @@ bool loadCustomShapeTemplate(const QString& filePath, CustomShapeTemplate* resul
     return true;
 }
 
-QList<CustomShapeTemplate> loadCustomShapeTemplates(const QString& directory, QStringList* errors)
+QList<CustomShapeTemplate> LoadCustomShapeTemplates(const QString& directory, QStringList* errors)
 {
     QList<CustomShapeTemplate> templates;
     QDir dir(directory);
@@ -173,7 +173,7 @@ QList<CustomShapeTemplate> loadCustomShapeTemplates(const QString& directory, QS
     for (const QFileInfo& info : files) {
         CustomShapeTemplate entry;
         QString error;
-        if (loadCustomShapeTemplate(info.absoluteFilePath(), &entry, &error)) {
+        if (LoadCustomShapeTemplate(info.absoluteFilePath(), &entry, &error)) {
             templates.append(entry);
         } else if (errors) {
             errors->append(QStringLiteral("%1: %2").arg(info.fileName(), error));
@@ -182,12 +182,12 @@ QList<CustomShapeTemplate> loadCustomShapeTemplates(const QString& directory, QS
     return templates;
 }
 
-QList<CustomShapeTemplate> loadCustomShapeTemplatesFromDirs(const QStringList& directories, QStringList* errors)
+QList<CustomShapeTemplate> LoadCustomShapeTemplatesFromDirs(const QStringList& directories, QStringList* errors)
 {
     QList<CustomShapeTemplate> templates;
     QSet<QString> seenNames;
     for (const QString& directory : directories) {
-        const QList<CustomShapeTemplate> found = loadCustomShapeTemplates(directory, errors);
+        const QList<CustomShapeTemplate> found = LoadCustomShapeTemplates(directory, errors);
         for (const CustomShapeTemplate& entry : found) {
             // 同名模板按目录顺序优先：配置文件同级的覆盖部署目录里的。
             if (seenNames.contains(entry.name)) {
@@ -200,7 +200,7 @@ QList<CustomShapeTemplate> loadCustomShapeTemplatesFromDirs(const QStringList& d
     return templates;
 }
 
-QIcon makeCustomShapeIcon(const QPainterPath& unitPath, const QColor& color, int logicalSize)
+QIcon MakeCustomShapeIcon(const QPainterPath& unitPath, const QColor& color, int logicalSize)
 {
     constexpr qreal scale = 2.0;
     QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));

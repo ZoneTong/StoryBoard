@@ -77,14 +77,14 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     m_arrangeCard->setObjectName(QStringLiteral("ItemArrangeCard"));
     layout->addWidget(m_arrangeCard);
 
-    layout->addWidget(m_contentCard->textContentRow());
-    layout->addWidget(m_contentCard->textColorRow());
-    layout->addWidget(m_contentCard->textFontRow());
+    layout->addWidget(m_contentCard->TextContentRow());
+    layout->addWidget(m_contentCard->TextColorRow());
+    layout->addWidget(m_contentCard->TextFontRow());
 
     // 需求 1 行序（与菜单、工具栏、属性窗统一）：
     // 填充样式 → 填充颜色 → （需求 13 引入的背景图片） → 描线样式 → 描线颜色 → 描线宽度。
-    layout->addWidget(m_fillBorderCard->fillStyleRow());
-    layout->addWidget(m_colorsCard->fillColorRow());
+    layout->addWidget(m_fillBorderCard->FillStyleRow());
+    layout->addWidget(m_colorsCard->FillColorRow());
 
     // 填充图片行排在填充颜色之后、描线样式之前；与其它行同一套图标与值按钮样式。
     m_fillImageRow = new QWidget(content);
@@ -94,7 +94,7 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     fillImageLayout->setSpacing(2);
     auto* fillImageIcon = new QToolButton(m_fillImageRow);
     fillImageIcon->setObjectName(QStringLiteral("ItemRowIcon"));
-    fillImageIcon->setIcon(makeIcon(IconId::IMAGE, QColor(139, 144, 156), 20));
+    fillImageIcon->setIcon(MakeIcon(IconId::IMAGE, QColor(139, 144, 156), 20));
     fillImageIcon->setIconSize(QSize(20, 20));
     fillImageIcon->setFixedSize(32, 32);
     fillImageIcon->setAutoRaise(true);
@@ -103,18 +103,18 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
 
     m_fillImageButton = new QToolButton(m_fillImageRow);
     m_fillImageButton->setObjectName(QStringLiteral("ItemFillImageButton"));
-    m_fillImageButton->setIcon(makeIcon(IconId::IMAGE, QColor(58, 64, 80), 16));
+    m_fillImageButton->setIcon(MakeIcon(IconId::IMAGE, QColor(58, 64, 80), 16));
     m_fillImageButton->setIconSize(QSize(16, 16));
     m_fillImageButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     m_fillImageButton->setText(tr("Choose fill image"));
     m_fillImageButton->setToolTip(tr("Choose an image to fill the selected items"));
     m_fillImageButton->setMinimumHeight(30);
-    connect(m_fillImageButton, &QToolButton::clicked, this, &PropertiesPanel::chooseFillImage);
+    connect(m_fillImageButton, &QToolButton::clicked, this, &PropertiesPanel::ChooseFillImage);
     fillImageLayout->addWidget(m_fillImageButton, 1);
 
     m_clearFillImageButton = new QToolButton(m_fillImageRow);
     m_clearFillImageButton->setObjectName(QStringLiteral("ItemRowIcon"));
-    m_clearFillImageButton->setIcon(makeIcon(IconId::DELETE, QColor(139, 144, 156), 20));
+    m_clearFillImageButton->setIcon(MakeIcon(IconId::DELETE, QColor(139, 144, 156), 20));
     m_clearFillImageButton->setIconSize(QSize(20, 20));
     m_clearFillImageButton->setFixedSize(32, 32);
     m_clearFillImageButton->setAutoRaise(true);
@@ -124,9 +124,9 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     fillImageLayout->addWidget(m_clearFillImageButton);
     layout->addWidget(m_fillImageRow);
 
-    layout->addWidget(m_fillBorderCard->borderStyleRow());
-    layout->addWidget(m_colorsCard->borderColorRow());
-    layout->addWidget(m_fillBorderCard->borderWidthRow());
+    layout->addWidget(m_fillBorderCard->BorderStyleRow());
+    layout->addWidget(m_colorsCard->BorderColorRow());
+    layout->addWidget(m_fillBorderCard->BorderWidthRow());
 
     m_valueCard = new PropertiesPanelValueCard(content);
     layout->addWidget(m_valueCard);
@@ -137,67 +137,67 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     scroll->setWidget(content);
     outer->addWidget(scroll, 1);
 
-    connect(m_colorsCard, &PropertiesPanelColorsCard::strokeColorChosen, this, &PropertiesPanel::applyStrokeColor);
-    connect(m_colorsCard, &PropertiesPanelColorsCard::fillColorChosen, this, &PropertiesPanel::applyFillColor);
-    connect(m_fillBorderCard, &PropertiesPanelFillBorderCard::fillStyleChosen, this, &PropertiesPanel::applyFillStyle);
+    connect(m_colorsCard, &PropertiesPanelColorsCard::strokeColorChosen, this, &PropertiesPanel::ApplyStrokeColor);
+    connect(m_colorsCard, &PropertiesPanelColorsCard::fillColorChosen, this, &PropertiesPanel::ApplyFillColor);
+    connect(m_fillBorderCard, &PropertiesPanelFillBorderCard::fillStyleChosen, this, &PropertiesPanel::ApplyFillStyle);
     connect(m_fillBorderCard, &PropertiesPanelFillBorderCard::borderStyleChosen, this,
-            &PropertiesPanel::applyBorderStyle);
+            &PropertiesPanel::ApplyBorderStyle);
     connect(m_fillBorderCard, &PropertiesPanelFillBorderCard::borderWidthChosen, this,
-            &PropertiesPanel::applyBorderWidth);
-    connect(m_contentCard, &PropertiesPanelContentCard::textContentChosen, this, &PropertiesPanel::applyTextContent);
-    connect(m_contentCard, &PropertiesPanelContentCard::textFontChosen, this, &PropertiesPanel::applyTextFont);
-    connect(m_contentCard, &PropertiesPanelContentCard::textColorChosen, this, &PropertiesPanel::applyTextColor);
-    connect(m_valueCard, &PropertiesPanelValueCard::opacityChosen, this, &PropertiesPanel::applyOpacity);
-    connect(m_valueCard, &PropertiesPanelValueCard::cornerRadiusChosen, this, &PropertiesPanel::applyCornerRadius);
-    connect(m_valueCard, &PropertiesPanelValueCard::startAngleChosen, this, &PropertiesPanel::applyStartAngle);
-    connect(m_valueCard, &PropertiesPanelValueCard::sweepAngleChosen, this, &PropertiesPanel::applySweepAngle);
-    connect(m_valueCard, &PropertiesPanelValueCard::sineCyclesChosen, this, &PropertiesPanel::applySineCycles);
-    connect(m_valueCard, &PropertiesPanelValueCard::sineAmplitudeChosen, this, &PropertiesPanel::applySineAmplitude);
-    connect(m_valueCard, &PropertiesPanelValueCard::triangleBaseChosen, this, &PropertiesPanel::applyTriangleBase);
-    connect(m_valueCard, &PropertiesPanelValueCard::triangleAngle1Chosen, this, &PropertiesPanel::applyTriangleAngle1);
-    connect(m_valueCard, &PropertiesPanelValueCard::triangleAngle2Chosen, this, &PropertiesPanel::applyTriangleAngle2);
-    connect(m_valueCard, &PropertiesPanelValueCard::arrowStartChosen, this, &PropertiesPanel::applyArrowStart);
-    connect(m_valueCard, &PropertiesPanelValueCard::arrowEndChosen, this, &PropertiesPanel::applyArrowEnd);
-    connect(m_arrangeCard, &PropertiesPanelArrangeCard::layerAdjusted, this, &PropertiesPanel::adjustLayer);
-    connect(m_arrangeCard, &PropertiesPanelArrangeCard::heightAdjusted, this, &PropertiesPanel::adjustHeight);
+            &PropertiesPanel::ApplyBorderWidth);
+    connect(m_contentCard, &PropertiesPanelContentCard::textContentChosen, this, &PropertiesPanel::ApplyTextContent);
+    connect(m_contentCard, &PropertiesPanelContentCard::textFontChosen, this, &PropertiesPanel::ApplyTextFont);
+    connect(m_contentCard, &PropertiesPanelContentCard::textColorChosen, this, &PropertiesPanel::ApplyTextColor);
+    connect(m_valueCard, &PropertiesPanelValueCard::opacityChosen, this, &PropertiesPanel::ApplyOpacity);
+    connect(m_valueCard, &PropertiesPanelValueCard::cornerRadiusChosen, this, &PropertiesPanel::ApplyCornerRadius);
+    connect(m_valueCard, &PropertiesPanelValueCard::startAngleChosen, this, &PropertiesPanel::ApplyStartAngle);
+    connect(m_valueCard, &PropertiesPanelValueCard::sweepAngleChosen, this, &PropertiesPanel::ApplySweepAngle);
+    connect(m_valueCard, &PropertiesPanelValueCard::sineCyclesChosen, this, &PropertiesPanel::ApplySineCycles);
+    connect(m_valueCard, &PropertiesPanelValueCard::sineAmplitudeChosen, this, &PropertiesPanel::ApplySineAmplitude);
+    connect(m_valueCard, &PropertiesPanelValueCard::triangleBaseChosen, this, &PropertiesPanel::ApplyTriangleBase);
+    connect(m_valueCard, &PropertiesPanelValueCard::triangleAngle1Chosen, this, &PropertiesPanel::ApplyTriangleAngle1);
+    connect(m_valueCard, &PropertiesPanelValueCard::triangleAngle2Chosen, this, &PropertiesPanel::ApplyTriangleAngle2);
+    connect(m_valueCard, &PropertiesPanelValueCard::arrowStartChosen, this, &PropertiesPanel::ApplyArrowStart);
+    connect(m_valueCard, &PropertiesPanelValueCard::arrowEndChosen, this, &PropertiesPanel::ApplyArrowEnd);
+    connect(m_arrangeCard, &PropertiesPanelArrangeCard::layerAdjusted, this, &PropertiesPanel::AdjustLayer);
+    connect(m_arrangeCard, &PropertiesPanelArrangeCard::heightAdjusted, this, &PropertiesPanel::AdjustHeight);
 
     if (m_scene) {
-        connect(m_scene, &QGraphicsScene::selectionChanged, this, &PropertiesPanel::scheduleRefresh);
-        connect(m_scene, &CanvasScene::contentChanged, this, &PropertiesPanel::scheduleRefresh);
+        connect(m_scene, &QGraphicsScene::selectionChanged, this, &PropertiesPanel::ScheduleRefresh);
+        connect(m_scene, &CanvasScene::contentChanged, this, &PropertiesPanel::ScheduleRefresh);
         // 模式切换会改写一批动作的可用状态，操作栏要跟着重算显隐。
-        connect(m_scene, &CanvasScene::modeChanged, this, &PropertiesPanel::scheduleRefresh);
-        if (m_scene->undoStack()) {
+        connect(m_scene, &CanvasScene::modeChanged, this, &PropertiesPanel::ScheduleRefresh);
+        if (m_scene->UndoStack()) {
             // 撤销 / 重做后卡片里的数值也要回到图元的真实状态。
-            connect(m_scene->undoStack(), &QUndoStack::indexChanged, this, &PropertiesPanel::scheduleRefresh);
+            connect(m_scene->UndoStack(), &QUndoStack::indexChanged, this, &PropertiesPanel::ScheduleRefresh);
         }
     }
 
-    refresh();
+    Refresh();
 }
 
-void PropertiesPanel::setSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions,
+void PropertiesPanel::SetSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions,
                                           QAction* copyAction, QAction* removeAction, QAction* rotateCwAction,
                                           QAction* rotateCcwAction, QAction* groupAction, QAction* ungroupAction)
 {
     if (m_selectionCard) {
-        m_selectionCard->setSelectionActions(alignActions, boolActions, copyAction, removeAction, rotateCwAction,
+        m_selectionCard->SetSelectionActions(alignActions, boolActions, copyAction, removeAction, rotateCwAction,
                                              rotateCcwAction, groupAction, ungroupAction);
     }
 }
 
-void PropertiesPanel::setItemActions(QAction* smoothAction, QAction* propertiesAction)
+void PropertiesPanel::SetItemActions(QAction* smoothAction, QAction* propertiesAction)
 {
     if (m_selectionCard) {
-        m_selectionCard->setItemActions(smoothAction, propertiesAction);
+        m_selectionCard->SetItemActions(smoothAction, propertiesAction);
     }
 }
 
 QList<CanvasItem*> PropertiesPanel::selectedItems() const
 {
-    return m_scene ? m_scene->selectedCanvasItems() : QList<CanvasItem*>();
+    return m_scene ? m_scene->SelectedCanvasItems() : QList<CanvasItem*>();
 }
 
-QList<ShapeItem*> PropertiesPanel::selectedShapes() const
+QList<ShapeItem*> PropertiesPanel::SelectedShapes() const
 {
     QList<ShapeItem*> shapes;
     for (CanvasItem* item : selectedItems()) {
@@ -209,7 +209,7 @@ QList<ShapeItem*> PropertiesPanel::selectedShapes() const
     return shapes;
 }
 
-QList<ShapeItem*> PropertiesPanel::selectedComposites() const
+QList<ShapeItem*> PropertiesPanel::SelectedComposites() const
 {
     QList<ShapeItem*> composites;
     for (CanvasItem* item : selectedItems()) {
@@ -220,7 +220,7 @@ QList<ShapeItem*> PropertiesPanel::selectedComposites() const
     return composites;
 }
 
-QList<LineItemAbstract*> PropertiesPanel::selectedStrokes() const
+QList<LineItemAbstract*> PropertiesPanel::SelectedStrokes() const
 {
     QList<LineItemAbstract*> strokes;
     for (CanvasItem* item : selectedItems()) {
@@ -231,7 +231,7 @@ QList<LineItemAbstract*> PropertiesPanel::selectedStrokes() const
     return strokes;
 }
 
-QList<CanvasItem*> PropertiesPanel::selectedStrokeTargets() const
+QList<CanvasItem*> PropertiesPanel::SelectedStrokeTargets() const
 {
     QList<CanvasItem*> targets;
     for (CanvasItem* item : selectedItems()) {
@@ -242,7 +242,7 @@ QList<CanvasItem*> PropertiesPanel::selectedStrokeTargets() const
     return targets;
 }
 
-QList<CanvasItem*> PropertiesPanel::selectedTexts() const
+QList<CanvasItem*> PropertiesPanel::SelectedTexts() const
 {
     QList<CanvasItem*> texts;
     for (CanvasItem* item : selectedItems()) {
@@ -253,16 +253,16 @@ QList<CanvasItem*> PropertiesPanel::selectedTexts() const
     return texts;
 }
 
-void PropertiesPanel::scheduleRefresh()
+void PropertiesPanel::ScheduleRefresh()
 {
     if (m_refreshing) {
         m_refreshPending = true;
         return;
     }
-    QTimer::singleShot(0, this, &PropertiesPanel::refresh);
+    QTimer::singleShot(0, this, &PropertiesPanel::Refresh);
 }
 
-int PropertiesPanel::preferredWidth() const
+int PropertiesPanel::PreferredWidth() const
 {
     if (!m_contentWidget || !m_contentWidget->layout()) {
         return 260;
@@ -292,70 +292,70 @@ int PropertiesPanel::preferredWidth() const
     return qBound(260, widestRow + chrome, 320);
 }
 
-void PropertiesPanel::refresh()
+void PropertiesPanel::Refresh()
 {
     if (!m_scene) {
         return;
     }
     m_refreshing = true;
-    updateSummary();
+    UpdateSummary();
 
     const QList<CanvasItem*> items = selectedItems();
-    const QList<ShapeItem*> shapes = selectedShapes();
-    const QList<ShapeItem*> composites = selectedComposites();
-    const QList<LineItemAbstract*> strokes = selectedStrokes();
-    const QList<CanvasItem*> texts = selectedTexts();
-    m_selectionCard->setSelectionState(!items.isEmpty(), selectionGroupUseful(items));
+    const QList<ShapeItem*> shapes = SelectedShapes();
+    const QList<ShapeItem*> composites = SelectedComposites();
+    const QList<LineItemAbstract*> strokes = SelectedStrokes();
+    const QList<CanvasItem*> texts = SelectedTexts();
+    m_selectionCard->SetSelectionState(!items.isEmpty(), SelectionGroupUseful(items));
 
     // 交集规则：只显示选中集合里每个图元都拥有的行；空选择时集合为空，全部行隐藏。
     // 值的回显仍取第一个选中图元（卡片内部的既有逻辑）。
     ItemPropertySet common;
     for (int index = 0; index < items.size(); ++index) {
         const ItemPropertySet properties = items.at(index)->Properties();
-        common = index == 0 ? properties : common.intersected(properties);
+        common = index == 0 ? properties : common.Intersected(properties);
     }
 
-    m_valueCard->setCornerVisible(common.contains(ItemProperty::CORNER_RADIUS));
-    m_valueCard->setArcRadiusVisible(common.contains(ItemProperty::START_ANGLE));
-    m_valueCard->setSineVisible(common.contains(ItemProperty::SINE_CYCLES));
-    m_valueCard->setTriangleVisible(common.contains(ItemProperty::TRIANGLE_BASE));
-    m_valueCard->setArrowVisible(common.contains(ItemProperty::ARROW_START));
-    m_fillImageRow->setVisible(common.contains(ItemProperty::FILL_IMAGE));
+    m_valueCard->SetCornerVisible(common.Contains(ItemProperty::CORNER_RADIUS));
+    m_valueCard->SetArcRadiusVisible(common.Contains(ItemProperty::START_ANGLE));
+    m_valueCard->SetSineVisible(common.Contains(ItemProperty::SINE_CYCLES));
+    m_valueCard->SetTriangleVisible(common.Contains(ItemProperty::TRIANGLE_BASE));
+    m_valueCard->SetArrowVisible(common.Contains(ItemProperty::ARROW_START));
+    m_fillImageRow->setVisible(common.Contains(ItemProperty::FILL_IMAGE));
     if (m_fillImageButton) {
         const bool hasImage = !items.isEmpty() &&
                               items.first()->PropertyValue(ItemProperty::FILL_IMAGE).value<QPixmap>().isNull() == false;
         m_fillImageButton->setText(hasImage ? tr("Change fill image") : tr("Choose fill image"));
     }
     if (m_clearFillImageButton) {
-        m_clearFillImageButton->setVisible(common.contains(ItemProperty::FILL_IMAGE));
+        m_clearFillImageButton->setVisible(common.Contains(ItemProperty::FILL_IMAGE));
     }
 
     const bool hasSelection = !items.isEmpty();
-    m_fillBorderCard->fillStyleRow()->setVisible(common.contains(ItemProperty::FILL_STYLE));
-    m_colorsCard->fillColorRow()->setVisible(common.contains(ItemProperty::FILL_COLOR));
-    m_fillBorderCard->borderStyleRow()->setVisible(common.contains(ItemProperty::STROKE_STYLE));
-    m_colorsCard->borderColorRow()->setVisible(common.contains(ItemProperty::STROKE_COLOR));
-    m_fillBorderCard->borderWidthRow()->setVisible(common.contains(ItemProperty::STROKE_WIDTH));
+    m_fillBorderCard->FillStyleRow()->setVisible(common.Contains(ItemProperty::FILL_STYLE));
+    m_colorsCard->FillColorRow()->setVisible(common.Contains(ItemProperty::FILL_COLOR));
+    m_fillBorderCard->BorderStyleRow()->setVisible(common.Contains(ItemProperty::STROKE_STYLE));
+    m_colorsCard->BorderColorRow()->setVisible(common.Contains(ItemProperty::STROKE_COLOR));
+    m_fillBorderCard->BorderWidthRow()->setVisible(common.Contains(ItemProperty::STROKE_WIDTH));
 
     m_contentCard->setVisible(hasSelection);
     m_colorsCard->setVisible(hasSelection);
     m_fillBorderCard->setVisible(hasSelection);
     m_valueCard->setVisible(hasSelection);
     m_arrangeCard->setVisible(hasSelection);
-    m_contentCard->refresh(texts);
-    m_colorsCard->refresh(shapes, strokes, composites);
-    m_fillBorderCard->refresh(shapes, strokes, composites);
-    m_valueCard->refresh(shapes, strokes, items);
-    m_arrangeCard->refresh(!selectedItems().isEmpty());
+    m_contentCard->Refresh(texts);
+    m_colorsCard->Refresh(shapes, strokes, composites);
+    m_fillBorderCard->Refresh(shapes, strokes, composites);
+    m_valueCard->Refresh(shapes, strokes, items);
+    m_arrangeCard->Refresh(!selectedItems().isEmpty());
 
     m_refreshing = false;
     if (m_refreshPending) {
         m_refreshPending = false;
-        scheduleRefresh();
+        ScheduleRefresh();
     }
 }
 
-bool PropertiesPanel::selectionGroupUseful(const QList<CanvasItem*>& items) const
+bool PropertiesPanel::SelectionGroupUseful(const QList<CanvasItem*>& items) const
 {
     if (!m_scene || items.size() < 2) {
         return false;
@@ -366,7 +366,7 @@ bool PropertiesPanel::selectionGroupUseful(const QList<CanvasItem*>& items) cons
         if (item->GroupId() <= 0) {
             return true;
         }
-        const int current = m_scene->outermostGroup(item->GroupId());
+        const int current = m_scene->OutermostGroup(item->GroupId());
         if (outerGroup == 0) {
             outerGroup = current;
         } else if (current != outerGroup) {
@@ -378,7 +378,7 @@ bool PropertiesPanel::selectionGroupUseful(const QList<CanvasItem*>& items) cons
     return false;
 }
 
-void PropertiesPanel::updateSummary()
+void PropertiesPanel::UpdateSummary()
 {
     const QList<CanvasItem*> items = selectedItems();
     if (items.isEmpty()) {

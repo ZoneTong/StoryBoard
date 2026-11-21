@@ -8,7 +8,7 @@ CurveParamState curveParamState(const LineItemAbstract* item)
     return item ? item->paramState() : CurveParamState();
 }
 
-void applyCurveParamState(LineItemAbstract* item, const CurveParamState& state)
+void ApplyCurveParamState(LineItemAbstract* item, const CurveParamState& state)
 {
     if (item) {
         item->ApplyParamState(state);
@@ -31,15 +31,15 @@ CurveParamCommand::CurveParamCommand(CanvasScene* scene, const QList<LineItemAbs
 
 void CurveParamCommand::undo()
 {
-    apply(m_paramsBefore, m_geometryBefore);
+    Apply(m_paramsBefore, m_geometryBefore);
 }
 
 void CurveParamCommand::redo()
 {
-    apply(m_paramsAfter, m_geometryAfter);
+    Apply(m_paramsAfter, m_geometryAfter);
 }
 
-void CurveParamCommand::apply(const QList<CurveParamState>& params,
+void CurveParamCommand::Apply(const QList<CurveParamState>& params,
                               const QList<LineItemAbstract::GeometryState>& geometry)
 {
     if (!m_scene) {
@@ -52,9 +52,9 @@ void CurveParamCommand::apply(const QList<CurveParamState>& params,
             continue;
         }
         // 先按参数重建，再用快照覆盖：撤销 / 重做都回到记录时的精确几何。
-        applyCurveParamState(item, params.at(i));
+        ApplyCurveParamState(item, params.at(i));
         item->ApplyGeometryState(geometry.at(i));
     }
-    m_scene->updateSceneExtent();
+    m_scene->UpdateSceneExtent();
     m_scene->update();
 }

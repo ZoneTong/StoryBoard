@@ -9,7 +9,7 @@
 
 // 把路径里每个子路径显式闭合：布尔运算（交集 / 拆块）产生的路径与序列化
 // 重建的路径都不带 closeSubpath 标记，描边时收尾一条边会缺失（需求 11）。
-QPainterPath PolygonItem::closedSubpaths(const QPainterPath& path)
+QPainterPath PolygonItem::ClosedSubpaths(const QPainterPath& path)
 {
     QPainterPath closed;
     bool hasDraw = false;
@@ -46,7 +46,7 @@ QPainterPath PolygonItem::closedSubpaths(const QPainterPath& path)
 PolygonItem::PolygonItem(const QList<Layer>& layers, FillStyle fillStyle, Qt::PenStyle strokeStyle)
     : ShapeItem(), m_layers(layers), m_fillStyle(fillStyle), m_strokeStyle(strokeStyle)
 {
-    updateBoundsFromLayers();
+    UpdateBoundsFromLayers();
 }
 
 QColor PolygonItem::FillColor() const
@@ -111,7 +111,7 @@ void PolygonItem::SetFillStyle(FillStyle style)
     update();
 }
 
-void PolygonItem::setStroke(const QColor& color, qreal width)
+void PolygonItem::SetStroke(const QColor& color, qreal width)
 {
     if (!color.isValid()) {
         return;
@@ -159,15 +159,15 @@ void PolygonItem::SetStrokeStyle(Qt::PenStyle style)
 
 QString PolygonItem::DisplayName() const
 {
-    return uiText(QStringLiteral("Polygon"));
+    return UiText(QStringLiteral("Polygon"));
 }
 
 QString PolygonItem::TypeDisplayName() const
 {
-    return uiText(QStringLiteral("Polygon"));
+    return UiText(QStringLiteral("Polygon"));
 }
 
-void PolygonItem::updateBoundsFromLayers()
+void PolygonItem::UpdateBoundsFromLayers()
 {
     QRectF bounds;
     for (const Layer& layer : m_layers) {
@@ -193,7 +193,7 @@ void PolygonItem::updateBoundsFromLayers()
     setPos(bounds.topLeft());
 }
 
-QTransform PolygonItem::layerTransform() const
+QTransform PolygonItem::LayerTransform() const
 {
     QTransform transform;
     const QRectF rect = ContentRect();
@@ -204,9 +204,9 @@ QTransform PolygonItem::layerTransform() const
     return transform;
 }
 
-QPainterPath PolygonItem::mapLayerPath(const QPainterPath& localPath) const
+QPainterPath PolygonItem::MapLayerPath(const QPainterPath& localPath) const
 {
-    return layerTransform().map(localPath);
+    return LayerTransform().map(localPath);
 }
 
 QPainterPath PolygonItem::PaintedShape() const
@@ -217,7 +217,7 @@ QPainterPath PolygonItem::PaintedShape() const
             shape.addPath(layer.path);
         }
     }
-    return layerTransform().map(shape);
+    return LayerTransform().map(shape);
 }
 
 QPainterPath PolygonItem::OutlineShape() const
@@ -226,7 +226,7 @@ QPainterPath PolygonItem::OutlineShape() const
     for (const Layer& layer : m_layers) {
         shape.addPath(layer.path);
     }
-    return layerTransform().map(shape);
+    return LayerTransform().map(shape);
 }
 
 QPainterPath PolygonItem::shape() const
@@ -243,18 +243,18 @@ QPainterPath PolygonItem::CurrentPath(const QRectF& rect) const
     }
     const QRectF content = ContentRect();
     if (content.isEmpty() || m_baseSize.isEmpty() || rect == content) {
-        return layerTransform().map(unionPath);
+        return LayerTransform().map(unionPath);
     }
     QTransform transform;
     transform.translate(rect.center().x(), rect.center().y());
     transform.scale(rect.width() / content.width(), rect.height() / content.height());
     transform.translate(-content.center().x(), -content.center().y());
-    return transform.map(layerTransform().map(unionPath));
+    return transform.map(LayerTransform().map(unionPath));
 }
 
-void PolygonItem::setStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth)
+void PolygonItem::SetStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth)
 {
-    setStroke(strokeColor, strokeWidth);
+    SetStroke(strokeColor, strokeWidth);
     SetFill(fillColor, fillStyle());
 }
 
@@ -271,7 +271,7 @@ ShapeItemState PolygonItem::State() const
     result.fillImage = m_fillImage;
     result.fillImageMode = m_fillImageMode;
     result.pos = pos();
-    result.size = contentSize();
+    result.size = ContentSize();
     return result;
 }
 
@@ -283,9 +283,9 @@ void PolygonItem::ApplyState(const ShapeItemState& state)
     m_fillImageMode = state.fillImageMode;
     SetItemOpacity(state.opacity);
     setPos(state.pos);
-    SetContentSize(state.size.isEmpty() ? contentSize() : state.size);
+    SetContentSize(state.size.isEmpty() ? ContentSize() : state.size);
     SetFill(state.fillColor, state.fillStyle);
-    setStroke(state.strokeColor, state.strokeWidth);
+    SetStroke(state.strokeColor, state.strokeWidth);
     SetStrokeStyle(state.strokeStyle);
     update();
 }
@@ -297,7 +297,7 @@ void PolygonItem::PaintContent(QPainter* painter)
     }
 
     painter->save();
-    painter->setTransform(layerTransform(), true);
+    painter->setTransform(LayerTransform(), true);
     const int count = m_layers.size();
 
     // 填充取色：优先级从低到高逐层绘制，但只有“填充可见”的高层才遮挡低层。
@@ -324,8 +324,8 @@ void PolygonItem::PaintContent(QPainter* painter)
             continue;
         }
         painter->setPen(Qt::NoPen);
-        if (layer.role == LayerRole::FILLED_AREA && ShapePainter::isPatternFill(m_fillStyle)) {
-            ShapePainter::paintPatternFill(painter, visible, visible.boundingRect(), layer.fill, m_fillStyle);
+        if (layer.role == LayerRole::FILLED_AREA && ShapePainter::IsPatternFill(m_fillStyle)) {
+            ShapePainter::PaintPatternFill(painter, visible, visible.boundingRect(), layer.fill, m_fillStyle);
         } else {
             painter->setBrush(layer.fill);
             painter->drawPath(visible);
@@ -404,7 +404,7 @@ void PolygonItem::PaintContent(QPainter* painter)
         painter->setBrush(Qt::NoBrush);
         // 需求 11：有面积层与文字字形必须按闭合轮廓描边（收尾边不能缺）；
         // 线宽带本身是开放笔画，保持原样。
-        painter->drawPath(layer.role == LayerRole::STROKE_BAND ? layer.path : closedSubpaths(layer.path));
+        painter->drawPath(layer.role == LayerRole::STROKE_BAND ? layer.path : ClosedSubpaths(layer.path));
     }
 
     painter->restore();
@@ -439,5 +439,5 @@ ShapeLayer PolygonItem::shapeLayer(int index) const
 
 QPainterPath PolygonItem::MapShapeLayerPath(const ShapeLayer& layer) const
 {
-    return layerTransform().map(layer.path);
+    return LayerTransform().map(layer.path);
 }

@@ -16,7 +16,7 @@ QToolButton* makeRowIcon(IconId id, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
-    button->setIcon(makeIcon(id, QColor(139, 144, 156), SMALL_ICON_SIZE));
+    button->setIcon(MakeIcon(id, QColor(139, 144, 156), SMALL_ICON_SIZE));
     button->setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE));
     button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
     button->setAutoRaise(true);
@@ -38,12 +38,12 @@ PropertiesPanelArrangeCard::PropertiesPanelArrangeCard(QWidget* parent) : QWidge
     row->addWidget(icon);
 
     m_layerUpButton =
-        makeButton(IconId::LAYER_UP, PropertiesPanel::tr("Layer +1"), QStringLiteral("ItemLayerUpButton"), 1, false);
-    m_layerDownButton = makeButton(IconId::LAYER_DOWN, PropertiesPanel::tr("Layer -1"),
+        MakeButton(IconId::LAYER_UP, PropertiesPanel::tr("Layer +1"), QStringLiteral("ItemLayerUpButton"), 1, false);
+    m_layerDownButton = MakeButton(IconId::LAYER_DOWN, PropertiesPanel::tr("Layer -1"),
                                    QStringLiteral("ItemLayerDownButton"), -1, false);
     m_heightUpButton =
-        makeButton(IconId::ORDER_UP, PropertiesPanel::tr("Height +1"), QStringLiteral("ItemHeightUpButton"), 1, true);
-    m_heightDownButton = makeButton(IconId::ORDER_DOWN, PropertiesPanel::tr("Height -1"),
+        MakeButton(IconId::ORDER_UP, PropertiesPanel::tr("Height +1"), QStringLiteral("ItemHeightUpButton"), 1, true);
+    m_heightDownButton = MakeButton(IconId::ORDER_DOWN, PropertiesPanel::tr("Height -1"),
                                     QStringLiteral("ItemHeightDownButton"), -1, true);
     row->addWidget(m_layerUpButton);
     row->addWidget(m_layerDownButton);
@@ -52,12 +52,12 @@ PropertiesPanelArrangeCard::PropertiesPanelArrangeCard(QWidget* parent) : QWidge
     row->addStretch(1);
 }
 
-QToolButton* PropertiesPanelArrangeCard::makeButton(IconId id, const QString& toolTip, const QString& objectName,
+QToolButton* PropertiesPanelArrangeCard::MakeButton(IconId id, const QString& toolTip, const QString& objectName,
                                                     int delta, bool height)
 {
     auto* button = new QToolButton(this);
     button->setObjectName(objectName);
-    button->setIcon(makeIcon(id, QColor(75, 85, 99), ICON_SIZE));
+    button->setIcon(MakeIcon(id, QColor(75, 85, 99), ICON_SIZE));
     button->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
     button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
     button->setToolTip(toolTip);
@@ -72,7 +72,7 @@ QToolButton* PropertiesPanelArrangeCard::makeButton(IconId id, const QString& to
     return button;
 }
 
-void PropertiesPanelArrangeCard::refresh(bool enabled)
+void PropertiesPanelArrangeCard::Refresh(bool enabled)
 {
     for (QToolButton* button : {m_layerDownButton, m_layerUpButton, m_heightDownButton, m_heightUpButton}) {
         if (button) {

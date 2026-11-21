@@ -16,10 +16,10 @@ class CanvasContextMenuController {
   public:
     explicit CanvasContextMenuController(CanvasView* view, CanvasScene* scene);
 
-    void addGroup(const QString& title, const QList<QAction*>& actions);
-    int groupCount() const { return m_groups.size(); }
+    void AddGroup(const QString& title, const QList<QAction*>& actions);
+    int GroupCount() const { return m_groups.size(); }
 
-    void showMenu(QContextMenuEvent* event);
+    void ShowMenu(QContextMenuEvent* event);
 
   private:
     struct ContextMenuGroup {

@@ -16,7 +16,7 @@ LineItemAbstract::LineItemAbstract(QGraphicsItem* parent) : CanvasItem(parent)
 bool LineItemAbstract::GeometryState::operator==(const GeometryState& other) const
 {
     if (hasDot != other.hasDot || segments.size() != other.segments.size() ||
-        !StrokeSmoothing::samePoint(dotCenter, other.dotCenter)) {
+        !StrokeSmoothing::SamePoint(dotCenter, other.dotCenter)) {
         return false;
     }
     for (int i = 0; i < segments.size(); ++i) {
@@ -35,7 +35,7 @@ bool LineItemAbstract::GeometryState::operator==(const GeometryState& other) con
 ItemPropertySet LineItemAbstract::Properties() const
 {
     // 描线三件套对五个形态统一生效；箭头 / 角度 / 波形参数由各自的子型追加。
-    return CanvasItem::Properties().united(
+    return CanvasItem::Properties().United(
         ItemPropertySet{ItemProperty::STROKE_STYLE, ItemProperty::STROKE_COLOR, ItemProperty::STROKE_WIDTH});
 }
 
@@ -57,7 +57,7 @@ void LineItemAbstract::SetPropertyValue(ItemProperty property, const QVariant& v
 {
     switch (property) {
     case ItemProperty::STROKE_STYLE:
-        setStrokePattern(static_cast<Qt::PenStyle>(value.toInt()));
+        SetStrokePattern(static_cast<Qt::PenStyle>(value.toInt()));
         break;
     case ItemProperty::STROKE_COLOR:
         SetStrokeColor(value.value<QColor>());
@@ -98,7 +98,7 @@ void LineItemAbstract::SetStrokeWidth(qreal width)
     update();
 }
 
-void LineItemAbstract::setStrokePattern(Qt::PenStyle style)
+void LineItemAbstract::SetStrokePattern(Qt::PenStyle style)
 {
     if (m_strokePattern == style) {
         return;
@@ -140,7 +140,7 @@ void LineItemAbstract::SetStrokePoints(const QVector<QPointF>& scenePoints, cons
         local.append(point - origin);
     }
 
-    m_segments = CurveGeometry::fitSegments(local, tolerance, polyline);
+    m_segments = CurveGeometry::FitSegments(local, tolerance, polyline);
     NormalizeGeometry();
     RebuildPath();
     update();
@@ -148,7 +148,7 @@ void LineItemAbstract::SetStrokePoints(const QVector<QPointF>& scenePoints, cons
 
 QVector<QPointF> LineItemAbstract::StrokePoints() const
 {
-    return CurveGeometry::knots(m_segments);
+    return CurveGeometry::Knots(m_segments);
 }
 
 QRectF LineItemAbstract::SegmentBounds() const
@@ -216,7 +216,7 @@ void LineItemAbstract::NormalizeGeometry()
 
 void LineItemAbstract::RebuildPath()
 {
-    m_path = CurveGeometry::buildPath(m_segments);
+    m_path = CurveGeometry::BuildPath(m_segments);
 }
 
 bool LineItemAbstract::SimplifyCurve(qreal tolerance)
@@ -227,30 +227,30 @@ bool LineItemAbstract::SimplifyCurve(qreal tolerance)
 
 void LineItemAbstract::PaintContent(QPainter* painter)
 {
-    StrokeGeometry::render(painter, m_path, m_baseSize, contentSize(), m_strokeColor, m_strokeWidth, m_strokePattern);
+    StrokeGeometry::render(painter, m_path, m_baseSize, ContentSize(), m_strokeColor, m_strokeWidth, m_strokePattern);
 
     // 两端箭头：端点取贝塞尔段的首尾节点，与描线共用同一套基坐标 → 内容尺寸缩放，
     // 箭头随描线一起缩放；单点笔迹没有方向，不画箭头。
-    if (!ArrowsAvailable() || (!arrowStyleIsHead(m_startArrow) && !arrowStyleIsHead(m_endArrow)) ||
+    if (!ArrowsAvailable() || (!ArrowStyleIsHead(m_startArrow) && !ArrowStyleIsHead(m_endArrow)) ||
         m_segments.isEmpty() || m_baseSize.isEmpty() || m_baseSize.width() <= 0.0 || m_baseSize.height() <= 0.0) {
         return;
     }
-    const QVector<QPointF> knots = CurveGeometry::knots(m_segments);
+    const QVector<QPointF> knots = CurveGeometry::Knots(m_segments);
     if (knots.size() < 2) {
         return;
     }
-    const qreal scaleX = contentSize().width() / m_baseSize.width();
-    const qreal scaleY = contentSize().height() / m_baseSize.height();
+    const qreal scaleX = ContentSize().width() / m_baseSize.width();
+    const qreal scaleY = ContentSize().height() / m_baseSize.height();
     painter->save();
     painter->scale(scaleX, scaleY);
-    paintArrowHead(painter, knots.constFirst(), knots.at(1), m_strokeWidth, m_strokeColor, m_startArrow);
-    paintArrowHead(painter, knots.constLast(), knots.at(knots.size() - 2), m_strokeWidth, m_strokeColor, m_endArrow);
+    PaintArrowHead(painter, knots.constFirst(), knots.at(1), m_strokeWidth, m_strokeColor, m_startArrow);
+    PaintArrowHead(painter, knots.constLast(), knots.at(knots.size() - 2), m_strokeWidth, m_strokeColor, m_endArrow);
     painter->restore();
 }
 
 QPainterPath LineItemAbstract::OutlineShape() const
 {
-    return StrokeGeometry::outline(m_path, m_baseSize, contentSize());
+    return StrokeGeometry::outline(m_path, m_baseSize, ContentSize());
 }
 
 QPainterPath LineItemAbstract::PaintedShape() const
@@ -260,12 +260,12 @@ QPainterPath LineItemAbstract::PaintedShape() const
         return QPainterPath();
     }
     const QPainterPath centerLine = OutlineShape();
-    return StrokeGeometry::painted(centerLine, m_baseSize, contentSize(), m_strokeWidth);
+    return StrokeGeometry::Painted(centerLine, m_baseSize, ContentSize(), m_strokeWidth);
 }
 
 QPainterPath LineItemAbstract::shape() const
 {
-    QPainterPath result = StrokeGeometry::hitScaled(m_path, m_baseSize, contentSize(), m_strokeWidth, ViewScale());
+    QPainterPath result = StrokeGeometry::HitScaled(m_path, m_baseSize, ContentSize(), m_strokeWidth, ViewScale());
 
     // Selection handles sit on the content corners; make them clickable even when
     // the stroke itself does not pass through those points.
@@ -279,7 +279,7 @@ QPainterPath LineItemAbstract::shape() const
 
 LineItemAbstract::GeometryState LineItemAbstract::geometryState() const
 {
-    return GeometryState{m_segments, pos(), contentSize(), m_baseSize, false, QPointF()};
+    return GeometryState{m_segments, pos(), ContentSize(), m_baseSize, false, QPointF()};
 }
 
 void LineItemAbstract::ApplyGeometryState(const GeometryState& state)
@@ -300,8 +300,8 @@ QJsonObject LineItemAbstract::ToJson() const
     json.insert(QStringLiteral("strokeStyle"), static_cast<int>(m_strokePattern));
     json.insert(QStringLiteral("baseWidth"), m_baseSize.width());
     json.insert(QStringLiteral("baseHeight"), m_baseSize.height());
-    json.insert(QStringLiteral("startArrow"), arrowStyleToString(m_startArrow));
-    json.insert(QStringLiteral("endArrow"), arrowStyleToString(m_endArrow));
+    json.insert(QStringLiteral("startArrow"), ArrowStyleToString(m_startArrow));
+    json.insert(QStringLiteral("endArrow"), ArrowStyleToString(m_endArrow));
     if (m_polyline) {
         json.insert(QStringLiteral("polyline"), true);
     }
@@ -332,8 +332,8 @@ void LineItemAbstract::FromJson(const QJsonObject& json)
     m_strokeWidth = qMax<qreal>(0.5, json.value(QStringLiteral("width")).toDouble(4.0));
     m_strokePattern = static_cast<Qt::PenStyle>(json.value(QStringLiteral("strokeStyle")).toInt(Qt::SolidLine));
     m_strokePadding = m_strokeWidth / 2.0 + 2.0;
-    m_startArrow = arrowStyleFromString(json.value(QStringLiteral("startArrow")).toString());
-    m_endArrow = arrowStyleFromString(json.value(QStringLiteral("endArrow")).toString());
+    m_startArrow = ArrowStyleFromString(json.value(QStringLiteral("startArrow")).toString());
+    m_endArrow = ArrowStyleFromString(json.value(QStringLiteral("endArrow")).toString());
     m_polyline = json.value(QStringLiteral("polyline")).toBool(false);
 
     m_segments.clear();

@@ -18,21 +18,21 @@ class ItemPropertiesDialogGeometryBlock : public QWidget {
   public:
     ItemPropertiesDialogGeometryBlock(CanvasItem* item, QWidget* parent = nullptr);
 
-    void addRows(QFormLayout* form);
+    void AddRows(QFormLayout* form);
 
-    QDoubleSpinBox* positionXSpin() const { return m_positionXSpin; }
-    QDoubleSpinBox* positionYSpin() const { return m_positionYSpin; }
-    QDoubleSpinBox* widthSpin() const { return m_widthSpin; }
-    QDoubleSpinBox* heightSizeSpin() const { return m_heightSizeSpin; }
-    QDoubleSpinBox* majorAxisSpin() const { return m_majorAxisSpin; }
-    QDoubleSpinBox* minorAxisSpin() const { return m_minorAxisSpin; }
-    QDoubleSpinBox* rotationSpin() const { return m_rotationSpin; }
+    QDoubleSpinBox* PositionXSpin() const { return m_positionXSpin; }
+    QDoubleSpinBox* PositionYSpin() const { return m_positionYSpin; }
+    QDoubleSpinBox* WidthSpin() const { return m_widthSpin; }
+    QDoubleSpinBox* HeightSizeSpin() const { return m_heightSizeSpin; }
+    QDoubleSpinBox* MajorAxisSpin() const { return m_majorAxisSpin; }
+    QDoubleSpinBox* MinorAxisSpin() const { return m_minorAxisSpin; }
+    QDoubleSpinBox* RotationSpin() const { return m_rotationSpin; }
 
-    void setNaturalSize(const QSizeF& size);
+    void SetNaturalSize(const QSizeF& size);
 
   private:
-    void syncAxesFromSize();
-    void applyAxesToSize(bool majorChanged);
+    void SyncAxesFromSize();
+    void ApplyAxesToSize(bool majorChanged);
 
     QDoubleSpinBox* m_positionXSpin = nullptr;
     QDoubleSpinBox* m_positionYSpin = nullptr;

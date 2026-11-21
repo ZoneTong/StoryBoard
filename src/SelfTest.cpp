@@ -15,10 +15,10 @@
 #include <QTimer>
 #include <cstdlib>
 
-int runSelfTest(const QString& reportPath)
+int RunSelfTest(const QString& reportPath)
 {
     // 自检里的界面文案断言都按中文原文写，固定成中文，避免受机器语言影响。
-    uiOverrideLanguage(UiLanguage::CHINESE);
+    UiOverrideLanguage(UiLanguage::CHINESE);
 
     // 看门狗：任何一步意外卡住（例如被别处弹出的模态框挡住），180 秒后直接结束，
     // 免得打包脚本或 CI 一直挂着等。定时器在嵌套事件循环里同样会触发。
@@ -30,10 +30,10 @@ int runSelfTest(const QString& reportPath)
     selftest::Context ctx;
 
     // Qt 内置字体对话框的标签来自 qtbase 翻译，而不是应用自己的 StoryBoard 上下文。
-    ctx.check(QCoreApplication::translate("QFontDialog", "Effects") == QStringLiteral("效果"),
+    ctx.Check(QCoreApplication::translate("QFontDialog", "Effects") == QStringLiteral("效果"),
               QStringLiteral("Qt 内置字体对话框已装载中文翻译"));
     // 视图 → 辅助网格 的菜单文案在 MainWindow 上下文里，缺译文就会显示英文。
-    ctx.check(QCoreApplication::translate("MainWindow", "Helper grid") == QStringLiteral("辅助网格"),
+    ctx.Check(QCoreApplication::translate("MainWindow", "Helper grid") == QStringLiteral("辅助网格"),
               QStringLiteral("视图菜单的辅助网格项有中文译文"),
               QCoreApplication::translate("MainWindow", "Helper grid"));
 
@@ -45,7 +45,7 @@ int runSelfTest(const QString& reportPath)
     QDir().mkpath(reportInfo.absolutePath());
     ctx.workDirectory = QDir(reportInfo.absolutePath()).filePath(QStringLiteral("storyboard-selftest-work"));
     QDir().mkpath(ctx.workDirectory);
-    ctx.check(QDir(ctx.workDirectory).exists(), QStringLiteral("准备自检工作目录"), ctx.workDirectory);
+    ctx.Check(QDir(ctx.workDirectory).exists(), QStringLiteral("准备自检工作目录"), ctx.workDirectory);
 
     // 增量落盘：每条断言后重写报告，进程崩溃时也能看到最后的断言位置。
     ctx.progressHook = [&ctx, resolvedReportPath]() {
@@ -60,43 +60,43 @@ int runSelfTest(const QString& reportPath)
     };
 
     // 各功能段按历史断言顺序依次执行；段间共享状态放在 selftest::Context 里。
-    selftest::runSceneCanvasIoTests(ctx);
-    selftest::runLayerModelTests(ctx);
-    selftest::runStackingPriorityTests(ctx);
-    selftest::runLayerVisibilityLockTests(ctx);
-    selftest::runTextItemTests(ctx);
-    selftest::runShapeItemTests(ctx);
-    selftest::runLayerPanelTests(ctx);
-    selftest::runPaintOrderTests(ctx);
-    selftest::runViewInteractionTests(ctx);
-    selftest::runPropertyDialogFieldGeometryTests(ctx);
-    selftest::runPropertyDialogTextNamingTests(ctx);
-    selftest::runDuplicateItemTests(ctx);
-    selftest::runGroupTests(ctx);
-    selftest::runRubberBandTests(ctx);
-    selftest::runLockedLayerTests(ctx);
-    selftest::runMainWindowFlowTests(ctx);
-    selftest::runMainWindowShapeMenuTests(ctx);
-    selftest::runSettingsDialogBasicTests(ctx);
-    selftest::runLineArtDialogParameterTests(ctx);
-    selftest::runLineArtPresetAdaptiveTests(ctx);
-    selftest::runFillStyleBasicTests(ctx);
-    selftest::runFillStylePatternTests(ctx);
-    selftest::runCanvasOcclusionBoundaryTests(ctx);
-    selftest::runLayerExportPanelTests(ctx);
-    selftest::runLineArtConverterTests(ctx);
-    selftest::runAlignmentTests(ctx);
-    selftest::runAlignmentMenuTests(ctx);
-    selftest::runGroupBoolOpsTests(ctx);
-    selftest::runCustomShapeDockTests(ctx);
-    selftest::runShapesFolderTests(ctx);
-    selftest::runDockPanelMainWindowTests(ctx);
-    selftest::runDockOrderPersistenceTests(ctx);
-    selftest::runClipboardShortcutTests(ctx);
-    selftest::runExcalidrawFormatTests(ctx);
-    selftest::runLineSplitTests(ctx);
-    selftest::runShapesClusterTests(ctx);
-    selftest::runImageFillTests(ctx);
+    selftest::RunSceneCanvasIoTests(ctx);
+    selftest::RunLayerModelTests(ctx);
+    selftest::RunStackingPriorityTests(ctx);
+    selftest::RunLayerVisibilityLockTests(ctx);
+    selftest::RunTextItemTests(ctx);
+    selftest::RunShapeItemTests(ctx);
+    selftest::RunLayerPanelTests(ctx);
+    selftest::RunPaintOrderTests(ctx);
+    selftest::RunViewInteractionTests(ctx);
+    selftest::RunPropertyDialogFieldGeometryTests(ctx);
+    selftest::RunPropertyDialogTextNamingTests(ctx);
+    selftest::RunDuplicateItemTests(ctx);
+    selftest::RunGroupTests(ctx);
+    selftest::RunRubberBandTests(ctx);
+    selftest::RunLockedLayerTests(ctx);
+    selftest::RunMainWindowFlowTests(ctx);
+    selftest::RunMainWindowShapeMenuTests(ctx);
+    selftest::RunSettingsDialogBasicTests(ctx);
+    selftest::RunLineArtDialogParameterTests(ctx);
+    selftest::RunLineArtPresetAdaptiveTests(ctx);
+    selftest::RunFillStyleBasicTests(ctx);
+    selftest::RunFillStylePatternTests(ctx);
+    selftest::RunCanvasOcclusionBoundaryTests(ctx);
+    selftest::RunLayerExportPanelTests(ctx);
+    selftest::RunLineArtConverterTests(ctx);
+    selftest::RunAlignmentTests(ctx);
+    selftest::RunAlignmentMenuTests(ctx);
+    selftest::RunGroupBoolOpsTests(ctx);
+    selftest::RunCustomShapeDockTests(ctx);
+    selftest::RunShapesFolderTests(ctx);
+    selftest::RunDockPanelMainWindowTests(ctx);
+    selftest::RunDockOrderPersistenceTests(ctx);
+    selftest::RunClipboardShortcutTests(ctx);
+    selftest::RunExcalidrawFormatTests(ctx);
+    selftest::RunLineSplitTests(ctx);
+    selftest::RunShapesClusterTests(ctx);
+    selftest::RunImageFillTests(ctx);
 
     int passCount = 0;
     for (const QString& line : ctx.lines) {

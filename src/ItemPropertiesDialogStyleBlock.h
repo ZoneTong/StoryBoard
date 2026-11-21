@@ -24,49 +24,49 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
   public:
     ItemPropertiesDialogStyleBlock(CanvasItem* item, QWidget* parent = nullptr);
 
-    void addRows(QFormLayout* form);
+    void AddRows(QFormLayout* form);
 
-    bool hasFill() const { return m_hasFill; }
-    qreal initialStrokeWidth() const { return m_initialStrokeWidth; }
-    QComboBox* fillStyleCombo() const { return m_fillStyleCombo; }
-    QToolButton* fillColorButton() const { return m_fillColorButton; }
-    QToolButton* strokeColorButton() const { return m_strokeColorButton; }
-    QComboBox* borderStyleCombo() const { return m_borderStyleCombo; }
-    QSpinBox* strokeWidthSpin() const { return m_strokeWidthSpin; }
-    QSpinBox* opacitySpin() const { return m_opacitySpin; }
+    bool HasFill() const { return m_hasFill; }
+    qreal InitialStrokeWidth() const { return m_initialStrokeWidth; }
+    QComboBox* FillStyleCombo() const { return m_fillStyleCombo; }
+    QToolButton* FillColorButton() const { return m_fillColorButton; }
+    QToolButton* StrokeColorButton() const { return m_strokeColorButton; }
+    QComboBox* BorderStyleCombo() const { return m_borderStyleCombo; }
+    QSpinBox* StrokeWidthSpin() const { return m_strokeWidthSpin; }
+    QSpinBox* OpacitySpin() const { return m_opacitySpin; }
     // 需求 15：填充图片与摆放模式（仅可填充图元有这一行）。
-    bool hasFillImageRow() const { return m_fillImageButton != nullptr; }
-    bool fillImagePresent() const { return !m_fillImage.isNull(); }
+    bool HasFillImageRow() const { return m_fillImageButton != nullptr; }
+    bool FillImagePresent() const { return !m_fillImage.isNull(); }
     QPixmap FillImage() const { return m_fillImage; }
     ImageFill::Mode FillImageMode() const;
-    qreal initialOpacity() const { return m_initialOpacity; }
-    int initialOpacityPercent() const { return m_initialOpacityPercent; }
+    qreal InitialOpacity() const { return m_initialOpacity; }
+    int InitialOpacityPercent() const { return m_initialOpacityPercent; }
 
-    QSpinBox* startAngleSpin() const { return m_startAngleSpin; }
-    QSpinBox* sweepAngleSpin() const { return m_sweepAngleSpin; }
-    qreal initialStartAngle() const { return m_initialStartAngle; }
-    qreal initialSweepAngle() const { return m_initialSweepAngle; }
+    QSpinBox* StartAngleSpin() const { return m_startAngleSpin; }
+    QSpinBox* SweepAngleSpin() const { return m_sweepAngleSpin; }
+    qreal InitialStartAngle() const { return m_initialStartAngle; }
+    qreal InitialSweepAngle() const { return m_initialSweepAngle; }
 
-    bool hasCornerRadius() const { return m_cornerRadiusSpin != nullptr; }
-    QSpinBox* cornerRadiusSpin() const { return m_cornerRadiusSpin; }
-    int initialCornerRadius() const { return m_initialCornerRadius; }
-    qreal initialStoredCornerRadius() const { return m_initialStoredCornerRadius; }
+    bool HasCornerRadius() const { return m_cornerRadiusSpin != nullptr; }
+    QSpinBox* CornerRadiusSpin() const { return m_cornerRadiusSpin; }
+    int InitialCornerRadius() const { return m_initialCornerRadius; }
+    qreal InitialStoredCornerRadius() const { return m_initialStoredCornerRadius; }
 
     // 三角形：底边长度与两个底角；底边即内容矩形宽度，角度优先、高度派生。
-    QSpinBox* triangleBaseSpin() const { return m_triangleBaseSpin; }
-    int initialTriangleBase() const { return m_initialTriangleBase; }
-    QSpinBox* bottomAngle1Spin() const { return m_bottomAngle1Spin; }
-    QSpinBox* bottomAngle2Spin() const { return m_bottomAngle2Spin; }
-    qreal initialBottomAngle1() const { return m_initialBottomAngle1; }
-    qreal initialBottomAngle2() const { return m_initialBottomAngle2; }
+    QSpinBox* TriangleBaseSpin() const { return m_triangleBaseSpin; }
+    int InitialTriangleBase() const { return m_initialTriangleBase; }
+    QSpinBox* BottomAngle1Spin() const { return m_bottomAngle1Spin; }
+    QSpinBox* BottomAngle2Spin() const { return m_bottomAngle2Spin; }
+    qreal InitialBottomAngle1() const { return m_initialBottomAngle1; }
+    qreal InitialBottomAngle2() const { return m_initialBottomAngle2; }
 
     // 需求 9：平行四边形左下内角（度），未改动时保留原值。
-    QSpinBox* parallelogramAngleSpin() const { return m_parallelogramAngleSpin; }
-    qreal initialParallelogramAngle() const { return m_initialParallelogramAngle; }
+    QSpinBox* ParallelogramAngleSpin() const { return m_parallelogramAngleSpin; }
+    qreal InitialParallelogramAngle() const { return m_initialParallelogramAngle; }
 
     // 直线两端箭头样式下拉（一行两个）。
-    QComboBox* startArrowCombo() const { return m_startArrowCombo; }
-    QComboBox* endArrowCombo() const { return m_endArrowCombo; }
+    QComboBox* StartArrowCombo() const { return m_startArrowCombo; }
+    QComboBox* EndArrowCombo() const { return m_endArrowCombo; }
 
     // 尺寸框变化时同步圆角上限；用户尚未改过圆角时，圆角矩形的默认值
     // 按新短边重新计算，保证对话框显示值与最终轮廓一致。

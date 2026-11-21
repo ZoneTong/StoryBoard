@@ -9,11 +9,11 @@ class UiToolBarBuilder {
   public:
     explicit UiToolBarBuilder(MainWindow* window);
 
-    void buildToolBars();
+    void BuildToolBars();
 
   private:
-    void createShapeToolbar(QToolBar* mainBar);
-    void createSmoothingToolbar(QToolBar* mainBar);
+    void CreateShapeToolbar(QToolBar* mainBar);
+    void CreateSmoothingToolbar(QToolBar* mainBar);
 
     MainWindow* m_window = nullptr;
 };

@@ -8,11 +8,11 @@ class MainWindowAppController {
   public:
     explicit MainWindowAppController(MainWindow* window);
 
-    void applyUiLanguage();
-    void showSettings();
-    void showAbout();
+    void ApplyUiLanguage();
+    void ShowSettings();
+    void ShowAbout();
     // 退出前把窗口几何、停靠顺序、画笔与画布参数写回配置；由 closeEvent 调用。
-    void persistBeforeExit();
+    void PersistBeforeExit();
 
   private:
     MainWindow* m_window = nullptr;

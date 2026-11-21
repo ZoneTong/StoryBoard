@@ -6,18 +6,18 @@
 
 namespace StrokeSmoothing {
 
-bool samePoint(const QPointF& first, const QPointF& second)
+bool SamePoint(const QPointF& first, const QPointF& second)
 {
     return qAbs(first.x() - second.x()) < StateEpsilon && qAbs(first.y() - second.y()) < StateEpsilon;
 }
 
-bool samePoints(const QVector<QPointF>& first, const QVector<QPointF>& second)
+bool SamePoints(const QVector<QPointF>& first, const QVector<QPointF>& second)
 {
     if (first.size() != second.size()) {
         return false;
     }
     for (int i = 0; i < first.size(); ++i) {
-        if (!samePoint(first.at(i), second.at(i))) {
+        if (!SamePoint(first.at(i), second.at(i))) {
             return false;
         }
     }
@@ -37,7 +37,7 @@ qreal pointToSegmentDistance(const QPointF& point, const QPointF& start, const Q
     return QLineF(point, start + segment * t).length();
 }
 
-QVector<QPointF> simplifyRdp(const QVector<QPointF>& points, qreal tolerance)
+QVector<QPointF> SimplifyRdp(const QVector<QPointF>& points, qreal tolerance)
 {
     if (points.size() <= 2 || tolerance <= 0.0) {
         return points;
@@ -71,7 +71,7 @@ QVector<QPointF> simplifyRdp(const QVector<QPointF>& points, qreal tolerance)
     return result;
 }
 
-QVector<QPointF> chaikinSmooth(const QVector<QPointF>& points, int iterations)
+QVector<QPointF> ChaikinSmooth(const QVector<QPointF>& points, int iterations)
 {
     QVector<QPointF> result = points;
     for (int pass = 0; pass < iterations && result.size() > 2; ++pass) {
@@ -90,7 +90,7 @@ QVector<QPointF> chaikinSmooth(const QVector<QPointF>& points, int iterations)
     return result;
 }
 
-bool looksLikeStraightLine(const QVector<QPointF>& points, qreal tolerance, qreal& chordLength)
+bool LooksLikeStraightLine(const QVector<QPointF>& points, qreal tolerance, qreal& chordLength)
 {
     if (points.size() < 3) {
         return true;

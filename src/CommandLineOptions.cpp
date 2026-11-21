@@ -41,7 +41,7 @@ const QString LINE_ART_MIN_THICKNESS = QStringLiteral("--lineart-min-thickness")
 
 } // namespace
 
-CommandLineOptions CommandLineOptions::parse(const QStringList& arguments)
+CommandLineOptions CommandLineOptions::Parse(const QStringList& arguments)
 {
     CommandLineOptions options;
 
@@ -64,36 +64,36 @@ CommandLineOptions CommandLineOptions::parse(const QStringList& arguments)
     options.exportScreenshot = arguments.contains(EXPORT_SCREENSHOT);
     options.lineArt = arguments.contains(LINE_ART);
 
-    options.selfTestPath = takeOptionPath(arguments, SELF_TEST);
-    options.renderDemoPath = takeOptionPath(arguments, RENDER_DEMO);
-    options.demoCanvasPath = takeOptionPath(arguments, DEMO_CANVAS);
-    options.uiScreenshotPath = takeOptionPath(arguments, UI_SCREENSHOT);
-    options.settingsScreenshotPath = takeOptionPath(arguments, SETTINGS_SCREENSHOT);
-    options.setLanguageValue = takeOptionPath(arguments, SET_LANGUAGE);
-    options.settingsProbePath = takeOptionPath(arguments, SETTINGS_PROBE);
-    options.openShapesProbePath = takeOptionPath(arguments, OPEN_SHAPES_PROBE);
-    options.aboutScreenshotPath = takeOptionPath(arguments, ABOUT_SCREENSHOT);
-    options.itemPropertiesScreenshotPath = takeOptionPath(arguments, ITEM_PROPERTIES_SCREENSHOT);
-    options.shapeMenuScreenshotPath = takeOptionPath(arguments, SHAPE_MENU_SCREENSHOT);
-    options.brushStyleMenuScreenshotPath = takeOptionPath(arguments, BRUSH_STYLE_MENU_SCREENSHOT);
-    options.brushWidthMenuScreenshotPath = takeOptionPath(arguments, BRUSH_WIDTH_MENU_SCREENSHOT);
-    options.fillStyleMenuScreenshotPath = takeOptionPath(arguments, FILL_STYLE_MENU_SCREENSHOT);
-    options.styleMenuScreenshotPath = takeOptionPath(arguments, STYLE_MENU_SCREENSHOT);
-    options.exportScreenshotPath = takeOptionPath(arguments, EXPORT_SCREENSHOT);
+    options.selfTestPath = TakeOptionPath(arguments, SELF_TEST);
+    options.renderDemoPath = TakeOptionPath(arguments, RENDER_DEMO);
+    options.demoCanvasPath = TakeOptionPath(arguments, DEMO_CANVAS);
+    options.uiScreenshotPath = TakeOptionPath(arguments, UI_SCREENSHOT);
+    options.settingsScreenshotPath = TakeOptionPath(arguments, SETTINGS_SCREENSHOT);
+    options.setLanguageValue = TakeOptionPath(arguments, SET_LANGUAGE);
+    options.settingsProbePath = TakeOptionPath(arguments, SETTINGS_PROBE);
+    options.openShapesProbePath = TakeOptionPath(arguments, OPEN_SHAPES_PROBE);
+    options.aboutScreenshotPath = TakeOptionPath(arguments, ABOUT_SCREENSHOT);
+    options.itemPropertiesScreenshotPath = TakeOptionPath(arguments, ITEM_PROPERTIES_SCREENSHOT);
+    options.shapeMenuScreenshotPath = TakeOptionPath(arguments, SHAPE_MENU_SCREENSHOT);
+    options.brushStyleMenuScreenshotPath = TakeOptionPath(arguments, BRUSH_STYLE_MENU_SCREENSHOT);
+    options.brushWidthMenuScreenshotPath = TakeOptionPath(arguments, BRUSH_WIDTH_MENU_SCREENSHOT);
+    options.fillStyleMenuScreenshotPath = TakeOptionPath(arguments, FILL_STYLE_MENU_SCREENSHOT);
+    options.styleMenuScreenshotPath = TakeOptionPath(arguments, STYLE_MENU_SCREENSHOT);
+    options.exportScreenshotPath = TakeOptionPath(arguments, EXPORT_SCREENSHOT);
 
     // ---- 命令行线稿化参数 ----
-    options.lineArtInputPath = takeOptionPath(arguments, LINE_ART);
-    options.lineArtOutputPath = takeOptionPath(arguments, LINE_ART_OUT);
-    const QString presetValue = takeOptionPath(arguments, LINE_ART_PRESET);
+    options.lineArtInputPath = TakeOptionPath(arguments, LINE_ART);
+    options.lineArtOutputPath = TakeOptionPath(arguments, LINE_ART_OUT);
+    const QString presetValue = TakeOptionPath(arguments, LINE_ART_PRESET);
     if (!presetValue.isEmpty()) {
         bool presetOk = false;
         const int preset = presetValue.toInt(&presetOk);
-        if (presetOk && preset >= 0 && preset < lineArtPresetCount()) {
+        if (presetOk && preset >= 0 && preset < LineArtPresetCount()) {
             options.lineArtPreset = preset;
         }
     }
     auto takeInt = [&arguments](const QString& option, bool& seen, int& value) {
-        const QString text = takeOptionPath(arguments, option);
+        const QString text = TakeOptionPath(arguments, option);
         if (text.isEmpty()) {
             return;
         }
@@ -105,7 +105,7 @@ CommandLineOptions CommandLineOptions::parse(const QStringList& arguments)
         }
     };
     auto takeDouble = [&arguments](const QString& option, bool& seen, double& value) {
-        const QString text = takeOptionPath(arguments, option);
+        const QString text = TakeOptionPath(arguments, option);
         if (text.isEmpty()) {
             return;
         }
@@ -129,7 +129,7 @@ CommandLineOptions CommandLineOptions::parse(const QStringList& arguments)
     takeDouble(LINE_ART_MIN_THICKNESS, options.lineArtMinThicknessSeen, options.lineArtMinThickness);
     // 自适应开关取 0/1；其它值一律视为未给出，保持默认开启。
     {
-        const QString text = takeOptionPath(arguments, LINE_ART_ADAPTIVE);
+        const QString text = TakeOptionPath(arguments, LINE_ART_ADAPTIVE);
         if (text == QStringLiteral("0") || text.compare(QLatin1String("false"), Qt::CaseInsensitive) == 0) {
             options.lineArtAdaptiveSeen = true;
             options.lineArtAdaptive = false;
@@ -155,7 +155,7 @@ CommandLineOptions CommandLineOptions::parse(const QStringList& arguments)
     return options;
 }
 
-QString CommandLineOptions::takeOptionPath(const QStringList& arguments, const QString& option)
+QString CommandLineOptions::TakeOptionPath(const QStringList& arguments, const QString& option)
 {
     const int index = arguments.indexOf(option);
     if (index < 0 || index + 1 >= arguments.size()) {

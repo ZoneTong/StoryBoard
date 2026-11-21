@@ -345,14 +345,14 @@ void mergeLineArtSettings(SettingsMap& values, const AppSettings& settings)
 
 } // namespace
 
-QString AppSettings::settingsFilePath()
+QString AppSettings::SettingsFilePath()
 {
     return resolveSettingsFile();
 }
 
-void AppSettings::load()
+void AppSettings::Load()
 {
-    const QString path = settingsFilePath();
+    const QString path = SettingsFilePath();
     const bool existed = QFileInfo::exists(path);
     const SettingsMap values = readSettingsFile(path);
 
@@ -415,27 +415,27 @@ void AppSettings::load()
     // 首次运行也立刻落盘，确保配置文件一定存在；已存在的文件只在读取成功时才规范化，
     // 读取失败（例如临时被占用）不做覆盖，避免把用户的配置写回默认值。
     if (!existed || !values.isEmpty()) {
-        save();
+        Save();
     }
 }
 
-bool AppSettings::save() const
+bool AppSettings::Save() const
 {
-    const QString path = settingsFilePath();
+    const QString path = SettingsFilePath();
     SettingsMap values = readSettingsFile(path);
     mergeSettings(values, *this);
     return writeSettingsFile(path, values);
 }
 
-bool AppSettings::saveLineArt() const
+bool AppSettings::SaveLineArt() const
 {
-    const QString path = settingsFilePath();
+    const QString path = SettingsFilePath();
     SettingsMap values = readSettingsFile(path);
     mergeLineArtSettings(values, *this);
     return writeSettingsFile(path, values);
 }
 
-void AppSettings::copyLineArtFrom(const AppSettings& other)
+void AppSettings::CopyLineArtFrom(const AppSettings& other)
 {
     lineArtColorLevels = other.lineArtColorLevels;
     lineArtPaletteMerge = other.lineArtPaletteMerge;
@@ -447,7 +447,7 @@ void AppSettings::copyLineArtFrom(const AppSettings& other)
     lineArtMinThickness = other.lineArtMinThickness;
 }
 
-QString AppSettings::defaultCanvasesDir()
+QString AppSettings::DefaultCanvasesDir()
 {
     const QString base = userConfigDirectory();
     if (base.isEmpty()) {
@@ -456,38 +456,38 @@ QString AppSettings::defaultCanvasesDir()
     return QDir(base).filePath(QStringLiteral("canvases"));
 }
 
-QString AppSettings::canvasesDir()
+QString AppSettings::CanvasesDir()
 {
-    const SettingsMap values = readSettingsFile(settingsFilePath());
+    const SettingsMap values = readSettingsFile(SettingsFilePath());
     const QString configured = values.value(QStringLiteral("paths/canvasesDirectory"));
     if (!configured.isEmpty()) {
         QDir().mkpath(configured);
         return configured;
     }
 
-    const QString dir = defaultCanvasesDir();
+    const QString dir = DefaultCanvasesDir();
     QDir().mkpath(dir);
     return dir;
 }
 
-void AppSettings::ensureCanvasesDir()
+void AppSettings::EnsureCanvasesDir()
 {
-    QDir().mkpath(canvasesDir());
+    QDir().mkpath(CanvasesDir());
 }
 
-QString AppSettings::shapesDir()
+QString AppSettings::ShapesDir()
 {
     // 与配置文件同级：便携版里配了 STORYBOARD_CONFIG 就是 exe 旁的 shapes 目录。
-    const QString dir = QDir(QFileInfo(settingsFilePath()).absolutePath()).filePath(QStringLiteral("shapes"));
+    const QString dir = QDir(QFileInfo(SettingsFilePath()).absolutePath()).filePath(QStringLiteral("shapes"));
     QDir().mkpath(dir);
     return dir;
 }
 
-QString AppSettings::writableShapesDir()
+QString AppSettings::WritableShapesDir()
 {
     // 与扫描顺序一致：配置文件同级最优先，其次是部署目录旁的 shapes，
     // 最后退到用户配置目录——这样装在 Program Files 里也能正常打开模板目录。
-    QStringList candidates{shapesDir(), bundledShapesDir()};
+    QStringList candidates{ShapesDir(), BundledShapesDir()};
     const QString userBase = userConfigDirectory();
     if (!userBase.isEmpty()) {
         candidates.append(QDir(userBase).filePath(QStringLiteral("shapes")));
@@ -516,16 +516,16 @@ QString AppSettings::writableShapesDir()
     return QString();
 }
 
-QString AppSettings::bundledShapesDir()
+QString AppSettings::BundledShapesDir()
 {
     // 部署目录旁的 shapes：便携包解压后把模板丢这里就能被扫到，不必去用户配置目录翻。
     return QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("shapes"));
 }
 
-QStringList AppSettings::shapesDirs()
+QStringList AppSettings::ShapesDirs()
 {
-    const QString userDir = shapesDir();
-    const QString bundledDir = bundledShapesDir();
+    const QString userDir = ShapesDir();
+    const QString bundledDir = BundledShapesDir();
     QStringList dirs{userDir};
     // 便携包里两者常常是同一个目录，去重后只扫一次。
     if (QDir::cleanPath(bundledDir) != QDir::cleanPath(userDir)) {
@@ -534,22 +534,22 @@ QStringList AppSettings::shapesDirs()
     return dirs;
 }
 
-void AppSettings::ensureShapesDir()
+void AppSettings::EnsureShapesDir()
 {
-    QDir().mkpath(shapesDir());
+    QDir().mkpath(ShapesDir());
 }
 
-AppSettings::ShapesFolderOpenResult AppSettings::openShapesFolder()
+AppSettings::ShapesFolderOpenResult AppSettings::OpenShapesFolder()
 {
     ShapesFolderOpenResult result;
     // 先找一个「能建且可写」的目录：只读安装目录里配置同级目录建不出来时自动降级，
     // 不再像以前那样对一个不存在的目录发起打开，失败原因也就说不清了。
-    const QString directory = writableShapesDir();
+    const QString directory = WritableShapesDir();
     result.directory = directory;
     if (directory.isEmpty()) {
         result.error = ShapesFolderError::CREATE_FAILED;
         qWarning("shapes folder unavailable: no writable candidate (settings=%s, bundled=%s)",
-                 qUtf8Printable(shapesDir()), qUtf8Printable(bundledShapesDir()));
+                 qUtf8Printable(ShapesDir()), qUtf8Printable(BundledShapesDir()));
         return result;
     }
 #ifdef Q_OS_WIN
@@ -610,21 +610,21 @@ AppSettings::ShapesFolderOpenResult AppSettings::openShapesFolder()
     return result;
 }
 
-QString AppSettings::shapesFolderFailureText(const ShapesFolderOpenResult& result)
+QString AppSettings::ShapesFolderFailureText(const ShapesFolderOpenResult& result)
 {
     const QString directory = result.directory.isEmpty() ? QStringLiteral("(unresolved directory)")
                                                          : QDir::toNativeSeparators(result.directory);
     switch (result.error) {
     case ShapesFolderError::CREATE_FAILED:
-        return uiText(QStringLiteral(
+        return UiText(QStringLiteral(
                           "Could not open the shapes folder: %1 (cannot create the directory; check write permission)"))
             .arg(directory);
     case ShapesFolderError::SHELL_FAILED:
-        return uiText(QStringLiteral("Could not open the shapes folder: %1 (Windows shell returned %2)"))
+        return UiText(QStringLiteral("Could not open the shapes folder: %1 (Windows shell returned %2)"))
             .arg(directory)
             .arg(result.shellCode);
     case ShapesFolderError::DESKTOP_FAILED:
-        return uiText(QStringLiteral("Could not open the shapes folder: %1 (no file manager available)"))
+        return UiText(QStringLiteral("Could not open the shapes folder: %1 (no file manager available)"))
             .arg(directory);
     case ShapesFolderError::NONE:
         break;
@@ -632,14 +632,14 @@ QString AppSettings::shapesFolderFailureText(const ShapesFolderOpenResult& resul
     return QString();
 }
 
-QString AppSettings::languageSetting()
+QString AppSettings::LanguageSetting()
 {
-    return readSettingsFile(settingsFilePath()).value(QStringLiteral("ui/language"));
+    return readSettingsFile(SettingsFilePath()).value(QStringLiteral("ui/language"));
 }
 
-bool AppSettings::setLanguageSetting(const QString& stored)
+bool AppSettings::SetLanguageSetting(const QString& stored)
 {
-    const QString path = settingsFilePath();
+    const QString path = SettingsFilePath();
     SettingsMap values = readSettingsFile(path);
     values.insert(QStringLiteral("ui/language"), stored);
     return writeSettingsFile(path, values);

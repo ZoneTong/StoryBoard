@@ -27,33 +27,33 @@ class CanvasView : public QGraphicsView {
     explicit CanvasView(CanvasScene* scene, QWidget* parent = nullptr);
 
     ToolMode mode() const { return m_mode; }
-    void setMode(ToolMode mode);
+    void SetMode(ToolMode mode);
 
-    qreal zoom() const;
-    void fitAll();
-    void zoomIn();
-    void zoomOut();
-    void actualSize();
+    qreal Zoom() const;
+    void FitAll();
+    void ZoomIn();
+    void ZoomOut();
+    void ActualSize();
 
-    void setBrushColor(const QColor& color);
-    void setBrushWidth(qreal width);
-    QColor brushColor() const { return m_stroke->brushColor(); }
-    qreal brushWidth() const { return m_stroke->brushWidth(); }
+    void SetBrushColor(const QColor& color);
+    void SetBrushWidth(qreal width);
+    QColor BrushColor() const { return m_stroke->BrushColor(); }
+    qreal BrushWidth() const { return m_stroke->BrushWidth(); }
     // 画笔收尾自动平滑容差，单位为画布像素；0 表示关闭自动平滑。
-    void setStrokeSmoothing(qreal tolerance);
-    qreal strokeSmoothing() const { return m_stroke->strokeSmoothing(); }
+    void SetStrokeSmoothing(qreal tolerance);
+    qreal StrokeSmoothing() const { return m_stroke->StrokeSmoothing(); }
 
-    void setCanvasColor(const QColor& color);
-    void cancelCurrentStroke();
-    void finishCurrentStroke();
+    void SetCanvasColor(const QColor& color);
+    void CancelCurrentStroke();
+    void FinishCurrentStroke();
 
     // 画板边缘拖动：扩大或裁剪画板。返回当前是否正在拖动边缘。
-    bool isResizingCanvas() const { return m_resize->isResizing(); }
+    bool IsResizingCanvas() const { return m_resize->IsResizing(); }
 
     // 让主窗口把自己的动作组挂进右键菜单（例如布尔运算下拉），
     // 传进来的动作与菜单栏、工具栏共用同一个 QAction，状态自然同步。
-    void addContextMenuGroup(const QString& title, const QList<QAction*>& actions);
-    int contextMenuGroupCount() const { return m_menu->groupCount(); }
+    void AddContextMenuGroup(const QString& title, const QList<QAction*>& actions);
+    int ContextMenuGroupCount() const { return m_menu->GroupCount(); }
 
   signals:
     void zoomChanged(qreal zoom);
@@ -83,10 +83,10 @@ class CanvasView : public QGraphicsView {
     friend class CanvasStrokeController;
     friend class CanvasContextMenuController;
 
-    void updateCursor();
+    void UpdateCursor();
     // 框选补判定：把整框落在选区内的图元选上（判定用图元实际外框，不含描边外扩）。
-    void selectItemsInsideBand(const QPoint& from, const QPoint& to);
-    void baseContextMenuEvent(QContextMenuEvent* event) { QGraphicsView::contextMenuEvent(event); }
+    void SelectItemsInsideBand(const QPoint& from, const QPoint& to);
+    void BaseContextMenuEvent(QContextMenuEvent* event) { QGraphicsView::contextMenuEvent(event); }
 
     CanvasScene* m_scene = nullptr;
     ToolMode m_mode = ToolMode::VIEW;

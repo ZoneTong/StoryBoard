@@ -16,37 +16,37 @@ class DockPanelController {
   public:
     explicit DockPanelController(MainWindow* window);
 
-    void createLayerDock();
-    void createPropertiesPanelDock();
-    void createViewModeDock();
+    void CreateLayerDock();
+    void CreatePropertiesPanelDock();
+    void CreateViewModeDock();
     // 把左侧工具条里的模式栏摘下，挂进右上角的视图模式卡片。
-    void attachViewModeToolBar();
+    void AttachViewModeToolBar();
     // 按设置恢复右侧卡片顺序和属性编辑面板位置；首次启动属性编辑面板默认停靠左侧。
-    void applyDockLayout();
+    void ApplyDockLayout();
     // 拖拽后读取实际上下位置并落盘。
-    void rememberDockOrder();
+    void RememberDockOrder();
     // 把属性编辑面板当前的停靠侧 / 悬浮几何写进设置文件。
-    void rememberPropertiesPanelDockState();
+    void RememberPropertiesPanelDockState();
     // 属性编辑面板停靠时始终显示；只有悬浮窗口才跟随选中状态显隐。
-    void updatePropertiesPanelDockVisibility();
+    void UpdatePropertiesPanelDockVisibility();
 
     // 拖拽卡片标题栏换位时没有位置信号，用移动事件兜底。
-    void handleMoveEvent(QObject* watched, QEvent* event);
+    void HandleMoveEvent(QObject* watched, QEvent* event);
 
-    QDockWidget* layerDock() const { return m_layerDock; }
-    QDockWidget* propertiesDock() const { return m_propertiesDock; }
-    QDockWidget* viewModeDock() const { return m_viewModeDock; }
+    QDockWidget* LayerDock() const { return m_layerDock; }
+    QDockWidget* PropertiesDock() const { return m_propertiesDock; }
+    QDockWidget* ViewModeDock() const { return m_viewModeDock; }
     LayerPanel* layerPanel() const { return m_layerPanel; }
     PropertiesPanel* propertiesPanel() const { return m_propertiesPanel; }
 
     // 右侧两张卡（视图模式 / 图层）的实际上下顺序（对象名）。
-    QStringList currentDockOrder() const;
+    QStringList CurrentDockOrder() const;
 
   private:
-    void schedulePropertiesPanelDockStateSave();
-    void restorePropertiesPanelDockState();
+    void SchedulePropertiesPanelDockStateSave();
+    void RestorePropertiesPanelDockState();
     // 属性编辑面板宽度：启动时按内容定一次，之后保持用户拖拽结果，只约束 260–360。
-    void applyPropertiesPanelDockWidth(int width, bool resizeNow);
+    void ApplyPropertiesPanelDockWidth(int width, bool resizeNow);
 
     MainWindow* m_window = nullptr;
     QDockWidget* m_layerDock = nullptr;

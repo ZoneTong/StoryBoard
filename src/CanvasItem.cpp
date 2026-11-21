@@ -49,7 +49,7 @@ CanvasItem::~CanvasItem()
     // 趁 QObject 部分仍完好时主动把自身清出缓存，杜绝这类悬垂读取。
     if (QGraphicsScene* owner = scene()) {
         if (auto* canvasScene = qobject_cast<CanvasScene*>(owner)) {
-            canvasScene->forgetItem(this);
+            canvasScene->ForgetItem(this);
         }
     }
     delete m_handles;
@@ -155,8 +155,8 @@ QRectF CanvasItem::boundingRect() const
 {
     // 绘制区域仍是内容矩形；选中框可能更小（扇形 / 弧线），两者取并集。
     const QRectF area = ContentRect().united(FrameRect());
-    return CanvasItemGeometry::boundingRect(area, FramePadding(), isSelected(), ViewScale(), m_handles->size(),
-                                            m_handles->rotationOffset());
+    return CanvasItemGeometry::boundingRect(area, FramePadding(), isSelected(), ViewScale(), m_handles->Size(),
+                                            m_handles->RotationOffset());
 }
 
 void CanvasItem::RefreshViewDependentGeometry()
@@ -193,7 +193,7 @@ QPainterPath CanvasItem::ClippingShape() const
 
 QPainterPath CanvasItem::SelectionHandleShape() const
 {
-    return m_handles->selectionShape();
+    return m_handles->SelectionShape();
 }
 
 void CanvasItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
@@ -217,7 +217,7 @@ void CanvasItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option
 bool CanvasItem::IsEditable() const
 {
     const CanvasScene* canvas = canvasScene();
-    return canvas && canvas->isItemEditable(this);
+    return canvas && canvas->IsItemEditable(this);
 }
 
 bool CanvasItem::IsExporting() const
@@ -247,62 +247,62 @@ bool CanvasItem::HasSingleSelection() const
 
 qreal CanvasItem::HandleSize() const
 {
-    return m_handles->size();
+    return m_handles->Size();
 }
 
 QPointF CanvasItem::HandleCenter(Handle handle) const
 {
-    return m_handles->center(handle);
+    return m_handles->Center(handle);
 }
 
 qreal CanvasItem::RotationHandleOffset() const
 {
-    return m_handles->rotationOffset();
+    return m_handles->RotationOffset();
 }
 
 QRectF CanvasItem::HandleRect(Handle handle) const
 {
-    return m_handles->rect(handle);
+    return m_handles->Rect(handle);
 }
 
 CanvasItem::Handle CanvasItem::HandleAt(const QPointF& pos) const
 {
-    return static_cast<Handle>(m_handles->hitAt(pos));
+    return static_cast<Handle>(m_handles->HitAt(pos));
 }
 
 QCursor CanvasItem::CursorForHandle(Handle handle) const
 {
-    return m_handles->cursor(handle);
+    return m_handles->Cursor(handle);
 }
 
 void CanvasItem::DrawSelectionOverlay(QPainter* painter)
 {
-    m_handles->drawOverlay(painter);
+    m_handles->DrawOverlay(painter);
 }
 
 void CanvasItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 {
-    m_interaction->onHoverMove(event);
+    m_interaction->OnHoverMove(event);
 }
 
 void CanvasItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
-    m_interaction->onHoverLeave(event);
+    m_interaction->OnHoverLeave(event);
 }
 
 void CanvasItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
-    m_interaction->onMousePress(event);
+    m_interaction->OnMousePress(event);
 }
 
 void CanvasItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
-    m_interaction->onMouseMove(event);
+    m_interaction->OnMouseMove(event);
 }
 
 void CanvasItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-    m_interaction->onMouseRelease(event);
+    m_interaction->OnMouseRelease(event);
 }
 
 QVariant CanvasItem::itemChange(GraphicsItemChange change, const QVariant& value)
@@ -334,7 +334,7 @@ QVariant CanvasItem::PropertyValue(ItemProperty property) const
     case ItemProperty::POSITION:
         return pos();
     case ItemProperty::SIZE:
-        return contentSize();
+        return ContentSize();
     case ItemProperty::ROTATION:
         return RotationAngle();
     case ItemProperty::OPACITY:

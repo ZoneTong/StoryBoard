@@ -23,7 +23,7 @@ QToolButton* makeRowIcon(IconId id, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
-    button->setIcon(makeIcon(id, QColor(139, 144, 156), SMALL_ICON_SIZE));
+    button->setIcon(MakeIcon(id, QColor(139, 144, 156), SMALL_ICON_SIZE));
     button->setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE));
     button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
     button->setAutoRaise(true);
@@ -44,16 +44,16 @@ PropertiesPanelFillBorderCard::PropertiesPanelFillBorderCard(QWidget* parent) : 
     fillIcon->setToolTip(PropertiesPanel::tr("Fill style"));
     fillLayout->addWidget(fillIcon);
 
-    const QList<FillStyle> styles = allFillStyles();
+    const QList<FillStyle> styles = AllFillStyles();
     for (const FillStyle style : styles) {
         auto* button = new QToolButton(fillRow);
         button->setObjectName(QStringLiteral("ItemFillStyleButton"));
         button->setCheckable(true);
         button->setAutoRaise(true);
-        button->setIcon(ItemStyleVisuals::fillStyleIcon(style, ICON_SIZE));
+        button->setIcon(ItemStyleVisuals::FillStyleIcon(style, ICON_SIZE));
         button->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
         button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
-        button->setToolTip(fillStyleName(style));
+        button->setToolTip(FillStyleName(style));
         button->setProperty("fillStyle", static_cast<int>(style));
         connect(button, &QToolButton::clicked, this, [this, style]() { emit fillStyleChosen(style); });
         m_fillStyleButtons.append(button);
@@ -72,16 +72,16 @@ PropertiesPanelFillBorderCard::PropertiesPanelFillBorderCard(QWidget* parent) : 
     borderIcon->setToolTip(PropertiesPanel::tr("Border style"));
     styleLayout->addWidget(borderIcon);
 
-    const QList<Qt::PenStyle> penStyles = ItemStyleVisuals::borderStyles();
+    const QList<Qt::PenStyle> penStyles = ItemStyleVisuals::BorderStyles();
     for (int index = 0; index < penStyles.size(); ++index) {
         auto* button = new QToolButton(styleRow);
         button->setObjectName(QStringLiteral("ItemBorderStyleButton"));
         button->setCheckable(true);
         button->setAutoRaise(true);
-        button->setIcon(ItemStyleVisuals::borderStyleIcon(penStyles.at(index), ICON_SIZE));
+        button->setIcon(ItemStyleVisuals::BorderStyleIcon(penStyles.at(index), ICON_SIZE));
         button->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
         button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
-        button->setToolTip(ItemStyleVisuals::borderStyleName(penStyles.at(index)));
+        button->setToolTip(ItemStyleVisuals::BorderStyleName(penStyles.at(index)));
         const Qt::PenStyle style = penStyles.at(index);
         connect(button, &QToolButton::clicked, this, [this, style]() { emit borderStyleChosen(style); });
         m_borderStyleButtons.append(button);
@@ -118,7 +118,7 @@ PropertiesPanelFillBorderCard::PropertiesPanelFillBorderCard(QWidget* parent) : 
     m_borderWidthRow->setObjectName(QStringLiteral("ItemBorderWidthRow"));
 }
 
-void PropertiesPanelFillBorderCard::refresh(const QList<ShapeItem*>& shapes, const QList<LineItemAbstract*>& strokes,
+void PropertiesPanelFillBorderCard::Refresh(const QList<ShapeItem*>& shapes, const QList<LineItemAbstract*>& strokes,
                                             const QList<ShapeItem*>& composites)
 {
     m_refreshing = true;
@@ -143,7 +143,7 @@ void PropertiesPanelFillBorderCard::refresh(const QList<ShapeItem*>& shapes, con
     } else if (!composites.isEmpty()) {
         currentStyle = composites.first()->StrokeStyle();
     }
-    const QList<Qt::PenStyle> penStyles = ItemStyleVisuals::borderStyles();
+    const QList<Qt::PenStyle> penStyles = ItemStyleVisuals::BorderStyles();
     const bool hasStrokeTargets = !shapes.isEmpty() || !strokes.isEmpty() || !composites.isEmpty();
     for (int index = 0; index < m_borderStyleButtons.size(); ++index) {
         m_borderStyleButtons.at(index)->setChecked(hasStrokeTargets && penStyles.at(index) == currentStyle);

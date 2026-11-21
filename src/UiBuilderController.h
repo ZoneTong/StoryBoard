@@ -15,11 +15,11 @@ class UiBuilderController {
     explicit UiBuilderController(MainWindow* window);
     ~UiBuilderController();
 
-    void buildActions();
-    void buildShapeMenu();
-    void buildMenus();
-    void buildToolBars();
-    void buildStatusBar();
+    void BuildActions();
+    void BuildShapeMenu();
+    void BuildMenus();
+    void BuildToolBars();
+    void BuildStatusBar();
 
   private:
     MainWindow* m_window = nullptr;

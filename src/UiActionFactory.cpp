@@ -16,7 +16,7 @@
 #include <QUndoStack>
 #include <QWidget>
 
-QString stripShortcutTail(const QString& tip)
+QString StripShortcutTail(const QString& tip)
 {
     static const QRegularExpression tail(QStringLiteral("(?:\\s*[（(][^（）()]*[）)])$"));
     QString result = tip;
@@ -30,14 +30,14 @@ QAction* makeAction(QObject* parent, IconId icon, const QString& text, const QKe
                     QString tip = QString())
 {
     // 工具栏按钮与菜单项共用一份图标，按工具栏图标尺寸生成；菜单再缩放到 16px。
-    auto* action = new QAction(makeIcon(icon, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE), text, parent);
+    auto* action = new QAction(MakeIcon(icon, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE), text, parent);
     if (!shortcut.isEmpty()) {
         action->setShortcut(shortcut);
     }
     // 提示里统一带上快捷键，省得逐个动作手写。基串是「不带键位的纯描述」：
     // 作者手写的 “(Ctrl+N)” 在入库前剥掉，改键后 refreshShortcutTips 重拼
     // 只会拼一次，不会再出现双份括号。
-    tip = stripShortcutTail(tip);
+    tip = StripShortcutTail(tip);
     action->setProperty("storyBoardBaseTip", tip);
     if (!tip.isEmpty() && !shortcut.isEmpty()) {
         const QString keys = shortcut.toString(QKeySequence::NativeText);
@@ -54,7 +54,7 @@ QAction* makeAction(QObject* parent, IconId icon, const QString& text, const QKe
 
 UiActionFactory::UiActionFactory(MainWindow* window) : m_window(window) {}
 
-void UiActionFactory::build()
+void UiActionFactory::Build()
 {
     m_window->m_newAct =
         makeAction(m_window, IconId::NEW, MainWindow::tr("New canvas"), QKeySequence(QStringLiteral("Ctrl+N")),
@@ -104,7 +104,7 @@ void UiActionFactory::build()
     m_window->m_deleteAct = makeAction(m_window, IconId::DELETE, MainWindow::tr("Delete selected items"),
                                        QKeySequence::Delete, MainWindow::tr("Delete the selected items (Delete)"));
     m_window->m_duplicateAct = new QAction(MainWindow::tr("Duplicate selected items"), m_window);
-    m_window->m_duplicateAct->setIcon(makeIcon(IconId::COPY, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
+    m_window->m_duplicateAct->setIcon(MakeIcon(IconId::COPY, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
     m_window->m_duplicateAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+D")));
     m_window->m_duplicateAct->setStatusTip(MainWindow::tr("Duplicate the selected items with a small offset (Ctrl+D)"));
     m_window->m_duplicateAct->setEnabled(false);
@@ -112,9 +112,9 @@ void UiActionFactory::build()
         if (!m_window->m_scene) {
             return;
         }
-        const int duplicated = m_window->m_scene->duplicateSelectedItems();
+        const int duplicated = m_window->m_scene->DuplicateSelectedItems();
         if (duplicated > 0) {
-            m_window->statusBar()->showMessage(MainWindow::tr("Duplicated %1 item(s)").arg(duplicated), 3000);
+            m_window->statusBar()->showMessage(MainWindow::tr("Duplicated %1 Item(s)").arg(duplicated), 3000);
         }
     });
     m_window->m_copyAct = makeAction(m_window, IconId::COPY, MainWindow::tr("Copy selected items"),
@@ -134,7 +134,7 @@ void UiActionFactory::build()
     m_window->m_pasteAct->setEnabled(false);
 
     m_window->m_groupAct = new QAction(MainWindow::tr("Group selected items"), m_window);
-    m_window->m_groupAct->setIcon(makeIcon(IconId::GROUP, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
+    m_window->m_groupAct->setIcon(MakeIcon(IconId::GROUP, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
     m_window->m_groupAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+G")));
     m_window->m_groupAct->setStatusTip(MainWindow::tr("Group the selected items so they move together (Ctrl+G)"));
     m_window->m_groupAct->setEnabled(false);
@@ -142,26 +142,26 @@ void UiActionFactory::build()
         if (!m_window->m_scene) {
             return;
         }
-        const int grouped = m_window->m_scene->groupSelectedItems();
+        const int grouped = m_window->m_scene->GroupSelectedItems();
         if (grouped > 0) {
-            m_window->statusBar()->showMessage(MainWindow::tr("Grouped %1 item(s)").arg(grouped), 3000);
+            m_window->statusBar()->showMessage(MainWindow::tr("Grouped %1 Item(s)").arg(grouped), 3000);
             // 组合前后“取消组合”的可用状态会变，立即刷新一批动作与卡片。
-            m_window->updateActions();
+            m_window->UpdateActions();
         }
     });
     m_window->m_ungroupAct = new QAction(MainWindow::tr("Ungroup selected items"), m_window);
-    m_window->m_ungroupAct->setIcon(makeIcon(IconId::UNGROUP, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
+    m_window->m_ungroupAct->setIcon(MakeIcon(IconId::UNGROUP, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
     m_window->m_ungroupAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+G")));
-    m_window->m_ungroupAct->setStatusTip(MainWindow::tr("Ungroup the selected group(s) (Ctrl+Shift+G)"));
+    m_window->m_ungroupAct->setStatusTip(MainWindow::tr("Ungroup the selected Group(s) (Ctrl+Shift+G)"));
     m_window->m_ungroupAct->setEnabled(false);
     QObject::connect(m_window->m_ungroupAct, &QAction::triggered, m_window, [this]() {
         if (!m_window->m_scene) {
             return;
         }
-        const int ungrouped = m_window->m_scene->ungroupSelectedItems();
+        const int ungrouped = m_window->m_scene->UngroupSelectedItems();
         if (ungrouped > 0) {
-            m_window->statusBar()->showMessage(MainWindow::tr("Ungrouped %1 item(s)").arg(ungrouped), 3000);
-            m_window->updateActions();
+            m_window->statusBar()->showMessage(MainWindow::tr("Ungrouped %1 Item(s)").arg(ungrouped), 3000);
+            m_window->UpdateActions();
         }
     });
     m_window->m_smoothAct = makeAction(
@@ -173,7 +173,7 @@ void UiActionFactory::build()
         if (!m_window->m_scene || !m_window->m_view) {
             return;
         }
-        const int smoothed = m_window->m_scene->smoothSelectedStrokes(m_window->m_settings.strokeSmoothing);
+        const int smoothed = m_window->m_scene->SmoothSelectedStrokes(m_window->m_settings.strokeSmoothing);
         if (smoothed > 0) {
             m_window->statusBar()->showMessage(MainWindow::tr("Simplified %1 curve(s)").arg(smoothed), 3000);
         } else {
@@ -243,9 +243,9 @@ void UiActionFactory::build()
     m_window->m_gridAct->setCheckable(true);
     m_window->m_gridAct->setChecked(m_window->m_settings.showGrid);
     QObject::connect(m_window->m_gridAct, &QAction::toggled, m_window, [this](bool visible) {
-        m_window->m_scene->setShowGrid(visible);
+        m_window->m_scene->SetShowGrid(visible);
         m_window->m_settings.showGrid = visible;
-        m_window->m_settings.save();
+        m_window->m_settings.Save();
         m_window->statusBar()->showMessage(
             visible ? MainWindow::tr("Helper grid shown") : MainWindow::tr("Helper grid hidden"), 2000);
     });
@@ -281,45 +281,45 @@ void UiActionFactory::build()
     m_window->m_shortcutsAct->setStatusTip(MainWindow::tr("List every action that has a shortcut"));
     m_window->m_aboutQtAct = new QAction(MainWindow::tr("About Qt"), m_window);
 
-    QObject::connect(m_window->m_newAct, &QAction::triggered, m_window, &MainWindow::newCanvas);
-    QObject::connect(m_window->m_openAct, &QAction::triggered, m_window, &MainWindow::openCanvasDialog);
-    QObject::connect(m_window->m_saveAct, &QAction::triggered, m_window, [this]() { m_window->saveCanvas(); });
-    QObject::connect(m_window->m_saveAsAct, &QAction::triggered, m_window, [this]() { m_window->saveCanvasAs(); });
-    QObject::connect(m_window->m_importAct, &QAction::triggered, m_window, &MainWindow::importImagesDialog);
-    QObject::connect(m_window->m_lineArtAct, &QAction::triggered, m_window, &MainWindow::importOutlineImageDialog);
-    QObject::connect(m_window->m_exportAct, &QAction::triggered, m_window, &MainWindow::exportCanvas);
-    QObject::connect(m_window->m_exportExcalidrawAct, &QAction::triggered, m_window, &MainWindow::exportExcalidraw);
-    QObject::connect(m_window->m_exportCustomShapeAct, &QAction::triggered, m_window, &MainWindow::exportCustomShape);
+    QObject::connect(m_window->m_newAct, &QAction::triggered, m_window, &MainWindow::NewCanvas);
+    QObject::connect(m_window->m_openAct, &QAction::triggered, m_window, &MainWindow::OpenCanvasDialog);
+    QObject::connect(m_window->m_saveAct, &QAction::triggered, m_window, [this]() { m_window->SaveCanvas(); });
+    QObject::connect(m_window->m_saveAsAct, &QAction::triggered, m_window, [this]() { m_window->SaveCanvasAs(); });
+    QObject::connect(m_window->m_importAct, &QAction::triggered, m_window, &MainWindow::ImportImagesDialog);
+    QObject::connect(m_window->m_lineArtAct, &QAction::triggered, m_window, &MainWindow::ImportOutlineImageDialog);
+    QObject::connect(m_window->m_exportAct, &QAction::triggered, m_window, &MainWindow::ExportCanvas);
+    QObject::connect(m_window->m_exportExcalidrawAct, &QAction::triggered, m_window, &MainWindow::ExportExcalidraw);
+    QObject::connect(m_window->m_exportCustomShapeAct, &QAction::triggered, m_window, &MainWindow::ExportCustomShape);
     QObject::connect(m_window->m_quitAct, &QAction::triggered, m_window, &QWidget::close);
 
     QObject::connect(m_window->m_undoAct, &QAction::triggered, m_window->m_undo, &QUndoStack::undo);
     QObject::connect(m_window->m_redoAct, &QAction::triggered, m_window->m_undo, &QUndoStack::redo);
-    QObject::connect(m_window->m_deleteAct, &QAction::triggered, m_window->m_scene, &CanvasScene::deleteSelected);
+    QObject::connect(m_window->m_deleteAct, &QAction::triggered, m_window->m_scene, &CanvasScene::DeleteSelected);
     QObject::connect(m_window->m_copyAct, &QAction::triggered, m_window,
-                     [this]() { m_window->m_editActions->copySelectedItems(); });
+                     [this]() { m_window->m_editActions->CopySelectedItems(); });
     QObject::connect(m_window->m_cutAct, &QAction::triggered, m_window,
-                     [this]() { m_window->m_editActions->cutSelectedItems(); });
+                     [this]() { m_window->m_editActions->CutSelectedItems(); });
     QObject::connect(m_window->m_pasteAct, &QAction::triggered, m_window,
-                     [this]() { m_window->m_editActions->pasteItems(); });
-    QObject::connect(m_window->m_selectAllAct, &QAction::triggered, m_window->m_scene, &CanvasScene::selectAllItems);
-    QObject::connect(m_window->m_itemPropsAct, &QAction::triggered, m_window, &MainWindow::showSelectedItemProperties);
+                     [this]() { m_window->m_editActions->PasteItems(); });
+    QObject::connect(m_window->m_selectAllAct, &QAction::triggered, m_window->m_scene, &CanvasScene::SelectAllItems);
+    QObject::connect(m_window->m_itemPropsAct, &QAction::triggered, m_window, &MainWindow::ShowSelectedItemProperties);
     QObject::connect(m_window->m_rotateCwAct, &QAction::triggered, m_window,
-                     [this]() { m_window->rotateSelected(45.0); });
+                     [this]() { m_window->RotateSelected(45.0); });
     QObject::connect(m_window->m_rotateCcwAct, &QAction::triggered, m_window,
-                     [this]() { m_window->rotateSelected(-45.0); });
+                     [this]() { m_window->RotateSelected(-45.0); });
 
     QObject::connect(m_window->m_modeGroup, &QActionGroup::triggered, m_window,
-                     [this](QAction* action) { m_window->setToolMode(static_cast<ToolMode>(action->data().toInt())); });
-    QObject::connect(m_window->m_fitAct, &QAction::triggered, m_window->m_view, &CanvasView::fitAll);
-    QObject::connect(m_window->m_zoomInAct, &QAction::triggered, m_window->m_view, &CanvasView::zoomIn);
-    QObject::connect(m_window->m_zoomOutAct, &QAction::triggered, m_window->m_view, &CanvasView::zoomOut);
-    QObject::connect(m_window->m_actualSizeAct, &QAction::triggered, m_window->m_view, &CanvasView::actualSize);
+                     [this](QAction* action) { m_window->SetToolMode(static_cast<ToolMode>(action->data().toInt())); });
+    QObject::connect(m_window->m_fitAct, &QAction::triggered, m_window->m_view, &CanvasView::FitAll);
+    QObject::connect(m_window->m_zoomInAct, &QAction::triggered, m_window->m_view, &CanvasView::ZoomIn);
+    QObject::connect(m_window->m_zoomOutAct, &QAction::triggered, m_window->m_view, &CanvasView::ZoomOut);
+    QObject::connect(m_window->m_actualSizeAct, &QAction::triggered, m_window->m_view, &CanvasView::ActualSize);
 
     QObject::connect(m_window->m_replaceBgAct, &QAction::triggered, m_window,
-                     &MainWindow::replaceCanvasBackgroundImage);
-    QObject::connect(m_window->m_bgColorAct, &QAction::triggered, m_window, &MainWindow::setBackgroundColor);
-    QObject::connect(m_window->m_clearBgAct, &QAction::triggered, m_window, &MainWindow::clearBackground);
-    QObject::connect(m_window->m_settingsAct, &QAction::triggered, m_window, &MainWindow::showSettings);
+                     &MainWindow::ReplaceCanvasBackgroundImage);
+    QObject::connect(m_window->m_bgColorAct, &QAction::triggered, m_window, &MainWindow::SetBackgroundColor);
+    QObject::connect(m_window->m_clearBgAct, &QAction::triggered, m_window, &MainWindow::ClearBackground);
+    QObject::connect(m_window->m_settingsAct, &QAction::triggered, m_window, &MainWindow::ShowSettings);
 
     m_window->m_fillNoneAct = new QAction(MainWindow::tr("No fill"), m_window);
     m_window->m_fillSolidAct = new QAction(MainWindow::tr("Solid fill"), m_window);
@@ -352,7 +352,7 @@ void UiActionFactory::build()
     m_window->m_fillStyleGroup->addAction(m_window->m_fillBrickAct);
     m_window->m_fillStyleGroup->addAction(m_window->m_fillDotsAct);
     // 需求 16：默认“无填充”，勾选状态必须按当前全局状态刷新，不能写死纯色。
-    m_window->updateFillActions();
+    m_window->UpdateFillActions();
     QObject::connect(m_window->m_fillNoneAct, &QAction::triggered, m_window,
                      [this]() { m_window->SetFillStyle(FillStyle::NONE); });
     QObject::connect(m_window->m_fillSolidAct, &QAction::triggered, m_window,
@@ -377,19 +377,19 @@ void UiActionFactory::build()
                      [this]() { m_window->SetFillStyle(FillStyle::DOTS); });
     m_window->m_fillColorAct = new QAction(MainWindow::tr("Fill color…"), m_window);
     m_window->m_fillColorAct->setObjectName(QStringLiteral("FillColorAction"));
-    m_window->m_fillColorAct->setIcon(m_window->m_style->fillColorIcon(
+    m_window->m_fillColorAct->setIcon(m_window->m_style->FillColorIcon(
         m_window->m_fillColor.isValid() ? m_window->m_fillColor : QColor(30, 41, 59, 36), 16));
-    QObject::connect(m_window->m_fillColorAct, &QAction::triggered, m_window, &MainWindow::chooseFillColor);
+    QObject::connect(m_window->m_fillColorAct, &QAction::triggered, m_window, &MainWindow::ChooseFillColor);
     m_window->m_strokeColorAct = new QAction(MainWindow::tr("Border color…"), m_window);
     m_window->m_strokeColorAct->setObjectName(QStringLiteral("BorderColorAction"));
-    m_window->m_strokeColorAct->setIcon(m_window->m_style->strokeColorIcon(m_window->m_brushColor, 16));
-    QObject::connect(m_window->m_strokeColorAct, &QAction::triggered, m_window, &MainWindow::chooseStrokeColor);
+    m_window->m_strokeColorAct->setIcon(m_window->m_style->StrokeColorIcon(m_window->m_brushColor, 16));
+    QObject::connect(m_window->m_strokeColorAct, &QAction::triggered, m_window, &MainWindow::ChooseStrokeColor);
 
-    // 需求 1/15：描线样式动作组，候选表与编辑卡、属性窗共用 ItemStyleVisuals::borderStyles()。
+    // 需求 1/15：描线样式动作组，候选表与编辑卡、属性窗共用 ItemStyleVisuals::BorderStyles()。
     m_window->m_strokeStyleGroup = new QActionGroup(m_window);
     m_window->m_strokeStyleGroup->setExclusive(true);
-    for (Qt::PenStyle penStyle : ItemStyleVisuals::borderStyles()) {
-        QAction* action = new QAction(ItemStyleVisuals::borderStyleName(penStyle), m_window);
+    for (Qt::PenStyle penStyle : ItemStyleVisuals::BorderStyles()) {
+        QAction* action = new QAction(ItemStyleVisuals::BorderStyleName(penStyle), m_window);
         action->setCheckable(true);
         action->setData(static_cast<int>(penStyle));
         m_window->m_strokeStyleGroup->addAction(action);
@@ -397,14 +397,14 @@ void UiActionFactory::build()
         QObject::connect(action, &QAction::triggered, m_window,
                          [this, penStyle]() { m_window->SetStrokeStyle(penStyle); });
     }
-    m_window->m_style->updateStrokeStyleActions();
+    m_window->m_style->UpdateStrokeStyleActions();
 
     // 需求 1：菜单里的“描线宽度”改成普通菜单项，触发后把焦点放到工具栏宽度输入框末尾。
     m_window->m_strokeWidthFocusAct = new QAction(MainWindow::tr("Border width"), m_window);
     m_window->m_strokeWidthFocusAct->setObjectName(QStringLiteral("StrokeWidthFocusAction"));
     m_window->m_strokeWidthFocusAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+W")));
     m_window->m_strokeWidthFocusAct->setShortcutContext(Qt::ApplicationShortcut);
-    QObject::connect(m_window->m_strokeWidthFocusAct, &QAction::triggered, m_window, &MainWindow::focusStrokeWidthSpin);
+    QObject::connect(m_window->m_strokeWidthFocusAct, &QAction::triggered, m_window, &MainWindow::FocusStrokeWidthSpin);
 
     auto setCanvasBackgroundMode = [this](BackgroundMode mode) {
         CanvasBackground background = m_window->m_scene->canvasBackground();
@@ -412,7 +412,7 @@ void UiActionFactory::build()
             return;
         }
         background.mode = mode;
-        m_window->m_scene->replaceCanvasBackground(background, MainWindow::tr("Adjust background fill mode"));
+        m_window->m_scene->ReplaceCanvasBackground(background, MainWindow::tr("Adjust background fill mode"));
     };
     QObject::connect(m_window->m_bgStretchAct, &QAction::triggered, m_window,
                      [setCanvasBackgroundMode]() { setCanvasBackgroundMode(BackgroundMode::STRETCH); });
@@ -421,7 +421,7 @@ void UiActionFactory::build()
     QObject::connect(m_window->m_bgTileAct, &QAction::triggered, m_window,
                      [setCanvasBackgroundMode]() { setCanvasBackgroundMode(BackgroundMode::TILE); });
 
-    QObject::connect(m_window->m_aboutAct, &QAction::triggered, m_window, &MainWindow::showAbout);
-    QObject::connect(m_window->m_shortcutsAct, &QAction::triggered, m_window, &MainWindow::showShortcuts);
+    QObject::connect(m_window->m_aboutAct, &QAction::triggered, m_window, &MainWindow::ShowAbout);
+    QObject::connect(m_window->m_shortcutsAct, &QAction::triggered, m_window, &MainWindow::ShowShortcuts);
     QObject::connect(m_window->m_aboutQtAct, &QAction::triggered, qApp, &QApplication::aboutQt);
 }

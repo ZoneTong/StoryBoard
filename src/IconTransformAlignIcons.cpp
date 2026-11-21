@@ -211,7 +211,7 @@ constexpr struct IconEntry {
 
 } // namespace
 
-bool paintIconTransformAlign(QPainter& painter, IconId id)
+bool PaintIconTransformAlign(QPainter& painter, IconId id)
 {
     for (const IconEntry& entry : ENTRIES) {
         if (entry.id == id) {

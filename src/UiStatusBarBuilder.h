@@ -7,7 +7,7 @@ class UiStatusBarBuilder {
   public:
     explicit UiStatusBarBuilder(MainWindow* window);
 
-    void buildStatusBar();
+    void BuildStatusBar();
 
   private:
     MainWindow* m_window = nullptr;

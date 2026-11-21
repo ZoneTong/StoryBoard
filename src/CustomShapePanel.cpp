@@ -47,7 +47,7 @@ bool loadTemplateCached(const QFileInfo& info, CustomShapeTemplate* entry, QStri
         return true;
     }
     CustomShapeTemplate loaded;
-    if (!loadCustomShapeTemplate(path, &loaded, error)) {
+    if (!LoadCustomShapeTemplate(path, &loaded, error)) {
         g_templateCache.remove(path);
         return false;
     }
@@ -134,24 +134,24 @@ CustomShapePanel::CustomShapePanel(MainWindow* window) : QWidget(window), m_wind
     layout->addLayout(footer);
 
     connect(openButton, &QPushButton::clicked, this, [this]() {
-        const AppSettings::ShapesFolderOpenResult result = AppSettings::openShapesFolder();
+        const AppSettings::ShapesFolderOpenResult result = AppSettings::OpenShapesFolder();
         if (!result.opened && m_status) {
             // 与菜单项同一句：带目录路径与失败原因，便于直接判断是权限还是外壳问题。
-            m_status->setText(AppSettings::shapesFolderFailureText(result));
+            m_status->setText(AppSettings::ShapesFolderFailureText(result));
         }
     });
-    connect(refreshButton, &QPushButton::clicked, this, [this]() { showAt(nullptr); });
+    connect(refreshButton, &QPushButton::clicked, this, [this]() { ShowAt(nullptr); });
     connect(m_tabs, &QTabWidget::currentChanged, this, [this](int index) {
         if (m_rebuilding || !m_tabs || index < 0) {
             return;
         }
         m_currentKey = m_tabs->widget(index)->property("folderKey").toString();
-        saveGeometryToSettings();
+        SaveGeometryToSettings();
     });
-    restoreGeometryFromSettings();
+    RestoreGeometryFromSettings();
 }
 
-QString CustomShapePanel::currentFolder() const
+QString CustomShapePanel::CurrentFolder() const
 {
     if (!m_tabs || m_tabs->currentIndex() < 0) {
         return {};
@@ -159,14 +159,14 @@ QString CustomShapePanel::currentFolder() const
     return m_tabs->tabText(m_tabs->currentIndex());
 }
 
-QList<CustomShapePanel::Folder> CustomShapePanel::scanFolders() const
+QList<CustomShapePanel::Folder> CustomShapePanel::ScanFolders() const
 {
     QList<Folder> folders;
     QList<CustomShapeTemplate> looseItems;
     QStringList looseErrors;
     QHash<QString, int> folderIndex;
 
-    for (const QString& rootPath : AppSettings::shapesDirs()) {
+    for (const QString& rootPath : AppSettings::ShapesDirs()) {
         QDir root(rootPath);
         if (!root.exists()) {
             continue;
@@ -233,7 +233,7 @@ QList<CustomShapePanel::Folder> CustomShapePanel::scanFolders() const
     return folders;
 }
 
-void CustomShapePanel::rebuild(const QList<Folder>& folders)
+void CustomShapePanel::Rebuild(const QList<Folder>& folders)
 {
     m_rebuilding = true;
     const QString previousKey = m_currentKey;
@@ -261,7 +261,7 @@ void CustomShapePanel::rebuild(const QList<Folder>& folders)
             button->setProperty("shapePath", entry.filePath);
             button->setText(entry.name);
             button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-            button->setIcon(makeCustomShapeIcon(entry.unitPath, QColor(58, 64, 80), ICON_SIZE));
+            button->setIcon(MakeCustomShapeIcon(entry.unitPath, QColor(58, 64, 80), ICON_SIZE));
             button->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
             button->setToolTip(tr("Insert “%1” from %2").arg(entry.name, QFileInfo(entry.filePath).fileName()));
             button->setAutoRaise(true);
@@ -269,7 +269,7 @@ void CustomShapePanel::rebuild(const QList<Folder>& folders)
             // 方向键 / 回车要能落到模板按钮上，焦点策略不能是 NoFocus。
             button->setFocusPolicy(Qt::StrongFocus);
             const QString filePath = entry.filePath;
-            connect(button, &QToolButton::clicked, this, [this, filePath]() { insertTemplate(filePath); });
+            connect(button, &QToolButton::clicked, this, [this, filePath]() { InsertTemplate(filePath); });
             grid->addWidget(button, index / COLUMNS, index % COLUMNS, Qt::AlignLeft | Qt::AlignTop);
             ++index;
         }
@@ -329,10 +329,10 @@ void CustomShapePanel::rebuild(const QList<Folder>& folders)
     }
 }
 
-void CustomShapePanel::showAt(QWidget* anchor)
+void CustomShapePanel::ShowAt(QWidget* anchor)
 {
-    const QList<Folder> folders = scanFolders();
-    rebuild(folders);
+    const QList<Folder> folders = ScanFolders();
+    Rebuild(folders);
 
     if (anchor) {
         const QPoint origin = anchor->mapToGlobal(QPoint(0, anchor->height() + 4));
@@ -354,14 +354,14 @@ void CustomShapePanel::showAt(QWidget* anchor)
     }
 }
 
-void CustomShapePanel::insertTemplate(const QString& filePath)
+void CustomShapePanel::InsertTemplate(const QString& filePath)
 {
     if (!m_window) {
         return;
     }
     // 插入后收起（Q2 已确认关闭），下一轮通过工具栏/菜单再次展开。
     hide();
-    m_window->insertCustomShape(filePath);
+    m_window->InsertCustomShape(filePath);
 }
 
 void CustomShapePanel::keyPressEvent(QKeyEvent* event)
@@ -382,19 +382,19 @@ void CustomShapePanel::keyPressEvent(QKeyEvent* event)
     }
     switch (event->key()) {
     case Qt::Key_Left:
-        moveFocusByStep(-1);
+        MoveFocusByStep(-1);
         event->accept();
         return;
     case Qt::Key_Right:
-        moveFocusByStep(1);
+        MoveFocusByStep(1);
         event->accept();
         return;
     case Qt::Key_Up:
-        moveFocusByStep(-COLUMNS);
+        MoveFocusByStep(-COLUMNS);
         event->accept();
         return;
     case Qt::Key_Down:
-        moveFocusByStep(COLUMNS);
+        MoveFocusByStep(COLUMNS);
         event->accept();
         return;
     default:
@@ -403,7 +403,7 @@ void CustomShapePanel::keyPressEvent(QKeyEvent* event)
     QWidget::keyPressEvent(event);
 }
 
-void CustomShapePanel::moveFocusByStep(int step)
+void CustomShapePanel::MoveFocusByStep(int step)
 {
     QWidget* page = m_tabs ? m_tabs->currentWidget() : nullptr;
     if (!page) {
@@ -424,13 +424,13 @@ void CustomShapePanel::moveFocusByStep(int step)
 
 void CustomShapePanel::closeEvent(QCloseEvent* event)
 {
-    saveGeometryToSettings();
+    SaveGeometryToSettings();
     QWidget::closeEvent(event);
 }
 
-void CustomShapePanel::restoreGeometryFromSettings()
+void CustomShapePanel::RestoreGeometryFromSettings()
 {
-    QSettings settings(AppSettings::settingsFilePath(), QSettings::IniFormat);
+    QSettings settings(AppSettings::SettingsFilePath(), QSettings::IniFormat);
     const QByteArray geometry = settings.value(QStringLiteral("customShapes/geometry")).toByteArray();
     if (!geometry.isEmpty()) {
         restoreGeometry(geometry);
@@ -438,9 +438,9 @@ void CustomShapePanel::restoreGeometryFromSettings()
     m_currentKey = settings.value(QStringLiteral("customShapes/page")).toString();
 }
 
-void CustomShapePanel::saveGeometryToSettings()
+void CustomShapePanel::SaveGeometryToSettings()
 {
-    QSettings settings(AppSettings::settingsFilePath(), QSettings::IniFormat);
+    QSettings settings(AppSettings::SettingsFilePath(), QSettings::IniFormat);
     settings.setValue(QStringLiteral("customShapes/geometry"), saveGeometry());
     if (!m_currentKey.isEmpty()) {
         settings.setValue(QStringLiteral("customShapes/page"), m_currentKey);

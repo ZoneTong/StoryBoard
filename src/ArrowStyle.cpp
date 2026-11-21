@@ -27,7 +27,7 @@ QPointF normalizedDir(const QPointF& tip, const QPointF& toward)
 
 } // namespace
 
-QList<ArrowStyle> allArrowStyles()
+QList<ArrowStyle> AllArrowStyles()
 {
     return {ArrowStyle::NONE,
             ArrowStyle::TRIANGLE_FILLED,
@@ -37,7 +37,7 @@ QList<ArrowStyle> allArrowStyles()
             ArrowStyle::BAR};
 }
 
-QString arrowStyleName(ArrowStyle style)
+QString ArrowStyleName(ArrowStyle style)
 {
     auto translate = [](const char* text) { return QCoreApplication::translate("ArrowStyle", text); };
     switch (style) {
@@ -57,7 +57,7 @@ QString arrowStyleName(ArrowStyle style)
     return translate("None");
 }
 
-QString arrowStyleToString(ArrowStyle style)
+QString ArrowStyleToString(ArrowStyle style)
 {
     switch (style) {
     case ArrowStyle::TRIANGLE_FILLED:
@@ -76,7 +76,7 @@ QString arrowStyleToString(ArrowStyle style)
     return QStringLiteral("none");
 }
 
-ArrowStyle arrowStyleFromString(const QString& value)
+ArrowStyle ArrowStyleFromString(const QString& value)
 {
     if (value == QStringLiteral("triangle")) {
         return ArrowStyle::TRIANGLE_FILLED;
@@ -97,15 +97,15 @@ ArrowStyle arrowStyleFromString(const QString& value)
     return ArrowStyle::NONE;
 }
 
-bool arrowStyleIsHead(ArrowStyle style)
+bool ArrowStyleIsHead(ArrowStyle style)
 {
     return style != ArrowStyle::NONE;
 }
 
-QPainterPath arrowHeadPath(const QPointF& tip, const QPointF& toward, qreal strokeWidth, ArrowStyle style)
+QPainterPath ArrowHeadPath(const QPointF& tip, const QPointF& toward, qreal strokeWidth, ArrowStyle style)
 {
     QPainterPath path;
-    if (!arrowStyleIsHead(style)) {
+    if (!ArrowStyleIsHead(style)) {
         return path;
     }
     const QPointF dir = normalizedDir(tip, toward);
@@ -150,13 +150,13 @@ QPainterPath arrowHeadPath(const QPointF& tip, const QPointF& toward, qreal stro
     return path;
 }
 
-void paintArrowHead(QPainter* painter, const QPointF& tip, const QPointF& toward, qreal strokeWidth,
+void PaintArrowHead(QPainter* painter, const QPointF& tip, const QPointF& toward, qreal strokeWidth,
                     const QColor& color, ArrowStyle style)
 {
-    if (!painter || !arrowStyleIsHead(style)) {
+    if (!painter || !ArrowStyleIsHead(style)) {
         return;
     }
-    const QPainterPath path = arrowHeadPath(tip, toward, strokeWidth, style);
+    const QPainterPath path = ArrowHeadPath(tip, toward, strokeWidth, style);
     if (path.isEmpty()) {
         return;
     }

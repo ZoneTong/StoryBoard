@@ -41,37 +41,37 @@ PropertiesPanelSelectionCard::PropertiesPanelSelectionCard(QWidget* parent) : QW
     QHBoxLayout* groupLayout = nullptr;
     m_groupRow = makeRow(this, &groupLayout);
 
-    m_propertiesButton = makeButton(QStringLiteral("ItemPropertiesButton"));
+    m_propertiesButton = MakeButton(QStringLiteral("ItemPropertiesButton"));
     basicLayout->addWidget(m_propertiesButton);
-    m_copyButton = makeButton(QStringLiteral("ItemCopyButton"));
+    m_copyButton = MakeButton(QStringLiteral("ItemCopyButton"));
     basicLayout->addWidget(m_copyButton);
-    m_deleteButton = makeButton(QStringLiteral("ItemDeleteButton"));
+    m_deleteButton = MakeButton(QStringLiteral("ItemDeleteButton"));
     basicLayout->addWidget(m_deleteButton);
-    m_rotateCwButton = makeButton(QStringLiteral("ItemRotateCwButton"));
+    m_rotateCwButton = MakeButton(QStringLiteral("ItemRotateCwButton"));
     basicLayout->addWidget(m_rotateCwButton);
-    m_rotateCcwButton = makeButton(QStringLiteral("ItemRotateCcwButton"));
+    m_rotateCcwButton = MakeButton(QStringLiteral("ItemRotateCcwButton"));
     basicLayout->addWidget(m_rotateCcwButton);
-    m_smoothButton = makeButton(QStringLiteral("ItemSmoothButton"));
+    m_smoothButton = MakeButton(QStringLiteral("ItemSmoothButton"));
     basicLayout->addWidget(m_smoothButton);
     basicLayout->addStretch(1);
 
     // 对齐 8 项与合并图元 6 项各占一行：多选时直接平铺，不再收进下拉菜单。
     for (int i = 0; i < ALIGN_BUTTON_COUNT; ++i) {
-        auto* button = makeButton(QStringLiteral("ItemAlignRowButton"));
+        auto* button = MakeButton(QStringLiteral("ItemAlignRowButton"));
         m_alignButtons.append(button);
         alignLayout->addWidget(button);
     }
     alignLayout->addStretch(1);
     for (int i = 0; i < BOOL_BUTTON_COUNT; ++i) {
-        auto* button = makeButton(QStringLiteral("ItemMorphButton"));
+        auto* button = MakeButton(QStringLiteral("ItemMorphButton"));
         m_boolButtons.append(button);
         morphLayout->addWidget(button);
     }
     morphLayout->addStretch(1);
 
-    m_groupButton = makeButton(QStringLiteral("ItemGroupButton"));
+    m_groupButton = MakeButton(QStringLiteral("ItemGroupButton"));
     groupLayout->addWidget(m_groupButton);
-    m_ungroupButton = makeButton(QStringLiteral("ItemUngroupButton"));
+    m_ungroupButton = MakeButton(QStringLiteral("ItemUngroupButton"));
     groupLayout->addWidget(m_ungroupButton);
     groupLayout->addStretch(1);
 
@@ -83,7 +83,7 @@ PropertiesPanelSelectionCard::PropertiesPanelSelectionCard(QWidget* parent) : QW
     hide();
 }
 
-QToolButton* PropertiesPanelSelectionCard::makeButton(const QString& objectName)
+QToolButton* PropertiesPanelSelectionCard::MakeButton(const QString& objectName)
 {
     auto* button = new QToolButton(this);
     button->setObjectName(objectName);
@@ -94,7 +94,7 @@ QToolButton* PropertiesPanelSelectionCard::makeButton(const QString& objectName)
     return button;
 }
 
-void PropertiesPanelSelectionCard::bindAction(QToolButton* button, QAction* action)
+void PropertiesPanelSelectionCard::BindAction(QToolButton* button, QAction* action)
 {
     if (!button) {
         return;
@@ -112,7 +112,7 @@ void PropertiesPanelSelectionCard::bindAction(QToolButton* button, QAction* acti
     }
 }
 
-QAction* PropertiesPanelSelectionCard::actionForButton(QToolButton* button) const
+QAction* PropertiesPanelSelectionCard::ActionForButton(QToolButton* button) const
 {
     if (!button) {
         return nullptr;
@@ -152,7 +152,7 @@ QAction* PropertiesPanelSelectionCard::actionForButton(QToolButton* button) cons
     return nullptr;
 }
 
-void PropertiesPanelSelectionCard::setSelectionActions(const QList<QAction*>& alignActions,
+void PropertiesPanelSelectionCard::SetSelectionActions(const QList<QAction*>& alignActions,
                                                        const QList<QAction*>& boolActions, QAction* copyAction,
                                                        QAction* removeAction, QAction* rotateCwAction,
                                                        QAction* rotateCcwAction, QAction* groupAction,
@@ -161,10 +161,10 @@ void PropertiesPanelSelectionCard::setSelectionActions(const QList<QAction*>& al
     m_alignActions = alignActions;
     m_boolActions = boolActions;
     for (int i = 0; i < m_alignButtons.size() && i < alignActions.size(); ++i) {
-        bindAction(m_alignButtons.at(i), alignActions.at(i));
+        BindAction(m_alignButtons.at(i), alignActions.at(i));
     }
     for (int i = 0; i < m_boolButtons.size() && i < boolActions.size(); ++i) {
-        bindAction(m_boolButtons.at(i), boolActions.at(i));
+        BindAction(m_boolButtons.at(i), boolActions.at(i));
     }
 
     m_copyAction = copyAction;
@@ -173,37 +173,37 @@ void PropertiesPanelSelectionCard::setSelectionActions(const QList<QAction*>& al
     m_rotateCcwAction = rotateCcwAction;
     m_groupAction = groupAction;
     m_ungroupAction = ungroupAction;
-    bindAction(m_copyButton, copyAction);
-    bindAction(m_deleteButton, removeAction);
-    bindAction(m_rotateCwButton, rotateCwAction);
-    bindAction(m_rotateCcwButton, rotateCcwAction);
-    bindAction(m_groupButton, groupAction);
-    bindAction(m_ungroupButton, ungroupAction);
+    BindAction(m_copyButton, copyAction);
+    BindAction(m_deleteButton, removeAction);
+    BindAction(m_rotateCwButton, rotateCwAction);
+    BindAction(m_rotateCcwButton, rotateCcwAction);
+    BindAction(m_groupButton, groupAction);
+    BindAction(m_ungroupButton, ungroupAction);
 
-    refreshVisibility();
+    RefreshVisibility();
 }
 
-void PropertiesPanelSelectionCard::setItemActions(QAction* smoothAction, QAction* propertiesAction)
+void PropertiesPanelSelectionCard::SetItemActions(QAction* smoothAction, QAction* propertiesAction)
 {
     m_smoothAction = smoothAction;
     m_propertiesAction = propertiesAction;
-    bindAction(m_smoothButton, smoothAction);
-    bindAction(m_propertiesButton, propertiesAction);
-    refreshVisibility();
+    BindAction(m_smoothButton, smoothAction);
+    BindAction(m_propertiesButton, propertiesAction);
+    RefreshVisibility();
 }
 
-void PropertiesPanelSelectionCard::setSelectionState(bool hasSelection, bool groupUseful)
+void PropertiesPanelSelectionCard::SetSelectionState(bool hasSelection, bool groupUseful)
 {
     m_hasSelection = hasSelection;
     m_groupUseful = groupUseful;
-    refreshVisibility();
+    RefreshVisibility();
 }
 
-void PropertiesPanelSelectionCard::refreshVisibility()
+void PropertiesPanelSelectionCard::RefreshVisibility()
 {
     // 动作不可用就整颗按钮隐藏：卡片只列出当前选中真正能做的操作。
     auto usable = [this](QToolButton* button) {
-        QAction* action = actionForButton(button);
+        QAction* action = ActionForButton(button);
         const bool enabled = action && action->isEnabled();
         button->setEnabled(enabled);
         button->setVisible(enabled);

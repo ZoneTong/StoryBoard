@@ -19,39 +19,39 @@
 #include <QUndoStack>
 
 
-void selftest::runSettingsDialogBasicTests(Context& ctx)
+void selftest::RunSettingsDialogBasicTests(Context& ctx)
 {
     {
         CanvasScene handleScene;
-        handleScene.setMode(ToolMode::EDIT);
-        handleScene.setShowGrid(false);
+        handleScene.SetMode(ToolMode::EDIT);
+        handleScene.SetShowGrid(false);
         QUndoStack handleUndo;
-        handleScene.setUndoStack(&handleUndo);
+        handleScene.SetUndoStack(&handleUndo);
 
-        auto* handleEllipse = createShapeItem(ShapeType::ELLIPSE);
-        handleEllipse->setStyle(QColor(QStringLiteral("#0F172A")), QColor(Qt::transparent), 4.0);
+        auto* handleEllipse = CreateShapeItem(ShapeType::ELLIPSE);
+        handleEllipse->SetStyle(QColor(QStringLiteral("#0F172A")), QColor(Qt::transparent), 4.0);
         handleEllipse->SetContentSize(QSizeF(200, 120));
         handleEllipse->setPos(QPointF(60, 40));
-        handleScene.attachItem(handleEllipse);
+        handleScene.AttachItem(handleEllipse);
         handleEllipse->setSelected(true);
 
-        ctx.check(handleEllipse->shape().contains(QPointF(-3.0, -3.0)), QStringLiteral("选中椭圆后左上角控制点可命中"));
-        ctx.check(handleEllipse->shape().contains(QPointF(203.0, 123.0)),
+        ctx.Check(handleEllipse->shape().contains(QPointF(-3.0, -3.0)), QStringLiteral("选中椭圆后左上角控制点可命中"));
+        ctx.Check(handleEllipse->shape().contains(QPointF(203.0, 123.0)),
                   QStringLiteral("选中椭圆后右下角控制点可命中"));
-        ctx.check(!handleEllipse->shape().contains(QPointF(-40.0, -40.0)),
+        ctx.Check(!handleEllipse->shape().contains(QPointF(-40.0, -40.0)),
                   QStringLiteral("控制点命中区域不会无限外扩"));
 
         handleEllipse->setSelected(false);
-        ctx.check(!handleEllipse->shape().contains(QPointF(-3.0, -3.0)), QStringLiteral("未选中时控制点不参与命中"));
+        ctx.Check(!handleEllipse->shape().contains(QPointF(-3.0, -3.0)), QStringLiteral("未选中时控制点不参与命中"));
 
-        auto* thickRect = createShapeItem(ShapeType::RECTANGLE);
-        thickRect->setStyle(QColor(QStringLiteral("#1D4ED8")), QColor(29, 78, 216, 40), 40.0);
+        auto* thickRect = CreateShapeItem(ShapeType::RECTANGLE);
+        thickRect->SetStyle(QColor(QStringLiteral("#1D4ED8")), QColor(29, 78, 216, 40), 40.0);
         thickRect->SetContentSize(QSizeF(200, 120));
         thickRect->setPos(QPointF(400, 40));
-        handleScene.attachItem(thickRect);
+        handleScene.AttachItem(thickRect);
 
-        ctx.check(thickRect->shape().contains(QPointF(-10.0, 60.0)), QStringLiteral("粗描边图形按描边宽度纳入命中"));
-        ctx.check(!thickRect->shape().contains(QPointF(-40.0, 60.0)), QStringLiteral("粗描边命中范围不超过描边宽度"));
+        ctx.Check(thickRect->shape().contains(QPointF(-10.0, 60.0)), QStringLiteral("粗描边图形按描边宽度纳入命中"));
+        ctx.Check(!thickRect->shape().contains(QPointF(-40.0, 60.0)), QStringLiteral("粗描边命中范围不超过描边宽度"));
     }
 
     {
@@ -66,25 +66,25 @@ void selftest::runSettingsDialogBasicTests(Context& ctx)
         CanvasBackground secondState = firstState;
         secondState.image = secondBackground;
 
-        ctx.check(firstState == secondState, QStringLiteral("内容相同的背景图片判定为相等"));
+        ctx.Check(firstState == secondState, QStringLiteral("内容相同的背景图片判定为相等"));
 
         CanvasScene dedupeScene;
         QUndoStack dedupeUndo;
-        dedupeScene.setUndoStack(&dedupeUndo);
-        dedupeScene.replaceCanvasBackground(firstState);
+        dedupeScene.SetUndoStack(&dedupeUndo);
+        dedupeScene.ReplaceCanvasBackground(firstState);
         const int stepsAfterFirst = dedupeUndo.count();
-        dedupeScene.replaceCanvasBackground(secondState);
-        ctx.check(dedupeUndo.count() == stepsAfterFirst, QStringLiteral("重复应用同一背景图片不增加撤销步骤"),
+        dedupeScene.ReplaceCanvasBackground(secondState);
+        ctx.Check(dedupeUndo.count() == stepsAfterFirst, QStringLiteral("重复应用同一背景图片不增加撤销步骤"),
                   QString::number(dedupeUndo.count()));
     }
 
     {
         const AppSettings defaults;
         SettingsDialog dialog(defaults);
-        dialog.setBrushColor(QColor(QStringLiteral("#FF8800")));
-        dialog.setCanvasColor(QColor(QStringLiteral("#102A43")));
+        dialog.SetBrushColor(QColor(QStringLiteral("#FF8800")));
+        dialog.SetCanvasColor(QColor(QStringLiteral("#102A43")));
         auto* smoothingSpin = dialog.findChild<QDoubleSpinBox*>(QStringLiteral("StrokeSmoothingSpin"));
-        ctx.check(smoothingSpin && smoothingSpin->minimum() == 0.0 && smoothingSpin->maximum() == 20.0 &&
+        ctx.Check(smoothingSpin && smoothingSpin->minimum() == 0.0 && smoothingSpin->maximum() == 20.0 &&
                       qAbs(smoothingSpin->singleStep() - 0.1) < 0.001 && smoothingSpin->decimals() == 1 &&
                       smoothingSpin->value() == defaults.strokeSmoothing,
                   QStringLiteral("设置对话框默认启用 0.1 精度的画笔拟合容差"),
@@ -102,18 +102,18 @@ void selftest::runSettingsDialogBasicTests(Context& ctx)
         } else {
             dialog.accept();
         }
-        ctx.check(dialog.settings().brushColor == QColor(QStringLiteral("#FF8800")),
+        ctx.Check(dialog.Settings().brushColor == QColor(QStringLiteral("#FF8800")),
                   QStringLiteral("设置对话框保留画笔颜色"));
-        ctx.check(dialog.settings().canvasColor == QColor(QStringLiteral("#102A43")),
+        ctx.Check(dialog.Settings().canvasColor == QColor(QStringLiteral("#102A43")),
                   QStringLiteral("设置对话框保留画布外围颜色"));
-        ctx.check(dialog.settings().strokeSmoothing == 0, QStringLiteral("设置对话框可关闭自动平滑"),
-                  QString::number(dialog.settings().strokeSmoothing));
+        ctx.Check(dialog.Settings().strokeSmoothing == 0, QStringLiteral("设置对话框可关闭自动平滑"),
+                  QString::number(dialog.Settings().strokeSmoothing));
     }
 
     {
         // 需求：把“相邻且颜色接近的色块并成一块”做成可调参数，并放在设置里。
         const AppSettings defaults;
-        ctx.check(defaults.lineArtAdjacentMerge == qRound(LineArtConverter::Options().adjacentMergeDistance) &&
+        ctx.Check(defaults.lineArtAdjacentMerge == qRound(LineArtConverter::Options().adjacentMergeDistance) &&
                       defaults.lineArtPaletteMerge == qRound(LineArtConverter::Options().paletteMergeDistance),
                   QStringLiteral("线稿化设置的默认值与转换器默认参数一致"),
                   QStringLiteral("adjacent=%1 palette=%2")
@@ -142,24 +142,24 @@ void selftest::runSettingsDialogBasicTests(Context& ctx)
         } else {
             dialog.accept();
         }
-        ctx.check(dialog.settings().lineArtAdjacentMerge == 96, QStringLiteral("设置对话框可调整相邻色块合并距离"),
-                  QString::number(dialog.settings().lineArtAdjacentMerge));
-        ctx.check(dialog.settings().lineArtPaletteMerge == 24 && dialog.settings().lineArtMinRegionArea == 8,
+        ctx.Check(dialog.Settings().lineArtAdjacentMerge == 96, QStringLiteral("设置对话框可调整相邻色块合并距离"),
+                  QString::number(dialog.Settings().lineArtAdjacentMerge));
+        ctx.Check(dialog.Settings().lineArtPaletteMerge == 24 && dialog.Settings().lineArtMinRegionArea == 8,
                   QStringLiteral("设置对话框可调整颜色聚类距离与最小色块"),
                   QStringLiteral("palette=%1 area=%2")
-                      .arg(dialog.settings().lineArtPaletteMerge)
-                      .arg(dialog.settings().lineArtMinRegionArea));
+                      .arg(dialog.Settings().lineArtPaletteMerge)
+                      .arg(dialog.Settings().lineArtMinRegionArea));
     }
 
     {
         // 「恢复初始值」：改完数值点一下，应该回到配置文件里当前保存的那一套。
         AppSettings fileSettings;
-        fileSettings.load();
+        fileSettings.Load();
         const int fileLevels = fileSettings.lineArtColorLevels;
         LineArtDialog dialog(fileSettings);
         auto* levels = dialog.findChild<QSpinBox*>(QStringLiteral("LineArtLevelsSpin"));
         auto* restore = dialog.findChild<QPushButton*>(QStringLiteral("LineArtRestoreButton"));
-        ctx.check(restore != nullptr, QStringLiteral("线稿化参数窗提供「恢复初始值」按钮"));
+        ctx.Check(restore != nullptr, QStringLiteral("线稿化参数窗提供「恢复初始值」按钮"));
         if (levels) {
             levels->setValue(fileLevels == 2 ? 3 : 2);
         }
@@ -167,7 +167,7 @@ void selftest::runSettingsDialogBasicTests(Context& ctx)
         if (restore) {
             restore->click();
         }
-        ctx.check(levels && levels->value() == fileLevels, QStringLiteral("恢复初始值后回到配置文件里的参数"),
+        ctx.Check(levels && levels->value() == fileLevels, QStringLiteral("恢复初始值后回到配置文件里的参数"),
                   QStringLiteral("edited=%1 restored=%2 file=%3")
                       .arg(editedLevels)
                       .arg(levels ? levels->value() : -1)

@@ -165,7 +165,7 @@ QString readPlainLanguage(const QString& file)
 
 QString readStoredLanguage()
 {
-    const QString stored = AppSettings::languageSetting();
+    const QString stored = AppSettings::LanguageSetting();
     if (!stored.isEmpty()) {
         return stored;
     }
@@ -175,7 +175,7 @@ QString readStoredLanguage()
         if (legacy.isEmpty()) {
             continue;
         }
-        if (AppSettings::setLanguageSetting(legacy)) {
+        if (AppSettings::SetLanguageSetting(legacy)) {
             for (const QString& other : legacyLanguageFiles()) {
                 QFile::remove(other);
             }
@@ -183,7 +183,7 @@ QString readStoredLanguage()
         return legacy;
     }
     // 新装的机器第一次运行就把语言落进 ini，配置文件里能看到这项设置。
-    AppSettings::setLanguageSetting(QStringLiteral("system"));
+    AppSettings::SetLanguageSetting(QStringLiteral("system"));
     return QStringLiteral("system");
 }
 
@@ -195,7 +195,7 @@ QString& storedLanguageCache()
 
 bool persistLanguage(const QString& stored)
 {
-    if (!AppSettings::setLanguageSetting(stored)) {
+    if (!AppSettings::SetLanguageSetting(stored)) {
         return false;
     }
     // 语言已经写进 StoryBoard.ini，旧的独立文件不再保留。
@@ -218,7 +218,7 @@ UiLanguage languageFromStored(const QString& stored)
 
 } // namespace
 
-UiLanguage uiLanguageSetting()
+UiLanguage UiLanguageSetting()
 {
     if (gExplicitActive) {
         return gExplicitLanguage;
@@ -226,7 +226,7 @@ UiLanguage uiLanguageSetting()
     return languageFromStored(storedLanguageCache());
 }
 
-void setUiLanguageSetting(UiLanguage language)
+void SetUiLanguageSetting(UiLanguage language)
 {
     const QString stored = language == UiLanguage::CHINESE   ? QStringLiteral("zh")
                            : language == UiLanguage::ENGLISH ? QStringLiteral("en")
@@ -245,17 +245,17 @@ void setUiLanguageSetting(UiLanguage language)
         storedLanguageCache() = stored;
     }
 
-    installChineseTranslator(uiEffectiveLanguage() == UiLanguage::CHINESE);
+    installChineseTranslator(UiEffectiveLanguage() == UiLanguage::CHINESE);
 }
 
-void uiOverrideLanguage(UiLanguage language)
+void UiOverrideLanguage(UiLanguage language)
 {
     gOverrideActive = language != UiLanguage::SYSTEM;
     gOverride = language;
-    installChineseTranslator(uiEffectiveLanguage() == UiLanguage::CHINESE);
+    installChineseTranslator(UiEffectiveLanguage() == UiLanguage::CHINESE);
 }
 
-UiLanguage uiEffectiveLanguage()
+UiLanguage UiEffectiveLanguage()
 {
     if (gOverrideActive) {
         return gOverride;
@@ -267,35 +267,35 @@ UiLanguage uiEffectiveLanguage()
     if (fromEnv == QLatin1String("en")) {
         return UiLanguage::ENGLISH;
     }
-    const UiLanguage setting = uiLanguageSetting();
+    const UiLanguage setting = UiLanguageSetting();
     if (setting != UiLanguage::SYSTEM) {
         return setting;
     }
     return QLocale::system().language() == QLocale::Chinese ? UiLanguage::CHINESE : UiLanguage::ENGLISH;
 }
 
-bool uiIsEnglish()
+bool UiIsEnglish()
 {
-    return uiEffectiveLanguage() == UiLanguage::ENGLISH;
+    return UiEffectiveLanguage() == UiLanguage::ENGLISH;
 }
 
-void uiInitializeLanguage()
+void UiInitializeLanguage()
 {
     // 语言资源在窗口创建前就装好，首次构造出来的文字直接是目标语言。
-    installChineseTranslator(uiEffectiveLanguage() == UiLanguage::CHINESE);
+    installChineseTranslator(UiEffectiveLanguage() == UiLanguage::CHINESE);
 }
 
-QString uiText(const QString& english)
+QString UiText(const QString& english)
 {
     return translateToCurrent(english);
 }
 
-QString uiTranslateEitherWay(const QString& text)
+QString UiTranslateEitherWay(const QString& text)
 {
     if (text.isEmpty()) {
         return text;
     }
-    if (uiIsEnglish()) {
+    if (UiIsEnglish()) {
         // 源语言是英文；只有已经显示成中文的文本需要查反向表。
         const auto it = gReverseTranslations.constFind(text);
         return it == gReverseTranslations.constEnd() ? text : it.value();
@@ -304,55 +304,55 @@ QString uiTranslateEitherWay(const QString& text)
     return translateToCurrent(text);
 }
 
-void uiRetranslateWidgetTree(QWidget* root)
+void UiRetranslateWidgetTree(QWidget* root)
 {
     if (!root) {
         return;
     }
 
     for (QAction* action : root->findChildren<QAction*>()) {
-        action->setText(uiTranslateEitherWay(action->text()));
+        action->setText(UiTranslateEitherWay(action->text()));
         if (!action->toolTip().isEmpty()) {
-            action->setToolTip(uiTranslateEitherWay(action->toolTip()));
+            action->setToolTip(UiTranslateEitherWay(action->toolTip()));
         }
         if (!action->statusTip().isEmpty()) {
-            action->setStatusTip(uiTranslateEitherWay(action->statusTip()));
+            action->setStatusTip(UiTranslateEitherWay(action->statusTip()));
         }
     }
 
     for (QMenu* menu : root->findChildren<QMenu*>()) {
-        menu->setTitle(uiTranslateEitherWay(menu->title()));
+        menu->setTitle(UiTranslateEitherWay(menu->title()));
     }
 
     for (QDockWidget* dock : root->findChildren<QDockWidget*>()) {
-        dock->setWindowTitle(uiTranslateEitherWay(dock->windowTitle()));
+        dock->setWindowTitle(UiTranslateEitherWay(dock->windowTitle()));
     }
 
     for (QLabel* label : root->findChildren<QLabel*>()) {
-        label->setText(uiTranslateEitherWay(label->text()));
+        label->setText(UiTranslateEitherWay(label->text()));
     }
 
     for (QAbstractButton* button : root->findChildren<QAbstractButton*>()) {
-        button->setText(uiTranslateEitherWay(button->text()));
+        button->setText(UiTranslateEitherWay(button->text()));
         if (!button->toolTip().isEmpty()) {
-            button->setToolTip(uiTranslateEitherWay(button->toolTip()));
+            button->setToolTip(UiTranslateEitherWay(button->toolTip()));
         }
     }
 
     for (QGroupBox* group : root->findChildren<QGroupBox*>()) {
-        group->setTitle(uiTranslateEitherWay(group->title()));
+        group->setTitle(UiTranslateEitherWay(group->title()));
     }
 
     for (QLineEdit* edit : root->findChildren<QLineEdit*>()) {
         if (!edit->placeholderText().isEmpty()) {
-            edit->setPlaceholderText(uiTranslateEitherWay(edit->placeholderText()));
+            edit->setPlaceholderText(UiTranslateEitherWay(edit->placeholderText()));
         }
     }
 
     for (QComboBox* combo : root->findChildren<QComboBox*>()) {
         for (int i = 0; i < combo->count(); ++i) {
             const QString itemText = combo->itemText(i);
-            const QString translated = uiTranslateEitherWay(itemText);
+            const QString translated = UiTranslateEitherWay(itemText);
             if (translated != itemText) {
                 combo->setItemText(i, translated);
             }
@@ -362,7 +362,7 @@ void uiRetranslateWidgetTree(QWidget* root)
     for (QTabWidget* tabs : root->findChildren<QTabWidget*>()) {
         for (int i = 0; i < tabs->count(); ++i) {
             const QString tabText = tabs->tabText(i);
-            const QString translated = uiTranslateEitherWay(tabText);
+            const QString translated = UiTranslateEitherWay(tabText);
             if (translated != tabText) {
                 tabs->setTabText(i, translated);
             }
@@ -370,6 +370,6 @@ void uiRetranslateWidgetTree(QWidget* root)
     }
 
     if (root->isWindow()) {
-        root->setWindowTitle(uiTranslateEitherWay(root->windowTitle()));
+        root->setWindowTitle(UiTranslateEitherWay(root->windowTitle()));
     }
 }

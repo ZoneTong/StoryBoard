@@ -15,16 +15,16 @@ class MainWindowEditActionsController {
 
     explicit MainWindowEditActionsController(MainWindow* window);
 
-    void showSelectedItemProperties();
-    void showItemProperties(CanvasItem* item);
-    void closeItemProperties();
-    void rotateSelected(qreal degrees);
-    void applyAlignment(Alignment::Mode mode);
-    void applyBoolOperation(BoolOps::Operation operation);
+    void ShowSelectedItemProperties();
+    void ShowItemProperties(CanvasItem* item);
+    void CloseItemProperties();
+    void RotateSelected(qreal degrees);
+    void ApplyAlignment(Alignment::Mode mode);
+    void ApplyBoolOperation(BoolOps::Operation operation);
 
-    void copySelectedItems();
-    void cutSelectedItems();
-    void pasteItems();
+    void CopySelectedItems();
+    void CutSelectedItems();
+    void PasteItems();
 
   private:
     MainWindow* m_window = nullptr;

@@ -12,9 +12,9 @@ class CanvasItem;
 class ObscurationAnalyzer {
   public:
     // 返回被任一更高优先级图元盖住的可见图元；area 非空时只统计与该区域相交的图元。
-    QList<CanvasItem*> findObscured(const QList<CanvasItem*>& items, const QRectF& area) const;
+    QList<CanvasItem*> FindObscured(const QList<CanvasItem*>& items, const QRectF& area) const;
 
     // 用路径填充多边形近似成区域，便于快速算出被遮盖的面积占比。
-    static QRegion filledRegion(const QPainterPath& path);
-    static qreal regionArea(const QRegion& region);
+    static QRegion FilledRegion(const QPainterPath& path);
+    static qreal RegionArea(const QRegion& region);
 };

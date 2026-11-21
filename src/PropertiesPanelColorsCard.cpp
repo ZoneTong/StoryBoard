@@ -42,7 +42,7 @@ QToolButton* makeRowIcon(IconId id, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
-    button->setIcon(makeIcon(id, QColor(139, 144, 156), SMALL_ICON_SIZE));
+    button->setIcon(MakeIcon(id, QColor(139, 144, 156), SMALL_ICON_SIZE));
     button->setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE));
     button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
     button->setAutoRaise(true);
@@ -54,13 +54,13 @@ QToolButton* makeRowIcon(IconId id, QWidget* parent)
 
 PropertiesPanelColorsCard::PropertiesPanelColorsCard(QWidget* parent) : QWidget(parent)
 {
-    m_borderColorRow = makeColorRow(true);
+    m_borderColorRow = MakeColorRow(true);
     m_borderColorRow->setObjectName(QStringLiteral("ItemBorderColorRow"));
-    m_fillColorRow = makeColorRow(false);
+    m_fillColorRow = MakeColorRow(false);
     m_fillColorRow->setObjectName(QStringLiteral("ItemFillColorRow"));
 }
 
-QWidget* PropertiesPanelColorsCard::makeColorRow(bool stroke)
+QWidget* PropertiesPanelColorsCard::MakeColorRow(bool stroke)
 {
     auto* row = new QWidget(this);
     auto* rowLayout = new QHBoxLayout(row);
@@ -93,8 +93,8 @@ QWidget* PropertiesPanelColorsCard::makeColorRow(bool stroke)
     custom->setObjectName(QStringLiteral("ItemColorButton"));
     custom->setFixedSize(SWATCH_SIZE, SWATCH_SIZE);
     custom->setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE));
-    custom->setIcon(stroke ? ItemStyleVisuals::borderColorIcon(m_strokeFallback, SMALL_ICON_SIZE)
-                           : ItemStyleVisuals::fillColorIcon(m_fillFallback, SMALL_ICON_SIZE));
+    custom->setIcon(stroke ? ItemStyleVisuals::BorderColorIcon(m_strokeFallback, SMALL_ICON_SIZE)
+                           : ItemStyleVisuals::FillColorIcon(m_fillFallback, SMALL_ICON_SIZE));
     custom->setToolTip(stroke ? PropertiesPanel::tr("Border color") : PropertiesPanel::tr("Fill color"));
     connect(custom, &QToolButton::clicked, this, [this, stroke]() {
         const QColor initial = stroke ? m_strokeFallback : m_fillFallback;
@@ -121,7 +121,7 @@ QWidget* PropertiesPanelColorsCard::makeColorRow(bool stroke)
     return row;
 }
 
-void PropertiesPanelColorsCard::refresh(const QList<ShapeItem*>& shapes, const QList<LineItemAbstract*>& strokes,
+void PropertiesPanelColorsCard::Refresh(const QList<ShapeItem*>& shapes, const QList<LineItemAbstract*>& strokes,
                                         const QList<ShapeItem*>& composites)
 {
     QColor strokeFallback = QColor(QStringLiteral("#1E293B"));
@@ -149,11 +149,11 @@ void PropertiesPanelColorsCard::refresh(const QList<ShapeItem*>& shapes, const Q
         swatch->setChecked(color.rgb() == m_fillFallback.rgb());
     }
     if (m_strokeColorButton) {
-        m_strokeColorButton->setIcon(ItemStyleVisuals::borderColorIcon(m_strokeFallback, SMALL_ICON_SIZE));
+        m_strokeColorButton->setIcon(ItemStyleVisuals::BorderColorIcon(m_strokeFallback, SMALL_ICON_SIZE));
         m_strokeColorButton->setToolTip(colorTip(m_strokeFallback));
     }
     if (m_fillColorButton) {
-        m_fillColorButton->setIcon(ItemStyleVisuals::fillColorIcon(m_fillFallback, SMALL_ICON_SIZE));
+        m_fillColorButton->setIcon(ItemStyleVisuals::FillColorIcon(m_fillFallback, SMALL_ICON_SIZE));
         m_fillColorButton->setToolTip(colorTip(m_fillFallback));
     }
 }

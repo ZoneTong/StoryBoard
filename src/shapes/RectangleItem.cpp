@@ -4,7 +4,7 @@
 
 RectangleItem::RectangleItem()
 {
-    SetContentSize(defaultContentSize());
+    SetContentSize(DefaultContentSize());
     SetParallelogramAngle(90.0);
 }
 
@@ -12,7 +12,7 @@ ItemPropertySet RectangleItem::Properties() const
 {
     // 不走 ParallelogramItem::properties：矩形没有内角行，只有圆角行。
     ItemPropertySet result = ShapeItem::Properties();
-    result.insert(ItemProperty::CORNER_RADIUS);
+    result.Insert(ItemProperty::CORNER_RADIUS);
     return result;
 }
 
@@ -39,5 +39,5 @@ QPointF RectangleItem::CustomHandleCenter(int handle, bool* ok) const
 
 QPainterPath RectangleItem::ShapePath(const QRectF& rect) const
 {
-    return ShapePathBuilder::roundedRectPath(rect, CornerRadius());
+    return ShapePathBuilder::RoundedRectPath(rect, CornerRadius());
 }

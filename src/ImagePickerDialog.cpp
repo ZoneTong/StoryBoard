@@ -40,7 +40,7 @@ ImagePickerDialog::ImagePickerDialog(const QVector<QPixmap>& images, QWidget* pa
     layout->addWidget(m_list, 1);
 
     for (const QPixmap& image : images) {
-        addImage(image);
+        AddImage(image);
     }
     if (m_list->count() > 0) {
         m_list->setCurrentRow(0);
@@ -51,12 +51,12 @@ ImagePickerDialog::ImagePickerDialog(const QVector<QPixmap>& images, QWidget* pa
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     auto* fromFile = buttons->addButton(tr("From file…"), QDialogButtonBox::ActionRole);
-    connect(fromFile, &QPushButton::clicked, this, &ImagePickerDialog::chooseLocalFile);
+    connect(fromFile, &QPushButton::clicked, this, &ImagePickerDialog::ChooseLocalFile);
     // 双击缩略图等同于确定。
     connect(m_list, &QListWidget::itemDoubleClicked, this, &QDialog::accept);
 }
 
-void ImagePickerDialog::addImage(const QPixmap& image)
+void ImagePickerDialog::AddImage(const QPixmap& image)
 {
     if (image.isNull()) {
         return;
@@ -67,7 +67,7 @@ void ImagePickerDialog::addImage(const QPixmap& image)
     m_list->setCurrentItem(item);
 }
 
-QPixmap ImagePickerDialog::selectedImage() const
+QPixmap ImagePickerDialog::SelectedImage() const
 {
     const QListWidgetItem* item = m_list->currentItem();
     if (!item) {
@@ -76,7 +76,7 @@ QPixmap ImagePickerDialog::selectedImage() const
     return item->data(Qt::UserRole).value<QPixmap>();
 }
 
-void ImagePickerDialog::chooseLocalFile()
+void ImagePickerDialog::ChooseLocalFile()
 {
     const QString path = QFileDialog::getOpenFileName(
         this, tr("Choose image"), QString(), tr("Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;All files (*)"));
@@ -88,27 +88,27 @@ void ImagePickerDialog::chooseLocalFile()
         return;
     }
     m_localName = QFileInfo(path).completeBaseName();
-    addImage(pixmap);
+    AddImage(pixmap);
 }
 
-QPixmap ImagePickerDialog::pick(QWidget* parent, const QVector<QPixmap>& images, const QString& title)
+QPixmap ImagePickerDialog::Pick(QWidget* parent, const QVector<QPixmap>& images, const QString& title)
 {
     ImagePickerDialog dialog(images, parent);
     dialog.setWindowTitle(title);
     if (dialog.exec() != QDialog::Accepted) {
         return QPixmap();
     }
-    return dialog.selectedImage();
+    return dialog.SelectedImage();
 }
 
-QVector<QPixmap> collectCanvasImages(const CanvasScene* scene)
+QVector<QPixmap> CollectCanvasImages(const CanvasScene* scene)
 {
     QVector<QPixmap> result;
     QSet<qint64> seen;
     if (!scene) {
         return result;
     }
-    for (CanvasItem* item : scene->canvasItems()) {
+    for (CanvasItem* item : scene->CanvasItems()) {
         QPixmap candidate;
         if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->HasFillImage()) {
             candidate = shape->FillImage();

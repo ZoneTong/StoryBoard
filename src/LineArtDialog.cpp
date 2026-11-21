@@ -37,8 +37,8 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent) : QDi
 
     m_presetCombo = new QComboBox(lineArtGroup);
     m_presetCombo->setObjectName(QStringLiteral("LineArtPresetCombo"));
-    for (int i = 0; i < lineArtPresetCount(); ++i) {
-        m_presetCombo->addItem(uiText(QString::fromLatin1(lineArtPreset(i).name)), i);
+    for (int i = 0; i < LineArtPresetCount(); ++i) {
+        m_presetCombo->addItem(UiText(QString::fromLatin1(lineArtPreset(i).name)), i);
     }
     m_presetCombo->addItem(tr("Custom"), -1);
     m_presetCombo->setToolTip(
@@ -192,7 +192,7 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent) : QDi
     };
     auto syncPresetCombo = [this, matchesPreset]() {
         int data = -1;
-        for (int i = 0; i < lineArtPresetCount(); ++i) {
+        for (int i = 0; i < LineArtPresetCount(); ++i) {
             if (matchesPreset(lineArtPreset(i))) {
                 data = i;
                 break;
@@ -235,7 +235,7 @@ LineArtDialog::LineArtDialog(const AppSettings& settings, QWidget* parent) : QDi
 
     auto restoreFromFile = [this, syncPresetCombo]() {
         AppSettings fileSettings;
-        fileSettings.load();
+        fileSettings.Load();
         m_applyingPreset = true;
         m_levelsSpin->setValue(fileSettings.lineArtColorLevels);
         m_paletteMergeSpin->setValue(fileSettings.lineArtPaletteMerge);
@@ -267,7 +267,7 @@ LineArtConverter::Options LineArtDialog::options() const
     return options;
 }
 
-void LineArtDialog::applyToSettings(AppSettings& settings) const
+void LineArtDialog::ApplyToSettings(AppSettings& settings) const
 {
     settings.lineArtColorLevels = m_levelsSpin->value();
     settings.lineArtPaletteMerge = m_paletteMergeSpin->value();

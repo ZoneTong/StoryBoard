@@ -20,15 +20,15 @@ namespace CurveGeometry {
 
 // 采样点 → 贝塞尔段。tolerance > 0 时先做 RDP 抽点，控制点数量随容差增大而下降；
 // linear 为 true 时每段退化成直线（图片线稿化使用）。
-QVector<CurveSegment> fitSegments(QVector<QPointF> points, qreal tolerance, bool linear);
+QVector<CurveSegment> FitSegments(QVector<QPointF> points, qreal tolerance, bool linear);
 
-QPainterPath buildPath(const QVector<CurveSegment>& segments);
-QPainterPath buildDotPath(const QPointF& center, qreal radius);
+QPainterPath BuildPath(const QVector<CurveSegment>& segments);
+QPainterPath BuildDotPath(const QPointF& center, qreal radius);
 
 // 贝塞尔段的端点序列（首段起点 + 每段终点），用于撤销比较与外部只读访问。
-QVector<QPointF> knots(const QVector<CurveSegment>& segments);
+QVector<QPointF> Knots(const QVector<CurveSegment>& segments);
 
 // 把已有路径拍平成折线，供“简化曲线”重新拟合。
-QVector<QPointF> flatten(const QPainterPath& path);
+QVector<QPointF> Flatten(const QPainterPath& path);
 
 } // namespace CurveGeometry

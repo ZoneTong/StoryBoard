@@ -29,7 +29,7 @@ class Context {
     std::function<void()> progressHook;
 
     // 记录一条断言：条件成立追加 PASS，否则计入失败并追加 FAIL（文案与历史自检保持一致）。
-    void check(bool condition, const QString& name, const QString& detail = QString());
+    void Check(bool condition, const QString& name, const QString& detail = QString());
 
     // 图层模型段创建，可见性 / 锁定段继续复用。
     CanvasScene layerScene;

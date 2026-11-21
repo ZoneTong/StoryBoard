@@ -10,14 +10,14 @@ namespace StrokeSmoothing {
 // 撤销/重做快照比较时允许的坐标误差。
 constexpr qreal StateEpsilon = 0.01;
 
-bool samePoint(const QPointF& first, const QPointF& second);
-bool samePoints(const QVector<QPointF>& first, const QVector<QPointF>& second);
+bool SamePoint(const QPointF& first, const QPointF& second);
+bool SamePoints(const QVector<QPointF>& first, const QVector<QPointF>& second);
 
 // Ramer-Douglas-Peucker：容差越大，越多的小抖动会被压掉。
-QVector<QPointF> simplifyRdp(const QVector<QPointF>& points, qreal tolerance);
-QVector<QPointF> chaikinSmooth(const QVector<QPointF>& points, int iterations);
+QVector<QPointF> SimplifyRdp(const QVector<QPointF>& points, qreal tolerance);
+QVector<QPointF> ChaikinSmooth(const QVector<QPointF>& points, int iterations);
 
 // 判定是否接近直线；chordLength 回填首尾弦长。
-bool looksLikeStraightLine(const QVector<QPointF>& points, qreal tolerance, qreal& chordLength);
+bool LooksLikeStraightLine(const QVector<QPointF>& points, qreal tolerance, qreal& chordLength);
 
 } // namespace StrokeSmoothing

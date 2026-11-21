@@ -30,17 +30,17 @@ class ExportDialog : public QDialog {
     Options options() const;
 
   private:
-    QRectF selectedArea() const;
-    QString selectedFormat() const;
-    QString fileFilter() const;
-    bool separateLayersSelected() const;
-    QStringList outputFilePaths() const;
-    static QString layerFileComponent(const QString& name, int layerId);
-    static QString formatSuffix(const QString& format);
-    void updateEstimatedSize();
-    void updatePathExtension();
-    void browseForFile();
-    void validateAndAccept();
+    QRectF SelectedArea() const;
+    QString SelectedFormat() const;
+    QString FileFilter() const;
+    bool SeparateLayersSelected() const;
+    QStringList OutputFilePaths() const;
+    static QString LayerFileComponent(const QString& name, int layerId);
+    static QString FormatSuffix(const QString& format);
+    void UpdateEstimatedSize();
+    void UpdatePathExtension();
+    void BrowseForFile();
+    void ValidateAndAccept();
 
     CanvasScene* m_scene = nullptr;
     QComboBox* m_scopeCombo = nullptr;

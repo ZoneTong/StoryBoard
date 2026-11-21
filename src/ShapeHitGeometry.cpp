@@ -2,7 +2,7 @@
 
 #include <QPainterPathStroker>
 
-QPainterPath ShapeHitGeometry::hitShape(const QPainterPath& path, ShapeType type, qreal strokeWidth,
+QPainterPath ShapeHitGeometry::HitShape(const QPainterPath& path, ShapeType type, qreal strokeWidth,
                                         const QPainterPath& handleShape)
 {
     if (path.isEmpty()) {

@@ -49,24 +49,24 @@ enum class FillStyle {
     DOTS
 };
 
-QList<ShapeType> allShapeTypes();
-QString shapeTypeName(ShapeType type);
-QString shapeTypeToString(ShapeType type);
-ShapeType shapeTypeFromString(const QString& value);
-QSizeF defaultShapeSize(ShapeType type);
-bool shapeTypeIsFilled(ShapeType type);
+QList<ShapeType> AllShapeTypes();
+QString ShapeTypeName(ShapeType type);
+QString ShapeTypeToString(ShapeType type);
+ShapeType ShapeTypeFromString(const QString& value);
+QSizeF DefaultShapeSize(ShapeType type);
+bool ShapeTypeIsFilled(ShapeType type);
 
-QIcon makeShapeIcon(ShapeType type, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);
+QIcon MakeShapeIcon(ShapeType type, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);
 // 预置项（圆角矩形 / 45°·60° 直角三角 / 直线箭头）单独画图标，
 // 和基础图形并排放在菜单与工具栏时能一眼区分。
-QIcon makeShapePresetIcon(const QString& preset, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);
+QIcon MakeShapePresetIcon(const QString& preset, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);
 
-QList<FillStyle> allFillStyles();
-QString fillStyleName(FillStyle style);
-QString fillStyleToString(FillStyle style);
-FillStyle fillStyleFromString(const QString& value);
+QList<FillStyle> AllFillStyles();
+QString FillStyleName(FillStyle style);
+QString FillStyleToString(FillStyle style);
+FillStyle FillStyleFromString(const QString& value);
 // 填充纹理的中心线几何，属性编辑面板的工具按钮缩略图与图元绘制共用这一份。
-QPainterPath fillPatternCenterLines(FillStyle style, const QRectF& rect);
+QPainterPath FillPatternCenterLines(FillStyle style, const QRectF& rect);
 
 // 多边形图元的内部图层（合并 / 分割产物）：基类只暴露只读视图，
 // 具体存储仍在 PolygonItem，避免上层按叶子类强转。
@@ -178,7 +178,7 @@ class ShapeItem : public CanvasItem {
     virtual ImageFill::Mode FillImageMode() const { return m_fillImageMode; }
     virtual void SetFillImage(const QPixmap& image, ImageFill::Mode mode);
     virtual void ClearFillImage();
-    virtual void setStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth);
+    virtual void SetStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth);
     virtual void SetFill(const QColor& fillColor, FillStyle style);
     virtual void SetFillStyle(FillStyle style);
     virtual void SetStrokeStyle(Qt::PenStyle style);
@@ -208,7 +208,7 @@ class ShapeItem : public CanvasItem {
     // 当前生效的轮廓：自定义图形按内容矩形缩放单位路径，普通图形交给具体类实现。
     virtual QPainterPath CurrentPath(const QRectF& rect) const;
     // 插入 / 状态与 JSON 缺省时的初始内容尺寸；数值只存在于各子类，基类默认 2 格正方形。
-    virtual QSizeF defaultContentSize() const;
+    virtual QSizeF DefaultContentSize() const;
 
   protected:
     // 具体图形的内置轮廓（不含自定义模板与矩形圆角自动态哨兵）。
@@ -249,4 +249,4 @@ class ShapeItem : public CanvasItem {
 };
 
 // 图形工厂（定义在 shapes/ShapeFactory.cpp）：按 ShapeType 建出具体子类。
-ShapeItem* createShapeItem(ShapeType type);
+ShapeItem* CreateShapeItem(ShapeType type);

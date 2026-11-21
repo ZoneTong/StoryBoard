@@ -38,15 +38,15 @@ RotationCommand::RotationCommand(CanvasScene* scene, const QList<CanvasItem*>& i
 
 void RotationCommand::undo()
 {
-    apply(m_before);
+    Apply(m_before);
 }
 
 void RotationCommand::redo()
 {
-    apply(m_after);
+    Apply(m_after);
 }
 
-void RotationCommand::apply(const QList<qreal>& angles)
+void RotationCommand::Apply(const QList<qreal>& angles)
 {
     const int count = qMin(m_items.size(), angles.size());
     for (int i = 0; i < count; ++i) {
@@ -55,7 +55,7 @@ void RotationCommand::apply(const QList<qreal>& angles)
         }
     }
     if (m_scene) {
-        m_scene->updateSceneExtent();
+        m_scene->UpdateSceneExtent();
         m_scene->update();
     }
 }
@@ -68,14 +68,14 @@ AddItemCommand::AddItemCommand(CanvasScene* scene, CanvasItem* item, const QStri
 void AddItemCommand::undo()
 {
     if (m_scene && m_item) {
-        m_scene->detachItem(m_item);
+        m_scene->DetachItem(m_item);
     }
 }
 
 void AddItemCommand::redo()
 {
     if (m_scene && m_item) {
-        m_scene->attachItem(m_item);
+        m_scene->AttachItem(m_item);
     }
 }
 
@@ -98,8 +98,8 @@ void RemoveItemsCommand::undo()
         if (!item) {
             continue;
         }
-        m_scene->attachItem(item);
-        if (m_scene->isItemEditable(item)) {
+        m_scene->AttachItem(item);
+        if (m_scene->IsItemEditable(item)) {
             item->setSelected(true);
         }
     }
@@ -113,7 +113,7 @@ void RemoveItemsCommand::redo()
 
     for (const QPointer<CanvasItem>& item : std::as_const(m_items)) {
         if (item) {
-            m_scene->detachItem(item);
+            m_scene->DetachItem(item);
         }
     }
 }
@@ -127,15 +127,15 @@ GeometryCommand::GeometryCommand(CanvasScene* scene, const ItemGeometryList& bef
 
 void GeometryCommand::undo()
 {
-    apply(m_before);
+    Apply(m_before);
 }
 
 void GeometryCommand::redo()
 {
-    apply(m_after);
+    Apply(m_after);
 }
 
-void GeometryCommand::setMergeId(const QString& id)
+void GeometryCommand::SetMergeId(const QString& id)
 {
     m_mergeId = id;
 }
@@ -167,7 +167,7 @@ bool GeometryCommand::mergeWith(const QUndoCommand* other)
     return true;
 }
 
-void GeometryCommand::apply(const ItemGeometryList& geometry)
+void GeometryCommand::Apply(const ItemGeometryList& geometry)
 {
     for (const ItemGeometry& entry : geometry) {
         if (!entry.item) {
@@ -177,7 +177,7 @@ void GeometryCommand::apply(const ItemGeometryList& geometry)
         entry.item->SetContentSize(entry.size);
     }
     if (m_scene) {
-        m_scene->updateSceneExtent();
+        m_scene->UpdateSceneExtent();
         m_scene->update();
     }
 }
@@ -195,15 +195,15 @@ GroupCommand::GroupCommand(CanvasScene* scene, const QList<CanvasItem*>& items, 
 
 void GroupCommand::undo()
 {
-    apply(m_before, m_parentsBefore);
+    Apply(m_before, m_parentsBefore);
 }
 
 void GroupCommand::redo()
 {
-    apply(m_after, m_parentsAfter);
+    Apply(m_after, m_parentsAfter);
 }
 
-void GroupCommand::apply(const QList<int>& groupIds, const QHash<int, int>& parents)
+void GroupCommand::Apply(const QList<int>& groupIds, const QHash<int, int>& parents)
 {
     if (!m_scene) {
         return;
@@ -215,8 +215,8 @@ void GroupCommand::apply(const QList<int>& groupIds, const QHash<int, int>& pare
             items.append(item.data());
         }
     }
-    m_scene->applyGroupIds(items, groupIds);
-    m_scene->applyGroupParents(parents);
+    m_scene->ApplyGroupIds(items, groupIds);
+    m_scene->ApplyGroupParents(parents);
 }
 
 StrokeSmoothCommand::StrokeSmoothCommand(CanvasScene* scene, const QList<LineItemAbstract*>& items,
@@ -232,15 +232,15 @@ StrokeSmoothCommand::StrokeSmoothCommand(CanvasScene* scene, const QList<LineIte
 
 void StrokeSmoothCommand::undo()
 {
-    apply(m_before);
+    Apply(m_before);
 }
 
 void StrokeSmoothCommand::redo()
 {
-    apply(m_after);
+    Apply(m_after);
 }
 
-void StrokeSmoothCommand::apply(const QList<LineItemAbstract::GeometryState>& states)
+void StrokeSmoothCommand::Apply(const QList<LineItemAbstract::GeometryState>& states)
 {
     if (states.size() != m_items.size()) {
         return;
@@ -251,7 +251,7 @@ void StrokeSmoothCommand::apply(const QList<LineItemAbstract::GeometryState>& st
         }
     }
     if (m_scene) {
-        m_scene->updateSceneExtent();
+        m_scene->UpdateSceneExtent();
         m_scene->update();
     }
 }
@@ -266,14 +266,14 @@ BackgroundCommand::BackgroundCommand(CanvasScene* scene, const CanvasBackground&
 void BackgroundCommand::undo()
 {
     if (m_scene) {
-        m_scene->setCanvasBackground(m_before);
+        m_scene->SetCanvasBackground(m_before);
     }
 }
 
 void BackgroundCommand::redo()
 {
     if (m_scene) {
-        m_scene->setCanvasBackground(m_after);
+        m_scene->SetCanvasBackground(m_after);
     }
 }
 
@@ -286,14 +286,14 @@ CanvasSizeCommand::CanvasSizeCommand(CanvasScene* scene, const QRectF& before, c
 void CanvasSizeCommand::undo()
 {
     if (m_scene) {
-        m_scene->applyCanvasRect(m_before);
+        m_scene->ApplyCanvasRect(m_before);
     }
 }
 
 void CanvasSizeCommand::redo()
 {
     if (m_scene) {
-        m_scene->applyCanvasRect(m_after);
+        m_scene->ApplyCanvasRect(m_after);
     }
 }
 
@@ -307,14 +307,14 @@ ItemStackCommand::ItemStackCommand(CanvasScene* scene, const ItemStackList& befo
 void ItemStackCommand::undo()
 {
     if (m_scene) {
-        m_scene->applyItemStack(m_before);
+        m_scene->ApplyItemStack(m_before);
     }
 }
 
 void ItemStackCommand::redo()
 {
     if (m_scene) {
-        m_scene->applyItemStack(m_after);
+        m_scene->ApplyItemStack(m_after);
     }
 }
 
@@ -349,14 +349,14 @@ LayerStateCommand::LayerStateCommand(CanvasScene* scene, const LayerStackState& 
 void LayerStateCommand::undo()
 {
     if (m_scene) {
-        m_scene->applyLayerState(m_before);
+        m_scene->ApplyLayerState(m_before);
     }
 }
 
 void LayerStateCommand::redo()
 {
     if (m_scene) {
-        m_scene->applyLayerState(m_after);
+        m_scene->ApplyLayerState(m_after);
     }
 }
 
@@ -376,15 +376,15 @@ ItemPropertyCommand::ItemPropertyCommand(CanvasScene* scene, const QList<CanvasI
 
 void ItemPropertyCommand::undo()
 {
-    apply(m_before);
+    Apply(m_before);
 }
 
 void ItemPropertyCommand::redo()
 {
-    apply(m_after);
+    Apply(m_after);
 }
 
-void ItemPropertyCommand::apply(const QList<QMap<ItemProperty, QVariant>>& states)
+void ItemPropertyCommand::Apply(const QList<QMap<ItemProperty, QVariant>>& states)
 {
     for (int index = 0; index < m_items.size() && index < states.size(); ++index) {
         CanvasItem* item = m_items.at(index);
@@ -433,15 +433,15 @@ ItemPropertiesCommand::ItemPropertiesCommand(CanvasScene* scene, CanvasItem* ite
 
 void ItemPropertiesCommand::undo()
 {
-    apply(m_before);
+    Apply(m_before);
 }
 
 void ItemPropertiesCommand::redo()
 {
-    apply(m_after);
+    Apply(m_after);
 }
 
-void ItemPropertiesCommand::apply(const ItemPropertiesState& state)
+void ItemPropertiesCommand::Apply(const ItemPropertiesState& state)
 {
     if (!m_item) {
         return;
@@ -468,17 +468,17 @@ void ItemPropertiesCommand::apply(const ItemPropertiesState& state)
         if (auto* stroke = dynamic_cast<LineItemAbstract*>(m_item.data())) {
             stroke->SetStrokeColor(state.strokeColor);
             stroke->SetStrokeWidth(state.strokeWidth);
-            stroke->setStrokePattern(state.strokeStyle);
+            stroke->SetStrokePattern(state.strokeStyle);
             // 需求 27：曲线两端箭头随同一条撤销记录一起应用。
             stroke->SetArrowStyles(state.curveStartArrow, state.curveEndArrow);
         }
     }
 
     if (m_scene && !state.stack.isEmpty()) {
-        m_scene->applyItemStack(state.stack);
+        m_scene->ApplyItemStack(state.stack);
     }
     if (m_scene) {
-        m_scene->updateSceneExtent();
+        m_scene->UpdateSceneExtent();
         m_scene->update();
     }
 }

@@ -16,7 +16,7 @@ QString trView(const char* text)
 
 CanvasResizeController::CanvasResizeController(CanvasView* view, CanvasScene* scene) : m_view(view), m_scene(scene) {}
 
-Qt::CursorShape CanvasResizeController::handleCursor(Handle handle)
+Qt::CursorShape CanvasResizeController::HandleCursor(Handle handle)
 {
     switch (handle) {
     case Handle::LEFT:
@@ -43,7 +43,7 @@ CanvasResizeController::Handle CanvasResizeController::HandleAt(const QPoint& vi
         return Handle::NONE;
     }
 
-    const QRectF rect = m_view->mapFromScene(m_scene->canvasRect()).boundingRect();
+    const QRectF rect = m_view->mapFromScene(m_scene->CanvasRect()).boundingRect();
     const QPointF point = viewportPos;
     const qreal tolerance = 7.0;
     const QRectF outer = rect.adjusted(-tolerance, -tolerance, tolerance, tolerance);
@@ -83,7 +83,7 @@ CanvasResizeController::Handle CanvasResizeController::HandleAt(const QPoint& vi
     return Handle::NONE;
 }
 
-bool CanvasResizeController::beginResize(const QPoint& viewportPos)
+bool CanvasResizeController::BeginResize(const QPoint& viewportPos)
 {
     const Handle handle = HandleAt(viewportPos);
     if (handle == Handle::NONE) {
@@ -92,12 +92,12 @@ bool CanvasResizeController::beginResize(const QPoint& viewportPos)
 
     m_canvasHandle = handle;
     m_resizingCanvas = true;
-    m_resizeStartRect = m_scene->canvasRect();
-    m_view->viewport()->setCursor(handleCursor(handle));
+    m_resizeStartRect = m_scene->CanvasRect();
+    m_view->viewport()->setCursor(HandleCursor(handle));
     return true;
 }
 
-QRectF CanvasResizeController::rectForDrag(const QPointF& scenePos) const
+QRectF CanvasResizeController::RectForDrag(const QPointF& scenePos) const
 {
     QRectF rect = m_resizeStartRect;
     switch (m_canvasHandle) {
@@ -150,29 +150,29 @@ QRectF CanvasResizeController::rectForDrag(const QPointF& scenePos) const
     return rect;
 }
 
-void CanvasResizeController::updateResize(const QPointF& scenePos)
+void CanvasResizeController::UpdateResize(const QPointF& scenePos)
 {
     if (!m_resizingCanvas) {
         return;
     }
-    m_scene->applyCanvasRect(rectForDrag(scenePos));
+    m_scene->ApplyCanvasRect(RectForDrag(scenePos));
 }
 
-void CanvasResizeController::endResize()
+void CanvasResizeController::EndResize()
 {
     if (!m_resizingCanvas) {
         return;
     }
     m_resizingCanvas = false;
     m_canvasHandle = Handle::NONE;
-    m_scene->commitCanvasRect(m_resizeStartRect);
-    const QSizeF size = m_scene->canvasSize();
+    m_scene->CommitCanvasRect(m_resizeStartRect);
+    const QSizeF size = m_scene->CanvasSize();
     emit m_view->statusMessage(
         trView("Canvas size: %1 × %2 (undoable)").arg(qRound(size.width())).arg(qRound(size.height())));
-    m_view->updateCursor();
+    m_view->UpdateCursor();
 }
 
-void CanvasResizeController::updateHoverCursor(const QPoint& viewportPos, bool panActive, bool strokeActive)
+void CanvasResizeController::UpdateHoverCursor(const QPoint& viewportPos, bool panActive, bool strokeActive)
 {
     if (panActive || strokeActive || m_resizingCanvas) {
         return;
@@ -184,23 +184,23 @@ void CanvasResizeController::updateHoverCursor(const QPoint& viewportPos, bool p
     }
     m_hoverHandle = handle;
     if (handle == Handle::NONE) {
-        m_view->updateCursor();
+        m_view->UpdateCursor();
     } else {
-        m_view->viewport()->setCursor(handleCursor(handle));
+        m_view->viewport()->setCursor(HandleCursor(handle));
     }
 }
 
-void CanvasResizeController::resetHoverOnLeave()
+void CanvasResizeController::ResetHoverOnLeave()
 {
     if (!m_resizingCanvas) {
         m_hoverHandle = Handle::NONE;
-        m_view->updateCursor();
+        m_view->UpdateCursor();
     }
 }
 
-void CanvasResizeController::drawHandles(QPainter* painter)
+void CanvasResizeController::DrawHandles(QPainter* painter)
 {
-    const QPolygon polygon = m_view->mapFromScene(m_scene->canvasRect());
+    const QPolygon polygon = m_view->mapFromScene(m_scene->CanvasRect());
     const QRectF rect = polygon.boundingRect();
     if (rect.width() < 30.0 || rect.height() < 30.0) {
         return;

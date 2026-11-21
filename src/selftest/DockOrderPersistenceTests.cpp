@@ -83,7 +83,7 @@
 #include <cstdlib>
 
 
-void selftest::runDockOrderPersistenceTests(Context& ctx)
+void selftest::RunDockOrderPersistenceTests(Context& ctx)
 {
     // 右侧卡片的上下顺序：写进设置文件、读回、启动时按保存的顺序恢复。
     {
@@ -92,10 +92,10 @@ void selftest::runDockOrderPersistenceTests(Context& ctx)
         qputenv("STORYBOARD_CONFIG", orderConfig.toLocal8Bit());
         AppSettings seededOrder;
         seededOrder.dockOrder = QStringList{QStringLiteral("ViewModeDock"), QStringLiteral("LayerDock")};
-        const bool orderSaved = seededOrder.save();
+        const bool orderSaved = seededOrder.Save();
         AppSettings reloadedOrder;
-        reloadedOrder.load();
-        ctx.check(orderSaved && reloadedOrder.dockOrder == seededOrder.dockOrder,
+        reloadedOrder.Load();
+        ctx.Check(orderSaved && reloadedOrder.dockOrder == seededOrder.dockOrder,
                   QStringLiteral("卡片顺序写入设置文件并可读回"), reloadedOrder.dockOrder.join(QStringLiteral("|")));
 
         MainWindow orderWindow;
@@ -105,15 +105,15 @@ void selftest::runDockOrderPersistenceTests(Context& ctx)
         QDockWidget* orderLayer = orderWindow.findChild<QDockWidget*>(QStringLiteral("LayerDock"));
         QDockWidget* orderViewMode = orderWindow.findChild<QDockWidget*>(QStringLiteral("ViewModeDock"));
         QApplication::processEvents();
-        ctx.check(orderLayer && orderViewMode &&
+        ctx.Check(orderLayer && orderViewMode &&
                       orderViewMode->mapTo(&orderWindow, QPoint(0, 0)).y() <
                           orderLayer->mapTo(&orderWindow, QPoint(0, 0)).y(),
                   QStringLiteral("启动时按设置文件恢复右侧卡片顺序"));
         const bool orderWindowClosed = orderWindow.close();
         QApplication::processEvents();
         AppSettings savedOrderAfterClose;
-        savedOrderAfterClose.load();
-        ctx.check(orderWindowClosed && savedOrderAfterClose.dockOrder == seededOrder.dockOrder,
+        savedOrderAfterClose.Load();
+        ctx.Check(orderWindowClosed && savedOrderAfterClose.dockOrder == seededOrder.dockOrder,
                   QStringLiteral("关闭窗口时把卡片顺序写回设置文件"),
                   savedOrderAfterClose.dockOrder.join(QStringLiteral("|")));
         qunsetenv("STORYBOARD_CONFIG");
@@ -134,7 +134,7 @@ void selftest::runDockOrderPersistenceTests(Context& ctx)
             itemWindow.show();
             QApplication::processEvents();
             QDockWidget* propertiesDock = itemWindow.findChild<QDockWidget*>(QStringLiteral("PropertiesPanelDock"));
-            ctx.check(propertiesDock && !propertiesDock->isFloating() &&
+            ctx.Check(propertiesDock && !propertiesDock->isFloating() &&
                           itemWindow.dockWidgetArea(propertiesDock) == Qt::LeftDockWidgetArea &&
                           propertiesDock->isVisible(),
                       QStringLiteral("首次启动属性编辑面板显示并固定在窗口左侧"),
@@ -156,8 +156,8 @@ void selftest::runDockOrderPersistenceTests(Context& ctx)
                     QApplication::processEvents();
                 }
                 AppSettings movedSettings;
-                movedSettings.load();
-                ctx.check(movedSettings.propertiesDockStateSaved && movedSettings.propertiesDockFloating &&
+                movedSettings.Load();
+                ctx.Check(movedSettings.propertiesDockStateSaved && movedSettings.propertiesDockFloating &&
                               !movedSettings.propertiesDockGeometry.isEmpty(),
                           QStringLiteral("属性编辑面板悬浮后把位置写入设置文件"));
             }
@@ -173,7 +173,7 @@ void selftest::runDockOrderPersistenceTests(Context& ctx)
             QDockWidget* propertiesDock = restoredWindow.findChild<QDockWidget*>(QStringLiteral("PropertiesPanelDock"));
             const bool positionRestored = propertiesDock && qAbs(propertiesDock->pos().x() - movedPosition.x()) <= 24 &&
                                           qAbs(propertiesDock->pos().y() - movedPosition.y()) <= 24;
-            ctx.check(propertiesDock && propertiesDock->isFloating() && positionRestored,
+            ctx.Check(propertiesDock && propertiesDock->isFloating() && positionRestored,
                       QStringLiteral("重启后按设置恢复属性编辑面板的悬浮位置"),
                       propertiesDock
                           ? QStringLiteral("%1,%2").arg(propertiesDock->pos().x()).arg(propertiesDock->pos().y())

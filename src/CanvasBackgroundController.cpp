@@ -39,7 +39,7 @@ QString imageFilter()
 
 CanvasBackgroundController::CanvasBackgroundController(MainWindow* window) : m_window(window) {}
 
-void CanvasBackgroundController::replaceCanvasBackgroundImage()
+void CanvasBackgroundController::ReplaceCanvasBackgroundImage()
 {
     QString startDirectory = m_window->m_settings.lastImageDir;
     if (startDirectory.isEmpty()) {
@@ -67,14 +67,14 @@ void CanvasBackgroundController::replaceCanvasBackgroundImage()
     background.mode = m_window->m_scene->canvasBackground().type == BackgroundType::IMAGE
                           ? m_window->m_scene->canvasBackground().mode
                           : BackgroundMode::STRETCH;
-    m_window->m_scene->replaceCanvasBackground(background, MainWindow::tr("Replace canvas background image"));
+    m_window->m_scene->ReplaceCanvasBackground(background, MainWindow::tr("Replace canvas background image"));
 
     m_window->m_settings.lastImageDir = QFileInfo(path).absolutePath();
-    m_window->m_settings.save();
+    m_window->m_settings.Save();
     m_window->statusBar()->showMessage(MainWindow::tr("Background replaced"), 3000);
 }
 
-void CanvasBackgroundController::setBackgroundColor()
+void CanvasBackgroundController::SetBackgroundColor()
 {
     QColor initial(255, 255, 255);
     if (m_window->m_scene->canvasBackground().type == BackgroundType::COLOR) {
@@ -89,17 +89,17 @@ void CanvasBackgroundController::setBackgroundColor()
     CanvasBackground background;
     background.type = BackgroundType::COLOR;
     background.color = color;
-    m_window->m_scene->replaceCanvasBackground(background, MainWindow::tr("Set background color"));
+    m_window->m_scene->ReplaceCanvasBackground(background, MainWindow::tr("Set background color"));
     m_window->statusBar()->showMessage(MainWindow::tr("Background color updated"), 3000);
 }
 
-void CanvasBackgroundController::clearBackground()
+void CanvasBackgroundController::ClearBackground()
 {
-    m_window->m_scene->replaceCanvasBackground(CanvasBackground(), MainWindow::tr("Clear canvas background"));
+    m_window->m_scene->ReplaceCanvasBackground(CanvasBackground(), MainWindow::tr("Clear canvas background"));
     m_window->statusBar()->showMessage(MainWindow::tr("Background cleared"), 3000);
 }
 
-void CanvasBackgroundController::updateModeActions()
+void CanvasBackgroundController::UpdateModeActions()
 {
     if (!m_window->m_scene || !m_window->m_bgStretchAct) {
         return;

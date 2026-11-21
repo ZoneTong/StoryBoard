@@ -18,18 +18,18 @@ class SettingsDialogBrushPage : public QWidget {
   public:
     explicit SettingsDialogBrushPage(const AppSettings& settings, QWidget* parent = nullptr);
 
-    QGroupBox* group() const { return m_group; }
-    QPushButton* brushColorButton() const { return m_brushColorButton; }
+    QGroupBox* Group() const { return m_group; }
+    QPushButton* BrushColorButton() const { return m_brushColorButton; }
 
-    void writeTo(AppSettings& settings) const;
-    void reset(const AppSettings& defaults);
-    void setBrushColor(const QColor& color);
+    void WriteTo(AppSettings& settings) const;
+    void Reset(const AppSettings& defaults);
+    void SetBrushColor(const QColor& color);
 
   signals:
     void brushColorChosen(const QColor& color);
 
   private:
-    static void refreshColorButton(QPushButton* button, const QColor& color);
+    static void RefreshColorButton(QPushButton* button, const QColor& color);
 
     QGroupBox* m_group = nullptr;
     QPushButton* m_brushColorButton = nullptr;

@@ -15,12 +15,12 @@ const qreal FIT_MAX_ZOOM = 3.0;
 
 CanvasZoomController::CanvasZoomController(CanvasView* view, CanvasScene* scene) : m_view(view), m_scene(scene) {}
 
-qreal CanvasZoomController::zoom() const
+qreal CanvasZoomController::Zoom() const
 {
     return m_view->transform().m11();
 }
 
-void CanvasZoomController::fitAll()
+void CanvasZoomController::FitAll()
 {
     if (m_view->viewport()->width() <= 8 || m_view->viewport()->height() <= 8) {
         return;
@@ -28,7 +28,7 @@ void CanvasZoomController::fitAll()
 
     QRectF target = m_scene->ContentRect();
     if (target.isEmpty()) {
-        target = m_scene->canvasRect();
+        target = m_scene->CanvasRect();
     }
 
     const qreal margin = qMax<qreal>(24.0, qMax(target.width(), target.height()) * 0.035);
@@ -46,35 +46,35 @@ void CanvasZoomController::fitAll()
         m_view->centerOn(target.center());
     }
 
-    emitZoom();
+    EmitZoom();
 }
 
-void CanvasZoomController::zoomIn()
+void CanvasZoomController::ZoomIn()
 {
-    applyScale(1.22);
+    ApplyScale(1.22);
 }
 
-void CanvasZoomController::zoomOut()
+void CanvasZoomController::ZoomOut()
 {
-    applyScale(1.0 / 1.22);
+    ApplyScale(1.0 / 1.22);
 }
 
-void CanvasZoomController::actualSize()
+void CanvasZoomController::ActualSize()
 {
     const QPointF center = m_view->mapToScene(m_view->viewport()->rect().center());
     m_view->setTransformationAnchor(QGraphicsView::NoAnchor);
     m_view->resetTransform();
     m_view->centerOn(center);
-    emitZoom();
+    EmitZoom();
 }
 
-void CanvasZoomController::applyScale(qreal factor)
+void CanvasZoomController::ApplyScale(qreal factor)
 {
     if (factor <= 0.0) {
         return;
     }
 
-    const qreal current = zoom();
+    const qreal current = Zoom();
     if (current <= 0.0) {
         return;
     }
@@ -87,18 +87,18 @@ void CanvasZoomController::applyScale(qreal factor)
 
     m_view->setTransformationAnchor(QGraphicsView::AnchorViewCenter);
     m_view->scale(applied, applied);
-    emitZoom();
+    EmitZoom();
 }
 
-void CanvasZoomController::emitZoom()
+void CanvasZoomController::EmitZoom()
 {
     if (m_scene) {
         m_scene->RefreshViewDependentGeometry();
     }
-    emit m_view->zoomChanged(zoom());
+    emit m_view->zoomChanged(Zoom());
 }
 
-void CanvasZoomController::handleWheel(QWheelEvent* event)
+void CanvasZoomController::HandleWheel(QWheelEvent* event)
 {
     const int delta = event->angleDelta().y();
     if (delta == 0) {
@@ -106,7 +106,7 @@ void CanvasZoomController::handleWheel(QWheelEvent* event)
         return;
     }
 
-    const qreal current = zoom();
+    const qreal current = Zoom();
     qreal factor = qPow(1.0015, delta);
     const qreal target = qBound(MIN_ZOOM, current * factor, MAX_ZOOM);
     factor = target / current;
@@ -118,6 +118,6 @@ void CanvasZoomController::handleWheel(QWheelEvent* event)
 
     m_view->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     m_view->scale(factor, factor);
-    emitZoom();
+    EmitZoom();
     event->accept();
 }

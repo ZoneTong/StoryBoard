@@ -411,19 +411,19 @@ QJsonArray relativePoints(const QJsonArray& segments, qreal originX, qreal origi
 
 namespace Excalidraw {
 
-bool isScene(const QJsonObject& root)
+bool IsScene(const QJsonObject& root)
 {
     return root.value(QStringLiteral("type")).toString() == QLatin1String(SceneType) &&
            root.value(QStringLiteral("elements")).isArray();
 }
 
-bool isClipboard(const QJsonObject& root)
+bool IsClipboard(const QJsonObject& root)
 {
     return root.value(QStringLiteral("type")).toString() == QLatin1String(ClipboardType) &&
            root.value(QStringLiteral("elements")).isArray();
 }
 
-QJsonArray elementsToItems(const QJsonArray& elements, QStringList* warnings, QJsonArray* layers,
+QJsonArray ElementsToItems(const QJsonArray& elements, QStringList* warnings, QJsonArray* layers,
                            const QJsonObject& files, bool keepImages)
 {
     QJsonArray items;
@@ -503,10 +503,10 @@ QJsonArray elementsToItems(const QJsonArray& elements, QStringList* warnings, QJ
     return items;
 }
 
-QJsonObject sceneToStoryBoard(const QJsonObject& scene, QStringList* warnings, bool keepImages)
+QJsonObject SceneToStoryBoard(const QJsonObject& scene, QStringList* warnings, bool keepImages)
 {
     QJsonArray layers;
-    const QJsonArray items = elementsToItems(scene.value(QStringLiteral("elements")).toArray(), warnings, &layers,
+    const QJsonArray items = ElementsToItems(scene.value(QStringLiteral("elements")).toArray(), warnings, &layers,
                                              scene.value(QStringLiteral("files")).toObject(), keepImages);
     if (items.isEmpty()) {
         return {};
@@ -549,7 +549,7 @@ QJsonObject sceneToStoryBoard(const QJsonObject& scene, QStringList* warnings, b
     return document;
 }
 
-QJsonObject storyBoardToScene(const QJsonObject& document, QStringList* warnings)
+QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings)
 {
     const QJsonArray items = document.value(QStringLiteral("items")).toArray();
     QJsonArray elements;

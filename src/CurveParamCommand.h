@@ -25,7 +25,7 @@ class CurveParamCommand : public QUndoCommand {
     void redo() override;
 
   private:
-    void apply(const QList<CurveParamState>& params, const QList<LineItemAbstract::GeometryState>& geometry);
+    void Apply(const QList<CurveParamState>& params, const QList<LineItemAbstract::GeometryState>& geometry);
 
     CanvasScene* m_scene = nullptr;
     QList<QPointer<LineItemAbstract>> m_items;
@@ -36,4 +36,4 @@ class CurveParamCommand : public QUndoCommand {
 };
 
 // 把一份参数状态写回具体子型；不是弧线 / 正弦的描线图元不做任何事。
-void applyCurveParamState(LineItemAbstract* item, const CurveParamState& state);
+void ApplyCurveParamState(LineItemAbstract* item, const CurveParamState& state);

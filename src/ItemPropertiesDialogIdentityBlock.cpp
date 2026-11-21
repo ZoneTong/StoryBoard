@@ -25,8 +25,8 @@ ItemPropertiesDialogIdentityBlock::ItemPropertiesDialogIdentityBlock(CanvasScene
     m_layerCombo->setObjectName(QStringLiteral("ItemPropertiesLayerValue"));
     m_layerCombo->setMinimumWidth(220);
     if (scene) {
-        for (const CanvasLayer& layer : scene->userLayers()) {
-            m_layerCombo->addItem(ItemPropertiesDialog::layerDescription(scene, layer.id), layer.id);
+        for (const CanvasLayer& layer : scene->UserLayers()) {
+            m_layerCombo->addItem(ItemPropertiesDialog::LayerDescription(scene, layer.id), layer.id);
         }
     }
     const int layerIndex = m_layerCombo->findData(item->LayerId());
@@ -37,7 +37,7 @@ ItemPropertiesDialogIdentityBlock::ItemPropertiesDialogIdentityBlock(CanvasScene
         if (m_initializing) {
             return;
         }
-        updateHeightRange(true);
+        UpdateHeightRange(true);
         emit layerChanged();
     });
 
@@ -48,7 +48,7 @@ ItemPropertiesDialogIdentityBlock::ItemPropertiesDialogIdentityBlock(CanvasScene
     m_heightSpin->setValue(qMax(0, item->ZOrder()));
 }
 
-void ItemPropertiesDialogIdentityBlock::addRows(QFormLayout* form)
+void ItemPropertiesDialogIdentityBlock::AddRows(QFormLayout* form)
 {
     if (m_nameEdit) {
         form->addRow(ItemPropertiesDialog::tr("Item name"), m_nameEdit);
@@ -61,7 +61,7 @@ void ItemPropertiesDialogIdentityBlock::addRows(QFormLayout* form)
     }
 }
 
-void ItemPropertiesDialogIdentityBlock::updateHeightRange(bool selectTop)
+void ItemPropertiesDialogIdentityBlock::UpdateHeightRange(bool selectTop)
 {
     if (!m_layerCombo || !m_heightSpin || !m_item) {
         return;
@@ -70,7 +70,7 @@ void ItemPropertiesDialogIdentityBlock::updateHeightRange(bool selectTop)
     const int targetLayer = m_layerCombo->currentData().toInt();
     int maxHeight = 0;
     if (m_scene) {
-        for (CanvasItem* peer : m_scene->layerItems(targetLayer)) {
+        for (CanvasItem* peer : m_scene->LayerItems(targetLayer)) {
             maxHeight = qMax(maxHeight, peer->ZOrder());
         }
     }

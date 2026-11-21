@@ -14,26 +14,26 @@ namespace {
 
 void drawIconShape(QPainter& painter, IconId id)
 {
-    if (paintIconFileEdit(painter, id)) {
+    if (PaintIconFileEdit(painter, id)) {
         return;
     }
-    if (paintIconShapeGraphic(painter, id)) {
+    if (PaintIconShapeGraphic(painter, id)) {
         return;
     }
-    if (paintIconTransformAlign(painter, id)) {
+    if (PaintIconTransformAlign(painter, id)) {
         return;
     }
-    if (paintIconLayerView(painter, id)) {
+    if (PaintIconLayerView(painter, id)) {
         return;
     }
-    if (paintIconMerge(painter, id)) {
+    if (PaintIconMerge(painter, id)) {
         return;
     }
 }
 
 } // namespace
 
-QIcon makeIcon(IconId id, const QColor& color, int logicalSize)
+QIcon MakeIcon(IconId id, const QColor& color, int logicalSize)
 {
     constexpr qreal iconGrid = 24.0;
     const qreal scale = 2.0;
@@ -54,7 +54,7 @@ QIcon makeIcon(IconId id, const QColor& color, int logicalSize)
     return QIcon(pixmap);
 }
 
-QIcon makeColorIcon(const QColor& color, int logicalSize)
+QIcon MakeColorIcon(const QColor& color, int logicalSize)
 {
     constexpr qreal scale = 2.0;
     QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));

@@ -15,8 +15,8 @@ namespace BoolOps {
 enum class Operation { UNION, XOR, INTERSECT, SUBTRACT, FRAGMENT, LINE_SPLIT };
 
 // 至少两个可编辑图元才能做合并形状。
-bool supports(CanvasScene* scene);
+bool Supports(CanvasScene* scene);
 // 返回 true 表示生成了多边形。
-bool apply(CanvasScene* scene, Operation operation, const QString& commandText);
+bool Apply(CanvasScene* scene, Operation operation, const QString& commandText);
 
 } // namespace BoolOps

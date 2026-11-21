@@ -65,7 +65,7 @@ LayerRow::LayerRow(const CanvasLayer& layer, int index, int itemCount, QWidget* 
         m_lockButton->setChecked(layer.locked);
         m_lockButton->setFocusPolicy(Qt::NoFocus);
         m_lockButton->setFixedSize(22, 22);
-        m_lockButton->setIcon(makeIcon(IconId::LOCK, layer.locked ? QColor(37, 99, 235) : QColor(110, 118, 132), 18));
+        m_lockButton->setIcon(MakeIcon(IconId::LOCK, layer.locked ? QColor(37, 99, 235) : QColor(110, 118, 132), 18));
         m_lockButton->setIconSize(QSize(18, 18));
         m_lockButton->setToolTip(LayerPanel::tr("Lock layer: items on it cannot be edited"));
         layout->addWidget(m_lockButton);
@@ -77,7 +77,7 @@ LayerRow::LayerRow(const CanvasLayer& layer, int index, int itemCount, QWidget* 
             [this](bool visible) { emit visibilityToggled(m_layerId, visible); });
 }
 
-void LayerRow::applySelectedStyle(bool selected)
+void LayerRow::ApplySelectedStyle(bool selected)
 {
     setProperty("selected", selected);
     style()->unpolish(this);

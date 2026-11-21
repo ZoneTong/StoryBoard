@@ -82,31 +82,31 @@
 #include <cstdlib>
 
 
-void selftest::runLockedLayerTests(Context& ctx)
+void selftest::RunLockedLayerTests(Context& ctx)
 {
     CanvasScene& viewScene = ctx.viewScene;
     CanvasView& view = *ctx.view;
     int& itemPropertyRequests = ctx.itemPropertyRequests;
 
-    const int baseLayerId = viewScene.activeLayerId();
-    ctx.check(viewScene.addLayerWithUndo(QStringLiteral("锁定的注释")), QStringLiteral("创建锁定测试图层"));
-    const int lockedLayerId = viewScene.activeLayerId();
+    const int baseLayerId = viewScene.ActiveLayerId();
+    ctx.Check(viewScene.AddLayerWithUndo(QStringLiteral("锁定的注释")), QStringLiteral("创建锁定测试图层"));
+    const int lockedLayerId = viewScene.ActiveLayerId();
     QFont lockedFont(QStringLiteral("Microsoft YaHei UI"));
     lockedFont.setPointSize(22);
     auto* lockedText = new TextItem();
-    lockedText->setTextFormat(QStringLiteral("锁定图层文字"), lockedFont, QColor(QStringLiteral("#0F766E")));
+    lockedText->SetTextFormat(QStringLiteral("锁定图层文字"), lockedFont, QColor(QStringLiteral("#0F766E")));
     lockedText->setPos(QPointF(980, 600));
-    viewScene.addItemsWithUndo({lockedText}, QStringLiteral("添加锁定图层文字"));
-    ctx.check(viewScene.setLayerLocked(lockedLayerId, true), QStringLiteral("锁定文字所在图层"));
-    viewScene.setActiveLayer(baseLayerId);
-    view.fitAll();
+    viewScene.AddItemsWithUndo({lockedText}, QStringLiteral("添加锁定图层文字"));
+    ctx.Check(viewScene.SetLayerLocked(lockedLayerId, true), QStringLiteral("锁定文字所在图层"));
+    viewScene.SetActiveLayer(baseLayerId);
+    view.FitAll();
     QApplication::processEvents();
 
-    ctx.check(lockedLayerId != baseLayerId && !lockedText->IsEditable() &&
+    ctx.Check(lockedLayerId != baseLayerId && !lockedText->IsEditable() &&
                   (lockedText->flags() & QGraphicsItem::ItemIsSelectable) == 0,
               QStringLiteral("锁定图层上的文字不可编辑和选择"));
-    viewScene.selectAllItems();
-    ctx.check(!lockedText->isSelected(), QStringLiteral("全选不包含锁定图层图元"));
+    viewScene.SelectAllItems();
+    ctx.Check(!lockedText->isSelected(), QStringLiteral("全选不包含锁定图层图元"));
     viewScene.clearSelection();
 
     const int requestsBeforeLockedClick = itemPropertyRequests;
@@ -116,12 +116,12 @@ void selftest::runLockedLayerTests(Context& ctx)
                                   Qt::NoModifier);
     QApplication::sendEvent(view.viewport(), &lockedDoubleClick);
     QApplication::processEvents();
-    ctx.check(itemPropertyRequests == requestsBeforeLockedClick, QStringLiteral("双击锁定图层图元不会弹出属性窗"));
+    ctx.Check(itemPropertyRequests == requestsBeforeLockedClick, QStringLiteral("双击锁定图层图元不会弹出属性窗"));
 
-    sendMouseEvent(view.viewport(), QEvent::MouseButtonPress, lockedPoint, Qt::LeftButton, Qt::LeftButton);
-    sendMouseEvent(view.viewport(), QEvent::MouseButtonRelease, lockedPoint, Qt::LeftButton, Qt::NoButton);
+    SendMouseEvent(view.viewport(), QEvent::MouseButtonPress, lockedPoint, Qt::LeftButton, Qt::LeftButton);
+    SendMouseEvent(view.viewport(), QEvent::MouseButtonRelease, lockedPoint, Qt::LeftButton, Qt::NoButton);
     QApplication::processEvents();
-    ctx.check(!lockedText->isSelected(), QStringLiteral("锁定图层图元不能被鼠标选中"));
+    ctx.Check(!lockedText->isSelected(), QStringLiteral("锁定图层图元不能被鼠标选中"));
 
     int lockedLayerMessages = 0;
     QObject::connect(&view, &CanvasView::statusMessage, &view, [&lockedLayerMessages](const QString& message) {
@@ -133,9 +133,9 @@ void selftest::runLockedLayerTests(Context& ctx)
     QContextMenuEvent lockedContext(QContextMenuEvent::Mouse, lockedPoint, lockedGlobal);
     QApplication::sendEvent(view.viewport(), &lockedContext);
     QApplication::processEvents();
-    ctx.check(lockedLayerMessages > 0, QStringLiteral("右键锁定图层图元提示先解锁图层"));
-    ctx.check(viewScene.setLayerLocked(lockedLayerId, false), QStringLiteral("解锁文字图层"));
-    ctx.check(lockedText->IsEditable(), QStringLiteral("解锁后文字恢复可编辑"));
+    ctx.Check(lockedLayerMessages > 0, QStringLiteral("右键锁定图层图元提示先解锁图层"));
+    ctx.Check(viewScene.SetLayerLocked(lockedLayerId, false), QStringLiteral("解锁文字图层"));
+    ctx.Check(lockedText->IsEditable(), QStringLiteral("解锁后文字恢复可编辑"));
 
     view.close();
     QApplication::processEvents();

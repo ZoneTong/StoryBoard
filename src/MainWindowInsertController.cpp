@@ -49,38 +49,38 @@ void reportWarning(QWidget* parent, const QString& title, const QString& text)
 
 MainWindowInsertController::MainWindowInsertController(MainWindow* window) : m_window(window) {}
 
-void MainWindowInsertController::insertTextAt(const QPointF& scenePos)
+void MainWindowInsertController::InsertTextAt(const QPointF& scenePos)
 {
     auto* item = new TextItem();
-    item->setTextFormat(MainWindow::tr("Text"), item->TextFont(), m_window->m_brushColor);
+    item->SetTextFormat(MainWindow::tr("Text"), item->TextFont(), m_window->m_brushColor);
 
-    const QRectF canvas = m_window->m_scene->canvasRect();
-    const QSizeF size = item->contentSize();
+    const QRectF canvas = m_window->m_scene->CanvasRect();
+    const QSizeF size = item->ContentSize();
     qreal x = scenePos.x() - size.width() / 2.0;
     qreal y = scenePos.y() - size.height() / 2.0;
     x = qBound(canvas.left(), x, qMax(canvas.left(), canvas.right() - size.width()));
     y = qBound(canvas.top(), y, qMax(canvas.top(), canvas.bottom() - size.height()));
     item->setPos(QPointF(x, y));
 
-    m_window->setToolMode(ToolMode::EDIT);
-    m_window->m_scene->addItemsWithUndo({item}, MainWindow::tr("Add text"));
+    m_window->SetToolMode(ToolMode::EDIT);
+    m_window->m_scene->AddItemsWithUndo({item}, MainWindow::tr("Add text"));
     item->setSelected(true);
     m_window->m_view->setFocus();
     m_window->statusBar()->showMessage(MainWindow::tr("Text item added"), 4000);
 
     // 文字正文现在由属性窗直接编辑；添加后立即打开属性窗，避免再维护独立
     // 的文字输入对话框。
-    m_window->showItemProperties(item);
+    m_window->ShowItemProperties(item);
 }
 
-void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle1, qreal triangleAngle2,
+void MainWindowInsertController::InsertShape(ShapeType type, qreal triangleAngle1, qreal triangleAngle2,
                                              qreal cornerRatio, qreal parallelogramAngle)
 {
     if (m_window->m_view->mode() != ToolMode::EDIT) {
-        m_window->setToolMode(ToolMode::EDIT);
+        m_window->SetToolMode(ToolMode::EDIT);
     }
 
-    if (!m_window->m_scene->isActiveLayerWritable()) {
+    if (!m_window->m_scene->IsActiveLayerWritable()) {
         m_window->statusBar()->showMessage(
             MainWindow::tr("The current layer is locked or hidden; shapes cannot be "
                            "inserted. Unlock or switch layers in the layer panel first."),
@@ -90,7 +90,7 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
 
     // 需求 4/5：立方体与圆柱体插入即分组，走组合面图元的专用通道。
     if (type == ShapeType::CUBE || type == ShapeType::CYLINDER) {
-        insertCompositeShape(type);
+        InsertCompositeShape(type);
         return;
     }
 
@@ -99,14 +99,14 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
     const QColor stroke =
         m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
     const qreal strokeWidth = qMax<qreal>(0.5, m_window->m_brushWidth);
-    const bool filled = shapeTypeIsFilled(type) && m_window->m_fillStyle != FillStyle::NONE;
+    const bool filled = ShapeTypeIsFilled(type) && m_window->m_fillStyle != FillStyle::NONE;
     const QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : stroke;
     const FillStyle fillStyle = filled ? m_window->m_fillStyle : FillStyle::NONE;
 
     // 图形族已按 ShapeType 拆成具体类：十字星 / 六芒星 / 心形 / 旗帜 / 卷轴
     // 与其余有面积图形一样直接建类，不再经多边形包装。
-    const QRectF canvas = m_window->m_scene->canvasRect();
-    QSizeF size = defaultShapeSize(type);
+    const QRectF canvas = m_window->m_scene->CanvasRect();
+    QSizeF size = DefaultShapeSize(type);
     const qreal fitScale = qMin<qreal>(1.0, qMin(canvas.width() * 0.72 / qMax<qreal>(1.0, size.width()),
                                                  canvas.height() * 0.72 / qMax<qreal>(1.0, size.height())));
     size *= fitScale;
@@ -121,7 +121,7 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
     if (!canvas.contains(center)) {
         center = canvas.center();
     }
-    const qreal cascade = (m_window->m_scene->canvasItemCount() % 5) * 18.0;
+    const qreal cascade = (m_window->m_scene->CanvasItemCount() % 5) * 18.0;
     center += QPointF(cascade, cascade);
     center.setX(qBound(canvas.left() + size.width() / 2.0, center.x(), canvas.right() - size.width() / 2.0));
     center.setY(qBound(canvas.top() + size.height() / 2.0, center.y(), canvas.bottom() - size.height() / 2.0));
@@ -129,8 +129,8 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
 
     CanvasItem* item = nullptr;
     {
-        auto* shape = createShapeItem(type);
-        shape->setStyle(stroke, filled ? fill : QColor(Qt::transparent), strokeWidth);
+        auto* shape = CreateShapeItem(type);
+        shape->SetStyle(stroke, filled ? fill : QColor(Qt::transparent), strokeWidth);
         shape->SetFillStyle(fillStyle);
         // 需求 1：新图元沿用工具栏当前描线样式。
         shape->SetStrokeStyle(m_window->m_strokeStyle);
@@ -154,7 +154,7 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
     }
 
     m_window->m_scene->clearSelection();
-    m_window->m_scene->addItemsWithUndo({item}, MainWindow::tr("Insert %1").arg(shapeTypeName(type)));
+    m_window->m_scene->AddItemsWithUndo({item}, MainWindow::tr("Insert %1").arg(ShapeTypeName(type)));
     item->setSelected(true);
     m_window->m_view->setFocus();
     if (type == ShapeType::ELLIPSE) {
@@ -163,12 +163,12 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
     } else {
         m_window->statusBar()->showMessage(
             MainWindow::tr("Inserted %1; drag to move, drag handles to resize, color follows the current brush")
-                .arg(shapeTypeName(type)),
+                .arg(ShapeTypeName(type)),
             5000);
     }
 }
 
-void MainWindow::insertCurve(LineGlyph glyph, ArrowStyle startArrow, ArrowStyle endArrow)
+void MainWindow::InsertCurve(LineGlyph glyph, ArrowStyle startArrow, ArrowStyle endArrow)
 {
     if (!m_view || !m_scene) {
         return;
@@ -176,12 +176,12 @@ void MainWindow::insertCurve(LineGlyph glyph, ArrowStyle startArrow, ArrowStyle 
     const QSizeF size = glyph == LineGlyph::STRAIGHT ? QSizeF(128.0, 64.0)
                         : glyph == LineGlyph::ARC    ? QSizeF(128.0, 94.0)
                                                      : QSizeF(128.0, 40.0);
-    const QRectF canvas = m_scene->canvasRect();
+    const QRectF canvas = m_scene->CanvasRect();
     QPointF center = m_view->mapToScene(m_view->viewport()->rect().center());
     if (!canvas.contains(center)) {
         center = canvas.center();
     }
-    const qreal cascade = (m_scene->canvasItemCount() % 5) * 18.0;
+    const qreal cascade = (m_scene->CanvasItemCount() % 5) * 18.0;
     center += QPointF(cascade, cascade);
     center.setX(qBound(canvas.left() + size.width() / 2.0, center.x(), canvas.right() - size.width() / 2.0));
     center.setY(qBound(canvas.top() + size.height() / 2.0, center.y(), canvas.bottom() - size.height() / 2.0));
@@ -195,24 +195,24 @@ void MainWindow::insertCurve(LineGlyph glyph, ArrowStyle startArrow, ArrowStyle 
         auto* line = new StraightLineItem();
         const QPointF start(topLeft.x(), topLeft.y() + size.height() / 2.0);
         const QPointF end(topLeft.x() + size.width(), start.y());
-        line->setEndpoints(start, end, stroke, width);
+        line->SetEndpoints(start, end, stroke, width);
         curve = line;
     } else if (glyph == LineGlyph::ARC) {
         auto* arc = new ArcItem();
-        arc->setArcGeometry(topLeft, size, 30.0, 120.0, stroke, width);
+        arc->SetArcGeometry(topLeft, size, 30.0, 120.0, stroke, width);
         curve = arc;
     } else if (glyph == LineGlyph::SINE) {
         auto* sine = new SineItem();
-        sine->setWaveGeometry(topLeft, size, stroke, width);
+        sine->SetWaveGeometry(topLeft, size, stroke, width);
         curve = sine;
     } else {
         return;
     }
-    curve->setStrokePattern(m_strokeStyle);
+    curve->SetStrokePattern(m_strokeStyle);
     curve->SetArrowStyles(startArrow, endArrow);
 
     m_scene->clearSelection();
-    m_scene->addItemsWithUndo({curve}, tr("Insert %1").arg(curve->DisplayName()));
+    m_scene->AddItemsWithUndo({curve}, tr("Insert %1").arg(curve->DisplayName()));
     curve->setSelected(true);
     m_view->setFocus();
     statusBar()->showMessage(tr("Inserted %1; drag to move, drag handles to resize, color follows the current brush")
@@ -220,7 +220,7 @@ void MainWindow::insertCurve(LineGlyph glyph, ArrowStyle startArrow, ArrowStyle 
                              5000);
 }
 
-void MainWindowInsertController::insertCompositeShape(ShapeType type)
+void MainWindowInsertController::InsertCompositeShape(ShapeType type)
 {
     // 需求 16：与常见图形同一套工具栏取值规则（描线宽度不再钳制、填充跟随画笔色）。
     const QColor stroke =
@@ -234,10 +234,10 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
     // 靠各自的旋转角摆放成等轴测，不再用自定义轮廓冒充斜置的菱形。
     auto makeFace = [&stroke, &fill, fillStyle, width, this](const QString& name, const QPointF& center,
                                                              const QSizeF& faceSize, qreal rotation) {
-        auto* face = createShapeItem(ShapeType::PARALLELOGRAM);
+        auto* face = CreateShapeItem(ShapeType::PARALLELOGRAM);
         // 名字走图元名：customName 只留给真正的自定义轮廓，类型仍显示「平行四边形」。
         face->SetName(name);
-        face->setStyle(stroke, fill, width);
+        face->SetStyle(stroke, fill, width);
         face->SetFillStyle(fillStyle);
         // 需求 1：组内各面同样沿用工具栏描线样式。
         face->SetStrokeStyle(m_window->m_strokeStyle);
@@ -247,8 +247,8 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
         return face;
     };
 
-    const QRectF canvas = m_window->m_scene->canvasRect();
-    QSizeF size = defaultShapeSize(type);
+    const QRectF canvas = m_window->m_scene->CanvasRect();
+    QSizeF size = DefaultShapeSize(type);
     const qreal fitScale = qMin<qreal>(1.0, qMin(canvas.width() * 0.72 / qMax<qreal>(1.0, size.width()),
                                                  canvas.height() * 0.72 / qMax<qreal>(1.0, size.height())));
     size *= fitScale;
@@ -257,7 +257,7 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
     if (!canvas.contains(center)) {
         center = canvas.center();
     }
-    const qreal cascade = (m_window->m_scene->canvasItemCount() % 5) * 18.0;
+    const qreal cascade = (m_window->m_scene->CanvasItemCount() % 5) * 18.0;
     center += QPointF(cascade, cascade);
     center.setX(qBound(canvas.left() + size.width() / 2.0, center.x(), canvas.right() - size.width() / 2.0));
     center.setY(qBound(canvas.top() + size.height() / 2.0, center.y(), canvas.bottom() - size.height() / 2.0));
@@ -314,8 +314,8 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
         bodyItem->SetName(MainWindow::tr("Cylinder body"));
         faces.append(bodyItem);
 
-        auto* top = createShapeItem(ShapeType::ELLIPSE);
-        top->setStyle(stroke, fill, width);
+        auto* top = CreateShapeItem(ShapeType::ELLIPSE);
+        top->SetStyle(stroke, fill, width);
         top->SetFillStyle(fillStyle);
         top->SetStrokeStyle(m_window->m_strokeStyle);
         top->setPos(topLeft);
@@ -324,24 +324,24 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
     }
 
     m_window->m_scene->clearSelection();
-    m_window->m_scene->addItemsWithUndo(faces, MainWindow::tr("Insert %1").arg(shapeTypeName(type)));
-    m_window->m_scene->assignNewGroup(faces);
+    m_window->m_scene->AddItemsWithUndo(faces, MainWindow::tr("Insert %1").arg(ShapeTypeName(type)));
+    m_window->m_scene->AssignNewGroup(faces);
     for (CanvasItem* face : faces) {
         face->setSelected(true);
     }
     m_window->m_view->setFocus();
     m_window->statusBar()->showMessage(
-        MainWindow::tr("Inserted %1 as a grouped set of faces; drag to move the whole shape").arg(shapeTypeName(type)),
+        MainWindow::tr("Inserted %1 as a grouped set of faces; drag to move the whole shape").arg(ShapeTypeName(type)),
         5000);
 }
 
-void MainWindowInsertController::insertBrace(bool left)
+void MainWindowInsertController::InsertBrace(bool left)
 {
     if (m_window->m_view->mode() != ToolMode::EDIT) {
-        m_window->setToolMode(ToolMode::EDIT);
+        m_window->SetToolMode(ToolMode::EDIT);
     }
 
-    if (!m_window->m_scene->isActiveLayerWritable()) {
+    if (!m_window->m_scene->IsActiveLayerWritable()) {
         m_window->statusBar()->showMessage(
             MainWindow::tr("The current layer is locked or hidden; shapes cannot be "
                            "inserted. Unlock or switch layers in the layer panel first."),
@@ -354,7 +354,7 @@ void MainWindowInsertController::insertBrace(bool left)
     const qreal width = qMax<qreal>(0.5, m_window->m_brushWidth);
 
     // 花括号沿用原默认尺寸（21×64，2 格基准）在 64px 格下放大一倍：42×128。
-    const QRectF canvas = m_window->m_scene->canvasRect();
+    const QRectF canvas = m_window->m_scene->CanvasRect();
     QSizeF size(42.0, 128.0);
     const qreal fitScale = qMin<qreal>(1.0, qMin(canvas.width() * 0.72 / qMax<qreal>(1.0, size.width()),
                                                  canvas.height() * 0.72 / qMax<qreal>(1.0, size.height())));
@@ -364,22 +364,22 @@ void MainWindowInsertController::insertBrace(bool left)
     if (!canvas.contains(center)) {
         center = canvas.center();
     }
-    const qreal cascade = (m_window->m_scene->canvasItemCount() % 5) * 18.0;
+    const qreal cascade = (m_window->m_scene->CanvasItemCount() % 5) * 18.0;
     center += QPointF(cascade, cascade);
     center.setX(qBound(canvas.left() + size.width() / 2.0, center.x(), canvas.right() - size.width() / 2.0));
     center.setY(qBound(canvas.top() + size.height() / 2.0, center.y(), canvas.bottom() - size.height() / 2.0));
 
     const QPointF topLeft = center - QPointF(size.width() / 2.0, size.height() / 2.0);
     auto* item = new BraceItem();
-    item->setBraceRect(QRectF(topLeft, size), stroke, width);
-    item->setStrokePattern(m_window->m_strokeStyle);
+    item->SetBraceRect(QRectF(topLeft, size), stroke, width);
+    item->SetStrokePattern(m_window->m_strokeStyle);
     // 右括号 = 左括号旋转 180°（旋转绕内容中心，几何不复制第二套）。
     if (!left) {
         item->SetRotationAngle(180.0);
     }
 
     m_window->m_scene->clearSelection();
-    m_window->m_scene->addItemsWithUndo(
+    m_window->m_scene->AddItemsWithUndo(
         {item}, MainWindow::tr("Insert %1").arg(left ? MainWindow::tr("Left brace") : MainWindow::tr("Right brace")));
     item->setSelected(true);
     m_window->m_view->setFocus();
@@ -388,13 +388,13 @@ void MainWindowInsertController::insertBrace(bool left)
                                        5000);
 }
 
-void MainWindowInsertController::insertCustomShape(const QString& filePath)
+void MainWindowInsertController::InsertCustomShape(const QString& filePath)
 {
     if (m_window->m_view->mode() != ToolMode::EDIT) {
-        m_window->setToolMode(ToolMode::EDIT);
+        m_window->SetToolMode(ToolMode::EDIT);
     }
 
-    if (!m_window->m_scene->isActiveLayerWritable()) {
+    if (!m_window->m_scene->IsActiveLayerWritable()) {
         m_window->statusBar()->showMessage(
             MainWindow::tr("The current layer is locked or hidden; shapes cannot be "
                            "inserted. Unlock or switch layers in the layer panel first."),
@@ -404,25 +404,25 @@ void MainWindowInsertController::insertCustomShape(const QString& filePath)
 
     CustomShapeTemplate customShape;
     QString error;
-    if (!loadCustomShapeTemplate(filePath, &customShape, &error)) {
+    if (!LoadCustomShapeTemplate(filePath, &customShape, &error)) {
         reportWarning(m_window, MainWindow::tr("Custom shape"),
                       MainWindow::tr("Could not read %1:\n%2").arg(QDir::toNativeSeparators(filePath), error));
         return;
     }
 
-    auto* item = createShapeItem(ShapeType::RECTANGLE);
+    auto* item = CreateShapeItem(ShapeType::RECTANGLE);
     item->SetCustomShape(customShape.name, customShape.unitPath);
     // 需求 16：与常见图形一致，按工具栏当前选择取样式（填充未选色跟随画笔色）。
     const QColor stroke =
         m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
     const QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : stroke;
     const bool filled = m_window->m_fillStyle != FillStyle::NONE;
-    item->setStyle(stroke, filled ? fill : QColor(Qt::transparent), qMax<qreal>(0.5, m_window->m_brushWidth));
+    item->SetStyle(stroke, filled ? fill : QColor(Qt::transparent), qMax<qreal>(0.5, m_window->m_brushWidth));
     item->SetFillStyle(filled ? m_window->m_fillStyle : FillStyle::NONE);
     item->SetStrokeStyle(m_window->m_strokeStyle);
 
     // 需求 7：模板按原始宽高比插入，长边固定 64（2 格）；画布装不下时才等比缩到 72%。
-    const QRectF canvas = m_window->m_scene->canvasRect();
+    const QRectF canvas = m_window->m_scene->CanvasRect();
     const qreal aspect = qMax<qreal>(0.05, customShape.aspectRatio);
     const qreal longSide = 64.0;
     QSizeF size = aspect >= 1.0 ? QSizeF(longSide, longSide / aspect) : QSizeF(longSide * aspect, longSide);
@@ -436,7 +436,7 @@ void MainWindowInsertController::insertCustomShape(const QString& filePath)
     if (!canvas.contains(center)) {
         center = canvas.center();
     }
-    const qreal cascade = (m_window->m_scene->canvasItemCount() % 5) * 18.0;
+    const qreal cascade = (m_window->m_scene->CanvasItemCount() % 5) * 18.0;
     center += QPointF(cascade, cascade);
     center.setX(qBound(canvas.left() + size.width() / 2.0, center.x(), canvas.right() - size.width() / 2.0));
     center.setY(qBound(canvas.top() + size.height() / 2.0, center.y(), canvas.bottom() - size.height() / 2.0));
@@ -445,22 +445,22 @@ void MainWindowInsertController::insertCustomShape(const QString& filePath)
     item->SetContentSize(size);
 
     m_window->m_scene->clearSelection();
-    m_window->m_scene->addItemsWithUndo({item}, MainWindow::tr("Insert custom shape “%1”").arg(customShape.name));
+    m_window->m_scene->AddItemsWithUndo({item}, MainWindow::tr("Insert custom shape “%1”").arg(customShape.name));
     item->setSelected(true);
     m_window->m_view->setFocus();
     m_window->statusBar()->showMessage(
         MainWindow::tr("Inserted custom shape “%1” from the shapes folder").arg(customShape.name), 4000);
 }
 
-void MainWindowInsertController::openShapesFolder()
+void MainWindowInsertController::OpenShapesFolder()
 {
-    const AppSettings::ShapesFolderOpenResult result = AppSettings::openShapesFolder();
+    const AppSettings::ShapesFolderOpenResult result = AppSettings::OpenShapesFolder();
     if (!result.opened) {
-        m_window->statusBar()->showMessage(AppSettings::shapesFolderFailureText(result), 6000);
+        m_window->statusBar()->showMessage(AppSettings::ShapesFolderFailureText(result), 6000);
     }
 }
 
-void MainWindowInsertController::updateCustomShapeMenu()
+void MainWindowInsertController::UpdateCustomShapeMenu()
 {
     if (!m_window->m_customShapeMenu) {
         return;
@@ -480,7 +480,7 @@ void MainWindowInsertController::updateCustomShapeMenu()
     trigger->setObjectName(QStringLiteral("CustomShapePanelTrigger"));
     trigger->setToolTip(MainWindow::tr("Open the custom shape panel, one tab per folder in the shapes directory"));
     QObject::connect(trigger, &QAction::triggered, m_window, [this]() {
-        QTimer::singleShot(0, m_window, [this]() { m_window->openCustomShapePanel(nullptr); });
+        QTimer::singleShot(0, m_window, [this]() { m_window->OpenCustomShapePanel(nullptr); });
     });
     m_customShapeTrigger = trigger;
     m_window->m_customShapeMenu->addAction(trigger);

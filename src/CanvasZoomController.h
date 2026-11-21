@@ -12,14 +12,14 @@ class CanvasZoomController {
   public:
     explicit CanvasZoomController(CanvasView* view, CanvasScene* scene);
 
-    qreal zoom() const;
-    void fitAll();
-    void zoomIn();
-    void zoomOut();
-    void actualSize();
-    void applyScale(qreal factor);
-    void emitZoom();
-    void handleWheel(QWheelEvent* event);
+    qreal Zoom() const;
+    void FitAll();
+    void ZoomIn();
+    void ZoomOut();
+    void ActualSize();
+    void ApplyScale(qreal factor);
+    void EmitZoom();
+    void HandleWheel(QWheelEvent* event);
 
   private:
     CanvasView* m_view = nullptr;

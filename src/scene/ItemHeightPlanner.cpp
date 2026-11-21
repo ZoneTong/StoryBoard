@@ -6,7 +6,7 @@
 
 ItemHeightPlanner::ItemHeightPlanner(int maxHeight) : m_maxHeight(maxHeight) {}
 
-int ItemHeightPlanner::nextHeight(const QList<CanvasItem*>& items, int layerId) const
+int ItemHeightPlanner::NextHeight(const QList<CanvasItem*>& items, int layerId) const
 {
     QSet<int> used;
     int maximum = 0;
@@ -32,7 +32,7 @@ int ItemHeightPlanner::nextHeight(const QList<CanvasItem*>& items, int layerId) 
     return -1;
 }
 
-bool ItemHeightPlanner::heightsUnique(const QList<CanvasItem*>& items) const
+bool ItemHeightPlanner::HeightsUnique(const QList<CanvasItem*>& items) const
 {
     QSet<int> heights;
     for (CanvasItem* item : items) {
@@ -44,7 +44,7 @@ bool ItemHeightPlanner::heightsUnique(const QList<CanvasItem*>& items) const
     return true;
 }
 
-bool ItemHeightPlanner::heightUsedByOther(const QList<CanvasItem*>& items, int height, const CanvasItem* except) const
+bool ItemHeightPlanner::HeightUsedByOther(const QList<CanvasItem*>& items, int height, const CanvasItem* except) const
 {
     for (const CanvasItem* item : items) {
         if (item != except && item->ZOrder() == height) {

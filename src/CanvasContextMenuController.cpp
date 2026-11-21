@@ -23,7 +23,7 @@ CanvasContextMenuController::CanvasContextMenuController(CanvasView* view, Canva
 {
 }
 
-void CanvasContextMenuController::addGroup(const QString& title, const QList<QAction*>& actions)
+void CanvasContextMenuController::AddGroup(const QString& title, const QList<QAction*>& actions)
 {
     for (const ContextMenuGroup& group : std::as_const(m_groups)) {
         if (group.title == title) {
@@ -33,22 +33,22 @@ void CanvasContextMenuController::addGroup(const QString& title, const QList<QAc
     m_groups.append({title, actions});
 }
 
-void CanvasContextMenuController::showMenu(QContextMenuEvent* event)
+void CanvasContextMenuController::ShowMenu(QContextMenuEvent* event)
 {
     if (m_view->mode() != ToolMode::EDIT) {
-        m_view->baseContextMenuEvent(event);
+        m_view->BaseContextMenuEvent(event);
         return;
     }
 
-    CanvasItem* item = m_view->m_hits->editableItemAt(event->pos());
+    CanvasItem* item = m_view->m_hits->EditableItemAt(event->pos());
     if (!item) {
-        if (m_view->m_hits->topItemAt(event->pos())) {
+        if (m_view->m_hits->TopItemAt(event->pos())) {
             emit m_view->statusMessage(trView("The layer containing this item is locked or hidden; editing is "
                                               "unavailable. Unlock or show that layer in the layer panel first."));
             event->accept();
             return;
         }
-        m_view->baseContextMenuEvent(event);
+        m_view->BaseContextMenuEvent(event);
         return;
     }
 
@@ -58,7 +58,7 @@ void CanvasContextMenuController::showMenu(QContextMenuEvent* event)
     }
 
     const CanvasLayer itemLayer = m_scene->layer(item->LayerId());
-    const int layerIndex = m_scene->layerIndex(item->LayerId());
+    const int layerIndex = m_scene->LayerIndex(item->LayerId());
 
     QMenu menu(m_view);
     QAction* title =
@@ -71,11 +71,11 @@ void CanvasContextMenuController::showMenu(QContextMenuEvent* event)
     QAction* duplicate = menu.addAction(trView("Duplicate item"));
     duplicate->setEnabled(item->isSelected());
     QAction* smooth = menu.addAction(trView("Simplify curve"));
-    smooth->setEnabled(m_scene->canSmoothSelectedStrokes());
+    smooth->setEnabled(m_scene->CanSmoothSelectedStrokes());
     QAction* group = menu.addAction(trView("Group selected items"));
-    group->setEnabled(m_scene->canGroupSelectedItems());
+    group->setEnabled(m_scene->CanGroupSelectedItems());
     QAction* ungroup = menu.addAction(trView("Ungroup selected items"));
-    ungroup->setEnabled(m_scene->canUngroupSelectedItems());
+    ungroup->setEnabled(m_scene->CanUngroupSelectedItems());
 
     // 主窗口挂进来的动作组（例如布尔运算）与菜单栏、工具栏共用同一批 QAction。
     for (const ContextMenuGroup& group : std::as_const(m_groups)) {
@@ -101,7 +101,7 @@ void CanvasContextMenuController::showMenu(QContextMenuEvent* event)
 
     QAction* layerUp = menu.addAction(trView("Move to the layer above"));
     QAction* layerDown = menu.addAction(trView("Move to the layer below"));
-    layerUp->setEnabled(layerIndex >= 0 && layerIndex < m_scene->layerCount() - 1);
+    layerUp->setEnabled(layerIndex >= 0 && layerIndex < m_scene->LayerCount() - 1);
     layerDown->setEnabled(layerIndex > 1);
     menu.addSeparator();
 
@@ -116,35 +116,35 @@ void CanvasContextMenuController::showMenu(QContextMenuEvent* event)
     if (chosen == properties) {
         emit m_view->itemPropertiesRequested(item);
     } else if (chosen == duplicate) {
-        const int duplicated = m_scene->duplicateSelectedItems();
+        const int duplicated = m_scene->DuplicateSelectedItems();
         if (duplicated > 0) {
-            emit m_view->statusMessage(trView("Duplicated %1 item(s)").arg(duplicated));
+            emit m_view->statusMessage(trView("Duplicated %1 Item(s)").arg(duplicated));
         }
     } else if (chosen == smooth) {
-        const int smoothed = m_scene->smoothSelectedStrokes(m_view->strokeSmoothing());
+        const int smoothed = m_scene->SmoothSelectedStrokes(m_view->StrokeSmoothing());
         if (smoothed > 0) {
             emit m_view->statusMessage(trView("Simplified %1 curve(s)").arg(smoothed));
         }
     } else if (chosen == group) {
-        const int grouped = m_scene->groupSelectedItems();
+        const int grouped = m_scene->GroupSelectedItems();
         if (grouped > 0) {
-            emit m_view->statusMessage(trView("Grouped %1 item(s)").arg(grouped));
+            emit m_view->statusMessage(trView("Grouped %1 Item(s)").arg(grouped));
         }
     } else if (chosen == ungroup) {
-        const int ungrouped = m_scene->ungroupSelectedItems();
+        const int ungrouped = m_scene->UngroupSelectedItems();
         if (ungrouped > 0) {
-            emit m_view->statusMessage(trView("Ungrouped %1 item(s)").arg(ungrouped));
+            emit m_view->statusMessage(trView("Ungrouped %1 Item(s)").arg(ungrouped));
         }
     } else if (chosen == heightUp) {
-        m_scene->adjustSelectedHeights(1);
+        m_scene->AdjustSelectedHeights(1);
     } else if (chosen == heightDown) {
-        m_scene->adjustSelectedHeights(-1);
+        m_scene->AdjustSelectedHeights(-1);
     } else if (chosen == layerUp) {
-        m_scene->moveSelectedItemsToAdjacentLayer(1);
+        m_scene->MoveSelectedItemsToAdjacentLayer(1);
     } else if (chosen == layerDown) {
-        m_scene->moveSelectedItemsToAdjacentLayer(-1);
+        m_scene->MoveSelectedItemsToAdjacentLayer(-1);
     } else if (chosen == remove) {
-        m_scene->deleteSelected();
+        m_scene->DeleteSelected();
     }
 
     event->accept();

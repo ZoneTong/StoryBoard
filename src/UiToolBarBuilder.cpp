@@ -19,7 +19,7 @@
 
 UiToolBarBuilder::UiToolBarBuilder(MainWindow* window) : m_window(window) {}
 
-void UiToolBarBuilder::buildToolBars()
+void UiToolBarBuilder::BuildToolBars()
 {
     auto* mainBar = new QToolBar(MainWindow::tr("Main toolbar"), m_window);
     mainBar->setObjectName(QStringLiteral("MainToolBar"));
@@ -39,15 +39,15 @@ void UiToolBarBuilder::buildToolBars()
     mainBar->addSeparator();
 
     // 图形区：常见图形直接平铺成一排，后面接填充 / 描线颜色与描线宽度。
-    createShapeToolbar(mainBar);
+    CreateShapeToolbar(mainBar);
     mainBar->addSeparator();
 
     // 对齐与合并图元留在菜单栏与属性编辑面板里，主工具栏不再重复放置入口。
     // 画笔区只保留拟合容差输入；画笔颜色 / 粗细由图形描线区统一设置。
-    createSmoothingToolbar(mainBar);
+    CreateSmoothingToolbar(mainBar);
     // 布尔运算的右键菜单入口照旧保留，只是不再作为工具栏下拉按钮。
     if (m_window->m_view) {
-        m_window->m_view->addContextMenuGroup(MainWindow::tr("Merge items"), m_window->m_boolActions);
+        m_window->m_view->AddContextMenuGroup(MainWindow::tr("Merge items"), m_window->m_boolActions);
     }
 
     // 统一主工具栏里所有纯图标按钮的尺寸：QToolBar 为 action 自动创建的按钮、
@@ -75,7 +75,7 @@ void UiToolBarBuilder::buildToolBars()
     modeBar->addAction(m_window->m_textModeAct);
 }
 
-void UiToolBarBuilder::createSmoothingToolbar(QToolBar* mainBar)
+void UiToolBarBuilder::CreateSmoothingToolbar(QToolBar* mainBar)
 {
     auto* smoothingLabel = new QLabel(MainWindow::tr("Brush fit tolerance"), mainBar);
     smoothingLabel->setObjectName(QStringLiteral("ToolBarLabelTight"));
@@ -94,13 +94,13 @@ void UiToolBarBuilder::createSmoothingToolbar(QToolBar* mainBar)
         MainWindow::tr("Brush fit tolerance in pixels (0–20, 0.1 px steps); 0 disables curve fitting"));
     QObject::connect(m_window->m_smoothingSpin, &QDoubleSpinBox::valueChanged, m_window, [this](qreal value) {
         m_window->m_settings.strokeSmoothing = value;
-        m_window->m_view->setStrokeSmoothing(value);
-        m_window->m_settings.save();
+        m_window->m_view->SetStrokeSmoothing(value);
+        m_window->m_settings.Save();
     });
     mainBar->addWidget(m_window->m_smoothingSpin);
 }
 
-void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
+void UiToolBarBuilder::CreateShapeToolbar(QToolBar* mainBar)
 {
     // 「图形」区：常见图形与紧随其后的预置项（圆角矩形、45°/60° 直角三角、直线箭头、
     // 左右花括号）按下面的固定顺序平铺成一排，复用「插入 → 常见图形」同一批动作，
@@ -108,7 +108,7 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
     // 已改为曲线，菜单里只剩两个预置动作，工具栏按名字显式补在直线之后。
     // 需求 7：常见图形只有一份顺序源（ShapeMeta::allTypes），工具栏与菜单共用，
     // 新增图形只改那一处；末尾两个预置动作（花括号）按名字显式补在后面。
-    const QList<ShapeType> shapeOrder = ShapeMeta::allTypes();
+    const QList<ShapeType> shapeOrder = ShapeMeta::AllTypes();
     auto addShapeButton = [mainBar](QAction* action) {
         if (!action) {
             return;
@@ -157,7 +157,7 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
     // 常见图形之后追加自定义图形下拉，和「插入 → 常见图形」里的同一份目录菜单。
     auto* customShapeButton = new QToolButton(mainBar);
     customShapeButton->setObjectName(QStringLiteral("ToolBarCustomShapeButton"));
-    customShapeButton->setIcon(makeIcon(IconId::SHAPES, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
+    customShapeButton->setIcon(MakeIcon(IconId::SHAPES, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
     customShapeButton->setIconSize(QSize(MainWindow::TOOL_BAR_ICON_SIZE, MainWindow::TOOL_BAR_ICON_SIZE));
     customShapeButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
     customShapeButton->setPopupMode(QToolButton::DelayedPopup);
@@ -165,7 +165,7 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
     customShapeButton->setMenu(m_window->m_customShapeMenu);
     // 需求 7：按钮是浮动面板的触发器；菜单保留给键盘与辅助入口。
     QObject::connect(customShapeButton, &QToolButton::clicked, m_window,
-                     [this, customShapeButton]() { m_window->openCustomShapePanel(customShapeButton); });
+                     [this, customShapeButton]() { m_window->OpenCustomShapePanel(customShapeButton); });
     mainBar->addWidget(customShapeButton);
 
     m_window->m_fillButton = new QToolButton(mainBar);
@@ -185,7 +185,7 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
     fillMenu->addAction(m_window->m_fillBrickAct);
     fillMenu->addAction(m_window->m_fillDotsAct);
     m_window->m_fillButton->setMenu(fillMenu);
-    m_window->updateFillActions();
+    m_window->UpdateFillActions();
 
     // 需求 1 行序：填充样式 → 填充颜色 → 描线样式 → 描线颜色 → 描线宽度。
     mainBar->addWidget(m_window->m_fillButton);
@@ -210,7 +210,7 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
         strokeStyleMenu->addAction(action);
     }
     m_window->m_strokeStyleButton->setMenu(strokeStyleMenu);
-    m_window->m_style->updateStrokeStyleActions();
+    m_window->m_style->UpdateStrokeStyleActions();
     mainBar->addWidget(m_window->m_strokeStyleButton);
 
     m_window->m_strokeColorButton = new QToolButton(mainBar);
@@ -219,7 +219,7 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
     m_window->m_strokeColorButton->setDefaultAction(m_window->m_strokeColorAct);
     // 菜单项图标是 16px，工具栏按钮另画一份 20px 的，避免比旁边的图标小一圈。
     m_window->m_strokeColorButton->setIcon(
-        m_window->m_style->strokeColorIcon(m_window->m_brushColor, MainWindow::TOOL_BAR_ICON_SIZE));
+        m_window->m_style->StrokeColorIcon(m_window->m_brushColor, MainWindow::TOOL_BAR_ICON_SIZE));
     m_window->m_strokeColorButton->setToolTip(MainWindow::tr("Border color: %1 (click to choose)")
                                                   .arg(m_window->m_brushColor.name(QColor::HexArgb).toUpper()));
     mainBar->addWidget(m_window->m_strokeColorButton);
@@ -233,7 +233,7 @@ void UiToolBarBuilder::createShapeToolbar(QToolBar* mainBar)
     m_window->m_widthSpin->setFixedWidth(74);
     m_window->m_widthSpin->setFixedHeight(MainWindow::TOOL_BAR_CONTROL_HEIGHT);
     m_window->m_widthSpin->setToolTip(MainWindow::tr("Border width"));
-    QObject::connect(m_window->m_widthSpin, &QSpinBox::valueChanged, m_window, &MainWindow::applyBrushWidth);
-    m_window->setBrushWidthUi(m_window->m_brushWidth);
+    QObject::connect(m_window->m_widthSpin, &QSpinBox::valueChanged, m_window, &MainWindow::ApplyBrushWidth);
+    m_window->SetBrushWidthUi(m_window->m_brushWidth);
     mainBar->addWidget(m_window->m_widthSpin);
 }

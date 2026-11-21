@@ -9,7 +9,7 @@ class RectangleItem : public ParallelogramItem {
     RectangleItem();
     ShapeType shapeType() const override { return ShapeType::RECTANGLE; }
     // 覆写父类的平行四边形默认尺寸：矩形插入即为 2 格正方形。
-    QSizeF defaultContentSize() const override { return QSizeF(128.0, 128.0); }
+    QSizeF DefaultContentSize() const override { return QSizeF(128.0, 128.0); }
     ItemPropertySet Properties() const override;
     // 矩形锁 90°：写入侧统一抹平，面板也没有内角行。
     void SetParallelogramAngle(qreal angle) override;

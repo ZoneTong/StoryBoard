@@ -9,14 +9,14 @@
 // 是否纯描边。不含界面文案（带翻译上下文的名称仍由 ShapeItem 侧提供）。
 class ShapeMeta {
   public:
-    static QList<ShapeType> allTypes();
-    static QString typeToString(ShapeType type);
-    static ShapeType typeFromString(const QString& value);
-    static bool isFilled(ShapeType type);
+    static QList<ShapeType> AllTypes();
+    static QString TypeToString(ShapeType type);
+    static ShapeType TypeFromString(const QString& value);
+    static bool IsFilled(ShapeType type);
 
     // 需求 4：线条类图元（零面积、只有一条开放描线）两端可设箭头样式。
 
-    static QList<FillStyle> allStyles();
-    static QString styleToString(FillStyle style);
-    static FillStyle styleFromString(const QString& value);
+    static QList<FillStyle> AllStyles();
+    static QString StyleToString(FillStyle style);
+    static FillStyle StyleFromString(const QString& value);
 };

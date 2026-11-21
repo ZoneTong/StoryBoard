@@ -75,7 +75,7 @@ constexpr struct IconEntry {
 
 } // namespace
 
-bool paintIconMerge(QPainter& painter, IconId id)
+bool PaintIconMerge(QPainter& painter, IconId id)
 {
     for (const IconEntry& entry : ENTRIES) {
         if (entry.id == id) {

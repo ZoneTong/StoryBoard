@@ -25,160 +25,160 @@ class CanvasScene : public QGraphicsScene {
     explicit CanvasScene(QObject* parent = nullptr);
     ~CanvasScene() override;
 
-    void setUndoStack(QUndoStack* stack);
-    QUndoStack* undoStack() const { return m_undoStack; }
+    void SetUndoStack(QUndoStack* stack);
+    QUndoStack* UndoStack() const { return m_undoStack; }
 
     ToolMode mode() const { return m_mode; }
-    void setMode(ToolMode mode);
+    void SetMode(ToolMode mode);
 
-    QSizeF canvasSize() const { return m_canvasSize; }
-    QPointF canvasOrigin() const { return m_canvasOrigin; }
-    QRectF canvasRect() const;
-    void applyCanvasSize(const QSizeF& size);
-    void setCanvasSizeWithUndo(const QSizeF& size);
+    QSizeF CanvasSize() const { return m_canvasSize; }
+    QPointF CanvasOrigin() const { return m_canvasOrigin; }
+    QRectF CanvasRect() const;
+    void ApplyCanvasSize(const QSizeF& size);
+    void SetCanvasSizeWithUndo(const QSizeF& size);
     // Canvas geometry includes the origin so the canvas can be stretched from
     // any edge; apply* is live (drag) and commit* pushes one undo step.
-    void applyCanvasRect(const QRectF& rect);
-    void setCanvasRectWithUndo(const QRectF& rect);
-    void commitCanvasRect(const QRectF& before);
+    void ApplyCanvasRect(const QRectF& rect);
+    void SetCanvasRectWithUndo(const QRectF& rect);
+    void CommitCanvasRect(const QRectF& before);
 
     CanvasBackground canvasBackground() const { return m_background; }
-    void setCanvasBackground(const CanvasBackground& background);
-    void replaceCanvasBackground(const CanvasBackground& background, const QString& text = QString());
+    void SetCanvasBackground(const CanvasBackground& background);
+    void ReplaceCanvasBackground(const CanvasBackground& background, const QString& text = QString());
 
-    bool showGrid() const { return m_showGrid; }
-    void setShowGrid(bool enabled);
+    bool ShowGrid() const { return m_showGrid; }
+    void SetShowGrid(bool enabled);
 
     QRectF ContentRect() const;
-    void updateSceneExtent();
+    void UpdateSceneExtent();
     // 视图缩放后刷新图元的 boundingRect（旋转手柄等屏幕尺寸相关几何）。
     void RefreshViewDependentGeometry();
 
-    QList<CanvasItem*> canvasItems() const;
-    int canvasItemCount() const;
+    QList<CanvasItem*> CanvasItems() const;
+    int CanvasItemCount() const;
     // 需求 32：给所有还没有自定义名称的图元补上“类型 1 / 类型 2 …”自动名称。
     // 同时修复载入文件里已有的重名条目，保证画布内名称唯一。
-    void assignAutoItemNames();
-    QList<CanvasItem*> selectedCanvasItems() const;
+    void AssignAutoItemNames();
+    QList<CanvasItem*> SelectedCanvasItems() const;
     // 图元析构时把自身从选中排序缓存清出（QPointer 惰性清理在接连析构下不安全）。
-    void forgetItem(CanvasItem* item);
+    void ForgetItem(CanvasItem* item);
     // 选择顺序：先选中的在前，框选时按场景叠放顺序（最底层在前）记录。
     // 合并图元的「剪除」以最先选中的图元为底，框选时以最底层为底。
-    QList<CanvasItem*> selectionOrder() const;
+    QList<CanvasItem*> SelectionOrder() const;
     // 名称只按画布内图元的 Name() 比较；空名称不占用唯一名额。
-    bool isItemNameAvailable(const QString& name, const CanvasItem* except = nullptr) const;
+    bool IsItemNameAvailable(const QString& name, const CanvasItem* except = nullptr) const;
     // 按“类型 1 / 类型 2 …”生成类型专属的自动名称；用于新建图元与空名称补名。
-    QString uniqueItemName(const QString& base, const CanvasItem* except = nullptr) const;
+    QString UniqueItemName(const QString& base, const CanvasItem* except = nullptr) const;
     // 在已有名称基础上生成唯一副本名称：Hero panel → Hero panel 2，矩形 1 → 矩形 2。
-    QString uniqueItemNameFor(const QString& requested, const CanvasItem* except = nullptr) const;
+    QString UniqueItemNameFor(const QString& requested, const CanvasItem* except = nullptr) const;
     // 复制当前选中的可编辑图元（同层、偏移一点、名称自动取唯一值），整体一条撤销记录。
     // 返回实际生成的副本数量。
-    int duplicateSelectedItems();
+    int DuplicateSelectedItems();
 
     // 剪贴板：把选中的可编辑图元序列化成 JSON 数组；粘贴时按数组重建并偏移选中。
-    QJsonArray clipboardItems() const;
-    int pasteClipboardItems(const QJsonArray& items);
+    QJsonArray ClipboardItems() const;
+    int PasteClipboardItems(const QJsonArray& items);
     // 方向键微调：按 delta 移动选中的可编辑图元，整体一条撤销记录，返回移动数量。
-    int nudgeSelected(const QPointF& delta);
+    int NudgeSelected(const QPointF& delta);
 
     // 分组：只允许同层、至少两个可编辑图元。移动任意组员时整组移动，
     // 但组员仍可单独选中并编辑属性。
-    bool canGroupSelectedItems() const;
-    bool canUngroupSelectedItems() const;
-    int groupSelectedItems();
-    int ungroupSelectedItems();
-    QList<CanvasItem*> itemsInGroup(int groupId) const;
+    bool CanGroupSelectedItems() const;
+    bool CanUngroupSelectedItems() const;
+    int GroupSelectedItems();
+    int UngroupSelectedItems();
+    QList<CanvasItem*> ItemsInGroup(int groupId) const;
     // 分组有层级：组本身还能被更外层的组包住。outermostGroup 沿父链找到最外层组，
     // itemsInGroupTree 返回该组及其所有嵌套子组里的图元。
-    int parentGroup(int groupId) const;
-    int outermostGroup(int groupId) const;
-    QList<CanvasItem*> itemsInGroupTree(int groupId) const;
+    int ParentGroup(int groupId) const;
+    int OutermostGroup(int groupId) const;
+    QList<CanvasItem*> ItemsInGroupTree(int groupId) const;
     // 单击组内任意图元时选中整棵组树；返回 true 表示该图元属于某个组。
-    bool selectGroupOfItem(CanvasItem* item);
-    QHash<int, int> groupParents() const { return m_groupParents; }
-    void applyGroupParents(const QHash<int, int>& parents);
-    void applyGroupIds(const QList<CanvasItem*>& items, const QList<int>& groupIds);
+    bool SelectGroupOfItem(CanvasItem* item);
+    QHash<int, int> GroupParents() const { return m_groupParents; }
+    void ApplyGroupParents(const QHash<int, int>& parents);
+    void ApplyGroupIds(const QList<CanvasItem*>& items, const QList<int>& groupIds);
     // 插入即成组（立方体 / 圆柱体的面图元）：给 items 分配新组号并落组，
     // 不占撤销记录——插入本身的 addItemsWithUndo 已经是一条撤销。
-    int assignNewGroup(const QList<CanvasItem*>& items);
+    int AssignNewGroup(const QList<CanvasItem*>& items);
 
     // 手动平滑：只处理编辑模式下选中的自由笔画，一次操作只占一条撤销记录。
-    bool canSmoothSelectedStrokes() const;
-    int smoothSelectedStrokes(qreal tolerance);
+    bool CanSmoothSelectedStrokes() const;
+    int SmoothSelectedStrokes(qreal tolerance);
 
     static constexpr int BackgroundLayerId = 0;
 
-    const QList<CanvasLayer>& layers() const { return m_layers; }
-    QList<CanvasLayer> userLayers() const;
-    int layerCount() const { return m_layers.size(); }
-    int userLayerCount() const { return qMax(0, m_layers.size() - 1); }
-    bool hasLayer(int layerId) const;
+    const QList<CanvasLayer>& Layers() const { return m_layers; }
+    QList<CanvasLayer> UserLayers() const;
+    int LayerCount() const { return m_layers.size(); }
+    int UserLayerCount() const { return qMax(0, m_layers.size() - 1); }
+    bool HasLayer(int layerId) const;
     CanvasLayer layer(int layerId) const;
-    int layerIndex(int layerId) const;
-    int layerItemCount(int layerId) const;
-    QList<CanvasItem*> layerItems(int layerId) const;
-    bool isLayerVisible(int layerId) const;
-    bool setLayerVisible(int layerId, bool visible);
-    bool setAllLayersVisible(bool visible);
-    bool isLayerLocked(int layerId) const;
-    bool setLayerLocked(int layerId, bool locked);
-    bool isItemEditable(const CanvasItem* item) const;
+    int LayerIndex(int layerId) const;
+    int LayerItemCount(int layerId) const;
+    QList<CanvasItem*> LayerItems(int layerId) const;
+    bool IsLayerVisible(int layerId) const;
+    bool SetLayerVisible(int layerId, bool visible);
+    bool SetAllLayersVisible(bool visible);
+    bool IsLayerLocked(int layerId) const;
+    bool SetLayerLocked(int layerId, bool locked);
+    bool IsItemEditable(const CanvasItem* item) const;
     // True when the active layer accepts new items (exists, visible, unlocked).
-    bool isActiveLayerWritable() const;
-    int activeLayerId() const { return m_activeLayerId; }
-    void setActiveLayer(int layerId);
+    bool IsActiveLayerWritable() const;
+    int ActiveLayerId() const { return m_activeLayerId; }
+    void SetActiveLayer(int layerId);
 
-    int createLayer(const QString& name = QString());
-    bool addLayerWithUndo(const QString& name = QString());
-    bool removeLayerWithUndo(int layerId, QString* errorMessage = nullptr);
-    bool moveLayerWithUndo(int layerId, int delta);
-    bool renameLayerWithUndo(int layerId, const QString& name);
-    LayerStackState layerState() const;
-    void applyLayerState(const LayerStackState& state);
+    int CreateLayer(const QString& name = QString());
+    bool AddLayerWithUndo(const QString& name = QString());
+    bool RemoveLayerWithUndo(int layerId, QString* errorMessage = nullptr);
+    bool MoveLayerWithUndo(int layerId, int delta);
+    bool RenameLayerWithUndo(int layerId, const QString& name);
+    LayerStackState LayerState() const;
+    void ApplyLayerState(const LayerStackState& state);
 
-    int nextHeight(int layerId) const;
-    bool layerHeightsUnique(int layerId) const;
-    bool adjustItemHeight(CanvasItem* item, int delta, const QString& text = QString());
-    bool moveItemToAdjacentLayer(CanvasItem* item, int delta, const QString& text = QString());
+    int NextHeight(int layerId) const;
+    bool LayerHeightsUnique(int layerId) const;
+    bool AdjustItemHeight(CanvasItem* item, int delta, const QString& text = QString());
+    bool MoveItemToAdjacentLayer(CanvasItem* item, int delta, const QString& text = QString());
     // 对当前选中的所有图元批量调整高度 / 图层，整体只占一条撤销记录。
-    int adjustSelectedHeights(int delta);
-    int moveSelectedItemsToAdjacentLayer(int delta);
+    int AdjustSelectedHeights(int delta);
+    int MoveSelectedItemsToAdjacentLayer(int delta);
 
     // 图层面板中被选中的图层。重叠图元命中时优先选择这些图层里的图元。
-    void setPreferredLayerIds(const QList<int>& ids);
-    QList<int> preferredLayerIds() const { return m_preferredLayerIds; }
-    void applyItemStack(const ItemStackList& stack);
+    void SetPreferredLayerIds(const QList<int>& ids);
+    QList<int> PreferredLayerIds() const { return m_preferredLayerIds; }
+    void ApplyItemStack(const ItemStackList& stack);
 
-    bool changeTextWithUndo(CanvasItem* item, const QString& text, const QFont& font, const QColor& color,
+    bool ChangeTextWithUndo(CanvasItem* item, const QString& text, const QFont& font, const QColor& color,
                             const QString& commandText = QString());
     void ApplyTextState(CanvasItem* item, const TextItemState& state);
 
-    void addItemsWithUndo(const QList<CanvasItem*>& items, const QString& text);
-    void commitNewItem(CanvasItem* item, const QString& text);
-    void attachItem(CanvasItem* item);
-    void detachItem(CanvasItem* item);
-    void deleteSelected();
-    void selectAllItems();
+    void AddItemsWithUndo(const QList<CanvasItem*>& items, const QString& text);
+    void CommitNewItem(CanvasItem* item, const QString& text);
+    void AttachItem(CanvasItem* item);
+    void DetachItem(CanvasItem* item);
+    void DeleteSelected();
+    void SelectAllItems();
     // mergeId 非空时命令标记为可合并（目前用于 nudge：连续方向键微调并成一条撤销记录）。
-    void pushGeometry(const ItemGeometryList& before, const ItemGeometryList& after, const QString& text,
+    void PushGeometry(const ItemGeometryList& before, const ItemGeometryList& after, const QString& text,
                       const QString& mergeId = QString());
     // 需求 35：旋转手柄与快捷键的撤销入口。
-    void pushRotation(CanvasItem* item, qreal before, qreal after, const QString& text);
-    int rotateSelected(qreal degrees, const QString& commandText = QString());
+    void PushRotation(CanvasItem* item, qreal before, qreal after, const QString& text);
+    int RotateSelected(qreal degrees, const QString& commandText = QString());
 
-    void resetDocument();
+    void ResetDocument();
     QJsonObject ToJson() const;
     bool FromJson(const QJsonObject& root, QString* errorMessage = nullptr);
 
-    QImage renderImage(const QRectF& area, qreal scale);
+    QImage RenderImage(const QRectF& area, qreal scale);
     // 只渲染指定图层上的图元；画板背景仍按背景层的显示状态保留。
-    QImage renderLayerImage(const QRectF& area, qreal scale, int layerId);
+    QImage RenderLayerImage(const QRectF& area, qreal scale, int layerId);
     bool IsExporting() const { return m_exporting; }
 
     // 非查看模式下被更高优先级图元遮住、需要额外描出轮廓的图元。
     // 优先级：图层越高越优先；同一图层内 height 越大越优先。
     // area 非空时只统计与该区域相交的图元（绘制时用它避免整场景重算）。
-    QList<CanvasItem*> obscuredItems(const QRectF& area = QRectF()) const;
+    QList<CanvasItem*> ObscuredItems(const QRectF& area = QRectF()) const;
 
   signals:
     void modeChanged(ToolMode mode);
@@ -196,34 +196,34 @@ class CanvasScene : public QGraphicsScene {
                    QWidget* widget = nullptr) override;
 
   private:
-    CanvasItem* createItem(const QString& kind, const QString& shapeType = QString()) const;
+    CanvasItem* CreateItem(const QString& kind, const QString& shapeType = QString()) const;
     // 图元类型标识只按 JSON 里的 kind 分派：线条族五个形态各自一个类，
     // 图形 / 多边形 / 文字各一个族。
-    CanvasItem* createItemForJson(const QJsonObject& json) const;
+    CanvasItem* CreateItemForJson(const QJsonObject& json) const;
     // reserved 里是尚未挂到场景、但已经保留给其它副本的名称。
-    QString uniqueItemNameFor(const QString& requested, const CanvasItem* except, const QSet<QString>& reserved) const;
-    void drawCanvasBackground(QPainter* painter, const QRectF& area, bool includeGrid) const;
+    QString UniqueItemNameFor(const QString& requested, const CanvasItem* except, const QSet<QString>& reserved) const;
+    void DrawCanvasBackground(QPainter* painter, const QRectF& area, bool includeGrid) const;
     // 透明背景（None）在视图里画浅灰 / 白棋盘格作为透明标识，每格固定 64 逻辑像素；导出图不画。
-    void drawCheckerboard(QPainter* painter, const QRectF& canvas) const;
+    void DrawCheckerboard(QPainter* painter, const QRectF& canvas) const;
     // 单选三角形时在 A 边（底边）中点画 8px 刻度线，标记可调底边与两侧内角；查看模式与导出不画。
-    void drawTriangleBaseTick(QPainter* painter, const QRectF& rect);
-    void updateItemFlags();
-    void applyItemInteraction(CanvasItem* item);
-    void clearOrphans();
+    void DrawTriangleBaseTick(QPainter* painter, const QRectF& rect);
+    void UpdateItemFlags();
+    void ApplyItemInteraction(CanvasItem* item);
+    void ClearOrphans();
     // 维护选择顺序：新增的选中项追加到末尾，撤销选中或删除的被移除。
-    void refreshSelectionOrder();
+    void RefreshSelectionOrder();
 
-    void ensureLayerState();
-    LayerStackState sanitizedLayerState(const LayerStackState& state) const;
-    void applyLayerStateInternal(const LayerStackState& state, bool preserveLock = true);
-    void assignNewItemPlacement(CanvasItem* item);
-    void applyItemStacking(CanvasItem* item);
-    void applyAllItemStacking();
-    bool normalizeLayerHeights(int layerId);
-    void normalizeAllHeights();
-    bool heightUsedByOther(int layerId, int height, const CanvasItem* except) const;
-    qreal layerBaseZ(int layerId) const;
-    ItemStackList itemStackSnapshot(const QList<CanvasItem*>& items) const;
+    void EnsureLayerState();
+    LayerStackState SanitizedLayerState(const LayerStackState& state) const;
+    void ApplyLayerStateInternal(const LayerStackState& state, bool preserveLock = true);
+    void AssignNewItemPlacement(CanvasItem* item);
+    void ApplyItemStacking(CanvasItem* item);
+    void ApplyAllItemStacking();
+    bool NormalizeLayerHeights(int layerId);
+    void NormalizeAllHeights();
+    bool HeightUsedByOther(int layerId, int height, const CanvasItem* except) const;
+    qreal LayerBaseZ(int layerId) const;
+    ItemStackList ItemStackSnapshot(const QList<CanvasItem*>& items) const;
 
     QUndoStack* m_undoStack = nullptr;
     ToolMode m_mode = ToolMode::VIEW;

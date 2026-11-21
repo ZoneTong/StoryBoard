@@ -39,7 +39,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     setMinimumSize(1080, 700);
     setAcceptDrops(true);
 
-    m_settings.load();
+    m_settings.Load();
     m_lineArtSettings = m_settings;
     m_brushColor = m_settings.brushColor;
     m_brushWidth = m_settings.brushWidth;
@@ -47,18 +47,18 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     m_fillColor = QColor(0x9C, 0xA3, 0xAF);
 
     m_scene = new CanvasScene(this);
-    m_scene->applyCanvasSize(m_settings.canvasSize);
-    m_scene->setShowGrid(m_settings.showGrid);
+    m_scene->ApplyCanvasSize(m_settings.canvasSize);
+    m_scene->SetShowGrid(m_settings.showGrid);
 
     m_undo = new QUndoStack(this);
     m_undo->setUndoLimit(300);
-    m_scene->setUndoStack(m_undo);
+    m_scene->SetUndoStack(m_undo);
 
     m_view = new CanvasView(m_scene, this);
-    m_view->setBrushColor(m_brushColor);
-    m_view->setBrushWidth(m_brushWidth);
-    m_view->setStrokeSmoothing(m_settings.strokeSmoothing);
-    m_view->setCanvasColor(m_settings.canvasColor);
+    m_view->SetBrushColor(m_brushColor);
+    m_view->SetBrushWidth(m_brushWidth);
+    m_view->SetStrokeSmoothing(m_settings.strokeSmoothing);
+    m_view->SetCanvasColor(m_settings.canvasColor);
     setCentralWidget(m_view);
 
     m_background = std::make_unique<CanvasBackgroundController>(this);
@@ -73,18 +73,18 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     m_insert = std::make_unique<MainWindowInsertController>(this);
     m_app = std::make_unique<MainWindowAppController>(this);
 
-    createActions();
-    createShapeMenu();
-    m_docks->createLayerDock();
-    m_docks->createPropertiesPanelDock();
-    m_docks->createViewModeDock();
-    createMenus();
-    createToolBars();
-    m_docks->attachViewModeToolBar();
-    m_docks->applyDockLayout();
-    createStatusBar();
-    connectSignals();
-    m_shortcuts->applyShortcutOverrides();
+    CreateActions();
+    CreateShapeMenu();
+    m_docks->CreateLayerDock();
+    m_docks->CreatePropertiesPanelDock();
+    m_docks->CreateViewModeDock();
+    CreateMenus();
+    CreateToolBars();
+    m_docks->AttachViewModeToolBar();
+    m_docks->ApplyDockLayout();
+    CreateStatusBar();
+    ConnectSignals();
+    m_shortcuts->ApplyShortcutOverrides();
 
     if (!m_settings.windowGeometry.isEmpty()) {
         restoreGeometry(m_settings.windowGeometry);
@@ -92,19 +92,19 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
         resize(1440, 900);
     }
 
-    updateModeUi();
-    updateTitle();
-    updateStatusBar();
-    updateActions();
-    updateBackgroundModeActions();
+    UpdateModeUi();
+    UpdateTitle();
+    UpdateStatusBar();
+    UpdateActions();
+    UpdateBackgroundModeActions();
 
     QTimer::singleShot(0, this, [this]() {
         if (m_view) {
-            m_view->fitAll();
+            m_view->FitAll();
             // 需求 1：启动保持 fitAll 的缩放不变，只把视口居中到画布中心，
             // 让首屏优先落在画布最中间的区域。
             if (m_scene) {
-                m_view->centerOn(m_scene->canvasRect().center());
+                m_view->centerOn(m_scene->CanvasRect().center());
             }
         }
     });
@@ -132,62 +132,62 @@ MainWindow::~MainWindow()
         m_view->setScene(nullptr);
     }
     if (m_scene) {
-        m_scene->setUndoStack(nullptr);
+        m_scene->SetUndoStack(nullptr);
     }
 }
 
-void MainWindow::createActions()
+void MainWindow::CreateActions()
 {
-    m_ui->buildActions();
+    m_ui->BuildActions();
 }
 
-void MainWindow::createShapeMenu()
+void MainWindow::CreateShapeMenu()
 {
-    m_ui->buildShapeMenu();
+    m_ui->BuildShapeMenu();
 }
 
-void MainWindow::updateCustomShapeMenu()
+void MainWindow::UpdateCustomShapeMenu()
 {
-    m_insert->updateCustomShapeMenu();
+    m_insert->UpdateCustomShapeMenu();
 }
 
 // 需求 7：自定义图形面板是独立浮动窗口，按钮/菜单只负责把它展开。
-void MainWindow::openCustomShapePanel(QWidget* anchor)
+void MainWindow::OpenCustomShapePanel(QWidget* anchor)
 {
     if (!m_customShapePanel) {
         m_customShapePanel = new CustomShapePanel(this);
     }
-    m_customShapePanel->showAt(anchor);
+    m_customShapePanel->ShowAt(anchor);
 }
 
 bool MainWindow::eventFilter(QObject* watched, QEvent* event)
 {
     if (m_docks) {
-        m_docks->handleMoveEvent(watched, event);
+        m_docks->HandleMoveEvent(watched, event);
     }
     return QMainWindow::eventFilter(watched, event);
 }
 
-void MainWindow::createMenus()
+void MainWindow::CreateMenus()
 {
-    m_ui->buildMenus();
+    m_ui->BuildMenus();
 }
 
-void MainWindow::createToolBars()
+void MainWindow::CreateToolBars()
 {
-    m_ui->buildToolBars();
+    m_ui->BuildToolBars();
 }
 
-void MainWindow::createStatusBar()
+void MainWindow::CreateStatusBar()
 {
-    m_ui->buildStatusBar();
+    m_ui->BuildStatusBar();
 }
 
-void MainWindow::connectSignals()
+void MainWindow::ConnectSignals()
 {
-    connect(m_undo, &QUndoStack::canUndoChanged, this, &MainWindow::updateActions);
-    connect(m_undo, &QUndoStack::canRedoChanged, this, &MainWindow::updateActions);
-    connect(m_undo, &QUndoStack::cleanChanged, this, &MainWindow::updateTitle);
+    connect(m_undo, &QUndoStack::canUndoChanged, this, &MainWindow::UpdateActions);
+    connect(m_undo, &QUndoStack::canRedoChanged, this, &MainWindow::UpdateActions);
+    connect(m_undo, &QUndoStack::cleanChanged, this, &MainWindow::UpdateTitle);
     connect(m_undo, &QUndoStack::undoTextChanged, this, [this](const QString& text) {
         m_undoAct->setToolTip(text.isEmpty() ? tr("Undo") : tr("Undo: %1").arg(text));
     });
@@ -200,87 +200,87 @@ void MainWindow::connectSignals()
             m_zoomBadge->setText(QStringLiteral("%1%").arg(qRound(zoom * 100.0)));
         }
     });
-    connect(m_view, &CanvasView::modeChanged, this, [this](ToolMode) { updateModeUi(); });
+    connect(m_view, &CanvasView::modeChanged, this, [this](ToolMode) { UpdateModeUi(); });
     connect(m_view, &CanvasView::statusMessage, this,
             [this](const QString& message) { statusBar()->showMessage(message, 4000); });
-    connect(m_view, &CanvasView::textPlacementRequested, this, &MainWindow::insertTextAt);
-    connect(m_view, &CanvasView::itemPropertiesRequested, this, &MainWindow::showItemProperties);
+    connect(m_view, &CanvasView::textPlacementRequested, this, &MainWindow::InsertTextAt);
+    connect(m_view, &CanvasView::itemPropertiesRequested, this, &MainWindow::ShowItemProperties);
 
     connect(m_scene, &CanvasScene::contentChanged, this, [this]() {
         if (m_itemPropertiesDialog &&
-            (!m_itemPropertiesDialog->item() || m_itemPropertiesDialog->item()->scene() != m_scene)) {
-            closeItemProperties();
+            (!m_itemPropertiesDialog->Item() || m_itemPropertiesDialog->Item()->scene() != m_scene)) {
+            CloseItemProperties();
         }
-        updateActions();
-        updateStatusBar();
+        UpdateActions();
+        UpdateStatusBar();
     });
-    connect(m_scene, &CanvasScene::layersChanged, this, &MainWindow::updateStatusBar);
-    connect(m_scene, &CanvasScene::activeLayerChanged, this, [this](int) { updateStatusBar(); });
-    connect(m_scene, &CanvasScene::selectionChanged, this, &MainWindow::updateActions);
-    connect(m_scene, &CanvasScene::selectionChanged, this, &MainWindow::updatePropertiesPanelDockVisibility);
-    connect(QApplication::clipboard(), &QClipboard::dataChanged, this, &MainWindow::updateActions);
+    connect(m_scene, &CanvasScene::layersChanged, this, &MainWindow::UpdateStatusBar);
+    connect(m_scene, &CanvasScene::activeLayerChanged, this, [this](int) { UpdateStatusBar(); });
+    connect(m_scene, &CanvasScene::selectionChanged, this, &MainWindow::UpdateActions);
+    connect(m_scene, &CanvasScene::selectionChanged, this, &MainWindow::UpdatePropertiesPanelDockVisibility);
+    connect(QApplication::clipboard(), &QClipboard::dataChanged, this, &MainWindow::UpdateActions);
     connect(m_scene, &CanvasScene::backgroundChanged, this, [this]() {
-        updateBackgroundModeActions();
-        updateActions();
+        UpdateBackgroundModeActions();
+        UpdateActions();
     });
     connect(m_scene, &CanvasScene::canvasSizeChanged, this, [this](const QSizeF&) {
         if (m_view->mode() == ToolMode::VIEW) {
-            m_view->fitAll();
+            m_view->FitAll();
         }
     });
 }
 
-void MainWindow::setToolMode(ToolMode mode)
+void MainWindow::SetToolMode(ToolMode mode)
 {
-    m_viewStatus->setToolMode(mode);
+    m_viewStatus->SetToolMode(mode);
 }
 
-void MainWindow::updateModeUi()
+void MainWindow::UpdateModeUi()
 {
-    m_viewStatus->updateModeUi();
+    m_viewStatus->UpdateModeUi();
 }
 
-void MainWindow::updateActions()
+void MainWindow::UpdateActions()
 {
-    m_viewStatus->updateActions();
+    m_viewStatus->UpdateActions();
 }
 
-void MainWindow::updateBackgroundModeActions()
+void MainWindow::UpdateBackgroundModeActions()
 {
-    m_viewStatus->updateBackgroundModeActions();
+    m_viewStatus->UpdateBackgroundModeActions();
 }
 
-void MainWindow::updateStatusBar()
+void MainWindow::UpdateStatusBar()
 {
-    m_viewStatus->updateStatusBar();
+    m_viewStatus->UpdateStatusBar();
 }
 
-void MainWindow::updateTitle()
+void MainWindow::UpdateTitle()
 {
-    m_document->updateTitle();
+    m_document->UpdateTitle();
 }
 
-void MainWindow::setBrushColor(const QColor& color, bool remember)
+void MainWindow::SetBrushColor(const QColor& color, bool remember)
 {
-    m_style->setBrushColor(color, remember);
+    m_style->SetBrushColor(color, remember);
 }
 
-void MainWindow::setBrushWidthUi(int width)
+void MainWindow::SetBrushWidthUi(int width)
 {
-    m_style->setBrushWidthUi(width);
+    m_style->SetBrushWidthUi(width);
 }
 
-void MainWindow::applyBrushWidth(int width)
+void MainWindow::ApplyBrushWidth(int width)
 {
-    setBrushWidthUi(width);
+    SetBrushWidthUi(width);
     m_settings.brushWidth = m_brushWidth;
-    m_settings.save();
-    m_style->applyStrokeWidthToSelection(m_brushWidth);
+    m_settings.Save();
+    m_style->ApplyStrokeWidthToSelection(m_brushWidth);
 }
 
-void MainWindow::setStrokeSmoothingUi(qreal tolerance)
+void MainWindow::SetStrokeSmoothingUi(qreal tolerance)
 {
-    m_style->setStrokeSmoothingUi(tolerance);
+    m_style->SetStrokeSmoothingUi(tolerance);
 }
 
 void MainWindow::SetStrokeStyle(Qt::PenStyle style)
@@ -288,7 +288,7 @@ void MainWindow::SetStrokeStyle(Qt::PenStyle style)
     m_style->SetStrokeStyle(style);
 }
 
-void MainWindow::focusStrokeWidthSpin()
+void MainWindow::FocusStrokeWidthSpin()
 {
     if (!m_widthSpin) {
         return;
@@ -303,85 +303,85 @@ void MainWindow::focusStrokeWidthSpin()
     }
 }
 
-void MainWindow::chooseBrushColor()
+void MainWindow::ChooseBrushColor()
 {
-    m_style->chooseBrushColor();
+    m_style->ChooseBrushColor();
 }
 
-void MainWindow::newCanvas()
+void MainWindow::NewCanvas()
 {
-    m_document->newCanvas();
+    m_document->NewCanvas();
 }
 
-void MainWindow::openCanvasDialog()
+void MainWindow::OpenCanvasDialog()
 {
-    m_document->openCanvasDialog();
+    m_document->OpenCanvasDialog();
 }
 
-bool MainWindow::openCanvasFile(const QString& path)
+bool MainWindow::OpenCanvasFile(const QString& path)
 {
-    return m_document->openCanvasFile(path);
+    return m_document->OpenCanvasFile(path);
 }
 
-bool MainWindow::saveCanvas()
+bool MainWindow::SaveCanvas()
 {
-    return m_document->saveCanvas();
+    return m_document->SaveCanvas();
 }
 
-bool MainWindow::saveCanvasAs()
+bool MainWindow::SaveCanvasAs()
 {
-    return m_document->saveCanvasAs();
+    return m_document->SaveCanvasAs();
 }
 
-void MainWindow::exportCanvas()
+void MainWindow::ExportCanvas()
 {
-    m_io->exportCanvas();
+    m_io->ExportCanvas();
 }
 
-void MainWindow::exportExcalidraw()
+void MainWindow::ExportExcalidraw()
 {
-    m_document->exportExcalidraw();
+    m_document->ExportExcalidraw();
 }
 
-void MainWindow::exportCustomShape()
+void MainWindow::ExportCustomShape()
 {
-    m_document->exportCustomShape();
+    m_document->ExportCustomShape();
 }
 
-void MainWindow::importImagesDialog()
+void MainWindow::ImportImagesDialog()
 {
-    m_io->importImagesDialog();
+    m_io->ImportImagesDialog();
 }
 
-void MainWindow::importOutlineImageDialog()
+void MainWindow::ImportOutlineImageDialog()
 {
-    m_io->importOutlineImageDialog();
+    m_io->ImportOutlineImageDialog();
 }
 
-void MainWindow::insertBrace(bool left)
+void MainWindow::InsertBrace(bool left)
 {
-    m_insert->insertBrace(left);
+    m_insert->InsertBrace(left);
 }
 
-void MainWindow::insertShape(ShapeType type, qreal triangleAngle1, qreal triangleAngle2, qreal cornerRatio,
+void MainWindow::InsertShape(ShapeType type, qreal triangleAngle1, qreal triangleAngle2, qreal cornerRatio,
                              qreal parallelogramAngle)
 {
-    m_insert->insertShape(type, triangleAngle1, triangleAngle2, cornerRatio, parallelogramAngle);
+    m_insert->InsertShape(type, triangleAngle1, triangleAngle2, cornerRatio, parallelogramAngle);
 }
 
-void MainWindow::insertCustomShape(const QString& filePath)
+void MainWindow::InsertCustomShape(const QString& filePath)
 {
-    m_insert->insertCustomShape(filePath);
+    m_insert->InsertCustomShape(filePath);
 }
 
-void MainWindow::openShapesFolder()
+void MainWindow::OpenShapesFolder()
 {
-    m_insert->openShapesFolder();
+    m_insert->OpenShapesFolder();
 }
 
-void MainWindow::updatePropertiesPanelDockVisibility()
+void MainWindow::UpdatePropertiesPanelDockVisibility()
 {
-    m_viewStatus->updatePropertiesPanelDockVisibility();
+    m_viewStatus->UpdatePropertiesPanelDockVisibility();
 }
 
 void MainWindow::SetFillStyle(FillStyle style)
@@ -389,54 +389,54 @@ void MainWindow::SetFillStyle(FillStyle style)
     m_style->SetFillStyle(style);
 }
 
-void MainWindow::chooseFillColor()
+void MainWindow::ChooseFillColor()
 {
-    m_style->chooseFillColor();
+    m_style->ChooseFillColor();
 }
 
-void MainWindow::chooseStrokeColor()
+void MainWindow::ChooseStrokeColor()
 {
-    m_style->chooseStrokeColor();
+    m_style->ChooseStrokeColor();
 }
 
-void MainWindow::updateFillActions()
+void MainWindow::UpdateFillActions()
 {
-    m_style->updateFillActions();
+    m_style->UpdateFillActions();
 }
 
-void MainWindow::insertTextAt(const QPointF& scenePos)
+void MainWindow::InsertTextAt(const QPointF& scenePos)
 {
-    m_insert->insertTextAt(scenePos);
+    m_insert->InsertTextAt(scenePos);
 }
 
-void MainWindow::showSelectedItemProperties()
+void MainWindow::ShowSelectedItemProperties()
 {
-    m_editActions->showSelectedItemProperties();
+    m_editActions->ShowSelectedItemProperties();
 }
 
-void MainWindow::showItemProperties(CanvasItem* item)
+void MainWindow::ShowItemProperties(CanvasItem* item)
 {
-    m_editActions->showItemProperties(item);
+    m_editActions->ShowItemProperties(item);
 }
 
-void MainWindow::closeItemProperties()
+void MainWindow::CloseItemProperties()
 {
-    m_editActions->closeItemProperties();
+    m_editActions->CloseItemProperties();
 }
 
-void MainWindow::rotateSelected(qreal degrees)
+void MainWindow::RotateSelected(qreal degrees)
 {
-    m_editActions->rotateSelected(degrees);
+    m_editActions->RotateSelected(degrees);
 }
 
-void MainWindow::applyAlignment(Alignment::Mode mode)
+void MainWindow::ApplyAlignment(Alignment::Mode mode)
 {
-    m_editActions->applyAlignment(mode);
+    m_editActions->ApplyAlignment(mode);
 }
 
-void MainWindow::applyBoolOperation(BoolOps::Operation operation)
+void MainWindow::ApplyBoolOperation(BoolOps::Operation operation)
 {
-    m_editActions->applyBoolOperation(operation);
+    m_editActions->ApplyBoolOperation(operation);
 }
 
 void MainWindow::keyPressEvent(QKeyEvent* event)
@@ -446,22 +446,22 @@ void MainWindow::keyPressEvent(QKeyEvent* event)
         m_boolChordPending = false;
         switch (event->key()) {
         case Qt::Key_U:
-            applyBoolOperation(BoolOps::Operation::UNION);
+            ApplyBoolOperation(BoolOps::Operation::UNION);
             return;
         case Qt::Key_X:
-            applyBoolOperation(BoolOps::Operation::XOR);
+            ApplyBoolOperation(BoolOps::Operation::XOR);
             return;
         case Qt::Key_I:
-            applyBoolOperation(BoolOps::Operation::INTERSECT);
+            ApplyBoolOperation(BoolOps::Operation::INTERSECT);
             return;
         case Qt::Key_S:
-            applyBoolOperation(BoolOps::Operation::SUBTRACT);
+            ApplyBoolOperation(BoolOps::Operation::SUBTRACT);
             return;
         case Qt::Key_F:
-            applyBoolOperation(BoolOps::Operation::FRAGMENT);
+            ApplyBoolOperation(BoolOps::Operation::FRAGMENT);
             return;
         case Qt::Key_L:
-            applyBoolOperation(BoolOps::Operation::LINE_SPLIT);
+            ApplyBoolOperation(BoolOps::Operation::LINE_SPLIT);
             return;
         default:
             break;
@@ -476,66 +476,66 @@ void MainWindow::keyPressEvent(QKeyEvent* event)
     QMainWindow::keyPressEvent(event);
 }
 
-void MainWindow::replaceCanvasBackgroundImage()
+void MainWindow::ReplaceCanvasBackgroundImage()
 {
-    m_background->replaceCanvasBackgroundImage();
+    m_background->ReplaceCanvasBackgroundImage();
 }
 
-void MainWindow::setBackgroundColor()
+void MainWindow::SetBackgroundColor()
 {
-    m_background->setBackgroundColor();
+    m_background->SetBackgroundColor();
 }
 
-void MainWindow::clearBackground()
+void MainWindow::ClearBackground()
 {
-    m_background->clearBackground();
+    m_background->ClearBackground();
 }
 
-void MainWindow::applyUiLanguage()
+void MainWindow::ApplyUiLanguage()
 {
-    m_app->applyUiLanguage();
+    m_app->ApplyUiLanguage();
 }
 
-void MainWindow::showSettings()
+void MainWindow::ShowSettings()
 {
-    m_app->showSettings();
+    m_app->ShowSettings();
 }
 
-void MainWindow::updateCanvasesMenu()
+void MainWindow::UpdateCanvasesMenu()
 {
-    m_document->updateCanvasesMenu();
+    m_document->UpdateCanvasesMenu();
 }
 
-void MainWindow::openCanvasesFolder()
+void MainWindow::OpenCanvasesFolder()
 {
-    m_document->openCanvasesFolder();
+    m_document->OpenCanvasesFolder();
 }
 
-void MainWindow::showShortcuts()
+void MainWindow::ShowShortcuts()
 {
-    m_shortcuts->showShortcuts();
+    m_shortcuts->ShowShortcuts();
 }
 
-void MainWindow::showAbout()
+void MainWindow::ShowAbout()
 {
-    m_app->showAbout();
+    m_app->ShowAbout();
 }
 
 void MainWindow::closeEvent(QCloseEvent* event)
 {
-    m_view->finishCurrentStroke();
-    if (!m_document->maybeSave()) {
+    m_view->FinishCurrentStroke();
+    if (!m_document->MaybeSave()) {
         event->ignore();
         return;
     }
 
-    m_app->persistBeforeExit();
+    m_app->PersistBeforeExit();
     event->accept();
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent* event)
 {
-    if (m_io->acceptsDropUrls(event->mimeData())) {
+    if (m_io->AcceptsDropUrls(event->mimeData())) {
         event->acceptProposedAction();
     } else {
         event->ignore();
@@ -544,5 +544,5 @@ void MainWindow::dragEnterEvent(QDragEnterEvent* event)
 
 void MainWindow::dropEvent(QDropEvent* event)
 {
-    m_io->handleDrop(event);
+    m_io->HandleDrop(event);
 }

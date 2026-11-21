@@ -16,20 +16,20 @@ class CanvasResizeController {
 
     explicit CanvasResizeController(CanvasView* view, CanvasScene* scene);
 
-    bool isResizing() const { return m_resizingCanvas; }
+    bool IsResizing() const { return m_resizingCanvas; }
 
     Handle HandleAt(const QPoint& viewportPos) const;
-    static Qt::CursorShape handleCursor(Handle handle);
+    static Qt::CursorShape HandleCursor(Handle handle);
 
-    bool beginResize(const QPoint& viewportPos);
-    void updateResize(const QPointF& scenePos);
-    void endResize();
-    void updateHoverCursor(const QPoint& viewportPos, bool panActive, bool strokeActive);
-    void resetHoverOnLeave();
-    void drawHandles(QPainter* painter);
+    bool BeginResize(const QPoint& viewportPos);
+    void UpdateResize(const QPointF& scenePos);
+    void EndResize();
+    void UpdateHoverCursor(const QPoint& viewportPos, bool panActive, bool strokeActive);
+    void ResetHoverOnLeave();
+    void DrawHandles(QPainter* painter);
 
   private:
-    QRectF rectForDrag(const QPointF& scenePos) const;
+    QRectF RectForDrag(const QPointF& scenePos) const;
 
     CanvasView* m_view = nullptr;
     CanvasScene* m_scene = nullptr;

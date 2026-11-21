@@ -10,20 +10,20 @@ class DocumentController {
   public:
     explicit DocumentController(MainWindow* window);
 
-    void newCanvas();
-    void openCanvasDialog();
-    bool openCanvasFile(const QString& path);
-    bool loadCanvasFile(const QString& path, bool showErrors);
-    bool saveCanvas();
-    bool saveCanvasAs();
-    void exportExcalidraw();
-    void exportCustomShape();
-    bool saveToFile(const QString& path);
-    bool maybeSave();
-    void updateCanvasesMenu();
-    void openCanvasesFolder();
-    void updateTitle();
-    QString documentName() const;
+    void NewCanvas();
+    void OpenCanvasDialog();
+    bool OpenCanvasFile(const QString& path);
+    bool LoadCanvasFile(const QString& path, bool showErrors);
+    bool SaveCanvas();
+    bool SaveCanvasAs();
+    void ExportExcalidraw();
+    void ExportCustomShape();
+    bool SaveToFile(const QString& path);
+    bool MaybeSave();
+    void UpdateCanvasesMenu();
+    void OpenCanvasesFolder();
+    void UpdateTitle();
+    QString DocumentName() const;
 
   private:
     MainWindow* m_window = nullptr;

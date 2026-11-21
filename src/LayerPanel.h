@@ -19,21 +19,21 @@ class LayerPanel : public QWidget {
   public:
     explicit LayerPanel(CanvasScene* scene, QWidget* parent = nullptr);
 
-    QList<int> selectedLayerIds() const;
+    QList<int> SelectedLayerIds() const;
 
   public slots:
-    void refresh();
+    void Refresh();
 
   signals:
     void statusMessage(const QString& message);
 
   private:
-    LayerRow* createRow(const CanvasLayer& layer, int index, int itemCount);
-    void scheduleRefresh();
-    void activateCurrentLayer();
-    void syncActiveLayer();
-    void syncSceneSelection();
-    void removeSelectedLayers();
+    LayerRow* CreateRow(const CanvasLayer& layer, int index, int itemCount);
+    void ScheduleRefresh();
+    void ActivateCurrentLayer();
+    void SyncActiveLayer();
+    void SyncSceneSelection();
+    void RemoveSelectedLayers();
 
     CanvasScene* m_scene = nullptr;
     LayerActions* m_actions = nullptr;

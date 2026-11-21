@@ -11,12 +11,12 @@
 #include <QWidget>
 #include <QtMath>
 
-QRectF CanvasScene::canvasRect() const
+QRectF CanvasScene::CanvasRect() const
 {
     return QRectF(m_canvasOrigin, m_canvasSize);
 }
 
-void CanvasScene::applyCanvasRect(const QRectF& rect)
+void CanvasScene::ApplyCanvasRect(const QRectF& rect)
 {
     const QRectF normalized = rect.normalized();
     const QSizeF bounded(
@@ -29,31 +29,31 @@ void CanvasScene::applyCanvasRect(const QRectF& rect)
     }
     m_canvasOrigin = origin;
     m_canvasSize = bounded;
-    updateSceneExtent();
+    UpdateSceneExtent();
     update();
     emit canvasSizeChanged(m_canvasSize);
 }
 
-void CanvasScene::applyCanvasSize(const QSizeF& size)
+void CanvasScene::ApplyCanvasSize(const QSizeF& size)
 {
-    applyCanvasRect(QRectF(m_canvasOrigin, size));
+    ApplyCanvasRect(QRectF(m_canvasOrigin, size));
 }
 
-void CanvasScene::setCanvasSizeWithUndo(const QSizeF& size)
+void CanvasScene::SetCanvasSizeWithUndo(const QSizeF& size)
 {
-    setCanvasRectWithUndo(QRectF(m_canvasOrigin, size));
+    SetCanvasRectWithUndo(QRectF(m_canvasOrigin, size));
 }
 
-void CanvasScene::setCanvasRectWithUndo(const QRectF& rect)
+void CanvasScene::SetCanvasRectWithUndo(const QRectF& rect)
 {
-    const QRectF before = canvasRect();
-    applyCanvasRect(rect);
-    commitCanvasRect(before);
+    const QRectF before = CanvasRect();
+    ApplyCanvasRect(rect);
+    CommitCanvasRect(before);
 }
 
-void CanvasScene::commitCanvasRect(const QRectF& before)
+void CanvasScene::CommitCanvasRect(const QRectF& before)
 {
-    const QRectF after = canvasRect();
+    const QRectF after = CanvasRect();
     if (before == after) {
         return;
     }
@@ -62,14 +62,14 @@ void CanvasScene::commitCanvasRect(const QRectF& before)
     }
 }
 
-void CanvasScene::setCanvasBackground(const CanvasBackground& background)
+void CanvasScene::SetCanvasBackground(const CanvasBackground& background)
 {
     m_background = background;
     update();
     emit backgroundChanged();
 }
 
-void CanvasScene::replaceCanvasBackground(const CanvasBackground& background, const QString& text)
+void CanvasScene::ReplaceCanvasBackground(const CanvasBackground& background, const QString& text)
 {
     if (background == m_background) {
         return;
@@ -79,11 +79,11 @@ void CanvasScene::replaceCanvasBackground(const CanvasBackground& background, co
         m_undoStack->push(
             new BackgroundCommand(this, m_background, background, text.isEmpty() ? tr("Change background") : text));
     } else {
-        setCanvasBackground(background);
+        SetCanvasBackground(background);
     }
 }
 
-void CanvasScene::setShowGrid(bool enabled)
+void CanvasScene::SetShowGrid(bool enabled)
 {
     if (m_showGrid == enabled) {
         return;
@@ -96,7 +96,7 @@ QRectF CanvasScene::ContentRect() const
 {
     QRectF rect;
     bool hasItem = false;
-    const QList<CanvasItem*> items = canvasItems();
+    const QList<CanvasItem*> items = CanvasItems();
     for (CanvasItem* item : items) {
         if (!item->isVisible()) {
             continue;
@@ -115,9 +115,9 @@ QRectF CanvasScene::ContentRect() const
     return hasItem ? rect : QRectF();
 }
 
-void CanvasScene::updateSceneExtent()
+void CanvasScene::UpdateSceneExtent()
 {
-    QRectF extent = canvasRect();
+    QRectF extent = CanvasRect();
     const QRectF content = ContentRect();
     if (!content.isEmpty()) {
         extent = extent.united(content);
@@ -128,7 +128,7 @@ void CanvasScene::updateSceneExtent()
     }
 }
 
-QImage CanvasScene::renderImage(const QRectF& area, qreal scale)
+QImage CanvasScene::RenderImage(const QRectF& area, qreal scale)
 {
     if (area.isEmpty() || scale <= 0.0) {
         return QImage();
@@ -156,21 +156,21 @@ QImage CanvasScene::renderImage(const QRectF& area, qreal scale)
     return image;
 }
 
-QImage CanvasScene::renderLayerImage(const QRectF& area, qreal scale, int layerId)
+QImage CanvasScene::RenderLayerImage(const QRectF& area, qreal scale, int layerId)
 {
-    if (!hasLayer(layerId)) {
+    if (!HasLayer(layerId)) {
         return QImage();
     }
 
-    const QList<CanvasItem*> items = canvasItems();
+    const QList<CanvasItem*> items = CanvasItems();
     QList<bool> previousVisibility;
     previousVisibility.reserve(items.size());
     for (CanvasItem* item : items) {
         previousVisibility.append(item->isVisible());
-        item->setVisible(item->LayerId() == layerId && isLayerVisible(layerId));
+        item->setVisible(item->LayerId() == layerId && IsLayerVisible(layerId));
     }
 
-    QImage image = renderImage(area, scale);
+    QImage image = RenderImage(area, scale);
 
     for (int i = 0; i < items.size() && i < previousVisibility.size(); ++i) {
         items.at(i)->setVisible(previousVisibility.at(i));
@@ -180,7 +180,7 @@ QImage CanvasScene::renderLayerImage(const QRectF& area, qreal scale, int layerI
 
 void CanvasScene::drawBackground(QPainter* painter, const QRectF& rect)
 {
-    const QRectF canvas = canvasRect();
+    const QRectF canvas = CanvasRect();
     const QRectF area = rect.intersected(canvas);
     if (area.isEmpty()) {
         return;
@@ -188,7 +188,7 @@ void CanvasScene::drawBackground(QPainter* painter, const QRectF& rect)
 
     painter->save();
     painter->setClipRect(rect);
-    drawCanvasBackground(painter, area, !m_exporting && m_showGrid);
+    DrawCanvasBackground(painter, area, !m_exporting && m_showGrid);
     painter->restore();
 
     if (!m_exporting) {
@@ -201,13 +201,13 @@ void CanvasScene::drawBackground(QPainter* painter, const QRectF& rect)
     }
 }
 
-void CanvasScene::drawCanvasBackground(QPainter* painter, const QRectF& area, bool includeGrid) const
+void CanvasScene::DrawCanvasBackground(QPainter* painter, const QRectF& area, bool includeGrid) const
 {
-    const QRectF canvas = canvasRect();
+    const QRectF canvas = CanvasRect();
 
     // 默认背景层为无色（None）：不铺任何底色，画布区域保持纯透明；
     // 背景层隐藏时同样不绘制底，仅在设置了纯色或背景图时才覆盖画布。
-    if (isLayerVisible(BackgroundLayerId)) {
+    if (IsLayerVisible(BackgroundLayerId)) {
         switch (m_background.type) {
         case BackgroundType::NONE:
             break;
@@ -237,13 +237,13 @@ void CanvasScene::drawCanvasBackground(QPainter* painter, const QRectF& area, bo
 
     // 透明背景：仅在屏幕视图上用白 / 浅灰棋盘格标识透明区域；离屏渲染与导出图保持纯透明，不画棋盘。
     const bool onScreen = dynamic_cast<const QWidget*>(painter->device()) != nullptr;
-    if (onScreen && !m_exporting && isLayerVisible(BackgroundLayerId) && m_background.type == BackgroundType::NONE) {
-        drawCheckerboard(painter, canvas);
+    if (onScreen && !m_exporting && IsLayerVisible(BackgroundLayerId) && m_background.type == BackgroundType::NONE) {
+        DrawCheckerboard(painter, canvas);
     }
 
     // 有色背景或背景图时，棋盘格被遮住，长度参照改为 32px 参考网格（主网格 160px），
     // 不依赖用户是否手动打开辅助网格，保证任何背景都有统一的 1 格 = 32px 参照。
-    const bool backgroundGrid = m_background.type != BackgroundType::NONE && isLayerVisible(BackgroundLayerId);
+    const bool backgroundGrid = m_background.type != BackgroundType::NONE && IsLayerVisible(BackgroundLayerId);
     if (!includeGrid && !backgroundGrid) {
         return;
     }
@@ -288,7 +288,7 @@ void CanvasScene::drawCanvasBackground(QPainter* painter, const QRectF& area, bo
     painter->restore();
 }
 
-void CanvasScene::drawCheckerboard(QPainter* painter, const QRectF& canvas) const
+void CanvasScene::DrawCheckerboard(QPainter* painter, const QRectF& canvas) const
 {
     const qreal zoom = painter->worldTransform().m11();
     if (zoom < 0.18) {

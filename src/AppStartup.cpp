@@ -153,7 +153,7 @@ QToolTip { background: #1F2937; color: #F9FAFB; border: none; padding: 5px 8px; 
 
 namespace AppStartup {
 
-void prepareEnvironment(const CommandLineOptions& options)
+void PrepareEnvironment(const CommandLineOptions& options)
 {
     if (options.selfTest && qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM")) {
         qputenv("QT_QPA_PLATFORM", "offscreen");
@@ -171,13 +171,13 @@ void prepareEnvironment(const CommandLineOptions& options)
     }
 }
 
-void initialize(QApplication& app)
+void Initialize(QApplication& app)
 {
     QCoreApplication::setOrganizationName(QStringLiteral("ZoneTong"));
     QCoreApplication::setOrganizationDomain(QStringLiteral("zonetong.github.io"));
     QCoreApplication::setApplicationName(QStringLiteral("StoryBoard"));
     QCoreApplication::setApplicationVersion(QString::fromLatin1(STORYBOARD_VERSION));
-    uiInitializeLanguage();
+    UiInitializeLanguage();
     app.setApplicationDisplayName(QCoreApplication::tr("StoryBoard Canvas"));
     app.setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));
     applyApplicationStyle(app);

@@ -13,11 +13,11 @@
 // 剪贴板序列化与方向键微调：复制走图元自身的 toJson/fromJson，粘贴复用副本的
 // 命名、层高与撤销入口；微调只改位置，复用几何撤销命令，一次按键一条记录。
 
-QJsonArray CanvasScene::clipboardItems() const
+QJsonArray CanvasScene::ClipboardItems() const
 {
     QJsonArray array;
-    for (CanvasItem* item : selectedCanvasItems()) {
-        if (!item || !isItemEditable(item)) {
+    for (CanvasItem* item : SelectedCanvasItems()) {
+        if (!item || !IsItemEditable(item)) {
             continue;
         }
         QJsonObject json = item->ToJson();
@@ -27,7 +27,7 @@ QJsonArray CanvasScene::clipboardItems() const
     return array;
 }
 
-int CanvasScene::pasteClipboardItems(const QJsonArray& items)
+int CanvasScene::PasteClipboardItems(const QJsonArray& items)
 {
     if (items.isEmpty()) {
         return 0;
@@ -37,7 +37,7 @@ int CanvasScene::pasteClipboardItems(const QJsonArray& items)
     QSet<QString> reservedNames;
     for (const QJsonValue& value : items) {
         const QJsonObject json = value.toObject();
-        CanvasItem* copy = createItemForJson(json);
+        CanvasItem* copy = CreateItemForJson(json);
         if (!copy) {
             continue;
         }
@@ -51,7 +51,7 @@ int CanvasScene::pasteClipboardItems(const QJsonArray& items)
         if (sourceName.isEmpty()) {
             copy->SetName(QString());
         } else {
-            const QString copyName = uniqueItemNameFor(sourceName, copy, reservedNames);
+            const QString copyName = UniqueItemNameFor(sourceName, copy, reservedNames);
             copy->SetName(copyName);
             reservedNames.insert(copyName.toCaseFolded());
         }
@@ -62,7 +62,7 @@ int CanvasScene::pasteClipboardItems(const QJsonArray& items)
     }
 
     // 需求 2：粘贴落点是视口中心；整块内容超过画布 72% 时先等比缩到 72%，再夹回画布内。
-    const QRectF canvas = canvasRect();
+    const QRectF canvas = CanvasRect();
     QRectF block;
     for (CanvasItem* copy : std::as_const(copies)) {
         const QRectF itemRect = copy->sceneBoundingRect();
@@ -85,7 +85,7 @@ int CanvasScene::pasteClipboardItems(const QJsonArray& items)
     if (!qFuzzyCompare(scale, 1.0) && !block.isEmpty()) {
         for (CanvasItem* copy : std::as_const(copies)) {
             const QPointF anchor = copy->pos();
-            copy->SetContentSize(copy->contentSize() * scale);
+            copy->SetContentSize(copy->ContentSize() * scale);
             copy->setPos(block.topLeft() + (anchor - block.topLeft()) * scale);
         }
         block = QRectF(block.topLeft(), block.size() * scale);
@@ -95,20 +95,20 @@ int CanvasScene::pasteClipboardItems(const QJsonArray& items)
         copy->setPos(copy->pos() + delta);
     }
 
-    addItemsWithUndo(copies, tr("Paste items"));
+    AddItemsWithUndo(copies, tr("Paste items"));
     clearSelection();
     for (CanvasItem* copy : copies) {
-        if (isItemEditable(copy)) {
+        if (IsItemEditable(copy)) {
             copy->setSelected(true);
         }
     }
-    updateSceneExtent();
+    UpdateSceneExtent();
     update();
     emit contentChanged();
     return copies.size();
 }
 
-int CanvasScene::nudgeSelected(const QPointF& delta)
+int CanvasScene::NudgeSelected(const QPointF& delta)
 {
     if (m_mode != ToolMode::EDIT || delta.isNull()) {
         return 0;
@@ -118,18 +118,18 @@ int CanvasScene::nudgeSelected(const QPointF& delta)
     // 与拖拽移动组的行为一致；多个选中目标之间按图元指针去重。
     QList<CanvasItem*> targets;
     QSet<CanvasItem*> seen;
-    for (CanvasItem* item : selectedCanvasItems()) {
-        if (!item || !isItemEditable(item)) {
+    for (CanvasItem* item : SelectedCanvasItems()) {
+        if (!item || !IsItemEditable(item)) {
             continue;
         }
         QList<CanvasItem*> members;
         if (item->GroupId() > 0) {
-            members = itemsInGroupTree(outermostGroup(item->GroupId()));
+            members = ItemsInGroupTree(OutermostGroup(item->GroupId()));
         } else {
             members.append(item);
         }
         for (CanvasItem* member : members) {
-            if (member && isItemEditable(member) && !seen.contains(member)) {
+            if (member && IsItemEditable(member) && !seen.contains(member)) {
                 seen.insert(member);
                 targets.append(member);
             }
@@ -144,15 +144,15 @@ int CanvasScene::nudgeSelected(const QPointF& delta)
     before.reserve(targets.size());
     after.reserve(targets.size());
     for (CanvasItem* item : targets) {
-        before.append({item, item->pos(), item->contentSize()});
+        before.append({item, item->pos(), item->ContentSize()});
     }
     for (CanvasItem* item : targets) {
         item->setPos(item->pos() + delta);
     }
     for (CanvasItem* item : targets) {
-        after.append({item, item->pos(), item->contentSize()});
+        after.append({item, item->pos(), item->ContentSize()});
     }
     // 标记为 nudge 合并：按住方向键连续微调时并入同一条撤销记录。
-    pushGeometry(before, after, tr("Nudge items"), QStringLiteral("nudge"));
+    PushGeometry(before, after, tr("Nudge items"), QStringLiteral("nudge"));
     return targets.size();
 }

@@ -23,7 +23,7 @@ bool ringContains(const QPainterPath& ring, const QPolygonF& points)
 
 namespace PathRegions {
 
-QList<QPainterPath> splitDisjoint(const QPainterPath& path)
+QList<QPainterPath> SplitDisjoint(const QPainterPath& path)
 {
     QList<QPainterPath> pieces;
     if (path.isEmpty()) {
@@ -106,7 +106,7 @@ QList<QPainterPath> splitDisjoint(const QPainterPath& path)
     return pieces;
 }
 
-qreal area(const QPainterPath& path)
+qreal Area(const QPainterPath& path)
 {
     // toFillPolygons 已按填充规则把外轮廓与孔洞解成互不重叠的多边形，
     // 各环鞋带公式面积取绝对值求和即填充面积。

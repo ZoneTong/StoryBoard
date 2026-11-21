@@ -21,14 +21,14 @@ class CurveItem : public LineItemAbstract {
     QString Kind() const override { return QStringLiteral("freehand"); }
     QString DisplayName() const override;
 
-    void beginStroke(const QPointF& scenePos, const QColor& color, qreal width);
-    void appendScenePoint(const QPointF& scenePos);
+    void BeginStroke(const QPointF& scenePos, const QColor& color, qreal width);
+    void AppendScenePoint(const QPointF& scenePos);
     // 用算好的场景坐标直接构造一条曲线（图片线稿化等程序化场景使用）。
     void SetStrokePoints(const QVector<QPointF>& scenePoints, const QColor& color, qreal width, qreal tolerance = 0.0,
                          bool polyline = false) override;
     // tolerance 是绘制期拟合参数：0 表示按采样点直接连成曲线段，>0 时先抽点再拟合。
-    void endStroke(qreal tolerance = 0.0);
-    bool isEmpty() const;
+    void EndStroke(qreal tolerance = 0.0);
+    bool IsEmpty() const;
 
     CurveSource StrokeSource() const { return m_strokeSource; }
     void SetStrokeSource(CurveSource source);

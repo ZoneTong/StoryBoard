@@ -4,10 +4,10 @@
 
 CubeItem::CubeItem()
 {
-    SetContentSize(defaultContentSize());
+    SetContentSize(DefaultContentSize());
 }
 
 QPainterPath CubeItem::ShapePath(const QRectF& rect) const
 {
-    return ShapePathBuilder::cubePath(rect);
+    return ShapePathBuilder::CubePath(rect);
 }

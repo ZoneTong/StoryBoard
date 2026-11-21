@@ -25,10 +25,10 @@ class SineItem : public LineItemAbstract {
     QRectF FrameRect() const override;
 
     Params params() const { return m_params; }
-    void setParams(const Params& params);
+    void SetParams(const Params& params);
 
     // 插入入口：在场景矩形内按当前参数生成波形。
-    void setWaveGeometry(const QPointF& topLeftScene, const QSizeF& size, const QColor& color, qreal width);
+    void SetWaveGeometry(const QPointF& topLeftScene, const QSizeF& size, const QColor& color, qreal width);
 
     bool SupportsSineWave() const override { return true; }
     ParamState paramState() const override;
@@ -46,8 +46,8 @@ class SineItem : public LineItemAbstract {
 
   private:
     // 参数变化后按“上次波形框相对内容框的比例”重建，保证拉伸过再改参数不会跳。
-    void rebuild();
-    QVector<QPointF> wavePoints(const QRectF& frameScene) const;
+    void Rebuild();
+    QVector<QPointF> WavePoints(const QRectF& frameScene) const;
 
     Params m_params;
     QRectF m_refFrame{0.0, 0.0, 1.0, 1.0};

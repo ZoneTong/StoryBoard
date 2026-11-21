@@ -82,7 +82,7 @@
 #include <cstdlib>
 
 
-void selftest::runLineArtConverterTests(Context& ctx)
+void selftest::RunLineArtConverterTests(Context& ctx)
 {
     // 需求：导入图片线稿化 —— 图片里的各色块轮廓要描成曲线图元，线宽固定为 1。
     QImage artwork(240, 160, QImage::Format_RGB32);
@@ -102,9 +102,9 @@ void selftest::runLineArtConverterTests(Context& ctx)
         painter.drawPath(wave);
     }
 
-    const LineArtConverter::Result traced = LineArtConverter::extract(artwork);
-    ctx.check(traced.ok, QStringLiteral("图片线稿化提取成功"), traced.error);
-    ctx.check(traced.outlines.size() >= 3 && traced.outlines.size() <= 8,
+    const LineArtConverter::Result traced = LineArtConverter::Extract(artwork);
+    ctx.Check(traced.ok, QStringLiteral("图片线稿化提取成功"), traced.error);
+    ctx.Check(traced.outlines.size() >= 3 && traced.outlines.size() <= 8,
               QStringLiteral("线稿化把每一块颜色描成一条轮廓"),
               QStringLiteral("outlines=%1 regions=%2").arg(traced.outlines.size()).arg(traced.regionCount));
 
@@ -125,26 +125,26 @@ void selftest::runLineArtConverterTests(Context& ctx)
             redBlockFound = true;
         }
     }
-    ctx.check(closedLoops, QStringLiteral("线稿轮廓都是闭合回路"));
-    ctx.check(insideImage, QStringLiteral("线稿轮廓落在图片范围内"));
-    ctx.check(redBlockFound, QStringLiteral("线稿曲线颜色取自对应色块"));
+    ctx.Check(closedLoops, QStringLiteral("线稿轮廓都是闭合回路"));
+    ctx.Check(insideImage, QStringLiteral("线稿轮廓落在图片范围内"));
+    ctx.Check(redBlockFound, QStringLiteral("线稿曲线颜色取自对应色块"));
 
     CanvasScene lineArtScene;
     QUndoStack lineArtUndo;
     lineArtUndo.setUndoLimit(30);
-    lineArtScene.setUndoStack(&lineArtUndo);
-    lineArtScene.applyCanvasSize(QSizeF(240.0, 160.0));
+    lineArtScene.SetUndoStack(&lineArtUndo);
+    lineArtScene.ApplyCanvasSize(QSizeF(240.0, 160.0));
     QList<CanvasItem*> lineArtItems;
     for (const LineArtConverter::Outline& outline : traced.outlines) {
         auto* stroke = new CurveItem();
         stroke->SetStrokePoints(outline.points, outline.color, LineArtConverter::Options().strokeWidth, 0.0, true);
         lineArtItems.append(stroke);
     }
-    ctx.check(!lineArtItems.isEmpty(), QStringLiteral("线稿轮廓生成曲线图元"));
+    ctx.Check(!lineArtItems.isEmpty(), QStringLiteral("线稿轮廓生成曲线图元"));
     if (!lineArtItems.isEmpty()) {
-        lineArtScene.addItemsWithUndo(lineArtItems, QStringLiteral("导入图片线稿化"));
-        ctx.check(lineArtScene.canvasItemCount() == lineArtItems.size(), QStringLiteral("线稿曲线加入画布"));
-        ctx.check(lineArtUndo.count() == 1, QStringLiteral("线稿化整体只占一条撤销记录"));
+        lineArtScene.AddItemsWithUndo(lineArtItems, QStringLiteral("导入图片线稿化"));
+        ctx.Check(lineArtScene.CanvasItemCount() == lineArtItems.size(), QStringLiteral("线稿曲线加入画布"));
+        ctx.Check(lineArtUndo.count() == 1, QStringLiteral("线稿化整体只占一条撤销记录"));
 
         int thinStrokes = 0;
         for (CanvasItem* item : lineArtItems) {
@@ -152,7 +152,7 @@ void selftest::runLineArtConverterTests(Context& ctx)
                 ++thinStrokes;
             }
         }
-        ctx.check(thinStrokes == lineArtItems.size(), QStringLiteral("线稿曲线线宽都是 1"),
+        ctx.Check(thinStrokes == lineArtItems.size(), QStringLiteral("线稿曲线线宽都是 1"),
                   QStringLiteral("thin=%1 total=%2").arg(thinStrokes).arg(lineArtItems.size()));
 
         int linearStrokes = 0;
@@ -161,7 +161,7 @@ void selftest::runLineArtConverterTests(Context& ctx)
                 ++linearStrokes;
             }
         }
-        ctx.check(linearStrokes == lineArtItems.size(), QStringLiteral("线稿曲线按折线绘制，方角不会被磨圆"));
+        ctx.Check(linearStrokes == lineArtItems.size(), QStringLiteral("线稿曲线按折线绘制，方角不会被磨圆"));
 
         bool linearPersisted = false;
         if (auto* firstStroke = dynamic_cast<CurveItem*>(lineArtItems.constFirst())) {
@@ -169,9 +169,9 @@ void selftest::runLineArtConverterTests(Context& ctx)
             reloadedStroke.FromJson(firstStroke->ToJson());
             linearPersisted = reloadedStroke.IsPolyline() && qFuzzyCompare(reloadedStroke.StrokeWidth(), 1.0);
         }
-        ctx.check(linearPersisted, QStringLiteral("折线线稿曲线可以存取还原"));
+        ctx.Check(linearPersisted, QStringLiteral("折线线稿曲线可以存取还原"));
 
-        const QImage rendered = lineArtScene.renderImage(QRectF(0.0, 0.0, 240.0, 160.0), 2.0);
+        const QImage rendered = lineArtScene.RenderImage(QRectF(0.0, 0.0, 240.0, 160.0), 2.0);
         int inkPixels = 0;
         for (int y = 0; y < rendered.height(); ++y) {
             for (int x = 0; x < rendered.width(); ++x) {
@@ -180,18 +180,18 @@ void selftest::runLineArtConverterTests(Context& ctx)
                 }
             }
         }
-        ctx.check(inkPixels > 1000, QStringLiteral("线稿曲线在画布上可见"), QStringLiteral("ink=%1").arg(inkPixels));
+        ctx.Check(inkPixels > 1000, QStringLiteral("线稿曲线在画布上可见"), QStringLiteral("ink=%1").arg(inkPixels));
 
         const QString lineArtPath = QDir(ctx.workDirectory).filePath(QStringLiteral("lineart.png"));
-        ctx.check(rendered.save(lineArtPath), QStringLiteral("线稿渲染结果可保存为 PNG"), lineArtPath);
+        ctx.Check(rendered.save(lineArtPath), QStringLiteral("线稿渲染结果可保存为 PNG"), lineArtPath);
     }
-    lineArtScene.setUndoStack(nullptr);
+    lineArtScene.SetUndoStack(nullptr);
 
     // 纯色图片没有可描的色块，应当明确报告而不是生成空图元。
     QImage flat(64, 64, QImage::Format_RGB32);
     flat.fill(Qt::white);
-    const LineArtConverter::Result flatResult = LineArtConverter::extract(flat);
-    ctx.check(!flatResult.ok && !flatResult.error.isEmpty(), QStringLiteral("纯色图片不会生成空线稿"),
+    const LineArtConverter::Result flatResult = LineArtConverter::Extract(flat);
+    ctx.Check(!flatResult.ok && !flatResult.error.isEmpty(), QStringLiteral("纯色图片不会生成空线稿"),
               flatResult.error);
 
     // 相邻且颜色接近的两块，应该在合并参数打开时并成一条轮廓；参数为 0 时各自一条。
@@ -207,13 +207,13 @@ void selftest::runLineArtConverterTests(Context& ctx)
     splitOptions.adjacentMergeDistance = 0.0;
     // 关掉颜色聚类，让两块近似色先各自成为独立色块，才能单独验证相邻合并这一步。
     splitOptions.paletteMergeDistance = 0.0;
-    const LineArtConverter::Result splitResult = LineArtConverter::extract(twin, splitOptions);
+    const LineArtConverter::Result splitResult = LineArtConverter::Extract(twin, splitOptions);
     LineArtConverter::Options mergeOptions;
     mergeOptions.adjacentMergeDistance = 48.0;
-    const LineArtConverter::Result mergeResult = LineArtConverter::extract(twin, mergeOptions);
-    ctx.check(splitResult.ok && splitResult.outlines.size() == 2, QStringLiteral("关闭相邻合并时两块近似色各自成轮廓"),
+    const LineArtConverter::Result mergeResult = LineArtConverter::Extract(twin, mergeOptions);
+    ctx.Check(splitResult.ok && splitResult.outlines.size() == 2, QStringLiteral("关闭相邻合并时两块近似色各自成轮廓"),
               QStringLiteral("outlines=%1").arg(splitResult.outlines.size()));
-    ctx.check(mergeResult.ok && mergeResult.outlines.size() == 1, QStringLiteral("相邻近似色块合并成一条轮廓"),
+    ctx.Check(mergeResult.ok && mergeResult.outlines.size() == 1, QStringLiteral("相邻近似色块合并成一条轮廓"),
               QStringLiteral("outlines=%1 regions=%2").arg(mergeResult.outlines.size()).arg(mergeResult.regionCount));
     if (mergeResult.outlines.size() == 1 && splitResult.outlines.size() == 2) {
         qreal splitSpan = 0.0;
@@ -228,7 +228,7 @@ void selftest::runLineArtConverterTests(Context& ctx)
         for (const QPointF& point : mergeResult.outlines.constFirst().points) {
             mergedMaxX = qMax(mergedMaxX, point.x());
         }
-        ctx.check(mergedMaxX > splitSpan / 2.0, QStringLiteral("合并后的轮廓覆盖原来两个色块的位置"),
+        ctx.Check(mergedMaxX > splitSpan / 2.0, QStringLiteral("合并后的轮廓覆盖原来两个色块的位置"),
                   QStringLiteral("mergedMaxX=%1").arg(mergedMaxX));
     }
 
@@ -241,8 +241,8 @@ void selftest::runLineArtConverterTests(Context& ctx)
         painter.fillRect(QRect(40, 40, 120, 120), QColor(200, 120, 60));
         painter.fillRect(QRect(160, 40, 120, 120), QColor(60, 90, 200));
     }
-    const LineArtConverter::Result farResult = LineArtConverter::extract(farTwin, mergeOptions);
-    ctx.check(farResult.ok && farResult.outlines.size() == 2, QStringLiteral("颜色差得远的相邻色块不会被合并"),
+    const LineArtConverter::Result farResult = LineArtConverter::Extract(farTwin, mergeOptions);
+    ctx.Check(farResult.ok && farResult.outlines.size() == 2, QStringLiteral("颜色差得远的相邻色块不会被合并"),
               QStringLiteral("outlines=%1").arg(farResult.outlines.size()));
 
     // 渐变底色的图：色块很多，结果必须有界，不能把画布塞满。
@@ -272,16 +272,16 @@ void selftest::runLineArtConverterTests(Context& ctx)
             }
         }
     }
-    const LineArtConverter::Result manyResult = LineArtConverter::extract(manyBlocks);
-    ctx.check(manyResult.ok && !manyResult.truncated && manyResult.outlines.size() >= 1200,
+    const LineArtConverter::Result manyResult = LineArtConverter::Extract(manyBlocks);
+    ctx.Check(manyResult.ok && !manyResult.truncated && manyResult.outlines.size() >= 1200,
               QStringLiteral("色块超过 1200 块时不再截断"),
               QStringLiteral("outlines=%1 regions=%2 truncated=%3")
                   .arg(manyResult.outlines.size())
                   .arg(manyResult.regionCount)
                   .arg(manyResult.truncated ? 1 : 0));
 
-    const LineArtConverter::Result gradientResult = LineArtConverter::extract(gradient);
-    ctx.check(gradientResult.ok && !gradientResult.truncated && !gradientResult.outlines.isEmpty(),
+    const LineArtConverter::Result gradientResult = LineArtConverter::Extract(gradient);
+    ctx.Check(gradientResult.ok && !gradientResult.truncated && !gradientResult.outlines.isEmpty(),
               QStringLiteral("渐变底色的图片线稿不再按数量截断"),
               QStringLiteral("outlines=%1 regions=%2 truncated=%3")
                   .arg(gradientResult.outlines.size())
@@ -289,15 +289,15 @@ void selftest::runLineArtConverterTests(Context& ctx)
                   .arg(gradientResult.truncated ? 1 : 0));
     {
         CanvasScene gradientScene;
-        gradientScene.applyCanvasSize(QSizeF(400.0, 300.0));
+        gradientScene.ApplyCanvasSize(QSizeF(400.0, 300.0));
         QList<CanvasItem*> gradientItems;
         for (const LineArtConverter::Outline& outline : gradientResult.outlines) {
             auto* stroke = new CurveItem();
             stroke->SetStrokePoints(outline.points, outline.color, LineArtConverter::Options().strokeWidth, 0.0, true);
             gradientItems.append(stroke);
         }
-        gradientScene.addItemsWithUndo(gradientItems, QStringLiteral("导入图片线稿化"));
-        const QImage rendered = gradientScene.renderImage(QRectF(0.0, 0.0, 400.0, 300.0), 1.5);
+        gradientScene.AddItemsWithUndo(gradientItems, QStringLiteral("导入图片线稿化"));
+        const QImage rendered = gradientScene.RenderImage(QRectF(0.0, 0.0, 400.0, 300.0), 1.5);
         rendered.save(QDir(ctx.workDirectory).filePath(QStringLiteral("lineart-gradient.png")));
     }
 }

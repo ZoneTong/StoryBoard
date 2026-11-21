@@ -15,7 +15,7 @@ const int DIR_Y[8] = {0, 1, 1, 1, 0, -1, -1, -1};
 
 namespace LineArtInternal {
 
-RegionMap buildRegions(const QImage& image, const LineArtConverter::Options& options)
+RegionMap BuildRegions(const QImage& image, const LineArtConverter::Options& options)
 {
     const int width = image.width();
     const int height = image.height();

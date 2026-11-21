@@ -20,15 +20,15 @@ class SettingsDialogLineArtPage : public QWidget {
   public:
     explicit SettingsDialogLineArtPage(const AppSettings& settings, QWidget* parent = nullptr);
 
-    QGroupBox* group() const { return m_group; }
+    QGroupBox* Group() const { return m_group; }
 
-    void writeTo(AppSettings& settings) const;
-    void reset(const AppSettings& defaults);
+    void WriteTo(AppSettings& settings) const;
+    void Reset(const AppSettings& defaults);
 
   private:
-    bool matchesPreset(const LineArtPreset& preset) const;
-    void applyPreset(int index);
-    void syncPresetCombo();
+    bool MatchesPreset(const LineArtPreset& preset) const;
+    void ApplyPreset(int index);
+    void SyncPresetCombo();
 
     bool m_applyingPreset = false;
     QGroupBox* m_group = nullptr;

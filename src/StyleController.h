@@ -16,30 +16,30 @@ class StyleController {
     explicit StyleController(MainWindow* window);
 
     void SetFillStyle(FillStyle style);
-    void chooseFillColor();
-    void chooseStrokeColor();
-    void applyStrokeColorToSelection(const QColor& color);
-    void applyStrokeWidthToSelection(qreal width);
+    void ChooseFillColor();
+    void ChooseStrokeColor();
+    void ApplyStrokeColorToSelection(const QColor& color);
+    void ApplyStrokeWidthToSelection(qreal width);
     // 描线样式（需求 1）：设置全局描线样式并同步到选中图元与各处图标。
     void SetStrokeStyle(Qt::PenStyle style);
-    void updateStrokeStyleActions();
-    void applyFillToSelection();
-    void updateFillActions();
+    void UpdateStrokeStyleActions();
+    void ApplyFillToSelection();
+    void UpdateFillActions();
 
-    void setBrushColor(const QColor& color, bool remember);
-    void setBrushWidthUi(int width);
-    void setStrokeSmoothingUi(qreal tolerance);
-    void chooseBrushColor();
+    void SetBrushColor(const QColor& color, bool remember);
+    void SetBrushWidthUi(int width);
+    void SetStrokeSmoothingUi(qreal tolerance);
+    void ChooseBrushColor();
 
     // 填充 / 描边色板图标：动作创建与工具栏搭建阶段也复用这一份绘制逻辑。
-    QIcon fillColorIcon(const QColor& color, int logicalSize) const;
-    QIcon strokeColorIcon(const QColor& color, int logicalSize) const;
-    QIcon fillStyleIcon(FillStyle style, const QColor& color, int logicalSize) const;
+    QIcon FillColorIcon(const QColor& color, int logicalSize) const;
+    QIcon StrokeColorIcon(const QColor& color, int logicalSize) const;
+    QIcon FillStyleIcon(FillStyle style, const QColor& color, int logicalSize) const;
 
   private:
-    int applyStrokeStyleToSelection(const QColor& color, qreal width, bool changeColor, bool changeWidth,
+    int ApplyStrokeStyleToSelection(const QColor& color, qreal width, bool changeColor, bool changeWidth,
                                     const QString& text);
-    int applyPenStyleToSelection(Qt::PenStyle style, const QString& text);
+    int ApplyPenStyleToSelection(Qt::PenStyle style, const QString& text);
 
     MainWindow* m_window = nullptr;
 };

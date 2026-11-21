@@ -26,7 +26,7 @@ struct CanvasBackground {
         if (type != other.type || color != other.color || mode != other.mode) {
             return false;
         }
-        // QPixmap::cacheKey() only identifies the underlying pixel storage, so
+        // QPixmap::CacheKey() only identifies the underlying pixel storage, so
         // two QPixmaps decoded from the same file compare unequal. Compare the
         // decoded contents instead, otherwise re-applying an identical image
         // pushes a redundant undo step.
@@ -68,7 +68,7 @@ struct LayerStackState {
     bool operator!=(const LayerStackState& other) const { return !(*this == other); }
 };
 
-inline QString toolModeName(ToolMode mode)
+inline QString ToolModeName(ToolMode mode)
 {
     switch (mode) {
     case ToolMode::VIEW:
@@ -83,7 +83,7 @@ inline QString toolModeName(ToolMode mode)
     return QString();
 }
 
-inline QString backgroundModeName(BackgroundMode mode)
+inline QString BackgroundModeName(BackgroundMode mode)
 {
     switch (mode) {
     case BackgroundMode::STRETCH:
@@ -96,7 +96,7 @@ inline QString backgroundModeName(BackgroundMode mode)
     return QString();
 }
 
-inline QString backgroundModeToString(BackgroundMode mode)
+inline QString BackgroundModeToString(BackgroundMode mode)
 {
     switch (mode) {
     case BackgroundMode::STRETCH:
@@ -109,7 +109,7 @@ inline QString backgroundModeToString(BackgroundMode mode)
     return QStringLiteral("stretch");
 }
 
-inline BackgroundMode backgroundModeFromString(const QString& value)
+inline BackgroundMode BackgroundModeFromString(const QString& value)
 {
     if (value == QStringLiteral("fit")) {
         return BackgroundMode::FIT;

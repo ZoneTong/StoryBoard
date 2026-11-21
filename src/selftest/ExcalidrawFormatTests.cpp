@@ -28,7 +28,7 @@ QJsonObject element(const QString& type, qreal x, qreal y, qreal w, qreal h)
     return object;
 }
 
-QJsonObject scene(const QJsonArray& elements)
+QJsonObject Scene(const QJsonArray& elements)
 {
     QJsonObject root;
     root.insert(QStringLiteral("type"), QStringLiteral("excalidraw"));
@@ -39,19 +39,19 @@ QJsonObject scene(const QJsonArray& elements)
 
 } // namespace
 
-void selftest::runExcalidrawFormatTests(Context& ctx)
+void selftest::RunExcalidrawFormatTests(Context& ctx)
 {
     // 识别：场景与剪贴板两种包装。
     {
-        const QJsonObject clipboard = scene(QJsonArray{});
+        const QJsonObject clipboard = Scene(QJsonArray{});
         QJsonObject edited = clipboard;
         edited.insert(QStringLiteral("type"), QStringLiteral("excalidraw/clipboard"));
-        ctx.check(Excalidraw::isScene(clipboard), QStringLiteral("Excalidraw 场景按 type=excalidraw 识别"),
+        ctx.Check(Excalidraw::IsScene(clipboard), QStringLiteral("Excalidraw 场景按 type=excalidraw 识别"),
                   QStringLiteral("type=%1").arg(clipboard.value(QStringLiteral("type")).toString()));
-        ctx.check(Excalidraw::isClipboard(edited), QStringLiteral("Excalidraw 剪贴板按 type=excalidraw/clipboard 识别"),
+        ctx.Check(Excalidraw::IsClipboard(edited), QStringLiteral("Excalidraw 剪贴板按 type=excalidraw/clipboard 识别"),
                   QStringLiteral("type=%1").arg(edited.value(QStringLiteral("type")).toString()));
         QJsonObject plain;
-        ctx.check(!Excalidraw::isScene(plain) && !Excalidraw::isClipboard(plain),
+        ctx.Check(!Excalidraw::IsScene(plain) && !Excalidraw::IsClipboard(plain),
                   QStringLiteral("普通 JSON 不会被当成 Excalidraw 内容"), QStringLiteral("empty object"));
     }
 
@@ -88,17 +88,17 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
     }
     elements.append(element(QStringLiteral("image"), 500, 400, 40, 40));
 
-    const QJsonArray items = Excalidraw::elementsToItems(elements, &warnings);
-    ctx.check(items.size() == 7, QStringLiteral("Excalidraw 元素的导入条数正确（画片图跳过）"),
+    const QJsonArray items = Excalidraw::ElementsToItems(elements, &warnings);
+    ctx.Check(items.size() == 7, QStringLiteral("Excalidraw 元素的导入条数正确（画片图跳过）"),
               QStringLiteral("count=%1 warnings=%2").arg(items.size()).arg(warnings.join(QStringLiteral(";"))));
 
     auto typeAt = [&items](int index) { return items.at(index).toObject().value(QStringLiteral("kind")).toString(); };
     auto shapeTypeAt = [&items](int index) {
         return items.at(index).toObject().value(QStringLiteral("shapeType")).toString();
     };
-    ctx.check(typeAt(0) == QStringLiteral("shape") && shapeTypeAt(0) == QStringLiteral("rectangle"),
+    ctx.Check(typeAt(0) == QStringLiteral("shape") && shapeTypeAt(0) == QStringLiteral("rectangle"),
               QStringLiteral("矩形导入为画板矩形"), QStringLiteral("type=%1").arg(typeAt(0)));
-    ctx.check(shapeTypeAt(1) == QStringLiteral("ellipse") && shapeTypeAt(2) == QStringLiteral("parallelogram"),
+    ctx.Check(shapeTypeAt(1) == QStringLiteral("ellipse") && shapeTypeAt(2) == QStringLiteral("parallelogram"),
               QStringLiteral("椭圆原名映射，菱形落成平行四边形"),
               QStringLiteral("ellipse=%1 diamond=%2").arg(shapeTypeAt(1), shapeTypeAt(2)));
     // 菱形→平行四边形换算：外接框 80×60 → 边长 50、内角 acos((60²−80²)/(80²+60²))≈106.26°、
@@ -107,7 +107,7 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
         const QJsonObject diamond = items.at(2).toObject();
         const qreal inner = diamond.value(QStringLiteral("parallelogramAngle")).toDouble();
         const qreal rotation = diamond.value(QStringLiteral("rotation")).toDouble();
-        ctx.check(qAbs(inner - 106.26) < 0.05 && qAbs(rotation + 36.87) < 0.05 &&
+        ctx.Check(qAbs(inner - 106.26) < 0.05 && qAbs(rotation + 36.87) < 0.05 &&
                       qAbs(diamond.value(QStringLiteral("w")).toDouble() - 64.0) < 0.01 &&
                       qAbs(diamond.value(QStringLiteral("h")).toDouble() - 50.0) < 0.01,
                   QStringLiteral("Excalidraw 菱形按几何换算为平行四边形"),
@@ -117,11 +117,11 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
                       .arg(diamond.value(QStringLiteral("w")).toDouble())
                       .arg(diamond.value(QStringLiteral("h")).toDouble()));
     }
-    ctx.check(typeAt(3) == QStringLiteral("text") &&
+    ctx.Check(typeAt(3) == QStringLiteral("text") &&
                   items.at(3).toObject().value(QStringLiteral("text")).toString() == QStringLiteral("你好"),
               QStringLiteral("文字内容原样带入"),
               QStringLiteral("text=%1").arg(items.at(3).toObject().value(QStringLiteral("text")).toString()));
-    ctx.check(items.at(3).toObject().value(QStringLiteral("fontSize")).toDouble() > 14.0 &&
+    ctx.Check(items.at(3).toObject().value(QStringLiteral("fontSize")).toDouble() > 14.0 &&
                   items.at(3).toObject().value(QStringLiteral("fontSize")).toDouble() < 16.0,
               QStringLiteral("文字字号按 pt≈px/1.333 换算"),
               QStringLiteral("fontSize=%1").arg(items.at(3).toObject().value(QStringLiteral("fontSize")).toDouble()));
@@ -129,7 +129,7 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
     // 两点箭头 → 直线图元（kind=straightline）+ 末端实心三角；起点无箭头。
     {
         const QJsonObject line = items.at(4).toObject();
-        ctx.check(
+        ctx.Check(
             line.value(QStringLiteral("kind")).toString() == QStringLiteral("straightline") &&
                 line.value(QStringLiteral("endArrow")).toString() == QStringLiteral("triangle") &&
                 line.value(QStringLiteral("startArrow")).toString() == QStringLiteral("none"),
@@ -140,7 +140,7 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
     // 多段箭头 → 直线图元 + 折线段。
     {
         const QJsonObject curve = items.at(5).toObject();
-        ctx.check(curve.value(QStringLiteral("kind")).toString() == QStringLiteral("straightline") &&
+        ctx.Check(curve.value(QStringLiteral("kind")).toString() == QStringLiteral("straightline") &&
                       curve.value(QStringLiteral("endArrow")).toString() == QStringLiteral("dot") &&
                       curve.value(QStringLiteral("segments")).toArray().size() == 2,
                   QStringLiteral("多段箭头导入为描线图元并保留拐点与圆点箭头"),
@@ -150,23 +150,23 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
     }
     {
         const QJsonObject freehand = items.at(6).toObject();
-        ctx.check(freehand.value(QStringLiteral("kind")).toString() == QStringLiteral("freehand"),
+        ctx.Check(freehand.value(QStringLiteral("kind")).toString() == QStringLiteral("freehand"),
                   QStringLiteral("freedraw 导入为手绘曲线"),
                   QStringLiteral("kind=%1").arg(freehand.value(QStringLiteral("kind")).toString()));
     }
-    ctx.check(!warnings.isEmpty(), QStringLiteral("不支持的元素会留下降级说明"),
+    ctx.Check(!warnings.isEmpty(), QStringLiteral("不支持的元素会留下降级说明"),
               QStringLiteral("count=%1").arg(warnings.size()));
 
     // 完整场景导入：画布尺寸覆盖元素包围盒，背景取 viewBackgroundColor。
     {
-        QJsonObject root = scene(QJsonArray{element(QStringLiteral("rectangle"), 0, 0, 400, 300)});
+        QJsonObject root = Scene(QJsonArray{element(QStringLiteral("rectangle"), 0, 0, 400, 300)});
         QJsonObject appState;
         appState.insert(QStringLiteral("viewBackgroundColor"), QStringLiteral("#ffffff"));
         root.insert(QStringLiteral("appState"), appState);
         QStringList sceneWarnings;
-        const QJsonObject document = Excalidraw::sceneToStoryBoard(root, &sceneWarnings);
+        const QJsonObject document = Excalidraw::SceneToStoryBoard(root, &sceneWarnings);
         const QJsonObject canvas = document.value(QStringLiteral("canvas")).toObject();
-        ctx.check(document.value(QStringLiteral("format")).toString() == QStringLiteral("StoryBoardCanvas") &&
+        ctx.Check(document.value(QStringLiteral("format")).toString() == QStringLiteral("StoryBoardCanvas") &&
                       canvas.value(QStringLiteral("width")).toDouble() >= 400.0 &&
                       canvas.value(QStringLiteral("height")).toDouble() >= 300.0 &&
                       document.value(QStringLiteral("items")).toArray().size() == 1,
@@ -175,7 +175,7 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
                       .arg(canvas.value(QStringLiteral("width")).toDouble())
                       .arg(canvas.value(QStringLiteral("height")).toDouble())
                       .arg(document.value(QStringLiteral("items")).toArray().size()));
-        ctx.check(document.value(QStringLiteral("background")).toObject().value(QStringLiteral("color")).toString() ==
+        ctx.Check(document.value(QStringLiteral("background")).toObject().value(QStringLiteral("color")).toString() ==
                       QStringLiteral("#ffffff"),
                   QStringLiteral("场景背景色带入画板背景"),
                   document.value(QStringLiteral("background")).toObject().value(QStringLiteral("color")).toString());
@@ -223,9 +223,9 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
         document.insert(QStringLiteral("items"), QJsonArray{item, line, text});
 
         QStringList exportWarnings;
-        const QJsonObject exported = Excalidraw::storyBoardToScene(document, &exportWarnings);
+        const QJsonObject exported = Excalidraw::StoryBoardToScene(document, &exportWarnings);
         const QJsonArray exportedElements = exported.value(QStringLiteral("elements")).toArray();
-        ctx.check(exported.value(QStringLiteral("type")).toString() == QStringLiteral("excalidraw") &&
+        ctx.Check(exported.value(QStringLiteral("type")).toString() == QStringLiteral("excalidraw") &&
                       exported.value(QStringLiteral("version")).toInt() == 2 && exportedElements.size() == 3,
                   QStringLiteral("导出生成 type/version 正确的场景"),
                   QStringLiteral("type=%1 v=%2 n=%3")
@@ -233,30 +233,30 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
                       .arg(exported.value(QStringLiteral("version")).toInt())
                       .arg(exportedElements.size()));
         // 需求 16：棋盘格边长从 32px 扩大到 64px，导出的 appState.gridSize 跟随画板网格。
-        ctx.check(exported.value(QStringLiteral("appState")).toObject().value(QStringLiteral("gridSize")).toInt() ==
+        ctx.Check(exported.value(QStringLiteral("appState")).toObject().value(QStringLiteral("gridSize")).toInt() ==
                           64 &&
                       exported.value(QStringLiteral("files")).isObject(),
                   QStringLiteral("导出场景 appState.gridSize=64 且带 files"),
                   exported.value(QStringLiteral("appState")).toObject().value(QStringLiteral("gridSize")).toString());
         const QJsonObject exportedLine = exportedElements.at(1).toObject();
-        ctx.check(exportedLine.value(QStringLiteral("type")).toString() == QStringLiteral("arrow") &&
+        ctx.Check(exportedLine.value(QStringLiteral("type")).toString() == QStringLiteral("arrow") &&
                       exportedLine.value(QStringLiteral("endArrowhead")).toString() == QStringLiteral("arrow") &&
                       exportedLine.value(QStringLiteral("points")).toArray().size() == 2,
                   QStringLiteral("直线箭头导出为 arrow 且末端开口箭头"),
                   exportedLine.value(QStringLiteral("type")).toString());
         const QJsonObject exportedText = exportedElements.at(2).toObject();
-        ctx.check(exportedText.value(QStringLiteral("type")).toString() == QStringLiteral("text") &&
+        ctx.Check(exportedText.value(QStringLiteral("type")).toString() == QStringLiteral("text") &&
                       exportedText.value(QStringLiteral("fontSize")).toDouble() > 19.0 &&
                       exportedText.value(QStringLiteral("fontSize")).toDouble() < 21.0,
                   QStringLiteral("文字导出为 text 且字号按 px≈pt*1.333 换算"),
                   QStringLiteral("fontSize=%1").arg(exportedText.value(QStringLiteral("fontSize")).toDouble()));
-        ctx.check(exportedElements.at(0).toObject().value(QStringLiteral("type")).toString() ==
+        ctx.Check(exportedElements.at(0).toObject().value(QStringLiteral("type")).toString() ==
                       QStringLiteral("rectangle"),
                   QStringLiteral("矩形导出为 rectangle"), QStringLiteral("ok"));
 
         // 往返：导出的场景能再导入回画板文档。
-        const QJsonObject roundTrip = Excalidraw::sceneToStoryBoard(exported, nullptr);
-        ctx.check(roundTrip.value(QStringLiteral("format")).toString() == QStringLiteral("StoryBoardCanvas") &&
+        const QJsonObject roundTrip = Excalidraw::SceneToStoryBoard(exported, nullptr);
+        ctx.Check(roundTrip.value(QStringLiteral("format")).toString() == QStringLiteral("StoryBoardCanvas") &&
                       roundTrip.value(QStringLiteral("items")).toArray().size() == 3,
                   QStringLiteral("导出结果可再次导入（往返 3 个图元）"),
                   QStringLiteral("items=%1").arg(roundTrip.value(QStringLiteral("items")).toArray().size()));
@@ -272,12 +272,12 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
         QJsonObject outside = element(QStringLiteral("rectangle"), 400, 10, 100, 40);
         QJsonArray layers;
         const QJsonArray framedItems =
-            Excalidraw::elementsToItems(QJsonArray{frameElement, inside, outside}, nullptr, &layers);
+            Excalidraw::ElementsToItems(QJsonArray{frameElement, inside, outside}, nullptr, &layers);
         const bool layerNamesOk =
             layers.size() == 2 &&
             layers.at(0).toObject().value(QStringLiteral("name")).toString() == QStringLiteral("图层 1") &&
             layers.at(1).toObject().value(QStringLiteral("name")).toString() == QStringLiteral("分镜一");
-        ctx.check(framedItems.size() == 2 && layerNamesOk &&
+        ctx.Check(framedItems.size() == 2 && layerNamesOk &&
                       framedItems.at(0).toObject().value(QStringLiteral("layer")).toInt() == 2 &&
                       framedItems.at(1).toObject().value(QStringLiteral("layer")).toInt() == 1,
                   QStringLiteral("frame 建一层，frameId 命中的元素归该层"),
@@ -304,14 +304,14 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
         QJsonObject document;
         document.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
         document.insert(QStringLiteral("items"), QJsonArray{styled});
-        const QJsonObject exportedStyled = Excalidraw::storyBoardToScene(document, nullptr);
+        const QJsonObject exportedStyled = Excalidraw::StoryBoardToScene(document, nullptr);
         const QJsonObject exportedElement = exportedStyled.value(QStringLiteral("elements")).toArray().at(0).toObject();
         const QJsonObject custom = exportedElement.value(QStringLiteral("customData")).toObject();
-        const QJsonObject reimported = Excalidraw::sceneToStoryBoard(exportedStyled, nullptr);
+        const QJsonObject reimported = Excalidraw::SceneToStoryBoard(exportedStyled, nullptr);
         const QJsonObject reimportedItem = reimported.value(QStringLiteral("items")).toArray().at(0).toObject();
         const QColor reimportedFill(reimportedItem.value(QStringLiteral("fillColor")).toString());
         const QColor reimportedStroke(reimportedItem.value(QStringLiteral("strokeColor")).toString());
-        ctx.check(custom.value(QStringLiteral("fillStyle")).toString() == QStringLiteral("cross_hatch") &&
+        ctx.Check(custom.value(QStringLiteral("fillStyle")).toString() == QStringLiteral("cross_hatch") &&
                       custom.value(QStringLiteral("fillAlpha")).toInt() == 128 &&
                       custom.value(QStringLiteral("strokeAlpha")).toInt() == 200 &&
                       reimportedItem.value(QStringLiteral("fillStyle")).toString() == QStringLiteral("cross_hatch") &&
@@ -333,13 +333,13 @@ void selftest::runExcalidrawFormatTests(Context& ctx)
         file.insert(QStringLiteral("dataURL"), QStringLiteral("data:image/png;base64,QUJD"));
         QJsonObject files;
         files.insert(QStringLiteral("img1"), file);
-        QJsonObject withImage = scene(QJsonArray{imageElement});
+        QJsonObject withImage = Scene(QJsonArray{imageElement});
         withImage.insert(QStringLiteral("files"), files);
         QStringList skippedWarnings;
-        const QJsonObject skipped = Excalidraw::sceneToStoryBoard(withImage, &skippedWarnings, false);
-        const QJsonObject kept = Excalidraw::sceneToStoryBoard(withImage, nullptr, true);
+        const QJsonObject skipped = Excalidraw::SceneToStoryBoard(withImage, &skippedWarnings, false);
+        const QJsonObject kept = Excalidraw::SceneToStoryBoard(withImage, nullptr, true);
         const QJsonObject keptItem = kept.value(QStringLiteral("items")).toArray().at(0).toObject();
-        ctx.check(skipped.isEmpty() && !skippedWarnings.isEmpty() &&
+        ctx.Check(skipped.isEmpty() && !skippedWarnings.isEmpty() &&
                       keptItem.value(QStringLiteral("kind")).toString() == QStringLiteral("image") &&
                       keptItem.value(QStringLiteral("image")).toString() == QStringLiteral("QUJD"),
                   QStringLiteral("位图保留选项：不勾选跳过并提示，勾选后按 dataURL 保真"),

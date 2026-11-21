@@ -95,7 +95,7 @@ ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QW
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     buttons->button(QDialogButtonBox::Ok)->setText(tr("Export"));
-    buttons->button(QDialogButtonBox::Ok)->setIcon(makeIcon(IconId::EXPORT, QColor(255, 255, 255), 18));
+    buttons->button(QDialogButtonBox::Ok)->setIcon(MakeIcon(IconId::EXPORT, QColor(255, 255, 255), 18));
     buttons->button(QDialogButtonBox::Cancel)->setText(tr("Cancel"));
     rootLayout->addWidget(buttons);
 
@@ -114,44 +114,44 @@ ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QW
     m_pathEdit->setCursorPosition(0);
     m_pathEdit->setToolTip(m_pathEdit->text());
 
-    connect(m_scopeCombo, &QComboBox::currentIndexChanged, this, [this]() { updateEstimatedSize(); });
+    connect(m_scopeCombo, &QComboBox::currentIndexChanged, this, [this]() { UpdateEstimatedSize(); });
     connect(m_layerModeCombo, &QComboBox::currentIndexChanged, this, [this]() {
-        m_pathEdit->setToolTip(separateLayersSelected() ? tr("Base path: each visible layer gets its own file")
+        m_pathEdit->setToolTip(SeparateLayersSelected() ? tr("Base path: each visible layer gets its own file")
                                                         : m_pathEdit->text());
-        updateEstimatedSize();
+        UpdateEstimatedSize();
     });
-    connect(m_scaleSpin, &QDoubleSpinBox::valueChanged, this, [this]() { updateEstimatedSize(); });
+    connect(m_scaleSpin, &QDoubleSpinBox::valueChanged, this, [this]() { UpdateEstimatedSize(); });
     connect(m_formatCombo, &QComboBox::currentIndexChanged, this, [this]() {
-        updatePathExtension();
-        updateEstimatedSize();
+        UpdatePathExtension();
+        UpdateEstimatedSize();
     });
-    connect(browseButton, &QPushButton::clicked, this, &ExportDialog::browseForFile);
-    connect(buttons, &QDialogButtonBox::accepted, this, &ExportDialog::validateAndAccept);
+    connect(browseButton, &QPushButton::clicked, this, &ExportDialog::BrowseForFile);
+    connect(buttons, &QDialogButtonBox::accepted, this, &ExportDialog::ValidateAndAccept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
-    updateEstimatedSize();
+    UpdateEstimatedSize();
 }
 
-QRectF ExportDialog::selectedArea() const
+QRectF ExportDialog::SelectedArea() const
 {
     if (m_scopeCombo->currentIndex() == 1) {
         QRectF content = m_scene->ContentRect();
         if (content.isEmpty()) {
-            content = m_scene->canvasRect();
+            content = m_scene->CanvasRect();
         }
         return content.adjusted(-24.0, -24.0, 24.0, 24.0);
     }
-    return m_scene->canvasRect();
+    return m_scene->CanvasRect();
 }
 
-QString ExportDialog::selectedFormat() const
+QString ExportDialog::SelectedFormat() const
 {
     return m_formatCombo->currentData().toString();
 }
 
-QString ExportDialog::fileFilter() const
+QString ExportDialog::FileFilter() const
 {
-    const QString format = selectedFormat();
+    const QString format = SelectedFormat();
     if (format == QStringLiteral("JPEG")) {
         return tr("JPEG images (*.jpg *.jpeg)");
     }
@@ -161,17 +161,17 @@ QString ExportDialog::fileFilter() const
     return tr("PNG images (*.png)");
 }
 
-bool ExportDialog::separateLayersSelected() const
+bool ExportDialog::SeparateLayersSelected() const
 {
     return m_layerModeCombo && m_layerModeCombo->currentData().toBool();
 }
 
-QString ExportDialog::formatSuffix(const QString& format)
+QString ExportDialog::FormatSuffix(const QString& format)
 {
     return format == QStringLiteral("JPEG") ? QStringLiteral("jpg") : format.toLower();
 }
 
-QString ExportDialog::layerFileComponent(const QString& name, int layerId)
+QString ExportDialog::LayerFileComponent(const QString& name, int layerId)
 {
     QString clean = name.trimmed();
     clean.replace(QRegularExpression(QStringLiteral("[<>:\"/\\\\|?*\\x00-\\x1F]")), QStringLiteral("_"));
@@ -185,14 +185,14 @@ QString ExportDialog::layerFileComponent(const QString& name, int layerId)
     return clean.left(40);
 }
 
-QStringList ExportDialog::outputFilePaths() const
+QStringList ExportDialog::OutputFilePaths() const
 {
     const QString basePath = m_pathEdit->text().trimmed();
     if (basePath.isEmpty()) {
         return QStringList();
     }
 
-    if (!separateLayersSelected()) {
+    if (!SeparateLayersSelected()) {
         return QStringList{basePath};
     }
 
@@ -204,17 +204,17 @@ QStringList ExportDialog::outputFilePaths() const
     const QFileInfo baseInfo(basePath);
     const QString baseName =
         baseInfo.completeBaseName().isEmpty() ? QStringLiteral("StoryBoard") : baseInfo.completeBaseName();
-    const QString suffix = formatSuffix(selectedFormat());
+    const QString suffix = FormatSuffix(SelectedFormat());
     const QDir directory(baseInfo.absolutePath());
 
-    for (const CanvasLayer& layer : m_scene->layers()) {
+    for (const CanvasLayer& layer : m_scene->Layers()) {
         if (!layer.visible) {
             continue;
         }
         paths.append(directory.filePath(QStringLiteral("%1_L%2_%3.%4")
                                             .arg(baseName)
                                             .arg(layer.id)
-                                            .arg(layerFileComponent(layer.name, layer.id), suffix)));
+                                            .arg(LayerFileComponent(layer.name, layer.id), suffix)));
     }
     return paths;
 }
@@ -222,14 +222,14 @@ QStringList ExportDialog::outputFilePaths() const
 ExportDialog::Options ExportDialog::options() const
 {
     Options result;
-    result.area = selectedArea();
+    result.area = SelectedArea();
     result.scale = m_scaleSpin->value();
-    result.format = selectedFormat();
-    result.separateLayers = separateLayersSelected();
+    result.format = SelectedFormat();
+    result.separateLayers = SeparateLayersSelected();
     result.filePath = m_pathEdit->text().trimmed();
-    result.filePaths = outputFilePaths();
+    result.filePaths = OutputFilePaths();
     if (result.separateLayers && m_scene) {
-        for (const CanvasLayer& layer : m_scene->layers()) {
+        for (const CanvasLayer& layer : m_scene->Layers()) {
             if (layer.visible) {
                 result.layerIds.append(layer.id);
             }
@@ -238,9 +238,9 @@ ExportDialog::Options ExportDialog::options() const
     return result;
 }
 
-void ExportDialog::updateEstimatedSize()
+void ExportDialog::UpdateEstimatedSize()
 {
-    const QRectF area = selectedArea();
+    const QRectF area = SelectedArea();
     const qreal scale = m_scaleSpin->value();
     int width = qMax(1, qCeil(area.width() * scale));
     int height = qMax(1, qCeil(area.height() * scale));
@@ -251,10 +251,10 @@ void ExportDialog::updateEstimatedSize()
         height = qMax(1, qCeil(height * factor));
     }
     QString text = QStringLiteral("%1 × %2 px").arg(width).arg(height);
-    if (separateLayersSelected()) {
+    if (SeparateLayersSelected()) {
         int count = 0;
         if (m_scene) {
-            for (const CanvasLayer& layer : m_scene->layers()) {
+            for (const CanvasLayer& layer : m_scene->Layers()) {
                 if (layer.visible) {
                     ++count;
                 }
@@ -265,9 +265,9 @@ void ExportDialog::updateEstimatedSize()
     m_sizeLabel->setText(text);
 }
 
-void ExportDialog::updatePathExtension()
+void ExportDialog::UpdatePathExtension()
 {
-    const QString format = selectedFormat();
+    const QString format = SelectedFormat();
     const QString suffix = format == QStringLiteral("JPEG") ? QStringLiteral("jpg") : format.toLower();
 
     QString path = m_pathEdit->text().trimmed();
@@ -293,18 +293,18 @@ void ExportDialog::updatePathExtension()
     }
 }
 
-void ExportDialog::browseForFile()
+void ExportDialog::BrowseForFile()
 {
     const QString current = m_pathEdit->text().trimmed();
     const QString directory = current.isEmpty() ? QString() : QFileInfo(current).absolutePath();
-    QString path = QFileDialog::getSaveFileName(this, tr("Export canvas"), directory, fileFilter());
+    QString path = QFileDialog::getSaveFileName(this, tr("Export canvas"), directory, FileFilter());
     if (path.isEmpty()) {
         return;
     }
     QFileInfo info(path);
     if (info.suffix().isEmpty()) {
         const QString suffix =
-            selectedFormat() == QStringLiteral("JPEG") ? QStringLiteral("jpg") : selectedFormat().toLower();
+            SelectedFormat() == QStringLiteral("JPEG") ? QStringLiteral("jpg") : SelectedFormat().toLower();
         path += QLatin1Char('.') + suffix;
     }
     m_pathEdit->setText(path);
@@ -312,7 +312,7 @@ void ExportDialog::browseForFile()
     m_pathEdit->setToolTip(path);
 }
 
-void ExportDialog::validateAndAccept()
+void ExportDialog::ValidateAndAccept()
 {
     QString path = m_pathEdit->text().trimmed();
     if (path.isEmpty()) {
@@ -321,11 +321,11 @@ void ExportDialog::validateAndAccept()
     }
 
     const QString expectedSuffix =
-        selectedFormat() == QStringLiteral("JPEG") ? QStringLiteral("jpg") : selectedFormat().toLower();
+        SelectedFormat() == QStringLiteral("JPEG") ? QStringLiteral("jpg") : SelectedFormat().toLower();
     QFileInfo info(path);
     const QString currentSuffix = info.suffix().toLower();
     const bool suffixMatches = currentSuffix == expectedSuffix ||
-                               (selectedFormat() == QStringLiteral("JPEG") && currentSuffix == QStringLiteral("jpeg"));
+                               (SelectedFormat() == QStringLiteral("JPEG") && currentSuffix == QStringLiteral("jpeg"));
     if (!suffixMatches) {
         if (currentSuffix.isEmpty()) {
             path += QLatin1Char('.') + expectedSuffix;
@@ -345,8 +345,8 @@ void ExportDialog::validateAndAccept()
         return;
     }
 
-    if (separateLayersSelected()) {
-        const QStringList paths = outputFilePaths();
+    if (SeparateLayersSelected()) {
+        const QStringList paths = OutputFilePaths();
         if (paths.isEmpty()) {
             QMessageBox::warning(this, tr("Export canvas"), tr("No visible layers to export."));
             return;

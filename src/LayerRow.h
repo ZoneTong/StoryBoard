@@ -16,7 +16,7 @@ class LayerRow : public QWidget {
     LayerRow(const CanvasLayer& layer, int index, int itemCount, QWidget* parent = nullptr);
 
     // 选中态走 QSS 动态属性，颜色只在样式表里维护。
-    void applySelectedStyle(bool selected);
+    void ApplySelectedStyle(bool selected);
 
   signals:
     void visibilityToggled(int layerId, bool visible);

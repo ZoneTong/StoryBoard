@@ -14,13 +14,13 @@ class LayerActions : public QObject {
   public:
     explicit LayerActions(CanvasScene* scene, QObject* parent = nullptr);
 
-    void setLayerVisible(int layerId, bool visible);
-    void setAllLayersVisible(bool visible);
-    void setLayerLocked(int layerId, bool locked);
-    void addLayer();
-    void removeLayer(QWidget* dialogParent, const QList<int>& layerIds);
-    void renameLayer(QWidget* dialogParent, int layerId);
-    void moveLayer(int delta);
+    void SetLayerVisible(int layerId, bool visible);
+    void SetAllLayersVisible(bool visible);
+    void SetLayerLocked(int layerId, bool locked);
+    void AddLayer();
+    void RemoveLayer(QWidget* dialogParent, const QList<int>& layerIds);
+    void RenameLayer(QWidget* dialogParent, int layerId);
+    void MoveLayer(int delta);
 
   signals:
     void statusMessage(const QString& message);

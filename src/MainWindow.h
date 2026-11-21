@@ -27,8 +27,8 @@ class QKeyEvent;
 
 namespace selftest {
 class Context;
-void runFillStyleBasicTests(Context& ctx);
-void runMainWindowShapeMenuTests(Context& ctx);
+void RunFillStyleBasicTests(Context& ctx);
+void RunMainWindowShapeMenuTests(Context& ctx);
 } // namespace selftest
 class ItemPropertiesDialog;
 class PropertiesPanel;
@@ -77,12 +77,12 @@ class MainWindow : public QMainWindow {
     // 宽出一条箭头区，高度保持一致。
     static constexpr int TOOL_BAR_SPLIT_BUTTON_WIDTH = 34;
 
-    bool openCanvasFile(const QString& path);
-    CanvasScene* scene() const { return m_scene; }
-    CanvasView* view() const { return m_view; }
+    bool OpenCanvasFile(const QString& path);
+    CanvasScene* Scene() const { return m_scene; }
+    CanvasView* View() const { return m_view; }
 
     // 按当前语言刷新整个界面文字（设置里切换语言时调用）。
-    void applyUiLanguage();
+    void ApplyUiLanguage();
 
   protected:
     void closeEvent(QCloseEvent* event) override;
@@ -93,78 +93,78 @@ class MainWindow : public QMainWindow {
     bool eventFilter(QObject* watched, QEvent* event) override;
 
   private slots:
-    void newCanvas();
-    void openCanvasDialog();
-    bool saveCanvas();
-    bool saveCanvasAs();
-    void exportCanvas();
-    void exportExcalidraw();
-    void exportCustomShape();
-    void importImagesDialog();
-    void importOutlineImageDialog();
-    void insertTextAt(const QPointF& scenePos);
-    void chooseBrushColor();
-    void replaceCanvasBackgroundImage();
-    void setBackgroundColor();
-    void clearBackground();
-    void showSettings();
-    void showAbout();
-    void showShortcuts();
-    void setToolMode(ToolMode mode);
-    void updateTitle();
-    void updateActions();
-    void updateStatusBar();
-    void updateModeUi();
-    void openCanvasesFolder();
+    void NewCanvas();
+    void OpenCanvasDialog();
+    bool SaveCanvas();
+    bool SaveCanvasAs();
+    void ExportCanvas();
+    void ExportExcalidraw();
+    void ExportCustomShape();
+    void ImportImagesDialog();
+    void ImportOutlineImageDialog();
+    void InsertTextAt(const QPointF& scenePos);
+    void ChooseBrushColor();
+    void ReplaceCanvasBackgroundImage();
+    void SetBackgroundColor();
+    void ClearBackground();
+    void ShowSettings();
+    void ShowAbout();
+    void ShowShortcuts();
+    void SetToolMode(ToolMode mode);
+    void UpdateTitle();
+    void UpdateActions();
+    void UpdateStatusBar();
+    void UpdateModeUi();
+    void OpenCanvasesFolder();
 
   public:
     // 需求 7：展开自定义图形浮动面板（按目录分标签页）；anchor 为空时沿用上次位置。
-    void openCustomShapePanel(QWidget* anchor);
+    void OpenCustomShapePanel(QWidget* anchor);
     // 插入常见图形；自检需要直接驱动插入流程（含立方体 / 圆柱体的组合面插入）。
     // parallelogramAngle > 0 表示菱形预置：平行四边形锁该内角并旋转 45° 插入。
-    void insertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0, qreal cornerRatio = 0.0,
+    void InsertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0, qreal cornerRatio = 0.0,
                      qreal parallelogramAngle = 0.0);
     // 线条插入入口：直线 / 弧线 / 正弦都不是形状类型，按形态分派。
-    void insertCurve(LineGlyph glyph, ArrowStyle startArrow = ArrowStyle::NONE, ArrowStyle endArrow = ArrowStyle::NONE);
+    void InsertCurve(LineGlyph glyph, ArrowStyle startArrow = ArrowStyle::NONE, ArrowStyle endArrow = ArrowStyle::NONE);
     // 需求 16：自检需要直接驱动工具栏样式取值（填充样式 / 画笔色 / 描线宽度）验证新图元生成。
-    friend void selftest::runFillStyleBasicTests(selftest::Context&);
-    friend void selftest::runMainWindowShapeMenuTests(selftest::Context&);
+    friend void selftest::RunFillStyleBasicTests(selftest::Context&);
+    friend void selftest::RunMainWindowShapeMenuTests(selftest::Context&);
 
   private:
-    void createActions();
-    void createShapeMenu();
-    void updateCustomShapeMenu();
-    void createMenus();
-    void createToolBars();
-    void createStatusBar();
-    void connectSignals();
+    void CreateActions();
+    void CreateShapeMenu();
+    void UpdateCustomShapeMenu();
+    void CreateMenus();
+    void CreateToolBars();
+    void CreateStatusBar();
+    void ConnectSignals();
     // 多图元对齐：菜单与工具栏下拉共用同一组动作，状态按当前选择更新。
-    void applyAlignment(Alignment::Mode mode);
+    void ApplyAlignment(Alignment::Mode mode);
     // 合并形状：联合 / 组合 / 拆分 / 相交 / 剪除，结果替换为一个多边形，只记一条撤销。
-    void applyBoolOperation(BoolOps::Operation operation);
+    void ApplyBoolOperation(BoolOps::Operation operation);
 
-    void insertBrace(bool left);
-    void insertCustomShape(const QString& filePath);
-    void openShapesFolder();
-    void updatePropertiesPanelDockVisibility();
+    void InsertBrace(bool left);
+    void InsertCustomShape(const QString& filePath);
+    void OpenShapesFolder();
+    void UpdatePropertiesPanelDockVisibility();
     void SetFillStyle(FillStyle style);
-    void chooseFillColor();
-    void chooseStrokeColor();
+    void ChooseFillColor();
+    void ChooseStrokeColor();
     // 描线样式（需求 1）：与填充样式同构的全局状态入口。
     void SetStrokeStyle(Qt::PenStyle style);
     // 菜单“描线宽度”普通项触发后聚焦工具栏宽度输入框末尾（需求 1）。
-    void focusStrokeWidthSpin();
-    void updateFillActions();
-    void setBrushColor(const QColor& color, bool remember);
-    void setBrushWidthUi(int width);
-    void applyBrushWidth(int width);
-    void setStrokeSmoothingUi(qreal tolerance);
-    void updateCanvasesMenu();
-    void updateBackgroundModeActions();
-    void showSelectedItemProperties();
-    void showItemProperties(CanvasItem* item);
-    void rotateSelected(qreal degrees);
-    void closeItemProperties();
+    void FocusStrokeWidthSpin();
+    void UpdateFillActions();
+    void SetBrushColor(const QColor& color, bool remember);
+    void SetBrushWidthUi(int width);
+    void ApplyBrushWidth(int width);
+    void SetStrokeSmoothingUi(qreal tolerance);
+    void UpdateCanvasesMenu();
+    void UpdateBackgroundModeActions();
+    void ShowSelectedItemProperties();
+    void ShowItemProperties(CanvasItem* item);
+    void RotateSelected(qreal degrees);
+    void CloseItemProperties();
 
   private:
     friend class CanvasBackgroundController;
@@ -282,7 +282,7 @@ class MainWindow : public QMainWindow {
 
     QToolButton* m_fillButton = nullptr;
     QToolButton* m_fillColorButton = nullptr;
-    // 描线样式按钮（需求 1）：与填充样式按钮同构，弹出菜单列出 borderStyles()。
+    // 描线样式按钮（需求 1）：与填充样式按钮同构，弹出菜单列出 BorderStyles()。
     QToolButton* m_strokeStyleButton = nullptr;
     QToolButton* m_strokeColorButton = nullptr;
     QSpinBox* m_widthSpin = nullptr;

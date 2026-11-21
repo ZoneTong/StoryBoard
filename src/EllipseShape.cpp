@@ -4,14 +4,14 @@
 
 EllipseShape::EllipseShape(const QRectF& frame) : m_frame(frame.normalized()) {}
 
-qreal EllipseShape::clampedSweep(qreal sweepDeg)
+qreal EllipseShape::ClampedSweep(qreal sweepDeg)
 {
     const qreal sweep = qBound<qreal>(-360.0, sweepDeg, 360.0);
     // 扫过角为 0 时画不出可见图形，退回默认 120°，避免插入后“什么都没有”。
     return qFuzzyIsNull(sweep) ? 120.0 : sweep;
 }
 
-QPainterPath EllipseShape::ellipse() const
+QPainterPath EllipseShape::Ellipse() const
 {
     QPainterPath path;
     if (m_frame.width() <= 0.0 || m_frame.height() <= 0.0) {
@@ -21,52 +21,52 @@ QPainterPath EllipseShape::ellipse() const
     return path;
 }
 
-QPainterPath EllipseShape::arc(qreal startDeg, qreal sweepDeg) const
+QPainterPath EllipseShape::Arc(qreal startDeg, qreal sweepDeg) const
 {
     QPainterPath path;
     if (m_frame.width() <= 0.0 || m_frame.height() <= 0.0) {
         return path;
     }
     path.arcMoveTo(m_frame, startDeg);
-    path.arcTo(m_frame, startDeg, clampedSweep(sweepDeg));
+    path.arcTo(m_frame, startDeg, ClampedSweep(sweepDeg));
     return path;
 }
 
-QPainterPath EllipseShape::sector(qreal startDeg, qreal sweepDeg) const
+QPainterPath EllipseShape::Sector(qreal startDeg, qreal sweepDeg) const
 {
     QPainterPath path;
     if (m_frame.width() <= 0.0 || m_frame.height() <= 0.0) {
         return path;
     }
     path.arcMoveTo(m_frame, startDeg);
-    path.arcTo(m_frame, startDeg, clampedSweep(sweepDeg));
-    path.lineTo(center());
+    path.arcTo(m_frame, startDeg, ClampedSweep(sweepDeg));
+    path.lineTo(Center());
     path.closeSubpath();
     return path;
 }
 
-QRectF EllipseShape::arcBounds(qreal startDeg, qreal sweepDeg) const
+QRectF EllipseShape::ArcBounds(qreal startDeg, qreal sweepDeg) const
 {
-    return arc(startDeg, sweepDeg).boundingRect();
+    return Arc(startDeg, sweepDeg).boundingRect();
 }
 
-QRectF EllipseShape::sectorBounds(qreal startDeg, qreal sweepDeg) const
+QRectF EllipseShape::SectorBounds(qreal startDeg, qreal sweepDeg) const
 {
-    return sector(startDeg, sweepDeg).boundingRect();
+    return Sector(startDeg, sweepDeg).boundingRect();
 }
 
-QVector<QPointF> EllipseShape::sample(qreal startDeg, qreal sweepDeg, int count) const
+QVector<QPointF> EllipseShape::Sample(qreal startDeg, qreal sweepDeg, int count) const
 {
     QVector<QPointF> points;
     if (m_frame.width() <= 0.0 || m_frame.height() <= 0.0 || count < 1) {
         return points;
     }
 
-    const qreal sweep = clampedSweep(sweepDeg);
-    const qreal cx = center().x();
-    const qreal cy = center().y();
-    const qreal rx = radiusX();
-    const qreal ry = radiusY();
+    const qreal sweep = ClampedSweep(sweepDeg);
+    const qreal cx = Center().x();
+    const qreal cy = Center().y();
+    const qreal rx = RadiusX();
+    const qreal ry = RadiusY();
 
     points.reserve(count + 1);
     for (int i = 0; i <= count; ++i) {

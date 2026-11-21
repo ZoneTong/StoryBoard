@@ -9,13 +9,13 @@
 #include <algorithm>
 #include <utility>
 
-qreal CanvasScene::layerBaseZ(int layerId) const
+qreal CanvasScene::LayerBaseZ(int layerId) const
 {
-    const int index = layerIndex(layerId);
+    const int index = LayerIndex(layerId);
     return index > 0 ? index * scene_constants::LAYER_Z_STRIDE : 0.0;
 }
 
-void CanvasScene::applyItemStacking(CanvasItem* item)
+void CanvasScene::ApplyItemStacking(CanvasItem* item)
 {
     if (!item) {
         return;
@@ -25,35 +25,35 @@ void CanvasScene::applyItemStacking(CanvasItem* item)
     if (height != item->ZOrder()) {
         item->SetZOrder(height);
     }
-    item->setZValue(layerBaseZ(item->LayerId()) + height);
+    item->setZValue(LayerBaseZ(item->LayerId()) + height);
 }
 
-void CanvasScene::applyAllItemStacking()
+void CanvasScene::ApplyAllItemStacking()
 {
-    const QList<CanvasItem*> items = canvasItems();
+    const QList<CanvasItem*> items = CanvasItems();
     for (CanvasItem* item : items) {
-        applyItemStacking(item);
+        ApplyItemStacking(item);
     }
 }
 
-int CanvasScene::nextHeight(int layerId) const
+int CanvasScene::NextHeight(int layerId) const
 {
-    return ItemHeightPlanner().nextHeight(canvasItems(), layerId);
+    return ItemHeightPlanner().NextHeight(CanvasItems(), layerId);
 }
 
-bool CanvasScene::layerHeightsUnique(int layerId) const
+bool CanvasScene::LayerHeightsUnique(int layerId) const
 {
-    return ItemHeightPlanner().heightsUnique(layerItems(layerId));
+    return ItemHeightPlanner().HeightsUnique(LayerItems(layerId));
 }
 
-bool CanvasScene::heightUsedByOther(int layerId, int height, const CanvasItem* except) const
+bool CanvasScene::HeightUsedByOther(int layerId, int height, const CanvasItem* except) const
 {
-    return ItemHeightPlanner().heightUsedByOther(layerItems(layerId), height, except);
+    return ItemHeightPlanner().HeightUsedByOther(LayerItems(layerId), height, except);
 }
 
-bool CanvasScene::normalizeLayerHeights(int layerId)
+bool CanvasScene::NormalizeLayerHeights(int layerId)
 {
-    QList<CanvasItem*> items = layerItems(layerId);
+    QList<CanvasItem*> items = LayerItems(layerId);
     if (items.isEmpty()) {
         return false;
     }
@@ -86,7 +86,7 @@ bool CanvasScene::normalizeLayerHeights(int layerId)
     for (int i = 0; i < items.size(); ++i) {
         CanvasItem* item = items.at(i);
         item->SetZOrder(i + 1);
-        applyItemStacking(item);
+        ApplyItemStacking(item);
         item->update();
     }
 
@@ -103,16 +103,16 @@ bool CanvasScene::normalizeLayerHeights(int layerId)
     return true;
 }
 
-void CanvasScene::normalizeAllHeights()
+void CanvasScene::NormalizeAllHeights()
 {
     for (const CanvasLayer& entry : std::as_const(m_layers)) {
         if (entry.id != BackgroundLayerId) {
-            normalizeLayerHeights(entry.id);
+            NormalizeLayerHeights(entry.id);
         }
     }
 }
 
-ItemStackList CanvasScene::itemStackSnapshot(const QList<CanvasItem*>& items) const
+ItemStackList CanvasScene::ItemStackSnapshot(const QList<CanvasItem*>& items) const
 {
     ItemStackList snapshot;
     for (CanvasItem* item : items) {
@@ -123,9 +123,9 @@ ItemStackList CanvasScene::itemStackSnapshot(const QList<CanvasItem*>& items) co
     return snapshot;
 }
 
-bool CanvasScene::adjustItemHeight(CanvasItem* item, int delta, const QString& text)
+bool CanvasScene::AdjustItemHeight(CanvasItem* item, int delta, const QString& text)
 {
-    if (!item || delta == 0 || !hasLayer(item->LayerId())) {
+    if (!item || delta == 0 || !HasLayer(item->LayerId())) {
         return false;
     }
 
@@ -136,7 +136,7 @@ bool CanvasScene::adjustItemHeight(CanvasItem* item, int delta, const QString& t
     }
 
     CanvasItem* colliding = nullptr;
-    const QList<CanvasItem*> peers = layerItems(item->LayerId());
+    const QList<CanvasItem*> peers = LayerItems(item->LayerId());
     for (CanvasItem* peer : peers) {
         if (peer != item && peer->ZOrder() == target) {
             colliding = peer;
@@ -145,7 +145,7 @@ bool CanvasScene::adjustItemHeight(CanvasItem* item, int delta, const QString& t
     }
 
     const ItemStackList before =
-        itemStackSnapshot(colliding ? QList<CanvasItem*>{item, colliding} : QList<CanvasItem*>{item});
+        ItemStackSnapshot(colliding ? QList<CanvasItem*>{item, colliding} : QList<CanvasItem*>{item});
     ItemStackList after;
     after.append({item, item->LayerId(), target});
     if (colliding) {
@@ -156,21 +156,21 @@ bool CanvasScene::adjustItemHeight(CanvasItem* item, int delta, const QString& t
     if (m_undoStack) {
         m_undoStack->push(new ItemStackCommand(this, before, after, commandText));
     } else {
-        applyItemStack(after);
+        ApplyItemStack(after);
     }
     return true;
 }
 
-int CanvasScene::adjustSelectedHeights(int delta)
+int CanvasScene::AdjustSelectedHeights(int delta)
 {
     if (delta == 0) {
         return 0;
     }
 
     QList<CanvasItem*> targets;
-    const QList<CanvasItem*> selected = selectedCanvasItems();
+    const QList<CanvasItem*> selected = SelectedCanvasItems();
     for (CanvasItem* item : selected) {
-        if (item && isItemEditable(item)) {
+        if (item && IsItemEditable(item)) {
             targets.append(item);
         }
     }
@@ -191,7 +191,7 @@ int CanvasScene::adjustSelectedHeights(int delta)
         bool blocked = false;
         for (auto it = targetsByLayer.constBegin(); it != targetsByLayer.constEnd(); ++it) {
             const QSet<int>& newHeights = newHeightsByLayer[it.key()];
-            for (CanvasItem* peer : layerItems(it.key())) {
+            for (CanvasItem* peer : LayerItems(it.key())) {
                 if (!peer) {
                     continue;
                 }
@@ -213,7 +213,7 @@ int CanvasScene::adjustSelectedHeights(int delta)
         if (blocked) {
             return 0;
         }
-        const ItemStackList before = itemStackSnapshot(targets);
+        const ItemStackList before = ItemStackSnapshot(targets);
         ItemStackList after;
         after.reserve(targets.size());
         for (CanvasItem* item : targets) {
@@ -223,25 +223,25 @@ int CanvasScene::adjustSelectedHeights(int delta)
         if (m_undoStack) {
             m_undoStack->push(new ItemStackCommand(this, before, after, commandText));
         } else {
-            applyItemStack(after);
+            ApplyItemStack(after);
         }
         return targets.size();
     }
 
     // 单选保持原有「与相邻图元互换」语义。
-    return adjustItemHeight(targets.first(), delta) ? 1 : 0;
+    return AdjustItemHeight(targets.first(), delta) ? 1 : 0;
 }
 
-int CanvasScene::moveSelectedItemsToAdjacentLayer(int delta)
+int CanvasScene::MoveSelectedItemsToAdjacentLayer(int delta)
 {
     if (delta == 0) {
         return 0;
     }
 
     QList<CanvasItem*> targets;
-    const QList<CanvasItem*> selected = selectedCanvasItems();
+    const QList<CanvasItem*> selected = SelectedCanvasItems();
     for (CanvasItem* item : selected) {
-        if (item && isItemEditable(item)) {
+        if (item && IsItemEditable(item)) {
             targets.append(item);
         }
     }
@@ -256,7 +256,7 @@ int CanvasScene::moveSelectedItemsToAdjacentLayer(int delta)
 
     int changed = 0;
     for (CanvasItem* item : targets) {
-        if (moveItemToAdjacentLayer(item, delta)) {
+        if (MoveItemToAdjacentLayer(item, delta)) {
             ++changed;
         }
     }
@@ -267,13 +267,13 @@ int CanvasScene::moveSelectedItemsToAdjacentLayer(int delta)
     return changed;
 }
 
-bool CanvasScene::moveItemToAdjacentLayer(CanvasItem* item, int delta, const QString& text)
+bool CanvasScene::MoveItemToAdjacentLayer(CanvasItem* item, int delta, const QString& text)
 {
     if (!item || delta == 0) {
         return false;
     }
 
-    const int currentIndex = layerIndex(item->LayerId());
+    const int currentIndex = LayerIndex(item->LayerId());
     const int targetIndex = currentIndex + delta;
     if (currentIndex <= 0 || targetIndex <= 0 || targetIndex >= m_layers.size()) {
         return false;
@@ -284,8 +284,8 @@ bool CanvasScene::moveItemToAdjacentLayer(CanvasItem* item, int delta, const QSt
         return false;
     }
 
-    const ItemStackList before = itemStackSnapshot({item});
-    const int targetHeight = nextHeight(targetLayerId);
+    const ItemStackList before = ItemStackSnapshot({item});
+    const int targetHeight = NextHeight(targetLayerId);
     if (targetHeight < 0) {
         return false;
     }
@@ -296,51 +296,51 @@ bool CanvasScene::moveItemToAdjacentLayer(CanvasItem* item, int delta, const QSt
     if (m_undoStack) {
         m_undoStack->push(new ItemStackCommand(this, before, after, commandText));
     } else {
-        applyItemStack(after);
+        ApplyItemStack(after);
     }
     return true;
 }
 
-void CanvasScene::applyItemStack(const ItemStackList& stack)
+void CanvasScene::ApplyItemStack(const ItemStackList& stack)
 {
     QSet<int> affectedLayers;
     for (const ItemStack& entry : stack) {
         if (!entry.item) {
             continue;
         }
-        if (!hasLayer(entry.layerId)) {
+        if (!HasLayer(entry.layerId)) {
             entry.item->SetLayerId(m_activeLayerId);
         } else {
             entry.item->SetLayerId(entry.layerId);
         }
         entry.item->SetZOrder(qBound(0, entry.height, scene_constants::MAX_ITEM_HEIGHT));
         affectedLayers.insert(entry.item->LayerId());
-        applyItemStacking(entry.item);
+        ApplyItemStacking(entry.item);
         entry.item->update();
     }
     for (int layerId : std::as_const(affectedLayers)) {
-        normalizeLayerHeights(layerId);
+        NormalizeLayerHeights(layerId);
     }
-    applyAllItemStacking();
-    updateItemFlags();
-    updateSceneExtent();
+    ApplyAllItemStacking();
+    UpdateItemFlags();
+    UpdateSceneExtent();
     update();
     emit contentChanged();
 }
 
-void CanvasScene::assignNewItemPlacement(CanvasItem* item)
+void CanvasScene::AssignNewItemPlacement(CanvasItem* item)
 {
     if (!item) {
         return;
     }
 
-    if (!hasLayer(item->LayerId()) || item->LayerId() == BackgroundLayerId) {
+    if (!HasLayer(item->LayerId()) || item->LayerId() == BackgroundLayerId) {
         item->SetLayerId(m_activeLayerId);
     }
     if (item->ZOrder() < 0 || item->ZOrder() > scene_constants::MAX_ITEM_HEIGHT ||
-        heightUsedByOther(item->LayerId(), item->ZOrder(), item)) {
-        const int height = nextHeight(item->LayerId());
+        HeightUsedByOther(item->LayerId(), item->ZOrder(), item)) {
+        const int height = NextHeight(item->LayerId());
         item->SetZOrder(height >= 0 ? height : 0);
     }
-    applyItemStacking(item);
+    ApplyItemStacking(item);
 }

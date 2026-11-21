@@ -4,7 +4,7 @@
 
 CanvasViewCursor::CanvasViewCursor(CanvasView* view) : m_view(view) {}
 
-void CanvasViewCursor::refresh(ToolMode mode, bool panning)
+void CanvasViewCursor::Refresh(ToolMode mode, bool panning)
 {
     if (panning) {
         m_view->viewport()->setCursor(Qt::ClosedHandCursor);

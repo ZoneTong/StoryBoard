@@ -16,15 +16,15 @@ class CurveItem;
 
 namespace selftest {
 
-QString geometryText(const QPointF& pos, const QSizeF& size);
-QPixmap makeShotImage(int width, int height, const QString& label, const QColor& start, const QColor& end);
-QPixmap makeTextImage(const QString& text, const QColor& color, const QFont& font, int width, int height);
-void addStroke(CanvasScene& scene, const QVector<QPointF>& points, const QColor& color, qreal width, int layerId = -1);
-void addLine(CanvasScene& scene, const QPointF& from, const QPointF& to, const QColor& color, qreal width,
+QString GeometryText(const QPointF& pos, const QSizeF& size);
+QPixmap MakeShotImage(int width, int height, const QString& label, const QColor& start, const QColor& end);
+QPixmap MakeTextImage(const QString& text, const QColor& color, const QFont& font, int width, int height);
+void AddStroke(CanvasScene& scene, const QVector<QPointF>& points, const QColor& color, qreal width, int layerId = -1);
+void AddLine(CanvasScene& scene, const QPointF& from, const QPointF& to, const QColor& color, qreal width,
              int layerId = -1);
-CurveItem* makeLineItem(const QPointF& from, const QPointF& to, const QColor& color);
-void sendMouseEvent(QWidget* target, QEvent::Type type, const QPoint& position, Qt::MouseButton button,
+CurveItem* MakeLineItem(const QPointF& from, const QPointF& to, const QColor& color);
+void SendMouseEvent(QWidget* target, QEvent::Type type, const QPoint& position, Qt::MouseButton button,
                     Qt::MouseButtons buttons, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
-QString demoCanvasPath();
+QString DemoCanvasPath();
 
 } // namespace selftest

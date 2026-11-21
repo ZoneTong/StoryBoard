@@ -24,7 +24,7 @@ QToolButton* makeRowIcon(IconId id, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
-    button->setIcon(makeIcon(id, QColor(139, 144, 156), SMALL_ICON_SIZE));
+    button->setIcon(MakeIcon(id, QColor(139, 144, 156), SMALL_ICON_SIZE));
     button->setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE));
     button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
     button->setAutoRaise(true);
@@ -55,7 +55,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     m_opacitySpin->setSuffix(QStringLiteral(" %"));
     m_opacitySpin->setToolTip(PropertiesPanel::tr("Opacity (100% = opaque)"));
     // 关闭键盘跟踪：输入过程不触发 valueChanged，回车或失焦才提交，
-    // 选中变化触发的 refresh() 也就不会打断正在输入的值。
+    // 选中变化触发的 Refresh() 也就不会打断正在输入的值。
     m_opacitySpin->setKeyboardTracking(false);
     connect(m_opacitySpin, &QSpinBox::valueChanged, this, [this](int value) {
         if (!m_refreshing) {
@@ -273,8 +273,8 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
         QComboBox* combo = new QComboBox(row);
         combo->setObjectName(QStringLiteral("ItemArrowCombo"));
         combo->setToolTip(tooltip);
-        for (ArrowStyle style : allArrowStyles()) {
-            combo->addItem(arrowStyleName(style), static_cast<int>(style));
+        for (ArrowStyle style : AllArrowStyles()) {
+            combo->addItem(ArrowStyleName(style), static_cast<int>(style));
         }
         connect(combo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, combo, signal](int) {
             if (!m_refreshing) {
@@ -293,7 +293,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     outer->addWidget(m_arrowSection);
 }
 
-void PropertiesPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QList<LineItemAbstract*>& strokes,
+void PropertiesPanelValueCard::Refresh(const QList<ShapeItem*>& shapes, const QList<LineItemAbstract*>& strokes,
                                        const QList<CanvasItem*>& items)
 {
     m_refreshing = true;
@@ -306,7 +306,7 @@ void PropertiesPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QL
     if (m_cornerSpin) {
         m_cornerSpin->setEnabled(enabled);
         // 需求 4：圆角上限统一为短边一半，不再写死 400。
-        const QSizeF size = shapes.isEmpty() ? QSizeF() : shapes.first()->contentSize();
+        const QSizeF size = shapes.isEmpty() ? QSizeF() : shapes.first()->ContentSize();
         const int limit = (size.width() > 0.0 && size.height() > 0.0)
                               ? qMax(1, qRound(qMin(size.width(), size.height()) / 2.0))
                               : 400;
@@ -365,7 +365,7 @@ void PropertiesPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QL
         m_triangleAngle1Spin->setEnabled(triangleOn);
         m_triangleAngle2Spin->setEnabled(triangleOn);
         // 底边即内容矩形宽度；角度直接回显当前值，未选中三角形时给默认 64 / 60° / 60°。
-        m_triangleBaseSpin->setValue(triangleOn ? qRound(triangle->contentSize().width()) : 64);
+        m_triangleBaseSpin->setValue(triangleOn ? qRound(triangle->ContentSize().width()) : 64);
         m_triangleAngle1Spin->setValue(triangleOn ? qRound(triangle->BottomAngle1()) : 60);
         m_triangleAngle2Spin->setValue(triangleOn ? qRound(triangle->BottomAngle2()) : 60);
     }
@@ -385,35 +385,35 @@ void PropertiesPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QL
     m_refreshing = false;
 }
 
-void PropertiesPanelValueCard::setArrowVisible(bool visible)
+void PropertiesPanelValueCard::SetArrowVisible(bool visible)
 {
     if (m_arrowSection) {
         m_arrowSection->setVisible(visible);
     }
 }
 
-void PropertiesPanelValueCard::setTriangleVisible(bool visible)
+void PropertiesPanelValueCard::SetTriangleVisible(bool visible)
 {
     if (m_triangleSection) {
         m_triangleSection->setVisible(visible);
     }
 }
 
-void PropertiesPanelValueCard::setCornerVisible(bool visible)
+void PropertiesPanelValueCard::SetCornerVisible(bool visible)
 {
     if (m_cornerSection) {
         m_cornerSection->setVisible(visible);
     }
 }
 
-void PropertiesPanelValueCard::setSineVisible(bool visible)
+void PropertiesPanelValueCard::SetSineVisible(bool visible)
 {
     if (m_sineSection) {
         m_sineSection->setVisible(visible);
     }
 }
 
-void PropertiesPanelValueCard::setArcRadiusVisible(bool visible)
+void PropertiesPanelValueCard::SetArcRadiusVisible(bool visible)
 {
     if (m_startAngleSection) {
         m_startAngleSection->setVisible(visible);

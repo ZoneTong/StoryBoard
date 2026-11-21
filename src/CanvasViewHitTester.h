@@ -12,11 +12,11 @@ class CanvasViewHitTester {
   public:
     explicit CanvasViewHitTester(CanvasView* view, CanvasScene* scene);
 
-    CanvasItem* topItemAt(const QPoint& viewportPos) const;
+    CanvasItem* TopItemAt(const QPoint& viewportPos) const;
     // 只按可见性和叠放顺序命中，不检查工具模式或图层锁定；属性窗自己决定是否可编辑。
-    CanvasItem* propertyItemAt(const QPoint& viewportPos) const;
-    CanvasItem* preferredEditableItemAt(const QPoint& viewportPos) const;
-    CanvasItem* editableItemAt(const QPoint& viewportPos) const;
+    CanvasItem* PropertyItemAt(const QPoint& viewportPos) const;
+    CanvasItem* PreferredEditableItemAt(const QPoint& viewportPos) const;
+    CanvasItem* EditableItemAt(const QPoint& viewportPos) const;
 
   private:
     CanvasView* m_view = nullptr;

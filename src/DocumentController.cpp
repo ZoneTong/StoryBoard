@@ -106,7 +106,7 @@ bool validateCanvasRoot(const QJsonObject& root, QString* error)
     }
 
     // layers 必须是非空数组：缺失 / 置空的「半坏」文件在这里就拦下，
-    // 不进 maybeSave() 消耗用户的未保存内容。
+    // 不进 MaybeSave() 消耗用户的未保存内容。
     if (!root.value(QStringLiteral("layers")).isArray() || root.value(QStringLiteral("layers")).toArray().isEmpty()) {
         if (error) {
             *error = MainWindow::tr("This is not a valid StoryBoard canvas file.");
@@ -151,49 +151,49 @@ bool validateCanvasRoot(const QJsonObject& root, QString* error)
 
 DocumentController::DocumentController(MainWindow* window) : m_window(window) {}
 
-void DocumentController::newCanvas()
+void DocumentController::NewCanvas()
 {
-    if (!maybeSave()) {
+    if (!MaybeSave()) {
         return;
     }
 
-    m_window->m_view->cancelCurrentStroke();
-    m_window->m_scene->resetDocument();
-    m_window->m_scene->applyCanvasSize(m_window->m_settings.canvasSize);
-    m_window->m_scene->setShowGrid(m_window->m_settings.showGrid);
-    m_window->m_scene->setCanvasBackground(CanvasBackground());
+    m_window->m_view->CancelCurrentStroke();
+    m_window->m_scene->ResetDocument();
+    m_window->m_scene->ApplyCanvasSize(m_window->m_settings.canvasSize);
+    m_window->m_scene->SetShowGrid(m_window->m_settings.showGrid);
+    m_window->m_scene->SetCanvasBackground(CanvasBackground());
     m_window->m_filePath.clear();
     m_window->m_undo->clear();
     m_window->m_undo->setClean();
 
     if (m_window->m_view->mode() != ToolMode::VIEW) {
-        m_window->m_view->setMode(ToolMode::VIEW);
+        m_window->m_view->SetMode(ToolMode::VIEW);
     } else {
-        m_window->m_view->fitAll();
+        m_window->m_view->FitAll();
     }
 
-    m_window->updateModeUi();
-    m_window->updateTitle();
-    m_window->updateStatusBar();
-    m_window->updateActions();
+    m_window->UpdateModeUi();
+    m_window->UpdateTitle();
+    m_window->UpdateStatusBar();
+    m_window->UpdateActions();
     m_window->statusBar()->showMessage(MainWindow::tr("New empty canvas created"), 3000);
 }
 
-void DocumentController::openCanvasDialog()
+void DocumentController::OpenCanvasDialog()
 {
     const QString path = QFileDialog::getOpenFileName(m_window, MainWindow::tr("Open canvas"),
-                                                      AppSettings::canvasesDir(), canvasFilter());
+                                                      AppSettings::CanvasesDir(), canvasFilter());
     if (!path.isEmpty()) {
-        loadCanvasFile(path, true);
+        LoadCanvasFile(path, true);
     }
 }
 
-bool DocumentController::openCanvasFile(const QString& path)
+bool DocumentController::OpenCanvasFile(const QString& path)
 {
-    return loadCanvasFile(path, true);
+    return LoadCanvasFile(path, true);
 }
 
-bool DocumentController::loadCanvasFile(const QString& path, bool showErrors)
+bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors)
 {
     // 需求 2：文件体积闸门，20MB 以上的场景不读进内存，避免崩溃或长时间假死。
     constexpr qint64 MAX_SCENE_BYTES = 20LL * 1024 * 1024;
@@ -229,10 +229,10 @@ bool DocumentController::loadCanvasFile(const QString& path, bool showErrors)
     bool importedExcalidraw = false;
     QJsonObject usableRoot = root;
     QStringList excalidrawNotes;
-    if (Excalidraw::isScene(root)) {
+    if (Excalidraw::IsScene(root)) {
         // 含图片的场景先问一次是否保留位图，默认按老行为跳过图片。
         const bool keepImages = sceneHasImages(root) && askKeepImagesAsBitmap(m_window);
-        usableRoot = Excalidraw::sceneToStoryBoard(root, &excalidrawNotes, keepImages);
+        usableRoot = Excalidraw::SceneToStoryBoard(root, &excalidrawNotes, keepImages);
         if (usableRoot.isEmpty()) {
             if (showErrors) {
                 reportWarning(m_window, MainWindow::tr("Import Excalidraw"),
@@ -258,11 +258,11 @@ bool DocumentController::loadCanvasFile(const QString& path, bool showErrors)
         }
     }
 
-    if (!maybeSave()) {
+    if (!MaybeSave()) {
         return false;
     }
 
-    m_window->m_view->finishCurrentStroke();
+    m_window->m_view->FinishCurrentStroke();
     QString loadError;
     if (!m_window->m_scene->FromJson(usableRoot, &loadError)) {
         if (showErrors) {
@@ -275,18 +275,18 @@ bool DocumentController::loadCanvasFile(const QString& path, bool showErrors)
     m_window->m_filePath = importedExcalidraw ? QString() : QFileInfo(path).absoluteFilePath();
     m_window->m_undo->setClean();
     if (m_window->m_view->mode() != ToolMode::VIEW) {
-        m_window->m_view->setMode(ToolMode::VIEW);
+        m_window->m_view->SetMode(ToolMode::VIEW);
     } else {
-        m_window->m_view->fitAll();
+        m_window->m_view->FitAll();
     }
 
     if (!importedExcalidraw) {
         m_window->m_settings.lastCanvasPath = m_window->m_filePath;
     }
-    m_window->updateModeUi();
-    m_window->updateTitle();
-    m_window->updateStatusBar();
-    m_window->updateActions();
+    m_window->UpdateModeUi();
+    m_window->UpdateTitle();
+    m_window->UpdateStatusBar();
+    m_window->UpdateActions();
     if (importedExcalidraw) {
         QString message = MainWindow::tr("Imported an Excalidraw scene as a new canvas");
         if (!excalidrawNotes.isEmpty()) {
@@ -299,26 +299,26 @@ bool DocumentController::loadCanvasFile(const QString& path, bool showErrors)
     }
     if (legacyStrokes > 0) {
         m_window->statusBar()->showMessage(
-            MainWindow::tr("Skipped %1 legacy stroke item(s); curves are not backward compatible").arg(legacyStrokes),
+            MainWindow::tr("Skipped %1 legacy stroke Item(s); curves are not backward compatible").arg(legacyStrokes),
             6000);
     }
     return true;
 }
 
-bool DocumentController::saveCanvas()
+bool DocumentController::SaveCanvas()
 {
     if (m_window->m_filePath.isEmpty()) {
-        return saveCanvasAs();
+        return SaveCanvasAs();
     }
-    return saveToFile(m_window->m_filePath);
+    return SaveToFile(m_window->m_filePath);
 }
 
-bool DocumentController::saveCanvasAs()
+bool DocumentController::SaveCanvasAs()
 {
     QString suggestion = m_window->m_filePath;
     if (suggestion.isEmpty()) {
-        const QString name = documentName();
-        suggestion = QDir(AppSettings::canvasesDir()).filePath(name + QStringLiteral(".sbcanvas"));
+        const QString name = DocumentName();
+        suggestion = QDir(AppSettings::CanvasesDir()).filePath(name + QStringLiteral(".sbcanvas"));
     }
 
     QString path = QFileDialog::getSaveFileName(m_window, MainWindow::tr("Save canvas as"), suggestion,
@@ -329,12 +329,12 @@ bool DocumentController::saveCanvasAs()
     if (!path.endsWith(QStringLiteral(".sbcanvas"), Qt::CaseInsensitive)) {
         path += QStringLiteral(".sbcanvas");
     }
-    return saveToFile(path);
+    return SaveToFile(path);
 }
 
-bool DocumentController::saveToFile(const QString& path)
+bool DocumentController::SaveToFile(const QString& path)
 {
-    m_window->m_view->finishCurrentStroke();
+    m_window->m_view->FinishCurrentStroke();
 
     const QJsonDocument document(m_window->m_scene->ToJson());
     const QByteArray data = document.toJson(QJsonDocument::Indented);
@@ -354,18 +354,18 @@ bool DocumentController::saveToFile(const QString& path)
 
     m_window->m_filePath = QFileInfo(path).absoluteFilePath();
     m_window->m_settings.lastCanvasPath = m_window->m_filePath;
-    m_window->m_settings.save();
+    m_window->m_settings.Save();
     m_window->m_undo->setClean();
-    m_window->updateTitle();
-    m_window->updateActions();
+    m_window->UpdateTitle();
+    m_window->UpdateActions();
     m_window->statusBar()->showMessage(
         MainWindow::tr("Canvas saved: %1").arg(QFileInfo(m_window->m_filePath).fileName()), 4000);
     return true;
 }
 
-void DocumentController::exportCustomShape()
+void DocumentController::ExportCustomShape()
 {
-    const QJsonArray items = m_window->m_scene->clipboardItems();
+    const QJsonArray items = m_window->m_scene->ClipboardItems();
     if (items.isEmpty()) {
         m_window->statusBar()->showMessage(MainWindow::tr("Select at least one editable item first"), 3000);
         return;
@@ -386,11 +386,11 @@ void DocumentController::exportCustomShape()
     }
 
     // 默认存到可写模板目录：配置同级不可写时（装在 Program Files）不会把文件丢到只读路径。
-    QString shapesDir = AppSettings::writableShapesDir();
+    QString shapesDir = AppSettings::WritableShapesDir();
     if (shapesDir.isEmpty()) {
-        shapesDir = AppSettings::shapesDir();
+        shapesDir = AppSettings::ShapesDir();
     }
-    QString suggestion = QDir(shapesDir).filePath(documentName() + QStringLiteral(".sbcanvas"));
+    QString suggestion = QDir(shapesDir).filePath(DocumentName() + QStringLiteral(".sbcanvas"));
     QString path = QFileDialog::getSaveFileName(m_window, MainWindow::tr("Export custom shape"), suggestion,
                                                 MainWindow::tr("StoryBoard canvases (*.sbcanvas)"));
     if (path.isEmpty()) {
@@ -447,12 +447,12 @@ void DocumentController::exportCustomShape()
     m_window->statusBar()->showMessage(MainWindow::tr("Custom shape saved: %1").arg(QFileInfo(path).fileName()), 4000);
 }
 
-void DocumentController::exportExcalidraw()
+void DocumentController::ExportExcalidraw()
 {
-    m_window->m_view->finishCurrentStroke();
+    m_window->m_view->FinishCurrentStroke();
     QString suggestion = m_window->m_filePath;
     if (suggestion.isEmpty()) {
-        suggestion = QDir(AppSettings::canvasesDir()).filePath(documentName() + QStringLiteral(".excalidraw"));
+        suggestion = QDir(AppSettings::CanvasesDir()).filePath(DocumentName() + QStringLiteral(".excalidraw"));
     } else {
         suggestion = QFileInfo(suggestion).absolutePath() + QStringLiteral("/") +
                      QFileInfo(suggestion).completeBaseName() + QStringLiteral(".excalidraw");
@@ -468,7 +468,7 @@ void DocumentController::exportExcalidraw()
     }
 
     QStringList notes;
-    const QJsonObject scene = Excalidraw::storyBoardToScene(m_window->m_scene->ToJson(), &notes);
+    const QJsonObject scene = Excalidraw::StoryBoardToScene(m_window->m_scene->ToJson(), &notes);
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly)) {
         reportWarning(m_window, MainWindow::tr("Export Excalidraw"),
@@ -489,7 +489,7 @@ void DocumentController::exportExcalidraw()
     m_window->statusBar()->showMessage(message, 5000);
 }
 
-bool DocumentController::maybeSave()
+bool DocumentController::MaybeSave()
 {
     if (!m_window->m_undo || m_window->m_undo->isClean()) {
         return true;
@@ -507,7 +507,7 @@ bool DocumentController::maybeSave()
     box.exec();
 
     if (box.clickedButton() == saveButton) {
-        return saveCanvas();
+        return SaveCanvas();
     }
     if (box.clickedButton() == discardButton) {
         return true;
@@ -515,7 +515,7 @@ bool DocumentController::maybeSave()
     return false;
 }
 
-void DocumentController::updateCanvasesMenu()
+void DocumentController::UpdateCanvasesMenu()
 {
     if (!m_window->m_fileMenu || !m_window->m_boardSectionSeparator) {
         return;
@@ -542,7 +542,7 @@ void DocumentController::updateCanvasesMenu()
     items.append(m_window->m_settingsAct);
     items.append(nullptr); // 占位：之后换成真正的分隔线
 
-    QDir directory(AppSettings::canvasesDir());
+    QDir directory(AppSettings::CanvasesDir());
     const QFileInfoList files = directory.entryInfoList({QStringLiteral("*.sbcanvas")}, QDir::Files, QDir::Time);
     if (files.isEmpty()) {
         QAction* emptyAction = new QAction(MainWindow::tr("(Canvas folder is empty)"), m_window->m_fileMenu);
@@ -552,14 +552,14 @@ void DocumentController::updateCanvasesMenu()
         const int maximum = qMin(15, static_cast<int>(files.size()));
         for (int i = 0; i < maximum; ++i) {
             const QFileInfo info = files.at(i);
-            QAction* action = new QAction(makeIcon(IconId::SAVE, QColor(90, 98, 112), 16), info.completeBaseName(),
+            QAction* action = new QAction(MakeIcon(IconId::SAVE, QColor(90, 98, 112), 16), info.completeBaseName(),
                                           m_window->m_fileMenu);
             action->setCheckable(true);
             action->setChecked(info.absoluteFilePath() == m_window->m_filePath);
             action->setToolTip(QDir::toNativeSeparators(info.absoluteFilePath()));
             const QString filePath = info.absoluteFilePath();
             QObject::connect(action, &QAction::triggered, m_window,
-                             [this, filePath]() { loadCanvasFile(filePath, true); });
+                             [this, filePath]() { LoadCanvasFile(filePath, true); });
             items.append(action);
         }
         if (files.size() > maximum) {
@@ -572,7 +572,7 @@ void DocumentController::updateCanvasesMenu()
 
     items.append(nullptr); // 占位：画布列表之后的分隔线
     QAction* openFolderAction = new QAction(MainWindow::tr("Open canvases folder"), m_window->m_fileMenu);
-    QObject::connect(openFolderAction, &QAction::triggered, m_window, &MainWindow::openCanvasesFolder);
+    QObject::connect(openFolderAction, &QAction::triggered, m_window, &MainWindow::OpenCanvasesFolder);
     items.append(openFolderAction);
 
     // 全部插到“退出”之前，保持原来画板菜单的顺序：设置 → 最近画布 → 画布文件夹。
@@ -587,14 +587,14 @@ void DocumentController::updateCanvasesMenu()
     }
 }
 
-void DocumentController::openCanvasesFolder()
+void DocumentController::OpenCanvasesFolder()
 {
-    const QString directory = AppSettings::canvasesDir();
+    const QString directory = AppSettings::CanvasesDir();
     QDir().mkpath(directory);
     QDesktopServices::openUrl(QUrl::fromLocalFile(directory));
 }
 
-QString DocumentController::documentName() const
+QString DocumentController::DocumentName() const
 {
     if (m_window->m_filePath.isEmpty()) {
         return MainWindow::tr("Untitled canvas");
@@ -603,9 +603,9 @@ QString DocumentController::documentName() const
     return name.isEmpty() ? MainWindow::tr("Untitled canvas") : name;
 }
 
-void DocumentController::updateTitle()
+void DocumentController::UpdateTitle()
 {
-    m_window->setWindowTitle(MainWindow::tr("%1[*] - StoryBoard").arg(documentName()));
+    m_window->setWindowTitle(MainWindow::tr("%1[*] - StoryBoard").arg(DocumentName()));
     m_window->setWindowModified(m_window->m_undo && !m_window->m_undo->isClean());
     if (!m_window->m_filePath.isEmpty()) {
         m_window->setWindowFilePath(m_window->m_filePath);

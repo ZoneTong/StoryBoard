@@ -38,7 +38,7 @@ qreal pointToSegmentDistance(const QPointF& point, const QPointF& start, const Q
 
 namespace LineArtInternal {
 
-QVector<QPointF> simplifyContour(const QVector<QPointF>& points, qreal tolerance)
+QVector<QPointF> SimplifyContour(const QVector<QPointF>& points, qreal tolerance)
 {
     if (points.size() <= 2 || tolerance <= 0.0) {
         return points;
@@ -84,7 +84,7 @@ QVector<QPointF> simplifyContour(const QVector<QPointF>& points, qreal tolerance
     return result;
 }
 
-QVector<QPointF> traceContour(const QVector<int>& labels, int width, int height, int seed, int regionId)
+QVector<QPointF> TraceContour(const QVector<int>& labels, int width, int height, int seed, int regionId)
 {
     QVector<QPointF> contour;
     const int startX = seed % width;
@@ -139,7 +139,7 @@ QVector<QPointF> traceContour(const QVector<int>& labels, int width, int height,
     return contour;
 }
 
-QVector<QPointF> buildOutlinePoints(const QVector<QPointF>& contour, int area, const LineArtConverter::Options& options)
+QVector<QPointF> BuildOutlinePoints(const QVector<QPointF>& contour, int area, const LineArtConverter::Options& options)
 {
     if (contour.size() < 3) {
         return {};
@@ -152,7 +152,7 @@ QVector<QPointF> buildOutlinePoints(const QVector<QPointF>& contour, int area, c
         return {};
     }
 
-    QVector<QPointF> points = simplifyContour(contour, options.simplifyTolerance);
+    QVector<QPointF> points = SimplifyContour(contour, options.simplifyTolerance);
     if (points.size() < 2) {
         return {};
     }

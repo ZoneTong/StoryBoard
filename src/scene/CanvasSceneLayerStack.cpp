@@ -6,7 +6,7 @@
 #include <QSet>
 #include <QUndoStack>
 
-int CanvasScene::createLayer(const QString& name)
+int CanvasScene::CreateLayer(const QString& name)
 {
     const int id = m_nextLayerId++;
     CanvasLayer entry;
@@ -14,7 +14,7 @@ int CanvasScene::createLayer(const QString& name)
     entry.name = name.trimmed().isEmpty() ? QStringLiteral("图层 %1").arg(id) : name.trimmed();
     m_layers.append(entry);
     m_activeLayerId = id;
-    applyAllItemStacking();
+    ApplyAllItemStacking();
     update();
     emit layersChanged();
     emit activeLayerChanged(m_activeLayerId);
@@ -22,9 +22,9 @@ int CanvasScene::createLayer(const QString& name)
     return id;
 }
 
-bool CanvasScene::addLayerWithUndo(const QString& name)
+bool CanvasScene::AddLayerWithUndo(const QString& name)
 {
-    const LayerStackState before = layerState();
+    const LayerStackState before = LayerState();
     const int id = m_nextLayerId++;
     CanvasLayer entry;
     entry.id = id;
@@ -38,12 +38,12 @@ bool CanvasScene::addLayerWithUndo(const QString& name)
     if (m_undoStack) {
         m_undoStack->push(new LayerStateCommand(this, before, after, text));
     } else {
-        applyLayerStateInternal(after);
+        ApplyLayerStateInternal(after);
     }
     return true;
 }
 
-bool CanvasScene::removeLayerWithUndo(int layerId, QString* errorMessage)
+bool CanvasScene::RemoveLayerWithUndo(int layerId, QString* errorMessage)
 {
     auto fail = [errorMessage](const QString& message) {
         if (errorMessage) {
@@ -52,18 +52,18 @@ bool CanvasScene::removeLayerWithUndo(int layerId, QString* errorMessage)
         return false;
     };
 
-    const int index = layerIndex(layerId);
+    const int index = LayerIndex(layerId);
     if (index <= 0) {
         return fail(tr("The background layer cannot be deleted."));
     }
-    if (userLayerCount() <= 1) {
+    if (UserLayerCount() <= 1) {
         return fail(tr("At least one layer must remain."));
     }
-    if (layerItemCount(layerId) > 0) {
+    if (LayerItemCount(layerId) > 0) {
         return fail(tr("This layer still contains items. Delete or move them first."));
     }
 
-    const LayerStackState before = layerState();
+    const LayerStackState before = LayerState();
     LayerStackState after = before;
     after.layers.removeAt(index);
     if (after.activeLayerId == layerId) {
@@ -74,14 +74,14 @@ bool CanvasScene::removeLayerWithUndo(int layerId, QString* errorMessage)
     if (m_undoStack) {
         m_undoStack->push(new LayerStateCommand(this, before, after, tr("Delete layer")));
     } else {
-        applyLayerStateInternal(after);
+        ApplyLayerStateInternal(after);
     }
     return true;
 }
 
-bool CanvasScene::moveLayerWithUndo(int layerId, int delta)
+bool CanvasScene::MoveLayerWithUndo(int layerId, int delta)
 {
-    const int index = layerIndex(layerId);
+    const int index = LayerIndex(layerId);
     if (index <= 0 || delta == 0) {
         return false;
     }
@@ -91,7 +91,7 @@ bool CanvasScene::moveLayerWithUndo(int layerId, int delta)
         return false;
     }
 
-    const LayerStackState before = layerState();
+    const LayerStackState before = LayerState();
     LayerStackState after = before;
     after.layers.swapItemsAt(index, target);
 
@@ -99,14 +99,14 @@ bool CanvasScene::moveLayerWithUndo(int layerId, int delta)
     if (m_undoStack) {
         m_undoStack->push(new LayerStateCommand(this, before, after, text));
     } else {
-        applyLayerStateInternal(after);
+        ApplyLayerStateInternal(after);
     }
     return true;
 }
 
-bool CanvasScene::renameLayerWithUndo(int layerId, const QString& name)
+bool CanvasScene::RenameLayerWithUndo(int layerId, const QString& name)
 {
-    const int index = layerIndex(layerId);
+    const int index = LayerIndex(layerId);
     if (index <= 0) {
         return false;
     }
@@ -116,7 +116,7 @@ bool CanvasScene::renameLayerWithUndo(int layerId, const QString& name)
         return false;
     }
 
-    const LayerStackState before = layerState();
+    const LayerStackState before = LayerState();
     LayerStackState after = before;
     after.layers[index].name = trimmed;
 
@@ -124,12 +124,12 @@ bool CanvasScene::renameLayerWithUndo(int layerId, const QString& name)
     if (m_undoStack) {
         m_undoStack->push(new LayerStateCommand(this, before, after, text));
     } else {
-        applyLayerStateInternal(after);
+        ApplyLayerStateInternal(after);
     }
     return true;
 }
 
-LayerStackState CanvasScene::layerState() const
+LayerStackState CanvasScene::LayerState() const
 {
     LayerStackState state;
     state.layers = m_layers;
@@ -137,12 +137,12 @@ LayerStackState CanvasScene::layerState() const
     return state;
 }
 
-void CanvasScene::applyLayerState(const LayerStackState& state)
+void CanvasScene::ApplyLayerState(const LayerStackState& state)
 {
-    applyLayerStateInternal(sanitizedLayerState(state));
+    ApplyLayerStateInternal(SanitizedLayerState(state));
 }
 
-LayerStackState CanvasScene::sanitizedLayerState(const LayerStackState& state) const
+LayerStackState CanvasScene::SanitizedLayerState(const LayerStackState& state) const
 {
     LayerStackState result;
     bool backgroundVisible = true;
@@ -189,7 +189,7 @@ LayerStackState CanvasScene::sanitizedLayerState(const LayerStackState& state) c
     return result;
 }
 
-void CanvasScene::applyLayerStateInternal(const LayerStackState& state, bool preserveLock)
+void CanvasScene::ApplyLayerStateInternal(const LayerStackState& state, bool preserveLock)
 {
     const QList<CanvasLayer> previousLayers = m_layers;
     m_layers = state.layers;
@@ -219,26 +219,26 @@ void CanvasScene::applyLayerStateInternal(const LayerStackState& state, bool pre
         m_nextLayerId = qMax(m_nextLayerId, entry.id + 1);
     }
 
-    const QList<CanvasItem*> items = canvasItems();
+    const QList<CanvasItem*> items = CanvasItems();
     for (CanvasItem* item : items) {
-        if (!hasLayer(item->LayerId())) {
+        if (!HasLayer(item->LayerId())) {
             item->SetLayerId(m_activeLayerId);
         }
     }
-    normalizeAllHeights();
-    applyAllItemStacking();
-    updateItemFlags();
-    updateSceneExtent();
+    NormalizeAllHeights();
+    ApplyAllItemStacking();
+    UpdateItemFlags();
+    UpdateSceneExtent();
     update();
     emit layersChanged();
     emit activeLayerChanged(m_activeLayerId);
     emit contentChanged();
 }
 
-void CanvasScene::ensureLayerState()
+void CanvasScene::EnsureLayerState()
 {
-    const LayerStackState fixed = sanitizedLayerState(layerState());
+    const LayerStackState fixed = SanitizedLayerState(LayerState());
     if (fixed.layers != m_layers || fixed.activeLayerId != m_activeLayerId) {
-        applyLayerStateInternal(fixed, false);
+        ApplyLayerStateInternal(fixed, false);
     }
 }

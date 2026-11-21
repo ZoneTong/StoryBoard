@@ -1,6 +1,6 @@
 #include "ShapeMeta.h"
 
-QList<ShapeType> ShapeMeta::allTypes()
+QList<ShapeType> ShapeMeta::AllTypes()
 {
     // 需求 7：菜单与工具栏「常见图形」共用这一份常用顺序表（唯一顺序源）。
     // 需求 9：平行四边形紧跟菱形，方便和立方体三个面归在一处认图。
@@ -10,7 +10,7 @@ QList<ShapeType> ShapeMeta::allTypes()
             ShapeType::HEXAGRAM,  ShapeType::HEART,    ShapeType::FLAG_WAVE,     ShapeType::SCROLL};
 }
 
-QString ShapeMeta::typeToString(ShapeType type)
+QString ShapeMeta::TypeToString(ShapeType type)
 {
     switch (type) {
     case ShapeType::RECTANGLE:
@@ -53,7 +53,7 @@ QString ShapeMeta::typeToString(ShapeType type)
     return QStringLiteral("rectangle");
 }
 
-ShapeType ShapeMeta::typeFromString(const QString& value)
+ShapeType ShapeMeta::TypeFromString(const QString& value)
 {
     const QString normalized = value.trimmed().toLower();
     if (normalized == QStringLiteral("rounded_rectangle") || normalized == QStringLiteral("roundedrect") ||
@@ -125,7 +125,7 @@ ShapeType ShapeMeta::typeFromString(const QString& value)
     return ShapeType::RECTANGLE;
 }
 
-bool ShapeMeta::isFilled(ShapeType type)
+bool ShapeMeta::IsFilled(ShapeType type)
 {
     switch (type) {
     case ShapeType::RECTANGLE:
@@ -149,14 +149,14 @@ bool ShapeMeta::isFilled(ShapeType type)
     return false;
 }
 
-QList<FillStyle> ShapeMeta::allStyles()
+QList<FillStyle> ShapeMeta::AllStyles()
 {
     return {FillStyle::NONE,           FillStyle::SOLID,      FillStyle::HACHURE,   FillStyle::REVERSE_HACHURE,
             FillStyle::CROSS_HATCH,    FillStyle::GRID_HATCH, FillStyle::HONEYCOMB, FillStyle::HORIZONTAL_HATCH,
             FillStyle::VERTICAL_HATCH, FillStyle::BRICK,      FillStyle::DOTS};
 }
 
-QString ShapeMeta::styleToString(FillStyle style)
+QString ShapeMeta::StyleToString(FillStyle style)
 {
     switch (style) {
     case FillStyle::NONE:
@@ -185,7 +185,7 @@ QString ShapeMeta::styleToString(FillStyle style)
     return QStringLiteral("solid");
 }
 
-FillStyle ShapeMeta::styleFromString(const QString& value)
+FillStyle ShapeMeta::StyleFromString(const QString& value)
 {
     const QString normalized = value.trimmed().toLower();
     if (normalized == QStringLiteral("none") || normalized == QStringLiteral("transparent")) {

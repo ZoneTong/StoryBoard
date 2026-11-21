@@ -14,8 +14,8 @@ QList<CanvasItem*> alignmentTargets(CanvasScene* scene)
     if (!scene) {
         return items;
     }
-    for (CanvasItem* item : scene->selectedCanvasItems()) {
-        if (item && scene->isItemEditable(item)) {
+    for (CanvasItem* item : scene->SelectedCanvasItems()) {
+        if (item && scene->IsItemEditable(item)) {
             items.append(item);
         }
     }
@@ -63,7 +63,7 @@ QList<qreal> distributeDeltas(QList<CanvasItem*> items, bool horizontal, const Q
 
 namespace Alignment {
 
-bool supports(CanvasScene* scene, Mode mode)
+bool Supports(CanvasScene* scene, Mode mode)
 {
     const int count = alignmentTargets(scene).size();
     if (mode == Mode::DISTRIBUTE_HORIZONTAL || mode == Mode::DISTRIBUTE_VERTICAL) {
@@ -72,7 +72,7 @@ bool supports(CanvasScene* scene, Mode mode)
     return count >= 2;
 }
 
-int apply(CanvasScene* scene, Mode mode, const QString& commandText)
+int Apply(CanvasScene* scene, Mode mode, const QString& commandText)
 {
     QList<CanvasItem*> items = alignmentTargets(scene);
     if (items.size() < 2) {
@@ -144,14 +144,14 @@ int apply(CanvasScene* scene, Mode mode, const QString& commandText)
     for (int i = 0; i < items.size(); ++i) {
         CanvasItem* item = items.at(i);
         const QPointF delta(dxs.at(i), dys.at(i));
-        before.append({item, item->pos(), item->contentSize()});
-        after.append({item, item->pos() + delta, item->contentSize()});
+        before.append({item, item->pos(), item->ContentSize()});
+        after.append({item, item->pos() + delta, item->ContentSize()});
         if (!qFuzzyIsNull(delta.x()) || !qFuzzyIsNull(delta.y())) {
             ++moved;
         }
     }
     if (moved > 0) {
-        scene->pushGeometry(before, after, commandText);
+        scene->PushGeometry(before, after, commandText);
     }
     return moved;
 }

@@ -18,11 +18,11 @@ class PropertiesPanelFillBorderCard : public QWidget {
   public:
     explicit PropertiesPanelFillBorderCard(QWidget* parent = nullptr);
 
-    void refresh(const QList<ShapeItem*>& shapes, const QList<LineItemAbstract*>& strokes,
+    void Refresh(const QList<ShapeItem*>& shapes, const QList<LineItemAbstract*>& strokes,
                  const QList<ShapeItem*>& composites = QList<ShapeItem*>());
-    QWidget* fillStyleRow() const { return m_fillStyleRow; }
-    QWidget* borderStyleRow() const { return m_borderStyleRow; }
-    QWidget* borderWidthRow() const { return m_borderWidthRow; }
+    QWidget* FillStyleRow() const { return m_fillStyleRow; }
+    QWidget* BorderStyleRow() const { return m_borderStyleRow; }
+    QWidget* BorderWidthRow() const { return m_borderWidthRow; }
 
   signals:
     void fillStyleChosen(FillStyle style);

@@ -17,7 +17,7 @@
 
 namespace selftest {
 
-QString geometryText(const QPointF& pos, const QSizeF& size)
+QString GeometryText(const QPointF& pos, const QSizeF& size)
 {
     return QStringLiteral("pos=(%1,%2) size=(%3,%4)")
         .arg(pos.x(), 0, 'f', 1)
@@ -26,7 +26,7 @@ QString geometryText(const QPointF& pos, const QSizeF& size)
         .arg(size.height(), 0, 'f', 1);
 }
 
-QPixmap makeShotImage(int width, int height, const QString& label, const QColor& start, const QColor& end)
+QPixmap MakeShotImage(int width, int height, const QString& label, const QColor& start, const QColor& end)
 {
     QPixmap pixmap(width, height);
     pixmap.fill(Qt::transparent);
@@ -67,7 +67,7 @@ QPixmap makeShotImage(int width, int height, const QString& label, const QColor&
     return pixmap;
 }
 
-QPixmap makeTextImage(const QString& text, const QColor& color, const QFont& font, int width, int height)
+QPixmap MakeTextImage(const QString& text, const QColor& color, const QFont& font, int width, int height)
 {
     QPixmap pixmap(width, height);
     pixmap.fill(Qt::transparent);
@@ -81,40 +81,40 @@ QPixmap makeTextImage(const QString& text, const QColor& color, const QFont& fon
     return pixmap;
 }
 
-void addStroke(CanvasScene& scene, const QVector<QPointF>& points, const QColor& color, qreal width, int layerId)
+void AddStroke(CanvasScene& scene, const QVector<QPointF>& points, const QColor& color, qreal width, int layerId)
 {
     auto* stroke = new CurveItem();
     stroke->SetLayerId(layerId);
-    stroke->beginStroke(points.constFirst(), color, width);
+    stroke->BeginStroke(points.constFirst(), color, width);
     for (int i = 1; i < points.size(); ++i) {
-        stroke->appendScenePoint(points.at(i));
+        stroke->AppendScenePoint(points.at(i));
     }
-    stroke->endStroke();
-    scene.attachItem(stroke);
+    stroke->EndStroke();
+    scene.AttachItem(stroke);
 }
 
-void addLine(CanvasScene& scene, const QPointF& from, const QPointF& to, const QColor& color, qreal width, int layerId)
+void AddLine(CanvasScene& scene, const QPointF& from, const QPointF& to, const QColor& color, qreal width, int layerId)
 {
-    addStroke(scene, {from, to}, color, width, layerId);
+    AddStroke(scene, {from, to}, color, width, layerId);
 }
 
-CurveItem* makeLineItem(const QPointF& from, const QPointF& to, const QColor& color)
+CurveItem* MakeLineItem(const QPointF& from, const QPointF& to, const QColor& color)
 {
     auto* item = new CurveItem();
-    item->beginStroke(from, color, 4.0);
-    item->appendScenePoint(to);
-    item->endStroke();
+    item->BeginStroke(from, color, 4.0);
+    item->AppendScenePoint(to);
+    item->EndStroke();
     return item;
 }
 
-void sendMouseEvent(QWidget* target, QEvent::Type type, const QPoint& position, Qt::MouseButton button,
+void SendMouseEvent(QWidget* target, QEvent::Type type, const QPoint& position, Qt::MouseButton button,
                     Qt::MouseButtons buttons, Qt::KeyboardModifiers modifiers)
 {
     QMouseEvent event(type, QPointF(position), QPointF(target->mapToGlobal(position)), button, buttons, modifiers);
     QApplication::sendEvent(target, &event);
 }
 
-QString demoCanvasPath()
+QString DemoCanvasPath()
 {
     const QString appDir = QCoreApplication::applicationDirPath();
     const QString adjacent = QDir(appDir).filePath(QStringLiteral("examples/demo-canvas.sbcanvas"));

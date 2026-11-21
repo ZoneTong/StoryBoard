@@ -26,12 +26,12 @@ TextItem::TextItem(QGraphicsItem* parent) : CanvasItem(parent)
 {
     m_font.setFamily(QStringLiteral("Microsoft YaHei UI"));
     m_font.setPointSizeF(DEFAULT_POINT_SIZE);
-    m_baseSize = measure(QString(), m_font);
+    m_baseSize = Measure(QString(), m_font);
 }
 
 ItemPropertySet TextItem::Properties() const
 {
-    return CanvasItem::Properties().united(
+    return CanvasItem::Properties().United(
         ItemPropertySet{ItemProperty::TEXT_CONTENT, ItemProperty::TEXT_COLOR, ItemProperty::TEXT_FONT});
 }
 
@@ -53,13 +53,13 @@ void TextItem::SetPropertyValue(ItemProperty property, const QVariant& value)
 {
     switch (property) {
     case ItemProperty::TEXT_CONTENT:
-        setTextFormat(value.toString(), m_font, m_color);
+        SetTextFormat(value.toString(), m_font, m_color);
         break;
     case ItemProperty::TEXT_COLOR:
-        setTextFormat(m_text, m_font, value.value<QColor>());
+        SetTextFormat(m_text, m_font, value.value<QColor>());
         break;
     case ItemProperty::TEXT_FONT:
-        setTextFormat(m_text, value.value<QFont>(), m_color);
+        SetTextFormat(m_text, value.value<QFont>(), m_color);
         break;
     default:
         CanvasItem::SetPropertyValue(property, value);
@@ -81,7 +81,7 @@ QString TextItem::TypeDisplayName() const
     return tr("Text");
 }
 
-QSizeF TextItem::measure(const QString& text, const QFont& font)
+QSizeF TextItem::Measure(const QString& text, const QFont& font)
 {
     const QFont effective = normalizedFont(font);
     const QFontMetricsF metrics(effective);
@@ -99,12 +99,12 @@ QSizeF TextItem::measure(const QString& text, const QFont& font)
     return QSizeF(qMax<qreal>(64.0, width + 2.0 * PADDING), qMax<qreal>(32.0, height + 2.0 * PADDING));
 }
 
-void TextItem::setTextFormat(const QString& text, const QFont& font, const QColor& color)
+void TextItem::SetTextFormat(const QString& text, const QFont& font, const QColor& color)
 {
     m_text = text;
     m_font = normalizedFont(font);
     m_color = color.isValid() ? color : QColor(30, 41, 59);
-    m_baseSize = measure(m_text, m_font);
+    m_baseSize = Measure(m_text, m_font);
     SetContentSize(m_baseSize);
     update();
 }
@@ -126,7 +126,7 @@ TextItemState TextItem::State() const
     result.font = m_font;
     result.color = m_color;
     result.pos = pos();
-    result.size = contentSize();
+    result.size = ContentSize();
     result.baseSize = m_baseSize;
     return result;
 }
@@ -136,7 +136,7 @@ void TextItem::ApplyState(const TextItemState& state)
     m_text = state.text;
     m_font = normalizedFont(state.font);
     m_color = state.color.isValid() ? state.color : QColor(30, 41, 59);
-    m_baseSize = state.baseSize.isEmpty() ? measure(m_text, m_font) : state.baseSize;
+    m_baseSize = state.baseSize.isEmpty() ? Measure(m_text, m_font) : state.baseSize;
 
     // 不在这里额外 prepareGeometryChange：setContentSize 会在尺寸真正变化时
     // 负责声明几何变化；重复调用会让旧的绘制区域没有被正确纳入重绘，留下旧
@@ -148,17 +148,17 @@ void TextItem::ApplyState(const TextItemState& state)
 
 void TextItem::PaintContent(QPainter* painter)
 {
-    if (m_baseSize.isEmpty() || contentSize().isEmpty()) {
+    if (m_baseSize.isEmpty() || ContentSize().isEmpty()) {
         return;
     }
 
-    const qreal scaleX = contentSize().width() / m_baseSize.width();
-    const qreal scaleY = contentSize().height() / m_baseSize.height();
+    const qreal scaleX = ContentSize().width() / m_baseSize.width();
+    const qreal scaleY = ContentSize().height() / m_baseSize.height();
     const QFontMetricsF metrics(m_font);
     const QStringList lines = m_text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
 
     painter->save();
-    // IntersectClip：保留 drawItems() 设置的“被遮挡裁剪”区域，不能整个替换。
+    // IntersectClip：保留 DrawItems() 设置的“被遮挡裁剪”区域，不能整个替换。
     painter->setClipRect(ContentRect(), Qt::IntersectClip);
     painter->scale(scaleX, scaleY);
     painter->translate(PADDING, PADDING);
@@ -187,13 +187,13 @@ QPainterPath TextItem::OutlineShape() const
 
 QPainterPath TextItem::PaintedShape() const
 {
-    if (contentSize().isEmpty() || m_color.alpha() == 0) {
+    if (ContentSize().isEmpty() || m_color.alpha() == 0) {
         return QPainterPath();
     }
 
     const QSizeF base = m_baseSize.isEmpty() ? QSizeF(1.0, 1.0) : m_baseSize;
-    const qreal scaleX = contentSize().width() / base.width();
-    const qreal scaleY = contentSize().height() / base.height();
+    const qreal scaleX = ContentSize().width() / base.width();
+    const qreal scaleY = ContentSize().height() / base.height();
     const QFontMetricsF metrics(m_font);
     const QStringList lines = m_text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
 
@@ -266,10 +266,10 @@ void TextItem::FromJson(const QJsonObject& json)
 
     const QSizeF storedBase(json.value(QStringLiteral("baseWidth")).toDouble(0.0),
                             json.value(QStringLiteral("baseHeight")).toDouble(0.0));
-    m_baseSize = (storedBase.width() > 0.0 && storedBase.height() > 0.0) ? storedBase : measure(m_text, m_font);
+    m_baseSize = (storedBase.width() > 0.0 && storedBase.height() > 0.0) ? storedBase : Measure(m_text, m_font);
 
     ApplyBaseJson(json);
-    if (contentSize().isEmpty()) {
+    if (ContentSize().isEmpty()) {
         SetContentSize(m_baseSize);
     }
 }

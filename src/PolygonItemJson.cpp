@@ -6,7 +6,7 @@
 
 // 多边形的序列化单独成文件：路径元素表与图层快照都和绘制无关，
 // 只在这里与画布文件的 JSON 结构对接。
-QJsonArray PolygonItem::pathToJson(const QPainterPath& path)
+QJsonArray PolygonItem::PathToJson(const QPainterPath& path)
 {
     QJsonArray elements;
     for (int i = 0; i < path.elementCount(); ++i) {
@@ -30,7 +30,7 @@ QJsonArray PolygonItem::pathToJson(const QPainterPath& path)
     return elements;
 }
 
-QPainterPath PolygonItem::pathFromJson(const QJsonArray& elements)
+QPainterPath PolygonItem::PathFromJson(const QJsonArray& elements)
 {
     QPainterPath path;
     QList<QPointF> curvePoints;
@@ -73,7 +73,7 @@ QJsonObject PolygonItem::ToJson() const
     QJsonArray layers;
     for (const Layer& layer : m_layers) {
         QJsonObject entry;
-        entry.insert(QStringLiteral("path"), pathToJson(layer.path));
+        entry.insert(QStringLiteral("path"), PathToJson(layer.path));
         entry.insert(QStringLiteral("fill"), layer.fill.name(QColor::HexArgb));
         entry.insert(QStringLiteral("stroke"), layer.stroke.name(QColor::HexArgb));
         entry.insert(QStringLiteral("width"), layer.strokeWidth);
@@ -101,7 +101,7 @@ void PolygonItem::FromJson(const QJsonObject& json)
     for (const QJsonValue& value : layers) {
         const QJsonObject entry = value.toObject();
         Layer layer;
-        layer.path = pathFromJson(entry.value(QStringLiteral("path")).toArray());
+        layer.path = PathFromJson(entry.value(QStringLiteral("path")).toArray());
         layer.fill = QColor(entry.value(QStringLiteral("fill")).toString());
         layer.stroke = QColor(entry.value(QStringLiteral("stroke")).toString());
         layer.strokeWidth = entry.value(QStringLiteral("width")).toDouble(1.0);
@@ -124,7 +124,7 @@ void PolygonItem::FromJson(const QJsonObject& json)
                         qMax(1.0, json.value(QStringLiteral("designHeight")).toDouble(1.0)));
     SetContentSize(m_baseSize);
     if (json.contains(QStringLiteral("fillImage"))) {
-        m_fillImage = ImageFill::pixmapFromJson(json.value(QStringLiteral("fillImage")).toObject(), &m_fillImageMode);
+        m_fillImage = ImageFill::PixmapFromJson(json.value(QStringLiteral("fillImage")).toObject(), &m_fillImageMode);
     } else {
         m_fillImage = QPixmap();
         m_fillImageMode = ImageFill::Mode::STRETCH;

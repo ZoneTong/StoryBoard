@@ -19,19 +19,19 @@ class SettingsDialog : public QDialog {
   public:
     explicit SettingsDialog(const AppSettings& settings, QWidget* parent = nullptr);
 
-    AppSettings settings() const { return m_settings; }
-    UiLanguage language() const;
+    AppSettings Settings() const { return m_settings; }
+    UiLanguage Language() const;
 
-    void setBrushColor(const QColor& color);
-    void setCanvasColor(const QColor& color);
+    void SetBrushColor(const QColor& color);
+    void SetCanvasColor(const QColor& color);
 
   protected:
     // 窗口显示后布局才是最终值，这里按真实内容高度补一次尺寸，避免底部说明被裁。
     void showEvent(QShowEvent* event) override;
 
   private:
-    void resetToDefaults();
-    void openCanvasesFolder();
+    void ResetToDefaults();
+    void OpenCanvasesFolder();
 
     AppSettings m_settings;
     QComboBox* m_languageCombo = nullptr;

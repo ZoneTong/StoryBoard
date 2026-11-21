@@ -10,7 +10,7 @@ class CanvasViewCursor {
   public:
     explicit CanvasViewCursor(CanvasView* view);
 
-    void refresh(ToolMode mode, bool panning);
+    void Refresh(ToolMode mode, bool panning);
 
   private:
     CanvasView* m_view = nullptr;

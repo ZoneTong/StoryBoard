@@ -8,8 +8,8 @@ class UiMenuBuilder {
   public:
     explicit UiMenuBuilder(MainWindow* window);
 
-    void buildShapeMenu();
-    void buildMenus();
+    void BuildShapeMenu();
+    void BuildMenus();
 
   private:
     MainWindow* m_window = nullptr;

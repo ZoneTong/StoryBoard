@@ -15,10 +15,10 @@ namespace StrokeGeometry {
 QPainterPath outline(const QPainterPath& path, const QSizeF& baseSize, const QSizeF& contentSize);
 
 // 真正涂满画布的遮挡区：中心线上按平均缩放描出笔触宽度。
-QPainterPath painted(const QPainterPath& outline, const QSizeF& baseSize, const QSizeF& contentSize, qreal penWidth);
+QPainterPath Painted(const QPainterPath& outline, const QSizeF& baseSize, const QSizeF& contentSize, qreal penWidth);
 
 // 命中测试用的加粗路径（不含图元手柄区域，手柄由图元自身补上）。
-QPainterPath hitScaled(const QPainterPath& path, const QSizeF& baseSize, const QSizeF& contentSize, qreal penWidth,
+QPainterPath HitScaled(const QPainterPath& path, const QSizeF& baseSize, const QSizeF& contentSize, qreal penWidth,
                        qreal viewScale);
 
 // 按内容尺寸缩放后描边渲染。

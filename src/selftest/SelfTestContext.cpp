@@ -2,7 +2,7 @@
 
 namespace selftest {
 
-void Context::check(bool condition, const QString& name, const QString& detail)
+void Context::Check(bool condition, const QString& name, const QString& detail)
 {
     if (condition) {
         lines.append(QStringLiteral("PASS  %1").arg(name));

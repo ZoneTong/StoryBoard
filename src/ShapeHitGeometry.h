@@ -10,7 +10,7 @@
 class ShapeHitGeometry {
   public:
     // 命中区域：空心箭头取整剪影，描边类按笔画加宽，实心图形再叠一层轮廓描边。
-    static QPainterPath hitShape(const QPainterPath& path, ShapeType type, qreal strokeWidth,
+    static QPainterPath HitShape(const QPainterPath& path, ShapeType type, qreal strokeWidth,
                                  const QPainterPath& handleShape);
 
     // 遮挡区域：描边扫过的部分始终遮挡；仅纯色填充才把轮廓内部整体算作遮挡区。

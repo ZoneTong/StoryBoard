@@ -15,11 +15,11 @@ CanvasScene::CanvasScene(QObject* parent) : QGraphicsScene(parent)
     setBackgroundBrush(Qt::NoBrush);
     setItemIndexMethod(QGraphicsScene::BspTreeIndex);
     setStickyFocus(true);
-    connect(this, &QGraphicsScene::selectionChanged, this, [this]() { refreshSelectionOrder(); });
-    updateSceneExtent();
+    connect(this, &QGraphicsScene::selectionChanged, this, [this]() { RefreshSelectionOrder(); });
+    UpdateSceneExtent();
 }
 
-QList<CanvasItem*> CanvasScene::selectionOrder() const
+QList<CanvasItem*> CanvasScene::SelectionOrder() const
 {
     QList<CanvasItem*> order;
     order.reserve(m_selectionOrder.size());
@@ -31,10 +31,10 @@ QList<CanvasItem*> CanvasScene::selectionOrder() const
     return order;
 }
 
-void CanvasScene::refreshSelectionOrder()
+void CanvasScene::RefreshSelectionOrder()
 {
     QSet<CanvasItem*> current;
-    const QList<CanvasItem*> selected = selectedCanvasItems();
+    const QList<CanvasItem*> selected = SelectedCanvasItems();
     for (CanvasItem* item : selected) {
         current.insert(item);
     }
@@ -58,7 +58,7 @@ void CanvasScene::refreshSelectionOrder()
     }
 }
 
-void CanvasScene::forgetItem(CanvasItem* item)
+void CanvasScene::ForgetItem(CanvasItem* item)
 {
     for (int i = m_selectionOrder.size() - 1; i >= 0; --i) {
         if (m_selectionOrder.at(i).data() == item) {
@@ -74,15 +74,15 @@ CanvasScene::~CanvasScene()
     // 数据已不可靠。先断开信号并清空缓存，再交由基类清理图元。
     disconnect(this, &QGraphicsScene::selectionChanged, this, nullptr);
     m_selectionOrder.clear();
-    clearOrphans();
+    ClearOrphans();
 }
 
-void CanvasScene::setUndoStack(QUndoStack* stack)
+void CanvasScene::SetUndoStack(QUndoStack* stack)
 {
     m_undoStack = stack;
 }
 
-void CanvasScene::setMode(ToolMode mode)
+void CanvasScene::SetMode(ToolMode mode)
 {
     if (m_mode == mode) {
         return;
@@ -93,19 +93,19 @@ void CanvasScene::setMode(ToolMode mode)
     }
 
     m_mode = mode;
-    updateItemFlags();
+    UpdateItemFlags();
     update();
     emit modeChanged(mode);
 }
 
-void CanvasScene::resetDocument()
+void CanvasScene::ResetDocument()
 {
     if (m_undoStack) {
         m_undoStack->clear();
     }
 
     clear();
-    clearOrphans();
+    ClearOrphans();
     m_selectionOrder.clear();
     m_background = CanvasBackground();
     m_layers = {{BackgroundLayerId, scene_constants::BACKGROUND_LAYER_NAME, true, true},
@@ -116,7 +116,7 @@ void CanvasScene::resetDocument()
     m_groupParents.clear();
     m_canvasOrigin = QPointF(0.0, 0.0);
     m_exporting = false;
-    updateSceneExtent();
+    UpdateSceneExtent();
     update();
     emit layersChanged();
     emit activeLayerChanged(m_activeLayerId);
@@ -124,7 +124,7 @@ void CanvasScene::resetDocument()
     emit backgroundChanged();
 }
 
-void CanvasScene::clearOrphans()
+void CanvasScene::ClearOrphans()
 {
     qDeleteAll(m_orphans);
     m_orphans.clear();

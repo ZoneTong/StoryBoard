@@ -13,7 +13,7 @@ constexpr qreal HANDLE_HIT_PADDING = 2.0;
 CanvasItemHandles::CanvasItemHandles(CanvasItem* item) : m_item(item) {}
 
 // 需求 2：单选三角形时顶点 C 取代 Top 句柄；其它情况仍用八向包围框。
-bool CanvasItemHandles::usesApexHandle() const
+bool CanvasItemHandles::UsesApexHandle() const
 {
     if (!m_item || !m_item->isSelected() || !m_item->IsEditable() || !m_item->HasSingleSelection()) {
         return false;
@@ -22,19 +22,19 @@ bool CanvasItemHandles::usesApexHandle() const
     return shape && shape->ApexAngleHandle() && !shape->IsCustomShape();
 }
 
-qreal CanvasItemHandles::size() const
+qreal CanvasItemHandles::Size() const
 {
     return qBound<qreal>(6.0, 9.0 / m_item->ViewScale(), 40.0);
 }
 
-qreal CanvasItemHandles::rotationOffset() const
+qreal CanvasItemHandles::RotationOffset() const
 {
     // Keep the rotation handle one handle-size plus a small gap above the frame,
     // so it stays visually separate from the Top resize handle at any zoom.
-    return size() + 16.0 / m_item->ViewScale();
+    return Size() + 16.0 / m_item->ViewScale();
 }
 
-QPointF CanvasItemHandles::center(int handle) const
+QPointF CanvasItemHandles::Center(int handle) const
 {
     const QRectF rect = m_item->FrameRect();
     switch (static_cast<CanvasItem::Handle>(handle)) {
@@ -55,7 +55,7 @@ QPointF CanvasItemHandles::center(int handle) const
     case CanvasItem::LEFT:
         return QPointF(rect.left(), rect.center().y());
     case CanvasItem::ROTATION:
-        return QPointF(rect.center().x(), rect.top() - rotationOffset());
+        return QPointF(rect.center().x(), rect.top() - RotationOffset());
     case CanvasItem::APEX: {
         bool ok = false;
         const QPointF custom = m_item->CustomHandleCenter(CanvasItem::APEX, &ok);
@@ -70,27 +70,27 @@ QPointF CanvasItemHandles::center(int handle) const
     return rect.center();
 }
 
-QRectF CanvasItemHandles::rect(int handle) const
+QRectF CanvasItemHandles::Rect(int handle) const
 {
-    const qreal handleSize = size();
-    const QPointF handleCenter = center(handle);
+    const qreal handleSize = Size();
+    const QPointF handleCenter = Center(handle);
     return QRectF(handleCenter.x() - handleSize / 2.0, handleCenter.y() - handleSize / 2.0, handleSize, handleSize);
 }
 
-int CanvasItemHandles::hitAt(const QPointF& pos) const
+int CanvasItemHandles::HitAt(const QPointF& pos) const
 {
     const qreal hitPadding = qMin<qreal>(10.0 / m_item->ViewScale(), 14.0);
     for (int handle = CanvasItem::TOP_LEFT; handle <= CanvasItem::ROTATION; ++handle) {
-        if (handle == CanvasItem::TOP && usesApexHandle()) {
+        if (handle == CanvasItem::TOP && UsesApexHandle()) {
             continue;
         }
-        const QRectF handleRect = rect(handle).adjusted(-hitPadding, -hitPadding, hitPadding, hitPadding);
+        const QRectF handleRect = Rect(handle).adjusted(-hitPadding, -hitPadding, hitPadding, hitPadding);
         if (handleRect.contains(pos)) {
             return handle;
         }
     }
-    if (usesApexHandle()) {
-        const QRectF handleRect = rect(CanvasItem::APEX).adjusted(-hitPadding, -hitPadding, hitPadding, hitPadding);
+    if (UsesApexHandle()) {
+        const QRectF handleRect = Rect(CanvasItem::APEX).adjusted(-hitPadding, -hitPadding, hitPadding, hitPadding);
         if (handleRect.contains(pos)) {
             return CanvasItem::APEX;
         }
@@ -98,7 +98,7 @@ int CanvasItemHandles::hitAt(const QPointF& pos) const
     return CanvasItem::NO_HANDLE;
 }
 
-QPainterPath CanvasItemHandles::selectionShape() const
+QPainterPath CanvasItemHandles::SelectionShape() const
 {
     QPainterPath path;
     if (!m_item->isSelected() || !m_item->IsEditable() || !m_item->HasSingleSelection()) {
@@ -111,20 +111,20 @@ QPainterPath CanvasItemHandles::selectionShape() const
     // reach the corner (ellipse, triangle, parallelogram, star) the handle could not
     // be grabbed at all.
     for (int handle = CanvasItem::TOP_LEFT; handle <= CanvasItem::ROTATION; ++handle) {
-        if (handle == CanvasItem::TOP && usesApexHandle()) {
+        if (handle == CanvasItem::TOP && UsesApexHandle()) {
             continue;
         }
         path.addRect(
-            rect(handle).adjusted(-HANDLE_HIT_PADDING, -HANDLE_HIT_PADDING, HANDLE_HIT_PADDING, HANDLE_HIT_PADDING));
+            Rect(handle).adjusted(-HANDLE_HIT_PADDING, -HANDLE_HIT_PADDING, HANDLE_HIT_PADDING, HANDLE_HIT_PADDING));
     }
-    if (usesApexHandle()) {
-        path.addRect(rect(CanvasItem::APEX)
+    if (UsesApexHandle()) {
+        path.addRect(Rect(CanvasItem::APEX)
                          .adjusted(-HANDLE_HIT_PADDING, -HANDLE_HIT_PADDING, HANDLE_HIT_PADDING, HANDLE_HIT_PADDING));
     }
     return path;
 }
 
-void CanvasItemHandles::drawOverlay(QPainter* painter) const
+void CanvasItemHandles::DrawOverlay(QPainter* painter) const
 {
     QPen borderPen(QColor(79, 124, 255));
     borderPen.setWidthF(1.3);
@@ -145,24 +145,24 @@ void CanvasItemHandles::drawOverlay(QPainter* painter) const
     painter->setPen(handlePen);
     painter->setBrush(Qt::white);
     for (int handle = CanvasItem::TOP_LEFT; handle <= CanvasItem::LEFT; ++handle) {
-        if (handle == CanvasItem::TOP && usesApexHandle()) {
+        if (handle == CanvasItem::TOP && UsesApexHandle()) {
             continue;
         }
-        painter->drawRect(rect(handle));
+        painter->drawRect(Rect(handle));
     }
-    if (usesApexHandle()) {
-        painter->drawRect(rect(CanvasItem::APEX));
+    if (UsesApexHandle()) {
+        painter->drawRect(Rect(CanvasItem::APEX));
     }
 
     // Rotation handle: a circular knob above the frame, connected by a thin line.
-    const QPointF topCenter(center(CanvasItem::TOP).x(), m_item->FrameRect().top());
-    const QPointF rotationCenter = center(CanvasItem::ROTATION);
+    const QPointF topCenter(Center(CanvasItem::TOP).x(), m_item->FrameRect().top());
+    const QPointF rotationCenter = Center(CanvasItem::ROTATION);
     painter->drawLine(topCenter, rotationCenter);
     painter->setBrush(QColor(79, 124, 255));
-    painter->drawEllipse(rect(CanvasItem::ROTATION).adjusted(1.0, 1.0, -1.0, -1.0));
+    painter->drawEllipse(Rect(CanvasItem::ROTATION).adjusted(1.0, 1.0, -1.0, -1.0));
 }
 
-QCursor CanvasItemHandles::cursor(int handle) const
+QCursor CanvasItemHandles::Cursor(int handle) const
 {
     switch (static_cast<CanvasItem::Handle>(handle)) {
     case CanvasItem::TOP_LEFT:

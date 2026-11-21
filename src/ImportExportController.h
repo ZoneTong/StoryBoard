@@ -16,17 +16,17 @@ class ImportExportController {
   public:
     explicit ImportExportController(MainWindow* window);
 
-    void exportCanvas();
-    bool exportToFile(const QString& path, const QRectF& area, qreal scale, const QString& format,
+    void ExportCanvas();
+    bool ExportToFile(const QString& path, const QRectF& area, qreal scale, const QString& format,
                       bool showCompletion = true, int layerId = -1);
-    void importImagesDialog();
-    void importOutlineImageDialog();
-    void importOutlineImageFile(const QString& file, const LineArtConverter::Options& options);
-    void importImageFiles(const QStringList& files);
+    void ImportImagesDialog();
+    void ImportOutlineImageDialog();
+    void ImportOutlineImageFile(const QString& file, const LineArtConverter::Options& options);
+    void ImportImageFiles(const QStringList& files);
 
     // 拖拽落盘：判断拖入的是否为画板文件或图片，按类型载入或插入。
-    bool acceptsDropUrls(const QMimeData* mimeData) const;
-    void handleDrop(QDropEvent* event);
+    bool AcceptsDropUrls(const QMimeData* mimeData) const;
+    void HandleDrop(QDropEvent* event);
 
   private:
     MainWindow* m_window = nullptr;

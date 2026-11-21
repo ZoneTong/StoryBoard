@@ -8,9 +8,9 @@ class CommandLineOptions;
 namespace AppStartup {
 
 // QApplication 创建之前调用：自检模式下设置离屏平台与自检配置目录。
-void prepareEnvironment(const CommandLineOptions& options);
+void PrepareEnvironment(const CommandLineOptions& options);
 
 // QApplication 创建之后调用：组织名、版本、翻译装载、窗口图标与全局样式表。
-void initialize(QApplication& app);
+void Initialize(QApplication& app);
 
 } // namespace AppStartup

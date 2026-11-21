@@ -1,7 +1,7 @@
 #pragma once
 
-#include <QPointF>
 #include <QPainterPath>
+#include <QPointF>
 #include <QRectF>
 #include <QVector>
 
@@ -13,28 +13,28 @@ class EllipseShape {
     EllipseShape() = default; // 供同时继承曲线与椭圆的图元先默认构造、再由 setFrame 定位
     explicit EllipseShape(const QRectF& frame);
 
-    QRectF frame() const { return m_frame; }
-    void setFrame(const QRectF& frame) { m_frame = frame.normalized(); }
-    QPointF center() const { return m_frame.center(); }
-    qreal radiusX() const { return m_frame.width() / 2.0; }
-    qreal radiusY() const { return m_frame.height() / 2.0; }
+    QRectF Frame() const { return m_frame; }
+    void SetFrame(const QRectF& frame) { m_frame = frame.normalized(); }
+    QPointF Center() const { return m_frame.center(); }
+    qreal RadiusX() const { return m_frame.width() / 2.0; }
+    qreal RadiusY() const { return m_frame.height() / 2.0; }
 
     // 整圆 / 整椭圆，闭合。
-    QPainterPath ellipse() const;
+    QPainterPath Ellipse() const;
     // 开放弧线，不闭合。
-    QPainterPath arc(qreal startDeg, qreal sweepDeg) const;
+    QPainterPath Arc(qreal startDeg, qreal sweepDeg) const;
     // 扇形：弧线两端到圆心闭合（闭合点就是 frame 中心）。
-    QPainterPath sector(qreal startDeg, qreal sweepDeg) const;
+    QPainterPath Sector(qreal startDeg, qreal sweepDeg) const;
 
     // 选框必须由生成路径的包围盒给出，解析近似会让扇形 90° 时差出几个像素。
-    QRectF arcBounds(qreal startDeg, qreal sweepDeg) const;
-    QRectF sectorBounds(qreal startDeg, qreal sweepDeg) const;
+    QRectF ArcBounds(qreal startDeg, qreal sweepDeg) const;
+    QRectF SectorBounds(qreal startDeg, qreal sweepDeg) const;
 
     // 按角度均匀采样（不是按弧长），供弧线图元转折线几何。
-    QVector<QPointF> sample(qreal startDeg, qreal sweepDeg, int count) const;
+    QVector<QPointF> Sample(qreal startDeg, qreal sweepDeg, int count) const;
 
     // 扫过角夹在 ±360°，0 兜底 120°：插入扇形 / 弧线后不能“什么都没有”。
-    static qreal clampedSweep(qreal sweepDeg);
+    static qreal ClampedSweep(qreal sweepDeg);
 
   private:
     QRectF m_frame;

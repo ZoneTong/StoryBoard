@@ -4,7 +4,7 @@
 
 namespace StrokePath {
 
-QPainterPath build(const QVector<QPointF>& points, bool dot, bool linearPath, qreal penWidth)
+QPainterPath Build(const QVector<QPointF>& points, bool dot, bool linearPath, qreal penWidth)
 {
     QPainterPath path;
     if (points.isEmpty()) {
@@ -35,7 +35,7 @@ QPainterPath build(const QVector<QPointF>& points, bool dot, bool linearPath, qr
     return path;
 }
 
-qreal length(const QVector<QPointF>& points)
+qreal Length(const QVector<QPointF>& points)
 {
     qreal length = 0.0;
     for (int i = 1; i < points.size(); ++i) {

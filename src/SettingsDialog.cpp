@@ -47,7 +47,7 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     m_languageCombo->addItem(tr("Follow system"), static_cast<int>(UiLanguage::SYSTEM));
     m_languageCombo->addItem(tr("Simplified Chinese"), static_cast<int>(UiLanguage::CHINESE));
     m_languageCombo->addItem(QStringLiteral("English"), static_cast<int>(UiLanguage::ENGLISH));
-    m_languageCombo->setCurrentIndex(m_languageCombo->findData(static_cast<int>(uiLanguageSetting())));
+    m_languageCombo->setCurrentIndex(m_languageCombo->findData(static_cast<int>(UiLanguageSetting())));
     m_languageCombo->setToolTip(tr("The interface updates immediately and this choice is remembered."));
     headerRow->addWidget(m_languageCombo);
     rootLayout->addLayout(headerRow);
@@ -75,9 +75,9 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     grid->setHorizontalSpacing(12);
     grid->setVerticalSpacing(10);
     // 第一行「画笔默认值 | 画布（含存储目录）」，线稿化整组占满下一行。
-    grid->addWidget(m_brushPage->group(), 0, 0, Qt::AlignTop);
-    grid->addWidget(m_canvasPage->group(), 0, 1, Qt::AlignTop);
-    grid->addWidget(m_lineArtPage->group(), 1, 0, 1, 2);
+    grid->addWidget(m_brushPage->Group(), 0, 0, Qt::AlignTop);
+    grid->addWidget(m_canvasPage->Group(), 0, 1, Qt::AlignTop);
+    grid->addWidget(m_lineArtPage->Group(), 1, 0, 1, 2);
     grid->setColumnStretch(0, 1);
     grid->setColumnStretch(1, 1);
     grid->setRowStretch(2, 1);
@@ -100,17 +100,17 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     buttons->button(QDialogButtonBox::Reset)->setText(tr("Restore defaults"));
     rootLayout->addWidget(buttons);
 
-    connect(m_brushPage, &SettingsDialogBrushPage::brushColorChosen, this, &SettingsDialog::setBrushColor);
-    connect(m_canvasPage, &SettingsDialogCanvasPage::canvasColorChosen, this, &SettingsDialog::setCanvasColor);
-    connect(m_canvasPage, &SettingsDialogCanvasPage::openFolderRequested, this, &SettingsDialog::openCanvasesFolder);
+    connect(m_brushPage, &SettingsDialogBrushPage::brushColorChosen, this, &SettingsDialog::SetBrushColor);
+    connect(m_canvasPage, &SettingsDialogCanvasPage::canvasColorChosen, this, &SettingsDialog::SetCanvasColor);
+    connect(m_canvasPage, &SettingsDialogCanvasPage::openFolderRequested, this, &SettingsDialog::OpenCanvasesFolder);
     connect(buttons, &QDialogButtonBox::accepted, this, [this]() {
-        m_brushPage->writeTo(m_settings);
-        m_canvasPage->writeTo(m_settings);
-        m_lineArtPage->writeTo(m_settings);
+        m_brushPage->WriteTo(m_settings);
+        m_canvasPage->WriteTo(m_settings);
+        m_lineArtPage->WriteTo(m_settings);
         accept();
     });
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
-    connect(buttons->button(QDialogButtonBox::Reset), &QPushButton::clicked, this, &SettingsDialog::resetToDefaults);
+    connect(buttons->button(QDialogButtonBox::Reset), &QPushButton::clicked, this, &SettingsDialog::ResetToDefaults);
 }
 
 void SettingsDialog::showEvent(QShowEvent* event)
@@ -140,49 +140,49 @@ void SettingsDialog::showEvent(QShowEvent* event)
     }
 }
 
-void SettingsDialog::setBrushColor(const QColor& color)
+void SettingsDialog::SetBrushColor(const QColor& color)
 {
     if (!color.isValid()) {
         return;
     }
     m_settings.brushColor = color;
-    m_brushPage->setBrushColor(color);
+    m_brushPage->SetBrushColor(color);
 }
 
-void SettingsDialog::setCanvasColor(const QColor& color)
+void SettingsDialog::SetCanvasColor(const QColor& color)
 {
     if (!color.isValid()) {
         return;
     }
     m_settings.canvasColor = color;
-    m_canvasPage->setCanvasColor(color);
+    m_canvasPage->SetCanvasColor(color);
 }
 
-void SettingsDialog::resetToDefaults()
+void SettingsDialog::ResetToDefaults()
 {
     const AppSettings defaults;
     if (m_languageCombo) {
         m_languageCombo->setCurrentIndex(m_languageCombo->findData(static_cast<int>(UiLanguage::SYSTEM)));
     }
-    m_brushPage->reset(defaults);
-    m_canvasPage->reset(defaults);
-    m_lineArtPage->reset(defaults);
+    m_brushPage->Reset(defaults);
+    m_canvasPage->Reset(defaults);
+    m_lineArtPage->Reset(defaults);
     m_settings.brushColor = defaults.brushColor;
     m_settings.canvasColor = defaults.canvasColor;
 }
 
-UiLanguage SettingsDialog::language() const
+UiLanguage SettingsDialog::Language() const
 {
     if (!m_languageCombo) {
-        return uiLanguageSetting();
+        return UiLanguageSetting();
     }
     return static_cast<UiLanguage>(m_languageCombo->currentData().toInt());
 }
 
-void SettingsDialog::openCanvasesFolder()
+void SettingsDialog::OpenCanvasesFolder()
 {
     const QString dir =
-        m_settings.canvasesDirectory.isEmpty() ? AppSettings::defaultCanvasesDir() : m_settings.canvasesDirectory;
+        m_settings.canvasesDirectory.isEmpty() ? AppSettings::DefaultCanvasesDir() : m_settings.canvasesDirectory;
     QDir().mkpath(dir);
     QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
 }

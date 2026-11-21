@@ -8,10 +8,10 @@ class CanvasBackgroundController {
   public:
     explicit CanvasBackgroundController(MainWindow* window);
 
-    void replaceCanvasBackgroundImage();
-    void setBackgroundColor();
-    void clearBackground();
-    void updateModeActions();
+    void ReplaceCanvasBackgroundImage();
+    void SetBackgroundColor();
+    void ClearBackground();
+    void UpdateModeActions();
 
   private:
     MainWindow* m_window = nullptr;

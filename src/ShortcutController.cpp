@@ -59,7 +59,7 @@ void collectMenuActions(QMenu* menu, QList<QAction*>& ordered)
 
 ShortcutController::ShortcutController(MainWindow* window) : m_window(window) {}
 
-void ShortcutController::applyShortcutOverrides()
+void ShortcutController::ApplyShortcutOverrides()
 {
     // 用「默认快捷键」当稳定标识：它在代码里写死，换语言、改键后都不变，
     // 比菜单文字更适合做配置键。默认键只在启动时记一次，之后改键不会把它覆盖掉，
@@ -102,10 +102,10 @@ void ShortcutController::applyShortcutOverrides()
         }
         action->setShortcuts(defaults);
     }
-    refreshShortcutTips();
+    RefreshShortcutTips();
 }
 
-void ShortcutController::refreshShortcutTips()
+void ShortcutController::RefreshShortcutTips()
 {
     for (QAction* action : m_window->findChildren<QAction*>()) {
         if (!action) {
@@ -121,7 +121,7 @@ void ShortcutController::refreshShortcutTips()
             const QString source = action->statusTip().isEmpty() ? action->toolTip() : action->statusTip();
             // 没走 makeAction 的动作（如退出、高度 ±1）没有记基串，就用同一份
             // stripShortcutTail 从现有提示里剥掉末尾键位括号。
-            baseTip = stripShortcutTail(source);
+            baseTip = StripShortcutTail(source);
         }
         if (baseTip.isEmpty()) {
             if (!base.isValid()) {
@@ -139,7 +139,7 @@ void ShortcutController::refreshShortcutTips()
     }
 }
 
-bool ShortcutController::changeShortcut(QAction* action, const QKeySequence& sequence)
+bool ShortcutController::ChangeShortcut(QAction* action, const QKeySequence& sequence)
 {
     if (!action || sequence.isEmpty()) {
         return false;
@@ -168,12 +168,12 @@ bool ShortcutController::changeShortcut(QAction* action, const QKeySequence& seq
     } else {
         m_window->m_settings.shortcutOverrides.insert(id, sequence.toString(QKeySequence::PortableText));
     }
-    m_window->m_settings.save();
-    refreshShortcutTips();
+    m_window->m_settings.Save();
+    RefreshShortcutTips();
     return true;
 }
 
-void ShortcutController::showShortcuts()
+void ShortcutController::ShowShortcuts()
 {
     // 直接从现有动作汇总，新加的快捷键自动进表。
     struct Entry {
@@ -275,7 +275,7 @@ void ShortcutController::showShortcuts()
             if (edit.exec() != QDialog::Accepted) {
                 return;
             }
-            if (changeShortcut(action, editor->keySequence())) {
+            if (ChangeShortcut(action, editor->keySequence())) {
                 keys->setText(action->shortcut().toString(QKeySequence::NativeText));
             }
         });
@@ -299,8 +299,8 @@ void ShortcutController::showShortcuts()
     QObject::connect(closeButton, &QPushButton::clicked, &dialog, &QDialog::accept);
     QObject::connect(resetButton, &QPushButton::clicked, &dialog, [this, &keyButtons]() {
         m_window->m_settings.shortcutOverrides.clear();
-        m_window->m_settings.save();
-        applyShortcutOverrides();
+        m_window->m_settings.Save();
+        ApplyShortcutOverrides();
         // 恢复默认后键帽也要当场回到默认键。
         for (const auto& item : keyButtons) {
             if (item.first) {

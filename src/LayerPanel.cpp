@@ -39,7 +39,7 @@ LayerPanel::LayerPanel(CanvasScene* scene, QWidget* parent) : QWidget(parent), m
 
     m_actions = new LayerActions(m_scene, this);
     connect(m_actions, &LayerActions::statusMessage, this, &LayerPanel::statusMessage);
-    connect(m_actions, &LayerActions::refreshRequested, this, &LayerPanel::scheduleRefresh);
+    connect(m_actions, &LayerActions::refreshRequested, this, &LayerPanel::ScheduleRefresh);
 
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(10, 10, 10, 10);
@@ -102,57 +102,57 @@ LayerPanel::LayerPanel(CanvasScene* scene, QWidget* parent) : QWidget(parent), m
     m_view = new LayerPanelView(m_scene, m_list, m_allVisibleBox, m_addButton, m_removeButton, m_upButton, m_downButton,
                                 m_summaryLabel);
 
-    connect(m_list, &QListWidget::itemSelectionChanged, this, &LayerPanel::activateCurrentLayer);
-    connect(m_list, &QListWidget::itemSelectionChanged, this, [this]() { m_view->refreshRowStyles(); });
+    connect(m_list, &QListWidget::itemSelectionChanged, this, &LayerPanel::ActivateCurrentLayer);
+    connect(m_list, &QListWidget::itemSelectionChanged, this, [this]() { m_view->RefreshRowStyles(); });
     connect(m_allVisibleBox, &QCheckBox::clicked, this, [this]() {
         bool allVisible = true;
-        const QList<CanvasLayer> layers = m_scene->layers();
+        const QList<CanvasLayer> layers = m_scene->Layers();
         for (const CanvasLayer& layer : layers) {
             if (!layer.visible) {
                 allVisible = false;
                 break;
             }
         }
-        m_actions->setAllLayersVisible(!allVisible);
+        m_actions->SetAllLayersVisible(!allVisible);
     });
-    connect(m_addButton, &QToolButton::clicked, this, [this]() { m_actions->addLayer(); });
-    connect(m_removeButton, &QToolButton::clicked, this, &LayerPanel::removeSelectedLayers);
-    connect(m_upButton, &QToolButton::clicked, this, [this]() { m_actions->moveLayer(1); });
-    connect(m_downButton, &QToolButton::clicked, this, [this]() { m_actions->moveLayer(-1); });
+    connect(m_addButton, &QToolButton::clicked, this, [this]() { m_actions->AddLayer(); });
+    connect(m_removeButton, &QToolButton::clicked, this, &LayerPanel::RemoveSelectedLayers);
+    connect(m_upButton, &QToolButton::clicked, this, [this]() { m_actions->MoveLayer(1); });
+    connect(m_downButton, &QToolButton::clicked, this, [this]() { m_actions->MoveLayer(-1); });
 
     // 场景信号可能来自行内控件自己的信号栈（勾选框、锁定按钮），直接 refresh
     // 会在 emit 者还被使用时销毁它，所以统一延后到下一个事件循环。
-    connect(m_scene, &CanvasScene::layersChanged, this, &LayerPanel::scheduleRefresh);
-    connect(m_scene, &CanvasScene::contentChanged, this, &LayerPanel::scheduleRefresh);
-    connect(m_scene, &CanvasScene::activeLayerChanged, this, &LayerPanel::syncActiveLayer);
-    connect(m_scene, &QGraphicsScene::selectionChanged, this, &LayerPanel::syncSceneSelection);
+    connect(m_scene, &CanvasScene::layersChanged, this, &LayerPanel::ScheduleRefresh);
+    connect(m_scene, &CanvasScene::contentChanged, this, &LayerPanel::ScheduleRefresh);
+    connect(m_scene, &CanvasScene::activeLayerChanged, this, &LayerPanel::SyncActiveLayer);
+    connect(m_scene, &QGraphicsScene::selectionChanged, this, &LayerPanel::SyncSceneSelection);
 
-    refresh();
+    Refresh();
 }
 
-LayerRow* LayerPanel::createRow(const CanvasLayer& layer, int index, int itemCount)
+LayerRow* LayerPanel::CreateRow(const CanvasLayer& layer, int index, int itemCount)
 {
     auto* row = new LayerRow(layer, index, itemCount);
     connect(row, &LayerRow::visibilityToggled, this, [this](int layerId, bool visible) {
         if (!m_refreshing) {
-            m_actions->setLayerVisible(layerId, visible);
+            m_actions->SetLayerVisible(layerId, visible);
         }
     });
     connect(row, &LayerRow::lockToggled, this, [this](int layerId, bool locked) {
         if (!m_refreshing) {
-            m_actions->setLayerLocked(layerId, locked);
+            m_actions->SetLayerLocked(layerId, locked);
         }
     });
-    connect(row, &LayerRow::renameRequested, this, [this](int layerId) { m_actions->renameLayer(this, layerId); });
+    connect(row, &LayerRow::renameRequested, this, [this](int layerId) { m_actions->RenameLayer(this, layerId); });
     return row;
 }
 
-QList<int> LayerPanel::selectedLayerIds() const
+QList<int> LayerPanel::SelectedLayerIds() const
 {
-    return m_view->selectedLayerIds();
+    return m_view->SelectedLayerIds();
 }
 
-void LayerPanel::scheduleRefresh()
+void LayerPanel::ScheduleRefresh()
 {
     if (m_refreshPending) {
         return;
@@ -160,11 +160,11 @@ void LayerPanel::scheduleRefresh()
     m_refreshPending = true;
     QTimer::singleShot(0, this, [this]() {
         m_refreshPending = false;
-        refresh();
+        Refresh();
     });
 }
 
-void LayerPanel::refresh()
+void LayerPanel::Refresh()
 {
     if (!m_scene || m_refreshing) {
         return;
@@ -173,17 +173,17 @@ void LayerPanel::refresh()
     m_refreshing = true;
     const QSignalBlocker blocker(m_list);
     const int scroll = m_list->verticalScrollBar()->value();
-    const QList<int> previouslySelected = selectedLayerIds();
-    const int activeId = m_scene->activeLayerId();
-    const int previousCurrent = m_view->currentLayerId();
+    const QList<int> previouslySelected = SelectedLayerIds();
+    const int activeId = m_scene->ActiveLayerId();
+    const int previousCurrent = m_view->CurrentLayerId();
 
     m_list->clear();
 
     // 列表顶部是最高层；背景固定在最后一行且不可选中。
-    const QList<CanvasLayer> layers = m_scene->layers();
+    const QList<CanvasLayer> layers = m_scene->Layers();
     for (int i = layers.size() - 1; i >= 1; --i) {
         const CanvasLayer layer = layers.at(i);
-        const int count = m_scene->layerItemCount(layer.id);
+        const int count = m_scene->LayerItemCount(layer.id);
         auto* row = new QListWidgetItem(m_list);
         row->setData(Qt::UserRole, layer.id);
         row->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
@@ -193,7 +193,7 @@ void LayerPanel::refresh()
                 .arg(i)
                 .arg(count)
                 .arg(layer.visible ? tr("Visible") : tr("Hidden"), layer.locked ? tr(" · Locked") : QString()));
-        m_list->setItemWidget(row, createRow(layer, i, count));
+        m_list->setItemWidget(row, CreateRow(layer, i, count));
     }
 
     auto* backgroundRow = new QListWidgetItem(m_list);
@@ -202,7 +202,7 @@ void LayerPanel::refresh()
     backgroundRow->setSizeHint(QSize(0, 30));
     backgroundRow->setToolTip(tr("The background is always the bottom layer, cannot hold items, and is locked by "
                                  "default.\nUse the checkbox to show or hide it."));
-    m_list->setItemWidget(backgroundRow, createRow(m_scene->layer(CanvasScene::BackgroundLayerId), 0, 0));
+    m_list->setItemWidget(backgroundRow, CreateRow(m_scene->layer(CanvasScene::BackgroundLayerId), 0, 0));
 
     // 先恢复当前行（不改变选择），再恢复多选。
     int currentRow = -1;
@@ -228,7 +228,7 @@ void LayerPanel::refresh()
     }
 
     if (currentRow >= 0) {
-        if (selectedLayerIds().isEmpty() && activeId > CanvasScene::BackgroundLayerId) {
+        if (SelectedLayerIds().isEmpty() && activeId > CanvasScene::BackgroundLayerId) {
             m_list->item(currentRow)->setSelected(true);
         }
     }
@@ -236,28 +236,28 @@ void LayerPanel::refresh()
     m_list->verticalScrollBar()->setValue(scroll);
     m_refreshing = false;
 
-    m_scene->setPreferredLayerIds(selectedLayerIds());
-    m_view->refreshRowStyles();
-    m_view->refreshSummary();
-    m_view->refreshButtons();
-    m_view->refreshAllVisibleState();
+    m_scene->SetPreferredLayerIds(SelectedLayerIds());
+    m_view->RefreshRowStyles();
+    m_view->RefreshSummary();
+    m_view->RefreshButtons();
+    m_view->RefreshAllVisibleState();
 }
 
-void LayerPanel::activateCurrentLayer()
+void LayerPanel::ActivateCurrentLayer()
 {
     if (!m_scene || m_refreshing || m_syncingScene) {
         return;
     }
-    const int id = m_view->currentLayerId();
-    if (id > CanvasScene::BackgroundLayerId && m_scene->hasLayer(id)) {
-        m_scene->setActiveLayer(id);
+    const int id = m_view->CurrentLayerId();
+    if (id > CanvasScene::BackgroundLayerId && m_scene->HasLayer(id)) {
+        m_scene->SetActiveLayer(id);
     }
-    m_scene->setPreferredLayerIds(selectedLayerIds());
-    m_view->refreshButtons();
-    m_view->refreshSummary();
+    m_scene->SetPreferredLayerIds(SelectedLayerIds());
+    m_view->RefreshButtons();
+    m_view->RefreshSummary();
 }
 
-void LayerPanel::syncActiveLayer()
+void LayerPanel::SyncActiveLayer()
 {
     if (!m_scene || m_refreshing) {
         return;
@@ -266,23 +266,23 @@ void LayerPanel::syncActiveLayer()
     m_refreshing = true;
     const QSignalBlocker blocker(m_list);
     for (int row = 0; row < m_list->count(); ++row) {
-        if (m_list->item(row)->data(Qt::UserRole).toInt() == m_scene->activeLayerId()) {
+        if (m_list->item(row)->data(Qt::UserRole).toInt() == m_scene->ActiveLayerId()) {
             m_list->setCurrentRow(row);
             break;
         }
     }
     m_refreshing = false;
-    m_view->refreshSummary();
-    m_view->refreshButtons();
+    m_view->RefreshSummary();
+    m_view->RefreshButtons();
 }
 
-void LayerPanel::syncSceneSelection()
+void LayerPanel::SyncSceneSelection()
 {
     if (!m_scene || m_refreshing || m_syncingScene) {
         return;
     }
 
-    const QList<CanvasItem*> items = m_scene->selectedCanvasItems();
+    const QList<CanvasItem*> items = m_scene->SelectedCanvasItems();
     if (items.isEmpty()) {
         return; // 清空选择时保持图层面板的选择，不做反向同步。
     }
@@ -297,9 +297,9 @@ void LayerPanel::syncSceneSelection()
     const int topId = ids.last();
 
     m_syncingScene = true;
-    if (m_scene->hasLayer(topId) && topId != CanvasScene::BackgroundLayerId && topId != m_scene->activeLayerId()) {
+    if (m_scene->HasLayer(topId) && topId != CanvasScene::BackgroundLayerId && topId != m_scene->ActiveLayerId()) {
         // 选中图元时自动把它的图层设为当前图层。
-        m_scene->setActiveLayer(topId);
+        m_scene->SetActiveLayer(topId);
     }
 
     m_refreshing = true;
@@ -325,24 +325,24 @@ void LayerPanel::syncSceneSelection()
     m_refreshing = false;
     m_syncingScene = false;
 
-    m_scene->setPreferredLayerIds(ids);
-    m_view->refreshRowStyles();
-    m_view->refreshButtons();
-    m_view->refreshSummary();
+    m_scene->SetPreferredLayerIds(ids);
+    m_view->RefreshRowStyles();
+    m_view->RefreshButtons();
+    m_view->RefreshSummary();
 }
 
-void LayerPanel::removeSelectedLayers()
+void LayerPanel::RemoveSelectedLayers()
 {
     if (!m_scene) {
         return;
     }
 
-    QList<int> ids = selectedLayerIds();
+    QList<int> ids = SelectedLayerIds();
     if (ids.isEmpty()) {
-        const int fallback = m_view->currentLayerId();
+        const int fallback = m_view->CurrentLayerId();
         if (fallback > CanvasScene::BackgroundLayerId) {
             ids.append(fallback);
         }
     }
-    m_actions->removeLayer(this, ids);
+    m_actions->RemoveLayer(this, ids);
 }

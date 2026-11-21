@@ -19,17 +19,17 @@
 
 MainWindowEditActionsController::MainWindowEditActionsController(MainWindow* window) : m_window(window) {}
 
-void MainWindowEditActionsController::showSelectedItemProperties()
+void MainWindowEditActionsController::ShowSelectedItemProperties()
 {
-    const QList<CanvasItem*> items = m_window->m_scene->selectedCanvasItems();
+    const QList<CanvasItem*> items = m_window->m_scene->SelectedCanvasItems();
     if (items.size() != 1) {
         m_window->statusBar()->showMessage(MainWindow::tr("Select a single item to show its properties"), 3000);
         return;
     }
-    showItemProperties(items.constFirst());
+    ShowItemProperties(items.constFirst());
 }
 
-void MainWindowEditActionsController::showItemProperties(CanvasItem* item)
+void MainWindowEditActionsController::ShowItemProperties(CanvasItem* item)
 {
     if (!item || item->scene() != m_window->m_scene) {
         return;
@@ -37,16 +37,16 @@ void MainWindowEditActionsController::showItemProperties(CanvasItem* item)
 
     // 需求 42：属性窗在任何模式都能打开，但只有编辑模式下且图层可见未锁定
     // 时才允许修改；查看/画笔/文字模式一律以只读方式展示。
-    const bool editable = m_window->m_view->mode() == ToolMode::EDIT && m_window->m_scene->isItemEditable(item);
+    const bool editable = m_window->m_view->mode() == ToolMode::EDIT && m_window->m_scene->IsItemEditable(item);
 
-    closeItemProperties();
+    CloseItemProperties();
     ItemPropertiesDialog dialog(m_window->m_scene, item, m_window, editable);
     m_window->m_itemPropertiesDialog = &dialog;
     dialog.exec();
     m_window->m_itemPropertiesDialog = nullptr;
 }
 
-void MainWindowEditActionsController::closeItemProperties()
+void MainWindowEditActionsController::CloseItemProperties()
 {
     if (!m_window->m_itemPropertiesDialog) {
         return;
@@ -58,24 +58,24 @@ void MainWindowEditActionsController::closeItemProperties()
     }
 }
 
-void MainWindowEditActionsController::rotateSelected(qreal degrees)
+void MainWindowEditActionsController::RotateSelected(qreal degrees)
 {
     if (m_window->m_view->mode() != ToolMode::EDIT) {
         m_window->statusBar()->showMessage(MainWindow::tr("Rotation is available in edit mode only"), 3000);
         return;
     }
     const int changed =
-        m_window->m_scene->rotateSelected(degrees, degrees > 0 ? MainWindow::tr("Rotate items clockwise")
+        m_window->m_scene->RotateSelected(degrees, degrees > 0 ? MainWindow::tr("Rotate items clockwise")
                                                                : MainWindow::tr("Rotate items counterclockwise"));
     if (changed == 0) {
         m_window->statusBar()->showMessage(MainWindow::tr("No selected items can be rotated"), 3000);
         return;
     }
-    m_window->statusBar()->showMessage(MainWindow::tr("Rotated %1 item(s) by %2°").arg(changed).arg(qAbs(degrees)),
+    m_window->statusBar()->showMessage(MainWindow::tr("Rotated %1 Item(s) by %2°").arg(changed).arg(qAbs(degrees)),
                                        3000);
 }
 
-void MainWindowEditActionsController::applyAlignment(Alignment::Mode mode)
+void MainWindowEditActionsController::ApplyAlignment(Alignment::Mode mode)
 {
     if (m_window->m_view->mode() != ToolMode::EDIT) {
         m_window->statusBar()->showMessage(MainWindow::tr("Alignment is available in edit mode only"), 3000);
@@ -108,15 +108,15 @@ void MainWindowEditActionsController::applyAlignment(Alignment::Mode mode)
         commandText = MainWindow::tr("Distribute items vertically");
         break;
     }
-    const int moved = Alignment::apply(m_window->m_scene, mode, commandText);
+    const int moved = Alignment::Apply(m_window->m_scene, mode, commandText);
     if (moved == 0) {
         m_window->statusBar()->showMessage(MainWindow::tr("The selected items are already aligned"), 3000);
         return;
     }
-    m_window->statusBar()->showMessage(MainWindow::tr("Aligned %1 item(s)").arg(moved), 3000);
+    m_window->statusBar()->showMessage(MainWindow::tr("Aligned %1 Item(s)").arg(moved), 3000);
 }
 
-void MainWindowEditActionsController::applyBoolOperation(BoolOps::Operation operation)
+void MainWindowEditActionsController::ApplyBoolOperation(BoolOps::Operation operation)
 {
     if (m_window->m_view->mode() != ToolMode::EDIT) {
         m_window->statusBar()->showMessage(MainWindow::tr("Merge items is available in edit mode only"), 3000);
@@ -143,7 +143,7 @@ void MainWindowEditActionsController::applyBoolOperation(BoolOps::Operation oper
         commandText = MainWindow::tr("Split along line");
         break;
     }
-    if (!BoolOps::apply(m_window->m_scene, operation, commandText)) {
+    if (!BoolOps::Apply(m_window->m_scene, operation, commandText)) {
         // 线条分割的常见失败是切刀没碰到填充图形，提示比通用文案更具体。
         if (operation == BoolOps::Operation::LINE_SPLIT) {
             m_window->statusBar()->showMessage(
@@ -158,15 +158,15 @@ void MainWindowEditActionsController::applyBoolOperation(BoolOps::Operation oper
     } else {
         m_window->statusBar()->showMessage(MainWindow::tr("Merged into one polygon (undo to restore)"), 3000);
     }
-    m_window->updateActions();
+    m_window->UpdateActions();
 }
 
-void MainWindowEditActionsController::copySelectedItems()
+void MainWindowEditActionsController::CopySelectedItems()
 {
     if (!m_window->m_scene) {
         return;
     }
-    const QJsonArray items = m_window->m_scene->clipboardItems();
+    const QJsonArray items = m_window->m_scene->ClipboardItems();
     if (items.isEmpty()) {
         m_window->statusBar()->showMessage(MainWindow::tr("Select an item to copy"), 3000);
         return;
@@ -174,18 +174,18 @@ void MainWindowEditActionsController::copySelectedItems()
     auto* mime = new QMimeData;
     mime->setData(QLatin1String(CLIPBOARD_MIME_TYPE), QJsonDocument(items).toJson(QJsonDocument::Compact));
     QApplication::clipboard()->setMimeData(mime);
-    m_window->statusBar()->showMessage(MainWindow::tr("Copied %1 item(s)").arg(items.size()), 3000);
+    m_window->statusBar()->showMessage(MainWindow::tr("Copied %1 Item(s)").arg(items.size()), 3000);
 }
 
-void MainWindowEditActionsController::cutSelectedItems()
+void MainWindowEditActionsController::CutSelectedItems()
 {
-    copySelectedItems();
+    CopySelectedItems();
     if (m_window->m_scene) {
-        m_window->m_scene->deleteSelected();
+        m_window->m_scene->DeleteSelected();
     }
 }
 
-void MainWindowEditActionsController::pasteItems()
+void MainWindowEditActionsController::PasteItems()
 {
     if (!m_window->m_scene) {
         return;
@@ -198,16 +198,16 @@ void MainWindowEditActionsController::pasteItems()
     // 需求 9：从 excalidraw.com 复制的 JSON 也能直接粘到画板里。
     if (!mime->hasFormat(QLatin1String(CLIPBOARD_MIME_TYPE))) {
         const QJsonDocument external = QJsonDocument::fromJson(mime->data(QStringLiteral("text/plain")));
-        if (external.isObject() && Excalidraw::isClipboard(external.object())) {
+        if (external.isObject() && Excalidraw::IsClipboard(external.object())) {
             QStringList notes;
             const QJsonArray items =
-                Excalidraw::elementsToItems(external.object().value(QStringLiteral("elements")).toArray(), &notes);
-            const int pastedCount = m_window->m_scene->pasteClipboardItems(items);
+                Excalidraw::ElementsToItems(external.object().value(QStringLiteral("elements")).toArray(), &notes);
+            const int pastedCount = m_window->m_scene->PasteClipboardItems(items);
             if (pastedCount == 0) {
                 m_window->statusBar()->showMessage(MainWindow::tr("Nothing to paste"), 3000);
                 return;
             }
-            m_window->statusBar()->showMessage(MainWindow::tr("Pasted %1 Excalidraw item(s)").arg(pastedCount), 3000);
+            m_window->statusBar()->showMessage(MainWindow::tr("Pasted %1 Excalidraw Item(s)").arg(pastedCount), 3000);
             return;
         }
     }
@@ -216,10 +216,10 @@ void MainWindowEditActionsController::pasteItems()
         return;
     }
     const QJsonDocument doc = QJsonDocument::fromJson(mime->data(QLatin1String(CLIPBOARD_MIME_TYPE)));
-    const int pasted = m_window->m_scene->pasteClipboardItems(doc.array());
+    const int pasted = m_window->m_scene->PasteClipboardItems(doc.array());
     if (pasted == 0) {
         m_window->statusBar()->showMessage(MainWindow::tr("Nothing to paste"), 3000);
         return;
     }
-    m_window->statusBar()->showMessage(MainWindow::tr("Pasted %1 item(s)").arg(pasted), 3000);
+    m_window->statusBar()->showMessage(MainWindow::tr("Pasted %1 Item(s)").arg(pasted), 3000);
 }

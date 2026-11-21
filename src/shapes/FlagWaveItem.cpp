@@ -4,15 +4,15 @@
 
 FlagWaveItem::FlagWaveItem()
 {
-    SetContentSize(defaultContentSize());
+    SetContentSize(DefaultContentSize());
 }
 
-QSizeF FlagWaveItem::defaultContentSize() const
+QSizeF FlagWaveItem::DefaultContentSize() const
 {
     return QSizeF(128.0, 86.0);
 }
 
 QPainterPath FlagWaveItem::ShapePath(const QRectF& rect) const
 {
-    return ShapePathBuilder::flagWavePath(rect);
+    return ShapePathBuilder::FlagWavePath(rect);
 }

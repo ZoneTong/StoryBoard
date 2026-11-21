@@ -28,10 +28,10 @@ class ItemPropertiesDialog : public QDialog {
     explicit ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item, QWidget* parent = nullptr,
                                   bool editable = true);
 
-    CanvasItem* item() const { return m_item.data(); }
+    CanvasItem* Item() const { return m_item.data(); }
     bool IsEditable() const { return m_editable; }
-    bool isItemInScene() const;
-    static QString layerDescription(const CanvasScene* scene, int layerId);
+    bool IsItemInScene() const;
+    static QString LayerDescription(const CanvasScene* scene, int layerId);
     void accept() override;
 
   protected:
@@ -39,9 +39,9 @@ class ItemPropertiesDialog : public QDialog {
     void showEvent(QShowEvent* event) override;
 
   private:
-    void applyChanges();
-    void syncTextNaturalSize();
-    void applyEditableState();
+    void ApplyChanges();
+    void SyncTextNaturalSize();
+    void ApplyEditableState();
 
     CanvasScene* m_scene = nullptr;
     QPointer<CanvasItem> m_item;

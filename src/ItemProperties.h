@@ -45,16 +45,16 @@ class ItemPropertySet {
     ItemPropertySet() = default;
     ItemPropertySet(std::initializer_list<ItemProperty> values);
 
-    void insert(ItemProperty property);
-    bool contains(ItemProperty property) const;
-    bool isEmpty() const { return m_bits == 0; }
-    int size() const;
+    void Insert(ItemProperty property);
+    bool Contains(ItemProperty property) const;
+    bool IsEmpty() const { return m_bits == 0; }
+    int Size() const;
 
-    ItemPropertySet united(const ItemPropertySet& other) const;
-    ItemPropertySet intersected(const ItemPropertySet& other) const;
+    ItemPropertySet United(const ItemPropertySet& other) const;
+    ItemPropertySet Intersected(const ItemPropertySet& other) const;
 
     // 按枚举声明顺序返回，面板与属性窗直接照此排列行。
-    QList<ItemProperty> values() const;
+    QList<ItemProperty> Values() const;
 
   private:
     quint64 m_bits = 0;

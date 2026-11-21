@@ -6,7 +6,7 @@
 
 CanvasPanController::CanvasPanController(CanvasView* view) : m_view(view) {}
 
-void CanvasPanController::beginPan(const QPoint& position)
+void CanvasPanController::BeginPan(const QPoint& position)
 {
     m_panning = true;
     m_panStart = position;
@@ -15,14 +15,14 @@ void CanvasPanController::beginPan(const QPoint& position)
     m_view->viewport()->setCursor(Qt::ClosedHandCursor);
 }
 
-void CanvasPanController::endPan()
+void CanvasPanController::EndPan()
 {
     m_panning = false;
     m_panMoved = false;
-    m_view->updateCursor();
+    m_view->UpdateCursor();
 }
 
-bool CanvasPanController::movePan(const QPoint& position)
+bool CanvasPanController::MovePan(const QPoint& position)
 {
     if (!m_panning) {
         return false;

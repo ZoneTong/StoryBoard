@@ -15,7 +15,7 @@ constexpr int BRACE_SAMPLES = 64;
 ItemPropertySet BraceItem::Properties() const
 {
     // 箭头行对全部描线子型开放（含花括号），与现状一致。
-    return LineItemAbstract::Properties().united(ItemPropertySet{ItemProperty::ARROW_START, ItemProperty::ARROW_END});
+    return LineItemAbstract::Properties().United(ItemPropertySet{ItemProperty::ARROW_START, ItemProperty::ARROW_END});
 }
 
 QVariant BraceItem::PropertyValue(ItemProperty property) const
@@ -47,10 +47,10 @@ void BraceItem::SetPropertyValue(ItemProperty property, const QVariant& value)
 
 BraceItem::BraceItem(QGraphicsItem* parent) : LineItemAbstract(parent) {}
 
-void BraceItem::setBraceRect(const QRectF& rectScene, const QColor& color, qreal width)
+void BraceItem::SetBraceRect(const QRectF& rectScene, const QColor& color, qreal width)
 {
     const QRectF frame = rectScene.normalized();
-    const QPainterPath bracePath = ShapePathBuilder::bracePath(QRectF(QPointF(0.0, 0.0), frame.size()));
+    const QPainterPath bracePath = ShapePathBuilder::BracePath(QRectF(QPointF(0.0, 0.0), frame.size()));
     QVector<QPointF> points;
     points.reserve(BRACE_SAMPLES + 1);
     for (int i = 0; i <= BRACE_SAMPLES; ++i) {

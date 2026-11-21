@@ -6,7 +6,7 @@
 class CylinderItem : public ShapeItem {
   public:
     CylinderItem();
-    QSizeF defaultContentSize() const override;
+    QSizeF DefaultContentSize() const override;
     ShapeType shapeType() const override { return ShapeType::CYLINDER; }
 
   protected:

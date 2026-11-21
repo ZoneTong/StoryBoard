@@ -20,10 +20,10 @@ class CustomShapePanel : public QWidget {
     explicit CustomShapePanel(MainWindow* window);
 
     // 每次展开前重扫目录（按 mtime + size 缓存单个模板），并回到上次停留的标签页。
-    void showAt(QWidget* anchor);
-    QTabWidget* tabWidget() const { return m_tabs; }
+    void ShowAt(QWidget* anchor);
+    QTabWidget* TabWidget() const { return m_tabs; }
     // 当前选中标签页对应的文件夹名（根目录散文件为「其它」）。
-    QString currentFolder() const;
+    QString CurrentFolder() const;
 
   protected:
     void keyPressEvent(QKeyEvent* event) override;
@@ -37,13 +37,13 @@ class CustomShapePanel : public QWidget {
         QStringList errors;
     };
 
-    QList<Folder> scanFolders() const;
-    void rebuild(const QList<Folder>& folders);
-    void insertTemplate(const QString& filePath);
+    QList<Folder> ScanFolders() const;
+    void Rebuild(const QList<Folder>& folders);
+    void InsertTemplate(const QString& filePath);
     // 方向键在模板按钮间移动焦点（左右 ±1，上下 ±列数），回车插入焦点所在模板。
-    void moveFocusByStep(int step);
-    void restoreGeometryFromSettings();
-    void saveGeometryToSettings();
+    void MoveFocusByStep(int step);
+    void RestoreGeometryFromSettings();
+    void SaveGeometryToSettings();
 
     MainWindow* m_window = nullptr;
     QTabWidget* m_tabs = nullptr;

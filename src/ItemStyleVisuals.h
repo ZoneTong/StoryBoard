@@ -10,12 +10,12 @@
 // 同一功能在不同入口必须显示同一套文案与图标，避免各画一份后逐渐分叉。
 namespace ItemStyleVisuals {
 
-QList<Qt::PenStyle> borderStyles();
-QString borderStyleName(Qt::PenStyle style);
-QIcon borderStyleIcon(Qt::PenStyle style, int logicalSize = 16);
-QIcon fillStyleIcon(FillStyle style, int logicalSize = 16);
-QIcon fillStyleIcon(FillStyle style, const QColor& color, int logicalSize);
-QIcon fillColorIcon(const QColor& color, int logicalSize = 16);
-QIcon borderColorIcon(const QColor& color, int logicalSize = 16);
+QList<Qt::PenStyle> BorderStyles();
+QString BorderStyleName(Qt::PenStyle style);
+QIcon BorderStyleIcon(Qt::PenStyle style, int logicalSize = 16);
+QIcon FillStyleIcon(FillStyle style, int logicalSize = 16);
+QIcon FillStyleIcon(FillStyle style, const QColor& color, int logicalSize);
+QIcon FillColorIcon(const QColor& color, int logicalSize = 16);
+QIcon BorderColorIcon(const QColor& color, int logicalSize = 16);
 
 } // namespace ItemStyleVisuals

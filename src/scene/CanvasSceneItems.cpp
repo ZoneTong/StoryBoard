@@ -23,7 +23,7 @@ bool sameGeometry(const ItemGeometry& a, const ItemGeometry& b)
 
 } // namespace
 
-QList<CanvasItem*> CanvasScene::canvasItems() const
+QList<CanvasItem*> CanvasScene::CanvasItems() const
 {
     QList<CanvasItem*> result;
     const QList<QGraphicsItem*> allItems = items(Qt::AscendingOrder);
@@ -36,12 +36,12 @@ QList<CanvasItem*> CanvasScene::canvasItems() const
     return result;
 }
 
-int CanvasScene::canvasItemCount() const
+int CanvasScene::CanvasItemCount() const
 {
-    return canvasItems().size();
+    return CanvasItems().size();
 }
 
-QList<CanvasItem*> CanvasScene::selectedCanvasItems() const
+QList<CanvasItem*> CanvasScene::SelectedCanvasItems() const
 {
     QList<CanvasItem*> result;
     const QList<QGraphicsItem*> graphicsItems = selectedItems();
@@ -55,7 +55,7 @@ QList<CanvasItem*> CanvasScene::selectedCanvasItems() const
 
 void CanvasScene::RefreshViewDependentGeometry()
 {
-    const QList<CanvasItem*> items = canvasItems();
+    const QList<CanvasItem*> items = CanvasItems();
     for (CanvasItem* item : items) {
         if (item) {
             item->RefreshViewDependentGeometry();
@@ -63,13 +63,13 @@ void CanvasScene::RefreshViewDependentGeometry()
     }
 }
 
-bool CanvasScene::canSmoothSelectedStrokes() const
+bool CanvasScene::CanSmoothSelectedStrokes() const
 {
     if (m_mode != ToolMode::EDIT) {
         return false;
     }
-    for (CanvasItem* item : selectedCanvasItems()) {
-        if (!isItemEditable(item)) {
+    for (CanvasItem* item : SelectedCanvasItems()) {
+        if (!IsItemEditable(item)) {
             continue;
         }
         if (auto* line = dynamic_cast<LineItemAbstract*>(item)) {
@@ -84,7 +84,7 @@ bool CanvasScene::canSmoothSelectedStrokes() const
     return false;
 }
 
-int CanvasScene::smoothSelectedStrokes(qreal tolerance)
+int CanvasScene::SmoothSelectedStrokes(qreal tolerance)
 {
     if (m_mode != ToolMode::EDIT) {
         return 0;
@@ -95,8 +95,8 @@ int CanvasScene::smoothSelectedStrokes(qreal tolerance)
     QList<LineItemAbstract*> items;
     QList<LineItemAbstract::GeometryState> before;
     QList<LineItemAbstract::GeometryState> after;
-    for (CanvasItem* item : selectedCanvasItems()) {
-        if (!isItemEditable(item)) {
+    for (CanvasItem* item : SelectedCanvasItems()) {
+        if (!IsItemEditable(item)) {
             continue;
         }
         auto* line = dynamic_cast<LineItemAbstract*>(item);
@@ -124,19 +124,19 @@ int CanvasScene::smoothSelectedStrokes(qreal tolerance)
         for (int i = 0; i < items.size(); ++i) {
             items.at(i)->ApplyGeometryState(after.at(i));
         }
-        updateSceneExtent();
+        UpdateSceneExtent();
         update();
         emit contentChanged();
     }
     return items.size();
 }
 
-QString CanvasScene::uniqueItemName(const QString& base, const CanvasItem* except) const
+QString CanvasScene::UniqueItemName(const QString& base, const CanvasItem* except) const
 {
     const QString typeName = base.trimmed();
     const QString prefix = typeName + QLatin1Char(' ');
     int maxSuffix = 0;
-    for (CanvasItem* item : canvasItems()) {
+    for (CanvasItem* item : CanvasItems()) {
         if (!item || item == except) {
             continue;
         }
@@ -153,13 +153,13 @@ QString CanvasScene::uniqueItemName(const QString& base, const CanvasItem* excep
     return QStringLiteral("%1 %2").arg(typeName).arg(maxSuffix + 1);
 }
 
-bool CanvasScene::isItemNameAvailable(const QString& name, const CanvasItem* except) const
+bool CanvasScene::IsItemNameAvailable(const QString& name, const CanvasItem* except) const
 {
     const QString candidate = name.trimmed();
     if (candidate.isEmpty()) {
         return true;
     }
-    for (CanvasItem* item : canvasItems()) {
+    for (CanvasItem* item : CanvasItems()) {
         if (!item || item == except) {
             continue;
         }
@@ -170,13 +170,13 @@ bool CanvasScene::isItemNameAvailable(const QString& name, const CanvasItem* exc
     return true;
 }
 
-QString CanvasScene::uniqueItemNameFor(const QString& requested, const CanvasItem* except) const
+QString CanvasScene::UniqueItemNameFor(const QString& requested, const CanvasItem* except) const
 {
     static const QSet<QString> reserved;
-    return uniqueItemNameFor(requested, except, reserved);
+    return UniqueItemNameFor(requested, except, reserved);
 }
 
-QString CanvasScene::uniqueItemNameFor(const QString& requested, const CanvasItem* except,
+QString CanvasScene::UniqueItemNameFor(const QString& requested, const CanvasItem* except,
                                        const QSet<QString>& reserved) const
 {
     const QString trimmed = requested.trimmed();
@@ -222,7 +222,7 @@ QString CanvasScene::uniqueItemNameFor(const QString& requested, const CanvasIte
         }
     };
 
-    for (CanvasItem* item : canvasItems()) {
+    for (CanvasItem* item : CanvasItems()) {
         if (!item || item == except) {
             continue;
         }
@@ -239,35 +239,35 @@ QString CanvasScene::uniqueItemNameFor(const QString& requested, const CanvasIte
     return prefix + QString::number(next);
 }
 
-void CanvasScene::assignAutoItemNames()
+void CanvasScene::AssignAutoItemNames()
 {
-    for (CanvasItem* item : canvasItems()) {
+    for (CanvasItem* item : CanvasItems()) {
         if (!item) {
             continue;
         }
         const QString existing = item->CustomName().trimmed();
         if (existing.isEmpty()) {
-            item->SetName(uniqueItemName(item->TypeDisplayName(), item));
-        } else if (!isItemNameAvailable(existing, item)) {
-            item->SetName(uniqueItemNameFor(existing, item));
+            item->SetName(UniqueItemName(item->TypeDisplayName(), item));
+        } else if (!IsItemNameAvailable(existing, item)) {
+            item->SetName(UniqueItemNameFor(existing, item));
         }
     }
 }
 
-void CanvasScene::selectAllItems()
+void CanvasScene::SelectAllItems()
 {
     if (m_mode != ToolMode::EDIT) {
         return;
     }
-    const QList<CanvasItem*> allItems = canvasItems();
+    const QList<CanvasItem*> allItems = CanvasItems();
     for (CanvasItem* item : allItems) {
-        if (isItemEditable(item)) {
+        if (IsItemEditable(item)) {
             item->setSelected(true);
         }
     }
 }
 
-void CanvasScene::pushGeometry(const ItemGeometryList& before, const ItemGeometryList& after, const QString& text,
+void CanvasScene::PushGeometry(const ItemGeometryList& before, const ItemGeometryList& after, const QString& text,
                                const QString& mergeId)
 {
     if (before.size() != after.size()) {
@@ -293,7 +293,7 @@ void CanvasScene::pushGeometry(const ItemGeometryList& before, const ItemGeometr
     if (m_undoStack) {
         auto* command = new GeometryCommand(this, filteredBefore, filteredAfter, text);
         if (!mergeId.isEmpty()) {
-            command->setMergeId(mergeId);
+            command->SetMergeId(mergeId);
         }
         m_undoStack->push(command);
     } else {
@@ -305,10 +305,10 @@ void CanvasScene::pushGeometry(const ItemGeometryList& before, const ItemGeometr
             geometry.item->SetContentSize(geometry.size);
         }
     }
-    updateSceneExtent();
+    UpdateSceneExtent();
 }
 
-void CanvasScene::pushRotation(CanvasItem* item, qreal before, qreal after, const QString& text)
+void CanvasScene::PushRotation(CanvasItem* item, qreal before, qreal after, const QString& text)
 {
     if (!item || qAbs(before - after) < 0.0001) {
         return;
@@ -319,17 +319,17 @@ void CanvasScene::pushRotation(CanvasItem* item, qreal before, qreal after, cons
     } else {
         item->SetRotationAngle(after);
     }
-    updateSceneExtent();
+    UpdateSceneExtent();
 }
 
-int CanvasScene::rotateSelected(qreal degrees, const QString& commandText)
+int CanvasScene::RotateSelected(qreal degrees, const QString& commandText)
 {
-    const QList<CanvasItem*> items = selectedCanvasItems();
+    const QList<CanvasItem*> items = SelectedCanvasItems();
     QList<CanvasItem*> changed;
     QList<qreal> before;
     QList<qreal> after;
     for (CanvasItem* item : items) {
-        if (!item || !isItemEditable(item)) {
+        if (!item || !IsItemEditable(item)) {
             continue;
         }
         const qreal start = item->RotationAngle();
@@ -353,7 +353,7 @@ int CanvasScene::rotateSelected(qreal degrees, const QString& commandText)
             changed.at(i)->SetRotationAngle(after.at(i));
         }
     }
-    updateSceneExtent();
+    UpdateSceneExtent();
     update();
     return changed.size();
 }

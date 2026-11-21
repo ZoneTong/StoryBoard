@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <utility>
 
-void CanvasScene::attachItem(CanvasItem* item)
+void CanvasScene::AttachItem(CanvasItem* item)
 {
     if (!item) {
         return;
@@ -29,29 +29,29 @@ void CanvasScene::attachItem(CanvasItem* item)
         addItem(item);
     }
 
-    if (!hasLayer(item->LayerId()) || item->LayerId() == BackgroundLayerId) {
+    if (!HasLayer(item->LayerId()) || item->LayerId() == BackgroundLayerId) {
         item->SetLayerId(m_activeLayerId);
     }
     if (item->ZOrder() < 0 || item->ZOrder() > scene_constants::MAX_ITEM_HEIGHT ||
-        heightUsedByOther(item->LayerId(), item->ZOrder(), item)) {
-        const int height = nextHeight(item->LayerId());
+        HeightUsedByOther(item->LayerId(), item->ZOrder(), item)) {
+        const int height = NextHeight(item->LayerId());
         item->SetZOrder(height >= 0 ? height : 0);
     }
     const QString existingName = item->CustomName().trimmed();
     if (existingName.isEmpty()) {
-        item->SetName(uniqueItemName(item->TypeDisplayName(), item));
-    } else if (!isItemNameAvailable(existingName, item)) {
-        item->SetName(uniqueItemNameFor(existingName, item));
+        item->SetName(UniqueItemName(item->TypeDisplayName(), item));
+    } else if (!IsItemNameAvailable(existingName, item)) {
+        item->SetName(UniqueItemNameFor(existingName, item));
     }
-    applyItemStacking(item);
-    applyItemInteraction(item);
+    ApplyItemStacking(item);
+    ApplyItemInteraction(item);
 
-    updateSceneExtent();
+    UpdateSceneExtent();
     update();
     emit contentChanged();
 }
 
-void CanvasScene::detachItem(CanvasItem* item)
+void CanvasScene::DetachItem(CanvasItem* item)
 {
     if (!item) {
         return;
@@ -65,12 +65,12 @@ void CanvasScene::detachItem(CanvasItem* item)
     }
     item->setSelected(false);
 
-    updateSceneExtent();
+    UpdateSceneExtent();
     update();
     emit contentChanged();
 }
 
-void CanvasScene::deleteSelected()
+void CanvasScene::DeleteSelected()
 {
     QList<CanvasItem*> selected;
     const QList<QGraphicsItem*> graphicsSelection = selectedItems();
@@ -87,20 +87,20 @@ void CanvasScene::deleteSelected()
         m_undoStack->push(new RemoveItemsCommand(this, selected, tr("Delete item")));
     } else {
         for (CanvasItem* item : selected) {
-            detachItem(item);
+            DetachItem(item);
         }
     }
 }
 
-int CanvasScene::duplicateSelectedItems()
+int CanvasScene::DuplicateSelectedItems()
 {
     if (m_mode != ToolMode::EDIT) {
         return 0;
     }
 
     QList<CanvasItem*> sources;
-    for (CanvasItem* item : selectedCanvasItems()) {
-        if (item && isItemEditable(item)) {
+    for (CanvasItem* item : SelectedCanvasItems()) {
+        if (item && IsItemEditable(item)) {
             sources.append(item);
         }
     }
@@ -111,7 +111,7 @@ int CanvasScene::duplicateSelectedItems()
     // 只有在整组成员都被复制时，副本才重新组成一个新组；只复制组内单个图元
     // 时副本保持未分组，避免副本和原组意外联动。
     QHash<int, QList<CanvasItem*>> groupMembers;
-    for (CanvasItem* item : canvasItems()) {
+    for (CanvasItem* item : CanvasItems()) {
         if (item->GroupId() > 0) {
             groupMembers[item->GroupId()].append(item);
         }
@@ -127,7 +127,7 @@ int CanvasScene::duplicateSelectedItems()
     QList<CanvasItem*> copies;
     QSet<QString> reservedNames;
     for (CanvasItem* source : sources) {
-        CanvasItem* copy = createItemForJson(source->ToJson());
+        CanvasItem* copy = CreateItemForJson(source->ToJson());
         if (!copy) {
             continue;
         }
@@ -150,7 +150,7 @@ int CanvasScene::duplicateSelectedItems()
         if (sourceName.isEmpty()) {
             copy->SetName(QString());
         } else {
-            const QString copyName = uniqueItemNameFor(sourceName, copy, reservedNames);
+            const QString copyName = UniqueItemNameFor(sourceName, copy, reservedNames);
             copy->SetName(copyName);
             reservedNames.insert(copyName.toCaseFolded());
         }
@@ -160,38 +160,38 @@ int CanvasScene::duplicateSelectedItems()
         return 0;
     }
 
-    addItemsWithUndo(copies, tr("Duplicate selected items"));
+    AddItemsWithUndo(copies, tr("Duplicate selected items"));
     clearSelection();
     for (CanvasItem* copy : copies) {
-        if (isItemEditable(copy)) {
+        if (IsItemEditable(copy)) {
             copy->setSelected(true);
         }
     }
-    updateSceneExtent();
+    UpdateSceneExtent();
     update();
     emit contentChanged();
     return copies.size();
 }
 
-void CanvasScene::addItemsWithUndo(const QList<CanvasItem*>& items, const QString& text)
+void CanvasScene::AddItemsWithUndo(const QList<CanvasItem*>& items, const QString& text)
 {
     if (items.isEmpty()) {
         return;
     }
 
-    if (!hasLayer(m_activeLayerId)) {
-        ensureLayerState();
+    if (!HasLayer(m_activeLayerId)) {
+        EnsureLayerState();
     }
 
     // Repair any externally supplied duplicate heights before reserving new
     // slots. Every layer must expose exactly one item per height value.
-    normalizeAllHeights();
+    NormalizeAllHeights();
 
     // Assign the active layer and a unique height before the items are
     // attached, so a multi-image drop keeps the same top-to-bottom order it
     // had when it was created.
     QHash<int, QSet<int>> usedHeights;
-    const QList<CanvasItem*> existing = canvasItems();
+    const QList<CanvasItem*> existing = CanvasItems();
     for (const CanvasItem* item : existing) {
         usedHeights[item->LayerId()].insert(item->ZOrder());
     }
@@ -200,14 +200,14 @@ void CanvasScene::addItemsWithUndo(const QList<CanvasItem*>& items, const QStrin
         if (!item) {
             continue;
         }
-        if (!hasLayer(item->LayerId()) || item->LayerId() == BackgroundLayerId) {
+        if (!HasLayer(item->LayerId()) || item->LayerId() == BackgroundLayerId) {
             item->SetLayerId(m_activeLayerId);
         }
 
         QSet<int>& used = usedHeights[item->LayerId()];
         int height = item->ZOrder();
         if (height < 0 || height > scene_constants::MAX_ITEM_HEIGHT || used.contains(height)) {
-            height = nextHeight(item->LayerId());
+            height = NextHeight(item->LayerId());
             while (height >= 0 && height < scene_constants::MAX_ITEM_HEIGHT && used.contains(height)) {
                 ++height;
             }
@@ -220,7 +220,7 @@ void CanvasScene::addItemsWithUndo(const QList<CanvasItem*>& items, const QStrin
         if (item->GroupId() > 0) {
             m_nextGroupId = qMax(m_nextGroupId, item->GroupId() + 1);
         }
-        applyItemStacking(item);
+        ApplyItemStacking(item);
     }
 
     if (m_undoStack) {
@@ -235,18 +235,18 @@ void CanvasScene::addItemsWithUndo(const QList<CanvasItem*>& items, const QStrin
         }
     } else {
         for (CanvasItem* item : items) {
-            attachItem(item);
+            AttachItem(item);
         }
     }
-    updateSceneExtent();
+    UpdateSceneExtent();
 }
 
-void CanvasScene::commitNewItem(CanvasItem* item, const QString& text)
+void CanvasScene::CommitNewItem(CanvasItem* item, const QString& text)
 {
-    addItemsWithUndo({item}, text);
+    AddItemsWithUndo({item}, text);
 }
 
-CanvasItem* CanvasScene::createItem(const QString& kind, const QString& shapeType) const
+CanvasItem* CanvasScene::CreateItem(const QString& kind, const QString& shapeType) const
 {
     // 类型标识只按 kind 建类：线条族五个形态各自一个类，图形 / 多边形 / 文字各一个族。
     if (kind == QStringLiteral("straightline")) {
@@ -268,7 +268,7 @@ CanvasItem* CanvasScene::createItem(const QString& kind, const QString& shapeTyp
         return new TextItem();
     }
     if (kind == QStringLiteral("shape")) {
-        return createShapeItem(shapeTypeFromString(shapeType));
+        return CreateShapeItem(ShapeTypeFromString(shapeType));
     }
     if (kind == QStringLiteral("polygon")) {
         return new PolygonItem();
@@ -276,7 +276,7 @@ CanvasItem* CanvasScene::createItem(const QString& kind, const QString& shapeTyp
     return nullptr;
 }
 
-CanvasItem* CanvasScene::createItemForJson(const QJsonObject& json) const
+CanvasItem* CanvasScene::CreateItemForJson(const QJsonObject& json) const
 {
     // 旧画布把类型写在 type 里，kind 是 0.1.4 起的键；曲线族改名前的
     // curve / line 也在这里折到新 kind，保证示例画布与自定义模板能直接打开。
@@ -289,5 +289,5 @@ CanvasItem* CanvasScene::createItemForJson(const QJsonObject& json) const
     } else if (kind == QStringLiteral("line")) {
         kind = QStringLiteral("straightline");
     }
-    return createItem(kind, json.value(QStringLiteral("shapeType")).toString());
+    return CreateItem(kind, json.value(QStringLiteral("shapeType")).toString());
 }

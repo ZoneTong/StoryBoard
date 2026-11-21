@@ -7,7 +7,7 @@
 #include <QVector>
 #include <algorithm>
 
-QRegion ObscurationAnalyzer::filledRegion(const QPainterPath& path)
+QRegion ObscurationAnalyzer::FilledRegion(const QPainterPath& path)
 {
     QRegion region;
     if (path.isEmpty()) {
@@ -22,7 +22,7 @@ QRegion ObscurationAnalyzer::filledRegion(const QPainterPath& path)
     return region;
 }
 
-qreal ObscurationAnalyzer::regionArea(const QRegion& region)
+qreal ObscurationAnalyzer::RegionArea(const QRegion& region)
 {
     qreal area = 0.0;
     for (const QRect& rect : region) {
@@ -31,7 +31,7 @@ qreal ObscurationAnalyzer::regionArea(const QRegion& region)
     return area;
 }
 
-QList<CanvasItem*> ObscurationAnalyzer::findObscured(const QList<CanvasItem*>& items, const QRectF& area) const
+QList<CanvasItem*> ObscurationAnalyzer::FindObscured(const QList<CanvasItem*>& items, const QRectF& area) const
 {
     QList<CanvasItem*> stack = items;
     stack.erase(std::remove_if(stack.begin(), stack.end(),
@@ -62,7 +62,7 @@ QList<CanvasItem*> ObscurationAnalyzer::findObscured(const QList<CanvasItem*>& i
     auto regionOf = [&stack, &regions, &regionReady](int index) -> const QRegion& {
         if (!regionReady.at(index)) {
             CanvasItem* item = stack.at(index);
-            regions[index] = filledRegion(item->sceneTransform().map(item->PaintedShape()));
+            regions[index] = FilledRegion(item->sceneTransform().map(item->PaintedShape()));
             regionReady[index] = true;
         }
         return regions.at(index);
@@ -72,7 +72,7 @@ QList<CanvasItem*> ObscurationAnalyzer::findObscured(const QList<CanvasItem*>& i
     for (int i = 0; i < count; ++i) {
         CanvasItem* lower = stack.at(i);
         const QRegion own = regionOf(i);
-        const qreal ownArea = regionArea(own);
+        const qreal ownArea = RegionArea(own);
         if (ownArea <= 0.0) {
             continue;
         }
@@ -92,7 +92,7 @@ QList<CanvasItem*> ObscurationAnalyzer::findObscured(const QList<CanvasItem*>& i
 
         // 只要有任何面积被更高优先级图元盖住，就算被遮挡：被盖住的内容完全看不见，
         // 但会给它补一圈轮廓。
-        if (regionArea(covered) > 0.0) {
+        if (RegionArea(covered) > 0.0) {
             result.append(lower);
         }
     }

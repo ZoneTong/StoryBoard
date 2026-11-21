@@ -7,10 +7,10 @@
 
 ParallelogramItem::ParallelogramItem()
 {
-    SetContentSize(defaultContentSize());
+    SetContentSize(DefaultContentSize());
 }
 
-QSizeF ParallelogramItem::defaultContentSize() const
+QSizeF ParallelogramItem::DefaultContentSize() const
 {
     return QSizeF(110.85, 64.0);
 }
@@ -18,13 +18,13 @@ QSizeF ParallelogramItem::defaultContentSize() const
 ItemPropertySet ParallelogramItem::Properties() const
 {
     ItemPropertySet result = ShapeItem::Properties();
-    result.insert(ItemProperty::PARALLELOGRAM_ANGLE);
+    result.Insert(ItemProperty::PARALLELOGRAM_ANGLE);
     return result;
 }
 
 QPainterPath ParallelogramItem::ShapePath(const QRectF& rect) const
 {
-    return ShapePathBuilder::parallelogramPath(rect, ParallelogramAngle());
+    return ShapePathBuilder::ParallelogramPath(rect, ParallelogramAngle());
 }
 
 void ParallelogramItem::SetParallelogramAngle(qreal angle)

@@ -15,13 +15,13 @@ class LayerPanelView {
     LayerPanelView(CanvasScene* scene, QListWidget* list, QCheckBox* allVisibleBox, QToolButton* addButton,
                    QToolButton* removeButton, QToolButton* upButton, QToolButton* downButton, QLabel* summaryLabel);
 
-    int currentLayerId() const;
-    QList<int> selectedLayerIds() const;
+    int CurrentLayerId() const;
+    QList<int> SelectedLayerIds() const;
 
-    void refreshRowStyles();
-    void refreshAllVisibleState();
-    void refreshButtons();
-    void refreshSummary();
+    void RefreshRowStyles();
+    void RefreshAllVisibleState();
+    void RefreshButtons();
+    void RefreshSummary();
 
   private:
     CanvasScene* m_scene = nullptr;

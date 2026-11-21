@@ -18,30 +18,30 @@ class ShapePathBuilder {
                                 qreal sweepAngle);
     // 三角形按底边角度生成：底边 = 矩形宽，顶点横坐标 = 高 × cot(底角1)。
     // 角度是真相；调用方负责让矩形高与底边、角度保持自洽。
-    static QPainterPath trianglePath(const QRectF& rect, qreal bottomAngle1, qreal bottomAngle2);
+    static QPainterPath TrianglePath(const QRectF& rect, qreal bottomAngle1, qreal bottomAngle2);
     // 需求 9：平行四边形左下内角（度）。上边相对底边的水平偏移 = 高 × cot(角度)，
     // 锐角向右移、钝角向左移，图形始终落在矩形内。
-    static QPainterPath parallelogramPath(const QRectF& rect, qreal bottomLeftAngle);
+    static QPainterPath ParallelogramPath(const QRectF& rect, qreal bottomLeftAngle);
 
     // 各图形的具体几何：由同名的图元子类在 ShapePath() 中直接调用。
-    static QPainterPath roundedRectPath(const QRectF& rect, qreal cornerRadius);
-    static QPainterPath ellipsePath(const QRectF& rect);
-    static QPainterPath sectorPath(const QRectF& rect, qreal startAngle, qreal sweepAngle);
-    static QPainterPath arrowPath(const QRectF& rect);
-    static QPainterPath doubleArrowPath(const QRectF& rect);
-    static QPainterPath starPath(const QRectF& rect);
-    static QPainterPath fourPointStarPath(const QRectF& rect);
-    static QPainterPath hexagramPath(const QRectF& rect);
-    static QPainterPath heartPath(const QRectF& rect);
-    static QPainterPath calloutPath(const QRectF& rect);
-    static QPainterPath flagWavePath(const QRectF& rect);
-    static QPainterPath scrollPath(const QRectF& rect);
-    static QPainterPath cubePath(const QRectF& rect);
-    static QPainterPath cylinderPath(const QRectF& rect);
+    static QPainterPath RoundedRectPath(const QRectF& rect, qreal cornerRadius);
+    static QPainterPath EllipsePath(const QRectF& rect);
+    static QPainterPath SectorPath(const QRectF& rect, qreal startAngle, qreal sweepAngle);
+    static QPainterPath ArrowPath(const QRectF& rect);
+    static QPainterPath DoubleArrowPath(const QRectF& rect);
+    static QPainterPath StarPath(const QRectF& rect);
+    static QPainterPath FourPointStarPath(const QRectF& rect);
+    static QPainterPath HexagramPath(const QRectF& rect);
+    static QPainterPath HeartPath(const QRectF& rect);
+    static QPainterPath CalloutPath(const QRectF& rect);
+    static QPainterPath FlagWavePath(const QRectF& rect);
+    static QPainterPath ScrollPath(const QRectF& rect);
+    static QPainterPath CubePath(const QRectF& rect);
+    static QPainterPath CylinderPath(const QRectF& rect);
 
     // 需求 13：花括号曲线化后不再是 ShapeType，插入采样与图标绘制共用这份几何。
-    static QPainterPath bracePath(const QRectF& rect);
+    static QPainterPath BracePath(const QRectF& rect);
 
     // 模板存的是 0–1 单位坐标，按内容矩形铺开，路径本身可任意放大缩小。
-    static QPainterPath mapUnitPath(const QPainterPath& unitPath, const QRectF& rect);
+    static QPainterPath MapUnitPath(const QPainterPath& unitPath, const QRectF& rect);
 };

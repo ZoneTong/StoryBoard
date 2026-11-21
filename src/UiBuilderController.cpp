@@ -15,27 +15,27 @@ UiBuilderController::UiBuilderController(MainWindow* window)
 
 UiBuilderController::~UiBuilderController() = default;
 
-void UiBuilderController::buildActions()
+void UiBuilderController::BuildActions()
 {
-    m_actions->build();
+    m_actions->Build();
 }
 
-void UiBuilderController::buildShapeMenu()
+void UiBuilderController::BuildShapeMenu()
 {
-    m_menus->buildShapeMenu();
+    m_menus->BuildShapeMenu();
 }
 
-void UiBuilderController::buildMenus()
+void UiBuilderController::BuildMenus()
 {
-    m_menus->buildMenus();
+    m_menus->BuildMenus();
 }
 
-void UiBuilderController::buildToolBars()
+void UiBuilderController::BuildToolBars()
 {
-    m_toolBars->buildToolBars();
+    m_toolBars->BuildToolBars();
 }
 
-void UiBuilderController::buildStatusBar()
+void UiBuilderController::BuildStatusBar()
 {
-    m_statusBar->buildStatusBar();
+    m_statusBar->BuildStatusBar();
 }

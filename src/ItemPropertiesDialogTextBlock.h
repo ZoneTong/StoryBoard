@@ -19,20 +19,20 @@ class ItemPropertiesDialogTextBlock : public QWidget {
   public:
     ItemPropertiesDialogTextBlock(CanvasItem* item, QWidget* parent = nullptr);
 
-    void addRows(QFormLayout* form);
+    void AddRows(QFormLayout* form);
 
-    QPlainTextEdit* textEdit() const { return m_textEdit; }
-    QToolButton* textColorButton() const { return m_textColorButton; }
-    QPushButton* fontButton() const { return m_fontButton; }
+    QPlainTextEdit* TextEdit() const { return m_textEdit; }
+    QToolButton* TextColorButton() const { return m_textColorButton; }
+    QPushButton* FontButton() const { return m_fontButton; }
     QFont TextFont() const { return m_textFont; }
 
-    void chooseFont();
+    void ChooseFont();
 
   signals:
     void fontChanged();
 
   private:
-    void updateFontButton();
+    void UpdateFontButton();
 
     QFont m_textFont;
     QPlainTextEdit* m_textEdit = nullptr;

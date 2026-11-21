@@ -11,7 +11,7 @@
 
 LayerActions::LayerActions(CanvasScene* scene, QObject* parent) : QObject(parent), m_scene(scene) {}
 
-void LayerActions::setLayerVisible(int layerId, bool visible)
+void LayerActions::SetLayerVisible(int layerId, bool visible)
 {
     if (!m_scene) {
         return;
@@ -19,9 +19,9 @@ void LayerActions::setLayerVisible(int layerId, bool visible)
 
     const QString layerName =
         (layerId == CanvasScene::BackgroundLayerId) ? LayerPanel::tr("Background layer") : m_scene->layer(layerId).name;
-    const int oldActive = m_scene->activeLayerId();
+    const int oldActive = m_scene->ActiveLayerId();
 
-    if (!m_scene->setLayerVisible(layerId, visible)) {
+    if (!m_scene->SetLayerVisible(layerId, visible)) {
         emit statusMessage(LayerPanel::tr("The last visible layer cannot be hidden. Create a new layer first."));
         emit refreshRequested();
         return;
@@ -30,9 +30,9 @@ void LayerActions::setLayerVisible(int layerId, bool visible)
     if (layerId == CanvasScene::BackgroundLayerId) {
         emit statusMessage(visible ? LayerPanel::tr("Background layer shown")
                                    : LayerPanel::tr("Background layer hidden"));
-    } else if (!visible && oldActive == layerId && m_scene->activeLayerId() != oldActive) {
+    } else if (!visible && oldActive == layerId && m_scene->ActiveLayerId() != oldActive) {
         emit statusMessage(LayerPanel::tr("Layer \"%1\" hidden; the current layer switched to \"%2\"")
-                               .arg(layerName, m_scene->layer(m_scene->activeLayerId()).name));
+                               .arg(layerName, m_scene->layer(m_scene->ActiveLayerId()).name));
     } else {
         emit statusMessage(visible ? LayerPanel::tr("Layer \"%1\" shown").arg(layerName)
                                    : LayerPanel::tr("Layer \"%1\" hidden").arg(layerName));
@@ -40,26 +40,26 @@ void LayerActions::setLayerVisible(int layerId, bool visible)
     emit refreshRequested();
 }
 
-void LayerActions::setAllLayersVisible(bool visible)
+void LayerActions::SetAllLayersVisible(bool visible)
 {
     if (!m_scene) {
         return;
     }
-    if (!m_scene->setAllLayersVisible(visible)) {
+    if (!m_scene->SetAllLayersVisible(visible)) {
         return;
     }
     emit statusMessage(visible ? LayerPanel::tr("All layers shown") : LayerPanel::tr("All layers hidden"));
     emit refreshRequested();
 }
 
-void LayerActions::setLayerLocked(int layerId, bool locked)
+void LayerActions::SetLayerLocked(int layerId, bool locked)
 {
     if (!m_scene) {
         return;
     }
 
     const QString layerName = m_scene->layer(layerId).name;
-    if (!m_scene->setLayerLocked(layerId, locked)) {
+    if (!m_scene->SetLayerLocked(layerId, locked)) {
         emit statusMessage(LayerPanel::tr("The background layer is always locked."));
         emit refreshRequested();
         return;
@@ -70,46 +70,46 @@ void LayerActions::setLayerLocked(int layerId, bool locked)
     emit refreshRequested();
 }
 
-void LayerActions::addLayer()
+void LayerActions::AddLayer()
 {
     if (!m_scene) {
         return;
     }
-    m_scene->addLayerWithUndo();
+    m_scene->AddLayerWithUndo();
     emit statusMessage(LayerPanel::tr("Layer created"));
 }
 
-void LayerActions::removeLayer(QWidget* dialogParent, const QList<int>& layerIds)
+void LayerActions::RemoveLayer(QWidget* dialogParent, const QList<int>& layerIds)
 {
     if (!m_scene || layerIds.isEmpty()) {
         return;
     }
 
     for (int id : layerIds) {
-        if (m_scene->layerItemCount(id) > 0) {
+        if (m_scene->LayerItemCount(id) > 0) {
             QMessageBox::information(dialogParent, LayerPanel::tr("Delete layer"),
                                      LayerPanel::tr("Layer \"%1\" still contains items. Move or delete them first.")
                                          .arg(m_scene->layer(id).name));
             return;
         }
     }
-    if (m_scene->userLayerCount() - layerIds.size() < 1) {
+    if (m_scene->UserLayerCount() - layerIds.size() < 1) {
         QMessageBox::information(dialogParent, LayerPanel::tr("Delete layer"),
                                  LayerPanel::tr("At least one user layer must remain."));
         return;
     }
 
     for (int id : layerIds) {
-        m_scene->removeLayerWithUndo(id, nullptr);
+        m_scene->RemoveLayerWithUndo(id, nullptr);
     }
     emit statusMessage(layerIds.size() > 1 ? LayerPanel::tr("%1 layer(s) deleted").arg(layerIds.size())
                                            : LayerPanel::tr("Layer deleted"));
     emit refreshRequested();
 }
 
-void LayerActions::renameLayer(QWidget* dialogParent, int layerId)
+void LayerActions::RenameLayer(QWidget* dialogParent, int layerId)
 {
-    if (!m_scene || layerId <= CanvasScene::BackgroundLayerId || !m_scene->hasLayer(layerId)) {
+    if (!m_scene || layerId <= CanvasScene::BackgroundLayerId || !m_scene->HasLayer(layerId)) {
         return;
     }
 
@@ -131,19 +131,19 @@ void LayerActions::renameLayer(QWidget* dialogParent, int layerId)
         return;
     }
 
-    if (m_scene->renameLayerWithUndo(layerId, trimmed)) {
+    if (m_scene->RenameLayerWithUndo(layerId, trimmed)) {
         emit statusMessage(LayerPanel::tr("Layer renamed to \"%1\"").arg(trimmed));
         emit refreshRequested();
     }
 }
 
-void LayerActions::moveLayer(int delta)
+void LayerActions::MoveLayer(int delta)
 {
     if (!m_scene) {
         return;
     }
-    const int id = m_scene->activeLayerId();
-    if (m_scene->moveLayerWithUndo(id, delta)) {
+    const int id = m_scene->ActiveLayerId();
+    if (m_scene->MoveLayerWithUndo(id, delta)) {
         emit statusMessage(delta > 0 ? LayerPanel::tr("Layer moved up") : LayerPanel::tr("Layer moved down"));
     }
 }

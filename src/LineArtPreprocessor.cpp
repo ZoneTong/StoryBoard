@@ -4,7 +4,7 @@
 
 namespace LineArtInternal {
 
-QImage composeOnWhite(const QImage& source)
+QImage ComposeOnWhite(const QImage& source)
 {
     QImage base(source.size(), QImage::Format_RGB32);
     base.fill(Qt::white);
@@ -15,7 +15,7 @@ QImage composeOnWhite(const QImage& source)
     return base;
 }
 
-QImage fitToSide(const QImage& image, int side)
+QImage FitToSide(const QImage& image, int side)
 {
     if (qMax(image.width(), image.height()) <= side) {
         return image;

@@ -51,7 +51,7 @@ SettingsDialogCanvasPage::SettingsDialogCanvasPage(const AppSettings& settings, 
 
     m_canvasColorButton = new QPushButton(m_group);
     m_canvasColorButton->setIconSize(QSize(18, 18));
-    refreshColorButton(m_canvasColorButton, m_canvasColor);
+    RefreshColorButton(m_canvasColorButton, m_canvasColor);
     connect(m_canvasColorButton, &QPushButton::clicked, this, [this]() {
         const QColor color = QColorDialog::getColor(
             m_canvasColor, this, SettingsDialog::tr("Choose canvas surround color"), QColorDialog::DontUseNativeDialog);
@@ -59,13 +59,13 @@ SettingsDialogCanvasPage::SettingsDialogCanvasPage(const AppSettings& settings, 
             return;
         }
         m_canvasColor = color;
-        refreshColorButton(m_canvasColorButton, m_canvasColor);
+        RefreshColorButton(m_canvasColorButton, m_canvasColor);
         emit canvasColorChosen(color);
     });
     form->addRow(SettingsDialog::tr("Canvas surround color"), m_canvasColorButton);
 
     const QString canvasesDir =
-        settings.canvasesDirectory.isEmpty() ? AppSettings::defaultCanvasesDir() : settings.canvasesDirectory;
+        settings.canvasesDirectory.isEmpty() ? AppSettings::DefaultCanvasesDir() : settings.canvasesDirectory;
     auto* pathEdit = new QLineEdit(QDir::toNativeSeparators(canvasesDir), m_group);
     pathEdit->setReadOnly(true);
     pathEdit->setCursorPosition(0);
@@ -79,7 +79,7 @@ SettingsDialogCanvasPage::SettingsDialogCanvasPage(const AppSettings& settings, 
     form->addRow(SettingsDialog::tr("Canvas storage"), storageRow);
 }
 
-void SettingsDialogCanvasPage::writeTo(AppSettings& settings) const
+void SettingsDialogCanvasPage::WriteTo(AppSettings& settings) const
 {
     // 需求 16：画布宽高必须是棋盘格的整数倍，不接受半格；这里吸附到最近的 64 倍数。
     constexpr int cell = 64;
@@ -88,26 +88,26 @@ void SettingsDialogCanvasPage::writeTo(AppSettings& settings) const
     settings.canvasSize = QSizeF(width, height);
 }
 
-void SettingsDialogCanvasPage::reset(const AppSettings& defaults)
+void SettingsDialogCanvasPage::Reset(const AppSettings& defaults)
 {
     m_canvasWidthSpin->setValue(static_cast<int>(defaults.canvasSize.width()));
     m_canvasHeightSpin->setValue(static_cast<int>(defaults.canvasSize.height()));
     m_canvasColor = defaults.canvasColor;
-    refreshColorButton(m_canvasColorButton, m_canvasColor);
+    RefreshColorButton(m_canvasColorButton, m_canvasColor);
 }
 
-void SettingsDialogCanvasPage::setCanvasColor(const QColor& color)
+void SettingsDialogCanvasPage::SetCanvasColor(const QColor& color)
 {
     if (!color.isValid()) {
         return;
     }
     m_canvasColor = color;
-    refreshColorButton(m_canvasColorButton, m_canvasColor);
+    RefreshColorButton(m_canvasColorButton, m_canvasColor);
 }
 
-void SettingsDialogCanvasPage::refreshColorButton(QPushButton* button, const QColor& color)
+void SettingsDialogCanvasPage::RefreshColorButton(QPushButton* button, const QColor& color)
 {
-    button->setIcon(makeColorIcon(color, 18));
+    button->setIcon(MakeColorIcon(color, 18));
     const QString text =
         color.alpha() < 255 ? color.name(QColor::HexArgb).toUpper() : color.name(QColor::HexRgb).toUpper();
     button->setText(text);

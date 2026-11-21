@@ -19,15 +19,15 @@ class ItemPropertiesDialogIdentityBlock : public QWidget {
   public:
     ItemPropertiesDialogIdentityBlock(CanvasScene* scene, CanvasItem* item, QWidget* parent = nullptr);
 
-    void addRows(QFormLayout* form);
+    void AddRows(QFormLayout* form);
 
-    QLineEdit* nameEdit() const { return m_nameEdit; }
-    QComboBox* layerCombo() const { return m_layerCombo; }
-    QSpinBox* heightSpin() const { return m_heightSpin; }
-    bool hasLayerControls() const { return m_layerCombo && m_heightSpin; }
+    QLineEdit* NameEdit() const { return m_nameEdit; }
+    QComboBox* LayerCombo() const { return m_layerCombo; }
+    QSpinBox* HeightSpin() const { return m_heightSpin; }
+    bool HasLayerControls() const { return m_layerCombo && m_heightSpin; }
 
-    void updateHeightRange(bool selectTop);
-    void setInitialized(bool initialized) { m_initializing = initialized; }
+    void UpdateHeightRange(bool selectTop);
+    void SetInitialized(bool initialized) { m_initializing = initialized; }
 
   signals:
     void layerChanged();

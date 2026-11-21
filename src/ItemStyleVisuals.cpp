@@ -22,13 +22,13 @@ QColor fillIconColor(const QColor& color)
 
 namespace ItemStyleVisuals {
 
-QList<Qt::PenStyle> borderStyles()
+QList<Qt::PenStyle> BorderStyles()
 {
     // 需求 15：描线样式头部新增“无”（Qt::NoPen，即完全透明）。
     return {Qt::NoPen, Qt::SolidLine, Qt::DashLine, Qt::DotLine, Qt::DashDotLine};
 }
 
-QString borderStyleName(Qt::PenStyle style)
+QString BorderStyleName(Qt::PenStyle style)
 {
     switch (style) {
     case Qt::NoPen:
@@ -46,7 +46,7 @@ QString borderStyleName(Qt::PenStyle style)
     }
 }
 
-QIcon borderStyleIcon(Qt::PenStyle style, int logicalSize)
+QIcon BorderStyleIcon(Qt::PenStyle style, int logicalSize)
 {
     // 需求 14：四种描线样式图标共用一套生成器，图案按逻辑像素手调（以 16px 为基准等比缩放），
     // 不再依赖 Qt 笔宽倍数与圆头端点——那样 1.8px 的点会被糊成 3.6px 短划，点线与虚线难分。
@@ -128,7 +128,7 @@ QIcon borderStyleIcon(Qt::PenStyle style, int logicalSize)
     return QIcon(pixmap);
 }
 
-QIcon fillColorIcon(const QColor& color, int logicalSize)
+QIcon FillColorIcon(const QColor& color, int logicalSize)
 {
     constexpr qreal scale = 2.0;
     QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
@@ -169,7 +169,7 @@ QIcon fillColorIcon(const QColor& color, int logicalSize)
     return QIcon(pixmap);
 }
 
-QIcon borderColorIcon(const QColor& color, int logicalSize)
+QIcon BorderColorIcon(const QColor& color, int logicalSize)
 {
     constexpr qreal scale = 2.0;
     QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
@@ -205,12 +205,12 @@ QIcon borderColorIcon(const QColor& color, int logicalSize)
     return QIcon(pixmap);
 }
 
-QIcon fillStyleIcon(FillStyle style, int logicalSize)
+QIcon FillStyleIcon(FillStyle style, int logicalSize)
 {
-    return fillStyleIcon(style, QColor(96, 132, 255), logicalSize);
+    return FillStyleIcon(style, QColor(96, 132, 255), logicalSize);
 }
 
-QIcon fillStyleIcon(FillStyle style, const QColor& color, int logicalSize)
+QIcon FillStyleIcon(FillStyle style, const QColor& color, int logicalSize)
 {
     constexpr qreal scale = 2.0;
     QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));

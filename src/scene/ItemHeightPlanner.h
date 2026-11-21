@@ -14,11 +14,11 @@ class ItemHeightPlanner {
 
     // 取该图层下一个不与现有高度冲突的高度；图层接近满员时返回第一个空位，
     // 实在没有空位返回 -1。
-    int nextHeight(const QList<CanvasItem*>& items, int layerId) const;
+    int NextHeight(const QList<CanvasItem*>& items, int layerId) const;
     // 该图层内高度是否唯一且全部落在合法区间。
-    bool heightsUnique(const QList<CanvasItem*>& items) const;
+    bool HeightsUnique(const QList<CanvasItem*>& items) const;
     // 指定高度是否被除 except 外的图元占用。
-    bool heightUsedByOther(const QList<CanvasItem*>& items, int height, const CanvasItem* except) const;
+    bool HeightUsedByOther(const QList<CanvasItem*>& items, int height, const CanvasItem* except) const;
 
   private:
     int m_maxHeight;

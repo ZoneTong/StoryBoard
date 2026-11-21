@@ -18,19 +18,19 @@ class SettingsDialogCanvasPage : public QWidget {
   public:
     explicit SettingsDialogCanvasPage(const AppSettings& settings, QWidget* parent = nullptr);
 
-    QGroupBox* group() const { return m_group; }
-    QPushButton* canvasColorButton() const { return m_canvasColorButton; }
+    QGroupBox* Group() const { return m_group; }
+    QPushButton* CanvasColorButton() const { return m_canvasColorButton; }
 
-    void writeTo(AppSettings& settings) const;
-    void reset(const AppSettings& defaults);
-    void setCanvasColor(const QColor& color);
+    void WriteTo(AppSettings& settings) const;
+    void Reset(const AppSettings& defaults);
+    void SetCanvasColor(const QColor& color);
 
   signals:
     void canvasColorChosen(const QColor& color);
     void openFolderRequested();
 
   private:
-    static void refreshColorButton(QPushButton* button, const QColor& color);
+    static void RefreshColorButton(QPushButton* button, const QColor& color);
 
     QGroupBox* m_group = nullptr;
     QSpinBox* m_canvasWidthSpin = nullptr;

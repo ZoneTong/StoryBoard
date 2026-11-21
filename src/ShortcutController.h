@@ -15,13 +15,13 @@ class ShortcutController {
     explicit ShortcutController(MainWindow* window);
 
     // 启动 / 恢复默认后调用：按配置覆盖键位，并刷新所有动作的提示文字。
-    void applyShortcutOverrides();
+    void ApplyShortcutOverrides();
     // 按当前键位重拼动作提示里的 “(Ctrl+X)”，改键后立即生效。
-    void refreshShortcutTips();
+    void RefreshShortcutTips();
     // 改单个动作的键位；冲突时提示并返回 false。
-    bool changeShortcut(QAction* action, const QKeySequence& sequence);
+    bool ChangeShortcut(QAction* action, const QKeySequence& sequence);
     // 「键盘快捷键」对话框：列出、就地改键、恢复默认。
-    void showShortcuts();
+    void ShowShortcuts();
 
   private:
     MainWindow* m_window = nullptr;

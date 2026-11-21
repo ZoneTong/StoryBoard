@@ -185,7 +185,7 @@ constexpr struct IconEntry {
 
 } // namespace
 
-bool paintIconShapeGraphic(QPainter& painter, IconId id)
+bool PaintIconShapeGraphic(QPainter& painter, IconId id)
 {
     for (const IconEntry& entry : ENTRIES) {
         if (entry.id == id) {

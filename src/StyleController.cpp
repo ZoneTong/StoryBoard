@@ -27,29 +27,29 @@
 
 StyleController::StyleController(MainWindow* window) : m_window(window) {}
 
-QIcon StyleController::fillColorIcon(const QColor& color, int logicalSize) const
+QIcon StyleController::FillColorIcon(const QColor& color, int logicalSize) const
 {
-    return ItemStyleVisuals::fillColorIcon(color, logicalSize);
+    return ItemStyleVisuals::FillColorIcon(color, logicalSize);
 }
 
-QIcon StyleController::strokeColorIcon(const QColor& color, int logicalSize) const
+QIcon StyleController::StrokeColorIcon(const QColor& color, int logicalSize) const
 {
-    return ItemStyleVisuals::borderColorIcon(color, logicalSize);
+    return ItemStyleVisuals::BorderColorIcon(color, logicalSize);
 }
 
-QIcon StyleController::fillStyleIcon(FillStyle style, const QColor& color, int logicalSize) const
+QIcon StyleController::FillStyleIcon(FillStyle style, const QColor& color, int logicalSize) const
 {
-    return ItemStyleVisuals::fillStyleIcon(style, color, logicalSize);
+    return ItemStyleVisuals::FillStyleIcon(style, color, logicalSize);
 }
 
 void StyleController::SetFillStyle(FillStyle style)
 {
     m_window->m_fillStyle = style;
-    updateFillActions();
-    applyFillToSelection();
+    UpdateFillActions();
+    ApplyFillToSelection();
 }
 
-void StyleController::chooseFillColor()
+void StyleController::ChooseFillColor()
 {
     const QColor initial = m_window->m_fillColor.isValid() ? m_window->m_fillColor : QColor(59, 130, 246, 96);
     const QColor color =
@@ -58,11 +58,11 @@ void StyleController::chooseFillColor()
         return;
     }
     m_window->m_fillColor = color;
-    updateFillActions();
-    applyFillToSelection();
+    UpdateFillActions();
+    ApplyFillToSelection();
 }
 
-void StyleController::chooseStrokeColor()
+void StyleController::ChooseStrokeColor()
 {
     if (!m_window->m_scene || !m_window->m_undo) {
         return;
@@ -76,36 +76,36 @@ void StyleController::chooseStrokeColor()
         return;
     }
 
-    setBrushColor(color, true);
-    const int applied = applyStrokeStyleToSelection(color, 0, true, false, MainWindow::tr("Change border color"));
+    SetBrushColor(color, true);
+    const int applied = ApplyStrokeStyleToSelection(color, 0, true, false, MainWindow::tr("Change border color"));
     if (applied == 0) {
         m_window->statusBar()->showMessage(
             MainWindow::tr("Border color set; it will be used for newly inserted shapes and strokes"), 4000);
     }
 }
 
-void StyleController::applyStrokeColorToSelection(const QColor& color)
+void StyleController::ApplyStrokeColorToSelection(const QColor& color)
 {
     if (color.isValid()) {
-        applyStrokeStyleToSelection(color, 0, true, false, MainWindow::tr("Change border color"));
+        ApplyStrokeStyleToSelection(color, 0, true, false, MainWindow::tr("Change border color"));
     }
 }
 
-void StyleController::applyStrokeWidthToSelection(qreal width)
+void StyleController::ApplyStrokeWidthToSelection(qreal width)
 {
     if (width > 0) {
-        applyStrokeStyleToSelection(QColor(), width, false, true, MainWindow::tr("Change border width"));
+        ApplyStrokeStyleToSelection(QColor(), width, false, true, MainWindow::tr("Change border width"));
     }
 }
 
 void StyleController::SetStrokeStyle(Qt::PenStyle style)
 {
     m_window->m_strokeStyle = style;
-    updateStrokeStyleActions();
-    applyPenStyleToSelection(style, MainWindow::tr("Change border style"));
+    UpdateStrokeStyleActions();
+    ApplyPenStyleToSelection(style, MainWindow::tr("Change border style"));
 }
 
-int StyleController::applyPenStyleToSelection(Qt::PenStyle style, const QString& text)
+int StyleController::ApplyPenStyleToSelection(Qt::PenStyle style, const QString& text)
 {
     if (!m_window->m_scene || !m_window->m_undo) {
         return 0;
@@ -114,9 +114,9 @@ int StyleController::applyPenStyleToSelection(Qt::PenStyle style, const QString&
     QList<CanvasItem*> items;
     QList<QMap<ItemProperty, QVariant>> before;
     QList<QMap<ItemProperty, QVariant>> after;
-    const QList<CanvasItem*> selected = m_window->m_scene->selectedCanvasItems();
+    const QList<CanvasItem*> selected = m_window->m_scene->SelectedCanvasItems();
     for (CanvasItem* item : selected) {
-        if (!item->Properties().contains(ItemProperty::STROKE_STYLE)) {
+        if (!item->Properties().Contains(ItemProperty::STROKE_STYLE)) {
             continue;
         }
         QMap<ItemProperty, QVariant> beforeValues;
@@ -131,7 +131,7 @@ int StyleController::applyPenStyleToSelection(Qt::PenStyle style, const QString&
     if (items.isEmpty()) {
         m_window->statusBar()->showMessage(
             MainWindow::tr("Border style set to \"%1\"; it will be used for newly inserted items")
-                .arg(ItemStyleVisuals::borderStyleName(style)),
+                .arg(ItemStyleVisuals::BorderStyleName(style)),
             4000);
         return 0;
     }
@@ -145,11 +145,11 @@ int StyleController::applyPenStyleToSelection(Qt::PenStyle style, const QString&
         item->SetPropertyValue(ItemProperty::STROKE_STYLE, static_cast<int>(style));
     }
     m_window->m_undo->push(new ItemPropertyCommand(m_window->m_scene, items, before, after, text));
-    m_window->statusBar()->showMessage(MainWindow::tr("Applied border style to %1 item(s)").arg(items.size()), 4000);
+    m_window->statusBar()->showMessage(MainWindow::tr("Applied border style to %1 Item(s)").arg(items.size()), 4000);
     return items.size();
 }
 
-void StyleController::updateStrokeStyleActions()
+void StyleController::UpdateStrokeStyleActions()
 {
     for (QAction* action : m_window->m_strokeStyleActions) {
         if (!action) {
@@ -157,22 +157,22 @@ void StyleController::updateStrokeStyleActions()
         }
         const Qt::PenStyle style = static_cast<Qt::PenStyle>(action->data().toInt());
         action->setChecked(style == m_window->m_strokeStyle);
-        action->setIcon(ItemStyleVisuals::borderStyleIcon(style, 16));
-        action->setToolTip(ItemStyleVisuals::borderStyleName(style));
+        action->setIcon(ItemStyleVisuals::BorderStyleIcon(style, 16));
+        action->setToolTip(ItemStyleVisuals::BorderStyleName(style));
     }
     if (m_window->m_strokeStyleButton) {
         m_window->m_strokeStyleButton->setIcon(
-            ItemStyleVisuals::borderStyleIcon(m_window->m_strokeStyle, MainWindow::TOOL_BAR_ICON_SIZE));
+            ItemStyleVisuals::BorderStyleIcon(m_window->m_strokeStyle, MainWindow::TOOL_BAR_ICON_SIZE));
         m_window->m_strokeStyleButton->setToolTip(MainWindow::tr("Border style: %1 (click to choose)")
-                                                      .arg(ItemStyleVisuals::borderStyleName(m_window->m_strokeStyle)));
+                                                      .arg(ItemStyleVisuals::BorderStyleName(m_window->m_strokeStyle)));
     }
     if (m_window->m_strokeStyleMenu) {
         m_window->m_strokeStyleMenu->menuAction()->setIcon(
-            ItemStyleVisuals::borderStyleIcon(m_window->m_strokeStyle, 16));
+            ItemStyleVisuals::BorderStyleIcon(m_window->m_strokeStyle, 16));
     }
 }
 
-int StyleController::applyStrokeStyleToSelection(const QColor& color, qreal width, bool changeColor, bool changeWidth,
+int StyleController::ApplyStrokeStyleToSelection(const QColor& color, qreal width, bool changeColor, bool changeWidth,
                                                  const QString& text)
 {
     if (!m_window->m_scene || !m_window->m_undo) {
@@ -180,10 +180,10 @@ int StyleController::applyStrokeStyleToSelection(const QColor& color, qreal widt
     }
 
     QList<CanvasItem*> items;
-    const QList<CanvasItem*> selected = m_window->m_scene->selectedCanvasItems();
+    const QList<CanvasItem*> selected = m_window->m_scene->SelectedCanvasItems();
     for (CanvasItem* item : selected) {
         const ItemPropertySet properties = item->Properties();
-        if (properties.contains(ItemProperty::STROKE_COLOR) && properties.contains(ItemProperty::STROKE_WIDTH)) {
+        if (properties.Contains(ItemProperty::STROKE_COLOR) && properties.Contains(ItemProperty::STROKE_WIDTH)) {
             items.append(item);
         }
     }
@@ -221,11 +221,11 @@ int StyleController::applyStrokeStyleToSelection(const QColor& color, qreal widt
         }
     }
     m_window->m_undo->push(new ItemPropertyCommand(m_window->m_scene, items, before, after, text));
-    m_window->statusBar()->showMessage(MainWindow::tr("Applied border style to %1 item(s)").arg(items.size()), 4000);
+    m_window->statusBar()->showMessage(MainWindow::tr("Applied border style to %1 Item(s)").arg(items.size()), 4000);
     return items.size();
 }
 
-void StyleController::applyFillToSelection()
+void StyleController::ApplyFillToSelection()
 {
     if (!m_window->m_scene || !m_window->m_undo) {
         return;
@@ -233,14 +233,14 @@ void StyleController::applyFillToSelection()
 
     QList<ShapeItem*> targets;
     int outlineOnlyCount = 0;
-    const QList<CanvasItem*> selected = m_window->m_scene->selectedCanvasItems();
+    const QList<CanvasItem*> selected = m_window->m_scene->SelectedCanvasItems();
     for (CanvasItem* item : selected) {
         auto* shape = dynamic_cast<ShapeItem*>(item);
         if (!shape) {
             continue;
         }
         // 填充图形与多边形都可带填充；线、花括号等纯描线图元不参与。
-        if (shapeTypeIsFilled(shape->shapeType()) || shape->ShapeLayerCount() > 0) {
+        if (ShapeTypeIsFilled(shape->shapeType()) || shape->ShapeLayerCount() > 0) {
             targets.append(shape);
         } else {
             ++outlineOnlyCount;
@@ -254,7 +254,7 @@ void StyleController::applyFillToSelection()
         } else {
             m_window->statusBar()->showMessage(
                 MainWindow::tr("Fill set to \"%1\"; it will be used for newly inserted shapes")
-                    .arg(fillStyleName(m_window->m_fillStyle)),
+                    .arg(FillStyleName(m_window->m_fillStyle)),
                 4000);
         }
         return;
@@ -294,11 +294,11 @@ void StyleController::applyFillToSelection()
     m_window->m_undo->push(
         new ItemPropertyCommand(m_window->m_scene, items, before, after, MainWindow::tr("Change fill style")));
     m_window->statusBar()->showMessage(
-        MainWindow::tr("Applied \"%2\" to %1 shape(s)").arg(targets.size()).arg(fillStyleName(m_window->m_fillStyle)),
+        MainWindow::tr("Applied \"%2\" to %1 shape(s)").arg(targets.size()).arg(FillStyleName(m_window->m_fillStyle)),
         4000);
 }
 
-void StyleController::updateFillActions()
+void StyleController::UpdateFillActions()
 {
     if (!m_window->m_fillButton) {
         return;
@@ -340,86 +340,86 @@ void StyleController::updateFillActions()
 
     const QColor swatch = m_window->m_fillColor.isValid() ? m_window->m_fillColor : m_window->m_brushColor;
     m_window->m_fillButton->setIcon(
-        ItemStyleVisuals::fillStyleIcon(m_window->m_fillStyle, swatch, MainWindow::TOOL_BAR_ICON_SIZE));
+        ItemStyleVisuals::FillStyleIcon(m_window->m_fillStyle, swatch, MainWindow::TOOL_BAR_ICON_SIZE));
     if (m_window->m_fillNoneAct) {
-        m_window->m_fillNoneAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::NONE, swatch, 16));
+        m_window->m_fillNoneAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::NONE, swatch, 16));
     }
     if (m_window->m_fillSolidAct) {
-        m_window->m_fillSolidAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::SOLID, swatch, 16));
+        m_window->m_fillSolidAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::SOLID, swatch, 16));
     }
     if (m_window->m_fillHachureAct) {
-        m_window->m_fillHachureAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::HACHURE, swatch, 16));
+        m_window->m_fillHachureAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::HACHURE, swatch, 16));
     }
     if (m_window->m_fillReverseAct) {
-        m_window->m_fillReverseAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::REVERSE_HACHURE, swatch, 16));
+        m_window->m_fillReverseAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::REVERSE_HACHURE, swatch, 16));
     }
     if (m_window->m_fillCrossAct) {
-        m_window->m_fillCrossAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::CROSS_HATCH, swatch, 16));
+        m_window->m_fillCrossAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::CROSS_HATCH, swatch, 16));
     }
     if (m_window->m_fillGridAct) {
-        m_window->m_fillGridAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::GRID_HATCH, swatch, 16));
+        m_window->m_fillGridAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::GRID_HATCH, swatch, 16));
     }
     if (m_window->m_fillHoneycombAct) {
-        m_window->m_fillHoneycombAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::HONEYCOMB, swatch, 16));
+        m_window->m_fillHoneycombAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::HONEYCOMB, swatch, 16));
     }
     if (m_window->m_fillHorizontalAct) {
         m_window->m_fillHorizontalAct->setIcon(
-            ItemStyleVisuals::fillStyleIcon(FillStyle::HORIZONTAL_HATCH, swatch, 16));
+            ItemStyleVisuals::FillStyleIcon(FillStyle::HORIZONTAL_HATCH, swatch, 16));
     }
     if (m_window->m_fillVerticalAct) {
-        m_window->m_fillVerticalAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::VERTICAL_HATCH, swatch, 16));
+        m_window->m_fillVerticalAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::VERTICAL_HATCH, swatch, 16));
     }
     if (m_window->m_fillBrickAct) {
-        m_window->m_fillBrickAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::BRICK, swatch, 16));
+        m_window->m_fillBrickAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::BRICK, swatch, 16));
     }
     if (m_window->m_fillDotsAct) {
-        m_window->m_fillDotsAct->setIcon(ItemStyleVisuals::fillStyleIcon(FillStyle::DOTS, swatch, 16));
+        m_window->m_fillDotsAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::DOTS, swatch, 16));
     }
     const QString colorText = m_window->m_fillColor.isValid() ? m_window->m_fillColor.name(QColor::HexArgb).toUpper()
                                                               : MainWindow::tr("Follow brush color");
     m_window->m_fillButton->setToolTip(
-        MainWindow::tr("Fill: %1 · %2 (click to choose)").arg(fillStyleName(m_window->m_fillStyle), colorText));
+        MainWindow::tr("Fill: %1 · %2 (click to choose)").arg(FillStyleName(m_window->m_fillStyle), colorText));
     if (m_window->m_fillColorAct) {
-        m_window->m_fillColorAct->setIcon(fillColorIcon(swatch, 16));
+        m_window->m_fillColorAct->setIcon(FillColorIcon(swatch, 16));
     }
     if (m_window->m_fillColorButton) {
         // 工具栏按钮的色板图标单独按工具栏尺寸绘制，菜单项保持 16px。
-        m_window->m_fillColorButton->setIcon(fillColorIcon(swatch, MainWindow::TOOL_BAR_ICON_SIZE));
+        m_window->m_fillColorButton->setIcon(FillColorIcon(swatch, MainWindow::TOOL_BAR_ICON_SIZE));
         m_window->m_fillColorButton->setToolTip(MainWindow::tr("Fill color: %1 (click to choose)").arg(colorText));
     }
 }
 
-void StyleController::setBrushColor(const QColor& color, bool remember)
+void StyleController::SetBrushColor(const QColor& color, bool remember)
 {
     if (!color.isValid()) {
         return;
     }
 
     m_window->m_brushColor = color;
-    m_window->m_view->setBrushColor(color);
+    m_window->m_view->SetBrushColor(color);
     if (m_window->m_strokeColorAct) {
-        m_window->m_strokeColorAct->setIcon(strokeColorIcon(color, 16));
+        m_window->m_strokeColorAct->setIcon(StrokeColorIcon(color, 16));
     }
     if (m_window->m_strokeColorButton) {
-        m_window->m_strokeColorButton->setIcon(strokeColorIcon(color, MainWindow::TOOL_BAR_ICON_SIZE));
+        m_window->m_strokeColorButton->setIcon(StrokeColorIcon(color, MainWindow::TOOL_BAR_ICON_SIZE));
         m_window->m_strokeColorButton->setToolTip(
             MainWindow::tr("Border color: %1 (click to choose)").arg(color.name(QColor::HexArgb).toUpper()));
     }
     if (m_window->m_fillButton) {
-        updateFillActions();
+        UpdateFillActions();
     }
     if (remember) {
         m_window->m_settings.brushColor = color;
-        m_window->m_settings.save();
+        m_window->m_settings.Save();
     }
 }
 
-void StyleController::setBrushWidthUi(int width)
+void StyleController::SetBrushWidthUi(int width)
 {
     width = qBound(1, width, 64);
     m_window->m_brushWidth = width;
     if (m_window->m_view) {
-        m_window->m_view->setBrushWidth(width);
+        m_window->m_view->SetBrushWidth(width);
     }
     for (QSpinBox* spin : {m_window->m_widthSpin}) {
         if (spin) {
@@ -429,12 +429,12 @@ void StyleController::setBrushWidthUi(int width)
     }
 }
 
-void StyleController::setStrokeSmoothingUi(qreal tolerance)
+void StyleController::SetStrokeSmoothingUi(qreal tolerance)
 {
     tolerance = qBound<qreal>(0.0, tolerance, 20.0);
     m_window->m_settings.strokeSmoothing = tolerance;
     if (m_window->m_view) {
-        m_window->m_view->setStrokeSmoothing(tolerance);
+        m_window->m_view->SetStrokeSmoothing(tolerance);
     }
     if (m_window->m_smoothingSpin) {
         const QSignalBlocker blocker(m_window->m_smoothingSpin);
@@ -442,11 +442,11 @@ void StyleController::setStrokeSmoothingUi(qreal tolerance)
     }
 }
 
-void StyleController::chooseBrushColor()
+void StyleController::ChooseBrushColor()
 {
     const QColor color = QColorDialog::getColor(m_window->m_brushColor, m_window, MainWindow::tr("Choose brush color"),
                                                 QColorDialog::ShowAlphaChannel);
     if (color.isValid()) {
-        setBrushColor(color, true);
+        SetBrushColor(color, true);
     }
 }

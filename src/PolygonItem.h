@@ -50,12 +50,12 @@ class PolygonItem : public ShapeItem {
     QPainterPath PaintedShape() const override;
     QPainterPath OutlineShape() const override;
 
-    int layerCount() const { return m_layers.size(); }
-    const QList<Layer>& layers() const { return m_layers; }
+    int LayerCount() const { return m_layers.size(); }
+    const QList<Layer>& Layers() const { return m_layers; }
 
     // 需求 11：把路径里每个子路径显式闭合（布尔交集 / 拆块与序列化重建的
     // 路径不带 closeSubpath 标记，描边时收尾一条边会缺失）。开放笔画请勿使用。
-    static QPainterPath closedSubpaths(const QPainterPath& path);
+    static QPainterPath ClosedSubpaths(const QPainterPath& path);
 
     // 多边形共用的填充 / 描线属性：填充作用于有面积图形与文字字形，
     // 描线颜色同时同步直线 / 曲线的线宽带颜色；样式与宽度只作用于有面积轮廓。
@@ -66,9 +66,9 @@ class PolygonItem : public ShapeItem {
     Qt::PenStyle StrokeStyle() const override { return m_strokeStyle; }
     void SetFill(const QColor& color, FillStyle style) override;
     void SetFillStyle(FillStyle style) override;
-    void setStroke(const QColor& color, qreal width);
+    void SetStroke(const QColor& color, qreal width);
     // 样式三件套与单形状同签名：合并后仍按「填充 + 描线」统一套用。
-    void setStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth) override;
+    void SetStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth) override;
     void SetStrokeStyle(Qt::PenStyle style) override;
     // 需求 15：图片填充只作用于 FilledArea 层围成的区域，孔洞留空；不参与合并与导出。
     bool HasFillImage() const override { return !m_fillImage.isNull(); }
@@ -82,11 +82,11 @@ class PolygonItem : public ShapeItem {
     void ApplyState(const ShapeItemState& state) override;
 
     // 把某层的局部路径映射到图元坐标；布尔运算需要按层角色分别取几何。
-    QPainterPath mapLayerPath(const QPainterPath& localPath) const;
+    QPainterPath MapLayerPath(const QPainterPath& localPath) const;
 
     // 路径 → JSON 元素数组（布尔运算结果随画布文件保存与撤销一起走）。
-    static QJsonArray pathToJson(const QPainterPath& path);
-    static QPainterPath pathFromJson(const QJsonArray& elements);
+    static QJsonArray PathToJson(const QPainterPath& path);
+    static QPainterPath PathFromJson(const QJsonArray& elements);
 
   protected:
     // 基类纯虚钩子：多边形的轮廓来自图层，currentPath 已覆写。
@@ -101,7 +101,7 @@ class PolygonItem : public ShapeItem {
     qreal FramePadding() const override { return CanvasItem::FramePadding(); }
 
   private:
-    void updateBoundsFromLayers();
+    void UpdateBoundsFromLayers();
 
     QList<Layer> m_layers;
     QSizeF m_baseSize{1.0, 1.0};
@@ -110,5 +110,5 @@ class PolygonItem : public ShapeItem {
     QPixmap m_fillImage;
     ImageFill::Mode m_fillImageMode = ImageFill::Mode::STRETCH;
     // 内容尺寸变化时不改路径，绘制阶段按比例缩放，避免反复量化误差累积。
-    QTransform layerTransform() const;
+    QTransform LayerTransform() const;
 };

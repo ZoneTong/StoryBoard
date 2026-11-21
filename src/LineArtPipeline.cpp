@@ -16,10 +16,10 @@ using LineArtConverter::Options;
 using LineArtConverter::Outline;
 using LineArtConverter::Result;
 
-Result extractAtSide(const QImage& base, const Options& options, int side)
+Result ExtractAtSide(const QImage& base, const Options& options, int side)
 {
     Result result;
-    const QImage image = fitToSide(base, side);
+    const QImage image = FitToSide(base, side);
 
     const int width = image.width();
     const int height = image.height();
@@ -29,7 +29,7 @@ Result extractAtSide(const QImage& base, const Options& options, int side)
     }
     result.imageSize = QSize(width, height);
 
-    const RegionMap regions = buildRegions(image, options);
+    const RegionMap regions = BuildRegions(image, options);
     result.regionCount = regions.regions.size();
 
     // ---- 挑出色块：去掉整张图的底色和太小的碎块 ----
@@ -69,8 +69,8 @@ Result extractAtSide(const QImage& base, const Options& options, int side)
 
     for (int index : candidates) {
         const RegionData& region = regions.regions.at(index);
-        const QVector<QPointF> contour = traceContour(regions.labels, width, height, region.seed, index);
-        const QVector<QPointF> points = buildOutlinePoints(contour, region.area, options);
+        const QVector<QPointF> contour = TraceContour(regions.labels, width, height, region.seed, index);
+        const QVector<QPointF> points = BuildOutlinePoints(contour, region.area, options);
         if (points.isEmpty()) {
             continue;
         }

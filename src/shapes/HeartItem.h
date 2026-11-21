@@ -6,7 +6,7 @@
 class HeartItem : public ShapeItem {
   public:
     HeartItem();
-    QSizeF defaultContentSize() const override;
+    QSizeF DefaultContentSize() const override;
     ShapeType shapeType() const override { return ShapeType::HEART; }
 
   protected:

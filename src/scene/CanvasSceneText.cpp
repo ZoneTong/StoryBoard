@@ -5,7 +5,7 @@
 
 #include <QUndoStack>
 
-bool CanvasScene::changeTextWithUndo(CanvasItem* item, const QString& text, const QFont& font, const QColor& color,
+bool CanvasScene::ChangeTextWithUndo(CanvasItem* item, const QString& text, const QFont& font, const QColor& color,
                                      const QString& textCommand)
 {
     if (!item || item->scene() != this) {
@@ -17,7 +17,7 @@ bool CanvasScene::changeTextWithUndo(CanvasItem* item, const QString& text, cons
     after.text = text;
     after.font = font;
     after.color = color.isValid() ? color : before.color;
-    after.baseSize = TextItem::measure(after.text, after.font);
+    after.baseSize = TextItem::Measure(after.text, after.font);
     after.size = after.baseSize;
 
     if (before == after) {
@@ -39,7 +39,7 @@ void CanvasScene::ApplyTextState(CanvasItem* item, const TextItemState& state)
         return;
     }
     item->ApplyTextState(state);
-    updateSceneExtent();
+    UpdateSceneExtent();
     update();
     emit contentChanged();
 }

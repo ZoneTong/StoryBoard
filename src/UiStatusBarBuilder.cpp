@@ -20,7 +20,7 @@ QLabel* makeBadge(const QString& objectName, QWidget* parent)
 
 UiStatusBarBuilder::UiStatusBarBuilder(MainWindow* window) : m_window(window) {}
 
-void UiStatusBarBuilder::buildStatusBar()
+void UiStatusBarBuilder::BuildStatusBar()
 {
     m_window->statusBar()->setSizeGripEnabled(true);
     m_window->m_hintLabel = new QLabel(m_window);

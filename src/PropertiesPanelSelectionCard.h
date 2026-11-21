@@ -16,19 +16,19 @@ class PropertiesPanelSelectionCard : public QWidget {
     explicit PropertiesPanelSelectionCard(QWidget* parent = nullptr);
 
     // 用主窗口已有的对齐 / 合并图元 / 编辑动作填充按钮，触发与启用状态由主窗口维护。
-    void setSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions,
+    void SetSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions,
                              QAction* copyAction, QAction* removeAction, QAction* rotateCwAction,
                              QAction* rotateCcwAction, QAction* groupAction, QAction* ungroupAction);
     // 笔画平滑与图元属性窗：动作可用时按钮才出现，和菜单 / 工具栏共用同一批 QAction。
-    void setItemActions(QAction* smoothAction, QAction* propertiesAction);
+    void SetItemActions(QAction* smoothAction, QAction* propertiesAction);
     // 有选中才可能显示整卡；groupUseful 为 false（选中的正好是一整个组）时不再提供“组合”。
-    void setSelectionState(bool hasSelection, bool groupUseful);
+    void SetSelectionState(bool hasSelection, bool groupUseful);
 
   private:
-    QToolButton* makeButton(const QString& objectName);
-    void bindAction(QToolButton* button, QAction* action);
-    QAction* actionForButton(QToolButton* button) const;
-    void refreshVisibility();
+    QToolButton* MakeButton(const QString& objectName);
+    void BindAction(QToolButton* button, QAction* action);
+    QAction* ActionForButton(QToolButton* button) const;
+    void RefreshVisibility();
 
     QWidget* m_basicRow = nullptr;
     QWidget* m_alignRow = nullptr;

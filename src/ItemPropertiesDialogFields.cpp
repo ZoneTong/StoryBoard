@@ -13,42 +13,42 @@
 
 namespace ItemPropertiesFields {
 
-QString number(qreal value)
+QString Number(qreal value)
 {
     return QString::number(value, 'f', 1);
 }
 
-QString colorText(const QColor& color)
+QString ColorText(const QColor& color)
 {
     return color.isValid() ? color.name(QColor::HexArgb).toUpper() : QStringLiteral("—");
 }
 
-QString fontText(const QFont& font)
+QString FontText(const QFont& font)
 {
     const QFontInfo info(font);
-    const QString size = font.pointSizeF() > 0 ? ItemPropertiesDialog::tr("%1 pt").arg(number(font.pointSizeF()))
+    const QString size = font.pointSizeF() > 0 ? ItemPropertiesDialog::tr("%1 pt").arg(Number(font.pointSizeF()))
                                                : ItemPropertiesDialog::tr("%1 px").arg(font.pixelSize());
     return ItemPropertiesDialog::tr("%1 · %2").arg(info.family(), size);
 }
 
-void refreshColorButton(QToolButton* button)
+void RefreshColorButton(QToolButton* button)
 {
     const QColor color = button->property("itemColor").value<QColor>();
     const ColorIconRole role = static_cast<ColorIconRole>(button->property("colorIconRole").toInt());
     QIcon icon;
     if (role == ColorIconRole::FILL) {
-        icon = ItemStyleVisuals::fillColorIcon(color.isValid() ? color : QColor(Qt::transparent), 18);
+        icon = ItemStyleVisuals::FillColorIcon(color.isValid() ? color : QColor(Qt::transparent), 18);
     } else if (role == ColorIconRole::BORDER) {
-        icon = ItemStyleVisuals::borderColorIcon(color.isValid() ? color : QColor(Qt::transparent), 18);
+        icon = ItemStyleVisuals::BorderColorIcon(color.isValid() ? color : QColor(Qt::transparent), 18);
     } else {
-        icon = makeColorIcon(color.isValid() ? color : QColor(Qt::transparent), 18);
+        icon = MakeColorIcon(color.isValid() ? color : QColor(Qt::transparent), 18);
     }
     button->setIcon(icon);
-    button->setText(colorText(color));
-    button->setToolTip(colorText(color));
+    button->setText(ColorText(color));
+    button->setToolTip(ColorText(color));
 }
 
-QToolButton* makeColorField(QWidget* parent, const QColor& color, const QString& objectName, ColorIconRole iconRole)
+QToolButton* MakeColorField(QWidget* parent, const QColor& color, const QString& objectName, ColorIconRole iconRole)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(objectName);
@@ -56,7 +56,7 @@ QToolButton* makeColorField(QWidget* parent, const QColor& color, const QString&
     button->setMinimumWidth(118);
     button->setProperty("itemColor", color);
     button->setProperty("colorIconRole", static_cast<int>(iconRole));
-    refreshColorButton(button);
+    RefreshColorButton(button);
 
     QObject::connect(button, &QToolButton::clicked, button, [button]() {
         const QColor initial = button->property("itemColor").value<QColor>();
@@ -66,12 +66,12 @@ QToolButton* makeColorField(QWidget* parent, const QColor& color, const QString&
             return;
         }
         button->setProperty("itemColor", chosen);
-        refreshColorButton(button);
+        RefreshColorButton(button);
     });
     return button;
 }
 
-QDoubleSpinBox* makeSpin(QWidget* parent, const QString& objectName, qreal minimum, qreal maximum)
+QDoubleSpinBox* MakeSpin(QWidget* parent, const QString& objectName, qreal minimum, qreal maximum)
 {
     auto* spin = new QDoubleSpinBox(parent);
     spin->setObjectName(objectName);
@@ -83,7 +83,7 @@ QDoubleSpinBox* makeSpin(QWidget* parent, const QString& objectName, qreal minim
     return spin;
 }
 
-QWidget* makePairField(QWidget* parent, const QString& objectName, QDoubleSpinBox* first, QDoubleSpinBox* second,
+QWidget* MakePairField(QWidget* parent, const QString& objectName, QDoubleSpinBox* first, QDoubleSpinBox* second,
                        const QString& separator)
 {
     auto* field = new QWidget(parent);

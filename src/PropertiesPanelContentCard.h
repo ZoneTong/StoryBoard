@@ -19,10 +19,10 @@ class PropertiesPanelContentCard : public QWidget {
   public:
     explicit PropertiesPanelContentCard(QWidget* parent = nullptr);
 
-    void refresh(const QList<CanvasItem*>& texts);
-    QWidget* textContentRow() const { return m_textContentRow; }
-    QWidget* textFontRow() const { return m_textFontRow; }
-    QWidget* textColorRow() const { return m_textColorRow; }
+    void Refresh(const QList<CanvasItem*>& texts);
+    QWidget* TextContentRow() const { return m_textContentRow; }
+    QWidget* TextFontRow() const { return m_textFontRow; }
+    QWidget* TextColorRow() const { return m_textColorRow; }
 
   signals:
     void textContentChosen(const QString& text);
@@ -30,9 +30,9 @@ class PropertiesPanelContentCard : public QWidget {
     void textColorChosen(const QColor& color);
 
   private:
-    QWidget* makeTextColorRow();
-    QFont composedFont() const;
-    void emitFontChanged();
+    QWidget* MakeTextColorRow();
+    QFont ComposedFont() const;
+    void EmitFontChanged();
 
     QWidget* m_textContentRow = nullptr;
     QLineEdit* m_textEdit = nullptr;

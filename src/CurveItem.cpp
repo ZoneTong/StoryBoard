@@ -14,7 +14,7 @@ CurveItem::CurveItem(QGraphicsItem* parent) : LineItemAbstract(parent) {}
 ItemPropertySet CurveItem::Properties() const
 {
     // 箭头行对全部描线子型开放（含花括号），与现状一致。
-    return LineItemAbstract::Properties().united(ItemPropertySet{ItemProperty::ARROW_START, ItemProperty::ARROW_END});
+    return LineItemAbstract::Properties().United(ItemPropertySet{ItemProperty::ARROW_START, ItemProperty::ARROW_END});
 }
 
 QVariant CurveItem::PropertyValue(ItemProperty property) const
@@ -46,10 +46,10 @@ void CurveItem::SetPropertyValue(ItemProperty property, const QVariant& value)
 
 QString CurveItem::DisplayName() const
 {
-    return uiText(QStringLiteral("Curve"));
+    return UiText(QStringLiteral("Curve"));
 }
 
-void CurveItem::beginStroke(const QPointF& scenePos, const QColor& color, qreal width)
+void CurveItem::BeginStroke(const QPointF& scenePos, const QColor& color, qreal width)
 {
     m_strokeColor = StrokeColorOrDefault(color);
     m_strokeWidth = qMax<qreal>(0.5, width);
@@ -64,7 +64,7 @@ void CurveItem::beginStroke(const QPointF& scenePos, const QColor& color, qreal 
     NormalizeGeometry();
 }
 
-void CurveItem::appendScenePoint(const QPointF& scenePos)
+void CurveItem::AppendScenePoint(const QPointF& scenePos)
 {
     if (m_finished || !m_drawing || m_rawPoints.isEmpty()) {
         return;
@@ -92,7 +92,7 @@ void CurveItem::SetStrokePoints(const QVector<QPointF>& scenePoints, const QColo
     m_finished = true;
 }
 
-void CurveItem::endStroke(qreal tolerance)
+void CurveItem::EndStroke(qreal tolerance)
 {
     if (m_finished) {
         return;
@@ -103,7 +103,7 @@ void CurveItem::endStroke(qreal tolerance)
         return;
     }
 
-    if (m_rawPoints.size() < 2 || StrokePath::length(m_rawPoints) < 2.5) {
+    if (m_rawPoints.size() < 2 || StrokePath::Length(m_rawPoints) < 2.5) {
         QRectF bounds(m_rawPoints.constFirst(), QSizeF(0.0, 0.0));
         for (const QPointF& point : std::as_const(m_rawPoints)) {
             bounds = bounds.united(QRectF(point, QSizeF(0.0, 0.0)));
@@ -113,7 +113,7 @@ void CurveItem::endStroke(qreal tolerance)
         m_rawPoints = {bounds.center()};
     } else {
         m_hasDot = false;
-        m_segments = CurveGeometry::fitSegments(m_rawPoints, tolerance, m_polyline);
+        m_segments = CurveGeometry::FitSegments(m_rawPoints, tolerance, m_polyline);
         m_rawPoints.clear();
     }
 
@@ -123,7 +123,7 @@ void CurveItem::endStroke(qreal tolerance)
     RebuildPath();
 }
 
-bool CurveItem::isEmpty() const
+bool CurveItem::IsEmpty() const
 {
     return !m_hasDot && m_segments.isEmpty() && m_rawPoints.isEmpty();
 }
@@ -139,16 +139,16 @@ bool CurveItem::SimplifyCurve(qreal tolerance)
         return false;
     }
 
-    QVector<QPointF> points = CurveGeometry::flatten(m_path);
+    QVector<QPointF> points = CurveGeometry::Flatten(m_path);
     if (points.size() < 3) {
         return false;
     }
-    points = StrokeSmoothing::simplifyRdp(points, qMax<qreal>(0.5, tolerance));
+    points = StrokeSmoothing::SimplifyRdp(points, qMax<qreal>(0.5, tolerance));
     if (points.size() < 2) {
         return false;
     }
 
-    QVector<CurveSegment> simplified = CurveGeometry::fitSegments(points, 0.0, m_polyline);
+    QVector<CurveSegment> simplified = CurveGeometry::FitSegments(points, 0.0, m_polyline);
     if (simplified == m_segments) {
         return false;
     }
@@ -165,7 +165,7 @@ CurveItem::GeometryState CurveItem::geometryState() const
     GeometryState state;
     state.segments = m_segments;
     state.pos = pos();
-    state.contentSize = contentSize();
+    state.contentSize = ContentSize();
     state.baseSize = m_baseSize;
     state.hasDot = m_hasDot;
     state.dotCenter = m_rawPoints.isEmpty() ? QPointF() : m_rawPoints.constFirst();
@@ -247,14 +247,14 @@ void CurveItem::NormalizeGeometry()
 void CurveItem::RebuildPath()
 {
     if (m_hasDot && !m_rawPoints.isEmpty()) {
-        m_path = CurveGeometry::buildDotPath(m_rawPoints.constFirst(), m_strokeWidth / 2.0);
+        m_path = CurveGeometry::BuildDotPath(m_rawPoints.constFirst(), m_strokeWidth / 2.0);
         return;
     }
     if (m_drawing) {
-        m_path = StrokePath::build(m_rawPoints, false, m_polyline, m_strokeWidth);
+        m_path = StrokePath::Build(m_rawPoints, false, m_polyline, m_strokeWidth);
         return;
     }
-    m_path = CurveGeometry::buildPath(m_segments);
+    m_path = CurveGeometry::BuildPath(m_segments);
 }
 
 void CurveItem::SetStrokeSource(CurveSource source)

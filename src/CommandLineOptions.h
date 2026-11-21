@@ -7,7 +7,7 @@
 // 纯数据解析，不触碰环境变量、QApplication 或主窗口。
 class CommandLineOptions {
   public:
-    static CommandLineOptions parse(const QStringList& arguments);
+    static CommandLineOptions Parse(const QStringList& arguments);
 
     bool selfTest = false;
     bool renderDemo = false;
@@ -83,5 +83,5 @@ class CommandLineOptions {
   private:
     CommandLineOptions() = default;
 
-    static QString takeOptionPath(const QStringList& arguments, const QString& option);
+    static QString TakeOptionPath(const QStringList& arguments, const QString& option);
 };

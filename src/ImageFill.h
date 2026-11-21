@@ -13,12 +13,12 @@ namespace ImageFill {
 
 enum class Mode { STRETCH = 0, FIT, TILE };
 
-QString modeToString(Mode mode);
-Mode modeFromString(const QString& name);
+QString ModeToString(Mode mode);
+Mode ModeFromString(const QString& name);
 
 // 序列化：{"data": <base64 PNG>, "mode": "stretch|fit|tile"}；无图时返回空对象，不写键。
 QJsonObject ToJson(const QPixmap& image, Mode mode);
-QPixmap pixmapFromJson(const QJsonObject& json, Mode* mode);
+QPixmap PixmapFromJson(const QJsonObject& json, Mode* mode);
 
 // rect 是图元内容矩形（图元局部坐标），clipPath 是可填充区域路径。
 // Stretch 非等比铺满；Fit 等比留边居中；Tile 按图片原始像素 1:1 平铺。

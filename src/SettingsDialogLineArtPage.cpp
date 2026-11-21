@@ -41,8 +41,8 @@ SettingsDialogLineArtPage::SettingsDialogLineArtPage(const AppSettings& settings
     m_presetCombo = new QComboBox(m_group);
     m_presetCombo->setObjectName(QStringLiteral("LineArtPresetCombo"));
     m_presetCombo->setFixedHeight(30);
-    for (int i = 0; i < lineArtPresetCount(); ++i) {
-        m_presetCombo->addItem(uiText(QString::fromLatin1(lineArtPreset(i).name)), i);
+    for (int i = 0; i < LineArtPresetCount(); ++i) {
+        m_presetCombo->addItem(UiText(QString::fromLatin1(lineArtPreset(i).name)), i);
     }
     m_presetCombo->addItem(SettingsDialog::tr("Custom"), -1);
     m_presetCombo->setToolTip(SettingsDialog::tr(
@@ -141,7 +141,7 @@ SettingsDialogLineArtPage::SettingsDialogLineArtPage(const AppSettings& settings
         }
         const int data = m_presetCombo->currentData().toInt();
         if (data >= 0) {
-            applyPreset(data);
+            ApplyPreset(data);
         }
     });
     for (QSpinBox* spin : {m_levelsSpin, m_paletteMergeSpin, m_adjacentMergeSpin, m_minAreaSpin}) {
@@ -149,7 +149,7 @@ SettingsDialogLineArtPage::SettingsDialogLineArtPage(const AppSettings& settings
             if (m_applyingPreset) {
                 return;
             }
-            syncPresetCombo();
+            SyncPresetCombo();
         });
     }
     // 手改简化容差同样要跳回“自定义”。
@@ -157,9 +157,9 @@ SettingsDialogLineArtPage::SettingsDialogLineArtPage(const AppSettings& settings
         if (m_applyingPreset) {
             return;
         }
-        syncPresetCombo();
+        SyncPresetCombo();
     });
-    syncPresetCombo();
+    SyncPresetCombo();
 
     auto* lineArtHint =
         new QLabel(SettingsDialog::tr(
@@ -202,7 +202,7 @@ SettingsDialogLineArtPage::SettingsDialogLineArtPage(const AppSettings& settings
     });
 }
 
-bool SettingsDialogLineArtPage::matchesPreset(const LineArtPreset& preset) const
+bool SettingsDialogLineArtPage::MatchesPreset(const LineArtPreset& preset) const
 {
     return m_levelsSpin->value() == preset.levels && m_paletteMergeSpin->value() == preset.palette &&
            m_adjacentMergeSpin->value() == preset.adjacent &&
@@ -211,7 +211,7 @@ bool SettingsDialogLineArtPage::matchesPreset(const LineArtPreset& preset) const
            && qAbs(m_toleranceSpin->value() - preset.tolerance) < 1e-3;
 }
 
-void SettingsDialogLineArtPage::applyPreset(int index)
+void SettingsDialogLineArtPage::ApplyPreset(int index)
 {
     const LineArtPreset preset = lineArtPreset(index);
     m_applyingPreset = true;
@@ -223,11 +223,11 @@ void SettingsDialogLineArtPage::applyPreset(int index)
     m_applyingPreset = false;
 }
 
-void SettingsDialogLineArtPage::syncPresetCombo()
+void SettingsDialogLineArtPage::SyncPresetCombo()
 {
     int data = -1;
-    for (int i = 0; i < lineArtPresetCount(); ++i) {
-        if (matchesPreset(lineArtPreset(i))) {
+    for (int i = 0; i < LineArtPresetCount(); ++i) {
+        if (MatchesPreset(lineArtPreset(i))) {
             data = i;
             break;
         }
@@ -240,7 +240,7 @@ void SettingsDialogLineArtPage::syncPresetCombo()
     m_presetCombo->setCurrentIndex(index);
 }
 
-void SettingsDialogLineArtPage::writeTo(AppSettings& settings) const
+void SettingsDialogLineArtPage::WriteTo(AppSettings& settings) const
 {
     settings.lineArtColorLevels = m_levelsSpin->value();
     settings.lineArtPaletteMerge = m_paletteMergeSpin->value();
@@ -252,7 +252,7 @@ void SettingsDialogLineArtPage::writeTo(AppSettings& settings) const
     settings.lineArtMinThickness = m_thicknessSpin->value();
 }
 
-void SettingsDialogLineArtPage::reset(const AppSettings& defaults)
+void SettingsDialogLineArtPage::Reset(const AppSettings& defaults)
 {
     m_levelsSpin->setValue(defaults.lineArtColorLevels);
     m_paletteMergeSpin->setValue(defaults.lineArtPaletteMerge);
@@ -262,5 +262,5 @@ void SettingsDialogLineArtPage::reset(const AppSettings& defaults)
     m_adaptiveCheck->setChecked(defaults.lineArtAdaptiveDownscale);
     m_toleranceSpin->setValue(defaults.lineArtSimplifyTolerance);
     m_thicknessSpin->setValue(defaults.lineArtMinThickness);
-    syncPresetCombo();
+    SyncPresetCombo();
 }

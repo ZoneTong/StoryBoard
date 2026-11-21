@@ -29,7 +29,7 @@ QPainterPath outline(const QPainterPath& path, const QSizeF& baseSize, const QSi
     return transform.map(path);
 }
 
-QPainterPath painted(const QPainterPath& outline, const QSizeF& baseSize, const QSizeF& contentSize, qreal penWidth)
+QPainterPath Painted(const QPainterPath& outline, const QSizeF& baseSize, const QSizeF& contentSize, qreal penWidth)
 {
     if (outline.isEmpty()) {
         return outline;
@@ -43,7 +43,7 @@ QPainterPath painted(const QPainterPath& outline, const QSizeF& baseSize, const 
     return stroker.createStroke(outline);
 }
 
-QPainterPath hitScaled(const QPainterPath& path, const QSizeF& baseSize, const QSizeF& contentSize, qreal penWidth,
+QPainterPath HitScaled(const QPainterPath& path, const QSizeF& baseSize, const QSizeF& contentSize, qreal penWidth,
                        qreal viewScale)
 {
     if (baseSize.isEmpty()) {

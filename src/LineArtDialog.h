@@ -21,9 +21,9 @@ class LineArtDialog : public QDialog {
     explicit LineArtDialog(const AppSettings& settings, QWidget* parent = nullptr);
 
     LineArtConverter::Options options() const;
-    void applyToSettings(AppSettings& settings) const;
+    void ApplyToSettings(AppSettings& settings) const;
     // 用户是否点了“保存到配置文件”；未点则调用方只更新内存，不写文件。
-    bool saveRequested() const { return m_saveToConfig; }
+    bool SaveRequested() const { return m_saveToConfig; }
 
   private:
     QPushButton* m_saveToConfigButton = nullptr;

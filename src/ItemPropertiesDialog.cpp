@@ -42,7 +42,7 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
     // 打开属性窗时再兜底一次自动名称：旧画布、直接 addItem 或清空名称后，
     // 这里也能得到“类型 N”，不会出现看不到名称或名称为空的行。
     if (scene) {
-        scene->assignAutoItemNames();
+        scene->AssignAutoItemNames();
     }
 
     auto* root = new QVBoxLayout(this);
@@ -78,7 +78,7 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
         root->addLayout(form);
     } else {
         m_initialPos = item->pos();
-        m_initialSize = item->contentSize();
+        m_initialSize = item->ContentSize();
         m_initialRotation = item->RotationAngle();
         m_initialItemName = item->CustomName();
         m_initialDisplayName = item->Name();
@@ -88,18 +88,18 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
         form->addRow(tr("Item type"), typeValue);
 
         m_identityBlock = new ItemPropertiesDialogIdentityBlock(scene, item, this);
-        m_identityBlock->addRows(form);
+        m_identityBlock->AddRows(form);
 
         if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<LineItemAbstract*>(item)) {
             m_styleBlock = new ItemPropertiesDialogStyleBlock(item, this);
-            m_styleBlock->addRows(form);
-            m_hasFill = m_styleBlock->hasFill();
-            m_initialStrokeWidth = m_styleBlock->initialStrokeWidth();
+            m_styleBlock->AddRows(form);
+            m_hasFill = m_styleBlock->HasFill();
+            m_initialStrokeWidth = m_styleBlock->InitialStrokeWidth();
         } else if (item->HasTextFacet()) {
             m_textBlock = new ItemPropertiesDialogTextBlock(item, this);
-            m_textBlock->addRows(form);
+            m_textBlock->AddRows(form);
             connect(m_textBlock, &ItemPropertiesDialogTextBlock::fontChanged, this,
-                    &ItemPropertiesDialog::syncTextNaturalSize);
+                    &ItemPropertiesDialog::SyncTextNaturalSize);
         }
 
         // 图形在样式区已有透明度行；笔画、文字、图片等图元在这里统一补一行。
@@ -116,17 +116,17 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
         }
 
         m_geometryBlock = new ItemPropertiesDialogGeometryBlock(item, this);
-        m_geometryBlock->addRows(form);
-        if (m_styleBlock && m_styleBlock->cornerRadiusSpin()) {
+        m_geometryBlock->AddRows(form);
+        if (m_styleBlock && m_styleBlock->CornerRadiusSpin()) {
             auto syncCornerRange = [this]() {
                 if (!m_geometryBlock) {
                     return;
                 }
                 m_styleBlock->SetContentSize(
-                    QSizeF(m_geometryBlock->widthSpin()->value(), m_geometryBlock->heightSizeSpin()->value()));
+                    QSizeF(m_geometryBlock->WidthSpin()->value(), m_geometryBlock->HeightSizeSpin()->value()));
             };
-            connect(m_geometryBlock->widthSpin(), &QDoubleSpinBox::valueChanged, this, syncCornerRange);
-            connect(m_geometryBlock->heightSizeSpin(), &QDoubleSpinBox::valueChanged, this, syncCornerRange);
+            connect(m_geometryBlock->WidthSpin(), &QDoubleSpinBox::valueChanged, this, syncCornerRange);
+            connect(m_geometryBlock->HeightSizeSpin(), &QDoubleSpinBox::valueChanged, this, syncCornerRange);
         }
 
         root->addLayout(form);
@@ -134,12 +134,12 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
 
     // 文字正文直接在属性窗里编辑；内容变化时同步到自然尺寸，确定后由
     // ItemPropertiesCommand 一次性提交文字、尺寸和撤销记录。
-    if (m_textBlock && m_textBlock->textEdit()) {
-        connect(m_textBlock->textEdit(), &QPlainTextEdit::textChanged, this,
-                &ItemPropertiesDialog::syncTextNaturalSize);
+    if (m_textBlock && m_textBlock->TextEdit()) {
+        connect(m_textBlock->TextEdit(), &QPlainTextEdit::textChanged, this,
+                &ItemPropertiesDialog::SyncTextNaturalSize);
     }
 
-    applyEditableState();
+    ApplyEditableState();
 
     auto* buttons = new QDialogButtonBox(
         m_editable ? (QDialogButtonBox::Ok | QDialogButtonBox::Cancel) : QDialogButtonBox::Ok, this);
@@ -153,16 +153,16 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     root->addWidget(buttons);
 
-    if (m_identityBlock && m_identityBlock->hasLayerControls()) {
-        m_identityBlock->updateHeightRange(false);
+    if (m_identityBlock && m_identityBlock->HasLayerControls()) {
+        m_identityBlock->UpdateHeightRange(false);
         connect(m_identityBlock, &ItemPropertiesDialogIdentityBlock::layerChanged, this, [this]() {
             if (m_initializing) {
                 return;
             }
-            m_identityBlock->updateHeightRange(true);
+            m_identityBlock->UpdateHeightRange(true);
         });
         m_initializing = false;
-        m_identityBlock->setInitialized(false);
+        m_identityBlock->SetInitialized(false);
     } else {
         m_initializing = false;
     }
@@ -172,16 +172,16 @@ void ItemPropertiesDialog::showEvent(QShowEvent* event)
 {
     QDialog::showEvent(event);
     // 只做一次，且只读模式不抢焦点；光标停在正文末尾，不整段选中。
-    if (m_textFocusApplied || !m_editable || !m_textBlock || !m_textBlock->textEdit()) {
+    if (m_textFocusApplied || !m_editable || !m_textBlock || !m_textBlock->TextEdit()) {
         return;
     }
     m_textFocusApplied = true;
-    QPlainTextEdit* edit = m_textBlock->textEdit();
+    QPlainTextEdit* edit = m_textBlock->TextEdit();
     edit->moveCursor(QTextCursor::End);
     edit->setFocus(Qt::OtherFocusReason);
 }
 
-void ItemPropertiesDialog::applyEditableState()
+void ItemPropertiesDialog::ApplyEditableState()
 {
     if (m_editable) {
         return;
@@ -189,24 +189,24 @@ void ItemPropertiesDialog::applyEditableState()
 
     QList<QWidget*> widgets;
     if (m_identityBlock) {
-        widgets << m_identityBlock->nameEdit() << m_identityBlock->layerCombo() << m_identityBlock->heightSpin();
+        widgets << m_identityBlock->NameEdit() << m_identityBlock->LayerCombo() << m_identityBlock->HeightSpin();
     }
     if (m_styleBlock) {
-        widgets << m_styleBlock->fillStyleCombo() << m_styleBlock->fillColorButton()
-                << m_styleBlock->strokeColorButton() << m_styleBlock->borderStyleCombo()
-                << m_styleBlock->strokeWidthSpin() << m_styleBlock->opacitySpin() << m_styleBlock->cornerRadiusSpin()
-                << m_styleBlock->startAngleSpin() << m_styleBlock->sweepAngleSpin();
+        widgets << m_styleBlock->FillStyleCombo() << m_styleBlock->FillColorButton()
+                << m_styleBlock->StrokeColorButton() << m_styleBlock->BorderStyleCombo()
+                << m_styleBlock->StrokeWidthSpin() << m_styleBlock->OpacitySpin() << m_styleBlock->CornerRadiusSpin()
+                << m_styleBlock->StartAngleSpin() << m_styleBlock->SweepAngleSpin();
     }
     if (m_opacitySpin) {
         widgets << m_opacitySpin;
     }
     if (m_textBlock) {
-        widgets << m_textBlock->textColorButton() << m_textBlock->fontButton() << m_textBlock->textEdit();
+        widgets << m_textBlock->TextColorButton() << m_textBlock->FontButton() << m_textBlock->TextEdit();
     }
     if (m_geometryBlock) {
-        widgets << m_geometryBlock->positionXSpin() << m_geometryBlock->positionYSpin() << m_geometryBlock->widthSpin()
-                << m_geometryBlock->heightSizeSpin() << m_geometryBlock->majorAxisSpin()
-                << m_geometryBlock->minorAxisSpin() << m_geometryBlock->rotationSpin();
+        widgets << m_geometryBlock->PositionXSpin() << m_geometryBlock->PositionYSpin() << m_geometryBlock->WidthSpin()
+                << m_geometryBlock->HeightSizeSpin() << m_geometryBlock->MajorAxisSpin()
+                << m_geometryBlock->MinorAxisSpin() << m_geometryBlock->RotationSpin();
     }
     for (QWidget* widget : widgets) {
         if (widget) {
@@ -221,39 +221,39 @@ void ItemPropertiesDialog::accept()
         QDialog::accept();
         return;
     }
-    if (m_identityBlock && m_identityBlock->nameEdit() && m_scene && m_item) {
-        const QString typedName = m_identityBlock->nameEdit()->text().trimmed();
-        if (!typedName.isEmpty() && !m_scene->isItemNameAvailable(typedName, m_item)) {
+    if (m_identityBlock && m_identityBlock->NameEdit() && m_scene && m_item) {
+        const QString typedName = m_identityBlock->NameEdit()->text().trimmed();
+        if (!typedName.isEmpty() && !m_scene->IsItemNameAvailable(typedName, m_item)) {
             QMessageBox::warning(this, tr("Duplicate item name"),
                                  tr("Another item in this canvas already uses this name. Choose a different name."));
-            m_identityBlock->nameEdit()->setFocus();
-            m_identityBlock->nameEdit()->selectAll();
+            m_identityBlock->NameEdit()->setFocus();
+            m_identityBlock->NameEdit()->selectAll();
             return;
         }
     }
-    applyChanges();
+    ApplyChanges();
     QDialog::accept();
 }
 
-void ItemPropertiesDialog::syncTextNaturalSize()
+void ItemPropertiesDialog::SyncTextNaturalSize()
 {
-    if (!m_editable || !m_textBlock || !m_textBlock->textEdit()) {
+    if (!m_editable || !m_textBlock || !m_textBlock->TextEdit()) {
         return;
     }
     if (m_item->HasTextFacet()) {
-        const QSizeF natural = TextItem::measure(m_textBlock->textEdit()->toPlainText(), m_textBlock->TextFont());
+        const QSizeF natural = TextItem::Measure(m_textBlock->TextEdit()->toPlainText(), m_textBlock->TextFont());
         if (m_geometryBlock) {
-            m_geometryBlock->setNaturalSize(natural);
+            m_geometryBlock->SetNaturalSize(natural);
         }
     }
 }
 
-bool ItemPropertiesDialog::isItemInScene() const
+bool ItemPropertiesDialog::IsItemInScene() const
 {
     return m_scene && m_item && m_item->scene() == m_scene;
 }
 
-void ItemPropertiesDialog::applyChanges()
+void ItemPropertiesDialog::ApplyChanges()
 {
     if (!m_editable || !m_scene || !m_item) {
         return;
@@ -267,12 +267,12 @@ void ItemPropertiesDialog::applyChanges()
     const int oldLayer = m_item->LayerId();
     const int oldHeight = m_item->ZOrder();
     const int targetLayer =
-        (identity && identity->layerCombo()) ? identity->layerCombo()->currentData().toInt() : oldLayer;
-    const int targetHeight = (identity && identity->heightSpin()) ? identity->heightSpin()->value() : oldHeight;
+        (identity && identity->LayerCombo()) ? identity->LayerCombo()->currentData().toInt() : oldLayer;
+    const int targetHeight = (identity && identity->HeightSpin()) ? identity->HeightSpin()->value() : oldHeight;
 
     QList<CanvasItem*> swapped;
     if (targetLayer != oldLayer || targetHeight != oldHeight) {
-        for (CanvasItem* peer : m_scene->layerItems(targetLayer)) {
+        for (CanvasItem* peer : m_scene->LayerItems(targetLayer)) {
             if (peer != m_item && peer->ZOrder() == targetHeight) {
                 swapped.append(peer);
             }
@@ -281,7 +281,7 @@ void ItemPropertiesDialog::applyChanges()
 
     ItemPropertiesState before;
     before.pos = m_item->pos();
-    before.size = m_item->contentSize();
+    before.size = m_item->ContentSize();
     before.rotation = m_initialRotation;
     before.opacity = m_item->ItemOpacity();
     before.itemName = m_initialItemName;
@@ -299,16 +299,16 @@ void ItemPropertiesDialog::applyChanges()
         // 数值框按控件自身精度显示；用户没动过时保留原始精度，避免“打开就点确定”也产生修改。
         return qFuzzyCompare(value, qRound(initial * 10.0) / 10.0) ? initial : value;
     };
-    after.pos = QPointF(spinValue(geometry->positionXSpin(), m_initialPos.x()),
-                        spinValue(geometry->positionYSpin(), m_initialPos.y()));
-    after.size = QSizeF(spinValue(geometry->widthSpin(), m_initialSize.width()),
-                        spinValue(geometry->heightSizeSpin(), m_initialSize.height()));
-    after.rotation = spinValue(geometry->rotationSpin(), m_initialRotation);
+    after.pos = QPointF(spinValue(geometry->PositionXSpin(), m_initialPos.x()),
+                        spinValue(geometry->PositionYSpin(), m_initialPos.y()));
+    after.size = QSizeF(spinValue(geometry->WidthSpin(), m_initialSize.width()),
+                        spinValue(geometry->HeightSizeSpin(), m_initialSize.height()));
+    after.rotation = spinValue(geometry->RotationSpin(), m_initialRotation);
     after.opacity = before.opacity;
-    const QString typedName = (identity && identity->nameEdit()) ? identity->nameEdit()->text().trimmed() : QString();
+    const QString typedName = (identity && identity->NameEdit()) ? identity->NameEdit()->text().trimmed() : QString();
     // 清空名称不能退回“多个同名类型名”的状态；这时补一个本画布内唯一的自动名称。
     const QString effectiveName =
-        typedName.isEmpty() ? m_scene->uniqueItemName(m_item->TypeDisplayName(), m_item) : typedName;
+        typedName.isEmpty() ? m_scene->UniqueItemName(m_item->TypeDisplayName(), m_item) : typedName;
     after.itemName = (m_initialItemName.isEmpty() && typedName == m_initialDisplayName) ? QString() : effectiveName;
     after.stack.append({m_item, targetLayer, targetHeight});
     for (CanvasItem* peer : std::as_const(swapped)) {
@@ -323,72 +323,72 @@ void ItemPropertiesDialog::applyChanges()
         after.shapeState = shape->State();
         after.shapeState.pos = after.pos;
         after.shapeState.size = after.size;
-        if (style && style->strokeColorButton()) {
-            after.shapeState.strokeColor = style->strokeColorButton()->property("itemColor").value<QColor>();
+        if (style && style->StrokeColorButton()) {
+            after.shapeState.strokeColor = style->StrokeColorButton()->property("itemColor").value<QColor>();
         }
-        if (style && style->strokeWidthSpin()) {
-            after.shapeState.strokeWidth = spinValue(style->strokeWidthSpin(), m_initialStrokeWidth);
+        if (style && style->StrokeWidthSpin()) {
+            after.shapeState.strokeWidth = spinValue(style->StrokeWidthSpin(), m_initialStrokeWidth);
         }
-        if (style && style->borderStyleCombo() && style->borderStyleCombo()->currentData().toInt() >= 0) {
-            after.shapeState.strokeStyle = static_cast<Qt::PenStyle>(style->borderStyleCombo()->currentData().toInt());
+        if (style && style->BorderStyleCombo() && style->BorderStyleCombo()->currentData().toInt() >= 0) {
+            after.shapeState.strokeStyle = static_cast<Qt::PenStyle>(style->BorderStyleCombo()->currentData().toInt());
         }
-        if (style && style->opacitySpin()) {
-            const int percent = style->opacitySpin()->value();
+        if (style && style->OpacitySpin()) {
+            const int percent = style->OpacitySpin()->value();
             after.shapeState.opacity =
-                percent == style->initialOpacityPercent() ? style->initialOpacity() : percent / 100.0;
+                percent == style->InitialOpacityPercent() ? style->InitialOpacity() : percent / 100.0;
             after.opacity = after.shapeState.opacity;
         }
-        if (style && style->startAngleSpin()) {
-            const int value = style->startAngleSpin()->value();
+        if (style && style->StartAngleSpin()) {
+            const int value = style->StartAngleSpin()->value();
             after.shapeState.startAngle =
-                value == qRound(style->initialStartAngle()) ? style->initialStartAngle() : value;
+                value == qRound(style->InitialStartAngle()) ? style->InitialStartAngle() : value;
         }
-        if (style && style->sweepAngleSpin()) {
-            const int value = style->sweepAngleSpin()->value();
+        if (style && style->SweepAngleSpin()) {
+            const int value = style->SweepAngleSpin()->value();
             after.shapeState.sweepAngle =
-                value == qRound(style->initialSweepAngle()) ? style->initialSweepAngle() : value;
+                value == qRound(style->InitialSweepAngle()) ? style->InitialSweepAngle() : value;
         }
-        if (style && style->cornerRadiusSpin()) {
-            const int value = style->cornerRadiusSpin()->value();
+        if (style && style->CornerRadiusSpin()) {
+            const int value = style->CornerRadiusSpin()->value();
             // 圆角矩形默认值来自短边的 16%，对话框里显示为非 0；
             // 未改动时保留“按类型取默认”的 -1，避免打开属性窗点确定就写回显式值。
             after.shapeState.cornerRadius =
-                value == style->initialCornerRadius() ? style->initialStoredCornerRadius() : value;
+                value == style->InitialCornerRadius() ? style->InitialStoredCornerRadius() : value;
         }
         // 需求 1：三角形的两个底角为真相，未改动时保留原值（含非整数角度）。
-        if (style && style->bottomAngle1Spin()) {
-            const int value = style->bottomAngle1Spin()->value();
+        if (style && style->BottomAngle1Spin()) {
+            const int value = style->BottomAngle1Spin()->value();
             after.shapeState.bottomAngle1 =
-                value == qRound(style->initialBottomAngle1()) ? style->initialBottomAngle1() : value;
+                value == qRound(style->InitialBottomAngle1()) ? style->InitialBottomAngle1() : value;
         }
-        if (style && style->bottomAngle2Spin()) {
-            const int value = style->bottomAngle2Spin()->value();
+        if (style && style->BottomAngle2Spin()) {
+            const int value = style->BottomAngle2Spin()->value();
             after.shapeState.bottomAngle2 =
-                value == qRound(style->initialBottomAngle2()) ? style->initialBottomAngle2() : value;
+                value == qRound(style->InitialBottomAngle2()) ? style->InitialBottomAngle2() : value;
         }
         // 需求 1：底边长度独立字段，写入内容矩形宽度（高度由角度派生）。
-        if (style && style->triangleBaseSpin()) {
-            const int value = style->triangleBaseSpin()->value();
-            if (value != style->initialTriangleBase()) {
+        if (style && style->TriangleBaseSpin()) {
+            const int value = style->TriangleBaseSpin()->value();
+            if (value != style->InitialTriangleBase()) {
                 after.size.setWidth(qMax<qreal>(8.0, static_cast<qreal>(value)));
             }
         }
         // 需求 9：平行四边形左下内角，未改动时保留原值。
-        if (style && style->parallelogramAngleSpin()) {
-            const int value = style->parallelogramAngleSpin()->value();
+        if (style && style->ParallelogramAngleSpin()) {
+            const int value = style->ParallelogramAngleSpin()->value();
             after.shapeState.parallelogramAngle =
-                value == qRound(style->initialParallelogramAngle()) ? style->initialParallelogramAngle() : value;
+                value == qRound(style->InitialParallelogramAngle()) ? style->InitialParallelogramAngle() : value;
         }
         if (m_hasFill) {
-            if (style && style->fillStyleCombo() && style->fillStyleCombo()->currentData().toInt() >= 0) {
-                after.shapeState.fillStyle = static_cast<FillStyle>(style->fillStyleCombo()->currentData().toInt());
+            if (style && style->FillStyleCombo() && style->FillStyleCombo()->currentData().toInt() >= 0) {
+                after.shapeState.fillStyle = static_cast<FillStyle>(style->FillStyleCombo()->currentData().toInt());
             }
-            if (style && style->fillColorButton()) {
-                after.shapeState.fillColor = style->fillColorButton()->property("itemColor").value<QColor>();
+            if (style && style->FillColorButton()) {
+                after.shapeState.fillColor = style->FillColorButton()->property("itemColor").value<QColor>();
             }
             // 需求 15：图片填充是独立属性，ShapeItemState 直接快照。
-            if (style && style->hasFillImageRow()) {
-                after.shapeState.hasFillImage = style->fillImagePresent();
+            if (style && style->HasFillImageRow()) {
+                after.shapeState.hasFillImage = style->FillImagePresent();
                 after.shapeState.fillImage = style->FillImage();
                 after.shapeState.fillImageMode = style->FillImageMode();
             }
@@ -402,18 +402,18 @@ void ItemPropertiesDialog::applyChanges()
         after.textState.pos = after.pos;
         after.textState.size = after.size;
         after.textState.font = text ? text->TextFont() : m_item->TextFont();
-        if (text && text->textEdit()) {
-            after.textState.text = text->textEdit()->toPlainText();
+        if (text && text->TextEdit()) {
+            after.textState.text = text->TextEdit()->toPlainText();
         }
-        after.textState.baseSize = TextItem::measure(after.textState.text, after.textState.font);
+        after.textState.baseSize = TextItem::Measure(after.textState.text, after.textState.font);
         // 需求追加：文字正文变化后直接回到文字自然尺寸，不再沿用旧图元的
         // 拉伸尺寸，避免新旧字形按不同比例叠在同一块内容区里。
         if (after.textState.text != before.textState.text) {
             after.size = after.textState.baseSize;
             after.textState.size = after.textState.baseSize;
         }
-        if (text && text->textColorButton()) {
-            after.textState.color = text->textColorButton()->property("itemColor").value<QColor>();
+        if (text && text->TextColorButton()) {
+            after.textState.color = text->TextColorButton()->property("itemColor").value<QColor>();
         }
     } else if (auto* stroke = dynamic_cast<LineItemAbstract*>(m_item.data())) {
         before.hasStrokeStyle = true;
@@ -425,20 +425,20 @@ void ItemPropertiesDialog::applyChanges()
         before.curveEndArrow = stroke->EndArrow();
 
         after.hasStrokeStyle = true;
-        after.strokeColor = (style && style->strokeColorButton())
-                                ? style->strokeColorButton()->property("itemColor").value<QColor>()
+        after.strokeColor = (style && style->StrokeColorButton())
+                                ? style->StrokeColorButton()->property("itemColor").value<QColor>()
                                 : before.strokeColor;
-        after.strokeWidth = (style && style->strokeWidthSpin())
-                                ? spinValue(style->strokeWidthSpin(), m_initialStrokeWidth)
+        after.strokeWidth = (style && style->StrokeWidthSpin())
+                                ? spinValue(style->StrokeWidthSpin(), m_initialStrokeWidth)
                                 : before.strokeWidth;
-        after.strokeStyle = (style && style->borderStyleCombo())
-                                ? static_cast<Qt::PenStyle>(style->borderStyleCombo()->currentData().toInt())
+        after.strokeStyle = (style && style->BorderStyleCombo())
+                                ? static_cast<Qt::PenStyle>(style->BorderStyleCombo()->currentData().toInt())
                                 : before.strokeStyle;
-        after.curveStartArrow = (style && style->startArrowCombo())
-                                    ? static_cast<ArrowStyle>(style->startArrowCombo()->currentData().toInt())
+        after.curveStartArrow = (style && style->StartArrowCombo())
+                                    ? static_cast<ArrowStyle>(style->StartArrowCombo()->currentData().toInt())
                                     : before.curveStartArrow;
-        after.curveEndArrow = (style && style->endArrowCombo())
-                                  ? static_cast<ArrowStyle>(style->endArrowCombo()->currentData().toInt())
+        after.curveEndArrow = (style && style->EndArrowCombo())
+                                  ? static_cast<ArrowStyle>(style->EndArrowCombo()->currentData().toInt())
                                   : before.curveEndArrow;
     }
 
@@ -452,7 +452,7 @@ void ItemPropertiesDialog::applyChanges()
     }
 
     auto* command = new ItemPropertiesCommand(m_scene, m_item, before, after, tr("Edit item properties"));
-    if (auto* undo = m_scene->undoStack()) {
+    if (auto* undo = m_scene->UndoStack()) {
         undo->push(command);
     } else {
         command->redo();
@@ -460,16 +460,16 @@ void ItemPropertiesDialog::applyChanges()
     }
 }
 
-QString ItemPropertiesDialog::layerDescription(const CanvasScene* scene, int layerId)
+QString ItemPropertiesDialog::LayerDescription(const CanvasScene* scene, int layerId)
 {
     if (layerId == CanvasScene::BackgroundLayerId) {
         return tr("Background layer");
     }
 
-    const int index = scene ? scene->layerIndex(layerId) : layerId;
+    const int index = scene ? scene->LayerIndex(layerId) : layerId;
     QString layerName;
     if (scene) {
-        for (const CanvasLayer& layer : scene->layers()) {
+        for (const CanvasLayer& layer : scene->Layers()) {
             if (layer.id == layerId) {
                 layerName = layer.name;
                 break;

@@ -33,10 +33,10 @@
 #include <QVBoxLayout>
 
 
-void PropertiesPanel::changeSelectedShapes(const QString& text, const std::function<void(ShapeItem*)>& mutate)
+void PropertiesPanel::ChangeSelectedShapes(const QString& text, const std::function<void(ShapeItem*)>& mutate)
 {
-    const QList<ShapeItem*> shapes = selectedShapes();
-    if (shapes.isEmpty() || !m_scene || !m_scene->undoStack()) {
+    const QList<ShapeItem*> shapes = SelectedShapes();
+    if (shapes.isEmpty() || !m_scene || !m_scene->UndoStack()) {
         return;
     }
 
@@ -49,7 +49,7 @@ void PropertiesPanel::changeSelectedShapes(const QString& text, const std::funct
     after.reserve(shapes.size());
     for (ShapeItem* shape : shapes) {
         QMap<ItemProperty, QVariant> beforeValues;
-        for (ItemProperty property : shape->Properties().values()) {
+        for (ItemProperty property : shape->Properties().Values()) {
             beforeValues.insert(property, shape->PropertyValue(property));
         }
         items.append(shape);
@@ -62,20 +62,20 @@ void PropertiesPanel::changeSelectedShapes(const QString& text, const std::funct
     m_refreshing = false;
     for (ShapeItem* shape : shapes) {
         QMap<ItemProperty, QVariant> afterValues;
-        for (ItemProperty property : shape->Properties().values()) {
+        for (ItemProperty property : shape->Properties().Values()) {
             afterValues.insert(property, shape->PropertyValue(property));
         }
         after.append(afterValues);
     }
 
-    m_scene->undoStack()->push(new ItemPropertyCommand(m_scene, items, before, after, text));
-    refresh();
+    m_scene->UndoStack()->push(new ItemPropertyCommand(m_scene, items, before, after, text));
+    Refresh();
 }
 
-void PropertiesPanel::applyPropertyValues(const QMap<ItemProperty, QVariant>& values, const QString& text,
+void PropertiesPanel::ApplyPropertyValues(const QMap<ItemProperty, QVariant>& values, const QString& text,
                                           const QList<CanvasItem*>& targets)
 {
-    if (!m_scene || !m_scene->undoStack()) {
+    if (!m_scene || !m_scene->UndoStack()) {
         return;
     }
     const QList<CanvasItem*> items = targets.isEmpty() ? selectedItems() : targets;
@@ -89,7 +89,7 @@ void PropertiesPanel::applyPropertyValues(const QMap<ItemProperty, QVariant>& va
         QMap<ItemProperty, QVariant> beforeValues;
         QMap<ItemProperty, QVariant> afterValues;
         for (auto it = values.constBegin(); it != values.constEnd(); ++it) {
-            if (!properties.contains(it.key())) {
+            if (!properties.Contains(it.key())) {
                 continue;
             }
             beforeValues.insert(it.key(), item->PropertyValue(it.key()));
@@ -111,24 +111,24 @@ void PropertiesPanel::applyPropertyValues(const QMap<ItemProperty, QVariant>& va
     if (applyItems.isEmpty()) {
         return;
     }
-    m_scene->undoStack()->push(new ItemPropertyCommand(m_scene, applyItems, before, after, text));
-    refresh();
+    m_scene->UndoStack()->push(new ItemPropertyCommand(m_scene, applyItems, before, after, text));
+    Refresh();
 }
 
-void PropertiesPanel::applyStrokeColor(const QColor& color)
+void PropertiesPanel::ApplyStrokeColor(const QColor& color)
 {
-    const QList<CanvasItem*> items = selectedStrokeTargets();
+    const QList<CanvasItem*> items = SelectedStrokeTargets();
     if (!color.isValid() || items.isEmpty()) {
         return;
     }
     emit strokeColorPicked(color);
-    applyPropertyValues({{ItemProperty::STROKE_COLOR, color}}, tr("Change border color"), items);
+    ApplyPropertyValues({{ItemProperty::STROKE_COLOR, color}}, tr("Change border color"), items);
 }
 
-void PropertiesPanel::applyFillColor(const QColor& color)
+void PropertiesPanel::ApplyFillColor(const QColor& color)
 {
     const QList<CanvasItem*> items = selectedItems();
-    if (!color.isValid() || items.isEmpty() || !m_scene || !m_scene->undoStack()) {
+    if (!color.isValid() || items.isEmpty() || !m_scene || !m_scene->UndoStack()) {
         return;
     }
 
@@ -138,17 +138,17 @@ void PropertiesPanel::applyFillColor(const QColor& color)
     m_refreshing = true;
     for (CanvasItem* item : items) {
         const ItemPropertySet properties = item->Properties();
-        if (!properties.contains(ItemProperty::FILL_COLOR)) {
+        if (!properties.Contains(ItemProperty::FILL_COLOR)) {
             continue;
         }
         QMap<ItemProperty, QVariant> beforeValues;
         beforeValues.insert(ItemProperty::FILL_COLOR, item->PropertyValue(ItemProperty::FILL_COLOR));
-        if (properties.contains(ItemProperty::FILL_STYLE)) {
+        if (properties.Contains(ItemProperty::FILL_STYLE)) {
             beforeValues.insert(ItemProperty::FILL_STYLE, item->PropertyValue(ItemProperty::FILL_STYLE));
         }
         QMap<ItemProperty, QVariant> afterValues = beforeValues;
         afterValues.insert(ItemProperty::FILL_COLOR, color);
-        if (properties.contains(ItemProperty::FILL_STYLE) &&
+        if (properties.Contains(ItemProperty::FILL_STYLE) &&
             item->PropertyValue(ItemProperty::FILL_STYLE).toInt() == static_cast<int>(FillStyle::NONE)) {
             afterValues.insert(ItemProperty::FILL_STYLE, static_cast<int>(FillStyle::SOLID));
         }
@@ -166,50 +166,50 @@ void PropertiesPanel::applyFillColor(const QColor& color)
     if (targets.isEmpty()) {
         return;
     }
-    m_scene->undoStack()->push(new ItemPropertyCommand(m_scene, targets, before, after, tr("Change shape fill color")));
-    refresh();
+    m_scene->UndoStack()->push(new ItemPropertyCommand(m_scene, targets, before, after, tr("Change shape fill color")));
+    Refresh();
 }
 
-void PropertiesPanel::applyFillStyle(FillStyle style)
+void PropertiesPanel::ApplyFillStyle(FillStyle style)
 {
-    if (selectedItems().isEmpty() || !m_scene || !m_scene->undoStack()) {
+    if (selectedItems().isEmpty() || !m_scene || !m_scene->UndoStack()) {
         return;
     }
-    applyPropertyValues({{ItemProperty::FILL_STYLE, static_cast<int>(style)}}, tr("Change shape fill style"));
+    ApplyPropertyValues({{ItemProperty::FILL_STYLE, static_cast<int>(style)}}, tr("Change shape fill style"));
 }
 
-void PropertiesPanel::applyBorderStyle(Qt::PenStyle style)
+void PropertiesPanel::ApplyBorderStyle(Qt::PenStyle style)
 {
-    const QList<CanvasItem*> items = selectedStrokeTargets();
+    const QList<CanvasItem*> items = SelectedStrokeTargets();
     if (items.isEmpty()) {
         return;
     }
-    applyPropertyValues({{ItemProperty::STROKE_STYLE, static_cast<int>(style)}}, tr("Change shape border style"),
+    ApplyPropertyValues({{ItemProperty::STROKE_STYLE, static_cast<int>(style)}}, tr("Change shape border style"),
                         items);
 }
 
-void PropertiesPanel::applyBorderWidth(qreal width)
+void PropertiesPanel::ApplyBorderWidth(qreal width)
 {
-    const QList<CanvasItem*> items = selectedStrokeTargets();
+    const QList<CanvasItem*> items = SelectedStrokeTargets();
     if (items.isEmpty()) {
         return;
     }
     emit borderWidthPicked(width);
-    applyPropertyValues({{ItemProperty::STROKE_WIDTH, width}}, tr("Change border width"), items);
+    ApplyPropertyValues({{ItemProperty::STROKE_WIDTH, width}}, tr("Change border width"), items);
 }
 
-void PropertiesPanel::applyOpacity(int percent)
+void PropertiesPanel::ApplyOpacity(int percent)
 {
     if (selectedItems().isEmpty()) {
         return;
     }
-    applyPropertyValues({{ItemProperty::OPACITY, percent / 100.0}}, tr("Change opacity"));
+    ApplyPropertyValues({{ItemProperty::OPACITY, percent / 100.0}}, tr("Change opacity"));
 }
 
-void PropertiesPanel::changeSelectedTexts(const QString& text, const std::function<void(TextItemState&)>& mutate)
+void PropertiesPanel::ChangeSelectedTexts(const QString& text, const std::function<void(TextItemState&)>& mutate)
 {
-    const QList<CanvasItem*> texts = selectedTexts();
-    if (texts.isEmpty() || !m_scene || !m_scene->undoStack()) {
+    const QList<CanvasItem*> texts = SelectedTexts();
+    if (texts.isEmpty() || !m_scene || !m_scene->UndoStack()) {
         return;
     }
 
@@ -228,56 +228,56 @@ void PropertiesPanel::changeSelectedTexts(const QString& text, const std::functi
         return;
     }
 
-    QUndoStack* undo = m_scene->undoStack();
+    QUndoStack* undo = m_scene->UndoStack();
     undo->beginMacro(text);
     for (int i = 0; i < texts.size(); ++i) {
         undo->push(new TextItemCommand(m_scene, texts.at(i), beforeStates.at(i), afterStates.at(i), text));
     }
     undo->endMacro();
-    refresh();
+    Refresh();
 }
 
-void PropertiesPanel::applyTextContent(const QString& text)
+void PropertiesPanel::ApplyTextContent(const QString& text)
 {
-    changeSelectedTexts(tr("Change text content"), [&text](TextItemState& state) {
+    ChangeSelectedTexts(tr("Change text content"), [&text](TextItemState& state) {
         if (state.text == text) {
             return;
         }
         state.text = text;
-        state.baseSize = TextItem::measure(state.text, state.font);
+        state.baseSize = TextItem::Measure(state.text, state.font);
         state.size = state.baseSize;
     });
 }
 
-void PropertiesPanel::applyTextFont(const QFont& font)
+void PropertiesPanel::ApplyTextFont(const QFont& font)
 {
-    changeSelectedTexts(tr("Change text font"), [&font](TextItemState& state) {
+    ChangeSelectedTexts(tr("Change text font"), [&font](TextItemState& state) {
         if (state.font == font) {
             return;
         }
         state.font = font;
-        state.baseSize = TextItem::measure(state.text, state.font);
+        state.baseSize = TextItem::Measure(state.text, state.font);
         state.size = state.baseSize;
     });
 }
 
-void PropertiesPanel::applyTextColor(const QColor& color)
+void PropertiesPanel::ApplyTextColor(const QColor& color)
 {
     if (!color.isValid()) {
         return;
     }
-    changeSelectedTexts(tr("Change text color"), [&color](TextItemState& state) { state.color = color; });
+    ChangeSelectedTexts(tr("Change text color"), [&color](TextItemState& state) { state.color = color; });
 }
 
-void PropertiesPanel::changeSelectedArcs(const QString& text, const std::function<void(LineItemAbstract*)>& mutate)
+void PropertiesPanel::ChangeSelectedArcs(const QString& text, const std::function<void(LineItemAbstract*)>& mutate)
 {
     QList<LineItemAbstract*> arcs;
-    for (LineItemAbstract* stroke : selectedStrokes()) {
+    for (LineItemAbstract* stroke : SelectedStrokes()) {
         if (stroke->SupportsArcAngles()) {
             arcs.append(stroke);
         }
     }
-    if (arcs.isEmpty() || !m_scene || !m_scene->undoStack()) {
+    if (arcs.isEmpty() || !m_scene || !m_scene->UndoStack()) {
         return;
     }
 
@@ -299,20 +299,20 @@ void PropertiesPanel::changeSelectedArcs(const QString& text, const std::functio
     }
     m_refreshing = false;
 
-    m_scene->undoStack()->push(
+    m_scene->UndoStack()->push(
         new CurveParamCommand(m_scene, targets, paramsBefore, geometryBefore, paramsAfter, geometryAfter, text));
-    refresh();
+    Refresh();
 }
 
-void PropertiesPanel::changeSelectedSines(const QString& text, const std::function<void(LineItemAbstract*)>& mutate)
+void PropertiesPanel::ChangeSelectedSines(const QString& text, const std::function<void(LineItemAbstract*)>& mutate)
 {
     QList<LineItemAbstract*> sines;
-    for (LineItemAbstract* stroke : selectedStrokes()) {
+    for (LineItemAbstract* stroke : SelectedStrokes()) {
         if (stroke->SupportsSineWave()) {
             sines.append(stroke);
         }
     }
-    if (sines.isEmpty() || !m_scene || !m_scene->undoStack()) {
+    if (sines.isEmpty() || !m_scene || !m_scene->UndoStack()) {
         return;
     }
 
@@ -334,26 +334,26 @@ void PropertiesPanel::changeSelectedSines(const QString& text, const std::functi
     }
     m_refreshing = false;
 
-    m_scene->undoStack()->push(
+    m_scene->UndoStack()->push(
         new CurveParamCommand(m_scene, targets, paramsBefore, geometryBefore, paramsAfter, geometryAfter, text));
-    refresh();
+    Refresh();
 }
 
-void PropertiesPanel::chooseFillImage()
+void PropertiesPanel::ChooseFillImage()
 {
     // 需求 13：选中多个可填充图元时一次替换；图片从资源面板里选（也可以现场从本地加一张）。
     QList<ShapeItem*> shapes;
     for (CanvasItem* item : selectedItems()) {
         if (auto* shape = dynamic_cast<ShapeItem*>(item);
-            shape && !shape->IsCustomShape() && ShapeMeta::isFilled(shape->shapeType())) {
+            shape && !shape->IsCustomShape() && ShapeMeta::IsFilled(shape->shapeType())) {
             shapes.append(shape);
         }
     }
     if (shapes.isEmpty()) {
         return;
     }
-    const QPixmap pixmap = ImagePickerDialog::pick(this, collectCanvasImages(m_scene), tr("Fill image"));
-    if (pixmap.isNull() || !m_scene || !m_scene->undoStack()) {
+    const QPixmap pixmap = ImagePickerDialog::Pick(this, CollectCanvasImages(m_scene), tr("Fill image"));
+    if (pixmap.isNull() || !m_scene || !m_scene->UndoStack()) {
         return;
     }
     QList<CanvasItem*> items;
@@ -376,8 +376,8 @@ void PropertiesPanel::chooseFillImage()
             items.at(index)->SetPropertyValue(it.key(), it.value());
         }
     }
-    m_scene->undoStack()->push(new ItemPropertyCommand(m_scene, items, before, after, tr("Replace fill image")));
-    refresh();
+    m_scene->UndoStack()->push(new ItemPropertyCommand(m_scene, items, before, after, tr("Replace fill image")));
+    Refresh();
 }
 
 void PropertiesPanel::ClearFillImage()
@@ -385,72 +385,72 @@ void PropertiesPanel::ClearFillImage()
     if (selectedItems().isEmpty()) {
         return;
     }
-    applyPropertyValues({{ItemProperty::FILL_IMAGE, QVariant()}}, tr("Clear fill image"));
+    ApplyPropertyValues({{ItemProperty::FILL_IMAGE, QVariant()}}, tr("Clear fill image"));
 }
 
-void PropertiesPanel::applyCornerRadius(int radius)
+void PropertiesPanel::ApplyCornerRadius(int radius)
 {
-    changeSelectedShapes(tr("Change rectangle corner radius"),
+    ChangeSelectedShapes(tr("Change rectangle corner radius"),
                          [radius](ShapeItem* shape) { shape->SetCornerRadius(radius); });
 }
 
-void PropertiesPanel::applyStartAngle(int angle)
+void PropertiesPanel::ApplyStartAngle(int angle)
 {
-    changeSelectedShapes(tr("Change start angle"),
+    ChangeSelectedShapes(tr("Change start angle"),
                          [angle](ShapeItem* shape) { shape->SetArcAngles(angle, shape->SweepAngle()); });
-    changeSelectedArcs(tr("Change start angle"), [angle](LineItemAbstract* arc) {
+    ChangeSelectedArcs(tr("Change start angle"), [angle](LineItemAbstract* arc) {
         LineItemAbstract::ParamState params = arc->paramState();
         params.first = angle;
         arc->ApplyParamState(params);
     });
 }
 
-void PropertiesPanel::applySweepAngle(int angle)
+void PropertiesPanel::ApplySweepAngle(int angle)
 {
-    changeSelectedShapes(tr("Change sector angle"),
+    ChangeSelectedShapes(tr("Change sector angle"),
                          [angle](ShapeItem* shape) { shape->SetArcAngles(shape->StartAngle(), angle); });
-    changeSelectedArcs(tr("Change arc sweep angle"), [angle](LineItemAbstract* arc) {
+    ChangeSelectedArcs(tr("Change arc sweep angle"), [angle](LineItemAbstract* arc) {
         LineItemAbstract::ParamState params = arc->paramState();
         params.second = angle;
         arc->ApplyParamState(params);
     });
 }
 
-void PropertiesPanel::applySineCycles(int cycles)
+void PropertiesPanel::ApplySineCycles(int cycles)
 {
     const int bounded = qBound(1, cycles, 12);
-    changeSelectedSines(tr("Change sine cycles"), [bounded](LineItemAbstract* sine) {
+    ChangeSelectedSines(tr("Change sine cycles"), [bounded](LineItemAbstract* sine) {
         LineItemAbstract::ParamState params = sine->paramState();
         params.first = bounded;
         sine->ApplyParamState(params);
     });
 }
 
-void PropertiesPanel::applySineAmplitude(int pixels)
+void PropertiesPanel::ApplySineAmplitude(int pixels)
 {
     const qreal amplitude = qBound<qreal>(1.0, pixels, 200.0);
-    changeSelectedSines(tr("Change sine amplitude"), [amplitude](LineItemAbstract* sine) {
+    ChangeSelectedSines(tr("Change sine amplitude"), [amplitude](LineItemAbstract* sine) {
         LineItemAbstract::ParamState params = sine->paramState();
         params.second = amplitude;
         sine->ApplyParamState(params);
     });
 }
 
-void PropertiesPanel::applyTriangleBase(int base)
+void PropertiesPanel::ApplyTriangleBase(int base)
 {
     // 底边即 A 边；改底边后高度由两个底角派生（contentResized 内完成）。
-    changeSelectedShapes(tr("Change triangle base"), [base](ShapeItem* shape) {
+    ChangeSelectedShapes(tr("Change triangle base"), [base](ShapeItem* shape) {
         if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->IsCustomShape()) {
             return;
         }
-        const QSizeF current = shape->contentSize();
+        const QSizeF current = shape->ContentSize();
         shape->SetContentSize(QSizeF(qMax<qreal>(8.0, base), current.height()));
     });
 }
 
-void PropertiesPanel::applyTriangleAngle1(int degrees)
+void PropertiesPanel::ApplyTriangleAngle1(int degrees)
 {
-    changeSelectedShapes(tr("Change triangle base angle"), [degrees](ShapeItem* shape) {
+    ChangeSelectedShapes(tr("Change triangle base angle"), [degrees](ShapeItem* shape) {
         if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->IsCustomShape()) {
             return;
         }
@@ -458,9 +458,9 @@ void PropertiesPanel::applyTriangleAngle1(int degrees)
     });
 }
 
-void PropertiesPanel::applyTriangleAngle2(int degrees)
+void PropertiesPanel::ApplyTriangleAngle2(int degrees)
 {
-    changeSelectedShapes(tr("Change triangle base angle"), [degrees](ShapeItem* shape) {
+    ChangeSelectedShapes(tr("Change triangle base angle"), [degrees](ShapeItem* shape) {
         if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->IsCustomShape()) {
             return;
         }
@@ -468,15 +468,15 @@ void PropertiesPanel::applyTriangleAngle2(int degrees)
     });
 }
 
-void PropertiesPanel::applyArrowStart(int style)
+void PropertiesPanel::ApplyArrowStart(int style)
 {
     // 需求 9b/9d：直线与曲线共用一条箭头撤销记录，只改箭头样式。
-    const QList<LineItemAbstract*> curves = selectedStrokes();
+    const QList<LineItemAbstract*> curves = SelectedStrokes();
     QList<CanvasItem*> targets;
     QList<QMap<ItemProperty, QVariant>> before;
     QList<QMap<ItemProperty, QVariant>> after;
     for (LineItemAbstract* curve : curves) {
-        if (!curve || !curve->Properties().contains(ItemProperty::ARROW_START)) {
+        if (!curve || !curve->Properties().Contains(ItemProperty::ARROW_START)) {
             continue;
         }
         QMap<ItemProperty, QVariant> beforeValues;
@@ -488,24 +488,24 @@ void PropertiesPanel::applyArrowStart(int style)
         before.append(beforeValues);
         after.append(afterValues);
     }
-    if (targets.isEmpty() || !m_scene || !m_scene->undoStack()) {
+    if (targets.isEmpty() || !m_scene || !m_scene->UndoStack()) {
         return;
     }
     for (CanvasItem* target : targets) {
         target->SetPropertyValue(ItemProperty::ARROW_START, style);
     }
-    m_scene->undoStack()->push(new ItemPropertyCommand(m_scene, targets, before, after, tr("Change line start arrow")));
-    refresh();
+    m_scene->UndoStack()->push(new ItemPropertyCommand(m_scene, targets, before, after, tr("Change line start arrow")));
+    Refresh();
 }
 
-void PropertiesPanel::applyArrowEnd(int style)
+void PropertiesPanel::ApplyArrowEnd(int style)
 {
-    const QList<LineItemAbstract*> curves = selectedStrokes();
+    const QList<LineItemAbstract*> curves = SelectedStrokes();
     QList<CanvasItem*> targets;
     QList<QMap<ItemProperty, QVariant>> before;
     QList<QMap<ItemProperty, QVariant>> after;
     for (LineItemAbstract* curve : curves) {
-        if (!curve || !curve->Properties().contains(ItemProperty::ARROW_END)) {
+        if (!curve || !curve->Properties().Contains(ItemProperty::ARROW_END)) {
             continue;
         }
         QMap<ItemProperty, QVariant> beforeValues;
@@ -517,32 +517,32 @@ void PropertiesPanel::applyArrowEnd(int style)
         before.append(beforeValues);
         after.append(afterValues);
     }
-    if (targets.isEmpty() || !m_scene || !m_scene->undoStack()) {
+    if (targets.isEmpty() || !m_scene || !m_scene->UndoStack()) {
         return;
     }
     for (CanvasItem* target : targets) {
         target->SetPropertyValue(ItemProperty::ARROW_END, style);
     }
-    m_scene->undoStack()->push(new ItemPropertyCommand(m_scene, targets, before, after, tr("Change line end arrow")));
-    refresh();
+    m_scene->UndoStack()->push(new ItemPropertyCommand(m_scene, targets, before, after, tr("Change line end arrow")));
+    Refresh();
 }
 
-void PropertiesPanel::adjustLayer(int delta)
+void PropertiesPanel::AdjustLayer(int delta)
 {
     if (m_scene) {
-        const int count = m_scene->moveSelectedItemsToAdjacentLayer(delta);
-        statusMessage(count > 0 ? tr("Moved %1 item(s) to another layer.").arg(count)
+        const int count = m_scene->MoveSelectedItemsToAdjacentLayer(delta);
+        statusMessage(count > 0 ? tr("Moved %1 Item(s) to another layer.").arg(count)
                                 : tr("No layer to move to in that direction."));
-        refresh();
+        Refresh();
     }
 }
 
-void PropertiesPanel::adjustHeight(int delta)
+void PropertiesPanel::AdjustHeight(int delta)
 {
     if (m_scene) {
-        const int count = m_scene->adjustSelectedHeights(delta);
-        statusMessage(count > 0 ? tr("Adjusted the height of %1 item(s).").arg(count)
+        const int count = m_scene->AdjustSelectedHeights(delta);
+        statusMessage(count > 0 ? tr("Adjusted the height of %1 Item(s).").arg(count)
                                 : tr("The height did not change."));
-        refresh();
+        Refresh();
     }
 }

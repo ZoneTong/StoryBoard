@@ -22,7 +22,7 @@ QByteArray encodePng(const QPixmap& image)
 
 } // namespace
 
-QString ImageStore::idFor(const QPixmap& image)
+QString ImageStore::IdFor(const QPixmap& image)
 {
     const QByteArray bytes = encodePng(image);
     if (bytes.isEmpty()) {
@@ -33,7 +33,7 @@ QString ImageStore::idFor(const QPixmap& image)
     return QStringLiteral("img-") + digest;
 }
 
-QJsonObject ImageStore::entryFromPixmap(const QPixmap& image)
+QJsonObject ImageStore::EntryFromPixmap(const QPixmap& image)
 {
     QJsonObject entry;
     const QByteArray bytes = encodePng(image);
@@ -47,7 +47,7 @@ QJsonObject ImageStore::entryFromPixmap(const QPixmap& image)
     return entry;
 }
 
-QPixmap ImageStore::pixmapFromEntry(const QJsonObject& entry)
+QPixmap ImageStore::PixmapFromEntry(const QJsonObject& entry)
 {
     const QString data = entry.value(QStringLiteral("data")).toString();
     if (data.isEmpty()) {
@@ -61,19 +61,19 @@ QPixmap ImageStore::pixmapFromEntry(const QJsonObject& entry)
     return QPixmap::fromImage(image);
 }
 
-QString ImageStore::store(QJsonObject* table, const QPixmap& image)
+QString ImageStore::Store(QJsonObject* table, const QPixmap& image)
 {
-    const QString id = idFor(image);
+    const QString id = IdFor(image);
     if (id.isEmpty() || !table) {
         return id;
     }
     if (!table->contains(id)) {
-        table->insert(id, entryFromPixmap(image));
+        table->insert(id, EntryFromPixmap(image));
     }
     return id;
 }
 
-QJsonObject ImageStore::compact(const QJsonObject& table, const QSet<QString>& usedIds)
+QJsonObject ImageStore::Compact(const QJsonObject& table, const QSet<QString>& usedIds)
 {
     QJsonObject result;
     for (const QString& id : usedIds) {

@@ -34,7 +34,7 @@ qreal patternSpacing(const QRectF& rect)
 
 } // namespace
 
-QPainterPath ShapePainter::centerLines(FillStyle style, const QRectF& rect)
+QPainterPath ShapePainter::CenterLines(FillStyle style, const QRectF& rect)
 {
     QPainterPath path;
     if (rect.isEmpty()) {
@@ -143,14 +143,14 @@ QPainterPath ShapePainter::centerLines(FillStyle style, const QRectF& rect)
     return path;
 }
 
-bool ShapePainter::isPatternFill(FillStyle style)
+bool ShapePainter::IsPatternFill(FillStyle style)
 {
     return style == FillStyle::HACHURE || style == FillStyle::REVERSE_HACHURE || style == FillStyle::CROSS_HATCH ||
            style == FillStyle::GRID_HATCH || style == FillStyle::HONEYCOMB || style == FillStyle::HORIZONTAL_HATCH ||
            style == FillStyle::VERTICAL_HATCH || style == FillStyle::BRICK || style == FillStyle::DOTS;
 }
 
-void ShapePainter::paintPatternFill(QPainter* painter, const QPainterPath& clip, const QRectF& rect,
+void ShapePainter::PaintPatternFill(QPainter* painter, const QPainterPath& clip, const QRectF& rect,
                                     const QColor& color, FillStyle style)
 {
     QColor lineColor = color;
@@ -159,18 +159,18 @@ void ShapePainter::paintPatternFill(QPainter* painter, const QPainterPath& clip,
     }
 
     painter->save();
-    // 必须用 IntersectClip：ReplaceClip 会把 drawItems() 里为“被遮挡裁剪”设置的区域
+    // 必须用 IntersectClip：ReplaceClip 会把 DrawItems() 里为“被遮挡裁剪”设置的区域
     // 整个替换掉，导致纹理线条画到本该被上层纯色图元遮住的地方。
     painter->setClipPath(clip, Qt::IntersectClip);
     QPen pen(lineColor, PATTERN_PEN_WIDTH, Qt::SolidLine, Qt::FlatCap);
     painter->setPen(pen);
     // 点阵需要实心圆点，其余图案只描线。
     painter->setBrush(style == FillStyle::DOTS ? QBrush(lineColor) : QBrush(Qt::NoBrush));
-    painter->drawPath(centerLines(style, rect));
+    painter->drawPath(CenterLines(style, rect));
     painter->restore();
 }
 
-void ShapePainter::paintShape(QPainter* painter, const QPainterPath& path, const QRectF& rect, ShapeType type,
+void ShapePainter::PaintShape(QPainter* painter, const QPainterPath& path, const QRectF& rect, ShapeType type,
                               const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth,
                               Qt::PenStyle strokeStyle, FillStyle fillStyle, qreal opacity)
 {
@@ -178,8 +178,8 @@ void ShapePainter::paintShape(QPainter* painter, const QPainterPath& path, const
     painter->setRenderHint(QPainter::Antialiasing, true);
     painter->setOpacity(painter->opacity() * opacity);
 
-    if (isPatternFill(fillStyle)) {
-        paintPatternFill(painter, path, rect, fillColor, fillStyle);
+    if (IsPatternFill(fillStyle)) {
+        PaintPatternFill(painter, path, rect, fillColor, fillStyle);
     }
 
     QPen pen(strokeColor, strokeWidth, strokeStyle, Qt::RoundCap, Qt::RoundJoin);
@@ -193,7 +193,7 @@ void ShapePainter::paintShape(QPainter* painter, const QPainterPath& path, const
     painter->restore();
 }
 
-QIcon ShapePainter::makeIcon(ShapeType type, const QColor& color, int logicalSize)
+QIcon ShapePainter::MakeIcon(ShapeType type, const QColor& color, int logicalSize)
 {
     constexpr qreal scale = 2.0;
     QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
@@ -235,7 +235,7 @@ QIcon ShapePainter::makeIcon(ShapeType type, const QColor& color, int logicalSiz
     return QIcon(pixmap);
 }
 
-QIcon ShapePainter::makeCurveIcon(LineGlyph glyph, const QColor& color, int logicalSize)
+QIcon ShapePainter::MakeCurveIcon(LineGlyph glyph, const QColor& color, int logicalSize)
 {
     constexpr qreal scale = 2.0;
     QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
@@ -249,7 +249,7 @@ QIcon ShapePainter::makeCurveIcon(LineGlyph glyph, const QColor& color, int logi
     // 24px 栅格里的一笔开放描线：与插入后的默认形态同一套角度 / 周期。
     QPainterPath path;
     if (glyph == LineGlyph::ARC) {
-        path = EllipseShape(QRectF(1.5, 1.5, 21.0, 21.0)).arc(30.0, 120.0);
+        path = EllipseShape(QRectF(1.5, 1.5, 21.0, 21.0)).Arc(30.0, 120.0);
     } else if (glyph == LineGlyph::SINE) {
         constexpr int steps = 64;
         for (int i = 0; i <= steps; ++i) {

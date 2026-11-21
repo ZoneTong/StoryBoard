@@ -21,7 +21,7 @@ inline constexpr LineArtPreset LINE_ART_PRESETS[] = {
     {"Bold blocks", 6, 80, 56, 32, 1.0},
 };
 
-inline int lineArtPresetCount()
+inline int LineArtPresetCount()
 {
     return static_cast<int>(sizeof(LINE_ART_PRESETS) / sizeof(LINE_ART_PRESETS[0]));
 }
@@ -29,7 +29,7 @@ inline int lineArtPresetCount()
 inline LineArtPreset lineArtPreset(int index)
 {
     static const LineArtPreset fallback{};
-    if (index < 0 || index >= lineArtPresetCount()) {
+    if (index < 0 || index >= LineArtPresetCount()) {
         return fallback;
     }
     return LINE_ART_PRESETS[index];

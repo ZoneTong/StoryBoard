@@ -14,14 +14,14 @@ class PropertiesPanelArrangeCard : public QWidget {
   public:
     explicit PropertiesPanelArrangeCard(QWidget* parent = nullptr);
 
-    void refresh(bool enabled);
+    void Refresh(bool enabled);
 
   signals:
     void layerAdjusted(int delta);
     void heightAdjusted(int delta);
 
   private:
-    QToolButton* makeButton(IconId id, const QString& toolTip, const QString& objectName, int delta, bool height);
+    QToolButton* MakeButton(IconId id, const QString& toolTip, const QString& objectName, int delta, bool height);
 
     QToolButton* m_layerUpButton = nullptr;
     QToolButton* m_layerDownButton = nullptr;

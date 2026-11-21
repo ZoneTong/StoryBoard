@@ -26,7 +26,7 @@ StraightLineItem::StraightLineItem(QGraphicsItem* parent) : LineItemAbstract(par
 ItemPropertySet StraightLineItem::Properties() const
 {
     // 箭头行对全部描线子型开放（含花括号），与现状一致。
-    return LineItemAbstract::Properties().united(ItemPropertySet{ItemProperty::ARROW_START, ItemProperty::ARROW_END});
+    return LineItemAbstract::Properties().United(ItemPropertySet{ItemProperty::ARROW_START, ItemProperty::ARROW_END});
 }
 
 QVariant StraightLineItem::PropertyValue(ItemProperty property) const
@@ -58,8 +58,8 @@ void StraightLineItem::SetPropertyValue(ItemProperty property, const QVariant& v
 
 QString StraightLineItem::DisplayName() const
 {
-    return arrowStyleIsHead(StartArrow()) || arrowStyleIsHead(EndArrow()) ? uiText(QStringLiteral("Line Arrow"))
-                                                                          : uiText(QStringLiteral("Straight Line"));
+    return ArrowStyleIsHead(StartArrow()) || ArrowStyleIsHead(EndArrow()) ? UiText(QStringLiteral("Line Arrow"))
+                                                                          : UiText(QStringLiteral("Straight Line"));
 }
 
 QRectF StraightLineItem::FrameRect() const
@@ -67,7 +67,7 @@ QRectF StraightLineItem::FrameRect() const
     return paddedToMinimum(CanvasItem::FrameRect());
 }
 
-void StraightLineItem::setEndpoints(const QPointF& startScene, const QPointF& endScene, const QColor& color,
+void StraightLineItem::SetEndpoints(const QPointF& startScene, const QPointF& endScene, const QColor& color,
                                     qreal width)
 {
     SetStrokePoints(QVector<QPointF>{startScene, endScene}, color, width, 0.0, true);

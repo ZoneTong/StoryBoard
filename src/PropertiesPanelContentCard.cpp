@@ -24,7 +24,7 @@ QToolButton* makeRowIcon(IconId id, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
-    button->setIcon(makeIcon(id, QColor(139, 144, 156), SMALL_ICON_SIZE));
+    button->setIcon(MakeIcon(id, QColor(139, 144, 156), SMALL_ICON_SIZE));
     button->setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE));
     button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
     button->setAutoRaise(true);
@@ -115,19 +115,19 @@ PropertiesPanelContentCard::PropertiesPanelContentCard(QWidget* parent) : QWidge
     italicFont.setItalic(true);
     m_italicButton->setFont(italicFont);
     fontLayout->addWidget(m_italicButton);
-    connect(m_fontCombo, &QFontComboBox::currentFontChanged, this, [this]() { emitFontChanged(); });
-    connect(m_fontSizeSpin, &QSpinBox::valueChanged, this, [this]() { emitFontChanged(); });
-    connect(m_boldButton, &QToolButton::toggled, this, [this]() { emitFontChanged(); });
-    connect(m_italicButton, &QToolButton::toggled, this, [this]() { emitFontChanged(); });
+    connect(m_fontCombo, &QFontComboBox::currentFontChanged, this, [this]() { EmitFontChanged(); });
+    connect(m_fontSizeSpin, &QSpinBox::valueChanged, this, [this]() { EmitFontChanged(); });
+    connect(m_boldButton, &QToolButton::toggled, this, [this]() { EmitFontChanged(); });
+    connect(m_italicButton, &QToolButton::toggled, this, [this]() { EmitFontChanged(); });
     outer->addWidget(m_textFontRow);
 
-    m_textColorRow = makeTextColorRow();
+    m_textColorRow = MakeTextColorRow();
     outer->addWidget(m_textColorRow);
 
     hide();
 }
 
-QWidget* PropertiesPanelContentCard::makeTextColorRow()
+QWidget* PropertiesPanelContentCard::MakeTextColorRow()
 {
     auto* row = new QWidget(this);
     row->setObjectName(QStringLiteral("ItemTextColorRow"));
@@ -158,7 +158,7 @@ QWidget* PropertiesPanelContentCard::makeTextColorRow()
     m_textColorButton->setObjectName(QStringLiteral("ItemTextColorButton"));
     m_textColorButton->setFixedSize(SWATCH_SIZE, SWATCH_SIZE);
     m_textColorButton->setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE));
-    m_textColorButton->setIcon(ItemStyleVisuals::fillColorIcon(m_textColorFallback, SMALL_ICON_SIZE));
+    m_textColorButton->setIcon(ItemStyleVisuals::FillColorIcon(m_textColorFallback, SMALL_ICON_SIZE));
     m_textColorButton->setToolTip(PropertiesPanel::tr("Text color"));
     connect(m_textColorButton, &QToolButton::clicked, this, [this]() {
         const QColor chosen = QColorDialog::getColor(m_textColorFallback, this, PropertiesPanel::tr("Text color"),
@@ -172,7 +172,7 @@ QWidget* PropertiesPanelContentCard::makeTextColorRow()
     return row;
 }
 
-void PropertiesPanelContentCard::refresh(const QList<CanvasItem*>& texts)
+void PropertiesPanelContentCard::Refresh(const QList<CanvasItem*>& texts)
 {
     m_refreshing = true;
 
@@ -196,7 +196,7 @@ void PropertiesPanelContentCard::refresh(const QList<CanvasItem*>& texts)
             swatch->setChecked(color.rgb() == m_textColorFallback.rgb());
         }
         if (m_textColorButton) {
-            m_textColorButton->setIcon(ItemStyleVisuals::fillColorIcon(m_textColorFallback, SMALL_ICON_SIZE));
+            m_textColorButton->setIcon(ItemStyleVisuals::FillColorIcon(m_textColorFallback, SMALL_ICON_SIZE));
             m_textColorButton->setToolTip(m_textColorFallback.name(QColor::HexRgb).toUpper());
         }
     }
@@ -205,7 +205,7 @@ void PropertiesPanelContentCard::refresh(const QList<CanvasItem*>& texts)
     m_refreshing = false;
 }
 
-QFont PropertiesPanelContentCard::composedFont() const
+QFont PropertiesPanelContentCard::ComposedFont() const
 {
     QFont font = m_textFont;
     if (m_fontCombo) {
@@ -223,9 +223,9 @@ QFont PropertiesPanelContentCard::composedFont() const
     return font;
 }
 
-void PropertiesPanelContentCard::emitFontChanged()
+void PropertiesPanelContentCard::EmitFontChanged()
 {
     if (!m_refreshing) {
-        emit textFontChosen(composedFont());
+        emit textFontChosen(ComposedFont());
     }
 }

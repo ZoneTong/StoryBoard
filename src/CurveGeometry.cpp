@@ -23,7 +23,7 @@ QPointF catmullControl(const QPointF& previous, const QPointF& current, const QP
 
 } // namespace
 
-QVector<CurveSegment> fitSegments(QVector<QPointF> points, qreal tolerance, bool linear)
+QVector<CurveSegment> FitSegments(QVector<QPointF> points, qreal tolerance, bool linear)
 {
     QVector<CurveSegment> segments;
     if (points.size() < 2) {
@@ -33,11 +33,11 @@ QVector<CurveSegment> fitSegments(QVector<QPointF> points, qreal tolerance, bool
     qreal chordLength = 0.0;
     if (tolerance > 0.0 && !linear) {
         // 明显是手抖画出来的直线时直接收成首尾两点，避免留下小波浪。
-        if (StrokeSmoothing::looksLikeStraightLine(points, qMax<qreal>(1.0, tolerance), chordLength)) {
+        if (StrokeSmoothing::LooksLikeStraightLine(points, qMax<qreal>(1.0, tolerance), chordLength)) {
             points = {points.constFirst(), points.constLast()};
             linear = true;
         } else {
-            points = StrokeSmoothing::simplifyRdp(points, qMax<qreal>(1.0, tolerance));
+            points = StrokeSmoothing::SimplifyRdp(points, qMax<qreal>(1.0, tolerance));
         }
     }
 
@@ -59,13 +59,13 @@ QVector<CurveSegment> fitSegments(QVector<QPointF> points, qreal tolerance, bool
         const QPointF& p1 = points.at(i + 1);
         const QPointF& previous = i > 0 ? points.at(i - 1) : p0;
         const QPointF& next = i + 2 < points.size() ? points.at(i + 2) : p1;
-        segments.append(CurveSegment{p0, catmullControl(previous, p0, p1, 1.0), catmullControl(p0, p1, next, -1.0),
-                                     p1});
+        segments.append(
+            CurveSegment{p0, catmullControl(previous, p0, p1, 1.0), catmullControl(p0, p1, next, -1.0), p1});
     }
     return segments;
 }
 
-QPainterPath buildPath(const QVector<CurveSegment>& segments)
+QPainterPath BuildPath(const QVector<CurveSegment>& segments)
 {
     QPainterPath path;
     if (segments.isEmpty()) {
@@ -78,14 +78,14 @@ QPainterPath buildPath(const QVector<CurveSegment>& segments)
     return path;
 }
 
-QPainterPath buildDotPath(const QPointF& center, qreal radius)
+QPainterPath BuildDotPath(const QPointF& center, qreal radius)
 {
     QPainterPath path;
     path.addEllipse(center, qMax<qreal>(0.5, radius), qMax<qreal>(0.5, radius));
     return path;
 }
 
-QVector<QPointF> knots(const QVector<CurveSegment>& segments)
+QVector<QPointF> Knots(const QVector<CurveSegment>& segments)
 {
     QVector<QPointF> result;
     if (segments.isEmpty()) {
@@ -99,7 +99,7 @@ QVector<QPointF> knots(const QVector<CurveSegment>& segments)
     return result;
 }
 
-QVector<QPointF> flatten(const QPainterPath& path)
+QVector<QPointF> Flatten(const QPainterPath& path)
 {
     QVector<QPointF> result;
     const QList<QPolygonF> polygons = path.toSubpathPolygons();
@@ -117,6 +117,6 @@ QVector<QPointF> flatten(const QPainterPath& path)
 
 bool CurveSegment::operator==(const CurveSegment& other) const
 {
-    return StrokeSmoothing::samePoint(p0, other.p0) && StrokeSmoothing::samePoint(c1, other.c1) &&
-           StrokeSmoothing::samePoint(c2, other.c2) && StrokeSmoothing::samePoint(p1, other.p1);
+    return StrokeSmoothing::SamePoint(p0, other.p0) && StrokeSmoothing::SamePoint(c1, other.c1) &&
+           StrokeSmoothing::SamePoint(c2, other.c2) && StrokeSmoothing::SamePoint(p1, other.p1);
 }

@@ -231,15 +231,15 @@ QPainterPath fillPathOf(CanvasItem* item)
 
 namespace LineSplitOps {
 
-bool supports(CanvasScene* scene)
+bool Supports(CanvasScene* scene)
 {
     if (!scene) {
         return false;
     }
     int fills = 0;
     int knives = 0;
-    for (CanvasItem* item : scene->selectionOrder()) {
-        if (!item || !scene->isItemEditable(item)) {
+    for (CanvasItem* item : scene->SelectionOrder()) {
+        if (!item || !scene->IsItemEditable(item)) {
             continue;
         }
         if (isFillTarget(item)) {
@@ -251,7 +251,7 @@ bool supports(CanvasScene* scene)
     return fills >= 1 && knives == 1;
 }
 
-bool apply(CanvasScene* scene, const QString& commandText)
+bool Apply(CanvasScene* scene, const QString& commandText)
 {
     if (!scene) {
         return false;
@@ -265,8 +265,8 @@ bool apply(CanvasScene* scene, const QString& commandText)
         QPainterPath fill;
     };
     QList<Target> targets;
-    for (CanvasItem* item : scene->selectionOrder()) {
-        if (!item || !scene->isItemEditable(item)) {
+    for (CanvasItem* item : scene->SelectionOrder()) {
+        if (!item || !scene->IsItemEditable(item)) {
             continue;
         }
         if (isFillTarget(item)) {
@@ -303,13 +303,13 @@ bool apply(CanvasScene* scene, const QString& commandText)
             return false;
         }
     } else {
-        regions = canvasHalfRegions(scene->canvasRect(), knife);
+        regions = canvasHalfRegions(scene->CanvasRect(), knife);
         if (regions.isEmpty()) {
             return false;
         }
     }
 
-    QUndoStack* undo = scene->undoStack();
+    QUndoStack* undo = scene->UndoStack();
     if (!undo) {
         return false;
     }
@@ -328,16 +328,16 @@ bool apply(CanvasScene* scene, const QString& commandText)
         QList<QPainterPath> pieces;
         bool straddles = true;
         if (trajectoryKnife) {
-            pieces = PathRegions::splitDisjoint(target.fill.subtracted(knifeBand));
+            pieces = PathRegions::SplitDisjoint(target.fill.subtracted(knifeBand));
             // 需求 25：先丢弃退化碎屑，剩下的块数才是真实的切割块数。
-            pieces.removeIf([](const QPainterPath& piece) { return PathRegions::area(piece) < MIN_FRAGMENT_AREA; });
+            pieces.removeIf([](const QPainterPath& piece) { return PathRegions::Area(piece) < MIN_FRAGMENT_AREA; });
             if (pieces.size() < 2) {
                 straddles = false;
             }
         } else {
             for (const QPainterPath& region : regions) {
-                QList<QPainterPath> parts = PathRegions::splitDisjoint(region.intersected(target.fill));
-                parts.removeIf([](const QPainterPath& piece) { return PathRegions::area(piece) < MIN_FRAGMENT_AREA; });
+                QList<QPainterPath> parts = PathRegions::SplitDisjoint(region.intersected(target.fill));
+                parts.removeIf([](const QPainterPath& piece) { return PathRegions::Area(piece) < MIN_FRAGMENT_AREA; });
                 if (parts.isEmpty()) {
                     straddles = false;
                     break;
@@ -383,9 +383,9 @@ bool apply(CanvasScene* scene, const QString& commandText)
         layer.role = PolygonItem::LayerRole::FILLED_AREA;
         auto* item = new PolygonItem(QList<PolygonItem::Layer>{layer}, compositeSource->fillStyle(),
                                      compositeSource->StrokeStyle());
-        item->SetName(scene->uniqueItemName(item->TypeDisplayName()));
+        item->SetName(scene->UniqueItemName(item->TypeDisplayName()));
         item->SetLayerId(source->LayerId());
-        item->SetZOrder(scene->nextHeight(source->LayerId()));
+        item->SetZOrder(scene->NextHeight(source->LayerId()));
         undo->push(new AddItemCommand(scene, item, commandText));
         created.append(item);
     }

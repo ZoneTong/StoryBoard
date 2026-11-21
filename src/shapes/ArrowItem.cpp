@@ -4,15 +4,15 @@
 
 ArrowItem::ArrowItem()
 {
-    SetContentSize(defaultContentSize());
+    SetContentSize(DefaultContentSize());
 }
 
-QSizeF ArrowItem::defaultContentSize() const
+QSizeF ArrowItem::DefaultContentSize() const
 {
     return QSizeF(128.0, 46.0);
 }
 
 QPainterPath ArrowItem::ShapePath(const QRectF& rect) const
 {
-    return ShapePathBuilder::arrowPath(rect);
+    return ShapePathBuilder::ArrowPath(rect);
 }

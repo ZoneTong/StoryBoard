@@ -10,13 +10,13 @@ class ViewStatusController {
   public:
     explicit ViewStatusController(MainWindow* window);
 
-    void setToolMode(ToolMode mode);
-    void updateModeUi();
-    void updateActions();
-    void updateStatusBar();
-    void updateBackgroundModeActions();
-    void fitAll();
-    void updatePropertiesPanelDockVisibility();
+    void SetToolMode(ToolMode mode);
+    void UpdateModeUi();
+    void UpdateActions();
+    void UpdateStatusBar();
+    void UpdateBackgroundModeActions();
+    void FitAll();
+    void UpdatePropertiesPanelDockVisibility();
 
   private:
     MainWindow* m_window = nullptr;

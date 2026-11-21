@@ -21,7 +21,7 @@ SettingsDialogBrushPage::SettingsDialogBrushPage(const AppSettings& settings, QW
 
     m_brushColorButton = new QPushButton(m_group);
     m_brushColorButton->setIconSize(QSize(18, 18));
-    refreshColorButton(m_brushColorButton, m_brushColor);
+    RefreshColorButton(m_brushColorButton, m_brushColor);
     connect(m_brushColorButton, &QPushButton::clicked, this, [this]() {
         // 使用 Qt 自绘颜色窗，避免 Windows 原生颜色对话框在部分会话/显卡驱动下
         // 进入嵌套模态循环后触发 0xc0000005（打开设置窗后点颜色时崩溃）。
@@ -32,7 +32,7 @@ SettingsDialogBrushPage::SettingsDialogBrushPage(const AppSettings& settings, QW
             return;
         }
         m_brushColor = color;
-        refreshColorButton(m_brushColorButton, m_brushColor);
+        RefreshColorButton(m_brushColorButton, m_brushColor);
         emit brushColorChosen(color);
     });
     form->addRow(SettingsDialog::tr("Default color"), m_brushColorButton);
@@ -57,32 +57,32 @@ SettingsDialogBrushPage::SettingsDialogBrushPage(const AppSettings& settings, QW
     form->addRow(SettingsDialog::tr("Brush fit tolerance"), m_smoothingSpin);
 }
 
-void SettingsDialogBrushPage::writeTo(AppSettings& settings) const
+void SettingsDialogBrushPage::WriteTo(AppSettings& settings) const
 {
     settings.brushWidth = m_brushWidthSpin->value();
     settings.strokeSmoothing = m_smoothingSpin->value();
 }
 
-void SettingsDialogBrushPage::reset(const AppSettings& defaults)
+void SettingsDialogBrushPage::Reset(const AppSettings& defaults)
 {
     m_brushWidthSpin->setValue(defaults.brushWidth);
     m_smoothingSpin->setValue(defaults.strokeSmoothing);
     m_brushColor = defaults.brushColor;
-    refreshColorButton(m_brushColorButton, m_brushColor);
+    RefreshColorButton(m_brushColorButton, m_brushColor);
 }
 
-void SettingsDialogBrushPage::setBrushColor(const QColor& color)
+void SettingsDialogBrushPage::SetBrushColor(const QColor& color)
 {
     if (!color.isValid()) {
         return;
     }
     m_brushColor = color;
-    refreshColorButton(m_brushColorButton, m_brushColor);
+    RefreshColorButton(m_brushColorButton, m_brushColor);
 }
 
-void SettingsDialogBrushPage::refreshColorButton(QPushButton* button, const QColor& color)
+void SettingsDialogBrushPage::RefreshColorButton(QPushButton* button, const QColor& color)
 {
-    button->setIcon(makeColorIcon(color, 18));
+    button->setIcon(MakeColorIcon(color, 18));
     const QString text =
         color.alpha() < 255 ? color.name(QColor::HexArgb).toUpper() : color.name(QColor::HexRgb).toUpper();
     button->setText(text);

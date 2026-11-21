@@ -87,8 +87,8 @@ bool hasFillSpace(CanvasItem* item)
 // 图层在下 → 同层 height 小在下 → zValue 小在下。
 bool stackLess(CanvasScene* scene, CanvasItem* left, CanvasItem* right)
 {
-    const int leftLayer = scene->layerIndex(left->LayerId());
-    const int rightLayer = scene->layerIndex(right->LayerId());
+    const int leftLayer = scene->LayerIndex(left->LayerId());
+    const int rightLayer = scene->LayerIndex(right->LayerId());
     if (leftLayer != rightLayer) {
         return leftLayer < rightLayer;
     }
@@ -120,7 +120,7 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
     QList<CanvasItem*> editable;
     QList<CanvasItem*> vectorMembers;
     for (CanvasItem* member : members) {
-        if (!member || !scene->isItemEditable(member)) {
+        if (!member || !scene->IsItemEditable(member)) {
             continue;
         }
         editable.append(member);
@@ -242,7 +242,7 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
         participant.fill = QColor(30, 41, 59, 36);
         participant.stroke = QColor(30, 41, 59);
     }
-    participant.layerIndex = scene->layerIndex(participant.item->LayerId());
+    participant.layerIndex = scene->LayerIndex(participant.item->LayerId());
     participant.height = participant.item->ZOrder();
     participant.selectionIndex = selectionIndex;
     out->append(participant);
@@ -259,24 +259,24 @@ QList<Participant> collect(CanvasScene* scene)
         return participants;
     }
     // 选择顺序：先选中的在前，框选时最底层在前（剪除用它挑底图）。
-    QList<CanvasItem*> ordered = scene->selectionOrder();
+    QList<CanvasItem*> ordered = scene->SelectionOrder();
     QHash<CanvasItem*, int> selectionIndex;
     for (int i = 0; i < ordered.size(); ++i) {
         selectionIndex.insert(ordered.at(i), i);
     }
     QSet<int> handledGroups;
     for (CanvasItem* item : ordered) {
-        if (!item || !scene->isItemEditable(item)) {
+        if (!item || !scene->IsItemEditable(item)) {
             continue;
         }
         const int order = selectionIndex.value(item, INT_MAX);
         if (item->GroupId() > 0) {
-            const int rootGroup = scene->outermostGroup(item->GroupId());
+            const int rootGroup = scene->OutermostGroup(item->GroupId());
             if (handledGroups.contains(rootGroup)) {
                 continue;
             }
             handledGroups.insert(rootGroup);
-            const QList<CanvasItem*> members = scene->itemsInGroupTree(rootGroup);
+            const QList<CanvasItem*> members = scene->ItemsInGroupTree(rootGroup);
             // 组内含线条类图元时整组跳过：线条不参与合并，也不能随组一起被替换掉。
             bool hasLine = false;
             for (CanvasItem* member : members) {
@@ -441,17 +441,17 @@ QList<PolygonItem::Layer> buildLayers(const QPainterPath& result, const QList<Pa
 
 namespace BoolOps {
 
-bool supports(CanvasScene* scene)
+bool Supports(CanvasScene* scene)
 {
     return collect(scene).size() >= 2;
 }
 
-bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
+bool Apply(CanvasScene* scene, Operation operation, const QString& commandText)
 {
     if (operation == Operation::LINE_SPLIT) {
         // 需求 12 方案 2：线条分割有自己的参与者规则（≥1 填充图元 + 恰 1 条切刀），
         // 交给独立实现，避免共用 collect 的「线条不参与」过滤。
-        return LineSplitOps::apply(scene, commandText);
+        return LineSplitOps::Apply(scene, commandText);
     }
     QList<Participant> participants = collect(scene);
     if (participants.size() < 2) {
@@ -622,7 +622,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         }
         // 剪除可能把底图切成互不相连的多块：每块单独成一个图元，
         // 这样每一块都能自己选中、拖动，而不是藏在一个图元里只能整体移动。
-        const QList<QPainterPath> pieces = PathRegions::splitDisjoint(result);
+        const QList<QPainterPath> pieces = PathRegions::SplitDisjoint(result);
         for (const QPainterPath& piece : pieces) {
             const QList<PolygonItem::Layer> layers = buildLayers(piece, participants, top, false);
             if (!layers.isEmpty()) {
@@ -650,7 +650,7 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
         }
     }
 
-    QUndoStack* undo = scene->undoStack();
+    QUndoStack* undo = scene->UndoStack();
     if (!undo) {
         return false;
     }
@@ -661,9 +661,9 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
     undo->push(new RemoveItemsCommand(scene, originals, commandText));
     for (const QList<PolygonItem::Layer>& block : results) {
         auto* composite = new PolygonItem(block, top.fillStyle, top.strokeStyle);
-        composite->SetName(scene->uniqueItemName(composite->TypeDisplayName()));
+        composite->SetName(scene->UniqueItemName(composite->TypeDisplayName()));
         composite->SetLayerId(top.item->LayerId());
-        composite->SetZOrder(scene->nextHeight(top.item->LayerId()));
+        composite->SetZOrder(scene->NextHeight(top.item->LayerId()));
         undo->push(new AddItemCommand(scene, composite, commandText));
         created.append(composite);
     }

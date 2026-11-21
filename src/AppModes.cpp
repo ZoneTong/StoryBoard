@@ -39,12 +39,12 @@
 
 namespace {
 
-int runSelfTest(QApplication& app, const CommandLineOptions& options)
+int RunSelfTest(QApplication& app, const CommandLineOptions& options)
 {
     // 自检跑在离屏平台上，任何模态弹窗都会永久阻塞进程；打上标记后
     // MainWindow 的报错路径改为只写状态栏 / stderr。
     app.setProperty("storyboardSelfTest", true);
-    return runSelfTest(options.selfTestPath);
+    return RunSelfTest(options.selfTestPath);
 }
 
 int runRenderDemo(const CommandLineOptions& options)
@@ -52,7 +52,7 @@ int runRenderDemo(const CommandLineOptions& options)
     if (options.renderDemoPath.isEmpty()) {
         return 2;
     }
-    return renderDemoCanvas(options.renderDemoPath) ? 0 : 1;
+    return RenderDemoCanvas(options.renderDemoPath) ? 0 : 1;
 }
 
 int runDemoCanvas(const CommandLineOptions& options)
@@ -60,7 +60,7 @@ int runDemoCanvas(const CommandLineOptions& options)
     if (options.demoCanvasPath.isEmpty()) {
         return 2;
     }
-    return writeDemoCanvas(options.demoCanvasPath) ? 0 : 1;
+    return WriteDemoCanvas(options.demoCanvasPath) ? 0 : 1;
 }
 
 int runUiScreenshot(const CommandLineOptions& options)
@@ -73,9 +73,9 @@ int runUiScreenshot(const CommandLineOptions& options)
     QApplication::processEvents();
 
     CanvasScene demoScene;
-    populateDemoScene(demoScene);
-    window.scene()->FromJson(demoScene.ToJson());
-    window.view()->fitAll();
+    PopulateDemoScene(demoScene);
+    window.Scene()->FromJson(demoScene.ToJson());
+    window.View()->FitAll();
     QApplication::processEvents();
 
     QTimer::singleShot(350, &window, [&window, outputPath]() {
@@ -89,7 +89,7 @@ int runSettingsScreenshot(const CommandLineOptions& options)
 {
     const QString& outputPath = options.settingsScreenshotPath;
     AppSettings settings;
-    settings.load();
+    settings.Load();
     SettingsDialog dialog(settings);
     dialog.show();
     QApplication::processEvents();
@@ -116,7 +116,7 @@ int runOpenShapesProbe(const CommandLineOptions& options)
     if (!output.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
         return 2;
     }
-    const AppSettings::ShapesFolderOpenResult result = AppSettings::openShapesFolder();
+    const AppSettings::ShapesFolderOpenResult result = AppSettings::OpenShapesFolder();
     QTextStream stream(&output);
     stream << "opened=" << (result.opened ? 1 : 0) << "\n";
     stream << "error=" << static_cast<int>(result.error) << "\n";
@@ -144,7 +144,7 @@ int runSettingsApplyProbe()
     if (!settingsAction) {
         return 3;
     }
-    const UiLanguage originalLanguage = uiLanguageSetting();
+    const UiLanguage originalLanguage = UiLanguageSetting();
     QTimer::singleShot(200, &window, [&window, originalLanguage]() {
         if (auto* dialog = window.findChild<SettingsDialog*>()) {
             auto* languageCombo = dialog->findChild<QComboBox*>();
@@ -157,18 +157,18 @@ int runSettingsApplyProbe()
         }
     });
     settingsAction->trigger();
-    setUiLanguageSetting(originalLanguage);
+    SetUiLanguageSetting(originalLanguage);
     return 0;
 }
 
 int runSetLanguage(const CommandLineOptions& options)
 {
     if (options.setLanguageValue == QLatin1String("en")) {
-        setUiLanguageSetting(UiLanguage::ENGLISH);
+        SetUiLanguageSetting(UiLanguage::ENGLISH);
     } else if (options.setLanguageValue == QLatin1String("zh")) {
-        setUiLanguageSetting(UiLanguage::CHINESE);
+        SetUiLanguageSetting(UiLanguage::CHINESE);
     } else {
-        setUiLanguageSetting(UiLanguage::SYSTEM);
+        SetUiLanguageSetting(UiLanguage::SYSTEM);
     }
     return 0;
 }
@@ -177,14 +177,14 @@ int runSettingsProbe(const CommandLineOptions& options)
 {
     const QString& outputPath = options.settingsProbePath;
     AppSettings probe;
-    probe.load();
-    const QString file = AppSettings::settingsFilePath();
+    probe.Load();
+    const QString file = AppSettings::SettingsFilePath();
     const QString text = QStringLiteral("file=%1\nexists=%2\nsetting=%3\neffective=%4\nstored=%5\n")
                              .arg(file)
                              .arg(QFileInfo::exists(file))
-                             .arg(static_cast<int>(uiLanguageSetting()))
-                             .arg(static_cast<int>(uiEffectiveLanguage()))
-                             .arg(AppSettings::languageSetting());
+                             .arg(static_cast<int>(UiLanguageSetting()))
+                             .arg(static_cast<int>(UiEffectiveLanguage()))
+                             .arg(AppSettings::LanguageSetting());
     QFile output(outputPath);
     if (!output.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
         return 1;
@@ -215,23 +215,23 @@ int runItemPropertiesScreenshot(const CommandLineOptions& options)
     const QString& outputPath = options.itemPropertiesScreenshotPath;
 
     CanvasScene demoScene;
-    populateDemoScene(demoScene);
-    demoScene.assignAutoItemNames();
-    demoScene.setMode(ToolMode::EDIT);
+    PopulateDemoScene(demoScene);
+    demoScene.AssignAutoItemNames();
+    demoScene.SetMode(ToolMode::EDIT);
     CanvasItem* target = nullptr;
-    for (CanvasItem* item : demoScene.canvasItems()) {
+    for (CanvasItem* item : demoScene.CanvasItems()) {
         if (dynamic_cast<ShapeItem*>(item)) {
             target = item;
             break;
         }
     }
-    if (!target && demoScene.canvasItemCount() > 0) {
-        target = demoScene.canvasItems().constFirst();
+    if (!target && demoScene.CanvasItemCount() > 0) {
+        target = demoScene.CanvasItems().constFirst();
     }
     if (!target) {
         return 3;
     }
-    demoScene.setActiveLayer(target->LayerId());
+    demoScene.SetActiveLayer(target->LayerId());
     target->setSelected(true);
 
     ItemPropertiesDialog dialog(&demoScene, target);
@@ -263,7 +263,7 @@ int runExportScreenshot(const CommandLineOptions& options)
     const QString& outputPath = options.exportScreenshotPath;
 
     CanvasScene demoScene;
-    populateDemoScene(demoScene);
+    PopulateDemoScene(demoScene);
     ExportDialog dialog(&demoScene, QStandardPaths::writableLocation(QStandardPaths::PicturesLocation));
     dialog.show();
     QApplication::processEvents();
@@ -333,7 +333,7 @@ int runLineArt(const CommandLineOptions& options)
         return 1;
     }
 
-    const LineArtConverter::Result traced = LineArtConverter::extract(image, lineArtOptions);
+    const LineArtConverter::Result traced = LineArtConverter::Extract(image, lineArtOptions);
     if (!traced.ok) {
         std::fprintf(stderr, "lineart: %s\n", qPrintable(traced.error));
         return 1;
@@ -350,7 +350,7 @@ int runLineArt(const CommandLineOptions& options)
     const QSizeF canvasSize(traced.imageSize.width() * scale + 40.0, traced.imageSize.height() * scale + 40.0);
 
     CanvasScene scene;
-    scene.applyCanvasSize(canvasSize);
+    scene.ApplyCanvasSize(canvasSize);
 
     QList<CanvasItem*> items;
     items.reserve(traced.outlines.size());
@@ -373,8 +373,8 @@ int runLineArt(const CommandLineOptions& options)
         std::fprintf(stderr, "lineart: no color blocks were found in the image.\n");
         return 1;
     }
-    scene.addItemsWithUndo(items, QStringLiteral("Import outline image"));
-    scene.assignAutoItemNames();
+    scene.AddItemsWithUndo(items, QStringLiteral("Import outline image"));
+    scene.AssignAutoItemNames();
 
     QString outputPath = options.lineArtOutputPath;
     if (outputPath.isEmpty()) {
@@ -407,7 +407,7 @@ int runNormalLaunch(QApplication& app, const CommandLineOptions& options)
 
     if (!options.canvasPath.isEmpty()) {
         const QString canvasPath = options.canvasPath;
-        QTimer::singleShot(0, &window, [&window, canvasPath]() { window.openCanvasFile(canvasPath); });
+        QTimer::singleShot(0, &window, [&window, canvasPath]() { window.OpenCanvasFile(canvasPath); });
     }
 
     return app.exec();
@@ -417,10 +417,10 @@ int runNormalLaunch(QApplication& app, const CommandLineOptions& options)
 
 namespace AppModes {
 
-int run(QApplication& app, const CommandLineOptions& options)
+int Run(QApplication& app, const CommandLineOptions& options)
 {
     if (options.selfTest) {
-        return runSelfTest(app, options);
+        return RunSelfTest(app, options);
     }
     if (options.renderDemo) {
         return runRenderDemo(options);

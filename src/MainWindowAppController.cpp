@@ -22,81 +22,81 @@
 
 MainWindowAppController::MainWindowAppController(MainWindow* window) : m_window(window) {}
 
-void MainWindowAppController::applyUiLanguage()
+void MainWindowAppController::ApplyUiLanguage()
 {
     // 先按字典把已经创建出来的文字整体切到目标语言。
-    uiRetranslateWidgetTree(m_window);
+    UiRetranslateWidgetTree(m_window);
 
     // 形状菜单的文字与提示是拼出来的，字典无法整体命中，按当前语言重新生成。
     if (m_window->m_shapeMenu) {
         for (QAction* action : m_window->m_shapeMenu->actions()) {
             const ShapeType type = static_cast<ShapeType>(action->data().toInt());
-            action->setText(shapeTypeName(type));
-            action->setToolTip(MainWindow::tr("Insert %1 (uses the current brush color)").arg(shapeTypeName(type)));
+            action->setText(ShapeTypeName(type));
+            action->setToolTip(MainWindow::tr("Insert %1 (uses the current brush color)").arg(ShapeTypeName(type)));
         }
     }
 
     // 图层面板每行文字（图层名、图元数、锁定/隐藏后缀）是动态拼的，重建一次。
     if (m_window->m_docks && m_window->m_docks->layerPanel()) {
-        m_window->m_docks->layerPanel()->refresh();
+        m_window->m_docks->layerPanel()->Refresh();
     }
 
     if (m_window->m_view) {
-        m_window->setBrushColor(m_window->m_brushColor, false);
+        m_window->SetBrushColor(m_window->m_brushColor, false);
     }
-    m_window->updateFillActions();
-    m_window->updateModeUi();
-    m_window->updateStatusBar();
-    m_window->updateTitle();
-    m_window->updateCanvasesMenu();
+    m_window->UpdateFillActions();
+    m_window->UpdateModeUi();
+    m_window->UpdateStatusBar();
+    m_window->UpdateTitle();
+    m_window->UpdateCanvasesMenu();
 }
 
-void MainWindowAppController::showSettings()
+void MainWindowAppController::ShowSettings()
 {
     AppSettings updated;
-    UiLanguage requestedLanguage = uiLanguageSetting();
+    UiLanguage requestedLanguage = UiLanguageSetting();
     {
         SettingsDialog dialog(m_window->m_settings, m_window);
         if (dialog.exec() != QDialog::Accepted) {
             return;
         }
-        updated = dialog.settings();
-        requestedLanguage = dialog.language();
+        updated = dialog.Settings();
+        requestedLanguage = dialog.Language();
     }
 
     // 对话框对象已经析构，再切换语言/重建动态文案，避免在已关闭的模态窗上重译。
-    if (requestedLanguage != uiLanguageSetting()) {
-        setUiLanguageSetting(requestedLanguage);
-        m_window->applyUiLanguage();
+    if (requestedLanguage != UiLanguageSetting()) {
+        SetUiLanguageSetting(requestedLanguage);
+        m_window->ApplyUiLanguage();
     }
     // 对话框里的设置是主窗口设置的一份完整副本：语言另存，其余整份拷回，
     // 避免新增参数（例如线稿化档位）漏在“改完却记不住”的队伍里。
     m_window->m_settings = updated;
     // 设置窗里的线稿化参数已经随整份保存落盘，进程内副本跟着刷新。
-    m_window->m_lineArtSettings.copyLineArtFrom(m_window->m_settings);
+    m_window->m_lineArtSettings.CopyLineArtFrom(m_window->m_settings);
 
-    m_window->setBrushColor(m_window->m_settings.brushColor, false);
-    m_window->setBrushWidthUi(m_window->m_settings.brushWidth);
-    m_window->setStrokeSmoothingUi(m_window->m_settings.strokeSmoothing);
-    m_window->m_view->setCanvasColor(m_window->m_settings.canvasColor);
-    m_window->m_scene->setShowGrid(m_window->m_settings.showGrid);
+    m_window->SetBrushColor(m_window->m_settings.brushColor, false);
+    m_window->SetBrushWidthUi(m_window->m_settings.brushWidth);
+    m_window->SetStrokeSmoothingUi(m_window->m_settings.strokeSmoothing);
+    m_window->m_view->SetCanvasColor(m_window->m_settings.canvasColor);
+    m_window->m_scene->SetShowGrid(m_window->m_settings.showGrid);
     // 设置里改过辅助网格时，视图菜单的勾选状态跟着走（屏蔽信号，避免回写一遍配置）。
     if (m_window->m_gridAct) {
         const QSignalBlocker blocker(m_window->m_gridAct);
         m_window->m_gridAct->setChecked(m_window->m_settings.showGrid);
     }
-    m_window->m_scene->setCanvasSizeWithUndo(m_window->m_settings.canvasSize);
+    m_window->m_scene->SetCanvasSizeWithUndo(m_window->m_settings.canvasSize);
 
     if (m_window->m_view->mode() == ToolMode::VIEW) {
-        m_window->m_view->fitAll();
+        m_window->m_view->FitAll();
     }
 
-    m_window->m_settings.save();
-    m_window->updateStatusBar();
+    m_window->m_settings.Save();
+    m_window->UpdateStatusBar();
     m_window->statusBar()->showMessage(MainWindow::tr("Settings saved"), 3000);
 }
 
-void MainWindowAppController::showAbout()
+void MainWindowAppController::ShowAbout()
 {
     QString html;
     html += QStringLiteral("<h3>%1 %2</h3>")
@@ -147,7 +147,7 @@ void MainWindowAppController::showAbout()
                        "Ctrl+Shift+B simplifies the selected curve (Brush); Ctrl+Q or Alt+F4 quits"),
     };
     for (const QString& operation : operations) {
-        html += QStringLiteral("<li>%1</li>").arg(uiText(operation));
+        html += QStringLiteral("<li>%1</li>").arg(UiText(operation));
     }
     html +=
         QStringLiteral("</ul><p>%1</p>").arg(MainWindow::tr("Built with Qt %1.").arg(QString::fromLatin1(qVersion())));
@@ -157,13 +157,13 @@ void MainWindowAppController::showAbout()
     box.exec();
 }
 
-void MainWindowAppController::persistBeforeExit()
+void MainWindowAppController::PersistBeforeExit()
 {
     m_window->m_settings.windowGeometry = m_window->saveGeometry();
     // 退出时按实际上下位置再记一次卡片顺序，拖拽换位后即使没有触发移动事件也能落盘。
-    m_window->m_settings.dockOrder = m_window->m_docks ? m_window->m_docks->currentDockOrder() : QStringList();
+    m_window->m_settings.dockOrder = m_window->m_docks ? m_window->m_docks->CurrentDockOrder() : QStringList();
     if (m_window->m_docks) {
-        m_window->m_docks->rememberPropertiesPanelDockState();
+        m_window->m_docks->RememberPropertiesPanelDockState();
     }
     m_window->m_settings.brushColor = m_window->m_brushColor;
     m_window->m_settings.brushWidth = m_window->m_brushWidth;
@@ -171,8 +171,8 @@ void MainWindowAppController::persistBeforeExit()
         m_window->m_settings.strokeSmoothing = m_window->m_smoothingSpin->value();
     }
     if (m_window->m_scene) {
-        m_window->m_settings.canvasSize = m_window->m_scene->canvasSize();
-        m_window->m_settings.showGrid = m_window->m_scene->showGrid();
+        m_window->m_settings.canvasSize = m_window->m_scene->CanvasSize();
+        m_window->m_settings.showGrid = m_window->m_scene->ShowGrid();
     }
-    m_window->m_settings.save();
+    m_window->m_settings.Save();
 }

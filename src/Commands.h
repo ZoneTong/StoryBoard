@@ -53,12 +53,12 @@ class GeometryCommand : public QUndoCommand {
     void redo() override;
     // 标记为可合并的连续操作（目前只有 nudge）：同一批图元的相邻两次调用
     // 由 mergeWith 叠加成一条撤销记录，方向键按住不放不再刷爆撤销栈。
-    void setMergeId(const QString& id);
+    void SetMergeId(const QString& id);
     int id() const override;
     bool mergeWith(const QUndoCommand* other) override;
 
   private:
-    void apply(const ItemGeometryList& geometry);
+    void Apply(const ItemGeometryList& geometry);
 
     CanvasScene* m_scene = nullptr;
     ItemGeometryList m_before;
@@ -76,7 +76,7 @@ class GroupCommand : public QUndoCommand {
     void redo() override;
 
   private:
-    void apply(const QList<int>& groupIds, const QHash<int, int>& parents);
+    void Apply(const QList<int>& groupIds, const QHash<int, int>& parents);
 
     CanvasScene* m_scene = nullptr;
     QList<QPointer<CanvasItem>> m_items;
@@ -146,7 +146,7 @@ class RotationCommand : public QUndoCommand {
     void redo() override;
 
   private:
-    void apply(const QList<qreal>& angles);
+    void Apply(const QList<qreal>& angles);
 
     CanvasScene* m_scene = nullptr;
     QList<QPointer<CanvasItem>> m_items;
@@ -164,7 +164,7 @@ class StrokeSmoothCommand : public QUndoCommand {
     void redo() override;
 
   private:
-    void apply(const QList<LineItemAbstract::GeometryState>& states);
+    void Apply(const QList<LineItemAbstract::GeometryState>& states);
 
     CanvasScene* m_scene = nullptr;
     QList<QPointer<LineItemAbstract>> m_items;
@@ -207,7 +207,7 @@ class ItemPropertiesCommand : public QUndoCommand {
     void redo() override;
 
   private:
-    void apply(const ItemPropertiesState& state);
+    void Apply(const ItemPropertiesState& state);
 
     CanvasScene* m_scene = nullptr;
     QPointer<CanvasItem> m_item;
@@ -227,7 +227,7 @@ class ItemPropertyCommand : public QUndoCommand {
     void redo() override;
 
   private:
-    void apply(const QList<QMap<ItemProperty, QVariant>>& states);
+    void Apply(const QList<QMap<ItemProperty, QVariant>>& states);
 
     CanvasScene* m_scene = nullptr;
     QList<QPointer<CanvasItem>> m_items;

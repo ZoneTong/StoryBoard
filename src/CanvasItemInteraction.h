@@ -15,20 +15,20 @@ class CanvasItemInteraction {
   public:
     explicit CanvasItemInteraction(CanvasItem* item);
 
-    void beginMove(const QPointF& scenePos);
-    void applyMove(const QPointF& scenePos);
-    void beginResize(int handle, const QPointF& scenePos);
-    void applyResize(const QPointF& scenePos, Qt::KeyboardModifiers modifiers);
-    void beginRotate(const QPointF& scenePos);
-    void applyRotate(const QPointF& scenePos);
-    void finishInteraction();
+    void BeginMove(const QPointF& scenePos);
+    void ApplyMove(const QPointF& scenePos);
+    void BeginResize(int handle, const QPointF& scenePos);
+    void ApplyResize(const QPointF& scenePos, Qt::KeyboardModifiers modifiers);
+    void BeginRotate(const QPointF& scenePos);
+    void ApplyRotate(const QPointF& scenePos);
+    void FinishInteraction();
 
-    void onHoverMove(QGraphicsSceneHoverEvent* event);
-    void onHoverLeave(QGraphicsSceneHoverEvent* event);
-    void onMousePress(QGraphicsSceneMouseEvent* event);
-    void onMouseMove(QGraphicsSceneMouseEvent* event);
-    void onMouseRelease(QGraphicsSceneMouseEvent* event);
-    void updateHoverCursor(const QPointF& pos);
+    void OnHoverMove(QGraphicsSceneHoverEvent* event);
+    void OnHoverLeave(QGraphicsSceneHoverEvent* event);
+    void OnMousePress(QGraphicsSceneMouseEvent* event);
+    void OnMouseMove(QGraphicsSceneMouseEvent* event);
+    void OnMouseRelease(QGraphicsSceneMouseEvent* event);
+    void UpdateHoverCursor(const QPointF& pos);
 
   private:
     CanvasItem* m_item = nullptr;

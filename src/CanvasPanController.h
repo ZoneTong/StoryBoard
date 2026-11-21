@@ -11,12 +11,12 @@ class CanvasPanController {
   public:
     explicit CanvasPanController(CanvasView* view);
 
-    bool isPanning() const { return m_panning; }
+    bool IsPanning() const { return m_panning; }
 
-    void beginPan(const QPoint& position);
-    void endPan();
+    void BeginPan(const QPoint& position);
+    void EndPan();
     // 平移进行中则按当前点更新视图并返回 true；否则返回 false。
-    bool movePan(const QPoint& position);
+    bool MovePan(const QPoint& position);
 
   private:
     CanvasView* m_view = nullptr;

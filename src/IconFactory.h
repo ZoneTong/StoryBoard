@@ -71,5 +71,5 @@ enum class IconId {
     MORPH
 };
 
-QIcon makeIcon(IconId id, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);
-QIcon makeColorIcon(const QColor& color, int logicalSize = 18);
+QIcon MakeIcon(IconId id, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);
+QIcon MakeColorIcon(const QColor& color, int logicalSize = 18);

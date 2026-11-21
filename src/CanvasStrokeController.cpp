@@ -52,26 +52,26 @@ bool strokeLooksLinear(const LineItemAbstract* stroke)
 
 CanvasStrokeController::CanvasStrokeController(CanvasView* view, CanvasScene* scene) : m_view(view), m_scene(scene) {}
 
-void CanvasStrokeController::setBrushColor(const QColor& color)
+void CanvasStrokeController::SetBrushColor(const QColor& color)
 {
     if (color.isValid()) {
         m_brushColor = color;
     }
 }
 
-void CanvasStrokeController::setBrushWidth(qreal width)
+void CanvasStrokeController::SetBrushWidth(qreal width)
 {
     m_brushWidth = qBound<qreal>(0.5, width, 64.0);
 }
 
-void CanvasStrokeController::setStrokeSmoothing(qreal tolerance)
+void CanvasStrokeController::SetStrokeSmoothing(qreal tolerance)
 {
     m_strokeSmoothing = qBound<qreal>(0.0, tolerance, 20.0);
 }
 
-bool CanvasStrokeController::beginStroke(const QPoint& viewportPos)
+bool CanvasStrokeController::BeginStroke(const QPoint& viewportPos)
 {
-    if (!m_scene->isActiveLayerWritable()) {
+    if (!m_scene->IsActiveLayerWritable()) {
         emit m_view->statusMessage(
             trView("The current layer is locked or hidden; drawing is unavailable. Unlock or switch "
                    "layers in the layer panel first."));
@@ -82,23 +82,23 @@ bool CanvasStrokeController::beginStroke(const QPoint& viewportPos)
     // Keep the in-progress stroke on top while drawing. The final layer
     // and height are assigned when the stroke is committed.
     stroke->setZValue(1.0e12);
-    stroke->beginStroke(m_view->mapToScene(viewportPos), m_brushColor, m_brushWidth);
+    stroke->BeginStroke(m_view->mapToScene(viewportPos), m_brushColor, m_brushWidth);
     m_scene->addItem(stroke);
     m_activeStroke = stroke;
     m_scene->clearSelection();
     return true;
 }
 
-void CanvasStrokeController::appendPoint(const QPoint& viewportPos)
+void CanvasStrokeController::AppendPoint(const QPoint& viewportPos)
 {
     if (!m_activeStroke) {
         return;
     }
-    m_activeStroke->appendScenePoint(m_view->mapToScene(viewportPos));
+    m_activeStroke->AppendScenePoint(m_view->mapToScene(viewportPos));
     m_view->viewport()->update();
 }
 
-void CanvasStrokeController::finishStroke()
+void CanvasStrokeController::FinishStroke()
 {
     if (!m_activeStroke) {
         return;
@@ -106,12 +106,12 @@ void CanvasStrokeController::finishStroke()
 
     CurveItem* stroke = m_activeStroke;
     m_activeStroke = nullptr;
-    stroke->endStroke(m_strokeSmoothing);
+    stroke->EndStroke(m_strokeSmoothing);
 
-    if (stroke->isEmpty()) {
+    if (stroke->IsEmpty()) {
         m_scene->removeItem(stroke);
         delete stroke;
-        m_view->updateCursor();
+        m_view->UpdateCursor();
         return;
     }
 
@@ -124,20 +124,20 @@ void CanvasStrokeController::finishStroke()
         const QPointF b = stroke->mapToScene(knots.last());
         // 直线是曲线族的两点线性子型：端点直接决定几何，不再用旋转角摆放细长条。
         auto* line = new StraightLineItem();
-        line->setEndpoints(a, b, stroke->StrokeColor(), stroke->StrokeWidth());
-        line->setStrokePattern(stroke->strokePattern());
+        line->SetEndpoints(a, b, stroke->StrokeColor(), stroke->StrokeWidth());
+        line->SetStrokePattern(stroke->strokePattern());
         m_scene->removeItem(stroke);
         delete stroke;
-        m_scene->commitNewItem(line, trView("Add stroke"));
-        m_view->updateCursor();
+        m_scene->CommitNewItem(line, trView("Add stroke"));
+        m_view->UpdateCursor();
         return;
     }
 
-    m_scene->commitNewItem(stroke, trView("Add stroke"));
-    m_view->updateCursor();
+    m_scene->CommitNewItem(stroke, trView("Add stroke"));
+    m_view->UpdateCursor();
 }
 
-void CanvasStrokeController::cancelStroke()
+void CanvasStrokeController::CancelStroke()
 {
     if (!m_activeStroke) {
         return;
@@ -147,5 +147,5 @@ void CanvasStrokeController::cancelStroke()
     m_activeStroke = nullptr;
     m_scene->removeItem(stroke);
     delete stroke;
-    m_view->updateCursor();
+    m_view->UpdateCursor();
 }

@@ -81,9 +81,9 @@ bool hasImageSuffix(const QString& path)
 
 ImportExportController::ImportExportController(MainWindow* window) : m_window(window) {}
 
-void ImportExportController::exportCanvas()
+void ImportExportController::ExportCanvas()
 {
-    m_window->m_view->finishCurrentStroke();
+    m_window->m_view->FinishCurrentStroke();
     QString startDirectory = m_window->m_settings.lastExportDir;
     if (startDirectory.isEmpty()) {
         startDirectory = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
@@ -96,7 +96,7 @@ void ImportExportController::exportCanvas()
 
     const ExportDialog::Options options = dialog.options();
     m_window->m_settings.lastExportDir = QFileInfo(options.filePath).absolutePath();
-    m_window->m_settings.save();
+    m_window->m_settings.Save();
 
     if (options.separateLayers) {
         const QStringList paths = options.filePaths;
@@ -108,7 +108,7 @@ void ImportExportController::exportCanvas()
         QStringList exported;
         for (int i = 0; i < paths.size(); ++i) {
             const int layerId = i < options.layerIds.size() ? options.layerIds.at(i) : -1;
-            if (!exportToFile(paths.at(i), options.area, options.scale, options.format, false, layerId)) {
+            if (!ExportToFile(paths.at(i), options.area, options.scale, options.format, false, layerId)) {
                 return;
             }
             exported.append(paths.at(i));
@@ -132,15 +132,15 @@ void ImportExportController::exportCanvas()
         return;
     }
 
-    exportToFile(options.filePath, options.area, options.scale, options.format);
+    ExportToFile(options.filePath, options.area, options.scale, options.format);
 }
 
-bool ImportExportController::exportToFile(const QString& path, const QRectF& area, qreal scale, const QString& format,
+bool ImportExportController::ExportToFile(const QString& path, const QRectF& area, qreal scale, const QString& format,
                                           bool showCompletion, int layerId)
 {
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    const QImage rawImage = layerId >= 0 ? m_window->m_scene->renderLayerImage(area, scale, layerId)
-                                         : m_window->m_scene->renderImage(area, scale);
+    const QImage rawImage = layerId >= 0 ? m_window->m_scene->RenderLayerImage(area, scale, layerId)
+                                         : m_window->m_scene->RenderImage(area, scale);
     QApplication::restoreOverrideCursor();
 
     if (rawImage.isNull()) {
@@ -198,7 +198,7 @@ bool ImportExportController::exportToFile(const QString& path, const QRectF& are
     }
 
     m_window->m_settings.lastExportDir = QFileInfo(path).absolutePath();
-    m_window->m_settings.save();
+    m_window->m_settings.Save();
     m_window->statusBar()->showMessage(MainWindow::tr("Canvas exported: %1").arg(QFileInfo(path).fileName()), 5000);
 
     if (!showCompletion) {
@@ -224,7 +224,7 @@ bool ImportExportController::exportToFile(const QString& path, const QRectF& are
     return true;
 }
 
-void ImportExportController::importImagesDialog()
+void ImportExportController::ImportImagesDialog()
 {
     QString startDirectory = m_window->m_settings.lastImageDir;
     if (startDirectory.isEmpty()) {
@@ -234,11 +234,11 @@ void ImportExportController::importImagesDialog()
     const QStringList files =
         QFileDialog::getOpenFileNames(m_window, MainWindow::tr("Insert images"), startDirectory, imageFilter());
     if (!files.isEmpty()) {
-        importImageFiles(files);
+        ImportImageFiles(files);
     }
 }
 
-void ImportExportController::importOutlineImageDialog()
+void ImportExportController::ImportOutlineImageDialog()
 {
     QString startDirectory = m_window->m_settings.lastImageDir;
     if (startDirectory.isEmpty()) {
@@ -258,12 +258,12 @@ void ImportExportController::importOutlineImageDialog()
         return;
     }
 
-    dialog.applyToSettings(m_window->m_lineArtSettings);
-    if (dialog.saveRequested()) {
-        const bool saved = m_window->m_lineArtSettings.saveLineArt();
+    dialog.ApplyToSettings(m_window->m_lineArtSettings);
+    if (dialog.SaveRequested()) {
+        const bool saved = m_window->m_lineArtSettings.SaveLineArt();
         if (saved) {
             // 文件已经是新值了，主设置对象同步一份，避免之后整份保存把旧值写回去。
-            m_window->m_settings.copyLineArtFrom(m_window->m_lineArtSettings);
+            m_window->m_settings.CopyLineArtFrom(m_window->m_lineArtSettings);
             m_window->statusBar()->showMessage(MainWindow::tr("Image outline settings saved to the configuration file"),
                                                4000);
         } else {
@@ -273,20 +273,20 @@ void ImportExportController::importOutlineImageDialog()
                 5000);
         }
     }
-    importOutlineImageFile(file, dialog.options());
+    ImportOutlineImageFile(file, dialog.options());
 }
 
-void ImportExportController::importOutlineImageFile(const QString& file, const LineArtConverter::Options& options)
+void ImportExportController::ImportOutlineImageFile(const QString& file, const LineArtConverter::Options& options)
 {
     if (file.isEmpty()) {
         return;
     }
 
     if (m_window->m_view->mode() != ToolMode::EDIT) {
-        m_window->setToolMode(ToolMode::EDIT);
+        m_window->SetToolMode(ToolMode::EDIT);
     }
 
-    if (!m_window->m_scene->isActiveLayerWritable()) {
+    if (!m_window->m_scene->IsActiveLayerWritable()) {
         m_window->statusBar()->showMessage(
             MainWindow::tr("The current layer is locked or hidden; the image outline cannot be imported. Unlock "
                            "or switch layers in the layer panel first."),
@@ -303,18 +303,18 @@ void ImportExportController::importOutlineImageFile(const QString& file, const L
         return;
     }
 
-    const LineArtConverter::Result traced = LineArtConverter::extract(image, options);
+    const LineArtConverter::Result traced = LineArtConverter::Extract(image, options);
     if (!traced.ok || traced.outlines.isEmpty()) {
         reportWarning(m_window, MainWindow::tr("Import outline image"),
                       traced.error.isEmpty() ? MainWindow::tr("No color blocks were found in the image.")
-                                             : uiText(traced.error));
+                                             : UiText(traced.error));
         return;
     }
 
     // 和插入图片一致：等比缩到画布的 60% 以内，居中放到当前视图中心。
     const QSizeF processed(traced.imageSize.width(), traced.imageSize.height());
-    qreal scale = qMin(1.0, qMin(m_window->m_scene->canvasSize().width() * 0.6 / processed.width(),
-                                 m_window->m_scene->canvasSize().height() * 0.6 / processed.height()));
+    qreal scale = qMin(1.0, qMin(m_window->m_scene->CanvasSize().width() * 0.6 / processed.width(),
+                                 m_window->m_scene->CanvasSize().height() * 0.6 / processed.height()));
     if (!(scale > 0.0)) {
         scale = 1.0;
     }
@@ -350,27 +350,27 @@ void ImportExportController::importOutlineImageFile(const QString& file, const L
         return;
     }
 
-    m_window->m_scene->addItemsWithUndo(items, MainWindow::tr("Import outline image"));
+    m_window->m_scene->AddItemsWithUndo(items, MainWindow::tr("Import outline image"));
 
     m_window->m_settings.lastImageDir = QFileInfo(file).absolutePath();
-    m_window->m_settings.save();
+    m_window->m_settings.Save();
 
     m_window->statusBar()->showMessage(MainWindow::tr("%1 stroke(s) created from the image outlines").arg(items.size()),
                                        5000);
     // 色块数量上限已放开：有多少块就描多少块，不再提示“只转换了前 N 个”。
 }
 
-void ImportExportController::importImageFiles(const QStringList& files)
+void ImportExportController::ImportImageFiles(const QStringList& files)
 {
     if (files.isEmpty()) {
         return;
     }
 
     if (m_window->m_view->mode() != ToolMode::EDIT) {
-        m_window->setToolMode(ToolMode::EDIT);
+        m_window->SetToolMode(ToolMode::EDIT);
     }
 
-    if (!m_window->m_scene->isActiveLayerWritable()) {
+    if (!m_window->m_scene->IsActiveLayerWritable()) {
         m_window->statusBar()->showMessage(
             MainWindow::tr("The current layer is locked or hidden; images cannot be "
                            "inserted. Unlock or switch layers in the layer panel first."),
@@ -379,7 +379,7 @@ void ImportExportController::importImageFiles(const QStringList& files)
     }
 
     const QPointF viewCenter = m_window->m_view->mapToScene(m_window->m_view->viewport()->rect().center());
-    const QSizeF maxSize(m_window->m_scene->canvasSize().width() * 0.6, m_window->m_scene->canvasSize().height() * 0.6);
+    const QSizeF maxSize(m_window->m_scene->CanvasSize().width() * 0.6, m_window->m_scene->CanvasSize().height() * 0.6);
 
     QList<CanvasItem*> items;
     QStringList failed;
@@ -410,9 +410,9 @@ void ImportExportController::importImageFiles(const QStringList& files)
 
         // 需求 14：插入图片生成的是矩形图元，图片只作为它的背景（在填充样式之下）。
         // 填充与描线都是透明无色，图片本身承担视觉；不再产生图片类型图元。
-        auto* item = createShapeItem(ShapeType::RECTANGLE);
+        auto* item = CreateShapeItem(ShapeType::RECTANGLE);
         item->SetFillImage(pixmap, ImageFill::Mode::STRETCH);
-        item->setStyle(QColor(Qt::transparent), QColor(Qt::transparent), 1.0);
+        item->SetStyle(QColor(Qt::transparent), QColor(Qt::transparent), 1.0);
         item->SetFillStyle(FillStyle::NONE);
         item->SetName(QFileInfo(file).fileName());
         item->SetContentSize(size);
@@ -427,13 +427,13 @@ void ImportExportController::importImageFiles(const QStringList& files)
         return;
     }
 
-    m_window->m_scene->addItemsWithUndo(items, MainWindow::tr("Insert images"));
+    m_window->m_scene->AddItemsWithUndo(items, MainWindow::tr("Insert images"));
     for (CanvasItem* item : items) {
         item->setSelected(true);
     }
 
     m_window->m_settings.lastImageDir = QFileInfo(files.constFirst()).absolutePath();
-    m_window->m_settings.save();
+    m_window->m_settings.Save();
 
     m_window->statusBar()->showMessage(MainWindow::tr("%1 image(s) inserted").arg(items.size()), 4000);
     if (!failed.isEmpty()) {
@@ -443,7 +443,7 @@ void ImportExportController::importImageFiles(const QStringList& files)
     }
 }
 
-bool ImportExportController::acceptsDropUrls(const QMimeData* mimeData) const
+bool ImportExportController::AcceptsDropUrls(const QMimeData* mimeData) const
 {
     if (!mimeData || !mimeData->hasUrls()) {
         return false;
@@ -460,7 +460,7 @@ bool ImportExportController::acceptsDropUrls(const QMimeData* mimeData) const
     return false;
 }
 
-void ImportExportController::handleDrop(QDropEvent* event)
+void ImportExportController::HandleDrop(QDropEvent* event)
 {
     QStringList images;
     QString canvasPath;
@@ -478,14 +478,14 @@ void ImportExportController::handleDrop(QDropEvent* event)
     }
 
     if (!canvasPath.isEmpty() && images.isEmpty()) {
-        if (m_window->m_document->loadCanvasFile(canvasPath, true)) {
+        if (m_window->m_document->LoadCanvasFile(canvasPath, true)) {
             event->acceptProposedAction();
         }
         return;
     }
 
     if (!images.isEmpty()) {
-        importImageFiles(images);
+        ImportImageFiles(images);
         event->acceptProposedAction();
     }
 }
