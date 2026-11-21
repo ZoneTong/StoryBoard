@@ -329,6 +329,25 @@ void selftest::RunShapeItemTests(Context& ctx)
         copy.FromJson(sector.ToJson());
         ctx.Check(copy.shapeType() == ShapeType::SECTOR && qFuzzyCompare(copy.SweepAngle() + 2.0, 92.0),
                   QStringLiteral("扇形角度随画布保存和恢复，半径字段已移除"));
+
+        // 需求 6 扩展：扇形与弧线共用 ArcAngleAttributes，角度语义只有一份。
+        ArcAngleAttributes* sectorAngles = dynamic_cast<ArcAngleAttributes*>(&sector);
+        sectorAngles->SetStartAngle(45.0);
+        ctx.Check(sectorAngles && qFuzzyCompare(sector.StartAngle() + 2.0, 47.0) &&
+                      qFuzzyCompare(sector.SweepAngle() + 2.0, 92.0),
+                  QStringLiteral("扇形通过角度属性基类读写起始角"),
+                  QStringLiteral("start=%1 sweep=%2").arg(sector.StartAngle()).arg(sector.SweepAngle()));
+        ArcItem baseArc;
+        baseArc.SetArcAngles(45.0, 0.0);
+        QJsonObject arcJson = baseArc.ToJson();
+        ArcItem loadedArc;
+        loadedArc.FromJson(arcJson);
+        ctx.Check(qFuzzyCompare(baseArc.StartAngle() + 2.0, 47.0) && qFuzzyCompare(baseArc.SweepAngle() + 2.0, 122.0) &&
+                      arcJson.contains(QStringLiteral("startAngle")) &&
+                      qFuzzyCompare(loadedArc.StartAngle() + 2.0, 47.0) &&
+                      qFuzzyCompare(loadedArc.SweepAngle() + 2.0, 122.0),
+                  QStringLiteral("弧线通过角度属性基类兜底扫过角并保持 JSON 兼容"),
+                  QStringLiteral("start=%1 sweep=%2").arg(loadedArc.StartAngle()).arg(loadedArc.SweepAngle()));
     }
     {
         // 扇形 / 弧线的选中框贴着实际轮廓，而不是整个内容矩形。

@@ -15,10 +15,7 @@ void SectorItem::ContentResized()
 
 ItemPropertySet SectorItem::Properties() const
 {
-    ItemPropertySet result = ShapeItem::Properties();
-    result.Insert(ItemProperty::START_ANGLE);
-    result.Insert(ItemProperty::SWEEP_ANGLE);
-    return result;
+    return ShapeItem::Properties().United(ArcAngleAttributes::ArcAngleProperties());
 }
 
 QPainterPath SectorItem::ShapePath(const QRectF& rect) const

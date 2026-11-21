@@ -46,16 +46,16 @@ ArcItem::ArcItem(QGraphicsItem* parent) : LineItemAbstract(parent) {}
 ItemPropertySet ArcItem::Properties() const
 {
     // 弧线只有角度参数，没有箭头行（与现状一致）。
-    return LineItemAbstract::Properties().United(ItemPropertySet{ItemProperty::START_ANGLE, ItemProperty::SWEEP_ANGLE});
+    return LineItemAbstract::Properties().United(ArcAngleAttributes::ArcAngleProperties());
 }
 
 QVariant ArcItem::PropertyValue(ItemProperty property) const
 {
     switch (property) {
     case ItemProperty::START_ANGLE:
-        return m_startAngle;
+        return StartAngle();
     case ItemProperty::SWEEP_ANGLE:
-        return m_sweepAngle;
+        return SweepAngle();
     default:
         return LineItemAbstract::PropertyValue(property);
     }
@@ -65,10 +65,10 @@ void ArcItem::SetPropertyValue(ItemProperty property, const QVariant& value)
 {
     switch (property) {
     case ItemProperty::START_ANGLE:
-        SetAngles(value.toDouble(), m_sweepAngle);
+        SetAngles(value.toDouble(), SweepAngle());
         break;
     case ItemProperty::SWEEP_ANGLE:
-        SetAngles(m_startAngle, value.toDouble());
+        SetAngles(StartAngle(), value.toDouble());
         break;
     default:
         LineItemAbstract::SetPropertyValue(property, value);
@@ -88,7 +88,7 @@ QRectF ArcItem::FrameRect() const
 
 ArcItem::ParamState ArcItem::paramState() const
 {
-    return ParamState{m_startAngle, m_sweepAngle, true};
+    return ParamState{StartAngle(), SweepAngle(), true};
 }
 
 void ArcItem::ApplyParamState(const ParamState& state)
@@ -98,12 +98,16 @@ void ArcItem::ApplyParamState(const ParamState& state)
 
 void ArcItem::SetAngles(qreal startDeg, qreal sweepDeg)
 {
-    const qreal sweep = EllipseShape::ClampedSweep(sweepDeg);
-    if (qFuzzyCompare(startDeg + 1.0, m_startAngle + 1.0) && qFuzzyCompare(sweep + 1.0, m_sweepAngle + 1.0)) {
-        return;
-    }
-    m_startAngle = startDeg;
-    m_sweepAngle = sweep;
+    ArcAngleAttributes::SetArcAngles(startDeg, EllipseShape::ClampedSweep(sweepDeg));
+}
+
+void ArcItem::SetArcAngles(qreal startDeg, qreal sweepDeg)
+{
+    SetAngles(startDeg, sweepDeg);
+}
+
+void ArcItem::ArcAnglesChanged()
+{
     Rebuild();
 }
 
@@ -153,8 +157,7 @@ void ArcItem::Rebuild()
 QJsonObject ArcItem::ToJson() const
 {
     QJsonObject json = LineItemAbstract::ToJson();
-    json.insert(QStringLiteral("startAngle"), m_startAngle);
-    json.insert(QStringLiteral("sweepAngle"), m_sweepAngle);
+    WriteArcAngleJson(json);
     json.insert(QStringLiteral("arcFrame"), RectToArray(m_refFrame));
     return json;
 }
@@ -162,8 +165,7 @@ QJsonObject ArcItem::ToJson() const
 void ArcItem::FromJson(const QJsonObject& json)
 {
     LineItemAbstract::FromJson(json);
-    m_startAngle = json.value(QStringLiteral("startAngle")).toDouble(30.0);
-    m_sweepAngle = EllipseShape::ClampedSweep(json.value(QStringLiteral("sweepAngle")).toDouble(120.0));
+    ReadArcAngleJson(json);
     m_refFrame = ArrayToRect(json.value(QStringLiteral("arcFrame")).toArray(), QRectF(0.0, 0.0, 1.0, 1.0));
     Rebuild();
 }

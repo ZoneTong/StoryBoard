@@ -333,12 +333,12 @@ void ItemPropertiesDialog::ApplyChanges()
         }
         if (style && style->StartAngleSpin()) {
             const int value = style->StartAngleSpin()->value();
-            after.shapeState.startAngle =
+            after.shapeState.arc.startAngle =
                 value == qRound(style->InitialStartAngle()) ? style->InitialStartAngle() : value;
         }
         if (style && style->SweepAngleSpin()) {
             const int value = style->SweepAngleSpin()->value();
-            after.shapeState.sweepAngle =
+            after.shapeState.arc.sweepAngle =
                 value == qRound(style->InitialSweepAngle()) ? style->InitialSweepAngle() : value;
         }
         if (style && style->CornerRadiusSpin()) {

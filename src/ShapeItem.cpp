@@ -338,15 +338,8 @@ void ShapeItem::SetCornerRadius(qreal radius)
     update();
 }
 
-void ShapeItem::SetArcAngles(qreal startAngle, qreal sweepAngle)
+void ShapeItem::ArcAnglesChanged()
 {
-    const qreal start = qBound<qreal>(-360.0, startAngle, 360.0);
-    const qreal sweep = qBound<qreal>(-360.0, sweepAngle, 360.0);
-    if (qFuzzyCompare(m_startAngle + 2.0, start + 2.0) && qFuzzyCompare(m_sweepAngle + 2.0, sweep + 2.0)) {
-        return;
-    }
-    m_startAngle = start;
-    m_sweepAngle = sweep;
     update();
 }
 
@@ -357,8 +350,7 @@ ShapeItemState ShapeItem::State() const
     result.stroke = StrokeState();
     result.opacity = m_opacity;
     result.cornerRadius = m_cornerRadius;
-    result.startAngle = m_startAngle;
-    result.sweepAngle = m_sweepAngle;
+    result.arc = ArcAngleState();
     result.bottomAngle1 = m_bottomAngle1;
     result.bottomAngle2 = m_bottomAngle2;
     result.parallelogramAngle = m_parallelogramAngle;
@@ -374,8 +366,7 @@ void ShapeItem::ApplyState(const ShapeItemState& state)
     ApplyStrokeState(state.stroke);
     m_opacity = state.opacity;
     m_cornerRadius = state.cornerRadius;
-    m_startAngle = state.startAngle;
-    m_sweepAngle = state.sweepAngle;
+    ApplyArcAngleState(state.arc);
     m_bottomAngle1 = state.bottomAngle1;
     m_bottomAngle2 = state.bottomAngle2;
     m_parallelogramAngle = qBound<qreal>(15.0, state.parallelogramAngle, 165.0);
