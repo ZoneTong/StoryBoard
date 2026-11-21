@@ -226,13 +226,14 @@ void selftest::RunShapeItemTests(Context& ctx)
         const QPointF acuteKnob = KnobInScene();
         para.SetParallelogramAngle(90.0);
         const qreal rightBase = BottomLength();
+        const qreal rightCenterX = para.ContentSize().width() / 2.0;
         const QPointF rightKnob = KnobInScene();
         para.SetParallelogramAngle(120.0);
         const qreal obtuseBase = BottomLength();
         const QPointF obtuseKnob = KnobInScene();
         ctx.Check(
             ok && acuteKnob.x() > rightKnob.x() && rightKnob.x() > obtuseKnob.x() &&
-                qAbs(rightKnob.x() - para.ContentSize().width() / 2.0) < 0.01,
+                qAbs(rightKnob.x() - rightCenterX) < 0.01,
             QStringLiteral("平行四边形内角旋钮连续跨越锐角与钝角"),
             QStringLiteral("acute=%1 right=%2 obtuse=%3").arg(acuteKnob.x()).arg(rightKnob.x()).arg(obtuseKnob.x()));
         ctx.Check(qAbs(baseLength - rightBase) < 0.01 && qAbs(baseLength - obtuseBase) < 0.01,
