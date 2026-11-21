@@ -42,7 +42,6 @@ class PropertiesPanelValueCard : public QWidget {
     void sineCyclesChosen(int cycles);
     void sineAmplitudeChosen(int percent);
     // 三角形：底边长度（px）、底角 1 / 底角 2（度）。
-    void triangleBaseChosen(int base);
     void triangleAngle1Chosen(int degrees);
     void triangleAngle2Chosen(int degrees);
     // 直线两端箭头样式（ArrowStyle 的整数值）。
@@ -62,7 +61,6 @@ class PropertiesPanelValueCard : public QWidget {
     QSpinBox* m_sineCyclesSpin = nullptr;
     QSpinBox* m_sineAmplitudeSpin = nullptr;
     QWidget* m_triangleSection = nullptr;
-    QSpinBox* m_triangleBaseSpin = nullptr;
     QSpinBox* m_triangleAngle1Spin = nullptr;
     QSpinBox* m_triangleAngle2Spin = nullptr;
     QWidget* m_arrowSection = nullptr;

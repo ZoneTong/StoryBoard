@@ -177,7 +177,6 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     connect(m_valueCard, &PropertiesPanelValueCard::sweepAngleChosen, this, &PropertiesPanel::ApplySweepAngle);
     connect(m_valueCard, &PropertiesPanelValueCard::sineCyclesChosen, this, &PropertiesPanel::ApplySineCycles);
     connect(m_valueCard, &PropertiesPanelValueCard::sineAmplitudeChosen, this, &PropertiesPanel::ApplySineAmplitude);
-    connect(m_valueCard, &PropertiesPanelValueCard::triangleBaseChosen, this, &PropertiesPanel::ApplyTriangleBase);
     connect(m_valueCard, &PropertiesPanelValueCard::triangleAngle1Chosen, this, &PropertiesPanel::ApplyTriangleAngle1);
     connect(m_valueCard, &PropertiesPanelValueCard::triangleAngle2Chosen, this, &PropertiesPanel::ApplyTriangleAngle2);
     connect(m_valueCard, &PropertiesPanelValueCard::arrowStartChosen, this, &PropertiesPanel::ApplyArrowStart);
@@ -253,17 +252,6 @@ QList<LineItemAbstract*> PropertiesPanel::SelectedStrokes() const
         }
     }
     return strokes;
-}
-
-QList<CanvasItem*> PropertiesPanel::SelectedStrokeTargets() const
-{
-    QList<CanvasItem*> targets;
-    for (CanvasItem* item : SelectedItems()) {
-        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<LineItemAbstract*>(item)) {
-            targets.append(item);
-        }
-    }
-    return targets;
 }
 
 QList<CanvasItem*> PropertiesPanel::SelectedTexts() const
@@ -342,7 +330,7 @@ void PropertiesPanel::Refresh()
     m_valueCard->SetCornerVisible(common.Contains(ItemProperty::CORNER_RADIUS));
     m_valueCard->SetArcRadiusVisible(common.Contains(ItemProperty::START_ANGLE));
     m_valueCard->SetSineVisible(common.Contains(ItemProperty::SINE_CYCLES));
-    m_valueCard->SetTriangleVisible(common.Contains(ItemProperty::TRIANGLE_BASE));
+    m_valueCard->SetTriangleVisible(common.Contains(ItemProperty::BOTTOM_ANGLE1));
     m_valueCard->SetArrowVisible(common.Contains(ItemProperty::ARROW_START));
     m_fillImageRow->setVisible(common.Contains(ItemProperty::FILL_IMAGE));
     {

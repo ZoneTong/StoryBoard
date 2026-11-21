@@ -43,7 +43,7 @@ QVariant LineItemAbstract::PropertyValue(ItemProperty property) const
 {
     switch (property) {
     case ItemProperty::STROKE_STYLE:
-        return static_cast<int>(m_strokePattern);
+        return static_cast<int>(StrokeStyle());
     case ItemProperty::STROKE_COLOR:
         return m_strokeColor;
     case ItemProperty::STROKE_WIDTH:
@@ -78,33 +78,25 @@ QColor LineItemAbstract::StrokeColorOrDefault(const QColor& color) const
 
 void LineItemAbstract::SetStrokeColor(const QColor& color)
 {
-    const QColor resolved = StrokeColorOrDefault(color);
-    if (m_strokeColor == resolved) {
-        return;
-    }
-    m_strokeColor = resolved;
-    update();
+    StrokeAttributes::SetStrokeColor(color);
 }
 
 void LineItemAbstract::SetStrokeWidth(qreal width)
 {
-    const qreal resolved = qMax<qreal>(0.5, width);
-    if (qFuzzyCompare(m_strokeWidth, resolved)) {
+    const qreal resolved = qBound<qreal>(0.5, width, 48.0);
+    if (qFuzzyCompare(m_strokeWidth + 1.0, resolved + 1.0)) {
         return;
     }
     m_strokeWidth = resolved;
     m_strokePadding = m_strokeWidth / 2.0 + 2.0;
     RebuildPath();
+    prepareGeometryChange();
     update();
 }
 
 void LineItemAbstract::SetStrokePattern(Qt::PenStyle style)
 {
-    if (m_strokePattern == style) {
-        return;
-    }
-    m_strokePattern = style;
-    update();
+    StrokeAttributes::SetStrokePattern(style);
 }
 
 void LineItemAbstract::SetArrowStyles(ArrowStyle start, ArrowStyle end)
@@ -227,7 +219,7 @@ bool LineItemAbstract::SimplifyCurve(qreal tolerance)
 
 void LineItemAbstract::PaintContent(QPainter* painter)
 {
-    StrokeGeometry::Render(painter, m_path, m_baseSize, ContentSize(), m_strokeColor, m_strokeWidth, m_strokePattern);
+    StrokeGeometry::Render(painter, m_path, m_baseSize, ContentSize(), m_strokeColor, m_strokeWidth, m_strokeStyle);
 
     // 两端箭头：端点取贝塞尔段的首尾节点，与描线共用同一套基坐标 → 内容尺寸缩放，
     // 箭头随描线一起缩放；单点笔迹没有方向，不画箭头。
@@ -297,7 +289,7 @@ QJsonObject LineItemAbstract::ToJson() const
     QJsonObject json = BaseJson();
     json.insert(QStringLiteral("color"), m_strokeColor.name(QColor::HexArgb));
     json.insert(QStringLiteral("width"), m_strokeWidth);
-    json.insert(QStringLiteral("strokeStyle"), static_cast<int>(m_strokePattern));
+    json.insert(QStringLiteral("strokeStyle"), static_cast<int>(m_strokeStyle));
     json.insert(QStringLiteral("baseWidth"), m_baseSize.width());
     json.insert(QStringLiteral("baseHeight"), m_baseSize.height());
     json.insert(QStringLiteral("startArrow"), ArrowStyleToString(m_startArrow));
@@ -330,7 +322,7 @@ void LineItemAbstract::FromJson(const QJsonObject& json)
         m_strokeColor = QColor(30, 41, 59);
     }
     m_strokeWidth = qMax<qreal>(0.5, json.value(QStringLiteral("width")).toDouble(4.0));
-    m_strokePattern = static_cast<Qt::PenStyle>(json.value(QStringLiteral("strokeStyle")).toInt(Qt::SolidLine));
+    m_strokeStyle = static_cast<Qt::PenStyle>(json.value(QStringLiteral("strokeStyle")).toInt(Qt::SolidLine));
     m_strokePadding = m_strokeWidth / 2.0 + 2.0;
     m_startArrow = ArrowStyleFromString(json.value(QStringLiteral("startArrow")).toString());
     m_endArrow = ArrowStyleFromString(json.value(QStringLiteral("endArrow")).toString());

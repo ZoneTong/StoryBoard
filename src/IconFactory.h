@@ -37,8 +37,6 @@ enum class IconId {
     ORDER_DOWN,
     CORNER,
     OPACITY,
-    // 三角形底边长度：底边加两端内角、不闭合的开口轮廓。
-    TRIANGLE_BASE,
     // 三角形两个底角：开口朝右的角（底角 A）与开口朝左的角（底角 B）。
     ANGLE_RIGHT,
     ANGLE_LEFT,

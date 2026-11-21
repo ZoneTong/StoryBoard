@@ -182,33 +182,12 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     sineOuter->addWidget(amplitudeRow);
     outer->addWidget(m_sineSection);
 
-    // 需求 1：三角形以角度为真相——底边长度、角 A、角 B 三行
-    // 直接决定当前几何，高度由底边与两个底角派生（拖高等价于等比改底边）。
+    // 需求 1：三角形以角度为真相——角 A、角 B 两行直接决定当前几何，
+    // 高度由底边与两个底角派生（拖底边等价于等比改高度）；底边长度不再单独成属性。
     m_triangleSection = new QWidget(this);
     auto* triangleOuter = new QVBoxLayout(m_triangleSection);
     triangleOuter->setContentsMargins(0, 0, 0, 0);
     triangleOuter->setSpacing(2);
-
-    auto* baseRow = new QWidget(m_triangleSection);
-    auto* baseLayout = new QHBoxLayout(baseRow);
-    baseLayout->setContentsMargins(0, 0, 0, 0);
-    baseLayout->setSpacing(4);
-    QToolButton* baseIcon = MakeRowIcon(IconId::TRIANGLE_BASE, baseRow);
-    baseIcon->setToolTip(PropertiesPanel::tr("Triangle base length"));
-    baseLayout->addWidget(baseIcon);
-    m_triangleBaseSpin = new QSpinBox(baseRow);
-    m_triangleBaseSpin->setObjectName(QStringLiteral("ItemValueSpin"));
-    m_triangleBaseSpin->setRange(8, 2000);
-    m_triangleBaseSpin->setSuffix(QStringLiteral(" px"));
-    m_triangleBaseSpin->setToolTip(PropertiesPanel::tr("Triangle base length"));
-    m_triangleBaseSpin->setKeyboardTracking(false);
-    connect(m_triangleBaseSpin, &QSpinBox::valueChanged, this, [this](int value) {
-        if (!m_refreshing) {
-            emit triangleBaseChosen(value);
-        }
-    });
-    baseLayout->addWidget(m_triangleBaseSpin, 1);
-    triangleOuter->addWidget(baseRow);
 
     auto* angle1Row = new QWidget(m_triangleSection);
     auto* angle1Layout = new QHBoxLayout(angle1Row);
@@ -359,13 +338,11 @@ void PropertiesPanelValueCard::Refresh(const QList<ShapeItem*>& shapes, const QL
             break;
         }
     }
-    if (m_triangleBaseSpin && m_triangleAngle1Spin && m_triangleAngle2Spin) {
+    if (m_triangleAngle1Spin && m_triangleAngle2Spin) {
         const bool triangleOn = triangle != nullptr;
-        m_triangleBaseSpin->setEnabled(triangleOn);
         m_triangleAngle1Spin->setEnabled(triangleOn);
         m_triangleAngle2Spin->setEnabled(triangleOn);
-        // 底边即内容矩形宽度；角度直接回显当前值，未选中三角形时给默认 64 / 60° / 60°。
-        m_triangleBaseSpin->setValue(triangleOn ? qRound(triangle->ContentSize().width()) : 64);
+        // 角度直接回显当前值，未选中三角形时给默认 60° / 60°。
         m_triangleAngle1Spin->setValue(triangleOn ? qRound(triangle->BottomAngle1()) : 60);
         m_triangleAngle2Spin->setValue(triangleOn ? qRound(triangle->BottomAngle2()) : 60);
     }

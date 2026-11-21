@@ -267,9 +267,9 @@ void selftest::RunImageFillTests(Context& ctx)
         before.shapeState = shape->State();
 
         ItemPropertiesState afterSet = before;
-        afterSet.shapeState.hasFillImage = true;
-        afterSet.shapeState.fillImage = SolidImage(GREEN, 16);
-        afterSet.shapeState.fillImageMode = ImageFill::Mode::STRETCH;
+        afterSet.shapeState.fill.hasImage = true;
+        afterSet.shapeState.fill.image = SolidImage(GREEN, 16);
+        afterSet.shapeState.fill.imageMode = ImageFill::Mode::STRETCH;
         undo.push(new ItemPropertiesCommand(&undoScene, shape, before, afterSet, QStringLiteral("设图片填充")));
         ctx.Check(undo.index() == 1 && shape->HasFillImage(), QStringLiteral("设置图片填充占一条撤销记录"),
                   QStringLiteral("index=%1 has=%2").arg(undo.index()).arg(shape->HasFillImage() ? 1 : 0));
@@ -280,7 +280,7 @@ void selftest::RunImageFillTests(Context& ctx)
         ctx.Check(shape->HasFillImage(), QStringLiteral("重做后图片填充恢复"));
 
         ItemPropertiesState afterMode = afterSet;
-        afterMode.shapeState.fillImageMode = ImageFill::Mode::TILE;
+        afterMode.shapeState.fill.imageMode = ImageFill::Mode::TILE;
         undo.push(new ItemPropertiesCommand(&undoScene, shape, afterSet, afterMode, QStringLiteral("换档")));
         ctx.Check(undo.index() == 2 && shape->FillImageMode() == ImageFill::Mode::TILE,
                   QStringLiteral("换摆放模式占一条撤销记录"));
@@ -290,8 +290,8 @@ void selftest::RunImageFillTests(Context& ctx)
         undo.redo();
 
         ItemPropertiesState afterClear = afterMode;
-        afterClear.shapeState.hasFillImage = false;
-        afterClear.shapeState.fillImage = QPixmap();
+        afterClear.shapeState.fill.hasImage = false;
+        afterClear.shapeState.fill.image = QPixmap();
         undo.push(new ItemPropertiesCommand(&undoScene, shape, afterMode, afterClear, QStringLiteral("清除")));
         undo.undo();
         ctx.Check(shape->HasFillImage() && shape->FillImageMode() == ImageFill::Mode::TILE,

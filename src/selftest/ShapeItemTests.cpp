@@ -107,6 +107,51 @@ void selftest::RunShapeItemTests(Context& ctx)
     // 菱形已是独立类型（DiamondItem，派生自平行四边形）。
     ctx.Check(shapeTypes.size() == 17, QStringLiteral("提供 17 种有面积图形（直线/弧线/正弦已并入曲线族）"),
               QStringLiteral("count=%1").arg(shapeTypes.size()));
+
+    // 需求 6：填充 / 描线属性各自归入基类，有面积图形同时多继承两者，
+    // 零面积描线只继承描线基类；属性面板按基类虚函数批量改选中图元。
+    {
+        ShapeItem* rect = CreateShapeItem(ShapeType::RECTANGLE);
+        StraightLineItem line;
+        CanvasItem* lineItem = &line;
+        ctx.Check(dynamic_cast<FillAttributes*>(rect) != nullptr && dynamic_cast<StrokeAttributes*>(rect) != nullptr,
+                  QStringLiteral("有面积图形同时继承填充与描线属性基类"));
+        ctx.Check(dynamic_cast<StrokeAttributes*>(lineItem) != nullptr &&
+                      dynamic_cast<FillAttributes*>(lineItem) == nullptr,
+                  QStringLiteral("直线只继承描线属性基类，不继承填充基类"));
+
+        const QColor fill(239, 68, 68, 120);
+        auto* fillAttrs = dynamic_cast<FillAttributes*>(rect);
+        auto* strokeAttrs = dynamic_cast<StrokeAttributes*>(rect);
+        fillAttrs->SetFillColor(fill);
+        strokeAttrs->SetStrokeWidth(9.0);
+        ctx.Check(rect->FillColor() == fill && qAbs(rect->StrokeWidth() - 9.0) < 0.01,
+                  QStringLiteral("通过属性基类写回填充颜色与描线宽度"),
+                  QStringLiteral("fill=%1 width=%2").arg(rect->FillColor().name()).arg(rect->StrokeWidth()));
+
+        // 多边形从内部图层取色：经 FillAttributes 虚函数写入时也要落到图层上。
+        PolygonItem::Layer layer;
+        layer.path.addRect(QRectF(0.0, 0.0, 40.0, 30.0));
+        layer.fill = QColor(QStringLiteral("#3B82F6"));
+        layer.stroke = QColor(QStringLiteral("#1E293B"));
+        layer.filled = true;
+        PolygonItem polygon({layer});
+        auto* polygonFill = dynamic_cast<FillAttributes*>(&polygon);
+        polygonFill->SetFillColor(fill);
+        ctx.Check(polygonFill && polygon.FillColor() == fill, QStringLiteral("填充基类虚函数对多边形落到图层取色"),
+                  polygon.FillColor().name());
+        delete rect;
+    }
+
+    // 需求 5：三角形不再暴露底边长度属性，只保留两个底角。
+    {
+        TriangleItem triangle;
+        const ItemPropertySet properties = triangle.Properties();
+        ctx.Check(properties.Size() == 16 && properties.Contains(ItemProperty::BOTTOM_ANGLE1) &&
+                      properties.Contains(ItemProperty::BOTTOM_ANGLE2),
+                  QStringLiteral("三角形属性只剩两个底角（底边长度已移除）"),
+                  QStringLiteral("size=%1").arg(properties.Size()));
+    }
     // 需求 9：平行四边形默认 60° 内角、内容尺寸 110.85×64，角度钳在 15–165°。
     {
         ParallelogramItem para;
