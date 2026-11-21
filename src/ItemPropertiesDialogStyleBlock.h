@@ -23,13 +23,17 @@ class StrokeWidthRow;
 // 属性窗的填充 / 边框区块：填充与描线两组行直接复用编辑面板的 AttributeRowWidgets，
 // 行控件绑定本块私有的 FillAttributes / StrokeAttributes 副本（属性窗取消时不影响图元），
 // 确定时把两份状态交给对话框写入撤销记录。
+// 所有行在构造时一次建齐、顺序固定；SetItem 按图元属性有无回填并显隐，
+// 全部图元类型共用同一区块实例。行首图标在属性窗内隐藏（行标题已说明属性名）。
 class ItemPropertiesDialogStyleBlock : public QWidget {
     Q_OBJECT
 
   public:
-    ItemPropertiesDialogStyleBlock(CanvasItem* item, QWidget* parent = nullptr);
+    explicit ItemPropertiesDialogStyleBlock(QWidget* parent = nullptr);
 
     void AddRows(QFormLayout* form);
+
+    void SetItem(CanvasItem* item);
 
     bool HasFill() const { return m_hasFill; }
     qreal InitialStrokeWidth() const { return m_initialStrokeWidth; }
@@ -85,9 +89,11 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     void SetContentSize(const QSizeF& size);
 
   private:
-    void BuildFillRows(CanvasItem* item);
-    void BuildStrokeRows(CanvasItem* item);
+    void BuildFillRows();
+    void BuildStrokeRows();
+    void BuildTypeRows();
 
+    QFormLayout* m_form = nullptr;
     bool m_hasFill = false;
     qreal m_initialStrokeWidth = 4.0;
     FillAttributes m_fillAttributes;

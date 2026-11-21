@@ -1,3 +1,4 @@
+#include "ArcItem.h"
 #include "BraceItem.h"
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
@@ -6,6 +7,7 @@
 #include "I18n.h"
 #include "ItemPropertiesDialog.h"
 #include "ShapeItem.h"
+#include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
 
@@ -409,5 +411,60 @@ void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
         QTimer::singleShot(1500, &outsideDialog, &QDialog::reject);
         outsideDialog.exec();
         ctx.Check(closedByOutsideClick, QStringLiteral("点击属性窗外的画布按取消关闭属性窗"));
+    }
+
+    {
+        // 单实例复用：同一属性窗依次换绑椭圆 / 文字 / 弧线，行序固定，
+        // 行按图元属性有无显隐；填充 / 描线行的行首图标在属性窗内不再显示。
+        CanvasScene reuseScene;
+        reuseScene.ApplyCanvasSize(QSizeF(800, 600));
+        QUndoStack reuseUndo;
+        reuseScene.SetUndoStack(&reuseUndo);
+
+        auto* ellipse = CreateShapeItem(ShapeType::ELLIPSE);
+        ellipse->SetLayerId(reuseScene.ActiveLayerId());
+        ellipse->SetStyle(QColor(QStringLiteral("#1D4ED8")), QColor(QStringLiteral("#BFDBFE")), 4.0);
+        ellipse->SetFill(QColor(QStringLiteral("#BFDBFE")), FillStyle::SOLID);
+        reuseScene.AttachItem(ellipse);
+
+        QFont reuseFont(QStringLiteral("Microsoft YaHei UI"));
+        reuseFont.setPointSize(14);
+        auto* reuseText = new TextItem();
+        reuseText->SetTextFormat(QStringLiteral("复用文字"), reuseFont, QColor(QStringLiteral("#0F766E")));
+        reuseText->SetLayerId(reuseScene.ActiveLayerId());
+        reuseScene.AttachItem(reuseText);
+
+        auto* reuseArc = new ArcItem;
+        reuseArc->SetArcGeometry(QPointF(50.0, 50.0), QSizeF(160.0, 80.0), 0.0, 180.0, QColor(Qt::black), 2.0);
+        reuseArc->SetLayerId(reuseScene.ActiveLayerId());
+        reuseScene.AttachItem(reuseArc);
+
+        ItemPropertiesDialog dialog(&reuseScene, ellipse);
+        auto* fillStyleRow = dialog.findChild<QWidget*>(QStringLiteral("ItemFillStyleRow"));
+        auto* fillColorRow = dialog.findChild<QWidget*>(QStringLiteral("ItemFillColorRow"));
+        auto* borderStyleRow = dialog.findChild<QWidget*>(QStringLiteral("ItemBorderStyleRow"));
+        auto* reuseTextEdit = dialog.findChild<QWidget*>(QStringLiteral("ItemPropertiesTextValue"));
+        auto* sineCyclesRow = dialog.findChild<QWidget*>(QStringLiteral("ItemPropertiesSineCyclesValue"));
+        auto* majorAxisRow = dialog.findChild<QWidget*>(QStringLiteral("ItemPropertiesMajorAxisValue"));
+        auto* fillIcon = fillStyleRow ? fillStyleRow->findChild<QToolButton*>(QStringLiteral("ItemRowIcon")) : nullptr;
+        ctx.Check(fillStyleRow && fillColorRow && borderStyleRow && fillStyleRow->isVisibleTo(&dialog) && fillIcon &&
+                      fillIcon->isHidden(),
+                  QStringLiteral("椭圆属性窗显示填充 / 描线行且行首图标隐藏"));
+        ctx.Check(majorAxisRow && majorAxisRow->isVisibleTo(&dialog) && reuseTextEdit &&
+                      !reuseTextEdit->isVisibleTo(&dialog) && sineCyclesRow && !sineCyclesRow->isVisibleTo(&dialog),
+                  QStringLiteral("椭圆属性窗显示半轴行、隐藏文字与正弦行"));
+
+        dialog.SetItem(&reuseScene, reuseText, true);
+        ctx.Check(fillStyleRow && !fillStyleRow->isVisibleTo(&dialog) && reuseTextEdit &&
+                      reuseTextEdit->isVisibleTo(&dialog),
+                  QStringLiteral("同一实例换绑文字后填充行隐藏、文字行显示"));
+
+        dialog.SetItem(&reuseScene, reuseArc, true);
+        QComboBox* arrowCombo = dialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesStartArrowValue"));
+        auto* arcAngleRow = dialog.findChild<QWidget*>(QStringLiteral("ItemPropertiesArcStartAngleValue"));
+        ctx.Check(arrowCombo && arrowCombo->isVisibleTo(&dialog) && arcAngleRow && arcAngleRow->isVisibleTo(&dialog) &&
+                      fillStyleRow && !fillStyleRow->isVisibleTo(&dialog),
+                  QStringLiteral("同一实例换绑弧线后箭头 / 角度行显示、填充行仍隐藏"));
+        ctx.Check(dialog.Item() == reuseArc, QStringLiteral("属性窗换绑后图元指针已更新"));
     }
 }

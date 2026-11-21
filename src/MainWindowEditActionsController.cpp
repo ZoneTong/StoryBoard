@@ -39,11 +39,15 @@ void MainWindowEditActionsController::ShowItemProperties(CanvasItem* item)
     // 时才允许修改；查看/画笔/文字模式一律以只读方式展示。
     const bool editable = m_window->m_view->mode() == ToolMode::EDIT && m_window->m_scene->IsItemEditable(item);
 
-    CloseItemProperties();
-    ItemPropertiesDialog dialog(m_window->m_scene, item, m_window, editable);
-    m_window->m_itemPropertiesDialog = &dialog;
-    dialog.exec();
-    m_window->m_itemPropertiesDialog = nullptr;
+    // 所有图元类型复用同一个属性窗实例：行控件一次建齐、顺序固定，
+    // 每次打开只换绑图元并按属性显隐，不再按类型重建对话框。
+    ItemPropertiesDialog* dialog = m_window->m_itemPropertiesDialog;
+    if (!dialog) {
+        dialog = new ItemPropertiesDialog(nullptr, nullptr, m_window, true);
+        m_window->m_itemPropertiesDialog = dialog;
+    }
+    dialog->SetItem(m_window->m_scene, item, editable);
+    dialog->exec();
 }
 
 void MainWindowEditActionsController::CloseItemProperties()
@@ -51,10 +55,9 @@ void MainWindowEditActionsController::CloseItemProperties()
     if (!m_window->m_itemPropertiesDialog) {
         return;
     }
-    QPointer<ItemPropertiesDialog> dialog = m_window->m_itemPropertiesDialog;
-    m_window->m_itemPropertiesDialog = nullptr;
-    if (dialog) {
-        dialog->close();
+    // 实例常驻复用：这里只负责关闭（取消未确认修改），不销毁。
+    if (m_window->m_itemPropertiesDialog->isVisible()) {
+        m_window->m_itemPropertiesDialog->close();
     }
 }
 

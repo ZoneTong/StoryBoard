@@ -68,6 +68,18 @@ QString AttributeRowText(const char* source)
     return QCoreApplication::translate("PropertiesPanel", source);
 }
 
+void SetRowIconVisible(QWidget* row, bool visible)
+{
+    if (!row) {
+        return;
+    }
+    for (const char* name : {"ItemRowIcon", "ItemBorderWidthIcon"}) {
+        for (QToolButton* icon : row->findChildren<QToolButton*>(QString::fromLatin1(name))) {
+            icon->setVisible(visible);
+        }
+    }
+}
+
 FillStyleRow::FillStyleRow(QWidget* parent) : QWidget(parent)
 {
     setObjectName(QStringLiteral("ItemFillStyleRow"));

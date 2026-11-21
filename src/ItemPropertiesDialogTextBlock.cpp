@@ -10,22 +10,15 @@
 #include <QPushButton>
 #include <QToolButton>
 
-ItemPropertiesDialogTextBlock::ItemPropertiesDialogTextBlock(CanvasItem* item, QWidget* parent) : QWidget(parent)
+ItemPropertiesDialogTextBlock::ItemPropertiesDialogTextBlock(QWidget* parent) : QWidget(parent)
 {
-    if (!item || !item->HasTextFacet()) {
-        return;
-    }
-
-    m_textFont = item->TextFont();
-
     // 需求 39：文字正文也是可编辑属性，直接在属性窗里改，不必先离开再开文字对话框。
     m_textEdit = new QPlainTextEdit(this);
     m_textEdit->setObjectName(QStringLiteral("ItemPropertiesTextValue"));
-    m_textEdit->setPlainText(item->TextContent());
     m_textEdit->setMinimumHeight(88);
 
     m_textColorButton =
-        ItemPropertiesFields::MakeColorField(this, item->TextColor(), QStringLiteral("ItemPropertiesTextColorValue"));
+        ItemPropertiesFields::MakeColorField(this, QColor(), QStringLiteral("ItemPropertiesTextColorValue"));
 
     m_fontButton = new QPushButton(this);
     m_fontButton->setObjectName(QStringLiteral("ItemPropertiesFontValue"));
@@ -36,14 +29,26 @@ ItemPropertiesDialogTextBlock::ItemPropertiesDialogTextBlock(CanvasItem* item, Q
 
 void ItemPropertiesDialogTextBlock::AddRows(QFormLayout* form)
 {
-    if (m_textEdit) {
-        form->addRow(ItemPropertiesDialog::tr("Text content"), m_textEdit);
+    m_form = form;
+    form->addRow(ItemPropertiesDialog::tr("Text content"), m_textEdit);
+    form->addRow(ItemPropertiesDialog::tr("Text color"), m_textColorButton);
+    form->addRow(ItemPropertiesDialog::tr("Font"), m_fontButton);
+}
+
+void ItemPropertiesDialogTextBlock::SetItem(CanvasItem* item)
+{
+    const bool showText = item && item->HasTextFacet();
+    if (showText) {
+        m_textFont = item->TextFont();
+        m_textEdit->setPlainText(item->TextContent());
+        m_textColorButton->setProperty("itemColor", item->TextColor());
+        ItemPropertiesFields::RefreshColorButton(m_textColorButton);
+        UpdateFontButton();
     }
-    if (m_textColorButton) {
-        form->addRow(ItemPropertiesDialog::tr("Text color"), m_textColorButton);
-    }
-    if (m_fontButton) {
-        form->addRow(ItemPropertiesDialog::tr("Font"), m_fontButton);
+    if (m_form) {
+        m_form->setRowVisible(m_textEdit, showText);
+        m_form->setRowVisible(m_textColorButton, showText);
+        m_form->setRowVisible(m_fontButton, showText);
     }
 }
 

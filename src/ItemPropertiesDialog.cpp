@@ -18,13 +18,10 @@
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QEvent>
-#include <QFileDialog>
-#include <QFont>
 #include <QFormLayout>
 #include <QFrame>
 #include <QGuiApplication>
 #include <QHideEvent>
-#include <QImage>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
@@ -33,7 +30,6 @@
 #include <QPlainTextEdit>
 #include <QPoint>
 #include <QPointer>
-#include <QPolygon>
 #include <QPushButton>
 #include <QShowEvent>
 #include <QSpinBox>
@@ -133,7 +129,7 @@ void UninstallClickOutsideHook(ItemPropertiesDialog* dialog)
 } // namespace
 
 ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item, QWidget* parent, bool editable)
-    : QDialog(parent), m_scene(scene), m_item(item), m_editable(editable)
+    : QDialog(parent)
 {
     setWindowTitle(tr("Item properties"));
     // 需求 42：属性窗统一改为模态；非编辑模式可打开查看，但字段只读。
@@ -142,31 +138,24 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
     // 模态窗会先吃掉窗外的鼠标按下，必须由应用级过滤器在事件分发前识别。
     qApp->installEventFilter(this);
 
-    // 打开属性窗时再兜底一次自动名称：旧画布、直接 addItem 或清空名称后，
-    // 这里也能得到“类型 N”，不会出现看不到名称或名称为空的行。
-    if (scene) {
-        scene->AssignAutoItemNames();
-    }
-
     auto* root = new QVBoxLayout(this);
     root->setContentsMargins(20, 18, 20, 16);
     root->setSpacing(12);
 
-    auto* heading = new QLabel(item ? item->Name() : tr("No item selected"), this);
-    heading->setObjectName(QStringLiteral("ItemPropertiesHeading"));
-    root->addWidget(heading);
+    m_heading = new QLabel(this);
+    m_heading->setObjectName(QStringLiteral("ItemPropertiesHeading"));
+    root->addWidget(m_heading);
 
     auto* line = new QFrame(this);
     line->setFrameShape(QFrame::HLine);
     line->setFrameShadow(QFrame::Sunken);
     root->addWidget(line);
 
-    if (!m_editable) {
-        auto* readOnlyHint = new QLabel(tr("Read-only: switch to Edit mode to change properties."), this);
-        readOnlyHint->setObjectName(QStringLiteral("ItemPropertiesReadOnlyHint"));
-        readOnlyHint->setWordWrap(true);
-        root->addWidget(readOnlyHint);
-    }
+    m_readOnlyHint = new QLabel(tr("Read-only: switch to Edit mode to change properties."), this);
+    m_readOnlyHint->setObjectName(QStringLiteral("ItemPropertiesReadOnlyHint"));
+    m_readOnlyHint->setWordWrap(true);
+    m_readOnlyHint->hide();
+    root->addWidget(m_readOnlyHint);
 
     auto* form = new QFormLayout;
     form->setContentsMargins(0, 0, 0, 0);
@@ -174,102 +163,118 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
     form->setVerticalSpacing(9);
     form->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
-    if (!item) {
-        auto* typeValue = new QLabel(QStringLiteral("—"), this);
-        typeValue->setObjectName(QStringLiteral("ItemPropertiesTypeValue"));
-        form->addRow(tr("Item type"), typeValue);
-        root->addLayout(form);
-    } else {
-        m_initialPos = item->pos();
-        m_initialSize = item->ContentSize();
-        m_initialRotation = item->RotationAngle();
-        m_initialItemName = item->CustomName();
-        m_initialDisplayName = item->Name();
-        auto* typeValue = new QLabel(item->TypeDisplayName(), this);
-        typeValue->setObjectName(QStringLiteral("ItemPropertiesTypeValue"));
-        typeValue->setTextInteractionFlags(Qt::TextSelectableByMouse);
-        form->addRow(tr("Item type"), typeValue);
+    m_typeValue = new QLabel(this);
+    m_typeValue->setObjectName(QStringLiteral("ItemPropertiesTypeValue"));
+    m_typeValue->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    form->addRow(tr("Item type"), m_typeValue);
 
-        m_identityBlock = new ItemPropertiesDialogIdentityBlock(scene, item, this);
-        m_identityBlock->AddRows(form);
+    // 所有行一次建齐、顺序固定（类型 → 名称 / 图层 / 高度 → 文字 → 填充 / 描线 /
+    // 参数行 → 几何）；SetItem 按图元属性有无回填并显隐，全部类型共用同一实例。
+    m_identityBlock = new ItemPropertiesDialogIdentityBlock(scene, this);
+    m_identityBlock->AddRows(form);
 
-        if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<LineItemAbstract*>(item)) {
-            m_styleBlock = new ItemPropertiesDialogStyleBlock(item, this);
-            m_styleBlock->AddRows(form);
-            m_hasFill = m_styleBlock->HasFill();
-            m_initialStrokeWidth = m_styleBlock->InitialStrokeWidth();
-        } else if (item->HasTextFacet()) {
-            m_textBlock = new ItemPropertiesDialogTextBlock(item, this);
-            m_textBlock->AddRows(form);
-            connect(m_textBlock, &ItemPropertiesDialogTextBlock::fontChanged, this,
-                    &ItemPropertiesDialog::SyncTextNaturalSize);
+    m_textBlock = new ItemPropertiesDialogTextBlock(this);
+    m_textBlock->AddRows(form);
+    connect(m_textBlock, &ItemPropertiesDialogTextBlock::fontChanged, this, &ItemPropertiesDialog::SyncTextNaturalSize);
+    connect(m_textBlock->TextEdit(), &QPlainTextEdit::textChanged, this, &ItemPropertiesDialog::SyncTextNaturalSize);
+
+    m_styleBlock = new ItemPropertiesDialogStyleBlock(this);
+    m_styleBlock->AddRows(form);
+
+    m_geometryBlock = new ItemPropertiesDialogGeometryBlock(this);
+    m_geometryBlock->AddRows(form);
+    // 圆角矩形：尺寸框变化时同步圆角上限（区块内部按当前图元是否适用自行判断）。
+    // 回填期间跳过：逐值回填宽高时另一个尺寸框还是构造默认值，会把圆角上限钳小；
+    // SetItem 末尾用真实内容尺寸统一同步一次。
+    auto syncCornerRange = [this]() {
+        if (m_initializing || !m_geometryBlock || !m_styleBlock) {
+            return;
         }
+        m_styleBlock->SetContentSize(
+            QSizeF(m_geometryBlock->WidthSpin()->value(), m_geometryBlock->HeightSizeSpin()->value()));
+    };
+    connect(m_geometryBlock->WidthSpin(), &QDoubleSpinBox::valueChanged, this, syncCornerRange);
+    connect(m_geometryBlock->HeightSizeSpin(), &QDoubleSpinBox::valueChanged, this, syncCornerRange);
 
-        // 图形与曲线族在样式区已有不透明度行（紧跟描线宽度）；文字、图片等
-        // 没有样式区的图元在这里统一补一行。
-        if (!m_styleBlock) {
-            m_opacitySpin = new QSpinBox(this);
-            m_opacitySpin->setObjectName(QStringLiteral("ItemPropertiesOpacityValue"));
-            m_opacitySpin->setRange(0, 100);
-            m_opacitySpin->setSuffix(QStringLiteral(" %"));
-            m_opacitySpin->setMinimumWidth(88);
-            m_initialOpacity = item->ItemOpacity();
-            m_opacitySpin->setValue(qRound(m_initialOpacity * 100.0));
-            m_initialOpacityPercent = m_opacitySpin->value();
-            form->addRow(tr("Opacity"), m_opacitySpin);
-        }
+    root->addLayout(form);
 
-        m_geometryBlock = new ItemPropertiesDialogGeometryBlock(item, this);
-        m_geometryBlock->AddRows(form);
-        if (m_styleBlock && m_styleBlock->CornerRadiusSpin()) {
-            auto syncCornerRange = [this]() {
-                if (!m_geometryBlock) {
-                    return;
-                }
-                m_styleBlock->SetContentSize(
-                    QSizeF(m_geometryBlock->WidthSpin()->value(), m_geometryBlock->HeightSizeSpin()->value()));
-            };
-            connect(m_geometryBlock->WidthSpin(), &QDoubleSpinBox::valueChanged, this, syncCornerRange);
-            connect(m_geometryBlock->HeightSizeSpin(), &QDoubleSpinBox::valueChanged, this, syncCornerRange);
-        }
+    m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+    connect(m_buttons, &QDialogButtonBox::accepted, this, &ItemPropertiesDialog::accept);
+    connect(m_buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    root->addWidget(m_buttons);
 
-        root->addLayout(form);
-    }
-
-    // 文字正文直接在属性窗里编辑；内容变化时同步到自然尺寸，确定后由
-    // ItemPropertiesCommand 一次性提交文字、尺寸和撤销记录。
-    if (m_textBlock && m_textBlock->TextEdit()) {
-        connect(m_textBlock->TextEdit(), &QPlainTextEdit::textChanged, this,
-                &ItemPropertiesDialog::SyncTextNaturalSize);
-    }
-
-    ApplyEditableState();
-
-    auto* buttons = new QDialogButtonBox(
-        m_editable ? (QDialogButtonBox::Ok | QDialogButtonBox::Cancel) : QDialogButtonBox::Ok, this);
-    if (auto* ok = buttons->button(QDialogButtonBox::Ok)) {
-        ok->setText(m_editable ? tr("OK") : tr("Close"));
-    }
-    if (auto* cancel = buttons->button(QDialogButtonBox::Cancel)) {
-        cancel->setText(tr("Cancel"));
-    }
-    connect(buttons, &QDialogButtonBox::accepted, this, &ItemPropertiesDialog::accept);
-    connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
-    root->addWidget(buttons);
-
-    if (m_identityBlock && m_identityBlock->HasLayerControls()) {
-        m_identityBlock->UpdateHeightRange(false);
+    if (m_identityBlock->HasLayerControls()) {
         connect(m_identityBlock, &ItemPropertiesDialogIdentityBlock::layerChanged, this, [this]() {
             if (m_initializing) {
                 return;
             }
             m_identityBlock->UpdateHeightRange(true);
         });
-        m_initializing = false;
-        m_identityBlock->SetInitialized(false);
-    } else {
-        m_initializing = false;
     }
+
+    SetItem(scene, item, editable);
+}
+
+void ItemPropertiesDialog::SetItem(CanvasScene* scene, CanvasItem* item, bool editable)
+{
+    m_scene = scene;
+    m_item = item;
+    m_editable = editable;
+    m_textFocusApplied = false;
+    m_outsideClickClosing = false;
+    // 回填期间屏蔽信号联动（文字正文变化同步自然尺寸、图层切换重算高度等），
+    // 避免“打开属性窗”被误当成用户修改。
+    m_initializing = true;
+
+    // 打开属性窗时再兜底一次自动名称：旧画布、直接 addItem 或清空名称后，
+    // 这里也能得到“类型 N”，不会出现看不到名称或名称为空的行。
+    if (scene) {
+        scene->AssignAutoItemNames();
+    }
+
+    m_heading->setText(item ? item->Name() : tr("No item selected"));
+    m_typeValue->setText(item ? item->TypeDisplayName() : QStringLiteral("—"));
+    m_readOnlyHint->setVisible(item && !m_editable);
+
+    if (item) {
+        m_initialPos = item->pos();
+        m_initialSize = item->ContentSize();
+        m_initialRotation = item->RotationAngle();
+        m_initialItemName = item->CustomName();
+        m_initialDisplayName = item->Name();
+    } else {
+        m_initialPos = QPointF();
+        m_initialSize = QSizeF();
+        m_initialRotation = 0.0;
+        m_initialItemName.clear();
+        m_initialDisplayName.clear();
+    }
+
+    m_identityBlock->SetItem(scene, item);
+    m_textBlock->SetItem(item);
+    m_styleBlock->SetItem(item);
+    m_hasFill = m_styleBlock->HasFill();
+    m_initialStrokeWidth = m_styleBlock->InitialStrokeWidth();
+    m_geometryBlock->SetItem(item);
+    // 宽高回填完成后用真实内容尺寸统一同步圆角上限（含未存储圆角的图元按比例推默认值）。
+    if (item) {
+        m_styleBlock->SetContentSize(m_initialSize);
+    }
+
+    ApplyEditableState();
+
+    if (auto* ok = m_buttons->button(QDialogButtonBox::Ok)) {
+        ok->setText(m_editable ? tr("OK") : tr("Close"));
+    }
+    if (auto* cancel = m_buttons->button(QDialogButtonBox::Cancel)) {
+        cancel->setVisible(m_editable);
+    }
+
+    if (m_identityBlock->HasLayerControls()) {
+        m_identityBlock->UpdateHeightRange(false);
+        m_identityBlock->SetInitialized(false);
+    }
+    m_initializing = false;
 }
 
 ItemPropertiesDialog::~ItemPropertiesDialog()
@@ -335,7 +340,7 @@ void ItemPropertiesDialog::showEvent(QShowEvent* event)
     InstallClickOutsideHook(this);
 #endif
     // 只做一次，且只读模式不抢焦点；光标停在正文末尾，不整段选中。
-    if (m_textFocusApplied || !m_editable || !m_textBlock || !m_textBlock->TextEdit()) {
+    if (m_textFocusApplied || !m_editable || !m_item || !m_item->HasTextFacet()) {
         return;
     }
     m_textFocusApplied = true;
@@ -364,9 +369,6 @@ void ItemPropertiesDialog::ApplyEditableState()
     }
     if (m_styleBlock) {
         widgets << m_styleBlock->StyleRows();
-    }
-    if (m_opacitySpin) {
-        widgets << m_opacitySpin;
     }
     if (m_textBlock) {
         widgets << m_textBlock->TextColorButton() << m_textBlock->FontButton() << m_textBlock->TextEdit();
@@ -405,10 +407,10 @@ void ItemPropertiesDialog::accept()
 
 void ItemPropertiesDialog::SyncTextNaturalSize()
 {
-    if (!m_editable || !m_textBlock || !m_textBlock->TextEdit()) {
+    if (m_initializing || !m_editable || !m_textBlock || !m_textBlock->TextEdit()) {
         return;
     }
-    if (m_item->HasTextFacet()) {
+    if (m_item && m_item->HasTextFacet()) {
         const QSizeF natural = TextItem::Measure(m_textBlock->TextEdit()->toPlainText(), m_textBlock->TextFont());
         if (m_geometryBlock) {
             m_geometryBlock->SetNaturalSize(natural);
@@ -493,7 +495,10 @@ void ItemPropertiesDialog::ApplyChanges()
         after.shapeState.size = after.size;
         if (style) {
             // 填充 / 描线两行直接绑定属性基类副本，确定时整份状态取回，不再逐控件拼值。
-            after.shapeState.fill = style->FillState();
+            // 只描线的图形没有填充行：副本保持图元原值，不产生额外修改。
+            if (m_hasFill) {
+                after.shapeState.fill = style->FillState();
+            }
             after.shapeState.stroke = style->StrokeState();
         }
         if (style && style->OpacitySpin()) {
@@ -547,9 +552,6 @@ void ItemPropertiesDialog::ApplyChanges()
                                                          after.shapeState.bottomAngle2);
             after.shapeState.size = after.size;
         }
-        if (m_hasFill && style) {
-            after.shapeState.fill = style->FillState();
-        }
     } else if (m_item->HasTextFacet()) {
         before.hasTextState = true;
         before.textState = m_item->TextState();
@@ -571,6 +573,11 @@ void ItemPropertiesDialog::ApplyChanges()
         }
         if (text && text->TextColorButton()) {
             after.textState.color = text->TextColorButton()->property("itemColor").value<QColor>();
+        }
+        // 不透明度是所有图元共有的属性：文字在这里与图形共用同一行提交流程。
+        if (style && style->OpacitySpin()) {
+            const int percent = style->OpacitySpin()->value();
+            after.opacity = percent == style->InitialOpacityPercent() ? style->InitialOpacity() : percent / 100.0;
         }
     } else if (auto* stroke = dynamic_cast<LineItemAbstract*>(m_item.data())) {
         before.hasStrokeStyle = true;
@@ -635,11 +642,6 @@ void ItemPropertiesDialog::ApplyChanges()
                                               : style->SineAmplitudeSpin()->value();
             }
         }
-    }
-
-    if (m_opacitySpin) {
-        const int percent = m_opacitySpin->value();
-        after.opacity = percent == m_initialOpacityPercent ? m_initialOpacity : percent / 100.0;
     }
 
     if (before == after) {

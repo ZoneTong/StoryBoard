@@ -8,13 +8,8 @@
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 
-ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(CanvasItem* item, QWidget* parent)
-    : QWidget(parent)
+ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(QWidget* parent) : QWidget(parent)
 {
-    if (!item) {
-        return;
-    }
-
     m_positionRow = new PairAttributeRow(IconId::FIT, false, QStringLiteral("ItemPropertiesPositionXValue"),
                                          QStringLiteral("ItemPropertiesPositionYValue"), 1, -1000000.0, 1000000.0,
                                          QString(), QStringLiteral(","), this);
@@ -22,7 +17,6 @@ ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(CanvasItem*
     m_positionYSpin = m_positionRow->SecondSpin();
     m_positionXSpin->setMinimumWidth(88);
     m_positionYSpin->setMinimumWidth(88);
-    m_positionRow->Refresh(item->pos().x(), item->pos().y());
 
     m_sizeRow = new PairAttributeRow(IconId::SHAPES, false, QStringLiteral("ItemPropertiesWidthValue"),
                                      QStringLiteral("ItemPropertiesHeightSizeValue"), 1, 1.0, 1000000.0, QString(),
@@ -31,63 +25,72 @@ ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(CanvasItem*
     m_heightSizeSpin = m_sizeRow->SecondSpin();
     m_widthSpin->setMinimumWidth(88);
     m_heightSizeSpin->setMinimumWidth(88);
-    m_sizeRow->Refresh(item->ContentSize().width(), item->ContentSize().height());
 
     m_rotationRow = new NumberAttributeRow(IconId::ROTATE_CCW, false, 1, -360.0, 360.0, QStringLiteral("°"),
                                            QStringLiteral("ItemPropertiesRotationValue"), this);
     m_rotationRow->SetSingleStep(5.0);
     m_rotationSpin = m_rotationRow->Spin();
     m_rotationSpin->setMinimumWidth(88);
-    m_rotationRow->Refresh(item->RotationAngle());
 
-    const bool hasAxes = item->Properties().Contains(ItemProperty::MAJOR_AXIS);
     // 曲线族里的弧线：椭圆框与笔迹包围盒不同，半轴按真实椭圆外接框读写；
     // 椭圆 / 扇形的内容框即外接框，半轴与内容宽高双向同步。
-    m_arcAxes = hasAxes && dynamic_cast<LineItemAbstract*>(item) != nullptr;
-    if (hasAxes) {
-        m_axisItem = item;
-        m_majorAxisRow = new NumberAttributeRow(IconId::SHAPES, false, 1, 0.5, 500000.0, QStringLiteral(" px"),
-                                                QStringLiteral("ItemPropertiesMajorAxisValue"), this);
-        m_majorAxisSpin = m_majorAxisRow->Spin();
-        m_majorAxisSpin->setMinimumWidth(88);
+    m_majorAxisRow = new NumberAttributeRow(IconId::SHAPES, false, 1, 0.5, 500000.0, QStringLiteral(" px"),
+                                            QStringLiteral("ItemPropertiesMajorAxisValue"), this);
+    m_majorAxisSpin = m_majorAxisRow->Spin();
+    m_majorAxisSpin->setMinimumWidth(88);
 
-        m_minorAxisRow = new NumberAttributeRow(IconId::SHAPES, false, 1, 0.5, 500000.0, QStringLiteral(" px"),
-                                                QStringLiteral("ItemPropertiesMinorAxisValue"), this);
-        m_minorAxisSpin = m_minorAxisRow->Spin();
-        m_minorAxisSpin->setMinimumWidth(88);
+    m_minorAxisRow = new NumberAttributeRow(IconId::SHAPES, false, 1, 0.5, 500000.0, QStringLiteral(" px"),
+                                            QStringLiteral("ItemPropertiesMinorAxisValue"), this);
+    m_minorAxisSpin = m_minorAxisRow->Spin();
+    m_minorAxisSpin->setMinimumWidth(88);
 
-        SyncAxesFromSize();
-        if (m_arcAxes) {
-            m_initialArcMajor = m_majorAxisSpin->value();
-            m_initialArcMinor = m_minorAxisSpin->value();
-            // 弧线半轴可编辑：提交时并入属性窗的同一份快照撤销记录。
-            connect(m_majorAxisSpin, &QDoubleSpinBox::valueChanged, this, [this]() { ApplyArcAxes(true); });
-            connect(m_minorAxisSpin, &QDoubleSpinBox::valueChanged, this, [this]() { ApplyArcAxes(false); });
-        } else {
-            connect(m_widthSpin, &QDoubleSpinBox::valueChanged, this, [this]() { SyncAxesFromSize(); });
-            connect(m_heightSizeSpin, &QDoubleSpinBox::valueChanged, this, [this]() { SyncAxesFromSize(); });
-            connect(m_majorAxisSpin, &QDoubleSpinBox::valueChanged, this, [this]() { ApplyAxesToSize(true); });
-            connect(m_minorAxisSpin, &QDoubleSpinBox::valueChanged, this, [this]() { ApplyAxesToSize(false); });
-        }
-    }
+    // 连接一次、运行时按 m_hasAxes / m_arcAxes 分派：同一实例换图元无需重连。
+    connect(m_widthSpin, &QDoubleSpinBox::valueChanged, this, [this]() { SyncAxesFromSize(); });
+    connect(m_heightSizeSpin, &QDoubleSpinBox::valueChanged, this, [this]() { SyncAxesFromSize(); });
+    connect(m_majorAxisSpin, &QDoubleSpinBox::valueChanged, this,
+            [this]() { m_arcAxes ? ApplyArcAxes(true) : ApplyAxesToSize(true); });
+    connect(m_minorAxisSpin, &QDoubleSpinBox::valueChanged, this,
+            [this]() { m_arcAxes ? ApplyArcAxes(false) : ApplyAxesToSize(false); });
 }
 
 void ItemPropertiesDialogGeometryBlock::AddRows(QFormLayout* form)
 {
+    m_form = form;
     // 需求 8 行序定稿：长半轴 → 短半轴 → 旋转 → 位置 → 图元尺寸。
     // 位置与尺寸固定在最后两行，旋转保持在位置之前。
-    if (m_majorAxisRow && m_minorAxisRow) {
-        form->addRow(ItemPropertiesDialog::tr("Semi-major axis"), m_majorAxisRow);
-        form->addRow(ItemPropertiesDialog::tr("Semi-minor axis"), m_minorAxisRow);
+    form->addRow(ItemPropertiesDialog::tr("Semi-major axis"), m_majorAxisRow);
+    form->addRow(ItemPropertiesDialog::tr("Semi-minor axis"), m_minorAxisRow);
+    form->addRow(ItemPropertiesDialog::tr("Rotation"), m_rotationRow);
+    form->addRow(ItemPropertiesDialog::tr("Position"), m_positionRow);
+    form->addRow(ItemPropertiesDialog::tr("Item size"), m_sizeRow);
+}
+
+void ItemPropertiesDialogGeometryBlock::SetItem(CanvasItem* item)
+{
+    m_hasAxes = false;
+    m_arcAxes = false;
+    m_axisItem = item;
+    if (item) {
+        m_positionRow->Refresh(item->pos().x(), item->pos().y());
+        m_sizeRow->Refresh(item->ContentSize().width(), item->ContentSize().height());
+        m_rotationRow->Refresh(item->RotationAngle());
+        m_hasAxes = item->Properties().Contains(ItemProperty::MAJOR_AXIS);
+        m_arcAxes = m_hasAxes && dynamic_cast<LineItemAbstract*>(item) != nullptr;
+        if (m_hasAxes) {
+            SyncAxesFromSize();
+            if (m_arcAxes) {
+                m_initialArcMajor = m_majorAxisSpin->value();
+                m_initialArcMinor = m_minorAxisSpin->value();
+            }
+        }
     }
-    if (m_rotationRow) {
-        form->addRow(ItemPropertiesDialog::tr("Rotation"), m_rotationRow);
-    }
-    if (m_positionRow) {
-        form->addRow(ItemPropertiesDialog::tr("Position"), m_positionRow);
-    }
-    if (m_sizeRow) {
-        form->addRow(ItemPropertiesDialog::tr("Item size"), m_sizeRow);
+    if (m_form) {
+        const bool showAxes = item != nullptr && m_hasAxes;
+        m_form->setRowVisible(m_majorAxisRow, showAxes);
+        m_form->setRowVisible(m_minorAxisRow, showAxes);
+        m_form->setRowVisible(m_rotationRow, item != nullptr);
+        m_form->setRowVisible(m_positionRow, item != nullptr);
+        m_form->setRowVisible(m_sizeRow, item != nullptr);
     }
 }
 
@@ -103,7 +106,8 @@ void ItemPropertiesDialogGeometryBlock::SetNaturalSize(const QSizeF& size)
 
 void ItemPropertiesDialogGeometryBlock::SyncAxesFromSize()
 {
-    if (m_syncingAxes || !m_widthSpin || !m_heightSizeSpin || !m_majorAxisSpin || !m_minorAxisSpin) {
+    if (m_syncingAxes || !m_hasAxes || !m_axisItem || !m_widthSpin || !m_heightSizeSpin || !m_majorAxisSpin ||
+        !m_minorAxisSpin) {
         return;
     }
     m_syncingAxes = true;
@@ -121,7 +125,7 @@ void ItemPropertiesDialogGeometryBlock::SyncAxesFromSize()
 
 void ItemPropertiesDialogGeometryBlock::ApplyArcAxes(bool majorChanged)
 {
-    if (m_syncingAxes || !m_majorAxisSpin || !m_minorAxisSpin) {
+    if (m_syncingAxes || !m_hasAxes || !m_axisItem || !m_majorAxisSpin || !m_minorAxisSpin) {
         return;
     }
 
@@ -143,7 +147,7 @@ void ItemPropertiesDialogGeometryBlock::ApplyArcAxes(bool majorChanged)
 
 void ItemPropertiesDialogGeometryBlock::ApplyAxesToSize(bool majorChanged)
 {
-    if (m_syncingAxes || !m_widthSpin || !m_heightSizeSpin || !m_majorAxisSpin || !m_minorAxisSpin ||
+    if (m_syncingAxes || !m_hasAxes || !m_widthSpin || !m_heightSizeSpin || !m_majorAxisSpin || !m_minorAxisSpin ||
         !m_positionXSpin || !m_positionYSpin) {
         return;
     }

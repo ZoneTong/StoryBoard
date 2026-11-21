@@ -12,6 +12,8 @@
 #include <QString>
 
 class CanvasScene;
+class QDialogButtonBox;
+class QLabel;
 class ItemPropertiesDialogGeometryBlock;
 class ItemPropertiesDialogIdentityBlock;
 class ItemPropertiesDialogStyleBlock;
@@ -20,12 +22,13 @@ class QEvent;
 class QHideEvent;
 class QMouseEvent;
 class QObject;
-class QSpinBox;
 class QShowEvent;
 
 // 编辑单个图元的属性。图元类型只读，其余字段（名称、图层、层内高度、填充、
 // 描边、位置尺寸、文字字体颜色、图片名称）由对应区块类构建与收集，确认后
 // 作为一条撤销记录提交。文字正文在属性窗内直接编辑，不再弹出额外的文字对话框。
+// 所有图元类型复用同一实例：全部行在构造时一次建齐、顺序固定，SetItem 按图元
+// 属性有无回填数值并显隐对应行，不再按类型重建控件。
 class ItemPropertiesDialog : public QDialog {
     Q_OBJECT
 
@@ -40,6 +43,8 @@ class ItemPropertiesDialog : public QDialog {
     // 只有画布本身的点击才触发“取消并关闭”，工具栏、停靠面板等区域不关窗。
     bool IsGlobalPointInsideCanvas(const QPoint& globalPoint) const;
     static QString LayerDescription(const CanvasScene* scene, int layerId);
+    // 换绑目标图元：回填全部行控件并按属性显隐；未改动的隐藏行在提交时原样跳过。
+    void SetItem(CanvasScene* scene, CanvasItem* item, bool editable);
     void accept() override;
 
   protected:
@@ -58,14 +63,16 @@ class ItemPropertiesDialog : public QDialog {
     QPointer<CanvasItem> m_item;
     bool m_editable = true;
 
+    QLabel* m_heading = nullptr;
+    QLabel* m_typeValue = nullptr;
+    QLabel* m_readOnlyHint = nullptr;
+    QDialogButtonBox* m_buttons = nullptr;
     ItemPropertiesDialogIdentityBlock* m_identityBlock = nullptr;
     ItemPropertiesDialogStyleBlock* m_styleBlock = nullptr;
     ItemPropertiesDialogTextBlock* m_textBlock = nullptr;
     ItemPropertiesDialogGeometryBlock* m_geometryBlock = nullptr;
-    // 图形沿用样式区里的透明度行，其余图元由属性窗统一提供。
-    QSpinBox* m_opacitySpin = nullptr;
-    qreal m_initialOpacity = 1.0;
-    int m_initialOpacityPercent = 100;
+    qreal m_initialStrokeWidth = 4.0;
+    bool m_hasFill = false;
     bool m_textFocusApplied = false;
 
     QPointF m_initialPos;
@@ -73,8 +80,6 @@ class ItemPropertiesDialog : public QDialog {
     qreal m_initialRotation = 0.0;
     QString m_initialItemName;
     QString m_initialDisplayName;
-    qreal m_initialStrokeWidth = 4.0;
-    bool m_hasFill = false;
     bool m_initializing = true;
     bool m_outsideClickClosing = false;
 };

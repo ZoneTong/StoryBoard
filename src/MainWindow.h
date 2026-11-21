@@ -290,6 +290,8 @@ class MainWindow : public QMainWindow {
     QList<QAction*> m_strokeStyleActions;
     QActionGroup* m_strokeStyleGroup = nullptr;
     QDoubleSpinBox* m_smoothingSpin = nullptr;
+    // 属性窗常驻复用：首次打开时创建（父为主窗口，随窗销毁），之后所有图元
+    // 类型共用同一实例，按需 SetItem 换绑与显隐。
     QPointer<ItemPropertiesDialog> m_itemPropertiesDialog;
     std::unique_ptr<CanvasBackgroundController> m_background;
     std::unique_ptr<DockPanelController> m_docks;
