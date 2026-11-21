@@ -126,6 +126,14 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
                             menuActions.indexOf(triangle60Preset) == triangleIndex + 2;
         }
         ctx.Check(presetOrderOk, QStringLiteral("图形菜单内预置项紧跟基础图形（三角形 45°/60°、直线箭头）"));
+        if (presetOrderOk) {
+            // 直线箭头必须用独立的开口箭头图标，不能与普通直线共用一条直线图标。
+            const QImage lineIcon = lineAction->icon().pixmap(18, 18).toImage();
+            const QImage arrowIcon = lineArrowPreset->icon().pixmap(18, 18).toImage();
+            ctx.Check(!lineIcon.isNull() && !arrowIcon.isNull() && lineIcon != arrowIcon,
+                      QStringLiteral("直线箭头使用独立开口箭头图标"),
+                      QStringLiteral("same=%1").arg(lineIcon == arrowIcon));
+        }
 
         QMenu* customShapeMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("CustomShapeMenu"));
         QAction* customTrigger = shapeWindow.findChild<QAction*>(QStringLiteral("CustomShapePanelTrigger"));

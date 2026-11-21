@@ -69,7 +69,7 @@ void UiMenuBuilder::BuildShapeMenu()
             // 需求 6：直线箭头紧跟在「直线」之后，复用直线类，默认末端开口箭头，
             // 长边 128（与形状基准边长一致）。
             QAction* lineArrow = m_window->m_shapeMenu->addAction(
-                ShapePainter::MakeCurveIcon(LineGlyph::STRAIGHT, QColor(58, 64, 80), 18), MainWindow::tr("Line Arrow"));
+                MakeShapePresetIcon(QStringLiteral("lineArrow"), QColor(58, 64, 80), 18), MainWindow::tr("Line Arrow"));
             lineArrow->setObjectName(QStringLiteral("ShapePreset_lineArrow"));
             lineArrow->setData(-1);
             lineArrow->setToolTip(MainWindow::tr("Insert a line with an open arrow head at its end"));
