@@ -373,6 +373,40 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
         cardImage->setSelected(true);
         QApplication::processEvents();
         ctx.Check(fillImageRow && fillImageRow->isVisible(), QStringLiteral("选中带背景图的矩形时显示背景图片行"));
+        QWidget* fillStyleRowForImage = propertiesDock->findChild<QWidget*>(QStringLiteral("ItemFillStyleRow"));
+        QComboBox* fillImageModeCombo = propertiesDock->findChild<QComboBox*>(QStringLiteral("ItemFillImageMode"));
+        QToolButton* clearFillImageButton =
+            propertiesDock->findChild<QToolButton*>(QStringLiteral("ItemClearFillImageButton"));
+        auto rowIconX = [](QWidget* row) {
+            auto* icon = row ? row->findChild<QToolButton*>(QStringLiteral("ItemRowIcon")) : nullptr;
+            return icon ? icon->x() : -1;
+        };
+        ctx.Check(fillImageModeCombo && fillImageModeCombo->count() == 3 && fillImageModeCombo->isEnabled() &&
+                      clearFillImageButton && clearFillImageButton->isEnabled() &&
+                      clearFillImageButton->text() == QCoreApplication::translate("PropertiesPanel", "Clear"),
+                  QStringLiteral("背景图片行提供填充方式与清除按钮"),
+                  QStringLiteral("combo=%1 count=%2 clear=%3")
+                      .arg(fillImageModeCombo ? 1 : 0)
+                      .arg(fillImageModeCombo ? fillImageModeCombo->count() : -1)
+                      .arg(clearFillImageButton ? 1 : 0));
+        // 图片行没有色板行那样的尾部伸缩，必须显式留白，否则行内空隙会均摊，图标与上方各行错位。
+        ctx.Check(rowIconX(fillImageRow) >= 0 && rowIconX(fillImageRow) == rowIconX(fillStyleRowForImage),
+                  QStringLiteral("背景图片行图标与上方各行左对齐"),
+                  QStringLiteral("image=%1 fill=%2").arg(rowIconX(fillImageRow)).arg(rowIconX(fillStyleRowForImage)));
+        if (fillImageModeCombo) {
+            const int tileIndex = fillImageModeCombo->findData(static_cast<int>(ImageFill::Mode::TILE));
+            if (tileIndex >= 0) {
+                fillImageModeCombo->setCurrentIndex(tileIndex);
+                QApplication::processEvents();
+            }
+            ctx.Check(cardImage->PropertyValue(ItemProperty::FILL_IMAGE_MODE).toInt() ==
+                          static_cast<int>(ImageFill::Mode::TILE),
+                      QStringLiteral("卡片切换背景图摆放方式"), QString::number(cardImage->FillImageMode()));
+            dockScene->UndoStack()->undo();
+            QApplication::processEvents();
+            ctx.Check(cardImage->FillImageMode() == ImageFill::Mode::STRETCH,
+                      QStringLiteral("撤销背景图摆放方式恢复拉伸"), QString::number(cardImage->FillImageMode()));
+        }
         ctx.Check(textContentRow && !textContentRow->isVisible() && textFontRow && !textFontRow->isVisible() &&
                       textColorRow && !textColorRow->isVisible(),
                   QStringLiteral("选中图形时隐藏文字行"));

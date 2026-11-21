@@ -278,6 +278,25 @@ void selftest::RunDockPanelMainWindowTests(Context& ctx)
         QToolBar* modeBar = dockWindow.findChild<QToolBar*>(QStringLiteral("ModeToolBar"));
         ctx.Check(viewModeDock && modeBar && viewModeDock->widget() == modeBar,
                   QStringLiteral("视图模式栏作为右上角卡片"));
+        // 卡片标题跟随当前模式，不再固定为「查看模式」。
+        ctx.Check(viewModeDock && viewModeDock->windowTitle() == ToolModeName(ToolMode::VIEW),
+                  QStringLiteral("模式卡标题初始为查看模式"), viewModeDock ? viewModeDock->windowTitle() : QString());
+        QAction* editModeActionForTitle = nullptr;
+        for (QAction* action : dockWindow.findChildren<QAction*>()) {
+            if (action->text() == MainWindow::tr("Edit mode")) {
+                editModeActionForTitle = action;
+                break;
+            }
+        }
+        if (editModeActionForTitle) {
+            editModeActionForTitle->trigger();
+            QApplication::processEvents();
+        }
+        ctx.Check(viewModeDock && editModeActionForTitle && viewModeDock->windowTitle() == ToolModeName(ToolMode::EDIT),
+                  QStringLiteral("切到编辑模式后模式卡标题同步刷新"),
+                  QStringLiteral("action=%1 title=%2")
+                      .arg(editModeActionForTitle ? 1 : 0)
+                      .arg(viewModeDock ? viewModeDock->windowTitle() : QString()));
         // 默认停靠在左侧，不属于悬浮窗口。
         ctx.Check(propertiesDock && !propertiesDock->isFloating() &&
                       dockWindow.dockWidgetArea(propertiesDock) == Qt::LeftDockWidgetArea,

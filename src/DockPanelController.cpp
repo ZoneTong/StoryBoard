@@ -1,6 +1,8 @@
 #include "DockPanelController.h"
 
 #include "CanvasScene.h"
+#include "CanvasTypes.h"
+#include "CanvasView.h"
 #include "LayerPanel.h"
 #include "MainWindow.h"
 #include "PropertiesPanel.h"
@@ -84,7 +86,9 @@ void DockPanelController::CreatePropertiesPanelDock()
 
 void DockPanelController::CreateViewModeDock()
 {
-    m_viewModeDock = new QDockWidget(MainWindow::tr("View mode"), m_window);
+    // 卡片标题在构造时取当前模式，之后随模式切换刷新，不再固定写死「查看模式」。
+    const ToolMode initialMode = m_window->m_view ? m_window->m_view->mode() : ToolMode::VIEW;
+    m_viewModeDock = new QDockWidget(ToolModeName(initialMode), m_window);
     m_viewModeDock->setObjectName(QStringLiteral("ViewModeDock"));
     m_viewModeDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     // 不提供关闭按钮，避免用户误关后没有入口重新打开模式卡。
@@ -92,6 +96,13 @@ void DockPanelController::CreateViewModeDock()
     m_window->addDockWidget(Qt::RightDockWidgetArea, m_viewModeDock);
     m_viewModeDock->setMinimumHeight(90);
     m_viewModeDock->setMaximumHeight(130);
+    if (m_window->m_view) {
+        QObject::connect(m_window->m_view, &CanvasView::modeChanged, m_window, [this](ToolMode mode) {
+            if (m_viewModeDock) {
+                m_viewModeDock->setWindowTitle(ToolModeName(mode));
+            }
+        });
+    }
 }
 
 void DockPanelController::AttachViewModeToolBar()

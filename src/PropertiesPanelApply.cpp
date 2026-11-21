@@ -388,6 +388,15 @@ void PropertiesPanel::ClearFillImage()
     ApplyPropertyValues({{ItemProperty::FILL_IMAGE, QVariant()}}, tr("Clear fill image"));
 }
 
+void PropertiesPanel::ApplyFillImageMode(int mode)
+{
+    if (SelectedItems().isEmpty()) {
+        return;
+    }
+    // 与属性窗同一套摆放方式；无图时组合框已禁用，这里再兜一次底。
+    ApplyPropertyValues({{ItemProperty::FILL_IMAGE_MODE, mode}}, tr("Change fill image mode"));
+}
+
 void PropertiesPanel::ApplyCornerRadius(int radius)
 {
     ChangeSelectedShapes(tr("Change rectangle corner radius"),
