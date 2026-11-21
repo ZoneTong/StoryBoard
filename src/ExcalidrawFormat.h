@@ -8,8 +8,8 @@
 // 需求 9：Excalidraw 兼容。
 // 只做「场景 JSON <-> 画板 JSON」的纯转换，不碰场景对象，方便单独自检。
 namespace Excalidraw {
-constexpr char SceneType[] = "excalidraw";
-constexpr char ClipboardType[] = "excalidraw/clipboard";
+constexpr char SCENE_TYPE[] = "excalidraw";
+constexpr char CLIPBOARD_TYPE[] = "excalidraw/clipboard";
 
 bool IsScene(const QJsonObject& root);
 bool IsClipboard(const QJsonObject& root);

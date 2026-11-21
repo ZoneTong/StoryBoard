@@ -29,7 +29,7 @@
 namespace {
 
 // 需求 14：插入图片统一为「矩形图元 + 背景图片」，演示场景沿用同一构造。
-ShapeItem* addImageRect(CanvasScene& scene, int layerId, const QPixmap& pixmap, const QSizeF& size, const QPointF& pos)
+ShapeItem* AddImageRect(CanvasScene& scene, int layerId, const QPixmap& pixmap, const QSizeF& size, const QPointF& pos)
 {
     auto* item = CreateShapeItem(ShapeType::RECTANGLE);
     item->SetLayerId(layerId);
@@ -107,7 +107,7 @@ void PopulateDemoScene(CanvasScene& scene)
     labelFont.setBold(true);
     const QPixmap subtitle = MakeTextImage(QStringLiteral("三个镜头 · 一个下午的故事"),
                                            QColor(QStringLiteral("#78716C")), labelFont, 720, 40);
-    addImageRect(scene, inkLayer, subtitle, subtitle.size(), QPointF(82, 126));
+    AddImageRect(scene, inkLayer, subtitle, subtitle.size(), QPointF(82, 126));
 
     const QColor ink(QStringLiteral("#1F2937"));
     const QColor accent(QStringLiteral("#EA580C"));
@@ -130,13 +130,13 @@ void PopulateDemoScene(CanvasScene& scene)
         scene.AttachItem(frame);
 
         const QPixmap shot = MakeShotImage(380, 230, shotLabels.at(i), shotStarts.at(i), shotEnds.at(i));
-        addImageRect(scene, shotLayer, shot, QSizeF(380, 230), QPointF(panel.left() + 30, panel.top() + 24));
+        AddImageRect(scene, shotLayer, shot, QSizeF(380, 230), QPointF(panel.left() + 30, panel.top() + 24));
 
         QFont numberFont(QStringLiteral("Microsoft YaHei UI"));
         numberFont.setPointSize(26);
         numberFont.setBold(true);
         const QPixmap number = MakeTextImage(QStringLiteral("0%1").arg(i + 1), ink, numberFont, 90, 44);
-        addImageRect(scene, shotLayer, number, QSizeF(70, 40), QPointF(panel.left() + 32, panel.bottom() - 84));
+        AddImageRect(scene, shotLayer, number, QSizeF(70, 40), QPointF(panel.left() + 32, panel.bottom() - 84));
 
         QFont captionFont(QStringLiteral("Microsoft YaHei UI"));
         captionFont.setPointSize(16);
@@ -144,7 +144,7 @@ void PopulateDemoScene(CanvasScene& scene)
                                       QStringLiteral("发现桌上的旧照片，定格。"),
                                       QStringLiteral("转身离开，门缓缓合上。")};
         const QPixmap caption = MakeTextImage(captions.at(i), QColor(QStringLiteral("#57534E")), captionFont, 420, 34);
-        addImageRect(scene, shotLayer, caption, QSizeF(376, 30), QPointF(panel.left() + 32, panel.bottom() - 40));
+        AddImageRect(scene, shotLayer, caption, QSizeF(376, 30), QPointF(panel.left() + 32, panel.bottom() - 40));
     }
 
     // Hand-drawn annotations: stick figure, arrows and a few accents.
@@ -186,9 +186,9 @@ void PopulateDemoScene(CanvasScene& scene)
 
     QVector<QPointF> figure;
     const QPointF headCenter(300, 552);
-    constexpr qreal pi = 3.14159265358979323846;
+    constexpr qreal PI = 3.14159265358979323846;
     for (int i = 0; i <= 24; ++i) {
-        const qreal angle = 2.0 * pi * i / 24.0;
+        const qreal angle = 2.0 * PI * i / 24.0;
         figure.append(headCenter + QPointF(qCos(angle) * 26.0, qSin(angle) * 26.0));
     }
     AddStroke(scene, figure, teal, 4.0, inkLayer);
@@ -210,5 +210,5 @@ void PopulateDemoScene(CanvasScene& scene)
     noteFont.setBold(true);
     const QPixmap note =
         MakeTextImage(QStringLiteral("KEEP THE MOMENT"), QColor(QStringLiteral("#9A3412")), noteFont, 330, 40);
-    addImageRect(scene, inkLayer, note, QSizeF(300, 36), QPointF(1098, 920));
+    AddImageRect(scene, inkLayer, note, QSizeF(300, 36), QPointF(1098, 920));
 }

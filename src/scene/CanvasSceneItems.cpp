@@ -10,15 +10,15 @@
 
 namespace {
 
-bool nearlyEqual(qreal a, qreal b)
+bool NearlyEqual(qreal a, qreal b)
 {
     return qAbs(a - b) < 0.01;
 }
 
-bool sameGeometry(const ItemGeometry& a, const ItemGeometry& b)
+bool SameGeometry(const ItemGeometry& a, const ItemGeometry& b)
 {
-    return nearlyEqual(a.pos.x(), b.pos.x()) && nearlyEqual(a.pos.y(), b.pos.y()) &&
-           nearlyEqual(a.size.width(), b.size.width()) && nearlyEqual(a.size.height(), b.size.height());
+    return NearlyEqual(a.pos.x(), b.pos.x()) && NearlyEqual(a.pos.y(), b.pos.y()) &&
+           NearlyEqual(a.size.width(), b.size.width()) && NearlyEqual(a.size.height(), b.size.height());
 }
 
 } // namespace
@@ -172,8 +172,8 @@ bool CanvasScene::IsItemNameAvailable(const QString& name, const CanvasItem* exc
 
 QString CanvasScene::UniqueItemNameFor(const QString& requested, const CanvasItem* except) const
 {
-    static const QSet<QString> reserved;
-    return UniqueItemNameFor(requested, except, reserved);
+    static const QSet<QString> RESERVED;
+    return UniqueItemNameFor(requested, except, RESERVED);
 }
 
 QString CanvasScene::UniqueItemNameFor(const QString& requested, const CanvasItem* except,
@@ -204,8 +204,8 @@ QString CanvasScene::UniqueItemNameFor(const QString& requested, const CanvasIte
     bool exactBase = false;
     int maxSuffix = suffix;
 
-    auto consider = [&](const QString& CustomName) {
-        const QString existing = CustomName.trimmed();
+    auto consider = [&](const QString& customName) {
+        const QString existing = customName.trimmed();
         if (existing.isEmpty()) {
             return;
         }
@@ -280,7 +280,7 @@ void CanvasScene::PushGeometry(const ItemGeometryList& before, const ItemGeometr
         if (!before.at(i).item || !after.at(i).item) {
             continue;
         }
-        if (sameGeometry(before.at(i), after.at(i))) {
+        if (SameGeometry(before.at(i), after.at(i))) {
             continue;
         }
         filteredBefore.append(before.at(i));

@@ -31,7 +31,7 @@
 namespace {
 
 // 场景内所有图元的数量（切刀保留，碎片与被切图元都会被计数）。
-int itemCount(const CanvasScene& scene)
+int ItemCount(const CanvasScene& scene)
 {
     return scene.CanvasItemCount();
 }
@@ -96,9 +96,9 @@ void selftest::RunLineSplitTests(Context& ctx)
         scene.clearSelection();
         rect->setSelected(true);
         knife->setSelected(true);
-        const int before = itemCount(scene);
+        const int before = ItemCount(scene);
         ctx.Check(LineSplitOps::Apply(&scene, QStringLiteral("分割")), QStringLiteral("直线可以切分矩形"));
-        const int after = itemCount(scene);
+        const int after = ItemCount(scene);
         ctx.Check(after == before + 1, QStringLiteral("切分后切刀保留并多出两块碎片"),
                   QStringLiteral("before=%1 after=%2").arg(before).arg(after));
 
@@ -178,9 +178,9 @@ void selftest::RunLineSplitTests(Context& ctx)
         }
 
         undo.undo();
-        ctx.Check(itemCount(scene) == before, QStringLiteral("撤销一次还原为矩形加切刀"));
+        ctx.Check(ItemCount(scene) == before, QStringLiteral("撤销一次还原为矩形加切刀"));
         undo.redo();
-        ctx.Check(itemCount(scene) == after, QStringLiteral("重做恢复切分结果"));
+        ctx.Check(ItemCount(scene) == after, QStringLiteral("重做恢复切分结果"));
     }
 
     // 需求 23：真机流程复现——画笔曲线 + 矩形双选时，分割动作必须使能。
@@ -438,12 +438,12 @@ void selftest::RunLineSplitTests(Context& ctx)
         scene.clearSelection();
         rect->setSelected(true);
         knife->setSelected(true);
-        const int before = itemCount(scene);
+        const int before = ItemCount(scene);
         const int undoCount = undo.count();
         ctx.Check(!LineSplitOps::Apply(&scene, QStringLiteral("分割")),
                   QStringLiteral("切刀不与填充图形相交时返回失败"));
-        ctx.Check(itemCount(scene) == before && undo.count() == undoCount, QStringLiteral("切空时不产生图元与撤销记录"),
-                  QStringLiteral("items=%1 undo=%2").arg(itemCount(scene)).arg(undo.count()));
+        ctx.Check(ItemCount(scene) == before && undo.count() == undoCount, QStringLiteral("切空时不产生图元与撤销记录"),
+                  QStringLiteral("items=%1 undo=%2").arg(ItemCount(scene)).arg(undo.count()));
     }
 
     // 需求 25：左花括号分割波形旗帜时出现多余的奇怪色块。复现两种真机摆放：

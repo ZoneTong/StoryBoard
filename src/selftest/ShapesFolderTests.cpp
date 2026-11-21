@@ -10,7 +10,7 @@
 namespace {
 
 // 用「父路径被一个普通文件占位」制造必然失败：跨平台都成立，也不依赖目录权限位。
-QString blockedConfigPath(const QString& workDirectory, QString* blockerPath)
+QString BlockedConfigPath(const QString& workDirectory, QString* blockerPath)
 {
     const QString blocker = QDir(workDirectory).filePath(QStringLiteral("shapes-blocker"));
     // 上一次自检可能留下了同名目录，先清掉再占位成普通文件。
@@ -49,7 +49,7 @@ void selftest::RunShapesFolderTests(Context& ctx)
         // 配置文件放进被普通文件占位的路径里：同级 shapes 建不出来，必须降级到其它可写候选，
         // 而不是返回一个不存在的目录去打开（这正是「无法打开 shapes 目录」的根因）。
         QString blockerPath;
-        const QString blockedConfig = blockedConfigPath(ctx.workDirectory, &blockerPath);
+        const QString blockedConfig = BlockedConfigPath(ctx.workDirectory, &blockerPath);
         qputenv("STORYBOARD_CONFIG", blockedConfig.toLocal8Bit());
         blockedDir = AppSettings::ShapesDir();
         const QString fallbackDir = AppSettings::WritableShapesDir();

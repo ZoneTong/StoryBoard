@@ -61,7 +61,7 @@ class PropertiesPanel : public QWidget {
     // 选中的是否还值得再套一层组合：正好选中的是一整棵组树时返回 false。
     bool SelectionGroupUseful(const QList<CanvasItem*>& items) const;
 
-    QList<CanvasItem*> selectedItems() const;
+    QList<CanvasItem*> SelectedItems() const;
     QList<ShapeItem*> SelectedShapes() const;
     QList<ShapeItem*> SelectedComposites() const;
     QList<LineItemAbstract*> SelectedStrokes() const;

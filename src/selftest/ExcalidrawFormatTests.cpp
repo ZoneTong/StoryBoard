@@ -11,7 +11,7 @@
 
 namespace {
 
-QJsonObject element(const QString& type, qreal x, qreal y, qreal w, qreal h)
+QJsonObject Element(const QString& type, qreal x, qreal y, qreal w, qreal h)
 {
     QJsonObject object;
     object.insert(QStringLiteral("type"), type);
@@ -58,35 +58,35 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
     // 导入：形状 / 文字 / 箭头 / 多段折线 / 不支持类型。
     QStringList warnings;
     QJsonArray elements;
-    elements.append(element(QStringLiteral("rectangle"), 10, 20, 120, 60));
-    elements.append(element(QStringLiteral("ellipse"), 200, 20, 80, 80));
-    elements.append(element(QStringLiteral("diamond"), 300, 20, 80, 60));
+    elements.append(Element(QStringLiteral("rectangle"), 10, 20, 120, 60));
+    elements.append(Element(QStringLiteral("ellipse"), 200, 20, 80, 80));
+    elements.append(Element(QStringLiteral("diamond"), 300, 20, 80, 60));
     {
-        QJsonObject text = element(QStringLiteral("text"), 10, 200, 100, 40);
+        QJsonObject text = Element(QStringLiteral("text"), 10, 200, 100, 40);
         text.insert(QStringLiteral("text"), QStringLiteral("你好"));
         text.insert(QStringLiteral("fontSize"), 20.0);
         elements.append(text);
     }
     {
-        QJsonObject arrow = element(QStringLiteral("arrow"), 10, 300, 100, 0);
+        QJsonObject arrow = Element(QStringLiteral("arrow"), 10, 300, 100, 0);
         arrow.insert(QStringLiteral("points"), QJsonArray{QJsonArray{0.0, 0.0}, QJsonArray{100.0, 0.0}});
         arrow.insert(QStringLiteral("startArrowhead"), QJsonValue(QJsonValue::Null));
         arrow.insert(QStringLiteral("endArrowhead"), QStringLiteral("triangle"));
         elements.append(arrow);
     }
     {
-        QJsonObject polyline = element(QStringLiteral("arrow"), 200, 300, 100, 60);
+        QJsonObject polyline = Element(QStringLiteral("arrow"), 200, 300, 100, 60);
         polyline.insert(QStringLiteral("points"),
                         QJsonArray{QJsonArray{0.0, 0.0}, QJsonArray{50.0, 60.0}, QJsonArray{100.0, 0.0}});
         polyline.insert(QStringLiteral("endArrowhead"), QStringLiteral("dot"));
         elements.append(polyline);
     }
     {
-        QJsonObject freedraw = element(QStringLiteral("freedraw"), 400, 300, 60, 60);
+        QJsonObject freedraw = Element(QStringLiteral("freedraw"), 400, 300, 60, 60);
         freedraw.insert(QStringLiteral("points"), QJsonArray{QJsonArray{0.0, 0.0}, QJsonArray{60.0, 60.0}});
         elements.append(freedraw);
     }
-    elements.append(element(QStringLiteral("image"), 500, 400, 40, 40));
+    elements.append(Element(QStringLiteral("image"), 500, 400, 40, 40));
 
     const QJsonArray items = Excalidraw::ElementsToItems(elements, &warnings);
     ctx.Check(items.size() == 7, QStringLiteral("Excalidraw 元素的导入条数正确（画片图跳过）"),
@@ -159,7 +159,7 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
 
     // 完整场景导入：画布尺寸覆盖元素包围盒，背景取 viewBackgroundColor。
     {
-        QJsonObject root = Scene(QJsonArray{element(QStringLiteral("rectangle"), 0, 0, 400, 300)});
+        QJsonObject root = Scene(QJsonArray{Element(QStringLiteral("rectangle"), 0, 0, 400, 300)});
         QJsonObject appState;
         appState.insert(QStringLiteral("viewBackgroundColor"), QStringLiteral("#ffffff"));
         root.insert(QStringLiteral("appState"), appState);
@@ -264,12 +264,12 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
 
     // frame 变成图层：frameId 命中的元素归该层，层名取 frame name。
     {
-        QJsonObject frameElement = element(QStringLiteral("frame"), 0, 0, 300, 200);
+        QJsonObject frameElement = Element(QStringLiteral("frame"), 0, 0, 300, 200);
         frameElement.insert(QStringLiteral("id"), QStringLiteral("f1"));
         frameElement.insert(QStringLiteral("name"), QStringLiteral("分镜一"));
-        QJsonObject inside = element(QStringLiteral("rectangle"), 10, 10, 100, 40);
+        QJsonObject inside = Element(QStringLiteral("rectangle"), 10, 10, 100, 40);
         inside.insert(QStringLiteral("frameId"), QStringLiteral("f1"));
-        QJsonObject outside = element(QStringLiteral("rectangle"), 400, 10, 100, 40);
+        QJsonObject outside = Element(QStringLiteral("rectangle"), 400, 10, 100, 40);
         QJsonArray layers;
         const QJsonArray framedItems =
             Excalidraw::ElementsToItems(QJsonArray{frameElement, inside, outside}, nullptr, &layers);
@@ -327,7 +327,7 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
 
     // 位图选项：默认跳过 image 并留 warning，勾选后按 dataURL 落成图片图元。
     {
-        QJsonObject imageElement = element(QStringLiteral("image"), 0, 0, 40, 40);
+        QJsonObject imageElement = Element(QStringLiteral("image"), 0, 0, 40, 40);
         imageElement.insert(QStringLiteral("fileId"), QStringLiteral("img1"));
         QJsonObject file;
         file.insert(QStringLiteral("dataURL"), QStringLiteral("data:image/png;base64,QUJD"));

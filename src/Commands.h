@@ -43,7 +43,7 @@ class RemoveItemsCommand : public QUndoCommand {
 
 // 连续方向键微调共用这个命令 id：QUndoStack 只对 id 相同且非 -1 的命令尝试
 // mergeWith，普通拖拽/缩放的 GeometryCommand 不带 mergeId，绝不参与合并。
-enum { GeometryNudgeCommandId = 1001 };
+enum { GEOMETRY_NUDGE_COMMAND_ID = 1001 };
 
 class GeometryCommand : public QUndoCommand {
   public:

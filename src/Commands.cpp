@@ -142,7 +142,7 @@ void GeometryCommand::SetMergeId(const QString& id)
 
 int GeometryCommand::id() const
 {
-    return m_mergeId.isEmpty() ? -1 : GeometryNudgeCommandId;
+    return m_mergeId.isEmpty() ? -1 : GEOMETRY_NUDGE_COMMAND_ID;
 }
 
 bool GeometryCommand::mergeWith(const QUndoCommand* other)

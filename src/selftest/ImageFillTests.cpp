@@ -29,7 +29,7 @@ const QColor BLUE(50, 90, 220);
 const QColor YELLOW(240, 200, 60);
 
 // 四象限图片：左上红 / 右上绿 / 左下蓝 / 右下黄。
-QPixmap quadrantImage(int width, int height)
+QPixmap QuadrantImage(int width, int height)
 {
     QPixmap pixmap(width, height);
     pixmap.fill(Qt::transparent);
@@ -43,7 +43,7 @@ QPixmap quadrantImage(int width, int height)
 }
 
 // 左半红右半蓝的条纹图：用于确认平铺步长等于原图像素。
-QPixmap stripedImage(int width, int height)
+QPixmap StripedImage(int width, int height)
 {
     QPixmap pixmap(width, height);
     pixmap.fill(Qt::transparent);
@@ -54,20 +54,20 @@ QPixmap stripedImage(int width, int height)
     return pixmap;
 }
 
-QPixmap solidImage(const QColor& color, int size)
+QPixmap SolidImage(const QColor& color, int size)
 {
     QPixmap pixmap(size, size);
     pixmap.fill(color);
     return pixmap;
 }
 
-bool colorNear(const QColor& actual, const QColor& expected, int tolerance = 28)
+bool ColorNear(const QColor& actual, const QColor& expected, int tolerance = 28)
 {
     return qAbs(actual.red() - expected.red()) <= tolerance && qAbs(actual.green() - expected.green()) <= tolerance &&
            qAbs(actual.blue() - expected.blue()) <= tolerance;
 }
 
-QImage renderCanvas(CanvasScene& scene, const QSize& size)
+QImage RenderCanvas(CanvasScene& scene, const QSize& size)
 {
     QImage image(size, QImage::Format_ARGB32_Premultiplied);
     image.fill(Qt::white);
@@ -78,7 +78,7 @@ QImage renderCanvas(CanvasScene& scene, const QSize& size)
 }
 
 // 采样用的矩形：无描边、可带纯色填充，只留下图片本体参与像素比较。
-ShapeItem* makePlainShape(ShapeType type, const QSizeF& size, const QColor& fillColor)
+ShapeItem* MakePlainShape(ShapeType type, const QSizeF& size, const QColor& fillColor)
 {
     auto* shape = CreateShapeItem(type);
     shape->setPos(QPointF(0, 0));
@@ -99,14 +99,14 @@ void selftest::RunImageFillTests(Context& ctx)
         stretchScene.SetMode(ToolMode::EDIT);
         stretchScene.SetShowGrid(false);
         stretchScene.ApplyCanvasSize(QSizeF(200, 100));
-        auto* rect = makePlainShape(ShapeType::RECTANGLE, QSizeF(200, 100), QColor(255, 255, 255, 0));
-        rect->SetFillImage(quadrantImage(40, 40), ImageFill::Mode::STRETCH);
+        auto* rect = MakePlainShape(ShapeType::RECTANGLE, QSizeF(200, 100), QColor(255, 255, 255, 0));
+        rect->SetFillImage(QuadrantImage(40, 40), ImageFill::Mode::STRETCH);
         stretchScene.AttachItem(rect);
 
-        const QImage stretched = renderCanvas(stretchScene, QSize(200, 100));
+        const QImage stretched = RenderCanvas(stretchScene, QSize(200, 100));
         const bool cornersMatch =
-            colorNear(stretched.pixelColor(20, 15), RED) && colorNear(stretched.pixelColor(180, 15), GREEN) &&
-            colorNear(stretched.pixelColor(20, 85), BLUE) && colorNear(stretched.pixelColor(180, 85), YELLOW);
+            ColorNear(stretched.pixelColor(20, 15), RED) && ColorNear(stretched.pixelColor(180, 15), GREEN) &&
+            ColorNear(stretched.pixelColor(20, 85), BLUE) && ColorNear(stretched.pixelColor(180, 85), YELLOW);
         ctx.Check(cornersMatch, QStringLiteral("Stretch 填充的四角对应图片四角"),
                   QStringLiteral("%1/%2/%3/%4")
                       .arg(stretched.pixelColor(20, 15).name())
@@ -116,10 +116,10 @@ void selftest::RunImageFillTests(Context& ctx)
 
         rect->SetContentSize(QSizeF(400, 200));
         stretchScene.ApplyCanvasSize(QSizeF(400, 200));
-        const QImage doubled = renderCanvas(stretchScene, QSize(400, 200));
+        const QImage doubled = RenderCanvas(stretchScene, QSize(400, 200));
         const bool doubledMatch =
-            colorNear(doubled.pixelColor(40, 30), RED) && colorNear(doubled.pixelColor(360, 30), GREEN) &&
-            colorNear(doubled.pixelColor(40, 170), BLUE) && colorNear(doubled.pixelColor(360, 170), YELLOW);
+            ColorNear(doubled.pixelColor(40, 30), RED) && ColorNear(doubled.pixelColor(360, 30), GREEN) &&
+            ColorNear(doubled.pixelColor(40, 170), BLUE) && ColorNear(doubled.pixelColor(360, 170), YELLOW);
         ctx.Check(doubledMatch, QStringLiteral("Stretch 填充缩放到 2 倍后四角仍对应"),
                   QStringLiteral("%1/%2/%3/%4")
                       .arg(doubled.pixelColor(40, 30).name())
@@ -134,14 +134,14 @@ void selftest::RunImageFillTests(Context& ctx)
         heartScene.SetMode(ToolMode::EDIT);
         heartScene.SetShowGrid(false);
         heartScene.ApplyCanvasSize(QSizeF(200, 200));
-        auto* heart = makePlainShape(ShapeType::HEART, QSizeF(200, 200), QColor(255, 255, 255, 0));
-        heart->SetFillImage(solidImage(GREEN, 32), ImageFill::Mode::STRETCH);
+        auto* heart = MakePlainShape(ShapeType::HEART, QSizeF(200, 200), QColor(255, 255, 255, 0));
+        heart->SetFillImage(SolidImage(GREEN, 32), ImageFill::Mode::STRETCH);
         heartScene.AttachItem(heart);
 
-        const QImage heartImage = renderCanvas(heartScene, QSize(200, 200));
+        const QImage heartImage = RenderCanvas(heartScene, QSize(200, 200));
         const QColor outside = heartImage.pixelColor(14, 14);
         const QColor inside = heartImage.pixelColor(100, 130);
-        ctx.Check(colorNear(outside, QColor(255, 255, 255)) && colorNear(inside, GREEN),
+        ctx.Check(ColorNear(outside, QColor(255, 255, 255)) && ColorNear(inside, GREEN),
                   QStringLiteral("心形填充区外没有图片墨迹、区内有图"),
                   QStringLiteral("outside=%1 inside=%2").arg(outside.name()).arg(inside.name()));
     }
@@ -163,13 +163,13 @@ void selftest::RunImageFillTests(Context& ctx)
         ring.strokeWidth = 0.0;
         ring.filled = true;
         auto* polygon = new PolygonItem({ring}, FillStyle::SOLID, Qt::SolidLine);
-        polygon->SetFillImage(solidImage(GREEN, 32), ImageFill::Mode::STRETCH);
+        polygon->SetFillImage(SolidImage(GREEN, 32), ImageFill::Mode::STRETCH);
         holeScene.AttachItem(polygon);
 
-        const QImage ringImage = renderCanvas(holeScene, QSize(200, 200));
+        const QImage ringImage = RenderCanvas(holeScene, QSize(200, 200));
         const QColor ringPixel = ringImage.pixelColor(20, 20);
         const QColor holePixel = ringImage.pixelColor(100, 100);
-        ctx.Check(colorNear(ringPixel, GREEN) && colorNear(holePixel, QColor(255, 255, 255)),
+        ctx.Check(ColorNear(ringPixel, GREEN) && ColorNear(holePixel, QColor(255, 255, 255)),
                   QStringLiteral("带孔多边形的孔洞露出画布背景"),
                   QStringLiteral("ring=%1 hole=%2").arg(ringPixel.name()).arg(holePixel.name()));
     }
@@ -181,14 +181,14 @@ void selftest::RunImageFillTests(Context& ctx)
         fitScene.SetMode(ToolMode::EDIT);
         fitScene.SetShowGrid(false);
         fitScene.ApplyCanvasSize(QSizeF(100, 200));
-        auto* tall = makePlainShape(ShapeType::RECTANGLE, QSizeF(100, 200), BLUE);
-        tall->SetFillImage(solidImage(GREEN, 40), ImageFill::Mode::FIT);
+        auto* tall = MakePlainShape(ShapeType::RECTANGLE, QSizeF(100, 200), BLUE);
+        tall->SetFillImage(SolidImage(GREEN, 40), ImageFill::Mode::FIT);
         fitScene.AttachItem(tall);
 
-        const QImage fitImage = renderCanvas(fitScene, QSize(100, 200));
+        const QImage fitImage = RenderCanvas(fitScene, QSize(100, 200));
         const QColor topBand = fitImage.pixelColor(50, 20);
         const QColor middle = fitImage.pixelColor(50, 100);
-        ctx.Check(colorNear(topBand, BLUE) && colorNear(middle, BLUE),
+        ctx.Check(ColorNear(topBand, BLUE) && ColorNear(middle, BLUE),
                   QStringLiteral("背景图片在填充样式之下，纯色填充将它完全遮挡"),
                   QStringLiteral("top=%1 middle=%2").arg(topBand.name()).arg(middle.name()));
     }
@@ -199,9 +199,9 @@ void selftest::RunImageFillTests(Context& ctx)
         storeScene.SetMode(ToolMode::EDIT);
         storeScene.SetShowGrid(false);
         storeScene.ApplyCanvasSize(QSizeF(300, 200));
-        const QPixmap shared = solidImage(GREEN, 40);
-        auto* first = makePlainShape(ShapeType::RECTANGLE, QSizeF(80, 80), BLUE);
-        auto* second = makePlainShape(ShapeType::ELLIPSE, QSizeF(80, 80), BLUE);
+        const QPixmap shared = SolidImage(GREEN, 40);
+        auto* first = MakePlainShape(ShapeType::RECTANGLE, QSizeF(80, 80), BLUE);
+        auto* second = MakePlainShape(ShapeType::ELLIPSE, QSizeF(80, 80), BLUE);
         first->SetFillImage(shared, ImageFill::Mode::STRETCH);
         second->SetFillImage(shared, ImageFill::Mode::STRETCH);
         second->setPos(100.0, 0.0);
@@ -229,17 +229,17 @@ void selftest::RunImageFillTests(Context& ctx)
         tileScene.SetMode(ToolMode::EDIT);
         tileScene.SetShowGrid(false);
         tileScene.ApplyCanvasSize(QSizeF(100, 100));
-        auto* tiled = makePlainShape(ShapeType::RECTANGLE, QSizeF(100, 100), QColor(255, 255, 255, 0));
-        tiled->SetFillImage(stripedImage(20, 20), ImageFill::Mode::TILE);
+        auto* tiled = MakePlainShape(ShapeType::RECTANGLE, QSizeF(100, 100), QColor(255, 255, 255, 0));
+        tiled->SetFillImage(StripedImage(20, 20), ImageFill::Mode::TILE);
         tileScene.AttachItem(tiled);
 
-        const QImage tileImage = renderCanvas(tileScene, QSize(100, 100));
+        const QImage tileImage = RenderCanvas(tileScene, QSize(100, 100));
         const QColor firstPeriodRed = tileImage.pixelColor(4, 6);
         const QColor firstPeriodBlue = tileImage.pixelColor(14, 6);
         const QColor secondPeriodRed = tileImage.pixelColor(24, 6);
         const QColor secondPeriodBlue = tileImage.pixelColor(34, 6);
-        ctx.Check(colorNear(firstPeriodRed, RED) && colorNear(firstPeriodBlue, BLUE) &&
-                      colorNear(secondPeriodRed, RED) && colorNear(secondPeriodBlue, BLUE),
+        ctx.Check(ColorNear(firstPeriodRed, RED) && ColorNear(firstPeriodBlue, BLUE) &&
+                      ColorNear(secondPeriodRed, RED) && ColorNear(secondPeriodBlue, BLUE),
                   QStringLiteral("Tile 平铺出现 2×2 周期且步长等于原图像素"),
                   QStringLiteral("%1/%2/%3/%4")
                       .arg(firstPeriodRed.name())
@@ -268,7 +268,7 @@ void selftest::RunImageFillTests(Context& ctx)
 
         ItemPropertiesState afterSet = before;
         afterSet.shapeState.hasFillImage = true;
-        afterSet.shapeState.fillImage = solidImage(GREEN, 16);
+        afterSet.shapeState.fillImage = SolidImage(GREEN, 16);
         afterSet.shapeState.fillImageMode = ImageFill::Mode::STRETCH;
         undo.push(new ItemPropertiesCommand(&undoScene, shape, before, afterSet, QStringLiteral("设图片填充")));
         ctx.Check(undo.index() == 1 && shape->HasFillImage(), QStringLiteral("设置图片填充占一条撤销记录"),
@@ -303,7 +303,7 @@ void selftest::RunImageFillTests(Context& ctx)
     {
         auto* saved = CreateShapeItem(ShapeType::ELLIPSE);
         saved->SetContentSize(QSizeF(80, 60));
-        saved->SetFillImage(solidImage(BLUE, 24), ImageFill::Mode::TILE);
+        saved->SetFillImage(SolidImage(BLUE, 24), ImageFill::Mode::TILE);
         const QJsonObject json = saved->ToJson();
         const QJsonObject fillJson = json.value(QStringLiteral("fillImage")).toObject();
         ctx.Check(!fillJson.isEmpty() && fillJson.value(QStringLiteral("mode")).toString() == QStringLiteral("tile"),
@@ -332,9 +332,9 @@ void selftest::RunImageFillTests(Context& ctx)
 
     // 8) Excalidraw 导出：图片填充降级为纯色 fillColor，并给出一次降级提示。
     {
-        auto* exportShape = makePlainShape(ShapeType::RECTANGLE, QSizeF(120, 80), YELLOW);
+        auto* exportShape = MakePlainShape(ShapeType::RECTANGLE, QSizeF(120, 80), YELLOW);
         exportShape->SetStyle(QColor(20, 20, 20), YELLOW, 2.0);
-        exportShape->SetFillImage(solidImage(GREEN, 24), ImageFill::Mode::STRETCH);
+        exportShape->SetFillImage(SolidImage(GREEN, 24), ImageFill::Mode::STRETCH);
         QJsonArray items;
         items.append(exportShape->ToJson());
         QJsonObject document;
@@ -360,11 +360,11 @@ void selftest::RunImageFillTests(Context& ctx)
         mergeScene.SetMode(ToolMode::EDIT);
         QUndoStack mergeUndo;
         mergeScene.SetUndoStack(&mergeUndo);
-        auto* leftRect = makePlainShape(ShapeType::RECTANGLE, QSizeF(80, 80), RED);
+        auto* leftRect = MakePlainShape(ShapeType::RECTANGLE, QSizeF(80, 80), RED);
         leftRect->setPos(QPointF(0, 0));
-        auto* rightRect = makePlainShape(ShapeType::RECTANGLE, QSizeF(80, 80), BLUE);
+        auto* rightRect = MakePlainShape(ShapeType::RECTANGLE, QSizeF(80, 80), BLUE);
         rightRect->setPos(QPointF(40, 0));
-        rightRect->SetFillImage(solidImage(GREEN, 16), ImageFill::Mode::STRETCH);
+        rightRect->SetFillImage(SolidImage(GREEN, 16), ImageFill::Mode::STRETCH);
         mergeScene.AddItemsWithUndo({leftRect, rightRect}, QStringLiteral("Add merge items"));
         leftRect->setSelected(true);
         rightRect->setSelected(true);

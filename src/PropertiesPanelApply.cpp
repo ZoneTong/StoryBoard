@@ -78,7 +78,7 @@ void PropertiesPanel::ApplyPropertyValues(const QMap<ItemProperty, QVariant>& va
     if (!m_scene || !m_scene->UndoStack()) {
         return;
     }
-    const QList<CanvasItem*> items = targets.isEmpty() ? selectedItems() : targets;
+    const QList<CanvasItem*> items = targets.isEmpty() ? SelectedItems() : targets;
 
     QList<CanvasItem*> applyItems;
     QList<QMap<ItemProperty, QVariant>> before;
@@ -127,7 +127,7 @@ void PropertiesPanel::ApplyStrokeColor(const QColor& color)
 
 void PropertiesPanel::ApplyFillColor(const QColor& color)
 {
-    const QList<CanvasItem*> items = selectedItems();
+    const QList<CanvasItem*> items = SelectedItems();
     if (!color.isValid() || items.isEmpty() || !m_scene || !m_scene->UndoStack()) {
         return;
     }
@@ -172,7 +172,7 @@ void PropertiesPanel::ApplyFillColor(const QColor& color)
 
 void PropertiesPanel::ApplyFillStyle(FillStyle style)
 {
-    if (selectedItems().isEmpty() || !m_scene || !m_scene->UndoStack()) {
+    if (SelectedItems().isEmpty() || !m_scene || !m_scene->UndoStack()) {
         return;
     }
     ApplyPropertyValues({{ItemProperty::FILL_STYLE, static_cast<int>(style)}}, tr("Change shape fill style"));
@@ -200,7 +200,7 @@ void PropertiesPanel::ApplyBorderWidth(qreal width)
 
 void PropertiesPanel::ApplyOpacity(int percent)
 {
-    if (selectedItems().isEmpty()) {
+    if (SelectedItems().isEmpty()) {
         return;
     }
     ApplyPropertyValues({{ItemProperty::OPACITY, percent / 100.0}}, tr("Change opacity"));
@@ -343,7 +343,7 @@ void PropertiesPanel::ChooseFillImage()
 {
     // 需求 13：选中多个可填充图元时一次替换；图片从资源面板里选（也可以现场从本地加一张）。
     QList<ShapeItem*> shapes;
-    for (CanvasItem* item : selectedItems()) {
+    for (CanvasItem* item : SelectedItems()) {
         if (auto* shape = dynamic_cast<ShapeItem*>(item);
             shape && !shape->IsCustomShape() && ShapeMeta::IsFilled(shape->shapeType())) {
             shapes.append(shape);
@@ -382,7 +382,7 @@ void PropertiesPanel::ChooseFillImage()
 
 void PropertiesPanel::ClearFillImage()
 {
-    if (selectedItems().isEmpty()) {
+    if (SelectedItems().isEmpty()) {
         return;
     }
     ApplyPropertyValues({{ItemProperty::FILL_IMAGE, QVariant()}}, tr("Clear fill image"));

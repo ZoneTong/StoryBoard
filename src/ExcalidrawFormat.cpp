@@ -413,13 +413,13 @@ namespace Excalidraw {
 
 bool IsScene(const QJsonObject& root)
 {
-    return root.value(QStringLiteral("type")).toString() == QLatin1String(SceneType) &&
+    return root.value(QStringLiteral("type")).toString() == QLatin1String(SCENE_TYPE) &&
            root.value(QStringLiteral("elements")).isArray();
 }
 
 bool IsClipboard(const QJsonObject& root)
 {
-    return root.value(QStringLiteral("type")).toString() == QLatin1String(ClipboardType) &&
+    return root.value(QStringLiteral("type")).toString() == QLatin1String(CLIPBOARD_TYPE) &&
            root.value(QStringLiteral("elements")).isArray();
 }
 
@@ -664,7 +664,7 @@ QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings
     }
 
     QJsonObject scene;
-    scene.insert(QStringLiteral("type"), QLatin1String(SceneType));
+    scene.insert(QStringLiteral("type"), QLatin1String(SCENE_TYPE));
     scene.insert(QStringLiteral("version"), 2);
     scene.insert(QStringLiteral("source"), QStringLiteral("https://storyboard.local"));
     scene.insert(QStringLiteral("elements"), elements);

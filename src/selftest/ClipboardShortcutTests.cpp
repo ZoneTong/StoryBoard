@@ -19,12 +19,12 @@
 namespace {
 
 // 功能键只看绑定键是否正常工作；副键组合只要不与任何功能冲突即可，不整组断言。
-QAction* findActionByObjectName(QWidget* window, const QString& objectName)
+QAction* FindActionByObjectName(QWidget* window, const QString& objectName)
 {
     return window->findChild<QAction*>(objectName);
 }
 
-QAction* findActionByText(QWidget* window, const QString& text)
+QAction* FindActionByText(QWidget* window, const QString& text)
 {
     for (QAction* action : window->findChildren<QAction*>()) {
         if (action->text() == text) {
@@ -99,9 +99,9 @@ void selftest::RunClipboardShortcutTests(Context& ctx)
     {
         MainWindow shortcutWindow;
 
-        QAction* copyAction = findActionByObjectName(&shortcutWindow, QStringLiteral("CopyItemsAction"));
-        QAction* cutAction = findActionByObjectName(&shortcutWindow, QStringLiteral("CutItemsAction"));
-        QAction* pasteAction = findActionByObjectName(&shortcutWindow, QStringLiteral("PasteItemsAction"));
+        QAction* copyAction = FindActionByObjectName(&shortcutWindow, QStringLiteral("CopyItemsAction"));
+        QAction* cutAction = FindActionByObjectName(&shortcutWindow, QStringLiteral("CutItemsAction"));
+        QAction* pasteAction = FindActionByObjectName(&shortcutWindow, QStringLiteral("PasteItemsAction"));
         ctx.Check(copyAction && copyAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+C")),
                   QStringLiteral("复制绑定 Ctrl+C"));
         ctx.Check(cutAction && cutAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+X")),
@@ -109,52 +109,52 @@ void selftest::RunClipboardShortcutTests(Context& ctx)
         ctx.Check(pasteAction && pasteAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+V")),
                   QStringLiteral("粘贴绑定 Ctrl+V"));
 
-        ctx.Check(findActionByText(&shortcutWindow, QStringLiteral("查看模式")) &&
-                      findActionByText(&shortcutWindow, QStringLiteral("查看模式"))->shortcut() ==
+        ctx.Check(FindActionByText(&shortcutWindow, QStringLiteral("查看模式")) &&
+                      FindActionByText(&shortcutWindow, QStringLiteral("查看模式"))->shortcut() ==
                           QKeySequence(QStringLiteral("H")),
                   QStringLiteral("概览/手型模式绑定 H"));
-        ctx.Check(findActionByText(&shortcutWindow, QStringLiteral("编辑模式")) &&
-                      findActionByText(&shortcutWindow, QStringLiteral("编辑模式"))->shortcut() ==
+        ctx.Check(FindActionByText(&shortcutWindow, QStringLiteral("编辑模式")) &&
+                      FindActionByText(&shortcutWindow, QStringLiteral("编辑模式"))->shortcut() ==
                           QKeySequence(QStringLiteral("V")),
                   QStringLiteral("选择/编辑模式绑定 V（PS / Figma 指针工具）"));
-        ctx.Check(findActionByText(&shortcutWindow, QStringLiteral("画笔模式")) &&
-                      findActionByText(&shortcutWindow, QStringLiteral("画笔模式"))->shortcut() ==
+        ctx.Check(FindActionByText(&shortcutWindow, QStringLiteral("画笔模式")) &&
+                      FindActionByText(&shortcutWindow, QStringLiteral("画笔模式"))->shortcut() ==
                           QKeySequence(QStringLiteral("B")),
                   QStringLiteral("画笔模式绑定 B"));
-        ctx.Check(findActionByText(&shortcutWindow, QStringLiteral("文字模式")) &&
-                      findActionByText(&shortcutWindow, QStringLiteral("文字模式"))->shortcut() ==
+        ctx.Check(FindActionByText(&shortcutWindow, QStringLiteral("文字模式")) &&
+                      FindActionByText(&shortcutWindow, QStringLiteral("文字模式"))->shortcut() ==
                           QKeySequence(QStringLiteral("T")),
                   QStringLiteral("文字模式绑定 T"));
 
-        QAction* insertAction = findActionByText(&shortcutWindow, QStringLiteral("插入图片…"));
+        QAction* insertAction = FindActionByText(&shortcutWindow, QStringLiteral("插入图片…"));
         ctx.Check(insertAction && insertAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+I")),
                   QStringLiteral("插入图片绑定 Ctrl+I"));
 
-        QAction* redoAction = findActionByText(&shortcutWindow, QStringLiteral("重做"));
+        QAction* redoAction = FindActionByText(&shortcutWindow, QStringLiteral("重做"));
         ctx.Check(redoAction && redoAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+Y")),
                   QStringLiteral("重做绑定 Ctrl+Y"));
 
-        QAction* zoomInAction = findActionByText(&shortcutWindow, QStringLiteral("放大"));
+        QAction* zoomInAction = FindActionByText(&shortcutWindow, QStringLiteral("放大"));
         ctx.Check(zoomInAction && zoomInAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+=")),
                   QStringLiteral("放大绑定 Ctrl+="));
 
-        QAction* deleteAction = findActionByText(&shortcutWindow, QStringLiteral("删除选中图元"));
+        QAction* deleteAction = FindActionByText(&shortcutWindow, QStringLiteral("删除选中图元"));
         ctx.Check(deleteAction && deleteAction->shortcut() == QKeySequence(QStringLiteral("Delete")),
                   QStringLiteral("删除绑定 Delete"));
 
-        QAction* fitAction = findActionByText(&shortcutWindow, QStringLiteral("回到全景视图"));
+        QAction* fitAction = FindActionByText(&shortcutWindow, QStringLiteral("回到全景视图"));
         ctx.Check(fitAction && fitAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+0")),
                   QStringLiteral("回到全景绑定 Ctrl+0"));
 
-        QAction* quitAction = findActionByText(&shortcutWindow, QStringLiteral("退出"));
+        QAction* quitAction = FindActionByText(&shortcutWindow, QStringLiteral("退出"));
         ctx.Check(quitAction && quitAction->shortcut() == QKeySequence(QStringLiteral("Alt+F4")),
                   QStringLiteral("退出绑定 Alt+F4"));
 
-        QAction* gridAction = findActionByText(&shortcutWindow, QStringLiteral("辅助网格"));
+        QAction* gridAction = FindActionByText(&shortcutWindow, QStringLiteral("辅助网格"));
         ctx.Check(gridAction && gridAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+'")),
                   QStringLiteral("网格开关绑定 Ctrl+'"));
 
-        QAction* propsAction = findActionByText(&shortcutWindow, QStringLiteral("图元属性…"));
+        QAction* propsAction = FindActionByText(&shortcutWindow, QStringLiteral("图元属性…"));
         ctx.Check(propsAction && propsAction->shortcut().isEmpty(), QStringLiteral("图元属性动作不绑定单字母快捷键"));
     }
 }

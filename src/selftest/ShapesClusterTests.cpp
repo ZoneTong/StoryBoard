@@ -21,7 +21,7 @@ namespace {
 
 // 波线中点必须落在中心线上：一个完整周期时 sin(π)=0；该断言能击穿「周期数没改干净」的回归。
 // 轴线用采样点自身的峰谷中点定义（内容框含笔宽余量，不能当轴线基准）。
-void checkSineWaveOnePeriod(selftest::Context& ctx)
+void CheckSineWaveOnePeriod(selftest::Context& ctx)
 {
     SineItem sine;
     sine.SetWaveGeometry(QPointF(0.0, 0.0), QSizeF(128.0, 40.0), QColor(Qt::black), 2.0);
@@ -50,7 +50,7 @@ void checkSineWaveOnePeriod(selftest::Context& ctx)
 }
 
 // 需求 17：波形旗帜占满内容宽度（两棋盘格）且纵向重心居中。
-void checkFlagWaveNoPole(selftest::Context& ctx)
+void CheckFlagWaveNoPole(selftest::Context& ctx)
 {
     const QRectF rect(0.0, 0.0, 128.0, 86.0);
     const QPainterPath path = ShapePathBuilder::PathFor(ShapeType::FLAG_WAVE, rect, -1.0);
@@ -66,7 +66,7 @@ void checkFlagWaveNoPole(selftest::Context& ctx)
               QStringLiteral("top=%1 bottom=%2").arg(bounds.top()).arg(bounds.bottom()));
 }
 
-void checkScrollShape(selftest::Context& ctx)
+void CheckScrollShape(selftest::Context& ctx)
 {
     ctx.Check(ShapeMeta::TypeToString(ShapeType::SCROLL) == QStringLiteral("scroll"),
               QStringLiteral("卷轴序列化字符串为 scroll"));
@@ -93,9 +93,9 @@ void checkScrollShape(selftest::Context& ctx)
 
 void selftest::RunShapesClusterTests(Context& ctx)
 {
-    checkSineWaveOnePeriod(ctx);
-    checkFlagWaveNoPole(ctx);
-    checkScrollShape(ctx);
+    CheckSineWaveOnePeriod(ctx);
+    CheckFlagWaveNoPole(ctx);
+    CheckScrollShape(ctx);
 
     // 需求 4/5 + 需求 30：立方体 = 3 个菱形图元组成的组；圆柱体 = 顶椭圆 +
     // 有面积的多边形柱身，椭圆叠在多边形之上。

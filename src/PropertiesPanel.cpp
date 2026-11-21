@@ -192,7 +192,7 @@ void PropertiesPanel::SetItemActions(QAction* smoothAction, QAction* propertiesA
     }
 }
 
-QList<CanvasItem*> PropertiesPanel::selectedItems() const
+QList<CanvasItem*> PropertiesPanel::SelectedItems() const
 {
     return m_scene ? m_scene->SelectedCanvasItems() : QList<CanvasItem*>();
 }
@@ -200,7 +200,7 @@ QList<CanvasItem*> PropertiesPanel::selectedItems() const
 QList<ShapeItem*> PropertiesPanel::SelectedShapes() const
 {
     QList<ShapeItem*> shapes;
-    for (CanvasItem* item : selectedItems()) {
+    for (CanvasItem* item : SelectedItems()) {
         // 多边形派生自 ShapeItem，但它没有形状类型语义：圆角 / 角度等行只对普通图形开放。
         if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() == 0) {
             shapes.append(shape);
@@ -212,7 +212,7 @@ QList<ShapeItem*> PropertiesPanel::SelectedShapes() const
 QList<ShapeItem*> PropertiesPanel::SelectedComposites() const
 {
     QList<ShapeItem*> composites;
-    for (CanvasItem* item : selectedItems()) {
+    for (CanvasItem* item : SelectedItems()) {
         if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() > 0) {
             composites.append(shape);
         }
@@ -223,7 +223,7 @@ QList<ShapeItem*> PropertiesPanel::SelectedComposites() const
 QList<LineItemAbstract*> PropertiesPanel::SelectedStrokes() const
 {
     QList<LineItemAbstract*> strokes;
-    for (CanvasItem* item : selectedItems()) {
+    for (CanvasItem* item : SelectedItems()) {
         if (auto* stroke = dynamic_cast<LineItemAbstract*>(item)) {
             strokes.append(stroke);
         }
@@ -234,7 +234,7 @@ QList<LineItemAbstract*> PropertiesPanel::SelectedStrokes() const
 QList<CanvasItem*> PropertiesPanel::SelectedStrokeTargets() const
 {
     QList<CanvasItem*> targets;
-    for (CanvasItem* item : selectedItems()) {
+    for (CanvasItem* item : SelectedItems()) {
         if (dynamic_cast<ShapeItem*>(item) || dynamic_cast<LineItemAbstract*>(item)) {
             targets.append(item);
         }
@@ -245,7 +245,7 @@ QList<CanvasItem*> PropertiesPanel::SelectedStrokeTargets() const
 QList<CanvasItem*> PropertiesPanel::SelectedTexts() const
 {
     QList<CanvasItem*> texts;
-    for (CanvasItem* item : selectedItems()) {
+    for (CanvasItem* item : SelectedItems()) {
         if (item->HasTextFacet()) {
             texts.append(item);
         }
@@ -300,7 +300,7 @@ void PropertiesPanel::Refresh()
     m_refreshing = true;
     UpdateSummary();
 
-    const QList<CanvasItem*> items = selectedItems();
+    const QList<CanvasItem*> items = SelectedItems();
     const QList<ShapeItem*> shapes = SelectedShapes();
     const QList<ShapeItem*> composites = SelectedComposites();
     const QList<LineItemAbstract*> strokes = SelectedStrokes();
@@ -346,7 +346,7 @@ void PropertiesPanel::Refresh()
     m_colorsCard->Refresh(shapes, strokes, composites);
     m_fillBorderCard->Refresh(shapes, strokes, composites);
     m_valueCard->Refresh(shapes, strokes, items);
-    m_arrangeCard->Refresh(!selectedItems().isEmpty());
+    m_arrangeCard->Refresh(!SelectedItems().isEmpty());
 
     m_refreshing = false;
     if (m_refreshPending) {
@@ -380,7 +380,7 @@ bool PropertiesPanel::SelectionGroupUseful(const QList<CanvasItem*>& items) cons
 
 void PropertiesPanel::UpdateSummary()
 {
-    const QList<CanvasItem*> items = selectedItems();
+    const QList<CanvasItem*> items = SelectedItems();
     if (items.isEmpty()) {
         m_titleLabel->setText(tr("No item selected"));
         m_metaLabel->setText(tr("Select an item on the canvas to edit its style here."));

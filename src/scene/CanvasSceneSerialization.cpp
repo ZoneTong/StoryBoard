@@ -17,7 +17,7 @@
 
 namespace {
 
-QString encodePixmap(const QPixmap& pixmap)
+QString EncodePixmap(const QPixmap& pixmap)
 {
     if (pixmap.isNull()) {
         return QString();
@@ -29,7 +29,7 @@ QString encodePixmap(const QPixmap& pixmap)
     return QString::fromLatin1(bytes.toBase64());
 }
 
-QPixmap decodePixmap(const QString& base64)
+QPixmap DecodePixmap(const QString& base64)
 {
     const QByteArray bytes = QByteArray::fromBase64(base64.toLatin1());
     QPixmap pixmap;
@@ -69,7 +69,7 @@ QJsonObject CanvasScene::ToJson() const
     case BackgroundType::IMAGE:
         background.insert(QStringLiteral("type"), QStringLiteral("image"));
         background.insert(QStringLiteral("mode"), BackgroundModeToString(m_background.mode));
-        background.insert(QStringLiteral("image"), encodePixmap(m_background.image));
+        background.insert(QStringLiteral("image"), EncodePixmap(m_background.image));
         break;
     }
     root.insert(QStringLiteral("background"), background);
@@ -210,7 +210,7 @@ bool CanvasScene::FromJson(const QJsonObject& root, QString* errorMessage)
         background.type = BackgroundType::COLOR;
         background.color = color.isValid() ? color : QColor(255, 255, 255);
     } else if (backgroundType == QStringLiteral("image")) {
-        const QPixmap pixmap = decodePixmap(backgroundJson.value(QStringLiteral("image")).toString());
+        const QPixmap pixmap = DecodePixmap(backgroundJson.value(QStringLiteral("image")).toString());
         if (!pixmap.isNull()) {
             background.type = BackgroundType::IMAGE;
             background.image = pixmap;
