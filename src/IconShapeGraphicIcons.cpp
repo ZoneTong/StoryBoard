@@ -158,9 +158,10 @@ void DrawArrowEnd(QPainter& painter, IconId)
 void DrawSineCycles(QPainter& painter, IconId)
 {
     // 正弦周期数：一个波峰，波峰下方一支左右双向箭头，表达周期沿轴往复推进。
+    // 波峰与箭杆都关于 x=12 居中对称。
     QPainterPath wave;
-    wave.moveTo(4.0, 13.0);
-    wave.cubicTo(6.5, 5.5, 9.5, 5.5, 12.0, 13.0);
+    wave.moveTo(6.0, 13.0);
+    wave.cubicTo(9.0, 5.5, 15.0, 5.5, 18.0, 13.0);
     painter.drawPath(wave);
     painter.drawLine(QPointF(4.0, 19.5), QPointF(20.0, 19.5));
     painter.drawLine(QPointF(4.0, 19.5), QPointF(7.0, 17.0));
