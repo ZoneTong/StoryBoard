@@ -3,7 +3,16 @@
 #include "ShapePathBuilder.h"
 
 #include <QPainter>
+#include <QTransform>
 #include <QtMath>
+
+namespace {
+qreal AbsoluteShiftFor(qreal height, qreal angle)
+{
+    // 上边相对左下顶点（钝角时相对右下顶点）的水平偏移。
+    return qAbs(height / qTan(qDegreesToRadians(angle)));
+}
+} // namespace
 
 ParallelogramItem::ParallelogramItem()
 {
@@ -29,7 +38,37 @@ QPainterPath ParallelogramItem::ShapePath(const QRectF& rect) const
 
 void ParallelogramItem::SetParallelogramAngle(qreal angle)
 {
-    ShapeItem::SetParallelogramAngle(angle);
+    // 菱形只是复用这个字段保存 90°，轮廓由宽高决定；不能按平行四边形改尺寸。
+    if (shapeType() != ShapeType::PARALLELOGRAM || IsCustomShape()) {
+        ShapeItem::SetParallelogramAngle(angle);
+        return;
+    }
+
+    const qreal oldAngle = ParallelogramAngle();
+    const qreal clamped = qBound<qreal>(5.0, angle, 175.0);
+    if (qFuzzyCompare(oldAngle + 2.0, clamped + 2.0)) {
+        return;
+    }
+
+    // 角度改变时只让上边绕底边旋转：底边长度保持不变，包围框随偏移量增减。
+    // 旧底边 = 旧框宽 − 旧上边偏移；新框宽 = 旧底边 + 新上边偏移。
+    const QRectF oldRect = ContentRect();
+    const qreal cotOld = 1.0 / qTan(qDegreesToRadians(oldAngle));
+    const qreal oldShift = qMin(AbsoluteShiftFor(oldRect.height(), oldAngle), qMax<qreal>(0.0, oldRect.width() - 1.0));
+    const qreal baseLength = qMax<qreal>(1.0, oldRect.width() - oldShift);
+    const qreal oldBottomLeftX = cotOld >= 0.0 ? oldRect.left() : oldRect.left() + oldShift;
+    const QPointF oldBottomLeftScene = mapToScene(QPointF(oldBottomLeftX, oldRect.bottom()));
+
+    ShapeItem::SetParallelogramAngle(clamped);
+
+    const qreal newShift = AbsoluteShiftFor(oldRect.height(), clamped);
+    SetContentSize(QSizeF(baseLength + newShift, oldRect.height()));
+    const QRectF newRect = ContentRect();
+    const qreal cotNew = 1.0 / qTan(qDegreesToRadians(clamped));
+    const qreal newBottomLeftX = cotNew >= 0.0 ? newRect.left() : newRect.left() + newShift;
+    // 左下顶点保持不动：包围框为容纳上边向左/右伸出的部分而移动时，图元位置反向补偿。
+    const QPointF newBottomLeftScene = mapToScene(QPointF(newBottomLeftX, newRect.bottom()));
+    setPos(pos() + (oldBottomLeftScene - newBottomLeftScene));
 }
 
 QPointF ParallelogramItem::CustomHandleCenter(int handle, bool* ok) const
@@ -48,8 +87,10 @@ QPointF ParallelogramItem::CustomHandleCenter(int handle, bool* ok) const
     qreal shift = qAbs(rect.height() * cotValue);
     shift = qMin(shift, qMax<qreal>(0.0, rect.width() - 1.0));
     const qreal signedShift = cotValue >= 0.0 ? shift : -shift;
-    // 往下让开顶边中点（Top 缩放句柄）半个句柄加间隙；形很矮时收在内框里。
-    const qreal inset = qMin(qMax<qreal>(0.0, rect.height() * 0.5), 14.0 / qMax<qreal>(ViewScale(), 0.001));
+    // 往下让开顶边中点（Top 缩放句柄），并保证内角调到 90° 时旋钮也不与顶点/角手柄
+    // 重合；形很矮时收在内框里。
+    const qreal inset = qMin<qreal>(22.0 / qMax<qreal>(ViewScale(), 0.001),
+                                    qMax<qreal>(0.0, rect.height() - 7.0 / qMax<qreal>(ViewScale(), 0.001)));
     if (ok) {
         *ok = true;
     }

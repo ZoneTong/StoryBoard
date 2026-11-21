@@ -118,6 +118,19 @@ void CanvasItemInteraction::BeginResize(int handle, const QPointF& scenePos)
     m_item->m_dragStartSize = m_item->m_size;
     m_item->m_before = {{m_item, m_item->pos(), m_item->m_size}};
 
+    if (auto* para = dynamic_cast<ShapeItem*>(m_item); handle == CanvasItem::SKEW && para &&
+                                                       para->shapeType() == ShapeType::PARALLELOGRAM &&
+                                                       para->SkewHandleEnabled() && !para->IsCustomShape()) {
+        // 内角旋钮绕左下顶点旋转上边：先记住底边的场景锚点与长度。
+        // 拖动中包围框会随上边偏移量增减，不能再用固定的拖拽起点推算。
+        const QRectF rect = m_item->ContentRect();
+        const qreal cotValue = 1.0 / qTan(qDegreesToRadians(para->ParallelogramAngle()));
+        const qreal shift = qMin(qAbs(rect.height() * cotValue), qMax<qreal>(0.0, rect.width() - 1.0));
+        m_parallelogramBaseLength = qMax<qreal>(1.0, rect.width() - shift);
+        const qreal bottomLeftX = cotValue >= 0.0 ? rect.left() : rect.left() + shift;
+        m_parallelogramBottomLeft = m_item->mapToScene(QPointF(bottomLeftX, rect.bottom()));
+    }
+
     if (auto* triangle = dynamic_cast<ShapeItem*>(m_item); triangle && triangle->shapeType() == ShapeType::TRIANGLE &&
                                                            !triangle->IsCustomShape() && handle == CanvasItem::APEX) {
         m_triangleDragBaseA = m_item->mapToScene(triangle->triangleVertex(ShapeItem::TriangleVertex::A));
@@ -131,23 +144,22 @@ void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardMod
     QRectF rect(m_item->m_dragStartPos, m_item->m_dragStartSize);
     const int handle = m_item->m_resizeHandle;
 
-    // 需求 3：平行四边形内角改由顶边中点的倾斜旋钮拖动，不再借顶点句柄。
-    // 旋钮相对框中心的有符号偏移 u = 2×(指针 x − 框中心 x)：u>0 锐角、u<0 钝角，
-    // 拖过中心即连续跨过 90°，不会像拖顶点那样在 90° 处断档。
+    // 需求 3：平行四边形内角由顶边中点的倾斜旋钮拖动。旋钮位于“底边中点 + 上边偏移”，
+    // 因此以固定左下顶点为原点量横向距离：上边偏移 = 指针到底边中点的距离 − 底边半长。
+    // 上边向左右移动即改变左下内角，底边长度全程保持不动。
     if (auto* para = dynamic_cast<ShapeItem*>(m_item); para && para->shapeType() == ShapeType::PARALLELOGRAM &&
                                                        para->SkewHandleEnabled() && !para->IsCustomShape() &&
                                                        handle == CanvasItem::SKEW) {
-        const qreal startWidth = m_item->m_dragStartSize.width();
         const qreal startHeight = m_item->m_dragStartSize.height();
-        QPointF local = scenePos - m_item->m_dragStartPos;
+        QPointF along(1.0, 0.0);
         const qreal rotation = m_item->RotationAngle();
         if (!qFuzzyIsNull(rotation)) {
             QTransform transform;
-            transform.rotate(-rotation);
-            local = transform.map(local);
+            transform.rotate(rotation);
+            along = transform.map(along);
         }
-        const qreal limit = qMax<qreal>(1.0, startWidth - 0.5);
-        const qreal signedShift = qBound<qreal>(-limit, 2.0 * (local.x() - startWidth / 2.0), limit);
+        const QPointF toPointer = scenePos - m_parallelogramBottomLeft;
+        const qreal signedShift = QPointF::dotProduct(toPointer, along) - m_parallelogramBaseLength / 2.0;
         const qreal angle = qRadiansToDegrees(qAtan2(startHeight, signedShift));
         para->SetParallelogramAngle(angle);
         para->SetAngleReadoutVisible(true);
