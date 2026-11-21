@@ -61,7 +61,7 @@ QPixmap PixmapFromJson(const QJsonObject& json, Mode* mode)
     return pixmap;
 }
 
-void paint(QPainter* painter, const QPixmap& image, Mode mode, const QRectF& rect, const QPainterPath& clipPath)
+void Paint(QPainter* painter, const QPixmap& image, Mode mode, const QRectF& rect, const QPainterPath& clipPath)
 {
     if (!painter || image.isNull() || rect.isEmpty() || clipPath.isEmpty()) {
         return;

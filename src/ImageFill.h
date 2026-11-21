@@ -22,6 +22,6 @@ QPixmap PixmapFromJson(const QJsonObject& json, Mode* mode);
 
 // rect 是图元内容矩形（图元局部坐标），clipPath 是可填充区域路径。
 // Stretch 非等比铺满；Fit 等比留边居中；Tile 按图片原始像素 1:1 平铺。
-void paint(QPainter* painter, const QPixmap& image, Mode mode, const QRectF& rect, const QPainterPath& clipPath);
+void Paint(QPainter* painter, const QPixmap& image, Mode mode, const QRectF& rect, const QPainterPath& clipPath);
 
 } // namespace ImageFill

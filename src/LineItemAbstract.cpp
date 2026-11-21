@@ -227,7 +227,7 @@ bool LineItemAbstract::SimplifyCurve(qreal tolerance)
 
 void LineItemAbstract::PaintContent(QPainter* painter)
 {
-    StrokeGeometry::render(painter, m_path, m_baseSize, ContentSize(), m_strokeColor, m_strokeWidth, m_strokePattern);
+    StrokeGeometry::Render(painter, m_path, m_baseSize, ContentSize(), m_strokeColor, m_strokeWidth, m_strokePattern);
 
     // 两端箭头：端点取贝塞尔段的首尾节点，与描线共用同一套基坐标 → 内容尺寸缩放，
     // 箭头随描线一起缩放；单点笔迹没有方向，不画箭头。
@@ -250,7 +250,7 @@ void LineItemAbstract::PaintContent(QPainter* painter)
 
 QPainterPath LineItemAbstract::OutlineShape() const
 {
-    return StrokeGeometry::outline(m_path, m_baseSize, ContentSize());
+    return StrokeGeometry::Outline(m_path, m_baseSize, ContentSize());
 }
 
 QPainterPath LineItemAbstract::PaintedShape() const

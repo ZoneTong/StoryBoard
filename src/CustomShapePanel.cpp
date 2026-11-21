@@ -37,7 +37,7 @@ struct CachedTemplate {
 // 模板解析按 mtime + size 缓存，面板每次展开只重解析真正改动过的文件。
 QHash<QString, CachedTemplate> g_templateCache;
 
-bool loadTemplateCached(const QFileInfo& info, CustomShapeTemplate* entry, QString* error)
+bool LoadTemplateCached(const QFileInfo& info, CustomShapeTemplate* entry, QString* error)
 {
     const QString path = info.absoluteFilePath();
     const auto it = g_templateCache.constFind(path);
@@ -61,7 +61,7 @@ bool loadTemplateCached(const QFileInfo& info, CustomShapeTemplate* entry, QStri
 }
 
 // 「顺序.txt」每行一个文件夹名，空行与 # 注释忽略；未列出的目录按本地化名称排在后面。
-QStringList readOrderFile(const QString& rootPath)
+QStringList ReadOrderFile(const QString& rootPath)
 {
     QFile file(QDir(rootPath).filePath(ORDER_FILE));
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -80,7 +80,7 @@ QStringList readOrderFile(const QString& rootPath)
 }
 
 // 单个目录扫描：同一目录内的模板按文件名排序，解析失败的记入 errors。
-QList<CustomShapeTemplate> scanDirectory(const QString& path, QStringList* errors)
+QList<CustomShapeTemplate> ScanDirectory(const QString& path, QStringList* errors)
 {
     QList<CustomShapeTemplate> items;
     QDir dir(path);
@@ -91,7 +91,7 @@ QList<CustomShapeTemplate> scanDirectory(const QString& path, QStringList* error
     for (const QFileInfo& info : files) {
         CustomShapeTemplate entry;
         QString error;
-        if (loadTemplateCached(info, &entry, &error)) {
+        if (LoadTemplateCached(info, &entry, &error)) {
             items.append(entry);
         } else if (errors) {
             errors->append(QStringLiteral("%1: %2").arg(info.fileName(), error));
@@ -180,7 +180,7 @@ QList<CustomShapePanel::Folder> CustomShapePanel::ScanFolders() const
         }
         subdirs.sort(Qt::CaseInsensitive);
 
-        const QStringList ordered = readOrderFile(rootPath);
+        const QStringList ordered = ReadOrderFile(rootPath);
         QStringList orderedExisting;
         for (const QString& name : ordered) {
             if (subdirs.contains(name) && !orderedExisting.contains(name)) {
@@ -195,7 +195,7 @@ QList<CustomShapePanel::Folder> CustomShapePanel::ScanFolders() const
 
         for (const QString& name : orderedExisting) {
             QStringList errors;
-            const QList<CustomShapeTemplate> items = scanDirectory(root.filePath(name), &errors);
+            const QList<CustomShapeTemplate> items = ScanDirectory(root.filePath(name), &errors);
             // 空目录不出页；有坏文件时保留页，在页底以灰字提示。
             if (items.isEmpty() && errors.isEmpty()) {
                 continue;
@@ -217,7 +217,7 @@ QList<CustomShapePanel::Folder> CustomShapePanel::ScanFolders() const
         }
 
         QStringList errors;
-        const QList<CustomShapeTemplate> rootItems = scanDirectory(rootPath, &errors);
+        const QList<CustomShapeTemplate> rootItems = ScanDirectory(rootPath, &errors);
         looseItems.append(rootItems);
         looseErrors.append(errors);
     }

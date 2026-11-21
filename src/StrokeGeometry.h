@@ -12,7 +12,7 @@ class QPainter;
 namespace StrokeGeometry {
 
 // 路径按 baseSize -> contentSize 的比例映射到当前大小。
-QPainterPath outline(const QPainterPath& path, const QSizeF& baseSize, const QSizeF& contentSize);
+QPainterPath Outline(const QPainterPath& path, const QSizeF& baseSize, const QSizeF& contentSize);
 
 // 真正涂满画布的遮挡区：中心线上按平均缩放描出笔触宽度。
 QPainterPath Painted(const QPainterPath& outline, const QSizeF& baseSize, const QSizeF& contentSize, qreal penWidth);
@@ -22,7 +22,7 @@ QPainterPath HitScaled(const QPainterPath& path, const QSizeF& baseSize, const Q
                        qreal viewScale);
 
 // 按内容尺寸缩放后描边渲染。
-void render(QPainter* painter, const QPainterPath& path, const QSizeF& baseSize, const QSizeF& contentSize,
+void Render(QPainter* painter, const QPainterPath& path, const QSizeF& baseSize, const QSizeF& contentSize,
             const QColor& color, qreal penWidth, Qt::PenStyle style = Qt::SolidLine);
 
 } // namespace StrokeGeometry

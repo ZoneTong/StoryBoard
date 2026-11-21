@@ -735,7 +735,7 @@ void ShapeItem::PaintContent(QPainter* painter)
             stroker.setJoinStyle(Qt::MiterJoin);
             clip = path.subtracted(stroker.createStroke(path));
         }
-        ImageFill::paint(painter, m_fillImage, m_fillImageMode, rect, clip);
+        ImageFill::Paint(painter, m_fillImage, m_fillImageMode, rect, clip);
         painter->restore();
     }
 

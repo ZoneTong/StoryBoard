@@ -10,7 +10,7 @@ namespace CanvasItemGeometry {
 QRectF ContentRect(const QSizeF& size);
 
 // 依据内容矩形、帧边距与选中状态计算图元的粗包围矩形。
-QRectF boundingRect(const QRectF& content, qreal framePadding, bool selected, qreal viewScale, qreal handleSize,
+QRectF BoundingRect(const QRectF& content, qreal framePadding, bool selected, qreal viewScale, qreal handleSize,
                     qreal rotationOffset);
 
 } // namespace CanvasItemGeometry

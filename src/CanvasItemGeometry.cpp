@@ -9,7 +9,7 @@ QRectF ContentRect(const QSizeF& size)
     return QRectF(0.0, 0.0, size.width(), size.height());
 }
 
-QRectF boundingRect(const QRectF& content, qreal framePadding, bool selected, qreal viewScale, qreal handleSize,
+QRectF BoundingRect(const QRectF& content, qreal framePadding, bool selected, qreal viewScale, qreal handleSize,
                     qreal rotationOffset)
 {
     qreal topPadding = framePadding;

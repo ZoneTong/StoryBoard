@@ -350,7 +350,7 @@ void PolygonItem::PaintContent(QPainter* painter)
                 stroker.setWidth(borderWidth);
                 area = area.subtracted(stroker.createStroke(area));
             }
-            ImageFill::paint(painter, m_fillImage, m_fillImageMode, QRectF(QPointF(0.0, 0.0), m_baseSize), area);
+            ImageFill::Paint(painter, m_fillImage, m_fillImageMode, QRectF(QPointF(0.0, 0.0), m_baseSize), area);
         }
     }
 

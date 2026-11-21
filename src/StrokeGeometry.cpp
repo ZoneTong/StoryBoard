@@ -18,7 +18,7 @@ qreal averageScale(const QSizeF& baseSize, const QSizeF& contentSize)
 
 } // namespace
 
-QPainterPath outline(const QPainterPath& path, const QSizeF& baseSize, const QSizeF& contentSize)
+QPainterPath Outline(const QPainterPath& path, const QSizeF& baseSize, const QSizeF& contentSize)
 {
     if (baseSize.isEmpty() || path.isEmpty()) {
         return QPainterPath();
@@ -65,7 +65,7 @@ QPainterPath HitScaled(const QPainterPath& path, const QSizeF& baseSize, const Q
     return result;
 }
 
-void render(QPainter* painter, const QPainterPath& path, const QSizeF& baseSize, const QSizeF& contentSize,
+void Render(QPainter* painter, const QPainterPath& path, const QSizeF& baseSize, const QSizeF& contentSize,
             const QColor& color, qreal penWidth, Qt::PenStyle style)
 {
     if (baseSize.isEmpty() || path.isEmpty()) {
