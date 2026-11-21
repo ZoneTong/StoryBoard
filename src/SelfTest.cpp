@@ -91,6 +91,8 @@ int RunSelfTest(const QString& reportPath)
     selftest::RunCustomShapeDockTests(ctx);
     selftest::RunShapesFolderTests(ctx);
     selftest::RunDockPanelMainWindowTests(ctx);
+    selftest::RunDockPanelItemStyleTests(ctx);
+    selftest::RunDockPanelPropertyTests(ctx);
     selftest::RunDockOrderPersistenceTests(ctx);
     selftest::RunClipboardShortcutTests(ctx);
     selftest::RunExcalidrawFormatTests(ctx);

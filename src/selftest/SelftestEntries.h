@@ -36,6 +36,8 @@ void RunGroupBoolOpsTests(Context& ctx);
 void RunCustomShapeDockTests(Context& ctx);
 void RunShapesFolderTests(Context& ctx);
 void RunDockPanelMainWindowTests(Context& ctx);
+void RunDockPanelItemStyleTests(Context& ctx);
+void RunDockPanelPropertyTests(Context& ctx);
 void RunDockOrderPersistenceTests(Context& ctx);
 void RunClipboardShortcutTests(Context& ctx);
 void RunExcalidrawFormatTests(Context& ctx);
