@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# 提交前命名检查：只对暂存的 .cpp 跑 .clang-tidy 的 readability-identifier-naming。
+# 跳过：SKIP_NAMING_CHECK=1 git commit ...
+set -uo pipefail
+ROOT=$(git rev-parse --show-toplevel)
+exec bash "$ROOT/scripts/naming-check.sh"

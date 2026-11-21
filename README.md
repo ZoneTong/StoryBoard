@@ -223,7 +223,24 @@ APP=$(basename "$PWD")
 QT_QPA_PLATFORM=offscreen ./build/bin/$APP --self-test build/selftest.txt
 ```
 
-当前 Windows 基线为 **858 passed, 0 failed**（GCC 15 + Qt 6.12 实跑），其他平台以实际 `SUMMARY` 为准。自检需要平台插件目录下的 offscreen 插件，打包脚本会自动补齐。自检里的快捷键用例只验证功能键的主键生效且互不冲突；副键组合只要不与任何功能冲突即可，不做额外守卫。
+当前 Windows 基线为 **995 passed, 0 failed**（GCC 15 + Qt 6.12 实跑），其他平台以实际 `SUMMARY` 为准。自检需要平台插件目录下的 offscreen 插件，打包脚本会自动补齐。自检里的快捷键用例只验证功能键的主键生效且互不冲突；副键组合只要不与任何功能冲突即可，不做额外守卫。
+
+## 命名检查
+
+`.clang-tidy` 只启 `readability-identifier-naming`，口径见文件头注释（类型与函数大驼峰、类成员 `m_` + 小驼峰、结构体成员与局部变量小驼峰、全局变量 `g_`、枚举值与常量全大写；Qt 虚覆盖、信号、与类型同名的函数在白名单里）。
+
+```bash
+bash scripts/naming-check.sh                 # 只查本次暂存的 .cpp
+bash scripts/naming-check.sh src/ArcItem.cpp # 指定文件
+```
+
+想让它随提交自动跑：
+
+```bash
+git config core.hooksPath .githooks
+```
+
+`SKIP_NAMING_CHECK=1 git commit ...` 可临时跳过。改名用 `--fix` 时务必**逐个 TU 串行**：多进程并行会同时写同一头文件，产生错位替换。
 
 ## 项目结构
 

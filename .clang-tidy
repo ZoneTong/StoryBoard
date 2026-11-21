@@ -1,15 +1,18 @@
 # 命名规范守卫：readability-identifier-naming（只启这一项，其余检查全部关闭）。
-# 规范口径与 .clang-format / §4.8 一致：类型大驼峰、成员函数大驼峰、
-# 私有/保护成员 m_ + 小驼峰、局部变量与参数小驼峰、枚举值与命名空间常量全大写。
+# 口径取自 §4.8.1：类型大驼峰；函数（全局与成员）大驼峰；类成员 m_ + 小驼峰；
+# 结构体/联合体成员与局部变量、参数小驼峰（无前缀）；全局变量 g_ + 小驼峰；
+# 枚举值与常量全大写。
 #
-# 有意保留小写的白名单（不进检查）：
-#   1. Qt 虚函数覆盖与 Qt 惯例枚举值（Type/UserType）；
-#   2. 与同名类型冲突的成员函数（canvasScene、shapeType、fillStyle 等），
-#      类型名不能与用户定义叶子类同名，函数保留小写以编译优先；
-#   3. Qt 信号（signals 段），moc 生成实现，按 Qt 惯例小写；
-#   4. 命名空间自由函数中与类型同名的 curveParamState / lineArtPreset。
-# 结构体公开数据成员不纳入检查：项目里的 CanvasTypes/ItemGeometry/Settings 等
-# 是纯 POD 字段（style.text、settings.brushColor），按成员前缀规则会大面积报假红。
+# 两种成员按规范分开检查：
+#   PrivateMember/ProtectedMember -> m_ + camelBack（类成员）
+#   PublicMember                 -> camelBack（结构体与类的公开数据字段，无前缀）
+#
+# 有意保留小写的白名单（写进 IgnoredRegexp）：
+#   1. Qt 虚函数覆盖与 Qt 惯例枚举值 Type/UserType；
+#   2. 与同名类型冲突的成员函数（canvasScene、shapeType、fillStyle 等）；
+#   3. Qt 信号（signals 段，moc 生成实现），按 Qt 惯例小写；
+#   4. 命名空间自由函数中与类型同名的 curveParamState / lineArtPreset；
+#   5. 类内大驼峰常量 BackgroundLayerId（其余 constexpr 全大写）。
 #
 # 运行方式（Windows + MinGW + Qt Creator 自带 clang-tidy）：
 #   MINGW=D:/Qt/Tools/mingw1510_64
@@ -32,10 +35,10 @@
 #     --extra-arg=-D__GCC_ATOMIC_POINTER_LOCK_FREE=2 \
 #     --extra-arg=-D__GCC_ATOMIC_TEST_AND_SET_TRUEVAL=1 \
 #     src/CanvasItem.cpp
-# 说明：GCC 自带的 libstdc++ 头无法被 clang 直接解析（缺内置 intrinsic 头，
-# 且 clang 不认 GCC 的 -isystem 内置目录口径），因此只把 libstdc++ 与 win32 头
-# 传成 -isystem，并补齐 __GCC_ATOMIC_* 宏与 windows-gnu target。
-# 加 --fix 可自动改名，但会连带重命名，先只看诊断结果。
+# 说明：clang 不能直接解析 GCC 15 的 libstdc++（缺内置 intrinsic 头与原子宏），
+# 所以只把 libstdc++ 与 win32 头按 -isystem 传入，并补 __GCC_ATOMIC_* 宏与
+# windows-gnu target。加 --fix 可自动改名；必须逐个 TU 串行，多进程并行会同时
+# 写同一头文件造成错位替换。
 Checks: '-*,readability-identifier-naming'
 WarningsAsErrors: ''
 HeaderFilterRegex: '.*src.*'
@@ -67,6 +70,8 @@ CheckOptions:
     value: camelBack
   - key: readability-identifier-naming.ProtectedMemberPrefix
     value: 'm_'
+  - key: readability-identifier-naming.PublicMemberCase
+    value: camelBack
   - key: readability-identifier-naming.LocalVariableCase
     value: camelBack
   - key: readability-identifier-naming.ParameterCase
@@ -77,22 +82,9 @@ CheckOptions:
     value: '^BackgroundLayerId$'
   - key: readability-identifier-naming.StaticConstantCase
     value: UPPER_CASE
-
-  - key: readability-identifier-naming.PrivateMemberCase
-    value: camelBack
-  - key: readability-identifier-naming.PrivateMemberPrefix
-    value: 'm_'
-  - key: readability-identifier-naming.ProtectedMemberCase
-    value: camelBack
-  - key: readability-identifier-naming.ProtectedMemberPrefix
-    value: 'm_'
-  - key: readability-identifier-naming.LocalVariableCase
-    value: camelBack
-  - key: readability-identifier-naming.ParameterCase
-    value: camelBack
-  - key: readability-identifier-naming.ConstexprVariableCase
+  - key: readability-identifier-naming.GlobalConstantCase
     value: UPPER_CASE
-  - key: readability-identifier-naming.ConstexprVariableIgnoredRegexp
-    value: '^BackgroundLayerId$'
-  - key: readability-identifier-naming.StaticConstantCase
-    value: UPPER_CASE
+  - key: readability-identifier-naming.GlobalVariableCase
+    value: camelBack
+  - key: readability-identifier-naming.GlobalVariablePrefix
+    value: 'g_'
