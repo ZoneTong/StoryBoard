@@ -235,6 +235,13 @@ void selftest::RunShapeItemTests(Context& ctx)
             QStringLiteral("90° 前后的平行四边形轮廓都不越出内容框"),
             QStringLiteral("89=%1 91=%2").arg(steepPath.boundingRect().width()).arg(bluntPath.boundingRect().width()));
     }
+    // 矩形锁 90°，不能继承平行四边形的内角旋钮：那个旋钮在矩形里落在中心，
+    // 拖动只会调用锁 90° 的写入，视觉上是一个没有用途的图标。
+    {
+        RectangleItem rect;
+        ctx.Check(!rect.SkewHandleEnabled() && !rect.ApexAngleHandle(),
+                  QStringLiteral("矩形不显示内角倾斜旋钮与顶点手柄"));
+    }
     // 需求 4：菱形独立成类，派生自平行四边形，四边恒等且创建时一条对角线水平。
     {
         DiamondItem diamond;

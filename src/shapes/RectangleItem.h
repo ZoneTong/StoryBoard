@@ -11,9 +11,11 @@ class RectangleItem : public ParallelogramItem {
     // 覆写父类的平行四边形默认尺寸：矩形插入即为 2 格正方形。
     QSizeF DefaultContentSize() const override { return QSizeF(128.0, 128.0); }
     ItemPropertySet Properties() const override;
-    // 矩形锁 90°：写入侧统一抹平，面板也没有内角行。
+    // 矩形锁 90°：写入侧统一抹平，面板也没有内角行；顶部内角旋钮同样不应出现，
+    // 否则会继承平行四边形的旋钮落在中心却改不动任何角度。
     void SetParallelogramAngle(qreal angle) override;
     bool ApexAngleHandle() const override { return false; }
+    bool SkewHandleEnabled() const override { return false; }
     QPointF CustomHandleCenter(int handle, bool* ok) const override;
 
   protected:
