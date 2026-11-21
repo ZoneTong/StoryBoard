@@ -1,41 +1,30 @@
 #pragma once
 
-#include "ShapeItem.h"
-
 #include <QColor>
 #include <QList>
 #include <QWidget>
 
-class QToolButton;
-class LineItemAbstract;
+class FillAttributes;
+class StrokeAttributes;
+class FillColorRow;
+class StrokeColorRow;
 
-// 属性编辑面板的描边 / 填充颜色两行：每行 8 个预设色块加一个自定义颜色按钮，
-// 选中图元后按图元当前颜色勾选；自定义颜色走颜色对话框后把颜色交回面板应用。
-// 两行由面板按“填充颜色在填充样式后、边框颜色紧邻边框样式后”的顺序插入布局。
+// 编辑面板的描线 / 填充颜色两行：复用属性行控件，颜色直接取自对应属性基类。
 class PropertiesPanelColorsCard : public QWidget {
     Q_OBJECT
 
   public:
     explicit PropertiesPanelColorsCard(QWidget* parent = nullptr);
 
-    void Refresh(const QList<ShapeItem*>& shapes, const QList<LineItemAbstract*>& strokes,
-                 const QList<ShapeItem*>& composites = QList<ShapeItem*>());
-    QWidget* FillColorRow() const { return m_fillColorRow; }
-    QWidget* BorderColorRow() const { return m_borderColorRow; }
+    void Refresh(const QList<FillAttributes*>& fills, const QList<StrokeAttributes*>& strokes);
+    QWidget* FillColorRow() const;
+    QWidget* BorderColorRow() const;
 
   signals:
     void strokeColorChosen(const QColor& color);
     void fillColorChosen(const QColor& color);
 
   private:
-    QWidget* MakeColorRow(bool stroke);
-
-    QWidget* m_fillColorRow = nullptr;
-    QWidget* m_borderColorRow = nullptr;
-    QToolButton* m_strokeColorButton = nullptr;
-    QToolButton* m_fillColorButton = nullptr;
-    QList<QToolButton*> m_strokeSwatches;
-    QList<QToolButton*> m_fillSwatches;
-    QColor m_strokeFallback = QColor(QStringLiteral("#1E293B"));
-    QColor m_fillFallback = QColor(QStringLiteral("#1E293B"));
+    class FillColorRow* m_fillColorRow = nullptr;
+    class StrokeColorRow* m_borderColorRow = nullptr;
 };

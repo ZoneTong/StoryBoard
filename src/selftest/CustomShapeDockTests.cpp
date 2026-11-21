@@ -283,14 +283,14 @@ void selftest::RunCustomShapeDockTests(Context& ctx)
         // 紧凑化后不再有折叠分组小标题：断言整卡只由标题行 + 内容滚动区组成，
         // 颜色 / 填充 / 边框 / 透明度 / 圆角 / 图层各行控件直接平铺在卡内。
         ctx.Check(panel.findChildren<QToolButton*>(QStringLiteral("ItemSectionToggle")).isEmpty(),
-                  QStringLiteral("属性编辑面板已去掉折叠分组小标题"));
+                  QStringLiteral("编辑面板已去掉折叠分组小标题"));
         ctx.Check(panel.findChildren<QToolButton*>(QStringLiteral("ItemShapeButton")).isEmpty() &&
                       panel.findChildren<QToolButton*>(QStringLiteral("ItemCustomShapeButton")).isEmpty(),
-                  QStringLiteral("属性编辑面板已移除常见图形展开行"));
+                  QStringLiteral("编辑面板已移除常见图形展开行"));
         ctx.Check(panel.findChildren<QToolButton*>(QStringLiteral("ItemColorSwatch")).size() >= 16 &&
                       panel.findChildren<QToolButton*>(QStringLiteral("ItemFillStyleButton")).size() == 11 &&
                       panel.findChildren<QToolButton*>(QStringLiteral("ItemBorderStyleButton")).size() == 5,
-                  QStringLiteral("属性编辑面板平铺颜色 / 填充 / 边框等工具"),
+                  QStringLiteral("编辑面板平铺颜色 / 填充 / 边框等工具"),
                   QStringLiteral("colors=%1 fills=%2 borders=%3")
                       .arg(panel.findChildren<QToolButton*>(QStringLiteral("ItemColorSwatch")).size())
                       .arg(panel.findChildren<QToolButton*>(QStringLiteral("ItemFillStyleButton")).size())
@@ -320,7 +320,7 @@ void selftest::RunCustomShapeDockTests(Context& ctx)
         // 需求 1 行序：填充样式 → 填充颜色 → 描线样式 → 描线颜色 → 描线宽度。
         ctx.Check(fillStyleIndex >= 0 && fillColorIndex > fillStyleIndex && borderStyleIndex > fillColorIndex &&
                       borderColorIndex > borderStyleIndex && borderWidthIndex > borderColorIndex,
-                  QStringLiteral("属性编辑面板按填充样式、填充颜色、描线样式、描线颜色、描线宽度排列"),
+                  QStringLiteral("编辑面板按填充样式、填充颜色、描线样式、描线颜色、描线宽度排列"),
                   QStringLiteral("%1/%2/%3/%4/%5")
                       .arg(fillStyleIndex)
                       .arg(fillColorIndex)
@@ -340,7 +340,7 @@ void selftest::RunCustomShapeDockTests(Context& ctx)
                       PropertiesPanel::tr("Border width") == QStringLiteral("描线宽度") &&
                       PropertiesPanel::tr("Height +1") == QStringLiteral("高度 +1") &&
                       PropertiesPanel::tr("Layer and height") == QStringLiteral("图层与高度"),
-                  QStringLiteral("属性编辑面板把颜色与宽度统一称为描线颜色 / 描线宽度"),
+                  QStringLiteral("编辑面板把颜色与宽度统一称为描线颜色 / 描线宽度"),
                   QStringLiteral("stroke=%1 height=%2")
                       .arg(PropertiesPanel::tr("Border color"))
                       .arg(PropertiesPanel::tr("Height +1")));

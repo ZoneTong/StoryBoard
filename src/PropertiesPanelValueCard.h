@@ -10,7 +10,7 @@ class LineItemAbstract;
 class QComboBox;
 class QSpinBox;
 
-// 属性编辑面板的透明度、圆角半径、扇形 / 弧线扫过角与半径各行：圆角行只在矩形类
+// 编辑面板的透明度、圆角半径、扇形 / 弧线扫过角与半径各行：圆角行只在矩形类
 // 图元上出现，角度与半径行只在扇形 / 弧线上出现；数值框跟随选中状态启用并回显，
 // 改动交回面板走撤销命令。
 class PropertiesPanelValueCard : public QWidget {

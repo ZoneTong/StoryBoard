@@ -2,6 +2,7 @@
 
 #include "CanvasScene.h"
 #include "ItemPropertiesDialog.h"
+#include "PropertyRowWidgets.h"
 
 #include <QComboBox>
 #include <QFormLayout>
@@ -16,23 +17,19 @@ ItemPropertiesDialogIdentityBlock::ItemPropertiesDialogIdentityBlock(CanvasScene
         return;
     }
 
-    m_nameEdit = new QLineEdit(this);
+    // 名称 / 图层 / 高度与编辑面板共用同一批 PropertyRowWidgets，属性窗不需要行首图标。
+    m_nameRow = new TextAttributeRow(item->TypeDisplayName(), this);
+    m_nameRow->setObjectName(QStringLiteral("ItemPropertiesNameRow"));
+    m_nameEdit = m_nameRow->Edit();
     m_nameEdit->setObjectName(QStringLiteral("ItemPropertiesNameValue"));
-    m_nameEdit->setText(item->Name());
-    m_nameEdit->setPlaceholderText(item->TypeDisplayName());
+    m_nameRow->Refresh(item->Name());
 
-    m_layerCombo = new QComboBox(this);
+    m_layerRow = new LayerAttributeRow(this, false);
+    m_layerRow->setObjectName(QStringLiteral("ItemPropertiesLayerRow"));
+    m_layerCombo = m_layerRow->Combo();
     m_layerCombo->setObjectName(QStringLiteral("ItemPropertiesLayerValue"));
     m_layerCombo->setMinimumWidth(220);
-    if (scene) {
-        for (const CanvasLayer& layer : scene->UserLayers()) {
-            m_layerCombo->addItem(ItemPropertiesDialog::LayerDescription(scene, layer.id), layer.id);
-        }
-    }
-    const int layerIndex = m_layerCombo->findData(item->LayerId());
-    if (layerIndex >= 0) {
-        m_layerCombo->setCurrentIndex(layerIndex);
-    }
+    m_layerRow->Refresh(scene, item->LayerId());
     connect(m_layerCombo, &QComboBox::currentIndexChanged, this, [this](int) {
         if (m_initializing) {
             return;
@@ -41,23 +38,24 @@ ItemPropertiesDialogIdentityBlock::ItemPropertiesDialogIdentityBlock(CanvasScene
         emit layerChanged();
     });
 
-    m_heightSpin = new QSpinBox(this);
+    m_heightRow = new HeightAttributeRow(this, false);
+    m_heightRow->setObjectName(QStringLiteral("ItemPropertiesHeightRow"));
+    m_heightSpin = m_heightRow->Spin();
     m_heightSpin->setObjectName(QStringLiteral("ItemPropertiesHeightValue"));
-    m_heightSpin->setRange(0, 999999);
-    m_heightSpin->setKeyboardTracking(false);
+    m_heightSpin->setMinimumWidth(88);
     m_heightSpin->setValue(qMax(0, item->ZOrder()));
 }
 
 void ItemPropertiesDialogIdentityBlock::AddRows(QFormLayout* form)
 {
-    if (m_nameEdit) {
-        form->addRow(ItemPropertiesDialog::tr("Item name"), m_nameEdit);
+    if (m_nameRow) {
+        form->addRow(ItemPropertiesDialog::tr("Item name"), m_nameRow);
     }
-    if (m_layerCombo) {
-        form->addRow(ItemPropertiesDialog::tr("Layer"), m_layerCombo);
+    if (m_layerRow) {
+        form->addRow(ItemPropertiesDialog::tr("Layer"), m_layerRow);
     }
-    if (m_heightSpin) {
-        form->addRow(ItemPropertiesDialog::tr("Height"), m_heightSpin);
+    if (m_heightRow) {
+        form->addRow(ItemPropertiesDialog::tr("Height"), m_heightRow);
     }
 }
 

@@ -43,7 +43,7 @@ void DockPanelController::CreateLayerDock()
 
 void DockPanelController::CreatePropertiesPanelDock()
 {
-    m_propertiesDock = new QDockWidget(MainWindow::tr("Properties Editing panel"), m_window);
+    m_propertiesDock = new QDockWidget(MainWindow::tr("Edit panel"), m_window);
     m_propertiesDock->setObjectName(QStringLiteral("PropertiesPanelDock"));
     m_propertiesDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     m_propertiesDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable |
@@ -52,7 +52,7 @@ void DockPanelController::CreatePropertiesPanelDock()
     m_propertiesPanel = new PropertiesPanel(m_window->m_scene, m_propertiesDock);
     m_propertiesDock->setWidget(m_propertiesPanel);
     m_window->addDockWidget(Qt::LeftDockWidgetArea, m_propertiesDock);
-    // 属性编辑面板固定在左侧，高度限定在合适区间，避免单独占满整列。
+    // 编辑面板固定在左侧，高度限定在合适区间，避免单独占满整列。
     m_propertiesDock->setMinimumHeight(240);
     m_propertiesDock->setMaximumHeight(620);
     // 宽度按内容算一次作为启动宽度；之后不随选中项增减自动变化，用户可手动拖拽调整。
@@ -67,7 +67,7 @@ void DockPanelController::CreatePropertiesPanelDock()
     QObject::connect(m_propertiesPanel, &PropertiesPanel::borderWidthPicked, m_window,
                      [this](qreal width) { m_window->SetBrushWidthUi(qBound(1, qRound(width), 64)); });
 
-    // 属性编辑面板默认停靠左侧并常驻显示；首次启动没有保存位置时由 applyDockLayout 固定到左侧。
+    // 编辑面板默认停靠左侧并常驻显示；首次启动没有保存位置时由 applyDockLayout 固定到左侧。
     m_propertiesDock->setVisible(true);
     m_propertiesDock->installEventFilter(m_window);
     QObject::connect(m_propertiesDock, &QDockWidget::topLevelChanged, m_window, [this](bool floating) {
@@ -170,7 +170,7 @@ void DockPanelController::ApplyDockLayout()
     QDockWidget* first = order.first() == QStringLiteral("ViewModeDock") ? m_viewModeDock : m_layerDock;
     QDockWidget* second = first == m_viewModeDock ? m_layerDock : m_viewModeDock;
 
-    // 属性编辑面板由 restorePropertiesPanelDockState 按设置恢复：首次启动没有保存位置时停靠左侧。
+    // 编辑面板由 restorePropertiesPanelDockState 按设置恢复：首次启动没有保存位置时停靠左侧。
     m_window->removeDockWidget(m_propertiesDock);
     m_window->removeDockWidget(m_viewModeDock);
     m_window->removeDockWidget(m_layerDock);
@@ -198,7 +198,7 @@ void DockPanelController::ApplyDockLayout()
     m_viewModeDock->setVisible(true);
     m_layerDock->setVisible(true);
 
-    // 属性编辑面板：首次启动固定左侧；之后按设置恢复停靠侧或悬浮位置。
+    // 编辑面板：首次启动固定左侧；之后按设置恢复停靠侧或悬浮位置。
     RestorePropertiesPanelDockState();
 
     m_applyingDockLayout = false;

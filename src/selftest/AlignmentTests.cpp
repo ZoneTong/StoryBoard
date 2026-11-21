@@ -134,7 +134,7 @@ void selftest::RunAlignmentTests(Context& ctx)
 
 void selftest::RunAlignmentMenuTests(Context& ctx)
 {
-    // 菜单保留对齐下拉；主工具栏不再放对齐按钮，入口集中到菜单与属性编辑面板。
+    // 菜单保留对齐下拉；主工具栏不再放对齐按钮，入口集中到菜单与编辑面板。
     {
         MainWindow alignWindow;
         QMenu* alignMenu = alignWindow.findChild<QMenu*>(QStringLiteral("AlignMenu"));

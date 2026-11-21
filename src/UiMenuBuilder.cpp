@@ -97,16 +97,15 @@ void UiMenuBuilder::BuildShapeMenu()
                 ShapePainter::MakeCurveIcon(LineGlyph::ARC, QColor(58, 64, 80), 18), MainWindow::tr("Arc"));
             arc->setObjectName(QStringLiteral("ShapeAction_arc"));
             arc->setData(-1);
-            arc->setToolTip(
-                MainWindow::tr("Insert an arc (start angle and sweep are editable in the Properties Editing panel)"));
+            arc->setToolTip(MainWindow::tr("Insert an arc (start angle and sweep are editable in the Edit panel)"));
             QObject::connect(arc, &QAction::triggered, m_window, [this]() { m_window->InsertCurve(LineGlyph::ARC); });
 
             QAction* sine = m_window->m_shapeMenu->addAction(
                 ShapePainter::MakeCurveIcon(LineGlyph::SINE, QColor(58, 64, 80), 18), MainWindow::tr("Sine wave"));
             sine->setObjectName(QStringLiteral("ShapeAction_sine_wave"));
             sine->setData(-1);
-            sine->setToolTip(MainWindow::tr(
-                "Insert a sine wave (cycles and amplitude are editable in the Properties Editing panel)"));
+            sine->setToolTip(
+                MainWindow::tr("Insert a sine wave (cycles and amplitude are editable in the Edit panel)"));
             QObject::connect(sine, &QAction::triggered, m_window, [this]() { m_window->InsertCurve(LineGlyph::SINE); });
         }
 
@@ -196,11 +195,11 @@ void UiMenuBuilder::BuildMenus()
 
     QAction* propertiesDockAction = m_window->m_docks->PropertiesDock()->toggleViewAction();
     propertiesDockAction->setObjectName(QStringLiteral("PropertiesPanelToggleAction"));
-    propertiesDockAction->setText(MainWindow::tr("Properties Editing panel"));
+    propertiesDockAction->setText(MainWindow::tr("Edit panel"));
     propertiesDockAction->setShortcut(QKeySequence(QStringLiteral("Alt+2")));
-    propertiesDockAction->setStatusTip(MainWindow::tr(
-        "Show or hide the Properties Editing panel (it stays visible while docked and follows the item selection "
-        "while floating)"));
+    propertiesDockAction->setStatusTip(
+        MainWindow::tr("Show or hide the Edit panel (it stays visible while docked and follows the item selection "
+                       "while floating)"));
     viewMenu->addAction(propertiesDockAction);
 
     QMenu* editMenu = m_window->menuBar()->addMenu(MainWindow::tr("&Edit"));
@@ -333,7 +332,7 @@ void UiMenuBuilder::BuildMenus()
                          [this, operation = boolEntries.at(i).first]() { m_window->ApplyBoolOperation(operation); });
         m_window->m_boolActions.append(action);
     }
-    // 多选时属性编辑面板直接复用同一批对齐 / 合并图元 / 复制 / 删除 / 旋转 / 组合动作，
+    // 多选时编辑面板直接复用同一批对齐 / 合并图元 / 复制 / 删除 / 旋转 / 组合动作，
     // 快捷键与启用状态不用再维护一份。
     if (m_window->m_docks && m_window->m_docks->propertiesPanel()) {
         m_window->m_docks->propertiesPanel()->SetSelectionActions(

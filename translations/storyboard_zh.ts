@@ -784,6 +784,54 @@
     </message><message>
         <source>Change sine amplitude</source>
         <translation>修改正弦振幅</translation>
+    </message><message>
+        <source>Item name</source>
+        <translation>图元名称</translation>
+    </message><message>
+        <source>Layer</source>
+        <translation>图层</translation>
+    </message><message>
+        <source>Height</source>
+        <translation>层内高度</translation>
+    </message><message>
+        <source>Position</source>
+        <translation>位置</translation>
+    </message><message>
+        <source>Item size</source>
+        <translation>图元尺寸</translation>
+    </message><message>
+        <source>Rotation</source>
+        <translation>旋转</translation>
+    </message><message>
+        <source>Semi-major axis</source>
+        <translation>长半轴</translation>
+    </message><message>
+        <source>Semi-minor axis</source>
+        <translation>短半轴</translation>
+    </message><message>
+        <source>Parallelogram bottom-left angle</source>
+        <translation>平行四边形左下角</translation>
+    </message><message>
+        <source>Rename item</source>
+        <translation>修改图元名称</translation>
+    </message><message>
+        <source>Move item to another layer</source>
+        <translation>移动图元到其他图层</translation>
+    </message><message>
+        <source>Change item height</source>
+        <translation>修改层内高度</translation>
+    </message><message>
+        <source>Change item geometry</source>
+        <translation>修改图元几何</translation>
+    </message><message>
+        <source>Change rotation</source>
+        <translation>修改旋转角度</translation>
+    </message><message>
+        <source>Change parallelogram angle</source>
+        <translation>修改平行四边形内角</translation>
+    </message><message>
+        <source>Another item already uses this name.</source>
+        <translation>已有其他图元使用该名称。</translation>
     </message></context>
 <context>
     <name>ItemPropertiesDialog</name><message>
@@ -2868,10 +2916,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <translation>选中图元</translation>
     </message><message>
         <source>Selected item panel</source>
-        <translation>属性编辑面板</translation>
+        <translation>编辑面板</translation>
     </message><message>
         <source>Show or hide the selected item panel (it appears automatically when an item is selected)</source>
-        <translation>显示或隐藏属性编辑面板（选中图元时自动出现）</translation>
+        <translation>显示或隐藏编辑面板（选中图元时自动出现）</translation>
     </message><message>
         <source>Don&amp;apos;t save</source>
         <translation>不保存</translation>
@@ -2924,15 +2972,15 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message><message>
         <location filename="../src/DockPanelController.cpp" line="43"/>
         <location filename="../src/UiMenuBuilder.cpp" line="201"/>
-        <source>Properties Editing panel</source>
-        <translation>属性编辑面板</translation>
+        <source>Edit panel</source>
+        <translation>编辑面板</translation>
     </message><message>
         <location filename="../src/UiMenuBuilder.cpp" line="177"/>
-        <source>Show or hide the Properties Editing panel (it stays visible while docked and follows the item selection while floating)</source>
-        <translation>显示或隐藏属性编辑面板（停靠时始终显示，悬浮时随图元选中状态显隐）</translation>
+        <source>Show or hide the Edit panel (it stays visible while docked and follows the item selection while floating)</source>
+        <translation>显示或隐藏编辑面板（停靠时始终显示，悬浮时随图元选中状态显隐）</translation>
     </message><message>
         <source>Show or hide the edit item panel (it appears automatically when an item is selected)</source>
-        <translation>显示或隐藏属性编辑面板（选中图元时自动出现）</translation>
+        <translation>显示或隐藏编辑面板（选中图元时自动出现）</translation>
     </message><message>
         <source>Merge the selected shapes</source>
         <translation>合并选中的图形</translation>
@@ -3042,11 +3090,11 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Insert a right brace (left brace rotated 180°)</source>
         <translation>插入右花括号（左花括号旋转 180°）</translation>
     </message><message>
-        <source>Insert an arc (start angle and sweep are editable in the Properties Editing panel)</source>
-        <translation>插入弧线（起始角与扫过角可在属性编辑面板修改）</translation>
+        <source>Insert an arc (start angle and sweep are editable in the Edit panel)</source>
+        <translation>插入弧线（起始角与扫过角可在编辑面板修改）</translation>
     </message><message>
-        <source>Insert a sine wave (cycles and amplitude are editable in the Properties Editing panel)</source>
-        <translation>插入正弦波（周期数与振幅可在属性编辑面板修改）</translation>
+        <source>Insert a sine wave (cycles and amplitude are editable in the Edit panel)</source>
+        <translation>插入正弦波（周期数与振幅可在编辑面板修改）</translation>
     </message><message>
         <source>Inserted %1 as a brace; drag to move, drag handles to resize</source>
         <translation>已插入%1作为花括号，拖动可移动、拖手柄可缩放</translation>
@@ -5001,10 +5049,10 @@ Use the checkbox to show or hide it.</source>
         <translation>选中图元</translation>
     </message><message>
         <source>Selected item panel</source>
-        <translation>属性编辑面板</translation>
+        <translation>编辑面板</translation>
     </message><message>
         <source>Show or hide the selected item panel (it appears automatically when an item is selected)</source>
-        <translation>显示或隐藏属性编辑面板（选中图元时自动出现）</translation>
+        <translation>显示或隐藏编辑面板（选中图元时自动出现）</translation>
     </message><message>
         <source>Don&amp;apos;t save</source>
         <translation>不保存</translation>
@@ -5041,8 +5089,8 @@ Use the checkbox to show or hide it.</source>
         <source>Applied &amp;quot;%2&amp;quot; to %1 shape(s)</source>
         <translation>已对 %1 个图形应用「%2」</translation>
     </message><message>
-        <source>Show or hide the Properties Editing panel (it appears automatically when an item is selected)</source>
-        <translation>显示或隐藏属性编辑面板（选中图元时自动出现）</translation>
+        <source>Show or hide the Edit panel (it appears automatically when an item is selected)</source>
+        <translation>显示或隐藏编辑面板（选中图元时自动出现）</translation>
     </message><message>
         <source>Merge the selected shapes</source>
         <translation>合并选中的图形</translation>

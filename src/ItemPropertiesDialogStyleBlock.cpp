@@ -1,7 +1,7 @@
 #include "ItemPropertiesDialogStyleBlock.h"
 
+#include "AttributeRowWidgets.h"
 #include "ItemPropertiesDialog.h"
-#include "ItemPropertiesDialogFields.h"
 #include "ItemStyleVisuals.h"
 #include "LineItemAbstract.h"
 #include "PolygonItem.h"
@@ -12,59 +12,11 @@
 #include <QFileDialog>
 #include <QFormLayout>
 #include <QHBoxLayout>
-#include <QPushButton>
 #include <QSpinBox>
 #include <QToolButton>
 
-
 ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item, QWidget* parent) : QWidget(parent)
 {
-    auto buildFillImageRow = [this](const QPixmap& initial, ImageFill::Mode mode) {
-        m_fillImage = initial;
-        m_fillImageRow = new QWidget(this);
-        auto* rowLayout = new QHBoxLayout(m_fillImageRow);
-        rowLayout->setContentsMargins(0, 0, 0, 0);
-        rowLayout->setSpacing(4);
-
-        m_fillImageButton = new QPushButton(m_fillImageRow);
-        m_fillImageButton->setObjectName(QStringLiteral("ItemPropertiesFillImageValue"));
-        m_fillImageButton->setText(initial.isNull() ? ItemPropertiesDialog::tr("Choose image…")
-                                                    : ItemPropertiesDialog::tr("Change image…"));
-
-        m_fillImageModeCombo = new QComboBox(m_fillImageRow);
-        m_fillImageModeCombo->setObjectName(QStringLiteral("ItemPropertiesFillImageModeValue"));
-        m_fillImageModeCombo->addItem(ItemPropertiesDialog::tr("Stretch"), static_cast<int>(ImageFill::Mode::STRETCH));
-        m_fillImageModeCombo->addItem(ItemPropertiesDialog::tr("Fit"), static_cast<int>(ImageFill::Mode::FIT));
-        m_fillImageModeCombo->addItem(ItemPropertiesDialog::tr("Tile"), static_cast<int>(ImageFill::Mode::TILE));
-        m_fillImageModeCombo->setCurrentIndex(qMax(0, m_fillImageModeCombo->findData(static_cast<int>(mode))));
-
-        m_fillImageClearButton = new QPushButton(ItemPropertiesDialog::tr("Clear"), m_fillImageRow);
-        m_fillImageClearButton->setObjectName(QStringLiteral("ItemPropertiesFillImageClear"));
-
-        rowLayout->addWidget(m_fillImageButton, 1);
-        rowLayout->addWidget(m_fillImageModeCombo);
-        rowLayout->addWidget(m_fillImageClearButton);
-
-        connect(m_fillImageButton, &QPushButton::clicked, this, [this]() {
-            const QString path = QFileDialog::getOpenFileName(
-                this, ItemPropertiesDialog::tr("Choose fill image"), QString(),
-                ItemPropertiesDialog::tr("Images (*.png *.jpg *.jpeg *.bmp *.webp *.gif)"));
-            if (path.isEmpty()) {
-                return;
-            }
-            QPixmap image(path);
-            if (image.isNull()) {
-                return;
-            }
-            m_fillImage = image;
-            m_fillImageButton->setText(ItemPropertiesDialog::tr("Change image…"));
-        });
-        connect(m_fillImageClearButton, &QPushButton::clicked, this, [this]() {
-            m_fillImage = QPixmap();
-            m_fillImageButton->setText(ItemPropertiesDialog::tr("Choose image…"));
-        });
-    };
-
     if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
         // 多边形派生自 ShapeItem 但没有形状类型：填充与描线照旧，圆角 / 角度等行不给。
         const bool filled = shape->ShapeLayerCount() > 0 || ShapeTypeIsFilled(shape->shapeType());
@@ -73,49 +25,9 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
         // 需求 5/9a：直线、弧线这类只描线的图形根本没有填充属性，
         // 不建行也不留“Not applicable”占位。
         if (filled) {
-            m_fillStyleCombo = new QComboBox(this);
-            m_fillStyleCombo->setObjectName(QStringLiteral("ItemPropertiesFillStyleValue"));
-            m_fillStyleCombo->setMinimumWidth(180);
-            for (FillStyle style : AllFillStyles()) {
-                m_fillStyleCombo->addItem(ItemStyleVisuals::FillStyleIcon(style, 16), FillStyleName(style),
-                                          static_cast<int>(style));
-            }
-            const int index = m_fillStyleCombo->findData(static_cast<int>(shape->fillStyle()));
-            if (index >= 0) {
-                m_fillStyleCombo->setCurrentIndex(index);
-            }
-
-            m_fillColorButton = ItemPropertiesFields::MakeColorField(this, shape->FillColor(),
-                                                                     QStringLiteral("ItemPropertiesFillColorValue"),
-                                                                     ItemPropertiesFields::ColorIconRole::FILL);
-            // 需求 15：独立「填充图片」属性，不进 FillStyle；图片透明处露出填充色 / 图案。
-            buildFillImageRow(shape->FillImage(), shape->FillImageMode());
+            BuildFillRows(item);
         }
-
-        m_strokeColorButton = ItemPropertiesFields::MakeColorField(this, shape->StrokeColor(),
-                                                                   QStringLiteral("ItemPropertiesStrokeColorValue"),
-                                                                   ItemPropertiesFields::ColorIconRole::BORDER);
-
-        m_borderStyleCombo = new QComboBox(this);
-        m_borderStyleCombo->setObjectName(QStringLiteral("ItemPropertiesBorderStyleValue"));
-        m_borderStyleCombo->setMinimumWidth(180);
-        for (Qt::PenStyle penStyle : ItemStyleVisuals::BorderStyles()) {
-            m_borderStyleCombo->addItem(ItemStyleVisuals::BorderStyleIcon(penStyle, 16),
-                                        ItemStyleVisuals::BorderStyleName(penStyle), static_cast<int>(penStyle));
-        }
-        const int borderStyleIndex = m_borderStyleCombo->findData(static_cast<int>(shape->StrokeStyle()));
-        if (borderStyleIndex >= 0) {
-            m_borderStyleCombo->setCurrentIndex(borderStyleIndex);
-        }
-
-        m_strokeWidthSpin = new QSpinBox(this);
-        m_strokeWidthSpin->setObjectName(QStringLiteral("ItemPropertiesStrokeWidthValue"));
-        m_strokeWidthSpin->setRange(1, 64);
-        m_strokeWidthSpin->setSingleStep(1);
-        m_strokeWidthSpin->setSuffix(QStringLiteral(" px"));
-        m_strokeWidthSpin->setValue(qRound(shape->StrokeWidth()));
-        m_initialStrokeWidth = shape->StrokeWidth();
-        m_strokeWidthSpin->setMinimumWidth(88);
+        BuildStrokeRows(item);
 
         m_opacitySpin = new QSpinBox(this);
         m_opacitySpin->setObjectName(QStringLiteral("ItemPropertiesOpacityValue"));
@@ -206,77 +118,8 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_parallelogramAngleSpin->setMinimumWidth(88);
             m_parallelogramAngleSpin->setValue(qRound(m_initialParallelogramAngle));
         }
-
-    } else if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->ShapeLayerCount() > 0) {
-        m_hasFill = true;
-
-        m_fillStyleCombo = new QComboBox(this);
-        m_fillStyleCombo->setObjectName(QStringLiteral("ItemPropertiesFillStyleValue"));
-        m_fillStyleCombo->setMinimumWidth(180);
-        for (FillStyle style : AllFillStyles()) {
-            m_fillStyleCombo->addItem(ItemStyleVisuals::FillStyleIcon(style, 16), FillStyleName(style),
-                                      static_cast<int>(style));
-        }
-        const int fillIndex = m_fillStyleCombo->findData(static_cast<int>(composite->fillStyle()));
-        if (fillIndex >= 0) {
-            m_fillStyleCombo->setCurrentIndex(fillIndex);
-        }
-
-        // 需求 15：多边形同样支持图片填充，裁剪到 FilledArea 层并集（孔洞留空）。
-        buildFillImageRow(composite->FillImage(), composite->FillImageMode());
-
-        m_fillColorButton = ItemPropertiesFields::MakeColorField(this, composite->FillColor(),
-                                                                 QStringLiteral("ItemPropertiesFillColorValue"),
-                                                                 ItemPropertiesFields::ColorIconRole::FILL);
-        m_strokeColorButton = ItemPropertiesFields::MakeColorField(this, composite->StrokeColor(),
-                                                                   QStringLiteral("ItemPropertiesStrokeColorValue"),
-                                                                   ItemPropertiesFields::ColorIconRole::BORDER);
-
-        m_borderStyleCombo = new QComboBox(this);
-        m_borderStyleCombo->setObjectName(QStringLiteral("ItemPropertiesBorderStyleValue"));
-        m_borderStyleCombo->setMinimumWidth(180);
-        for (Qt::PenStyle penStyle : ItemStyleVisuals::BorderStyles()) {
-            m_borderStyleCombo->addItem(ItemStyleVisuals::BorderStyleIcon(penStyle, 16),
-                                        ItemStyleVisuals::BorderStyleName(penStyle), static_cast<int>(penStyle));
-        }
-        const int compositeBorderIndex = m_borderStyleCombo->findData(static_cast<int>(composite->StrokeStyle()));
-        if (compositeBorderIndex >= 0) {
-            m_borderStyleCombo->setCurrentIndex(compositeBorderIndex);
-        }
-
-        m_strokeWidthSpin = new QSpinBox(this);
-        m_strokeWidthSpin->setObjectName(QStringLiteral("ItemPropertiesStrokeWidthValue"));
-        m_strokeWidthSpin->setRange(1, 64);
-        m_strokeWidthSpin->setSingleStep(1);
-        m_strokeWidthSpin->setSuffix(QStringLiteral(" px"));
-        m_strokeWidthSpin->setValue(qRound(qMax<qreal>(1.0, composite->StrokeWidth())));
-        m_initialStrokeWidth = composite->StrokeWidth();
-        m_strokeWidthSpin->setMinimumWidth(88);
     } else if (auto* stroke = dynamic_cast<LineItemAbstract*>(item)) {
-        m_strokeColorButton = ItemPropertiesFields::MakeColorField(this, stroke->StrokeColor(),
-                                                                   QStringLiteral("ItemPropertiesStrokeColorValue"),
-                                                                   ItemPropertiesFields::ColorIconRole::BORDER);
-
-        m_borderStyleCombo = new QComboBox(this);
-        m_borderStyleCombo->setObjectName(QStringLiteral("ItemPropertiesBorderStyleValue"));
-        m_borderStyleCombo->setMinimumWidth(180);
-        for (Qt::PenStyle penStyle : ItemStyleVisuals::BorderStyles()) {
-            m_borderStyleCombo->addItem(ItemStyleVisuals::BorderStyleIcon(penStyle, 16),
-                                        ItemStyleVisuals::BorderStyleName(penStyle), static_cast<int>(penStyle));
-        }
-        const int borderStyleIndex = m_borderStyleCombo->findData(static_cast<int>(stroke->strokePattern()));
-        if (borderStyleIndex >= 0) {
-            m_borderStyleCombo->setCurrentIndex(borderStyleIndex);
-        }
-
-        m_strokeWidthSpin = new QSpinBox(this);
-        m_strokeWidthSpin->setObjectName(QStringLiteral("ItemPropertiesStrokeWidthValue"));
-        m_strokeWidthSpin->setRange(1, 64);
-        m_strokeWidthSpin->setSingleStep(1);
-        m_strokeWidthSpin->setSuffix(QStringLiteral(" px"));
-        m_strokeWidthSpin->setValue(qRound(stroke->StrokeWidth()));
-        m_initialStrokeWidth = stroke->StrokeWidth();
-        m_strokeWidthSpin->setMinimumWidth(88);
+        BuildStrokeRows(item);
 
         // 需求 27：曲线与直线一样，属性窗提供两端箭头样式；箭头对全部曲线子型开放（含花括号）。
         m_arrowRow = new QWidget(this);
@@ -304,26 +147,115 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
     }
 }
 
+void ItemPropertiesDialogStyleBlock::BuildFillRows(CanvasItem* item)
+{
+    auto* shape = dynamic_cast<ShapeItem*>(item);
+    if (!shape) {
+        return;
+    }
+    // 属性窗用私有副本承载填充属性：行控件直接读它，取消时图元不受影响。
+    m_fillAttributes.SetFill(shape->FillColor(), shape->fillStyle());
+    m_fillAttributes.SetFillImage(shape->FillImage(), shape->FillImageMode());
+
+    m_fillStyleRow = new FillStyleRow(this);
+    m_fillStyleRow->SetTargets({&m_fillAttributes});
+    connect(m_fillStyleRow, &FillStyleRow::fillStyleChosen, this, [this](FillStyle style) {
+        m_fillAttributes.SetFillStyle(style);
+        m_fillStyleRow->Refresh();
+    });
+
+    m_fillColorRow = new FillColorRow(this);
+    m_fillColorRow->SetTargets({&m_fillAttributes});
+    connect(m_fillColorRow, &FillColorRow::fillColorChosen, this, [this](const QColor& color) {
+        m_fillAttributes.SetFill(color, m_fillAttributes.fillStyle());
+        m_fillColorRow->Refresh();
+    });
+
+    // 需求 15：独立「填充图片」属性，不进 FillStyle；图片透明处露出填充色 / 图案。
+    m_fillImageRow = new FillImageRow(this);
+    m_fillImageRow->SetTargets({&m_fillAttributes});
+    connect(m_fillImageRow, &FillImageRow::chooseFillImageClicked, this, [this]() {
+        const QString path =
+            QFileDialog::getOpenFileName(this, ItemPropertiesDialog::tr("Choose fill image"), QString(),
+                                         ItemPropertiesDialog::tr("Images (*.png *.jpg *.jpeg *.bmp *.webp *.gif)"));
+        if (path.isEmpty()) {
+            return;
+        }
+        QPixmap image(path);
+        if (image.isNull()) {
+            return;
+        }
+        m_fillAttributes.SetFillImage(image, m_fillAttributes.FillImageMode());
+        m_fillImageRow->Refresh();
+    });
+    connect(m_fillImageRow, &FillImageRow::fillImageModeChosen, this, [this](int mode) {
+        if (!m_fillAttributes.HasFillImage()) {
+            return;
+        }
+        m_fillAttributes.SetFillImage(m_fillAttributes.FillImage(), static_cast<ImageFill::Mode>(mode));
+        m_fillImageRow->Refresh();
+    });
+    connect(m_fillImageRow, &FillImageRow::clearFillImageClicked, this, [this]() {
+        m_fillAttributes.ClearFillImage();
+        m_fillImageRow->Refresh();
+    });
+}
+
+void ItemPropertiesDialogStyleBlock::BuildStrokeRows(CanvasItem* item)
+{
+    if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+        m_strokeAttributes.SetStroke(shape->StrokeColor(), shape->StrokeWidth());
+        m_strokeAttributes.SetStrokeStyle(shape->StrokeStyle());
+    } else if (auto* stroke = dynamic_cast<LineItemAbstract*>(item)) {
+        m_strokeAttributes.SetStroke(stroke->StrokeColor(), stroke->StrokeWidth());
+        m_strokeAttributes.SetStrokeStyle(stroke->strokePattern());
+    } else {
+        return;
+    }
+    m_initialStrokeWidth = m_strokeAttributes.StrokeWidth();
+
+    m_borderStyleRow = new StrokeStyleRow(this);
+    m_borderStyleRow->SetTargets({&m_strokeAttributes});
+    connect(m_borderStyleRow, &StrokeStyleRow::borderStyleChosen, this, [this](Qt::PenStyle style) {
+        m_strokeAttributes.SetStrokeStyle(style);
+        m_borderStyleRow->Refresh();
+    });
+
+    m_strokeColorRow = new StrokeColorRow(this);
+    m_strokeColorRow->SetTargets({&m_strokeAttributes});
+    connect(m_strokeColorRow, &StrokeColorRow::strokeColorChosen, this, [this](const QColor& color) {
+        m_strokeAttributes.SetStrokeColor(color);
+        m_strokeColorRow->Refresh();
+    });
+
+    m_borderWidthRow = new StrokeWidthRow(this);
+    m_borderWidthRow->SetTargets({&m_strokeAttributes});
+    connect(m_borderWidthRow, &StrokeWidthRow::borderWidthChosen, this, [this](qreal width) {
+        m_strokeAttributes.SetStrokeWidth(width);
+        m_borderWidthRow->Refresh();
+    });
+}
+
 void ItemPropertiesDialogStyleBlock::AddRows(QFormLayout* form)
 {
-    if (m_fillStyleCombo) {
-        form->addRow(ItemPropertiesDialog::tr("Fill style"), m_fillStyleCombo);
+    if (m_fillStyleRow) {
+        form->addRow(ItemPropertiesDialog::tr("Fill style"), m_fillStyleRow);
     }
-    if (m_fillColorButton) {
-        form->addRow(ItemPropertiesDialog::tr("Fill color"), m_fillColorButton);
+    if (m_fillColorRow) {
+        form->addRow(ItemPropertiesDialog::tr("Fill color"), m_fillColorRow);
     }
     if (m_fillImageRow) {
         form->addRow(ItemPropertiesDialog::tr("Fill image"), m_fillImageRow);
     }
-    // 需求 1 行序：描线样式排在描线颜色之前（与菜单、工具栏、编辑卡统一）。
-    if (m_borderStyleCombo) {
-        form->addRow(ItemPropertiesDialog::tr("Border style"), m_borderStyleCombo);
+    // 需求 1 行序：描线样式排在描线颜色之前（与菜单、工具栏、编辑面板统一）。
+    if (m_borderStyleRow) {
+        form->addRow(ItemPropertiesDialog::tr("Border style"), m_borderStyleRow);
     }
-    if (m_strokeColorButton) {
-        form->addRow(ItemPropertiesDialog::tr("Border color"), m_strokeColorButton);
+    if (m_strokeColorRow) {
+        form->addRow(ItemPropertiesDialog::tr("Border color"), m_strokeColorRow);
     }
-    if (m_strokeWidthSpin) {
-        form->addRow(ItemPropertiesDialog::tr("Border width"), m_strokeWidthSpin);
+    if (m_borderWidthRow) {
+        form->addRow(ItemPropertiesDialog::tr("Border width"), m_borderWidthRow);
     }
     if (m_opacitySpin) {
         // 需求 5：该选项实际是“不透明度”（100% = 完全不透明），名称与提示一并纠正。
@@ -353,12 +285,19 @@ void ItemPropertiesDialogStyleBlock::AddRows(QFormLayout* form)
     }
 }
 
-ImageFill::Mode ItemPropertiesDialogStyleBlock::FillImageMode() const
+QList<QWidget*> ItemPropertiesDialogStyleBlock::StyleRows() const
 {
-    if (!m_fillImageModeCombo) {
-        return ImageFill::Mode::STRETCH;
+    QList<QWidget*> rows;
+    for (QWidget* row : {static_cast<QWidget*>(m_fillStyleRow), static_cast<QWidget*>(m_fillColorRow),
+                         static_cast<QWidget*>(m_fillImageRow), static_cast<QWidget*>(m_borderStyleRow),
+                         static_cast<QWidget*>(m_strokeColorRow), static_cast<QWidget*>(m_borderWidthRow),
+                         static_cast<QWidget*>(m_opacitySpin), static_cast<QWidget*>(m_cornerRadiusSpin),
+                         static_cast<QWidget*>(m_startAngleSpin), static_cast<QWidget*>(m_sweepAngleSpin)}) {
+        if (row) {
+            rows.append(row);
+        }
     }
-    return static_cast<ImageFill::Mode>(m_fillImageModeCombo->currentData().toInt());
+    return rows;
 }
 
 void ItemPropertiesDialogStyleBlock::SetContentSize(const QSizeF& size)

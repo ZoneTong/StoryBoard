@@ -291,7 +291,7 @@ void MergeSettings(SettingsMap& values, const AppSettings& settings)
         values.remove(QStringLiteral("layout/dockOrder"));
     }
 
-    // 属性编辑面板位置：是否已经由用户移动过、当前停靠侧、是否悬浮以及悬浮几何。
+    // 编辑面板位置：是否已经由用户移动过、当前停靠侧、是否悬浮以及悬浮几何。
     values.insert(QStringLiteral("layout/itemDockSaved"),
                   settings.propertiesDockStateSaved ? QStringLiteral("true") : QStringLiteral("false"));
     values.insert(QStringLiteral("layout/itemDockFloating"),

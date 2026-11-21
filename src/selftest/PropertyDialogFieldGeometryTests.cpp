@@ -23,6 +23,49 @@
 #include <QUndoStack>
 #include <QtMath>
 
+namespace {
+
+QToolButton* FindFillStyleButton(QWidget* root, FillStyle style)
+{
+    for (QToolButton* button : root->findChildren<QToolButton*>(QStringLiteral("ItemFillStyleButton"))) {
+        if (button->property("fillStyle").toInt() == static_cast<int>(style)) {
+            return button;
+        }
+    }
+    return nullptr;
+}
+
+QToolButton* FindPenStyleButton(QWidget* root, Qt::PenStyle style)
+{
+    for (QToolButton* button : root->findChildren<QToolButton*>(QStringLiteral("ItemBorderStyleButton"))) {
+        if (button->property("penStyle").toInt() == static_cast<int>(style)) {
+            return button;
+        }
+    }
+    return nullptr;
+}
+
+QToolButton* FindSwatch(QWidget* row, const QColor& color)
+{
+    if (!row) {
+        return nullptr;
+    }
+    for (QToolButton* button : row->findChildren<QToolButton*>(QStringLiteral("ItemColorSwatch"))) {
+        if (button->property("swatchColor").value<QColor>().rgb() == color.rgb()) {
+            return button;
+        }
+    }
+    return nullptr;
+}
+
+bool FillStyleRowHasChecked(QWidget* row, FillStyle style)
+{
+    QToolButton* button = FindFillStyleButton(row, style);
+    return button && button->isChecked();
+}
+
+} // namespace
+
 
 void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
 {
@@ -58,12 +101,11 @@ void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
         QLineEdit* nameValue = dialog.findChild<QLineEdit*>(QStringLiteral("ItemPropertiesNameValue"));
         QComboBox* layerValue = dialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesLayerValue"));
         QSpinBox* heightValue = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesHeightValue"));
-        QComboBox* fillStyleValue = dialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesFillStyleValue"));
-        QToolButton* fillColorValue = dialog.findChild<QToolButton*>(QStringLiteral("ItemPropertiesFillColorValue"));
-        QToolButton* strokeColorValue =
-            dialog.findChild<QToolButton*>(QStringLiteral("ItemPropertiesStrokeColorValue"));
-        QSpinBox* strokeWidthValue = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesStrokeWidthValue"));
-        QComboBox* borderStyleValue = dialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesBorderStyleValue"));
+        QWidget* fillStyleRow = dialog.findChild<QWidget*>(QStringLiteral("ItemFillStyleRow"));
+        QWidget* fillColorRow = dialog.findChild<QWidget*>(QStringLiteral("ItemFillColorRow"));
+        QWidget* strokeColorRow = dialog.findChild<QWidget*>(QStringLiteral("ItemBorderColorRow"));
+        QSpinBox* strokeWidthValue = dialog.findChild<QSpinBox*>(QStringLiteral("ItemBorderWidthSpin"));
+        QWidget* borderStyleRow = dialog.findChild<QWidget*>(QStringLiteral("ItemBorderStyleRow"));
         QSpinBox* opacityValue = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesOpacityValue"));
         QSpinBox* cornerRadiusValue = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesCornerRadiusValue"));
         QDoubleSpinBox* positionXValue =
@@ -80,24 +122,27 @@ void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
                   QStringLiteral("属性窗显示并可编辑图元所在图层"));
         ctx.Check(heightValue && heightValue->isEnabled() && heightValue->value() == propertyShape->ZOrder(),
                   QStringLiteral("属性窗显示并可编辑层内高度"));
-        ctx.Check(fillStyleValue && fillStyleValue->isEnabled() &&
-                      fillStyleValue->currentText() == FillStyleName(propertyShape->fillStyle()),
-                  QStringLiteral("属性窗显示并可编辑填充样式"),
-                  fillStyleValue ? fillStyleValue->currentText() : QString());
-        ctx.Check(fillColorValue && fillColorValue->isEnabled(), QStringLiteral("属性窗填充颜色可编辑"));
-        ctx.Check(strokeColorValue && strokeColorValue->isEnabled(), QStringLiteral("属性窗边框颜色可编辑"));
+        ctx.Check(fillStyleRow && fillStyleRow->isVisible() &&
+                      FillStyleRowHasChecked(fillStyleRow, propertyShape->fillStyle()),
+                  QStringLiteral("属性窗显示并可编辑填充样式"));
+        ctx.Check(fillColorRow && fillColorRow->isVisible() &&
+                      fillColorRow->findChild<QToolButton*>(QStringLiteral("ItemColorButton")) != nullptr,
+                  QStringLiteral("属性窗填充颜色可编辑"));
+        ctx.Check(strokeColorRow && strokeColorRow->isVisible() &&
+                      strokeColorRow->findChild<QToolButton*>(QStringLiteral("ItemColorButton")) != nullptr,
+                  QStringLiteral("属性窗边框颜色可编辑"));
         ctx.Check(strokeWidthValue && strokeWidthValue->isEnabled() &&
                       qFuzzyCompare(strokeWidthValue->value(), propertyShape->StrokeWidth()) &&
                       strokeWidthValue->minimum() == 1 && strokeWidthValue->maximum() == 64 &&
                       strokeWidthValue->singleStep() == 1 && strokeWidthValue->suffix() == QStringLiteral(" px"),
                   QStringLiteral("属性窗边框宽度可编辑且与工具栏使用同一 SpinBox 规格"));
-        ctx.Check(borderStyleValue && borderStyleValue->isEnabled() &&
-                      borderStyleValue->currentData().toInt() == static_cast<int>(Qt::SolidLine),
+        ctx.Check(borderStyleRow && borderStyleRow->isVisible() &&
+                      FindPenStyleButton(borderStyleRow, Qt::SolidLine) != nullptr,
                   QStringLiteral("属性窗边框样式可编辑"));
         ctx.Check(opacityValue && opacityValue->isEnabled() && opacityValue->value() == 100,
                   QStringLiteral("属性窗透明度可编辑"));
-        if (borderStyleValue) {
-            borderStyleValue->setCurrentIndex(borderStyleValue->findData(static_cast<int>(Qt::DashLine)));
+        if (QToolButton* dashButton = FindPenStyleButton(borderStyleRow, Qt::DashLine)) {
+            dashButton->click();
         }
         if (opacityValue) {
             opacityValue->setValue(45);
@@ -170,12 +215,10 @@ void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
             QComboBox* layerValue = dialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesLayerValue"));
             QLineEdit* nameValue = dialog.findChild<QLineEdit*>(QStringLiteral("ItemPropertiesNameValue"));
             QSpinBox* heightValue = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesHeightValue"));
-            QComboBox* fillStyleValue = dialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesFillStyleValue"));
-            QToolButton* fillColorValue =
-                dialog.findChild<QToolButton*>(QStringLiteral("ItemPropertiesFillColorValue"));
-            QToolButton* strokeColorValue =
-                dialog.findChild<QToolButton*>(QStringLiteral("ItemPropertiesStrokeColorValue"));
-            QSpinBox* strokeWidthValue = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesStrokeWidthValue"));
+            QWidget* fillStyleRow = dialog.findChild<QWidget*>(QStringLiteral("ItemFillStyleRow"));
+            QWidget* fillColorRow = dialog.findChild<QWidget*>(QStringLiteral("ItemFillColorRow"));
+            QWidget* strokeColorRow = dialog.findChild<QWidget*>(QStringLiteral("ItemBorderColorRow"));
+            QSpinBox* strokeWidthValue = dialog.findChild<QSpinBox*>(QStringLiteral("ItemBorderWidthSpin"));
             QSpinBox* cornerRadiusValue =
                 dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesCornerRadiusValue"));
             QDoubleSpinBox* positionXValue =
@@ -187,7 +230,7 @@ void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
                 dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesHeightSizeValue"));
             QDoubleSpinBox* rotationValue =
                 dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesRotationValue"));
-            ctx.Check(layerValue && heightValue && nameValue && fillStyleValue && fillColorValue && strokeColorValue &&
+            ctx.Check(layerValue && heightValue && nameValue && fillStyleRow && fillColorRow && strokeColorRow &&
                           strokeWidthValue && cornerRadiusValue && positionXValue && positionYValue && widthValue &&
                           heightSizeValue && rotationValue,
                       QStringLiteral("属性窗编辑控件齐全"));
@@ -213,15 +256,16 @@ void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
             if (heightValue) {
                 heightValue->setValue(2);
             }
-            if (fillStyleValue) {
-                fillStyleValue->setCurrentIndex(fillStyleValue->findData(static_cast<int>(FillStyle::HONEYCOMB)));
+            if (QToolButton* styleButton = FindFillStyleButton(fillStyleRow, FillStyle::HONEYCOMB)) {
+                styleButton->click();
             }
-            if (fillColorValue) {
-                fillColorValue->setProperty("itemColor", QColor(QStringLiteral("#22C55E")));
+            if (QToolButton* fillSwatch = FindSwatch(fillColorRow, QColor(QStringLiteral("#22C55E")))) {
+                fillSwatch->click();
             }
-            if (strokeColorValue) {
-                strokeColorValue->setProperty("itemColor", QColor(QStringLiteral("#DC2626")));
+            if (QToolButton* strokeSwatch = FindSwatch(strokeColorRow, QColor(QStringLiteral("#EF4444")))) {
+                strokeSwatch->click();
             }
+            // 描线宽度来自共享的 StrokeWidthRow。
             if (strokeWidthValue) {
                 strokeWidthValue->setValue(9);
             }
@@ -250,7 +294,7 @@ void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
         ctx.Check(firstShape->fillStyle() == FillStyle::HONEYCOMB &&
                       firstShape->FillColor() == QColor(QStringLiteral("#22C55E")),
                   QStringLiteral("属性窗修改可落到填充样式和填充颜色"));
-        ctx.Check(firstShape->StrokeColor() == QColor(QStringLiteral("#DC2626")) &&
+        ctx.Check(firstShape->StrokeColor() == QColor(QStringLiteral("#EF4444")) &&
                       qFuzzyCompare(firstShape->StrokeWidth(), 9.0),
                   QStringLiteral("属性窗修改可落到边框颜色和边框宽度"));
         ctx.Check(qAbs(firstShape->CornerRadius() - 20.0) < 0.01, QStringLiteral("矩形属性窗修改可落到圆角半径"),

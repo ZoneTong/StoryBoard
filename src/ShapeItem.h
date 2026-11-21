@@ -54,7 +54,7 @@ QIcon MakeShapePresetIcon(const QString& preset, const QColor& color = QColor(58
 
 QList<FillStyle> AllFillStyles();
 QString FillStyleName(FillStyle style);
-// 填充纹理的中心线几何，属性编辑面板的工具按钮缩略图与图元绘制共用这一份。
+// 填充纹理的中心线几何，编辑面板的工具按钮缩略图与图元绘制共用这一份。
 QPainterPath FillPatternCenterLines(FillStyle style, const QRectF& rect);
 
 // 多边形图元的内部图层（合并 / 分割产物）：基类只暴露只读视图，

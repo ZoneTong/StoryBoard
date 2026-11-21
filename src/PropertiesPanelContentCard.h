@@ -11,7 +11,7 @@ class QSpinBox;
 class QToolButton;
 class CanvasItem;
 
-// 属性编辑面板的内容属性行：文字正文 / 字体 / 文字颜色，以及图片名称与替换入口。
+// 编辑面板的内容属性行：文字正文 / 字体 / 文字颜色，以及图片名称与替换入口。
 // 这些行只在当前选中存在对应图元时显示，避免给图形、笔画展示无效控件。
 class PropertiesPanelContentCard : public QWidget {
     Q_OBJECT

@@ -1,7 +1,9 @@
 #pragma once
 
 #include "CanvasItem.h"
+#include "FillAttributes.h"
 #include "ImageFill.h"
+#include "StrokeAttributes.h"
 
 #include <QPixmap>
 #include <QPointer>
@@ -10,14 +12,17 @@
 
 class QComboBox;
 class QFormLayout;
-class QPushButton;
 class QSpinBox;
-class QToolButton;
+class FillStyleRow;
+class FillColorRow;
+class FillImageRow;
+class StrokeStyleRow;
+class StrokeColorRow;
+class StrokeWidthRow;
 
-// 属性窗的填充 / 边框区块：图形图元提供填充样式、填充颜色、边框颜色、边框样式、
-// 边框宽度、透明度；矩形 / 圆角矩形额外提供圆角半径，扇形 / 弧线额外提供
-// 起始角、扫过角与半径；笔画图元只提供边框颜色与宽度。控件初始值取自图元，
-// 快照值供确定时提交撤销记录。
+// 属性窗的填充 / 边框区块：填充与描线两组行直接复用编辑面板的 AttributeRowWidgets，
+// 行控件绑定本块私有的 FillAttributes / StrokeAttributes 副本（属性窗取消时不影响图元），
+// 确定时把两份状态交给对话框写入撤销记录。
 class ItemPropertiesDialogStyleBlock : public QWidget {
     Q_OBJECT
 
@@ -28,17 +33,14 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
 
     bool HasFill() const { return m_hasFill; }
     qreal InitialStrokeWidth() const { return m_initialStrokeWidth; }
-    QComboBox* FillStyleCombo() const { return m_fillStyleCombo; }
-    QToolButton* FillColorButton() const { return m_fillColorButton; }
-    QToolButton* StrokeColorButton() const { return m_strokeColorButton; }
-    QComboBox* BorderStyleCombo() const { return m_borderStyleCombo; }
-    QSpinBox* StrokeWidthSpin() const { return m_strokeWidthSpin; }
+    FillAttributesState FillState() const { return m_fillAttributes.FillState(); }
+    StrokeAttributesState StrokeState() const { return m_strokeAttributes.StrokeState(); }
     QSpinBox* OpacitySpin() const { return m_opacitySpin; }
-    // 需求 15：填充图片与摆放模式（仅可填充图元有这一行）。
-    bool HasFillImageRow() const { return m_fillImageButton != nullptr; }
-    bool FillImagePresent() const { return !m_fillImage.isNull(); }
-    QPixmap FillImage() const { return m_fillImage; }
-    ImageFill::Mode FillImageMode() const;
+    bool HasFillImageRow() const { return m_fillImageRow != nullptr; }
+    QList<QWidget*> StyleRows() const;
+    bool FillImagePresent() const { return m_fillAttributes.HasFillImage(); }
+    QPixmap FillImage() const { return m_fillAttributes.FillImage(); }
+    ImageFill::Mode FillImageMode() const { return m_fillAttributes.FillImageMode(); }
     qreal InitialOpacity() const { return m_initialOpacity; }
     int InitialOpacityPercent() const { return m_initialOpacityPercent; }
 
@@ -52,7 +54,7 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     int InitialCornerRadius() const { return m_initialCornerRadius; }
     qreal InitialStoredCornerRadius() const { return m_initialStoredCornerRadius; }
 
-    // 三角形：底边长度与两个底角；底边即内容矩形宽度，角度优先、高度派生。
+    // 三角形：两个底角；底边宽度随图元外框调整，角度优先、高度派生。
     QSpinBox* BottomAngle1Spin() const { return m_bottomAngle1Spin; }
     QSpinBox* BottomAngle2Spin() const { return m_bottomAngle2Spin; }
     qreal InitialBottomAngle1() const { return m_initialBottomAngle1; }
@@ -71,19 +73,20 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     void SetContentSize(const QSizeF& size);
 
   private:
+    void BuildFillRows(CanvasItem* item);
+    void BuildStrokeRows(CanvasItem* item);
+
     bool m_hasFill = false;
     qreal m_initialStrokeWidth = 4.0;
-    QComboBox* m_fillStyleCombo = nullptr;
-    QToolButton* m_fillColorButton = nullptr;
-    QToolButton* m_strokeColorButton = nullptr;
-    QComboBox* m_borderStyleCombo = nullptr;
-    QSpinBox* m_strokeWidthSpin = nullptr;
+    FillAttributes m_fillAttributes;
+    StrokeAttributes m_strokeAttributes;
+    FillStyleRow* m_fillStyleRow = nullptr;
+    FillColorRow* m_fillColorRow = nullptr;
+    FillImageRow* m_fillImageRow = nullptr;
+    StrokeStyleRow* m_borderStyleRow = nullptr;
+    StrokeColorRow* m_strokeColorRow = nullptr;
+    StrokeWidthRow* m_borderWidthRow = nullptr;
     QSpinBox* m_opacitySpin = nullptr;
-    QPushButton* m_fillImageButton = nullptr;
-    QComboBox* m_fillImageModeCombo = nullptr;
-    QPushButton* m_fillImageClearButton = nullptr;
-    QPixmap m_fillImage;
-    QWidget* m_fillImageRow = nullptr;
     qreal m_initialOpacity = 1.0;
     int m_initialOpacityPercent = 100;
 

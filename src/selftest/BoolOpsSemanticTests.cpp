@@ -392,7 +392,7 @@ void selftest::RunBoolOpsSemanticTests(Context& ctx)
                   QStringLiteral("整组结果采用组内最高优先级图元的样式"));
     }
     {
-        // 合并图元仍然能从菜单、右键菜单和属性编辑面板进入，但主工具栏不再放合并图元按钮。
+        // 合并图元仍然能从菜单、右键菜单和编辑面板进入，但主工具栏不再放合并图元按钮。
         MainWindow boolWindow;
         QToolButton* boolButton = boolWindow.findChild<QToolButton*>(QStringLiteral("BoolToolButton"));
         QMenu* boolMenu = boolWindow.findChild<QMenu*>(QStringLiteral("BoolMenu"));

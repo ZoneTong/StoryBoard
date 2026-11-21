@@ -222,7 +222,7 @@ void selftest::RunDockPanelItemStyleTests(Context& ctx)
 
         ctx.Check(copyButton && deleteButton && rotateCwButton && rotateCcwButton && copyButton->isVisible() &&
                       deleteButton->isVisible() && rotateCwButton->isVisible() && rotateCcwButton->isVisible(),
-                  QStringLiteral("单选时属性编辑面板列出复制 / 删除 / 旋转按钮"));
+                  QStringLiteral("单选时编辑面板列出复制 / 删除 / 旋转按钮"));
         ctx.Check(alignRowButtons.size() == 8 && morphButtons.size() == 6 && groupButton && ungroupButton &&
                       !alignRowButtons.first()->isVisible() && !morphButtons.first()->isVisible() &&
                       !groupButton->isVisible() && !ungroupButton->isVisible(),

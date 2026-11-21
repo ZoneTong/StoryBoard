@@ -15,6 +15,7 @@ class SineItem;
 class LineItemAbstract;
 class FillAttributes;
 class StrokeAttributes;
+class FillImageRow;
 struct TextItemState;
 class QPixmap;
 class QFont;
@@ -31,6 +32,8 @@ class PropertiesPanelFillBorderCard;
 class PropertiesPanelValueCard;
 class PropertiesPanelArrangeCard;
 class PropertiesPanelContentCard;
+class PropertiesPanelIdentityCard;
+class PropertiesPanelGeometryCard;
 
 // 选中图元时出现在右侧的「编辑图元」dock 卡片。外壳只负责整体布局、选中联动与
 // 撤销命令提交；图形、颜色、填充 / 描边、透明度 / 圆角、图层 / 高度各行由对应
@@ -66,7 +69,6 @@ class PropertiesPanel : public QWidget {
 
     QList<CanvasItem*> SelectedItems() const;
     QList<ShapeItem*> SelectedShapes() const;
-    QList<ShapeItem*> SelectedComposites() const;
     QList<LineItemAbstract*> SelectedStrokes() const;
     QList<CanvasItem*> SelectedTexts() const;
 
@@ -108,6 +110,16 @@ class PropertiesPanel : public QWidget {
     // 直线两端箭头样式（ArrowStyle 整数值）。
     void ApplyArrowStart(int style);
     void ApplyArrowEnd(int style);
+    // 属性窗里可直接编辑的身份 / 几何字段，在编辑面板里同样可改：
+    // 名称、目标图层、层内高度、位置与尺寸、旋转、平行四边形内角。
+    void ApplyItemName(const QString& name);
+    void ApplyItemLayer(int layerId);
+    void ApplyItemHeight(int height);
+    void ApplyItemGeometry(const QPointF& position, const QSizeF& size);
+    void ApplyItemRotation(qreal angle);
+    void ApplyParallelogramAngle(qreal angle);
+    // 图层 / 高度一次改到目标值：与属性窗一样，同层同高度时互换两条记录。
+    void ApplyItemStack(int layerId, int height, const QString& text);
     void AdjustLayer(int delta);
     void AdjustHeight(int delta);
 
@@ -115,12 +127,8 @@ class PropertiesPanel : public QWidget {
     QLabel* m_titleLabel = nullptr;
     QLabel* m_metaLabel = nullptr;
     QWidget* m_contentWidget = nullptr;
-    // 需求 13：背景图片行（填充颜色之后），多选可填充图元时可用。
-    QWidget* m_fillImageRow = nullptr;
-    QToolButton* m_fillImageIcon = nullptr;
-    QToolButton* m_fillImageButton = nullptr;
-    QComboBox* m_fillImageModeCombo = nullptr;
-    QToolButton* m_clearFillImageButton = nullptr;
+    // 需求 13：背景图片行（填充颜色之后），与属性窗共用同一个 FillImageRow。
+    FillImageRow* m_fillImageRow = nullptr;
 
     PropertiesPanelSelectionCard* m_selectionCard = nullptr;
     PropertiesPanelContentCard* m_contentCard = nullptr;
@@ -128,6 +136,8 @@ class PropertiesPanel : public QWidget {
     PropertiesPanelFillBorderCard* m_fillBorderCard = nullptr;
     PropertiesPanelValueCard* m_valueCard = nullptr;
     PropertiesPanelArrangeCard* m_arrangeCard = nullptr;
+    PropertiesPanelIdentityCard* m_identityCard = nullptr;
+    PropertiesPanelGeometryCard* m_geometryCard = nullptr;
 
     bool m_refreshing = false;
     bool m_refreshPending = false;

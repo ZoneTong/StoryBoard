@@ -1,6 +1,7 @@
 #include "PropertiesPanel.h"
 
 #include "ArcItem.h"
+#include "AttributeRowWidgets.h"
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
@@ -12,6 +13,8 @@
 #include "PropertiesPanelColorsCard.h"
 #include "PropertiesPanelContentCard.h"
 #include "PropertiesPanelFillBorderCard.h"
+#include "PropertiesPanelGeometryCard.h"
+#include "PropertiesPanelIdentityCard.h"
 #include "PropertiesPanelSelectionCard.h"
 #include "PropertiesPanelValueCard.h"
 #include "ShapeItem.h"
@@ -72,8 +75,13 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     m_contentCard = new PropertiesPanelContentCard(content);
 
     // 需求 9c 行序定稿（与属性窗同序）：
-    // 图层/高度 → 文字内容/颜色/字体、图片 → 填充样式 → 填充色 →
-    // 描边颜色 → 描边样式 → 描边宽度 → 透明度/圆角/角度/三角形/箭头 → 选择操作行。
+    // 名称/图层/高度 → 图层与高度微调 → 文字内容/颜色/字体、图片 → 填充样式 → 填充色 →
+    // 描边颜色 → 描边样式 → 描边宽度 → 透明度/圆角/角度/三角形/箭头 → 位置/尺寸/旋转 →
+    // 选择操作行。
+    m_identityCard = new PropertiesPanelIdentityCard(content);
+    m_identityCard->setObjectName(QStringLiteral("ItemIdentityCard"));
+    layout->addWidget(m_identityCard);
+
     m_arrangeCard = new PropertiesPanelArrangeCard(content);
     m_arrangeCard->setObjectName(QStringLiteral("ItemArrangeCard"));
     layout->addWidget(m_arrangeCard);
@@ -87,65 +95,12 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     layout->addWidget(m_fillBorderCard->FillStyleRow());
     layout->addWidget(m_colorsCard->FillColorRow());
 
-    // 填充图片行排在填充颜色之后、描线样式之前；与其它行同一套图标与值按钮样式。
-    // 行内四件：用途图标（与上方各行左对齐）→ 选择 / 更换图片 → 摆放方式 → 清除。
-    m_fillImageRow = new QWidget(content);
-    m_fillImageRow->setObjectName(QStringLiteral("ItemFillImageRow"));
-    auto* fillImageLayout = new QHBoxLayout(m_fillImageRow);
-    fillImageLayout->setContentsMargins(0, 0, 0, 0);
-    fillImageLayout->setSpacing(2);
-
-    m_fillImageIcon = new QToolButton(m_fillImageRow);
-    m_fillImageIcon->setObjectName(QStringLiteral("ItemRowIcon"));
-    m_fillImageIcon->setIcon(MakeIcon(IconId::IMAGE, QColor(139, 144, 156), 20));
-    m_fillImageIcon->setIconSize(QSize(20, 20));
-    m_fillImageIcon->setFixedSize(32, 32);
-    m_fillImageIcon->setAutoRaise(true);
-    m_fillImageIcon->setFocusPolicy(Qt::NoFocus);
-    m_fillImageIcon->setToolTip(tr("Fill image"));
-    fillImageLayout->addWidget(m_fillImageIcon, 0, Qt::AlignVCenter);
-
-    m_fillImageButton = new QToolButton(m_fillImageRow);
-    m_fillImageButton->setObjectName(QStringLiteral("ItemFillImageButton"));
-    m_fillImageButton->setIcon(MakeIcon(IconId::IMAGE, QColor(58, 64, 80), 16));
-    m_fillImageButton->setIconSize(QSize(16, 16));
-    m_fillImageButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    m_fillImageButton->setText(tr("Choose fill image"));
-    m_fillImageButton->setToolTip(tr("Choose an image to fill the selected items"));
-    m_fillImageButton->setMinimumHeight(30);
-    connect(m_fillImageButton, &QToolButton::clicked, this, &PropertiesPanel::ChooseFillImage);
-    fillImageLayout->addWidget(m_fillImageButton, 0, Qt::AlignVCenter);
-
-    // 与图元属性窗同一套摆放方式：拉伸铺满 / 等比适应 / 原始像素平铺。
-    m_fillImageModeCombo = new QComboBox(m_fillImageRow);
-    m_fillImageModeCombo->setObjectName(QStringLiteral("ItemFillImageMode"));
-    m_fillImageModeCombo->addItem(tr("Stretch"), static_cast<int>(ImageFill::Mode::STRETCH));
-    m_fillImageModeCombo->addItem(tr("Fit"), static_cast<int>(ImageFill::Mode::FIT));
-    m_fillImageModeCombo->addItem(tr("Tile"), static_cast<int>(ImageFill::Mode::TILE));
-    m_fillImageModeCombo->setMinimumHeight(30);
-    m_fillImageModeCombo->setToolTip(tr("Fill image mode"));
-    connect(m_fillImageModeCombo, &QComboBox::currentIndexChanged, this, [this](int index) {
-        if (m_refreshing || index < 0) {
-            return;
-        }
-        ApplyFillImageMode(m_fillImageModeCombo->itemData(index).toInt());
-    });
-    fillImageLayout->addWidget(m_fillImageModeCombo, 0, Qt::AlignVCenter);
-
-    // 清除按钮与属性窗保持一致，带文字说明而不是只画一个垃圾桶图标。
-    m_clearFillImageButton = new QToolButton(m_fillImageRow);
-    m_clearFillImageButton->setObjectName(QStringLiteral("ItemClearFillImageButton"));
-    m_clearFillImageButton->setIcon(MakeIcon(IconId::DELETE, QColor(58, 64, 80), 16));
-    m_clearFillImageButton->setIconSize(QSize(16, 16));
-    m_clearFillImageButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    m_clearFillImageButton->setText(tr("Clear"));
-    m_clearFillImageButton->setMinimumHeight(30);
-    m_clearFillImageButton->setToolTip(tr("Clear fill image"));
-    connect(m_clearFillImageButton, &QToolButton::clicked, this, &PropertiesPanel::ClearFillImage);
-    fillImageLayout->addWidget(m_clearFillImageButton, 0, Qt::AlignVCenter);
-    // 末尾留伸缩位：这一行不像上面的色板行那样自带 addStretch，否则多出的宽度
-    // 会被均摊成行内空隙，图标就与上方各行错位。
-    fillImageLayout->addStretch(1);
+    // 填充图片行与属性窗共用同一个属性行控件：图标、更换图片、摆放方式、清除四件，
+    // 值直接读 FillAttributes，改动仍交回面板走撤销命令。
+    m_fillImageRow = new FillImageRow(content);
+    connect(m_fillImageRow, &FillImageRow::chooseFillImageClicked, this, &PropertiesPanel::ChooseFillImage);
+    connect(m_fillImageRow, &FillImageRow::fillImageModeChosen, this, &PropertiesPanel::ApplyFillImageMode);
+    connect(m_fillImageRow, &FillImageRow::clearFillImageClicked, this, &PropertiesPanel::ClearFillImage);
     layout->addWidget(m_fillImageRow);
 
     layout->addWidget(m_fillBorderCard->BorderStyleRow());
@@ -154,6 +109,10 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
 
     m_valueCard = new PropertiesPanelValueCard(content);
     layout->addWidget(m_valueCard);
+
+    m_geometryCard = new PropertiesPanelGeometryCard(content);
+    m_geometryCard->setObjectName(QStringLiteral("ItemGeometryCard"));
+    layout->addWidget(m_geometryCard);
 
     layout->addWidget(m_selectionCard);
     layout->addStretch(1);
@@ -183,6 +142,13 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     connect(m_valueCard, &PropertiesPanelValueCard::arrowEndChosen, this, &PropertiesPanel::ApplyArrowEnd);
     connect(m_arrangeCard, &PropertiesPanelArrangeCard::layerAdjusted, this, &PropertiesPanel::AdjustLayer);
     connect(m_arrangeCard, &PropertiesPanelArrangeCard::heightAdjusted, this, &PropertiesPanel::AdjustHeight);
+    connect(m_identityCard, &PropertiesPanelIdentityCard::nameChosen, this, &PropertiesPanel::ApplyItemName);
+    connect(m_identityCard, &PropertiesPanelIdentityCard::layerChosen, this, &PropertiesPanel::ApplyItemLayer);
+    connect(m_identityCard, &PropertiesPanelIdentityCard::heightChosen, this, &PropertiesPanel::ApplyItemHeight);
+    connect(m_geometryCard, &PropertiesPanelGeometryCard::geometryChosen, this, &PropertiesPanel::ApplyItemGeometry);
+    connect(m_geometryCard, &PropertiesPanelGeometryCard::rotationChosen, this, &PropertiesPanel::ApplyItemRotation);
+    connect(m_geometryCard, &PropertiesPanelGeometryCard::parallelogramAngleChosen, this,
+            &PropertiesPanel::ApplyParallelogramAngle);
 
     if (m_scene) {
         connect(m_scene, &QGraphicsScene::selectionChanged, this, &PropertiesPanel::ScheduleRefresh);
@@ -230,17 +196,6 @@ QList<ShapeItem*> PropertiesPanel::SelectedShapes() const
         }
     }
     return shapes;
-}
-
-QList<ShapeItem*> PropertiesPanel::SelectedComposites() const
-{
-    QList<ShapeItem*> composites;
-    for (CanvasItem* item : SelectedItems()) {
-        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() > 0) {
-            composites.append(shape);
-        }
-    }
-    return composites;
 }
 
 QList<LineItemAbstract*> PropertiesPanel::SelectedStrokes() const
@@ -314,9 +269,21 @@ void PropertiesPanel::Refresh()
 
     const QList<CanvasItem*> items = SelectedItems();
     const QList<ShapeItem*> shapes = SelectedShapes();
-    const QList<ShapeItem*> composites = SelectedComposites();
     const QList<LineItemAbstract*> strokes = SelectedStrokes();
     const QList<CanvasItem*> texts = SelectedTexts();
+
+    // 属性行按基类绑定：填充行只看 FillAttributes，描线行只看 StrokeAttributes，
+    // 不再按叶子类分别拼目标；多边形等特殊取色由基类虚函数处理。
+    QList<FillAttributes*> fillTargets;
+    QList<StrokeAttributes*> strokeTargets;
+    for (CanvasItem* item : items) {
+        if (auto* fill = dynamic_cast<FillAttributes*>(item)) {
+            fillTargets.append(fill);
+        }
+        if (auto* stroke = dynamic_cast<StrokeAttributes*>(item)) {
+            strokeTargets.append(stroke);
+        }
+    }
     m_selectionCard->SetSelectionState(!items.isEmpty(), SelectionGroupUseful(items));
 
     // 交集规则：只显示选中集合里每个图元都拥有的行；空选择时集合为空，全部行隐藏。
@@ -333,17 +300,26 @@ void PropertiesPanel::Refresh()
     m_valueCard->SetTriangleVisible(common.Contains(ItemProperty::BOTTOM_ANGLE1));
     m_valueCard->SetArrowVisible(common.Contains(ItemProperty::ARROW_START));
     m_fillImageRow->setVisible(common.Contains(ItemProperty::FILL_IMAGE));
-    {
-        const bool hasImage =
-            !items.isEmpty() && !items.first()->PropertyValue(ItemProperty::FILL_IMAGE).value<QPixmap>().isNull();
-        m_fillImageButton->setText(hasImage ? tr("Change fill image") : tr("Choose fill image"));
-        m_fillImageModeCombo->setEnabled(hasImage);
-        m_clearFillImageButton->setEnabled(hasImage);
-        const int mode = items.isEmpty() ? static_cast<int>(ImageFill::Mode::STRETCH)
-                                         : items.first()->PropertyValue(ItemProperty::FILL_IMAGE_MODE).toInt();
-        const int index = m_fillImageModeCombo->findData(mode);
-        m_fillImageModeCombo->setCurrentIndex(index >= 0 ? index : 0);
+    m_fillImageRow->SetTargets(fillTargets);
+
+    // 属性窗一次只编辑一个图元；身份与几何的绝对数值也只在单选时开放，
+    // 多选把它们设成同一个位置 / 尺寸没有意义，整块隐藏。
+    const bool singleItem = items.size() == 1;
+    m_identityCard->setVisible(singleItem);
+    m_geometryCard->setVisible(singleItem);
+    m_identityCard->Refresh(m_scene, singleItem ? items.first() : nullptr);
+    m_geometryCard->Refresh(singleItem ? items.first() : nullptr);
+
+    bool axisVisible = false;
+    if (singleItem) {
+        if (auto* shape = dynamic_cast<ShapeItem*>(items.first());
+            shape && !shape->IsCustomShape() &&
+            (shape->shapeType() == ShapeType::ELLIPSE || shape->shapeType() == ShapeType::SECTOR)) {
+            axisVisible = true;
+        }
     }
+    m_geometryCard->SetAxisVisible(axisVisible);
+    m_geometryCard->SetParallelogramVisible(singleItem && common.Contains(ItemProperty::PARALLELOGRAM_ANGLE));
 
     const bool hasSelection = !items.isEmpty();
     m_fillBorderCard->FillStyleRow()->setVisible(common.Contains(ItemProperty::FILL_STYLE));
@@ -358,8 +334,8 @@ void PropertiesPanel::Refresh()
     m_valueCard->setVisible(hasSelection);
     m_arrangeCard->setVisible(hasSelection);
     m_contentCard->Refresh(texts);
-    m_colorsCard->Refresh(shapes, strokes, composites);
-    m_fillBorderCard->Refresh(shapes, strokes, composites);
+    m_colorsCard->Refresh(fillTargets, strokeTargets);
+    m_fillBorderCard->Refresh(fillTargets, strokeTargets);
     m_valueCard->Refresh(shapes, strokes, items);
     m_arrangeCard->Refresh(!SelectedItems().isEmpty());
 

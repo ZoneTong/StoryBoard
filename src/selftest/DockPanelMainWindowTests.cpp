@@ -142,7 +142,7 @@ void selftest::RunDockPanelMainWindowTests(Context& ctx)
         ctx.Check(propertiesDock && dockPanel && !propertiesDock->isFloating() &&
                       dockWindow.dockWidgetArea(propertiesDock) == Qt::LeftDockWidgetArea &&
                       propertiesDock->isVisible(),
-                  QStringLiteral("属性编辑面板首次启动显示并固定在窗口左侧"));
+                  QStringLiteral("编辑面板首次启动显示并固定在窗口左侧"));
         const int preferredCardWidth = dockPanel ? dockPanel->PreferredWidth() : 0;
         const int actualCardWidth = propertiesDock ? propertiesDock->width() : -1;
         // 宽度既要覆盖内容，也不能明显宽于内容，否则右侧会留下空白。
@@ -150,7 +150,7 @@ void selftest::RunDockPanelMainWindowTests(Context& ctx)
             actualCardWidth >= preferredCardWidth - 2 && actualCardWidth <= preferredCardWidth + 2;
         ctx.Check(propertiesDock && dockPanel && preferredCardWidth >= 260 && preferredCardWidth <= 320 &&
                       dockWidthFits,
-                  QStringLiteral("属性编辑面板宽度贴合内容且不超出 320px"),
+                  QStringLiteral("编辑面板宽度贴合内容且不超出 320px"),
                   QStringLiteral("preferred=%1 actual=%2").arg(preferredCardWidth).arg(actualCardWidth));
         // 需求 7：自定义图形改为浮动面板，模板以按钮形式出现在标签页里；菜单只留触发器。
         dockWindow.OpenCustomShapePanel(nullptr);
@@ -235,7 +235,7 @@ void selftest::RunDockPanelMainWindowTests(Context& ctx)
             QApplication::processEvents();
         }
         ctx.Check(dockWindow.findChild<QAction*>(QStringLiteral("PropertiesPanelToggleAction")) != nullptr,
-                  QStringLiteral("视图菜单提供属性编辑面板开关"));
+                  QStringLiteral("视图菜单提供编辑面板开关"));
 
         CanvasScene* dockScene = dockWindow.Scene();
         // 卡片不再有常见图形行，插入改为走场景接口（等价于「插入」菜单插入矩形）；
@@ -257,7 +257,7 @@ void selftest::RunDockPanelMainWindowTests(Context& ctx)
                                        : dynamic_cast<ShapeItem*>(dockScene->SelectedCanvasItems().first());
         ctx.Check(selectedShape == insertedShape && dockScene->CanvasItemCount() == beforeCount + 1 &&
                       propertiesDock->isVisible(),
-                  QStringLiteral("插入矩形后属性编辑面板随选中出现并保持显示"),
+                  QStringLiteral("插入矩形后编辑面板随选中出现并保持显示"),
                   QStringLiteral("same=%1 count=%2/%3 visible=%4 sel=%5 inScene=%6")
                       .arg(selectedShape == insertedShape ? 1 : 0)
                       .arg(dockScene->CanvasItemCount())
@@ -269,8 +269,7 @@ void selftest::RunDockPanelMainWindowTests(Context& ctx)
         // 选中图元后可见行变多，卡片宽度保持启动时的值，不随选中来回跳动。
         QApplication::processEvents();
         const int selectedActualWidth = propertiesDock ? propertiesDock->width() : -1;
-        ctx.Check(qAbs(selectedActualWidth - preferredCardWidth) <= 2,
-                  QStringLiteral("切换选中后属性编辑面板宽度保持不变"),
+        ctx.Check(qAbs(selectedActualWidth - preferredCardWidth) <= 2, QStringLiteral("切换选中后编辑面板宽度保持不变"),
                   QStringLiteral("start=%1 actual=%2").arg(preferredCardWidth).arg(selectedActualWidth));
 
         QDockWidget* layerDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("LayerDock"));
@@ -297,7 +296,7 @@ void selftest::RunDockPanelMainWindowTests(Context& ctx)
         // 默认停靠在左侧，不属于悬浮窗口。
         ctx.Check(propertiesDock && !propertiesDock->isFloating() &&
                       dockWindow.dockWidgetArea(propertiesDock) == Qt::LeftDockWidgetArea,
-                  QStringLiteral("属性编辑面板默认停靠左侧"));
+                  QStringLiteral("编辑面板默认停靠左侧"));
         ctx.Check(viewModeDock && layerDock && dockWindow.dockWidgetArea(viewModeDock) == Qt::RightDockWidgetArea &&
                       dockWindow.dockWidgetArea(layerDock) == Qt::RightDockWidgetArea,
                   QStringLiteral("视图模式卡与图层卡默认停靠右侧"));

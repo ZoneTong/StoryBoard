@@ -119,7 +119,7 @@ void selftest::RunDockOrderPersistenceTests(Context& ctx)
         qunsetenv("STORYBOARD_CONFIG");
     }
 
-    // 属性编辑面板：首次启动停靠左侧并显示；拖动成悬浮窗口后保存位置，重启按保存的位置恢复。
+    // 编辑面板：首次启动停靠左侧并显示；拖动成悬浮窗口后保存位置，重启按保存的位置恢复。
     {
         const QString itemConfig =
             QDir(ctx.workDirectory)
@@ -137,7 +137,7 @@ void selftest::RunDockOrderPersistenceTests(Context& ctx)
             ctx.Check(propertiesDock && !propertiesDock->isFloating() &&
                           itemWindow.dockWidgetArea(propertiesDock) == Qt::LeftDockWidgetArea &&
                           propertiesDock->isVisible(),
-                      QStringLiteral("首次启动属性编辑面板显示并固定在窗口左侧"),
+                      QStringLiteral("首次启动编辑面板显示并固定在窗口左侧"),
                       propertiesDock ? QStringLiteral("floating=%1 area=%2 visible=%3")
                                            .arg(propertiesDock->isFloating() ? 1 : 0)
                                            .arg(static_cast<int>(itemWindow.dockWidgetArea(propertiesDock)))
@@ -159,7 +159,7 @@ void selftest::RunDockOrderPersistenceTests(Context& ctx)
                 movedSettings.Load();
                 ctx.Check(movedSettings.propertiesDockStateSaved && movedSettings.propertiesDockFloating &&
                               !movedSettings.propertiesDockGeometry.isEmpty(),
-                          QStringLiteral("属性编辑面板悬浮后把位置写入设置文件"));
+                          QStringLiteral("编辑面板悬浮后把位置写入设置文件"));
             }
             itemWindow.close();
             QApplication::processEvents();
@@ -174,7 +174,7 @@ void selftest::RunDockOrderPersistenceTests(Context& ctx)
             const bool positionRestored = propertiesDock && qAbs(propertiesDock->pos().x() - movedPosition.x()) <= 24 &&
                                           qAbs(propertiesDock->pos().y() - movedPosition.y()) <= 24;
             ctx.Check(propertiesDock && propertiesDock->isFloating() && positionRestored,
-                      QStringLiteral("重启后按设置恢复属性编辑面板的悬浮位置"),
+                      QStringLiteral("重启后按设置恢复编辑面板的悬浮位置"),
                       propertiesDock
                           ? QStringLiteral("%1,%2").arg(propertiesDock->pos().x()).arg(propertiesDock->pos().y())
                           : QString());

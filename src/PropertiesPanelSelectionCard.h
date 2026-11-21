@@ -6,7 +6,7 @@
 class QAction;
 class QToolButton;
 
-// 属性编辑面板的选中操作栏：单选时提供复制 / 删除 / 顺、逆时针旋转；多选时把对齐 8 项与
+// 编辑面板的选中操作栏：单选时提供复制 / 删除 / 顺、逆时针旋转；多选时把对齐 8 项与
 // 合并图元 6 项直接展开成图标按钮行，再按当前选择能否组合 / 取消组合显示组操作按钮。
 // 按钮全部复用主窗口 QAction，卡片只负责图标按钮、逐行显隐与整卡可见性。
 class PropertiesPanelSelectionCard : public QWidget {

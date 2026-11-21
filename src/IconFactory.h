@@ -30,7 +30,7 @@ enum class IconId {
     SHAPES,
     SMOOTH,
     LOCK,
-    // 属性编辑面板用的紧凑图标。
+    // 编辑面板用的紧凑图标。
     LAYER_UP,
     LAYER_DOWN,
     ORDER_UP,

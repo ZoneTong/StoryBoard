@@ -192,10 +192,7 @@ void ItemPropertiesDialog::ApplyEditableState()
         widgets << m_identityBlock->NameEdit() << m_identityBlock->LayerCombo() << m_identityBlock->HeightSpin();
     }
     if (m_styleBlock) {
-        widgets << m_styleBlock->FillStyleCombo() << m_styleBlock->FillColorButton()
-                << m_styleBlock->StrokeColorButton() << m_styleBlock->BorderStyleCombo()
-                << m_styleBlock->StrokeWidthSpin() << m_styleBlock->OpacitySpin() << m_styleBlock->CornerRadiusSpin()
-                << m_styleBlock->StartAngleSpin() << m_styleBlock->SweepAngleSpin();
+        widgets << m_styleBlock->StyleRows();
     }
     if (m_opacitySpin) {
         widgets << m_opacitySpin;
@@ -323,14 +320,10 @@ void ItemPropertiesDialog::ApplyChanges()
         after.shapeState = shape->State();
         after.shapeState.pos = after.pos;
         after.shapeState.size = after.size;
-        if (style && style->StrokeColorButton()) {
-            after.shapeState.stroke.color = style->StrokeColorButton()->property("itemColor").value<QColor>();
-        }
-        if (style && style->StrokeWidthSpin()) {
-            after.shapeState.stroke.width = spinValue(style->StrokeWidthSpin(), m_initialStrokeWidth);
-        }
-        if (style && style->BorderStyleCombo() && style->BorderStyleCombo()->currentData().toInt() >= 0) {
-            after.shapeState.stroke.style = static_cast<Qt::PenStyle>(style->BorderStyleCombo()->currentData().toInt());
+        if (style) {
+            // 填充 / 描线两行直接绑定属性基类副本，确定时整份状态取回，不再逐控件拼值。
+            after.shapeState.fill = style->FillState();
+            after.shapeState.stroke = style->StrokeState();
         }
         if (style && style->OpacitySpin()) {
             const int percent = style->OpacitySpin()->value();
@@ -372,19 +365,8 @@ void ItemPropertiesDialog::ApplyChanges()
             after.shapeState.parallelogramAngle =
                 value == qRound(style->InitialParallelogramAngle()) ? style->InitialParallelogramAngle() : value;
         }
-        if (m_hasFill) {
-            if (style && style->FillStyleCombo() && style->FillStyleCombo()->currentData().toInt() >= 0) {
-                after.shapeState.fill.style = static_cast<FillStyle>(style->FillStyleCombo()->currentData().toInt());
-            }
-            if (style && style->FillColorButton()) {
-                after.shapeState.fill.color = style->FillColorButton()->property("itemColor").value<QColor>();
-            }
-            // 需求 15：图片填充是独立属性，FillAttributesState 直接快照。
-            if (style && style->HasFillImageRow()) {
-                after.shapeState.fill.hasImage = style->FillImagePresent();
-                after.shapeState.fill.image = style->FillImage();
-                after.shapeState.fill.imageMode = style->FillImageMode();
-            }
+        if (m_hasFill && style) {
+            after.shapeState.fill = style->FillState();
         }
     } else if (m_item->HasTextFacet()) {
         before.hasTextState = true;
@@ -417,16 +399,12 @@ void ItemPropertiesDialog::ApplyChanges()
         before.curveStartArrow = stroke->StartArrow();
         before.curveEndArrow = stroke->EndArrow();
 
+        const StrokeAttributesState beforeStroke{before.strokeColor, before.strokeWidth, before.strokeStyle};
+        const StrokeAttributesState strokeState = style ? style->StrokeState() : beforeStroke;
         after.hasStrokeStyle = true;
-        after.strokeColor = (style && style->StrokeColorButton())
-                                ? style->StrokeColorButton()->property("itemColor").value<QColor>()
-                                : before.strokeColor;
-        after.strokeWidth = (style && style->StrokeWidthSpin())
-                                ? spinValue(style->StrokeWidthSpin(), m_initialStrokeWidth)
-                                : before.strokeWidth;
-        after.strokeStyle = (style && style->BorderStyleCombo())
-                                ? static_cast<Qt::PenStyle>(style->BorderStyleCombo()->currentData().toInt())
-                                : before.strokeStyle;
+        after.strokeColor = strokeState.color;
+        after.strokeWidth = strokeState.width;
+        after.strokeStyle = strokeState.style;
         after.curveStartArrow = (style && style->StartArrowCombo())
                                     ? static_cast<ArrowStyle>(style->StartArrowCombo()->currentData().toInt())
                                     : before.curveStartArrow;

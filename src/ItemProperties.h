@@ -5,7 +5,7 @@
 #include <QtGlobal>
 #include <initializer_list>
 
-// 图元属性的统一标识。顺序即属性编辑面板的行序（样式行在颜色行之前已固化），
+// 图元属性的统一标识。顺序即编辑面板的行序（样式行在颜色行之前已固化），
 // 各图元只上报自己真正拥有的属性，面板按选中集合求交后逐行显隐。
 enum class ItemProperty {
     TEXT_CONTENT,

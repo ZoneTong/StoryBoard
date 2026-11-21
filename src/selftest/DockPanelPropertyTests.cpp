@@ -59,6 +59,7 @@
 #include <QMarginsF>
 #include <QMenu>
 #include <QMenuBar>
+#include <QMetaObject>
 #include <QMouseEvent>
 #include <QPageLayout>
 #include <QPageSize>
@@ -117,6 +118,134 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
     QDockWidget* propertiesDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("PropertiesPanelDock"));
     QDockWidget* layerDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("LayerDock"));
     if (selectedShape && dockPanel) {
+        // 需求：属性窗里可编辑的身份 / 几何字段，在编辑面板里同样有行且能改。
+        QLineEdit* itemNameEdit = dockPanel->findChild<QLineEdit*>(QStringLiteral("ItemNameEdit"));
+        QDoubleSpinBox* positionXSpin = dockPanel->findChild<QDoubleSpinBox*>(QStringLiteral("ItemPositionXSpin"));
+        QDoubleSpinBox* sizeWidthSpin = dockPanel->findChild<QDoubleSpinBox*>(QStringLiteral("ItemSizeWidthSpin"));
+        QDoubleSpinBox* rotationSpin = dockPanel->findChild<QDoubleSpinBox*>(QStringLiteral("ItemRotationSpin"));
+        ctx.Check(itemNameEdit && itemNameEdit->isVisible() && positionXSpin && positionXSpin->isVisible() &&
+                      sizeWidthSpin && sizeWidthSpin->isVisible() && rotationSpin && rotationSpin->isVisible(),
+                  QStringLiteral("编辑面板提供名称 / 位置 / 尺寸 / 旋转行"));
+
+        const QString nameBeforeEdit = selectedShape->Name();
+        if (itemNameEdit) {
+            itemNameEdit->setText(QStringLiteral("面板改名"));
+            QMetaObject::invokeMethod(itemNameEdit, "editingFinished");
+            QApplication::processEvents();
+        }
+        ctx.Check(selectedShape->Name() == QStringLiteral("面板改名"), QStringLiteral("编辑面板改名作用到图元"),
+                  selectedShape->Name());
+        dockScene->UndoStack()->undo();
+        QApplication::processEvents();
+        ctx.Check(selectedShape->Name() == nameBeforeEdit, QStringLiteral("撤销改名恢复图元名称"),
+                  selectedShape->Name());
+
+        QComboBox* itemLayerCombo = dockPanel->findChild<QComboBox*>(QStringLiteral("ItemLayerCombo"));
+        QSpinBox* itemHeightSpin = dockPanel->findChild<QSpinBox*>(QStringLiteral("ItemHeightSpin"));
+        ctx.Check(itemLayerCombo && itemLayerCombo->isVisible() && itemHeightSpin && itemHeightSpin->isVisible(),
+                  QStringLiteral("编辑面板提供目标图层 / 层内高度行"));
+        if (itemLayerCombo && itemLayerCombo->count() > 1) {
+            const int layerBeforeEdit = selectedShape->LayerId();
+            itemLayerCombo->setCurrentIndex(1);
+            QApplication::processEvents();
+            ctx.Check(selectedShape->LayerId() != layerBeforeEdit, QStringLiteral("编辑面板图层行把图元移到目标图层"),
+                      QStringLiteral("%1->%2").arg(layerBeforeEdit).arg(selectedShape->LayerId()));
+            dockScene->UndoStack()->undo();
+            QApplication::processEvents();
+        }
+        if (itemHeightSpin) {
+            const int heightBeforeEdit = selectedShape->ZOrder();
+            itemHeightSpin->setValue(heightBeforeEdit + 1);
+            QApplication::processEvents();
+            ctx.Check(selectedShape->ZOrder() == heightBeforeEdit + 1,
+                      QStringLiteral("编辑面板高度行把图元改到目标层内高度"),
+                      QStringLiteral("%1->%2").arg(heightBeforeEdit).arg(selectedShape->ZOrder()));
+            dockScene->UndoStack()->undo();
+            QApplication::processEvents();
+        }
+
+        const QPointF positionBeforeEdit = selectedShape->pos();
+        if (positionXSpin) {
+            positionXSpin->setValue(210.0);
+            QApplication::processEvents();
+        }
+        ctx.Check(qAbs(selectedShape->pos().x() - 210.0) < 0.01, QStringLiteral("编辑面板位置行作用到图元"),
+                  QString::number(selectedShape->pos().x()));
+        dockScene->UndoStack()->undo();
+        QApplication::processEvents();
+        ctx.Check(qAbs(selectedShape->pos().x() - positionBeforeEdit.x()) < 0.01,
+                  QStringLiteral("撤销位置恢复图元原坐标"));
+
+        const QSizeF sizeBeforeEdit = selectedShape->ContentSize();
+        if (sizeWidthSpin) {
+            sizeWidthSpin->setValue(170.0);
+            QApplication::processEvents();
+        }
+        ctx.Check(qAbs(selectedShape->ContentSize().width() - 170.0) < 0.01, QStringLiteral("编辑面板尺寸行作用到图元"),
+                  QString::number(selectedShape->ContentSize().width()));
+        dockScene->UndoStack()->undo();
+        QApplication::processEvents();
+        ctx.Check(qAbs(selectedShape->ContentSize().width() - sizeBeforeEdit.width()) < 0.01,
+                  QStringLiteral("撤销尺寸恢复图元原大小"));
+
+        const qreal rotationBeforeEdit = selectedShape->RotationAngle();
+        if (rotationSpin) {
+            rotationSpin->setValue(20.0);
+            QApplication::processEvents();
+        }
+        ctx.Check(qAbs(selectedShape->RotationAngle() - 20.0) < 0.01, QStringLiteral("编辑面板旋转行作用到图元"),
+                  QString::number(selectedShape->RotationAngle()));
+        dockScene->UndoStack()->undo();
+        QApplication::processEvents();
+        ctx.Check(qAbs(selectedShape->RotationAngle() - rotationBeforeEdit) < 0.01,
+                  QStringLiteral("撤销旋转恢复图元原角度"));
+
+        // 平行四边形内角与椭圆长短半轴：属性窗里的专属几何字段，面板同样提供。
+        auto* panelParallelogram = CreateShapeItem(ShapeType::PARALLELOGRAM);
+        panelParallelogram->setPos(QPointF(620.0, 150.0));
+        dockScene->AddItemsWithUndo({panelParallelogram}, QStringLiteral("Add panel parallelogram"));
+        dockScene->clearSelection();
+        panelParallelogram->setSelected(true);
+        QApplication::processEvents();
+        QDoubleSpinBox* parallelogramAngleSpin =
+            dockPanel->findChild<QDoubleSpinBox*>(QStringLiteral("ItemParallelogramAngleSpin"));
+        ctx.Check(parallelogramAngleSpin && parallelogramAngleSpin->isVisible(),
+                  QStringLiteral("选中平行四边形时编辑面板显示内角行"));
+        if (parallelogramAngleSpin) {
+            parallelogramAngleSpin->setValue(75);
+            QApplication::processEvents();
+        }
+        ctx.Check(qAbs(panelParallelogram->ParallelogramAngle() - 75.0) < 0.01,
+                  QStringLiteral("编辑面板内角行作用到平行四边形"),
+                  QString::number(panelParallelogram->ParallelogramAngle()));
+        dockScene->UndoStack()->undo();
+        QApplication::processEvents();
+
+        auto* panelEllipse = CreateShapeItem(ShapeType::ELLIPSE);
+        panelEllipse->setPos(QPointF(620.0, 320.0));
+        panelEllipse->SetContentSize(QSizeF(140.0, 100.0));
+        dockScene->AddItemsWithUndo({panelEllipse}, QStringLiteral("Add panel ellipse"));
+        dockScene->clearSelection();
+        panelEllipse->setSelected(true);
+        QApplication::processEvents();
+        QDoubleSpinBox* majorAxisSpin = dockPanel->findChild<QDoubleSpinBox*>(QStringLiteral("ItemMajorAxisSpin"));
+        QDoubleSpinBox* minorAxisSpin = dockPanel->findChild<QDoubleSpinBox*>(QStringLiteral("ItemMinorAxisSpin"));
+        ctx.Check(majorAxisSpin && majorAxisSpin->isVisible() && minorAxisSpin && minorAxisSpin->isVisible(),
+                  QStringLiteral("选中椭圆时编辑面板显示长短半轴行"));
+        if (majorAxisSpin) {
+            majorAxisSpin->setValue(90.0);
+            QApplication::processEvents();
+        }
+        ctx.Check(
+            qAbs(panelEllipse->ContentSize().width() - 180.0) < 0.01 &&
+                qAbs(panelEllipse->ContentSize().height() - 100.0) < 0.01,
+            QStringLiteral("编辑面板长半轴行改写椭圆尺寸"),
+            QStringLiteral("%1×%2").arg(panelEllipse->ContentSize().width()).arg(panelEllipse->ContentSize().height()));
+        dockScene->UndoStack()->undo();
+        QApplication::processEvents();
+        ctx.Check(qAbs(panelEllipse->ContentSize().width() - 140.0) < 0.01,
+                  QStringLiteral("撤销长半轴修改恢复椭圆尺寸"));
+
         QSpinBox* opacitySpin = nullptr;
         for (QSpinBox* spin : dockPanel->findChildren<QSpinBox*>(QStringLiteral("ItemValueSpin"))) {
             if (spin->maximum() == 100) {
@@ -221,16 +350,17 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
 
         // 属性窗同样识别多边形的填充 / 描线字段，确认后只占一条撤销记录。
         ItemPropertiesDialog polygonDialog(dockScene, polygon);
-        QComboBox* dialogFillStyle =
-            polygonDialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesFillStyleValue"));
-        QSpinBox* dialogStrokeWidth =
-            polygonDialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesStrokeWidthValue"));
+        QWidget* dialogFillStyleRow = polygonDialog.findChild<QWidget*>(QStringLiteral("ItemFillStyleRow"));
+        QSpinBox* dialogStrokeWidth = polygonDialog.findChild<QSpinBox*>(QStringLiteral("ItemBorderWidthSpin"));
         const FillStyle dialogFillBefore = polygon->fillStyle();
         const qreal dialogWidthBefore = polygon->StrokeWidth();
-        if (dialogFillStyle) {
-            const int hachureIndex = dialogFillStyle->findData(static_cast<int>(FillStyle::HACHURE));
-            if (hachureIndex >= 0) {
-                dialogFillStyle->setCurrentIndex(hachureIndex);
+        if (dialogFillStyleRow) {
+            for (QToolButton* button :
+                 dialogFillStyleRow->findChildren<QToolButton*>(QStringLiteral("ItemFillStyleButton"))) {
+                if (button->property("fillStyle").toInt() == static_cast<int>(FillStyle::HACHURE)) {
+                    button->click();
+                    break;
+                }
             }
         }
         if (dialogStrokeWidth) {
@@ -460,10 +590,10 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
         QApplication::processEvents();
         dockScene->clearSelection();
         QApplication::processEvents();
-        ctx.Check(!propertiesDock->isVisible(), QStringLiteral("悬浮时清空选中隐藏属性编辑面板"));
+        ctx.Check(!propertiesDock->isVisible(), QStringLiteral("悬浮时清空选中隐藏编辑面板"));
         selectedShape->setSelected(true);
         QApplication::processEvents();
-        ctx.Check(propertiesDock->isVisible(), QStringLiteral("悬浮时有选中显示属性编辑面板"));
+        ctx.Check(propertiesDock->isVisible(), QStringLiteral("悬浮时有选中显示编辑面板"));
 
         // 拖回主窗口停靠后卡片常驻，不再随选中状态整张显隐。
         propertiesDock->setFloating(false);
@@ -472,9 +602,9 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
                   QStringLiteral("拖回主窗口后停靠并保持显示"));
         dockScene->clearSelection();
         QApplication::processEvents();
-        ctx.Check(propertiesDock->isVisible(), QStringLiteral("停靠时清空选中不隐藏属性编辑面板"));
+        ctx.Check(propertiesDock->isVisible(), QStringLiteral("停靠时清空选中不隐藏编辑面板"));
         ctx.Check(layerDock && layerDock->height() < dockWindow.height() - 100,
-                  QStringLiteral("属性编辑面板停靠时图层卡不撑满窗口高度"));
+                  QStringLiteral("编辑面板停靠时图层卡不撑满窗口高度"));
     }
     qunsetenv("STORYBOARD_CONFIG");
 }
