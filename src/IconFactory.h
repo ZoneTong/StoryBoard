@@ -46,6 +46,9 @@ enum class IconId {
     // 正弦波形两行：周期数是波峰下带左右双向箭头（沿轴往复推进），振幅是波峰右侧带上下双向箭头（波高）。
     SINE_CYCLES,
     SINE_AMPLITUDE,
+    // 椭圆半轴两行：椭圆轮廓加从左焦点出发的半轴线；长半轴沿长轴到右顶点，短半轴垂直向上到椭圆。
+    AXIS_MAJOR,
+    AXIS_MINOR,
     // 合并形状五项操作，图形参照 PPT「合并形状」菜单。
     MERGE_UNION,
     MERGE_COMBINE,

@@ -184,6 +184,46 @@ void DrawSineAmplitude(QPainter& painter, IconId)
     painter.drawLine(QPointF(19.0, 21.0), QPointF(21.7, 18.2));
 }
 
+namespace {
+
+// 椭圆半轴两行的公共轮廓：中心 (12,12)、半长轴 9、半短轴 6，
+// 焦距 = √(9²−6²) ≈ 6.7，左焦点落在 (5.3,12)。
+constexpr qreal AXIS_ELLIPSE_C = 6.7082039324993694;
+constexpr QPointF AXIS_LEFT_FOCUS(12.0 - AXIS_ELLIPSE_C, 12.0);
+
+void DrawAxisEllipse(QPainter& painter)
+{
+    painter.drawEllipse(QRectF(3.0, 6.0, 18.0, 12.0));
+}
+
+void DrawAxisFocusDot(QPainter& painter)
+{
+    painter.save();
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(painter.pen().color());
+    painter.drawEllipse(AXIS_LEFT_FOCUS, 1.1, 1.1);
+    painter.restore();
+}
+
+} // namespace
+
+void DrawAxisMajor(QPainter& painter, IconId)
+{
+    // 长半轴：椭圆 + 左焦点实心点 + 从左焦点沿长轴画到右顶点的横线。
+    DrawAxisEllipse(painter);
+    DrawAxisFocusDot(painter);
+    painter.drawLine(AXIS_LEFT_FOCUS, QPointF(21.0, 12.0));
+}
+
+void DrawAxisMinor(QPainter& painter, IconId)
+{
+    // 短半轴：椭圆 + 左焦点实心点 + 从左焦点垂直向上画到椭圆的短线。
+    DrawAxisEllipse(painter);
+    DrawAxisFocusDot(painter);
+    const qreal topY = 12.0 - 6.0 * qSqrt(1.0 - (AXIS_ELLIPSE_C / 9.0) * (AXIS_ELLIPSE_C / 9.0));
+    painter.drawLine(AXIS_LEFT_FOCUS, QPointF(AXIS_LEFT_FOCUS.x(), topY));
+}
+
 constexpr struct IconEntry {
     IconId id;
     void (*draw)(QPainter&, IconId);
@@ -203,6 +243,8 @@ constexpr struct IconEntry {
     {IconId::ARROW_END, DrawArrowEnd},
     {IconId::SINE_CYCLES, DrawSineCycles},
     {IconId::SINE_AMPLITUDE, DrawSineAmplitude},
+    {IconId::AXIS_MAJOR, DrawAxisMajor},
+    {IconId::AXIS_MINOR, DrawAxisMinor},
 };
 
 } // namespace

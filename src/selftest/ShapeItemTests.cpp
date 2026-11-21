@@ -774,6 +774,17 @@ void selftest::RunShapeItemTests(Context& ctx)
         ctx.Check(hasInkIn(sineCycles, QRect(0, 30, 12, 14)) && hasInkIn(sineCycles, QRect(32, 30, 12, 14)) &&
                       hasInkIn(sineAmplitude, QRect(30, 0, 14, 12)) && hasInkIn(sineAmplitude, QRect(30, 32, 14, 12)),
                   QStringLiteral("周期图标为左右双向箭头、振幅图标为上下双向箭头"));
+        // 椭圆长 / 短半轴图标：椭圆轮廓 + 左焦点 + 半轴线；两者互不相同，
+        // 也不再复用通用的图形集合图标。
+        const QImage axisMajor = iconImage(IconId::AXIS_MAJOR);
+        const QImage axisMinor = iconImage(IconId::AXIS_MINOR);
+        const QImage shapesIcon = iconImage(IconId::SHAPES);
+        ctx.Check(hasInk(axisMajor) && hasInk(axisMinor) && axisMajor != axisMinor && axisMajor != shapesIcon &&
+                      axisMinor != shapesIcon,
+                  QStringLiteral("长 / 短半轴使用独立的焦点半轴图标"));
+        // 长半轴图标在焦点右侧的横线上有墨迹，短半轴图标在焦点上方的竖线上有墨迹。
+        ctx.Check(hasInkIn(axisMajor, QRect(24, 18, 18, 10)) && hasInkIn(axisMinor, QRect(4, 10, 12, 12)),
+                  QStringLiteral("长半轴横向出焦点、短半轴纵向出焦点"));
     }
 
     QList<ShapeItem*> shapeItems;

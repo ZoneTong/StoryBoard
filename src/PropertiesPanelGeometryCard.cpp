@@ -16,14 +16,14 @@ PropertiesPanelGeometryCard::PropertiesPanelGeometryCard(QWidget* parent) : QWid
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(2);
 
-    m_majorAxisRow = new NumberAttributeRow(IconId::SHAPES, true, 1, 0.5, 500000.0, QStringLiteral(" px"),
+    m_majorAxisRow = new NumberAttributeRow(IconId::AXIS_MAJOR, true, 1, 0.5, 500000.0, QStringLiteral(" px"),
                                             QStringLiteral("ItemMajorAxisSpin"), this);
     m_majorAxisRow->Spin()->setToolTip(PropertiesPanel::tr("Semi-major axis"));
     m_majorAxisRow->SetIconToolTip(PropertiesPanel::tr("Semi-major axis"));
     m_majorAxisRow->setVisible(false);
     layout->addWidget(m_majorAxisRow);
 
-    m_minorAxisRow = new NumberAttributeRow(IconId::SHAPES, true, 1, 0.5, 500000.0, QStringLiteral(" px"),
+    m_minorAxisRow = new NumberAttributeRow(IconId::AXIS_MINOR, true, 1, 0.5, 500000.0, QStringLiteral(" px"),
                                             QStringLiteral("ItemMinorAxisSpin"), this);
     m_minorAxisRow->Spin()->setToolTip(PropertiesPanel::tr("Semi-minor axis"));
     m_minorAxisRow->SetIconToolTip(PropertiesPanel::tr("Semi-minor axis"));
