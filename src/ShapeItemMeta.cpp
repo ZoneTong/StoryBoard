@@ -1,0 +1,208 @@
+#include "ShapeItem.h"
+#include "ShapeMeta.h"
+#include "ShapePainter.h"
+#include "ShapePathBuilder.h"
+#include "shapes/ShapeFactory.h"
+
+#include <QPainter>
+#include <QPainterPath>
+#include <QPixmap>
+#include <QtMath>
+
+// 填充纹理的中心线。绘制与遮挡计算共用这一份几何，保证看到的和“挡住别人的”一致。
+QPainterPath FillPatternCenterLines(FillStyle style, const QRectF& rect)
+{
+    return ShapePainter::CenterLines(style, rect);
+}
+
+QList<ShapeType> AllShapeTypes()
+{
+    return ShapeMeta::AllTypes();
+}
+
+QString ShapeTypeName(ShapeType type)
+{
+    switch (type) {
+    case ShapeType::RECTANGLE:
+        return ShapeItem::tr("Rectangle");
+    case ShapeType::ELLIPSE:
+        return ShapeItem::tr("Ellipse");
+    case ShapeType::TRIANGLE:
+        return ShapeItem::tr("Triangle");
+    case ShapeType::STAR:
+        return ShapeItem::tr("Star");
+    case ShapeType::ARROW:
+        return ShapeItem::tr("Arrow");
+    case ShapeType::DOUBLE_ARROW:
+        return ShapeItem::tr("Double arrow");
+
+    case ShapeType::CALLOUT:
+        return ShapeItem::tr("Speech bubble");
+    case ShapeType::SECTOR:
+        return ShapeItem::tr("Sector");
+
+    case ShapeType::STAR4:
+        return ShapeItem::tr("Four-point star");
+    case ShapeType::HEXAGRAM:
+        return ShapeItem::tr("Six-point star");
+    case ShapeType::HEART:
+        return ShapeItem::tr("Heart");
+
+    case ShapeType::FLAG_WAVE:
+        return ShapeItem::tr("Wavy flag");
+    case ShapeType::SCROLL:
+        return ShapeItem::tr("Scroll");
+    case ShapeType::CUBE:
+        return ShapeItem::tr("Cube");
+    case ShapeType::CYLINDER:
+        return ShapeItem::tr("Cylinder");
+    case ShapeType::PARALLELOGRAM:
+        return ShapeItem::tr("Parallelogram");
+    }
+    return ShapeItem::tr("Rectangle");
+}
+
+QString ShapeTypeToString(ShapeType type)
+{
+    return ShapeMeta::TypeToString(type);
+}
+
+ShapeType ShapeTypeFromString(const QString& value)
+{
+    return ShapeMeta::TypeFromString(value);
+}
+
+QSizeF DefaultShapeSize(ShapeType type)
+{
+    // 单一来源在子类 DefaultContentSize()：按需构造原型图元取默认尺寸，
+    // 构造函数走 SetContentSize(DefaultContentSize())，不会递归。
+    ShapeItem* prototype = CreateShapeItem(type);
+    const QSizeF size = prototype->DefaultContentSize();
+    delete prototype;
+    return size;
+}
+
+bool ShapeTypeIsFilled(ShapeType type)
+{
+    return ShapeMeta::IsFilled(type);
+}
+
+
+QList<FillStyle> AllFillStyles()
+{
+    return ShapeMeta::AllStyles();
+}
+
+QString FillStyleName(FillStyle style)
+{
+    switch (style) {
+    case FillStyle::NONE:
+        return ShapeItem::tr("No fill");
+    case FillStyle::SOLID:
+        return ShapeItem::tr("Solid");
+    case FillStyle::HACHURE:
+        return ShapeItem::tr("Hatch");
+    case FillStyle::REVERSE_HACHURE:
+        return ShapeItem::tr("Reverse hatch");
+    case FillStyle::CROSS_HATCH:
+        return ShapeItem::tr("Cross hatch");
+    case FillStyle::GRID_HATCH:
+        return ShapeItem::tr("Grid hatch");
+    case FillStyle::HONEYCOMB:
+        return ShapeItem::tr("Hexagon");
+    case FillStyle::HORIZONTAL_HATCH:
+        return ShapeItem::tr("Horizontal lines");
+    case FillStyle::VERTICAL_HATCH:
+        return ShapeItem::tr("Vertical lines");
+    case FillStyle::BRICK:
+        return ShapeItem::tr("Brick");
+    case FillStyle::DOTS:
+        return ShapeItem::tr("Dots");
+    }
+    return ShapeItem::tr("Solid");
+}
+
+QString FillStyleToString(FillStyle style)
+{
+    return ShapeMeta::StyleToString(style);
+}
+
+FillStyle FillStyleFromString(const QString& value)
+{
+    return ShapeMeta::StyleFromString(value);
+}
+
+QIcon MakeShapeIcon(ShapeType type, const QColor& color, int logicalSize)
+{
+    return ShapePainter::MakeIcon(type, color, logicalSize);
+}
+
+QIcon MakeShapePresetIcon(const QString& preset, const QColor& color, int logicalSize)
+{
+    constexpr qreal SCALE = 2.0;
+    QPixmap pixmap(static_cast<int>(logicalSize * SCALE), static_cast<int>(logicalSize * SCALE));
+    pixmap.fill(Qt::transparent);
+    pixmap.setDevicePixelRatio(SCALE);
+
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.scale(logicalSize / 24.0, logicalSize / 24.0);
+    painter.setPen(QPen(color, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter.setBrush(Qt::NoBrush);
+
+    const QRectF box(3.0, 4.0, 18.0, 16.0);
+    if (preset == QStringLiteral("roundedRect")) {
+        // 与插入值一致：圆角取短边的 16%。
+        const qreal radius = qMin(box.height(), box.width()) * 0.16;
+        painter.drawRoundedRect(box, radius, radius);
+    } else if (preset == QStringLiteral("triangle45")) {
+        // 45° 预置：底角 90° 在左下、45° 在右下，顶点落在左上角，画成等腰直角三角形。
+        const QRectF square(5.0, 5.0, 14.0, 14.0);
+        QPainterPath path;
+        path.moveTo(square.left(), square.top());
+        path.lineTo(square.left(), square.bottom());
+        path.lineTo(square.right(), square.bottom());
+        path.closeSubpath();
+        painter.drawPath(path);
+    } else if (preset == QStringLiteral("triangle60")) {
+        // 60° 预置：同一条竖边，底角 60° 让底边更短，整体更瘦高。
+        const qreal height = 15.0;
+        const qreal width = height / qTan(qDegreesToRadians(60.0));
+        const QRectF tall(6.0, 4.5, width, height);
+        QPainterPath path;
+        path.moveTo(tall.left(), tall.top());
+        path.lineTo(tall.left(), tall.bottom());
+        path.lineTo(tall.right(), tall.bottom());
+        path.closeSubpath();
+        painter.drawPath(path);
+    } else if (preset == QStringLiteral("braceLeft") || preset == QStringLiteral("braceRight")) {
+        // 需求 13：花括号已是曲线图元，图标直接用它插入时的采样路径绘制。
+        QRectF braceBox(7.0, 2.0, 10.0, 20.0);
+        const QPainterPath brace = ShapePathBuilder::BracePath(braceBox);
+        if (preset == QStringLiteral("braceRight")) {
+            QTransform mirror;
+            mirror.translate(braceBox.left() + braceBox.right(), 0.0);
+            mirror.scale(-1.0, 1.0);
+            painter.drawPath(mirror.map(brace));
+        } else {
+            painter.drawPath(brace);
+        }
+    } else if (preset == QStringLiteral("lineArrow")) {
+        const qreal y = box.center().y();
+        painter.drawLine(QPointF(box.left(), y), QPointF(box.right(), y));
+        painter.drawLine(QPointF(box.right() - 4.5, y - 4.0), QPointF(box.right(), y));
+        painter.drawLine(QPointF(box.right() - 4.5, y + 4.0), QPointF(box.right(), y));
+    } else if (preset == QStringLiteral("diamond")) {
+        // 菱形预置：平行四边形 90° + 旋转 45°，外接对角线撑满图标框。
+        QPainterPath path;
+        path.moveTo(box.center().x(), box.top());
+        path.lineTo(box.right(), box.center().y());
+        path.lineTo(box.center().x(), box.bottom());
+        path.lineTo(box.left(), box.center().y());
+        path.closeSubpath();
+        painter.drawPath(path);
+    }
+    painter.end();
+
+    return QIcon(pixmap);
+}
