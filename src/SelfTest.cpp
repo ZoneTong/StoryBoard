@@ -88,6 +88,7 @@ int RunSelfTest(const QString& reportPath)
     selftest::RunAlignmentTests(ctx);
     selftest::RunAlignmentMenuTests(ctx);
     selftest::RunGroupBoolOpsTests(ctx);
+    selftest::RunBoolOpsSemanticTests(ctx);
     selftest::RunCustomShapeDockTests(ctx);
     selftest::RunShapesFolderTests(ctx);
     selftest::RunDockPanelMainWindowTests(ctx);

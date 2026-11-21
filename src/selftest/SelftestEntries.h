@@ -33,6 +33,7 @@ void RunLineArtConverterTests(Context& ctx);
 void RunAlignmentTests(Context& ctx);
 void RunAlignmentMenuTests(Context& ctx);
 void RunGroupBoolOpsTests(Context& ctx);
+void RunBoolOpsSemanticTests(Context& ctx);
 void RunCustomShapeDockTests(Context& ctx);
 void RunShapesFolderTests(Context& ctx);
 void RunDockPanelMainWindowTests(Context& ctx);
