@@ -32,4 +32,7 @@ class CanvasItemInteraction {
 
   private:
     CanvasItem* m_item = nullptr;
+    // 拖三角形顶点 C 时固定底边：记录拖拽开始时的 A/B 场景位置。
+    QPointF m_triangleDragBaseA;
+    QPointF m_triangleDragBaseB;
 };

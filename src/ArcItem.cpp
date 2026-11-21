@@ -86,6 +86,13 @@ QRectF ArcItem::FrameRect() const
     return PaddedToMinimum(CanvasItem::FrameRect());
 }
 
+QSizeF ArcItem::EllipseSize() const
+{
+    const QSizeF box = ContentSize();
+    return QSizeF(qMax<qreal>(0.0, m_refFrame.width() * box.width()),
+                  qMax<qreal>(0.0, m_refFrame.height() * box.height()));
+}
+
 ArcItem::ParamState ArcItem::paramState() const
 {
     return ParamState{StartAngle(), SweepAngle(), true};

@@ -10,10 +10,11 @@ class QDoubleSpinBox;
 class QFormLayout;
 class NumberAttributeRow;
 class PairAttributeRow;
+class ArcItem;
 
 // 属性窗的几何区块：位置、内容尺寸与旋转角度三组数值框；椭圆、扇形与弧线
-// 额外提供长半轴、短半轴，两者与内容宽高双向同步，并保持图元中心不动。
-// 这些行直接复用编辑面板的 PropertyRowWidgets（属性窗关闭行首图标）。
+// 额外提供长半轴、短半轴。椭圆 / 扇形与内容宽高双向同步；弧线的椭圆框与笔迹
+// 包围盒不同，只读展示真实的椭圆外接尺寸。
 class ItemPropertiesDialogGeometryBlock : public QWidget {
     Q_OBJECT
 
@@ -48,5 +49,6 @@ class ItemPropertiesDialogGeometryBlock : public QWidget {
     QDoubleSpinBox* m_majorAxisSpin = nullptr;
     QDoubleSpinBox* m_minorAxisSpin = nullptr;
     QDoubleSpinBox* m_rotationSpin = nullptr;
+    ArcItem* m_arcItem = nullptr;
     bool m_syncingAxes = false;
 };

@@ -10,6 +10,7 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QSet>
 #include <QtMath>
+#include <cmath>
 #include <utility>
 
 namespace {
@@ -116,6 +117,12 @@ void CanvasItemInteraction::BeginResize(int handle, const QPointF& scenePos)
     m_item->m_dragStartPos = m_item->pos();
     m_item->m_dragStartSize = m_item->m_size;
     m_item->m_before = {{m_item, m_item->pos(), m_item->m_size}};
+
+    if (auto* triangle = dynamic_cast<ShapeItem*>(m_item); triangle && triangle->shapeType() == ShapeType::TRIANGLE &&
+                                                           !triangle->IsCustomShape() && handle == CanvasItem::APEX) {
+        m_triangleDragBaseA = m_item->mapToScene(triangle->triangleVertex(ShapeItem::TriangleVertex::A));
+        m_triangleDragBaseB = m_item->mapToScene(triangle->triangleVertex(ShapeItem::TriangleVertex::B));
+    }
 }
 
 void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardModifiers modifiers)
@@ -147,33 +154,27 @@ void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardMod
         return;
     }
 
-    // 需求 2：拖顶点 C 只改三角形，AB 两端在场景中固定；底边宽度不变，
-    // 顶点高度由落点反推两个底角，角度是真相、高度再按角度派生。
+    // 需求 2：拖顶点 C 只改三角形，AB 两端在场景中固定；底边长度不变，
+    // 顶点可以越过 A / B 的垂线，因此两个底角都能进入钝角区。
     if (auto* triangle = dynamic_cast<ShapeItem*>(m_item); triangle && triangle->shapeType() == ShapeType::TRIANGLE &&
                                                            !triangle->IsCustomShape() && handle == CanvasItem::APEX) {
-        const qreal startWidth = m_item->m_dragStartSize.width();
-        const qreal startHeight = m_item->m_dragStartSize.height();
-        QPointF local = scenePos - m_item->m_dragStartPos;
-        const qreal rotation = m_item->RotationAngle();
-        if (!qFuzzyIsNull(rotation)) {
-            QTransform transform;
-            transform.rotate(-rotation);
-            local = transform.map(local);
-        }
-        const qreal x = qBound<qreal>(1.0, local.x(), qMax<qreal>(1.0, startWidth - 1.0));
-        const qreal h = qMax<qreal>(1.0, startHeight - local.y());
-        const qreal angleA = qRadiansToDegrees(qAtan2(h, x));
-        const qreal angleB = qRadiansToDegrees(qAtan2(h, qMax<qreal>(1.0, startWidth - x)));
+        const QPointF base = m_triangleDragBaseB - m_triangleDragBaseA;
+        const qreal baseLength = qMax<qreal>(1.0, std::hypot(base.x(), base.y()));
+        const QPointF along = base / baseLength;
+        // 未旋转时 along=(1,0)，normal=(0,-1) 指向画布上方；旋转后一起跟着底边转。
+        const QPointF normal(along.y(), -along.x());
+        const QPointF toPointer = scenePos - m_triangleDragBaseA;
+        const qreal height = qMax<qreal>(0.0, QPointF::dotProduct(toPointer, normal));
+        const qreal fromA = QPointF::dotProduct(toPointer, along);
+        const qreal fromB = QPointF::dotProduct(scenePos - m_triangleDragBaseB, along);
+        const qreal angleA = qRadiansToDegrees(qAtan2(height, fromA));
+        const qreal angleB = qRadiansToDegrees(qAtan2(height, -fromB));
         triangle->SetTriangleAngles(angleA, angleB);
-        const qreal newHeight = triangle->ContentSize().height();
-        // 底边在场景中固定：内容矩形上边随高度变化下移/上移，旋转时按同一角度补偿。
-        QPointF shift(0.0, startHeight - newHeight);
-        if (!qFuzzyIsNull(rotation)) {
-            QTransform transform;
-            transform.rotate(rotation);
-            shift = transform.map(shift);
-        }
-        m_item->setPos(m_item->m_dragStartPos + shift);
+        triangle->SetAngleReadoutVisible(true);
+        // 角度与包围盒重算后，把局部 A 点搬回拖拽开始时的场景位置；底边长度不变，
+        // B 会随同一条底边一起保持固定。
+        const QPointF newA = m_item->mapToScene(triangle->triangleVertex(ShapeItem::TriangleVertex::A));
+        m_item->setPos(m_item->pos() + (m_triangleDragBaseA - newA));
         return;
     }
 

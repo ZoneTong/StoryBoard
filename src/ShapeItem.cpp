@@ -6,10 +6,12 @@
 #include "ShapeMeta.h"
 #include "ShapePainter.h"
 #include "ShapePathBuilder.h"
+#include "TriangleGeometry.h"
 #include "shapes/ShapeFactory.h"
 
 #include <QByteArray>
 #include <QDataStream>
+#include <QFontMetricsF>
 #include <QIODevice>
 #include <QJsonObject>
 #include <QPainter>
@@ -139,27 +141,15 @@ QString ShapeItem::DisplayName() const
 
 QPointF ShapeItem::triangleVertex(TriangleVertex vertex) const
 {
-    const QRectF rect = ContentRect();
+    const TriangleGeometry::Vertices vertices = TriangleGeometry::Make(ContentRect(), m_bottomAngle1, m_bottomAngle2);
     switch (vertex) {
     case TriangleVertex::A:
-        return rect.bottomLeft();
+        return vertices.a;
     case TriangleVertex::B:
-        return rect.bottomRight();
+        return vertices.b;
     case TriangleVertex::C:
-    default: {
-        // 顶点位置与 ShapePathBuilder::trianglePath 同一套算法：高度由底边与两个底角派生。
-        const qreal cot1 = 1.0 / qTan(qDegreesToRadians(m_bottomAngle1));
-        const qreal cot2 = 1.0 / qTan(qDegreesToRadians(m_bottomAngle2));
-        qreal apexX = rect.left() + rect.height() * cot1;
-        const qreal offset = apexX - rect.left();
-        const qreal sum = rect.height() * (cot1 + cot2);
-        if (sum > rect.width() && sum > 0.0) {
-            apexX = rect.left() + qBound<qreal>(0.0, offset * rect.width() / sum, rect.width());
-        } else {
-            apexX = rect.left() + qBound<qreal>(0.0, offset, rect.width());
-        }
-        return QPointF(apexX, rect.top());
-    }
+    default:
+        return vertices.c;
     }
 }
 
@@ -179,20 +169,17 @@ QPointF ShapeItem::CustomHandleCenter(int handle, bool* ok) const
 
 void ShapeItem::SetTriangleAngles(qreal angle1, qreal angle2)
 {
-    const qreal a1 = qBound<qreal>(1.0, angle1, 174.0);
-    const qreal a2 = qBound<qreal>(1.0, angle2, 175.0 - a1);
-    if (qFuzzyCompare(m_bottomAngle1 + 2.0, a1 + 2.0) && qFuzzyCompare(m_bottomAngle2 + 2.0, a2 + 2.0)) {
+    TriangleGeometry::ClampAngles(&angle1, &angle2);
+    if (qFuzzyCompare(m_bottomAngle1 + 2.0, angle1 + 2.0) && qFuzzyCompare(m_bottomAngle2 + 2.0, angle2 + 2.0)) {
         return;
     }
-    m_bottomAngle1 = a1;
-    m_bottomAngle2 = a2;
-    // 角度优先：底边保持当前宽度，高度按两个底角重新派生。
-    const QSizeF size = ContentSize();
-    const qreal cot1 = 1.0 / qTan(qDegreesToRadians(a1));
-    const qreal cot2 = 1.0 / qTan(qDegreesToRadians(a2));
-    const qreal height = size.width() / qMax<qreal>(0.02, cot1 + cot2);
+    // 角度优先：底边长度保持不变，包围盒宽高按新角度重新派生。
+    const QSizeF newSize =
+        TriangleGeometry::SizeForAngles(ContentSize(), m_bottomAngle1, m_bottomAngle2, angle1, angle2);
+    m_bottomAngle1 = angle1;
+    m_bottomAngle2 = angle2;
     m_syncingTriangle = true;
-    SetContentSize(QSizeF(size.width(), height));
+    SetContentSize(newSize);
     m_syncingTriangle = false;
     m_triangleSyncSize = ContentSize();
     update();
@@ -209,7 +196,7 @@ void ShapeItem::SetAngleReadoutVisible(bool visible)
 
 void ShapeItem::SetParallelogramAngle(qreal angle)
 {
-    const qreal clamped = qBound<qreal>(15.0, angle, 165.0);
+    const qreal clamped = qBound<qreal>(5.0, angle, 175.0);
     if (qFuzzyCompare(m_parallelogramAngle + 2.0, clamped + 2.0)) {
         return;
     }
@@ -237,18 +224,16 @@ QSizeF ShapeItem::AdjustedContentSize(const QSizeF& size) const
         return size;
     }
     const QSizeF current = ContentSize();
-    const qreal cot1 = 1.0 / qTan(qDegreesToRadians(m_bottomAngle1));
-    const qreal cot2 = 1.0 / qTan(qDegreesToRadians(m_bottomAngle2));
-    const qreal factor = qMax<qreal>(0.02, cot1 + cot2);
+    const qreal ratio = TriangleGeometry::AspectRatio(m_bottomAngle1, m_bottomAngle2);
     const bool widthChanged = !qFuzzyCompare(size.width() + 0.01, current.width() + 0.01);
     const bool heightChanged = !qFuzzyCompare(size.height() + 0.01, current.height() + 0.01);
     QSizeF target = size;
     if (heightChanged && !widthChanged) {
-        // 拖高等价于等比改底边：高度是本次输入，底边按角度系数放大 / 缩小。
-        target.setWidth(size.height() * factor);
+        // 拖高等价于等比改底边：高度是本次输入，包围盒宽度按角度比例放大 / 缩小。
+        target = TriangleGeometry::SizeForHeight(size.height(), m_bottomAngle1, m_bottomAngle2);
     } else if (widthChanged) {
-        // 拖底边：高度由底边与角度派生。
-        target.setHeight(size.width() / factor);
+        // 拖宽度：高度由包围盒宽度与角度派生。
+        target.setHeight(size.width() / ratio);
     }
     return target;
 }
@@ -286,6 +271,20 @@ void ShapeItem::DrawSelectionOverlay(QPainter* painter)
     const QPointF center(frame.center().x(), frame.bottom());
     painter->drawLine(QPointF(center.x() - gap, center.y()), QPointF(center.x() - gap, center.y() - tick));
     painter->drawLine(QPointF(center.x() + gap, center.y()), QPointF(center.x() + gap, center.y() - tick));
+    if (AngleReadoutVisible()) {
+        const qreal scale = qMax<qreal>(ViewScale(), 0.001);
+        QFont font = painter->font();
+        font.setPointSizeF(qMax<qreal>(8.0, 11.0 / scale));
+        painter->setFont(font);
+        painter->setPen(QColor(37, 99, 235));
+        const QFontMetricsF metrics(font);
+        const QPointF a = triangleVertex(TriangleVertex::A);
+        const QPointF b = triangleVertex(TriangleVertex::B);
+        const QString textA = QStringLiteral("%1°").arg(BottomAngle1(), 0, 'f', 1);
+        const QString textB = QStringLiteral("%1°").arg(BottomAngle2(), 0, 'f', 1);
+        painter->drawText(a + QPointF(6.0 / scale, -6.0 / scale), textA);
+        painter->drawText(b + QPointF(-metrics.horizontalAdvance(textB) - 6.0 / scale, -6.0 / scale), textB);
+    }
     painter->restore();
 }
 
@@ -357,18 +356,35 @@ void ShapeItem::ApplyState(const ShapeItemState& state)
     SetItemOpacity(state.opacity);
     m_cornerRadius = state.cornerRadius;
     ApplyArcAngleState(state.arc);
-    m_bottomAngle1 = state.bottomAngle1;
-    m_bottomAngle2 = state.bottomAngle2;
-    m_parallelogramAngle = qBound<qreal>(15.0, state.parallelogramAngle, 165.0);
-    setPos(state.pos);
-    m_syncingTriangle = true;
-    SetContentSize(state.size.isEmpty() ? DefaultContentSize() : state.size);
-    // 角度优先：应用状态时按角度重算三角形高度（旧尺寸与角度自洽，不会造成视觉变化）。
+    const qreal oldAngle1 = m_bottomAngle1;
+    const qreal oldAngle2 = m_bottomAngle2;
+    qreal angle1 = state.bottomAngle1;
+    qreal angle2 = state.bottomAngle2;
     if (shapeType() == ShapeType::TRIANGLE && !IsCustomShape()) {
-        const qreal factor =
-            1.0 / qTan(qDegreesToRadians(m_bottomAngle1)) + 1.0 / qTan(qDegreesToRadians(m_bottomAngle2));
-        const QSizeF size = ContentSize();
-        SetContentSize(QSizeF(size.width(), size.width() / qMax<qreal>(0.02, factor)));
+        TriangleGeometry::ClampAngles(&angle1, &angle2);
+    }
+    m_bottomAngle1 = angle1;
+    m_bottomAngle2 = angle2;
+    m_parallelogramAngle = qBound<qreal>(5.0, state.parallelogramAngle, 175.0);
+    setPos(state.pos);
+    const QSizeF requested = state.size.isEmpty() ? DefaultContentSize() : state.size;
+    const bool sameSize = qFuzzyCompare(requested.width() + 0.01, ContentSize().width() + 0.01) &&
+                          qFuzzyCompare(requested.height() + 0.01, ContentSize().height() + 0.01);
+    bool preserveTriangleBase = false;
+    if (shapeType() == ShapeType::TRIANGLE && !IsCustomShape()) {
+        const bool angleChanged =
+            !qFuzzyCompare(oldAngle1 + 2.0, angle1 + 2.0) || !qFuzzyCompare(oldAngle2 + 2.0, angle2 + 2.0);
+        preserveTriangleBase = sameSize && angleChanged;
+    }
+    m_syncingTriangle = true;
+    if (preserveTriangleBase) {
+        SetContentSize(TriangleGeometry::SizeForAngles(ContentSize(), oldAngle1, oldAngle2, angle1, angle2));
+    } else {
+        QSizeF target = requested;
+        if (shapeType() == ShapeType::TRIANGLE && !IsCustomShape()) {
+            target.setHeight(target.width() / TriangleGeometry::AspectRatio(angle1, angle2));
+        }
+        SetContentSize(target);
     }
     m_syncingTriangle = false;
     ReadState(state);

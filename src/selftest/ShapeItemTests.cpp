@@ -184,7 +184,7 @@ void selftest::RunShapeItemTests(Context& ctx)
                   QStringLiteral("三角形属性只剩两个底角（底边长度已移除）"),
                   QStringLiteral("size=%1").arg(properties.Size()));
     }
-    // 需求 9：平行四边形默认 60° 内角、内容尺寸 110.85×64，角度钳在 15–165°。
+    // 需求 9：平行四边形默认 60° 内角、内容尺寸 110.85×64，角度钳在 5–175°。
     {
         ParallelogramItem para;
         const QSizeF paraSize = DefaultShapeSize(ShapeType::PARALLELOGRAM);
@@ -202,10 +202,10 @@ void selftest::RunShapeItemTests(Context& ctx)
                   QStringLiteral("平行四边形锐角/钝角都能画出闭合轮廓"),
                   QStringLiteral("acute=%1 blunt=%2").arg(acute.elementCount()).arg(blunt.elementCount()));
         para.SetParallelogramAngle(170.0);
-        ctx.Check(qAbs(para.ParallelogramAngle() - 165.0) < 0.01, QStringLiteral("平行四边形内角钳在 15–165°"),
+        ctx.Check(qAbs(para.ParallelogramAngle() - 170.0) < 0.01, QStringLiteral("平行四边形内角保持 170°"),
                   QStringLiteral("angle=%1").arg(para.ParallelogramAngle()));
         const ShapeItemState paraState = para.State();
-        ctx.Check(qAbs(paraState.parallelogramAngle - 165.0) < 0.01, QStringLiteral("平行四边形内角进入状态快照"),
+        ctx.Check(qAbs(paraState.parallelogramAngle - 170.0) < 0.01, QStringLiteral("平行四边形内角进入状态快照"),
                   QStringLiteral("angle=%1").arg(paraState.parallelogramAngle));
     }
     // 需求 3：内角旋钮以框中心为 0，锐角在右、钝角在左，可连续跨过 90°。
@@ -529,6 +529,85 @@ void selftest::RunShapeItemTests(Context& ctx)
                       .arg(cornerAfter.y())
                       .arg(cornerRatioBefore)
                       .arg(cornerRatioAfter));
+    }
+    {
+        // 钝角三角形：拖顶点越过 A/B 的垂线后，底角可大于 90°，底边两端在场景中不动。
+        TriangleItem triangle;
+        triangle.setPos(QPointF(50.0, 50.0));
+        triangle.SetContentSize(QSizeF(128.0, 111.0));
+        const QPointF aBefore = triangle.mapToScene(triangle.triangleVertex(ShapeItem::TriangleVertex::A));
+        const QPointF bBefore = triangle.mapToScene(triangle.triangleVertex(ShapeItem::TriangleVertex::B));
+        const qreal height =
+            qAbs(aBefore.y() - triangle.mapToScene(triangle.triangleVertex(ShapeItem::TriangleVertex::C)).y());
+        CanvasItemInteraction apexDrag(&triangle);
+        apexDrag.BeginResize(CanvasItem::APEX,
+                             triangle.mapToScene(triangle.triangleVertex(ShapeItem::TriangleVertex::C)));
+        apexDrag.ApplyResize(aBefore + QPointF(-30.0, -height), Qt::NoModifier);
+        const QPointF aAfter = triangle.mapToScene(triangle.triangleVertex(ShapeItem::TriangleVertex::A));
+        const QPointF bAfter = triangle.mapToScene(triangle.triangleVertex(ShapeItem::TriangleVertex::B));
+        ctx.Check(triangle.BottomAngle1() > 90.0 && triangle.BottomAngle1() < 175.0 &&
+                      triangle.BottomAngle1() + triangle.BottomAngle2() <= 175.01 &&
+                      QLineF(aAfter, aBefore).length() < 0.5 && QLineF(bAfter, bBefore).length() < 0.5 &&
+                      triangle.AngleReadoutVisible(),
+                  QStringLiteral("拖三角形顶点可越过垂线得到钝角底角且 A/B 固定、角度浮层显示"),
+                  QStringLiteral("angles=%1/%2 A=%3,%4->%5,%6 B=%7,%8->%9,%10")
+                      .arg(triangle.BottomAngle1())
+                      .arg(triangle.BottomAngle2())
+                      .arg(aBefore.x())
+                      .arg(aBefore.y())
+                      .arg(aAfter.x())
+                      .arg(aAfter.y())
+                      .arg(bBefore.x())
+                      .arg(bBefore.y())
+                      .arg(bAfter.x())
+                      .arg(bAfter.y()));
+        apexDrag.FinishInteraction();
+        ctx.Check(!triangle.AngleReadoutVisible(), QStringLiteral("松开顶点后隐藏三角形底角度数"));
+
+        TriangleItem clampedTriangle;
+        clampedTriangle.SetTriangleAngles(1.0, 179.0);
+        ctx.Check(
+            qAbs(clampedTriangle.BottomAngle1() - 5.0) < 0.01 && qAbs(clampedTriangle.BottomAngle2() - 170.0) < 0.01,
+            QStringLiteral("三角形内角下限为 5°、两底角和不超过 175°"),
+            QStringLiteral("angles=%1/%2").arg(clampedTriangle.BottomAngle1()).arg(clampedTriangle.BottomAngle2()));
+    }
+    {
+        // 平行四边形内角范围放开到 5–175°。
+        auto* parallelogram = CreateShapeItem(ShapeType::PARALLELOGRAM);
+        parallelogram->SetParallelogramAngle(5.0);
+        const qreal low = parallelogram->ParallelogramAngle();
+        parallelogram->SetParallelogramAngle(175.0);
+        const qreal high = parallelogram->ParallelogramAngle();
+        ctx.Check(qAbs(low - 5.0) < 0.01 && qAbs(high - 175.0) < 0.01, QStringLiteral("平行四边形内角可到 5° / 175°"),
+                  QStringLiteral("%1/%2").arg(low).arg(high));
+        delete parallelogram;
+    }
+    {
+        // 弧线属性窗按真实椭圆外接框显示长短半轴，而不是弧线笔迹的包围盒。
+        ArcItem* arc = new ArcItem;
+        arc->SetArcGeometry(QPointF(10.0, 20.0), QSizeF(200.0, 100.0), 15.0, 140.0, QColor(Qt::black), 2.0);
+        const QSizeF ellipseSize = arc->EllipseSize();
+        CanvasScene arcScene;
+        QUndoStack arcUndo;
+        arcScene.SetUndoStack(&arcUndo);
+        arcScene.AddItemsWithUndo({arc}, QStringLiteral("Add arc"));
+        ItemPropertiesDialog dialog(&arcScene, arc);
+        dialog.show();
+        QApplication::processEvents();
+        QDoubleSpinBox* majorAxisValue =
+            dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesMajorAxisValue"));
+        QDoubleSpinBox* minorAxisValue =
+            dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesMinorAxisValue"));
+        ctx.Check(qAbs(ellipseSize.width() - 200.0) < 0.01 && qAbs(ellipseSize.height() - 100.0) < 0.01 &&
+                      majorAxisValue && minorAxisValue && majorAxisValue->isReadOnly() &&
+                      minorAxisValue->isReadOnly() && qAbs(majorAxisValue->value() - 100.0) < 0.01 &&
+                      qAbs(minorAxisValue->value() - 50.0) < 0.01,
+                  QStringLiteral("弧线属性窗显示椭圆长半轴 / 短半轴且保持只读"),
+                  QStringLiteral("ellipse=%1x%2 major=%3 minor=%4")
+                      .arg(ellipseSize.width())
+                      .arg(ellipseSize.height())
+                      .arg(majorAxisValue ? majorAxisValue->value() : -999.0)
+                      .arg(minorAxisValue ? minorAxisValue->value() : -999.0));
     }
     {
         // 底角 A / B 的图标：开口方向不同（A 朝右、B 朝左），且都不是空白图标。

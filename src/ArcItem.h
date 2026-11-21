@@ -17,6 +17,8 @@ class ArcItem : public LineItemAbstract, public ArcAngleAttributes, public Ellip
     QString Kind() const override { return QStringLiteral("arc"); }
     QString DisplayName() const override;
     QRectF FrameRect() const override;
+    // 弧线所在椭圆的真实外接尺寸（不是弧线笔迹的包围盒），供属性窗显示长短半轴。
+    QSizeF EllipseSize() const;
 
     void SetAngles(qreal startDeg, qreal sweepDeg);
     void SetArcAngles(qreal startDeg, qreal sweepDeg) override;

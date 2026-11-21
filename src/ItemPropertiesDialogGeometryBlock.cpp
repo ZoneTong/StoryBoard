@@ -1,9 +1,11 @@
 #include "ItemPropertiesDialogGeometryBlock.h"
 
+#include "ArcItem.h"
 #include "ItemPropertiesDialog.h"
 #include "PropertyRowWidgets.h"
 #include "ShapeItem.h"
 
+#include <QAbstractSpinBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 
@@ -40,8 +42,10 @@ ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(CanvasItem*
     m_rotationRow->Refresh(item->RotationAngle());
 
     auto* shape = dynamic_cast<ShapeItem*>(item);
-    if (shape && !shape->IsCustomShape() &&
-        (shape->shapeType() == ShapeType::ELLIPSE || shape->shapeType() == ShapeType::SECTOR)) {
+    m_arcItem = dynamic_cast<ArcItem*>(item);
+    const bool ellipseShape = shape && !shape->IsCustomShape() &&
+                              (shape->shapeType() == ShapeType::ELLIPSE || shape->shapeType() == ShapeType::SECTOR);
+    if (ellipseShape || m_arcItem) {
         m_majorAxisRow = new NumberAttributeRow(IconId::SHAPES, false, 1, 0.5, 500000.0, QStringLiteral(" px"),
                                                 QStringLiteral("ItemPropertiesMajorAxisValue"), this);
         m_majorAxisSpin = m_majorAxisRow->Spin();
@@ -52,11 +56,21 @@ ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(CanvasItem*
         m_minorAxisSpin = m_minorAxisRow->Spin();
         m_minorAxisSpin->setMinimumWidth(88);
 
+        if (m_arcItem) {
+            // 弧线的椭圆框与笔迹包围盒不是同一个矩形：属性窗只读展示真实椭圆的长短半轴，
+            // 避免把弧线包围盒误当成整椭圆尺寸。
+            for (QDoubleSpinBox* spin : {m_majorAxisSpin, m_minorAxisSpin}) {
+                spin->setReadOnly(true);
+                spin->setButtonSymbols(QAbstractSpinBox::NoButtons);
+            }
+        }
         SyncAxesFromSize();
-        connect(m_widthSpin, &QDoubleSpinBox::valueChanged, this, [this]() { SyncAxesFromSize(); });
-        connect(m_heightSizeSpin, &QDoubleSpinBox::valueChanged, this, [this]() { SyncAxesFromSize(); });
-        connect(m_majorAxisSpin, &QDoubleSpinBox::valueChanged, this, [this]() { ApplyAxesToSize(true); });
-        connect(m_minorAxisSpin, &QDoubleSpinBox::valueChanged, this, [this]() { ApplyAxesToSize(false); });
+        if (!m_arcItem) {
+            connect(m_widthSpin, &QDoubleSpinBox::valueChanged, this, [this]() { SyncAxesFromSize(); });
+            connect(m_heightSizeSpin, &QDoubleSpinBox::valueChanged, this, [this]() { SyncAxesFromSize(); });
+            connect(m_majorAxisSpin, &QDoubleSpinBox::valueChanged, this, [this]() { ApplyAxesToSize(true); });
+            connect(m_minorAxisSpin, &QDoubleSpinBox::valueChanged, this, [this]() { ApplyAxesToSize(false); });
+        }
     }
 }
 
@@ -94,11 +108,15 @@ void ItemPropertiesDialogGeometryBlock::SyncAxesFromSize()
     if (m_syncingAxes || !m_widthSpin || !m_heightSizeSpin || !m_majorAxisSpin || !m_minorAxisSpin) {
         return;
     }
-    const qreal width = m_widthSpin->value();
-    const qreal height = m_heightSizeSpin->value();
+    QSizeF size;
+    if (m_arcItem) {
+        size = m_arcItem->EllipseSize();
+    } else {
+        size = QSizeF(m_widthSpin->value(), m_heightSizeSpin->value());
+    }
     m_syncingAxes = true;
-    m_majorAxisSpin->setValue(qMax(width, height) / 2.0);
-    m_minorAxisSpin->setValue(qMin(width, height) / 2.0);
+    m_majorAxisSpin->setValue(qMax(size.width(), size.height()) / 2.0);
+    m_minorAxisSpin->setValue(qMin(size.width(), size.height()) / 2.0);
     m_syncingAxes = false;
 }
 

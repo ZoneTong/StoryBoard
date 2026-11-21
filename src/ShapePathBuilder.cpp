@@ -1,6 +1,7 @@
 #include "ShapePathBuilder.h"
 
 #include "EllipseShape.h"
+#include "TriangleGeometry.h"
 
 #include <QTransform>
 #include <QtMath>
@@ -12,35 +13,6 @@ QRectF NormalizedRect(const QRectF& rect)
     return rect.normalized();
 }
 
-// 底角换算成"高 / 底边"系数：cot(α)。角度先做安全钳制，两角和不超过 175°。
-qreal CotDegrees(qreal degrees)
-{
-    const qreal clamped = qBound<qreal>(1.0, degrees, 174.0);
-    return 1.0 / qTan(qDegreesToRadians(clamped));
-}
-
-QPainterPath TrianglePathWithAngles(const QRectF& rect, qreal angle1, qreal angle2)
-{
-    const QRectF r = rect.normalized();
-    QPainterPath path;
-    if (r.width() <= 0.0 || r.height() <= 0.0) {
-        return path;
-    }
-    const qreal a1 = qBound<qreal>(1.0, angle1, 174.0);
-    const qreal a2 = qBound<qreal>(1.0, angle2, 175.0 - a1);
-    // 两侧水平投影之和应等于宽度；尺寸与角度暂时不自洽时按比例压缩，顶点不会跑出矩形。
-    const qreal fromLeft = r.height() * CotDegrees(a1);
-    const qreal fromRight = r.height() * CotDegrees(a2);
-    const qreal sum = fromLeft + fromRight;
-    const qreal apexOffset = sum > r.width() && sum > 0.0 ? qBound<qreal>(0.0, fromLeft * r.width() / sum, r.width())
-                                                          : qBound<qreal>(0.0, fromLeft, r.width());
-    path.moveTo(r.left() + apexOffset, r.top());
-    path.lineTo(r.right(), r.bottom());
-    path.lineTo(r.left(), r.bottom());
-    path.closeSubpath();
-    return path;
-}
-
 QPainterPath ParallelogramPathWithAngle(const QRectF& rect, qreal bottomLeftAngle)
 {
     const QRectF r = rect.normalized();
@@ -48,7 +20,7 @@ QPainterPath ParallelogramPathWithAngle(const QRectF& rect, qreal bottomLeftAngl
     if (r.width() <= 0.0 || r.height() <= 0.0) {
         return path;
     }
-    const qreal angle = qBound<qreal>(15.0, bottomLeftAngle, 165.0);
+    const qreal angle = qBound<qreal>(5.0, bottomLeftAngle, 175.0);
     const qreal cotValue = 1.0 / qTan(qDegreesToRadians(angle));
     // 上边相对底边的水平偏移；留 1px 底边，避免钝角时把底边压没。
     qreal shift = qAbs(r.height() * cotValue);
@@ -486,7 +458,7 @@ QPainterPath ShapePathBuilder::PathFor(ShapeType type, const QRectF& rect, qreal
 }
 QPainterPath ShapePathBuilder::TrianglePath(const QRectF& rect, qreal bottomAngle1, qreal bottomAngle2)
 {
-    return TrianglePathWithAngles(rect, bottomAngle1, bottomAngle2);
+    return TriangleGeometry::Path(rect, bottomAngle1, bottomAngle2);
 }
 
 QPainterPath ShapePathBuilder::ParallelogramPath(const QRectF& rect, qreal bottomLeftAngle)

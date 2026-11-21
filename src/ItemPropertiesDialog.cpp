@@ -11,6 +11,7 @@
 #include "LineItemAbstract.h"
 #include "ShapeItem.h"
 #include "TextItem.h"
+#include "TriangleGeometry.h"
 
 #include <QApplication>
 #include <QComboBox>
@@ -533,6 +534,17 @@ void ItemPropertiesDialog::ApplyChanges()
             const int value = style->ParallelogramAngleSpin()->value();
             after.shapeState.parallelogramAngle =
                 value == qRound(style->InitialParallelogramAngle()) ? style->InitialParallelogramAngle() : value;
+        }
+        // 只改底角、不动尺寸时保持底边长度：按新角度重算包围盒，而不是沿用旧盒宽。
+        const bool triangleAnglesChanged =
+            !qFuzzyCompare(before.shapeState.bottomAngle1 + 2.0, after.shapeState.bottomAngle1 + 2.0) ||
+            !qFuzzyCompare(before.shapeState.bottomAngle2 + 2.0, after.shapeState.bottomAngle2 + 2.0);
+        if (shape->shapeType() == ShapeType::TRIANGLE && !shape->IsCustomShape() && triangleAnglesChanged &&
+            after.size == before.size) {
+            after.size = TriangleGeometry::SizeForAngles(before.size, before.shapeState.bottomAngle1,
+                                                         before.shapeState.bottomAngle2, after.shapeState.bottomAngle1,
+                                                         after.shapeState.bottomAngle2);
+            after.shapeState.size = after.size;
         }
         if (m_hasFill && style) {
             after.shapeState.fill = style->FillState();

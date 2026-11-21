@@ -88,7 +88,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
 
             m_bottomAngle1Spin = new QSpinBox(this);
             m_bottomAngle1Spin->setObjectName(QStringLiteral("ItemPropertiesBottomAngle1Value"));
-            m_bottomAngle1Spin->setRange(1, 174);
+            m_bottomAngle1Spin->setRange(5, 170);
             m_bottomAngle1Spin->setSingleStep(1);
             m_bottomAngle1Spin->setSuffix(QStringLiteral("°"));
             m_bottomAngle1Spin->setToolTip(ItemPropertiesDialog::tr("Triangle base angle A"));
@@ -97,7 +97,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
 
             m_bottomAngle2Spin = new QSpinBox(this);
             m_bottomAngle2Spin->setObjectName(QStringLiteral("ItemPropertiesBottomAngle2Value"));
-            m_bottomAngle2Spin->setRange(1, 174);
+            m_bottomAngle2Spin->setRange(5, 170);
             m_bottomAngle2Spin->setSingleStep(1);
             m_bottomAngle2Spin->setSuffix(QStringLiteral("°"));
             m_bottomAngle2Spin->setToolTip(ItemPropertiesDialog::tr("Triangle base angle B"));
@@ -111,7 +111,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
 
             m_parallelogramAngleSpin = new QSpinBox(this);
             m_parallelogramAngleSpin->setObjectName(QStringLiteral("ItemPropertiesParallelogramAngleValue"));
-            m_parallelogramAngleSpin->setRange(15, 165);
+            m_parallelogramAngleSpin->setRange(5, 175);
             m_parallelogramAngleSpin->setSingleStep(1);
             m_parallelogramAngleSpin->setSuffix(QStringLiteral("°"));
             m_parallelogramAngleSpin->setToolTip(ItemPropertiesDialog::tr("Parallelogram bottom-left angle"));
