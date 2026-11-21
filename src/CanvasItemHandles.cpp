@@ -22,6 +22,16 @@ bool CanvasItemHandles::UsesApexHandle() const
     return shape && shape->ApexAngleHandle() && !shape->IsCustomShape();
 }
 
+// 单选平行四边形时，顶边中点下方多出一枚内角旋钮；菱形不提供（四边恒等）。
+bool CanvasItemHandles::UsesSkewHandle() const
+{
+    if (!m_item || !m_item->isSelected() || !m_item->IsEditable() || !m_item->HasSingleSelection()) {
+        return false;
+    }
+    const auto* shape = dynamic_cast<const ShapeItem*>(m_item);
+    return shape && shape->SkewHandleEnabled() && !shape->IsCustomShape();
+}
+
 qreal CanvasItemHandles::Size() const
 {
     return qBound<qreal>(6.0, 9.0 / m_item->ViewScale(), 40.0);
@@ -64,6 +74,14 @@ QPointF CanvasItemHandles::Center(int handle) const
         }
         break;
     }
+    case CanvasItem::SKEW: {
+        bool ok = false;
+        const QPointF custom = m_item->CustomHandleCenter(CanvasItem::SKEW, &ok);
+        if (ok) {
+            return custom;
+        }
+        break;
+    }
     case CanvasItem::NO_HANDLE:
         break;
     }
@@ -80,6 +98,13 @@ QRectF CanvasItemHandles::Rect(int handle) const
 int CanvasItemHandles::HitAt(const QPointF& pos) const
 {
     const qreal hitPadding = qMin<qreal>(10.0 / m_item->ViewScale(), 14.0);
+    // 倾斜旋钮在顶边中点下方，形很矮时可能与 Top 手柄的命中区重叠，先判断它。
+    if (UsesSkewHandle()) {
+        const QRectF handleRect = Rect(CanvasItem::SKEW).adjusted(-hitPadding, -hitPadding, hitPadding, hitPadding);
+        if (handleRect.contains(pos)) {
+            return CanvasItem::SKEW;
+        }
+    }
     for (int handle = CanvasItem::TOP_LEFT; handle <= CanvasItem::ROTATION; ++handle) {
         if (handle == CanvasItem::TOP && UsesApexHandle()) {
             continue;
@@ -121,6 +146,10 @@ QPainterPath CanvasItemHandles::SelectionShape() const
         path.addRect(Rect(CanvasItem::APEX)
                          .adjusted(-HANDLE_HIT_PADDING, -HANDLE_HIT_PADDING, HANDLE_HIT_PADDING, HANDLE_HIT_PADDING));
     }
+    if (UsesSkewHandle()) {
+        path.addRect(Rect(CanvasItem::SKEW)
+                         .adjusted(-HANDLE_HIT_PADDING, -HANDLE_HIT_PADDING, HANDLE_HIT_PADDING, HANDLE_HIT_PADDING));
+    }
     return path;
 }
 
@@ -153,6 +182,29 @@ void CanvasItemHandles::DrawOverlay(QPainter* painter) const
     if (UsesApexHandle()) {
         painter->drawRect(Rect(CanvasItem::APEX));
     }
+    if (UsesSkewHandle()) {
+        // 内角旋钮：白底小方块里画一个水平双箭头，暗示“左右拖，内角连续变”。
+        const QRectF knob = Rect(CanvasItem::SKEW);
+        painter->setBrush(Qt::white);
+        painter->drawRect(knob);
+        painter->setBrush(QColor(79, 124, 255));
+        const QPointF center = knob.center();
+        const qreal halfLength = knob.width() * 0.26;
+        const qreal head = knob.width() * 0.14;
+        const QPointF left = center - QPointF(halfLength, 0.0);
+        const QPointF right = center + QPointF(halfLength, 0.0);
+        painter->drawLine(left, right);
+        QPainterPath heads;
+        heads.moveTo(left, center.y());
+        heads.lineTo(left + QPointF(head, -head * 0.8));
+        heads.lineTo(left + QPointF(head, head * 0.8));
+        heads.closeSubpath();
+        heads.moveTo(right, center.y());
+        heads.lineTo(right - QPointF(head, -head * 0.8));
+        heads.lineTo(right - QPointF(head, head * 0.8));
+        heads.closeSubpath();
+        painter->drawPath(heads);
+    }
 
     // Rotation handle: a circular knob above the frame, connected by a thin line.
     const QPointF topCenter(Center(CanvasItem::TOP).x(), m_item->FrameRect().top());
@@ -179,6 +231,8 @@ QCursor CanvasItemHandles::Cursor(int handle) const
         return QCursor(Qt::SizeHorCursor);
     case CanvasItem::APEX:
         return QCursor(Qt::SizeAllCursor);
+    case CanvasItem::SKEW:
+        return QCursor(Qt::SizeHorCursor);
     case CanvasItem::ROTATION:
         return QCursor(Qt::PointingHandCursor);
     case CanvasItem::NO_HANDLE:

@@ -104,8 +104,8 @@ void selftest::RunShapeItemTests(Context& ctx)
     shapeScene.SetShowGrid(false);
 
     const QList<ShapeType> shapeTypes = AllShapeTypes();
-    // 菱形不再是独立类型，只剩平行四边形预置。
-    ctx.Check(shapeTypes.size() == 16, QStringLiteral("提供 16 种有面积图形（直线/弧线/正弦已并入曲线族）"),
+    // 菱形已是独立类型（DiamondItem，派生自平行四边形）。
+    ctx.Check(shapeTypes.size() == 17, QStringLiteral("提供 17 种有面积图形（直线/弧线/正弦已并入曲线族）"),
               QStringLiteral("count=%1").arg(shapeTypes.size()));
     // 需求 9：平行四边形默认 60° 内角、内容尺寸 110.85×64，角度钳在 15–165°。
     {
@@ -130,6 +130,62 @@ void selftest::RunShapeItemTests(Context& ctx)
         const ShapeItemState paraState = para.State();
         ctx.Check(qAbs(paraState.parallelogramAngle - 165.0) < 0.01, QStringLiteral("平行四边形内角进入状态快照"),
                   QStringLiteral("angle=%1").arg(paraState.parallelogramAngle));
+    }
+    // 需求 3：内角旋钮以框中心为 0，锐角在右、钝角在左，可连续跨过 90°。
+    {
+        ParallelogramItem para;
+        const QRectF frame(0.0, 0.0, 110.85, 64.0);
+        bool ok = false;
+        para.SetParallelogramAngle(60.0);
+        const QPointF acuteKnob = para.CustomHandleCenter(CanvasItem::SKEW, &ok);
+        para.SetParallelogramAngle(90.0);
+        const QPointF rightKnob = para.CustomHandleCenter(CanvasItem::SKEW, &ok);
+        para.SetParallelogramAngle(120.0);
+        const QPointF obtuseKnob = para.CustomHandleCenter(CanvasItem::SKEW, &ok);
+        ctx.Check(
+            ok && acuteKnob.x() > rightKnob.x() && rightKnob.x() > obtuseKnob.x() &&
+                qAbs(rightKnob.x() - frame.center().x()) < 0.01,
+            QStringLiteral("平行四边形内角旋钮连续跨越锐角与钝角"),
+            QStringLiteral("acute=%1 right=%2 obtuse=%3").arg(acuteKnob.x()).arg(rightKnob.x()).arg(obtuseKnob.x()));
+        // 角度是真相：89°/91° 都落在同一内容框宽度内，说明 90° 前后没有断档或跳变。
+        para.SetParallelogramAngle(89.0);
+        const QPainterPath steepPath = para.CurrentPath(frame);
+        para.SetParallelogramAngle(91.0);
+        const QPainterPath bluntPath = para.CurrentPath(frame);
+        ctx.Check(
+            qAbs(steepPath.boundingRect().width() - frame.width()) < 1.0 &&
+                qAbs(bluntPath.boundingRect().width() - frame.width()) < 1.0,
+            QStringLiteral("90° 前后的平行四边形轮廓都不越出内容框"),
+            QStringLiteral("89=%1 91=%2").arg(steepPath.boundingRect().width()).arg(bluntPath.boundingRect().width()));
+    }
+    // 需求 4：菱形独立成类，派生自平行四边形，四边恒等且创建时一条对角线水平。
+    {
+        DiamondItem diamond;
+        const QSizeF diamondSize = DefaultShapeSize(ShapeType::DIAMOND);
+        const QPainterPath path = diamond.CurrentPath(QRectF(0.0, 0.0, diamondSize.width(), diamondSize.height()));
+        const QPointF top(path.elementAt(0).x, path.elementAt(0).y);
+        const QPointF right(path.elementAt(1).x, path.elementAt(1).y);
+        const QPointF bottom(path.elementAt(2).x, path.elementAt(2).y);
+        const QPointF left(path.elementAt(3).x, path.elementAt(3).y);
+        const qreal sideTop = QLineF(top, right).length();
+        const qreal sideRight = QLineF(right, bottom).length();
+        const qreal sideBottom = QLineF(bottom, left).length();
+        const qreal sideLeft = QLineF(left, top).length();
+        ctx.Check(dynamic_cast<ParallelogramItem*>(&diamond) != nullptr && diamond.shapeType() == ShapeType::DIAMOND,
+                  QStringLiteral("菱形派生自平行四边形且自带类型"),
+                  QStringLiteral("type=%1").arg(static_cast<int>(diamond.shapeType())));
+        ctx.Check(qAbs(sideTop - sideRight) < 0.01 && qAbs(sideRight - sideBottom) < 0.01 &&
+                      qAbs(sideBottom - sideLeft) < 0.01,
+                  QStringLiteral("菱形四条边恒等"),
+                  QStringLiteral("%1/%2/%3/%4").arg(sideTop).arg(sideRight).arg(sideBottom).arg(sideLeft));
+        // 左右顶点等高 ⇒ 一条对角线水平；上下顶点等宽 ⇒ 另一条竖直。
+        ctx.Check(qAbs(right.y() - left.y()) < 0.01 && qAbs(top.x() - bottom.x()) < 0.01 &&
+                      qAbs(diamondSize.width() - 128.0) < 0.01 && qAbs(diamondSize.height() - 72.0) < 0.01,
+                  QStringLiteral("菱形插入时水平对角线为宽、默认 128×72"),
+                  QStringLiteral("w=%1 h=%2").arg(diamondSize.width()).arg(diamondSize.height()));
+        ctx.Check(!diamond.Properties().Contains(ItemProperty::PARALLELOGRAM_ANGLE) &&
+                      qAbs(diamond.ContentSize().width() - diamondSize.width()) < 0.01,
+                  QStringLiteral("菱形不开放内角属性"), QStringLiteral("angle=%1").arg(diamond.ParallelogramAngle()));
     }
     // 需求 4：弧线 / 正弦波这些曲线族子型同样能设两端箭头，箭头并入命中轮廓。
     {

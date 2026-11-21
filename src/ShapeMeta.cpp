@@ -3,11 +3,12 @@
 QList<ShapeType> ShapeMeta::AllTypes()
 {
     // 需求 7：菜单与工具栏「常见图形」共用这一份常用顺序表（唯一顺序源）。
-    // 需求 9：平行四边形紧跟菱形，方便和立方体三个面归在一处认图。
+    // 需求 9：菱形紧跟平行四边形，方便和立方体三个面归在一处认图。
     return {ShapeType::RECTANGLE, ShapeType::ELLIPSE,  ShapeType::ARROW,         ShapeType::DOUBLE_ARROW,
-            ShapeType::TRIANGLE,  ShapeType::CALLOUT,  ShapeType::PARALLELOGRAM, ShapeType::SECTOR,
-            ShapeType::CUBE,      ShapeType::CYLINDER, ShapeType::STAR4,         ShapeType::STAR,
-            ShapeType::HEXAGRAM,  ShapeType::HEART,    ShapeType::FLAG_WAVE,     ShapeType::SCROLL};
+            ShapeType::TRIANGLE,  ShapeType::CALLOUT,  ShapeType::PARALLELOGRAM, ShapeType::DIAMOND,
+            ShapeType::SECTOR,    ShapeType::CUBE,     ShapeType::CYLINDER,      ShapeType::STAR4,
+            ShapeType::STAR,      ShapeType::HEXAGRAM, ShapeType::HEART,         ShapeType::FLAG_WAVE,
+            ShapeType::SCROLL};
 }
 
 QString ShapeMeta::TypeToString(ShapeType type)
@@ -49,6 +50,8 @@ QString ShapeMeta::TypeToString(ShapeType type)
         return QStringLiteral("cylinder");
     case ShapeType::PARALLELOGRAM:
         return QStringLiteral("parallelogram");
+    case ShapeType::DIAMOND:
+        return QStringLiteral("diamond");
     }
     return QStringLiteral("rectangle");
 }
@@ -69,8 +72,9 @@ ShapeType ShapeMeta::TypeFromString(const QString& value)
         return ShapeType::TRIANGLE;
     }
     if (normalized == QStringLiteral("diamond") || normalized == QStringLiteral("rhombus")) {
-        // 菱形不再是类型：旧文件 / 别名统一落成平行四边形。
-        return ShapeType::PARALLELOGRAM;
+        // 菱形已是独立类型（DiamondItem）；旧文件里写成 parallelogram + 45° 旋转的预置
+        // 仍是平行四边形，按自身字段读回，不受这里影响。
+        return ShapeType::DIAMOND;
     }
     if (normalized == QStringLiteral("star")) {
         return ShapeType::STAR;
@@ -144,6 +148,7 @@ bool ShapeMeta::IsFilled(ShapeType type)
     case ShapeType::CUBE:
     case ShapeType::CYLINDER:
     case ShapeType::PARALLELOGRAM:
+    case ShapeType::DIAMOND:
         return true;
     }
     return false;

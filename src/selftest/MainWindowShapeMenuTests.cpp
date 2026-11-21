@@ -130,7 +130,7 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
         QMenu* customShapeMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("CustomShapeMenu"));
         QAction* customTrigger = shapeWindow.findChild<QAction*>(QStringLiteral("CustomShapePanelTrigger"));
         // 自定义图形不再是二级子菜单：入口直接平铺在「常见图形」末尾。
-        // 内建图形动作 = 16 种有面积图形 + 曲线族三入口（直线 / 弧线 / 正弦）。
+        // 内建图形动作 = 17 种有面积图形 + 曲线族三入口（直线 / 弧线 / 正弦）。
         ctx.Check(shapeMenu && builtInShapeActions == shapeTypes.size() + 3 && customShapeMenu && customTrigger &&
                       shapeMenu->actions().contains(customTrigger) &&
                       !shapeMenu->actions().contains(customShapeMenu->menuAction()),
@@ -140,8 +140,9 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
                       .arg(builtInShapeActions)
                       .arg(customTrigger ? 1 : 0));
         // 工具栏在原「图形」入口处把常见图形与预置项直接平铺成一排，复用菜单里的同一批动作。
-        // 预置项：圆角矩形、直线箭头、45°/60° 三角、菱形、左右花括号（需求 13 花括号改曲线后仍是 2 枚按钮）。
-        const int toolbarExpected = builtInShapeActions + 7;
+        // 预置项：圆角矩形、直线箭头、45°/60° 三角、左右花括号（需求 13 花括号改曲线后仍是 2 枚按钮）。
+        // 菱形已是独立图形，预置项由 7 枚减为 6 枚。
+        const int toolbarExpected = builtInShapeActions + 6;
         QToolButton* shapeButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("ShapeButton"));
         QList<QToolButton*> toolbarShapeButtons =
             shapeWindow.findChildren<QToolButton*>(QStringLiteral("ToolBarShapeButton"));
@@ -166,7 +167,7 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
             QStringLiteral("ShapeAction_double_arrow"), QStringLiteral("ShapeAction_triangle"),
             QStringLiteral("ShapePreset_triangle45"),   QStringLiteral("ShapePreset_triangle60"),
             QStringLiteral("ShapeAction_callout"),      QStringLiteral("ShapeAction_parallelogram"),
-            QStringLiteral("ShapePreset_diamond"),      QStringLiteral("ShapeAction_sector"),
+            QStringLiteral("ShapeAction_diamond"),      QStringLiteral("ShapeAction_sector"),
             QStringLiteral("ShapeAction_arc"),          QStringLiteral("ShapeAction_cube"),
             QStringLiteral("ShapeAction_cylinder"),     QStringLiteral("ShapeAction_star4"),
             QStringLiteral("ShapeAction_star"),         QStringLiteral("ShapeAction_hexagram"),

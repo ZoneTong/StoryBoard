@@ -478,6 +478,8 @@ QPainterPath ShapePathBuilder::PathFor(ShapeType type, const QRectF& rect, qreal
     case ShapeType::PARALLELOGRAM:
         // 默认按 60° 生成；具体图元用带角度参数的重载。
         return ParallelogramPath(rect, 60.0);
+    case ShapeType::DIAMOND:
+        return DiamondPath(rect);
     }
     // 多边形（合并产物）没有内置轮廓。
     return QPainterPath();
@@ -490,4 +492,20 @@ QPainterPath ShapePathBuilder::TrianglePath(const QRectF& rect, qreal bottomAngl
 QPainterPath ShapePathBuilder::ParallelogramPath(const QRectF& rect, qreal bottomLeftAngle)
 {
     return ParallelogramPathWithAngle(rect, bottomLeftAngle);
+}
+
+QPainterPath ShapePathBuilder::DiamondPath(const QRectF& rect)
+{
+    const QRectF r = NormalizedRect(rect);
+    QPainterPath path;
+    if (r.width() <= 0.0 || r.height() <= 0.0) {
+        return path;
+    }
+    // 四个顶点取矩形四边中点：两条对角线互相垂直平分，四条边自然恒等。
+    path.moveTo(r.center().x(), r.top());
+    path.lineTo(r.right(), r.center().y());
+    path.lineTo(r.center().x(), r.bottom());
+    path.lineTo(r.left(), r.center().y());
+    path.closeSubpath();
+    return path;
 }

@@ -98,24 +98,21 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
     };
     ctx.Check(typeAt(0) == QStringLiteral("shape") && shapeTypeAt(0) == QStringLiteral("rectangle"),
               QStringLiteral("矩形导入为画板矩形"), QStringLiteral("type=%1").arg(typeAt(0)));
-    ctx.Check(shapeTypeAt(1) == QStringLiteral("ellipse") && shapeTypeAt(2) == QStringLiteral("parallelogram"),
-              QStringLiteral("椭圆原名映射，菱形落成平行四边形"),
+    ctx.Check(shapeTypeAt(1) == QStringLiteral("ellipse") && shapeTypeAt(2) == QStringLiteral("diamond"),
+              QStringLiteral("椭圆与菱形都按原生类型导入"),
               QStringLiteral("ellipse=%1 diamond=%2").arg(shapeTypeAt(1), shapeTypeAt(2)));
-    // 菱形→平行四边形换算：外接框 80×60 → 边长 50、内角 acos((60²−80²)/(80²+60²))≈106.26°、
-    // 内容框宽 50×(1+0.28)=64、旋转修正 −atan(60/80)≈−36.87°。
+    // 菱形已是独立类型：外接框原样保留（宽即水平对角线），不再做平行四边形换算。
     {
         const QJsonObject diamond = items.at(2).toObject();
-        const qreal inner = diamond.value(QStringLiteral("parallelogramAngle")).toDouble();
-        const qreal rotation = diamond.value(QStringLiteral("rotation")).toDouble();
-        ctx.Check(qAbs(inner - 106.26) < 0.05 && qAbs(rotation + 36.87) < 0.05 &&
-                      qAbs(diamond.value(QStringLiteral("w")).toDouble() - 64.0) < 0.01 &&
-                      qAbs(diamond.value(QStringLiteral("h")).toDouble() - 50.0) < 0.01,
-                  QStringLiteral("Excalidraw 菱形按几何换算为平行四边形"),
-                  QStringLiteral("angle=%1 rotation=%2 w=%3 h=%4")
-                      .arg(inner)
-                      .arg(rotation)
+        ctx.Check(qAbs(diamond.value(QStringLiteral("w")).toDouble() - 80.0) < 0.01 &&
+                      qAbs(diamond.value(QStringLiteral("h")).toDouble() - 60.0) < 0.01 &&
+                      qAbs(diamond.value(QStringLiteral("rotation")).toDouble()) < 0.01 &&
+                      !diamond.contains(QStringLiteral("parallelogramAngle")),
+                  QStringLiteral("Excalidraw 菱形按原框导入独立菱形类型"),
+                  QStringLiteral("w=%1 h=%2 rotation=%3")
                       .arg(diamond.value(QStringLiteral("w")).toDouble())
-                      .arg(diamond.value(QStringLiteral("h")).toDouble()));
+                      .arg(diamond.value(QStringLiteral("h")).toDouble())
+                      .arg(diamond.value(QStringLiteral("rotation")).toDouble()));
     }
     ctx.Check(typeAt(3) == QStringLiteral("text") &&
                   items.at(3).toObject().value(QStringLiteral("text")).toString() == QStringLiteral("你好"),

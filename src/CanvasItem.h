@@ -52,7 +52,10 @@ class CanvasItem : public QGraphicsObject {
         BOTTOM_LEFT,
         LEFT,
         ROTATION,
-        APEX
+        APEX,
+        // 倾斜旋钮：平行四边形上边中点的内角手柄，水平拖动连续改变内角（锐角↔钝角）。
+        // 追加在末尾，避免既有句柄值发生位移。
+        SKEW
     };
 
     explicit CanvasItem(QGraphicsItem* parent = nullptr);

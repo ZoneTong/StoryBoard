@@ -74,7 +74,7 @@ void MainWindowInsertController::InsertTextAt(const QPointF& scenePos)
 }
 
 void MainWindowInsertController::InsertShape(ShapeType type, qreal triangleAngle1, qreal triangleAngle2,
-                                             qreal cornerRatio, qreal parallelogramAngle)
+                                             qreal cornerRatio)
 {
     if (m_window->m_view->mode() != ToolMode::EDIT) {
         m_window->SetToolMode(ToolMode::EDIT);
@@ -110,12 +110,6 @@ void MainWindowInsertController::InsertShape(ShapeType type, qreal triangleAngle
     const qreal fitScale = qMin<qreal>(1.0, qMin(canvas.width() * 0.72 / qMax<qreal>(1.0, size.width()),
                                                  canvas.height() * 0.72 / qMax<qreal>(1.0, size.height())));
     size *= fitScale;
-    // 菱形预置：90° 平行四边形旋转 45° 后的外接对角线仍是基准边长，
-    // 内容框按边长 = 对角线 / √2 取正方形（平行四边形默认框对菱形无意义）。
-    if (type == ShapeType::PARALLELOGRAM && parallelogramAngle > 0.0) {
-        const qreal diag = qMin<qreal>(128.0, qMin(canvas.width(), canvas.height()) * 0.72);
-        size = QSizeF(diag / qSqrt(2.0), diag / qSqrt(2.0));
-    }
 
     QPointF center = m_window->m_view->mapToScene(m_window->m_view->viewport()->rect().center());
     if (!canvas.contains(center)) {
@@ -144,11 +138,6 @@ void MainWindowInsertController::InsertShape(ShapeType type, qreal triangleAngle
         // 圆角矩形预置项：按短边比例折算成显式 px 圆角。
         if (type == ShapeType::RECTANGLE && cornerRatio > 0.0) {
             shape->SetCornerRadius(qMin(size.width(), size.height()) * cornerRatio);
-        }
-        // 菱形预置项：锁内角并旋转 45°（数值只有 90° 一种，公式化以便扩展）。
-        if (type == ShapeType::PARALLELOGRAM && parallelogramAngle > 0.0) {
-            shape->SetParallelogramAngle(parallelogramAngle);
-            shape->SetRotationAngle(45.0);
         }
         item = shape;
     }
