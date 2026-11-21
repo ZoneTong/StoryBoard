@@ -2,7 +2,9 @@
 
 #include "ArrowStyle.h"
 #include "CanvasItem.h"
+#include "FillAttributes.h"
 #include "ImageFill.h"
+#include "StrokeAttributes.h"
 
 #include <QColor>
 #include <QIcon>
@@ -38,20 +40,6 @@ enum class ShapeType {
     DIAMOND
 };
 
-enum class FillStyle {
-    NONE = 0,
-    SOLID,
-    HACHURE,
-    REVERSE_HACHURE,
-    CROSS_HATCH,
-    GRID_HATCH,
-    HONEYCOMB,
-    HORIZONTAL_HATCH,
-    VERTICAL_HATCH,
-    BRICK,
-    DOTS
-};
-
 QList<ShapeType> AllShapeTypes();
 QString ShapeTypeName(ShapeType type);
 QString ShapeTypeToString(ShapeType type);
@@ -66,8 +54,6 @@ QIcon MakeShapePresetIcon(const QString& preset, const QColor& color = QColor(58
 
 QList<FillStyle> AllFillStyles();
 QString FillStyleName(FillStyle style);
-QString FillStyleToString(FillStyle style);
-FillStyle FillStyleFromString(const QString& value);
 // 填充纹理的中心线几何，属性编辑面板的工具按钮缩略图与图元绘制共用这一份。
 QPainterPath FillPatternCenterLines(FillStyle style, const QRectF& rect);
 
@@ -85,11 +71,9 @@ struct ShapeLayer {
 };
 
 struct ShapeItemState {
-    QColor strokeColor = QColor(30, 41, 59);
-    QColor fillColor = QColor(30, 41, 59, 36);
-    FillStyle fillStyle = FillStyle::SOLID;
-    qreal strokeWidth = 4.0;
-    Qt::PenStyle strokeStyle = Qt::SolidLine;
+    // 填充 / 描线两组属性直接复用属性基类的快照，不再在图形状态里重复字段。
+    FillAttributesState fill;
+    StrokeAttributesState stroke;
     qreal opacity = 1.0;
     qreal cornerRadius = 0.0;
     // 扇形 / 弧线：起始角与扫过角（度，Qt 坐标：0° 在三点钟方向，逆时针为正）。
@@ -100,32 +84,25 @@ struct ShapeItemState {
     qreal bottomAngle2 = 60.0;
     // 需求 9：平行四边形左下内角（度）。角度是真相，上边水平偏移由高度与角度派生。
     qreal parallelogramAngle = 60.0;
-    // 直线 / 直线箭头 / 曲线两端的箭头样式（旧文件缺字段时按「无」）。
-    // 需求 15：图片填充参与撤销快照；QPixmap 隐式共享，不会额外拷贝像素。
-    bool hasFillImage = false;
-    QPixmap fillImage;
-    ImageFill::Mode fillImageMode = ImageFill::Mode::STRETCH;
     QPointF pos;
     QSizeF size;
 
     bool operator==(const ShapeItemState& other) const
     {
-        return strokeColor == other.strokeColor && fillColor == other.fillColor && fillStyle == other.fillStyle &&
-               qFuzzyCompare(strokeWidth, other.strokeWidth) && strokeStyle == other.strokeStyle &&
-               qFuzzyCompare(opacity, other.opacity) && qFuzzyCompare(cornerRadius + 2.0, other.cornerRadius + 2.0) &&
+        return fill == other.fill && stroke == other.stroke && qFuzzyCompare(opacity, other.opacity) &&
+               qFuzzyCompare(cornerRadius + 2.0, other.cornerRadius + 2.0) &&
                qFuzzyCompare(startAngle + 2.0, other.startAngle + 2.0) &&
                qFuzzyCompare(sweepAngle + 2.0, other.sweepAngle + 2.0) &&
                qFuzzyCompare(bottomAngle1 + 2.0, other.bottomAngle1 + 2.0) &&
                qFuzzyCompare(bottomAngle2 + 2.0, other.bottomAngle2 + 2.0) &&
-               qFuzzyCompare(parallelogramAngle + 2.0, other.parallelogramAngle + 2.0) &&
-               hasFillImage == other.hasFillImage && fillImage.cacheKey() == other.fillImage.cacheKey() &&
-               fillImageMode == other.fillImageMode && pos == other.pos && size == other.size;
+               qFuzzyCompare(parallelogramAngle + 2.0, other.parallelogramAngle + 2.0) && pos == other.pos &&
+               size == other.size;
     }
 
     bool operator!=(const ShapeItemState& other) const { return !(*this == other); }
 };
 
-class ShapeItem : public CanvasItem {
+class ShapeItem : public CanvasItem, public FillAttributes, public StrokeAttributes {
     Q_OBJECT
   public:
     // 需求 2：带短刻度线的底边是 AB（A 在左、B 在右），对面顶点是 C。
@@ -155,12 +132,8 @@ class ShapeItem : public CanvasItem {
     QRectF FrameRect() const override;
     QSizeF AdjustedContentSize(const QSizeF& size) const override;
 
-    // 样式访问器对多边形开放覆写：多边形的颜色来自内部图层，而不是单一字段。
-    virtual QColor StrokeColor() const { return m_strokeColor; }
-    virtual QColor FillColor() const { return m_fillColor; }
-    virtual FillStyle fillStyle() const { return m_fillStyle; }
-    virtual qreal StrokeWidth() const { return m_strokeWidth; }
-    virtual Qt::PenStyle StrokeStyle() const { return m_strokeStyle; }
+    // 填充 / 描线的读写接口由两个属性基类提供；多边形按内部图层覆写其中若干条。
+    // 这里只保留图形特有的组合入口与几何属性。
     qreal ItemOpacity() const override { return m_opacity; }
     void SetItemOpacity(qreal opacity) override;
     qreal CornerRadius() const { return m_cornerRadius; }
@@ -176,17 +149,7 @@ class ShapeItem : public CanvasItem {
     virtual bool SkewHandleEnabled() const { return false; }
     void SetAngleReadoutVisible(bool visible);
     bool AngleReadoutVisible() const { return m_angleReadoutVisible; }
-    virtual bool HasFillImage() const { return !m_fillImage.isNull(); }
-    virtual QPixmap FillImage() const { return m_fillImage; }
-    QString FillImageId() const { return m_fillImageId; }
-    void SetFillImageId(const QString& id) { m_fillImageId = id; }
-    virtual ImageFill::Mode FillImageMode() const { return m_fillImageMode; }
-    virtual void SetFillImage(const QPixmap& image, ImageFill::Mode mode);
-    virtual void ClearFillImage();
     virtual void SetStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth);
-    virtual void SetFill(const QColor& fillColor, FillStyle style);
-    virtual void SetFillStyle(FillStyle style);
-    virtual void SetStrokeStyle(Qt::PenStyle style);
     void SetCornerRadius(qreal radius);
     void SetArcAngles(qreal startAngle, qreal sweepAngle);
     // 三角形：设置底边两侧的底角（度）。角度优先，高度按底边与角度重算；
@@ -226,14 +189,11 @@ class ShapeItem : public CanvasItem {
     void PaintContent(QPainter* painter) override;
     void ContentResized() override;
     void DrawSelectionOverlay(QPainter* painter) override;
-    qreal FramePadding() const override { return qMax<qreal>(22.0, m_strokeWidth + 6.0); }
+    void FillChanged() override;
+    void StrokeChanged() override;
+    qreal FramePadding() const override { return qMax<qreal>(22.0, StrokeWidth() + 6.0); }
 
   private:
-    QColor m_strokeColor = QColor(30, 41, 59);
-    QColor m_fillColor = QColor(30, 41, 59, 36);
-    FillStyle m_fillStyle = FillStyle::SOLID;
-    qreal m_strokeWidth = 4.0;
-    Qt::PenStyle m_strokeStyle = Qt::SolidLine;
     qreal m_opacity = 1.0;
     // 圆角半径，单位画布 px；0 表示直角。
     qreal m_cornerRadius = 0.0;
@@ -242,9 +202,6 @@ class ShapeItem : public CanvasItem {
     qreal m_bottomAngle1 = 60.0;
     qreal m_bottomAngle2 = 60.0;
     qreal m_parallelogramAngle = 60.0;
-    QPixmap m_fillImage;
-    QString m_fillImageId;
-    ImageFill::Mode m_fillImageMode = ImageFill::Mode::STRETCH;
     // 上一次同步后的尺寸，用于区分「拖高」与「拖底边」，避免互相覆盖。
     QSizeF m_triangleSyncSize;
     bool m_syncingTriangle = false;

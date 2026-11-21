@@ -4,6 +4,7 @@
 #include "CanvasScene.h"
 #include "Commands.h"
 #include "CurveParamCommand.h"
+#include "FillAttributes.h"
 #include "ImagePickerDialog.h"
 #include "LineItemAbstract.h"
 #include "PolygonItem.h"
@@ -17,6 +18,7 @@
 #include "ShapeItem.h"
 #include "ShapeMeta.h"
 #include "SineItem.h"
+#include "StrokeAttributes.h"
 #include "TextItem.h"
 
 #include <QFileDialog>
@@ -115,87 +117,153 @@ void PropertiesPanel::ApplyPropertyValues(const QMap<ItemProperty, QVariant>& va
     Refresh();
 }
 
-void PropertiesPanel::ApplyStrokeColor(const QColor& color)
+void PropertiesPanel::ApplyFillMutation(const QString& text, const std::function<void(FillAttributes*)>& mutate)
 {
-    const QList<CanvasItem*> items = SelectedStrokeTargets();
-    if (!color.isValid() || items.isEmpty()) {
+    if (!m_scene || !m_scene->UndoStack()) {
         return;
     }
-    emit strokeColorPicked(color);
-    ApplyPropertyValues({{ItemProperty::STROKE_COLOR, color}}, tr("Change border color"), items);
-}
-
-void PropertiesPanel::ApplyFillColor(const QColor& color)
-{
-    const QList<CanvasItem*> items = SelectedItems();
-    if (!color.isValid() || items.isEmpty() || !m_scene || !m_scene->UndoStack()) {
+    QList<CanvasItem*> items;
+    QList<FillAttributes*> fills;
+    for (CanvasItem* item : SelectedItems()) {
+        if (auto* fill = dynamic_cast<FillAttributes*>(item)) {
+            items.append(item);
+            fills.append(fill);
+        }
+    }
+    if (fills.isEmpty()) {
         return;
     }
 
-    QList<CanvasItem*> targets;
+    // 填充属性的撤销快照仍然走属性表，回放时 SetPropertyValue 会分派回这些基类虚函数。
     QList<QMap<ItemProperty, QVariant>> before;
     QList<QMap<ItemProperty, QVariant>> after;
     m_refreshing = true;
     for (CanvasItem* item : items) {
         const ItemPropertySet properties = item->Properties();
-        if (!properties.Contains(ItemProperty::FILL_COLOR)) {
-            continue;
+        QMap<ItemProperty, QVariant> values;
+        for (ItemProperty property : {ItemProperty::FILL_STYLE, ItemProperty::FILL_COLOR, ItemProperty::FILL_IMAGE,
+                                      ItemProperty::FILL_IMAGE_MODE}) {
+            if (properties.Contains(property)) {
+                values.insert(property, item->PropertyValue(property));
+            }
         }
-        QMap<ItemProperty, QVariant> beforeValues;
-        beforeValues.insert(ItemProperty::FILL_COLOR, item->PropertyValue(ItemProperty::FILL_COLOR));
-        if (properties.Contains(ItemProperty::FILL_STYLE)) {
-            beforeValues.insert(ItemProperty::FILL_STYLE, item->PropertyValue(ItemProperty::FILL_STYLE));
-        }
-        QMap<ItemProperty, QVariant> afterValues = beforeValues;
-        afterValues.insert(ItemProperty::FILL_COLOR, color);
-        if (properties.Contains(ItemProperty::FILL_STYLE) &&
-            item->PropertyValue(ItemProperty::FILL_STYLE).toInt() == static_cast<int>(FillStyle::NONE)) {
-            afterValues.insert(ItemProperty::FILL_STYLE, static_cast<int>(FillStyle::SOLID));
-        }
-        targets.append(item);
-        before.append(beforeValues);
-        after.append(afterValues);
+        before.append(values);
     }
-    // 先写值再入栈：命令的 redo 会被 push 重复执行一次，幂等即可，这里保持与旧实现一致。
-    for (int index = 0; index < targets.size(); ++index) {
-        for (auto it = after.at(index).constBegin(); it != after.at(index).constEnd(); ++it) {
-            targets.at(index)->SetPropertyValue(it.key(), it.value());
+    for (FillAttributes* fill : fills) {
+        mutate(fill);
+    }
+    for (CanvasItem* item : items) {
+        const ItemPropertySet properties = item->Properties();
+        QMap<ItemProperty, QVariant> values;
+        for (ItemProperty property : {ItemProperty::FILL_STYLE, ItemProperty::FILL_COLOR, ItemProperty::FILL_IMAGE,
+                                      ItemProperty::FILL_IMAGE_MODE}) {
+            if (properties.Contains(property)) {
+                values.insert(property, item->PropertyValue(property));
+            }
         }
+        after.append(values);
     }
     m_refreshing = false;
-    if (targets.isEmpty()) {
+
+    if (before == after) {
         return;
     }
-    m_scene->UndoStack()->push(new ItemPropertyCommand(m_scene, targets, before, after, tr("Change shape fill color")));
+    m_scene->UndoStack()->push(new ItemPropertyCommand(m_scene, items, before, after, text));
     Refresh();
+}
+
+void PropertiesPanel::ApplyStrokeMutation(const QString& text, const std::function<void(StrokeAttributes*)>& mutate)
+{
+    if (!m_scene || !m_scene->UndoStack()) {
+        return;
+    }
+    QList<CanvasItem*> items;
+    QList<StrokeAttributes*> strokes;
+    for (CanvasItem* item : SelectedItems()) {
+        if (auto* stroke = dynamic_cast<StrokeAttributes*>(item)) {
+            items.append(item);
+            strokes.append(stroke);
+        }
+    }
+    if (strokes.isEmpty()) {
+        return;
+    }
+
+    QList<QMap<ItemProperty, QVariant>> before;
+    QList<QMap<ItemProperty, QVariant>> after;
+    m_refreshing = true;
+    for (CanvasItem* item : items) {
+        const ItemPropertySet properties = item->Properties();
+        QMap<ItemProperty, QVariant> values;
+        for (ItemProperty property :
+             {ItemProperty::STROKE_STYLE, ItemProperty::STROKE_COLOR, ItemProperty::STROKE_WIDTH}) {
+            if (properties.Contains(property)) {
+                values.insert(property, item->PropertyValue(property));
+            }
+        }
+        before.append(values);
+    }
+    for (StrokeAttributes* stroke : strokes) {
+        mutate(stroke);
+    }
+    for (CanvasItem* item : items) {
+        const ItemPropertySet properties = item->Properties();
+        QMap<ItemProperty, QVariant> values;
+        for (ItemProperty property :
+             {ItemProperty::STROKE_STYLE, ItemProperty::STROKE_COLOR, ItemProperty::STROKE_WIDTH}) {
+            if (properties.Contains(property)) {
+                values.insert(property, item->PropertyValue(property));
+            }
+        }
+        after.append(values);
+    }
+    m_refreshing = false;
+
+    if (before == after) {
+        return;
+    }
+    m_scene->UndoStack()->push(new ItemPropertyCommand(m_scene, items, before, after, text));
+    Refresh();
+}
+
+void PropertiesPanel::ApplyStrokeColor(const QColor& color)
+{
+    if (!color.isValid()) {
+        return;
+    }
+    emit strokeColorPicked(color);
+    ApplyStrokeMutation(tr("Change border color"),
+                        [color](StrokeAttributes* stroke) { stroke->SetStrokeColor(color); });
+}
+
+void PropertiesPanel::ApplyFillColor(const QColor& color)
+{
+    if (!color.isValid()) {
+        return;
+    }
+    ApplyFillMutation(tr("Change shape fill color"), [color](FillAttributes* fill) {
+        // 原逻辑：无填充时改颜色顺带切回纯色，否则只换颜色不动样式。
+        const FillStyle style = fill->fillStyle() == FillStyle::NONE ? FillStyle::SOLID : fill->fillStyle();
+        fill->SetFill(color, style);
+    });
 }
 
 void PropertiesPanel::ApplyFillStyle(FillStyle style)
 {
-    if (SelectedItems().isEmpty() || !m_scene || !m_scene->UndoStack()) {
-        return;
-    }
-    ApplyPropertyValues({{ItemProperty::FILL_STYLE, static_cast<int>(style)}}, tr("Change shape fill style"));
+    ApplyFillMutation(tr("Change shape fill style"), [style](FillAttributes* fill) { fill->SetFillStyle(style); });
 }
 
 void PropertiesPanel::ApplyBorderStyle(Qt::PenStyle style)
 {
-    const QList<CanvasItem*> items = SelectedStrokeTargets();
-    if (items.isEmpty()) {
-        return;
-    }
-    ApplyPropertyValues({{ItemProperty::STROKE_STYLE, static_cast<int>(style)}}, tr("Change shape border style"),
-                        items);
+    ApplyStrokeMutation(tr("Change shape border style"),
+                        [style](StrokeAttributes* stroke) { stroke->SetStrokeStyle(style); });
 }
 
 void PropertiesPanel::ApplyBorderWidth(qreal width)
 {
-    const QList<CanvasItem*> items = SelectedStrokeTargets();
-    if (items.isEmpty()) {
-        return;
-    }
     emit borderWidthPicked(width);
-    ApplyPropertyValues({{ItemProperty::STROKE_WIDTH, width}}, tr("Change border width"), items);
+    ApplyStrokeMutation(tr("Change border width"),
+                        [width](StrokeAttributes* stroke) { stroke->SetStrokeWidth(width); });
 }
 
 void PropertiesPanel::ApplyOpacity(int percent)
@@ -342,59 +410,45 @@ void PropertiesPanel::ChangeSelectedSines(const QString& text, const std::functi
 void PropertiesPanel::ChooseFillImage()
 {
     // 需求 13：选中多个可填充图元时一次替换；图片从资源面板里选（也可以现场从本地加一张）。
-    QList<ShapeItem*> shapes;
+    bool hasTarget = false;
     for (CanvasItem* item : SelectedItems()) {
-        if (auto* shape = dynamic_cast<ShapeItem*>(item);
-            shape && !shape->IsCustomShape() && ShapeMeta::IsFilled(shape->shapeType())) {
-            shapes.append(shape);
+        auto* fill = dynamic_cast<FillAttributes*>(item);
+        auto* shape = dynamic_cast<ShapeItem*>(item);
+        if (fill && shape && !shape->IsCustomShape() && ShapeMeta::IsFilled(shape->shapeType())) {
+            hasTarget = true;
+            break;
         }
     }
-    if (shapes.isEmpty()) {
+    if (!hasTarget || !m_scene || !m_scene->UndoStack()) {
         return;
     }
     const QPixmap pixmap = ImagePickerDialog::Pick(this, CollectCanvasImages(m_scene), tr("Fill image"));
-    if (pixmap.isNull() || !m_scene || !m_scene->UndoStack()) {
+    if (pixmap.isNull()) {
         return;
     }
-    QList<CanvasItem*> items;
-    QList<QMap<ItemProperty, QVariant>> before;
-    QList<QMap<ItemProperty, QVariant>> after;
-    for (ShapeItem* shape : shapes) {
-        QMap<ItemProperty, QVariant> beforeValues;
-        beforeValues.insert(ItemProperty::FILL_IMAGE, shape->PropertyValue(ItemProperty::FILL_IMAGE));
-        beforeValues.insert(ItemProperty::FILL_IMAGE_MODE, static_cast<int>(shape->FillImageMode()));
-        QMap<ItemProperty, QVariant> afterValues = beforeValues;
-        afterValues.insert(ItemProperty::FILL_IMAGE, QVariant::fromValue(pixmap));
-        // 替换图片同时重置为拉伸模式，与原整份状态命令语义一致。
-        afterValues.insert(ItemProperty::FILL_IMAGE_MODE, static_cast<int>(ImageFill::Mode::STRETCH));
-        items.append(shape);
-        before.append(beforeValues);
-        after.append(afterValues);
-    }
-    for (int index = 0; index < items.size(); ++index) {
-        for (auto it = after.at(index).constBegin(); it != after.at(index).constEnd(); ++it) {
-            items.at(index)->SetPropertyValue(it.key(), it.value());
+    ApplyFillMutation(tr("Replace fill image"), [pixmap](FillAttributes* fill) {
+        if (auto* shape = dynamic_cast<ShapeItem*>(fill); shape && shape->IsCustomShape()) {
+            return;
         }
-    }
-    m_scene->UndoStack()->push(new ItemPropertyCommand(m_scene, items, before, after, tr("Replace fill image")));
-    Refresh();
+        // 替换图片同时重置为拉伸模式，与原整份状态命令语义一致。
+        fill->SetFillImage(pixmap, ImageFill::Mode::STRETCH);
+    });
 }
 
 void PropertiesPanel::ClearFillImage()
 {
-    if (SelectedItems().isEmpty()) {
-        return;
-    }
-    ApplyPropertyValues({{ItemProperty::FILL_IMAGE, QVariant()}}, tr("Clear fill image"));
+    ApplyFillMutation(tr("Clear fill image"), [](FillAttributes* fill) { fill->ClearFillImage(); });
 }
 
 void PropertiesPanel::ApplyFillImageMode(int mode)
 {
-    if (SelectedItems().isEmpty()) {
-        return;
-    }
     // 与属性窗同一套摆放方式；无图时组合框已禁用，这里再兜一次底。
-    ApplyPropertyValues({{ItemProperty::FILL_IMAGE_MODE, mode}}, tr("Change fill image mode"));
+    ApplyFillMutation(tr("Change fill image mode"), [mode](FillAttributes* fill) {
+        if (!fill->HasFillImage()) {
+            return;
+        }
+        fill->SetFillImage(fill->FillImage(), static_cast<ImageFill::Mode>(mode));
+    });
 }
 
 void PropertiesPanel::ApplyCornerRadius(int radius)
@@ -442,18 +496,6 @@ void PropertiesPanel::ApplySineAmplitude(int pixels)
         LineItemAbstract::ParamState params = sine->paramState();
         params.second = amplitude;
         sine->ApplyParamState(params);
-    });
-}
-
-void PropertiesPanel::ApplyTriangleBase(int base)
-{
-    // 底边即 A 边；改底边后高度由两个底角派生（contentResized 内完成）。
-    ChangeSelectedShapes(tr("Change triangle base"), [base](ShapeItem* shape) {
-        if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->IsCustomShape()) {
-            return;
-        }
-        const QSizeF current = shape->ContentSize();
-        shape->SetContentSize(QSizeF(qMax<qreal>(8.0, base), current.height()));
     });
 }
 

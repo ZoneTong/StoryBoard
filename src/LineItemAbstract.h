@@ -3,6 +3,7 @@
 #include "ArrowStyle.h"
 #include "CanvasItem.h"
 #include "CurveGeometry.h"
+#include "StrokeAttributes.h"
 
 #include <QColor>
 #include <QPainterPath>
@@ -10,10 +11,11 @@
 #include <QVector>
 #include <Qt>
 
-// 描线图元抽象基类：描线属性 + 点段几何 + 描带 / 两端的箭头绘制管线。
+// 描线图元抽象基类：几何 + 描带绘制管线；颜色 / 线宽 / 线型来自 StrokeAttributes，
+// 零面积图元不继承填充属性基类。
 // 五个形态（直线 / 弧线 / 正弦 / 手绘曲线 / 花括号）共同继承本类，
 // 类型标识由各自的 Kind() 给出，本类不覆写 Kind()。
-class LineItemAbstract : public CanvasItem {
+class LineItemAbstract : public CanvasItem, public StrokeAttributes {
   public:
     // 参数快照：弧线是起止角，正弦是周期数与振幅；其余形态 valid 为 false。
     struct ParamState {
@@ -46,9 +48,9 @@ class LineItemAbstract : public CanvasItem {
     QPainterPath OutlineShape() const override;
     QPainterPath PaintedShape() const override;
 
-    QColor StrokeColor() const { return m_strokeColor; }
-    qreal StrokeWidth() const { return m_strokeWidth; }
-    Qt::PenStyle strokePattern() const { return m_strokePattern; }
+    QColor StrokeColor() const { return StrokeAttributes::StrokeColor(); }
+    qreal StrokeWidth() const { return StrokeAttributes::StrokeWidth(); }
+    Qt::PenStyle strokePattern() const { return StrokeAttributes::StrokeStyle(); }
     void SetStrokeColor(const QColor& color);
     void SetStrokeWidth(qreal width);
     void SetStrokePattern(Qt::PenStyle style);
@@ -97,9 +99,8 @@ class LineItemAbstract : public CanvasItem {
     QColor StrokeColorOrDefault(const QColor& color) const;
     QRectF SegmentBounds() const;
 
-    QColor m_strokeColor = QColor(30, 41, 59);
-    qreal m_strokeWidth = 4.0;
-    Qt::PenStyle m_strokePattern = Qt::SolidLine;
+    void StrokeChanged() override { update(); }
+
     ArrowStyle m_startArrow = ArrowStyle::NONE;
     ArrowStyle m_endArrow = ArrowStyle::NONE;
     QVector<CurveSegment> m_segments;

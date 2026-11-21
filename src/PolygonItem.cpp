@@ -44,8 +44,10 @@ QPainterPath PolygonItem::ClosedSubpaths(const QPainterPath& path)
 }
 
 PolygonItem::PolygonItem(const QList<Layer>& layers, FillStyle fillStyle, Qt::PenStyle strokeStyle)
-    : ShapeItem(), m_layers(layers), m_fillStyle(fillStyle), m_strokeStyle(strokeStyle)
+    : ShapeItem(), m_layers(layers)
 {
+    m_fillStyle = fillStyle;
+    m_strokeStyle = strokeStyle;
     UpdateBoundsFromLayers();
 }
 
@@ -90,6 +92,11 @@ qreal PolygonItem::StrokeWidth() const
     return 0.0;
 }
 
+void PolygonItem::SetFillColor(const QColor& color)
+{
+    SetFill(color, m_fillStyle);
+}
+
 void PolygonItem::SetFill(const QColor& color, FillStyle style)
 {
     if (!color.isValid()) {
@@ -109,6 +116,16 @@ void PolygonItem::SetFillStyle(FillStyle style)
 {
     m_fillStyle = style;
     update();
+}
+
+void PolygonItem::SetStrokeColor(const QColor& color)
+{
+    SetStroke(color, StrokeWidth());
+}
+
+void PolygonItem::SetStrokeWidth(qreal width)
+{
+    SetStroke(StrokeColor(), width);
 }
 
 void PolygonItem::SetStroke(const QColor& color, qreal width)
@@ -139,6 +156,7 @@ void PolygonItem::SetFillImage(const QPixmap& image, ImageFill::Mode mode)
     }
     m_fillImage = image;
     m_fillImageMode = mode;
+    m_fillImageId.clear();
     update();
 }
 
@@ -148,6 +166,7 @@ void PolygonItem::ClearFillImage()
         return;
     }
     m_fillImage = QPixmap();
+    m_fillImageId.clear();
     update();
 }
 
@@ -261,15 +280,10 @@ void PolygonItem::SetStyle(const QColor& strokeColor, const QColor& fillColor, q
 ShapeItemState PolygonItem::State() const
 {
     ShapeItemState result;
-    result.strokeColor = StrokeColor();
-    result.fillColor = FillColor();
-    result.fillStyle = m_fillStyle;
-    result.strokeWidth = StrokeWidth();
-    result.strokeStyle = m_strokeStyle;
+    // 属性基类按虚函数读取，多边形的取色来自内部图层，因此这里同样拿到图层颜色。
+    result.fill = FillState();
+    result.stroke = StrokeState();
     result.opacity = ItemOpacity();
-    result.hasFillImage = HasFillImage();
-    result.fillImage = m_fillImage;
-    result.fillImageMode = m_fillImageMode;
     result.pos = pos();
     result.size = ContentSize();
     return result;
@@ -277,16 +291,11 @@ ShapeItemState PolygonItem::State() const
 
 void PolygonItem::ApplyState(const ShapeItemState& state)
 {
-    m_fillStyle = state.fillStyle;
-    m_strokeStyle = state.strokeStyle;
-    m_fillImage = state.hasFillImage ? state.fillImage : QPixmap();
-    m_fillImageMode = state.fillImageMode;
+    ApplyFillState(state.fill);
+    ApplyStrokeState(state.stroke);
     SetItemOpacity(state.opacity);
     setPos(state.pos);
     SetContentSize(state.size.isEmpty() ? ContentSize() : state.size);
-    SetFill(state.fillColor, state.fillStyle);
-    SetStroke(state.strokeColor, state.strokeWidth);
-    SetStrokeStyle(state.strokeStyle);
     update();
 }
 

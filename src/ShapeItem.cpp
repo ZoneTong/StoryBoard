@@ -64,8 +64,6 @@ QVariant ShapeItem::PropertyValue(ItemProperty property) const
         return StartAngle();
     case ItemProperty::SWEEP_ANGLE:
         return SweepAngle();
-    case ItemProperty::TRIANGLE_BASE:
-        return ContentSize().width();
     case ItemProperty::BOTTOM_ANGLE1:
         return BottomAngle1();
     case ItemProperty::BOTTOM_ANGLE2:
@@ -115,9 +113,6 @@ void ShapeItem::SetPropertyValue(ItemProperty property, const QVariant& value)
         break;
     case ItemProperty::SWEEP_ANGLE:
         SetArcAngles(StartAngle(), value.toDouble());
-        break;
-    case ItemProperty::TRIANGLE_BASE:
-        SetContentSize(QSizeF(value.toDouble(), ContentSize().height()));
         break;
     case ItemProperty::BOTTOM_ANGLE1:
         SetTriangleAngles(value.toDouble(), BottomAngle2());
@@ -306,34 +301,19 @@ void ShapeItem::SetCustomShape(const QString& name, const QPainterPath& unitPath
 
 void ShapeItem::SetStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth)
 {
-    m_strokeColor = strokeColor.isValid() ? strokeColor : QColor(30, 41, 59);
-    m_fillColor = fillColor.isValid() ? fillColor : QColor(Qt::transparent);
-    m_strokeWidth = qBound<qreal>(0.5, strokeWidth, 48.0);
+    SetStroke(strokeColor, strokeWidth);
+    SetFill(fillColor, fillStyle());
+}
+
+void ShapeItem::FillChanged()
+{
     update();
 }
 
-void ShapeItem::SetFill(const QColor& fillColor, FillStyle style)
+void ShapeItem::StrokeChanged()
 {
-    m_fillColor = fillColor.isValid() ? fillColor : QColor(Qt::transparent);
-    m_fillStyle = style;
-    update();
-}
-
-void ShapeItem::SetFillStyle(FillStyle style)
-{
-    if (m_fillStyle == style) {
-        return;
-    }
-    m_fillStyle = style;
-    update();
-}
-
-void ShapeItem::SetStrokeStyle(Qt::PenStyle style)
-{
-    if (m_strokeStyle == style) {
-        return;
-    }
-    m_strokeStyle = style;
+    // 描线宽度参与取景余量，句柄区域跟着变化，需要重算 boundingRect。
+    prepareGeometryChange();
     update();
 }
 
@@ -358,29 +338,6 @@ void ShapeItem::SetCornerRadius(qreal radius)
     update();
 }
 
-void ShapeItem::SetFillImage(const QPixmap& image, ImageFill::Mode mode)
-{
-    if (image.isNull()) {
-        ClearFillImage();
-        return;
-    }
-    m_fillImage = image;
-    m_fillImageMode = mode;
-    // 图片内容变了，旧的内容哈希 id 失效，由保存时按新内容重新签发。
-    m_fillImageId.clear();
-    update();
-}
-
-void ShapeItem::ClearFillImage()
-{
-    if (m_fillImage.isNull()) {
-        return;
-    }
-    m_fillImage = QPixmap();
-    m_fillImageId.clear();
-    update();
-}
-
 void ShapeItem::SetArcAngles(qreal startAngle, qreal sweepAngle)
 {
     const qreal start = qBound<qreal>(-360.0, startAngle, 360.0);
@@ -396,11 +353,8 @@ void ShapeItem::SetArcAngles(qreal startAngle, qreal sweepAngle)
 ShapeItemState ShapeItem::State() const
 {
     ShapeItemState result;
-    result.strokeColor = m_strokeColor;
-    result.fillColor = m_fillColor;
-    result.fillStyle = m_fillStyle;
-    result.strokeWidth = m_strokeWidth;
-    result.strokeStyle = m_strokeStyle;
+    result.fill = FillState();
+    result.stroke = StrokeState();
     result.opacity = m_opacity;
     result.cornerRadius = m_cornerRadius;
     result.startAngle = m_startAngle;
@@ -408,9 +362,6 @@ ShapeItemState ShapeItem::State() const
     result.bottomAngle1 = m_bottomAngle1;
     result.bottomAngle2 = m_bottomAngle2;
     result.parallelogramAngle = m_parallelogramAngle;
-    result.hasFillImage = HasFillImage();
-    result.fillImage = m_fillImage;
-    result.fillImageMode = m_fillImageMode;
     result.pos = pos();
     result.size = ContentSize();
     WriteState(result);
@@ -419,8 +370,8 @@ ShapeItemState ShapeItem::State() const
 
 void ShapeItem::ApplyState(const ShapeItemState& state)
 {
-    m_fillStyle = state.fillStyle;
-    m_strokeStyle = state.strokeStyle;
+    ApplyFillState(state.fill);
+    ApplyStrokeState(state.stroke);
     m_opacity = state.opacity;
     m_cornerRadius = state.cornerRadius;
     m_startAngle = state.startAngle;
@@ -428,9 +379,6 @@ void ShapeItem::ApplyState(const ShapeItemState& state)
     m_bottomAngle1 = state.bottomAngle1;
     m_bottomAngle2 = state.bottomAngle2;
     m_parallelogramAngle = qBound<qreal>(15.0, state.parallelogramAngle, 165.0);
-    m_fillImage = state.hasFillImage ? state.fillImage : QPixmap();
-    m_fillImageMode = state.fillImageMode;
-    SetStyle(state.strokeColor, state.fillColor, state.strokeWidth);
     setPos(state.pos);
     m_syncingTriangle = true;
     SetContentSize(state.size.isEmpty() ? DefaultContentSize() : state.size);

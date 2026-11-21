@@ -125,14 +125,6 @@ void DrawOpacity(QPainter& painter, IconId)
     painter.drawArc(QRectF(3.5, 3.5, 17.0, 17.0), -90 * 16, 180 * 16);
 }
 
-void DrawTriangleBase(QPainter& painter, IconId)
-{
-    // 只有底线与两条向内收的短斜边，不闭合顶点，读作“三角形底边”。
-    painter.drawLine(QPointF(3.0, 18.5), QPointF(21.0, 18.5));
-    painter.drawLine(QPointF(3.0, 18.5), QPointF(8.0, 9.5));
-    painter.drawLine(QPointF(21.0, 18.5), QPointF(16.0, 9.5));
-}
-
 void DrawAngleRight(QPainter& painter, IconId)
 {
     // 底角 A：顶点在左下，一条边沿底边向右、另一条斜向右上，开口朝右。
@@ -176,7 +168,7 @@ constexpr struct IconEntry {
     {IconId::CORNER, DrawCorner},
     {IconId::SMOOTH, DrawSmooth},
     {IconId::OPACITY, DrawOpacity},
-    {IconId::TRIANGLE_BASE, DrawTriangleBase},
+    {IconId::OPACITY, DrawOpacity},
     {IconId::ANGLE_RIGHT, DrawAngleRight},
     {IconId::ANGLE_LEFT, DrawAngleLeft},
     {IconId::ARROW_START, DrawArrowStart},

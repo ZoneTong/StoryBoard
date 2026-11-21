@@ -53,8 +53,6 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     qreal InitialStoredCornerRadius() const { return m_initialStoredCornerRadius; }
 
     // 三角形：底边长度与两个底角；底边即内容矩形宽度，角度优先、高度派生。
-    QSpinBox* TriangleBaseSpin() const { return m_triangleBaseSpin; }
-    int InitialTriangleBase() const { return m_initialTriangleBase; }
     QSpinBox* BottomAngle1Spin() const { return m_bottomAngle1Spin; }
     QSpinBox* BottomAngle2Spin() const { return m_bottomAngle2Spin; }
     qreal InitialBottomAngle1() const { return m_initialBottomAngle1; }
@@ -107,8 +105,6 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     qreal m_initialBottomAngle2 = 60.0;
     qreal m_initialParallelogramAngle = 60.0;
     QSpinBox* m_parallelogramAngleSpin = nullptr;
-    QSpinBox* m_triangleBaseSpin = nullptr;
-    int m_initialTriangleBase = 64;
 
     QComboBox* m_startArrowCombo = nullptr;
     QComboBox* m_endArrowCombo = nullptr;

@@ -324,13 +324,13 @@ void ItemPropertiesDialog::ApplyChanges()
         after.shapeState.pos = after.pos;
         after.shapeState.size = after.size;
         if (style && style->StrokeColorButton()) {
-            after.shapeState.strokeColor = style->StrokeColorButton()->property("itemColor").value<QColor>();
+            after.shapeState.stroke.color = style->StrokeColorButton()->property("itemColor").value<QColor>();
         }
         if (style && style->StrokeWidthSpin()) {
-            after.shapeState.strokeWidth = spinValue(style->StrokeWidthSpin(), m_initialStrokeWidth);
+            after.shapeState.stroke.width = spinValue(style->StrokeWidthSpin(), m_initialStrokeWidth);
         }
         if (style && style->BorderStyleCombo() && style->BorderStyleCombo()->currentData().toInt() >= 0) {
-            after.shapeState.strokeStyle = static_cast<Qt::PenStyle>(style->BorderStyleCombo()->currentData().toInt());
+            after.shapeState.stroke.style = static_cast<Qt::PenStyle>(style->BorderStyleCombo()->currentData().toInt());
         }
         if (style && style->OpacitySpin()) {
             const int percent = style->OpacitySpin()->value();
@@ -366,13 +366,6 @@ void ItemPropertiesDialog::ApplyChanges()
             after.shapeState.bottomAngle2 =
                 value == qRound(style->InitialBottomAngle2()) ? style->InitialBottomAngle2() : value;
         }
-        // 需求 1：底边长度独立字段，写入内容矩形宽度（高度由角度派生）。
-        if (style && style->TriangleBaseSpin()) {
-            const int value = style->TriangleBaseSpin()->value();
-            if (value != style->InitialTriangleBase()) {
-                after.size.setWidth(qMax<qreal>(8.0, static_cast<qreal>(value)));
-            }
-        }
         // 需求 9：平行四边形左下内角，未改动时保留原值。
         if (style && style->ParallelogramAngleSpin()) {
             const int value = style->ParallelogramAngleSpin()->value();
@@ -381,16 +374,16 @@ void ItemPropertiesDialog::ApplyChanges()
         }
         if (m_hasFill) {
             if (style && style->FillStyleCombo() && style->FillStyleCombo()->currentData().toInt() >= 0) {
-                after.shapeState.fillStyle = static_cast<FillStyle>(style->FillStyleCombo()->currentData().toInt());
+                after.shapeState.fill.style = static_cast<FillStyle>(style->FillStyleCombo()->currentData().toInt());
             }
             if (style && style->FillColorButton()) {
-                after.shapeState.fillColor = style->FillColorButton()->property("itemColor").value<QColor>();
+                after.shapeState.fill.color = style->FillColorButton()->property("itemColor").value<QColor>();
             }
-            // 需求 15：图片填充是独立属性，ShapeItemState 直接快照。
+            // 需求 15：图片填充是独立属性，FillAttributesState 直接快照。
             if (style && style->HasFillImageRow()) {
-                after.shapeState.hasFillImage = style->FillImagePresent();
-                after.shapeState.fillImage = style->FillImage();
-                after.shapeState.fillImageMode = style->FillImageMode();
+                after.shapeState.fill.hasImage = style->FillImagePresent();
+                after.shapeState.fill.image = style->FillImage();
+                after.shapeState.fill.imageMode = style->FillImageMode();
             }
         }
     } else if (m_item->HasTextFacet()) {

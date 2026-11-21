@@ -64,8 +64,11 @@ class PolygonItem : public ShapeItem {
     qreal StrokeWidth() const override;
     FillStyle fillStyle() const override { return m_fillStyle; }
     Qt::PenStyle StrokeStyle() const override { return m_strokeStyle; }
+    void SetFillColor(const QColor& color) override;
     void SetFill(const QColor& color, FillStyle style) override;
     void SetFillStyle(FillStyle style) override;
+    void SetStrokeColor(const QColor& color) override;
+    void SetStrokeWidth(qreal width) override;
     void SetStroke(const QColor& color, qreal width);
     // 样式三件套与单形状同签名：合并后仍按「填充 + 描线」统一套用。
     void SetStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth) override;
@@ -105,10 +108,6 @@ class PolygonItem : public ShapeItem {
 
     QList<Layer> m_layers;
     QSizeF m_baseSize{1.0, 1.0};
-    FillStyle m_fillStyle = FillStyle::SOLID;
-    Qt::PenStyle m_strokeStyle = Qt::SolidLine;
-    QPixmap m_fillImage;
-    ImageFill::Mode m_fillImageMode = ImageFill::Mode::STRETCH;
     // 内容尺寸变化时不改路径，绘制阶段按比例缩放，避免反复量化误差累积。
     QTransform LayerTransform() const;
 };

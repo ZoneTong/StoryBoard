@@ -13,6 +13,8 @@ class CanvasItem;
 class ArcItem;
 class SineItem;
 class LineItemAbstract;
+class FillAttributes;
+class StrokeAttributes;
 struct TextItemState;
 class QPixmap;
 class QFont;
@@ -67,8 +69,7 @@ class PropertiesPanel : public QWidget {
     QList<ShapeItem*> SelectedComposites() const;
     QList<LineItemAbstract*> SelectedStrokes() const;
     QList<CanvasItem*> SelectedTexts() const;
-    // 描线颜色 / 宽度可作用的对象：图形、笔画与多边形。
-    QList<CanvasItem*> SelectedStrokeTargets() const;
+
     void ChangeSelectedShapes(const QString& text, const std::function<void(ShapeItem*)>& mutate);
     // 弧线角度与正弦参数：几何由参数派生，改动按参数快照入撤销栈。
     void ChangeSelectedArcs(const QString& text, const std::function<void(LineItemAbstract*)>& mutate);
@@ -85,6 +86,10 @@ class PropertiesPanel : public QWidget {
     // 属性表通道：同一组属性值写回所有目标图元，只占一条撤销记录。
     void ApplyPropertyValues(const QMap<ItemProperty, QVariant>& values, const QString& text,
                              const QList<CanvasItem*>& targets = QList<CanvasItem*>());
+    // 按属性基类批量修改：选中集合里能解析出填充 / 描线基类的图元统一套用一次，
+    // 具体叶子类的特殊语义（多边形按图层取色）由基类虚函数分派。
+    void ApplyFillMutation(const QString& text, const std::function<void(FillAttributes*)>& mutate);
+    void ApplyStrokeMutation(const QString& text, const std::function<void(StrokeAttributes*)>& mutate);
     void ApplyStrokeColor(const QColor& color);
     void ApplyFillColor(const QColor& color);
     void ApplyFillStyle(FillStyle style);
@@ -97,8 +102,7 @@ class PropertiesPanel : public QWidget {
     // 正弦波形：周期数（1–12）与振幅（相对中心线的像素高度，1–200）。
     void ApplySineCycles(int cycles);
     void ApplySineAmplitude(int percent);
-    // 三角形：底边长度与两个底角；角度优先，高度随底边派生。
-    void ApplyTriangleBase(int base);
+    // 三角形：两个底角；角度优先，高度随底边派生。
     void ApplyTriangleAngle1(int degrees);
     void ApplyTriangleAngle2(int degrees);
     // 直线两端箭头样式（ArrowStyle 整数值）。
