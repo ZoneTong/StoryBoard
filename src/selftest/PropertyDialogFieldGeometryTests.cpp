@@ -19,6 +19,7 @@
 #include <QPointF>
 #include <QSizeF>
 #include <QSpinBox>
+#include <QTimer>
 #include <QToolButton>
 #include <QUndoStack>
 #include <QtMath>
@@ -380,5 +381,33 @@ void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
         QComboBox* braceEnd = braceDialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesEndArrowValue"));
         ctx.Check(braceStart && braceEnd && braceStart->isEnabled() && braceEnd->isEnabled(),
                   QStringLiteral("花括号曲线属性窗也提供箭头设置"));
+    }
+
+    {
+        // 模态属性窗打开后，点在窗外的画布上应当等同于 Cancel：关闭并丢弃修改。
+        CanvasScene outsideScene;
+        outsideScene.ApplyCanvasSize(QSizeF(800, 600));
+        outsideScene.SetMode(ToolMode::EDIT);
+        auto* outsideShape = CreateShapeItem(ShapeType::RECTANGLE);
+        outsideShape->SetLayerId(outsideScene.ActiveLayerId());
+        outsideScene.AttachItem(outsideShape);
+        outsideShape->setSelected(true);
+
+        ItemPropertiesDialog outsideDialog(&outsideScene, outsideShape, &view);
+        outsideDialog.move(600, 500);
+        bool closedByOutsideClick = false;
+        QTimer::singleShot(0, &outsideDialog, [&]() {
+            const QPoint canvasPoint = view.mapFromScene(outsideScene.CanvasRect().topLeft() + QPointF(30, 30));
+            const QPoint outsideGlobal = view.viewport()->mapToGlobal(canvasPoint);
+            const QPoint outsideLocal = view.viewport()->mapFromGlobal(outsideGlobal);
+            QMouseEvent press(QEvent::MouseButtonPress, QPointF(outsideLocal), QPointF(outsideGlobal), Qt::LeftButton,
+                              Qt::LeftButton, Qt::NoModifier);
+            QApplication::sendEvent(view.viewport(), &press);
+            closedByOutsideClick = outsideDialog.result() == QDialog::Rejected && !outsideDialog.isVisible();
+        });
+        // 兜底，避免过滤器失效时把自检卡在模态事件循环里。
+        QTimer::singleShot(1500, &outsideDialog, &QDialog::reject);
+        outsideDialog.exec();
+        ctx.Check(closedByOutsideClick, QStringLiteral("点击属性窗外的画布按取消关闭属性窗"));
     }
 }

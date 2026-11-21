@@ -5,6 +5,7 @@
 #include <QColor>
 #include <QDialog>
 #include <QPixmap>
+#include <QPoint>
 #include <QPointF>
 #include <QPointer>
 #include <QSizeF>
@@ -15,6 +16,10 @@ class ItemPropertiesDialogGeometryBlock;
 class ItemPropertiesDialogIdentityBlock;
 class ItemPropertiesDialogStyleBlock;
 class ItemPropertiesDialogTextBlock;
+class QEvent;
+class QHideEvent;
+class QMouseEvent;
+class QObject;
 class QSpinBox;
 class QShowEvent;
 
@@ -27,16 +32,22 @@ class ItemPropertiesDialog : public QDialog {
   public:
     explicit ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item, QWidget* parent = nullptr,
                                   bool editable = true);
+    ~ItemPropertiesDialog() override;
 
     CanvasItem* Item() const { return m_item.data(); }
     bool IsEditable() const { return m_editable; }
     bool IsItemInScene() const;
+    // 只有画布本身的点击才触发“取消并关闭”，工具栏、停靠面板等区域不关窗。
+    bool IsGlobalPointInsideCanvas(const QPoint& globalPoint) const;
     static QString LayerDescription(const CanvasScene* scene, int layerId);
     void accept() override;
 
   protected:
     // 需求 3：属性窗首次显示时，可编辑文字图元的输入焦点直接落到正文尾部。
     void showEvent(QShowEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
+    // 模态窗会吞掉画布上的鼠标事件，这里在应用级过滤到“窗外的按下”后按取消处理。
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
   private:
     void ApplyChanges();
@@ -65,4 +76,5 @@ class ItemPropertiesDialog : public QDialog {
     qreal m_initialStrokeWidth = 4.0;
     bool m_hasFill = false;
     bool m_initializing = true;
+    bool m_outsideClickClosing = false;
 };

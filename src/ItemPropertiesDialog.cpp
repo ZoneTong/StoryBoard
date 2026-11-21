@@ -2,6 +2,7 @@
 
 #include "CanvasItem.h"
 #include "CanvasScene.h"
+#include "CanvasView.h"
 #include "Commands.h"
 #include "ItemPropertiesDialogGeometryBlock.h"
 #include "ItemPropertiesDialogIdentityBlock.h"
@@ -11,18 +12,27 @@
 #include "ShapeItem.h"
 #include "TextItem.h"
 
+#include <QApplication>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
+#include <QEvent>
 #include <QFileDialog>
 #include <QFont>
 #include <QFormLayout>
 #include <QFrame>
+#include <QGuiApplication>
+#include <QHideEvent>
 #include <QImage>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QMetaObject>
+#include <QMouseEvent>
 #include <QPlainTextEdit>
+#include <QPoint>
+#include <QPointer>
+#include <QPolygon>
 #include <QPushButton>
 #include <QShowEvent>
 #include <QSpinBox>
@@ -31,6 +41,96 @@
 #include <QVBoxLayout>
 #include <utility>
 
+#ifdef Q_OS_WIN
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
+namespace {
+
+#ifdef Q_OS_WIN
+ItemPropertiesDialog* g_clickOutsideDialog = nullptr;
+HHOOK g_clickOutsideHook = nullptr;
+bool g_clickOutsideQueued = false;
+
+bool IsClickOnDialogOwner(ItemPropertiesDialog* dialog, const QPoint& globalPoint)
+{
+    QWidget* owner = dialog ? dialog->parentWidget() : nullptr;
+    if (!owner) {
+        return false;
+    }
+    POINT nativePoint{globalPoint.x(), globalPoint.y()};
+    HWND window = WindowFromPoint(nativePoint);
+    if (!window) {
+        return false;
+    }
+    // 只认主窗口自己的区域：点到别的应用（即使压在画布上）不关闭属性窗。
+    return GetAncestor(window, GA_ROOT) == reinterpret_cast<HWND>(owner->winId());
+}
+
+LRESULT CALLBACK ClickOutsideHook(int code, WPARAM wParam, LPARAM lParam)
+{
+    if (code == HC_ACTION && (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN || wParam == WM_MBUTTONDOWN) &&
+        g_clickOutsideDialog && g_clickOutsideDialog->isVisible() && !g_clickOutsideQueued) {
+        // 子对话框（颜色/字体/文件）和下拉弹窗优先，不要把属性窗一起取消。
+        QWidget* activeModal = QApplication::activeModalWidget();
+        if ((!activeModal || activeModal == g_clickOutsideDialog) && !QApplication::activePopupWidget()) {
+            const MSLLHOOKSTRUCT* mouse = reinterpret_cast<const MSLLHOOKSTRUCT*>(lParam);
+            const QPoint globalPoint(mouse->pt.x, mouse->pt.y);
+            if (!g_clickOutsideDialog->frameGeometry().contains(globalPoint) &&
+                IsClickOnDialogOwner(g_clickOutsideDialog, globalPoint) &&
+                g_clickOutsideDialog->IsGlobalPointInsideCanvas(globalPoint)) {
+                g_clickOutsideQueued = true;
+                QPointer<ItemPropertiesDialog> dialog(g_clickOutsideDialog);
+                QMetaObject::invokeMethod(
+                    g_clickOutsideDialog,
+                    [dialog]() {
+                        if (dialog) {
+                            dialog->reject();
+                        }
+                    },
+                    Qt::QueuedConnection);
+                // 吞掉这次按下，避免属性窗关闭后同一下落又触发画布操作。
+                return 1;
+            }
+        }
+    }
+    return CallNextHookEx(g_clickOutsideHook, code, wParam, lParam);
+}
+
+void InstallClickOutsideHook(ItemPropertiesDialog* dialog)
+{
+    if (!dialog || QGuiApplication::platformName() == QLatin1String("offscreen")) {
+        return;
+    }
+    g_clickOutsideDialog = dialog;
+    g_clickOutsideQueued = false;
+    if (!g_clickOutsideHook) {
+        g_clickOutsideHook = SetWindowsHookExW(WH_MOUSE_LL, ClickOutsideHook, GetModuleHandleW(nullptr), 0);
+    }
+}
+
+void UninstallClickOutsideHook(ItemPropertiesDialog* dialog)
+{
+    if (g_clickOutsideDialog != dialog) {
+        return;
+    }
+    g_clickOutsideDialog = nullptr;
+    g_clickOutsideQueued = false;
+    if (g_clickOutsideHook) {
+        UnhookWindowsHookEx(g_clickOutsideHook);
+        g_clickOutsideHook = nullptr;
+    }
+}
+#endif
+
+} // namespace
+
 ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item, QWidget* parent, bool editable)
     : QDialog(parent), m_scene(scene), m_item(item), m_editable(editable)
 {
@@ -38,6 +138,8 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
     // 需求 42：属性窗统一改为模态；非编辑模式可打开查看，但字段只读。
     setModal(true);
     setMinimumWidth(480);
+    // 模态窗会先吃掉窗外的鼠标按下，必须由应用级过滤器在事件分发前识别。
+    qApp->installEventFilter(this);
 
     // 打开属性窗时再兜底一次自动名称：旧画布、直接 addItem 或清空名称后，
     // 这里也能得到“类型 N”，不会出现看不到名称或名称为空的行。
@@ -168,9 +270,68 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
     }
 }
 
+ItemPropertiesDialog::~ItemPropertiesDialog()
+{
+#ifdef Q_OS_WIN
+    UninstallClickOutsideHook(this);
+#endif
+    if (qApp) {
+        qApp->removeEventFilter(this);
+    }
+}
+
+bool ItemPropertiesDialog::IsGlobalPointInsideCanvas(const QPoint& globalPoint) const
+{
+    if (!m_scene) {
+        return false;
+    }
+    QWidget* owner = parentWidget();
+    CanvasView* view = qobject_cast<CanvasView*>(owner);
+    if (!view && owner) {
+        view = owner->findChild<CanvasView*>();
+    }
+    if (!view || !view->viewport()) {
+        return false;
+    }
+    // 必须真正落在画布视图上：被浮动面板挡住时，即使屏幕坐标在画布矩形内也不触发。
+    // 无桌面平台（自检 offscreen）拿不到 widgetAt 时，只按画布矩形判断。
+    QWidget* hit = QApplication::widgetAt(globalPoint);
+    if (hit && hit != view->viewport()) {
+        return false;
+    }
+    const QPoint viewportPoint = view->viewport()->mapFromGlobal(globalPoint);
+    return view->mapFromScene(m_scene->CanvasRect()).containsPoint(viewportPoint, Qt::OddEvenFill);
+}
+
+bool ItemPropertiesDialog::eventFilter(QObject* watched, QEvent* event)
+{
+    // 只处理模态属性窗自己的“窗外按下”：子对话框（颜色/字体/文件）和
+    // 下拉弹窗上的点击不应把属性窗一起取消。
+    if (!event || event->type() != QEvent::MouseButtonPress || !isVisible() || m_outsideClickClosing ||
+        QApplication::activeModalWidget() != this || QApplication::activePopupWidget()) {
+        return QDialog::eventFilter(watched, event);
+    }
+
+    const QMouseEvent* mouseEvent = static_cast<const QMouseEvent*>(event);
+    const QPoint globalPoint = mouseEvent->globalPosition().toPoint();
+    if (mouseEvent->button() == Qt::NoButton || frameGeometry().contains(globalPoint) ||
+        !IsGlobalPointInsideCanvas(globalPoint)) {
+        return QDialog::eventFilter(watched, event);
+    }
+
+    m_outsideClickClosing = true;
+    // 窗外点击按取消处理：丢弃尚未确认的修改，和按 Cancel 一致。
+    reject();
+    // 吞掉这次按下，避免关闭后同一次点击又落到画布上。
+    return true;
+}
+
 void ItemPropertiesDialog::showEvent(QShowEvent* event)
 {
     QDialog::showEvent(event);
+#ifdef Q_OS_WIN
+    InstallClickOutsideHook(this);
+#endif
     // 只做一次，且只读模式不抢焦点；光标停在正文末尾，不整段选中。
     if (m_textFocusApplied || !m_editable || !m_textBlock || !m_textBlock->TextEdit()) {
         return;
@@ -179,6 +340,14 @@ void ItemPropertiesDialog::showEvent(QShowEvent* event)
     QPlainTextEdit* edit = m_textBlock->TextEdit();
     edit->moveCursor(QTextCursor::End);
     edit->setFocus(Qt::OtherFocusReason);
+}
+
+void ItemPropertiesDialog::hideEvent(QHideEvent* event)
+{
+#ifdef Q_OS_WIN
+    UninstallClickOutsideHook(this);
+#endif
+    QDialog::hideEvent(event);
 }
 
 void ItemPropertiesDialog::ApplyEditableState()
