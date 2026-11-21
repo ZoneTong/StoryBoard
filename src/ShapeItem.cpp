@@ -27,9 +27,11 @@ ShapeItem::ShapeItem(QGraphicsItem* parent) : CanvasItem(parent)
 ItemPropertySet ShapeItem::Properties() const
 {
     // 公共样式六件套；圆角 / 角度 / 箭头等按图形由子类自行追加。
-    return CanvasItem::Properties().United(ItemPropertySet{ItemProperty::FILL_STYLE, ItemProperty::FILL_COLOR,
-                                                           ItemProperty::FILL_IMAGE, ItemProperty::STROKE_STYLE,
-                                                           ItemProperty::STROKE_COLOR, ItemProperty::STROKE_WIDTH});
+    // 背景图片的摆放方式与图片本身同属填充属性，一并纳入属性全集，
+    // 属性面板与属性窗都按这一份快照写回。
+    return CanvasItem::Properties().United(ItemPropertySet{
+        ItemProperty::FILL_STYLE, ItemProperty::FILL_COLOR, ItemProperty::FILL_IMAGE, ItemProperty::FILL_IMAGE_MODE,
+        ItemProperty::STROKE_STYLE, ItemProperty::STROKE_COLOR, ItemProperty::STROKE_WIDTH});
 }
 
 QSizeF ShapeItem::DefaultContentSize() const

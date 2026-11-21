@@ -194,16 +194,11 @@ void CanvasItemHandles::DrawOverlay(QPainter* painter) const
         const QPointF left = center - QPointF(halfLength, 0.0);
         const QPointF right = center + QPointF(halfLength, 0.0);
         painter->drawLine(left, right);
-        QPainterPath heads;
-        heads.moveTo(left, center.y());
-        heads.lineTo(left + QPointF(head, -head * 0.8));
-        heads.lineTo(left + QPointF(head, head * 0.8));
-        heads.closeSubpath();
-        heads.moveTo(right, center.y());
-        heads.lineTo(right - QPointF(head, -head * 0.8));
-        heads.lineTo(right - QPointF(head, head * 0.8));
-        heads.closeSubpath();
-        painter->drawPath(heads);
+        // 两端的箭头用线段画，避免 QPainterPath 的坐标重载歧义。
+        painter->drawLine(left, left + QPointF(head, -head * 0.8));
+        painter->drawLine(left, left + QPointF(head, head * 0.8));
+        painter->drawLine(right, right - QPointF(head, -head * 0.8));
+        painter->drawLine(right, right - QPointF(head, head * 0.8));
     }
 
     // Rotation handle: a circular knob above the frame, connected by a thin line.

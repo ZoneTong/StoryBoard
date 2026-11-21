@@ -171,7 +171,8 @@ void selftest::RunShapeItemTests(Context& ctx)
         const qreal sideRight = QLineF(right, bottom).length();
         const qreal sideBottom = QLineF(bottom, left).length();
         const qreal sideLeft = QLineF(left, top).length();
-        ctx.Check(dynamic_cast<ParallelogramItem*>(&diamond) != nullptr && diamond.shapeType() == ShapeType::DIAMOND,
+        ShapeItem* diamondBase = &diamond;
+        ctx.Check(dynamic_cast<ParallelogramItem*>(diamondBase) != nullptr && diamond.shapeType() == ShapeType::DIAMOND,
                   QStringLiteral("菱形派生自平行四边形且自带类型"),
                   QStringLiteral("type=%1").arg(static_cast<int>(diamond.shapeType())));
         ctx.Check(qAbs(sideTop - sideRight) < 0.01 && qAbs(sideRight - sideBottom) < 0.01 &&

@@ -401,11 +401,13 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
             }
             ctx.Check(cardImage->PropertyValue(ItemProperty::FILL_IMAGE_MODE).toInt() ==
                           static_cast<int>(ImageFill::Mode::TILE),
-                      QStringLiteral("卡片切换背景图摆放方式"), QString::number(cardImage->FillImageMode()));
+                      QStringLiteral("卡片切换背景图摆放方式"),
+                      QString::number(static_cast<int>(cardImage->FillImageMode())));
             dockScene->UndoStack()->undo();
             QApplication::processEvents();
             ctx.Check(cardImage->FillImageMode() == ImageFill::Mode::STRETCH,
-                      QStringLiteral("撤销背景图摆放方式恢复拉伸"), QString::number(cardImage->FillImageMode()));
+                      QStringLiteral("撤销背景图摆放方式恢复拉伸"),
+                      QString::number(static_cast<int>(cardImage->FillImageMode())));
         }
         ctx.Check(textContentRow && !textContentRow->isVisible() && textFontRow && !textFontRow->isVisible() &&
                       textColorRow && !textColorRow->isVisible(),
