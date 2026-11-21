@@ -9,7 +9,7 @@ namespace StrokeGeometry {
 
 namespace {
 
-qreal averageScale(const QSizeF& baseSize, const QSizeF& contentSize)
+qreal AverageScale(const QSizeF& baseSize, const QSizeF& contentSize)
 {
     const qreal scaleX = contentSize.width() / baseSize.width();
     const qreal scaleY = contentSize.height() / baseSize.height();
@@ -35,7 +35,7 @@ QPainterPath Painted(const QPainterPath& outline, const QSizeF& baseSize, const 
         return outline;
     }
 
-    const qreal average = averageScale(baseSize, contentSize);
+    const qreal average = AverageScale(baseSize, contentSize);
     QPainterPathStroker stroker;
     stroker.setWidth(qMax<qreal>(1.0, penWidth * average));
     stroker.setCapStyle(Qt::RoundCap);

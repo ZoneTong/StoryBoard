@@ -1,0 +1,98 @@
+# 命名规范守卫：readability-identifier-naming（只启这一项，其余检查全部关闭）。
+# 规范口径与 .clang-format / §4.8 一致：类型大驼峰、成员函数大驼峰、
+# 私有/保护成员 m_ + 小驼峰、局部变量与参数小驼峰、枚举值与命名空间常量全大写。
+#
+# 有意保留小写的白名单（不进检查）：
+#   1. Qt 虚函数覆盖与 Qt 惯例枚举值（Type/UserType）；
+#   2. 与同名类型冲突的成员函数（canvasScene、shapeType、fillStyle 等），
+#      类型名不能与用户定义叶子类同名，函数保留小写以编译优先；
+#   3. Qt 信号（signals 段），moc 生成实现，按 Qt 惯例小写；
+#   4. 命名空间自由函数中与类型同名的 curveParamState / lineArtPreset。
+# 结构体公开数据成员不纳入检查：项目里的 CanvasTypes/ItemGeometry/Settings 等
+# 是纯 POD 字段（style.text、settings.brushColor），按成员前缀规则会大面积报假红。
+#
+# 运行方式（Windows + MinGW + Qt Creator 自带 clang-tidy）：
+#   MINGW=D:/Qt/Tools/mingw1510_64
+#   GCC=$MINGW/lib/gcc/x86_64-w64-mingw32/15.1.0
+#   clang-tidy -p build --config-file=.clang-tidy \
+#     --extra-arg=--target=x86_64-w64-windows-gnu \
+#     --extra-arg=-isystem$GCC/include/c++ \
+#     --extra-arg=-isystem$GCC/include/c++/x86_64-w64-mingw32 \
+#     --extra-arg=-isystem$GCC/include/c++/backward \
+#     --extra-arg=-isystem$MINGW/x86_64-w64-mingw32/include \
+#     --extra-arg=-D__GCC_ATOMIC_BOOL_LOCK_FREE=2 \
+#     --extra-arg=-D__GCC_ATOMIC_CHAR_LOCK_FREE=2 \
+#     --extra-arg=-D__GCC_ATOMIC_CHAR16_T_LOCK_FREE=2 \
+#     --extra-arg=-D__GCC_ATOMIC_CHAR32_T_LOCK_FREE=2 \
+#     --extra-arg=-D__GCC_ATOMIC_WCHAR_T_LOCK_FREE=2 \
+#     --extra-arg=-D__GCC_ATOMIC_SHORT_LOCK_FREE=2 \
+#     --extra-arg=-D__GCC_ATOMIC_INT_LOCK_FREE=2 \
+#     --extra-arg=-D__GCC_ATOMIC_LONG_LOCK_FREE=2 \
+#     --extra-arg=-D__GCC_ATOMIC_LLONG_LOCK_FREE=2 \
+#     --extra-arg=-D__GCC_ATOMIC_POINTER_LOCK_FREE=2 \
+#     --extra-arg=-D__GCC_ATOMIC_TEST_AND_SET_TRUEVAL=1 \
+#     src/CanvasItem.cpp
+# 说明：GCC 自带的 libstdc++ 头无法被 clang 直接解析（缺内置 intrinsic 头，
+# 且 clang 不认 GCC 的 -isystem 内置目录口径），因此只把 libstdc++ 与 win32 头
+# 传成 -isystem，并补齐 __GCC_ATOMIC_* 宏与 windows-gnu target。
+# 加 --fix 可自动改名，但会连带重命名，先只看诊断结果。
+Checks: '-*,readability-identifier-naming'
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*src.*'
+SystemHeaders: false
+CheckOptions:
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.EnumConstantIgnoredRegexp
+    value: '^(Type|UserType)$'
+  - key: readability-identifier-naming.FunctionCase
+    value: CamelCase
+  - key: readability-identifier-naming.FunctionIgnoredRegexp
+    value: '^(curveParamState|lineArtPreset)$'
+  - key: readability-identifier-naming.MethodCase
+    value: CamelCase
+  - key: readability-identifier-naming.MethodIgnoredRegexp
+    value: '^(accept|fillStyle|activeLayerChanged|arrowEndChosen|arrowStartChosen|backgroundChanged|borderStyleChosen|borderWidthChosen|borderWidthPicked|boundingRect|brushColorChosen|canvasBackground|canvasColorChosen|canvasScene|canvasSizeChanged|closeEvent|contentChanged|contextMenuEvent|cornerRadiusChosen|dragEnterEvent|drawBackground|drawForeground|dropEvent|eventFilter|fillColorChosen|fillStyleChosen|focusOutEvent|fontChanged|geometryState|heightAdjusted|hoverLeaveEvent|hoverMoveEvent|id|itemChange|itemPropertiesRequested|keyPressEvent|keyReleaseEvent|layer|layerAdjusted|layerChanged|layerPanel|layersChanged|leaveEvent|lockToggled|mergeWith|mode|modeChanged|mouseDoubleClickEvent|mouseMoveEvent|mousePressEvent|mouseReleaseEvent|opacityChosen|openFolderRequested|options|paint|paintEvent|params|paramState|propertiesPanel|redo|refreshRequested|renameRequested|shape|shapeLayer|shapeType|showEvent|sineAmplitudeChosen|sineCyclesChosen|startAngleChosen|statusMessage|strokeColorChosen|strokeColorPicked|strokePattern|sweepAngleChosen|textColorChosen|textContentChosen|textFontChosen|textPlacementRequested|triangleAngle1Chosen|triangleAngle2Chosen|triangleBaseChosen|triangleVertex|type|undo|visibilityToggled|wheelEvent|zoomChanged)$'
+  - key: readability-identifier-naming.PrivateMemberCase
+    value: camelBack
+  - key: readability-identifier-naming.PrivateMemberPrefix
+    value: 'm_'
+  - key: readability-identifier-naming.ProtectedMemberCase
+    value: camelBack
+  - key: readability-identifier-naming.ProtectedMemberPrefix
+    value: 'm_'
+  - key: readability-identifier-naming.LocalVariableCase
+    value: camelBack
+  - key: readability-identifier-naming.ParameterCase
+    value: camelBack
+  - key: readability-identifier-naming.ConstexprVariableCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.ConstexprVariableIgnoredRegexp
+    value: '^BackgroundLayerId$'
+  - key: readability-identifier-naming.StaticConstantCase
+    value: UPPER_CASE
+
+  - key: readability-identifier-naming.PrivateMemberCase
+    value: camelBack
+  - key: readability-identifier-naming.PrivateMemberPrefix
+    value: 'm_'
+  - key: readability-identifier-naming.ProtectedMemberCase
+    value: camelBack
+  - key: readability-identifier-naming.ProtectedMemberPrefix
+    value: 'm_'
+  - key: readability-identifier-naming.LocalVariableCase
+    value: camelBack
+  - key: readability-identifier-naming.ParameterCase
+    value: camelBack
+  - key: readability-identifier-naming.ConstexprVariableCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.ConstexprVariableIgnoredRegexp
+    value: '^BackgroundLayerId$'
+  - key: readability-identifier-naming.StaticConstantCase
+    value: UPPER_CASE
