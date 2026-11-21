@@ -43,13 +43,13 @@ QRectF arrayToRect(const QJsonArray& array, const QRectF& fallback)
 
 ArcItem::ArcItem(QGraphicsItem* parent) : LineItemAbstract(parent) {}
 
-ItemPropertySet ArcItem::properties() const
+ItemPropertySet ArcItem::Properties() const
 {
     // 弧线只有角度参数，没有箭头行（与现状一致）。
-    return LineItemAbstract::properties().united(ItemPropertySet{ItemProperty::START_ANGLE, ItemProperty::SWEEP_ANGLE});
+    return LineItemAbstract::Properties().united(ItemPropertySet{ItemProperty::START_ANGLE, ItemProperty::SWEEP_ANGLE});
 }
 
-QVariant ArcItem::propertyValue(ItemProperty property) const
+QVariant ArcItem::PropertyValue(ItemProperty property) const
 {
     switch (property) {
     case ItemProperty::START_ANGLE:
@@ -57,11 +57,11 @@ QVariant ArcItem::propertyValue(ItemProperty property) const
     case ItemProperty::SWEEP_ANGLE:
         return m_sweepAngle;
     default:
-        return LineItemAbstract::propertyValue(property);
+        return LineItemAbstract::PropertyValue(property);
     }
 }
 
-void ArcItem::setPropertyValue(ItemProperty property, const QVariant& value)
+void ArcItem::SetPropertyValue(ItemProperty property, const QVariant& value)
 {
     switch (property) {
     case ItemProperty::START_ANGLE:
@@ -71,19 +71,19 @@ void ArcItem::setPropertyValue(ItemProperty property, const QVariant& value)
         setAngles(m_startAngle, value.toDouble());
         break;
     default:
-        LineItemAbstract::setPropertyValue(property, value);
+        LineItemAbstract::SetPropertyValue(property, value);
         break;
     }
 }
 
-QString ArcItem::displayName() const
+QString ArcItem::DisplayName() const
 {
     return uiText(QStringLiteral("Arc"));
 }
 
-QRectF ArcItem::frameRect() const
+QRectF ArcItem::FrameRect() const
 {
-    return paddedToMinimum(CanvasItem::frameRect());
+    return paddedToMinimum(CanvasItem::FrameRect());
 }
 
 ArcItem::ParamState ArcItem::paramState() const
@@ -91,7 +91,7 @@ ArcItem::ParamState ArcItem::paramState() const
     return ParamState{m_startAngle, m_sweepAngle, true};
 }
 
-void ArcItem::applyParamState(const ParamState& state)
+void ArcItem::ApplyParamState(const ParamState& state)
 {
     setAngles(state.first, state.second);
 }
@@ -115,7 +115,7 @@ void ArcItem::setArcGeometry(const QPointF& topLeftScene, const QSizeF& size, qr
 
     const QRectF frameScene(topLeftScene, size);
     setFrame(frameScene);
-    setStrokePoints(sample(m_startAngle, m_sweepAngle, ARC_SAMPLES), color, width, 0.0, false);
+    SetStrokePoints(sample(m_startAngle, m_sweepAngle, ARC_SAMPLES), color, width, 0.0, false);
 
     const QPointF origin = pos();
     const QSizeF box = contentSize();
@@ -138,7 +138,7 @@ void ArcItem::rebuild()
                        m_refFrame.height() * box.height());
     const QRectF frameScene = local.translated(pos());
     setFrame(frameScene);
-    setStrokePoints(sample(m_startAngle, m_sweepAngle, ARC_SAMPLES), strokeColor(), strokeWidth(), 0.0, false);
+    SetStrokePoints(sample(m_startAngle, m_sweepAngle, ARC_SAMPLES), StrokeColor(), StrokeWidth(), 0.0, false);
 
     const QPointF origin = pos();
     const QSizeF now = contentSize();
@@ -150,18 +150,18 @@ void ArcItem::rebuild()
     update();
 }
 
-QJsonObject ArcItem::toJson() const
+QJsonObject ArcItem::ToJson() const
 {
-    QJsonObject json = LineItemAbstract::toJson();
+    QJsonObject json = LineItemAbstract::ToJson();
     json.insert(QStringLiteral("startAngle"), m_startAngle);
     json.insert(QStringLiteral("sweepAngle"), m_sweepAngle);
     json.insert(QStringLiteral("arcFrame"), rectToArray(m_refFrame));
     return json;
 }
 
-void ArcItem::fromJson(const QJsonObject& json)
+void ArcItem::FromJson(const QJsonObject& json)
 {
-    LineItemAbstract::fromJson(json);
+    LineItemAbstract::FromJson(json);
     m_startAngle = json.value(QStringLiteral("startAngle")).toDouble(30.0);
     m_sweepAngle = EllipseShape::clampedSweep(json.value(QStringLiteral("sweepAngle")).toDouble(120.0));
     m_refFrame = arrayToRect(json.value(QStringLiteral("arcFrame")).toArray(), QRectF(0.0, 0.0, 1.0, 1.0));

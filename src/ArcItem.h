@@ -13,27 +13,27 @@ class ArcItem : public LineItemAbstract, public EllipseShape {
   public:
     explicit ArcItem(QGraphicsItem* parent = nullptr);
 
-    QString kind() const override { return QStringLiteral("arc"); }
-    QString displayName() const override;
-    QRectF frameRect() const override;
+    QString Kind() const override { return QStringLiteral("arc"); }
+    QString DisplayName() const override;
+    QRectF FrameRect() const override;
 
-    qreal startAngle() const { return m_startAngle; }
-    qreal sweepAngle() const { return m_sweepAngle; }
+    qreal StartAngle() const { return m_startAngle; }
+    qreal SweepAngle() const { return m_sweepAngle; }
     void setAngles(qreal startDeg, qreal sweepDeg);
 
     // 插入入口：椭圆框 + 起始角 / 扫过角。
     void setArcGeometry(const QPointF& topLeftScene, const QSizeF& size, qreal startDeg, qreal sweepDeg,
                         const QColor& color, qreal width);
 
-    bool supportsArcAngles() const override { return true; }
+    bool SupportsArcAngles() const override { return true; }
     ParamState paramState() const override;
-    void applyParamState(const ParamState& state) override;
-    ItemPropertySet properties() const override;
-    QVariant propertyValue(ItemProperty property) const override;
-    void setPropertyValue(ItemProperty property, const QVariant& value) override;
+    void ApplyParamState(const ParamState& state) override;
+    ItemPropertySet Properties() const override;
+    QVariant PropertyValue(ItemProperty property) const override;
+    void SetPropertyValue(ItemProperty property, const QVariant& value) override;
 
-    QJsonObject toJson() const override;
-    void fromJson(const QJsonObject& json) override;
+    QJsonObject ToJson() const override;
+    void FromJson(const QJsonObject& json) override;
 
   private:
     // 角度变化后按“上次椭圆框相对内容框的比例”重建，拉伸过再改角度不会跳。

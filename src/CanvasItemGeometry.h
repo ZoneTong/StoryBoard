@@ -7,7 +7,7 @@
 // 帧边距，选中时还要给上方的旋转手柄留出位置。
 namespace CanvasItemGeometry {
 
-QRectF contentRect(const QSizeF& size);
+QRectF ContentRect(const QSizeF& size);
 
 // 依据内容矩形、帧边距与选中状态计算图元的粗包围矩形。
 QRectF boundingRect(const QRectF& content, qreal framePadding, bool selected, qreal viewScale, qreal handleSize,

@@ -41,7 +41,7 @@ QPixmap decodePixmap(const QString& base64)
 
 } // namespace
 
-QJsonObject CanvasScene::toJson() const
+QJsonObject CanvasScene::ToJson() const
 {
     QJsonObject root;
     root.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
@@ -104,16 +104,16 @@ QJsonObject CanvasScene::toJson() const
     QSet<QString> usedImageIds;
     const QList<CanvasItem*> items = canvasItems();
     for (CanvasItem* item : items) {
-        QJsonObject itemJson = item->toJson();
+        QJsonObject itemJson = item->ToJson();
         // 旧画布只有图形自带 opacity，这里统一给所有图元写入透明度。
-        itemJson.insert(QStringLiteral("opacity"), item->itemOpacity());
-        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->hasFillImage()) {
+        itemJson.insert(QStringLiteral("opacity"), item->ItemOpacity());
+        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->HasFillImage()) {
             // 以图元当前像素重新签发 id：复制 / 粘贴 / 换图后内容与 id 必然一致。
-            const QString id = ImageStore::store(&imagesTable, shape->fillImage());
+            const QString id = ImageStore::store(&imagesTable, shape->FillImage());
             if (!id.isEmpty()) {
                 usedImageIds.insert(id);
                 itemJson.insert(QStringLiteral("fillImageId"), id);
-                itemJson.insert(QStringLiteral("fillImageMode"), ImageFill::modeToString(shape->fillImageMode()));
+                itemJson.insert(QStringLiteral("fillImageMode"), ImageFill::modeToString(shape->FillImageMode()));
                 itemJson.remove(QStringLiteral("fillImage"));
             }
         }
@@ -127,7 +127,7 @@ QJsonObject CanvasScene::toJson() const
     return root;
 }
 
-bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
+bool CanvasScene::FromJson(const QJsonObject& root, QString* errorMessage)
 {
     auto fail = [errorMessage](const QString& message) {
         if (errorMessage) {
@@ -179,14 +179,14 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
             qDeleteAll(parsedItems);
             return fail(tr("The canvas contains an unknown item type: %1").arg(kind));
         }
-        item->fromJson(itemJson);
-        item->setItemOpacity(itemJson.value(QStringLiteral("opacity")).toDouble(1.0));
+        item->FromJson(itemJson);
+        item->SetItemOpacity(itemJson.value(QStringLiteral("opacity")).toDouble(1.0));
         // 需求 11：引用式背景图片；表里缺项（例如手工改过文件）时按无图处理，不阻断打开。
-        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && !shape->fillImageId().isEmpty()) {
-            const QPixmap pixmap = ImageStore::pixmapFromEntry(imagesTable.value(shape->fillImageId()).toObject());
+        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && !shape->FillImageId().isEmpty()) {
+            const QPixmap pixmap = ImageStore::pixmapFromEntry(imagesTable.value(shape->FillImageId()).toObject());
             if (!pixmap.isNull()) {
-                shape->setFillImage(pixmap, shape->fillImageMode());
-                shape->setFillImageId(itemJson.value(QStringLiteral("fillImageId")).toString());
+                shape->SetFillImage(pixmap, shape->FillImageMode());
+                shape->SetFillImageId(itemJson.value(QStringLiteral("fillImageId")).toString());
             }
         }
         parsedItems.append(item);
@@ -264,15 +264,15 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
     applyLayerStateInternal(sanitizedLayerState(state), false);
 
     for (CanvasItem* item : std::as_const(parsedItems)) {
-        if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId) {
-            item->setLayerId(m_activeLayerId);
+        if (!hasLayer(item->LayerId()) || item->LayerId() == BackgroundLayerId) {
+            item->SetLayerId(m_activeLayerId);
         }
         addItem(item);
     }
 
     m_nextGroupId = 1;
     for (CanvasItem* item : canvasItems()) {
-        m_nextGroupId = qMax(m_nextGroupId, item->groupId() + 1);
+        m_nextGroupId = qMax(m_nextGroupId, item->GroupId() + 1);
     }
     // 还原嵌套分组的父子关系（旧文件没有这个字段，按平铺分组处理）。
     QHash<int, int> parents;
@@ -295,17 +295,17 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
     QHash<int, QSet<int>> usedHeights;
     const QList<CanvasItem*> items = canvasItems();
     for (const CanvasItem* item : items) {
-        usedHeights[item->layerId()].insert(item->height());
+        usedHeights[item->LayerId()].insert(item->ZOrder());
     }
     for (CanvasItem* item : items) {
-        if (item->height() >= 0) {
+        if (item->ZOrder() >= 0) {
             continue;
         }
-        auto it = nextHeights.constFind(item->layerId());
+        auto it = nextHeights.constFind(item->LayerId());
         int next = 0;
         if (it == nextHeights.constEnd()) {
-            next = nextHeight(item->layerId());
-            nextHeights.insert(item->layerId(), next);
+            next = nextHeight(item->LayerId());
+            nextHeights.insert(item->LayerId(), next);
         } else {
             next = it.value();
         }
@@ -314,13 +314,13 @@ bool CanvasScene::fromJson(const QJsonObject& root, QString* errorMessage)
         // 不再把非法值写进图元。
         if (next < 0) {
             next = 0;
-            for (const int height : std::as_const(usedHeights[item->layerId()])) {
+            for (const int height : std::as_const(usedHeights[item->LayerId()])) {
                 next = qMax(next, height + 1);
             }
         }
-        item->setHeight(qMin(scene_constants::MAX_ITEM_HEIGHT, next));
-        nextHeights[item->layerId()] = qMin(scene_constants::MAX_ITEM_HEIGHT, next + 1);
-        usedHeights[item->layerId()].insert(item->height());
+        item->SetZOrder(qMin(scene_constants::MAX_ITEM_HEIGHT, next));
+        nextHeights[item->LayerId()] = qMin(scene_constants::MAX_ITEM_HEIGHT, next + 1);
+        usedHeights[item->LayerId()].insert(item->ZOrder());
     }
 
     // Enforce the canvas invariant: every layer has one item per height.

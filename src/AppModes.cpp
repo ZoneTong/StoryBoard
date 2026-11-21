@@ -74,7 +74,7 @@ int runUiScreenshot(const CommandLineOptions& options)
 
     CanvasScene demoScene;
     populateDemoScene(demoScene);
-    window.scene()->fromJson(demoScene.toJson());
+    window.scene()->FromJson(demoScene.ToJson());
     window.view()->fitAll();
     QApplication::processEvents();
 
@@ -231,7 +231,7 @@ int runItemPropertiesScreenshot(const CommandLineOptions& options)
     if (!target) {
         return 3;
     }
-    demoScene.setActiveLayer(target->layerId());
+    demoScene.setActiveLayer(target->LayerId());
     target->setSelected(true);
 
     ItemPropertiesDialog dialog(&demoScene, target);
@@ -365,8 +365,8 @@ int runLineArt(const CommandLineOptions& options)
         }
         // 与「导入图片线稿化」一致：不额外平滑，折线模式保持方角。
         auto* stroke = new CurveItem();
-        stroke->setStrokePoints(scenePoints, outline.color, lineArtOptions.strokeWidth, 0.0, true);
-        stroke->setSource(CurveSource::LINE_ART);
+        stroke->SetStrokePoints(scenePoints, outline.color, lineArtOptions.strokeWidth, 0.0, true);
+        stroke->SetStrokeSource(CurveSource::LINE_ART);
         items.append(stroke);
     }
     if (items.isEmpty()) {
@@ -387,7 +387,7 @@ int runLineArt(const CommandLineOptions& options)
         std::fprintf(stderr, "lineart: could not write the file: %s\n", qPrintable(outputPath));
         return 1;
     }
-    const QJsonDocument document(scene.toJson());
+    const QJsonDocument document(scene.ToJson());
     file.write(document.toJson(QJsonDocument::Indented));
     if (!file.commit()) {
         std::fprintf(stderr, "lineart: could not write the file: %s\n", qPrintable(outputPath));

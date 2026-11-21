@@ -10,6 +10,6 @@ class EllipseItem : public ShapeItem, public EllipseShape {
     ShapeType shapeType() const override { return ShapeType::ELLIPSE; }
 
   protected:
-    void contentResized() override;
-    QPainterPath shapePath(const QRectF& rect) const override;
+    void ContentResized() override;
+    QPainterPath ShapePath(const QRectF& rect) const override;
 };

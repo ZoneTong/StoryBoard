@@ -29,19 +29,19 @@ void CanvasScene::attachItem(CanvasItem* item)
         addItem(item);
     }
 
-    if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId) {
-        item->setLayerId(m_activeLayerId);
+    if (!hasLayer(item->LayerId()) || item->LayerId() == BackgroundLayerId) {
+        item->SetLayerId(m_activeLayerId);
     }
-    if (item->height() < 0 || item->height() > scene_constants::MAX_ITEM_HEIGHT ||
-        heightUsedByOther(item->layerId(), item->height(), item)) {
-        const int height = nextHeight(item->layerId());
-        item->setHeight(height >= 0 ? height : 0);
+    if (item->ZOrder() < 0 || item->ZOrder() > scene_constants::MAX_ITEM_HEIGHT ||
+        heightUsedByOther(item->LayerId(), item->ZOrder(), item)) {
+        const int height = nextHeight(item->LayerId());
+        item->SetZOrder(height >= 0 ? height : 0);
     }
-    const QString existingName = item->rawName().trimmed();
+    const QString existingName = item->CustomName().trimmed();
     if (existingName.isEmpty()) {
-        item->setName(uniqueItemName(item->typeDisplayName(), item));
+        item->SetName(uniqueItemName(item->TypeDisplayName(), item));
     } else if (!isItemNameAvailable(existingName, item)) {
-        item->setName(uniqueItemNameFor(existingName, item));
+        item->SetName(uniqueItemNameFor(existingName, item));
     }
     applyItemStacking(item);
     applyItemInteraction(item);
@@ -112,14 +112,14 @@ int CanvasScene::duplicateSelectedItems()
     // 时副本保持未分组，避免副本和原组意外联动。
     QHash<int, QList<CanvasItem*>> groupMembers;
     for (CanvasItem* item : canvasItems()) {
-        if (item->groupId() > 0) {
-            groupMembers[item->groupId()].append(item);
+        if (item->GroupId() > 0) {
+            groupMembers[item->GroupId()].append(item);
         }
     }
     QHash<int, int> selectedGroupCounts;
     for (CanvasItem* source : sources) {
-        if (source->groupId() > 0) {
-            ++selectedGroupCounts[source->groupId()];
+        if (source->GroupId() > 0) {
+            ++selectedGroupCounts[source->GroupId()];
         }
     }
     QHash<int, int> copyGroupIds;
@@ -127,31 +127,31 @@ int CanvasScene::duplicateSelectedItems()
     QList<CanvasItem*> copies;
     QSet<QString> reservedNames;
     for (CanvasItem* source : sources) {
-        CanvasItem* copy = createItemForJson(source->toJson());
+        CanvasItem* copy = createItemForJson(source->ToJson());
         if (!copy) {
             continue;
         }
-        copy->fromJson(source->toJson());
-        copy->setGroupId(0);
+        copy->FromJson(source->ToJson());
+        copy->SetGroupId(0);
 
-        const int sourceGroupId = source->groupId();
+        const int sourceGroupId = source->GroupId();
         if (sourceGroupId > 0 && selectedGroupCounts.value(sourceGroupId) == groupMembers.value(sourceGroupId).size() &&
             groupMembers.value(sourceGroupId).size() >= 2) {
             if (!copyGroupIds.contains(sourceGroupId)) {
                 copyGroupIds.insert(sourceGroupId, m_nextGroupId++);
             }
-            copy->setGroupId(copyGroupIds.value(sourceGroupId));
+            copy->SetGroupId(copyGroupIds.value(sourceGroupId));
         }
 
         // 副本与原图元完全重叠会让用户以为没有复制成功，统一向右下错开一点。
         copy->setPos(source->pos() + QPointF(20.0, 20.0));
 
-        const QString sourceName = source->rawName().trimmed();
+        const QString sourceName = source->CustomName().trimmed();
         if (sourceName.isEmpty()) {
-            copy->setName(QString());
+            copy->SetName(QString());
         } else {
             const QString copyName = uniqueItemNameFor(sourceName, copy, reservedNames);
-            copy->setName(copyName);
+            copy->SetName(copyName);
             reservedNames.insert(copyName.toCaseFolded());
         }
         copies.append(copy);
@@ -193,21 +193,21 @@ void CanvasScene::addItemsWithUndo(const QList<CanvasItem*>& items, const QStrin
     QHash<int, QSet<int>> usedHeights;
     const QList<CanvasItem*> existing = canvasItems();
     for (const CanvasItem* item : existing) {
-        usedHeights[item->layerId()].insert(item->height());
+        usedHeights[item->LayerId()].insert(item->ZOrder());
     }
 
     for (CanvasItem* item : items) {
         if (!item) {
             continue;
         }
-        if (!hasLayer(item->layerId()) || item->layerId() == BackgroundLayerId) {
-            item->setLayerId(m_activeLayerId);
+        if (!hasLayer(item->LayerId()) || item->LayerId() == BackgroundLayerId) {
+            item->SetLayerId(m_activeLayerId);
         }
 
-        QSet<int>& used = usedHeights[item->layerId()];
-        int height = item->height();
+        QSet<int>& used = usedHeights[item->LayerId()];
+        int height = item->ZOrder();
         if (height < 0 || height > scene_constants::MAX_ITEM_HEIGHT || used.contains(height)) {
-            height = nextHeight(item->layerId());
+            height = nextHeight(item->LayerId());
             while (height >= 0 && height < scene_constants::MAX_ITEM_HEIGHT && used.contains(height)) {
                 ++height;
             }
@@ -215,10 +215,10 @@ void CanvasScene::addItemsWithUndo(const QList<CanvasItem*>& items, const QStrin
                 height = 0;
             }
         }
-        item->setHeight(qBound(0, height, scene_constants::MAX_ITEM_HEIGHT));
-        used.insert(item->height());
-        if (item->groupId() > 0) {
-            m_nextGroupId = qMax(m_nextGroupId, item->groupId() + 1);
+        item->SetZOrder(qBound(0, height, scene_constants::MAX_ITEM_HEIGHT));
+        used.insert(item->ZOrder());
+        if (item->GroupId() > 0) {
+            m_nextGroupId = qMax(m_nextGroupId, item->GroupId() + 1);
         }
         applyItemStacking(item);
     }

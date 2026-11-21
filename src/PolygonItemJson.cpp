@@ -67,9 +67,9 @@ QPainterPath PolygonItem::pathFromJson(const QJsonArray& elements)
     return path;
 }
 
-QJsonObject PolygonItem::toJson() const
+QJsonObject PolygonItem::ToJson() const
 {
-    QJsonObject json = baseJson();
+    QJsonObject json = BaseJson();
     QJsonArray layers;
     for (const Layer& layer : m_layers) {
         QJsonObject entry;
@@ -84,18 +84,18 @@ QJsonObject PolygonItem::toJson() const
     json.insert(QStringLiteral("layers"), layers);
     json.insert(QStringLiteral("fillStyle"), static_cast<int>(m_fillStyle));
     json.insert(QStringLiteral("strokeStyle"), static_cast<int>(m_strokeStyle));
-    json.insert(QStringLiteral("designWidth"), m_designSize.width());
-    json.insert(QStringLiteral("designHeight"), m_designSize.height());
-    const QJsonObject fillImageJson = ImageFill::toJson(m_fillImage, fillImageMode());
+    json.insert(QStringLiteral("designWidth"), m_baseSize.width());
+    json.insert(QStringLiteral("designHeight"), m_baseSize.height());
+    const QJsonObject fillImageJson = ImageFill::ToJson(m_fillImage, FillImageMode());
     if (!fillImageJson.isEmpty()) {
         json.insert(QStringLiteral("fillImage"), fillImageJson);
     }
     return json;
 }
 
-void PolygonItem::fromJson(const QJsonObject& json)
+void PolygonItem::FromJson(const QJsonObject& json)
 {
-    applyBaseJson(json);
+    ApplyBaseJson(json);
     m_layers.clear();
     const QJsonArray layers = json.value(QStringLiteral("layers")).toArray();
     for (const QJsonValue& value : layers) {
@@ -120,9 +120,9 @@ void PolygonItem::fromJson(const QJsonObject& json)
     m_strokeStyle = strokeStyle >= static_cast<int>(Qt::NoPen) && strokeStyle <= static_cast<int>(Qt::CustomDashLine)
                         ? static_cast<Qt::PenStyle>(strokeStyle)
                         : Qt::SolidLine;
-    m_designSize = QSizeF(qMax(1.0, json.value(QStringLiteral("designWidth")).toDouble(1.0)),
-                          qMax(1.0, json.value(QStringLiteral("designHeight")).toDouble(1.0)));
-    setContentSize(m_designSize);
+    m_baseSize = QSizeF(qMax(1.0, json.value(QStringLiteral("designWidth")).toDouble(1.0)),
+                        qMax(1.0, json.value(QStringLiteral("designHeight")).toDouble(1.0)));
+    SetContentSize(m_baseSize);
     if (json.contains(QStringLiteral("fillImage"))) {
         m_fillImage = ImageFill::pixmapFromJson(json.value(QStringLiteral("fillImage")).toObject(), &m_fillImageMode);
     } else {

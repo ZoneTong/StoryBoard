@@ -4,7 +4,7 @@
 
 TriangleItem::TriangleItem()
 {
-    setContentSize(defaultContentSize());
+    SetContentSize(defaultContentSize());
 }
 
 QSizeF TriangleItem::defaultContentSize() const
@@ -12,16 +12,16 @@ QSizeF TriangleItem::defaultContentSize() const
     return QSizeF(128.0, 111.0);
 }
 
-ItemPropertySet TriangleItem::properties() const
+ItemPropertySet TriangleItem::Properties() const
 {
-    ItemPropertySet result = ShapeItem::properties();
+    ItemPropertySet result = ShapeItem::Properties();
     result.insert(ItemProperty::TRIANGLE_BASE);
     result.insert(ItemProperty::BOTTOM_ANGLE1);
     result.insert(ItemProperty::BOTTOM_ANGLE2);
     return result;
 }
 
-QPainterPath TriangleItem::shapePath(const QRectF& rect) const
+QPainterPath TriangleItem::ShapePath(const QRectF& rect) const
 {
-    return ShapePathBuilder::trianglePath(rect, bottomAngle1(), bottomAngle2());
+    return ShapePathBuilder::trianglePath(rect, BottomAngle1(), BottomAngle2());
 }

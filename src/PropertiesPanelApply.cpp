@@ -49,8 +49,8 @@ void PropertiesPanel::changeSelectedShapes(const QString& text, const std::funct
     after.reserve(shapes.size());
     for (ShapeItem* shape : shapes) {
         QMap<ItemProperty, QVariant> beforeValues;
-        for (ItemProperty property : shape->properties().values()) {
-            beforeValues.insert(property, shape->propertyValue(property));
+        for (ItemProperty property : shape->Properties().values()) {
+            beforeValues.insert(property, shape->PropertyValue(property));
         }
         items.append(shape);
         before.append(beforeValues);
@@ -62,8 +62,8 @@ void PropertiesPanel::changeSelectedShapes(const QString& text, const std::funct
     m_refreshing = false;
     for (ShapeItem* shape : shapes) {
         QMap<ItemProperty, QVariant> afterValues;
-        for (ItemProperty property : shape->properties().values()) {
-            afterValues.insert(property, shape->propertyValue(property));
+        for (ItemProperty property : shape->Properties().values()) {
+            afterValues.insert(property, shape->PropertyValue(property));
         }
         after.append(afterValues);
     }
@@ -85,14 +85,14 @@ void PropertiesPanel::applyPropertyValues(const QMap<ItemProperty, QVariant>& va
     QList<QMap<ItemProperty, QVariant>> after;
     m_refreshing = true;
     for (CanvasItem* item : items) {
-        const ItemPropertySet properties = item->properties();
+        const ItemPropertySet properties = item->Properties();
         QMap<ItemProperty, QVariant> beforeValues;
         QMap<ItemProperty, QVariant> afterValues;
         for (auto it = values.constBegin(); it != values.constEnd(); ++it) {
             if (!properties.contains(it.key())) {
                 continue;
             }
-            beforeValues.insert(it.key(), item->propertyValue(it.key()));
+            beforeValues.insert(it.key(), item->PropertyValue(it.key()));
             afterValues.insert(it.key(), it.value());
         }
         if (afterValues.isEmpty()) {
@@ -100,7 +100,7 @@ void PropertiesPanel::applyPropertyValues(const QMap<ItemProperty, QVariant>& va
         }
         // 先写值，命令随后 push 时的 redo 幂等执行；撤销 / 重做都按快照回放。
         for (auto it = afterValues.constBegin(); it != afterValues.constEnd(); ++it) {
-            item->setPropertyValue(it.key(), it.value());
+            item->SetPropertyValue(it.key(), it.value());
         }
         applyItems.append(item);
         before.append(beforeValues);
@@ -137,19 +137,19 @@ void PropertiesPanel::applyFillColor(const QColor& color)
     QList<QMap<ItemProperty, QVariant>> after;
     m_refreshing = true;
     for (CanvasItem* item : items) {
-        const ItemPropertySet properties = item->properties();
+        const ItemPropertySet properties = item->Properties();
         if (!properties.contains(ItemProperty::FILL_COLOR)) {
             continue;
         }
         QMap<ItemProperty, QVariant> beforeValues;
-        beforeValues.insert(ItemProperty::FILL_COLOR, item->propertyValue(ItemProperty::FILL_COLOR));
+        beforeValues.insert(ItemProperty::FILL_COLOR, item->PropertyValue(ItemProperty::FILL_COLOR));
         if (properties.contains(ItemProperty::FILL_STYLE)) {
-            beforeValues.insert(ItemProperty::FILL_STYLE, item->propertyValue(ItemProperty::FILL_STYLE));
+            beforeValues.insert(ItemProperty::FILL_STYLE, item->PropertyValue(ItemProperty::FILL_STYLE));
         }
         QMap<ItemProperty, QVariant> afterValues = beforeValues;
         afterValues.insert(ItemProperty::FILL_COLOR, color);
         if (properties.contains(ItemProperty::FILL_STYLE) &&
-            item->propertyValue(ItemProperty::FILL_STYLE).toInt() == static_cast<int>(FillStyle::NONE)) {
+            item->PropertyValue(ItemProperty::FILL_STYLE).toInt() == static_cast<int>(FillStyle::NONE)) {
             afterValues.insert(ItemProperty::FILL_STYLE, static_cast<int>(FillStyle::SOLID));
         }
         targets.append(item);
@@ -159,7 +159,7 @@ void PropertiesPanel::applyFillColor(const QColor& color)
     // 先写值再入栈：命令的 redo 会被 push 重复执行一次，幂等即可，这里保持与旧实现一致。
     for (int index = 0; index < targets.size(); ++index) {
         for (auto it = after.at(index).constBegin(); it != after.at(index).constEnd(); ++it) {
-            targets.at(index)->setPropertyValue(it.key(), it.value());
+            targets.at(index)->SetPropertyValue(it.key(), it.value());
         }
     }
     m_refreshing = false;
@@ -217,7 +217,7 @@ void PropertiesPanel::changeSelectedTexts(const QString& text, const std::functi
     QList<TextItemState> afterStates;
     bool changed = false;
     for (CanvasItem* item : texts) {
-        const TextItemState before = item->textState();
+        const TextItemState before = item->TextState();
         TextItemState after = before;
         mutate(after);
         beforeStates.append(before);
@@ -273,7 +273,7 @@ void PropertiesPanel::changeSelectedArcs(const QString& text, const std::functio
 {
     QList<LineItemAbstract*> arcs;
     for (LineItemAbstract* stroke : selectedStrokes()) {
-        if (stroke->supportsArcAngles()) {
+        if (stroke->SupportsArcAngles()) {
             arcs.append(stroke);
         }
     }
@@ -308,7 +308,7 @@ void PropertiesPanel::changeSelectedSines(const QString& text, const std::functi
 {
     QList<LineItemAbstract*> sines;
     for (LineItemAbstract* stroke : selectedStrokes()) {
-        if (stroke->supportsSineWave()) {
+        if (stroke->SupportsSineWave()) {
             sines.append(stroke);
         }
     }
@@ -345,7 +345,7 @@ void PropertiesPanel::chooseFillImage()
     QList<ShapeItem*> shapes;
     for (CanvasItem* item : selectedItems()) {
         if (auto* shape = dynamic_cast<ShapeItem*>(item);
-            shape && !shape->isCustomShape() && ShapeMeta::isFilled(shape->shapeType())) {
+            shape && !shape->IsCustomShape() && ShapeMeta::isFilled(shape->shapeType())) {
             shapes.append(shape);
         }
     }
@@ -361,8 +361,8 @@ void PropertiesPanel::chooseFillImage()
     QList<QMap<ItemProperty, QVariant>> after;
     for (ShapeItem* shape : shapes) {
         QMap<ItemProperty, QVariant> beforeValues;
-        beforeValues.insert(ItemProperty::FILL_IMAGE, shape->propertyValue(ItemProperty::FILL_IMAGE));
-        beforeValues.insert(ItemProperty::FILL_IMAGE_MODE, static_cast<int>(shape->fillImageMode()));
+        beforeValues.insert(ItemProperty::FILL_IMAGE, shape->PropertyValue(ItemProperty::FILL_IMAGE));
+        beforeValues.insert(ItemProperty::FILL_IMAGE_MODE, static_cast<int>(shape->FillImageMode()));
         QMap<ItemProperty, QVariant> afterValues = beforeValues;
         afterValues.insert(ItemProperty::FILL_IMAGE, QVariant::fromValue(pixmap));
         // 替换图片同时重置为拉伸模式，与原整份状态命令语义一致。
@@ -373,14 +373,14 @@ void PropertiesPanel::chooseFillImage()
     }
     for (int index = 0; index < items.size(); ++index) {
         for (auto it = after.at(index).constBegin(); it != after.at(index).constEnd(); ++it) {
-            items.at(index)->setPropertyValue(it.key(), it.value());
+            items.at(index)->SetPropertyValue(it.key(), it.value());
         }
     }
     m_scene->undoStack()->push(new ItemPropertyCommand(m_scene, items, before, after, tr("Replace fill image")));
     refresh();
 }
 
-void PropertiesPanel::clearFillImage()
+void PropertiesPanel::ClearFillImage()
 {
     if (selectedItems().isEmpty()) {
         return;
@@ -391,28 +391,28 @@ void PropertiesPanel::clearFillImage()
 void PropertiesPanel::applyCornerRadius(int radius)
 {
     changeSelectedShapes(tr("Change rectangle corner radius"),
-                         [radius](ShapeItem* shape) { shape->setCornerRadius(radius); });
+                         [radius](ShapeItem* shape) { shape->SetCornerRadius(radius); });
 }
 
 void PropertiesPanel::applyStartAngle(int angle)
 {
     changeSelectedShapes(tr("Change start angle"),
-                         [angle](ShapeItem* shape) { shape->setArcAngles(angle, shape->sweepAngle()); });
+                         [angle](ShapeItem* shape) { shape->SetArcAngles(angle, shape->SweepAngle()); });
     changeSelectedArcs(tr("Change start angle"), [angle](LineItemAbstract* arc) {
         LineItemAbstract::ParamState params = arc->paramState();
         params.first = angle;
-        arc->applyParamState(params);
+        arc->ApplyParamState(params);
     });
 }
 
 void PropertiesPanel::applySweepAngle(int angle)
 {
     changeSelectedShapes(tr("Change sector angle"),
-                         [angle](ShapeItem* shape) { shape->setArcAngles(shape->startAngle(), angle); });
+                         [angle](ShapeItem* shape) { shape->SetArcAngles(shape->StartAngle(), angle); });
     changeSelectedArcs(tr("Change arc sweep angle"), [angle](LineItemAbstract* arc) {
         LineItemAbstract::ParamState params = arc->paramState();
         params.second = angle;
-        arc->applyParamState(params);
+        arc->ApplyParamState(params);
     });
 }
 
@@ -422,7 +422,7 @@ void PropertiesPanel::applySineCycles(int cycles)
     changeSelectedSines(tr("Change sine cycles"), [bounded](LineItemAbstract* sine) {
         LineItemAbstract::ParamState params = sine->paramState();
         params.first = bounded;
-        sine->applyParamState(params);
+        sine->ApplyParamState(params);
     });
 }
 
@@ -432,7 +432,7 @@ void PropertiesPanel::applySineAmplitude(int pixels)
     changeSelectedSines(tr("Change sine amplitude"), [amplitude](LineItemAbstract* sine) {
         LineItemAbstract::ParamState params = sine->paramState();
         params.second = amplitude;
-        sine->applyParamState(params);
+        sine->ApplyParamState(params);
     });
 }
 
@@ -440,31 +440,31 @@ void PropertiesPanel::applyTriangleBase(int base)
 {
     // 底边即 A 边；改底边后高度由两个底角派生（contentResized 内完成）。
     changeSelectedShapes(tr("Change triangle base"), [base](ShapeItem* shape) {
-        if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->isCustomShape()) {
+        if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->IsCustomShape()) {
             return;
         }
         const QSizeF current = shape->contentSize();
-        shape->setContentSize(QSizeF(qMax<qreal>(8.0, base), current.height()));
+        shape->SetContentSize(QSizeF(qMax<qreal>(8.0, base), current.height()));
     });
 }
 
 void PropertiesPanel::applyTriangleAngle1(int degrees)
 {
     changeSelectedShapes(tr("Change triangle base angle"), [degrees](ShapeItem* shape) {
-        if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->isCustomShape()) {
+        if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->IsCustomShape()) {
             return;
         }
-        shape->setTriangleAngles(degrees, shape->bottomAngle2());
+        shape->SetTriangleAngles(degrees, shape->BottomAngle2());
     });
 }
 
 void PropertiesPanel::applyTriangleAngle2(int degrees)
 {
     changeSelectedShapes(tr("Change triangle base angle"), [degrees](ShapeItem* shape) {
-        if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->isCustomShape()) {
+        if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->IsCustomShape()) {
             return;
         }
-        shape->setTriangleAngles(shape->bottomAngle1(), degrees);
+        shape->SetTriangleAngles(shape->BottomAngle1(), degrees);
     });
 }
 
@@ -476,12 +476,12 @@ void PropertiesPanel::applyArrowStart(int style)
     QList<QMap<ItemProperty, QVariant>> before;
     QList<QMap<ItemProperty, QVariant>> after;
     for (LineItemAbstract* curve : curves) {
-        if (!curve || !curve->properties().contains(ItemProperty::ARROW_START)) {
+        if (!curve || !curve->Properties().contains(ItemProperty::ARROW_START)) {
             continue;
         }
         QMap<ItemProperty, QVariant> beforeValues;
-        beforeValues.insert(ItemProperty::ARROW_START, curve->propertyValue(ItemProperty::ARROW_START));
-        beforeValues.insert(ItemProperty::ARROW_END, curve->propertyValue(ItemProperty::ARROW_END));
+        beforeValues.insert(ItemProperty::ARROW_START, curve->PropertyValue(ItemProperty::ARROW_START));
+        beforeValues.insert(ItemProperty::ARROW_END, curve->PropertyValue(ItemProperty::ARROW_END));
         QMap<ItemProperty, QVariant> afterValues = beforeValues;
         afterValues.insert(ItemProperty::ARROW_START, style);
         targets.append(curve);
@@ -492,7 +492,7 @@ void PropertiesPanel::applyArrowStart(int style)
         return;
     }
     for (CanvasItem* target : targets) {
-        target->setPropertyValue(ItemProperty::ARROW_START, style);
+        target->SetPropertyValue(ItemProperty::ARROW_START, style);
     }
     m_scene->undoStack()->push(new ItemPropertyCommand(m_scene, targets, before, after, tr("Change line start arrow")));
     refresh();
@@ -505,12 +505,12 @@ void PropertiesPanel::applyArrowEnd(int style)
     QList<QMap<ItemProperty, QVariant>> before;
     QList<QMap<ItemProperty, QVariant>> after;
     for (LineItemAbstract* curve : curves) {
-        if (!curve || !curve->properties().contains(ItemProperty::ARROW_END)) {
+        if (!curve || !curve->Properties().contains(ItemProperty::ARROW_END)) {
             continue;
         }
         QMap<ItemProperty, QVariant> beforeValues;
-        beforeValues.insert(ItemProperty::ARROW_START, curve->propertyValue(ItemProperty::ARROW_START));
-        beforeValues.insert(ItemProperty::ARROW_END, curve->propertyValue(ItemProperty::ARROW_END));
+        beforeValues.insert(ItemProperty::ARROW_START, curve->PropertyValue(ItemProperty::ARROW_START));
+        beforeValues.insert(ItemProperty::ARROW_END, curve->PropertyValue(ItemProperty::ARROW_END));
         QMap<ItemProperty, QVariant> afterValues = beforeValues;
         afterValues.insert(ItemProperty::ARROW_END, style);
         targets.append(curve);
@@ -521,7 +521,7 @@ void PropertiesPanel::applyArrowEnd(int style)
         return;
     }
     for (CanvasItem* target : targets) {
-        target->setPropertyValue(ItemProperty::ARROW_END, style);
+        target->SetPropertyValue(ItemProperty::ARROW_END, style);
     }
     m_scene->undoStack()->push(new ItemPropertyCommand(m_scene, targets, before, after, tr("Change line end arrow")));
     refresh();

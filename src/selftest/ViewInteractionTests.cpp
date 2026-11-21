@@ -127,10 +127,10 @@ void selftest::runViewInteractionTests(Context& ctx)
     auto* drawnStroke = dynamic_cast<CurveItem*>(drawnItem);
     ctx.check(drawnStroke != nullptr, QStringLiteral("绘制图元类型为曲线"));
     if (drawnStroke) {
-        ctx.check(drawnStroke->strokeColor() == QColor(QStringLiteral("#2563EB")),
+        ctx.check(drawnStroke->StrokeColor() == QColor(QStringLiteral("#2563EB")),
                   QStringLiteral("画笔颜色应用到图元"));
-        ctx.check(qAbs(drawnStroke->strokeWidth() - 7.0) < 0.01, QStringLiteral("画笔粗细应用到图元"));
-        ctx.check(drawnStroke->layerId() == viewScene.activeLayerId() && drawnStroke->height() == 1,
+        ctx.check(qAbs(drawnStroke->StrokeWidth() - 7.0) < 0.01, QStringLiteral("画笔粗细应用到图元"));
+        ctx.check(drawnStroke->LayerId() == viewScene.activeLayerId() && drawnStroke->ZOrder() == 1,
                   QStringLiteral("鼠标绘制落入当前图层"));
         ctx.check(drawnStroke->contentSize().width() > 300.0 && drawnStroke->contentSize().height() > 150.0,
                   QStringLiteral("绘制曲线内容尺寸覆盖曲线范围"),
@@ -162,13 +162,13 @@ void selftest::runViewInteractionTests(Context& ctx)
         auto* lineShape = dynamic_cast<StraightLineItem*>(straightItem);
         ctx.check(lineShape != nullptr, QStringLiteral("笔直笔画归为直线图元（曲线族的直线子型）"));
         if (lineShape) {
-            ctx.check(lineShape->strokeColor() == QColor(QStringLiteral("#DC2626")) &&
-                          qAbs(lineShape->strokeWidth() - 5.0) < 0.01,
+            ctx.check(lineShape->StrokeColor() == QColor(QStringLiteral("#DC2626")) &&
+                          qAbs(lineShape->StrokeWidth() - 5.0) < 0.01,
                       QStringLiteral("直线图元沿用画笔颜色与粗细"));
             // 需求 20：直线必须落在落笔位置——两个端点回到场景坐标后要对上起笔 / 收笔点。
             const QRectF lineBounds = lineShape->sceneBoundingRect();
             const QPointF boundsCenter = lineBounds.center();
-            const QVector<QPointF> knots = lineShape->strokePoints();
+            const QVector<QPointF> knots = lineShape->StrokePoints();
             const QPointF startScene = knots.isEmpty() ? QPointF() : lineShape->mapToScene(knots.constFirst());
             const QPointF endScene = knots.isEmpty() ? startScene : lineShape->mapToScene(knots.constLast());
             ctx.check(qAbs(boundsCenter.x() - 320.0) < 8.0 && qAbs(boundsCenter.y() - 620.0) < 8.0 &&
@@ -223,8 +223,8 @@ void selftest::runViewInteractionTests(Context& ctx)
             jitterLine.appendScenePoint(QPointF(x, y));
         }
         jitterLine.endStroke(4.0);
-        ctx.check(jitterLine.strokePoints().size() == 2, QStringLiteral("自动平滑将手绘直线收敛为两点"),
-                  QString::number(jitterLine.strokePoints().size()));
+        ctx.check(jitterLine.StrokePoints().size() == 2, QStringLiteral("自动平滑将手绘直线收敛为两点"),
+                  QString::number(jitterLine.StrokePoints().size()));
 
         CurveItem rawLine;
         rawLine.beginStroke(QPointF(100, 100), QColor(QStringLiteral("#111827")), 4.0);
@@ -234,8 +234,8 @@ void selftest::runViewInteractionTests(Context& ctx)
             rawLine.appendScenePoint(QPointF(x, y));
         }
         rawLine.endStroke(0.0);
-        ctx.check(rawLine.strokePoints().size() == 41, QStringLiteral("平滑参数为 0 时关闭自动平滑"),
-                  QString::number(rawLine.strokePoints().size()));
+        ctx.check(rawLine.StrokePoints().size() == 41, QStringLiteral("平滑参数为 0 时关闭自动平滑"),
+                  QString::number(rawLine.StrokePoints().size()));
 
         CurveItem rawCurve;
         rawCurve.beginStroke(QPointF(100, 200), QColor(QStringLiteral("#111827")), 4.0);
@@ -249,13 +249,13 @@ void selftest::runViewInteractionTests(Context& ctx)
         }
         rawCurve.endStroke(0.0);
         smoothCurve.endStroke(4.0);
-        ctx.check(smoothCurve.strokePoints().size() >= 3 &&
-                      (smoothCurve.strokePoints().size() != rawCurve.strokePoints().size() ||
-                       smoothCurve.strokePoints() != rawCurve.strokePoints()),
+        ctx.check(smoothCurve.StrokePoints().size() >= 3 &&
+                      (smoothCurve.StrokePoints().size() != rawCurve.StrokePoints().size() ||
+                       smoothCurve.StrokePoints() != rawCurve.StrokePoints()),
                   QStringLiteral("自动平滑保留曲线并简化采样点"),
                   QStringLiteral("raw=%1 smooth=%2")
-                      .arg(rawCurve.strokePoints().size())
-                      .arg(smoothCurve.strokePoints().size()));
+                      .arg(rawCurve.StrokePoints().size())
+                      .arg(smoothCurve.StrokePoints().size()));
 
         CanvasScene manualScene;
         manualScene.applyCanvasSize(QSizeF(800, 600));
@@ -264,7 +264,7 @@ void selftest::runViewInteractionTests(Context& ctx)
         QUndoStack manualUndo;
         manualScene.setUndoStack(&manualUndo);
         auto* manualStroke = new CurveItem();
-        manualStroke->setLayerId(manualScene.activeLayerId());
+        manualStroke->SetLayerId(manualScene.activeLayerId());
         manualStroke->beginStroke(QPointF(120, 240), QColor(QStringLiteral("#111827")), 4.0);
         for (int i = 0; i < 50; ++i) {
             const qreal x = 120.0 + i * 4.0;
@@ -274,15 +274,15 @@ void selftest::runViewInteractionTests(Context& ctx)
         manualStroke->endStroke(0.0);
         manualScene.attachItem(manualStroke);
         manualStroke->setSelected(true);
-        const QVector<QPointF> beforeSmooth = manualStroke->strokePoints();
+        const QVector<QPointF> beforeSmooth = manualStroke->StrokePoints();
         const int manuallySmoothed = manualScene.smoothSelectedStrokes(4.0);
-        const QVector<QPointF> afterSmooth = manualStroke->strokePoints();
+        const QVector<QPointF> afterSmooth = manualStroke->StrokePoints();
         ctx.check(manuallySmoothed == 1 && manualUndo.count() == 1, QStringLiteral("选中曲线可手动平滑并进入撤销栈"),
                   QStringLiteral("changed=%1 undo=%2").arg(manuallySmoothed).arg(manualUndo.count()));
         manualUndo.undo();
-        ctx.check(manualStroke->strokePoints() == beforeSmooth, QStringLiteral("撤销手动平滑恢复曲线采样点"));
+        ctx.check(manualStroke->StrokePoints() == beforeSmooth, QStringLiteral("撤销手动平滑恢复曲线采样点"));
         manualUndo.redo();
-        ctx.check(manualStroke->strokePoints() == afterSmooth, QStringLiteral("重做手动平滑恢复平滑结果"));
+        ctx.check(manualStroke->StrokePoints() == afterSmooth, QStringLiteral("重做手动平滑恢复平滑结果"));
     }
 
     int textPlacementRequests = 0;
@@ -314,16 +314,16 @@ void selftest::runViewInteractionTests(Context& ctx)
     view.setMode(ToolMode::VIEW);
     QApplication::processEvents();
     const QRectF visibleScene = view.mapToScene(view.viewport()->rect()).boundingRect();
-    ctx.check(visibleScene.contains(viewScene.contentRect()), QStringLiteral("查看模式自动包含全部图元"),
+    ctx.check(visibleScene.contains(viewScene.ContentRect()), QStringLiteral("查看模式自动包含全部图元"),
               QStringLiteral("visible=%1,%2 %3x%4 content=%5,%6 %7x%8")
                   .arg(visibleScene.x())
                   .arg(visibleScene.y())
                   .arg(visibleScene.width())
                   .arg(visibleScene.height())
-                  .arg(viewScene.contentRect().x())
-                  .arg(viewScene.contentRect().y())
-                  .arg(viewScene.contentRect().width())
-                  .arg(viewScene.contentRect().height()));
+                  .arg(viewScene.ContentRect().x())
+                  .arg(viewScene.ContentRect().y())
+                  .arg(viewScene.ContentRect().width())
+                  .arg(viewScene.ContentRect().height()));
 
     const QPointF centerBefore = view.mapToScene(view.viewport()->rect().center());
     const QPoint panStart = view.viewport()->rect().center();
@@ -395,7 +395,7 @@ void selftest::runViewInteractionTests(Context& ctx)
         // Ctrl 在编辑模式下只负责加选/减选，不再用来拖动平移整体视图。
         const QPointF ctrlDragItemBefore = drawnStroke ? drawnStroke->pos() : QPointF();
         const QPoint ctrlDragStart =
-            view.mapFromScene(drawnStroke ? drawnStroke->sceneContentRect().center() : QPointF(500.0, 400.0));
+            view.mapFromScene(drawnStroke ? drawnStroke->SceneContentRect().center() : QPointF(500.0, 400.0));
         sendMouseEvent(view.viewport(), QEvent::MouseButtonPress, ctrlDragStart, Qt::LeftButton, Qt::LeftButton,
                        Qt::ControlModifier);
         sendMouseEvent(view.viewport(), QEvent::MouseMove, ctrlDragStart + QPoint(70, 45), Qt::NoButton, Qt::LeftButton,
@@ -410,7 +410,7 @@ void selftest::runViewInteractionTests(Context& ctx)
     if (drawnStroke) {
         // Ctrl 只是点击（没有拖动）时仍按点选处理，保留原有的“Ctrl 点击切换选中”。
         const bool ctrlClickSelectedBefore = drawnStroke->isSelected();
-        const QPoint ctrlClickPoint = view.mapFromScene(drawnStroke->sceneContentRect().center());
+        const QPoint ctrlClickPoint = view.mapFromScene(drawnStroke->SceneContentRect().center());
         sendMouseEvent(view.viewport(), QEvent::MouseButtonPress, ctrlClickPoint, Qt::LeftButton, Qt::LeftButton,
                        Qt::ControlModifier);
         sendMouseEvent(view.viewport(), QEvent::MouseButtonRelease, ctrlClickPoint, Qt::LeftButton, Qt::NoButton,
@@ -492,7 +492,7 @@ void selftest::runViewInteractionTests(Context& ctx)
     QApplication::processEvents();
     QObject::connect(&view, &CanvasView::itemPropertiesRequested, &view,
                      [&ctx](CanvasItem*) { ++ctx.itemPropertyRequests; });
-    const QPoint doubleClickPoint = view.mapFromScene(doubleClickText->sceneContentRect().center());
+    const QPoint doubleClickPoint = view.mapFromScene(doubleClickText->SceneContentRect().center());
     QMouseEvent doubleClickEvent(QEvent::MouseButtonDblClick, QPointF(doubleClickPoint),
                                  QPointF(view.viewport()->mapToGlobal(doubleClickPoint)), Qt::LeftButton,
                                  Qt::LeftButton, Qt::NoModifier);
@@ -504,7 +504,7 @@ void selftest::runViewInteractionTests(Context& ctx)
     view.setMode(ToolMode::VIEW);
     view.fitAll();
     QApplication::processEvents();
-    const QPoint viewDoubleClickPoint = view.mapFromScene(doubleClickText->sceneContentRect().center());
+    const QPoint viewDoubleClickPoint = view.mapFromScene(doubleClickText->SceneContentRect().center());
     QMouseEvent viewDoubleClickEvent(QEvent::MouseButtonDblClick, QPointF(viewDoubleClickPoint),
                                      QPointF(view.viewport()->mapToGlobal(viewDoubleClickPoint)), Qt::LeftButton,
                                      Qt::LeftButton, Qt::NoModifier);

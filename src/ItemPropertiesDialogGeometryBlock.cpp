@@ -30,10 +30,10 @@ ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(CanvasItem*
     m_rotationSpin = ItemPropertiesFields::makeSpin(this, QStringLiteral("ItemPropertiesRotationValue"), -360.0, 360.0);
     m_rotationSpin->setSingleStep(5.0);
     m_rotationSpin->setSuffix(QStringLiteral("°"));
-    m_rotationSpin->setValue(item->rotationAngle());
+    m_rotationSpin->setValue(item->RotationAngle());
 
     auto* shape = dynamic_cast<ShapeItem*>(item);
-    if (shape && !shape->isCustomShape() &&
+    if (shape && !shape->IsCustomShape() &&
         (shape->shapeType() == ShapeType::ELLIPSE || shape->shapeType() == ShapeType::SECTOR)) {
         m_majorAxisSpin =
             ItemPropertiesFields::makeSpin(this, QStringLiteral("ItemPropertiesMajorAxisValue"), 0.5, 500000.0);

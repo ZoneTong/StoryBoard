@@ -264,7 +264,7 @@ bool DocumentController::loadCanvasFile(const QString& path, bool showErrors)
 
     m_window->m_view->finishCurrentStroke();
     QString loadError;
-    if (!m_window->m_scene->fromJson(usableRoot, &loadError)) {
+    if (!m_window->m_scene->FromJson(usableRoot, &loadError)) {
         if (showErrors) {
             reportWarning(m_window, MainWindow::tr("Open canvas"), loadError);
         }
@@ -336,7 +336,7 @@ bool DocumentController::saveToFile(const QString& path)
 {
     m_window->m_view->finishCurrentStroke();
 
-    const QJsonDocument document(m_window->m_scene->toJson());
+    const QJsonDocument document(m_window->m_scene->ToJson());
     const QByteArray data = document.toJson(QJsonDocument::Indented);
 
     QSaveFile file(path);
@@ -468,7 +468,7 @@ void DocumentController::exportExcalidraw()
     }
 
     QStringList notes;
-    const QJsonObject scene = Excalidraw::storyBoardToScene(m_window->m_scene->toJson(), &notes);
+    const QJsonObject scene = Excalidraw::storyBoardToScene(m_window->m_scene->ToJson(), &notes);
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly)) {
         reportWarning(m_window, MainWindow::tr("Export Excalidraw"),

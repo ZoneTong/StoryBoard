@@ -120,7 +120,7 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     m_clearFillImageButton->setAutoRaise(true);
     m_clearFillImageButton->setFocusPolicy(Qt::NoFocus);
     m_clearFillImageButton->setToolTip(tr("Clear fill image"));
-    connect(m_clearFillImageButton, &QToolButton::clicked, this, &PropertiesPanel::clearFillImage);
+    connect(m_clearFillImageButton, &QToolButton::clicked, this, &PropertiesPanel::ClearFillImage);
     fillImageLayout->addWidget(m_clearFillImageButton);
     layout->addWidget(m_fillImageRow);
 
@@ -202,7 +202,7 @@ QList<ShapeItem*> PropertiesPanel::selectedShapes() const
     QList<ShapeItem*> shapes;
     for (CanvasItem* item : selectedItems()) {
         // 多边形派生自 ShapeItem，但它没有形状类型语义：圆角 / 角度等行只对普通图形开放。
-        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->shapeLayerCount() == 0) {
+        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() == 0) {
             shapes.append(shape);
         }
     }
@@ -213,7 +213,7 @@ QList<ShapeItem*> PropertiesPanel::selectedComposites() const
 {
     QList<ShapeItem*> composites;
     for (CanvasItem* item : selectedItems()) {
-        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->shapeLayerCount() > 0) {
+        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() > 0) {
             composites.append(shape);
         }
     }
@@ -246,7 +246,7 @@ QList<CanvasItem*> PropertiesPanel::selectedTexts() const
 {
     QList<CanvasItem*> texts;
     for (CanvasItem* item : selectedItems()) {
-        if (item->hasTextFacet()) {
+        if (item->HasTextFacet()) {
             texts.append(item);
         }
     }
@@ -311,7 +311,7 @@ void PropertiesPanel::refresh()
     // 值的回显仍取第一个选中图元（卡片内部的既有逻辑）。
     ItemPropertySet common;
     for (int index = 0; index < items.size(); ++index) {
-        const ItemPropertySet properties = items.at(index)->properties();
+        const ItemPropertySet properties = items.at(index)->Properties();
         common = index == 0 ? properties : common.intersected(properties);
     }
 
@@ -323,7 +323,7 @@ void PropertiesPanel::refresh()
     m_fillImageRow->setVisible(common.contains(ItemProperty::FILL_IMAGE));
     if (m_fillImageButton) {
         const bool hasImage = !items.isEmpty() &&
-                              items.first()->propertyValue(ItemProperty::FILL_IMAGE).value<QPixmap>().isNull() == false;
+                              items.first()->PropertyValue(ItemProperty::FILL_IMAGE).value<QPixmap>().isNull() == false;
         m_fillImageButton->setText(hasImage ? tr("Change fill image") : tr("Choose fill image"));
     }
     if (m_clearFillImageButton) {
@@ -363,10 +363,10 @@ bool PropertiesPanel::selectionGroupUseful(const QList<CanvasItem*>& items) cons
     int outerGroup = 0;
     for (CanvasItem* item : items) {
         // 有组外图元参与时组合总能多套一层，值得提供。
-        if (item->groupId() <= 0) {
+        if (item->GroupId() <= 0) {
             return true;
         }
-        const int current = m_scene->outermostGroup(item->groupId());
+        const int current = m_scene->outermostGroup(item->GroupId());
         if (outerGroup == 0) {
             outerGroup = current;
         } else if (current != outerGroup) {
@@ -392,7 +392,7 @@ void PropertiesPanel::updateSummary()
         return;
     }
     CanvasItem* item = items.first();
-    m_titleLabel->setText(item->displayName());
+    m_titleLabel->setText(item->DisplayName());
     m_metaLabel->setText(
-        tr("%1 · layer %2 · height %3").arg(item->typeDisplayName()).arg(item->layerId()).arg(item->height()));
+        tr("%1 · layer %2 · height %3").arg(item->TypeDisplayName()).arg(item->LayerId()).arg(item->ZOrder()));
 }

@@ -12,7 +12,7 @@ bool CanvasScene::changeTextWithUndo(CanvasItem* item, const QString& text, cons
         return false;
     }
 
-    const TextItemState before = item->textState();
+    const TextItemState before = item->TextState();
     TextItemState after = before;
     after.text = text;
     after.font = font;
@@ -28,17 +28,17 @@ bool CanvasScene::changeTextWithUndo(CanvasItem* item, const QString& text, cons
     if (m_undoStack) {
         m_undoStack->push(new TextItemCommand(this, item, before, after, commandText));
     } else {
-        applyTextState(item, after);
+        ApplyTextState(item, after);
     }
     return true;
 }
 
-void CanvasScene::applyTextState(CanvasItem* item, const TextItemState& state)
+void CanvasScene::ApplyTextState(CanvasItem* item, const TextItemState& state)
 {
     if (!item) {
         return;
     }
-    item->applyTextState(state);
+    item->ApplyTextState(state);
     updateSceneExtent();
     update();
     emit contentChanged();

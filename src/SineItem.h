@@ -20,9 +20,9 @@ class SineItem : public LineItemAbstract {
 
     explicit SineItem(QGraphicsItem* parent = nullptr);
 
-    QString kind() const override { return QStringLiteral("sine"); }
-    QString displayName() const override;
-    QRectF frameRect() const override;
+    QString Kind() const override { return QStringLiteral("sine"); }
+    QString DisplayName() const override;
+    QRectF FrameRect() const override;
 
     Params params() const { return m_params; }
     void setParams(const Params& params);
@@ -30,19 +30,19 @@ class SineItem : public LineItemAbstract {
     // 插入入口：在场景矩形内按当前参数生成波形。
     void setWaveGeometry(const QPointF& topLeftScene, const QSizeF& size, const QColor& color, qreal width);
 
-    bool supportsSineWave() const override { return true; }
+    bool SupportsSineWave() const override { return true; }
     ParamState paramState() const override;
-    void applyParamState(const ParamState& state) override;
-    ItemPropertySet properties() const override;
-    QVariant propertyValue(ItemProperty property) const override;
-    void setPropertyValue(ItemProperty property, const QVariant& value) override;
+    void ApplyParamState(const ParamState& state) override;
+    ItemPropertySet Properties() const override;
+    QVariant PropertyValue(ItemProperty property) const override;
+    void SetPropertyValue(ItemProperty property, const QVariant& value) override;
 
-    QJsonObject toJson() const override;
-    void fromJson(const QJsonObject& json) override;
+    QJsonObject ToJson() const override;
+    void FromJson(const QJsonObject& json) override;
 
   protected:
     // 竖直拉伸直接改振幅：拖高拖矮等价于改波高，参数与几何始终一致。
-    void contentResized() override;
+    void ContentResized() override;
 
   private:
     // 参数变化后按“上次波形框相对内容框的比例”重建，保证拉伸过再改参数不会跳。

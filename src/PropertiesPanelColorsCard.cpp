@@ -126,18 +126,18 @@ void PropertiesPanelColorsCard::refresh(const QList<ShapeItem*>& shapes, const Q
 {
     QColor strokeFallback = QColor(QStringLiteral("#1E293B"));
     if (!shapes.isEmpty()) {
-        strokeFallback = shapes.first()->strokeColor();
+        strokeFallback = shapes.first()->StrokeColor();
     } else if (!strokes.isEmpty()) {
-        strokeFallback = strokes.first()->strokeColor();
+        strokeFallback = strokes.first()->StrokeColor();
     } else if (!composites.isEmpty()) {
-        strokeFallback = composites.first()->strokeColor();
+        strokeFallback = composites.first()->StrokeColor();
     }
     m_strokeFallback = strokeFallback;
     QColor fillFallback = QColor(QStringLiteral("#1E293B"));
     if (!shapes.isEmpty()) {
-        fillFallback = shapes.first()->fillColor();
+        fillFallback = shapes.first()->FillColor();
     } else if (!composites.isEmpty()) {
-        fillFallback = composites.first()->fillColor();
+        fillFallback = composites.first()->FillColor();
     }
     m_fillFallback = fillFallback;
     for (QToolButton* swatch : m_strokeSwatches) {

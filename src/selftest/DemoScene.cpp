@@ -32,12 +32,12 @@ namespace {
 ShapeItem* addImageRect(CanvasScene& scene, int layerId, const QPixmap& pixmap, const QSizeF& size, const QPointF& pos)
 {
     auto* item = createShapeItem(ShapeType::RECTANGLE);
-    item->setLayerId(layerId);
+    item->SetLayerId(layerId);
     item->setStyle(QColor(Qt::transparent), QColor(Qt::transparent), 1.0);
-    item->setFillStyle(FillStyle::NONE);
-    item->setFillImage(pixmap, ImageFill::Mode::STRETCH);
+    item->SetFillStyle(FillStyle::NONE);
+    item->SetFillImage(pixmap, ImageFill::Mode::STRETCH);
     item->setPos(pos);
-    item->setContentSize(size);
+    item->SetContentSize(size);
     scene.attachItem(item);
     return item;
 }
@@ -67,7 +67,7 @@ bool writeDemoCanvas(const QString& outputPath)
     if (!file.open(QIODevice::WriteOnly)) {
         return false;
     }
-    const QJsonDocument document(scene.toJson());
+    const QJsonDocument document(scene.ToJson());
     const QByteArray data = document.toJson(QJsonDocument::Indented);
     if (file.write(data) != data.size()) {
         file.close();
@@ -96,9 +96,9 @@ void populateDemoScene(CanvasScene& scene)
     titleFont.setPointSize(52);
     titleFont.setBold(true);
     auto* titleItem = new TextItem();
-    titleItem->setLayerId(inkLayer);
+    titleItem->SetLayerId(inkLayer);
     titleItem->setTextFormat(QStringLiteral("STORYBOARD  /  分镜画板"), titleFont, QColor(QStringLiteral("#1F2937")));
-    titleItem->setContentSize(QSizeF(980, 80));
+    titleItem->SetContentSize(QSizeF(980, 80));
     titleItem->setPos(QPointF(78, 48));
     scene.attachItem(titleItem);
 
@@ -123,10 +123,10 @@ void populateDemoScene(CanvasScene& scene)
     for (int i = 0; i < panels.size(); ++i) {
         const QRectF& panel = panels.at(i);
         auto* frame = createShapeItem(ShapeType::RECTANGLE);
-        frame->setLayerId(frameLayer);
+        frame->SetLayerId(frameLayer);
         frame->setStyle(ink, QColor(Qt::transparent), 5.0);
         frame->setPos(panel.topLeft());
-        frame->setContentSize(panel.size());
+        frame->SetContentSize(panel.size());
         scene.attachItem(frame);
 
         const QPixmap shot = makeShotImage(380, 230, shotLabels.at(i), shotStarts.at(i), shotEnds.at(i));
@@ -149,39 +149,39 @@ void populateDemoScene(CanvasScene& scene)
 
     // Hand-drawn annotations: stick figure, arrows and a few accents.
     auto* firstArrow = createShapeItem(ShapeType::ARROW);
-    firstArrow->setLayerId(inkLayer);
+    firstArrow->SetLayerId(inkLayer);
     firstArrow->setStyle(accent, QColor(Qt::transparent), 5.0);
     firstArrow->setPos(QPointF(520, 522));
-    firstArrow->setContentSize(QSizeF(66, 36));
+    firstArrow->SetContentSize(QSizeF(66, 36));
     scene.attachItem(firstArrow);
 
     auto* secondArrow = createShapeItem(ShapeType::ARROW);
-    secondArrow->setLayerId(inkLayer);
+    secondArrow->SetLayerId(inkLayer);
     secondArrow->setStyle(accent, QColor(Qt::transparent), 5.0);
     secondArrow->setPos(QPointF(1020, 522));
-    secondArrow->setContentSize(QSizeF(66, 36));
+    secondArrow->SetContentSize(QSizeF(66, 36));
     scene.attachItem(secondArrow);
 
     auto* headRing = createShapeItem(ShapeType::ELLIPSE);
-    headRing->setLayerId(inkLayer);
+    headRing->SetLayerId(inkLayer);
     headRing->setStyle(teal, QColor(Qt::transparent), 3.0);
     headRing->setPos(QPointF(258, 510));
-    headRing->setContentSize(QSizeF(84, 84));
+    headRing->SetContentSize(QSizeF(84, 84));
     scene.attachItem(headRing);
 
     auto* star = createShapeItem(ShapeType::STAR);
-    star->setLayerId(inkLayer);
+    star->SetLayerId(inkLayer);
     QColor starFill = accent;
     starFill.setAlpha(62);
     star->setStyle(accent, starFill, 3.0);
     star->setPos(QPointF(1538, 306));
-    star->setContentSize(QSizeF(54, 54));
+    star->SetContentSize(QSizeF(54, 54));
     scene.attachItem(star);
 
     // 需求 13：花括号是独立的描线图元，几何采样下沉到 BraceItem::setBraceRect。
     auto* brace = new BraceItem();
     brace->setBraceRect(QRectF(1040, 884, 44, 92), accent, 5.0);
-    brace->setLayerId(inkLayer);
+    brace->SetLayerId(inkLayer);
     scene.attachItem(brace);
 
     QVector<QPointF> figure;

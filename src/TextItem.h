@@ -11,25 +11,25 @@ class TextItem : public CanvasItem {
   public:
     explicit TextItem(QGraphicsItem* parent = nullptr);
 
-    QString kind() const override { return QStringLiteral("text"); }
-    QString displayName() const override;
-    QString typeDisplayName() const override;
-    QJsonObject toJson() const override;
-    void fromJson(const QJsonObject& json) override;
-    ItemPropertySet properties() const override;
-    QVariant propertyValue(ItemProperty property) const override;
-    void setPropertyValue(ItemProperty property, const QVariant& value) override;
-    QPainterPath outlineShape() const override;
-    QPainterPath paintedShape() const override;
-    QPainterPath clippingShape() const override;
+    QString Kind() const override { return QStringLiteral("text"); }
+    QString DisplayName() const override;
+    QString TypeDisplayName() const override;
+    QJsonObject ToJson() const override;
+    void FromJson(const QJsonObject& json) override;
+    ItemPropertySet Properties() const override;
+    QVariant PropertyValue(ItemProperty property) const override;
+    void SetPropertyValue(ItemProperty property, const QVariant& value) override;
+    QPainterPath OutlineShape() const override;
+    QPainterPath PaintedShape() const override;
+    QPainterPath ClippingShape() const override;
 
-    bool hasTextFacet() const override { return true; }
-    QString textContent() const override { return m_text; }
-    QFont textFont() const override { return m_font; }
-    QColor textColor() const override { return m_color; }
-    QSizeF textNaturalSize() const override { return m_baseSize; }
-    TextItemState textState() const override;
-    void applyTextState(const TextItemState& state) override;
+    bool HasTextFacet() const override { return true; }
+    QString TextContent() const override { return m_text; }
+    QFont TextFont() const override { return m_font; }
+    QColor TextColor() const override { return m_color; }
+    QSizeF TextNaturalSize() const override { return m_baseSize; }
+    TextItemState TextState() const override;
+    void ApplyTextState(const TextItemState& state) override;
 
     void setTextFormat(const QString& text, const QFont& font, const QColor& color);
     QString text() const { return m_text; }
@@ -37,12 +37,12 @@ class TextItem : public CanvasItem {
     QSizeF naturalSize() const { return m_baseSize; }
     static QSizeF measure(const QString& text, const QFont& font);
 
-    TextItemState state() const;
-    void applyState(const TextItemState& state);
+    TextItemState State() const;
+    void ApplyState(const TextItemState& state);
 
   protected:
-    void paintContent(QPainter* painter) override;
-    qreal framePadding() const override { return 20.0; }
+    void PaintContent(QPainter* painter) override;
+    qreal FramePadding() const override { return 20.0; }
 
   private:
     QString m_text;

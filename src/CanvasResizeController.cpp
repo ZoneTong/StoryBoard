@@ -37,7 +37,7 @@ Qt::CursorShape CanvasResizeController::handleCursor(Handle handle)
     return Qt::ArrowCursor;
 }
 
-CanvasResizeController::Handle CanvasResizeController::handleAt(const QPoint& viewportPos) const
+CanvasResizeController::Handle CanvasResizeController::HandleAt(const QPoint& viewportPos) const
 {
     if (m_view->mode() != ToolMode::EDIT) {
         return Handle::NONE;
@@ -85,7 +85,7 @@ CanvasResizeController::Handle CanvasResizeController::handleAt(const QPoint& vi
 
 bool CanvasResizeController::beginResize(const QPoint& viewportPos)
 {
-    const Handle handle = handleAt(viewportPos);
+    const Handle handle = HandleAt(viewportPos);
     if (handle == Handle::NONE) {
         return false;
     }
@@ -178,7 +178,7 @@ void CanvasResizeController::updateHoverCursor(const QPoint& viewportPos, bool p
         return;
     }
     // 编辑模式下左键不再兼作平移，画板边缘始终可以按提示拉伸。
-    const Handle handle = handleAt(viewportPos);
+    const Handle handle = HandleAt(viewportPos);
     if (handle == m_hoverHandle) {
         return;
     }

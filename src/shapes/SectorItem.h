@@ -9,9 +9,9 @@ class SectorItem : public ShapeItem, public EllipseShape {
   public:
     SectorItem();
     ShapeType shapeType() const override { return ShapeType::SECTOR; }
-    ItemPropertySet properties() const override;
+    ItemPropertySet Properties() const override;
 
   protected:
-    void contentResized() override;
-    QPainterPath shapePath(const QRectF& rect) const override;
+    void ContentResized() override;
+    QPainterPath ShapePath(const QRectF& rect) const override;
 };

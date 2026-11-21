@@ -26,7 +26,7 @@ void CanvasZoomController::fitAll()
         return;
     }
 
-    QRectF target = m_scene->contentRect();
+    QRectF target = m_scene->ContentRect();
     if (target.isEmpty()) {
         target = m_scene->canvasRect();
     }
@@ -93,7 +93,7 @@ void CanvasZoomController::applyScale(qreal factor)
 void CanvasZoomController::emitZoom()
 {
     if (m_scene) {
-        m_scene->refreshViewDependentGeometry();
+        m_scene->RefreshViewDependentGeometry();
     }
     emit m_view->zoomChanged(zoom());
 }

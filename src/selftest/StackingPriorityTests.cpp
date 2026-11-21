@@ -90,16 +90,16 @@ void selftest::runStackingPriorityTests(Context& ctx)
     auto addPriorityRect = [&priorityScene](const QRectF& rect, const QColor& color) {
         auto* shape = createShapeItem(ShapeType::RECTANGLE);
         shape->setPos(rect.topLeft());
-        shape->setContentSize(rect.size());
+        shape->SetContentSize(rect.size());
         shape->setStyle(color, color, 3.0);
-        shape->setFill(color, FillStyle::SOLID);
+        shape->SetFill(color, FillStyle::SOLID);
         priorityScene.attachItem(shape);
         return shape;
     };
 
     auto* coveredRect = addPriorityRect(QRectF(120.0, 120.0, 240.0, 140.0), QColor(QStringLiteral("#DC2626")));
     auto* coverRect = addPriorityRect(QRectF(120.0, 120.0, 240.0, 140.0), QColor(QStringLiteral("#2563EB")));
-    ctx.check(coverRect->zValue() > coveredRect->zValue() && coverRect->height() > coveredRect->height(),
+    ctx.check(coverRect->zValue() > coveredRect->zValue() && coverRect->ZOrder() > coveredRect->ZOrder(),
               QStringLiteral("同层后加入的图元叠放优先级更高"));
 
     priorityScene.setMode(ToolMode::EDIT);
@@ -143,14 +143,14 @@ void selftest::runStackingPriorityTests(Context& ctx)
     ctx.check(priorityScene.addLayerWithUndo(QStringLiteral("遮挡层")), QStringLiteral("新建更高的遮挡图层"));
     const int overlayLayerId = priorityScene.activeLayerId();
     auto* layerCover = addPriorityRect(QRectF(120.0, 120.0, 240.0, 140.0), QColor(QStringLiteral("#059669")));
-    ctx.check(layerCover->layerId() == overlayLayerId && layerCover->zValue() > coveredRect->zValue(),
+    ctx.check(layerCover->LayerId() == overlayLayerId && layerCover->zValue() > coveredRect->zValue(),
               QStringLiteral("更高图层的低 height 图元优先级仍然更高"));
     obscured = priorityScene.obscuredItems();
     ctx.check(obscured.contains(coveredRect) && obscured.contains(coverRect) && !obscured.contains(layerCover),
               QStringLiteral("轮廓提示只覆盖被更高优先级图元遮住的图元"),
               QStringLiteral("count=%1").arg(obscured.size()));
 
-    const int coveredLayerId = coveredRect->layerId();
+    const int coveredLayerId = coveredRect->LayerId();
     ctx.check(priorityScene.setLayerVisible(coveredLayerId, false), QStringLiteral("隐藏低优先级图元所在图层"));
     ctx.check(priorityScene.obscuredItems().isEmpty(), QStringLiteral("隐藏图层上的图元不参与轮廓提示"));
 
@@ -159,9 +159,9 @@ void selftest::runStackingPriorityTests(Context& ctx)
     auto addPartialRect = [&partialScene](const QRectF& rect, const QColor& color) {
         auto* shape = createShapeItem(ShapeType::RECTANGLE);
         shape->setPos(rect.topLeft());
-        shape->setContentSize(rect.size());
+        shape->SetContentSize(rect.size());
         shape->setStyle(color, color, 3.0);
-        shape->setFill(color, FillStyle::SOLID);
+        shape->SetFill(color, FillStyle::SOLID);
         partialScene.attachItem(shape);
         return shape;
     };

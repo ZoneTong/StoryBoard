@@ -24,7 +24,7 @@ class ItemPropertiesDialogTextBlock : public QWidget {
     QPlainTextEdit* textEdit() const { return m_textEdit; }
     QToolButton* textColorButton() const { return m_textColorButton; }
     QPushButton* fontButton() const { return m_fontButton; }
-    QFont textFont() const { return m_textFont; }
+    QFont TextFont() const { return m_textFont; }
 
     void chooseFont();
 

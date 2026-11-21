@@ -33,7 +33,7 @@ Mode modeFromString(const QString& name)
     return Mode::STRETCH;
 }
 
-QJsonObject toJson(const QPixmap& image, Mode mode)
+QJsonObject ToJson(const QPixmap& image, Mode mode)
 {
     if (image.isNull()) {
         return QJsonObject();

@@ -435,12 +435,12 @@ QPainterPath ShapePathBuilder::doubleArrowPath(const QRectF& rect)
     return path;
 }
 
-QPainterPath ShapePathBuilder::pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius)
+QPainterPath ShapePathBuilder::PathFor(ShapeType type, const QRectF& rect, qreal cornerRadius)
 {
-    return pathFor(type, rect, cornerRadius, 30.0, 120.0);
+    return PathFor(type, rect, cornerRadius, 30.0, 120.0);
 }
 
-QPainterPath ShapePathBuilder::pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius, qreal startAngle,
+QPainterPath ShapePathBuilder::PathFor(ShapeType type, const QRectF& rect, qreal cornerRadius, qreal startAngle,
                                        qreal sweepAngle)
 {
     switch (type) {

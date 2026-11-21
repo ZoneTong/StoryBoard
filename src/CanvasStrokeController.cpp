@@ -21,7 +21,7 @@ QString trView(const char* text)
 // 手绘轻微抖动的直线不会被误判成曲线；折返笔画（来回描）按曲线保留。
 bool strokeLooksLinear(const LineItemAbstract* stroke)
 {
-    const QVector<QPointF> knots = stroke->strokePoints();
+    const QVector<QPointF> knots = stroke->StrokePoints();
     if (knots.size() < 2) {
         return false;
     }
@@ -30,7 +30,7 @@ bool strokeLooksLinear(const LineItemAbstract* stroke)
     if (length < 2.0) {
         return false;
     }
-    const qreal tolerance = qMax(1.5, stroke->strokeWidth() * 0.5);
+    const qreal tolerance = qMax(1.5, stroke->StrokeWidth() * 0.5);
     qreal drawn = 0.0;
     for (const QPointF& knot : knots) {
         if (axis.dx() == 0.0 && axis.dy() == 0.0) {
@@ -118,13 +118,13 @@ void CanvasStrokeController::finishStroke()
     // 需求 8：画笔模式画出的近似直线的笔画直接落成直线类型图元。
     // 需求 20：笔画收尾后节点已被平移到图元局部坐标，必须经 mapToScene
     // 换回场景坐标再落位，否则直线会跑到画布原点附近"消失"。
-    if (stroke->source() == CurveSource::HAND_DRAWN && strokeLooksLinear(stroke)) {
-        const QVector<QPointF> knots = stroke->strokePoints();
+    if (stroke->StrokeSource() == CurveSource::HAND_DRAWN && strokeLooksLinear(stroke)) {
+        const QVector<QPointF> knots = stroke->StrokePoints();
         const QPointF a = stroke->mapToScene(knots.first());
         const QPointF b = stroke->mapToScene(knots.last());
         // 直线是曲线族的两点线性子型：端点直接决定几何，不再用旋转角摆放细长条。
         auto* line = new StraightLineItem();
-        line->setEndpoints(a, b, stroke->strokeColor(), stroke->strokeWidth());
+        line->setEndpoints(a, b, stroke->StrokeColor(), stroke->StrokeWidth());
         line->setStrokePattern(stroke->strokePattern());
         m_scene->removeItem(stroke);
         delete stroke;

@@ -43,37 +43,37 @@ QRectF arrayToRect(const QJsonArray& array, const QRectF& fallback)
 
 SineItem::SineItem(QGraphicsItem* parent) : LineItemAbstract(parent) {}
 
-ItemPropertySet SineItem::properties() const
+ItemPropertySet SineItem::Properties() const
 {
     // 正弦有箭头行，另有周期数与振幅两行参数。
-    return LineItemAbstract::properties().united(ItemPropertySet{
+    return LineItemAbstract::Properties().united(ItemPropertySet{
         ItemProperty::ARROW_START, ItemProperty::ARROW_END, ItemProperty::SINE_CYCLES, ItemProperty::SINE_AMPLITUDE});
 }
 
-QVariant SineItem::propertyValue(ItemProperty property) const
+QVariant SineItem::PropertyValue(ItemProperty property) const
 {
     switch (property) {
     case ItemProperty::ARROW_START:
-        return static_cast<int>(startArrow());
+        return static_cast<int>(StartArrow());
     case ItemProperty::ARROW_END:
-        return static_cast<int>(endArrow());
+        return static_cast<int>(EndArrow());
     case ItemProperty::SINE_CYCLES:
         return m_params.cycles;
     case ItemProperty::SINE_AMPLITUDE:
         return m_params.amplitude;
     default:
-        return LineItemAbstract::propertyValue(property);
+        return LineItemAbstract::PropertyValue(property);
     }
 }
 
-void SineItem::setPropertyValue(ItemProperty property, const QVariant& value)
+void SineItem::SetPropertyValue(ItemProperty property, const QVariant& value)
 {
     switch (property) {
     case ItemProperty::ARROW_START:
-        setArrowStyles(static_cast<ArrowStyle>(value.toInt()), endArrow());
+        SetArrowStyles(static_cast<ArrowStyle>(value.toInt()), EndArrow());
         break;
     case ItemProperty::ARROW_END:
-        setArrowStyles(startArrow(), static_cast<ArrowStyle>(value.toInt()));
+        SetArrowStyles(StartArrow(), static_cast<ArrowStyle>(value.toInt()));
         break;
     case ItemProperty::SINE_CYCLES: {
         Params params = m_params;
@@ -88,19 +88,19 @@ void SineItem::setPropertyValue(ItemProperty property, const QVariant& value)
         break;
     }
     default:
-        LineItemAbstract::setPropertyValue(property, value);
+        LineItemAbstract::SetPropertyValue(property, value);
         break;
     }
 }
 
-QString SineItem::displayName() const
+QString SineItem::DisplayName() const
 {
     return uiText(QStringLiteral("Sine wave"));
 }
 
-QRectF SineItem::frameRect() const
+QRectF SineItem::FrameRect() const
 {
-    return paddedToMinimum(CanvasItem::frameRect());
+    return paddedToMinimum(CanvasItem::FrameRect());
 }
 
 SineItem::ParamState SineItem::paramState() const
@@ -108,7 +108,7 @@ SineItem::ParamState SineItem::paramState() const
     return ParamState{qreal(m_params.cycles), m_params.amplitude, true};
 }
 
-void SineItem::applyParamState(const ParamState& state)
+void SineItem::ApplyParamState(const ParamState& state)
 {
     Params params = m_params;
     params.cycles = qBound(1, qRound(state.first), 12);
@@ -155,7 +155,7 @@ void SineItem::setWaveGeometry(const QPointF& topLeftScene, const QSizeF& size, 
     const QRectF frameScene(topLeftScene, size);
     // 程序化插入时按给定振幅采样，不让 contentResized 的“按高度反推振幅”插一脚。
     m_rebuilding = true;
-    setStrokePoints(wavePoints(frameScene), color, width, 0.0, false);
+    SetStrokePoints(wavePoints(frameScene), color, width, 0.0, false);
     m_rebuilding = false;
 
     const QPointF origin = pos();
@@ -169,7 +169,7 @@ void SineItem::setWaveGeometry(const QPointF& topLeftScene, const QSizeF& size, 
     }
 }
 
-void SineItem::contentResized()
+void SineItem::ContentResized()
 {
     if (m_rebuilding) {
         return;
@@ -179,7 +179,7 @@ void SineItem::contentResized()
     if (boxHeight <= 0.0) {
         return;
     }
-    const qreal padding = qMax<qreal>(6.0, strokeWidth() + 4.0);
+    const qreal padding = qMax<qreal>(6.0, StrokeWidth() + 4.0);
     const qreal amplitude = qBound<qreal>(1.0, qMax<qreal>(1.0, boxHeight - padding) / 2.0, 200.0);
     if (qAbs(amplitude - m_params.amplitude) < 0.5) {
         return;
@@ -198,7 +198,7 @@ void SineItem::rebuild()
                        m_refFrame.height() * box.height());
     const QRectF frameScene = local.translated(pos());
     m_rebuilding = true;
-    setStrokePoints(wavePoints(frameScene), strokeColor(), strokeWidth(), 0.0, false);
+    SetStrokePoints(wavePoints(frameScene), StrokeColor(), StrokeWidth(), 0.0, false);
     m_rebuilding = false;
 
     const QPointF origin = pos();
@@ -211,18 +211,18 @@ void SineItem::rebuild()
     update();
 }
 
-QJsonObject SineItem::toJson() const
+QJsonObject SineItem::ToJson() const
 {
-    QJsonObject json = LineItemAbstract::toJson();
+    QJsonObject json = LineItemAbstract::ToJson();
     json.insert(QStringLiteral("sineCycles"), m_params.cycles);
     json.insert(QStringLiteral("sineAmplitude"), m_params.amplitude);
     json.insert(QStringLiteral("sineFrame"), rectToArray(m_refFrame));
     return json;
 }
 
-void SineItem::fromJson(const QJsonObject& json)
+void SineItem::FromJson(const QJsonObject& json)
 {
-    LineItemAbstract::fromJson(json);
+    LineItemAbstract::FromJson(json);
     m_params.cycles = qBound(1, json.value(QStringLiteral("sineCycles")).toInt(1), 12);
     m_params.amplitude = qBound<qreal>(1.0, json.value(QStringLiteral("sineAmplitude")).toDouble(20.0), 200.0);
     m_refFrame = arrayToRect(json.value(QStringLiteral("sineFrame")).toArray(), QRectF(0.0, 0.0, 1.0, 1.0));

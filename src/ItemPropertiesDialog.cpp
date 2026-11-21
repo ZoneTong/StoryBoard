@@ -49,7 +49,7 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
     root->setContentsMargins(20, 18, 20, 16);
     root->setSpacing(12);
 
-    auto* heading = new QLabel(item ? item->name() : tr("No item selected"), this);
+    auto* heading = new QLabel(item ? item->Name() : tr("No item selected"), this);
     heading->setObjectName(QStringLiteral("ItemPropertiesHeading"));
     root->addWidget(heading);
 
@@ -79,10 +79,10 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
     } else {
         m_initialPos = item->pos();
         m_initialSize = item->contentSize();
-        m_initialRotation = item->rotationAngle();
-        m_initialItemName = item->rawName();
-        m_initialDisplayName = item->name();
-        auto* typeValue = new QLabel(item->typeDisplayName(), this);
+        m_initialRotation = item->RotationAngle();
+        m_initialItemName = item->CustomName();
+        m_initialDisplayName = item->Name();
+        auto* typeValue = new QLabel(item->TypeDisplayName(), this);
         typeValue->setObjectName(QStringLiteral("ItemPropertiesTypeValue"));
         typeValue->setTextInteractionFlags(Qt::TextSelectableByMouse);
         form->addRow(tr("Item type"), typeValue);
@@ -95,7 +95,7 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
             m_styleBlock->addRows(form);
             m_hasFill = m_styleBlock->hasFill();
             m_initialStrokeWidth = m_styleBlock->initialStrokeWidth();
-        } else if (item->hasTextFacet()) {
+        } else if (item->HasTextFacet()) {
             m_textBlock = new ItemPropertiesDialogTextBlock(item, this);
             m_textBlock->addRows(form);
             connect(m_textBlock, &ItemPropertiesDialogTextBlock::fontChanged, this,
@@ -109,7 +109,7 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
             m_opacitySpin->setRange(0, 100);
             m_opacitySpin->setSuffix(QStringLiteral(" %"));
             m_opacitySpin->setMinimumWidth(88);
-            m_initialOpacity = item->itemOpacity();
+            m_initialOpacity = item->ItemOpacity();
             m_opacitySpin->setValue(qRound(m_initialOpacity * 100.0));
             m_initialOpacityPercent = m_opacitySpin->value();
             form->addRow(tr("Opacity"), m_opacitySpin);
@@ -122,7 +122,7 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
                 if (!m_geometryBlock) {
                     return;
                 }
-                m_styleBlock->setContentSize(
+                m_styleBlock->SetContentSize(
                     QSizeF(m_geometryBlock->widthSpin()->value(), m_geometryBlock->heightSizeSpin()->value()));
             };
             connect(m_geometryBlock->widthSpin(), &QDoubleSpinBox::valueChanged, this, syncCornerRange);
@@ -240,8 +240,8 @@ void ItemPropertiesDialog::syncTextNaturalSize()
     if (!m_editable || !m_textBlock || !m_textBlock->textEdit()) {
         return;
     }
-    if (m_item->hasTextFacet()) {
-        const QSizeF natural = TextItem::measure(m_textBlock->textEdit()->toPlainText(), m_textBlock->textFont());
+    if (m_item->HasTextFacet()) {
+        const QSizeF natural = TextItem::measure(m_textBlock->textEdit()->toPlainText(), m_textBlock->TextFont());
         if (m_geometryBlock) {
             m_geometryBlock->setNaturalSize(natural);
         }
@@ -264,8 +264,8 @@ void ItemPropertiesDialog::applyChanges()
     auto* text = m_textBlock;
     auto* geometry = m_geometryBlock;
 
-    const int oldLayer = m_item->layerId();
-    const int oldHeight = m_item->height();
+    const int oldLayer = m_item->LayerId();
+    const int oldHeight = m_item->ZOrder();
     const int targetLayer =
         (identity && identity->layerCombo()) ? identity->layerCombo()->currentData().toInt() : oldLayer;
     const int targetHeight = (identity && identity->heightSpin()) ? identity->heightSpin()->value() : oldHeight;
@@ -273,7 +273,7 @@ void ItemPropertiesDialog::applyChanges()
     QList<CanvasItem*> swapped;
     if (targetLayer != oldLayer || targetHeight != oldHeight) {
         for (CanvasItem* peer : m_scene->layerItems(targetLayer)) {
-            if (peer != m_item && peer->height() == targetHeight) {
+            if (peer != m_item && peer->ZOrder() == targetHeight) {
                 swapped.append(peer);
             }
         }
@@ -283,11 +283,11 @@ void ItemPropertiesDialog::applyChanges()
     before.pos = m_item->pos();
     before.size = m_item->contentSize();
     before.rotation = m_initialRotation;
-    before.opacity = m_item->itemOpacity();
+    before.opacity = m_item->ItemOpacity();
     before.itemName = m_initialItemName;
     before.stack.append({m_item, oldLayer, oldHeight});
     for (CanvasItem* peer : std::as_const(swapped)) {
-        before.stack.append({peer, peer->layerId(), peer->height()});
+        before.stack.append({peer, peer->LayerId(), peer->ZOrder()});
     }
 
     ItemPropertiesState after;
@@ -308,7 +308,7 @@ void ItemPropertiesDialog::applyChanges()
     const QString typedName = (identity && identity->nameEdit()) ? identity->nameEdit()->text().trimmed() : QString();
     // 清空名称不能退回“多个同名类型名”的状态；这时补一个本画布内唯一的自动名称。
     const QString effectiveName =
-        typedName.isEmpty() ? m_scene->uniqueItemName(m_item->typeDisplayName(), m_item) : typedName;
+        typedName.isEmpty() ? m_scene->uniqueItemName(m_item->TypeDisplayName(), m_item) : typedName;
     after.itemName = (m_initialItemName.isEmpty() && typedName == m_initialDisplayName) ? QString() : effectiveName;
     after.stack.append({m_item, targetLayer, targetHeight});
     for (CanvasItem* peer : std::as_const(swapped)) {
@@ -317,10 +317,10 @@ void ItemPropertiesDialog::applyChanges()
 
     if (auto* shape = dynamic_cast<ShapeItem*>(m_item.data())) {
         before.hasShapeState = true;
-        before.shapeState = shape->state();
+        before.shapeState = shape->State();
 
         after.hasShapeState = true;
-        after.shapeState = shape->state();
+        after.shapeState = shape->State();
         after.shapeState.pos = after.pos;
         after.shapeState.size = after.size;
         if (style && style->strokeColorButton()) {
@@ -389,19 +389,19 @@ void ItemPropertiesDialog::applyChanges()
             // 需求 15：图片填充是独立属性，ShapeItemState 直接快照。
             if (style && style->hasFillImageRow()) {
                 after.shapeState.hasFillImage = style->fillImagePresent();
-                after.shapeState.fillImage = style->fillImage();
-                after.shapeState.fillImageMode = style->fillImageMode();
+                after.shapeState.fillImage = style->FillImage();
+                after.shapeState.fillImageMode = style->FillImageMode();
             }
         }
-    } else if (m_item->hasTextFacet()) {
+    } else if (m_item->HasTextFacet()) {
         before.hasTextState = true;
-        before.textState = m_item->textState();
+        before.textState = m_item->TextState();
 
         after.hasTextState = true;
-        after.textState = m_item->textState();
+        after.textState = m_item->TextState();
         after.textState.pos = after.pos;
         after.textState.size = after.size;
-        after.textState.font = text ? text->textFont() : m_item->textFont();
+        after.textState.font = text ? text->TextFont() : m_item->TextFont();
         if (text && text->textEdit()) {
             after.textState.text = text->textEdit()->toPlainText();
         }
@@ -417,12 +417,12 @@ void ItemPropertiesDialog::applyChanges()
         }
     } else if (auto* stroke = dynamic_cast<LineItemAbstract*>(m_item.data())) {
         before.hasStrokeStyle = true;
-        before.strokeColor = stroke->strokeColor();
-        before.strokeWidth = stroke->strokeWidth();
+        before.strokeColor = stroke->StrokeColor();
+        before.strokeWidth = stroke->StrokeWidth();
         before.strokeStyle = stroke->strokePattern();
         // 需求 27：曲线两端箭头与描线一起进入同一条撤销记录；箭头对全部曲线子型开放。
-        before.curveStartArrow = stroke->startArrow();
-        before.curveEndArrow = stroke->endArrow();
+        before.curveStartArrow = stroke->StartArrow();
+        before.curveEndArrow = stroke->EndArrow();
 
         after.hasStrokeStyle = true;
         after.strokeColor = (style && style->strokeColorButton())

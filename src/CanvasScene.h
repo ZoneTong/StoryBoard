@@ -49,10 +49,10 @@ class CanvasScene : public QGraphicsScene {
     bool showGrid() const { return m_showGrid; }
     void setShowGrid(bool enabled);
 
-    QRectF contentRect() const;
+    QRectF ContentRect() const;
     void updateSceneExtent();
     // 视图缩放后刷新图元的 boundingRect（旋转手柄等屏幕尺寸相关几何）。
-    void refreshViewDependentGeometry();
+    void RefreshViewDependentGeometry();
 
     QList<CanvasItem*> canvasItems() const;
     int canvasItemCount() const;
@@ -65,7 +65,7 @@ class CanvasScene : public QGraphicsScene {
     // 选择顺序：先选中的在前，框选时按场景叠放顺序（最底层在前）记录。
     // 合并图元的「剪除」以最先选中的图元为底，框选时以最底层为底。
     QList<CanvasItem*> selectionOrder() const;
-    // 名称只按画布内图元的 name() 比较；空名称不占用唯一名额。
+    // 名称只按画布内图元的 Name() 比较；空名称不占用唯一名额。
     bool isItemNameAvailable(const QString& name, const CanvasItem* except = nullptr) const;
     // 按“类型 1 / 类型 2 …”生成类型专属的自动名称；用于新建图元与空名称补名。
     QString uniqueItemName(const QString& base, const CanvasItem* except = nullptr) const;
@@ -151,7 +151,7 @@ class CanvasScene : public QGraphicsScene {
 
     bool changeTextWithUndo(CanvasItem* item, const QString& text, const QFont& font, const QColor& color,
                             const QString& commandText = QString());
-    void applyTextState(CanvasItem* item, const TextItemState& state);
+    void ApplyTextState(CanvasItem* item, const TextItemState& state);
 
     void addItemsWithUndo(const QList<CanvasItem*>& items, const QString& text);
     void commitNewItem(CanvasItem* item, const QString& text);
@@ -167,13 +167,13 @@ class CanvasScene : public QGraphicsScene {
     int rotateSelected(qreal degrees, const QString& commandText = QString());
 
     void resetDocument();
-    QJsonObject toJson() const;
-    bool fromJson(const QJsonObject& root, QString* errorMessage = nullptr);
+    QJsonObject ToJson() const;
+    bool FromJson(const QJsonObject& root, QString* errorMessage = nullptr);
 
     QImage renderImage(const QRectF& area, qreal scale);
     // 只渲染指定图层上的图元；画板背景仍按背景层的显示状态保留。
     QImage renderLayerImage(const QRectF& area, qreal scale, int layerId);
-    bool isExporting() const { return m_exporting; }
+    bool IsExporting() const { return m_exporting; }
 
     // 非查看模式下被更高优先级图元遮住、需要额外描出轮廓的图元。
     // 优先级：图层越高越优先；同一图层内 height 越大越优先。

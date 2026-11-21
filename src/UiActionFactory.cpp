@@ -354,27 +354,27 @@ void UiActionFactory::build()
     // 需求 16：默认“无填充”，勾选状态必须按当前全局状态刷新，不能写死纯色。
     m_window->updateFillActions();
     QObject::connect(m_window->m_fillNoneAct, &QAction::triggered, m_window,
-                     [this]() { m_window->setFillStyle(FillStyle::NONE); });
+                     [this]() { m_window->SetFillStyle(FillStyle::NONE); });
     QObject::connect(m_window->m_fillSolidAct, &QAction::triggered, m_window,
-                     [this]() { m_window->setFillStyle(FillStyle::SOLID); });
+                     [this]() { m_window->SetFillStyle(FillStyle::SOLID); });
     QObject::connect(m_window->m_fillHachureAct, &QAction::triggered, m_window,
-                     [this]() { m_window->setFillStyle(FillStyle::HACHURE); });
+                     [this]() { m_window->SetFillStyle(FillStyle::HACHURE); });
     QObject::connect(m_window->m_fillReverseAct, &QAction::triggered, m_window,
-                     [this]() { m_window->setFillStyle(FillStyle::REVERSE_HACHURE); });
+                     [this]() { m_window->SetFillStyle(FillStyle::REVERSE_HACHURE); });
     QObject::connect(m_window->m_fillCrossAct, &QAction::triggered, m_window,
-                     [this]() { m_window->setFillStyle(FillStyle::CROSS_HATCH); });
+                     [this]() { m_window->SetFillStyle(FillStyle::CROSS_HATCH); });
     QObject::connect(m_window->m_fillGridAct, &QAction::triggered, m_window,
-                     [this]() { m_window->setFillStyle(FillStyle::GRID_HATCH); });
+                     [this]() { m_window->SetFillStyle(FillStyle::GRID_HATCH); });
     QObject::connect(m_window->m_fillHoneycombAct, &QAction::triggered, m_window,
-                     [this]() { m_window->setFillStyle(FillStyle::HONEYCOMB); });
+                     [this]() { m_window->SetFillStyle(FillStyle::HONEYCOMB); });
     QObject::connect(m_window->m_fillHorizontalAct, &QAction::triggered, m_window,
-                     [this]() { m_window->setFillStyle(FillStyle::HORIZONTAL_HATCH); });
+                     [this]() { m_window->SetFillStyle(FillStyle::HORIZONTAL_HATCH); });
     QObject::connect(m_window->m_fillVerticalAct, &QAction::triggered, m_window,
-                     [this]() { m_window->setFillStyle(FillStyle::VERTICAL_HATCH); });
+                     [this]() { m_window->SetFillStyle(FillStyle::VERTICAL_HATCH); });
     QObject::connect(m_window->m_fillBrickAct, &QAction::triggered, m_window,
-                     [this]() { m_window->setFillStyle(FillStyle::BRICK); });
+                     [this]() { m_window->SetFillStyle(FillStyle::BRICK); });
     QObject::connect(m_window->m_fillDotsAct, &QAction::triggered, m_window,
-                     [this]() { m_window->setFillStyle(FillStyle::DOTS); });
+                     [this]() { m_window->SetFillStyle(FillStyle::DOTS); });
     m_window->m_fillColorAct = new QAction(MainWindow::tr("Fill color…"), m_window);
     m_window->m_fillColorAct->setObjectName(QStringLiteral("FillColorAction"));
     m_window->m_fillColorAct->setIcon(m_window->m_style->fillColorIcon(
@@ -395,7 +395,7 @@ void UiActionFactory::build()
         m_window->m_strokeStyleGroup->addAction(action);
         m_window->m_strokeStyleActions.append(action);
         QObject::connect(action, &QAction::triggered, m_window,
-                         [this, penStyle]() { m_window->setStrokeStyle(penStyle); });
+                         [this, penStyle]() { m_window->SetStrokeStyle(penStyle); });
     }
     m_window->m_style->updateStrokeStyleActions();
 

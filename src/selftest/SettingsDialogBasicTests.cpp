@@ -30,7 +30,7 @@ void selftest::runSettingsDialogBasicTests(Context& ctx)
 
         auto* handleEllipse = createShapeItem(ShapeType::ELLIPSE);
         handleEllipse->setStyle(QColor(QStringLiteral("#0F172A")), QColor(Qt::transparent), 4.0);
-        handleEllipse->setContentSize(QSizeF(200, 120));
+        handleEllipse->SetContentSize(QSizeF(200, 120));
         handleEllipse->setPos(QPointF(60, 40));
         handleScene.attachItem(handleEllipse);
         handleEllipse->setSelected(true);
@@ -46,7 +46,7 @@ void selftest::runSettingsDialogBasicTests(Context& ctx)
 
         auto* thickRect = createShapeItem(ShapeType::RECTANGLE);
         thickRect->setStyle(QColor(QStringLiteral("#1D4ED8")), QColor(29, 78, 216, 40), 40.0);
-        thickRect->setContentSize(QSizeF(200, 120));
+        thickRect->SetContentSize(QSizeF(200, 120));
         thickRect->setPos(QPointF(400, 40));
         handleScene.attachItem(thickRect);
 

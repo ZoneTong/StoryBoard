@@ -17,7 +17,7 @@ QString modeToString(Mode mode);
 Mode modeFromString(const QString& name);
 
 // 序列化：{"data": <base64 PNG>, "mode": "stretch|fit|tile"}；无图时返回空对象，不写键。
-QJsonObject toJson(const QPixmap& image, Mode mode);
+QJsonObject ToJson(const QPixmap& image, Mode mode);
 QPixmap pixmapFromJson(const QJsonObject& json, Mode* mode);
 
 // rect 是图元内容矩形（图元局部坐标），clipPath 是可填充区域路径。

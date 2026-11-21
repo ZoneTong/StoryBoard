@@ -25,7 +25,7 @@ void checkSineWaveOnePeriod(selftest::Context& ctx)
 {
     SineItem sine;
     sine.setWaveGeometry(QPointF(0.0, 0.0), QSizeF(128.0, 40.0), QColor(Qt::black), 2.0);
-    const QVector<QPointF> points = sine.strokePoints();
+    const QVector<QPointF> points = sine.StrokePoints();
     ctx.check(points.size() > 8, QStringLiteral("正弦波由采样点构成"), QStringLiteral("points=%1").arg(points.size()));
     qreal minY = std::numeric_limits<qreal>::max();
     qreal maxY = std::numeric_limits<qreal>::lowest();
@@ -53,7 +53,7 @@ void checkSineWaveOnePeriod(selftest::Context& ctx)
 void checkFlagWaveNoPole(selftest::Context& ctx)
 {
     const QRectF rect(0.0, 0.0, 128.0, 86.0);
-    const QPainterPath path = ShapePathBuilder::pathFor(ShapeType::FLAG_WAVE, rect, -1.0);
+    const QPainterPath path = ShapePathBuilder::PathFor(ShapeType::FLAG_WAVE, rect, -1.0);
     const QRectF bounds = path.boundingRect();
     ctx.check(qAbs(bounds.width() - rect.width()) < 1.0, QStringLiteral("波形旗帜宽度占满内容（两棋盘格）"),
               QStringLiteral("width=%1").arg(bounds.width()));
@@ -74,7 +74,7 @@ void checkScrollShape(selftest::Context& ctx)
                   ShapeMeta::typeFromString(QStringLiteral("banner")) == ShapeType::SCROLL,
               QStringLiteral("旧文件的 flag_curl / banner 兼容读成卷轴"));
     const QRectF rect(0.0, 0.0, 128.0, 96.0);
-    const QPainterPath path = ShapePathBuilder::pathFor(ShapeType::SCROLL, rect, -1.0);
+    const QPainterPath path = ShapePathBuilder::PathFor(ShapeType::SCROLL, rect, -1.0);
     ctx.check(path.intersects(QRectF(rect.center().x() - 2.0, rect.center().y() - 2.0, 4.0, 4.0)),
               QStringLiteral("卷轴中段有可填充纸面"));
     // 需求 22：卷筒纵向撑满内容高度，路径包围盒与内容矩形一致。
@@ -111,14 +111,14 @@ void selftest::runShapesClusterTests(Context& ctx)
         int rotatedFaces = 0;
         for (CanvasItem* item : items) {
             if (groupId == 0) {
-                groupId = item->groupId();
-            } else if (item->groupId() != groupId) {
+                groupId = item->GroupId();
+            } else if (item->GroupId() != groupId) {
                 sameGroup = false;
             }
             auto* face = qgraphicsitem_cast<ShapeItem*>(item);
             if (face && face->shapeType() == ShapeType::PARALLELOGRAM) {
                 ++diamondFaces;
-                if (!qFuzzyIsNull(face->rotationAngle())) {
+                if (!qFuzzyIsNull(face->RotationAngle())) {
                     ++rotatedFaces;
                 }
             }
@@ -138,8 +138,8 @@ void selftest::runShapesClusterTests(Context& ctx)
         int ellipseCount = 0;
         for (int i = 3; i < items.size(); ++i) {
             if (cylGroup == 0) {
-                cylGroup = items.at(i)->groupId();
-            } else if (items.at(i)->groupId() != cylGroup) {
+                cylGroup = items.at(i)->GroupId();
+            } else if (items.at(i)->GroupId() != cylGroup) {
                 cylinderGrouped = false;
             }
             auto* shape = qgraphicsitem_cast<ShapeItem*>(items.at(i));
@@ -156,13 +156,13 @@ void selftest::runShapesClusterTests(Context& ctx)
                   QStringLiteral("layers=%1").arg(body ? body->layerCount() : -1));
         // 需求 18/30：顶椭圆叠在柱身上层（分组内后加入的图元高度更高）。
         auto* lastFace = qgraphicsitem_cast<ShapeItem*>(items.last());
-        ctx.check(lastFace && lastFace->shapeType() == ShapeType::ELLIPSE && lastFace->groupId() == cylGroup,
+        ctx.check(lastFace && lastFace->shapeType() == ShapeType::ELLIPSE && lastFace->GroupId() == cylGroup,
                   QStringLiteral("圆柱体顶椭圆叠在柱身上方"));
-        ctx.check(body && lastFace && lastFace->height() > body->height(),
+        ctx.check(body && lastFace && lastFace->ZOrder() > body->ZOrder(),
                   QStringLiteral("顶椭圆的层内高度高于柱身多边形"),
                   QStringLiteral("ellipse=%1 body=%2")
-                      .arg(lastFace ? lastFace->height() : -1)
-                      .arg(body ? body->height() : -1));
+                      .arg(lastFace ? lastFace->ZOrder() : -1)
+                      .arg(body ? body->ZOrder() : -1));
     }
 
     // 需求 26：正弦波形插入即生成曲线图元；今日新增的其余填充图形插入后

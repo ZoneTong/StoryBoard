@@ -15,13 +15,13 @@ class StyleController {
   public:
     explicit StyleController(MainWindow* window);
 
-    void setFillStyle(FillStyle style);
+    void SetFillStyle(FillStyle style);
     void chooseFillColor();
     void chooseStrokeColor();
     void applyStrokeColorToSelection(const QColor& color);
     void applyStrokeWidthToSelection(qreal width);
     // 描线样式（需求 1）：设置全局描线样式并同步到选中图元与各处图标。
-    void setStrokeStyle(Qt::PenStyle style);
+    void SetStrokeStyle(Qt::PenStyle style);
     void updateStrokeStyleActions();
     void applyFillToSelection();
     void updateFillActions();

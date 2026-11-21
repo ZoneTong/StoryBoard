@@ -283,9 +283,9 @@ void MainWindow::setStrokeSmoothingUi(qreal tolerance)
     m_style->setStrokeSmoothingUi(tolerance);
 }
 
-void MainWindow::setStrokeStyle(Qt::PenStyle style)
+void MainWindow::SetStrokeStyle(Qt::PenStyle style)
 {
-    m_style->setStrokeStyle(style);
+    m_style->SetStrokeStyle(style);
 }
 
 void MainWindow::focusStrokeWidthSpin()
@@ -384,9 +384,9 @@ void MainWindow::updatePropertiesPanelDockVisibility()
     m_viewStatus->updatePropertiesPanelDockVisibility();
 }
 
-void MainWindow::setFillStyle(FillStyle style)
+void MainWindow::SetFillStyle(FillStyle style)
 {
-    m_style->setFillStyle(style);
+    m_style->SetFillStyle(style);
 }
 
 void MainWindow::chooseFillColor()

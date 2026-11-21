@@ -94,44 +94,44 @@ void selftest::runCustomShapeDockTests(Context& ctx)
     // 需求：选中图元工具卡（边框样式 / 透明度 / 矩形圆角 / 图层与高度）与画布格式自定义图形。
     {
         RectangleItem styled;
-        styled.setContentSize(QSizeF(200, 120));
+        styled.SetContentSize(QSizeF(200, 120));
         styled.setStyle(QColor(QStringLiteral("#1E293B")), QColor(QStringLiteral("#F97316")), 6.0);
-        styled.setStrokeStyle(Qt::DashLine);
-        styled.setItemOpacity(0.42);
-        styled.setCornerRadius(18.0);
+        styled.SetStrokeStyle(Qt::DashLine);
+        styled.SetItemOpacity(0.42);
+        styled.SetCornerRadius(18.0);
 
         RectangleItem reloaded;
-        reloaded.fromJson(styled.toJson());
-        ctx.check(reloaded.strokeStyle() == Qt::DashLine && qAbs(reloaded.itemOpacity() - 0.42) < 0.001 &&
-                      qAbs(reloaded.cornerRadius() - 18.0) < 0.001,
+        reloaded.FromJson(styled.ToJson());
+        ctx.check(reloaded.StrokeStyle() == Qt::DashLine && qAbs(reloaded.ItemOpacity() - 0.42) < 0.001 &&
+                      qAbs(reloaded.CornerRadius() - 18.0) < 0.001,
                   QStringLiteral("图形边框样式、透明度与圆角随画布保存"),
                   QStringLiteral("style=%1 opacity=%2 radius=%3")
-                      .arg(static_cast<int>(reloaded.strokeStyle()))
-                      .arg(reloaded.itemOpacity())
-                      .arg(reloaded.cornerRadius()));
+                      .arg(static_cast<int>(reloaded.StrokeStyle()))
+                      .arg(reloaded.ItemOpacity())
+                      .arg(reloaded.CornerRadius()));
 
-        const int squareElements = ShapeItem::pathFor(ShapeType::RECTANGLE, QRectF(0, 0, 100, 80), 0.0).elementCount();
-        const int roundElements = ShapeItem::pathFor(ShapeType::RECTANGLE, QRectF(0, 0, 100, 80), 20.0).elementCount();
+        const int squareElements = ShapeItem::PathFor(ShapeType::RECTANGLE, QRectF(0, 0, 100, 80), 0.0).elementCount();
+        const int roundElements = ShapeItem::PathFor(ShapeType::RECTANGLE, QRectF(0, 0, 100, 80), 20.0).elementCount();
         ctx.check(roundElements > squareElements, QStringLiteral("矩形圆角半径改变轮廓"),
                   QStringLiteral("square=%1 round=%2").arg(squareElements).arg(roundElements));
 
         QPainterPath unit;
         unit.addRect(QRectF(0.0, 0.0, 1.0, 1.0));
         RectangleItem custom;
-        custom.setCustomShape(QStringLiteral("Badge"), unit);
-        custom.setContentSize(QSizeF(160, 100));
+        custom.SetCustomShape(QStringLiteral("Badge"), unit);
+        custom.SetContentSize(QSizeF(160, 100));
         RectangleItem customReloaded;
-        customReloaded.fromJson(custom.toJson());
-        const QRectF customBounds = customReloaded.currentPath(QRectF(0, 0, 160, 100)).boundingRect();
-        ctx.check(customReloaded.isCustomShape() && customReloaded.displayName() == QStringLiteral("Badge") &&
+        customReloaded.FromJson(custom.ToJson());
+        const QRectF customBounds = customReloaded.CurrentPath(QRectF(0, 0, 160, 100)).boundingRect();
+        ctx.check(customReloaded.IsCustomShape() && customReloaded.DisplayName() == QStringLiteral("Badge") &&
                       qAbs(customBounds.width() - 160.0) < 0.01 && qAbs(customBounds.height() - 100.0) < 0.01,
                   QStringLiteral("自定义图形轮廓随画布保存并按内容矩形缩放"),
                   QStringLiteral("custom=%1 name=%2 w=%3")
-                      .arg(customReloaded.isCustomShape() ? 1 : 0)
-                      .arg(customReloaded.displayName())
+                      .arg(customReloaded.IsCustomShape() ? 1 : 0)
+                      .arg(customReloaded.DisplayName())
                       .arg(customBounds.width()));
-        customReloaded.setCustomShape(QString(), QPainterPath());
-        ctx.check(!customReloaded.isCustomShape(), QStringLiteral("切换内置图形时清除自定义轮廓"));
+        customReloaded.SetCustomShape(QString(), QPainterPath());
+        ctx.check(!customReloaded.IsCustomShape(), QStringLiteral("切换内置图形时清除自定义轮廓"));
 
         // 自定义图形目录：配置同级的 shapes 子目录，扫描 .sbcanvas 并按文件名命名。
         const QString shapesConfig = QDir(ctx.workDirectory).filePath(QStringLiteral("custom-shape-config.ini"));
@@ -143,10 +143,10 @@ void selftest::runCustomShapeDockTests(Context& ctx)
 
         StarItem templateShape;
         templateShape.setPos(QPointF(12, 18));
-        templateShape.setContentSize(QSizeF(160, 100));
+        templateShape.SetContentSize(QSizeF(160, 100));
         QJsonObject templateRoot;
         templateRoot.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
-        templateRoot.insert(QStringLiteral("items"), QJsonArray{templateShape.toJson()});
+        templateRoot.insert(QStringLiteral("items"), QJsonArray{templateShape.ToJson()});
         const QString templatePath = QDir(shapesDirectory).filePath(QStringLiteral("probe-badge.sbcanvas"));
         for (const QString& stale : QDir(shapesDirectory).entryList({QStringLiteral("*.sbcanvas")}, QDir::Files)) {
             QFile::remove(QDir(shapesDirectory).filePath(stale));
@@ -245,8 +245,8 @@ void selftest::runCustomShapeDockTests(Context& ctx)
             QJsonObject deployedRoot;
             deployedRoot.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
             EllipseItem deployedShape;
-            deployedShape.setContentSize(QSizeF(90, 90));
-            deployedRoot.insert(QStringLiteral("items"), QJsonArray{deployedShape.toJson()});
+            deployedShape.SetContentSize(QSizeF(90, 90));
+            deployedRoot.insert(QStringLiteral("items"), QJsonArray{deployedShape.ToJson()});
             const QString deployedPath = QDir(secondDir).filePath(QStringLiteral("deployed-leaf.sbcanvas"));
             QFile deployedFile(deployedPath);
             if (deployedFile.open(QIODevice::WriteOnly)) {
@@ -355,7 +355,7 @@ void selftest::runCustomShapeDockTests(Context& ctx)
         ctx.check(fillStyleRow && fillStyleRow->isHidden() && fillColorRow && fillColorRow->isHidden(),
                   QStringLiteral("选中不支持填充的图元时隐藏填充颜色与填充样式行"));
         auto* fillableShape = createShapeItem(ShapeType::RECTANGLE);
-        fillableShape->setContentSize(QSizeF(120.0, 80.0));
+        fillableShape->SetContentSize(QSizeF(120.0, 80.0));
         panelScene.addItemsWithUndo({fillableShape}, QStringLiteral("Add rectangle"));
         fillableShape->setSelected(true);
         strokeOnlyShape->setSelected(true);
@@ -384,10 +384,10 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
         qputenv("STORYBOARD_CONFIG", dockConfig.toLocal8Bit());
         const QString dockShapesDir = AppSettings::shapesDir();
         StarItem menuShape;
-        menuShape.setContentSize(QSizeF(120, 80));
+        menuShape.SetContentSize(QSizeF(120, 80));
         QJsonObject menuRoot;
         menuRoot.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
-        menuRoot.insert(QStringLiteral("items"), QJsonArray{menuShape.toJson()});
+        menuRoot.insert(QStringLiteral("items"), QJsonArray{menuShape.ToJson()});
         const QString menuTemplatePath = QDir(dockShapesDir).filePath(QStringLiteral("dock-probe.sbcanvas"));
         for (const QString& stale : QDir(dockShapesDir).entryList({QStringLiteral("*.sbcanvas")}, QDir::Files)) {
             QFile::remove(QDir(dockShapesDir).filePath(stale));
@@ -535,7 +535,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
         const int beforeCount = dockScene->canvasItemCount();
         auto* insertedShape = createShapeItem(ShapeType::RECTANGLE);
         insertedShape->setPos(QPointF(160.0, 140.0));
-        insertedShape->setContentSize(QSizeF(140.0, 100.0));
+        insertedShape->SetContentSize(QSizeF(140.0, 100.0));
         dockScene->addItemsWithUndo({insertedShape}, QStringLiteral("Add rectangle"));
         insertedShape->setSelected(true);
         QApplication::processEvents();
@@ -613,17 +613,17 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 opacitySpin->setValue(45);
                 QApplication::processEvents();
             }
-            ctx.check(qAbs(selectedShape->itemOpacity() - 0.45) < 0.01, QStringLiteral("工具卡透明度即时作用到图形"),
-                      QString::number(selectedShape->itemOpacity()));
+            ctx.check(qAbs(selectedShape->ItemOpacity() - 0.45) < 0.01, QStringLiteral("工具卡透明度即时作用到图形"),
+                      QString::number(selectedShape->ItemOpacity()));
             dockScene->undoStack()->undo();
-            ctx.check(qAbs(selectedShape->itemOpacity() - 1.0) < 0.01, QStringLiteral("撤销透明度修改恢复原值"),
-                      QString::number(selectedShape->itemOpacity()));
+            ctx.check(qAbs(selectedShape->ItemOpacity() - 1.0) < 0.01, QStringLiteral("撤销透明度修改恢复原值"),
+                      QString::number(selectedShape->ItemOpacity()));
 
             if (dashedBorderButtonIndex >= 0 && borderButtons.size() > dashedBorderButtonIndex) {
                 borderButtons.at(dashedBorderButtonIndex)->click();
                 QApplication::processEvents();
             }
-            ctx.check(selectedShape->strokeStyle() == Qt::DashLine, QStringLiteral("工具卡边框样式作用到图形"));
+            ctx.check(selectedShape->StrokeStyle() == Qt::DashLine, QStringLiteral("工具卡边框样式作用到图形"));
             if (fillButtons.size() > 2) {
                 fillButtons.at(2)->click();
                 QApplication::processEvents();
@@ -634,18 +634,18 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 cornerSpin->setValue(24);
                 QApplication::processEvents();
             }
-            ctx.check(qAbs(selectedShape->cornerRadius() - 24.0) < 0.01, QStringLiteral("矩形选中时圆角设置可用"),
-                      QString::number(selectedShape->cornerRadius()));
+            ctx.check(qAbs(selectedShape->CornerRadius() - 24.0) < 0.01, QStringLiteral("矩形选中时圆角设置可用"),
+                      QString::number(selectedShape->CornerRadius()));
 
-            const int heightBefore = selectedShape->height();
+            const int heightBefore = selectedShape->ZOrder();
             if (heightUp) {
                 heightUp->click();
                 QApplication::processEvents();
             }
-            ctx.check(selectedShape->height() == heightBefore + 1, QStringLiteral("工具卡高度 +1 按钮生效"),
-                      QStringLiteral("%1->%2").arg(heightBefore).arg(selectedShape->height()));
+            ctx.check(selectedShape->ZOrder() == heightBefore + 1, QStringLiteral("工具卡高度 +1 按钮生效"),
+                      QStringLiteral("%1->%2").arg(heightBefore).arg(selectedShape->ZOrder()));
             dockScene->undoStack()->undo();
-            ctx.check(selectedShape->height() == heightBefore, QStringLiteral("撤销高度 +1 恢复原高度"));
+            ctx.check(selectedShape->ZOrder() == heightBefore, QStringLiteral("撤销高度 +1 恢复原高度"));
 
             // 边框颜色 / 宽度同时是画笔的当前颜色与宽度，改完描边后画笔立即沿用。
             QWidget* borderWidthWidget = dockPanel->findChild<QWidget*>(QStringLiteral("ItemBorderWidthRow"));
@@ -664,11 +664,11 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                           .arg(borderWidthSpin ? borderWidthSpin->maximum() : -1)
                           .arg(borderWidthSpin ? borderWidthSpin->singleStep() : 0)
                           .arg(borderWidthSpin ? borderWidthSpin->suffix() : QStringLiteral("-")));
-            ctx.check(qAbs(selectedShape->strokeWidth() - 9.0) < 0.01 && dockView &&
+            ctx.check(qAbs(selectedShape->StrokeWidth() - 9.0) < 0.01 && dockView &&
                           qAbs(dockView->brushWidth() - 9.0) < 0.01,
                       QStringLiteral("边框宽度同时成为画笔宽度"),
                       QStringLiteral("stroke=%1 brush=%2")
-                          .arg(selectedShape->strokeWidth())
+                          .arg(selectedShape->StrokeWidth())
                           .arg(dockView ? dockView->brushWidth() : -1.0));
             QWidget* borderColorWidget = dockPanel->findChild<QWidget*>(QStringLiteral("ItemBorderColorRow"));
             const QList<QToolButton*> strokeSwatches =
@@ -679,11 +679,11 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 strokeSwatches.at(1)->click();
                 QApplication::processEvents();
             }
-            ctx.check(selectedShape->strokeColor() == brushColorTarget && dockView &&
+            ctx.check(selectedShape->StrokeColor() == brushColorTarget && dockView &&
                           dockView->brushColor() == brushColorTarget,
                       QStringLiteral("边框颜色同时成为画笔颜色"),
                       QStringLiteral("stroke=%1 brush=%2")
-                          .arg(selectedShape->strokeColor().name())
+                          .arg(selectedShape->StrokeColor().name())
                           .arg(dockView ? dockView->brushColor().name() : QStringLiteral("-")));
 
             ctx.check(copyButton && deleteButton && rotateCwButton && rotateCcwButton && copyButton->isVisible() &&
@@ -767,7 +767,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             // 多选时卡片把对齐 8 项与合并图元 6 项直接展开成图标按钮行，并复用菜单栏同一批动作。
             auto* secondShape = createShapeItem(ShapeType::RECTANGLE);
             secondShape->setPos(QPointF(420.0, 240.0));
-            secondShape->setContentSize(QSizeF(120.0, 90.0));
+            secondShape->SetContentSize(QSizeF(120.0, 90.0));
             secondShape->setStyle(QColor(QStringLiteral("#1D4ED8")), QColor(29, 78, 216, 40), 3.0);
             dockScene->addItemsWithUndo({secondShape}, QStringLiteral("Add second shape"));
             selectedShape->setSelected(true);
@@ -847,7 +847,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             // 组 + 组外图元混合选中：再套一层组合与取消组合同时可用（分组支持多层）。
             auto* thirdShape = createShapeItem(ShapeType::ELLIPSE);
             thirdShape->setPos(QPointF(560.0, 320.0));
-            thirdShape->setContentSize(QSizeF(100.0, 80.0));
+            thirdShape->SetContentSize(QSizeF(100.0, 80.0));
             dockScene->addItemsWithUndo({thirdShape}, QStringLiteral("Add third shape"));
             selectedShape->setSelected(true);
             secondShape->setSelected(true);
@@ -861,7 +861,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             // 删除按钮单独用一个临时图元验证，避免删掉后面还要复用的图元。
             auto* deleteProbe = createShapeItem(ShapeType::RECTANGLE);
             deleteProbe->setPos(QPointF(640.0, 360.0));
-            deleteProbe->setContentSize(QSizeF(80.0, 60.0));
+            deleteProbe->SetContentSize(QSizeF(80.0, 60.0));
             dockScene->addItemsWithUndo({deleteProbe}, QStringLiteral("Add delete probe"));
             dockScene->clearSelection();
             deleteProbe->setSelected(true);
@@ -884,7 +884,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
 
             // 曲线复用描线颜色 / 宽度 / 样式与透明度：只选曲线时描线样式行可用。
             auto* selectedStroke = new CurveItem();
-            selectedStroke->setStrokePoints({QPointF(60.0, 300.0), QPointF(180.0, 300.0)},
+            selectedStroke->SetStrokePoints({QPointF(60.0, 300.0), QPointF(180.0, 300.0)},
                                             QColor(QStringLiteral("#2563EB")), 6.0);
             dockScene->addItemsWithUndo({selectedStroke}, QStringLiteral("Add stroke"));
             dockScene->clearSelection();
@@ -894,34 +894,34 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             QWidget* borderStyleWidget = dockPanel->findChild<QWidget*>(QStringLiteral("ItemBorderStyleRow"));
             ctx.check(borderStyleWidget && borderStyleWidget->isVisible(), QStringLiteral("只选曲线时显示描线样式行"));
             ctx.check(borderWidthSpin && borderWidthSpin->isEnabled() &&
-                          qAbs(borderWidthSpin->value() - selectedStroke->strokeWidth()) < 0.01 && opacitySpin &&
+                          qAbs(borderWidthSpin->value() - selectedStroke->StrokeWidth()) < 0.01 && opacitySpin &&
                           opacitySpin->isEnabled(),
                       QStringLiteral("只选曲线时描线宽度与透明度可用并按曲线回显"),
                       QStringLiteral("width=%1 spin=%2")
-                          .arg(selectedStroke->strokeWidth())
+                          .arg(selectedStroke->StrokeWidth())
                           .arg(borderWidthSpin ? borderWidthSpin->value() : -1.0));
 
             if (strokeSwatches.size() > 1) {
                 strokeSwatches.at(1)->click();
                 QApplication::processEvents();
             }
-            ctx.check(selectedStroke->strokeColor() == QColor(QStringLiteral("#EF4444")),
-                      QStringLiteral("卡片描线颜色直接改变曲线颜色"), selectedStroke->strokeColor().name());
+            ctx.check(selectedStroke->StrokeColor() == QColor(QStringLiteral("#EF4444")),
+                      QStringLiteral("卡片描线颜色直接改变曲线颜色"), selectedStroke->StrokeColor().name());
             dockScene->undoStack()->undo();
             QApplication::processEvents();
-            ctx.check(selectedStroke->strokeColor() == QColor(QStringLiteral("#2563EB")),
-                      QStringLiteral("撤销描线颜色恢复曲线原色"), selectedStroke->strokeColor().name());
+            ctx.check(selectedStroke->StrokeColor() == QColor(QStringLiteral("#2563EB")),
+                      QStringLiteral("撤销描线颜色恢复曲线原色"), selectedStroke->StrokeColor().name());
 
             if (borderWidthSpin) {
                 borderWidthSpin->setValue(11);
                 QApplication::processEvents();
             }
-            ctx.check(qAbs(selectedStroke->strokeWidth() - 11.0) < 0.01, QStringLiteral("卡片描线宽度直接改变曲线宽度"),
-                      QString::number(selectedStroke->strokeWidth()));
+            ctx.check(qAbs(selectedStroke->StrokeWidth() - 11.0) < 0.01, QStringLiteral("卡片描线宽度直接改变曲线宽度"),
+                      QString::number(selectedStroke->StrokeWidth()));
             dockScene->undoStack()->undo();
             QApplication::processEvents();
-            ctx.check(qAbs(selectedStroke->strokeWidth() - 6.0) < 0.01, QStringLiteral("撤销描线宽度恢复曲线原宽度"),
-                      QString::number(selectedStroke->strokeWidth()));
+            ctx.check(qAbs(selectedStroke->StrokeWidth() - 6.0) < 0.01, QStringLiteral("撤销描线宽度恢复曲线原宽度"),
+                      QString::number(selectedStroke->StrokeWidth()));
 
             if (dashedBorderButtonIndex >= 0 && borderButtons.size() > dashedBorderButtonIndex) {
                 const Qt::PenStyle styleBefore = selectedStroke->strokePattern();
@@ -938,12 +938,12 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 opacitySpin->setValue(55);
                 QApplication::processEvents();
             }
-            ctx.check(qAbs(selectedStroke->itemOpacity() - 0.55) < 0.01, QStringLiteral("透明度作用到曲线"),
-                      QString::number(selectedStroke->itemOpacity()));
+            ctx.check(qAbs(selectedStroke->ItemOpacity() - 0.55) < 0.01, QStringLiteral("透明度作用到曲线"),
+                      QString::number(selectedStroke->ItemOpacity()));
             dockScene->undoStack()->undo();
             QApplication::processEvents();
-            ctx.check(qAbs(selectedStroke->itemOpacity() - 1.0) < 0.01, QStringLiteral("撤销透明度恢复曲线原值"),
-                      QString::number(selectedStroke->itemOpacity()));
+            ctx.check(qAbs(selectedStroke->ItemOpacity() - 1.0) < 0.01, QStringLiteral("撤销透明度恢复曲线原值"),
+                      QString::number(selectedStroke->ItemOpacity()));
 
             selectedShape->setSelected(true);
             selectedStroke->setSelected(true);
@@ -954,16 +954,16 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 opacitySpin->setValue(30);
                 QApplication::processEvents();
             }
-            ctx.check(qAbs(selectedShape->itemOpacity() - 0.3) < 0.01 &&
-                          qAbs(selectedStroke->itemOpacity() - 0.3) < 0.01,
+            ctx.check(qAbs(selectedShape->ItemOpacity() - 0.3) < 0.01 &&
+                          qAbs(selectedStroke->ItemOpacity() - 0.3) < 0.01,
                       QStringLiteral("透明度同时作用到图形和曲线"),
                       QStringLiteral("shape=%1 stroke=%2")
-                          .arg(selectedShape->itemOpacity())
-                          .arg(selectedStroke->itemOpacity()));
+                          .arg(selectedShape->ItemOpacity())
+                          .arg(selectedStroke->ItemOpacity()));
             dockScene->undoStack()->undo();
             QApplication::processEvents();
-            ctx.check(qAbs(selectedShape->itemOpacity() - 1.0) < 0.01 &&
-                          qAbs(selectedStroke->itemOpacity() - 1.0) < 0.01,
+            ctx.check(qAbs(selectedShape->ItemOpacity() - 1.0) < 0.01 &&
+                          qAbs(selectedStroke->ItemOpacity() - 1.0) < 0.01,
                       QStringLiteral("撤销透明度同时恢复图形和曲线"));
 
             // 多边形也要有填充 / 描线属性：选中后五行可见，按钮改动真正落到图层并可撤销。
@@ -1003,29 +1003,29 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             const QList<QToolButton*> fillSwatches =
                 fillColorRow ? fillColorRow->findChildren<QToolButton*>(QStringLiteral("ItemColorSwatch"))
                              : QList<QToolButton*>();
-            const QColor polygonFillBeforeColor = polygon->fillColor();
+            const QColor polygonFillBeforeColor = polygon->FillColor();
             if (fillSwatches.size() > 1) {
                 fillSwatches.at(1)->click();
                 QApplication::processEvents();
             }
-            ctx.check(polygon->fillColor() == QColor(QStringLiteral("#EF4444")),
-                      QStringLiteral("编辑卡填充颜色作用到多边形"), polygon->fillColor().name());
+            ctx.check(polygon->FillColor() == QColor(QStringLiteral("#EF4444")),
+                      QStringLiteral("编辑卡填充颜色作用到多边形"), polygon->FillColor().name());
             dockScene->undoStack()->undo();
             QApplication::processEvents();
-            ctx.check(polygon->fillColor() == polygonFillBeforeColor, QStringLiteral("撤销填充颜色恢复多边形原色"),
-                      polygon->fillColor().name());
+            ctx.check(polygon->FillColor() == polygonFillBeforeColor, QStringLiteral("撤销填充颜色恢复多边形原色"),
+                      polygon->FillColor().name());
 
-            const Qt::PenStyle polygonPenBefore = polygon->strokeStyle();
+            const Qt::PenStyle polygonPenBefore = polygon->StrokeStyle();
             if (dashedBorderButtonIndex >= 0 && borderButtons.size() > dashedBorderButtonIndex) {
                 borderButtons.at(dashedBorderButtonIndex)->click();
                 QApplication::processEvents();
             }
-            ctx.check(polygon->strokeStyle() != polygonPenBefore, QStringLiteral("编辑卡描线样式作用到多边形"));
+            ctx.check(polygon->StrokeStyle() != polygonPenBefore, QStringLiteral("编辑卡描线样式作用到多边形"));
             dockScene->undoStack()->undo();
             QApplication::processEvents();
-            ctx.check(polygon->strokeStyle() == polygonPenBefore, QStringLiteral("撤销描线样式恢复多边形原样式"));
+            ctx.check(polygon->StrokeStyle() == polygonPenBefore, QStringLiteral("撤销描线样式恢复多边形原样式"));
 
-            const QColor polygonStrokeBefore = polygon->strokeColor();
+            const QColor polygonStrokeBefore = polygon->StrokeColor();
             const QList<QToolButton*> polygonStrokeSwatches =
                 borderColorRow ? borderColorRow->findChildren<QToolButton*>(QStringLiteral("ItemColorSwatch"))
                                : QList<QToolButton*>();
@@ -1033,26 +1033,26 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 polygonStrokeSwatches.at(1)->click();
                 QApplication::processEvents();
             }
-            ctx.check(polygon->strokeColor() == QColor(QStringLiteral("#EF4444")),
-                      QStringLiteral("编辑卡描线颜色作用到多边形"), polygon->strokeColor().name());
+            ctx.check(polygon->StrokeColor() == QColor(QStringLiteral("#EF4444")),
+                      QStringLiteral("编辑卡描线颜色作用到多边形"), polygon->StrokeColor().name());
             dockScene->undoStack()->undo();
             QApplication::processEvents();
-            ctx.check(polygon->strokeColor() == polygonStrokeBefore, QStringLiteral("撤销描线颜色恢复多边形原色"),
-                      polygon->strokeColor().name());
+            ctx.check(polygon->StrokeColor() == polygonStrokeBefore, QStringLiteral("撤销描线颜色恢复多边形原色"),
+                      polygon->StrokeColor().name());
 
-            const qreal polygonWidthBefore = polygon->strokeWidth();
+            const qreal polygonWidthBefore = polygon->StrokeWidth();
             QSpinBox* polygonWidthSpin =
                 borderWidthRow ? borderWidthRow->findChild<QSpinBox*>(QStringLiteral("ItemBorderWidthSpin")) : nullptr;
             if (polygonWidthSpin) {
                 polygonWidthSpin->setValue(9);
                 QApplication::processEvents();
             }
-            ctx.check(qAbs(polygon->strokeWidth() - 9.0) < 0.01, QStringLiteral("编辑卡描线宽度作用到多边形"),
-                      QString::number(polygon->strokeWidth()));
+            ctx.check(qAbs(polygon->StrokeWidth() - 9.0) < 0.01, QStringLiteral("编辑卡描线宽度作用到多边形"),
+                      QString::number(polygon->StrokeWidth()));
             dockScene->undoStack()->undo();
             QApplication::processEvents();
-            ctx.check(qAbs(polygon->strokeWidth() - polygonWidthBefore) < 0.01,
-                      QStringLiteral("撤销描线宽度恢复多边形原宽度"), QString::number(polygon->strokeWidth()));
+            ctx.check(qAbs(polygon->StrokeWidth() - polygonWidthBefore) < 0.01,
+                      QStringLiteral("撤销描线宽度恢复多边形原宽度"), QString::number(polygon->StrokeWidth()));
 
             // 属性窗同样识别多边形的填充 / 描线字段，确认后只占一条撤销记录。
             ItemPropertiesDialog polygonDialog(dockScene, polygon);
@@ -1061,7 +1061,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             QSpinBox* dialogStrokeWidth =
                 polygonDialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesStrokeWidthValue"));
             const FillStyle dialogFillBefore = polygon->fillStyle();
-            const qreal dialogWidthBefore = polygon->strokeWidth();
+            const qreal dialogWidthBefore = polygon->StrokeWidth();
             if (dialogFillStyle) {
                 const int hachureIndex = dialogFillStyle->findData(static_cast<int>(FillStyle::HACHURE));
                 if (hachureIndex >= 0) {
@@ -1073,15 +1073,15 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             }
             polygonDialog.accept();
             QApplication::processEvents();
-            ctx.check(polygon->fillStyle() == FillStyle::HACHURE && qAbs(polygon->strokeWidth() - 12.0) < 0.01,
+            ctx.check(polygon->fillStyle() == FillStyle::HACHURE && qAbs(polygon->StrokeWidth() - 12.0) < 0.01,
                       QStringLiteral("属性窗填充样式与描线宽度作用到多边形"),
                       QStringLiteral("fill=%1 width=%2")
                           .arg(static_cast<int>(polygon->fillStyle()))
-                          .arg(polygon->strokeWidth()));
+                          .arg(polygon->StrokeWidth()));
             dockScene->undoStack()->undo();
             QApplication::processEvents();
             ctx.check(polygon->fillStyle() == dialogFillBefore &&
-                          qAbs(polygon->strokeWidth() - dialogWidthBefore) < 0.01,
+                          qAbs(polygon->StrokeWidth() - dialogWidthBefore) < 0.01,
                       QStringLiteral("撤销属性窗修改同时恢复多边形填充与描线"));
 
             // 图形与多边形混合选中时，一次填充色修改只占一条撤销记录。
@@ -1089,29 +1089,29 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             selectedShape->setSelected(true);
             polygon->setSelected(true);
             QApplication::processEvents();
-            const QColor mixedShapeFillBefore = selectedShape->fillColor();
-            const QColor mixedPolygonFillBefore = polygon->fillColor();
+            const QColor mixedShapeFillBefore = selectedShape->FillColor();
+            const QColor mixedPolygonFillBefore = polygon->FillColor();
             const int mixedUndoBefore = dockScene->undoStack()->index();
             if (fillSwatches.size() > 2) {
                 fillSwatches.at(2)->click();
                 QApplication::processEvents();
             }
             const int mixedUndoAfter = dockScene->undoStack()->index();
-            ctx.check(selectedShape->fillColor() != mixedShapeFillBefore &&
-                          polygon->fillColor() != mixedPolygonFillBefore && mixedUndoAfter == mixedUndoBefore + 1,
+            ctx.check(selectedShape->FillColor() != mixedShapeFillBefore &&
+                          polygon->FillColor() != mixedPolygonFillBefore && mixedUndoAfter == mixedUndoBefore + 1,
                       QStringLiteral("混合选中图形与多边形时填充色只占一条撤销记录"),
                       QStringLiteral("undo=%1->%2 shape=%3->%4 polygon=%5->%6 selected=%7")
                           .arg(mixedUndoBefore)
                           .arg(mixedUndoAfter)
                           .arg(mixedShapeFillBefore.name())
-                          .arg(selectedShape->fillColor().name())
+                          .arg(selectedShape->FillColor().name())
                           .arg(mixedPolygonFillBefore.name())
-                          .arg(polygon->fillColor().name())
+                          .arg(polygon->FillColor().name())
                           .arg(dockScene->selectedCanvasItems().size()));
             dockScene->undoStack()->undo();
             QApplication::processEvents();
-            ctx.check(selectedShape->fillColor() == mixedShapeFillBefore &&
-                          polygon->fillColor() == mixedPolygonFillBefore,
+            ctx.check(selectedShape->FillColor() == mixedShapeFillBefore &&
+                          polygon->FillColor() == mixedPolygonFillBefore,
                       QStringLiteral("撤销混合填充同时恢复图形与多边形原色"));
 
             // 文字 / 图片内容行与卡片操作按钮：只对相应类型显示，并且写入能撤销。
@@ -1157,12 +1157,12 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 opacitySpin->setValue(40);
                 QApplication::processEvents();
             }
-            ctx.check(qAbs(cardText->itemOpacity() - 0.4) < 0.01, QStringLiteral("卡片透明度作用于文字图元"),
-                      QString::number(cardText->itemOpacity()));
+            ctx.check(qAbs(cardText->ItemOpacity() - 0.4) < 0.01, QStringLiteral("卡片透明度作用于文字图元"),
+                      QString::number(cardText->ItemOpacity()));
             dockScene->undoStack()->undo();
             QApplication::processEvents();
-            ctx.check(qAbs(cardText->itemOpacity() - 1.0) < 0.01, QStringLiteral("撤销透明度恢复文字原值"),
-                      QString::number(cardText->itemOpacity()));
+            ctx.check(qAbs(cardText->ItemOpacity() - 1.0) < 0.01, QStringLiteral("撤销透明度恢复文字原值"),
+                      QString::number(cardText->ItemOpacity()));
 
             auto* textEdit = propertiesDock->findChild<QLineEdit*>(QStringLiteral("ItemTextContentEdit"));
             if (textEdit) {
@@ -1182,12 +1182,12 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 fontSizeSpin->setValue(20);
                 QApplication::processEvents();
             }
-            ctx.check(cardText->textFont().pointSize() == 20, QStringLiteral("卡片字号直接修改文字字体"),
-                      QString::number(cardText->textFont().pointSize()));
+            ctx.check(cardText->TextFont().pointSize() == 20, QStringLiteral("卡片字号直接修改文字字体"),
+                      QString::number(cardText->TextFont().pointSize()));
             dockScene->undoStack()->undo();
             QApplication::processEvents();
-            ctx.check(cardText->textFont().pointSize() == 12, QStringLiteral("撤销字号恢复原字体"),
-                      QString::number(cardText->textFont().pointSize()));
+            ctx.check(cardText->TextFont().pointSize() == 12, QStringLiteral("撤销字号恢复原字体"),
+                      QString::number(cardText->TextFont().pointSize()));
 
             const QList<QToolButton*> textSwatches =
                 propertiesDock->findChildren<QToolButton*>(QStringLiteral("ItemTextColorSwatch"));
@@ -1195,18 +1195,18 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
                 textSwatches.at(1)->click();
                 QApplication::processEvents();
             }
-            ctx.check(cardText->textColor() == QColor(QStringLiteral("#EF4444")),
-                      QStringLiteral("卡片文字颜色直接修改文字"), cardText->textColor().name());
+            ctx.check(cardText->TextColor() == QColor(QStringLiteral("#EF4444")),
+                      QStringLiteral("卡片文字颜色直接修改文字"), cardText->TextColor().name());
             dockScene->undoStack()->undo();
             QApplication::processEvents();
-            ctx.check(cardText->textColor() == QColor(QStringLiteral("#1E293B")),
-                      QStringLiteral("撤销文字颜色恢复原色"), cardText->textColor().name());
+            ctx.check(cardText->TextColor() == QColor(QStringLiteral("#1E293B")),
+                      QStringLiteral("撤销文字颜色恢复原色"), cardText->TextColor().name());
 
             auto* cardImage = createShapeItem(ShapeType::RECTANGLE);
             QPixmap imagePixmap(32, 24);
             imagePixmap.fill(QColor(QStringLiteral("#2563EB")));
-            cardImage->setFillImage(imagePixmap, ImageFill::Mode::STRETCH);
-            cardImage->setContentSize(QSizeF(32, 24));
+            cardImage->SetFillImage(imagePixmap, ImageFill::Mode::STRETCH);
+            cardImage->SetContentSize(QSizeF(32, 24));
             cardImage->setPos(QPointF(620.0, 430.0));
             dockScene->addItemsWithUndo({cardImage}, QStringLiteral("Add card image"));
             dockScene->clearSelection();
@@ -1234,7 +1234,7 @@ void selftest::runDockPanelMainWindowTests(Context& ctx)
             for (int i = 0; i <= 8; ++i) {
                 jitterPoints.append(QPointF(520.0 + i * 6.0, 470.0 + (i % 2) * 3.0));
             }
-            smoothStroke->setStrokePoints(jitterPoints, QColor(QStringLiteral("#334155")), 5.0);
+            smoothStroke->SetStrokePoints(jitterPoints, QColor(QStringLiteral("#334155")), 5.0);
             dockScene->addItemsWithUndo({smoothStroke}, QStringLiteral("Add smooth stroke"));
             dockScene->clearSelection();
             QApplication::processEvents();

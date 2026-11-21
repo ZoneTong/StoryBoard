@@ -20,8 +20,8 @@ QJsonArray CanvasScene::clipboardItems() const
         if (!item || !isItemEditable(item)) {
             continue;
         }
-        QJsonObject json = item->toJson();
-        json.insert(QStringLiteral("opacity"), item->itemOpacity());
+        QJsonObject json = item->ToJson();
+        json.insert(QStringLiteral("opacity"), item->ItemOpacity());
         array.append(json);
     }
     return array;
@@ -41,18 +41,18 @@ int CanvasScene::pasteClipboardItems(const QJsonArray& items)
         if (!copy) {
             continue;
         }
-        copy->fromJson(json);
-        copy->setItemOpacity(json.value(QStringLiteral("opacity")).toDouble(1.0));
+        copy->FromJson(json);
+        copy->SetItemOpacity(json.value(QStringLiteral("opacity")).toDouble(1.0));
         // 跨文档粘贴时不带原分组关系，避免副本和来源画布的组联动。
-        copy->setGroupId(0);
+        copy->SetGroupId(0);
         copy->setPos(copy->pos() + QPointF(20.0, 20.0));
 
-        const QString sourceName = copy->rawName().trimmed();
+        const QString sourceName = copy->CustomName().trimmed();
         if (sourceName.isEmpty()) {
-            copy->setName(QString());
+            copy->SetName(QString());
         } else {
             const QString copyName = uniqueItemNameFor(sourceName, copy, reservedNames);
-            copy->setName(copyName);
+            copy->SetName(copyName);
             reservedNames.insert(copyName.toCaseFolded());
         }
         copies.append(copy);
@@ -85,7 +85,7 @@ int CanvasScene::pasteClipboardItems(const QJsonArray& items)
     if (!qFuzzyCompare(scale, 1.0) && !block.isEmpty()) {
         for (CanvasItem* copy : std::as_const(copies)) {
             const QPointF anchor = copy->pos();
-            copy->setContentSize(copy->contentSize() * scale);
+            copy->SetContentSize(copy->contentSize() * scale);
             copy->setPos(block.topLeft() + (anchor - block.topLeft()) * scale);
         }
         block = QRectF(block.topLeft(), block.size() * scale);
@@ -123,8 +123,8 @@ int CanvasScene::nudgeSelected(const QPointF& delta)
             continue;
         }
         QList<CanvasItem*> members;
-        if (item->groupId() > 0) {
-            members = itemsInGroupTree(outermostGroup(item->groupId()));
+        if (item->GroupId() > 0) {
+            members = itemsInGroupTree(outermostGroup(item->GroupId()));
         } else {
             members.append(item);
         }

@@ -100,13 +100,13 @@ void selftest::runLayerModelTests(Context& ctx)
 
     auto* lower = makeLineItem(QPointF(20, 20), QPointF(180, 120), QColor(QStringLiteral("#DC2626")));
     layerScene.addItemsWithUndo({lower}, QStringLiteral("添加底层图元"));
-    ctx.check(lower->layerId() == layerScene.activeLayerId() && lower->height() == 1,
+    ctx.check(lower->LayerId() == layerScene.activeLayerId() && lower->ZOrder() == 1,
               QStringLiteral("新图元进入当前图层并从 height 1 开始"),
-              QStringLiteral("layer=%1 height=%2").arg(lower->layerId()).arg(lower->height()));
+              QStringLiteral("layer=%1 height=%2").arg(lower->LayerId()).arg(lower->ZOrder()));
 
     auto* upper = makeLineItem(QPointF(40, 40), QPointF(200, 160), QColor(QStringLiteral("#2563EB")));
     layerScene.addItemsWithUndo({upper}, QStringLiteral("添加同层图元"));
-    ctx.check(upper->height() == 2 && upper->zValue() > lower->zValue(),
+    ctx.check(upper->ZOrder() == 2 && upper->zValue() > lower->zValue(),
               QStringLiteral("同层新图元 height 递增且覆盖旧图元"));
 
     ctx.check(layerScene.addLayerWithUndo(QStringLiteral("顶层")), QStringLiteral("新建图层进入撤销栈"));
@@ -116,7 +116,7 @@ void selftest::runLayerModelTests(Context& ctx)
 
     auto* topLine = makeLineItem(QPointF(60, 60), QPointF(220, 180), QColor(QStringLiteral("#059669")));
     layerScene.addItemsWithUndo({topLine}, QStringLiteral("添加上层图元"));
-    ctx.check(topLine->layerId() == topLayerId && topLine->height() == 1, QStringLiteral("上层图元使用新图层"));
+    ctx.check(topLine->LayerId() == topLayerId && topLine->ZOrder() == 1, QStringLiteral("上层图元使用新图层"));
     ctx.check(topLine->zValue() > upper->zValue(), QStringLiteral("高图层的低 height 图元仍覆盖低图层图元"));
 
     ctx.check(layerScene.moveLayerWithUndo(topLayerId, -1), QStringLiteral("图层下移一层"));
@@ -145,38 +145,38 @@ void selftest::runLayerModelTests(Context& ctx)
     ctx.check(!layerScene.hasLayer(temporaryLayerId), QStringLiteral("重做删除图层"));
 
     ctx.check(layerScene.adjustItemHeight(upper, 1), QStringLiteral("图元高度 +1 进入撤销栈"));
-    ctx.check(upper->height() == 3 && upper->zValue() > lower->zValue(),
+    ctx.check(upper->ZOrder() == 3 && upper->zValue() > lower->zValue(),
               QStringLiteral("height +1 后图元位于同层更高处"));
     layerUndo.undo();
-    ctx.check(upper->height() == 2, QStringLiteral("撤销 height +1"));
+    ctx.check(upper->ZOrder() == 2, QStringLiteral("撤销 height +1"));
     layerUndo.redo();
-    ctx.check(upper->height() == 3, QStringLiteral("重做 height +1"));
+    ctx.check(upper->ZOrder() == 3, QStringLiteral("重做 height +1"));
     layerUndo.undo();
 
     ctx.check(layerScene.adjustItemHeight(lower, 1), QStringLiteral("height +1 遇到同高图元时交换"));
-    ctx.check(lower->height() == 2 && upper->height() == 1 && lower->zValue() > upper->zValue(),
+    ctx.check(lower->ZOrder() == 2 && upper->ZOrder() == 1 && lower->zValue() > upper->zValue(),
               QStringLiteral("height +1 跨过同层相邻图元"));
     layerUndo.undo();
-    ctx.check(lower->height() == 1 && upper->height() == 2 && lower->zValue() < upper->zValue(),
+    ctx.check(lower->ZOrder() == 1 && upper->ZOrder() == 2 && lower->zValue() < upper->zValue(),
               QStringLiteral("撤销 height 交换"));
     layerUndo.redo();
-    ctx.check(lower->height() == 2 && upper->height() == 1, QStringLiteral("重做 height 交换"));
+    ctx.check(lower->ZOrder() == 2 && upper->ZOrder() == 1, QStringLiteral("重做 height 交换"));
     layerUndo.undo();
 
     ctx.check(layerScene.adjustItemHeight(upper, -1), QStringLiteral("图元高度 -1 进入撤销栈"));
-    ctx.check(upper->height() == 1 && lower->height() == 2 && upper->zValue() < lower->zValue(),
+    ctx.check(upper->ZOrder() == 1 && lower->ZOrder() == 2 && upper->zValue() < lower->zValue(),
               QStringLiteral("height -1 后图元位于同层更低处"));
     layerUndo.undo();
-    ctx.check(upper->height() == 2 && lower->height() == 1, QStringLiteral("撤销 height -1"));
+    ctx.check(upper->ZOrder() == 2 && lower->ZOrder() == 1, QStringLiteral("撤销 height -1"));
 
-    ctx.check(layerScene.adjustItemHeight(lower, -1) && lower->height() == 0, QStringLiteral("height 可以降到 0"));
-    ctx.check(!layerScene.adjustItemHeight(lower, -1) && lower->height() == 0, QStringLiteral("height 不会低于 0"));
+    ctx.check(layerScene.adjustItemHeight(lower, -1) && lower->ZOrder() == 0, QStringLiteral("height 可以降到 0"));
+    ctx.check(!layerScene.adjustItemHeight(lower, -1) && lower->ZOrder() == 0, QStringLiteral("height 不会低于 0"));
     layerUndo.undo();
-    ctx.check(lower->height() == 1, QStringLiteral("撤销 height 降到 0"));
+    ctx.check(lower->ZOrder() == 1, QStringLiteral("撤销 height 降到 0"));
 
     // 需求 24：height 合法值包含 0；打开属性窗时不能把 0 夹成 1，也不能
     // 因为层内存在 height 空洞而把当前值收紧。
-    lower->setHeight(0);
+    lower->SetZOrder(0);
     const int zeroHeightUndoBefore = layerUndo.count();
     {
         ItemPropertiesDialog zeroHeightDialog(&layerScene, lower);
@@ -190,19 +190,19 @@ void selftest::runLayerModelTests(Context& ctx)
         QApplication::processEvents();
     }
     ctx.check(layerUndo.count() == zeroHeightUndoBefore, QStringLiteral("height 0 属性窗未修改时不产生撤销记录"));
-    lower->setHeight(1);
+    lower->SetZOrder(1);
 
     ctx.check(layerScene.moveItemToAdjacentLayer(lower, 1), QStringLiteral("图元移到上一层图层"));
-    ctx.check(lower->layerId() == topLayerId && lower->zValue() > topLine->zValue(),
+    ctx.check(lower->LayerId() == topLayerId && lower->zValue() > topLine->zValue(),
               QStringLiteral("跨图层移动后覆盖目标层图元"));
     layerUndo.undo();
-    ctx.check(lower->layerId() == layerScene.layers().at(1).id && lower->height() == 1,
+    ctx.check(lower->LayerId() == layerScene.layers().at(1).id && lower->ZOrder() == 1,
               QStringLiteral("撤销图元跨图层移动"));
     layerUndo.redo();
-    ctx.check(lower->layerId() == topLayerId, QStringLiteral("重做图元跨图层移动"));
+    ctx.check(lower->LayerId() == topLayerId, QStringLiteral("重做图元跨图层移动"));
     layerUndo.undo();
 
-    const QJsonObject layerRoot = layerScene.toJson();
+    const QJsonObject layerRoot = layerScene.ToJson();
     ctx.check(layerRoot.value(QStringLiteral("version")).toInt() == 2 &&
                   layerRoot.value(QStringLiteral("layers")).toArray().size() == 3 &&
                   layerRoot.value(QStringLiteral("activeLayer")).toInt() == layerScene.activeLayerId(),
@@ -213,7 +213,7 @@ void selftest::runLayerModelTests(Context& ctx)
 
     CanvasScene layerLoaded;
     QString layerLoadError;
-    ctx.check(layerLoaded.fromJson(layerRoot, &layerLoadError), QStringLiteral("图层画布反序列化"), layerLoadError);
+    ctx.check(layerLoaded.FromJson(layerRoot, &layerLoadError), QStringLiteral("图层画布反序列化"), layerLoadError);
     ctx.check(layerLoaded.layers() == layerScene.layers() && layerLoaded.activeLayerId() == layerScene.activeLayerId(),
               QStringLiteral("图层顺序与当前图层恢复"));
     ctx.check(layerLoaded.canvasItemCount() == 3, QStringLiteral("图层画布图元数量一致"));
@@ -231,7 +231,7 @@ void selftest::runLayerModelTests(Context& ctx)
     missingLayersRoot.remove(QStringLiteral("activeLayer"));
     CanvasScene missingLayersScene;
     QString missingLayersError;
-    ctx.check(!missingLayersScene.fromJson(missingLayersRoot, &missingLayersError),
+    ctx.check(!missingLayersScene.FromJson(missingLayersRoot, &missingLayersError),
               QStringLiteral("缺少图层数组的画布被拒绝"));
 
     // ---------------------------------------------------------------
@@ -300,12 +300,12 @@ void selftest::runLayerVisibilityLockTests(Context& ctx)
               QStringLiteral("隐藏当前图层自动切换到其他可见图层"));
     ctx.check(!layerScene.isItemEditable(topLine), QStringLiteral("隐藏后原当前图层图元不可编辑"));
 
-    const QRectF hiddenContent = layerScene.contentRect();
-    ctx.check(hiddenContent.right() < topLine->sceneContentRect().right() - 1.0,
+    const QRectF hiddenContent = layerScene.ContentRect();
+    ctx.check(hiddenContent.right() < topLine->SceneContentRect().right() - 1.0,
               QStringLiteral("隐藏图层不参与内容范围"),
               QStringLiteral("contentRight=%1 hiddenItemRight=%2")
                   .arg(hiddenContent.right())
-                  .arg(topLine->sceneContentRect().right()));
+                  .arg(topLine->SceneContentRect().right()));
 
     layerScene.setActiveLayer(topLayerId);
     ctx.check(layerScene.isLayerVisible(topLayerId) && topLine->isVisible() && layerScene.isItemEditable(topLine),
@@ -325,7 +325,7 @@ void selftest::runLayerVisibilityLockTests(Context& ctx)
 
     ctx.check(layerScene.setLayerVisible(lowerLayerId, false), QStringLiteral("隐藏带图元的下层"));
     ctx.check(layerScene.setLayerVisible(CanvasScene::BackgroundLayerId, false), QStringLiteral("画布保存前隐藏背景"));
-    const QJsonObject visibilityRoot = layerScene.toJson();
+    const QJsonObject visibilityRoot = layerScene.ToJson();
     const QJsonArray visibilityLayers = visibilityRoot.value(QStringLiteral("layers")).toArray();
     bool lowerHiddenInJson = false;
     bool backgroundHiddenInJson = false;
@@ -343,7 +343,7 @@ void selftest::runLayerVisibilityLockTests(Context& ctx)
 
     CanvasScene visibilityLoaded;
     QString visibilityLoadError;
-    ctx.check(visibilityLoaded.fromJson(visibilityRoot, &visibilityLoadError),
+    ctx.check(visibilityLoaded.FromJson(visibilityRoot, &visibilityLoadError),
               QStringLiteral("图层显示状态画布反序列化"), visibilityLoadError);
     ctx.check(!visibilityLoaded.isLayerVisible(lowerLayerId) &&
                   !visibilityLoaded.isLayerVisible(CanvasScene::BackgroundLayerId) &&
@@ -362,7 +362,7 @@ void selftest::runLayerVisibilityLockTests(Context& ctx)
     hiddenActiveRoot.insert(QStringLiteral("layers"), hiddenActiveLayers);
     CanvasScene hiddenActiveScene;
     QString hiddenActiveError;
-    ctx.check(hiddenActiveScene.fromJson(hiddenActiveRoot, &hiddenActiveError),
+    ctx.check(hiddenActiveScene.FromJson(hiddenActiveRoot, &hiddenActiveError),
               QStringLiteral("载入当前图层被隐藏的画布"), hiddenActiveError);
     ctx.check(hiddenActiveScene.activeLayerId() == topLayerId && hiddenActiveScene.isLayerVisible(topLayerId),
               QStringLiteral("载入时自动显示当前图层"));
@@ -377,14 +377,14 @@ void selftest::runLayerVisibilityLockTests(Context& ctx)
 
     auto* redImage = createShapeItem(ShapeType::RECTANGLE);
     redImage->setStyle(QColor(Qt::transparent), redColor, 1.0);
-    redImage->setContentSize(QSizeF(80, 80));
+    redImage->SetContentSize(QSizeF(80, 80));
     redImage->setPos(QPointF(10, 10));
     hiddenPaintScene.addItemsWithUndo({redImage}, QStringLiteral("添加红色图元"));
 
     ctx.check(hiddenPaintScene.addLayerWithUndo(QStringLiteral("蓝色层")), QStringLiteral("隐藏渲染测试新建上层"));
     auto* blueImage = createShapeItem(ShapeType::RECTANGLE);
     blueImage->setStyle(QColor(Qt::transparent), blueColor, 1.0);
-    blueImage->setContentSize(QSizeF(80, 80));
+    blueImage->SetContentSize(QSizeF(80, 80));
     blueImage->setPos(QPointF(20, 20));
     hiddenPaintScene.addItemsWithUndo({blueImage}, QStringLiteral("添加蓝色图元"));
     const int hiddenBlueLayerId = hiddenPaintScene.activeLayerId();
@@ -394,7 +394,7 @@ void selftest::runLayerVisibilityLockTests(Context& ctx)
     const QImage paintedHidden = hiddenPaintScene.renderImage(hiddenPaintScene.canvasRect(), 1.0);
     ctx.check(paintedHidden.pixelColor(30, 30) == QColor(QStringLiteral("#DC2626")),
               QStringLiteral("隐藏图层图元不参与渲染"));
-    ctx.check(hiddenPaintScene.contentRect().right() < blueImage->sceneContentRect().right() - 1.0,
+    ctx.check(hiddenPaintScene.ContentRect().right() < blueImage->SceneContentRect().right() - 1.0,
               QStringLiteral("隐藏图层图元不参与内容外接矩形"));
 
     ctx.check(hiddenPaintScene.setLayerVisible(hiddenBlueLayerId, true), QStringLiteral("显示蓝色图层"));

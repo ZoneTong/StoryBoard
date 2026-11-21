@@ -32,11 +32,11 @@ struct Knife {
 
 bool isFillTarget(CanvasItem* item)
 {
-    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->shapeLayerCount() == 0) {
+    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() == 0) {
         return true;
     }
-    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->shapeLayerCount() > 0) {
-        return composite->hasShapeFillArea();
+    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->ShapeLayerCount() > 0) {
+        return composite->HasShapeFillArea();
     }
     return false;
 }
@@ -81,14 +81,14 @@ bool knifeFromPath(const QPainterPath& path, Knife* out)
 bool collectKnife(CanvasItem* item, Knife* out, QPainterPath* trajectoryPath)
 {
     if (auto* curve = dynamic_cast<LineItemAbstract*>(item)) {
-        const QPainterPath scenePath = curve->mapToScene(curve->outlineShape());
+        const QPainterPath scenePath = curve->mapToScene(curve->OutlineShape());
         if (trajectoryPath) {
             *trajectoryPath = scenePath;
         }
         return knifeFromPath(scenePath, out);
     }
-    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->shapeLayerCount() == 0) {
-        const QPainterPath scenePath = shape->mapToScene(shape->outlineShape());
+    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() == 0) {
+        const QPainterPath scenePath = shape->mapToScene(shape->OutlineShape());
         if (trajectoryPath) {
             *trajectoryPath = scenePath;
         }
@@ -209,17 +209,17 @@ QList<QPainterPath> canvasHalfRegions(const QRectF& canvas, const Knife& knife)
 // 被切图元的填充轮廓（场景坐标）。
 QPainterPath fillPathOf(CanvasItem* item)
 {
-    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->shapeLayerCount() == 0) {
-        return shape->mapToScene(shape->outlineShape());
+    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() == 0) {
+        return shape->mapToScene(shape->OutlineShape());
     }
-    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->shapeLayerCount() > 0) {
+    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->ShapeLayerCount() > 0) {
         QPainterPath fill;
-        for (int index = 0; index < composite->shapeLayerCount(); ++index) {
+        for (int index = 0; index < composite->ShapeLayerCount(); ++index) {
             const ShapeLayer layer = composite->shapeLayer(index);
             if (layer.role != ShapeLayerRole::FILL_AREA || layer.path.isEmpty()) {
                 continue;
             }
-            const QPainterPath part = composite->mapToScene(composite->mapShapeLayerPath(layer));
+            const QPainterPath part = composite->mapToScene(composite->MapShapeLayerPath(layer));
             fill = fill.isEmpty() ? part : fill.united(part);
         }
         return fill;
@@ -295,7 +295,7 @@ bool apply(CanvasScene* scene, const QString& commandText)
         auto* shapeKnife = dynamic_cast<ShapeItem*>(knifeItem);
         QPainterPathStroker stroker;
         stroker.setWidth(
-            qMax<qreal>(1.0, curveKnife ? curveKnife->strokeWidth() : (shapeKnife ? shapeKnife->strokeWidth() : 1.0)));
+            qMax<qreal>(1.0, curveKnife ? curveKnife->StrokeWidth() : (shapeKnife ? shapeKnife->StrokeWidth() : 1.0)));
         stroker.setCapStyle(Qt::RoundCap);
         stroker.setJoinStyle(Qt::RoundJoin);
         knifeBand = stroker.createStroke(knifeTrajectory);
@@ -371,21 +371,21 @@ bool apply(CanvasScene* scene, const QString& commandText)
     for (const Fragment& fragment : fragments) {
         auto* source = fragment.source;
         auto* shapeSource = dynamic_cast<ShapeItem*>(source);
-        shapeSource = shapeSource && shapeSource->shapeLayerCount() == 0 ? shapeSource : nullptr;
+        shapeSource = shapeSource && shapeSource->ShapeLayerCount() == 0 ? shapeSource : nullptr;
         auto* compositeSource = dynamic_cast<ShapeItem*>(source);
-        compositeSource = compositeSource && compositeSource->shapeLayerCount() > 0 ? compositeSource : shapeSource;
+        compositeSource = compositeSource && compositeSource->ShapeLayerCount() > 0 ? compositeSource : shapeSource;
         PolygonItem::Layer layer;
         layer.path = fragment.piece;
-        layer.fill = compositeSource->fillColor();
-        layer.stroke = compositeSource->strokeColor();
-        layer.strokeWidth = compositeSource->strokeWidth();
+        layer.fill = compositeSource->FillColor();
+        layer.stroke = compositeSource->StrokeColor();
+        layer.strokeWidth = compositeSource->StrokeWidth();
         layer.filled = true;
         layer.role = PolygonItem::LayerRole::FILLED_AREA;
         auto* item = new PolygonItem(QList<PolygonItem::Layer>{layer}, compositeSource->fillStyle(),
-                                     compositeSource->strokeStyle());
-        item->setName(scene->uniqueItemName(item->typeDisplayName()));
-        item->setLayerId(source->layerId());
-        item->setHeight(scene->nextHeight(source->layerId()));
+                                     compositeSource->StrokeStyle());
+        item->SetName(scene->uniqueItemName(item->TypeDisplayName()));
+        item->SetLayerId(source->LayerId());
+        item->SetZOrder(scene->nextHeight(source->LayerId()));
         undo->push(new AddItemCommand(scene, item, commandText));
         created.append(item);
     }

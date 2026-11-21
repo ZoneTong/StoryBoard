@@ -82,9 +82,9 @@ ShapeItem* makePlainShape(ShapeType type, const QSizeF& size, const QColor& fill
 {
     auto* shape = createShapeItem(type);
     shape->setPos(QPointF(0, 0));
-    shape->setContentSize(size);
+    shape->SetContentSize(size);
     shape->setStyle(QColor(0, 0, 0, 0), fillColor, 0.0);
-    shape->setFill(fillColor, FillStyle::SOLID);
+    shape->SetFill(fillColor, FillStyle::SOLID);
     return shape;
 }
 
@@ -100,7 +100,7 @@ void selftest::runImageFillTests(Context& ctx)
         stretchScene.setShowGrid(false);
         stretchScene.applyCanvasSize(QSizeF(200, 100));
         auto* rect = makePlainShape(ShapeType::RECTANGLE, QSizeF(200, 100), QColor(255, 255, 255, 0));
-        rect->setFillImage(quadrantImage(40, 40), ImageFill::Mode::STRETCH);
+        rect->SetFillImage(quadrantImage(40, 40), ImageFill::Mode::STRETCH);
         stretchScene.attachItem(rect);
 
         const QImage stretched = renderCanvas(stretchScene, QSize(200, 100));
@@ -114,7 +114,7 @@ void selftest::runImageFillTests(Context& ctx)
                       .arg(stretched.pixelColor(20, 85).name())
                       .arg(stretched.pixelColor(180, 85).name()));
 
-        rect->setContentSize(QSizeF(400, 200));
+        rect->SetContentSize(QSizeF(400, 200));
         stretchScene.applyCanvasSize(QSizeF(400, 200));
         const QImage doubled = renderCanvas(stretchScene, QSize(400, 200));
         const bool doubledMatch =
@@ -135,7 +135,7 @@ void selftest::runImageFillTests(Context& ctx)
         heartScene.setShowGrid(false);
         heartScene.applyCanvasSize(QSizeF(200, 200));
         auto* heart = makePlainShape(ShapeType::HEART, QSizeF(200, 200), QColor(255, 255, 255, 0));
-        heart->setFillImage(solidImage(GREEN, 32), ImageFill::Mode::STRETCH);
+        heart->SetFillImage(solidImage(GREEN, 32), ImageFill::Mode::STRETCH);
         heartScene.attachItem(heart);
 
         const QImage heartImage = renderCanvas(heartScene, QSize(200, 200));
@@ -163,7 +163,7 @@ void selftest::runImageFillTests(Context& ctx)
         ring.strokeWidth = 0.0;
         ring.filled = true;
         auto* polygon = new PolygonItem({ring}, FillStyle::SOLID, Qt::SolidLine);
-        polygon->setFillImage(solidImage(GREEN, 32), ImageFill::Mode::STRETCH);
+        polygon->SetFillImage(solidImage(GREEN, 32), ImageFill::Mode::STRETCH);
         holeScene.attachItem(polygon);
 
         const QImage ringImage = renderCanvas(holeScene, QSize(200, 200));
@@ -182,7 +182,7 @@ void selftest::runImageFillTests(Context& ctx)
         fitScene.setShowGrid(false);
         fitScene.applyCanvasSize(QSizeF(100, 200));
         auto* tall = makePlainShape(ShapeType::RECTANGLE, QSizeF(100, 200), BLUE);
-        tall->setFillImage(solidImage(GREEN, 40), ImageFill::Mode::FIT);
+        tall->SetFillImage(solidImage(GREEN, 40), ImageFill::Mode::FIT);
         fitScene.attachItem(tall);
 
         const QImage fitImage = renderCanvas(fitScene, QSize(100, 200));
@@ -202,13 +202,13 @@ void selftest::runImageFillTests(Context& ctx)
         const QPixmap shared = solidImage(GREEN, 40);
         auto* first = makePlainShape(ShapeType::RECTANGLE, QSizeF(80, 80), BLUE);
         auto* second = makePlainShape(ShapeType::ELLIPSE, QSizeF(80, 80), BLUE);
-        first->setFillImage(shared, ImageFill::Mode::STRETCH);
-        second->setFillImage(shared, ImageFill::Mode::STRETCH);
+        first->SetFillImage(shared, ImageFill::Mode::STRETCH);
+        second->SetFillImage(shared, ImageFill::Mode::STRETCH);
         second->setPos(100.0, 0.0);
         storeScene.attachItem(first);
         storeScene.attachItem(second);
 
-        const QJsonObject root = storeScene.toJson();
+        const QJsonObject root = storeScene.ToJson();
         const QJsonObject images = root.value(QStringLiteral("images")).toObject();
         const QJsonArray items = root.value(QStringLiteral("items")).toArray();
         const QString firstId = items.at(0).toObject().value(QStringLiteral("fillImageId")).toString();
@@ -230,7 +230,7 @@ void selftest::runImageFillTests(Context& ctx)
         tileScene.setShowGrid(false);
         tileScene.applyCanvasSize(QSizeF(100, 100));
         auto* tiled = makePlainShape(ShapeType::RECTANGLE, QSizeF(100, 100), QColor(255, 255, 255, 0));
-        tiled->setFillImage(stripedImage(20, 20), ImageFill::Mode::TILE);
+        tiled->SetFillImage(stripedImage(20, 20), ImageFill::Mode::TILE);
         tileScene.attachItem(tiled);
 
         const QImage tileImage = renderCanvas(tileScene, QSize(100, 100));
@@ -256,36 +256,36 @@ void selftest::runImageFillTests(Context& ctx)
         undoScene.setUndoStack(&undo);
         auto* shape = createShapeItem(ShapeType::RECTANGLE);
         shape->setPos(QPointF(10, 10));
-        shape->setContentSize(QSizeF(120, 80));
+        shape->SetContentSize(QSizeF(120, 80));
         undoScene.attachItem(shape);
 
         ItemPropertiesState before;
         before.pos = shape->pos();
         before.size = shape->contentSize();
-        before.rotation = shape->rotationAngle();
+        before.rotation = shape->RotationAngle();
         before.hasShapeState = true;
-        before.shapeState = shape->state();
+        before.shapeState = shape->State();
 
         ItemPropertiesState afterSet = before;
         afterSet.shapeState.hasFillImage = true;
         afterSet.shapeState.fillImage = solidImage(GREEN, 16);
         afterSet.shapeState.fillImageMode = ImageFill::Mode::STRETCH;
         undo.push(new ItemPropertiesCommand(&undoScene, shape, before, afterSet, QStringLiteral("设图片填充")));
-        ctx.check(undo.index() == 1 && shape->hasFillImage(), QStringLiteral("设置图片填充占一条撤销记录"),
-                  QStringLiteral("index=%1 has=%2").arg(undo.index()).arg(shape->hasFillImage() ? 1 : 0));
+        ctx.check(undo.index() == 1 && shape->HasFillImage(), QStringLiteral("设置图片填充占一条撤销记录"),
+                  QStringLiteral("index=%1 has=%2").arg(undo.index()).arg(shape->HasFillImage() ? 1 : 0));
 
         undo.undo();
-        ctx.check(!shape->hasFillImage(), QStringLiteral("撤销后图片填充被移除"));
+        ctx.check(!shape->HasFillImage(), QStringLiteral("撤销后图片填充被移除"));
         undo.redo();
-        ctx.check(shape->hasFillImage(), QStringLiteral("重做后图片填充恢复"));
+        ctx.check(shape->HasFillImage(), QStringLiteral("重做后图片填充恢复"));
 
         ItemPropertiesState afterMode = afterSet;
         afterMode.shapeState.fillImageMode = ImageFill::Mode::TILE;
         undo.push(new ItemPropertiesCommand(&undoScene, shape, afterSet, afterMode, QStringLiteral("换档")));
-        ctx.check(undo.index() == 2 && shape->fillImageMode() == ImageFill::Mode::TILE,
+        ctx.check(undo.index() == 2 && shape->FillImageMode() == ImageFill::Mode::TILE,
                   QStringLiteral("换摆放模式占一条撤销记录"));
         undo.undo();
-        ctx.check(shape->fillImageMode() == ImageFill::Mode::STRETCH && shape->hasFillImage(),
+        ctx.check(shape->FillImageMode() == ImageFill::Mode::STRETCH && shape->HasFillImage(),
                   QStringLiteral("撤销换档回到 Stretch 且图片还在"));
         undo.redo();
 
@@ -294,7 +294,7 @@ void selftest::runImageFillTests(Context& ctx)
         afterClear.shapeState.fillImage = QPixmap();
         undo.push(new ItemPropertiesCommand(&undoScene, shape, afterMode, afterClear, QStringLiteral("清除")));
         undo.undo();
-        ctx.check(shape->hasFillImage() && shape->fillImageMode() == ImageFill::Mode::TILE,
+        ctx.check(shape->HasFillImage() && shape->FillImageMode() == ImageFill::Mode::TILE,
                   QStringLiteral("撤销清除恢复图片与 Tile 模式"));
         delete shape;
     }
@@ -302,26 +302,26 @@ void selftest::runImageFillTests(Context& ctx)
     // 7) 序列化：往返后字节与模式一致；没有 fillImage 键的文件按纯色无图载入。
     {
         auto* saved = createShapeItem(ShapeType::ELLIPSE);
-        saved->setContentSize(QSizeF(80, 60));
-        saved->setFillImage(solidImage(BLUE, 24), ImageFill::Mode::TILE);
-        const QJsonObject json = saved->toJson();
+        saved->SetContentSize(QSizeF(80, 60));
+        saved->SetFillImage(solidImage(BLUE, 24), ImageFill::Mode::TILE);
+        const QJsonObject json = saved->ToJson();
         const QJsonObject fillJson = json.value(QStringLiteral("fillImage")).toObject();
         ctx.check(!fillJson.isEmpty() && fillJson.value(QStringLiteral("mode")).toString() == QStringLiteral("tile"),
                   QStringLiteral("图片填充按 data + mode 序列化"),
                   QStringLiteral("mode=%1").arg(fillJson.value(QStringLiteral("mode")).toString()));
 
         auto* loaded = createShapeItem(ShapeType::RECTANGLE);
-        loaded->fromJson(json);
-        const QJsonObject loadedJson = ImageFill::toJson(loaded->fillImage(), loaded->fillImageMode());
-        ctx.check(loaded->hasFillImage() && loaded->fillImageMode() == ImageFill::Mode::TILE &&
+        loaded->FromJson(json);
+        const QJsonObject loadedJson = ImageFill::ToJson(loaded->FillImage(), loaded->FillImageMode());
+        ctx.check(loaded->HasFillImage() && loaded->FillImageMode() == ImageFill::Mode::TILE &&
                       loadedJson.value(QStringLiteral("data")) == fillJson.value(QStringLiteral("data")),
                   QStringLiteral("图片填充保存往返后字节与模式一致"));
 
         auto* plain = createShapeItem(ShapeType::RECTANGLE);
-        const QJsonObject plainJson = plain->toJson();
+        const QJsonObject plainJson = plain->ToJson();
         auto* plainLoaded = createShapeItem(ShapeType::RECTANGLE);
-        plainLoaded->fromJson(plainJson);
-        ctx.check(!plainJson.contains(QStringLiteral("fillImage")) && !plainLoaded->hasFillImage(),
+        plainLoaded->FromJson(plainJson);
+        ctx.check(!plainJson.contains(QStringLiteral("fillImage")) && !plainLoaded->HasFillImage(),
                   QStringLiteral("没有图片填充的图元不写 fillImage 键，载入按纯色无图"));
 
         delete saved;
@@ -334,9 +334,9 @@ void selftest::runImageFillTests(Context& ctx)
     {
         auto* exportShape = makePlainShape(ShapeType::RECTANGLE, QSizeF(120, 80), YELLOW);
         exportShape->setStyle(QColor(20, 20, 20), YELLOW, 2.0);
-        exportShape->setFillImage(solidImage(GREEN, 24), ImageFill::Mode::STRETCH);
+        exportShape->SetFillImage(solidImage(GREEN, 24), ImageFill::Mode::STRETCH);
         QJsonArray items;
-        items.append(exportShape->toJson());
+        items.append(exportShape->ToJson());
         QJsonObject document;
         document.insert(QStringLiteral("items"), items);
 
@@ -364,17 +364,17 @@ void selftest::runImageFillTests(Context& ctx)
         leftRect->setPos(QPointF(0, 0));
         auto* rightRect = makePlainShape(ShapeType::RECTANGLE, QSizeF(80, 80), BLUE);
         rightRect->setPos(QPointF(40, 0));
-        rightRect->setFillImage(solidImage(GREEN, 16), ImageFill::Mode::STRETCH);
+        rightRect->SetFillImage(solidImage(GREEN, 16), ImageFill::Mode::STRETCH);
         mergeScene.addItemsWithUndo({leftRect, rightRect}, QStringLiteral("Add merge items"));
         leftRect->setSelected(true);
         rightRect->setSelected(true);
         const bool merged = BoolOps::apply(&mergeScene, BoolOps::Operation::UNION, QStringLiteral("合并"));
         const QList<CanvasItem*> selected = mergeScene.selectedCanvasItems();
         auto* composite = selected.isEmpty() ? nullptr : dynamic_cast<PolygonItem*>(selected.constFirst());
-        ctx.check(merged && composite && !composite->hasFillImage(), QStringLiteral("合并图元的结果不继承图片填充"),
+        ctx.check(merged && composite && !composite->HasFillImage(), QStringLiteral("合并图元的结果不继承图片填充"),
                   QStringLiteral("merged=%1 composite=%2 hasImage=%3")
                       .arg(merged ? 1 : 0)
                       .arg(composite ? 1 : 0)
-                      .arg(composite && composite->hasFillImage() ? 1 : 0));
+                      .arg(composite && composite->HasFillImage() ? 1 : 0));
     }
 }

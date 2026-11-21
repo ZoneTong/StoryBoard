@@ -11,7 +11,7 @@ CurveParamState curveParamState(const LineItemAbstract* item)
 void applyCurveParamState(LineItemAbstract* item, const CurveParamState& state)
 {
     if (item) {
-        item->applyParamState(state);
+        item->ApplyParamState(state);
     }
 }
 
@@ -53,7 +53,7 @@ void CurveParamCommand::apply(const QList<CurveParamState>& params,
         }
         // 先按参数重建，再用快照覆盖：撤销 / 重做都回到记录时的精确几何。
         applyCurveParamState(item, params.at(i));
-        item->applyGeometryState(geometry.at(i));
+        item->ApplyGeometryState(geometry.at(i));
     }
     m_scene->updateSceneExtent();
     m_scene->update();

@@ -129,99 +129,99 @@ class ShapeItem : public CanvasItem {
     enum class TriangleVertex { A, B, C };
     explicit ShapeItem(QGraphicsItem* parent = nullptr);
 
-    QString kind() const override { return QStringLiteral("shape"); }
+    QString Kind() const override { return QStringLiteral("shape"); }
     // 每种图形由 src/shapes/ 下的具体类给出身份；基类不再保存 ShapeType。
     virtual ShapeType shapeType() const = 0;
     // 属性表：填充 / 描线六件套为图形族公共项，各子类再按需要追加。
-    ItemPropertySet properties() const override;
-    QVariant propertyValue(ItemProperty property) const override;
-    void setPropertyValue(ItemProperty property, const QVariant& value) override;
+    ItemPropertySet Properties() const override;
+    QVariant PropertyValue(ItemProperty property) const override;
+    void SetPropertyValue(ItemProperty property, const QVariant& value) override;
     // 内部图层视图：普通图形没有图层（0 层），多边形返回自己的层。
-    virtual int shapeLayerCount() const { return 0; }
+    virtual int ShapeLayerCount() const { return 0; }
     virtual ShapeLayer shapeLayer(int index) const;
     // 图层路径映射到图元坐标；多边形按内容尺寸缩放，普通图形默认恒等。
-    virtual QPainterPath mapShapeLayerPath(const ShapeLayer& layer) const;
+    virtual QPainterPath MapShapeLayerPath(const ShapeLayer& layer) const;
     // 是否有可填充的区域层（孔洞不算）。
-    bool hasShapeFillArea() const;
-    QString displayName() const override;
-    QJsonObject toJson() const override;
-    void fromJson(const QJsonObject& json) override;
+    bool HasShapeFillArea() const;
+    QString DisplayName() const override;
+    QJsonObject ToJson() const override;
+    void FromJson(const QJsonObject& json) override;
     QPainterPath shape() const override;
-    QPainterPath outlineShape() const override;
-    QPainterPath paintedShape() const override;
-    QRectF frameRect() const override;
-    QSizeF adjustedContentSize(const QSizeF& size) const override;
+    QPainterPath OutlineShape() const override;
+    QPainterPath PaintedShape() const override;
+    QRectF FrameRect() const override;
+    QSizeF AdjustedContentSize(const QSizeF& size) const override;
 
     // 样式访问器对多边形开放覆写：多边形的颜色来自内部图层，而不是单一字段。
-    virtual QColor strokeColor() const { return m_strokeColor; }
-    virtual QColor fillColor() const { return m_fillColor; }
+    virtual QColor StrokeColor() const { return m_strokeColor; }
+    virtual QColor FillColor() const { return m_fillColor; }
     virtual FillStyle fillStyle() const { return m_fillStyle; }
-    virtual qreal strokeWidth() const { return m_strokeWidth; }
-    virtual Qt::PenStyle strokeStyle() const { return m_strokeStyle; }
-    qreal itemOpacity() const override { return m_opacity; }
-    void setItemOpacity(qreal opacity) override;
-    qreal cornerRadius() const { return m_cornerRadius; }
-    qreal startAngle() const { return m_startAngle; }
-    qreal sweepAngle() const { return m_sweepAngle; }
-    qreal bottomAngle1() const { return m_bottomAngle1; }
-    qreal bottomAngle2() const { return m_bottomAngle2; }
-    qreal parallelogramAngle() const { return m_parallelogramAngle; }
-    virtual void setParallelogramAngle(qreal angle);
+    virtual qreal StrokeWidth() const { return m_strokeWidth; }
+    virtual Qt::PenStyle StrokeStyle() const { return m_strokeStyle; }
+    qreal ItemOpacity() const override { return m_opacity; }
+    void SetItemOpacity(qreal opacity) override;
+    qreal CornerRadius() const { return m_cornerRadius; }
+    qreal StartAngle() const { return m_startAngle; }
+    qreal SweepAngle() const { return m_sweepAngle; }
+    qreal BottomAngle1() const { return m_bottomAngle1; }
+    qreal BottomAngle2() const { return m_bottomAngle2; }
+    qreal ParallelogramAngle() const { return m_parallelogramAngle; }
+    virtual void SetParallelogramAngle(qreal angle);
     // 平行四边形用 Apex 句柄改内角；矩形锁 90°，不提供该句柄。
-    virtual bool apexAngleHandle() const { return false; }
-    void setAngleReadoutVisible(bool visible);
-    bool angleReadoutVisible() const { return m_angleReadoutVisible; }
-    virtual bool hasFillImage() const { return !m_fillImage.isNull(); }
-    virtual QPixmap fillImage() const { return m_fillImage; }
-    QString fillImageId() const { return m_fillImageId; }
-    void setFillImageId(const QString& id) { m_fillImageId = id; }
-    virtual ImageFill::Mode fillImageMode() const { return m_fillImageMode; }
-    virtual void setFillImage(const QPixmap& image, ImageFill::Mode mode);
-    virtual void clearFillImage();
+    virtual bool ApexAngleHandle() const { return false; }
+    void SetAngleReadoutVisible(bool visible);
+    bool AngleReadoutVisible() const { return m_angleReadoutVisible; }
+    virtual bool HasFillImage() const { return !m_fillImage.isNull(); }
+    virtual QPixmap FillImage() const { return m_fillImage; }
+    QString FillImageId() const { return m_fillImageId; }
+    void SetFillImageId(const QString& id) { m_fillImageId = id; }
+    virtual ImageFill::Mode FillImageMode() const { return m_fillImageMode; }
+    virtual void SetFillImage(const QPixmap& image, ImageFill::Mode mode);
+    virtual void ClearFillImage();
     virtual void setStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth);
-    virtual void setFill(const QColor& fillColor, FillStyle style);
-    virtual void setFillStyle(FillStyle style);
-    virtual void setStrokeStyle(Qt::PenStyle style);
-    void setCornerRadius(qreal radius);
-    void setArcAngles(qreal startAngle, qreal sweepAngle);
+    virtual void SetFill(const QColor& fillColor, FillStyle style);
+    virtual void SetFillStyle(FillStyle style);
+    virtual void SetStrokeStyle(Qt::PenStyle style);
+    void SetCornerRadius(qreal radius);
+    void SetArcAngles(qreal startAngle, qreal sweepAngle);
     // 三角形：设置底边两侧的底角（度）。角度优先，高度按底边与角度重算；
     // 两角和被钳制在 175° 以内，保证顶点不会跑出内容矩形。
-    void setTriangleAngles(qreal angle1, qreal angle2);
+    void SetTriangleAngles(qreal angle1, qreal angle2);
     // 自定义图形：轮廓来自画布模板，存的是 0–1 单位坐标；没有自定义轮廓时按子类轮廓画。
-    bool isCustomShape() const { return !m_customPath.isEmpty(); }
-    QString customShapeName() const { return m_customName; }
-    QPainterPath customShapePath() const { return m_customPath; }
-    void setCustomShape(const QString& name, const QPainterPath& unitPath);
+    bool IsCustomShape() const { return !m_customPath.isEmpty(); }
+    QString CustomShapeName() const { return m_customName; }
+    QPainterPath CustomShapePath() const { return m_customPath; }
+    void SetCustomShape(const QString& name, const QPainterPath& unitPath);
 
     // 三角形三个顶点（内容矩形局部坐标）：A/B 为底边两端，C 为顶点。
     QPointF triangleVertex(TriangleVertex vertex) const;
     // 需求 2：顶点 C 的句柄位置由三角形几何给出，而不是包围框上边中点。
-    QPointF customHandleCenter(int handle, bool* ok) const override;
+    QPointF CustomHandleCenter(int handle, bool* ok) const override;
 
     // 样式撤销快照：多边形覆写后只记录样式与位置，不写 ShapeType。
-    virtual ShapeItemState state() const;
-    virtual void applyState(const ShapeItemState& state);
-    static QPainterPath pathFor(ShapeType type, const QRectF& rect);
-    static QPainterPath pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius);
-    static QPainterPath pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius, qreal startAngle,
+    virtual ShapeItemState State() const;
+    virtual void ApplyState(const ShapeItemState& state);
+    static QPainterPath PathFor(ShapeType type, const QRectF& rect);
+    static QPainterPath PathFor(ShapeType type, const QRectF& rect, qreal cornerRadius);
+    static QPainterPath PathFor(ShapeType type, const QRectF& rect, qreal cornerRadius, qreal startAngle,
                                 qreal sweepAngle);
     // 当前生效的轮廓：自定义图形按内容矩形缩放单位路径，普通图形交给具体类实现。
-    virtual QPainterPath currentPath(const QRectF& rect) const;
+    virtual QPainterPath CurrentPath(const QRectF& rect) const;
     // 插入 / 状态与 JSON 缺省时的初始内容尺寸；数值只存在于各子类，基类默认 2 格正方形。
     virtual QSizeF defaultContentSize() const;
 
   protected:
     // 具体图形的内置轮廓（不含自定义模板与矩形圆角自动态哨兵）。
-    virtual QPainterPath shapePath(const QRectF& rect) const = 0;
+    virtual QPainterPath ShapePath(const QRectF& rect) const = 0;
     // 子类可覆写的状态 / JSON 增量。
-    virtual void writeState(ShapeItemState& state) const;
-    virtual void readState(const ShapeItemState& state);
-    virtual void writeJsonExtra(QJsonObject& json) const;
-    virtual void readJsonExtra(const QJsonObject& json);
-    void paintContent(QPainter* painter) override;
-    void contentResized() override;
-    void drawSelectionOverlay(QPainter* painter) override;
-    qreal framePadding() const override { return qMax<qreal>(22.0, m_strokeWidth + 6.0); }
+    virtual void WriteState(ShapeItemState& state) const;
+    virtual void ReadState(const ShapeItemState& state);
+    virtual void WriteJsonExtra(QJsonObject& json) const;
+    virtual void ReadJsonExtra(const QJsonObject& json);
+    void PaintContent(QPainter* painter) override;
+    void ContentResized() override;
+    void DrawSelectionOverlay(QPainter* painter) override;
+    qreal FramePadding() const override { return qMax<qreal>(22.0, m_strokeWidth + 6.0); }
 
   private:
     QColor m_strokeColor = QColor(30, 41, 59);

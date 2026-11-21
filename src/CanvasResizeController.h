@@ -18,7 +18,7 @@ class CanvasResizeController {
 
     bool isResizing() const { return m_resizingCanvas; }
 
-    Handle handleAt(const QPoint& viewportPos) const;
+    Handle HandleAt(const QPoint& viewportPos) const;
     static Qt::CursorShape handleCursor(Handle handle);
 
     bool beginResize(const QPoint& viewportPos);

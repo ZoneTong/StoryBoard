@@ -51,7 +51,7 @@ void RotationCommand::apply(const QList<qreal>& angles)
     const int count = qMin(m_items.size(), angles.size());
     for (int i = 0; i < count; ++i) {
         if (m_items.at(i)) {
-            m_items.at(i)->setRotationAngle(angles.at(i));
+            m_items.at(i)->SetRotationAngle(angles.at(i));
         }
     }
     if (m_scene) {
@@ -174,7 +174,7 @@ void GeometryCommand::apply(const ItemGeometryList& geometry)
             continue;
         }
         entry.item->setPos(entry.pos);
-        entry.item->setContentSize(entry.size);
+        entry.item->SetContentSize(entry.size);
     }
     if (m_scene) {
         m_scene->updateSceneExtent();
@@ -247,7 +247,7 @@ void StrokeSmoothCommand::apply(const QList<LineItemAbstract::GeometryState>& st
     }
     for (int i = 0; i < m_items.size(); ++i) {
         if (m_items.at(i)) {
-            m_items.at(i)->applyGeometryState(states.at(i));
+            m_items.at(i)->ApplyGeometryState(states.at(i));
         }
     }
     if (m_scene) {
@@ -328,14 +328,14 @@ TextItemCommand::TextItemCommand(CanvasScene* scene, CanvasItem* item, const Tex
 void TextItemCommand::undo()
 {
     if (m_scene && m_item) {
-        m_scene->applyTextState(m_item, m_before);
+        m_scene->ApplyTextState(m_item, m_before);
     }
 }
 
 void TextItemCommand::redo()
 {
     if (m_scene && m_item) {
-        m_scene->applyTextState(m_item, m_after);
+        m_scene->ApplyTextState(m_item, m_after);
     }
 }
 
@@ -362,7 +362,7 @@ void LayerStateCommand::redo()
 
 // 透明度对图形、笔画、文字、图片等所有图元都生效。
 // 属性表命令：一次编辑把同一组属性值写回所有目标图元，只占一条撤销记录。
-// 替代原先按图元类型分拆的样式命令，读写都走 properties()/propertyValue()/setPropertyValue()。
+// 替代原先按图元类型分拆的样式命令，读写都走 Properties()/PropertyValue()/SetPropertyValue()。
 ItemPropertyCommand::ItemPropertyCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
                                          const QList<QMap<ItemProperty, QVariant>>& before,
                                          const QList<QMap<ItemProperty, QVariant>>& after, const QString& text)
@@ -393,7 +393,7 @@ void ItemPropertyCommand::apply(const QList<QMap<ItemProperty, QVariant>>& state
         }
         const QMap<ItemProperty, QVariant>& values = states.at(index);
         for (auto it = values.constBegin(); it != values.constEnd(); ++it) {
-            item->setPropertyValue(it.key(), it.value());
+            item->SetPropertyValue(it.key(), it.value());
         }
     }
     if (m_scene) {
@@ -447,30 +447,30 @@ void ItemPropertiesCommand::apply(const ItemPropertiesState& state)
         return;
     }
 
-    m_item->setName(state.itemName);
+    m_item->SetName(state.itemName);
 
     if (state.hasShapeState) {
         if (auto* shape = dynamic_cast<ShapeItem*>(m_item.data())) {
-            shape->applyState(state.shapeState);
+            shape->ApplyState(state.shapeState);
         }
     } else if (state.hasTextState) {
-        m_item->applyTextState(state.textState);
+        m_item->ApplyTextState(state.textState);
     } else {
         m_item->setPos(state.pos);
-        m_item->setContentSize(state.size);
+        m_item->SetContentSize(state.size);
     }
 
     // Rotation is a generic CanvasItem property for every item kind.
-    m_item->setRotationAngle(state.rotation);
-    m_item->setItemOpacity(state.opacity);
+    m_item->SetRotationAngle(state.rotation);
+    m_item->SetItemOpacity(state.opacity);
 
     if (state.hasStrokeStyle) {
         if (auto* stroke = dynamic_cast<LineItemAbstract*>(m_item.data())) {
-            stroke->setStrokeColor(state.strokeColor);
-            stroke->setStrokeWidth(state.strokeWidth);
+            stroke->SetStrokeColor(state.strokeColor);
+            stroke->SetStrokeWidth(state.strokeWidth);
             stroke->setStrokePattern(state.strokeStyle);
             // 需求 27：曲线两端箭头随同一条撤销记录一起应用。
-            stroke->setArrowStyles(state.curveStartArrow, state.curveEndArrow);
+            stroke->SetArrowStyles(state.curveStartArrow, state.curveEndArrow);
         }
     }
 

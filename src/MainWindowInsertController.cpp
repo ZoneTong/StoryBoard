@@ -52,7 +52,7 @@ MainWindowInsertController::MainWindowInsertController(MainWindow* window) : m_w
 void MainWindowInsertController::insertTextAt(const QPointF& scenePos)
 {
     auto* item = new TextItem();
-    item->setTextFormat(MainWindow::tr("Text"), item->textFont(), m_window->m_brushColor);
+    item->setTextFormat(MainWindow::tr("Text"), item->TextFont(), m_window->m_brushColor);
 
     const QRectF canvas = m_window->m_scene->canvasRect();
     const QSizeF size = item->contentSize();
@@ -131,24 +131,24 @@ void MainWindowInsertController::insertShape(ShapeType type, qreal triangleAngle
     {
         auto* shape = createShapeItem(type);
         shape->setStyle(stroke, filled ? fill : QColor(Qt::transparent), strokeWidth);
-        shape->setFillStyle(fillStyle);
+        shape->SetFillStyle(fillStyle);
         // 需求 1：新图元沿用工具栏当前描线样式。
-        shape->setStrokeStyle(m_window->m_strokeStyle);
+        shape->SetStrokeStyle(m_window->m_strokeStyle);
         shape->setPos(topLeft);
-        shape->setContentSize(size);
+        shape->SetContentSize(size);
         // 三角形预置项：底边保持默认 64，按预置角度重算高度（角度是真相）。
         if (type == ShapeType::TRIANGLE && triangleAngle1 > 0.0 && triangleAngle2 > 0.0) {
-            shape->setTriangleAngles(triangleAngle1, triangleAngle2);
+            shape->SetTriangleAngles(triangleAngle1, triangleAngle2);
         }
         // 直线箭头预置项由上面的 LineItem 分支处理，这里只剩有面积图形。
         // 圆角矩形预置项：按短边比例折算成显式 px 圆角。
         if (type == ShapeType::RECTANGLE && cornerRatio > 0.0) {
-            shape->setCornerRadius(qMin(size.width(), size.height()) * cornerRatio);
+            shape->SetCornerRadius(qMin(size.width(), size.height()) * cornerRatio);
         }
         // 菱形预置项：锁内角并旋转 45°（数值只有 90° 一种，公式化以便扩展）。
         if (type == ShapeType::PARALLELOGRAM && parallelogramAngle > 0.0) {
-            shape->setParallelogramAngle(parallelogramAngle);
-            shape->setRotationAngle(45.0);
+            shape->SetParallelogramAngle(parallelogramAngle);
+            shape->SetRotationAngle(45.0);
         }
         item = shape;
     }
@@ -209,14 +209,14 @@ void MainWindow::insertCurve(LineGlyph glyph, ArrowStyle startArrow, ArrowStyle 
         return;
     }
     curve->setStrokePattern(m_strokeStyle);
-    curve->setArrowStyles(startArrow, endArrow);
+    curve->SetArrowStyles(startArrow, endArrow);
 
     m_scene->clearSelection();
-    m_scene->addItemsWithUndo({curve}, tr("Insert %1").arg(curve->displayName()));
+    m_scene->addItemsWithUndo({curve}, tr("Insert %1").arg(curve->DisplayName()));
     curve->setSelected(true);
     m_view->setFocus();
     statusBar()->showMessage(tr("Inserted %1; drag to move, drag handles to resize, color follows the current brush")
-                                 .arg(curve->displayName()),
+                                 .arg(curve->DisplayName()),
                              5000);
 }
 
@@ -236,14 +236,14 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
                                                              const QSizeF& faceSize, qreal rotation) {
         auto* face = createShapeItem(ShapeType::PARALLELOGRAM);
         // 名字走图元名：customName 只留给真正的自定义轮廓，类型仍显示「平行四边形」。
-        face->setName(name);
+        face->SetName(name);
         face->setStyle(stroke, fill, width);
-        face->setFillStyle(fillStyle);
+        face->SetFillStyle(fillStyle);
         // 需求 1：组内各面同样沿用工具栏描线样式。
-        face->setStrokeStyle(m_window->m_strokeStyle);
-        face->setContentSize(faceSize);
+        face->SetStrokeStyle(m_window->m_strokeStyle);
+        face->SetContentSize(faceSize);
         face->setPos(center - QPointF(faceSize.width() / 2.0, faceSize.height() / 2.0));
-        face->setRotationAngle(rotation);
+        face->SetRotationAngle(rotation);
         return face;
     };
 
@@ -311,15 +311,15 @@ void MainWindowInsertController::insertCompositeShape(ShapeType type)
         bodyLayer.filled = true;
         bodyLayer.role = PolygonItem::LayerRole::FILLED_AREA;
         auto* bodyItem = new PolygonItem(QList<PolygonItem::Layer>{bodyLayer}, fillStyle, m_window->m_strokeStyle);
-        bodyItem->setName(MainWindow::tr("Cylinder body"));
+        bodyItem->SetName(MainWindow::tr("Cylinder body"));
         faces.append(bodyItem);
 
         auto* top = createShapeItem(ShapeType::ELLIPSE);
         top->setStyle(stroke, fill, width);
-        top->setFillStyle(fillStyle);
-        top->setStrokeStyle(m_window->m_strokeStyle);
+        top->SetFillStyle(fillStyle);
+        top->SetStrokeStyle(m_window->m_strokeStyle);
         top->setPos(topLeft);
-        top->setContentSize(QSizeF(w, ry * 2.0));
+        top->SetContentSize(QSizeF(w, ry * 2.0));
         faces.append(top);
     }
 
@@ -375,7 +375,7 @@ void MainWindowInsertController::insertBrace(bool left)
     item->setStrokePattern(m_window->m_strokeStyle);
     // 右括号 = 左括号旋转 180°（旋转绕内容中心，几何不复制第二套）。
     if (!left) {
-        item->setRotationAngle(180.0);
+        item->SetRotationAngle(180.0);
     }
 
     m_window->m_scene->clearSelection();
@@ -411,15 +411,15 @@ void MainWindowInsertController::insertCustomShape(const QString& filePath)
     }
 
     auto* item = createShapeItem(ShapeType::RECTANGLE);
-    item->setCustomShape(customShape.name, customShape.unitPath);
+    item->SetCustomShape(customShape.name, customShape.unitPath);
     // 需求 16：与常见图形一致，按工具栏当前选择取样式（填充未选色跟随画笔色）。
     const QColor stroke =
         m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
     const QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : stroke;
     const bool filled = m_window->m_fillStyle != FillStyle::NONE;
     item->setStyle(stroke, filled ? fill : QColor(Qt::transparent), qMax<qreal>(0.5, m_window->m_brushWidth));
-    item->setFillStyle(filled ? m_window->m_fillStyle : FillStyle::NONE);
-    item->setStrokeStyle(m_window->m_strokeStyle);
+    item->SetFillStyle(filled ? m_window->m_fillStyle : FillStyle::NONE);
+    item->SetStrokeStyle(m_window->m_strokeStyle);
 
     // 需求 7：模板按原始宽高比插入，长边固定 64（2 格）；画布装不下时才等比缩到 72%。
     const QRectF canvas = m_window->m_scene->canvasRect();
@@ -442,7 +442,7 @@ void MainWindowInsertController::insertCustomShape(const QString& filePath)
     center.setY(qBound(canvas.top() + size.height() / 2.0, center.y(), canvas.bottom() - size.height() / 2.0));
 
     item->setPos(center - QPointF(size.width() / 2.0, size.height() / 2.0));
-    item->setContentSize(size);
+    item->SetContentSize(size);
 
     m_window->m_scene->clearSelection();
     m_window->m_scene->addItemsWithUndo({item}, MainWindow::tr("Insert custom shape “%1”").arg(customShape.name));

@@ -23,52 +23,52 @@ QRectF paddedToMinimum(QRectF frame)
 
 StraightLineItem::StraightLineItem(QGraphicsItem* parent) : LineItemAbstract(parent) {}
 
-ItemPropertySet StraightLineItem::properties() const
+ItemPropertySet StraightLineItem::Properties() const
 {
     // 箭头行对全部描线子型开放（含花括号），与现状一致。
-    return LineItemAbstract::properties().united(ItemPropertySet{ItemProperty::ARROW_START, ItemProperty::ARROW_END});
+    return LineItemAbstract::Properties().united(ItemPropertySet{ItemProperty::ARROW_START, ItemProperty::ARROW_END});
 }
 
-QVariant StraightLineItem::propertyValue(ItemProperty property) const
+QVariant StraightLineItem::PropertyValue(ItemProperty property) const
 {
     switch (property) {
     case ItemProperty::ARROW_START:
-        return static_cast<int>(startArrow());
+        return static_cast<int>(StartArrow());
     case ItemProperty::ARROW_END:
-        return static_cast<int>(endArrow());
+        return static_cast<int>(EndArrow());
     default:
-        return LineItemAbstract::propertyValue(property);
+        return LineItemAbstract::PropertyValue(property);
     }
 }
 
-void StraightLineItem::setPropertyValue(ItemProperty property, const QVariant& value)
+void StraightLineItem::SetPropertyValue(ItemProperty property, const QVariant& value)
 {
     switch (property) {
     case ItemProperty::ARROW_START:
-        setArrowStyles(static_cast<ArrowStyle>(value.toInt()), endArrow());
+        SetArrowStyles(static_cast<ArrowStyle>(value.toInt()), EndArrow());
         break;
     case ItemProperty::ARROW_END:
-        setArrowStyles(startArrow(), static_cast<ArrowStyle>(value.toInt()));
+        SetArrowStyles(StartArrow(), static_cast<ArrowStyle>(value.toInt()));
         break;
     default:
-        LineItemAbstract::setPropertyValue(property, value);
+        LineItemAbstract::SetPropertyValue(property, value);
         break;
     }
 }
 
-QString StraightLineItem::displayName() const
+QString StraightLineItem::DisplayName() const
 {
-    return arrowStyleIsHead(startArrow()) || arrowStyleIsHead(endArrow()) ? uiText(QStringLiteral("Line Arrow"))
+    return arrowStyleIsHead(StartArrow()) || arrowStyleIsHead(EndArrow()) ? uiText(QStringLiteral("Line Arrow"))
                                                                           : uiText(QStringLiteral("Straight Line"));
 }
 
-QRectF StraightLineItem::frameRect() const
+QRectF StraightLineItem::FrameRect() const
 {
-    return paddedToMinimum(CanvasItem::frameRect());
+    return paddedToMinimum(CanvasItem::FrameRect());
 }
 
 void StraightLineItem::setEndpoints(const QPointF& startScene, const QPointF& endScene, const QColor& color,
                                     qreal width)
 {
-    setStrokePoints(QVector<QPointF>{startScene, endScene}, color, width, 0.0, true);
+    SetStrokePoints(QVector<QPointF>{startScene, endScene}, color, width, 0.0, true);
 }

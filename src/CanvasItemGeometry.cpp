@@ -4,7 +4,7 @@
 
 namespace CanvasItemGeometry {
 
-QRectF contentRect(const QSizeF& size)
+QRectF ContentRect(const QSizeF& size)
 {
     return QRectF(0.0, 0.0, size.width(), size.height());
 }

@@ -42,7 +42,7 @@ QIcon StyleController::fillStyleIcon(FillStyle style, const QColor& color, int l
     return ItemStyleVisuals::fillStyleIcon(style, color, logicalSize);
 }
 
-void StyleController::setFillStyle(FillStyle style)
+void StyleController::SetFillStyle(FillStyle style)
 {
     m_window->m_fillStyle = style;
     updateFillActions();
@@ -98,7 +98,7 @@ void StyleController::applyStrokeWidthToSelection(qreal width)
     }
 }
 
-void StyleController::setStrokeStyle(Qt::PenStyle style)
+void StyleController::SetStrokeStyle(Qt::PenStyle style)
 {
     m_window->m_strokeStyle = style;
     updateStrokeStyleActions();
@@ -116,11 +116,11 @@ int StyleController::applyPenStyleToSelection(Qt::PenStyle style, const QString&
     QList<QMap<ItemProperty, QVariant>> after;
     const QList<CanvasItem*> selected = m_window->m_scene->selectedCanvasItems();
     for (CanvasItem* item : selected) {
-        if (!item->properties().contains(ItemProperty::STROKE_STYLE)) {
+        if (!item->Properties().contains(ItemProperty::STROKE_STYLE)) {
             continue;
         }
         QMap<ItemProperty, QVariant> beforeValues;
-        beforeValues.insert(ItemProperty::STROKE_STYLE, item->propertyValue(ItemProperty::STROKE_STYLE));
+        beforeValues.insert(ItemProperty::STROKE_STYLE, item->PropertyValue(ItemProperty::STROKE_STYLE));
         QMap<ItemProperty, QVariant> afterValues = beforeValues;
         afterValues.insert(ItemProperty::STROKE_STYLE, static_cast<int>(style));
         items.append(item);
@@ -142,7 +142,7 @@ int StyleController::applyPenStyleToSelection(Qt::PenStyle style, const QString&
     }
 
     for (CanvasItem* item : items) {
-        item->setPropertyValue(ItemProperty::STROKE_STYLE, static_cast<int>(style));
+        item->SetPropertyValue(ItemProperty::STROKE_STYLE, static_cast<int>(style));
     }
     m_window->m_undo->push(new ItemPropertyCommand(m_window->m_scene, items, before, after, text));
     m_window->statusBar()->showMessage(MainWindow::tr("Applied border style to %1 item(s)").arg(items.size()), 4000);
@@ -182,7 +182,7 @@ int StyleController::applyStrokeStyleToSelection(const QColor& color, qreal widt
     QList<CanvasItem*> items;
     const QList<CanvasItem*> selected = m_window->m_scene->selectedCanvasItems();
     for (CanvasItem* item : selected) {
-        const ItemPropertySet properties = item->properties();
+        const ItemPropertySet properties = item->Properties();
         if (properties.contains(ItemProperty::STROKE_COLOR) && properties.contains(ItemProperty::STROKE_WIDTH)) {
             items.append(item);
         }
@@ -197,8 +197,8 @@ int StyleController::applyStrokeStyleToSelection(const QColor& color, qreal widt
     after.reserve(items.size());
     for (CanvasItem* item : items) {
         QMap<ItemProperty, QVariant> beforeValues;
-        beforeValues.insert(ItemProperty::STROKE_COLOR, item->propertyValue(ItemProperty::STROKE_COLOR));
-        beforeValues.insert(ItemProperty::STROKE_WIDTH, item->propertyValue(ItemProperty::STROKE_WIDTH));
+        beforeValues.insert(ItemProperty::STROKE_COLOR, item->PropertyValue(ItemProperty::STROKE_COLOR));
+        beforeValues.insert(ItemProperty::STROKE_WIDTH, item->PropertyValue(ItemProperty::STROKE_WIDTH));
         QMap<ItemProperty, QVariant> afterValues = beforeValues;
         if (changeColor) {
             afterValues.insert(ItemProperty::STROKE_COLOR, color);
@@ -217,7 +217,7 @@ int StyleController::applyStrokeStyleToSelection(const QColor& color, qreal widt
 
     for (int index = 0; index < items.size(); ++index) {
         for (auto it = after.at(index).constBegin(); it != after.at(index).constEnd(); ++it) {
-            items.at(index)->setPropertyValue(it.key(), it.value());
+            items.at(index)->SetPropertyValue(it.key(), it.value());
         }
     }
     m_window->m_undo->push(new ItemPropertyCommand(m_window->m_scene, items, before, after, text));
@@ -240,7 +240,7 @@ void StyleController::applyFillToSelection()
             continue;
         }
         // 填充图形与多边形都可带填充；线、花括号等纯描线图元不参与。
-        if (shapeTypeIsFilled(shape->shapeType()) || shape->shapeLayerCount() > 0) {
+        if (shapeTypeIsFilled(shape->shapeType()) || shape->ShapeLayerCount() > 0) {
             targets.append(shape);
         } else {
             ++outlineOnlyCount;
@@ -267,11 +267,11 @@ void StyleController::applyFillToSelection()
     after.reserve(targets.size());
     for (ShapeItem* shape : targets) {
         QMap<ItemProperty, QVariant> beforeValues;
-        beforeValues.insert(ItemProperty::FILL_COLOR, shape->propertyValue(ItemProperty::FILL_COLOR));
-        beforeValues.insert(ItemProperty::FILL_STYLE, shape->propertyValue(ItemProperty::FILL_STYLE));
-        QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : shape->fillColor();
+        beforeValues.insert(ItemProperty::FILL_COLOR, shape->PropertyValue(ItemProperty::FILL_COLOR));
+        beforeValues.insert(ItemProperty::FILL_STYLE, shape->PropertyValue(ItemProperty::FILL_STYLE));
+        QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : shape->FillColor();
         if (fill.alpha() == 0) {
-            fill = shape->strokeColor();
+            fill = shape->StrokeColor();
         }
         QMap<ItemProperty, QVariant> afterValues = beforeValues;
         afterValues.insert(ItemProperty::FILL_COLOR, fill);
@@ -288,7 +288,7 @@ void StyleController::applyFillToSelection()
 
     for (int index = 0; index < items.size(); ++index) {
         for (auto it = after.at(index).constBegin(); it != after.at(index).constEnd(); ++it) {
-            items.at(index)->setPropertyValue(it.key(), it.value());
+            items.at(index)->SetPropertyValue(it.key(), it.value());
         }
     }
     m_window->m_undo->push(

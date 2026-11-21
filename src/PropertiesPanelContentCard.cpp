@@ -182,15 +182,15 @@ void PropertiesPanelContentCard::refresh(const QList<CanvasItem*>& texts)
     m_textColorRow->setVisible(hasText);
     if (hasText) {
         CanvasItem* first = texts.first();
-        m_textFont = first->textFont();
+        m_textFont = first->TextFont();
         if (!m_textEdit->hasFocus()) {
-            m_textEdit->setText(first->textContent());
+            m_textEdit->setText(first->TextContent());
         }
         m_fontCombo->setCurrentFont(m_textFont);
         m_fontSizeSpin->setValue(qMax(1, qRound(m_textFont.pointSizeF())));
         m_boldButton->setChecked(m_textFont.bold());
         m_italicButton->setChecked(m_textFont.italic());
-        m_textColorFallback = first->textColor();
+        m_textColorFallback = first->TextColor();
         for (QToolButton* swatch : std::as_const(m_textColorSwatches)) {
             const QColor color = swatch->property("swatchColor").value<QColor>();
             swatch->setChecked(color.rgb() == m_textColorFallback.rgb());

@@ -111,7 +111,7 @@ ShapeType shapeTypeFromString(const QString& value)
 QSizeF defaultShapeSize(ShapeType type)
 {
     // 单一来源在子类 defaultContentSize()：按需构造原型图元取默认尺寸，
-    // 构造函数走 setContentSize(defaultContentSize())，不会递归。
+    // 构造函数走 SetContentSize(defaultContentSize())，不会递归。
     ShapeItem* prototype = createShapeItem(type);
     const QSizeF size = prototype->defaultContentSize();
     delete prototype;
@@ -249,10 +249,10 @@ ShapeItem::ShapeItem(QGraphicsItem* parent) : CanvasItem(parent)
     m_fillColor.setAlpha(36);
 }
 
-ItemPropertySet ShapeItem::properties() const
+ItemPropertySet ShapeItem::Properties() const
 {
     // 公共样式六件套；圆角 / 角度 / 箭头等按图形由子类自行追加。
-    return CanvasItem::properties().united(ItemPropertySet{ItemProperty::FILL_STYLE, ItemProperty::FILL_COLOR,
+    return CanvasItem::Properties().united(ItemPropertySet{ItemProperty::FILL_STYLE, ItemProperty::FILL_COLOR,
                                                            ItemProperty::FILL_IMAGE, ItemProperty::STROKE_STYLE,
                                                            ItemProperty::STROKE_COLOR, ItemProperty::STROKE_WIDTH});
 }
@@ -264,100 +264,100 @@ QSizeF ShapeItem::defaultContentSize() const
     return QSizeF(128.0, 128.0);
 }
 
-QVariant ShapeItem::propertyValue(ItemProperty property) const
+QVariant ShapeItem::PropertyValue(ItemProperty property) const
 {
     switch (property) {
     case ItemProperty::FILL_STYLE:
         return static_cast<int>(fillStyle());
     case ItemProperty::FILL_COLOR:
-        return fillColor();
+        return FillColor();
     case ItemProperty::FILL_IMAGE:
-        return QVariant::fromValue(fillImage());
+        return QVariant::fromValue(FillImage());
     case ItemProperty::FILL_IMAGE_MODE:
-        return static_cast<int>(fillImageMode());
+        return static_cast<int>(FillImageMode());
     case ItemProperty::STROKE_STYLE:
-        return static_cast<int>(strokeStyle());
+        return static_cast<int>(StrokeStyle());
     case ItemProperty::STROKE_COLOR:
-        return strokeColor();
+        return StrokeColor();
     case ItemProperty::STROKE_WIDTH:
-        return strokeWidth();
+        return StrokeWidth();
     case ItemProperty::CORNER_RADIUS:
-        return cornerRadius();
+        return CornerRadius();
     case ItemProperty::START_ANGLE:
-        return startAngle();
+        return StartAngle();
     case ItemProperty::SWEEP_ANGLE:
-        return sweepAngle();
+        return SweepAngle();
     case ItemProperty::TRIANGLE_BASE:
         return contentSize().width();
     case ItemProperty::BOTTOM_ANGLE1:
-        return bottomAngle1();
+        return BottomAngle1();
     case ItemProperty::BOTTOM_ANGLE2:
-        return bottomAngle2();
+        return BottomAngle2();
     case ItemProperty::PARALLELOGRAM_ANGLE:
-        return parallelogramAngle();
+        return ParallelogramAngle();
     default:
-        return CanvasItem::propertyValue(property);
+        return CanvasItem::PropertyValue(property);
     }
 }
 
-void ShapeItem::setPropertyValue(ItemProperty property, const QVariant& value)
+void ShapeItem::SetPropertyValue(ItemProperty property, const QVariant& value)
 {
     switch (property) {
     case ItemProperty::FILL_STYLE:
-        setFillStyle(static_cast<FillStyle>(value.toInt()));
+        SetFillStyle(static_cast<FillStyle>(value.toInt()));
         break;
     case ItemProperty::FILL_COLOR:
-        setFill(value.value<QColor>(), fillStyle());
+        SetFill(value.value<QColor>(), fillStyle());
         break;
     case ItemProperty::FILL_IMAGE: {
         const QPixmap image = value.value<QPixmap>();
         if (image.isNull()) {
-            clearFillImage();
+            ClearFillImage();
         } else {
-            setFillImage(image, fillImageMode());
+            SetFillImage(image, FillImageMode());
         }
         break;
     }
     case ItemProperty::FILL_IMAGE_MODE:
-        setFillImage(fillImage(), static_cast<ImageFill::Mode>(value.toInt()));
+        SetFillImage(FillImage(), static_cast<ImageFill::Mode>(value.toInt()));
         break;
     case ItemProperty::STROKE_STYLE:
-        setStrokeStyle(static_cast<Qt::PenStyle>(value.toInt()));
+        SetStrokeStyle(static_cast<Qt::PenStyle>(value.toInt()));
         break;
     case ItemProperty::STROKE_COLOR:
-        setStyle(value.value<QColor>(), fillColor(), strokeWidth());
+        setStyle(value.value<QColor>(), FillColor(), StrokeWidth());
         break;
     case ItemProperty::STROKE_WIDTH:
-        setStyle(strokeColor(), fillColor(), value.toDouble());
+        setStyle(StrokeColor(), FillColor(), value.toDouble());
         break;
     case ItemProperty::CORNER_RADIUS:
-        setCornerRadius(value.toDouble());
+        SetCornerRadius(value.toDouble());
         break;
     case ItemProperty::START_ANGLE:
-        setArcAngles(value.toDouble(), sweepAngle());
+        SetArcAngles(value.toDouble(), SweepAngle());
         break;
     case ItemProperty::SWEEP_ANGLE:
-        setArcAngles(startAngle(), value.toDouble());
+        SetArcAngles(StartAngle(), value.toDouble());
         break;
     case ItemProperty::TRIANGLE_BASE:
-        setContentSize(QSizeF(value.toDouble(), contentSize().height()));
+        SetContentSize(QSizeF(value.toDouble(), contentSize().height()));
         break;
     case ItemProperty::BOTTOM_ANGLE1:
-        setTriangleAngles(value.toDouble(), bottomAngle2());
+        SetTriangleAngles(value.toDouble(), BottomAngle2());
         break;
     case ItemProperty::BOTTOM_ANGLE2:
-        setTriangleAngles(bottomAngle1(), value.toDouble());
+        SetTriangleAngles(BottomAngle1(), value.toDouble());
         break;
     case ItemProperty::PARALLELOGRAM_ANGLE:
-        setParallelogramAngle(value.toDouble());
+        SetParallelogramAngle(value.toDouble());
         break;
     default:
-        CanvasItem::setPropertyValue(property, value);
+        CanvasItem::SetPropertyValue(property, value);
         break;
     }
 }
 
-QString ShapeItem::displayName() const
+QString ShapeItem::DisplayName() const
 {
     if (!m_customName.isEmpty()) {
         return m_customName;
@@ -367,7 +367,7 @@ QString ShapeItem::displayName() const
 
 QPointF ShapeItem::triangleVertex(TriangleVertex vertex) const
 {
-    const QRectF rect = contentRect();
+    const QRectF rect = ContentRect();
     switch (vertex) {
     case TriangleVertex::A:
         return rect.bottomLeft();
@@ -391,12 +391,12 @@ QPointF ShapeItem::triangleVertex(TriangleVertex vertex) const
     }
 }
 
-QPointF ShapeItem::customHandleCenter(int handle, bool* ok) const
+QPointF ShapeItem::CustomHandleCenter(int handle, bool* ok) const
 {
     if (ok) {
         *ok = false;
     }
-    if (handle == CanvasItem::APEX && shapeType() == ShapeType::TRIANGLE && !isCustomShape()) {
+    if (handle == CanvasItem::APEX && shapeType() == ShapeType::TRIANGLE && !IsCustomShape()) {
         if (ok) {
             *ok = true;
         }
@@ -405,7 +405,7 @@ QPointF ShapeItem::customHandleCenter(int handle, bool* ok) const
     return QPointF();
 }
 
-void ShapeItem::setTriangleAngles(qreal angle1, qreal angle2)
+void ShapeItem::SetTriangleAngles(qreal angle1, qreal angle2)
 {
     const qreal a1 = qBound<qreal>(1.0, angle1, 174.0);
     const qreal a2 = qBound<qreal>(1.0, angle2, 175.0 - a1);
@@ -420,13 +420,13 @@ void ShapeItem::setTriangleAngles(qreal angle1, qreal angle2)
     const qreal cot2 = 1.0 / qTan(qDegreesToRadians(a2));
     const qreal height = size.width() / qMax<qreal>(0.02, cot1 + cot2);
     m_syncingTriangle = true;
-    setContentSize(QSizeF(size.width(), height));
+    SetContentSize(QSizeF(size.width(), height));
     m_syncingTriangle = false;
     m_triangleSyncSize = contentSize();
     update();
 }
 
-void ShapeItem::setAngleReadoutVisible(bool visible)
+void ShapeItem::SetAngleReadoutVisible(bool visible)
 {
     if (m_angleReadoutVisible == visible) {
         return;
@@ -435,7 +435,7 @@ void ShapeItem::setAngleReadoutVisible(bool visible)
     update();
 }
 
-void ShapeItem::setParallelogramAngle(qreal angle)
+void ShapeItem::SetParallelogramAngle(qreal angle)
 {
     const qreal clamped = qBound<qreal>(15.0, angle, 165.0);
     if (qFuzzyCompare(m_parallelogramAngle + 2.0, clamped + 2.0)) {
@@ -447,21 +447,21 @@ void ShapeItem::setParallelogramAngle(qreal angle)
     update();
 }
 
-void ShapeItem::contentResized()
+void ShapeItem::ContentResized()
 {
-    if (shapeType() != ShapeType::TRIANGLE || isCustomShape()) {
+    if (shapeType() != ShapeType::TRIANGLE || IsCustomShape()) {
         return;
     }
-    // 尺寸折算已经在 adjustedContentSize() 里做完，这里只记一次同步基准，
+    // 尺寸折算已经在 AdjustedContentSize() 里做完，这里只记一次同步基准，
     // 不再在 resize 过程中二次改尺寸，避免拖动底边时反复重排导致闪烁。
     if (!m_syncingTriangle) {
         m_triangleSyncSize = contentSize();
     }
 }
 
-QSizeF ShapeItem::adjustedContentSize(const QSizeF& size) const
+QSizeF ShapeItem::AdjustedContentSize(const QSizeF& size) const
 {
-    if (shapeType() != ShapeType::TRIANGLE || isCustomShape()) {
+    if (shapeType() != ShapeType::TRIANGLE || IsCustomShape()) {
         return size;
     }
     const QSizeF current = contentSize();
@@ -481,30 +481,30 @@ QSizeF ShapeItem::adjustedContentSize(const QSizeF& size) const
     return target;
 }
 
-QRectF ShapeItem::frameRect() const
+QRectF ShapeItem::FrameRect() const
 {
     // 扇形只画了内容矩形里的一小块，选中框与手柄改贴在轮廓的最小覆盖矩形上。
     if (m_customPath.isEmpty() && shapeType() == ShapeType::SECTOR) {
-        const QPainterPath path = currentPath(contentRect());
+        const QPainterPath path = CurrentPath(ContentRect());
         const QRectF bounds = path.boundingRect();
         if (!bounds.isEmpty()) {
             return bounds;
         }
     }
-    return CanvasItem::frameRect();
+    return CanvasItem::FrameRect();
 }
 
-void ShapeItem::drawSelectionOverlay(QPainter* painter)
+void ShapeItem::DrawSelectionOverlay(QPainter* painter)
 {
-    CanvasItem::drawSelectionOverlay(painter);
-    if (shapeType() != ShapeType::TRIANGLE || isCustomShape() || !isSelected() || !isEditable() ||
-        !hasSingleSelection()) {
+    CanvasItem::DrawSelectionOverlay(painter);
+    if (shapeType() != ShapeType::TRIANGLE || IsCustomShape() || !isSelected() || !IsEditable() ||
+        !HasSingleSelection()) {
         return;
     }
     // 底边中点的底边长度手柄两侧各补一根短刻度线，提示这里拖的是底边。
-    const QRectF frame = frameRect();
-    const qreal gap = qMax<qreal>(4.0, 6.0 / qMax<qreal>(viewScale(), 0.001));
-    const qreal tick = qMax<qreal>(4.0, 7.0 / qMax<qreal>(viewScale(), 0.001));
+    const QRectF frame = FrameRect();
+    const qreal gap = qMax<qreal>(4.0, 6.0 / qMax<qreal>(ViewScale(), 0.001));
+    const qreal tick = qMax<qreal>(4.0, 7.0 / qMax<qreal>(ViewScale(), 0.001));
     QPen tickPen(QColor(79, 124, 255));
     tickPen.setWidthF(1.2);
     tickPen.setCosmetic(true);
@@ -517,7 +517,7 @@ void ShapeItem::drawSelectionOverlay(QPainter* painter)
     painter->restore();
 }
 
-void ShapeItem::setCustomShape(const QString& name, const QPainterPath& unitPath)
+void ShapeItem::SetCustomShape(const QString& name, const QPainterPath& unitPath)
 {
     m_customName = name;
     m_customPath = unitPath;
@@ -535,14 +535,14 @@ void ShapeItem::setStyle(const QColor& strokeColor, const QColor& fillColor, qre
     update();
 }
 
-void ShapeItem::setFill(const QColor& fillColor, FillStyle style)
+void ShapeItem::SetFill(const QColor& fillColor, FillStyle style)
 {
     m_fillColor = fillColor.isValid() ? fillColor : QColor(Qt::transparent);
     m_fillStyle = style;
     update();
 }
 
-void ShapeItem::setFillStyle(FillStyle style)
+void ShapeItem::SetFillStyle(FillStyle style)
 {
     if (m_fillStyle == style) {
         return;
@@ -551,7 +551,7 @@ void ShapeItem::setFillStyle(FillStyle style)
     update();
 }
 
-void ShapeItem::setStrokeStyle(Qt::PenStyle style)
+void ShapeItem::SetStrokeStyle(Qt::PenStyle style)
 {
     if (m_strokeStyle == style) {
         return;
@@ -560,7 +560,7 @@ void ShapeItem::setStrokeStyle(Qt::PenStyle style)
     update();
 }
 
-void ShapeItem::setItemOpacity(qreal opacity)
+void ShapeItem::SetItemOpacity(qreal opacity)
 {
     const qreal clamped = qBound<qreal>(0.0, opacity, 1.0);
     if (qFuzzyCompare(m_opacity, clamped)) {
@@ -570,10 +570,10 @@ void ShapeItem::setItemOpacity(qreal opacity)
     update();
 }
 
-void ShapeItem::setCornerRadius(qreal radius)
+void ShapeItem::SetCornerRadius(qreal radius)
 {
     // 圆角半径按画布像素处理，不超过短边的一半；0 表示直角。
-    const qreal clamped = qBound<qreal>(0.0, radius, qMin(contentRect().width(), contentRect().height()) / 2.0);
+    const qreal clamped = qBound<qreal>(0.0, radius, qMin(ContentRect().width(), ContentRect().height()) / 2.0);
     if (qFuzzyCompare(m_cornerRadius + 1.0, clamped + 1.0)) {
         return;
     }
@@ -581,10 +581,10 @@ void ShapeItem::setCornerRadius(qreal radius)
     update();
 }
 
-void ShapeItem::setFillImage(const QPixmap& image, ImageFill::Mode mode)
+void ShapeItem::SetFillImage(const QPixmap& image, ImageFill::Mode mode)
 {
     if (image.isNull()) {
-        clearFillImage();
+        ClearFillImage();
         return;
     }
     m_fillImage = image;
@@ -594,7 +594,7 @@ void ShapeItem::setFillImage(const QPixmap& image, ImageFill::Mode mode)
     update();
 }
 
-void ShapeItem::clearFillImage()
+void ShapeItem::ClearFillImage()
 {
     if (m_fillImage.isNull()) {
         return;
@@ -604,7 +604,7 @@ void ShapeItem::clearFillImage()
     update();
 }
 
-void ShapeItem::setArcAngles(qreal startAngle, qreal sweepAngle)
+void ShapeItem::SetArcAngles(qreal startAngle, qreal sweepAngle)
 {
     const qreal start = qBound<qreal>(-360.0, startAngle, 360.0);
     const qreal sweep = qBound<qreal>(-360.0, sweepAngle, 360.0);
@@ -616,7 +616,7 @@ void ShapeItem::setArcAngles(qreal startAngle, qreal sweepAngle)
     update();
 }
 
-ShapeItemState ShapeItem::state() const
+ShapeItemState ShapeItem::State() const
 {
     ShapeItemState result;
     result.strokeColor = m_strokeColor;
@@ -631,16 +631,16 @@ ShapeItemState ShapeItem::state() const
     result.bottomAngle1 = m_bottomAngle1;
     result.bottomAngle2 = m_bottomAngle2;
     result.parallelogramAngle = m_parallelogramAngle;
-    result.hasFillImage = hasFillImage();
+    result.hasFillImage = HasFillImage();
     result.fillImage = m_fillImage;
     result.fillImageMode = m_fillImageMode;
     result.pos = pos();
     result.size = contentSize();
-    writeState(result);
+    WriteState(result);
     return result;
 }
 
-void ShapeItem::applyState(const ShapeItemState& state)
+void ShapeItem::ApplyState(const ShapeItemState& state)
 {
     m_fillStyle = state.fillStyle;
     m_strokeStyle = state.strokeStyle;
@@ -656,69 +656,69 @@ void ShapeItem::applyState(const ShapeItemState& state)
     setStyle(state.strokeColor, state.fillColor, state.strokeWidth);
     setPos(state.pos);
     m_syncingTriangle = true;
-    setContentSize(state.size.isEmpty() ? defaultContentSize() : state.size);
+    SetContentSize(state.size.isEmpty() ? defaultContentSize() : state.size);
     // 角度优先：应用状态时按角度重算三角形高度（旧尺寸与角度自洽，不会造成视觉变化）。
-    if (shapeType() == ShapeType::TRIANGLE && !isCustomShape()) {
+    if (shapeType() == ShapeType::TRIANGLE && !IsCustomShape()) {
         const qreal factor =
             1.0 / qTan(qDegreesToRadians(m_bottomAngle1)) + 1.0 / qTan(qDegreesToRadians(m_bottomAngle2));
         const QSizeF size = contentSize();
-        setContentSize(QSizeF(size.width(), size.width() / qMax<qreal>(0.02, factor)));
+        SetContentSize(QSizeF(size.width(), size.width() / qMax<qreal>(0.02, factor)));
     }
     m_syncingTriangle = false;
-    readState(state);
+    ReadState(state);
     m_triangleSyncSize = contentSize();
     update();
 }
 
 QPainterPath ShapeItem::shape() const
 {
-    return ShapeHitGeometry::hitShape(currentPath(contentRect()), shapeType(), m_strokeWidth, selectionHandleShape());
+    return ShapeHitGeometry::hitShape(CurrentPath(ContentRect()), shapeType(), m_strokeWidth, SelectionHandleShape());
 }
 
-QPainterPath ShapeItem::outlineShape() const
+QPainterPath ShapeItem::OutlineShape() const
 {
-    const QPainterPath path = currentPath(contentRect());
-    return path.isEmpty() ? CanvasItem::outlineShape() : path;
+    const QPainterPath path = CurrentPath(ContentRect());
+    return path.isEmpty() ? CanvasItem::OutlineShape() : path;
 }
 
-QPainterPath ShapeItem::paintedShape() const
+QPainterPath ShapeItem::PaintedShape() const
 {
-    return ShapeHitGeometry::paintedShape(currentPath(contentRect()), shapeType(), m_fillStyle, m_fillColor,
+    return ShapeHitGeometry::PaintedShape(CurrentPath(ContentRect()), shapeType(), m_fillStyle, m_fillColor,
                                           m_strokeWidth, m_strokeStyle);
 }
 
-QPainterPath ShapeItem::currentPath(const QRectF& rect) const
+QPainterPath ShapeItem::CurrentPath(const QRectF& rect) const
 {
     if (!m_customPath.isEmpty()) {
         return ShapePathBuilder::mapUnitPath(m_customPath, rect);
     }
-    return shapePath(rect);
+    return ShapePath(rect);
 }
 
-QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect)
+QPainterPath ShapeItem::PathFor(ShapeType type, const QRectF& rect)
 {
-    return pathFor(type, rect, 0.0, 30.0, 120.0);
+    return PathFor(type, rect, 0.0, 30.0, 120.0);
 }
 
-QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius)
+QPainterPath ShapeItem::PathFor(ShapeType type, const QRectF& rect, qreal cornerRadius)
 {
-    return pathFor(type, rect, cornerRadius, 30.0, 120.0);
+    return PathFor(type, rect, cornerRadius, 30.0, 120.0);
 }
 
-QPainterPath ShapeItem::pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius, qreal startAngle,
+QPainterPath ShapeItem::PathFor(ShapeType type, const QRectF& rect, qreal cornerRadius, qreal startAngle,
                                 qreal sweepAngle)
 {
-    return ShapePathBuilder::pathFor(type, rect, cornerRadius, startAngle, sweepAngle);
+    return ShapePathBuilder::PathFor(type, rect, cornerRadius, startAngle, sweepAngle);
 }
 
-void ShapeItem::paintContent(QPainter* painter)
+void ShapeItem::PaintContent(QPainter* painter)
 {
-    const QRectF rect = contentRect();
+    const QRectF rect = ContentRect();
     if (rect.isEmpty()) {
         return;
     }
 
-    const QPainterPath path = currentPath(rect);
+    const QPainterPath path = CurrentPath(rect);
     if (path.isEmpty()) {
         return;
     }
@@ -743,9 +743,9 @@ void ShapeItem::paintContent(QPainter* painter)
                              m_fillStyle, m_opacity);
 }
 
-QJsonObject ShapeItem::toJson() const
+QJsonObject ShapeItem::ToJson() const
 {
-    QJsonObject json = baseJson();
+    QJsonObject json = BaseJson();
     json.insert(QStringLiteral("shapeType"), shapeTypeToString(shapeType()));
     json.insert(QStringLiteral("strokeColor"), m_strokeColor.name(QColor::HexArgb));
     json.insert(QStringLiteral("fillColor"), m_fillColor.name(QColor::HexArgb));
@@ -772,7 +772,7 @@ QJsonObject ShapeItem::toJson() const
         json.insert(QStringLiteral("fillImageId"), m_fillImageId);
         json.insert(QStringLiteral("fillImageMode"), ImageFill::modeToString(m_fillImageMode));
     } else {
-        const QJsonObject fillImageJson = ImageFill::toJson(m_fillImage, m_fillImageMode);
+        const QJsonObject fillImageJson = ImageFill::ToJson(m_fillImage, m_fillImageMode);
         if (!fillImageJson.isEmpty()) {
             json.insert(QStringLiteral("fillImage"), fillImageJson);
         }
@@ -786,11 +786,11 @@ QJsonObject ShapeItem::toJson() const
     if (!m_customPath.isEmpty()) {
         json.insert(QStringLiteral("pathData"), encodePathData(m_customPath));
     }
-    writeJsonExtra(json);
+    WriteJsonExtra(json);
     return json;
 }
 
-void ShapeItem::fromJson(const QJsonObject& json)
+void ShapeItem::FromJson(const QJsonObject& json)
 {
     const QString typeName = json.value(QStringLiteral("shapeType")).toString();
     bool forceRoundedCorner = false;
@@ -871,26 +871,26 @@ void ShapeItem::fromJson(const QJsonObject& json)
 
     // 载入期间先屏蔽三角形尺寸联动，避免 baseJson 恢复尺寸时反推高度、改动旧文件外观。
     m_syncingTriangle = true;
-    applyBaseJson(json);
+    ApplyBaseJson(json);
     if (contentSize().isEmpty()) {
-        setContentSize(defaultContentSize());
+        SetContentSize(defaultContentSize());
     }
     m_syncingTriangle = false;
 
     // 需求 6：扇形 / 弧线旧半径 < 内容宽的一半时，把椭圆外接框改成新内容矩形：
     // k = 2r、ry = r·h/w，位置按椭圆中心不动补偿，轮廓逐点不变；r<0 或 r≥w/2 无需迁移。
-    if (shapeType() == ShapeType::SECTOR && legacyRadius >= 0.0 && !isCustomShape()) {
+    if (shapeType() == ShapeType::SECTOR && legacyRadius >= 0.0 && !IsCustomShape()) {
         const QSizeF size = contentSize();
         if (size.width() > 0.0 && legacyRadius < size.width() / 2.0) {
             const qreal ry = legacyRadius * size.height() / size.width();
-            setContentSize(QSizeF(legacyRadius * 2.0, ry * 2.0));
+            SetContentSize(QSizeF(legacyRadius * 2.0, ry * 2.0));
             setPos(pos() + QPointF(size.width() / 2.0 - legacyRadius, size.height() / 2.0 - ry));
         }
     }
 
     // 旧文件没有角度字段：按原三角形的顶点位置（内容矩形上边中点）反算两个底角，
     // 使角度与恢复后的尺寸自洽，外观零变化。
-    if (shapeType() == ShapeType::TRIANGLE && !isCustomShape()) {
+    if (shapeType() == ShapeType::TRIANGLE && !IsCustomShape()) {
         if (hasAngles) {
             m_bottomAngle1 = qBound<qreal>(1.0, json.value(QStringLiteral("bottomAngle1")).toDouble(60.0), 174.0);
             m_bottomAngle2 =
@@ -904,8 +904,8 @@ void ShapeItem::fromJson(const QJsonObject& json)
         }
     }
 
-    readJsonExtra(json);
-    if ((forceRoundedCorner || legacyAutoCorner) && !isCustomShape()) {
+    ReadJsonExtra(json);
+    if ((forceRoundedCorner || legacyAutoCorner) && !IsCustomShape()) {
         m_cornerRadius = qMin(contentSize().width(), contentSize().height()) * 0.16;
     }
     m_triangleSyncSize = contentSize();
@@ -918,17 +918,17 @@ ShapeLayer ShapeItem::shapeLayer(int index) const
     return ShapeLayer();
 }
 
-QPainterPath ShapeItem::mapShapeLayerPath(const ShapeLayer& layer) const
+QPainterPath ShapeItem::MapShapeLayerPath(const ShapeLayer& layer) const
 {
     return layer.path;
 }
 
-bool ShapeItem::hasShapeFillArea() const
+bool ShapeItem::HasShapeFillArea() const
 {
-    if (shapeLayerCount() == 0) {
+    if (ShapeLayerCount() == 0) {
         return true;
     }
-    for (int index = 0; index < shapeLayerCount(); ++index) {
+    for (int index = 0; index < ShapeLayerCount(); ++index) {
         const ShapeLayer layer = shapeLayer(index);
         if (layer.role == ShapeLayerRole::FILL_AREA && !layer.path.isEmpty()) {
             return true;
@@ -937,22 +937,22 @@ bool ShapeItem::hasShapeFillArea() const
     return false;
 }
 
-void ShapeItem::writeState(ShapeItemState& state) const
+void ShapeItem::WriteState(ShapeItemState& state) const
 {
     Q_UNUSED(state);
 }
 
-void ShapeItem::readState(const ShapeItemState& state)
+void ShapeItem::ReadState(const ShapeItemState& state)
 {
     Q_UNUSED(state);
 }
 
-void ShapeItem::writeJsonExtra(QJsonObject& json) const
+void ShapeItem::WriteJsonExtra(QJsonObject& json) const
 {
     Q_UNUSED(json);
 }
 
-void ShapeItem::readJsonExtra(const QJsonObject& json)
+void ShapeItem::ReadJsonExtra(const QJsonObject& json)
 {
     Q_UNUSED(json);
 }

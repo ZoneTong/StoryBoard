@@ -48,11 +48,11 @@ bool isLineClassItem(CanvasItem* item)
         return true;
     }
     // 零面积图元已全部并入曲线族，普通形状类恒有填充面积；多边形要看图层。
-    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->shapeLayerCount() == 0) {
+    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() == 0) {
         return false;
     }
-    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->shapeLayerCount() > 0) {
-        for (int index = 0; index < composite->shapeLayerCount(); ++index) {
+    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->ShapeLayerCount() > 0) {
+        for (int index = 0; index < composite->ShapeLayerCount(); ++index) {
             const ShapeLayer layer = composite->shapeLayer(index);
             if (layer.role == ShapeLayerRole::FILL_AREA && !layer.path.isEmpty()) {
                 return false;
@@ -68,11 +68,11 @@ bool isLineClassItem(CanvasItem* item)
 // 图形仍按完整轮廓参与布尔运算，也应优先决定合并结果的样式。
 bool hasFillSpace(CanvasItem* item)
 {
-    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->shapeLayerCount() == 0) {
+    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() == 0) {
         return true;
     }
-    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->shapeLayerCount() > 0) {
-        for (int index = 0; index < composite->shapeLayerCount(); ++index) {
+    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->ShapeLayerCount() > 0) {
+        for (int index = 0; index < composite->ShapeLayerCount(); ++index) {
             const ShapeLayer layer = composite->shapeLayer(index);
             if (layer.role == ShapeLayerRole::FILL_AREA && !layer.path.isEmpty()) {
                 return true;
@@ -80,20 +80,20 @@ bool hasFillSpace(CanvasItem* item)
         }
         return false;
     }
-    return !dynamic_cast<LineItemAbstract*>(item) && !item->hasTextFacet();
+    return !dynamic_cast<LineItemAbstract*>(item) && !item->HasTextFacet();
 }
 
 // 合并前的叠放顺序（决定合并后各层的绘制顺序，保持遮挡关系）：
 // 图层在下 → 同层 height 小在下 → zValue 小在下。
 bool stackLess(CanvasScene* scene, CanvasItem* left, CanvasItem* right)
 {
-    const int leftLayer = scene->layerIndex(left->layerId());
-    const int rightLayer = scene->layerIndex(right->layerId());
+    const int leftLayer = scene->layerIndex(left->LayerId());
+    const int rightLayer = scene->layerIndex(right->LayerId());
     if (leftLayer != rightLayer) {
         return leftLayer < rightLayer;
     }
-    if (left->height() != right->height()) {
-        return left->height() < right->height();
+    if (left->ZOrder() != right->ZOrder()) {
+        return left->ZOrder() < right->ZOrder();
     }
     return left->zValue() < right->zValue();
 }
@@ -151,25 +151,25 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
         // 布尔运算使用图元的几何轮廓，而不是“可见涂色区域”：无填充、纹理填充的
         // 闭合图形也必须按完整轮廓参与联合 / 相交 / 相减，否则菱形与五角星这类
         // 图形联合后会只剩描线带，内部被错误地留空。
-        if (vectorMember->hasTextFacet()) {
-            memberPath = vectorMember->mapToScene(vectorMember->paintedShape());
+        if (vectorMember->HasTextFacet()) {
+            memberPath = vectorMember->mapToScene(vectorMember->PaintedShape());
             textPart = memberPath;
-            participant.textColor = vectorMember->textColor();
+            participant.textColor = vectorMember->TextColor();
         } else if (auto* curve = dynamic_cast<LineItemAbstract*>(vectorMember)) {
             Q_UNUSED(curve)
-            memberPath = vectorMember->mapToScene(vectorMember->paintedShape());
+            memberPath = vectorMember->mapToScene(vectorMember->PaintedShape());
             strokePart = memberPath;
-        } else if (auto* shape = dynamic_cast<ShapeItem*>(vectorMember); shape && shape->shapeLayerCount() == 0) {
-            memberPath = shape->mapToScene(shape->outlineShape());
+        } else if (auto* shape = dynamic_cast<ShapeItem*>(vectorMember); shape && shape->ShapeLayerCount() == 0) {
+            memberPath = shape->mapToScene(shape->OutlineShape());
             fillPart = memberPath;
         } else if (auto* composite = dynamic_cast<ShapeItem*>(vectorMember);
-                   composite && composite->shapeLayerCount() > 0) {
-            for (int index = 0; index < composite->shapeLayerCount(); ++index) {
+                   composite && composite->ShapeLayerCount() > 0) {
+            for (int index = 0; index < composite->ShapeLayerCount(); ++index) {
                 const ShapeLayer layer = composite->shapeLayer(index);
                 if (layer.path.isEmpty()) {
                     continue;
                 }
-                const QPainterPath part = composite->mapToScene(composite->mapShapeLayerPath(layer));
+                const QPainterPath part = composite->mapToScene(composite->MapShapeLayerPath(layer));
                 if (layer.role == ShapeLayerRole::FILL_AREA) {
                     fillPart = fillPart.isEmpty() ? part : fillPart.united(part);
                 } else if (layer.role == ShapeLayerRole::STROKE_BAND) {
@@ -183,7 +183,7 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
             memberPath = memberPath.isEmpty() ? strokePart : memberPath.united(strokePart);
             memberPath = memberPath.isEmpty() ? textPart : memberPath.united(textPart);
         } else {
-            memberPath = vectorMember->mapToScene(vectorMember->paintedShape());
+            memberPath = vectorMember->mapToScene(vectorMember->PaintedShape());
             fillPart = memberPath;
         }
 
@@ -211,30 +211,30 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
     }
 
     CanvasItem* styleItem = participant.item;
-    if (auto* shape = dynamic_cast<ShapeItem*>(styleItem); shape && shape->shapeLayerCount() == 0) {
-        participant.fill = shape->fillColor();
-        participant.stroke = shape->strokeColor();
-        participant.strokeWidth = shape->strokeWidth();
+    if (auto* shape = dynamic_cast<ShapeItem*>(styleItem); shape && shape->ShapeLayerCount() == 0) {
+        participant.fill = shape->FillColor();
+        participant.stroke = shape->StrokeColor();
+        participant.strokeWidth = shape->StrokeWidth();
         participant.fillStyle = shape->fillStyle();
-        participant.strokeStyle = shape->strokeStyle();
+        participant.strokeStyle = shape->StrokeStyle();
         participant.filled = shape->fillStyle() != FillStyle::NONE;
-    } else if (auto* composite = dynamic_cast<ShapeItem*>(styleItem); composite && composite->shapeLayerCount() > 0) {
-        participant.fill = composite->fillColor();
-        participant.stroke = composite->strokeColor();
-        participant.strokeWidth = composite->strokeWidth();
+    } else if (auto* composite = dynamic_cast<ShapeItem*>(styleItem); composite && composite->ShapeLayerCount() > 0) {
+        participant.fill = composite->FillColor();
+        participant.stroke = composite->StrokeColor();
+        participant.strokeWidth = composite->StrokeWidth();
         participant.fillStyle = composite->fillStyle();
-        participant.strokeStyle = composite->strokeStyle();
+        participant.strokeStyle = composite->StrokeStyle();
         participant.filled = true;
     } else if (auto* stroke = dynamic_cast<LineItemAbstract*>(styleItem)) {
-        participant.fill = stroke->strokeColor();
-        participant.stroke = stroke->strokeColor();
-        participant.strokeWidth = stroke->strokeWidth();
+        participant.fill = stroke->StrokeColor();
+        participant.stroke = stroke->StrokeColor();
+        participant.strokeWidth = stroke->StrokeWidth();
         participant.strokeStyle = stroke->strokePattern();
         participant.filled = false;
-    } else if (styleItem->hasTextFacet()) {
+    } else if (styleItem->HasTextFacet()) {
         // 文字参照曲线：填充色等于字形描线色、纯色、面积按 0 参与。
-        participant.fill = styleItem->textColor();
-        participant.stroke = styleItem->textColor();
+        participant.fill = styleItem->TextColor();
+        participant.stroke = styleItem->TextColor();
         participant.strokeWidth = 1.0;
         participant.fillStyle = FillStyle::SOLID;
         participant.filled = false;
@@ -242,8 +242,8 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
         participant.fill = QColor(30, 41, 59, 36);
         participant.stroke = QColor(30, 41, 59);
     }
-    participant.layerIndex = scene->layerIndex(participant.item->layerId());
-    participant.height = participant.item->height();
+    participant.layerIndex = scene->layerIndex(participant.item->LayerId());
+    participant.height = participant.item->ZOrder();
     participant.selectionIndex = selectionIndex;
     out->append(participant);
     return true;
@@ -270,8 +270,8 @@ QList<Participant> collect(CanvasScene* scene)
             continue;
         }
         const int order = selectionIndex.value(item, INT_MAX);
-        if (item->groupId() > 0) {
-            const int rootGroup = scene->outermostGroup(item->groupId());
+        if (item->GroupId() > 0) {
+            const int rootGroup = scene->outermostGroup(item->GroupId());
             if (handledGroups.contains(rootGroup)) {
                 continue;
             }
@@ -661,9 +661,9 @@ bool apply(CanvasScene* scene, Operation operation, const QString& commandText)
     undo->push(new RemoveItemsCommand(scene, originals, commandText));
     for (const QList<PolygonItem::Layer>& block : results) {
         auto* composite = new PolygonItem(block, top.fillStyle, top.strokeStyle);
-        composite->setName(scene->uniqueItemName(composite->typeDisplayName()));
-        composite->setLayerId(top.item->layerId());
-        composite->setHeight(scene->nextHeight(top.item->layerId()));
+        composite->SetName(scene->uniqueItemName(composite->TypeDisplayName()));
+        composite->SetLayerId(top.item->LayerId());
+        composite->SetZOrder(scene->nextHeight(top.item->LayerId()));
         undo->push(new AddItemCommand(scene, composite, commandText));
         created.append(composite);
     }

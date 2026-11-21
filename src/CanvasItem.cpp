@@ -21,7 +21,7 @@ namespace {
 constexpr qreal MINIMUM_SIDE = 8.0;
 } // namespace
 
-QPointF CanvasItem::customHandleCenter(int handle, bool* ok) const
+QPointF CanvasItem::CustomHandleCenter(int handle, bool* ok) const
 {
     Q_UNUSED(handle);
     if (ok) {
@@ -36,7 +36,7 @@ CanvasItem::CanvasItem(QGraphicsItem* parent) : QGraphicsObject(parent)
     setFlag(QGraphicsItem::ItemIsFocusable, false);
     setAcceptHoverEvents(false);
     setCursor(Qt::ArrowCursor);
-    setTransformOriginPoint(contentRect().center());
+    setTransformOriginPoint(ContentRect().center());
     m_handles = new CanvasItemHandles(this);
     m_interaction = new CanvasItemInteraction(this);
 }
@@ -56,13 +56,13 @@ CanvasItem::~CanvasItem()
     delete m_interaction;
 }
 
-QString CanvasItem::name() const
+QString CanvasItem::Name() const
 {
     const QString trimmed = m_name.trimmed();
-    return trimmed.isEmpty() ? typeDisplayName() : trimmed;
+    return trimmed.isEmpty() ? TypeDisplayName() : trimmed;
 }
 
-void CanvasItem::setName(const QString& name)
+void CanvasItem::SetName(const QString& name)
 {
     const QString trimmed = name.trimmed();
     if (m_name == trimmed) {
@@ -71,24 +71,24 @@ void CanvasItem::setName(const QString& name)
     m_name = trimmed;
 }
 
-QSizeF CanvasItem::minimumSize()
+QSizeF CanvasItem::MinimumSize()
 {
     return QSizeF(MINIMUM_SIDE, MINIMUM_SIDE);
 }
 
-QRectF CanvasItem::contentRect() const
+QRectF CanvasItem::ContentRect() const
 {
-    return CanvasItemGeometry::contentRect(m_size);
+    return CanvasItemGeometry::ContentRect(m_size);
 }
 
-QRectF CanvasItem::frameRect() const
+QRectF CanvasItem::FrameRect() const
 {
-    return contentRect();
+    return ContentRect();
 }
 
-void CanvasItem::setContentSize(const QSizeF& size)
+void CanvasItem::SetContentSize(const QSizeF& size)
 {
-    const QSizeF requested = adjustedContentSize(size);
+    const QSizeF requested = AdjustedContentSize(size);
     const QSizeF clamped(qMax(MINIMUM_SIDE, requested.width()), qMax(MINIMUM_SIDE, requested.height()));
     if (qFuzzyCompare(clamped.width(), m_size.width()) && qFuzzyCompare(clamped.height(), m_size.height())) {
         return;
@@ -97,27 +97,27 @@ void CanvasItem::setContentSize(const QSizeF& size)
     m_size = clamped;
     // Rotation uses the content centre as its origin; keep it in sync after
     // interactive or property-dialog resizing.
-    setTransformOriginPoint(contentRect().center());
+    setTransformOriginPoint(ContentRect().center());
     update();
-    contentResized();
+    ContentResized();
 }
 
-void CanvasItem::setItemOpacity(qreal opacity)
+void CanvasItem::SetItemOpacity(qreal opacity)
 {
     QGraphicsItem::setOpacity(qBound<qreal>(0.0, opacity, 1.0));
 }
 
-void CanvasItem::setLayerId(int layerId)
+void CanvasItem::SetLayerId(int layerId)
 {
     m_layerId = qMax(0, layerId);
 }
 
-void CanvasItem::setHeight(int height)
+void CanvasItem::SetZOrder(int height)
 {
-    m_height = qMax(0, height);
+    m_zOrder = qMax(0, height);
 }
 
-void CanvasItem::setRotationAngle(qreal angle)
+void CanvasItem::SetRotationAngle(qreal angle)
 {
     if (qFuzzyCompare(angle, m_rotation)) {
         return;
@@ -127,7 +127,7 @@ void CanvasItem::setRotationAngle(qreal angle)
     update();
 }
 
-qreal CanvasItem::normalizeRotation(qreal angle)
+qreal CanvasItem::NormalizeRotation(qreal angle)
 {
     while (angle >= 180.0) {
         angle -= 360.0;
@@ -138,28 +138,28 @@ qreal CanvasItem::normalizeRotation(qreal angle)
     return angle;
 }
 
-qreal CanvasItem::snapRotation(qreal angle, qreal step)
+qreal CanvasItem::SnapRotation(qreal angle, qreal step)
 {
     if (step <= 0.0) {
-        return normalizeRotation(angle);
+        return NormalizeRotation(angle);
     }
-    return normalizeRotation(qRound(angle / step) * step);
+    return NormalizeRotation(qRound(angle / step) * step);
 }
 
-QRectF CanvasItem::sceneContentRect() const
+QRectF CanvasItem::SceneContentRect() const
 {
-    return mapRectToScene(contentRect());
+    return mapRectToScene(ContentRect());
 }
 
 QRectF CanvasItem::boundingRect() const
 {
     // 绘制区域仍是内容矩形；选中框可能更小（扇形 / 弧线），两者取并集。
-    const QRectF area = contentRect().united(frameRect());
-    return CanvasItemGeometry::boundingRect(area, framePadding(), isSelected(), viewScale(), m_handles->size(),
+    const QRectF area = ContentRect().united(FrameRect());
+    return CanvasItemGeometry::boundingRect(area, FramePadding(), isSelected(), ViewScale(), m_handles->size(),
                                             m_handles->rotationOffset());
 }
 
-void CanvasItem::refreshViewDependentGeometry()
+void CanvasItem::RefreshViewDependentGeometry()
 {
     prepareGeometryChange();
     update();
@@ -168,30 +168,30 @@ void CanvasItem::refreshViewDependentGeometry()
 QPainterPath CanvasItem::shape() const
 {
     QPainterPath path;
-    path.addRect(contentRect());
-    path.addPath(selectionHandleShape());
+    path.addRect(ContentRect());
+    path.addPath(SelectionHandleShape());
     return path;
 }
 
-QPainterPath CanvasItem::outlineShape() const
+QPainterPath CanvasItem::OutlineShape() const
 {
     QPainterPath path;
-    path.addRect(contentRect());
+    path.addRect(ContentRect());
     return path;
 }
 
-QPainterPath CanvasItem::paintedShape() const
+QPainterPath CanvasItem::PaintedShape() const
 {
     // 基类按内容矩形整体涂满处理：图片与文字等子类会覆写这里。
-    return outlineShape();
+    return OutlineShape();
 }
 
-QPainterPath CanvasItem::clippingShape() const
+QPainterPath CanvasItem::ClippingShape() const
 {
-    return paintedShape();
+    return PaintedShape();
 }
 
-QPainterPath CanvasItem::selectionHandleShape() const
+QPainterPath CanvasItem::SelectionHandleShape() const
 {
     return m_handles->selectionShape();
 }
@@ -204,26 +204,26 @@ void CanvasItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
     painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
-    paintContent(painter);
+    PaintContent(painter);
     painter->restore();
 
-    if (isSelected() && !isExporting()) {
+    if (isSelected() && !IsExporting()) {
         painter->save();
-        drawSelectionOverlay(painter);
+        DrawSelectionOverlay(painter);
         painter->restore();
     }
 }
 
-bool CanvasItem::isEditable() const
+bool CanvasItem::IsEditable() const
 {
     const CanvasScene* canvas = canvasScene();
     return canvas && canvas->isItemEditable(this);
 }
 
-bool CanvasItem::isExporting() const
+bool CanvasItem::IsExporting() const
 {
     const CanvasScene* canvas = canvasScene();
-    return canvas && canvas->isExporting();
+    return canvas && canvas->IsExporting();
 }
 
 CanvasScene* CanvasItem::canvasScene() const
@@ -231,7 +231,7 @@ CanvasScene* CanvasItem::canvasScene() const
     return dynamic_cast<CanvasScene*>(scene());
 }
 
-qreal CanvasItem::viewScale() const
+qreal CanvasItem::ViewScale() const
 {
     if (scene() && !scene()->views().isEmpty()) {
         const qreal scale = scene()->views().constFirst()->transform().m11();
@@ -240,42 +240,42 @@ qreal CanvasItem::viewScale() const
     return 1.0;
 }
 
-bool CanvasItem::hasSingleSelection() const
+bool CanvasItem::HasSingleSelection() const
 {
     return scene() && isSelected() && scene()->selectedItems().size() == 1;
 }
 
-qreal CanvasItem::handleSize() const
+qreal CanvasItem::HandleSize() const
 {
     return m_handles->size();
 }
 
-QPointF CanvasItem::handleCenter(Handle handle) const
+QPointF CanvasItem::HandleCenter(Handle handle) const
 {
     return m_handles->center(handle);
 }
 
-qreal CanvasItem::rotationHandleOffset() const
+qreal CanvasItem::RotationHandleOffset() const
 {
     return m_handles->rotationOffset();
 }
 
-QRectF CanvasItem::handleRect(Handle handle) const
+QRectF CanvasItem::HandleRect(Handle handle) const
 {
     return m_handles->rect(handle);
 }
 
-CanvasItem::Handle CanvasItem::handleAt(const QPointF& pos) const
+CanvasItem::Handle CanvasItem::HandleAt(const QPointF& pos) const
 {
     return static_cast<Handle>(m_handles->hitAt(pos));
 }
 
-QCursor CanvasItem::cursorForHandle(Handle handle) const
+QCursor CanvasItem::CursorForHandle(Handle handle) const
 {
     return m_handles->cursor(handle);
 }
 
-void CanvasItem::drawSelectionOverlay(QPainter* painter)
+void CanvasItem::DrawSelectionOverlay(QPainter* painter)
 {
     m_handles->drawOverlay(painter);
 }
@@ -315,74 +315,74 @@ QVariant CanvasItem::itemChange(GraphicsItemChange change, const QVariant& value
     return QGraphicsObject::itemChange(change, value);
 }
 
-ItemPropertySet CanvasItem::properties() const
+ItemPropertySet CanvasItem::Properties() const
 {
     // 所有图元共有的属性：名称 / 图层 / 层内叠放 / 位置 / 尺寸 / 旋转 / 不透明度。
     return ItemPropertySet{ItemProperty::NAME, ItemProperty::LAYER,    ItemProperty::HEIGHT, ItemProperty::POSITION,
                            ItemProperty::SIZE, ItemProperty::ROTATION, ItemProperty::OPACITY};
 }
 
-QVariant CanvasItem::propertyValue(ItemProperty property) const
+QVariant CanvasItem::PropertyValue(ItemProperty property) const
 {
     switch (property) {
     case ItemProperty::NAME:
-        return name();
+        return Name();
     case ItemProperty::LAYER:
-        return layerId();
+        return LayerId();
     case ItemProperty::HEIGHT:
-        return height();
+        return ZOrder();
     case ItemProperty::POSITION:
         return pos();
     case ItemProperty::SIZE:
         return contentSize();
     case ItemProperty::ROTATION:
-        return rotationAngle();
+        return RotationAngle();
     case ItemProperty::OPACITY:
-        return itemOpacity();
+        return ItemOpacity();
     default:
         return QVariant();
     }
 }
 
-void CanvasItem::setPropertyValue(ItemProperty property, const QVariant& value)
+void CanvasItem::SetPropertyValue(ItemProperty property, const QVariant& value)
 {
     switch (property) {
     case ItemProperty::NAME:
-        setName(value.toString());
+        SetName(value.toString());
         break;
     case ItemProperty::LAYER:
-        setLayerId(value.toInt());
+        SetLayerId(value.toInt());
         break;
     case ItemProperty::HEIGHT:
-        setHeight(value.toInt());
+        SetZOrder(value.toInt());
         break;
     case ItemProperty::POSITION:
         setPos(value.toPointF());
         break;
     case ItemProperty::SIZE:
-        setContentSize(value.toSizeF());
+        SetContentSize(value.toSizeF());
         break;
     case ItemProperty::ROTATION:
-        setRotationAngle(value.toDouble());
+        SetRotationAngle(value.toDouble());
         break;
     case ItemProperty::OPACITY:
-        setItemOpacity(value.toDouble());
+        SetItemOpacity(value.toDouble());
         break;
     default:
         break;
     }
 }
 
-QJsonObject CanvasItem::baseJson() const
+QJsonObject CanvasItem::BaseJson() const
 {
     QJsonObject json;
-    json.insert(QStringLiteral("kind"), kind());
+    json.insert(QStringLiteral("kind"), Kind());
     json.insert(QStringLiteral("x"), pos().x());
     json.insert(QStringLiteral("y"), pos().y());
     json.insert(QStringLiteral("w"), m_size.width());
     json.insert(QStringLiteral("h"), m_size.height());
     json.insert(QStringLiteral("layer"), m_layerId);
-    json.insert(QStringLiteral("height"), m_height);
+    json.insert(QStringLiteral("zOrder"), m_zOrder);
     if (m_groupId > 0) {
         json.insert(QStringLiteral("group"), m_groupId);
     }
@@ -390,20 +390,20 @@ QJsonObject CanvasItem::baseJson() const
         json.insert(QStringLiteral("rotation"), m_rotation);
     }
     if (!m_name.isEmpty()) {
-        json.insert(QStringLiteral("itemName"), m_name);
+        json.insert(QStringLiteral("name"), m_name);
     }
     // 绘制顺序由 layer + height 决定，不再写冗余的 z 键。
     return json;
 }
 
-void CanvasItem::applyBaseJson(const QJsonObject& json)
+void CanvasItem::ApplyBaseJson(const QJsonObject& json)
 {
     setPos(json.value(QStringLiteral("x")).toDouble(), json.value(QStringLiteral("y")).toDouble());
-    setContentSize(QSizeF(json.value(QStringLiteral("w")).toDouble(m_size.width()),
+    SetContentSize(QSizeF(json.value(QStringLiteral("w")).toDouble(m_size.width()),
                           json.value(QStringLiteral("h")).toDouble(m_size.height())));
     m_layerId = qMax(0, json.value(QStringLiteral("layer")).toInt(0));
     m_groupId = qMax(0, json.value(QStringLiteral("group")).toInt(0));
-    m_height = json.contains(QStringLiteral("height")) ? qMax(0, json.value(QStringLiteral("height")).toInt(0)) : -1;
-    setRotationAngle(json.value(QStringLiteral("rotation")).toDouble(0.0));
-    m_name = json.value(QStringLiteral("itemName")).toString().trimmed();
+    m_zOrder = json.contains(QStringLiteral("zOrder")) ? qMax(0, json.value(QStringLiteral("height")).toInt(0)) : -1;
+    SetRotationAngle(json.value(QStringLiteral("rotation")).toDouble(0.0));
+    m_name = json.value(QStringLiteral("name")).toString().trimmed();
 }

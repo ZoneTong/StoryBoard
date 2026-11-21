@@ -4,31 +4,31 @@
 
 RectangleItem::RectangleItem()
 {
-    setContentSize(defaultContentSize());
-    setParallelogramAngle(90.0);
+    SetContentSize(defaultContentSize());
+    SetParallelogramAngle(90.0);
 }
 
-ItemPropertySet RectangleItem::properties() const
+ItemPropertySet RectangleItem::Properties() const
 {
     // 不走 ParallelogramItem::properties：矩形没有内角行，只有圆角行。
-    ItemPropertySet result = ShapeItem::properties();
+    ItemPropertySet result = ShapeItem::Properties();
     result.insert(ItemProperty::CORNER_RADIUS);
     return result;
 }
 
-void RectangleItem::readJsonExtra(const QJsonObject& json)
+void RectangleItem::ReadJsonExtra(const QJsonObject& json)
 {
-    ParallelogramItem::readJsonExtra(json);
-    setParallelogramAngle(90.0);
+    ParallelogramItem::ReadJsonExtra(json);
+    SetParallelogramAngle(90.0);
 }
 
-void RectangleItem::setParallelogramAngle(qreal angle)
+void RectangleItem::SetParallelogramAngle(qreal angle)
 {
     Q_UNUSED(angle);
-    ShapeItem::setParallelogramAngle(90.0);
+    ShapeItem::SetParallelogramAngle(90.0);
 }
 
-QPointF RectangleItem::customHandleCenter(int handle, bool* ok) const
+QPointF RectangleItem::CustomHandleCenter(int handle, bool* ok) const
 {
     Q_UNUSED(handle);
     if (ok) {
@@ -37,7 +37,7 @@ QPointF RectangleItem::customHandleCenter(int handle, bool* ok) const
     return QPointF();
 }
 
-QPainterPath RectangleItem::shapePath(const QRectF& rect) const
+QPainterPath RectangleItem::ShapePath(const QRectF& rect) const
 {
-    return ShapePathBuilder::roundedRectPath(rect, cornerRadius());
+    return ShapePathBuilder::roundedRectPath(rect, CornerRadius());
 }

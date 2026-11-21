@@ -114,20 +114,20 @@ void selftest::runShapeItemTests(Context& ctx)
         ctx.check(qAbs(paraSize.width() - 110.85) < 0.1 && qAbs(paraSize.height() - 64.0) < 0.1,
                   QStringLiteral("平行四边形默认尺寸 110.85×64"),
                   QStringLiteral("%1×%2").arg(paraSize.width()).arg(paraSize.height()));
-        ctx.check(qAbs(para.parallelogramAngle() - 60.0) < 0.01, QStringLiteral("平行四边形默认内角 60°"),
-                  QStringLiteral("angle=%1").arg(para.parallelogramAngle()));
-        para.setParallelogramAngle(20.0);
-        const QPainterPath acute = para.currentPath(QRectF(0.0, 0.0, paraSize.width(), paraSize.height()));
+        ctx.check(qAbs(para.ParallelogramAngle() - 60.0) < 0.01, QStringLiteral("平行四边形默认内角 60°"),
+                  QStringLiteral("angle=%1").arg(para.ParallelogramAngle()));
+        para.SetParallelogramAngle(20.0);
+        const QPainterPath acute = para.CurrentPath(QRectF(0.0, 0.0, paraSize.width(), paraSize.height()));
         const QPainterPath blunt =
             ShapePathBuilder::parallelogramPath(QRectF(0.0, 0.0, paraSize.width(), paraSize.height()), 120.0);
         ctx.check(acute.elementCount() >= 4 && blunt.elementCount() >= 4 &&
                       qAbs(acute.boundingRect().width() - paraSize.width()) < 1.0,
                   QStringLiteral("平行四边形锐角/钝角都能画出闭合轮廓"),
                   QStringLiteral("acute=%1 blunt=%2").arg(acute.elementCount()).arg(blunt.elementCount()));
-        para.setParallelogramAngle(170.0);
-        ctx.check(qAbs(para.parallelogramAngle() - 165.0) < 0.01, QStringLiteral("平行四边形内角钳在 15–165°"),
-                  QStringLiteral("angle=%1").arg(para.parallelogramAngle()));
-        const ShapeItemState paraState = para.state();
+        para.SetParallelogramAngle(170.0);
+        ctx.check(qAbs(para.ParallelogramAngle() - 165.0) < 0.01, QStringLiteral("平行四边形内角钳在 15–165°"),
+                  QStringLiteral("angle=%1").arg(para.ParallelogramAngle()));
+        const ShapeItemState paraState = para.State();
         ctx.check(qAbs(paraState.parallelogramAngle - 165.0) < 0.01, QStringLiteral("平行四边形内角进入状态快照"),
                   QStringLiteral("angle=%1").arg(paraState.parallelogramAngle));
     }
@@ -138,10 +138,10 @@ void selftest::runShapeItemTests(Context& ctx)
         arc.setArcGeometry(QPointF(0.0, 0.0), QSizeF(120.0, 80.0), 15.0, 140.0, QColor(Qt::black), 2.0);
         wave.setWaveGeometry(QPointF(0.0, 0.0), QSizeF(120.0, 80.0), QColor(Qt::black), 2.0);
         for (LineItemAbstract* line : {static_cast<LineItemAbstract*>(&arc), static_cast<LineItemAbstract*>(&wave)}) {
-            line->setArrowStyles(ArrowStyle::TRIANGLE_FILLED, ArrowStyle::OPEN_ARROW);
-            const QRectF hit = line->paintedShape().boundingRect();
-            const QRectF plain = line->outlineShape().boundingRect();
-            ctx.check(line->startArrow() == ArrowStyle::TRIANGLE_FILLED && line->endArrow() == ArrowStyle::OPEN_ARROW &&
+            line->SetArrowStyles(ArrowStyle::TRIANGLE_FILLED, ArrowStyle::OPEN_ARROW);
+            const QRectF hit = line->PaintedShape().boundingRect();
+            const QRectF plain = line->OutlineShape().boundingRect();
+            ctx.check(line->StartArrow() == ArrowStyle::TRIANGLE_FILLED && line->EndArrow() == ArrowStyle::OPEN_ARROW &&
                           !hit.isEmpty() && hit.width() >= plain.width(),
                       QStringLiteral("线条类图元可设两端箭头并计入命中轮廓"),
                       QStringLiteral("hit=%1,%2 plain=%3,%4")
@@ -164,33 +164,33 @@ void selftest::runShapeItemTests(Context& ctx)
     // 需求 5：圆角矩形并入矩形后，旧 rounded_rectangle 文件读成「矩形 + 自动圆角」。
     {
         RectangleItem legacyRounded;
-        QJsonObject legacyJson = legacyRounded.toJson();
+        QJsonObject legacyJson = legacyRounded.ToJson();
         legacyJson.insert(QStringLiteral("shapeType"), QStringLiteral("rounded_rectangle"));
         legacyJson.remove(QStringLiteral("cornerRadius"));
         legacyJson.remove(QStringLiteral("cornerAuto"));
         RectangleItem loadedRounded;
-        loadedRounded.fromJson(legacyJson);
-        ctx.check(loadedRounded.shapeType() == ShapeType::RECTANGLE && loadedRounded.cornerRadius() > 0.0,
+        loadedRounded.FromJson(legacyJson);
+        ctx.check(loadedRounded.shapeType() == ShapeType::RECTANGLE && loadedRounded.CornerRadius() > 0.0,
                   QStringLiteral("旧 rounded_rectangle 读成矩形显式圆角"));
     }
 
     // 矩形 JSON 重载锁 90°：旧文件 / 复制粘贴带的 parallelogramAngle 不能把矩形拖成斜四边形。
     {
         RectangleItem legacyRect;
-        QJsonObject legacyJson = legacyRect.toJson();
+        QJsonObject legacyJson = legacyRect.ToJson();
         legacyJson.insert(QStringLiteral("parallelogramAngle"), 60.0);
         RectangleItem loadedRect;
-        loadedRect.fromJson(legacyJson);
+        loadedRect.FromJson(legacyJson);
         ctx.check(loadedRect.shapeType() == ShapeType::RECTANGLE &&
-                      qFuzzyCompare(loadedRect.parallelogramAngle() + 2.0, 92.0),
+                      qFuzzyCompare(loadedRect.ParallelogramAngle() + 2.0, 92.0),
                   QStringLiteral("矩形 JSON 重载后内角仍锁 90°"),
-                  QStringLiteral("angle=%1").arg(loadedRect.parallelogramAngle()));
+                  QStringLiteral("angle=%1").arg(loadedRect.ParallelogramAngle()));
     }
 
     bool shapePathsOk = true;
     bool shapeIconsOk = true;
     for (ShapeType type : shapeTypes) {
-        if (ShapeItem::pathFor(type, QRectF(0, 0, 140, 90)).isEmpty()) {
+        if (ShapeItem::PathFor(type, QRectF(0, 0, 140, 90)).isEmpty()) {
             shapePathsOk = false;
         }
         if (makeShapeIcon(type, QColor(58, 64, 80), 18).isNull()) {
@@ -213,9 +213,9 @@ void selftest::runShapeItemTests(Context& ctx)
               QStringLiteral("扇形可识别且可填充（弧线已并入曲线族，不再出现在形状类型表里）"));
     {
         SectorItem sector;
-        sector.setContentSize(QSizeF(200.0, 200.0));
-        sector.setArcAngles(0.0, 90.0);
-        const QPainterPath sectorPath = sector.currentPath(sector.contentRect());
+        sector.SetContentSize(QSizeF(200.0, 200.0));
+        sector.SetArcAngles(0.0, 90.0);
+        const QPainterPath sectorPath = sector.CurrentPath(sector.ContentRect());
         // 弧线几何与椭圆共用 EllipseShape，纯几何可直接验证角度采样。
         const QPainterPath arcPath = EllipseShape(QRectF(0.0, 0.0, 200.0, 200.0)).arc(15.0, 140.0);
         ctx.check(!sectorPath.isEmpty() && !arcPath.isEmpty() && sectorPath.boundingRect().width() <= 202.0 &&
@@ -225,20 +225,20 @@ void selftest::runShapeItemTests(Context& ctx)
         ctx.check(qAbs(ovalBounds.width() - 120.0) < 2.0 && qAbs(ovalBounds.height() - 60.0) < 2.0,
                   QStringLiteral("扇形与弧线由椭圆派生并跟随图元拉伸"));
         SectorItem copy;
-        copy.fromJson(sector.toJson());
-        ctx.check(copy.shapeType() == ShapeType::SECTOR && qFuzzyCompare(copy.sweepAngle() + 2.0, 92.0),
+        copy.FromJson(sector.ToJson());
+        ctx.check(copy.shapeType() == ShapeType::SECTOR && qFuzzyCompare(copy.SweepAngle() + 2.0, 92.0),
                   QStringLiteral("扇形角度随画布保存和恢复，半径字段已移除"));
     }
     {
         // 扇形 / 弧线的选中框贴着实际轮廓，而不是整个内容矩形。
         SectorItem sector;
-        sector.setContentSize(QSizeF(200.0, 200.0));
-        sector.setArcAngles(0.0, 90.0);
-        const QRectF sectorFrame = sector.frameRect();
-        const QRectF sectorBounds = sector.currentPath(sector.contentRect()).boundingRect();
+        sector.SetContentSize(QSizeF(200.0, 200.0));
+        sector.SetArcAngles(0.0, 90.0);
+        const QRectF sectorFrame = sector.FrameRect();
+        const QRectF sectorBounds = sector.CurrentPath(sector.ContentRect()).boundingRect();
         ArcItem arc;
         arc.setArcGeometry(QPointF(0.0, 0.0), QSizeF(200.0, 200.0), 15.0, 140.0, QColor(Qt::black), 2.0);
-        const QRectF arcFrame = arc.frameRect();
+        const QRectF arcFrame = arc.FrameRect();
         ctx.check(sectorFrame.width() < 200.0 && arcFrame.width() < 200.0 &&
                       qAbs(sectorFrame.right() - sectorBounds.right()) < 0.5 &&
                       qAbs(sectorFrame.top() - sectorBounds.top()) < 0.5,
@@ -252,10 +252,10 @@ void selftest::runShapeItemTests(Context& ctx)
     {
         // 三角形一次性折算尺寸：拖宽即派生高度，不再二次改尺寸（原先的来回抖动来源）。
         TriangleItem triangle;
-        triangle.setContentSize(QSizeF(120.0, 90.0));
+        triangle.SetContentSize(QSizeF(120.0, 90.0));
         const qreal derived = 120.0 / (2.0 / qTan(qDegreesToRadians(60.0)));
         const QSizeF first = triangle.contentSize();
-        triangle.setContentSize(QSizeF(160.0, first.height()));
+        triangle.SetContentSize(QSizeF(160.0, first.height()));
         const QSizeF second = triangle.contentSize();
         ctx.check(qAbs(first.height() - derived) < 0.6 && qAbs(second.width() - 160.0) < 0.01 &&
                       second.height() > first.height(),
@@ -270,10 +270,10 @@ void selftest::runShapeItemTests(Context& ctx)
         // 三角形拖包围框：只能等比缩放，三个内角不变，手柄对面的点钉住。
         TriangleItem triangle;
         triangle.setPos(QPointF(60.0, 40.0));
-        triangle.setContentSize(QSizeF(120.0, 90.0));
-        const qreal cot1 = 1.0 / qTan(qDegreesToRadians(triangle.bottomAngle1()));
-        const qreal angle1Before = triangle.bottomAngle1();
-        const qreal angle2Before = triangle.bottomAngle2();
+        triangle.SetContentSize(QSizeF(120.0, 90.0));
+        const qreal cot1 = 1.0 / qTan(qDegreesToRadians(triangle.BottomAngle1()));
+        const qreal angle1Before = triangle.BottomAngle1();
+        const qreal angle2Before = triangle.BottomAngle2();
         const auto apexScene = [&triangle, cot1]() {
             return triangle.pos() + QPointF(triangle.contentSize().height() * cot1, 0.0);
         };
@@ -293,8 +293,8 @@ void selftest::runShapeItemTests(Context& ctx)
         const QPointF apexAfter = apexScene();
         const QPointF baseMidAfter = baseMidScene();
         ctx.check(qAbs(apexAfter.x() - apexBefore.x()) < 0.5 && qAbs(apexAfter.y() - apexBefore.y()) < 0.5 &&
-                      qAbs(triangle.bottomAngle1() - angle1Before) < 0.05 &&
-                      qAbs(triangle.bottomAngle2() - angle2Before) < 0.05 &&
+                      qAbs(triangle.BottomAngle1() - angle1Before) < 0.05 &&
+                      qAbs(triangle.BottomAngle2() - angle2Before) < 0.05 &&
                       qAbs(triangle.contentSize().width() / startWidth -
                            triangle.contentSize().height() / startHeight) < 0.01 &&
                       triangle.contentSize().height() > startHeight + 1.0 &&
@@ -307,8 +307,8 @@ void selftest::runShapeItemTests(Context& ctx)
                       .arg(apexAfter.y())
                       .arg(angle1Before)
                       .arg(angle2Before)
-                      .arg(triangle.bottomAngle1())
-                      .arg(triangle.bottomAngle2())
+                      .arg(triangle.BottomAngle1())
+                      .arg(triangle.BottomAngle2())
                       .arg(baseMidBefore.x())
                       .arg(baseMidBefore.y())
                       .arg(baseMidAfter.x())
@@ -317,9 +317,9 @@ void selftest::runShapeItemTests(Context& ctx)
         // 拖上边：对面点 = 底边中点，钉住；底边两端随等比缩放外扩。
         TriangleItem topTriangle;
         topTriangle.setPos(QPointF(60.0, 40.0));
-        topTriangle.setContentSize(QSizeF(120.0, 90.0));
-        const qreal topA1 = topTriangle.bottomAngle1();
-        const qreal topA2 = topTriangle.bottomAngle2();
+        topTriangle.SetContentSize(QSizeF(120.0, 90.0));
+        const qreal topA1 = topTriangle.BottomAngle1();
+        const qreal topA2 = topTriangle.BottomAngle2();
         const auto topBaseMid = [&topTriangle]() {
             const QSizeF size = topTriangle.contentSize();
             return topTriangle.pos() + QPointF(size.width() / 2.0, size.height());
@@ -331,8 +331,8 @@ void selftest::runShapeItemTests(Context& ctx)
         const QPointF topBaseMidAfter = topBaseMid();
         ctx.check(qAbs(topBaseMidAfter.x() - topBaseMidBefore.x()) < 0.5 &&
                       qAbs(topBaseMidAfter.y() - topBaseMidBefore.y()) < 0.5 &&
-                      qAbs(topTriangle.bottomAngle1() - topA1) < 0.05 &&
-                      qAbs(topTriangle.bottomAngle2() - topA2) < 0.05 && topTriangle.contentSize().width() > 120.0,
+                      qAbs(topTriangle.BottomAngle1() - topA1) < 0.05 &&
+                      qAbs(topTriangle.BottomAngle2() - topA2) < 0.05 && topTriangle.contentSize().width() > 120.0,
                   QStringLiteral("拖三角形上边：底边中点钉住、内角不变、宽度等比放大"),
                   QStringLiteral("baseMid=%1,%2->%3,%4 width=%5")
                       .arg(topBaseMidBefore.x())
@@ -344,9 +344,9 @@ void selftest::runShapeItemTests(Context& ctx)
         // 拖左上角：对面点 = 右下角，钉住；宽高比与内角都不变。
         TriangleItem cornerTriangle;
         cornerTriangle.setPos(QPointF(60.0, 40.0));
-        cornerTriangle.setContentSize(QSizeF(120.0, 90.0));
-        const qreal cornerA1 = cornerTriangle.bottomAngle1();
-        const qreal cornerA2 = cornerTriangle.bottomAngle2();
+        cornerTriangle.SetContentSize(QSizeF(120.0, 90.0));
+        const qreal cornerA1 = cornerTriangle.BottomAngle1();
+        const qreal cornerA2 = cornerTriangle.BottomAngle2();
         const auto bottomRight = [&cornerTriangle]() {
             const QSizeF size = cornerTriangle.contentSize();
             return cornerTriangle.pos() + QPointF(size.width(), size.height());
@@ -360,8 +360,8 @@ void selftest::runShapeItemTests(Context& ctx)
         const qreal cornerRatioAfter = cornerTriangle.contentSize().width() / cornerTriangle.contentSize().height();
         ctx.check(qAbs(cornerAfter.x() - cornerBefore.x()) < 0.5 && qAbs(cornerAfter.y() - cornerBefore.y()) < 0.5 &&
                       qAbs(cornerRatioAfter - cornerRatioBefore) < 0.01 &&
-                      qAbs(cornerTriangle.bottomAngle1() - cornerA1) < 0.05 &&
-                      qAbs(cornerTriangle.bottomAngle2() - cornerA2) < 0.05,
+                      qAbs(cornerTriangle.BottomAngle1() - cornerA1) < 0.05 &&
+                      qAbs(cornerTriangle.BottomAngle2() - cornerA2) < 0.05,
                   QStringLiteral("拖三角形左上角：右下角钉住、宽高比与内角不变"),
                   QStringLiteral("corner=%1,%2->%3,%4 ratio=%5->%6")
                       .arg(cornerBefore.x())
@@ -412,15 +412,15 @@ void selftest::runShapeItemTests(Context& ctx)
         const int row = i / 4;
         const QPointF cell(40.0 + column * 240.0, 40.0 + row * 190.0);
         item->setPos(cell + QPointF((220.0 - size.width()) / 2.0, (220.0 - size.height()) / 2.0));
-        item->setContentSize(size);
+        item->SetContentSize(size);
         item->setStyle(shapeStroke, shapeTypeIsFilled(type) ? shapeFill : QColor(Qt::transparent), 4.0);
         shapeScene.addItemsWithUndo({item}, QStringLiteral("插入%1").arg(shapeTypeName(type)));
         shapeItems.append(item);
 
-        ctx.check(item->kind() == QStringLiteral("shape") && item->shapeType() == type &&
-                      item->layerId() == shapeScene.activeLayerId() && item->height() == i + 1,
+        ctx.check(item->Kind() == QStringLiteral("shape") && item->shapeType() == type &&
+                      item->LayerId() == shapeScene.activeLayerId() && item->ZOrder() == i + 1,
                   QStringLiteral("图形图元 %1 进入当前图层且高度唯一").arg(shapeTypeName(type)),
-                  QStringLiteral("layer=%1 height=%2").arg(item->layerId()).arg(item->height()));
+                  QStringLiteral("layer=%1 height=%2").arg(item->LayerId()).arg(item->ZOrder()));
     }
     ctx.check(shapeScene.canvasItemCount() == shapeTypes.size(), QStringLiteral("所有常见图形加入场景"));
     ctx.check(shapeScene.layerHeightsUnique(shapeScene.activeLayerId()), QStringLiteral("图形同层 height 唯一"));
@@ -430,7 +430,7 @@ void selftest::runShapeItemTests(Context& ctx)
     QString invisibleShape;
     for (ShapeItem* item : shapeItems) {
         const QRect area =
-            item->sceneContentRect().toAlignedRect().adjusted(-3, -3, 3, 3).intersected(shapesRendered.rect());
+            item->SceneContentRect().toAlignedRect().adjusted(-3, -3, 3, 3).intersected(shapesRendered.rect());
         int inkPixels = 0;
         for (int y = area.top(); y <= area.bottom(); ++y) {
             for (int x = area.left(); x <= area.right(); ++x) {
@@ -459,7 +459,7 @@ void selftest::runShapeItemTests(Context& ctx)
     const QSizeF shapeSizeBefore = firstShape->contentSize();
     const ItemGeometry shapeBefore{firstShape, shapePosBefore, shapeSizeBefore};
     firstShape->setPos(shapePosBefore + QPointF(28, 20));
-    firstShape->setContentSize(shapeSizeBefore + QSizeF(24, 16));
+    firstShape->SetContentSize(shapeSizeBefore + QSizeF(24, 16));
     const ItemGeometry shapeAfter{firstShape, firstShape->pos(), firstShape->contentSize()};
     shapeScene.pushGeometry({shapeBefore}, {shapeAfter}, QStringLiteral("缩放图形"));
     shapeUndo.undo();
@@ -470,12 +470,12 @@ void selftest::runShapeItemTests(Context& ctx)
               QStringLiteral("重做图形移动与缩放"));
 
     ctx.check(shapeScene.adjustItemHeight(firstShape, 1), QStringLiteral("图形支持层内高度调整"));
-    ctx.check(firstShape->height() == 2 && shapeScene.layerHeightsUnique(firstShape->layerId()),
+    ctx.check(firstShape->ZOrder() == 2 && shapeScene.layerHeightsUnique(firstShape->LayerId()),
               QStringLiteral("图形高度交换后仍然唯一"));
     shapeUndo.undo();
-    ctx.check(firstShape->height() == 1, QStringLiteral("撤销图形高度调整"));
+    ctx.check(firstShape->ZOrder() == 1, QStringLiteral("撤销图形高度调整"));
 
-    const QJsonObject shapeRoot = shapeScene.toJson();
+    const QJsonObject shapeRoot = shapeScene.ToJson();
     const QByteArray shapeBytes = QJsonDocument(shapeRoot).toJson(QJsonDocument::Compact);
     ctx.check(shapeBytes.contains("\"kind\":\"shape\"") && shapeBytes.contains("\"shapeType\":\"rectangle\"") &&
                   shapeBytes.contains("\"strokeColor\"") && shapeBytes.contains("\"fillColor\""),
@@ -485,7 +485,7 @@ void selftest::runShapeItemTests(Context& ctx)
     QUndoStack shapeLoadedUndo;
     shapeLoaded.setUndoStack(&shapeLoadedUndo);
     QString shapeLoadError;
-    ctx.check(shapeLoaded.fromJson(shapeRoot, &shapeLoadError), QStringLiteral("画布反序列化图形图元"), shapeLoadError);
+    ctx.check(shapeLoaded.FromJson(shapeRoot, &shapeLoadError), QStringLiteral("画布反序列化图形图元"), shapeLoadError);
     ctx.check(shapeLoaded.canvasItemCount() == shapeItems.size(), QStringLiteral("画布恢复全部图形"));
     ctx.check(shapeLoaded.layerHeightsUnique(shapeLoaded.activeLayerId()),
               QStringLiteral("画布恢复图形后 height 唯一"));
@@ -506,9 +506,9 @@ void selftest::runShapeItemTests(Context& ctx)
     ctx.check(loadedShapeTypes.size() == shapeTypes.size() && loadedSineCurves == 0,
               QStringLiteral("画布恢复全部有面积图形类型"),
               QStringLiteral("shapes=%1 curves=%2").arg(loadedShapeTypes.size()).arg(loadedSineCurves));
-    ctx.check(loadedRectangle && loadedRectangle->strokeColor() == shapeStroke &&
-                  loadedRectangle->fillColor().alpha() == shapeFill.alpha() &&
-                  qAbs(loadedRectangle->strokeWidth() - 4.0) < 0.01,
+    ctx.check(loadedRectangle && loadedRectangle->StrokeColor() == shapeStroke &&
+                  loadedRectangle->FillColor().alpha() == shapeFill.alpha() &&
+                  qAbs(loadedRectangle->StrokeWidth() - 4.0) < 0.01,
               QStringLiteral("画布恢复图形描边、填充和线宽"));
 
     ctx.shapeRoot = shapeRoot;
@@ -528,35 +528,35 @@ void selftest::runShapeItemTests(Context& ctx)
 
         StraightLineItem arrowLine;
         arrowLine.setEndpoints(QPointF(0.0, 0.0), QPointF(200.0, 0.0), QColor(20, 20, 20), 3.0);
-        ctx.check(arrowLine.startArrow() == ArrowStyle::NONE && arrowLine.endArrow() == ArrowStyle::NONE,
+        ctx.check(arrowLine.StartArrow() == ArrowStyle::NONE && arrowLine.EndArrow() == ArrowStyle::NONE,
                   QStringLiteral("直线默认两端无箭头"));
-        arrowLine.setArrowStyles(ArrowStyle::BAR, ArrowStyle::OPEN_ARROW);
-        ctx.check(arrowLine.startArrow() == ArrowStyle::BAR && arrowLine.endArrow() == ArrowStyle::OPEN_ARROW,
+        arrowLine.SetArrowStyles(ArrowStyle::BAR, ArrowStyle::OPEN_ARROW);
+        ctx.check(arrowLine.StartArrow() == ArrowStyle::BAR && arrowLine.EndArrow() == ArrowStyle::OPEN_ARROW,
                   QStringLiteral("直线两端箭头写入曲线属性"));
-        ctx.check(arrowLine.displayName() != MainWindow::tr("Straight Line"),
+        ctx.check(arrowLine.DisplayName() != MainWindow::tr("Straight Line"),
                   QStringLiteral("带箭头直线显示名与直线类型名区分"));
 
-        const QJsonObject arrowJson = arrowLine.toJson();
+        const QJsonObject arrowJson = arrowLine.ToJson();
         StraightLineItem reloadedLine;
-        reloadedLine.fromJson(arrowJson);
-        ctx.check(reloadedLine.startArrow() == ArrowStyle::BAR && reloadedLine.endArrow() == ArrowStyle::OPEN_ARROW,
+        reloadedLine.FromJson(arrowJson);
+        ctx.check(reloadedLine.StartArrow() == ArrowStyle::BAR && reloadedLine.EndArrow() == ArrowStyle::OPEN_ARROW,
                   QStringLiteral("直线箭头 JSON 往返"));
         QJsonObject legacyLineJson = arrowJson;
         legacyLineJson.remove(QStringLiteral("startArrow"));
         legacyLineJson.remove(QStringLiteral("endArrow"));
         StraightLineItem legacyLine;
-        legacyLine.fromJson(legacyLineJson);
-        ctx.check(legacyLine.startArrow() == ArrowStyle::NONE && legacyLine.endArrow() == ArrowStyle::NONE,
+        legacyLine.FromJson(legacyLineJson);
+        ctx.check(legacyLine.StartArrow() == ArrowStyle::NONE && legacyLine.EndArrow() == ArrowStyle::NONE,
                   QStringLiteral("缺箭头字段的直线 JSON 读入后默认无箭头"));
 
         CurveItem arrowCurve;
-        arrowCurve.setStrokePoints({QPointF(0.0, 100.0), QPointF(80.0, 20.0), QPointF(160.0, 100.0)},
+        arrowCurve.SetStrokePoints({QPointF(0.0, 100.0), QPointF(80.0, 20.0), QPointF(160.0, 100.0)},
                                    QColor(20, 20, 20), 3.0);
-        arrowCurve.setArrowStyles(ArrowStyle::NONE, ArrowStyle::TRIANGLE_FILLED);
-        const QJsonObject curveJson = arrowCurve.toJson();
+        arrowCurve.SetArrowStyles(ArrowStyle::NONE, ArrowStyle::TRIANGLE_FILLED);
+        const QJsonObject curveJson = arrowCurve.ToJson();
         CurveItem reloadedCurve;
-        reloadedCurve.fromJson(curveJson);
-        ctx.check(reloadedCurve.endArrow() == ArrowStyle::TRIANGLE_FILLED, QStringLiteral("曲线箭头 JSON 往返"));
+        reloadedCurve.FromJson(curveJson);
+        ctx.check(reloadedCurve.EndArrow() == ArrowStyle::TRIANGLE_FILLED, QStringLiteral("曲线箭头 JSON 往返"));
 
         const int headLength = qRound(qMax(4.0, 3.0 * 4.0));
         const QPainterPath filledHead =

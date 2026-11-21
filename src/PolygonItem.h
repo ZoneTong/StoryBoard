@@ -20,9 +20,9 @@ class PolygonItem : public ShapeItem {
     // 有面积图形参与填充与描边；直线 / 曲线只保留线宽带，不再二次描线；文字只填字形。
     enum class LayerRole { FILLED_AREA = 0, STROKE_BAND = 1, TEXT = 2 };
     // 基类只读视图的覆写：把内部 Layer 映射成 ShapeLayer。
-    int shapeLayerCount() const override { return m_layers.size(); }
+    int ShapeLayerCount() const override { return m_layers.size(); }
     ShapeLayer shapeLayer(int index) const override;
-    QPainterPath mapShapeLayerPath(const ShapeLayer& layer) const override;
+    QPainterPath MapShapeLayerPath(const ShapeLayer& layer) const override;
 
     struct Layer {
         QPainterPath path; // 内容区局部坐标（0,0 为左上角）
@@ -36,19 +36,19 @@ class PolygonItem : public ShapeItem {
     explicit PolygonItem(const QList<Layer>& layers = QList<Layer>(), FillStyle fillStyle = FillStyle::SOLID,
                          Qt::PenStyle strokeStyle = Qt::SolidLine);
 
-    QString kind() const override { return QStringLiteral("polygon"); }
+    QString Kind() const override { return QStringLiteral("polygon"); }
     // 多边形没有内置轮廓，shapeType 只用于形状派生的公共分支（填充、命中已单独覆写）。
     ShapeType shapeType() const override { return ShapeType::POLYGON; }
     // 派生自 ShapeItem 但不受形状类型语义约束：凡按 shapeType 分派的入口都先看这一位。
-    QString displayName() const override;
-    QString typeDisplayName() const override;
-    QJsonObject toJson() const override;
-    void fromJson(const QJsonObject& json) override;
+    QString DisplayName() const override;
+    QString TypeDisplayName() const override;
+    QJsonObject ToJson() const override;
+    void FromJson(const QJsonObject& json) override;
     // 命中与轮廓取所有图层并集（ShapeItem 按单一 ShapeType 生成路径，不能沿用）。
     QPainterPath shape() const override;
-    QPainterPath currentPath(const QRectF& rect) const override;
-    QPainterPath paintedShape() const override;
-    QPainterPath outlineShape() const override;
+    QPainterPath CurrentPath(const QRectF& rect) const override;
+    QPainterPath PaintedShape() const override;
+    QPainterPath OutlineShape() const override;
 
     int layerCount() const { return m_layers.size(); }
     const QList<Layer>& layers() const { return m_layers; }
@@ -59,27 +59,27 @@ class PolygonItem : public ShapeItem {
 
     // 多边形共用的填充 / 描线属性：填充作用于有面积图形与文字字形，
     // 描线颜色同时同步直线 / 曲线的线宽带颜色；样式与宽度只作用于有面积轮廓。
-    QColor fillColor() const override;
-    QColor strokeColor() const override;
-    qreal strokeWidth() const override;
+    QColor FillColor() const override;
+    QColor StrokeColor() const override;
+    qreal StrokeWidth() const override;
     FillStyle fillStyle() const override { return m_fillStyle; }
-    Qt::PenStyle strokeStyle() const override { return m_strokeStyle; }
-    void setFill(const QColor& color, FillStyle style) override;
-    void setFillStyle(FillStyle style) override;
+    Qt::PenStyle StrokeStyle() const override { return m_strokeStyle; }
+    void SetFill(const QColor& color, FillStyle style) override;
+    void SetFillStyle(FillStyle style) override;
     void setStroke(const QColor& color, qreal width);
     // 样式三件套与单形状同签名：合并后仍按「填充 + 描线」统一套用。
     void setStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth) override;
-    void setStrokeStyle(Qt::PenStyle style) override;
+    void SetStrokeStyle(Qt::PenStyle style) override;
     // 需求 15：图片填充只作用于 FilledArea 层围成的区域，孔洞留空；不参与合并与导出。
-    bool hasFillImage() const override { return !m_fillImage.isNull(); }
-    QPixmap fillImage() const override { return m_fillImage; }
-    ImageFill::Mode fillImageMode() const override { return m_fillImageMode; }
-    void setFillImage(const QPixmap& image, ImageFill::Mode mode) override;
-    void clearFillImage() override;
+    bool HasFillImage() const override { return !m_fillImage.isNull(); }
+    QPixmap FillImage() const override { return m_fillImage; }
+    ImageFill::Mode FillImageMode() const override { return m_fillImageMode; }
+    void SetFillImage(const QPixmap& image, ImageFill::Mode mode) override;
+    void ClearFillImage() override;
 
     // 样式撤销快照：多边形没有 ShapeType，用 polygon 标记与普通图形区分。
-    ShapeItemState state() const override;
-    void applyState(const ShapeItemState& state) override;
+    ShapeItemState State() const override;
+    void ApplyState(const ShapeItemState& state) override;
 
     // 把某层的局部路径映射到图元坐标；布尔运算需要按层角色分别取几何。
     QPainterPath mapLayerPath(const QPainterPath& localPath) const;
@@ -90,21 +90,21 @@ class PolygonItem : public ShapeItem {
 
   protected:
     // 基类纯虚钩子：多边形的轮廓来自图层，currentPath 已覆写。
-    QPainterPath shapePath(const QRectF& rect) const override
+    QPainterPath ShapePath(const QRectF& rect) const override
     {
         Q_UNUSED(rect);
         return QPainterPath();
     }
-    void paintContent(QPainter* painter) override;
+    void PaintContent(QPainter* painter) override;
     // 选中框就是内容矩形，取景余量沿用画布图元的默认值（不跟着形状类型的 22px）。
-    QRectF frameRect() const override { return CanvasItem::frameRect(); }
-    qreal framePadding() const override { return CanvasItem::framePadding(); }
+    QRectF FrameRect() const override { return CanvasItem::FrameRect(); }
+    qreal FramePadding() const override { return CanvasItem::FramePadding(); }
 
   private:
     void updateBoundsFromLayers();
 
     QList<Layer> m_layers;
-    QSizeF m_designSize{1.0, 1.0};
+    QSizeF m_baseSize{1.0, 1.0};
     FillStyle m_fillStyle = FillStyle::SOLID;
     Qt::PenStyle m_strokeStyle = Qt::SolidLine;
     QPixmap m_fillImage;

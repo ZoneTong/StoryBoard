@@ -102,7 +102,7 @@ void selftest::runLockedLayerTests(Context& ctx)
     view.fitAll();
     QApplication::processEvents();
 
-    ctx.check(lockedLayerId != baseLayerId && !lockedText->isEditable() &&
+    ctx.check(lockedLayerId != baseLayerId && !lockedText->IsEditable() &&
                   (lockedText->flags() & QGraphicsItem::ItemIsSelectable) == 0,
               QStringLiteral("锁定图层上的文字不可编辑和选择"));
     viewScene.selectAllItems();
@@ -110,7 +110,7 @@ void selftest::runLockedLayerTests(Context& ctx)
     viewScene.clearSelection();
 
     const int requestsBeforeLockedClick = itemPropertyRequests;
-    const QPoint lockedPoint = view.mapFromScene(lockedText->sceneContentRect().center());
+    const QPoint lockedPoint = view.mapFromScene(lockedText->SceneContentRect().center());
     QMouseEvent lockedDoubleClick(QEvent::MouseButtonDblClick, QPointF(lockedPoint),
                                   QPointF(view.viewport()->mapToGlobal(lockedPoint)), Qt::LeftButton, Qt::LeftButton,
                                   Qt::NoModifier);
@@ -135,7 +135,7 @@ void selftest::runLockedLayerTests(Context& ctx)
     QApplication::processEvents();
     ctx.check(lockedLayerMessages > 0, QStringLiteral("右键锁定图层图元提示先解锁图层"));
     ctx.check(viewScene.setLayerLocked(lockedLayerId, false), QStringLiteral("解锁文字图层"));
-    ctx.check(lockedText->isEditable(), QStringLiteral("解锁后文字恢复可编辑"));
+    ctx.check(lockedText->IsEditable(), QStringLiteral("解锁后文字恢复可编辑"));
 
     view.close();
     QApplication::processEvents();

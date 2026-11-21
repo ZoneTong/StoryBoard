@@ -37,8 +37,8 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     // 需求 15：填充图片与摆放模式（仅可填充图元有这一行）。
     bool hasFillImageRow() const { return m_fillImageButton != nullptr; }
     bool fillImagePresent() const { return !m_fillImage.isNull(); }
-    QPixmap fillImage() const { return m_fillImage; }
-    ImageFill::Mode fillImageMode() const;
+    QPixmap FillImage() const { return m_fillImage; }
+    ImageFill::Mode FillImageMode() const;
     qreal initialOpacity() const { return m_initialOpacity; }
     int initialOpacityPercent() const { return m_initialOpacityPercent; }
 
@@ -70,7 +70,7 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
 
     // 尺寸框变化时同步圆角上限；用户尚未改过圆角时，圆角矩形的默认值
     // 按新短边重新计算，保证对话框显示值与最终轮廓一致。
-    void setContentSize(const QSizeF& size);
+    void SetContentSize(const QSizeF& size);
 
   private:
     bool m_hasFill = false;

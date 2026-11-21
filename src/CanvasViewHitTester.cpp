@@ -46,7 +46,7 @@ CanvasItem* CanvasViewHitTester::preferredEditableItemAt(const QPoint& viewportP
         if (!canvasItem || !canvasItem->isVisible()) {
             continue;
         }
-        if (preferred.contains(canvasItem->layerId()) && m_scene->isItemEditable(canvasItem)) {
+        if (preferred.contains(canvasItem->LayerId()) && m_scene->isItemEditable(canvasItem)) {
             return canvasItem;
         }
     }
@@ -69,7 +69,7 @@ CanvasItem* CanvasViewHitTester::editableItemAt(const QPoint& viewportPos) const
             continue;
         }
         // 重叠区域优先命中图层面板中已选图层里的图元，其余仍按叠放顺序取最上层。
-        if (preferred.contains(canvasItem->layerId())) {
+        if (preferred.contains(canvasItem->LayerId())) {
             return canvasItem;
         }
         if (!fallback) {

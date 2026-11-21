@@ -538,7 +538,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         if (ellipseAction) {
             // 描线色/宽度会按上次运行记忆（需求 16 的“仅首次生效”语义），
             // 这里显式把工具栏置成默认初值，避免断言受用户配置文件影响。
-            shapeWindow.setFillStyle(FillStyle::NONE);
+            shapeWindow.SetFillStyle(FillStyle::NONE);
             shapeWindow.setBrushColor(QColor(Qt::black), false);
             if (auto* widthControl = shapeWindow.findChild<QSpinBox*>(QStringLiteral("StrokeWidthSpin"))) {
                 widthControl->setValue(1);
@@ -555,22 +555,22 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
                       QStringLiteral("快速插入的图元类型为圆形"));
             ctx.check(inserted && inserted->isSelected() && shapeWindow.view()->mode() == ToolMode::EDIT,
                       QStringLiteral("快速插入后自动进入编辑模式并选中图形"));
-            ctx.check(inserted && inserted->layerId() == shapeWindow.scene()->activeLayerId() &&
-                          shapeWindow.scene()->layerHeightsUnique(inserted->layerId()),
+            ctx.check(inserted && inserted->LayerId() == shapeWindow.scene()->activeLayerId() &&
+                          shapeWindow.scene()->layerHeightsUnique(inserted->LayerId()),
                       QStringLiteral("快速插入图形进入当前图层且高度唯一"));
-            ctx.check(inserted && shapeWindow.scene()->canvasRect().contains(inserted->sceneContentRect()),
+            ctx.check(inserted && shapeWindow.scene()->canvasRect().contains(inserted->SceneContentRect()),
                       QStringLiteral("快速插入图形位于画板范围内"),
                       inserted ? geometryText(inserted->pos(), inserted->contentSize()) : QString());
             // 需求 16：新图元按工具栏当前样式生成——默认无填充（填充槽透明）、
             // 描线黑色 1px。
-            ctx.check(inserted && inserted->fillStyle() == FillStyle::NONE && inserted->fillColor().alpha() == 0 &&
-                          inserted->strokeColor() == QColor(Qt::black) && qAbs(inserted->strokeWidth() - 1.0) < 0.01,
+            ctx.check(inserted && inserted->fillStyle() == FillStyle::NONE && inserted->FillColor().alpha() == 0 &&
+                          inserted->StrokeColor() == QColor(Qt::black) && qAbs(inserted->StrokeWidth() - 1.0) < 0.01,
                       QStringLiteral("快速插入图形按工具栏默认样式生成（无填充、黑色描线 1px）"),
                       inserted ? QStringLiteral("fill=%1/%2 stroke=%3 width=%4 brush=%5 w=%6 fillMain=%7")
                                      .arg(static_cast<int>(inserted->fillStyle()))
-                                     .arg(inserted->fillColor().name())
-                                     .arg(inserted->strokeColor().name())
-                                     .arg(inserted->strokeWidth())
+                                     .arg(inserted->FillColor().name())
+                                     .arg(inserted->StrokeColor().name())
+                                     .arg(inserted->StrokeWidth())
                                      .arg(shapeWindow.m_brushColor.name())
                                      .arg(shapeWindow.m_brushWidth)
                                      .arg(shapeWindow.m_fillColor.name())
@@ -593,12 +593,12 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
             ctx.check(insertedArrow != nullptr, QStringLiteral("快速插入的图元类型为箭头"));
             // 需求 16：箭头同样按工具栏默认样式生成（无填充、黑色描线）。
             ctx.check(insertedArrow && insertedArrow->fillStyle() == FillStyle::NONE &&
-                          insertedArrow->strokeColor() == QColor(Qt::black),
+                          insertedArrow->StrokeColor() == QColor(Qt::black),
                       QStringLiteral("新插入箭头按工具栏默认样式生成"),
                       insertedArrow ? QStringLiteral("fill=%1/%2 stroke=%3")
                                           .arg(static_cast<int>(insertedArrow->fillStyle()))
-                                          .arg(insertedArrow->fillColor().name())
-                                          .arg(insertedArrow->strokeColor().name())
+                                          .arg(insertedArrow->FillColor().name())
+                                          .arg(insertedArrow->StrokeColor().name())
                                     : QString());
         }
     }
@@ -610,7 +610,7 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
 
         auto* stroke = new CurveItem();
         const QColor initialColor(QStringLiteral("#1E293B"));
-        stroke->setStrokePoints({QPointF(40, 40), QPointF(160, 120)}, initialColor, 4.0);
+        stroke->SetStrokePoints({QPointF(40, 40), QPointF(160, 120)}, initialColor, 4.0);
         strokeWindow.scene()->addItemsWithUndo({stroke}, QStringLiteral("Add width stroke"));
         strokeWindow.view()->setMode(ToolMode::EDIT);
         strokeWindow.scene()->clearSelection();
@@ -624,15 +624,15 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         if (widthSpin) {
             widthSpin->setValue(2);
             QApplication::processEvents();
-            ctx.check(qAbs(stroke->strokeWidth() - 2.0) < 0.01, QStringLiteral("描线宽度 2px 同步选中曲线"),
-                      QStringLiteral("stroke=%1 toolbar=%2").arg(stroke->strokeWidth()).arg(widthSpin->value()));
+            ctx.check(qAbs(stroke->StrokeWidth() - 2.0) < 0.01, QStringLiteral("描线宽度 2px 同步选中曲线"),
+                      QStringLiteral("stroke=%1 toolbar=%2").arg(stroke->StrokeWidth()).arg(widthSpin->value()));
 
             widthSpin->setValue(7);
             QApplication::processEvents();
-            ctx.check(qAbs(stroke->strokeWidth() - 7.0) < 0.01 && strokeWindow.view()->brushWidth() == 7.0,
+            ctx.check(qAbs(stroke->StrokeWidth() - 7.0) < 0.01 && strokeWindow.view()->brushWidth() == 7.0,
                       QStringLiteral("工具栏描线宽度 SpinBox 步进 1px 并改变选中曲线宽度"),
                       QStringLiteral("stroke=%1 brush=%2 step=%3")
-                          .arg(stroke->strokeWidth())
+                          .arg(stroke->StrokeWidth())
                           .arg(strokeWindow.view()->brushWidth())
                           .arg(widthSpin->singleStep()));
         }
@@ -640,12 +640,12 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
         StyleController styleController(&strokeWindow);
         const QColor changedColor(QStringLiteral("#20C997"));
         styleController.applyStrokeColorToSelection(changedColor);
-        ctx.check(stroke->strokeColor() == changedColor, QStringLiteral("描线颜色改变选中曲线颜色"),
-                  stroke->strokeColor().name());
+        ctx.check(stroke->StrokeColor() == changedColor, QStringLiteral("描线颜色改变选中曲线颜色"),
+                  stroke->StrokeColor().name());
         strokeWindow.scene()->undoStack()->undo();
         QApplication::processEvents();
-        ctx.check(stroke->strokeColor() == initialColor, QStringLiteral("撤销描线颜色恢复曲线颜色"),
-                  stroke->strokeColor().name());
+        ctx.check(stroke->StrokeColor() == initialColor, QStringLiteral("撤销描线颜色恢复曲线颜色"),
+                  stroke->StrokeColor().name());
     }
 
     {
@@ -688,25 +688,25 @@ void selftest::runMainWindowShapeMenuTests(Context& ctx)
 
         StyleController styleController(&polygonWindow);
         const QColor changedStroke(QStringLiteral("#20C997"));
-        const QColor strokeBefore = polygon->strokeColor();
+        const QColor strokeBefore = polygon->StrokeColor();
         styleController.applyStrokeColorToSelection(changedStroke);
-        ctx.check(polygon->strokeColor() == changedStroke, QStringLiteral("工具栏描线颜色作用到多边形"),
-                  polygon->strokeColor().name());
+        ctx.check(polygon->StrokeColor() == changedStroke, QStringLiteral("工具栏描线颜色作用到多边形"),
+                  polygon->StrokeColor().name());
         polygonWindow.scene()->undoStack()->undo();
         QApplication::processEvents();
-        ctx.check(polygon->strokeColor() == strokeBefore, QStringLiteral("撤销工具栏描线颜色恢复多边形原色"));
+        ctx.check(polygon->StrokeColor() == strokeBefore, QStringLiteral("撤销工具栏描线颜色恢复多边形原色"));
 
         QSpinBox* polygonWidthSpin = polygonWindow.findChild<QSpinBox*>(QStringLiteral("StrokeWidthSpin"));
-        const qreal widthBefore = polygon->strokeWidth();
+        const qreal widthBefore = polygon->StrokeWidth();
         if (polygonWidthSpin) {
             polygonWidthSpin->setValue(9);
             QApplication::processEvents();
         }
-        ctx.check(qAbs(polygon->strokeWidth() - 9.0) < 0.01, QStringLiteral("工具栏描线宽度作用到多边形"),
-                  QString::number(polygon->strokeWidth()));
+        ctx.check(qAbs(polygon->StrokeWidth() - 9.0) < 0.01, QStringLiteral("工具栏描线宽度作用到多边形"),
+                  QString::number(polygon->StrokeWidth()));
         polygonWindow.scene()->undoStack()->undo();
         QApplication::processEvents();
-        ctx.check(qAbs(polygon->strokeWidth() - widthBefore) < 0.01,
+        ctx.check(qAbs(polygon->StrokeWidth() - widthBefore) < 0.01,
                   QStringLiteral("撤销工具栏描线宽度恢复多边形原宽度"));
     }
 

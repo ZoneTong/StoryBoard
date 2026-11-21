@@ -108,15 +108,15 @@ void selftest::runLayerExportPanelTests(Context& ctx)
         overlapScene.setMode(ToolMode::EDIT);
         const int upperLayerId = overlapScene.createLayer(QStringLiteral("上层"));
         auto* lowerItem = createShapeItem(ShapeType::RECTANGLE);
-        lowerItem->setLayerId(CanvasScene::BackgroundLayerId + 1);
+        lowerItem->SetLayerId(CanvasScene::BackgroundLayerId + 1);
         lowerItem->setStyle(QColor(QStringLiteral("#2563EB")), QColor(Qt::transparent), 4.0);
         lowerItem->setPos(QPointF(200, 170));
-        lowerItem->setContentSize(QSizeF(200, 140));
+        lowerItem->SetContentSize(QSizeF(200, 140));
         auto* upperItem = createShapeItem(ShapeType::RECTANGLE);
-        upperItem->setLayerId(upperLayerId);
+        upperItem->SetLayerId(upperLayerId);
         upperItem->setStyle(QColor(QStringLiteral("#DC2626")), QColor(Qt::transparent), 4.0);
         upperItem->setPos(QPointF(200, 170));
-        upperItem->setContentSize(QSizeF(200, 140));
+        upperItem->SetContentSize(QSizeF(200, 140));
         overlapScene.addItemsWithUndo({lowerItem, upperItem}, QStringLiteral("重叠图元"));
 
         CanvasView overlapView(&overlapScene);
@@ -149,16 +149,16 @@ void selftest::runLayerExportPanelTests(Context& ctx)
         upperItem->setSelected(true);
         QUndoStack heightUndo;
         overlapScene.setUndoStack(&heightUndo);
-        const int lowerHeightBefore = lowerItem->height();
-        const int upperHeightBefore = upperItem->height();
+        const int lowerHeightBefore = lowerItem->ZOrder();
+        const int upperHeightBefore = upperItem->ZOrder();
         const int heightIndexBefore = heightUndo.index();
         const int heightChanged = overlapScene.adjustSelectedHeights(1);
-        ctx.check(heightChanged == 2 && lowerItem->height() == lowerHeightBefore + 1 &&
-                      upperItem->height() == upperHeightBefore + 1,
+        ctx.check(heightChanged == 2 && lowerItem->ZOrder() == lowerHeightBefore + 1 &&
+                      upperItem->ZOrder() == upperHeightBefore + 1,
                   QStringLiteral("快捷键批量提升选中图元高度"));
         ctx.check(heightUndo.index() == heightIndexBefore + 1, QStringLiteral("批量高度调整只生成一条撤销记录"));
         heightUndo.undo();
-        ctx.check(lowerItem->height() == lowerHeightBefore && upperItem->height() == upperHeightBefore,
+        ctx.check(lowerItem->ZOrder() == lowerHeightBefore && upperItem->ZOrder() == upperHeightBefore,
                   QStringLiteral("批量高度调整可整体撤销"));
         overlapScene.setUndoStack(nullptr);
     }
@@ -173,18 +173,18 @@ void selftest::runLayerExportPanelTests(Context& ctx)
 
         const int redLayer = layerExportScene.createLayer(QStringLiteral("红色层"));
         auto* red = createShapeItem(ShapeType::RECTANGLE);
-        red->setLayerId(redLayer);
+        red->SetLayerId(redLayer);
         red->setStyle(QColor(QStringLiteral("#DC2626")), QColor(QStringLiteral("#DC2626")), 1.0);
         red->setPos(QPointF(10, 10));
-        red->setContentSize(QSizeF(40, 40));
+        red->SetContentSize(QSizeF(40, 40));
         layerExportScene.attachItem(red);
 
         const int blueLayer = layerExportScene.createLayer(QStringLiteral("蓝色层"));
         auto* blue = createShapeItem(ShapeType::RECTANGLE);
-        blue->setLayerId(blueLayer);
+        blue->SetLayerId(blueLayer);
         blue->setStyle(QColor(QStringLiteral("#2563EB")), QColor(QStringLiteral("#2563EB")), 1.0);
         blue->setPos(QPointF(100, 100));
-        blue->setContentSize(QSizeF(40, 40));
+        blue->SetContentSize(QSizeF(40, 40));
         layerExportScene.attachItem(blue);
 
         const QImage merged = layerExportScene.renderImage(layerExportScene.canvasRect(), 1.0);
@@ -253,7 +253,7 @@ void selftest::runLayerExportPanelTests(Context& ctx)
                   QStringLiteral("空图层名被拒绝"));
 
         CanvasScene reloadedScene;
-        ctx.check(reloadedScene.fromJson(renameScene.toJson()), QStringLiteral("重命名后的画布可重新载入"));
+        ctx.check(reloadedScene.FromJson(renameScene.ToJson()), QStringLiteral("重命名后的画布可重新载入"));
         ctx.check(reloadedScene.layer(renameLayerId).name == QStringLiteral("终版分镜"),
                   QStringLiteral("图层名持久化到画布"));
 

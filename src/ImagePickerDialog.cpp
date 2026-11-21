@@ -110,8 +110,8 @@ QVector<QPixmap> collectCanvasImages(const CanvasScene* scene)
     }
     for (CanvasItem* item : scene->canvasItems()) {
         QPixmap candidate;
-        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->hasFillImage()) {
-            candidate = shape->fillImage();
+        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->HasFillImage()) {
+            candidate = shape->FillImage();
         }
         if (candidate.isNull() || seen.contains(candidate.cacheKey())) {
             continue;

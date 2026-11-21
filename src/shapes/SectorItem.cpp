@@ -2,27 +2,27 @@
 
 SectorItem::SectorItem()
 {
-    setContentSize(defaultContentSize());
-    setFrame(contentRect());
+    SetContentSize(defaultContentSize());
+    setFrame(ContentRect());
 }
 
-void SectorItem::contentResized()
+void SectorItem::ContentResized()
 {
-    ShapeItem::contentResized();
+    ShapeItem::ContentResized();
     // 外接框与内容矩形保持一致，扇形只由 EllipseShape::sector() 出。
-    setFrame(contentRect());
+    setFrame(ContentRect());
 }
 
-ItemPropertySet SectorItem::properties() const
+ItemPropertySet SectorItem::Properties() const
 {
-    ItemPropertySet result = ShapeItem::properties();
+    ItemPropertySet result = ShapeItem::Properties();
     result.insert(ItemProperty::START_ANGLE);
     result.insert(ItemProperty::SWEEP_ANGLE);
     return result;
 }
 
-QPainterPath SectorItem::shapePath(const QRectF& rect) const
+QPainterPath SectorItem::ShapePath(const QRectF& rect) const
 {
     Q_UNUSED(rect)
-    return sector(startAngle(), sweepAngle());
+    return sector(StartAngle(), SweepAngle());
 }

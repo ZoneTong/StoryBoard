@@ -58,11 +58,11 @@ QList<CanvasItem*> ObscurationAnalyzer::findObscured(const QList<CanvasItem*>& i
         regionReady.append(false);
     }
 
-    // paintedShape() 会为笔画、图形做描边展开，只在真正需要比较时才计算。
+    // PaintedShape() 会为笔画、图形做描边展开，只在真正需要比较时才计算。
     auto regionOf = [&stack, &regions, &regionReady](int index) -> const QRegion& {
         if (!regionReady.at(index)) {
             CanvasItem* item = stack.at(index);
-            regions[index] = filledRegion(item->sceneTransform().map(item->paintedShape()));
+            regions[index] = filledRegion(item->sceneTransform().map(item->PaintedShape()));
             regionReady[index] = true;
         }
         return regions.at(index);

@@ -57,12 +57,12 @@ void CanvasContextMenuController::showMenu(QContextMenuEvent* event)
         item->setSelected(true);
     }
 
-    const CanvasLayer itemLayer = m_scene->layer(item->layerId());
-    const int layerIndex = m_scene->layerIndex(item->layerId());
+    const CanvasLayer itemLayer = m_scene->layer(item->LayerId());
+    const int layerIndex = m_scene->layerIndex(item->LayerId());
 
     QMenu menu(m_view);
     QAction* title =
-        menu.addAction(trView("%1 · %2 · height %3").arg(item->name(), itemLayer.name).arg(item->height()));
+        menu.addAction(trView("%1 · %2 · height %3").arg(item->Name(), itemLayer.name).arg(item->ZOrder()));
     title->setEnabled(false);
     menu.addSeparator();
 
@@ -96,7 +96,7 @@ void CanvasContextMenuController::showMenu(QContextMenuEvent* event)
     heightDown->setShortcut(QKeySequence(Qt::Key_BracketLeft));
     heightUp->setShortcutVisibleInContextMenu(true);
     heightDown->setShortcutVisibleInContextMenu(true);
-    heightDown->setEnabled(item->height() > 0);
+    heightDown->setEnabled(item->ZOrder() > 0);
     menu.addSeparator();
 
     QAction* layerUp = menu.addAction(trView("Move to the layer above"));

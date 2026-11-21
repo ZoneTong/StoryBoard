@@ -10,5 +10,5 @@ class HeartItem : public ShapeItem {
     ShapeType shapeType() const override { return ShapeType::HEART; }
 
   protected:
-    QPainterPath shapePath(const QRectF& rect) const override;
+    QPainterPath ShapePath(const QRectF& rect) const override;
 };

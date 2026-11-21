@@ -10,5 +10,5 @@ class ScrollItem : public ShapeItem {
     ShapeType shapeType() const override { return ShapeType::SCROLL; }
 
   protected:
-    QPainterPath shapePath(const QRectF& rect) const override;
+    QPainterPath ShapePath(const QRectF& rect) const override;
 };

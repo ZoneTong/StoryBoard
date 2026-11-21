@@ -50,7 +50,7 @@ void CanvasScene::drawForeground(QPainter* painter, const QRectF& rect)
         dashPen.setDashPattern({5.0, 4.0});
 
         for (CanvasItem* item : obscured) {
-            const QPainterPath path = item->sceneTransform().map(item->outlineShape());
+            const QPainterPath path = item->sceneTransform().map(item->OutlineShape());
             if (path.isEmpty()) {
                 continue;
             }
@@ -78,11 +78,11 @@ void CanvasScene::drawTriangleBaseTick(QPainter* painter, const QRectF& rect)
         return;
     }
     ShapeItem* shape = dynamic_cast<ShapeItem*>(selection.constFirst());
-    if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->isCustomShape()) {
+    if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->IsCustomShape()) {
         return;
     }
 
-    const QRectF content = shape->contentRect();
+    const QRectF content = shape->ContentRect();
     if (content.isEmpty()) {
         return;
     }
@@ -164,7 +164,7 @@ void CanvasScene::drawItems(QPainter* painter, int numItems, QGraphicsItem* item
         if (!regionReady.at(position)) {
             if (auto* canvasItem = qgraphicsitem_cast<CanvasItem*>(items[order.at(position)])) {
                 regions[position] =
-                    ObscurationAnalyzer::filledRegion(canvasItem->sceneTransform().map(canvasItem->clippingShape()));
+                    ObscurationAnalyzer::filledRegion(canvasItem->sceneTransform().map(canvasItem->ClippingShape()));
             } else {
                 regions[position] = QRegion(bounds.at(position).toAlignedRect());
             }

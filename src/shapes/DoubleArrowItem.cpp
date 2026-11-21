@@ -4,7 +4,7 @@
 
 DoubleArrowItem::DoubleArrowItem()
 {
-    setContentSize(defaultContentSize());
+    SetContentSize(defaultContentSize());
 }
 
 QSizeF DoubleArrowItem::defaultContentSize() const
@@ -12,7 +12,7 @@ QSizeF DoubleArrowItem::defaultContentSize() const
     return QSizeF(128.0, 40.0);
 }
 
-QPainterPath DoubleArrowItem::shapePath(const QRectF& rect) const
+QPainterPath DoubleArrowItem::ShapePath(const QRectF& rect) const
 {
     return ShapePathBuilder::doubleArrowPath(rect);
 }

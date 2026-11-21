@@ -30,7 +30,7 @@ QPainterPath ShapeHitGeometry::hitShape(const QPainterPath& path, ShapeType type
     return result;
 }
 
-QPainterPath ShapeHitGeometry::paintedShape(const QPainterPath& path, ShapeType type, FillStyle fillStyle,
+QPainterPath ShapeHitGeometry::PaintedShape(const QPainterPath& path, ShapeType type, FillStyle fillStyle,
                                             const QColor& fillColor, qreal strokeWidth, Qt::PenStyle strokeStyle)
 {
     if (path.isEmpty()) {

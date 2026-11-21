@@ -49,7 +49,7 @@ void selftest::runLineSplitTests(Context& ctx)
         scene.setUndoStack(&undo);
 
         auto* rect = createShapeItem(ShapeType::RECTANGLE);
-        rect->setContentSize(QSizeF(180.0, 120.0));
+        rect->SetContentSize(QSizeF(180.0, 120.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
 
         scene.clearSelection();
@@ -67,7 +67,7 @@ void selftest::runLineSplitTests(Context& ctx)
         ctx.check(LineSplitOps::supports(&scene), QStringLiteral("填充图元加一条直线切刀时可用"));
 
         auto* secondRect = createShapeItem(ShapeType::RECTANGLE);
-        secondRect->setContentSize(QSizeF(80.0, 80.0));
+        secondRect->SetContentSize(QSizeF(80.0, 80.0));
         scene.addItemsWithUndo({secondRect}, QStringLiteral("Add second rect"));
         scene.clearSelection();
         rect->setSelected(true);
@@ -85,9 +85,9 @@ void selftest::runLineSplitTests(Context& ctx)
         scene.setUndoStack(&undo);
 
         auto* rect = createShapeItem(ShapeType::RECTANGLE);
-        rect->setContentSize(QSizeF(180.0, 120.0));
+        rect->SetContentSize(QSizeF(180.0, 120.0));
         rect->setPos(QPointF(110.0, 150.0));
-        rect->setFill(QColor(QStringLiteral("#2563EB")), FillStyle::SOLID);
+        rect->SetFill(QColor(QStringLiteral("#2563EB")), FillStyle::SOLID);
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
         auto* knife = new StraightLineItem();
         knife->setEndpoints(QPointF(100.0, 210.0), QPointF(300.0, 210.0), QColor(QStringLiteral("#1E293B")), 2.0);
@@ -191,7 +191,7 @@ void selftest::runLineSplitTests(Context& ctx)
         window.insertShape(ShapeType::RECTANGLE);
         CanvasView* view = window.view();
         // 画一条横穿矩形本体的画笔曲线（起终点在矩形两侧之外）。
-        const QRectF rectBounds = window.scene()->canvasItems().constFirst()->sceneContentRect();
+        const QRectF rectBounds = window.scene()->canvasItems().constFirst()->SceneContentRect();
         const QPointF crossStart = rectBounds.center() + QPointF(-rectBounds.width(), 0.0);
         view->setMode(ToolMode::BRUSH);
         const QPoint brushStart = view->mapFromScene(crossStart);
@@ -268,11 +268,11 @@ void selftest::runLineSplitTests(Context& ctx)
         scene.setUndoStack(&undo);
 
         auto* ellipse = createShapeItem(ShapeType::ELLIPSE);
-        ellipse->setContentSize(QSizeF(160.0, 120.0));
+        ellipse->SetContentSize(QSizeF(160.0, 120.0));
         ellipse->setPos(QPointF(120.0, 180.0));
         scene.addItemsWithUndo({ellipse}, QStringLiteral("Add ellipse"));
         auto* curve = new CurveItem();
-        curve->setStrokePoints({QPointF(100.0, 240.0), QPointF(280.0, 240.0)}, QColor(QStringLiteral("#334155")), 3.0);
+        curve->SetStrokePoints({QPointF(100.0, 240.0), QPointF(280.0, 240.0)}, QColor(QStringLiteral("#334155")), 3.0);
         scene.addItemsWithUndo({curve}, QStringLiteral("Add curve"));
 
         scene.clearSelection();
@@ -299,13 +299,13 @@ void selftest::runLineSplitTests(Context& ctx)
         scene.setUndoStack(&undo);
 
         auto* rect = createShapeItem(ShapeType::RECTANGLE);
-        rect->setContentSize(QSizeF(200.0, 200.0));
+        rect->SetContentSize(QSizeF(200.0, 200.0));
         rect->setPos(QPointF(110.0, 150.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
         // 下凹的曲线：从矩形左缘进入、中部下探到 y≈300、右缘出去；
         // 端点连线（y≈200 的水平线）与轨迹明显不同。
         auto* curve = new CurveItem();
-        curve->setStrokePoints({QPointF(80.0, 200.0), QPointF(200.0, 300.0), QPointF(320.0, 200.0)},
+        curve->SetStrokePoints({QPointF(80.0, 200.0), QPointF(200.0, 300.0), QPointF(320.0, 200.0)},
                                QColor(QStringLiteral("#334155")), 4.0);
         scene.addItemsWithUndo({curve}, QStringLiteral("Add curve"));
 
@@ -343,7 +343,7 @@ void selftest::runLineSplitTests(Context& ctx)
         scene.setUndoStack(&undo);
 
         auto* rect = createShapeItem(ShapeType::RECTANGLE);
-        rect->setContentSize(QSizeF(128.0, 128.0));
+        rect->SetContentSize(QSizeF(128.0, 128.0));
         rect->setPos(QPointF(500.0, 500.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
         // 半椭圆弧：两端落在矩形左右两缘之外，弧底从矩形下部横穿。
@@ -380,7 +380,7 @@ void selftest::runLineSplitTests(Context& ctx)
         scene.addItemsWithUndo({sine}, QStringLiteral("Add sine"));
 
         auto* rect = createShapeItem(ShapeType::RECTANGLE);
-        rect->setContentSize(QSizeF(80.0, 60.0));
+        rect->SetContentSize(QSizeF(80.0, 60.0));
         rect->setPos(QPointF(320.0, 190.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
         scene.clearSelection();
@@ -398,11 +398,11 @@ void selftest::runLineSplitTests(Context& ctx)
         scene.setUndoStack(&undo);
 
         auto* rect = createShapeItem(ShapeType::RECTANGLE);
-        rect->setContentSize(QSizeF(200.0, 200.0));
+        rect->SetContentSize(QSizeF(200.0, 200.0));
         rect->setPos(QPointF(110.0, 150.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
         auto* curve = new CurveItem();
-        curve->setStrokePoints({QPointF(150.0, 200.0), QPointF(200.0, 260.0), QPointF(250.0, 200.0)},
+        curve->SetStrokePoints({QPointF(150.0, 200.0), QPointF(200.0, 260.0), QPointF(250.0, 200.0)},
                                QColor(QStringLiteral("#334155")), 4.0);
         scene.addItemsWithUndo({curve}, QStringLiteral("Add curve"));
 
@@ -428,7 +428,7 @@ void selftest::runLineSplitTests(Context& ctx)
         scene.setUndoStack(&undo);
 
         auto* rect = createShapeItem(ShapeType::RECTANGLE);
-        rect->setContentSize(QSizeF(120.0, 90.0));
+        rect->SetContentSize(QSizeF(120.0, 90.0));
         rect->setPos(QPointF(110.0, 150.0));
         scene.addItemsWithUndo({rect}, QStringLiteral("Add rect"));
         auto* knife = new StraightLineItem();
@@ -465,7 +465,7 @@ void selftest::runLineSplitTests(Context& ctx)
         scene.setUndoStack(&undo);
 
         auto* flag = createShapeItem(ShapeType::FLAG_WAVE);
-        flag->setContentSize(arrangement.flagRect.size());
+        flag->SetContentSize(arrangement.flagRect.size());
         flag->setPos(arrangement.flagRect.topLeft());
         scene.addItemsWithUndo({flag}, QStringLiteral("Add flag"));
 
@@ -478,7 +478,7 @@ void selftest::runLineSplitTests(Context& ctx)
             for (int i = 0; i <= 48; ++i) {
                 points.append(arrangement.braceRect.topLeft() + braceShape.pointAtPercent(qreal(i) / qreal(48)));
             }
-            brace->setStrokePoints(points, QColor(QStringLiteral("#334155")), 4.0);
+            brace->SetStrokePoints(points, QColor(QStringLiteral("#334155")), 4.0);
         }
         scene.addItemsWithUndo({brace}, QStringLiteral("Add brace"));
 

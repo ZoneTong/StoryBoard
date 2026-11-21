@@ -11,47 +11,47 @@
 
 CurveItem::CurveItem(QGraphicsItem* parent) : LineItemAbstract(parent) {}
 
-ItemPropertySet CurveItem::properties() const
+ItemPropertySet CurveItem::Properties() const
 {
     // 箭头行对全部描线子型开放（含花括号），与现状一致。
-    return LineItemAbstract::properties().united(ItemPropertySet{ItemProperty::ARROW_START, ItemProperty::ARROW_END});
+    return LineItemAbstract::Properties().united(ItemPropertySet{ItemProperty::ARROW_START, ItemProperty::ARROW_END});
 }
 
-QVariant CurveItem::propertyValue(ItemProperty property) const
+QVariant CurveItem::PropertyValue(ItemProperty property) const
 {
     switch (property) {
     case ItemProperty::ARROW_START:
-        return static_cast<int>(startArrow());
+        return static_cast<int>(StartArrow());
     case ItemProperty::ARROW_END:
-        return static_cast<int>(endArrow());
+        return static_cast<int>(EndArrow());
     default:
-        return LineItemAbstract::propertyValue(property);
+        return LineItemAbstract::PropertyValue(property);
     }
 }
 
-void CurveItem::setPropertyValue(ItemProperty property, const QVariant& value)
+void CurveItem::SetPropertyValue(ItemProperty property, const QVariant& value)
 {
     switch (property) {
     case ItemProperty::ARROW_START:
-        setArrowStyles(static_cast<ArrowStyle>(value.toInt()), endArrow());
+        SetArrowStyles(static_cast<ArrowStyle>(value.toInt()), EndArrow());
         break;
     case ItemProperty::ARROW_END:
-        setArrowStyles(startArrow(), static_cast<ArrowStyle>(value.toInt()));
+        SetArrowStyles(StartArrow(), static_cast<ArrowStyle>(value.toInt()));
         break;
     default:
-        LineItemAbstract::setPropertyValue(property, value);
+        LineItemAbstract::SetPropertyValue(property, value);
         break;
     }
 }
 
-QString CurveItem::displayName() const
+QString CurveItem::DisplayName() const
 {
     return uiText(QStringLiteral("Curve"));
 }
 
 void CurveItem::beginStroke(const QPointF& scenePos, const QColor& color, qreal width)
 {
-    m_strokeColor = strokeColorOrDefault(color);
+    m_strokeColor = StrokeColorOrDefault(color);
     m_strokeWidth = qMax<qreal>(0.5, width);
     m_strokePadding = m_strokeWidth / 2.0 + 2.0;
     m_hasDot = false;
@@ -61,7 +61,7 @@ void CurveItem::beginStroke(const QPointF& scenePos, const QColor& color, qreal 
     m_rawPoints.clear();
     m_rawPoints.append(QPointF(0.0, 0.0));
     setPos(scenePos);
-    normalizeGeometry();
+    NormalizeGeometry();
 }
 
 void CurveItem::appendScenePoint(const QPointF& scenePos)
@@ -71,24 +71,24 @@ void CurveItem::appendScenePoint(const QPointF& scenePos)
     }
 
     const QPointF local = scenePos - pos();
-    const qreal minDistance = 1.0 / qMax<qreal>(0.25, viewScale());
+    const qreal minDistance = 1.0 / qMax<qreal>(0.25, ViewScale());
     if (QLineF(m_rawPoints.constLast(), local).length() < minDistance) {
         return;
     }
 
     m_hasDot = false;
     m_rawPoints.append(local);
-    CurveItem::normalizeGeometry();
+    CurveItem::NormalizeGeometry();
 }
 
-void CurveItem::setStrokePoints(const QVector<QPointF>& scenePoints, const QColor& color, qreal width, qreal tolerance,
+void CurveItem::SetStrokePoints(const QVector<QPointF>& scenePoints, const QColor& color, qreal width, qreal tolerance,
                                 bool polyline)
 {
     m_rawPoints.clear();
     m_hasDot = false;
     m_drawing = false;
     m_finished = false;
-    LineItemAbstract::setStrokePoints(scenePoints, color, width, tolerance, polyline);
+    LineItemAbstract::SetStrokePoints(scenePoints, color, width, tolerance, polyline);
     m_finished = true;
 }
 
@@ -119,8 +119,8 @@ void CurveItem::endStroke(qreal tolerance)
 
     m_drawing = false;
     m_finished = true;
-    normalizeGeometry();
-    rebuildPath();
+    NormalizeGeometry();
+    RebuildPath();
 }
 
 bool CurveItem::isEmpty() const
@@ -128,12 +128,12 @@ bool CurveItem::isEmpty() const
     return !m_hasDot && m_segments.isEmpty() && m_rawPoints.isEmpty();
 }
 
-bool CurveItem::isSinglePointGeometry() const
+bool CurveItem::IsSinglePointGeometry() const
 {
     return m_hasDot || (m_drawing && m_rawPoints.size() == 1);
 }
 
-bool CurveItem::simplifyCurve(qreal tolerance)
+bool CurveItem::SimplifyCurve(qreal tolerance)
 {
     if (m_hasDot || m_segments.isEmpty() || tolerance <= 0.0) {
         return false;
@@ -154,8 +154,8 @@ bool CurveItem::simplifyCurve(qreal tolerance)
     }
 
     m_segments = simplified;
-    normalizeGeometry();
-    rebuildPath();
+    NormalizeGeometry();
+    RebuildPath();
     update();
     return true;
 }
@@ -172,18 +172,18 @@ CurveItem::GeometryState CurveItem::geometryState() const
     return state;
 }
 
-void CurveItem::applyGeometryState(const GeometryState& state)
+void CurveItem::ApplyGeometryState(const GeometryState& state)
 {
-    LineItemAbstract::applyGeometryState(state);
+    LineItemAbstract::ApplyGeometryState(state);
     m_hasDot = state.hasDot;
     m_rawPoints = m_hasDot ? QVector<QPointF>{state.dotCenter} : QVector<QPointF>();
     m_drawing = false;
     m_finished = true;
-    rebuildPath();
+    RebuildPath();
     update();
 }
 
-void CurveItem::normalizeGeometry()
+void CurveItem::NormalizeGeometry()
 {
     // 绘制期直接用采样点，收笔后才按拟合段计算；两套几何互斥，避免回读空集合。
     QVector<QPointF> points;
@@ -213,7 +213,7 @@ void CurveItem::normalizeGeometry()
     }
     const QRectF bounds(minX, minY, maxX - minX, maxY - minY);
 
-    const bool singlePoint = isSinglePointGeometry();
+    const bool singlePoint = IsSinglePointGeometry();
     QPointF shift;
     if (singlePoint) {
         shift = QPointF(m_strokePadding - bounds.center().x(), m_strokePadding - bounds.center().y());
@@ -240,11 +240,11 @@ void CurveItem::normalizeGeometry()
         setPos(pos() - shift);
     }
 
-    rebuildPath();
-    setContentSize(m_baseSize);
+    RebuildPath();
+    SetContentSize(m_baseSize);
 }
 
-void CurveItem::rebuildPath()
+void CurveItem::RebuildPath()
 {
     if (m_hasDot && !m_rawPoints.isEmpty()) {
         m_path = CurveGeometry::buildDotPath(m_rawPoints.constFirst(), m_strokeWidth / 2.0);
@@ -257,7 +257,7 @@ void CurveItem::rebuildPath()
     m_path = CurveGeometry::buildPath(m_segments);
 }
 
-void CurveItem::setSource(CurveSource source)
+void CurveItem::SetStrokeSource(CurveSource source)
 {
     if (m_strokeSource == source) {
         return;
@@ -266,9 +266,9 @@ void CurveItem::setSource(CurveSource source)
     update();
 }
 
-QJsonObject CurveItem::toJson() const
+QJsonObject CurveItem::ToJson() const
 {
-    QJsonObject json = LineItemAbstract::toJson();
+    QJsonObject json = LineItemAbstract::ToJson();
     json.insert(QStringLiteral("dot"), m_hasDot);
     if (m_strokeSource != CurveSource::HAND_DRAWN) {
         json.insert(QStringLiteral("source"), QStringLiteral("line_art"));
@@ -282,7 +282,7 @@ QJsonObject CurveItem::toJson() const
     return json;
 }
 
-void CurveItem::fromJson(const QJsonObject& json)
+void CurveItem::FromJson(const QJsonObject& json)
 {
     m_hasDot = json.value(QStringLiteral("dot")).toBool(false);
     // 来源只剩“手绘 / 图片线稿提取”两种。
@@ -291,7 +291,7 @@ void CurveItem::fromJson(const QJsonObject& json)
                          : CurveSource::HAND_DRAWN;
     m_rawPoints.clear();
 
-    LineItemAbstract::fromJson(json);
+    LineItemAbstract::FromJson(json);
 
     if (m_hasDot) {
         const QJsonArray center = json.value(QStringLiteral("dotCenter")).toArray();
@@ -302,5 +302,5 @@ void CurveItem::fromJson(const QJsonObject& json)
 
     m_drawing = false;
     m_finished = true;
-    rebuildPath();
+    RebuildPath();
 }

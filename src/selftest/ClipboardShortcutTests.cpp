@@ -47,7 +47,7 @@ void selftest::runClipboardShortcutTests(Context& ctx)
         sourceScene.setUndoStack(&sourceUndo);
 
         auto* source = createShapeItem(ShapeType::RECTANGLE);
-        source->setContentSize(QSizeF(120.0, 80.0));
+        source->SetContentSize(QSizeF(120.0, 80.0));
         source->setPos(QPointF(40.0, 50.0));
         sourceScene.addItemsWithUndo({source}, QStringLiteral("Add clipboard source"));
         source->setSelected(true);
@@ -77,7 +77,7 @@ void selftest::runClipboardShortcutTests(Context& ctx)
             copy && (pastedCenter - source->sceneBoundingRect().center()).manhattanLength() > 1.0;
         ctx.check(copy && insideCanvas && movedAwayFromSource, QStringLiteral("粘贴副本落在画布内并离开源图元位置"),
                   QStringLiteral("%1,%2").arg(pastedCenter.x()).arg(pastedCenter.y()));
-        ctx.check(copy && copy->groupId() == 0, QStringLiteral("粘贴副本不带原分组关系"));
+        ctx.check(copy && copy->GroupId() == 0, QStringLiteral("粘贴副本不带原分组关系"));
         ctx.check(pasteUndo.count() == 1, QStringLiteral("粘贴只产生一条撤销记录"));
 
         // 方向键微调：编辑模式按偏移移动选中图元，撤销可还原。

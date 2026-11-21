@@ -13,14 +13,14 @@ class BraceItem : public LineItemAbstract {
   public:
     explicit BraceItem(QGraphicsItem* parent = nullptr);
 
-    QString kind() const override { return QStringLiteral("brace"); }
-    QString displayName() const override { return uiText(QStringLiteral("Brace")); }
+    QString Kind() const override { return QStringLiteral("brace"); }
+    QString DisplayName() const override { return uiText(QStringLiteral("Brace")); }
 
     // 插入入口：括号外接框（场景坐标）+ 描线颜色与宽度；采样下沉到本类，
     // 插入端不再自己拼点。
     void setBraceRect(const QRectF& rectScene, const QColor& color, qreal width);
 
-    ItemPropertySet properties() const override;
-    QVariant propertyValue(ItemProperty property) const override;
-    void setPropertyValue(ItemProperty property, const QVariant& value) override;
+    ItemPropertySet Properties() const override;
+    QVariant PropertyValue(ItemProperty property) const override;
+    void SetPropertyValue(ItemProperty property, const QVariant& value) override;
 };

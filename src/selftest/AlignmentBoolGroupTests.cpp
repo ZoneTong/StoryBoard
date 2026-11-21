@@ -94,10 +94,10 @@ void selftest::runAlignmentTests(Context& ctx)
         alignScene.setUndoStack(&alignUndo);
 
         auto* leftItem = createShapeItem(ShapeType::RECTANGLE);
-        leftItem->setContentSize(QSizeF(120.0, 90.0));
+        leftItem->SetContentSize(QSizeF(120.0, 90.0));
         alignScene.addItemsWithUndo({leftItem}, QStringLiteral("Add align item"));
         auto* rightItem = createShapeItem(ShapeType::ELLIPSE);
-        rightItem->setContentSize(QSizeF(80.0, 60.0));
+        rightItem->SetContentSize(QSizeF(80.0, 60.0));
         alignScene.addItemsWithUndo({rightItem}, QStringLiteral("Add align item"));
         leftItem->setPos(QPointF(40.0, 60.0));
         rightItem->setPos(QPointF(240.0, 180.0));
@@ -112,16 +112,16 @@ void selftest::runAlignmentTests(Context& ctx)
         const int undoBefore = alignUndo.count();
         const int moved = Alignment::apply(&alignScene, Alignment::Mode::LEFT, QStringLiteral("Align items left"));
         ctx.check(
-            moved == 1 && qAbs(leftItem->sceneContentRect().left() - rightItem->sceneContentRect().left()) < 0.01,
+            moved == 1 && qAbs(leftItem->SceneContentRect().left() - rightItem->SceneContentRect().left()) < 0.01,
             QStringLiteral("左对齐后两图元左边缘一致"),
-            QStringLiteral("dx=%1").arg(rightItem->sceneContentRect().left() - leftItem->sceneContentRect().left()));
+            QStringLiteral("dx=%1").arg(rightItem->SceneContentRect().left() - leftItem->SceneContentRect().left()));
         ctx.check(alignUndo.count() == undoBefore + 1, QStringLiteral("对齐整体只占一条撤销记录"));
         alignUndo.undo();
         ctx.check(qAbs(rightItem->pos().x() - 240.0) < 0.01, QStringLiteral("对齐可撤销"));
 
         // 等间距：三个图元按空隙均分。
         auto* thirdItem = createShapeItem(ShapeType::RECTANGLE);
-        thirdItem->setContentSize(QSizeF(60.0, 40.0));
+        thirdItem->SetContentSize(QSizeF(60.0, 40.0));
         alignScene.addItemsWithUndo({thirdItem}, QStringLiteral("Add align item"));
         thirdItem->setPos(QPointF(620.0, 300.0));
         alignScene.clearSelection();
@@ -173,9 +173,9 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         auto makeRect = [&groupScene](qreal x, qreal y) {
             auto* item = createShapeItem(ShapeType::RECTANGLE);
             item->setPos(QPointF(x, y));
-            item->setContentSize(QSizeF(40.0, 40.0));
+            item->SetContentSize(QSizeF(40.0, 40.0));
             item->setStyle(QColor(30, 41, 59), QColor(30, 41, 59, 36), 1.0);
-            item->setFill(QColor(30, 41, 59, 36), FillStyle::SOLID);
+            item->SetFill(QColor(30, 41, 59, 36), FillStyle::SOLID);
             groupScene.addItemsWithUndo({item}, QStringLiteral("Add group item"));
             return item;
         };
@@ -185,12 +185,12 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         first->setSelected(true);
         second->setSelected(true);
         const int innerGroup = groupScene.groupSelectedItems();
-        ctx.check(innerGroup == 2 && first->groupId() > 0 && groupScene.itemsInGroup(first->groupId()).size() == 2,
+        ctx.check(innerGroup == 2 && first->GroupId() > 0 && groupScene.itemsInGroup(first->GroupId()).size() == 2,
                   QStringLiteral("两个同层图元可以组合成一组"), QStringLiteral("grouped=%1").arg(innerGroup));
 
         third->setSelected(true);
         groupScene.groupSelectedItems();
-        const int outerGroup = first->groupId() > 0 ? groupScene.outermostGroup(first->groupId()) : 0;
+        const int outerGroup = first->GroupId() > 0 ? groupScene.outermostGroup(first->GroupId()) : 0;
         ctx.check(
             outerGroup > 0 && groupScene.itemsInGroupTree(outerGroup).size() == 3,
             QStringLiteral("再和其他图元组合时形成外层组，覆盖整棵组树"),
@@ -203,7 +203,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                   QStringLiteral("selected=%1").arg(groupScene.selectedCanvasItems().size()));
         // 撤销分组后成员回到散图元状态。
         groupScene.undoStack()->undo();
-        ctx.check(third->groupId() == 0 && groupScene.groupParents().isEmpty(),
+        ctx.check(third->GroupId() == 0 && groupScene.groupParents().isEmpty(),
                   QStringLiteral("撤销外层分组还原组层级"));
     }
     {
@@ -215,7 +215,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         auto makeRect = [&boolScene](qreal x, const QColor& color) {
             auto* item = createShapeItem(ShapeType::RECTANGLE);
             item->setPos(QPointF(x, 40.0));
-            item->setContentSize(QSizeF(60.0, 60.0));
+            item->SetContentSize(QSizeF(60.0, 60.0));
             item->setStyle(color, color.lighter(160), 1.0);
             boolScene.addItemsWithUndo({item}, QStringLiteral("Add bool item"));
             return item;
@@ -236,9 +236,9 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         auto addRect = [](CanvasScene& scene, qreal x, qreal y, qreal w, qreal h) {
             auto* item = createShapeItem(ShapeType::RECTANGLE);
             item->setPos(QPointF(x, y));
-            item->setContentSize(QSizeF(w, h));
+            item->SetContentSize(QSizeF(w, h));
             item->setStyle(QColor(20, 20, 20), QColor(200, 60, 60), 2.0);
-            item->setFill(QColor(200, 60, 60), FillStyle::SOLID);
+            item->SetFill(QColor(200, 60, 60), FillStyle::SOLID);
             scene.addItemsWithUndo({item}, QStringLiteral("Add rect"));
             return item;
         };
@@ -427,9 +427,9 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                 scene.setCanvasBackground(background);
                 auto* diamond = createShapeItem(ShapeType::PARALLELOGRAM);
                 diamond->setPos(QPointF(70.0, 40.0));
-                diamond->setContentSize(QSizeF(160.0, 120.0));
+                diamond->SetContentSize(QSizeF(160.0, 120.0));
                 diamond->setStyle(QColor(20, 20, 20), QColor(200, 40, 40), 4.0);
-                diamond->setFill(QColor(200, 40, 40), FillStyle::SOLID);
+                diamond->SetFill(QColor(200, 40, 40), FillStyle::SOLID);
                 auto* line = new StraightLineItem();
                 line->setEndpoints(QPointF(30.0, 100.0), QPointF(280.0, 100.0), QColor(30, 90, 200), 6.0);
                 scene.addItemsWithUndo({line, diamond}, QStringLiteral("Add line skip"));
@@ -481,10 +481,10 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             lensScene.setCanvasBackground(lensBackground);
             auto* lensDiamond = createShapeItem(ShapeType::PARALLELOGRAM);
             lensDiamond->setPos(QPointF(60.0, 70.0));
-            lensDiamond->setContentSize(QSizeF(180.0, 180.0));
+            lensDiamond->SetContentSize(QSizeF(180.0, 180.0));
             auto* lensStar = createShapeItem(ShapeType::STAR);
             lensStar->setPos(QPointF(180.0, 60.0));
-            lensStar->setContentSize(QSizeF(180.0, 180.0));
+            lensStar->SetContentSize(QSizeF(180.0, 180.0));
             lensScene.addItemsWithUndo({lensDiamond, lensStar}, QStringLiteral("Add lens pair"));
             lensDiamond->setSelected(true);
             lensStar->setSelected(true);
@@ -517,12 +517,12 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             scene.applyCanvasSize(QSizeF(320.0, 220.0));
             auto* rect = createShapeItem(ShapeType::RECTANGLE);
             rect->setPos(QPointF(60.0, 50.0));
-            rect->setContentSize(QSizeF(160.0, 120.0));
+            rect->SetContentSize(QSizeF(160.0, 120.0));
             rect->setStyle(QColor(20, 20, 20), QColor(255, 255, 255), 4.0);
-            rect->setFill(QColor(200, 40, 40), FillStyle::SOLID);
+            rect->SetFill(QColor(200, 40, 40), FillStyle::SOLID);
             auto* text = new TextItem();
             text->setTextFormat(QStringLiteral("Ag文"), QFont(QStringLiteral("Microsoft YaHei"), 24), QColor(0, 0, 0));
-            text->setContentSize(QSizeF(150.0, 50.0));
+            text->SetContentSize(QSizeF(150.0, 50.0));
             text->setPos(QPointF(65.0, 85.0));
             scene.addItemsWithUndo({rect, text}, QStringLiteral("Add rect and text"));
             rect->setSelected(true);
@@ -530,11 +530,11 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             const bool merged = BoolOps::apply(&scene, BoolOps::Operation::UNION, QStringLiteral("合并"));
             const QList<CanvasItem*> mergedItems = scene.selectedCanvasItems();
             auto* shell = mergedItems.isEmpty() ? nullptr : dynamic_cast<PolygonItem*>(mergedItems.constFirst());
-            ctx.check(merged && shell && shell->fillColor() == QColor(200, 40, 40),
+            ctx.check(merged && shell && shell->FillColor() == QColor(200, 40, 40),
                       QStringLiteral("合并优先采用有填充空间图元的样式（矩形>文字）"),
                       QStringLiteral("ok=%1 fill=%2")
                           .arg(merged ? 1 : 0)
-                          .arg(shell ? shell->fillColor().name() : QStringLiteral("none")));
+                          .arg(shell ? shell->FillColor().name() : QStringLiteral("none")));
         }
 
         // 文字参与合并：只填字形、不描边；不透明层直接覆盖，避免抗锯齿边缘露出白色重影。
@@ -546,12 +546,12 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             scene.applyCanvasSize(QSizeF(320.0, 220.0));
             auto* diamond = createShapeItem(ShapeType::PARALLELOGRAM);
             diamond->setPos(QPointF(60.0, 30.0));
-            diamond->setContentSize(QSizeF(180.0, 140.0));
+            diamond->SetContentSize(QSizeF(180.0, 140.0));
             diamond->setStyle(QColor(20, 20, 20), QColor(255, 255, 255), 4.0);
-            diamond->setFill(QColor(255, 255, 255), FillStyle::SOLID);
+            diamond->SetFill(QColor(255, 255, 255), FillStyle::SOLID);
             auto* text = new TextItem();
             text->setTextFormat(QStringLiteral("Ag文"), QFont(QStringLiteral("Microsoft YaHei"), 24), QColor(0, 0, 0));
-            text->setContentSize(QSizeF(150.0, 50.0));
+            text->SetContentSize(QSizeF(150.0, 50.0));
             text->setPos(QPointF(75.0, 80.0));
             scene.addItemsWithUndo({diamond, text}, QStringLiteral("Add diamond and text"));
             diamond->setSelected(true);
@@ -606,7 +606,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             auto makeRect = [&scene](qreal x, const QColor& color) {
                 auto* item = createShapeItem(ShapeType::RECTANGLE);
                 item->setPos(QPointF(x, 40.0));
-                item->setContentSize(QSizeF(60.0, 60.0));
+                item->SetContentSize(QSizeF(60.0, 60.0));
                 item->setStyle(color, color.lighter(160), 1.0);
                 scene.addItemsWithUndo({item}, QStringLiteral("Add bool item"));
                 return item;
@@ -624,7 +624,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
                 if (auto* composite = dynamic_cast<PolygonItem*>(item)) {
                     layerCount += composite->layerCount();
                     if (area <= 0.0) {
-                        area = composite->outlineShape().boundingRect().width();
+                        area = composite->OutlineShape().boundingRect().width();
                     }
                 }
             }
@@ -663,9 +663,9 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         auto makeRect = [&unionScene](qreal x, const QColor& fill, const QColor& stroke) {
             auto* item = createShapeItem(ShapeType::RECTANGLE);
             item->setPos(QPointF(x, 60.0));
-            item->setContentSize(QSizeF(80.0, 80.0));
+            item->SetContentSize(QSizeF(80.0, 80.0));
             item->setStyle(stroke, fill, 6.0);
-            item->setFill(fill, FillStyle::SOLID);
+            item->SetFill(fill, FillStyle::SOLID);
             unionScene.addItemsWithUndo({item}, QStringLiteral("Add union item"));
             return item;
         };
@@ -740,16 +740,16 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             auto makeShape = [&scene](ShapeType type, QPointF pos, const QColor& fill, bool filled) {
                 auto* shape = createShapeItem(type);
                 shape->setPos(pos);
-                shape->setContentSize(QSizeF(180.0, 180.0));
+                shape->SetContentSize(QSizeF(180.0, 180.0));
                 shape->setStyle(QColor(20, 20, 20), filled ? fill : QColor(Qt::transparent), 8.0);
-                shape->setFill(filled ? fill : QColor(Qt::transparent), filled ? FillStyle::SOLID : FillStyle::NONE);
+                shape->SetFill(filled ? fill : QColor(Qt::transparent), filled ? FillStyle::SOLID : FillStyle::NONE);
                 scene.addItemsWithUndo({shape}, QStringLiteral("Add pair shape"));
                 return shape;
             };
             auto* lower = makeShape(ShapeType::PARALLELOGRAM, QPointF(100.0, 70.0), diamondFill, diamondFilled);
             auto* upper = makeShape(ShapeType::STAR, QPointF(180.0, 60.0), starFill, starFilled);
-            const QPainterPath lowerOutline = lower->mapToScene(lower->outlineShape());
-            const QPainterPath upperOutline = upper->mapToScene(upper->outlineShape());
+            const QPainterPath lowerOutline = lower->mapToScene(lower->OutlineShape());
+            const QPainterPath upperOutline = upper->mapToScene(upper->OutlineShape());
             result.overlapPoint = interiorPoint(lowerOutline.intersected(upperOutline));
             lower->setSelected(true);
             upper->setSelected(true);
@@ -760,11 +760,11 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             result.items = selected.size();
             for (CanvasItem* item : selected) {
                 if (auto* composite = dynamic_cast<PolygonItem*>(item)) {
-                    const QPainterPath outline = composite->mapToScene(composite->outlineShape());
+                    const QPainterPath outline = composite->mapToScene(composite->OutlineShape());
                     result.path = result.path.isEmpty() ? outline : result.path.united(outline);
                     result.layers += composite->layerCount();
                     result.fillStyle = composite->fillStyle();
-                    result.strokeWidth = composite->strokeWidth();
+                    result.strokeWidth = composite->StrokeWidth();
                 }
             }
             return result;
@@ -854,9 +854,9 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         auto makeShape = [&compositeScene](ShapeType type, QPointF pos, QColor fill) {
             auto* shape = createShapeItem(type);
             shape->setPos(pos);
-            shape->setContentSize(QSizeF(140.0, 140.0));
+            shape->SetContentSize(QSizeF(140.0, 140.0));
             shape->setStyle(fill, fill, 4.0);
-            shape->setFill(fill, FillStyle::SOLID);
+            shape->SetFill(fill, FillStyle::SOLID);
             compositeScene.addItemsWithUndo({shape}, QStringLiteral("Add composite source"));
             return shape;
         };
@@ -877,7 +877,7 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             BoolOps::apply(&compositeScene, BoolOps::Operation::UNION, QStringLiteral("Second union"));
         const QList<CanvasItem*> secondSelection = compositeScene.selectedCanvasItems();
         auto* result = secondSelection.isEmpty() ? nullptr : secondSelection.constFirst();
-        const QPainterPath resultPath = result ? result->mapToScene(result->outlineShape()) : QPainterPath();
+        const QPainterPath resultPath = result ? result->mapToScene(result->OutlineShape()) : QPainterPath();
         ctx.check(firstUnion && polygon && secondUnion && result && resultPath.contains(QPointF(80.0, 100.0)) &&
                       resultPath.contains(QPointF(330.0, 160.0)),
                   QStringLiteral("已生成的多边形再次参与联合仍保留原填充区域"),
@@ -900,9 +900,9 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         auto makeRect = [&fallbackScene](qreal x, const QColor& fill, const QColor& stroke, qreal width) {
             auto* item = createShapeItem(ShapeType::RECTANGLE);
             item->setPos(QPointF(x, 60.0));
-            item->setContentSize(QSizeF(80.0, 80.0));
+            item->SetContentSize(QSizeF(80.0, 80.0));
             item->setStyle(stroke, fill, width);
-            item->setFill(fill, FillStyle::SOLID);
+            item->SetFill(fill, FillStyle::SOLID);
             fallbackScene.addItemsWithUndo({item}, QStringLiteral("Add fallback item"));
             return item;
         };
@@ -934,9 +934,9 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
         auto makeRect = [&groupBoolScene](qreal x, const QColor& color) {
             auto* item = createShapeItem(ShapeType::RECTANGLE);
             item->setPos(QPointF(x, 100.0));
-            item->setContentSize(QSizeF(40.0, 40.0));
+            item->SetContentSize(QSizeF(40.0, 40.0));
             item->setStyle(color, color, 2.0);
-            item->setFill(color, FillStyle::SOLID);
+            item->SetFill(color, FillStyle::SOLID);
             groupBoolScene.addItemsWithUndo({item}, QStringLiteral("Add grouped bool item"));
             return item;
         };
@@ -1026,9 +1026,9 @@ void selftest::runGroupBoolOpsTests(Context& ctx)
             auto makeRect = [scene](qreal x, const QColor& fill, const QColor& stroke) {
                 auto* item = createShapeItem(ShapeType::RECTANGLE);
                 item->setPos(QPointF(x, 40.0));
-                item->setContentSize(QSizeF(60.0, 60.0));
+                item->SetContentSize(QSizeF(60.0, 60.0));
                 item->setStyle(stroke, fill, 2.0);
-                item->setFill(fill, FillStyle::SOLID);
+                item->SetFill(fill, FillStyle::SOLID);
                 scene->addItemsWithUndo({item}, QStringLiteral("Add split item"));
                 return item;
             };

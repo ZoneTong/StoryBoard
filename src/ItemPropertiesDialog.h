@@ -29,7 +29,7 @@ class ItemPropertiesDialog : public QDialog {
                                   bool editable = true);
 
     CanvasItem* item() const { return m_item.data(); }
-    bool isEditable() const { return m_editable; }
+    bool IsEditable() const { return m_editable; }
     bool isItemInScene() const;
     static QString layerDescription(const CanvasScene* scene, int layerId);
     void accept() override;

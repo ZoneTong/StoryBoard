@@ -217,7 +217,7 @@ class ItemPropertiesCommand : public QUndoCommand {
 
 // 透明度对图形、笔画、文字、图片等所有图元都生效。
 // 属性表命令：一次编辑把同一组属性值写回所有目标图元，只占一条撤销记录。
-// 替代原先按图元类型分拆的样式命令，读写都走 properties()/propertyValue()/setPropertyValue()。
+// 替代原先按图元类型分拆的样式命令，读写都走 Properties()/PropertyValue()/SetPropertyValue()。
 class ItemPropertyCommand : public QUndoCommand {
   public:
     ItemPropertyCommand(CanvasScene* scene, const QList<CanvasItem*>& items,

@@ -31,7 +31,7 @@ QPainterPath itemOutlinePath(CanvasItem* item)
         return QPainterPath();
     }
 
-    QPainterPath path = item->outlineShape();
+    QPainterPath path = item->OutlineShape();
     if (path.isEmpty()) {
         return path;
     }
@@ -118,7 +118,7 @@ bool loadCustomShapeTemplate(const QString& filePath, CustomShapeTemplate* resul
         if (!item) {
             continue;
         }
-        item->fromJson(object);
+        item->FromJson(object);
         combined.addPath(itemOutlinePath(item.get()));
     }
 

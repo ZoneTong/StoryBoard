@@ -221,8 +221,8 @@ void CanvasScene::applyLayerStateInternal(const LayerStackState& state, bool pre
 
     const QList<CanvasItem*> items = canvasItems();
     for (CanvasItem* item : items) {
-        if (!hasLayer(item->layerId())) {
-            item->setLayerId(m_activeLayerId);
+        if (!hasLayer(item->LayerId())) {
+            item->SetLayerId(m_activeLayerId);
         }
     }
     normalizeAllHeights();

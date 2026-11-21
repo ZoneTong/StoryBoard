@@ -78,7 +78,7 @@ class PropertiesPanel : public QWidget {
     void applyTextColor(const QColor& color);
     // 需求 13：给选中的所有可填充图元批量替换背景图片（多选也生效）。
     void chooseFillImage();
-    void clearFillImage();
+    void ClearFillImage();
     // 属性表通道：同一组属性值写回所有目标图元，只占一条撤销记录。
     void applyPropertyValues(const QMap<ItemProperty, QVariant>& values, const QString& text,
                              const QList<CanvasItem*>& targets = QList<CanvasItem*>());

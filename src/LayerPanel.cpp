@@ -289,8 +289,8 @@ void LayerPanel::syncSceneSelection()
 
     QList<int> ids;
     for (CanvasItem* item : items) {
-        if (!ids.contains(item->layerId())) {
-            ids.append(item->layerId());
+        if (!ids.contains(item->LayerId())) {
+            ids.append(item->LayerId());
         }
     }
     std::sort(ids.begin(), ids.end());

@@ -301,7 +301,7 @@ void PropertiesPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QL
     const bool enabled = !shapes.isEmpty();
     if (m_opacitySpin) {
         m_opacitySpin->setEnabled(!items.isEmpty());
-        m_opacitySpin->setValue(items.isEmpty() ? 100 : qRound(items.first()->itemOpacity() * 100.0));
+        m_opacitySpin->setValue(items.isEmpty() ? 100 : qRound(items.first()->ItemOpacity() * 100.0));
     }
     if (m_cornerSpin) {
         m_cornerSpin->setEnabled(enabled);
@@ -311,7 +311,7 @@ void PropertiesPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QL
                               ? qMax(1, qRound(qMin(size.width(), size.height()) / 2.0))
                               : 400;
         m_cornerSpin->setMaximum(limit);
-        const qreal radius = shapes.isEmpty() ? 0.0 : qMax<qreal>(0.0, shapes.first()->cornerRadius());
+        const qreal radius = shapes.isEmpty() ? 0.0 : qMax<qreal>(0.0, shapes.first()->CornerRadius());
         m_cornerSpin->setValue(qBound(0, qRound(radius), limit));
     }
     // 弧线角度：扇形等形状与曲线族里的弧线共用这两行，优先回显当前选中的弧线曲线。
@@ -319,9 +319,9 @@ void PropertiesPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QL
     ShapeItem* arcShape = nullptr;
     LineItemAbstract* sineCurve = nullptr;
     for (LineItemAbstract* stroke : strokes) {
-        if (stroke->supportsArcAngles() && !arcCurve) {
+        if (stroke->SupportsArcAngles() && !arcCurve) {
             arcCurve = stroke;
-        } else if (stroke->supportsSineWave() && !sineCurve) {
+        } else if (stroke->SupportsSineWave() && !sineCurve) {
             sineCurve = stroke;
         }
     }
@@ -334,13 +334,13 @@ void PropertiesPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QL
     if (m_startAngleSpin) {
         const bool on = arcCurve || arcShape;
         m_startAngleSpin->setEnabled(on);
-        const qreal start = arcCurve ? arcCurve->paramState().first : (arcShape ? arcShape->startAngle() : 30.0);
+        const qreal start = arcCurve ? arcCurve->paramState().first : (arcShape ? arcShape->StartAngle() : 30.0);
         m_startAngleSpin->setValue(qRound(start));
     }
     if (m_angleSpin) {
         const bool on = arcCurve || arcShape;
         m_angleSpin->setEnabled(on);
-        const qreal sweep = arcCurve ? arcCurve->paramState().second : (arcShape ? arcShape->sweepAngle() : 120.0);
+        const qreal sweep = arcCurve ? arcCurve->paramState().second : (arcShape ? arcShape->SweepAngle() : 120.0);
         m_angleSpin->setValue(qMax(1, qRound(sweep)));
     }
     if (m_sineCyclesSpin && m_sineAmplitudeSpin) {
@@ -354,7 +354,7 @@ void PropertiesPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QL
 
     ShapeItem* triangle = nullptr;
     for (ShapeItem* shape : shapes) {
-        if (shape && shape->shapeType() == ShapeType::TRIANGLE && !shape->isCustomShape()) {
+        if (shape && shape->shapeType() == ShapeType::TRIANGLE && !shape->IsCustomShape()) {
             triangle = shape;
             break;
         }
@@ -366,18 +366,18 @@ void PropertiesPanelValueCard::refresh(const QList<ShapeItem*>& shapes, const QL
         m_triangleAngle2Spin->setEnabled(triangleOn);
         // 底边即内容矩形宽度；角度直接回显当前值，未选中三角形时给默认 64 / 60° / 60°。
         m_triangleBaseSpin->setValue(triangleOn ? qRound(triangle->contentSize().width()) : 64);
-        m_triangleAngle1Spin->setValue(triangleOn ? qRound(triangle->bottomAngle1()) : 60);
-        m_triangleAngle2Spin->setValue(triangleOn ? qRound(triangle->bottomAngle2()) : 60);
+        m_triangleAngle1Spin->setValue(triangleOn ? qRound(triangle->BottomAngle1()) : 60);
+        m_triangleAngle2Spin->setValue(triangleOn ? qRound(triangle->BottomAngle2()) : 60);
     }
 
     if (m_startArrowCombo && m_endArrowCombo) {
         // 图形族不再有箭头，只有线条族（直线 / 弧线 / 正弦 / 手绘 / 花括号）显示这两行。
         LineItemAbstract* line = strokes.isEmpty() ? nullptr : strokes.first();
-        const bool on = line && line->arrowsEnabled();
+        const bool on = line && line->ArrowsEnabled();
         m_startArrowCombo->setEnabled(on);
         m_endArrowCombo->setEnabled(on);
-        const ArrowStyle startStyle = on ? line->startArrow() : ArrowStyle::NONE;
-        const ArrowStyle endStyle = on ? line->endArrow() : ArrowStyle::NONE;
+        const ArrowStyle startStyle = on ? line->StartArrow() : ArrowStyle::NONE;
+        const ArrowStyle endStyle = on ? line->EndArrow() : ArrowStyle::NONE;
         m_startArrowCombo->setCurrentIndex(qMax(0, m_startArrowCombo->findData(static_cast<int>(startStyle))));
         m_endArrowCombo->setCurrentIndex(qMax(0, m_endArrowCombo->findData(static_cast<int>(endStyle))));
     }

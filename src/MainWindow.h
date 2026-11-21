@@ -147,11 +147,11 @@ class MainWindow : public QMainWindow {
     void insertCustomShape(const QString& filePath);
     void openShapesFolder();
     void updatePropertiesPanelDockVisibility();
-    void setFillStyle(FillStyle style);
+    void SetFillStyle(FillStyle style);
     void chooseFillColor();
     void chooseStrokeColor();
     // 描线样式（需求 1）：与填充样式同构的全局状态入口。
-    void setStrokeStyle(Qt::PenStyle style);
+    void SetStrokeStyle(Qt::PenStyle style);
     // 菜单“描线宽度”普通项触发后聚焦工具栏宽度输入框末尾（需求 1）。
     void focusStrokeWidthSpin();
     void updateFillActions();

@@ -135,7 +135,7 @@ ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QW
 QRectF ExportDialog::selectedArea() const
 {
     if (m_scopeCombo->currentIndex() == 1) {
-        QRectF content = m_scene->contentRect();
+        QRectF content = m_scene->ContentRect();
         if (content.isEmpty()) {
             content = m_scene->canvasRect();
         }

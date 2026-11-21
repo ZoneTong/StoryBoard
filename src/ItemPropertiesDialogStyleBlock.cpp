@@ -67,7 +67,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
 
     if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
         // 多边形派生自 ShapeItem 但没有形状类型：填充与描线照旧，圆角 / 角度等行不给。
-        const bool filled = shape->shapeLayerCount() > 0 || shapeTypeIsFilled(shape->shapeType());
+        const bool filled = shape->ShapeLayerCount() > 0 || shapeTypeIsFilled(shape->shapeType());
         m_hasFill = filled;
 
         // 需求 5/9a：直线、弧线这类只描线的图形根本没有填充属性，
@@ -85,14 +85,14 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
                 m_fillStyleCombo->setCurrentIndex(index);
             }
 
-            m_fillColorButton = ItemPropertiesFields::makeColorField(this, shape->fillColor(),
+            m_fillColorButton = ItemPropertiesFields::makeColorField(this, shape->FillColor(),
                                                                      QStringLiteral("ItemPropertiesFillColorValue"),
                                                                      ItemPropertiesFields::ColorIconRole::FILL);
             // 需求 15：独立「填充图片」属性，不进 FillStyle；图片透明处露出填充色 / 图案。
-            buildFillImageRow(shape->fillImage(), shape->fillImageMode());
+            buildFillImageRow(shape->FillImage(), shape->FillImageMode());
         }
 
-        m_strokeColorButton = ItemPropertiesFields::makeColorField(this, shape->strokeColor(),
+        m_strokeColorButton = ItemPropertiesFields::makeColorField(this, shape->StrokeColor(),
                                                                    QStringLiteral("ItemPropertiesStrokeColorValue"),
                                                                    ItemPropertiesFields::ColorIconRole::BORDER);
 
@@ -103,7 +103,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_borderStyleCombo->addItem(ItemStyleVisuals::borderStyleIcon(penStyle, 16),
                                         ItemStyleVisuals::borderStyleName(penStyle), static_cast<int>(penStyle));
         }
-        const int borderStyleIndex = m_borderStyleCombo->findData(static_cast<int>(shape->strokeStyle()));
+        const int borderStyleIndex = m_borderStyleCombo->findData(static_cast<int>(shape->StrokeStyle()));
         if (borderStyleIndex >= 0) {
             m_borderStyleCombo->setCurrentIndex(borderStyleIndex);
         }
@@ -113,25 +113,25 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
         m_strokeWidthSpin->setRange(1, 64);
         m_strokeWidthSpin->setSingleStep(1);
         m_strokeWidthSpin->setSuffix(QStringLiteral(" px"));
-        m_strokeWidthSpin->setValue(qRound(shape->strokeWidth()));
-        m_initialStrokeWidth = shape->strokeWidth();
+        m_strokeWidthSpin->setValue(qRound(shape->StrokeWidth()));
+        m_initialStrokeWidth = shape->StrokeWidth();
         m_strokeWidthSpin->setMinimumWidth(88);
 
         m_opacitySpin = new QSpinBox(this);
         m_opacitySpin->setObjectName(QStringLiteral("ItemPropertiesOpacityValue"));
         m_opacitySpin->setRange(0, 100);
         m_opacitySpin->setSuffix(QStringLiteral(" %"));
-        m_opacitySpin->setValue(qRound(shape->itemOpacity() * 100.0));
-        m_initialOpacity = shape->itemOpacity();
+        m_opacitySpin->setValue(qRound(shape->ItemOpacity() * 100.0));
+        m_initialOpacity = shape->ItemOpacity();
         m_initialOpacityPercent = m_opacitySpin->value();
         m_opacitySpin->setMinimumWidth(88);
 
         const ShapeType type = shape->shapeType();
         // 多边形没有形状类型：圆角 / 角度 / 箭头这些按类型出现的行一律不给。
-        const bool plainShape = shape->shapeLayerCount() == 0;
+        const bool plainShape = shape->ShapeLayerCount() == 0;
         if (plainShape && type == ShapeType::SECTOR) {
-            m_initialStartAngle = shape->startAngle();
-            m_initialSweepAngle = shape->sweepAngle();
+            m_initialStartAngle = shape->StartAngle();
+            m_initialSweepAngle = shape->SweepAngle();
             m_startAngleSpin = new QSpinBox(this);
             m_startAngleSpin->setObjectName(QStringLiteral("ItemPropertiesStartAngleValue"));
             m_startAngleSpin->setRange(-360, 360);
@@ -149,12 +149,12 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_sweepAngleSpin->setMinimumWidth(88);
         }
 
-        if (plainShape && !shape->isCustomShape() && type == ShapeType::RECTANGLE) {
+        if (plainShape && !shape->IsCustomShape() && type == ShapeType::RECTANGLE) {
             m_contentSize = shape->contentSize();
-            const qreal radius = shape->cornerRadius();
+            const qreal radius = shape->CornerRadius();
             const qreal minSide = qMin(m_contentSize.width(), m_contentSize.height());
             m_defaultCornerRatio = minSide > 0.0 ? radius / minSide : 0.0;
-            m_initialStoredCornerRadius = shape->cornerRadius();
+            m_initialStoredCornerRadius = shape->CornerRadius();
             m_initialCornerRadius = qRound(radius);
 
             m_cornerRadiusSpin = new QSpinBox(this);
@@ -170,9 +170,9 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
 
         // 需求 1：三角形两个底角在属性窗里也可编辑；底边长度同样给出独立字段，
         // 与卡片上的「底边」一致，写入内容矩形宽度后高度按角度派生。
-        if (plainShape && !shape->isCustomShape() && type == ShapeType::TRIANGLE) {
-            m_initialBottomAngle1 = shape->bottomAngle1();
-            m_initialBottomAngle2 = shape->bottomAngle2();
+        if (plainShape && !shape->IsCustomShape() && type == ShapeType::TRIANGLE) {
+            m_initialBottomAngle1 = shape->BottomAngle1();
+            m_initialBottomAngle2 = shape->BottomAngle2();
             m_initialTriangleBase = qMax(8, qRound(shape->contentSize().width()));
 
             m_triangleBaseSpin = new QSpinBox(this);
@@ -203,8 +203,8 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
         }
 
         // 需求 9：平行四边形的左下内角可编辑；角度只影响上边相对底边的偏移。
-        if (plainShape && !shape->isCustomShape() && type == ShapeType::PARALLELOGRAM) {
-            m_initialParallelogramAngle = shape->parallelogramAngle();
+        if (plainShape && !shape->IsCustomShape() && type == ShapeType::PARALLELOGRAM) {
+            m_initialParallelogramAngle = shape->ParallelogramAngle();
 
             m_parallelogramAngleSpin = new QSpinBox(this);
             m_parallelogramAngleSpin->setObjectName(QStringLiteral("ItemPropertiesParallelogramAngleValue"));
@@ -216,7 +216,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_parallelogramAngleSpin->setValue(qRound(m_initialParallelogramAngle));
         }
 
-    } else if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->shapeLayerCount() > 0) {
+    } else if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->ShapeLayerCount() > 0) {
         m_hasFill = true;
 
         m_fillStyleCombo = new QComboBox(this);
@@ -232,12 +232,12 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
         }
 
         // 需求 15：多边形同样支持图片填充，裁剪到 FilledArea 层并集（孔洞留空）。
-        buildFillImageRow(composite->fillImage(), composite->fillImageMode());
+        buildFillImageRow(composite->FillImage(), composite->FillImageMode());
 
-        m_fillColorButton = ItemPropertiesFields::makeColorField(this, composite->fillColor(),
+        m_fillColorButton = ItemPropertiesFields::makeColorField(this, composite->FillColor(),
                                                                  QStringLiteral("ItemPropertiesFillColorValue"),
                                                                  ItemPropertiesFields::ColorIconRole::FILL);
-        m_strokeColorButton = ItemPropertiesFields::makeColorField(this, composite->strokeColor(),
+        m_strokeColorButton = ItemPropertiesFields::makeColorField(this, composite->StrokeColor(),
                                                                    QStringLiteral("ItemPropertiesStrokeColorValue"),
                                                                    ItemPropertiesFields::ColorIconRole::BORDER);
 
@@ -248,7 +248,7 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             m_borderStyleCombo->addItem(ItemStyleVisuals::borderStyleIcon(penStyle, 16),
                                         ItemStyleVisuals::borderStyleName(penStyle), static_cast<int>(penStyle));
         }
-        const int compositeBorderIndex = m_borderStyleCombo->findData(static_cast<int>(composite->strokeStyle()));
+        const int compositeBorderIndex = m_borderStyleCombo->findData(static_cast<int>(composite->StrokeStyle()));
         if (compositeBorderIndex >= 0) {
             m_borderStyleCombo->setCurrentIndex(compositeBorderIndex);
         }
@@ -258,11 +258,11 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
         m_strokeWidthSpin->setRange(1, 64);
         m_strokeWidthSpin->setSingleStep(1);
         m_strokeWidthSpin->setSuffix(QStringLiteral(" px"));
-        m_strokeWidthSpin->setValue(qRound(qMax<qreal>(1.0, composite->strokeWidth())));
-        m_initialStrokeWidth = composite->strokeWidth();
+        m_strokeWidthSpin->setValue(qRound(qMax<qreal>(1.0, composite->StrokeWidth())));
+        m_initialStrokeWidth = composite->StrokeWidth();
         m_strokeWidthSpin->setMinimumWidth(88);
     } else if (auto* stroke = dynamic_cast<LineItemAbstract*>(item)) {
-        m_strokeColorButton = ItemPropertiesFields::makeColorField(this, stroke->strokeColor(),
+        m_strokeColorButton = ItemPropertiesFields::makeColorField(this, stroke->StrokeColor(),
                                                                    QStringLiteral("ItemPropertiesStrokeColorValue"),
                                                                    ItemPropertiesFields::ColorIconRole::BORDER);
 
@@ -283,8 +283,8 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
         m_strokeWidthSpin->setRange(1, 64);
         m_strokeWidthSpin->setSingleStep(1);
         m_strokeWidthSpin->setSuffix(QStringLiteral(" px"));
-        m_strokeWidthSpin->setValue(qRound(stroke->strokeWidth()));
-        m_initialStrokeWidth = stroke->strokeWidth();
+        m_strokeWidthSpin->setValue(qRound(stroke->StrokeWidth()));
+        m_initialStrokeWidth = stroke->StrokeWidth();
         m_strokeWidthSpin->setMinimumWidth(88);
 
         // 需求 27：曲线与直线一样，属性窗提供两端箭头样式；箭头对全部曲线子型开放（含花括号）。
@@ -306,8 +306,8 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
             }
         }
         m_startArrowCombo->setCurrentIndex(
-            qMax(0, m_startArrowCombo->findData(static_cast<int>(stroke->startArrow()))));
-        m_endArrowCombo->setCurrentIndex(qMax(0, m_endArrowCombo->findData(static_cast<int>(stroke->endArrow()))));
+            qMax(0, m_startArrowCombo->findData(static_cast<int>(stroke->StartArrow()))));
+        m_endArrowCombo->setCurrentIndex(qMax(0, m_endArrowCombo->findData(static_cast<int>(stroke->EndArrow()))));
         arrowLayout->addWidget(m_startArrowCombo, 1);
         arrowLayout->addWidget(m_endArrowCombo, 1);
     }
@@ -363,7 +363,7 @@ void ItemPropertiesDialogStyleBlock::addRows(QFormLayout* form)
     }
 }
 
-ImageFill::Mode ItemPropertiesDialogStyleBlock::fillImageMode() const
+ImageFill::Mode ItemPropertiesDialogStyleBlock::FillImageMode() const
 {
     if (!m_fillImageModeCombo) {
         return ImageFill::Mode::STRETCH;
@@ -371,7 +371,7 @@ ImageFill::Mode ItemPropertiesDialogStyleBlock::fillImageMode() const
     return static_cast<ImageFill::Mode>(m_fillImageModeCombo->currentData().toInt());
 }
 
-void ItemPropertiesDialogStyleBlock::setContentSize(const QSizeF& size)
+void ItemPropertiesDialogStyleBlock::SetContentSize(const QSizeF& size)
 {
     m_contentSize = size;
     if (m_cornerRadiusSpin) {

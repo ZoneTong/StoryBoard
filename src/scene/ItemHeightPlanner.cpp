@@ -11,11 +11,11 @@ int ItemHeightPlanner::nextHeight(const QList<CanvasItem*>& items, int layerId) 
     QSet<int> used;
     int maximum = 0;
     for (CanvasItem* item : items) {
-        if (item->layerId() != layerId || item->height() < 0) {
+        if (item->LayerId() != layerId || item->ZOrder() < 0) {
             continue;
         }
-        used.insert(item->height());
-        maximum = qMax(maximum, item->height());
+        used.insert(item->ZOrder());
+        maximum = qMax(maximum, item->ZOrder());
     }
 
     const int aboveTop = maximum + 1;
@@ -36,10 +36,10 @@ bool ItemHeightPlanner::heightsUnique(const QList<CanvasItem*>& items) const
 {
     QSet<int> heights;
     for (CanvasItem* item : items) {
-        if (item->height() < 0 || item->height() > m_maxHeight || heights.contains(item->height())) {
+        if (item->ZOrder() < 0 || item->ZOrder() > m_maxHeight || heights.contains(item->ZOrder())) {
             return false;
         }
-        heights.insert(item->height());
+        heights.insert(item->ZOrder());
     }
     return true;
 }
@@ -47,7 +47,7 @@ bool ItemHeightPlanner::heightsUnique(const QList<CanvasItem*>& items) const
 bool ItemHeightPlanner::heightUsedByOther(const QList<CanvasItem*>& items, int height, const CanvasItem* except) const
 {
     for (const CanvasItem* item : items) {
-        if (item != except && item->height() == height) {
+        if (item != except && item->ZOrder() == height) {
             return true;
         }
     }

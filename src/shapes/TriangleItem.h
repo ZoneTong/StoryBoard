@@ -9,9 +9,9 @@ class TriangleItem : public ShapeItem {
     TriangleItem();
     QSizeF defaultContentSize() const override;
     ShapeType shapeType() const override { return ShapeType::TRIANGLE; }
-    ItemPropertySet properties() const override;
-    bool apexAngleHandle() const override { return true; }
+    ItemPropertySet Properties() const override;
+    bool ApexAngleHandle() const override { return true; }
 
   protected:
-    QPainterPath shapePath(const QRectF& rect) const override;
+    QPainterPath ShapePath(const QRectF& rect) const override;
 };

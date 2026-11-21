@@ -13,7 +13,7 @@ QList<CanvasItem*> CanvasScene::itemsInGroup(int groupId) const
         return result;
     }
     for (CanvasItem* item : canvasItems()) {
-        if (item->groupId() == groupId) {
+        if (item->GroupId() == groupId) {
             result.append(item);
         }
     }
@@ -46,7 +46,7 @@ QList<CanvasItem*> CanvasScene::itemsInGroupTree(int groupId) const
         return result;
     }
     for (CanvasItem* item : canvasItems()) {
-        if (item->groupId() > 0 && outermostGroup(item->groupId()) == groupId) {
+        if (item->GroupId() > 0 && outermostGroup(item->GroupId()) == groupId) {
             result.append(item);
         }
     }
@@ -55,10 +55,10 @@ QList<CanvasItem*> CanvasScene::itemsInGroupTree(int groupId) const
 
 bool CanvasScene::selectGroupOfItem(CanvasItem* item)
 {
-    if (!item || item->groupId() <= 0) {
+    if (!item || item->GroupId() <= 0) {
         return false;
     }
-    const int groupId = outermostGroup(item->groupId());
+    const int groupId = outermostGroup(item->GroupId());
     if (groupId <= 0) {
         return false;
     }
@@ -89,9 +89,9 @@ bool CanvasScene::canGroupSelectedItems() const
         return false;
     }
 
-    const int layerId = selected.constFirst()->layerId();
+    const int layerId = selected.constFirst()->LayerId();
     for (CanvasItem* item : selected) {
-        if (!isItemEditable(item) || item->layerId() != layerId) {
+        if (!isItemEditable(item) || item->LayerId() != layerId) {
             return false;
         }
     }
@@ -104,7 +104,7 @@ bool CanvasScene::canUngroupSelectedItems() const
         return false;
     }
     for (CanvasItem* item : selectedCanvasItems()) {
-        if (isItemEditable(item) && item->groupId() > 0) {
+        if (isItemEditable(item) && item->GroupId() > 0) {
             return true;
         }
     }
@@ -126,12 +126,12 @@ int CanvasScene::groupSelectedItems()
     before.reserve(items.size());
     after.reserve(items.size());
     for (CanvasItem* item : items) {
-        before.append(item->groupId());
-        if (item->groupId() > 0) {
+        before.append(item->GroupId());
+        if (item->GroupId() > 0) {
             // 选中项已经在某个组里：保留它的内层归属，把那个组整体并入新组，
             // 这样旧组变成新组的子组，选中行为才按“最外层组”展开。
-            parentsAfter.insert(outermostGroup(item->groupId()), groupId);
-            after.append(item->groupId());
+            parentsAfter.insert(outermostGroup(item->GroupId()), groupId);
+            after.append(item->GroupId());
         } else {
             after.append(groupId);
         }
@@ -175,8 +175,8 @@ int CanvasScene::ungroupSelectedItems()
     QSet<CanvasItem*> seen;
     QSet<int> groupIds;
     for (CanvasItem* selected : selectedCanvasItems()) {
-        if (isItemEditable(selected) && selected->groupId() > 0) {
-            groupIds.insert(outermostGroup(selected->groupId()));
+        if (isItemEditable(selected) && selected->GroupId() > 0) {
+            groupIds.insert(outermostGroup(selected->GroupId()));
         }
     }
     QHash<int, int> parentsAfter = m_groupParents;
@@ -206,7 +206,7 @@ int CanvasScene::ungroupSelectedItems()
     before.reserve(items.size());
     after.reserve(items.size());
     for (CanvasItem* item : items) {
-        before.append(item->groupId());
+        before.append(item->GroupId());
         after.append(0);
     }
 
@@ -227,7 +227,7 @@ void CanvasScene::applyGroupIds(const QList<CanvasItem*>& items, const QList<int
     }
     for (int i = 0; i < items.size(); ++i) {
         if (items.at(i)) {
-            items.at(i)->setGroupId(groupIds.at(i));
+            items.at(i)->SetGroupId(groupIds.at(i));
         }
     }
     update();

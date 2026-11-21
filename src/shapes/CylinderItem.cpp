@@ -4,7 +4,7 @@
 
 CylinderItem::CylinderItem()
 {
-    setContentSize(defaultContentSize());
+    SetContentSize(defaultContentSize());
 }
 
 QSizeF CylinderItem::defaultContentSize() const
@@ -12,7 +12,7 @@ QSizeF CylinderItem::defaultContentSize() const
     return QSizeF(104.0, 128.0);
 }
 
-QPainterPath CylinderItem::shapePath(const QRectF& rect) const
+QPainterPath CylinderItem::ShapePath(const QRectF& rect) const
 {
     return ShapePathBuilder::cylinderPath(rect);
 }

@@ -47,7 +47,7 @@ bool isStrokeHitToleranceOnly(CanvasItem* item, const QPointF& scenePos)
     if (!isStrokeItem(item)) {
         return false;
     }
-    return !item->paintedShape().contains(item->mapFromScene(scenePos));
+    return !item->PaintedShape().contains(item->mapFromScene(scenePos));
 }
 
 } // namespace
@@ -281,7 +281,7 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
                 if (!m_scene->isItemEditable(canvasItem)) {
                     continue;
                 }
-                if (m_scene->preferredLayerIds().contains(canvasItem->layerId())) {
+                if (m_scene->preferredLayerIds().contains(canvasItem->LayerId())) {
                     continue;
                 }
                 suspended.append({canvasItem, canvasItem->acceptedMouseButtons(),
@@ -324,7 +324,7 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
     if (m_mode == ToolMode::EDIT && event->button() == Qt::LeftButton &&
         !event->modifiers().testFlag(Qt::ControlModifier)) {
         CanvasItem* item = m_hits->editableItemAt(position);
-        if (item && item->groupId() > 0) {
+        if (item && item->GroupId() > 0) {
             m_scene->selectGroupOfItem(item);
         }
     }
@@ -342,7 +342,7 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
     if (m_mode == ToolMode::EDIT && event->button() == Qt::LeftButton &&
         !event->modifiers().testFlag(Qt::ControlModifier)) {
         CanvasItem* item = m_hits->editableItemAt(position);
-        if (item && item->groupId() > 0 && m_scene->selectedCanvasItems().size() > 1) {
+        if (item && item->GroupId() > 0 && m_scene->selectedCanvasItems().size() > 1) {
             m_scene->selectGroupOfItem(item);
         }
     }
@@ -417,13 +417,13 @@ void CanvasView::selectItemsInsideBand(const QPoint& from, const QPoint& to)
     const QRectF sceneRect = mapToScene(viewRect).boundingRect();
     for (QGraphicsItem* graphicsItem : m_scene->items()) {
         auto* item = qgraphicsitem_cast<CanvasItem*>(graphicsItem);
-        if (!item || !item->isVisible() || !item->isEditable()) {
+        if (!item || !item->isVisible() || !item->IsEditable()) {
             continue;
         }
         if (!item->flags().testFlag(QGraphicsItem::ItemIsSelectable)) {
             continue;
         }
-        const QRectF itemRect = item->mapRectToScene(item->frameRect());
+        const QRectF itemRect = item->mapRectToScene(item->FrameRect());
         if (sceneRect.contains(itemRect)) {
             item->setSelected(true);
         }

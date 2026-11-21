@@ -333,14 +333,14 @@ void selftest::runPaintOrderTests(Context& ctx)
 
     auto* redItem = createShapeItem(ShapeType::RECTANGLE);
     redItem->setStyle(QColor(Qt::transparent), redColor, 1.0);
-    redItem->setContentSize(QSizeF(80, 80));
+    redItem->SetContentSize(QSizeF(80, 80));
     redItem->setPos(QPointF(10, 10));
     paintScene.addItemsWithUndo({redItem}, QStringLiteral("添加红色图元"));
 
     ctx.check(paintScene.addLayerWithUndo(QStringLiteral("蓝色层")), QStringLiteral("渲染测试新建上层"));
     auto* blueItem = createShapeItem(ShapeType::RECTANGLE);
     blueItem->setStyle(QColor(Qt::transparent), blueColor, 1.0);
-    blueItem->setContentSize(QSizeF(80, 80));
+    blueItem->SetContentSize(QSizeF(80, 80));
     blueItem->setPos(QPointF(20, 20));
     paintScene.addItemsWithUndo({blueItem}, QStringLiteral("添加蓝色图元"));
     const int blueLayerId = paintScene.activeLayerId();
@@ -363,7 +363,7 @@ void selftest::runPaintOrderTests(Context& ctx)
         const QJsonDocument demoDocument = QJsonDocument::fromJson(demoFile.readAll());
         CanvasScene demoLoaded;
         QString demoError;
-        ctx.check(demoLoaded.fromJson(demoDocument.object(), &demoError), QStringLiteral("加载示例画布"), demoError);
+        ctx.check(demoLoaded.FromJson(demoDocument.object(), &demoError), QStringLiteral("加载示例画布"), demoError);
         ctx.check(
             demoLoaded.userLayerCount() == 3 && demoLoaded.activeLayerId() == demoLoaded.layers().last().id &&
                 demoLoaded.canvasItemCount() == 27,

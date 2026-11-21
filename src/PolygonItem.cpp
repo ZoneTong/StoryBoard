@@ -49,7 +49,7 @@ PolygonItem::PolygonItem(const QList<Layer>& layers, FillStyle fillStyle, Qt::Pe
     updateBoundsFromLayers();
 }
 
-QColor PolygonItem::fillColor() const
+QColor PolygonItem::FillColor() const
 {
     for (const Layer& layer : m_layers) {
         if (layer.role == LayerRole::FILLED_AREA && layer.filled) {
@@ -64,7 +64,7 @@ QColor PolygonItem::fillColor() const
     return QColor();
 }
 
-QColor PolygonItem::strokeColor() const
+QColor PolygonItem::StrokeColor() const
 {
     for (const Layer& layer : m_layers) {
         if (layer.role == LayerRole::FILLED_AREA && layer.strokeWidth > 0.0) {
@@ -77,10 +77,10 @@ QColor PolygonItem::strokeColor() const
             return layer.fill;
         }
     }
-    return fillColor();
+    return FillColor();
 }
 
-qreal PolygonItem::strokeWidth() const
+qreal PolygonItem::StrokeWidth() const
 {
     for (const Layer& layer : m_layers) {
         if (layer.role == LayerRole::FILLED_AREA && layer.strokeWidth > 0.0) {
@@ -90,7 +90,7 @@ qreal PolygonItem::strokeWidth() const
     return 0.0;
 }
 
-void PolygonItem::setFill(const QColor& color, FillStyle style)
+void PolygonItem::SetFill(const QColor& color, FillStyle style)
 {
     if (!color.isValid()) {
         return;
@@ -105,7 +105,7 @@ void PolygonItem::setFill(const QColor& color, FillStyle style)
     update();
 }
 
-void PolygonItem::setFillStyle(FillStyle style)
+void PolygonItem::SetFillStyle(FillStyle style)
 {
     m_fillStyle = style;
     update();
@@ -131,10 +131,10 @@ void PolygonItem::setStroke(const QColor& color, qreal width)
     update();
 }
 
-void PolygonItem::setFillImage(const QPixmap& image, ImageFill::Mode mode)
+void PolygonItem::SetFillImage(const QPixmap& image, ImageFill::Mode mode)
 {
     if (image.isNull()) {
-        clearFillImage();
+        ClearFillImage();
         return;
     }
     m_fillImage = image;
@@ -142,7 +142,7 @@ void PolygonItem::setFillImage(const QPixmap& image, ImageFill::Mode mode)
     update();
 }
 
-void PolygonItem::clearFillImage()
+void PolygonItem::ClearFillImage()
 {
     if (m_fillImage.isNull()) {
         return;
@@ -151,18 +151,18 @@ void PolygonItem::clearFillImage()
     update();
 }
 
-void PolygonItem::setStrokeStyle(Qt::PenStyle style)
+void PolygonItem::SetStrokeStyle(Qt::PenStyle style)
 {
     m_strokeStyle = style;
     update();
 }
 
-QString PolygonItem::displayName() const
+QString PolygonItem::DisplayName() const
 {
     return uiText(QStringLiteral("Polygon"));
 }
 
-QString PolygonItem::typeDisplayName() const
+QString PolygonItem::TypeDisplayName() const
 {
     return uiText(QStringLiteral("Polygon"));
 }
@@ -178,8 +178,8 @@ void PolygonItem::updateBoundsFromLayers()
         bounds = bounds.isNull() ? rect : bounds.united(rect);
     }
     if (bounds.isNull()) {
-        m_designSize = QSizeF(1.0, 1.0);
-        setContentSize(QSizeF(1.0, 1.0));
+        m_baseSize = QSizeF(1.0, 1.0);
+        SetContentSize(QSizeF(1.0, 1.0));
         return;
     }
     // 路径统一挪到 (0,0) 起点，绘制时只按内容尺寸缩放。
@@ -188,19 +188,19 @@ void PolygonItem::updateBoundsFromLayers()
             layer.path.translate(-bounds.left(), -bounds.top());
         }
     }
-    m_designSize = QSizeF(qMax(1.0, bounds.width()), qMax(1.0, bounds.height()));
-    setContentSize(m_designSize);
+    m_baseSize = QSizeF(qMax(1.0, bounds.width()), qMax(1.0, bounds.height()));
+    SetContentSize(m_baseSize);
     setPos(bounds.topLeft());
 }
 
 QTransform PolygonItem::layerTransform() const
 {
     QTransform transform;
-    const QRectF rect = contentRect();
-    if (rect.width() <= 0.0 || rect.height() <= 0.0 || m_designSize.width() <= 0.0 || m_designSize.height() <= 0.0) {
+    const QRectF rect = ContentRect();
+    if (rect.width() <= 0.0 || rect.height() <= 0.0 || m_baseSize.width() <= 0.0 || m_baseSize.height() <= 0.0) {
         return transform;
     }
-    transform.scale(rect.width() / m_designSize.width(), rect.height() / m_designSize.height());
+    transform.scale(rect.width() / m_baseSize.width(), rect.height() / m_baseSize.height());
     return transform;
 }
 
@@ -209,7 +209,7 @@ QPainterPath PolygonItem::mapLayerPath(const QPainterPath& localPath) const
     return layerTransform().map(localPath);
 }
 
-QPainterPath PolygonItem::paintedShape() const
+QPainterPath PolygonItem::PaintedShape() const
 {
     QPainterPath shape;
     for (const Layer& layer : m_layers) {
@@ -220,7 +220,7 @@ QPainterPath PolygonItem::paintedShape() const
     return layerTransform().map(shape);
 }
 
-QPainterPath PolygonItem::outlineShape() const
+QPainterPath PolygonItem::OutlineShape() const
 {
     QPainterPath shape;
     for (const Layer& layer : m_layers) {
@@ -235,14 +235,14 @@ QPainterPath PolygonItem::shape() const
     return CanvasItem::shape();
 }
 
-QPainterPath PolygonItem::currentPath(const QRectF& rect) const
+QPainterPath PolygonItem::CurrentPath(const QRectF& rect) const
 {
     QPainterPath unionPath;
     for (const Layer& layer : m_layers) {
         unionPath.addPath(layer.path);
     }
-    const QRectF content = contentRect();
-    if (content.isEmpty() || m_designSize.isEmpty() || rect == content) {
+    const QRectF content = ContentRect();
+    if (content.isEmpty() || m_baseSize.isEmpty() || rect == content) {
         return layerTransform().map(unionPath);
     }
     QTransform transform;
@@ -255,19 +255,19 @@ QPainterPath PolygonItem::currentPath(const QRectF& rect) const
 void PolygonItem::setStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth)
 {
     setStroke(strokeColor, strokeWidth);
-    setFill(fillColor, fillStyle());
+    SetFill(fillColor, fillStyle());
 }
 
-ShapeItemState PolygonItem::state() const
+ShapeItemState PolygonItem::State() const
 {
     ShapeItemState result;
-    result.strokeColor = strokeColor();
-    result.fillColor = fillColor();
+    result.strokeColor = StrokeColor();
+    result.fillColor = FillColor();
     result.fillStyle = m_fillStyle;
-    result.strokeWidth = strokeWidth();
+    result.strokeWidth = StrokeWidth();
     result.strokeStyle = m_strokeStyle;
-    result.opacity = itemOpacity();
-    result.hasFillImage = hasFillImage();
+    result.opacity = ItemOpacity();
+    result.hasFillImage = HasFillImage();
     result.fillImage = m_fillImage;
     result.fillImageMode = m_fillImageMode;
     result.pos = pos();
@@ -275,22 +275,22 @@ ShapeItemState PolygonItem::state() const
     return result;
 }
 
-void PolygonItem::applyState(const ShapeItemState& state)
+void PolygonItem::ApplyState(const ShapeItemState& state)
 {
     m_fillStyle = state.fillStyle;
     m_strokeStyle = state.strokeStyle;
     m_fillImage = state.hasFillImage ? state.fillImage : QPixmap();
     m_fillImageMode = state.fillImageMode;
-    setItemOpacity(state.opacity);
+    SetItemOpacity(state.opacity);
     setPos(state.pos);
-    setContentSize(state.size.isEmpty() ? contentSize() : state.size);
-    setFill(state.fillColor, state.fillStyle);
+    SetContentSize(state.size.isEmpty() ? contentSize() : state.size);
+    SetFill(state.fillColor, state.fillStyle);
     setStroke(state.strokeColor, state.strokeWidth);
-    setStrokeStyle(state.strokeStyle);
+    SetStrokeStyle(state.strokeStyle);
     update();
 }
 
-void PolygonItem::paintContent(QPainter* painter)
+void PolygonItem::PaintContent(QPainter* painter)
 {
     if (m_layers.isEmpty()) {
         return;
@@ -350,7 +350,7 @@ void PolygonItem::paintContent(QPainter* painter)
                 stroker.setWidth(borderWidth);
                 area = area.subtracted(stroker.createStroke(area));
             }
-            ImageFill::paint(painter, m_fillImage, m_fillImageMode, QRectF(QPointF(0.0, 0.0), m_designSize), area);
+            ImageFill::paint(painter, m_fillImage, m_fillImageMode, QRectF(QPointF(0.0, 0.0), m_baseSize), area);
         }
     }
 
@@ -437,7 +437,7 @@ ShapeLayer PolygonItem::shapeLayer(int index) const
     return view;
 }
 
-QPainterPath PolygonItem::mapShapeLayerPath(const ShapeLayer& layer) const
+QPainterPath PolygonItem::MapShapeLayerPath(const ShapeLayer& layer) const
 {
     return layerTransform().map(layer.path);
 }

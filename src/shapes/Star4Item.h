@@ -9,5 +9,5 @@ class Star4Item : public ShapeItem {
     ShapeType shapeType() const override { return ShapeType::STAR4; }
 
   protected:
-    QPainterPath shapePath(const QRectF& rect) const override;
+    QPainterPath ShapePath(const QRectF& rect) const override;
 };

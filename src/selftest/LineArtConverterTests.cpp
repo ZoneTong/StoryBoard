@@ -137,7 +137,7 @@ void selftest::runLineArtConverterTests(Context& ctx)
     QList<CanvasItem*> lineArtItems;
     for (const LineArtConverter::Outline& outline : traced.outlines) {
         auto* stroke = new CurveItem();
-        stroke->setStrokePoints(outline.points, outline.color, LineArtConverter::Options().strokeWidth, 0.0, true);
+        stroke->SetStrokePoints(outline.points, outline.color, LineArtConverter::Options().strokeWidth, 0.0, true);
         lineArtItems.append(stroke);
     }
     ctx.check(!lineArtItems.isEmpty(), QStringLiteral("线稿轮廓生成曲线图元"));
@@ -148,7 +148,7 @@ void selftest::runLineArtConverterTests(Context& ctx)
 
         int thinStrokes = 0;
         for (CanvasItem* item : lineArtItems) {
-            if (auto* stroke = dynamic_cast<CurveItem*>(item); stroke && qFuzzyCompare(stroke->strokeWidth(), 1.0)) {
+            if (auto* stroke = dynamic_cast<CurveItem*>(item); stroke && qFuzzyCompare(stroke->StrokeWidth(), 1.0)) {
                 ++thinStrokes;
             }
         }
@@ -157,7 +157,7 @@ void selftest::runLineArtConverterTests(Context& ctx)
 
         int linearStrokes = 0;
         for (CanvasItem* item : lineArtItems) {
-            if (auto* stroke = dynamic_cast<CurveItem*>(item); stroke && stroke->isPolyline()) {
+            if (auto* stroke = dynamic_cast<CurveItem*>(item); stroke && stroke->IsPolyline()) {
                 ++linearStrokes;
             }
         }
@@ -166,8 +166,8 @@ void selftest::runLineArtConverterTests(Context& ctx)
         bool linearPersisted = false;
         if (auto* firstStroke = dynamic_cast<CurveItem*>(lineArtItems.constFirst())) {
             CurveItem reloadedStroke;
-            reloadedStroke.fromJson(firstStroke->toJson());
-            linearPersisted = reloadedStroke.isPolyline() && qFuzzyCompare(reloadedStroke.strokeWidth(), 1.0);
+            reloadedStroke.FromJson(firstStroke->ToJson());
+            linearPersisted = reloadedStroke.IsPolyline() && qFuzzyCompare(reloadedStroke.StrokeWidth(), 1.0);
         }
         ctx.check(linearPersisted, QStringLiteral("折线线稿曲线可以存取还原"));
 
@@ -293,7 +293,7 @@ void selftest::runLineArtConverterTests(Context& ctx)
         QList<CanvasItem*> gradientItems;
         for (const LineArtConverter::Outline& outline : gradientResult.outlines) {
             auto* stroke = new CurveItem();
-            stroke->setStrokePoints(outline.points, outline.color, LineArtConverter::Options().strokeWidth, 0.0, true);
+            stroke->SetStrokePoints(outline.points, outline.color, LineArtConverter::Options().strokeWidth, 0.0, true);
             gradientItems.append(stroke);
         }
         gradientScene.addItemsWithUndo(gradientItems, QStringLiteral("导入图片线稿化"));

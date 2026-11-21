@@ -137,11 +137,11 @@ void PropertiesPanelFillBorderCard::refresh(const QList<ShapeItem*>& shapes, con
 
     Qt::PenStyle currentStyle = Qt::SolidLine;
     if (!shapes.isEmpty()) {
-        currentStyle = shapes.first()->strokeStyle();
+        currentStyle = shapes.first()->StrokeStyle();
     } else if (!strokes.isEmpty()) {
         currentStyle = strokes.first()->strokePattern();
     } else if (!composites.isEmpty()) {
-        currentStyle = composites.first()->strokeStyle();
+        currentStyle = composites.first()->StrokeStyle();
     }
     const QList<Qt::PenStyle> penStyles = ItemStyleVisuals::borderStyles();
     const bool hasStrokeTargets = !shapes.isEmpty() || !strokes.isEmpty() || !composites.isEmpty();
@@ -152,11 +152,11 @@ void PropertiesPanelFillBorderCard::refresh(const QList<ShapeItem*>& shapes, con
         m_borderWidthSpin->setEnabled(hasStrokeTargets);
         qreal width = 4.0;
         if (!shapes.isEmpty()) {
-            width = shapes.first()->strokeWidth();
+            width = shapes.first()->StrokeWidth();
         } else if (!strokes.isEmpty()) {
-            width = strokes.first()->strokeWidth();
+            width = strokes.first()->StrokeWidth();
         } else if (!composites.isEmpty()) {
-            width = composites.first()->strokeWidth();
+            width = composites.first()->StrokeWidth();
         }
         m_borderWidthSpin->setValue(qRound(qMax<qreal>(1.0, width)));
     }

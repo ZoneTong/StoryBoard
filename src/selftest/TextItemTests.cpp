@@ -102,21 +102,21 @@ void selftest::runTextItemTests(Context& ctx)
     const QSizeF headingNatural = heading->naturalSize();
     textScene.addItemsWithUndo({heading}, QStringLiteral("添加文字"));
 
-    ctx.check(heading->kind() == QStringLiteral("text") && textScene.canvasItemCount() == 1,
+    ctx.check(heading->Kind() == QStringLiteral("text") && textScene.canvasItemCount() == 1,
               QStringLiteral("文字图元加入场景"));
     ctx.check(heading->text() == QStringLiteral("第一行标题\n第二行文字"), QStringLiteral("文字内容保存"));
-    ctx.check(heading->textFont().bold() && qAbs(heading->textFont().pointSizeF() - 36.0) < 0.1,
+    ctx.check(heading->TextFont().bold() && qAbs(heading->TextFont().pointSizeF() - 36.0) < 0.1,
               QStringLiteral("文字字体样式保存"));
-    ctx.check(heading->textColor() == QColor(QStringLiteral("#1D4ED8")), QStringLiteral("文字颜色保存"));
+    ctx.check(heading->TextColor() == QColor(QStringLiteral("#1D4ED8")), QStringLiteral("文字颜色保存"));
     ctx.check(heading->contentSize().width() >= headingNatural.width() - 0.5 &&
                   heading->contentSize().height() >= headingNatural.height() - 0.5,
               QStringLiteral("文字图元按内容计算尺寸"), geometryText(heading->pos(), heading->contentSize()));
-    ctx.check(heading->layerId() == textScene.activeLayerId() && heading->height() == 1,
+    ctx.check(heading->LayerId() == textScene.activeLayerId() && heading->ZOrder() == 1,
               QStringLiteral("文字进入当前图层并从 height 1 开始"));
     ctx.check(textScene.layerHeightsUnique(textScene.activeLayerId()), QStringLiteral("文字加入后层内 height 唯一"));
 
     const QImage textRendered = textScene.renderImage(textScene.canvasRect(), 1.0);
-    const QRect textArea = heading->sceneContentRect().toAlignedRect().intersected(textRendered.rect());
+    const QRect textArea = heading->SceneContentRect().toAlignedRect().intersected(textRendered.rect());
     int textInkPixels = 0;
     for (int y = textArea.top(); y <= textArea.bottom(); ++y) {
         for (int x = textArea.left(); x <= textArea.right(); ++x) {
@@ -142,13 +142,13 @@ void selftest::runTextItemTests(Context& ctx)
     ctx.check(textScene.changeTextWithUndo(heading, QStringLiteral("更新后的文字"), editedFont,
                                            QColor(QStringLiteral("#B91C1C")), QStringLiteral("编辑文字")),
               QStringLiteral("编辑文字进入撤销栈"));
-    ctx.check(heading->text() == QStringLiteral("更新后的文字") && heading->textFont().italic() &&
-                  heading->textFont().underline() && heading->textFont().strikeOut() &&
-                  heading->textColor() == QColor(QStringLiteral("#B91C1C")),
+    ctx.check(heading->text() == QStringLiteral("更新后的文字") && heading->TextFont().italic() &&
+                  heading->TextFont().underline() && heading->TextFont().strikeOut() &&
+                  heading->TextColor() == QColor(QStringLiteral("#B91C1C")),
               QStringLiteral("编辑文字内容与样式生效"));
     textUndo.undo();
-    ctx.check(heading->text() == QStringLiteral("第一行标题\n第二行文字") && heading->textFont().bold() &&
-                  heading->textColor() == QColor(QStringLiteral("#1D4ED8")),
+    ctx.check(heading->text() == QStringLiteral("第一行标题\n第二行文字") && heading->TextFont().bold() &&
+                  heading->TextColor() == QColor(QStringLiteral("#1D4ED8")),
               QStringLiteral("撤销编辑文字"));
     textUndo.redo();
     ctx.check(heading->text() == QStringLiteral("更新后的文字"), QStringLiteral("重做编辑文字"));
@@ -159,23 +159,23 @@ void selftest::runTextItemTests(Context& ctx)
     secondText->setTextFormat(QStringLiteral("第二段文字"), bodyFont, QColor(QStringLiteral("#0F766E")));
     secondText->setPos(QPointF(120, 260));
     textScene.addItemsWithUndo({secondText}, QStringLiteral("添加第二段文字"));
-    ctx.check(secondText->height() == 2 && textScene.layerHeightsUnique(textScene.activeLayerId()),
+    ctx.check(secondText->ZOrder() == 2 && textScene.layerHeightsUnique(textScene.activeLayerId()),
               QStringLiteral("同层文字高度继续递增且唯一"));
 
     ctx.check(textScene.adjustItemHeight(secondText, -1), QStringLiteral("文字图元支持高度 -1"));
-    ctx.check(secondText->height() == 1 && heading->height() == 2 &&
+    ctx.check(secondText->ZOrder() == 1 && heading->ZOrder() == 2 &&
                   textScene.layerHeightsUnique(textScene.activeLayerId()),
               QStringLiteral("文字高度交换后仍然唯一"));
     textUndo.undo();
-    ctx.check(secondText->height() == 2 && heading->height() == 1, QStringLiteral("撤销文字高度交换"));
+    ctx.check(secondText->ZOrder() == 2 && heading->ZOrder() == 1, QStringLiteral("撤销文字高度交换"));
 
-    const QJsonObject textRoot = textScene.toJson();
+    const QJsonObject textRoot = textScene.ToJson();
     ctx.check(textRoot.value(QStringLiteral("version")).toInt() == 2 &&
                   QJsonDocument(textRoot).toJson(QJsonDocument::Compact).contains("\"text\""),
               QStringLiteral("画布保存文字图元"));
     CanvasScene textLoaded;
     QString textLoadError;
-    ctx.check(textLoaded.fromJson(textRoot, &textLoadError), QStringLiteral("画布反序列化文字图元"), textLoadError);
+    ctx.check(textLoaded.FromJson(textRoot, &textLoadError), QStringLiteral("画布反序列化文字图元"), textLoadError);
     TextItem* loadedText = nullptr;
     for (CanvasItem* item : textLoaded.canvasItems()) {
         if (auto* text = dynamic_cast<TextItem*>(item)) {
@@ -185,11 +185,11 @@ void selftest::runTextItemTests(Context& ctx)
     }
     ctx.check(loadedText != nullptr, QStringLiteral("画布恢复文字类型"));
     if (loadedText) {
-        ctx.check(loadedText->text() == QStringLiteral("更新后的文字") && loadedText->textFont().italic() &&
-                      loadedText->textFont().underline() && loadedText->textFont().strikeOut() &&
-                      loadedText->textColor() == QColor(QStringLiteral("#B91C1C")),
+        ctx.check(loadedText->text() == QStringLiteral("更新后的文字") && loadedText->TextFont().italic() &&
+                      loadedText->TextFont().underline() && loadedText->TextFont().strikeOut() &&
+                      loadedText->TextColor() == QColor(QStringLiteral("#B91C1C")),
                   QStringLiteral("画布恢复文字内容与样式"));
-        ctx.check(loadedText->layerId() == textScene.activeLayerId() && loadedText->height() == heading->height(),
+        ctx.check(loadedText->LayerId() == textScene.activeLayerId() && loadedText->ZOrder() == heading->ZOrder(),
                   QStringLiteral("画布恢复文字图层与高度"));
         ctx.check(qAbs(loadedText->contentSize().width() - heading->contentSize().width()) < 0.5 &&
                       qAbs(loadedText->contentSize().height() - heading->contentSize().height()) < 0.5,
@@ -199,41 +199,41 @@ void selftest::runTextItemTests(Context& ctx)
 
     // A hand-edited canvas may contain duplicate heights. Loading it must
     // repair them to a stable, unique sequence while preserving item order.
-    QJsonObject duplicateRoot = textScene.toJson();
+    QJsonObject duplicateRoot = textScene.ToJson();
     QJsonArray duplicateItems = duplicateRoot.value(QStringLiteral("items")).toArray();
     for (int i = 0; i < duplicateItems.size(); ++i) {
         QJsonObject itemJson = duplicateItems.at(i).toObject();
-        itemJson.insert(QStringLiteral("height"), 1);
+        itemJson.insert(QStringLiteral("zOrder"), 1);
         duplicateItems.replace(i, itemJson);
     }
     duplicateRoot.insert(QStringLiteral("items"), duplicateItems);
     CanvasScene repairedScene;
     QString repairedError;
-    ctx.check(repairedScene.fromJson(duplicateRoot, &repairedError), QStringLiteral("载入含重复 height 的画布"),
+    ctx.check(repairedScene.FromJson(duplicateRoot, &repairedError), QStringLiteral("载入含重复 height 的画布"),
               repairedError);
     ctx.check(repairedScene.layerHeightsUnique(repairedScene.activeLayerId()) && repairedScene.canvasItemCount() == 2,
               QStringLiteral("重复 height 载入后自动修复为唯一值"));
     QSet<int> repairedHeights;
     for (CanvasItem* item : repairedScene.canvasItems()) {
-        repairedHeights.insert(item->height());
+        repairedHeights.insert(item->ZOrder());
     }
     ctx.check(repairedHeights == QSet<int>({1, 2}), QStringLiteral("修复后的 height 序列连续且唯一"));
 
-    QJsonObject oversizedRoot = textScene.toJson();
+    QJsonObject oversizedRoot = textScene.ToJson();
     QJsonArray oversizedItems = oversizedRoot.value(QStringLiteral("items")).toArray();
     for (int i = 0; i < oversizedItems.size(); ++i) {
         QJsonObject itemJson = oversizedItems.at(i).toObject();
-        itemJson.insert(QStringLiteral("height"), 1000000 + i);
+        itemJson.insert(QStringLiteral("zOrder"), 1000000 + i);
         oversizedItems.replace(i, itemJson);
     }
     oversizedRoot.insert(QStringLiteral("items"), oversizedItems);
     CanvasScene oversizedScene;
     QString oversizedError;
-    ctx.check(oversizedScene.fromJson(oversizedRoot, &oversizedError), QStringLiteral("载入超出高度上限的画布"),
+    ctx.check(oversizedScene.FromJson(oversizedRoot, &oversizedError), QStringLiteral("载入超出高度上限的画布"),
               oversizedError);
     bool oversizedRepaired = oversizedScene.layerHeightsUnique(oversizedScene.activeLayerId());
     for (CanvasItem* item : oversizedScene.canvasItems()) {
-        oversizedRepaired = oversizedRepaired && item->height() <= 999999;
+        oversizedRepaired = oversizedRepaired && item->ZOrder() <= 999999;
     }
     ctx.check(oversizedRepaired, QStringLiteral("超限 height 载入后修复到合法唯一范围"));
 

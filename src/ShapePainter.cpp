@@ -219,7 +219,7 @@ QIcon ShapePainter::makeIcon(ShapeType type, const QColor& color, int logicalSiz
         iconSweepAngle = 120.0;
     }
 
-    QPainterPath path = ShapeItem::pathFor(type, rect, -1.0, iconStartAngle, iconSweepAngle);
+    QPainterPath path = ShapeItem::PathFor(type, rect, -1.0, iconStartAngle, iconSweepAngle);
     // 需求 7：扇形图标的墨迹按包围盒重新居中到 (12,12) 并等比限幅；弧线走同一份 helper。
     if (type == ShapeType::SECTOR) {
         path = centerIconPath(path, 1.8);

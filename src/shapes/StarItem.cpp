@@ -4,10 +4,10 @@
 
 StarItem::StarItem()
 {
-    setContentSize(defaultContentSize());
+    SetContentSize(defaultContentSize());
 }
 
-QPainterPath StarItem::shapePath(const QRectF& rect) const
+QPainterPath StarItem::ShapePath(const QRectF& rect) const
 {
     return ShapePathBuilder::starPath(rect);
 }

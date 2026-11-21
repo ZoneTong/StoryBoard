@@ -8,12 +8,12 @@ class ParallelogramItem : public ShapeItem {
     ParallelogramItem();
     QSizeF defaultContentSize() const override;
     ShapeType shapeType() const override { return ShapeType::PARALLELOGRAM; }
-    ItemPropertySet properties() const override;
-    bool apexAngleHandle() const override { return true; }
-    void setParallelogramAngle(qreal angle) override;
-    QPointF customHandleCenter(int handle, bool* ok) const override;
+    ItemPropertySet Properties() const override;
+    bool ApexAngleHandle() const override { return true; }
+    void SetParallelogramAngle(qreal angle) override;
+    QPointF CustomHandleCenter(int handle, bool* ok) const override;
 
   protected:
-    QPainterPath shapePath(const QRectF& rect) const override;
-    void drawSelectionOverlay(QPainter* painter) override;
+    QPainterPath ShapePath(const QRectF& rect) const override;
+    void DrawSelectionOverlay(QPainter* painter) override;
 };

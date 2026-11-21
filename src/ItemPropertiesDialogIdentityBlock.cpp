@@ -18,8 +18,8 @@ ItemPropertiesDialogIdentityBlock::ItemPropertiesDialogIdentityBlock(CanvasScene
 
     m_nameEdit = new QLineEdit(this);
     m_nameEdit->setObjectName(QStringLiteral("ItemPropertiesNameValue"));
-    m_nameEdit->setText(item->name());
-    m_nameEdit->setPlaceholderText(item->typeDisplayName());
+    m_nameEdit->setText(item->Name());
+    m_nameEdit->setPlaceholderText(item->TypeDisplayName());
 
     m_layerCombo = new QComboBox(this);
     m_layerCombo->setObjectName(QStringLiteral("ItemPropertiesLayerValue"));
@@ -29,7 +29,7 @@ ItemPropertiesDialogIdentityBlock::ItemPropertiesDialogIdentityBlock(CanvasScene
             m_layerCombo->addItem(ItemPropertiesDialog::layerDescription(scene, layer.id), layer.id);
         }
     }
-    const int layerIndex = m_layerCombo->findData(item->layerId());
+    const int layerIndex = m_layerCombo->findData(item->LayerId());
     if (layerIndex >= 0) {
         m_layerCombo->setCurrentIndex(layerIndex);
     }
@@ -45,7 +45,7 @@ ItemPropertiesDialogIdentityBlock::ItemPropertiesDialogIdentityBlock(CanvasScene
     m_heightSpin->setObjectName(QStringLiteral("ItemPropertiesHeightValue"));
     m_heightSpin->setRange(0, 999999);
     m_heightSpin->setKeyboardTracking(false);
-    m_heightSpin->setValue(qMax(0, item->height()));
+    m_heightSpin->setValue(qMax(0, item->ZOrder()));
 }
 
 void ItemPropertiesDialogIdentityBlock::addRows(QFormLayout* form)
@@ -71,14 +71,14 @@ void ItemPropertiesDialogIdentityBlock::updateHeightRange(bool selectTop)
     int maxHeight = 0;
     if (m_scene) {
         for (CanvasItem* peer : m_scene->layerItems(targetLayer)) {
-            maxHeight = qMax(maxHeight, peer->height());
+            maxHeight = qMax(maxHeight, peer->ZOrder());
         }
     }
     // Height 0 is valid and deletion can leave gaps. Allow one slot above the
     // highest existing height, and never clamp the current value on open.
     maxHeight = qMax(0, maxHeight + 1);
     if (!selectTop) {
-        maxHeight = qMax(maxHeight, m_item->height());
+        maxHeight = qMax(maxHeight, m_item->ZOrder());
     }
     maxHeight = qBound(0, maxHeight, 999999);
     m_heightSpin->setMaximum(maxHeight);

@@ -145,7 +145,7 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     ctx.check(stroke->pos() == strokePos + QPointF(45.0, 30.0), QStringLiteral("重做移动图元"));
 
     ItemGeometry beforeResize{stroke, stroke->pos(), stroke->contentSize()};
-    stroke->setContentSize(stroke->contentSize() * 1.35);
+    stroke->SetContentSize(stroke->contentSize() * 1.35);
     ItemGeometry afterResize{stroke, stroke->pos(), stroke->contentSize()};
     scene.pushGeometry({beforeResize}, {afterResize}, QStringLiteral("缩放图元"));
     const QSizeF resized = stroke->contentSize();
@@ -158,18 +158,18 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
                                        QColor(QStringLiteral("#1D4ED8")));
     auto* imageItem = createShapeItem(ShapeType::RECTANGLE);
     imageItem->setStyle(QColor(Qt::transparent), QColor(Qt::transparent), 1.0);
-    imageItem->setFillStyle(FillStyle::NONE);
-    imageItem->setFillImage(shot, ImageFill::Mode::STRETCH);
-    imageItem->setContentSize(QSizeF(320, 200));
+    imageItem->SetFillStyle(FillStyle::NONE);
+    imageItem->SetFillImage(shot, ImageFill::Mode::STRETCH);
+    imageItem->SetContentSize(QSizeF(320, 200));
     imageItem->setPos(QPointF(400, 260));
     scene.addItemsWithUndo({imageItem}, QStringLiteral("插入图片"));
     ctx.check(scene.canvasItemCount() == 2, QStringLiteral("插入图片图元"));
 
     // 透明度是所有图元共有属性：曲线与图片都要随画布一起保存和恢复。
-    stroke->setItemOpacity(0.35);
-    imageItem->setItemOpacity(0.6);
+    stroke->SetItemOpacity(0.35);
+    imageItem->SetItemOpacity(0.6);
 
-    const QJsonObject root = scene.toJson();
+    const QJsonObject root = scene.ToJson();
     const QByteArray jsonBytes = QJsonDocument(root).toJson(QJsonDocument::Indented);
     ctx.check(jsonBytes.contains("StoryBoard") && jsonBytes.contains("\"freehand\"") &&
                   jsonBytes.contains("\"shape\"") && jsonBytes.contains("\"images\""),
@@ -179,7 +179,7 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     QUndoStack loadedUndo;
     loaded.setUndoStack(&loadedUndo);
     QString loadError;
-    ctx.check(loaded.fromJson(root, &loadError), QStringLiteral("反序列化画布"), loadError);
+    ctx.check(loaded.FromJson(root, &loadError), QStringLiteral("反序列化画布"), loadError);
     ctx.check(loaded.canvasItemCount() == 2, QStringLiteral("画布图元数量一致"));
     ctx.check(loaded.canvasBackground().type == BackgroundType::COLOR &&
                   loaded.canvasBackground().color == background.color,
@@ -191,15 +191,15 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     for (CanvasItem* item : loadedItems) {
         if (dynamic_cast<LineItemAbstract*>(item)) {
             loadedStroke = static_cast<LineItemAbstract*>(item);
-        } else if (item->kind() == QStringLiteral("shape")) {
-            if (static_cast<ShapeItem*>(item)->hasFillImage()) {
+        } else if (item->Kind() == QStringLiteral("shape")) {
+            if (static_cast<ShapeItem*>(item)->HasFillImage()) {
                 loadedImage = static_cast<ShapeItem*>(item);
             }
         }
     }
     ctx.check(loadedStroke != nullptr, QStringLiteral("画布包含曲线"));
     if (loadedStroke) {
-        ctx.check(loadedStroke->strokeColor() == QColor(QStringLiteral("#EF4444")) &&
+        ctx.check(loadedStroke->StrokeColor() == QColor(QStringLiteral("#EF4444")) &&
                       loadedStroke->strokePattern() == Qt::DashLine,
                   QStringLiteral("曲线颜色与描线样式恢复"),
                   QString::number(static_cast<int>(loadedStroke->strokePattern())));
@@ -207,13 +207,13 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
                       qAbs(loadedStroke->contentSize().height() - resized.height()) < 0.5,
                   QStringLiteral("曲线缩放状态恢复"));
     }
-    ctx.check(loadedImage != nullptr && !loadedImage->fillImage().isNull(), QStringLiteral("图片内容恢复"));
-    ctx.check(loadedStroke && qAbs(loadedStroke->itemOpacity() - 0.35) < 0.01 && loadedImage &&
-                  qAbs(loadedImage->itemOpacity() - 0.6) < 0.01,
+    ctx.check(loadedImage != nullptr && !loadedImage->FillImage().isNull(), QStringLiteral("图片内容恢复"));
+    ctx.check(loadedStroke && qAbs(loadedStroke->ItemOpacity() - 0.35) < 0.01 && loadedImage &&
+                  qAbs(loadedImage->ItemOpacity() - 0.6) < 0.01,
               QStringLiteral("曲线与图片的透明度随画布恢复"),
               QStringLiteral("stroke=%1 image=%2")
-                  .arg(loadedStroke ? loadedStroke->itemOpacity() : -1.0)
-                  .arg(loadedImage ? loadedImage->itemOpacity() : -1.0));
+                  .arg(loadedStroke ? loadedStroke->ItemOpacity() : -1.0)
+                  .arg(loadedImage ? loadedImage->ItemOpacity() : -1.0));
 
     const QImage rendered = loaded.renderImage(loaded.canvasRect(), 1.0);
     ctx.check(rendered.size() == QSize(800, 600), QStringLiteral("导出图像尺寸正确"));
@@ -256,7 +256,7 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
 
     CanvasScene imageBackgroundLoaded;
     QString imageBackgroundError;
-    ctx.check(imageBackgroundLoaded.fromJson(imageBackgroundScene.toJson(), &imageBackgroundError),
+    ctx.check(imageBackgroundLoaded.FromJson(imageBackgroundScene.ToJson(), &imageBackgroundError),
               QStringLiteral("背景图片序列化"), imageBackgroundError);
     ctx.check(imageBackgroundLoaded.canvasBackground().type == BackgroundType::IMAGE &&
                   !imageBackgroundLoaded.canvasBackground().image.isNull() &&
@@ -277,7 +277,7 @@ void selftest::runSceneCanvasIoTests(Context& ctx)
     ctx.check(canvasFile.open(QIODevice::ReadOnly), QStringLiteral("读取画布文件"));
     const QJsonDocument reloadedDocument = QJsonDocument::fromJson(canvasFile.readAll());
     ctx.check(reloadedDocument.isObject(), QStringLiteral("画布文件 JSON 有效"));
-    ctx.check(reloaded.fromJson(reloadedDocument.object()), QStringLiteral("从文件载入画布"));
+    ctx.check(reloaded.FromJson(reloadedDocument.object()), QStringLiteral("从文件载入画布"));
     ctx.check(reloaded.canvasItemCount() == 2, QStringLiteral("文件载入图元数量一致"));
 
     reloaded.setMode(ToolMode::EDIT);

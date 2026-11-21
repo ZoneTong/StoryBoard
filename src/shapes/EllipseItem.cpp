@@ -2,18 +2,18 @@
 
 EllipseItem::EllipseItem()
 {
-    setContentSize(defaultContentSize());
-    setFrame(contentRect());
+    SetContentSize(defaultContentSize());
+    setFrame(ContentRect());
 }
 
-void EllipseItem::contentResized()
+void EllipseItem::ContentResized()
 {
-    ShapeItem::contentResized();
+    ShapeItem::ContentResized();
     // 外接框与内容矩形保持一致，轮廓只由 EllipseShape::ellipse() 出。
-    setFrame(contentRect());
+    setFrame(ContentRect());
 }
 
-QPainterPath EllipseItem::shapePath(const QRectF& rect) const
+QPainterPath EllipseItem::ShapePath(const QRectF& rect) const
 {
     Q_UNUSED(rect)
     return ellipse();

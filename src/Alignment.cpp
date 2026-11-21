@@ -26,7 +26,7 @@ QRectF unionRect(const QList<CanvasItem*>& items)
 {
     QRectF bounds;
     for (CanvasItem* item : items) {
-        bounds = bounds.isNull() ? item->sceneContentRect() : bounds.united(item->sceneContentRect());
+        bounds = bounds.isNull() ? item->SceneContentRect() : bounds.united(item->SceneContentRect());
     }
     return bounds;
 }
@@ -35,15 +35,15 @@ QRectF unionRect(const QList<CanvasItem*>& items)
 QList<qreal> distributeDeltas(QList<CanvasItem*> items, bool horizontal, const QRectF& bounds)
 {
     std::sort(items.begin(), items.end(), [horizontal](CanvasItem* left, CanvasItem* right) {
-        const QRectF a = left->sceneContentRect();
-        const QRectF b = right->sceneContentRect();
+        const QRectF a = left->SceneContentRect();
+        const QRectF b = right->SceneContentRect();
         return horizontal ? a.left() < b.left() : a.top() < b.top();
     });
 
     const qreal span = horizontal ? bounds.width() : bounds.height();
     qreal used = 0.0;
     for (CanvasItem* item : items) {
-        const QRectF rect = item->sceneContentRect();
+        const QRectF rect = item->SceneContentRect();
         used += horizontal ? rect.width() : rect.height();
     }
     const int gaps = qMax(1, items.size() - 1);
@@ -52,7 +52,7 @@ QList<qreal> distributeDeltas(QList<CanvasItem*> items, bool horizontal, const Q
     QList<qreal> deltas;
     qreal cursor = horizontal ? bounds.left() : bounds.top();
     for (CanvasItem* item : items) {
-        const QRectF rect = item->sceneContentRect();
+        const QRectF rect = item->SceneContentRect();
         deltas.append(cursor - (horizontal ? rect.left() : rect.top()));
         cursor += (horizontal ? rect.width() : rect.height()) + step;
     }
@@ -94,8 +94,8 @@ int apply(CanvasScene* scene, Mode mode, const QString& commandText)
         items = [&items, horizontal]() {
             QList<CanvasItem*> sorted = items;
             std::sort(sorted.begin(), sorted.end(), [horizontal](CanvasItem* left, CanvasItem* right) {
-                const QRectF a = left->sceneContentRect();
-                const QRectF b = right->sceneContentRect();
+                const QRectF a = left->SceneContentRect();
+                const QRectF b = right->SceneContentRect();
                 return horizontal ? a.left() < b.left() : a.top() < b.top();
             });
             return sorted;
@@ -107,7 +107,7 @@ int apply(CanvasScene* scene, Mode mode, const QString& commandText)
         }
     } else {
         for (CanvasItem* item : items) {
-            const QRectF rect = item->sceneContentRect();
+            const QRectF rect = item->SceneContentRect();
             qreal dx = 0.0;
             qreal dy = 0.0;
             switch (mode) {

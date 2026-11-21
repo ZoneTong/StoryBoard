@@ -12,9 +12,9 @@ class ShapePathBuilder {
   public:
     // 图元类已各自持有几何（shapePath 直调对应方法）；pathFor 仅保留给
     // 图标绘制与测试这类“只知道 ShapeType”的场景。
-    static QPainterPath pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius);
+    static QPainterPath PathFor(ShapeType type, const QRectF& rect, qreal cornerRadius);
     // 需求 6：扇形 / 弧线不再有独立半径，椭圆外接框即内容矩形（长短半轴 = 宽高一半）。
-    static QPainterPath pathFor(ShapeType type, const QRectF& rect, qreal cornerRadius, qreal startAngle,
+    static QPainterPath PathFor(ShapeType type, const QRectF& rect, qreal cornerRadius, qreal startAngle,
                                 qreal sweepAngle);
     // 三角形按底边角度生成：底边 = 矩形宽，顶点横坐标 = 高 × cot(底角1)。
     // 角度是真相；调用方负责让矩形高与底边、角度保持自洽。
@@ -23,7 +23,7 @@ class ShapePathBuilder {
     // 锐角向右移、钝角向左移，图形始终落在矩形内。
     static QPainterPath parallelogramPath(const QRectF& rect, qreal bottomLeftAngle);
 
-    // 各图形的具体几何：由同名的图元子类在 shapePath() 中直接调用。
+    // 各图形的具体几何：由同名的图元子类在 ShapePath() 中直接调用。
     static QPainterPath roundedRectPath(const QRectF& rect, qreal cornerRadius);
     static QPainterPath ellipsePath(const QRectF& rect);
     static QPainterPath sectorPath(const QRectF& rect, qreal startAngle, qreal sweepAngle);

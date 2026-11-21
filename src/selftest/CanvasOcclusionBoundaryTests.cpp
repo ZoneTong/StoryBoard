@@ -34,16 +34,16 @@ void selftest::runCanvasOcclusionBoundaryTests(Context& ctx)
     blendScene.setCanvasBackground(blendBackground);
     auto* lowerBand = createShapeItem(ShapeType::RECTANGLE);
     lowerBand->setPos(QPointF(20, 20));
-    lowerBand->setContentSize(QSizeF(160, 120));
+    lowerBand->SetContentSize(QSizeF(160, 120));
     lowerBand->setStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 1.0);
-    lowerBand->setFill(QColor(255, 0, 0, 255), FillStyle::SOLID);
+    lowerBand->SetFill(QColor(255, 0, 0, 255), FillStyle::SOLID);
     blendScene.attachItem(lowerBand);
 
     auto* upperBand = createShapeItem(ShapeType::RECTANGLE);
     upperBand->setPos(QPointF(100, 50));
-    upperBand->setContentSize(QSizeF(160, 120));
+    upperBand->SetContentSize(QSizeF(160, 120));
     upperBand->setStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 1.0);
-    upperBand->setFill(QColor(0, 0, 255, 128), FillStyle::SOLID);
+    upperBand->SetFill(QColor(0, 0, 255, 128), FillStyle::SOLID);
     blendScene.attachItem(upperBand);
 
     QImage blendImage(300, 200, QImage::Format_ARGB32_Premultiplied);
@@ -76,9 +76,9 @@ void selftest::runCanvasOcclusionBoundaryTests(Context& ctx)
 
         auto* rectangle = createShapeItem(ShapeType::RECTANGLE);
         rectangle->setPos(QPointF(30, 30));
-        rectangle->setContentSize(QSizeF(200, 150));
+        rectangle->SetContentSize(QSizeF(200, 150));
         rectangle->setStyle(QColor(QStringLiteral("#1E293B")), QColor(QStringLiteral("#1E293B")), 2.0);
-        rectangle->setFill(QColor(QStringLiteral("#FFF59D")), FillStyle::SOLID);
+        rectangle->SetFill(QColor(QStringLiteral("#FFF59D")), FillStyle::SOLID);
         textScene.attachItem(rectangle);
 
         auto* text = new TextItem;
@@ -158,16 +158,16 @@ void selftest::runCanvasOcclusionBoundaryTests(Context& ctx)
         hollowScene.setShowGrid(false);
         auto* lower = createShapeItem(ShapeType::RECTANGLE);
         lower->setPos(QPointF(40, 40));
-        lower->setContentSize(QSizeF(220, 120));
+        lower->SetContentSize(QSizeF(220, 120));
         lower->setStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 1.0);
-        lower->setFill(QColor(239, 68, 68), FillStyle::SOLID);
+        lower->SetFill(QColor(239, 68, 68), FillStyle::SOLID);
         hollowScene.attachItem(lower);
 
         auto* hollow = createShapeItem(ShapeType::RECTANGLE);
         hollow->setPos(QPointF(80, 60));
-        hollow->setContentSize(QSizeF(140, 100));
+        hollow->SetContentSize(QSizeF(140, 100));
         hollow->setStyle(QColor(37, 99, 235), QColor(Qt::transparent), 2.0);
-        hollow->setFill(QColor(Qt::transparent), FillStyle::NONE);
+        hollow->SetFill(QColor(Qt::transparent), FillStyle::NONE);
         hollowScene.attachItem(hollow);
 
         QImage hollowImage(300, 200, QImage::Format_ARGB32_Premultiplied);
@@ -183,18 +183,18 @@ void selftest::runCanvasOcclusionBoundaryTests(Context& ctx)
 
         auto* pattern = createShapeItem(ShapeType::RECTANGLE);
         pattern->setPos(QPointF(80, 60));
-        pattern->setContentSize(QSizeF(140, 100));
+        pattern->SetContentSize(QSizeF(140, 100));
         pattern->setStyle(QColor(37, 99, 235), QColor(37, 99, 235, 200), 2.0);
-        pattern->setFill(QColor(37, 99, 235, 200), FillStyle::HONEYCOMB);
+        pattern->SetFill(QColor(37, 99, 235, 200), FillStyle::HONEYCOMB);
 
         CanvasScene patternScene;
         patternScene.applyCanvasSize(QSizeF(300, 200));
         patternScene.setShowGrid(false);
         auto* patternLower = createShapeItem(ShapeType::RECTANGLE);
         patternLower->setPos(QPointF(40, 40));
-        patternLower->setContentSize(QSizeF(220, 120));
+        patternLower->SetContentSize(QSizeF(220, 120));
         patternLower->setStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 1.0);
-        patternLower->setFill(QColor(239, 68, 68), FillStyle::SOLID);
+        patternLower->SetFill(QColor(239, 68, 68), FillStyle::SOLID);
         patternScene.attachItem(patternLower);
         patternScene.attachItem(pattern);
 
@@ -226,16 +226,16 @@ void selftest::runCanvasOcclusionBoundaryTests(Context& ctx)
         solidOverTexture.setShowGrid(false);
         auto* texturedLower = createShapeItem(ShapeType::RECTANGLE);
         texturedLower->setPos(QPointF(40, 40));
-        texturedLower->setContentSize(QSizeF(220, 120));
+        texturedLower->SetContentSize(QSizeF(220, 120));
         texturedLower->setStyle(QColor(239, 68, 68), QColor(239, 68, 68, 200), 1.0);
-        texturedLower->setFill(QColor(239, 68, 68, 200), FillStyle::HONEYCOMB);
+        texturedLower->SetFill(QColor(239, 68, 68, 200), FillStyle::HONEYCOMB);
         solidOverTexture.attachItem(texturedLower);
 
         auto* solidCover = createShapeItem(ShapeType::RECTANGLE);
         solidCover->setPos(QPointF(80, 60));
-        solidCover->setContentSize(QSizeF(140, 100));
+        solidCover->SetContentSize(QSizeF(140, 100));
         solidCover->setStyle(QColor(37, 99, 235), QColor(37, 99, 235, 128), 2.0);
-        solidCover->setFill(QColor(37, 99, 235, 128), FillStyle::SOLID);
+        solidCover->SetFill(QColor(37, 99, 235, 128), FillStyle::SOLID);
         solidOverTexture.attachItem(solidCover);
 
         QImage solidOverImage(300, 200, QImage::Format_ARGB32_Premultiplied);
@@ -301,10 +301,10 @@ void selftest::runCanvasOcclusionBoundaryTests(Context& ctx)
               QStringLiteral("画板边缘拖动只生成一条撤销记录"),
               QStringLiteral("index before=%1 after=%2").arg(commandsBeforeDrag).arg(canvasUndo.index()));
 
-    const QJsonObject canvasRoot = canvasScene.toJson();
+    const QJsonObject canvasRoot = canvasScene.ToJson();
     CanvasScene canvasLoaded;
     QString canvasError;
-    ctx.check(canvasLoaded.fromJson(canvasRoot, &canvasError) && canvasLoaded.canvasRect() == canvasScene.canvasRect(),
+    ctx.check(canvasLoaded.FromJson(canvasRoot, &canvasError) && canvasLoaded.canvasRect() == canvasScene.canvasRect(),
               QStringLiteral("画板原点随画布保存"), canvasError);
 
     // 需求 10：锁定状态随画布保存。
@@ -312,9 +312,9 @@ void selftest::runCanvasOcclusionBoundaryTests(Context& ctx)
     lockScene.setMode(ToolMode::EDIT);
     const int lockLayerId = lockScene.activeLayerId();
     ctx.check(lockScene.setLayerLocked(lockLayerId, true), QStringLiteral("锁定图层用于序列化测试"));
-    const QJsonObject lockRoot = lockScene.toJson();
+    const QJsonObject lockRoot = lockScene.ToJson();
     CanvasScene lockLoaded;
     QString lockError;
-    ctx.check(lockLoaded.fromJson(lockRoot, &lockError) && lockLoaded.isLayerLocked(lockLoaded.activeLayerId()),
+    ctx.check(lockLoaded.FromJson(lockRoot, &lockError) && lockLoaded.isLayerLocked(lockLoaded.activeLayerId()),
               QStringLiteral("图层锁定状态随画布保存"), lockError);
 }

@@ -93,11 +93,11 @@ void selftest::runDuplicateItemTests(Context& ctx)
         duplicateScene.setUndoStack(&duplicateUndo);
 
         auto* source = createShapeItem(ShapeType::RECTANGLE);
-        source->setContentSize(QSizeF(120.0, 80.0));
+        source->SetContentSize(QSizeF(120.0, 80.0));
         source->setPos(QPointF(40.0, 50.0));
         duplicateScene.addItemsWithUndo({source}, QStringLiteral("Add duplicate source"));
-        ctx.check(source->rawName() == QStringLiteral("矩形 1"), QStringLiteral("拷贝源图元使用自动名称"),
-                  source->rawName());
+        ctx.check(source->CustomName() == QStringLiteral("矩形 1"), QStringLiteral("拷贝源图元使用自动名称"),
+                  source->CustomName());
         source->setSelected(true);
 
         const int countBefore = duplicateScene.canvasItemCount();
@@ -108,7 +108,7 @@ void selftest::runDuplicateItemTests(Context& ctx)
 
         CanvasItem* copy = nullptr;
         for (CanvasItem* item : duplicateScene.canvasItems()) {
-            if (item != source && item->rawName() == QStringLiteral("矩形 2")) {
+            if (item != source && item->CustomName() == QStringLiteral("矩形 2")) {
                 copy = item;
             }
         }
@@ -127,7 +127,7 @@ void selftest::runDuplicateItemTests(Context& ctx)
         duplicateUndo.redo();
         QApplication::processEvents();
         ctx.check(duplicateScene.canvasItemCount() == countBefore + 1 && copy && copy->scene() == &duplicateScene &&
-                      copy->rawName() == QStringLiteral("矩形 2"),
+                      copy->CustomName() == QStringLiteral("矩形 2"),
                   QStringLiteral("重做拷贝恢复副本和名称"));
     }
 
@@ -140,20 +140,20 @@ void selftest::runDuplicateItemTests(Context& ctx)
         customNameScene.setUndoStack(&customNameUndo);
 
         auto* first = createShapeItem(ShapeType::RECTANGLE);
-        first->setContentSize(QSizeF(100.0, 60.0));
+        first->SetContentSize(QSizeF(100.0, 60.0));
         customNameScene.addItemsWithUndo({first}, QStringLiteral("Add first custom item"));
-        first->setName(QStringLiteral("Hero panel"));
+        first->SetName(QStringLiteral("Hero panel"));
 
         auto* second = createShapeItem(ShapeType::ELLIPSE);
-        second->setContentSize(QSizeF(90.0, 90.0));
+        second->SetContentSize(QSizeF(90.0, 90.0));
         customNameScene.addItemsWithUndo({second}, QStringLiteral("Add second custom item"));
-        second->setName(QStringLiteral("Hero panel 2"));
+        second->SetName(QStringLiteral("Hero panel 2"));
 
         first->setSelected(true);
         const int duplicated = customNameScene.duplicateSelectedItems();
         CanvasItem* copy = nullptr;
         for (CanvasItem* item : customNameScene.canvasItems()) {
-            if (item != first && item != second && item->rawName() == QStringLiteral("Hero panel 3")) {
+            if (item != first && item != second && item->CustomName() == QStringLiteral("Hero panel 3")) {
                 copy = item;
             }
         }
@@ -164,16 +164,16 @@ void selftest::runDuplicateItemTests(Context& ctx)
     {
         CanvasScene repairScene;
         auto* first = createShapeItem(ShapeType::RECTANGLE);
-        first->setContentSize(QSizeF(80.0, 60.0));
+        first->SetContentSize(QSizeF(80.0, 60.0));
         repairScene.addItemsWithUndo({first}, QStringLiteral("Add repair item"));
         auto* second = createShapeItem(ShapeType::RECTANGLE);
-        second->setContentSize(QSizeF(70.0, 50.0));
+        second->SetContentSize(QSizeF(70.0, 50.0));
         repairScene.addItemsWithUndo({second}, QStringLiteral("Add repair item"));
-        first->setName(QStringLiteral("Same name"));
-        second->setName(QStringLiteral("Same name"));
+        first->SetName(QStringLiteral("Same name"));
+        second->SetName(QStringLiteral("Same name"));
         repairScene.assignAutoItemNames();
-        const QString firstName = first->rawName();
-        const QString secondName = second->rawName();
+        const QString firstName = first->CustomName();
+        const QString secondName = second->CustomName();
         ctx.check(firstName != secondName &&
                       (firstName == QStringLiteral("Same name") || firstName == QStringLiteral("Same name 2")) &&
                       (secondName == QStringLiteral("Same name") || secondName == QStringLiteral("Same name 2")),
@@ -193,31 +193,31 @@ void selftest::runGroupTests(Context& ctx)
         groupScene.setMode(ToolMode::EDIT);
 
         auto* first = createShapeItem(ShapeType::RECTANGLE);
-        first->setContentSize(QSizeF(90.0, 70.0));
+        first->SetContentSize(QSizeF(90.0, 70.0));
         first->setPos(QPointF(80.0, 90.0));
         auto* second = createShapeItem(ShapeType::ELLIPSE);
-        second->setContentSize(QSizeF(90.0, 70.0));
+        second->SetContentSize(QSizeF(90.0, 70.0));
         second->setPos(QPointF(320.0, 260.0));
         groupScene.addItemsWithUndo({first, second}, QStringLiteral("Add grouped sources"));
 
         first->setSelected(true);
         second->setSelected(true);
         const int grouped = groupScene.groupSelectedItems();
-        const int groupId = first->groupId();
+        const int groupId = first->GroupId();
         ctx.check(
-            grouped == 2 && groupId > 0 && second->groupId() == groupId, QStringLiteral("同层多选图元可组合"),
-            QStringLiteral("group=%1 first=%2 second=%3").arg(grouped).arg(first->groupId()).arg(second->groupId()));
+            grouped == 2 && groupId > 0 && second->GroupId() == groupId, QStringLiteral("同层多选图元可组合"),
+            QStringLiteral("group=%1 first=%2 second=%3").arg(grouped).arg(first->GroupId()).arg(second->GroupId()));
         ctx.check(groupScene.canUngroupSelectedItems(), QStringLiteral("组合后可取消组合"));
 
         groupUndo.undo();
-        ctx.check(first->groupId() == 0 && second->groupId() == 0, QStringLiteral("撤销组合恢复未分组"));
+        ctx.check(first->GroupId() == 0 && second->GroupId() == 0, QStringLiteral("撤销组合恢复未分组"));
         groupUndo.redo();
-        ctx.check(first->groupId() == groupId && second->groupId() == groupId, QStringLiteral("重做组合恢复组标记"));
+        ctx.check(first->GroupId() == groupId && second->GroupId() == groupId, QStringLiteral("重做组合恢复组标记"));
 
         // 单个组员仍可成为唯一选中项，属性窗保持可编辑。
         groupScene.clearSelection();
         first->setSelected(true);
-        ctx.check(groupScene.selectedCanvasItems().size() == 1 && first->isEditable(),
+        ctx.check(groupScene.selectedCanvasItems().size() == 1 && first->IsEditable(),
                   QStringLiteral("组合后单个图元仍可单独选中"));
         ItemPropertiesDialog propertiesDialog(&groupScene, first, nullptr);
         QLineEdit* nameEdit = propertiesDialog.findChild<QLineEdit*>(QStringLiteral("ItemPropertiesNameValue"));
@@ -232,7 +232,7 @@ void selftest::runGroupTests(Context& ctx)
 
         const QPointF firstBefore = first->pos();
         const QPointF secondBefore = second->pos();
-        const QPointF firstCenter = first->mapToScene(first->contentRect().center());
+        const QPointF firstCenter = first->mapToScene(first->ContentRect().center());
         const QPoint dragStart = groupView.mapFromScene(firstCenter);
 
         // 右键点中已选图元时，Qt 默认选择逻辑不能把多选收成单选，
@@ -271,19 +271,19 @@ void selftest::runGroupTests(Context& ctx)
         ctx.check(first->pos() != firstBefore && second->pos() != secondBefore, QStringLiteral("重做整组移动"));
 
         CanvasScene reloadedGroups;
-        ctx.check(reloadedGroups.fromJson(groupScene.toJson()), QStringLiteral("分组画布可重新载入"));
+        ctx.check(reloadedGroups.FromJson(groupScene.ToJson()), QStringLiteral("分组画布可重新载入"));
         CanvasItem* reloadedFirst = nullptr;
         CanvasItem* reloadedSecond = nullptr;
         for (CanvasItem* item : reloadedGroups.canvasItems()) {
-            if (item->rawName() == first->rawName()) {
+            if (item->CustomName() == first->CustomName()) {
                 reloadedFirst = item;
             }
-            if (item->rawName() == second->rawName()) {
+            if (item->CustomName() == second->CustomName()) {
                 reloadedSecond = item;
             }
         }
-        ctx.check(reloadedFirst && reloadedSecond && reloadedFirst->groupId() > 0 &&
-                      reloadedFirst->groupId() == reloadedSecond->groupId(),
+        ctx.check(reloadedFirst && reloadedSecond && reloadedFirst->GroupId() > 0 &&
+                      reloadedFirst->GroupId() == reloadedSecond->GroupId(),
                   QStringLiteral("分组关系随画布保存和载入"));
 
         // 只复制组内一个图元时，副本不能误加入原组。
@@ -292,21 +292,21 @@ void selftest::runGroupTests(Context& ctx)
         const int duplicatedGroupMember = groupScene.duplicateSelectedItems();
         CanvasItem* groupCopy = nullptr;
         for (CanvasItem* item : groupScene.canvasItems()) {
-            if (item != first && item != second && item->rawName() == QStringLiteral("矩形 2")) {
+            if (item != first && item != second && item->CustomName() == QStringLiteral("矩形 2")) {
                 groupCopy = item;
             }
         }
-        ctx.check(duplicatedGroupMember == 1 && groupCopy && groupCopy->groupId() == 0,
+        ctx.check(duplicatedGroupMember == 1 && groupCopy && groupCopy->GroupId() == 0,
                   QStringLiteral("只复制单个组员时副本保持未分组"));
 
         // 只选中一个组员也能取消整个组。
         groupScene.clearSelection();
         first->setSelected(true);
         const int ungrouped = groupScene.ungroupSelectedItems();
-        ctx.check(ungrouped == 2 && first->groupId() == 0 && second->groupId() == 0,
+        ctx.check(ungrouped == 2 && first->GroupId() == 0 && second->GroupId() == 0,
                   QStringLiteral("取消组合会清除整个组"), QStringLiteral("ungrouped=%1").arg(ungrouped));
         groupUndo.undo();
-        ctx.check(first->groupId() == groupId && second->groupId() == groupId, QStringLiteral("撤销取消组合恢复整组"));
+        ctx.check(first->GroupId() == groupId && second->GroupId() == groupId, QStringLiteral("撤销取消组合恢复整组"));
 
         groupView.close();
         QApplication::processEvents();
@@ -321,7 +321,7 @@ void selftest::runRubberBandTests(Context& ctx)
         rubberScene.applyCanvasSize(QSizeF(800.0, 600.0));
         rubberScene.setMode(ToolMode::EDIT);
         auto* target = createShapeItem(ShapeType::RECTANGLE);
-        target->setContentSize(QSizeF(120.0, 80.0));
+        target->SetContentSize(QSizeF(120.0, 80.0));
         target->setPos(QPointF(300.0, 250.0));
         rubberScene.addItemsWithUndo({target}, QStringLiteral("Add rubber-band target"));
 
@@ -332,7 +332,7 @@ void selftest::runRubberBandTests(Context& ctx)
         rubberView.fitAll();
         QApplication::processEvents();
 
-        const QPointF center = target->mapToScene(target->contentRect().center());
+        const QPointF center = target->mapToScene(target->ContentRect().center());
         const QPoint start = rubberView.mapFromScene(center + QPointF(-140.0, -100.0));
         const QPoint edgeEnd = rubberView.mapFromScene(center + QPointF(-15.0, -15.0));
         sendMouseEvent(rubberView.viewport(), QEvent::MouseButtonPress, start, Qt::LeftButton, Qt::LeftButton);
@@ -363,7 +363,7 @@ void selftest::runRubberBandTests(Context& ctx)
         rubberView.resetTransform();
         rubberView.centerOn(target);
         QApplication::processEvents();
-        const QRectF frame = target->mapRectToScene(target->frameRect());
+        const QRectF frame = target->mapRectToScene(target->FrameRect());
         const QPoint nearStart = rubberView.mapFromScene(frame.topLeft() - QPointF(1.5, 1.5));
         const QPoint nearEnd = rubberView.mapFromScene(frame.bottomRight() + QPointF(1.5, 1.5));
         sendMouseEvent(rubberView.viewport(), QEvent::MouseButtonPress, nearStart, Qt::LeftButton, Qt::LeftButton);

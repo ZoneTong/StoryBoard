@@ -29,13 +29,13 @@ TextItem::TextItem(QGraphicsItem* parent) : CanvasItem(parent)
     m_baseSize = measure(QString(), m_font);
 }
 
-ItemPropertySet TextItem::properties() const
+ItemPropertySet TextItem::Properties() const
 {
-    return CanvasItem::properties().united(
+    return CanvasItem::Properties().united(
         ItemPropertySet{ItemProperty::TEXT_CONTENT, ItemProperty::TEXT_COLOR, ItemProperty::TEXT_FONT});
 }
 
-QVariant TextItem::propertyValue(ItemProperty property) const
+QVariant TextItem::PropertyValue(ItemProperty property) const
 {
     switch (property) {
     case ItemProperty::TEXT_CONTENT:
@@ -45,11 +45,11 @@ QVariant TextItem::propertyValue(ItemProperty property) const
     case ItemProperty::TEXT_FONT:
         return m_font;
     default:
-        return CanvasItem::propertyValue(property);
+        return CanvasItem::PropertyValue(property);
     }
 }
 
-void TextItem::setPropertyValue(ItemProperty property, const QVariant& value)
+void TextItem::SetPropertyValue(ItemProperty property, const QVariant& value)
 {
     switch (property) {
     case ItemProperty::TEXT_CONTENT:
@@ -62,12 +62,12 @@ void TextItem::setPropertyValue(ItemProperty property, const QVariant& value)
         setTextFormat(m_text, value.value<QFont>(), m_color);
         break;
     default:
-        CanvasItem::setPropertyValue(property, value);
+        CanvasItem::SetPropertyValue(property, value);
         break;
     }
 }
 
-QString TextItem::displayName() const
+QString TextItem::DisplayName() const
 {
     QString snippet = m_text.simplified();
     if (snippet.size() > 18) {
@@ -76,7 +76,7 @@ QString TextItem::displayName() const
     return snippet.isEmpty() ? tr("Text") : tr("Text: %1").arg(snippet);
 }
 
-QString TextItem::typeDisplayName() const
+QString TextItem::TypeDisplayName() const
 {
     return tr("Text");
 }
@@ -105,21 +105,21 @@ void TextItem::setTextFormat(const QString& text, const QFont& font, const QColo
     m_font = normalizedFont(font);
     m_color = color.isValid() ? color : QColor(30, 41, 59);
     m_baseSize = measure(m_text, m_font);
-    setContentSize(m_baseSize);
+    SetContentSize(m_baseSize);
     update();
 }
 
-TextItemState TextItem::textState() const
+TextItemState TextItem::TextState() const
 {
-    return state();
+    return State();
 }
 
-void TextItem::applyTextState(const TextItemState& state)
+void TextItem::ApplyTextState(const TextItemState& state)
 {
-    applyState(state);
+    ApplyState(state);
 }
 
-TextItemState TextItem::state() const
+TextItemState TextItem::State() const
 {
     TextItemState result;
     result.text = m_text;
@@ -131,7 +131,7 @@ TextItemState TextItem::state() const
     return result;
 }
 
-void TextItem::applyState(const TextItemState& state)
+void TextItem::ApplyState(const TextItemState& state)
 {
     m_text = state.text;
     m_font = normalizedFont(state.font);
@@ -142,11 +142,11 @@ void TextItem::applyState(const TextItemState& state)
     // 负责声明几何变化；重复调用会让旧的绘制区域没有被正确纳入重绘，留下旧
     // 字形的残影。
     setPos(state.pos);
-    setContentSize(state.size.isEmpty() ? m_baseSize : state.size);
+    SetContentSize(state.size.isEmpty() ? m_baseSize : state.size);
     update();
 }
 
-void TextItem::paintContent(QPainter* painter)
+void TextItem::PaintContent(QPainter* painter)
 {
     if (m_baseSize.isEmpty() || contentSize().isEmpty()) {
         return;
@@ -159,7 +159,7 @@ void TextItem::paintContent(QPainter* painter)
 
     painter->save();
     // IntersectClip：保留 drawItems() 设置的“被遮挡裁剪”区域，不能整个替换。
-    painter->setClipRect(contentRect(), Qt::IntersectClip);
+    painter->setClipRect(ContentRect(), Qt::IntersectClip);
     painter->scale(scaleX, scaleY);
     painter->translate(PADDING, PADDING);
     painter->setFont(m_font);
@@ -178,14 +178,14 @@ void TextItem::paintContent(QPainter* painter)
     painter->restore();
 }
 
-QPainterPath TextItem::outlineShape() const
+QPainterPath TextItem::OutlineShape() const
 {
     QPainterPath path;
-    path.addRect(contentRect());
+    path.addRect(ContentRect());
     return path;
 }
 
-QPainterPath TextItem::paintedShape() const
+QPainterPath TextItem::PaintedShape() const
 {
     if (contentSize().isEmpty() || m_color.alpha() == 0) {
         return QPainterPath();
@@ -211,7 +211,7 @@ QPainterPath TextItem::paintedShape() const
     }
 
     if (path.isEmpty()) {
-        return CanvasItem::paintedShape();
+        return CanvasItem::PaintedShape();
     }
 
     QTransform transform;
@@ -219,20 +219,20 @@ QPainterPath TextItem::paintedShape() const
     QPainterPath scaled = transform.map(path);
 
     QPainterPath contentPath;
-    contentPath.addRect(contentRect());
+    contentPath.addRect(ContentRect());
     return scaled.intersected(contentPath);
 }
 
-QPainterPath TextItem::clippingShape() const
+QPainterPath TextItem::ClippingShape() const
 {
     // 文字直接叠在下层上绘制，不参与下层的遮挡裁剪。按字形裁剪下层会
     // 在低缩放和亚像素位置露出画板底色，表现为黑字后面的白色错位重影。
     return QPainterPath();
 }
 
-QJsonObject TextItem::toJson() const
+QJsonObject TextItem::ToJson() const
 {
-    QJsonObject json = baseJson();
+    QJsonObject json = BaseJson();
     json.insert(QStringLiteral("text"), m_text);
     json.insert(QStringLiteral("color"), m_color.name(QColor::HexArgb));
     json.insert(QStringLiteral("fontFamily"), m_font.family());
@@ -246,7 +246,7 @@ QJsonObject TextItem::toJson() const
     return json;
 }
 
-void TextItem::fromJson(const QJsonObject& json)
+void TextItem::FromJson(const QJsonObject& json)
 {
     m_text = json.value(QStringLiteral("text")).toString();
 
@@ -268,8 +268,8 @@ void TextItem::fromJson(const QJsonObject& json)
                             json.value(QStringLiteral("baseHeight")).toDouble(0.0));
     m_baseSize = (storedBase.width() > 0.0 && storedBase.height() > 0.0) ? storedBase : measure(m_text, m_font);
 
-    applyBaseJson(json);
+    ApplyBaseJson(json);
     if (contentSize().isEmpty()) {
-        setContentSize(m_baseSize);
+        SetContentSize(m_baseSize);
     }
 }

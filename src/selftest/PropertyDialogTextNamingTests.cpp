@@ -33,11 +33,11 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
     propertyFont.setPointSize(16);
     auto* textItem = new TextItem();
     textItem->setTextFormat(QStringLiteral("属性文字"), propertyFont, QColor(QStringLiteral("#0F766E")));
-    textItem->setContentSize(QSizeF(200.0, 50.0));
+    textItem->SetContentSize(QSizeF(200.0, 50.0));
     textItem->setPos(QPointF(420.0, 300.0));
     editScene.addItemsWithUndo({textItem}, QStringLiteral("Add property text"));
-    ctx.check(textItem->rawName() == QStringLiteral("文字 1"), QStringLiteral("文字图元自动名称不使用文字内容"),
-              textItem->rawName());
+    ctx.check(textItem->CustomName() == QStringLiteral("文字 1"), QStringLiteral("文字图元自动名称不使用文字内容"),
+              textItem->CustomName());
 
     const int textPropertyUndoBefore = editUndo.count();
     const QSizeF textSizeBefore = textItem->contentSize();
@@ -56,7 +56,7 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
     }
     ctx.check(textItem->text() == QStringLiteral("属性文字已更新") && editUndo.count() == textPropertyUndoBefore + 1,
               QStringLiteral("文字正文修改进入属性撤销记录"));
-    ctx.check(textItem->contentSize() == TextItem::measure(textItem->text(), textItem->textFont()),
+    ctx.check(textItem->contentSize() == TextItem::measure(textItem->text(), textItem->TextFont()),
               QStringLiteral("文字正文修改后重置为自然尺寸"),
               QStringLiteral("%1x%2").arg(textItem->contentSize().width()).arg(textItem->contentSize().height()));
     editUndo.undo();
@@ -79,13 +79,13 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
         dialog.accept();
         QApplication::processEvents();
     }
-    ctx.check(qAbs(textItem->itemOpacity() - 0.35) < 0.01 && editUndo.canUndo(),
+    ctx.check(qAbs(textItem->ItemOpacity() - 0.35) < 0.01 && editUndo.canUndo(),
               QStringLiteral("文字属性窗修改透明度并可撤销"),
-              QStringLiteral("opacity=%1 canUndo=%2").arg(textItem->itemOpacity()).arg(editUndo.canUndo() ? 1 : 0));
+              QStringLiteral("opacity=%1 canUndo=%2").arg(textItem->ItemOpacity()).arg(editUndo.canUndo() ? 1 : 0));
     editUndo.undo();
     QApplication::processEvents();
-    ctx.check(qAbs(textItem->itemOpacity() - 1.0) < 0.01, QStringLiteral("撤销文字透明度恢复原值"),
-              QString::number(textItem->itemOpacity()));
+    ctx.check(qAbs(textItem->ItemOpacity() - 1.0) < 0.01, QStringLiteral("撤销文字透明度恢复原值"),
+              QString::number(textItem->ItemOpacity()));
 
     auto* firstNamingStroke = new CurveItem();
     firstNamingStroke->beginStroke(QPointF(90.0, 420.0), QColor(QStringLiteral("#0F766E")), 5.0);
@@ -99,27 +99,27 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
     secondNamingStroke->appendScenePoint(QPointF(380.0, 440.0));
     secondNamingStroke->endStroke();
     editScene.addItemsWithUndo({secondNamingStroke}, QStringLiteral("Add second numbered stroke"));
-    ctx.check(firstNamingStroke->rawName() == QStringLiteral("曲线 1") &&
-                  secondNamingStroke->rawName() == QStringLiteral("曲线 2"),
+    ctx.check(firstNamingStroke->CustomName() == QStringLiteral("曲线 1") &&
+                  secondNamingStroke->CustomName() == QStringLiteral("曲线 2"),
               QStringLiteral("曲线图元名称后缀自动递增"),
-              firstNamingStroke->rawName() + QStringLiteral(" / ") + secondNamingStroke->rawName());
+              firstNamingStroke->CustomName() + QStringLiteral(" / ") + secondNamingStroke->CustomName());
 
     int strokeUndoBefore = editUndo.count();
-    firstNamingStroke->setName(QString());
+    firstNamingStroke->SetName(QString());
     {
         ItemPropertiesDialog dialog(&editScene, firstNamingStroke);
         dialog.show();
         QApplication::processEvents();
         QLineEdit* strokeNameValue = dialog.findChild<QLineEdit*>(QStringLiteral("ItemPropertiesNameValue"));
         QLabel* strokeTypeValue = dialog.findChild<QLabel*>(QStringLiteral("ItemPropertiesTypeValue"));
-        ctx.check(!firstNamingStroke->rawName().isEmpty() &&
-                      firstNamingStroke->rawName().startsWith(QStringLiteral("曲线 ")),
-                  QStringLiteral("打开属性窗时为无名图元补上自动编号"), firstNamingStroke->rawName());
+        ctx.check(!firstNamingStroke->CustomName().isEmpty() &&
+                      firstNamingStroke->CustomName().startsWith(QStringLiteral("曲线 ")),
+                  QStringLiteral("打开属性窗时为无名图元补上自动编号"), firstNamingStroke->CustomName());
         ctx.check(strokeNameValue && strokeNameValue->isEnabled() &&
-                      strokeNameValue->text() == firstNamingStroke->name(),
+                      strokeNameValue->text() == firstNamingStroke->Name(),
                   QStringLiteral("曲线属性窗显示可编辑的图元名称"),
                   strokeNameValue ? strokeNameValue->text() : QStringLiteral("<missing>"));
-        ctx.check(strokeTypeValue && strokeTypeValue->text() == firstNamingStroke->typeDisplayName(),
+        ctx.check(strokeTypeValue && strokeTypeValue->text() == firstNamingStroke->TypeDisplayName(),
                   QStringLiteral("曲线属性窗图元类型只读显示当前类型"));
         dialog.reject();
         QApplication::processEvents();
@@ -127,12 +127,12 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
     ctx.check(editUndo.count() == strokeUndoBefore, QStringLiteral("只打开并取消曲线属性窗不产生撤销记录"));
     int unnamedItemCount = 0;
     for (CanvasItem* item : editScene.canvasItems()) {
-        if (!item || item->rawName().isEmpty()) {
+        if (!item || item->CustomName().isEmpty()) {
             ++unnamedItemCount;
         }
     }
     ctx.check(unnamedItemCount == 0, QStringLiteral("场景内所有图元都有名称"), QString::number(unnamedItemCount));
-    const QColor textColorBefore = textItem->textColor();
+    const QColor textColorBefore = textItem->TextColor();
     const int textUndoBefore = editUndo.count();
     {
         ItemPropertiesDialog dialog(&editScene, textItem);
@@ -142,7 +142,7 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
         QLabel* typeValue = dialog.findChild<QLabel*>(QStringLiteral("ItemPropertiesTypeValue"));
         QLabel* heading = dialog.findChild<QLabel*>(QStringLiteral("ItemPropertiesHeading"));
         ctx.check(typeValue && typeValue->text() == uiText(QStringLiteral("Text")) && heading &&
-                      heading->text() == textItem->name(),
+                      heading->text() == textItem->Name(),
                   QStringLiteral("文字属性窗标题和类型使用图元名称与类型名"));
         if (textColorValue) {
             textColorValue->setProperty("itemColor", QColor(QStringLiteral("#DB2777")));
@@ -150,11 +150,11 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
         dialog.accept();
         QApplication::processEvents();
     }
-    ctx.check(textItem->textColor() == QColor(QStringLiteral("#DB2777")) && editUndo.count() == textUndoBefore + 1,
+    ctx.check(textItem->TextColor() == QColor(QStringLiteral("#DB2777")) && editUndo.count() == textUndoBefore + 1,
               QStringLiteral("文字属性窗修改文字颜色并生成一条撤销记录"));
     editUndo.undo();
     QApplication::processEvents();
-    ctx.check(textItem->textColor() == textColorBefore, QStringLiteral("文字属性窗修改可撤销"));
+    ctx.check(textItem->TextColor() == textColorBefore, QStringLiteral("文字属性窗修改可撤销"));
 
     {
         ItemPropertiesDialog dialog(&editScene, textItem);
@@ -170,10 +170,10 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
     }
 
     CanvasScene reloadedNames;
-    ctx.check(reloadedNames.fromJson(editScene.toJson()), QStringLiteral("自动名称随画布重新载入"));
+    ctx.check(reloadedNames.FromJson(editScene.ToJson()), QStringLiteral("自动名称随画布重新载入"));
     QStringList reloadedNameList;
     for (CanvasItem* item : reloadedNames.canvasItems()) {
-        reloadedNameList.append(item->rawName());
+        reloadedNameList.append(item->CustomName());
     }
     ctx.check(reloadedNameList.contains(QStringLiteral("Hero panel")) &&
                   reloadedNameList.contains(QStringLiteral("矩形 2")) &&
@@ -185,7 +185,7 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
     QUndoStack ellipseUndo;
     ellipseScene.setUndoStack(&ellipseUndo);
     auto* ellipse = createShapeItem(ShapeType::ELLIPSE);
-    ellipse->setContentSize(QSizeF(300.0, 100.0));
+    ellipse->SetContentSize(QSizeF(300.0, 100.0));
     ellipse->setPos(QPointF(100.0, 100.0));
     ellipseScene.addItemsWithUndo({ellipse}, QStringLiteral("Add ellipse"));
     {
@@ -225,7 +225,7 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
     QUndoStack arcUndo;
     arcScene.setUndoStack(&arcUndo);
     auto* sector = createShapeItem(ShapeType::SECTOR);
-    sector->setContentSize(QSizeF(200.0, 200.0));
+    sector->SetContentSize(QSizeF(200.0, 200.0));
     arcScene.addItemsWithUndo({sector}, QStringLiteral("Add sector"));
     {
         ItemPropertiesDialog dialog(&arcScene, sector);
@@ -258,7 +258,7 @@ void selftest::runPropertyDialogTextNamingTests(Context& ctx)
         dialog.accept();
         QApplication::processEvents();
     }
-    ctx.check(qAbs(sector->startAngle() - 60.0) < 0.01 && qAbs(sector->sweepAngle() - 200.0) < 0.01,
+    ctx.check(qAbs(sector->StartAngle() - 60.0) < 0.01 && qAbs(sector->SweepAngle() - 200.0) < 0.01,
               QStringLiteral("属性窗修改可落到扇形角度"),
-              QStringLiteral("start=%1 sweep=%2").arg(sector->startAngle()).arg(sector->sweepAngle()));
+              QStringLiteral("start=%1 sweep=%2").arg(sector->StartAngle()).arg(sector->SweepAngle()));
 }

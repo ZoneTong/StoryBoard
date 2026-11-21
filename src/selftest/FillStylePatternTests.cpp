@@ -20,9 +20,9 @@ void selftest::runFillStylePatternTests(Context& ctx)
     hatchScene.applyCanvasSize(QSizeF(400, 300));
     auto* crossShape = createShapeItem(ShapeType::RECTANGLE);
     crossShape->setPos(QPointF(50, 45));
-    crossShape->setContentSize(QSizeF(300, 200));
+    crossShape->SetContentSize(QSizeF(300, 200));
     crossShape->setStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 2.0);
-    crossShape->setFill(QColor(239, 68, 68, 255), FillStyle::CROSS_HATCH);
+    crossShape->SetFill(QColor(239, 68, 68, 255), FillStyle::CROSS_HATCH);
     hatchScene.attachItem(crossShape);
 
     QImage hatchImage(400, 300, QImage::Format_ARGB32_Premultiplied);
@@ -85,9 +85,9 @@ void selftest::runFillStylePatternTests(Context& ctx)
         scene.applyCanvasSize(QSizeF(400, 300));
         auto* shape = createShapeItem(ShapeType::RECTANGLE);
         shape->setPos(QPointF(50, 45));
-        shape->setContentSize(QSizeF(300, 200));
+        shape->SetContentSize(QSizeF(300, 200));
         shape->setStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 2.0);
-        shape->setFill(QColor(239, 68, 68, 255), style);
+        shape->SetFill(QColor(239, 68, 68, 255), style);
         scene.attachItem(shape);
         image = QImage(400, 300, QImage::Format_ARGB32_Premultiplied);
         image.fill(Qt::white);

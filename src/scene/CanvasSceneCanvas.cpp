@@ -92,7 +92,7 @@ void CanvasScene::setShowGrid(bool enabled)
     update();
 }
 
-QRectF CanvasScene::contentRect() const
+QRectF CanvasScene::ContentRect() const
 {
     QRectF rect;
     bool hasItem = false;
@@ -101,7 +101,7 @@ QRectF CanvasScene::contentRect() const
         if (!item->isVisible()) {
             continue;
         }
-        const QRectF itemRect = item->sceneContentRect();
+        const QRectF itemRect = item->SceneContentRect();
         if (itemRect.isEmpty()) {
             continue;
         }
@@ -118,7 +118,7 @@ QRectF CanvasScene::contentRect() const
 void CanvasScene::updateSceneExtent()
 {
     QRectF extent = canvasRect();
-    const QRectF content = contentRect();
+    const QRectF content = ContentRect();
     if (!content.isEmpty()) {
         extent = extent.united(content);
     }
@@ -167,7 +167,7 @@ QImage CanvasScene::renderLayerImage(const QRectF& area, qreal scale, int layerI
     previousVisibility.reserve(items.size());
     for (CanvasItem* item : items) {
         previousVisibility.append(item->isVisible());
-        item->setVisible(item->layerId() == layerId && isLayerVisible(layerId));
+        item->setVisible(item->LayerId() == layerId && isLayerVisible(layerId));
     }
 
     QImage image = renderImage(area, scale);

@@ -84,7 +84,7 @@ QPixmap makeTextImage(const QString& text, const QColor& color, const QFont& fon
 void addStroke(CanvasScene& scene, const QVector<QPointF>& points, const QColor& color, qreal width, int layerId)
 {
     auto* stroke = new CurveItem();
-    stroke->setLayerId(layerId);
+    stroke->SetLayerId(layerId);
     stroke->beginStroke(points.constFirst(), color, width);
     for (int i = 1; i < points.size(); ++i) {
         stroke->appendScenePoint(points.at(i));

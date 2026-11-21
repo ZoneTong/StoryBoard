@@ -434,9 +434,9 @@ void selftest::runMainWindowFlowTests(Context& ctx)
         }
         ctx.check(createdText && createdText->text() == QStringLiteral("端到端文字图元"),
                   QStringLiteral("主窗口创建的文字内容正确"));
-        ctx.check(createdText && createdText->textColor() == window.view()->brushColor() &&
-                      createdText->layerId() == window.scene()->activeLayerId() &&
-                      window.scene()->layerHeightsUnique(createdText->layerId()),
+        ctx.check(createdText && createdText->TextColor() == window.view()->brushColor() &&
+                      createdText->LayerId() == window.scene()->activeLayerId() &&
+                      window.scene()->layerHeightsUnique(createdText->LayerId()),
                   QStringLiteral("主窗口文字使用所选颜色且高度唯一"));
         ctx.check(window.view()->mode() == ToolMode::EDIT, QStringLiteral("主窗口添加文字后切回编辑模式"));
 
@@ -473,11 +473,11 @@ void selftest::runMainWindowFlowTests(Context& ctx)
                   QStringLiteral("图元属性保留菜单入口、不绑单字母快捷键，选中单个图元时可用"),
                   propertiesAction ? propertiesAction->text() : QString());
         if (createdText && heightUpAction && heightDownAction) {
-            const int heightBeforeShortcut = createdText->height();
+            const int heightBeforeShortcut = createdText->ZOrder();
             heightUpAction->trigger();
-            ctx.check(createdText->height() == heightBeforeShortcut + 1, QStringLiteral("] 快捷键提升选中图元高度"));
+            ctx.check(createdText->ZOrder() == heightBeforeShortcut + 1, QStringLiteral("] 快捷键提升选中图元高度"));
             heightDownAction->trigger();
-            ctx.check(createdText->height() == heightBeforeShortcut, QStringLiteral("[ 快捷键降低选中图元高度"));
+            ctx.check(createdText->ZOrder() == heightBeforeShortcut, QStringLiteral("[ 快捷键降低选中图元高度"));
         }
 
         // 需求 42 端到端：查看模式双击图元，MainWindow 以只读模态窗打开。
@@ -491,13 +491,13 @@ void selftest::runMainWindowFlowTests(Context& ctx)
                     return;
                 }
                 readOnlyDialogSeen = true;
-                ctx.check(dialog->isModal() && !dialog->isEditable(),
+                ctx.check(dialog->isModal() && !dialog->IsEditable(),
                           QStringLiteral("查看模式端到端打开只读模态属性窗"));
                 QLineEdit* nameEdit = dialog->findChild<QLineEdit*>(QStringLiteral("ItemPropertiesNameValue"));
                 ctx.check(nameEdit && !nameEdit->isEnabled(), QStringLiteral("查看模式端到端属性字段不可编辑"));
                 dialog->accept();
             });
-            const QPoint textPoint = window.view()->mapFromScene(createdText->sceneContentRect().center());
+            const QPoint textPoint = window.view()->mapFromScene(createdText->SceneContentRect().center());
             QMouseEvent textDoubleClick(QEvent::MouseButtonDblClick, QPointF(textPoint),
                                         QPointF(window.view()->viewport()->mapToGlobal(textPoint)), Qt::LeftButton,
                                         Qt::LeftButton, Qt::NoModifier);

@@ -16,8 +16,8 @@ void CanvasScene::applyItemInteraction(CanvasItem* item)
         return;
     }
 
-    const bool layerVisible = isLayerVisible(item->layerId());
-    const bool editable = m_mode == ToolMode::EDIT && layerVisible && !isLayerLocked(item->layerId());
+    const bool layerVisible = isLayerVisible(item->LayerId());
+    const bool editable = m_mode == ToolMode::EDIT && layerVisible && !isLayerLocked(item->LayerId());
 
     item->setVisible(layerVisible);
     item->setFlag(QGraphicsItem::ItemIsSelectable, editable);
@@ -65,7 +65,7 @@ int CanvasScene::layerItemCount(int layerId) const
     int count = 0;
     const QList<CanvasItem*> items = canvasItems();
     for (CanvasItem* item : items) {
-        if (item->layerId() == layerId) {
+        if (item->LayerId() == layerId) {
             ++count;
         }
     }
@@ -77,7 +77,7 @@ QList<CanvasItem*> CanvasScene::layerItems(int layerId) const
     QList<CanvasItem*> result;
     const QList<CanvasItem*> items = canvasItems();
     for (CanvasItem* item : items) {
-        if (item->layerId() == layerId) {
+        if (item->LayerId() == layerId) {
             result.append(item);
         }
     }
@@ -201,8 +201,8 @@ bool CanvasScene::isItemEditable(const CanvasItem* item) const
 {
     // 需求变更后的口径：编辑模式下，只要图元所在图层可见且未锁定就能编辑，
     // 与“当前图层”无关。
-    return item && item->scene() == this && m_mode == ToolMode::EDIT && isLayerVisible(item->layerId()) &&
-           !isLayerLocked(item->layerId());
+    return item && item->scene() == this && m_mode == ToolMode::EDIT && isLayerVisible(item->LayerId()) &&
+           !isLayerLocked(item->LayerId());
 }
 
 void CanvasScene::setActiveLayer(int layerId)

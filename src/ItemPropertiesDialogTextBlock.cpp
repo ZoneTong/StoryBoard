@@ -12,20 +12,20 @@
 
 ItemPropertiesDialogTextBlock::ItemPropertiesDialogTextBlock(CanvasItem* item, QWidget* parent) : QWidget(parent)
 {
-    if (!item || !item->hasTextFacet()) {
+    if (!item || !item->HasTextFacet()) {
         return;
     }
 
-    m_textFont = item->textFont();
+    m_textFont = item->TextFont();
 
     // 需求 39：文字正文也是可编辑属性，直接在属性窗里改，不必先离开再开文字对话框。
     m_textEdit = new QPlainTextEdit(this);
     m_textEdit->setObjectName(QStringLiteral("ItemPropertiesTextValue"));
-    m_textEdit->setPlainText(item->textContent());
+    m_textEdit->setPlainText(item->TextContent());
     m_textEdit->setMinimumHeight(88);
 
     m_textColorButton =
-        ItemPropertiesFields::makeColorField(this, item->textColor(), QStringLiteral("ItemPropertiesTextColorValue"));
+        ItemPropertiesFields::makeColorField(this, item->TextColor(), QStringLiteral("ItemPropertiesTextColorValue"));
 
     m_fontButton = new QPushButton(this);
     m_fontButton->setObjectName(QStringLiteral("ItemPropertiesFontValue"));
