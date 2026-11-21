@@ -423,6 +423,27 @@
         <source>Clear fill image</source>
         <translation>清除填充图片</translation>
     </message><message>
+        <source>Fill image</source>
+        <translation>填充图片</translation>
+    </message><message>
+        <source>Fill image mode</source>
+        <translation>图片填充方式</translation>
+    </message><message>
+        <source>Stretch</source>
+        <translation>拉伸</translation>
+    </message><message>
+        <source>Fit</source>
+        <translation>适应</translation>
+    </message><message>
+        <source>Tile</source>
+        <translation>平铺</translation>
+    </message><message>
+        <source>Clear</source>
+        <translation>清除</translation>
+    </message><message>
+        <source>Change fill image mode</source>
+        <translation>修改图片填充方式</translation>
+    </message><message>
         <source>Replace fill image</source>
         <translation>替换填充图片</translation>
     </message><message>

@@ -19,6 +19,7 @@
 #include "SineItem.h"
 #include "TextItem.h"
 
+#include <QComboBox>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFont>
@@ -87,19 +88,22 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     layout->addWidget(m_colorsCard->FillColorRow());
 
     // 填充图片行排在填充颜色之后、描线样式之前；与其它行同一套图标与值按钮样式。
+    // 行内四件：用途图标（与上方各行左对齐）→ 选择 / 更换图片 → 摆放方式 → 清除。
     m_fillImageRow = new QWidget(content);
     m_fillImageRow->setObjectName(QStringLiteral("ItemFillImageRow"));
     auto* fillImageLayout = new QHBoxLayout(m_fillImageRow);
     fillImageLayout->setContentsMargins(0, 0, 0, 0);
     fillImageLayout->setSpacing(2);
-    auto* fillImageIcon = new QToolButton(m_fillImageRow);
-    fillImageIcon->setObjectName(QStringLiteral("ItemRowIcon"));
-    fillImageIcon->setIcon(MakeIcon(IconId::IMAGE, QColor(139, 144, 156), 20));
-    fillImageIcon->setIconSize(QSize(20, 20));
-    fillImageIcon->setFixedSize(32, 32);
-    fillImageIcon->setAutoRaise(true);
-    fillImageIcon->setFocusPolicy(Qt::NoFocus);
-    fillImageLayout->addWidget(fillImageIcon);
+
+    m_fillImageIcon = new QToolButton(m_fillImageRow);
+    m_fillImageIcon->setObjectName(QStringLiteral("ItemRowIcon"));
+    m_fillImageIcon->setIcon(MakeIcon(IconId::IMAGE, QColor(139, 144, 156), 20));
+    m_fillImageIcon->setIconSize(QSize(20, 20));
+    m_fillImageIcon->setFixedSize(32, 32);
+    m_fillImageIcon->setAutoRaise(true);
+    m_fillImageIcon->setFocusPolicy(Qt::NoFocus);
+    m_fillImageIcon->setToolTip(tr("Fill image"));
+    fillImageLayout->addWidget(m_fillImageIcon, 0, Qt::AlignVCenter);
 
     m_fillImageButton = new QToolButton(m_fillImageRow);
     m_fillImageButton->setObjectName(QStringLiteral("ItemFillImageButton"));
@@ -110,18 +114,38 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     m_fillImageButton->setToolTip(tr("Choose an image to fill the selected items"));
     m_fillImageButton->setMinimumHeight(30);
     connect(m_fillImageButton, &QToolButton::clicked, this, &PropertiesPanel::ChooseFillImage);
-    fillImageLayout->addWidget(m_fillImageButton, 1);
+    fillImageLayout->addWidget(m_fillImageButton, 0, Qt::AlignVCenter);
 
+    // 与图元属性窗同一套摆放方式：拉伸铺满 / 等比适应 / 原始像素平铺。
+    m_fillImageModeCombo = new QComboBox(m_fillImageRow);
+    m_fillImageModeCombo->setObjectName(QStringLiteral("ItemFillImageMode"));
+    m_fillImageModeCombo->addItem(tr("Stretch"), static_cast<int>(ImageFill::Mode::STRETCH));
+    m_fillImageModeCombo->addItem(tr("Fit"), static_cast<int>(ImageFill::Mode::FIT));
+    m_fillImageModeCombo->addItem(tr("Tile"), static_cast<int>(ImageFill::Mode::TILE));
+    m_fillImageModeCombo->setMinimumHeight(30);
+    m_fillImageModeCombo->setToolTip(tr("Fill image mode"));
+    connect(m_fillImageModeCombo, &QComboBox::currentIndexChanged, this, [this](int index) {
+        if (m_refreshing || index < 0) {
+            return;
+        }
+        ApplyFillImageMode(m_fillImageModeCombo->itemData(index).toInt());
+    });
+    fillImageLayout->addWidget(m_fillImageModeCombo, 0, Qt::AlignVCenter);
+
+    // 清除按钮与属性窗保持一致，带文字说明而不是只画一个垃圾桶图标。
     m_clearFillImageButton = new QToolButton(m_fillImageRow);
-    m_clearFillImageButton->setObjectName(QStringLiteral("ItemRowIcon"));
-    m_clearFillImageButton->setIcon(MakeIcon(IconId::DELETE, QColor(139, 144, 156), 20));
-    m_clearFillImageButton->setIconSize(QSize(20, 20));
-    m_clearFillImageButton->setFixedSize(32, 32);
-    m_clearFillImageButton->setAutoRaise(true);
-    m_clearFillImageButton->setFocusPolicy(Qt::NoFocus);
+    m_clearFillImageButton->setObjectName(QStringLiteral("ItemClearFillImageButton"));
+    m_clearFillImageButton->setIcon(MakeIcon(IconId::DELETE, QColor(58, 64, 80), 16));
+    m_clearFillImageButton->setIconSize(QSize(16, 16));
+    m_clearFillImageButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    m_clearFillImageButton->setText(tr("Clear"));
+    m_clearFillImageButton->setMinimumHeight(30);
     m_clearFillImageButton->setToolTip(tr("Clear fill image"));
     connect(m_clearFillImageButton, &QToolButton::clicked, this, &PropertiesPanel::ClearFillImage);
-    fillImageLayout->addWidget(m_clearFillImageButton);
+    fillImageLayout->addWidget(m_clearFillImageButton, 0, Qt::AlignVCenter);
+    // 末尾留伸缩位：这一行不像上面的色板行那样自带 addStretch，否则多出的宽度
+    // 会被均摊成行内空隙，图标就与上方各行错位。
+    fillImageLayout->addStretch(1);
     layout->addWidget(m_fillImageRow);
 
     layout->addWidget(m_fillBorderCard->BorderStyleRow());
@@ -321,13 +345,16 @@ void PropertiesPanel::Refresh()
     m_valueCard->SetTriangleVisible(common.Contains(ItemProperty::TRIANGLE_BASE));
     m_valueCard->SetArrowVisible(common.Contains(ItemProperty::ARROW_START));
     m_fillImageRow->setVisible(common.Contains(ItemProperty::FILL_IMAGE));
-    if (m_fillImageButton) {
-        const bool hasImage = !items.isEmpty() &&
-                              items.first()->PropertyValue(ItemProperty::FILL_IMAGE).value<QPixmap>().isNull() == false;
+    {
+        const bool hasImage =
+            !items.isEmpty() && !items.first()->PropertyValue(ItemProperty::FILL_IMAGE).value<QPixmap>().isNull();
         m_fillImageButton->setText(hasImage ? tr("Change fill image") : tr("Choose fill image"));
-    }
-    if (m_clearFillImageButton) {
-        m_clearFillImageButton->setVisible(common.Contains(ItemProperty::FILL_IMAGE));
+        m_fillImageModeCombo->setEnabled(hasImage);
+        m_clearFillImageButton->setEnabled(hasImage);
+        const int mode = items.isEmpty() ? static_cast<int>(ImageFill::Mode::STRETCH)
+                                         : items.first()->PropertyValue(ItemProperty::FILL_IMAGE_MODE).toInt();
+        const int index = m_fillImageModeCombo->findData(mode);
+        m_fillImageModeCombo->setCurrentIndex(index >= 0 ? index : 0);
     }
 
     const bool hasSelection = !items.isEmpty();

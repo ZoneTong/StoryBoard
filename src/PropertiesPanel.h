@@ -17,6 +17,7 @@ struct TextItemState;
 class QPixmap;
 class QFont;
 class QAction;
+class QComboBox;
 class QToolButton;
 class QLabel;
 class QWidget;
@@ -79,6 +80,8 @@ class PropertiesPanel : public QWidget {
     // 需求 13：给选中的所有可填充图元批量替换背景图片（多选也生效）。
     void ChooseFillImage();
     void ClearFillImage();
+    // 图片填充方式（拉伸 / 适应 / 平铺）与图元属性窗一致，多选批量写回。
+    void ApplyFillImageMode(int mode);
     // 属性表通道：同一组属性值写回所有目标图元，只占一条撤销记录。
     void ApplyPropertyValues(const QMap<ItemProperty, QVariant>& values, const QString& text,
                              const QList<CanvasItem*>& targets = QList<CanvasItem*>());
@@ -110,7 +113,9 @@ class PropertiesPanel : public QWidget {
     QWidget* m_contentWidget = nullptr;
     // 需求 13：背景图片行（填充颜色之后），多选可填充图元时可用。
     QWidget* m_fillImageRow = nullptr;
+    QToolButton* m_fillImageIcon = nullptr;
     QToolButton* m_fillImageButton = nullptr;
+    QComboBox* m_fillImageModeCombo = nullptr;
     QToolButton* m_clearFillImageButton = nullptr;
 
     PropertiesPanelSelectionCard* m_selectionCard = nullptr;
