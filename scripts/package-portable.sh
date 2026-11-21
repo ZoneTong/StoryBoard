@@ -160,9 +160,9 @@ if [ -n "$EXPECTED_PASSED" ]; then
         ''|*[!0-9]*) die "--expected-passed must be a number" ;;
     esac
 elif [ "$PLATFORM" = windows ]; then
-    # 自检条数随功能增加而变，这里跟随当前的实测值（1064）；新增/删除自检时同批更新，
+    # 自检条数随功能增加而变，这里跟随当前的实测值（1066）；新增/删除自检时同批更新，
     # 也可以显式传 --expected-passed <n> 覆盖，或传 0 表示只要求「全是 0 failed」。
-    EXPECTED_PASSED=1064
+    EXPECTED_PASSED=1066
 else
     EXPECTED_PASSED=0
 fi
