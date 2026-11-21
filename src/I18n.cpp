@@ -24,8 +24,8 @@
 namespace {
 
 
-UiLanguage gOverride = UiLanguage::SYSTEM;
-bool gOverrideActive = false;
+UiLanguage g_gOverride = UiLanguage::SYSTEM;
+bool g_gOverrideActive = false;
 
 const char* const TRANSLATION_CONTEXT = "StoryBoard";
 // 源语言是英文；中文等其它语种放在各自的 .ts/.qm 里。
@@ -34,17 +34,17 @@ const char* const TRANSLATION_SOURCE_RESOURCE = ":/i18n/storyboard_zh.ts";
 // Qt 6 内置控件（QFontDialog、QMessageBox 等）的标准标签由 qtbase 翻译提供。
 const char* const QT_TRANSLATION_RESOURCE = ":/i18n/qtbase_zh_CN.qm";
 
-QTranslator gTranslator;
-bool gTranslatorLoaded = false;
-bool gTranslatorInstalled = false;
-QTranslator gQtTranslator;
-bool gQtTranslationAvailable = false;
-bool gQtTranslatorInstalled = false;
-QHash<QString, QString> gReverseTranslations;
+QTranslator g_gTranslator;
+bool g_gTranslatorLoaded = false;
+bool g_gTranslatorInstalled = false;
+QTranslator g_gQtTranslator;
+bool g_gQtTranslationAvailable = false;
+bool g_gQtTranslatorInstalled = false;
+QHash<QString, QString> g_gReverseTranslations;
 
 void LoadReverseTranslations()
 {
-    if (!gReverseTranslations.isEmpty()) {
+    if (!g_gReverseTranslations.isEmpty()) {
         return;
     }
 
@@ -65,7 +65,7 @@ void LoadReverseTranslations()
         } else if (xml.name() == QLatin1String("translation")) {
             const QString translated = xml.readElementText();
             if (!source.isEmpty() && !translated.isEmpty()) {
-                gReverseTranslations.insert(translated, source);
+                g_gReverseTranslations.insert(translated, source);
             }
             source.clear();
         }
@@ -74,13 +74,13 @@ void LoadReverseTranslations()
 
 void EnsureTranslatorLoaded()
 {
-    if (gTranslatorLoaded) {
+    if (g_gTranslatorLoaded) {
         return;
     }
-    gTranslatorLoaded = true;
+    g_gTranslatorLoaded = true;
     LoadReverseTranslations();
-    (void)gTranslator.load(QString::fromLatin1(TRANSLATION_RESOURCE));
-    gQtTranslationAvailable = gQtTranslator.load(QString::fromLatin1(QT_TRANSLATION_RESOURCE));
+    (void)g_gTranslator.load(QString::fromLatin1(TRANSLATION_RESOURCE));
+    g_gQtTranslationAvailable = g_gQtTranslator.load(QString::fromLatin1(QT_TRANSLATION_RESOURCE));
 }
 
 void InstallChineseTranslator(bool chinese)
@@ -91,24 +91,24 @@ void InstallChineseTranslator(bool chinese)
         return;
     }
     if (chinese) {
-        if (!gTranslatorInstalled) {
-            app->installTranslator(&gTranslator);
-            gTranslatorInstalled = true;
+        if (!g_gTranslatorInstalled) {
+            app->installTranslator(&g_gTranslator);
+            g_gTranslatorInstalled = true;
         }
         // qtbase 翻译放在最后安装：Qt 内置控件优先查到它，应用自己的
         // StoryBoard 上下文仍由 gTranslator 提供。
-        if (gQtTranslationAvailable && !gQtTranslatorInstalled) {
-            app->installTranslator(&gQtTranslator);
-            gQtTranslatorInstalled = true;
+        if (g_gQtTranslationAvailable && !g_gQtTranslatorInstalled) {
+            app->installTranslator(&g_gQtTranslator);
+            g_gQtTranslatorInstalled = true;
         }
     } else {
-        if (gQtTranslatorInstalled) {
-            app->removeTranslator(&gQtTranslator);
-            gQtTranslatorInstalled = false;
+        if (g_gQtTranslatorInstalled) {
+            app->removeTranslator(&g_gQtTranslator);
+            g_gQtTranslatorInstalled = false;
         }
-        if (gTranslatorInstalled) {
-            app->removeTranslator(&gTranslator);
-            gTranslatorInstalled = false;
+        if (g_gTranslatorInstalled) {
+            app->removeTranslator(&g_gTranslator);
+            g_gTranslatorInstalled = false;
         }
     }
 }
@@ -118,8 +118,8 @@ QString TranslateToCurrent(const QString& source)
     return QCoreApplication::translate(TRANSLATION_CONTEXT, source.toUtf8().constData());
 }
 
-UiLanguage gExplicitLanguage = UiLanguage::SYSTEM;
-bool gExplicitActive = false;
+UiLanguage g_gExplicitLanguage = UiLanguage::SYSTEM;
+bool g_gExplicitActive = false;
 
 // 旧版本把语言单独存在 StoryBoard-language.txt（注册表写不进去时的退路）。
 // 这些文件只用于一次性迁移，读到旧值就并入 StoryBoard.ini 再删除，避免两处配置打架。
@@ -220,8 +220,8 @@ UiLanguage LanguageFromStored(const QString& stored)
 
 UiLanguage UiLanguageSetting()
 {
-    if (gExplicitActive) {
-        return gExplicitLanguage;
+    if (g_gExplicitActive) {
+        return g_gExplicitLanguage;
     }
     return LanguageFromStored(StoredLanguageCache());
 }
@@ -234,11 +234,11 @@ void SetUiLanguageSetting(UiLanguage language)
 
     // 先记住本次运行的选择：即使磁盘/注册表写失败，当前窗口也能立即切换。
     if (language == UiLanguage::SYSTEM) {
-        gExplicitActive = false;
-        gExplicitLanguage = UiLanguage::SYSTEM;
+        g_gExplicitActive = false;
+        g_gExplicitLanguage = UiLanguage::SYSTEM;
     } else {
-        gExplicitActive = true;
-        gExplicitLanguage = language;
+        g_gExplicitActive = true;
+        g_gExplicitLanguage = language;
     }
 
     if (PersistLanguage(stored)) {
@@ -250,15 +250,15 @@ void SetUiLanguageSetting(UiLanguage language)
 
 void UiOverrideLanguage(UiLanguage language)
 {
-    gOverrideActive = language != UiLanguage::SYSTEM;
-    gOverride = language;
+    g_gOverrideActive = language != UiLanguage::SYSTEM;
+    g_gOverride = language;
     InstallChineseTranslator(UiEffectiveLanguage() == UiLanguage::CHINESE);
 }
 
 UiLanguage UiEffectiveLanguage()
 {
-    if (gOverrideActive) {
-        return gOverride;
+    if (g_gOverrideActive) {
+        return g_gOverride;
     }
     const QString fromEnv = qEnvironmentVariable("STORYBOARD_LANG").trimmed().toLower();
     if (fromEnv == QLatin1String("zh")) {
@@ -297,8 +297,8 @@ QString UiTranslateEitherWay(const QString& text)
     }
     if (UiIsEnglish()) {
         // 源语言是英文；只有已经显示成中文的文本需要查反向表。
-        const auto it = gReverseTranslations.constFind(text);
-        return it == gReverseTranslations.constEnd() ? text : it.value();
+        const auto it = g_gReverseTranslations.constFind(text);
+        return it == g_gReverseTranslations.constEnd() ? text : it.value();
     }
     // 中文翻译器已装载：英文源串会变成中文，本来就是中文的文本保持原样。
     return TranslateToCurrent(text);
