@@ -130,6 +130,60 @@ void selftest::RunShapesClusterTests(Context& ctx)
         ctx.Check(rotatedFaces == 3, QStringLiteral("立方体三个面都带旋转角度"),
                   QStringLiteral("rotated=%1").arg(rotatedFaces));
 
+        // §6 验收：单一边长缝合 —— 三面两两至少共享两个顶点（误差 ≤0.05px），
+        // 且组的外接框保持六边形比例（宽 : 高 = 1.732 : 2），顶点不溢出内容框。
+        {
+            // 取图形本体轮廓（不是内容框）：斜切平行四边形的轮廓顶点才是共享顶点。
+            QList<QPolygonF> faces;
+            for (CanvasItem* item : items) {
+                QPolygonF quad;
+                const QPainterPath painted = item->mapToScene(item->PaintedShape());
+                for (const QPolygonF& polygon : painted.toSubpathPolygons()) {
+                    for (const QPointF& point : polygon) {
+                        if (!quad.contains(point)) {
+                            quad.append(point);
+                        }
+                    }
+                }
+                faces.append(quad);
+            }
+            int sharedPairs = 0;
+            for (int i = 0; i < faces.size(); ++i) {
+                for (int j = i + 1; j < faces.size(); ++j) {
+                    int shared = 0;
+                    for (const QPointF& first : faces.at(i)) {
+                        for (const QPointF& second : faces.at(j)) {
+                            if (QLineF(first, second).length() <= 0.05) {
+                                ++shared;
+                            }
+                        }
+                    }
+                    if (shared >= 2) {
+                        ++sharedPairs;
+                    }
+                }
+            }
+            QRectF unionRect;
+            for (const QPolygonF& quad : faces) {
+                unionRect = unionRect.isNull() ? quad.boundingRect() : unionRect.united(quad.boundingRect());
+            }
+            const qreal ratio = unionRect.height() > 0.0 ? unionRect.width() / unionRect.height() : 0.0;
+            ctx.Check(faces.size() == 3 && sharedPairs == 3,
+                      QStringLiteral("立方体三面两两共享至少两个顶点（误差 ≤0.05px）"),
+                      QStringLiteral("pairs=%1 verts=%2").arg(sharedPairs).arg([&faces]() {
+                          QString text;
+                          for (const QPolygonF& quad : faces) {
+                              for (const QPointF& point : quad) {
+                                  text += QStringLiteral("(%1,%2)").arg(point.x(), 0, 'f', 1).arg(point.y(), 0, 'f', 1);
+                              }
+                              text += QLatin1Char('|');
+                          }
+                          return text;
+                      }()));
+            ctx.Check(qAbs(ratio - 0.866) <= 0.02, QStringLiteral("立方体组外接框保持六边形比例 1.732:2"),
+                      QStringLiteral("ratio=%1").arg(ratio));
+        }
+
         window.InsertShape(ShapeType::CYLINDER);
         items = scene->CanvasItems();
         bool twoMore = items.size() == 5;

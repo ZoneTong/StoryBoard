@@ -223,7 +223,7 @@ APP=$(basename "$PWD")
 QT_QPA_PLATFORM=offscreen ./build/bin/$APP --self-test build/selftest.txt
 ```
 
-当前 Windows 基线为 **995 passed, 0 failed**（GCC 15 + Qt 6.12 实跑），其他平台以实际 `SUMMARY` 为准。自检需要平台插件目录下的 offscreen 插件，打包脚本会自动补齐。自检里的快捷键用例只验证功能键的主键生效且互不冲突；副键组合只要不与任何功能冲突即可，不做额外守卫。
+当前 Windows 基线为 **997 passed, 0 failed**（GCC 15 + Qt 6.12 实跑），其他平台以实际 `SUMMARY` 为准。自检需要平台插件目录下的 offscreen 插件，打包脚本会自动补齐。自检里的快捷键用例只验证功能键的主键生效且互不冲突；副键组合只要不与任何功能冲突即可，不做额外守卫。
 
 ## 命名检查
 
