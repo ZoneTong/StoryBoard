@@ -1,4 +1,5 @@
 #include "Alignment.h"
+#include "ArcItem.h"
 #include "BoolOps.h"
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
@@ -268,6 +269,36 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
         QApplication::processEvents();
         ctx.Check(qAbs(panelEllipse->ContentSize().width() - 140.0) < 0.01,
                   QStringLiteral("撤销长半轴修改恢复椭圆尺寸"));
+
+        // 弧线长短半轴：与椭圆共用同一对行（属性交集驱动显隐），写入保持椭圆中心，
+        // 走编辑面板的属性表撤销记录。
+        auto* panelArc = new ArcItem;
+        panelArc->SetArcGeometry(QPointF(620.0, 460.0), QSizeF(200.0, 100.0), 15.0, 140.0, QColor(Qt::black), 2.0);
+        dockScene->AddItemsWithUndo({panelArc}, QStringLiteral("Add panel arc"));
+        dockScene->clearSelection();
+        panelArc->setSelected(true);
+        QApplication::processEvents();
+        QDoubleSpinBox* arcMajorSpin = dockPanel->findChild<QDoubleSpinBox*>(QStringLiteral("ItemMajorAxisSpin"));
+        QDoubleSpinBox* arcMinorSpin = dockPanel->findChild<QDoubleSpinBox*>(QStringLiteral("ItemMinorAxisSpin"));
+        ctx.Check(arcMajorSpin && arcMajorSpin->isVisible() && arcMinorSpin && arcMinorSpin->isVisible() &&
+                      qAbs(arcMajorSpin->value() - 100.0) < 0.01 && qAbs(arcMinorSpin->value() - 50.0) < 0.01,
+                  QStringLiteral("选中弧线时编辑面板显示真实椭圆长短半轴"),
+                  QStringLiteral("major=%1 minor=%2")
+                      .arg(arcMajorSpin ? arcMajorSpin->value() : -999.0)
+                      .arg(arcMinorSpin ? arcMinorSpin->value() : -999.0));
+        if (arcMajorSpin) {
+            arcMajorSpin->setValue(90.0);
+            QApplication::processEvents();
+        }
+        ctx.Check(qAbs(panelArc->EllipseSize().width() - 180.0) < 0.01 &&
+                      qAbs(panelArc->EllipseSize().height() - 100.0) < 0.01,
+                  QStringLiteral("编辑面板长半轴行改写弧线椭圆框"),
+                  QStringLiteral("%1x%2").arg(panelArc->EllipseSize().width()).arg(panelArc->EllipseSize().height()));
+        dockScene->UndoStack()->undo();
+        QApplication::processEvents();
+        ctx.Check(qAbs(panelArc->EllipseSize().width() - 200.0) < 0.01 &&
+                      qAbs(panelArc->EllipseSize().height() - 100.0) < 0.01,
+                  QStringLiteral("撤销弧线长半轴修改恢复椭圆框"));
 
         // 需求 2：多选也开放旋转 / 位置 / 尺寸行，行序对齐属性窗；
         // 位置与尺寸按首个图元回显，改动以增量套到其余图元，不会把选中项叠在一起。

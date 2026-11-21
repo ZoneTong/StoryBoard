@@ -197,6 +197,10 @@ struct ItemPropertiesState {
     // 弧线角度 / 正弦周期与振幅：走 LineItemAbstract::ParamState 的形状参数。
     bool hasCurveParam = false;
     LineItemAbstract::ParamState curveParam;
+    // 弧线长短半轴：写入按真实椭圆外接框换算，未改动时与 before 相等即跳过。
+    bool hasArcAxes = false;
+    qreal arcMajor = 0.0;
+    qreal arcMinor = 0.0;
 
     bool operator==(const ItemPropertiesState& other) const;
     bool operator!=(const ItemPropertiesState& other) const { return !(*this == other); }

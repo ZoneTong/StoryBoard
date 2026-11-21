@@ -98,9 +98,9 @@ void PropertiesPanelGeometryCard::Refresh(CanvasItem* item)
     m_sizeRow->Refresh(item->ContentSize().width(), item->ContentSize().height());
     m_rotationRow->Refresh(item->RotationAngle());
 
-    const QSizeF size = item->ContentSize();
-    m_majorAxisRow->Refresh(qMax(size.width(), size.height()) / 2.0);
-    m_minorAxisRow->Refresh(qMin(size.width(), size.height()) / 2.0);
+    // 长短半轴按属性回显：椭圆 / 扇形由内容尺寸派生，弧线按真实椭圆外接框。
+    m_majorAxisRow->Refresh(item->PropertyValue(ItemProperty::MAJOR_AXIS).toDouble());
+    m_minorAxisRow->Refresh(item->PropertyValue(ItemProperty::MINOR_AXIS).toDouble());
 
     qreal angle = 60.0;
     if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
@@ -118,6 +118,7 @@ void PropertiesPanelGeometryCard::ApplyAxes(bool majorChanged)
         return;
     }
 
+    // 长半轴不得小于短半轴：改哪根就把另一根钳到同值并回显。
     m_refreshing = true;
     qreal major = m_majorAxisRow->Value();
     qreal minor = m_minorAxisRow->Value();
@@ -130,20 +131,10 @@ void PropertiesPanelGeometryCard::ApplyAxes(bool majorChanged)
             m_majorAxisRow->Refresh(major);
         }
     }
-
-    const qreal oldWidth = m_sizeRow->First();
-    const qreal oldHeight = m_sizeRow->Second();
-    const bool widthIsMajor = oldWidth >= oldHeight;
-    const qreal newWidth = widthIsMajor ? major * 2.0 : minor * 2.0;
-    const qreal newHeight = widthIsMajor ? minor * 2.0 : major * 2.0;
-    const QPointF oldPosition(m_positionRow->First(), m_positionRow->Second());
-    const QPointF center(oldPosition.x() + oldWidth / 2.0, oldPosition.y() + oldHeight / 2.0);
-    const QPointF newPosition(center.x() - newWidth / 2.0, center.y() - newHeight / 2.0);
-
-    m_positionRow->Refresh(newPosition.x(), newPosition.y());
-    m_sizeRow->Refresh(newWidth, newHeight);
     m_refreshing = false;
-    emit geometryChosen(newPosition, QSizeF(newWidth, newHeight));
+    // 椭圆 / 扇形与弧线共用一条属性写入路径：MAJOR_AXIS / MINOR_AXIS
+    // 由各图元自行换算（尺寸派生或按真实椭圆框重采样）。
+    emit axesChosen(major, minor);
 }
 
 void PropertiesPanelGeometryCard::SetAxisVisible(bool visible)

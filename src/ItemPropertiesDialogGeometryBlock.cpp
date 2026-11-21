@@ -1,11 +1,10 @@
 #include "ItemPropertiesDialogGeometryBlock.h"
 
-#include "ArcItem.h"
 #include "ItemPropertiesDialog.h"
+#include "LineItemAbstract.h"
 #include "PropertyRowWidgets.h"
 #include "ShapeItem.h"
 
-#include <QAbstractSpinBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 
@@ -41,11 +40,12 @@ ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(CanvasItem*
     m_rotationSpin->setMinimumWidth(88);
     m_rotationRow->Refresh(item->RotationAngle());
 
-    auto* shape = dynamic_cast<ShapeItem*>(item);
-    m_arcItem = dynamic_cast<ArcItem*>(item);
-    const bool ellipseShape = shape && !shape->IsCustomShape() &&
-                              (shape->shapeType() == ShapeType::ELLIPSE || shape->shapeType() == ShapeType::SECTOR);
-    if (ellipseShape || m_arcItem) {
+    const bool hasAxes = item->Properties().Contains(ItemProperty::MAJOR_AXIS);
+    // 曲线族里的弧线：椭圆框与笔迹包围盒不同，半轴按真实椭圆外接框读写；
+    // 椭圆 / 扇形的内容框即外接框，半轴与内容宽高双向同步。
+    m_arcAxes = hasAxes && dynamic_cast<LineItemAbstract*>(item) != nullptr;
+    if (hasAxes) {
+        m_axisItem = item;
         m_majorAxisRow = new NumberAttributeRow(IconId::SHAPES, false, 1, 0.5, 500000.0, QStringLiteral(" px"),
                                                 QStringLiteral("ItemPropertiesMajorAxisValue"), this);
         m_majorAxisSpin = m_majorAxisRow->Spin();
@@ -56,16 +56,14 @@ ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(CanvasItem*
         m_minorAxisSpin = m_minorAxisRow->Spin();
         m_minorAxisSpin->setMinimumWidth(88);
 
-        if (m_arcItem) {
-            // 弧线的椭圆框与笔迹包围盒不是同一个矩形：属性窗只读展示真实椭圆的长短半轴，
-            // 避免把弧线包围盒误当成整椭圆尺寸。
-            for (QDoubleSpinBox* spin : {m_majorAxisSpin, m_minorAxisSpin}) {
-                spin->setReadOnly(true);
-                spin->setButtonSymbols(QAbstractSpinBox::NoButtons);
-            }
-        }
         SyncAxesFromSize();
-        if (!m_arcItem) {
+        if (m_arcAxes) {
+            m_initialArcMajor = m_majorAxisSpin->value();
+            m_initialArcMinor = m_minorAxisSpin->value();
+            // 弧线半轴可编辑：提交时并入属性窗的同一份快照撤销记录。
+            connect(m_majorAxisSpin, &QDoubleSpinBox::valueChanged, this, [this]() { ApplyArcAxes(true); });
+            connect(m_minorAxisSpin, &QDoubleSpinBox::valueChanged, this, [this]() { ApplyArcAxes(false); });
+        } else {
             connect(m_widthSpin, &QDoubleSpinBox::valueChanged, this, [this]() { SyncAxesFromSize(); });
             connect(m_heightSizeSpin, &QDoubleSpinBox::valueChanged, this, [this]() { SyncAxesFromSize(); });
             connect(m_majorAxisSpin, &QDoubleSpinBox::valueChanged, this, [this]() { ApplyAxesToSize(true); });
@@ -108,15 +106,38 @@ void ItemPropertiesDialogGeometryBlock::SyncAxesFromSize()
     if (m_syncingAxes || !m_widthSpin || !m_heightSizeSpin || !m_majorAxisSpin || !m_minorAxisSpin) {
         return;
     }
-    QSizeF size;
-    if (m_arcItem) {
-        size = m_arcItem->EllipseSize();
-    } else {
-        size = QSizeF(m_widthSpin->value(), m_heightSizeSpin->value());
-    }
     m_syncingAxes = true;
-    m_majorAxisSpin->setValue(qMax(size.width(), size.height()) / 2.0);
-    m_minorAxisSpin->setValue(qMin(size.width(), size.height()) / 2.0);
+    if (m_arcAxes) {
+        // 弧线：半轴按真实椭圆外接框回显（图元状态未变时与打开时一致）。
+        m_majorAxisSpin->setValue(m_axisItem->PropertyValue(ItemProperty::MAJOR_AXIS).toDouble());
+        m_minorAxisSpin->setValue(m_axisItem->PropertyValue(ItemProperty::MINOR_AXIS).toDouble());
+    } else {
+        const QSizeF size(m_widthSpin->value(), m_heightSizeSpin->value());
+        m_majorAxisSpin->setValue(qMax(size.width(), size.height()) / 2.0);
+        m_minorAxisSpin->setValue(qMin(size.width(), size.height()) / 2.0);
+    }
+    m_syncingAxes = false;
+}
+
+void ItemPropertiesDialogGeometryBlock::ApplyArcAxes(bool majorChanged)
+{
+    if (m_syncingAxes || !m_majorAxisSpin || !m_minorAxisSpin) {
+        return;
+    }
+
+    // 弧线半轴行内互约束：长半轴不得小于短半轴，改哪根就把另一根钳到同值。
+    m_syncingAxes = true;
+    qreal major = m_majorAxisSpin->value();
+    qreal minor = m_minorAxisSpin->value();
+    if (major < minor) {
+        if (majorChanged) {
+            minor = major;
+            m_minorAxisSpin->setValue(minor);
+        } else {
+            major = minor;
+            m_majorAxisSpin->setValue(major);
+        }
+    }
     m_syncingAxes = false;
 }
 

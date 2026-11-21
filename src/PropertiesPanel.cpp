@@ -149,6 +149,7 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     connect(m_identityCard, &PropertiesPanelIdentityCard::heightChosen, this, &PropertiesPanel::ApplyItemHeight);
     connect(m_geometryCard, &PropertiesPanelGeometryCard::geometryChosen, this, &PropertiesPanel::ApplyItemGeometry);
     connect(m_geometryCard, &PropertiesPanelGeometryCard::rotationChosen, this, &PropertiesPanel::ApplyItemRotation);
+    connect(m_geometryCard, &PropertiesPanelGeometryCard::axesChosen, this, &PropertiesPanel::ApplyItemAxes);
     connect(m_geometryCard, &PropertiesPanelGeometryCard::parallelogramAngleChosen, this,
             &PropertiesPanel::ApplyParallelogramAngle);
 
@@ -314,15 +315,9 @@ void PropertiesPanel::Refresh()
     m_identityCard->Refresh(m_scene, singleItem ? items.first() : nullptr);
     m_geometryCard->Refresh(hasSelection ? items.first() : nullptr);
 
-    bool axisVisible = false;
-    if (singleItem) {
-        if (auto* shape = dynamic_cast<ShapeItem*>(items.first());
-            shape && !shape->IsCustomShape() &&
-            (shape->shapeType() == ShapeType::ELLIPSE || shape->shapeType() == ShapeType::SECTOR)) {
-            axisVisible = true;
-        }
-    }
-    m_geometryCard->SetAxisVisible(axisVisible);
+    // 长短半轴行按属性交集显隐：椭圆 / 扇形与弧线都在 Properties() 上报 MAJOR_AXIS，
+    // 复用同一对行，回显与写入都走 PropertyValue / SetPropertyValue。
+    m_geometryCard->SetAxisVisible(singleItem && common.Contains(ItemProperty::MAJOR_AXIS));
     m_geometryCard->SetParallelogramVisible(singleItem && common.Contains(ItemProperty::PARALLELOGRAM_ANGLE));
 
     m_fillBorderCard->FillStyleRow()->setVisible(common.Contains(ItemProperty::FILL_STYLE));

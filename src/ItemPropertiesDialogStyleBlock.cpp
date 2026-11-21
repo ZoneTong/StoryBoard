@@ -37,7 +37,6 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
         m_initialOpacity = shape->ItemOpacity();
         m_initialOpacityPercent = m_opacitySpin->value();
         m_opacitySpin->setMinimumWidth(88);
-
         const ShapeType type = shape->shapeType();
         // 多边形没有形状类型：圆角 / 角度 / 箭头这些按类型出现的行一律不给。
         const bool plainShape = shape->ShapeLayerCount() == 0;
@@ -120,6 +119,16 @@ ItemPropertiesDialogStyleBlock::ItemPropertiesDialogStyleBlock(CanvasItem* item,
         }
     } else if (auto* stroke = dynamic_cast<LineItemAbstract*>(item)) {
         BuildStrokeRows(item);
+
+        // 不透明度统一紧跟描线宽度：曲线族与图形走同一行序，确认时并入同一条撤销记录。
+        m_opacitySpin = new QSpinBox(this);
+        m_opacitySpin->setObjectName(QStringLiteral("ItemPropertiesOpacityValue"));
+        m_opacitySpin->setRange(0, 100);
+        m_opacitySpin->setSuffix(QStringLiteral(" %"));
+        m_opacitySpin->setValue(qRound(stroke->ItemOpacity() * 100.0));
+        m_initialOpacity = stroke->ItemOpacity();
+        m_initialOpacityPercent = m_opacitySpin->value();
+        m_opacitySpin->setMinimumWidth(88);
 
         // 需求 27：曲线与直线一样，属性窗提供两端箭头样式；箭头对全部曲线子型开放（含花括号）。
         m_arrowRow = new QWidget(this);

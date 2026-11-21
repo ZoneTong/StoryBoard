@@ -205,8 +205,9 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
                     &ItemPropertiesDialog::SyncTextNaturalSize);
         }
 
-        // 图形在样式区已有透明度行；笔画、文字、图片等图元在这里统一补一行。
-        if (!dynamic_cast<ShapeItem*>(item)) {
+        // 图形与曲线族在样式区已有不透明度行（紧跟描线宽度）；文字、图片等
+        // 没有样式区的图元在这里统一补一行。
+        if (!m_styleBlock) {
             m_opacitySpin = new QSpinBox(this);
             m_opacitySpin->setObjectName(QStringLiteral("ItemPropertiesOpacityValue"));
             m_opacitySpin->setRange(0, 100);
@@ -586,6 +587,11 @@ void ItemPropertiesDialog::ApplyChanges()
         after.strokeColor = strokeState.color;
         after.strokeWidth = strokeState.width;
         after.strokeStyle = strokeState.style;
+        // 不透明度行在样式区（紧跟描线宽度），与图形同一份提交流程。
+        if (style && style->OpacitySpin()) {
+            const int percent = style->OpacitySpin()->value();
+            after.opacity = percent == style->InitialOpacityPercent() ? style->InitialOpacity() : percent / 100.0;
+        }
         after.curveStartArrow = (style && style->StartArrowCombo())
                                     ? static_cast<ArrowStyle>(style->StartArrowCombo()->currentData().toInt())
                                     : before.curveStartArrow;
@@ -605,6 +611,15 @@ void ItemPropertiesDialog::ApplyChanges()
                 after.curveParam.second = style->ArcSweepAngleSpin()->value() == qRound(before.curveParam.second)
                                               ? before.curveParam.second
                                               : style->ArcSweepAngleSpin()->value();
+            }
+            // 弧线长短半轴：与角度同一份快照，未改动时 before == after 自动跳过。
+            if (geometry && geometry->MajorAxisSpin()) {
+                before.hasArcAxes = true;
+                before.arcMajor = geometry->InitialArcMajor();
+                before.arcMinor = geometry->InitialArcMinor();
+                after.hasArcAxes = true;
+                after.arcMajor = geometry->MajorAxisSpin()->value();
+                after.arcMinor = geometry->MinorAxisSpin()->value();
             }
         } else if (stroke->SupportsSineWave()) {
             before.hasCurveParam = true;

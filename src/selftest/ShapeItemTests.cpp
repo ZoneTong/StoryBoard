@@ -70,10 +70,10 @@
 #include <QPainterPath>
 #include <QPdfWriter>
 #include <QPixmap>
-#include <QRect>
 #include <QPlainTextEdit>
 #include <QPolygonF>
 #include <QPushButton>
+#include <QRect>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QSet>
@@ -621,7 +621,8 @@ void selftest::RunShapeItemTests(Context& ctx)
         delete parallelogram;
     }
     {
-        // 弧线属性窗按真实椭圆外接框显示长短半轴，而不是弧线笔迹的包围盒。
+        // 弧线属性窗按真实椭圆外接框显示长短半轴（不是弧线笔迹的包围盒），且可直接编辑：
+        // 写入保持椭圆中心不动，并入属性窗的同一份撤销记录。
         ArcItem* arc = new ArcItem;
         arc->SetArcGeometry(QPointF(10.0, 20.0), QSizeF(200.0, 100.0), 15.0, 140.0, QColor(Qt::black), 2.0);
         const QSizeF ellipseSize = arc->EllipseSize();
@@ -637,15 +638,34 @@ void selftest::RunShapeItemTests(Context& ctx)
         QDoubleSpinBox* minorAxisValue =
             dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesMinorAxisValue"));
         ctx.Check(qAbs(ellipseSize.width() - 200.0) < 0.01 && qAbs(ellipseSize.height() - 100.0) < 0.01 &&
-                      majorAxisValue && minorAxisValue && majorAxisValue->isReadOnly() &&
-                      minorAxisValue->isReadOnly() && qAbs(majorAxisValue->value() - 100.0) < 0.01 &&
+                      majorAxisValue && minorAxisValue && !majorAxisValue->isReadOnly() &&
+                      !minorAxisValue->isReadOnly() && qAbs(majorAxisValue->value() - 100.0) < 0.01 &&
                       qAbs(minorAxisValue->value() - 50.0) < 0.01,
-                  QStringLiteral("弧线属性窗显示椭圆长半轴 / 短半轴且保持只读"),
+                  QStringLiteral("弧线属性窗显示椭圆长半轴 / 短半轴且可编辑"),
                   QStringLiteral("ellipse=%1x%2 major=%3 minor=%4")
                       .arg(ellipseSize.width())
                       .arg(ellipseSize.height())
                       .arg(majorAxisValue ? majorAxisValue->value() : -999.0)
                       .arg(minorAxisValue ? minorAxisValue->value() : -999.0));
+        if (majorAxisValue) {
+            majorAxisValue->setValue(120.0);
+            dialog.accept();
+            QApplication::processEvents();
+            const QSizeF newEllipse = arc->EllipseSize();
+            ctx.Check(qAbs(newEllipse.width() - 240.0) < 0.01 && qAbs(newEllipse.height() - 100.0) < 0.01 &&
+                          arcUndo.count() == 2,
+                      QStringLiteral("弧线长半轴编辑并入属性窗撤销记录"),
+                      QStringLiteral("ellipse=%1x%2 undo=%3")
+                          .arg(newEllipse.width())
+                          .arg(newEllipse.height())
+                          .arg(arcUndo.count()));
+            arcUndo.undo();
+            QApplication::processEvents();
+            const QSizeF restored = arc->EllipseSize();
+            ctx.Check(qAbs(restored.width() - 200.0) < 0.01 && qAbs(restored.height() - 100.0) < 0.01,
+                      QStringLiteral("撤销恢复弧线椭圆外接框"),
+                      QStringLiteral("ellipse=%1x%2").arg(restored.width()).arg(restored.height()));
+        }
     }
     {
         // 属性窗为弧线补起始角 / 扫过角行：确认后走同一条撤销记录，可整体回退。

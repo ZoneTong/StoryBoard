@@ -22,6 +22,9 @@ enum class ItemProperty {
     CORNER_RADIUS,
     START_ANGLE,
     SWEEP_ANGLE,
+    // 长短半轴是几何行：椭圆 / 扇形按内容尺寸派生，弧线按真实椭圆外接框读写。
+    MAJOR_AXIS,
+    MINOR_AXIS,
     SINE_CYCLES,
     SINE_AMPLITUDE,
     BOTTOM_ANGLE1,

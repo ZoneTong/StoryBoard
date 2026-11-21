@@ -22,6 +22,8 @@ class ArcItem : public LineItemAbstract, public ArcAngleAttributes, public Ellip
 
     void SetAngles(qreal startDeg, qreal sweepDeg);
     void SetArcAngles(qreal startDeg, qreal sweepDeg) override;
+    // 长短半轴写入：保持椭圆中心不动，按当前长轴方向换算外接框后重建描线几何。
+    void SetArcAxes(qreal majorAxis, qreal minorAxis);
 
     // 插入入口：椭圆框 + 起始角 / 扫过角。
     void SetArcGeometry(const QPointF& topLeftScene, const QSizeF& size, qreal startDeg, qreal sweepDeg,
@@ -43,6 +45,8 @@ class ArcItem : public LineItemAbstract, public ArcAngleAttributes, public Ellip
   private:
     // 角度变化后按“上次椭圆框相对内容框的比例”重建，拉伸过再改角度不会跳。
     void Rebuild();
+    // 以给定场景坐标椭圆框重建：写入半轴与角度重建共用这一份采样与 refFrame 回写。
+    void RebuildWithFrame(const QRectF& frameScene);
 
     QRectF m_refFrame{0.0, 0.0, 1.0, 1.0};
 };

@@ -45,8 +45,10 @@ ArcItem::ArcItem(QGraphicsItem* parent) : LineItemAbstract(parent) {}
 
 ItemPropertySet ArcItem::Properties() const
 {
-    // 弧线只有角度参数，没有箭头行（与现状一致）。
-    return LineItemAbstract::Properties().United(ArcAngleAttributes::ArcAngleProperties());
+    // 弧线只有角度参数，没有箭头行（与现状一致）；长短半轴按真实椭圆外接框读写。
+    return LineItemAbstract::Properties()
+        .United(ArcAngleAttributes::ArcAngleProperties())
+        .United(ItemPropertySet{ItemProperty::MAJOR_AXIS, ItemProperty::MINOR_AXIS});
 }
 
 QVariant ArcItem::PropertyValue(ItemProperty property) const
@@ -56,6 +58,10 @@ QVariant ArcItem::PropertyValue(ItemProperty property) const
         return StartAngle();
     case ItemProperty::SWEEP_ANGLE:
         return SweepAngle();
+    case ItemProperty::MAJOR_AXIS:
+        return qMax(EllipseSize().width(), EllipseSize().height()) / 2.0;
+    case ItemProperty::MINOR_AXIS:
+        return qMin(EllipseSize().width(), EllipseSize().height()) / 2.0;
     default:
         return LineItemAbstract::PropertyValue(property);
     }
@@ -69,6 +75,12 @@ void ArcItem::SetPropertyValue(ItemProperty property, const QVariant& value)
         break;
     case ItemProperty::SWEEP_ANGLE:
         SetAngles(StartAngle(), value.toDouble());
+        break;
+    case ItemProperty::MAJOR_AXIS:
+        SetArcAxes(value.toDouble(), PropertyValue(ItemProperty::MINOR_AXIS).toDouble());
+        break;
+    case ItemProperty::MINOR_AXIS:
+        SetArcAxes(PropertyValue(ItemProperty::MAJOR_AXIS).toDouble(), value.toDouble());
         break;
     default:
         LineItemAbstract::SetPropertyValue(property, value);
@@ -139,7 +151,7 @@ void ArcItem::SetArcGeometry(const QPointF& topLeftScene, const QSizeF& size, qr
     }
 }
 
-void ArcItem::Rebuild()
+void ArcItem::SetArcAxes(qreal majorAxis, qreal minorAxis)
 {
     const QSizeF box = ContentSize();
     if (box.width() <= 0.0 || box.height() <= 0.0) {
@@ -148,6 +160,30 @@ void ArcItem::Rebuild()
     const QRectF local(m_refFrame.x() * box.width(), m_refFrame.y() * box.height(), m_refFrame.width() * box.width(),
                        m_refFrame.height() * box.height());
     const QRectF frameScene = local.translated(pos());
+    // 长轴沿外接框的宽或高：写入时保持另一根半轴不变，椭圆中心不动。
+    const bool widthIsMajor = frameScene.width() >= frameScene.height();
+    if (majorAxis < minorAxis) {
+        minorAxis = majorAxis;
+    }
+    const qreal newWidth = widthIsMajor ? majorAxis * 2.0 : minorAxis * 2.0;
+    const qreal newHeight = widthIsMajor ? minorAxis * 2.0 : majorAxis * 2.0;
+    const QPointF center = frameScene.center();
+    RebuildWithFrame(QRectF(center.x() - newWidth / 2.0, center.y() - newHeight / 2.0, newWidth, newHeight));
+}
+
+void ArcItem::Rebuild()
+{
+    const QSizeF box = ContentSize();
+    if (box.width() <= 0.0 || box.height() <= 0.0) {
+        return;
+    }
+    const QRectF local(m_refFrame.x() * box.width(), m_refFrame.y() * box.height(), m_refFrame.width() * box.width(),
+                       m_refFrame.height() * box.height());
+    RebuildWithFrame(local.translated(pos()));
+}
+
+void ArcItem::RebuildWithFrame(const QRectF& frameScene)
+{
     SetFrame(frameScene);
     SetStrokePoints(Sample(m_startAngle, m_sweepAngle, ARC_SAMPLES), StrokeColor(), StrokeWidth(), 0.0, false);
 

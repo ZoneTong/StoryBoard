@@ -411,6 +411,9 @@
 
 <context>
     <name>PropertiesPanel</name><message>
+        <source>Edit semi-axes</source>
+        <translation>编辑长短半轴</translation>
+    </message><message>
         <source>Choose fill image</source>
         <translation>选择填充图片</translation>
     </message><message>

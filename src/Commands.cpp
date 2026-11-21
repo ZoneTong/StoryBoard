@@ -421,12 +421,15 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
                            curveEndArrow != other.curveEndArrow)) {
         return false;
     }
-    if (hasCurveParam != other.hasCurveParam) {
+    if (hasCurveParam != other.hasCurveParam || hasArcAxes != other.hasArcAxes) {
         return false;
     }
     if (hasCurveParam &&
         (!qFuzzyCompare(curveParam.first, other.curveParam.first) ||
          !qFuzzyCompare(curveParam.second, other.curveParam.second) || curveParam.valid != other.curveParam.valid)) {
+        return false;
+    }
+    if (hasArcAxes && (!qFuzzyCompare(arcMajor, other.arcMajor) || !qFuzzyCompare(arcMinor, other.arcMinor))) {
         return false;
     }
     return true;
@@ -482,6 +485,11 @@ void ItemPropertiesCommand::Apply(const ItemPropertiesState& state)
             // 弧线角度 / 正弦周期振幅：形状参数与描线同一份快照。
             if (state.hasCurveParam) {
                 stroke->ApplyParamState(state.curveParam);
+            }
+            // 弧线长短半轴：走通用属性写入，保持椭圆中心重采样。
+            if (state.hasArcAxes) {
+                m_item->SetPropertyValue(ItemProperty::MAJOR_AXIS, state.arcMajor);
+                m_item->SetPropertyValue(ItemProperty::MINOR_AXIS, state.arcMinor);
             }
         }
     }

@@ -26,6 +26,8 @@ class PropertiesPanelGeometryCard : public QWidget {
   signals:
     void geometryChosen(const QPointF& position, const QSizeF& size);
     void rotationChosen(qreal angle);
+    // 长短半轴统一走属性写入：椭圆 / 扇形换算尺寸，弧线按真实椭圆框重采样。
+    void axesChosen(qreal majorAxis, qreal minorAxis);
     void parallelogramAngleChosen(qreal angle);
 
   private:
