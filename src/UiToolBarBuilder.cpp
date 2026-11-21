@@ -8,7 +8,6 @@
 
 #include <QColor>
 #include <QDoubleSpinBox>
-#include <QLabel>
 #include <QList>
 #include <QMenu>
 #include <QSize>
@@ -77,10 +76,6 @@ void UiToolBarBuilder::BuildToolBars()
 
 void UiToolBarBuilder::CreateSmoothingToolbar(QToolBar* mainBar)
 {
-    auto* smoothingLabel = new QLabel(MainWindow::tr("Brush fit tolerance"), mainBar);
-    smoothingLabel->setObjectName(QStringLiteral("ToolBarLabelTight"));
-    mainBar->addWidget(smoothingLabel);
-
     m_window->m_smoothingSpin = new QDoubleSpinBox(mainBar);
     m_window->m_smoothingSpin->setObjectName(QStringLiteral("BrushSmoothingSpin"));
     m_window->m_smoothingSpin->setRange(0.0, 20.0);
