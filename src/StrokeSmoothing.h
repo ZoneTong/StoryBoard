@@ -8,7 +8,7 @@
 namespace StrokeSmoothing {
 
 // 撤销/重做快照比较时允许的坐标误差。
-constexpr qreal StateEpsilon = 0.01;
+constexpr qreal STATE_EPSILON = 0.01;
 
 bool SamePoint(const QPointF& first, const QPointF& second);
 bool SamePoints(const QVector<QPointF>& first, const QVector<QPointF>& second);

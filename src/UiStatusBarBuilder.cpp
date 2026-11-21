@@ -8,7 +8,7 @@
 
 namespace {
 
-QLabel* makeBadge(const QString& objectName, QWidget* parent)
+QLabel* MakeBadge(const QString& objectName, QWidget* parent)
 {
     auto* label = new QLabel(parent);
     label->setObjectName(objectName);
@@ -25,9 +25,9 @@ void UiStatusBarBuilder::BuildStatusBar()
     m_window->statusBar()->setSizeGripEnabled(true);
     m_window->m_hintLabel = new QLabel(m_window);
     m_window->m_hintLabel->setObjectName(QStringLiteral("StatusHint"));
-    m_window->m_modeBadge = makeBadge(QStringLiteral("Badge"), m_window);
-    m_window->m_zoomBadge = makeBadge(QStringLiteral("Badge"), m_window);
-    m_window->m_countBadge = makeBadge(QStringLiteral("Badge"), m_window);
+    m_window->m_modeBadge = MakeBadge(QStringLiteral("Badge"), m_window);
+    m_window->m_zoomBadge = MakeBadge(QStringLiteral("Badge"), m_window);
+    m_window->m_countBadge = MakeBadge(QStringLiteral("Badge"), m_window);
 
     m_window->statusBar()->addWidget(m_window->m_hintLabel, 1);
     m_window->statusBar()->addPermanentWidget(m_window->m_modeBadge);

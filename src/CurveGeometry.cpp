@@ -10,13 +10,13 @@ namespace CurveGeometry {
 
 namespace {
 
-CurveSegment straightSegment(const QPointF& from, const QPointF& to)
+CurveSegment StraightSegment(const QPointF& from, const QPointF& to)
 {
     const QPointF delta = to - from;
     return CurveSegment{from, from + delta / 3.0, from + delta * 2.0 / 3.0, to};
 }
 
-QPointF catmullControl(const QPointF& previous, const QPointF& current, const QPointF& next, qreal sign)
+QPointF CatmullControl(const QPointF& previous, const QPointF& current, const QPointF& next, qreal sign)
 {
     return current + (next - previous) * (sign / 6.0);
 }
@@ -48,7 +48,7 @@ QVector<CurveSegment> FitSegments(QVector<QPointF> points, qreal tolerance, bool
     segments.reserve(points.size() - 1);
     if (linear || points.size() == 2) {
         for (int i = 1; i < points.size(); ++i) {
-            segments.append(straightSegment(points.at(i - 1), points.at(i)));
+            segments.append(StraightSegment(points.at(i - 1), points.at(i)));
         }
         return segments;
     }
@@ -60,7 +60,7 @@ QVector<CurveSegment> FitSegments(QVector<QPointF> points, qreal tolerance, bool
         const QPointF& previous = i > 0 ? points.at(i - 1) : p0;
         const QPointF& next = i + 2 < points.size() ? points.at(i + 2) : p1;
         segments.append(
-            CurveSegment{p0, catmullControl(previous, p0, p1, 1.0), catmullControl(p0, p1, next, -1.0), p1});
+            CurveSegment{p0, CatmullControl(previous, p0, p1, 1.0), CatmullControl(p0, p1, next, -1.0), p1});
     }
     return segments;
 }

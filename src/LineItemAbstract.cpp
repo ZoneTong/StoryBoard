@@ -24,12 +24,12 @@ bool LineItemAbstract::GeometryState::operator==(const GeometryState& other) con
             return false;
         }
     }
-    return qAbs(pos.x() - other.pos.x()) < StrokeSmoothing::StateEpsilon &&
-           qAbs(pos.y() - other.pos.y()) < StrokeSmoothing::StateEpsilon &&
-           qAbs(contentSize.width() - other.contentSize.width()) < StrokeSmoothing::StateEpsilon &&
-           qAbs(contentSize.height() - other.contentSize.height()) < StrokeSmoothing::StateEpsilon &&
-           qAbs(baseSize.width() - other.baseSize.width()) < StrokeSmoothing::StateEpsilon &&
-           qAbs(baseSize.height() - other.baseSize.height()) < StrokeSmoothing::StateEpsilon;
+    return qAbs(pos.x() - other.pos.x()) < StrokeSmoothing::STATE_EPSILON &&
+           qAbs(pos.y() - other.pos.y()) < StrokeSmoothing::STATE_EPSILON &&
+           qAbs(contentSize.width() - other.contentSize.width()) < StrokeSmoothing::STATE_EPSILON &&
+           qAbs(contentSize.height() - other.contentSize.height()) < StrokeSmoothing::STATE_EPSILON &&
+           qAbs(baseSize.width() - other.baseSize.width()) < StrokeSmoothing::STATE_EPSILON &&
+           qAbs(baseSize.height() - other.baseSize.height()) < StrokeSmoothing::STATE_EPSILON;
 }
 
 ItemPropertySet LineItemAbstract::Properties() const

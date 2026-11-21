@@ -47,7 +47,7 @@ int RunSelfTest(QApplication& app, const CommandLineOptions& options)
     return RunSelfTest(options.selfTestPath);
 }
 
-int runRenderDemo(const CommandLineOptions& options)
+int RunRenderDemo(const CommandLineOptions& options)
 {
     if (options.renderDemoPath.isEmpty()) {
         return 2;
@@ -55,7 +55,7 @@ int runRenderDemo(const CommandLineOptions& options)
     return RenderDemoCanvas(options.renderDemoPath) ? 0 : 1;
 }
 
-int runDemoCanvas(const CommandLineOptions& options)
+int RunDemoCanvas(const CommandLineOptions& options)
 {
     if (options.demoCanvasPath.isEmpty()) {
         return 2;
@@ -63,7 +63,7 @@ int runDemoCanvas(const CommandLineOptions& options)
     return WriteDemoCanvas(options.demoCanvasPath) ? 0 : 1;
 }
 
-int runUiScreenshot(const CommandLineOptions& options)
+int RunUiScreenshot(const CommandLineOptions& options)
 {
     const QString& outputPath = options.uiScreenshotPath;
 
@@ -85,7 +85,7 @@ int runUiScreenshot(const CommandLineOptions& options)
     return QApplication::exec();
 }
 
-int runSettingsScreenshot(const CommandLineOptions& options)
+int RunSettingsScreenshot(const CommandLineOptions& options)
 {
     const QString& outputPath = options.settingsScreenshotPath;
     AppSettings settings;
@@ -110,7 +110,7 @@ int runSettingsScreenshot(const CommandLineOptions& options)
 
 // 诊断：用与面板按钮完全相同的代码路径跑一次“打开 shapes 目录”，把结果
 // 写到指定文件（opened / error / shellCode / 目录），用于真机排查外壳通道。
-int runOpenShapesProbe(const CommandLineOptions& options)
+int RunOpenShapesProbe(const CommandLineOptions& options)
 {
     QFile output(options.openShapesProbePath);
     if (!output.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
@@ -128,7 +128,7 @@ int runOpenShapesProbe(const CommandLineOptions& options)
     return 0;
 }
 
-int runSettingsApplyProbe()
+int RunSettingsApplyProbe()
 {
     MainWindow window;
     window.resize(1000, 700);
@@ -161,7 +161,7 @@ int runSettingsApplyProbe()
     return 0;
 }
 
-int runSetLanguage(const CommandLineOptions& options)
+int RunSetLanguage(const CommandLineOptions& options)
 {
     if (options.setLanguageValue == QLatin1String("en")) {
         SetUiLanguageSetting(UiLanguage::ENGLISH);
@@ -173,7 +173,7 @@ int runSetLanguage(const CommandLineOptions& options)
     return 0;
 }
 
-int runSettingsProbe(const CommandLineOptions& options)
+int RunSettingsProbe(const CommandLineOptions& options)
 {
     const QString& outputPath = options.settingsProbePath;
     AppSettings probe;
@@ -193,7 +193,7 @@ int runSettingsProbe(const CommandLineOptions& options)
     return 0;
 }
 
-int runAboutScreenshot(const CommandLineOptions& options)
+int RunAboutScreenshot(const CommandLineOptions& options)
 {
     const QString& outputPath = options.aboutScreenshotPath;
     MainWindow window;
@@ -210,7 +210,7 @@ int runAboutScreenshot(const CommandLineOptions& options)
     return saved ? 0 : 1;
 }
 
-int runItemPropertiesScreenshot(const CommandLineOptions& options)
+int RunItemPropertiesScreenshot(const CommandLineOptions& options)
 {
     const QString& outputPath = options.itemPropertiesScreenshotPath;
 
@@ -240,7 +240,7 @@ int runItemPropertiesScreenshot(const CommandLineOptions& options)
     return dialog.grab().save(outputPath) ? 0 : 1;
 }
 
-int grabMenu(const QString& menuName, const QPoint& popupPoint, const QString& outputPath)
+int GrabMenu(const QString& menuName, const QPoint& popupPoint, const QString& outputPath)
 {
     MainWindow window;
     window.resize(1200, 800);
@@ -258,7 +258,7 @@ int grabMenu(const QString& menuName, const QPoint& popupPoint, const QString& o
     return shot.save(outputPath) ? 0 : 1;
 }
 
-int runExportScreenshot(const CommandLineOptions& options)
+int RunExportScreenshot(const CommandLineOptions& options)
 {
     const QString& outputPath = options.exportScreenshotPath;
 
@@ -270,7 +270,7 @@ int runExportScreenshot(const CommandLineOptions& options)
     return dialog.grab().save(outputPath) ? 0 : 1;
 }
 
-int runLineArt(const CommandLineOptions& options)
+int RunLineArt(const CommandLineOptions& options)
 {
     // 默认均衡档（Balanced）+ 1px 最细条带；显式给出的细项覆盖档位对应值。
     // 覆盖范围 = 档位 5 项之外的 Options 全部可调字段（除固定为 1 的线宽）。
@@ -400,7 +400,7 @@ int runLineArt(const CommandLineOptions& options)
     return 0;
 }
 
-int runNormalLaunch(QApplication& app, const CommandLineOptions& options)
+int RunNormalLaunch(QApplication& app, const CommandLineOptions& options)
 {
     MainWindow window;
     window.show();
@@ -423,58 +423,58 @@ int Run(QApplication& app, const CommandLineOptions& options)
         return RunSelfTest(app, options);
     }
     if (options.renderDemo) {
-        return runRenderDemo(options);
+        return RunRenderDemo(options);
     }
     if (options.demoCanvas) {
-        return runDemoCanvas(options);
+        return RunDemoCanvas(options);
     }
     if (options.uiScreenshot) {
-        return runUiScreenshot(options);
+        return RunUiScreenshot(options);
     }
     if (options.settingsScreenshot) {
-        return runSettingsScreenshot(options);
+        return RunSettingsScreenshot(options);
     }
     if (options.settingsApplyProbe) {
-        return runSettingsApplyProbe();
+        return RunSettingsApplyProbe();
     }
     if (options.openShapesProbe) {
-        return runOpenShapesProbe(options);
+        return RunOpenShapesProbe(options);
     }
     if (options.setLanguage) {
-        return runSetLanguage(options);
+        return RunSetLanguage(options);
     }
     if (options.settingsProbe) {
-        return runSettingsProbe(options);
+        return RunSettingsProbe(options);
     }
     if (options.aboutScreenshot) {
-        return runAboutScreenshot(options);
+        return RunAboutScreenshot(options);
     }
     if (options.itemPropertiesScreenshot) {
-        return runItemPropertiesScreenshot(options);
+        return RunItemPropertiesScreenshot(options);
     }
     if (options.shapeMenuScreenshot) {
-        return grabMenu(QStringLiteral("ShapeMenu"), QPoint(420, 80), options.shapeMenuScreenshotPath);
+        return GrabMenu(QStringLiteral("ShapeMenu"), QPoint(420, 80), options.shapeMenuScreenshotPath);
     }
     if (options.brushStyleMenuScreenshot) {
-        return grabMenu(QStringLiteral("BrushStyleMenu"), QPoint(500, 40), options.brushStyleMenuScreenshotPath);
+        return GrabMenu(QStringLiteral("BrushStyleMenu"), QPoint(500, 40), options.brushStyleMenuScreenshotPath);
     }
     if (options.brushWidthMenuScreenshot) {
-        return grabMenu(QStringLiteral("InsertMenu"), QPoint(420, 40), options.brushWidthMenuScreenshotPath);
+        return GrabMenu(QStringLiteral("InsertMenu"), QPoint(420, 40), options.brushWidthMenuScreenshotPath);
     }
     if (options.fillStyleMenuScreenshot) {
-        return grabMenu(QStringLiteral("FillStyleMenu"), QPoint(600, 40), options.fillStyleMenuScreenshotPath);
+        return GrabMenu(QStringLiteral("FillStyleMenu"), QPoint(600, 40), options.fillStyleMenuScreenshotPath);
     }
     if (options.styleMenuScreenshot) {
-        return grabMenu(QStringLiteral("StyleMenu"), QPoint(500, 40), options.styleMenuScreenshotPath);
+        return GrabMenu(QStringLiteral("StyleMenu"), QPoint(500, 40), options.styleMenuScreenshotPath);
     }
     if (options.exportScreenshot) {
-        return runExportScreenshot(options);
+        return RunExportScreenshot(options);
     }
     if (options.lineArt) {
-        return runLineArt(options);
+        return RunLineArt(options);
     }
 
-    return runNormalLaunch(app, options);
+    return RunNormalLaunch(app, options);
 }
 
 } // namespace AppModes

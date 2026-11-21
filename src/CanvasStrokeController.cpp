@@ -12,14 +12,14 @@
 #include <QtMath>
 
 namespace {
-QString trView(const char* text)
+QString TrView(const char* text)
 {
     return QCoreApplication::translate("CanvasView", text);
 }
 
 // 需求 8：笔画拟合出的节点几乎共线时视作直线。阈值放宽到约笔画宽度的一半，
 // 手绘轻微抖动的直线不会被误判成曲线；折返笔画（来回描）按曲线保留。
-bool strokeLooksLinear(const LineItemAbstract* stroke)
+bool StrokeLooksLinear(const LineItemAbstract* stroke)
 {
     const QVector<QPointF> knots = stroke->StrokePoints();
     if (knots.size() < 2) {
@@ -73,7 +73,7 @@ bool CanvasStrokeController::BeginStroke(const QPoint& viewportPos)
 {
     if (!m_scene->IsActiveLayerWritable()) {
         emit m_view->statusMessage(
-            trView("The current layer is locked or hidden; drawing is unavailable. Unlock or switch "
+            TrView("The current layer is locked or hidden; drawing is unavailable. Unlock or switch "
                    "layers in the layer panel first."));
         return false;
     }
@@ -118,7 +118,7 @@ void CanvasStrokeController::FinishStroke()
     // 需求 8：画笔模式画出的近似直线的笔画直接落成直线类型图元。
     // 需求 20：笔画收尾后节点已被平移到图元局部坐标，必须经 mapToScene
     // 换回场景坐标再落位，否则直线会跑到画布原点附近"消失"。
-    if (stroke->StrokeSource() == CurveSource::HAND_DRAWN && strokeLooksLinear(stroke)) {
+    if (stroke->StrokeSource() == CurveSource::HAND_DRAWN && StrokeLooksLinear(stroke)) {
         const QVector<QPointF> knots = stroke->StrokePoints();
         const QPointF a = stroke->mapToScene(knots.first());
         const QPointF b = stroke->mapToScene(knots.last());
@@ -128,12 +128,12 @@ void CanvasStrokeController::FinishStroke()
         line->SetStrokePattern(stroke->strokePattern());
         m_scene->removeItem(stroke);
         delete stroke;
-        m_scene->CommitNewItem(line, trView("Add stroke"));
+        m_scene->CommitNewItem(line, TrView("Add stroke"));
         m_view->UpdateCursor();
         return;
     }
 
-    m_scene->CommitNewItem(stroke, trView("Add stroke"));
+    m_scene->CommitNewItem(stroke, TrView("Add stroke"));
     m_view->UpdateCursor();
 }
 

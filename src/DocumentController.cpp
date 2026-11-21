@@ -32,27 +32,27 @@
 
 namespace {
 
-bool selfTestMode()
+bool SelfTestMode()
 {
     return qApp && qApp->property("storyboardSelfTest").toBool();
 }
 
 // 与 MainWindow 相同的报错出口：自检（离屏）时不许弹模态框。
-void reportWarning(QWidget* parent, const QString& title, const QString& text)
+void ReportWarning(QWidget* parent, const QString& title, const QString& text)
 {
-    if (selfTestMode()) {
+    if (SelfTestMode()) {
         qWarning("self-test suppressed dialog [%s]: %s", qUtf8Printable(title), qUtf8Printable(text));
         return;
     }
     QMessageBox::warning(parent, title, text);
 }
 
-QString canvasFilter()
+QString CanvasFilter()
 {
     return MainWindow::tr("StoryBoard canvases (*.sbcanvas);;Excalidraw scenes (*.excalidraw);;All files (*.*)");
 }
 
-bool sceneHasImages(const QJsonObject& scene)
+bool SceneHasImages(const QJsonObject& scene)
 {
     for (const QJsonValue& value : scene.value(QStringLiteral("elements")).toArray()) {
         const QJsonObject element = value.toObject();
@@ -65,9 +65,9 @@ bool sceneHasImages(const QJsonObject& scene)
 }
 
 // 导入含图片的 Excalidraw 场景时给一次选择：默认跳过图片，勾选后按 dataURL 保留成位图图元。
-bool askKeepImagesAsBitmap(QWidget* parent)
+bool AskKeepImagesAsBitmap(QWidget* parent)
 {
-    if (selfTestMode()) {
+    if (SelfTestMode()) {
         return false;
     }
     QDialog dialog(parent);
@@ -84,7 +84,7 @@ bool askKeepImagesAsBitmap(QWidget* parent)
     return dialog.exec() == QDialog::Accepted && keep->isChecked();
 }
 
-bool validateCanvasRoot(const QJsonObject& root, QString* error)
+bool ValidateCanvasRoot(const QJsonObject& root, QString* error)
 {
     if (root.value(QStringLiteral("format")).toString() != QStringLiteral("StoryBoardCanvas")) {
         if (error) {
@@ -182,7 +182,7 @@ void DocumentController::NewCanvas()
 void DocumentController::OpenCanvasDialog()
 {
     const QString path = QFileDialog::getOpenFileName(m_window, MainWindow::tr("Open canvas"),
-                                                      AppSettings::CanvasesDir(), canvasFilter());
+                                                      AppSettings::CanvasesDir(), CanvasFilter());
     if (!path.isEmpty()) {
         LoadCanvasFile(path, true);
     }
@@ -199,7 +199,7 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors)
     constexpr qint64 MAX_SCENE_BYTES = 20LL * 1024 * 1024;
     if (QFileInfo(path).size() > MAX_SCENE_BYTES) {
         if (showErrors) {
-            reportWarning(m_window, MainWindow::tr("Open canvas"),
+            ReportWarning(m_window, MainWindow::tr("Open canvas"),
                           MainWindow::tr("This file is larger than 20MB and was not opened:\n%1")
                               .arg(QDir::toNativeSeparators(path)));
         }
@@ -208,7 +208,7 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors)
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
         if (showErrors) {
-            reportWarning(m_window, MainWindow::tr("Open canvas"),
+            ReportWarning(m_window, MainWindow::tr("Open canvas"),
                           MainWindow::tr("Could not read the file:\n%1").arg(QDir::toNativeSeparators(path)));
         }
         return false;
@@ -218,7 +218,7 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors)
     const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &parseError);
     if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
         if (showErrors) {
-            reportWarning(m_window, MainWindow::tr("Open canvas"),
+            ReportWarning(m_window, MainWindow::tr("Open canvas"),
                           MainWindow::tr("Failed to parse the canvas file:\n%1").arg(parseError.errorString()));
         }
         return false;
@@ -231,11 +231,11 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors)
     QStringList excalidrawNotes;
     if (Excalidraw::IsScene(root)) {
         // 含图片的场景先问一次是否保留位图，默认按老行为跳过图片。
-        const bool keepImages = sceneHasImages(root) && askKeepImagesAsBitmap(m_window);
+        const bool keepImages = SceneHasImages(root) && AskKeepImagesAsBitmap(m_window);
         usableRoot = Excalidraw::SceneToStoryBoard(root, &excalidrawNotes, keepImages);
         if (usableRoot.isEmpty()) {
             if (showErrors) {
-                reportWarning(m_window, MainWindow::tr("Import Excalidraw"),
+                ReportWarning(m_window, MainWindow::tr("Import Excalidraw"),
                               MainWindow::tr("This Excalidraw scene has no supported elements."));
             }
             return false;
@@ -244,9 +244,9 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors)
     }
 
     QString validationError;
-    if (!validateCanvasRoot(usableRoot, &validationError)) {
+    if (!ValidateCanvasRoot(usableRoot, &validationError)) {
         if (showErrors) {
-            reportWarning(m_window, MainWindow::tr("Open canvas"), validationError);
+            ReportWarning(m_window, MainWindow::tr("Open canvas"), validationError);
         }
         return false;
     }
@@ -266,7 +266,7 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors)
     QString loadError;
     if (!m_window->m_scene->FromJson(usableRoot, &loadError)) {
         if (showErrors) {
-            reportWarning(m_window, MainWindow::tr("Open canvas"), loadError);
+            ReportWarning(m_window, MainWindow::tr("Open canvas"), loadError);
         }
         return false;
     }
@@ -341,13 +341,13 @@ bool DocumentController::SaveToFile(const QString& path)
 
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly)) {
-        reportWarning(m_window, MainWindow::tr("Save canvas"),
+        ReportWarning(m_window, MainWindow::tr("Save canvas"),
                       MainWindow::tr("Could not write the file:\n%1").arg(QDir::toNativeSeparators(path)));
         return false;
     }
     file.write(data);
     if (!file.commit()) {
-        reportWarning(m_window, MainWindow::tr("Save canvas"),
+        ReportWarning(m_window, MainWindow::tr("Save canvas"),
                       MainWindow::tr("Failed to save the canvas:\n%1").arg(QDir::toNativeSeparators(path)));
         return false;
     }
@@ -433,13 +433,13 @@ void DocumentController::ExportCustomShape()
 
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly)) {
-        reportWarning(m_window, MainWindow::tr("Export custom shape"),
+        ReportWarning(m_window, MainWindow::tr("Export custom shape"),
                       MainWindow::tr("Could not write the file:\n%1").arg(QDir::toNativeSeparators(path)));
         return;
     }
     file.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
     if (!file.commit()) {
-        reportWarning(m_window, MainWindow::tr("Export custom shape"),
+        ReportWarning(m_window, MainWindow::tr("Export custom shape"),
                       MainWindow::tr("Failed to save the file:\n%1").arg(QDir::toNativeSeparators(path)));
         return;
     }
@@ -471,13 +471,13 @@ void DocumentController::ExportExcalidraw()
     const QJsonObject scene = Excalidraw::StoryBoardToScene(m_window->m_scene->ToJson(), &notes);
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly)) {
-        reportWarning(m_window, MainWindow::tr("Export Excalidraw"),
+        ReportWarning(m_window, MainWindow::tr("Export Excalidraw"),
                       MainWindow::tr("Could not write the file:\n%1").arg(QDir::toNativeSeparators(path)));
         return;
     }
     file.write(QJsonDocument(scene).toJson(QJsonDocument::Indented));
     if (!file.commit()) {
-        reportWarning(m_window, MainWindow::tr("Export Excalidraw"),
+        ReportWarning(m_window, MainWindow::tr("Export Excalidraw"),
                       MainWindow::tr("Failed to save the file:\n%1").arg(QDir::toNativeSeparators(path)));
         return;
     }

@@ -8,7 +8,7 @@ namespace {
 constexpr qreal MINIMUM_FRAME_SIDE = 12.0;
 constexpr int STEPS_PER_CYCLE = 64;
 
-QRectF paddedToMinimum(QRectF frame)
+QRectF PaddedToMinimum(QRectF frame)
 {
     if (frame.width() < MINIMUM_FRAME_SIDE) {
         frame.moveLeft(frame.center().x() - MINIMUM_FRAME_SIDE / 2.0);
@@ -21,7 +21,7 @@ QRectF paddedToMinimum(QRectF frame)
     return frame;
 }
 
-QJsonArray rectToArray(const QRectF& rect)
+QJsonArray RectToArray(const QRectF& rect)
 {
     QJsonArray array;
     array.append(rect.x());
@@ -31,7 +31,7 @@ QJsonArray rectToArray(const QRectF& rect)
     return array;
 }
 
-QRectF arrayToRect(const QJsonArray& array, const QRectF& fallback)
+QRectF ArrayToRect(const QJsonArray& array, const QRectF& fallback)
 {
     if (array.size() < 4) {
         return fallback;
@@ -100,7 +100,7 @@ QString SineItem::DisplayName() const
 
 QRectF SineItem::FrameRect() const
 {
-    return paddedToMinimum(CanvasItem::FrameRect());
+    return PaddedToMinimum(CanvasItem::FrameRect());
 }
 
 SineItem::ParamState SineItem::paramState() const
@@ -216,7 +216,7 @@ QJsonObject SineItem::ToJson() const
     QJsonObject json = LineItemAbstract::ToJson();
     json.insert(QStringLiteral("sineCycles"), m_params.cycles);
     json.insert(QStringLiteral("sineAmplitude"), m_params.amplitude);
-    json.insert(QStringLiteral("sineFrame"), rectToArray(m_refFrame));
+    json.insert(QStringLiteral("sineFrame"), RectToArray(m_refFrame));
     return json;
 }
 
@@ -225,6 +225,6 @@ void SineItem::FromJson(const QJsonObject& json)
     LineItemAbstract::FromJson(json);
     m_params.cycles = qBound(1, json.value(QStringLiteral("sineCycles")).toInt(1), 12);
     m_params.amplitude = qBound<qreal>(1.0, json.value(QStringLiteral("sineAmplitude")).toDouble(20.0), 200.0);
-    m_refFrame = arrayToRect(json.value(QStringLiteral("sineFrame")).toArray(), QRectF(0.0, 0.0, 1.0, 1.0));
+    m_refFrame = ArrayToRect(json.value(QStringLiteral("sineFrame")).toArray(), QRectF(0.0, 0.0, 1.0, 1.0));
     Rebuild();
 }

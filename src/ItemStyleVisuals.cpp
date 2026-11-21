@@ -9,7 +9,7 @@
 
 namespace {
 
-QColor fillIconColor(const QColor& color)
+QColor FillIconColor(const QColor& color)
 {
     QColor fill = color.isValid() ? color : QColor(96, 132, 255);
     if (fill.alpha() < 150) {
@@ -51,10 +51,10 @@ QIcon BorderStyleIcon(Qt::PenStyle style, int logicalSize)
     // 需求 14：四种描线样式图标共用一套生成器，图案按逻辑像素手调（以 16px 为基准等比缩放），
     // 不再依赖 Qt 笔宽倍数与圆头端点——那样 1.8px 的点会被糊成 3.6px 短划，点线与虚线难分。
     // 图标只是示意图，画布实际描线仍用 Qt::PenStyle。
-    constexpr qreal scale = 2.0;
-    QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
+    constexpr qreal SCALE = 2.0;
+    QPixmap pixmap(static_cast<int>(logicalSize * SCALE), static_cast<int>(logicalSize * SCALE));
     pixmap.fill(Qt::transparent);
-    pixmap.setDevicePixelRatio(scale);
+    pixmap.setDevicePixelRatio(SCALE);
 
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing, true);
@@ -130,17 +130,17 @@ QIcon BorderStyleIcon(Qt::PenStyle style, int logicalSize)
 
 QIcon FillColorIcon(const QColor& color, int logicalSize)
 {
-    constexpr qreal scale = 2.0;
-    QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
+    constexpr qreal SCALE = 2.0;
+    QPixmap pixmap(static_cast<int>(logicalSize * SCALE), static_cast<int>(logicalSize * SCALE));
     pixmap.fill(Qt::transparent);
-    pixmap.setDevicePixelRatio(scale);
+    pixmap.setDevicePixelRatio(SCALE);
 
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing, true);
     painter.scale(logicalSize / 24.0, logicalSize / 24.0);
 
     const QColor ink(58, 64, 80);
-    const QColor fill = fillIconColor(color);
+    const QColor fill = FillIconColor(color);
 
     QPainterPath bucket;
     bucket.moveTo(5.0, 9.0);
@@ -171,17 +171,17 @@ QIcon FillColorIcon(const QColor& color, int logicalSize)
 
 QIcon BorderColorIcon(const QColor& color, int logicalSize)
 {
-    constexpr qreal scale = 2.0;
-    QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
+    constexpr qreal SCALE = 2.0;
+    QPixmap pixmap(static_cast<int>(logicalSize * SCALE), static_cast<int>(logicalSize * SCALE));
     pixmap.fill(Qt::transparent);
-    pixmap.setDevicePixelRatio(scale);
+    pixmap.setDevicePixelRatio(SCALE);
 
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing, true);
     painter.scale(logicalSize / 24.0, logicalSize / 24.0);
 
     const QColor ink(58, 64, 80);
-    const QColor stroke = fillIconColor(color);
+    const QColor stroke = FillIconColor(color);
     const QRectF box(4.0, 4.0, 16.0, 16.0);
 
     painter.setPen(QPen(ink, 1.0));
@@ -212,10 +212,10 @@ QIcon FillStyleIcon(FillStyle style, int logicalSize)
 
 QIcon FillStyleIcon(FillStyle style, const QColor& color, int logicalSize)
 {
-    constexpr qreal scale = 2.0;
-    QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
+    constexpr qreal SCALE = 2.0;
+    QPixmap pixmap(static_cast<int>(logicalSize * SCALE), static_cast<int>(logicalSize * SCALE));
     pixmap.fill(Qt::transparent);
-    pixmap.setDevicePixelRatio(scale);
+    pixmap.setDevicePixelRatio(SCALE);
 
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing, true);
@@ -223,7 +223,7 @@ QIcon FillStyleIcon(FillStyle style, const QColor& color, int logicalSize)
 
     const QRectF box(3.0, 4.0, 18.0, 16.0);
     const QColor ink(58, 64, 80);
-    const QColor fill = fillIconColor(color);
+    const QColor fill = FillIconColor(color);
 
     QPainterPath clipPath;
     clipPath.addRoundedRect(box.adjusted(1.0, 1.0, -1.0, -1.0), 2.5, 2.5);

@@ -19,7 +19,7 @@ constexpr int ICON_SIZE = 20;
 constexpr int SMALL_ICON_SIZE = 20;
 constexpr int BUTTON_SIZE = 32;
 
-QToolButton* makeRowIcon(IconId id, QWidget* parent)
+QToolButton* MakeRowIcon(IconId id, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
@@ -40,7 +40,7 @@ PropertiesPanelFillBorderCard::PropertiesPanelFillBorderCard(QWidget* parent) : 
     fillLayout->setContentsMargins(0, 0, 0, 0);
     fillLayout->setSpacing(2);
 
-    QToolButton* fillIcon = makeRowIcon(IconId::PALETTE, fillRow);
+    QToolButton* fillIcon = MakeRowIcon(IconId::PALETTE, fillRow);
     fillIcon->setToolTip(PropertiesPanel::tr("Fill style"));
     fillLayout->addWidget(fillIcon);
 
@@ -68,7 +68,7 @@ PropertiesPanelFillBorderCard::PropertiesPanelFillBorderCard(QWidget* parent) : 
     styleLayout->setContentsMargins(0, 0, 0, 0);
     styleLayout->setSpacing(2);
 
-    QToolButton* borderIcon = makeRowIcon(IconId::BRUSH, styleRow);
+    QToolButton* borderIcon = MakeRowIcon(IconId::BRUSH, styleRow);
     borderIcon->setToolTip(PropertiesPanel::tr("Border style"));
     styleLayout->addWidget(borderIcon);
 
@@ -95,7 +95,7 @@ PropertiesPanelFillBorderCard::PropertiesPanelFillBorderCard(QWidget* parent) : 
     auto* widthLayout = new QHBoxLayout(widthRow);
     widthLayout->setContentsMargins(0, 0, 0, 0);
     widthLayout->setSpacing(4);
-    QToolButton* widthIcon = makeRowIcon(IconId::BRUSH, widthRow);
+    QToolButton* widthIcon = MakeRowIcon(IconId::BRUSH, widthRow);
     widthIcon->setObjectName(QStringLiteral("ItemBorderWidthIcon"));
     widthIcon->setToolTip(PropertiesPanel::tr("Border width"));
     widthLayout->addWidget(widthIcon);

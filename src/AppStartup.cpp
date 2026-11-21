@@ -14,7 +14,7 @@
 
 namespace {
 
-void applyApplicationStyle(QApplication& app)
+void ApplyApplicationStyle(QApplication& app)
 {
     app.setStyle(QStyleFactory::create(QStringLiteral("Fusion")));
 
@@ -180,7 +180,7 @@ void Initialize(QApplication& app)
     UiInitializeLanguage();
     app.setApplicationDisplayName(QCoreApplication::tr("StoryBoard Canvas"));
     app.setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));
-    applyApplicationStyle(app);
+    ApplyApplicationStyle(app);
 }
 
 } // namespace AppStartup

@@ -15,27 +15,27 @@
 namespace {
 constexpr qreal MINIMUM_SIDE = 8.0;
 
-bool isLeftHandle(int handle)
+bool IsLeftHandle(int handle)
 {
     return handle == CanvasItem::TOP_LEFT || handle == CanvasItem::LEFT || handle == CanvasItem::BOTTOM_LEFT;
 }
 
-bool isRightHandle(int handle)
+bool IsRightHandle(int handle)
 {
     return handle == CanvasItem::TOP_RIGHT || handle == CanvasItem::RIGHT || handle == CanvasItem::BOTTOM_RIGHT;
 }
 
-bool isTopHandle(int handle)
+bool IsTopHandle(int handle)
 {
     return handle == CanvasItem::TOP_LEFT || handle == CanvasItem::TOP || handle == CanvasItem::TOP_RIGHT;
 }
 
-bool isBottomHandle(int handle)
+bool IsBottomHandle(int handle)
 {
     return handle == CanvasItem::BOTTOM_LEFT || handle == CanvasItem::BOTTOM || handle == CanvasItem::BOTTOM_RIGHT;
 }
 
-bool isCornerHandle(int handle)
+bool IsCornerHandle(int handle)
 {
     return handle == CanvasItem::TOP_LEFT || handle == CanvasItem::TOP_RIGHT || handle == CanvasItem::BOTTOM_LEFT ||
            handle == CanvasItem::BOTTOM_RIGHT;
@@ -245,13 +245,13 @@ void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardMod
         default:
             break;
         }
-        const bool horizontal = isLeftHandle(handle) || isRightHandle(handle);
-        const bool vertical = isTopHandle(handle) || isBottomHandle(handle);
+        const bool horizontal = IsLeftHandle(handle) || IsRightHandle(handle);
+        const bool vertical = IsTopHandle(handle) || IsBottomHandle(handle);
         const qreal kx =
-            horizontal ? 1.0 + (isLeftHandle(handle) ? -delta.x() : delta.x()) / qMax<qreal>(1.0, startSize.width())
+            horizontal ? 1.0 + (IsLeftHandle(handle) ? -delta.x() : delta.x()) / qMax<qreal>(1.0, startSize.width())
                        : 1.0;
         const qreal ky =
-            vertical ? 1.0 + (isTopHandle(handle) ? -delta.y() : delta.y()) / qMax<qreal>(1.0, startSize.height())
+            vertical ? 1.0 + (IsTopHandle(handle) ? -delta.y() : delta.y()) / qMax<qreal>(1.0, startSize.height())
                      : 1.0;
         // 角手柄两维都有位移，跟位移更大的那一维走；边手柄只有一维。
         qreal scale = horizontal && vertical ? (qAbs(kx - 1.0) >= qAbs(ky - 1.0) ? kx : ky) : (horizontal ? kx : ky);
@@ -268,36 +268,36 @@ void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardMod
         return;
     }
 
-    if (isLeftHandle(handle)) {
+    if (IsLeftHandle(handle)) {
         rect.setLeft(rect.left() + delta.x());
     }
-    if (isRightHandle(handle)) {
+    if (IsRightHandle(handle)) {
         rect.setRight(rect.right() + delta.x());
     }
-    if (isTopHandle(handle)) {
+    if (IsTopHandle(handle)) {
         rect.setTop(rect.top() + delta.y());
     }
-    if (isBottomHandle(handle)) {
+    if (IsBottomHandle(handle)) {
         rect.setBottom(rect.bottom() + delta.y());
     }
 
     const qreal minSide = MINIMUM_SIDE;
     if (rect.width() < minSide) {
-        if (isLeftHandle(handle)) {
+        if (IsLeftHandle(handle)) {
             rect.setLeft(rect.right() - minSide);
         } else {
             rect.setRight(rect.left() + minSide);
         }
     }
     if (rect.height() < minSide) {
-        if (isTopHandle(handle)) {
+        if (IsTopHandle(handle)) {
             rect.setTop(rect.bottom() - minSide);
         } else {
             rect.setBottom(rect.top() + minSide);
         }
     }
 
-    if ((modifiers & Qt::ShiftModifier) && isCornerHandle(handle) && m_item->m_dragStartSize.height() > 0.0) {
+    if ((modifiers & Qt::ShiftModifier) && IsCornerHandle(handle) && m_item->m_dragStartSize.height() > 0.0) {
         const qreal aspect = m_item->m_dragStartSize.width() / m_item->m_dragStartSize.height();
         QSizeF size = rect.size();
         if (size.width() / size.height() > aspect) {
@@ -307,12 +307,12 @@ void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardMod
         }
         size = size.expandedTo(QSizeF(minSide, minSide));
 
-        if (isLeftHandle(handle)) {
+        if (IsLeftHandle(handle)) {
             rect.setLeft(rect.right() - size.width());
         } else {
             rect.setRight(rect.left() + size.width());
         }
-        if (isTopHandle(handle)) {
+        if (IsTopHandle(handle)) {
             rect.setTop(rect.bottom() - size.height());
         } else {
             rect.setBottom(rect.top() + size.height());

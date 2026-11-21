@@ -8,7 +8,7 @@ namespace {
 constexpr qreal MINIMUM_FRAME_SIDE = 12.0;
 constexpr int ARC_SAMPLES = 64;
 
-QRectF paddedToMinimum(QRectF frame)
+QRectF PaddedToMinimum(QRectF frame)
 {
     if (frame.width() < MINIMUM_FRAME_SIDE) {
         frame.moveLeft(frame.center().x() - MINIMUM_FRAME_SIDE / 2.0);
@@ -21,7 +21,7 @@ QRectF paddedToMinimum(QRectF frame)
     return frame;
 }
 
-QJsonArray rectToArray(const QRectF& rect)
+QJsonArray RectToArray(const QRectF& rect)
 {
     QJsonArray array;
     array.append(rect.x());
@@ -31,7 +31,7 @@ QJsonArray rectToArray(const QRectF& rect)
     return array;
 }
 
-QRectF arrayToRect(const QJsonArray& array, const QRectF& fallback)
+QRectF ArrayToRect(const QJsonArray& array, const QRectF& fallback)
 {
     if (array.size() < 4) {
         return fallback;
@@ -83,7 +83,7 @@ QString ArcItem::DisplayName() const
 
 QRectF ArcItem::FrameRect() const
 {
-    return paddedToMinimum(CanvasItem::FrameRect());
+    return PaddedToMinimum(CanvasItem::FrameRect());
 }
 
 ArcItem::ParamState ArcItem::paramState() const
@@ -155,7 +155,7 @@ QJsonObject ArcItem::ToJson() const
     QJsonObject json = LineItemAbstract::ToJson();
     json.insert(QStringLiteral("startAngle"), m_startAngle);
     json.insert(QStringLiteral("sweepAngle"), m_sweepAngle);
-    json.insert(QStringLiteral("arcFrame"), rectToArray(m_refFrame));
+    json.insert(QStringLiteral("arcFrame"), RectToArray(m_refFrame));
     return json;
 }
 
@@ -164,6 +164,6 @@ void ArcItem::FromJson(const QJsonObject& json)
     LineItemAbstract::FromJson(json);
     m_startAngle = json.value(QStringLiteral("startAngle")).toDouble(30.0);
     m_sweepAngle = EllipseShape::ClampedSweep(json.value(QStringLiteral("sweepAngle")).toDouble(120.0));
-    m_refFrame = arrayToRect(json.value(QStringLiteral("arcFrame")).toArray(), QRectF(0.0, 0.0, 1.0, 1.0));
+    m_refFrame = ArrayToRect(json.value(QStringLiteral("arcFrame")).toArray(), QRectF(0.0, 0.0, 1.0, 1.0));
     Rebuild();
 }

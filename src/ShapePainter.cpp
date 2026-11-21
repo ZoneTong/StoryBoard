@@ -11,7 +11,7 @@ constexpr qreal PATTERN_PEN_WIDTH = 1.6;
 
 // 图标墨迹归心：按包围盒（含描边外扩）把图形平移到 24px 栅格中心，并等比限幅，
 // 扇形与弧线共用一份，避免两条路各写一遍、下次只修一处。
-QPainterPath centerIconPath(const QPainterPath& path, qreal penWidth, qreal bound = 18.0, qreal maxScale = 1.4)
+QPainterPath CenterIconPath(const QPainterPath& path, qreal penWidth, qreal bound = 18.0, qreal maxScale = 1.4)
 {
     const qreal margin = penWidth / 2.0;
     const QRectF bounds = path.boundingRect().adjusted(-margin, -margin, margin, margin);
@@ -27,7 +27,7 @@ QPainterPath centerIconPath(const QPainterPath& path, qreal penWidth, qreal boun
     return transform.map(path);
 }
 
-qreal patternSpacing(const QRectF& rect)
+qreal PatternSpacing(const QRectF& rect)
 {
     return qBound<qreal>(5.0, qMax(rect.width(), rect.height()) * 0.03, 12.0);
 }
@@ -41,7 +41,7 @@ QPainterPath ShapePainter::CenterLines(FillStyle style, const QRectF& rect)
         return path;
     }
 
-    const qreal spacing = patternSpacing(rect);
+    const qreal spacing = PatternSpacing(rect);
     const qreal h = rect.height();
 
     if (style == FillStyle::HONEYCOMB) {
@@ -195,10 +195,10 @@ void ShapePainter::PaintShape(QPainter* painter, const QPainterPath& path, const
 
 QIcon ShapePainter::MakeIcon(ShapeType type, const QColor& color, int logicalSize)
 {
-    constexpr qreal scale = 2.0;
-    QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
+    constexpr qreal SCALE = 2.0;
+    QPixmap pixmap(static_cast<int>(logicalSize * SCALE), static_cast<int>(logicalSize * SCALE));
     pixmap.fill(Qt::transparent);
-    pixmap.setDevicePixelRatio(scale);
+    pixmap.setDevicePixelRatio(SCALE);
 
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing, true);
@@ -222,7 +222,7 @@ QIcon ShapePainter::MakeIcon(ShapeType type, const QColor& color, int logicalSiz
     QPainterPath path = ShapeItem::PathFor(type, rect, -1.0, iconStartAngle, iconSweepAngle);
     // 需求 7：扇形图标的墨迹按包围盒重新居中到 (12,12) 并等比限幅；弧线走同一份 helper。
     if (type == ShapeType::SECTOR) {
-        path = centerIconPath(path, 1.8);
+        path = CenterIconPath(path, 1.8);
     }
     QPen pen(color, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
 
@@ -237,10 +237,10 @@ QIcon ShapePainter::MakeIcon(ShapeType type, const QColor& color, int logicalSiz
 
 QIcon ShapePainter::MakeCurveIcon(LineGlyph glyph, const QColor& color, int logicalSize)
 {
-    constexpr qreal scale = 2.0;
-    QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
+    constexpr qreal SCALE = 2.0;
+    QPixmap pixmap(static_cast<int>(logicalSize * SCALE), static_cast<int>(logicalSize * SCALE));
     pixmap.fill(Qt::transparent);
-    pixmap.setDevicePixelRatio(scale);
+    pixmap.setDevicePixelRatio(SCALE);
 
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing, true);
@@ -251,9 +251,9 @@ QIcon ShapePainter::MakeCurveIcon(LineGlyph glyph, const QColor& color, int logi
     if (glyph == LineGlyph::ARC) {
         path = EllipseShape(QRectF(1.5, 1.5, 21.0, 21.0)).Arc(30.0, 120.0);
     } else if (glyph == LineGlyph::SINE) {
-        constexpr int steps = 64;
-        for (int i = 0; i <= steps; ++i) {
-            const qreal t = qreal(i) / qreal(steps);
+        constexpr int STEPS = 64;
+        for (int i = 0; i <= STEPS; ++i) {
+            const qreal t = qreal(i) / qreal(STEPS);
             const QPointF point(2.5 + t * 19.0, 12.0 - qSin(t * 2.0 * M_PI) * 6.0);
             if (i == 0) {
                 path.moveTo(point);
@@ -267,7 +267,7 @@ QIcon ShapePainter::MakeCurveIcon(LineGlyph glyph, const QColor& color, int logi
     }
     // 三种形态统一归心：直线与正弦本就居中（平移量为 0，行为不变），弧线自动修正
     // 此前整块偏上约 7.9px 的问题；归心按包围盒计算，描边外扩也一并覆盖。
-    path = centerIconPath(path, 1.6);
+    path = CenterIconPath(path, 1.6);
     painter.setPen(QPen(color, 1.6));
     painter.setBrush(Qt::NoBrush);
     painter.drawPath(path);

@@ -28,9 +28,9 @@ inline int LineArtPresetCount()
 
 inline LineArtPreset lineArtPreset(int index)
 {
-    static const LineArtPreset fallback{};
+    static const LineArtPreset FALLBACK{};
     if (index < 0 || index >= LineArtPresetCount()) {
-        return fallback;
+        return FALLBACK;
     }
     return LINE_ART_PRESETS[index];
 }

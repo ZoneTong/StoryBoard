@@ -18,15 +18,15 @@
 
 QString StripShortcutTail(const QString& tip)
 {
-    static const QRegularExpression tail(QStringLiteral("(?:\\s*[（(][^（）()]*[）)])$"));
+    static const QRegularExpression TAIL(QStringLiteral("(?:\\s*[（(][^（）()]*[）)])$"));
     QString result = tip;
-    result.remove(tail);
+    result.remove(TAIL);
     return result;
 }
 
 namespace {
 
-QAction* makeAction(QObject* parent, IconId icon, const QString& text, const QKeySequence& shortcut = QKeySequence(),
+QAction* MakeAction(QObject* parent, IconId icon, const QString& text, const QKeySequence& shortcut = QKeySequence(),
                     QString tip = QString())
 {
     // 工具栏按钮与菜单项共用一份图标，按工具栏图标尺寸生成；菜单再缩放到 16px。
@@ -57,51 +57,51 @@ UiActionFactory::UiActionFactory(MainWindow* window) : m_window(window) {}
 void UiActionFactory::Build()
 {
     m_window->m_newAct =
-        makeAction(m_window, IconId::NEW, MainWindow::tr("New canvas"), QKeySequence(QStringLiteral("Ctrl+N")),
+        MakeAction(m_window, IconId::NEW, MainWindow::tr("New canvas"), QKeySequence(QStringLiteral("Ctrl+N")),
                    MainWindow::tr("Create an empty canvas (Ctrl+N)"));
     m_window->m_openAct =
-        makeAction(m_window, IconId::OPEN, MainWindow::tr("Open canvas…"), QKeySequence(QStringLiteral("Ctrl+O")),
+        MakeAction(m_window, IconId::OPEN, MainWindow::tr("Open canvas…"), QKeySequence(QStringLiteral("Ctrl+O")),
                    MainWindow::tr("Open a StoryBoard canvas (Ctrl+O)"));
     m_window->m_saveAct =
-        makeAction(m_window, IconId::SAVE, MainWindow::tr("Save canvas"), QKeySequence(QStringLiteral("Ctrl+S")),
+        MakeAction(m_window, IconId::SAVE, MainWindow::tr("Save canvas"), QKeySequence(QStringLiteral("Ctrl+S")),
                    MainWindow::tr("Save the current canvas (Ctrl+S)"));
-    m_window->m_saveAsAct = makeAction(m_window, IconId::SAVE, MainWindow::tr("Save canvas as…"),
+    m_window->m_saveAsAct = MakeAction(m_window, IconId::SAVE, MainWindow::tr("Save canvas as…"),
                                        QKeySequence(QStringLiteral("Ctrl+Shift+S")),
                                        MainWindow::tr("Save the current canvas to a new file (Ctrl+Shift+S)"));
     // 只留一个主键：Ctrl+I 取 I（image / insert）的直觉，Ctrl+P 留给打印这类通用标准键。
     m_window->m_importAct =
-        makeAction(m_window, IconId::IMAGE, MainWindow::tr("Insert images…"), QKeySequence(QStringLiteral("Ctrl+I")),
+        MakeAction(m_window, IconId::IMAGE, MainWindow::tr("Insert images…"), QKeySequence(QStringLiteral("Ctrl+I")),
                    MainWindow::tr("Insert images as movable, resizable items (Ctrl+I)"));
-    m_window->m_lineArtAct = makeAction(
+    m_window->m_lineArtAct = MakeAction(
         m_window, IconId::LINE_ART, MainWindow::tr("Import outline image"), QKeySequence(QStringLiteral("Ctrl+L")),
         MainWindow::tr(
             "Trace an image's color-block outlines into strokes (line width 1); a parameter dialog opens first and "
             "only Save to configuration file writes StoryBoard.ini (Ctrl+L)"));
     m_window->m_exportAct =
-        makeAction(m_window, IconId::EXPORT, MainWindow::tr("Export canvas…"), QKeySequence(QStringLiteral("Ctrl+E")),
+        MakeAction(m_window, IconId::EXPORT, MainWindow::tr("Export canvas…"), QKeySequence(QStringLiteral("Ctrl+E")),
                    MainWindow::tr("Export as PNG / JPEG / PDF (Ctrl+E)"));
     m_window->m_exportExcalidrawAct =
-        makeAction(m_window, IconId::EXPORT, MainWindow::tr("Export Excalidraw…"), QKeySequence(),
+        MakeAction(m_window, IconId::EXPORT, MainWindow::tr("Export Excalidraw…"), QKeySequence(),
                    MainWindow::tr("Save this canvas as an .excalidraw scene that excalidraw.com can open"));
     m_window->m_exportCustomShapeAct =
-        makeAction(m_window, IconId::SHAPES, MainWindow::tr("Export custom shape…"), QKeySequence(),
+        MakeAction(m_window, IconId::SHAPES, MainWindow::tr("Export custom shape…"), QKeySequence(),
                    MainWindow::tr("Save the selected items into the shapes folder as a reusable template"));
     // 主键取 Windows 关闭标准 Alt+F4；副键 Ctrl+Q 是 Linux / macOS 级的退出标准。
     m_window->m_quitAct = new QAction(MainWindow::tr("Quit"), m_window);
     m_window->m_quitAct->setShortcuts({QKeySequence(Qt::ALT | Qt::Key_F4), QKeySequence(QStringLiteral("Ctrl+Q"))});
     m_window->m_quitAct->setStatusTip(MainWindow::tr("Quit StoryBoard (Alt+F4)"));
 
-    m_window->m_undoAct = makeAction(m_window, IconId::UNDO, MainWindow::tr("Undo"), QKeySequence::Undo,
+    m_window->m_undoAct = MakeAction(m_window, IconId::UNDO, MainWindow::tr("Undo"), QKeySequence::Undo,
                                      MainWindow::tr("Undo the last step (Ctrl+Z)"));
     m_window->m_undoAct->setEnabled(false);
-    m_window->m_redoAct = makeAction(m_window, IconId::REDO, MainWindow::tr("Redo"),
+    m_window->m_redoAct = MakeAction(m_window, IconId::REDO, MainWindow::tr("Redo"),
                                      QKeySequence(QStringLiteral("Ctrl+Y")), MainWindow::tr("Redo (Ctrl+Y)"));
     // 副键 Ctrl+Shift+Z 是 macOS / GNOME 级的重做标准。
     m_window->m_redoAct->setShortcuts(
         {QKeySequence(QStringLiteral("Ctrl+Y")), QKeySequence(QStringLiteral("Ctrl+Shift+Z"))});
     m_window->m_redoAct->setEnabled(false);
 
-    m_window->m_deleteAct = makeAction(m_window, IconId::DELETE, MainWindow::tr("Delete selected items"),
+    m_window->m_deleteAct = MakeAction(m_window, IconId::DELETE, MainWindow::tr("Delete selected items"),
                                        QKeySequence::Delete, MainWindow::tr("Delete the selected items (Delete)"));
     m_window->m_duplicateAct = new QAction(MainWindow::tr("Duplicate selected items"), m_window);
     m_window->m_duplicateAct->setIcon(MakeIcon(IconId::COPY, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
@@ -117,12 +117,12 @@ void UiActionFactory::Build()
             m_window->statusBar()->showMessage(MainWindow::tr("Duplicated %1 Item(s)").arg(duplicated), 3000);
         }
     });
-    m_window->m_copyAct = makeAction(m_window, IconId::COPY, MainWindow::tr("Copy selected items"),
+    m_window->m_copyAct = MakeAction(m_window, IconId::COPY, MainWindow::tr("Copy selected items"),
                                      QKeySequence(QStringLiteral("Ctrl+C")),
                                      MainWindow::tr("Copy the selected items to the clipboard (Ctrl+C)"));
     m_window->m_copyAct->setObjectName(QStringLiteral("CopyItemsAction"));
     m_window->m_copyAct->setEnabled(false);
-    m_window->m_cutAct = makeAction(m_window, IconId::DELETE, MainWindow::tr("Cut selected items"),
+    m_window->m_cutAct = MakeAction(m_window, IconId::DELETE, MainWindow::tr("Cut selected items"),
                                     QKeySequence(QStringLiteral("Ctrl+X")),
                                     MainWindow::tr("Cut the selected items to the clipboard (Ctrl+X)"));
     m_window->m_cutAct->setObjectName(QStringLiteral("CutItemsAction"));
@@ -164,7 +164,7 @@ void UiActionFactory::Build()
             m_window->UpdateActions();
         }
     });
-    m_window->m_smoothAct = makeAction(
+    m_window->m_smoothAct = MakeAction(
         m_window, IconId::SMOOTH, MainWindow::tr("Simplify curve"), QKeySequence(QStringLiteral("Ctrl+Shift+B")),
         MainWindow::tr("Simplify the selected curve once using the current brush tolerance "
                        "(Ctrl+Shift+B)"));
@@ -183,28 +183,28 @@ void UiActionFactory::Build()
     m_window->m_selectAllAct = new QAction(MainWindow::tr("Select all items"), m_window);
     m_window->m_selectAllAct->setShortcut(QKeySequence::SelectAll);
     m_window->m_selectAllAct->setStatusTip(MainWindow::tr("Select all items (Ctrl+A)"));
-    m_window->m_itemPropsAct = makeAction(m_window, IconId::SETTINGS, MainWindow::tr("Item properties…"),
+    m_window->m_itemPropsAct = MakeAction(m_window, IconId::SETTINGS, MainWindow::tr("Item properties…"),
                                           QKeySequence(), MainWindow::tr("Show the selected item's properties"));
-    m_window->m_rotateCwAct = makeAction(m_window, IconId::ROTATE_CW, MainWindow::tr("Rotate 45° clockwise"),
+    m_window->m_rotateCwAct = MakeAction(m_window, IconId::ROTATE_CW, MainWindow::tr("Rotate 45° clockwise"),
                                          QKeySequence(QStringLiteral("Ctrl+R")),
                                          MainWindow::tr("Rotate selected items 45° clockwise (Ctrl+R)"));
-    m_window->m_rotateCcwAct = makeAction(m_window, IconId::ROTATE_CCW, MainWindow::tr("Rotate 45° counterclockwise"),
+    m_window->m_rotateCcwAct = MakeAction(m_window, IconId::ROTATE_CCW, MainWindow::tr("Rotate 45° counterclockwise"),
                                           QKeySequence(QStringLiteral("Ctrl+Shift+R")),
                                           MainWindow::tr("Rotate selected items 45° counterclockwise (Ctrl+Shift+R)"));
 
     m_window->m_viewModeAct =
-        makeAction(m_window, IconId::VIEW, MainWindow::tr("View mode"), QKeySequence(QStringLiteral("H")),
+        MakeAction(m_window, IconId::VIEW, MainWindow::tr("View mode"), QKeySequence(QStringLiteral("H")),
                    MainWindow::tr("View mode: overview, pan and zoom (H)"));
     m_window->m_brushModeAct =
-        makeAction(m_window, IconId::BRUSH, MainWindow::tr("Brush mode"), QKeySequence(QStringLiteral("B")),
+        MakeAction(m_window, IconId::BRUSH, MainWindow::tr("Brush mode"), QKeySequence(QStringLiteral("B")),
                    MainWindow::tr("Brush mode: hold the left button to draw freely (B)"));
     m_window->m_editModeAct =
-        makeAction(m_window, IconId::EDIT, MainWindow::tr("Edit mode"), QKeySequence(QStringLiteral("V")),
+        MakeAction(m_window, IconId::EDIT, MainWindow::tr("Edit mode"), QKeySequence(QStringLiteral("V")),
                    MainWindow::tr("Edit mode: items on visible, unlocked layers are editable · "
                                   "double-click to open item properties and change them · "
                                   "Space / middle button to pan the view (V)"));
     m_window->m_textModeAct =
-        makeAction(m_window, IconId::TEXT, MainWindow::tr("Text mode"), QKeySequence(QStringLiteral("T")),
+        MakeAction(m_window, IconId::TEXT, MainWindow::tr("Text mode"), QKeySequence(QStringLiteral("T")),
                    MainWindow::tr("Text mode: click the canvas to place a text item (T)"));
     m_window->m_viewModeAct->setCheckable(true);
     m_window->m_brushModeAct->setCheckable(true);
@@ -223,21 +223,21 @@ void UiActionFactory::Build()
     m_window->m_editModeAct->setData(static_cast<int>(ToolMode::EDIT));
     m_window->m_textModeAct->setData(static_cast<int>(ToolMode::TEXT));
 
-    m_window->m_fitAct = makeAction(m_window, IconId::FIT, MainWindow::tr("Back to overview"),
+    m_window->m_fitAct = MakeAction(m_window, IconId::FIT, MainWindow::tr("Back to overview"),
                                     QKeySequence(QStringLiteral("Ctrl+0")), MainWindow::tr("Fit all items (Ctrl+0)"));
-    m_window->m_zoomInAct = makeAction(m_window, IconId::ZOOM_IN, MainWindow::tr("Zoom in"),
+    m_window->m_zoomInAct = MakeAction(m_window, IconId::ZOOM_IN, MainWindow::tr("Zoom in"),
                                        QKeySequence(QStringLiteral("Ctrl+=")), MainWindow::tr("Zoom in (Ctrl+=)"));
     // 副键 Ctrl++（含小键盘加号同码）与 Ctrl+= 同属系统级放大标准绑定。
     m_window->m_zoomInAct->setShortcuts(
         {QKeySequence(QStringLiteral("Ctrl+=")), QKeySequence(QStringLiteral("Ctrl++"))});
-    m_window->m_zoomOutAct = makeAction(m_window, IconId::ZOOM_OUT, MainWindow::tr("Zoom out"),
+    m_window->m_zoomOutAct = MakeAction(m_window, IconId::ZOOM_OUT, MainWindow::tr("Zoom out"),
                                         QKeySequence(QStringLiteral("Ctrl+-")), MainWindow::tr("Zoom out (Ctrl+-)"));
     m_window->m_actualSizeAct =
-        makeAction(m_window, IconId::ZOOM_IN, MainWindow::tr("Actual size"), QKeySequence(QStringLiteral("Ctrl+1")),
+        MakeAction(m_window, IconId::ZOOM_IN, MainWindow::tr("Actual size"), QKeySequence(QStringLiteral("Ctrl+1")),
                    MainWindow::tr("Show at 100% (Ctrl+1)"));
 
     m_window->m_gridAct =
-        makeAction(m_window, IconId::GRID, MainWindow::tr("Helper grid"), QKeySequence(QStringLiteral("Ctrl+'")),
+        MakeAction(m_window, IconId::GRID, MainWindow::tr("Helper grid"), QKeySequence(QStringLiteral("Ctrl+'")),
                    MainWindow::tr("Show or hide the helper grid on the canvas"));
     m_window->m_gridAct->setObjectName(QStringLiteral("GridToggleAction"));
     m_window->m_gridAct->setCheckable(true);
@@ -251,11 +251,11 @@ void UiActionFactory::Build()
     });
 
     m_window->m_replaceBgAct =
-        makeAction(m_window, IconId::BACKGROUND, MainWindow::tr("Replace canvas background image…"), QKeySequence(),
+        MakeAction(m_window, IconId::BACKGROUND, MainWindow::tr("Replace canvas background image…"), QKeySequence(),
                    MainWindow::tr("Choose an image as the canvas background"));
-    m_window->m_bgColorAct = makeAction(m_window, IconId::PALETTE, MainWindow::tr("Set background color…"),
+    m_window->m_bgColorAct = MakeAction(m_window, IconId::PALETTE, MainWindow::tr("Set background color…"),
                                         QKeySequence(), MainWindow::tr("Use a solid color as the canvas background"));
-    m_window->m_clearBgAct = makeAction(m_window, IconId::DELETE, MainWindow::tr("Clear canvas background"),
+    m_window->m_clearBgAct = MakeAction(m_window, IconId::DELETE, MainWindow::tr("Clear canvas background"),
                                         QKeySequence(), MainWindow::tr("Restore a transparent background"));
 
     m_window->m_bgStretchAct = new QAction(MainWindow::tr("Stretch to fill"), m_window);
@@ -271,7 +271,7 @@ void UiActionFactory::Build()
     m_window->m_backgroundModeGroup->addAction(m_window->m_bgTileAct);
 
     m_window->m_settingsAct =
-        makeAction(m_window, IconId::SETTINGS, MainWindow::tr("Settings…"), QKeySequence(QStringLiteral("Ctrl+,")),
+        MakeAction(m_window, IconId::SETTINGS, MainWindow::tr("Settings…"), QKeySequence(QStringLiteral("Ctrl+,")),
                    MainWindow::tr("Open board settings (Ctrl+,)"));
 
     m_window->m_aboutAct =

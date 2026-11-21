@@ -30,15 +30,15 @@
 
 namespace {
 
-bool selfTestMode()
+bool SelfTestMode()
 {
     return qApp && qApp->property("storyboardSelfTest").toBool();
 }
 
 // 与 MainWindow 相同的报错出口：自检（离屏）时不许弹模态框。
-void reportWarning(QWidget* parent, const QString& title, const QString& text)
+void ReportWarning(QWidget* parent, const QString& title, const QString& text)
 {
-    if (selfTestMode()) {
+    if (SelfTestMode()) {
         qWarning("self-test suppressed dialog [%s]: %s", qUtf8Printable(title), qUtf8Printable(text));
         return;
     }
@@ -405,7 +405,7 @@ void MainWindowInsertController::InsertCustomShape(const QString& filePath)
     CustomShapeTemplate customShape;
     QString error;
     if (!LoadCustomShapeTemplate(filePath, &customShape, &error)) {
-        reportWarning(m_window, MainWindow::tr("Custom shape"),
+        ReportWarning(m_window, MainWindow::tr("Custom shape"),
                       MainWindow::tr("Could not read %1:\n%2").arg(QDir::toNativeSeparators(filePath), error));
         return;
     }

@@ -9,13 +9,13 @@
 
 namespace {
 
-qreal headLengthFor(qreal strokeWidth)
+qreal HeadLengthFor(qreal strokeWidth)
 {
     // 头长固定为 4 倍线宽；线宽为 0 时退化为 4px，保证箭头仍可见。
     return qMax<qreal>(4.0, strokeWidth * 4.0);
 }
 
-QPointF normalizedDir(const QPointF& tip, const QPointF& toward)
+QPointF NormalizedDir(const QPointF& tip, const QPointF& toward)
 {
     const QPointF delta = tip - toward;
     const qreal length = std::hypot(delta.x(), delta.y());
@@ -108,9 +108,9 @@ QPainterPath ArrowHeadPath(const QPointF& tip, const QPointF& toward, qreal stro
     if (!ArrowStyleIsHead(style)) {
         return path;
     }
-    const QPointF dir = normalizedDir(tip, toward);
+    const QPointF dir = NormalizedDir(tip, toward);
     const QPointF perp(-dir.y(), dir.x());
-    const qreal length = headLengthFor(strokeWidth);
+    const qreal length = HeadLengthFor(strokeWidth);
     const QPointF base = tip - dir * length;
 
     switch (style) {

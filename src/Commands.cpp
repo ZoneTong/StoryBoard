@@ -10,7 +10,7 @@
 
 namespace {
 
-bool sameStack(const ItemStackList& first, const ItemStackList& second)
+bool SameStack(const ItemStackList& first, const ItemStackList& second)
 {
     if (first.size() != second.size()) {
         return false;
@@ -404,7 +404,7 @@ void ItemPropertyCommand::Apply(const QList<QMap<ItemProperty, QVariant>>& state
 
 bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
 {
-    if (!sameStack(stack, other.stack) || pos != other.pos || size != other.size ||
+    if (!SameStack(stack, other.stack) || pos != other.pos || size != other.size ||
         !qFuzzyCompare(rotation, other.rotation) || !qFuzzyCompare(1.0 + opacity, 1.0 + other.opacity) ||
         itemName != other.itemName || hasShapeState != other.hasShapeState || hasTextState != other.hasTextState ||
         hasStrokeStyle != other.hasStrokeStyle) {

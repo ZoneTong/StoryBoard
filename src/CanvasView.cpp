@@ -31,7 +31,7 @@
 namespace {
 
 // 零面积描线图元：曲线，以及直线等描线类图形。
-bool isStrokeItem(CanvasItem* item)
+bool IsStrokeItem(CanvasItem* item)
 {
     if (dynamic_cast<LineItemAbstract*>(item)) {
         return true;
@@ -42,9 +42,9 @@ bool isStrokeItem(CanvasItem* item)
 
 // 需求 23：描线图元的 shape() 含命中容差外扩。若“实际笔迹”（paintedShape）没盖住
 // 点击点、只是靠容差擦边命中，点击意图更可能是下方被横穿的填充图形。
-bool isStrokeHitToleranceOnly(CanvasItem* item, const QPointF& scenePos)
+bool IsStrokeHitToleranceOnly(CanvasItem* item, const QPointF& scenePos)
 {
-    if (!isStrokeItem(item)) {
+    if (!IsStrokeItem(item)) {
         return false;
     }
     return !item->PaintedShape().contains(item->mapFromScene(scenePos));
@@ -232,12 +232,12 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
             strokeTop = canvasItem;
             break;
         }
-        if (strokeTop && !strokeTop->isSelected() && isStrokeHitToleranceOnly(strokeTop, scenePos)) {
+        if (strokeTop && !strokeTop->isSelected() && IsStrokeHitToleranceOnly(strokeTop, scenePos)) {
             CanvasItem* fillBelow = nullptr;
             for (QGraphicsItem* graphicsItem : clickCandidates) {
                 auto* canvasItem = qgraphicsitem_cast<CanvasItem*>(graphicsItem);
                 if (canvasItem == strokeTop || !canvasItem || !canvasItem->isVisible() ||
-                    !m_scene->IsItemEditable(canvasItem) || isStrokeItem(canvasItem)) {
+                    !m_scene->IsItemEditable(canvasItem) || IsStrokeItem(canvasItem)) {
                     continue;
                 }
                 if (canvasItem->shape().contains(canvasItem->mapFromScene(scenePos))) {

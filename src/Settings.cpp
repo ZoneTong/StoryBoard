@@ -29,7 +29,7 @@ namespace {
 
 // 诊断：当前进程的完整性级别（0x1000 低 / 0x2000 中 / 0x3000 高）。外壳"open"通道
 // 被 UIPI 挡住时，先看这个数就知道是不是级别不匹配，而不是把每种拒绝都当成权限问题。
-int processIntegrityLevel()
+int ProcessIntegrityLevel()
 {
     HANDLE token = nullptr;
     if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) {
@@ -62,7 +62,7 @@ struct ShellChannelResult {
 // 中完整性外壳而返回 5，直接起 explorer.exe 子进程又会在部分会话里以
 // 0xc0000142（STATUS_DLL_INIT_FAILED）退出并弹“应用程序错误”；COM 本地服务器
 // 激活只是跨进程调用，不会新建进程，实测在提权上下文可正常开窗。
-ShellChannelResult openFolderViaShellAutomation(const QString& directory)
+ShellChannelResult OpenFolderViaShellAutomation(const QString& directory)
 {
     const std::wstring native = QDir::toNativeSeparators(directory).toStdWString();
     // 线程若已按套间模型初始化，CoInitializeEx 会返回 RPC_E_CHANGED_MODE；
@@ -98,7 +98,7 @@ ShellChannelResult openFolderViaShellAutomation(const QString& directory)
 // 起新的 explorer.exe 进程——提权 / 受限会话里子进程可能以 0xc0000142 启动失败
 // 并弹“应用程序错误”对话框。需求 24 实测部分进程上下文里 ShellExecute 与本通道
 // 都会被系统拒绝（5 / E_ACCESSDENIED），需求 31 改为再走 Shell.Application。
-ShellChannelResult openFolderViaShellItem(const QString& directory)
+ShellChannelResult OpenFolderViaShellItem(const QString& directory)
 {
     const std::wstring native = QDir::toNativeSeparators(directory).toStdWString();
     // SHOpenFolderAndSelectItems 要求调用线程已初始化 COM；已初始化（含模式
@@ -129,12 +129,12 @@ using SettingsMap = QMap<QString, QString>;
 const QString FILE_NAME = QStringLiteral("StoryBoard.ini");
 constexpr const char* OVERRIDE_VARIABLE = "STORYBOARD_CONFIG";
 
-QString applicationSettingsFile()
+QString ApplicationSettingsFile()
 {
     return QDir(QCoreApplication::applicationDirPath()).filePath(FILE_NAME);
 }
 
-QString userConfigDirectory()
+QString UserConfigDirectory()
 {
     QString base = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
     if (base.isEmpty()) {
@@ -147,19 +147,19 @@ QString userConfigDirectory()
 // 1. 显式指定（自检、调试用）；
 // 2. 便携目录里已经有 ini 时沿用，整包拷贝可以带走配置；
 // 3. 其余情况写用户配置目录，避免程序目录被写保护。
-QString resolveSettingsFile()
+QString ResolveSettingsFile()
 {
     const QString override = qEnvironmentVariable(OVERRIDE_VARIABLE).trimmed();
     if (!override.isEmpty()) {
         return QDir::cleanPath(override);
     }
 
-    const QString portable = applicationSettingsFile();
+    const QString portable = ApplicationSettingsFile();
     if (QFileInfo::exists(portable)) {
         return portable;
     }
 
-    const QString directory = userConfigDirectory();
+    const QString directory = UserConfigDirectory();
     if (!directory.isEmpty()) {
         return QDir(directory).filePath(FILE_NAME);
     }
@@ -167,7 +167,7 @@ QString resolveSettingsFile()
     return portable;
 }
 
-SettingsMap readSettingsFile(const QString& path)
+SettingsMap ReadSettingsFile(const QString& path)
 {
     SettingsMap values;
     QFile file(path);
@@ -199,7 +199,7 @@ SettingsMap readSettingsFile(const QString& path)
 }
 
 // 用 QSaveFile 提交：要么保留旧文件，要么换成完整的新文件，不会留下截断的半个配置。
-bool writeSettingsFile(const QString& path, const SettingsMap& values)
+bool WriteSettingsFile(const QString& path, const SettingsMap& values)
 {
     const QFileInfo info(path);
     if (!QDir(info.absolutePath()).exists() && !QDir().mkpath(info.absolutePath())) {
@@ -233,13 +233,13 @@ bool writeSettingsFile(const QString& path, const SettingsMap& values)
     return file.commit();
 }
 
-QColor colorFromMap(const SettingsMap& values, const QString& key, const QColor& fallback)
+QColor ColorFromMap(const SettingsMap& values, const QString& key, const QColor& fallback)
 {
     const QColor color(values.value(key));
     return color.isValid() ? color : fallback;
 }
 
-bool boolFromMap(const SettingsMap& values, const QString& key, bool fallback)
+bool BoolFromMap(const SettingsMap& values, const QString& key, bool fallback)
 {
     if (!values.contains(key)) {
         return fallback;
@@ -248,24 +248,24 @@ bool boolFromMap(const SettingsMap& values, const QString& key, bool fallback)
     return value == QLatin1String("true") || value == QLatin1String("1") || value == QLatin1String("yes");
 }
 
-int boundedFromMap(const SettingsMap& values, const QString& key, int fallback, int minimum, int maximum)
+int BoundedFromMap(const SettingsMap& values, const QString& key, int fallback, int minimum, int maximum)
 {
     bool ok = false;
     const int value = values.value(key).toInt(&ok);
     return qBound(minimum, ok ? value : fallback, maximum);
 }
 
-qreal boundedDoubleFromMap(const SettingsMap& values, const QString& key, qreal fallback, qreal minimum, qreal maximum)
+qreal BoundedDoubleFromMap(const SettingsMap& values, const QString& key, qreal fallback, qreal minimum, qreal maximum)
 {
     bool ok = false;
     const qreal value = values.value(key).toDouble(&ok);
     return qBound(minimum, ok ? value : fallback, maximum);
 }
 
-void mergeLineArtSettings(SettingsMap& values, const AppSettings& settings);
-void mergeShortcutSettings(SettingsMap& values, const AppSettings& settings);
+void MergeLineArtSettings(SettingsMap& values, const AppSettings& settings);
+void MergeShortcutSettings(SettingsMap& values, const AppSettings& settings);
 
-void mergeSettings(SettingsMap& values, const AppSettings& settings)
+void MergeSettings(SettingsMap& values, const AppSettings& settings)
 {
     values.insert(QStringLiteral("brush/color"), settings.brushColor.name(QColor::HexArgb));
     values.insert(QStringLiteral("brush/width"), QString::number(settings.brushWidth));
@@ -306,12 +306,12 @@ void mergeSettings(SettingsMap& values, const AppSettings& settings)
 
     // 快捷键整段重写：先清掉旧的 shortcuts/*，再按当前内存里的覆盖表写入，
     // 这样「恢复默认」删掉的条目才会真的从文件里消失。
-    mergeShortcutSettings(values, settings);
+    MergeShortcutSettings(values, settings);
 
-    mergeLineArtSettings(values, settings);
+    MergeLineArtSettings(values, settings);
 }
 
-void mergeShortcutSettings(SettingsMap& values, const AppSettings& settings)
+void MergeShortcutSettings(SettingsMap& values, const AppSettings& settings)
 {
     const QString prefix = QStringLiteral("shortcuts/");
     for (auto it = values.begin(); it != values.end();) {
@@ -329,7 +329,7 @@ void mergeShortcutSettings(SettingsMap& values, const AppSettings& settings)
     }
 }
 
-void mergeLineArtSettings(SettingsMap& values, const AppSettings& settings)
+void MergeLineArtSettings(SettingsMap& values, const AppSettings& settings)
 {
     values.insert(QStringLiteral("lineArt/colorLevels"), QString::number(settings.lineArtColorLevels));
     values.insert(QStringLiteral("lineArt/paletteMerge"), QString::number(settings.lineArtPaletteMerge));
@@ -347,27 +347,27 @@ void mergeLineArtSettings(SettingsMap& values, const AppSettings& settings)
 
 QString AppSettings::SettingsFilePath()
 {
-    return resolveSettingsFile();
+    return ResolveSettingsFile();
 }
 
 void AppSettings::Load()
 {
     const QString path = SettingsFilePath();
     const bool existed = QFileInfo::exists(path);
-    const SettingsMap values = readSettingsFile(path);
+    const SettingsMap values = ReadSettingsFile(path);
 
-    brushColor = colorFromMap(values, QStringLiteral("brush/color"), brushColor);
-    brushWidth = boundedFromMap(values, QStringLiteral("brush/width"), brushWidth, 1, 64);
-    strokeSmoothing = boundedDoubleFromMap(values, QStringLiteral("brush/smoothing"), strokeSmoothing, 0.0, 20.0);
+    brushColor = ColorFromMap(values, QStringLiteral("brush/color"), brushColor);
+    brushWidth = BoundedFromMap(values, QStringLiteral("brush/width"), brushWidth, 1, 64);
+    strokeSmoothing = BoundedDoubleFromMap(values, QStringLiteral("brush/smoothing"), strokeSmoothing, 0.0, 20.0);
 
-    const int canvasWidth = boundedFromMap(values, QStringLiteral("canvas/width"), qRound(canvasSize.width()),
+    const int canvasWidth = BoundedFromMap(values, QStringLiteral("canvas/width"), qRound(canvasSize.width()),
                                            MIN_CANVAS_SIDE, MAX_CANVAS_SIDE);
-    const int canvasHeight = boundedFromMap(values, QStringLiteral("canvas/height"), qRound(canvasSize.height()),
+    const int canvasHeight = BoundedFromMap(values, QStringLiteral("canvas/height"), qRound(canvasSize.height()),
                                             MIN_CANVAS_SIDE, MAX_CANVAS_SIDE);
     canvasSize = QSizeF(canvasWidth, canvasHeight);
 
-    showGrid = boolFromMap(values, QStringLiteral("view/grid"), showGrid);
-    canvasColor = colorFromMap(values, QStringLiteral("view/canvasColor"), canvasColor);
+    showGrid = BoolFromMap(values, QStringLiteral("view/grid"), showGrid);
+    canvasColor = ColorFromMap(values, QStringLiteral("view/canvasColor"), canvasColor);
 
     lastExportDir = values.value(QStringLiteral("paths/export"), lastExportDir);
     lastImageDir = values.value(QStringLiteral("paths/image"), lastImageDir);
@@ -379,8 +379,8 @@ void AppSettings::Load()
         name = name.trimmed();
     }
 
-    propertiesDockStateSaved = boolFromMap(values, QStringLiteral("layout/itemDockSaved"), propertiesDockStateSaved);
-    propertiesDockFloating = boolFromMap(values, QStringLiteral("layout/itemDockFloating"), propertiesDockFloating);
+    propertiesDockStateSaved = BoolFromMap(values, QStringLiteral("layout/itemDockSaved"), propertiesDockStateSaved);
+    propertiesDockFloating = BoolFromMap(values, QStringLiteral("layout/itemDockFloating"), propertiesDockFloating);
     const QString savedPropertiesPanelDockArea =
         values.value(QStringLiteral("layout/itemDockArea")).trimmed().toLower();
     propertiesDockArea =
@@ -397,20 +397,20 @@ void AppSettings::Load()
         shortcutOverrides.insert(it.key().mid(shortcutPrefix.size()), it.value());
     }
 
-    lineArtColorLevels = boundedFromMap(values, QStringLiteral("lineArt/colorLevels"), lineArtColorLevels, 2, 12);
-    lineArtPaletteMerge = boundedFromMap(values, QStringLiteral("lineArt/paletteMerge"), lineArtPaletteMerge, 0, 160);
+    lineArtColorLevels = BoundedFromMap(values, QStringLiteral("lineArt/colorLevels"), lineArtColorLevels, 2, 12);
+    lineArtPaletteMerge = BoundedFromMap(values, QStringLiteral("lineArt/paletteMerge"), lineArtPaletteMerge, 0, 160);
     lineArtAdjacentMerge =
-        boundedFromMap(values, QStringLiteral("lineArt/adjacentMerge"), lineArtAdjacentMerge, 0, 160);
+        BoundedFromMap(values, QStringLiteral("lineArt/adjacentMerge"), lineArtAdjacentMerge, 0, 160);
     lineArtMinRegionArea =
-        boundedFromMap(values, QStringLiteral("lineArt/minRegionArea"), lineArtMinRegionArea, 4, 400);
+        BoundedFromMap(values, QStringLiteral("lineArt/minRegionArea"), lineArtMinRegionArea, 4, 400);
     lineArtAdaptiveDownscale =
-        boolFromMap(values, QStringLiteral("lineArt/adaptiveDownscale"), lineArtAdaptiveDownscale);
+        BoolFromMap(values, QStringLiteral("lineArt/adaptiveDownscale"), lineArtAdaptiveDownscale);
     lineArtAdaptiveLimit =
-        boundedFromMap(values, QStringLiteral("lineArt/adaptiveLimit"), lineArtAdaptiveLimit, 100, 20000);
+        BoundedFromMap(values, QStringLiteral("lineArt/adaptiveLimit"), lineArtAdaptiveLimit, 100, 20000);
     lineArtSimplifyTolerance =
-        boundedDoubleFromMap(values, QStringLiteral("lineArt/simplifyTolerance"), lineArtSimplifyTolerance, 0.0, 4.0);
+        BoundedDoubleFromMap(values, QStringLiteral("lineArt/simplifyTolerance"), lineArtSimplifyTolerance, 0.0, 4.0);
     lineArtMinThickness =
-        boundedDoubleFromMap(values, QStringLiteral("lineArt/minThickness"), lineArtMinThickness, 0.0, 8.0);
+        BoundedDoubleFromMap(values, QStringLiteral("lineArt/minThickness"), lineArtMinThickness, 0.0, 8.0);
 
     // 首次运行也立刻落盘，确保配置文件一定存在；已存在的文件只在读取成功时才规范化，
     // 读取失败（例如临时被占用）不做覆盖，避免把用户的配置写回默认值。
@@ -422,17 +422,17 @@ void AppSettings::Load()
 bool AppSettings::Save() const
 {
     const QString path = SettingsFilePath();
-    SettingsMap values = readSettingsFile(path);
-    mergeSettings(values, *this);
-    return writeSettingsFile(path, values);
+    SettingsMap values = ReadSettingsFile(path);
+    MergeSettings(values, *this);
+    return WriteSettingsFile(path, values);
 }
 
 bool AppSettings::SaveLineArt() const
 {
     const QString path = SettingsFilePath();
-    SettingsMap values = readSettingsFile(path);
-    mergeLineArtSettings(values, *this);
-    return writeSettingsFile(path, values);
+    SettingsMap values = ReadSettingsFile(path);
+    MergeLineArtSettings(values, *this);
+    return WriteSettingsFile(path, values);
 }
 
 void AppSettings::CopyLineArtFrom(const AppSettings& other)
@@ -449,7 +449,7 @@ void AppSettings::CopyLineArtFrom(const AppSettings& other)
 
 QString AppSettings::DefaultCanvasesDir()
 {
-    const QString base = userConfigDirectory();
+    const QString base = UserConfigDirectory();
     if (base.isEmpty()) {
         return QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("canvases"));
     }
@@ -458,7 +458,7 @@ QString AppSettings::DefaultCanvasesDir()
 
 QString AppSettings::CanvasesDir()
 {
-    const SettingsMap values = readSettingsFile(SettingsFilePath());
+    const SettingsMap values = ReadSettingsFile(SettingsFilePath());
     const QString configured = values.value(QStringLiteral("paths/canvasesDirectory"));
     if (!configured.isEmpty()) {
         QDir().mkpath(configured);
@@ -488,7 +488,7 @@ QString AppSettings::WritableShapesDir()
     // 与扫描顺序一致：配置文件同级最优先，其次是部署目录旁的 shapes，
     // 最后退到用户配置目录——这样装在 Program Files 里也能正常打开模板目录。
     QStringList candidates{ShapesDir(), BundledShapesDir()};
-    const QString userBase = userConfigDirectory();
+    const QString userBase = UserConfigDirectory();
     if (!userBase.isEmpty()) {
         candidates.append(QDir(userBase).filePath(QStringLiteral("shapes")));
     }
@@ -557,7 +557,7 @@ AppSettings::ShapesFolderOpenResult AppSettings::OpenShapesFolder()
     const std::wstring native = QDir::toNativeSeparators(directory).toStdWString();
     const HINSTANCE handle = ShellExecuteW(nullptr, L"open", native.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
     const qintptr shellCode = reinterpret_cast<qintptr>(handle);
-    const int integrity = processIntegrityLevel();
+    const int integrity = ProcessIntegrityLevel();
     if (shellCode > 32) {
         result.opened = true;
         return result;
@@ -570,7 +570,7 @@ AppSettings::ShapesFolderOpenResult AppSettings::OpenShapesFolder()
     // 需求 31：提权会话里 ShellExecute 会被 UIPI 挡住（这里实测 5 / E_ACCESSDENIED）。
     // 改由 Shell.Application 的 Explore 委托已在运行的外壳进程开窗——不新建进程，
     // 也就不会再出现 0xc0000142 的“应用程序错误”弹窗。
-    const ShellChannelResult automation = openFolderViaShellAutomation(directory);
+    const ShellChannelResult automation = OpenFolderViaShellAutomation(directory);
     channelDiagnostics +=
         QStringLiteral(" auto=0x%1").arg(static_cast<quint32>(automation.code), 8, 16, QLatin1Char('0'));
     if (automation.opened) {
@@ -581,7 +581,7 @@ AppSettings::ShapesFolderOpenResult AppSettings::OpenShapesFolder()
     qWarning("Shell.Application Explore failed to open shapes folder [%s]", qUtf8Printable(directory));
     // 需求 19：LocalLow 等目录 "open" 动词可能返回 5（拒绝访问）。再用 COM 的
     // SHOpenFolderAndSelectItems 兜一次底，同样不新建 explorer.exe 进程。
-    const ShellChannelResult shellItem = openFolderViaShellItem(directory);
+    const ShellChannelResult shellItem = OpenFolderViaShellItem(directory);
     channelDiagnostics +=
         QStringLiteral(" item=0x%1").arg(static_cast<quint32>(shellItem.code), 8, 16, QLatin1Char('0'));
     result.diagnostics = channelDiagnostics;
@@ -634,13 +634,13 @@ QString AppSettings::ShapesFolderFailureText(const ShapesFolderOpenResult& resul
 
 QString AppSettings::LanguageSetting()
 {
-    return readSettingsFile(SettingsFilePath()).value(QStringLiteral("ui/language"));
+    return ReadSettingsFile(SettingsFilePath()).value(QStringLiteral("ui/language"));
 }
 
 bool AppSettings::SetLanguageSetting(const QString& stored)
 {
     const QString path = SettingsFilePath();
-    SettingsMap values = readSettingsFile(path);
+    SettingsMap values = ReadSettingsFile(path);
     values.insert(QStringLiteral("ui/language"), stored);
-    return writeSettingsFile(path, values);
+    return WriteSettingsFile(path, values);
 }

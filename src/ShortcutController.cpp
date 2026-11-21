@@ -19,15 +19,15 @@
 
 namespace {
 
-bool selfTestMode()
+bool SelfTestMode()
 {
     return qApp && qApp->property("storyboardSelfTest").toBool();
 }
 
 // 与 MainWindow 相同的报错出口：自检（离屏）时不许弹模态框。
-void reportWarning(QWidget* parent, const QString& title, const QString& text)
+void ReportWarning(QWidget* parent, const QString& title, const QString& text)
 {
-    if (selfTestMode()) {
+    if (SelfTestMode()) {
         qWarning("self-test suppressed dialog [%s]: %s", qUtf8Printable(title), qUtf8Printable(text));
         return;
     }
@@ -36,7 +36,7 @@ void reportWarning(QWidget* parent, const QString& title, const QString& text)
 
 // 一览窗口按功能分组：顺着菜单栏的顺序递归收集动作，同一菜单下的快捷键自然挨在一起，
 // 顺序与用户平时找入口的顺序一致，语言切换或改键都不影响分组。
-void collectMenuActions(QMenu* menu, QList<QAction*>& ordered)
+void CollectMenuActions(QMenu* menu, QList<QAction*>& ordered)
 {
     if (!menu) {
         return;
@@ -46,7 +46,7 @@ void collectMenuActions(QMenu* menu, QList<QAction*>& ordered)
             continue;
         }
         if (action->menu()) {
-            collectMenuActions(action->menu(), ordered);
+            CollectMenuActions(action->menu(), ordered);
             continue;
         }
         if (!ordered.contains(action)) {
@@ -155,7 +155,7 @@ bool ShortcutController::ChangeShortcut(QAction* action, const QKeySequence& seq
         }
         for (const QKeySequence& existing : other->shortcuts()) {
             if (existing == sequence) {
-                reportWarning(m_window, MainWindow::tr("Shortcut already in use"),
+                ReportWarning(m_window, MainWindow::tr("Shortcut already in use"),
                               MainWindow::tr("%1 is already used by “%2”.")
                                   .arg(sequence.toString(QKeySequence::NativeText), other->text()));
                 return false;
@@ -188,7 +188,7 @@ void ShortcutController::ShowShortcuts()
     if (menuBar) {
         for (QAction* top : menuBar->actions()) {
             if (top && top->menu()) {
-                collectMenuActions(top->menu(), orderedActions);
+                CollectMenuActions(top->menu(), orderedActions);
             }
         }
     }

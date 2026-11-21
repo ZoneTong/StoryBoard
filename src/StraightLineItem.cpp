@@ -6,7 +6,7 @@ namespace {
 
 constexpr qreal MINIMUM_FRAME_SIDE = 12.0;
 
-QRectF paddedToMinimum(QRectF frame)
+QRectF PaddedToMinimum(QRectF frame)
 {
     if (frame.width() < MINIMUM_FRAME_SIDE) {
         frame.moveLeft(frame.center().x() - MINIMUM_FRAME_SIDE / 2.0);
@@ -64,7 +64,7 @@ QString StraightLineItem::DisplayName() const
 
 QRectF StraightLineItem::FrameRect() const
 {
-    return paddedToMinimum(CanvasItem::FrameRect());
+    return PaddedToMinimum(CanvasItem::FrameRect());
 }
 
 void StraightLineItem::SetEndpoints(const QPointF& startScene, const QPointF& endScene, const QColor& color,

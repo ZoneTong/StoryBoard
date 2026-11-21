@@ -7,19 +7,19 @@
 
 namespace {
 
-QRectF normalizedRect(const QRectF& rect)
+QRectF NormalizedRect(const QRectF& rect)
 {
     return rect.normalized();
 }
 
 // 底角换算成"高 / 底边"系数：cot(α)。角度先做安全钳制，两角和不超过 175°。
-qreal cotDegrees(qreal degrees)
+qreal CotDegrees(qreal degrees)
 {
     const qreal clamped = qBound<qreal>(1.0, degrees, 174.0);
     return 1.0 / qTan(qDegreesToRadians(clamped));
 }
 
-QPainterPath trianglePathWithAngles(const QRectF& rect, qreal angle1, qreal angle2)
+QPainterPath TrianglePathWithAngles(const QRectF& rect, qreal angle1, qreal angle2)
 {
     const QRectF r = rect.normalized();
     QPainterPath path;
@@ -29,8 +29,8 @@ QPainterPath trianglePathWithAngles(const QRectF& rect, qreal angle1, qreal angl
     const qreal a1 = qBound<qreal>(1.0, angle1, 174.0);
     const qreal a2 = qBound<qreal>(1.0, angle2, 175.0 - a1);
     // 两侧水平投影之和应等于宽度；尺寸与角度暂时不自洽时按比例压缩，顶点不会跑出矩形。
-    const qreal fromLeft = r.height() * cotDegrees(a1);
-    const qreal fromRight = r.height() * cotDegrees(a2);
+    const qreal fromLeft = r.height() * CotDegrees(a1);
+    const qreal fromRight = r.height() * CotDegrees(a2);
     const qreal sum = fromLeft + fromRight;
     const qreal apexOffset = sum > r.width() && sum > 0.0 ? qBound<qreal>(0.0, fromLeft * r.width() / sum, r.width())
                                                           : qBound<qreal>(0.0, fromLeft, r.width());
@@ -41,7 +41,7 @@ QPainterPath trianglePathWithAngles(const QRectF& rect, qreal angle1, qreal angl
     return path;
 }
 
-QPainterPath parallelogramPathWithAngle(const QRectF& rect, qreal bottomLeftAngle)
+QPainterPath ParallelogramPathWithAngle(const QRectF& rect, qreal bottomLeftAngle)
 {
     const QRectF r = rect.normalized();
     QPainterPath path;
@@ -78,7 +78,7 @@ QPainterPath parallelogramPathWithAngle(const QRectF& rect, qreal bottomLeftAngl
 } // namespace
 QPainterPath ShapePathBuilder::StarPath(const QRectF& rect)
 {
-    const QRectF r = normalizedRect(rect);
+    const QRectF r = NormalizedRect(rect);
     const QPointF center = r.center();
     const qreal rx = r.width() / 2.0;
     const qreal ry = r.height() / 2.0;
@@ -87,8 +87,8 @@ QPainterPath ShapePathBuilder::StarPath(const QRectF& rect)
     }
 
     QPainterPath path;
-    constexpr int points = 10;
-    for (int i = 0; i < points; ++i) {
+    constexpr int POINTS = 10;
+    for (int i = 0; i < POINTS; ++i) {
         const qreal angle = -M_PI / 2.0 + i * M_PI / 5.0;
         const qreal factor = (i % 2 == 0) ? 1.0 : 0.42;
         const QPointF point(center.x() + qCos(angle) * rx * factor, center.y() + qSin(angle) * ry * factor);
@@ -103,7 +103,7 @@ QPainterPath ShapePathBuilder::StarPath(const QRectF& rect)
 }
 QPainterPath ShapePathBuilder::CalloutPath(const QRectF& rect)
 {
-    const QRectF r = normalizedRect(rect);
+    const QRectF r = NormalizedRect(rect);
     const qreal w = r.width();
     const qreal h = r.height();
     if (w <= 0.0 || h <= 0.0) {
@@ -125,7 +125,7 @@ QPainterPath ShapePathBuilder::CalloutPath(const QRectF& rect)
 }
 QPainterPath ShapePathBuilder::FourPointStarPath(const QRectF& rect)
 {
-    const QRectF r = normalizedRect(rect);
+    const QRectF r = NormalizedRect(rect);
     const QPointF center = r.center();
     const qreal rx = r.width() / 2.0;
     const qreal ry = r.height() / 2.0;
@@ -149,7 +149,7 @@ QPainterPath ShapePathBuilder::FourPointStarPath(const QRectF& rect)
 }
 QPainterPath ShapePathBuilder::HexagramPath(const QRectF& rect)
 {
-    const QRectF r = normalizedRect(rect);
+    const QRectF r = NormalizedRect(rect);
     const QPointF center = r.center();
     const qreal rx = r.width() / 2.0;
     const qreal ry = r.height() / 2.0;
@@ -176,7 +176,7 @@ QPainterPath ShapePathBuilder::HexagramPath(const QRectF& rect)
 }
 QPainterPath ShapePathBuilder::HeartPath(const QRectF& rect)
 {
-    const QRectF r = normalizedRect(rect);
+    const QRectF r = NormalizedRect(rect);
     const qreal w = r.width();
     const qreal h = r.height();
     if (w <= 0.0 || h <= 0.0) {
@@ -195,7 +195,7 @@ QPainterPath ShapePathBuilder::HeartPath(const QRectF& rect)
 }
 QPainterPath ShapePathBuilder::FlagWavePath(const QRectF& rect)
 {
-    const QRectF r = normalizedRect(rect);
+    const QRectF r = NormalizedRect(rect);
     if (r.width() <= 0.0 || r.height() <= 0.0) {
         return QPainterPath();
     }
@@ -206,16 +206,16 @@ QPainterPath ShapePathBuilder::FlagWavePath(const QRectF& rect)
     const qreal amplitude = r.height() * 0.07;
     const qreal flagHeight = r.height() - amplitude * 2.0;
     const qreal topBase = r.top() + amplitude;
-    constexpr int steps = 24;
+    constexpr int STEPS = 24;
 
     QPainterPath path;
     path.moveTo(r.left(), topBase);
-    for (int i = 1; i <= steps; ++i) {
-        const qreal t = qreal(i) / qreal(steps);
+    for (int i = 1; i <= STEPS; ++i) {
+        const qreal t = qreal(i) / qreal(STEPS);
         path.lineTo(r.left() + t * r.width(), topBase + qSin(t * 3.0 * M_PI) * amplitude);
     }
-    for (int i = steps; i >= 0; --i) {
-        const qreal t = qreal(i) / qreal(steps);
+    for (int i = STEPS; i >= 0; --i) {
+        const qreal t = qreal(i) / qreal(STEPS);
         path.lineTo(r.left() + t * r.width(), topBase + flagHeight + qSin(t * 3.0 * M_PI) * amplitude);
     }
     path.closeSubpath();
@@ -225,7 +225,7 @@ QPainterPath ShapePathBuilder::FlagWavePath(const QRectF& rect)
 }
 QPainterPath ShapePathBuilder::ScrollPath(const QRectF& rect)
 {
-    const QRectF r = normalizedRect(rect);
+    const QRectF r = NormalizedRect(rect);
     if (r.width() <= 0.0 || r.height() <= 0.0) {
         return QPainterPath();
     }
@@ -250,7 +250,7 @@ QPainterPath ShapePathBuilder::ScrollPath(const QRectF& rect)
 }
 QPainterPath ShapePathBuilder::CubePath(const QRectF& rect)
 {
-    const QRectF r = normalizedRect(rect);
+    const QRectF r = NormalizedRect(rect);
     if (r.width() <= 0.0 || r.height() <= 0.0) {
         return QPainterPath();
     }
@@ -283,7 +283,7 @@ QPainterPath ShapePathBuilder::CubePath(const QRectF& rect)
 }
 QPainterPath ShapePathBuilder::CylinderPath(const QRectF& rect)
 {
-    const QRectF r = normalizedRect(rect);
+    const QRectF r = NormalizedRect(rect);
     if (r.width() <= 0.0 || r.height() <= 0.0) {
         return QPainterPath();
     }
@@ -317,7 +317,7 @@ QPainterPath ShapePathBuilder::BracePath(const QRectF& rect)
 {
     // 需求 13：花括号不再是 ShapeType，而是曲线图元的采样源；这里公开成静态助手，
     // 插入（采样构点）与图标绘制共用同一份几何。
-    const QRectF r = normalizedRect(rect);
+    const QRectF r = NormalizedRect(rect);
     const qreal w = r.width();
     const qreal h = r.height();
     if (w <= 0.0 || h <= 0.0) {
@@ -339,7 +339,7 @@ QPainterPath ShapePathBuilder::BracePath(const QRectF& rect)
 
 QPainterPath ShapePathBuilder::MapUnitPath(const QPainterPath& unitPath, const QRectF& rect)
 {
-    const QRectF r = normalizedRect(rect);
+    const QRectF r = NormalizedRect(rect);
     if (r.width() <= 0.0 || r.height() <= 0.0) {
         return QPainterPath();
     }
@@ -351,7 +351,7 @@ QPainterPath ShapePathBuilder::MapUnitPath(const QPainterPath& unitPath, const Q
 
 QPainterPath ShapePathBuilder::RoundedRectPath(const QRectF& rect, qreal cornerRadius)
 {
-    const QRectF r = normalizedRect(rect);
+    const QRectF r = NormalizedRect(rect);
     if (r.width() <= 0.0 || r.height() <= 0.0) {
         return QPainterPath();
     }
@@ -368,7 +368,7 @@ QPainterPath ShapePathBuilder::RoundedRectPath(const QRectF& rect, qreal cornerR
 
 QPainterPath ShapePathBuilder::EllipsePath(const QRectF& rect)
 {
-    const QRectF r = normalizedRect(rect);
+    const QRectF r = NormalizedRect(rect);
     if (r.width() <= 0.0 || r.height() <= 0.0) {
         return QPainterPath();
     }
@@ -379,7 +379,7 @@ QPainterPath ShapePathBuilder::EllipsePath(const QRectF& rect)
 
 QPainterPath ShapePathBuilder::SectorPath(const QRectF& rect, qreal startAngle, qreal sweepAngle)
 {
-    const QRectF r = normalizedRect(rect);
+    const QRectF r = NormalizedRect(rect);
     if (r.width() <= 0.0 || r.height() <= 0.0) {
         return QPainterPath();
     }
@@ -389,7 +389,7 @@ QPainterPath ShapePathBuilder::SectorPath(const QRectF& rect, qreal startAngle, 
 
 QPainterPath ShapePathBuilder::ArrowPath(const QRectF& rect)
 {
-    const QRectF r = normalizedRect(rect);
+    const QRectF r = NormalizedRect(rect);
     if (r.width() <= 0.0 || r.height() <= 0.0) {
         return QPainterPath();
     }
@@ -411,7 +411,7 @@ QPainterPath ShapePathBuilder::ArrowPath(const QRectF& rect)
 
 QPainterPath ShapePathBuilder::DoubleArrowPath(const QRectF& rect)
 {
-    const QRectF r = normalizedRect(rect);
+    const QRectF r = NormalizedRect(rect);
     if (r.width() <= 0.0 || r.height() <= 0.0) {
         return QPainterPath();
     }
@@ -484,10 +484,10 @@ QPainterPath ShapePathBuilder::PathFor(ShapeType type, const QRectF& rect, qreal
 }
 QPainterPath ShapePathBuilder::TrianglePath(const QRectF& rect, qreal bottomAngle1, qreal bottomAngle2)
 {
-    return trianglePathWithAngles(rect, bottomAngle1, bottomAngle2);
+    return TrianglePathWithAngles(rect, bottomAngle1, bottomAngle2);
 }
 
 QPainterPath ShapePathBuilder::ParallelogramPath(const QRectF& rect, qreal bottomLeftAngle)
 {
-    return parallelogramPathWithAngle(rect, bottomLeftAngle);
+    return ParallelogramPathWithAngle(rect, bottomLeftAngle);
 }

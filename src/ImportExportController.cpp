@@ -39,15 +39,15 @@
 
 namespace {
 
-bool selfTestMode()
+bool SelfTestMode()
 {
     return qApp && qApp->property("storyboardSelfTest").toBool();
 }
 
 // 与 MainWindow 相同的报错出口：自检（离屏）时不许弹模态框。
-void reportWarning(QWidget* parent, const QString& title, const QString& text)
+void ReportWarning(QWidget* parent, const QString& title, const QString& text)
 {
-    if (selfTestMode()) {
+    if (SelfTestMode()) {
         qWarning("self-test suppressed dialog [%s]: %s", qUtf8Printable(title), qUtf8Printable(text));
         return;
     }
@@ -55,7 +55,7 @@ void reportWarning(QWidget* parent, const QString& title, const QString& text)
 }
 
 // JPEG / PDF 不保留透明通道：导出前把透明区域合成到白底上，避免透出黑色。
-QImage flattenOnWhite(const QImage& source)
+QImage FlattenOnWhite(const QImage& source)
 {
     QImage result(source.size(), QImage::Format_ARGB32_Premultiplied);
     result.fill(Qt::white);
@@ -65,16 +65,16 @@ QImage flattenOnWhite(const QImage& source)
     return result;
 }
 
-QString imageFilter()
+QString ImageFilter()
 {
     return MainWindow::tr("Image files (*.png *.jpg *.jpeg *.bmp *.gif);;All files (*.*)");
 }
 
-bool hasImageSuffix(const QString& path)
+bool HasImageSuffix(const QString& path)
 {
-    static const QStringList suffixes = {QStringLiteral("png"), QStringLiteral("jpg"), QStringLiteral("jpeg"),
+    static const QStringList SUFFIXES = {QStringLiteral("png"), QStringLiteral("jpg"), QStringLiteral("jpeg"),
                                          QStringLiteral("bmp"), QStringLiteral("gif")};
-    return suffixes.contains(QFileInfo(path).suffix().toLower());
+    return SUFFIXES.contains(QFileInfo(path).suffix().toLower());
 }
 
 } // namespace
@@ -101,7 +101,7 @@ void ImportExportController::ExportCanvas()
     if (options.separateLayers) {
         const QStringList paths = options.filePaths;
         if (paths.isEmpty()) {
-            reportWarning(m_window, MainWindow::tr("Export canvas"), MainWindow::tr("No visible layers to export."));
+            ReportWarning(m_window, MainWindow::tr("Export canvas"), MainWindow::tr("No visible layers to export."));
             return;
         }
 
@@ -144,13 +144,13 @@ bool ImportExportController::ExportToFile(const QString& path, const QRectF& are
     QApplication::restoreOverrideCursor();
 
     if (rawImage.isNull()) {
-        reportWarning(m_window, MainWindow::tr("Export canvas"),
+        ReportWarning(m_window, MainWindow::tr("Export canvas"),
                       MainWindow::tr("Rendering the canvas failed: nothing to export."));
         return false;
     }
 
     // PNG 保留透明背景；JPEG / PDF 不支持透明，先合成白底。
-    const QImage image = format == QStringLiteral("PNG") ? rawImage : flattenOnWhite(rawImage);
+    const QImage image = format == QStringLiteral("PNG") ? rawImage : FlattenOnWhite(rawImage);
 
     bool success = false;
     QString errorMessage;
@@ -191,7 +191,7 @@ bool ImportExportController::ExportToFile(const QString& path, const QRectF& are
     }
 
     if (!success) {
-        reportWarning(
+        ReportWarning(
             m_window, MainWindow::tr("Export failed"),
             MainWindow::tr("Could not export the canvas:\n%1\n\n%2").arg(QDir::toNativeSeparators(path), errorMessage));
         return false;
@@ -232,7 +232,7 @@ void ImportExportController::ImportImagesDialog()
     }
 
     const QStringList files =
-        QFileDialog::getOpenFileNames(m_window, MainWindow::tr("Insert images"), startDirectory, imageFilter());
+        QFileDialog::getOpenFileNames(m_window, MainWindow::tr("Insert images"), startDirectory, ImageFilter());
     if (!files.isEmpty()) {
         ImportImageFiles(files);
     }
@@ -246,7 +246,7 @@ void ImportExportController::ImportOutlineImageDialog()
     }
 
     const QString file =
-        QFileDialog::getOpenFileName(m_window, MainWindow::tr("Import outline image"), startDirectory, imageFilter());
+        QFileDialog::getOpenFileName(m_window, MainWindow::tr("Import outline image"), startDirectory, ImageFilter());
     if (file.isEmpty()) {
         return;
     }
@@ -298,14 +298,14 @@ void ImportExportController::ImportOutlineImageFile(const QString& file, const L
     reader.setAutoTransform(true);
     const QImage image = reader.read();
     if (image.isNull()) {
-        reportWarning(m_window, MainWindow::tr("Import outline image"),
+        ReportWarning(m_window, MainWindow::tr("Import outline image"),
                       MainWindow::tr("Could not read the image:\n%1").arg(QDir::toNativeSeparators(file)));
         return;
     }
 
     const LineArtConverter::Result traced = LineArtConverter::Extract(image, options);
     if (!traced.ok || traced.outlines.isEmpty()) {
-        reportWarning(m_window, MainWindow::tr("Import outline image"),
+        ReportWarning(m_window, MainWindow::tr("Import outline image"),
                       traced.error.isEmpty() ? MainWindow::tr("No color blocks were found in the image.")
                                              : UiText(traced.error));
         return;
@@ -345,7 +345,7 @@ void ImportExportController::ImportOutlineImageFile(const QString& file, const L
     }
 
     if (items.isEmpty()) {
-        reportWarning(m_window, MainWindow::tr("Import outline image"),
+        ReportWarning(m_window, MainWindow::tr("Import outline image"),
                       MainWindow::tr("No color blocks were found in the image."));
         return;
     }
@@ -423,7 +423,7 @@ void ImportExportController::ImportImageFiles(const QStringList& files)
     }
 
     if (items.isEmpty()) {
-        reportWarning(m_window, MainWindow::tr("Insert images"), MainWindow::tr("No usable image files."));
+        ReportWarning(m_window, MainWindow::tr("Insert images"), MainWindow::tr("No usable image files."));
         return;
     }
 
@@ -437,7 +437,7 @@ void ImportExportController::ImportImageFiles(const QStringList& files)
 
     m_window->statusBar()->showMessage(MainWindow::tr("%1 image(s) inserted").arg(items.size()), 4000);
     if (!failed.isEmpty()) {
-        reportWarning(m_window, MainWindow::tr("Some images were not inserted"),
+        ReportWarning(m_window, MainWindow::tr("Some images were not inserted"),
                       MainWindow::tr("The following files could not be read:\n%1")
                           .arg(QDir::toNativeSeparators(failed.join(QLatin1Char('\n')))));
     }
@@ -453,7 +453,7 @@ bool ImportExportController::AcceptsDropUrls(const QMimeData* mimeData) const
             continue;
         }
         const QString path = url.toLocalFile();
-        if (hasImageSuffix(path) || path.endsWith(QStringLiteral(".sbcanvas"), Qt::CaseInsensitive)) {
+        if (HasImageSuffix(path) || path.endsWith(QStringLiteral(".sbcanvas"), Qt::CaseInsensitive)) {
             return true;
         }
     }
@@ -472,7 +472,7 @@ void ImportExportController::HandleDrop(QDropEvent* event)
         const QString path = url.toLocalFile();
         if (path.endsWith(QStringLiteral(".sbcanvas"), Qt::CaseInsensitive)) {
             canvasPath = path;
-        } else if (hasImageSuffix(path)) {
+        } else if (HasImageSuffix(path)) {
             images.append(path);
         }
     }

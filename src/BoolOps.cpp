@@ -42,7 +42,7 @@ struct Participant {
 };
 
 // 线条类图元不参与合并：直线（含直线箭头）、括号、弧、曲线，以及纯描线多边形。
-bool isLineClassItem(CanvasItem* item)
+bool IsLineClassItem(CanvasItem* item)
 {
     if (dynamic_cast<LineItemAbstract*>(item)) {
         return true;
@@ -66,7 +66,7 @@ bool isLineClassItem(CanvasItem* item)
 // 判定图元是否「有填充空间」：闭合图形与含面积层的多边形算有，直线 / 曲线 /
 // 文字是零面积描线，算没有。只看几何类型，不看当前填充样式——无填充的闭合
 // 图形仍按完整轮廓参与布尔运算，也应优先决定合并结果的样式。
-bool hasFillSpace(CanvasItem* item)
+bool HasFillSpace(CanvasItem* item)
 {
     if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() == 0) {
         return true;
@@ -85,7 +85,7 @@ bool hasFillSpace(CanvasItem* item)
 
 // 合并前的叠放顺序（决定合并后各层的绘制顺序，保持遮挡关系）：
 // 图层在下 → 同层 height 小在下 → zValue 小在下。
-bool stackLess(CanvasScene* scene, CanvasItem* left, CanvasItem* right)
+bool StackLess(CanvasScene* scene, CanvasItem* left, CanvasItem* right)
 {
     const int leftLayer = scene->LayerIndex(left->LayerId());
     const int rightLayer = scene->LayerIndex(right->LayerId());
@@ -101,19 +101,19 @@ bool stackLess(CanvasScene* scene, CanvasItem* left, CanvasItem* right)
 // 合并优先级（只决定样式 donor，不决定绘制顺序）：有填充空间的图元整体高于
 // 零面积描线图元（矩形 > 曲线），同类内部再按叠放顺序比较；排序为升序，末位
 // 即 donor。绘制顺序由 stackRank 另行保证。
-bool priorityLess(CanvasScene* scene, CanvasItem* left, CanvasItem* right)
+bool PriorityLess(CanvasScene* scene, CanvasItem* left, CanvasItem* right)
 {
-    const bool leftFilled = hasFillSpace(left);
-    const bool rightFilled = hasFillSpace(right);
+    const bool leftFilled = HasFillSpace(left);
+    const bool rightFilled = HasFillSpace(right);
     if (leftFilled != rightFilled) {
         return !leftFilled;
     }
-    return stackLess(scene, left, right);
+    return StackLess(scene, left, right);
 }
 
 // 把一批图元合成一个参与者：组按整棵组树算一个轮廓，样式取组内最高优先级的矢量图元。
 
-bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bool grouped, int selectionIndex,
+bool AppendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bool grouped, int selectionIndex,
                        QList<Participant>* out)
 {
     Q_UNUSED(grouped);
@@ -131,15 +131,15 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
         return false;
     }
     std::sort(vectorMembers.begin(), vectorMembers.end(),
-              [scene](CanvasItem* left, CanvasItem* right) { return priorityLess(scene, left, right); });
+              [scene](CanvasItem* left, CanvasItem* right) { return PriorityLess(scene, left, right); });
 
     Participant participant;
     participant.item = vectorMembers.constLast();
-    participant.fillSpace = hasFillSpace(participant.item);
+    participant.fillSpace = HasFillSpace(participant.item);
     // 叠放最高的成员代表该参与者在合并前的可见位置；合并后它所在的层保持后画。
     QList<CanvasItem*> byStacking = vectorMembers;
     std::sort(byStacking.begin(), byStacking.end(),
-              [scene](CanvasItem* left, CanvasItem* right) { return stackLess(scene, left, right); });
+              [scene](CanvasItem* left, CanvasItem* right) { return StackLess(scene, left, right); });
     participant.stackItem = byStacking.constLast();
     participant.members = editable;
     for (CanvasItem* vectorMember : std::as_const(vectorMembers)) {
@@ -252,7 +252,7 @@ bool appendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
 // 收集参与运算的参与者：先记录合并前叠放序号（绘制顺序用），再按样式优先级
 // 从低到高排序（有填充空间整体靠后、优先级高，末位即 donor）。整组只算一个
 // 参与者，避免组内成员被拆开重复参与。
-QList<Participant> collect(CanvasScene* scene)
+QList<Participant> Collect(CanvasScene* scene)
 {
     QList<Participant> participants;
     if (!scene) {
@@ -280,7 +280,7 @@ QList<Participant> collect(CanvasScene* scene)
             // 组内含线条类图元时整组跳过：线条不参与合并，也不能随组一起被替换掉。
             bool hasLine = false;
             for (CanvasItem* member : members) {
-                if (member && isLineClassItem(member)) {
+                if (member && IsLineClassItem(member)) {
                     hasLine = true;
                     break;
                 }
@@ -288,14 +288,14 @@ QList<Participant> collect(CanvasScene* scene)
             if (hasLine) {
                 continue;
             }
-            appendParticipant(scene, members, true, order, &participants);
+            AppendParticipant(scene, members, true, order, &participants);
             continue;
         }
         // 线条类图元不参与合并，留在画布上不动。
-        if (isLineClassItem(item)) {
+        if (IsLineClassItem(item)) {
             continue;
         }
-        appendParticipant(scene, QList<CanvasItem*>{item}, false, order, &participants);
+        AppendParticipant(scene, QList<CanvasItem*>{item}, false, order, &participants);
     }
     // 先按合并前叠放顺序记序号：合并结果各层按它排绘制顺序，保证合并前
     // 可见（在上层 / 更高 height）的部分合并后仍后画、仍可见。
@@ -305,7 +305,7 @@ QList<Participant> collect(CanvasScene* scene)
         paintOrder.append(i);
     }
     std::sort(paintOrder.begin(), paintOrder.end(), [scene, &participants](int left, int right) {
-        return stackLess(scene, participants.at(left).stackItem, participants.at(right).stackItem);
+        return StackLess(scene, participants.at(left).stackItem, participants.at(right).stackItem);
     });
     for (int rank = 0; rank < paintOrder.size(); ++rank) {
         participants[paintOrder.at(rank)].stackRank = rank;
@@ -327,7 +327,7 @@ QList<Participant> collect(CanvasScene* scene)
 // 文字一层（只填字形，不描边）。分层只在结果包含零面积图元或文字时出现。
 // intersectMode：相交结果的填充轮廓先挖掉线宽带（条带区域直接归线宽带层渲染），
 // 避免细窄交集条带被当成面积层套上描线后变成黑块。
-QList<PolygonItem::Layer> buildLayers(const QPainterPath& result, const QList<Participant>& participants,
+QList<PolygonItem::Layer> BuildLayers(const QPainterPath& result, const QList<Participant>& participants,
                                       const Participant& top, bool intersectMode)
 {
     QPainterPath bandUnion;
@@ -443,7 +443,7 @@ namespace BoolOps {
 
 bool Supports(CanvasScene* scene)
 {
-    return collect(scene).size() >= 2;
+    return Collect(scene).size() >= 2;
 }
 
 bool Apply(CanvasScene* scene, Operation operation, const QString& commandText)
@@ -453,7 +453,7 @@ bool Apply(CanvasScene* scene, Operation operation, const QString& commandText)
         // 交给独立实现，避免共用 collect 的「线条不参与」过滤。
         return LineSplitOps::Apply(scene, commandText);
     }
-    QList<Participant> participants = collect(scene);
+    QList<Participant> participants = Collect(scene);
     if (participants.size() < 2) {
         return false;
     }
@@ -493,7 +493,7 @@ bool Apply(CanvasScene* scene, Operation operation, const QString& commandText)
         if (result.isEmpty()) {
             return false;
         }
-        results.append(buildLayers(result, participants, top, false));
+        results.append(BuildLayers(result, participants, top, false));
         break;
     }
     case Operation::XOR: {
@@ -507,7 +507,7 @@ bool Apply(CanvasScene* scene, Operation operation, const QString& commandText)
             if (result.isEmpty()) {
                 return false;
             }
-            results.append(buildLayers(result, participants, top, false));
+            results.append(BuildLayers(result, participants, top, false));
             break;
         }
         // 只在有填充空间的图元之间挖重叠区；线宽带与文字不参与挖除，
@@ -527,7 +527,7 @@ bool Apply(CanvasScene* scene, Operation operation, const QString& commandText)
         if (result.isEmpty()) {
             return false;
         }
-        results.append(buildLayers(result, participants, top, false));
+        results.append(BuildLayers(result, participants, top, false));
         break;
     }
     case Operation::FRAGMENT: {
@@ -570,7 +570,7 @@ bool Apply(CanvasScene* scene, Operation operation, const QString& commandText)
                 continue;
             }
             // 拆分出的每一块都沿用同一个 donor（全局最高优先级图元）的样式。
-            results.append(buildLayers(region, participants, top, false));
+            results.append(BuildLayers(region, participants, top, false));
         }
         if (results.isEmpty()) {
             return false;
@@ -586,7 +586,7 @@ bool Apply(CanvasScene* scene, Operation operation, const QString& commandText)
             return false;
         }
         // 相交结果同样统一采用最高优先级图元的样式；条带区域交给线宽带层渲染。
-        results.append(buildLayers(result, participants, top, true));
+        results.append(BuildLayers(result, participants, top, true));
         break;
     }
     case Operation::SUBTRACT: {
@@ -624,7 +624,7 @@ bool Apply(CanvasScene* scene, Operation operation, const QString& commandText)
         // 这样每一块都能自己选中、拖动，而不是藏在一个图元里只能整体移动。
         const QList<QPainterPath> pieces = PathRegions::SplitDisjoint(result);
         for (const QPainterPath& piece : pieces) {
-            const QList<PolygonItem::Layer> layers = buildLayers(piece, participants, top, false);
+            const QList<PolygonItem::Layer> layers = BuildLayers(piece, participants, top, false);
             if (!layers.isEmpty()) {
                 results.append(layers);
             }

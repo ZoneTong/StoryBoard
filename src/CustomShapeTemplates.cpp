@@ -25,7 +25,7 @@
 namespace {
 
 // 画布文件里的图元坐标是场景坐标；模板只取轮廓，按 pos 平移后再归一化。
-QPainterPath itemOutlinePath(CanvasItem* item)
+QPainterPath ItemOutlinePath(CanvasItem* item)
 {
     if (!item) {
         return QPainterPath();
@@ -40,7 +40,7 @@ QPainterPath itemOutlinePath(CanvasItem* item)
     return translate.map(path);
 }
 
-CanvasItem* createTemplateItem(const QJsonObject& object)
+CanvasItem* CreateTemplateItem(const QJsonObject& object)
 {
     // 旧模板把类型写在 type 里，曲线族也曾共用 curve；这里与画布加载保持同一套折算。
     QString kind = object.value(QStringLiteral("kind")).toString();
@@ -114,12 +114,12 @@ bool LoadCustomShapeTemplate(const QString& filePath, CustomShapeTemplate* resul
     const QJsonArray items = root.value(QStringLiteral("items")).toArray();
     for (const QJsonValue& value : items) {
         const QJsonObject object = value.toObject();
-        std::unique_ptr<CanvasItem> item(createTemplateItem(object));
+        std::unique_ptr<CanvasItem> item(CreateTemplateItem(object));
         if (!item) {
             continue;
         }
         item->FromJson(object);
-        combined.addPath(itemOutlinePath(item.get()));
+        combined.addPath(ItemOutlinePath(item.get()));
     }
 
     if (combined.isEmpty()) {
@@ -202,10 +202,10 @@ QList<CustomShapeTemplate> LoadCustomShapeTemplatesFromDirs(const QStringList& d
 
 QIcon MakeCustomShapeIcon(const QPainterPath& unitPath, const QColor& color, int logicalSize)
 {
-    constexpr qreal scale = 2.0;
-    QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
+    constexpr qreal SCALE = 2.0;
+    QPixmap pixmap(static_cast<int>(logicalSize * SCALE), static_cast<int>(logicalSize * SCALE));
     pixmap.fill(Qt::transparent);
-    pixmap.setDevicePixelRatio(scale);
+    pixmap.setDevicePixelRatio(SCALE);
 
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing, true);

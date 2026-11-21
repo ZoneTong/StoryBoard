@@ -20,7 +20,7 @@ constexpr int SMALL_ICON_SIZE = 20;
 constexpr int BUTTON_SIZE = 32;
 constexpr int SWATCH_SIZE = 26;
 
-QToolButton* makeRowIcon(IconId id, QWidget* parent)
+QToolButton* MakeRowIcon(IconId id, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
@@ -32,7 +32,7 @@ QToolButton* makeRowIcon(IconId id, QWidget* parent)
     return button;
 }
 
-QToolButton* makeSwatch(const QColor& color, QWidget* parent)
+QToolButton* MakeSwatch(const QColor& color, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemTextColorSwatch"));
@@ -60,7 +60,7 @@ PropertiesPanelContentCard::PropertiesPanelContentCard(QWidget* parent) : QWidge
     auto* contentLayout = new QHBoxLayout(m_textContentRow);
     contentLayout->setContentsMargins(0, 0, 0, 0);
     contentLayout->setSpacing(4);
-    QToolButton* contentIcon = makeRowIcon(IconId::TEXT, m_textContentRow);
+    QToolButton* contentIcon = MakeRowIcon(IconId::TEXT, m_textContentRow);
     contentIcon->setToolTip(PropertiesPanel::tr("Text content"));
     contentLayout->addWidget(contentIcon);
     m_textEdit = new QLineEdit(m_textContentRow);
@@ -80,7 +80,7 @@ PropertiesPanelContentCard::PropertiesPanelContentCard(QWidget* parent) : QWidge
     auto* fontLayout = new QHBoxLayout(m_textFontRow);
     fontLayout->setContentsMargins(0, 0, 0, 0);
     fontLayout->setSpacing(3);
-    QToolButton* fontIcon = makeRowIcon(IconId::TEXT, m_textFontRow);
+    QToolButton* fontIcon = MakeRowIcon(IconId::TEXT, m_textFontRow);
     fontIcon->setToolTip(PropertiesPanel::tr("Font"));
     fontLayout->addWidget(fontIcon);
     m_fontCombo = new QFontComboBox(m_textFontRow);
@@ -135,7 +135,7 @@ QWidget* PropertiesPanelContentCard::MakeTextColorRow()
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(2);
 
-    QToolButton* icon = makeRowIcon(IconId::PALETTE, row);
+    QToolButton* icon = MakeRowIcon(IconId::PALETTE, row);
     icon->setToolTip(PropertiesPanel::tr("Text color"));
     layout->addWidget(icon);
 
@@ -144,7 +144,7 @@ QWidget* PropertiesPanelContentCard::MakeTextColorRow()
                                  QStringLiteral("#3B82F6"), QStringLiteral("#8B5CF6")};
     for (const QString& hex : presets) {
         const QColor color(hex);
-        QToolButton* swatch = makeSwatch(color, row);
+        QToolButton* swatch = MakeSwatch(color, row);
         connect(swatch, &QToolButton::clicked, this, [this, color]() {
             if (!m_refreshing) {
                 emit textColorChosen(color);

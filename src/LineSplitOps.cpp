@@ -30,7 +30,7 @@ struct Knife {
     QPointF endDir;
 };
 
-bool isFillTarget(CanvasItem* item)
+bool IsFillTarget(CanvasItem* item)
 {
     if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() == 0) {
         return true;
@@ -41,7 +41,7 @@ bool isFillTarget(CanvasItem* item)
     return false;
 }
 
-bool isKnifeItem(CanvasItem* item)
+bool IsKnifeItem(CanvasItem* item)
 {
     if (dynamic_cast<LineItemAbstract*>(item)) {
         return true;
@@ -51,7 +51,7 @@ bool isKnifeItem(CanvasItem* item)
 
 // 从路径提取两端点与端点切向：首元素为起点，末元素为终点；
 // 切向取相邻元素连线方向，三次曲线用控制点近似，方向退化为零时报无效。
-bool knifeFromPath(const QPainterPath& path, Knife* out)
+bool KnifeFromPath(const QPainterPath& path, Knife* out)
 {
     const int count = path.elementCount();
     if (count < 2) {
@@ -78,27 +78,27 @@ bool knifeFromPath(const QPainterPath& path, Knife* out)
 
 // 收集切刀几何（场景坐标）：直线图元取 outlineShape 的线段，曲线取中心线。
 // 需求 21：曲线同时返回完整轨迹路径，供按轨迹切分使用。
-bool collectKnife(CanvasItem* item, Knife* out, QPainterPath* trajectoryPath)
+bool CollectKnife(CanvasItem* item, Knife* out, QPainterPath* trajectoryPath)
 {
     if (auto* curve = dynamic_cast<LineItemAbstract*>(item)) {
         const QPainterPath scenePath = curve->mapToScene(curve->OutlineShape());
         if (trajectoryPath) {
             *trajectoryPath = scenePath;
         }
-        return knifeFromPath(scenePath, out);
+        return KnifeFromPath(scenePath, out);
     }
     if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() == 0) {
         const QPainterPath scenePath = shape->mapToScene(shape->OutlineShape());
         if (trajectoryPath) {
             *trajectoryPath = scenePath;
         }
-        return knifeFromPath(scenePath, out);
+        return KnifeFromPath(scenePath, out);
     }
     return false;
 }
 
 // 求射线与矩形边界的交点：从 origin 沿 dir 走，返回最先离开矩形的边界点。
-QPointF rayBoundaryPoint(const QRectF& rect, const QPointF& origin, const QPointF& dir)
+QPointF RayBoundaryPoint(const QRectF& rect, const QPointF& origin, const QPointF& dir)
 {
     qreal best = std::numeric_limits<qreal>::max();
     QPointF result = origin;
@@ -120,7 +120,7 @@ QPointF rayBoundaryPoint(const QRectF& rect, const QPointF& origin, const QPoint
 }
 
 // 边界点在顺时针边界上的位置参数：上边 [0,1) → 右边 [1,2) → 下边 [2,3) → 左边 [3,4)。
-qreal boundaryKey(const QRectF& rect, const QPointF& point)
+qreal BoundaryKey(const QRectF& rect, const QPointF& point)
 {
     const qreal w = qMax<qreal>(rect.width(), 1.0);
     const qreal h = qMax<qreal>(rect.height(), 1.0);
@@ -137,15 +137,15 @@ qreal boundaryKey(const QRectF& rect, const QPointF& point)
 }
 
 // 把两个边界点按序插入矩形角点环，取 entry→exit（顺时针）或反向的闭合折线。
-QList<QPointF> perimeterChain(const QRectF& rect, const QPointF& entry, const QPointF& exit, bool fromEntry)
+QList<QPointF> PerimeterChain(const QRectF& rect, const QPointF& entry, const QPointF& exit, bool fromEntry)
 {
     const QList<QPointF> corners = {rect.topLeft(), rect.topRight(), rect.bottomRight(), rect.bottomLeft()};
     QList<QPair<qreal, QPointF>> ring;
     for (const QPointF& corner : corners) {
-        ring.append({boundaryKey(rect, corner), corner});
+        ring.append({BoundaryKey(rect, corner), corner});
     }
-    ring.append({boundaryKey(rect, entry), entry});
-    ring.append({boundaryKey(rect, exit), exit});
+    ring.append({BoundaryKey(rect, entry), entry});
+    ring.append({BoundaryKey(rect, exit), exit});
     std::stable_sort(
         ring.begin(), ring.end(),
         [](const QPair<qreal, QPointF>& left, const QPair<qreal, QPointF>& right) { return left.first < right.first; });
@@ -178,7 +178,7 @@ QList<QPointF> perimeterChain(const QRectF& rect, const QPointF& entry, const QP
     return chain;
 }
 
-QPainterPath polygonPath(const QList<QPointF>& points)
+QPainterPath PolygonPath(const QList<QPointF>& points)
 {
     QPainterPath path;
     if (points.size() < 3) {
@@ -193,21 +193,21 @@ QPainterPath polygonPath(const QList<QPointF>& points)
 }
 
 // 刀线两端沿端点切向延伸到画布边界后，画布被分成两个闭合区域。
-QList<QPainterPath> canvasHalfRegions(const QRectF& canvas, const Knife& knife)
+QList<QPainterPath> CanvasHalfRegions(const QRectF& canvas, const Knife& knife)
 {
-    const QPointF entry = rayBoundaryPoint(canvas, knife.start, -knife.startDir);
-    const QPointF exit = rayBoundaryPoint(canvas, knife.end, knife.endDir);
+    const QPointF entry = RayBoundaryPoint(canvas, knife.start, -knife.startDir);
+    const QPointF exit = RayBoundaryPoint(canvas, knife.end, knife.endDir);
     if (entry == knife.start || exit == knife.end) {
         return {};
     }
     QList<QPainterPath> regions;
-    regions.append(polygonPath(perimeterChain(canvas, entry, exit, true)));
-    regions.append(polygonPath(perimeterChain(canvas, entry, exit, false)));
+    regions.append(PolygonPath(PerimeterChain(canvas, entry, exit, true)));
+    regions.append(PolygonPath(PerimeterChain(canvas, entry, exit, false)));
     return regions;
 }
 
 // 被切图元的填充轮廓（场景坐标）。
-QPainterPath fillPathOf(CanvasItem* item)
+QPainterPath FillPathOf(CanvasItem* item)
 {
     if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() == 0) {
         return shape->mapToScene(shape->OutlineShape());
@@ -242,9 +242,9 @@ bool Supports(CanvasScene* scene)
         if (!item || !scene->IsItemEditable(item)) {
             continue;
         }
-        if (isFillTarget(item)) {
+        if (IsFillTarget(item)) {
             ++fills;
-        } else if (isKnifeItem(item)) {
+        } else if (IsKnifeItem(item)) {
             ++knives;
         }
     }
@@ -269,14 +269,14 @@ bool Apply(CanvasScene* scene, const QString& commandText)
         if (!item || !scene->IsItemEditable(item)) {
             continue;
         }
-        if (isFillTarget(item)) {
+        if (IsFillTarget(item)) {
             Target target;
             target.item = item;
-            target.fill = fillPathOf(item);
+            target.fill = FillPathOf(item);
             if (!target.fill.isEmpty()) {
                 targets.append(target);
             }
-        } else if (isKnifeItem(item) && !knifeItem && collectKnife(item, &knife, &knifeTrajectory)) {
+        } else if (IsKnifeItem(item) && !knifeItem && CollectKnife(item, &knife, &knifeTrajectory)) {
             knifeItem = item;
             // 刀线全部是曲线族：弧线、正弦的轨迹是弯的，统一按轨迹条带切。
             trajectoryKnife = true;
@@ -303,7 +303,7 @@ bool Apply(CanvasScene* scene, const QString& commandText)
             return false;
         }
     } else {
-        regions = canvasHalfRegions(scene->CanvasRect(), knife);
+        regions = CanvasHalfRegions(scene->CanvasRect(), knife);
         if (regions.isEmpty()) {
             return false;
         }

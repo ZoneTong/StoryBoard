@@ -20,7 +20,7 @@
 
 namespace {
 
-QToolButton* makeLayerButton(QWidget* parent, const QString& text, const QString& tip)
+QToolButton* MakeLayerButton(QWidget* parent, const QString& text, const QString& tip)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("LayerToolButton"));
@@ -83,10 +83,10 @@ LayerPanel::LayerPanel(CanvasScene* scene, QWidget* parent) : QWidget(parent), m
 
     auto* buttonRow = new QHBoxLayout;
     buttonRow->setSpacing(5);
-    m_addButton = makeLayerButton(this, QStringLiteral("+"), tr("New layer (placed on top)"));
-    m_removeButton = makeLayerButton(this, QStringLiteral("−"), tr("Delete the selected empty layers (multi-select)"));
-    m_upButton = makeLayerButton(this, QStringLiteral("↑"), tr("Move the current layer up one step"));
-    m_downButton = makeLayerButton(this, QStringLiteral("↓"), tr("Move the current layer down one step"));
+    m_addButton = MakeLayerButton(this, QStringLiteral("+"), tr("New layer (placed on top)"));
+    m_removeButton = MakeLayerButton(this, QStringLiteral("−"), tr("Delete the selected empty layers (multi-select)"));
+    m_upButton = MakeLayerButton(this, QStringLiteral("↑"), tr("Move the current layer up one step"));
+    m_downButton = MakeLayerButton(this, QStringLiteral("↓"), tr("Move the current layer down one step"));
     buttonRow->addWidget(m_addButton);
     buttonRow->addWidget(m_removeButton);
     buttonRow->addStretch(1);

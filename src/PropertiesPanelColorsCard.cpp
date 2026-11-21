@@ -18,7 +18,7 @@ constexpr int SMALL_ICON_SIZE = 20;
 constexpr int BUTTON_SIZE = 32;
 constexpr int SWATCH_SIZE = 26;
 
-QToolButton* makeSwatch(const QColor& color, QWidget* parent, const QString& objectName)
+QToolButton* MakeSwatch(const QColor& color, QWidget* parent, const QString& objectName)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(objectName);
@@ -33,12 +33,12 @@ QToolButton* makeSwatch(const QColor& color, QWidget* parent, const QString& obj
     return button;
 }
 
-QString colorTip(const QColor& color)
+QString ColorTip(const QColor& color)
 {
     return color.name(QColor::HexRgb).toUpper();
 }
 
-QToolButton* makeRowIcon(IconId id, QWidget* parent)
+QToolButton* MakeRowIcon(IconId id, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
@@ -67,7 +67,7 @@ QWidget* PropertiesPanelColorsCard::MakeColorRow(bool stroke)
     rowLayout->setContentsMargins(0, 0, 0, 0);
     rowLayout->setSpacing(2);
 
-    QToolButton* icon = makeRowIcon(stroke ? IconId::BRUSH : IconId::PALETTE, row);
+    QToolButton* icon = MakeRowIcon(stroke ? IconId::BRUSH : IconId::PALETTE, row);
     icon->setToolTip(stroke ? PropertiesPanel::tr("Border") : PropertiesPanel::tr("Fill"));
     rowLayout->addWidget(icon);
 
@@ -77,7 +77,7 @@ QWidget* PropertiesPanelColorsCard::MakeColorRow(bool stroke)
     QList<QToolButton*>* swatches = stroke ? &m_strokeSwatches : &m_fillSwatches;
     for (const QString& hex : presets) {
         const QColor color(hex);
-        QToolButton* swatch = makeSwatch(color, row, QStringLiteral("ItemColorSwatch"));
+        QToolButton* swatch = MakeSwatch(color, row, QStringLiteral("ItemColorSwatch"));
         connect(swatch, &QToolButton::clicked, this, [this, color, stroke]() {
             if (stroke) {
                 emit strokeColorChosen(color);
@@ -150,10 +150,10 @@ void PropertiesPanelColorsCard::Refresh(const QList<ShapeItem*>& shapes, const Q
     }
     if (m_strokeColorButton) {
         m_strokeColorButton->setIcon(ItemStyleVisuals::BorderColorIcon(m_strokeFallback, SMALL_ICON_SIZE));
-        m_strokeColorButton->setToolTip(colorTip(m_strokeFallback));
+        m_strokeColorButton->setToolTip(ColorTip(m_strokeFallback));
     }
     if (m_fillColorButton) {
         m_fillColorButton->setIcon(ItemStyleVisuals::FillColorIcon(m_fillFallback, SMALL_ICON_SIZE));
-        m_fillColorButton->setToolTip(colorTip(m_fillFallback));
+        m_fillColorButton->setToolTip(ColorTip(m_fillFallback));
     }
 }

@@ -21,7 +21,7 @@ namespace {
 
 // 自定义图形轮廓随画布内嵌：QPainterPath 本身没有 JSON 表示，用 QDataStream
 // 序列化再 base64，比手写点表更可靠，也兼容曲线与多子路径。
-QString encodePathData(const QPainterPath& path)
+QString EncodePathData(const QPainterPath& path)
 {
     QByteArray data;
     QDataStream stream(&data, QIODevice::WriteOnly);
@@ -30,7 +30,7 @@ QString encodePathData(const QPainterPath& path)
     return QString::fromLatin1(data.toBase64());
 }
 
-QPainterPath decodePathData(const QString& text)
+QPainterPath DecodePathData(const QString& text)
 {
     QByteArray data = QByteArray::fromBase64(text.toLatin1());
     if (data.isEmpty()) {
@@ -175,10 +175,10 @@ QIcon MakeShapeIcon(ShapeType type, const QColor& color, int logicalSize)
 
 QIcon MakeShapePresetIcon(const QString& preset, const QColor& color, int logicalSize)
 {
-    constexpr qreal scale = 2.0;
-    QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
+    constexpr qreal SCALE = 2.0;
+    QPixmap pixmap(static_cast<int>(logicalSize * SCALE), static_cast<int>(logicalSize * SCALE));
     pixmap.fill(Qt::transparent);
-    pixmap.setDevicePixelRatio(scale);
+    pixmap.setDevicePixelRatio(SCALE);
 
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing, true);
@@ -784,7 +784,7 @@ QJsonObject ShapeItem::ToJson() const
         json.insert(QStringLiteral("customName"), m_customName);
     }
     if (!m_customPath.isEmpty()) {
-        json.insert(QStringLiteral("pathData"), encodePathData(m_customPath));
+        json.insert(QStringLiteral("pathData"), EncodePathData(m_customPath));
     }
     WriteJsonExtra(json);
     return json;
@@ -796,7 +796,7 @@ void ShapeItem::FromJson(const QJsonObject& json)
     bool forceRoundedCorner = false;
     if (typeName == QStringLiteral("custom")) {
         m_customName = json.value(QStringLiteral("customName")).toString();
-        m_customPath = decodePathData(json.value(QStringLiteral("pathData")).toString());
+        m_customPath = DecodePathData(json.value(QStringLiteral("pathData")).toString());
     } else {
         // 需求 5：旧的 rounded_rectangle 读成「矩形 + 自动圆角」，不向后写兼容。
         const QString normalizedType = typeName.trimmed().toLower();
@@ -816,7 +816,7 @@ void ShapeItem::FromJson(const QJsonObject& json)
         }
         const QString pathData = json.value(QStringLiteral("pathData")).toString();
         if (!pathData.isEmpty()) {
-            m_customPath = decodePathData(pathData);
+            m_customPath = DecodePathData(pathData);
         }
     }
 

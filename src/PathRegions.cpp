@@ -8,7 +8,7 @@ namespace {
 // 但布尔运算的结果里，孔洞与它的外轮廓共享的顶点不会太多，抽样足够判嵌套。
 constexpr int MAX_PROBE_POINTS = 24;
 
-bool ringContains(const QPainterPath& ring, const QPolygonF& points)
+bool RingContains(const QPainterPath& ring, const QPolygonF& points)
 {
     const int step = qMax(1, points.size() / MAX_PROBE_POINTS);
     for (int i = 0; i < points.size(); i += step) {
@@ -71,7 +71,7 @@ QList<QPainterPath> SplitDisjoint(const QPainterPath& path)
             if (!ringPaths.at(j).boundingRect().contains(box)) {
                 continue;
             }
-            if (ringContains(ringPaths.at(j), rings.at(i))) {
+            if (RingContains(ringPaths.at(j), rings.at(i))) {
                 ++depth;
             }
         }
@@ -91,7 +91,7 @@ QList<QPainterPath> SplitDisjoint(const QPainterPath& path)
             if (!ringPaths.at(i).boundingRect().contains(rings.at(j).boundingRect())) {
                 continue;
             }
-            if (ringContains(ringPaths.at(i), rings.at(j))) {
+            if (RingContains(ringPaths.at(i), rings.at(j))) {
                 piece = piece.subtracted(ringPaths.at(j));
             }
         }

@@ -17,7 +17,7 @@ namespace {
 
 constexpr int THUMB_SIDE = 96;
 
-QPixmap thumbnail(const QPixmap& image)
+QPixmap Thumbnail(const QPixmap& image)
 {
     return image.scaled(THUMB_SIDE, THUMB_SIDE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 }
@@ -61,7 +61,7 @@ void ImagePickerDialog::AddImage(const QPixmap& image)
     if (image.isNull()) {
         return;
     }
-    auto* item = new QListWidgetItem(QIcon(thumbnail(image)), m_localName.isEmpty() ? tr("Canvas image") : m_localName);
+    auto* item = new QListWidgetItem(QIcon(Thumbnail(image)), m_localName.isEmpty() ? tr("Canvas image") : m_localName);
     item->setData(Qt::UserRole, QVariant::fromValue(image));
     m_list->addItem(item);
     m_list->setCurrentItem(item);

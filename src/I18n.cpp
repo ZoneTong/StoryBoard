@@ -42,7 +42,7 @@ bool gQtTranslationAvailable = false;
 bool gQtTranslatorInstalled = false;
 QHash<QString, QString> gReverseTranslations;
 
-void loadReverseTranslations()
+void LoadReverseTranslations()
 {
     if (!gReverseTranslations.isEmpty()) {
         return;
@@ -72,20 +72,20 @@ void loadReverseTranslations()
     }
 }
 
-void ensureTranslatorLoaded()
+void EnsureTranslatorLoaded()
 {
     if (gTranslatorLoaded) {
         return;
     }
     gTranslatorLoaded = true;
-    loadReverseTranslations();
+    LoadReverseTranslations();
     (void)gTranslator.load(QString::fromLatin1(TRANSLATION_RESOURCE));
     gQtTranslationAvailable = gQtTranslator.load(QString::fromLatin1(QT_TRANSLATION_RESOURCE));
 }
 
-void installChineseTranslator(bool chinese)
+void InstallChineseTranslator(bool chinese)
 {
-    ensureTranslatorLoaded();
+    EnsureTranslatorLoaded();
     QCoreApplication* app = QCoreApplication::instance();
     if (!app) {
         return;
@@ -113,7 +113,7 @@ void installChineseTranslator(bool chinese)
     }
 }
 
-QString translateToCurrent(const QString& source)
+QString TranslateToCurrent(const QString& source)
 {
     return QCoreApplication::translate(TRANSLATION_CONTEXT, source.toUtf8().constData());
 }
@@ -123,9 +123,9 @@ bool gExplicitActive = false;
 
 // 旧版本把语言单独存在 StoryBoard-language.txt（注册表写不进去时的退路）。
 // 这些文件只用于一次性迁移，读到旧值就并入 StoryBoard.ini 再删除，避免两处配置打架。
-QStringList legacyLanguageFiles()
+QStringList LegacyLanguageFiles()
 {
-    static const QStringList files = []() {
+    static const QStringList FILES = []() {
         QStringList dirs;
         dirs << QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
         dirs << QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
@@ -144,10 +144,10 @@ QStringList legacyLanguageFiles()
         }
         return result;
     }();
-    return files;
+    return FILES;
 }
 
-QString readPlainLanguage(const QString& file)
+QString ReadPlainLanguage(const QString& file)
 {
     QFile input(file);
     if (!input.open(QIODevice::ReadOnly)) {
@@ -163,20 +163,20 @@ QString readPlainLanguage(const QString& file)
     return QString();
 }
 
-QString readStoredLanguage()
+QString ReadStoredLanguage()
 {
     const QString stored = AppSettings::LanguageSetting();
     if (!stored.isEmpty()) {
         return stored;
     }
 
-    for (const QString& file : legacyLanguageFiles()) {
-        const QString legacy = readPlainLanguage(file);
+    for (const QString& file : LegacyLanguageFiles()) {
+        const QString legacy = ReadPlainLanguage(file);
         if (legacy.isEmpty()) {
             continue;
         }
         if (AppSettings::SetLanguageSetting(legacy)) {
-            for (const QString& other : legacyLanguageFiles()) {
+            for (const QString& other : LegacyLanguageFiles()) {
                 QFile::remove(other);
             }
         }
@@ -187,25 +187,25 @@ QString readStoredLanguage()
     return QStringLiteral("system");
 }
 
-QString& storedLanguageCache()
+QString& StoredLanguageCache()
 {
-    static QString cached = readStoredLanguage();
+    static QString cached = ReadStoredLanguage();
     return cached;
 }
 
-bool persistLanguage(const QString& stored)
+bool PersistLanguage(const QString& stored)
 {
     if (!AppSettings::SetLanguageSetting(stored)) {
         return false;
     }
     // 语言已经写进 StoryBoard.ini，旧的独立文件不再保留。
-    for (const QString& file : legacyLanguageFiles()) {
+    for (const QString& file : LegacyLanguageFiles()) {
         QFile::remove(file);
     }
     return true;
 }
 
-UiLanguage languageFromStored(const QString& stored)
+UiLanguage LanguageFromStored(const QString& stored)
 {
     if (stored == QLatin1String("zh")) {
         return UiLanguage::CHINESE;
@@ -223,7 +223,7 @@ UiLanguage UiLanguageSetting()
     if (gExplicitActive) {
         return gExplicitLanguage;
     }
-    return languageFromStored(storedLanguageCache());
+    return LanguageFromStored(StoredLanguageCache());
 }
 
 void SetUiLanguageSetting(UiLanguage language)
@@ -241,18 +241,18 @@ void SetUiLanguageSetting(UiLanguage language)
         gExplicitLanguage = language;
     }
 
-    if (persistLanguage(stored)) {
-        storedLanguageCache() = stored;
+    if (PersistLanguage(stored)) {
+        StoredLanguageCache() = stored;
     }
 
-    installChineseTranslator(UiEffectiveLanguage() == UiLanguage::CHINESE);
+    InstallChineseTranslator(UiEffectiveLanguage() == UiLanguage::CHINESE);
 }
 
 void UiOverrideLanguage(UiLanguage language)
 {
     gOverrideActive = language != UiLanguage::SYSTEM;
     gOverride = language;
-    installChineseTranslator(UiEffectiveLanguage() == UiLanguage::CHINESE);
+    InstallChineseTranslator(UiEffectiveLanguage() == UiLanguage::CHINESE);
 }
 
 UiLanguage UiEffectiveLanguage()
@@ -282,12 +282,12 @@ bool UiIsEnglish()
 void UiInitializeLanguage()
 {
     // 语言资源在窗口创建前就装好，首次构造出来的文字直接是目标语言。
-    installChineseTranslator(UiEffectiveLanguage() == UiLanguage::CHINESE);
+    InstallChineseTranslator(UiEffectiveLanguage() == UiLanguage::CHINESE);
 }
 
 QString UiText(const QString& english)
 {
-    return translateToCurrent(english);
+    return TranslateToCurrent(english);
 }
 
 QString UiTranslateEitherWay(const QString& text)
@@ -301,7 +301,7 @@ QString UiTranslateEitherWay(const QString& text)
         return it == gReverseTranslations.constEnd() ? text : it.value();
     }
     // 中文翻译器已装载：英文源串会变成中文，本来就是中文的文本保持原样。
-    return translateToCurrent(text);
+    return TranslateToCurrent(text);
 }
 
 void UiRetranslateWidgetTree(QWidget* root)

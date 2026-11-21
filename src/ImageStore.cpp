@@ -8,7 +8,7 @@
 namespace {
 
 // 唯一的编码入口：所有 id 与 data 都基于同一次 PNG 编码结果，保证内容哈希一致。
-QByteArray encodePng(const QPixmap& image)
+QByteArray EncodePng(const QPixmap& image)
 {
     if (image.isNull()) {
         return QByteArray();
@@ -24,7 +24,7 @@ QByteArray encodePng(const QPixmap& image)
 
 QString ImageStore::IdFor(const QPixmap& image)
 {
-    const QByteArray bytes = encodePng(image);
+    const QByteArray bytes = EncodePng(image);
     if (bytes.isEmpty()) {
         return QString();
     }
@@ -36,7 +36,7 @@ QString ImageStore::IdFor(const QPixmap& image)
 QJsonObject ImageStore::EntryFromPixmap(const QPixmap& image)
 {
     QJsonObject entry;
-    const QByteArray bytes = encodePng(image);
+    const QByteArray bytes = EncodePng(image);
     if (bytes.isEmpty()) {
         return entry;
     }

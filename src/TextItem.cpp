@@ -12,7 +12,7 @@ namespace {
 constexpr qreal PADDING = 12.0;
 constexpr qreal DEFAULT_POINT_SIZE = 32.0;
 
-QFont normalizedFont(QFont font)
+QFont NormalizedFont(QFont font)
 {
     if (font.pointSizeF() <= 0.0) {
         font.setPointSizeF(DEFAULT_POINT_SIZE);
@@ -83,7 +83,7 @@ QString TextItem::TypeDisplayName() const
 
 QSizeF TextItem::Measure(const QString& text, const QFont& font)
 {
-    const QFont effective = normalizedFont(font);
+    const QFont effective = NormalizedFont(font);
     const QFontMetricsF metrics(effective);
     const QStringList lines = text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
 
@@ -102,7 +102,7 @@ QSizeF TextItem::Measure(const QString& text, const QFont& font)
 void TextItem::SetTextFormat(const QString& text, const QFont& font, const QColor& color)
 {
     m_text = text;
-    m_font = normalizedFont(font);
+    m_font = NormalizedFont(font);
     m_color = color.isValid() ? color : QColor(30, 41, 59);
     m_baseSize = Measure(m_text, m_font);
     SetContentSize(m_baseSize);
@@ -134,7 +134,7 @@ TextItemState TextItem::State() const
 void TextItem::ApplyState(const TextItemState& state)
 {
     m_text = state.text;
-    m_font = normalizedFont(state.font);
+    m_font = NormalizedFont(state.font);
     m_color = state.color.isValid() ? state.color : QColor(30, 41, 59);
     m_baseSize = state.baseSize.isEmpty() ? Measure(m_text, m_font) : state.baseSize;
 

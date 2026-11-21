@@ -15,22 +15,22 @@
 
 namespace {
 
-bool selfTestMode()
+bool SelfTestMode()
 {
     return qApp && qApp->property("storyboardSelfTest").toBool();
 }
 
 // 与 MainWindow 相同的报错出口：自检（离屏）时不许弹模态框。
-void reportWarning(QWidget* parent, const QString& title, const QString& text)
+void ReportWarning(QWidget* parent, const QString& title, const QString& text)
 {
-    if (selfTestMode()) {
+    if (SelfTestMode()) {
         qWarning("self-test suppressed dialog [%s]: %s", qUtf8Printable(title), qUtf8Printable(text));
         return;
     }
     QMessageBox::warning(parent, title, text);
 }
 
-QString imageFilter()
+QString ImageFilter()
 {
     return MainWindow::tr("Image files (*.png *.jpg *.jpeg *.bmp *.gif);;All files (*.*)");
 }
@@ -47,7 +47,7 @@ void CanvasBackgroundController::ReplaceCanvasBackgroundImage()
     }
 
     const QString path = QFileDialog::getOpenFileName(m_window, MainWindow::tr("Replace canvas background image"),
-                                                      startDirectory, imageFilter());
+                                                      startDirectory, ImageFilter());
     if (path.isEmpty()) {
         return;
     }
@@ -56,7 +56,7 @@ void CanvasBackgroundController::ReplaceCanvasBackgroundImage()
     reader.setAutoTransform(true);
     const QImage image = reader.read();
     if (image.isNull()) {
-        reportWarning(m_window, MainWindow::tr("Replace canvas background image"),
+        ReportWarning(m_window, MainWindow::tr("Replace canvas background image"),
                       MainWindow::tr("Could not read the image:\n%1").arg(reader.errorString()));
         return;
     }

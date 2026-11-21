@@ -8,7 +8,7 @@ namespace StrokeSmoothing {
 
 bool SamePoint(const QPointF& first, const QPointF& second)
 {
-    return qAbs(first.x() - second.x()) < StateEpsilon && qAbs(first.y() - second.y()) < StateEpsilon;
+    return qAbs(first.x() - second.x()) < STATE_EPSILON && qAbs(first.y() - second.y()) < STATE_EPSILON;
 }
 
 bool SamePoints(const QVector<QPointF>& first, const QVector<QPointF>& second)

@@ -11,7 +11,7 @@ namespace {
 const int DIR_X[8] = {1, 1, 0, -1, -1, -1, 0, 1};
 const int DIR_Y[8] = {0, 1, 1, 1, 0, -1, -1, -1};
 
-int directionIndex(int dx, int dy)
+int DirectionIndex(int dx, int dy)
 {
     for (int i = 0; i < 8; ++i) {
         if (DIR_X[i] == dx && DIR_Y[i] == dy) {
@@ -21,7 +21,7 @@ int directionIndex(int dx, int dy)
     return -1;
 }
 
-qreal pointToSegmentDistance(const QPointF& point, const QPointF& start, const QPointF& end)
+qreal PointToSegmentDistance(const QPointF& point, const QPointF& start, const QPointF& end)
 {
     const QPointF segment = end - start;
     const qreal lengthSquared = QPointF::dotProduct(segment, segment);
@@ -61,7 +61,7 @@ QVector<QPointF> SimplifyContour(const QVector<QPointF>& points, qreal tolerance
         qreal maxDistance = -1.0;
         int maxIndex = -1;
         for (int i = first + 1; i < last; ++i) {
-            const qreal distance = pointToSegmentDistance(points.at(i), points.at(first), points.at(last));
+            const qreal distance = PointToSegmentDistance(points.at(i), points.at(first), points.at(last));
             if (distance > maxDistance) {
                 maxDistance = distance;
                 maxIndex = i;
@@ -103,7 +103,7 @@ QVector<QPointF> TraceContour(const QVector<int>& labels, int width, int height,
     const int guard = width * height + 64;
     for (int step = 0; step < guard; ++step) {
         // backtrack 相对当前像素的方位，扫描从这里开始顺时针绕一圈。
-        int backDir = directionIndex(backX - cx, backY - cy);
+        int backDir = DirectionIndex(backX - cx, backY - cy);
         if (backDir < 0) {
             backDir = 4;
         }

@@ -14,7 +14,7 @@ constexpr int ALIGN_BUTTON_COUNT = 8;
 constexpr int BOOL_BUTTON_COUNT = 6;
 
 // 每一行都是独立容器，行内按钮平铺；行容器负责整行的显隐，避免逐排撑开空行。
-QWidget* makeRow(QWidget* parent, QHBoxLayout** layout)
+QWidget* MakeRow(QWidget* parent, QHBoxLayout** layout)
 {
     auto* row = new QWidget(parent);
     auto* rowLayout = new QHBoxLayout(row);
@@ -33,13 +33,13 @@ PropertiesPanelSelectionCard::PropertiesPanelSelectionCard(QWidget* parent) : QW
     outer->setSpacing(3);
 
     QHBoxLayout* basicLayout = nullptr;
-    m_basicRow = makeRow(this, &basicLayout);
+    m_basicRow = MakeRow(this, &basicLayout);
     QHBoxLayout* alignLayout = nullptr;
-    m_alignRow = makeRow(this, &alignLayout);
+    m_alignRow = MakeRow(this, &alignLayout);
     QHBoxLayout* morphLayout = nullptr;
-    m_morphRow = makeRow(this, &morphLayout);
+    m_morphRow = MakeRow(this, &morphLayout);
     QHBoxLayout* groupLayout = nullptr;
-    m_groupRow = makeRow(this, &groupLayout);
+    m_groupRow = MakeRow(this, &groupLayout);
 
     m_propertiesButton = MakeButton(QStringLiteral("ItemPropertiesButton"));
     basicLayout->addWidget(m_propertiesButton);

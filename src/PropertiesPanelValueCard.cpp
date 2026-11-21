@@ -20,7 +20,7 @@ namespace {
 constexpr int SMALL_ICON_SIZE = 20;
 constexpr int BUTTON_SIZE = 32;
 
-QToolButton* makeRowIcon(IconId id, QWidget* parent)
+QToolButton* MakeRowIcon(IconId id, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
@@ -45,7 +45,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     opacityLayout->setContentsMargins(0, 0, 0, 0);
     opacityLayout->setSpacing(4);
 
-    QToolButton* opacityIcon = makeRowIcon(IconId::OPACITY, opacityRow);
+    QToolButton* opacityIcon = MakeRowIcon(IconId::OPACITY, opacityRow);
     opacityIcon->setToolTip(PropertiesPanel::tr("Opacity (100% = opaque)"));
     opacityLayout->addWidget(opacityIcon);
 
@@ -70,7 +70,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     cornerLayout->setContentsMargins(0, 0, 0, 0);
     cornerLayout->setSpacing(4);
 
-    QToolButton* cornerIcon = makeRowIcon(IconId::CORNER, m_cornerSection);
+    QToolButton* cornerIcon = MakeRowIcon(IconId::CORNER, m_cornerSection);
     cornerIcon->setToolTip(PropertiesPanel::tr("Corner radius"));
     cornerLayout->addWidget(cornerIcon);
 
@@ -93,7 +93,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     auto* startLayout = new QHBoxLayout(m_startAngleSection);
     startLayout->setContentsMargins(0, 0, 0, 0);
     startLayout->setSpacing(4);
-    QToolButton* startIcon = makeRowIcon(IconId::ROTATE_CCW, m_startAngleSection);
+    QToolButton* startIcon = MakeRowIcon(IconId::ROTATE_CCW, m_startAngleSection);
     startIcon->setToolTip(PropertiesPanel::tr("Start angle"));
     startLayout->addWidget(startIcon);
     m_startAngleSpin = new QSpinBox(m_startAngleSection);
@@ -115,7 +115,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     angleLayout->setContentsMargins(0, 0, 0, 0);
     angleLayout->setSpacing(4);
 
-    QToolButton* angleIcon = makeRowIcon(IconId::ROTATE_CCW, m_angleSection);
+    QToolButton* angleIcon = MakeRowIcon(IconId::ROTATE_CCW, m_angleSection);
     angleIcon->setToolTip(PropertiesPanel::tr("Sweep angle"));
     angleLayout->addWidget(angleIcon);
 
@@ -143,7 +143,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     auto* cyclesLayout = new QHBoxLayout(cyclesRow);
     cyclesLayout->setContentsMargins(0, 0, 0, 0);
     cyclesLayout->setSpacing(4);
-    QToolButton* cyclesIcon = makeRowIcon(IconId::ROTATE_CCW, cyclesRow);
+    QToolButton* cyclesIcon = MakeRowIcon(IconId::ROTATE_CCW, cyclesRow);
     cyclesIcon->setToolTip(PropertiesPanel::tr("Sine cycles"));
     cyclesLayout->addWidget(cyclesIcon);
     m_sineCyclesSpin = new QSpinBox(cyclesRow);
@@ -163,7 +163,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     auto* amplitudeLayout = new QHBoxLayout(amplitudeRow);
     amplitudeLayout->setContentsMargins(0, 0, 0, 0);
     amplitudeLayout->setSpacing(4);
-    QToolButton* amplitudeIcon = makeRowIcon(IconId::ROTATE_CCW, amplitudeRow);
+    QToolButton* amplitudeIcon = MakeRowIcon(IconId::ROTATE_CCW, amplitudeRow);
     amplitudeIcon->setToolTip(PropertiesPanel::tr("Sine amplitude"));
     amplitudeLayout->addWidget(amplitudeIcon);
     m_sineAmplitudeSpin = new QSpinBox(amplitudeRow);
@@ -193,7 +193,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     auto* baseLayout = new QHBoxLayout(baseRow);
     baseLayout->setContentsMargins(0, 0, 0, 0);
     baseLayout->setSpacing(4);
-    QToolButton* baseIcon = makeRowIcon(IconId::TRIANGLE_BASE, baseRow);
+    QToolButton* baseIcon = MakeRowIcon(IconId::TRIANGLE_BASE, baseRow);
     baseIcon->setToolTip(PropertiesPanel::tr("Triangle base length"));
     baseLayout->addWidget(baseIcon);
     m_triangleBaseSpin = new QSpinBox(baseRow);
@@ -214,7 +214,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     auto* angle1Layout = new QHBoxLayout(angle1Row);
     angle1Layout->setContentsMargins(0, 0, 0, 0);
     angle1Layout->setSpacing(4);
-    QToolButton* angle1Icon = makeRowIcon(IconId::ANGLE_RIGHT, angle1Row);
+    QToolButton* angle1Icon = MakeRowIcon(IconId::ANGLE_RIGHT, angle1Row);
     angle1Icon->setToolTip(PropertiesPanel::tr("Triangle base angle A"));
     angle1Layout->addWidget(angle1Icon);
     m_triangleAngle1Spin = new QSpinBox(angle1Row);
@@ -235,7 +235,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     auto* angle2Layout = new QHBoxLayout(angle2Row);
     angle2Layout->setContentsMargins(0, 0, 0, 0);
     angle2Layout->setSpacing(4);
-    QToolButton* angle2Icon = makeRowIcon(IconId::ANGLE_LEFT, angle2Row);
+    QToolButton* angle2Icon = MakeRowIcon(IconId::ANGLE_LEFT, angle2Row);
     angle2Icon->setToolTip(PropertiesPanel::tr("Triangle base angle B"));
     angle2Layout->addWidget(angle2Icon);
     m_triangleAngle2Spin = new QSpinBox(angle2Row);
@@ -267,7 +267,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
         auto* rowLayout = new QHBoxLayout(row);
         rowLayout->setContentsMargins(0, 0, 0, 0);
         rowLayout->setSpacing(4);
-        QToolButton* icon = makeRowIcon(iconId, row);
+        QToolButton* icon = MakeRowIcon(iconId, row);
         icon->setToolTip(tooltip);
         rowLayout->addWidget(icon);
         QComboBox* combo = new QComboBox(row);

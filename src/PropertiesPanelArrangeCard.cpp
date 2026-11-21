@@ -12,7 +12,7 @@ constexpr int ICON_SIZE = 20;
 constexpr int SMALL_ICON_SIZE = 20;
 constexpr int BUTTON_SIZE = 32;
 
-QToolButton* makeRowIcon(IconId id, QWidget* parent)
+QToolButton* MakeRowIcon(IconId id, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
@@ -32,7 +32,7 @@ PropertiesPanelArrangeCard::PropertiesPanelArrangeCard(QWidget* parent) : QWidge
     row->setContentsMargins(0, 0, 0, 0);
     row->setSpacing(2);
 
-    QToolButton* icon = makeRowIcon(IconId::ORDER_UP, this);
+    QToolButton* icon = MakeRowIcon(IconId::ORDER_UP, this);
     icon->setToolTip(PropertiesPanel::tr("Layer and height") + QLatin1Char('\n') +
                      PropertiesPanel::tr("Priority: layer order first, then height within the same layer"));
     row->addWidget(icon);

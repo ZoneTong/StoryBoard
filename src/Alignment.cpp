@@ -8,7 +8,7 @@
 
 namespace {
 
-QList<CanvasItem*> alignmentTargets(CanvasScene* scene)
+QList<CanvasItem*> AlignmentTargets(CanvasScene* scene)
 {
     QList<CanvasItem*> items;
     if (!scene) {
@@ -22,7 +22,7 @@ QList<CanvasItem*> alignmentTargets(CanvasScene* scene)
     return items;
 }
 
-QRectF unionRect(const QList<CanvasItem*>& items)
+QRectF UnionRect(const QList<CanvasItem*>& items)
 {
     QRectF bounds;
     for (CanvasItem* item : items) {
@@ -32,7 +32,7 @@ QRectF unionRect(const QList<CanvasItem*>& items)
 }
 
 // 等间距分布：先按轴排序，再按“可用空隙平均分配”计算每个图元的目标位置。
-QList<qreal> distributeDeltas(QList<CanvasItem*> items, bool horizontal, const QRectF& bounds)
+QList<qreal> DistributeDeltas(QList<CanvasItem*> items, bool horizontal, const QRectF& bounds)
 {
     std::sort(items.begin(), items.end(), [horizontal](CanvasItem* left, CanvasItem* right) {
         const QRectF a = left->SceneContentRect();
@@ -65,7 +65,7 @@ namespace Alignment {
 
 bool Supports(CanvasScene* scene, Mode mode)
 {
-    const int count = alignmentTargets(scene).size();
+    const int count = AlignmentTargets(scene).size();
     if (mode == Mode::DISTRIBUTE_HORIZONTAL || mode == Mode::DISTRIBUTE_VERTICAL) {
         return count >= 3;
     }
@@ -74,11 +74,11 @@ bool Supports(CanvasScene* scene, Mode mode)
 
 int Apply(CanvasScene* scene, Mode mode, const QString& commandText)
 {
-    QList<CanvasItem*> items = alignmentTargets(scene);
+    QList<CanvasItem*> items = AlignmentTargets(scene);
     if (items.size() < 2) {
         return 0;
     }
-    const QRectF bounds = unionRect(items);
+    const QRectF bounds = UnionRect(items);
     if (bounds.isNull()) {
         return 0;
     }
@@ -100,7 +100,7 @@ int Apply(CanvasScene* scene, Mode mode, const QString& commandText)
             });
             return sorted;
         }();
-        const QList<qreal> deltas = distributeDeltas(items, horizontal, bounds);
+        const QList<qreal> deltas = DistributeDeltas(items, horizontal, bounds);
         for (int i = 0; i < items.size(); ++i) {
             dxs.append(horizontal ? deltas.at(i) : 0.0);
             dys.append(horizontal ? 0.0 : deltas.at(i));

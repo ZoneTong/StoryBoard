@@ -8,7 +8,7 @@
 #include <QtMath>
 
 namespace {
-QString trView(const char* text)
+QString TrView(const char* text)
 {
     return QCoreApplication::translate("CanvasView", text);
 }
@@ -130,21 +130,21 @@ QRectF CanvasResizeController::RectForDrag(const QPointF& scenePos) const
     }
 
     rect = rect.normalized();
-    constexpr qreal minimum = 200.0;
-    if (rect.width() < minimum) {
+    constexpr qreal MINIMUM = 200.0;
+    if (rect.width() < MINIMUM) {
         if (m_canvasHandle == Handle::LEFT || m_canvasHandle == Handle::TOP_LEFT ||
             m_canvasHandle == Handle::BOTTOM_LEFT) {
-            rect.setLeft(rect.right() - minimum);
+            rect.setLeft(rect.right() - MINIMUM);
         } else {
-            rect.setRight(rect.left() + minimum);
+            rect.setRight(rect.left() + MINIMUM);
         }
     }
-    if (rect.height() < minimum) {
+    if (rect.height() < MINIMUM) {
         if (m_canvasHandle == Handle::TOP || m_canvasHandle == Handle::TOP_LEFT ||
             m_canvasHandle == Handle::TOP_RIGHT) {
-            rect.setTop(rect.bottom() - minimum);
+            rect.setTop(rect.bottom() - MINIMUM);
         } else {
-            rect.setBottom(rect.top() + minimum);
+            rect.setBottom(rect.top() + MINIMUM);
         }
     }
     return rect;
@@ -168,7 +168,7 @@ void CanvasResizeController::EndResize()
     m_scene->CommitCanvasRect(m_resizeStartRect);
     const QSizeF size = m_scene->CanvasSize();
     emit m_view->statusMessage(
-        trView("Canvas size: %1 × %2 (undoable)").arg(qRound(size.width())).arg(qRound(size.height())));
+        TrView("Canvas size: %1 × %2 (undoable)").arg(qRound(size.width())).arg(qRound(size.height())));
     m_view->UpdateCursor();
 }
 
