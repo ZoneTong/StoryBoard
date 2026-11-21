@@ -10,6 +10,7 @@ class QComboBox;
 class QDoubleSpinBox;
 class QLineEdit;
 class QSpinBox;
+class QToolButton;
 
 // 编辑面板与属性窗共用的基础属性行：名称、图层、层内高度、单个数值与成对数值。
 // 行控件只负责回显与发信号，写回与撤销由宿主决定；图标用于编辑面板的紧凑行，
@@ -80,11 +81,14 @@ class NumberAttributeRow : public QWidget {
     qreal Value() const;
     QDoubleSpinBox* Spin() const { return m_spin; }
     void SetSingleStep(qreal step);
+    // 行图标（编辑面板显示）的悬停提示：由宿主传入翻译后的属性行名称。
+    void SetIconToolTip(const QString& toolTip);
 
   signals:
     void valueChosen(qreal value);
 
   private:
+    QToolButton* m_icon = nullptr;
     QDoubleSpinBox* m_spin = nullptr;
     bool m_refreshing = false;
 };
@@ -103,11 +107,13 @@ class PairAttributeRow : public QWidget {
     qreal Second() const;
     QDoubleSpinBox* FirstSpin() const { return m_first; }
     QDoubleSpinBox* SecondSpin() const { return m_second; }
+    void SetIconToolTip(const QString& toolTip);
 
   signals:
     void valuesChosen(qreal first, qreal second);
 
   private:
+    QToolButton* m_icon = nullptr;
     QDoubleSpinBox* m_first = nullptr;
     QDoubleSpinBox* m_second = nullptr;
     bool m_refreshing = false;

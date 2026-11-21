@@ -17,7 +17,7 @@ namespace {
 constexpr int ICON_SIZE = 20;
 constexpr int BUTTON_SIZE = 32;
 
-void AddRowIcon(QHBoxLayout* layout, IconId id, QWidget* parent, const QString& toolTip)
+QToolButton* AddRowIcon(QHBoxLayout* layout, IconId id, QWidget* parent, const QString& toolTip)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
@@ -28,6 +28,7 @@ void AddRowIcon(QHBoxLayout* layout, IconId id, QWidget* parent, const QString& 
     button->setFocusPolicy(Qt::NoFocus);
     button->setToolTip(toolTip);
     layout->addWidget(button);
+    return button;
 }
 
 QDoubleSpinBox* MakeSpin(QWidget* parent, const QString& objectName, int decimals, qreal minimum, qreal maximum,
@@ -170,7 +171,7 @@ NumberAttributeRow::NumberAttributeRow(IconId icon, bool showIcon, int decimals,
     layout->setSpacing(4);
 
     if (showIcon) {
-        AddRowIcon(layout, icon, this, objectName);
+        m_icon = AddRowIcon(layout, icon, this, objectName);
     }
 
     m_spin = MakeSpin(this, objectName, decimals, minimum, maximum, suffix);
@@ -181,6 +182,13 @@ NumberAttributeRow::NumberAttributeRow(IconId icon, bool showIcon, int decimals,
             emit valueChosen(value);
         }
     });
+}
+
+void NumberAttributeRow::SetIconToolTip(const QString& toolTip)
+{
+    if (m_icon) {
+        m_icon->setToolTip(toolTip);
+    }
 }
 
 void NumberAttributeRow::Refresh(qreal value)
@@ -210,7 +218,7 @@ PairAttributeRow::PairAttributeRow(IconId icon, bool showIcon, const QString& fi
     layout->setSpacing(4);
 
     if (showIcon) {
-        AddRowIcon(layout, icon, this, firstName);
+        m_icon = AddRowIcon(layout, icon, this, firstName);
     }
 
     m_first = MakeSpin(this, firstName, decimals, minimum, maximum, suffix);
@@ -229,6 +237,13 @@ PairAttributeRow::PairAttributeRow(IconId icon, bool showIcon, const QString& fi
                 emit valuesChosen(m_first->value(), m_second->value());
             }
         });
+    }
+}
+
+void PairAttributeRow::SetIconToolTip(const QString& toolTip)
+{
+    if (m_icon) {
+        m_icon->setToolTip(toolTip);
     }
 }
 

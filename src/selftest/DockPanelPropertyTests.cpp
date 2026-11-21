@@ -132,6 +132,23 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
         ctx.Check(itemNameEdit && itemNameEdit->isVisible() && positionXSpin && positionXSpin->isVisible() &&
                       sizeWidthSpin && sizeWidthSpin->isVisible() && rotationSpin && rotationSpin->isVisible(),
                   QStringLiteral("编辑面板提供名称 / 位置 / 尺寸 / 旋转行"));
+        if (rotationSpin && positionXSpin && sizeWidthSpin) {
+            // 几何行的悬停提示走 PropertiesPanel 上下文的 qm 翻译，且行图标不再
+            // 泄漏 ItemRotationSpin 这类内部对象名。
+            const auto& tip = [](QDoubleSpinBox* spin) { return spin->toolTip(); };
+            const QString rotationTip = QCoreApplication::translate("PropertiesPanel", "Rotation");
+            const QString positionTip = QCoreApplication::translate("PropertiesPanel", "Position");
+            const QString sizeTip = QCoreApplication::translate("PropertiesPanel", "Item size");
+            ctx.Check(tip(rotationSpin) == rotationTip && tip(positionXSpin) == positionTip &&
+                          tip(sizeWidthSpin) == sizeTip && !tip(rotationSpin).contains(QStringLiteral("Item")),
+                      QStringLiteral("编辑面板旋转 / 位置 / 图元尺寸行提示已翻译"),
+                      QStringLiteral("%1|%2|%3").arg(tip(rotationSpin), tip(positionXSpin), tip(sizeWidthSpin)));
+            QToolButton* rotationIcon =
+                rotationSpin->parentWidget()->findChild<QToolButton*>(QStringLiteral("ItemRowIcon"));
+            ctx.Check(rotationIcon && !rotationIcon->toolTip().contains(QStringLiteral("ItemRotation")),
+                      QStringLiteral("行图标悬停提示不再是内部对象名"),
+                      rotationIcon ? rotationIcon->toolTip() : QStringLiteral("(null)"));
+        }
 
         const QString nameBeforeEdit = selectedShape->Name();
         if (itemNameEdit) {

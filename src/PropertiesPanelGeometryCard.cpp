@@ -19,12 +19,14 @@ PropertiesPanelGeometryCard::PropertiesPanelGeometryCard(QWidget* parent) : QWid
     m_majorAxisRow = new NumberAttributeRow(IconId::SHAPES, true, 1, 0.5, 500000.0, QStringLiteral(" px"),
                                             QStringLiteral("ItemMajorAxisSpin"), this);
     m_majorAxisRow->Spin()->setToolTip(PropertiesPanel::tr("Semi-major axis"));
+    m_majorAxisRow->SetIconToolTip(PropertiesPanel::tr("Semi-major axis"));
     m_majorAxisRow->setVisible(false);
     layout->addWidget(m_majorAxisRow);
 
     m_minorAxisRow = new NumberAttributeRow(IconId::SHAPES, true, 1, 0.5, 500000.0, QStringLiteral(" px"),
                                             QStringLiteral("ItemMinorAxisSpin"), this);
     m_minorAxisRow->Spin()->setToolTip(PropertiesPanel::tr("Semi-minor axis"));
+    m_minorAxisRow->SetIconToolTip(PropertiesPanel::tr("Semi-minor axis"));
     m_minorAxisRow->setVisible(false);
     layout->addWidget(m_minorAxisRow);
 
@@ -33,6 +35,7 @@ PropertiesPanelGeometryCard::PropertiesPanelGeometryCard(QWidget* parent) : QWid
                                            QStringLiteral("ItemRotationSpin"), this);
     m_rotationRow->SetSingleStep(5.0);
     m_rotationRow->Spin()->setToolTip(PropertiesPanel::tr("Rotation"));
+    m_rotationRow->SetIconToolTip(PropertiesPanel::tr("Rotation"));
     layout->addWidget(m_rotationRow);
 
     m_positionRow = new PairAttributeRow(IconId::FIT, true, QStringLiteral("ItemPositionXSpin"),
@@ -40,6 +43,7 @@ PropertiesPanelGeometryCard::PropertiesPanelGeometryCard(QWidget* parent) : QWid
                                          QStringLiteral(","), this);
     m_positionRow->FirstSpin()->setToolTip(PropertiesPanel::tr("Position"));
     m_positionRow->SecondSpin()->setToolTip(PropertiesPanel::tr("Position"));
+    m_positionRow->SetIconToolTip(PropertiesPanel::tr("Position"));
     layout->addWidget(m_positionRow);
 
     m_sizeRow = new PairAttributeRow(IconId::SHAPES, true, QStringLiteral("ItemSizeWidthSpin"),
@@ -47,11 +51,13 @@ PropertiesPanelGeometryCard::PropertiesPanelGeometryCard(QWidget* parent) : QWid
                                      QStringLiteral("×"), this);
     m_sizeRow->FirstSpin()->setToolTip(PropertiesPanel::tr("Item size"));
     m_sizeRow->SecondSpin()->setToolTip(PropertiesPanel::tr("Item size"));
+    m_sizeRow->SetIconToolTip(PropertiesPanel::tr("Item size"));
     layout->addWidget(m_sizeRow);
 
     m_parallelogramRow = new NumberAttributeRow(IconId::ANGLE_RIGHT, true, 0, 15.0, 165.0, QStringLiteral("°"),
                                                 QStringLiteral("ItemParallelogramAngleSpin"), this);
     m_parallelogramRow->Spin()->setToolTip(PropertiesPanel::tr("Parallelogram bottom-left angle"));
+    m_parallelogramRow->SetIconToolTip(PropertiesPanel::tr("Parallelogram bottom-left angle"));
     m_parallelogramRow->setVisible(false);
     layout->addWidget(m_parallelogramRow);
 
