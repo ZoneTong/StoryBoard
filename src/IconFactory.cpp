@@ -12,7 +12,7 @@
 
 namespace {
 
-void drawIconShape(QPainter& painter, IconId id)
+void DrawIconShape(QPainter& painter, IconId id)
 {
     if (PaintIconFileEdit(painter, id)) {
         return;
@@ -35,7 +35,7 @@ void drawIconShape(QPainter& painter, IconId id)
 
 QIcon MakeIcon(IconId id, const QColor& color, int logicalSize)
 {
-    constexpr qreal iconGrid = 24.0;
+    constexpr qreal ICON_GRID = 24.0;
     const qreal scale = 2.0;
     QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
     pixmap.fill(Qt::transparent);
@@ -44,11 +44,11 @@ QIcon MakeIcon(IconId id, const QColor& color, int logicalSize)
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing, true);
     painter.setRenderHint(QPainter::TextAntialiasing, true);
-    painter.scale(logicalSize / iconGrid, logicalSize / iconGrid);
+    painter.scale(logicalSize / ICON_GRID, logicalSize / ICON_GRID);
     painter.setPen(QPen(color, 1.9, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
     painter.setBrush(Qt::NoBrush);
 
-    drawIconShape(painter, id);
+    DrawIconShape(painter, id);
     painter.end();
 
     return QIcon(pixmap);
@@ -56,10 +56,10 @@ QIcon MakeIcon(IconId id, const QColor& color, int logicalSize)
 
 QIcon MakeColorIcon(const QColor& color, int logicalSize)
 {
-    constexpr qreal scale = 2.0;
-    QPixmap pixmap(static_cast<int>(logicalSize * scale), static_cast<int>(logicalSize * scale));
+    constexpr qreal SCALE = 2.0;
+    QPixmap pixmap(static_cast<int>(logicalSize * SCALE), static_cast<int>(logicalSize * SCALE));
     pixmap.fill(Qt::transparent);
-    pixmap.setDevicePixelRatio(scale);
+    pixmap.setDevicePixelRatio(SCALE);
 
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing, true);

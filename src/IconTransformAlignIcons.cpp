@@ -5,7 +5,7 @@
 
 namespace {
 
-void drawRotate(QPainter& painter, IconId id)
+void DrawRotate(QPainter& painter, IconId id)
 {
     const bool clockwise = id == IconId::ROTATE_CW;
     const QRectF circle(3.5, 3.5, 17.0, 17.0);
@@ -29,7 +29,7 @@ void drawRotate(QPainter& painter, IconId id)
     painter.restore();
 }
 
-void drawFit(QPainter& painter, IconId)
+void DrawFit(QPainter& painter, IconId)
 {
     const qreal m = 4.0;
     const qreal len = 5.0;
@@ -45,7 +45,7 @@ void drawFit(QPainter& painter, IconId)
     painter.drawEllipse(QPointF(12.0, 12.0), 1.4, 1.4);
 }
 
-void drawZoom(QPainter& painter, IconId id)
+void DrawZoom(QPainter& painter, IconId id)
 {
     painter.drawEllipse(QPointF(10.5, 10.5), 6.2, 6.2);
     painter.drawLine(QPointF(15.2, 15.2), QPointF(20.5, 20.5));
@@ -55,7 +55,7 @@ void drawZoom(QPainter& painter, IconId id)
     }
 }
 
-void drawAlign(QPainter& painter, IconId)
+void DrawAlign(QPainter& painter, IconId)
 {
     // 三条左对齐的短线，表达“对齐 / 分布”。
     painter.setPen(QPen(painter.pen().color(), 2.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
@@ -65,7 +65,7 @@ void drawAlign(QPainter& painter, IconId)
     painter.drawLine(QPointF(7.0, 16.5), QPointF(20.5, 16.5));
 }
 
-void drawAlignMode(QPainter& painter, IconId id)
+void DrawAlignMode(QPainter& painter, IconId id)
 {
     // 一条基准线 + 两块被摆齐的实心块：基准线在哪一侧就是对齐到哪一侧。
     const QColor color = painter.pen().color();
@@ -118,7 +118,7 @@ void drawAlignMode(QPainter& painter, IconId id)
     }
 }
 
-void drawCopy(QPainter& painter, IconId)
+void DrawCopy(QPainter& painter, IconId)
 {
     // 前后错位的两张圆角卡片，表示复制一份。
     const QColor color = painter.pen().color();
@@ -130,7 +130,7 @@ void drawCopy(QPainter& painter, IconId)
     painter.restore();
 }
 
-void drawGroup(QPainter& p, IconId id)
+void DrawGroup(QPainter& p, IconId id)
 {
     // 虚线框住的两个小方块 = 组合；取消组合时虚线框只剩四角，方块也分开。
     QColor c = p.pen().color();
@@ -163,7 +163,7 @@ void drawGroup(QPainter& p, IconId id)
     p.restore();
 }
 
-void drawMorph(QPainter& painter, IconId)
+void DrawMorph(QPainter& painter, IconId)
 {
     // 圆 → 箭头 → 圆角方：表达“合并图元”，与并集 / 组合等五项子操作的图形语言区分开。
     const QColor color = painter.pen().color();
@@ -189,24 +189,24 @@ constexpr struct IconEntry {
     IconId id;
     void (*draw)(QPainter&, IconId);
 } ENTRIES[] = {
-    {IconId::ROTATE_CCW, drawRotate},
-    {IconId::ROTATE_CW, drawRotate},
-    {IconId::FIT, drawFit},
-    {IconId::ZOOM_IN, drawZoom},
-    {IconId::ZOOM_OUT, drawZoom},
-    {IconId::ALIGN, drawAlign},
-    {IconId::ALIGN_LEFT, drawAlignMode},
-    {IconId::ALIGN_CENTER_H, drawAlignMode},
-    {IconId::ALIGN_RIGHT, drawAlignMode},
-    {IconId::ALIGN_TOP, drawAlignMode},
-    {IconId::ALIGN_CENTER_V, drawAlignMode},
-    {IconId::ALIGN_BOTTOM, drawAlignMode},
-    {IconId::DISTRIBUTE_H, drawAlignMode},
-    {IconId::DISTRIBUTE_V, drawAlignMode},
-    {IconId::COPY, drawCopy},
-    {IconId::GROUP, drawGroup},
-    {IconId::UNGROUP, drawGroup},
-    {IconId::MORPH, drawMorph},
+    {IconId::ROTATE_CCW, DrawRotate},
+    {IconId::ROTATE_CW, DrawRotate},
+    {IconId::FIT, DrawFit},
+    {IconId::ZOOM_IN, DrawZoom},
+    {IconId::ZOOM_OUT, DrawZoom},
+    {IconId::ALIGN, DrawAlign},
+    {IconId::ALIGN_LEFT, DrawAlignMode},
+    {IconId::ALIGN_CENTER_H, DrawAlignMode},
+    {IconId::ALIGN_RIGHT, DrawAlignMode},
+    {IconId::ALIGN_TOP, DrawAlignMode},
+    {IconId::ALIGN_CENTER_V, DrawAlignMode},
+    {IconId::ALIGN_BOTTOM, DrawAlignMode},
+    {IconId::DISTRIBUTE_H, DrawAlignMode},
+    {IconId::DISTRIBUTE_V, DrawAlignMode},
+    {IconId::COPY, DrawCopy},
+    {IconId::GROUP, DrawGroup},
+    {IconId::UNGROUP, DrawGroup},
+    {IconId::MORPH, DrawMorph},
 };
 
 } // namespace

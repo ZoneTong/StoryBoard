@@ -5,7 +5,7 @@
 
 namespace {
 
-void drawShapes(QPainter& painter, IconId)
+void DrawShapes(QPainter& painter, IconId)
 {
     painter.drawRoundedRect(QRectF(3.0, 3.0, 11.0, 9.0), 1.8, 1.8);
     painter.drawEllipse(QPointF(15.5, 15.0), 5.5, 5.5);
@@ -17,7 +17,7 @@ void drawShapes(QPainter& painter, IconId)
     painter.drawPath(triangle);
 }
 
-void drawImage(QPainter& painter, IconId)
+void DrawImage(QPainter& painter, IconId)
 {
     painter.drawRoundedRect(QRectF(3.0, 4.0, 18.0, 16.0), 2.0, 2.0);
     painter.drawEllipse(QPointF(8.5, 9.0), 2.0, 2.0);
@@ -30,7 +30,7 @@ void drawImage(QPainter& painter, IconId)
     painter.drawPath(hills);
 }
 
-void drawLineArt(QPainter& painter, IconId)
+void DrawLineArt(QPainter& painter, IconId)
 {
     // 一个画框加里面一条单线轮廓，表达“把图片描成线稿”。
     painter.drawRoundedRect(QRectF(3.0, 4.0, 18.0, 16.0), 2.0, 2.0);
@@ -43,7 +43,7 @@ void drawLineArt(QPainter& painter, IconId)
     painter.drawPath(contour);
 }
 
-void drawBackground(QPainter& painter, IconId)
+void DrawBackground(QPainter& painter, IconId)
 {
     painter.drawRoundedRect(QRectF(3.0, 4.0, 18.0, 16.0), 2.0, 2.0);
     painter.save();
@@ -56,7 +56,7 @@ void drawBackground(QPainter& painter, IconId)
     painter.restore();
 }
 
-void drawGrid(QPainter& painter, IconId)
+void DrawGrid(QPainter& painter, IconId)
 {
     painter.drawRoundedRect(QRectF(3.0, 3.0, 18.0, 18.0), 1.5, 1.5);
     painter.drawLine(QPointF(9.0, 3.0), QPointF(9.0, 21.0));
@@ -65,7 +65,7 @@ void drawGrid(QPainter& painter, IconId)
     painter.drawLine(QPointF(3.0, 15.0), QPointF(21.0, 15.0));
 }
 
-void drawPalette(QPainter& painter, IconId)
+void DrawPalette(QPainter& painter, IconId)
 {
     QPainterPath palette;
     palette.moveTo(12.0, 3.0);
@@ -83,7 +83,7 @@ void drawPalette(QPainter& painter, IconId)
     painter.drawEllipse(QPointF(16.0, 12.0), 1.8, 1.8);
 }
 
-void drawCorner(QPainter& painter, IconId)
+void DrawCorner(QPainter& painter, IconId)
 {
     // 一角带圆弧的方框，表达“矩形圆角”。
     QPainterPath frame;
@@ -97,7 +97,7 @@ void drawCorner(QPainter& painter, IconId)
     painter.drawEllipse(QPointF(6.8, 6.8), 1.4, 1.4);
 }
 
-void drawSmooth(QPainter& painter, IconId)
+void DrawSmooth(QPainter& painter, IconId)
 {
     // 一条手绘波浪线加两个控制点，表达“把抖动收敛成平滑曲线”。
     QPainterPath wave;
@@ -111,7 +111,7 @@ void drawSmooth(QPainter& painter, IconId)
     painter.setBrush(Qt::NoBrush);
 }
 
-void drawOpacity(QPainter& painter, IconId)
+void DrawOpacity(QPainter& painter, IconId)
 {
     // 左实右虚的圆，表达“不透明度”。
     QPainterPath left;
@@ -125,7 +125,7 @@ void drawOpacity(QPainter& painter, IconId)
     painter.drawArc(QRectF(3.5, 3.5, 17.0, 17.0), -90 * 16, 180 * 16);
 }
 
-void drawTriangleBase(QPainter& painter, IconId)
+void DrawTriangleBase(QPainter& painter, IconId)
 {
     // 只有底线与两条向内收的短斜边，不闭合顶点，读作“三角形底边”。
     painter.drawLine(QPointF(3.0, 18.5), QPointF(21.0, 18.5));
@@ -133,21 +133,21 @@ void drawTriangleBase(QPainter& painter, IconId)
     painter.drawLine(QPointF(21.0, 18.5), QPointF(16.0, 9.5));
 }
 
-void drawAngleRight(QPainter& painter, IconId)
+void DrawAngleRight(QPainter& painter, IconId)
 {
     // 底角 A：顶点在左下，一条边沿底边向右、另一条斜向右上，开口朝右。
     painter.drawLine(QPointF(4.0, 18.0), QPointF(20.0, 18.0));
     painter.drawLine(QPointF(4.0, 18.0), QPointF(18.5, 6.0));
 }
 
-void drawAngleLeft(QPainter& painter, IconId)
+void DrawAngleLeft(QPainter& painter, IconId)
 {
     // 底角 B：顶点在右下，一条边沿底边向左、另一条斜向左上，开口朝左。
     painter.drawLine(QPointF(20.0, 18.0), QPointF(4.0, 18.0));
     painter.drawLine(QPointF(20.0, 18.0), QPointF(5.5, 6.0));
 }
 
-void drawArrowStart(QPainter& painter, IconId)
+void DrawArrowStart(QPainter& painter, IconId)
 {
     // 起点箭头：箭头朝左，落在线的左端。
     painter.drawLine(QPointF(4.0, 12.0), QPointF(19.0, 12.0));
@@ -155,7 +155,7 @@ void drawArrowStart(QPainter& painter, IconId)
     painter.drawLine(QPointF(4.0, 12.0), QPointF(9.0, 16.5));
 }
 
-void drawArrowEnd(QPainter& painter, IconId)
+void DrawArrowEnd(QPainter& painter, IconId)
 {
     // 终点箭头：与起点图标左右镜像，箭头朝右。
     painter.drawLine(QPointF(5.0, 12.0), QPointF(20.0, 12.0));
@@ -167,20 +167,20 @@ constexpr struct IconEntry {
     IconId id;
     void (*draw)(QPainter&, IconId);
 } ENTRIES[] = {
-    {IconId::SHAPES, drawShapes},
-    {IconId::IMAGE, drawImage},
-    {IconId::LINE_ART, drawLineArt},
-    {IconId::BACKGROUND, drawBackground},
-    {IconId::GRID, drawGrid},
-    {IconId::PALETTE, drawPalette},
-    {IconId::CORNER, drawCorner},
-    {IconId::SMOOTH, drawSmooth},
-    {IconId::OPACITY, drawOpacity},
-    {IconId::TRIANGLE_BASE, drawTriangleBase},
-    {IconId::ANGLE_RIGHT, drawAngleRight},
-    {IconId::ANGLE_LEFT, drawAngleLeft},
-    {IconId::ARROW_START, drawArrowStart},
-    {IconId::ARROW_END, drawArrowEnd},
+    {IconId::SHAPES, DrawShapes},
+    {IconId::IMAGE, DrawImage},
+    {IconId::LINE_ART, DrawLineArt},
+    {IconId::BACKGROUND, DrawBackground},
+    {IconId::GRID, DrawGrid},
+    {IconId::PALETTE, DrawPalette},
+    {IconId::CORNER, DrawCorner},
+    {IconId::SMOOTH, DrawSmooth},
+    {IconId::OPACITY, DrawOpacity},
+    {IconId::TRIANGLE_BASE, DrawTriangleBase},
+    {IconId::ANGLE_RIGHT, DrawAngleRight},
+    {IconId::ANGLE_LEFT, DrawAngleLeft},
+    {IconId::ARROW_START, DrawArrowStart},
+    {IconId::ARROW_END, DrawArrowEnd},
 };
 
 } // namespace

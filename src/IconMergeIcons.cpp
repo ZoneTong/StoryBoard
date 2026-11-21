@@ -5,7 +5,7 @@
 
 namespace {
 
-void drawMerge(QPainter& painter, IconId id)
+void DrawMerge(QPainter& painter, IconId id)
 {
     // PPT「合并形状」图标语言：两个交叠的圆，用实心区域表示运算结果。
     QPainterPath left;
@@ -69,8 +69,8 @@ constexpr struct IconEntry {
     IconId id;
     void (*draw)(QPainter&, IconId);
 } ENTRIES[] = {
-    {IconId::MERGE_UNION, drawMerge},     {IconId::MERGE_COMBINE, drawMerge},  {IconId::MERGE_FRAGMENT, drawMerge},
-    {IconId::MERGE_INTERSECT, drawMerge}, {IconId::MERGE_SUBTRACT, drawMerge}, {IconId::MERGE_LINE_SPLIT, drawMerge},
+    {IconId::MERGE_UNION, DrawMerge},     {IconId::MERGE_COMBINE, DrawMerge},  {IconId::MERGE_FRAGMENT, DrawMerge},
+    {IconId::MERGE_INTERSECT, DrawMerge}, {IconId::MERGE_SUBTRACT, DrawMerge}, {IconId::MERGE_LINE_SPLIT, DrawMerge},
 };
 
 } // namespace

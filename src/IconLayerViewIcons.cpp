@@ -5,7 +5,7 @@
 
 namespace {
 
-void drawView(QPainter& painter, IconId)
+void DrawView(QPainter& painter, IconId)
 {
     QPainterPath eye;
     eye.moveTo(2.5, 12.0);
@@ -16,7 +16,7 @@ void drawView(QPainter& painter, IconId)
     painter.drawEllipse(QPointF(12.0, 12.0), 3.1, 3.1);
 }
 
-void drawLock(QPainter& painter, IconId)
+void DrawLock(QPainter& painter, IconId)
 {
     QPainterPath shackle;
     shackle.moveTo(8.0, 12.5);
@@ -35,7 +35,7 @@ void drawLock(QPainter& painter, IconId)
     painter.setBrush(Qt::NoBrush);
 }
 
-void drawLayerUp(QPainter& painter, IconId)
+void DrawLayerUp(QPainter& painter, IconId)
 {
     // 双层页片整体上移，表达“跨图层移动”。
     painter.setBrush(QColor(255, 255, 255));
@@ -55,7 +55,7 @@ void drawLayerUp(QPainter& painter, IconId)
     painter.drawLine(QPointF(18.5, 14.5), QPointF(21.2, 17.2));
 }
 
-void drawLayerDown(QPainter& painter, IconId)
+void DrawLayerDown(QPainter& painter, IconId)
 {
     painter.setBrush(QColor(255, 255, 255));
     painter.drawRect(QRectF(5.0, 2.0, 12.0, 15.0));
@@ -74,7 +74,7 @@ void drawLayerDown(QPainter& painter, IconId)
     painter.drawLine(QPointF(18.5, 16.5), QPointF(21.2, 13.8));
 }
 
-void drawOrderUp(QPainter& painter, IconId)
+void DrawOrderUp(QPainter& painter, IconId)
 {
     // 方块上移一层，表达“层内顺序 +1”。
     painter.setBrush(painter.pen().color());
@@ -89,7 +89,7 @@ void drawOrderUp(QPainter& painter, IconId)
     painter.drawLine(QPointF(15.5, 15.5), QPointF(18.2, 18.2));
 }
 
-void drawOrderDown(QPainter& painter, IconId)
+void DrawOrderDown(QPainter& painter, IconId)
 {
     painter.setBrush(painter.pen().color());
     painter.drawRect(QRectF(4.0, 3.0, 10.0, 9.0));
@@ -107,9 +107,9 @@ constexpr struct IconEntry {
     IconId id;
     void (*draw)(QPainter&, IconId);
 } ENTRIES[] = {
-    {IconId::VIEW, drawView},        {IconId::LOCK, drawLock},
-    {IconId::LAYER_UP, drawLayerUp}, {IconId::LAYER_DOWN, drawLayerDown},
-    {IconId::ORDER_UP, drawOrderUp}, {IconId::ORDER_DOWN, drawOrderDown},
+    {IconId::VIEW, DrawView},        {IconId::LOCK, DrawLock},
+    {IconId::LAYER_UP, DrawLayerUp}, {IconId::LAYER_DOWN, DrawLayerDown},
+    {IconId::ORDER_UP, DrawOrderUp}, {IconId::ORDER_DOWN, DrawOrderDown},
 };
 
 } // namespace

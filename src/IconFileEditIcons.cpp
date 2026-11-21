@@ -5,7 +5,7 @@
 
 namespace {
 
-void drawNew(QPainter& painter, IconId)
+void DrawNew(QPainter& painter, IconId)
 {
     QPainterPath page;
     page.moveTo(5.0, 3.0);
@@ -24,7 +24,7 @@ void drawNew(QPainter& painter, IconId)
     painter.drawLine(QPointF(15.8, 18.0), QPointF(20.2, 18.0));
 }
 
-void drawOpen(QPainter& painter, IconId)
+void DrawOpen(QPainter& painter, IconId)
 {
     QPainterPath folder;
     folder.moveTo(3.0, 18.5);
@@ -43,7 +43,7 @@ void drawOpen(QPainter& painter, IconId)
     painter.drawPath(front);
 }
 
-void drawSave(QPainter& painter, IconId)
+void DrawSave(QPainter& painter, IconId)
 {
     painter.drawRoundedRect(QRectF(3.0, 3.0, 18.0, 18.0), 2.0, 2.0);
     painter.drawRect(QRectF(7.0, 3.0, 9.0, 6.0));
@@ -51,7 +51,7 @@ void drawSave(QPainter& painter, IconId)
     painter.drawLine(QPointF(9.0, 3.0), QPointF(9.0, 6.5));
 }
 
-void drawExport(QPainter& painter, IconId)
+void DrawExport(QPainter& painter, IconId)
 {
     painter.drawLine(QPointF(12.0, 3.0), QPointF(12.0, 14.0));
     painter.drawLine(QPointF(12.0, 3.0), QPointF(8.0, 7.0));
@@ -64,7 +64,7 @@ void drawExport(QPainter& painter, IconId)
     painter.drawPath(tray);
 }
 
-void drawUndo(QPainter& painter, IconId)
+void DrawUndo(QPainter& painter, IconId)
 {
     QPainterPath arc;
     arc.moveTo(19.0, 18.0);
@@ -74,7 +74,7 @@ void drawUndo(QPainter& painter, IconId)
     painter.drawLine(QPointF(5.5, 8.0), QPointF(10.5, 11.5));
 }
 
-void drawRedo(QPainter& painter, IconId)
+void DrawRedo(QPainter& painter, IconId)
 {
     painter.save();
     painter.translate(24.0, 0.0);
@@ -88,7 +88,7 @@ void drawRedo(QPainter& painter, IconId)
     painter.restore();
 }
 
-void drawBrush(QPainter& painter, IconId)
+void DrawBrush(QPainter& painter, IconId)
 {
     QPainterPath handle;
     handle.moveTo(10.0, 15.5);
@@ -106,7 +106,7 @@ void drawBrush(QPainter& painter, IconId)
     painter.drawPath(tip);
 }
 
-void drawEdit(QPainter& painter, IconId)
+void DrawEdit(QPainter& painter, IconId)
 {
     QPainterPath pointer;
     pointer.moveTo(5.5, 3.0);
@@ -121,7 +121,7 @@ void drawEdit(QPainter& painter, IconId)
     painter.drawPath(pointer);
 }
 
-void drawText(QPainter& painter, IconId)
+void DrawText(QPainter& painter, IconId)
 {
     painter.drawLine(QPointF(4.5, 5.0), QPointF(19.5, 5.0));
     painter.drawLine(QPointF(12.0, 5.0), QPointF(12.0, 20.0));
@@ -130,7 +130,7 @@ void drawText(QPainter& painter, IconId)
     painter.drawLine(QPointF(18.5, 8.0), QPointF(18.5, 5.0));
 }
 
-void drawDelete(QPainter& painter, IconId)
+void DrawDelete(QPainter& painter, IconId)
 {
     painter.drawLine(QPointF(4.0, 6.5), QPointF(20.0, 6.5));
     painter.drawLine(QPointF(9.5, 6.5), QPointF(9.5, 3.5));
@@ -146,7 +146,7 @@ void drawDelete(QPainter& painter, IconId)
     painter.drawLine(QPointF(14.0, 10.0), QPointF(13.5, 17.5));
 }
 
-void drawFolder(QPainter& painter, IconId)
+void DrawFolder(QPainter& painter, IconId)
 {
     QPainterPath folder;
     folder.moveTo(3.0, 19.0);
@@ -160,7 +160,7 @@ void drawFolder(QPainter& painter, IconId)
     painter.drawLine(QPointF(3.0, 10.0), QPointF(21.0, 10.0));
 }
 
-void drawSettings(QPainter& painter, IconId)
+void DrawSettings(QPainter& painter, IconId)
 {
     painter.drawLine(QPointF(3.0, 6.5), QPointF(21.0, 6.5));
     painter.drawLine(QPointF(3.0, 12.0), QPointF(21.0, 12.0));
@@ -175,10 +175,10 @@ constexpr struct IconEntry {
     IconId id;
     void (*draw)(QPainter&, IconId);
 } ENTRIES[] = {
-    {IconId::NEW, drawNew},       {IconId::OPEN, drawOpen},     {IconId::SAVE, drawSave},
-    {IconId::EXPORT, drawExport}, {IconId::UNDO, drawUndo},     {IconId::REDO, drawRedo},
-    {IconId::BRUSH, drawBrush},   {IconId::EDIT, drawEdit},     {IconId::TEXT, drawText},
-    {IconId::DELETE, drawDelete}, {IconId::FOLDER, drawFolder}, {IconId::SETTINGS, drawSettings},
+    {IconId::NEW, DrawNew},       {IconId::OPEN, DrawOpen},     {IconId::SAVE, DrawSave},
+    {IconId::EXPORT, DrawExport}, {IconId::UNDO, DrawUndo},     {IconId::REDO, DrawRedo},
+    {IconId::BRUSH, DrawBrush},   {IconId::EDIT, DrawEdit},     {IconId::TEXT, DrawText},
+    {IconId::DELETE, DrawDelete}, {IconId::FOLDER, DrawFolder}, {IconId::SETTINGS, DrawSettings},
 };
 
 } // namespace
