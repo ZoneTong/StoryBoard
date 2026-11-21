@@ -215,24 +215,24 @@ void selftest::RunShapeItemTests(Context& ctx)
     {
         ParallelogramItem para;
         bool ok = false;
-        auto KnobInScene = [&para, &ok]() {
+        auto knobInScene = [&para, &ok]() {
             const QPointF local = para.CustomHandleCenter(CanvasItem::SKEW, &ok);
             return para.mapToScene(local);
         };
-        auto BottomLength = [&para]() {
+        auto bottomLength = [&para]() {
             const QPainterPath path = para.CurrentPath(para.ContentRect());
             return QLineF(path.elementAt(0), path.elementAt(1)).length();
         };
         para.SetParallelogramAngle(60.0);
-        const qreal baseLength = BottomLength();
-        const QPointF acuteKnob = KnobInScene();
+        const qreal baseLength = bottomLength();
+        const QPointF acuteKnob = knobInScene();
         para.SetParallelogramAngle(90.0);
-        const qreal rightBase = BottomLength();
+        const qreal rightBase = bottomLength();
         const qreal rightCenterX = para.ContentSize().width() / 2.0;
-        const QPointF rightKnob = KnobInScene();
+        const QPointF rightKnob = knobInScene();
         para.SetParallelogramAngle(120.0);
-        const qreal obtuseBase = BottomLength();
-        const QPointF obtuseKnob = KnobInScene();
+        const qreal obtuseBase = bottomLength();
+        const QPointF obtuseKnob = knobInScene();
         ctx.Check(
             ok && acuteKnob.x() > rightKnob.x() && rightKnob.x() > obtuseKnob.x() &&
                 qAbs(rightKnob.x() - rightCenterX) < 0.01,
@@ -628,6 +628,70 @@ void selftest::RunShapeItemTests(Context& ctx)
                       .arg(ellipseSize.height())
                       .arg(majorAxisValue ? majorAxisValue->value() : -999.0)
                       .arg(minorAxisValue ? minorAxisValue->value() : -999.0));
+    }
+    {
+        // 属性窗为弧线补起始角 / 扫过角行：确认后走同一条撤销记录，可整体回退。
+        ArcItem* arc = new ArcItem;
+        arc->SetArcGeometry(QPointF(10.0, 20.0), QSizeF(200.0, 100.0), 15.0, 140.0, QColor(Qt::black), 2.0);
+        CanvasScene arcScene;
+        QUndoStack arcUndo;
+        arcScene.SetUndoStack(&arcUndo);
+        arcScene.AddItemsWithUndo({arc}, QStringLiteral("Add arc"));
+        ItemPropertiesDialog dialog(&arcScene, arc);
+        dialog.show();
+        QApplication::processEvents();
+        QSpinBox* startSpin = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesArcStartAngleValue"));
+        QSpinBox* sweepSpin = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesArcSweepAngleValue"));
+        ctx.Check(startSpin && sweepSpin && startSpin->value() == 15 && sweepSpin->value() == 140,
+                  QStringLiteral("弧线属性窗显示起始角 / 扫过角"),
+                  QStringLiteral("start=%1 sweep=%2")
+                      .arg(startSpin ? startSpin->value() : -1)
+                      .arg(sweepSpin ? sweepSpin->value() : -1));
+        startSpin->setValue(30);
+        sweepSpin->setValue(180);
+        dialog.accept();
+        QApplication::processEvents();
+        ctx.Check(qAbs(arc->StartAngle() - 30.0) < 0.01 && qAbs(arc->SweepAngle() - 180.0) < 0.01 &&
+                      arcUndo.count() == 2,
+                  QStringLiteral("弧线角度改动并入属性窗撤销记录"),
+                  QStringLiteral("start=%1 sweep=%2 undo=%3")
+                      .arg(arc->StartAngle())
+                      .arg(arc->SweepAngle())
+                      .arg(arcUndo.count()));
+        arcUndo.undo();
+        ctx.Check(qAbs(arc->StartAngle() - 15.0) < 0.01 && qAbs(arc->SweepAngle() - 140.0) < 0.01,
+                  QStringLiteral("撤销后弧线角度还原"),
+                  QStringLiteral("start=%1 sweep=%2").arg(arc->StartAngle()).arg(arc->SweepAngle()));
+    }
+    {
+        // 属性窗为正弦波补周期 / 振幅行：确认后波形重建且可撤销。
+        SineItem* wave = new SineItem;
+        wave->SetWaveGeometry(QPointF(10.0, 20.0), QSizeF(200.0, 100.0), QColor(Qt::black), 2.0);
+        CanvasScene waveScene;
+        QUndoStack waveUndo;
+        waveScene.SetUndoStack(&waveUndo);
+        waveScene.AddItemsWithUndo({wave}, QStringLiteral("Add wave"));
+        ItemPropertiesDialog dialog(&waveScene, wave);
+        dialog.show();
+        QApplication::processEvents();
+        QSpinBox* cyclesSpin = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesSineCyclesValue"));
+        QSpinBox* amplitudeSpin = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesSineAmplitudeValue"));
+        ctx.Check(cyclesSpin && amplitudeSpin && cyclesSpin->value() == wave->params().cycles &&
+                      amplitudeSpin->value() == qRound(wave->params().amplitude),
+                  QStringLiteral("正弦属性窗显示周期 / 振幅"),
+                  QStringLiteral("cycles=%1 amplitude=%2")
+                      .arg(cyclesSpin ? cyclesSpin->value() : -1)
+                      .arg(amplitudeSpin ? amplitudeSpin->value() : -1));
+        cyclesSpin->setValue(6);
+        amplitudeSpin->setValue(120);
+        dialog.accept();
+        QApplication::processEvents();
+        ctx.Check(wave->params().cycles == 6 && qAbs(wave->params().amplitude - 120.0) < 0.01 && waveUndo.count() == 2,
+                  QStringLiteral("正弦参数改动并入属性窗撤销记录"),
+                  QStringLiteral("cycles=%1 amplitude=%2 undo=%3")
+                      .arg(wave->params().cycles)
+                      .arg(wave->params().amplitude)
+                      .arg(waveUndo.count()));
     }
     {
         // 底角 A / B 的图标：开口方向不同（A 朝右、B 朝左），且都不是空白图标。

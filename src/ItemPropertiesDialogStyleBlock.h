@@ -68,6 +68,18 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     QComboBox* StartArrowCombo() const { return m_startArrowCombo; }
     QComboBox* EndArrowCombo() const { return m_endArrowCombo; }
 
+    // 弧线：起始角 / 扫过角（度），走 LineItemAbstract::ParamState。
+    QSpinBox* ArcStartAngleSpin() const { return m_arcStartAngleSpin; }
+    QSpinBox* ArcSweepAngleSpin() const { return m_arcSweepAngleSpin; }
+    qreal InitialArcStartAngle() const { return m_initialArcStartAngle; }
+    qreal InitialArcSweepAngle() const { return m_initialArcSweepAngle; }
+
+    // 正弦：周期数（1–12）与振幅（1–200 px），走 LineItemAbstract::ParamState。
+    QSpinBox* SineCyclesSpin() const { return m_sineCyclesSpin; }
+    QSpinBox* SineAmplitudeSpin() const { return m_sineAmplitudeSpin; }
+    int InitialSineCycles() const { return m_initialSineCycles; }
+    int InitialSineAmplitude() const { return m_initialSineAmplitude; }
+
     // 尺寸框变化时同步圆角上限；用户尚未改过圆角时，圆角矩形的默认值
     // 按新短边重新计算，保证对话框显示值与最终轮廓一致。
     void SetContentSize(const QSizeF& size);
@@ -112,4 +124,14 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     QComboBox* m_startArrowCombo = nullptr;
     QComboBox* m_endArrowCombo = nullptr;
     QWidget* m_arrowRow = nullptr;
+
+    QSpinBox* m_arcStartAngleSpin = nullptr;
+    QSpinBox* m_arcSweepAngleSpin = nullptr;
+    qreal m_initialArcStartAngle = 0.0;
+    qreal m_initialArcSweepAngle = 0.0;
+
+    QSpinBox* m_sineCyclesSpin = nullptr;
+    QSpinBox* m_sineAmplitudeSpin = nullptr;
+    int m_initialSineCycles = 3;
+    int m_initialSineAmplitude = 40;
 };

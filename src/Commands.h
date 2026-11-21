@@ -194,6 +194,9 @@ struct ItemPropertiesState {
     // 需求 27：曲线两端箭头与直线同一套属性窗提交流程（箭头对全部曲线子型开放）。
     ArrowStyle curveStartArrow = ArrowStyle::NONE;
     ArrowStyle curveEndArrow = ArrowStyle::NONE;
+    // 弧线角度 / 正弦周期与振幅：走 LineItemAbstract::ParamState 的形状参数。
+    bool hasCurveParam = false;
+    LineItemAbstract::ParamState curveParam;
 
     bool operator==(const ItemPropertiesState& other) const;
     bool operator!=(const ItemPropertiesState& other) const { return !(*this == other); }

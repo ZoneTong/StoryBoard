@@ -421,6 +421,14 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
                            curveEndArrow != other.curveEndArrow)) {
         return false;
     }
+    if (hasCurveParam != other.hasCurveParam) {
+        return false;
+    }
+    if (hasCurveParam &&
+        (!qFuzzyCompare(curveParam.first, other.curveParam.first) ||
+         !qFuzzyCompare(curveParam.second, other.curveParam.second) || curveParam.valid != other.curveParam.valid)) {
+        return false;
+    }
     return true;
 }
 
@@ -471,6 +479,10 @@ void ItemPropertiesCommand::Apply(const ItemPropertiesState& state)
             stroke->SetStrokePattern(state.strokeStyle);
             // 需求 27：曲线两端箭头随同一条撤销记录一起应用。
             stroke->SetArrowStyles(state.curveStartArrow, state.curveEndArrow);
+            // 弧线角度 / 正弦周期振幅：形状参数与描线同一份快照。
+            if (state.hasCurveParam) {
+                stroke->ApplyParamState(state.curveParam);
+            }
         }
     }
 

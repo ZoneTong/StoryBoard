@@ -592,6 +592,34 @@ void ItemPropertiesDialog::ApplyChanges()
         after.curveEndArrow = (style && style->EndArrowCombo())
                                   ? static_cast<ArrowStyle>(style->EndArrowCombo()->currentData().toInt())
                                   : before.curveEndArrow;
+        // 弧线角度 / 正弦周期振幅：改过才写入快照，未改动的行沿用原值。
+        if (stroke->SupportsArcAngles()) {
+            before.hasCurveParam = true;
+            before.curveParam = stroke->paramState();
+            after.hasCurveParam = true;
+            after.curveParam = before.curveParam;
+            if (style && style->ArcStartAngleSpin() && style->ArcSweepAngleSpin()) {
+                after.curveParam.first = style->ArcStartAngleSpin()->value() == qRound(before.curveParam.first)
+                                             ? before.curveParam.first
+                                             : style->ArcStartAngleSpin()->value();
+                after.curveParam.second = style->ArcSweepAngleSpin()->value() == qRound(before.curveParam.second)
+                                              ? before.curveParam.second
+                                              : style->ArcSweepAngleSpin()->value();
+            }
+        } else if (stroke->SupportsSineWave()) {
+            before.hasCurveParam = true;
+            before.curveParam = stroke->paramState();
+            after.hasCurveParam = true;
+            after.curveParam = before.curveParam;
+            if (style && style->SineCyclesSpin() && style->SineAmplitudeSpin()) {
+                after.curveParam.first = style->SineCyclesSpin()->value() == qRound(before.curveParam.first)
+                                             ? before.curveParam.first
+                                             : style->SineCyclesSpin()->value();
+                after.curveParam.second = style->SineAmplitudeSpin()->value() == qRound(before.curveParam.second)
+                                              ? before.curveParam.second
+                                              : style->SineAmplitudeSpin()->value();
+            }
+        }
     }
 
     if (m_opacitySpin) {

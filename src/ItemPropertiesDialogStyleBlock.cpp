@@ -234,6 +234,40 @@ void ItemPropertiesDialogStyleBlock::BuildStrokeRows(CanvasItem* item)
         m_strokeAttributes.SetStrokeWidth(width);
         m_borderWidthRow->Refresh();
     });
+
+    // 弧线 / 正弦曲线：描线类图元的形状参数行，与编辑面板同一套取值范围。
+    if (auto* stroke = dynamic_cast<LineItemAbstract*>(item)) {
+        if (stroke->SupportsArcAngles()) {
+            const LineItemAbstract::ParamState param = stroke->paramState();
+            m_initialArcStartAngle = param.first;
+            m_initialArcSweepAngle = param.second;
+            m_arcStartAngleSpin = new QSpinBox(this);
+            m_arcStartAngleSpin->setObjectName(QStringLiteral("ItemPropertiesArcStartAngleValue"));
+            m_arcStartAngleSpin->setRange(-360, 360);
+            m_arcStartAngleSpin->setSingleStep(5);
+            m_arcStartAngleSpin->setSuffix(tr("°"));
+            m_arcStartAngleSpin->setValue(qRound(m_initialArcStartAngle));
+            m_arcSweepAngleSpin = new QSpinBox(this);
+            m_arcSweepAngleSpin->setObjectName(QStringLiteral("ItemPropertiesArcSweepAngleValue"));
+            m_arcSweepAngleSpin->setRange(-360, 360);
+            m_arcSweepAngleSpin->setSingleStep(5);
+            m_arcSweepAngleSpin->setSuffix(QStringLiteral("°"));
+            m_arcSweepAngleSpin->setValue(qRound(m_initialArcSweepAngle));
+        } else if (stroke->SupportsSineWave()) {
+            const LineItemAbstract::ParamState param = stroke->paramState();
+            m_initialSineCycles = qBound(1, qRound(param.first), 12);
+            m_initialSineAmplitude = qBound(1, qRound(param.second), 200);
+            m_sineCyclesSpin = new QSpinBox(this);
+            m_sineCyclesSpin->setObjectName(QStringLiteral("ItemPropertiesSineCyclesValue"));
+            m_sineCyclesSpin->setRange(1, 12);
+            m_sineCyclesSpin->setValue(m_initialSineCycles);
+            m_sineAmplitudeSpin = new QSpinBox(this);
+            m_sineAmplitudeSpin->setObjectName(QStringLiteral("ItemPropertiesSineAmplitudeValue"));
+            m_sineAmplitudeSpin->setRange(1, 200);
+            m_sineAmplitudeSpin->setSuffix(QStringLiteral(" px"));
+            m_sineAmplitudeSpin->setValue(m_initialSineAmplitude);
+        }
+    }
 }
 
 void ItemPropertiesDialogStyleBlock::AddRows(QFormLayout* form)
@@ -283,6 +317,19 @@ void ItemPropertiesDialogStyleBlock::AddRows(QFormLayout* form)
     if (m_sweepAngleSpin) {
         form->addRow(ItemPropertiesDialog::tr("Sweep angle"), m_sweepAngleSpin);
     }
+    // 弧线起始角 / 扫过角与正弦周期 / 振幅：参数化描线的形状行。
+    if (m_arcStartAngleSpin) {
+        form->addRow(ItemPropertiesDialog::tr("Start angle"), m_arcStartAngleSpin);
+    }
+    if (m_arcSweepAngleSpin) {
+        form->addRow(ItemPropertiesDialog::tr("Sweep angle"), m_arcSweepAngleSpin);
+    }
+    if (m_sineCyclesSpin) {
+        form->addRow(ItemPropertiesDialog::tr("Sine cycles"), m_sineCyclesSpin);
+    }
+    if (m_sineAmplitudeSpin) {
+        form->addRow(ItemPropertiesDialog::tr("Sine amplitude"), m_sineAmplitudeSpin);
+    }
 }
 
 QList<QWidget*> ItemPropertiesDialogStyleBlock::StyleRows() const
@@ -292,7 +339,9 @@ QList<QWidget*> ItemPropertiesDialogStyleBlock::StyleRows() const
                          static_cast<QWidget*>(m_fillImageRow), static_cast<QWidget*>(m_borderStyleRow),
                          static_cast<QWidget*>(m_strokeColorRow), static_cast<QWidget*>(m_borderWidthRow),
                          static_cast<QWidget*>(m_opacitySpin), static_cast<QWidget*>(m_cornerRadiusSpin),
-                         static_cast<QWidget*>(m_startAngleSpin), static_cast<QWidget*>(m_sweepAngleSpin)}) {
+                         static_cast<QWidget*>(m_startAngleSpin), static_cast<QWidget*>(m_sweepAngleSpin),
+                         static_cast<QWidget*>(m_arcStartAngleSpin), static_cast<QWidget*>(m_arcSweepAngleSpin),
+                         static_cast<QWidget*>(m_sineCyclesSpin), static_cast<QWidget*>(m_sineAmplitudeSpin)}) {
         if (row) {
             rows.append(row);
         }
