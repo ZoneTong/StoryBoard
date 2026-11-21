@@ -117,6 +117,12 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
     PropertiesPanel* dockPanel = dockWindow.findChild<PropertiesPanel*>(QStringLiteral("PropertiesPanel"));
     QDockWidget* propertiesDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("PropertiesPanelDock"));
     QDockWidget* layerDock = dockWindow.findChild<QDockWidget*>(QStringLiteral("LayerDock"));
+    QScrollArea* propertiesScroll =
+        dockPanel ? dockPanel->findChild<QScrollArea*>(QStringLiteral("PropertiesPanelScroll")) : nullptr;
+    ctx.Check(propertiesDock && propertiesDock->maximumHeight() > 620,
+              QStringLiteral("编辑面板不再固定 620px 上限，跟随窗口高度伸展"));
+    ctx.Check(propertiesScroll && propertiesScroll->verticalScrollBarPolicy() == Qt::ScrollBarAsNeeded,
+              QStringLiteral("编辑面板仅在高度不足时出现竖向卷动轴"));
     if (selectedShape && dockPanel) {
         // 需求：属性窗里可编辑的身份 / 几何字段，在编辑面板里同样有行且能改。
         QLineEdit* itemNameEdit = dockPanel->findChild<QLineEdit*>(QStringLiteral("ItemNameEdit"));
@@ -245,6 +251,76 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
         QApplication::processEvents();
         ctx.Check(qAbs(panelEllipse->ContentSize().width() - 140.0) < 0.01,
                   QStringLiteral("撤销长半轴修改恢复椭圆尺寸"));
+
+        // 需求 2：多选也开放旋转 / 位置 / 尺寸行，行序对齐属性窗；
+        // 位置与尺寸按首个图元回显，改动以增量套到其余图元，不会把选中项叠在一起。
+        auto* secondGeometryShape = CreateShapeItem(ShapeType::RECTANGLE);
+        secondGeometryShape->setPos(QPointF(420.0, 260.0));
+        secondGeometryShape->SetContentSize(QSizeF(100.0, 80.0));
+        dockScene->AddItemsWithUndo({secondGeometryShape}, QStringLiteral("Add second geometry shape"));
+        dockScene->clearSelection();
+        selectedShape->setSelected(true);
+        secondGeometryShape->setSelected(true);
+        QApplication::processEvents();
+
+        ctx.Check(positionXSpin && positionXSpin->isVisible() && sizeWidthSpin && sizeWidthSpin->isVisible() &&
+                      rotationSpin && rotationSpin->isVisible(),
+                  QStringLiteral("多选时编辑面板开放旋转 / 位置 / 尺寸行"));
+        ctx.Check(itemNameEdit && !itemNameEdit->isVisible(), QStringLiteral("多选时仍隐藏名称等身份行"));
+
+        const int rotationY = rotationSpin ? rotationSpin->mapTo(dockPanel, QPoint(0, 0)).y() : -1;
+        const int positionY = positionXSpin ? positionXSpin->mapTo(dockPanel, QPoint(0, 0)).y() : -1;
+        const int sizeY = sizeWidthSpin ? sizeWidthSpin->mapTo(dockPanel, QPoint(0, 0)).y() : -1;
+        ctx.Check(rotationY >= 0 && rotationY < positionY && positionY < sizeY,
+                  QStringLiteral("几何行按旋转 → 位置 → 尺寸排列，与属性窗一致"),
+                  QStringLiteral("y=%1/%2/%3").arg(rotationY).arg(positionY).arg(sizeY));
+
+        const QPointF firstPositionBefore = selectedShape->pos();
+        const QPointF secondPositionBefore = secondGeometryShape->pos();
+        if (positionXSpin) {
+            positionXSpin->setValue(positionXSpin->value() + 30.0);
+            QApplication::processEvents();
+        }
+        ctx.Check(qAbs(selectedShape->pos().x() - firstPositionBefore.x() - 30.0) < 0.01 &&
+                      qAbs(secondGeometryShape->pos().x() - secondPositionBefore.x() - 30.0) < 0.01,
+                  QStringLiteral("多选位置行按增量同时移动两个图元"));
+        dockScene->UndoStack()->undo();
+        QApplication::processEvents();
+        ctx.Check(qAbs(selectedShape->pos().x() - firstPositionBefore.x()) < 0.01 &&
+                      qAbs(secondGeometryShape->pos().x() - secondPositionBefore.x()) < 0.01,
+                  QStringLiteral("撤销多选位置移动同时恢复两个图元"));
+
+        const QSizeF firstSizeBefore = selectedShape->ContentSize();
+        const QSizeF secondSizeBefore = secondGeometryShape->ContentSize();
+        if (sizeWidthSpin) {
+            sizeWidthSpin->setValue(sizeWidthSpin->value() + 20.0);
+            QApplication::processEvents();
+        }
+        ctx.Check(qAbs(selectedShape->ContentSize().width() - firstSizeBefore.width() - 20.0) < 0.01 &&
+                      qAbs(secondGeometryShape->ContentSize().width() - secondSizeBefore.width() - 20.0) < 0.01,
+                  QStringLiteral("多选尺寸行按增量同时改宽两个图元"));
+        dockScene->UndoStack()->undo();
+        QApplication::processEvents();
+        ctx.Check(qAbs(selectedShape->ContentSize().width() - firstSizeBefore.width()) < 0.01 &&
+                      qAbs(secondGeometryShape->ContentSize().width() - secondSizeBefore.width()) < 0.01,
+                  QStringLiteral("撤销多选尺寸修改同时恢复两个图元"));
+
+        const qreal firstRotationBefore = selectedShape->RotationAngle();
+        const qreal secondRotationBefore = secondGeometryShape->RotationAngle();
+        if (rotationSpin) {
+            rotationSpin->setValue(25.0);
+            QApplication::processEvents();
+        }
+        ctx.Check(qAbs(selectedShape->RotationAngle() - 25.0) < 0.01 &&
+                      qAbs(secondGeometryShape->RotationAngle() - 25.0) < 0.01,
+                  QStringLiteral("多选旋转行把同一角度套到两个图元"));
+        dockScene->UndoStack()->undo();
+        QApplication::processEvents();
+        ctx.Check(qAbs(selectedShape->RotationAngle() - firstRotationBefore) < 0.01 &&
+                      qAbs(secondGeometryShape->RotationAngle() - secondRotationBefore) < 0.01,
+                  QStringLiteral("撤销多选旋转同时恢复两个图元"));
+        dockScene->clearSelection();
+        QApplication::processEvents();
 
         QSpinBox* opacitySpin = nullptr;
         for (QSpinBox* spin : dockPanel->findChildren<QSpinBox*>(QStringLiteral("ItemValueSpin"))) {

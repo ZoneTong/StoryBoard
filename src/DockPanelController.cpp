@@ -52,9 +52,9 @@ void DockPanelController::CreatePropertiesPanelDock()
     m_propertiesPanel = new PropertiesPanel(m_window->m_scene, m_propertiesDock);
     m_propertiesDock->setWidget(m_propertiesPanel);
     m_window->addDockWidget(Qt::LeftDockWidgetArea, m_propertiesDock);
-    // 编辑面板固定在左侧，高度限定在合适区间，避免单独占满整列。
+    // 编辑面板固定在左侧，默认跟着主窗口可用高度伸展；只有窗口高度不足、
+    // 内容放不下时才由面板内部的滚动区出现卷动轴，不再预先砍掉上限。
     m_propertiesDock->setMinimumHeight(240);
-    m_propertiesDock->setMaximumHeight(620);
     // 宽度按内容算一次作为启动宽度；之后不随选中项增减自动变化，用户可手动拖拽调整。
     ApplyPropertiesPanelDockWidth(m_propertiesPanel->PreferredWidth(), true);
 

@@ -56,6 +56,8 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     scroll->setObjectName(QStringLiteral("PropertiesPanelScroll"));
     scroll->setWidgetResizable(true);
     scroll->setFrameShape(QFrame::NoFrame);
+    // 面板本身跟着主窗口高度伸展；只有窗口矮到内容放不下时才出现竖向卷动轴。
+    scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     auto* content = new QWidget(scroll);
     content->setObjectName(QStringLiteral("PropertiesPanelContent"));
     m_contentWidget = content;
@@ -302,13 +304,15 @@ void PropertiesPanel::Refresh()
     m_fillImageRow->setVisible(common.Contains(ItemProperty::FILL_IMAGE));
     m_fillImageRow->SetTargets(fillTargets);
 
-    // 属性窗一次只编辑一个图元；身份与几何的绝对数值也只在单选时开放，
-    // 多选把它们设成同一个位置 / 尺寸没有意义，整块隐藏。
+    // 身份行（名称 / 图层 / 高度）只在单选时开放：把多个图元改成同一个名称或
+    // 同一个层内高度没有意义。几何行多选也要开放，位置与尺寸按选中集合的首个
+    // 图元回显，改动按增量套到其余图元，避免所有图元被叠到同一坐标。
     const bool singleItem = items.size() == 1;
+    const bool hasSelection = !items.isEmpty();
     m_identityCard->setVisible(singleItem);
-    m_geometryCard->setVisible(singleItem);
+    m_geometryCard->setVisible(hasSelection);
     m_identityCard->Refresh(m_scene, singleItem ? items.first() : nullptr);
-    m_geometryCard->Refresh(singleItem ? items.first() : nullptr);
+    m_geometryCard->Refresh(hasSelection ? items.first() : nullptr);
 
     bool axisVisible = false;
     if (singleItem) {
@@ -321,7 +325,6 @@ void PropertiesPanel::Refresh()
     m_geometryCard->SetAxisVisible(axisVisible);
     m_geometryCard->SetParallelogramVisible(singleItem && common.Contains(ItemProperty::PARALLELOGRAM_ANGLE));
 
-    const bool hasSelection = !items.isEmpty();
     m_fillBorderCard->FillStyleRow()->setVisible(common.Contains(ItemProperty::FILL_STYLE));
     m_colorsCard->FillColorRow()->setVisible(common.Contains(ItemProperty::FILL_COLOR));
     m_fillBorderCard->BorderStyleRow()->setVisible(common.Contains(ItemProperty::STROKE_STYLE));

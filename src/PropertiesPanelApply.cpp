@@ -651,10 +651,67 @@ void PropertiesPanel::ApplyItemStack(int layerId, int height, const QString& tex
 
 void PropertiesPanel::ApplyItemGeometry(const QPointF& position, const QSizeF& size)
 {
-    if (SelectedItems().isEmpty()) {
+    const QList<CanvasItem*> items = SelectedItems();
+    if (items.isEmpty() || !m_scene || !m_scene->UndoStack()) {
         return;
     }
-    ApplyPropertyValues({{ItemProperty::POSITION, position}, {ItemProperty::SIZE, size}}, tr("Change item geometry"));
+
+    // 单选按属性窗语义写绝对位置与尺寸；多选时面板回显首个图元的值，
+    // 这里把面板变化折算成增量套到每个图元，保持它们之间的相对位置和大小。
+    if (items.size() == 1) {
+        ApplyPropertyValues({{ItemProperty::POSITION, position}, {ItemProperty::SIZE, size}},
+                            tr("Change item geometry"));
+        return;
+    }
+
+    CanvasItem* anchor = items.first();
+    const QPointF positionDelta = position - anchor->pos();
+    const QSizeF sizeDelta = size - anchor->ContentSize();
+    if (qFuzzyIsNull(positionDelta.x()) && qFuzzyIsNull(positionDelta.y()) && qFuzzyIsNull(sizeDelta.width()) &&
+        qFuzzyIsNull(sizeDelta.height())) {
+        return;
+    }
+
+    const QSizeF minimumSize = CanvasItem::MinimumSize();
+    QList<CanvasItem*> applyItems;
+    QList<QMap<ItemProperty, QVariant>> before;
+    QList<QMap<ItemProperty, QVariant>> after;
+    m_refreshing = true;
+    for (CanvasItem* item : items) {
+        const ItemPropertySet properties = item->Properties();
+        QMap<ItemProperty, QVariant> beforeValues;
+        QMap<ItemProperty, QVariant> afterValues;
+
+        if (properties.Contains(ItemProperty::POSITION)) {
+            const QPointF currentPosition = item->pos();
+            const QPointF targetPosition = currentPosition + positionDelta;
+            beforeValues.insert(ItemProperty::POSITION, currentPosition);
+            item->SetPropertyValue(ItemProperty::POSITION, targetPosition);
+            afterValues.insert(ItemProperty::POSITION, item->PropertyValue(ItemProperty::POSITION));
+        }
+        if (properties.Contains(ItemProperty::SIZE)) {
+            const QSizeF currentSize = item->ContentSize();
+            const QSizeF targetSize(qMax(minimumSize.width(), currentSize.width() + sizeDelta.width()),
+                                    qMax(minimumSize.height(), currentSize.height() + sizeDelta.height()));
+            beforeValues.insert(ItemProperty::SIZE, currentSize);
+            item->SetPropertyValue(ItemProperty::SIZE, targetSize);
+            afterValues.insert(ItemProperty::SIZE, item->PropertyValue(ItemProperty::SIZE));
+        }
+
+        if (afterValues.isEmpty()) {
+            continue;
+        }
+        applyItems.append(item);
+        before.append(beforeValues);
+        after.append(afterValues);
+    }
+    m_refreshing = false;
+
+    if (applyItems.isEmpty()) {
+        return;
+    }
+    m_scene->UndoStack()->push(new ItemPropertyCommand(m_scene, applyItems, before, after, tr("Change item geometry")));
+    Refresh();
 }
 
 void PropertiesPanel::ApplyItemRotation(qreal angle)

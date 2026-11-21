@@ -16,6 +16,25 @@ PropertiesPanelGeometryCard::PropertiesPanelGeometryCard(QWidget* parent) : QWid
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(2);
 
+    m_majorAxisRow = new NumberAttributeRow(IconId::SHAPES, true, 1, 0.5, 500000.0, QStringLiteral(" px"),
+                                            QStringLiteral("ItemMajorAxisSpin"), this);
+    m_majorAxisRow->Spin()->setToolTip(PropertiesPanel::tr("Semi-major axis"));
+    m_majorAxisRow->setVisible(false);
+    layout->addWidget(m_majorAxisRow);
+
+    m_minorAxisRow = new NumberAttributeRow(IconId::SHAPES, true, 1, 0.5, 500000.0, QStringLiteral(" px"),
+                                            QStringLiteral("ItemMinorAxisSpin"), this);
+    m_minorAxisRow->Spin()->setToolTip(PropertiesPanel::tr("Semi-minor axis"));
+    m_minorAxisRow->setVisible(false);
+    layout->addWidget(m_minorAxisRow);
+
+    // 行序与属性窗几何区一致：长短半轴 → 旋转 → 位置 → 尺寸。
+    m_rotationRow = new NumberAttributeRow(IconId::ROTATE_CCW, true, 1, -360.0, 360.0, QStringLiteral("°"),
+                                           QStringLiteral("ItemRotationSpin"), this);
+    m_rotationRow->SetSingleStep(5.0);
+    m_rotationRow->Spin()->setToolTip(PropertiesPanel::tr("Rotation"));
+    layout->addWidget(m_rotationRow);
+
     m_positionRow = new PairAttributeRow(IconId::FIT, true, QStringLiteral("ItemPositionXSpin"),
                                          QStringLiteral("ItemPositionYSpin"), 1, -1000000.0, 1000000.0, QString(),
                                          QStringLiteral(","), this);
@@ -29,24 +48,6 @@ PropertiesPanelGeometryCard::PropertiesPanelGeometryCard(QWidget* parent) : QWid
     m_sizeRow->FirstSpin()->setToolTip(PropertiesPanel::tr("Item size"));
     m_sizeRow->SecondSpin()->setToolTip(PropertiesPanel::tr("Item size"));
     layout->addWidget(m_sizeRow);
-
-    m_rotationRow = new NumberAttributeRow(IconId::ROTATE_CCW, true, 1, -360.0, 360.0, QStringLiteral("°"),
-                                           QStringLiteral("ItemRotationSpin"), this);
-    m_rotationRow->SetSingleStep(5.0);
-    m_rotationRow->Spin()->setToolTip(PropertiesPanel::tr("Rotation"));
-    layout->addWidget(m_rotationRow);
-
-    m_majorAxisRow = new NumberAttributeRow(IconId::SHAPES, true, 1, 0.5, 500000.0, QStringLiteral(" px"),
-                                            QStringLiteral("ItemMajorAxisSpin"), this);
-    m_majorAxisRow->Spin()->setToolTip(PropertiesPanel::tr("Semi-major axis"));
-    m_majorAxisRow->setVisible(false);
-    layout->addWidget(m_majorAxisRow);
-
-    m_minorAxisRow = new NumberAttributeRow(IconId::SHAPES, true, 1, 0.5, 500000.0, QStringLiteral(" px"),
-                                            QStringLiteral("ItemMinorAxisSpin"), this);
-    m_minorAxisRow->Spin()->setToolTip(PropertiesPanel::tr("Semi-minor axis"));
-    m_minorAxisRow->setVisible(false);
-    layout->addWidget(m_minorAxisRow);
 
     m_parallelogramRow = new NumberAttributeRow(IconId::ANGLE_RIGHT, true, 0, 15.0, 165.0, QStringLiteral("°"),
                                                 QStringLiteral("ItemParallelogramAngleSpin"), this);

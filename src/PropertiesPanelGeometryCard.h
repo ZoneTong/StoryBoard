@@ -9,7 +9,7 @@ class CanvasItem;
 class NumberAttributeRow;
 class PairAttributeRow;
 
-// 编辑面板的位置 / 尺寸 / 旋转 / 长短半轴 / 平行四边形内角行：
+// 编辑面板的旋转 / 位置 / 尺寸 / 长短半轴 / 平行四边形内角行：
 // 属性窗几何区的同一批字段在面板里也能直接改，成对数值行与单个数值行复用
 // PropertyRowWidgets，尺寸和位置一次性写入同一条撤销记录。
 class PropertiesPanelGeometryCard : public QWidget {
