@@ -1,3 +1,4 @@
+#include "ArcItem.h"
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
 #include "CurveItem.h"
@@ -249,6 +250,27 @@ void selftest::RunShapesClusterTests(Context& ctx)
         ctx.Check(shapeCount == insertedShapes.size() && mismatched == 0,
                   QStringLiteral("新增填充图形插入后归类为各自的具体图形图元"),
                   QStringLiteral("shape=%1 other=%2").arg(shapeCount).arg(mismatched));
+    }
+
+    // 需求：弧线默认插入的长短半轴与椭圆 / 扇形一致（外接框 128×128，半轴 64/64）。
+    {
+        MainWindow window;
+        window.InsertCurve(LineGlyph::ARC);
+        CanvasScene* scene = window.findChild<CanvasScene*>();
+        const auto* arc =
+            scene->CanvasItems().isEmpty() ? nullptr : dynamic_cast<const ArcItem*>(scene->CanvasItems().constFirst());
+        const QSizeF arcFrame = arc ? arc->EllipseSize() : QSizeF();
+        const QSizeF ellipseDefault = DefaultShapeSize(ShapeType::ELLIPSE);
+        const QSizeF sectorDefault = DefaultShapeSize(ShapeType::SECTOR);
+        ctx.Check(arcFrame == ellipseDefault && arcFrame == sectorDefault,
+                  QStringLiteral("弧线默认长短半轴与椭圆 / 扇形一致"),
+                  QStringLiteral("arc=%1x%2 ellipse=%3x%4 sector=%5x%6")
+                      .arg(arcFrame.width())
+                      .arg(arcFrame.height())
+                      .arg(ellipseDefault.width())
+                      .arg(ellipseDefault.height())
+                      .arg(sectorDefault.width())
+                      .arg(sectorDefault.height()));
     }
 
     // 需求 28：几个星星按角的个数顺序排在一起（四角/十字星 → 五角星 → 六芒星）。

@@ -162,8 +162,9 @@ void MainWindow::InsertCurve(LineGlyph glyph, ArrowStyle startArrow, ArrowStyle 
     if (!m_view || !m_scene) {
         return;
     }
+    // 弧线默认外接框与椭圆 / 扇形一致（128×128，半轴 64/64）；直线 / 正弦保持扁长比例。
     const QSizeF size = glyph == LineGlyph::STRAIGHT ? QSizeF(128.0, 64.0)
-                        : glyph == LineGlyph::ARC    ? QSizeF(128.0, 94.0)
+                        : glyph == LineGlyph::ARC    ? QSizeF(128.0, 128.0)
                                                      : QSizeF(128.0, 40.0);
     const QRectF canvas = m_scene->CanvasRect();
     QPointF center = m_view->mapToScene(m_view->viewport()->rect().center());
