@@ -1052,6 +1052,12 @@
         <source>Sweep angle</source>
         <translation>扫过角度</translation>
     </message><message>
+        <source>Sine cycles</source>
+        <translation>正弦周期数</translation>
+    </message><message>
+        <source>Sine amplitude</source>
+        <translation>正弦振幅</translation>
+    </message><message>
         <source>Shape radius</source>
         <translation>图形半径</translation>
     </message><message>

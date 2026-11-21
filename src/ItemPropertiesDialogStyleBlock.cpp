@@ -245,7 +245,7 @@ void ItemPropertiesDialogStyleBlock::BuildStrokeRows(CanvasItem* item)
             m_arcStartAngleSpin->setObjectName(QStringLiteral("ItemPropertiesArcStartAngleValue"));
             m_arcStartAngleSpin->setRange(-360, 360);
             m_arcStartAngleSpin->setSingleStep(5);
-            m_arcStartAngleSpin->setSuffix(tr("°"));
+            m_arcStartAngleSpin->setSuffix(QStringLiteral("°"));
             m_arcStartAngleSpin->setValue(qRound(m_initialArcStartAngle));
             m_arcSweepAngleSpin = new QSpinBox(this);
             m_arcSweepAngleSpin->setObjectName(QStringLiteral("ItemPropertiesArcSweepAngleValue"));
