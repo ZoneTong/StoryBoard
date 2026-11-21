@@ -43,6 +43,9 @@ enum class IconId {
     // 直线两端箭头：起点朝左、终点朝右，避免两行都用旋转图标而分不清。
     ARROW_START,
     ARROW_END,
+    // 正弦波形两行：周期数是一个波峰下带向右箭头（沿轴推进），振幅是波峰右侧带向上箭头（波高）。
+    SINE_CYCLES,
+    SINE_AMPLITUDE,
     // 合并形状五项操作，图形参照 PPT「合并形状」菜单。
     MERGE_UNION,
     MERGE_COMBINE,

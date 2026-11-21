@@ -143,7 +143,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     auto* cyclesLayout = new QHBoxLayout(cyclesRow);
     cyclesLayout->setContentsMargins(0, 0, 0, 0);
     cyclesLayout->setSpacing(4);
-    QToolButton* cyclesIcon = MakeRowIcon(IconId::ROTATE_CCW, cyclesRow);
+    QToolButton* cyclesIcon = MakeRowIcon(IconId::SINE_CYCLES, cyclesRow);
     cyclesIcon->setToolTip(PropertiesPanel::tr("Sine cycles"));
     cyclesLayout->addWidget(cyclesIcon);
     m_sineCyclesSpin = new QSpinBox(cyclesRow);
@@ -163,7 +163,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     auto* amplitudeLayout = new QHBoxLayout(amplitudeRow);
     amplitudeLayout->setContentsMargins(0, 0, 0, 0);
     amplitudeLayout->setSpacing(4);
-    QToolButton* amplitudeIcon = MakeRowIcon(IconId::ROTATE_CCW, amplitudeRow);
+    QToolButton* amplitudeIcon = MakeRowIcon(IconId::SINE_AMPLITUDE, amplitudeRow);
     amplitudeIcon->setToolTip(PropertiesPanel::tr("Sine amplitude"));
     amplitudeLayout->addWidget(amplitudeIcon);
     m_sineAmplitudeSpin = new QSpinBox(amplitudeRow);

@@ -155,6 +155,31 @@ void DrawArrowEnd(QPainter& painter, IconId)
     painter.drawLine(QPointF(20.0, 12.0), QPointF(15.0, 16.5));
 }
 
+void DrawSineCycles(QPainter& painter, IconId)
+{
+    // 正弦周期数：一个波峰接一个波谷的正弦波，波峰下方一支向右箭头，表达沿轴推进的周期。
+    QPainterPath wave;
+    wave.moveTo(3.0, 11.0);
+    wave.cubicTo(6.5, 3.5, 9.5, 3.5, 12.0, 11.0);
+    wave.cubicTo(14.5, 17.5, 18.0, 17.5, 21.0, 11.0);
+    painter.drawPath(wave);
+    painter.drawLine(QPointF(4.0, 19.5), QPointF(14.0, 19.5));
+    painter.drawLine(QPointF(14.0, 19.5), QPointF(11.0, 16.8));
+    painter.drawLine(QPointF(14.0, 19.5), QPointF(11.0, 22.0));
+}
+
+void DrawSineAmplitude(QPainter& painter, IconId)
+{
+    // 正弦振幅：一个波峰的正弦波，波峰右侧一支向上箭头，表达波峰的高度。
+    QPainterPath wave;
+    wave.moveTo(3.0, 18.0);
+    wave.cubicTo(5.5, 4.0, 10.5, 4.0, 13.0, 18.0);
+    painter.drawPath(wave);
+    painter.drawLine(QPointF(19.0, 21.0), QPointF(19.0, 6.5));
+    painter.drawLine(QPointF(19.0, 6.5), QPointF(16.3, 9.5));
+    painter.drawLine(QPointF(19.0, 6.5), QPointF(21.7, 9.5));
+}
+
 constexpr struct IconEntry {
     IconId id;
     void (*draw)(QPainter&, IconId);
@@ -168,11 +193,12 @@ constexpr struct IconEntry {
     {IconId::CORNER, DrawCorner},
     {IconId::SMOOTH, DrawSmooth},
     {IconId::OPACITY, DrawOpacity},
-    {IconId::OPACITY, DrawOpacity},
     {IconId::ANGLE_RIGHT, DrawAngleRight},
     {IconId::ANGLE_LEFT, DrawAngleLeft},
     {IconId::ARROW_START, DrawArrowStart},
     {IconId::ARROW_END, DrawArrowEnd},
+    {IconId::SINE_CYCLES, DrawSineCycles},
+    {IconId::SINE_AMPLITUDE, DrawSineAmplitude},
 };
 
 } // namespace

@@ -730,6 +730,14 @@ void selftest::RunShapeItemTests(Context& ctx)
         };
         ctx.Check(hasInk(right) && hasInk(left) && right != left,
                   QStringLiteral("底角 A / B 图标分别为开口朝右、朝左且都不是空白"));
+        // 正弦周期 / 振幅图标：波峰下向右箭头与波峰右向上箭头，两者互不相同，
+        // 也不再复用通用的旋转图标。
+        const QImage sineCycles = iconImage(IconId::SINE_CYCLES);
+        const QImage sineAmplitude = iconImage(IconId::SINE_AMPLITUDE);
+        const QImage rotate = iconImage(IconId::ROTATE_CCW);
+        ctx.Check(hasInk(sineCycles) && hasInk(sineAmplitude) && sineCycles != sineAmplitude && sineCycles != rotate &&
+                      sineAmplitude != rotate,
+                  QStringLiteral("正弦周期 / 振幅使用独立波形箭头图标"));
     }
 
     QList<ShapeItem*> shapeItems;
