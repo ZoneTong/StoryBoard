@@ -157,27 +157,30 @@ void DrawArrowEnd(QPainter& painter, IconId)
 
 void DrawSineCycles(QPainter& painter, IconId)
 {
-    // 正弦周期数：一个波峰接一个波谷的正弦波，波峰下方一支向右箭头，表达沿轴推进的周期。
+    // 正弦周期数：一个波峰，波峰下方一支左右双向箭头，表达周期沿轴往复推进。
     QPainterPath wave;
-    wave.moveTo(3.0, 11.0);
-    wave.cubicTo(6.5, 3.5, 9.5, 3.5, 12.0, 11.0);
-    wave.cubicTo(14.5, 17.5, 18.0, 17.5, 21.0, 11.0);
+    wave.moveTo(4.0, 13.0);
+    wave.cubicTo(6.5, 5.5, 9.5, 5.5, 12.0, 13.0);
     painter.drawPath(wave);
-    painter.drawLine(QPointF(4.0, 19.5), QPointF(14.0, 19.5));
-    painter.drawLine(QPointF(14.0, 19.5), QPointF(11.0, 16.8));
-    painter.drawLine(QPointF(14.0, 19.5), QPointF(11.0, 22.0));
+    painter.drawLine(QPointF(4.0, 19.5), QPointF(20.0, 19.5));
+    painter.drawLine(QPointF(4.0, 19.5), QPointF(7.0, 17.0));
+    painter.drawLine(QPointF(4.0, 19.5), QPointF(7.0, 22.0));
+    painter.drawLine(QPointF(20.0, 19.5), QPointF(17.0, 17.0));
+    painter.drawLine(QPointF(20.0, 19.5), QPointF(17.0, 22.0));
 }
 
 void DrawSineAmplitude(QPainter& painter, IconId)
 {
-    // 正弦振幅：一个波峰的正弦波，波峰右侧一支向上箭头，表达波峰的高度。
+    // 正弦振幅：一个波峰，波峰右侧一支上下双向箭头，表达波峰到谷的高度。
     QPainterPath wave;
     wave.moveTo(3.0, 18.0);
     wave.cubicTo(5.5, 4.0, 10.5, 4.0, 13.0, 18.0);
     painter.drawPath(wave);
-    painter.drawLine(QPointF(19.0, 21.0), QPointF(19.0, 6.5));
-    painter.drawLine(QPointF(19.0, 6.5), QPointF(16.3, 9.5));
-    painter.drawLine(QPointF(19.0, 6.5), QPointF(21.7, 9.5));
+    painter.drawLine(QPointF(19.0, 6.0), QPointF(19.0, 21.0));
+    painter.drawLine(QPointF(19.0, 6.0), QPointF(16.3, 8.8));
+    painter.drawLine(QPointF(19.0, 6.0), QPointF(21.7, 8.8));
+    painter.drawLine(QPointF(19.0, 21.0), QPointF(16.3, 18.2));
+    painter.drawLine(QPointF(19.0, 21.0), QPointF(21.7, 18.2));
 }
 
 constexpr struct IconEntry {

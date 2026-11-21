@@ -70,6 +70,7 @@
 #include <QPainterPath>
 #include <QPdfWriter>
 #include <QPixmap>
+#include <QRect>
 #include <QPlainTextEdit>
 #include <QPolygonF>
 #include <QPushButton>
@@ -730,7 +731,7 @@ void selftest::RunShapeItemTests(Context& ctx)
         };
         ctx.Check(hasInk(right) && hasInk(left) && right != left,
                   QStringLiteral("底角 A / B 图标分别为开口朝右、朝左且都不是空白"));
-        // 正弦周期 / 振幅图标：波峰下向右箭头与波峰右向上箭头，两者互不相同，
+        // 正弦周期 / 振幅图标：波峰下左右双向箭头与波峰右上下双向箭头，两者互不相同，
         // 也不再复用通用的旋转图标。
         const QImage sineCycles = iconImage(IconId::SINE_CYCLES);
         const QImage sineAmplitude = iconImage(IconId::SINE_AMPLITUDE);
@@ -738,6 +739,21 @@ void selftest::RunShapeItemTests(Context& ctx)
         ctx.Check(hasInk(sineCycles) && hasInk(sineAmplitude) && sineCycles != sineAmplitude && sineCycles != rotate &&
                       sineAmplitude != rotate,
                   QStringLiteral("正弦周期 / 振幅使用独立波形箭头图标"));
+        // 双向箭头：周期图标的箭杆两端（左右下角）都有墨迹，振幅图标的箭杆两端
+        // （右上与右下）都有墨迹。
+        const auto hasInkIn = [](const QImage& image, const QRect& region) {
+            for (int y = region.top(); y <= region.bottom(); ++y) {
+                for (int x = region.left(); x <= region.right(); ++x) {
+                    if (image.valid(x, y) && image.pixelColor(x, y).alpha() > 0) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+        ctx.Check(hasInkIn(sineCycles, QRect(0, 30, 12, 14)) && hasInkIn(sineCycles, QRect(32, 30, 12, 14)) &&
+                      hasInkIn(sineAmplitude, QRect(30, 0, 14, 12)) && hasInkIn(sineAmplitude, QRect(30, 32, 14, 12)),
+                  QStringLiteral("周期图标为左右双向箭头、振幅图标为上下双向箭头"));
     }
 
     QList<ShapeItem*> shapeItems;
