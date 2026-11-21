@@ -208,30 +208,47 @@ void selftest::RunShapeItemTests(Context& ctx)
         ctx.Check(qAbs(paraState.parallelogramAngle - 170.0) < 0.01, QStringLiteral("平行四边形内角进入状态快照"),
                   QStringLiteral("angle=%1").arg(paraState.parallelogramAngle));
     }
-    // 需求 3：内角旋钮以框中心为 0，锐角在右、钝角在左，可连续跨过 90°。
+    // 需求：内角旋钮绕左下顶点拖动，底边长度全程不变；锐角在右、钝角在左，可连续跨过 90°。
+    // 旋钮下移到框内 22px，90° 时不再与任何角手柄重合。
     {
         ParallelogramItem para;
-        const QRectF frame(0.0, 0.0, 110.85, 64.0);
         bool ok = false;
+        auto KnobInScene = [&para, &ok]() {
+            const QPointF local = para.CustomHandleCenter(CanvasItem::SKEW, &ok);
+            return para.mapToScene(local);
+        };
+        auto BottomLength = [&para]() {
+            const QPainterPath path = para.CurrentPath(para.ContentRect());
+            return QLineF(path.elementAt(0), path.elementAt(1)).length();
+        };
         para.SetParallelogramAngle(60.0);
-        const QPointF acuteKnob = para.CustomHandleCenter(CanvasItem::SKEW, &ok);
+        const qreal baseLength = BottomLength();
+        const QPointF acuteKnob = KnobInScene();
         para.SetParallelogramAngle(90.0);
-        const QPointF rightKnob = para.CustomHandleCenter(CanvasItem::SKEW, &ok);
+        const qreal rightBase = BottomLength();
+        const QPointF rightKnob = KnobInScene();
         para.SetParallelogramAngle(120.0);
-        const QPointF obtuseKnob = para.CustomHandleCenter(CanvasItem::SKEW, &ok);
+        const qreal obtuseBase = BottomLength();
+        const QPointF obtuseKnob = KnobInScene();
         ctx.Check(
             ok && acuteKnob.x() > rightKnob.x() && rightKnob.x() > obtuseKnob.x() &&
-                qAbs(rightKnob.x() - frame.center().x()) < 0.01,
+                qAbs(rightKnob.x() - para.ContentSize().width() / 2.0) < 0.01,
             QStringLiteral("平行四边形内角旋钮连续跨越锐角与钝角"),
             QStringLiteral("acute=%1 right=%2 obtuse=%3").arg(acuteKnob.x()).arg(rightKnob.x()).arg(obtuseKnob.x()));
+        ctx.Check(qAbs(baseLength - rightBase) < 0.01 && qAbs(baseLength - obtuseBase) < 0.01,
+                  QStringLiteral("改变左下内角时底边长度保持不变"),
+                  QStringLiteral("60=%1 90=%2 120=%3").arg(baseLength).arg(rightBase).arg(obtuseBase));
+        ctx.Check(acuteKnob.y() > para.ContentRect().top() + 12.0 && rightKnob.y() > para.ContentRect().top() + 12.0,
+                  QStringLiteral("内角旋钮下移，不在顶边/角手柄处"),
+                  QStringLiteral("y=%1/%2").arg(acuteKnob.y()).arg(rightKnob.y()));
         // 角度是真相：89°/91° 都落在同一内容框宽度内，说明 90° 前后没有断档或跳变。
         para.SetParallelogramAngle(89.0);
-        const QPainterPath steepPath = para.CurrentPath(frame);
+        const QPainterPath steepPath = para.CurrentPath(para.ContentRect());
         para.SetParallelogramAngle(91.0);
-        const QPainterPath bluntPath = para.CurrentPath(frame);
+        const QPainterPath bluntPath = para.CurrentPath(para.ContentRect());
         ctx.Check(
-            qAbs(steepPath.boundingRect().width() - frame.width()) < 1.0 &&
-                qAbs(bluntPath.boundingRect().width() - frame.width()) < 1.0,
+            qAbs(steepPath.boundingRect().width() - para.ContentSize().width()) < 1.0 &&
+                qAbs(bluntPath.boundingRect().width() - para.ContentSize().width()) < 1.0,
             QStringLiteral("90° 前后的平行四边形轮廓都不越出内容框"),
             QStringLiteral("89=%1 91=%2").arg(steepPath.boundingRect().width()).arg(bluntPath.boundingRect().width()));
     }

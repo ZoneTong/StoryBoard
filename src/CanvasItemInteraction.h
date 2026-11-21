@@ -35,4 +35,7 @@ class CanvasItemInteraction {
     // 拖三角形顶点 C 时固定底边：记录拖拽开始时的 A/B 场景位置。
     QPointF m_triangleDragBaseA;
     QPointF m_triangleDragBaseB;
+    // 拖平行四边形内角旋钮时固定底边：记录左下顶点场景位置与底边长度。
+    QPointF m_parallelogramBottomLeft;
+    qreal m_parallelogramBaseLength = 0.0;
 };
