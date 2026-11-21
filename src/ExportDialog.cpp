@@ -244,9 +244,9 @@ void ExportDialog::UpdateEstimatedSize()
     const qreal scale = m_scaleSpin->value();
     int width = qMax(1, qCeil(area.width() * scale));
     int height = qMax(1, qCeil(area.height() * scale));
-    constexpr int maxSide = 12000;
-    if (width > maxSide || height > maxSide) {
-        const qreal factor = qMin(static_cast<qreal>(maxSide) / width, static_cast<qreal>(maxSide) / height);
+    constexpr int MAX_SIDE = 12000;
+    if (width > MAX_SIDE || height > MAX_SIDE) {
+        const qreal factor = qMin(static_cast<qreal>(MAX_SIDE) / width, static_cast<qreal>(MAX_SIDE) / height);
         width = qMax(1, qCeil(width * factor));
         height = qMax(1, qCeil(height * factor));
     }

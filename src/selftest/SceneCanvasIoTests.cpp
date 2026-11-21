@@ -318,17 +318,17 @@ void selftest::RunSceneCanvasIoTests(Context& ctx)
         // 棋盘格按固定 64px 铺格（长度单位基准），不再按画布等分：
         // 首行 / 首列各取前 16 个格心采样，格数与步长任一不符都会失配。
         const QRectF checkerCanvas = checkerScene.CanvasRect();
-        constexpr qreal tileWidth = 64.0;
-        constexpr qreal tileHeight = 64.0;
+        constexpr qreal TILE_WIDTH = 64.0;
+        constexpr qreal TILE_HEIGHT = 64.0;
         const int sampleCount =
-            qMin(16, qMin(qFloor(checkerCanvas.width() / tileWidth), qFloor(checkerCanvas.height() / tileHeight)));
+            qMin(16, qMin(qFloor(checkerCanvas.width() / TILE_WIDTH), qFloor(checkerCanvas.height() / TILE_HEIGHT)));
         int mismatchedCells = 0;
         for (int index = 0; index < sampleCount; ++index) {
             const bool expectWhite = (index % 2) == 0;
             const QPoint columnPoint = checkerView.mapFromScene(
-                QPointF(checkerCanvas.left() + tileWidth * (index + 0.5), checkerCanvas.top() + tileHeight * 0.5));
+                QPointF(checkerCanvas.left() + TILE_WIDTH * (index + 0.5), checkerCanvas.top() + TILE_HEIGHT * 0.5));
             const QPoint rowPoint = checkerView.mapFromScene(
-                QPointF(checkerCanvas.left() + tileWidth * 0.5, checkerCanvas.top() + tileHeight * (index + 0.5)));
+                QPointF(checkerCanvas.left() + TILE_WIDTH * 0.5, checkerCanvas.top() + TILE_HEIGHT * (index + 0.5)));
             for (const QColor& cellPixel : {viewImage.pixelColor(columnPoint), viewImage.pixelColor(rowPoint)}) {
                 const bool isWhite = cellPixel.red() > 245 && cellPixel.green() > 245 && cellPixel.blue() > 245;
                 const bool isGray = cellPixel.red() < 235 && cellPixel.blue() < 245;
@@ -338,7 +338,7 @@ void selftest::RunSceneCanvasIoTests(Context& ctx)
             }
         }
         ctx.Check(mismatchedCells == 0, QStringLiteral("视图透明背景按画布 16×16 等分显示棋盘格"),
-                  QStringLiteral("tile=%1x%2 mismatched=%3").arg(tileWidth).arg(tileHeight).arg(mismatchedCells));
+                  QStringLiteral("tile=%1x%2 mismatched=%3").arg(TILE_WIDTH).arg(TILE_HEIGHT).arg(mismatchedCells));
     }
 
     // ---------------------------------------------------------------

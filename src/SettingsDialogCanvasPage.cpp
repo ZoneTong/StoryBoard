@@ -82,9 +82,9 @@ SettingsDialogCanvasPage::SettingsDialogCanvasPage(const AppSettings& settings, 
 void SettingsDialogCanvasPage::WriteTo(AppSettings& settings) const
 {
     // 需求 16：画布宽高必须是棋盘格的整数倍，不接受半格；这里吸附到最近的 64 倍数。
-    constexpr int cell = 64;
-    const int width = qMax(cell, qRound(m_canvasWidthSpin->value() / static_cast<qreal>(cell)) * cell);
-    const int height = qMax(cell, qRound(m_canvasHeightSpin->value() / static_cast<qreal>(cell)) * cell);
+    constexpr int CELL = 64;
+    const int width = qMax(CELL, qRound(m_canvasWidthSpin->value() / static_cast<qreal>(CELL)) * CELL);
+    const int height = qMax(CELL, qRound(m_canvasHeightSpin->value() / static_cast<qreal>(CELL)) * CELL);
     settings.canvasSize = QSizeF(width, height);
 }
 

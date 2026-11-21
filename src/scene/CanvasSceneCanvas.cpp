@@ -254,7 +254,7 @@ void CanvasScene::DrawCanvasBackground(QPainter* painter, const QRectF& area, bo
     }
     const bool drawMinor = zoom >= 0.32;
     // 网格步长与棋盘格一致：1 格 = 32px，每 5 格一条主网格线（160px）。
-    constexpr qreal step = 32.0;
+    constexpr qreal STEP = 32.0;
 
     QPen minorPen(QColor(15, 23, 42, 13));
     minorPen.setCosmetic(true);
@@ -265,23 +265,23 @@ void CanvasScene::DrawCanvasBackground(QPainter* painter, const QRectF& area, bo
 
     painter->save();
     painter->setClipRect(area);
-    const int columns = qCeil(canvas.width() / step);
+    const int columns = qCeil(canvas.width() / STEP);
     for (int i = 0; i <= columns; ++i) {
         const bool major = (i % 5) == 0;
         if (!major && !drawMinor) {
             continue;
         }
-        const qreal x = canvas.left() + i * step;
+        const qreal x = canvas.left() + i * STEP;
         painter->setPen(major ? majorPen : minorPen);
         painter->drawLine(QPointF(x, canvas.top()), QPointF(x, canvas.bottom()));
     }
-    const int rows = qCeil(canvas.height() / step);
+    const int rows = qCeil(canvas.height() / STEP);
     for (int i = 0; i <= rows; ++i) {
         const bool major = (i % 5) == 0;
         if (!major && !drawMinor) {
             continue;
         }
-        const qreal y = canvas.top() + i * step;
+        const qreal y = canvas.top() + i * STEP;
         painter->setPen(major ? majorPen : minorPen);
         painter->drawLine(QPointF(canvas.left(), y), QPointF(canvas.right(), y));
     }
@@ -297,11 +297,11 @@ void CanvasScene::DrawCheckerboard(QPainter* painter, const QRectF& canvas) cons
 
     // 棋盘格是长度单位基准：每格固定 64 逻辑像素（需求 16：由 32 扩大一倍），从画布左上角铺起，
     // 不再随画布尺寸等分；画布宽高不是 64 倍数时，右 / 下边缘保留残格。
-    constexpr qreal tileSize = 64.0;
-    const int columnsCount = qMax(1, qCeil(canvas.width() / tileSize));
-    const int rowsCount = qMax(1, qCeil(canvas.height() / tileSize));
-    const qreal tileWidth = tileSize;
-    const qreal tileHeight = tileSize;
+    constexpr qreal TILE_SIZE = 64.0;
+    const int columnsCount = qMax(1, qCeil(canvas.width() / TILE_SIZE));
+    const int rowsCount = qMax(1, qCeil(canvas.height() / TILE_SIZE));
+    const qreal tileWidth = TILE_SIZE;
+    const qreal tileHeight = TILE_SIZE;
     const QColor white(255, 255, 255);
     const QColor lightGray(229, 231, 235);
 

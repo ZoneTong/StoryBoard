@@ -24,7 +24,7 @@ bool SamePoints(const QVector<QPointF>& first, const QVector<QPointF>& second)
     return true;
 }
 
-qreal pointToSegmentDistance(const QPointF& point, const QPointF& start, const QPointF& end)
+qreal PointToSegmentDistance(const QPointF& point, const QPointF& start, const QPointF& end)
 {
     const QPointF segment = end - start;
     const qreal lengthSquared = QPointF::dotProduct(segment, segment);
@@ -53,7 +53,7 @@ QVector<QPointF> SimplifyRdp(const QVector<QPointF>& points, qreal tolerance)
         qreal maxDistance = 0.0;
         int maxIndex = -1;
         for (int i = first + 1; i < last; ++i) {
-            const qreal distance = pointToSegmentDistance(points.at(i), points.at(first), points.at(last));
+            const qreal distance = PointToSegmentDistance(points.at(i), points.at(first), points.at(last));
             if (distance > maxDistance) {
                 maxDistance = distance;
                 maxIndex = i;
@@ -106,7 +106,7 @@ bool LooksLikeStraightLine(const QVector<QPointF>& points, qreal tolerance, qrea
 
     qreal maxDeviation = 0.0;
     for (int i = 1; i < points.size() - 1; ++i) {
-        maxDeviation = qMax(maxDeviation, pointToSegmentDistance(points.at(i), start, end));
+        maxDeviation = qMax(maxDeviation, PointToSegmentDistance(points.at(i), start, end));
     }
     if (maxDeviation > tolerance) {
         return false;
