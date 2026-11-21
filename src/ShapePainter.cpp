@@ -172,11 +172,10 @@ void ShapePainter::PaintPatternFill(QPainter* painter, const QPainterPath& clip,
 
 void ShapePainter::PaintShape(QPainter* painter, const QPainterPath& path, const QRectF& rect, ShapeType type,
                               const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth,
-                              Qt::PenStyle strokeStyle, FillStyle fillStyle, qreal opacity)
+                              Qt::PenStyle strokeStyle, FillStyle fillStyle)
 {
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
-    painter->setOpacity(painter->opacity() * opacity);
 
     if (IsPatternFill(fillStyle)) {
         PaintPatternFill(painter, path, rect, fillColor, fillStyle);

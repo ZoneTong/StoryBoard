@@ -317,16 +317,6 @@ void ShapeItem::StrokeChanged()
     update();
 }
 
-void ShapeItem::SetItemOpacity(qreal opacity)
-{
-    const qreal clamped = qBound<qreal>(0.0, opacity, 1.0);
-    if (qFuzzyCompare(m_opacity, clamped)) {
-        return;
-    }
-    m_opacity = clamped;
-    update();
-}
-
 void ShapeItem::SetCornerRadius(qreal radius)
 {
     // 圆角半径按画布像素处理，不超过短边的一半；0 表示直角。
@@ -348,7 +338,7 @@ ShapeItemState ShapeItem::State() const
     ShapeItemState result;
     result.fill = FillState();
     result.stroke = StrokeState();
-    result.opacity = m_opacity;
+    result.opacity = ItemOpacity();
     result.cornerRadius = m_cornerRadius;
     result.arc = ArcAngleState();
     result.bottomAngle1 = m_bottomAngle1;
@@ -364,7 +354,7 @@ void ShapeItem::ApplyState(const ShapeItemState& state)
 {
     ApplyFillState(state.fill);
     ApplyStrokeState(state.stroke);
-    m_opacity = state.opacity;
+    SetItemOpacity(state.opacity);
     m_cornerRadius = state.cornerRadius;
     ApplyArcAngleState(state.arc);
     m_bottomAngle1 = state.bottomAngle1;
@@ -443,7 +433,6 @@ void ShapeItem::PaintContent(QPainter* painter)
     // 图片仍然裁剪到填充区并避开描边带，描线不会被打断。
     if (!m_fillImage.isNull()) {
         painter->save();
-        painter->setOpacity(painter->opacity() * m_opacity);
         QPainterPath clip = path;
         if (m_strokeWidth > 0.0 && m_strokeColor.alpha() > 0) {
             QPainterPathStroker stroker;
@@ -456,7 +445,7 @@ void ShapeItem::PaintContent(QPainter* painter)
     }
 
     ShapePainter::PaintShape(painter, path, rect, shapeType(), m_strokeColor, m_fillColor, m_strokeWidth, m_strokeStyle,
-                             m_fillStyle, m_opacity);
+                             m_fillStyle);
 }
 
 ShapeLayer ShapeItem::shapeLayer(int index) const

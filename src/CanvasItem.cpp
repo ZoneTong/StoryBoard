@@ -104,7 +104,12 @@ void CanvasItem::SetContentSize(const QSizeF& size)
 
 void CanvasItem::SetItemOpacity(qreal opacity)
 {
-    QGraphicsItem::setOpacity(qBound<qreal>(0.0, opacity, 1.0));
+    const qreal clamped = qBound<qreal>(0.0, opacity, 1.0);
+    if (qFuzzyCompare(m_itemOpacity, clamped)) {
+        return;
+    }
+    m_itemOpacity = clamped;
+    update();
 }
 
 void CanvasItem::SetLayerId(int layerId)
@@ -188,6 +193,11 @@ QPainterPath CanvasItem::PaintedShape() const
 
 QPainterPath CanvasItem::ClippingShape() const
 {
+    // 半透明内容不能整块遮挡下层，否则 40% 的红矩形下面会露出画板底色而不是
+    // 下层图形；这时让下层按原样参与合成，由透明度自然混色。
+    if (m_itemOpacity < 1.0) {
+        return QPainterPath();
+    }
     return PaintedShape();
 }
 
@@ -204,6 +214,8 @@ void CanvasItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing, true);
     painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+    // 透明度只作用于内容，选中框与手柄在恢复后按不透明绘制。
+    painter->setOpacity(painter->opacity() * m_itemOpacity);
     PaintContent(painter);
     painter->restore();
 
@@ -389,6 +401,10 @@ QJsonObject CanvasItem::BaseJson() const
     if (!qFuzzyIsNull(m_rotation)) {
         json.insert(QStringLiteral("rotation"), m_rotation);
     }
+    // 透明度现在对所有图元生效，和几何一样写进 baseJson；1.0 不落键。
+    if (!qFuzzyCompare(m_itemOpacity, 1.0)) {
+        json.insert(QStringLiteral("opacity"), m_itemOpacity);
+    }
     if (!m_name.isEmpty()) {
         json.insert(QStringLiteral("name"), m_name);
     }
@@ -405,5 +421,6 @@ void CanvasItem::ApplyBaseJson(const QJsonObject& json)
     m_groupId = qMax(0, json.value(QStringLiteral("group")).toInt(0));
     m_zOrder = json.contains(QStringLiteral("zOrder")) ? qMax(0, json.value(QStringLiteral("height")).toInt(0)) : -1;
     SetRotationAngle(json.value(QStringLiteral("rotation")).toDouble(0.0));
+    SetItemOpacity(json.value(QStringLiteral("opacity")).toDouble(1.0));
     m_name = json.value(QStringLiteral("name")).toString().trimmed();
 }

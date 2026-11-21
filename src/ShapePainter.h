@@ -20,10 +20,11 @@ class ShapePainter {
     static void PaintPatternFill(QPainter* painter, const QPainterPath& clip, const QRectF& rect, const QColor& color,
                                  FillStyle style);
 
-    // 按当前属性把轮廓画到 painter 上；save/restore、抗锯齿与透明度在方法内部完成。
+    // 按当前属性把轮廓画到 painter 上；save/restore 与抗锯齿在方法内部完成。
+    // 内容透明度由 CanvasItem 在调用前统一施加，这里不再单独压暗。
     static void PaintShape(QPainter* painter, const QPainterPath& path, const QRectF& rect, ShapeType type,
                            const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth,
-                           Qt::PenStyle strokeStyle, FillStyle fillStyle, qreal opacity);
+                           Qt::PenStyle strokeStyle, FillStyle fillStyle);
 
     // 工具按钮缩略图：按类型取默认轮廓，纯描边类型只落笔，其余叠加半透明填充。
     static QIcon MakeIcon(ShapeType type, const QColor& color, int logicalSize);

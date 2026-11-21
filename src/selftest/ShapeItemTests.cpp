@@ -108,6 +108,38 @@ void selftest::RunShapeItemTests(Context& ctx)
     ctx.Check(shapeTypes.size() == 17, QStringLiteral("提供 17 种有面积图形（直线/弧线/正弦已并入曲线族）"),
               QStringLiteral("count=%1").arg(shapeTypes.size()));
 
+    // 透明度统一为“内容透明度”：不压 QGraphicsItem，只压 PaintContent() 的像素。
+    {
+        CanvasScene opacityScene;
+        opacityScene.ApplyCanvasSize(QSizeF(400, 300));
+        opacityScene.SetShowGrid(false);
+        ShapeItem* underRect = CreateShapeItem(ShapeType::RECTANGLE);
+        underRect->SetFillColor(QColor(30, 80, 200));
+        underRect->SetStrokeWidth(0.0);
+        underRect->SetContentSize(QSizeF(80, 80));
+        underRect->setPos(QPointF(20, 20));
+        opacityScene.AddItemsWithUndo({underRect}, QStringLiteral("添加底层矩形"));
+
+        ShapeItem* opacityRect = CreateShapeItem(ShapeType::RECTANGLE);
+        opacityRect->SetFillColor(QColor(220, 38, 38));
+        opacityRect->SetStrokeWidth(0.0);
+        opacityRect->SetContentSize(QSizeF(80, 80));
+        opacityRect->setPos(QPointF(20, 20));
+        opacityRect->SetItemOpacity(0.4);
+        opacityScene.AddItemsWithUndo({opacityRect}, QStringLiteral("添加半透明矩形"));
+
+        const QImage rendered = opacityScene.RenderImage(opacityRect->SceneContentRect(), 1.0);
+        const QColor center = rendered.pixelColor(rendered.width() / 2, rendered.height() / 2);
+        ctx.Check(center.alpha() >= 245 && center.red() >= 80 && center.blue() >= 100 &&
+                      qFuzzyCompare(opacityRect->opacity(), 1.0),
+                  QStringLiteral("图形内容透明度与下层正常混色"),
+                  QStringLiteral("rgba=%1,%2,%3,%4")
+                      .arg(center.red())
+                      .arg(center.green())
+                      .arg(center.blue())
+                      .arg(center.alpha()));
+    }
+
     // 需求 6：填充 / 描线属性各自归入基类，有面积图形同时多继承两者，
     // 零面积描线只继承描线基类；属性面板按基类虚函数批量改选中图元。
     {

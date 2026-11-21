@@ -131,9 +131,7 @@ class ShapeItem : public CanvasItem, public FillAttributes, public StrokeAttribu
     QSizeF AdjustedContentSize(const QSizeF& size) const override;
 
     // 填充 / 描线的读写接口由两个属性基类提供；多边形按内部图层覆写其中若干条。
-    // 这里只保留图形特有的组合入口与几何属性。
-    qreal ItemOpacity() const override { return m_opacity; }
-    void SetItemOpacity(qreal opacity) override;
+    // 透明度已收口到 CanvasItem，按“内容透明度”统一处理。
     qreal CornerRadius() const { return m_cornerRadius; }
     qreal BottomAngle1() const { return m_bottomAngle1; }
     qreal BottomAngle2() const { return m_bottomAngle2; }
@@ -191,7 +189,6 @@ class ShapeItem : public CanvasItem, public FillAttributes, public StrokeAttribu
     qreal FramePadding() const override { return qMax<qreal>(22.0, StrokeWidth() + 6.0); }
 
   private:
-    qreal m_opacity = 1.0;
     // 圆角半径，单位画布 px；0 表示直角。
     qreal m_cornerRadius = 0.0;
     qreal m_bottomAngle1 = 60.0;

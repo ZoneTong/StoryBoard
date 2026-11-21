@@ -39,7 +39,6 @@ QJsonObject ShapeItem::ToJson() const
     // 填充与描线两组属性由各自的属性基类序列化，图形只拼接几何与其它字段。
     WriteStrokeJson(json);
     WriteFillJson(json);
-    json.insert(QStringLiteral("opacity"), m_opacity);
     json.insert(QStringLiteral("cornerRadius"), m_cornerRadius);
     WriteArcAngleJson(json);
     // 三角形以角度为真相，两个底角随画布保存；旧文件没有这两个字段时按 60°/60° 反算。
@@ -97,7 +96,6 @@ void ShapeItem::FromJson(const QJsonObject& json)
     ReadStrokeJson(json);
     // 旧文件缺 fillColor 时按描线色派生 36/255 透明度的纯色填充，保持原外观。
     ReadFillJson(json, StrokeColor());
-    m_opacity = qBound<qreal>(0.0, json.value(QStringLiteral("opacity")).toDouble(1.0), 1.0);
     m_cornerRadius = qMax<qreal>(0.0, json.value(QStringLiteral("cornerRadius")).toDouble(0.0));
     ReadArcAngleJson(json);
     // 需求 9：平行四边形内角；旧文件没有这个键时按默认 60°。

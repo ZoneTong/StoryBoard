@@ -77,7 +77,11 @@ class CanvasItem : public QGraphicsObject {
     void SetContentSize(const QSizeF& size);
     QRectF SceneContentRect() const;
 
-    // 透明度是所有图元共有的属性；图形因为有自绘填充，单独覆盖这两个接口。
+    // 所有图元共用“内容透明度”：只压 PaintContent() 画出的填充、描线、
+    // 文字与图片，选中框、手柄等编辑态覆盖层始终按 100% 绘制。
+    qreal ItemOpacity() const { return m_itemOpacity; }
+    void SetItemOpacity(qreal opacity);
+
     // 文字能力查询：非文字图元返回 false / 空值，文字图元由 TextItem 覆写。
     virtual bool HasTextFacet() const { return false; }
     virtual QString TextContent() const { return QString(); }
@@ -86,9 +90,6 @@ class CanvasItem : public QGraphicsObject {
     virtual QSizeF TextNaturalSize() const { return QSizeF(); }
     virtual TextItemState TextState() const { return TextItemState(); }
     virtual void ApplyTextState(const TextItemState& state) { Q_UNUSED(state) }
-
-    virtual qreal ItemOpacity() const { return QGraphicsItem::opacity(); }
-    virtual void SetItemOpacity(qreal opacity);
 
     int LayerId() const { return m_layerId; }
     void SetLayerId(int layerId);
@@ -166,6 +167,7 @@ class CanvasItem : public QGraphicsObject {
     int m_groupId = 0;
     int m_zOrder = -1;
     qreal m_rotation = 0.0;
+    qreal m_itemOpacity = 1.0;
     QString m_name;
     DragKind m_drag = DragKind::NONE;
     Handle m_resizeHandle = NO_HANDLE;

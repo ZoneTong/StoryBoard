@@ -139,6 +139,10 @@ void selftest::RunTextItemTests(Context& ctx)
     textUndo.redo();
     ctx.Check(textScene.CanvasItemCount() == 1, QStringLiteral("重做添加文字"));
 
+    heading->SetItemOpacity(0.35);
+    ctx.Check(qAbs(heading->ItemOpacity() - 0.35) < 0.01 && qFuzzyCompare(heading->opacity(), 1.0),
+              QStringLiteral("透明度按内容语义收口到 CanvasItem"));
+
     QFont editedFont(QStringLiteral("Microsoft YaHei UI"));
     editedFont.setPointSize(24);
     editedFont.setItalic(true);
@@ -196,6 +200,8 @@ void selftest::RunTextItemTests(Context& ctx)
                   QStringLiteral("画布恢复文字内容与样式"));
         ctx.Check(loadedText->LayerId() == textScene.ActiveLayerId() && loadedText->ZOrder() == heading->ZOrder(),
                   QStringLiteral("画布恢复文字图层与高度"));
+        ctx.Check(qAbs(loadedText->ItemOpacity() - 0.35) < 0.01 && qFuzzyCompare(loadedText->opacity(), 1.0),
+                  QStringLiteral("画布恢复文字内容透明度"));
         ctx.Check(qAbs(loadedText->ContentSize().width() - heading->ContentSize().width()) < 0.5 &&
                       qAbs(loadedText->ContentSize().height() - heading->ContentSize().height()) < 0.5,
                   QStringLiteral("画布恢复文字尺寸"));
