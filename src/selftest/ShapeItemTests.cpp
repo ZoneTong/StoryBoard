@@ -592,6 +592,23 @@ void selftest::RunShapeItemTests(Context& ctx)
             QStringLiteral("angles=%1/%2").arg(clampedTriangle.BottomAngle1()).arg(clampedTriangle.BottomAngle2()));
     }
     {
+        // 底角拖到 90° 时顶点 C 与角顶点横向重合：APEX 手柄必须下移避开角落手柄，
+        // 否则把手柄顶在顶点上，用户点中的是 TOP_LEFT / TOP_RIGHT 缩放手柄。
+        TriangleItem rightTriangle;
+        rightTriangle.SetTriangleAngles(90.0, 45.0);
+        bool apexOk = false;
+        const QPointF apexCenter = rightTriangle.CustomHandleCenter(CanvasItem::APEX, &apexOk);
+        const QPointF vertex = rightTriangle.triangleVertex(ShapeItem::TriangleVertex::C);
+        ctx.Check(apexOk && apexCenter.y() > rightTriangle.ContentRect().top() + 12.0 &&
+                      qAbs(apexCenter.x() - vertex.x()) < 0.01 && apexCenter.y() < rightTriangle.ContentRect().bottom(),
+                  QStringLiteral("三角形顶点手柄下移避开角落手柄"),
+                  QStringLiteral("apex=%1,%2 vertex=%3,%4")
+                      .arg(apexCenter.x())
+                      .arg(apexCenter.y())
+                      .arg(vertex.x())
+                      .arg(vertex.y()));
+    }
+    {
         // 平行四边形内角范围放开到 5–175°。
         auto* parallelogram = CreateShapeItem(ShapeType::PARALLELOGRAM);
         parallelogram->SetParallelogramAngle(5.0);

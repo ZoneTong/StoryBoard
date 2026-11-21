@@ -159,10 +159,14 @@ QPointF ShapeItem::CustomHandleCenter(int handle, bool* ok) const
         *ok = false;
     }
     if (handle == CanvasItem::APEX && shapeType() == ShapeType::TRIANGLE && !IsCustomShape()) {
+        // 顶点 C 的手柄向下偏移，让开底角 90° 时与角顶点重合的角落手柄；
+        // 命中与拖拽都仍按真实顶点所在的包围框计算，形很矮时收在内框里。
+        const qreal scale = qMax<qreal>(ViewScale(), 0.001);
+        const qreal inset = qMin<qreal>(18.0 / scale, qMax<qreal>(0.0, ContentRect().height() - 7.0 / scale));
         if (ok) {
             *ok = true;
         }
-        return triangleVertex(TriangleVertex::C);
+        return triangleVertex(TriangleVertex::C) + QPointF(0.0, inset);
     }
     return QPointF();
 }
