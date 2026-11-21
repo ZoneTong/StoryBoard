@@ -108,6 +108,11 @@ void selftest::RunTextItemTests(Context& ctx)
     ctx.Check(heading->TextFont().bold() && qAbs(heading->TextFont().pointSizeF() - 36.0) < 0.1,
               QStringLiteral("文字字体样式保存"));
     ctx.Check(heading->TextColor() == QColor(QStringLiteral("#1D4ED8")), QStringLiteral("文字颜色保存"));
+    TextAttributes* textAttrs = dynamic_cast<TextAttributes*>(heading);
+    const TextAttributesState textState = textAttrs ? textAttrs->TextAttributeState() : TextAttributesState();
+    ctx.Check(textAttrs != nullptr && textState.text == heading->Text() &&
+                  qAbs(textState.baseSize.width() - headingNatural.width()) < 0.5,
+              QStringLiteral("文字状态经由 TextAttributes 基类读写"));
     ctx.Check(heading->ContentSize().width() >= headingNatural.width() - 0.5 &&
                   heading->ContentSize().height() >= headingNatural.height() - 0.5,
               QStringLiteral("文字图元按内容计算尺寸"), GeometryText(heading->pos(), heading->ContentSize()));

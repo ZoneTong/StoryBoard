@@ -1,12 +1,15 @@
 #pragma once
 
 #include "CanvasItem.h"
+#include "TextAttributes.h"
 
 #include <QColor>
 #include <QFont>
 #include <QString>
 
-class TextItem : public CanvasItem {
+// 文字图元：几何来自 CanvasItem，正文 / 字体 / 颜色 / 自然尺寸来自 TextAttributes。
+// 基类只保留虚文字 facet 接口，实际状态读写都委托给属性基类。
+class TextItem : public CanvasItem, public TextAttributes {
     Q_OBJECT
   public:
     explicit TextItem(QGraphicsItem* parent = nullptr);
@@ -24,17 +27,15 @@ class TextItem : public CanvasItem {
     QPainterPath ClippingShape() const override;
 
     bool HasTextFacet() const override { return true; }
-    QString TextContent() const override { return m_text; }
-    QFont TextFont() const override { return m_font; }
-    QColor TextColor() const override { return m_color; }
-    QSizeF TextNaturalSize() const override { return m_baseSize; }
+    QString TextContent() const override { return TextAttributes::TextContent(); }
+    QFont TextFont() const override { return TextAttributes::TextFont(); }
+    QColor TextColor() const override { return TextAttributes::TextColor(); }
+    QSizeF TextNaturalSize() const override { return TextAttributes::TextNaturalSize(); }
     TextItemState TextState() const override;
     void ApplyTextState(const TextItemState& state) override;
 
-    void SetTextFormat(const QString& text, const QFont& font, const QColor& color);
-    QString Text() const { return m_text; }
-
-    QSizeF NaturalSize() const { return m_baseSize; }
+    QSizeF NaturalSize() const { return TextNaturalSize(); }
+    QString Text() const { return TextContent(); }
     static QSizeF Measure(const QString& text, const QFont& font);
 
     TextItemState State() const;
@@ -43,10 +44,5 @@ class TextItem : public CanvasItem {
   protected:
     void PaintContent(QPainter* painter) override;
     qreal FramePadding() const override { return 20.0; }
-
-  private:
-    QString m_text;
-    QFont m_font;
-    QColor m_color = QColor(30, 41, 59);
-    QSizeF m_baseSize{120.0, 44.0};
+    void TextChanged() override;
 };

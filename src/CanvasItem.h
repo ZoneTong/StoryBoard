@@ -2,6 +2,7 @@
 
 #include "ItemGeometry.h"
 #include "ItemProperties.h"
+#include "TextAttributes.h"
 
 #include <QColor>
 #include <QCursor>
@@ -10,25 +11,6 @@
 #include <QJsonObject>
 #include <QSizeF>
 #include <QString>
-
-// 文字图元的状态快照（撤销 / 属性窗共用）；放在基类头里，任何图元都能持有，
-// 上层不必为了读写文字而强转到 TextItem。
-struct TextItemState {
-    QString text;
-    QFont font;
-    QColor color;
-    QPointF pos;
-    QSizeF size;
-    QSizeF baseSize;
-
-    bool operator==(const TextItemState& other) const
-    {
-        return text == other.text && font == other.font && color == other.color && pos == other.pos &&
-               size == other.size && baseSize == other.baseSize;
-    }
-
-    bool operator!=(const TextItemState& other) const { return !(*this == other); }
-};
 
 class CanvasScene;
 class CanvasItemHandles;
