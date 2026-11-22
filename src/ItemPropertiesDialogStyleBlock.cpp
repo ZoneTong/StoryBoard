@@ -288,7 +288,10 @@ void ItemPropertiesDialogStyleBlock::SetItem(CanvasItem* item)
         m_bottomAngle1Spin->setValue(qRound(m_initialBottomAngle1));
         m_bottomAngle2Spin->setValue(qRound(m_initialBottomAngle2));
 
-        m_initialParallelogramAngle = shape->ParallelogramAngle();
+        // 内角 A 归平行四边形族（普通平行四边形为真值，菱形为派生量）；
+        // 无该属性的图形按 60 占位，行本身隐藏。
+        const QVariant angleValue = shape->PropertyValue(ItemProperty::PARALLELOGRAM_ANGLE);
+        m_initialParallelogramAngle = angleValue.isValid() ? angleValue.toDouble() : 60.0;
         showParallelogram = plainShape && !shape->IsCustomShape() && type == ShapeType::PARALLELOGRAM;
         m_parallelogramAngleSpin->setValue(qRound(m_initialParallelogramAngle));
 

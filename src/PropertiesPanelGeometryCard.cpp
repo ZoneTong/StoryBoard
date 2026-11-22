@@ -105,7 +105,8 @@ void PropertiesPanelGeometryCard::Refresh(CanvasItem* item)
     qreal angle = 60.0;
     if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
         if (shape->Properties().Contains(ItemProperty::PARALLELOGRAM_ANGLE)) {
-            angle = shape->ParallelogramAngle();
+            // 内角 A：普通平行四边形为字段值，菱形为派生量，统一走属性读取。
+            angle = shape->PropertyValue(ItemProperty::PARALLELOGRAM_ANGLE).toDouble();
         }
     }
     m_parallelogramRow->Refresh(angle);

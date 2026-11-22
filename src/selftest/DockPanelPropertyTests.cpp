@@ -239,9 +239,9 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
             parallelogramAngleSpin->setValue(75);
             QApplication::processEvents();
         }
-        ctx.Check(qAbs(panelParallelogram->ParallelogramAngle() - 75.0) < 0.01,
-                  QStringLiteral("编辑面板内角行作用到平行四边形"),
-                  QString::number(panelParallelogram->ParallelogramAngle()));
+        const qreal panelAngle = panelParallelogram->PropertyValue(ItemProperty::PARALLELOGRAM_ANGLE).toDouble();
+        ctx.Check(qAbs(panelAngle - 75.0) < 0.01, QStringLiteral("编辑面板内角行作用到平行四边形"),
+                  QString::number(panelAngle));
         dockScene->UndoStack()->undo();
         QApplication::processEvents();
 

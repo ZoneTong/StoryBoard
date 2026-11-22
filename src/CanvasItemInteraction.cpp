@@ -3,6 +3,7 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "ShapeAbstractItem.h"
+#include "shapes/ParallelogramAbstractItem.h"
 
 #include <QCursor>
 #include <QGraphicsScene>
@@ -118,9 +119,9 @@ void CanvasItemInteraction::BeginResize(int handle, const QPointF& scenePos)
     m_item->m_dragStartSize = m_item->m_size;
     m_item->m_before = {{m_item, m_item->pos(), m_item->m_size}};
 
-    if (auto* para = dynamic_cast<ShapeAbstractItem*>(m_item); handle == CanvasItem::SKEW && para &&
-                                                               para->shapeType() == ShapeType::PARALLELOGRAM &&
-                                                               para->SkewHandleEnabled() && !para->IsCustomShape()) {
+    if (auto* para = dynamic_cast<ParallelogramAbstractItem*>(m_item);
+        handle == CanvasItem::SKEW && para && para->shapeType() == ShapeType::PARALLELOGRAM &&
+        para->SkewHandleEnabled() && !para->IsCustomShape()) {
         // 内角旋钮绕左下顶点旋转上边：先记住底边的场景锚点与长度。
         // 拖动中包围框会随上边偏移量增减，不能再用固定的拖拽起点推算。
         const QRectF rect = m_item->ContentRect();
@@ -148,9 +149,9 @@ void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardMod
     // 需求 3：平行四边形内角由顶边中点的倾斜旋钮拖动。旋钮位于“底边中点 + 上边偏移”，
     // 因此以固定左下顶点为原点量横向距离：上边偏移 = 指针到底边中点的距离 − 底边半长。
     // 上边向左右移动即改变左下内角，底边长度全程保持不动。
-    if (auto* para = dynamic_cast<ShapeAbstractItem*>(m_item); para && para->shapeType() == ShapeType::PARALLELOGRAM &&
-                                                               para->SkewHandleEnabled() && !para->IsCustomShape() &&
-                                                               handle == CanvasItem::SKEW) {
+    if (auto* para = dynamic_cast<ParallelogramAbstractItem*>(m_item);
+        para && para->shapeType() == ShapeType::PARALLELOGRAM && para->SkewHandleEnabled() && !para->IsCustomShape() &&
+        handle == CanvasItem::SKEW) {
         const qreal startHeight = m_item->m_dragStartSize.height();
         QPointF along(1.0, 0.0);
         const qreal rotation = m_item->RotationAngle();
@@ -305,6 +306,13 @@ void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardMod
         } else {
             rect.setBottom(rect.top() + size.height());
         }
+    }
+
+    // §3.2：菱形拖外接框 / 边时显示派生内角读数（尺寸是真相，角度随宽高连续变化，
+    // 1 位小数显示；Shift 等比缩放时角度不变，读数维持原值）。
+    if (auto* family = dynamic_cast<ParallelogramAbstractItem*>(m_item);
+        family && family->shapeType() == ShapeType::DIAMOND && !family->IsCustomShape()) {
+        family->SetAngleReadoutVisible(true);
     }
 
     m_item->setPos(rect.topLeft());

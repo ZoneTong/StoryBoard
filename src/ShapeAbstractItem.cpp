@@ -68,8 +68,6 @@ QVariant ShapeAbstractItem::PropertyValue(ItemProperty property) const
         return BottomAngle1();
     case ItemProperty::BOTTOM_ANGLE2:
         return BottomAngle2();
-    case ItemProperty::PARALLELOGRAM_ANGLE:
-        return ParallelogramAngle();
     default:
         return CanvasItem::PropertyValue(property);
     }
@@ -113,9 +111,6 @@ void ShapeAbstractItem::SetPropertyValue(ItemProperty property, const QVariant& 
         break;
     case ItemProperty::BOTTOM_ANGLE2:
         SetTriangleAngles(BottomAngle1(), value.toDouble());
-        break;
-    case ItemProperty::PARALLELOGRAM_ANGLE:
-        SetParallelogramAngle(value.toDouble());
         break;
     default:
         CanvasItem::SetPropertyValue(property, value);
@@ -192,18 +187,6 @@ void ShapeAbstractItem::SetAngleReadoutVisible(bool visible)
         return;
     }
     m_angleReadoutVisible = visible;
-    update();
-}
-
-void ShapeAbstractItem::SetParallelogramAngle(qreal angle)
-{
-    const qreal clamped = qBound<qreal>(5.0, angle, 175.0);
-    if (qFuzzyCompare(m_parallelogramAngle + 2.0, clamped + 2.0)) {
-        return;
-    }
-    m_parallelogramAngle = clamped;
-    // 角度只改上边相对底边的水平偏移，内容矩形宽高不变。
-    prepareGeometryChange();
     update();
 }
 
@@ -337,7 +320,6 @@ ShapeItemState ShapeAbstractItem::State() const
     result.cornerRadius = m_cornerRadius;
     result.bottomAngle1 = m_bottomAngle1;
     result.bottomAngle2 = m_bottomAngle2;
-    result.parallelogramAngle = m_parallelogramAngle;
     result.pos = pos();
     result.size = ContentSize();
     WriteState(result);
@@ -359,7 +341,6 @@ void ShapeAbstractItem::ApplyState(const ShapeItemState& state)
     }
     m_bottomAngle1 = angle1;
     m_bottomAngle2 = angle2;
-    m_parallelogramAngle = qBound<qreal>(5.0, state.parallelogramAngle, 175.0);
     setPos(state.pos);
     const QSizeF requested = state.size.isEmpty() ? DefaultContentSize() : state.size;
     const bool sameSize = qFuzzyCompare(requested.width() + 0.01, ContentSize().width() + 0.01) &&

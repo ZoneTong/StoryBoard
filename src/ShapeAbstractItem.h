@@ -118,12 +118,8 @@ class ShapeAbstractItem : public CanvasItem, public FillAttributes, public Strok
     qreal CornerRadius() const { return m_cornerRadius; }
     qreal BottomAngle1() const { return m_bottomAngle1; }
     qreal BottomAngle2() const { return m_bottomAngle2; }
-    qreal ParallelogramAngle() const { return m_parallelogramAngle; }
-    virtual void SetParallelogramAngle(qreal angle);
-    // 平行四边形用 Apex 句柄改内角；矩形锁 90°，不提供该句柄。
+    // 需求 2：三角形顶点 C 是否取代 Top 句柄。内角与倾斜旋钮归平行四边形族基类。
     virtual bool ApexAngleHandle() const { return false; }
-    // 平行四边形用上边中点的倾斜旋钮连续改内角（可跨过 90°）；菱形四边恒等，不提供。
-    virtual bool SkewHandleEnabled() const { return false; }
     void SetAngleReadoutVisible(bool visible);
     bool AngleReadoutVisible() const { return m_angleReadoutVisible; }
     virtual void SetStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth);
@@ -174,7 +170,6 @@ class ShapeAbstractItem : public CanvasItem, public FillAttributes, public Strok
     qreal m_cornerRadius = 0.0;
     qreal m_bottomAngle1 = 60.0;
     qreal m_bottomAngle2 = 60.0;
-    qreal m_parallelogramAngle = 60.0;
     // 上一次同步后的尺寸，用于区分「拖高」与「拖底边」，避免互相覆盖。
     QSizeF m_triangleSyncSize;
     bool m_syncingTriangle = false;

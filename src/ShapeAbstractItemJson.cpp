@@ -45,10 +45,6 @@ QJsonObject ShapeAbstractItem::ToJson() const
         json.insert(QStringLiteral("bottomAngle1"), m_bottomAngle1);
         json.insert(QStringLiteral("bottomAngle2"), m_bottomAngle2);
     }
-    // 需求 9：平行四边形的左下内角随画布保存；旧文件缺字段时按 60° 载入。
-    if (shapeType() == ShapeType::PARALLELOGRAM) {
-        json.insert(QStringLiteral("parallelogramAngle"), m_parallelogramAngle);
-    }
     // 需求 30：自定义轮廓不再一律写成 "custom"（旧版读回会退化成矩形），真实
     // 类型照常写进 shapeType；名字与轮廓单独存，只有名字的图元（立方体顶面）
     // 也能在重开后保留名称。
@@ -96,8 +92,6 @@ void ShapeAbstractItem::FromJson(const QJsonObject& json)
     // 旧文件缺 fillColor 时按描线色派生 36/255 透明度的纯色填充，保持原外观。
     ReadFillJson(json, StrokeColor());
     m_cornerRadius = qMax<qreal>(0.0, json.value(QStringLiteral("cornerRadius")).toDouble(0.0));
-    // 需求 9：平行四边形内角；旧文件没有这个键时按默认 60°。
-    m_parallelogramAngle = qBound<qreal>(15.0, json.value(QStringLiteral("parallelogramAngle")).toDouble(60.0), 165.0);
     // 需求 6：旧文件可能还带 shapeRadius；先记下原值，等尺寸恢复后再折算（见下方迁移）。
     const qreal legacyRadius = json.value(QStringLiteral("shapeRadius")).toDouble(-1.0);
     const bool hasAngles = json.contains(QStringLiteral("bottomAngle1"));

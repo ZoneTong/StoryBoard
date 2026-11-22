@@ -8,9 +8,9 @@
 #include "shapes/DoubleArrowItem.h"
 #include "shapes/EllipseItem.h"
 #include "shapes/FlagWaveItem.h"
+#include "shapes/GeneralParallelogramItem.h"
 #include "shapes/HeartItem.h"
 #include "shapes/HexagramItem.h"
-#include "shapes/ParallelogramItem.h"
 #include "shapes/RectangleItem.h"
 #include "shapes/ScrollItem.h"
 #include "shapes/SectorItem.h"
@@ -50,7 +50,7 @@ ShapeAbstractItem* CreateShapeItem(ShapeType type)
     case ShapeType::CYLINDER:
         return new CylinderItem();
     case ShapeType::PARALLELOGRAM:
-        return new ParallelogramItem();
+        return new GeneralParallelogramItem();
     case ShapeType::DIAMOND:
         return new DiamondItem();
     case ShapeType::RECTANGLE:

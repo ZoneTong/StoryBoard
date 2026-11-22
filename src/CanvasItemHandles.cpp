@@ -2,6 +2,7 @@
 
 #include "CanvasItem.h"
 #include "ShapeAbstractItem.h"
+#include "shapes/ParallelogramAbstractItem.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -28,8 +29,8 @@ bool CanvasItemHandles::UsesSkewHandle() const
     if (!m_item || !m_item->isSelected() || !m_item->IsEditable() || !m_item->HasSingleSelection()) {
         return false;
     }
-    const auto* shape = dynamic_cast<const ShapeAbstractItem*>(m_item);
-    return shape && shape->SkewHandleEnabled() && !shape->IsCustomShape();
+    const auto* family = dynamic_cast<const ParallelogramAbstractItem*>(m_item);
+    return family && family->SkewHandleEnabled() && !family->IsCustomShape();
 }
 
 qreal CanvasItemHandles::Size() const
