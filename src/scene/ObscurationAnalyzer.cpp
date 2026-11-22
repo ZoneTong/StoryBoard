@@ -1,6 +1,6 @@
 #include "scene/ObscurationAnalyzer.h"
 
-#include "CanvasItem.h"
+#include "items/CanvasItem.h"
 
 #include <QPainterPath>
 #include <QPolygon>

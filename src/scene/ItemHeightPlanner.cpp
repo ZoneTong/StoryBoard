@@ -1,6 +1,6 @@
 #include "scene/ItemHeightPlanner.h"
 
-#include "CanvasItem.h"
+#include "items/CanvasItem.h"
 
 #include <QSet>
 

@@ -1,9 +1,9 @@
-#include "CanvasItem.h"
-#include "CanvasScene.h"
-#include "CurveItem.h"
-#include "ImageStore.h"
-#include "ShapeAbstractItem.h"
-#include "ShapePathBuilder.h"
+#include "io/ImageStore.h"
+#include "items/CanvasItem.h"
+#include "items/geometry/ShapePathBuilder.h"
+#include "items/lines/CurveItem.h"
+#include "items/shapes/ShapeAbstractItem.h"
+#include "scene/CanvasScene.h"
 #include "scene/SceneConstants.h"
 
 #include <QBuffer>

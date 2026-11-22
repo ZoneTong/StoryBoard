@@ -1,7 +1,7 @@
-#include "CanvasItem.h"
-#include "CanvasScene.h"
-#include "Commands.h"
-#include "TextItem.h"
+#include "items/CanvasItem.h"
+#include "items/text/TextItem.h"
+#include "scene/CanvasScene.h"
+#include "scene/Commands.h"
 
 #include <QUndoStack>
 

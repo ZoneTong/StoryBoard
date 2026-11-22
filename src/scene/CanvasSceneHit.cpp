@@ -1,6 +1,6 @@
-#include "CanvasItem.h"
-#include "CanvasScene.h"
-#include "ShapeAbstractItem.h"
+#include "items/CanvasItem.h"
+#include "items/shapes/ShapeAbstractItem.h"
+#include "scene/CanvasScene.h"
 #include "scene/ObscurationAnalyzer.h"
 
 #include <QPainter>

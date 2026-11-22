@@ -86,9 +86,40 @@ endfunction()
 
 set(STORYBOARD_SOURCE_FOLDERS
     src
+    src/app
+    src/canvas
+    src/canvas/controllers
+    src/io
+    src/items
+    src/items/geometry
+    src/items/lines
+    src/items/polygon
+    src/items/properties
+    src/items/shapes
+    src/items/text
+    src/lineart
+    src/ops
     src/scene
-    src/shapes
+    src/ui
+    src/ui/builder
+    src/ui/dialogs
+    src/ui/icons
+    src/ui/mainwindow
+    src/ui/panels/customshape
+    src/ui/panels/itemdialog
+    src/ui/panels/layers
+    src/ui/panels/properties
+    src/ui/settings
+    src/ui/widgets
     src/selftest
+    src/selftest/core
+    src/selftest/groups
+    src/selftest/items
+    src/selftest/layers
+    src/selftest/lineart
+    src/selftest/merge
+    src/selftest/scene
+    src/selftest/ui
     resources
 )
 

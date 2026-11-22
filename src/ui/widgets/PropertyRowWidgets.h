@@ -1,0 +1,120 @@
+#pragma once
+
+#include "ui/icons/IconFactory.h"
+
+#include <QWidget>
+
+class CanvasItem;
+class CanvasScene;
+class QComboBox;
+class QDoubleSpinBox;
+class QLineEdit;
+class QSpinBox;
+class QToolButton;
+
+// 编辑面板与属性窗共用的基础属性行：名称、图层、层内高度、单个数值与成对数值。
+// 行控件只负责回显与发信号，写回与撤销由宿主决定；图标用于编辑面板的紧凑行，
+// 属性窗把图标关掉，仍套用同一套控件与文案。
+class TextAttributeRow : public QWidget {
+    Q_OBJECT
+
+  public:
+    explicit TextAttributeRow(const QString& placeholder, QWidget* parent = nullptr);
+
+    void Refresh(const QString& text);
+    QString Text() const;
+    QLineEdit* Edit() const { return m_edit; }
+
+  signals:
+    void textChosen(const QString& text);
+
+  private:
+    QLineEdit* m_edit = nullptr;
+};
+
+class LayerAttributeRow : public QWidget {
+    Q_OBJECT
+
+  public:
+    explicit LayerAttributeRow(QWidget* parent = nullptr, bool showIcon = true);
+
+    // 按画布的图层列表重建下拉；layerId 不在列表里时保留原选中项。
+    void Refresh(CanvasScene* scene, int layerId);
+    int LayerId() const;
+    QComboBox* Combo() const { return m_combo; }
+
+  signals:
+    void layerChosen(int layerId);
+
+  private:
+    QComboBox* m_combo = nullptr;
+    bool m_refreshing = false;
+};
+
+class HeightAttributeRow : public QWidget {
+    Q_OBJECT
+
+  public:
+    explicit HeightAttributeRow(QWidget* parent = nullptr, bool showIcon = true);
+
+    void Refresh(int value, int maximum);
+    int Value() const;
+    QSpinBox* Spin() const { return m_spin; }
+
+  signals:
+    void heightChosen(int height);
+
+  private:
+    QSpinBox* m_spin = nullptr;
+    bool m_refreshing = false;
+};
+
+// 一行一个数值框：透明度 / 圆角 / 角度 / 正弦参数 / 旋转等共用。
+class NumberAttributeRow : public QWidget {
+    Q_OBJECT
+
+  public:
+    NumberAttributeRow(IconId icon, bool showIcon, int decimals, qreal minimum, qreal maximum, const QString& suffix,
+                       const QString& objectName, QWidget* parent = nullptr);
+
+    void Refresh(qreal value);
+    qreal Value() const;
+    QDoubleSpinBox* Spin() const { return m_spin; }
+    void SetSingleStep(qreal step);
+    // 行图标（编辑面板显示）的悬停提示：由宿主传入翻译后的属性行名称。
+    void SetIconToolTip(const QString& toolTip);
+
+  signals:
+    void valueChosen(qreal value);
+
+  private:
+    QToolButton* m_icon = nullptr;
+    QDoubleSpinBox* m_spin = nullptr;
+    bool m_refreshing = false;
+};
+
+// 一行两个数值框：位置 X/Y、图元尺寸 W×H 共用。
+class PairAttributeRow : public QWidget {
+    Q_OBJECT
+
+  public:
+    PairAttributeRow(IconId icon, bool showIcon, const QString& firstName, const QString& secondName, int decimals,
+                     qreal minimum, qreal maximum, const QString& suffix, const QString& separator,
+                     QWidget* parent = nullptr);
+
+    void Refresh(qreal first, qreal second);
+    qreal First() const;
+    qreal Second() const;
+    QDoubleSpinBox* FirstSpin() const { return m_first; }
+    QDoubleSpinBox* SecondSpin() const { return m_second; }
+    void SetIconToolTip(const QString& toolTip);
+
+  signals:
+    void valuesChosen(qreal first, qreal second);
+
+  private:
+    QToolButton* m_icon = nullptr;
+    QDoubleSpinBox* m_first = nullptr;
+    QDoubleSpinBox* m_second = nullptr;
+    bool m_refreshing = false;
+};

@@ -1,5 +1,5 @@
-#include "CanvasItem.h"
-#include "CanvasScene.h"
+#include "items/CanvasItem.h"
+#include "scene/CanvasScene.h"
 #include "scene/SceneConstants.h"
 
 void CanvasScene::UpdateItemFlags()

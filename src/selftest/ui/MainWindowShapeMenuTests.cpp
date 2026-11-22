@@ -1,0 +1,780 @@
+#include "app/I18n.h"
+#include "app/Settings.h"
+#include "canvas/CanvasView.h"
+#include "io/CustomShapeTemplates.h"
+#include "items/CanvasTypes.h"
+#include "items/lines/CurveItem.h"
+#include "items/polygon/PolygonItem.h"
+#include "items/shapes/ShapeAbstractItem.h"
+#include "items/text/TextItem.h"
+#include "lineart/LineArtConverter.h"
+#include "lineart/LineArtDialog.h"
+#include "lineart/LineArtPresets.h"
+#include "ops/Alignment.h"
+#include "ops/BoolOps.h"
+#include "scene/CanvasScene.h"
+#include "scene/Commands.h"
+#include "selftest/core/SelfTestContext.h"
+#include "selftest/core/SelftestEntries.h"
+#include "selftest/core/SelftestHelpers.h"
+#include "ui/dialogs/ExportDialog.h"
+#include "ui/mainwindow/MainWindow.h"
+#include "ui/panels/itemdialog/ItemPropertiesDialog.h"
+#include "ui/panels/layers/LayerPanel.h"
+#include "ui/panels/properties/PropertiesPanel.h"
+#include "ui/settings/SettingsDialog.h"
+#include "ui/widgets/StyleController.h"
+
+#include <QAction>
+#include <QApplication>
+#include <QBuffer>
+#include <QCheckBox>
+#include <QComboBox>
+#include <QContextMenuEvent>
+#include <QCoreApplication>
+#include <QDialogButtonBox>
+#include <QDir>
+#include <QDockWidget>
+#include <QDoubleSpinBox>
+#include <QFile>
+#include <QFileInfo>
+#include <QFont>
+#include <QGroupBox>
+#include <QImage>
+#include <QImageWriter>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QLabel>
+#include <QLineEdit>
+#include <QLineF>
+#include <QLinearGradient>
+#include <QListWidget>
+#include <QListWidgetItem>
+#include <QMarginsF>
+#include <QMenu>
+#include <QMenuBar>
+#include <QMouseEvent>
+#include <QPageLayout>
+#include <QPageSize>
+#include <QPainter>
+#include <QPainterPath>
+#include <QPdfWriter>
+#include <QPixmap>
+#include <QPlainTextEdit>
+#include <QPolygonF>
+#include <QPushButton>
+#include <QScrollArea>
+#include <QScrollBar>
+#include <QSet>
+#include <QSize>
+#include <QSpinBox>
+#include <QStandardPaths>
+#include <QStringConverter>
+#include <QTextStream>
+#include <QTimer>
+#include <QToolBar>
+#include <QToolButton>
+#include <QUndoStack>
+#include <QWheelEvent>
+#include <QWidget>
+#include <QWidgetAction>
+#include <QtMath>
+#include <cstdlib>
+
+
+void selftest::RunMainWindowShapeMenuTests(Context& ctx)
+{
+    const QList<ShapeType> shapeTypes = AllShapeTypes();
+
+    const QString shapeCanvasPath = QDir(ctx.workDirectory).filePath(QStringLiteral("shapes.sbcanvas"));
+    {
+        QFile shapeCanvasFile(shapeCanvasPath);
+        ctx.Check(shapeCanvasFile.open(QIODevice::WriteOnly), QStringLiteral("创建图形画布测试文件"));
+        shapeCanvasFile.write(QJsonDocument(ctx.shapeRoot).toJson(QJsonDocument::Indented));
+    }
+
+    {
+        MainWindow shapeWindow;
+        shapeWindow.resize(1082, 800);
+        shapeWindow.show();
+        QApplication::processEvents();
+
+        QMenu* shapeMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("ShapeMenu"));
+        int builtInShapeActions = 0;
+        if (shapeMenu) {
+            for (QAction* action : shapeMenu->actions()) {
+                if (action->objectName().startsWith(QStringLiteral("ShapeAction_"))) {
+                    ++builtInShapeActions;
+                }
+            }
+        }
+        // 需求 1/6：预置项（45°/60° 直角三角、直线箭头）紧随其基础图形之后，且不计入内建图形数量。
+        QAction* lineAction = shapeWindow.findChild<QAction*>(QStringLiteral("ShapeAction_line"));
+        QAction* triangleAction = shapeWindow.findChild<QAction*>(QStringLiteral("ShapeAction_triangle"));
+        QAction* lineArrowPreset = shapeWindow.findChild<QAction*>(QStringLiteral("ShapePreset_lineArrow"));
+        QAction* triangle45Preset = shapeWindow.findChild<QAction*>(QStringLiteral("ShapePreset_triangle45"));
+        QAction* triangle60Preset = shapeWindow.findChild<QAction*>(QStringLiteral("ShapePreset_triangle60"));
+        bool presetOrderOk =
+            shapeMenu && lineAction && triangleAction && lineArrowPreset && triangle45Preset && triangle60Preset;
+        if (presetOrderOk) {
+            const QList<QAction*> menuActions = shapeMenu->actions();
+            const int lineIndex = menuActions.indexOf(lineAction);
+            const int triangleIndex = menuActions.indexOf(triangleAction);
+            presetOrderOk = menuActions.indexOf(lineArrowPreset) == lineIndex + 1 &&
+                            menuActions.indexOf(triangle45Preset) == triangleIndex + 1 &&
+                            menuActions.indexOf(triangle60Preset) == triangleIndex + 2;
+        }
+        ctx.Check(presetOrderOk, QStringLiteral("图形菜单内预置项紧跟基础图形（三角形 45°/60°、直线箭头）"));
+        if (presetOrderOk) {
+            // 直线箭头必须用独立的开口箭头图标，不能与普通直线共用一条直线图标。
+            const QImage lineIcon = lineAction->icon().pixmap(18, 18).toImage();
+            const QImage arrowIcon = lineArrowPreset->icon().pixmap(18, 18).toImage();
+            ctx.Check(!lineIcon.isNull() && !arrowIcon.isNull() && lineIcon != arrowIcon,
+                      QStringLiteral("直线箭头使用独立开口箭头图标"),
+                      QStringLiteral("same=%1").arg(lineIcon == arrowIcon));
+        }
+
+        QMenu* customShapeMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("CustomShapeMenu"));
+        QAction* customTrigger = shapeWindow.findChild<QAction*>(QStringLiteral("CustomShapePanelTrigger"));
+        // 自定义图形不再是二级子菜单：入口直接平铺在「常见图形」末尾。
+        // 内建图形动作 = 17 种有面积图形 + 曲线族三入口（直线 / 弧线 / 正弦）。
+        ctx.Check(shapeMenu && builtInShapeActions == shapeTypes.size() + 3 && customShapeMenu && customTrigger &&
+                      shapeMenu->actions().contains(customTrigger) &&
+                      !shapeMenu->actions().contains(customShapeMenu->menuAction()),
+                  QStringLiteral("图形菜单包含全部图形，自定义图形入口与常见图形同层"),
+                  QStringLiteral("actions=%1 builtIn=%2 custom=%3")
+                      .arg(shapeMenu ? shapeMenu->actions().size() : 0)
+                      .arg(builtInShapeActions)
+                      .arg(customTrigger ? 1 : 0));
+        // 工具栏在原「图形」入口处把常见图形与预置项直接平铺成一排，复用菜单里的同一批动作。
+        // 预置项：圆角矩形、直线箭头、45°/60° 三角、左右花括号（需求 13 花括号改曲线后仍是 2 枚按钮）。
+        // 菱形已是独立图形，预置项由 7 枚减为 6 枚。
+        const int toolbarExpected = builtInShapeActions + 6;
+        QToolButton* shapeButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("ShapeButton"));
+        QList<QToolButton*> toolbarShapeButtons =
+            shapeWindow.findChildren<QToolButton*>(QStringLiteral("ToolBarShapeButton"));
+        bool shapeButtonsShareMenu = toolbarShapeButtons.size() == toolbarExpected && shapeMenu;
+        for (QToolButton* button : std::as_const(toolbarShapeButtons)) {
+            const QString actionName = button->property("shapeActionName").toString();
+            QAction* boundAction = actionName.isEmpty() ? nullptr : shapeWindow.findChild<QAction*>(actionName);
+            if (!boundAction || !shapeMenu || !shapeMenu->actions().contains(boundAction)) {
+                shapeButtonsShareMenu = false;
+                break;
+            }
+        }
+        ctx.Check(shapeButtonsShareMenu && !shapeButton, QStringLiteral("主工具栏把常见图形与预置项展开成一排按钮"),
+                  QStringLiteral("buttons=%1 expected=%2").arg(toolbarShapeButtons.size()).arg(toolbarExpected));
+
+        // 需求 7：工具栏顺序直接来自单一顺序源（常用顺序表），预置项紧随其主体图形，
+        // 直线箭头跟在直线后、45°/60° 直角三角跟在三角形后，两枚花括号收尾。
+        const QStringList expectedToolBarOrder = {
+            QStringLiteral("ShapeAction_rectangle"),    QStringLiteral("ShapePreset_roundedRect"),
+            QStringLiteral("ShapeAction_ellipse"),      QStringLiteral("ShapeAction_line"),
+            QStringLiteral("ShapePreset_lineArrow"),    QStringLiteral("ShapeAction_arrow"),
+            QStringLiteral("ShapeAction_double_arrow"), QStringLiteral("ShapeAction_triangle"),
+            QStringLiteral("ShapePreset_triangle45"),   QStringLiteral("ShapePreset_triangle60"),
+            QStringLiteral("ShapeAction_callout"),      QStringLiteral("ShapeAction_parallelogram"),
+            QStringLiteral("ShapeAction_diamond"),      QStringLiteral("ShapeAction_sector"),
+            QStringLiteral("ShapeAction_arc"),          QStringLiteral("ShapeAction_cube"),
+            QStringLiteral("ShapeAction_cylinder"),     QStringLiteral("ShapeAction_star4"),
+            QStringLiteral("ShapeAction_star"),         QStringLiteral("ShapeAction_hexagram"),
+            QStringLiteral("ShapeAction_heart"),        QStringLiteral("ShapeAction_sine_wave"),
+            QStringLiteral("ShapeAction_flag_wave"),    QStringLiteral("ShapeAction_scroll"),
+            QStringLiteral("ShapePreset_braceLeft"),    QStringLiteral("ShapePreset_braceRight"),
+        };
+        QStringList actualToolBarOrder;
+        for (QToolButton* button : std::as_const(toolbarShapeButtons)) {
+            actualToolBarOrder.append(button->property("shapeActionName").toString());
+        }
+        ctx.Check(actualToolBarOrder == expectedToolBarOrder,
+                  QStringLiteral("工具栏图形顺序跟随单一顺序源（常用顺序表）"),
+                  actualToolBarOrder.join(QLatin1Char(',')));
+
+        QToolBar* mainToolBar = shapeWindow.findChild<QToolBar*>(QStringLiteral("MainToolBar"));
+        QAction* exportAction = nullptr;
+        for (QAction* action : shapeWindow.findChildren<QAction*>()) {
+            if (action->text() == QStringLiteral("导出画布…")) {
+                exportAction = action;
+                break;
+            }
+        }
+        QToolButton* exportButton = mainToolBar && exportAction
+                                        ? qobject_cast<QToolButton*>(mainToolBar->widgetForAction(exportAction))
+                                        : nullptr;
+        QToolButton* alignButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("AlignToolButton"));
+        QToolButton* morphButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("BoolToolButton"));
+        ctx.Check(exportButton && exportButton->isVisible() && exportButton->width() > 0 && exportAction &&
+                      !exportAction->icon().isNull(),
+                  QStringLiteral("工具栏导出按钮正常显示"),
+                  QStringLiteral("visible=%1 width=%2 icon=%3")
+                      .arg(exportButton && exportButton->isVisible() ? 1 : 0)
+                      .arg(exportButton ? exportButton->width() : 0)
+                      .arg(exportAction && !exportAction->icon().isNull() ? 1 : 0));
+        ctx.Check(!alignButton && !morphButton, QStringLiteral("工具栏不再显示对齐和合并图元按钮"),
+                  QStringLiteral("align=%1 morph=%2").arg(alignButton ? 1 : 0).arg(morphButton ? 1 : 0));
+
+        auto* toleranceSpin = shapeWindow.findChild<QDoubleSpinBox*>(QStringLiteral("BrushSmoothingSpin"));
+        CanvasView* toleranceView = shapeWindow.findChild<CanvasView*>();
+        ctx.Check(toleranceSpin && toleranceSpin->minimum() == 0.0 && toleranceSpin->maximum() == 20.0 &&
+                      qAbs(toleranceSpin->singleStep() - 0.1) < 0.001 && toleranceSpin->decimals() == 1 &&
+                      toleranceView && qAbs(toleranceSpin->value() - toleranceView->StrokeSmoothing()) < 0.001 &&
+                      toleranceSpin->toolTip().contains(QStringLiteral("画笔")),
+                  QStringLiteral("工具栏拟合容差为 0–20、0.1 步进、与画布同步且提示含画笔"),
+                  QStringLiteral("spin=%1 range=%2-%3 step=%4 value=%5 tip=%6")
+                      .arg(toleranceSpin ? 1 : 0)
+                      .arg(toleranceSpin ? toleranceSpin->minimum() : 0.0)
+                      .arg(toleranceSpin ? toleranceSpin->maximum() : 0.0)
+                      .arg(toleranceSpin ? toleranceSpin->singleStep() : 0.0)
+                      .arg(toleranceSpin ? toleranceSpin->value() : 0.0)
+                      .arg(toleranceSpin ? toleranceSpin->toolTip() : QString()));
+
+        QToolButton* fillColorButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("FillColorButton"));
+        QToolButton* fillStyleButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("FillButton"));
+        QToolButton* strokeStyleButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("StrokeStyleButton"));
+        QToolButton* strokeColorButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("StrokeColorButton"));
+        QSpinBox* toolbarStrokeWidthSpin = shapeWindow.findChild<QSpinBox*>(QStringLiteral("StrokeWidthSpin"));
+        QToolBar* mainBar = shapeWindow.findChild<QToolBar*>(QStringLiteral("MainToolBar"));
+        auto toolbarActionIndex = [mainBar](QWidget* widget) {
+            if (!mainBar || !widget) {
+                return -1;
+            }
+            const QList<QAction*> barActions = mainBar->actions();
+            for (int i = 0; i < barActions.size(); ++i) {
+                QWidget* actionWidget = mainBar->widgetForAction(barActions.at(i));
+                if (auto* widgetAction = qobject_cast<QWidgetAction*>(barActions.at(i))) {
+                    if (widgetAction->defaultWidget()) {
+                        actionWidget = widgetAction->defaultWidget();
+                    }
+                }
+                if (actionWidget == widget) {
+                    return i;
+                }
+            }
+            return -1;
+        };
+        const int toolbarFillStyleIndex = toolbarActionIndex(fillStyleButton);
+        const int toolbarFillColorIndex = toolbarActionIndex(fillColorButton);
+        const int toolbarStrokeStyleIndex = toolbarActionIndex(strokeStyleButton);
+        const int toolbarStrokeColorIndex = toolbarActionIndex(strokeColorButton);
+        const int toolbarStrokeWidthIndex = toolbarActionIndex(toolbarStrokeWidthSpin);
+        const int toolbarToleranceIndex = toolbarActionIndex(toleranceSpin);
+        // 需求 1 行序：填充样式 → 填充颜色 → 描线样式 → 描线颜色 → 描线宽度。
+        ctx.Check(
+            toolbarFillStyleIndex >= 0 && toolbarFillColorIndex > toolbarFillStyleIndex &&
+                toolbarStrokeStyleIndex > toolbarFillColorIndex && toolbarStrokeColorIndex > toolbarStrokeStyleIndex &&
+                toolbarStrokeWidthIndex > toolbarStrokeColorIndex && toolbarToleranceIndex > toolbarStrokeWidthIndex,
+            QStringLiteral("工具栏顺序为填充样式、填充颜色、描线样式、描线颜色、描线宽度、拟合容差"),
+            QStringLiteral("index=%1,%2,%3,%4,%5,%6")
+                .arg(toolbarFillStyleIndex)
+                .arg(toolbarFillColorIndex)
+                .arg(toolbarStrokeStyleIndex)
+                .arg(toolbarStrokeColorIndex)
+                .arg(toolbarStrokeWidthIndex)
+                .arg(toolbarToleranceIndex));
+
+        QToolButton* customShapeButton =
+            shapeWindow.findChild<QToolButton*>(QStringLiteral("ToolBarCustomShapeButton"));
+        ctx.Check(customShapeButton && customShapeButton->menu() == customShapeMenu && customShapeButton->isVisible(),
+                  QStringLiteral("常见图形后追加自定义图形下拉按钮"),
+                  QStringLiteral("button=%1 menu=%2 visible=%3")
+                      .arg(customShapeButton ? 1 : 0)
+                      .arg(customShapeButton && customShapeButton->menu() == customShapeMenu ? 1 : 0)
+                      .arg(customShapeButton && customShapeButton->isVisible() ? 1 : 0));
+
+        int toolbarSeparators = 0;
+        bool hasShapeTextLabel = false;
+        if (mainToolBar) {
+            for (QAction* action : mainToolBar->actions()) {
+                if (action && action->isSeparator()) {
+                    ++toolbarSeparators;
+                }
+            }
+            for (QLabel* label : mainToolBar->findChildren<QLabel*>()) {
+                if (label->text() == QStringLiteral("图形")) {
+                    hasShapeTextLabel = true;
+                    break;
+                }
+            }
+        }
+        ctx.Check(mainToolBar && toolbarSeparators <= 2 && !hasShapeTextLabel,
+                  QStringLiteral("工具栏没有多余的图形文字和分隔符"),
+                  QStringLiteral("separators=%1 shapeLabel=%2").arg(toolbarSeparators).arg(hasShapeTextLabel ? 1 : 0));
+
+        bool hasRemovedToolbarEntry = false;
+        if (mainToolBar) {
+            for (QAction* action : mainToolBar->actions()) {
+                if (!action || action->isSeparator()) {
+                    continue;
+                }
+                const QString text = action->text();
+                if (text == QStringLiteral("撤销") || text == QStringLiteral("重做") ||
+                    text == QStringLiteral("放大") || text == QStringLiteral("缩小") ||
+                    text == QStringLiteral("适应画布") || text == QStringLiteral("替换画布背景图片…") ||
+                    text == QStringLiteral("设置…")) {
+                    hasRemovedToolbarEntry = true;
+                    break;
+                }
+            }
+        }
+        ctx.Check(mainToolBar && !hasRemovedToolbarEntry,
+                  QStringLiteral("主工具栏不再保留撤销 / 重做 / 缩放 / 背景 / 设置按钮"));
+
+        // 需求：辅助网格除了设置里勾选，还要能从视图菜单直接开关，勾选状态与画布一致。
+        QAction* gridAction = shapeWindow.findChild<QAction*>(QStringLiteral("GridToggleAction"));
+        CanvasScene* gridScene = shapeWindow.Scene();
+        ctx.Check(gridAction && gridAction->isCheckable() && gridScene &&
+                      gridAction->isChecked() == gridScene->ShowGrid(),
+                  QStringLiteral("视图菜单提供辅助网格开关"),
+                  QStringLiteral("checked=%1 scene=%2")
+                      .arg(gridAction && gridAction->isChecked() ? 1 : 0)
+                      .arg(gridScene && gridScene->ShowGrid() ? 1 : 0));
+        if (gridAction) {
+            // 菜单项文案必须是中文，不能因为上下文/译文缺失而露出英文。
+            ctx.Check(gridAction->text() == QStringLiteral("辅助网格"), QStringLiteral("辅助网格菜单项显示中文"),
+                      gridAction->text());
+        }
+        if (gridAction && gridScene) {
+            const bool gridBefore = gridScene->ShowGrid();
+            gridAction->setChecked(!gridBefore);
+            ctx.Check(gridScene->ShowGrid() == !gridBefore, QStringLiteral("辅助网格开关即时生效"),
+                      QStringLiteral("scene=%1").arg(gridScene->ShowGrid() ? 1 : 0));
+            gridAction->setChecked(gridBefore);
+        }
+
+        QAction* shortcutsAction = nullptr;
+        for (QAction* action : shapeWindow.findChildren<QAction*>()) {
+            if (action->text() == QStringLiteral("快捷键一览…")) {
+                shortcutsAction = action;
+            }
+        }
+        ctx.Check(shortcutsAction != nullptr, QStringLiteral("帮助菜单提供快捷键一览入口"));
+
+        QToolButton* fillButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("FillButton"));
+        QStringList fillActionTexts;
+        if (fillButton && fillButton->menu()) {
+            for (QAction* action : fillButton->menu()->actions()) {
+                if (!action->isSeparator()) {
+                    fillActionTexts.append(action->text());
+                }
+            }
+        }
+        ctx.Check(fillActionTexts.size() == 11 && fillActionTexts.contains(QStringLiteral("反斜线填充")) &&
+                      fillActionTexts.contains(QStringLiteral("十字线填充")) &&
+                      fillActionTexts.contains(QStringLiteral("六边形填充")) &&
+                      fillActionTexts.contains(QStringLiteral("水平线填充")) &&
+                      fillActionTexts.contains(QStringLiteral("竖线填充")) &&
+                      fillActionTexts.contains(QStringLiteral("砖纹填充")) &&
+                      fillActionTexts.contains(QStringLiteral("点阵填充")),
+                  QStringLiteral("填充菜单只保留填充样式"), fillActionTexts.join(QStringLiteral("|")));
+
+        QDoubleSpinBox* toolbarSmoothing = shapeWindow.findChild<QDoubleSpinBox*>(QStringLiteral("BrushSmoothingSpin"));
+        CanvasView* canvasView = shapeWindow.findChild<CanvasView*>();
+        if (toolbarSmoothing) {
+            toolbarSmoothing->setValue(0.0);
+            ctx.Check(canvasView && canvasView->StrokeSmoothing() == 0, QStringLiteral("工具栏容差即时生效"),
+                      QStringLiteral("view=%1").arg(canvasView ? canvasView->StrokeSmoothing() : -1));
+            toolbarSmoothing->setValue(2.0);
+        }
+        QToolButton* smoothButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("SmoothStrokeButton"));
+        ctx.Check(!smoothButton, QStringLiteral("工具栏不提供手动平滑按钮"),
+                  QStringLiteral("button=%1").arg(smoothButton ? 1 : 0));
+        QAction* smoothAction = nullptr;
+        for (QAction* action : shapeWindow.findChildren<QAction*>()) {
+            if (action->text() == QStringLiteral("简化曲线")) {
+                smoothAction = action;
+            }
+        }
+        ctx.Check(smoothAction && smoothAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+Shift+B")),
+                  QStringLiteral("菜单提供简化曲线入口与快捷键"));
+        QToolButton* iconFillButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("FillButton"));
+        QToolButton* iconFillColorButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("FillColorButton"));
+        QToolButton* iconStrokeColorButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("StrokeColorButton"));
+        const QImage fillStyleImage = iconFillButton ? iconFillButton->icon().pixmap(20, 20).toImage() : QImage();
+        const QImage fillColorImage =
+            iconFillColorButton ? iconFillColorButton->icon().pixmap(20, 20).toImage() : QImage();
+        const QImage strokeColorImage =
+            iconStrokeColorButton ? iconStrokeColorButton->icon().pixmap(20, 20).toImage() : QImage();
+        ctx.Check(!fillStyleImage.isNull() && !fillColorImage.isNull() && !strokeColorImage.isNull() &&
+                      fillStyleImage != fillColorImage && fillColorImage != strokeColorImage,
+                  QStringLiteral("填充样式、填充颜色与边框颜色使用彼此不同的图标"));
+
+        // 画笔颜色按钮与画笔宽度按钮已从工具栏移除；描线宽度改为描线颜色按钮后的 SpinBox。
+        // 图形数量增多后窗口宽度可能触发工具栏溢出扩展，隐藏控件的几何坐标恒为 0，
+        // 因此用 MainToolBar 的动作序号（与上文同一套判定）代替像素位置。
+        QToolButton* removedBrushColorButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("ColorButton"));
+        QAction* removedBrushColorAction = shapeWindow.findChild<QAction*>(QStringLiteral("BrushColorAction"));
+        QSpinBox* strokeWidthSpin = shapeWindow.findChild<QSpinBox*>(QStringLiteral("StrokeWidthSpin"));
+        const int strokeButtonIndex = toolbarActionIndex(iconStrokeColorButton);
+        const int widthSpinIndex = toolbarActionIndex(strokeWidthSpin);
+        ctx.Check(!removedBrushColorButton && !removedBrushColorAction && strokeWidthSpin && iconStrokeColorButton &&
+                      widthSpinIndex > strokeButtonIndex && strokeWidthSpin->singleStep() == 1,
+                  QStringLiteral("工具栏去掉画笔颜色按钮并在描线按钮后追加描线宽度 SpinBox"),
+                  QStringLiteral("color=%1 action=%2 spinIdx=%3 strokeIdx=%4 step=%5")
+                      .arg(removedBrushColorButton ? 1 : 0)
+                      .arg(removedBrushColorAction ? 1 : 0)
+                      .arg(widthSpinIndex)
+                      .arg(strokeButtonIndex)
+                      .arg(strokeWidthSpin ? strokeWidthSpin->singleStep() : 0));
+
+        // 需求 1：菜单里的“描线宽度”改为普通菜单项，触发后把焦点放到工具栏宽度输入框末尾。
+        QAction* widthFocusAction = shapeWindow.findChild<QAction*>(QStringLiteral("StrokeWidthFocusAction"));
+        QSpinBox* removedMenuWidthSpin = shapeWindow.findChild<QSpinBox*>(QStringLiteral("MenuStrokeWidthSpin"));
+        ctx.Check(widthFocusAction && !removedMenuWidthSpin && strokeWidthSpin &&
+                      widthFocusAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+W")),
+                  QStringLiteral("菜单描线宽度改为普通菜单项并带 Ctrl+W，不再内嵌 SpinBox"),
+                  QStringLiteral("action=%1 shortcut=%2 menuSpin=%3")
+                      .arg(widthFocusAction ? 1 : 0)
+                      .arg(widthFocusAction ? widthFocusAction->shortcut().toString() : QStringLiteral("-"))
+                      .arg(removedMenuWidthSpin ? 1 : 0));
+        if (widthFocusAction && strokeWidthSpin) {
+            // 真实交互里窗口已经是活动窗口（菜单属于它），QWidget::setFocus 才会真正移动焦点；
+            // 自检的 offscreen 平台没有活动窗口，焦点归属由平台决定，这里只校验
+            // “输入框可获得焦点 + 光标被移到末尾”这条实现链路。
+            shapeWindow.activateWindow();
+            QApplication::processEvents();
+            widthFocusAction->trigger();
+            QApplication::processEvents();
+            // lineEdit() 是保护接口：取 SpinBox 内部编辑器（焦点代理）来校验光标位置。
+            QLineEdit* widthEdit = strokeWidthSpin->findChild<QLineEdit*>();
+            const bool focusable = strokeWidthSpin->focusPolicy() != Qt::NoFocus;
+            ctx.Check(widthEdit && focusable && widthEdit->cursorPosition() == widthEdit->text().length(),
+                      QStringLiteral("触发菜单描线宽度后光标移到工具栏输入框末尾"),
+                      QStringLiteral("focusable=%1 cursor=%2/%3")
+                          .arg(focusable ? 1 : 0)
+                          .arg(widthEdit ? widthEdit->cursorPosition() : -1)
+                          .arg(widthEdit ? widthEdit->text().length() : -1));
+        }
+
+        // 一级「画笔」菜单已删除：描线宽度子菜单与平滑曲线并到「插入」的描线颜色之后，
+        // 重复的画笔颜色项不再保留。
+        QMenu* brushMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("BrushMenu"));
+        QMenu* fillStyleMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("FillStyleMenu"));
+        QMenu* insertMenuForOrder = shapeWindow.findChild<QMenu*>(QStringLiteral("InsertMenu"));
+        QList<QAction*> insertActionsForOrder;
+        if (insertMenuForOrder) {
+            insertActionsForOrder = insertMenuForOrder->actions();
+        }
+        const int strokeColorIndex =
+            insertActionsForOrder.indexOf(shapeWindow.findChild<QAction*>(QStringLiteral("BorderColorAction")));
+        const int widthMenuIndex =
+            insertActionsForOrder.indexOf(shapeWindow.findChild<QAction*>(QStringLiteral("StrokeWidthFocusAction")));
+        int smoothActionIndex = -1;
+        for (int i = 0; i < insertActionsForOrder.size(); ++i) {
+            if (insertActionsForOrder.at(i) && insertActionsForOrder.at(i)->text() == QStringLiteral("简化曲线")) {
+                smoothActionIndex = i;
+                break;
+            }
+        }
+        bool repeatedBrushColor = false;
+        for (QAction* action : std::as_const(insertActionsForOrder)) {
+            if (action && action->objectName() == QStringLiteral("BrushColorAction")) {
+                repeatedBrushColor = true;
+                break;
+            }
+        }
+        ctx.Check(!brushMenu && strokeColorIndex >= 0 && widthMenuIndex > strokeColorIndex &&
+                      smoothActionIndex > widthMenuIndex && !repeatedBrushColor,
+                  QStringLiteral("描线宽度与简化曲线移到插入菜单描线颜色之后"),
+                  QStringLiteral("brush=%1 stroke=%2 width=%3 smooth=%4 repeat=%5")
+                      .arg(brushMenu ? 1 : 0)
+                      .arg(strokeColorIndex)
+                      .arg(widthMenuIndex)
+                      .arg(smoothActionIndex)
+                      .arg(repeatedBrushColor ? 1 : 0));
+        bool styleMenuGone = shapeWindow.findChild<QMenu*>(QStringLiteral("StyleMenu")) == nullptr &&
+                             shapeWindow.findChild<QMenu*>(QStringLiteral("BrushStyleMenu")) == nullptr;
+        ctx.Check(styleMenuGone, QStringLiteral("样式菜单与画笔样式子菜单不再存在"));
+
+        QList<QAction*> fillActions;
+        if (fillStyleMenu) {
+            fillActions = fillStyleMenu->actions();
+        }
+        bool fillHasColor = false;
+        int fillMenuItemCount = 0;
+        for (QAction* action : fillActions) {
+            if (action->isSeparator()) {
+                continue;
+            }
+            ++fillMenuItemCount;
+            if (action->objectName() == QStringLiteral("FillColorAction")) {
+                fillHasColor = true;
+            }
+        }
+        ctx.Check(fillStyleMenu && fillMenuItemCount == 11 && !fillHasColor,
+                  QStringLiteral("填充样式子菜单只保留填充样式"), QStringLiteral("actions=%1").arg(fillMenuItemCount));
+
+        QMenu* insertMenu = nullptr;
+        for (QAction* action : shapeWindow.menuBar()->actions()) {
+            QMenu* menu = action ? action->menu() : nullptr;
+            if (menu && menu->objectName() == QStringLiteral("InsertMenu")) {
+                insertMenu = menu;
+            }
+        }
+        QList<QAction*> insertActions;
+        if (insertMenu) {
+            insertActions = insertMenu->actions();
+        }
+        {
+            // 需求：插入图片只归插入菜单，菜单栏里不再重复。
+            QStringList insertEntries;
+            for (QAction* action : insertActions) {
+                if (action && !action->isSeparator()) {
+                    insertEntries.append(action->text());
+                }
+            }
+            ctx.Check(insertEntries.contains(QStringLiteral("插入图片…")), QStringLiteral("插入菜单提供插入图片"),
+                      insertEntries.join(QStringLiteral(" / ")));
+            // 需求：原画布菜单的背景项已并入插入菜单。
+            ctx.Check(insertEntries.contains(QStringLiteral("替换画布背景图片…")) &&
+                          insertEntries.contains(QStringLiteral("设置背景颜色…")) &&
+                          insertEntries.contains(QStringLiteral("清除画布背景")) &&
+                          insertEntries.contains(QStringLiteral("背景填充方式")),
+                      QStringLiteral("插入菜单包含原画布菜单的背景项"), insertEntries.join(QStringLiteral(" / ")));
+        }
+        int fillStyleMenuIndex = insertActions.indexOf(fillStyleMenu ? fillStyleMenu->menuAction() : nullptr);
+        int shapeMenuIndex = insertActions.indexOf(shapeMenu ? shapeMenu->menuAction() : nullptr);
+        ctx.Check(fillStyleMenuIndex >= 0 && shapeMenuIndex >= 0,
+                  QStringLiteral("插入菜单包含常见图形与填充样式两个子菜单"),
+                  QStringLiteral("shape=%1 fillStyle=%2").arg(shapeMenuIndex).arg(fillStyleMenuIndex));
+
+        QAction* outlineAction = shapeWindow.findChild<QAction*>(QStringLiteral("BorderColorAction"));
+        ctx.Check(outlineAction && outlineAction->text() == QStringLiteral("描线颜色…"),
+                  QStringLiteral("主窗口提供描线颜色动作"));
+
+        QAction* ellipseAction =
+            shapeMenu ? shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_ellipse")) : nullptr;
+        if (ellipseAction) {
+            // 描线色/宽度会按上次运行记忆（需求 16 的“仅首次生效”语义），
+            // 这里显式把工具栏置成默认初值，避免断言受用户配置文件影响。
+            shapeWindow.SetFillStyle(FillStyle::NONE);
+            shapeWindow.SetBrushColor(QColor(Qt::black), false);
+            if (auto* widthControl = shapeWindow.findChild<QSpinBox*>(QStringLiteral("StrokeWidthSpin"))) {
+                widthControl->setValue(1);
+            }
+            shapeWindow.SetBrushWidthUi(1);
+            ellipseAction->trigger();
+            QApplication::processEvents();
+
+            ctx.Check(shapeWindow.Scene()->CanvasItemCount() == 1, QStringLiteral("快速插入图形到当前画板"));
+            ShapeAbstractItem* inserted =
+                shapeWindow.Scene()->CanvasItemCount() == 1
+                    ? dynamic_cast<ShapeAbstractItem*>(shapeWindow.Scene()->CanvasItems().constFirst())
+                    : nullptr;
+            ctx.Check(inserted && inserted->shapeType() == ShapeType::ELLIPSE,
+                      QStringLiteral("快速插入的图元类型为圆形"));
+            ctx.Check(inserted && inserted->isSelected() && shapeWindow.View()->mode() == ToolMode::EDIT,
+                      QStringLiteral("快速插入后自动进入编辑模式并选中图形"));
+            ctx.Check(inserted && inserted->LayerId() == shapeWindow.Scene()->ActiveLayerId() &&
+                          shapeWindow.Scene()->LayerHeightsUnique(inserted->LayerId()),
+                      QStringLiteral("快速插入图形进入当前图层且高度唯一"));
+            ctx.Check(inserted && shapeWindow.Scene()->CanvasRect().contains(inserted->SceneContentRect()),
+                      QStringLiteral("快速插入图形位于画板范围内"),
+                      inserted ? GeometryText(inserted->pos(), inserted->ContentSize()) : QString());
+            // 需求 16：新图元按工具栏当前样式生成——默认无填充（填充槽透明）、
+            // 描线黑色 1px。
+            ctx.Check(inserted && inserted->fillStyle() == FillStyle::NONE && inserted->FillColor().alpha() == 0 &&
+                          inserted->StrokeColor() == QColor(Qt::black) && qAbs(inserted->StrokeWidth() - 1.0) < 0.01,
+                      QStringLiteral("快速插入图形按工具栏默认样式生成（无填充、黑色描线 1px）"),
+                      inserted ? QStringLiteral("fill=%1/%2 stroke=%3 width=%4 brush=%5 w=%6 fillMain=%7")
+                                     .arg(static_cast<int>(inserted->fillStyle()))
+                                     .arg(inserted->FillColor().name())
+                                     .arg(inserted->StrokeColor().name())
+                                     .arg(inserted->StrokeWidth())
+                                     .arg(shapeWindow.m_brushColor.name())
+                                     .arg(shapeWindow.m_brushWidth)
+                                     .arg(shapeWindow.m_fillColor.name())
+                               : QString());
+        }
+
+        QAction* arrowInsertAction =
+            shapeMenu ? shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_arrow")) : nullptr;
+        if (arrowInsertAction) {
+            arrowInsertAction->trigger();
+            QApplication::processEvents();
+            ShapeAbstractItem* insertedArrow = nullptr;
+            for (CanvasItem* item : shapeWindow.Scene()->CanvasItems()) {
+                if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
+                    if (shape->shapeType() == ShapeType::ARROW) {
+                        insertedArrow = shape;
+                    }
+                }
+            }
+            ctx.Check(insertedArrow != nullptr, QStringLiteral("快速插入的图元类型为箭头"));
+            // 需求 16：箭头同样按工具栏默认样式生成（无填充、黑色描线）。
+            ctx.Check(insertedArrow && insertedArrow->fillStyle() == FillStyle::NONE &&
+                          insertedArrow->StrokeColor() == QColor(Qt::black),
+                      QStringLiteral("新插入箭头按工具栏默认样式生成"),
+                      insertedArrow ? QStringLiteral("fill=%1/%2 stroke=%3")
+                                          .arg(static_cast<int>(insertedArrow->fillStyle()))
+                                          .arg(insertedArrow->FillColor().name())
+                                          .arg(insertedArrow->StrokeColor().name())
+                                    : QString());
+        }
+    }
+
+    {
+        MainWindow strokeWindow;
+        strokeWindow.show();
+        QApplication::processEvents();
+
+        auto* stroke = new CurveItem();
+        const QColor initialColor(QStringLiteral("#1E293B"));
+        stroke->SetStrokePoints({QPointF(40, 40), QPointF(160, 120)}, initialColor, 4.0);
+        strokeWindow.Scene()->AddItemsWithUndo({stroke}, QStringLiteral("Add width stroke"));
+        strokeWindow.View()->SetMode(ToolMode::EDIT);
+        strokeWindow.Scene()->clearSelection();
+        stroke->setSelected(true);
+        QApplication::processEvents();
+
+        QSpinBox* widthSpin = strokeWindow.findChild<QSpinBox*>(QStringLiteral("StrokeWidthSpin"));
+        QAction* widthFocusAction = strokeWindow.findChild<QAction*>(QStringLiteral("StrokeWidthFocusAction"));
+        ctx.Check(widthSpin && widthFocusAction, QStringLiteral("工具栏与菜单提供描线宽度入口"),
+                  QStringLiteral("toolbar=%1 menu=%2").arg(widthSpin ? 1 : 0).arg(widthFocusAction ? 1 : 0));
+        if (widthSpin) {
+            widthSpin->setValue(2);
+            QApplication::processEvents();
+            ctx.Check(qAbs(stroke->StrokeWidth() - 2.0) < 0.01, QStringLiteral("描线宽度 2px 同步选中曲线"),
+                      QStringLiteral("stroke=%1 toolbar=%2").arg(stroke->StrokeWidth()).arg(widthSpin->value()));
+
+            widthSpin->setValue(7);
+            QApplication::processEvents();
+            ctx.Check(qAbs(stroke->StrokeWidth() - 7.0) < 0.01 && strokeWindow.View()->BrushWidth() == 7.0,
+                      QStringLiteral("工具栏描线宽度 SpinBox 步进 1px 并改变选中曲线宽度"),
+                      QStringLiteral("stroke=%1 brush=%2 step=%3")
+                          .arg(stroke->StrokeWidth())
+                          .arg(strokeWindow.View()->BrushWidth())
+                          .arg(widthSpin->singleStep()));
+        }
+
+        StyleController styleController(&strokeWindow);
+        const QColor changedColor(QStringLiteral("#20C997"));
+        styleController.ApplyStrokeColorToSelection(changedColor);
+        ctx.Check(stroke->StrokeColor() == changedColor, QStringLiteral("描线颜色改变选中曲线颜色"),
+                  stroke->StrokeColor().name());
+        strokeWindow.Scene()->UndoStack()->undo();
+        QApplication::processEvents();
+        ctx.Check(stroke->StrokeColor() == initialColor, QStringLiteral("撤销描线颜色恢复曲线颜色"),
+                  stroke->StrokeColor().name());
+    }
+
+    {
+        MainWindow polygonWindow;
+        polygonWindow.show();
+        QApplication::processEvents();
+
+        PolygonItem::Layer layer;
+        layer.path.addRect(0.0, 0.0, 120.0, 80.0);
+        layer.fill = QColor(QStringLiteral("#3B82F6"));
+        layer.stroke = QColor(QStringLiteral("#1E293B"));
+        layer.strokeWidth = 4.0;
+        layer.role = PolygonItem::LayerRole::FILLED_AREA;
+        auto* polygon = new PolygonItem({layer});
+        polygonWindow.Scene()->AddItemsWithUndo({polygon}, QStringLiteral("Add toolbar polygon"));
+        polygonWindow.View()->SetMode(ToolMode::EDIT);
+        polygonWindow.Scene()->clearSelection();
+        polygon->setSelected(true);
+        QApplication::processEvents();
+
+        QToolButton* fillButton = polygonWindow.findChild<QToolButton*>(QStringLiteral("FillButton"));
+        QAction* hachureAction = nullptr;
+        if (fillButton && fillButton->menu()) {
+            for (QAction* action : fillButton->menu()->actions()) {
+                if (action->text() == QStringLiteral("反斜线填充")) {
+                    hachureAction = action;
+                }
+            }
+        }
+        const FillStyle fillBefore = polygon->fillStyle();
+        if (hachureAction) {
+            hachureAction->trigger();
+            QApplication::processEvents();
+        }
+        ctx.Check(polygon->fillStyle() == FillStyle::REVERSE_HACHURE, QStringLiteral("工具栏填充样式作用到多边形"),
+                  QString::number(static_cast<int>(polygon->fillStyle())));
+        polygonWindow.Scene()->UndoStack()->undo();
+        QApplication::processEvents();
+        ctx.Check(polygon->fillStyle() == fillBefore, QStringLiteral("撤销工具栏填充样式恢复多边形原样式"));
+
+        StyleController styleController(&polygonWindow);
+        const QColor changedStroke(QStringLiteral("#20C997"));
+        const QColor strokeBefore = polygon->StrokeColor();
+        styleController.ApplyStrokeColorToSelection(changedStroke);
+        ctx.Check(polygon->StrokeColor() == changedStroke, QStringLiteral("工具栏描线颜色作用到多边形"),
+                  polygon->StrokeColor().name());
+        polygonWindow.Scene()->UndoStack()->undo();
+        QApplication::processEvents();
+        ctx.Check(polygon->StrokeColor() == strokeBefore, QStringLiteral("撤销工具栏描线颜色恢复多边形原色"));
+
+        QSpinBox* polygonWidthSpin = polygonWindow.findChild<QSpinBox*>(QStringLiteral("StrokeWidthSpin"));
+        const qreal widthBefore = polygon->StrokeWidth();
+        if (polygonWidthSpin) {
+            polygonWidthSpin->setValue(9);
+            QApplication::processEvents();
+        }
+        ctx.Check(qAbs(polygon->StrokeWidth() - 9.0) < 0.01, QStringLiteral("工具栏描线宽度作用到多边形"),
+                  QString::number(polygon->StrokeWidth()));
+        polygonWindow.Scene()->UndoStack()->undo();
+        QApplication::processEvents();
+        ctx.Check(qAbs(polygon->StrokeWidth() - widthBefore) < 0.01,
+                  QStringLiteral("撤销工具栏描线宽度恢复多边形原宽度"));
+    }
+
+    {
+        MainWindow shapeCanvasWindow;
+        ctx.Check(shapeCanvasWindow.OpenCanvasFile(shapeCanvasPath), QStringLiteral("主窗口打开含图形的画布"));
+        ctx.Check(shapeCanvasWindow.Scene()->CanvasItemCount() == shapeTypes.size(),
+                  QStringLiteral("主窗口载入含图形画布完整内容"));
+        int loadedShapeCount = 0;
+        int loadedSineCurves = 0;
+        for (CanvasItem* item : shapeCanvasWindow.Scene()->CanvasItems()) {
+            if (dynamic_cast<ShapeAbstractItem*>(item)) {
+                ++loadedShapeCount;
+            } else if (dynamic_cast<CurveItem*>(item)) {
+                ++loadedSineCurves;
+            }
+        }
+        // 形状类型只剩有面积图形，直线 / 弧线 / 正弦已并入曲线族，载入后不应出现曲线图元。
+        ctx.Check(loadedShapeCount == shapeTypes.size() && loadedSineCurves == 0,
+                  QStringLiteral("主窗口识别画布中的图形图元"),
+                  QStringLiteral("shapes=%1 curves=%2").arg(loadedShapeCount).arg(loadedSineCurves));
+    }
+
+    {
+        QJsonObject fractionalRoot = ctx.shapeRoot;
+        QJsonObject fractionalCanvas = fractionalRoot.value(QStringLiteral("canvas")).toObject();
+        fractionalCanvas.insert(QStringLiteral("width"), 800.5);
+        fractionalCanvas.insert(QStringLiteral("height"), 600.25);
+        fractionalRoot.insert(QStringLiteral("canvas"), fractionalCanvas);
+        const QString fractionalPath = QDir(ctx.workDirectory).filePath(QStringLiteral("fractional-canvas.sbcanvas"));
+        QFile fractionalFile(fractionalPath);
+        ctx.Check(fractionalFile.open(QIODevice::WriteOnly), QStringLiteral("创建小数尺寸画布测试文件"));
+        fractionalFile.write(QJsonDocument(fractionalRoot).toJson(QJsonDocument::Indented));
+        fractionalFile.close();
+
+        MainWindow fractionalWindow;
+        ctx.Check(fractionalWindow.OpenCanvasFile(fractionalPath), QStringLiteral("主窗口打开带小数尺寸的画布"));
+        ctx.Check(qAbs(fractionalWindow.Scene()->CanvasSize().width() - 800.5) < 0.01 &&
+                      qAbs(fractionalWindow.Scene()->CanvasSize().height() - 600.25) < 0.01,
+                  QStringLiteral("小数画布尺寸按原值载入"),
+                  QStringLiteral("%1 x %2")
+                      .arg(fractionalWindow.Scene()->CanvasSize().width())
+                      .arg(fractionalWindow.Scene()->CanvasSize().height()));
+    }
+
+    const QString demoPath = DemoCanvasPath();
+    if (QFileInfo::exists(demoPath)) {
+        MainWindow canvasWindow;
+        ctx.Check(canvasWindow.OpenCanvasFile(demoPath), QStringLiteral("主窗口打开含文字的示例画布"));
+        ctx.Check(canvasWindow.Scene()->CanvasItemCount() == 27 && canvasWindow.Scene()->UserLayerCount() == 3,
+                  QStringLiteral("主窗口载入示例画布完整内容"));
+        bool hasTextItem = false;
+        for (CanvasItem* item : canvasWindow.Scene()->CanvasItems()) {
+            if (dynamic_cast<TextItem*>(item)) {
+                hasTextItem = true;
+                break;
+            }
+        }
+        ctx.Check(hasTextItem, QStringLiteral("主窗口载入画布中的文字图元"));
+    }
+}

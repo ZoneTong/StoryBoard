@@ -1,9 +1,9 @@
-#include "CanvasItem.h"
-#include "CanvasItemVisitor.h"
-#include "CanvasScene.h"
-#include "Commands.h"
-#include "CurveItem.h"
-#include "LineAbstractItem.h"
+#include "items/CanvasItem.h"
+#include "items/CanvasItemVisitor.h"
+#include "items/lines/CurveItem.h"
+#include "items/lines/LineAbstractItem.h"
+#include "scene/CanvasScene.h"
+#include "scene/Commands.h"
 #include "scene/SceneConstants.h"
 
 #include <QSet>

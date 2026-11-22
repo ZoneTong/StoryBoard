@@ -1,6 +1,6 @@
-#include "CanvasItem.h"
-#include "CanvasScene.h"
-#include "ItemGeometry.h"
+#include "items/CanvasItem.h"
+#include "items/ItemGeometry.h"
+#include "scene/CanvasScene.h"
 
 #include <QGraphicsView>
 #include <QJsonArray>

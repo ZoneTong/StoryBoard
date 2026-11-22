@@ -1,6 +1,6 @@
-#include "CanvasItem.h"
-#include "CanvasScene.h"
-#include "Commands.h"
+#include "items/CanvasItem.h"
+#include "scene/CanvasScene.h"
+#include "scene/Commands.h"
 #include "scene/SceneConstants.h"
 
 #include <QImage>
