@@ -1,12 +1,21 @@
 #include "PathRegions.h"
 
+#include <QLineF>
+#include <QPainterPathStroker>
 #include <QPolygonF>
+#include <limits>
 
 namespace {
 
 // 一个环是否真的把另一个环包住：只取有限个顶点做包含测试，环的顶点数可能很大，
 // 但布尔运算的结果里，孔洞与它的外轮廓共享的顶点不会太多，抽样足够判嵌套。
 constexpr int MAX_PROBE_POINTS = 24;
+// 面积判定容差（px²）：布尔减法在近切线处会留下抗锯齿细缝，小于该值视为空。
+constexpr qreal AREA_EPS = 0.05;
+// 共享边探测带宽度（px）：把另一区域轮廓描成细带，判断本区域轮廓是否落在带内。
+constexpr qreal CONTACT_BAND_WIDTH = 1.0;
+// 接触链长度阈值：仅角点接触时接触链只是一个小折角，长度低于该值。
+constexpr qreal CONTACT_LENGTH_EPS = 1.5;
 
 bool RingContains(const QPainterPath& ring, const QPolygonF& points)
 {
@@ -17,6 +26,31 @@ bool RingContains(const QPainterPath& ring, const QPolygonF& points)
         }
     }
     return false;
+}
+
+// 多边形闭合折线的周长（边长按鞋带边逐项求和），用于近似接触链长度。
+qreal PolylineLength(const QPolygonF& polygon)
+{
+    const int count = polygon.size();
+    if (count < 2) {
+        return 0.0;
+    }
+    qreal length = 0.0;
+    for (int i = 0; i < count; ++i) {
+        length += QLineF(polygon.at(i), polygon.at((i + 1) % count)).length();
+    }
+    return length;
+}
+
+// 路径轮廓接触链长度：各子路径周长求和。
+qreal ContactLength(const QPainterPath& path)
+{
+    qreal total = 0.0;
+    const QList<QPolygonF> polygons = path.toSubpathPolygons();
+    for (const QPolygonF& polygon : polygons) {
+        total += PolylineLength(polygon);
+    }
+    return total;
 }
 
 } // namespace
@@ -102,6 +136,19 @@ QList<QPainterPath> SplitDisjoint(const QPainterPath& path)
     }
     if (pieces.isEmpty()) {
         pieces.append(path);
+        return pieces;
+    }
+
+    // 全覆盖不变量（§5.2）：各块并集必须兜住原填充区域。拆分一旦丢面积（嵌套误判、
+    // 角点接触被并到同一块等），退回整块返回，绝不允许产出缺角的结果。
+    QPainterPath unionPieces;
+    for (const QPainterPath& piece : std::as_const(pieces)) {
+        unionPieces = unionPieces.isEmpty() ? piece : unionPieces.united(piece);
+    }
+    const qreal originalArea = Area(path);
+    const qreal coverageEps = qMax(1.0, originalArea * 0.01);
+    if (Area(unionPieces) < originalArea - coverageEps) {
+        return {path};
     }
     return pieces;
 }
@@ -126,6 +173,47 @@ qreal Area(const QPainterPath& path)
         total += qAbs(sum) / 2.0;
     }
     return total;
+}
+
+bool RegionsContinuous(const QPainterPath& a, const QPainterPath& b)
+{
+    if (a.isEmpty() || b.isEmpty()) {
+        return false;
+    }
+    // 实际重叠：交集面积 > 0 即连续。
+    if (Area(a.intersected(b)) > AREA_EPS) {
+        return true;
+    }
+    // 共享边：把 b 轮廓描成细带，a 落在带内的接触链长度超过阈值才算共边；
+    // 仅角点接触时接触链只是一个小折角，长度趋近 0，判为不连续。
+    QPainterPathStroker stroker;
+    stroker.setWidth(CONTACT_BAND_WIDTH);
+    const QPainterPath bandB = stroker.createStroke(b);
+    return ContactLength(a.intersected(bandB)) > CONTACT_LENGTH_EPS;
+}
+
+qreal SharedBoundaryLength(const QPainterPath& a, const QPainterPath& b)
+{
+    if (a.isEmpty() || b.isEmpty()) {
+        return 0.0;
+    }
+    const QPainterPath overlap = a.intersected(b);
+    if (Area(overlap) > AREA_EPS) {
+        // 相互重叠时共享边界取交集轮廓周长作为近似。
+        return ContactLength(overlap);
+    }
+    QPainterPathStroker stroker;
+    stroker.setWidth(CONTACT_BAND_WIDTH);
+    const QPainterPath bandB = stroker.createStroke(b);
+    return ContactLength(a.intersected(bandB));
+}
+
+qreal RegionDistance(const QPainterPath& a, const QPainterPath& b)
+{
+    if (a.isEmpty() || b.isEmpty()) {
+        return std::numeric_limits<qreal>::max();
+    }
+    return QLineF(a.boundingRect().center(), b.boundingRect().center()).length();
 }
 
 } // namespace PathRegions
