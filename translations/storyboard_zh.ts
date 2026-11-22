@@ -79,6 +79,10 @@
         <translation>图层下移</translation>
     </message><message>
         <location filename="../src/scene/CanvasSceneLayerStack.cpp" line="123"/>
+        <source>Reorder layer</source>
+        <translation>图层排序</translation>
+    </message><message>
+        <location filename="../src/scene/CanvasSceneLayerStack.cpp" line="146"/>
         <source>Rename layer</source>
         <translation>重命名图层</translation>
     </message><message>
@@ -152,6 +156,9 @@
         <location filename="../src/scene/CanvasSceneClipboard.cpp" line="156"/>
         <source>Nudge items</source>
         <translation>微调图元</translation>
+    </message><message>
+        <source>Rename group</source>
+        <translation>重命名组</translation>
     </message></context>
 <context>
     <name>CanvasView</name><message>
@@ -1302,6 +1309,30 @@ Use the checkbox to show or hide it.</source>
 In edit mode, items on visible, unlocked layers can be edited</source>
         <translation>勾选框＝显示/隐藏 · 锁形按钮＝锁定
 编辑模式下，显示且未锁定的图层上图元均可编辑</translation>
+    </message><message>
+        <source>%1 · %2 items</source>
+        <translation>%1 · %2 个图元</translation>
+    </message><message>
+        <source>Double-click to rename group</source>
+        <translation>双击重命名组</translation>
+    </message><message>
+        <source>Rename group</source>
+        <translation>重命名组</translation>
+    </message><message>
+        <source>Group name</source>
+        <translation>组名</translation>
+    </message><message>
+        <source>Group name cannot be empty.</source>
+        <translation>组名不能为空。</translation>
+    </message><message>
+        <source>Group name is empty or already in use.</source>
+        <translation>组名为空或已被占用。</translation>
+    </message><message>
+        <source>Group renamed to “%1”</source>
+        <translation>组已重命名为“%1”</translation>
+    </message><message>
+        <source>Group “%1” · %2 items</source>
+        <translation>组 “%1” · %2 个图元</translation>
     </message></context>
 <context>
     <name>LineArtDialog</name><message>
@@ -2951,6 +2982,9 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Inserted custom shape “%1” from the shapes folder</source>
         <translation>已从 shapes 目录插入自定义图形“%1”</translation>
     </message><message>
+        <source>Custom shape inserted, but grouping failed: %1</source>
+        <translation>自定义图形已插入，但分组失败：%1</translation>
+    </message><message>
         <source>Could not open the shapes folder: %1</source>
         <translation>无法打开 shapes 目录：%1</translation>
     </message><message>
@@ -3151,6 +3185,27 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <location filename="../src/AppModes.cpp" line="118"/>
         <source>Settings…</source>
         <translation>设置…</translation>
+    </message><message>
+        <source>Switch to edit mode before creating a group</source>
+        <translation>请切换到编辑模式后再创建图元分组</translation>
+    </message><message>
+        <source>Select at least two items to create a group</source>
+        <translation>至少选择两个图元才能创建分组</translation>
+    </message><message>
+        <source>The selection contains non-editable or locked items</source>
+        <translation>选中项中包含不可编辑或已锁定的图元</translation>
+    </message><message>
+        <source>Items in a group must belong to the same layer</source>
+        <translation>只能将同一图层的图元组成一个分组</translation>
+    </message><message>
+        <source>The selection is no longer valid; please select again</source>
+        <translation>选中项已失效，请重新选择</translation>
+    </message><message>
+        <source>Resize group</source>
+        <translation>缩放组</translation>
+    </message><message>
+        <source>Rotate group</source>
+        <translation>旋转组</translation>
     </message></context>
 <context>
     <name>QFontDialog</name><message>
