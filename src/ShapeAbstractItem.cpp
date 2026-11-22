@@ -19,6 +19,7 @@
 #include <QPainterPathStroker>
 #include <QPixmap>
 #include <QtMath>
+#include <cmath>
 
 
 ShapeAbstractItem::ShapeAbstractItem(QGraphicsItem* parent) : CanvasItem(parent)
@@ -145,22 +146,56 @@ QPointF ShapeAbstractItem::triangleVertex(TriangleVertex vertex) const
     }
 }
 
-QPointF ShapeAbstractItem::CustomHandleCenter(int handle, bool* ok) const
+bool ShapeAbstractItem::BeginCustomHandleDrag(int handle, const QPointF& scenePos)
 {
-    if (ok) {
-        *ok = false;
+    Q_UNUSED(scenePos);
+    // 顶点 C 的内角手柄只属于三角形；自定义轮廓没有角度语义，不提供专用拖拽。
+    if (handle != CanvasItem::CUSTOM_0 || shapeType() != ShapeType::TRIANGLE || IsCustomShape()) {
+        return false;
     }
-    if (handle == CanvasItem::APEX && shapeType() == ShapeType::TRIANGLE && !IsCustomShape()) {
-        // 顶点 C 的手柄向下偏移，让开底角 90° 时与角顶点重合的角落手柄；
-        // 命中与拖拽都仍按真实顶点所在的包围框计算，形很矮时收在内框里。
-        const qreal scale = qMax<qreal>(ViewScale(), 0.001);
-        const qreal inset = qMin<qreal>(18.0 / scale, qMax<qreal>(0.0, ContentRect().height() - 7.0 / scale));
-        if (ok) {
-            *ok = true;
-        }
-        return triangleVertex(TriangleVertex::C) + QPointF(0.0, inset);
+    m_apexDragBaseA = mapToScene(triangleVertex(TriangleVertex::A));
+    m_apexDragBaseB = mapToScene(triangleVertex(TriangleVertex::B));
+    m_apexDragHeight = qMax<qreal>(1.0, ContentSize().height());
+    SetAngleReadoutVisible(true);
+    return true;
+}
+
+bool ShapeAbstractItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos)
+{
+    if (handle != CanvasItem::CUSTOM_0 || shapeType() != ShapeType::TRIANGLE || IsCustomShape()) {
+        return false;
     }
-    return QPointF();
+    // §3.1：拖顶点只改内角 A。AB 边上的垂直高度保持拖拽开始时的值，B 由底边长度
+    // 与高度反算（cotB = base/h − cotA）；A 的钝角分支跟指针方向一致（D12），按 1° 取整。
+    const QPointF base = m_apexDragBaseB - m_apexDragBaseA;
+    const qreal baseLength = qMax<qreal>(1.0, std::hypot(base.x(), base.y()));
+    const QPointF along = base / baseLength;
+    const qreal fromA = QPointF::dotProduct(scenePos - m_apexDragBaseA, along);
+    const qreal angleA = qRound(qRadiansToDegrees(qAtan2(m_apexDragHeight, fromA)));
+    const qreal cotA = 1.0 / qTan(qDegreesToRadians(angleA));
+    const qreal cotB = baseLength / m_apexDragHeight - cotA;
+    const qreal angleB = qRadiansToDegrees(qAtan2(1.0, cotB));
+    SetTriangleAnglesFixedHeight(angleA, angleB, m_apexDragHeight);
+    SetAngleReadoutVisible(true);
+    // 底边长度与高度都没变，把局部 A 点搬回拖拽开始时的场景位置即可，
+    // B 会随同一条底边一起保持固定。
+    const QPointF newA = mapToScene(triangleVertex(TriangleVertex::A));
+    setPos(pos() + (m_apexDragBaseA - newA));
+    return true;
+}
+
+void ShapeAbstractItem::EndHandleDrag()
+{
+    // 角度读数只在拖动期间显示。
+    SetAngleReadoutVisible(false);
+}
+
+void ShapeAbstractItem::FrameResizeDragged()
+{
+    // §3.1：三角形四角 / 边自由缩放时，A、B 读数随拖动显示（B 在 ContentResized 里反算）。
+    if (shapeType() == ShapeType::TRIANGLE && !IsCustomShape()) {
+        SetAngleReadoutVisible(true);
+    }
 }
 
 void ShapeAbstractItem::SetTriangleAngles(qreal angle1, qreal angle2)

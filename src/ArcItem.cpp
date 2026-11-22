@@ -171,6 +171,50 @@ void ArcItem::SetArcAxes(qreal majorAxis, qreal minorAxis)
     RebuildWithFrame(QRectF(center.x() - newWidth / 2.0, center.y() - newHeight / 2.0, newWidth, newHeight));
 }
 
+QRectF ArcItem::LocalEllipseFrame() const
+{
+    const QSizeF box = ContentSize();
+    return QRectF(m_refFrame.x() * box.width(), m_refFrame.y() * box.height(), m_refFrame.width() * box.width(),
+                  m_refFrame.height() * box.height());
+}
+
+HandleSpecList ArcItem::CustomHandles() const
+{
+    HandleSpecList specs;
+    const QRectF frame = LocalEllipseFrame();
+    if (frame.width() <= 0.0 || frame.height() <= 0.0) {
+        return specs;
+    }
+    HandleSpec start;
+    start.id = CanvasItem::CUSTOM_0;
+    start.position = EllipseShape::PointOnFrame(frame, StartAngle());
+    start.behavior = HandleBehavior::ARC_ENDPOINT;
+    start.cursor = Qt::SizeAllCursor;
+    specs.append(start);
+    HandleSpec end;
+    end.id = CanvasItem::CUSTOM_1;
+    end.position = EllipseShape::PointOnFrame(frame, StartAngle() + SweepAngle());
+    end.behavior = HandleBehavior::ARC_ENDPOINT;
+    end.cursor = Qt::SizeAllCursor;
+    specs.append(end);
+    return specs;
+}
+
+bool ArcItem::BeginCustomHandleDrag(int handle, const QPointF& scenePos)
+{
+    Q_UNUSED(scenePos);
+    return handle == CanvasItem::CUSTOM_0 || handle == CanvasItem::CUSTOM_1;
+}
+
+bool ArcItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos)
+{
+    if (handle != CanvasItem::CUSTOM_0 && handle != CanvasItem::CUSTOM_1) {
+        return false;
+    }
+    DragArcEndpoint(LocalEllipseFrame(), mapFromScene(scenePos), handle == CanvasItem::CUSTOM_0);
+    return true;
+}
+
 void ArcItem::Rebuild()
 {
     const QSizeF box = ContentSize();

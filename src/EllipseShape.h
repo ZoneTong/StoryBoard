@@ -33,6 +33,10 @@ class EllipseShape {
     // 按角度均匀采样（不是按弧长），供弧线图元转折线几何。
     QVector<QPointF> Sample(qreal startDeg, qreal sweepDeg, int count) const;
 
+    // 给定外接框上某个角度对应的点（Qt 语义：0° 在三点钟方向、逆时针为正）。
+    // 端点手柄与端点拖拽共用这一份换算，避免各处再写一遍 cos/sin。
+    static QPointF PointOnFrame(const QRectF& frame, qreal deg);
+
     // 扫过角夹在 ±360°，0 兜底 120°：插入扇形 / 弧线后不能“什么都没有”。
     static qreal ClampedSweep(qreal sweepDeg);
 

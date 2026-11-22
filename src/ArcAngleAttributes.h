@@ -3,6 +3,8 @@
 #include "ItemProperties.h"
 
 #include <QJsonObject>
+#include <QPointF>
+#include <QRectF>
 #include <QtGlobal>
 
 // 起始角 / 扫过角属性基类：扇形（有面积图形）与弧线（零面积描线）共用这一份状态、
@@ -32,6 +34,11 @@ class ArcAngleAttributes {
     virtual void SetArcAngles(qreal startAngle, qreal sweepAngle);
     void SetStartAngle(qreal startAngle) { SetArcAngles(startAngle, m_sweepAngle); }
     void SetSweepAngle(qreal sweepAngle) { SetArcAngles(m_startAngle, sweepAngle); }
+
+    // §3.3 共享端点拖拽行为：拖起始端时结束端固定，拖结束端时起始端固定；
+    // 只改 start / sweep（不改中心、半轴与外接框），扫过角限 ±360° 且最小 1°。
+    // ellipseFrame 与 localPoint 都取图元本地坐标（旋转由调用方的 mapFromScene 消化）。
+    void DragArcEndpoint(const QRectF& ellipseFrame, const QPointF& localPoint, bool startEndpoint);
 
     ArcAngleAttributesState ArcAngleState() const;
     void ApplyArcAngleState(const ArcAngleAttributesState& state);

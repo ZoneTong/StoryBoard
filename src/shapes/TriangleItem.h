@@ -10,7 +10,8 @@ class TriangleItem : public ShapeAbstractItem {
     QSizeF DefaultContentSize() const override;
     ShapeType shapeType() const override { return ShapeType::TRIANGLE; }
     ItemPropertySet Properties() const override;
-    bool ApexAngleHandle() const override { return true; }
+    // 顶点 C 的内角手柄：取代顶边中点手柄，拖它只改底角 A（§3.1）。
+    HandleSpecList CustomHandles() const override;
 
   protected:
     QPainterPath ShapePath(const QRectF& rect) const override;

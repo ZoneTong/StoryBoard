@@ -17,6 +17,9 @@ struct HandleSpec {
     HandleBehavior behavior = HandleBehavior::STATIC;
     Qt::CursorShape cursor = Qt::SizeAllCursor;
     qreal sizeScale = 1.0;
+    // 该句柄占用的位置与顶边缩放手柄冲突时（三角形顶点 C），置 true 让通用 TOP 手柄让位；
+    // 默认 false，表示与八向手柄并存。
+    bool replacesTopHandle = false;
 };
 
 using HandleSpecList = QList<HandleSpec>;

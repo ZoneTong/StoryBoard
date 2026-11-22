@@ -2,8 +2,7 @@
 
 #include "CanvasItem.h"
 #include "CanvasScene.h"
-#include "ShapeAbstractItem.h"
-#include "shapes/ParallelogramAbstractItem.h"
+#include "Commands.h"
 
 #include <QCursor>
 #include <QGraphicsScene>
@@ -118,87 +117,39 @@ void CanvasItemInteraction::BeginResize(int handle, const QPointF& scenePos)
     m_item->m_dragStartPos = m_item->pos();
     m_item->m_dragStartSize = m_item->m_size;
     m_item->m_before = {{m_item, m_item->pos(), m_item->m_size}};
+    m_customDrag = false;
+    m_customDragBefore.clear();
 
-    if (auto* para = dynamic_cast<ParallelogramAbstractItem*>(m_item);
-        handle == CanvasItem::SKEW && para && para->shapeType() == ShapeType::PARALLELOGRAM &&
-        para->SkewHandleEnabled() && !para->IsCustomShape()) {
-        // 内角旋钮绕左下顶点旋转上边：先记住底边的场景锚点与长度。
-        // 拖动中包围框会随上边偏移量增减，不能再用固定的拖拽起点推算。
-        const QRectF rect = m_item->ContentRect();
-        const qreal cotValue = 1.0 / qTan(qDegreesToRadians(para->ParallelogramAngle()));
-        const qreal shift = qMin(qAbs(rect.height() * cotValue), qMax<qreal>(0.0, rect.width() - 1.0));
-        m_parallelogramBaseLength = qMax<qreal>(1.0, rect.width() - shift);
-        const qreal bottomLeftX = cotValue >= 0.0 ? rect.left() : rect.left() + shift;
-        m_parallelogramBottomLeft = m_item->mapToScene(QPointF(bottomLeftX, rect.bottom()));
+    if (handle < CanvasItem::CUSTOM_0) {
+        return;
     }
-
-    if (auto* triangle = dynamic_cast<ShapeAbstractItem*>(m_item);
-        triangle && triangle->shapeType() == ShapeType::TRIANGLE && !triangle->IsCustomShape() &&
-        handle == CanvasItem::APEX) {
-        m_triangleDragBaseA = m_item->mapToScene(triangle->triangleVertex(ShapeAbstractItem::TriangleVertex::A));
-        m_triangleDragBaseB = m_item->mapToScene(triangle->triangleVertex(ShapeAbstractItem::TriangleVertex::B));
+    // P2：自定义句柄的拖拽语义由图元自己实现，控制器不再按图元类型分支。
+    m_customDrag = m_item->BeginCustomHandleDrag(handle, scenePos);
+    if (!m_customDrag) {
+        return;
+    }
+    // 角度 / 端点这类属性不在 GeometryCommand 的回放范围里，改为逐属性快照，
+    // 拖拽结束时只把真正变过的项推成一条 ItemPropertyCommand。
+    for (ItemProperty property : m_item->Properties().Values()) {
+        m_customDragBefore.insert(property, m_item->PropertyValue(property));
     }
 }
 
 void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardModifiers modifiers)
 {
-    const QPointF delta = scenePos - m_item->m_dragStartScene;
-    QRectF rect(m_item->m_dragStartPos, m_item->m_dragStartSize);
     const int handle = m_item->m_resizeHandle;
 
-    // 需求 3：平行四边形内角由顶边中点的倾斜旋钮拖动。旋钮位于“底边中点 + 上边偏移”，
-    // 因此以固定左下顶点为原点量横向距离：上边偏移 = 指针到底边中点的距离 − 底边半长。
-    // 上边向左右移动即改变左下内角，底边长度全程保持不动。
-    if (auto* para = dynamic_cast<ParallelogramAbstractItem*>(m_item);
-        para && para->shapeType() == ShapeType::PARALLELOGRAM && para->SkewHandleEnabled() && !para->IsCustomShape() &&
-        handle == CanvasItem::SKEW) {
-        const qreal startHeight = m_item->m_dragStartSize.height();
-        QPointF along(1.0, 0.0);
-        const qreal rotation = m_item->RotationAngle();
-        if (!qFuzzyIsNull(rotation)) {
-            QTransform transform;
-            transform.rotate(rotation);
-            along = transform.map(along);
-        }
-        const QPointF toPointer = scenePos - m_parallelogramBottomLeft;
-        const qreal signedShift = QPointF::dotProduct(toPointer, along) - m_parallelogramBaseLength / 2.0;
-        const qreal angle = qRadiansToDegrees(qAtan2(startHeight, signedShift));
-        para->SetParallelogramAngle(angle);
-        para->SetAngleReadoutVisible(true);
+    if (m_customDrag) {
+        m_item->ApplyCustomHandleDrag(handle, scenePos);
         return;
     }
 
-    // 需求 §3.1：拖顶点只改内角 A。AB 边上的垂直高度保持拖拽开始时的值，
-    // B 由底边长度与高度反算（cotB = base/h − cotA）；A 的钝角分支跟指针方向
-    // 一致（D12），按 1° 步进取整数。
-    if (auto* triangle = dynamic_cast<ShapeAbstractItem*>(m_item);
-        triangle && triangle->shapeType() == ShapeType::TRIANGLE && !triangle->IsCustomShape() &&
-        handle == CanvasItem::APEX) {
-        const QPointF base = m_triangleDragBaseB - m_triangleDragBaseA;
-        const qreal baseLength = qMax<qreal>(1.0, std::hypot(base.x(), base.y()));
-        const QPointF along = base / baseLength;
-        const QPointF toPointer = scenePos - m_triangleDragBaseA;
-        const qreal height = qMax<qreal>(1.0, m_item->m_dragStartSize.height());
-        const qreal fromA = QPointF::dotProduct(toPointer, along);
-        const qreal angleA = qRound(qRadiansToDegrees(qAtan2(height, fromA)));
-        const qreal cotA = 1.0 / qTan(qDegreesToRadians(angleA));
-        const qreal cotB = baseLength / height - cotA;
-        const qreal angleB = qRadiansToDegrees(qAtan2(1.0, cotB));
-        triangle->SetTriangleAnglesFixedHeight(angleA, angleB, height);
-        triangle->SetAngleReadoutVisible(true);
-        // 底边长度与高度都没变，把局部 A 点搬回拖拽开始时的场景位置即可，
-        // B 会随同一条底边一起保持固定。
-        const QPointF newA = m_item->mapToScene(triangle->triangleVertex(ShapeAbstractItem::TriangleVertex::A));
-        m_item->setPos(m_item->pos() + (m_triangleDragBaseA - newA));
-        return;
-    }
+    // 拖外接框 / 边时的逐帧回调：三角形（A/B）与菱形（派生内角）在这里点亮读数
+    // （§3.1、§3.2），控制器不再按图元类型分支。
+    m_item->FrameResizeDragged();
 
-    // §3.1：三角形不再等比缩放——四角 / 边走通用自由缩放，B 在 ContentResized()
-    // 里按新框宽高反算；拖外接框 / 边时 A、B 读数都随拖动显示。
-    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(m_item);
-        shape && shape->shapeType() == ShapeType::TRIANGLE && !shape->IsCustomShape()) {
-        shape->SetAngleReadoutVisible(true);
-    }
+    const QPointF delta = scenePos - m_item->m_dragStartScene;
+    QRectF rect(m_item->m_dragStartPos, m_item->m_dragStartSize);
 
     if (IsLeftHandle(handle)) {
         rect.setLeft(rect.left() + delta.x());
@@ -251,13 +202,6 @@ void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardMod
         }
     }
 
-    // §3.2：菱形拖外接框 / 边时显示派生内角读数（尺寸是真相，角度随宽高连续变化，
-    // 1 位小数显示；Shift 等比缩放时角度不变，读数维持原值）。
-    if (auto* family = dynamic_cast<ParallelogramAbstractItem*>(m_item);
-        family && family->shapeType() == ShapeType::DIAMOND && !family->IsCustomShape()) {
-        family->SetAngleReadoutVisible(true);
-    }
-
     m_item->setPos(rect.topLeft());
     m_item->SetContentSize(rect.size());
 }
@@ -287,19 +231,24 @@ void CanvasItemInteraction::FinishInteraction()
         return;
     }
 
-    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(m_item)) {
-        shape->SetAngleReadoutVisible(false);
-    }
+    // 收起拖动中的临时状态（角度读数等），由各图元自己决定要不要处理。
+    m_item->EndHandleDrag();
 
     const bool wasResize = m_item->m_drag == CanvasItem::DragKind::RESIZE;
     const bool wasRotate = m_item->m_drag == CanvasItem::DragKind::ROTATE;
+    const bool wasCustomDrag = wasResize && m_customDrag;
+    const QMap<ItemProperty, QVariant> customBefore = m_customDragBefore;
     m_item->m_drag = CanvasItem::DragKind::NONE;
     m_item->m_resizeHandle = CanvasItem::NO_HANDLE;
+    m_customDrag = false;
+    m_customDragBefore.clear();
 
     if (wasRotate) {
         if (CanvasScene* canvas = m_item->canvasScene()) {
             canvas->PushRotation(m_item, m_item->m_dragStartRotation, m_item->m_rotation, m_item->tr("Rotate item"));
         }
+    } else if (wasCustomDrag) {
+        PushCustomHandleChange(customBefore);
     } else if (!m_item->m_before.isEmpty()) {
         ItemGeometryList after;
         after.reserve(m_item->m_before.size());
@@ -314,6 +263,29 @@ void CanvasItemInteraction::FinishInteraction()
         }
     }
     m_item->m_before.clear();
+}
+
+void CanvasItemInteraction::PushCustomHandleChange(const QMap<ItemProperty, QVariant>& before)
+{
+    CanvasScene* canvas = m_item->canvasScene();
+    if (!canvas || !canvas->UndoStack()) {
+        return;
+    }
+    QMap<ItemProperty, QVariant> beforeChanged;
+    QMap<ItemProperty, QVariant> afterChanged;
+    for (auto it = before.constBegin(); it != before.constEnd(); ++it) {
+        const QVariant now = m_item->PropertyValue(it.key());
+        if (now == it.value()) {
+            continue;
+        }
+        beforeChanged.insert(it.key(), it.value());
+        afterChanged.insert(it.key(), now);
+    }
+    if (beforeChanged.isEmpty()) {
+        return;
+    }
+    canvas->UndoStack()->push(
+        new ItemPropertyCommand(canvas, {m_item}, {beforeChanged}, {afterChanged}, m_item->tr("Resize item")));
 }
 
 void CanvasItemInteraction::OnHoverMove(QGraphicsSceneHoverEvent* event)

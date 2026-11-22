@@ -29,7 +29,9 @@ class CanvasItem : public QGraphicsObject {
     Q_OBJECT
   public:
     enum { Type = QGraphicsItem::UserType + 1 };
-    // 需求 2：Apex 是三角形顶点 C 的专用句柄，数值排在 Rotation 之后，旧值不受影响。
+    // 八向缩放手柄与旋转手柄是公共协议；排在它们之后的是两个通用“自定义句柄槽位”，
+    // 具体含义由图元的 CustomHandles() 声明（三角形顶点 C、平行四边形内角旋钮、
+    // 扇形 / 弧线的起止端点）。槽位追加在末尾且数值不变，旧调用点不需要迁移。
     enum Handle {
         NO_HANDLE = -1,
         TOP_LEFT = 0,
@@ -41,10 +43,8 @@ class CanvasItem : public QGraphicsObject {
         BOTTOM_LEFT,
         LEFT,
         ROTATION,
-        APEX,
-        // 倾斜旋钮：平行四边形上边中点的内角手柄，水平拖动连续改变内角（锐角↔钝角）。
-        // 追加在末尾，避免既有句柄值发生位移。
-        SKEW
+        CUSTOM_0,
+        CUSTOM_1
     };
 
     explicit CanvasItem(QGraphicsItem* parent = nullptr);
@@ -67,10 +67,16 @@ class CanvasItem : public QGraphicsObject {
     virtual void SetPropertyValues(const QMap<ItemProperty, QVariant>& values);
     // 自定义句柄协议：默认没有额外句柄，需要时由叶子给出位置与行为策略。
     virtual HandleSpecList CustomHandles() const;
+    // 自定义句柄的拖拽语义由图元实现（句柄命中 / 绘制 / 光标已由 HandleSpec 决定）：
+    // 返回 false 表示该句柄没有专用拖拽行为，交给通用缩放路径。
+    virtual bool BeginCustomHandleDrag(int handle, const QPointF& scenePos);
+    virtual bool ApplyCustomHandleDrag(int handle, const QPointF& scenePos);
+    // 一次拖拽（含通用外接框缩放）结束时的回调：收起拖动中的角度读数等临时状态。
+    virtual void EndHandleDrag();
+    // 拖外接框 / 边缩放期间的逐帧回调：三角形与菱形在这里点亮派生角度读数。
+    virtual void FrameResizeDragged();
     // 用于自动命名的类型名：文字/图片不取内容摘要或文件名，而是稳定的类型称呼。
     virtual QString TypeDisplayName() const { return DisplayName(); }
-    // 需求 2：非矩形句柄（三角形顶点 C）由图元给出本地坐标；默认不支持。
-    virtual QPointF CustomHandleCenter(int handle, bool* ok) const;
     virtual QJsonObject ToJson() const = 0;
     virtual void FromJson(const QJsonObject& json) = 0;
 

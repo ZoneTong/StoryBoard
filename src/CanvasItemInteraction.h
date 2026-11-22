@@ -1,16 +1,20 @@
 #pragma once
 
+#include "ItemProperties.h"
+
+#include <QMap>
 #include <QPointF>
 #include <QSizeF>
+#include <QVariant>
 #include <Qt>
 
 class CanvasItem;
 class QGraphicsSceneHoverEvent;
 class QGraphicsSceneMouseEvent;
 
-// 图元拖动交互：移动（含成组联动快照）、缩放（含最小边长与等比约束）、旋转（含步长吸附）。
-// 同时承接悬停与鼠标事件分发：交互开始时记录快照，结束时通过场景推入撤销记录；
-// 图元本身只保留交互状态。
+// 图元拖动交互：移动（含成组联动快照）、缩放（含最小边长与等比约束）、旋转（含步长吸附），
+// 以及由图元自己实现的“自定义句柄拖拽”（角度 / 端点等）。同时承接悬停与鼠标事件分发：
+// 交互开始时记录快照，结束时通过场景推入撤销记录；图元本身只保留交互状态。
 class CanvasItemInteraction {
   public:
     explicit CanvasItemInteraction(CanvasItem* item);
@@ -31,11 +35,11 @@ class CanvasItemInteraction {
     void UpdateHoverCursor(const QPointF& pos);
 
   private:
+    // 自定义句柄拖拽只改角度 / 端点这类派生属性，GeometryCommand 回放不了，
+    // 因此按属性快照把真正变过的项推成一条 ItemPropertyCommand。
+    void PushCustomHandleChange(const QMap<ItemProperty, QVariant>& before);
+
     CanvasItem* m_item = nullptr;
-    // 拖三角形顶点 C 时固定底边：记录拖拽开始时的 A/B 场景位置。
-    QPointF m_triangleDragBaseA;
-    QPointF m_triangleDragBaseB;
-    // 拖平行四边形内角旋钮时固定底边：记录左下顶点场景位置与底边长度。
-    QPointF m_parallelogramBottomLeft;
-    qreal m_parallelogramBaseLength = 0.0;
+    bool m_customDrag = false;
+    QMap<ItemProperty, QVariant> m_customDragBefore;
 };

@@ -215,10 +215,14 @@ void selftest::RunShapeItemTests(Context& ctx)
     // 旋钮下移到框内 22px，90° 时不再与任何角手柄重合。
     {
         GeneralParallelogramItem para;
-        bool ok = false;
-        auto knobInScene = [&para, &ok]() {
-            const QPointF local = para.CustomHandleCenter(CanvasItem::SKEW, &ok);
-            return para.mapToScene(local);
+        auto knobInScene = [&para]() {
+            const HandleSpecList specs = para.CustomHandles();
+            return specs.isEmpty() ? QPointF() : para.mapToScene(specs.constFirst().position);
+        };
+        auto hasSkewKnob = [&para]() {
+            const HandleSpecList specs = para.CustomHandles();
+            return !specs.isEmpty() && specs.constFirst().id == CanvasItem::CUSTOM_1 &&
+                   specs.constFirst().behavior == HandleBehavior::SKEW;
         };
         auto bottomLength = [&para]() {
             const QPainterPath path = para.CurrentPath(para.ContentRect());
@@ -235,7 +239,7 @@ void selftest::RunShapeItemTests(Context& ctx)
         const qreal obtuseBase = bottomLength();
         const QPointF obtuseKnob = knobInScene();
         ctx.Check(
-            ok && acuteKnob.x() > rightKnob.x() && rightKnob.x() > obtuseKnob.x() &&
+            hasSkewKnob() && acuteKnob.x() > rightKnob.x() && rightKnob.x() > obtuseKnob.x() &&
                 qAbs(rightKnob.x() - rightCenterX) < 0.01,
             QStringLiteral("平行四边形内角旋钮连续跨越锐角与钝角"),
             QStringLiteral("acute=%1 right=%2 obtuse=%3").arg(acuteKnob.x()).arg(rightKnob.x()).arg(obtuseKnob.x()));
@@ -260,8 +264,40 @@ void selftest::RunShapeItemTests(Context& ctx)
     // 拖动只会调用锁 90° 的写入，视觉上是一个没有用途的图标。
     {
         RectangleItem rect;
-        ctx.Check(!rect.SkewHandleEnabled() && !rect.ApexAngleHandle(),
-                  QStringLiteral("矩形不显示内角倾斜旋钮与顶点手柄"));
+        ctx.Check(rect.CustomHandles().isEmpty(), QStringLiteral("矩形不显示内角倾斜旋钮与顶点手柄"));
+    }
+    {
+        // §2.2 自定义句柄只推一条属性撤销记录：三角形顶点拖拽的撤销 / 重做要能回放角度。
+        TriangleItem* triangle = new TriangleItem;
+        triangle->setPos(QPointF(20.0, 20.0));
+        triangle->SetContentSize(QSizeF(120.0, 90.0));
+        CanvasScene scene;
+        QUndoStack undo;
+        scene.SetUndoStack(&undo);
+        scene.AddItemsWithUndo({triangle}, QStringLiteral("Add triangle"));
+        const qreal angle1Before = triangle->BottomAngle1();
+        const qreal angle2Before = triangle->BottomAngle2();
+        CanvasItemInteraction apexDrag(triangle);
+        const QPointF aBefore = triangle->mapToScene(triangle->triangleVertex(ShapeAbstractItem::TriangleVertex::A));
+        const QPointF cBefore = triangle->mapToScene(triangle->triangleVertex(ShapeAbstractItem::TriangleVertex::C));
+        apexDrag.BeginResize(CanvasItem::CUSTOM_0, cBefore);
+        apexDrag.ApplyResize(QPointF(aBefore.x() - 30.0, cBefore.y() - 45.0), Qt::NoModifier);
+        apexDrag.FinishInteraction();
+        const qreal angle1Dragged = triangle->BottomAngle1();
+        ctx.Check(undo.count() == 2, QStringLiteral("顶点手柄拖拽只落一条撤销记录"),
+                  QStringLiteral("undo=%1 angle1=%2").arg(undo.count()).arg(angle1Dragged));
+        undo.undo();
+        ctx.Check(qAbs(triangle->BottomAngle1() - angle1Before) < 0.5 &&
+                      qAbs(triangle->BottomAngle2() - angle2Before) < 0.5,
+                  QStringLiteral("撤销顶点拖拽恢复两个底角"),
+                  QStringLiteral("angles=%1/%2 before=%3/%4")
+                      .arg(triangle->BottomAngle1())
+                      .arg(triangle->BottomAngle2())
+                      .arg(angle1Before)
+                      .arg(angle2Before));
+        undo.redo();
+        ctx.Check(qAbs(triangle->BottomAngle1() - angle1Dragged) < 0.5, QStringLiteral("重做顶点拖拽恢复拖拽后角度"),
+                  QStringLiteral("angle1=%1 dragged=%2").arg(triangle->BottomAngle1()).arg(angle1Dragged));
     }
     // 需求 4：菱形独立成类，派生自平行四边形，四边恒等且创建时一条对角线水平。
     {
@@ -432,6 +468,110 @@ void selftest::RunShapeItemTests(Context& ctx)
                       .arg(arcFrame.height()));
     }
     {
+        // §3.3 弧端点手柄：扇形两端各一个端点手柄；拖起始端固定结束端、拖结束端固定起始端，
+        // 只改 start / sweep（中心与半轴不动），一次拖拽只落一条属性撤销记录。
+        SectorItem* sector = new SectorItem;
+        sector->SetContentSize(QSizeF(200.0, 200.0));
+        sector->SetArcAngles(0.0, 90.0);
+        CanvasScene scene;
+        QUndoStack undo;
+        scene.SetUndoStack(&undo);
+        scene.AddItemsWithUndo({sector}, QStringLiteral("Add sector"));
+        const QRectF frameBefore = sector->Frame();
+        const HandleSpecList sectorSpecs = sector->CustomHandles();
+        const bool sectorSpecsOk = sectorSpecs.size() == 2 && sectorSpecs.at(0).id == CanvasItem::CUSTOM_0 &&
+                                   sectorSpecs.at(1).id == CanvasItem::CUSTOM_1 &&
+                                   sectorSpecs.at(0).behavior == HandleBehavior::ARC_ENDPOINT &&
+                                   sectorSpecs.at(1).behavior == HandleBehavior::ARC_ENDPOINT;
+        const QPointF startHandle = sectorSpecs.isEmpty() ? QPointF() : sectorSpecs.constFirst().position;
+        const QPointF expectedStart = EllipseShape::PointOnFrame(frameBefore, 0.0);
+        ctx.Check(sectorSpecsOk && QLineF(startHandle, expectedStart).length() < 0.01,
+                  QStringLiteral("扇形提供起始端 / 结束端两个弧端点手柄"),
+                  QStringLiteral("count=%1 start=%2,%3 expected=%4,%5")
+                      .arg(sectorSpecs.size())
+                      .arg(startHandle.x())
+                      .arg(startHandle.y())
+                      .arg(expectedStart.x())
+                      .arg(expectedStart.y()));
+
+        // 拖结束端 90°→45°：起始端仍钉在 0°，扫过角收窄到 45°。
+        CanvasItemInteraction endDrag(sector);
+        const QPointF endTarget = sector->mapToScene(EllipseShape::PointOnFrame(frameBefore, 45.0));
+        endDrag.BeginResize(CanvasItem::CUSTOM_1, sector->mapToScene(EllipseShape::PointOnFrame(frameBefore, 90.0)));
+        endDrag.ApplyResize(endTarget, Qt::NoModifier);
+        endDrag.FinishInteraction();
+        const QRectF frameAfterEnd = sector->Frame();
+        ctx.Check(qAbs(sector->StartAngle()) < 0.5 && qAbs(sector->SweepAngle() - 45.0) < 0.5 &&
+                      QLineF(frameAfterEnd.center(), frameBefore.center()).length() < 0.5 &&
+                      qAbs(frameAfterEnd.width() - frameBefore.width()) < 0.5 &&
+                      qAbs(frameAfterEnd.height() - frameBefore.height()) < 0.5 && undo.count() == 2,
+                  QStringLiteral("拖扇形结束端固定起始端、只改扫过角且不动外接框"),
+                  QStringLiteral("start=%1 sweep=%2 frame=%3x%4 undo=%5")
+                      .arg(sector->StartAngle())
+                      .arg(sector->SweepAngle())
+                      .arg(frameAfterEnd.width())
+                      .arg(frameAfterEnd.height())
+                      .arg(undo.count()));
+
+        // 拖起始端 0°→-45°：结束端仍钉在 45°，扫过角重新张开。
+        CanvasItemInteraction startDrag(sector);
+        startDrag.BeginResize(CanvasItem::CUSTOM_0, sector->mapToScene(EllipseShape::PointOnFrame(frameAfterEnd, 0.0)));
+        startDrag.ApplyResize(sector->mapToScene(EllipseShape::PointOnFrame(frameAfterEnd, -45.0)), Qt::NoModifier);
+        ctx.Check(qAbs(sector->StartAngle() + 45.0) < 0.5 &&
+                      qAbs(sector->StartAngle() + sector->SweepAngle() - 45.0) < 0.5,
+                  QStringLiteral("拖扇形起始端固定结束端"),
+                  QStringLiteral("start=%1 sweep=%2 end=%3")
+                      .arg(sector->StartAngle())
+                      .arg(sector->SweepAngle())
+                      .arg(sector->StartAngle() + sector->SweepAngle()));
+        startDrag.FinishInteraction();
+        undo.undo();
+        ctx.Check(qAbs(sector->StartAngle()) < 0.5 && qAbs(sector->SweepAngle() - 45.0) < 0.5,
+                  QStringLiteral("撤销弧端点拖拽恢复起始角与扫过角"),
+                  QStringLiteral("start=%1 sweep=%2").arg(sector->StartAngle()).arg(sector->SweepAngle()));
+
+        // 端点拖到与另一端重合：至少留 1°，不能出现 0° 的“空扇形”。
+        CanvasItemInteraction overlapDrag(sector);
+        overlapDrag.BeginResize(CanvasItem::CUSTOM_1,
+                                sector->mapToScene(EllipseShape::PointOnFrame(sector->Frame(), 45.0)));
+        overlapDrag.ApplyResize(sector->mapToScene(EllipseShape::PointOnFrame(sector->Frame(), 0.0)), Qt::NoModifier);
+        ctx.Check(qAbs(sector->SweepAngle() - 1.0) < 0.5, QStringLiteral("弧端点重合时扫过角保底 1°"),
+                  QStringLiteral("sweep=%1").arg(sector->SweepAngle()));
+        overlapDrag.FinishInteraction();
+    }
+    {
+        // 弧线端点手柄：位置取椭圆外接框上的角度点，拖动只改角度、椭圆尺寸不变。
+        ArcItem arc;
+        arc.SetArcGeometry(QPointF(10.0, 20.0), QSizeF(200.0, 100.0), 15.0, 140.0, QColor(Qt::black), 2.0);
+        const QSizeF ellipseBefore = arc.EllipseSize();
+        const QRectF arcFrame = arc.Frame();
+        const HandleSpecList arcSpecs = arc.CustomHandles();
+        ctx.Check(
+            arcSpecs.size() == 2 && arcSpecs.at(0).id == CanvasItem::CUSTOM_0 &&
+                arcSpecs.at(1).id == CanvasItem::CUSTOM_1 && arcSpecs.at(0).behavior == HandleBehavior::ARC_ENDPOINT &&
+                arcSpecs.at(1).behavior == HandleBehavior::ARC_ENDPOINT,
+            QStringLiteral("弧线提供起始端 / 结束端两个弧端点手柄"), QStringLiteral("count=%1").arg(arcSpecs.size()));
+        CanvasItemInteraction arcDrag(&arc);
+        arcDrag.BeginResize(CanvasItem::CUSTOM_1,
+                            arc.mapToScene(arcSpecs.isEmpty() ? QPointF() : arcSpecs.at(1).position));
+        // 结束端从 155° 拖到 100°：起始角 15° 钉住，扫过角变 85°。
+        const QPointF arcTarget = EllipseShape::PointOnFrame(arcFrame, 100.0);
+        arcDrag.ApplyResize(arcTarget, Qt::NoModifier);
+        const QSizeF ellipseAfter = arc.EllipseSize();
+        ctx.Check(qAbs(arc.StartAngle() - 15.0) < 0.5 && qAbs(arc.SweepAngle() - 85.0) < 0.5 &&
+                      qAbs(ellipseAfter.width() - ellipseBefore.width()) < 3.0 &&
+                      qAbs(ellipseAfter.height() - ellipseBefore.height()) < 3.0,
+                  QStringLiteral("拖弧线结束端只改扫过角、椭圆外接框不跳变"),
+                  QStringLiteral("start=%1 sweep=%2 ellipse=%3x%4->%5x%6")
+                      .arg(arc.StartAngle())
+                      .arg(arc.SweepAngle())
+                      .arg(ellipseBefore.width())
+                      .arg(ellipseBefore.height())
+                      .arg(ellipseAfter.width())
+                      .arg(ellipseAfter.height()));
+        arcDrag.FinishInteraction();
+    }
+    {
         // §3.1 三角形自由缩放：尺寸按输入直接生效，A 不变，B 按新框宽高反算。
         TriangleItem triangle;
         triangle.SetContentSize(QSizeF(120.0, 90.0));
@@ -457,11 +597,6 @@ void selftest::RunShapeItemTests(Context& ctx)
         triangle.SetContentSize(QSizeF(120.0, 90.0));
         const qreal angle1Before = triangle.BottomAngle1();
         const qreal cot1 = 1.0 / qTan(qDegreesToRadians(angle1Before));
-        const auto baseMidScene = [&triangle]() {
-            const QSizeF size = triangle.ContentSize();
-            return triangle.pos() + QPointF(size.width() / 2.0, size.height());
-        };
-        const QPointF baseMidBefore = baseMidScene();
 
         // 拖底边：高度是输入，宽度不变，A 不变，B 按新宽高反算。
         CanvasItemInteraction bottomDrag(&triangle);
@@ -545,7 +680,7 @@ void selftest::RunShapeItemTests(Context& ctx)
         const qreal height =
             qAbs(aBefore.y() - triangle.mapToScene(triangle.triangleVertex(ShapeAbstractItem::TriangleVertex::C)).y());
         CanvasItemInteraction apexDrag(&triangle);
-        apexDrag.BeginResize(CanvasItem::APEX,
+        apexDrag.BeginResize(CanvasItem::CUSTOM_0,
                              triangle.mapToScene(triangle.triangleVertex(ShapeAbstractItem::TriangleVertex::C)));
         apexDrag.ApplyResize(aBefore + QPointF(-30.0, -height), Qt::NoModifier);
         const QPointF aAfter = triangle.mapToScene(triangle.triangleVertex(ShapeAbstractItem::TriangleVertex::A));
@@ -581,8 +716,10 @@ void selftest::RunShapeItemTests(Context& ctx)
         // 否则把手柄顶在顶点上，用户点中的是 TOP_LEFT / TOP_RIGHT 缩放手柄。
         TriangleItem rightTriangle;
         rightTriangle.SetTriangleAngles(90.0, 45.0);
-        bool apexOk = false;
-        const QPointF apexCenter = rightTriangle.CustomHandleCenter(CanvasItem::APEX, &apexOk);
+        const HandleSpecList apexSpecs = rightTriangle.CustomHandles();
+        const bool apexOk = apexSpecs.size() == 1 && apexSpecs.constFirst().id == CanvasItem::CUSTOM_0 &&
+                            apexSpecs.constFirst().behavior == HandleBehavior::ANGLE;
+        const QPointF apexCenter = apexOk ? apexSpecs.constFirst().position : QPointF();
         const QPointF vertex = rightTriangle.triangleVertex(ShapeAbstractItem::TriangleVertex::C);
         ctx.Check(apexOk && apexCenter.y() > rightTriangle.ContentRect().top() + 12.0 &&
                       qAbs(apexCenter.x() - vertex.x()) < 0.01 && apexCenter.y() < rightTriangle.ContentRect().bottom(),

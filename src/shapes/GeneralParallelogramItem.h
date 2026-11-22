@@ -11,9 +11,17 @@ class GeneralParallelogramItem : public ParallelogramAbstractItem {
     QSizeF DefaultContentSize() const override;
     ShapeType shapeType() const override { return ShapeType::PARALLELOGRAM; }
     ItemPropertySet Properties() const override;
-    bool SkewHandleEnabled() const override { return true; }
+    // 顶边中点下方的内角倾斜旋钮：水平拖动连续改变内角（锐角↔钝角）。
+    HandleSpecList CustomHandles() const override;
+    bool BeginCustomHandleDrag(int handle, const QPointF& scenePos) override;
+    bool ApplyCustomHandleDrag(int handle, const QPointF& scenePos) override;
     void SetParallelogramAngle(qreal angle) override;
 
   protected:
     QPainterPath ShapePath(const QRectF& rect) const override;
+
+  private:
+    // 拖旋钮期间固定的底边锚点（场景坐标）与底边长度。
+    QPointF m_skewDragBottomLeft;
+    qreal m_skewDragBaseLength = 0.0;
 };

@@ -117,8 +117,6 @@ class ShapeAbstractItem : public CanvasItem, public FillAttributes, public Strok
     qreal CornerRadius() const { return m_cornerRadius; }
     qreal BottomAngle1() const { return m_bottomAngle1; }
     qreal BottomAngle2() const { return m_bottomAngle2; }
-    // 需求 2：三角形顶点 C 是否取代 Top 句柄。内角与倾斜旋钮归平行四边形族基类。
-    virtual bool ApexAngleHandle() const { return false; }
     void SetAngleReadoutVisible(bool visible);
     bool AngleReadoutVisible() const { return m_angleReadoutVisible; }
     virtual void SetStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth);
@@ -136,8 +134,11 @@ class ShapeAbstractItem : public CanvasItem, public FillAttributes, public Strok
 
     // 三角形三个顶点（内容矩形局部坐标）：A/B 为底边两端，C 为顶点。
     QPointF triangleVertex(TriangleVertex vertex) const;
-    // 需求 2：顶点 C 的句柄位置由三角形几何给出，而不是包围框上边中点。
-    QPointF CustomHandleCenter(int handle, bool* ok) const override;
+    // P2 自定义句柄拖拽：三角形顶点 C 的内角手柄（位置由 TriangleItem 的 CustomHandles 给出）。
+    bool BeginCustomHandleDrag(int handle, const QPointF& scenePos) override;
+    bool ApplyCustomHandleDrag(int handle, const QPointF& scenePos) override;
+    void EndHandleDrag() override;
+    void FrameResizeDragged() override;
 
     // 样式撤销快照：多边形覆写后只记录样式与位置，不写 ShapeType。
     virtual ShapeItemState State() const;
@@ -175,6 +176,10 @@ class ShapeAbstractItem : public CanvasItem, public FillAttributes, public Strok
     // ContentResized 反算 B 覆盖刚写入的角度。
     bool m_syncingTriangle = false;
     bool m_angleReadoutVisible = false;
+    // 拖顶点 C 期间固定的底边锚点（场景坐标）与 AB 边上的垂直高度。
+    QPointF m_apexDragBaseA;
+    QPointF m_apexDragBaseB;
+    qreal m_apexDragHeight = 1.0;
     QString m_customName;
     QPainterPath m_customPath;
 };

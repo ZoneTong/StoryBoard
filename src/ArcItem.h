@@ -35,6 +35,11 @@ class ArcItem : public LineAbstractItem, public ArcAngleAttributes, public Ellip
     ItemPropertySet Properties() const override;
     QVariant PropertyValue(ItemProperty property) const override;
     void SetPropertyValue(ItemProperty property, const QVariant& value) override;
+    // §3.3：弧线两端各一个端点手柄（CUSTOM_0 起始端、CUSTOM_1 结束端），
+    // 拖起始端固定结束端，反之亦然；只改 start / sweep，不动中心 / 半轴 / 外接框。
+    HandleSpecList CustomHandles() const override;
+    bool BeginCustomHandleDrag(int handle, const QPointF& scenePos) override;
+    bool ApplyCustomHandleDrag(int handle, const QPointF& scenePos) override;
 
     QJsonObject ToJson() const override;
     void FromJson(const QJsonObject& json) override;
@@ -47,6 +52,8 @@ class ArcItem : public LineAbstractItem, public ArcAngleAttributes, public Ellip
     void Rebuild();
     // 以给定场景坐标椭圆框重建：写入半轴与角度重建共用这一份采样与 refFrame 回写。
     void RebuildWithFrame(const QRectF& frameScene);
+    // 椭圆外接框在图元本地坐标系里的位置（refFrame 按内容框缩放）。
+    QRectF LocalEllipseFrame() const;
 
     QRectF m_refFrame{0.0, 0.0, 1.0, 1.0};
 };

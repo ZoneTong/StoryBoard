@@ -562,11 +562,7 @@ int CanvasScene::AssignNewGroup(const QList<CanvasItem*>& items, GroupFailureRea
     QHash<int, QString> namesAfter = m_groupNames;
     namesAfter.insert(groupId, groupName);
 
-    QList<int> groupIds;
-    groupIds.reserve(items.size());
-    for (CanvasItem* item : items) {
-        groupIds.append(groupId);
-    }
+    QList<int> groupIds(items.size(), groupId);
     ApplyGroupIds(items, groupIds);
     ApplyGroupNames(namesAfter);
     WriteReason(reason, GroupFailureReason::NONE);

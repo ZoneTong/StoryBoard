@@ -55,6 +55,15 @@ QRectF EllipseShape::SectorBounds(qreal startDeg, qreal sweepDeg) const
     return Sector(startDeg, sweepDeg).boundingRect();
 }
 
+QPointF EllipseShape::PointOnFrame(const QRectF& frame, qreal deg)
+{
+    const QRectF normalized = frame.normalized();
+    const qreal rad = qDegreesToRadians(deg);
+    // Qt 角度：逆时针为正，故 y 取负号。
+    return QPointF(normalized.center().x() + normalized.width() / 2.0 * qCos(rad),
+                   normalized.center().y() - normalized.height() / 2.0 * qSin(rad));
+}
+
 QVector<QPointF> EllipseShape::Sample(qreal startDeg, qreal sweepDeg, int count) const
 {
     QVector<QPointF> points;

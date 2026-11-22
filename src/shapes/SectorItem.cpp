@@ -107,3 +107,41 @@ QPainterPath SectorItem::ShapePath(const QRectF& rect) const
     Q_UNUSED(rect)
     return Sector(StartAngle(), SweepAngle());
 }
+
+HandleSpecList SectorItem::CustomHandles() const
+{
+    HandleSpecList specs;
+    // 自定义轮廓没有弧角语义：不提供端点手柄。
+    if (IsCustomShape()) {
+        return specs;
+    }
+    const QRectF frame = Frame();
+    HandleSpec start;
+    start.id = CanvasItem::CUSTOM_0;
+    start.position = EllipseShape::PointOnFrame(frame, StartAngle());
+    start.behavior = HandleBehavior::ARC_ENDPOINT;
+    start.cursor = Qt::SizeAllCursor;
+    specs.append(start);
+    HandleSpec end;
+    end.id = CanvasItem::CUSTOM_1;
+    end.position = EllipseShape::PointOnFrame(frame, StartAngle() + SweepAngle());
+    end.behavior = HandleBehavior::ARC_ENDPOINT;
+    end.cursor = Qt::SizeAllCursor;
+    specs.append(end);
+    return specs;
+}
+
+bool SectorItem::BeginCustomHandleDrag(int handle, const QPointF& scenePos)
+{
+    Q_UNUSED(scenePos);
+    return !IsCustomShape() && (handle == CanvasItem::CUSTOM_0 || handle == CanvasItem::CUSTOM_1);
+}
+
+bool SectorItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos)
+{
+    if (IsCustomShape() || (handle != CanvasItem::CUSTOM_0 && handle != CanvasItem::CUSTOM_1)) {
+        return false;
+    }
+    DragArcEndpoint(Frame(), mapFromScene(scenePos), handle == CanvasItem::CUSTOM_0);
+    return true;
+}

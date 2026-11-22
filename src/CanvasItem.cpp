@@ -21,15 +21,6 @@ namespace {
 constexpr qreal MINIMUM_SIDE = 8.0;
 } // namespace
 
-QPointF CanvasItem::CustomHandleCenter(int handle, bool* ok) const
-{
-    Q_UNUSED(handle);
-    if (ok) {
-        *ok = false;
-    }
-    return QPointF();
-}
-
 void CanvasItem::Accept(CanvasItemVisitor& visitor)
 {
     // 默认 no-op：没有专属跨类型能力的图元不参与访问者分派。
@@ -40,6 +31,25 @@ HandleSpecList CanvasItem::CustomHandles() const
 {
     return HandleSpecList();
 }
+
+bool CanvasItem::BeginCustomHandleDrag(int handle, const QPointF& scenePos)
+{
+    // 默认没有专用拖拽行为：交互控制器退回通用缩放路径。
+    Q_UNUSED(handle);
+    Q_UNUSED(scenePos);
+    return false;
+}
+
+bool CanvasItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos)
+{
+    Q_UNUSED(handle);
+    Q_UNUSED(scenePos);
+    return false;
+}
+
+void CanvasItem::EndHandleDrag() {}
+
+void CanvasItem::FrameResizeDragged() {}
 
 CanvasItem::CanvasItem(QGraphicsItem* parent) : QGraphicsObject(parent)
 {

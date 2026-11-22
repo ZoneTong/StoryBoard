@@ -15,6 +15,11 @@ class SectorItem : public ShapeAbstractItem, public EllipseShape, public ArcAngl
     void SetPropertyValue(ItemProperty property, const QVariant& value) override;
     ShapeItemState State() const override;
     void ApplyState(const ShapeItemState& state) override;
+    // §3.3：弧边两端各一个端点手柄（CUSTOM_0 起始端、CUSTOM_1 结束端），
+    // 拖起始端固定结束端，反之亦然；只改 start / sweep。
+    HandleSpecList CustomHandles() const override;
+    bool BeginCustomHandleDrag(int handle, const QPointF& scenePos) override;
+    bool ApplyCustomHandleDrag(int handle, const QPointF& scenePos) override;
 
   protected:
     void ContentResized() override;

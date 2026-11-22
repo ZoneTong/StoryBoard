@@ -44,30 +44,13 @@ void ParallelogramAbstractItem::SetPropertyValue(ItemProperty property, const QV
     ShapeAbstractItem::SetPropertyValue(property, value);
 }
 
-QPointF ParallelogramAbstractItem::CustomHandleCenter(int handle, bool* ok) const
+void ParallelogramAbstractItem::FrameResizeDragged()
 {
-    if (ok) {
-        *ok = false;
+    ShapeAbstractItem::FrameResizeDragged();
+    // §3.2：菱形拖外接框 / 边时显示派生内角读数（1 位小数；Shift 等比缩放时角度不变）。
+    if (shapeType() == ShapeType::DIAMOND && !IsCustomShape()) {
+        SetAngleReadoutVisible(true);
     }
-    if (handle != CanvasItem::SKEW || !SkewHandleEnabled() || IsCustomShape()) {
-        return CanvasItem::CustomHandleCenter(handle, ok);
-    }
-    // 上边中点的倾斜旋钮：上边中点相对内容框中心的水平偏移正好是有符号偏移的一半。
-    // 上边偏移 = 高 × cot(角度)，锐角为正（上边右移）、钝角为负（上边左移），
-    // 旋钮因此能连续跨过 90°（正负交界处落在框中心）。
-    const QRectF rect = ContentRect();
-    const qreal cotValue = 1.0 / qTan(qDegreesToRadians(ParallelogramAngle()));
-    qreal shift = qAbs(rect.height() * cotValue);
-    shift = qMin(shift, qMax<qreal>(0.0, rect.width() - 1.0));
-    const qreal signedShift = cotValue >= 0.0 ? shift : -shift;
-    // 往下让开顶边中点（Top 缩放句柄），并保证内角调到 90° 时旋钮也不与顶点/角手柄
-    // 重合；形很矮时收在内框里。
-    const qreal inset = qMin<qreal>(22.0 / qMax<qreal>(ViewScale(), 0.001),
-                                    qMax<qreal>(0.0, rect.height() - 7.0 / qMax<qreal>(ViewScale(), 0.001)));
-    if (ok) {
-        *ok = true;
-    }
-    return QPointF(rect.center().x() + signedShift / 2.0, rect.top() + inset);
 }
 
 ShapeItemState ParallelogramAbstractItem::State() const
