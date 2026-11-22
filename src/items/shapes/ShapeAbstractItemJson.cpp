@@ -40,11 +40,6 @@ QJsonObject ShapeAbstractItem::ToJson() const
     WriteStrokeJson(json);
     WriteFillJson(json);
     json.insert(QStringLiteral("cornerRadius"), m_cornerRadius);
-    // 三角形以角度为真相，两个底角随画布保存；旧文件没有这两个字段时按 60°/60° 反算。
-    if (shapeType() == ShapeType::TRIANGLE) {
-        json.insert(QStringLiteral("bottomAngle1"), m_bottomAngle1);
-        json.insert(QStringLiteral("bottomAngle2"), m_bottomAngle2);
-    }
     // 需求 30：自定义轮廓不再一律写成 "custom"（旧版读回会退化成矩形），真实
     // 类型照常写进 shapeType；名字与轮廓单独存，只有名字的图元（立方体顶面）
     // 也能在重开后保留名称。
@@ -94,15 +89,11 @@ void ShapeAbstractItem::FromJson(const QJsonObject& json)
     m_cornerRadius = qMax<qreal>(0.0, json.value(QStringLiteral("cornerRadius")).toDouble(0.0));
     // 需求 6：旧文件可能还带 shapeRadius；先记下原值，等尺寸恢复后再折算（见下方迁移）。
     const qreal legacyRadius = json.value(QStringLiteral("shapeRadius")).toDouble(-1.0);
-    const bool hasAngles = json.contains(QStringLiteral("bottomAngle1"));
 
-    // 载入期间先屏蔽三角形尺寸联动，避免 baseJson 恢复尺寸时反推高度、改动旧文件外观。
-    m_syncingTriangle = true;
     ApplyBaseJson(json);
     if (ContentSize().isEmpty()) {
         SetContentSize(DefaultContentSize());
     }
-    m_syncingTriangle = false;
 
     // 需求 6：扇形 / 弧线旧半径 < 内容宽的一半时，把椭圆外接框改成新内容矩形：
     // k = 2r、ry = r·h/w，位置按椭圆中心不动补偿，轮廓逐点不变；r<0 或 r≥w/2 无需迁移。
@@ -115,22 +106,7 @@ void ShapeAbstractItem::FromJson(const QJsonObject& json)
         }
     }
 
-    // 旧文件没有角度字段：按原三角形的顶点位置（内容矩形上边中点）反算两个底角，
-    // 使角度与恢复后的尺寸自洽，外观零变化。
-    if (shapeType() == ShapeType::TRIANGLE && !IsCustomShape()) {
-        if (hasAngles) {
-            m_bottomAngle1 = qBound<qreal>(1.0, json.value(QStringLiteral("bottomAngle1")).toDouble(60.0), 174.0);
-            m_bottomAngle2 =
-                qBound<qreal>(1.0, json.value(QStringLiteral("bottomAngle2")).toDouble(60.0), 175.0 - m_bottomAngle1);
-        } else {
-            const QSizeF size = ContentSize();
-            const qreal halfWidth = qMax<qreal>(1.0, size.width() / 2.0);
-            const qreal legacyAngle = qRadiansToDegrees(qAtan2(qMax<qreal>(1.0, size.height()), halfWidth));
-            m_bottomAngle1 = qBound<qreal>(1.0, legacyAngle, 174.0);
-            m_bottomAngle2 = qBound<qreal>(1.0, legacyAngle, 175.0 - m_bottomAngle1);
-        }
-    }
-
+    // 旧文件没有角度字段时的兼容反算由 TriangleItem::ReadJsonExtra 处理。
     ReadJsonExtra(json);
     if (forceRoundedCorner && !IsCustomShape()) {
         m_cornerRadius = qMin(ContentSize().width(), ContentSize().height()) * 0.16;

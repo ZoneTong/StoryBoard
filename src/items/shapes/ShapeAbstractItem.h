@@ -109,17 +109,18 @@ class ShapeAbstractItem : public CanvasItem, public FillAttributes, public Strok
     // 填充 / 描线的读写接口由两个属性基类提供；多边形按内部图层覆写其中若干条。
     // 透明度已收口到 CanvasItem，按“内容透明度”统一处理。
     qreal CornerRadius() const { return m_cornerRadius; }
-    qreal BottomAngle1() const { return m_bottomAngle1; }
-    qreal BottomAngle2() const { return m_bottomAngle2; }
+    // 底角只属于三角形：具体类覆写；其余图形返回缺省值，属性表里也没有这两项。
+    virtual qreal BottomAngle1() const { return 60.0; }
+    virtual qreal BottomAngle2() const { return 60.0; }
     void SetAngleReadoutVisible(bool visible);
     bool AngleReadoutVisible() const { return m_angleReadoutVisible; }
     virtual void SetStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth);
     void SetCornerRadius(qreal radius);
     // 三角形：设置底边两侧的底角（度）。角度优先，底边保持不变（面板与撤销用）；
-    // 两角和被钳制在 175° 以内，保证顶点不会跑出内容矩形。
-    void SetTriangleAngles(qreal angle1, qreal angle2);
+    // 两角和被钳制在 175° 以内，保证顶点不会跑出内容矩形。非三角形图形为空实现。
+    virtual void SetTriangleAngles(qreal angle1, qreal angle2);
     // 拖顶点专用（§3.1）：AB 边上的垂直高度保持不变，只有角度与包围框宽度变。
-    void SetTriangleAnglesFixedHeight(qreal angle1, qreal angle2, qreal height);
+    virtual void SetTriangleAnglesFixedHeight(qreal angle1, qreal angle2, qreal height);
     // 自定义图形：轮廓来自画布模板，存的是 0–1 单位坐标；没有自定义轮廓时按子类轮廓画。
     bool IsCustomShape() const { return !m_customPath.isEmpty(); }
     QString CustomShapeName() const { return m_customName; }
@@ -128,12 +129,7 @@ class ShapeAbstractItem : public CanvasItem, public FillAttributes, public Strok
 
     // 三角形三个顶点（内容矩形局部坐标）：A/B 为底边两端，C 为顶点。
     QPointF triangleVertex(TriangleVertex vertex) const;
-    // P2 自定义句柄拖拽：三角形顶点 C 的内角手柄（位置由 TriangleItem 的 CustomHandles 给出）。
-    bool BeginCustomHandleDrag(int handle, const QPointF& scenePos) override;
-    bool ApplyCustomHandleDrag(int handle, const QPointF& scenePos) override;
     void EndHandleDrag() override;
-    void FrameResizeDragged() override;
-
     // 样式撤销快照：多边形覆写后只记录样式与位置，不写 ShapeType。
     virtual ShapeItemState State() const;
     virtual void ApplyState(const ShapeItemState& state);
@@ -152,11 +148,11 @@ class ShapeAbstractItem : public CanvasItem, public FillAttributes, public Strok
     // 子类可覆写的状态 / JSON 增量。
     virtual void WriteState(ShapeItemState& state) const;
     virtual void ReadState(const ShapeItemState& state);
+    // 状态回放时的内容尺寸落位：默认直接写回；三角形按角度派生高度（覆写）。
+    virtual void ApplyStateContentSize(const QSizeF& requested);
     virtual void WriteJsonExtra(QJsonObject& json) const;
     virtual void ReadJsonExtra(const QJsonObject& json);
     void PaintContent(QPainter* painter) override;
-    void ContentResized() override;
-    void DrawSelectionOverlay(QPainter* painter) override;
     void FillChanged() override;
     void StrokeChanged() override;
     qreal FramePadding() const override { return qMax<qreal>(22.0, StrokeWidth() + 6.0); }
@@ -164,16 +160,7 @@ class ShapeAbstractItem : public CanvasItem, public FillAttributes, public Strok
   private:
     // 圆角半径，单位画布 px；0 表示直角。
     qreal m_cornerRadius = 0.0;
-    qreal m_bottomAngle1 = 60.0;
-    qreal m_bottomAngle2 = 60.0;
-    // 角度 / 状态回放期间的尺寸同步屏蔽：避免 SetContentSize 触发的
-    // ContentResized 反算 B 覆盖刚写入的角度。
-    bool m_syncingTriangle = false;
     bool m_angleReadoutVisible = false;
-    // 拖顶点 C 期间固定的底边锚点（场景坐标）与 AB 边上的垂直高度。
-    QPointF m_apexDragBaseA;
-    QPointF m_apexDragBaseB;
-    qreal m_apexDragHeight = 1.0;
     QString m_customName;
     QPainterPath m_customPath;
 };
