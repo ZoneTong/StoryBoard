@@ -410,10 +410,10 @@ void MainWindowInsertController::InsertCustomShape(const QString& filePath)
     const FillStyle fillStyle = filled ? m_window->m_fillStyle : FillStyle::NONE;
     const qreal strokeWidth = qMax<qreal>(0.5, m_window->m_brushWidth);
 
-    // 需求 7：模板按原始宽高比插入，长边固定 64（2 格）；画布装不下时才等比缩到 72%。
+    // 需求 7：模板按原始宽高比插入，长边固定 128（2 格）；画布装不下时才等比缩到 72%。
     const QRectF canvas = m_window->m_scene->CanvasRect();
     const qreal aspect = qMax<qreal>(0.05, customShape.aspectRatio);
-    const qreal longSide = 64.0;
+    const qreal longSide = 128.0;
     QSizeF size = aspect >= 1.0 ? QSizeF(longSide, longSide / aspect) : QSizeF(longSide * aspect, longSide);
     const qreal fitScale = qMin<qreal>(1.0, qMin(canvas.width() * 0.72 / qMax<qreal>(1.0, size.width()),
                                                  canvas.height() * 0.72 / qMax<qreal>(1.0, size.height())));

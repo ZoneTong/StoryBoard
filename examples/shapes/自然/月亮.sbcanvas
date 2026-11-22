@@ -5,8 +5,8 @@
   "canvas": {
     "x": 0,
     "y": 0,
-    "width": 200,
-    "height": 200
+    "width": 128,
+    "height": 128
   },
   "background": {
     "type": "none"
@@ -24,16 +24,16 @@
     {
       "type": "shape",
       "shapeType": "arc",
-      "x": 40.0,
-      "y": 40.0,
-      "w": 120.0,
-      "h": 120.0,
+      "x": 0.0,
+      "y": 0.0,
+      "w": 128.0,
+      "h": 128.0,
       "layer": 1,
       "height": 1,
       "strokeColor": "#ff1f2937",
       "fillColor": "#00000000",
       "fillStyle": "none",
-      "strokeWidth": 6,
+      "strokeWidth": 6.4,
       "opacity": 1,
       "startAngle": 60.0,
       "sweepAngle": 240.0,
