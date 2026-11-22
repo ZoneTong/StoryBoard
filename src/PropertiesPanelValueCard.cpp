@@ -313,13 +313,17 @@ void PropertiesPanelValueCard::Refresh(const QList<ShapeAbstractItem*>& shapes, 
     if (m_startAngleSpin) {
         const bool on = arcCurve || arcShape;
         m_startAngleSpin->setEnabled(on);
-        const qreal start = arcCurve ? arcCurve->paramState().first : (arcShape ? arcShape->StartAngle() : 30.0);
+        const qreal start = arcCurve
+                                ? arcCurve->paramState().first
+                                : (arcShape ? arcShape->PropertyValue(ItemProperty::START_ANGLE).toDouble() : 30.0);
         m_startAngleSpin->setValue(qRound(start));
     }
     if (m_angleSpin) {
         const bool on = arcCurve || arcShape;
         m_angleSpin->setEnabled(on);
-        const qreal sweep = arcCurve ? arcCurve->paramState().second : (arcShape ? arcShape->SweepAngle() : 120.0);
+        const qreal sweep = arcCurve
+                                ? arcCurve->paramState().second
+                                : (arcShape ? arcShape->PropertyValue(ItemProperty::SWEEP_ANGLE).toDouble() : 120.0);
         m_angleSpin->setValue(qMax(1, qRound(sweep)));
     }
     if (m_sineCyclesSpin && m_sineAmplitudeSpin) {

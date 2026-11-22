@@ -68,10 +68,6 @@ QVariant ShapeAbstractItem::PropertyValue(ItemProperty property) const
         return StrokeWidth();
     case ItemProperty::CORNER_RADIUS:
         return CornerRadius();
-    case ItemProperty::START_ANGLE:
-        return StartAngle();
-    case ItemProperty::SWEEP_ANGLE:
-        return SweepAngle();
     case ItemProperty::MAJOR_AXIS:
         return qMax(ContentSize().width(), ContentSize().height()) / 2.0;
     case ItemProperty::MINOR_AXIS:
@@ -119,12 +115,6 @@ void ShapeAbstractItem::SetPropertyValue(ItemProperty property, const QVariant& 
         break;
     case ItemProperty::CORNER_RADIUS:
         SetCornerRadius(value.toDouble());
-        break;
-    case ItemProperty::START_ANGLE:
-        SetArcAngles(value.toDouble(), SweepAngle());
-        break;
-    case ItemProperty::SWEEP_ANGLE:
-        SetArcAngles(StartAngle(), value.toDouble());
         break;
     case ItemProperty::MAJOR_AXIS:
     case ItemProperty::MINOR_AXIS: {
@@ -371,11 +361,6 @@ void ShapeAbstractItem::SetCornerRadius(qreal radius)
     update();
 }
 
-void ShapeAbstractItem::ArcAnglesChanged()
-{
-    update();
-}
-
 ShapeItemState ShapeAbstractItem::State() const
 {
     ShapeItemState result;
@@ -383,7 +368,6 @@ ShapeItemState ShapeAbstractItem::State() const
     result.stroke = StrokeState();
     result.opacity = ItemOpacity();
     result.cornerRadius = m_cornerRadius;
-    result.arc = ArcAngleState();
     result.bottomAngle1 = m_bottomAngle1;
     result.bottomAngle2 = m_bottomAngle2;
     result.parallelogramAngle = m_parallelogramAngle;
@@ -399,7 +383,6 @@ void ShapeAbstractItem::ApplyState(const ShapeItemState& state)
     ApplyStrokeState(state.stroke);
     SetItemOpacity(state.opacity);
     m_cornerRadius = state.cornerRadius;
-    ApplyArcAngleState(state.arc);
     const qreal oldAngle1 = m_bottomAngle1;
     const qreal oldAngle2 = m_bottomAngle2;
     qreal angle1 = state.bottomAngle1;

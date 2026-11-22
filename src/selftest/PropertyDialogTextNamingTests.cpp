@@ -258,7 +258,9 @@ void selftest::RunPropertyDialogTextNamingTests(Context& ctx)
         dialog.accept();
         QApplication::processEvents();
     }
-    ctx.Check(qAbs(sector->StartAngle() - 60.0) < 0.01 && qAbs(sector->SweepAngle() - 200.0) < 0.01,
+    const qreal startAngle = sector->PropertyValue(ItemProperty::START_ANGLE).toDouble();
+    const qreal sweepAngle = sector->PropertyValue(ItemProperty::SWEEP_ANGLE).toDouble();
+    ctx.Check(qAbs(startAngle - 60.0) < 0.01 && qAbs(sweepAngle - 200.0) < 0.01,
               QStringLiteral("属性窗修改可落到扇形角度"),
-              QStringLiteral("start=%1 sweep=%2").arg(sector->StartAngle()).arg(sector->SweepAngle()));
+              QStringLiteral("start=%1 sweep=%2").arg(startAngle).arg(sweepAngle));
 }

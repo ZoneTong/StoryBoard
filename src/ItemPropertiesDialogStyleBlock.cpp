@@ -291,9 +291,12 @@ void ItemPropertiesDialogStyleBlock::SetItem(CanvasItem* item)
         showParallelogram = plainShape && !shape->IsCustomShape() && type == ShapeType::PARALLELOGRAM;
         m_parallelogramAngleSpin->setValue(qRound(m_initialParallelogramAngle));
 
-        m_initialStartAngle = shape->StartAngle();
-        m_initialSweepAngle = shape->SweepAngle();
-        showSectorAngles = plainShape && type == ShapeType::SECTOR;
+        // 弧角属于扇形自己的属性：有该属性才回填，非扇形按 0 占位（行本身隐藏）。
+        const QVariant startAngleValue = shape->PropertyValue(ItemProperty::START_ANGLE);
+        const QVariant sweepAngleValue = shape->PropertyValue(ItemProperty::SWEEP_ANGLE);
+        m_initialStartAngle = startAngleValue.isValid() ? startAngleValue.toDouble() : 0.0;
+        m_initialSweepAngle = sweepAngleValue.isValid() ? sweepAngleValue.toDouble() : 0.0;
+        showSectorAngles = plainShape && !shape->IsCustomShape() && type == ShapeType::SECTOR;
         m_startAngleSpin->setValue(qRound(m_initialStartAngle));
         m_sweepAngleSpin->setValue(qRound(m_initialSweepAngle));
     } else if (auto* stroke = dynamic_cast<LineAbstractItem*>(item)) {

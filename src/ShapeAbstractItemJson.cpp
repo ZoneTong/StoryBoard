@@ -40,7 +40,6 @@ QJsonObject ShapeAbstractItem::ToJson() const
     WriteStrokeJson(json);
     WriteFillJson(json);
     json.insert(QStringLiteral("cornerRadius"), m_cornerRadius);
-    WriteArcAngleJson(json);
     // 三角形以角度为真相，两个底角随画布保存；旧文件没有这两个字段时按 60°/60° 反算。
     if (shapeType() == ShapeType::TRIANGLE) {
         json.insert(QStringLiteral("bottomAngle1"), m_bottomAngle1);
@@ -97,7 +96,6 @@ void ShapeAbstractItem::FromJson(const QJsonObject& json)
     // 旧文件缺 fillColor 时按描线色派生 36/255 透明度的纯色填充，保持原外观。
     ReadFillJson(json, StrokeColor());
     m_cornerRadius = qMax<qreal>(0.0, json.value(QStringLiteral("cornerRadius")).toDouble(0.0));
-    ReadArcAngleJson(json);
     // 需求 9：平行四边形内角；旧文件没有这个键时按默认 60°。
     m_parallelogramAngle = qBound<qreal>(15.0, json.value(QStringLiteral("parallelogramAngle")).toDouble(60.0), 165.0);
     // 需求 6：旧文件可能还带 shapeRadius；先记下原值，等尺寸恢复后再折算（见下方迁移）。

@@ -459,8 +459,9 @@ void PropertiesPanel::ApplyCornerRadius(int radius)
 
 void PropertiesPanel::ApplyStartAngle(int angle)
 {
-    ChangeSelectedShapes(tr("Change start angle"),
-                         [angle](ShapeAbstractItem* shape) { shape->SetArcAngles(angle, shape->SweepAngle()); });
+    ChangeSelectedShapes(tr("Change start angle"), [angle](ShapeAbstractItem* shape) {
+        shape->SetPropertyValue(ItemProperty::START_ANGLE, angle);
+    });
     ChangeSelectedArcs(tr("Change start angle"), [angle](LineAbstractItem* arc) {
         LineAbstractItem::ParamState params = arc->paramState();
         params.first = angle;
@@ -470,8 +471,9 @@ void PropertiesPanel::ApplyStartAngle(int angle)
 
 void PropertiesPanel::ApplySweepAngle(int angle)
 {
-    ChangeSelectedShapes(tr("Change sector angle"),
-                         [angle](ShapeAbstractItem* shape) { shape->SetArcAngles(shape->StartAngle(), angle); });
+    ChangeSelectedShapes(tr("Change sector angle"), [angle](ShapeAbstractItem* shape) {
+        shape->SetPropertyValue(ItemProperty::SWEEP_ANGLE, angle);
+    });
     ChangeSelectedArcs(tr("Change arc sweep angle"), [angle](LineAbstractItem* arc) {
         LineAbstractItem::ParamState params = arc->paramState();
         params.second = angle;

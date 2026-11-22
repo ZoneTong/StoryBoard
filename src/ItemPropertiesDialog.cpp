@@ -509,13 +509,15 @@ void ItemPropertiesDialog::ApplyChanges()
         }
         if (style && style->StartAngleSpin()) {
             const int value = style->StartAngleSpin()->value();
-            after.shapeState.arc.startAngle =
-                value == qRound(style->InitialStartAngle()) ? style->InitialStartAngle() : value;
+            after.shapeState.propertyExtras.insert(
+                ItemProperty::START_ANGLE,
+                value == qRound(style->InitialStartAngle()) ? style->InitialStartAngle() : static_cast<qreal>(value));
         }
         if (style && style->SweepAngleSpin()) {
             const int value = style->SweepAngleSpin()->value();
-            after.shapeState.arc.sweepAngle =
-                value == qRound(style->InitialSweepAngle()) ? style->InitialSweepAngle() : value;
+            after.shapeState.propertyExtras.insert(
+                ItemProperty::SWEEP_ANGLE,
+                value == qRound(style->InitialSweepAngle()) ? style->InitialSweepAngle() : static_cast<qreal>(value));
         }
         if (style && style->CornerRadiusSpin()) {
             const int value = style->CornerRadiusSpin()->value();

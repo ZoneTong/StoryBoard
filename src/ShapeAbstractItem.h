@@ -1,6 +1,5 @@
 #pragma once
 
-#include "ArcAngleAttributes.h"
 #include "ArrowStyle.h"
 #include "CanvasItem.h"
 #include "FillAttributes.h"
@@ -77,8 +76,6 @@ struct ShapeItemState {
     StrokeAttributesState stroke;
     qreal opacity = 1.0;
     qreal cornerRadius = 0.0;
-    // 扇形：起始角与扫过角（度，Qt 坐标：0° 在三点钟方向，逆时针为正）。
-    ArcAngleAttributesState arc;
     // 三角形：底边（内容矩形宽度）两侧的底角，单位为度。角度是真相，高度由两者派生。
     qreal bottomAngle1 = 60.0;
     qreal bottomAngle2 = 60.0;
@@ -92,7 +89,7 @@ struct ShapeItemState {
     bool operator==(const ShapeItemState& other) const
     {
         return fill == other.fill && stroke == other.stroke && qFuzzyCompare(opacity, other.opacity) &&
-               qFuzzyCompare(cornerRadius + 2.0, other.cornerRadius + 2.0) && arc == other.arc &&
+               qFuzzyCompare(cornerRadius + 2.0, other.cornerRadius + 2.0) &&
                qFuzzyCompare(bottomAngle1 + 2.0, other.bottomAngle1 + 2.0) &&
                qFuzzyCompare(bottomAngle2 + 2.0, other.bottomAngle2 + 2.0) &&
                qFuzzyCompare(parallelogramAngle + 2.0, other.parallelogramAngle + 2.0) && pos == other.pos &&
@@ -102,7 +99,7 @@ struct ShapeItemState {
     bool operator!=(const ShapeItemState& other) const { return !(*this == other); }
 };
 
-class ShapeAbstractItem : public CanvasItem, public FillAttributes, public StrokeAttributes, public ArcAngleAttributes {
+class ShapeAbstractItem : public CanvasItem, public FillAttributes, public StrokeAttributes {
     Q_OBJECT
   public:
     // 需求 2：带短刻度线的底边是 AB（A 在左、B 在右），对面顶点是 C。
@@ -149,7 +146,6 @@ class ShapeAbstractItem : public CanvasItem, public FillAttributes, public Strok
     bool AngleReadoutVisible() const { return m_angleReadoutVisible; }
     virtual void SetStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth);
     void SetCornerRadius(qreal radius);
-    // 起始角 / 扫过角由 ArcAngleAttributes 提供；扇形与弧线共用同一份语义。
     // 三角形：设置底边两侧的底角（度）。角度优先，高度按底边与角度重算；
     // 两角和被钳制在 175° 以内，保证顶点不会跑出内容矩形。
     void SetTriangleAngles(qreal angle1, qreal angle2);
@@ -189,7 +185,6 @@ class ShapeAbstractItem : public CanvasItem, public FillAttributes, public Strok
     void DrawSelectionOverlay(QPainter* painter) override;
     void FillChanged() override;
     void StrokeChanged() override;
-    void ArcAnglesChanged() override;
     qreal FramePadding() const override { return qMax<qreal>(22.0, StrokeWidth() + 6.0); }
 
   private:
