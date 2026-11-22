@@ -2,26 +2,29 @@
 
 #include "CanvasItem.h"
 
+#include <QPointF>
 #include <QPointer>
 #include <QSizeF>
 #include <QWidget>
 
 class QDoubleSpinBox;
 class QFormLayout;
+class QLabel;
 class NumberAttributeRow;
 class PairAttributeRow;
+class PropertyRowRegistry;
 
-// 属性窗的几何区块：位置、内容尺寸与旋转角度三组数值框；椭圆、扇形与弧线
-// 额外提供长半轴、短半轴。椭圆 / 扇形与内容宽高双向同步；弧线按真实椭圆
-// 外接框读写，提交时并入属性窗的同一份快照撤销记录。
-// 五行构造时一次建齐、顺序固定；SetItem 按图元回填并显隐。
+// 属性窗的几何区块：长短半轴 → 旋转 → 位置 → 图元尺寸 → 中心点（§4.1 第 23~28 行）。
+// 椭圆 / 扇形与内容宽高双向同步；弧线按真实椭圆外接框读写；中心点是派生属性，
+// 回显取 PropertyValue(CENTER)，提交时折算到位置。
+// 行显隐统一交给 PropertyRowRegistry。
 class ItemPropertiesDialogGeometryBlock : public QWidget {
     Q_OBJECT
 
   public:
-    ItemPropertiesDialogGeometryBlock(QWidget* parent = nullptr);
+    explicit ItemPropertiesDialogGeometryBlock(QWidget* parent = nullptr);
 
-    void AddRows(QFormLayout* form);
+    void AddRows(QFormLayout* form, PropertyRowRegistry* rows);
 
     void SetItem(CanvasItem* item);
 
@@ -35,10 +38,16 @@ class ItemPropertiesDialogGeometryBlock : public QWidget {
     qreal InitialArcMajor() const { return m_initialArcMajor; }
     qreal InitialArcMinor() const { return m_initialArcMinor; }
     QDoubleSpinBox* RotationSpin() const { return m_rotationSpin; }
+    QDoubleSpinBox* CenterXSpin() const { return m_centerXSpin; }
+    QDoubleSpinBox* CenterYSpin() const { return m_centerYSpin; }
+    QPointF InitialCenter() const { return m_initialCenter; }
 
     void SetNaturalSize(const QSizeF& size);
 
   private:
+    // 椭圆族（椭圆 / 扇形 / 弧线）的中心点行标题特例。
+    static bool IsEllipseFamily(const CanvasItem* item);
+
     void SyncAxesFromSize();
     void ApplyArcAxes(bool majorChanged);
     void ApplyAxesToSize(bool majorChanged);
@@ -49,6 +58,8 @@ class ItemPropertiesDialogGeometryBlock : public QWidget {
     NumberAttributeRow* m_rotationRow = nullptr;
     NumberAttributeRow* m_majorAxisRow = nullptr;
     NumberAttributeRow* m_minorAxisRow = nullptr;
+    PairAttributeRow* m_centerRow = nullptr;
+    QLabel* m_centerLabel = nullptr;
     QDoubleSpinBox* m_positionXSpin = nullptr;
     QDoubleSpinBox* m_positionYSpin = nullptr;
     QDoubleSpinBox* m_widthSpin = nullptr;
@@ -56,6 +67,9 @@ class ItemPropertiesDialogGeometryBlock : public QWidget {
     QDoubleSpinBox* m_majorAxisSpin = nullptr;
     QDoubleSpinBox* m_minorAxisSpin = nullptr;
     QDoubleSpinBox* m_rotationSpin = nullptr;
+    QDoubleSpinBox* m_centerXSpin = nullptr;
+    QDoubleSpinBox* m_centerYSpin = nullptr;
+    QPointF m_initialCenter;
     // 半轴行归属的图元：弧线按属性回显真实椭圆半轴。
     QPointer<CanvasItem> m_axisItem;
     bool m_hasAxes = false;

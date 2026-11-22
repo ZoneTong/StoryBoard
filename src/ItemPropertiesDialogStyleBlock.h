@@ -13,6 +13,7 @@
 class QComboBox;
 class QFormLayout;
 class QSpinBox;
+class PropertyRowRegistry;
 class FillStyleRow;
 class FillColorRow;
 class FillImageRow;
@@ -23,15 +24,17 @@ class StrokeWidthRow;
 // 属性窗的填充 / 边框区块：填充与描线两组行直接复用编辑面板的 AttributeRowWidgets，
 // 行控件绑定本块私有的 FillAttributes / StrokeAttributes 副本（属性窗取消时不影响图元），
 // 确定时把两份状态交给对话框写入撤销记录。
-// 所有行在构造时一次建齐、顺序固定；SetItem 按图元属性有无回填并显隐，
-// 全部图元类型共用同一区块实例。行首图标在属性窗内隐藏（行标题已说明属性名）。
+// 行显隐统一交给 PropertyRowRegistry：按图元上报的属性集合决定，不看 shapeType。
 class ItemPropertiesDialogStyleBlock : public QWidget {
     Q_OBJECT
 
   public:
+    // 内角 A 的提交目标：同一行控件按图元属性回填 / 提交，避免换绑后被旧值脏写。
+    enum class InteriorAngleTarget { NONE, TRIANGLE_A, PARALLELOGRAM };
+
     explicit ItemPropertiesDialogStyleBlock(QWidget* parent = nullptr);
 
-    void AddRows(QFormLayout* form);
+    void AddRows(QFormLayout* form, PropertyRowRegistry* rows);
 
     void SetItem(CanvasItem* item);
 
@@ -48,35 +51,27 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     qreal InitialOpacity() const { return m_initialOpacity; }
     int InitialOpacityPercent() const { return m_initialOpacityPercent; }
 
-    QSpinBox* StartAngleSpin() const { return m_startAngleSpin; }
-    QSpinBox* SweepAngleSpin() const { return m_sweepAngleSpin; }
-    qreal InitialStartAngle() const { return m_initialStartAngle; }
-    qreal InitialSweepAngle() const { return m_initialSweepAngle; }
+    // 内角 A / B：三角形两个底角、平行四边形左下内角共用两行（§4.2）。
+    QSpinBox* InteriorAngleASpin() const { return m_interiorAngleASpin; }
+    QSpinBox* InteriorAngleBSpin() const { return m_interiorAngleBSpin; }
+    InteriorAngleTarget Target() const { return m_interiorAngleTarget; }
+    qreal InitialInteriorAngleA() const { return m_initialInteriorAngleA; }
+    qreal InitialInteriorAngleB() const { return m_initialInteriorAngleB; }
 
     bool HasCornerRadius() const { return m_cornerRadiusSpin != nullptr; }
     QSpinBox* CornerRadiusSpin() const { return m_cornerRadiusSpin; }
     int InitialCornerRadius() const { return m_initialCornerRadius; }
     qreal InitialStoredCornerRadius() const { return m_initialStoredCornerRadius; }
 
-    // 三角形：两个底角；底边宽度随图元外框调整，角度优先、高度派生。
-    QSpinBox* BottomAngle1Spin() const { return m_bottomAngle1Spin; }
-    QSpinBox* BottomAngle2Spin() const { return m_bottomAngle2Spin; }
-    qreal InitialBottomAngle1() const { return m_initialBottomAngle1; }
-    qreal InitialBottomAngle2() const { return m_initialBottomAngle2; }
-
-    // 需求 9：平行四边形左下内角（度），未改动时保留原值。
-    QSpinBox* ParallelogramAngleSpin() const { return m_parallelogramAngleSpin; }
-    qreal InitialParallelogramAngle() const { return m_initialParallelogramAngle; }
+    // 起始角 / 扫过角：扇形与弧线共用两行，按 ItemProperty::START_ANGLE / SWEEP_ANGLE 读写。
+    QSpinBox* StartAngleSpin() const { return m_startAngleSpin; }
+    QSpinBox* SweepAngleSpin() const { return m_sweepAngleSpin; }
+    qreal InitialStartAngle() const { return m_initialStartAngle; }
+    qreal InitialSweepAngle() const { return m_initialSweepAngle; }
 
     // 直线两端箭头样式下拉（一行两个）。
     QComboBox* StartArrowCombo() const { return m_startArrowCombo; }
     QComboBox* EndArrowCombo() const { return m_endArrowCombo; }
-
-    // 弧线：起始角 / 扫过角（度），按 ItemProperty::START_ANGLE / SWEEP_ANGLE 读写。
-    QSpinBox* ArcStartAngleSpin() const { return m_arcStartAngleSpin; }
-    QSpinBox* ArcSweepAngleSpin() const { return m_arcSweepAngleSpin; }
-    qreal InitialArcStartAngle() const { return m_initialArcStartAngle; }
-    qreal InitialArcSweepAngle() const { return m_initialArcSweepAngle; }
 
     // 正弦：周期数（1–12）与振幅（1–200 px），按 ItemProperty::SINE_CYCLES / SINE_AMPLITUDE 读写。
     QSpinBox* SineCyclesSpin() const { return m_sineCyclesSpin; }
@@ -108,11 +103,6 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     qreal m_initialOpacity = 1.0;
     int m_initialOpacityPercent = 100;
 
-    QSpinBox* m_startAngleSpin = nullptr;
-    QSpinBox* m_sweepAngleSpin = nullptr;
-    qreal m_initialStartAngle = 0.0;
-    qreal m_initialSweepAngle = 0.0;
-
     qreal m_defaultCornerRatio = 0.0;
     QSizeF m_contentSize;
     QSpinBox* m_cornerRadiusSpin = nullptr;
@@ -120,21 +110,20 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     qreal m_initialStoredCornerRadius = -1.0;
     bool m_cornerEdited = false;
 
-    QSpinBox* m_bottomAngle1Spin = nullptr;
-    QSpinBox* m_bottomAngle2Spin = nullptr;
-    qreal m_initialBottomAngle1 = 60.0;
-    qreal m_initialBottomAngle2 = 60.0;
-    qreal m_initialParallelogramAngle = 60.0;
-    QSpinBox* m_parallelogramAngleSpin = nullptr;
+    QSpinBox* m_interiorAngleASpin = nullptr;
+    QSpinBox* m_interiorAngleBSpin = nullptr;
+    InteriorAngleTarget m_interiorAngleTarget = InteriorAngleTarget::NONE;
+    qreal m_initialInteriorAngleA = 60.0;
+    qreal m_initialInteriorAngleB = 60.0;
 
     QComboBox* m_startArrowCombo = nullptr;
     QComboBox* m_endArrowCombo = nullptr;
     QWidget* m_arrowRow = nullptr;
 
-    QSpinBox* m_arcStartAngleSpin = nullptr;
-    QSpinBox* m_arcSweepAngleSpin = nullptr;
-    qreal m_initialArcStartAngle = 0.0;
-    qreal m_initialArcSweepAngle = 0.0;
+    QSpinBox* m_startAngleSpin = nullptr;
+    QSpinBox* m_sweepAngleSpin = nullptr;
+    qreal m_initialStartAngle = 0.0;
+    qreal m_initialSweepAngle = 0.0;
 
     QSpinBox* m_sineCyclesSpin = nullptr;
     QSpinBox* m_sineAmplitudeSpin = nullptr;

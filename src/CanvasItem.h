@@ -91,6 +91,9 @@ class CanvasItem : public QGraphicsObject {
     // 选中框与缩放手柄的锚定矩形。默认就是内容矩形；扇形 / 弧线这类
     // 只占内容矩形一部分的图元会覆盖成实际轮廓的最小覆盖矩形。
     virtual QRectF FrameRect() const;
+    // §3.4 中心点：派生属性，返回图元绘制中心的场景坐标；写回只平移 pos，
+    // 不改尺寸与旋转。椭圆族由叶子覆写成真实椭圆圆心，其余取内容矩形中心。
+    virtual QPointF CenterScenePoint() const;
     QSizeF ContentSize() const { return m_size; }
     // 外部请求的尺寸先经过图元自己的规则折算（例如三角形按角度派生高度），
     // 由 setContentSize 一次性应用，避免在一次拖拽里反复改动几何。

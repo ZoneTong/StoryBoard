@@ -149,8 +149,9 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     connect(m_geometryCard, &PropertiesPanelGeometryCard::geometryChosen, this, &PropertiesPanel::ApplyItemGeometry);
     connect(m_geometryCard, &PropertiesPanelGeometryCard::rotationChosen, this, &PropertiesPanel::ApplyItemRotation);
     connect(m_geometryCard, &PropertiesPanelGeometryCard::axesChosen, this, &PropertiesPanel::ApplyItemAxes);
-    connect(m_geometryCard, &PropertiesPanelGeometryCard::parallelogramAngleChosen, this,
-            &PropertiesPanel::ApplyParallelogramAngle);
+    connect(m_geometryCard, &PropertiesPanelGeometryCard::interiorAngleChosen, this,
+            &PropertiesPanel::ApplyInteriorAngle);
+    connect(m_geometryCard, &PropertiesPanelGeometryCard::centerChosen, this, &PropertiesPanel::ApplyItemCenter);
 
     if (m_scene) {
         connect(m_scene, &QGraphicsScene::selectionChanged, this, &PropertiesPanel::ScheduleRefresh);
@@ -314,10 +315,11 @@ void PropertiesPanel::Refresh()
     m_identityCard->Refresh(m_scene, singleItem ? items.first() : nullptr);
     m_geometryCard->Refresh(hasSelection ? items.first() : nullptr);
 
-    // 长短半轴行按属性交集显隐：椭圆 / 扇形与弧线都在 Properties() 上报 MAJOR_AXIS，
-    // 复用同一对行，回显与写入都走 PropertyValue / SetPropertyValue。
-    m_geometryCard->SetAxisVisible(singleItem && common.Contains(ItemProperty::MAJOR_AXIS));
-    m_geometryCard->SetParallelogramVisible(singleItem && common.Contains(ItemProperty::PARALLELOGRAM_ANGLE));
+    // 长短半轴 / 内角 / 中心点行按属性交集显隐：多选时也开放，写入侧只对
+    // 上报了该属性的成员生效（§4.3，不再要求 singleItem）。
+    m_geometryCard->SetAxisVisible(common.Contains(ItemProperty::MAJOR_AXIS));
+    m_geometryCard->SetInteriorAngleVisible(common.Contains(ItemProperty::PARALLELOGRAM_ANGLE));
+    m_geometryCard->SetCenterVisible(common.Contains(ItemProperty::CENTER));
 
     m_fillBorderCard->FillStyleRow()->setVisible(common.Contains(ItemProperty::FILL_STYLE));
     m_colorsCard->FillColorRow()->setVisible(common.Contains(ItemProperty::FILL_COLOR));

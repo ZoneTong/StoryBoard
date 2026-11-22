@@ -3,6 +3,7 @@
 #include "CanvasItem.h"
 #include "ItemPropertiesDialog.h"
 #include "ItemPropertiesDialogFields.h"
+#include "PropertyRowRegistry.h"
 
 #include <QFontDialog>
 #include <QFormLayout>
@@ -27,29 +28,28 @@ ItemPropertiesDialogTextBlock::ItemPropertiesDialogTextBlock(QWidget* parent) : 
     connect(m_fontButton, &QPushButton::clicked, this, &ItemPropertiesDialogTextBlock::ChooseFont);
 }
 
-void ItemPropertiesDialogTextBlock::AddRows(QFormLayout* form)
+void ItemPropertiesDialogTextBlock::AddRows(QFormLayout* form, PropertyRowRegistry* rows)
 {
     m_form = form;
     form->addRow(ItemPropertiesDialog::tr("Text content"), m_textEdit);
     form->addRow(ItemPropertiesDialog::tr("Text color"), m_textColorButton);
     form->addRow(ItemPropertiesDialog::tr("Font"), m_fontButton);
+    if (rows) {
+        rows->Register(ItemProperty::TEXT_CONTENT, m_textEdit);
+        rows->Register(ItemProperty::TEXT_COLOR, m_textColorButton);
+        rows->Register(ItemProperty::TEXT_FONT, m_fontButton);
+    }
 }
 
 void ItemPropertiesDialogTextBlock::SetItem(CanvasItem* item)
 {
-    // 文字行的显隐按图元类别判断；正文 / 颜色 / 字体一律从属性协议读，基类不再有文字 facet。
-    const bool showText = item && item->Category() == ItemCategory::TEXT;
-    if (showText) {
+    // 正文 / 颜色 / 字体一律从属性协议读；行显隐由 PropertyRowRegistry 按属性表决定。
+    if (item && item->Category() == ItemCategory::TEXT) {
         m_textFont = item->PropertyValue(ItemProperty::TEXT_FONT).value<QFont>();
         m_textEdit->setPlainText(item->PropertyValue(ItemProperty::TEXT_CONTENT).toString());
         m_textColorButton->setProperty("itemColor", item->PropertyValue(ItemProperty::TEXT_COLOR).value<QColor>());
         ItemPropertiesFields::RefreshColorButton(m_textColorButton);
         UpdateFontButton();
-    }
-    if (m_form) {
-        m_form->setRowVisible(m_textEdit, showText);
-        m_form->setRowVisible(m_textColorButton, showText);
-        m_form->setRowVisible(m_fontButton, showText);
     }
 }
 

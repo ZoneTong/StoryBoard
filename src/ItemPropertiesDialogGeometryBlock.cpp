@@ -1,12 +1,15 @@
 #include "ItemPropertiesDialogGeometryBlock.h"
 
+#include "ArcItem.h"
 #include "ItemPropertiesDialog.h"
 #include "LineAbstractItem.h"
+#include "PropertyRowRegistry.h"
 #include "PropertyRowWidgets.h"
 #include "ShapeAbstractItem.h"
 
 #include <QDoubleSpinBox>
 #include <QFormLayout>
+#include <QLabel>
 
 ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(QWidget* parent) : QWidget(parent)
 {
@@ -44,6 +47,15 @@ ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(QWidget* pa
     m_minorAxisSpin = m_minorAxisRow->Spin();
     m_minorAxisSpin->setMinimumWidth(88);
 
+    // §3.4 中心点：派生属性，行放在椭圆相关行之后，固定为属性窗最后一行。
+    m_centerRow = new PairAttributeRow(IconId::FIT, false, QStringLiteral("ItemPropertiesCenterXValue"),
+                                       QStringLiteral("ItemPropertiesCenterYValue"), 1, -1000000.0, 1000000.0,
+                                       QString(), QStringLiteral(","), this);
+    m_centerXSpin = m_centerRow->FirstSpin();
+    m_centerYSpin = m_centerRow->SecondSpin();
+    m_centerXSpin->setMinimumWidth(88);
+    m_centerYSpin->setMinimumWidth(88);
+
     // 连接一次、运行时按 m_hasAxes / m_arcAxes 分派：同一实例换图元无需重连。
     connect(m_widthSpin, &QDoubleSpinBox::valueChanged, this, [this]() { SyncAxesFromSize(); });
     connect(m_heightSizeSpin, &QDoubleSpinBox::valueChanged, this, [this]() { SyncAxesFromSize(); });
@@ -53,16 +65,26 @@ ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(QWidget* pa
             [this]() { m_arcAxes ? ApplyArcAxes(false) : ApplyAxesToSize(false); });
 }
 
-void ItemPropertiesDialogGeometryBlock::AddRows(QFormLayout* form)
+void ItemPropertiesDialogGeometryBlock::AddRows(QFormLayout* form, PropertyRowRegistry* rows)
 {
     m_form = form;
-    // 需求 8 行序定稿：长半轴 → 短半轴 → 旋转 → 位置 → 图元尺寸。
-    // 位置与尺寸固定在最后两行，旋转保持在位置之前。
+    // 行序定稿（§4.1 第 23~28 行）：长半轴 → 短半轴 → 旋转 → 位置 → 图元尺寸 → 中心点。
+    m_centerLabel = new QLabel(ItemPropertiesDialog::tr("Center point"), this);
     form->addRow(ItemPropertiesDialog::tr("Semi-major axis"), m_majorAxisRow);
     form->addRow(ItemPropertiesDialog::tr("Semi-minor axis"), m_minorAxisRow);
     form->addRow(ItemPropertiesDialog::tr("Rotation"), m_rotationRow);
     form->addRow(ItemPropertiesDialog::tr("Position"), m_positionRow);
     form->addRow(ItemPropertiesDialog::tr("Item size"), m_sizeRow);
+    form->addRow(m_centerLabel, m_centerRow);
+
+    if (rows) {
+        rows->Register(ItemProperty::MAJOR_AXIS, m_majorAxisRow);
+        rows->Register(ItemProperty::MINOR_AXIS, m_minorAxisRow);
+        rows->Register(ItemProperty::ROTATION, m_rotationRow);
+        rows->Register(ItemProperty::POSITION, m_positionRow);
+        rows->Register(ItemProperty::SIZE, m_sizeRow);
+        rows->Register(ItemProperty::CENTER, m_centerRow);
+    }
 }
 
 void ItemPropertiesDialogGeometryBlock::SetItem(CanvasItem* item)
@@ -70,6 +92,7 @@ void ItemPropertiesDialogGeometryBlock::SetItem(CanvasItem* item)
     m_hasAxes = false;
     m_arcAxes = false;
     m_axisItem = item;
+    m_initialCenter = QPointF();
     if (item) {
         m_positionRow->Refresh(item->pos().x(), item->pos().y());
         m_sizeRow->Refresh(item->ContentSize().width(), item->ContentSize().height());
@@ -83,16 +106,28 @@ void ItemPropertiesDialogGeometryBlock::SetItem(CanvasItem* item)
                 m_initialArcMinor = m_minorAxisSpin->value();
             }
         }
-    }
-    if (m_form) {
-        const bool showAxes = item != nullptr && m_hasAxes;
-        m_form->setRowVisible(m_majorAxisRow, showAxes);
-        m_form->setRowVisible(m_minorAxisRow, showAxes);
-        m_form->setRowVisible(m_rotationRow, item != nullptr);
-        m_form->setRowVisible(m_positionRow, item != nullptr);
-        m_form->setRowVisible(m_sizeRow, item != nullptr);
+
+        // 中心点按图元几何回显：椭圆族显示“椭圆中心点”，其余显示“中心点”。
+        m_initialCenter = item->PropertyValue(ItemProperty::CENTER).toPointF();
+        m_centerRow->Refresh(m_initialCenter.x(), m_initialCenter.y());
+        if (m_centerLabel) {
+            m_centerLabel->setText(ItemPropertiesDialog::tr(IsEllipseFamily(item) ? "Ellipse center" : "Center point"));
+        }
     }
 }
+
+bool ItemPropertiesDialogGeometryBlock::IsEllipseFamily(const CanvasItem* item)
+{
+    if (dynamic_cast<const ArcItem*>(item) != nullptr) {
+        return true;
+    }
+    const auto* shape = dynamic_cast<const ShapeAbstractItem*>(item);
+    if (!shape) {
+        return false;
+    }
+    return shape->shapeType() == ShapeType::ELLIPSE || shape->shapeType() == ShapeType::SECTOR;
+}
+
 
 void ItemPropertiesDialogGeometryBlock::SetNaturalSize(const QSizeF& size)
 {

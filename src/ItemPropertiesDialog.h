@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CanvasItem.h"
+#include "PropertyRowRegistry.h"
 
 #include <QColor>
 #include <QDialog>
@@ -13,6 +14,7 @@
 
 class CanvasScene;
 class QDialogButtonBox;
+class QFormLayout;
 class QLabel;
 class ItemPropertiesDialogGeometryBlock;
 class ItemPropertiesDialogIdentityBlock;
@@ -40,6 +42,8 @@ class ItemPropertiesDialog : public QDialog {
     CanvasItem* Item() const { return m_item.data(); }
     bool IsEditable() const { return m_editable; }
     bool IsItemInScene() const;
+    // 属性窗总行数（含固定的图元类型行）：§4.1 定稿为 28 行。
+    int PropertyRowCount() const { return m_rows.RowCount() + 1; }
     // 只有画布本身的点击才触发“取消并关闭”，工具栏、停靠面板等区域不关窗。
     bool IsGlobalPointInsideCanvas(const QPoint& globalPoint) const;
     static QString LayerDescription(const CanvasScene* scene, int layerId);
@@ -67,6 +71,9 @@ class ItemPropertiesDialog : public QDialog {
     QLabel* m_typeValue = nullptr;
     QLabel* m_readOnlyHint = nullptr;
     QDialogButtonBox* m_buttons = nullptr;
+    // 全部属性行的注册表：显隐只看图元上报的 Properties()（§4.3）。
+    PropertyRowRegistry m_rows;
+    QFormLayout* m_form = nullptr;
     ItemPropertiesDialogIdentityBlock* m_identityBlock = nullptr;
     ItemPropertiesDialogStyleBlock* m_styleBlock = nullptr;
     ItemPropertiesDialogTextBlock* m_textBlock = nullptr;

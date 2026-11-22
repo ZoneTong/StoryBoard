@@ -2,6 +2,7 @@
 
 #include "CanvasScene.h"
 #include "ItemPropertiesDialog.h"
+#include "PropertyRowRegistry.h"
 #include "PropertyRowWidgets.h"
 
 #include <QComboBox>
@@ -38,12 +39,17 @@ ItemPropertiesDialogIdentityBlock::ItemPropertiesDialogIdentityBlock(CanvasScene
     m_heightSpin->setMinimumWidth(88);
 }
 
-void ItemPropertiesDialogIdentityBlock::AddRows(QFormLayout* form)
+void ItemPropertiesDialogIdentityBlock::AddRows(QFormLayout* form, PropertyRowRegistry* rows)
 {
     m_form = form;
     form->addRow(ItemPropertiesDialog::tr("Item name"), m_nameRow);
     form->addRow(ItemPropertiesDialog::tr("Layer"), m_layerRow);
     form->addRow(ItemPropertiesDialog::tr("Height"), m_heightRow);
+    if (rows) {
+        rows->Register(ItemProperty::NAME, m_nameRow);
+        rows->Register(ItemProperty::LAYER, m_layerRow);
+        rows->Register(ItemProperty::HEIGHT, m_heightRow);
+    }
 }
 
 void ItemPropertiesDialogIdentityBlock::SetItem(CanvasScene* scene, CanvasItem* item)
@@ -56,11 +62,6 @@ void ItemPropertiesDialogIdentityBlock::SetItem(CanvasScene* scene, CanvasItem* 
         m_nameRow->Refresh(item->Name());
         m_layerRow->Refresh(scene, item->LayerId());
         m_heightSpin->setValue(qMax(0, item->ZOrder()));
-    }
-    if (m_form) {
-        m_form->setRowVisible(m_nameRow, item != nullptr);
-        m_form->setRowVisible(m_layerRow, item != nullptr);
-        m_form->setRowVisible(m_heightRow, item != nullptr);
     }
 }
 

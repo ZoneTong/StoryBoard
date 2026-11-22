@@ -171,18 +171,18 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
     // 所有行一次建齐、顺序固定（类型 → 名称 / 图层 / 高度 → 文字 → 填充 / 描线 /
     // 参数行 → 几何）；SetItem 按图元属性有无回填并显隐，全部类型共用同一实例。
     m_identityBlock = new ItemPropertiesDialogIdentityBlock(scene, this);
-    m_identityBlock->AddRows(form);
+    m_identityBlock->AddRows(form, &m_rows);
 
     m_textBlock = new ItemPropertiesDialogTextBlock(this);
-    m_textBlock->AddRows(form);
+    m_textBlock->AddRows(form, &m_rows);
     connect(m_textBlock, &ItemPropertiesDialogTextBlock::fontChanged, this, &ItemPropertiesDialog::SyncTextNaturalSize);
     connect(m_textBlock->TextEdit(), &QPlainTextEdit::textChanged, this, &ItemPropertiesDialog::SyncTextNaturalSize);
 
     m_styleBlock = new ItemPropertiesDialogStyleBlock(this);
-    m_styleBlock->AddRows(form);
+    m_styleBlock->AddRows(form, &m_rows);
 
     m_geometryBlock = new ItemPropertiesDialogGeometryBlock(this);
-    m_geometryBlock->AddRows(form);
+    m_geometryBlock->AddRows(form, &m_rows);
     // 圆角矩形：尺寸框变化时同步圆角上限（区块内部按当前图元是否适用自行判断）。
     // 回填期间跳过：逐值回填宽高时另一个尺寸框还是构造默认值，会把圆角上限钳小；
     // SetItem 末尾用真实内容尺寸统一同步一次。
@@ -197,6 +197,7 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
     connect(m_geometryBlock->HeightSizeSpin(), &QDoubleSpinBox::valueChanged, this, syncCornerRange);
 
     root->addLayout(form);
+    m_form = form;
 
     m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     connect(m_buttons, &QDialogButtonBox::accepted, this, &ItemPropertiesDialog::accept);
@@ -260,6 +261,8 @@ void ItemPropertiesDialog::SetItem(CanvasScene* scene, CanvasItem* item, bool ed
     if (item) {
         m_styleBlock->SetContentSize(m_initialSize);
     }
+    // 行显隐只看图元上报的属性集合（§4.3）：换绑图元时整表重算一次。
+    m_rows.Apply(m_form, item ? item->Properties() : ItemPropertySet());
 
     ApplyEditableState();
 
@@ -474,6 +477,14 @@ void ItemPropertiesDialog::ApplyChanges()
     after.size = QSizeF(spinValue(geometry->WidthSpin(), m_initialSize.width()),
                         spinValue(geometry->HeightSizeSpin(), m_initialSize.height()));
     after.rotation = spinValue(geometry->RotationSpin(), m_initialRotation);
+    // §3.4 中心点是派生属性：用户改过中心点时按“初始位置 + 中心增量”折算位置，
+    // 尺寸与旋转不受影响；未改动时与位置行的结果完全一致。
+    const QPointF centerValue(geometry->CenterXSpin()->value(), geometry->CenterYSpin()->value());
+    const QPointF initialCenter = geometry->InitialCenter();
+    if (!qFuzzyCompare(centerValue.x() + 1.0, initialCenter.x() + 1.0) ||
+        !qFuzzyCompare(centerValue.y() + 1.0, initialCenter.y() + 1.0)) {
+        after.pos = m_initialPos + (centerValue - initialCenter);
+    }
     after.opacity = before.opacity;
     const QString typedName = (identity && identity->NameEdit()) ? identity->NameEdit()->text().trimmed() : QString();
     // 清空名称不能退回“多个同名类型名”的状态；这时补一个本画布内唯一的自动名称。
@@ -526,22 +537,22 @@ void ItemPropertiesDialog::ApplyChanges()
             after.shapeState.cornerRadius =
                 value == style->InitialCornerRadius() ? style->InitialStoredCornerRadius() : value;
         }
-        // 需求 1：三角形的两个底角为真相，未改动时保留原值（含非整数角度）。
-        if (style && style->BottomAngle1Spin()) {
-            const int value = style->BottomAngle1Spin()->value();
-            after.shapeState.bottomAngle1 =
-                value == qRound(style->InitialBottomAngle1()) ? style->InitialBottomAngle1() : value;
+        // 内角 A / B 两行由三角形与平行四边形共用：同一控件按目标回填与提交，
+        // 换绑图元后不会把旧值脏写到另一类属性上（§4.2）。
+        if (style && style->InteriorAngleASpin()) {
+            const int value = style->InteriorAngleASpin()->value();
+            const qreal initial = style->InitialInteriorAngleA();
+            const bool unchanged = value == qRound(initial);
+            if (style->Target() == ItemPropertiesDialogStyleBlock::InteriorAngleTarget::TRIANGLE_A) {
+                after.shapeState.bottomAngle1 = unchanged ? initial : value;
+            } else if (style->Target() == ItemPropertiesDialogStyleBlock::InteriorAngleTarget::PARALLELOGRAM) {
+                after.shapeState.parallelogramAngle = unchanged ? initial : value;
+            }
         }
-        if (style && style->BottomAngle2Spin()) {
-            const int value = style->BottomAngle2Spin()->value();
-            after.shapeState.bottomAngle2 =
-                value == qRound(style->InitialBottomAngle2()) ? style->InitialBottomAngle2() : value;
-        }
-        // 需求 9：平行四边形左下内角，未改动时保留原值。
-        if (style && style->ParallelogramAngleSpin()) {
-            const int value = style->ParallelogramAngleSpin()->value();
-            after.shapeState.parallelogramAngle =
-                value == qRound(style->InitialParallelogramAngle()) ? style->InitialParallelogramAngle() : value;
+        if (style && style->InteriorAngleBSpin()) {
+            const int value = style->InteriorAngleBSpin()->value();
+            const qreal initial = style->InitialInteriorAngleB();
+            after.shapeState.bottomAngle2 = value == qRound(initial) ? initial : value;
         }
         // 只改底角、不动尺寸时保持底边长度：按新角度重算包围盒，而不是沿用旧盒宽。
         const bool triangleAnglesChanged =
@@ -617,17 +628,17 @@ void ItemPropertiesDialog::ApplyChanges()
             before.curveParams.insert(ItemProperty::START_ANGLE, stroke->PropertyValue(ItemProperty::START_ANGLE));
             before.curveParams.insert(ItemProperty::SWEEP_ANGLE, stroke->PropertyValue(ItemProperty::SWEEP_ANGLE));
             after.curveParams = before.curveParams;
-            if (style && style->ArcStartAngleSpin() && style->ArcSweepAngleSpin()) {
+            if (style && style->StartAngleSpin() && style->SweepAngleSpin()) {
                 const qreal startBefore = before.curveParams.value(ItemProperty::START_ANGLE).toDouble();
                 const qreal sweepBefore = before.curveParams.value(ItemProperty::SWEEP_ANGLE).toDouble();
                 after.curveParams.insert(ItemProperty::START_ANGLE,
-                                         style->ArcStartAngleSpin()->value() == qRound(startBefore)
+                                         style->StartAngleSpin()->value() == qRound(startBefore)
                                              ? startBefore
-                                             : style->ArcStartAngleSpin()->value());
+                                             : style->StartAngleSpin()->value());
                 after.curveParams.insert(ItemProperty::SWEEP_ANGLE,
-                                         style->ArcSweepAngleSpin()->value() == qRound(sweepBefore)
+                                         style->SweepAngleSpin()->value() == qRound(sweepBefore)
                                              ? sweepBefore
-                                             : style->ArcSweepAngleSpin()->value());
+                                             : style->SweepAngleSpin()->value());
             }
             // 弧线长短半轴：与角度同一份快照，未改动时 before == after 自动跳过。
             if (geometry && geometry->MajorAxisSpin()) {

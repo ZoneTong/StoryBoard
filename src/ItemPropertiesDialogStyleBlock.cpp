@@ -5,6 +5,7 @@
 #include "ItemStyleVisuals.h"
 #include "LineAbstractItem.h"
 #include "PolygonItem.h"
+#include "PropertyRowRegistry.h"
 #include "ShapeAbstractItem.h"
 #include "ShapeMeta.h"
 
@@ -117,29 +118,22 @@ void ItemPropertiesDialogStyleBlock::BuildTypeRows()
     connect(m_cornerRadiusSpin, &QSpinBox::valueChanged, this,
             [this](int value) { m_cornerEdited = value != m_initialCornerRadius; });
 
-    m_bottomAngle1Spin = new QSpinBox(this);
-    m_bottomAngle1Spin->setObjectName(QStringLiteral("ItemPropertiesBottomAngle1Value"));
-    m_bottomAngle1Spin->setRange(5, 170);
-    m_bottomAngle1Spin->setSingleStep(1);
-    m_bottomAngle1Spin->setSuffix(QStringLiteral("°"));
-    m_bottomAngle1Spin->setToolTip(ItemPropertiesDialog::tr("Triangle base angle A"));
-    m_bottomAngle1Spin->setMinimumWidth(88);
+    // 内角 A / B 两行由三角形与平行四边形共用（§4.2）：同一控件按目标回填与提交。
+    m_interiorAngleASpin = new QSpinBox(this);
+    m_interiorAngleASpin->setObjectName(QStringLiteral("ItemPropertiesInteriorAngleAValue"));
+    m_interiorAngleASpin->setRange(5, 175);
+    m_interiorAngleASpin->setSingleStep(1);
+    m_interiorAngleASpin->setSuffix(QStringLiteral("°"));
+    m_interiorAngleASpin->setToolTip(ItemPropertiesDialog::tr("Interior angle A"));
+    m_interiorAngleASpin->setMinimumWidth(88);
 
-    m_bottomAngle2Spin = new QSpinBox(this);
-    m_bottomAngle2Spin->setObjectName(QStringLiteral("ItemPropertiesBottomAngle2Value"));
-    m_bottomAngle2Spin->setRange(5, 170);
-    m_bottomAngle2Spin->setSingleStep(1);
-    m_bottomAngle2Spin->setSuffix(QStringLiteral("°"));
-    m_bottomAngle2Spin->setToolTip(ItemPropertiesDialog::tr("Triangle base angle B"));
-    m_bottomAngle2Spin->setMinimumWidth(88);
-
-    m_parallelogramAngleSpin = new QSpinBox(this);
-    m_parallelogramAngleSpin->setObjectName(QStringLiteral("ItemPropertiesParallelogramAngleValue"));
-    m_parallelogramAngleSpin->setRange(5, 175);
-    m_parallelogramAngleSpin->setSingleStep(1);
-    m_parallelogramAngleSpin->setSuffix(QStringLiteral("°"));
-    m_parallelogramAngleSpin->setToolTip(ItemPropertiesDialog::tr("Parallelogram bottom-left angle"));
-    m_parallelogramAngleSpin->setMinimumWidth(88);
+    m_interiorAngleBSpin = new QSpinBox(this);
+    m_interiorAngleBSpin->setObjectName(QStringLiteral("ItemPropertiesInteriorAngleBValue"));
+    m_interiorAngleBSpin->setRange(5, 170);
+    m_interiorAngleBSpin->setSingleStep(1);
+    m_interiorAngleBSpin->setSuffix(QStringLiteral("°"));
+    m_interiorAngleBSpin->setToolTip(ItemPropertiesDialog::tr("Interior angle B"));
+    m_interiorAngleBSpin->setMinimumWidth(88);
 
     m_arrowRow = new QWidget(this);
     auto* arrowLayout = new QHBoxLayout(m_arrowRow);
@@ -161,11 +155,13 @@ void ItemPropertiesDialogStyleBlock::BuildTypeRows()
     arrowLayout->addWidget(m_startArrowCombo, 1);
     arrowLayout->addWidget(m_endArrowCombo, 1);
 
+    // 起始角 / 扫过角：扇形与弧线共用同一对控件，值统一按属性读写。
     m_startAngleSpin = new QSpinBox(this);
     m_startAngleSpin->setObjectName(QStringLiteral("ItemPropertiesStartAngleValue"));
     m_startAngleSpin->setRange(-360, 360);
     m_startAngleSpin->setSingleStep(5);
     m_startAngleSpin->setSuffix(QStringLiteral("°"));
+    m_startAngleSpin->setToolTip(ItemPropertiesDialog::tr("Start angle"));
     m_startAngleSpin->setMinimumWidth(88);
 
     m_sweepAngleSpin = new QSpinBox(this);
@@ -173,21 +169,8 @@ void ItemPropertiesDialogStyleBlock::BuildTypeRows()
     m_sweepAngleSpin->setRange(-360, 360);
     m_sweepAngleSpin->setSingleStep(5);
     m_sweepAngleSpin->setSuffix(QStringLiteral("°"));
+    m_sweepAngleSpin->setToolTip(ItemPropertiesDialog::tr("Sweep angle"));
     m_sweepAngleSpin->setMinimumWidth(88);
-
-    m_arcStartAngleSpin = new QSpinBox(this);
-    m_arcStartAngleSpin->setObjectName(QStringLiteral("ItemPropertiesArcStartAngleValue"));
-    m_arcStartAngleSpin->setRange(-360, 360);
-    m_arcStartAngleSpin->setSingleStep(5);
-    m_arcStartAngleSpin->setSuffix(QStringLiteral("°"));
-    m_arcStartAngleSpin->setMinimumWidth(88);
-
-    m_arcSweepAngleSpin = new QSpinBox(this);
-    m_arcSweepAngleSpin->setObjectName(QStringLiteral("ItemPropertiesArcSweepAngleValue"));
-    m_arcSweepAngleSpin->setRange(-360, 360);
-    m_arcSweepAngleSpin->setSingleStep(5);
-    m_arcSweepAngleSpin->setSuffix(QStringLiteral("°"));
-    m_arcSweepAngleSpin->setMinimumWidth(88);
 
     m_sineCyclesSpin = new QSpinBox(this);
     m_sineCyclesSpin->setObjectName(QStringLiteral("ItemPropertiesSineCyclesValue"));
@@ -201,12 +184,11 @@ void ItemPropertiesDialogStyleBlock::BuildTypeRows()
     m_sineAmplitudeSpin->setMinimumWidth(88);
 }
 
-void ItemPropertiesDialogStyleBlock::AddRows(QFormLayout* form)
+void ItemPropertiesDialogStyleBlock::AddRows(QFormLayout* form, PropertyRowRegistry* rows)
 {
     m_form = form;
-    // 行序固定（所有图元共用）：填充样式 → 填充颜色 → 填充图片 → 描线样式 →
-    // 描线颜色 → 描线宽度 → 不透明度 → 圆角 → 三角形底角 A/B → 平行四边形内角 →
-    // 箭头 → 扇形起始 / 扫过角 → 弧线起始 / 扫过角 → 正弦周期 / 振幅。
+    // 行序固定（§4.1 第 8~22 行）：填充 → 描线 → 不透明度 → 圆角 →
+    // 内角 A/B → 箭头 → 起始 / 扫过角 → 正弦周期 / 振幅。
     form->addRow(ItemPropertiesDialog::tr("Fill style"), m_fillStyleRow);
     form->addRow(ItemPropertiesDialog::tr("Fill color"), m_fillColorRow);
     form->addRow(ItemPropertiesDialog::tr("Fill image"), m_fillImageRow);
@@ -216,16 +198,33 @@ void ItemPropertiesDialogStyleBlock::AddRows(QFormLayout* form)
     m_opacitySpin->setToolTip(ItemPropertiesDialog::tr("Opacity (100% = opaque)"));
     form->addRow(ItemPropertiesDialog::tr("Opacity"), m_opacitySpin);
     form->addRow(ItemPropertiesDialog::tr("Corner radius"), m_cornerRadiusSpin);
-    form->addRow(ItemPropertiesDialog::tr("Triangle base angle A"), m_bottomAngle1Spin);
-    form->addRow(ItemPropertiesDialog::tr("Triangle base angle B"), m_bottomAngle2Spin);
-    form->addRow(ItemPropertiesDialog::tr("Parallelogram bottom-left angle"), m_parallelogramAngleSpin);
+    form->addRow(ItemPropertiesDialog::tr("Interior angle A"), m_interiorAngleASpin);
+    form->addRow(ItemPropertiesDialog::tr("Interior angle B"), m_interiorAngleBSpin);
     form->addRow(ItemPropertiesDialog::tr("Arrow heads"), m_arrowRow);
     form->addRow(ItemPropertiesDialog::tr("Start angle"), m_startAngleSpin);
     form->addRow(ItemPropertiesDialog::tr("Sweep angle"), m_sweepAngleSpin);
-    form->addRow(ItemPropertiesDialog::tr("Start angle"), m_arcStartAngleSpin);
-    form->addRow(ItemPropertiesDialog::tr("Sweep angle"), m_arcSweepAngleSpin);
     form->addRow(ItemPropertiesDialog::tr("Sine cycles"), m_sineCyclesSpin);
     form->addRow(ItemPropertiesDialog::tr("Sine amplitude"), m_sineAmplitudeSpin);
+
+    if (rows) {
+        rows->Register(ItemProperty::FILL_STYLE, m_fillStyleRow);
+        rows->Register(ItemProperty::FILL_COLOR, m_fillColorRow);
+        rows->Register(ItemProperty::FILL_IMAGE, m_fillImageRow);
+        rows->Register(ItemProperty::STROKE_STYLE, m_borderStyleRow);
+        rows->Register(ItemProperty::STROKE_COLOR, m_strokeColorRow);
+        rows->Register(ItemProperty::STROKE_WIDTH, m_borderWidthRow);
+        rows->Register(ItemProperty::OPACITY, m_opacitySpin);
+        rows->Register(ItemProperty::CORNER_RADIUS, m_cornerRadiusSpin);
+        // 内角 A 接受三角形底角 A 与平行四边形内角，两者互斥。
+        rows->Register(ItemPropertySet{ItemProperty::BOTTOM_ANGLE1, ItemProperty::PARALLELOGRAM_ANGLE},
+                       m_interiorAngleASpin);
+        rows->Register(ItemProperty::BOTTOM_ANGLE2, m_interiorAngleBSpin);
+        rows->Register(ItemProperty::ARROW_START, m_arrowRow);
+        rows->Register(ItemProperty::START_ANGLE, m_startAngleSpin);
+        rows->Register(ItemProperty::SWEEP_ANGLE, m_sweepAngleSpin);
+        rows->Register(ItemProperty::SINE_CYCLES, m_sineCyclesSpin);
+        rows->Register(ItemProperty::SINE_AMPLITUDE, m_sineAmplitudeSpin);
+    }
 }
 
 void ItemPropertiesDialogStyleBlock::SetItem(CanvasItem* item)
@@ -233,28 +232,17 @@ void ItemPropertiesDialogStyleBlock::SetItem(CanvasItem* item)
     m_hasFill = false;
     m_initialStrokeWidth = 4.0;
     m_cornerEdited = false;
-    bool showFill = false;
-    bool showStroke = false;
-    bool showOpacity = false;
-    bool showCorner = false;
-    bool showBottomAngles = false;
-    bool showParallelogram = false;
-    bool showArrows = false;
-    bool showSectorAngles = false;
-    bool showArcAngles = false;
-    bool showSine = false;
+    m_interiorAngleTarget = InteriorAngleTarget::NONE;
+    m_initialInteriorAngleA = 60.0;
+    m_initialInteriorAngleB = 60.0;
+    m_initialStartAngle = 0.0;
+    m_initialSweepAngle = 0.0;
 
     if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
-        // 多边形派生自 ShapeAbstractItem 但没有形状类型：填充与描线照旧，圆角 / 角度等行不给。
-        const bool polygon = dynamic_cast<PolygonItem*>(shape) != nullptr; // 白名单定点强转（D16）
-        const bool filled = polygon || ShapeTypeIsFilled(shape->shapeType());
-        const bool plainShape = !polygon;
-        showStroke = true;
-        showOpacity = true;
-        m_hasFill = filled;
-        showFill = filled;
-        // 属性窗用私有副本承载填充属性：行控件直接读它，取消时图元不受影响。
-        if (filled) {
+        // 多边形派生自 ShapeAbstractItem 但没有形状类型：填充与描线照旧，圆角 / 角度等行按属性表。
+        const ItemPropertySet properties = shape->Properties();
+        m_hasFill = properties.Contains(ItemProperty::FILL_STYLE);
+        if (m_hasFill) {
             m_fillAttributes.SetFill(shape->FillColor(), shape->fillStyle());
             m_fillAttributes.SetFillImage(shape->FillImage(), shape->FillImageMode());
         }
@@ -262,51 +250,37 @@ void ItemPropertiesDialogStyleBlock::SetItem(CanvasItem* item)
         m_strokeAttributes.SetStrokeStyle(shape->StrokeStyle());
         m_initialStrokeWidth = m_strokeAttributes.StrokeWidth();
 
-        const ShapeType type = shape->shapeType();
-        if (plainShape && !shape->IsCustomShape() && type == ShapeType::RECTANGLE) {
-            showCorner = true;
-            m_contentSize = shape->ContentSize();
-            const qreal radius = shape->CornerRadius();
-            const qreal minSide = qMin(m_contentSize.width(), m_contentSize.height());
-            m_defaultCornerRatio = minSide > 0.0 ? radius / minSide : 0.0;
-            m_initialStoredCornerRadius = radius;
-            m_initialCornerRadius = qRound(radius);
-            m_cornerRadiusSpin->setMaximum(qMax(0, qRound(minSide / 2.0)));
-        } else {
-            m_defaultCornerRatio = 0.0;
-            m_initialStoredCornerRadius = shape->CornerRadius();
-            m_initialCornerRadius = qRound(shape->CornerRadius());
-            m_cornerRadiusSpin->setMaximum(qMax(0, qRound(shape->ContentSize().width() / 2.0)));
-        }
+        // 圆角行由属性表决定是否出现；这里只负责回填上限与默认比例。
+        m_contentSize = shape->ContentSize();
+        const qreal radius = shape->CornerRadius();
+        const qreal minSide = qMin(m_contentSize.width(), m_contentSize.height());
+        m_defaultCornerRatio = minSide > 0.0 ? radius / minSide : 0.0;
+        m_initialStoredCornerRadius = radius;
+        m_initialCornerRadius = qRound(radius);
+        m_cornerRadiusSpin->setMaximum(qMax(0, qRound(minSide / 2.0)));
         m_cornerRadiusSpin->setValue(m_initialCornerRadius);
 
-        // 以下各参数行无论是否适用都按图元当前值回填：隐藏行未被触碰时，
-        // 提交路径按“未改动即保留原值”原样跳过。
-        m_initialBottomAngle1 = shape->BottomAngle1();
-        m_initialBottomAngle2 = shape->BottomAngle2();
-        showBottomAngles = plainShape && !shape->IsCustomShape() && type == ShapeType::TRIANGLE;
-        m_bottomAngle1Spin->setValue(qRound(m_initialBottomAngle1));
-        m_bottomAngle2Spin->setValue(qRound(m_initialBottomAngle2));
+        // 内角 A 按属性表挑提交目标：三角形底角 A 为真值，平行四边形 / 菱形同用一行。
+        if (properties.Contains(ItemProperty::BOTTOM_ANGLE1)) {
+            m_interiorAngleTarget = InteriorAngleTarget::TRIANGLE_A;
+            m_initialInteriorAngleA = shape->BottomAngle1();
+            m_initialInteriorAngleB = shape->BottomAngle2();
+        } else if (properties.Contains(ItemProperty::PARALLELOGRAM_ANGLE)) {
+            m_interiorAngleTarget = InteriorAngleTarget::PARALLELOGRAM;
+            m_initialInteriorAngleA = shape->PropertyValue(ItemProperty::PARALLELOGRAM_ANGLE).toDouble();
+            m_initialInteriorAngleB = 60.0;
+        }
+        m_interiorAngleASpin->setValue(qRound(m_initialInteriorAngleA));
+        m_interiorAngleBSpin->setValue(qRound(m_initialInteriorAngleB));
 
-        // 内角 A 归平行四边形族（普通平行四边形为真值，菱形为派生量）；
-        // 无该属性的图形按 60 占位，行本身隐藏。
-        const QVariant angleValue = shape->PropertyValue(ItemProperty::PARALLELOGRAM_ANGLE);
-        m_initialParallelogramAngle = angleValue.isValid() ? angleValue.toDouble() : 60.0;
-        showParallelogram = plainShape && !shape->IsCustomShape() && type == ShapeType::PARALLELOGRAM;
-        m_parallelogramAngleSpin->setValue(qRound(m_initialParallelogramAngle));
-
-        // 弧角属于扇形自己的属性：有该属性才回填，非扇形按 0 占位（行本身隐藏）。
+        // 弧角是扇形 / 弧线的属性：有该属性才回填，其余按 0 占位（行本身由属性表隐藏）。
         const QVariant startAngleValue = shape->PropertyValue(ItemProperty::START_ANGLE);
         const QVariant sweepAngleValue = shape->PropertyValue(ItemProperty::SWEEP_ANGLE);
         m_initialStartAngle = startAngleValue.isValid() ? startAngleValue.toDouble() : 0.0;
         m_initialSweepAngle = sweepAngleValue.isValid() ? sweepAngleValue.toDouble() : 0.0;
-        showSectorAngles = plainShape && !shape->IsCustomShape() && type == ShapeType::SECTOR;
         m_startAngleSpin->setValue(qRound(m_initialStartAngle));
         m_sweepAngleSpin->setValue(qRound(m_initialSweepAngle));
     } else if (auto* stroke = dynamic_cast<LineAbstractItem*>(item)) {
-        showStroke = true;
-        showOpacity = true;
-        showArrows = true;
         m_strokeAttributes.SetStroke(stroke->StrokeColor(), stroke->StrokeWidth());
         m_strokeAttributes.SetStrokeStyle(stroke->strokePattern());
         m_initialStrokeWidth = m_strokeAttributes.StrokeWidth();
@@ -315,21 +289,14 @@ void ItemPropertiesDialogStyleBlock::SetItem(CanvasItem* item)
         m_endArrowCombo->setCurrentIndex(qMax(0, m_endArrowCombo->findData(static_cast<int>(stroke->EndArrow()))));
 
         // 弧线角度 / 正弦周期振幅不再是基类能力位，按属性表回答“这一行该不该开”。
-        const ItemPropertySet strokeProperties = stroke->Properties();
-        const qreal arcStartAngle = stroke->PropertyValue(ItemProperty::START_ANGLE).toDouble();
-        const qreal arcSweepAngle = stroke->PropertyValue(ItemProperty::SWEEP_ANGLE).toDouble();
-        m_initialArcStartAngle = arcStartAngle;
-        m_initialArcSweepAngle = arcSweepAngle;
-        m_arcStartAngleSpin->setValue(qRound(arcStartAngle));
-        m_arcSweepAngleSpin->setValue(qRound(arcSweepAngle));
+        m_initialStartAngle = stroke->PropertyValue(ItemProperty::START_ANGLE).toDouble();
+        m_initialSweepAngle = stroke->PropertyValue(ItemProperty::SWEEP_ANGLE).toDouble();
+        m_startAngleSpin->setValue(qRound(m_initialStartAngle));
+        m_sweepAngleSpin->setValue(qRound(m_initialSweepAngle));
         m_initialSineCycles = qBound(1, qRound(stroke->PropertyValue(ItemProperty::SINE_CYCLES).toDouble()), 12);
         m_initialSineAmplitude = qBound(1, qRound(stroke->PropertyValue(ItemProperty::SINE_AMPLITUDE).toDouble()), 200);
         m_sineCyclesSpin->setValue(m_initialSineCycles);
         m_sineAmplitudeSpin->setValue(m_initialSineAmplitude);
-        showArcAngles = strokeProperties.Contains(ItemProperty::START_ANGLE) &&
-                        strokeProperties.Contains(ItemProperty::SWEEP_ANGLE);
-        showSine = !showArcAngles && strokeProperties.Contains(ItemProperty::SINE_CYCLES) &&
-                   strokeProperties.Contains(ItemProperty::SINE_AMPLITUDE);
     }
 
     if (item) {
@@ -337,27 +304,6 @@ void ItemPropertiesDialogStyleBlock::SetItem(CanvasItem* item)
         m_initialOpacity = item->ItemOpacity();
         m_initialOpacityPercent = qRound(m_initialOpacity * 100.0);
         m_opacitySpin->setValue(m_initialOpacityPercent);
-    }
-
-    if (m_form) {
-        m_form->setRowVisible(m_fillStyleRow, showFill);
-        m_form->setRowVisible(m_fillColorRow, showFill);
-        m_form->setRowVisible(m_fillImageRow, showFill);
-        m_form->setRowVisible(m_borderStyleRow, showStroke);
-        m_form->setRowVisible(m_strokeColorRow, showStroke);
-        m_form->setRowVisible(m_borderWidthRow, showStroke);
-        m_form->setRowVisible(m_opacitySpin, showOpacity);
-        m_form->setRowVisible(m_cornerRadiusSpin, showCorner);
-        m_form->setRowVisible(m_bottomAngle1Spin, showBottomAngles);
-        m_form->setRowVisible(m_bottomAngle2Spin, showBottomAngles);
-        m_form->setRowVisible(m_parallelogramAngleSpin, showParallelogram);
-        m_form->setRowVisible(m_arrowRow, showArrows);
-        m_form->setRowVisible(m_startAngleSpin, showSectorAngles);
-        m_form->setRowVisible(m_sweepAngleSpin, showSectorAngles);
-        m_form->setRowVisible(m_arcStartAngleSpin, showArcAngles);
-        m_form->setRowVisible(m_arcSweepAngleSpin, showArcAngles);
-        m_form->setRowVisible(m_sineCyclesSpin, showSine);
-        m_form->setRowVisible(m_sineAmplitudeSpin, showSine);
     }
 
     // 属性副本已按图元回填，刷新各行控件的选中态与数值。
@@ -376,8 +322,8 @@ QList<QWidget*> ItemPropertiesDialogStyleBlock::StyleRows() const
                          static_cast<QWidget*>(m_fillImageRow), static_cast<QWidget*>(m_borderStyleRow),
                          static_cast<QWidget*>(m_strokeColorRow), static_cast<QWidget*>(m_borderWidthRow),
                          static_cast<QWidget*>(m_opacitySpin), static_cast<QWidget*>(m_cornerRadiusSpin),
+                         static_cast<QWidget*>(m_interiorAngleASpin), static_cast<QWidget*>(m_interiorAngleBSpin),
                          static_cast<QWidget*>(m_startAngleSpin), static_cast<QWidget*>(m_sweepAngleSpin),
-                         static_cast<QWidget*>(m_arcStartAngleSpin), static_cast<QWidget*>(m_arcSweepAngleSpin),
                          static_cast<QWidget*>(m_sineCyclesSpin), static_cast<QWidget*>(m_sineAmplitudeSpin)}) {
         if (row) {
             rows.append(row);

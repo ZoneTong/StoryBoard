@@ -232,7 +232,7 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
         panelParallelogram->setSelected(true);
         QApplication::processEvents();
         QDoubleSpinBox* parallelogramAngleSpin =
-            dockPanel->findChild<QDoubleSpinBox*>(QStringLiteral("ItemParallelogramAngleSpin"));
+            dockPanel->findChild<QDoubleSpinBox*>(QStringLiteral("ItemInteriorAngleSpin"));
         ctx.Check(parallelogramAngleSpin && parallelogramAngleSpin->isVisible(),
                   QStringLiteral("选中平行四边形时编辑面板显示内角行"));
         if (parallelogramAngleSpin) {
@@ -337,6 +337,36 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
         ctx.Check(qAbs(selectedShape->pos().x() - firstPositionBefore.x()) < 0.01 &&
                       qAbs(secondGeometryShape->pos().x() - secondPositionBefore.x()) < 0.01,
                   QStringLiteral("撤销多选位置移动同时恢复两个图元"));
+
+        // §3.4 中心点：多选时把成员绝对对齐到同一中心，整次编辑只占一条撤销记录。
+        QDoubleSpinBox* centerXSpin = dockPanel->findChild<QDoubleSpinBox*>(QStringLiteral("ItemCenterXSpin"));
+        QDoubleSpinBox* centerYSpin = dockPanel->findChild<QDoubleSpinBox*>(QStringLiteral("ItemCenterYSpin"));
+        ctx.Check(centerXSpin && centerXSpin->isVisible() && centerYSpin && centerYSpin->isVisible(),
+                  QStringLiteral("多选对称图形时编辑面板显示中心点行"));
+        const QPointF firstCenterBefore = selectedShape->CenterScenePoint();
+        const QPointF secondCenterBefore = secondGeometryShape->CenterScenePoint();
+        if (centerXSpin) {
+            // 中心点写回是绝对值：改一次即把所有选中项对齐到同一中心（含 Y）。
+            centerXSpin->setValue(500.0);
+            QApplication::processEvents();
+        }
+        const QPointF firstCenterAfter = selectedShape->CenterScenePoint();
+        const QPointF secondCenterAfter = secondGeometryShape->CenterScenePoint();
+        ctx.Check(qAbs(firstCenterAfter.x() - 500.0) < 0.01 && qAbs(secondCenterAfter.x() - 500.0) < 0.01 &&
+                      qAbs(firstCenterAfter.y() - secondCenterAfter.y()) < 0.01,
+                  QStringLiteral("多选中心点行把两个图元对齐到同一中心"),
+                  QStringLiteral("%1,%2/%3,%4")
+                      .arg(firstCenterAfter.x())
+                      .arg(firstCenterAfter.y())
+                      .arg(secondCenterAfter.x())
+                      .arg(secondCenterAfter.y()));
+        dockScene->UndoStack()->undo();
+        QApplication::processEvents();
+        ctx.Check(qAbs(selectedShape->CenterScenePoint().x() - firstCenterBefore.x()) < 0.01 &&
+                      qAbs(selectedShape->CenterScenePoint().y() - firstCenterBefore.y()) < 0.01 &&
+                      qAbs(secondGeometryShape->CenterScenePoint().x() - secondCenterBefore.x()) < 0.01 &&
+                      qAbs(secondGeometryShape->CenterScenePoint().y() - secondCenterBefore.y()) < 0.01,
+                  QStringLiteral("撤销中心点对齐一条记录恢复两个图元"));
 
         const QSizeF firstSizeBefore = selectedShape->ContentSize();
         const QSizeF secondSizeBefore = secondGeometryShape->ContentSize();

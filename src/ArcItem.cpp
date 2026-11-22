@@ -45,10 +45,16 @@ ArcItem::ArcItem(QGraphicsItem* parent) : LineAbstractItem(parent) {}
 
 ItemPropertySet ArcItem::Properties() const
 {
-    // 弧线只有角度参数，没有箭头行（与现状一致）；长短半轴按真实椭圆外接框读写。
+    // 箭头行与其它描线子型一致地开放（弧线可设两端箭头）；长短半轴按真实椭圆外接框读写。
     return LineAbstractItem::Properties()
         .United(ArcAngleAttributes::ArcAngleProperties())
-        .United(ItemPropertySet{ItemProperty::MAJOR_AXIS, ItemProperty::MINOR_AXIS});
+        .United(ItemPropertySet{ItemProperty::ARROW_START, ItemProperty::ARROW_END, ItemProperty::MAJOR_AXIS,
+                                ItemProperty::MINOR_AXIS, ItemProperty::CENTER});
+}
+
+QPointF ArcItem::CenterScenePoint() const
+{
+    return mapToScene(EllipseShape::Center());
 }
 
 QVariant ArcItem::PropertyValue(ItemProperty property) const
@@ -62,6 +68,10 @@ QVariant ArcItem::PropertyValue(ItemProperty property) const
         return qMax(EllipseSize().width(), EllipseSize().height()) / 2.0;
     case ItemProperty::MINOR_AXIS:
         return qMin(EllipseSize().width(), EllipseSize().height()) / 2.0;
+    case ItemProperty::ARROW_START:
+        return static_cast<int>(StartArrow());
+    case ItemProperty::ARROW_END:
+        return static_cast<int>(EndArrow());
     default:
         return LineAbstractItem::PropertyValue(property);
     }
@@ -81,6 +91,12 @@ void ArcItem::SetPropertyValue(ItemProperty property, const QVariant& value)
         break;
     case ItemProperty::MINOR_AXIS:
         SetArcAxes(PropertyValue(ItemProperty::MAJOR_AXIS).toDouble(), value.toDouble());
+        break;
+    case ItemProperty::ARROW_START:
+        SetArrowStyles(static_cast<ArrowStyle>(value.toInt()), EndArrow());
+        break;
+    case ItemProperty::ARROW_END:
+        SetArrowStyles(StartArrow(), static_cast<ArrowStyle>(value.toInt()));
         break;
     default:
         LineAbstractItem::SetPropertyValue(property, value);

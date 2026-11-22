@@ -154,6 +154,24 @@ bool ShapeMeta::IsFilled(ShapeType type)
     return false;
 }
 
+bool ShapeMeta::SupportsCenter(ShapeType type)
+{
+    switch (type) {
+    case ShapeType::RECTANGLE:
+    case ShapeType::ELLIPSE:
+    case ShapeType::SECTOR:
+    case ShapeType::PARALLELOGRAM:
+    case ShapeType::DIAMOND:
+    case ShapeType::STAR4:
+    case ShapeType::HEXAGRAM:
+    case ShapeType::DOUBLE_ARROW:
+    case ShapeType::SCROLL:
+        return true;
+    default:
+        return false;
+    }
+}
+
 QList<FillStyle> ShapeMeta::AllStyles()
 {
     return {FillStyle::NONE,           FillStyle::SOLID,      FillStyle::HACHURE,   FillStyle::REVERSE_HACHURE,

@@ -13,6 +13,7 @@ class QSpinBox;
 class TextAttributeRow;
 class LayerAttributeRow;
 class HeightAttributeRow;
+class PropertyRowRegistry;
 
 // 属性窗的名称 / 图层 / 层内高度区块：名称可编辑，图层下拉按画布图层填充，
 // 高度上限随目标图层现有高度联动；三行直接复用编辑面板的 PropertyRowWidgets，
@@ -24,7 +25,7 @@ class ItemPropertiesDialogIdentityBlock : public QWidget {
   public:
     ItemPropertiesDialogIdentityBlock(CanvasScene* scene, QWidget* parent = nullptr);
 
-    void AddRows(QFormLayout* form);
+    void AddRows(QFormLayout* form, PropertyRowRegistry* rows);
 
     void SetItem(CanvasScene* scene, CanvasItem* item);
 

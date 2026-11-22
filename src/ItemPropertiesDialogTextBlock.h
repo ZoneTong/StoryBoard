@@ -10,6 +10,7 @@ class QFormLayout;
 class QPlainTextEdit;
 class QPushButton;
 class QToolButton;
+class PropertyRowRegistry;
 
 // 属性窗的文字区块：正文直接在窗内编辑，文字颜色与字体随文字图元初始化；
 // 字体改动后发出信号，由外壳按自然尺寸同步位置尺寸框。
@@ -20,7 +21,7 @@ class ItemPropertiesDialogTextBlock : public QWidget {
   public:
     explicit ItemPropertiesDialogTextBlock(QWidget* parent = nullptr);
 
-    void AddRows(QFormLayout* form);
+    void AddRows(QFormLayout* form, PropertyRowRegistry* rows);
 
     void SetItem(CanvasItem* item);
 

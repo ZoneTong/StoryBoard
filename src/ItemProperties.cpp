@@ -39,7 +39,7 @@ ItemPropertySet ItemPropertySet::Intersected(const ItemPropertySet& other) const
 QList<ItemProperty> ItemPropertySet::Values() const
 {
     QList<ItemProperty> result;
-    for (int index = 0; index <= static_cast<int>(ItemProperty::ROTATION); ++index) {
+    for (int index = 0; index <= static_cast<int>(ItemProperty::CENTER); ++index) {
         const ItemProperty property = static_cast<ItemProperty>(index);
         if (Contains(property)) {
             result.append(property);

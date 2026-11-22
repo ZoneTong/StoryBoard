@@ -461,10 +461,66 @@ void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
 
         dialog.SetItem(&reuseScene, reuseArc, true);
         QComboBox* arrowCombo = dialog.findChild<QComboBox*>(QStringLiteral("ItemPropertiesStartArrowValue"));
-        auto* arcAngleRow = dialog.findChild<QWidget*>(QStringLiteral("ItemPropertiesArcStartAngleValue"));
+        auto* arcAngleRow = dialog.findChild<QWidget*>(QStringLiteral("ItemPropertiesStartAngleValue"));
+        auto* arcSweepRow = dialog.findChild<QWidget*>(QStringLiteral("ItemPropertiesSweepAngleValue"));
+        auto* arcCenterRow = dialog.findChild<QWidget*>(QStringLiteral("ItemPropertiesCenterXValue"));
         ctx.Check(arrowCombo && arrowCombo->isVisibleTo(&dialog) && arcAngleRow && arcAngleRow->isVisibleTo(&dialog) &&
-                      fillStyleRow && !fillStyleRow->isVisibleTo(&dialog),
-                  QStringLiteral("同一实例换绑弧线后箭头 / 角度行显示、填充行仍隐藏"));
+                      arcSweepRow && arcSweepRow->isVisibleTo(&dialog) && arcCenterRow &&
+                      arcCenterRow->isVisibleTo(&dialog) && fillStyleRow && !fillStyleRow->isVisibleTo(&dialog),
+                  QStringLiteral("同一实例换绑弧线后箭头 / 角度 / 中心点行显示、填充行仍隐藏"));
         ctx.Check(dialog.Item() == reuseArc, QStringLiteral("属性窗换绑后图元指针已更新"));
+
+        // §4.1：属性窗行数固定为 28 行（1 行图元类型 + 27 行按 ItemProperty 注册的属性行）。
+        ctx.Check(dialog.PropertyRowCount() == 28, QStringLiteral("属性窗固定 28 行"),
+                  QString::number(dialog.PropertyRowCount()));
+
+        // §4.2：内角 A / B 两行复用。三角形两个底角都显示；平行四边形族只显示内角 A。
+        auto* triangle = CreateShapeItem(ShapeType::TRIANGLE);
+        triangle->SetLayerId(reuseScene.ActiveLayerId());
+        reuseScene.AttachItem(triangle);
+        auto* interiorA = dialog.findChild<QWidget*>(QStringLiteral("ItemPropertiesInteriorAngleAValue"));
+        auto* interiorB = dialog.findChild<QWidget*>(QStringLiteral("ItemPropertiesInteriorAngleBValue"));
+        dialog.SetItem(&reuseScene, triangle, true);
+        ctx.Check(interiorA && interiorA->isVisibleTo(&dialog) && interiorB && interiorB->isVisibleTo(&dialog),
+                  QStringLiteral("三角形属性窗显示内角 A 与内角 B"));
+
+        auto* parallelogram = CreateShapeItem(ShapeType::PARALLELOGRAM);
+        parallelogram->SetLayerId(reuseScene.ActiveLayerId());
+        reuseScene.AttachItem(parallelogram);
+        dialog.SetItem(&reuseScene, parallelogram, true);
+        ctx.Check(interiorA && interiorA->isVisibleTo(&dialog) && interiorB && !interiorB->isVisibleTo(&dialog),
+                  QStringLiteral("平行四边形属性窗只显示内角 A"));
+
+        // §4.3：行显隐只看属性表。文字没有内角 / 中心点行，矩形有中心点行。
+        dialog.SetItem(&reuseScene, reuseText, true);
+        auto* centerRow = dialog.findChild<QWidget*>(QStringLiteral("ItemPropertiesCenterXValue"));
+        ctx.Check(interiorA && !interiorA->isVisibleTo(&dialog) && centerRow && !centerRow->isVisibleTo(&dialog),
+                  QStringLiteral("文字属性窗隐藏内角与中心点行"));
+
+        auto* centerRect = CreateShapeItem(ShapeType::RECTANGLE);
+        centerRect->SetLayerId(reuseScene.ActiveLayerId());
+        centerRect->SetContentSize(QSizeF(200.0, 100.0));
+        centerRect->setPos(QPointF(100.0, 80.0));
+        reuseScene.AttachItem(centerRect);
+        dialog.SetItem(&reuseScene, centerRect, true);
+        QDoubleSpinBox* centerX = dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesCenterXValue"));
+        QDoubleSpinBox* centerY = dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesCenterYValue"));
+        ctx.Check(centerX && centerX->isVisibleTo(&dialog) && qAbs(centerX->value() - 200.0) < 0.01 && centerY &&
+                      qAbs(centerY->value() - 130.0) < 0.01,
+                  QStringLiteral("矩形属性窗中心点按几何回显"));
+        const QSizeF rectSizeBefore = centerRect->ContentSize();
+        const qreal rectRotationBefore = centerRect->RotationAngle();
+        if (centerX && centerY) {
+            centerX->setValue(300.0);
+            centerY->setValue(200.0);
+        }
+        dialog.accept();
+        QApplication::processEvents();
+        ctx.Check(qAbs(centerRect->CenterScenePoint().x() - 300.0) < 0.01 &&
+                      qAbs(centerRect->CenterScenePoint().y() - 200.0) < 0.01,
+                  QStringLiteral("属性窗改中心点后中心落在目标坐标"));
+        ctx.Check(centerRect->ContentSize() == rectSizeBefore &&
+                      qFuzzyCompare(centerRect->RotationAngle() + 1.0, rectRotationBefore + 1.0),
+                  QStringLiteral("中心点写回只平移位置、不改尺寸与旋转"));
     }
 }

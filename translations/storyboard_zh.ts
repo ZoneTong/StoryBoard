@@ -822,6 +822,21 @@
         <source>Parallelogram bottom-left angle</source>
         <translation>平行四边形左下角</translation>
     </message><message>
+        <source>Interior angle A</source>
+        <translation>内角 A</translation>
+    </message><message>
+        <source>Interior angle B</source>
+        <translation>内角 B</translation>
+    </message><message>
+        <source>Center point</source>
+        <translation>中心点</translation>
+    </message><message>
+        <source>Change interior angle</source>
+        <translation>修改内角</translation>
+    </message><message>
+        <source>Align item centers</source>
+        <translation>对齐图元中心</translation>
+    </message><message>
         <source>Rename item</source>
         <translation>修改图元名称</translation>
     </message><message>
@@ -845,22 +860,21 @@
     </message></context>
 <context>
     <name>ItemPropertiesDialog</name><message>
-        <location filename="../src/ItemPropertiesDialogStyleBlock.cpp" line="185"/>
-        <location filename="../src/ItemPropertiesDialogStyleBlock.cpp" line="333"/>
-        <source>Triangle base length</source>
-        <translation>底边长度</translation>
+        <location filename="../src/ItemPropertiesDialogStyleBlock.cpp" line="204"/>
+        <source>Interior angle A</source>
+        <translation>内角 A</translation>
     </message><message>
-        <location filename="../src/ItemPropertiesDialogStyleBlock.cpp" line="334"/>
-        <source>Triangle base angle A</source>
-        <translation>底角 A</translation>
+        <location filename="../src/ItemPropertiesDialogStyleBlock.cpp" line="205"/>
+        <source>Interior angle B</source>
+        <translation>内角 B</translation>
     </message><message>
-        <location filename="../src/ItemPropertiesDialogStyleBlock.cpp" line="337"/>
-        <source>Triangle base angle B</source>
-        <translation>底角 B</translation>
+        <location filename="../src/ItemPropertiesDialogGeometryBlock.cpp" line="72"/>
+        <source>Center point</source>
+        <translation>中心点</translation>
     </message><message>
-        <location filename="../src/ItemPropertiesDialogStyleBlock.cpp" line="206"/>
-        <source>Parallelogram bottom-left angle</source>
-        <translation>左下内角</translation>
+        <location filename="../src/ItemPropertiesDialogGeometryBlock.cpp" line="90"/>
+        <source>Ellipse center</source>
+        <translation>椭圆中心点</translation>
     </message><message>
         <location filename="../src/ItemPropertiesDialogStyleBlock.cpp" line="217"/>
         <source>Start arrow</source>

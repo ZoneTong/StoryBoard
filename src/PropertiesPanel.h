@@ -116,9 +116,11 @@ class PropertiesPanel : public QWidget {
     void ApplyItemHeight(int height);
     void ApplyItemGeometry(const QPointF& position, const QSizeF& size);
     void ApplyItemRotation(qreal angle);
+    // 中心点是派生属性：多选时把每个成员绝对对齐到同一中心，一条撤销记录。
+    void ApplyItemCenter(const QPointF& center);
     // 长短半轴：椭圆 / 扇形与弧线共用 MAJOR_AXIS / MINOR_AXIS 属性写入路径。
     void ApplyItemAxes(qreal majorAxis, qreal minorAxis);
-    void ApplyParallelogramAngle(qreal angle);
+    void ApplyInteriorAngle(qreal angle);
     // 图层 / 高度一次改到目标值：与属性窗一样，同层同高度时互换两条记录。
     void ApplyItemStack(int layerId, int height, const QString& text);
     void AdjustLayer(int delta);

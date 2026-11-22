@@ -36,6 +36,10 @@ ItemPropertySet ShapeAbstractItem::Properties() const
     ItemPropertySet properties = CanvasItem::Properties().United(ItemPropertySet{
         ItemProperty::FILL_STYLE, ItemProperty::FILL_COLOR, ItemProperty::FILL_IMAGE, ItemProperty::FILL_IMAGE_MODE,
         ItemProperty::STROKE_STYLE, ItemProperty::STROKE_COLOR, ItemProperty::STROKE_WIDTH});
+    // §3.4：中心点只上报给对称图形，属性窗与编辑面板据此决定这一行开不开。
+    if (ShapeMeta::SupportsCenter(shapeType())) {
+        properties.Insert(ItemProperty::CENTER);
+    }
     return properties;
 }
 

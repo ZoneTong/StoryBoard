@@ -37,7 +37,10 @@ enum class ItemProperty {
     HEIGHT,
     POSITION,
     SIZE,
-    ROTATION
+    ROTATION,
+    // 中心点是派生属性：不落盘、不新增存储字段，读写只折算到位置。
+    // 安排在枚举末尾，属性窗里固定为最后一行（第 28 行）。
+    CENTER
 };
 
 // 属性的轻量集合：枚举值不足 64 个，用一个位集即可，省掉 QSet 的 qHash 依赖。

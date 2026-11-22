@@ -54,12 +54,22 @@ PropertiesPanelGeometryCard::PropertiesPanelGeometryCard(QWidget* parent) : QWid
     m_sizeRow->SetIconToolTip(PropertiesPanel::tr("Item size"));
     layout->addWidget(m_sizeRow);
 
-    m_parallelogramRow = new NumberAttributeRow(IconId::ANGLE_RIGHT, true, 0, 15.0, 165.0, QStringLiteral("°"),
-                                                QStringLiteral("ItemParallelogramAngleSpin"), this);
-    m_parallelogramRow->Spin()->setToolTip(PropertiesPanel::tr("Parallelogram bottom-left angle"));
-    m_parallelogramRow->SetIconToolTip(PropertiesPanel::tr("Parallelogram bottom-left angle"));
-    m_parallelogramRow->setVisible(false);
-    layout->addWidget(m_parallelogramRow);
+    m_interiorAngleRow = new NumberAttributeRow(IconId::ANGLE_RIGHT, true, 0, 5.0, 175.0, QStringLiteral("°"),
+                                                QStringLiteral("ItemInteriorAngleSpin"), this);
+    m_interiorAngleRow->Spin()->setToolTip(PropertiesPanel::tr("Interior angle A"));
+    m_interiorAngleRow->SetIconToolTip(PropertiesPanel::tr("Interior angle A"));
+    m_interiorAngleRow->setVisible(false);
+    layout->addWidget(m_interiorAngleRow);
+
+    // §3.4 中心点：派生属性，行放在几何区最后；多选时绝对对齐到同一中心。
+    m_centerRow =
+        new PairAttributeRow(IconId::FIT, true, QStringLiteral("ItemCenterXSpin"), QStringLiteral("ItemCenterYSpin"), 1,
+                             -1000000.0, 1000000.0, QString(), QStringLiteral(","), this);
+    m_centerRow->FirstSpin()->setToolTip(PropertiesPanel::tr("Center point"));
+    m_centerRow->SecondSpin()->setToolTip(PropertiesPanel::tr("Center point"));
+    m_centerRow->SetIconToolTip(PropertiesPanel::tr("Center point"));
+    m_centerRow->setVisible(false);
+    layout->addWidget(m_centerRow);
 
     connect(m_positionRow, &PairAttributeRow::valuesChosen, this, [this](qreal x, qreal y) {
         if (!m_refreshing) {
@@ -78,9 +88,14 @@ PropertiesPanelGeometryCard::PropertiesPanelGeometryCard(QWidget* parent) : QWid
     });
     connect(m_majorAxisRow, &NumberAttributeRow::valueChosen, this, [this](qreal) { ApplyAxes(true); });
     connect(m_minorAxisRow, &NumberAttributeRow::valueChosen, this, [this](qreal) { ApplyAxes(false); });
-    connect(m_parallelogramRow, &NumberAttributeRow::valueChosen, this, [this](qreal angle) {
+    connect(m_interiorAngleRow, &NumberAttributeRow::valueChosen, this, [this](qreal angle) {
         if (!m_refreshing) {
-            emit parallelogramAngleChosen(angle);
+            emit interiorAngleChosen(angle);
+        }
+    });
+    connect(m_centerRow, &PairAttributeRow::valuesChosen, this, [this](qreal x, qreal y) {
+        if (!m_refreshing) {
+            emit centerChosen(QPointF(x, y));
         }
     });
 }
@@ -109,7 +124,11 @@ void PropertiesPanelGeometryCard::Refresh(CanvasItem* item)
             angle = shape->PropertyValue(ItemProperty::PARALLELOGRAM_ANGLE).toDouble();
         }
     }
-    m_parallelogramRow->Refresh(angle);
+    m_interiorAngleRow->Refresh(angle);
+
+    // 中心点是派生属性：按图元几何回显，写入侧只平移位置。
+    const QPointF center = item->PropertyValue(ItemProperty::CENTER).toPointF();
+    m_centerRow->Refresh(center.x(), center.y());
     m_refreshing = false;
 }
 
@@ -144,7 +163,12 @@ void PropertiesPanelGeometryCard::SetAxisVisible(bool visible)
     m_minorAxisRow->setVisible(visible);
 }
 
-void PropertiesPanelGeometryCard::SetParallelogramVisible(bool visible)
+void PropertiesPanelGeometryCard::SetInteriorAngleVisible(bool visible)
 {
-    m_parallelogramRow->setVisible(visible);
+    m_interiorAngleRow->setVisible(visible);
+}
+
+void PropertiesPanelGeometryCard::SetCenterVisible(bool visible)
+{
+    m_centerRow->setVisible(visible);
 }

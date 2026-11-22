@@ -107,6 +107,12 @@ QRectF CanvasItem::FrameRect() const
     return ContentRect();
 }
 
+QPointF CanvasItem::CenterScenePoint() const
+{
+    // 默认取内容矩形中心：矩形 / 四边形族 / 星形 / 卷轴都满足。
+    return mapToScene(ContentRect().center());
+}
+
 void CanvasItem::SetContentSize(const QSizeF& size)
 {
     const QSizeF requested = AdjustedContentSize(size);
@@ -374,6 +380,8 @@ QVariant CanvasItem::PropertyValue(ItemProperty property) const
         return ContentSize();
     case ItemProperty::ROTATION:
         return RotationAngle();
+    case ItemProperty::CENTER:
+        return CenterScenePoint();
     case ItemProperty::OPACITY:
         return ItemOpacity();
     default:
@@ -402,6 +410,12 @@ void CanvasItem::SetPropertyValue(ItemProperty property, const QVariant& value)
     case ItemProperty::ROTATION:
         SetRotationAngle(value.toDouble());
         break;
+    case ItemProperty::CENTER: {
+        // 只平移：中心点对齐不改变尺寸与旋转。
+        const QPointF delta = value.toPointF() - CenterScenePoint();
+        setPos(pos() + delta);
+        break;
+    }
     case ItemProperty::OPACITY:
         SetItemOpacity(value.toDouble());
         break;

@@ -635,6 +635,34 @@ void selftest::RunShapeItemTests(Context& ctx)
                   QStringLiteral("size=%1x%2").arg(text.ContentSize().width()).arg(text.ContentSize().height()));
     }
     {
+        // §3.4 中心点派生属性：对称图形上报 CENTER，写回只平移位置。
+        RectangleItem rectangle;
+        rectangle.SetContentSize(QSizeF(200.0, 100.0));
+        rectangle.setPos(QPointF(100.0, 80.0));
+        const bool rectangleHasCenter = rectangle.Properties().Contains(ItemProperty::CENTER);
+        const QPointF rectangleCenter = rectangle.PropertyValue(ItemProperty::CENTER).toPointF();
+        EllipseItem ellipse;
+        ellipse.SetContentSize(QSizeF(160.0, 80.0));
+        ellipse.setPos(QPointF(40.0, 60.0));
+        TriangleItem triangle;
+        TextItem text;
+        ctx.Check(rectangleHasCenter && ellipse.Properties().Contains(ItemProperty::CENTER) &&
+                      !triangle.Properties().Contains(ItemProperty::CENTER) &&
+                      !text.Properties().Contains(ItemProperty::CENTER),
+                  QStringLiteral("中心点只上报给对称图形"));
+        ctx.Check(qAbs(rectangleCenter.x() - 200.0) < 0.01 && qAbs(rectangleCenter.y() - 130.0) < 0.01,
+                  QStringLiteral("矩形中心点取内容矩形中心"),
+                  QStringLiteral("%1,%2").arg(rectangleCenter.x()).arg(rectangleCenter.y()));
+
+        const QSizeF sizeBefore = rectangle.ContentSize();
+        rectangle.SetPropertyValue(ItemProperty::CENTER, QPointF(300.0, 200.0));
+        const QPointF centerAfter = rectangle.CenterScenePoint();
+        ctx.Check(qAbs(centerAfter.x() - 300.0) < 0.01 && qAbs(centerAfter.y() - 200.0) < 0.01 &&
+                      rectangle.ContentSize() == sizeBefore,
+                  QStringLiteral("写中心点只平移位置、不改尺寸"),
+                  QStringLiteral("pos=%1,%2").arg(rectangle.pos().x()).arg(rectangle.pos().y()));
+    }
+    {
         // §3.1 三角形自由缩放：尺寸按输入直接生效，A 不变，B 按新框宽高反算。
         TriangleItem triangle;
         triangle.SetContentSize(QSizeF(120.0, 90.0));
@@ -862,8 +890,8 @@ void selftest::RunShapeItemTests(Context& ctx)
         ItemPropertiesDialog dialog(&arcScene, arc);
         dialog.show();
         QApplication::processEvents();
-        QSpinBox* startSpin = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesArcStartAngleValue"));
-        QSpinBox* sweepSpin = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesArcSweepAngleValue"));
+        QSpinBox* startSpin = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesStartAngleValue"));
+        QSpinBox* sweepSpin = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesSweepAngleValue"));
         ctx.Check(startSpin && sweepSpin && startSpin->value() == 15 && sweepSpin->value() == 140,
                   QStringLiteral("弧线属性窗显示起始角 / 扫过角"),
                   QStringLiteral("start=%1 sweep=%2")

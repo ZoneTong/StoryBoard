@@ -194,13 +194,13 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     angle1Layout->setContentsMargins(0, 0, 0, 0);
     angle1Layout->setSpacing(4);
     QToolButton* angle1Icon = MakeRowIcon(IconId::ANGLE_RIGHT, angle1Row);
-    angle1Icon->setToolTip(PropertiesPanel::tr("Triangle base angle A"));
+    angle1Icon->setToolTip(PropertiesPanel::tr("Interior angle A"));
     angle1Layout->addWidget(angle1Icon);
     m_triangleAngle1Spin = new QSpinBox(angle1Row);
     m_triangleAngle1Spin->setObjectName(QStringLiteral("ItemValueSpin"));
     m_triangleAngle1Spin->setRange(5, 170);
     m_triangleAngle1Spin->setSuffix(QStringLiteral("°"));
-    m_triangleAngle1Spin->setToolTip(PropertiesPanel::tr("Triangle base angle A"));
+    m_triangleAngle1Spin->setToolTip(PropertiesPanel::tr("Interior angle A"));
     m_triangleAngle1Spin->setKeyboardTracking(false);
     connect(m_triangleAngle1Spin, &QSpinBox::valueChanged, this, [this](int value) {
         if (!m_refreshing) {
@@ -215,13 +215,13 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     angle2Layout->setContentsMargins(0, 0, 0, 0);
     angle2Layout->setSpacing(4);
     QToolButton* angle2Icon = MakeRowIcon(IconId::ANGLE_LEFT, angle2Row);
-    angle2Icon->setToolTip(PropertiesPanel::tr("Triangle base angle B"));
+    angle2Icon->setToolTip(PropertiesPanel::tr("Interior angle B"));
     angle2Layout->addWidget(angle2Icon);
     m_triangleAngle2Spin = new QSpinBox(angle2Row);
     m_triangleAngle2Spin->setObjectName(QStringLiteral("ItemValueSpin"));
     m_triangleAngle2Spin->setRange(5, 170);
     m_triangleAngle2Spin->setSuffix(QStringLiteral("°"));
-    m_triangleAngle2Spin->setToolTip(PropertiesPanel::tr("Triangle base angle B"));
+    m_triangleAngle2Spin->setToolTip(PropertiesPanel::tr("Interior angle B"));
     m_triangleAngle2Spin->setKeyboardTracking(false);
     connect(m_triangleAngle2Spin, &QSpinBox::valueChanged, this, [this](int value) {
         if (!m_refreshing) {

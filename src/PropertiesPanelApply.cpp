@@ -688,12 +688,22 @@ void PropertiesPanel::ApplyItemRotation(qreal angle)
     ApplyPropertyValues({{ItemProperty::ROTATION, angle}}, tr("Change rotation"));
 }
 
-void PropertiesPanel::ApplyParallelogramAngle(qreal angle)
+void PropertiesPanel::ApplyInteriorAngle(qreal angle)
 {
     if (SelectedItems().isEmpty()) {
         return;
     }
-    ApplyPropertyValues({{ItemProperty::PARALLELOGRAM_ANGLE, angle}}, tr("Change parallelogram angle"));
+    // 内角 A 对选中集合里所有上报该属性的图元生效（普通平行四边形为真值，菱形按宽反算高）。
+    ApplyPropertyValues({{ItemProperty::PARALLELOGRAM_ANGLE, angle}}, tr("Change interior angle"));
+}
+
+void PropertiesPanel::ApplyItemCenter(const QPointF& center)
+{
+    if (SelectedItems().isEmpty()) {
+        return;
+    }
+    // 中心点写回只平移位置：多选时把所有成员绝对对齐到同一中心，一条撤销记录。
+    ApplyPropertyValues({{ItemProperty::CENTER, center}}, tr("Align item centers"));
 }
 
 void PropertiesPanel::AdjustLayer(int delta)
