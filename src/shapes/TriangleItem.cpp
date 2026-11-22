@@ -14,7 +14,7 @@ QSizeF TriangleItem::DefaultContentSize() const
 
 ItemPropertySet TriangleItem::Properties() const
 {
-    ItemPropertySet result = ShapeItem::Properties();
+    ItemPropertySet result = ShapeAbstractItem::Properties();
     result.Insert(ItemProperty::BOTTOM_ANGLE1);
     result.Insert(ItemProperty::BOTTOM_ANGLE2);
     return result;

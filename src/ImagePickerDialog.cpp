@@ -1,7 +1,7 @@
 #include "ImagePickerDialog.h"
 
 #include "CanvasScene.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 #include <QDialogButtonBox>
 #include <QFileDialog>
@@ -110,7 +110,7 @@ QVector<QPixmap> CollectCanvasImages(const CanvasScene* scene)
     }
     for (CanvasItem* item : scene->CanvasItems()) {
         QPixmap candidate;
-        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->HasFillImage()) {
+        if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item); shape && shape->HasFillImage()) {
             candidate = shape->FillImage();
         }
         if (candidate.isNull() || seen.contains(candidate.cacheKey())) {

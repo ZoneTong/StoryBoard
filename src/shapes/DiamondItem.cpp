@@ -20,7 +20,7 @@ QSizeF DiamondItem::DefaultContentSize() const
 ItemPropertySet DiamondItem::Properties() const
 {
     // 菱形不开放内角：shapeType 决定轮廓，宽高决定两条对角线。
-    return ShapeItem::Properties();
+    return ShapeAbstractItem::Properties();
 }
 
 QPainterPath DiamondItem::ShapePath(const QRectF& rect) const

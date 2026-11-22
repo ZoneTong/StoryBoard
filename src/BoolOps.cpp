@@ -3,11 +3,11 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
-#include "LineItemAbstract.h"
+#include "LineAbstractItem.h"
 #include "LineSplitOps.h"
 #include "PathRegions.h"
 #include "PolygonItem.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "TextItem.h"
 
 #include <QPainterPath>
@@ -44,14 +44,14 @@ struct Participant {
 // 线条类图元不参与合并：直线（含直线箭头）、括号、弧、曲线，以及纯描线多边形。
 bool IsLineClassItem(CanvasItem* item)
 {
-    if (dynamic_cast<LineItemAbstract*>(item)) {
+    if (dynamic_cast<LineAbstractItem*>(item)) {
         return true;
     }
     // 零面积图元已全部并入曲线族，普通形状类恒有填充面积；多边形要看图层。
-    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() == 0) {
+    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item); shape && shape->ShapeLayerCount() == 0) {
         return false;
     }
-    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->ShapeLayerCount() > 0) {
+    if (auto* composite = dynamic_cast<ShapeAbstractItem*>(item); composite && composite->ShapeLayerCount() > 0) {
         for (int index = 0; index < composite->ShapeLayerCount(); ++index) {
             const ShapeLayer layer = composite->shapeLayer(index);
             if (layer.role == ShapeLayerRole::FILL_AREA && !layer.path.isEmpty()) {
@@ -68,10 +68,10 @@ bool IsLineClassItem(CanvasItem* item)
 // 图形仍按完整轮廓参与布尔运算，也应优先决定合并结果的样式。
 bool HasFillSpace(CanvasItem* item)
 {
-    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() == 0) {
+    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item); shape && shape->ShapeLayerCount() == 0) {
         return true;
     }
-    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->ShapeLayerCount() > 0) {
+    if (auto* composite = dynamic_cast<ShapeAbstractItem*>(item); composite && composite->ShapeLayerCount() > 0) {
         for (int index = 0; index < composite->ShapeLayerCount(); ++index) {
             const ShapeLayer layer = composite->shapeLayer(index);
             if (layer.role == ShapeLayerRole::FILL_AREA && !layer.path.isEmpty()) {
@@ -80,7 +80,7 @@ bool HasFillSpace(CanvasItem* item)
         }
         return false;
     }
-    return !dynamic_cast<LineItemAbstract*>(item) && !item->HasTextFacet();
+    return !dynamic_cast<LineAbstractItem*>(item) && !item->HasTextFacet();
 }
 
 // 合并前的叠放顺序（决定合并后各层的绘制顺序，保持遮挡关系）：
@@ -155,14 +155,15 @@ bool AppendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
             memberPath = vectorMember->mapToScene(vectorMember->PaintedShape());
             textPart = memberPath;
             participant.textColor = vectorMember->TextColor();
-        } else if (auto* curve = dynamic_cast<LineItemAbstract*>(vectorMember)) {
+        } else if (auto* curve = dynamic_cast<LineAbstractItem*>(vectorMember)) {
             Q_UNUSED(curve)
             memberPath = vectorMember->mapToScene(vectorMember->PaintedShape());
             strokePart = memberPath;
-        } else if (auto* shape = dynamic_cast<ShapeItem*>(vectorMember); shape && shape->ShapeLayerCount() == 0) {
+        } else if (auto* shape = dynamic_cast<ShapeAbstractItem*>(vectorMember);
+                   shape && shape->ShapeLayerCount() == 0) {
             memberPath = shape->mapToScene(shape->OutlineShape());
             fillPart = memberPath;
-        } else if (auto* composite = dynamic_cast<ShapeItem*>(vectorMember);
+        } else if (auto* composite = dynamic_cast<ShapeAbstractItem*>(vectorMember);
                    composite && composite->ShapeLayerCount() > 0) {
             for (int index = 0; index < composite->ShapeLayerCount(); ++index) {
                 const ShapeLayer layer = composite->shapeLayer(index);
@@ -211,21 +212,22 @@ bool AppendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
     }
 
     CanvasItem* styleItem = participant.item;
-    if (auto* shape = dynamic_cast<ShapeItem*>(styleItem); shape && shape->ShapeLayerCount() == 0) {
+    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(styleItem); shape && shape->ShapeLayerCount() == 0) {
         participant.fill = shape->FillColor();
         participant.stroke = shape->StrokeColor();
         participant.strokeWidth = shape->StrokeWidth();
         participant.fillStyle = shape->fillStyle();
         participant.strokeStyle = shape->StrokeStyle();
         participant.filled = shape->fillStyle() != FillStyle::NONE;
-    } else if (auto* composite = dynamic_cast<ShapeItem*>(styleItem); composite && composite->ShapeLayerCount() > 0) {
+    } else if (auto* composite = dynamic_cast<ShapeAbstractItem*>(styleItem);
+               composite && composite->ShapeLayerCount() > 0) {
         participant.fill = composite->FillColor();
         participant.stroke = composite->StrokeColor();
         participant.strokeWidth = composite->StrokeWidth();
         participant.fillStyle = composite->fillStyle();
         participant.strokeStyle = composite->StrokeStyle();
         participant.filled = true;
-    } else if (auto* stroke = dynamic_cast<LineItemAbstract*>(styleItem)) {
+    } else if (auto* stroke = dynamic_cast<LineAbstractItem*>(styleItem)) {
         participant.fill = stroke->StrokeColor();
         participant.stroke = stroke->StrokeColor();
         participant.strokeWidth = stroke->StrokeWidth();

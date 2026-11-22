@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ImageFill.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 #include <QColor>
 #include <QJsonObject>
@@ -10,11 +10,11 @@
 #include <QPixmap>
 #include <Qt>
 
-// 多边形图元：合并 / 分割等布尔运算的产物，派生自有面积图形（ShapeItem），
+// 多边形图元：合并 / 分割等布尔运算的产物，派生自有面积图形（ShapeAbstractItem），
 // 但自身没有单一 ShapeType——内部按“优先级从低到高”保存若干图层，每层是一块
 // 路径 + 自己的填充色/描线色。填充取优先级最高且不透明的颜色，高层填充透明时
 // 退到次优先级；内部交界轮廓不描线，由填充色覆盖。
-class PolygonItem : public ShapeItem {
+class PolygonItem : public ShapeAbstractItem {
   public:
     // 图层来源决定填充 / 描线的应用方式：
     // 有面积图形参与填充与描边；直线 / 曲线只保留线宽带，不再二次描线；文字只填字形。
@@ -39,12 +39,12 @@ class PolygonItem : public ShapeItem {
     QString Kind() const override { return QStringLiteral("polygon"); }
     // 多边形没有内置轮廓，shapeType 只用于形状派生的公共分支（填充、命中已单独覆写）。
     ShapeType shapeType() const override { return ShapeType::POLYGON; }
-    // 派生自 ShapeItem 但不受形状类型语义约束：凡按 shapeType 分派的入口都先看这一位。
+    // 派生自 ShapeAbstractItem 但不受形状类型语义约束：凡按 shapeType 分派的入口都先看这一位。
     QString DisplayName() const override;
     QString TypeDisplayName() const override;
     QJsonObject ToJson() const override;
     void FromJson(const QJsonObject& json) override;
-    // 命中与轮廓取所有图层并集（ShapeItem 按单一 ShapeType 生成路径，不能沿用）。
+    // 命中与轮廓取所有图层并集（ShapeAbstractItem 按单一 ShapeType 生成路径，不能沿用）。
     QPainterPath shape() const override;
     QPainterPath CurrentPath(const QRectF& rect) const override;
     QPainterPath PaintedShape() const override;

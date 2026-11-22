@@ -11,7 +11,7 @@
 #include "LineArtDialog.h"
 #include "MainWindow.h"
 #include "Settings.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 #include <QApplication>
 #include <QDesktopServices>

@@ -20,7 +20,7 @@
 #include "PropertiesPanel.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "StraightLineItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
@@ -110,8 +110,10 @@ void selftest::RunCustomShapeDockTests(Context& ctx)
                       .arg(reloaded.ItemOpacity())
                       .arg(reloaded.CornerRadius()));
 
-        const int squareElements = ShapeItem::PathFor(ShapeType::RECTANGLE, QRectF(0, 0, 100, 80), 0.0).elementCount();
-        const int roundElements = ShapeItem::PathFor(ShapeType::RECTANGLE, QRectF(0, 0, 100, 80), 20.0).elementCount();
+        const int squareElements =
+            ShapeAbstractItem::PathFor(ShapeType::RECTANGLE, QRectF(0, 0, 100, 80), 0.0).elementCount();
+        const int roundElements =
+            ShapeAbstractItem::PathFor(ShapeType::RECTANGLE, QRectF(0, 0, 100, 80), 20.0).elementCount();
         ctx.Check(roundElements > squareElements, QStringLiteral("矩形圆角半径改变轮廓"),
                   QStringLiteral("square=%1 round=%2").arg(squareElements).arg(roundElements));
 

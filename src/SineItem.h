@@ -1,7 +1,7 @@
 #pragma once
 
 #include "I18n.h"
-#include "LineItemAbstract.h"
+#include "LineAbstractItem.h"
 
 #include <QRectF>
 #include <QSizeF>
@@ -10,7 +10,7 @@
 // 正弦波形图元：描线族的参数化子型。周期数与振幅是几何真相，几何按参数重新采样；
 // 振幅是相对中心线的像素高度（波峰到中心线的距离，2 倍振幅即波高）；
 // 竖直拉伸按新高度反推振幅，横向拉伸只拉宽一个周期，二者都回写到参数。
-class SineItem : public LineItemAbstract {
+class SineItem : public LineAbstractItem {
     Q_OBJECT
   public:
     struct Params {

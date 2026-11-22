@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 // Scroll：轮廓由 ShapePathBuilder 按 ShapeType::SCROLL 生成，没有额外参数。
-class ScrollItem : public ShapeItem {
+class ScrollItem : public ShapeAbstractItem {
   public:
     ScrollItem();
     QSizeF DefaultContentSize() const override;

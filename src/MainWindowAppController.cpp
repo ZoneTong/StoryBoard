@@ -8,7 +8,7 @@
 #include "MainWindow.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 #include <QAction>
 #include <QCoreApplication>

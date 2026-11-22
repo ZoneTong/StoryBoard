@@ -1,7 +1,7 @@
 #include "CanvasItemHandles.h"
 
 #include "CanvasItem.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -18,7 +18,7 @@ bool CanvasItemHandles::UsesApexHandle() const
     if (!m_item || !m_item->isSelected() || !m_item->IsEditable() || !m_item->HasSingleSelection()) {
         return false;
     }
-    const auto* shape = dynamic_cast<const ShapeItem*>(m_item);
+    const auto* shape = dynamic_cast<const ShapeAbstractItem*>(m_item);
     return shape && shape->ApexAngleHandle() && !shape->IsCustomShape();
 }
 
@@ -28,7 +28,7 @@ bool CanvasItemHandles::UsesSkewHandle() const
     if (!m_item || !m_item->isSelected() || !m_item->IsEditable() || !m_item->HasSingleSelection()) {
         return false;
     }
-    const auto* shape = dynamic_cast<const ShapeItem*>(m_item);
+    const auto* shape = dynamic_cast<const ShapeAbstractItem*>(m_item);
     return shape && shape->SkewHandleEnabled() && !shape->IsCustomShape();
 }
 

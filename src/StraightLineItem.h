@@ -1,11 +1,11 @@
 #pragma once
 
 #include "I18n.h"
-#include "LineItemAbstract.h"
+#include "LineAbstractItem.h"
 
 // 直线图元：几何恒为两点线性段，零面积、无填充。
 // 直线箭头复用同一个类，只是两端箭头样式不同。
-class StraightLineItem : public LineItemAbstract {
+class StraightLineItem : public LineAbstractItem {
     Q_OBJECT
   public:
     explicit StraightLineItem(QGraphicsItem* parent = nullptr);

@@ -3,9 +3,9 @@
 #include "ArcItem.h"
 #include "CanvasItem.h"
 #include "IconFactory.h"
-#include "LineItemAbstract.h"
+#include "LineAbstractItem.h"
 #include "PropertiesPanel.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "ShapeMeta.h"
 #include "SineItem.h"
 
@@ -272,7 +272,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     outer->addWidget(m_arrowSection);
 }
 
-void PropertiesPanelValueCard::Refresh(const QList<ShapeItem*>& shapes, const QList<LineItemAbstract*>& strokes,
+void PropertiesPanelValueCard::Refresh(const QList<ShapeAbstractItem*>& shapes, const QList<LineAbstractItem*>& strokes,
                                        const QList<CanvasItem*>& items)
 {
     m_refreshing = true;
@@ -294,17 +294,17 @@ void PropertiesPanelValueCard::Refresh(const QList<ShapeItem*>& shapes, const QL
         m_cornerSpin->setValue(qBound(0, qRound(radius), limit));
     }
     // 弧线角度：扇形等形状与曲线族里的弧线共用这两行，优先回显当前选中的弧线曲线。
-    LineItemAbstract* arcCurve = nullptr;
-    ShapeItem* arcShape = nullptr;
-    LineItemAbstract* sineCurve = nullptr;
-    for (LineItemAbstract* stroke : strokes) {
+    LineAbstractItem* arcCurve = nullptr;
+    ShapeAbstractItem* arcShape = nullptr;
+    LineAbstractItem* sineCurve = nullptr;
+    for (LineAbstractItem* stroke : strokes) {
         if (stroke->SupportsArcAngles() && !arcCurve) {
             arcCurve = stroke;
         } else if (stroke->SupportsSineWave() && !sineCurve) {
             sineCurve = stroke;
         }
     }
-    for (ShapeItem* shape : shapes) {
+    for (ShapeAbstractItem* shape : shapes) {
         if (shape && shape->shapeType() == ShapeType::SECTOR) {
             arcShape = shape;
             break;
@@ -326,13 +326,13 @@ void PropertiesPanelValueCard::Refresh(const QList<ShapeItem*>& shapes, const QL
         const bool on = sineCurve != nullptr;
         m_sineCyclesSpin->setEnabled(on);
         m_sineAmplitudeSpin->setEnabled(on);
-        const LineItemAbstract::ParamState params = on ? sineCurve->paramState() : LineItemAbstract::ParamState{};
+        const LineAbstractItem::ParamState params = on ? sineCurve->paramState() : LineAbstractItem::ParamState{};
         m_sineCyclesSpin->setValue(qBound(1, qRound(params.first), 12));
         m_sineAmplitudeSpin->setValue(qBound(1, qRound(params.second), 200));
     }
 
-    ShapeItem* triangle = nullptr;
-    for (ShapeItem* shape : shapes) {
+    ShapeAbstractItem* triangle = nullptr;
+    for (ShapeAbstractItem* shape : shapes) {
         if (shape && shape->shapeType() == ShapeType::TRIANGLE && !shape->IsCustomShape()) {
             triangle = shape;
             break;
@@ -349,7 +349,7 @@ void PropertiesPanelValueCard::Refresh(const QList<ShapeItem*>& shapes, const QL
 
     if (m_startArrowCombo && m_endArrowCombo) {
         // 图形族不再有箭头，只有线条族（直线 / 弧线 / 正弦 / 手绘 / 花括号）显示这两行。
-        LineItemAbstract* line = strokes.isEmpty() ? nullptr : strokes.first();
+        LineAbstractItem* line = strokes.isEmpty() ? nullptr : strokes.first();
         const bool on = line && line->ArrowsEnabled();
         m_startArrowCombo->setEnabled(on);
         m_endArrowCombo->setEnabled(on);

@@ -31,7 +31,7 @@ QSizeF ParallelogramItem::DefaultContentSize() const
 
 ItemPropertySet ParallelogramItem::Properties() const
 {
-    ItemPropertySet result = ShapeItem::Properties();
+    ItemPropertySet result = ShapeAbstractItem::Properties();
     result.Insert(ItemProperty::PARALLELOGRAM_ANGLE);
     return result;
 }
@@ -45,7 +45,7 @@ void ParallelogramItem::SetParallelogramAngle(qreal angle)
 {
     // 菱形只是复用这个字段保存 90°，轮廓由宽高决定；不能按平行四边形改尺寸。
     if (shapeType() != ShapeType::PARALLELOGRAM || IsCustomShape()) {
-        ShapeItem::SetParallelogramAngle(angle);
+        ShapeAbstractItem::SetParallelogramAngle(angle);
         return;
     }
 
@@ -64,7 +64,7 @@ void ParallelogramItem::SetParallelogramAngle(qreal angle)
     const qreal oldBottomLeftX = cotOld >= 0.0 ? oldRect.left() : oldRect.left() + oldShift;
     const QPointF oldBottomLeftScene = mapToScene(QPointF(oldBottomLeftX, oldRect.bottom()));
 
-    ShapeItem::SetParallelogramAngle(clamped);
+    ShapeAbstractItem::SetParallelogramAngle(clamped);
 
     const qreal newShift = AbsoluteShiftFor(oldRect.height(), clamped);
     SetContentSize(QSizeF(baseLength + newShift, oldRect.height()));
@@ -104,7 +104,7 @@ QPointF ParallelogramItem::CustomHandleCenter(int handle, bool* ok) const
 
 void ParallelogramItem::DrawSelectionOverlay(QPainter* painter)
 {
-    ShapeItem::DrawSelectionOverlay(painter);
+    ShapeAbstractItem::DrawSelectionOverlay(painter);
     if (!AngleReadoutVisible() || !isSelected() || IsCustomShape()) {
         return;
     }

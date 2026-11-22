@@ -3,7 +3,7 @@
 #include "CanvasTypes.h"
 #include "CurveItem.h"
 #include "SelfTest.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "ShapePathBuilder.h"
 #include "TextItem.h"
 #include "selftest/SelftestHelpers.h"
@@ -29,7 +29,8 @@
 namespace {
 
 // 需求 14：插入图片统一为「矩形图元 + 背景图片」，演示场景沿用同一构造。
-ShapeItem* AddImageRect(CanvasScene& scene, int layerId, const QPixmap& pixmap, const QSizeF& size, const QPointF& pos)
+ShapeAbstractItem* AddImageRect(CanvasScene& scene, int layerId, const QPixmap& pixmap, const QSizeF& size,
+                                const QPointF& pos)
 {
     auto* item = CreateShapeItem(ShapeType::RECTANGLE);
     item->SetLayerId(layerId);

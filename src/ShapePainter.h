@@ -1,7 +1,7 @@
 #pragma once
 
 #include "LineGlyph.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 #include <QColor>
 #include <QIcon>

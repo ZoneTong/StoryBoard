@@ -9,12 +9,12 @@
 #include <QPainter>
 #include <QtMath>
 
-CurveItem::CurveItem(QGraphicsItem* parent) : LineItemAbstract(parent) {}
+CurveItem::CurveItem(QGraphicsItem* parent) : LineAbstractItem(parent) {}
 
 ItemPropertySet CurveItem::Properties() const
 {
     // 箭头行对全部描线子型开放（含花括号），与现状一致。
-    return LineItemAbstract::Properties().United(ItemPropertySet{ItemProperty::ARROW_START, ItemProperty::ARROW_END});
+    return LineAbstractItem::Properties().United(ItemPropertySet{ItemProperty::ARROW_START, ItemProperty::ARROW_END});
 }
 
 QVariant CurveItem::PropertyValue(ItemProperty property) const
@@ -25,7 +25,7 @@ QVariant CurveItem::PropertyValue(ItemProperty property) const
     case ItemProperty::ARROW_END:
         return static_cast<int>(EndArrow());
     default:
-        return LineItemAbstract::PropertyValue(property);
+        return LineAbstractItem::PropertyValue(property);
     }
 }
 
@@ -39,7 +39,7 @@ void CurveItem::SetPropertyValue(ItemProperty property, const QVariant& value)
         SetArrowStyles(StartArrow(), static_cast<ArrowStyle>(value.toInt()));
         break;
     default:
-        LineItemAbstract::SetPropertyValue(property, value);
+        LineAbstractItem::SetPropertyValue(property, value);
         break;
     }
 }
@@ -88,7 +88,7 @@ void CurveItem::SetStrokePoints(const QVector<QPointF>& scenePoints, const QColo
     m_hasDot = false;
     m_drawing = false;
     m_finished = false;
-    LineItemAbstract::SetStrokePoints(scenePoints, color, width, tolerance, polyline);
+    LineAbstractItem::SetStrokePoints(scenePoints, color, width, tolerance, polyline);
     m_finished = true;
 }
 
@@ -174,7 +174,7 @@ CurveItem::GeometryState CurveItem::geometryState() const
 
 void CurveItem::ApplyGeometryState(const GeometryState& state)
 {
-    LineItemAbstract::ApplyGeometryState(state);
+    LineAbstractItem::ApplyGeometryState(state);
     m_hasDot = state.hasDot;
     m_rawPoints = m_hasDot ? QVector<QPointF>{state.dotCenter} : QVector<QPointF>();
     m_drawing = false;
@@ -268,7 +268,7 @@ void CurveItem::SetStrokeSource(CurveSource source)
 
 QJsonObject CurveItem::ToJson() const
 {
-    QJsonObject json = LineItemAbstract::ToJson();
+    QJsonObject json = LineAbstractItem::ToJson();
     json.insert(QStringLiteral("dot"), m_hasDot);
     if (m_strokeSource != CurveSource::HAND_DRAWN) {
         json.insert(QStringLiteral("source"), QStringLiteral("line_art"));
@@ -291,7 +291,7 @@ void CurveItem::FromJson(const QJsonObject& json)
                          : CurveSource::HAND_DRAWN;
     m_rawPoints.clear();
 
-    LineItemAbstract::FromJson(json);
+    LineAbstractItem::FromJson(json);
 
     if (m_hasDot) {
         const QJsonArray center = json.value(QStringLiteral("dotCenter")).toArray();

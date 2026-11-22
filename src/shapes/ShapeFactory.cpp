@@ -18,7 +18,7 @@
 #include "shapes/StarItem.h"
 #include "shapes/TriangleItem.h"
 
-ShapeItem* CreateShapeItem(ShapeType type)
+ShapeAbstractItem* CreateShapeItem(ShapeType type)
 {
     switch (type) {
     case ShapeType::ELLIPSE:

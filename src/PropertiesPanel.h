@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ItemProperties.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 #include <QList>
 #include <QMap>
@@ -12,7 +12,7 @@ class CanvasScene;
 class CanvasItem;
 class ArcItem;
 class SineItem;
-class LineItemAbstract;
+class LineAbstractItem;
 class FillAttributes;
 class StrokeAttributes;
 class FillImageRow;
@@ -68,14 +68,14 @@ class PropertiesPanel : public QWidget {
     bool SelectionGroupUseful(const QList<CanvasItem*>& items) const;
 
     QList<CanvasItem*> SelectedItems() const;
-    QList<ShapeItem*> SelectedShapes() const;
-    QList<LineItemAbstract*> SelectedStrokes() const;
+    QList<ShapeAbstractItem*> SelectedShapes() const;
+    QList<LineAbstractItem*> SelectedStrokes() const;
     QList<CanvasItem*> SelectedTexts() const;
 
-    void ChangeSelectedShapes(const QString& text, const std::function<void(ShapeItem*)>& mutate);
+    void ChangeSelectedShapes(const QString& text, const std::function<void(ShapeAbstractItem*)>& mutate);
     // 弧线角度与正弦参数：几何由参数派生，改动按参数快照入撤销栈。
-    void ChangeSelectedArcs(const QString& text, const std::function<void(LineItemAbstract*)>& mutate);
-    void ChangeSelectedSines(const QString& text, const std::function<void(LineItemAbstract*)>& mutate);
+    void ChangeSelectedArcs(const QString& text, const std::function<void(LineAbstractItem*)>& mutate);
+    void ChangeSelectedSines(const QString& text, const std::function<void(LineAbstractItem*)>& mutate);
     void ChangeSelectedTexts(const QString& text, const std::function<void(TextItemState&)>& mutate);
     void ApplyTextContent(const QString& text);
     void ApplyTextFont(const QFont& font);

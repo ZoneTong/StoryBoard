@@ -2,7 +2,7 @@
 
 #include "CanvasItem.h"
 #include "CanvasScene.h"
-#include "LineItemAbstract.h"
+#include "LineAbstractItem.h"
 #include "PolygonItem.h"
 
 #include <QGraphicsScene>
@@ -219,14 +219,14 @@ void GroupCommand::Apply(const QList<int>& groupIds, const QHash<int, int>& pare
     m_scene->ApplyGroupParents(parents);
 }
 
-StrokeSmoothCommand::StrokeSmoothCommand(CanvasScene* scene, const QList<LineItemAbstract*>& items,
-                                         const QList<LineItemAbstract::GeometryState>& before,
-                                         const QList<LineItemAbstract::GeometryState>& after, const QString& text)
+StrokeSmoothCommand::StrokeSmoothCommand(CanvasScene* scene, const QList<LineAbstractItem*>& items,
+                                         const QList<LineAbstractItem::GeometryState>& before,
+                                         const QList<LineAbstractItem::GeometryState>& after, const QString& text)
     : m_scene(scene), m_before(before), m_after(after)
 {
     setText(text);
-    for (LineItemAbstract* item : items) {
-        m_items.append(QPointer<LineItemAbstract>(item));
+    for (LineAbstractItem* item : items) {
+        m_items.append(QPointer<LineAbstractItem>(item));
     }
 }
 
@@ -240,7 +240,7 @@ void StrokeSmoothCommand::redo()
     Apply(m_after);
 }
 
-void StrokeSmoothCommand::Apply(const QList<LineItemAbstract::GeometryState>& states)
+void StrokeSmoothCommand::Apply(const QList<LineAbstractItem::GeometryState>& states)
 {
     if (states.size() != m_items.size()) {
         return;
@@ -461,7 +461,7 @@ void ItemPropertiesCommand::Apply(const ItemPropertiesState& state)
     m_item->SetName(state.itemName);
 
     if (state.hasShapeState) {
-        if (auto* shape = dynamic_cast<ShapeItem*>(m_item.data())) {
+        if (auto* shape = dynamic_cast<ShapeAbstractItem*>(m_item.data())) {
             shape->ApplyState(state.shapeState);
         }
     } else if (state.hasTextState) {
@@ -476,7 +476,7 @@ void ItemPropertiesCommand::Apply(const ItemPropertiesState& state)
     m_item->SetItemOpacity(state.opacity);
 
     if (state.hasStrokeStyle) {
-        if (auto* stroke = dynamic_cast<LineItemAbstract*>(m_item.data())) {
+        if (auto* stroke = dynamic_cast<LineAbstractItem*>(m_item.data())) {
             stroke->SetStrokeColor(state.strokeColor);
             stroke->SetStrokeWidth(state.strokeWidth);
             stroke->SetStrokePattern(state.strokeStyle);

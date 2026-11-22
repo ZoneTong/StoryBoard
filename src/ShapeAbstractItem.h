@@ -102,12 +102,12 @@ struct ShapeItemState {
     bool operator!=(const ShapeItemState& other) const { return !(*this == other); }
 };
 
-class ShapeItem : public CanvasItem, public FillAttributes, public StrokeAttributes, public ArcAngleAttributes {
+class ShapeAbstractItem : public CanvasItem, public FillAttributes, public StrokeAttributes, public ArcAngleAttributes {
     Q_OBJECT
   public:
     // 需求 2：带短刻度线的底边是 AB（A 在左、B 在右），对面顶点是 C。
     enum class TriangleVertex { A, B, C };
-    explicit ShapeItem(QGraphicsItem* parent = nullptr);
+    explicit ShapeAbstractItem(QGraphicsItem* parent = nullptr);
 
     QString Kind() const override { return QStringLiteral("shape"); }
     ItemCategory Category() const override { return ItemCategory::SHAPE; }
@@ -207,4 +207,4 @@ class ShapeItem : public CanvasItem, public FillAttributes, public StrokeAttribu
 };
 
 // 图形工厂（定义在 shapes/ShapeFactory.cpp）：按 ShapeType 建出具体子类。
-ShapeItem* CreateShapeItem(ShapeType type);
+ShapeAbstractItem* CreateShapeItem(ShapeType type);

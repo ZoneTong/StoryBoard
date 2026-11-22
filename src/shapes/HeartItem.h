@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 // Heart：轮廓由 ShapePathBuilder 按 ShapeType::HEART 生成，没有额外参数。
-class HeartItem : public ShapeItem {
+class HeartItem : public ShapeAbstractItem {
   public:
     HeartItem();
     QSizeF DefaultContentSize() const override;

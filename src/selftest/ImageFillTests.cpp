@@ -5,7 +5,7 @@
 #include "ExcalidrawFormat.h"
 #include "ImageFill.h"
 #include "PolygonItem.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
 
@@ -78,7 +78,7 @@ QImage RenderCanvas(CanvasScene& scene, const QSize& size)
 }
 
 // 采样用的矩形：无描边、可带纯色填充，只留下图片本体参与像素比较。
-ShapeItem* MakePlainShape(ShapeType type, const QSizeF& size, const QColor& fillColor)
+ShapeAbstractItem* MakePlainShape(ShapeType type, const QSizeF& size, const QColor& fillColor)
 {
     auto* shape = CreateShapeItem(type);
     shape->setPos(QPointF(0, 0));

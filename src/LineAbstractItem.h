@@ -15,7 +15,7 @@
 // 零面积图元不继承填充属性基类。
 // 五个形态（直线 / 弧线 / 正弦 / 手绘曲线 / 花括号）共同继承本类，
 // 类型标识由各自的 Kind() 给出，本类不覆写 Kind()。
-class LineItemAbstract : public CanvasItem, public StrokeAttributes {
+class LineAbstractItem : public CanvasItem, public StrokeAttributes {
   public:
     // 参数快照：弧线是起止角，正弦是周期数与振幅；其余形态 valid 为 false。
     struct ParamState {
@@ -37,7 +37,7 @@ class LineItemAbstract : public CanvasItem, public StrokeAttributes {
         bool operator!=(const GeometryState& other) const { return !(*this == other); }
     };
 
-    explicit LineItemAbstract(QGraphicsItem* parent = nullptr);
+    explicit LineAbstractItem(QGraphicsItem* parent = nullptr);
 
     ItemCategory Category() const override { return ItemCategory::LINE; }
     void Accept(CanvasItemVisitor& visitor) override;

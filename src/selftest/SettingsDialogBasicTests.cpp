@@ -4,7 +4,7 @@
 #include "LineArtDialog.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
 

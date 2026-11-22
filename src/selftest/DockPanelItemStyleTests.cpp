@@ -20,7 +20,7 @@
 #include "PropertiesPanel.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "StraightLineItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
@@ -110,9 +110,9 @@ void selftest::RunDockPanelItemStyleTests(Context& ctx)
     dockScene->AddItemsWithUndo({insertedShape}, QStringLiteral("Add rectangle"));
     insertedShape->setSelected(true);
     QApplication::processEvents();
-    ShapeItem* selectedShape = dockScene->SelectedCanvasItems().isEmpty()
-                                   ? nullptr
-                                   : dynamic_cast<ShapeItem*>(dockScene->SelectedCanvasItems().first());
+    ShapeAbstractItem* selectedShape = dockScene->SelectedCanvasItems().isEmpty()
+                                           ? nullptr
+                                           : dynamic_cast<ShapeAbstractItem*>(dockScene->SelectedCanvasItems().first());
     PropertiesPanel* dockPanel = dockWindow.findChild<PropertiesPanel*>(QStringLiteral("PropertiesPanel"));
     if (selectedShape && dockPanel) {
         QList<QSpinBox*> valueSpins = dockPanel->findChildren<QSpinBox*>(QStringLiteral("ItemValueSpin"));

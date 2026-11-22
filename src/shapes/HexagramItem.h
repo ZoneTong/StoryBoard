@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 // Hexagram：轮廓由 ShapePathBuilder 按 ShapeType::HEXAGRAM 生成，没有额外参数。
-class HexagramItem : public ShapeItem {
+class HexagramItem : public ShapeAbstractItem {
   public:
     HexagramItem();
     QSizeF DefaultContentSize() const override;

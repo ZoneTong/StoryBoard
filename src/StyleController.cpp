@@ -6,11 +6,11 @@
 #include "Commands.h"
 #include "IconFactory.h"
 #include "ItemStyleVisuals.h"
-#include "LineItemAbstract.h"
+#include "LineAbstractItem.h"
 #include "MainWindow.h"
 #include "PolygonItem.h"
 #include "Settings.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 #include <QColorDialog>
 #include <QMenu>
@@ -231,11 +231,11 @@ void StyleController::ApplyFillToSelection()
         return;
     }
 
-    QList<ShapeItem*> targets;
+    QList<ShapeAbstractItem*> targets;
     int outlineOnlyCount = 0;
     const QList<CanvasItem*> selected = m_window->m_scene->SelectedCanvasItems();
     for (CanvasItem* item : selected) {
-        auto* shape = dynamic_cast<ShapeItem*>(item);
+        auto* shape = dynamic_cast<ShapeAbstractItem*>(item);
         if (!shape) {
             continue;
         }
@@ -265,7 +265,7 @@ void StyleController::ApplyFillToSelection()
     QList<QMap<ItemProperty, QVariant>> after;
     before.reserve(targets.size());
     after.reserve(targets.size());
-    for (ShapeItem* shape : targets) {
+    for (ShapeAbstractItem* shape : targets) {
         QMap<ItemProperty, QVariant> beforeValues;
         beforeValues.insert(ItemProperty::FILL_COLOR, shape->PropertyValue(ItemProperty::FILL_COLOR));
         beforeValues.insert(ItemProperty::FILL_STYLE, shape->PropertyValue(ItemProperty::FILL_STYLE));

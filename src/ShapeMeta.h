@@ -1,12 +1,12 @@
 #pragma once
 
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 #include <QList>
 #include <QString>
 
 // 形状 / 填充样式的元数据映射：枚举与持久化字符串互转、默认尺寸、是否有面积 /
-// 是否纯描边。不含界面文案（带翻译上下文的名称仍由 ShapeItem 侧提供）。
+// 是否纯描边。不含界面文案（带翻译上下文的名称仍由 ShapeAbstractItem 侧提供）。
 class ShapeMeta {
   public:
     static QList<ShapeType> AllTypes();

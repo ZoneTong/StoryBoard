@@ -44,7 +44,7 @@ QPainterPath PolygonItem::ClosedSubpaths(const QPainterPath& path)
 }
 
 PolygonItem::PolygonItem(const QList<Layer>& layers, FillStyle fillStyle, Qt::PenStyle strokeStyle)
-    : ShapeItem(), m_layers(layers)
+    : ShapeAbstractItem(), m_layers(layers)
 {
     m_fillStyle = fillStyle;
     m_strokeStyle = strokeStyle;

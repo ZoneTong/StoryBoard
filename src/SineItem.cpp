@@ -41,12 +41,12 @@ QRectF ArrayToRect(const QJsonArray& array, const QRectF& fallback)
 
 } // namespace
 
-SineItem::SineItem(QGraphicsItem* parent) : LineItemAbstract(parent) {}
+SineItem::SineItem(QGraphicsItem* parent) : LineAbstractItem(parent) {}
 
 ItemPropertySet SineItem::Properties() const
 {
     // 正弦有箭头行，另有周期数与振幅两行参数。
-    return LineItemAbstract::Properties().United(ItemPropertySet{
+    return LineAbstractItem::Properties().United(ItemPropertySet{
         ItemProperty::ARROW_START, ItemProperty::ARROW_END, ItemProperty::SINE_CYCLES, ItemProperty::SINE_AMPLITUDE});
 }
 
@@ -62,7 +62,7 @@ QVariant SineItem::PropertyValue(ItemProperty property) const
     case ItemProperty::SINE_AMPLITUDE:
         return m_params.amplitude;
     default:
-        return LineItemAbstract::PropertyValue(property);
+        return LineAbstractItem::PropertyValue(property);
     }
 }
 
@@ -88,7 +88,7 @@ void SineItem::SetPropertyValue(ItemProperty property, const QVariant& value)
         break;
     }
     default:
-        LineItemAbstract::SetPropertyValue(property, value);
+        LineAbstractItem::SetPropertyValue(property, value);
         break;
     }
 }
@@ -213,7 +213,7 @@ void SineItem::Rebuild()
 
 QJsonObject SineItem::ToJson() const
 {
-    QJsonObject json = LineItemAbstract::ToJson();
+    QJsonObject json = LineAbstractItem::ToJson();
     json.insert(QStringLiteral("sineCycles"), m_params.cycles);
     json.insert(QStringLiteral("sineAmplitude"), m_params.amplitude);
     json.insert(QStringLiteral("sineFrame"), RectToArray(m_refFrame));
@@ -222,7 +222,7 @@ QJsonObject SineItem::ToJson() const
 
 void SineItem::FromJson(const QJsonObject& json)
 {
-    LineItemAbstract::FromJson(json);
+    LineAbstractItem::FromJson(json);
     m_params.cycles = qBound(1, json.value(QStringLiteral("sineCycles")).toInt(1), 12);
     m_params.amplitude = qBound<qreal>(1.0, json.value(QStringLiteral("sineAmplitude")).toDouble(20.0), 200.0);
     m_refFrame = ArrayToRect(json.value(QStringLiteral("sineFrame")).toArray(), QRectF(0.0, 0.0, 1.0, 1.0));

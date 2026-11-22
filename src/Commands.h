@@ -3,8 +3,8 @@
 #include "CanvasTypes.h"
 #include "ItemGeometry.h"
 #include "ItemProperties.h"
-#include "LineItemAbstract.h"
-#include "ShapeItem.h"
+#include "LineAbstractItem.h"
+#include "ShapeAbstractItem.h"
 #include "TextItem.h"
 
 #include <QColor>
@@ -157,19 +157,19 @@ class RotationCommand : public QUndoCommand {
 // 手动平滑一次可能同时作用于多条选中笔画，整体只占一条撤销记录。
 class StrokeSmoothCommand : public QUndoCommand {
   public:
-    StrokeSmoothCommand(CanvasScene* scene, const QList<LineItemAbstract*>& items,
-                        const QList<LineItemAbstract::GeometryState>& before,
-                        const QList<LineItemAbstract::GeometryState>& after, const QString& text);
+    StrokeSmoothCommand(CanvasScene* scene, const QList<LineAbstractItem*>& items,
+                        const QList<LineAbstractItem::GeometryState>& before,
+                        const QList<LineAbstractItem::GeometryState>& after, const QString& text);
     void undo() override;
     void redo() override;
 
   private:
-    void Apply(const QList<LineItemAbstract::GeometryState>& states);
+    void Apply(const QList<LineAbstractItem::GeometryState>& states);
 
     CanvasScene* m_scene = nullptr;
-    QList<QPointer<LineItemAbstract>> m_items;
-    QList<LineItemAbstract::GeometryState> m_before;
-    QList<LineItemAbstract::GeometryState> m_after;
+    QList<QPointer<LineAbstractItem>> m_items;
+    QList<LineAbstractItem::GeometryState> m_before;
+    QList<LineAbstractItem::GeometryState> m_after;
 };
 
 // 属性弹窗一次修改可能同时涉及层/高度、几何、填充、描边、文字或图片名，
@@ -182,7 +182,7 @@ struct ItemPropertiesState {
     // 透明度是所有图元共有的属性，属性窗统一按这个字段提交。
     qreal opacity = 1.0;
     QString itemName;
-    // 多边形也是 ShapeItem，填充、描线与图片填充都走这一份快照。
+    // 多边形也是 ShapeAbstractItem，填充、描线与图片填充都走这一份快照。
     bool hasShapeState = false;
     ShapeItemState shapeState;
     bool hasTextState = false;
@@ -194,9 +194,9 @@ struct ItemPropertiesState {
     // 需求 27：曲线两端箭头与直线同一套属性窗提交流程（箭头对全部曲线子型开放）。
     ArrowStyle curveStartArrow = ArrowStyle::NONE;
     ArrowStyle curveEndArrow = ArrowStyle::NONE;
-    // 弧线角度 / 正弦周期与振幅：走 LineItemAbstract::ParamState 的形状参数。
+    // 弧线角度 / 正弦周期与振幅：走 LineAbstractItem::ParamState 的形状参数。
     bool hasCurveParam = false;
-    LineItemAbstract::ParamState curveParam;
+    LineAbstractItem::ParamState curveParam;
     // 弧线长短半轴：写入按真实椭圆外接框换算，未改动时与 before 相等即跳过。
     bool hasArcAxes = false;
     qreal arcMajor = 0.0;

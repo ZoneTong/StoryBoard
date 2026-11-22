@@ -20,7 +20,7 @@
 #include "PropertiesPanel.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "StraightLineItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
@@ -252,9 +252,10 @@ void selftest::RunDockPanelMainWindowTests(Context& ctx)
         dockScene->AddItemsWithUndo({insertedShape}, QStringLiteral("Add rectangle"));
         insertedShape->setSelected(true);
         QApplication::processEvents();
-        ShapeItem* selectedShape = dockScene->SelectedCanvasItems().isEmpty()
-                                       ? nullptr
-                                       : dynamic_cast<ShapeItem*>(dockScene->SelectedCanvasItems().first());
+        ShapeAbstractItem* selectedShape =
+            dockScene->SelectedCanvasItems().isEmpty()
+                ? nullptr
+                : dynamic_cast<ShapeAbstractItem*>(dockScene->SelectedCanvasItems().first());
         ctx.Check(selectedShape == insertedShape && dockScene->CanvasItemCount() == beforeCount + 1 &&
                       propertiesDock->isVisible(),
                   QStringLiteral("插入矩形后编辑面板随选中出现并保持显示"),

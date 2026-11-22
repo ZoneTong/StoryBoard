@@ -2,7 +2,7 @@
 
 #include "CanvasItem.h"
 #include "CanvasScene.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 #include <QCursor>
 #include <QGraphicsScene>
@@ -118,9 +118,9 @@ void CanvasItemInteraction::BeginResize(int handle, const QPointF& scenePos)
     m_item->m_dragStartSize = m_item->m_size;
     m_item->m_before = {{m_item, m_item->pos(), m_item->m_size}};
 
-    if (auto* para = dynamic_cast<ShapeItem*>(m_item); handle == CanvasItem::SKEW && para &&
-                                                       para->shapeType() == ShapeType::PARALLELOGRAM &&
-                                                       para->SkewHandleEnabled() && !para->IsCustomShape()) {
+    if (auto* para = dynamic_cast<ShapeAbstractItem*>(m_item); handle == CanvasItem::SKEW && para &&
+                                                               para->shapeType() == ShapeType::PARALLELOGRAM &&
+                                                               para->SkewHandleEnabled() && !para->IsCustomShape()) {
         // 内角旋钮绕左下顶点旋转上边：先记住底边的场景锚点与长度。
         // 拖动中包围框会随上边偏移量增减，不能再用固定的拖拽起点推算。
         const QRectF rect = m_item->ContentRect();
@@ -131,10 +131,11 @@ void CanvasItemInteraction::BeginResize(int handle, const QPointF& scenePos)
         m_parallelogramBottomLeft = m_item->mapToScene(QPointF(bottomLeftX, rect.bottom()));
     }
 
-    if (auto* triangle = dynamic_cast<ShapeItem*>(m_item); triangle && triangle->shapeType() == ShapeType::TRIANGLE &&
-                                                           !triangle->IsCustomShape() && handle == CanvasItem::APEX) {
-        m_triangleDragBaseA = m_item->mapToScene(triangle->triangleVertex(ShapeItem::TriangleVertex::A));
-        m_triangleDragBaseB = m_item->mapToScene(triangle->triangleVertex(ShapeItem::TriangleVertex::B));
+    if (auto* triangle = dynamic_cast<ShapeAbstractItem*>(m_item);
+        triangle && triangle->shapeType() == ShapeType::TRIANGLE && !triangle->IsCustomShape() &&
+        handle == CanvasItem::APEX) {
+        m_triangleDragBaseA = m_item->mapToScene(triangle->triangleVertex(ShapeAbstractItem::TriangleVertex::A));
+        m_triangleDragBaseB = m_item->mapToScene(triangle->triangleVertex(ShapeAbstractItem::TriangleVertex::B));
     }
 }
 
@@ -147,9 +148,9 @@ void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardMod
     // 需求 3：平行四边形内角由顶边中点的倾斜旋钮拖动。旋钮位于“底边中点 + 上边偏移”，
     // 因此以固定左下顶点为原点量横向距离：上边偏移 = 指针到底边中点的距离 − 底边半长。
     // 上边向左右移动即改变左下内角，底边长度全程保持不动。
-    if (auto* para = dynamic_cast<ShapeItem*>(m_item); para && para->shapeType() == ShapeType::PARALLELOGRAM &&
-                                                       para->SkewHandleEnabled() && !para->IsCustomShape() &&
-                                                       handle == CanvasItem::SKEW) {
+    if (auto* para = dynamic_cast<ShapeAbstractItem*>(m_item); para && para->shapeType() == ShapeType::PARALLELOGRAM &&
+                                                               para->SkewHandleEnabled() && !para->IsCustomShape() &&
+                                                               handle == CanvasItem::SKEW) {
         const qreal startHeight = m_item->m_dragStartSize.height();
         QPointF along(1.0, 0.0);
         const qreal rotation = m_item->RotationAngle();
@@ -168,8 +169,9 @@ void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardMod
 
     // 需求 2：拖顶点 C 只改三角形，AB 两端在场景中固定；底边长度不变，
     // 顶点可以越过 A / B 的垂线，因此两个底角都能进入钝角区。
-    if (auto* triangle = dynamic_cast<ShapeItem*>(m_item); triangle && triangle->shapeType() == ShapeType::TRIANGLE &&
-                                                           !triangle->IsCustomShape() && handle == CanvasItem::APEX) {
+    if (auto* triangle = dynamic_cast<ShapeAbstractItem*>(m_item);
+        triangle && triangle->shapeType() == ShapeType::TRIANGLE && !triangle->IsCustomShape() &&
+        handle == CanvasItem::APEX) {
         const QPointF base = m_triangleDragBaseB - m_triangleDragBaseA;
         const qreal baseLength = qMax<qreal>(1.0, std::hypot(base.x(), base.y()));
         const QPointF along = base / baseLength;
@@ -185,7 +187,7 @@ void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardMod
         triangle->SetAngleReadoutVisible(true);
         // 角度与包围盒重算后，把局部 A 点搬回拖拽开始时的场景位置；底边长度不变，
         // B 会随同一条底边一起保持固定。
-        const QPointF newA = m_item->mapToScene(triangle->triangleVertex(ShapeItem::TriangleVertex::A));
+        const QPointF newA = m_item->mapToScene(triangle->triangleVertex(ShapeAbstractItem::TriangleVertex::A));
         m_item->setPos(m_item->pos() + (m_triangleDragBaseA - newA));
         return;
     }
@@ -193,7 +195,7 @@ void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardMod
     // 三角形拖动包围框只能等比缩放：三个内角保持不变，手柄对面的那个点钉住不动
     // （角对手柄钉对角、边中点对手柄钉对边中点）。高度由底边与角度派生，缩放后
     // 宽高比自然保持，所以只要按比例算新尺寸、再把锚点摆回原处。
-    if (auto* triangle = dynamic_cast<ShapeItem*>(m_item);
+    if (auto* triangle = dynamic_cast<ShapeAbstractItem*>(m_item);
         triangle && triangle->shapeType() == ShapeType::TRIANGLE && !triangle->IsCustomShape()) {
         const QSizeF startSize = m_item->m_dragStartSize;
         // 锚点在内容矩形里的归一化位置（0 = 左 / 上，1 = 右 / 下）。
@@ -334,7 +336,7 @@ void CanvasItemInteraction::FinishInteraction()
         return;
     }
 
-    if (auto* shape = dynamic_cast<ShapeItem*>(m_item)) {
+    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(m_item)) {
         shape->SetAngleReadoutVisible(false);
     }
 

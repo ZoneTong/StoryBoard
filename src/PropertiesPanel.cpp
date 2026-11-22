@@ -7,7 +7,7 @@
 #include "Commands.h"
 #include "CurveParamCommand.h"
 #include "ImagePickerDialog.h"
-#include "LineItemAbstract.h"
+#include "LineAbstractItem.h"
 #include "PolygonItem.h"
 #include "PropertiesPanelArrangeCard.h"
 #include "PropertiesPanelColorsCard.h"
@@ -17,7 +17,7 @@
 #include "PropertiesPanelIdentityCard.h"
 #include "PropertiesPanelSelectionCard.h"
 #include "PropertiesPanelValueCard.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "ShapeMeta.h"
 #include "SineItem.h"
 #include "TextItem.h"
@@ -189,23 +189,23 @@ QList<CanvasItem*> PropertiesPanel::SelectedItems() const
     return m_scene ? m_scene->SelectedCanvasItems() : QList<CanvasItem*>();
 }
 
-QList<ShapeItem*> PropertiesPanel::SelectedShapes() const
+QList<ShapeAbstractItem*> PropertiesPanel::SelectedShapes() const
 {
-    QList<ShapeItem*> shapes;
+    QList<ShapeAbstractItem*> shapes;
     for (CanvasItem* item : SelectedItems()) {
-        // 多边形派生自 ShapeItem，但它没有形状类型语义：圆角 / 角度等行只对普通图形开放。
-        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() == 0) {
+        // 多边形派生自 ShapeAbstractItem，但它没有形状类型语义：圆角 / 角度等行只对普通图形开放。
+        if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item); shape && shape->ShapeLayerCount() == 0) {
             shapes.append(shape);
         }
     }
     return shapes;
 }
 
-QList<LineItemAbstract*> PropertiesPanel::SelectedStrokes() const
+QList<LineAbstractItem*> PropertiesPanel::SelectedStrokes() const
 {
-    QList<LineItemAbstract*> strokes;
+    QList<LineAbstractItem*> strokes;
     for (CanvasItem* item : SelectedItems()) {
-        if (auto* stroke = dynamic_cast<LineItemAbstract*>(item)) {
+        if (auto* stroke = dynamic_cast<LineAbstractItem*>(item)) {
             strokes.append(stroke);
         }
     }
@@ -271,8 +271,8 @@ void PropertiesPanel::Refresh()
     UpdateSummary();
 
     const QList<CanvasItem*> items = SelectedItems();
-    const QList<ShapeItem*> shapes = SelectedShapes();
-    const QList<LineItemAbstract*> strokes = SelectedStrokes();
+    const QList<ShapeAbstractItem*> shapes = SelectedShapes();
+    const QList<LineAbstractItem*> strokes = SelectedStrokes();
     const QList<CanvasItem*> texts = SelectedTexts();
 
     // 属性行按基类绑定：填充行只看 FillAttributes，描线行只看 StrokeAttributes，

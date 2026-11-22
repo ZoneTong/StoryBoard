@@ -8,7 +8,7 @@ EllipseItem::EllipseItem()
 
 void EllipseItem::ContentResized()
 {
-    ShapeItem::ContentResized();
+    ShapeAbstractItem::ContentResized();
     // 外接框与内容矩形保持一致，轮廓只由 EllipseShape::Ellipse() 出。
     SetFrame(ContentRect());
 }

@@ -61,7 +61,7 @@ ShapeType ShapeMeta::TypeFromString(const QString& value)
     const QString normalized = value.trimmed().toLower();
     if (normalized == QStringLiteral("rounded_rectangle") || normalized == QStringLiteral("roundedrect") ||
         normalized == QStringLiteral("roundrect")) {
-        // 需求 5：圆角矩形已并入矩形，旧字符串统一读成矩形（由 ShapeItem 记为自动圆角态）。
+        // 需求 5：圆角矩形已并入矩形，旧字符串统一读成矩形（由 ShapeAbstractItem 记为自动圆角态）。
         return ShapeType::RECTANGLE;
     }
     if (normalized == QStringLiteral("ellipse") || normalized == QStringLiteral("circle") ||

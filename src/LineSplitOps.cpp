@@ -3,10 +3,10 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
-#include "LineItemAbstract.h"
+#include "LineAbstractItem.h"
 #include "PathRegions.h"
 #include "PolygonItem.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 #include <QPainterPath>
 #include <QSet>
@@ -32,10 +32,10 @@ struct Knife {
 
 bool IsFillTarget(CanvasItem* item)
 {
-    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() == 0) {
+    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item); shape && shape->ShapeLayerCount() == 0) {
         return true;
     }
-    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->ShapeLayerCount() > 0) {
+    if (auto* composite = dynamic_cast<ShapeAbstractItem*>(item); composite && composite->ShapeLayerCount() > 0) {
         return composite->HasShapeFillArea();
     }
     return false;
@@ -43,7 +43,7 @@ bool IsFillTarget(CanvasItem* item)
 
 bool IsKnifeItem(CanvasItem* item)
 {
-    if (dynamic_cast<LineItemAbstract*>(item)) {
+    if (dynamic_cast<LineAbstractItem*>(item)) {
         return true;
     }
     return false;
@@ -80,14 +80,14 @@ bool KnifeFromPath(const QPainterPath& path, Knife* out)
 // 需求 21：曲线同时返回完整轨迹路径，供按轨迹切分使用。
 bool CollectKnife(CanvasItem* item, Knife* out, QPainterPath* trajectoryPath)
 {
-    if (auto* curve = dynamic_cast<LineItemAbstract*>(item)) {
+    if (auto* curve = dynamic_cast<LineAbstractItem*>(item)) {
         const QPainterPath scenePath = curve->mapToScene(curve->OutlineShape());
         if (trajectoryPath) {
             *trajectoryPath = scenePath;
         }
         return KnifeFromPath(scenePath, out);
     }
-    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() == 0) {
+    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item); shape && shape->ShapeLayerCount() == 0) {
         const QPainterPath scenePath = shape->mapToScene(shape->OutlineShape());
         if (trajectoryPath) {
             *trajectoryPath = scenePath;
@@ -209,10 +209,10 @@ QList<QPainterPath> CanvasHalfRegions(const QRectF& canvas, const Knife& knife)
 // 被切图元的填充轮廓（场景坐标）。
 QPainterPath FillPathOf(CanvasItem* item)
 {
-    if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->ShapeLayerCount() == 0) {
+    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item); shape && shape->ShapeLayerCount() == 0) {
         return shape->mapToScene(shape->OutlineShape());
     }
-    if (auto* composite = dynamic_cast<ShapeItem*>(item); composite && composite->ShapeLayerCount() > 0) {
+    if (auto* composite = dynamic_cast<ShapeAbstractItem*>(item); composite && composite->ShapeLayerCount() > 0) {
         QPainterPath fill;
         for (int index = 0; index < composite->ShapeLayerCount(); ++index) {
             const ShapeLayer layer = composite->shapeLayer(index);
@@ -291,8 +291,8 @@ bool Apply(CanvasScene* scene, const QString& commandText)
     QList<QPainterPath> regions;
     QPainterPath knifeBand;
     if (trajectoryKnife) {
-        auto* curveKnife = dynamic_cast<LineItemAbstract*>(knifeItem);
-        auto* shapeKnife = dynamic_cast<ShapeItem*>(knifeItem);
+        auto* curveKnife = dynamic_cast<LineAbstractItem*>(knifeItem);
+        auto* shapeKnife = dynamic_cast<ShapeAbstractItem*>(knifeItem);
         QPainterPathStroker stroker;
         stroker.setWidth(
             qMax<qreal>(1.0, curveKnife ? curveKnife->StrokeWidth() : (shapeKnife ? shapeKnife->StrokeWidth() : 1.0)));
@@ -370,9 +370,9 @@ bool Apply(CanvasScene* scene, const QString& commandText)
     QList<CanvasItem*> created;
     for (const Fragment& fragment : fragments) {
         auto* source = fragment.source;
-        auto* shapeSource = dynamic_cast<ShapeItem*>(source);
+        auto* shapeSource = dynamic_cast<ShapeAbstractItem*>(source);
         shapeSource = shapeSource && shapeSource->ShapeLayerCount() == 0 ? shapeSource : nullptr;
-        auto* compositeSource = dynamic_cast<ShapeItem*>(source);
+        auto* compositeSource = dynamic_cast<ShapeAbstractItem*>(source);
         compositeSource = compositeSource && compositeSource->ShapeLayerCount() > 0 ? compositeSource : shapeSource;
         PolygonItem::Layer layer;
         layer.path = fragment.piece;

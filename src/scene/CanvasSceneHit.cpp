@@ -1,6 +1,6 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "scene/ObscurationAnalyzer.h"
 
 #include <QPainter>
@@ -77,7 +77,7 @@ void CanvasScene::DrawTriangleBaseTick(QPainter* painter, const QRectF& rect)
     if (selection.size() != 1) {
         return;
     }
-    ShapeItem* shape = dynamic_cast<ShapeItem*>(selection.constFirst());
+    ShapeAbstractItem* shape = dynamic_cast<ShapeAbstractItem*>(selection.constFirst());
     if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->IsCustomShape()) {
         return;
     }

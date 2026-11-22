@@ -1,6 +1,6 @@
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
 

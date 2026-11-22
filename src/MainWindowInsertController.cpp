@@ -11,7 +11,7 @@
 #include "MainWindow.h"
 #include "PolygonItem.h"
 #include "Settings.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "ShapePathBuilder.h"
 #include "SineItem.h"
 #include "StraightLineItem.h"
@@ -180,7 +180,7 @@ void MainWindow::InsertCurve(LineGlyph glyph, ArrowStyle startArrow, ArrowStyle 
     const QColor stroke = m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_brushColor;
     const qreal width = qMax<qreal>(0.5, m_brushWidth);
 
-    LineItemAbstract* curve = nullptr;
+    LineAbstractItem* curve = nullptr;
     if (glyph == LineGlyph::STRAIGHT) {
         auto* line = new StraightLineItem();
         const QPointF start(topLeft.x(), topLeft.y() + size.height() / 2.0);

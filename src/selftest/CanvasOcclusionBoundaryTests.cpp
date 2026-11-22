@@ -1,7 +1,7 @@
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
 #include "CanvasView.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"

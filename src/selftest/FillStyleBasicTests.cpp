@@ -2,7 +2,7 @@
 #include "CanvasTypes.h"
 #include "Commands.h"
 #include "MainWindow.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
 
@@ -95,9 +95,9 @@ void selftest::RunFillStyleBasicTests(Context& ctx)
         CanvasScene filledLoaded;
         QString filledError;
         ctx.Check(filledLoaded.FromJson(filledRoot, &filledError), QStringLiteral("填充样式画布反序列化"), filledError);
-        ShapeItem* loadedShape = nullptr;
+        ShapeAbstractItem* loadedShape = nullptr;
         for (CanvasItem* item : filledLoaded.CanvasItems()) {
-            if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+            if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
                 loadedShape = shape;
                 break;
             }
@@ -146,7 +146,7 @@ void selftest::RunFillStyleBasicTests(Context& ctx)
             window.SetBrushWidthUi(1);
             window.InsertShape(ShapeType::RECTANGLE);
             CanvasScene* scene = window.findChild<CanvasScene*>();
-            if (auto* shape = qgraphicsitem_cast<ShapeItem*>(scene->CanvasItems().value(0))) {
+            if (auto* shape = qgraphicsitem_cast<ShapeAbstractItem*>(scene->CanvasItems().value(0))) {
                 insertedWidth = shape->StrokeWidth();
                 fillColorText = shape->FillColor().name();
                 strokeColorText = shape->StrokeColor().name();
@@ -166,7 +166,7 @@ void selftest::RunFillStyleBasicTests(Context& ctx)
             wideWindow.SetBrushWidthUi(18);
             wideWindow.InsertShape(ShapeType::ELLIPSE);
             CanvasScene* wideScene = wideWindow.findChild<CanvasScene*>();
-            if (auto* wideShape = qgraphicsitem_cast<ShapeItem*>(wideScene->CanvasItems().value(0))) {
+            if (auto* wideShape = qgraphicsitem_cast<ShapeAbstractItem*>(wideScene->CanvasItems().value(0))) {
                 insertedWidth = wideShape->StrokeWidth();
                 insertedFillStyle = wideShape->fillStyle();
             }

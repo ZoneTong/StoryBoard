@@ -10,16 +10,16 @@
 #include "I18n.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
+#include "LineAbstractItem.h"
 #include "LineArtConverter.h"
 #include "LineArtDialog.h"
 #include "LineArtPresets.h"
-#include "LineItemAbstract.h"
 #include "MainWindow.h"
 #include "PolygonItem.h"
 #include "PropertiesPanel.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -185,15 +185,15 @@ void selftest::RunSceneCanvasIoTests(Context& ctx)
                   loaded.canvasBackground().color == background.color,
               QStringLiteral("画布背景恢复"));
 
-    LineItemAbstract* loadedStroke = nullptr;
-    ShapeItem* loadedImage = nullptr;
+    LineAbstractItem* loadedStroke = nullptr;
+    ShapeAbstractItem* loadedImage = nullptr;
     const QList<CanvasItem*> loadedItems = loaded.CanvasItems();
     for (CanvasItem* item : loadedItems) {
-        if (dynamic_cast<LineItemAbstract*>(item)) {
-            loadedStroke = static_cast<LineItemAbstract*>(item);
+        if (dynamic_cast<LineAbstractItem*>(item)) {
+            loadedStroke = static_cast<LineAbstractItem*>(item);
         } else if (item->Kind() == QStringLiteral("shape")) {
-            if (static_cast<ShapeItem*>(item)->HasFillImage()) {
-                loadedImage = static_cast<ShapeItem*>(item);
+            if (static_cast<ShapeAbstractItem*>(item)->HasFillImage()) {
+                loadedImage = static_cast<ShapeAbstractItem*>(item);
             }
         }
     }

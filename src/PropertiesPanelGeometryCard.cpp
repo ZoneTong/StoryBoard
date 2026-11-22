@@ -3,7 +3,7 @@
 #include "CanvasItem.h"
 #include "PropertiesPanel.h"
 #include "PropertyRowWidgets.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "ShapeMeta.h"
 
 #include <QDoubleSpinBox>
@@ -103,7 +103,7 @@ void PropertiesPanelGeometryCard::Refresh(CanvasItem* item)
     m_minorAxisRow->Refresh(item->PropertyValue(ItemProperty::MINOR_AXIS).toDouble());
 
     qreal angle = 60.0;
-    if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
         if (shape->Properties().Contains(ItemProperty::PARALLELOGRAM_ANGLE)) {
             angle = shape->ParallelogramAngle();
         }

@@ -14,7 +14,7 @@
 #include "SelfTest.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 #include <QAction>
 #include <QApplication>
@@ -220,7 +220,7 @@ int RunItemPropertiesScreenshot(const CommandLineOptions& options)
     demoScene.SetMode(ToolMode::EDIT);
     CanvasItem* target = nullptr;
     for (CanvasItem* item : demoScene.CanvasItems()) {
-        if (dynamic_cast<ShapeItem*>(item)) {
+        if (dynamic_cast<ShapeAbstractItem*>(item)) {
             target = item;
             break;
         }

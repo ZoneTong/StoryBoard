@@ -10,7 +10,7 @@
 #include <functional>
 #include <memory>
 
-class ShapeItem;
+class ShapeAbstractItem;
 class CurveItem;
 class TextItem;
 
@@ -53,7 +53,7 @@ class Context {
     // 属性对话框段创建，后续图片 / 文字命名段继续复用同一编辑场景与首图形。
     CanvasScene propertyScene;
     QUndoStack propertyUndo;
-    ShapeItem* propertyFirstShape = nullptr;
+    ShapeAbstractItem* propertyFirstShape = nullptr;
 };
 
 } // namespace selftest

@@ -1,4 +1,4 @@
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 #include "ArrowStyle.h"
 #include "CanvasItemVisitor.h"
@@ -21,13 +21,13 @@
 #include <QtMath>
 
 
-ShapeItem::ShapeItem(QGraphicsItem* parent) : CanvasItem(parent)
+ShapeAbstractItem::ShapeAbstractItem(QGraphicsItem* parent) : CanvasItem(parent)
 {
     m_fillColor = m_strokeColor;
     m_fillColor.setAlpha(36);
 }
 
-ItemPropertySet ShapeItem::Properties() const
+ItemPropertySet ShapeAbstractItem::Properties() const
 {
     // 公共样式六件套；圆角 / 角度 / 箭头等按图形由子类自行追加。
     // 背景图片的摆放方式与图片本身同属填充属性，一并纳入属性全集，
@@ -42,14 +42,14 @@ ItemPropertySet ShapeItem::Properties() const
     return properties;
 }
 
-QSizeF ShapeItem::DefaultContentSize() const
+QSizeF ShapeAbstractItem::DefaultContentSize() const
 {
     // 统一基准（需求 16）：棋盘格 1 格 = 64px，基准边长 = 2 格 = 128px。
     // 正方形 / 圆等直接用 128×128，异形比例由具体子类覆写。
     return QSizeF(128.0, 128.0);
 }
 
-QVariant ShapeItem::PropertyValue(ItemProperty property) const
+QVariant ShapeAbstractItem::PropertyValue(ItemProperty property) const
 {
     switch (property) {
     case ItemProperty::FILL_STYLE:
@@ -87,7 +87,7 @@ QVariant ShapeItem::PropertyValue(ItemProperty property) const
     }
 }
 
-void ShapeItem::SetPropertyValue(ItemProperty property, const QVariant& value)
+void ShapeAbstractItem::SetPropertyValue(ItemProperty property, const QVariant& value)
 {
     switch (property) {
     case ItemProperty::FILL_STYLE:
@@ -166,12 +166,12 @@ void ShapeItem::SetPropertyValue(ItemProperty property, const QVariant& value)
     }
 }
 
-void ShapeItem::Accept(CanvasItemVisitor& visitor)
+void ShapeAbstractItem::Accept(CanvasItemVisitor& visitor)
 {
     visitor.VisitShape(*this);
 }
 
-QString ShapeItem::DisplayName() const
+QString ShapeAbstractItem::DisplayName() const
 {
     if (!m_customName.isEmpty()) {
         return m_customName;
@@ -179,7 +179,7 @@ QString ShapeItem::DisplayName() const
     return ShapeTypeName(shapeType());
 }
 
-QPointF ShapeItem::triangleVertex(TriangleVertex vertex) const
+QPointF ShapeAbstractItem::triangleVertex(TriangleVertex vertex) const
 {
     const TriangleGeometry::Vertices vertices = TriangleGeometry::Make(ContentRect(), m_bottomAngle1, m_bottomAngle2);
     switch (vertex) {
@@ -193,7 +193,7 @@ QPointF ShapeItem::triangleVertex(TriangleVertex vertex) const
     }
 }
 
-QPointF ShapeItem::CustomHandleCenter(int handle, bool* ok) const
+QPointF ShapeAbstractItem::CustomHandleCenter(int handle, bool* ok) const
 {
     if (ok) {
         *ok = false;
@@ -211,7 +211,7 @@ QPointF ShapeItem::CustomHandleCenter(int handle, bool* ok) const
     return QPointF();
 }
 
-void ShapeItem::SetTriangleAngles(qreal angle1, qreal angle2)
+void ShapeAbstractItem::SetTriangleAngles(qreal angle1, qreal angle2)
 {
     TriangleGeometry::ClampAngles(&angle1, &angle2);
     if (qFuzzyCompare(m_bottomAngle1 + 2.0, angle1 + 2.0) && qFuzzyCompare(m_bottomAngle2 + 2.0, angle2 + 2.0)) {
@@ -229,7 +229,7 @@ void ShapeItem::SetTriangleAngles(qreal angle1, qreal angle2)
     update();
 }
 
-void ShapeItem::SetAngleReadoutVisible(bool visible)
+void ShapeAbstractItem::SetAngleReadoutVisible(bool visible)
 {
     if (m_angleReadoutVisible == visible) {
         return;
@@ -238,7 +238,7 @@ void ShapeItem::SetAngleReadoutVisible(bool visible)
     update();
 }
 
-void ShapeItem::SetParallelogramAngle(qreal angle)
+void ShapeAbstractItem::SetParallelogramAngle(qreal angle)
 {
     const qreal clamped = qBound<qreal>(5.0, angle, 175.0);
     if (qFuzzyCompare(m_parallelogramAngle + 2.0, clamped + 2.0)) {
@@ -250,7 +250,7 @@ void ShapeItem::SetParallelogramAngle(qreal angle)
     update();
 }
 
-void ShapeItem::ContentResized()
+void ShapeAbstractItem::ContentResized()
 {
     if (shapeType() != ShapeType::TRIANGLE || IsCustomShape()) {
         return;
@@ -262,7 +262,7 @@ void ShapeItem::ContentResized()
     }
 }
 
-QSizeF ShapeItem::AdjustedContentSize(const QSizeF& size) const
+QSizeF ShapeAbstractItem::AdjustedContentSize(const QSizeF& size) const
 {
     if (shapeType() != ShapeType::TRIANGLE || IsCustomShape()) {
         return size;
@@ -282,7 +282,7 @@ QSizeF ShapeItem::AdjustedContentSize(const QSizeF& size) const
     return target;
 }
 
-QRectF ShapeItem::FrameRect() const
+QRectF ShapeAbstractItem::FrameRect() const
 {
     // 扇形只画了内容矩形里的一小块，选中框与手柄改贴在轮廓的最小覆盖矩形上。
     if (m_customPath.isEmpty() && shapeType() == ShapeType::SECTOR) {
@@ -295,7 +295,7 @@ QRectF ShapeItem::FrameRect() const
     return CanvasItem::FrameRect();
 }
 
-void ShapeItem::DrawSelectionOverlay(QPainter* painter)
+void ShapeAbstractItem::DrawSelectionOverlay(QPainter* painter)
 {
     CanvasItem::DrawSelectionOverlay(painter);
     if (shapeType() != ShapeType::TRIANGLE || IsCustomShape() || !isSelected() || !IsEditable() ||
@@ -332,7 +332,7 @@ void ShapeItem::DrawSelectionOverlay(QPainter* painter)
     painter->restore();
 }
 
-void ShapeItem::SetCustomShape(const QString& name, const QPainterPath& unitPath)
+void ShapeAbstractItem::SetCustomShape(const QString& name, const QPainterPath& unitPath)
 {
     m_customName = name;
     m_customPath = unitPath;
@@ -342,25 +342,25 @@ void ShapeItem::SetCustomShape(const QString& name, const QPainterPath& unitPath
     update();
 }
 
-void ShapeItem::SetStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth)
+void ShapeAbstractItem::SetStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth)
 {
     SetStroke(strokeColor, strokeWidth);
     SetFill(fillColor, fillStyle());
 }
 
-void ShapeItem::FillChanged()
+void ShapeAbstractItem::FillChanged()
 {
     update();
 }
 
-void ShapeItem::StrokeChanged()
+void ShapeAbstractItem::StrokeChanged()
 {
     // 描线宽度参与取景余量，句柄区域跟着变化，需要重算 boundingRect。
     prepareGeometryChange();
     update();
 }
 
-void ShapeItem::SetCornerRadius(qreal radius)
+void ShapeAbstractItem::SetCornerRadius(qreal radius)
 {
     // 圆角半径按画布像素处理，不超过短边的一半；0 表示直角。
     const qreal clamped = qBound<qreal>(0.0, radius, qMin(ContentRect().width(), ContentRect().height()) / 2.0);
@@ -371,12 +371,12 @@ void ShapeItem::SetCornerRadius(qreal radius)
     update();
 }
 
-void ShapeItem::ArcAnglesChanged()
+void ShapeAbstractItem::ArcAnglesChanged()
 {
     update();
 }
 
-ShapeItemState ShapeItem::State() const
+ShapeItemState ShapeAbstractItem::State() const
 {
     ShapeItemState result;
     result.fill = FillState();
@@ -393,7 +393,7 @@ ShapeItemState ShapeItem::State() const
     return result;
 }
 
-void ShapeItem::ApplyState(const ShapeItemState& state)
+void ShapeAbstractItem::ApplyState(const ShapeItemState& state)
 {
     ApplyFillState(state.fill);
     ApplyStrokeState(state.stroke);
@@ -436,24 +436,24 @@ void ShapeItem::ApplyState(const ShapeItemState& state)
     update();
 }
 
-QPainterPath ShapeItem::shape() const
+QPainterPath ShapeAbstractItem::shape() const
 {
     return ShapeHitGeometry::HitShape(CurrentPath(ContentRect()), shapeType(), m_strokeWidth, SelectionHandleShape());
 }
 
-QPainterPath ShapeItem::OutlineShape() const
+QPainterPath ShapeAbstractItem::OutlineShape() const
 {
     const QPainterPath path = CurrentPath(ContentRect());
     return path.isEmpty() ? CanvasItem::OutlineShape() : path;
 }
 
-QPainterPath ShapeItem::PaintedShape() const
+QPainterPath ShapeAbstractItem::PaintedShape() const
 {
     return ShapeHitGeometry::PaintedShape(CurrentPath(ContentRect()), shapeType(), m_fillStyle, m_fillColor,
                                           m_strokeWidth, m_strokeStyle);
 }
 
-QPainterPath ShapeItem::CurrentPath(const QRectF& rect) const
+QPainterPath ShapeAbstractItem::CurrentPath(const QRectF& rect) const
 {
     if (!m_customPath.isEmpty()) {
         return ShapePathBuilder::MapUnitPath(m_customPath, rect);
@@ -461,23 +461,23 @@ QPainterPath ShapeItem::CurrentPath(const QRectF& rect) const
     return ShapePath(rect);
 }
 
-QPainterPath ShapeItem::PathFor(ShapeType type, const QRectF& rect)
+QPainterPath ShapeAbstractItem::PathFor(ShapeType type, const QRectF& rect)
 {
     return PathFor(type, rect, 0.0, 30.0, 120.0);
 }
 
-QPainterPath ShapeItem::PathFor(ShapeType type, const QRectF& rect, qreal cornerRadius)
+QPainterPath ShapeAbstractItem::PathFor(ShapeType type, const QRectF& rect, qreal cornerRadius)
 {
     return PathFor(type, rect, cornerRadius, 30.0, 120.0);
 }
 
-QPainterPath ShapeItem::PathFor(ShapeType type, const QRectF& rect, qreal cornerRadius, qreal startAngle,
-                                qreal sweepAngle)
+QPainterPath ShapeAbstractItem::PathFor(ShapeType type, const QRectF& rect, qreal cornerRadius, qreal startAngle,
+                                        qreal sweepAngle)
 {
     return ShapePathBuilder::PathFor(type, rect, cornerRadius, startAngle, sweepAngle);
 }
 
-void ShapeItem::PaintContent(QPainter* painter)
+void ShapeAbstractItem::PaintContent(QPainter* painter)
 {
     const QRectF rect = ContentRect();
     if (rect.isEmpty()) {
@@ -508,18 +508,18 @@ void ShapeItem::PaintContent(QPainter* painter)
                              m_fillStyle);
 }
 
-ShapeLayer ShapeItem::shapeLayer(int index) const
+ShapeLayer ShapeAbstractItem::shapeLayer(int index) const
 {
     Q_UNUSED(index);
     return ShapeLayer();
 }
 
-QPainterPath ShapeItem::MapShapeLayerPath(const ShapeLayer& layer) const
+QPainterPath ShapeAbstractItem::MapShapeLayerPath(const ShapeLayer& layer) const
 {
     return layer.path;
 }
 
-bool ShapeItem::HasShapeFillArea() const
+bool ShapeAbstractItem::HasShapeFillArea() const
 {
     if (ShapeLayerCount() == 0) {
         return true;
@@ -533,22 +533,22 @@ bool ShapeItem::HasShapeFillArea() const
     return false;
 }
 
-void ShapeItem::WriteState(ShapeItemState& state) const
+void ShapeAbstractItem::WriteState(ShapeItemState& state) const
 {
     Q_UNUSED(state);
 }
 
-void ShapeItem::ReadState(const ShapeItemState& state)
+void ShapeAbstractItem::ReadState(const ShapeItemState& state)
 {
     Q_UNUSED(state);
 }
 
-void ShapeItem::WriteJsonExtra(QJsonObject& json) const
+void ShapeAbstractItem::WriteJsonExtra(QJsonObject& json) const
 {
     Q_UNUSED(json);
 }
 
-void ShapeItem::ReadJsonExtra(const QJsonObject& json)
+void ShapeAbstractItem::ReadJsonExtra(const QJsonObject& json)
 {
     Q_UNUSED(json);
 }

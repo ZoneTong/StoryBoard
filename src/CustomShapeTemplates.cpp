@@ -4,7 +4,7 @@
 #include "BraceItem.h"
 #include "CurveItem.h"
 #include "PolygonItem.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "SineItem.h"
 #include "StraightLineItem.h"
 

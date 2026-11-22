@@ -10,7 +10,7 @@
 #include "ItemStyleVisuals.h"
 #include "MainWindow.h"
 #include "PropertiesPanel.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "ShapePainter.h"
 #include "StyleController.h"
 

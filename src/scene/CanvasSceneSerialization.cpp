@@ -2,7 +2,7 @@
 #include "CanvasScene.h"
 #include "CurveItem.h"
 #include "ImageStore.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "ShapePathBuilder.h"
 #include "scene/SceneConstants.h"
 
@@ -107,7 +107,7 @@ QJsonObject CanvasScene::ToJson() const
         QJsonObject itemJson = item->ToJson();
         // 旧画布只有图形自带 opacity，这里统一给所有图元写入透明度。
         itemJson.insert(QStringLiteral("opacity"), item->ItemOpacity());
-        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && shape->HasFillImage()) {
+        if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item); shape && shape->HasFillImage()) {
             // 以图元当前像素重新签发 id：复制 / 粘贴 / 换图后内容与 id 必然一致。
             const QString id = ImageStore::Store(&imagesTable, shape->FillImage());
             if (!id.isEmpty()) {
@@ -182,7 +182,7 @@ bool CanvasScene::FromJson(const QJsonObject& root, QString* errorMessage)
         item->FromJson(itemJson);
         item->SetItemOpacity(itemJson.value(QStringLiteral("opacity")).toDouble(1.0));
         // 需求 11：引用式背景图片；表里缺项（例如手工改过文件）时按无图处理，不阻断打开。
-        if (auto* shape = dynamic_cast<ShapeItem*>(item); shape && !shape->FillImageId().isEmpty()) {
+        if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item); shape && !shape->FillImageId().isEmpty()) {
             const QPixmap pixmap = ImageStore::PixmapFromEntry(imagesTable.value(shape->FillImageId()).toObject());
             if (!pixmap.isNull()) {
                 shape->SetFillImage(pixmap, shape->FillImageMode());

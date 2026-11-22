@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 // Star4：轮廓由 ShapePathBuilder 按 ShapeType::STAR4 生成，没有额外参数。
-class Star4Item : public ShapeItem {
+class Star4Item : public ShapeAbstractItem {
   public:
     Star4Item();
     ShapeType shapeType() const override { return ShapeType::STAR4; }

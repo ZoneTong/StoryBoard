@@ -3,9 +3,9 @@
 #include "AttributeRowWidgets.h"
 #include "ItemPropertiesDialog.h"
 #include "ItemStyleVisuals.h"
-#include "LineItemAbstract.h"
+#include "LineAbstractItem.h"
 #include "PolygonItem.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "ShapeMeta.h"
 
 #include <QComboBox>
@@ -244,8 +244,8 @@ void ItemPropertiesDialogStyleBlock::SetItem(CanvasItem* item)
     bool showArcAngles = false;
     bool showSine = false;
 
-    if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
-        // 多边形派生自 ShapeItem 但没有形状类型：填充与描线照旧，圆角 / 角度等行不给。
+    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
+        // 多边形派生自 ShapeAbstractItem 但没有形状类型：填充与描线照旧，圆角 / 角度等行不给。
         const bool filled = shape->ShapeLayerCount() > 0 || ShapeTypeIsFilled(shape->shapeType());
         const bool plainShape = shape->ShapeLayerCount() == 0;
         showStroke = true;
@@ -296,7 +296,7 @@ void ItemPropertiesDialogStyleBlock::SetItem(CanvasItem* item)
         showSectorAngles = plainShape && type == ShapeType::SECTOR;
         m_startAngleSpin->setValue(qRound(m_initialStartAngle));
         m_sweepAngleSpin->setValue(qRound(m_initialSweepAngle));
-    } else if (auto* stroke = dynamic_cast<LineItemAbstract*>(item)) {
+    } else if (auto* stroke = dynamic_cast<LineAbstractItem*>(item)) {
         showStroke = true;
         showOpacity = true;
         showArrows = true;
@@ -307,7 +307,7 @@ void ItemPropertiesDialogStyleBlock::SetItem(CanvasItem* item)
             qMax(0, m_startArrowCombo->findData(static_cast<int>(stroke->StartArrow()))));
         m_endArrowCombo->setCurrentIndex(qMax(0, m_endArrowCombo->findData(static_cast<int>(stroke->EndArrow()))));
 
-        const LineItemAbstract::ParamState param = stroke->paramState();
+        const LineAbstractItem::ParamState param = stroke->paramState();
         m_initialArcStartAngle = param.first;
         m_initialArcSweepAngle = param.second;
         m_arcStartAngleSpin->setValue(qRound(param.first));

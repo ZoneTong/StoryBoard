@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 // Callout：轮廓由 ShapePathBuilder 按 ShapeType::CALLOUT 生成，没有额外参数。
-class CalloutItem : public ShapeItem {
+class CalloutItem : public ShapeAbstractItem {
   public:
     CalloutItem();
     QSizeF DefaultContentSize() const override;

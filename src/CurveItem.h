@@ -1,7 +1,7 @@
 #pragma once
 
 #include "I18n.h"
-#include "LineItemAbstract.h"
+#include "LineAbstractItem.h"
 
 #include <QColor>
 #include <QJsonObject>
@@ -13,7 +13,7 @@ enum class CurveSource { HAND_DRAWN = 0, LINE_ART };
 
 // 手绘曲线图元：内部几何是分段三次贝塞尔，绘制期的采样点只在收笔拟合时短暂存在，
 // 不写入画布文件。直线 / 弧线 / 正弦 / 花括号已各自成类，本类只剩笔迹与线稿。
-class CurveItem : public LineItemAbstract {
+class CurveItem : public LineAbstractItem {
     Q_OBJECT
   public:
     explicit CurveItem(QGraphicsItem* parent = nullptr);

@@ -11,7 +11,7 @@ RectangleItem::RectangleItem()
 ItemPropertySet RectangleItem::Properties() const
 {
     // 不走 ParallelogramItem::properties：矩形没有内角行，只有圆角行。
-    ItemPropertySet result = ShapeItem::Properties();
+    ItemPropertySet result = ShapeAbstractItem::Properties();
     result.Insert(ItemProperty::CORNER_RADIUS);
     return result;
 }
@@ -25,7 +25,7 @@ void RectangleItem::ReadJsonExtra(const QJsonObject& json)
 void RectangleItem::SetParallelogramAngle(qreal angle)
 {
     Q_UNUSED(angle);
-    ShapeItem::SetParallelogramAngle(90.0);
+    ShapeAbstractItem::SetParallelogramAngle(90.0);
 }
 
 QPointF RectangleItem::CustomHandleCenter(int handle, bool* ok) const

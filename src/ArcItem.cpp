@@ -41,12 +41,12 @@ QRectF ArrayToRect(const QJsonArray& array, const QRectF& fallback)
 
 } // namespace
 
-ArcItem::ArcItem(QGraphicsItem* parent) : LineItemAbstract(parent) {}
+ArcItem::ArcItem(QGraphicsItem* parent) : LineAbstractItem(parent) {}
 
 ItemPropertySet ArcItem::Properties() const
 {
     // 弧线只有角度参数，没有箭头行（与现状一致）；长短半轴按真实椭圆外接框读写。
-    return LineItemAbstract::Properties()
+    return LineAbstractItem::Properties()
         .United(ArcAngleAttributes::ArcAngleProperties())
         .United(ItemPropertySet{ItemProperty::MAJOR_AXIS, ItemProperty::MINOR_AXIS});
 }
@@ -63,7 +63,7 @@ QVariant ArcItem::PropertyValue(ItemProperty property) const
     case ItemProperty::MINOR_AXIS:
         return qMin(EllipseSize().width(), EllipseSize().height()) / 2.0;
     default:
-        return LineItemAbstract::PropertyValue(property);
+        return LineAbstractItem::PropertyValue(property);
     }
 }
 
@@ -83,7 +83,7 @@ void ArcItem::SetPropertyValue(ItemProperty property, const QVariant& value)
         SetArcAxes(PropertyValue(ItemProperty::MAJOR_AXIS).toDouble(), value.toDouble());
         break;
     default:
-        LineItemAbstract::SetPropertyValue(property, value);
+        LineAbstractItem::SetPropertyValue(property, value);
         break;
     }
 }
@@ -199,7 +199,7 @@ void ArcItem::RebuildWithFrame(const QRectF& frameScene)
 
 QJsonObject ArcItem::ToJson() const
 {
-    QJsonObject json = LineItemAbstract::ToJson();
+    QJsonObject json = LineAbstractItem::ToJson();
     WriteArcAngleJson(json);
     json.insert(QStringLiteral("arcFrame"), RectToArray(m_refFrame));
     return json;
@@ -207,7 +207,7 @@ QJsonObject ArcItem::ToJson() const
 
 void ArcItem::FromJson(const QJsonObject& json)
 {
-    LineItemAbstract::FromJson(json);
+    LineAbstractItem::FromJson(json);
     ReadArcAngleJson(json);
     m_refFrame = ArrayToRect(json.value(QStringLiteral("arcFrame")).toArray(), QRectF(0.0, 0.0, 1.0, 1.0));
     Rebuild();

@@ -15,16 +15,16 @@
 #include "IconFactory.h"
 #include "ItemPropertiesDialog.h"
 #include "LayerPanel.h"
+#include "LineAbstractItem.h"
 #include "LineArtConverter.h"
 #include "LineArtDialog.h"
 #include "LineArtPresets.h"
-#include "LineItemAbstract.h"
 #include "MainWindow.h"
 #include "PolygonItem.h"
 #include "PropertiesPanel.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "ShapePathBuilder.h"
 #include "SineItem.h"
 #include "StraightLineItem.h"
@@ -114,14 +114,14 @@ void selftest::RunShapeItemTests(Context& ctx)
         CanvasScene opacityScene;
         opacityScene.ApplyCanvasSize(QSizeF(400, 300));
         opacityScene.SetShowGrid(false);
-        ShapeItem* underRect = CreateShapeItem(ShapeType::RECTANGLE);
+        ShapeAbstractItem* underRect = CreateShapeItem(ShapeType::RECTANGLE);
         underRect->SetFillColor(QColor(30, 80, 200));
         underRect->SetStrokeWidth(0.0);
         underRect->SetContentSize(QSizeF(80, 80));
         underRect->setPos(QPointF(20, 20));
         opacityScene.AddItemsWithUndo({underRect}, QStringLiteral("添加底层矩形"));
 
-        ShapeItem* opacityRect = CreateShapeItem(ShapeType::RECTANGLE);
+        ShapeAbstractItem* opacityRect = CreateShapeItem(ShapeType::RECTANGLE);
         opacityRect->SetFillColor(QColor(220, 38, 38));
         opacityRect->SetStrokeWidth(0.0);
         opacityRect->SetContentSize(QSizeF(80, 80));
@@ -144,7 +144,7 @@ void selftest::RunShapeItemTests(Context& ctx)
     // 需求 6：填充 / 描线属性各自归入基类，有面积图形同时多继承两者，
     // 零面积描线只继承描线基类；属性面板按基类虚函数批量改选中图元。
     {
-        ShapeItem* rect = CreateShapeItem(ShapeType::RECTANGLE);
+        ShapeAbstractItem* rect = CreateShapeItem(ShapeType::RECTANGLE);
         StraightLineItem line;
         CanvasItem* lineItem = &line;
         ctx.Check(dynamic_cast<FillAttributes*>(rect) != nullptr && dynamic_cast<StrokeAttributes*>(rect) != nullptr,
@@ -276,7 +276,7 @@ void selftest::RunShapeItemTests(Context& ctx)
         const qreal sideRight = QLineF(right, bottom).length();
         const qreal sideBottom = QLineF(bottom, left).length();
         const qreal sideLeft = QLineF(left, top).length();
-        ShapeItem* diamondBase = &diamond;
+        ShapeAbstractItem* diamondBase = &diamond;
         ctx.Check(dynamic_cast<ParallelogramItem*>(diamondBase) != nullptr && diamond.shapeType() == ShapeType::DIAMOND,
                   QStringLiteral("菱形派生自平行四边形且自带类型"),
                   QStringLiteral("type=%1").arg(static_cast<int>(diamond.shapeType())));
@@ -299,7 +299,7 @@ void selftest::RunShapeItemTests(Context& ctx)
         SineItem wave;
         arc.SetArcGeometry(QPointF(0.0, 0.0), QSizeF(120.0, 80.0), 15.0, 140.0, QColor(Qt::black), 2.0);
         wave.SetWaveGeometry(QPointF(0.0, 0.0), QSizeF(120.0, 80.0), QColor(Qt::black), 2.0);
-        for (LineItemAbstract* line : {static_cast<LineItemAbstract*>(&arc), static_cast<LineItemAbstract*>(&wave)}) {
+        for (LineAbstractItem* line : {static_cast<LineAbstractItem*>(&arc), static_cast<LineAbstractItem*>(&wave)}) {
             line->SetArrowStyles(ArrowStyle::TRIANGLE_FILLED, ArrowStyle::OPEN_ARROW);
             const QRectF hit = line->PaintedShape().boundingRect();
             const QRectF plain = line->OutlineShape().boundingRect();
@@ -351,7 +351,7 @@ void selftest::RunShapeItemTests(Context& ctx)
     bool shapePathsOk = true;
     bool shapeIconsOk = true;
     for (ShapeType type : shapeTypes) {
-        if (ShapeItem::PathFor(type, QRectF(0, 0, 140, 90)).isEmpty()) {
+        if (ShapeAbstractItem::PathFor(type, QRectF(0, 0, 140, 90)).isEmpty()) {
             shapePathsOk = false;
         }
         if (MakeShapeIcon(type, QColor(58, 64, 80), 18).isNull()) {
@@ -556,16 +556,16 @@ void selftest::RunShapeItemTests(Context& ctx)
         TriangleItem triangle;
         triangle.setPos(QPointF(50.0, 50.0));
         triangle.SetContentSize(QSizeF(128.0, 111.0));
-        const QPointF aBefore = triangle.mapToScene(triangle.triangleVertex(ShapeItem::TriangleVertex::A));
-        const QPointF bBefore = triangle.mapToScene(triangle.triangleVertex(ShapeItem::TriangleVertex::B));
+        const QPointF aBefore = triangle.mapToScene(triangle.triangleVertex(ShapeAbstractItem::TriangleVertex::A));
+        const QPointF bBefore = triangle.mapToScene(triangle.triangleVertex(ShapeAbstractItem::TriangleVertex::B));
         const qreal height =
-            qAbs(aBefore.y() - triangle.mapToScene(triangle.triangleVertex(ShapeItem::TriangleVertex::C)).y());
+            qAbs(aBefore.y() - triangle.mapToScene(triangle.triangleVertex(ShapeAbstractItem::TriangleVertex::C)).y());
         CanvasItemInteraction apexDrag(&triangle);
         apexDrag.BeginResize(CanvasItem::APEX,
-                             triangle.mapToScene(triangle.triangleVertex(ShapeItem::TriangleVertex::C)));
+                             triangle.mapToScene(triangle.triangleVertex(ShapeAbstractItem::TriangleVertex::C)));
         apexDrag.ApplyResize(aBefore + QPointF(-30.0, -height), Qt::NoModifier);
-        const QPointF aAfter = triangle.mapToScene(triangle.triangleVertex(ShapeItem::TriangleVertex::A));
-        const QPointF bAfter = triangle.mapToScene(triangle.triangleVertex(ShapeItem::TriangleVertex::B));
+        const QPointF aAfter = triangle.mapToScene(triangle.triangleVertex(ShapeAbstractItem::TriangleVertex::A));
+        const QPointF bAfter = triangle.mapToScene(triangle.triangleVertex(ShapeAbstractItem::TriangleVertex::B));
         ctx.Check(triangle.BottomAngle1() > 90.0 && triangle.BottomAngle1() < 175.0 &&
                       triangle.BottomAngle1() + triangle.BottomAngle2() <= 175.01 &&
                       QLineF(aAfter, aBefore).length() < 0.5 && QLineF(bAfter, bBefore).length() < 0.5 &&
@@ -599,7 +599,7 @@ void selftest::RunShapeItemTests(Context& ctx)
         rightTriangle.SetTriangleAngles(90.0, 45.0);
         bool apexOk = false;
         const QPointF apexCenter = rightTriangle.CustomHandleCenter(CanvasItem::APEX, &apexOk);
-        const QPointF vertex = rightTriangle.triangleVertex(ShapeItem::TriangleVertex::C);
+        const QPointF vertex = rightTriangle.triangleVertex(ShapeAbstractItem::TriangleVertex::C);
         ctx.Check(apexOk && apexCenter.y() > rightTriangle.ContentRect().top() + 12.0 &&
                       qAbs(apexCenter.x() - vertex.x()) < 0.01 && apexCenter.y() < rightTriangle.ContentRect().bottom(),
                   QStringLiteral("三角形顶点手柄下移避开角落手柄"),
@@ -788,7 +788,7 @@ void selftest::RunShapeItemTests(Context& ctx)
                   QStringLiteral("长 / 短半轴图标分别为左、右焦点横线到右顶点"));
     }
 
-    QList<ShapeItem*> shapeItems;
+    QList<ShapeAbstractItem*> shapeItems;
     const QColor shapeStroke(QStringLiteral("#1D4ED8"));
     const QColor shapeFill(29, 78, 216, 40);
     for (int i = 0; i < shapeTypes.size(); ++i) {
@@ -823,7 +823,7 @@ void selftest::RunShapeItemTests(Context& ctx)
     const QImage shapesRendered = shapeScene.RenderImage(shapeScene.CanvasRect(), 1.0);
     bool everyShapeVisible = !shapesRendered.isNull();
     QString invisibleShape;
-    for (ShapeItem* item : shapeItems) {
+    for (ShapeAbstractItem* item : shapeItems) {
         const QRect area =
             item->SceneContentRect().toAlignedRect().adjusted(-3, -3, 3, 3).intersected(shapesRendered.rect());
         int inkPixels = 0;
@@ -842,14 +842,14 @@ void selftest::RunShapeItemTests(Context& ctx)
     }
     ctx.Check(everyShapeVisible, QStringLiteral("每种图形都实际渲染到画板"), invisibleShape);
 
-    ShapeItem* lastShape = shapeItems.constLast();
+    ShapeAbstractItem* lastShape = shapeItems.constLast();
     shapeUndo.undo();
     ctx.Check(shapeScene.CanvasItemCount() == shapeTypes.size() - 1, QStringLiteral("撤销插入图形"));
     shapeUndo.redo();
     ctx.Check(shapeScene.CanvasItemCount() == shapeTypes.size() && lastShape->scene() == &shapeScene,
               QStringLiteral("重做插入图形"));
 
-    ShapeItem* firstShape = shapeItems.constFirst();
+    ShapeAbstractItem* firstShape = shapeItems.constFirst();
     const QPointF shapePosBefore = firstShape->pos();
     const QSizeF shapeSizeBefore = firstShape->ContentSize();
     const ItemGeometry shapeBefore{firstShape, shapePosBefore, shapeSizeBefore};
@@ -885,10 +885,10 @@ void selftest::RunShapeItemTests(Context& ctx)
     ctx.Check(shapeLoaded.LayerHeightsUnique(shapeLoaded.ActiveLayerId()),
               QStringLiteral("画布恢复图形后 height 唯一"));
     QSet<QString> loadedShapeTypes;
-    ShapeItem* loadedRectangle = nullptr;
+    ShapeAbstractItem* loadedRectangle = nullptr;
     int loadedSineCurves = 0;
     for (CanvasItem* item : shapeLoaded.CanvasItems()) {
-        if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+        if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
             loadedShapeTypes.insert(ShapeTypeToString(shape->shapeType()));
             if (shape->shapeType() == ShapeType::RECTANGLE && !loadedRectangle) {
                 loadedRectangle = shape;

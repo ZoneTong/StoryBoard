@@ -3,13 +3,13 @@
 #include "ArcAngleAttributes.h"
 #include "EllipseShape.h"
 #include "I18n.h"
-#include "LineItemAbstract.h"
+#include "LineAbstractItem.h"
 
 #include <QRectF>
 
 // 弧线图元：同时派生自描线图元（零面积描线）、角度属性基类（起止角）与椭圆几何（角度语义、采样）。
 // 椭圆外接框即插入时给出的矩形；角度是几何真相，改角度按上次相对框重新采样。
-class ArcItem : public LineItemAbstract, public ArcAngleAttributes, public EllipseShape {
+class ArcItem : public LineAbstractItem, public ArcAngleAttributes, public EllipseShape {
     Q_OBJECT
   public:
     explicit ArcItem(QGraphicsItem* parent = nullptr);

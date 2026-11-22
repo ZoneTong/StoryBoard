@@ -6,7 +6,7 @@
 #include "LineArtConverter.h"
 #include "LineGlyph.h"
 #include "Settings.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 #include <QColor>
 #include <QHash>

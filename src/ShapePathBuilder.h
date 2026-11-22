@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 #include <QPainterPath>
 #include <QRectF>

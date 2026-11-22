@@ -1,9 +1,9 @@
 #include "ItemPropertiesDialogGeometryBlock.h"
 
 #include "ItemPropertiesDialog.h"
-#include "LineItemAbstract.h"
+#include "LineAbstractItem.h"
 #include "PropertyRowWidgets.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 #include <QDoubleSpinBox>
 #include <QFormLayout>
@@ -75,7 +75,7 @@ void ItemPropertiesDialogGeometryBlock::SetItem(CanvasItem* item)
         m_sizeRow->Refresh(item->ContentSize().width(), item->ContentSize().height());
         m_rotationRow->Refresh(item->RotationAngle());
         m_hasAxes = item->Properties().Contains(ItemProperty::MAJOR_AXIS);
-        m_arcAxes = m_hasAxes && dynamic_cast<LineItemAbstract*>(item) != nullptr;
+        m_arcAxes = m_hasAxes && dynamic_cast<LineAbstractItem*>(item) != nullptr;
         if (m_hasAxes) {
             SyncAxesFromSize();
             if (m_arcAxes) {

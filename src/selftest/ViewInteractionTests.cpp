@@ -18,7 +18,7 @@
 #include "PropertiesPanel.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "StraightLineItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"

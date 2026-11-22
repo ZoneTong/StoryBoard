@@ -1,7 +1,7 @@
 #pragma once
 
-class ShapeItem;
-class LineItemAbstract;
+class ShapeAbstractItem;
+class LineAbstractItem;
 class TextItem;
 
 // 跨类型操作的通用访问者：只用于无法用标量属性表达的定点能力，
@@ -10,7 +10,7 @@ class TextItem;
 class CanvasItemVisitor {
   public:
     virtual ~CanvasItemVisitor() = default;
-    virtual void VisitShape(ShapeItem&);
-    virtual void VisitLine(LineItemAbstract&);
+    virtual void VisitShape(ShapeAbstractItem&);
+    virtual void VisitLine(LineAbstractItem&);
     virtual void VisitText(TextItem&);
 };

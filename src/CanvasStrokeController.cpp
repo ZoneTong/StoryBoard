@@ -3,7 +3,7 @@
 #include "CanvasScene.h"
 #include "CanvasView.h"
 #include "CurveItem.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "StraightLineItem.h"
 
 #include <QCoreApplication>
@@ -19,7 +19,7 @@ QString TrView(const char* text)
 
 // 需求 8：笔画拟合出的节点几乎共线时视作直线。阈值放宽到约笔画宽度的一半，
 // 手绘轻微抖动的直线不会被误判成曲线；折返笔画（来回描）按曲线保留。
-bool StrokeLooksLinear(const LineItemAbstract* stroke)
+bool StrokeLooksLinear(const LineAbstractItem* stroke)
 {
     const QVector<QPointF> knots = stroke->StrokePoints();
     if (knots.size() < 2) {

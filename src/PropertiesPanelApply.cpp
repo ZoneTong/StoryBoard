@@ -6,7 +6,7 @@
 #include "CurveParamCommand.h"
 #include "FillAttributes.h"
 #include "ImagePickerDialog.h"
-#include "LineItemAbstract.h"
+#include "LineAbstractItem.h"
 #include "PolygonItem.h"
 #include "PropertiesPanel.h"
 #include "PropertiesPanelArrangeCard.h"
@@ -15,7 +15,7 @@
 #include "PropertiesPanelFillBorderCard.h"
 #include "PropertiesPanelSelectionCard.h"
 #include "PropertiesPanelValueCard.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "ShapeMeta.h"
 #include "SineItem.h"
 #include "StrokeAttributes.h"
@@ -35,9 +35,9 @@
 #include <QVBoxLayout>
 
 
-void PropertiesPanel::ChangeSelectedShapes(const QString& text, const std::function<void(ShapeItem*)>& mutate)
+void PropertiesPanel::ChangeSelectedShapes(const QString& text, const std::function<void(ShapeAbstractItem*)>& mutate)
 {
-    const QList<ShapeItem*> shapes = SelectedShapes();
+    const QList<ShapeAbstractItem*> shapes = SelectedShapes();
     if (shapes.isEmpty() || !m_scene || !m_scene->UndoStack()) {
         return;
     }
@@ -49,7 +49,7 @@ void PropertiesPanel::ChangeSelectedShapes(const QString& text, const std::funct
     QList<QMap<ItemProperty, QVariant>> after;
     before.reserve(shapes.size());
     after.reserve(shapes.size());
-    for (ShapeItem* shape : shapes) {
+    for (ShapeAbstractItem* shape : shapes) {
         QMap<ItemProperty, QVariant> beforeValues;
         for (ItemProperty property : shape->Properties().Values()) {
             beforeValues.insert(property, shape->PropertyValue(property));
@@ -58,11 +58,11 @@ void PropertiesPanel::ChangeSelectedShapes(const QString& text, const std::funct
         before.append(beforeValues);
     }
     m_refreshing = true;
-    for (ShapeItem* shape : shapes) {
+    for (ShapeAbstractItem* shape : shapes) {
         mutate(shape);
     }
     m_refreshing = false;
-    for (ShapeItem* shape : shapes) {
+    for (ShapeAbstractItem* shape : shapes) {
         QMap<ItemProperty, QVariant> afterValues;
         for (ItemProperty property : shape->Properties().Values()) {
             afterValues.insert(property, shape->PropertyValue(property));
@@ -337,10 +337,10 @@ void PropertiesPanel::ApplyTextColor(const QColor& color)
     ChangeSelectedTexts(tr("Change text color"), [&color](TextItemState& state) { state.color = color; });
 }
 
-void PropertiesPanel::ChangeSelectedArcs(const QString& text, const std::function<void(LineItemAbstract*)>& mutate)
+void PropertiesPanel::ChangeSelectedArcs(const QString& text, const std::function<void(LineAbstractItem*)>& mutate)
 {
-    QList<LineItemAbstract*> arcs;
-    for (LineItemAbstract* stroke : SelectedStrokes()) {
+    QList<LineAbstractItem*> arcs;
+    for (LineAbstractItem* stroke : SelectedStrokes()) {
         if (stroke->SupportsArcAngles()) {
             arcs.append(stroke);
         }
@@ -350,17 +350,17 @@ void PropertiesPanel::ChangeSelectedArcs(const QString& text, const std::functio
     }
 
     QList<CurveParamState> paramsBefore;
-    QList<LineItemAbstract::GeometryState> geometryBefore;
+    QList<LineAbstractItem::GeometryState> geometryBefore;
     QList<CurveParamState> paramsAfter;
-    QList<LineItemAbstract::GeometryState> geometryAfter;
-    QList<LineItemAbstract*> targets;
-    for (LineItemAbstract* arc : arcs) {
+    QList<LineAbstractItem::GeometryState> geometryAfter;
+    QList<LineAbstractItem*> targets;
+    for (LineAbstractItem* arc : arcs) {
         targets.append(arc);
         paramsBefore.append(curveParamState(arc));
         geometryBefore.append(arc->geometryState());
     }
     m_refreshing = true;
-    for (LineItemAbstract* arc : arcs) {
+    for (LineAbstractItem* arc : arcs) {
         mutate(arc);
         paramsAfter.append(curveParamState(arc));
         geometryAfter.append(arc->geometryState());
@@ -372,10 +372,10 @@ void PropertiesPanel::ChangeSelectedArcs(const QString& text, const std::functio
     Refresh();
 }
 
-void PropertiesPanel::ChangeSelectedSines(const QString& text, const std::function<void(LineItemAbstract*)>& mutate)
+void PropertiesPanel::ChangeSelectedSines(const QString& text, const std::function<void(LineAbstractItem*)>& mutate)
 {
-    QList<LineItemAbstract*> sines;
-    for (LineItemAbstract* stroke : SelectedStrokes()) {
+    QList<LineAbstractItem*> sines;
+    for (LineAbstractItem* stroke : SelectedStrokes()) {
         if (stroke->SupportsSineWave()) {
             sines.append(stroke);
         }
@@ -385,17 +385,17 @@ void PropertiesPanel::ChangeSelectedSines(const QString& text, const std::functi
     }
 
     QList<CurveParamState> paramsBefore;
-    QList<LineItemAbstract::GeometryState> geometryBefore;
+    QList<LineAbstractItem::GeometryState> geometryBefore;
     QList<CurveParamState> paramsAfter;
-    QList<LineItemAbstract::GeometryState> geometryAfter;
-    QList<LineItemAbstract*> targets;
-    for (LineItemAbstract* sine : sines) {
+    QList<LineAbstractItem::GeometryState> geometryAfter;
+    QList<LineAbstractItem*> targets;
+    for (LineAbstractItem* sine : sines) {
         targets.append(sine);
         paramsBefore.append(curveParamState(sine));
         geometryBefore.append(sine->geometryState());
     }
     m_refreshing = true;
-    for (LineItemAbstract* sine : sines) {
+    for (LineAbstractItem* sine : sines) {
         mutate(sine);
         paramsAfter.append(curveParamState(sine));
         geometryAfter.append(sine->geometryState());
@@ -413,7 +413,7 @@ void PropertiesPanel::ChooseFillImage()
     bool hasTarget = false;
     for (CanvasItem* item : SelectedItems()) {
         auto* fill = dynamic_cast<FillAttributes*>(item);
-        auto* shape = dynamic_cast<ShapeItem*>(item);
+        auto* shape = dynamic_cast<ShapeAbstractItem*>(item);
         if (fill && shape && !shape->IsCustomShape() && ShapeMeta::IsFilled(shape->shapeType())) {
             hasTarget = true;
             break;
@@ -427,7 +427,7 @@ void PropertiesPanel::ChooseFillImage()
         return;
     }
     ApplyFillMutation(tr("Replace fill image"), [pixmap](FillAttributes* fill) {
-        if (auto* shape = dynamic_cast<ShapeItem*>(fill); shape && shape->IsCustomShape()) {
+        if (auto* shape = dynamic_cast<ShapeAbstractItem*>(fill); shape && shape->IsCustomShape()) {
             return;
         }
         // 替换图片同时重置为拉伸模式，与原整份状态命令语义一致。
@@ -454,15 +454,15 @@ void PropertiesPanel::ApplyFillImageMode(int mode)
 void PropertiesPanel::ApplyCornerRadius(int radius)
 {
     ChangeSelectedShapes(tr("Change rectangle corner radius"),
-                         [radius](ShapeItem* shape) { shape->SetCornerRadius(radius); });
+                         [radius](ShapeAbstractItem* shape) { shape->SetCornerRadius(radius); });
 }
 
 void PropertiesPanel::ApplyStartAngle(int angle)
 {
     ChangeSelectedShapes(tr("Change start angle"),
-                         [angle](ShapeItem* shape) { shape->SetArcAngles(angle, shape->SweepAngle()); });
-    ChangeSelectedArcs(tr("Change start angle"), [angle](LineItemAbstract* arc) {
-        LineItemAbstract::ParamState params = arc->paramState();
+                         [angle](ShapeAbstractItem* shape) { shape->SetArcAngles(angle, shape->SweepAngle()); });
+    ChangeSelectedArcs(tr("Change start angle"), [angle](LineAbstractItem* arc) {
+        LineAbstractItem::ParamState params = arc->paramState();
         params.first = angle;
         arc->ApplyParamState(params);
     });
@@ -471,9 +471,9 @@ void PropertiesPanel::ApplyStartAngle(int angle)
 void PropertiesPanel::ApplySweepAngle(int angle)
 {
     ChangeSelectedShapes(tr("Change sector angle"),
-                         [angle](ShapeItem* shape) { shape->SetArcAngles(shape->StartAngle(), angle); });
-    ChangeSelectedArcs(tr("Change arc sweep angle"), [angle](LineItemAbstract* arc) {
-        LineItemAbstract::ParamState params = arc->paramState();
+                         [angle](ShapeAbstractItem* shape) { shape->SetArcAngles(shape->StartAngle(), angle); });
+    ChangeSelectedArcs(tr("Change arc sweep angle"), [angle](LineAbstractItem* arc) {
+        LineAbstractItem::ParamState params = arc->paramState();
         params.second = angle;
         arc->ApplyParamState(params);
     });
@@ -482,8 +482,8 @@ void PropertiesPanel::ApplySweepAngle(int angle)
 void PropertiesPanel::ApplySineCycles(int cycles)
 {
     const int bounded = qBound(1, cycles, 12);
-    ChangeSelectedSines(tr("Change sine cycles"), [bounded](LineItemAbstract* sine) {
-        LineItemAbstract::ParamState params = sine->paramState();
+    ChangeSelectedSines(tr("Change sine cycles"), [bounded](LineAbstractItem* sine) {
+        LineAbstractItem::ParamState params = sine->paramState();
         params.first = bounded;
         sine->ApplyParamState(params);
     });
@@ -492,8 +492,8 @@ void PropertiesPanel::ApplySineCycles(int cycles)
 void PropertiesPanel::ApplySineAmplitude(int pixels)
 {
     const qreal amplitude = qBound<qreal>(1.0, pixels, 200.0);
-    ChangeSelectedSines(tr("Change sine amplitude"), [amplitude](LineItemAbstract* sine) {
-        LineItemAbstract::ParamState params = sine->paramState();
+    ChangeSelectedSines(tr("Change sine amplitude"), [amplitude](LineAbstractItem* sine) {
+        LineAbstractItem::ParamState params = sine->paramState();
         params.second = amplitude;
         sine->ApplyParamState(params);
     });
@@ -501,7 +501,7 @@ void PropertiesPanel::ApplySineAmplitude(int pixels)
 
 void PropertiesPanel::ApplyTriangleAngle1(int degrees)
 {
-    ChangeSelectedShapes(tr("Change triangle base angle"), [degrees](ShapeItem* shape) {
+    ChangeSelectedShapes(tr("Change triangle base angle"), [degrees](ShapeAbstractItem* shape) {
         if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->IsCustomShape()) {
             return;
         }
@@ -511,7 +511,7 @@ void PropertiesPanel::ApplyTriangleAngle1(int degrees)
 
 void PropertiesPanel::ApplyTriangleAngle2(int degrees)
 {
-    ChangeSelectedShapes(tr("Change triangle base angle"), [degrees](ShapeItem* shape) {
+    ChangeSelectedShapes(tr("Change triangle base angle"), [degrees](ShapeAbstractItem* shape) {
         if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->IsCustomShape()) {
             return;
         }
@@ -522,11 +522,11 @@ void PropertiesPanel::ApplyTriangleAngle2(int degrees)
 void PropertiesPanel::ApplyArrowStart(int style)
 {
     // 需求 9b/9d：直线与曲线共用一条箭头撤销记录，只改箭头样式。
-    const QList<LineItemAbstract*> curves = SelectedStrokes();
+    const QList<LineAbstractItem*> curves = SelectedStrokes();
     QList<CanvasItem*> targets;
     QList<QMap<ItemProperty, QVariant>> before;
     QList<QMap<ItemProperty, QVariant>> after;
-    for (LineItemAbstract* curve : curves) {
+    for (LineAbstractItem* curve : curves) {
         if (!curve || !curve->Properties().Contains(ItemProperty::ARROW_START)) {
             continue;
         }
@@ -551,11 +551,11 @@ void PropertiesPanel::ApplyArrowStart(int style)
 
 void PropertiesPanel::ApplyArrowEnd(int style)
 {
-    const QList<LineItemAbstract*> curves = SelectedStrokes();
+    const QList<LineAbstractItem*> curves = SelectedStrokes();
     QList<CanvasItem*> targets;
     QList<QMap<ItemProperty, QVariant>> before;
     QList<QMap<ItemProperty, QVariant>> after;
-    for (LineItemAbstract* curve : curves) {
+    for (LineAbstractItem* curve : curves) {
         if (!curve || !curve->Properties().Contains(ItemProperty::ARROW_END)) {
             continue;
         }

@@ -1,4 +1,4 @@
-#include "LineItemAbstract.h"
+#include "LineAbstractItem.h"
 
 #include "CanvasItemVisitor.h"
 #include "StrokeGeometry.h"
@@ -9,17 +9,17 @@
 #include <QPainter>
 #include <QtMath>
 
-LineItemAbstract::LineItemAbstract(QGraphicsItem* parent) : CanvasItem(parent)
+LineAbstractItem::LineAbstractItem(QGraphicsItem* parent) : CanvasItem(parent)
 {
     setZValue(0.0);
 }
 
-void LineItemAbstract::Accept(CanvasItemVisitor& visitor)
+void LineAbstractItem::Accept(CanvasItemVisitor& visitor)
 {
     visitor.VisitLine(*this);
 }
 
-bool LineItemAbstract::GeometryState::operator==(const GeometryState& other) const
+bool LineAbstractItem::GeometryState::operator==(const GeometryState& other) const
 {
     if (hasDot != other.hasDot || segments.size() != other.segments.size() ||
         !StrokeSmoothing::SamePoint(dotCenter, other.dotCenter)) {
@@ -38,14 +38,14 @@ bool LineItemAbstract::GeometryState::operator==(const GeometryState& other) con
            qAbs(baseSize.height() - other.baseSize.height()) < StrokeSmoothing::STATE_EPSILON;
 }
 
-ItemPropertySet LineItemAbstract::Properties() const
+ItemPropertySet LineAbstractItem::Properties() const
 {
     // 描线三件套对五个形态统一生效；箭头 / 角度 / 波形参数由各自的子型追加。
     return CanvasItem::Properties().United(
         ItemPropertySet{ItemProperty::STROKE_STYLE, ItemProperty::STROKE_COLOR, ItemProperty::STROKE_WIDTH});
 }
 
-QVariant LineItemAbstract::PropertyValue(ItemProperty property) const
+QVariant LineAbstractItem::PropertyValue(ItemProperty property) const
 {
     switch (property) {
     case ItemProperty::STROKE_STYLE:
@@ -59,7 +59,7 @@ QVariant LineItemAbstract::PropertyValue(ItemProperty property) const
     }
 }
 
-void LineItemAbstract::SetPropertyValue(ItemProperty property, const QVariant& value)
+void LineAbstractItem::SetPropertyValue(ItemProperty property, const QVariant& value)
 {
     switch (property) {
     case ItemProperty::STROKE_STYLE:
@@ -77,17 +77,17 @@ void LineItemAbstract::SetPropertyValue(ItemProperty property, const QVariant& v
     }
 }
 
-QColor LineItemAbstract::StrokeColorOrDefault(const QColor& color) const
+QColor LineAbstractItem::StrokeColorOrDefault(const QColor& color) const
 {
     return color.isValid() ? color : QColor(30, 41, 59);
 }
 
-void LineItemAbstract::SetStrokeColor(const QColor& color)
+void LineAbstractItem::SetStrokeColor(const QColor& color)
 {
     StrokeAttributes::SetStrokeColor(color);
 }
 
-void LineItemAbstract::SetStrokeWidth(qreal width)
+void LineAbstractItem::SetStrokeWidth(qreal width)
 {
     const qreal resolved = qBound<qreal>(0.5, width, 48.0);
     if (qFuzzyCompare(m_strokeWidth + 1.0, resolved + 1.0)) {
@@ -100,12 +100,12 @@ void LineItemAbstract::SetStrokeWidth(qreal width)
     update();
 }
 
-void LineItemAbstract::SetStrokePattern(Qt::PenStyle style)
+void LineAbstractItem::SetStrokePattern(Qt::PenStyle style)
 {
     StrokeAttributes::SetStrokePattern(style);
 }
 
-void LineItemAbstract::SetArrowStyles(ArrowStyle start, ArrowStyle end)
+void LineAbstractItem::SetArrowStyles(ArrowStyle start, ArrowStyle end)
 {
     if (m_startArrow == start && m_endArrow == end) {
         return;
@@ -115,7 +115,7 @@ void LineItemAbstract::SetArrowStyles(ArrowStyle start, ArrowStyle end)
     update();
 }
 
-void LineItemAbstract::SetStrokePoints(const QVector<QPointF>& scenePoints, const QColor& color, qreal width,
+void LineAbstractItem::SetStrokePoints(const QVector<QPointF>& scenePoints, const QColor& color, qreal width,
                                        qreal tolerance, bool polyline)
 {
     m_strokeColor = StrokeColorOrDefault(color);
@@ -144,12 +144,12 @@ void LineItemAbstract::SetStrokePoints(const QVector<QPointF>& scenePoints, cons
     update();
 }
 
-QVector<QPointF> LineItemAbstract::StrokePoints() const
+QVector<QPointF> LineAbstractItem::StrokePoints() const
 {
     return CurveGeometry::Knots(m_segments);
 }
 
-QRectF LineItemAbstract::SegmentBounds() const
+QRectF LineAbstractItem::SegmentBounds() const
 {
     qreal minX = 0.0;
     qreal minY = 0.0;
@@ -180,7 +180,7 @@ QRectF LineItemAbstract::SegmentBounds() const
     return QRectF(QPointF(minX, minY), QPointF(maxX, maxY));
 }
 
-void LineItemAbstract::NormalizeGeometry()
+void LineAbstractItem::NormalizeGeometry()
 {
     const QRectF bounds = SegmentBounds();
     if (bounds.isNull()) {
@@ -212,18 +212,18 @@ void LineItemAbstract::NormalizeGeometry()
     SetContentSize(m_baseSize);
 }
 
-void LineItemAbstract::RebuildPath()
+void LineAbstractItem::RebuildPath()
 {
     m_path = CurveGeometry::BuildPath(m_segments);
 }
 
-bool LineItemAbstract::SimplifyCurve(qreal tolerance)
+bool LineAbstractItem::SimplifyCurve(qreal tolerance)
 {
     Q_UNUSED(tolerance)
     return false;
 }
 
-void LineItemAbstract::PaintContent(QPainter* painter)
+void LineAbstractItem::PaintContent(QPainter* painter)
 {
     StrokeGeometry::Render(painter, m_path, m_baseSize, ContentSize(), m_strokeColor, m_strokeWidth, m_strokeStyle);
 
@@ -246,12 +246,12 @@ void LineItemAbstract::PaintContent(QPainter* painter)
     painter->restore();
 }
 
-QPainterPath LineItemAbstract::OutlineShape() const
+QPainterPath LineAbstractItem::OutlineShape() const
 {
     return StrokeGeometry::Outline(m_path, m_baseSize, ContentSize());
 }
 
-QPainterPath LineItemAbstract::PaintedShape() const
+QPainterPath LineAbstractItem::PaintedShape() const
 {
     // 完全透明的描线画不出东西，也就不该算作遮挡。
     if (m_strokeColor.alpha() == 0) {
@@ -261,7 +261,7 @@ QPainterPath LineItemAbstract::PaintedShape() const
     return StrokeGeometry::Painted(centerLine, m_baseSize, ContentSize(), m_strokeWidth);
 }
 
-QPainterPath LineItemAbstract::shape() const
+QPainterPath LineAbstractItem::shape() const
 {
     QPainterPath result = StrokeGeometry::HitScaled(m_path, m_baseSize, ContentSize(), m_strokeWidth, ViewScale());
 
@@ -275,12 +275,12 @@ QPainterPath LineItemAbstract::shape() const
     return result;
 }
 
-LineItemAbstract::GeometryState LineItemAbstract::geometryState() const
+LineAbstractItem::GeometryState LineAbstractItem::geometryState() const
 {
     return GeometryState{m_segments, pos(), ContentSize(), m_baseSize, false, QPointF()};
 }
 
-void LineItemAbstract::ApplyGeometryState(const GeometryState& state)
+void LineAbstractItem::ApplyGeometryState(const GeometryState& state)
 {
     m_segments = state.segments;
     m_baseSize = state.baseSize;
@@ -290,7 +290,7 @@ void LineItemAbstract::ApplyGeometryState(const GeometryState& state)
     update();
 }
 
-QJsonObject LineItemAbstract::ToJson() const
+QJsonObject LineAbstractItem::ToJson() const
 {
     QJsonObject json = BaseJson();
     json.insert(QStringLiteral("color"), m_strokeColor.name(QColor::HexArgb));
@@ -321,7 +321,7 @@ QJsonObject LineItemAbstract::ToJson() const
     return json;
 }
 
-void LineItemAbstract::FromJson(const QJsonObject& json)
+void LineAbstractItem::FromJson(const QJsonObject& json)
 {
     m_strokeColor = QColor(json.value(QStringLiteral("color")).toString(QStringLiteral("#ff1e293b")));
     if (!m_strokeColor.isValid()) {

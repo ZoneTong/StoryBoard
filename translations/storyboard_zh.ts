@@ -3359,7 +3359,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <translation>怎么调</translation>
     </message></context>
 <context>
-    <name>ShapeItem</name><message>
+    <name>ShapeAbstractItem</name><message>
         <location filename="../src/ShapeItem.cpp" line="62"/>
         <location filename="../src/ShapeItem.cpp" line="100"/>
         <source>Rectangle</source>

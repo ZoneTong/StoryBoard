@@ -1,7 +1,7 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
-#include "LineItemAbstract.h"
+#include "LineAbstractItem.h"
 #include "scene/SceneConstants.h"
 
 #include <QSet>
@@ -72,10 +72,10 @@ bool CanvasScene::CanSmoothSelectedStrokes() const
         if (!IsItemEditable(item)) {
             continue;
         }
-        if (auto* line = dynamic_cast<LineItemAbstract*>(item)) {
+        if (auto* line = dynamic_cast<LineAbstractItem*>(item)) {
             // 只有具备简化能力的手绘笔迹（含图片线稿提取）可简化；
             // 直线 / 弧线 / 正弦 / 花括号是程序化几何，能力位为 false。
-            const LineItemAbstract::GeometryState state = line->geometryState();
+            const LineAbstractItem::GeometryState state = line->geometryState();
             if (line->SupportsSimplify() && !state.hasDot && line->StrokePoints().size() >= 3) {
                 return true;
             }
@@ -92,18 +92,18 @@ int CanvasScene::SmoothSelectedStrokes(qreal tolerance)
 
     // 参数 0 只关闭“收尾自动平滑”；手动按钮即使在该设置下也执行一次轻量平滑。
     const qreal effectiveTolerance = qMax<qreal>(2.0, tolerance);
-    QList<LineItemAbstract*> items;
-    QList<LineItemAbstract::GeometryState> before;
-    QList<LineItemAbstract::GeometryState> after;
+    QList<LineAbstractItem*> items;
+    QList<LineAbstractItem::GeometryState> before;
+    QList<LineAbstractItem::GeometryState> after;
     for (CanvasItem* item : SelectedCanvasItems()) {
         if (!IsItemEditable(item)) {
             continue;
         }
-        auto* line = dynamic_cast<LineItemAbstract*>(item);
+        auto* line = dynamic_cast<LineAbstractItem*>(item);
         if (!line || !line->SupportsSimplify()) {
             continue;
         }
-        const LineItemAbstract::GeometryState beforeState = line->geometryState();
+        const LineAbstractItem::GeometryState beforeState = line->geometryState();
         if (beforeState.hasDot || line->StrokePoints().size() < 3) {
             continue;
         }

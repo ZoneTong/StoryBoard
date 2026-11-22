@@ -4,7 +4,7 @@
 #include "CurveItem.h"
 #include "MainWindow.h"
 #include "PolygonItem.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "ShapeMeta.h"
 #include "ShapePathBuilder.h"
 #include "SineItem.h"
@@ -116,7 +116,7 @@ void selftest::RunShapesClusterTests(Context& ctx)
             } else if (item->GroupId() != groupId) {
                 sameGroup = false;
             }
-            auto* face = qgraphicsitem_cast<ShapeItem*>(item);
+            auto* face = qgraphicsitem_cast<ShapeAbstractItem*>(item);
             if (face && face->shapeType() == ShapeType::PARALLELOGRAM) {
                 ++diamondFaces;
                 if (!qFuzzyIsNull(face->RotationAngle())) {
@@ -197,7 +197,7 @@ void selftest::RunShapesClusterTests(Context& ctx)
             } else if (items.at(i)->GroupId() != cylGroup) {
                 cylinderGrouped = false;
             }
-            auto* shape = qgraphicsitem_cast<ShapeItem*>(items.at(i));
+            auto* shape = qgraphicsitem_cast<ShapeAbstractItem*>(items.at(i));
             if (shape && shape->shapeType() == ShapeType::ELLIPSE) {
                 ++ellipseCount;
             }
@@ -210,7 +210,7 @@ void selftest::RunShapesClusterTests(Context& ctx)
         ctx.Check(body != nullptr && body->LayerCount() == 1, QStringLiteral("圆柱体柱身是有面积的多边形图元"),
                   QStringLiteral("layers=%1").arg(body ? body->LayerCount() : -1));
         // 需求 18/30：顶椭圆叠在柱身上层（分组内后加入的图元高度更高）。
-        auto* lastFace = qgraphicsitem_cast<ShapeItem*>(items.last());
+        auto* lastFace = qgraphicsitem_cast<ShapeAbstractItem*>(items.last());
         ctx.Check(lastFace && lastFace->shapeType() == ShapeType::ELLIPSE && lastFace->GroupId() == cylGroup,
                   QStringLiteral("圆柱体顶椭圆叠在柱身上方"));
         ctx.Check(body && lastFace && lastFace->ZOrder() > body->ZOrder(),
@@ -240,7 +240,7 @@ void selftest::RunShapesClusterTests(Context& ctx)
         int shapeCount = 0;
         int mismatched = 0;
         for (int i = 1; i < after.size(); ++i) {
-            auto* shape = dynamic_cast<ShapeItem*>(after.at(i));
+            auto* shape = dynamic_cast<ShapeAbstractItem*>(after.at(i));
             if (shape && shape->shapeType() == insertedShapes.at(i - 1)) {
                 ++shapeCount;
             } else {
@@ -283,11 +283,12 @@ void selftest::RunShapesClusterTests(Context& ctx)
                   QStringLiteral("星星按角的个数排序：十字星、五角星、六芒星"),
                   QStringLiteral("star4=%1 star=%2 hexagram=%3").arg(star4).arg(star).arg(hexagram));
         // 更名走 storyboard_zh.ts 手工翻译：源串不变，译文按需求更新。
-        ctx.Check(ShapeItem::tr("Four-point star") == QStringLiteral("十字星") &&
-                      ShapeItem::tr("Sine wave") == QStringLiteral("正弦波") &&
-                      ShapeItem::tr("Wavy flag") == QStringLiteral("旗帜"),
+        ctx.Check(ShapeAbstractItem::tr("Four-point star") == QStringLiteral("十字星") &&
+                      ShapeAbstractItem::tr("Sine wave") == QStringLiteral("正弦波") &&
+                      ShapeAbstractItem::tr("Wavy flag") == QStringLiteral("旗帜"),
                   QStringLiteral("四角星/正弦波形/波形旗帜已更名为十字星/正弦波/旗帜"),
                   QStringLiteral("%1/%2/%3")
-                      .arg(ShapeItem::tr("Four-point star"), ShapeItem::tr("Sine wave"), ShapeItem::tr("Wavy flag")));
+                      .arg(ShapeAbstractItem::tr("Four-point star"), ShapeAbstractItem::tr("Sine wave"),
+                           ShapeAbstractItem::tr("Wavy flag")));
     }
 }

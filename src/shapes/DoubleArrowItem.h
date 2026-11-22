@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 // DoubleArrow：轮廓由 ShapePathBuilder 按 ShapeType::DOUBLE_ARROW 生成，没有额外参数。
-class DoubleArrowItem : public ShapeItem {
+class DoubleArrowItem : public ShapeAbstractItem {
   public:
     DoubleArrowItem();
     QSizeF DefaultContentSize() const override;

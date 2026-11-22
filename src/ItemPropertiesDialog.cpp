@@ -8,8 +8,8 @@
 #include "ItemPropertiesDialogIdentityBlock.h"
 #include "ItemPropertiesDialogStyleBlock.h"
 #include "ItemPropertiesDialogTextBlock.h"
-#include "LineItemAbstract.h"
-#include "ShapeItem.h"
+#include "LineAbstractItem.h"
+#include "ShapeAbstractItem.h"
 #include "TextItem.h"
 #include "TriangleGeometry.h"
 
@@ -485,7 +485,7 @@ void ItemPropertiesDialog::ApplyChanges()
         after.stack.append({peer, oldLayer, oldHeight});
     }
 
-    if (auto* shape = dynamic_cast<ShapeItem*>(m_item.data())) {
+    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(m_item.data())) {
         before.hasShapeState = true;
         before.shapeState = shape->State();
 
@@ -579,7 +579,7 @@ void ItemPropertiesDialog::ApplyChanges()
             const int percent = style->OpacitySpin()->value();
             after.opacity = percent == style->InitialOpacityPercent() ? style->InitialOpacity() : percent / 100.0;
         }
-    } else if (auto* stroke = dynamic_cast<LineItemAbstract*>(m_item.data())) {
+    } else if (auto* stroke = dynamic_cast<LineAbstractItem*>(m_item.data())) {
         before.hasStrokeStyle = true;
         before.strokeColor = stroke->StrokeColor();
         before.strokeWidth = stroke->StrokeWidth();

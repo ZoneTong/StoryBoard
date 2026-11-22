@@ -72,13 +72,13 @@ class ItemPropertiesDialogStyleBlock : public QWidget {
     QComboBox* StartArrowCombo() const { return m_startArrowCombo; }
     QComboBox* EndArrowCombo() const { return m_endArrowCombo; }
 
-    // 弧线：起始角 / 扫过角（度），走 LineItemAbstract::ParamState。
+    // 弧线：起始角 / 扫过角（度），走 LineAbstractItem::ParamState。
     QSpinBox* ArcStartAngleSpin() const { return m_arcStartAngleSpin; }
     QSpinBox* ArcSweepAngleSpin() const { return m_arcSweepAngleSpin; }
     qreal InitialArcStartAngle() const { return m_initialArcStartAngle; }
     qreal InitialArcSweepAngle() const { return m_initialArcSweepAngle; }
 
-    // 正弦：周期数（1–12）与振幅（1–200 px），走 LineItemAbstract::ParamState。
+    // 正弦：周期数（1–12）与振幅（1–200 px），走 LineAbstractItem::ParamState。
     QSpinBox* SineCyclesSpin() const { return m_sineCyclesSpin; }
     QSpinBox* SineAmplitudeSpin() const { return m_sineAmplitudeSpin; }
     int InitialSineCycles() const { return m_initialSineCycles; }

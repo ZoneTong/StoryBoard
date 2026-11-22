@@ -9,7 +9,7 @@
 #include "PathRegions.h"
 #include "PolygonItem.h"
 #include "PropertiesPanel.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "ShapePathBuilder.h"
 #include "SineItem.h"
 #include "StraightLineItem.h"
@@ -218,7 +218,7 @@ void selftest::RunLineSplitTests(Context& ctx)
         QApplication::processEvents();
         {
             const QList<CanvasItem*> selected = mainScene->SelectedCanvasItems();
-            ctx.Check(selected.size() == 1 && dynamic_cast<ShapeItem*>(selected.value(0)) != nullptr,
+            ctx.Check(selected.size() == 1 && dynamic_cast<ShapeAbstractItem*>(selected.value(0)) != nullptr,
                       QStringLiteral("点选矩形内部仅选中矩形"), QStringLiteral("size=%1").arg(selected.size()));
         }
         const QPointF curveScenePos = QPointF(crossStart.x() + rectBounds.width() / 2.0, crossStart.y() - 10.0);
@@ -237,7 +237,7 @@ void selftest::RunLineSplitTests(Context& ctx)
         {
             const QList<CanvasItem*> selected = mainScene->SelectedCanvasItems();
             const bool hasShape = std::any_of(selected.cbegin(), selected.cend(), [](CanvasItem* item) {
-                return dynamic_cast<ShapeItem*>(item) != nullptr;
+                return dynamic_cast<ShapeAbstractItem*>(item) != nullptr;
             });
             const bool hasCurve = std::any_of(selected.cbegin(), selected.cend(), [](CanvasItem* item) {
                 return dynamic_cast<CurveItem*>(item) != nullptr;
@@ -412,7 +412,7 @@ void selftest::RunLineSplitTests(Context& ctx)
         ctx.Check(!LineSplitOps::Apply(&scene, QStringLiteral("分割")), QStringLiteral("内部曲线不切分填充图形"));
         bool originalKept = false;
         for (CanvasItem* item : scene.CanvasItems()) {
-            if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+            if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
                 originalKept = originalKept || shape == rect;
             }
         }

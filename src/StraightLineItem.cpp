@@ -21,12 +21,12 @@ QRectF PaddedToMinimum(QRectF frame)
 
 } // namespace
 
-StraightLineItem::StraightLineItem(QGraphicsItem* parent) : LineItemAbstract(parent) {}
+StraightLineItem::StraightLineItem(QGraphicsItem* parent) : LineAbstractItem(parent) {}
 
 ItemPropertySet StraightLineItem::Properties() const
 {
     // 箭头行对全部描线子型开放（含花括号），与现状一致。
-    return LineItemAbstract::Properties().United(ItemPropertySet{ItemProperty::ARROW_START, ItemProperty::ARROW_END});
+    return LineAbstractItem::Properties().United(ItemPropertySet{ItemProperty::ARROW_START, ItemProperty::ARROW_END});
 }
 
 QVariant StraightLineItem::PropertyValue(ItemProperty property) const
@@ -37,7 +37,7 @@ QVariant StraightLineItem::PropertyValue(ItemProperty property) const
     case ItemProperty::ARROW_END:
         return static_cast<int>(EndArrow());
     default:
-        return LineItemAbstract::PropertyValue(property);
+        return LineAbstractItem::PropertyValue(property);
     }
 }
 
@@ -51,7 +51,7 @@ void StraightLineItem::SetPropertyValue(ItemProperty property, const QVariant& v
         SetArrowStyles(StartArrow(), static_cast<ArrowStyle>(value.toInt()));
         break;
     default:
-        LineItemAbstract::SetPropertyValue(property, value);
+        LineAbstractItem::SetPropertyValue(property, value);
         break;
     }
 }

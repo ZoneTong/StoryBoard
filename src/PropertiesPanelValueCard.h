@@ -1,12 +1,12 @@
 #pragma once
 
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 #include <QList>
 #include <QWidget>
 
 class CanvasItem;
-class LineItemAbstract;
+class LineAbstractItem;
 class QComboBox;
 class QSpinBox;
 
@@ -20,7 +20,7 @@ class PropertiesPanelValueCard : public QWidget {
     explicit PropertiesPanelValueCard(QWidget* parent = nullptr);
 
     // 需求 9b：曲线也要显示起点 / 终点箭头行，因此 refresh 同时接收选中的曲线。
-    void Refresh(const QList<ShapeItem*>& shapes, const QList<LineItemAbstract*>& strokes,
+    void Refresh(const QList<ShapeAbstractItem*>& shapes, const QList<LineAbstractItem*>& strokes,
                  const QList<CanvasItem*>& items);
     // 圆角行是否可见：只有矩形类图元才显示圆角编辑。
     void SetCornerVisible(bool visible);

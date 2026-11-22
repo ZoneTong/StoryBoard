@@ -1,4 +1,4 @@
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "ShapeMeta.h"
 #include "ShapePainter.h"
 #include "ShapePathBuilder.h"
@@ -24,44 +24,44 @@ QString ShapeTypeName(ShapeType type)
 {
     switch (type) {
     case ShapeType::RECTANGLE:
-        return ShapeItem::tr("Rectangle");
+        return ShapeAbstractItem::tr("Rectangle");
     case ShapeType::ELLIPSE:
-        return ShapeItem::tr("Ellipse");
+        return ShapeAbstractItem::tr("Ellipse");
     case ShapeType::TRIANGLE:
-        return ShapeItem::tr("Triangle");
+        return ShapeAbstractItem::tr("Triangle");
     case ShapeType::STAR:
-        return ShapeItem::tr("Star");
+        return ShapeAbstractItem::tr("Star");
     case ShapeType::ARROW:
-        return ShapeItem::tr("Arrow");
+        return ShapeAbstractItem::tr("Arrow");
     case ShapeType::DOUBLE_ARROW:
-        return ShapeItem::tr("Double arrow");
+        return ShapeAbstractItem::tr("Double arrow");
 
     case ShapeType::CALLOUT:
-        return ShapeItem::tr("Speech bubble");
+        return ShapeAbstractItem::tr("Speech bubble");
     case ShapeType::SECTOR:
-        return ShapeItem::tr("Sector");
+        return ShapeAbstractItem::tr("Sector");
 
     case ShapeType::STAR4:
-        return ShapeItem::tr("Four-point star");
+        return ShapeAbstractItem::tr("Four-point star");
     case ShapeType::HEXAGRAM:
-        return ShapeItem::tr("Six-point star");
+        return ShapeAbstractItem::tr("Six-point star");
     case ShapeType::HEART:
-        return ShapeItem::tr("Heart");
+        return ShapeAbstractItem::tr("Heart");
 
     case ShapeType::FLAG_WAVE:
-        return ShapeItem::tr("Wavy flag");
+        return ShapeAbstractItem::tr("Wavy flag");
     case ShapeType::SCROLL:
-        return ShapeItem::tr("Scroll");
+        return ShapeAbstractItem::tr("Scroll");
     case ShapeType::CUBE:
-        return ShapeItem::tr("Cube");
+        return ShapeAbstractItem::tr("Cube");
     case ShapeType::CYLINDER:
-        return ShapeItem::tr("Cylinder");
+        return ShapeAbstractItem::tr("Cylinder");
     case ShapeType::PARALLELOGRAM:
-        return ShapeItem::tr("Parallelogram");
+        return ShapeAbstractItem::tr("Parallelogram");
     case ShapeType::DIAMOND:
-        return ShapeItem::tr("Diamond");
+        return ShapeAbstractItem::tr("Diamond");
     }
-    return ShapeItem::tr("Rectangle");
+    return ShapeAbstractItem::tr("Rectangle");
 }
 
 QString ShapeTypeToString(ShapeType type)
@@ -78,7 +78,7 @@ QSizeF DefaultShapeSize(ShapeType type)
 {
     // 单一来源在子类 DefaultContentSize()：按需构造原型图元取默认尺寸，
     // 构造函数走 SetContentSize(DefaultContentSize())，不会递归。
-    ShapeItem* prototype = CreateShapeItem(type);
+    ShapeAbstractItem* prototype = CreateShapeItem(type);
     const QSizeF size = prototype->DefaultContentSize();
     delete prototype;
     return size;
@@ -99,29 +99,29 @@ QString FillStyleName(FillStyle style)
 {
     switch (style) {
     case FillStyle::NONE:
-        return ShapeItem::tr("No fill");
+        return ShapeAbstractItem::tr("No fill");
     case FillStyle::SOLID:
-        return ShapeItem::tr("Solid");
+        return ShapeAbstractItem::tr("Solid");
     case FillStyle::HACHURE:
-        return ShapeItem::tr("Hatch");
+        return ShapeAbstractItem::tr("Hatch");
     case FillStyle::REVERSE_HACHURE:
-        return ShapeItem::tr("Reverse hatch");
+        return ShapeAbstractItem::tr("Reverse hatch");
     case FillStyle::CROSS_HATCH:
-        return ShapeItem::tr("Cross hatch");
+        return ShapeAbstractItem::tr("Cross hatch");
     case FillStyle::GRID_HATCH:
-        return ShapeItem::tr("Grid hatch");
+        return ShapeAbstractItem::tr("Grid hatch");
     case FillStyle::HONEYCOMB:
-        return ShapeItem::tr("Hexagon");
+        return ShapeAbstractItem::tr("Hexagon");
     case FillStyle::HORIZONTAL_HATCH:
-        return ShapeItem::tr("Horizontal lines");
+        return ShapeAbstractItem::tr("Horizontal lines");
     case FillStyle::VERTICAL_HATCH:
-        return ShapeItem::tr("Vertical lines");
+        return ShapeAbstractItem::tr("Vertical lines");
     case FillStyle::BRICK:
-        return ShapeItem::tr("Brick");
+        return ShapeAbstractItem::tr("Brick");
     case FillStyle::DOTS:
-        return ShapeItem::tr("Dots");
+        return ShapeAbstractItem::tr("Dots");
     }
-    return ShapeItem::tr("Solid");
+    return ShapeAbstractItem::tr("Solid");
 }
 
 QString FillStyleToString(FillStyle style)

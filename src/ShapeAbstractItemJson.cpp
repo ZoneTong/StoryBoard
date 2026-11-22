@@ -1,4 +1,4 @@
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 #include <QByteArray>
 #include <QDataStream>
@@ -32,7 +32,7 @@ QPainterPath DecodePathData(const QString& text)
 }
 } // namespace
 
-QJsonObject ShapeItem::ToJson() const
+QJsonObject ShapeAbstractItem::ToJson() const
 {
     QJsonObject json = BaseJson();
     json.insert(QStringLiteral("shapeType"), ShapeTypeToString(shapeType()));
@@ -63,7 +63,7 @@ QJsonObject ShapeItem::ToJson() const
     return json;
 }
 
-void ShapeItem::FromJson(const QJsonObject& json)
+void ShapeAbstractItem::FromJson(const QJsonObject& json)
 {
     const QString typeName = json.value(QStringLiteral("shapeType")).toString();
     bool forceRoundedCorner = false;

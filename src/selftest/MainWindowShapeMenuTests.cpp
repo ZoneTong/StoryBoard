@@ -18,7 +18,7 @@
 #include "PropertiesPanel.h"
 #include "Settings.h"
 #include "SettingsDialog.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "StyleController.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
@@ -557,9 +557,10 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
             QApplication::processEvents();
 
             ctx.Check(shapeWindow.Scene()->CanvasItemCount() == 1, QStringLiteral("快速插入图形到当前画板"));
-            ShapeItem* inserted = shapeWindow.Scene()->CanvasItemCount() == 1
-                                      ? dynamic_cast<ShapeItem*>(shapeWindow.Scene()->CanvasItems().constFirst())
-                                      : nullptr;
+            ShapeAbstractItem* inserted =
+                shapeWindow.Scene()->CanvasItemCount() == 1
+                    ? dynamic_cast<ShapeAbstractItem*>(shapeWindow.Scene()->CanvasItems().constFirst())
+                    : nullptr;
             ctx.Check(inserted && inserted->shapeType() == ShapeType::ELLIPSE,
                       QStringLiteral("快速插入的图元类型为圆形"));
             ctx.Check(inserted && inserted->isSelected() && shapeWindow.View()->mode() == ToolMode::EDIT,
@@ -591,9 +592,9 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
         if (arrowInsertAction) {
             arrowInsertAction->trigger();
             QApplication::processEvents();
-            ShapeItem* insertedArrow = nullptr;
+            ShapeAbstractItem* insertedArrow = nullptr;
             for (CanvasItem* item : shapeWindow.Scene()->CanvasItems()) {
-                if (auto* shape = dynamic_cast<ShapeItem*>(item)) {
+                if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
                     if (shape->shapeType() == ShapeType::ARROW) {
                         insertedArrow = shape;
                     }
@@ -727,7 +728,7 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
         int loadedShapeCount = 0;
         int loadedSineCurves = 0;
         for (CanvasItem* item : shapeCanvasWindow.Scene()->CanvasItems()) {
-            if (dynamic_cast<ShapeItem*>(item)) {
+            if (dynamic_cast<ShapeAbstractItem*>(item)) {
                 ++loadedShapeCount;
             } else if (dynamic_cast<CurveItem*>(item)) {
                 ++loadedSineCurves;

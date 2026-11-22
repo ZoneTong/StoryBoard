@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 // Cylinder：轮廓由 ShapePathBuilder 按 ShapeType::CYLINDER 生成，没有额外参数。
-class CylinderItem : public ShapeItem {
+class CylinderItem : public ShapeAbstractItem {
   public:
     CylinderItem();
     QSizeF DefaultContentSize() const override;

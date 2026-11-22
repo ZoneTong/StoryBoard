@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 
 // FlagWave：轮廓由 ShapePathBuilder 按 ShapeType::FLAG_WAVE 生成，没有额外参数。
-class FlagWaveItem : public ShapeItem {
+class FlagWaveItem : public ShapeAbstractItem {
   public:
     FlagWaveItem();
     QSizeF DefaultContentSize() const override;

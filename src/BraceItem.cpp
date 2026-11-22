@@ -15,7 +15,7 @@ constexpr int BRACE_SAMPLES = 64;
 ItemPropertySet BraceItem::Properties() const
 {
     // 箭头行对全部描线子型开放（含花括号），与现状一致。
-    return LineItemAbstract::Properties().United(ItemPropertySet{ItemProperty::ARROW_START, ItemProperty::ARROW_END});
+    return LineAbstractItem::Properties().United(ItemPropertySet{ItemProperty::ARROW_START, ItemProperty::ARROW_END});
 }
 
 QVariant BraceItem::PropertyValue(ItemProperty property) const
@@ -26,7 +26,7 @@ QVariant BraceItem::PropertyValue(ItemProperty property) const
     case ItemProperty::ARROW_END:
         return static_cast<int>(EndArrow());
     default:
-        return LineItemAbstract::PropertyValue(property);
+        return LineAbstractItem::PropertyValue(property);
     }
 }
 
@@ -40,12 +40,12 @@ void BraceItem::SetPropertyValue(ItemProperty property, const QVariant& value)
         SetArrowStyles(StartArrow(), static_cast<ArrowStyle>(value.toInt()));
         break;
     default:
-        LineItemAbstract::SetPropertyValue(property, value);
+        LineAbstractItem::SetPropertyValue(property, value);
         break;
     }
 }
 
-BraceItem::BraceItem(QGraphicsItem* parent) : LineItemAbstract(parent) {}
+BraceItem::BraceItem(QGraphicsItem* parent) : LineAbstractItem(parent) {}
 
 void BraceItem::SetBraceRect(const QRectF& rectScene, const QColor& color, qreal width)
 {

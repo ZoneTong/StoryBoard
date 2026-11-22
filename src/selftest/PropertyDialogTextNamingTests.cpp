@@ -2,7 +2,7 @@
 #include "CurveItem.h"
 #include "I18n.h"
 #include "ItemPropertiesDialog.h"
-#include "ShapeItem.h"
+#include "ShapeAbstractItem.h"
 #include "TextItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
