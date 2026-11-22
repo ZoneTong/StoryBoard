@@ -213,7 +213,7 @@ void selftest::RunGroupBoolOpsTests(Context& ctx)
                           .arg(scene.CanvasItemCount()));
         }
         {
-            // 异或：3 个矩形，并集减重叠，结果仍是单个图元。
+            // 异或：3 个矩形，并集减重叠；新语义按连续块拆分：左右顶部共边相连成一块，底部横条单独一块。
             QUndoStack undo;
             CanvasScene scene;
             scene.SetUndoStack(&undo);
@@ -226,7 +226,7 @@ void selftest::RunGroupBoolOpsTests(Context& ctx)
             b->setSelected(true);
             c->setSelected(true);
             const bool ok = BoolOps::Apply(&scene, BoolOps::Operation::XOR, QStringLiteral("异或"));
-            ctx.Check(ok && scene.SelectedCanvasItems().size() == 1 && scene.CanvasItemCount() == 1,
+            ctx.Check(ok && scene.SelectedCanvasItems().size() == 2 && scene.CanvasItemCount() == 2,
                       QStringLiteral("3 个图元异或成功"),
                       QStringLiteral("ok=%1 selected=%2 items=%3")
                           .arg(ok ? 1 : 0)

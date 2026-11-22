@@ -252,9 +252,11 @@ void selftest::RunBoolOpsSemanticTests(Context& ctx)
                       .arg(subtract.path.contains(subtract.overlapPoint) ? 1 : 0));
 
         const PairResult fragment = runPair(BoolOps::Operation::FRAGMENT, true, true);
-        ctx.Check(fragment.ok && fragment.items == 3 && fragment.layers == 3 && fragment.path.contains(diamondCenter) &&
+        // 新语义按连续块拆分：星形尖角从平行四边形斜边穿出，把 A−B 与 B−A 各切出一个
+        // 独立小尖角块，加上两个主体与重叠区共 5 块，均可分别选中。
+        ctx.Check(fragment.ok && fragment.items == 5 && fragment.layers == 5 && fragment.path.contains(diamondCenter) &&
                       fragment.path.contains(starCenter),
-                  QStringLiteral("平行四边形与五角星拆分得到三块可分别选中的多边形"),
+                  QStringLiteral("平行四边形与五角星拆分按连续块得到五块可分别选中的多边形"),
                   QStringLiteral("ok=%1 items=%2 layers=%3")
                       .arg(fragment.ok ? 1 : 0)
                       .arg(fragment.items)
@@ -299,8 +301,12 @@ void selftest::RunBoolOpsSemanticTests(Context& ctx)
         const bool secondUnion =
             BoolOps::Apply(&compositeScene, BoolOps::Operation::UNION, QStringLiteral("Second union"));
         const QList<CanvasItem*> secondSelection = compositeScene.SelectedCanvasItems();
-        auto* result = secondSelection.isEmpty() ? nullptr : secondSelection.constFirst();
-        const QPainterPath resultPath = result ? result->mapToScene(result->OutlineShape()) : QPainterPath();
+        // 新语义按连续块拆分：多边形与星形不相交，结果为两块，聚合全部结果块验证覆盖。
+        QPainterPath resultPath;
+        for (CanvasItem* item : secondSelection) {
+            resultPath = resultPath.united(item->mapToScene(item->OutlineShape()));
+        }
+        const bool result = !secondSelection.isEmpty();
         ctx.Check(firstUnion && polygon && secondUnion && result && resultPath.contains(QPointF(80.0, 100.0)) &&
                       resultPath.contains(QPointF(330.0, 160.0)),
                   QStringLiteral("已生成的多边形再次参与联合仍保留原填充区域"),

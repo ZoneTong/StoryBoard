@@ -342,19 +342,21 @@ void selftest::RunDockPanelItemStyleTests(Context& ctx)
             secondShape->setSelected(true);
             QApplication::processEvents();
         }
-        // 合并图元行按钮真正执行布尔运算：联合后两个矩形合并成一个多边形，撤销恢复。
+        // 合并图元行按钮真正执行布尔运算：两个不相交矩形联合后按连续块替换为两个多边形
+        // 图元（新语义不再强行捏成单个），撤销恢复原矩形。
         if (!morphButtons.isEmpty()) {
             const int countBeforeMorph = dockScene->CanvasItemCount();
             morphButtons.first()->click();
             QApplication::processEvents();
             bool hasComposite = false;
+            int compositeCount = 0;
             for (CanvasItem* item : dockScene->CanvasItems()) {
                 if (dynamic_cast<PolygonItem*>(item)) {
                     hasComposite = true;
-                    break;
+                    ++compositeCount;
                 }
             }
-            const bool merged = dockScene->CanvasItemCount() == countBeforeMorph - 1 && hasComposite;
+            const bool merged = hasComposite && compositeCount == 2 && dockScene->CanvasItemCount() == countBeforeMorph;
             dockScene->UndoStack()->undo();
             QApplication::processEvents();
             ctx.Check(merged && dockScene->CanvasItemCount() == countBeforeMorph,
@@ -362,7 +364,7 @@ void selftest::RunDockPanelItemStyleTests(Context& ctx)
                       QStringLiteral("count=%1->%2 composite=%3")
                           .arg(countBeforeMorph)
                           .arg(dockScene->CanvasItemCount())
-                          .arg(hasComposite ? 1 : 0));
+                          .arg(compositeCount));
             selectedShape->setSelected(true);
             secondShape->setSelected(true);
             QApplication::processEvents();

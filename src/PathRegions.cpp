@@ -1,6 +1,7 @@
 #include "PathRegions.h"
 
 #include <QLineF>
+#include <QMap>
 #include <QPainterPathStroker>
 #include <QPolygonF>
 #include <limits>
@@ -53,6 +54,46 @@ qreal ContactLength(const QPainterPath& path)
     return total;
 }
 
+// 单个环信息：poly 为展平多边形，ring 为独立填充路径；depth 为被其他环包住的层数
+// （偶数层是独立区域的外轮廓，奇数层是孔洞），parent 为直接包住它的最内层环下标。
+struct RingInfo {
+    QPolygonF poly;
+    QPainterPath ring;
+    int depth = 0;
+    int parent = -1;
+};
+
+// 并查集根查找（路径压缩）。
+int FindRingRoot(QList<int>& roots, int index)
+{
+    while (roots.at(index) != index) {
+        roots[index] = roots.at(roots.at(index));
+        index = roots.at(index);
+    }
+    return index;
+}
+
+// toFillPolygons 会把孔洞以“同向闭合环 + 零宽桥”的形式内联进同一个多边形，
+// 走向不归一导致鞋带面积无法自减；在重复顶点处切开，还原出一个个独立闭合环。
+QList<QPolygonF> SplitRingLoops(const QPolygonF& polygon)
+{
+    QList<QPolygonF> loops;
+    QPolygonF current;
+    for (const QPointF& point : polygon) {
+        const int index = current.indexOf(point);
+        if (index >= 0) {
+            loops.append(current.mid(index));
+            current = current.mid(0, index);
+        } else {
+            current.append(point);
+        }
+    }
+    if (current.size() >= 3) {
+        loops.append(current);
+    }
+    return loops;
+}
+
 } // namespace
 
 namespace PathRegions {
@@ -69,8 +110,7 @@ QList<QPainterPath> SplitDisjoint(const QPainterPath& path)
         return pieces;
     }
 
-    QList<QPolygonF> rings;
-    QList<QPainterPath> ringPaths;
+    QList<RingInfo> rings;
     for (const QPolygonF& polygon : polygons) {
         if (polygon.size() < 3) {
             continue;
@@ -82,53 +122,96 @@ QList<QPainterPath> SplitDisjoint(const QPainterPath& path)
         if (ring.isEmpty()) {
             continue;
         }
-        rings.append(polygon);
-        ringPaths.append(ring);
+        RingInfo info;
+        info.poly = polygon;
+        info.ring = ring;
+        rings.append(info);
     }
-    if (ringPaths.size() <= 1) {
+    if (rings.size() <= 1) {
         pieces.append(path);
         return pieces;
     }
 
-    // 嵌套深度 = 被多少个其他环包住。偶数层是独立区域的外轮廓，奇数层是它的孔洞：
-    // 布尔运算的孔洞总是单独成为一个子路径，方向与填充规则不保证对外可见，只能靠嵌套判。
-    QList<int> depths;
-    depths.reserve(ringPaths.size());
-    for (int i = 0; i < ringPaths.size(); ++i) {
-        int depth = 0;
-        const QRectF box = rings.at(i).boundingRect();
-        for (int j = 0; j < ringPaths.size(); ++j) {
-            if (i == j) {
+    const int ringCount = rings.size();
+    // 第一遍：嵌套深度 = 被多少个其他环包住。
+    for (int i = 0; i < ringCount; ++i) {
+        const QRectF box = rings.at(i).poly.boundingRect();
+        for (int j = 0; j < ringCount; ++j) {
+            if (i == j || !rings.at(j).ring.boundingRect().contains(box)) {
                 continue;
             }
-            // 包围盒不相交的直接跳过，先挡掉绝大多数无关环。
-            if (!ringPaths.at(j).boundingRect().contains(box)) {
-                continue;
-            }
-            if (RingContains(ringPaths.at(j), rings.at(i))) {
-                ++depth;
+            if (RingContains(rings.at(j).ring, rings.at(i).poly)) {
+                ++rings[i].depth;
             }
         }
-        depths.append(depth);
+    }
+    // 第二遍：直接父环 = 包住它的环中最内层（深度最大）的那个。
+    for (int i = 0; i < ringCount; ++i) {
+        const QRectF box = rings.at(i).poly.boundingRect();
+        for (int j = 0; j < ringCount; ++j) {
+            if (i == j || rings.at(j).depth >= rings.at(i).depth) {
+                continue;
+            }
+            if (!rings.at(j).ring.boundingRect().contains(box)) {
+                continue;
+            }
+            if (!RingContains(rings.at(j).ring, rings.at(i).poly)) {
+                continue;
+            }
+            if (rings.at(i).parent < 0 || rings.at(j).depth > rings.at(rings.at(i).parent).depth) {
+                rings[i].parent = j;
+            }
+        }
     }
 
-    for (int i = 0; i < ringPaths.size(); ++i) {
-        if (depths.at(i) % 2 != 0) {
-            continue; // 孔洞跟着它的外轮廓走，不单独成块
+    // 外轮廓环（偶数深度）按“同深度 + 同父环 + 实际接触”归并为同一块：
+    // 共边或重叠的子路径属于同一连续填充；隔着孔洞的嵌套岛（如深度 2）不与外层并块。
+    QList<int> roots(ringCount);
+    for (int i = 0; i < ringCount; ++i) {
+        roots[i] = i;
+    }
+    for (int i = 0; i < ringCount; ++i) {
+        if (rings.at(i).depth % 2 != 0) {
+            continue;
         }
-        QPainterPath piece = ringPaths.at(i);
-        // 直接嵌在它里面的孔洞挖掉；更深一层的岛属于别的块，由那一层自己处理。
-        for (int j = 0; j < ringPaths.size(); ++j) {
-            if (i == j || depths.at(j) != depths.at(i) + 1) {
+        for (int j = i + 1; j < ringCount; ++j) {
+            if (rings.at(j).depth % 2 != 0 || rings.at(i).depth != rings.at(j).depth ||
+                rings.at(i).parent != rings.at(j).parent) {
                 continue;
             }
-            if (!ringPaths.at(i).boundingRect().contains(rings.at(j).boundingRect())) {
+            if (!RegionsContinuous(rings.at(i).ring, rings.at(j).ring)) {
                 continue;
             }
-            if (RingContains(ringPaths.at(i), rings.at(j))) {
-                piece = piece.subtracted(ringPaths.at(j));
+            const int rootI = FindRingRoot(roots, i);
+            const int rootJ = FindRingRoot(roots, j);
+            if (rootI != rootJ) {
+                roots[rootJ] = rootI;
             }
         }
+    }
+
+    // 每组外环的并集成一块，孔洞（奇数深度）从其父环所在组挖掉。
+    QMap<int, QPainterPath> groupPaths;
+    for (int i = 0; i < ringCount; ++i) {
+        if (rings.at(i).depth % 2 != 0) {
+            continue;
+        }
+        const int root = FindRingRoot(roots, i);
+        const QPainterPath& ring = rings.at(i).ring;
+        groupPaths[root] = groupPaths.value(root).isEmpty() ? ring : groupPaths.value(root).united(ring);
+    }
+    for (int i = 0; i < ringCount; ++i) {
+        if (rings.at(i).depth % 2 == 0 || rings.at(i).parent < 0 || rings.at(rings.at(i).parent).depth % 2 != 0) {
+            continue;
+        }
+        const int root = FindRingRoot(roots, rings.at(i).parent);
+        if (!groupPaths.contains(root)) {
+            continue;
+        }
+        groupPaths[root] = groupPaths.value(root).subtracted(rings.at(i).ring);
+    }
+    for (auto it = groupPaths.cbegin(); it != groupPaths.cend(); ++it) {
+        QPainterPath piece = it.value();
         piece.setFillRule(Qt::OddEvenFill);
         if (!piece.isEmpty()) {
             pieces.append(piece);
@@ -155,22 +238,49 @@ QList<QPainterPath> SplitDisjoint(const QPainterPath& path)
 
 qreal Area(const QPainterPath& path)
 {
-    // toFillPolygons 已按填充规则把外轮廓与孔洞解成互不重叠的多边形，
-    // 各环鞋带公式面积取绝对值求和即填充面积。
-    qreal total = 0.0;
+    // toFillPolygons 先按填充规则合并同向重叠的子路径，再把孔洞以同向闭合环内联；
+    // 切环后按全局嵌套深度奇偶做加减（偶数层外轮廓取正、奇数层孔洞取负）才是真实填充面积。
+    QList<QPolygonF> loops;
     const QList<QPolygonF> polygons = path.toFillPolygons();
     for (const QPolygonF& polygon : polygons) {
-        const int count = polygon.size();
+        loops.append(SplitRingLoops(polygon));
+    }
+    if (loops.isEmpty()) {
+        return 0.0;
+    }
+    QList<QRectF> boxes;
+    boxes.reserve(loops.size());
+    for (const QPolygonF& loop : loops) {
+        boxes.append(loop.boundingRect());
+    }
+    qreal total = 0.0;
+    for (int i = 0; i < loops.size(); ++i) {
+        const QPolygonF& loop = loops.at(i);
+        const int count = loop.size();
         if (count < 3) {
             continue;
         }
         qreal sum = 0.0;
-        for (int i = 0; i < count; ++i) {
-            const QPointF& a = polygon.at(i);
-            const QPointF& b = polygon.at((i + 1) % count);
+        for (int j = 0; j < count; ++j) {
+            const QPointF& a = loop.at(j);
+            const QPointF& b = loop.at((j + 1) % count);
             sum += a.x() * b.y() - b.x() * a.y();
         }
-        total += qAbs(sum) / 2.0;
+        const qreal ringArea = qAbs(sum) / 2.0;
+        int depth = 0;
+        for (int j = 0; j < loops.size(); ++j) {
+            if (i == j || !boxes.at(j).contains(boxes.at(i))) {
+                continue;
+            }
+            QPainterPath ring;
+            ring.setFillRule(Qt::OddEvenFill);
+            ring.addPolygon(loops.at(j));
+            ring.closeSubpath();
+            if (RingContains(ring, loop)) {
+                ++depth;
+            }
+        }
+        total += (depth % 2 == 0) ? ringArea : -ringArea;
     }
     return total;
 }
@@ -184,12 +294,12 @@ bool RegionsContinuous(const QPainterPath& a, const QPainterPath& b)
     if (Area(a.intersected(b)) > AREA_EPS) {
         return true;
     }
-    // 共享边：把 b 轮廓描成细带，a 落在带内的接触链长度超过阈值才算共边；
-    // 仅角点接触时接触链只是一个小折角，长度趋近 0，判为不连续。
+    // 共享边：把 b 轮廓描成细带，a 落在带内的部分折算回链长（带只有一半在 b 外侧，
+    // 面积需除以半带宽）；仅角点接触时接触链只剩带角的小圆斑，链长趋近 0，判为不连续。
     QPainterPathStroker stroker;
     stroker.setWidth(CONTACT_BAND_WIDTH);
     const QPainterPath bandB = stroker.createStroke(b);
-    return ContactLength(a.intersected(bandB)) > CONTACT_LENGTH_EPS;
+    return 2.0 * Area(a.intersected(bandB)) / CONTACT_BAND_WIDTH > CONTACT_LENGTH_EPS;
 }
 
 qreal SharedBoundaryLength(const QPainterPath& a, const QPainterPath& b)
@@ -205,7 +315,7 @@ qreal SharedBoundaryLength(const QPainterPath& a, const QPainterPath& b)
     QPainterPathStroker stroker;
     stroker.setWidth(CONTACT_BAND_WIDTH);
     const QPainterPath bandB = stroker.createStroke(b);
-    return ContactLength(a.intersected(bandB));
+    return 2.0 * Area(a.intersected(bandB)) / CONTACT_BAND_WIDTH;
 }
 
 qreal RegionDistance(const QPainterPath& a, const QPainterPath& b)
