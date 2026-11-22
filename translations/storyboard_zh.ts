@@ -3475,6 +3475,10 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Six-point star</source>
         <translation>六芒星</translation>
     </message><message>
+        <location filename="../src/items/shapes/ShapeAbstractItemMeta.cpp" line="45"/>
+        <source>Regular hexagon</source>
+        <translation>正六边形</translation>
+    </message><message>
         <location filename="../src/ShapeItem.cpp" line="88"/>
         <source>Heart</source>
         <translation>心形</translation>

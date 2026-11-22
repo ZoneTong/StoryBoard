@@ -10,6 +10,7 @@
 #include "items/shapes/FlagWaveItem.h"
 #include "items/shapes/GeneralParallelogramItem.h"
 #include "items/shapes/HeartItem.h"
+#include "items/shapes/HexagonItem.h"
 #include "items/shapes/HexagramItem.h"
 #include "items/shapes/RectangleItem.h"
 #include "items/shapes/ScrollItem.h"
@@ -25,6 +26,7 @@ const QList<ShapeRegistry::Entry>& ShapeRegistry::Entries()
         {ShapeType::RECTANGLE, []() -> ShapeAbstractItem* { return new RectangleItem(); }},
         {ShapeType::ELLIPSE, []() -> ShapeAbstractItem* { return new EllipseItem(); }},
         {ShapeType::TRIANGLE, []() -> ShapeAbstractItem* { return new TriangleItem(); }},
+        {ShapeType::HEXAGON, []() -> ShapeAbstractItem* { return new HexagonItem(); }},
         {ShapeType::STAR, []() -> ShapeAbstractItem* { return new StarItem(); }},
         {ShapeType::ARROW, []() -> ShapeAbstractItem* { return new ArrowItem(); }},
         {ShapeType::DOUBLE_ARROW, []() -> ShapeAbstractItem* { return new DoubleArrowItem(); }},

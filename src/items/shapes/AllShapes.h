@@ -11,6 +11,7 @@
 #include "items/shapes/FlagWaveItem.h"
 #include "items/shapes/GeneralParallelogramItem.h"
 #include "items/shapes/HeartItem.h"
+#include "items/shapes/HexagonItem.h"
 #include "items/shapes/HexagramItem.h"
 #include "items/shapes/RectangleItem.h"
 #include "items/shapes/ScrollItem.h"

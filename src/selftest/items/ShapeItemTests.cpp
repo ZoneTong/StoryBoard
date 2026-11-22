@@ -5,6 +5,7 @@
 #include "io/CustomShapeTemplates.h"
 #include "items/CanvasTypes.h"
 #include "items/geometry/EllipseShape.h"
+#include "items/geometry/ShapeMeta.h"
 #include "items/geometry/ShapePathBuilder.h"
 #include "items/lines/ArcItem.h"
 #include "items/lines/BraceItem.h"
@@ -106,9 +107,36 @@ void selftest::RunShapeItemTests(Context& ctx)
     shapeScene.SetShowGrid(false);
 
     const QList<ShapeType> shapeTypes = AllShapeTypes();
-    // 菱形已是独立类型（DiamondItem，派生自平行四边形）。
-    ctx.Check(shapeTypes.size() == 17, QStringLiteral("提供 17 种有面积图形（直线/弧线/正弦已并入曲线族）"),
+    // 菱形已是独立类型（DiamondItem，派生自平行四边形）；正六边形由 HexagonItem 提供。
+    ctx.Check(shapeTypes.size() == 18, QStringLiteral("提供 18 种有面积图形（直线/弧线/正弦已并入曲线族）"),
               QStringLiteral("count=%1").arg(shapeTypes.size()));
+
+    // §3.5：正六边形按语义插在三角形之后、显示顺序放在菱形之后扇形之前。
+    {
+        ctx.Check(ShapeTypeToString(ShapeType::HEXAGON) == QStringLiteral("hexagon") &&
+                      ShapeTypeFromString(QStringLiteral("hexagon")) == ShapeType::HEXAGON,
+                  QStringLiteral("正六边形的枚举串为 hexagon"));
+        ctx.Check(ShapeTypeName(ShapeType::HEXAGON) != QStringLiteral("Honeycomb"),
+                  QStringLiteral("正六边形源码串避开填充纹理 Honeycomb"), ShapeTypeName(ShapeType::HEXAGON));
+        const QList<ShapeType> order = ShapeMeta::AllTypes();
+        const int diamond = order.indexOf(ShapeType::DIAMOND);
+        const int hexagon = order.indexOf(ShapeType::HEXAGON);
+        const int sector = order.indexOf(ShapeType::SECTOR);
+        ctx.Check(diamond >= 0 && hexagon == diamond + 1 && sector == hexagon + 1,
+                  QStringLiteral("正六边形显示在菱形之后、扇形之前"),
+                  QStringLiteral("diamond=%1 hexagon=%2 sector=%3").arg(diamond).arg(hexagon).arg(sector));
+        const QSizeF hexSize = DefaultShapeSize(ShapeType::HEXAGON);
+        ctx.Check(qAbs(hexSize.width() - 128.0) < 0.01 && qAbs(hexSize.height() - 111.0) < 0.01,
+                  QStringLiteral("正六边形默认约 128×111"),
+                  QStringLiteral("%1×%2").arg(hexSize.width()).arg(hexSize.height()));
+        ctx.Check(ShapeTypeIsFilled(ShapeType::HEXAGON) && ShapeMeta::SupportsCenter(ShapeType::HEXAGON),
+                  QStringLiteral("正六边形可填充且支持中心点"));
+        const QPainterPath hexPath = ShapePathBuilder::PathFor(ShapeType::HEXAGON, QRectF(0, 0, 128, 111), 0.0);
+        // 平顶：上下两条水平边 + 左右两个尖角；moveTo 起点 + 5 次 lineTo 后闭合，共 7 个元素（6 个顶点）。
+        ctx.Check(!hexPath.isEmpty() && hexPath.elementCount() == 7,
+                  QStringLiteral("正六边形轮廓为 6 个顶点的平顶六边形"),
+                  QStringLiteral("elements=%1").arg(hexPath.elementCount()));
+    }
 
     // 透明度统一为“内容透明度”：不压 QGraphicsItem，只压 PaintContent() 的像素。
     {

@@ -29,6 +29,9 @@ QString ShapeTypeName(ShapeType type)
         return ShapeAbstractItem::tr("Ellipse");
     case ShapeType::TRIANGLE:
         return ShapeAbstractItem::tr("Triangle");
+    case ShapeType::HEXAGON:
+        // §3.5：源码串固定为 Regular hexagon，避免与填充纹理 Honeycomb 撞名。
+        return ShapeAbstractItem::tr("Regular hexagon");
     case ShapeType::STAR:
         return ShapeAbstractItem::tr("Star");
     case ShapeType::ARROW:

@@ -27,6 +27,9 @@ class ShapePathBuilder {
     // 任意宽高下四条边恒等且一条对角线水平。
     static QPainterPath DiamondPath(const QRectF& rect);
 
+    // 平顶正六边形（§3.5）：上下两条水平边、左右两个尖角，按矩形铺满。
+    static QPainterPath HexagonPath(const QRectF& rect);
+
     // 各图形的具体几何：由同名的图元子类在 ShapePath() 中直接调用。
     static QPainterPath RoundedRectPath(const QRectF& rect, qreal cornerRadius);
     static QPainterPath EllipsePath(const QRectF& rect);

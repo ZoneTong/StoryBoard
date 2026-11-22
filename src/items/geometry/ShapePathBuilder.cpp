@@ -146,6 +146,28 @@ QPainterPath ShapePathBuilder::HexagramPath(const QRectF& rect)
 
     return triangleAt(-90.0).united(triangleAt(90.0));
 }
+QPainterPath ShapePathBuilder::HexagonPath(const QRectF& rect)
+{
+    const QRectF r = NormalizedRect(rect);
+    if (r.width() <= 0.0 || r.height() <= 0.0) {
+        return QPainterPath();
+    }
+    const qreal w = r.width();
+    const qreal h = r.height();
+    const qreal left = r.left();
+    const qreal top = r.top();
+    // 平顶：上下两条水平边各占半宽，左右顶点在中线上；六条边等长时高/宽 = √3/2。
+    QPainterPath path;
+    path.moveTo(left + w * 0.25, top);
+    path.lineTo(left + w * 0.75, top);
+    path.lineTo(left + w, top + h * 0.5);
+    path.lineTo(left + w * 0.75, top + h);
+    path.lineTo(left + w * 0.25, top + h);
+    path.lineTo(left, top + h * 0.5);
+    path.closeSubpath();
+    return path;
+}
+
 QPainterPath ShapePathBuilder::HeartPath(const QRectF& rect)
 {
     const QRectF r = NormalizedRect(rect);
@@ -423,6 +445,8 @@ QPainterPath ShapePathBuilder::PathFor(ShapeType type, const QRectF& rect, qreal
     case ShapeType::TRIANGLE:
         // 默认按 60°/60° 的等腰三角形生成；具体图元用带角度参数的重载。
         return TrianglePath(rect, 60.0, 60.0);
+    case ShapeType::HEXAGON:
+        return HexagonPath(rect);
     case ShapeType::STAR:
         return StarPath(rect);
     case ShapeType::ARROW:

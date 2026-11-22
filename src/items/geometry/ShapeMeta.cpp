@@ -4,11 +4,11 @@ QList<ShapeType> ShapeMeta::AllTypes()
 {
     // 需求 7：菜单与工具栏「常见图形」共用这一份常用顺序表（唯一顺序源）。
     // 需求 9：菱形紧跟平行四边形，方便和立方体三个面归在一处认图。
-    return {ShapeType::RECTANGLE, ShapeType::ELLIPSE,  ShapeType::ARROW,         ShapeType::DOUBLE_ARROW,
-            ShapeType::TRIANGLE,  ShapeType::CALLOUT,  ShapeType::PARALLELOGRAM, ShapeType::DIAMOND,
-            ShapeType::SECTOR,    ShapeType::CUBE,     ShapeType::CYLINDER,      ShapeType::STAR4,
-            ShapeType::STAR,      ShapeType::HEXAGRAM, ShapeType::HEART,         ShapeType::FLAG_WAVE,
-            ShapeType::SCROLL};
+    return {ShapeType::RECTANGLE, ShapeType::ELLIPSE, ShapeType::ARROW,         ShapeType::DOUBLE_ARROW,
+            ShapeType::TRIANGLE,  ShapeType::CALLOUT, ShapeType::PARALLELOGRAM, ShapeType::DIAMOND,
+            ShapeType::HEXAGON,   ShapeType::SECTOR,  ShapeType::CUBE,          ShapeType::CYLINDER,
+            ShapeType::STAR4,     ShapeType::STAR,    ShapeType::HEXAGRAM,      ShapeType::HEART,
+            ShapeType::FLAG_WAVE, ShapeType::SCROLL};
 }
 
 QString ShapeMeta::TypeToString(ShapeType type)
@@ -20,6 +20,8 @@ QString ShapeMeta::TypeToString(ShapeType type)
         return QStringLiteral("ellipse");
     case ShapeType::TRIANGLE:
         return QStringLiteral("triangle");
+    case ShapeType::HEXAGON:
+        return QStringLiteral("hexagon");
     case ShapeType::STAR:
         return QStringLiteral("star");
     case ShapeType::ARROW:
@@ -70,6 +72,10 @@ ShapeType ShapeMeta::TypeFromString(const QString& value)
     }
     if (normalized == QStringLiteral("triangle")) {
         return ShapeType::TRIANGLE;
+    }
+    if (normalized == QStringLiteral("hexagon") || normalized == QStringLiteral("regular_hexagon")) {
+        // §3.5：正六边形的 JSON 字符串固定为 hexagon，避免与填充纹理 honeycomb 混淆。
+        return ShapeType::HEXAGON;
     }
     if (normalized == QStringLiteral("diamond") || normalized == QStringLiteral("rhombus")) {
         // 菱形已是独立类型（DiamondItem）；旧文件里写成 parallelogram + 45° 旋转的预置
@@ -135,6 +141,7 @@ bool ShapeMeta::IsFilled(ShapeType type)
     case ShapeType::RECTANGLE:
     case ShapeType::ELLIPSE:
     case ShapeType::TRIANGLE:
+    case ShapeType::HEXAGON:
     case ShapeType::STAR:
     case ShapeType::ARROW:
     case ShapeType::DOUBLE_ARROW:
@@ -162,6 +169,7 @@ bool ShapeMeta::SupportsCenter(ShapeType type)
     case ShapeType::SECTOR:
     case ShapeType::PARALLELOGRAM:
     case ShapeType::DIAMOND:
+    case ShapeType::HEXAGON:
     case ShapeType::STAR4:
     case ShapeType::HEXAGRAM:
     case ShapeType::DOUBLE_ARROW:

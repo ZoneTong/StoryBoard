@@ -175,13 +175,14 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
             QStringLiteral("ShapeAction_double_arrow"), QStringLiteral("ShapeAction_triangle"),
             QStringLiteral("ShapePreset_triangle45"),   QStringLiteral("ShapePreset_triangle60"),
             QStringLiteral("ShapeAction_callout"),      QStringLiteral("ShapeAction_parallelogram"),
-            QStringLiteral("ShapeAction_diamond"),      QStringLiteral("ShapeAction_sector"),
-            QStringLiteral("ShapeAction_arc"),          QStringLiteral("ShapeAction_cube"),
-            QStringLiteral("ShapeAction_cylinder"),     QStringLiteral("ShapeAction_star4"),
-            QStringLiteral("ShapeAction_star"),         QStringLiteral("ShapeAction_hexagram"),
-            QStringLiteral("ShapeAction_heart"),        QStringLiteral("ShapeAction_sine_wave"),
-            QStringLiteral("ShapeAction_flag_wave"),    QStringLiteral("ShapeAction_scroll"),
-            QStringLiteral("ShapePreset_braceLeft"),    QStringLiteral("ShapePreset_braceRight"),
+            QStringLiteral("ShapeAction_diamond"),      QStringLiteral("ShapeAction_hexagon"),
+            QStringLiteral("ShapeAction_sector"),       QStringLiteral("ShapeAction_arc"),
+            QStringLiteral("ShapeAction_cube"),         QStringLiteral("ShapeAction_cylinder"),
+            QStringLiteral("ShapeAction_star4"),        QStringLiteral("ShapeAction_star"),
+            QStringLiteral("ShapeAction_hexagram"),     QStringLiteral("ShapeAction_heart"),
+            QStringLiteral("ShapeAction_sine_wave"),    QStringLiteral("ShapeAction_flag_wave"),
+            QStringLiteral("ShapeAction_scroll"),       QStringLiteral("ShapePreset_braceLeft"),
+            QStringLiteral("ShapePreset_braceRight"),
         };
         QStringList actualToolBarOrder;
         for (QToolButton* button : std::as_const(toolbarShapeButtons)) {

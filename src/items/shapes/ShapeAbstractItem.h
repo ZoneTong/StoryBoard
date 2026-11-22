@@ -16,6 +16,9 @@ enum class ShapeType {
     RECTANGLE = 0,
     ELLIPSE,
     TRIANGLE,
+    // 需求（§3.5）：平顶正六边形按语义插在三角形之后，不追加到枚举末尾；
+    // 插入顺序只影响内存里的枚举值，落盘一律走字符串 hexagon。
+    HEXAGON,
     STAR,
     ARROW,
     DOUBLE_ARROW,
