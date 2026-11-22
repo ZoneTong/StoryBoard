@@ -209,8 +209,9 @@ void selftest::RunShapeItemTests(Context& ctx)
         ctx.Check(qAbs(para.ParallelogramAngle() - 170.0) < 0.01, QStringLiteral("平行四边形内角保持 170°"),
                   QStringLiteral("angle=%1").arg(para.ParallelogramAngle()));
         const ShapeItemState paraState = para.State();
-        ctx.Check(qAbs(paraState.parallelogramAngle - 170.0) < 0.01, QStringLiteral("平行四边形内角进入状态快照"),
-                  QStringLiteral("angle=%1").arg(paraState.parallelogramAngle));
+        const qreal paraStateAngle = paraState.propertyExtras.value(ItemProperty::PARALLELOGRAM_ANGLE, -1.0).toDouble();
+        ctx.Check(qAbs(paraStateAngle - 170.0) < 0.01, QStringLiteral("平行四边形内角进入状态快照"),
+                  QStringLiteral("angle=%1").arg(paraStateAngle));
     }
     // 需求：内角旋钮绕左下顶点拖动，底边长度全程不变；锐角在右、钝角在左，可连续跨过 90°。
     // 旋钮下移到框内 22px，90° 时不再与任何角手柄重合。

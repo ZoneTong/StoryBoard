@@ -353,11 +353,9 @@ ShapeItemState ShapeAbstractItem::State() const
     result.fill = FillState();
     result.stroke = StrokeState();
     result.opacity = ItemOpacity();
-    result.cornerRadius = m_cornerRadius;
-    result.bottomAngle1 = m_bottomAngle1;
-    result.bottomAngle2 = m_bottomAngle2;
     result.pos = pos();
     result.size = ContentSize();
+    // 公共字段写完后交给叶子：类型专属标量按 ItemProperty 进 propertyExtras。
     WriteState(result);
     return result;
 }
@@ -367,11 +365,15 @@ void ShapeAbstractItem::ApplyState(const ShapeItemState& state)
     ApplyFillState(state.fill);
     ApplyStrokeState(state.stroke);
     SetItemOpacity(state.opacity);
-    m_cornerRadius = state.cornerRadius;
+    // 圆角 / 底角从属性扩展回放；没有这些键的图形保持当前值，不产生额外修改。
+    if (const auto cornerIt = state.propertyExtras.constFind(ItemProperty::CORNER_RADIUS);
+        cornerIt != state.propertyExtras.constEnd()) {
+        m_cornerRadius = cornerIt->toDouble();
+    }
     const qreal oldAngle1 = m_bottomAngle1;
     const qreal oldAngle2 = m_bottomAngle2;
-    qreal angle1 = state.bottomAngle1;
-    qreal angle2 = state.bottomAngle2;
+    qreal angle1 = state.propertyExtras.value(ItemProperty::BOTTOM_ANGLE1, m_bottomAngle1).toDouble();
+    qreal angle2 = state.propertyExtras.value(ItemProperty::BOTTOM_ANGLE2, m_bottomAngle2).toDouble();
     if (shapeType() == ShapeType::TRIANGLE && !IsCustomShape()) {
         TriangleGeometry::ClampAngles(&angle1, &angle2);
     }
@@ -476,7 +478,17 @@ void ShapeAbstractItem::PaintContent(QPainter* painter)
 
 void ShapeAbstractItem::WriteState(ShapeItemState& state) const
 {
-    Q_UNUSED(state);
+    // 公共可编辑标量按属性表进入快照：没有该属性的图形不写键，避免“打开即修改”。
+    const ItemPropertySet properties = Properties();
+    if (properties.Contains(ItemProperty::CORNER_RADIUS)) {
+        state.propertyExtras.insert(ItemProperty::CORNER_RADIUS, CornerRadius());
+    }
+    if (properties.Contains(ItemProperty::BOTTOM_ANGLE1)) {
+        state.propertyExtras.insert(ItemProperty::BOTTOM_ANGLE1, BottomAngle1());
+    }
+    if (properties.Contains(ItemProperty::BOTTOM_ANGLE2)) {
+        state.propertyExtras.insert(ItemProperty::BOTTOM_ANGLE2, BottomAngle2());
+    }
 }
 
 void ShapeAbstractItem::ReadState(const ShapeItemState& state)

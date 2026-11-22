@@ -53,17 +53,23 @@ void ParallelogramAbstractItem::FrameResizeDragged()
     }
 }
 
-ShapeItemState ParallelogramAbstractItem::State() const
+void ParallelogramAbstractItem::WriteState(ShapeItemState& state) const
 {
-    ShapeItemState state = ShapeAbstractItem::State();
-    state.parallelogramAngle = m_parallelogramAngle;
-    return state;
+    // 先让基类按属性表写公共标量（圆角等），再补本族的内角；
+    // 漏掉基类会让矩形的圆角整行既不进快照也不回放。
+    ShapeAbstractItem::WriteState(state);
+    // 内角 A 按 ItemProperty 进 propertyExtras：普通平行四边形写字段真值，
+    // 菱形同样写字段（菱形的尺寸才是真相，派生角由宽高还原）。
+    if (Properties().Contains(ItemProperty::PARALLELOGRAM_ANGLE)) {
+        state.propertyExtras.insert(ItemProperty::PARALLELOGRAM_ANGLE, m_parallelogramAngle);
+    }
 }
 
 void ParallelogramAbstractItem::ApplyState(const ShapeItemState& state)
 {
     // 先写角度再走基类：基类按状态里的尺寸 / 位置整体恢复，这里不带叶子副作用。
-    ApplyParallelogramAngleRaw(qBound<qreal>(5.0, state.parallelogramAngle, 175.0));
+    const qreal target = state.propertyExtras.value(ItemProperty::PARALLELOGRAM_ANGLE, m_parallelogramAngle).toDouble();
+    ApplyParallelogramAngleRaw(qBound<qreal>(5.0, target, 175.0));
     ShapeAbstractItem::ApplyState(state);
 }
 

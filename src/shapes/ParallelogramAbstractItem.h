@@ -15,7 +15,8 @@ class ParallelogramAbstractItem : public ShapeAbstractItem {
     QPointF BottomLeftVertex() const;
     QVariant PropertyValue(ItemProperty property) const override;
     void SetPropertyValue(ItemProperty property, const QVariant& value) override;
-    ShapeItemState State() const override;
+    // 内角 A 属于本族：状态快照按 ItemProperty 写进 propertyExtras，不再占公共字段。
+    void WriteState(ShapeItemState& state) const override;
     // §3.2：菱形拖外接框 / 边时点亮派生内角读数（尺寸是真相，角度随宽高连续变化）。
     void FrameResizeDragged() override;
 

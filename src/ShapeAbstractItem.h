@@ -62,25 +62,16 @@ struct ShapeItemState {
     FillAttributesState fill;
     StrokeAttributesState stroke;
     qreal opacity = 1.0;
-    qreal cornerRadius = 0.0;
-    // 三角形：底边（内容矩形宽度）两侧的底角，单位为度。角度是真相，高度由两者派生。
-    qreal bottomAngle1 = 60.0;
-    qreal bottomAngle2 = 60.0;
-    // 需求 9：平行四边形左下内角（度）。角度是真相，上边水平偏移由高度与角度派生。
-    qreal parallelogramAngle = 60.0;
     QPointF pos;
     QSizeF size;
-    // 叶子扩展属性：不属于公共字段的类型专属项放这里，公共快照不再为每个叶子加字段。
+    // 类型专属标量（圆角 / 三角形底角 / 平行四边形内角等）一律放这里，
+    // 按 ItemProperty 键回放；公共快照不再为每个叶子加扁平字段。
     QMap<ItemProperty, QVariant> propertyExtras;
 
     bool operator==(const ShapeItemState& other) const
     {
         return fill == other.fill && stroke == other.stroke && qFuzzyCompare(opacity, other.opacity) &&
-               qFuzzyCompare(cornerRadius + 2.0, other.cornerRadius + 2.0) &&
-               qFuzzyCompare(bottomAngle1 + 2.0, other.bottomAngle1 + 2.0) &&
-               qFuzzyCompare(bottomAngle2 + 2.0, other.bottomAngle2 + 2.0) &&
-               qFuzzyCompare(parallelogramAngle + 2.0, other.parallelogramAngle + 2.0) && pos == other.pos &&
-               size == other.size && propertyExtras == other.propertyExtras;
+               pos == other.pos && size == other.size && propertyExtras == other.propertyExtras;
     }
 
     bool operator!=(const ShapeItemState& other) const { return !(*this == other); }

@@ -530,12 +530,14 @@ void ItemPropertiesDialog::ApplyChanges()
                 ItemProperty::SWEEP_ANGLE,
                 value == qRound(style->InitialSweepAngle()) ? style->InitialSweepAngle() : static_cast<qreal>(value));
         }
-        if (style && style->CornerRadiusSpin()) {
+        if (style && style->CornerRadiusSpin() &&
+            after.shapeState.propertyExtras.contains(ItemProperty::CORNER_RADIUS)) {
             const int value = style->CornerRadiusSpin()->value();
             // 圆角矩形默认值来自短边的 16%，对话框里显示为非 0；
             // 未改动时保留“按类型取默认”的 -1，避免打开属性窗点确定就写回显式值。
-            after.shapeState.cornerRadius =
-                value == style->InitialCornerRadius() ? style->InitialStoredCornerRadius() : value;
+            after.shapeState.propertyExtras.insert(ItemProperty::CORNER_RADIUS, value == style->InitialCornerRadius()
+                                                                                    ? style->InitialStoredCornerRadius()
+                                                                                    : static_cast<qreal>(value));
         }
         // 内角 A / B 两行由三角形与平行四边形共用：同一控件按目标回填与提交，
         // 换绑图元后不会把旧值脏写到另一类属性上（§4.2）。
@@ -544,25 +546,34 @@ void ItemPropertiesDialog::ApplyChanges()
             const qreal initial = style->InitialInteriorAngleA();
             const bool unchanged = value == qRound(initial);
             if (style->Target() == ItemPropertiesDialogStyleBlock::InteriorAngleTarget::TRIANGLE_A) {
-                after.shapeState.bottomAngle1 = unchanged ? initial : value;
+                after.shapeState.propertyExtras.insert(ItemProperty::BOTTOM_ANGLE1,
+                                                       unchanged ? initial : static_cast<qreal>(value));
             } else if (style->Target() == ItemPropertiesDialogStyleBlock::InteriorAngleTarget::PARALLELOGRAM) {
-                after.shapeState.parallelogramAngle = unchanged ? initial : value;
+                after.shapeState.propertyExtras.insert(ItemProperty::PARALLELOGRAM_ANGLE,
+                                                       unchanged ? initial : static_cast<qreal>(value));
             }
         }
         if (style && style->InteriorAngleBSpin()) {
             const int value = style->InteriorAngleBSpin()->value();
             const qreal initial = style->InitialInteriorAngleB();
-            after.shapeState.bottomAngle2 = value == qRound(initial) ? initial : value;
+            after.shapeState.propertyExtras.insert(ItemProperty::BOTTOM_ANGLE2,
+                                                   value == qRound(initial) ? initial : static_cast<qreal>(value));
         }
         // 只改底角、不动尺寸时保持底边长度：按新角度重算包围盒，而不是沿用旧盒宽。
-        const bool triangleAnglesChanged =
-            !qFuzzyCompare(before.shapeState.bottomAngle1 + 2.0, after.shapeState.bottomAngle1 + 2.0) ||
-            !qFuzzyCompare(before.shapeState.bottomAngle2 + 2.0, after.shapeState.bottomAngle2 + 2.0);
+        const qreal angle1Before =
+            before.shapeState.propertyExtras.value(ItemProperty::BOTTOM_ANGLE1, shape->BottomAngle1()).toDouble();
+        const qreal angle2Before =
+            before.shapeState.propertyExtras.value(ItemProperty::BOTTOM_ANGLE2, shape->BottomAngle2()).toDouble();
+        const qreal angle1After =
+            after.shapeState.propertyExtras.value(ItemProperty::BOTTOM_ANGLE1, shape->BottomAngle1()).toDouble();
+        const qreal angle2After =
+            after.shapeState.propertyExtras.value(ItemProperty::BOTTOM_ANGLE2, shape->BottomAngle2()).toDouble();
+        const bool triangleAnglesChanged = !qFuzzyCompare(angle1Before + 2.0, angle1After + 2.0) ||
+                                           !qFuzzyCompare(angle2Before + 2.0, angle2After + 2.0);
         if (shape->shapeType() == ShapeType::TRIANGLE && !shape->IsCustomShape() && triangleAnglesChanged &&
             after.size == before.size) {
-            after.size = TriangleGeometry::SizeForAngles(before.size, before.shapeState.bottomAngle1,
-                                                         before.shapeState.bottomAngle2, after.shapeState.bottomAngle1,
-                                                         after.shapeState.bottomAngle2);
+            after.size =
+                TriangleGeometry::SizeForAngles(before.size, angle1Before, angle2Before, angle1After, angle2After);
             after.shapeState.size = after.size;
         }
     } else if (m_item->Category() == ItemCategory::TEXT) {
