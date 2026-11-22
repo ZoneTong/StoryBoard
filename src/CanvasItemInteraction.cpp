@@ -168,93 +168,36 @@ void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardMod
         return;
     }
 
-    // 需求 2：拖顶点 C 只改三角形，AB 两端在场景中固定；底边长度不变，
-    // 顶点可以越过 A / B 的垂线，因此两个底角都能进入钝角区。
+    // 需求 §3.1：拖顶点只改内角 A。AB 边上的垂直高度保持拖拽开始时的值，
+    // B 由底边长度与高度反算（cotB = base/h − cotA）；A 的钝角分支跟指针方向
+    // 一致（D12），按 1° 步进取整数。
     if (auto* triangle = dynamic_cast<ShapeAbstractItem*>(m_item);
         triangle && triangle->shapeType() == ShapeType::TRIANGLE && !triangle->IsCustomShape() &&
         handle == CanvasItem::APEX) {
         const QPointF base = m_triangleDragBaseB - m_triangleDragBaseA;
         const qreal baseLength = qMax<qreal>(1.0, std::hypot(base.x(), base.y()));
         const QPointF along = base / baseLength;
-        // 未旋转时 along=(1,0)，normal=(0,-1) 指向画布上方；旋转后一起跟着底边转。
-        const QPointF normal(along.y(), -along.x());
         const QPointF toPointer = scenePos - m_triangleDragBaseA;
-        const qreal height = qMax<qreal>(0.0, QPointF::dotProduct(toPointer, normal));
+        const qreal height = qMax<qreal>(1.0, m_item->m_dragStartSize.height());
         const qreal fromA = QPointF::dotProduct(toPointer, along);
-        const qreal fromB = QPointF::dotProduct(scenePos - m_triangleDragBaseB, along);
-        const qreal angleA = qRadiansToDegrees(qAtan2(height, fromA));
-        const qreal angleB = qRadiansToDegrees(qAtan2(height, -fromB));
-        triangle->SetTriangleAngles(angleA, angleB);
+        const qreal angleA = qRound(qRadiansToDegrees(qAtan2(height, fromA)));
+        const qreal cotA = 1.0 / qTan(qDegreesToRadians(angleA));
+        const qreal cotB = baseLength / height - cotA;
+        const qreal angleB = qRadiansToDegrees(qAtan2(1.0, cotB));
+        triangle->SetTriangleAnglesFixedHeight(angleA, angleB, height);
         triangle->SetAngleReadoutVisible(true);
-        // 角度与包围盒重算后，把局部 A 点搬回拖拽开始时的场景位置；底边长度不变，
+        // 底边长度与高度都没变，把局部 A 点搬回拖拽开始时的场景位置即可，
         // B 会随同一条底边一起保持固定。
         const QPointF newA = m_item->mapToScene(triangle->triangleVertex(ShapeAbstractItem::TriangleVertex::A));
         m_item->setPos(m_item->pos() + (m_triangleDragBaseA - newA));
         return;
     }
 
-    // 三角形拖动包围框只能等比缩放：三个内角保持不变，手柄对面的那个点钉住不动
-    // （角对手柄钉对角、边中点对手柄钉对边中点）。高度由底边与角度派生，缩放后
-    // 宽高比自然保持，所以只要按比例算新尺寸、再把锚点摆回原处。
-    if (auto* triangle = dynamic_cast<ShapeAbstractItem*>(m_item);
-        triangle && triangle->shapeType() == ShapeType::TRIANGLE && !triangle->IsCustomShape()) {
-        const QSizeF startSize = m_item->m_dragStartSize;
-        // 锚点在内容矩形里的归一化位置（0 = 左 / 上，1 = 右 / 下）。
-        qreal anchorX = 0.5;
-        qreal anchorY = 0.5;
-        switch (handle) {
-        case CanvasItem::TOP_LEFT:
-            anchorX = 1.0;
-            anchorY = 1.0;
-            break;
-        case CanvasItem::TOP:
-            anchorY = 1.0;
-            break;
-        case CanvasItem::TOP_RIGHT:
-            anchorX = 0.0;
-            anchorY = 1.0;
-            break;
-        case CanvasItem::LEFT:
-            anchorX = 1.0;
-            break;
-        case CanvasItem::RIGHT:
-            anchorX = 0.0;
-            break;
-        case CanvasItem::BOTTOM_LEFT:
-            anchorX = 1.0;
-            anchorY = 0.0;
-            break;
-        case CanvasItem::BOTTOM:
-            anchorY = 0.0;
-            break;
-        case CanvasItem::BOTTOM_RIGHT:
-            anchorX = 0.0;
-            anchorY = 0.0;
-            break;
-        default:
-            break;
-        }
-        const bool horizontal = IsLeftHandle(handle) || IsRightHandle(handle);
-        const bool vertical = IsTopHandle(handle) || IsBottomHandle(handle);
-        const qreal kx =
-            horizontal ? 1.0 + (IsLeftHandle(handle) ? -delta.x() : delta.x()) / qMax<qreal>(1.0, startSize.width())
-                       : 1.0;
-        const qreal ky =
-            vertical ? 1.0 + (IsTopHandle(handle) ? -delta.y() : delta.y()) / qMax<qreal>(1.0, startSize.height())
-                     : 1.0;
-        // 角手柄两维都有位移，跟位移更大的那一维走；边手柄只有一维。
-        qreal scale = horizontal && vertical ? (qAbs(kx - 1.0) >= qAbs(ky - 1.0) ? kx : ky) : (horizontal ? kx : ky);
-        scale = qMax(scale, qMax(MINIMUM_SIDE / qMax<qreal>(1.0, startSize.width()),
-                                 MINIMUM_SIDE / qMax<qreal>(1.0, startSize.height())));
-        const qreal newWidth = startSize.width() * scale;
-        const qreal cot1 = 1.0 / qTan(qDegreesToRadians(triangle->BottomAngle1()));
-        const qreal cot2 = 1.0 / qTan(qDegreesToRadians(triangle->BottomAngle2()));
-        const qreal newHeight = newWidth / qMax<qreal>(0.02, cot1 + cot2);
-        const QPointF anchorScene =
-            m_item->m_dragStartPos + QPointF(anchorX * startSize.width(), anchorY * startSize.height());
-        m_item->setPos(anchorScene - QPointF(anchorX * newWidth, anchorY * newHeight));
-        m_item->SetContentSize(QSizeF(newWidth, newHeight));
-        return;
+    // §3.1：三角形不再等比缩放——四角 / 边走通用自由缩放，B 在 ContentResized()
+    // 里按新框宽高反算；拖外接框 / 边时 A、B 读数都随拖动显示。
+    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(m_item);
+        shape && shape->shapeType() == ShapeType::TRIANGLE && !shape->IsCustomShape()) {
+        shape->SetAngleReadoutVisible(true);
     }
 
     if (IsLeftHandle(handle)) {

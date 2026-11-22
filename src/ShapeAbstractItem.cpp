@@ -177,7 +177,18 @@ void ShapeAbstractItem::SetTriangleAngles(qreal angle1, qreal angle2)
     m_syncingTriangle = true;
     SetContentSize(newSize);
     m_syncingTriangle = false;
-    m_triangleSyncSize = ContentSize();
+    update();
+}
+
+void ShapeAbstractItem::SetTriangleAnglesFixedHeight(qreal angle1, qreal angle2, qreal height)
+{
+    TriangleGeometry::ClampAngles(&angle1, &angle2);
+    // §3.1 拖顶点：AB 边上的垂直高度是输入，底边与包围框宽度随角度派生。
+    m_bottomAngle1 = angle1;
+    m_bottomAngle2 = angle2;
+    m_syncingTriangle = true;
+    SetContentSize(TriangleGeometry::SizeForHeight(qMax<qreal>(1.0, height), angle1, angle2));
+    m_syncingTriangle = false;
     update();
 }
 
@@ -195,31 +206,17 @@ void ShapeAbstractItem::ContentResized()
     if (shapeType() != ShapeType::TRIANGLE || IsCustomShape()) {
         return;
     }
-    // 尺寸折算已经在 AdjustedContentSize() 里做完，这里只记一次同步基准，
-    // 不再在 resize 过程中二次改尺寸，避免拖动底边时反复重排导致闪烁。
-    if (!m_syncingTriangle) {
-        m_triangleSyncSize = ContentSize();
+    if (m_syncingTriangle) {
+        return;
     }
-}
-
-QSizeF ShapeAbstractItem::AdjustedContentSize(const QSizeF& size) const
-{
-    if (shapeType() != ShapeType::TRIANGLE || IsCustomShape()) {
-        return size;
-    }
-    const QSizeF current = ContentSize();
-    const qreal ratio = TriangleGeometry::AspectRatio(m_bottomAngle1, m_bottomAngle2);
-    const bool widthChanged = !qFuzzyCompare(size.width() + 0.01, current.width() + 0.01);
-    const bool heightChanged = !qFuzzyCompare(size.height() + 0.01, current.height() + 0.01);
-    QSizeF target = size;
-    if (heightChanged && !widthChanged) {
-        // 拖高等价于等比改底边：高度是本次输入，包围盒宽度按角度比例放大 / 缩小。
-        target = TriangleGeometry::SizeForHeight(size.height(), m_bottomAngle1, m_bottomAngle2);
-    } else if (widthChanged) {
-        // 拖宽度：高度由包围盒宽度与角度派生。
-        target.setHeight(size.width() / ratio);
-    }
-    return target;
+    // §3.1：四角自由缩放后 A 保持不变，B 按新框宽高反算（cotB = w/h − cotA）；
+    // 反算分支随新框宽高自然取值，绘制按新角度贴合包围盒。
+    const QSizeF size = ContentSize();
+    const qreal cotA = 1.0 / qTan(qDegreesToRadians(m_bottomAngle1));
+    const qreal cotB = size.width() / qMax<qreal>(1.0, size.height()) - cotA;
+    const qreal angleB = qRadiansToDegrees(qAtan2(1.0, cotB));
+    m_bottomAngle2 = qBound<qreal>(5.0, angleB, 175.0 - m_bottomAngle1);
+    update();
 }
 
 QRectF ShapeAbstractItem::FrameRect() const
@@ -264,7 +261,7 @@ void ShapeAbstractItem::DrawSelectionOverlay(QPainter* painter)
         const QFontMetricsF metrics(font);
         const QPointF a = triangleVertex(TriangleVertex::A);
         const QPointF b = triangleVertex(TriangleVertex::B);
-        const QString textA = QStringLiteral("%1°").arg(BottomAngle1(), 0, 'f', 1);
+        const QString textA = QStringLiteral("%1°").arg(qRound(BottomAngle1()));
         const QString textB = QStringLiteral("%1°").arg(BottomAngle2(), 0, 'f', 1);
         painter->drawText(a + QPointF(6.0 / scale, -6.0 / scale), textA);
         painter->drawText(b + QPointF(-metrics.horizontalAdvance(textB) - 6.0 / scale, -6.0 / scale), textB);
@@ -363,7 +360,6 @@ void ShapeAbstractItem::ApplyState(const ShapeItemState& state)
     }
     m_syncingTriangle = false;
     ReadState(state);
-    m_triangleSyncSize = ContentSize();
     update();
 }
 

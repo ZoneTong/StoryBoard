@@ -432,126 +432,108 @@ void selftest::RunShapeItemTests(Context& ctx)
                       .arg(arcFrame.height()));
     }
     {
-        // 三角形一次性折算尺寸：拖宽即派生高度，不再二次改尺寸（原先的来回抖动来源）。
+        // §3.1 三角形自由缩放：尺寸按输入直接生效，A 不变，B 按新框宽高反算。
         TriangleItem triangle;
         triangle.SetContentSize(QSizeF(120.0, 90.0));
-        const qreal derived = 120.0 / (2.0 / qTan(qDegreesToRadians(60.0)));
-        const QSizeF first = triangle.ContentSize();
-        triangle.SetContentSize(QSizeF(160.0, first.height()));
-        const QSizeF second = triangle.ContentSize();
-        ctx.Check(qAbs(first.height() - derived) < 0.6 && qAbs(second.width() - 160.0) < 0.01 &&
-                      second.height() > first.height(),
-                  QStringLiteral("三角形宽度变化时一次折算派生高度并等比增长"),
-                  QStringLiteral("first=%1x%2 second=%3x%4")
-                      .arg(first.width())
-                      .arg(first.height())
-                      .arg(second.width())
-                      .arg(second.height()));
+        const qreal angleA = triangle.BottomAngle1();
+        const qreal cotA = 1.0 / qTan(qDegreesToRadians(angleA));
+        triangle.SetContentSize(QSizeF(160.0, 90.0));
+        const QSizeF size = triangle.ContentSize();
+        const qreal expectedB = qRadiansToDegrees(qAtan2(1.0, 160.0 / 90.0 - cotA));
+        ctx.Check(qAbs(size.width() - 160.0) < 0.01 && qAbs(size.height() - 90.0) < 0.01 &&
+                      qAbs(triangle.BottomAngle1() - angleA) < 0.05 && qAbs(triangle.BottomAngle2() - expectedB) < 0.05,
+                  QStringLiteral("三角形宽度变化时高度保持、A 不变、B 反算"),
+                  QStringLiteral("size=%1x%2 angles=%3/%4 expectedB=%5")
+                      .arg(size.width())
+                      .arg(size.height())
+                      .arg(triangle.BottomAngle1())
+                      .arg(triangle.BottomAngle2())
+                      .arg(expectedB));
     }
     {
-        // 三角形拖包围框：只能等比缩放，三个内角不变，手柄对面的点钉住。
+        // §3.1 三角形拖包围框：四角 / 边走通用自由缩放，A 不变、B 反算，对面边钉住。
         TriangleItem triangle;
         triangle.setPos(QPointF(60.0, 40.0));
         triangle.SetContentSize(QSizeF(120.0, 90.0));
-        const qreal cot1 = 1.0 / qTan(qDegreesToRadians(triangle.BottomAngle1()));
         const qreal angle1Before = triangle.BottomAngle1();
-        const qreal angle2Before = triangle.BottomAngle2();
-        const auto apexScene = [&triangle, cot1]() {
-            return triangle.pos() + QPointF(triangle.ContentSize().height() * cot1, 0.0);
-        };
+        const qreal cot1 = 1.0 / qTan(qDegreesToRadians(angle1Before));
         const auto baseMidScene = [&triangle]() {
             const QSizeF size = triangle.ContentSize();
             return triangle.pos() + QPointF(size.width() / 2.0, size.height());
         };
-        const QPointF apexBefore = apexScene();
         const QPointF baseMidBefore = baseMidScene();
-        const qreal startHeight = triangle.ContentSize().height();
-        const qreal startWidth = triangle.ContentSize().width();
 
-        // 拖底边：对面点 = 上边中点（等腰三角时就是顶点）。
+        // 拖底边：高度是输入，宽度不变，A 不变，B 按新宽高反算。
         CanvasItemInteraction bottomDrag(&triangle);
-        bottomDrag.BeginResize(CanvasItem::BOTTOM, triangle.pos() + QPointF(60.0, startHeight));
-        bottomDrag.ApplyResize(triangle.pos() + QPointF(60.0, startHeight + 30.0), Qt::NoModifier);
-        const QPointF apexAfter = apexScene();
-        const QPointF baseMidAfter = baseMidScene();
-        ctx.Check(qAbs(apexAfter.x() - apexBefore.x()) < 0.5 && qAbs(apexAfter.y() - apexBefore.y()) < 0.5 &&
+        bottomDrag.BeginResize(CanvasItem::BOTTOM, triangle.pos() + QPointF(60.0, 90.0));
+        bottomDrag.ApplyResize(triangle.pos() + QPointF(60.0, 120.0), Qt::NoModifier);
+        const qreal bottomExpectedB = qRadiansToDegrees(qAtan2(1.0, 120.0 / 120.0 - cot1));
+        ctx.Check(qAbs(triangle.ContentSize().width() - 120.0) < 0.01 &&
+                      qAbs(triangle.ContentSize().height() - 120.0) < 0.01 &&
                       qAbs(triangle.BottomAngle1() - angle1Before) < 0.05 &&
-                      qAbs(triangle.BottomAngle2() - angle2Before) < 0.05 &&
-                      qAbs(triangle.ContentSize().width() / startWidth -
-                           triangle.ContentSize().height() / startHeight) < 0.01 &&
-                      triangle.ContentSize().height() > startHeight + 1.0 &&
-                      qAbs(baseMidAfter.x() - baseMidBefore.x()) < 0.5 && baseMidAfter.y() - baseMidBefore.y() > 1.0,
-                  QStringLiteral("拖三角形底边：顶点钉住、内角不变、宽高等比放大"),
-                  QStringLiteral("apex=%1,%2->%3,%4 angles=%5/%6->%7/%8 baseMid=%9,%10->%11,%12")
-                      .arg(apexBefore.x())
-                      .arg(apexBefore.y())
-                      .arg(apexAfter.x())
-                      .arg(apexAfter.y())
-                      .arg(angle1Before)
-                      .arg(angle2Before)
+                      qAbs(triangle.BottomAngle2() - bottomExpectedB) < 0.05,
+                  QStringLiteral("拖三角形底边：宽度不变、A 不变、B 反算"),
+                  QStringLiteral("size=%1x%2 angles=%3/%4 expectedB=%5")
+                      .arg(triangle.ContentSize().width())
+                      .arg(triangle.ContentSize().height())
                       .arg(triangle.BottomAngle1())
                       .arg(triangle.BottomAngle2())
-                      .arg(baseMidBefore.x())
-                      .arg(baseMidBefore.y())
-                      .arg(baseMidAfter.x())
-                      .arg(baseMidAfter.y()));
+                      .arg(bottomExpectedB));
 
-        // 拖上边：对面点 = 底边中点，钉住；底边两端随等比缩放外扩。
+        // 拖上边：底边钉住，高度是输入，宽度不变。
         TriangleItem topTriangle;
         topTriangle.setPos(QPointF(60.0, 40.0));
         topTriangle.SetContentSize(QSizeF(120.0, 90.0));
         const qreal topA1 = topTriangle.BottomAngle1();
-        const qreal topA2 = topTriangle.BottomAngle2();
-        const auto topBaseMid = [&topTriangle]() {
-            const QSizeF size = topTriangle.ContentSize();
-            return topTriangle.pos() + QPointF(size.width() / 2.0, size.height());
-        };
-        const QPointF topBaseMidBefore = topBaseMid();
+        const QPointF topBaseMidBefore = topTriangle.pos() + QPointF(60.0, 90.0);
         CanvasItemInteraction topDrag(&topTriangle);
         topDrag.BeginResize(CanvasItem::TOP, topTriangle.pos() + QPointF(60.0, 0.0));
         topDrag.ApplyResize(topTriangle.pos() + QPointF(60.0, -30.0), Qt::NoModifier);
-        const QPointF topBaseMidAfter = topBaseMid();
+        const QPointF topBaseMidAfter =
+            topTriangle.pos() + QPointF(topTriangle.ContentSize().width() / 2.0, topTriangle.ContentSize().height());
         ctx.Check(qAbs(topBaseMidAfter.x() - topBaseMidBefore.x()) < 0.5 &&
                       qAbs(topBaseMidAfter.y() - topBaseMidBefore.y()) < 0.5 &&
-                      qAbs(topTriangle.BottomAngle1() - topA1) < 0.05 &&
-                      qAbs(topTriangle.BottomAngle2() - topA2) < 0.05 && topTriangle.ContentSize().width() > 120.0,
-                  QStringLiteral("拖三角形上边：底边中点钉住、内角不变、宽度等比放大"),
-                  QStringLiteral("baseMid=%1,%2->%3,%4 width=%5")
+                      qAbs(topTriangle.ContentSize().width() - 120.0) < 0.01 &&
+                      qAbs(topTriangle.ContentSize().height() - 120.0) < 0.01 &&
+                      qAbs(topTriangle.BottomAngle1() - topA1) < 0.05,
+                  QStringLiteral("拖三角形上边：底边中点钉住、宽度不变、A 不变"),
+                  QStringLiteral("baseMid=%1,%2->%3,%4 size=%5x%6")
                       .arg(topBaseMidBefore.x())
                       .arg(topBaseMidBefore.y())
                       .arg(topBaseMidAfter.x())
                       .arg(topBaseMidAfter.y())
-                      .arg(topTriangle.ContentSize().width()));
+                      .arg(topTriangle.ContentSize().width())
+                      .arg(topTriangle.ContentSize().height()));
 
-        // 拖左上角：对面点 = 右下角，钉住；宽高比与内角都不变。
+        // 拖左上角：右下角钉住，宽高自由变化（宽高比不再保持），A 不变、B 反算。
         TriangleItem cornerTriangle;
         cornerTriangle.setPos(QPointF(60.0, 40.0));
         cornerTriangle.SetContentSize(QSizeF(120.0, 90.0));
         const qreal cornerA1 = cornerTriangle.BottomAngle1();
-        const qreal cornerA2 = cornerTriangle.BottomAngle2();
-        const auto bottomRight = [&cornerTriangle]() {
-            const QSizeF size = cornerTriangle.ContentSize();
-            return cornerTriangle.pos() + QPointF(size.width(), size.height());
-        };
-        const QPointF cornerBefore = bottomRight();
-        const qreal cornerRatioBefore = cornerTriangle.ContentSize().width() / cornerTriangle.ContentSize().height();
+        const QPointF cornerBefore(180.0, 130.0);
         CanvasItemInteraction cornerDrag(&cornerTriangle);
         cornerDrag.BeginResize(CanvasItem::TOP_LEFT, cornerTriangle.pos());
         cornerDrag.ApplyResize(cornerTriangle.pos() + QPointF(-20.0, -20.0), Qt::NoModifier);
-        const QPointF cornerAfter = bottomRight();
-        const qreal cornerRatioAfter = cornerTriangle.ContentSize().width() / cornerTriangle.ContentSize().height();
+        const QPointF cornerAfter =
+            cornerTriangle.pos() + QPointF(cornerTriangle.ContentSize().width(), cornerTriangle.ContentSize().height());
+        const qreal cornerExpectedB =
+            qRadiansToDegrees(qAtan2(1.0, 140.0 / 110.0 - 1.0 / qTan(qDegreesToRadians(cornerA1))));
         ctx.Check(qAbs(cornerAfter.x() - cornerBefore.x()) < 0.5 && qAbs(cornerAfter.y() - cornerBefore.y()) < 0.5 &&
-                      qAbs(cornerRatioAfter - cornerRatioBefore) < 0.01 &&
+                      qAbs(cornerTriangle.ContentSize().width() - 140.0) < 0.01 &&
+                      qAbs(cornerTriangle.ContentSize().height() - 110.0) < 0.01 &&
                       qAbs(cornerTriangle.BottomAngle1() - cornerA1) < 0.05 &&
-                      qAbs(cornerTriangle.BottomAngle2() - cornerA2) < 0.05,
-                  QStringLiteral("拖三角形左上角：右下角钉住、宽高比与内角不变"),
-                  QStringLiteral("corner=%1,%2->%3,%4 ratio=%5->%6")
+                      qAbs(cornerTriangle.BottomAngle2() - cornerExpectedB) < 0.05,
+                  QStringLiteral("拖三角形左上角：右下角钉住、自由缩放、A 不变 B 反算"),
+                  QStringLiteral("corner=%1,%2->%3,%4 size=%5x%6 angles=%7/%8 expectedB=%9")
                       .arg(cornerBefore.x())
                       .arg(cornerBefore.y())
                       .arg(cornerAfter.x())
                       .arg(cornerAfter.y())
-                      .arg(cornerRatioBefore)
-                      .arg(cornerRatioAfter));
+                      .arg(cornerTriangle.ContentSize().width())
+                      .arg(cornerTriangle.ContentSize().height())
+                      .arg(cornerTriangle.BottomAngle1())
+                      .arg(cornerTriangle.BottomAngle2())
+                      .arg(cornerExpectedB));
     }
     {
         // 钝角三角形：拖顶点越过 A/B 的垂线后，底角可大于 90°，底边两端在场景中不动。

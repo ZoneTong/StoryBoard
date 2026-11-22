@@ -135,6 +135,5 @@ void ShapeAbstractItem::FromJson(const QJsonObject& json)
     if (forceRoundedCorner && !IsCustomShape()) {
         m_cornerRadius = qMin(ContentSize().width(), ContentSize().height()) * 0.16;
     }
-    m_triangleSyncSize = ContentSize();
     update();
 }
