@@ -2,6 +2,7 @@
 
 #include "items/CanvasItem.h"
 #include "items/lines/LineAbstractItem.h"
+#include "items/polygon/PolygonAccess.h"
 #include "items/polygon/PolygonItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
 #include "ops/MergeRegions.h"
@@ -26,16 +27,10 @@ struct Knife {
     QPointF endDir;
 };
 
-// dynamic_cast 到 PolygonItem 属白名单定点场景（D16）：按内部图层取几何
-// 只存在于该叶子类，无法用标量属性表达。
-PolygonItem* AsPolygon(CanvasItem* item)
-{
-    return dynamic_cast<PolygonItem*>(item);
-}
-
+// 按内部图层取几何只存在于多边形叶子类：统一走 PolygonAccess 的访问者入口（D16）。
 bool IsFillTarget(CanvasItem* item)
 {
-    if (const PolygonItem* polygon = AsPolygon(item)) {
+    if (PolygonItem* polygon = AsPolygon(item)) {
         return polygon->HasFillAreaLayer();
     }
     return dynamic_cast<ShapeAbstractItem*>(item) != nullptr;
@@ -213,7 +208,7 @@ QList<QPainterPath> CanvasHalfRegions(const QRectF& canvas, const Knife& knife)
 // 被切图元的填充轮廓（场景坐标）。
 QPainterPath FillPathOf(CanvasItem* item)
 {
-    if (const PolygonItem* polygon = AsPolygon(item)) {
+    if (PolygonItem* polygon = AsPolygon(item)) {
         QPainterPath fill;
         for (const PolygonItem::Layer& layer : polygon->Layers()) {
             if (layer.role != PolygonItem::LayerRole::FILLED_AREA || layer.path.isEmpty()) {

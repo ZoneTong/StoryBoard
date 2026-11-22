@@ -7,3 +7,5 @@ void CanvasItemVisitor::VisitLine(LineAbstractItem&) {}
 void CanvasItemVisitor::VisitCurve(CurveItem&) {}
 
 void CanvasItemVisitor::VisitText(TextItem&) {}
+
+void CanvasItemVisitor::VisitPolygon(PolygonItem&) {}

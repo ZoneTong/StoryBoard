@@ -2,6 +2,7 @@
 
 #include "items/CanvasItem.h"
 #include "items/lines/LineAbstractItem.h"
+#include "items/polygon/PolygonAccess.h"
 #include "items/polygon/PolygonItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
 #include "items/text/TextItem.h"
@@ -43,13 +44,6 @@ struct Participant {
     int selectionIndex = INT_MAX;    // 选择顺序（小者先选中），剪除时用来挑底图
 };
 
-// dynamic_cast 到 PolygonItem 属白名单定点场景（D16）：多边形内部图层
-// 只存在于该叶子类，布尔运算必须按层取几何，无法用标量属性表达。
-PolygonItem* AsPolygon(CanvasItem* item)
-{
-    return dynamic_cast<PolygonItem*>(item);
-}
-
 // 线条类图元不参与合并：直线（含直线箭头）、括号、弧、曲线，以及纯描线多边形。
 bool IsLineClassItem(CanvasItem* item)
 {
@@ -57,7 +51,7 @@ bool IsLineClassItem(CanvasItem* item)
         return true;
     }
     // 零面积图元已全部并入曲线族，普通形状类恒有填充面积；多边形要看图层。
-    if (const PolygonItem* polygon = AsPolygon(item)) {
+    if (PolygonItem* polygon = AsPolygon(item)) {
         return !polygon->HasFillAreaLayer();
     }
     return false;
@@ -68,7 +62,7 @@ bool IsLineClassItem(CanvasItem* item)
 // 图形仍按完整轮廓参与布尔运算，也应优先决定合并结果的样式。
 bool HasFillSpace(CanvasItem* item)
 {
-    if (const PolygonItem* polygon = AsPolygon(item)) {
+    if (PolygonItem* polygon = AsPolygon(item)) {
         return polygon->HasFillAreaLayer();
     }
     return !dynamic_cast<LineAbstractItem*>(item) && item->Category() != ItemCategory::TEXT;
@@ -168,7 +162,7 @@ bool AppendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
             Q_UNUSED(curve)
             memberPath = vectorMember->mapToScene(vectorMember->PaintedShape());
             strokePart = memberPath;
-        } else if (const PolygonItem* polygon = AsPolygon(vectorMember)) {
+        } else if (PolygonItem* polygon = AsPolygon(vectorMember)) {
             for (const PolygonItem::Layer& layer : polygon->Layers()) {
                 if (layer.path.isEmpty()) {
                     continue;

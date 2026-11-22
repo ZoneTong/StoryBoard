@@ -28,7 +28,7 @@ enum class ItemCategory { SHAPE, LINE, TEXT };
 // D16 叶子强转白名单（§2.4）：图元行为优先走 Category / 属性表 / 句柄 / Visitor，
 // 只允许下列「无法用标量属性表达」的定点叶子强转，且每处都在源码里注明 D16：
 //   1) PolygonItem：合并/分割产物要遍历自己的图层（Layer/Layers），这是多边形独有的数据结构；
-//      BoolOps.cpp、LineSplitOps.cpp、PropertiesPanel.cpp、StyleController.cpp。
+//      生产代码统一走 items/polygon/PolygonAccess 的访问者入口（VisitPolygon），不再各自强转。
 //   2) TextItem：文字 Memento（TextItemState）只属于文字图元，编辑面板按类别取回带类型的列表；
 //      PropertiesPanel::SelectedTexts。
 //   3) ArcItem：属性窗中心点行要区分"椭圆中心点"标题（弧线的椭圆框不等于内容框）；

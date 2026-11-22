@@ -35,6 +35,8 @@ class PolygonItem : public ShapeAbstractItem {
     QString Kind() const override { return QStringLiteral("polygon"); }
     // 多边形没有内置轮廓，shapeType 只用于形状派生的公共分支（填充、命中已单独覆写）。
     ShapeType shapeType() const override { return ShapeType::POLYGON; }
+    // 访问者入口：按图层取几何的调用方走 VisitPolygon，不再强转本类（D16）。
+    void Accept(CanvasItemVisitor& visitor) override;
     // 派生自 ShapeAbstractItem 但不受形状类型语义约束：凡按 shapeType 分派的入口都先看这一位。
     QString DisplayName() const override;
     QString TypeDisplayName() const override;

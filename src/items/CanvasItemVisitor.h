@@ -4,6 +4,7 @@ class ShapeAbstractItem;
 class LineAbstractItem;
 class CurveItem;
 class TextItem;
+class PolygonItem;
 
 // 跨类型操作的通用访问者：只用于无法用标量属性表达的定点能力，
 // 例如多边形内部图层遍历、曲线简化。默认实现为空（Null Object），
@@ -16,4 +17,6 @@ class CanvasItemVisitor {
     // 手绘曲线 / 图片线稿：曲线简化只属于这一类，描线基类不再带能力位。
     virtual void VisitCurve(CurveItem&);
     virtual void VisitText(TextItem&);
+    // 多边形内部图层：唯一需要按层取几何的叶子类（D16 白名单的唯一入口）。
+    virtual void VisitPolygon(PolygonItem&);
 };

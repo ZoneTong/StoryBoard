@@ -13,6 +13,7 @@
 #include "items/lines/LineAbstractItem.h"
 #include "items/lines/SineItem.h"
 #include "items/lines/StraightLineItem.h"
+#include "items/polygon/PolygonAccess.h"
 #include "items/polygon/PolygonItem.h"
 #include "items/properties/ArrowStyle.h"
 #include "items/shapes/AllShapes.h"
@@ -414,6 +415,17 @@ void selftest::RunShapeItemTests(Context& ctx)
                   QStringLiteral("中心点能力沿用描述器标记（五角星不支持）"));
         ctx.Check(ShapeMeta::IsFilled(ShapeType::DIAMOND) && !ShapeMeta::IsFilled(ShapeType::POLYGON),
                   QStringLiteral("填充能力沿用描述器标记（POLYGON 占位无面积）"));
+    }
+
+    // G5：多边形按层取几何统一走 VisitPolygon，不再由调用方强转叶子类。
+    {
+        PolygonItem polygon;
+        CanvasItem* asItem = &polygon;
+        ctx.Check(AsPolygon(asItem) == &polygon && IsPolygonShape(asItem),
+                  QStringLiteral("多边形经 VisitPolygon 可被识别"));
+        RectangleItem rectangle;
+        ctx.Check(AsPolygon(&rectangle) == nullptr && !IsPolygonShape(&rectangle),
+                  QStringLiteral("普通图形不会被误判成多边形"));
     }
 
     // 需求 5：圆角矩形并入矩形后，旧 rounded_rectangle 文件读成「矩形 + 自动圆角」。

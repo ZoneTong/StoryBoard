@@ -1,11 +1,17 @@
 #include "items/polygon/PolygonItem.h"
 
 #include "app/I18n.h"
+#include "items/CanvasItemVisitor.h"
 #include "items/geometry/ShapePainter.h"
 
 #include <QPainter>
 #include <QPainterPathStroker>
 #include <QTransform>
+
+void PolygonItem::Accept(CanvasItemVisitor& visitor)
+{
+    visitor.VisitPolygon(*this);
+}
 
 // 把路径里每个子路径显式闭合：布尔运算（交集 / 拆块）产生的路径与序列化
 // 重建的路径都不带 closeSubpath 标记，描边时收尾一条边会缺失（需求 11）。
