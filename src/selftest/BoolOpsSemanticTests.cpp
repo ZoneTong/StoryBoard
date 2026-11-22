@@ -2,6 +2,8 @@
 #include "CanvasScene.h"
 #include "CanvasView.h"
 #include "MainWindow.h"
+#include "MergeRegions.h"
+#include "PathRegions.h"
 #include "PolygonItem.h"
 #include "selftest/SelfTestContext.h"
 #include "selftest/SelftestEntries.h"
@@ -478,5 +480,100 @@ void selftest::RunBoolOpsSemanticTests(Context& ctx)
         ctx.Check(unionSplitOk && fragmentOk && differingPixels > 10,
                   QStringLiteral("拆分在块间保留内部交界线，与联合结果不同"),
                   QStringLiteral("diff=%1").arg(differingPixels));
+    }
+    {
+        // §5.1/§5.2：拆分连续块全覆盖；角点接触不算连续。
+        auto rectPath = [](qreal x, qreal y, qreal w, qreal h) {
+            QPainterPath path;
+            path.addRect(QRectF(x, y, w, h));
+            return path;
+        };
+        // 两块互不相连的矩形：拆成两块，并集面积等于两块面积之和，不丢面积。
+        const QPainterPath disjoint = rectPath(0, 0, 40, 40).united(rectPath(100, 0, 40, 40));
+        const QList<QPainterPath> disjointPieces = PathRegions::SplitDisjoint(disjoint);
+        qreal disjointArea = 0.0;
+        for (const QPainterPath& piece : disjointPieces) {
+            disjointArea += PathRegions::Area(piece);
+        }
+        ctx.Check(disjointPieces.size() == 2 && qAbs(disjointArea - 3200.0) < 1.0,
+                  QStringLiteral("互不相连区域拆成两块且全覆盖"),
+                  QStringLiteral("pieces=%1 area=%2").arg(disjointPieces.size()).arg(disjointArea, 0, 'f', 2));
+
+        // 仅角点接触的两个正方形：不算连续，保持两块独立。
+        const QPainterPath cornerTouch = rectPath(0, 0, 30, 30).united(rectPath(30, 30, 30, 30));
+        const QList<QPainterPath> cornerPieces = PathRegions::SplitDisjoint(cornerTouch);
+        ctx.Check(cornerPieces.size() == 2 &&
+                      !PathRegions::RegionsContinuous(rectPath(0, 0, 30, 30), rectPath(30, 30, 30, 30)),
+                  QStringLiteral("角点接触不算连续，保持两块独立"),
+                  QStringLiteral("pieces=%1").arg(cornerPieces.size()));
+
+        // 共享一条边的两个矩形：判为连续。
+        ctx.Check(PathRegions::RegionsContinuous(rectPath(0, 0, 30, 30), rectPath(30, 0, 30, 30)),
+                  QStringLiteral("共享边的两块判为连续"));
+
+        // 带孔洞的矩形：孔洞保留在同一块内，不被拆成独立块。
+        QPainterPath withHole;
+        withHole.addRect(QRectF(0, 0, 60, 60));
+        withHole.addRect(QRectF(20, 20, 20, 20));
+        withHole.setFillRule(Qt::OddEvenFill);
+        const QList<QPainterPath> holePieces = PathRegions::SplitDisjoint(withHole);
+        ctx.Check(holePieces.size() == 1 && qAbs(PathRegions::Area(holePieces.constFirst()) - 3200.0) < 1.0,
+                  QStringLiteral("孔洞保留在同一连续块内"),
+                  QStringLiteral("pieces=%1 area=%2")
+                      .arg(holePieces.size())
+                      .arg(holePieces.isEmpty() ? 0.0 : PathRegions::Area(holePieces.constFirst()), 0, 'f', 2));
+    }
+    {
+        // §5.3：极小碎块先吸收后删除；D2 豁免块不进入该流程。
+        auto makeBlock = [](const QPainterPath& path, int source = 0, bool exempt = false) {
+            MergeRegions::RegionBlock block;
+            block.path = path;
+            block.area = PathRegions::Area(path);
+            block.sourceIndex = source;
+            block.exempt = exempt;
+            return block;
+        };
+        auto rectPath = [](qreal x, qreal y, qreal w, qreal h) {
+            QPainterPath path;
+            path.addRect(QRectF(x, y, w, h));
+            return path;
+        };
+        // 大宿主 + 共边小碎块（3×3=9 < 16）：碎块被吸收，结果一块，面积不丢。
+        QList<MergeRegions::RegionBlock> absorbed;
+        absorbed.append(makeBlock(rectPath(0, 0, 40, 40)));
+        absorbed.append(makeBlock(rectPath(40, 0, 3, 3)));
+        absorbed = MergeRegions::AbsorbTinyFragments(absorbed);
+        qreal absorbedArea = 0.0;
+        for (const MergeRegions::RegionBlock& block : absorbed) {
+            absorbedArea += block.area;
+        }
+        ctx.Check(absorbed.size() == 1 && qAbs(absorbedArea - 1609.0) < 1.0, QStringLiteral("共边极小碎块先并入宿主"),
+                  QStringLiteral("blocks=%1 area=%2").arg(absorbed.size()).arg(absorbedArea, 0, 'f', 2));
+
+        // 孤立小碎块（无合法宿主）：删除，宿主保留。
+        QList<MergeRegions::RegionBlock> orphan;
+        orphan.append(makeBlock(rectPath(0, 0, 40, 40)));
+        orphan.append(makeBlock(rectPath(200, 200, 3, 3)));
+        orphan = MergeRegions::AbsorbTinyFragments(orphan);
+        ctx.Check(orphan.size() == 1 && PathRegions::Area(orphan.constFirst().path) > 16.0,
+                  QStringLiteral("无宿主的极小碎块删除，宿主保留"), QStringLiteral("blocks=%1").arg(orphan.size()));
+
+        // D2 豁免块：即使小于阈值也原样保留。
+        QList<MergeRegions::RegionBlock> exempt;
+        exempt.append(makeBlock(rectPath(0, 0, 40, 40)));
+        exempt.append(makeBlock(rectPath(200, 200, 3, 3), 0, true));
+        exempt = MergeRegions::AbsorbTinyFragments(exempt);
+        ctx.Check(exempt.size() == 2, QStringLiteral("原输入小图元豁免碎块规则"));
+    }
+    {
+        // §5.2：允许掩膜校验——最终填充落在掩膜外即不通过，提交前拦截。
+        QPainterPath mask;
+        mask.addRect(QRectF(0, 0, 60, 60));
+        QPainterPath inside;
+        inside.addRect(QRectF(10, 10, 20, 20));
+        QPainterPath outside;
+        outside.addRect(QRectF(70, 10, 20, 20));
+        ctx.Check(MergeRegions::FillWithinMask(inside, mask), QStringLiteral("掩膜内填充通过允许区域校验"));
+        ctx.Check(!MergeRegions::FillWithinMask(outside, mask), QStringLiteral("超出掩膜的填充不通过允许区域校验"));
     }
 }

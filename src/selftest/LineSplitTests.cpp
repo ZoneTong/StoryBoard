@@ -6,6 +6,7 @@
 #include "CurveItem.h"
 #include "LineSplitOps.h"
 #include "MainWindow.h"
+#include "MergeRegions.h"
 #include "PathRegions.h"
 #include "PolygonItem.h"
 #include "PropertiesPanel.h"
@@ -511,5 +512,27 @@ void selftest::RunLineSplitTests(Context& ctx)
                   QStringLiteral("fragments=%1 minArea=%2 %3").arg(fragments).arg(minArea, 0, 'f', 1).arg(geometry));
         ctx.Check(minArea >= 16.0, QStringLiteral("需求25-%1：不再产生退化色块碎片").arg(arrangement.label),
                   QStringLiteral("minArea=%1").arg(minArea, 0, 'f', 1));
+    }
+
+    // §5.4：线条分割以原始连续块数与刀线相交判定是否替换；切后填充不得超出原始填充区。
+    {
+        auto rectPath = [](qreal x, qreal y, qreal w, qreal h) {
+            QPainterPath path;
+            path.addRect(QRectF(x, y, w, h));
+            return path;
+        };
+        // 原始图元本身由两块互不相连区域组成：记录原始块数，刀线未相交时不误判为被切开。
+        const QPainterPath composite = rectPath(0, 0, 40, 40).united(rectPath(100, 0, 40, 40));
+        const int originalBlocks = PathRegions::SplitDisjoint(composite).size();
+        ctx.Check(originalBlocks == 2, QStringLiteral("多块复合图元记录原始连续块数"),
+                  QStringLiteral("blocks=%1").arg(originalBlocks));
+
+        // 切后碎片落在原始填充区内：允许掩膜校验通过。
+        const QPainterPath target = rectPath(0, 0, 100, 100);
+        const QPainterPath leftPiece = rectPath(0, 0, 40, 100);
+        const QPainterPath rightPiece = rectPath(60, 0, 40, 100);
+        const QPainterPath splitFill = leftPiece.united(rightPiece);
+        ctx.Check(MergeRegions::FillWithinMask(splitFill, target),
+                  QStringLiteral("线条分割结果不超出被切图元原始填充区"));
     }
 }
