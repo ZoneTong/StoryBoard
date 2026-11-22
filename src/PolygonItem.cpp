@@ -419,34 +419,12 @@ void PolygonItem::PaintContent(QPainter* painter)
     painter->restore();
 }
 
-ShapeLayer PolygonItem::shapeLayer(int index) const
+bool PolygonItem::HasFillAreaLayer() const
 {
-    if (index < 0 || index >= m_layers.size()) {
-        return ShapeLayer();
+    for (const Layer& layer : m_layers) {
+        if (layer.role == LayerRole::FILLED_AREA && !layer.path.isEmpty()) {
+            return true;
+        }
     }
-    const Layer& layer = m_layers.at(index);
-    ShapeLayer view;
-    view.path = layer.path;
-    view.fill = layer.fill;
-    view.stroke = layer.stroke;
-    view.strokeWidth = layer.strokeWidth;
-    view.filled = layer.filled;
-    switch (layer.role) {
-    case LayerRole::STROKE_BAND:
-        view.role = ShapeLayerRole::STROKE_BAND;
-        break;
-    case LayerRole::TEXT:
-        view.role = ShapeLayerRole::TEXT;
-        break;
-    case LayerRole::FILLED_AREA:
-    default:
-        view.role = ShapeLayerRole::FILL_AREA;
-        break;
-    }
-    return view;
-}
-
-QPainterPath PolygonItem::MapShapeLayerPath(const ShapeLayer& layer) const
-{
-    return LayerTransform().map(layer.path);
+    return false;
 }

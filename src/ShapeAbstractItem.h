@@ -57,19 +57,6 @@ QString FillStyleName(FillStyle style);
 // 填充纹理的中心线几何，编辑面板的工具按钮缩略图与图元绘制共用这一份。
 QPainterPath FillPatternCenterLines(FillStyle style, const QRectF& rect);
 
-// 多边形图元的内部图层（合并 / 分割产物）：基类只暴露只读视图，
-// 具体存储仍在 PolygonItem，避免上层按叶子类强转。
-enum class ShapeLayerRole { FILL_AREA = 0, STROKE_BAND = 1, TEXT = 2 };
-
-struct ShapeLayer {
-    QPainterPath path; // 内容区局部坐标（0,0 为左上角）
-    QColor fill;
-    QColor stroke;
-    qreal strokeWidth = 1.0;
-    bool filled = true;
-    ShapeLayerRole role = ShapeLayerRole::FILL_AREA;
-};
-
 struct ShapeItemState {
     // 填充 / 描线两组属性直接复用属性基类的快照，不再在图形状态里重复字段。
     FillAttributesState fill;
@@ -115,13 +102,8 @@ class ShapeAbstractItem : public CanvasItem, public FillAttributes, public Strok
     ItemPropertySet Properties() const override;
     QVariant PropertyValue(ItemProperty property) const override;
     void SetPropertyValue(ItemProperty property, const QVariant& value) override;
-    // 内部图层视图：普通图形没有图层（0 层），多边形返回自己的层。
-    virtual int ShapeLayerCount() const { return 0; }
-    virtual ShapeLayer shapeLayer(int index) const;
-    // 图层路径映射到图元坐标；多边形按内容尺寸缩放，普通图形默认恒等。
-    virtual QPainterPath MapShapeLayerPath(const ShapeLayer& layer) const;
-    // 是否有可填充的区域层（孔洞不算）。
-    bool HasShapeFillArea() const;
+    // 多边形的内部图层不再向基类暴露只读视图：需要按层取几何的调用方
+    // 直接使用 PolygonItem::Layers()（dynamic_cast 到 PolygonItem 属白名单定点场景）。
     QString DisplayName() const override;
     QJsonObject ToJson() const override;
     void FromJson(const QJsonObject& json) override;

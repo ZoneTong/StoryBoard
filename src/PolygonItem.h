@@ -19,10 +19,6 @@ class PolygonItem : public ShapeAbstractItem {
     // 图层来源决定填充 / 描线的应用方式：
     // 有面积图形参与填充与描边；直线 / 曲线只保留线宽带，不再二次描线；文字只填字形。
     enum class LayerRole { FILLED_AREA = 0, STROKE_BAND = 1, TEXT = 2 };
-    // 基类只读视图的覆写：把内部 Layer 映射成 ShapeLayer。
-    int ShapeLayerCount() const override { return m_layers.size(); }
-    ShapeLayer shapeLayer(int index) const override;
-    QPainterPath MapShapeLayerPath(const ShapeLayer& layer) const override;
 
     struct Layer {
         QPainterPath path; // 内容区局部坐标（0,0 为左上角）
@@ -52,6 +48,8 @@ class PolygonItem : public ShapeAbstractItem {
 
     int LayerCount() const { return m_layers.size(); }
     const QList<Layer>& Layers() const { return m_layers; }
+    // 是否有可填充的区域层（孔洞不算）：布尔运算与线条分割按它判断参与资格。
+    bool HasFillAreaLayer() const;
 
     // 需求 11：把路径里每个子路径显式闭合（布尔交集 / 拆块与序列化重建的
     // 路径不带 closeSubpath 标记，描边时收尾一条边会缺失）。开放笔画请勿使用。

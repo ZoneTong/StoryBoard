@@ -246,8 +246,9 @@ void ItemPropertiesDialogStyleBlock::SetItem(CanvasItem* item)
 
     if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
         // 多边形派生自 ShapeAbstractItem 但没有形状类型：填充与描线照旧，圆角 / 角度等行不给。
-        const bool filled = shape->ShapeLayerCount() > 0 || ShapeTypeIsFilled(shape->shapeType());
-        const bool plainShape = shape->ShapeLayerCount() == 0;
+        const bool polygon = dynamic_cast<PolygonItem*>(shape) != nullptr; // 白名单定点强转（D16）
+        const bool filled = polygon || ShapeTypeIsFilled(shape->shapeType());
+        const bool plainShape = !polygon;
         showStroke = true;
         showOpacity = true;
         m_hasFill = filled;

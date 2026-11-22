@@ -458,31 +458,6 @@ void ShapeAbstractItem::PaintContent(QPainter* painter)
                              m_fillStyle);
 }
 
-ShapeLayer ShapeAbstractItem::shapeLayer(int index) const
-{
-    Q_UNUSED(index);
-    return ShapeLayer();
-}
-
-QPainterPath ShapeAbstractItem::MapShapeLayerPath(const ShapeLayer& layer) const
-{
-    return layer.path;
-}
-
-bool ShapeAbstractItem::HasShapeFillArea() const
-{
-    if (ShapeLayerCount() == 0) {
-        return true;
-    }
-    for (int index = 0; index < ShapeLayerCount(); ++index) {
-        const ShapeLayer layer = shapeLayer(index);
-        if (layer.role == ShapeLayerRole::FILL_AREA && !layer.path.isEmpty()) {
-            return true;
-        }
-    }
-    return false;
-}
-
 void ShapeAbstractItem::WriteState(ShapeItemState& state) const
 {
     Q_UNUSED(state);

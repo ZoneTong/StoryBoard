@@ -30,15 +30,19 @@ struct Knife {
     QPointF endDir;
 };
 
+// dynamic_cast 到 PolygonItem 属白名单定点场景（D16）：按内部图层取几何
+// 只存在于该叶子类，无法用标量属性表达。
+PolygonItem* AsPolygon(CanvasItem* item)
+{
+    return dynamic_cast<PolygonItem*>(item);
+}
+
 bool IsFillTarget(CanvasItem* item)
 {
-    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item); shape && shape->ShapeLayerCount() == 0) {
-        return true;
+    if (const PolygonItem* polygon = AsPolygon(item)) {
+        return polygon->HasFillAreaLayer();
     }
-    if (auto* composite = dynamic_cast<ShapeAbstractItem*>(item); composite && composite->ShapeLayerCount() > 0) {
-        return composite->HasShapeFillArea();
-    }
-    return false;
+    return dynamic_cast<ShapeAbstractItem*>(item) != nullptr;
 }
 
 bool IsKnifeItem(CanvasItem* item)
@@ -87,7 +91,11 @@ bool CollectKnife(CanvasItem* item, Knife* out, QPainterPath* trajectoryPath)
         }
         return KnifeFromPath(scenePath, out);
     }
-    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item); shape && shape->ShapeLayerCount() == 0) {
+    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
+        // 多边形按内部图层切开（见下方分支），普通闭合图形的轮廓整体当刀线。
+        if (AsPolygon(item)) {
+            return false;
+        }
         const QPainterPath scenePath = shape->mapToScene(shape->OutlineShape());
         if (trajectoryPath) {
             *trajectoryPath = scenePath;
@@ -209,20 +217,19 @@ QList<QPainterPath> CanvasHalfRegions(const QRectF& canvas, const Knife& knife)
 // 被切图元的填充轮廓（场景坐标）。
 QPainterPath FillPathOf(CanvasItem* item)
 {
-    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item); shape && shape->ShapeLayerCount() == 0) {
-        return shape->mapToScene(shape->OutlineShape());
-    }
-    if (auto* composite = dynamic_cast<ShapeAbstractItem*>(item); composite && composite->ShapeLayerCount() > 0) {
+    if (const PolygonItem* polygon = AsPolygon(item)) {
         QPainterPath fill;
-        for (int index = 0; index < composite->ShapeLayerCount(); ++index) {
-            const ShapeLayer layer = composite->shapeLayer(index);
-            if (layer.role != ShapeLayerRole::FILL_AREA || layer.path.isEmpty()) {
+        for (const PolygonItem::Layer& layer : polygon->Layers()) {
+            if (layer.role != PolygonItem::LayerRole::FILLED_AREA || layer.path.isEmpty()) {
                 continue;
             }
-            const QPainterPath part = composite->mapToScene(composite->MapShapeLayerPath(layer));
+            const QPainterPath part = item->mapToScene(polygon->MapLayerPath(layer.path));
             fill = fill.isEmpty() ? part : fill.united(part);
         }
         return fill;
+    }
+    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
+        return shape->mapToScene(shape->OutlineShape());
     }
     return QPainterPath();
 }
@@ -369,20 +376,22 @@ bool Apply(CanvasScene* scene, const QString& commandText)
     undo->push(new RemoveItemsCommand(scene, removed, commandText));
     QList<CanvasItem*> created;
     for (const Fragment& fragment : fragments) {
-        auto* source = fragment.source;
+        CanvasItem* source = fragment.source;
+        // 样式 donor：被切图元是 ShapeAbstractItem 的某种形态（普通图形或多边形），
+        // 两者的填充 / 描线读写已统一收口，直接按基类接口取值即可。
         auto* shapeSource = dynamic_cast<ShapeAbstractItem*>(source);
-        shapeSource = shapeSource && shapeSource->ShapeLayerCount() == 0 ? shapeSource : nullptr;
-        auto* compositeSource = dynamic_cast<ShapeAbstractItem*>(source);
-        compositeSource = compositeSource && compositeSource->ShapeLayerCount() > 0 ? compositeSource : shapeSource;
+        if (!shapeSource) {
+            continue;
+        }
         PolygonItem::Layer layer;
         layer.path = fragment.piece;
-        layer.fill = compositeSource->FillColor();
-        layer.stroke = compositeSource->StrokeColor();
-        layer.strokeWidth = compositeSource->StrokeWidth();
+        layer.fill = shapeSource->FillColor();
+        layer.stroke = shapeSource->StrokeColor();
+        layer.strokeWidth = shapeSource->StrokeWidth();
         layer.filled = true;
         layer.role = PolygonItem::LayerRole::FILLED_AREA;
-        auto* item = new PolygonItem(QList<PolygonItem::Layer>{layer}, compositeSource->fillStyle(),
-                                     compositeSource->StrokeStyle());
+        auto* item =
+            new PolygonItem(QList<PolygonItem::Layer>{layer}, shapeSource->fillStyle(), shapeSource->StrokeStyle());
         item->SetName(scene->UniqueItemName(item->TypeDisplayName()));
         item->SetLayerId(source->LayerId());
         item->SetZOrder(scene->NextHeight(source->LayerId()));

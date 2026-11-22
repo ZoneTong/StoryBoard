@@ -240,7 +240,7 @@ void StyleController::ApplyFillToSelection()
             continue;
         }
         // 填充图形与多边形都可带填充；线、花括号等纯描线图元不参与。
-        if (ShapeTypeIsFilled(shape->shapeType()) || shape->ShapeLayerCount() > 0) {
+        if (ShapeTypeIsFilled(shape->shapeType()) || dynamic_cast<PolygonItem*>(shape)) { // 白名单定点强转（D16）
             targets.append(shape);
         } else {
             ++outlineOnlyCount;

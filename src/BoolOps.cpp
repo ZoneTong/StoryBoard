@@ -41,6 +41,13 @@ struct Participant {
     int selectionIndex = INT_MAX;    // 选择顺序（小者先选中），剪除时用来挑底图
 };
 
+// dynamic_cast 到 PolygonItem 属白名单定点场景（D16）：多边形内部图层
+// 只存在于该叶子类，布尔运算必须按层取几何，无法用标量属性表达。
+PolygonItem* AsPolygon(CanvasItem* item)
+{
+    return dynamic_cast<PolygonItem*>(item);
+}
+
 // 线条类图元不参与合并：直线（含直线箭头）、括号、弧、曲线，以及纯描线多边形。
 bool IsLineClassItem(CanvasItem* item)
 {
@@ -48,17 +55,8 @@ bool IsLineClassItem(CanvasItem* item)
         return true;
     }
     // 零面积图元已全部并入曲线族，普通形状类恒有填充面积；多边形要看图层。
-    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item); shape && shape->ShapeLayerCount() == 0) {
-        return false;
-    }
-    if (auto* composite = dynamic_cast<ShapeAbstractItem*>(item); composite && composite->ShapeLayerCount() > 0) {
-        for (int index = 0; index < composite->ShapeLayerCount(); ++index) {
-            const ShapeLayer layer = composite->shapeLayer(index);
-            if (layer.role == ShapeLayerRole::FILL_AREA && !layer.path.isEmpty()) {
-                return false;
-            }
-        }
-        return true;
+    if (const PolygonItem* polygon = AsPolygon(item)) {
+        return !polygon->HasFillAreaLayer();
     }
     return false;
 }
@@ -68,17 +66,8 @@ bool IsLineClassItem(CanvasItem* item)
 // 图形仍按完整轮廓参与布尔运算，也应优先决定合并结果的样式。
 bool HasFillSpace(CanvasItem* item)
 {
-    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item); shape && shape->ShapeLayerCount() == 0) {
-        return true;
-    }
-    if (auto* composite = dynamic_cast<ShapeAbstractItem*>(item); composite && composite->ShapeLayerCount() > 0) {
-        for (int index = 0; index < composite->ShapeLayerCount(); ++index) {
-            const ShapeLayer layer = composite->shapeLayer(index);
-            if (layer.role == ShapeLayerRole::FILL_AREA && !layer.path.isEmpty()) {
-                return true;
-            }
-        }
-        return false;
+    if (const PolygonItem* polygon = AsPolygon(item)) {
+        return polygon->HasFillAreaLayer();
     }
     return !dynamic_cast<LineAbstractItem*>(item) && !item->HasTextFacet();
 }
@@ -159,23 +148,17 @@ bool AppendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
             Q_UNUSED(curve)
             memberPath = vectorMember->mapToScene(vectorMember->PaintedShape());
             strokePart = memberPath;
-        } else if (auto* shape = dynamic_cast<ShapeAbstractItem*>(vectorMember);
-                   shape && shape->ShapeLayerCount() == 0) {
-            memberPath = shape->mapToScene(shape->OutlineShape());
-            fillPart = memberPath;
-        } else if (auto* composite = dynamic_cast<ShapeAbstractItem*>(vectorMember);
-                   composite && composite->ShapeLayerCount() > 0) {
-            for (int index = 0; index < composite->ShapeLayerCount(); ++index) {
-                const ShapeLayer layer = composite->shapeLayer(index);
+        } else if (const PolygonItem* polygon = AsPolygon(vectorMember)) {
+            for (const PolygonItem::Layer& layer : polygon->Layers()) {
                 if (layer.path.isEmpty()) {
                     continue;
                 }
-                const QPainterPath part = composite->mapToScene(composite->MapShapeLayerPath(layer));
-                if (layer.role == ShapeLayerRole::FILL_AREA) {
+                const QPainterPath part = vectorMember->mapToScene(polygon->MapLayerPath(layer.path));
+                if (layer.role == PolygonItem::LayerRole::FILLED_AREA) {
                     fillPart = fillPart.isEmpty() ? part : fillPart.united(part);
-                } else if (layer.role == ShapeLayerRole::STROKE_BAND) {
+                } else if (layer.role == PolygonItem::LayerRole::STROKE_BAND) {
                     strokePart = strokePart.isEmpty() ? part : strokePart.united(part);
-                } else if (layer.role == ShapeLayerRole::TEXT) {
+                } else if (layer.role == PolygonItem::LayerRole::TEXT) {
                     textPart = textPart.isEmpty() ? part : textPart.united(part);
                     participant.textColor = layer.fill;
                 }
@@ -183,6 +166,9 @@ bool AppendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
             memberPath = fillPart;
             memberPath = memberPath.isEmpty() ? strokePart : memberPath.united(strokePart);
             memberPath = memberPath.isEmpty() ? textPart : memberPath.united(textPart);
+        } else if (auto* shape = dynamic_cast<ShapeAbstractItem*>(vectorMember)) {
+            memberPath = shape->mapToScene(shape->OutlineShape());
+            fillPart = memberPath;
         } else {
             memberPath = vectorMember->mapToScene(vectorMember->PaintedShape());
             fillPart = memberPath;
@@ -212,21 +198,15 @@ bool AppendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
     }
 
     CanvasItem* styleItem = participant.item;
-    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(styleItem); shape && shape->ShapeLayerCount() == 0) {
+    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(styleItem)) {
+        // 多边形与普通图形共用这一段样式提取：填充 / 描线已按各自实现统一收口；
+        // 多边形的层区域始终按填充参与，普通图形看填充样式是否为 NONE。
         participant.fill = shape->FillColor();
         participant.stroke = shape->StrokeColor();
         participant.strokeWidth = shape->StrokeWidth();
         participant.fillStyle = shape->fillStyle();
         participant.strokeStyle = shape->StrokeStyle();
-        participant.filled = shape->fillStyle() != FillStyle::NONE;
-    } else if (auto* composite = dynamic_cast<ShapeAbstractItem*>(styleItem);
-               composite && composite->ShapeLayerCount() > 0) {
-        participant.fill = composite->FillColor();
-        participant.stroke = composite->StrokeColor();
-        participant.strokeWidth = composite->StrokeWidth();
-        participant.fillStyle = composite->fillStyle();
-        participant.strokeStyle = composite->StrokeStyle();
-        participant.filled = true;
+        participant.filled = AsPolygon(styleItem) || shape->fillStyle() != FillStyle::NONE;
     } else if (auto* stroke = dynamic_cast<LineAbstractItem*>(styleItem)) {
         participant.fill = stroke->StrokeColor();
         participant.stroke = stroke->StrokeColor();
