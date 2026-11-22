@@ -191,17 +191,21 @@ void selftest::RunCustomShapeDockTests(Context& ctx)
         const QString bundledDir = AppSettings::BundledShapesDir();
         {
             // 随包分发的示例模板必须能解析，否则用户装完看不到「自定义图形」示例。
+            // 顶层只放说明文件，示例模板全部分布在四个分类子目录里。
             const QString sampleDir =
                 QDir(QStringLiteral(STORYBOARD_SOURCE_DIR)).filePath(QStringLiteral("examples/shapes"));
+            const QStringList expectedFolders = {QStringLiteral("小动物"), QStringLiteral("自然"),
+                                                 QStringLiteral("物件"), QStringLiteral("人物与精灵")};
             QStringList sampleErrors;
-            const QList<CustomShapeTemplate> samples = LoadCustomShapeTemplates(sampleDir, &sampleErrors);
+            QList<CustomShapeTemplate> samples;
+            for (const QString& folder : expectedFolders) {
+                samples.append(LoadCustomShapeTemplates(QDir(sampleDir).filePath(folder), &sampleErrors));
+            }
             ctx.Check(
                 !samples.isEmpty() && sampleErrors.isEmpty(), QStringLiteral("随包示例模板可解析并出现在自定义图形里"),
                 QStringLiteral("count=%1 errors=%2").arg(samples.size()).arg(sampleErrors.join(QStringLiteral(";"))));
 
             // 需求 8：25 个儿童故事简笔画模板分四个子目录随包分发。
-            const QStringList expectedFolders = {QStringLiteral("小动物"), QStringLiteral("自然"),
-                                                 QStringLiteral("物件"), QStringLiteral("人物与精灵")};
             QStringList allNames;
             QStringList childErrors;
             int folderCount = 0;
