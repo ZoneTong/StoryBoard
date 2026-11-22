@@ -23,8 +23,10 @@
 #include <QFileInfo>
 #include <QMenu>
 #include <QMessageBox>
+#include <QPolygonF>
 #include <QStatusBar>
 #include <QTimer>
+#include <QTransform>
 #include <QVector>
 #include <QtMath>
 
@@ -400,16 +402,13 @@ void MainWindowInsertController::InsertCustomShape(const QString& filePath)
         return;
     }
 
-    auto* item = CreateShapeItem(ShapeType::RECTANGLE);
-    item->SetCustomShape(customShape.name, customShape.unitPath);
     // 需求 16：与常见图形一致，按工具栏当前选择取样式（填充未选色跟随画笔色）。
     const QColor stroke =
         m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
     const QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : stroke;
     const bool filled = m_window->m_fillStyle != FillStyle::NONE;
-    item->SetStyle(stroke, filled ? fill : QColor(Qt::transparent), qMax<qreal>(0.5, m_window->m_brushWidth));
-    item->SetFillStyle(filled ? m_window->m_fillStyle : FillStyle::NONE);
-    item->SetStrokeStyle(m_window->m_strokeStyle);
+    const FillStyle fillStyle = filled ? m_window->m_fillStyle : FillStyle::NONE;
+    const qreal strokeWidth = qMax<qreal>(0.5, m_window->m_brushWidth);
 
     // 需求 7：模板按原始宽高比插入，长边固定 64（2 格）；画布装不下时才等比缩到 72%。
     const QRectF canvas = m_window->m_scene->CanvasRect();
@@ -430,13 +429,73 @@ void MainWindowInsertController::InsertCustomShape(const QString& filePath)
     center += QPointF(cascade, cascade);
     center.setX(qBound(canvas.left() + size.width() / 2.0, center.x(), canvas.right() - size.width() / 2.0));
     center.setY(qBound(canvas.top() + size.height() / 2.0, center.y(), canvas.bottom() - size.height() / 2.0));
+    const QRectF targetRect(center - QPointF(size.width() / 2.0, size.height() / 2.0), size);
 
-    item->setPos(center - QPointF(size.width() / 2.0, size.height() / 2.0));
-    item->SetContentSize(size);
+    // §6：模板按子路径拆分——闭合部分成多边形（单层 FILLED_AREA），开放部分成曲线。
+    QList<CanvasItem*> items;
+    if (customShape.parts.isEmpty()) {
+        // 旧解析或退化轮廓：退回单图元自定义轮廓，保持兼容。
+        auto* item = CreateShapeItem(ShapeType::RECTANGLE);
+        item->SetCustomShape(customShape.name, customShape.unitPath);
+        item->SetStyle(stroke, filled ? fill : QColor(Qt::transparent), strokeWidth);
+        item->SetFillStyle(fillStyle);
+        item->SetStrokeStyle(m_window->m_strokeStyle);
+        item->setPos(targetRect.topLeft());
+        item->SetContentSize(size);
+        items.append(item);
+    } else {
+        QTransform unitToTarget;
+        unitToTarget.translate(targetRect.left(), targetRect.top());
+        unitToTarget.scale(targetRect.width(), targetRect.height());
+        for (const CustomShapePart& part : std::as_const(customShape.parts)) {
+            if (part.unitPath.isEmpty()) {
+                continue;
+            }
+            if (part.closed) {
+                PolygonItem::Layer layer;
+                layer.path = unitToTarget.map(part.unitPath);
+                layer.fill = filled ? fill : QColor(Qt::transparent);
+                layer.stroke = stroke;
+                layer.strokeWidth = strokeWidth;
+                layer.filled = true;
+                layer.role = PolygonItem::LayerRole::FILLED_AREA;
+                items.append(new PolygonItem(QList<PolygonItem::Layer>{layer}, fillStyle, m_window->m_strokeStyle));
+            } else {
+                const QList<QPolygonF> polygons = part.unitPath.toSubpathPolygons();
+                if (polygons.isEmpty()) {
+                    continue;
+                }
+                QVector<QPointF> points;
+                for (const QPointF& point : polygons.constFirst()) {
+                    points.append(unitToTarget.map(point));
+                }
+                auto* curve = new CurveItem();
+                curve->SetStrokePoints(points, stroke, strokeWidth, 0.0, true);
+                items.append(curve);
+            }
+        }
+    }
+
+    if (items.isEmpty()) {
+        return;
+    }
 
     m_window->m_scene->clearSelection();
-    m_window->m_scene->AddItemsWithUndo({item}, MainWindow::tr("Insert custom shape “%1”").arg(customShape.name));
-    item->setSelected(true);
+    m_window->m_scene->AddItemsWithUndo(items, MainWindow::tr("Insert custom shape “%1”").arg(customShape.name));
+    for (CanvasItem* item : std::as_const(items)) {
+        item->setSelected(true);
+    }
+
+    // §6：≥2 部分整组成组，单部分不落组；分组失败时图元保留并给出状态栏提示（§7.8）。
+    if (items.size() >= 2) {
+        GroupFailureReason reason = GroupFailureReason::NONE;
+        const int groupId = m_window->m_scene->AssignNewGroup(items, &reason, customShape.name);
+        if (groupId == 0) {
+            m_window->statusBar()->showMessage(
+                MainWindow::tr("Custom shape inserted, but grouping failed: %1").arg(GroupFailureReasonText(reason)),
+                4000);
+        }
+    }
     m_window->m_view->setFocus();
     m_window->statusBar()->showMessage(
         MainWindow::tr("Inserted custom shape “%1” from the shapes folder").arg(customShape.name), 4000);
