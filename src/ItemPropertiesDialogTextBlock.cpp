@@ -37,11 +37,12 @@ void ItemPropertiesDialogTextBlock::AddRows(QFormLayout* form)
 
 void ItemPropertiesDialogTextBlock::SetItem(CanvasItem* item)
 {
-    const bool showText = item && item->HasTextFacet();
+    // 文字行的显隐按图元类别判断；正文 / 颜色 / 字体一律从属性协议读，基类不再有文字 facet。
+    const bool showText = item && item->Category() == ItemCategory::TEXT;
     if (showText) {
-        m_textFont = item->TextFont();
-        m_textEdit->setPlainText(item->TextContent());
-        m_textColorButton->setProperty("itemColor", item->TextColor());
+        m_textFont = item->PropertyValue(ItemProperty::TEXT_FONT).value<QFont>();
+        m_textEdit->setPlainText(item->PropertyValue(ItemProperty::TEXT_CONTENT).toString());
+        m_textColorButton->setProperty("itemColor", item->PropertyValue(ItemProperty::TEXT_COLOR).value<QColor>());
         ItemPropertiesFields::RefreshColorButton(m_textColorButton);
         UpdateFontButton();
     }

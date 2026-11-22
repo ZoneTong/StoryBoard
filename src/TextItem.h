@@ -28,18 +28,12 @@ class TextItem : public CanvasItem, public TextAttributes {
     QPainterPath PaintedShape() const override;
     QPainterPath ClippingShape() const override;
 
-    bool HasTextFacet() const override { return true; }
-    QString TextContent() const override { return TextAttributes::TextContent(); }
-    QFont TextFont() const override { return TextAttributes::TextFont(); }
-    QColor TextColor() const override { return TextAttributes::TextColor(); }
-    QSizeF TextNaturalSize() const override { return TextAttributes::TextNaturalSize(); }
-    TextItemState TextState() const override;
-    void ApplyTextState(const TextItemState& state) override;
-
     QSizeF NaturalSize() const { return TextNaturalSize(); }
     QString Text() const { return TextContent(); }
     static QSizeF Measure(const QString& text, const QFont& font);
 
+    // TextItemState 是文字专用的 Memento：正文 / 字体 / 颜色 / 自然尺寸一次快照恢复，
+    // 不拆成逐属性命令（§3.6）。基类 CanvasItem 不再持有文字 facet。
     TextItemState State() const;
     void ApplyState(const TextItemState& state);
 

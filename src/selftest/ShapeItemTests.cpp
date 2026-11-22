@@ -609,6 +609,32 @@ void selftest::RunShapeItemTests(Context& ctx)
                       .arg(smoothUndo.count()));
     }
     {
+        // P4：文字属性只按属性表暴露（TEXT_CONTENT / TEXT_COLOR / TEXT_FONT），
+        // 非文字图元不带这些行；写入正文后自然尺寸随之重算。
+        TextItem text;
+        RectangleItem rect;
+        const ItemPropertySet textProperties = text.Properties();
+        const bool textOk = textProperties.Contains(ItemProperty::TEXT_CONTENT) &&
+                            textProperties.Contains(ItemProperty::TEXT_COLOR) &&
+                            textProperties.Contains(ItemProperty::TEXT_FONT) &&
+                            text.PropertyValue(ItemProperty::TEXT_COLOR).value<QColor>().isValid();
+        const bool plainOk = !rect.Properties().Contains(ItemProperty::TEXT_CONTENT) &&
+                             !rect.Properties().Contains(ItemProperty::TEXT_COLOR) &&
+                             !rect.Properties().Contains(ItemProperty::TEXT_FONT);
+        ctx.Check(textOk && plainOk, QStringLiteral("文字属性走属性表、非文字图元不带文字属性"),
+                  QStringLiteral("text=%1 plain=%2").arg(textOk).arg(plainOk));
+
+        text.SetPropertyValue(ItemProperty::TEXT_COLOR, QColor(QStringLiteral("#EF4444")));
+        text.SetPropertyValue(ItemProperty::TEXT_CONTENT, QStringLiteral("属性协议文字"));
+        ctx.Check(text.PropertyValue(ItemProperty::TEXT_COLOR).value<QColor>() == QColor(QStringLiteral("#EF4444")) &&
+                      text.PropertyValue(ItemProperty::TEXT_CONTENT).toString() == QStringLiteral("属性协议文字") &&
+                      text.ContentSize() ==
+                          TextItem::Measure(QStringLiteral("属性协议文字"),
+                                            text.PropertyValue(ItemProperty::TEXT_FONT).value<QFont>()),
+                  QStringLiteral("文字正文与颜色可经属性协议写入并重算自然尺寸"),
+                  QStringLiteral("size=%1x%2").arg(text.ContentSize().width()).arg(text.ContentSize().height()));
+    }
+    {
         // §3.1 三角形自由缩放：尺寸按输入直接生效，A 不变，B 按新框宽高反算。
         TriangleItem triangle;
         triangle.SetContentSize(QSizeF(120.0, 90.0));

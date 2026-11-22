@@ -4,6 +4,7 @@
 #include "IconFactory.h"
 #include "ItemStyleVisuals.h"
 #include "PropertiesPanel.h"
+#include "TextItem.h"
 
 #include <QColorDialog>
 #include <QFontComboBox>
@@ -172,7 +173,7 @@ QWidget* PropertiesPanelContentCard::MakeTextColorRow()
     return row;
 }
 
-void PropertiesPanelContentCard::Refresh(const QList<CanvasItem*>& texts)
+void PropertiesPanelContentCard::Refresh(const QList<TextItem*>& texts)
 {
     m_refreshing = true;
 
@@ -181,7 +182,7 @@ void PropertiesPanelContentCard::Refresh(const QList<CanvasItem*>& texts)
     m_textFontRow->setVisible(hasText);
     m_textColorRow->setVisible(hasText);
     if (hasText) {
-        CanvasItem* first = texts.first();
+        TextItem* first = texts.first();
         m_textFont = first->TextFont();
         if (!m_textEdit->hasFocus()) {
             m_textEdit->setText(first->TextContent());

@@ -103,15 +103,6 @@ class CanvasItem : public QGraphicsObject {
     qreal ItemOpacity() const { return m_itemOpacity; }
     void SetItemOpacity(qreal opacity);
 
-    // 文字能力查询：非文字图元返回 false / 空值，文字图元由 TextItem 覆写。
-    virtual bool HasTextFacet() const { return false; }
-    virtual QString TextContent() const { return QString(); }
-    virtual QFont TextFont() const { return QFont(); }
-    virtual QColor TextColor() const { return QColor(); }
-    virtual QSizeF TextNaturalSize() const { return QSizeF(); }
-    virtual TextItemState TextState() const { return TextItemState(); }
-    virtual void ApplyTextState(const TextItemState& state) { Q_UNUSED(state) }
-
     int LayerId() const { return m_layerId; }
     void SetLayerId(int layerId);
     // 同一分组内的图元在编辑模式下整组移动；0 表示未分组。

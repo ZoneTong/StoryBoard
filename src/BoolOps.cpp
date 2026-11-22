@@ -71,7 +71,7 @@ bool HasFillSpace(CanvasItem* item)
     if (const PolygonItem* polygon = AsPolygon(item)) {
         return polygon->HasFillAreaLayer();
     }
-    return !dynamic_cast<LineAbstractItem*>(item) && !item->HasTextFacet();
+    return !dynamic_cast<LineAbstractItem*>(item) && item->Category() != ItemCategory::TEXT;
 }
 
 // D2：原输入本身 < 阈值的图元豁免碎块规则；块中心落在某个豁免参与者填充区内即豁免，
@@ -160,10 +160,10 @@ bool AppendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
         // 布尔运算使用图元的几何轮廓，而不是“可见涂色区域”：无填充、纹理填充的
         // 闭合图形也必须按完整轮廓参与联合 / 相交 / 相减，否则菱形与五角星这类
         // 图形联合后会只剩描线带，内部被错误地留空。
-        if (vectorMember->HasTextFacet()) {
+        if (vectorMember->Category() == ItemCategory::TEXT) {
             memberPath = vectorMember->mapToScene(vectorMember->PaintedShape());
             textPart = memberPath;
-            participant.textColor = vectorMember->TextColor();
+            participant.textColor = vectorMember->PropertyValue(ItemProperty::TEXT_COLOR).value<QColor>();
         } else if (auto* curve = dynamic_cast<LineAbstractItem*>(vectorMember)) {
             Q_UNUSED(curve)
             memberPath = vectorMember->mapToScene(vectorMember->PaintedShape());
@@ -234,10 +234,11 @@ bool AppendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
         participant.strokeWidth = stroke->StrokeWidth();
         participant.strokeStyle = stroke->strokePattern();
         participant.filled = false;
-    } else if (styleItem->HasTextFacet()) {
+    } else if (styleItem->Category() == ItemCategory::TEXT) {
         // 文字参照曲线：填充色等于字形描线色、纯色、面积按 0 参与。
-        participant.fill = styleItem->TextColor();
-        participant.stroke = styleItem->TextColor();
+        const QColor textColor = styleItem->PropertyValue(ItemProperty::TEXT_COLOR).value<QColor>();
+        participant.fill = textColor;
+        participant.stroke = textColor;
         participant.strokeWidth = 1.0;
         participant.fillStyle = FillStyle::SOLID;
         participant.filled = false;

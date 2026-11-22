@@ -16,6 +16,7 @@
 
 class QUndoStack;
 class CanvasItem;
+class TextItem;
 class QFont;
 class QPainter;
 class QStyleOptionGraphicsItem;
@@ -193,9 +194,9 @@ class CanvasScene : public QGraphicsScene {
     QList<int> PreferredLayerIds() const { return m_preferredLayerIds; }
     void ApplyItemStack(const ItemStackList& stack);
 
-    bool ChangeTextWithUndo(CanvasItem* item, const QString& text, const QFont& font, const QColor& color,
+    bool ChangeTextWithUndo(TextItem* item, const QString& text, const QFont& font, const QColor& color,
                             const QString& commandText = QString());
-    void ApplyTextState(CanvasItem* item, const TextItemState& state);
+    void ApplyTextState(TextItem* item, const TextItemState& state);
 
     void AddItemsWithUndo(const QList<CanvasItem*>& items, const QString& text);
     void CommitNewItem(CanvasItem* item, const QString& text);

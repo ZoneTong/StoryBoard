@@ -154,14 +154,15 @@ class ItemStackCommand : public QUndoCommand {
 
 class TextItemCommand : public QUndoCommand {
   public:
-    TextItemCommand(CanvasScene* scene, CanvasItem* item, const TextItemState& before, const TextItemState& after,
+    // 文字编辑的专用 Memento 命令：正文 / 字体 / 颜色 / 自然尺寸一次恢复（§3.6）。
+    TextItemCommand(CanvasScene* scene, TextItem* item, const TextItemState& before, const TextItemState& after,
                     const QString& text);
     void undo() override;
     void redo() override;
 
   private:
     CanvasScene* m_scene = nullptr;
-    QPointer<CanvasItem> m_item;
+    QPointer<TextItem> m_item;
     TextItemState m_before;
     TextItemState m_after;
 };
@@ -218,8 +219,9 @@ struct ItemPropertiesState {
     // 多边形也是 ShapeAbstractItem，填充、描线与图片填充都走这一份快照。
     bool hasShapeState = false;
     ShapeItemState shapeState;
-    bool hasTextState = false;
-    TextItemState textState;
+    // 文字的正文 / 字体 / 颜色按属性键提交；尺寸与位置由同一份快照回放，
+    // 保证“改完正文回到自然尺寸”与属性写入仍是同一条撤销记录。
+    QMap<ItemProperty, QVariant> textParams;
     bool hasStrokeStyle = false;
     QColor strokeColor;
     qreal strokeWidth = 4.0;

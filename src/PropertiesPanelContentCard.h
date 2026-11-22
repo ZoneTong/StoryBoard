@@ -10,6 +10,7 @@ class QLineEdit;
 class QSpinBox;
 class QToolButton;
 class CanvasItem;
+class TextItem;
 
 // 编辑面板的内容属性行：文字正文 / 字体 / 文字颜色，以及图片名称与替换入口。
 // 这些行只在当前选中存在对应图元时显示，避免给图形、笔画展示无效控件。
@@ -19,7 +20,7 @@ class PropertiesPanelContentCard : public QWidget {
   public:
     explicit PropertiesPanelContentCard(QWidget* parent = nullptr);
 
-    void Refresh(const QList<CanvasItem*>& texts);
+    void Refresh(const QList<TextItem*>& texts);
     QWidget* TextContentRow() const { return m_textContentRow; }
     QWidget* TextFontRow() const { return m_textFontRow; }
     QWidget* TextColorRow() const { return m_textColorRow; }

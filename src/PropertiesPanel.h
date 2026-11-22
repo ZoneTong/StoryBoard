@@ -10,6 +10,7 @@
 
 class CanvasScene;
 class CanvasItem;
+class TextItem;
 class ArcItem;
 class SineItem;
 class LineAbstractItem;
@@ -70,7 +71,8 @@ class PropertiesPanel : public QWidget {
     QList<CanvasItem*> SelectedItems() const;
     QList<ShapeAbstractItem*> SelectedShapes() const;
     QList<LineAbstractItem*> SelectedStrokes() const;
-    QList<CanvasItem*> SelectedTexts() const;
+    // 文字图元按类别过滤后当作 TextItem 使用：文字 Memento（TextItemState）只属于 TextItem。
+    QList<TextItem*> SelectedTexts() const;
 
     void ChangeSelectedShapes(const QString& text, const std::function<void(ShapeAbstractItem*)>& mutate);
     void ChangeSelectedTexts(const QString& text, const std::function<void(TextItemState&)>& mutate);

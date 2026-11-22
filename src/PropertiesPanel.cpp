@@ -211,12 +211,12 @@ QList<LineAbstractItem*> PropertiesPanel::SelectedStrokes() const
     return strokes;
 }
 
-QList<CanvasItem*> PropertiesPanel::SelectedTexts() const
+QList<TextItem*> PropertiesPanel::SelectedTexts() const
 {
-    QList<CanvasItem*> texts;
+    QList<TextItem*> texts;
     for (CanvasItem* item : SelectedItems()) {
-        if (item->HasTextFacet()) {
-            texts.append(item);
+        if (auto* text = dynamic_cast<TextItem*>(item)) {
+            texts.append(text);
         }
     }
     return texts;
@@ -272,7 +272,7 @@ void PropertiesPanel::Refresh()
     const QList<CanvasItem*> items = SelectedItems();
     const QList<ShapeAbstractItem*> shapes = SelectedShapes();
     const QList<LineAbstractItem*> strokes = SelectedStrokes();
-    const QList<CanvasItem*> texts = SelectedTexts();
+    const QList<TextItem*> texts = SelectedTexts();
 
     // 属性行按基类绑定：填充行只看 FillAttributes，描线行只看 StrokeAttributes，
     // 不再按叶子类分别拼目标；多边形等特殊取色由基类虚函数处理。

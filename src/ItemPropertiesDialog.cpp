@@ -340,7 +340,7 @@ void ItemPropertiesDialog::showEvent(QShowEvent* event)
     InstallClickOutsideHook(this);
 #endif
     // 只做一次，且只读模式不抢焦点；光标停在正文末尾，不整段选中。
-    if (m_textFocusApplied || !m_editable || !m_item || !m_item->HasTextFacet()) {
+    if (m_textFocusApplied || !m_editable || !m_item || m_item->Category() != ItemCategory::TEXT) {
         return;
     }
     m_textFocusApplied = true;
@@ -410,7 +410,7 @@ void ItemPropertiesDialog::SyncTextNaturalSize()
     if (m_initializing || !m_editable || !m_textBlock || !m_textBlock->TextEdit()) {
         return;
     }
-    if (m_item && m_item->HasTextFacet()) {
+    if (m_item && m_item->Category() == ItemCategory::TEXT) {
         const QSizeF natural = TextItem::Measure(m_textBlock->TextEdit()->toPlainText(), m_textBlock->TextFont());
         if (m_geometryBlock) {
             m_geometryBlock->SetNaturalSize(natural);
@@ -554,27 +554,29 @@ void ItemPropertiesDialog::ApplyChanges()
                                                          after.shapeState.bottomAngle2);
             after.shapeState.size = after.size;
         }
-    } else if (m_item->HasTextFacet()) {
-        before.hasTextState = true;
-        before.textState = m_item->TextState();
+    } else if (m_item->Category() == ItemCategory::TEXT) {
+        // 文字属性走属性协议：正文 / 颜色 / 字体各按 ItemProperty 提交，
+        // 尺寸与位置仍由同一份快照回放，整次编辑只占一条撤销记录。
+        before.textParams.insert(ItemProperty::TEXT_CONTENT, m_item->PropertyValue(ItemProperty::TEXT_CONTENT));
+        before.textParams.insert(ItemProperty::TEXT_COLOR, m_item->PropertyValue(ItemProperty::TEXT_COLOR));
+        before.textParams.insert(ItemProperty::TEXT_FONT, m_item->PropertyValue(ItemProperty::TEXT_FONT));
+        after.textParams = before.textParams;
 
-        after.hasTextState = true;
-        after.textState = m_item->TextState();
-        after.textState.pos = after.pos;
-        after.textState.size = after.size;
-        after.textState.font = text ? text->TextFont() : m_item->TextFont();
+        const QFont font = text ? text->TextFont() : m_item->PropertyValue(ItemProperty::TEXT_FONT).value<QFont>();
+        after.textParams.insert(ItemProperty::TEXT_FONT, font);
         if (text && text->TextEdit()) {
-            after.textState.text = text->TextEdit()->toPlainText();
+            after.textParams.insert(ItemProperty::TEXT_CONTENT, text->TextEdit()->toPlainText());
         }
-        after.textState.baseSize = TextItem::Measure(after.textState.text, after.textState.font);
+        const QString textBefore = before.textParams.value(ItemProperty::TEXT_CONTENT).toString();
+        const QString textAfter = after.textParams.value(ItemProperty::TEXT_CONTENT).toString();
         // 需求追加：文字正文变化后直接回到文字自然尺寸，不再沿用旧图元的
         // 拉伸尺寸，避免新旧字形按不同比例叠在同一块内容区里。
-        if (after.textState.text != before.textState.text) {
-            after.size = after.textState.baseSize;
-            after.textState.size = after.textState.baseSize;
+        if (textAfter != textBefore) {
+            after.size = TextItem::Measure(textAfter, font);
         }
         if (text && text->TextColorButton()) {
-            after.textState.color = text->TextColorButton()->property("itemColor").value<QColor>();
+            after.textParams.insert(ItemProperty::TEXT_COLOR,
+                                    text->TextColorButton()->property("itemColor").value<QColor>());
         }
         // 不透明度是所有图元共有的属性：文字在这里与图形共用同一行提交流程。
         if (style && style->OpacitySpin()) {

@@ -77,16 +77,6 @@ QSizeF TextItem::Measure(const QString& text, const QFont& font)
     return TextAttributes::Measure(text, font);
 }
 
-TextItemState TextItem::TextState() const
-{
-    return State();
-}
-
-void TextItem::ApplyTextState(const TextItemState& state)
-{
-    ApplyState(state);
-}
-
 TextItemState TextItem::State() const
 {
     TextItemState result;

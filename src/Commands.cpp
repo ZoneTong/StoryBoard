@@ -369,7 +369,7 @@ void ItemStackCommand::redo()
     }
 }
 
-TextItemCommand::TextItemCommand(CanvasScene* scene, CanvasItem* item, const TextItemState& before,
+TextItemCommand::TextItemCommand(CanvasScene* scene, TextItem* item, const TextItemState& before,
                                  const TextItemState& after, const QString& text)
     : m_scene(scene), m_item(item), m_before(before), m_after(after)
 {
@@ -457,14 +457,11 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
 {
     if (!SameStack(stack, other.stack) || pos != other.pos || size != other.size ||
         !qFuzzyCompare(rotation, other.rotation) || !qFuzzyCompare(1.0 + opacity, 1.0 + other.opacity) ||
-        itemName != other.itemName || hasShapeState != other.hasShapeState || hasTextState != other.hasTextState ||
-        hasStrokeStyle != other.hasStrokeStyle) {
+        itemName != other.itemName || hasShapeState != other.hasShapeState || hasStrokeStyle != other.hasStrokeStyle ||
+        textParams != other.textParams) {
         return false;
     }
     if (hasShapeState && shapeState != other.shapeState) {
-        return false;
-    }
-    if (hasTextState && textState != other.textState) {
         return false;
     }
     if (hasStrokeStyle && (strokeColor != other.strokeColor || !qFuzzyCompare(strokeWidth, other.strokeWidth) ||
@@ -510,8 +507,13 @@ void ItemPropertiesCommand::Apply(const ItemPropertiesState& state)
         if (auto* shape = dynamic_cast<ShapeAbstractItem*>(m_item.data())) {
             shape->ApplyState(state.shapeState);
         }
-    } else if (state.hasTextState) {
-        m_item->ApplyTextState(state.textState);
+    } else if (!state.textParams.isEmpty()) {
+        // 文字属性走属性协议：正文 / 字体会重算自然尺寸，之后再按快照恢复位置与尺寸。
+        for (auto it = state.textParams.constBegin(); it != state.textParams.constEnd(); ++it) {
+            m_item->SetPropertyValue(it.key(), it.value());
+        }
+        m_item->setPos(state.pos);
+        m_item->SetContentSize(state.size);
     } else {
         m_item->setPos(state.pos);
         m_item->SetContentSize(state.size);

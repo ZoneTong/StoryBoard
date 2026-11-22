@@ -289,7 +289,7 @@ void PropertiesPanel::ApplyOpacity(int percent)
 
 void PropertiesPanel::ChangeSelectedTexts(const QString& text, const std::function<void(TextItemState&)>& mutate)
 {
-    const QList<CanvasItem*> texts = SelectedTexts();
+    const QList<TextItem*> texts = SelectedTexts();
     if (texts.isEmpty() || !m_scene || !m_scene->UndoStack()) {
         return;
     }
@@ -297,8 +297,8 @@ void PropertiesPanel::ChangeSelectedTexts(const QString& text, const std::functi
     QList<TextItemState> beforeStates;
     QList<TextItemState> afterStates;
     bool changed = false;
-    for (CanvasItem* item : texts) {
-        const TextItemState before = item->TextState();
+    for (TextItem* item : texts) {
+        const TextItemState before = item->State();
         TextItemState after = before;
         mutate(after);
         beforeStates.append(before);

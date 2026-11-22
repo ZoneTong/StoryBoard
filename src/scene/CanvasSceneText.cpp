@@ -5,14 +5,14 @@
 
 #include <QUndoStack>
 
-bool CanvasScene::ChangeTextWithUndo(CanvasItem* item, const QString& text, const QFont& font, const QColor& color,
+bool CanvasScene::ChangeTextWithUndo(TextItem* item, const QString& text, const QFont& font, const QColor& color,
                                      const QString& textCommand)
 {
     if (!item || item->scene() != this) {
         return false;
     }
 
-    const TextItemState before = item->TextState();
+    const TextItemState before = item->State();
     TextItemState after = before;
     after.text = text;
     after.font = font;
@@ -33,12 +33,12 @@ bool CanvasScene::ChangeTextWithUndo(CanvasItem* item, const QString& text, cons
     return true;
 }
 
-void CanvasScene::ApplyTextState(CanvasItem* item, const TextItemState& state)
+void CanvasScene::ApplyTextState(TextItem* item, const TextItemState& state)
 {
     if (!item) {
         return;
     }
-    item->ApplyTextState(state);
+    item->ApplyState(state);
     UpdateSceneExtent();
     update();
     emit contentChanged();
