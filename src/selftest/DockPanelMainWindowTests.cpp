@@ -234,6 +234,116 @@ void selftest::RunDockPanelMainWindowTests(Context& ctx)
             dockWindow.Scene()->clearSelection();
             QApplication::processEvents();
         }
+        // 需求：导入自定义图形时，只要拆出多个图元、且这些图元还不属于任何图元分组，
+        // 就自动归入一个新组；只有单个图元时不建组。分组与插入是同一条撤销记录。
+        {
+            CanvasScene* importScene = dockWindow.Scene();
+            const QString shapesDir = AppSettings::ShapesDir();
+            auto rectJson = [](const QPointF& pos, const QSizeF& size) {
+                RectangleItem probe;
+                probe.setPos(pos);
+                probe.SetContentSize(size);
+                return probe.ToJson();
+            };
+            auto writeTemplate = [&shapesDir](const QString& name, const QJsonArray& items) {
+                QJsonObject root;
+                root.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
+                root.insert(QStringLiteral("items"), items);
+                const QString path = QDir(shapesDir).filePath(name + QStringLiteral(".sbcanvas"));
+                QFile file(path);
+                if (!file.open(QIODevice::WriteOnly)) {
+                    return QString();
+                }
+                file.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
+                file.close();
+                return path;
+            };
+            auto collectAdded = [importScene](const QSet<CanvasItem*>& before) {
+                QList<CanvasItem*> added;
+                for (CanvasItem* item : importScene->CanvasItems()) {
+                    if (!before.contains(item)) {
+                        added.append(item);
+                    }
+                }
+                return added;
+            };
+
+            // 两个互不相连的矩形 → 两个闭合子路径 → 两个多边形图元，应落到同一个新组。
+            const QString twoPartPath = writeTemplate(QStringLiteral("双块探针"),
+                                                      QJsonArray{rectJson(QPointF(20.0, 20.0), QSizeF(60.0, 60.0)),
+                                                                 rectJson(QPointF(140.0, 20.0), QSizeF(60.0, 60.0))});
+            QSet<CanvasItem*> beforeSet;
+            for (CanvasItem* item : importScene->CanvasItems()) {
+                beforeSet.insert(item);
+            }
+            const int countBefore = importScene->CanvasItemCount();
+            dockWindow.InsertCustomShape(twoPartPath);
+            QApplication::processEvents();
+            const QList<CanvasItem*> added = collectAdded(beforeSet);
+            const int sharedGroup = added.isEmpty() ? 0 : added.constFirst()->GroupId();
+            bool sameGroup = added.size() == 2 && sharedGroup > 0;
+            for (CanvasItem* item : added) {
+                if (item->GroupId() != sharedGroup) {
+                    sameGroup = false;
+                }
+            }
+            ctx.Check(sameGroup, QStringLiteral("导入多图元自定义图形时自动归入同一个新组"),
+                      QStringLiteral("added=%1 group=%2 ids=%3")
+                          .arg(added.size())
+                          .arg(sharedGroup)
+                          .arg(added.isEmpty() ? QString() : QString::number(added.constFirst()->GroupId())));
+
+            // 一条撤销同时回退图元与组记录（不留孤儿组），重做时组名随图元一起回来。
+            const int countAfterInsert = importScene->CanvasItemCount();
+            if (importScene->UndoStack()->canUndo()) {
+                importScene->UndoStack()->undo();
+                QApplication::processEvents();
+            }
+            const bool undoneOk =
+                importScene->CanvasItemCount() == countBefore && !importScene->GroupIds().contains(sharedGroup);
+            if (importScene->UndoStack()->canRedo()) {
+                importScene->UndoStack()->redo();
+                QApplication::processEvents();
+            }
+            const bool redoneOk = importScene->CanvasItemCount() == countAfterInsert &&
+                                  importScene->GroupName(sharedGroup).startsWith(QStringLiteral("双块探针"));
+            ctx.Check(undoneOk && redoneOk,
+                      QStringLiteral("自定义图形成组与插入同一条撤销（撤销不留空组、重做保留组名）"),
+                      QStringLiteral("undo=%1 redo=%2 name=%3")
+                          .arg(undoneOk)
+                          .arg(redoneOk)
+                          .arg(importScene->GroupName(sharedGroup)));
+
+            // 只有一个 part 的模板不强行建单成员组。
+            const QString singlePath = writeTemplate(QStringLiteral("单块探针"),
+                                                     QJsonArray{rectJson(QPointF(30.0, 30.0), QSizeF(60.0, 60.0))});
+            QSet<CanvasItem*> beforeSingle;
+            for (CanvasItem* item : importScene->CanvasItems()) {
+                beforeSingle.insert(item);
+            }
+            dockWindow.InsertCustomShape(singlePath);
+            QApplication::processEvents();
+            const QList<CanvasItem*> addedSingle = collectAdded(beforeSingle);
+            ctx.Check(addedSingle.size() == 1 && addedSingle.constFirst()->GroupId() == 0,
+                      QStringLiteral("单图元自定义图形不建分组"),
+                      QStringLiteral("added=%1 group=%2")
+                          .arg(addedSingle.size())
+                          .arg(addedSingle.isEmpty() ? -1 : addedSingle.constFirst()->GroupId()));
+
+            // 清理：撤回两次插入，场景回到导入前的图元数与组记录。
+            for (int step = 0; step < 2 && importScene->UndoStack()->canUndo(); ++step) {
+                importScene->UndoStack()->undo();
+                QApplication::processEvents();
+            }
+            importScene->clearSelection();
+            QApplication::processEvents();
+            if (!twoPartPath.isEmpty()) {
+                QFile::remove(twoPartPath);
+            }
+            if (!singlePath.isEmpty()) {
+                QFile::remove(singlePath);
+            }
+        }
         ctx.Check(dockWindow.findChild<QAction*>(QStringLiteral("PropertiesPanelToggleAction")) != nullptr,
                   QStringLiteral("视图菜单提供编辑面板开关"));
 

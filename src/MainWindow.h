@@ -29,6 +29,7 @@ namespace selftest {
 class Context;
 void RunFillStyleBasicTests(Context& ctx);
 void RunMainWindowShapeMenuTests(Context& ctx);
+void RunDockPanelMainWindowTests(Context& ctx);
 } // namespace selftest
 class ItemPropertiesDialog;
 class PropertiesPanel;
@@ -127,6 +128,8 @@ class MainWindow : public QMainWindow {
     // 需求 16：自检需要直接驱动工具栏样式取值（填充样式 / 画笔色 / 描线宽度）验证新图元生成。
     friend void selftest::RunFillStyleBasicTests(selftest::Context&);
     friend void selftest::RunMainWindowShapeMenuTests(selftest::Context&);
+    // 自检需要直接驱动自定义图形导入，验证多图元自动成组与插入同一条撤销。
+    friend void selftest::RunDockPanelMainWindowTests(selftest::Context&);
 
   private:
     void CreateActions();

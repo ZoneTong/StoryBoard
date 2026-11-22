@@ -27,6 +27,7 @@
 #include <QStatusBar>
 #include <QTimer>
 #include <QTransform>
+#include <QUndoStack>
 #include <QVector>
 #include <QtMath>
 
@@ -481,19 +482,30 @@ void MainWindowInsertController::InsertCustomShape(const QString& filePath)
     }
 
     m_window->m_scene->clearSelection();
-    m_window->m_scene->AddItemsWithUndo(items, MainWindow::tr("Insert custom shape “%1”").arg(customShape.name));
+    const QString insertText = MainWindow::tr("Insert custom shape “%1”").arg(customShape.name);
+    // 导入（插入）自定义图形即一次操作：多图元自动成组与插入合并成一条撤销记录，
+    // 撤销时组名 / 父子记录随图元一起回退，重做也不丢组；单图元不建组（§6）。
+    QUndoStack* undoStack = m_window->m_scene->UndoStack();
+    const bool groupable = items.size() >= 2;
+    if (groupable && undoStack) {
+        undoStack->beginMacro(insertText);
+    }
+    m_window->m_scene->AddItemsWithUndo(items, insertText);
     for (CanvasItem* item : std::as_const(items)) {
         item->setSelected(true);
     }
 
     // §6：≥2 部分整组成组，单部分不落组；分组失败时图元保留并给出状态栏提示（§7.8）。
-    if (items.size() >= 2) {
+    if (groupable) {
         GroupFailureReason reason = GroupFailureReason::NONE;
-        const int groupId = m_window->m_scene->AssignNewGroup(items, &reason, customShape.name);
+        const int groupId = m_window->m_scene->AssignNewGroupWithUndo(items, &reason, customShape.name, insertText);
         if (groupId == 0) {
             m_window->statusBar()->showMessage(
                 MainWindow::tr("Custom shape inserted, but grouping failed: %1").arg(GroupFailureReasonText(reason)),
                 4000);
+        }
+        if (undoStack) {
+            undoStack->endMacro();
         }
     }
     m_window->m_view->setFocus();

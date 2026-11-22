@@ -106,6 +106,11 @@ class CanvasScene : public QGraphicsScene {
     // nameBase 非空时以其为组名 base 补后缀；为空时按“组 N”自动编号。
     int AssignNewGroup(const QList<CanvasItem*>& items, GroupFailureReason* reason = nullptr,
                        const QString& nameBase = QString());
+    // 导入多图元自定义图形用：同样分配新组，但把成员归属 / 组名 / 父子关系推成一条
+    // GroupCommand，调用方再用 beginMacro 与插入合并成一条撤销——撤销插入时组记录
+    // 一并回退，重做时组名也随图元一起回来，不留在场景里的孤儿组。
+    int AssignNewGroupWithUndo(const QList<CanvasItem*>& items, GroupFailureReason* reason, const QString& nameBase,
+                               const QString& text);
 
     // ---- 组模型（§7.2）：组不是 QGraphicsItem，只在场景里登记组名 / 父子关系 ----
     // 组名在文档范围内唯一（trimmed 后大小写不敏感）；groupId <= 0 返回空名。

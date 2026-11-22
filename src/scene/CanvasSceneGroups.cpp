@@ -430,6 +430,61 @@ bool CanvasScene::CanUngroupSelectedItems() const
     return false;
 }
 
+int CanvasScene::AssignNewGroupWithUndo(const QList<CanvasItem*>& items, GroupFailureReason* reason,
+                                        const QString& nameBase, const QString& text)
+{
+    // 校验口径与 AssignNewGroup 一致：至少两个图元、都在本场景、同一图层。
+    if (items.isEmpty()) {
+        WriteReason(reason, GroupFailureReason::INVALID_ITEMS);
+        return 0;
+    }
+    for (CanvasItem* item : items) {
+        if (!item || item->scene() != this) {
+            WriteReason(reason, GroupFailureReason::INVALID_ITEMS);
+            return 0;
+        }
+    }
+    if (items.size() < 2) {
+        WriteReason(reason, GroupFailureReason::NOT_ENOUGH_ITEMS);
+        return 0;
+    }
+    int layerId = -1;
+    for (CanvasItem* item : items) {
+        if (layerId < 0) {
+            layerId = item->LayerId();
+        } else if (item->LayerId() != layerId) {
+            WriteReason(reason, GroupFailureReason::DIFFERENT_LAYERS);
+            return 0;
+        }
+    }
+
+    const int groupId = m_nextGroupId++;
+    const QString groupName = SuggestGroupName(nameBase);
+    const QHash<int, QString> namesBefore = m_groupNames;
+    const QHash<int, int> parentsBefore = m_groupParents;
+    QHash<int, QString> namesAfter = namesBefore;
+    namesAfter.insert(groupId, groupName);
+
+    QList<int> before;
+    QList<int> after;
+    before.reserve(items.size());
+    after.reserve(items.size());
+    for (CanvasItem* item : items) {
+        before.append(item->GroupId());
+        after.append(groupId);
+    }
+
+    if (m_undoStack) {
+        m_undoStack->push(
+            new GroupCommand(this, items, before, after, text, parentsBefore, parentsBefore, namesBefore, namesAfter));
+    } else {
+        ApplyGroupIds(items, after);
+        ApplyGroupRecords(namesAfter, parentsBefore);
+    }
+    WriteReason(reason, GroupFailureReason::NONE);
+    return groupId;
+}
+
 int CanvasScene::GroupSelectedItems(GroupFailureReason* reason)
 {
     if (!CanGroupSelectedItems(reason)) {
