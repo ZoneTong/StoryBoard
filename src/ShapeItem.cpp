@@ -1,6 +1,7 @@
 #include "ShapeItem.h"
 
 #include "ArrowStyle.h"
+#include "CanvasItemVisitor.h"
 #include "I18n.h"
 #include "ShapeHitGeometry.h"
 #include "ShapeMeta.h"
@@ -163,6 +164,11 @@ void ShapeItem::SetPropertyValue(ItemProperty property, const QVariant& value)
         CanvasItem::SetPropertyValue(property, value);
         break;
     }
+}
+
+void ShapeItem::Accept(CanvasItemVisitor& visitor)
+{
+    visitor.VisitShape(*this);
 }
 
 QString ShapeItem::DisplayName() const

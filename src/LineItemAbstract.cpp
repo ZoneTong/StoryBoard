@@ -1,5 +1,6 @@
 #include "LineItemAbstract.h"
 
+#include "CanvasItemVisitor.h"
 #include "StrokeGeometry.h"
 #include "StrokeSmoothing.h"
 
@@ -11,6 +12,11 @@
 LineItemAbstract::LineItemAbstract(QGraphicsItem* parent) : CanvasItem(parent)
 {
     setZValue(0.0);
+}
+
+void LineItemAbstract::Accept(CanvasItemVisitor& visitor)
+{
+    visitor.VisitLine(*this);
 }
 
 bool LineItemAbstract::GeometryState::operator==(const GeometryState& other) const

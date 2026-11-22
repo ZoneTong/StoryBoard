@@ -1,5 +1,6 @@
 #pragma once
 
+#include "HandleSpec.h"
 #include "ItemGeometry.h"
 #include "ItemProperties.h"
 #include "TextAttributes.h"
@@ -9,14 +10,20 @@
 #include <QFont>
 #include <QGraphicsObject>
 #include <QJsonObject>
+#include <QMap>
 #include <QSizeF>
 #include <QString>
 
 class CanvasScene;
 class CanvasItemHandles;
 class CanvasItemInteraction;
+class CanvasItemVisitor;
 class QGraphicsSceneHoverEvent;
 class QGraphicsSceneMouseEvent;
+
+// 图元大类：用于按类别过滤（工具栏可用性、属性面板分组等），
+// 不靠 Kind() 字符串比较，也不需要上层按叶子类强转。
+enum class ItemCategory { SHAPE, LINE, TEXT };
 
 class CanvasItem : public QGraphicsObject {
     Q_OBJECT
@@ -47,11 +54,19 @@ class CanvasItem : public QGraphicsObject {
 
     virtual QString Kind() const = 0;
     virtual QString DisplayName() const = 0;
+    // 图元大类由各类根节点给出（图形 / 描线 / 文字），叶子类继承即可。
+    virtual ItemCategory Category() const = 0;
+    // 跨类型操作的通用入口：具体访问者按 Accept 分派到对应 Visit 方法。
+    virtual void Accept(CanvasItemVisitor& visitor);
     // 属性表：各图元只上报自己真正拥有的属性，面板按选中集合求交后逐行显隐。
     // 取值与写回都走同一份标识，界面不再按叶子类强转去读专属字段。
     virtual ItemPropertySet Properties() const;
     virtual QVariant PropertyValue(ItemProperty property) const;
     virtual void SetPropertyValue(ItemProperty property, const QVariant& value);
+    // 多属性原子提交：默认逐项委托给 SetPropertyValue，子类需要保证组合一致时可整体覆写。
+    virtual void SetPropertyValues(const QMap<ItemProperty, QVariant>& values);
+    // 自定义句柄协议：默认没有额外句柄，需要时由叶子给出位置与行为策略。
+    virtual HandleSpecList CustomHandles() const;
     // 用于自动命名的类型名：文字/图片不取内容摘要或文件名，而是稳定的类型称呼。
     virtual QString TypeDisplayName() const { return DisplayName(); }
     // 需求 2：非矩形句柄（三角形顶点 C）由图元给出本地坐标；默认不支持。

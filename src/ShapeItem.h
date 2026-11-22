@@ -86,6 +86,8 @@ struct ShapeItemState {
     qreal parallelogramAngle = 60.0;
     QPointF pos;
     QSizeF size;
+    // 叶子扩展属性：不属于公共字段的类型专属项放这里，公共快照不再为每个叶子加字段。
+    QMap<ItemProperty, QVariant> propertyExtras;
 
     bool operator==(const ShapeItemState& other) const
     {
@@ -94,7 +96,7 @@ struct ShapeItemState {
                qFuzzyCompare(bottomAngle1 + 2.0, other.bottomAngle1 + 2.0) &&
                qFuzzyCompare(bottomAngle2 + 2.0, other.bottomAngle2 + 2.0) &&
                qFuzzyCompare(parallelogramAngle + 2.0, other.parallelogramAngle + 2.0) && pos == other.pos &&
-               size == other.size;
+               size == other.size && propertyExtras == other.propertyExtras;
     }
 
     bool operator!=(const ShapeItemState& other) const { return !(*this == other); }
@@ -108,6 +110,8 @@ class ShapeItem : public CanvasItem, public FillAttributes, public StrokeAttribu
     explicit ShapeItem(QGraphicsItem* parent = nullptr);
 
     QString Kind() const override { return QStringLiteral("shape"); }
+    ItemCategory Category() const override { return ItemCategory::SHAPE; }
+    void Accept(CanvasItemVisitor& visitor) override;
     // 每种图形由 src/shapes/ 下的具体类给出身份；基类不再保存 ShapeType。
     virtual ShapeType shapeType() const = 0;
     // 属性表：填充 / 描线六件套为图形族公共项，各子类再按需要追加。

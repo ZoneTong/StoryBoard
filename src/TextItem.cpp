@@ -1,5 +1,6 @@
 #include "TextItem.h"
 
+#include "CanvasItemVisitor.h"
 #include "I18n.h"
 
 #include <QFontMetricsF>
@@ -13,6 +14,11 @@ constexpr qreal TEXT_PADDING = 12.0;
 }
 
 TextItem::TextItem(QGraphicsItem* parent) : CanvasItem(parent) {}
+
+void TextItem::Accept(CanvasItemVisitor& visitor)
+{
+    visitor.VisitText(*this);
+}
 
 ItemPropertySet TextItem::Properties() const
 {

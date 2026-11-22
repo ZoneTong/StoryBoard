@@ -15,6 +15,8 @@ class TextItem : public CanvasItem, public TextAttributes {
     explicit TextItem(QGraphicsItem* parent = nullptr);
 
     QString Kind() const override { return QStringLiteral("text"); }
+    ItemCategory Category() const override { return ItemCategory::TEXT; }
+    void Accept(CanvasItemVisitor& visitor) override;
     QString DisplayName() const override;
     QString TypeDisplayName() const override;
     QJsonObject ToJson() const override;

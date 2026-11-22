@@ -30,6 +30,17 @@ QPointF CanvasItem::CustomHandleCenter(int handle, bool* ok) const
     return QPointF();
 }
 
+void CanvasItem::Accept(CanvasItemVisitor& visitor)
+{
+    // 默认 no-op：没有专属跨类型能力的图元不参与访问者分派。
+    Q_UNUSED(visitor);
+}
+
+HandleSpecList CanvasItem::CustomHandles() const
+{
+    return HandleSpecList();
+}
+
 CanvasItem::CanvasItem(QGraphicsItem* parent) : QGraphicsObject(parent)
 {
     setFlag(QGraphicsItem::ItemIsSelectable, false);
@@ -382,6 +393,13 @@ void CanvasItem::SetPropertyValue(ItemProperty property, const QVariant& value)
         break;
     default:
         break;
+    }
+}
+
+void CanvasItem::SetPropertyValues(const QMap<ItemProperty, QVariant>& values)
+{
+    for (auto it = values.constBegin(); it != values.constEnd(); ++it) {
+        SetPropertyValue(it.key(), it.value());
     }
 }
 

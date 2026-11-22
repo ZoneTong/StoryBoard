@@ -39,6 +39,8 @@ class LineItemAbstract : public CanvasItem, public StrokeAttributes {
 
     explicit LineItemAbstract(QGraphicsItem* parent = nullptr);
 
+    ItemCategory Category() const override { return ItemCategory::LINE; }
+    void Accept(CanvasItemVisitor& visitor) override;
     QJsonObject ToJson() const override;
     void FromJson(const QJsonObject& json) override;
     ItemPropertySet Properties() const override;
