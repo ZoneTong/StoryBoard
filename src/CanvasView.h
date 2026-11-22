@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CanvasContextMenuController.h"
+#include "CanvasGroupBoxController.h"
 #include "CanvasPanController.h"
 #include "CanvasResizeController.h"
 #include "CanvasStrokeController.h"
@@ -82,6 +83,7 @@ class CanvasView : public QGraphicsView {
     friend class CanvasResizeController;
     friend class CanvasStrokeController;
     friend class CanvasContextMenuController;
+    friend class CanvasGroupBoxController;
 
     void UpdateCursor();
     // 框选补判定：把整框落在选区内的图元选上（判定用图元实际外框，不含描边外扩）。
@@ -104,4 +106,5 @@ class CanvasView : public QGraphicsView {
     std::unique_ptr<CanvasViewHitTester> m_hits;
     std::unique_ptr<CanvasViewCursor> m_cursor;
     std::unique_ptr<CanvasContextMenuController> m_menu;
+    std::unique_ptr<CanvasGroupBoxController> m_groupBox;
 };
