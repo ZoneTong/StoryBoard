@@ -4,13 +4,19 @@
 #include "CanvasScene.h"
 #include "I18n.h"
 #include "LayerActions.h"
+#include "LayerGroupRow.h"
 #include "LayerPanelView.h"
 #include "LayerRow.h"
 
 #include <QCheckBox>
+#include <QDropEvent>
+#include <QEvent>
 #include <QHBoxLayout>
+#include <QInputDialog>
 #include <QLabel>
+#include <QLineEdit>
 #include <QListWidget>
+#include <QMessageBox>
 #include <QScrollBar>
 #include <QSignalBlocker>
 #include <QTimer>
@@ -79,6 +85,9 @@ LayerPanel::LayerPanel(CanvasScene* scene, QWidget* parent) : QWidget(parent), m
     m_list->setSelectionMode(QAbstractItemView::ExtendedSelection);
     m_list->setFocusPolicy(Qt::StrongFocus);
     m_list->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    // 图层行内部拖拽排序；组行 / 背景行不可拖动，拖拽由场景命令落撤销（§8.1）。
+    m_list->setDragDropMode(QAbstractItemView::InternalMove);
+    m_list->viewport()->installEventFilter(this);
     layout->addWidget(m_list, 1);
 
     auto* buttonRow = new QHBoxLayout;
@@ -104,6 +113,7 @@ LayerPanel::LayerPanel(CanvasScene* scene, QWidget* parent) : QWidget(parent), m
 
     connect(m_list, &QListWidget::itemSelectionChanged, this, &LayerPanel::ActivateCurrentLayer);
     connect(m_list, &QListWidget::itemSelectionChanged, this, [this]() { m_view->RefreshRowStyles(); });
+    connect(m_list, &QListWidget::itemClicked, this, &LayerPanel::OnRowClicked);
     connect(m_allVisibleBox, &QCheckBox::clicked, this, [this]() {
         bool allVisible = true;
         const QList<CanvasLayer> layers = m_scene->Layers();
@@ -147,6 +157,136 @@ LayerRow* LayerPanel::CreateRow(const CanvasLayer& layer, int index, int itemCou
     return row;
 }
 
+QListWidgetItem* LayerPanel::CreateGroupRow(int groupId)
+{
+    const QString name = m_scene->GroupName(groupId);
+    const int count = m_scene->MemberCount(groupId);
+    int depth = 0;
+    for (int parent = m_scene->ParentGroup(groupId); parent > 0 && depth < 32; ++depth) {
+        parent = m_scene->ParentGroup(parent);
+    }
+    auto* row = new QListWidgetItem(m_list);
+    row->setData(Qt::UserRole, groupId);
+    row->setData(ROLE_ROW_TYPE, ROW_GROUP);
+    row->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+    row->setSizeHint(QSize(0, 28));
+    row->setToolTip(tr("Group “%1” · %2 items").arg(name).arg(count));
+
+    auto* groupRow = new LayerGroupRow(groupId, name, count, depth);
+    connect(groupRow, &LayerGroupRow::renameRequested, this, [this](int id) { RenameGroup(id); });
+    m_list->setItemWidget(row, groupRow);
+    return row;
+}
+
+void LayerPanel::OnRowClicked(QListWidgetItem* item)
+{
+    if (!item || m_refreshing) {
+        return;
+    }
+    if (item->data(ROLE_ROW_TYPE).toInt() != ROW_GROUP) {
+        return;
+    }
+    const int groupId = item->data(Qt::UserRole).toInt();
+    // 点组行只选中整组，不切换当前图层（§7.9）。
+    m_scene->SelectGroupById(groupId);
+}
+
+void LayerPanel::RenameGroup(int groupId)
+{
+    if (!m_scene || groupId <= 0) {
+        return;
+    }
+
+    const QString current = m_scene->GroupName(groupId);
+    bool ok = false;
+    const QString name =
+        QInputDialog::getText(this, tr("Rename group"), tr("Group name"), QLineEdit::Normal, current, &ok);
+    if (!ok) {
+        return;
+    }
+
+    const QString trimmed = name.trimmed();
+    if (trimmed.isEmpty()) {
+        QMessageBox::information(this, tr("Rename group"), tr("Group name cannot be empty."));
+        return;
+    }
+    if (m_scene->RenameGroupWithUndo(groupId, trimmed)) {
+        emit statusMessage(tr("Group renamed to “%1”").arg(trimmed));
+        ScheduleRefresh();
+    } else {
+        QMessageBox::information(this, tr("Rename group"), tr("Group name is empty or already in use."));
+    }
+}
+
+bool LayerPanel::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == m_list->viewport() && event->type() == QEvent::Drop) {
+        return HandleLayerDrop(static_cast<QDropEvent*>(event));
+    }
+    return QWidget::eventFilter(watched, event);
+}
+
+int LayerPanel::OwnerLayerRow(int row) const
+{
+    for (int candidate = row; candidate >= 0; --candidate) {
+        QListWidgetItem* entry = m_list->item(candidate);
+        if (entry && entry->data(ROLE_ROW_TYPE).toInt() == ROW_LAYER) {
+            return candidate;
+        }
+    }
+    return -1;
+}
+
+bool LayerPanel::HandleLayerDrop(QDropEvent* event)
+{
+    if (!m_scene || m_refreshing) {
+        return false;
+    }
+
+    QListWidgetItem* source = m_list->currentItem();
+    if (!source || source->data(ROLE_ROW_TYPE).toInt() != ROW_LAYER) {
+        event->ignore();
+        return true;
+    }
+    const int sourceId = source->data(Qt::UserRole).toInt();
+    if (sourceId <= CanvasScene::BackgroundLayerId) {
+        event->ignore();
+        return true;
+    }
+
+    int targetRow = m_list->indexAt(event->position().toPoint()).row();
+    if (targetRow < 0) {
+        event->ignore();
+        return true;
+    }
+    targetRow = OwnerLayerRow(targetRow);
+    QListWidgetItem* target = targetRow >= 0 ? m_list->item(targetRow) : nullptr;
+    if (!target || target->data(ROLE_ROW_TYPE).toInt() != ROW_LAYER) {
+        event->ignore();
+        return true;
+    }
+    const int targetId = target->data(Qt::UserRole).toInt();
+    // 背景层不能作为拖拽目标。
+    if (targetId <= CanvasScene::BackgroundLayerId) {
+        event->ignore();
+        return true;
+    }
+
+    const int sourceIndex = m_scene->LayerIndex(sourceId);
+    const int targetIndex = m_scene->LayerIndex(targetId);
+    if (sourceIndex < 0 || targetIndex < 0 || sourceIndex == targetIndex) {
+        event->ignore();
+        return true;
+    }
+
+    if (m_scene->MoveLayerToIndexWithUndo(sourceId, targetIndex)) {
+        event->accept();
+        return true;
+    }
+    event->ignore();
+    return true;
+}
+
 QList<int> LayerPanel::SelectedLayerIds() const
 {
     return m_view->SelectedLayerIds();
@@ -186,7 +326,8 @@ void LayerPanel::Refresh()
         const int count = m_scene->LayerItemCount(layer.id);
         auto* row = new QListWidgetItem(m_list);
         row->setData(Qt::UserRole, layer.id);
-        row->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+        row->setData(ROLE_ROW_TYPE, ROW_LAYER);
+        row->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled);
         row->setSizeHint(QSize(0, 30));
         row->setToolTip(
             tr("Layer %1 · %2 items\n%3%4\nIn edit mode, items on visible, unlocked layers can be edited")
@@ -194,10 +335,36 @@ void LayerPanel::Refresh()
                 .arg(count)
                 .arg(layer.visible ? tr("Visible") : tr("Hidden"), layer.locked ? tr(" · Locked") : QString()));
         m_list->setItemWidget(row, CreateRow(layer, i, count));
+
+        // 组行紧跟所属图层行；先按嵌套层级、再按组名排序；背景层不出组行（§7.9）。
+        QList<int> groupIds;
+        for (int groupId : m_scene->GroupIds()) {
+            if (m_scene->GroupLayerId(groupId) == layer.id) {
+                groupIds.append(groupId);
+            }
+        }
+        std::sort(groupIds.begin(), groupIds.end(), [this](int left, int right) {
+            int leftDepth = 0;
+            for (int parent = m_scene->ParentGroup(left); parent > 0 && leftDepth < 32; ++leftDepth) {
+                parent = m_scene->ParentGroup(parent);
+            }
+            int rightDepth = 0;
+            for (int parent = m_scene->ParentGroup(right); parent > 0 && rightDepth < 32; ++rightDepth) {
+                parent = m_scene->ParentGroup(parent);
+            }
+            if (leftDepth != rightDepth) {
+                return leftDepth < rightDepth;
+            }
+            return m_scene->GroupName(left).compare(m_scene->GroupName(right), Qt::CaseInsensitive) < 0;
+        });
+        for (int groupId : std::as_const(groupIds)) {
+            CreateGroupRow(groupId);
+        }
     }
 
     auto* backgroundRow = new QListWidgetItem(m_list);
     backgroundRow->setData(Qt::UserRole, CanvasScene::BackgroundLayerId);
+    backgroundRow->setData(ROLE_ROW_TYPE, ROW_LAYER);
     backgroundRow->setFlags(Qt::ItemIsEnabled);
     backgroundRow->setSizeHint(QSize(0, 30));
     backgroundRow->setToolTip(tr("The background is always the bottom layer, cannot hold items, and is locked by "
@@ -285,6 +452,24 @@ void LayerPanel::SyncSceneSelection()
     const QList<CanvasItem*> items = m_scene->SelectedCanvasItems();
     if (items.isEmpty()) {
         return; // 清空选择时保持图层面板的选择，不做反向同步。
+    }
+
+    // 选中恰好是一个完整组时：只选中对应组行，不切换当前图层；混合选择不强制组行。
+    int completeGroup = 0;
+    if (m_scene->SelectionIsCompleteGroup(&completeGroup)) {
+        m_syncingScene = true;
+        const QSignalBlocker blocker(m_list);
+        m_list->clearSelection();
+        for (int row = 0; row < m_list->count(); ++row) {
+            QListWidgetItem* entry = m_list->item(row);
+            if (entry->data(ROLE_ROW_TYPE).toInt() == ROW_GROUP && entry->data(Qt::UserRole).toInt() == completeGroup) {
+                entry->setSelected(true);
+                m_list->setCurrentRow(row, QItemSelectionModel::NoUpdate);
+            }
+        }
+        m_syncingScene = false;
+        m_view->RefreshRowStyles();
+        return;
     }
 
     QList<int> ids;

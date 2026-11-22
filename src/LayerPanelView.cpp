@@ -1,6 +1,7 @@
 #include "LayerPanelView.h"
 
 #include "CanvasScene.h"
+#include "LayerGroupRow.h"
 #include "LayerPanel.h"
 #include "LayerRow.h"
 
@@ -10,6 +11,15 @@
 #include <QListWidgetItem>
 #include <QSignalBlocker>
 #include <QToolButton>
+
+namespace {
+
+bool IsLayerRow(const QListWidgetItem* item)
+{
+    return item && item->data(LayerPanel::ROLE_ROW_TYPE).toInt() == LayerPanel::ROW_LAYER;
+}
+
+} // namespace
 
 LayerPanelView::LayerPanelView(CanvasScene* scene, QListWidget* list, QCheckBox* allVisibleBox, QToolButton* addButton,
                                QToolButton* removeButton, QToolButton* upButton, QToolButton* downButton,
@@ -22,7 +32,10 @@ LayerPanelView::LayerPanelView(CanvasScene* scene, QListWidget* list, QCheckBox*
 int LayerPanelView::CurrentLayerId() const
 {
     const QListWidgetItem* current = m_list ? m_list->currentItem() : nullptr;
-    return current ? current->data(Qt::UserRole).toInt() : 0;
+    if (!IsLayerRow(current)) {
+        return 0;
+    }
+    return current->data(Qt::UserRole).toInt();
 }
 
 QList<int> LayerPanelView::SelectedLayerIds() const
@@ -33,6 +46,9 @@ QList<int> LayerPanelView::SelectedLayerIds() const
     }
     const QList<QListWidgetItem*> rows = m_list->selectedItems();
     for (const QListWidgetItem* row : rows) {
+        if (!IsLayerRow(row)) {
+            continue;
+        }
         const int id = row->data(Qt::UserRole).toInt();
         if (id > CanvasScene::BackgroundLayerId) {
             ids.append(id);
@@ -48,9 +64,14 @@ void LayerPanelView::RefreshRowStyles()
     }
     for (int row = 0; row < m_list->count(); ++row) {
         QListWidgetItem* entry = m_list->item(row);
-        auto* rowWidget = qobject_cast<LayerRow*>(m_list->itemWidget(entry));
-        if (rowWidget) {
-            rowWidget->ApplySelectedStyle(entry->isSelected());
+        auto* layerRow = qobject_cast<LayerRow*>(m_list->itemWidget(entry));
+        if (layerRow) {
+            layerRow->ApplySelectedStyle(entry->isSelected());
+            continue;
+        }
+        auto* groupRow = qobject_cast<LayerGroupRow*>(m_list->itemWidget(entry));
+        if (groupRow) {
+            groupRow->ApplySelectedStyle(entry->isSelected());
         }
     }
 }
