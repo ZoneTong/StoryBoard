@@ -4,6 +4,7 @@
 #include "CanvasScene.h"
 #include "Commands.h"
 #include "LineAbstractItem.h"
+#include "MergeRegions.h"
 #include "PathRegions.h"
 #include "PolygonItem.h"
 #include "ShapeAbstractItem.h"
@@ -16,11 +17,6 @@
 #include <limits>
 
 namespace {
-
-// 需求 25：刀线条带与波面等弯曲边界近切线相交时，布尔减法会留下面积趋近 0 的
-// 退化碎屑（细环、纸屑），单独成图元后渲染成孤立的“奇怪色块”。碎片填充面积
-// 低于该阈值视为碎屑直接丢弃；约 4×4px，肉眼可辨的最小碎块远大于此。
-constexpr qreal MIN_FRAGMENT_AREA = 16.0;
 
 // 刀线的几何描述：两端点与端点处的切向单位向量。
 struct Knife {
@@ -323,40 +319,66 @@ bool Apply(CanvasScene* scene, const QString& commandText)
 
     // 先离线算出全部碎片。直线刀线：每个被切图元的两块画布半区交集再按
     // 互不相连拆块；曲线刀线：从填充里挖掉刀线条带后按互不相连拆块。
-    // 碎片样式沿用被切图元自身的填充与描线。刀线必须真的穿过填充图形
-    // （曲线至少拆出两块；直线两块半区交集都非空）才算切到，整块落在
-    // 刀线一侧的图元原样保留。
+    // 碎片样式沿用被切图元自身的填充与描线。
     struct Fragment {
         CanvasItem* source = nullptr;
         QPainterPath piece;
     };
     QList<Fragment> fragments;
     for (const Target& target : targets) {
+        // §5.4：记录原始连续块数；只有切后块数增加，或刀线确实穿过填充时才替换，
+        // 避免历史多块复合图元被误判为被切开。
+        const int originalBlocks = PathRegions::SplitDisjoint(target.fill).size();
         QList<QPainterPath> pieces;
-        bool straddles = true;
+        bool knifeCrosses = false;
         if (trajectoryKnife) {
             pieces = PathRegions::SplitDisjoint(target.fill.subtracted(knifeBand));
-            // 需求 25：先丢弃退化碎屑，剩下的块数才是真实的切割块数。
-            pieces.removeIf([](const QPainterPath& piece) { return PathRegions::Area(piece) < MIN_FRAGMENT_AREA; });
-            if (pieces.size() < 2) {
-                straddles = false;
-            }
+            // 曲线刀线以实际拆块为准：仅擦边相交但未切断时保留原图元。
+            knifeCrosses = pieces.size() > originalBlocks;
         } else {
-            for (const QPainterPath& region : regions) {
-                QList<QPainterPath> parts = PathRegions::SplitDisjoint(region.intersected(target.fill));
-                parts.removeIf([](const QPainterPath& piece) { return PathRegions::Area(piece) < MIN_FRAGMENT_AREA; });
-                if (parts.isEmpty()) {
-                    straddles = false;
-                    break;
-                }
+            bool leftHit = false;
+            bool rightHit = false;
+            for (int i = 0; i < regions.size(); ++i) {
+                const QList<QPainterPath> parts = PathRegions::SplitDisjoint(regions.at(i).intersected(target.fill));
                 pieces.append(parts);
+                if (!target.fill.intersected(regions.at(i)).isEmpty()) {
+                    if (i == 0) {
+                        leftHit = true;
+                    } else {
+                        rightHit = true;
+                    }
+                }
             }
+            // 直线刀线穿过填充：填充同时落在刀线两侧半区。
+            knifeCrosses = leftHit && rightHit;
         }
-        if (!straddles) {
+        if (pieces.size() <= originalBlocks && !knifeCrosses) {
             continue;
         }
+
+        // 同一套先吸收、无法吸收且仍极小才删除规则（§5.3、D15）。
+        QList<MergeRegions::RegionBlock> blocks;
         for (const QPainterPath& piece : pieces) {
-            fragments.append(Fragment{target.item, piece});
+            MergeRegions::RegionBlock block;
+            block.path = piece;
+            block.area = PathRegions::Area(piece);
+            blocks.append(block);
+        }
+        blocks = MergeRegions::AbsorbTinyFragments(blocks);
+
+        // 允许掩膜：切后填充不得超出被切图元原始填充区（§5.2）。
+        QPainterPath finalFill;
+        for (const MergeRegions::RegionBlock& block : blocks) {
+            finalFill = finalFill.isEmpty() ? block.path : finalFill.united(block.path);
+        }
+        if (!MergeRegions::FillWithinMask(finalFill, target.fill)) {
+            continue;
+        }
+        if (blocks.isEmpty()) {
+            continue; // 无有效结果不提交
+        }
+        for (const MergeRegions::RegionBlock& block : blocks) {
+            fragments.append(Fragment{target.item, block.path});
         }
     }
     if (fragments.isEmpty()) {

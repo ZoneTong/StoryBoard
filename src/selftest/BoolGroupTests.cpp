@@ -14,6 +14,8 @@
 #include "LineArtDialog.h"
 #include "LineArtPresets.h"
 #include "MainWindow.h"
+#include "MergeRegions.h"
+#include "PathRegions.h"
 #include "PolygonItem.h"
 #include "PropertiesPanel.h"
 #include "Settings.h"
@@ -513,5 +515,29 @@ void selftest::RunGroupBoolOpsTests(Context& ctx)
                           .arg(inkPixels)
                           .arg(textShell ? textShell->LayerCount() : -1));
         }
+    }
+
+    // §5.3/§5.5：宿主只在同一来源结果内挑选，分组内不跨子图元吸收碎块。
+    {
+        auto rectPath = [](qreal x, qreal y, qreal w, qreal h) {
+            QPainterPath path;
+            path.addRect(QRectF(x, y, w, h));
+            return path;
+        };
+        auto makeBlock = [](const QPainterPath& path, int source) {
+            MergeRegions::RegionBlock block;
+            block.path = path;
+            block.area = PathRegions::Area(path);
+            block.sourceIndex = source;
+            return block;
+        };
+        QList<MergeRegions::RegionBlock> blocks;
+        blocks.append(makeBlock(rectPath(0, 0, 40, 40), 0));   // 来源 0 宿主
+        blocks.append(makeBlock(rectPath(40, 0, 3, 3), 0));    // 来源 0 小碎块，共边可吸收
+        blocks.append(makeBlock(rectPath(200, 200, 3, 3), 1)); // 来源 1 孤立小碎块，不跨来源并入
+        blocks = MergeRegions::AbsorbTinyFragments(blocks);
+        // 来源 0 碎块并入宿主；来源 1 碎块找不到同来源宿主被删除，结果只剩来源 0 宿主一块。
+        ctx.Check(blocks.size() == 1 && blocks.constFirst().sourceIndex == 0,
+                  QStringLiteral("碎块不跨来源结果并入宿主"), QStringLiteral("blocks=%1").arg(blocks.size()));
     }
 }

@@ -5,6 +5,7 @@
 #include "Commands.h"
 #include "LineAbstractItem.h"
 #include "LineSplitOps.h"
+#include "MergeRegions.h"
 #include "PathRegions.h"
 #include "PolygonItem.h"
 #include "ShapeAbstractItem.h"
@@ -33,7 +34,8 @@ struct Participant {
     FillStyle fillStyle = FillStyle::SOLID;
     Qt::PenStyle strokeStyle = Qt::SolidLine;
     bool filled = true;
-    bool fillSpace = false; // 代表图元是否有填充空间（闭合图形 / 含面积层的多边形）
+    bool fillSpace = false;       // 代表图元是否有填充空间（闭合图形 / 含面积层的多边形）
+    qreal originalFillArea = 0.0; // 合并前自身填充面积（D2 豁免判定用）
     int layerIndex = 0;
     int height = -1;
     CanvasItem* stackItem = nullptr; // 叠放位置最高（后画）的成员，用于保持遮挡关系
@@ -70,6 +72,24 @@ bool HasFillSpace(CanvasItem* item)
         return polygon->HasFillAreaLayer();
     }
     return !dynamic_cast<LineAbstractItem*>(item) && !item->HasTextFacet();
+}
+
+// D2：原输入本身 < 阈值的图元豁免碎块规则；块中心落在某个豁免参与者填充区内即豁免，
+// 不进入先吸收后删除流程，避免误删用户有意画的小图元。
+bool IsBlockExempt(const QPainterPath& block, const QList<Participant>& participants)
+{
+    const QRectF bounds = block.boundingRect();
+    if (bounds.isEmpty()) {
+        return false;
+    }
+    const QPointF center = bounds.center();
+    for (const Participant& participant : participants) {
+        if (participant.originalFillArea < MergeRegions::MIN_FRAGMENT_AREA && !participant.fillPath.isEmpty() &&
+            participant.fillPath.contains(center)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // 合并前的叠放顺序（决定合并后各层的绘制顺序，保持遮挡关系）：
@@ -196,6 +216,7 @@ bool AppendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
     if (participant.path.isEmpty()) {
         return false;
     }
+    participant.originalFillArea = PathRegions::Area(participant.fillPath);
 
     CanvasItem* styleItem = participant.item;
     if (auto* shape = dynamic_cast<ShapeAbstractItem*>(styleItem)) {
@@ -442,8 +463,7 @@ bool Apply(CanvasScene* scene, Operation operation, const QString& commandText)
 
     // 优先级最高的图元决定结果的颜色与落点（有填充空间者优先，其次叠放顺序）。
     const Participant top = participants.constLast();
-    // 除拆分外的运算都只产出一个多边形；拆分产出多个互不重叠的独立图元。
-    QList<QList<PolygonItem::Layer>> results;
+    const int topIndex = participants.size() - 1;
 
     // 零面积描线（直线 / 曲线 / 文字）只做覆盖着色，不作为挖除与分块的边界：
     // 否则菱形挖直线会在图形上留细缝、交集条带被当成面积层套上描线后变成黑块。
@@ -465,6 +485,33 @@ bool Apply(CanvasScene* scene, Operation operation, const QString& commandText)
         }
     }
 
+    // 剪除底图：最先选中（框选最底层）为底；其余有填充空间的图元挖除它。
+    int baseIndex = 0;
+    for (int i = 1; i < participants.size(); ++i) {
+        const int candidate = participants.at(i).selectionIndex;
+        const int current = participants.at(baseIndex).selectionIndex;
+        if (candidate == INT_MAX && current == INT_MAX) {
+            // 没有选择顺序信息时退回最底层（stackRank 小者先画、位于下方）。
+            if (participants.at(i).stackRank < participants.at(baseIndex).stackRank) {
+                baseIndex = i;
+            }
+        } else if (candidate < current) {
+            baseIndex = i;
+        }
+    }
+
+    // 各运算先算出原始结果区域（场景坐标），再统一走「拆分连续块 → 极小碎块先吸收后
+    // 删除 → 允许掩膜校验」的不变量管线（§5.2、§5.3）。
+    QList<QPair<QPainterPath, int>> rawRegions;
+    auto appendRegions = [&](const QPainterPath& result, int sourceIndex) {
+        if (result.isEmpty()) {
+            return;
+        }
+        for (const QPainterPath& piece : PathRegions::SplitDisjoint(result)) {
+            rawRegions.append({piece, sourceIndex});
+        }
+    };
+
     switch (operation) {
     case Operation::UNION: {
         // 联合：内部共边不描线，整块结果统一采用最高优先级图元的填充与描线。
@@ -472,10 +519,7 @@ bool Apply(CanvasScene* scene, Operation operation, const QString& commandText)
         for (int i = 1; i < participants.size() && !result.isEmpty(); ++i) {
             result = result.united(participants.at(i).path);
         }
-        if (result.isEmpty()) {
-            return false;
-        }
-        results.append(BuildLayers(result, participants, top, false));
+        appendRegions(result, topIndex);
         break;
     }
     case Operation::XOR: {
@@ -486,10 +530,7 @@ bool Apply(CanvasScene* scene, Operation operation, const QString& commandText)
                 const QPainterPath& other = participants.at(i).path;
                 result = result.united(other).subtracted(result.intersected(other));
             }
-            if (result.isEmpty()) {
-                return false;
-            }
-            results.append(BuildLayers(result, participants, top, false));
+            appendRegions(result, topIndex);
             break;
         }
         // 只在有填充空间的图元之间挖重叠区；线宽带与文字不参与挖除，
@@ -505,11 +546,8 @@ bool Apply(CanvasScene* scene, Operation operation, const QString& commandText)
                           : participant.fillPath;
             started = true;
         }
-        QPainterPath result = punched.united(bandUnion.subtracted(fillUnion)).united(textUnion);
-        if (result.isEmpty()) {
-            return false;
-        }
-        results.append(BuildLayers(result, participants, top, false));
+        const QPainterPath result = punched.united(bandUnion.subtracted(fillUnion)).united(textUnion);
+        appendRegions(result, topIndex);
         break;
     }
     case Operation::FRAGMENT: {
@@ -526,7 +564,8 @@ bool Apply(CanvasScene* scene, Operation operation, const QString& commandText)
             return false;
         }
         const int count = qMin(fillers.size(), 3);
-        for (int mask = 1; mask < (1 << count) && results.size() < 8; ++mask) {
+        int fragmentSource = 1000;
+        for (int mask = 1; mask < (1 << count) && rawRegions.size() < 8; ++mask) {
             QPainterPath region;
             bool started = false;
             for (int i = 0; i < count; ++i) {
@@ -551,11 +590,8 @@ bool Apply(CanvasScene* scene, Operation operation, const QString& commandText)
             if (region.isEmpty()) {
                 continue;
             }
-            // 拆分出的每一块都沿用同一个 donor（全局最高优先级图元）的样式。
-            results.append(BuildLayers(region, participants, top, false));
-        }
-        if (results.isEmpty()) {
-            return false;
+            // 每个组合区域是独立来源结果：碎块不跨组合互相吸收。
+            appendRegions(region, fragmentSource++);
         }
         break;
     }
@@ -564,28 +600,10 @@ bool Apply(CanvasScene* scene, Operation operation, const QString& commandText)
         for (int i = 1; i < participants.size() && !result.isEmpty(); ++i) {
             result = result.intersected(participants.at(i).path);
         }
-        if (result.isEmpty()) {
-            return false;
-        }
-        // 相交结果同样统一采用最高优先级图元的样式；条带区域交给线宽带层渲染。
-        results.append(BuildLayers(result, participants, top, true));
+        appendRegions(result, topIndex);
         break;
     }
     case Operation::SUBTRACT: {
-        // 剪除：以最先选中的图元为底（框选多个时以最底层为底），依次挖掉其余图元。
-        int baseIndex = 0;
-        for (int i = 1; i < participants.size(); ++i) {
-            const int candidate = participants.at(i).selectionIndex;
-            const int current = participants.at(baseIndex).selectionIndex;
-            if (candidate == INT_MAX && current == INT_MAX) {
-                // 没有选择顺序信息时退回最底层（stackRank 小者先画、位于下方）。
-                if (participants.at(i).stackRank < participants.at(baseIndex).stackRank) {
-                    baseIndex = i;
-                }
-            } else if (candidate < current) {
-                baseIndex = i;
-            }
-        }
         const Participant& base = participants.at(baseIndex);
         // 底图只被其余有填充空间的图元挖除；文字不参与裁剪。
         QPainterPath otherFills;
@@ -598,27 +616,69 @@ bool Apply(CanvasScene* scene, Operation operation, const QString& commandText)
                 otherFills = otherFills.isEmpty() ? participant.fillPath : otherFills.united(participant.fillPath);
             }
         }
-        QPainterPath result = base.path.subtracted(otherFills);
-        if (result.isEmpty()) {
-            return false;
-        }
         // 剪除可能把底图切成互不相连的多块：每块单独成一个图元，
         // 这样每一块都能自己选中、拖动，而不是藏在一个图元里只能整体移动。
-        const QList<QPainterPath> pieces = PathRegions::SplitDisjoint(result);
-        for (const QPainterPath& piece : pieces) {
-            const QList<PolygonItem::Layer> layers = BuildLayers(piece, participants, top, false);
-            if (!layers.isEmpty()) {
-                results.append(layers);
-            }
-        }
-        if (results.isEmpty()) {
-            return false;
-        }
+        appendRegions(base.path.subtracted(otherFills), baseIndex);
         break;
     }
     case Operation::LINE_SPLIT:
         // 已在函数入口转交 LineSplitOps 处理，不会走到这里。
         break;
+    }
+
+    // 极小碎块先吸收后删除（§5.3，D1/D2/D3/D15）。
+    QList<MergeRegions::RegionBlock> blocks;
+    for (const auto& raw : rawRegions) {
+        MergeRegions::RegionBlock block;
+        block.path = raw.first;
+        block.area = PathRegions::Area(block.path);
+        block.sourceIndex = raw.second;
+        if (raw.second >= 0 && raw.second < participants.size()) {
+            block.stackRank = participants.at(raw.second).stackRank;
+        }
+        block.exempt = IsBlockExempt(block.path, participants);
+        blocks.append(block);
+    }
+    blocks = MergeRegions::AbsorbTinyFragments(blocks);
+
+    // 允许区域掩膜（§5.2）：联合/XOR/相交/拆分为参与者填充并集；剪除为底图填充区。
+    QPainterPath allowedMask;
+    if (operation == Operation::SUBTRACT) {
+        allowedMask = participants.at(baseIndex).fillPath;
+    } else {
+        for (const Participant& participant : participants) {
+            if (participant.fillPath.isEmpty()) {
+                continue;
+            }
+            allowedMask = allowedMask.isEmpty() ? participant.fillPath : allowedMask.united(participant.fillPath);
+        }
+    }
+
+    // 结果图层：按连续块分别生成，填充/描线沿用原 BuildLayers 分层规则。
+    QList<QList<PolygonItem::Layer>> results;
+    QPainterPath finalFill;
+    for (const MergeRegions::RegionBlock& block : blocks) {
+        const QList<PolygonItem::Layer> layers =
+            BuildLayers(block.path, participants, top, operation == Operation::INTERSECT);
+        if (layers.isEmpty()) {
+            continue;
+        }
+        results.append(layers);
+        for (const PolygonItem::Layer& layer : layers) {
+            if (layer.role == PolygonItem::LayerRole::FILLED_AREA && !layer.path.isEmpty()) {
+                finalFill = finalFill.isEmpty() ? layer.path : finalFill.united(layer.path);
+            }
+        }
+    }
+
+    // 提交命令前完成校验：最终填充超出允许掩膜即不提交，不能事后裁剪或修补（§5.2、§12）。
+    if (!MergeRegions::FillWithinMask(finalFill, allowedMask)) {
+        return false;
+    }
+
+    if (results.isEmpty() && operation != Operation::SUBTRACT) {
+        // D1：相交/联合/异或/拆分结果仅剩极小碎块并被删除时，本次合并不提交，保留原图元。
+        return false;
     }
 
     QList<CanvasItem*> originals;
