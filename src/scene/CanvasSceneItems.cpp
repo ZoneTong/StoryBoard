@@ -322,6 +322,32 @@ void CanvasScene::PushRotation(CanvasItem* item, qreal before, qreal after, cons
     UpdateSceneExtent();
 }
 
+void CanvasScene::PushGroupRotation(const QList<CanvasItem*>& items, const QList<qreal>& anglesBefore,
+                                    const QList<qreal>& anglesAfter, const ItemGeometryList& geometryBefore,
+                                    const ItemGeometryList& geometryAfter, const QString& text)
+{
+    if (items.isEmpty() || anglesBefore.size() != items.size() || anglesAfter.size() != items.size()) {
+        return;
+    }
+    if (m_undoStack) {
+        m_undoStack->push(
+            new RotationCommand(this, items, anglesBefore, anglesAfter, text, geometryBefore, geometryAfter));
+    } else {
+        for (const ItemGeometry& entry : std::as_const(geometryAfter)) {
+            if (entry.item) {
+                entry.item->setPos(entry.pos);
+                entry.item->SetContentSize(entry.size);
+            }
+        }
+        for (int i = 0; i < items.size(); ++i) {
+            if (items.at(i)) {
+                items.at(i)->SetRotationAngle(anglesAfter.at(i));
+            }
+        }
+    }
+    UpdateSceneExtent();
+}
+
 int CanvasScene::RotateSelected(qreal degrees, const QString& commandText)
 {
     const QList<CanvasItem*> items = SelectedCanvasItems();

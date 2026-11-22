@@ -4,11 +4,13 @@
 #include "ItemGeometry.h"
 
 #include <QGraphicsScene>
+#include <QHash>
 #include <QImage>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QList>
 #include <QPointer>
+#include <QRectF>
 #include <QSet>
 #include <QSizeF>
 
@@ -82,10 +84,10 @@ class CanvasScene : public QGraphicsScene {
     int NudgeSelected(const QPointF& delta);
 
     // 分组：只允许同层、至少两个可编辑图元。移动任意组员时整组移动，
-    // 但组员仍可单独选中并编辑属性。
-    bool CanGroupSelectedItems() const;
+    // 但组员仍可单独选中并编辑属性。reason 非空时写出失败原因（§7.8 枚举）。
+    bool CanGroupSelectedItems(GroupFailureReason* reason = nullptr) const;
     bool CanUngroupSelectedItems() const;
-    int GroupSelectedItems();
+    int GroupSelectedItems(GroupFailureReason* reason = nullptr);
     int UngroupSelectedItems();
     QList<CanvasItem*> ItemsInGroup(int groupId) const;
     // 分组有层级：组本身还能被更外层的组包住。outermostGroup 沿父链找到最外层组，
@@ -100,7 +102,42 @@ class CanvasScene : public QGraphicsScene {
     void ApplyGroupIds(const QList<CanvasItem*>& items, const QList<int>& groupIds);
     // 插入即成组（立方体 / 圆柱体的面图元）：给 items 分配新组号并落组，
     // 不占撤销记录——插入本身的 addItemsWithUndo 已经是一条撤销。
-    int AssignNewGroup(const QList<CanvasItem*>& items);
+    // reason 非空时写出失败原因；失败时返回 0 且不改动 items。
+    // nameBase 非空时以其为组名 base 补后缀；为空时按“组 N”自动编号。
+    int AssignNewGroup(const QList<CanvasItem*>& items, GroupFailureReason* reason = nullptr,
+                       const QString& nameBase = QString());
+
+    // ---- 组模型（§7.2）：组不是 QGraphicsItem，只在场景里登记组名 / 父子关系 ----
+    // 组名在文档范围内唯一（trimmed 后大小写不敏感）；groupId <= 0 返回空名。
+    QString GroupName(int groupId) const;
+    bool IsGroupNameAvailable(const QString& name, int exceptGroupId = 0) const;
+    // 按 base 生成唯一组名：base 可用即用 base，否则补 2、3… 后缀。
+    QString UniqueGroupName(const QString& base) const;
+    QList<int> GroupIds() const;
+    QList<int> ChildGroups(int groupId) const;
+    QList<CanvasItem*> DirectMembers(int groupId) const;
+    QList<CanvasItem*> AllLeafItems(int groupId) const;
+    int MemberCount(int groupId) const;
+    // 组框：所有成员 mapRectToScene(FrameRect()) 的并集；空组返回空矩形。
+    QRectF GroupBounds(int groupId) const;
+    bool IsGroupEmpty(int groupId) const;
+    // 组所属图层：取组内成员唯一 LayerId；跨层或空组返回 BackgroundLayerId。
+    int GroupLayerId(int groupId) const;
+    bool IsOutermostGroup(int groupId) const;
+    // 删除 / 剪切 / 解散 / 载入后清理没有叶子图元的空组（含其子组记录与组名）。
+    void PruneEmptyGroups();
+    // 重命名组：空名 / 重名不提交；合法时压一条撤销记录。
+    bool RenameGroupWithUndo(int groupId, const QString& name);
+    // 选中该组树下全部可编辑叶子图元，不改变当前活动图层。
+    void SelectGroupById(int groupId);
+    // 组名 / 父子关系快照：供删除命令与分组命令在撤销 / 重做时整体恢复。
+    QHash<int, QString> GroupNames() const { return m_groupNames; }
+    void ApplyGroupNames(const QHash<int, QString>& names);
+    void ApplyGroupRecords(const QHash<int, QString>& names, const QHash<int, int>& parents);
+    // 供组选框控制器判断：选中集合是否恰好是一个完整的最外层组。
+    bool SelectionIsCompleteGroup(int* outGroupId = nullptr) const;
+    // 完整整组选中时，成员自身的虚线框 / 手柄隐藏，由组选框统一绘制（§7.6）。
+    bool HideMemberOverlay(CanvasItem* item) const;
 
     // 手动平滑：只处理编辑模式下选中的自由笔画，一次操作只占一条撤销记录。
     bool CanSmoothSelectedStrokes() const;
@@ -132,6 +169,8 @@ class CanvasScene : public QGraphicsScene {
     bool AddLayerWithUndo(const QString& name = QString());
     bool RemoveLayerWithUndo(int layerId, QString* errorMessage = nullptr);
     bool MoveLayerWithUndo(int layerId, int delta);
+    // 拖拽排序：把图层移动到目标下标（用户图层区间，背景层固定在 0）；同下标不动作。
+    bool MoveLayerToIndexWithUndo(int layerId, int targetIndex);
     bool RenameLayerWithUndo(int layerId, const QString& name);
     LayerStackState LayerState() const;
     void ApplyLayerState(const LayerStackState& state);
@@ -164,6 +203,10 @@ class CanvasScene : public QGraphicsScene {
                       const QString& mergeId = QString());
     // 需求 35：旋转手柄与快捷键的撤销入口。
     void PushRotation(CanvasItem* item, qreal before, qreal after, const QString& text);
+    // 组旋转：一条撤销记录同时覆盖成员角度与绕组心旋转后的位置（§7.7）。
+    void PushGroupRotation(const QList<CanvasItem*>& items, const QList<qreal>& anglesBefore,
+                           const QList<qreal>& anglesAfter, const ItemGeometryList& geometryBefore,
+                           const ItemGeometryList& geometryAfter, const QString& text);
     int RotateSelected(qreal degrees, const QString& commandText = QString());
 
     void ResetDocument();
@@ -187,6 +230,8 @@ class CanvasScene : public QGraphicsScene {
     void canvasSizeChanged(const QSizeF& size);
     void layersChanged();
     void activeLayerChanged(int layerId);
+    // 分组动作失败时带出原因，视图层转成状态栏文案；成功不发此信号。
+    void groupOperationFailed(GroupFailureReason reason);
 
   protected:
     void drawBackground(QPainter* painter, const QRectF& rect) override;
@@ -215,6 +260,8 @@ class CanvasScene : public QGraphicsScene {
 
     void EnsureLayerState();
     LayerStackState SanitizedLayerState(const LayerStackState& state) const;
+    // 组名建议：base 为空按“组 N”编号，否则取 base 并在重名时补数字后缀。
+    QString SuggestGroupName(const QString& base) const;
     void ApplyLayerStateInternal(const LayerStackState& state, bool preserveLock = true);
     void AssignNewItemPlacement(CanvasItem* item);
     void ApplyItemStacking(CanvasItem* item);
@@ -241,6 +288,8 @@ class CanvasScene : public QGraphicsScene {
     int m_nextGroupId = 1;
     // 组 → 父组。组本身可以被更外层的组包住，成员通过 groupId 指到自己所在的那一层组。
     QHash<int, int> m_groupParents;
+    // 组 → 组名；未命名的旧组在载入时按编号补“组 N”。
+    QHash<int, QString> m_groupNames;
     QList<QPointer<CanvasItem>> m_selectionOrder;
     QList<int> m_preferredLayerIds;
     QList<CanvasItem*> m_orphans;

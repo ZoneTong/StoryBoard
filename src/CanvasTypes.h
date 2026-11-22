@@ -15,6 +15,17 @@ enum class BackgroundType { NONE = 0, COLOR = 1, IMAGE = 2 };
 
 enum class BackgroundMode { STRETCH = 0, FIT = 1, TILE = 2 };
 
+// 分组动作失败原因：CanGroupSelectedItems / GroupSelectedItems / AssignNewGroup
+// 通过出参写出，状态栏按枚举给出对应提示文案。
+enum class GroupFailureReason {
+    NONE = 0,
+    NOT_EDIT_MODE,
+    NOT_ENOUGH_ITEMS,
+    NOT_EDITABLE,
+    DIFFERENT_LAYERS,
+    INVALID_ITEMS
+};
+
 struct CanvasBackground {
     BackgroundType type = BackgroundType::NONE;
     QColor color = QColor(255, 255, 255);
@@ -118,4 +129,23 @@ inline BackgroundMode BackgroundModeFromString(const QString& value)
         return BackgroundMode::TILE;
     }
     return BackgroundMode::STRETCH;
+}
+
+inline QString GroupFailureReasonText(GroupFailureReason reason)
+{
+    switch (reason) {
+    case GroupFailureReason::NONE:
+        return QString();
+    case GroupFailureReason::NOT_EDIT_MODE:
+        return QCoreApplication::tr("Switch to edit mode before creating a group");
+    case GroupFailureReason::NOT_ENOUGH_ITEMS:
+        return QCoreApplication::tr("Select at least two items to create a group");
+    case GroupFailureReason::NOT_EDITABLE:
+        return QCoreApplication::tr("The selection contains non-editable or locked items");
+    case GroupFailureReason::DIFFERENT_LAYERS:
+        return QCoreApplication::tr("Items in a group must belong to the same layer");
+    case GroupFailureReason::INVALID_ITEMS:
+        return QCoreApplication::tr("The selection is no longer valid; please select again");
+    }
+    return QString();
 }
