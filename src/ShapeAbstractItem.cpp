@@ -35,10 +35,6 @@ ItemPropertySet ShapeAbstractItem::Properties() const
     ItemPropertySet properties = CanvasItem::Properties().United(ItemPropertySet{
         ItemProperty::FILL_STYLE, ItemProperty::FILL_COLOR, ItemProperty::FILL_IMAGE, ItemProperty::FILL_IMAGE_MODE,
         ItemProperty::STROKE_STYLE, ItemProperty::STROKE_COLOR, ItemProperty::STROKE_WIDTH});
-    // 椭圆 / 扇形的内容框即椭圆外接框，长短半轴可由尺寸派生、写回时反向换算。
-    if (!IsCustomShape() && (shapeType() == ShapeType::ELLIPSE || shapeType() == ShapeType::SECTOR)) {
-        properties = properties.United(ItemPropertySet{ItemProperty::MAJOR_AXIS, ItemProperty::MINOR_AXIS});
-    }
     return properties;
 }
 
@@ -68,10 +64,6 @@ QVariant ShapeAbstractItem::PropertyValue(ItemProperty property) const
         return StrokeWidth();
     case ItemProperty::CORNER_RADIUS:
         return CornerRadius();
-    case ItemProperty::MAJOR_AXIS:
-        return qMax(ContentSize().width(), ContentSize().height()) / 2.0;
-    case ItemProperty::MINOR_AXIS:
-        return qMin(ContentSize().width(), ContentSize().height()) / 2.0;
     case ItemProperty::BOTTOM_ANGLE1:
         return BottomAngle1();
     case ItemProperty::BOTTOM_ANGLE2:
@@ -116,31 +108,6 @@ void ShapeAbstractItem::SetPropertyValue(ItemProperty property, const QVariant& 
     case ItemProperty::CORNER_RADIUS:
         SetCornerRadius(value.toDouble());
         break;
-    case ItemProperty::MAJOR_AXIS:
-    case ItemProperty::MINOR_AXIS: {
-        // 半轴换算回内容宽高：长轴沿当前较长的边，另一根半轴保持不变，中心不动。
-        const QSizeF size = ContentSize();
-        const bool widthIsMajor = size.width() >= size.height();
-        qreal major = widthIsMajor ? size.width() / 2.0 : size.height() / 2.0;
-        qreal minor = widthIsMajor ? size.height() / 2.0 : size.width() / 2.0;
-        if (property == ItemProperty::MAJOR_AXIS) {
-            major = value.toDouble();
-            if (major < minor) {
-                minor = major;
-            }
-        } else {
-            minor = value.toDouble();
-            if (minor > major) {
-                major = minor;
-            }
-        }
-        const qreal newWidth = widthIsMajor ? major * 2.0 : minor * 2.0;
-        const qreal newHeight = widthIsMajor ? minor * 2.0 : major * 2.0;
-        const QPointF center = pos() + QPointF(size.width() / 2.0, size.height() / 2.0);
-        setPos(center.x() - newWidth / 2.0, center.y() - newHeight / 2.0);
-        SetContentSize(QSizeF(newWidth, newHeight));
-        break;
-    }
     case ItemProperty::BOTTOM_ANGLE1:
         SetTriangleAngles(value.toDouble(), BottomAngle2());
         break;

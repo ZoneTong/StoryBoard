@@ -8,6 +8,9 @@ class EllipseItem : public ShapeAbstractItem, public EllipseShape {
   public:
     EllipseItem();
     ShapeType shapeType() const override { return ShapeType::ELLIPSE; }
+    ItemPropertySet Properties() const override;
+    QVariant PropertyValue(ItemProperty property) const override;
+    void SetPropertyValue(ItemProperty property, const QVariant& value) override;
 
   protected:
     void ContentResized() override;

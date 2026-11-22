@@ -1,5 +1,7 @@
 #include "shapes/SectorItem.h"
 
+#include "EllipseAxis.h"
+
 #include <QJsonObject>
 
 SectorItem::SectorItem()
@@ -17,7 +19,13 @@ void SectorItem::ContentResized()
 
 ItemPropertySet SectorItem::Properties() const
 {
-    return ShapeAbstractItem::Properties().United(ArcAngleAttributes::ArcAngleProperties());
+    // 扇形同时拥有弧角与椭圆半轴；自定义轮廓不再按椭圆外接框换算。
+    ItemPropertySet properties = ShapeAbstractItem::Properties().United(ArcAngleAttributes::ArcAngleProperties());
+    if (!IsCustomShape()) {
+        properties.Insert(ItemProperty::MAJOR_AXIS);
+        properties.Insert(ItemProperty::MINOR_AXIS);
+    }
+    return properties;
 }
 
 QVariant SectorItem::PropertyValue(ItemProperty property) const
@@ -27,6 +35,10 @@ QVariant SectorItem::PropertyValue(ItemProperty property) const
         return StartAngle();
     case ItemProperty::SWEEP_ANGLE:
         return SweepAngle();
+    case ItemProperty::MAJOR_AXIS:
+        return EllipseAxis::Major(ContentSize());
+    case ItemProperty::MINOR_AXIS:
+        return EllipseAxis::Minor(ContentSize());
     default:
         return ShapeAbstractItem::PropertyValue(property);
     }
@@ -41,6 +53,14 @@ void SectorItem::SetPropertyValue(ItemProperty property, const QVariant& value)
     case ItemProperty::SWEEP_ANGLE:
         SetArcAngles(StartAngle(), value.toDouble());
         break;
+    case ItemProperty::MAJOR_AXIS:
+    case ItemProperty::MINOR_AXIS: {
+        const EllipseAxis::ResizeResult resize =
+            EllipseAxis::Apply(property == ItemProperty::MAJOR_AXIS, value.toDouble(), pos(), ContentSize());
+        setPos(resize.pos);
+        SetContentSize(resize.size);
+        break;
+    }
     default:
         ShapeAbstractItem::SetPropertyValue(property, value);
         break;
