@@ -8,12 +8,20 @@
 // 用户自定义图形：把一张画布文件（.sbcanvas）里的图形 / 笔画轮廓合并成一条路径，
 // 归一化到 0–1 的单位坐标后作为可缩放的图元模板。文件放在配置文件所在目录的
 // shapes 子目录里，按文件名排序后追加到「常见图形 → 自定义图形」下拉菜单。
+// 模板按 0–1 单位坐标存储；插入时再按目标矩形映射。合并路径保留给面板图标 /
+// 宽高比计算，parts 按子路径拆分：闭合部分走多边形，开放部分走曲线（§6）。
+struct CustomShapePart {
+    QPainterPath unitPath;
+    bool closed = false;
+};
+
 struct CustomShapeTemplate {
     QString name;
     QString filePath;
     // 单位坐标轮廓（0–1），宽高比保存在 aspectRatio 里，插入时保持原始比例。
     QPainterPath unitPath;
     qreal aspectRatio = 1.0;
+    QList<CustomShapePart> parts;
 };
 
 // 扫描目录里的全部 .sbcanvas，跳过无法解析或没有可用轮廓的文件。

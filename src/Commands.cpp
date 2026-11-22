@@ -27,8 +27,9 @@ bool SameStack(const ItemStackList& first, const ItemStackList& second)
 } // namespace
 
 RotationCommand::RotationCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<qreal>& before,
-                                 const QList<qreal>& after, const QString& text)
-    : m_scene(scene), m_before(before), m_after(after)
+                                 const QList<qreal>& after, const QString& text, const ItemGeometryList& geometryBefore,
+                                 const ItemGeometryList& geometryAfter)
+    : m_scene(scene), m_before(before), m_after(after), m_geometryBefore(geometryBefore), m_geometryAfter(geometryAfter)
 {
     setText(text);
     for (CanvasItem* item : items) {
@@ -38,16 +39,23 @@ RotationCommand::RotationCommand(CanvasScene* scene, const QList<CanvasItem*>& i
 
 void RotationCommand::undo()
 {
-    Apply(m_before);
+    Apply(m_before, m_geometryBefore);
 }
 
 void RotationCommand::redo()
 {
-    Apply(m_after);
+    Apply(m_after, m_geometryAfter);
 }
 
-void RotationCommand::Apply(const QList<qreal>& angles)
+void RotationCommand::Apply(const QList<qreal>& angles, const ItemGeometryList& geometry)
 {
+    for (const ItemGeometry& entry : geometry) {
+        if (!entry.item) {
+            continue;
+        }
+        entry.item->setPos(entry.pos);
+        entry.item->SetContentSize(entry.size);
+    }
     const int count = qMin(m_items.size(), angles.size());
     for (int i = 0; i < count; ++i) {
         if (m_items.at(i)) {
@@ -86,6 +94,12 @@ RemoveItemsCommand::RemoveItemsCommand(CanvasScene* scene, const QList<CanvasIte
     for (CanvasItem* item : items) {
         m_items.append(QPointer<CanvasItem>(item));
     }
+    if (m_scene) {
+        m_namesBefore = m_scene->GroupNames();
+        m_parentsBefore = m_scene->GroupParents();
+        m_namesAfter = m_namesBefore;
+        m_parentsAfter = m_parentsBefore;
+    }
 }
 
 void RemoveItemsCommand::undo()
@@ -103,6 +117,8 @@ void RemoveItemsCommand::undo()
             item->setSelected(true);
         }
     }
+    // 撤销删除时把组名 / 父子关系与空组状态一并恢复（§7.4、D17）。
+    m_scene->ApplyGroupRecords(m_namesBefore, m_parentsBefore);
 }
 
 void RemoveItemsCommand::redo()
@@ -116,6 +132,8 @@ void RemoveItemsCommand::redo()
             m_scene->DetachItem(item);
         }
     }
+    // 删除后清理因此变空的组，避免保存后留下孤儿组记录。
+    m_scene->PruneEmptyGroups();
 }
 
 GeometryCommand::GeometryCommand(CanvasScene* scene, const ItemGeometryList& before, const ItemGeometryList& after,
@@ -184,8 +202,10 @@ void GeometryCommand::Apply(const ItemGeometryList& geometry)
 
 GroupCommand::GroupCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<int>& before,
                            const QList<int>& after, const QString& text, const QHash<int, int>& parentsBefore,
-                           const QHash<int, int>& parentsAfter)
-    : m_scene(scene), m_before(before), m_after(after), m_parentsBefore(parentsBefore), m_parentsAfter(parentsAfter)
+                           const QHash<int, int>& parentsAfter, const QHash<int, QString>& namesBefore,
+                           const QHash<int, QString>& namesAfter)
+    : m_scene(scene), m_before(before), m_after(after), m_parentsBefore(parentsBefore), m_parentsAfter(parentsAfter),
+      m_namesBefore(namesBefore), m_namesAfter(namesAfter)
 {
     setText(text);
     for (CanvasItem* item : items) {
@@ -195,15 +215,15 @@ GroupCommand::GroupCommand(CanvasScene* scene, const QList<CanvasItem*>& items, 
 
 void GroupCommand::undo()
 {
-    Apply(m_before, m_parentsBefore);
+    Apply(m_before, m_parentsBefore, m_namesBefore);
 }
 
 void GroupCommand::redo()
 {
-    Apply(m_after, m_parentsAfter);
+    Apply(m_after, m_parentsAfter, m_namesAfter);
 }
 
-void GroupCommand::Apply(const QList<int>& groupIds, const QHash<int, int>& parents)
+void GroupCommand::Apply(const QList<int>& groupIds, const QHash<int, int>& parents, const QHash<int, QString>& names)
 {
     if (!m_scene) {
         return;
@@ -216,7 +236,38 @@ void GroupCommand::Apply(const QList<int>& groupIds, const QHash<int, int>& pare
         }
     }
     m_scene->ApplyGroupIds(items, groupIds);
-    m_scene->ApplyGroupParents(parents);
+    m_scene->ApplyGroupRecords(names, parents);
+}
+
+GroupRenameCommand::GroupRenameCommand(CanvasScene* scene, int groupId, const QString& before, const QString& after,
+                                       const QString& text)
+    : m_scene(scene), m_groupId(groupId), m_before(before), m_after(after)
+{
+    setText(text);
+}
+
+void GroupRenameCommand::undo()
+{
+    Apply(m_before);
+}
+
+void GroupRenameCommand::redo()
+{
+    Apply(m_after);
+}
+
+void GroupRenameCommand::Apply(const QString& name)
+{
+    if (!m_scene || m_groupId <= 0) {
+        return;
+    }
+    QHash<int, QString> names = m_scene->GroupNames();
+    if (name.trimmed().isEmpty()) {
+        names.remove(m_groupId);
+    } else {
+        names.insert(m_groupId, name);
+    }
+    m_scene->ApplyGroupNames(names);
 }
 
 StrokeSmoothCommand::StrokeSmoothCommand(CanvasScene* scene, const QList<LineAbstractItem*>& items,

@@ -73,6 +73,7 @@ int RunSelfTest(const QString& reportPath)
     selftest::RunPropertyDialogTextNamingTests(ctx);
     selftest::RunDuplicateItemTests(ctx);
     selftest::RunGroupTests(ctx);
+    selftest::RunGroupingModelTests(ctx);
     selftest::RunRubberBandTests(ctx);
     selftest::RunLockedLayerTests(ctx);
     selftest::RunMainWindowFlowTests(ctx);

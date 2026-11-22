@@ -85,6 +85,17 @@ QJsonObject CanvasScene::ToJson() const
         root.insert(QStringLiteral("groupParents"), groupParents);
     }
 
+    // 组名：{"组 id": "组名"}；旧文件没有这个字段时按组编号补“组 N”。
+    QJsonObject groupNames;
+    for (auto it = m_groupNames.constBegin(); it != m_groupNames.constEnd(); ++it) {
+        if (it.key() > 0 && !it.value().trimmed().isEmpty()) {
+            groupNames.insert(QString::number(it.key()), it.value());
+        }
+    }
+    if (!groupNames.isEmpty()) {
+        root.insert(QStringLiteral("groupNames"), groupNames);
+    }
+
     QJsonArray layerArray;
     for (const CanvasLayer& entry : m_layers) {
         QJsonObject layerJson;
@@ -284,7 +295,69 @@ bool CanvasScene::FromJson(const QJsonObject& root, QString* errorMessage)
             parents.insert(child, parent);
         }
     }
-    ApplyGroupParents(parents);
+
+    // 还原组名（旧文件没有 groupNames，下面按组编号补“组 N”）。
+    QHash<int, QString> names;
+    const QJsonObject namesJson = root.value(QStringLiteral("groupNames")).toObject();
+    for (auto it = namesJson.constBegin(); it != namesJson.constEnd(); ++it) {
+        const int groupId = it.key().toInt();
+        const QString name = it.value().toString().trimmed();
+        if (groupId > 0 && !name.isEmpty()) {
+            names.insert(groupId, name);
+        }
+    }
+
+    // D5：旧画布跨层组不做兼容迁移——组关系清理、图元保留。
+    QSet<int> loadedGroupIds;
+    for (CanvasItem* item : CanvasItems()) {
+        if (item->GroupId() > 0) {
+            loadedGroupIds.insert(item->GroupId());
+        }
+    }
+    for (auto it = parents.constBegin(); it != parents.constEnd(); ++it) {
+        loadedGroupIds.insert(it.key());
+        loadedGroupIds.insert(it.value());
+    }
+    for (int groupId : std::as_const(loadedGroupIds)) {
+        const QList<CanvasItem*> leaves = ItemsInGroupTree(groupId);
+        if (leaves.isEmpty()) {
+            continue;
+        }
+        const int layerId = leaves.constFirst()->LayerId();
+        bool mixedLayers = false;
+        for (CanvasItem* leaf : leaves) {
+            if (leaf->LayerId() != layerId) {
+                mixedLayers = true;
+                break;
+            }
+        }
+        if (!mixedLayers) {
+            continue;
+        }
+        for (CanvasItem* leaf : leaves) {
+            leaf->SetGroupId(0);
+        }
+        names.remove(groupId);
+        parents.remove(groupId);
+        for (auto it = parents.begin(); it != parents.end();) {
+            if (it.value() == groupId) {
+                it = parents.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+    ApplyGroupRecords(names, parents);
+
+    // 旧文件无组名时按组 ID 顺序补“组 N”；重名由 UniqueGroupName 自动补后缀。
+    QList<int> sortedGroupIds = GroupIds();
+    std::sort(sortedGroupIds.begin(), sortedGroupIds.end());
+    for (int groupId : std::as_const(sortedGroupIds)) {
+        if (GroupName(groupId).isEmpty()) {
+            m_groupNames.insert(groupId, SuggestGroupName(QString()));
+        }
+    }
+    PruneEmptyGroups();
 
     // 旧画布没有 itemName；补自动名称，保证重新保存后每个图元都有“类型 N”。
     AssignAutoItemNames();

@@ -15,6 +15,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QLineF>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
@@ -38,6 +39,61 @@ QPainterPath ItemOutlinePath(CanvasItem* item)
     QTransform translate;
     translate.translate(item->pos().x(), item->pos().y());
     return translate.map(path);
+}
+
+// 按子路径拆分合并轮廓：闭合子路径进多边形部分，开放子路径进曲线部分（§6）。
+QList<CustomShapePart> SplitTemplateParts(const QPainterPath& combined, const QTransform& normalize)
+{
+    QList<CustomShapePart> parts;
+    QPainterPath current;
+    bool hasCurrent = false;
+    bool closed = false;
+
+    auto finish = [&]() {
+        if (!hasCurrent || current.elementCount() == 0) {
+            return;
+        }
+        QPainterPath firstMove;
+        const QPointF firstPoint = current.elementAt(0);
+        if (!closed && current.elementCount() >= 2) {
+            const QPointF lastPoint = current.elementAt(current.elementCount() - 1);
+            closed = QLineF(firstPoint, lastPoint).length() <= 0.5;
+        }
+        CustomShapePart part;
+        part.unitPath = normalize.map(current);
+        part.closed = closed;
+        parts.append(part);
+        current = QPainterPath();
+        hasCurrent = false;
+        closed = false;
+    };
+
+    for (int i = 0; i < combined.elementCount(); ++i) {
+        const QPainterPath::Element element = combined.elementAt(i);
+        switch (element.type) {
+        case QPainterPath::MoveToElement:
+            finish();
+            current.moveTo(element.x, element.y);
+            hasCurrent = true;
+            break;
+        case QPainterPath::LineToElement:
+            current.lineTo(element.x, element.y);
+            break;
+        case QPainterPath::CurveToElement:
+            if (i + 2 < combined.elementCount()) {
+                const QPainterPath::Element c2 = combined.elementAt(i + 1);
+                const QPainterPath::Element end = combined.elementAt(i + 2);
+                current.cubicTo(element.x, element.y, c2.x, c2.y, end.x, end.y);
+                i += 2;
+            }
+            break;
+        case QPainterPath::CurveToDataElement:
+        default:
+            break;
+        }
+    }
+    finish();
+    return parts;
 }
 
 CanvasItem* CreateTemplateItem(const QJsonObject& object)
@@ -158,6 +214,7 @@ bool LoadCustomShapeTemplate(const QString& filePath, CustomShapeTemplate* resul
     result->filePath = QFileInfo(filePath).absoluteFilePath();
     result->unitPath = normalize.map(combined);
     result->aspectRatio = bounds.width() / bounds.height();
+    result->parts = SplitTemplateParts(combined, normalize);
     return true;
 }
 

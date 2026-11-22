@@ -3,6 +3,7 @@
 #include "CanvasTypes.h"
 
 #include <QList>
+#include <QListWidget>
 #include <QWidget>
 
 class CanvasScene;
@@ -10,8 +11,8 @@ class LayerActions;
 class LayerPanelView;
 class LayerRow;
 class QCheckBox;
+class QDropEvent;
 class QLabel;
-class QListWidget;
 class QToolButton;
 
 class LayerPanel : public QWidget {
@@ -21,6 +22,10 @@ class LayerPanel : public QWidget {
 
     QList<int> SelectedLayerIds() const;
 
+    // 行数据角色：UserRole 存图层 / 组 id，ROLE_ROW_TYPE 区分图层行与组行。
+    static constexpr int ROLE_ROW_TYPE = Qt::UserRole + 1;
+    enum RowType { ROW_LAYER = 0, ROW_GROUP = 1 };
+
   public slots:
     void Refresh();
 
@@ -29,11 +34,19 @@ class LayerPanel : public QWidget {
 
   private:
     LayerRow* CreateRow(const CanvasLayer& layer, int index, int itemCount);
+    QListWidgetItem* CreateGroupRow(int groupId);
     void ScheduleRefresh();
     void ActivateCurrentLayer();
     void SyncActiveLayer();
     void SyncSceneSelection();
     void RemoveSelectedLayers();
+    void OnRowClicked(QListWidgetItem* item);
+    void RenameGroup(int groupId);
+    bool HandleLayerDrop(QDropEvent* event);
+    int OwnerLayerRow(int row) const;
+
+  protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
     CanvasScene* m_scene = nullptr;
     LayerActions* m_actions = nullptr;

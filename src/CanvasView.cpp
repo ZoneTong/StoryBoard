@@ -82,6 +82,11 @@ CanvasView::CanvasView(CanvasScene* scene, QWidget* parent) : QGraphicsView(scen
     m_hits = std::make_unique<CanvasViewHitTester>(this, scene);
     m_cursor = std::make_unique<CanvasViewCursor>(this);
     m_menu = std::make_unique<CanvasContextMenuController>(this, scene);
+    m_groupBox = std::make_unique<CanvasGroupBoxController>(this, scene);
+
+    // 分组失败原因由场景写出，视图层转成状态栏文案（§7.8）。
+    connect(scene, &CanvasScene::groupOperationFailed, this,
+            [this](GroupFailureReason reason) { emit statusMessage(GroupFailureReasonText(reason)); });
 
     UpdateCursor();
 }
@@ -208,6 +213,18 @@ void CanvasView::mousePressEvent(QMouseEvent* event)
         m_pan->BeginPan(position);
         event->accept();
         return;
+    }
+
+    // 组选框手柄优先于图元自身手柄：完整整组选中时由组框统一缩放 / 旋转（§7.6）。
+    if (m_mode == ToolMode::EDIT && event->button() == Qt::LeftButton &&
+        !event->modifiers().testFlag(Qt::ControlModifier)) {
+        const int groupHandle = m_groupBox->HitTest(position);
+        if (groupHandle != static_cast<int>(GroupBoxHandle::NONE) &&
+            groupHandle != static_cast<int>(GroupBoxHandle::BODY)) {
+            m_groupBox->BeginDrag(position, groupHandle);
+            event->accept();
+            return;
+        }
     }
 
     if (m_mode == ToolMode::EDIT && event->button() == Qt::LeftButton && m_resize->BeginResize(position)) {
@@ -357,6 +374,12 @@ void CanvasView::mouseMoveEvent(QMouseEvent* event)
         return;
     }
 
+    if (m_groupBox->IsDragging()) {
+        m_groupBox->UpdateDrag(position);
+        event->accept();
+        return;
+    }
+
     if (m_resize->IsResizing()) {
         m_resize->UpdateResize(mapToScene(position));
         event->accept();
@@ -377,6 +400,12 @@ void CanvasView::mouseReleaseEvent(QMouseEvent* event)
 {
     if (m_pan->IsPanning()) {
         m_pan->EndPan();
+        event->accept();
+        return;
+    }
+
+    if (m_groupBox->IsDragging() && event->button() == Qt::LeftButton) {
+        m_groupBox->EndDrag();
         event->accept();
         return;
     }
@@ -574,6 +603,7 @@ void CanvasView::paintEvent(QPaintEvent* event)
     }
     QPainter painter(viewport());
     m_resize->DrawHandles(&painter);
+    m_groupBox->DrawOverlay(&painter);
 }
 
 void CanvasView::leaveEvent(QEvent* event)

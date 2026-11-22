@@ -300,6 +300,10 @@ QCursor CanvasItem::CursorForHandle(Handle handle) const
 
 void CanvasItem::DrawSelectionOverlay(QPainter* painter)
 {
+    // 完整整组选中时成员自身的虚线框 / 手柄让给组选框统一绘制（§7.6）。
+    if (canvasScene() && canvasScene()->HideMemberOverlay(this)) {
+        return;
+    }
     m_handles->DrawOverlay(painter);
 }
 

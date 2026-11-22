@@ -8,6 +8,7 @@
 #include "TextItem.h"
 
 #include <QColor>
+#include <QHash>
 #include <QList>
 #include <QMap>
 #include <QPair>
@@ -37,8 +38,15 @@ class RemoveItemsCommand : public QUndoCommand {
     void redo() override;
 
   private:
+    // 删除前后的组名 / 父子关系快照：撤销删除时连同空组状态一起恢复（§7.4）。
+    void ApplyGroupRecords();
+
     CanvasScene* m_scene = nullptr;
     QList<QPointer<CanvasItem>> m_items;
+    QHash<int, QString> m_namesBefore;
+    QHash<int, QString> m_namesAfter;
+    QHash<int, int> m_parentsBefore;
+    QHash<int, int> m_parentsAfter;
 };
 
 // 连续方向键微调共用这个命令 id：QUndoStack 只对 id 相同且非 -1 的命令尝试
@@ -68,15 +76,17 @@ class GeometryCommand : public QUndoCommand {
 
 class GroupCommand : public QUndoCommand {
   public:
-    // 分组有层级后，撤销不仅要还原成员归属，还要还原组与组的父子关系。
+    // 分组有层级后，撤销不仅要还原成员归属，还要还原组与组的父子关系与组名快照。
     GroupCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<int>& before, const QList<int>& after,
                  const QString& text, const QHash<int, int>& parentsBefore = QHash<int, int>(),
-                 const QHash<int, int>& parentsAfter = QHash<int, int>());
+                 const QHash<int, int>& parentsAfter = QHash<int, int>(),
+                 const QHash<int, QString>& namesBefore = QHash<int, QString>(),
+                 const QHash<int, QString>& namesAfter = QHash<int, QString>());
     void undo() override;
     void redo() override;
 
   private:
-    void Apply(const QList<int>& groupIds, const QHash<int, int>& parents);
+    void Apply(const QList<int>& groupIds, const QHash<int, int>& parents, const QHash<int, QString>& names);
 
     CanvasScene* m_scene = nullptr;
     QList<QPointer<CanvasItem>> m_items;
@@ -84,6 +94,25 @@ class GroupCommand : public QUndoCommand {
     QList<int> m_after;
     QHash<int, int> m_parentsBefore;
     QHash<int, int> m_parentsAfter;
+    QHash<int, QString> m_namesBefore;
+    QHash<int, QString> m_namesAfter;
+};
+
+// 组重命名：只改组名，成员归属与父子关系不动。
+class GroupRenameCommand : public QUndoCommand {
+  public:
+    GroupRenameCommand(CanvasScene* scene, int groupId, const QString& before, const QString& after,
+                       const QString& text);
+    void undo() override;
+    void redo() override;
+
+  private:
+    void Apply(const QString& name);
+
+    CanvasScene* m_scene = nullptr;
+    int m_groupId = 0;
+    QString m_before;
+    QString m_after;
 };
 
 class BackgroundCommand : public QUndoCommand {
@@ -141,17 +170,21 @@ class TextItemCommand : public QUndoCommand {
 class RotationCommand : public QUndoCommand {
   public:
     RotationCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<qreal>& before,
-                    const QList<qreal>& after, const QString& text);
+                    const QList<qreal>& after, const QString& text,
+                    const ItemGeometryList& geometryBefore = ItemGeometryList(),
+                    const ItemGeometryList& geometryAfter = ItemGeometryList());
     void undo() override;
     void redo() override;
 
   private:
-    void Apply(const QList<qreal>& angles);
+    void Apply(const QList<qreal>& angles, const ItemGeometryList& geometry);
 
     CanvasScene* m_scene = nullptr;
     QList<QPointer<CanvasItem>> m_items;
     QList<qreal> m_before;
     QList<qreal> m_after;
+    ItemGeometryList m_geometryBefore;
+    ItemGeometryList m_geometryAfter;
 };
 
 // 手动平滑一次可能同时作用于多条选中笔画，整体只占一条撤销记录。

@@ -18,6 +18,7 @@ void RunPropertyDialogFieldGeometryTests(Context& ctx);
 void RunPropertyDialogTextNamingTests(Context& ctx);
 void RunDuplicateItemTests(Context& ctx);
 void RunGroupTests(Context& ctx);
+void RunGroupingModelTests(Context& ctx);
 void RunRubberBandTests(Context& ctx);
 void RunLockedLayerTests(Context& ctx);
 void RunMainWindowFlowTests(Context& ctx);
