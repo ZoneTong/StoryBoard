@@ -608,18 +608,24 @@ void ItemPropertiesDialog::ApplyChanges()
                                   ? static_cast<ArrowStyle>(style->EndArrowCombo()->currentData().toInt())
                                   : before.curveEndArrow;
         // 弧线角度 / 正弦周期振幅：改过才写入快照，未改动的行沿用原值。
-        if (stroke->SupportsArcAngles()) {
-            before.hasCurveParam = true;
-            before.curveParam = stroke->paramState();
-            after.hasCurveParam = true;
-            after.curveParam = before.curveParam;
+        // 参数一律按 ItemProperty 键读写，基类不再提供叶子类型的参数快照。
+        const ItemPropertySet strokeProperties = stroke->Properties();
+        if (strokeProperties.Contains(ItemProperty::START_ANGLE) &&
+            strokeProperties.Contains(ItemProperty::SWEEP_ANGLE)) {
+            before.curveParams.insert(ItemProperty::START_ANGLE, stroke->PropertyValue(ItemProperty::START_ANGLE));
+            before.curveParams.insert(ItemProperty::SWEEP_ANGLE, stroke->PropertyValue(ItemProperty::SWEEP_ANGLE));
+            after.curveParams = before.curveParams;
             if (style && style->ArcStartAngleSpin() && style->ArcSweepAngleSpin()) {
-                after.curveParam.first = style->ArcStartAngleSpin()->value() == qRound(before.curveParam.first)
-                                             ? before.curveParam.first
-                                             : style->ArcStartAngleSpin()->value();
-                after.curveParam.second = style->ArcSweepAngleSpin()->value() == qRound(before.curveParam.second)
-                                              ? before.curveParam.second
-                                              : style->ArcSweepAngleSpin()->value();
+                const qreal startBefore = before.curveParams.value(ItemProperty::START_ANGLE).toDouble();
+                const qreal sweepBefore = before.curveParams.value(ItemProperty::SWEEP_ANGLE).toDouble();
+                after.curveParams.insert(ItemProperty::START_ANGLE,
+                                         style->ArcStartAngleSpin()->value() == qRound(startBefore)
+                                             ? startBefore
+                                             : style->ArcStartAngleSpin()->value());
+                after.curveParams.insert(ItemProperty::SWEEP_ANGLE,
+                                         style->ArcSweepAngleSpin()->value() == qRound(sweepBefore)
+                                             ? sweepBefore
+                                             : style->ArcSweepAngleSpin()->value());
             }
             // 弧线长短半轴：与角度同一份快照，未改动时 before == after 自动跳过。
             if (geometry && geometry->MajorAxisSpin()) {
@@ -630,18 +636,22 @@ void ItemPropertiesDialog::ApplyChanges()
                 after.arcMajor = geometry->MajorAxisSpin()->value();
                 after.arcMinor = geometry->MinorAxisSpin()->value();
             }
-        } else if (stroke->SupportsSineWave()) {
-            before.hasCurveParam = true;
-            before.curveParam = stroke->paramState();
-            after.hasCurveParam = true;
-            after.curveParam = before.curveParam;
+        } else if (strokeProperties.Contains(ItemProperty::SINE_CYCLES) &&
+                   strokeProperties.Contains(ItemProperty::SINE_AMPLITUDE)) {
+            before.curveParams.insert(ItemProperty::SINE_CYCLES, stroke->PropertyValue(ItemProperty::SINE_CYCLES));
+            before.curveParams.insert(ItemProperty::SINE_AMPLITUDE,
+                                      stroke->PropertyValue(ItemProperty::SINE_AMPLITUDE));
+            after.curveParams = before.curveParams;
             if (style && style->SineCyclesSpin() && style->SineAmplitudeSpin()) {
-                after.curveParam.first = style->SineCyclesSpin()->value() == qRound(before.curveParam.first)
-                                             ? before.curveParam.first
-                                             : style->SineCyclesSpin()->value();
-                after.curveParam.second = style->SineAmplitudeSpin()->value() == qRound(before.curveParam.second)
-                                              ? before.curveParam.second
-                                              : style->SineAmplitudeSpin()->value();
+                const int cyclesBefore = before.curveParams.value(ItemProperty::SINE_CYCLES).toInt();
+                const qreal amplitudeBefore = before.curveParams.value(ItemProperty::SINE_AMPLITUDE).toDouble();
+                after.curveParams.insert(ItemProperty::SINE_CYCLES, style->SineCyclesSpin()->value() == cyclesBefore
+                                                                        ? cyclesBefore
+                                                                        : style->SineCyclesSpin()->value());
+                after.curveParams.insert(ItemProperty::SINE_AMPLITUDE,
+                                         style->SineAmplitudeSpin()->value() == qRound(amplitudeBefore)
+                                             ? amplitudeBefore
+                                             : style->SineAmplitudeSpin()->value());
             }
         }
     }

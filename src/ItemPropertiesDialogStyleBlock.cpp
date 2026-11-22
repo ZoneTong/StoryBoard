@@ -314,17 +314,22 @@ void ItemPropertiesDialogStyleBlock::SetItem(CanvasItem* item)
             qMax(0, m_startArrowCombo->findData(static_cast<int>(stroke->StartArrow()))));
         m_endArrowCombo->setCurrentIndex(qMax(0, m_endArrowCombo->findData(static_cast<int>(stroke->EndArrow()))));
 
-        const LineAbstractItem::ParamState param = stroke->paramState();
-        m_initialArcStartAngle = param.first;
-        m_initialArcSweepAngle = param.second;
-        m_arcStartAngleSpin->setValue(qRound(param.first));
-        m_arcSweepAngleSpin->setValue(qRound(param.second));
-        m_initialSineCycles = qBound(1, qRound(param.first), 12);
-        m_initialSineAmplitude = qBound(1, qRound(param.second), 200);
+        // 弧线角度 / 正弦周期振幅不再是基类能力位，按属性表回答“这一行该不该开”。
+        const ItemPropertySet strokeProperties = stroke->Properties();
+        const qreal arcStartAngle = stroke->PropertyValue(ItemProperty::START_ANGLE).toDouble();
+        const qreal arcSweepAngle = stroke->PropertyValue(ItemProperty::SWEEP_ANGLE).toDouble();
+        m_initialArcStartAngle = arcStartAngle;
+        m_initialArcSweepAngle = arcSweepAngle;
+        m_arcStartAngleSpin->setValue(qRound(arcStartAngle));
+        m_arcSweepAngleSpin->setValue(qRound(arcSweepAngle));
+        m_initialSineCycles = qBound(1, qRound(stroke->PropertyValue(ItemProperty::SINE_CYCLES).toDouble()), 12);
+        m_initialSineAmplitude = qBound(1, qRound(stroke->PropertyValue(ItemProperty::SINE_AMPLITUDE).toDouble()), 200);
         m_sineCyclesSpin->setValue(m_initialSineCycles);
         m_sineAmplitudeSpin->setValue(m_initialSineAmplitude);
-        showArcAngles = stroke->SupportsArcAngles();
-        showSine = !showArcAngles && stroke->SupportsSineWave();
+        showArcAngles = strokeProperties.Contains(ItemProperty::START_ANGLE) &&
+                        strokeProperties.Contains(ItemProperty::SWEEP_ANGLE);
+        showSine = !showArcAngles && strokeProperties.Contains(ItemProperty::SINE_CYCLES) &&
+                   strokeProperties.Contains(ItemProperty::SINE_AMPLITUDE);
     }
 
     if (item) {

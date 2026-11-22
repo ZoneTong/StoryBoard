@@ -105,16 +105,6 @@ QSizeF ArcItem::EllipseSize() const
                   qMax<qreal>(0.0, m_refFrame.height() * box.height()));
 }
 
-ArcItem::ParamState ArcItem::paramState() const
-{
-    return ParamState{StartAngle(), SweepAngle(), true};
-}
-
-void ArcItem::ApplyParamState(const ParamState& state)
-{
-    SetAngles(state.first, state.second);
-}
-
 void ArcItem::SetAngles(qreal startDeg, qreal sweepDeg)
 {
     ArcAngleAttributes::SetArcAngles(startDeg, EllipseShape::ClampedSweep(sweepDeg));

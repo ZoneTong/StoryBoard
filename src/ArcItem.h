@@ -29,9 +29,6 @@ class ArcItem : public LineAbstractItem, public ArcAngleAttributes, public Ellip
     void SetArcGeometry(const QPointF& topLeftScene, const QSizeF& size, qreal startDeg, qreal sweepDeg,
                         const QColor& color, qreal width);
 
-    bool SupportsArcAngles() const override { return true; }
-    ParamState paramState() const override;
-    void ApplyParamState(const ParamState& state) override;
     ItemPropertySet Properties() const override;
     QVariant PropertyValue(ItemProperty property) const override;
     void SetPropertyValue(ItemProperty property, const QVariant& value) override;

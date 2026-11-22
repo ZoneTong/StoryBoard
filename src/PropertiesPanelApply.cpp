@@ -3,7 +3,6 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
-#include "CurveParamCommand.h"
 #include "FillAttributes.h"
 #include "ImagePickerDialog.h"
 #include "LineAbstractItem.h"
@@ -100,9 +99,23 @@ void PropertiesPanel::ApplyPropertyValues(const QMap<ItemProperty, QVariant>& va
         if (afterValues.isEmpty()) {
             continue;
         }
+        const QPointF posBefore = item->pos();
+        const QSizeF sizeBefore = item->ContentSize();
         // 先写值，命令随后 push 时的 redo 幂等执行；撤销 / 重做都按快照回放。
         for (auto it = afterValues.constBegin(); it != afterValues.constEnd(); ++it) {
             item->SetPropertyValue(it.key(), it.value());
+        }
+        // 参数 / 描线宽度这类写入会重建几何并挪动位置或内容框：把真实变化一并入快照，
+        // 否则撤销只回滚属性、几何留在改动后的位置。位置与尺寸排在属性之后回放。
+        const QPointF posAfter = item->pos();
+        const QSizeF sizeAfter = item->ContentSize();
+        if (posAfter != posBefore) {
+            beforeValues.insert(ItemProperty::POSITION, posBefore);
+            afterValues.insert(ItemProperty::POSITION, posAfter);
+        }
+        if (sizeAfter != sizeBefore) {
+            beforeValues.insert(ItemProperty::SIZE, sizeBefore);
+            afterValues.insert(ItemProperty::SIZE, sizeAfter);
         }
         applyItems.append(item);
         before.append(beforeValues);
@@ -337,75 +350,6 @@ void PropertiesPanel::ApplyTextColor(const QColor& color)
     ChangeSelectedTexts(tr("Change text color"), [&color](TextItemState& state) { state.color = color; });
 }
 
-void PropertiesPanel::ChangeSelectedArcs(const QString& text, const std::function<void(LineAbstractItem*)>& mutate)
-{
-    QList<LineAbstractItem*> arcs;
-    for (LineAbstractItem* stroke : SelectedStrokes()) {
-        if (stroke->SupportsArcAngles()) {
-            arcs.append(stroke);
-        }
-    }
-    if (arcs.isEmpty() || !m_scene || !m_scene->UndoStack()) {
-        return;
-    }
-
-    QList<CurveParamState> paramsBefore;
-    QList<LineAbstractItem::GeometryState> geometryBefore;
-    QList<CurveParamState> paramsAfter;
-    QList<LineAbstractItem::GeometryState> geometryAfter;
-    QList<LineAbstractItem*> targets;
-    for (LineAbstractItem* arc : arcs) {
-        targets.append(arc);
-        paramsBefore.append(curveParamState(arc));
-        geometryBefore.append(arc->geometryState());
-    }
-    m_refreshing = true;
-    for (LineAbstractItem* arc : arcs) {
-        mutate(arc);
-        paramsAfter.append(curveParamState(arc));
-        geometryAfter.append(arc->geometryState());
-    }
-    m_refreshing = false;
-
-    m_scene->UndoStack()->push(
-        new CurveParamCommand(m_scene, targets, paramsBefore, geometryBefore, paramsAfter, geometryAfter, text));
-    Refresh();
-}
-
-void PropertiesPanel::ChangeSelectedSines(const QString& text, const std::function<void(LineAbstractItem*)>& mutate)
-{
-    QList<LineAbstractItem*> sines;
-    for (LineAbstractItem* stroke : SelectedStrokes()) {
-        if (stroke->SupportsSineWave()) {
-            sines.append(stroke);
-        }
-    }
-    if (sines.isEmpty() || !m_scene || !m_scene->UndoStack()) {
-        return;
-    }
-
-    QList<CurveParamState> paramsBefore;
-    QList<LineAbstractItem::GeometryState> geometryBefore;
-    QList<CurveParamState> paramsAfter;
-    QList<LineAbstractItem::GeometryState> geometryAfter;
-    QList<LineAbstractItem*> targets;
-    for (LineAbstractItem* sine : sines) {
-        targets.append(sine);
-        paramsBefore.append(curveParamState(sine));
-        geometryBefore.append(sine->geometryState());
-    }
-    m_refreshing = true;
-    for (LineAbstractItem* sine : sines) {
-        mutate(sine);
-        paramsAfter.append(curveParamState(sine));
-        geometryAfter.append(sine->geometryState());
-    }
-    m_refreshing = false;
-
-    m_scene->UndoStack()->push(
-        new CurveParamCommand(m_scene, targets, paramsBefore, geometryBefore, paramsAfter, geometryAfter, text));
-    Refresh();
-}
 
 void PropertiesPanel::ChooseFillImage()
 {
@@ -462,11 +406,14 @@ void PropertiesPanel::ApplyStartAngle(int angle)
     ChangeSelectedShapes(tr("Change start angle"), [angle](ShapeAbstractItem* shape) {
         shape->SetPropertyValue(ItemProperty::START_ANGLE, angle);
     });
-    ChangeSelectedArcs(tr("Change start angle"), [angle](LineAbstractItem* arc) {
-        LineAbstractItem::ParamState params = arc->paramState();
-        params.first = angle;
-        arc->ApplyParamState(params);
-    });
+    const QList<LineAbstractItem*> strokes = SelectedStrokes();
+    QList<CanvasItem*> targets;
+    targets.reserve(strokes.size());
+    for (LineAbstractItem* stroke : strokes) {
+        targets.append(stroke);
+    }
+    ApplyPropertyValues(QMap<ItemProperty, QVariant>{{ItemProperty::START_ANGLE, angle}}, tr("Change start angle"),
+                        targets);
 }
 
 void PropertiesPanel::ApplySweepAngle(int angle)
@@ -474,31 +421,40 @@ void PropertiesPanel::ApplySweepAngle(int angle)
     ChangeSelectedShapes(tr("Change sector angle"), [angle](ShapeAbstractItem* shape) {
         shape->SetPropertyValue(ItemProperty::SWEEP_ANGLE, angle);
     });
-    ChangeSelectedArcs(tr("Change arc sweep angle"), [angle](LineAbstractItem* arc) {
-        LineAbstractItem::ParamState params = arc->paramState();
-        params.second = angle;
-        arc->ApplyParamState(params);
-    });
+    const QList<LineAbstractItem*> strokes = SelectedStrokes();
+    QList<CanvasItem*> targets;
+    targets.reserve(strokes.size());
+    for (LineAbstractItem* stroke : strokes) {
+        targets.append(stroke);
+    }
+    ApplyPropertyValues(QMap<ItemProperty, QVariant>{{ItemProperty::SWEEP_ANGLE, angle}}, tr("Change arc sweep angle"),
+                        targets);
 }
 
 void PropertiesPanel::ApplySineCycles(int cycles)
 {
     const int bounded = qBound(1, cycles, 12);
-    ChangeSelectedSines(tr("Change sine cycles"), [bounded](LineAbstractItem* sine) {
-        LineAbstractItem::ParamState params = sine->paramState();
-        params.first = bounded;
-        sine->ApplyParamState(params);
-    });
+    const QList<LineAbstractItem*> strokes = SelectedStrokes();
+    QList<CanvasItem*> targets;
+    targets.reserve(strokes.size());
+    for (LineAbstractItem* stroke : strokes) {
+        targets.append(stroke);
+    }
+    ApplyPropertyValues(QMap<ItemProperty, QVariant>{{ItemProperty::SINE_CYCLES, bounded}}, tr("Change sine cycles"),
+                        targets);
 }
 
 void PropertiesPanel::ApplySineAmplitude(int pixels)
 {
     const qreal amplitude = qBound<qreal>(1.0, pixels, 200.0);
-    ChangeSelectedSines(tr("Change sine amplitude"), [amplitude](LineAbstractItem* sine) {
-        LineAbstractItem::ParamState params = sine->paramState();
-        params.second = amplitude;
-        sine->ApplyParamState(params);
-    });
+    const QList<LineAbstractItem*> strokes = SelectedStrokes();
+    QList<CanvasItem*> targets;
+    targets.reserve(strokes.size());
+    for (LineAbstractItem* stroke : strokes) {
+        targets.append(stroke);
+    }
+    ApplyPropertyValues(QMap<ItemProperty, QVariant>{{ItemProperty::SINE_AMPLITUDE, amplitude}},
+                        tr("Change sine amplitude"), targets);
 }
 
 void PropertiesPanel::ApplyTriangleAngle1(int degrees)

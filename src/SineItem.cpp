@@ -103,19 +103,6 @@ QRectF SineItem::FrameRect() const
     return PaddedToMinimum(CanvasItem::FrameRect());
 }
 
-SineItem::ParamState SineItem::paramState() const
-{
-    return ParamState{qreal(m_params.cycles), m_params.amplitude, true};
-}
-
-void SineItem::ApplyParamState(const ParamState& state)
-{
-    Params params = m_params;
-    params.cycles = qBound(1, qRound(state.first), 12);
-    params.amplitude = qBound<qreal>(1.0, state.second, 200.0);
-    SetParams(params);
-}
-
 void SineItem::SetParams(const Params& params)
 {
     const int cycles = qBound(1, params.cycles, 12);

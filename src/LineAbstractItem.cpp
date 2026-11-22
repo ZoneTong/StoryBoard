@@ -217,12 +217,6 @@ void LineAbstractItem::RebuildPath()
     m_path = CurveGeometry::BuildPath(m_segments);
 }
 
-bool LineAbstractItem::SimplifyCurve(qreal tolerance)
-{
-    Q_UNUSED(tolerance)
-    return false;
-}
-
 void LineAbstractItem::PaintContent(QPainter* painter)
 {
     StrokeGeometry::Render(painter, m_path, m_baseSize, ContentSize(), m_strokeColor, m_strokeWidth, m_strokeStyle);

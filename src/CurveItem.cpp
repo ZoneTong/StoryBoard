@@ -1,5 +1,6 @@
 #include "CurveItem.h"
 
+#include "CanvasItemVisitor.h"
 #include "CurveGeometry.h"
 #include "StrokePath.h"
 #include "StrokeSmoothing.h"
@@ -128,9 +129,21 @@ bool CurveItem::IsEmpty() const
     return !m_hasDot && m_segments.isEmpty() && m_rawPoints.isEmpty();
 }
 
+void CurveItem::Accept(CanvasItemVisitor& visitor)
+{
+    // 曲线是描线族的叶子：只上报曲线分支，宿主不必再按类强转判断“能不能简化”。
+    visitor.VisitCurve(*this);
+}
+
 bool CurveItem::IsSinglePointGeometry() const
 {
     return m_hasDot || (m_drawing && m_rawPoints.size() == 1);
+}
+
+bool CurveItem::CanSimplify() const
+{
+    // 单点笔迹没有可简化内容；不足三个节点也拍不出新形状。
+    return !m_hasDot && !m_drawing && StrokePoints().size() >= 3;
 }
 
 bool CurveItem::SimplifyCurve(qreal tolerance)

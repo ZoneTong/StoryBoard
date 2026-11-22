@@ -36,8 +36,11 @@ class CurveItem : public LineAbstractItem {
     GeometryState geometryState() const override;
     void ApplyGeometryState(const GeometryState& state) override;
     // 简化曲线：把当前路径拍平后按容差抽点并重新拟合；返回是否改变了几何。
-    bool SimplifyCurve(qreal tolerance) override;
-    bool SupportsSimplify() const override { return true; }
+    // 这是曲线独有的操作，不放在描线基类上，场景通过 Visitor 调用。
+    bool SimplifyCurve(qreal tolerance);
+    // 是否值得简化：单点笔迹与不足三个节点的几何直接跳过。
+    bool CanSimplify() const;
+    void Accept(CanvasItemVisitor& visitor) override;
 
     QJsonObject ToJson() const override;
     ItemPropertySet Properties() const override;

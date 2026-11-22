@@ -472,12 +472,7 @@ bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
                            curveEndArrow != other.curveEndArrow)) {
         return false;
     }
-    if (hasCurveParam != other.hasCurveParam || hasArcAxes != other.hasArcAxes) {
-        return false;
-    }
-    if (hasCurveParam &&
-        (!qFuzzyCompare(curveParam.first, other.curveParam.first) ||
-         !qFuzzyCompare(curveParam.second, other.curveParam.second) || curveParam.valid != other.curveParam.valid)) {
+    if (hasArcAxes != other.hasArcAxes || curveParams != other.curveParams) {
         return false;
     }
     if (hasArcAxes && (!qFuzzyCompare(arcMajor, other.arcMajor) || !qFuzzyCompare(arcMinor, other.arcMinor))) {
@@ -533,9 +528,9 @@ void ItemPropertiesCommand::Apply(const ItemPropertiesState& state)
             stroke->SetStrokePattern(state.strokeStyle);
             // 需求 27：曲线两端箭头随同一条撤销记录一起应用。
             stroke->SetArrowStyles(state.curveStartArrow, state.curveEndArrow);
-            // 弧线角度 / 正弦周期振幅：形状参数与描线同一份快照。
-            if (state.hasCurveParam) {
-                stroke->ApplyParamState(state.curveParam);
+            // 弧线角度 / 正弦周期振幅：按属性键回放，与面板 / 拖拽共用同一套属性写入。
+            for (auto it = state.curveParams.constBegin(); it != state.curveParams.constEnd(); ++it) {
+                m_item->SetPropertyValue(it.key(), it.value());
             }
             // 弧线长短半轴：走通用属性写入，保持椭圆中心重采样。
             if (state.hasArcAxes) {

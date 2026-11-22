@@ -227,9 +227,8 @@ struct ItemPropertiesState {
     // 需求 27：曲线两端箭头与直线同一套属性窗提交流程（箭头对全部曲线子型开放）。
     ArrowStyle curveStartArrow = ArrowStyle::NONE;
     ArrowStyle curveEndArrow = ArrowStyle::NONE;
-    // 弧线角度 / 正弦周期与振幅：走 LineAbstractItem::ParamState 的形状参数。
-    bool hasCurveParam = false;
-    LineAbstractItem::ParamState curveParam;
+    // 弧线角度 / 正弦周期与振幅：走属性协议，按 ItemProperty 键提交，不再有叶子类型快照。
+    QMap<ItemProperty, QVariant> curveParams;
     // 弧线长短半轴：写入按真实椭圆外接框换算，未改动时与 before 相等即跳过。
     bool hasArcAxes = false;
     qreal arcMajor = 0.0;

@@ -17,13 +17,6 @@
 // 类型标识由各自的 Kind() 给出，本类不覆写 Kind()。
 class LineAbstractItem : public CanvasItem, public StrokeAttributes {
   public:
-    // 参数快照：弧线是起止角，正弦是周期数与振幅；其余形态 valid 为 false。
-    struct ParamState {
-        qreal first = 0.0;
-        qreal second = 0.0;
-        bool valid = false;
-    };
-
     // 一次几何变化（拟合 / 简化 / 参数重建）的完整快照，撤销与重做都靠它。
     struct GeometryState {
         QVector<CurveSegment> segments;
@@ -72,17 +65,6 @@ class LineAbstractItem : public CanvasItem, public StrokeAttributes {
 
     virtual GeometryState geometryState() const;
     virtual void ApplyGeometryState(const GeometryState& state);
-
-    // 简化曲线：能力位。默认 false，只有手绘笔迹 / 图片线稿覆写真实实现。
-    virtual bool SimplifyCurve(qreal tolerance);
-    // 是否具备简化能力（命令入口据此决定可用性，不按叶子类强转）。
-    virtual bool SupportsSimplify() const { return false; }
-    // 参数化线条的能力查询：弧线可改起止角，正弦可改周期与振幅。
-    virtual bool SupportsArcAngles() const { return false; }
-    virtual bool SupportsSineWave() const { return false; }
-
-    virtual ParamState paramState() const { return ParamState(); }
-    virtual void ApplyParamState(const ParamState& state) { Q_UNUSED(state) }
 
   public:
     // 箭头行是否可用（单点几何没有首尾切线）。

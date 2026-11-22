@@ -2,6 +2,7 @@
 #include "ArcItem.h"
 #include "ArrowStyle.h"
 #include "BoolOps.h"
+#include "BraceItem.h"
 #include "CanvasItemInteraction.h"
 #include "CanvasScene.h"
 #include "CanvasTypes.h"
@@ -570,6 +571,42 @@ void selftest::RunShapeItemTests(Context& ctx)
                       .arg(ellipseAfter.width())
                       .arg(ellipseAfter.height()));
         arcDrag.FinishInteraction();
+    }
+    {
+        // P3：弧角 / 正弦参数只按属性表暴露，普通描线不再带任何参数能力位。
+        ArcItem arc;
+        SineItem sine;
+        StraightLineItem line;
+        BraceItem brace;
+        const bool arcOk = arc.Properties().Contains(ItemProperty::START_ANGLE) &&
+                           arc.Properties().Contains(ItemProperty::SWEEP_ANGLE) &&
+                           !arc.Properties().Contains(ItemProperty::SINE_CYCLES);
+        const bool sineOk = sine.Properties().Contains(ItemProperty::SINE_CYCLES) &&
+                            sine.Properties().Contains(ItemProperty::SINE_AMPLITUDE) &&
+                            !sine.Properties().Contains(ItemProperty::START_ANGLE);
+        const bool plainOk = !line.Properties().Contains(ItemProperty::START_ANGLE) &&
+                             !line.Properties().Contains(ItemProperty::SWEEP_ANGLE) &&
+                             !line.Properties().Contains(ItemProperty::SINE_CYCLES) &&
+                             !brace.Properties().Contains(ItemProperty::SINE_AMPLITUDE);
+        ctx.Check(arcOk && sineOk && plainOk, QStringLiteral("弧角与正弦参数走属性表、普通描线不带参数属性"),
+                  QStringLiteral("arc=%1 sine=%2 plain=%3").arg(arcOk).arg(sineOk).arg(plainOk));
+
+        // 曲线简化只属于手绘曲线：直线即便有多个节点也不进入简化流程。
+        CanvasScene smoothScene;
+        smoothScene.SetMode(ToolMode::EDIT);
+        QUndoStack smoothUndo;
+        smoothScene.SetUndoStack(&smoothUndo);
+        auto* straight = new StraightLineItem;
+        straight->SetEndpoints(QPointF(10.0, 10.0), QPointF(90.0, 60.0), QColor(Qt::black), 3.0);
+        smoothScene.AttachItem(straight);
+        straight->setSelected(true);
+        ctx.Check(!smoothScene.CanSmoothSelectedStrokes() && smoothScene.SmoothSelectedStrokes(4.0) == 0 &&
+                      smoothUndo.count() == 0,
+                  QStringLiteral("直线不参与曲线简化，简化入口只认可简化曲线"),
+                  QStringLiteral("can=%1 changed=%2 undo=%3")
+                      .arg(smoothScene.CanSmoothSelectedStrokes())
+                      .arg(smoothScene.SmoothSelectedStrokes(4.0))
+                      .arg(smoothUndo.count()));
     }
     {
         // §3.1 三角形自由缩放：尺寸按输入直接生效，A 不变，B 按新框宽高反算。

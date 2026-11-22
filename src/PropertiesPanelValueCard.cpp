@@ -294,13 +294,18 @@ void PropertiesPanelValueCard::Refresh(const QList<ShapeAbstractItem*>& shapes, 
         m_cornerSpin->setValue(qBound(0, qRound(radius), limit));
     }
     // 弧线角度：扇形等形状与曲线族里的弧线共用这两行，优先回显当前选中的弧线曲线。
+    // “谁能提供这两行”由属性表回答，不再查基类能力位。
     LineAbstractItem* arcCurve = nullptr;
     ShapeAbstractItem* arcShape = nullptr;
     LineAbstractItem* sineCurve = nullptr;
     for (LineAbstractItem* stroke : strokes) {
-        if (stroke->SupportsArcAngles() && !arcCurve) {
+        const ItemPropertySet properties = stroke->Properties();
+        const bool hasArcAngles =
+            properties.Contains(ItemProperty::START_ANGLE) && properties.Contains(ItemProperty::SWEEP_ANGLE);
+        if (hasArcAngles && !arcCurve) {
             arcCurve = stroke;
-        } else if (stroke->SupportsSineWave() && !sineCurve) {
+        } else if (!hasArcAngles && properties.Contains(ItemProperty::SINE_CYCLES) &&
+                   properties.Contains(ItemProperty::SINE_AMPLITUDE) && !sineCurve) {
             sineCurve = stroke;
         }
     }
@@ -314,7 +319,7 @@ void PropertiesPanelValueCard::Refresh(const QList<ShapeAbstractItem*>& shapes, 
         const bool on = arcCurve || arcShape;
         m_startAngleSpin->setEnabled(on);
         const qreal start = arcCurve
-                                ? arcCurve->paramState().first
+                                ? arcCurve->PropertyValue(ItemProperty::START_ANGLE).toDouble()
                                 : (arcShape ? arcShape->PropertyValue(ItemProperty::START_ANGLE).toDouble() : 30.0);
         m_startAngleSpin->setValue(qRound(start));
     }
@@ -322,7 +327,7 @@ void PropertiesPanelValueCard::Refresh(const QList<ShapeAbstractItem*>& shapes, 
         const bool on = arcCurve || arcShape;
         m_angleSpin->setEnabled(on);
         const qreal sweep = arcCurve
-                                ? arcCurve->paramState().second
+                                ? arcCurve->PropertyValue(ItemProperty::SWEEP_ANGLE).toDouble()
                                 : (arcShape ? arcShape->PropertyValue(ItemProperty::SWEEP_ANGLE).toDouble() : 120.0);
         m_angleSpin->setValue(qMax(1, qRound(sweep)));
     }
@@ -330,9 +335,10 @@ void PropertiesPanelValueCard::Refresh(const QList<ShapeAbstractItem*>& shapes, 
         const bool on = sineCurve != nullptr;
         m_sineCyclesSpin->setEnabled(on);
         m_sineAmplitudeSpin->setEnabled(on);
-        const LineAbstractItem::ParamState params = on ? sineCurve->paramState() : LineAbstractItem::ParamState{};
-        m_sineCyclesSpin->setValue(qBound(1, qRound(params.first), 12));
-        m_sineAmplitudeSpin->setValue(qBound(1, qRound(params.second), 200));
+        const int cycles = on ? sineCurve->PropertyValue(ItemProperty::SINE_CYCLES).toInt() : 1;
+        const qreal amplitude = on ? sineCurve->PropertyValue(ItemProperty::SINE_AMPLITUDE).toDouble() : 20.0;
+        m_sineCyclesSpin->setValue(qBound(1, cycles, 12));
+        m_sineAmplitudeSpin->setValue(qBound(1, qRound(amplitude), 200));
     }
 
     ShapeAbstractItem* triangle = nullptr;

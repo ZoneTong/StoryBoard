@@ -1,6 +1,8 @@
 #include "CanvasItem.h"
+#include "CanvasItemVisitor.h"
 #include "CanvasScene.h"
 #include "Commands.h"
+#include "CurveItem.h"
 #include "LineAbstractItem.h"
 #include "scene/SceneConstants.h"
 
@@ -9,6 +11,44 @@
 #include <utility>
 
 namespace {
+
+// 曲线简化只属于手绘曲线（含图片线稿）：用 Visitor 定点访问，描线基类不再带能力位。
+// apply=false 时只探测“有没有可简化的曲线”，不改几何（用于菜单可用性）。
+class CurveSimplifyVisitor : public CanvasItemVisitor {
+  public:
+    CurveSimplifyVisitor(qreal tolerance, bool apply) : m_tolerance(tolerance), m_apply(apply) {}
+
+    void VisitCurve(CurveItem& curve) override
+    {
+        if (!curve.CanSimplify()) {
+            return;
+        }
+        m_canSimplify = true;
+        if (!m_apply) {
+            return;
+        }
+        const LineAbstractItem::GeometryState before = curve.geometryState();
+        if (!curve.SimplifyCurve(m_tolerance)) {
+            return;
+        }
+        m_curves.append(&curve);
+        m_before.append(before);
+        m_after.append(curve.geometryState());
+    }
+
+    bool CanSimplify() const { return m_canSimplify; }
+    const QList<CurveItem*>& Curves() const { return m_curves; }
+    const QList<LineAbstractItem::GeometryState>& BeforeStates() const { return m_before; }
+    const QList<LineAbstractItem::GeometryState>& AfterStates() const { return m_after; }
+
+  private:
+    qreal m_tolerance = 2.0;
+    bool m_apply = false;
+    bool m_canSimplify = false;
+    QList<CurveItem*> m_curves;
+    QList<LineAbstractItem::GeometryState> m_before;
+    QList<LineAbstractItem::GeometryState> m_after;
+};
 
 bool NearlyEqual(qreal a, qreal b)
 {
@@ -68,15 +108,11 @@ bool CanvasScene::CanSmoothSelectedStrokes() const
     if (m_mode != ToolMode::EDIT) {
         return false;
     }
+    CurveSimplifyVisitor probe(2.0, false);
     for (CanvasItem* item : SelectedCanvasItems()) {
-        if (!IsItemEditable(item)) {
-            continue;
-        }
-        if (auto* line = dynamic_cast<LineAbstractItem*>(item)) {
-            // 只有具备简化能力的手绘笔迹（含图片线稿提取）可简化；
-            // 直线 / 弧线 / 正弦 / 花括号是程序化几何，能力位为 false。
-            const LineAbstractItem::GeometryState state = line->geometryState();
-            if (line->SupportsSimplify() && !state.hasDot && line->StrokePoints().size() >= 3) {
+        if (item && IsItemEditable(item)) {
+            item->Accept(probe);
+            if (probe.CanSimplify()) {
                 return true;
             }
         }
@@ -92,43 +128,34 @@ int CanvasScene::SmoothSelectedStrokes(qreal tolerance)
 
     // 参数 0 只关闭“收尾自动平滑”；手动按钮即使在该设置下也执行一次轻量平滑。
     const qreal effectiveTolerance = qMax<qreal>(2.0, tolerance);
-    QList<LineAbstractItem*> items;
-    QList<LineAbstractItem::GeometryState> before;
-    QList<LineAbstractItem::GeometryState> after;
+    CurveSimplifyVisitor visitor(effectiveTolerance, true);
     for (CanvasItem* item : SelectedCanvasItems()) {
-        if (!IsItemEditable(item)) {
-            continue;
+        if (item && IsItemEditable(item)) {
+            item->Accept(visitor);
         }
-        auto* line = dynamic_cast<LineAbstractItem*>(item);
-        if (!line || !line->SupportsSimplify()) {
-            continue;
-        }
-        const LineAbstractItem::GeometryState beforeState = line->geometryState();
-        if (beforeState.hasDot || line->StrokePoints().size() < 3) {
-            continue;
-        }
-        if (!line->SimplifyCurve(effectiveTolerance)) {
-            continue;
-        }
-        items.append(line);
-        before.append(beforeState);
-        after.append(line->geometryState());
     }
-    if (items.isEmpty()) {
+    if (visitor.Curves().isEmpty()) {
         return 0;
     }
 
+    const QList<CurveItem*> curves = visitor.Curves();
+    QList<LineAbstractItem*> lines;
+    lines.reserve(curves.size());
+    for (CurveItem* curve : curves) {
+        lines.append(curve);
+    }
     if (m_undoStack) {
-        m_undoStack->push(new StrokeSmoothCommand(this, items, before, after, tr("Smooth selected strokes")));
+        m_undoStack->push(new StrokeSmoothCommand(this, lines, visitor.BeforeStates(), visitor.AfterStates(),
+                                                  tr("Smooth selected strokes")));
     } else {
-        for (int i = 0; i < items.size(); ++i) {
-            items.at(i)->ApplyGeometryState(after.at(i));
+        for (int i = 0; i < lines.size(); ++i) {
+            lines.at(i)->ApplyGeometryState(visitor.AfterStates().at(i));
         }
         UpdateSceneExtent();
         update();
         emit contentChanged();
     }
-    return items.size();
+    return lines.size();
 }
 
 QString CanvasScene::UniqueItemName(const QString& base, const CanvasItem* except) const

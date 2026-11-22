@@ -30,9 +30,6 @@ class SineItem : public LineAbstractItem {
     // 插入入口：在场景矩形内按当前参数生成波形。
     void SetWaveGeometry(const QPointF& topLeftScene, const QSizeF& size, const QColor& color, qreal width);
 
-    bool SupportsSineWave() const override { return true; }
-    ParamState paramState() const override;
-    void ApplyParamState(const ParamState& state) override;
     ItemPropertySet Properties() const override;
     QVariant PropertyValue(ItemProperty property) const override;
     void SetPropertyValue(ItemProperty property, const QVariant& value) override;

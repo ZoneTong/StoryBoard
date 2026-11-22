@@ -5,7 +5,6 @@
 #include "CanvasItem.h"
 #include "CanvasScene.h"
 #include "Commands.h"
-#include "CurveParamCommand.h"
 #include "ImagePickerDialog.h"
 #include "LineAbstractItem.h"
 #include "PolygonItem.h"

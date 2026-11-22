@@ -73,9 +73,6 @@ class PropertiesPanel : public QWidget {
     QList<CanvasItem*> SelectedTexts() const;
 
     void ChangeSelectedShapes(const QString& text, const std::function<void(ShapeAbstractItem*)>& mutate);
-    // 弧线角度与正弦参数：几何由参数派生，改动按参数快照入撤销栈。
-    void ChangeSelectedArcs(const QString& text, const std::function<void(LineAbstractItem*)>& mutate);
-    void ChangeSelectedSines(const QString& text, const std::function<void(LineAbstractItem*)>& mutate);
     void ChangeSelectedTexts(const QString& text, const std::function<void(TextItemState&)>& mutate);
     void ApplyTextContent(const QString& text);
     void ApplyTextFont(const QFont& font);
