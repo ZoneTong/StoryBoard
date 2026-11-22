@@ -1,183 +1,67 @@
 #include "items/geometry/ShapeMeta.h"
 
+#include "items/shapes/ShapeRegistry.h"
+
+#include <algorithm>
+
+namespace {
+
+// 描述器里的兼容字符串以空格分隔，逐词与规范化后的输入比对。
+bool MatchesAliases(const char* aliases, const QString& normalized)
+{
+    if (!aliases) {
+        return false;
+    }
+    const QStringList tokens = QString::fromLatin1(aliases).split(QLatin1Char(' '), Qt::SkipEmptyParts);
+    return tokens.contains(normalized);
+}
+
+} // namespace
+
 QList<ShapeType> ShapeMeta::AllTypes()
 {
-    // 需求 7：菜单与工具栏「常见图形」共用这一份常用顺序表（唯一顺序源）。
-    // 需求 9：菱形紧跟平行四边形，方便和立方体三个面归在一处认图。
-    return {ShapeType::RECTANGLE, ShapeType::ELLIPSE, ShapeType::ARROW,         ShapeType::DOUBLE_ARROW,
-            ShapeType::TRIANGLE,  ShapeType::CALLOUT, ShapeType::PARALLELOGRAM, ShapeType::DIAMOND,
-            ShapeType::HEXAGON,   ShapeType::SECTOR,  ShapeType::CUBE,          ShapeType::CYLINDER,
-            ShapeType::STAR4,     ShapeType::STAR,    ShapeType::HEXAGRAM,      ShapeType::HEART,
-            ShapeType::FLAG_WAVE, ShapeType::SCROLL};
+    // 需求 7：菜单与工具栏「常见图形」的顺位来自描述器 menuOrder（唯一顺序源）。
+    QList<ShapeType> types;
+    for (const ShapeRegistry::Entry& entry : ShapeRegistry::Entries()) {
+        if (entry.descriptor.menuOrder >= 0) {
+            types.append(entry.descriptor.type);
+        }
+    }
+    std::sort(types.begin(), types.end(), [](ShapeType a, ShapeType b) {
+        return ShapeRegistry::Find(a)->menuOrder < ShapeRegistry::Find(b)->menuOrder;
+    });
+    return types;
 }
 
 QString ShapeMeta::TypeToString(ShapeType type)
 {
-    switch (type) {
-    case ShapeType::RECTANGLE:
-        return QStringLiteral("rectangle");
-    case ShapeType::ELLIPSE:
-        return QStringLiteral("ellipse");
-    case ShapeType::TRIANGLE:
-        return QStringLiteral("triangle");
-    case ShapeType::HEXAGON:
-        return QStringLiteral("hexagon");
-    case ShapeType::STAR:
-        return QStringLiteral("star");
-    case ShapeType::ARROW:
-        return QStringLiteral("arrow");
-    case ShapeType::DOUBLE_ARROW:
-        return QStringLiteral("double_arrow");
-
-    case ShapeType::CALLOUT:
-        return QStringLiteral("callout");
-    case ShapeType::SECTOR:
-        return QStringLiteral("sector");
-
-    case ShapeType::STAR4:
-        return QStringLiteral("star4");
-    case ShapeType::HEXAGRAM:
-        return QStringLiteral("hexagram");
-    case ShapeType::HEART:
-        return QStringLiteral("heart");
-
-    case ShapeType::FLAG_WAVE:
-        return QStringLiteral("flag_wave");
-    case ShapeType::SCROLL:
-        // 需求 3：卷形旗帜替换为卷轴；旧文件的 flag_curl / banner 兼容读入。
-        return QStringLiteral("scroll");
-    case ShapeType::CUBE:
-        return QStringLiteral("cube");
-    case ShapeType::CYLINDER:
-        return QStringLiteral("cylinder");
-    case ShapeType::PARALLELOGRAM:
-        return QStringLiteral("parallelogram");
-    case ShapeType::DIAMOND:
-        return QStringLiteral("diamond");
-    }
-    return QStringLiteral("rectangle");
+    const ShapeRegistry::Descriptor* descriptor = ShapeRegistry::Find(type);
+    return descriptor ? QString::fromLatin1(descriptor->json) : QStringLiteral("rectangle");
 }
 
 ShapeType ShapeMeta::TypeFromString(const QString& value)
 {
     const QString normalized = value.trimmed().toLower();
-    if (normalized == QStringLiteral("rounded_rectangle") || normalized == QStringLiteral("roundedrect") ||
-        normalized == QStringLiteral("roundrect")) {
-        // 需求 5：圆角矩形已并入矩形，旧字符串统一读成矩形（由 ShapeAbstractItem 记为自动圆角态）。
-        return ShapeType::RECTANGLE;
-    }
-    if (normalized == QStringLiteral("ellipse") || normalized == QStringLiteral("circle") ||
-        normalized == QStringLiteral("oval")) {
-        return ShapeType::ELLIPSE;
-    }
-    if (normalized == QStringLiteral("triangle")) {
-        return ShapeType::TRIANGLE;
-    }
-    if (normalized == QStringLiteral("hexagon") || normalized == QStringLiteral("regular_hexagon")) {
-        // §3.5：正六边形的 JSON 字符串固定为 hexagon，避免与填充纹理 honeycomb 混淆。
-        return ShapeType::HEXAGON;
-    }
-    if (normalized == QStringLiteral("diamond") || normalized == QStringLiteral("rhombus")) {
-        // 菱形已是独立类型（DiamondItem）；旧文件里写成 parallelogram + 45° 旋转的预置
-        // 仍是平行四边形，按自身字段读回，不受这里影响。
-        return ShapeType::DIAMOND;
-    }
-    if (normalized == QStringLiteral("star")) {
-        return ShapeType::STAR;
-    }
-    if (normalized == QStringLiteral("arrow")) {
-        return ShapeType::ARROW;
-    }
-    if (normalized == QStringLiteral("double_arrow") || normalized == QStringLiteral("doublearrow") ||
-        normalized == QStringLiteral("bidirectional")) {
-        return ShapeType::DOUBLE_ARROW;
-    }
-
-    if (normalized == QStringLiteral("callout") || normalized == QStringLiteral("bubble") ||
-        normalized == QStringLiteral("speech")) {
-        return ShapeType::CALLOUT;
-    }
-    if (normalized == QStringLiteral("sector") || normalized == QStringLiteral("pie")) {
-        return ShapeType::SECTOR;
-    }
-
-    if (normalized == QStringLiteral("star4") || normalized == QStringLiteral("four_point_star") ||
-        normalized == QStringLiteral("fourpointstar")) {
-        return ShapeType::STAR4;
-    }
-    if (normalized == QStringLiteral("hexagram") || normalized == QStringLiteral("david_star") ||
-        normalized == QStringLiteral("six_point_star")) {
-        return ShapeType::HEXAGRAM;
-    }
-    if (normalized == QStringLiteral("heart") || normalized == QStringLiteral("love")) {
-        return ShapeType::HEART;
-    }
-
-    if (normalized == QStringLiteral("flag_wave") || normalized == QStringLiteral("wavy_flag")) {
-        return ShapeType::FLAG_WAVE;
-    }
-    if (normalized == QStringLiteral("scroll") || normalized == QStringLiteral("flag_curl") ||
-        normalized == QStringLiteral("banner")) {
-        return ShapeType::SCROLL;
-    }
-    if (normalized == QStringLiteral("cube")) {
-        return ShapeType::CUBE;
-    }
-    if (normalized == QStringLiteral("cylinder")) {
-        return ShapeType::CYLINDER;
-    }
-    if (normalized == QStringLiteral("parallelogram") || normalized == QStringLiteral("rhomboid")) {
-        return ShapeType::PARALLELOGRAM;
-    }
-    if (normalized == QStringLiteral("rect") || normalized == QStringLiteral("rectangle")) {
-        return ShapeType::RECTANGLE;
+    for (const ShapeRegistry::Entry& entry : ShapeRegistry::Entries()) {
+        const ShapeRegistry::Descriptor& descriptor = entry.descriptor;
+        if (normalized == QString::fromLatin1(descriptor.json) || MatchesAliases(descriptor.aliases, normalized)) {
+            return descriptor.type;
+        }
     }
     return ShapeType::RECTANGLE;
 }
 
 bool ShapeMeta::IsFilled(ShapeType type)
 {
-    switch (type) {
-    case ShapeType::RECTANGLE:
-    case ShapeType::ELLIPSE:
-    case ShapeType::TRIANGLE:
-    case ShapeType::HEXAGON:
-    case ShapeType::STAR:
-    case ShapeType::ARROW:
-    case ShapeType::DOUBLE_ARROW:
-    case ShapeType::CALLOUT:
-    case ShapeType::SECTOR:
-    case ShapeType::STAR4:
-    case ShapeType::HEXAGRAM:
-    case ShapeType::HEART:
-    case ShapeType::FLAG_WAVE:
-    case ShapeType::SCROLL:
-    case ShapeType::CUBE:
-    case ShapeType::CYLINDER:
-    case ShapeType::PARALLELOGRAM:
-    case ShapeType::DIAMOND:
-        return true;
-    }
-    return false;
+    const ShapeRegistry::Descriptor* descriptor = ShapeRegistry::Find(type);
+    return descriptor && descriptor->filled;
 }
 
 bool ShapeMeta::SupportsCenter(ShapeType type)
 {
-    switch (type) {
-    case ShapeType::RECTANGLE:
-    case ShapeType::ELLIPSE:
-    case ShapeType::SECTOR:
-    case ShapeType::PARALLELOGRAM:
-    case ShapeType::DIAMOND:
-    case ShapeType::HEXAGON:
-    case ShapeType::STAR4:
-    case ShapeType::HEXAGRAM:
-    case ShapeType::DOUBLE_ARROW:
-    case ShapeType::SCROLL:
-        return true;
-    default:
-        return false;
-    }
+    // §3.4 中心点：描述器里显式标记的对称图形才上报这一行。
+    const ShapeRegistry::Descriptor* descriptor = ShapeRegistry::Find(type);
+    return descriptor && descriptor->supportsCenter;
 }
 
 QList<FillStyle> ShapeMeta::AllStyles()

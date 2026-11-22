@@ -17,6 +17,7 @@
 #include "items/properties/ArrowStyle.h"
 #include "items/shapes/AllShapes.h"
 #include "items/shapes/ShapeAbstractItem.h"
+#include "items/shapes/ShapeRegistry.h"
 #include "items/text/TextItem.h"
 #include "lineart/LineArtConverter.h"
 #include "lineart/LineArtDialog.h"
@@ -390,6 +391,30 @@ void selftest::RunShapeItemTests(Context& ctx)
               QStringLiteral("图形类型字符串兼容常见别名（圆角矩形读成矩形）"));
     ctx.Check(ShapeTypeFromString(QStringLiteral("does-not-exist")) == ShapeType::RECTANGLE,
               QStringLiteral("未知图形类型回退为矩形"));
+
+    // G4：描述器表是唯一元数据源，落盘字符串、别名、菜单顺序与能力标记都查同一张表。
+    {
+        const QList<ShapeType> order = ShapeMeta::AllTypes();
+        bool ordered = true;
+        for (int i = 1; i < order.size(); ++i) {
+            const ShapeRegistry::Descriptor* previous = ShapeRegistry::Find(order.at(i - 1));
+            const ShapeRegistry::Descriptor* current = ShapeRegistry::Find(order.at(i));
+            ordered = ordered && previous && current && previous->menuOrder < current->menuOrder;
+        }
+        ctx.Check(ordered && order.size() == ShapeRegistry::Entries().size(),
+                  QStringLiteral("常见图形顺序表与描述器一一对应"),
+                  QStringLiteral("types=%1 entries=%2").arg(order.size()).arg(ShapeRegistry::Entries().size()));
+        bool roundTrip = true;
+        for (const ShapeRegistry::Entry& entry : ShapeRegistry::Entries()) {
+            roundTrip =
+                roundTrip && ShapeTypeFromString(ShapeTypeToString(entry.descriptor.type)) == entry.descriptor.type;
+        }
+        ctx.Check(roundTrip, QStringLiteral("每种图形的落盘字符串都能读回原类型"));
+        ctx.Check(!ShapeMeta::SupportsCenter(ShapeType::STAR) && ShapeMeta::SupportsCenter(ShapeType::STAR4),
+                  QStringLiteral("中心点能力沿用描述器标记（五角星不支持）"));
+        ctx.Check(ShapeMeta::IsFilled(ShapeType::DIAMOND) && !ShapeMeta::IsFilled(ShapeType::POLYGON),
+                  QStringLiteral("填充能力沿用描述器标记（POLYGON 占位无面积）"));
+    }
 
     // 需求 5：圆角矩形并入矩形后，旧 rounded_rectangle 文件读成「矩形 + 自动圆角」。
     {
