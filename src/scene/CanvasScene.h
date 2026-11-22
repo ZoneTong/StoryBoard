@@ -96,6 +96,11 @@ class CanvasScene : public QGraphicsScene {
     int ParentGroup(int groupId) const;
     int OutermostGroup(int groupId) const;
     QList<CanvasItem*> ItemsInGroupTree(int groupId) const;
+    // §7.5 / D6：组内成员不允许单独换层。整棵组树的成员都被选中时视为“整组换层”，
+    // 允许放行；同层内的层内高度调整不受此限制。
+    bool CanMoveItemToLayer(const CanvasItem* item, int layerId) const;
+    // 被拒绝的操作统一从这里提示，界面层决定展示时长。
+    void NotifyGroupLayerBlocked();
     // 单击组内任意图元时选中整棵组树；返回 true 表示该图元属于某个组。
     bool SelectGroupOfItem(CanvasItem* item);
     QHash<int, int> GroupParents() const { return m_groupParents; }
@@ -238,6 +243,8 @@ class CanvasScene : public QGraphicsScene {
     void activeLayerChanged(int layerId);
     // 分组动作失败时带出原因，视图层转成状态栏文案；成功不发此信号。
     void groupOperationFailed(GroupFailureReason reason);
+    // 被规则拒绝的编辑操作（目前是组内成员单独换层）的提示文案。
+    void statusMessage(const QString& message);
 
   protected:
     void drawBackground(QPainter* painter, const QRectF& rect) override;

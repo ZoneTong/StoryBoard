@@ -439,8 +439,12 @@ void ItemPropertiesDialog::ApplyChanges()
 
     const int oldLayer = m_item->LayerId();
     const int oldHeight = m_item->ZOrder();
-    const int targetLayer =
-        (identity && identity->LayerCombo()) ? identity->LayerCombo()->currentData().toInt() : oldLayer;
+    int targetLayer = (identity && identity->LayerCombo()) ? identity->LayerCombo()->currentData().toInt() : oldLayer;
+    // D6：组内成员不许单独换层。属性窗把图层夹回原值，并给一次状态栏提示。
+    if (!m_scene->CanMoveItemToLayer(m_item, targetLayer)) {
+        targetLayer = oldLayer;
+        m_scene->NotifyGroupLayerBlocked();
+    }
     const int targetHeight = (identity && identity->HeightSpin()) ? identity->HeightSpin()->value() : oldHeight;
 
     QList<CanvasItem*> swapped;

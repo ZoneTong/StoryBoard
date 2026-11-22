@@ -587,6 +587,12 @@ void PropertiesPanel::ApplyItemStack(int layerId, int height, const QString& tex
     if (item->LayerId() == layerId && item->ZOrder() == height) {
         return;
     }
+    // D6：组内成员不许单独换层，只有整组一起换层才放行。
+    if (!m_scene->CanMoveItemToLayer(item, layerId)) {
+        m_scene->NotifyGroupLayerBlocked();
+        Refresh();
+        return;
+    }
 
     // 与属性窗一致：目标位置已有图元时，两条记录互换，不留同层同高度。
     CanvasItem* colliding = nullptr;

@@ -87,6 +87,8 @@ CanvasView::CanvasView(CanvasScene* scene, QWidget* parent) : QGraphicsView(scen
     // 分组失败原因由场景写出，视图层转成状态栏文案（§7.8）。
     connect(scene, &CanvasScene::groupOperationFailed, this,
             [this](GroupFailureReason reason) { emit statusMessage(GroupFailureReasonText(reason)); });
+    // 场景层的规则拒绝（组内成员单独换层）走同一路状态栏文案，由 MainWindow 统一限时显示。
+    connect(scene, &CanvasScene::statusMessage, this, [this](const QString& message) { emit statusMessage(message); });
 
     UpdateCursor();
 }

@@ -159,6 +159,10 @@
     </message><message>
         <source>Rename group</source>
         <translation>重命名组</translation>
+    </message><message>
+        <location filename="../src/scene/CanvasSceneItemStacking.cpp" line="52"/>
+        <source>Grouped items cannot be moved to another layer on their own; ungroup first</source>
+        <translation>组内图元不能单独换层，请先解除分组</translation>
     </message></context>
 <context>
     <name>CanvasView</name><message>

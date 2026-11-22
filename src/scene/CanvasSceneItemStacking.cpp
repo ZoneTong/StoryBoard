@@ -46,6 +46,30 @@ bool CanvasScene::LayerHeightsUnique(int layerId) const
     return ItemHeightPlanner().HeightsUnique(LayerItems(layerId));
 }
 
+bool CanvasScene::CanMoveItemToLayer(const CanvasItem* item, int layerId) const
+{
+    if (!item || item->LayerId() == layerId) {
+        return true;
+    }
+    const int groupId = item->GroupId();
+    if (groupId <= 0) {
+        return true;
+    }
+    // 整棵组树（含嵌套子组）都选中时是“整组换层”，组内相对布局不变，允许。
+    const QList<CanvasItem*> members = ItemsInGroupTree(OutermostGroup(groupId));
+    for (const CanvasItem* member : std::as_const(members)) {
+        if (!member->isSelected()) {
+            return false;
+        }
+    }
+    return !members.isEmpty();
+}
+
+void CanvasScene::NotifyGroupLayerBlocked()
+{
+    emit statusMessage(tr("Grouped items cannot be moved to another layer on their own; ungroup first"));
+}
+
 bool CanvasScene::HeightUsedByOther(int layerId, int height, const CanvasItem* except) const
 {
     return ItemHeightPlanner().HeightUsedByOther(LayerItems(layerId), height, except);
@@ -281,6 +305,10 @@ bool CanvasScene::MoveItemToAdjacentLayer(CanvasItem* item, int delta, const QSt
 
     const int targetLayerId = m_layers.at(targetIndex).id;
     if (targetLayerId == item->LayerId()) {
+        return false;
+    }
+    if (!CanMoveItemToLayer(item, targetLayerId)) {
+        NotifyGroupLayerBlocked();
         return false;
     }
 

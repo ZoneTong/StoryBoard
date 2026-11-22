@@ -236,4 +236,40 @@ void selftest::RunGroupingModelTests(Context& ctx)
                   QStringLiteral("背景层不能参与排序"));
         ctx.Check(!scene.MoveLayerToIndexWithUndo(idA, scene.LayerIndex(idA)), QStringLiteral("同下标不动作"));
     }
+
+    // §7.5 / D6：组内成员不允许单独换层，整组一起换层才放行，并被拒绝时给出提示。
+    {
+        CanvasScene scene;
+        QUndoStack undo;
+        scene.SetUndoStack(&undo);
+        scene.ApplyCanvasSize(QSizeF(800.0, 600.0));
+        scene.SetMode(ToolMode::EDIT);
+        auto* first = AddTestRect(scene, QPointF(80.0, 90.0), QSizeF(90.0, 70.0));
+        auto* second = AddTestRect(scene, QPointF(320.0, 260.0), QSizeF(90.0, 70.0));
+        const int baseLayer = first->LayerId();
+        scene.AddLayerWithUndo(QStringLiteral("Target layer"));
+        const int targetLayer = scene.Layers().last().id;
+
+        ctx.Check(scene.CanMoveItemToLayer(first, targetLayer), QStringLiteral("未分组图元可以单独换层"));
+
+        first->setSelected(true);
+        second->setSelected(true);
+        scene.GroupSelectedItems();
+        const int groupId = first->GroupId();
+        ctx.Check(groupId > 0 && second->GroupId() == groupId, QStringLiteral("两图元已成组"));
+
+        int hints = 0;
+        QObject::connect(&scene, &CanvasScene::statusMessage, &scene, [&hints](const QString&) { ++hints; });
+
+        first->setSelected(true);
+        second->setSelected(false);
+        ctx.Check(!scene.CanMoveItemToLayer(first, targetLayer), QStringLiteral("组内成员不能单独换层"));
+        ctx.Check(scene.CanMoveItemToLayer(first, baseLayer), QStringLiteral("组内成员留在本层不算换层"));
+        ctx.Check(!scene.MoveItemToAdjacentLayer(first, 1), QStringLiteral("相邻层移动同样拒绝组内成员单独换层"));
+        ctx.Check(hints == 1, QStringLiteral("拒绝换层时给出一次状态栏提示"), QStringLiteral("hints=%1").arg(hints));
+
+        first->setSelected(true);
+        second->setSelected(true);
+        ctx.Check(scene.CanMoveItemToLayer(first, targetLayer), QStringLiteral("整组一起换层放行"));
+    }
 }
