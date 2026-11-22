@@ -104,6 +104,34 @@ bool CanvasScene::MoveLayerWithUndo(int layerId, int delta)
     return true;
 }
 
+bool CanvasScene::MoveLayerToIndexWithUndo(int layerId, int targetIndex)
+{
+    const int index = LayerIndex(layerId);
+    if (index <= 0) {
+        return false;
+    }
+    if (targetIndex <= 0 || targetIndex >= m_layers.size() || targetIndex == index) {
+        return false;
+    }
+
+    const LayerStackState before = LayerState();
+    LayerStackState after = before;
+    CanvasLayer entry = after.layers.takeAt(index);
+    // 向下拖走时移除元素会让后续下标前移，插入点要随之下移一位。
+    int insertAt = targetIndex;
+    if (targetIndex > index) {
+        --insertAt;
+    }
+    after.layers.insert(insertAt, entry);
+
+    if (m_undoStack) {
+        m_undoStack->push(new LayerStateCommand(this, before, after, tr("Reorder layer")));
+    } else {
+        ApplyLayerStateInternal(after);
+    }
+    return true;
+}
+
 bool CanvasScene::RenameLayerWithUndo(int layerId, const QString& name)
 {
     const int index = LayerIndex(layerId);
