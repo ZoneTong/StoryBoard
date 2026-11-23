@@ -29,7 +29,7 @@ void DrawRotate(QPainter& painter, IconId id)
     painter.restore();
 }
 
-void DrawFit(QPainter& painter, IconId)
+void DrawFitCorners(QPainter& painter)
 {
     const qreal m = 4.0;
     const qreal len = 5.0;
@@ -41,8 +41,20 @@ void DrawFit(QPainter& painter, IconId)
     painter.drawLine(QPointF(m, 24.0 - m), QPointF(m + len, 24.0 - m));
     painter.drawLine(QPointF(24.0 - m - len, 24.0 - m), QPointF(24.0 - m, 24.0 - m));
     painter.drawLine(QPointF(24.0 - m, 24.0 - m), QPointF(24.0 - m, 24.0 - m - len));
+}
+
+void DrawFit(QPainter& painter, IconId)
+{
+    DrawFitCorners(painter);
+    // 中心点：表达“适合窗口 / 中心点”语义。
     painter.setBrush(painter.pen().color());
     painter.drawEllipse(QPointF(12.0, 12.0), 1.4, 1.4);
+}
+
+void DrawPosition(QPainter& painter, IconId)
+{
+    // 位置只表达四角框，不画中心点，避免与“中心点”图标混淆。
+    DrawFitCorners(painter);
 }
 
 void DrawZoom(QPainter& painter, IconId id)
@@ -191,6 +203,7 @@ constexpr struct IconEntry {
 } ENTRIES[] = {
     {IconId::ROTATE_CCW, DrawRotate},
     {IconId::ROTATE_CW, DrawRotate},
+    {IconId::POSITION, DrawPosition},
     {IconId::FIT, DrawFit},
     {IconId::ZOOM_IN, DrawZoom},
     {IconId::ZOOM_OUT, DrawZoom},

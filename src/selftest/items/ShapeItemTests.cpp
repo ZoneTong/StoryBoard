@@ -977,6 +977,27 @@ void selftest::RunShapeItemTests(Context& ctx)
         sectorDrag.FinishInteraction();
         ctx.Check(!sector.AngleReadoutVisible(), QStringLiteral("松开扇形端点后隐藏读数"));
 
+        // B3：弧线中心点按真实椭圆框计算，不能再叠一次 pos()。
+        ArcItem centerArc;
+        centerArc.SetArcGeometry(QPointF(40.0, 30.0), QSizeF(120.0, 80.0), 30.0, 120.0, QColor(Qt::black), 2.0);
+        const QPointF ellipseCenter = centerArc.EllipseShape::Center();
+        const QPointF arcCenter = centerArc.CenterScenePoint();
+        ctx.Check(QLineF(arcCenter, ellipseCenter).length() < 0.01, QStringLiteral("弧线中心点等于真实椭圆中心"),
+                  QStringLiteral("arc=%1,%2 ellipse=%3,%4")
+                      .arg(arcCenter.x())
+                      .arg(arcCenter.y())
+                      .arg(ellipseCenter.x())
+                      .arg(ellipseCenter.y()));
+
+        // B3：位置图标四角框中心透明；中心点图标中心有实心点。
+        const QImage positionIcon = MakeIcon(IconId::POSITION, QColor(58, 64, 80), 24).pixmap(24, 24).toImage();
+        const QImage centerIcon = MakeIcon(IconId::FIT, QColor(58, 64, 80), 24).pixmap(24, 24).toImage();
+        ctx.Check(positionIcon.pixelColor(12, 12).alpha() == 0 && centerIcon.pixelColor(12, 12).alpha() > 0,
+                  QStringLiteral("位置图标去中心点、中心点图标保留中心点"),
+                  QStringLiteral("positionAlpha=%1 centerAlpha=%2")
+                      .arg(positionIcon.pixelColor(12, 12).alpha())
+                      .arg(centerIcon.pixelColor(12, 12).alpha()));
+
         DiamondItem diamond;
         diamond.setPos(QPointF(20.0, 20.0));
         diamond.SetContentSize(QSizeF(128.0, 72.0));

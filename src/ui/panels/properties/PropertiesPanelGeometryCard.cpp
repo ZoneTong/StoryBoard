@@ -2,6 +2,7 @@
 
 #include "items/CanvasItem.h"
 #include "items/geometry/ShapeMeta.h"
+#include "items/lines/ArcItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
 #include "ui/panels/properties/PropertiesPanel.h"
 #include "ui/widgets/PropertyRowWidgets.h"
@@ -38,7 +39,7 @@ PropertiesPanelGeometryCard::PropertiesPanelGeometryCard(QWidget* parent) : QWid
     m_rotationRow->SetIconToolTip(PropertiesPanel::tr("Rotation"));
     layout->addWidget(m_rotationRow);
 
-    m_positionRow = new PairAttributeRow(IconId::FIT, true, QStringLiteral("ItemPositionXSpin"),
+    m_positionRow = new PairAttributeRow(IconId::POSITION, true, QStringLiteral("ItemPositionXSpin"),
                                          QStringLiteral("ItemPositionYSpin"), 1, -1000000.0, 1000000.0, QString(),
                                          QStringLiteral(","), this);
     m_positionRow->FirstSpin()->setToolTip(PropertiesPanel::tr("Position"));
@@ -129,6 +130,14 @@ void PropertiesPanelGeometryCard::Refresh(CanvasItem* item)
     // 中心点是派生属性：按图元几何回显，写入侧只平移位置。
     const QPointF center = item->PropertyValue(ItemProperty::CENTER).toPointF();
     m_centerRow->Refresh(center.x(), center.y());
+    const auto* shape = dynamic_cast<ShapeAbstractItem*>(item);
+    const bool ellipseFamily =
+        dynamic_cast<ArcItem*>(item) != nullptr ||
+        (shape && (shape->shapeType() == ShapeType::ELLIPSE || shape->shapeType() == ShapeType::SECTOR));
+    const QString centerTip = PropertiesPanel::tr(ellipseFamily ? "Ellipse center" : "Center point");
+    m_centerRow->FirstSpin()->setToolTip(centerTip);
+    m_centerRow->SecondSpin()->setToolTip(centerTip);
+    m_centerRow->SetIconToolTip(centerTip);
     m_refreshing = false;
 }
 

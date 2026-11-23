@@ -13,7 +13,7 @@
 
 ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(QWidget* parent) : QWidget(parent)
 {
-    m_positionRow = new PairAttributeRow(IconId::FIT, false, QStringLiteral("ItemPropertiesPositionXValue"),
+    m_positionRow = new PairAttributeRow(IconId::POSITION, false, QStringLiteral("ItemPropertiesPositionXValue"),
                                          QStringLiteral("ItemPropertiesPositionYValue"), 1, -1000000.0, 1000000.0,
                                          QString(), QStringLiteral(","), this);
     m_positionXSpin = m_positionRow->FirstSpin();
@@ -111,7 +111,11 @@ void ItemPropertiesDialogGeometryBlock::SetItem(CanvasItem* item)
         m_initialCenter = item->PropertyValue(ItemProperty::CENTER).toPointF();
         m_centerRow->Refresh(m_initialCenter.x(), m_initialCenter.y());
         if (m_centerLabel) {
-            m_centerLabel->setText(ItemPropertiesDialog::tr(IsEllipseFamily(item) ? "Ellipse center" : "Center point"));
+            // 行标题统一为“中心点”，椭圆族的差异只放在悬浮提示里。
+            m_centerLabel->setText(ItemPropertiesDialog::tr("Center point"));
+            m_centerLabel->setToolTip(
+                ItemPropertiesDialog::tr(IsEllipseFamily(item) ? "Ellipse center" : "Center point"));
+            m_centerRow->SetIconToolTip(m_centerLabel->toolTip());
         }
     }
 }

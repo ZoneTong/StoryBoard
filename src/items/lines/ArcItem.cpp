@@ -56,7 +56,8 @@ ItemPropertySet ArcItem::Properties() const
 
 QPointF ArcItem::CenterScenePoint() const
 {
-    return mapToScene(EllipseShape::Center());
+    // EllipseShape 的外接框已是场景坐标；先取本地框中心再映射，避免再叠一次 pos()。
+    return mapToScene(LocalEllipseFrame().center());
 }
 
 QVariant ArcItem::PropertyValue(ItemProperty property) const

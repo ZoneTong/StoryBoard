@@ -16,6 +16,8 @@ enum class IconId {
     BRUSH,
     EDIT,
     TEXT,
+    // 位置：四角框不带中心点，和“中心点”图标区分。
+    POSITION,
     FIT,
     ZOOM_IN,
     ZOOM_OUT,
