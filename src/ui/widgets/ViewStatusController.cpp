@@ -58,10 +58,11 @@ void ViewStatusController::UpdateModeUi()
                 MainWindow::tr("Brush mode: left button to draw · wheel to zoom · Space / middle button to pan"));
             break;
         case ToolMode::EDIT:
-            // 需求 1：只讲“哪些图元可编辑 + 属性入口（双击）+ 唯一一条反直觉视图操作”，
+            // 需求 1：只讲“哪些图元可编辑 + 双击精确单选 + 属性窗入口 + 唯一一条反直觉视图操作”，
             // 不再枚举拖动、缩放、滚轮、Delete 这类一看就会的操作，也不提 Ctrl（已改多选）。
             m_window->m_hintLabel->setText(MainWindow::tr("Edit mode: items on visible, unlocked layers are editable · "
-                                                          "double-click to open item properties and change them · "
+                                                          "double-click to select only that item · "
+                                                          "item properties open from the menu, panel or context menu · "
                                                           "Space / middle button to pan the view"));
             break;
         case ToolMode::TEXT:

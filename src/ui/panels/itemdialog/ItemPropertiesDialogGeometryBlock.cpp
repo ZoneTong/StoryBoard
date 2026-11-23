@@ -1,9 +1,7 @@
 #include "ui/panels/itemdialog/ItemPropertiesDialogGeometryBlock.h"
 
-#include "items/lines/ArcItem.h"
 #include "items/lines/LineAbstractItem.h"
 #include "items/properties/ItemPropertyCatalog.h"
-#include "items/shapes/ShapeAbstractItem.h"
 #include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/properties/PropertyRowRegistry.h"
 #include "ui/panels/properties/PropertyRowSpec.h"
@@ -113,29 +111,15 @@ void ItemPropertiesDialogGeometryBlock::SetItem(CanvasItem* item)
             }
         }
 
-        // 中心点按图元几何回显：椭圆族显示“椭圆中心点”，其余显示“中心点”。
+        // 中心点按图元几何回显；椭圆族与其余图元共用同一套标题与悬浮提示。
         m_initialCenter = item->PropertyValue(ItemProperty::CENTER).toPointF();
         m_centerRow->Refresh(m_initialCenter.x(), m_initialCenter.y());
         if (m_centerLabel) {
-            // 行标题统一为“中心点”，椭圆族的差异只放在悬浮提示里。
             m_centerLabel->setText(ItemPropertiesDialog::tr("Center point"));
-            m_centerLabel->setToolTip(
-                ItemPropertiesDialog::tr(IsEllipseFamily(item) ? "Ellipse center" : "Center point"));
+            m_centerLabel->setToolTip(m_centerLabel->text());
             m_centerRow->SetIconToolTip(m_centerLabel->toolTip());
         }
     }
-}
-
-bool ItemPropertiesDialogGeometryBlock::IsEllipseFamily(const CanvasItem* item)
-{
-    if (dynamic_cast<const ArcItem*>(item) != nullptr) {
-        return true;
-    }
-    const auto* shape = dynamic_cast<const ShapeAbstractItem*>(item);
-    if (!shape) {
-        return false;
-    }
-    return shape->shapeType() == ShapeType::ELLIPSE || shape->shapeType() == ShapeType::SECTOR;
 }
 
 

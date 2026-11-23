@@ -497,31 +497,45 @@ void selftest::RunMainWindowFlowTests(Context& ctx)
             ctx.Check(createdText->ZOrder() == heightBeforeShortcut, QStringLiteral("[ 快捷键降低选中图元高度"));
         }
 
-        // 需求 42 端到端：查看模式双击图元，MainWindow 以只读模态窗打开。
+        // 双击不再弹属性窗：查看模式双击不开窗，属性窗只保留菜单 / 面板 / 右键入口。
         if (createdText) {
             window.View()->SetMode(ToolMode::VIEW);
             QApplication::processEvents();
-            bool readOnlyDialogSeen = false;
-            QTimer::singleShot(80, &window, [&]() {
-                auto* dialog = qobject_cast<ItemPropertiesDialog*>(QApplication::activeModalWidget());
-                if (!dialog) {
-                    return;
-                }
-                readOnlyDialogSeen = true;
-                ctx.Check(dialog->isModal() && !dialog->IsEditable(),
-                          QStringLiteral("查看模式端到端打开只读模态属性窗"));
-                QLineEdit* nameEdit = dialog->findChild<QLineEdit*>(QStringLiteral("ItemPropertiesNameValue"));
-                ctx.Check(nameEdit && !nameEdit->isEnabled(), QStringLiteral("查看模式端到端属性字段不可编辑"));
-                dialog->accept();
-            });
             const QPoint textPoint = window.View()->mapFromScene(createdText->SceneContentRect().center());
             QMouseEvent textDoubleClick(QEvent::MouseButtonDblClick, QPointF(textPoint),
                                         QPointF(window.View()->viewport()->mapToGlobal(textPoint)), Qt::LeftButton,
                                         Qt::LeftButton, Qt::NoModifier);
             QApplication::sendEvent(window.View()->viewport(), &textDoubleClick);
             QApplication::processEvents();
-            ctx.Check(readOnlyDialogSeen, QStringLiteral("查看模式双击图元确实打开属性窗"));
+            ctx.Check(QApplication::activeModalWidget() == nullptr,
+                      QStringLiteral("查看模式双击不再打开属性窗"));
+
             window.View()->SetMode(ToolMode::EDIT);
+            QApplication::processEvents();
+            const QPoint editPoint = window.View()->mapFromScene(createdText->SceneContentRect().center());
+            QMouseEvent editDoubleClick(QEvent::MouseButtonDblClick, QPointF(editPoint),
+                                        QPointF(window.View()->viewport()->mapToGlobal(editPoint)), Qt::LeftButton,
+                                        Qt::LeftButton, Qt::NoModifier);
+            QApplication::sendEvent(window.View()->viewport(), &editDoubleClick);
+            QApplication::processEvents();
+            ctx.Check(createdText->isSelected() && window.Scene()->selectedItems().size() == 1,
+                      QStringLiteral("编辑模式双击只单选该图元"));
+            ctx.Check(QApplication::activeModalWidget() == nullptr,
+                      QStringLiteral("编辑模式双击不打开属性窗"));
+
+            bool menuDialogSeen = false;
+            QTimer::singleShot(60, &window, [&]() {
+                auto* dialog = qobject_cast<ItemPropertiesDialog*>(QApplication::activeModalWidget());
+                if (!dialog) {
+                    return;
+                }
+                menuDialogSeen = true;
+                dialog->accept();
+            });
+            if (propertiesAction) {
+                propertiesAction->trigger();
+            }
+            ctx.Check(menuDialogSeen, QStringLiteral("图元属性菜单入口仍打开属性窗"));
         }
     }
 }

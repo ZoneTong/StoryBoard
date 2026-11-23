@@ -31,8 +31,6 @@ enum class ItemCategory { SHAPE, LINE, TEXT };
 //      生产代码统一走 items/polygon/PolygonAccess 的访问者入口（VisitPolygon），不再各自强转。
 //   2) TextItem：文字 Memento（TextItemState）只属于文字图元，编辑面板按类别取回带类型的列表；
 //      PropertiesPanel::SelectedTexts。
-//   3) ArcItem：属性窗中心点行要区分"椭圆中心点"标题（弧线的椭圆框不等于内容框）；
-//      ItemPropertiesDialogGeometryBlock::IsEllipseFamily。
 // 其余 dynamic_cast 只到基类（ShapeAbstractItem / LineAbstractItem / Fill / Stroke / CanvasScene），
 // 属于协议查询而非常量叶子判定，不在预算内。新增叶子强转必须先补进本白名单。
 class CanvasItem : public QGraphicsObject {

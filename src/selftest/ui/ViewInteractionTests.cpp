@@ -490,6 +490,7 @@ void selftest::RunViewInteractionTests(Context& ctx)
     viewScene.AddItemsWithUndo({doubleClickText}, QStringLiteral("添加文字"));
     view.FitAll();
     QApplication::processEvents();
+    const int requestsBase = ctx.itemPropertyRequests;
     QObject::connect(&view, &CanvasView::itemPropertiesRequested, &view,
                      [&ctx](CanvasItem*) { ++ctx.itemPropertyRequests; });
     const QPoint doubleClickPoint = view.mapFromScene(doubleClickText->SceneContentRect().center());
@@ -498,9 +499,11 @@ void selftest::RunViewInteractionTests(Context& ctx)
                                  Qt::LeftButton, Qt::NoModifier);
     QApplication::sendEvent(view.viewport(), &doubleClickEvent);
     QApplication::processEvents();
-    ctx.Check(ctx.itemPropertyRequests == 1, QStringLiteral("双击文字请求属性弹窗"));
+    ctx.Check(ctx.itemPropertyRequests == requestsBase, QStringLiteral("双击文字不再请求属性弹窗"));
+    ctx.Check(doubleClickText->isSelected() && viewScene.selectedItems().size() == 1,
+              QStringLiteral("双击文字只单选该图元"));
 
-    // 需求 42：查看模式下双击图元也可以打开（只读）属性窗。
+    // 双击不带回旧需求 42：查看模式下双击不发属性请求，也不再开只读属性窗。
     view.SetMode(ToolMode::VIEW);
     view.FitAll();
     QApplication::processEvents();
@@ -510,7 +513,7 @@ void selftest::RunViewInteractionTests(Context& ctx)
                                      Qt::LeftButton, Qt::NoModifier);
     QApplication::sendEvent(view.viewport(), &viewDoubleClickEvent);
     QApplication::processEvents();
-    ctx.Check(ctx.itemPropertyRequests == 2, QStringLiteral("查看模式双击文字仍请求属性弹窗"));
+    ctx.Check(ctx.itemPropertyRequests == requestsBase, QStringLiteral("查看模式双击不再请求属性弹窗"));
     view.SetMode(ToolMode::EDIT);
 
     {

@@ -71,7 +71,7 @@ void CanvasContextMenuController::ShowMenu(QContextMenuEvent* event)
     title->setEnabled(false);
     menu.addSeparator();
 
-    // 需求 42：属性窗在任意模式都可打开；编辑模式下此入口与双击/Q 等价。
+    // 属性窗入口：双击已改为只单选，右键菜单是画布侧唯一的打开方式。
     QAction* properties = menu.addAction(TrView("Item properties…"));
     QAction* duplicate = menu.addAction(TrView("Duplicate item"));
     duplicate->setEnabled(item->isSelected());

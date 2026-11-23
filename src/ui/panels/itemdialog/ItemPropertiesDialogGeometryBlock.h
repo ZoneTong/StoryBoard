@@ -45,9 +45,6 @@ class ItemPropertiesDialogGeometryBlock : public QWidget {
     void SetNaturalSize(const QSizeF& size);
 
   private:
-    // 椭圆族（椭圆 / 扇形 / 弧线）的中心点行标题特例。
-    static bool IsEllipseFamily(const CanvasItem* item);
-
     void SyncAxesFromSize();
     void ApplyArcAxes(bool majorChanged);
     void ApplyAxesToSize(bool majorChanged);

@@ -95,7 +95,8 @@ void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
                                  Qt::NoModifier);
     QApplication::sendEvent(view.viewport(), &shapeDoubleClick);
     QApplication::processEvents();
-    ctx.Check(itemPropertyRequests == requestsBeforeShape + 1, QStringLiteral("双击图形请求属性弹窗"));
+    ctx.Check(itemPropertyRequests == requestsBeforeShape, QStringLiteral("双击图形不再请求属性弹窗"));
+    ctx.Check(propertyShape->isSelected(), QStringLiteral("双击图形只单选该图元"));
 
     {
         ItemPropertiesDialog dialog(&viewScene, propertyShape, &view);

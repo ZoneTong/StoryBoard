@@ -18,20 +18,6 @@ CanvasItem* CanvasViewHitTester::TopItemAt(const QPoint& viewportPos) const
     return nullptr;
 }
 
-CanvasItem* CanvasViewHitTester::PropertyItemAt(const QPoint& viewportPos) const
-{
-    // 只按可见性和真实叠放顺序命中，不检查当前工具模式或图层锁定状态；
-    // 属性窗会决定自己是否可编辑。
-    const QList<QGraphicsItem*> candidates = m_scene->items(m_view->mapToScene(viewportPos));
-    for (QGraphicsItem* graphicsItem : candidates) {
-        auto* canvasItem = qgraphicsitem_cast<CanvasItem*>(graphicsItem);
-        if (canvasItem && canvasItem->isVisible()) {
-            return canvasItem;
-        }
-    }
-    return nullptr;
-}
-
 CanvasItem* CanvasViewHitTester::PreferredEditableItemAt(const QPoint& viewportPos) const
 {
     const QList<int> preferred = m_scene->PreferredLayerIds();

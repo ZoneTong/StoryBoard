@@ -2,7 +2,6 @@
 
 #include "items/CanvasItem.h"
 #include "items/geometry/ShapeMeta.h"
-#include "items/lines/ArcItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
 #include "ui/panels/properties/PropertiesPanel.h"
 #include "ui/widgets/rows/ValueRows.h"
@@ -124,14 +123,10 @@ void PropertiesPanelGeometryCard::Refresh(CanvasItem* item)
     }
     m_interiorAngleRow->Refresh(angle);
 
-    // 中心点是派生属性：按图元几何回显，写入侧只平移位置。
+    // 中心点是派生属性：按图元几何回显，写入侧只平移位置；提示文案与属性窗一致。
     const QPointF center = item->PropertyValue(ItemProperty::CENTER).toPointF();
     m_centerRow->Refresh(center.x(), center.y());
-    const auto* shape = dynamic_cast<ShapeAbstractItem*>(item);
-    const bool ellipseFamily =
-        dynamic_cast<ArcItem*>(item) != nullptr ||
-        (shape && (shape->shapeType() == ShapeType::ELLIPSE || shape->shapeType() == ShapeType::SECTOR));
-    const QString centerTip = PropertiesPanel::tr(ellipseFamily ? "Ellipse center" : "Center point");
+    const QString centerTip = PropertiesPanel::tr("Center point");
     m_centerRow->FirstSpin()->setToolTip(centerTip);
     m_centerRow->SecondSpin()->setToolTip(centerTip);
     m_centerRow->SetIconToolTip(centerTip);

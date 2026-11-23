@@ -204,7 +204,8 @@ void UiActionFactory::Build()
     m_window->m_editModeAct =
         MakeAction(m_window, IconId::EDIT, MainWindow::tr("Edit mode"), QKeySequence(QStringLiteral("V")),
                    MainWindow::tr("Edit mode: items on visible, unlocked layers are editable · "
-                                  "double-click to open item properties and change them · "
+                                  "double-click to select only that item · "
+                                  "item properties open from the menu, panel or context menu · "
                                   "Space / middle button to pan the view (V)"));
     m_window->m_textModeAct =
         MakeAction(m_window, IconId::TEXT, MainWindow::tr("Text mode"), QKeySequence(QStringLiteral("T")),

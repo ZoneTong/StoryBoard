@@ -478,32 +478,26 @@ void CanvasView::SelectItemsInsideBand(const QPoint& from, const QPoint& to)
 
 void CanvasView::mouseDoubleClickEvent(QMouseEvent* event)
 {
-    if (event->button() == Qt::LeftButton) {
-        // 需求 42：属性窗在查看/画笔/文字模式下也能打开（只读）；
-        // 编辑模式仍要求图元可编辑，锁定图层维持原来的“先解锁”提示。
-        if (m_mode == ToolMode::EDIT) {
-            CanvasItem* canvasItem = m_hits->EditableItemAt(event->position().toPoint());
-            if (!canvasItem) {
-                if (m_hits->TopItemAt(event->position().toPoint())) {
-                    emit statusMessage(tr("The layer containing this item is locked or hidden; editing is unavailable. "
-                                          "Unlock or show that layer in the layer panel first."));
-                    event->accept();
-                    return;
-                }
-                QGraphicsView::mouseDoubleClickEvent(event);
+    // 双击只做“精确单选”：把命中的成员图元单独选出来（组内成员不再展开整组），
+    // 属性窗改走编辑菜单、编辑面板与右键菜单，双击不再弹窗。
+    if (event->button() == Qt::LeftButton && m_mode == ToolMode::EDIT) {
+        CanvasItem* canvasItem = m_hits->EditableItemAt(event->position().toPoint());
+        if (!canvasItem) {
+            if (m_hits->TopItemAt(event->position().toPoint())) {
+                emit statusMessage(tr("The layer containing this item is locked or hidden; editing is unavailable. "
+                                      "Unlock or show that layer in the layer panel first."));
+                event->accept();
                 return;
             }
-            emit itemPropertiesRequested(canvasItem);
-            event->accept();
+            QGraphicsView::mouseDoubleClickEvent(event);
             return;
         }
-
-        CanvasItem* canvasItem = m_hits->PropertyItemAt(event->position().toPoint());
-        if (canvasItem) {
-            emit itemPropertiesRequested(canvasItem);
-            event->accept();
-            return;
+        if (m_scene->selectedItems().size() != 1 || !canvasItem->isSelected()) {
+            m_scene->clearSelection();
+            canvasItem->setSelected(true);
         }
+        event->accept();
+        return;
     }
     QGraphicsView::mouseDoubleClickEvent(event);
 }
