@@ -99,7 +99,7 @@ QJsonObject CanvasScene::ToJson() const
     }
 
     QJsonArray layerArray;
-    for (const CanvasLayer& entry : m_layers) {
+    for (const CanvasLayer& entry : m_layerDomain.Layers()) {
         QJsonObject layerJson;
         layerJson.insert(QStringLiteral("id"), entry.id);
         layerJson.insert(QStringLiteral("name"), entry.name);
@@ -108,7 +108,7 @@ QJsonObject CanvasScene::ToJson() const
         layerArray.append(layerJson);
     }
     root.insert(QStringLiteral("layers"), layerArray);
-    root.insert(QStringLiteral("activeLayer"), m_activeLayerId);
+    root.insert(QStringLiteral("activeLayer"), m_layerDomain.ActiveLayerId());
 
     QJsonArray itemsArray;
     // 需求 11：同一张图片在文件里只存一份。保存前按内容哈希收集本画布用到的图片，
@@ -278,7 +278,7 @@ bool CanvasScene::FromJson(const QJsonObject& root, QString* errorMessage)
 
     for (CanvasItem* item : std::as_const(parsedItems)) {
         if (!HasLayer(item->LayerId()) || item->LayerId() == BackgroundLayerId) {
-            item->SetLayerId(m_activeLayerId);
+            item->SetLayerId(m_layerDomain.ActiveLayerId());
         }
         addItem(item);
     }
@@ -407,9 +407,9 @@ bool CanvasScene::FromJson(const QJsonObject& root, QString* errorMessage)
     // when duplicate values are repaired.
     NormalizeAllHeights();
 
-    m_nextLayerId = 1;
-    for (const CanvasLayer& entry : std::as_const(m_layers)) {
-        m_nextLayerId = qMax(m_nextLayerId, entry.id + 1);
+    m_layerDomain.ResetNextId();
+    for (const CanvasLayer& entry : std::as_const(m_layerDomain.Layers())) {
+        m_layerDomain.ObserveId(entry.id);
     }
 
     m_restoringDocument = false;
@@ -419,7 +419,7 @@ bool CanvasScene::FromJson(const QJsonObject& root, QString* errorMessage)
     UpdateSceneExtent();
     update();
     emit layersChanged();
-    emit activeLayerChanged(m_activeLayerId);
+    emit activeLayerChanged(m_layerDomain.ActiveLayerId());
     emit contentChanged();
     emit backgroundChanged();
     emit canvasSizeChanged(m_canvasSize);

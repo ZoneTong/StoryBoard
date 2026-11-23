@@ -4,6 +4,7 @@
 #include "items/lines/LineAbstractItem.h"
 #include "scene/CanvasScene.h"
 #include "scene/Commands.h"
+#include "scene/ItemNameService.h"
 #include "scene/SceneConstants.h"
 
 #include <QSet>
@@ -160,125 +161,28 @@ int CanvasScene::SmoothSelectedStrokes(qreal tolerance)
 
 QString CanvasScene::UniqueItemName(const QString& base, const CanvasItem* except) const
 {
-    const QString typeName = base.trimmed();
-    const QString prefix = typeName + QLatin1Char(' ');
-    int maxSuffix = 0;
-    for (CanvasItem* item : CanvasItems()) {
-        if (!item || item == except) {
-            continue;
-        }
-        const QString existing = item->Name();
-        if (!existing.startsWith(prefix, Qt::CaseInsensitive)) {
-            continue;
-        }
-        bool ok = false;
-        const int value = existing.mid(prefix.size()).toInt(&ok);
-        if (ok && value > 0) {
-            maxSuffix = qMax(maxSuffix, value);
-        }
-    }
-    return QStringLiteral("%1 %2").arg(typeName).arg(maxSuffix + 1);
+    return ItemNameService::Unique(CanvasItems(), base, except);
 }
 
 bool CanvasScene::IsItemNameAvailable(const QString& name, const CanvasItem* except) const
 {
-    const QString candidate = name.trimmed();
-    if (candidate.isEmpty()) {
-        return true;
-    }
-    for (CanvasItem* item : CanvasItems()) {
-        if (!item || item == except) {
-            continue;
-        }
-        if (item->Name().trimmed().compare(candidate, Qt::CaseInsensitive) == 0) {
-            return false;
-        }
-    }
-    return true;
+    return ItemNameService::IsAvailable(CanvasItems(), name, except);
 }
 
 QString CanvasScene::UniqueItemNameFor(const QString& requested, const CanvasItem* except) const
 {
-    static const QSet<QString> RESERVED;
-    return UniqueItemNameFor(requested, except, RESERVED);
+    return ItemNameService::UniqueFor(CanvasItems(), requested, except);
 }
 
 QString CanvasScene::UniqueItemNameFor(const QString& requested, const CanvasItem* except,
                                        const QSet<QString>& reserved) const
 {
-    const QString trimmed = requested.trimmed();
-    if (trimmed.isEmpty()) {
-        return QString();
-    }
-
-    // “Hero panel” → base=Hero panel, suffix=0；“矩形 1” → base=矩形, suffix=1。
-    QString base = trimmed;
-    int suffix = 0;
-    const int split = base.lastIndexOf(QLatin1Char(' '));
-    if (split > 0) {
-        bool ok = false;
-        const int value = base.mid(split + 1).toInt(&ok);
-        if (ok && value > 0) {
-            base = base.left(split).trimmed();
-            suffix = value;
-        }
-    }
-    if (base.isEmpty()) {
-        base = trimmed;
-    }
-
-    const QString prefix = base + QLatin1Char(' ');
-    bool exactBase = false;
-    int maxSuffix = suffix;
-
-    auto consider = [&](const QString& customName) {
-        const QString existing = customName.trimmed();
-        if (existing.isEmpty()) {
-            return;
-        }
-        if (existing.compare(base, Qt::CaseInsensitive) == 0) {
-            exactBase = true;
-        }
-        if (!existing.startsWith(prefix, Qt::CaseInsensitive)) {
-            return;
-        }
-        bool ok = false;
-        const int value = existing.mid(prefix.size()).toInt(&ok);
-        if (ok && value > 0) {
-            maxSuffix = qMax(maxSuffix, value);
-        }
-    };
-
-    for (CanvasItem* item : CanvasItems()) {
-        if (!item || item == except) {
-            continue;
-        }
-        consider(item->Name());
-    }
-    for (const QString& name : reserved) {
-        consider(name);
-    }
-
-    int next = qMax(maxSuffix + 1, exactBase ? 2 : 1);
-    if (suffix > 0) {
-        next = qMax(next, suffix + 1);
-    }
-    return prefix + QString::number(next);
+    return ItemNameService::UniqueFor(CanvasItems(), requested, except, reserved);
 }
 
 void CanvasScene::AssignAutoItemNames()
 {
-    for (CanvasItem* item : CanvasItems()) {
-        if (!item) {
-            continue;
-        }
-        const QString existing = item->CustomName().trimmed();
-        if (existing.isEmpty()) {
-            item->SetName(UniqueItemName(item->TypeDisplayName(), item));
-        } else if (!IsItemNameAvailable(existing, item)) {
-            item->SetName(UniqueItemNameFor(existing, item));
-        }
-    }
+    ItemNameService::AssignAutoNames(CanvasItems());
 }
 
 void CanvasScene::SelectAllItems()

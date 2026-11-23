@@ -30,7 +30,7 @@ void CanvasScene::AttachItem(CanvasItem* item)
     }
 
     if (!HasLayer(item->LayerId()) || item->LayerId() == BackgroundLayerId) {
-        item->SetLayerId(m_activeLayerId);
+        item->SetLayerId(m_layerDomain.ActiveLayerId());
     }
     if (item->ZOrder() < 0 || item->ZOrder() > scene_constants::MAX_ITEM_HEIGHT ||
         HeightUsedByOther(item->LayerId(), item->ZOrder(), item)) {
@@ -179,7 +179,7 @@ void CanvasScene::AddItemsWithUndo(const QList<CanvasItem*>& items, const QStrin
         return;
     }
 
-    if (!HasLayer(m_activeLayerId)) {
+    if (!HasLayer(m_layerDomain.ActiveLayerId())) {
         EnsureLayerState();
     }
 
@@ -201,7 +201,7 @@ void CanvasScene::AddItemsWithUndo(const QList<CanvasItem*>& items, const QStrin
             continue;
         }
         if (!HasLayer(item->LayerId()) || item->LayerId() == BackgroundLayerId) {
-            item->SetLayerId(m_activeLayerId);
+            item->SetLayerId(m_layerDomain.ActiveLayerId());
         }
 
         QSet<int>& used = usedHeights[item->LayerId()];

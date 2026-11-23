@@ -129,7 +129,7 @@ bool CanvasScene::NormalizeLayerHeights(int layerId)
 
 void CanvasScene::NormalizeAllHeights()
 {
-    for (const CanvasLayer& entry : std::as_const(m_layers)) {
+    for (const CanvasLayer& entry : std::as_const(m_layerDomain.Layers())) {
         if (entry.id != BackgroundLayerId) {
             NormalizeLayerHeights(entry.id);
         }
@@ -299,11 +299,11 @@ bool CanvasScene::MoveItemToAdjacentLayer(CanvasItem* item, int delta, const QSt
 
     const int currentIndex = LayerIndex(item->LayerId());
     const int targetIndex = currentIndex + delta;
-    if (currentIndex <= 0 || targetIndex <= 0 || targetIndex >= m_layers.size()) {
+    if (currentIndex <= 0 || targetIndex <= 0 || targetIndex >= m_layerDomain.Layers().size()) {
         return false;
     }
 
-    const int targetLayerId = m_layers.at(targetIndex).id;
+    const int targetLayerId = m_layerDomain.Layers().at(targetIndex).id;
     if (targetLayerId == item->LayerId()) {
         return false;
     }
@@ -337,7 +337,7 @@ void CanvasScene::ApplyItemStack(const ItemStackList& stack)
             continue;
         }
         if (!HasLayer(entry.layerId)) {
-            entry.item->SetLayerId(m_activeLayerId);
+            entry.item->SetLayerId(m_layerDomain.ActiveLayerId());
         } else {
             entry.item->SetLayerId(entry.layerId);
         }
@@ -363,7 +363,7 @@ void CanvasScene::AssignNewItemPlacement(CanvasItem* item)
     }
 
     if (!HasLayer(item->LayerId()) || item->LayerId() == BackgroundLayerId) {
-        item->SetLayerId(m_activeLayerId);
+        item->SetLayerId(m_layerDomain.ActiveLayerId());
     }
     if (item->ZOrder() < 0 || item->ZOrder() > scene_constants::MAX_ITEM_HEIGHT ||
         HeightUsedByOther(item->LayerId(), item->ZOrder(), item)) {

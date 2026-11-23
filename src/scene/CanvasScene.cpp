@@ -7,10 +7,10 @@
 
 CanvasScene::CanvasScene(QObject* parent) : QGraphicsScene(parent)
 {
-    m_layers = {{BackgroundLayerId, scene_constants::BACKGROUND_LAYER_NAME, true, true},
-                {scene_constants::FIRST_USER_LAYER_ID, QStringLiteral("图层 1"), true, false}};
-    m_activeLayerId = scene_constants::FIRST_USER_LAYER_ID;
-    m_nextLayerId = scene_constants::FIRST_USER_LAYER_ID + 1;
+    m_layerDomain.Reset();
+    m_layerDomain.SetLayers({{BackgroundLayerId, scene_constants::BACKGROUND_LAYER_NAME, true, true},
+                             {scene_constants::FIRST_USER_LAYER_ID, QStringLiteral("图层 1"), true, false}});
+    m_layerDomain.SetActiveLayerId(scene_constants::FIRST_USER_LAYER_ID);
 
     setBackgroundBrush(Qt::NoBrush);
     setItemIndexMethod(QGraphicsScene::BspTreeIndex);
@@ -108,17 +108,17 @@ void CanvasScene::ResetDocument()
     ClearOrphans();
     m_selectionOrder.clear();
     m_background = CanvasBackground();
-    m_layers = {{BackgroundLayerId, scene_constants::BACKGROUND_LAYER_NAME, true, true},
-                {scene_constants::FIRST_USER_LAYER_ID, QStringLiteral("图层 1"), true, false}};
-    m_activeLayerId = scene_constants::FIRST_USER_LAYER_ID;
-    m_nextLayerId = scene_constants::FIRST_USER_LAYER_ID + 1;
+    m_layerDomain.Reset();
+    m_layerDomain.SetLayers({{BackgroundLayerId, scene_constants::BACKGROUND_LAYER_NAME, true, true},
+                             {scene_constants::FIRST_USER_LAYER_ID, QStringLiteral("图层 1"), true, false}});
+    m_layerDomain.SetActiveLayerId(scene_constants::FIRST_USER_LAYER_ID);
     m_groups.Reset();
     m_canvasOrigin = QPointF(0.0, 0.0);
     m_exporting = false;
     UpdateSceneExtent();
     update();
     emit layersChanged();
-    emit activeLayerChanged(m_activeLayerId);
+    emit activeLayerChanged(m_layerDomain.ActiveLayerId());
     emit contentChanged();
     emit backgroundChanged();
 }

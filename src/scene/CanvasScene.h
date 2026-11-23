@@ -4,6 +4,7 @@
 #include "items/ItemGeometry.h"
 #include "scene/GroupDomain.h"
 #include "scene/GroupState.h"
+#include "scene/LayerDomain.h"
 
 #include <QGraphicsScene>
 #include <QHash>
@@ -161,10 +162,10 @@ class CanvasScene : public QGraphicsScene {
 
     static constexpr int BackgroundLayerId = 0;
 
-    const QList<CanvasLayer>& Layers() const { return m_layers; }
+    const QList<CanvasLayer>& Layers() const { return m_layerDomain.Layers(); }
     QList<CanvasLayer> UserLayers() const;
-    int LayerCount() const { return m_layers.size(); }
-    int UserLayerCount() const { return qMax(0, m_layers.size() - 1); }
+    int LayerCount() const { return m_layerDomain.Count(); }
+    int UserLayerCount() const { return qMax(0, m_layerDomain.Count() - 1); }
     bool HasLayer(int layerId) const;
     CanvasLayer layer(int layerId) const;
     int LayerIndex(int layerId) const;
@@ -178,7 +179,7 @@ class CanvasScene : public QGraphicsScene {
     bool IsItemEditable(const CanvasItem* item) const;
     // True when the active layer accepts new items (exists, visible, unlocked).
     bool IsActiveLayerWritable() const;
-    int ActiveLayerId() const { return m_activeLayerId; }
+    int ActiveLayerId() const { return m_layerDomain.ActiveLayerId(); }
     void SetActiveLayer(int layerId);
 
     int CreateLayer(const QString& name = QString());
@@ -300,9 +301,7 @@ class CanvasScene : public QGraphicsScene {
     // fromJson 加载重建期间为 true：这期间的归一化修复不算用户操作，
     // 不往撤销栈压命令（否则打开文件就会产生一条脏的历史记录）。
     bool m_restoringDocument = false;
-    QList<CanvasLayer> m_layers;
-    int m_activeLayerId = 1;
-    int m_nextLayerId = 2;
+    LayerDomain m_layerDomain;
     GroupDomain m_groups;
     QList<QPointer<CanvasItem>> m_selectionOrder;
     QList<int> m_preferredLayerIds;

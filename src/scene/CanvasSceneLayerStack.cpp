@@ -8,16 +8,16 @@
 
 int CanvasScene::CreateLayer(const QString& name)
 {
-    const int id = m_nextLayerId++;
+    const int id = m_layerDomain.NextId();
     CanvasLayer entry;
     entry.id = id;
     entry.name = name.trimmed().isEmpty() ? QStringLiteral("图层 %1").arg(id) : name.trimmed();
-    m_layers.append(entry);
-    m_activeLayerId = id;
+    m_layerDomain.Layers().append(entry);
+    m_layerDomain.SetActiveLayerId(id);
     ApplyAllItemStacking();
     update();
     emit layersChanged();
-    emit activeLayerChanged(m_activeLayerId);
+    emit activeLayerChanged(m_layerDomain.ActiveLayerId());
     emit contentChanged();
     return id;
 }
@@ -25,7 +25,7 @@ int CanvasScene::CreateLayer(const QString& name)
 bool CanvasScene::AddLayerWithUndo(const QString& name)
 {
     const LayerStackState before = LayerState();
-    const int id = m_nextLayerId++;
+    const int id = m_layerDomain.NextId();
     CanvasLayer entry;
     entry.id = id;
     entry.name = name.trimmed().isEmpty() ? QStringLiteral("图层 %1").arg(id) : name.trimmed();
@@ -87,7 +87,7 @@ bool CanvasScene::MoveLayerWithUndo(int layerId, int delta)
     }
 
     const int target = index + delta;
-    if (target <= 0 || target >= m_layers.size()) {
+    if (target <= 0 || target >= m_layerDomain.Layers().size()) {
         return false;
     }
 
@@ -110,7 +110,7 @@ bool CanvasScene::MoveLayerToIndexWithUndo(int layerId, int targetIndex)
     if (index <= 0) {
         return false;
     }
-    if (targetIndex <= 0 || targetIndex >= m_layers.size() || targetIndex == index) {
+    if (targetIndex <= 0 || targetIndex >= m_layerDomain.Layers().size() || targetIndex == index) {
         return false;
     }
 
@@ -140,7 +140,7 @@ bool CanvasScene::RenameLayerWithUndo(int layerId, const QString& name)
     }
 
     const QString trimmed = name.trimmed();
-    if (trimmed.isEmpty() || m_layers.at(index).name == trimmed) {
+    if (trimmed.isEmpty() || m_layerDomain.Layers().at(index).name == trimmed) {
         return false;
     }
 
@@ -160,8 +160,8 @@ bool CanvasScene::RenameLayerWithUndo(int layerId, const QString& name)
 LayerStackState CanvasScene::LayerState() const
 {
     LayerStackState state;
-    state.layers = m_layers;
-    state.activeLayerId = m_activeLayerId;
+    state.layers = m_layerDomain.Layers();
+    state.activeLayerId = m_layerDomain.ActiveLayerId();
     return state;
 }
 
@@ -219,15 +219,15 @@ LayerStackState CanvasScene::SanitizedLayerState(const LayerStackState& state) c
 
 void CanvasScene::ApplyLayerStateInternal(const LayerStackState& state, bool preserveLock)
 {
-    const QList<CanvasLayer> previousLayers = m_layers;
-    m_layers = state.layers;
-    m_activeLayerId = state.activeLayerId;
+    const QList<CanvasLayer> previousLayers = m_layerDomain.Layers();
+    m_layerDomain.Layers() = state.layers;
+    m_layerDomain.SetActiveLayerId(state.activeLayerId);
 
     // 锁定状态刻意不进入撤销栈：撤销/重做图层操作（新建、删除、排序、显隐）
     // 不应该顺带改变某一层的锁定。这里用同 id 的旧快照把 locked 覆盖回来；
     // 但从画布载入时要保留文件里的锁定状态，因此传入 preserveLock=false。
     if (preserveLock) {
-        for (CanvasLayer& entry : m_layers) {
+        for (CanvasLayer& entry : m_layerDomain.Layers()) {
             for (const CanvasLayer& previous : previousLayers) {
                 if (previous.id == entry.id) {
                     entry.locked = previous.locked;
@@ -237,20 +237,20 @@ void CanvasScene::ApplyLayerStateInternal(const LayerStackState& state, bool pre
         }
     }
 
-    for (CanvasLayer& entry : m_layers) {
-        if (entry.id == m_activeLayerId && !entry.visible) {
+    for (CanvasLayer& entry : m_layerDomain.Layers()) {
+        if (entry.id == m_layerDomain.ActiveLayerId() && !entry.visible) {
             entry.visible = true;
         }
     }
 
-    for (const CanvasLayer& entry : m_layers) {
-        m_nextLayerId = qMax(m_nextLayerId, entry.id + 1);
+    for (const CanvasLayer& entry : m_layerDomain.Layers()) {
+        m_layerDomain.ObserveId(entry.id);
     }
 
     const QList<CanvasItem*> items = CanvasItems();
     for (CanvasItem* item : items) {
         if (!HasLayer(item->LayerId())) {
-            item->SetLayerId(m_activeLayerId);
+            item->SetLayerId(m_layerDomain.ActiveLayerId());
         }
     }
     NormalizeAllHeights();
@@ -259,14 +259,14 @@ void CanvasScene::ApplyLayerStateInternal(const LayerStackState& state, bool pre
     UpdateSceneExtent();
     update();
     emit layersChanged();
-    emit activeLayerChanged(m_activeLayerId);
+    emit activeLayerChanged(m_layerDomain.ActiveLayerId());
     emit contentChanged();
 }
 
 void CanvasScene::EnsureLayerState()
 {
     const LayerStackState fixed = SanitizedLayerState(LayerState());
-    if (fixed.layers != m_layers || fixed.activeLayerId != m_activeLayerId) {
+    if (fixed.layers != m_layerDomain.Layers() || fixed.activeLayerId != m_layerDomain.ActiveLayerId()) {
         ApplyLayerStateInternal(fixed, false);
     }
 }
