@@ -290,6 +290,26 @@ QString UiText(const QString& english)
     return TranslateToCurrent(english);
 }
 
+namespace {
+// 动作文本会带 " (Ctrl+M)" / " (U)" 这类快捷键后缀。整串不在翻译表里时，
+// 只翻译前缀，保留后缀原样，避免切换英文后菜单仍显示中文。
+QString TranslateWithSuffix(const QString& text)
+{
+    const int suffixStart = text.lastIndexOf(QStringLiteral(" ("));
+    if (suffixStart <= 0 || !text.endsWith(QLatin1Char(')'))) {
+        return text;
+    }
+    const QString prefix = text.left(suffixStart);
+    const QString suffix = text.mid(suffixStart);
+    if (UiIsEnglish()) {
+        const auto it = g_gReverseTranslations.constFind(prefix);
+        return it == g_gReverseTranslations.constEnd() ? text : it.value() + suffix;
+    }
+    const QString translated = TranslateToCurrent(prefix);
+    return translated == prefix ? text : translated + suffix;
+}
+} // namespace
+
 QString UiTranslateEitherWay(const QString& text)
 {
     if (text.isEmpty()) {
@@ -298,10 +318,14 @@ QString UiTranslateEitherWay(const QString& text)
     if (UiIsEnglish()) {
         // 源语言是英文；只有已经显示成中文的文本需要查反向表。
         const auto it = g_gReverseTranslations.constFind(text);
-        return it == g_gReverseTranslations.constEnd() ? text : it.value();
+        if (it != g_gReverseTranslations.constEnd()) {
+            return it.value();
+        }
+        return TranslateWithSuffix(text);
     }
     // 中文翻译器已装载：英文源串会变成中文，本来就是中文的文本保持原样。
-    return TranslateToCurrent(text);
+    const QString translated = TranslateToCurrent(text);
+    return translated == text ? TranslateWithSuffix(text) : translated;
 }
 
 void UiRetranslateWidgetTree(QWidget* root)

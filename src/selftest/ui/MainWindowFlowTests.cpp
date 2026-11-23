@@ -114,6 +114,23 @@ void selftest::RunMainWindowFlowTests(Context& ctx)
                           englishOrder.contains(QStringLiteral("Brush mode")) &&
                           englishOrder.contains(QStringLiteral("Text mode")),
                       QStringLiteral("已存在的界面可以原地切换到英文"), englishOrder.join(QStringLiteral(" / ")));
+            QMenu* boolMenu = window.findChild<QMenu*>(QStringLiteral("BoolMenu"));
+            QStringList boolTexts;
+            if (boolMenu) {
+                for (QAction* action : boolMenu->actions()) {
+                    if (action && !action->isSeparator()) {
+                        boolTexts.append(action->text());
+                    }
+                }
+            }
+            ctx.Check(boolMenu && boolMenu->title() == QStringLiteral("Merge shapes (Ctrl+M)") &&
+                          boolTexts.contains(QStringLiteral("Union (U)")) &&
+                          boolTexts.contains(QStringLiteral("Xor (X)")) &&
+                          boolTexts.contains(QStringLiteral("Intersect (I)")) &&
+                          boolTexts.contains(QStringLiteral("Subtract (S)")) &&
+                          boolTexts.contains(QStringLiteral("Fragment (F)")) &&
+                          boolTexts.contains(QStringLiteral("Split along line (L)")),
+                      QStringLiteral("合并图元及子功能切英文后保留快捷键后缀"), boolTexts.join(QStringLiteral(" / ")));
             UiOverrideLanguage(UiLanguage::CHINESE);
             UiRetranslateWidgetTree(&window);
 
