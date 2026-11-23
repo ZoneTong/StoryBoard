@@ -111,6 +111,7 @@ set(STORYBOARD_SOURCE_FOLDERS
     src/ui/panels/properties
     src/ui/settings
     src/ui/widgets
+    src/ui/widgets/rows
     src/selftest
     src/selftest/core
     src/selftest/groups

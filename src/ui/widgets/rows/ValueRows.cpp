@@ -1,4 +1,4 @@
-#include "ui/widgets/PropertyRowWidgets.h"
+#include "ui/widgets/rows/ValueRows.h"
 
 #include "items/properties/ItemPropertyCatalog.h"
 #include "scene/CanvasScene.h"

@@ -3,7 +3,7 @@
 #include "items/CanvasItem.h"
 #include "scene/CanvasScene.h"
 #include "ui/panels/properties/PropertiesPanel.h"
-#include "ui/widgets/PropertyRowWidgets.h"
+#include "ui/widgets/rows/ValueRows.h"
 
 #include <QLineEdit>
 #include <QVBoxLayout>

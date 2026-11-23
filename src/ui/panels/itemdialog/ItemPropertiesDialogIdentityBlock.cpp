@@ -5,7 +5,7 @@
 #include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/properties/PropertyRowRegistry.h"
 #include "ui/panels/properties/PropertyRowSpec.h"
-#include "ui/widgets/PropertyRowWidgets.h"
+#include "ui/widgets/rows/ValueRows.h"
 
 #include <QComboBox>
 #include <QFormLayout>
@@ -15,7 +15,7 @@
 ItemPropertiesDialogIdentityBlock::ItemPropertiesDialogIdentityBlock(CanvasScene* scene, QWidget* parent)
     : QWidget(parent), m_scene(scene)
 {
-    // 名称 / 图层 / 高度与编辑面板共用同一批 PropertyRowWidgets，属性窗不需要行首图标。
+    // 名称 / 图层 / 高度与编辑面板共用同一批 ValueRows，属性窗不需要行首图标。
     m_nameRow = new TextValueRow(QString(), this);
     m_nameRow->setObjectName(QStringLiteral("ItemPropertiesNameRow"));
     m_nameEdit = m_nameRow->Edit();

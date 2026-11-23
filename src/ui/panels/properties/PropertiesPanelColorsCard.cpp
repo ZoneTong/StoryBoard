@@ -2,7 +2,7 @@
 
 #include "items/properties/FillAttributes.h"
 #include "items/properties/StrokeAttributes.h"
-#include "ui/widgets/AttributeRowWidgets.h"
+#include "ui/widgets/rows/FillStrokeRows.h"
 
 PropertiesPanelColorsCard::PropertiesPanelColorsCard(QWidget* parent) : QWidget(parent)
 {

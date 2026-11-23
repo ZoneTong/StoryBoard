@@ -21,7 +21,7 @@ class StrokeStyleRow;
 class StrokeColorRow;
 class StrokeWidthRow;
 
-// 属性窗的填充 / 边框区块：填充与描线两组行直接复用编辑面板的 AttributeRowWidgets，
+// 属性窗的填充 / 边框区块：填充与描线两组行直接复用编辑面板的 FillStrokeRows，
 // 行控件绑定本块私有的 FillAttributes / StrokeAttributes 副本（属性窗取消时不影响图元），
 // 确定时把两份状态交给对话框写入撤销记录。
 // 行显隐统一交给 PropertyRowRegistry：按图元上报的属性集合决定，不看 shapeType。

@@ -1,6 +1,6 @@
 #include "ui/panels/properties/PropertiesPanelFillBorderCard.h"
 
-#include "ui/widgets/AttributeRowWidgets.h"
+#include "ui/widgets/rows/FillStrokeRows.h"
 
 PropertiesPanelFillBorderCard::PropertiesPanelFillBorderCard(QWidget* parent) : QWidget(parent)
 {

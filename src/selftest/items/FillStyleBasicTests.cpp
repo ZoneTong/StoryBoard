@@ -6,7 +6,7 @@
 #include "selftest/core/SelfTestContext.h"
 #include "selftest/core/SelftestEntries.h"
 #include "ui/mainwindow/MainWindow.h"
-#include "ui/widgets/AttributeRowWidgets.h"
+#include "ui/widgets/rows/FillStrokeRows.h"
 
 #include <QColor>
 #include <QImage>

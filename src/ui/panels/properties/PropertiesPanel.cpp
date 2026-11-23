@@ -21,7 +21,7 @@
 #include "ui/panels/properties/PropertiesPanelSelectionCard.h"
 #include "ui/panels/properties/PropertiesPanelValueCard.h"
 #include "ui/panels/properties/PropertyRowSpec.h"
-#include "ui/widgets/AttributeRowWidgets.h"
+#include "ui/widgets/rows/FillStrokeRows.h"
 
 #include <QComboBox>
 #include <QDoubleSpinBox>

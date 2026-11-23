@@ -5,7 +5,7 @@
 #include "items/lines/ArcItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
 #include "ui/panels/properties/PropertiesPanel.h"
-#include "ui/widgets/PropertyRowWidgets.h"
+#include "ui/widgets/rows/ValueRows.h"
 
 #include <QDoubleSpinBox>
 #include <QSizeF>

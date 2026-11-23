@@ -1,4 +1,4 @@
-#include "ui/widgets/AttributeRowWidgets.h"
+#include "ui/widgets/rows/FillStrokeRows.h"
 
 #include "items/properties/ItemStyleVisuals.h"
 #include "ui/icons/IconFactory.h"

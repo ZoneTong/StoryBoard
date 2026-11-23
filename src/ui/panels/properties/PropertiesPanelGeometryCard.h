@@ -11,7 +11,7 @@ class PairValueRow;
 
 // 编辑面板的长短半轴 / 旋转 / 位置 / 尺寸 / 中心点 / 内角 A 行：
 // 属性窗几何区的同一批字段在面板里也能直接改，成对数值行与单个数值行复用
-// PropertyRowWidgets，尺寸和位置一次性写入同一条撤销记录。
+// ValueRows，尺寸和位置一次性写入同一条撤销记录。
 class PropertiesPanelGeometryCard : public QWidget {
     Q_OBJECT
 
