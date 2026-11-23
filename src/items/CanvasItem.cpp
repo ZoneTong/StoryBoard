@@ -148,6 +148,11 @@ QRectF CanvasItem::FrameRect() const
     return ContentRect();
 }
 
+QPointF CanvasItem::RotationOrigin() const
+{
+    return ContentRect().center();
+}
+
 QPointF CanvasItem::CenterScenePoint() const
 {
     // 默认取内容矩形中心：矩形 / 四边形族 / 星形 / 卷轴都满足。
@@ -163,9 +168,9 @@ void CanvasItem::SetContentSize(const QSizeF& size)
     }
     prepareGeometryChange();
     m_size = clamped;
-    // Rotation uses the content centre as its origin; keep it in sync after
-    // interactive or property-dialog resizing.
-    setTransformOriginPoint(ContentRect().center());
+    // Rotation uses the frame centre as its origin; keep it in sync after
+    // interactive or property-dialog resizing. 弧线的框是椭圆外接框，原点即椭圆圆心。
+    setTransformOriginPoint(RotationOrigin());
     update();
     ContentResized();
 }
@@ -338,11 +343,6 @@ QPointF CanvasItem::HandleCenter(Handle handle) const
 qreal CanvasItem::RotationHandleOffset() const
 {
     return m_handles->RotationOffset();
-}
-
-QRectF CanvasItem::HandleRect(Handle handle) const
-{
-    return m_handles->Rect(handle);
 }
 
 CanvasItem::Handle CanvasItem::HandleAt(const QPointF& pos) const

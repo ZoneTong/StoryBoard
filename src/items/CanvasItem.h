@@ -103,9 +103,11 @@ class CanvasItem : public QGraphicsObject {
     void SetName(const QString& name);
 
     QRectF ContentRect() const;
-    // 选中框与缩放手柄的锚定矩形。默认就是内容矩形；扇形 / 弧线这类
-    // 只占内容矩形一部分的图元会覆盖成实际轮廓的最小覆盖矩形。
+    // 选中框与缩放手柄的锚定矩形。默认就是内容矩形；弧线这类只在椭圆上截一段轮廓的
+    // 图元覆写成“生成它的那个椭圆”的外接框（§D12），可见轮廓不参与。
     virtual QRectF FrameRect() const;
+    // 旋转原点（本地坐标）。默认内容矩形中心；弧线取椭圆圆心，让框、椭圆与笔迹绕同一点转。
+    virtual QPointF RotationOrigin() const;
     // §3.4 中心点：派生属性，返回图元绘制中心的场景坐标；写回只平移 pos，
     // 不改尺寸与旋转。椭圆族由叶子覆写成真实椭圆圆心，其余取内容矩形中心。
     virtual QPointF CenterScenePoint() const;
@@ -159,6 +161,10 @@ class CanvasItem : public QGraphicsObject {
 
     static QSizeF MinimumSize();
 
+    // 手柄几何查询：绘制、命中与自动化测试共用同一处坐标，避免测试自己推算偏移。
+    QPointF HandleCenter(Handle handle) const;
+    qreal RotationHandleOffset() const;
+
   protected:
     virtual void PaintContent(QPainter* painter) = 0;
     virtual void ContentResized() {}
@@ -180,14 +186,11 @@ class CanvasItem : public QGraphicsObject {
     // 当前正在拖的通用缩放手柄；属性 / 构造阶段的 SetContentSize 为 NO_HANDLE。
     Handle ActiveResizeHandle() const { return m_resizeHandle; }
 
-    QPointF HandleCenter(Handle handle) const;
-    QRectF HandleRect(Handle handle) const;
     QFont ReadoutFont(const QFont& base) const;
     QRectF ReadoutRectAt(const QPointF& anchor, const QString& text) const;
     qreal ReadoutPadding() const;
     virtual QList<QRectF> AngleReadoutRects() const { return {}; }
     Handle HandleAt(const QPointF& pos) const;
-    qreal RotationHandleOffset() const;
     // Clickable area of the resize handles drawn by DrawSelectionOverlay().
     // Handles are centred on the content corners, so half of every handle sits
     // outside shape(); item hit tests must include it explicitly.
@@ -214,6 +217,8 @@ class CanvasItem : public QGraphicsObject {
     QPointF m_dragStartScene;
     QPointF m_dragStartPos;
     QSizeF m_dragStartSize;
+    // 缩放以选中框为基准（弧线的框与内容框不同大小），拖拽开始时先记下本地框。
+    QRectF m_dragStartFrame;
     qreal m_dragStartRotation = 0.0;
     qreal m_rotateStartAngle = 0.0;
     bool m_angleReadoutVisible = false;

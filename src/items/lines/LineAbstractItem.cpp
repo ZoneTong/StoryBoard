@@ -259,13 +259,9 @@ QPainterPath LineAbstractItem::shape() const
 {
     QPainterPath result = StrokeGeometry::HitScaled(m_path, m_baseSize, ContentSize(), m_strokeWidth, ViewScale());
 
-    // Selection handles sit on the content corners; make them clickable even when
-    // the stroke itself does not pass through those points.
-    if (isSelected() && IsEditable() && HasSingleSelection()) {
-        for (int handle = TOP_LEFT; handle <= LEFT; ++handle) {
-            result.addRect(HandleRect(static_cast<Handle>(handle)).adjusted(-2.0, -2.0, 2.0, 2.0));
-        }
-    }
+    // 手柄与旋转钮落在内容框角上或框外，描线本身不会经过它们；统一并入命中形状，
+    // 否则曲线族的旋转钮、弧线端点这类自定义手柄点不到（§D11）。
+    result.addPath(SelectionHandleShape());
     return result;
 }
 

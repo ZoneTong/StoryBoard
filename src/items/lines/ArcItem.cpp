@@ -7,21 +7,7 @@
 
 namespace {
 
-constexpr qreal MINIMUM_FRAME_SIDE = 12.0;
 constexpr int ARC_SAMPLES = 64;
-
-QRectF PaddedToMinimum(QRectF frame)
-{
-    if (frame.width() < MINIMUM_FRAME_SIDE) {
-        frame.moveLeft(frame.center().x() - MINIMUM_FRAME_SIDE / 2.0);
-        frame.setWidth(MINIMUM_FRAME_SIDE);
-    }
-    if (frame.height() < MINIMUM_FRAME_SIDE) {
-        frame.moveTop(frame.center().y() - MINIMUM_FRAME_SIDE / 2.0);
-        frame.setHeight(MINIMUM_FRAME_SIDE);
-    }
-    return frame;
-}
 
 QJsonArray RectToArray(const QRectF& rect)
 {
@@ -114,7 +100,16 @@ QString ArcItem::DisplayName() const
 
 QRectF ArcItem::FrameRect() const
 {
-    return PaddedToMinimum(CanvasItem::FrameRect());
+    // 弧线本质是“椭圆上截一段轮廓”，选框必须是生成它的那个椭圆的外接框（§D12）；
+    // 可见笔迹的包围盒会被归一化收缩，起止角一变框就跟着变，不能用。
+    const QSizeF box = ContentSize();
+    return QRectF(m_refFrame.x() * box.width(), m_refFrame.y() * box.height(), m_refFrame.width() * box.width(),
+                  m_refFrame.height() * box.height());
+}
+
+QPointF ArcItem::RotationOrigin() const
+{
+    return FrameRect().center();
 }
 
 QSizeF ArcItem::EllipseSize() const

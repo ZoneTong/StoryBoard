@@ -516,24 +516,122 @@ void selftest::RunShapeItemTests(Context& ctx)
                   QStringLiteral("start=%1 sweep=%2").arg(loadedArc.StartAngle()).arg(loadedArc.SweepAngle()));
     }
     {
-        // 扇形 / 弧线的选中框贴着实际轮廓，而不是整个内容矩形。
+        // §D12：扇形与弧线都是“椭圆上截出的部分”，选框必须是生成它们的那个椭圆的外接框，
+        // 可见轮廓的最小覆盖矩形不参与；起止角变化不影响框。
         SectorItem sector;
         sector.SetContentSize(QSizeF(200.0, 200.0));
-        sector.SetArcAngles(0.0, 90.0);
+        sector.SetArcAngles(0.0, 100.0);
         const QRectF sectorFrame = sector.FrameRect();
-        const QRectF sectorBounds = sector.CurrentPath(sector.ContentRect()).boundingRect();
+        const QRectF sectorContent = sector.ContentRect();
+        sector.SetArcAngles(200.0, 30.0);
+        const QRectF sectorFrameAfter = sector.FrameRect();
+
         ArcItem arc;
         arc.SetArcGeometry(QPointF(0.0, 0.0), QSizeF(200.0, 200.0), 15.0, 140.0, QColor(Qt::black), 2.0);
         const QRectF arcFrame = arc.FrameRect();
-        ctx.Check(sectorFrame.width() < 200.0 && arcFrame.width() < 200.0 &&
-                      qAbs(sectorFrame.right() - sectorBounds.right()) < 0.5 &&
-                      qAbs(sectorFrame.top() - sectorBounds.top()) < 0.5,
-                  QStringLiteral("扇形与弧线的包围框按轮廓最小覆盖矩形"),
-                  QStringLiteral("sector=%1x%2 arc=%3x%4")
+        const QSizeF arcEllipse = arc.EllipseSize();
+        arc.SetArcAngles(15.0, 30.0);
+        const QRectF arcFrameAfter = arc.FrameRect();
+
+        ctx.Check(qAbs(sectorFrame.width() - sectorContent.width()) < 0.5 &&
+                      qAbs(sectorFrame.height() - sectorContent.height()) < 0.5 &&
+                      qAbs(arcFrame.width() - arcEllipse.width()) < 0.5 &&
+                      qAbs(arcFrame.height() - arcEllipse.height()) < 0.5,
+                  QStringLiteral("扇形与弧线的选框等于生成它们的椭圆外接框"),
+                  QStringLiteral("sector=%1x%2 content=%3x%4 arc=%5x%6 ellipse=%7x%8")
                       .arg(sectorFrame.width())
                       .arg(sectorFrame.height())
+                      .arg(sectorContent.width())
+                      .arg(sectorContent.height())
                       .arg(arcFrame.width())
-                      .arg(arcFrame.height()));
+                      .arg(arcFrame.height())
+                      .arg(arcEllipse.width())
+                      .arg(arcEllipse.height()));
+        ctx.Check(qAbs(sectorFrame.width() - sectorFrameAfter.width()) < 0.01 &&
+                      qAbs(sectorFrame.height() - sectorFrameAfter.height()) < 0.01 &&
+                      qAbs(arcFrame.width() - arcFrameAfter.width()) < 0.01 &&
+                      qAbs(arcFrame.height() - arcFrameAfter.height()) < 0.01,
+                  QStringLiteral("改变起止角不改变扇形与弧线的选框"),
+                  QStringLiteral("sector=%1x%2→%3x%4 arc=%5x%6→%7x%8")
+                      .arg(sectorFrame.width())
+                      .arg(sectorFrame.height())
+                      .arg(sectorFrameAfter.width())
+                      .arg(sectorFrameAfter.height())
+                      .arg(arcFrame.width())
+                      .arg(arcFrame.height())
+                      .arg(arcFrameAfter.width())
+                      .arg(arcFrameAfter.height()));
+        const QRectF arcFrameNow = arc.FrameRect();
+        ctx.Check(QLineF(arc.RotationOrigin(), arcFrameNow.center()).length() < 0.01,
+                  QStringLiteral("弧线绕椭圆圆心旋转"),
+                  QStringLiteral("origin=%1,%2 frameCenter=%3,%4")
+                      .arg(arc.RotationOrigin().x())
+                      .arg(arc.RotationOrigin().y())
+                      .arg(arcFrameNow.center().x())
+                      .arg(arcFrameNow.center().y()));
+    }
+    {
+        // §D10：简化按“用户看到的尺寸”算容差，并且不把用户调过的尺寸重置回 1:1。
+        CurveItem curve;
+        QVector<QPointF> points;
+        for (int i = 0; i < 60; ++i) {
+            points.append(QPointF(i * 6.0, (i % 2 == 0 ? 4.0 : -4.0) + i * 0.2));
+        }
+        curve.SetStrokePoints(points, QColor(Qt::black), 2.0, 0.0, false);
+        const QSizeF sizeBefore = curve.ContentSize();
+        const QPointF posBefore = curve.pos();
+        const QVector<QPointF> knotsBefore = curve.StrokePoints();
+        const QSizeF scaled(sizeBefore.width() * 0.25, sizeBefore.height() * 0.25);
+        curve.SetContentSize(scaled);
+
+        const bool changed = curve.SimplifyCurve(6.0);
+        const QSizeF sizeAfter = curve.ContentSize();
+        ctx.Check(changed && sizeAfter.width() < sizeBefore.width() * 0.45 &&
+                      sizeAfter.height() < sizeBefore.height() * 0.45 &&
+                      qAbs(curve.pos().x() - posBefore.x()) < 40.0 &&
+                      qAbs(curve.pos().y() - posBefore.y()) < 40.0 &&
+                      curve.StrokePoints().size() < knotsBefore.size(),
+                  QStringLiteral("简化曲线按缩放后的结果抽点并保留用户尺寸"),
+                  QStringLiteral("changed=%1 size=%2x%3 before=%4x%5 knots=%6→%7 pos=%8,%9→%10,%11")
+                      .arg(changed)
+                      .arg(sizeAfter.width())
+                      .arg(sizeAfter.height())
+                      .arg(sizeBefore.width())
+                      .arg(sizeBefore.height())
+                      .arg(knotsBefore.size())
+                      .arg(curve.StrokePoints().size())
+                      .arg(posBefore.x())
+                      .arg(posBefore.y())
+                      .arg(curve.pos().x())
+                      .arg(curve.pos().y()));
+    }
+    {
+        // §D11：描线族的 shape() 必须并入手柄命中区，否则旋转钮、弧线端点这些
+        // 落在描线之外的句柄点不到（曲线旋转钮失效的根因）。
+        ArcItem* arc = new ArcItem;
+        arc->SetArcGeometry(QPointF(0.0, 0.0), QSizeF(200.0, 200.0), 20.0, 100.0, QColor(Qt::black), 2.0);
+        CanvasScene scene;
+        QUndoStack undo;
+        scene.SetUndoStack(&undo);
+        // 编辑模式下图元才可编辑，选中态才会带上手柄命中区。
+        scene.SetMode(ToolMode::EDIT);
+        scene.AddItemsWithUndo({arc}, QStringLiteral("Add arc"));
+        arc->setFlag(QGraphicsItem::ItemIsSelectable, true);
+        arc->setSelected(true);
+        const QPointF rotationKnob = arc->HandleCenter(CanvasItem::ROTATION);
+        const HandleSpecList endpoints = arc->CustomHandles();
+        const QPointF firstEndpoint = endpoints.isEmpty() ? QPointF() : endpoints.constFirst().position;
+        const QPainterPath hitShape = arc->shape();
+        ctx.Check(!rotationKnob.isNull() && hitShape.contains(rotationKnob) && !firstEndpoint.isNull() &&
+                      hitShape.contains(firstEndpoint),
+                  QStringLiteral("描线族的旋转钮与自定义端点进入命中形状"),
+                  QStringLiteral("rot=%1,%2 in=%3 endpoint=%4,%5 in=%6")
+                      .arg(rotationKnob.x())
+                      .arg(rotationKnob.y())
+                      .arg(hitShape.contains(rotationKnob))
+                      .arg(firstEndpoint.x())
+                      .arg(firstEndpoint.y())
+                      .arg(hitShape.contains(firstEndpoint)));
     }
     {
         // §3.3 弧端点手柄：扇形两端各一个端点手柄；拖起始端固定结束端、拖结束端固定起始端，

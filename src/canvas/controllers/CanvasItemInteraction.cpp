@@ -116,6 +116,7 @@ void CanvasItemInteraction::BeginResize(int handle, const QPointF& scenePos)
     m_item->m_dragStartScene = scenePos;
     m_item->m_dragStartPos = m_item->pos();
     m_item->m_dragStartSize = m_item->m_size;
+    m_item->m_dragStartFrame = m_item->FrameRect();
     m_item->m_before = {{m_item, m_item->pos(), m_item->m_size}};
     m_customDrag = false;
     m_customDragBefore.clear();
@@ -149,7 +150,10 @@ void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardMod
     m_item->FrameResizeDragged();
 
     const QPointF delta = scenePos - m_item->m_dragStartScene;
-    QRectF rect(m_item->m_dragStartPos, m_item->m_dragStartSize);
+    // 缩放基准是选中框（FrameRect），不是内容框：弧线的框是椭圆外接框，比笔迹包围盒大。
+    // 框与内容框同尺寸的图元偏移为 0，下面的换算自然退化成旧行为。
+    const QRectF startFrame = m_item->m_dragStartFrame;
+    QRectF rect(startFrame.topLeft() + m_item->m_dragStartPos, startFrame.size());
 
     if (IsLeftHandle(handle)) {
         rect.setLeft(rect.left() + delta.x());
@@ -181,7 +185,7 @@ void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardMod
     }
 
     if ((modifiers & Qt::ShiftModifier) && IsCornerHandle(handle) && m_item->m_dragStartSize.height() > 0.0) {
-        const qreal aspect = m_item->m_dragStartSize.width() / m_item->m_dragStartSize.height();
+        const qreal aspect = startFrame.width() / startFrame.height();
         QSizeF size = rect.size();
         if (size.width() / size.height() > aspect) {
             size.setWidth(size.height() * aspect);
@@ -202,8 +206,16 @@ void CanvasItemInteraction::ApplyResize(const QPointF& scenePos, Qt::KeyboardMod
         }
     }
 
-    m_item->setPos(rect.topLeft());
-    m_item->SetContentSize(rect.size());
+    const qreal scaleX = startFrame.width() > 0.0 ? rect.width() / startFrame.width() : 1.0;
+    const qreal scaleY = startFrame.height() > 0.0 ? rect.height() / startFrame.height() : 1.0;
+    QSizeF size(m_item->m_dragStartSize.width() * scaleX, m_item->m_dragStartSize.height() * scaleY);
+    size = size.expandedTo(QSizeF(MINIMUM_SIDE, MINIMUM_SIDE));
+
+    // 内容原点相对选中框左上角的偏移随缩放一起变，否则弧线这类“框大于内容框”的图元
+    // 在拖角时会把椭圆整体平移出去。
+    const QPointF frameOffset = startFrame.topLeft();
+    m_item->setPos(rect.topLeft() - QPointF(frameOffset.x() * scaleX, frameOffset.y() * scaleY));
+    m_item->SetContentSize(size);
 }
 
 void CanvasItemInteraction::BeginRotate(const QPointF& scenePos)
@@ -211,14 +223,14 @@ void CanvasItemInteraction::BeginRotate(const QPointF& scenePos)
     m_item->m_drag = CanvasItem::DragKind::ROTATE;
     m_item->m_dragStartScene = scenePos;
     m_item->m_dragStartRotation = m_item->m_rotation;
-    const QPointF center = m_item->mapToScene(m_item->ContentRect().center());
+    const QPointF center = m_item->mapToScene(m_item->RotationOrigin());
     m_item->m_rotateStartAngle = qRadiansToDegrees(qAtan2(scenePos.y() - center.y(), scenePos.x() - center.x()));
     m_item->m_before.clear();
 }
 
 void CanvasItemInteraction::ApplyRotate(const QPointF& scenePos)
 {
-    const QPointF center = m_item->mapToScene(m_item->ContentRect().center());
+    const QPointF center = m_item->mapToScene(m_item->RotationOrigin());
     const qreal angle = qRadiansToDegrees(qAtan2(scenePos.y() - center.y(), scenePos.x() - center.x()));
     const qreal target = m_item->m_dragStartRotation + (angle - m_item->m_rotateStartAngle);
     // 需求 35：旋转手柄按 5° 步长吸附。

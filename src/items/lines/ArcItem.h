@@ -17,6 +17,8 @@ class ArcItem : public LineAbstractItem, public ArcAngleAttributes, public Ellip
     QString Kind() const override { return QStringLiteral("arc"); }
     QString DisplayName() const override;
     QRectF FrameRect() const override;
+    // 旋转原点取椭圆圆心：框、椭圆与笔迹绕同一点转，拖框时弧线不会绕着偏心点甩出去。
+    QPointF RotationOrigin() const override;
     // §3.4 中心点：弧线按所在椭圆的真实圆心，而不是描线笔迹的包围盒中心。
     QPointF CenterScenePoint() const override;
     // 弧线所在椭圆的真实外接尺寸（不是弧线笔迹的包围盒），供属性窗显示长短半轴。

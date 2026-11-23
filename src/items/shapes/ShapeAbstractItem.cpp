@@ -193,14 +193,8 @@ qreal ShapeAbstractItem::FramePadding() const
 
 QRectF ShapeAbstractItem::FrameRect() const
 {
-    // 扇形只画了内容矩形里的一小块，选中框与手柄改贴在轮廓的最小覆盖矩形上。
-    if (m_customPath.isEmpty() && shapeType() == ShapeType::SECTOR) {
-        const QPainterPath path = CurrentPath(ContentRect());
-        const QRectF bounds = path.boundingRect();
-        if (!bounds.isEmpty()) {
-            return bounds;
-        }
-    }
+    // 扇形是“椭圆上截出的一块平面”，其内容框本来就是生成它的椭圆外接框，
+    // 因此不再按可见轮廓的最小覆盖矩形收缩（§D12）；起止角改变不影响选框。
     return CanvasItem::FrameRect();
 }
 
