@@ -1,3 +1,4 @@
+#include "app/I18n.h"
 #include "app/Settings.h"
 #include "items/CanvasTypes.h"
 #include "items/shapes/ShapeAbstractItem.h"
@@ -173,5 +174,25 @@ void selftest::RunSettingsDialogBasicTests(Context& ctx)
                       .arg(editedLevels)
                       .arg(levels ? levels->value() : -1)
                       .arg(fileLevels));
+    }
+
+    {
+        // 属性窗的行标签用 ItemPropertiesDialog::tr 建好，换语言时只剩反向表可查；
+        // 这里校验 ts 全上下文的正续表能把英文源串送回中文，且冲突串不来回抖。
+        const UiLanguage previous = UiEffectiveLanguage();
+        UiOverrideLanguage(UiLanguage::ENGLISH);
+        UiInitializeLanguage();
+        const QString enSemi = UiTranslateEitherWay(QStringLiteral("长半轴"));
+        ctx.Check(enSemi == QStringLiteral("Semi-major axis"), QStringLiteral("中文译串翻回英文源串"),
+                  QStringLiteral("en=%1").arg(enSemi));
+        UiOverrideLanguage(UiLanguage::CHINESE);
+        UiInitializeLanguage();
+        const QString zhSemi = UiTranslateEitherWay(QStringLiteral("Semi-major axis"));
+        ctx.Check(zhSemi == QStringLiteral("长半轴"), QStringLiteral("英文源串跨上下文翻回中文"),
+                  QStringLiteral("zh=%1").arg(zhSemi));
+        ctx.Check(UiTranslateEitherWay(QStringLiteral("Stroke")) != QStringLiteral("Stroke"),
+                  QStringLiteral("冲突串仍按 StoryBoard 上下文照常翻译，未被正续表劫持"));
+        UiOverrideLanguage(previous);
+        UiInitializeLanguage();
     }
 }

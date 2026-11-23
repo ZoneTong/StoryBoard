@@ -6,6 +6,7 @@
 #include <QAction>
 #include <QComboBox>
 #include <QCoreApplication>
+#include <QDialog>
 #include <QDir>
 #include <QDockWidget>
 #include <QFile>
@@ -15,6 +16,7 @@
 #include <QLineEdit>
 #include <QLocale>
 #include <QMenu>
+#include <QSet>
 #include <QStandardPaths>
 #include <QTabWidget>
 #include <QTranslator>
@@ -41,6 +43,11 @@ QTranslator g_gQtTranslator;
 bool g_gQtTranslationAvailable = false;
 bool g_gQtTranslatorInstalled = false;
 QHash<QString, QString> g_gReverseTranslations;
+// 英文源串 → 中文：按 ts 全上下文收集，不只 StoryBoard 一个上下文。
+// 属性窗的行标签是用 ItemPropertiesDialog::tr 建的，只查 StoryBoard 会漏，必须走这张表。
+QHash<QString, QString> g_gForwardTranslations;
+// 同一源串出现多种译文的，记下来不再参与正向查询（否则第三条又会填回去）。
+QSet<QString> g_gForwardConflicts;
 
 void LoadReverseTranslations()
 {
@@ -65,7 +72,20 @@ void LoadReverseTranslations()
         } else if (xml.name() == QLatin1String("translation")) {
             const QString translated = xml.readElementText();
             if (!source.isEmpty() && !translated.isEmpty()) {
-                g_gReverseTranslations.insert(translated, source);
+                // 同源多译文（不同上下文各译一份）无法决定方向，跳过以免来回翻抖动。
+                if (!g_gForwardConflicts.contains(source)) {
+                    const auto forward = g_gForwardTranslations.constFind(source);
+                    if (forward == g_gForwardTranslations.constEnd()) {
+                        g_gForwardTranslations.insert(source, translated);
+                    } else if (forward.value() != translated) {
+                        g_gForwardTranslations.remove(source);
+                        g_gForwardConflicts.insert(source);
+                    }
+                }
+                // 同译文多源（Selected item / Stroke / Solid 等）反向也只能跳过。
+                if (!g_gReverseTranslations.contains(translated)) {
+                    g_gReverseTranslations.insert(translated, source);
+                }
             }
             source.clear();
         }
@@ -323,7 +343,12 @@ QString UiTranslateEitherWay(const QString& text)
         }
         return TranslateWithSuffix(text);
     }
-    // 中文翻译器已装载：英文源串会变成中文，本来就是中文的文本保持原样。
+    // 中文方向：先查跨上下文正续表（属性窗的行标签不在 StoryBoard 上下文里），
+    // 再退回 StoryBoard 上下文翻译器，最后试快捷键后缀。
+    const auto forward = g_gForwardTranslations.constFind(text);
+    if (forward != g_gForwardTranslations.constEnd()) {
+        return forward.value();
+    }
     const QString translated = TranslateToCurrent(text);
     return translated == text ? TranslateWithSuffix(text) : translated;
 }
@@ -365,6 +390,20 @@ void UiRetranslateWidgetTree(QWidget* root)
 
     for (QGroupBox* group : root->findChildren<QGroupBox*>()) {
         group->setTitle(UiTranslateEitherWay(group->title()));
+    }
+
+    // 属性窗、设置窗这类子对话框不是根窗口，标题要单独补。
+    for (QDialog* dialog : root->findChildren<QDialog*>()) {
+        if (!dialog->windowTitle().isEmpty()) {
+            dialog->setWindowTitle(UiTranslateEitherWay(dialog->windowTitle()));
+        }
+    }
+
+    // 普通控件的 tooltip（如属性行输入框的说明）不在上面的分类里，统一扫一遍。
+    for (QWidget* widget : root->findChildren<QWidget*>()) {
+        if (!widget->toolTip().isEmpty()) {
+            widget->setToolTip(UiTranslateEitherWay(widget->toolTip()));
+        }
     }
 
     for (QLineEdit* edit : root->findChildren<QLineEdit*>()) {
