@@ -16,6 +16,9 @@ namespace {
 constexpr int ICON_SIZE = 20;
 constexpr int BUTTON_SIZE = 30;
 constexpr int SWATCH_SIZE = 26;
+// 填充样式有 11 个按钮，单独收紧，避免属性行比填充颜色行更宽。
+constexpr int FILL_STYLE_ICON_SIZE = 18;
+constexpr int FILL_STYLE_BUTTON_SIZE = 22;
 
 QToolButton* MakeRowIcon(IconId id, QWidget* parent)
 {
@@ -84,7 +87,7 @@ FillStyleRow::FillStyleRow(QWidget* parent) : QWidget(parent)
 {
     setObjectName(QStringLiteral("ItemFillStyleRow"));
     auto* layout = MakeRowLayout(this);
-    layout->setSpacing(2);
+    layout->setSpacing(0);
 
     QToolButton* icon = MakeRowIcon(IconId::PALETTE, this);
     icon->setToolTip(AttributeRowText("Fill style"));
@@ -95,9 +98,9 @@ FillStyleRow::FillStyleRow(QWidget* parent) : QWidget(parent)
         button->setObjectName(QStringLiteral("ItemFillStyleButton"));
         button->setCheckable(true);
         button->setAutoRaise(true);
-        button->setIcon(ItemStyleVisuals::FillStyleIcon(style, ICON_SIZE));
-        button->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
-        button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
+        button->setIcon(ItemStyleVisuals::FillStyleIcon(style, FILL_STYLE_ICON_SIZE));
+        button->setIconSize(QSize(FILL_STYLE_ICON_SIZE, FILL_STYLE_ICON_SIZE));
+        button->setFixedSize(FILL_STYLE_BUTTON_SIZE, FILL_STYLE_BUTTON_SIZE);
         button->setToolTip(FillStyleName(style));
         button->setProperty("fillStyle", static_cast<int>(style));
         connect(button, &QToolButton::clicked, this, [this, style]() {

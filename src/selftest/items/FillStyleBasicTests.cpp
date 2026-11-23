@@ -5,6 +5,7 @@
 #include "selftest/core/SelfTestContext.h"
 #include "selftest/core/SelftestEntries.h"
 #include "ui/mainwindow/MainWindow.h"
+#include "ui/widgets/AttributeRowWidgets.h"
 
 #include <QColor>
 #include <QImage>
@@ -18,6 +19,20 @@
 
 void selftest::RunFillStyleBasicTests(Context& ctx)
 {
+    // 需求 7：11 个填充样式按钮收紧后，整行不超过填充颜色行。
+    {
+        FillStyleRow styleRow;
+        FillColorRow colorRow;
+        styleRow.show();
+        colorRow.show();
+        styleRow.adjustSize();
+        colorRow.adjustSize();
+        ctx.Check(
+            styleRow.sizeHint().width() <= colorRow.sizeHint().width(),
+            QStringLiteral("填充样式行宽度不超过填充颜色行"),
+            QStringLiteral("style=%1 color=%2").arg(styleRow.sizeHint().width()).arg(colorRow.sizeHint().width()));
+    }
+
     // 需求 10/11/12/13/14 回归：锁定、椭圆、填充样式、画板尺寸。
     {
         CanvasScene reqScene;
