@@ -21,8 +21,8 @@ class PropertiesPanelFillBorderCard : public QWidget {
     explicit PropertiesPanelFillBorderCard(QWidget* parent = nullptr);
 
     void Refresh(const QList<FillAttributes*>& fills, const QList<StrokeAttributes*>& strokes);
-    QWidget* FillStyleRow() const;
-    QWidget* BorderStyleRow() const;
+    QWidget* FillStyleWidget() const;
+    QWidget* BorderStyleWidget() const;
     QWidget* BorderWidthRow() const;
 
   signals:

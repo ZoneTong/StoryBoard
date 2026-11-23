@@ -17,7 +17,7 @@ class PropertiesPanelColorsCard : public QWidget {
     explicit PropertiesPanelColorsCard(QWidget* parent = nullptr);
 
     void Refresh(const QList<FillAttributes*>& fills, const QList<StrokeAttributes*>& strokes);
-    QWidget* FillColorRow() const;
+    QWidget* FillColorWidget() const;
     QWidget* BorderColorRow() const;
 
   signals:

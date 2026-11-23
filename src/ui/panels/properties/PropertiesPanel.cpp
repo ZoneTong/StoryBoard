@@ -99,8 +99,8 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
 
     // 需求 1 行序（与菜单、工具栏、属性窗统一）：
     // 填充样式 → 填充颜色 → （需求 13 引入的背景图片） → 描线样式 → 描线颜色 → 描线宽度。
-    layout->addWidget(m_fillBorderCard->FillStyleRow());
-    layout->addWidget(m_colorsCard->FillColorRow());
+    layout->addWidget(m_fillBorderCard->FillStyleWidget());
+    layout->addWidget(m_colorsCard->FillColorWidget());
 
     // 填充图片行与属性窗共用同一个属性行控件：图标、更换图片、摆放方式、清除四件，
     // 值直接读 FillAttributes，改动仍交回面板走撤销命令。
@@ -110,7 +110,7 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     connect(m_fillImageRow, &FillImageRow::clearFillImageClicked, this, &PropertiesPanel::ClearFillImage);
     layout->addWidget(m_fillImageRow);
 
-    layout->addWidget(m_fillBorderCard->BorderStyleRow());
+    layout->addWidget(m_fillBorderCard->BorderStyleWidget());
     layout->addWidget(m_colorsCard->BorderColorRow());
     layout->addWidget(m_fillBorderCard->BorderWidthRow());
 
@@ -343,9 +343,9 @@ void PropertiesPanel::Refresh()
     m_geometryCard->SetCenterVisible(rowVisible(ItemProperty::CENTER));
     RefreshDynamicRows(common, items);
 
-    m_fillBorderCard->FillStyleRow()->setVisible(rowVisible(ItemProperty::FILL_STYLE));
-    m_colorsCard->FillColorRow()->setVisible(rowVisible(ItemProperty::FILL_COLOR));
-    m_fillBorderCard->BorderStyleRow()->setVisible(rowVisible(ItemProperty::STROKE_STYLE));
+    m_fillBorderCard->FillStyleWidget()->setVisible(rowVisible(ItemProperty::FILL_STYLE));
+    m_colorsCard->FillColorWidget()->setVisible(rowVisible(ItemProperty::FILL_COLOR));
+    m_fillBorderCard->BorderStyleWidget()->setVisible(rowVisible(ItemProperty::STROKE_STYLE));
     m_colorsCard->BorderColorRow()->setVisible(rowVisible(ItemProperty::STROKE_COLOR));
     m_fillBorderCard->BorderWidthRow()->setVisible(rowVisible(ItemProperty::STROKE_WIDTH));
 

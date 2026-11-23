@@ -6,8 +6,8 @@
 
 PropertiesPanelColorsCard::PropertiesPanelColorsCard(QWidget* parent) : QWidget(parent)
 {
-    m_borderColorRow = new ::StrokeColorRow(this);
-    m_fillColorRow = new ::FillColorRow(this);
+    m_borderColorRow = new StrokeColorRow(this);
+    m_fillColorRow = new FillColorRow(this);
     connect(m_borderColorRow, &StrokeColorRow::strokeColorChosen, this, &PropertiesPanelColorsCard::strokeColorChosen);
     connect(m_fillColorRow, &FillColorRow::fillColorChosen, this, &PropertiesPanelColorsCard::fillColorChosen);
 }
@@ -18,7 +18,7 @@ void PropertiesPanelColorsCard::Refresh(const QList<FillAttributes*>& fills, con
     m_borderColorRow->SetTargets(strokes);
 }
 
-QWidget* PropertiesPanelColorsCard::FillColorRow() const
+QWidget* PropertiesPanelColorsCard::FillColorWidget() const
 {
     return m_fillColorRow;
 }

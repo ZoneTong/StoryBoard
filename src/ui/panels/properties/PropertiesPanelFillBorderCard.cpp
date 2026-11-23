@@ -4,9 +4,9 @@
 
 PropertiesPanelFillBorderCard::PropertiesPanelFillBorderCard(QWidget* parent) : QWidget(parent)
 {
-    m_fillStyleRow = new ::FillStyleRow(this);
-    m_borderStyleRow = new ::StrokeStyleRow(this);
-    m_borderWidthRow = new ::StrokeWidthRow(this);
+    m_fillStyleRow = new FillStyleRow(this);
+    m_borderStyleRow = new StrokeStyleRow(this);
+    m_borderWidthRow = new StrokeWidthRow(this);
 
     connect(m_fillStyleRow, &FillStyleRow::fillStyleChosen, this, &PropertiesPanelFillBorderCard::fillStyleChosen);
     connect(m_borderStyleRow, &StrokeStyleRow::borderStyleChosen, this,
@@ -23,12 +23,12 @@ void PropertiesPanelFillBorderCard::Refresh(const QList<FillAttributes*>& fills,
     m_borderWidthRow->SetTargets(strokes);
 }
 
-QWidget* PropertiesPanelFillBorderCard::FillStyleRow() const
+QWidget* PropertiesPanelFillBorderCard::FillStyleWidget() const
 {
     return m_fillStyleRow;
 }
 
-QWidget* PropertiesPanelFillBorderCard::BorderStyleRow() const
+QWidget* PropertiesPanelFillBorderCard::BorderStyleWidget() const
 {
     return m_borderStyleRow;
 }
