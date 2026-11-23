@@ -75,10 +75,10 @@ FillStyleRow::FillStyleRow(QWidget* parent) : QWidget(parent)
     icon->setToolTip(RowText("Fill style"));
     layout->addWidget(icon, 0, Qt::AlignVCenter);
 
-    // 11 个按钮排一行：按钮最大 28×28、字形 20，行宽 = 图标 25 + 11×28 = 333。
-    // 面板更窄时按可用宽度等比收小（不小于 20），始终排在一行、且不超过其它属性行的宽度。
-    const int fillStyleButton = 28;
-    const int fillStyleGlyph = 20;
+    // 11 个按钮排一行：按钮最大 21×21、字形 15，行宽 = 图标 + 11×21 = 255，比填充颜色行（265）窄。
+    // 面板更窄时按可用宽度等比收小（不小于 16），始终排在一行、且不超过其它属性行的宽度。
+    const int fillStyleButton = 21;
+    const int fillStyleGlyph = 15;
     m_buttonEdge = fillStyleButton;
     for (const FillStyle style : AllFillStyles()) {
         auto* button = new QToolButton(this);
@@ -101,6 +101,13 @@ FillStyleRow::FillStyleRow(QWidget* parent) : QWidget(parent)
     layout->addStretch(1);
 }
 
+QSize FillStyleRow::minimumSizeHint() const
+{
+    // 按钮边长最小 16（见 resizeEvent），这里按最小边长报下界：面板拉窄/拉宽都不会把行顶出面板右边界。
+    const int iconWidth = RowMetrics::IconButtonSize().width();
+    return QSize(iconWidth + m_buttons.size() * 16, RowMetrics::RowHeight());
+}
+
 void FillStyleRow::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
@@ -112,8 +119,8 @@ void FillStyleRow::resizeEvent(QResizeEvent* event)
     if (available <= 0) {
         return;
     }
-    const int edge = qBound(20, available / m_buttons.size(), 28);
-    ApplyButtonSize(edge, qBound(14, edge - 8, 20));
+    const int edge = qBound(16, available / m_buttons.size(), 21);
+    ApplyButtonSize(edge, qBound(12, edge - 6, 15));
 }
 
 void FillStyleRow::ApplyButtonSize(int edge, int glyph)
@@ -215,13 +222,15 @@ FillImageRow::FillImageRow(QWidget* parent) : QWidget(parent)
     setObjectName(QStringLiteral("ItemFillImageRow"));
     RowMetrics::ApplyRow(this);
     auto* layout = MakeRowLayout(this);
+    // 这一行是面板里最宽的行（图标 + 选图按钮 + 模式下拉 + 清除按钮），去掉控件间距才收得进 320px 面板。
+    layout->setSpacing(0);
 
     QToolButton* icon = MakeRowIcon(IconId::IMAGE, this);
     icon->setToolTip(RowText("Fill image"));
     layout->addWidget(icon, 0, Qt::AlignVCenter);
 
-    // §D24：样式表会给按钮和下拉框各自的 min-height，只按 RowMetrics 钉高度仍会差一截。
-    // 这里三者都建好、polish 完，再取「三者的 sizeHint + 输入框高」的最大值统一定高。
+    // §D24：样式表给按钮和下拉框各自的 min-height 不同，三者建好后统一按 RowMetrics 的字段高钉一次，
+    // 才不会出现按钮比“拉伸”下拉框高一截。
     m_modeCombo = new QComboBox(this);
     m_modeCombo->setObjectName(QStringLiteral("ItemFillImageMode"));
     m_modeCombo->addItem(RowText("Stretch"), static_cast<int>(ImageFill::Mode::STRETCH));
@@ -238,8 +247,8 @@ FillImageRow::FillImageRow(QWidget* parent) : QWidget(parent)
 
     m_chooseButton = new QToolButton(this);
     m_chooseButton->setObjectName(QStringLiteral("ItemFillImageButton"));
-    m_chooseButton->setIcon(IconFactory::Make(IconId::IMAGE, QColor(58, 64, 80), 16));
-    m_chooseButton->setIconSize(QSize(16, 16));
+    m_chooseButton->setIcon(IconFactory::Make(IconId::IMAGE, QColor(58, 64, 80), 14));
+    m_chooseButton->setIconSize(QSize(14, 14));
     m_chooseButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     m_chooseButton->setText(RowText("Choose fill image"));
     m_chooseButton->setToolTip(RowText("Choose an image to fill the selected items"));
@@ -248,8 +257,8 @@ FillImageRow::FillImageRow(QWidget* parent) : QWidget(parent)
 
     m_clearButton = new QToolButton(this);
     m_clearButton->setObjectName(QStringLiteral("ItemClearFillImageButton"));
-    m_clearButton->setIcon(IconFactory::Make(IconId::DELETE, QColor(58, 64, 80), 16));
-    m_clearButton->setIconSize(QSize(16, 16));
+    m_clearButton->setIcon(IconFactory::Make(IconId::DELETE, QColor(58, 64, 80), 14));
+    m_clearButton->setIconSize(QSize(14, 14));
     m_clearButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     m_clearButton->setText(RowText("Clear"));
     m_clearButton->setToolTip(RowText("Clear fill image"));

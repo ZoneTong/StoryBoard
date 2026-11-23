@@ -28,6 +28,7 @@ class FillStyleRow : public QWidget {
 
   protected:
     void resizeEvent(QResizeEvent* event) override;
+    QSize minimumSizeHint() const override;
 
   private:
     void ApplyButtonSize(int edge, int glyph);

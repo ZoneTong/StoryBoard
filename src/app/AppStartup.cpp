@@ -60,7 +60,7 @@ QLabel#StatusHint { color: #6B7280; padding-left: 8px; }
 QStatusBar { background: #FFFFFF; border-top: 1px solid #E3E7EE; min-height: 28px; }
 QStatusBar QLabel { color: #5B6472; }
 QStatusBar::item { border: none; }
-QSpinBox, QDoubleSpinBox { background: #FFFFFF; border: 1px solid #DDE2EA; border-radius: 6px; padding: 5px 24px 5px 8px; min-height: 23px; color: #2B2F36; }
+QSpinBox, QDoubleSpinBox { background: #FFFFFF; border: 1px solid #DDE2EA; border-radius: 6px; padding: 2px 24px 2px 6px; min-height: 18px; color: #2B2F36; }
 QSpinBox:focus, QDoubleSpinBox:focus { border-color: #7C9BFF; }
 QSpinBox::up-button, QDoubleSpinBox::up-button { subcontrol-origin: border; subcontrol-position: top right; width: 22px; height: 15px; border: none; background: transparent; }
 QSpinBox::down-button, QDoubleSpinBox::down-button { subcontrol-origin: border; subcontrol-position: bottom right; width: 22px; height: 15px; border: none; background: transparent; }
@@ -107,7 +107,7 @@ QLabel#ItemColorLabel { color: #6B7280; font-size: 9pt; }
 QLabel#ItemColorHint { color: #8A909C; font-size: 9pt; }
 QToolButton#ItemColorSwatch { border: 1px solid #CBD5E1; border-radius: 4px; }
 QToolButton#ItemColorButton { border: 1px solid #DDE2EA; border-radius: 4px; background: #FFFFFF; color: #4B5563; }
-QToolButton#ItemFillImageButton, QToolButton#ItemClearFillImageButton { border: 1px solid #DDE2EA; border-radius: 6px; background: #FFFFFF; color: #4B5563; padding: 5px 8px; text-align: left; }
+QToolButton#ItemFillImageButton, QToolButton#ItemClearFillImageButton { border: 1px solid #DDE2EA; border-radius: 6px; background: #FFFFFF; color: #4B5563; padding: 1px 4px; text-align: left; }
 QToolButton#ItemFillImageButton:hover { background: #F3F5F9; }
 QToolButton#ItemFillStyleButton, QToolButton#ItemBorderStyleButton { border: 1px solid transparent; border-radius: 5px; background: #F8F9FC; padding: 2px; }
 QToolButton#ItemFillStyleButton:hover, QToolButton#ItemBorderStyleButton:hover { background: #EEF2F9; }
@@ -118,7 +118,7 @@ QToolButton#ItemLayerUpButton:checked, QToolButton#ItemLayerDownButton:checked, 
 QDialog { background: #F7F8FA; }
 QGroupBox { background: #FFFFFF; border: 1px solid #E3E7EE; border-radius: 10px; margin-top: 10px; padding-top: 6px; font-weight: 600; }
 QGroupBox::title { subcontrol-origin: margin; left: 14px; padding: 0 6px; color: #374151; }
-QLineEdit, QComboBox, QFontComboBox { background: #FFFFFF; border: 1px solid #DDE2EA; border-radius: 6px; padding: 5px 8px; min-height: 23px; color: #2B2F36; }
+QLineEdit, QComboBox, QFontComboBox { background: #FFFFFF; border: 1px solid #DDE2EA; border-radius: 6px; padding: 2px 6px; min-height: 18px; color: #2B2F36; }
 QComboBox, QFontComboBox { padding-right: 0px; }
 QLineEdit:focus, QComboBox:focus, QFontComboBox:focus { border-color: #7C9BFF; }
 QPlainTextEdit { background: #FFFFFF; border: 1px solid #DDE2EA; border-radius: 6px; padding: 7px 8px; color: #2B2F36; selection-background-color: #DCE6FF; }
