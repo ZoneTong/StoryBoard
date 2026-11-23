@@ -243,8 +243,7 @@ void UiActionFactory::Build()
     m_window->m_gridAct =
         MakeAction(m_window, IconId::GRID, MainWindow::tr("Helper grid"), QKeySequence(QStringLiteral("Ctrl+'")),
                    MainWindow::tr("Show or hide the helper grid on the canvas"));
-    m_window->m_gridAct->setObjectName(QStringLiteral("GridToggleAction"));
-    m_window->m_gridAct->setCheckable(true);
+    m_window->m_gridAct->setObjectName(QStringLiteral("GridToggleAction"));    m_window->m_gridAct->setCheckable(true);
     m_window->m_gridAct->setChecked(m_window->m_settings.showGrid);
     QObject::connect(m_window->m_gridAct, &QAction::toggled, m_window, [this](bool visible) {
         m_window->m_scene->SetShowGrid(visible);
@@ -253,6 +252,15 @@ void UiActionFactory::Build()
         m_window->statusBar()->showMessage(
             visible ? MainWindow::tr("Helper grid shown") : MainWindow::tr("Helper grid hidden"), 2000);
     });
+
+    // F11 全屏：全屏期菜单栏与工具栏都藏起来，键位由 FullScreenController 重新挂到画布视图，
+    // 所以这条动作本身也必须能被保活，否则全屏后就退不出来。
+    m_window->m_fullScreenAct =
+        MakeAction(m_window, IconId::FULLSCREEN, MainWindow::tr("Full screen"), QKeySequence(QStringLiteral("F11")),
+                   MainWindow::tr("Canvas only with a floating toolbar (F11)"));
+    m_window->m_fullScreenAct->setObjectName(QStringLiteral("FullScreenAction"));
+    m_window->m_fullScreenAct->setCheckable(true);
+    QObject::connect(m_window->m_fullScreenAct, &QAction::triggered, m_window, &MainWindow::ToggleFullScreen);
 
     m_window->m_replaceBgAct =
         MakeAction(m_window, IconId::BACKGROUND, MainWindow::tr("Replace canvas background image…"), QKeySequence(),

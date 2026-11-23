@@ -25,6 +25,7 @@ void RunGroupingModelTests(Context& ctx);
 void RunRubberBandTests(Context& ctx);
 void RunLockedLayerTests(Context& ctx);
 void RunMainWindowFlowTests(Context& ctx);
+void RunFullScreenTests(Context& ctx);
 void RunMainWindowShapeMenuTests(Context& ctx);
 void RunSettingsDialogBasicTests(Context& ctx);
 void RunLineArtDialogParameterTests(Context& ctx);

@@ -1933,6 +1933,14 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Show the selected item&apos;s properties</source>
         <translation>显示选中图元的属性</translation>
     </message><message>
+        <location filename="../src/ui/builder/UiActionFactory.cpp" line="259"/>
+        <source>Full screen</source>
+        <translation>全屏</translation>
+    </message><message>
+        <location filename="../src/ui/builder/UiActionFactory.cpp" line="260"/>
+        <source>Canvas only with a floating toolbar (F11)</source>
+        <translation>只留画布与悬浮工具栏（F11）</translation>
+    </message><message>
         <location filename="../src/ui/builder/UiActionFactory.cpp" line="206"/>
         <source>Edit mode: items on visible, unlocked layers are editable · double-click to select only that item · item properties open from the menu, panel or context menu · Space / middle button to pan the view (V)</source>
         <translation>编辑模式：可见且未锁定图层上的图元可编辑 · 双击只单选该图元 · 属性窗从菜单、编辑面板或右键菜单打开 · 空格 / 中键平移视图 (V)</translation>

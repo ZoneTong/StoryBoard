@@ -84,6 +84,7 @@ int RunSelfTest(const QString& reportPath)
     selftest::RunRubberBandTests(ctx);
     selftest::RunLockedLayerTests(ctx);
     selftest::RunMainWindowFlowTests(ctx);
+    selftest::RunFullScreenTests(ctx);
     selftest::RunMainWindowShapeMenuTests(ctx);
     selftest::RunSettingsDialogBasicTests(ctx);
     selftest::RunLineArtDialogParameterTests(ctx);

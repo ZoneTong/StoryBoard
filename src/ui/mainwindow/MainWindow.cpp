@@ -2,6 +2,7 @@
 
 #include "app/DockPanelController.h"
 #include "app/DocumentController.h"
+#include "app/FullScreenController.h"
 #include "app/ShortcutController.h"
 #include "canvas/CanvasView.h"
 #include "canvas/controllers/CanvasBackgroundController.h"
@@ -84,6 +85,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     m_docks->ApplyDockLayout();
     CreateStatusBar();
     ConnectSignals();
+    // 全屏控制器最后建：它要在菜单、工具栏、停靠区都存在之后才能快照界面状态。
+    m_fullScreen = std::make_unique<FullScreenController>(this);
     m_shortcuts->ApplyShortcutOverrides();
 
     if (!m_settings.windowGeometry.isEmpty()) {
@@ -164,6 +167,10 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event)
 {
     if (m_docks) {
         m_docks->HandleMoveEvent(watched, event);
+    }
+    // 全屏期窗口尺寸变化时把悬浮工具栏重新居中。
+    if (m_fullScreen) {
+        m_fullScreen->HandleWindowEvent(watched, event);
     }
     return QMainWindow::eventFilter(watched, event);
 }
@@ -520,6 +527,30 @@ void MainWindow::ShowAbout()
     m_app->ShowAbout();
 }
 
+void MainWindow::ToggleFullScreen()
+{
+    if (m_fullScreen) {
+        m_fullScreen->Toggle();
+    }
+}
+
+void MainWindow::resizeEvent(QResizeEvent* event)
+{
+    QMainWindow::resizeEvent(event);
+    if (m_fullScreen) {
+        m_fullScreen->HandleWindowEvent(this, event);
+    }
+}
+
+void MainWindow::changeEvent(QEvent* event)
+{
+    QMainWindow::changeEvent(event);
+    // 全屏状态被外部改动（窗口管理器踢出、其它程序抢占）时同步界面，避免菜单栏还藏着。
+    if (event->type() == QEvent::WindowStateChange && m_fullScreen) {
+        m_fullScreen->HandleWindowStateChange();
+    }
+}
+
 void MainWindow::closeEvent(QCloseEvent* event)
 {
     m_view->FinishCurrentStroke();
@@ -528,6 +559,10 @@ void MainWindow::closeEvent(QCloseEvent* event)
         return;
     }
 
+    // 先退出全屏再落盘，否则会把全屏几何与浮层位置写进设置文件。
+    if (m_fullScreen) {
+        m_fullScreen->ExitIfActive();
+    }
     m_app->PersistBeforeExit();
     event->accept();
 }

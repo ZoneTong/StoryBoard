@@ -49,6 +49,8 @@ class UiStatusBarBuilder;
 class MainWindowEditActionsController;
 class MainWindowInsertController;
 class MainWindowAppController;
+class FullScreenController;
+class FullScreenBar;
 class QAction;
 class QActionGroup;
 class QDockWidget;
@@ -87,6 +89,10 @@ class MainWindow : public QMainWindow {
 
   protected:
     void closeEvent(QCloseEvent* event) override;
+    // 全屏由窗口管理器踢出时同步界面状态（F11 之后的兜底路径）。
+    void changeEvent(QEvent* event) override;
+    // 窗口尺寸变化时把全屏悬浮工具栏重新摆到顶部居中。
+    void resizeEvent(QResizeEvent* event) override;
     // 合并图元和弦：Ctrl+M 之后 1 秒内 U / X / I / S / F 触发对应子命令。
     void keyPressEvent(QKeyEvent* event) override;
     void dragEnterEvent(QDragEnterEvent* event) override;
@@ -117,6 +123,8 @@ class MainWindow : public QMainWindow {
     void UpdateStatusBar();
     void UpdateModeUi();
     void OpenCanvasesFolder();
+    // F11：进入 / 退出全屏（状态机与快照还原由 FullScreenController 负责）。
+    void ToggleFullScreen();
 
   public:
     // 需求 7：展开自定义图形浮动面板（按目录分标签页）；anchor 为空时沿用上次位置。
@@ -183,6 +191,8 @@ class MainWindow : public QMainWindow {
     friend class MainWindowEditActionsController;
     friend class MainWindowInsertController;
     friend class MainWindowAppController;
+    friend class FullScreenController;
+    friend class FullScreenBar;
 
     CanvasScene* m_scene = nullptr;
     CanvasView* m_view = nullptr;
@@ -238,6 +248,8 @@ class MainWindow : public QMainWindow {
     QAction* m_actualSizeAct = nullptr;
     // 视图菜单里的辅助网格开关，和「设置 → 画布」里的同名复选框共用 settings.showGrid。
     QAction* m_gridAct = nullptr;
+    // F11 全屏开关：勾选态跟随实际窗口状态。
+    QAction* m_fullScreenAct = nullptr;
 
     QAction* m_replaceBgAct = nullptr;
     QAction* m_bgColorAct = nullptr;
@@ -307,6 +319,7 @@ class MainWindow : public QMainWindow {
     std::unique_ptr<MainWindowEditActionsController> m_editActions;
     std::unique_ptr<MainWindowInsertController> m_insert;
     std::unique_ptr<MainWindowAppController> m_app;
+    std::unique_ptr<FullScreenController> m_fullScreen;
 
     QLabel* m_hintLabel = nullptr;
     QLabel* m_modeBadge = nullptr;

@@ -18,8 +18,7 @@ void DrawView(QPainter& painter, IconId)
     painter.drawEllipse(QPointF(12.0, 12.0), 3.1, 3.1);
 }
 
-void DrawLock(QPainter& painter, IconId)
-{
+void DrawLock(QPainter& painter, IconId){
     QPainterPath shackle;
     shackle.moveTo(8.0, 12.5);
     shackle.lineTo(8.0, 9.0);
@@ -105,11 +104,30 @@ void DrawOrderDown(QPainter& painter, IconId)
     painter.drawLine(QPointF(15.5, 15.5), QPointF(18.2, 12.8));
 }
 
+void DrawFullScreen(QPainter& painter, IconId)
+{
+    // 四角括号把画面铺满，中央留一块画布：全屏的语义与「适应窗口」区分开。
+    constexpr qreal ARM = 6.0;
+    constexpr qreal INSET = 3.0;
+    constexpr qreal OUTER = 21.0;
+    painter.drawLine(QPointF(INSET, INSET + ARM), QPointF(INSET, INSET));
+    painter.drawLine(QPointF(INSET, INSET), QPointF(INSET + ARM, INSET));
+    painter.drawLine(QPointF(OUTER - ARM, INSET), QPointF(OUTER, INSET));
+    painter.drawLine(QPointF(OUTER, INSET), QPointF(OUTER, INSET + ARM));
+    painter.drawLine(QPointF(OUTER, OUTER - ARM), QPointF(OUTER, OUTER));
+    painter.drawLine(QPointF(OUTER, OUTER), QPointF(OUTER - ARM, OUTER));
+    painter.drawLine(QPointF(INSET + ARM, OUTER), QPointF(INSET, OUTER));
+    painter.drawLine(QPointF(INSET, OUTER), QPointF(INSET, OUTER - ARM));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRect(QRectF(8.5, 8.5, 7.0, 7.0));
+}
+
 constexpr struct IconEntry {
     IconId id;
     void (*draw)(QPainter&, IconId);
 } ENTRIES[] = {
     {IconId::VIEW, DrawView},        {IconId::LOCK, DrawLock},
+    {IconId::FULLSCREEN, DrawFullScreen},
     {IconId::LAYER_UP, DrawLayerUp}, {IconId::LAYER_DOWN, DrawLayerDown},
     {IconId::ORDER_UP, DrawOrderUp}, {IconId::ORDER_DOWN, DrawOrderDown},
 };

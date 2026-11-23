@@ -19,6 +19,8 @@ enum class IconId {
     // 位置：四角框不带中心点，和“中心点”图标区分。
     POSITION,
     FIT,
+    // 全屏：四角括号把画面铺满，用于视图菜单的 F11 开关。
+    FULLSCREEN,
     ZOOM_IN,
     ZOOM_OUT,
     IMAGE,

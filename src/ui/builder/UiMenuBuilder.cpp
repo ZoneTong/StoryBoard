@@ -190,6 +190,9 @@ void UiMenuBuilder::BuildMenus()
     viewMenu->addSeparator();
     // 需求：辅助网格除设置外还要能从视图菜单直接开关，开关状态与设置里的复选框同步。
     viewMenu->addAction(m_window->m_gridAct);
+    // F11 全屏紧跟视图项：全屏只留画布与浮层，其余入口靠快捷键回到普通窗口。
+    viewMenu->addSeparator();
+    viewMenu->addAction(m_window->m_fullScreenAct);
     QAction* layerDockAction = m_window->m_docks->LayerDock()->toggleViewAction();
     layerDockAction->setText(MainWindow::tr("Layer panel"));
     layerDockAction->setShortcut(QKeySequence(QStringLiteral("Alt+1")));
