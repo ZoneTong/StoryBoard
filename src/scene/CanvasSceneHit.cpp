@@ -62,62 +62,6 @@ void CanvasScene::drawForeground(QPainter* painter, const QRectF& rect)
         }
         painter->restore();
     }
-
-    DrawTriangleBaseTick(painter, rect);
-}
-
-void CanvasScene::DrawTriangleBaseTick(QPainter* painter, const QRectF& rect)
-{
-    // 需求 8：三角形 A 边（底边）中点画一条短刻度线，标记可调底边与两侧内角。
-    // 只在编辑侧、单选、非导出时出现；查看模式与导出图里没有任何提示线。
-    if (m_mode == ToolMode::VIEW || m_exporting) {
-        return;
-    }
-    const QList<QGraphicsItem*> selection = selectedItems();
-    if (selection.size() != 1) {
-        return;
-    }
-    ShapeAbstractItem* shape = dynamic_cast<ShapeAbstractItem*>(selection.constFirst());
-    if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->IsCustomShape()) {
-        return;
-    }
-
-    const QRectF content = shape->ContentRect();
-    if (content.isEmpty()) {
-        return;
-    }
-    const QTransform transform = shape->sceneTransform();
-    const QPointF left = transform.map(QPointF(content.left(), content.bottom()));
-    const QPointF right = transform.map(QPointF(content.right(), content.bottom()));
-    const QPointF mid = (left + right) / 2.0;
-    const QPointF edge = right - left;
-    const qreal edgeLength = std::hypot(edge.x(), edge.y());
-    if (edgeLength < 1.0) {
-        return;
-    }
-    // 法线方向取朝顶点（内容中心）一侧，刻度线画进三角形内部。
-    QPointF normal(-edge.y() / edgeLength, edge.x() / edgeLength);
-    const QPointF center = transform.map(content.center());
-    if (QPointF::dotProduct(normal, center - mid) < 0.0) {
-        normal = -normal;
-    }
-
-    const qreal zoom = painter->worldTransform().m11();
-    if (zoom <= 0.0) {
-        return;
-    }
-    // 屏幕恒定 8px：场景长度按当前缩放换算。
-    const qreal tickLength = 8.0 / zoom;
-
-    painter->save();
-    painter->setClipRect(rect);
-    painter->setRenderHint(QPainter::Antialiasing, true);
-    QPen pen(QColor(30, 41, 59, 205));
-    pen.setWidthF(1.6);
-    pen.setCosmetic(true);
-    painter->setPen(pen);
-    painter->drawLine(mid, mid + normal * tickLength);
-    painter->restore();
 }
 
 void CanvasScene::drawItems(QPainter* painter, int numItems, QGraphicsItem* items[],

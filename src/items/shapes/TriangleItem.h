@@ -2,8 +2,8 @@
 
 #include "items/shapes/ShapeAbstractItem.h"
 
-// 三角形：底边两侧的底角是真相，高度由底边与角度派生；顶点句柄、底边刻度线与
-// 缩放反算 B、角度读数等三角形专属行为全部收敛在本类（§3.1 / G3）。
+// 三角形：底边两侧的底角是真相，高度由底边与角度派生；顶点句柄、缩放反算 B、
+// 角度读数等三角形专属行为全部收敛在本类（§3.1 / G3）。底边短刻度线按 §D9 删除。
 class TriangleItem : public ShapeAbstractItem {
   public:
     TriangleItem();

@@ -269,8 +269,6 @@ class CanvasScene : public QGraphicsScene {
     void DrawCanvasBackground(QPainter* painter, const QRectF& area, bool includeGrid) const;
     // 透明背景（None）在视图里画浅灰 / 白棋盘格作为透明标识，每格固定 64 逻辑像素；导出图不画。
     void DrawCheckerboard(QPainter* painter, const QRectF& canvas) const;
-    // 单选三角形时在 A 边（底边）中点画 8px 刻度线，标记可调底边与两侧内角；查看模式与导出不画。
-    void DrawTriangleBaseTick(QPainter* painter, const QRectF& rect);
     void UpdateItemFlags();
     void ApplyItemInteraction(CanvasItem* item);
     void ClearOrphans();

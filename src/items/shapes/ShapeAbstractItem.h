@@ -84,7 +84,7 @@ struct ShapeItemState {
 class ShapeAbstractItem : public CanvasItem, public FillAttributes, public StrokeAttributes {
     Q_OBJECT
   public:
-    // 需求 2：带短刻度线的底边是 AB（A 在左、B 在右），对面顶点是 C。
+    // 需求 2：底边是 AB（A 在左、B 在右），对面顶点是 C；底边短刻度线已按 §D9 删除。
     enum class TriangleVertex { A, B, C };
     explicit ShapeAbstractItem(QGraphicsItem* parent = nullptr);
 

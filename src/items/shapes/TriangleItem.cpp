@@ -222,19 +222,6 @@ void TriangleItem::DrawSelectionOverlay(QPainter* painter)
     if (IsCustomShape() || !isSelected() || !IsEditable() || !HasSingleSelection()) {
         return;
     }
-    // 底边中点的底边长度手柄两侧各补一根短刻度线，提示这里拖的是底边。
-    const QRectF frame = FrameRect();
-    const qreal gap = qMax<qreal>(4.0, 6.0 / qMax<qreal>(ViewScale(), 0.001));
-    const qreal tick = qMax<qreal>(4.0, 7.0 / qMax<qreal>(ViewScale(), 0.001));
-    QPen tickPen(QColor(79, 124, 255));
-    tickPen.setWidthF(1.2);
-    tickPen.setCosmetic(true);
-    painter->save();
-    painter->setPen(tickPen);
-    painter->setBrush(Qt::NoBrush);
-    const QPointF center(frame.center().x(), frame.bottom());
-    painter->drawLine(QPointF(center.x() - gap, center.y()), QPointF(center.x() - gap, center.y() - tick));
-    painter->drawLine(QPointF(center.x() + gap, center.y()), QPointF(center.x() + gap, center.y() - tick));
     if (AngleReadoutVisible()) {
         painter->setFont(ReadoutFont(painter->font()));
         painter->setPen(QColor(37, 99, 235));
