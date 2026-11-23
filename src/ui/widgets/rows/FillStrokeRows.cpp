@@ -8,6 +8,7 @@
 #include <QColorDialog>
 #include <QComboBox>
 #include <QCoreApplication>
+#include <QGridLayout>
 #include <QHBoxLayout>
 #include <QSpinBox>
 #include <QToolButton>
@@ -74,10 +75,16 @@ FillStyleRow::FillStyleRow(QWidget* parent) : QWidget(parent)
     icon->setToolTip(RowText("Fill style"));
     layout->addWidget(icon, 0, Qt::AlignVCenter);
 
-    // 11 个按钮：行宽上限是图元尺寸行（图标 25 + 两个 90 输入框 ≈ 227），
-    // (227 − 25) / 11 ≈ 18.3，所以按钮与字形都取 18，字形铺满按钮、不再留 2px 内缩。
-    const int fillStyleWidth = 18;
-    const int fillStyleGlyph = 18;
+    // 11 个样式按钮排成 6 + 5 两行：单行要塞进图元尺寸行（≈227）就只有 18px 宽，
+    // 按钮太小点不准；两行后每颗 28×28（字形 20），行宽 25 + 6×28 + 5×2 = 203，仍在限内。
+    const int fillStyleButton = 28;
+    const int fillStyleGlyph = 20;
+    const int fillStyleColumns = 6;
+
+    auto* grid = new QGridLayout;
+    grid->setContentsMargins(0, 0, 0, 0);
+    grid->setSpacing(2);
+    int index = 0;
     for (const FillStyle style : AllFillStyles()) {
         auto* button = new QToolButton(this);
         button->setObjectName(QStringLiteral("ItemFillStyleButton"));
@@ -85,7 +92,7 @@ FillStyleRow::FillStyleRow(QWidget* parent) : QWidget(parent)
         button->setAutoRaise(true);
         button->setIcon(ItemStyleVisuals::FillStyleIcon(style, fillStyleGlyph));
         button->setIconSize(QSize(fillStyleGlyph, fillStyleGlyph));
-        button->setFixedSize(fillStyleWidth, RowMetrics::RowHeight());
+        button->setFixedSize(fillStyleButton, fillStyleButton);
         button->setToolTip(FillStyles::Name(style));
         button->setProperty("fillStyle", static_cast<int>(style));
         connect(button, &QToolButton::clicked, this, [this, style]() {
@@ -94,8 +101,10 @@ FillStyleRow::FillStyleRow(QWidget* parent) : QWidget(parent)
             }
         });
         m_buttons.append(button);
-        layout->addWidget(button, 0, Qt::AlignVCenter);
+        grid->addWidget(button, index / fillStyleColumns, index % fillStyleColumns, Qt::AlignLeft | Qt::AlignVCenter);
+        ++index;
     }
+    layout->addLayout(grid);
     layout->addStretch(1);
 }
 
