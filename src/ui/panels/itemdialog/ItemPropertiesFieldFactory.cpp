@@ -1,4 +1,4 @@
-#include "ui/panels/itemdialog/ItemPropertiesDialogFields.h"
+#include "ui/panels/itemdialog/ItemPropertiesFieldFactory.h"
 
 #include "items/properties/ItemStyleVisuals.h"
 #include "ui/icons/IconFactory.h"
@@ -11,7 +11,7 @@
 #include <QLabel>
 #include <QToolButton>
 
-namespace ItemPropertiesFields {
+namespace ItemPropertiesFieldFactory {
 
 QString Number(qreal value)
 {
@@ -100,4 +100,4 @@ QWidget* MakePairField(QWidget* parent, const QString& objectName, QDoubleSpinBo
     return field;
 }
 
-} // namespace ItemPropertiesFields
+} // namespace ItemPropertiesFieldFactory

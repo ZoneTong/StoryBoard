@@ -3,7 +3,7 @@
 #include "items/CanvasItem.h"
 #include "items/properties/ItemPropertyCatalog.h"
 #include "ui/panels/itemdialog/ItemPropertiesDialog.h"
-#include "ui/panels/itemdialog/ItemPropertiesDialogFields.h"
+#include "ui/panels/itemdialog/ItemPropertiesFieldFactory.h"
 #include "ui/panels/properties/PropertyRowRegistry.h"
 #include "ui/panels/properties/PropertyRowSpec.h"
 
@@ -21,7 +21,7 @@ ItemPropertiesDialogTextBlock::ItemPropertiesDialogTextBlock(QWidget* parent) : 
     m_textEdit->setMinimumHeight(88);
 
     m_textColorButton =
-        ItemPropertiesFields::MakeColorField(this, QColor(), QStringLiteral("ItemPropertiesTextColorValue"));
+        ItemPropertiesFieldFactory::MakeColorField(this, QColor(), QStringLiteral("ItemPropertiesTextColorValue"));
 
     m_fontButton = new QPushButton(this);
     m_fontButton->setObjectName(QStringLiteral("ItemPropertiesFontValue"));
@@ -55,7 +55,7 @@ void ItemPropertiesDialogTextBlock::SetItem(CanvasItem* item)
         m_textFont = item->PropertyValue(ItemProperty::TEXT_FONT).value<QFont>();
         m_textEdit->setPlainText(item->PropertyValue(ItemProperty::TEXT_CONTENT).toString());
         m_textColorButton->setProperty("itemColor", item->PropertyValue(ItemProperty::TEXT_COLOR).value<QColor>());
-        ItemPropertiesFields::RefreshColorButton(m_textColorButton);
+        ItemPropertiesFieldFactory::RefreshColorButton(m_textColorButton);
         UpdateFontButton();
     }
 }
@@ -63,7 +63,7 @@ void ItemPropertiesDialogTextBlock::SetItem(CanvasItem* item)
 void ItemPropertiesDialogTextBlock::UpdateFontButton()
 {
     if (m_fontButton) {
-        m_fontButton->setText(ItemPropertiesFields::FontText(m_textFont));
+        m_fontButton->setText(ItemPropertiesFieldFactory::FontText(m_textFont));
     }
 }
 
