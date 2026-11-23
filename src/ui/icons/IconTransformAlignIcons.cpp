@@ -55,8 +55,15 @@ void DrawFit(QPainter& painter, IconId)
 
 void DrawPosition(QPainter& painter, IconId)
 {
-    // 位置只表达四角框，不画中心点，避免与“中心点”图标混淆。
-    DrawFitCorners(painter);
+    // 位置：十字准星 + 正中空心方块（不含实心点，跟“中心点”区分）。
+    painter.drawLine(QPointF(2.5, 12.0), QPointF(9.0, 12.0));
+    painter.drawLine(QPointF(15.0, 12.0), QPointF(21.5, 12.0));
+    painter.drawLine(QPointF(12.0, 2.5), QPointF(12.0, 9.0));
+    painter.drawLine(QPointF(12.0, 15.0), QPointF(12.0, 21.5));
+    painter.save();
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRect(QRectF(9.0, 9.0, 6.0, 6.0));
+    painter.restore();
 }
 
 void DrawZoom(QPainter& painter, IconId id)
@@ -199,75 +206,80 @@ void DrawMorph(QPainter& painter, IconId)
 }
 
 
-// 角度行：两根射线从一个顶点张开，起始角只画靠顶点的一小段弧，
-// 扫过角把弧画满并带箭头，一眼能分出“从哪开始”和“扫多少”。
+// 角度行：两者都以细椭圆作参照，起始角画一条粗半径 + 端点，扫过角画 42°–108° 实心扇形 + 该段细弧。
 void DrawAngleRow(QPainter& painter, IconId id)
 {
-    const QPointF vertex(4.5, 19.5);
-    painter.drawLine(vertex, QPointF(20.0, 19.5));
-    painter.drawLine(vertex, QPointF(17.5, 5.5));
+    const QRectF ellipse(3.0, 3.0, 18.0, 18.0);
+    painter.drawEllipse(ellipse);
 
     if (id == IconId::ANGLE_START) {
-        painter.drawArc(QRectF(vertex.x() - 4.5, vertex.y() - 4.5, 9.0, 9.0), 0 * 16, -46 * 16);
+        painter.save();
+        QPen thick = painter.pen();
+        thick.setWidthF(3.0);
+        thick.setCapStyle(Qt::RoundCap);
+        painter.setPen(thick);
+        const QPointF center = ellipse.center();
+        const QPointF radiusEnd(center.x() + 5.6, center.y() - 7.2); // 约 55°
+        painter.drawLine(center, radiusEnd);
+        painter.restore();
+
         painter.save();
         painter.setBrush(painter.pen().color());
-        painter.drawEllipse(QPointF(9.3, 19.5), 1.1, 1.1);
+        painter.drawEllipse(radiusEnd, 1.5, 1.5);
         painter.restore();
         return;
     }
-    painter.drawArc(QRectF(vertex.x() - 9.5, vertex.y() - 9.5, 19.0, 19.0), 0 * 16, -46 * 16);
+
+    // 扫过角：42°–108° 的实心扇形，外侧只补这一段细弧。
     painter.save();
-    painter.setBrush(painter.pen().color());
-    QPainterPath arrow;
-    const QPointF tip(vertex.x() + 13.2, vertex.y() - 9.0);
-    arrow.moveTo(tip);
-    arrow.lineTo(tip + QPointF(-3.2, 2.6));
-    arrow.lineTo(tip + QPointF(1.4, 3.4));
-    arrow.closeSubpath();
-    painter.drawPath(arrow);
+    const QColor color = painter.pen().color();
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(color);
+    painter.drawPie(ellipse, 42 * 16, 66 * 16);
     painter.restore();
+    painter.drawArc(ellipse, 42 * 16, 66 * 16);
 }
 
 void DrawCenter(QPainter& painter, IconId)
 {
-    painter.drawEllipse(QPointF(12.0, 12.0), 3.4, 3.4);
-    const qreal inner = 5.6;
-    const qreal outer = 8.6;
-    painter.drawLine(QPointF(12.0 - outer, 12.0), QPointF(12.0 - inner, 12.0));
-    painter.drawLine(QPointF(12.0 + inner, 12.0), QPointF(12.0 + outer, 12.0));
-    painter.drawLine(QPointF(12.0, 12.0 - outer), QPointF(12.0, 12.0 - inner));
-    painter.drawLine(QPointF(12.0, 12.0 + inner), QPointF(12.0, 12.0 + outer));
+    // 中心点：圆角框 + 正中实心点。
+    painter.save();
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRoundedRect(QRectF(4.5, 4.5, 15.0, 15.0), 2.5, 2.5);
+    painter.setBrush(painter.pen().color());
+    painter.drawEllipse(QPointF(12.0, 12.0), 2.2, 2.2);
+    painter.restore();
 }
 
 void DrawSize(QPainter& painter, IconId)
 {
-    painter.drawRect(QRectF(3.5, 6.5, 14.0, 11.0));
-    // 斜向双向箭头表示“宽 × 高”。
-    painter.drawLine(QPointF(7.0, 16.0), QPointF(17.0, 8.0));
-    painter.drawLine(QPointF(17.0, 8.0), QPointF(13.6, 8.4));
-    painter.drawLine(QPointF(17.0, 8.0), QPointF(16.6, 11.4));
-    painter.drawLine(QPointF(7.0, 16.0), QPointF(10.4, 15.6));
-    painter.drawLine(QPointF(7.0, 16.0), QPointF(7.4, 12.6));
+    // 尺寸：圆角框 + 框内对角双向箭头，表达「宽 × 高」。
+    painter.drawRoundedRect(QRectF(4.0, 6.0, 15.0, 12.0), 2.0, 2.0);
+    painter.drawLine(QPointF(7.5, 14.5), QPointF(16.5, 8.5));
+    painter.drawLine(QPointF(16.5, 8.5), QPointF(13.1, 9.1));
+    painter.drawLine(QPointF(16.5, 8.5), QPointF(15.9, 11.9));
+    painter.drawLine(QPointF(7.5, 14.5), QPointF(10.9, 13.9));
+    painter.drawLine(QPointF(7.5, 14.5), QPointF(8.1, 11.1));
 }
 
-// 对象旋转：虚线框 + 框外的弧形箭头，区别于工具栏里单纯的方向圆圈。
+// 对象旋转：倾斜 16° 的小方块 + 右侧半环箭头，区别于工具栏里单纯的方向圆圈。
 void DrawRotateObject(QPainter& painter, IconId)
 {
     painter.save();
-    QPen dashed = painter.pen();
-    dashed.setStyle(Qt::DashLine);
-    dashed.setDashPattern({3.0, 2.5});
-    painter.setPen(dashed);
-    painter.drawRect(QRectF(3.5, 9.0, 17.0, 11.5));
+    painter.translate(12.0, 12.0);
+    painter.rotate(16.0);
+    painter.drawRect(QRectF(-5.0, -5.0, 10.0, 10.0));
     painter.restore();
 
-    painter.drawArc(QRectF(3.0, 2.0, 18.0, 14.0), 20 * 16, 140 * 16);
+    // 右侧半环：从右上绕到右下，末端带箭头。
+    const QRectF ring(5.0, 4.5, 14.0, 15.0);
+    painter.drawArc(ring, -78 * 16, 156 * 16);
     painter.save();
     painter.setBrush(painter.pen().color());
     QPainterPath arrow;
-    arrow.moveTo(8.6, 2.2);
-    arrow.lineTo(4.4, 5.9);
-    arrow.lineTo(9.6, 6.4);
+    arrow.moveTo(9.2, 19.6);
+    arrow.lineTo(13.4, 17.4);
+    arrow.lineTo(9.0, 15.0);
     arrow.closeSubpath();
     painter.drawPath(arrow);
     painter.restore();
