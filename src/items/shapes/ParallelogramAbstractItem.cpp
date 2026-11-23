@@ -84,18 +84,29 @@ void ParallelogramAbstractItem::DrawSelectionOverlay(QPainter* painter)
     if (!AngleReadoutVisible() || !isSelected() || IsCustomShape()) {
         return;
     }
-    // 角度浮层贴角度锚点（§3.2：普通平行四边形为左下顶点，不再贴 SKEW 旋钮）：
-    // 只读浮层，只随拖动显示，不进状态与撤销。
-    const QPointF anchor = AngleReadoutAnchor();
-    const qreal scale = qMax<qreal>(ViewScale(), 0.001);
+    // 普通平行四边形把内角读数放到形状底边外侧；菱形保留原左顶点布局，
+    // 避免读数被菱形左侧的角与视口边缘遮挡。
     painter->save();
     painter->setPen(QColor(37, 99, 235));
-    QFont font = painter->font();
-    font.setPointSizeF(qMax<qreal>(8.0, 11.0 / scale));
-    painter->setFont(font);
-    painter->drawText(anchor + QPointF(10.0 / scale, 4.0 / scale),
-                      QStringLiteral("%1°").arg(ParallelogramAngle(), 0, 'f', 1));
+    painter->setFont(ReadoutFont(painter->font()));
+    const QString text = QStringLiteral("%1°").arg(qRound(ParallelogramAngle()));
+    if (shapeType() == ShapeType::PARALLELOGRAM) {
+        const QRectF box = BottomReadoutRect(text, Qt::AlignHCenter);
+        painter->drawText(box, Qt::AlignCenter, text);
+    } else if (shapeType() == ShapeType::DIAMOND) {
+        const qreal scale = qMax<qreal>(ViewScale(), 0.001);
+        painter->drawText(AngleReadoutAnchor() + QPointF(10.0 / scale, 4.0 / scale), text);
+    }
     painter->restore();
+}
+
+QList<QRectF> ParallelogramAbstractItem::AngleReadoutRects() const
+{
+    if (!AngleReadoutVisible() || IsCustomShape() || shapeType() != ShapeType::PARALLELOGRAM) {
+        return {};
+    }
+    const QString text = QStringLiteral("%1°").arg(qRound(ParallelogramAngle()));
+    return {BottomReadoutRect(text, Qt::AlignHCenter)};
 }
 
 void ParallelogramAbstractItem::WriteJsonExtra(QJsonObject& json) const

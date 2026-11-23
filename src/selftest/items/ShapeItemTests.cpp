@@ -1,6 +1,7 @@
 #include "app/I18n.h"
 #include "app/Settings.h"
 #include "canvas/CanvasView.h"
+#include "canvas/controllers/CanvasItemHandles.h"
 #include "canvas/controllers/CanvasItemInteraction.h"
 #include "io/CustomShapeTemplates.h"
 #include "items/CanvasTypes.h"
@@ -886,6 +887,54 @@ void selftest::RunShapeItemTests(Context& ctx)
                       .arg(apexCenter.y())
                       .arg(vertex.x())
                       .arg(vertex.y()));
+    }
+    {
+        // B1：角度读数移到基边外，命中区按屏幕尺寸保持稳定，三角形 C 顶点用水平双箭头。
+        CanvasScene scene;
+        scene.SetMode(ToolMode::EDIT);
+        CanvasView view(&scene);
+        view.resize(480, 360);
+        TriangleItem triangle;
+        scene.AttachItem(&triangle);
+        triangle.setSelected(true);
+
+        CanvasItemHandles handles(&triangle);
+        const HandleSpecList specs = triangle.CustomHandles();
+        const bool apexSpecOk = specs.size() == 1 && specs.constFirst().cursor == Qt::SizeHorCursor &&
+                                qFuzzyCompare(specs.constFirst().hitPadding + 1.0, 15.0);
+        const QPointF apex = apexSpecOk ? specs.constFirst().position : QPointF();
+        const int hitAt100 = handles.HitAt(apex + QPointF(0.0, 16.0));
+        view.setTransform(QTransform::fromScale(0.25, 0.25));
+        const HandleSpecList scaledSpecs = triangle.CustomHandles();
+        const QPointF scaledApex = scaledSpecs.isEmpty() ? QPointF() : scaledSpecs.constFirst().position;
+        const int hitAt25 = handles.HitAt(scaledApex);
+        const bool expandedAt25 = handles.HitRect(CanvasItem::CUSTOM_0).contains(scaledApex + QPointF(0.0, 44.0));
+        ctx.Check(apexSpecOk && hitAt100 == CanvasItem::CUSTOM_0 && hitAt25 == CanvasItem::CUSTOM_0 && expandedAt25,
+                  QStringLiteral("三角形顶点手柄为水平双箭头且 100% / 25% 缩放下命中区稳定"),
+                  QStringLiteral(
+                      "cursor=%1 padding=%2 hit100=%3 hit25=%4 scale=%5 apex=%6,%7 editable=%8 selected=%9 rect=%10,"
+                      "%11,%12,%13")
+                      .arg(static_cast<int>(specs.isEmpty() ? Qt::ArrowCursor : specs.constFirst().cursor))
+                      .arg(specs.isEmpty() ? -1.0 : specs.constFirst().hitPadding)
+                      .arg(hitAt100)
+                      .arg(hitAt25)
+                      .arg(view.transform().m11())
+                      .arg(scaledApex.x())
+                      .arg(scaledApex.y())
+                      .arg(triangle.IsEditable())
+                      .arg(triangle.isSelected())
+                      .arg(handles.HitRect(CanvasItem::CUSTOM_0).left())
+                      .arg(handles.HitRect(CanvasItem::CUSTOM_0).top())
+                      .arg(handles.HitRect(CanvasItem::CUSTOM_0).width())
+                      .arg(handles.HitRect(CanvasItem::CUSTOM_0).height()));
+
+        triangle.SetAngleReadoutVisible(true);
+        const QRectF content = triangle.ContentRect();
+        const QRectF bounds = triangle.boundingRect();
+        ctx.Check(bounds.bottom() > content.bottom() + 20.0 && bounds.contains(triangle.shape().boundingRect()),
+                  QStringLiteral("25% 缩放下三角形底角读数落在包围盒内且不被基边裁掉"),
+                  QStringLiteral("contentBottom=%1 boundsBottom=%2").arg(content.bottom()).arg(bounds.bottom()));
+        triangle.SetAngleReadoutVisible(false);
     }
     {
         // 平行四边形内角范围放开到 5–175°。

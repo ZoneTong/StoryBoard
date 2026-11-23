@@ -21,7 +21,10 @@ class CanvasItemHandles {
     qreal Size() const;
     QPointF Center(int handle) const;
     QRectF Rect(int handle) const;
+    // 手柄的实际命中矩形：视觉方块外扩命中余量，自定义句柄可单独加宽。
+    QRectF HitRect(int handle) const;
     int HitAt(const QPointF& pos) const;
+    qreal HitReach() const;
     qreal RotationOffset() const;
 
     // 命中测试用的手柄区域（含手柄半露在图元几何外的部分）。

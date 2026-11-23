@@ -6,7 +6,6 @@
 #include <QPainterPath>
 
 namespace {
-constexpr qreal HANDLE_HIT_PADDING = 2.0;
 constexpr qreal KNOB_STROKE = 1.4;
 const QColor HANDLE_COLOR(79, 124, 255);
 
@@ -110,13 +109,30 @@ QRectF CanvasItemHandles::Rect(int handle) const
     return QRectF(handleCenter.x() - handleSize / 2.0, handleCenter.y() - handleSize / 2.0, handleSize, handleSize);
 }
 
+qreal CanvasItemHandles::HitReach() const
+{
+    qreal padding = qMin<qreal>(10.0 / m_item->ViewScale(), 14.0);
+    for (const HandleSpec& spec : ActiveSpecs()) {
+        padding = qMax(padding, spec.hitPadding / m_item->ViewScale());
+    }
+    return Size() / 2.0 + padding;
+}
+
+QRectF CanvasItemHandles::HitRect(int handle) const
+{
+    HandleSpec spec;
+    const bool custom = SpecAt(handle, &spec);
+    qreal padding = qMin<qreal>(10.0 / m_item->ViewScale(), 14.0);
+    if (custom) {
+        padding = qMax(padding, spec.hitPadding / m_item->ViewScale());
+    }
+    return Rect(handle).adjusted(-padding, -padding, padding, padding);
+}
+
 int CanvasItemHandles::HitAt(const QPointF& pos) const
 {
-    const qreal hitPadding = qMin<qreal>(10.0 / m_item->ViewScale(), 14.0);
     const HandleSpecList specs = ActiveSpecs();
-    auto hitSpec = [this, &pos, hitPadding](const HandleSpec& spec) {
-        return Rect(spec.id).adjusted(-hitPadding, -hitPadding, hitPadding, hitPadding).contains(pos);
-    };
+    auto hitSpec = [this, &pos](const HandleSpec& spec) { return HitRect(spec.id).contains(pos); };
     bool hidesTop = false;
     for (const HandleSpec& spec : specs) {
         if (spec.replacesTopHandle) {
@@ -132,8 +148,7 @@ int CanvasItemHandles::HitAt(const QPointF& pos) const
         if (handle == CanvasItem::TOP && hidesTop) {
             continue;
         }
-        const QRectF handleRect = Rect(handle).adjusted(-hitPadding, -hitPadding, hitPadding, hitPadding);
-        if (handleRect.contains(pos)) {
+        if (HitRect(handle).contains(pos)) {
             return handle;
         }
     }
@@ -167,12 +182,10 @@ QPainterPath CanvasItemHandles::SelectionShape() const
         if (handle == CanvasItem::TOP && hidesTop) {
             continue;
         }
-        path.addRect(
-            Rect(handle).adjusted(-HANDLE_HIT_PADDING, -HANDLE_HIT_PADDING, HANDLE_HIT_PADDING, HANDLE_HIT_PADDING));
+        path.addRect(HitRect(handle));
     }
     for (const HandleSpec& spec : specs) {
-        path.addRect(
-            Rect(spec.id).adjusted(-HANDLE_HIT_PADDING, -HANDLE_HIT_PADDING, HANDLE_HIT_PADDING, HANDLE_HIT_PADDING));
+        path.addRect(HitRect(spec.id));
     }
     return path;
 }

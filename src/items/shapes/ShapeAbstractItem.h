@@ -7,6 +7,7 @@
 #include "items/properties/StrokeAttributes.h"
 
 #include <QColor>
+#include <QFont>
 #include <QIcon>
 #include <QList>
 #include <QPainterPath>
@@ -155,7 +156,11 @@ class ShapeAbstractItem : public CanvasItem, public FillAttributes, public Strok
     void PaintContent(QPainter* painter) override;
     void FillChanged() override;
     void StrokeChanged() override;
-    qreal FramePadding() const override { return qMax<qreal>(22.0, StrokeWidth() + 6.0); }
+    qreal FramePadding() const override;
+    // 角度读数统一贴在底边外侧；具体图形只决定文本与对齐，不各写一套偏移。
+    QFont ReadoutFont(const QFont& base) const;
+    QRectF BottomReadoutRect(const QString& text, Qt::Alignment alignment) const;
+    virtual QList<QRectF> AngleReadoutRects() const { return {}; }
 
   private:
     // 圆角半径，单位画布 px；0 表示直角。

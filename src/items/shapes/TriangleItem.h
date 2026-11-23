@@ -28,6 +28,7 @@ class TriangleItem : public ShapeAbstractItem {
     void ContentResized() override;
     void FrameResizeDragged() override;
     void DrawSelectionOverlay(QPainter* painter) override;
+    QList<QRectF> AngleReadoutRects() const override;
     void WriteJsonExtra(QJsonObject& json) const override;
     void ReadJsonExtra(const QJsonObject& json) override;
 

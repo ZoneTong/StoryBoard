@@ -63,6 +63,7 @@ HandleSpecList GeneralParallelogramItem::CustomHandles() const
     knob.position = QPointF(rect.center().x() + signedShift / 2.0, rect.top() + inset);
     knob.behavior = HandleBehavior::SKEW;
     knob.cursor = Qt::SizeHorCursor;
+    knob.hitPadding = 14.0;
     specs.append(knob);
     return specs;
 }

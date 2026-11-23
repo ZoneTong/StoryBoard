@@ -46,8 +46,9 @@ HandleSpecList TriangleItem::CustomHandles() const
     apex.id = CanvasItem::CUSTOM_0;
     apex.position = triangleVertex(TriangleVertex::C) + QPointF(0.0, inset);
     apex.behavior = HandleBehavior::ANGLE;
-    apex.cursor = Qt::SizeAllCursor;
+    apex.cursor = Qt::SizeHorCursor;
     apex.replacesTopHandle = true;
+    apex.hitPadding = 14.0;
     specs.append(apex);
     return specs;
 }
@@ -235,18 +236,22 @@ void TriangleItem::DrawSelectionOverlay(QPainter* painter)
     painter->drawLine(QPointF(center.x() - gap, center.y()), QPointF(center.x() - gap, center.y() - tick));
     painter->drawLine(QPointF(center.x() + gap, center.y()), QPointF(center.x() + gap, center.y() - tick));
     if (AngleReadoutVisible()) {
-        const qreal scale = qMax<qreal>(ViewScale(), 0.001);
-        QFont font = painter->font();
-        font.setPointSizeF(qMax<qreal>(8.0, 11.0 / scale));
-        painter->setFont(font);
+        painter->setFont(ReadoutFont(painter->font()));
         painter->setPen(QColor(37, 99, 235));
-        const QFontMetricsF metrics(font);
-        const QPointF a = triangleVertex(TriangleVertex::A);
-        const QPointF b = triangleVertex(TriangleVertex::B);
         const QString textA = QStringLiteral("%1°").arg(qRound(m_bottomAngle1));
-        const QString textB = QStringLiteral("%1°").arg(m_bottomAngle2, 0, 'f', 1);
-        painter->drawText(a + QPointF(6.0 / scale, -6.0 / scale), textA);
-        painter->drawText(b + QPointF(-metrics.horizontalAdvance(textB) - 6.0 / scale, -6.0 / scale), textB);
+        const QString textB = QStringLiteral("%1°").arg(qRound(m_bottomAngle2));
+        painter->drawText(BottomReadoutRect(textA, Qt::AlignLeft), Qt::AlignLeft | Qt::AlignVCenter, textA);
+        painter->drawText(BottomReadoutRect(textB, Qt::AlignRight), Qt::AlignRight | Qt::AlignVCenter, textB);
     }
     painter->restore();
+}
+
+QList<QRectF> TriangleItem::AngleReadoutRects() const
+{
+    if (!AngleReadoutVisible() || IsCustomShape()) {
+        return {};
+    }
+    const QString textA = QStringLiteral("%1°").arg(qRound(m_bottomAngle1));
+    const QString textB = QStringLiteral("%1°").arg(qRound(m_bottomAngle2));
+    return {BottomReadoutRect(textA, Qt::AlignLeft), BottomReadoutRect(textB, Qt::AlignRight)};
 }

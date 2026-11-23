@@ -187,8 +187,8 @@ QRectF CanvasItem::boundingRect() const
 {
     // 绘制区域仍是内容矩形；选中框可能更小（扇形 / 弧线），两者取并集。
     const QRectF area = ContentRect().united(FrameRect());
-    return CanvasItemGeometry::BoundingRect(area, FramePadding(), isSelected(), ViewScale(), m_handles->Size(),
-                                            m_handles->RotationOffset());
+    return CanvasItemGeometry::BoundingRect(area, qMax(FramePadding(), m_handles->HitReach()), isSelected(),
+                                            ViewScale(), m_handles->Size(), m_handles->RotationOffset());
 }
 
 void CanvasItem::RefreshViewDependentGeometry()

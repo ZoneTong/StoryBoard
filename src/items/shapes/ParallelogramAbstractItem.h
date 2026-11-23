@@ -27,6 +27,7 @@ class ParallelogramAbstractItem : public ShapeAbstractItem {
     // 状态 / JSON 回放用：只写字段，不带叶子副作用（改尺寸、保锚点由叶子负责）。
     void ApplyParallelogramAngleRaw(qreal angle) { m_parallelogramAngle = angle; }
     void DrawSelectionOverlay(QPainter* painter) override;
+    QList<QRectF> AngleReadoutRects() const override;
     void WriteJsonExtra(QJsonObject& json) const override;
     void ReadJsonExtra(const QJsonObject& json) override;
 

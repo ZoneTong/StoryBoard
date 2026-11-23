@@ -17,6 +17,9 @@ struct HandleSpec {
     HandleBehavior behavior = HandleBehavior::STATIC;
     Qt::CursorShape cursor = Qt::SizeAllCursor;
     qreal sizeScale = 1.0;
+    // 自定义句柄的命中外扩量（画布局部像素）。角度旋钮需要比视觉方块更大的
+    // 命中区，避免低缩放下必须点中 9px 方块；0 表示沿用通用手柄的命中规则。
+    qreal hitPadding = 0.0;
     // 该句柄占用的位置与顶边缩放手柄冲突时（三角形顶点 C），置 true 让通用 TOP 手柄让位；
     // 默认 false，表示与八向手柄并存。
     bool replacesTopHandle = false;
