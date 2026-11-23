@@ -84,5 +84,10 @@ enum class IconId {
     MORPH
 };
 
-QIcon MakeIcon(IconId id, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);
-QIcon MakeColorIcon(const QColor& color, int logicalSize = 18);
+namespace IconFactory {
+
+QIcon Make(IconId id, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);
+
+QIcon MakeColor(const QColor& color, int logicalSize = 18);
+
+} // namespace IconFactory

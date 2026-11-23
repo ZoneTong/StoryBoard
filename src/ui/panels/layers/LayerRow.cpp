@@ -65,7 +65,8 @@ LayerRow::LayerRow(const CanvasLayer& layer, int index, int itemCount, QWidget* 
         m_lockButton->setChecked(layer.locked);
         m_lockButton->setFocusPolicy(Qt::NoFocus);
         m_lockButton->setFixedSize(22, 22);
-        m_lockButton->setIcon(MakeIcon(IconId::LOCK, layer.locked ? QColor(37, 99, 235) : QColor(110, 118, 132), 18));
+        m_lockButton->setIcon(
+            IconFactory::Make(IconId::LOCK, layer.locked ? QColor(37, 99, 235) : QColor(110, 118, 132), 18));
         m_lockButton->setIconSize(QSize(18, 18));
         m_lockButton->setToolTip(LayerPanel::tr("Lock layer: items on it cannot be edited"));
         layout->addWidget(m_lockButton);

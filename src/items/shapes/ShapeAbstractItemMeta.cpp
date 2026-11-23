@@ -149,12 +149,14 @@ FillStyle FillStyleFromString(const QString& value)
     return ShapeMeta::StyleFromString(value);
 }
 
-QIcon MakeShapeIcon(ShapeType type, const QColor& color, int logicalSize)
+namespace ShapeIcons {
+
+QIcon Make(ShapeType type, const QColor& color, int logicalSize)
 {
     return ShapePainter::MakeIcon(type, color, logicalSize);
 }
 
-QIcon MakeShapePresetIcon(const QString& preset, const QColor& color, int logicalSize)
+QIcon MakePreset(const QString& preset, const QColor& color, int logicalSize)
 {
     constexpr qreal SCALE = 2.0;
     QPixmap pixmap(static_cast<int>(logicalSize * SCALE), static_cast<int>(logicalSize * SCALE));
@@ -218,3 +220,5 @@ QIcon MakeShapePresetIcon(const QString& preset, const QColor& color, int logica
 
     return QIcon(pixmap);
 }
+
+} // namespace ShapeIcons

@@ -30,12 +30,13 @@ void UiMenuBuilder::BuildShapeMenu()
 {
     m_window->m_shapeMenu = new QMenu(MainWindow::tr("Common shapes"), m_window);
     m_window->m_shapeMenu->setObjectName(QStringLiteral("ShapeMenu"));
-    m_window->m_shapeMenu->setIcon(MakeIcon(IconId::SHAPES, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
+    m_window->m_shapeMenu->setIcon(
+        IconFactory::Make(IconId::SHAPES, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
     m_window->m_shapeMenu->setToolTipsVisible(true);
 
     for (ShapeType type : AllShapeTypes()) {
         QAction* action =
-            m_window->m_shapeMenu->addAction(MakeShapeIcon(type, QColor(58, 64, 80), 18), ShapeTypes::Name(type));
+            m_window->m_shapeMenu->addAction(ShapeIcons::Make(type, QColor(58, 64, 80), 18), ShapeTypes::Name(type));
         action->setObjectName(QStringLiteral("ShapeAction_%1").arg(ShapeTypeToString(type)));
         action->setData(static_cast<int>(type));
         action->setToolTip(MainWindow::tr("Insert %1 (uses the current brush color)").arg(ShapeTypes::Name(type)));
@@ -45,7 +46,7 @@ void UiMenuBuilder::BuildShapeMenu()
         // 圆角矩形（短边 16% 自动圆角），底层同为 rectangle，仅圆角状态不同。
         if (type == ShapeType::RECTANGLE) {
             QAction* roundedPreset = m_window->m_shapeMenu->addAction(
-                MakeShapePresetIcon(QStringLiteral("roundedRect"), QColor(58, 64, 80), 18),
+                ShapeIcons::MakePreset(QStringLiteral("roundedRect"), QColor(58, 64, 80), 18),
                 MainWindow::tr("Rounded rectangle"));
             roundedPreset->setObjectName(QStringLiteral("ShapePreset_roundedRect"));
             roundedPreset->setData(static_cast<int>(type));
@@ -69,7 +70,8 @@ void UiMenuBuilder::BuildShapeMenu()
             // 需求 6：直线箭头紧跟在「直线」之后，复用直线类，默认末端开口箭头，
             // 长边 128（与形状基准边长一致）。
             QAction* lineArrow = m_window->m_shapeMenu->addAction(
-                MakeShapePresetIcon(QStringLiteral("lineArrow"), QColor(58, 64, 80), 18), MainWindow::tr("Line Arrow"));
+                ShapeIcons::MakePreset(QStringLiteral("lineArrow"), QColor(58, 64, 80), 18),
+                MainWindow::tr("Line Arrow"));
             lineArrow->setObjectName(QStringLiteral("ShapePreset_lineArrow"));
             lineArrow->setData(-1);
             lineArrow->setToolTip(MainWindow::tr("Insert a line with an open arrow head at its end"));
@@ -79,14 +81,15 @@ void UiMenuBuilder::BuildShapeMenu()
 
             // 需求 13：左右花括号是独立的花括号图元（右括号 = 左括号旋转 180°）。
             QAction* braceLeft = m_window->m_shapeMenu->addAction(
-                MakeShapePresetIcon(QStringLiteral("braceLeft"), QColor(58, 64, 80), 18), MainWindow::tr("Left brace"));
+                ShapeIcons::MakePreset(QStringLiteral("braceLeft"), QColor(58, 64, 80), 18),
+                MainWindow::tr("Left brace"));
             braceLeft->setObjectName(QStringLiteral("ShapePreset_braceLeft"));
             braceLeft->setData(-1);
             braceLeft->setToolTip(MainWindow::tr("Insert a left brace (draggable and resizable)"));
             QObject::connect(braceLeft, &QAction::triggered, m_window, [this]() { m_window->InsertBrace(true); });
 
             QAction* braceRight = m_window->m_shapeMenu->addAction(
-                MakeShapePresetIcon(QStringLiteral("braceRight"), QColor(58, 64, 80), 18),
+                ShapeIcons::MakePreset(QStringLiteral("braceRight"), QColor(58, 64, 80), 18),
                 MainWindow::tr("Right brace"));
             braceRight->setObjectName(QStringLiteral("ShapePreset_braceRight"));
             braceRight->setData(-1);
@@ -114,7 +117,7 @@ void UiMenuBuilder::BuildShapeMenu()
         // 预置项用 ShapePreset_ 前缀，工具栏那一排按钮只认 ShapeAction_，不会多出按钮。
         if (type == ShapeType::TRIANGLE) {
             QAction* preset45 = m_window->m_shapeMenu->addAction(
-                MakeShapePresetIcon(QStringLiteral("triangle45"), QColor(58, 64, 80), 18),
+                ShapeIcons::MakePreset(QStringLiteral("triangle45"), QColor(58, 64, 80), 18),
                 MainWindow::tr("Right triangle 45°"));
             preset45->setObjectName(QStringLiteral("ShapePreset_triangle45"));
             preset45->setData(static_cast<int>(type));
@@ -124,7 +127,7 @@ void UiMenuBuilder::BuildShapeMenu()
                              [this]() { m_window->InsertShape(ShapeType::TRIANGLE, 90.0, 45.0); });
 
             QAction* preset60 = m_window->m_shapeMenu->addAction(
-                MakeShapePresetIcon(QStringLiteral("triangle60"), QColor(58, 64, 80), 18),
+                ShapeIcons::MakePreset(QStringLiteral("triangle60"), QColor(58, 64, 80), 18),
                 MainWindow::tr("Right triangle 60°"));
             preset60->setObjectName(QStringLiteral("ShapePreset_triangle60"));
             preset60->setData(static_cast<int>(type));
@@ -240,14 +243,14 @@ void UiMenuBuilder::BuildMenus()
     // 高度两项只写动作名：快捷键交给 QAction 自己显示，手写 “] / [” 会跟它重复一遍。
     QAction* heightUpAct = editMenu->addAction(MainWindow::tr("Height +1 (stack up)"));
     heightUpAct->setObjectName(QStringLiteral("HeightUpAction"));
-    heightUpAct->setIcon(MakeIcon(IconId::ORDER_UP, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
+    heightUpAct->setIcon(IconFactory::Make(IconId::ORDER_UP, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
     heightUpAct->setShortcut(QKeySequence(Qt::Key_BracketRight));
     heightUpAct->setStatusTip(MainWindow::tr("Raise the stacking height of selected items (shortcut ])"));
     QObject::connect(heightUpAct, &QAction::triggered, m_window, [applySelectedHeight]() { applySelectedHeight(1); });
 
     QAction* heightDownAct = editMenu->addAction(MainWindow::tr("Height -1 (stack down)"));
     heightDownAct->setObjectName(QStringLiteral("HeightDownAction"));
-    heightDownAct->setIcon(MakeIcon(IconId::ORDER_DOWN, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
+    heightDownAct->setIcon(IconFactory::Make(IconId::ORDER_DOWN, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
     heightDownAct->setShortcut(QKeySequence(Qt::Key_BracketLeft));
     heightDownAct->setStatusTip(MainWindow::tr("Lower the stacking height of selected items (shortcut [)"));
     QObject::connect(heightDownAct, &QAction::triggered, m_window,
@@ -286,7 +289,7 @@ void UiMenuBuilder::BuildMenus()
     };
     for (const AlignEntry& entry : alignEntries) {
         QAction* action = alignMenu->addAction(MainWindow::tr(entry.text));
-        action->setIcon(MakeIcon(entry.icon, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
+        action->setIcon(IconFactory::Make(entry.icon, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
         action->setStatusTip(MainWindow::tr(entry.tip));
         action->setProperty("alignMode", static_cast<int>(entry.mode));
         QObject::connect(action, &QAction::triggered, m_window,
@@ -299,7 +302,7 @@ void UiMenuBuilder::BuildMenus()
     // 主入口用独立图标（形变图形），五项子操作继续用两圆交叠的运算图标。
     QMenu* boolMenu = editMenu->addMenu(MainWindow::tr("Merge items") + QStringLiteral(" (Ctrl+M)"));
     boolMenu->setObjectName(QStringLiteral("BoolMenu"));
-    boolMenu->setIcon(MakeIcon(IconId::MORPH, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
+    boolMenu->setIcon(IconFactory::Make(IconId::MORPH, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
     // 和弦键（Ctrl+M 之后 1 秒内按字母）不是 QAction 的快捷键，菜单里不会自动显示，
     // 所以直接把键名缀在条目文字后面，跟状态栏提示保持一致。
     const QList<QPair<BoolOps::Operation, QString>> boolEntries = {
@@ -323,8 +326,8 @@ void UiMenuBuilder::BuildMenus()
                                      IconId::MERGE_SUBTRACT, IconId::MERGE_FRAGMENT, IconId::MERGE_LINE_SPLIT};
     for (int i = 0; i < boolEntries.size(); ++i) {
         QAction* action = boolMenu->addAction(boolEntries.at(i).second);
-        action->setIcon(
-            MakeIcon(boolIcons.at(qMin(i, boolIcons.size() - 1)), QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
+        action->setIcon(IconFactory::Make(boolIcons.at(qMin(i, boolIcons.size() - 1)), QColor(58, 64, 80),
+                                          MainWindow::TOOL_BAR_ICON_SIZE));
         action->setStatusTip(boolTips.at(qMin(i, boolTips.size() - 1)));
         // 分割的参与者规则不同（填充图元 + 恰一条切刀），打上标记供启用状态单独判定。
         action->setProperty("lineSplitAction", boolEntries.at(i).first == BoolOps::Operation::LINE_SPLIT);
@@ -391,7 +394,7 @@ void UiMenuBuilder::BuildMenus()
     insertMenu->addAction(m_window->m_bgColorAct);
     insertMenu->addAction(m_window->m_clearBgAct);
     QMenu* fillMenu = insertMenu->addMenu(MainWindow::tr("Background fill mode"));
-    fillMenu->setIcon(MakeIcon(IconId::BACKGROUND, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
+    fillMenu->setIcon(IconFactory::Make(IconId::BACKGROUND, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
     fillMenu->addAction(m_window->m_bgStretchAct);
     fillMenu->addAction(m_window->m_bgFitAct);
     fillMenu->addAction(m_window->m_bgTileAct);

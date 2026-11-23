@@ -19,7 +19,7 @@ QToolButton* MakeRowIcon(IconId id, QWidget* parent)
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
     const int glyph = RowMetrics::GlyphSize();
-    button->setIcon(MakeIcon(id, QColor(139, 144, 156), glyph));
+    button->setIcon(IconFactory::Make(id, QColor(139, 144, 156), glyph));
     button->setIconSize(QSize(glyph, glyph));
     // 边长跟输入框等高：既不把行撑高，也不会比属性窗里的输入框高（§D13）。
     button->setFixedSize(RowMetrics::IconButtonSize());
@@ -209,7 +209,7 @@ FillImageRow::FillImageRow(QWidget* parent) : QWidget(parent)
 
     m_chooseButton = new QToolButton(this);
     m_chooseButton->setObjectName(QStringLiteral("ItemFillImageButton"));
-    m_chooseButton->setIcon(MakeIcon(IconId::IMAGE, QColor(58, 64, 80), 16));
+    m_chooseButton->setIcon(IconFactory::Make(IconId::IMAGE, QColor(58, 64, 80), 16));
     m_chooseButton->setIconSize(QSize(16, 16));
     m_chooseButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     m_chooseButton->setText(AttributeRowText("Choose fill image"));
@@ -236,7 +236,7 @@ FillImageRow::FillImageRow(QWidget* parent) : QWidget(parent)
 
     m_clearButton = new QToolButton(this);
     m_clearButton->setObjectName(QStringLiteral("ItemClearFillImageButton"));
-    m_clearButton->setIcon(MakeIcon(IconId::DELETE, QColor(58, 64, 80), 16));
+    m_clearButton->setIcon(IconFactory::Make(IconId::DELETE, QColor(58, 64, 80), 16));
     m_clearButton->setIconSize(QSize(16, 16));
     m_clearButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     m_clearButton->setText(AttributeRowText("Clear"));

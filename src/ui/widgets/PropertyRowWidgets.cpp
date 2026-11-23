@@ -28,7 +28,7 @@ QToolButton* AddRowIcon(QHBoxLayout* layout, IconId id, QWidget* parent, const Q
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
     const int glyph = RowMetrics::GlyphSize();
-    button->setIcon(MakeIcon(id, QColor(139, 144, 156), glyph));
+    button->setIcon(IconFactory::Make(id, QColor(139, 144, 156), glyph));
     button->setIconSize(QSize(glyph, glyph));
     // 与输入框等高：属性窗没有图标，这里一旦比输入框高，就会把整行撑起来。
     button->setFixedSize(RowMetrics::IconButtonSize());

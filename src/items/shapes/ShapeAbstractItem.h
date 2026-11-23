@@ -55,10 +55,15 @@ ShapeType ShapeTypeFromString(const QString& value);
 QSizeF DefaultShapeSize(ShapeType type);
 bool ShapeTypeIsFilled(ShapeType type);
 
-QIcon MakeShapeIcon(ShapeType type, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);
+namespace ShapeIcons {
+
+QIcon Make(ShapeType type, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);
+
 // 预置项（圆角矩形 / 45°·60° 直角三角 / 直线箭头）单独画图标，
 // 和基础图形并排放在菜单与工具栏时能一眼区分。
-QIcon MakeShapePresetIcon(const QString& preset, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);
+QIcon MakePreset(const QString& preset, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);
+
+} // namespace ShapeIcons
 
 QList<FillStyle> AllFillStyles();
 namespace FillStyles {

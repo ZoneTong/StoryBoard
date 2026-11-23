@@ -460,7 +460,7 @@ void selftest::RunShapeItemTests(Context& ctx)
         if (ShapeAbstractItem::PathFor(type, QRectF(0, 0, 140, 90)).isEmpty()) {
             shapePathsOk = false;
         }
-        if (MakeShapeIcon(type, QColor(58, 64, 80), 18).isNull()) {
+        if (ShapeIcons::Make(type, QColor(58, 64, 80), 18).isNull()) {
             shapeIconsOk = false;
         }
         if (ShapeTypes::Name(type).isEmpty()) {
@@ -1086,8 +1086,9 @@ void selftest::RunShapeItemTests(Context& ctx)
                       .arg(ellipseCenter.y()));
 
         // B3：位置图标四角框中心透明；中心点图标中心有实心点。
-        const QImage positionIcon = MakeIcon(IconId::POSITION, QColor(58, 64, 80), 24).pixmap(24, 24).toImage();
-        const QImage centerIcon = MakeIcon(IconId::FIT, QColor(58, 64, 80), 24).pixmap(24, 24).toImage();
+        const QImage positionIcon =
+            IconFactory::Make(IconId::POSITION, QColor(58, 64, 80), 24).pixmap(24, 24).toImage();
+        const QImage centerIcon = IconFactory::Make(IconId::FIT, QColor(58, 64, 80), 24).pixmap(24, 24).toImage();
         ctx.Check(positionIcon.pixelColor(12, 12).alpha() == 0 && centerIcon.pixelColor(12, 12).alpha() > 0,
                   QStringLiteral("位置图标去中心点、中心点图标保留中心点"),
                   QStringLiteral("positionAlpha=%1 centerAlpha=%2")
@@ -1240,7 +1241,7 @@ void selftest::RunShapeItemTests(Context& ctx)
     {
         // 底角 A / B 的图标：开口方向不同（A 朝右、B 朝左），且都不是空白图标。
         const auto iconImage = [](IconId id) {
-            const QIcon icon = MakeIcon(id, QColor(0, 0, 0), 22);
+            const QIcon icon = IconFactory::Make(id, QColor(0, 0, 0), 22);
             return icon.pixmap(QSize(44, 44)).toImage();
         };
         const QImage right = iconImage(IconId::ANGLE_RIGHT);

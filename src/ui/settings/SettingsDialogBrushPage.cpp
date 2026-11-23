@@ -82,7 +82,7 @@ void SettingsDialogBrushPage::SetBrushColor(const QColor& color)
 
 void SettingsDialogBrushPage::RefreshColorButton(QPushButton* button, const QColor& color)
 {
-    button->setIcon(MakeColorIcon(color, 18));
+    button->setIcon(IconFactory::MakeColor(color, 18));
     const QString text =
         color.alpha() < 255 ? color.name(QColor::HexArgb).toUpper() : color.name(QColor::HexRgb).toUpper();
     button->setText(text);

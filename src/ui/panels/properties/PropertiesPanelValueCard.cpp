@@ -23,7 +23,7 @@ QToolButton* MakeRowIcon(IconId id, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
-    button->setIcon(MakeIcon(id, QColor(139, 144, 156), RowMetrics::GlyphSize()));
+    button->setIcon(IconFactory::Make(id, QColor(139, 144, 156), RowMetrics::GlyphSize()));
     button->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
     button->setFixedSize(RowMetrics::IconButtonSize());
     button->setAutoRaise(true);

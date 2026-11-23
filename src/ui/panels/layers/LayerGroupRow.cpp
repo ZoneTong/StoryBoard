@@ -18,7 +18,7 @@ LayerGroupRow::LayerGroupRow(int groupId, const QString& name, int memberCount, 
 
     auto* iconLabel = new QLabel(this);
     iconLabel->setObjectName(QStringLiteral("LayerGroupRowIcon"));
-    iconLabel->setPixmap(MakeIcon(IconId::GROUP, QColor(110, 118, 132), 16).pixmap(16, 16));
+    iconLabel->setPixmap(IconFactory::Make(IconId::GROUP, QColor(110, 118, 132), 16).pixmap(16, 16));
     layout->addWidget(iconLabel);
 
     m_nameLabel = new QLabel(this);

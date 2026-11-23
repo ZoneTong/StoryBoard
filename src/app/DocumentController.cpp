@@ -552,8 +552,8 @@ void DocumentController::UpdateCanvasesMenu()
         const int maximum = qMin(15, static_cast<int>(files.size()));
         for (int i = 0; i < maximum; ++i) {
             const QFileInfo info = files.at(i);
-            QAction* action = new QAction(MakeIcon(IconId::SAVE, QColor(90, 98, 112), 16), info.completeBaseName(),
-                                          m_window->m_fileMenu);
+            QAction* action = new QAction(IconFactory::Make(IconId::SAVE, QColor(90, 98, 112), 16),
+                                          info.completeBaseName(), m_window->m_fileMenu);
             action->setCheckable(true);
             action->setChecked(info.absoluteFilePath() == m_window->m_filePath);
             action->setToolTip(QDir::toNativeSeparators(info.absoluteFilePath()));

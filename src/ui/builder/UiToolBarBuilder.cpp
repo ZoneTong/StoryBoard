@@ -152,7 +152,7 @@ void UiToolBarBuilder::CreateShapeToolbar(QToolBar* mainBar)
     // 常见图形之后追加自定义图形下拉，和「插入 → 常见图形」里的同一份目录菜单。
     auto* customShapeButton = new QToolButton(mainBar);
     customShapeButton->setObjectName(QStringLiteral("ToolBarCustomShapeButton"));
-    customShapeButton->setIcon(MakeIcon(IconId::SHAPES, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
+    customShapeButton->setIcon(IconFactory::Make(IconId::SHAPES, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
     customShapeButton->setIconSize(QSize(MainWindow::TOOL_BAR_ICON_SIZE, MainWindow::TOOL_BAR_ICON_SIZE));
     customShapeButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
     customShapeButton->setPopupMode(QToolButton::DelayedPopup);

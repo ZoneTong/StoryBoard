@@ -41,7 +41,7 @@ void RefreshColorButton(QToolButton* button)
     } else if (role == ColorIconRole::BORDER) {
         icon = ItemStyleVisuals::BorderColorIcon(color.isValid() ? color : QColor(Qt::transparent), 18);
     } else {
-        icon = MakeColorIcon(color.isValid() ? color : QColor(Qt::transparent), 18);
+        icon = IconFactory::MakeColor(color.isValid() ? color : QColor(Qt::transparent), 18);
     }
     button->setIcon(icon);
     button->setText(ColorText(color));

@@ -33,7 +33,9 @@ void DrawIconShape(QPainter& painter, IconId id)
 
 } // namespace
 
-QIcon MakeIcon(IconId id, const QColor& color, int logicalSize)
+namespace IconFactory {
+
+QIcon Make(IconId id, const QColor& color, int logicalSize)
 {
     constexpr qreal ICON_GRID = 24.0;
     const qreal scale = 2.0;
@@ -54,7 +56,7 @@ QIcon MakeIcon(IconId id, const QColor& color, int logicalSize)
     return QIcon(pixmap);
 }
 
-QIcon MakeColorIcon(const QColor& color, int logicalSize)
+QIcon MakeColor(const QColor& color, int logicalSize)
 {
     constexpr qreal SCALE = 2.0;
     QPixmap pixmap(static_cast<int>(logicalSize * SCALE), static_cast<int>(logicalSize * SCALE));
@@ -87,3 +89,5 @@ QIcon MakeColorIcon(const QColor& color, int logicalSize)
 
     return QIcon(pixmap);
 }
+
+} // namespace IconFactory

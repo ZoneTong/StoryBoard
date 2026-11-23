@@ -13,7 +13,7 @@ QToolButton* MakeRowIcon(IconId id, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
-    button->setIcon(MakeIcon(id, QColor(139, 144, 156), RowMetrics::GlyphSize()));
+    button->setIcon(IconFactory::Make(id, QColor(139, 144, 156), RowMetrics::GlyphSize()));
     button->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
     button->setFixedSize(RowMetrics::IconButtonSize());
     button->setAutoRaise(true);
@@ -54,7 +54,7 @@ QToolButton* PropertiesPanelArrangeCard::MakeButton(IconId id, const QString& to
 {
     auto* button = new QToolButton(this);
     button->setObjectName(objectName);
-    button->setIcon(MakeIcon(id, QColor(75, 85, 99), RowMetrics::GlyphSize()));
+    button->setIcon(IconFactory::Make(id, QColor(75, 85, 99), RowMetrics::GlyphSize()));
     button->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
     button->setFixedSize(RowMetrics::IconButtonSize());
     button->setToolTip(toolTip);

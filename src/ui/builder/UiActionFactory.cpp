@@ -30,7 +30,8 @@ QAction* MakeAction(QObject* parent, IconId icon, const QString& text, const QKe
                     QString tip = QString())
 {
     // 工具栏按钮与菜单项共用一份图标，按工具栏图标尺寸生成；菜单再缩放到 16px。
-    auto* action = new QAction(MakeIcon(icon, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE), text, parent);
+    auto* action =
+        new QAction(IconFactory::Make(icon, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE), text, parent);
     if (!shortcut.isEmpty()) {
         action->setShortcut(shortcut);
     }
@@ -104,7 +105,8 @@ void UiActionFactory::Build()
     m_window->m_deleteAct = MakeAction(m_window, IconId::DELETE, MainWindow::tr("Delete selected items"),
                                        QKeySequence::Delete, MainWindow::tr("Delete the selected items (Delete)"));
     m_window->m_duplicateAct = new QAction(MainWindow::tr("Duplicate selected items"), m_window);
-    m_window->m_duplicateAct->setIcon(MakeIcon(IconId::COPY, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
+    m_window->m_duplicateAct->setIcon(
+        IconFactory::Make(IconId::COPY, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
     m_window->m_duplicateAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+D")));
     m_window->m_duplicateAct->setStatusTip(MainWindow::tr("Duplicate the selected items with a small offset (Ctrl+D)"));
     m_window->m_duplicateAct->setEnabled(false);
@@ -134,7 +136,7 @@ void UiActionFactory::Build()
     m_window->m_pasteAct->setEnabled(false);
 
     m_window->m_groupAct = new QAction(MainWindow::tr("Group selected items"), m_window);
-    m_window->m_groupAct->setIcon(MakeIcon(IconId::GROUP, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
+    m_window->m_groupAct->setIcon(IconFactory::Make(IconId::GROUP, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
     m_window->m_groupAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+G")));
     m_window->m_groupAct->setStatusTip(MainWindow::tr("Group the selected items so they move together (Ctrl+G)"));
     m_window->m_groupAct->setEnabled(false);
@@ -150,7 +152,8 @@ void UiActionFactory::Build()
         }
     });
     m_window->m_ungroupAct = new QAction(MainWindow::tr("Ungroup selected items"), m_window);
-    m_window->m_ungroupAct->setIcon(MakeIcon(IconId::UNGROUP, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
+    m_window->m_ungroupAct->setIcon(
+        IconFactory::Make(IconId::UNGROUP, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
     m_window->m_ungroupAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+G")));
     m_window->m_ungroupAct->setStatusTip(MainWindow::tr("Ungroup the selected Group(s) (Ctrl+Shift+G)"));
     m_window->m_ungroupAct->setEnabled(false);
