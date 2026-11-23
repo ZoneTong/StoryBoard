@@ -203,6 +203,18 @@ APP=$(basename "$PWD")
 
 `scripts/check-translations.py` 只读对账三件事：源码里的串在 ts 里能否找到（HARD）、是否落在调用点应有的上下文（SOFT）、带 `%n` 的串是否配了 numerus 条目（PLURAL）。提交前跑一遍，HARD 与 PLURAL 必须为 0。
 
+文件命名（本节 2026-11-24 02:36 更新）：
+
+| 规则 | 说明 |
+| --- | --- |
+| 文件名 = `<领域><职责>` | `PropertiesPanelGeometryCard`、`IconTransformAlignIcons`，一眼看出属于谁、干什么 |
+| 禁用同义词对 | 同目录不要同时存在 `FillRows` 与 `FillWidgets` 这类只差措辞的文件，职责不同才允许并存 |
+| 禁用兜底名 | `Helpers` / `Utils` / `Common` / `Misc` 说明还没想清职责，改成具体名字 |
+| 只在超行数时拆 | `.cpp` 超过 500 行（界面类 800 行）才拆，拆分点是职责边界，不按代码量对半切 |
+| 同族文件靠公共前后缀区分 | `PropertiesPanel*Card`、`SettingsDialog*Page` 这类前缀后缀是族名，真正要比的是中间职责词 |
+
+`scripts/check-file-names.py` 按上表做体检：同目录职责词相似度 > 0.8、出现兜底名、唯一类名与文件名不符、同目录注释首句雷同都会列出来（`items/shapes` 同族图元句式统一，跳过注释检查）。默认只报告不拦提交，加 `--strict` 时返回非 0。
+
 ## 并行开发与打包
 
 只有一个任务时直接在主干目录开发，不必建工作树；同时在跑两件以上需求时，一个需求一棵工作树：从当前 `main` 的 HEAD 拉 `feature/<需求名>` 临时分支，放在仓库旁的 `StoryBoard-worktrees/<需求名>` 独立开发。
