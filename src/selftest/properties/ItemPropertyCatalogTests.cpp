@@ -16,6 +16,7 @@ void selftest::RunItemPropertyCatalogTests(Context& ctx)
     bool labelsPresent = true;
     bool rangesValid = true;
     bool derivedCorrect = true;
+    bool callbacksPresent = true;
     for (const ItemPropertyDescriptor* descriptor : descriptors) {
         const QString key = descriptor->storageKey;
         if (key.isEmpty() || keys.contains(key)) {
@@ -36,6 +37,11 @@ void selftest::RunItemPropertyCatalogTests(Context& ctx)
         if (descriptor->derived != expectedDerived) {
             derivedCorrect = false;
         }
+        const bool derivedAxis =
+            descriptor->key == ItemProperty::MAJOR_AXIS || descriptor->key == ItemProperty::MINOR_AXIS;
+        if (!derivedAxis && (!descriptor->reader || !descriptor->writer)) {
+            callbacksPresent = false;
+        }
         if (ItemPropertyCatalog::Find(descriptor->key) != descriptor) {
             labelsPresent = false;
         }
@@ -45,6 +51,7 @@ void selftest::RunItemPropertyCatalogTests(Context& ctx)
     ctx.Check(labelsPresent, QStringLiteral("每个属性都有标签且可反查"));
     ctx.Check(rangesValid, QStringLiteral("数值属性的范围与步长有效"));
     ctx.Check(derivedCorrect, QStringLiteral("派生属性只标记长短半轴与中心点"));
+    ctx.Check(callbacksPresent, QStringLiteral("除派生半轴外属性描述符均具备读写回调"));
 
     // 中文标签必须走属性窗上下文，手工维护的 storyboard_zh.ts 才不会因改上下文丢译文。
     ctx.Check(ItemPropertyCatalog::Label(ItemProperty::NAME) == QStringLiteral("图元名称"),

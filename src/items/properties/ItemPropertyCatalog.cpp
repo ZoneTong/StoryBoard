@@ -1,6 +1,14 @@
 #include "items/properties/ItemPropertyCatalog.h"
 
 #include "items/CanvasItem.h"
+#include "items/lines/ArcAngleAttributes.h"
+#include "items/lines/LineAbstractItem.h"
+#include "items/lines/SineItem.h"
+#include "items/properties/FillAttributes.h"
+#include "items/properties/StrokeAttributes.h"
+#include "items/shapes/ParallelogramAbstractItem.h"
+#include "items/shapes/ShapeAbstractItem.h"
+#include "items/text/TextItem.h"
 
 #include <QCoreApplication>
 #include <utility>
@@ -127,6 +135,215 @@ const QList<ItemPropertyDescriptor*>& ItemPropertyCatalog::All()
                 descriptor->reader = [](const CanvasItem* item) { return item->ItemOpacity(); };
                 descriptor->writer = [](CanvasItem* item, const QVariant& value) {
                     item->SetItemOpacity(value.toDouble());
+                };
+            } else if (descriptor->key == ItemProperty::TEXT_CONTENT) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* text = dynamic_cast<const TextItem*>(item);
+                    return text ? text->TextContent() : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* text = dynamic_cast<TextItem*>(item)) {
+                        text->SetTextContent(value.toString());
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::TEXT_FONT) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* text = dynamic_cast<const TextItem*>(item);
+                    return text ? text->TextFont() : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* text = dynamic_cast<TextItem*>(item)) {
+                        text->SetTextFont(value.value<QFont>());
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::TEXT_COLOR) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* text = dynamic_cast<const TextItem*>(item);
+                    return text ? text->TextColor() : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* text = dynamic_cast<TextItem*>(item)) {
+                        text->SetTextColor(value.value<QColor>());
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::FILL_STYLE) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* fill = dynamic_cast<const FillAttributes*>(item);
+                    return fill ? static_cast<int>(fill->fillStyle()) : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* fill = dynamic_cast<FillAttributes*>(item)) {
+                        fill->SetFillStyle(static_cast<FillStyle>(value.toInt()));
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::FILL_COLOR) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* fill = dynamic_cast<const FillAttributes*>(item);
+                    return fill ? fill->FillColor() : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* fill = dynamic_cast<FillAttributes*>(item)) {
+                        fill->SetFill(value.value<QColor>(), fill->fillStyle());
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::FILL_IMAGE) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* fill = dynamic_cast<const FillAttributes*>(item);
+                    return fill ? QVariant::fromValue(fill->FillImage()) : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* fill = dynamic_cast<FillAttributes*>(item)) {
+                        const QPixmap image = value.value<QPixmap>();
+                        if (image.isNull()) {
+                            fill->ClearFillImage();
+                        } else {
+                            fill->SetFillImage(image, fill->FillImageMode());
+                        }
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::FILL_IMAGE_MODE) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* fill = dynamic_cast<const FillAttributes*>(item);
+                    return fill ? static_cast<int>(fill->FillImageMode()) : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* fill = dynamic_cast<FillAttributes*>(item)) {
+                        fill->SetFillImage(fill->FillImage(), static_cast<ImageFill::Mode>(value.toInt()));
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::STROKE_STYLE) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* stroke = dynamic_cast<const StrokeAttributes*>(item);
+                    return stroke ? static_cast<int>(stroke->StrokeStyle()) : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* stroke = dynamic_cast<StrokeAttributes*>(item)) {
+                        stroke->SetStrokeStyle(static_cast<Qt::PenStyle>(value.toInt()));
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::STROKE_COLOR) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* stroke = dynamic_cast<const StrokeAttributes*>(item);
+                    return stroke ? stroke->StrokeColor() : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* stroke = dynamic_cast<StrokeAttributes*>(item)) {
+                        stroke->SetStrokeColor(value.value<QColor>());
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::STROKE_WIDTH) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* stroke = dynamic_cast<const StrokeAttributes*>(item);
+                    return stroke ? stroke->StrokeWidth() : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* stroke = dynamic_cast<StrokeAttributes*>(item)) {
+                        stroke->SetStrokeWidth(value.toDouble());
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::CORNER_RADIUS) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* shape = dynamic_cast<const ShapeAbstractItem*>(item);
+                    return shape ? shape->CornerRadius() : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
+                        shape->SetCornerRadius(value.toDouble());
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::START_ANGLE) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* arc = dynamic_cast<const ArcAngleAttributes*>(item);
+                    return arc ? arc->StartAngle() : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* arc = dynamic_cast<ArcAngleAttributes*>(item)) {
+                        arc->SetStartAngle(value.toDouble());
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::SWEEP_ANGLE) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* arc = dynamic_cast<const ArcAngleAttributes*>(item);
+                    return arc ? arc->SweepAngle() : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* arc = dynamic_cast<ArcAngleAttributes*>(item)) {
+                        arc->SetSweepAngle(value.toDouble());
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::SINE_CYCLES) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* sine = dynamic_cast<const SineItem*>(item);
+                    return sine ? sine->params().cycles : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* sine = dynamic_cast<SineItem*>(item)) {
+                        SineItem::Params params = sine->params();
+                        params.cycles = value.toInt();
+                        sine->SetParams(params);
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::SINE_AMPLITUDE) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* sine = dynamic_cast<const SineItem*>(item);
+                    return sine ? sine->params().amplitude : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* sine = dynamic_cast<SineItem*>(item)) {
+                        SineItem::Params params = sine->params();
+                        params.amplitude = value.toDouble();
+                        sine->SetParams(params);
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::BOTTOM_ANGLE1) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* shape = dynamic_cast<const ShapeAbstractItem*>(item);
+                    return shape ? shape->BottomAngle1() : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
+                        shape->SetTriangleAngles(value.toDouble(), shape->BottomAngle2());
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::BOTTOM_ANGLE2) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* shape = dynamic_cast<const ShapeAbstractItem*>(item);
+                    return shape ? shape->BottomAngle2() : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
+                        shape->SetTriangleAngles(shape->BottomAngle1(), value.toDouble());
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::PARALLELOGRAM_ANGLE) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* shape = dynamic_cast<const ParallelogramAbstractItem*>(item);
+                    return shape ? shape->ParallelogramAngle() : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* shape = dynamic_cast<ParallelogramAbstractItem*>(item)) {
+                        shape->SetParallelogramAngle(value.toDouble());
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::ARROW_START) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* line = dynamic_cast<const LineAbstractItem*>(item);
+                    return line ? static_cast<int>(line->StartArrow()) : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* line = dynamic_cast<LineAbstractItem*>(item)) {
+                        line->SetArrowStyles(static_cast<ArrowStyle>(value.toInt()), line->EndArrow());
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::ARROW_END) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    const auto* line = dynamic_cast<const LineAbstractItem*>(item);
+                    return line ? static_cast<int>(line->EndArrow()) : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* line = dynamic_cast<LineAbstractItem*>(item)) {
+                        line->SetArrowStyles(line->StartArrow(), static_cast<ArrowStyle>(value.toInt()));
+                    }
                 };
             }
         }
