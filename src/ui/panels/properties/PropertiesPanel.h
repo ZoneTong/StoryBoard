@@ -26,6 +26,7 @@ class QToolButton;
 class QLabel;
 class QWidget;
 class QLayout;
+class QFormLayout;
 
 class PropertiesPanelSelectionCard;
 class PropertiesPanelColorsCard;
@@ -125,6 +126,9 @@ class PropertiesPanel : public QWidget {
     void ApplyItemStack(int layerId, int height, const QString& text);
     void AdjustLayer(int delta);
     void AdjustHeight(int delta);
+    // 动态参数：按选中集合共有的 PropertyKey 现建通用编辑行，不追加图元类型分支。
+    void RefreshDynamicRows(const ItemPropertySet& common, const QList<CanvasItem*>& items);
+    void ApplyDynamicProperty(PropertyKey property, const QVariant& value);
 
     CanvasScene* m_scene = nullptr;
     QLabel* m_titleLabel = nullptr;
@@ -141,6 +145,8 @@ class PropertiesPanel : public QWidget {
     PropertiesPanelArrangeCard* m_arrangeCard = nullptr;
     PropertiesPanelIdentityCard* m_identityCard = nullptr;
     PropertiesPanelGeometryCard* m_geometryCard = nullptr;
+    QWidget* m_dynamicCard = nullptr;
+    QFormLayout* m_dynamicForm = nullptr;
 
     bool m_refreshing = false;
     bool m_refreshPending = false;

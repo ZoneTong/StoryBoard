@@ -24,13 +24,17 @@
 #include "ui/widgets/AttributeRowWidgets.h"
 
 #include <QComboBox>
+#include <QDoubleSpinBox>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFont>
+#include <QFormLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLayout>
+#include <QLineEdit>
 #include <QScrollArea>
+#include <QSpinBox>
 #include <QStyle>
 #include <QTimer>
 #include <QToolButton>
@@ -116,6 +120,14 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     m_geometryCard = new PropertiesPanelGeometryCard(content);
     m_geometryCard->setObjectName(QStringLiteral("ItemGeometryCard"));
     layout->addWidget(m_geometryCard);
+
+    m_dynamicCard = new QWidget(content);
+    m_dynamicCard->setObjectName(QStringLiteral("ItemDynamicPropertyCard"));
+    m_dynamicForm = new QFormLayout(m_dynamicCard);
+    m_dynamicForm->setContentsMargins(0, 0, 0, 0);
+    m_dynamicForm->setSpacing(4);
+    m_dynamicCard->setVisible(false);
+    layout->addWidget(m_dynamicCard);
 
     layout->addWidget(m_selectionCard);
     layout->addStretch(1);
@@ -329,6 +341,7 @@ void PropertiesPanel::Refresh()
     m_geometryCard->SetAxisVisible(rowVisible(ItemProperty::MAJOR_AXIS));
     m_geometryCard->SetInteriorAngleVisible(rowVisible(ItemProperty::BOTTOM_ANGLE1));
     m_geometryCard->SetCenterVisible(rowVisible(ItemProperty::CENTER));
+    RefreshDynamicRows(common, items);
 
     m_fillBorderCard->FillStyleRow()->setVisible(rowVisible(ItemProperty::FILL_STYLE));
     m_colorsCard->FillColorRow()->setVisible(rowVisible(ItemProperty::FILL_COLOR));
@@ -352,6 +365,75 @@ void PropertiesPanel::Refresh()
         m_refreshPending = false;
         ScheduleRefresh();
     }
+}
+
+void PropertiesPanel::RefreshDynamicRows(const ItemPropertySet& common, const QList<CanvasItem*>& items)
+{
+    if (!m_dynamicForm) {
+        return;
+    }
+    while (m_dynamicForm->rowCount() > 0) {
+        auto row = m_dynamicForm->takeRow(0);
+        delete row.labelItem;
+        if (row.fieldItem) {
+            delete row.fieldItem->widget();
+            delete row.fieldItem;
+        }
+    }
+    if (items.isEmpty()) {
+        m_dynamicCard->setVisible(false);
+        return;
+    }
+
+    CanvasItem* source = items.first();
+    for (PropertyKey property : common.Keys()) {
+        if (property.IsCommon()) {
+            continue;
+        }
+        const ItemPropertyDescriptor* descriptor = ItemPropertyCatalog::Find(property);
+        const PropertyRowSpec* spec = PropertyRowSpecs::For(property);
+        if (!descriptor || !spec) {
+            continue;
+        }
+        const QVariant current = source->PropertyValueByKey(property);
+        QWidget* editor = nullptr;
+        if (descriptor->kind == ItemPropertyKind::TEXT) {
+            auto* line = new QLineEdit(m_dynamicCard);
+            line->setText(current.toString());
+            connect(line, &QLineEdit::editingFinished, this,
+                    [this, property, line]() { ApplyDynamicProperty(property, line->text()); });
+            editor = line;
+        } else if (descriptor->kind == ItemPropertyKind::INTEGER) {
+            auto* spin = new QSpinBox(m_dynamicCard);
+            spin->setRange(qRound(descriptor->minimum), qRound(descriptor->maximum));
+            spin->setSingleStep(qMax(1, qRound(descriptor->step)));
+            spin->setSuffix(descriptor->suffix);
+            spin->setValue(current.toInt());
+            connect(spin, &QSpinBox::editingFinished, this,
+                    [this, property, spin]() { ApplyDynamicProperty(property, spin->value()); });
+            editor = spin;
+        } else if (descriptor->kind == ItemPropertyKind::REAL) {
+            auto* spin = new QDoubleSpinBox(m_dynamicCard);
+            spin->setRange(descriptor->minimum, descriptor->maximum);
+            spin->setSingleStep(descriptor->step);
+            spin->setDecimals(descriptor->decimals);
+            spin->setSuffix(descriptor->suffix);
+            spin->setValue(current.toDouble());
+            connect(spin, &QDoubleSpinBox::editingFinished, this,
+                    [this, property, spin]() { ApplyDynamicProperty(property, spin->value()); });
+            editor = spin;
+        } else {
+            auto* label = new QLabel(current.toString(), m_dynamicCard);
+            editor = label;
+        }
+        m_dynamicForm->addRow(spec->Label(), editor);
+    }
+    m_dynamicCard->setVisible(m_dynamicForm->rowCount() > 0);
+}
+
+void PropertiesPanel::ApplyDynamicProperty(PropertyKey property, const QVariant& value)
+{
+    ApplyPropertyValues(QMap<PropertyKey, QVariant>{{property, value}}, ItemPropertyCatalog::Label(property));
 }
 
 bool PropertiesPanel::SelectionGroupUseful(const QList<CanvasItem*>& items) const
