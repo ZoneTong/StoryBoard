@@ -74,10 +74,10 @@ FillStyleRow::FillStyleRow(QWidget* parent) : QWidget(parent)
     icon->setToolTip(RowText("Fill style"));
     layout->addWidget(icon, 0, Qt::AlignVCenter);
 
-    // 11 个按钮：宽度收到 18，行总宽 = 图标 25 + 11×18 = 223，不超过图元尺寸行（≈227）；
-    // 高度取统一行高，所以是窄长条而不是小方块（§D25）。
+    // 11 个按钮：行宽上限是图元尺寸行（图标 25 + 两个 90 输入框 ≈ 227），
+    // (227 − 25) / 11 ≈ 18.3，所以按钮与字形都取 18，字形铺满按钮、不再留 2px 内缩。
     const int fillStyleWidth = 18;
-    const int fillStyleGlyph = 16;
+    const int fillStyleGlyph = 18;
     for (const FillStyle style : AllFillStyles()) {
         auto* button = new QToolButton(this);
         button->setObjectName(QStringLiteral("ItemFillStyleButton"));
