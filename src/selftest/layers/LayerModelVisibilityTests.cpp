@@ -6,6 +6,7 @@
 #include "items/lines/CurveItem.h"
 #include "items/polygon/PolygonItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
+#include "items/shapes/ShapeRegistry.h"
 #include "items/text/TextItem.h"
 #include "lineart/LineArtConverter.h"
 #include "lineart/LineArtDialog.h"
@@ -375,14 +376,14 @@ void selftest::RunLayerVisibilityLockTests(Context& ctx)
     const QColor redColor(QStringLiteral("#DC2626"));
     const QColor blueColor(QStringLiteral("#2563EB"));
 
-    auto* redImage = CreateShapeItem(ShapeType::RECTANGLE);
+    auto* redImage = ShapeRegistry::Create(ShapeType::RECTANGLE);
     redImage->SetStyle(QColor(Qt::transparent), redColor, 1.0);
     redImage->SetContentSize(QSizeF(80, 80));
     redImage->setPos(QPointF(10, 10));
     hiddenPaintScene.AddItemsWithUndo({redImage}, QStringLiteral("添加红色图元"));
 
     ctx.Check(hiddenPaintScene.AddLayerWithUndo(QStringLiteral("蓝色层")), QStringLiteral("隐藏渲染测试新建上层"));
-    auto* blueImage = CreateShapeItem(ShapeType::RECTANGLE);
+    auto* blueImage = ShapeRegistry::Create(ShapeType::RECTANGLE);
     blueImage->SetStyle(QColor(Qt::transparent), blueColor, 1.0);
     blueImage->SetContentSize(QSizeF(80, 80));
     blueImage->setPos(QPointF(20, 20));

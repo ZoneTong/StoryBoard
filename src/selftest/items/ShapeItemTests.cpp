@@ -146,14 +146,14 @@ void selftest::RunShapeItemTests(Context& ctx)
         CanvasScene opacityScene;
         opacityScene.ApplyCanvasSize(QSizeF(400, 300));
         opacityScene.SetShowGrid(false);
-        ShapeAbstractItem* underRect = CreateShapeItem(ShapeType::RECTANGLE);
+        ShapeAbstractItem* underRect = ShapeRegistry::Create(ShapeType::RECTANGLE);
         underRect->SetFillColor(QColor(30, 80, 200));
         underRect->SetStrokeWidth(0.0);
         underRect->SetContentSize(QSizeF(80, 80));
         underRect->setPos(QPointF(20, 20));
         opacityScene.AddItemsWithUndo({underRect}, QStringLiteral("添加底层矩形"));
 
-        ShapeAbstractItem* opacityRect = CreateShapeItem(ShapeType::RECTANGLE);
+        ShapeAbstractItem* opacityRect = ShapeRegistry::Create(ShapeType::RECTANGLE);
         opacityRect->SetFillColor(QColor(220, 38, 38));
         opacityRect->SetStrokeWidth(0.0);
         opacityRect->SetContentSize(QSizeF(80, 80));
@@ -176,7 +176,7 @@ void selftest::RunShapeItemTests(Context& ctx)
     // 需求 6：填充 / 描线属性各自归入基类，有面积图形同时多继承两者，
     // 零面积描线只继承描线基类；属性面板按基类虚函数批量改选中图元。
     {
-        ShapeAbstractItem* rect = CreateShapeItem(ShapeType::RECTANGLE);
+        ShapeAbstractItem* rect = ShapeRegistry::Create(ShapeType::RECTANGLE);
         StraightLineItem line;
         CanvasItem* lineItem = &line;
         ctx.Check(dynamic_cast<FillAttributes*>(rect) != nullptr && dynamic_cast<StrokeAttributes*>(rect) != nullptr,
@@ -938,7 +938,7 @@ void selftest::RunShapeItemTests(Context& ctx)
     }
     {
         // B2：平行四边形角度旋钮与弧线/扇形端点拖拽都按 1° 量化，弧线/扇形拖拽时显示读数。
-        auto* parallelogram = CreateShapeItem(ShapeType::PARALLELOGRAM);
+        auto* parallelogram = ShapeRegistry::Create(ShapeType::PARALLELOGRAM);
         parallelogram->setPos(QPointF(40.0, 40.0));
         CanvasItemInteraction skewDrag(parallelogram);
         const HandleSpecList skewSpecs = parallelogram->CustomHandles();
@@ -1021,7 +1021,7 @@ void selftest::RunShapeItemTests(Context& ctx)
     }
     {
         // 平行四边形内角范围放开到 5–175°。
-        auto* parallelogram = CreateShapeItem(ShapeType::PARALLELOGRAM);
+        auto* parallelogram = ShapeRegistry::Create(ShapeType::PARALLELOGRAM);
         parallelogram->SetPropertyValue(ItemProperty::PARALLELOGRAM_ANGLE, 5.0);
         const qreal low = parallelogram->PropertyValue(ItemProperty::PARALLELOGRAM_ANGLE).toDouble();
         parallelogram->SetPropertyValue(ItemProperty::PARALLELOGRAM_ANGLE, 175.0);
@@ -1203,7 +1203,7 @@ void selftest::RunShapeItemTests(Context& ctx)
     const QColor shapeFill(29, 78, 216, 40);
     for (int i = 0; i < shapeTypes.size(); ++i) {
         const ShapeType type = shapeTypes.at(i);
-        auto* item = CreateShapeItem(type);
+        auto* item = ShapeRegistry::Create(type);
 
         QSizeF size(150, 90);
         if (type == ShapeType::ARROW || type == ShapeType::DOUBLE_ARROW) {

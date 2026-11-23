@@ -9,6 +9,7 @@
 #include "items/properties/ItemStyleVisuals.h"
 #include "items/shapes/AllShapes.h"
 #include "items/shapes/ShapeAbstractItem.h"
+#include "items/shapes/ShapeRegistry.h"
 #include "items/text/TextItem.h"
 #include "lineart/LineArtConverter.h"
 #include "lineart/LineArtDialog.h"
@@ -356,7 +357,7 @@ void selftest::RunDockPanelMainWindowTests(Context& ctx)
         }
         QApplication::processEvents();
         const int beforeCount = dockScene->CanvasItemCount();
-        auto* insertedShape = CreateShapeItem(ShapeType::RECTANGLE);
+        auto* insertedShape = ShapeRegistry::Create(ShapeType::RECTANGLE);
         insertedShape->setPos(QPointF(160.0, 140.0));
         insertedShape->SetContentSize(QSizeF(140.0, 100.0));
         dockScene->AddItemsWithUndo({insertedShape}, QStringLiteral("Add rectangle"));

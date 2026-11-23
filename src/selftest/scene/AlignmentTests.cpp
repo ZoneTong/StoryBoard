@@ -7,6 +7,7 @@
 #include "items/lines/StraightLineItem.h"
 #include "items/polygon/PolygonItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
+#include "items/shapes/ShapeRegistry.h"
 #include "items/text/TextItem.h"
 #include "lineart/LineArtConverter.h"
 #include "lineart/LineArtDialog.h"
@@ -92,10 +93,10 @@ void selftest::RunAlignmentTests(Context& ctx)
         QUndoStack alignUndo;
         alignScene.SetUndoStack(&alignUndo);
 
-        auto* leftItem = CreateShapeItem(ShapeType::RECTANGLE);
+        auto* leftItem = ShapeRegistry::Create(ShapeType::RECTANGLE);
         leftItem->SetContentSize(QSizeF(120.0, 90.0));
         alignScene.AddItemsWithUndo({leftItem}, QStringLiteral("Add align item"));
-        auto* rightItem = CreateShapeItem(ShapeType::ELLIPSE);
+        auto* rightItem = ShapeRegistry::Create(ShapeType::ELLIPSE);
         rightItem->SetContentSize(QSizeF(80.0, 60.0));
         alignScene.AddItemsWithUndo({rightItem}, QStringLiteral("Add align item"));
         leftItem->setPos(QPointF(40.0, 60.0));
@@ -119,7 +120,7 @@ void selftest::RunAlignmentTests(Context& ctx)
         ctx.Check(qAbs(rightItem->pos().x() - 240.0) < 0.01, QStringLiteral("对齐可撤销"));
 
         // 等间距：三个图元按空隙均分。
-        auto* thirdItem = CreateShapeItem(ShapeType::RECTANGLE);
+        auto* thirdItem = ShapeRegistry::Create(ShapeType::RECTANGLE);
         thirdItem->SetContentSize(QSizeF(60.0, 40.0));
         alignScene.AddItemsWithUndo({thirdItem}, QStringLiteral("Add align item"));
         thirdItem->setPos(QPointF(620.0, 300.0));

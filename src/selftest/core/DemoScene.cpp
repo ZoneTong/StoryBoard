@@ -3,6 +3,7 @@
 #include "items/lines/BraceItem.h"
 #include "items/lines/CurveItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
+#include "items/shapes/ShapeRegistry.h"
 #include "items/text/TextItem.h"
 #include "scene/CanvasScene.h"
 #include "selftest/core/SelfTest.h"
@@ -32,7 +33,7 @@ namespace {
 ShapeAbstractItem* AddImageRect(CanvasScene& scene, int layerId, const QPixmap& pixmap, const QSizeF& size,
                                 const QPointF& pos)
 {
-    auto* item = CreateShapeItem(ShapeType::RECTANGLE);
+    auto* item = ShapeRegistry::Create(ShapeType::RECTANGLE);
     item->SetLayerId(layerId);
     item->SetStyle(QColor(Qt::transparent), QColor(Qt::transparent), 1.0);
     item->SetFillStyle(FillStyle::NONE);
@@ -123,7 +124,7 @@ void PopulateDemoScene(CanvasScene& scene)
 
     for (int i = 0; i < panels.size(); ++i) {
         const QRectF& panel = panels.at(i);
-        auto* frame = CreateShapeItem(ShapeType::RECTANGLE);
+        auto* frame = ShapeRegistry::Create(ShapeType::RECTANGLE);
         frame->SetLayerId(frameLayer);
         frame->SetStyle(ink, QColor(Qt::transparent), 5.0);
         frame->setPos(panel.topLeft());
@@ -149,28 +150,28 @@ void PopulateDemoScene(CanvasScene& scene)
     }
 
     // Hand-drawn annotations: stick figure, arrows and a few accents.
-    auto* firstArrow = CreateShapeItem(ShapeType::ARROW);
+    auto* firstArrow = ShapeRegistry::Create(ShapeType::ARROW);
     firstArrow->SetLayerId(inkLayer);
     firstArrow->SetStyle(accent, QColor(Qt::transparent), 5.0);
     firstArrow->setPos(QPointF(520, 522));
     firstArrow->SetContentSize(QSizeF(66, 36));
     scene.AttachItem(firstArrow);
 
-    auto* secondArrow = CreateShapeItem(ShapeType::ARROW);
+    auto* secondArrow = ShapeRegistry::Create(ShapeType::ARROW);
     secondArrow->SetLayerId(inkLayer);
     secondArrow->SetStyle(accent, QColor(Qt::transparent), 5.0);
     secondArrow->setPos(QPointF(1020, 522));
     secondArrow->SetContentSize(QSizeF(66, 36));
     scene.AttachItem(secondArrow);
 
-    auto* headRing = CreateShapeItem(ShapeType::ELLIPSE);
+    auto* headRing = ShapeRegistry::Create(ShapeType::ELLIPSE);
     headRing->SetLayerId(inkLayer);
     headRing->SetStyle(teal, QColor(Qt::transparent), 3.0);
     headRing->setPos(QPointF(258, 510));
     headRing->SetContentSize(QSizeF(84, 84));
     scene.AttachItem(headRing);
 
-    auto* star = CreateShapeItem(ShapeType::STAR);
+    auto* star = ShapeRegistry::Create(ShapeType::STAR);
     star->SetLayerId(inkLayer);
     QColor starFill = accent;
     starFill.setAlpha(62);

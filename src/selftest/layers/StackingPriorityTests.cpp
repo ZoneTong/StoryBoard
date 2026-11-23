@@ -6,6 +6,7 @@
 #include "items/lines/CurveItem.h"
 #include "items/polygon/PolygonItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
+#include "items/shapes/ShapeRegistry.h"
 #include "items/text/TextItem.h"
 #include "lineart/LineArtConverter.h"
 #include "lineart/LineArtDialog.h"
@@ -88,7 +89,7 @@ void selftest::RunStackingPriorityTests(Context& ctx)
     priorityScene.ApplyCanvasSize(QSizeF(600, 400));
 
     auto addPriorityRect = [&priorityScene](const QRectF& rect, const QColor& color) {
-        auto* shape = CreateShapeItem(ShapeType::RECTANGLE);
+        auto* shape = ShapeRegistry::Create(ShapeType::RECTANGLE);
         shape->setPos(rect.topLeft());
         shape->SetContentSize(rect.size());
         shape->SetStyle(color, color, 3.0);
@@ -157,7 +158,7 @@ void selftest::RunStackingPriorityTests(Context& ctx)
     CanvasScene partialScene;
     partialScene.ApplyCanvasSize(QSizeF(500, 300));
     auto addPartialRect = [&partialScene](const QRectF& rect, const QColor& color) {
-        auto* shape = CreateShapeItem(ShapeType::RECTANGLE);
+        auto* shape = ShapeRegistry::Create(ShapeType::RECTANGLE);
         shape->setPos(rect.topLeft());
         shape->SetContentSize(rect.size());
         shape->SetStyle(color, color, 3.0);

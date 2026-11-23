@@ -6,6 +6,7 @@
 #include "items/lines/CurveItem.h"
 #include "items/polygon/PolygonItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
+#include "items/shapes/ShapeRegistry.h"
 #include "items/text/TextItem.h"
 #include "lineart/LineArtConverter.h"
 #include "lineart/LineArtDialog.h"
@@ -107,12 +108,12 @@ void selftest::RunLayerExportPanelTests(Context& ctx)
         CanvasScene overlapScene;
         overlapScene.SetMode(ToolMode::EDIT);
         const int upperLayerId = overlapScene.CreateLayer(QStringLiteral("上层"));
-        auto* lowerItem = CreateShapeItem(ShapeType::RECTANGLE);
+        auto* lowerItem = ShapeRegistry::Create(ShapeType::RECTANGLE);
         lowerItem->SetLayerId(CanvasScene::BackgroundLayerId + 1);
         lowerItem->SetStyle(QColor(QStringLiteral("#2563EB")), QColor(Qt::transparent), 4.0);
         lowerItem->setPos(QPointF(200, 170));
         lowerItem->SetContentSize(QSizeF(200, 140));
-        auto* upperItem = CreateShapeItem(ShapeType::RECTANGLE);
+        auto* upperItem = ShapeRegistry::Create(ShapeType::RECTANGLE);
         upperItem->SetLayerId(upperLayerId);
         upperItem->SetStyle(QColor(QStringLiteral("#DC2626")), QColor(Qt::transparent), 4.0);
         upperItem->setPos(QPointF(200, 170));
@@ -172,7 +173,7 @@ void selftest::RunLayerExportPanelTests(Context& ctx)
         layerExportScene.SetCanvasBackground(exportBackground);
 
         const int redLayer = layerExportScene.CreateLayer(QStringLiteral("红色层"));
-        auto* red = CreateShapeItem(ShapeType::RECTANGLE);
+        auto* red = ShapeRegistry::Create(ShapeType::RECTANGLE);
         red->SetLayerId(redLayer);
         red->SetStyle(QColor(QStringLiteral("#DC2626")), QColor(QStringLiteral("#DC2626")), 1.0);
         red->setPos(QPointF(10, 10));
@@ -180,7 +181,7 @@ void selftest::RunLayerExportPanelTests(Context& ctx)
         layerExportScene.AttachItem(red);
 
         const int blueLayer = layerExportScene.CreateLayer(QStringLiteral("蓝色层"));
-        auto* blue = CreateShapeItem(ShapeType::RECTANGLE);
+        auto* blue = ShapeRegistry::Create(ShapeType::RECTANGLE);
         blue->SetLayerId(blueLayer);
         blue->SetStyle(QColor(QStringLiteral("#2563EB")), QColor(QStringLiteral("#2563EB")), 1.0);
         blue->setPos(QPointF(100, 100));

@@ -7,6 +7,7 @@
 #include "items/lines/StraightLineItem.h"
 #include "items/polygon/PolygonItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
+#include "items/shapes/ShapeRegistry.h"
 #include "items/text/TextItem.h"
 #include "lineart/LineArtConverter.h"
 #include "lineart/LineArtDialog.h"
@@ -93,7 +94,7 @@ void selftest::RunGroupBoolOpsTests(Context& ctx)
         groupScene.SetMode(ToolMode::EDIT);
         groupScene.ApplyCanvasSize(QSizeF(400.0, 300.0));
         auto makeRect = [&groupScene](qreal x, qreal y) {
-            auto* item = CreateShapeItem(ShapeType::RECTANGLE);
+            auto* item = ShapeRegistry::Create(ShapeType::RECTANGLE);
             item->setPos(QPointF(x, y));
             item->SetContentSize(QSizeF(40.0, 40.0));
             item->SetStyle(QColor(30, 41, 59), QColor(30, 41, 59, 36), 1.0);
@@ -135,7 +136,7 @@ void selftest::RunGroupBoolOpsTests(Context& ctx)
         boolScene.SetMode(ToolMode::EDIT);
         boolScene.ApplyCanvasSize(QSizeF(400.0, 300.0));
         auto makeRect = [&boolScene](qreal x, const QColor& color) {
-            auto* item = CreateShapeItem(ShapeType::RECTANGLE);
+            auto* item = ShapeRegistry::Create(ShapeType::RECTANGLE);
             item->setPos(QPointF(x, 40.0));
             item->SetContentSize(QSizeF(60.0, 60.0));
             item->SetStyle(color, color.lighter(160), 1.0);
@@ -156,7 +157,7 @@ void selftest::RunGroupBoolOpsTests(Context& ctx)
 
         // 3 个及以上图元的合并：五项运算都要真正落到结果，不能只处理前两个。
         auto addRect = [](CanvasScene& scene, qreal x, qreal y, qreal w, qreal h) {
-            auto* item = CreateShapeItem(ShapeType::RECTANGLE);
+            auto* item = ShapeRegistry::Create(ShapeType::RECTANGLE);
             item->setPos(QPointF(x, y));
             item->SetContentSize(QSizeF(w, h));
             item->SetStyle(QColor(20, 20, 20), QColor(200, 60, 60), 2.0);
@@ -347,7 +348,7 @@ void selftest::RunGroupBoolOpsTests(Context& ctx)
                 background.type = BackgroundType::COLOR;
                 background.color = QColor(Qt::white);
                 scene.SetCanvasBackground(background);
-                auto* diamond = CreateShapeItem(ShapeType::PARALLELOGRAM);
+                auto* diamond = ShapeRegistry::Create(ShapeType::PARALLELOGRAM);
                 diamond->setPos(QPointF(70.0, 40.0));
                 diamond->SetContentSize(QSizeF(160.0, 120.0));
                 diamond->SetStyle(QColor(20, 20, 20), QColor(200, 40, 40), 4.0);
@@ -401,10 +402,10 @@ void selftest::RunGroupBoolOpsTests(Context& ctx)
             lensBackground.type = BackgroundType::COLOR;
             lensBackground.color = QColor(Qt::white);
             lensScene.SetCanvasBackground(lensBackground);
-            auto* lensDiamond = CreateShapeItem(ShapeType::PARALLELOGRAM);
+            auto* lensDiamond = ShapeRegistry::Create(ShapeType::PARALLELOGRAM);
             lensDiamond->setPos(QPointF(60.0, 70.0));
             lensDiamond->SetContentSize(QSizeF(180.0, 180.0));
-            auto* lensStar = CreateShapeItem(ShapeType::STAR);
+            auto* lensStar = ShapeRegistry::Create(ShapeType::STAR);
             lensStar->setPos(QPointF(180.0, 60.0));
             lensStar->SetContentSize(QSizeF(180.0, 180.0));
             lensScene.AddItemsWithUndo({lensDiamond, lensStar}, QStringLiteral("Add lens pair"));
@@ -437,7 +438,7 @@ void selftest::RunGroupBoolOpsTests(Context& ctx)
             scene.SetUndoStack(&undo);
             scene.SetMode(ToolMode::EDIT);
             scene.ApplyCanvasSize(QSizeF(320.0, 220.0));
-            auto* rect = CreateShapeItem(ShapeType::RECTANGLE);
+            auto* rect = ShapeRegistry::Create(ShapeType::RECTANGLE);
             rect->setPos(QPointF(60.0, 50.0));
             rect->SetContentSize(QSizeF(160.0, 120.0));
             rect->SetStyle(QColor(20, 20, 20), QColor(255, 255, 255), 4.0);
@@ -466,7 +467,7 @@ void selftest::RunGroupBoolOpsTests(Context& ctx)
             scene.SetUndoStack(&undo);
             scene.SetMode(ToolMode::EDIT);
             scene.ApplyCanvasSize(QSizeF(320.0, 220.0));
-            auto* diamond = CreateShapeItem(ShapeType::PARALLELOGRAM);
+            auto* diamond = ShapeRegistry::Create(ShapeType::PARALLELOGRAM);
             diamond->setPos(QPointF(60.0, 30.0));
             diamond->SetContentSize(QSizeF(180.0, 140.0));
             diamond->SetStyle(QColor(20, 20, 20), QColor(255, 255, 255), 4.0);

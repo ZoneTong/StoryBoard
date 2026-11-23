@@ -5,6 +5,7 @@
 #include "items/lines/BraceItem.h"
 #include "items/lines/CurveItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
+#include "items/shapes/ShapeRegistry.h"
 #include "items/text/TextItem.h"
 #include "scene/CanvasScene.h"
 #include "selftest/core/SelfTestContext.h"
@@ -77,7 +78,7 @@ void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
     int& itemPropertyRequests = ctx.itemPropertyRequests;
 
     // 需求 5：圆角矩形并入矩形，这里用「矩形 + 显式 px 圆角」覆盖原来的圆角形态。
-    auto* propertyShape = CreateShapeItem(ShapeType::RECTANGLE);
+    auto* propertyShape = ShapeRegistry::Create(ShapeType::RECTANGLE);
     propertyShape->SetCornerRadius(19.2);
     propertyShape->SetStyle(QColor(QStringLiteral("#1D4ED8")), QColor(QStringLiteral("#BFDBFE")), 6.0);
     propertyShape->SetFill(QColor(QStringLiteral("#BFDBFE")), FillStyle::GRID_HATCH);
@@ -180,7 +181,7 @@ void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
         editScene.SetMode(ToolMode::EDIT);
         editScene.SetUndoStack(&editUndo);
 
-        auto* firstShape = CreateShapeItem(ShapeType::RECTANGLE);
+        auto* firstShape = ShapeRegistry::Create(ShapeType::RECTANGLE);
         firstShape->SetStyle(QColor(QStringLiteral("#1E293B")), QColor(QStringLiteral("#93C5FD")), 3.0);
         firstShape->SetFill(QColor(QStringLiteral("#93C5FD")), FillStyle::SOLID);
         firstShape->SetContentSize(QSizeF(120.0, 80.0));
@@ -195,7 +196,7 @@ void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
 
         ctx.Check(editScene.AddLayerWithUndo(QStringLiteral("属性目标层")), QStringLiteral("创建属性编辑目标图层"));
         const int targetLayerId = editScene.ActiveLayerId();
-        auto* secondShape = CreateShapeItem(ShapeType::ELLIPSE);
+        auto* secondShape = ShapeRegistry::Create(ShapeType::ELLIPSE);
         secondShape->SetStyle(QColor(QStringLiteral("#334155")), QColor(QStringLiteral("#FDE68A")), 2.0);
         secondShape->SetContentSize(QSizeF(100.0, 100.0));
         secondShape->setPos(QPointF(240.0, 80.0));
@@ -203,7 +204,7 @@ void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
         ctx.Check(secondShape->CustomName() == QStringLiteral("椭圆 1"), QStringLiteral("不同图元类型各自从 1 编号"),
                   secondShape->CustomName());
 
-        auto* thirdShape = CreateShapeItem(ShapeType::RECTANGLE);
+        auto* thirdShape = ShapeRegistry::Create(ShapeType::RECTANGLE);
         thirdShape->SetContentSize(QSizeF(90.0, 60.0));
         thirdShape->setPos(QPointF(360.0, 200.0));
         editScene.AddItemsWithUndo({thirdShape}, QStringLiteral("Add second rectangle"));
@@ -390,7 +391,7 @@ void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
         CanvasScene outsideScene;
         outsideScene.ApplyCanvasSize(QSizeF(800, 600));
         outsideScene.SetMode(ToolMode::EDIT);
-        auto* outsideShape = CreateShapeItem(ShapeType::RECTANGLE);
+        auto* outsideShape = ShapeRegistry::Create(ShapeType::RECTANGLE);
         outsideShape->SetLayerId(outsideScene.ActiveLayerId());
         outsideScene.AttachItem(outsideShape);
         outsideShape->setSelected(true);
@@ -421,7 +422,7 @@ void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
         QUndoStack reuseUndo;
         reuseScene.SetUndoStack(&reuseUndo);
 
-        auto* ellipse = CreateShapeItem(ShapeType::ELLIPSE);
+        auto* ellipse = ShapeRegistry::Create(ShapeType::ELLIPSE);
         ellipse->SetLayerId(reuseScene.ActiveLayerId());
         ellipse->SetStyle(QColor(QStringLiteral("#1D4ED8")), QColor(QStringLiteral("#BFDBFE")), 4.0);
         ellipse->SetFill(QColor(QStringLiteral("#BFDBFE")), FillStyle::SOLID);
@@ -475,7 +476,7 @@ void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
                   QString::number(dialog.PropertyRowCount()));
 
         // §4.2：内角 A / B 两行复用。三角形两个底角都显示；平行四边形族只显示内角 A。
-        auto* triangle = CreateShapeItem(ShapeType::TRIANGLE);
+        auto* triangle = ShapeRegistry::Create(ShapeType::TRIANGLE);
         triangle->SetLayerId(reuseScene.ActiveLayerId());
         reuseScene.AttachItem(triangle);
         auto* interiorA = dialog.findChild<QWidget*>(QStringLiteral("ItemPropertiesInteriorAngleAValue"));
@@ -484,7 +485,7 @@ void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
         ctx.Check(interiorA && interiorA->isVisibleTo(&dialog) && interiorB && interiorB->isVisibleTo(&dialog),
                   QStringLiteral("三角形属性窗显示内角 A 与内角 B"));
 
-        auto* parallelogram = CreateShapeItem(ShapeType::PARALLELOGRAM);
+        auto* parallelogram = ShapeRegistry::Create(ShapeType::PARALLELOGRAM);
         parallelogram->SetLayerId(reuseScene.ActiveLayerId());
         reuseScene.AttachItem(parallelogram);
         dialog.SetItem(&reuseScene, parallelogram, true);
@@ -497,7 +498,7 @@ void selftest::RunPropertyDialogFieldGeometryTests(Context& ctx)
         ctx.Check(interiorA && !interiorA->isVisibleTo(&dialog) && centerRow && !centerRow->isVisibleTo(&dialog),
                   QStringLiteral("文字属性窗隐藏内角与中心点行"));
 
-        auto* centerRect = CreateShapeItem(ShapeType::RECTANGLE);
+        auto* centerRect = ShapeRegistry::Create(ShapeType::RECTANGLE);
         centerRect->SetLayerId(reuseScene.ActiveLayerId());
         centerRect->SetContentSize(QSizeF(200.0, 100.0));
         centerRect->setPos(QPointF(100.0, 80.0));

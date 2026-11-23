@@ -12,6 +12,7 @@
 #include "items/lines/StraightLineItem.h"
 #include "items/polygon/PolygonItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
+#include "items/shapes/ShapeRegistry.h"
 #include "items/text/TextItem.h"
 #include "scene/CanvasScene.h"
 #include "ui/icons/IconFactory.h"
@@ -126,7 +127,7 @@ void MainWindowInsertController::InsertShape(ShapeType type, qreal triangleAngle
 
     CanvasItem* item = nullptr;
     {
-        auto* shape = CreateShapeItem(type);
+        auto* shape = ShapeRegistry::Create(type);
         shape->SetStyle(stroke, filled ? fill : QColor(Qt::transparent), strokeWidth);
         shape->SetFillStyle(fillStyle);
         // 需求 1：新图元沿用工具栏当前描线样式。
@@ -227,7 +228,7 @@ void MainWindowInsertController::InsertCompositeShape(ShapeType type)
     // 靠各自的旋转角摆放成等轴测，不再用自定义轮廓冒充斜置的菱形。
     auto makeFace = [&stroke, &fill, fillStyle, width, this](const QString& name, const QPointF& center,
                                                              const QSizeF& faceSize, qreal rotation) {
-        auto* face = CreateShapeItem(ShapeType::PARALLELOGRAM);
+        auto* face = ShapeRegistry::Create(ShapeType::PARALLELOGRAM);
         // 名字走图元名：customName 只留给真正的自定义轮廓，类型仍显示「平行四边形」。
         face->SetName(name);
         face->SetStyle(stroke, fill, width);
@@ -307,7 +308,7 @@ void MainWindowInsertController::InsertCompositeShape(ShapeType type)
         bodyItem->SetName(MainWindow::tr("Cylinder body"));
         faces.append(bodyItem);
 
-        auto* top = CreateShapeItem(ShapeType::ELLIPSE);
+        auto* top = ShapeRegistry::Create(ShapeType::ELLIPSE);
         top->SetStyle(stroke, fill, width);
         top->SetFillStyle(fillStyle);
         top->SetStrokeStyle(m_window->m_strokeStyle);
@@ -436,7 +437,7 @@ void MainWindowInsertController::InsertCustomShape(const QString& filePath)
     QList<CanvasItem*> items;
     if (customShape.parts.isEmpty()) {
         // 旧解析或退化轮廓：退回单图元自定义轮廓，保持兼容。
-        auto* item = CreateShapeItem(ShapeType::RECTANGLE);
+        auto* item = ShapeRegistry::Create(ShapeType::RECTANGLE);
         item->SetCustomShape(customShape.name, customShape.unitPath);
         item->SetStyle(stroke, filled ? fill : QColor(Qt::transparent), strokeWidth);
         item->SetFillStyle(fillStyle);

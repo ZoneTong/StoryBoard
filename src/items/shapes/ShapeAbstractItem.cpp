@@ -8,7 +8,6 @@
 #include "items/geometry/ShapePathBuilder.h"
 #include "items/geometry/TriangleGeometry.h"
 #include "items/properties/ArrowStyle.h"
-#include "items/shapes/ShapeFactory.h"
 
 #include <QByteArray>
 #include <QDataStream>

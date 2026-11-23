@@ -8,6 +8,7 @@
 #include "items/lines/CurveItem.h"
 #include "items/properties/ImageFill.h"
 #include "items/shapes/ShapeAbstractItem.h"
+#include "items/shapes/ShapeRegistry.h"
 #include "lineart/LineArtDialog.h"
 #include "scene/CanvasScene.h"
 #include "ui/dialogs/ExportDialog.h"
@@ -410,7 +411,7 @@ void ImportExportController::ImportImageFiles(const QStringList& files)
 
         // 需求 14：插入图片生成的是矩形图元，图片只作为它的背景（在填充样式之下）。
         // 填充与描线都是透明无色，图片本身承担视觉；不再产生图片类型图元。
-        auto* item = CreateShapeItem(ShapeType::RECTANGLE);
+        auto* item = ShapeRegistry::Create(ShapeType::RECTANGLE);
         item->SetFillImage(pixmap, ImageFill::Mode::STRETCH);
         item->SetStyle(QColor(Qt::transparent), QColor(Qt::transparent), 1.0);
         item->SetFillStyle(FillStyle::NONE);

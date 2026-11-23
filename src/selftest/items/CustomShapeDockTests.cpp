@@ -9,6 +9,7 @@
 #include "items/properties/ItemStyleVisuals.h"
 #include "items/shapes/AllShapes.h"
 #include "items/shapes/ShapeAbstractItem.h"
+#include "items/shapes/ShapeRegistry.h"
 #include "items/text/TextItem.h"
 #include "lineart/LineArtConverter.h"
 #include "lineart/LineArtDialog.h"
@@ -360,7 +361,7 @@ void selftest::RunCustomShapeDockTests(Context& ctx)
         QApplication::processEvents();
         ctx.Check(fillStyleRow && fillStyleRow->isHidden() && fillColorRow && fillColorRow->isHidden(),
                   QStringLiteral("选中不支持填充的图元时隐藏填充颜色与填充样式行"));
-        auto* fillableShape = CreateShapeItem(ShapeType::RECTANGLE);
+        auto* fillableShape = ShapeRegistry::Create(ShapeType::RECTANGLE);
         fillableShape->SetContentSize(QSizeF(120.0, 80.0));
         panelScene.AddItemsWithUndo({fillableShape}, QStringLiteral("Add rectangle"));
         fillableShape->setSelected(true);

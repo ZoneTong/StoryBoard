@@ -4,8 +4,8 @@
 
 #include <QList>
 
-// 图形类注册表：ShapeType → 描述器 + 创建器。工厂只查表，不再维护 switch；
-// 新增图形只要在 Entries() 里加一行，工厂、持久化字符串与能力标记自动跟上。
+// 图形类注册表：ShapeType → 描述器 + 创建器，负责创建、序列化字符串与能力标记。
+// 新增图形仍需同步显示名与绘制路径；这里不做 switch 分发。
 class ShapeRegistry {
   public:
     using Creator = ShapeAbstractItem* (*)();

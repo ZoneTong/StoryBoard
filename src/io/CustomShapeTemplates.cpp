@@ -7,6 +7,7 @@
 #include "items/lines/StraightLineItem.h"
 #include "items/polygon/PolygonItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
+#include "items/shapes/ShapeRegistry.h"
 
 #include <QDir>
 #include <QFile>
@@ -109,7 +110,7 @@ CanvasItem* CreateTemplateItem(const QJsonObject& object)
         kind = QStringLiteral("straightline");
     }
     if (kind == QStringLiteral("shape")) {
-        return CreateShapeItem(ShapeTypeFromString(object.value(QStringLiteral("shapeType")).toString()));
+        return ShapeRegistry::Create(ShapeTypeFromString(object.value(QStringLiteral("shapeType")).toString()));
     }
     if (kind == QStringLiteral("straightline")) {
         return new StraightLineItem();

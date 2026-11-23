@@ -164,6 +164,3 @@ class ShapeAbstractItem : public CanvasItem, public FillAttributes, public Strok
     QString m_customName;
     QPainterPath m_customPath;
 };
-
-// 图形工厂（定义在 shapes/ShapeFactory.cpp）：按 ShapeType 建出具体子类。
-ShapeAbstractItem* CreateShapeItem(ShapeType type);
