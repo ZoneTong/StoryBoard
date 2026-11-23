@@ -3,11 +3,13 @@
 #include "items/geometry/ShapeMeta.h"
 #include "items/lines/LineAbstractItem.h"
 #include "items/polygon/PolygonItem.h"
+#include "items/properties/ItemPropertyCatalog.h"
 #include "items/properties/ItemStyleVisuals.h"
 #include "items/shapes/ShapeAbstractItem.h"
 #include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/properties/PropertyRowRegistry.h"
 #include "ui/widgets/AttributeRowWidgets.h"
+#include "ui/widgets/PropertyRowWidgets.h"
 
 #include <QComboBox>
 #include <QFileDialog>
@@ -102,8 +104,7 @@ void ItemPropertiesDialogStyleBlock::BuildStrokeRows()
 
     m_opacitySpin = new QSpinBox(this);
     m_opacitySpin->setObjectName(QStringLiteral("ItemPropertiesOpacityValue"));
-    m_opacitySpin->setRange(0, 100);
-    m_opacitySpin->setSuffix(QStringLiteral(" %"));
+    ApplyItemPropertyRange(m_opacitySpin, ItemProperty::OPACITY);
     m_opacitySpin->setMinimumWidth(88);
 }
 
@@ -111,9 +112,8 @@ void ItemPropertiesDialogStyleBlock::BuildTypeRows()
 {
     m_cornerRadiusSpin = new QSpinBox(this);
     m_cornerRadiusSpin->setObjectName(QStringLiteral("ItemPropertiesCornerRadiusValue"));
-    m_cornerRadiusSpin->setRange(0, 500000);
-    m_cornerRadiusSpin->setSuffix(QStringLiteral(" px"));
-    m_cornerRadiusSpin->setToolTip(ItemPropertiesDialog::tr("Corner radius"));
+    ApplyItemPropertyRange(m_cornerRadiusSpin, ItemProperty::CORNER_RADIUS);
+    m_cornerRadiusSpin->setToolTip(ItemPropertyCatalog::Label(ItemProperty::CORNER_RADIUS));
     m_cornerRadiusSpin->setMinimumWidth(88);
     connect(m_cornerRadiusSpin, &QSpinBox::valueChanged, this,
             [this](int value) { m_cornerEdited = value != m_initialCornerRadius; });
@@ -121,18 +121,14 @@ void ItemPropertiesDialogStyleBlock::BuildTypeRows()
     // 内角 A / B 两行由三角形与平行四边形共用（§4.2）：同一控件按目标回填与提交。
     m_interiorAngleASpin = new QSpinBox(this);
     m_interiorAngleASpin->setObjectName(QStringLiteral("ItemPropertiesInteriorAngleAValue"));
-    m_interiorAngleASpin->setRange(5, 175);
-    m_interiorAngleASpin->setSingleStep(1);
-    m_interiorAngleASpin->setSuffix(QStringLiteral("°"));
-    m_interiorAngleASpin->setToolTip(ItemPropertiesDialog::tr("Interior angle A"));
+    ApplyItemPropertyRange(m_interiorAngleASpin, ItemProperty::BOTTOM_ANGLE1);
+    m_interiorAngleASpin->setToolTip(ItemPropertyCatalog::Label(ItemProperty::BOTTOM_ANGLE1));
     m_interiorAngleASpin->setMinimumWidth(88);
 
     m_interiorAngleBSpin = new QSpinBox(this);
     m_interiorAngleBSpin->setObjectName(QStringLiteral("ItemPropertiesInteriorAngleBValue"));
-    m_interiorAngleBSpin->setRange(5, 170);
-    m_interiorAngleBSpin->setSingleStep(1);
-    m_interiorAngleBSpin->setSuffix(QStringLiteral("°"));
-    m_interiorAngleBSpin->setToolTip(ItemPropertiesDialog::tr("Interior angle B"));
+    ApplyItemPropertyRange(m_interiorAngleBSpin, ItemProperty::BOTTOM_ANGLE2);
+    m_interiorAngleBSpin->setToolTip(ItemPropertyCatalog::Label(ItemProperty::BOTTOM_ANGLE2));
     m_interiorAngleBSpin->setMinimumWidth(88);
 
     m_arrowRow = new QWidget(this);
@@ -158,29 +154,24 @@ void ItemPropertiesDialogStyleBlock::BuildTypeRows()
     // 起始角 / 扫过角：扇形与弧线共用同一对控件，值统一按属性读写。
     m_startAngleSpin = new QSpinBox(this);
     m_startAngleSpin->setObjectName(QStringLiteral("ItemPropertiesStartAngleValue"));
-    m_startAngleSpin->setRange(-360, 360);
-    m_startAngleSpin->setSingleStep(5);
-    m_startAngleSpin->setSuffix(QStringLiteral("°"));
-    m_startAngleSpin->setToolTip(ItemPropertiesDialog::tr("Start angle"));
+    ApplyItemPropertyRange(m_startAngleSpin, ItemProperty::START_ANGLE);
+    m_startAngleSpin->setToolTip(ItemPropertyCatalog::Label(ItemProperty::START_ANGLE));
     m_startAngleSpin->setMinimumWidth(88);
 
     m_sweepAngleSpin = new QSpinBox(this);
     m_sweepAngleSpin->setObjectName(QStringLiteral("ItemPropertiesSweepAngleValue"));
-    m_sweepAngleSpin->setRange(-360, 360);
-    m_sweepAngleSpin->setSingleStep(5);
-    m_sweepAngleSpin->setSuffix(QStringLiteral("°"));
-    m_sweepAngleSpin->setToolTip(ItemPropertiesDialog::tr("Sweep angle"));
+    ApplyItemPropertyRange(m_sweepAngleSpin, ItemProperty::SWEEP_ANGLE);
+    m_sweepAngleSpin->setToolTip(ItemPropertyCatalog::Label(ItemProperty::SWEEP_ANGLE));
     m_sweepAngleSpin->setMinimumWidth(88);
 
     m_sineCyclesSpin = new QSpinBox(this);
     m_sineCyclesSpin->setObjectName(QStringLiteral("ItemPropertiesSineCyclesValue"));
-    m_sineCyclesSpin->setRange(1, 12);
+    ApplyItemPropertyRange(m_sineCyclesSpin, ItemProperty::SINE_CYCLES);
     m_sineCyclesSpin->setMinimumWidth(88);
 
     m_sineAmplitudeSpin = new QSpinBox(this);
     m_sineAmplitudeSpin->setObjectName(QStringLiteral("ItemPropertiesSineAmplitudeValue"));
-    m_sineAmplitudeSpin->setRange(1, 200);
-    m_sineAmplitudeSpin->setSuffix(QStringLiteral(" px"));
+    ApplyItemPropertyRange(m_sineAmplitudeSpin, ItemProperty::SINE_AMPLITUDE);
     m_sineAmplitudeSpin->setMinimumWidth(88);
 }
 
@@ -189,22 +180,22 @@ void ItemPropertiesDialogStyleBlock::AddRows(QFormLayout* form, PropertyRowRegis
     m_form = form;
     // 行序固定（§4.1 第 8~22 行）：填充 → 描线 → 不透明度 → 圆角 →
     // 内角 A/B → 箭头 → 起始 / 扫过角 → 正弦周期 / 振幅。
-    form->addRow(ItemPropertiesDialog::tr("Fill style"), m_fillStyleRow);
-    form->addRow(ItemPropertiesDialog::tr("Fill color"), m_fillColorRow);
-    form->addRow(ItemPropertiesDialog::tr("Fill image"), m_fillImageRow);
-    form->addRow(ItemPropertiesDialog::tr("Border style"), m_borderStyleRow);
-    form->addRow(ItemPropertiesDialog::tr("Border color"), m_strokeColorRow);
-    form->addRow(ItemPropertiesDialog::tr("Border width"), m_borderWidthRow);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::FILL_STYLE), m_fillStyleRow);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::FILL_COLOR), m_fillColorRow);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::FILL_IMAGE), m_fillImageRow);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::STROKE_STYLE), m_borderStyleRow);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::STROKE_COLOR), m_strokeColorRow);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::STROKE_WIDTH), m_borderWidthRow);
     m_opacitySpin->setToolTip(ItemPropertiesDialog::tr("Opacity (100% = opaque)"));
-    form->addRow(ItemPropertiesDialog::tr("Opacity"), m_opacitySpin);
-    form->addRow(ItemPropertiesDialog::tr("Corner radius"), m_cornerRadiusSpin);
-    form->addRow(ItemPropertiesDialog::tr("Interior angle A"), m_interiorAngleASpin);
-    form->addRow(ItemPropertiesDialog::tr("Interior angle B"), m_interiorAngleBSpin);
-    form->addRow(ItemPropertiesDialog::tr("Arrow heads"), m_arrowRow);
-    form->addRow(ItemPropertiesDialog::tr("Start angle"), m_startAngleSpin);
-    form->addRow(ItemPropertiesDialog::tr("Sweep angle"), m_sweepAngleSpin);
-    form->addRow(ItemPropertiesDialog::tr("Sine cycles"), m_sineCyclesSpin);
-    form->addRow(ItemPropertiesDialog::tr("Sine amplitude"), m_sineAmplitudeSpin);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::OPACITY), m_opacitySpin);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::CORNER_RADIUS), m_cornerRadiusSpin);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::BOTTOM_ANGLE1), m_interiorAngleASpin);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::BOTTOM_ANGLE2), m_interiorAngleBSpin);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::ARROW_START), m_arrowRow);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::START_ANGLE), m_startAngleSpin);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::SWEEP_ANGLE), m_sweepAngleSpin);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::SINE_CYCLES), m_sineCyclesSpin);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::SINE_AMPLITUDE), m_sineAmplitudeSpin);
 
     if (rows) {
         rows->Register(ItemProperty::FILL_STYLE, m_fillStyleRow);

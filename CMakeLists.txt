@@ -118,6 +118,7 @@ set(STORYBOARD_SOURCE_FOLDERS
     src/selftest/layers
     src/selftest/lineart
     src/selftest/merge
+    src/selftest/properties
     src/selftest/scene
     src/selftest/ui
     resources

@@ -2,6 +2,7 @@
 
 #include "items/lines/ArcItem.h"
 #include "items/lines/LineAbstractItem.h"
+#include "items/properties/ItemPropertyCatalog.h"
 #include "items/shapes/ShapeAbstractItem.h"
 #include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/properties/PropertyRowRegistry.h"
@@ -14,43 +15,42 @@
 ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(QWidget* parent) : QWidget(parent)
 {
     m_positionRow = new PairAttributeRow(IconId::POSITION, false, QStringLiteral("ItemPropertiesPositionXValue"),
-                                         QStringLiteral("ItemPropertiesPositionYValue"), 1, -1000000.0, 1000000.0,
-                                         QString(), QStringLiteral(","), this);
+                                         QStringLiteral("ItemPropertiesPositionYValue"), ItemProperty::POSITION,
+                                         QStringLiteral(","), this);
     m_positionXSpin = m_positionRow->FirstSpin();
     m_positionYSpin = m_positionRow->SecondSpin();
     m_positionXSpin->setMinimumWidth(88);
     m_positionYSpin->setMinimumWidth(88);
 
     m_sizeRow = new PairAttributeRow(IconId::SHAPES, false, QStringLiteral("ItemPropertiesWidthValue"),
-                                     QStringLiteral("ItemPropertiesHeightSizeValue"), 1, 1.0, 1000000.0, QString(),
+                                     QStringLiteral("ItemPropertiesHeightSizeValue"), ItemProperty::SIZE,
                                      QStringLiteral("×"), this);
     m_widthSpin = m_sizeRow->FirstSpin();
     m_heightSizeSpin = m_sizeRow->SecondSpin();
     m_widthSpin->setMinimumWidth(88);
     m_heightSizeSpin->setMinimumWidth(88);
 
-    m_rotationRow = new NumberAttributeRow(IconId::ROTATE_CCW, false, 1, -360.0, 360.0, QStringLiteral("°"),
+    m_rotationRow = new NumberAttributeRow(IconId::ROTATE_CCW, false, ItemProperty::ROTATION,
                                            QStringLiteral("ItemPropertiesRotationValue"), this);
-    m_rotationRow->SetSingleStep(5.0);
     m_rotationSpin = m_rotationRow->Spin();
     m_rotationSpin->setMinimumWidth(88);
 
     // 曲线族里的弧线：椭圆框与笔迹包围盒不同，半轴按真实椭圆外接框读写；
     // 椭圆 / 扇形的内容框即外接框，半轴与内容宽高双向同步。
-    m_majorAxisRow = new NumberAttributeRow(IconId::SHAPES, false, 1, 0.5, 500000.0, QStringLiteral(" px"),
+    m_majorAxisRow = new NumberAttributeRow(IconId::SHAPES, false, ItemProperty::MAJOR_AXIS,
                                             QStringLiteral("ItemPropertiesMajorAxisValue"), this);
     m_majorAxisSpin = m_majorAxisRow->Spin();
     m_majorAxisSpin->setMinimumWidth(88);
 
-    m_minorAxisRow = new NumberAttributeRow(IconId::SHAPES, false, 1, 0.5, 500000.0, QStringLiteral(" px"),
+    m_minorAxisRow = new NumberAttributeRow(IconId::SHAPES, false, ItemProperty::MINOR_AXIS,
                                             QStringLiteral("ItemPropertiesMinorAxisValue"), this);
     m_minorAxisSpin = m_minorAxisRow->Spin();
     m_minorAxisSpin->setMinimumWidth(88);
 
     // §3.4 中心点：派生属性，行放在椭圆相关行之后，固定为属性窗最后一行。
     m_centerRow = new PairAttributeRow(IconId::FIT, false, QStringLiteral("ItemPropertiesCenterXValue"),
-                                       QStringLiteral("ItemPropertiesCenterYValue"), 1, -1000000.0, 1000000.0,
-                                       QString(), QStringLiteral(","), this);
+                                       QStringLiteral("ItemPropertiesCenterYValue"), ItemProperty::CENTER,
+                                       QStringLiteral(","), this);
     m_centerXSpin = m_centerRow->FirstSpin();
     m_centerYSpin = m_centerRow->SecondSpin();
     m_centerXSpin->setMinimumWidth(88);
@@ -69,12 +69,12 @@ void ItemPropertiesDialogGeometryBlock::AddRows(QFormLayout* form, PropertyRowRe
 {
     m_form = form;
     // 行序定稿（§4.1 第 23~28 行）：长半轴 → 短半轴 → 旋转 → 位置 → 图元尺寸 → 中心点。
-    m_centerLabel = new QLabel(ItemPropertiesDialog::tr("Center point"), this);
-    form->addRow(ItemPropertiesDialog::tr("Semi-major axis"), m_majorAxisRow);
-    form->addRow(ItemPropertiesDialog::tr("Semi-minor axis"), m_minorAxisRow);
-    form->addRow(ItemPropertiesDialog::tr("Rotation"), m_rotationRow);
-    form->addRow(ItemPropertiesDialog::tr("Position"), m_positionRow);
-    form->addRow(ItemPropertiesDialog::tr("Item size"), m_sizeRow);
+    m_centerLabel = new QLabel(ItemPropertyCatalog::Label(ItemProperty::CENTER), this);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::MAJOR_AXIS), m_majorAxisRow);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::MINOR_AXIS), m_minorAxisRow);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::ROTATION), m_rotationRow);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::POSITION), m_positionRow);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::SIZE), m_sizeRow);
     form->addRow(m_centerLabel, m_centerRow);
 
     if (rows) {

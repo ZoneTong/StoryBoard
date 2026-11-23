@@ -1,5 +1,6 @@
 #include "ui/widgets/PropertyRowWidgets.h"
 
+#include "items/properties/ItemPropertyCatalog.h"
 #include "scene/CanvasScene.h"
 #include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 
@@ -16,6 +17,13 @@ namespace {
 
 constexpr int ICON_SIZE = 20;
 constexpr int BUTTON_SIZE = 32;
+
+const ItemPropertyDescriptor& DescriptorOf(ItemProperty property)
+{
+    const ItemPropertyDescriptor* descriptor = ItemPropertyCatalog::Find(property);
+    static const ItemPropertyDescriptor FALLBACK{};
+    return descriptor ? *descriptor : FALLBACK;
+}
 
 QToolButton* AddRowIcon(QHBoxLayout* layout, IconId id, QWidget* parent, const QString& toolTip)
 {
@@ -184,6 +192,15 @@ NumberAttributeRow::NumberAttributeRow(IconId icon, bool showIcon, int decimals,
     });
 }
 
+NumberAttributeRow::NumberAttributeRow(IconId icon, bool showIcon, ItemProperty property, const QString& objectName,
+                                       QWidget* parent)
+    : NumberAttributeRow(icon, showIcon, DescriptorOf(property).decimals, DescriptorOf(property).minimum,
+                         DescriptorOf(property).maximum, QString::fromUtf8(DescriptorOf(property).suffix), objectName,
+                         parent)
+{
+    SetSingleStep(DescriptorOf(property).step);
+}
+
 void NumberAttributeRow::SetIconToolTip(const QString& toolTip)
 {
     if (m_icon) {
@@ -240,6 +257,14 @@ PairAttributeRow::PairAttributeRow(IconId icon, bool showIcon, const QString& fi
     }
 }
 
+PairAttributeRow::PairAttributeRow(IconId icon, bool showIcon, const QString& firstName, const QString& secondName,
+                                   ItemProperty property, const QString& separator, QWidget* parent)
+    : PairAttributeRow(icon, showIcon, firstName, secondName, DescriptorOf(property).decimals,
+                       DescriptorOf(property).minimum, DescriptorOf(property).maximum,
+                       QString::fromUtf8(DescriptorOf(property).suffix), separator, parent)
+{
+}
+
 void PairAttributeRow::SetIconToolTip(const QString& toolTip)
 {
     if (m_icon) {
@@ -263,4 +288,15 @@ qreal PairAttributeRow::First() const
 qreal PairAttributeRow::Second() const
 {
     return m_second ? m_second->value() : 0.0;
+}
+
+void ApplyItemPropertyRange(QSpinBox* spin, ItemProperty property)
+{
+    if (!spin) {
+        return;
+    }
+    const ItemPropertyDescriptor& descriptor = DescriptorOf(property);
+    spin->setRange(qRound(descriptor.minimum), qRound(descriptor.maximum));
+    spin->setSingleStep(qMax(1, qRound(descriptor.step)));
+    spin->setSuffix(QString::fromUtf8(descriptor.suffix));
 }

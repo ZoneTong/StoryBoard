@@ -1,6 +1,7 @@
 #include "ui/panels/itemdialog/ItemPropertiesDialogTextBlock.h"
 
 #include "items/CanvasItem.h"
+#include "items/properties/ItemPropertyCatalog.h"
 #include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/itemdialog/ItemPropertiesDialogFields.h"
 #include "ui/panels/properties/PropertyRowRegistry.h"
@@ -31,9 +32,9 @@ ItemPropertiesDialogTextBlock::ItemPropertiesDialogTextBlock(QWidget* parent) : 
 void ItemPropertiesDialogTextBlock::AddRows(QFormLayout* form, PropertyRowRegistry* rows)
 {
     m_form = form;
-    form->addRow(ItemPropertiesDialog::tr("Text content"), m_textEdit);
-    form->addRow(ItemPropertiesDialog::tr("Text color"), m_textColorButton);
-    form->addRow(ItemPropertiesDialog::tr("Font"), m_fontButton);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::TEXT_CONTENT), m_textEdit);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::TEXT_COLOR), m_textColorButton);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::TEXT_FONT), m_fontButton);
     if (rows) {
         rows->Register(ItemProperty::TEXT_CONTENT, m_textEdit);
         rows->Register(ItemProperty::TEXT_COLOR, m_textColorButton);

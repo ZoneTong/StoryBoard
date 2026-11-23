@@ -16,6 +16,7 @@ void RunPaintOrderTests(Context& ctx);
 void RunViewInteractionTests(Context& ctx);
 void RunPropertyDialogFieldGeometryTests(Context& ctx);
 void RunPropertyDialogTextNamingTests(Context& ctx);
+void RunItemPropertyCatalogTests(Context& ctx);
 void RunDuplicateItemTests(Context& ctx);
 void RunGroupTests(Context& ctx);
 void RunGroupingModelTests(Context& ctx);

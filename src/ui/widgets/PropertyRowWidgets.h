@@ -1,5 +1,6 @@
 #pragma once
 
+#include "items/properties/ItemProperties.h"
 #include "ui/icons/IconFactory.h"
 
 #include <QWidget>
@@ -11,6 +12,9 @@ class QDoubleSpinBox;
 class QLineEdit;
 class QSpinBox;
 class QToolButton;
+
+// 把描述符里的范围 / 步长 / 单位灌进已有的整数输入框，供不走通用行的属性卡片复用。
+void ApplyItemPropertyRange(QSpinBox* spin, ItemProperty property);
 
 // 编辑面板与属性窗共用的基础属性行：名称、图层、层内高度、单个数值与成对数值。
 // 行控件只负责回显与发信号，写回与撤销由宿主决定；图标用于编辑面板的紧凑行，
@@ -76,6 +80,9 @@ class NumberAttributeRow : public QWidget {
   public:
     NumberAttributeRow(IconId icon, bool showIcon, int decimals, qreal minimum, qreal maximum, const QString& suffix,
                        const QString& objectName, QWidget* parent = nullptr);
+    // 范围 / 步长 / 单位 / 小数位从属性描述符取，避免面板与属性窗各写一份常量。
+    NumberAttributeRow(IconId icon, bool showIcon, ItemProperty property, const QString& objectName,
+                       QWidget* parent = nullptr);
 
     void Refresh(qreal value);
     qreal Value() const;
@@ -101,6 +108,8 @@ class PairAttributeRow : public QWidget {
     PairAttributeRow(IconId icon, bool showIcon, const QString& firstName, const QString& secondName, int decimals,
                      qreal minimum, qreal maximum, const QString& suffix, const QString& separator,
                      QWidget* parent = nullptr);
+    PairAttributeRow(IconId icon, bool showIcon, const QString& firstName, const QString& secondName,
+                     ItemProperty property, const QString& separator, QWidget* parent = nullptr);
 
     void Refresh(qreal first, qreal second);
     qreal First() const;

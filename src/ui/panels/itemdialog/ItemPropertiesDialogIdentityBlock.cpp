@@ -1,5 +1,6 @@
 #include "ui/panels/itemdialog/ItemPropertiesDialogIdentityBlock.h"
 
+#include "items/properties/ItemPropertyCatalog.h"
 #include "scene/CanvasScene.h"
 #include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/properties/PropertyRowRegistry.h"
@@ -42,9 +43,9 @@ ItemPropertiesDialogIdentityBlock::ItemPropertiesDialogIdentityBlock(CanvasScene
 void ItemPropertiesDialogIdentityBlock::AddRows(QFormLayout* form, PropertyRowRegistry* rows)
 {
     m_form = form;
-    form->addRow(ItemPropertiesDialog::tr("Item name"), m_nameRow);
-    form->addRow(ItemPropertiesDialog::tr("Layer"), m_layerRow);
-    form->addRow(ItemPropertiesDialog::tr("Height"), m_heightRow);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::NAME), m_nameRow);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::LAYER), m_layerRow);
+    form->addRow(ItemPropertyCatalog::Label(ItemProperty::HEIGHT), m_heightRow);
     if (rows) {
         rows->Register(ItemProperty::NAME, m_nameRow);
         rows->Register(ItemProperty::LAYER, m_layerRow);

@@ -17,14 +17,14 @@ PropertiesPanelGeometryCard::PropertiesPanelGeometryCard(QWidget* parent) : QWid
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(2);
 
-    m_majorAxisRow = new NumberAttributeRow(IconId::AXIS_MAJOR, true, 1, 0.5, 500000.0, QStringLiteral(" px"),
+    m_majorAxisRow = new NumberAttributeRow(IconId::AXIS_MAJOR, true, ItemProperty::MAJOR_AXIS,
                                             QStringLiteral("ItemMajorAxisSpin"), this);
     m_majorAxisRow->Spin()->setToolTip(PropertiesPanel::tr("Semi-major axis"));
     m_majorAxisRow->SetIconToolTip(PropertiesPanel::tr("Semi-major axis"));
     m_majorAxisRow->setVisible(false);
     layout->addWidget(m_majorAxisRow);
 
-    m_minorAxisRow = new NumberAttributeRow(IconId::AXIS_MINOR, true, 1, 0.5, 500000.0, QStringLiteral(" px"),
+    m_minorAxisRow = new NumberAttributeRow(IconId::AXIS_MINOR, true, ItemProperty::MINOR_AXIS,
                                             QStringLiteral("ItemMinorAxisSpin"), this);
     m_minorAxisRow->Spin()->setToolTip(PropertiesPanel::tr("Semi-minor axis"));
     m_minorAxisRow->SetIconToolTip(PropertiesPanel::tr("Semi-minor axis"));
@@ -32,30 +32,29 @@ PropertiesPanelGeometryCard::PropertiesPanelGeometryCard(QWidget* parent) : QWid
     layout->addWidget(m_minorAxisRow);
 
     // 行序与属性窗几何区一致：长短半轴 → 旋转 → 位置 → 尺寸。
-    m_rotationRow = new NumberAttributeRow(IconId::ROTATE_CCW, true, 1, -360.0, 360.0, QStringLiteral("°"),
+    m_rotationRow = new NumberAttributeRow(IconId::ROTATE_CCW, true, ItemProperty::ROTATION,
                                            QStringLiteral("ItemRotationSpin"), this);
-    m_rotationRow->SetSingleStep(5.0);
     m_rotationRow->Spin()->setToolTip(PropertiesPanel::tr("Rotation"));
     m_rotationRow->SetIconToolTip(PropertiesPanel::tr("Rotation"));
     layout->addWidget(m_rotationRow);
 
-    m_positionRow = new PairAttributeRow(IconId::POSITION, true, QStringLiteral("ItemPositionXSpin"),
-                                         QStringLiteral("ItemPositionYSpin"), 1, -1000000.0, 1000000.0, QString(),
-                                         QStringLiteral(","), this);
+    m_positionRow =
+        new PairAttributeRow(IconId::POSITION, true, QStringLiteral("ItemPositionXSpin"),
+                             QStringLiteral("ItemPositionYSpin"), ItemProperty::POSITION, QStringLiteral(","), this);
     m_positionRow->FirstSpin()->setToolTip(PropertiesPanel::tr("Position"));
     m_positionRow->SecondSpin()->setToolTip(PropertiesPanel::tr("Position"));
     m_positionRow->SetIconToolTip(PropertiesPanel::tr("Position"));
     layout->addWidget(m_positionRow);
 
-    m_sizeRow = new PairAttributeRow(IconId::SHAPES, true, QStringLiteral("ItemSizeWidthSpin"),
-                                     QStringLiteral("ItemSizeHeightSpin"), 1, 1.0, 1000000.0, QString(),
-                                     QStringLiteral("×"), this);
+    m_sizeRow =
+        new PairAttributeRow(IconId::SHAPES, true, QStringLiteral("ItemSizeWidthSpin"),
+                             QStringLiteral("ItemSizeHeightSpin"), ItemProperty::SIZE, QStringLiteral("×"), this);
     m_sizeRow->FirstSpin()->setToolTip(PropertiesPanel::tr("Item size"));
     m_sizeRow->SecondSpin()->setToolTip(PropertiesPanel::tr("Item size"));
     m_sizeRow->SetIconToolTip(PropertiesPanel::tr("Item size"));
     layout->addWidget(m_sizeRow);
 
-    m_interiorAngleRow = new NumberAttributeRow(IconId::ANGLE_RIGHT, true, 0, 5.0, 175.0, QStringLiteral("°"),
+    m_interiorAngleRow = new NumberAttributeRow(IconId::ANGLE_RIGHT, true, ItemProperty::BOTTOM_ANGLE1,
                                                 QStringLiteral("ItemInteriorAngleSpin"), this);
     m_interiorAngleRow->Spin()->setToolTip(PropertiesPanel::tr("Interior angle A"));
     m_interiorAngleRow->SetIconToolTip(PropertiesPanel::tr("Interior angle A"));
@@ -64,8 +63,8 @@ PropertiesPanelGeometryCard::PropertiesPanelGeometryCard(QWidget* parent) : QWid
 
     // §3.4 中心点：派生属性，行放在几何区最后；多选时绝对对齐到同一中心。
     m_centerRow =
-        new PairAttributeRow(IconId::FIT, true, QStringLiteral("ItemCenterXSpin"), QStringLiteral("ItemCenterYSpin"), 1,
-                             -1000000.0, 1000000.0, QString(), QStringLiteral(","), this);
+        new PairAttributeRow(IconId::FIT, true, QStringLiteral("ItemCenterXSpin"), QStringLiteral("ItemCenterYSpin"),
+                             ItemProperty::CENTER, QStringLiteral(","), this);
     m_centerRow->FirstSpin()->setToolTip(PropertiesPanel::tr("Center point"));
     m_centerRow->SecondSpin()->setToolTip(PropertiesPanel::tr("Center point"));
     m_centerRow->SetIconToolTip(PropertiesPanel::tr("Center point"));
