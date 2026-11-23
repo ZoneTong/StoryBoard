@@ -16,6 +16,19 @@
 
 namespace {
 
+// 双数值行的输入框按文本长度定宽：默认 10 个字符够用，数值更长时自动放宽，不再整行平分面板宽度。
+int SpinTextWidth(const QDoubleSpinBox* spin, int minCharacters)
+{
+    if (!spin) {
+        return 0;
+    }
+    const QFontMetrics metrics(spin->font());
+    const int minWidth = metrics.horizontalAdvance(QString(minCharacters, QLatin1Char('0')));
+    const int textWidth = metrics.horizontalAdvance(spin->text());
+    // 左右内边距 8 + 24、1px 边框、2px 余量，与 QSS 里 QDoubleSpinBox 的 padding 对应。
+    return qMax(minWidth, textWidth) + 36;
+}
+
 const ItemPropertyDescriptor& DescriptorOf(ItemProperty property)
 {
     const ItemPropertyDescriptor* descriptor = ItemPropertyCatalog::Find(property);
@@ -245,16 +258,19 @@ PairValueRow::PairValueRow(IconId icon, bool showIcon, const QString& firstName,
 
     m_first = MakeSpin(this, firstName, decimals, minimum, maximum, suffix);
     m_second = MakeSpin(this, secondName, decimals, minimum, maximum, suffix);
-    layout->addWidget(m_first, 1);
+    layout->addWidget(m_first);
 
     auto* label = new QLabel(separator, this);
     label->setAlignment(Qt::AlignCenter);
     layout->addWidget(label);
 
-    layout->addWidget(m_second, 1);
+    layout->addWidget(m_second);
+    layout->addStretch(1);
 
     for (QDoubleSpinBox* spin : {m_first, m_second}) {
-        connect(spin, &QDoubleSpinBox::valueChanged, this, [this](double) {
+        spin->setFixedWidth(SpinTextWidth(spin, 10));
+        connect(spin, &QDoubleSpinBox::valueChanged, this, [this, spin](double) {
+            spin->setFixedWidth(SpinTextWidth(spin, 10));
             if (!m_refreshing) {
                 emit valuesChosen(m_first->value(), m_second->value());
             }
@@ -282,6 +298,8 @@ void PairValueRow::Refresh(qreal first, qreal second)
     m_refreshing = true;
     m_first->setValue(first);
     m_second->setValue(second);
+    m_first->setFixedWidth(SpinTextWidth(m_first, 10));
+    m_second->setFixedWidth(SpinTextWidth(m_second, 10));
     m_refreshing = false;
 }
 
