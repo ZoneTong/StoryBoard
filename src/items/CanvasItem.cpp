@@ -6,6 +6,7 @@
 #include "items/CanvasItemGeometry.h"
 #include "scene/CanvasScene.h"
 
+#include <QFontMetricsF>
 #include <QGraphicsScene>
 #include <QGraphicsSceneHoverEvent>
 #include <QGraphicsSceneMouseEvent>
@@ -50,6 +51,45 @@ bool CanvasItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos)
 void CanvasItem::EndHandleDrag() {}
 
 void CanvasItem::FrameResizeDragged() {}
+
+void CanvasItem::SetAngleReadoutVisible(bool visible)
+{
+    if (m_angleReadoutVisible == visible) {
+        return;
+    }
+    prepareGeometryChange();
+    m_angleReadoutVisible = visible;
+    update();
+}
+
+QFont CanvasItem::ReadoutFont(const QFont& base) const
+{
+    QFont font = base;
+    const qreal scale = qMax<qreal>(ViewScale(), 0.001);
+    font.setPointSizeF(qMax<qreal>(8.0, 11.0 / scale));
+    return font;
+}
+
+QRectF CanvasItem::ReadoutRectAt(const QPointF& anchor, const QString& text) const
+{
+    const QFontMetricsF metrics(ReadoutFont(QFont()));
+    const qreal width = metrics.horizontalAdvance(text);
+    const qreal height = metrics.height();
+    return QRectF(anchor.x() - width / 2.0, anchor.y() - height / 2.0, width, height);
+}
+
+qreal CanvasItem::ReadoutPadding() const
+{
+    qreal padding = 0.0;
+    const QRectF content = ContentRect();
+    for (const QRectF& readout : AngleReadoutRects()) {
+        padding = qMax(padding, content.left() - readout.left());
+        padding = qMax(padding, readout.right() - content.right());
+        padding = qMax(padding, readout.bottom() - content.bottom());
+        padding = qMax(padding, readout.top() - content.top());
+    }
+    return padding;
+}
 
 CanvasItem::CanvasItem(QGraphicsItem* parent) : QGraphicsObject(parent)
 {

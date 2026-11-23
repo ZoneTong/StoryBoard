@@ -3,6 +3,8 @@
 #include "items/geometry/EllipseAxis.h"
 
 #include <QJsonObject>
+#include <QPainter>
+#include <cmath>
 
 SectorItem::SectorItem()
 {
@@ -134,7 +136,11 @@ HandleSpecList SectorItem::CustomHandles() const
 bool SectorItem::BeginCustomHandleDrag(int handle, const QPointF& scenePos)
 {
     Q_UNUSED(scenePos);
-    return !IsCustomShape() && (handle == CanvasItem::CUSTOM_0 || handle == CanvasItem::CUSTOM_1);
+    if (IsCustomShape() || (handle != CanvasItem::CUSTOM_0 && handle != CanvasItem::CUSTOM_1)) {
+        return false;
+    }
+    SetAngleReadoutVisible(true);
+    return true;
 }
 
 bool SectorItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos)
@@ -143,5 +149,46 @@ bool SectorItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos)
         return false;
     }
     DragArcEndpoint(Frame(), mapFromScene(scenePos), handle == CanvasItem::CUSTOM_0);
+    SetAngleReadoutVisible(true);
     return true;
+}
+
+void SectorItem::EndHandleDrag()
+{
+    SetAngleReadoutVisible(false);
+}
+
+void SectorItem::DrawSelectionOverlay(QPainter* painter)
+{
+    ShapeAbstractItem::DrawSelectionOverlay(painter);
+    if (!AngleReadoutVisible()) {
+        return;
+    }
+    const QRectF frame = Frame();
+    const QPointF point = EllipseShape::PointOnFrame(frame, StartAngle() + SweepAngle() / 2.0);
+    QPointF radial = point - frame.center();
+    const qreal length = std::hypot(radial.x(), radial.y());
+    radial = length > 0.001 ? radial / length : QPointF(0.0, -1.0);
+    const qreal offset = 18.0 / qMax<qreal>(ViewScale(), 0.001);
+    const QPointF anchor = point + radial * offset;
+    const QString text = QStringLiteral("%1°").arg(qRound(SweepAngle()));
+    painter->save();
+    painter->setFont(ReadoutFont(painter->font()));
+    painter->setPen(QColor(37, 99, 235));
+    painter->drawText(ReadoutRectAt(anchor, text), Qt::AlignCenter, text);
+    painter->restore();
+}
+
+QList<QRectF> SectorItem::AngleReadoutRects() const
+{
+    if (!AngleReadoutVisible()) {
+        return {};
+    }
+    const QRectF frame = Frame();
+    const QPointF point = EllipseShape::PointOnFrame(frame, StartAngle() + SweepAngle() / 2.0);
+    QPointF radial = point - frame.center();
+    const qreal length = std::hypot(radial.x(), radial.y());
+    radial = length > 0.001 ? radial / length : QPointF(0.0, -1.0);
+    const qreal offset = 18.0 / qMax<qreal>(ViewScale(), 0.001);
+    return {ReadoutRectAt(point + radial * offset, QStringLiteral("%1°").arg(qRound(SweepAngle())))};
 }

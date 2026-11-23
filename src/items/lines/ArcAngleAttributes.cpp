@@ -32,18 +32,18 @@ void ArcAngleAttributes::DragArcEndpoint(const QRectF& ellipseFrame, const QPoin
     // 指针落入椭圆角度：Qt 语义 0° 在三点钟方向、逆时针为正，故 y 取负号。
     const QPointF center = frame.center();
     const qreal theta =
-        qRadiansToDegrees(qAtan2((center.y() - localPoint.y()) / ry, (localPoint.x() - center.x()) / rx));
+        qRound(qRadiansToDegrees(qAtan2((center.y() - localPoint.y()) / ry, (localPoint.x() - center.x()) / rx)));
 
     qreal newStart = m_startAngle;
     qreal newSweep = m_sweepAngle;
     if (startEndpoint) {
         // 拖起始端：结束端固定，只让 start 跟着指针走。
         const qreal endAngle = m_startAngle + m_sweepAngle;
-        newStart = UnwrapNear(theta, m_startAngle);
-        newSweep = UnwrapNear(endAngle - newStart, m_sweepAngle);
+        newStart = qRound(UnwrapNear(theta, m_startAngle));
+        newSweep = qRound(UnwrapNear(endAngle - newStart, m_sweepAngle));
     } else {
         // 拖结束端：起始端固定，扫过角跟着指针走。
-        newSweep = UnwrapNear(theta - m_startAngle, m_sweepAngle);
+        newSweep = qRound(UnwrapNear(theta - m_startAngle, m_sweepAngle));
     }
     newSweep = qBound<qreal>(-360.0, newSweep, 360.0);
     if (qAbs(newSweep) < MIN_ENDPOINT_SWEEP) {

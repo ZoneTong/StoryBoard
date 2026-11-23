@@ -37,7 +37,7 @@ void DiamondItem::SetParallelogramAngle(qreal angle)
         ParallelogramAbstractItem::SetParallelogramAngle(angle);
         return;
     }
-    const qreal clamped = qBound<qreal>(5.0, angle, 175.0);
+    const qreal clamped = qBound<qreal>(5.0, qRound(angle), 175.0);
     const QRectF rect = ContentRect();
     // h = w·tan(A/2)：宽保持不动，只由内角反算高；中心保持不动。
     const qreal newHeight = qMax<qreal>(1.0, rect.width() * qTan(qDegreesToRadians(clamped / 2.0)));
@@ -45,9 +45,50 @@ void DiamondItem::SetParallelogramAngle(qreal angle)
         return;
     }
     const QPointF centerScene = mapToScene(rect.center());
+    m_syncingDiamond = true;
     SetContentSize(QSizeF(rect.width(), newHeight));
+    m_syncingDiamond = false;
     const QPointF newCenterScene = mapToScene(ContentRect().center());
     setPos(pos() + (centerScene - newCenterScene));
+}
+
+void DiamondItem::ContentResized()
+{
+    if (IsCustomShape() || m_syncingDiamond) {
+        return;
+    }
+    // 四角拖动自由缩放；只有非四角边拖动才把派生内角吸附到整数度。
+    const Handle handle = ActiveResizeHandle();
+    const bool horizontalSide = handle == CanvasItem::LEFT || handle == CanvasItem::RIGHT;
+    const bool verticalSide = handle == CanvasItem::TOP || handle == CanvasItem::BOTTOM;
+    if (!horizontalSide && !verticalSide) {
+        return;
+    }
+    const QRectF rect = ContentRect();
+    qreal angle = qRound(ParallelogramAngle());
+    angle = qBound<qreal>(5.0, angle, 175.0);
+    const qreal tangent = qTan(qDegreesToRadians(angle / 2.0));
+    QSizeF snapped = rect.size();
+    if (horizontalSide && tangent > 0.001) {
+        snapped.setWidth(qMax<qreal>(8.0, rect.height() / tangent));
+    } else if (verticalSide) {
+        snapped.setHeight(qMax<qreal>(8.0, rect.width() * tangent));
+    }
+    if (qFuzzyCompare(snapped.width() + 0.1, rect.width() + 0.1) &&
+        qFuzzyCompare(snapped.height() + 0.1, rect.height() + 0.1)) {
+        return;
+    }
+    m_syncingDiamond = true;
+    SetContentSize(snapped);
+    m_syncingDiamond = false;
+}
+
+void DiamondItem::ApplyStateContentSize(const QSizeF& requested)
+{
+    // 状态回放保留文件里的宽高，不把历史文档吸附到新的整数角度。
+    m_syncingDiamond = true;
+    ShapeAbstractItem::ApplyStateContentSize(requested);
+    m_syncingDiamond = false;
 }
 
 QPointF DiamondItem::AngleReadoutAnchor() const

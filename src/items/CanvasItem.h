@@ -148,6 +148,9 @@ class CanvasItem : public QGraphicsObject {
 
     // 旋转手柄的屏幕尺寸随视图缩放变化；缩放后重新声明 boundingRect。
     void RefreshViewDependentGeometry();
+    // 角度读数只在拖拽期间显示；读数在形状外，显示/隐藏会改变包围盒。
+    void SetAngleReadoutVisible(bool visible);
+    bool AngleReadoutVisible() const { return m_angleReadoutVisible; }
 
     static QSizeF MinimumSize();
 
@@ -169,9 +172,15 @@ class CanvasItem : public QGraphicsObject {
     qreal ViewScale() const;
     bool HasSingleSelection() const;
     qreal HandleSize() const;
+    // 当前正在拖的通用缩放手柄；属性 / 构造阶段的 SetContentSize 为 NO_HANDLE。
+    Handle ActiveResizeHandle() const { return m_resizeHandle; }
 
     QPointF HandleCenter(Handle handle) const;
     QRectF HandleRect(Handle handle) const;
+    QFont ReadoutFont(const QFont& base) const;
+    QRectF ReadoutRectAt(const QPointF& anchor, const QString& text) const;
+    qreal ReadoutPadding() const;
+    virtual QList<QRectF> AngleReadoutRects() const { return {}; }
     Handle HandleAt(const QPointF& pos) const;
     qreal RotationHandleOffset() const;
     // Clickable area of the resize handles drawn by DrawSelectionOverlay().
@@ -201,6 +210,7 @@ class CanvasItem : public QGraphicsObject {
     QSizeF m_dragStartSize;
     qreal m_dragStartRotation = 0.0;
     qreal m_rotateStartAngle = 0.0;
+    bool m_angleReadoutVisible = false;
     ItemGeometryList m_before;
     CanvasItemHandles* m_handles = nullptr;
     CanvasItemInteraction* m_interaction = nullptr;

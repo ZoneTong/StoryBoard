@@ -102,7 +102,7 @@ bool GeneralParallelogramItem::ApplyCustomHandleDrag(int handle, const QPointF& 
         along = transform.map(along);
     }
     const qreal signedShift = QPointF::dotProduct(scenePos - m_skewDragBottomLeft, along) - m_skewDragBaseLength / 2.0;
-    SetParallelogramAngle(qRadiansToDegrees(qAtan2(startHeight, signedShift)));
+    SetParallelogramAngle(qRound(qRadiansToDegrees(qAtan2(startHeight, signedShift))));
     SetAngleReadoutVisible(true);
     return true;
 }

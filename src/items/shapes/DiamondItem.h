@@ -19,5 +19,11 @@ class DiamondItem : public ParallelogramAbstractItem {
   protected:
     // 角度浮层贴左顶点：拖外接框 / 边时显示，不新增角度句柄。
     QPointF AngleReadoutAnchor() const override;
+    void ContentResized() override;
+    void ApplyStateContentSize(const QSizeF& requested) override;
     QPainterPath ShapePath(const QRectF& rect) const override;
+
+  private:
+    // 非四角边拖动把派生内角吸附到 1°；四角拖动与状态回放不吸附。
+    bool m_syncingDiamond = false;
 };

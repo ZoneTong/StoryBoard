@@ -937,6 +937,68 @@ void selftest::RunShapeItemTests(Context& ctx)
         triangle.SetAngleReadoutVisible(false);
     }
     {
+        // B2：平行四边形角度旋钮与弧线/扇形端点拖拽都按 1° 量化，弧线/扇形拖拽时显示读数。
+        auto* parallelogram = CreateShapeItem(ShapeType::PARALLELOGRAM);
+        parallelogram->setPos(QPointF(40.0, 40.0));
+        CanvasItemInteraction skewDrag(parallelogram);
+        const HandleSpecList skewSpecs = parallelogram->CustomHandles();
+        const QPointF knobScene = parallelogram->mapToScene(skewSpecs.constFirst().position);
+        skewDrag.BeginResize(CanvasItem::CUSTOM_1, knobScene);
+        skewDrag.ApplyResize(knobScene + QPointF(37.3, 0.0), Qt::NoModifier);
+        const qreal skewedAngle = parallelogram->PropertyValue(ItemProperty::PARALLELOGRAM_ANGLE).toDouble();
+        ctx.Check(qAbs(skewedAngle - qRound(skewedAngle)) < 0.01 && parallelogram->AngleReadoutVisible(),
+                  QStringLiteral("平行四边形角度旋钮按 1° 量化并显示读数"),
+                  QStringLiteral("angle=%1").arg(skewedAngle));
+        skewDrag.FinishInteraction();
+        ctx.Check(!parallelogram->AngleReadoutVisible(), QStringLiteral("松开平行四边形角度旋钮后隐藏读数"));
+        delete parallelogram;
+
+        ArcItem arc;
+        arc.SetArcGeometry(QPointF(40.0, 30.0), QSizeF(120.0, 80.0), 30.0, 120.0, QColor(Qt::black), 2.0);
+        CanvasItemInteraction arcDrag(&arc);
+        const QPointF arcEndScene = arc.mapToScene(arc.CustomHandles().constLast().position);
+        arcDrag.BeginResize(CanvasItem::CUSTOM_1, arcEndScene);
+        arcDrag.ApplyResize(arcEndScene + QPointF(3.0, 7.0), Qt::NoModifier);
+        const qreal arcSweep = arc.SweepAngle();
+        ctx.Check(arc.AngleReadoutVisible() && qAbs(arcSweep - qRound(arcSweep)) < 0.01,
+                  QStringLiteral("弧线端点拖拽显示读数并按 1° 量化"), QStringLiteral("sweep=%1").arg(arcSweep));
+        arcDrag.FinishInteraction();
+        ctx.Check(!arc.AngleReadoutVisible(), QStringLiteral("松开弧线端点后隐藏读数"));
+
+        SectorItem sector;
+        sector.SetContentSize(QSizeF(120.0, 80.0));
+        CanvasItemInteraction sectorDrag(&sector);
+        const QPointF sectorEndScene = sector.mapToScene(sector.CustomHandles().constLast().position);
+        sectorDrag.BeginResize(CanvasItem::CUSTOM_1, sectorEndScene);
+        sectorDrag.ApplyResize(sectorEndScene + QPointF(4.0, 9.0), Qt::NoModifier);
+        const qreal sectorSweep = sector.SweepAngle();
+        ctx.Check(sector.AngleReadoutVisible() && qAbs(sectorSweep - qRound(sectorSweep)) < 0.01,
+                  QStringLiteral("扇形端点拖拽显示读数并按 1° 量化"), QStringLiteral("sweep=%1").arg(sectorSweep));
+        sectorDrag.FinishInteraction();
+        ctx.Check(!sector.AngleReadoutVisible(), QStringLiteral("松开扇形端点后隐藏读数"));
+
+        DiamondItem diamond;
+        diamond.setPos(QPointF(20.0, 20.0));
+        diamond.SetContentSize(QSizeF(128.0, 72.0));
+        CanvasItemInteraction sideDrag(&diamond);
+        sideDrag.BeginResize(CanvasItem::BOTTOM, diamond.pos() + QPointF(64.0, 72.0));
+        sideDrag.ApplyResize(diamond.pos() + QPointF(64.0, 95.0), Qt::NoModifier);
+        const qreal sideAngle = diamond.ParallelogramAngle();
+        ctx.Check(qAbs(sideAngle - qRound(sideAngle)) < 0.05, QStringLiteral("菱形非四角边拖动按 1° 吸附"),
+                  QStringLiteral("angle=%1").arg(sideAngle));
+        sideDrag.FinishInteraction();
+
+        DiamondItem cornerDiamond;
+        cornerDiamond.setPos(QPointF(180.0, 40.0));
+        cornerDiamond.SetContentSize(QSizeF(128.0, 72.0));
+        CanvasItemInteraction cornerDrag(&cornerDiamond);
+        cornerDrag.BeginResize(CanvasItem::TOP_LEFT, cornerDiamond.pos());
+        cornerDrag.ApplyResize(cornerDiamond.pos() + QPointF(-13.0, -9.0), Qt::NoModifier);
+        const qreal cornerAngle = cornerDiamond.ParallelogramAngle();
+        ctx.Check(qAbs(cornerAngle - qRound(cornerAngle)) > 0.05, QStringLiteral("菱形四角拖动保持自由角度"),
+                  QStringLiteral("angle=%1").arg(cornerAngle));
+    }
+    {
         // 平行四边形内角范围放开到 5–175°。
         auto* parallelogram = CreateShapeItem(ShapeType::PARALLELOGRAM);
         parallelogram->SetPropertyValue(ItemProperty::PARALLELOGRAM_ANGLE, 5.0);

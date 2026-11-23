@@ -170,25 +170,6 @@ void ShapeAbstractItem::EndHandleDrag()
     SetAngleReadoutVisible(false);
 }
 
-void ShapeAbstractItem::SetAngleReadoutVisible(bool visible)
-{
-    if (m_angleReadoutVisible == visible) {
-        return;
-    }
-    // 读数在底边外，会改变 boundingRect / shape 的覆盖范围。
-    prepareGeometryChange();
-    m_angleReadoutVisible = visible;
-    update();
-}
-
-QFont ShapeAbstractItem::ReadoutFont(const QFont& base) const
-{
-    QFont font = base;
-    const qreal scale = qMax<qreal>(ViewScale(), 0.001);
-    font.setPointSizeF(qMax<qreal>(8.0, 11.0 / scale));
-    return font;
-}
-
 QRectF ShapeAbstractItem::BottomReadoutRect(const QString& text, Qt::Alignment alignment) const
 {
     const QFontMetricsF metrics(ReadoutFont(QFont()));
@@ -208,16 +189,7 @@ QRectF ShapeAbstractItem::BottomReadoutRect(const QString& text, Qt::Alignment a
 
 qreal ShapeAbstractItem::FramePadding() const
 {
-    qreal padding = qMax<qreal>(22.0, StrokeWidth() + 6.0);
-    const QRectF content = ContentRect();
-    const QList<QRectF> readouts = AngleReadoutRects();
-    for (const QRectF& readout : readouts) {
-        padding = qMax(padding, content.left() - readout.left());
-        padding = qMax(padding, readout.right() - content.right());
-        padding = qMax(padding, readout.bottom() - content.bottom());
-        padding = qMax(padding, readout.top() - content.top());
-    }
-    return padding;
+    return qMax<qreal>(qMax<qreal>(22.0, StrokeWidth() + 6.0), ReadoutPadding());
 }
 
 QRectF ShapeAbstractItem::FrameRect() const

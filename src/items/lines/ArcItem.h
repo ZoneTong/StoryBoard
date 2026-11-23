@@ -39,12 +39,16 @@ class ArcItem : public LineAbstractItem, public ArcAngleAttributes, public Ellip
     HandleSpecList CustomHandles() const override;
     bool BeginCustomHandleDrag(int handle, const QPointF& scenePos) override;
     bool ApplyCustomHandleDrag(int handle, const QPointF& scenePos) override;
+    void EndHandleDrag() override;
 
     QJsonObject ToJson() const override;
     void FromJson(const QJsonObject& json) override;
 
   protected:
     void ArcAnglesChanged() override;
+    void DrawSelectionOverlay(QPainter* painter) override;
+    QList<QRectF> AngleReadoutRects() const override;
+    qreal FramePadding() const override;
 
   private:
     // 角度变化后按“上次椭圆框相对内容框的比例”重建，拉伸过再改角度不会跳。

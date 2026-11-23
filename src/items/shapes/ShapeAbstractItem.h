@@ -113,8 +113,6 @@ class ShapeAbstractItem : public CanvasItem, public FillAttributes, public Strok
     // 底角只属于三角形：具体类覆写；其余图形返回缺省值，属性表里也没有这两项。
     virtual qreal BottomAngle1() const { return 60.0; }
     virtual qreal BottomAngle2() const { return 60.0; }
-    void SetAngleReadoutVisible(bool visible);
-    bool AngleReadoutVisible() const { return m_angleReadoutVisible; }
     virtual void SetStyle(const QColor& strokeColor, const QColor& fillColor, qreal strokeWidth);
     void SetCornerRadius(qreal radius);
     // 三角形：设置底边两侧的底角（度）。角度优先，底边保持不变（面板与撤销用）；
@@ -158,14 +156,11 @@ class ShapeAbstractItem : public CanvasItem, public FillAttributes, public Strok
     void StrokeChanged() override;
     qreal FramePadding() const override;
     // 角度读数统一贴在底边外侧；具体图形只决定文本与对齐，不各写一套偏移。
-    QFont ReadoutFont(const QFont& base) const;
     QRectF BottomReadoutRect(const QString& text, Qt::Alignment alignment) const;
-    virtual QList<QRectF> AngleReadoutRects() const { return {}; }
 
   private:
     // 圆角半径，单位画布 px；0 表示直角。
     qreal m_cornerRadius = 0.0;
-    bool m_angleReadoutVisible = false;
     QString m_customName;
     QPainterPath m_customPath;
 };

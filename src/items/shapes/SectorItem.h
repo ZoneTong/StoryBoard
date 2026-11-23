@@ -20,9 +20,12 @@ class SectorItem : public ShapeAbstractItem, public EllipseShape, public ArcAngl
     HandleSpecList CustomHandles() const override;
     bool BeginCustomHandleDrag(int handle, const QPointF& scenePos) override;
     bool ApplyCustomHandleDrag(int handle, const QPointF& scenePos) override;
+    void EndHandleDrag() override;
 
   protected:
     void ContentResized() override;
+    void DrawSelectionOverlay(QPainter* painter) override;
+    QList<QRectF> AngleReadoutRects() const override;
     QPainterPath ShapePath(const QRectF& rect) const override;
     void ArcAnglesChanged() override;
     void WriteJsonExtra(QJsonObject& json) const override;

@@ -1,7 +1,9 @@
 #include "items/lines/ArcItem.h"
 
 #include <QJsonArray>
+#include <QPainter>
 #include <QVector>
+#include <cmath>
 
 namespace {
 
@@ -209,7 +211,11 @@ HandleSpecList ArcItem::CustomHandles() const
 bool ArcItem::BeginCustomHandleDrag(int handle, const QPointF& scenePos)
 {
     Q_UNUSED(scenePos);
-    return handle == CanvasItem::CUSTOM_0 || handle == CanvasItem::CUSTOM_1;
+    if (handle != CanvasItem::CUSTOM_0 && handle != CanvasItem::CUSTOM_1) {
+        return false;
+    }
+    SetAngleReadoutVisible(true);
+    return true;
 }
 
 bool ArcItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos)
@@ -218,7 +224,53 @@ bool ArcItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos)
         return false;
     }
     DragArcEndpoint(LocalEllipseFrame(), mapFromScene(scenePos), handle == CanvasItem::CUSTOM_0);
+    SetAngleReadoutVisible(true);
     return true;
+}
+
+void ArcItem::EndHandleDrag()
+{
+    SetAngleReadoutVisible(false);
+}
+
+void ArcItem::DrawSelectionOverlay(QPainter* painter)
+{
+    LineAbstractItem::DrawSelectionOverlay(painter);
+    if (!AngleReadoutVisible()) {
+        return;
+    }
+    const QRectF frame = LocalEllipseFrame();
+    const QPointF point = EllipseShape::PointOnFrame(frame, StartAngle() + SweepAngle() / 2.0);
+    QPointF radial = point - frame.center();
+    const qreal length = std::hypot(radial.x(), radial.y());
+    radial = length > 0.001 ? radial / length : QPointF(0.0, -1.0);
+    const qreal offset = 18.0 / qMax<qreal>(ViewScale(), 0.001);
+    const QPointF anchor = point + radial * offset;
+    const QString text = QStringLiteral("%1°").arg(qRound(SweepAngle()));
+    painter->save();
+    painter->setFont(ReadoutFont(painter->font()));
+    painter->setPen(QColor(37, 99, 235));
+    painter->drawText(ReadoutRectAt(anchor, text), Qt::AlignCenter, text);
+    painter->restore();
+}
+
+QList<QRectF> ArcItem::AngleReadoutRects() const
+{
+    if (!AngleReadoutVisible()) {
+        return {};
+    }
+    const QRectF frame = LocalEllipseFrame();
+    const QPointF point = EllipseShape::PointOnFrame(frame, StartAngle() + SweepAngle() / 2.0);
+    QPointF radial = point - frame.center();
+    const qreal length = std::hypot(radial.x(), radial.y());
+    radial = length > 0.001 ? radial / length : QPointF(0.0, -1.0);
+    const qreal offset = 18.0 / qMax<qreal>(ViewScale(), 0.001);
+    return {ReadoutRectAt(point + radial * offset, QStringLiteral("%1°").arg(qRound(SweepAngle())))};
+}
+
+qreal ArcItem::FramePadding() const
+{
+    return qMax<qreal>(42.0, ReadoutPadding());
 }
 
 void ArcItem::Rebuild()
