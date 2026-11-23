@@ -475,12 +475,12 @@ QVariant CanvasItem::PropertyValueByKey(PropertyKey property) const
     if (!property.IsValid()) {
         return QVariant();
     }
-    if (property.IsCommon()) {
-        return PropertyValue(property.CommonProperty());
-    }
     if (const ItemPropertyDescriptor* descriptor = ItemPropertyCatalog::Find(property);
         descriptor && descriptor->reader) {
         return descriptor->reader(this);
+    }
+    if (property.IsCommon()) {
+        return PropertyValue(property.CommonProperty());
     }
     const auto it = m_dynamicProperties.constFind(property);
     return it != m_dynamicProperties.constEnd() ? it.value() : QVariant();
@@ -491,13 +491,13 @@ void CanvasItem::SetPropertyValueByKey(PropertyKey property, const QVariant& val
     if (!property.IsValid()) {
         return;
     }
-    if (property.IsCommon()) {
-        SetPropertyValue(property.CommonProperty(), value);
-        return;
-    }
     if (const ItemPropertyDescriptor* descriptor = ItemPropertyCatalog::Find(property);
         descriptor && descriptor->writer) {
         descriptor->writer(this, value);
+        return;
+    }
+    if (property.IsCommon()) {
+        SetPropertyValue(property.CommonProperty(), value);
         return;
     }
     const auto it = m_dynamicProperties.find(property);
