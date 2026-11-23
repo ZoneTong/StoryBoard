@@ -146,7 +146,8 @@ int StyleController::ApplyPenStyleToSelection(Qt::PenStyle style, const QString&
         item->SetPropertyValue(ItemProperty::STROKE_STYLE, static_cast<int>(style));
     }
     m_window->m_undo->push(new ItemPropertyCommand(m_window->m_scene, items, before, after, text));
-    m_window->statusBar()->showMessage(MainWindow::tr("Applied border style to %1 Item(s)").arg(items.size()), 4000);
+    m_window->statusBar()->showMessage(MainWindow::tr("Applied border style to %n Item(s)", nullptr, items.size()),
+                                       4000);
     return items.size();
 }
 
@@ -222,7 +223,8 @@ int StyleController::ApplyStrokeStyleToSelection(const QColor& color, qreal widt
         }
     }
     m_window->m_undo->push(new ItemPropertyCommand(m_window->m_scene, items, before, after, text));
-    m_window->statusBar()->showMessage(MainWindow::tr("Applied border style to %1 Item(s)").arg(items.size()), 4000);
+    m_window->statusBar()->showMessage(MainWindow::tr("Applied border style to %n Item(s)", nullptr, items.size()),
+                                       4000);
     return items.size();
 }
 

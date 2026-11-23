@@ -192,6 +192,15 @@ void selftest::RunSettingsDialogBasicTests(Context& ctx)
                   QStringLiteral("zh=%1").arg(zhSemi));
         ctx.Check(UiTranslateEitherWay(QStringLiteral("Stroke")) != QStringLiteral("Stroke"),
                   QStringLiteral("冲突串仍按 StoryBoard 上下文照常翻译，未被正续表劫持"));
+        // D3：计数文案走 %n + numerusform，中文按数量替换、英文保留 Item(s)。
+        const QString zhCount = QCoreApplication::translate("MainWindow", "Duplicated %n Item(s)", nullptr, 2);
+        ctx.Check(zhCount == QStringLiteral("已复制 2 个图元"), QStringLiteral("中文复数条目按 %n 替换数量"),
+                  QStringLiteral("zh=%1").arg(zhCount));
+        UiOverrideLanguage(UiLanguage::ENGLISH);
+        UiInitializeLanguage();
+        const QString enCount = QCoreApplication::translate("MainWindow", "Duplicated %n Item(s)", nullptr, 1);
+        ctx.Check(enCount == QStringLiteral("Duplicated 1 Item(s)"), QStringLiteral("英文复数条目保留 Item(s) 写法"),
+                  QStringLiteral("en=%1").arg(enCount));
         UiOverrideLanguage(previous);
         UiInitializeLanguage();
     }

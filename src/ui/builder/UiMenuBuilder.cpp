@@ -230,10 +230,10 @@ void UiMenuBuilder::BuildMenus()
             m_window->statusBar()->showMessage(
                 MainWindow::tr("No selected items can change height (or the height limit was reached)"), 3000);
         } else {
-            m_window->statusBar()->showMessage(MainWindow::tr("Changed the height of %1 Item(s) by %2")
-                                                   .arg(changed)
-                                                   .arg(delta > 0 ? QStringLiteral("+1") : QStringLiteral("-1")),
-                                               3000);
+            m_window->statusBar()->showMessage(
+                MainWindow::tr("Changed the height of %n Item(s) by %1", nullptr, changed)
+                    .arg(delta > 0 ? QStringLiteral("+1") : QStringLiteral("-1")),
+                3000);
         }
     };
 

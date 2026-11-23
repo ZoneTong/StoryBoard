@@ -213,18 +213,24 @@
     </message><message>
         <source>Delete item</source>
         <translation>删除图元</translation>
-    </message><message>
-        <source>Duplicated %1 Item(s)</source>
-        <translation>已复制 %1 个图元</translation>
+    </message><message numerus="yes">
+        <source>Duplicated %n Item(s)</source>
+        <translation>
+            <numerusform>已复制 %n 个图元</numerusform>
+        </translation>
     </message><message>
         <source>Simplified %1 curve(s)</source>
         <translation>已简化 %1 条曲线</translation>
-    </message><message>
-        <source>Grouped %1 Item(s)</source>
-        <translation>已将 %1 个图元分组</translation>
-    </message><message>
-        <source>Ungrouped %1 Item(s)</source>
-        <translation>已解散 %1 个图元的分组</translation>
+    </message><message numerus="yes">
+        <source>Grouped %n Item(s)</source>
+        <translation>
+            <numerusform>已将 %n 个图元分组</numerusform>
+        </translation>
+    </message><message numerus="yes">
+        <source>Ungrouped %n Item(s)</source>
+        <translation>
+            <numerusform>已解散 %n 个图元的分组</numerusform>
+        </translation>
     </message><message>
         <location filename="../src/canvas/CanvasView.cpp" line="425"/>
         <source>Current stroke canceled</source>
@@ -659,18 +665,22 @@
         <location filename="../src/ui/panels/properties/PropertiesPanel.cpp" line="793"/>
         <source>Change start angle</source>
         <translation>修改起始角度</translation>
-    </message><message>
+    </message><message numerus="yes">
         <location filename="../src/ui/panels/properties/PropertiesPanel.cpp" line="900"/>
-        <source>Moved %1 Item(s) to another layer.</source>
-        <translation>已把 %1 个图元移到其他图层。</translation>
+                <source>Moved %n Item(s) to another layer.</source>
+        <translation>
+            <numerusform>已把 %n 个图元移到其他图层。</numerusform>
+        </translation>
     </message><message>
         <location filename="../src/ui/panels/properties/PropertiesPanel.cpp" line="901"/>
         <source>No layer to move to in that direction.</source>
         <translation>该方向没有可移动到的图层。</translation>
-    </message><message>
+    </message><message numerus="yes">
         <location filename="../src/ui/panels/properties/PropertiesPanel.cpp" line="910"/>
-        <source>Adjusted the height of %1 Item(s).</source>
-        <translation>已调整 %1 个图元的层内高度。</translation>
+                <source>Adjusted the height of %n Item(s).</source>
+        <translation>
+            <numerusform>已调整 %n 个图元的层内高度。</numerusform>
+        </translation>
     </message><message>
         <location filename="../src/ui/panels/properties/PropertiesPanel.cpp" line="911"/>
         <source>The height did not change.</source>
@@ -785,7 +795,8 @@
         <location filename="../src/ui/panels/properties/PropertiesPanel.cpp" line="778"/>
         <source>Unable to load the selected image.</source>
         <translation>无法加载所选图片。</translation>
-    </message>    <message>
+    </message>
+    <message>
         <source>Opacity (100% = opaque)</source>
         <translation>不透明度（100% = 完全不透明）</translation>
     </message>
@@ -1096,7 +1107,8 @@
         <location filename="../src/ui/panels/itemdialog/ItemPropertiesDialogGeometryBlock.cpp" line="59"/>
         <source>Semi-minor axis</source>
         <translation>短半轴</translation>
-    </message>    <message>
+    </message>
+    <message>
         <source>Opacity (100% = opaque)</source>
         <translation>不透明度（100% = 完全不透明）</translation>
     </message>
@@ -1119,7 +1131,8 @@
         <location filename="../src/items/properties/ItemStyleVisuals.cpp" line="40"/>
         <source>Dash-dot</source>
         <translation>点划线</translation>
-    </message>    <message>
+    </message>
+    <message>
         <source>None</source>
         <translation>无</translation>
     </message>
@@ -1700,10 +1713,12 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <location filename="../src/ui/builder/UiActionFactory.cpp" line="108"/>
         <source>Duplicate the selected items with a small offset (Ctrl+D)</source>
         <translation>复制选中图元并略微偏移（Ctrl+D）</translation>
-    </message><message>
+    </message><message numerus="yes">
         <location filename="../src/ui/builder/UiActionFactory.cpp" line="116"/>
-        <source>Duplicated %1 Item(s)</source>
-        <translation>已复制 %1 个图元</translation>
+                <source>Duplicated %n Item(s)</source>
+        <translation>
+            <numerusform>已复制 %n 个图元</numerusform>
+        </translation>
     </message><message>
         <location filename="../src/ui/builder/UiActionFactory.cpp" line="119"/>
         <source>Copy selected items</source>
@@ -1728,14 +1743,18 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <location filename="../src/ui/builder/UiActionFactory.cpp" line="132"/>
         <source>Paste items from the clipboard (Ctrl+V)</source>
         <translation>从剪贴板粘贴图元 (Ctrl+V)</translation>
-    </message><message>
+    </message><message numerus="yes">
         <location filename="../src/ui/mainwindow/MainWindowEditActionsController.cpp" line="177"/>
-        <source>Copied %1 Item(s)</source>
-        <translation>已复制 %1 个图元到剪贴板</translation>
-    </message><message>
+                <source>Copied %n Item(s)</source>
+        <translation>
+            <numerusform>已复制 %n 个图元到剪贴板</numerusform>
+        </translation>
+    </message><message numerus="yes">
         <location filename="../src/ui/mainwindow/MainWindowEditActionsController.cpp" line="224"/>
-        <source>Pasted %1 Item(s)</source>
-        <translation>已粘贴 %1 个图元</translation>
+                <source>Pasted %n Item(s)</source>
+        <translation>
+            <numerusform>已粘贴 %n 个图元</numerusform>
+        </translation>
     </message><message>
         <location filename="../src/ui/mainwindow/MainWindowEditActionsController.cpp" line="171"/>
         <source>Select an item to copy</source>
@@ -1761,10 +1780,12 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <location filename="../src/ui/builder/UiActionFactory.cpp" line="138"/>
         <source>Group the selected items so they move together (Ctrl+G)</source>
         <translation>将选中图元分组，使其整组移动（Ctrl+G）</translation>
-    </message><message>
+    </message><message numerus="yes">
         <location filename="../src/ui/builder/UiActionFactory.cpp" line="146"/>
-        <source>Grouped %1 Item(s)</source>
-        <translation>已将 %1 个图元分组</translation>
+                <source>Grouped %n Item(s)</source>
+        <translation>
+            <numerusform>已将 %n 个图元分组</numerusform>
+        </translation>
     </message><message>
         <location filename="../src/ui/builder/UiActionFactory.cpp" line="151"/>
         <source>Ungroup selected items</source>
@@ -1773,10 +1794,12 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <location filename="../src/ui/builder/UiActionFactory.cpp" line="154"/>
         <source>Ungroup the selected Group(s) (Ctrl+Shift+G)</source>
         <translation>解散选中的图元组（Ctrl+Shift+G）</translation>
-    </message><message>
+    </message><message numerus="yes">
         <location filename="../src/ui/builder/UiActionFactory.cpp" line="162"/>
-        <source>Ungrouped %1 Item(s)</source>
-        <translation>已解散 %1 个图元的分组</translation>
+                <source>Ungrouped %n Item(s)</source>
+        <translation>
+            <numerusform>已解散 %n 个图元的分组</numerusform>
+        </translation>
     </message><message>
         <location filename="../src/ui/builder/UiActionFactory.cpp" line="167"/>
         <source>Simplify curve</source>
@@ -2025,10 +2048,12 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <location filename="../src/ui/builder/UiMenuBuilder.cpp" line="208"/>
         <source>No selected items can change height (or the height limit was reached)</source>
         <translation>没有可调整高度的选中图元（或已到高度边界）</translation>
-    </message><message>
+    </message><message numerus="yes">
         <location filename="../src/ui/builder/UiMenuBuilder.cpp" line="210"/>
-        <source>Changed the height of %1 Item(s) by %2</source>
-        <translation>已将 %1 个图元的高度 %2</translation>
+                <source>Changed the height of %n Item(s) by %1</source>
+        <translation>
+            <numerusform>已将 %n 个图元的高度 %1</numerusform>
+        </translation>
     </message><message>
         <location filename="../src/ui/builder/UiMenuBuilder.cpp" line="218"/>
         <source>Height +1 (stack up)</source>
@@ -2509,10 +2534,12 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <location filename="../src/ui/widgets/StyleController.cpp" line="158"/>
         <source>The border style did not change</source>
         <translation>描线样式未发生变化</translation>
-    </message><message>
+    </message><message numerus="yes">
         <location filename="../src/ui/widgets/StyleController.cpp" line="164"/>
-        <source>Applied border style to %1 Item(s)</source>
-        <translation>已将描线样式应用到 %1 个图元</translation>
+                <source>Applied border style to %n Item(s)</source>
+        <translation>
+            <numerusform>已将描线样式应用到 %n 个图元</numerusform>
+        </translation>
     </message><message>
         <location filename="../src/ui/widgets/StyleController.cpp" line="197"/>
         <source>The selected shape is stroke-only (line, brace, etc.); fill is not supported</source>
@@ -2571,10 +2598,12 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <location filename="../src/ui/mainwindow/MainWindowEditActionsController.cpp" line="71"/>
         <source>No selected items can be rotated</source>
         <translation>没有可旋转的选中图元</translation>
-    </message><message>
+    </message><message numerus="yes">
         <location filename="../src/ui/mainwindow/MainWindowEditActionsController.cpp" line="74"/>
-        <source>Rotated %1 Item(s) by %2°</source>
-        <translation>已旋转 %1 个图元，角度 %2°</translation>
+                <source>Rotated %n Item(s) by %1°</source>
+        <translation>
+            <numerusform>已旋转 %n 个图元，角度 %1°</numerusform>
+        </translation>
     </message><message>
         <location filename="../src/BackgroundController.cpp" line="49"/>
         <location filename="../src/BackgroundController.cpp" line="70"/>
@@ -2829,10 +2858,12 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <location filename="../src/ui/mainwindow/MainWindowEditActionsController.cpp" line="113"/>
         <source>The selected items are already aligned</source>
         <translation>选中的图元已经对齐</translation>
-    </message><message>
+    </message><message numerus="yes">
         <location filename="../src/ui/mainwindow/MainWindowEditActionsController.cpp" line="116"/>
-        <source>Aligned %1 Item(s)</source>
-        <translation>已对齐 %1 个图元</translation>
+                <source>Aligned %n Item(s)</source>
+        <translation>
+            <numerusform>已对齐 %n 个图元</numerusform>
+        </translation>
     </message><message>
         <location filename="../src/ui/mainwindow/MainWindowEditActionsController.cpp" line="87"/>
         <source>Align items left</source>
@@ -3117,11 +3148,14 @@ In edit mode, items on visible, unlocked layers can be edited</source>
 %1</source>
         <translation>文件保存失败：
 %1</translation>
-    </message><message>
+    </message><message numerus="yes">
         <location filename="../src/ui/mainwindow/MainWindowEditActionsController.cpp" line="210"/>
-        <source>Pasted %1 Excalidraw Item(s)</source>
-        <translation>已粘贴 %1 个 Excalidraw 图元</translation>
-    </message>    <message>
+        <source>Pasted %n Excalidraw Item(s)</source>
+        <translation>
+            <numerusform>已粘贴 %n 个 Excalidraw 图元</numerusform>
+        </translation>
+    </message>
+    <message>
         <source>Border style</source>
         <translation>描线样式</translation>
     </message>
@@ -3814,9 +3848,11 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message><message>
         <source>Change border color</source>
         <translation>修改描线颜色</translation>
-    </message><message>
-        <source>Changed the height of %1 Item(s) by %2</source>
-        <translation>已将 %1 个图元的高度 %2</translation>
+    </message><message numerus="yes">
+        <source>Changed the height of %n Item(s) by %1</source>
+        <translation>
+            <numerusform>已将 %n 个图元的高度 %1</numerusform>
+        </translation>
     </message><message>
         <source>Changing the canvas size does not move existing items; undo restores it.</source>
         <translation>修改画布尺寸不会移动已有图元，可通过撤销恢复。</translation>
@@ -4190,9 +4226,11 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message><message>
         <source>Duplicate the selected items with a small offset (Ctrl+D)</source>
         <translation>复制选中图元并略微偏移（Ctrl+D）</translation>
-    </message><message>
-        <source>Duplicated %1 Item(s)</source>
-        <translation>已复制 %1 个图元</translation>
+    </message><message numerus="yes">
+        <source>Duplicated %n Item(s)</source>
+        <translation>
+            <numerusform>已复制 %n 个图元</numerusform>
+        </translation>
     </message><message>
         <source>Copy selected items</source>
         <translation>复制选中图元</translation>
@@ -4211,12 +4249,16 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message><message>
         <source>Paste items from the clipboard (Ctrl+V)</source>
         <translation>从剪贴板粘贴图元 (Ctrl+V)</translation>
-    </message><message>
-        <source>Copied %1 Item(s)</source>
-        <translation>已复制 %1 个图元到剪贴板</translation>
-    </message><message>
-        <source>Pasted %1 Item(s)</source>
-        <translation>已粘贴 %1 个图元</translation>
+    </message><message numerus="yes">
+        <source>Copied %n Item(s)</source>
+        <translation>
+            <numerusform>已复制 %n 个图元到剪贴板</numerusform>
+        </translation>
+    </message><message numerus="yes">
+        <source>Pasted %n Item(s)</source>
+        <translation>
+            <numerusform>已粘贴 %n 个图元</numerusform>
+        </translation>
     </message><message>
         <source>Select an item to copy</source>
         <translation>请先选中要复制的图元</translation>
@@ -4235,18 +4277,22 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message><message>
         <source>Group the selected items so they move together (Ctrl+G)</source>
         <translation>将选中图元分组，使其整组移动（Ctrl+G）</translation>
-    </message><message>
-        <source>Grouped %1 Item(s)</source>
-        <translation>已将 %1 个图元分组</translation>
+    </message><message numerus="yes">
+        <source>Grouped %n Item(s)</source>
+        <translation>
+            <numerusform>已将 %n 个图元分组</numerusform>
+        </translation>
     </message><message>
         <source>Ungroup selected items</source>
         <translation>解散分组</translation>
     </message><message>
         <source>Ungroup the selected Group(s) (Ctrl+Shift+G)</source>
         <translation>解散选中的图元组（Ctrl+Shift+G）</translation>
-    </message><message>
-        <source>Ungrouped %1 Item(s)</source>
-        <translation>已解散 %1 个图元的分组</translation>
+    </message><message numerus="yes">
+        <source>Ungrouped %n Item(s)</source>
+        <translation>
+            <numerusform>已解散 %n 个图元的分组</numerusform>
+        </translation>
     </message><message>
         <source>Duplicate item name</source>
         <translation>图元名称重复</translation>
@@ -4605,9 +4651,11 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message><message>
         <source>Rotate selected items 45° counterclockwise (Ctrl+Shift+R)</source>
         <translation>将选中图元逆时针旋转 45° (Ctrl+Shift+R)</translation>
-    </message><message>
-        <source>Rotated %1 Item(s) by %2°</source>
-        <translation>已旋转 %1 个图元，角度 %2°</translation>
+    </message><message numerus="yes">
+        <source>Rotated %n Item(s) by %1°</source>
+        <translation>
+            <numerusform>已旋转 %n 个图元，角度 %1°</numerusform>
+        </translation>
     </message><message>
         <source>Rotation</source>
         <translation>旋转</translation>
@@ -5240,9 +5288,11 @@ Use the checkbox to show or hide it.</source>
     </message><message>
         <source>Change rectangle corner radius</source>
         <translation>修改矩形圆角半径</translation>
-    </message><message>
-        <source>Adjusted the height of %1 Item(s).</source>
-        <translation>已调整 %1 个图元的层内高度。</translation>
+    </message><message numerus="yes">
+        <source>Adjusted the height of %n Item(s).</source>
+        <translation>
+            <numerusform>已调整 %n 个图元的层内高度。</numerusform>
+        </translation>
     </message><message>
         <source>The height did not change.</source>
         <translation>层内高度未变化。</translation>

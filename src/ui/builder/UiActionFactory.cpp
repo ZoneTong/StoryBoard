@@ -114,7 +114,7 @@ void UiActionFactory::Build()
         }
         const int duplicated = m_window->m_scene->DuplicateSelectedItems();
         if (duplicated > 0) {
-            m_window->statusBar()->showMessage(MainWindow::tr("Duplicated %1 Item(s)").arg(duplicated), 3000);
+            m_window->statusBar()->showMessage(MainWindow::tr("Duplicated %n Item(s)", nullptr, duplicated), 3000);
         }
     });
     m_window->m_copyAct = MakeAction(m_window, IconId::COPY, MainWindow::tr("Copy selected items"),
@@ -144,7 +144,7 @@ void UiActionFactory::Build()
         }
         const int grouped = m_window->m_scene->GroupSelectedItems();
         if (grouped > 0) {
-            m_window->statusBar()->showMessage(MainWindow::tr("Grouped %1 Item(s)").arg(grouped), 3000);
+            m_window->statusBar()->showMessage(MainWindow::tr("Grouped %n Item(s)", nullptr, grouped), 3000);
             // 组合前后“取消组合”的可用状态会变，立即刷新一批动作与卡片。
             m_window->UpdateActions();
         }
@@ -160,7 +160,7 @@ void UiActionFactory::Build()
         }
         const int ungrouped = m_window->m_scene->UngroupSelectedItems();
         if (ungrouped > 0) {
-            m_window->statusBar()->showMessage(MainWindow::tr("Ungrouped %1 Item(s)").arg(ungrouped), 3000);
+            m_window->statusBar()->showMessage(MainWindow::tr("Ungrouped %n Item(s)", nullptr, ungrouped), 3000);
             m_window->UpdateActions();
         }
     });

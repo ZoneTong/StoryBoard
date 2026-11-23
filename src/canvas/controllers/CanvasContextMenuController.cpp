@@ -16,6 +16,11 @@ QString TrView(const char* text)
 {
     return QCoreApplication::translate("CanvasView", text);
 }
+
+QString TrView(const char* text, int count)
+{
+    return QCoreApplication::translate("CanvasView", text, nullptr, count);
+}
 } // namespace
 
 CanvasContextMenuController::CanvasContextMenuController(CanvasView* view, CanvasScene* scene)
@@ -118,7 +123,7 @@ void CanvasContextMenuController::ShowMenu(QContextMenuEvent* event)
     } else if (chosen == duplicate) {
         const int duplicated = m_scene->DuplicateSelectedItems();
         if (duplicated > 0) {
-            emit m_view->statusMessage(TrView("Duplicated %1 Item(s)").arg(duplicated));
+            emit m_view->statusMessage(TrView("Duplicated %n Item(s)", duplicated));
         }
     } else if (chosen == smooth) {
         const int smoothed = m_scene->SmoothSelectedStrokes(m_view->StrokeSmoothing());
@@ -128,12 +133,12 @@ void CanvasContextMenuController::ShowMenu(QContextMenuEvent* event)
     } else if (chosen == group) {
         const int grouped = m_scene->GroupSelectedItems();
         if (grouped > 0) {
-            emit m_view->statusMessage(TrView("Grouped %1 Item(s)").arg(grouped));
+            emit m_view->statusMessage(TrView("Grouped %n Item(s)", grouped));
         }
     } else if (chosen == ungroup) {
         const int ungrouped = m_scene->UngroupSelectedItems();
         if (ungrouped > 0) {
-            emit m_view->statusMessage(TrView("Ungrouped %1 Item(s)").arg(ungrouped));
+            emit m_view->statusMessage(TrView("Ungrouped %n Item(s)", ungrouped));
         }
     } else if (chosen == heightUp) {
         m_scene->AdjustSelectedHeights(1);

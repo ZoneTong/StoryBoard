@@ -62,14 +62,27 @@ void LoadReverseTranslations()
 
     QXmlStreamReader xml(&file);
     QString source;
+    bool numerusMessage = false;
     while (!xml.atEnd()) {
         xml.readNext();
         if (!xml.isStartElement()) {
             continue;
         }
+        if (xml.name() == QLatin1String("message")) {
+            // 复数条目的 numerus 标在 message 上，译文里是 <numerusform>，读成单串会报错。
+            numerusMessage = xml.attributes().value(QLatin1String("numerus")) == QLatin1String("yes");
+            source.clear();
+            continue;
+        }
         if (xml.name() == QLatin1String("source")) {
             source = xml.readElementText();
         } else if (xml.name() == QLatin1String("translation")) {
+            if (numerusMessage) {
+                // %n 的复数译文不参与双向表，交给 Qt 的译者机制。
+                xml.skipCurrentElement();
+                source.clear();
+                continue;
+            }
             const QString translated = xml.readElementText();
             if (!source.isEmpty() && !translated.isEmpty()) {
                 // 同源多译文（不同上下文各译一份）无法决定方向，跳过以免来回翻抖动。

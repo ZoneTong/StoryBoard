@@ -717,7 +717,7 @@ void PropertiesPanel::AdjustLayer(int delta)
 {
     if (m_scene) {
         const int count = m_scene->MoveSelectedItemsToAdjacentLayer(delta);
-        statusMessage(count > 0 ? tr("Moved %1 Item(s) to another layer.").arg(count)
+        statusMessage(count > 0 ? tr("Moved %n Item(s) to another layer.", nullptr, count)
                                 : tr("No layer to move to in that direction."));
         Refresh();
     }
@@ -727,7 +727,7 @@ void PropertiesPanel::AdjustHeight(int delta)
 {
     if (m_scene) {
         const int count = m_scene->AdjustSelectedHeights(delta);
-        statusMessage(count > 0 ? tr("Adjusted the height of %1 Item(s).").arg(count)
+        statusMessage(count > 0 ? tr("Adjusted the height of %n Item(s).", nullptr, count)
                                 : tr("The height did not change."));
         Refresh();
     }

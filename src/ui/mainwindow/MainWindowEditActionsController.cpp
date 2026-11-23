@@ -74,7 +74,7 @@ void MainWindowEditActionsController::RotateSelected(qreal degrees)
         m_window->statusBar()->showMessage(MainWindow::tr("No selected items can be rotated"), 3000);
         return;
     }
-    m_window->statusBar()->showMessage(MainWindow::tr("Rotated %1 Item(s) by %2°").arg(changed).arg(qAbs(degrees)),
+    m_window->statusBar()->showMessage(MainWindow::tr("Rotated %n Item(s) by %1°", nullptr, changed).arg(qAbs(degrees)),
                                        3000);
 }
 
@@ -116,7 +116,7 @@ void MainWindowEditActionsController::ApplyAlignment(Alignment::Mode mode)
         m_window->statusBar()->showMessage(MainWindow::tr("The selected items are already aligned"), 3000);
         return;
     }
-    m_window->statusBar()->showMessage(MainWindow::tr("Aligned %1 Item(s)").arg(moved), 3000);
+    m_window->statusBar()->showMessage(MainWindow::tr("Aligned %n Item(s)", nullptr, moved), 3000);
 }
 
 void MainWindowEditActionsController::ApplyBoolOperation(BoolOps::Operation operation)
@@ -177,7 +177,7 @@ void MainWindowEditActionsController::CopySelectedItems()
     auto* mime = new QMimeData;
     mime->setData(QLatin1String(CLIPBOARD_MIME_TYPE), QJsonDocument(items).toJson(QJsonDocument::Compact));
     QApplication::clipboard()->setMimeData(mime);
-    m_window->statusBar()->showMessage(MainWindow::tr("Copied %1 Item(s)").arg(items.size()), 3000);
+    m_window->statusBar()->showMessage(MainWindow::tr("Copied %n Item(s)", nullptr, items.size()), 3000);
 }
 
 void MainWindowEditActionsController::CutSelectedItems()
@@ -232,7 +232,8 @@ void MainWindowEditActionsController::PasteItems()
                 m_window->statusBar()->showMessage(MainWindow::tr("Nothing to paste"), 3000);
                 return;
             }
-            m_window->statusBar()->showMessage(MainWindow::tr("Pasted %1 Excalidraw Item(s)").arg(pastedCount), 3000);
+            m_window->statusBar()->showMessage(MainWindow::tr("Pasted %n Excalidraw Item(s)", nullptr, pastedCount),
+                                               3000);
             return;
         }
     }
@@ -246,5 +247,5 @@ void MainWindowEditActionsController::PasteItems()
         m_window->statusBar()->showMessage(MainWindow::tr("Nothing to paste"), 3000);
         return;
     }
-    m_window->statusBar()->showMessage(MainWindow::tr("Pasted %1 Item(s)").arg(pasted), 3000);
+    m_window->statusBar()->showMessage(MainWindow::tr("Pasted %n Item(s)", nullptr, pasted), 3000);
 }
