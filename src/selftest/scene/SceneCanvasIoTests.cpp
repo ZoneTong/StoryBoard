@@ -136,18 +136,18 @@ void selftest::RunSceneCanvasIoTests(Context& ctx)
     ctx.Check(stroke->pos() == strokePos && stroke->ContentSize() == strokeSize, QStringLiteral("重做后曲线几何一致"),
               GeometryText(stroke->pos(), stroke->ContentSize()));
 
-    ItemGeometry beforeMove{stroke, stroke->pos(), stroke->ContentSize()};
+    ItemPlacement beforeMove{stroke, stroke->pos(), stroke->ContentSize()};
     stroke->setPos(stroke->pos() + QPointF(45.0, 30.0));
-    ItemGeometry afterMove{stroke, stroke->pos(), stroke->ContentSize()};
+    ItemPlacement afterMove{stroke, stroke->pos(), stroke->ContentSize()};
     scene.PushGeometry({beforeMove}, {afterMove}, QStringLiteral("移动图元"));
     undo.undo();
     ctx.Check(stroke->pos() == strokePos, QStringLiteral("撤销移动图元"));
     undo.redo();
     ctx.Check(stroke->pos() == strokePos + QPointF(45.0, 30.0), QStringLiteral("重做移动图元"));
 
-    ItemGeometry beforeResize{stroke, stroke->pos(), stroke->ContentSize()};
+    ItemPlacement beforeResize{stroke, stroke->pos(), stroke->ContentSize()};
     stroke->SetContentSize(stroke->ContentSize() * 1.35);
-    ItemGeometry afterResize{stroke, stroke->pos(), stroke->ContentSize()};
+    ItemPlacement afterResize{stroke, stroke->pos(), stroke->ContentSize()};
     scene.PushGeometry({beforeResize}, {afterResize}, QStringLiteral("缩放图元"));
     const QSizeF resized = stroke->ContentSize();
     undo.undo();

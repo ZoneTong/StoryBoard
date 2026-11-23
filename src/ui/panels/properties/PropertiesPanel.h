@@ -115,7 +115,7 @@ class PropertiesPanel : public QWidget {
     void ApplyItemName(const QString& name);
     void ApplyItemLayer(int layerId);
     void ApplyItemHeight(int height);
-    void ApplyItemGeometry(const QPointF& position, const QSizeF& size);
+    void ApplyItemPlacement(const QPointF& position, const QSizeF& size);
     void ApplyItemRotation(qreal angle);
     // 中心点是派生属性：多选时把每个成员绝对对齐到同一中心，一条撤销记录。
     void ApplyItemCenter(const QPointF& center);

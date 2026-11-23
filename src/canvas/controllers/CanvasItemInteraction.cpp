@@ -102,7 +102,7 @@ void CanvasItemInteraction::BeginMove(const QPointF& scenePos)
 void CanvasItemInteraction::ApplyMove(const QPointF& scenePos)
 {
     const QPointF delta = scenePos - m_item->m_dragStartScene;
-    for (const ItemGeometry& geometry : std::as_const(m_item->m_before)) {
+    for (const ItemPlacement& geometry : std::as_const(m_item->m_before)) {
         if (geometry.item) {
             geometry.item->setPos(geometry.pos + delta);
         }
@@ -262,9 +262,9 @@ void CanvasItemInteraction::FinishInteraction()
     } else if (wasCustomDrag) {
         PushCustomHandleChange(customBefore);
     } else if (!m_item->m_before.isEmpty()) {
-        ItemGeometryList after;
+        ItemPlacementList after;
         after.reserve(m_item->m_before.size());
-        for (const ItemGeometry& geometry : std::as_const(m_item->m_before)) {
+        for (const ItemPlacement& geometry : std::as_const(m_item->m_before)) {
             if (geometry.item) {
                 after.append({geometry.item, geometry.item->pos(), geometry.item->ContentSize()});
             }

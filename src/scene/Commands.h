@@ -1,7 +1,8 @@
 #pragma once
 
 #include "items/CanvasTypes.h"
-#include "items/ItemGeometry.h"
+#include "items/ItemSnapshot.h"
+#include "items/ItemStack.h"
 #include "items/lines/LineAbstractItem.h"
 #include "items/properties/ItemProperties.h"
 #include "items/shapes/ShapeAbstractItem.h"
@@ -52,7 +53,7 @@ enum { GEOMETRY_NUDGE_COMMAND_ID = 1001 };
 
 class GeometryCommand : public QUndoCommand {
   public:
-    GeometryCommand(CanvasScene* scene, const ItemGeometryList& before, const ItemGeometryList& after,
+    GeometryCommand(CanvasScene* scene, const ItemPlacementList& before, const ItemPlacementList& after,
                     const QString& text);
     void undo() override;
     void redo() override;
@@ -63,11 +64,11 @@ class GeometryCommand : public QUndoCommand {
     bool mergeWith(const QUndoCommand* other) override;
 
   private:
-    void Apply(const ItemGeometryList& geometry);
+    void Apply(const ItemPlacementList& geometry);
 
     CanvasScene* m_scene = nullptr;
-    ItemGeometryList m_before;
-    ItemGeometryList m_after;
+    ItemPlacementList m_before;
+    ItemPlacementList m_after;
     QString m_mergeId;
 };
 
@@ -165,20 +166,20 @@ class RotationCommand : public QUndoCommand {
   public:
     RotationCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<qreal>& before,
                     const QList<qreal>& after, const QString& text,
-                    const ItemGeometryList& geometryBefore = ItemGeometryList(),
-                    const ItemGeometryList& geometryAfter = ItemGeometryList());
+                    const ItemPlacementList& geometryBefore = ItemPlacementList(),
+                    const ItemPlacementList& geometryAfter = ItemPlacementList());
     void undo() override;
     void redo() override;
 
   private:
-    void Apply(const QList<qreal>& angles, const ItemGeometryList& geometry);
+    void Apply(const QList<qreal>& angles, const ItemPlacementList& geometry);
 
     CanvasScene* m_scene = nullptr;
     QList<QPointer<CanvasItem>> m_items;
     QList<qreal> m_before;
     QList<qreal> m_after;
-    ItemGeometryList m_geometryBefore;
-    ItemGeometryList m_geometryAfter;
+    ItemPlacementList m_geometryBefore;
+    ItemPlacementList m_geometryAfter;
 };
 
 // 手动平滑一次可能同时作用于多条选中笔画，整体只占一条撤销记录。

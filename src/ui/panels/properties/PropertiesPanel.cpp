@@ -118,7 +118,7 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     layout->addWidget(m_valueCard);
 
     m_geometryCard = new PropertiesPanelGeometryCard(content);
-    m_geometryCard->setObjectName(QStringLiteral("ItemGeometryCard"));
+    m_geometryCard->setObjectName(QStringLiteral("ItemPlacementCard"));
     layout->addWidget(m_geometryCard);
 
     m_dynamicCard = new QWidget(content);
@@ -160,7 +160,7 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     connect(m_identityCard, &PropertiesPanelIdentityCard::nameChosen, this, &PropertiesPanel::ApplyItemName);
     connect(m_identityCard, &PropertiesPanelIdentityCard::layerChosen, this, &PropertiesPanel::ApplyItemLayer);
     connect(m_identityCard, &PropertiesPanelIdentityCard::heightChosen, this, &PropertiesPanel::ApplyItemHeight);
-    connect(m_geometryCard, &PropertiesPanelGeometryCard::geometryChosen, this, &PropertiesPanel::ApplyItemGeometry);
+    connect(m_geometryCard, &PropertiesPanelGeometryCard::geometryChosen, this, &PropertiesPanel::ApplyItemPlacement);
     connect(m_geometryCard, &PropertiesPanelGeometryCard::rotationChosen, this, &PropertiesPanel::ApplyItemRotation);
     connect(m_geometryCard, &PropertiesPanelGeometryCard::axesChosen, this, &PropertiesPanel::ApplyItemAxes);
     connect(m_geometryCard, &PropertiesPanelGeometryCard::interiorAngleChosen, this,

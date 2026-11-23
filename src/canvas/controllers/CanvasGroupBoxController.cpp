@@ -312,8 +312,8 @@ void CanvasGroupBoxController::EndDrag()
         QList<CanvasItem*> items;
         QList<qreal> anglesBefore;
         QList<qreal> anglesAfter;
-        ItemGeometryList geometryBefore;
-        ItemGeometryList geometryAfter;
+        ItemPlacementList geometryBefore;
+        ItemPlacementList geometryAfter;
         for (const MemberSnapshot& entry : std::as_const(m_snapshot)) {
             if (!entry.item) {
                 continue;
@@ -329,8 +329,8 @@ void CanvasGroupBoxController::EndDrag()
         return;
     }
 
-    ItemGeometryList geometryBefore;
-    ItemGeometryList geometryAfter;
+    ItemPlacementList geometryBefore;
+    ItemPlacementList geometryAfter;
     for (const MemberSnapshot& entry : std::as_const(m_snapshot)) {
         if (!entry.item) {
             continue;

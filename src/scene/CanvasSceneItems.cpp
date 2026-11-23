@@ -56,7 +56,7 @@ bool NearlyEqual(qreal a, qreal b)
     return qAbs(a - b) < 0.01;
 }
 
-bool SameGeometry(const ItemGeometry& a, const ItemGeometry& b)
+bool SameGeometry(const ItemPlacement& a, const ItemPlacement& b)
 {
     return NearlyEqual(a.pos.x(), b.pos.x()) && NearlyEqual(a.pos.y(), b.pos.y()) &&
            NearlyEqual(a.size.width(), b.size.width()) && NearlyEqual(a.size.height(), b.size.height());
@@ -198,15 +198,15 @@ void CanvasScene::SelectAllItems()
     }
 }
 
-void CanvasScene::PushGeometry(const ItemGeometryList& before, const ItemGeometryList& after, const QString& text,
+void CanvasScene::PushGeometry(const ItemPlacementList& before, const ItemPlacementList& after, const QString& text,
                                const QString& mergeId)
 {
     if (before.size() != after.size()) {
         return;
     }
 
-    ItemGeometryList filteredBefore;
-    ItemGeometryList filteredAfter;
+    ItemPlacementList filteredBefore;
+    ItemPlacementList filteredAfter;
     for (int i = 0; i < before.size(); ++i) {
         if (!before.at(i).item || !after.at(i).item) {
             continue;
@@ -228,7 +228,7 @@ void CanvasScene::PushGeometry(const ItemGeometryList& before, const ItemGeometr
         }
         m_undoStack->push(command);
     } else {
-        for (const ItemGeometry& geometry : std::as_const(filteredAfter)) {
+        for (const ItemPlacement& geometry : std::as_const(filteredAfter)) {
             if (!geometry.item) {
                 continue;
             }
@@ -254,8 +254,8 @@ void CanvasScene::PushRotation(CanvasItem* item, qreal before, qreal after, cons
 }
 
 void CanvasScene::PushGroupRotation(const QList<CanvasItem*>& items, const QList<qreal>& anglesBefore,
-                                    const QList<qreal>& anglesAfter, const ItemGeometryList& geometryBefore,
-                                    const ItemGeometryList& geometryAfter, const QString& text)
+                                    const QList<qreal>& anglesAfter, const ItemPlacementList& geometryBefore,
+                                    const ItemPlacementList& geometryAfter, const QString& text)
 {
     if (items.isEmpty() || anglesBefore.size() != items.size() || anglesAfter.size() != items.size()) {
         return;
@@ -264,7 +264,7 @@ void CanvasScene::PushGroupRotation(const QList<CanvasItem*>& items, const QList
         m_undoStack->push(
             new RotationCommand(this, items, anglesBefore, anglesAfter, text, geometryBefore, geometryAfter));
     } else {
-        for (const ItemGeometry& entry : std::as_const(geometryAfter)) {
+        for (const ItemPlacement& entry : std::as_const(geometryAfter)) {
             if (entry.item) {
                 entry.item->setPos(entry.pos);
                 entry.item->SetContentSize(entry.size);

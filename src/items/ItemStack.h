@@ -1,20 +1,11 @@
 #pragma once
 
 #include <QList>
-#include <QPointF>
 #include <QPointer>
-#include <QSizeF>
 
 class CanvasItem;
 
-struct ItemGeometry {
-    QPointer<CanvasItem> item;
-    QPointF pos;
-    QSizeF size;
-};
-
-using ItemGeometryList = QList<ItemGeometry>;
-
+// 图元的「层内叠放快照」：改图层 / 改层内高度的撤销与修复都按这个三元组回滚。
 struct ItemStack {
     QPointer<CanvasItem> item;
     int layerId = 1;

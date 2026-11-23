@@ -1381,10 +1381,10 @@ void selftest::RunShapeItemTests(Context& ctx)
     ShapeAbstractItem* firstShape = shapeItems.constFirst();
     const QPointF shapePosBefore = firstShape->pos();
     const QSizeF shapeSizeBefore = firstShape->ContentSize();
-    const ItemGeometry shapeBefore{firstShape, shapePosBefore, shapeSizeBefore};
+    const ItemPlacement shapeBefore{firstShape, shapePosBefore, shapeSizeBefore};
     firstShape->setPos(shapePosBefore + QPointF(28, 20));
     firstShape->SetContentSize(shapeSizeBefore + QSizeF(24, 16));
-    const ItemGeometry shapeAfter{firstShape, firstShape->pos(), firstShape->ContentSize()};
+    const ItemPlacement shapeAfter{firstShape, firstShape->pos(), firstShape->ContentSize()};
     shapeScene.PushGeometry({shapeBefore}, {shapeAfter}, QStringLiteral("缩放图形"));
     shapeUndo.undo();
     ctx.Check(firstShape->pos() == shapePosBefore && firstShape->ContentSize() == shapeSizeBefore,

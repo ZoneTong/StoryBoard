@@ -10,8 +10,8 @@
 
 
 RotationCommand::RotationCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<qreal>& before,
-                                 const QList<qreal>& after, const QString& text, const ItemGeometryList& geometryBefore,
-                                 const ItemGeometryList& geometryAfter)
+                                 const QList<qreal>& after, const QString& text, const ItemPlacementList& geometryBefore,
+                                 const ItemPlacementList& geometryAfter)
     : m_scene(scene), m_before(before), m_after(after), m_geometryBefore(geometryBefore), m_geometryAfter(geometryAfter)
 {
     setText(text);
@@ -30,9 +30,9 @@ void RotationCommand::redo()
     Apply(m_after, m_geometryAfter);
 }
 
-void RotationCommand::Apply(const QList<qreal>& angles, const ItemGeometryList& geometry)
+void RotationCommand::Apply(const QList<qreal>& angles, const ItemPlacementList& geometry)
 {
-    for (const ItemGeometry& entry : geometry) {
+    for (const ItemPlacement& entry : geometry) {
         if (!entry.item) {
             continue;
         }
@@ -117,7 +117,7 @@ void RemoveItemsCommand::redo()
     m_scene->PruneEmptyGroups();
 }
 
-GeometryCommand::GeometryCommand(CanvasScene* scene, const ItemGeometryList& before, const ItemGeometryList& after,
+GeometryCommand::GeometryCommand(CanvasScene* scene, const ItemPlacementList& before, const ItemPlacementList& after,
                                  const QString& text)
     : m_scene(scene), m_before(before), m_after(after)
 {
@@ -166,9 +166,9 @@ bool GeometryCommand::mergeWith(const QUndoCommand* other)
     return true;
 }
 
-void GeometryCommand::Apply(const ItemGeometryList& geometry)
+void GeometryCommand::Apply(const ItemPlacementList& geometry)
 {
-    for (const ItemGeometry& entry : geometry) {
+    for (const ItemPlacement& entry : geometry) {
         if (!entry.item) {
             continue;
         }

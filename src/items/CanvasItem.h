@@ -1,7 +1,7 @@
 #pragma once
 
 #include "items/HandleSpec.h"
-#include "items/ItemGeometry.h"
+#include "items/ItemSnapshot.h"
 #include "items/properties/ItemProperties.h"
 #include "items/properties/TextAttributes.h"
 
@@ -222,7 +222,7 @@ class CanvasItem : public QGraphicsObject {
     qreal m_dragStartRotation = 0.0;
     qreal m_rotateStartAngle = 0.0;
     bool m_angleReadoutVisible = false;
-    ItemGeometryList m_before;
+    ItemPlacementList m_before;
     CanvasItemHandles* m_handles = nullptr;
     CanvasItemInteraction* m_interaction = nullptr;
 };

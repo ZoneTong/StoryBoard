@@ -1,6 +1,6 @@
 #pragma once
 
-#include "items/ItemGeometry.h"
+#include "items/ItemSnapshot.h"
 
 class CanvasScene;
 class CanvasItem;

@@ -1,5 +1,5 @@
 #include "items/CanvasItem.h"
-#include "items/ItemGeometry.h"
+#include "items/ItemSnapshot.h"
 #include "scene/CanvasScene.h"
 
 #include <QGraphicsView>
@@ -139,8 +139,8 @@ int CanvasScene::NudgeSelected(const QPointF& delta)
         return 0;
     }
 
-    ItemGeometryList before;
-    ItemGeometryList after;
+    ItemPlacementList before;
+    ItemPlacementList after;
     before.reserve(targets.size());
     after.reserve(targets.size());
     for (CanvasItem* item : targets) {

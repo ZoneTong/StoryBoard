@@ -138,8 +138,8 @@ int Apply(CanvasScene* scene, Mode mode, const QString& commandText)
         }
     }
 
-    ItemGeometryList before;
-    ItemGeometryList after;
+    ItemPlacementList before;
+    ItemPlacementList after;
     int moved = 0;
     for (int i = 0; i < items.size(); ++i) {
         CanvasItem* item = items.at(i);

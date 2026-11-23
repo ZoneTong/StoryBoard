@@ -1,7 +1,8 @@
 #pragma once
 
 #include "items/CanvasTypes.h"
-#include "items/ItemGeometry.h"
+#include "items/ItemSnapshot.h"
+#include "items/ItemStack.h"
 #include "scene/GroupDomain.h"
 #include "scene/GroupState.h"
 #include "scene/LayerDomain.h"
@@ -216,14 +217,14 @@ class CanvasScene : public QGraphicsScene {
     void DeleteSelected();
     void SelectAllItems();
     // mergeId 非空时命令标记为可合并（目前用于 nudge：连续方向键微调并成一条撤销记录）。
-    void PushGeometry(const ItemGeometryList& before, const ItemGeometryList& after, const QString& text,
+    void PushGeometry(const ItemPlacementList& before, const ItemPlacementList& after, const QString& text,
                       const QString& mergeId = QString());
     // 需求 35：旋转手柄与快捷键的撤销入口。
     void PushRotation(CanvasItem* item, qreal before, qreal after, const QString& text);
     // 组旋转：一条撤销记录同时覆盖成员角度与绕组心旋转后的位置（§7.7）。
     void PushGroupRotation(const QList<CanvasItem*>& items, const QList<qreal>& anglesBefore,
-                           const QList<qreal>& anglesAfter, const ItemGeometryList& geometryBefore,
-                           const ItemGeometryList& geometryAfter, const QString& text);
+                           const QList<qreal>& anglesAfter, const ItemPlacementList& geometryBefore,
+                           const ItemPlacementList& geometryAfter, const QString& text);
     int RotateSelected(qreal degrees, const QString& commandText = QString());
 
     void ResetDocument();

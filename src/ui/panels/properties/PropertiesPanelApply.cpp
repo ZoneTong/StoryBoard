@@ -622,7 +622,7 @@ void PropertiesPanel::ApplyItemAxes(qreal majorAxis, qreal minorAxis)
                         tr("Edit semi-axes"));
 }
 
-void PropertiesPanel::ApplyItemGeometry(const QPointF& position, const QSizeF& size)
+void PropertiesPanel::ApplyItemPlacement(const QPointF& position, const QSizeF& size)
 {
     const QList<CanvasItem*> items = SelectedItems();
     if (items.isEmpty() || !m_scene || !m_scene->UndoStack()) {
