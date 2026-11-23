@@ -6,8 +6,8 @@
 #include <QWidget>
 
 class CanvasItem;
-class NumberAttributeRow;
-class PairAttributeRow;
+class NumberValueRow;
+class PairValueRow;
 
 // 编辑面板的长短半轴 / 旋转 / 位置 / 尺寸 / 中心点 / 内角 A 行：
 // 属性窗几何区的同一批字段在面板里也能直接改，成对数值行与单个数值行复用
@@ -36,13 +36,13 @@ class PropertiesPanelGeometryCard : public QWidget {
   private:
     void ApplyAxes(bool majorChanged);
 
-    PairAttributeRow* m_positionRow = nullptr;
-    PairAttributeRow* m_sizeRow = nullptr;
-    NumberAttributeRow* m_rotationRow = nullptr;
-    NumberAttributeRow* m_majorAxisRow = nullptr;
-    NumberAttributeRow* m_minorAxisRow = nullptr;
-    NumberAttributeRow* m_interiorAngleRow = nullptr;
-    PairAttributeRow* m_centerRow = nullptr;
+    PairValueRow* m_positionRow = nullptr;
+    PairValueRow* m_sizeRow = nullptr;
+    NumberValueRow* m_rotationRow = nullptr;
+    NumberValueRow* m_majorAxisRow = nullptr;
+    NumberValueRow* m_minorAxisRow = nullptr;
+    NumberValueRow* m_interiorAngleRow = nullptr;
+    PairValueRow* m_centerRow = nullptr;
     QPointer<CanvasItem> m_item;
     bool m_refreshing = false;
 };

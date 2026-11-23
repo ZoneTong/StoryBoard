@@ -14,27 +14,27 @@ PropertiesPanelIdentityCard::PropertiesPanelIdentityCard(QWidget* parent) : QWid
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(2);
 
-    m_nameRow = new TextAttributeRow(PropertiesPanel::tr("Item name"), this);
+    m_nameRow = new TextValueRow(PropertiesPanel::tr("Item name"), this);
     m_nameRow->Edit()->setToolTip(PropertiesPanel::tr("Item name"));
     layout->addWidget(m_nameRow);
 
-    m_layerRow = new LayerAttributeRow(this);
+    m_layerRow = new LayerValueRow(this);
     layout->addWidget(m_layerRow);
 
-    m_heightRow = new HeightAttributeRow(this);
+    m_heightRow = new HeightValueRow(this);
     layout->addWidget(m_heightRow);
 
-    connect(m_nameRow, &TextAttributeRow::textChosen, this, [this](const QString& name) {
+    connect(m_nameRow, &TextValueRow::textChosen, this, [this](const QString& name) {
         if (!m_refreshing && m_item && name != m_item->Name()) {
             emit nameChosen(name);
         }
     });
-    connect(m_layerRow, &LayerAttributeRow::layerChosen, this, [this](int layerId) {
+    connect(m_layerRow, &LayerValueRow::layerChosen, this, [this](int layerId) {
         if (!m_refreshing && m_item && layerId != m_item->LayerId()) {
             emit layerChosen(layerId);
         }
     });
-    connect(m_heightRow, &HeightAttributeRow::heightChosen, this, [this](int height) {
+    connect(m_heightRow, &HeightValueRow::heightChosen, this, [this](int height) {
         if (!m_refreshing && m_item && height != m_item->ZOrder()) {
             emit heightChosen(height);
         }

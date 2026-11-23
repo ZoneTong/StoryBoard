@@ -15,43 +15,43 @@
 
 ItemPropertiesDialogGeometryBlock::ItemPropertiesDialogGeometryBlock(QWidget* parent) : QWidget(parent)
 {
-    m_positionRow = new PairAttributeRow(IconId::POSITION, false, QStringLiteral("ItemPropertiesPositionXValue"),
-                                         QStringLiteral("ItemPropertiesPositionYValue"), ItemProperty::POSITION,
-                                         QStringLiteral(","), this);
+    m_positionRow = new PairValueRow(IconId::POSITION, false, QStringLiteral("ItemPropertiesPositionXValue"),
+                                     QStringLiteral("ItemPropertiesPositionYValue"), ItemProperty::POSITION,
+                                     QStringLiteral(","), this);
     m_positionXSpin = m_positionRow->FirstSpin();
     m_positionYSpin = m_positionRow->SecondSpin();
     m_positionXSpin->setMinimumWidth(88);
     m_positionYSpin->setMinimumWidth(88);
 
-    m_sizeRow = new PairAttributeRow(IconId::SHAPES, false, QStringLiteral("ItemPropertiesWidthValue"),
-                                     QStringLiteral("ItemPropertiesHeightSizeValue"), ItemProperty::SIZE,
-                                     QStringLiteral("×"), this);
+    m_sizeRow = new PairValueRow(IconId::SHAPES, false, QStringLiteral("ItemPropertiesWidthValue"),
+                                 QStringLiteral("ItemPropertiesHeightSizeValue"), ItemProperty::SIZE,
+                                 QStringLiteral("×"), this);
     m_widthSpin = m_sizeRow->FirstSpin();
     m_heightSizeSpin = m_sizeRow->SecondSpin();
     m_widthSpin->setMinimumWidth(88);
     m_heightSizeSpin->setMinimumWidth(88);
 
-    m_rotationRow = new NumberAttributeRow(IconId::ROTATE_CCW, false, ItemProperty::ROTATION,
-                                           QStringLiteral("ItemPropertiesRotationValue"), this);
+    m_rotationRow = new NumberValueRow(IconId::ROTATE_CCW, false, ItemProperty::ROTATION,
+                                       QStringLiteral("ItemPropertiesRotationValue"), this);
     m_rotationSpin = m_rotationRow->Spin();
     m_rotationSpin->setMinimumWidth(88);
 
     // 曲线族里的弧线：椭圆框与笔迹包围盒不同，半轴按真实椭圆外接框读写；
     // 椭圆 / 扇形的内容框即外接框，半轴与内容宽高双向同步。
-    m_majorAxisRow = new NumberAttributeRow(IconId::SHAPES, false, ItemProperty::MAJOR_AXIS,
-                                            QStringLiteral("ItemPropertiesMajorAxisValue"), this);
+    m_majorAxisRow = new NumberValueRow(IconId::SHAPES, false, ItemProperty::MAJOR_AXIS,
+                                        QStringLiteral("ItemPropertiesMajorAxisValue"), this);
     m_majorAxisSpin = m_majorAxisRow->Spin();
     m_majorAxisSpin->setMinimumWidth(88);
 
-    m_minorAxisRow = new NumberAttributeRow(IconId::SHAPES, false, ItemProperty::MINOR_AXIS,
-                                            QStringLiteral("ItemPropertiesMinorAxisValue"), this);
+    m_minorAxisRow = new NumberValueRow(IconId::SHAPES, false, ItemProperty::MINOR_AXIS,
+                                        QStringLiteral("ItemPropertiesMinorAxisValue"), this);
     m_minorAxisSpin = m_minorAxisRow->Spin();
     m_minorAxisSpin->setMinimumWidth(88);
 
     // §3.4 中心点：派生属性，行放在椭圆相关行之后，固定为属性窗最后一行。
-    m_centerRow = new PairAttributeRow(IconId::FIT, false, QStringLiteral("ItemPropertiesCenterXValue"),
-                                       QStringLiteral("ItemPropertiesCenterYValue"), ItemProperty::CENTER,
-                                       QStringLiteral(","), this);
+    m_centerRow =
+        new PairValueRow(IconId::FIT, false, QStringLiteral("ItemPropertiesCenterXValue"),
+                         QStringLiteral("ItemPropertiesCenterYValue"), ItemProperty::CENTER, QStringLiteral(","), this);
     m_centerXSpin = m_centerRow->FirstSpin();
     m_centerYSpin = m_centerRow->SecondSpin();
     m_centerXSpin->setMinimumWidth(88);

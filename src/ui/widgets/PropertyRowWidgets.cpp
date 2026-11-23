@@ -55,7 +55,7 @@ QDoubleSpinBox* MakeSpin(QWidget* parent, const QString& objectName, int decimal
 
 } // namespace
 
-TextAttributeRow::TextAttributeRow(const QString& placeholder, QWidget* parent) : QWidget(parent)
+TextValueRow::TextValueRow(const QString& placeholder, QWidget* parent) : QWidget(parent)
 {
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -76,19 +76,19 @@ TextAttributeRow::TextAttributeRow(const QString& placeholder, QWidget* parent) 
     });
 }
 
-void TextAttributeRow::Refresh(const QString& text)
+void TextValueRow::Refresh(const QString& text)
 {
     const QSignalBlocker blocker(m_edit);
     m_edit->setText(text);
     m_edit->setProperty("lastText", text);
 }
 
-QString TextAttributeRow::Text() const
+QString TextValueRow::Text() const
 {
     return m_edit ? m_edit->text() : QString();
 }
 
-LayerAttributeRow::LayerAttributeRow(QWidget* parent, bool showIcon) : QWidget(parent)
+LayerValueRow::LayerValueRow(QWidget* parent, bool showIcon) : QWidget(parent)
 {
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -111,7 +111,7 @@ LayerAttributeRow::LayerAttributeRow(QWidget* parent, bool showIcon) : QWidget(p
     });
 }
 
-void LayerAttributeRow::Refresh(CanvasScene* scene, int layerId)
+void LayerValueRow::Refresh(CanvasScene* scene, int layerId)
 {
     m_refreshing = true;
     m_combo->clear();
@@ -127,12 +127,12 @@ void LayerAttributeRow::Refresh(CanvasScene* scene, int layerId)
     m_refreshing = false;
 }
 
-int LayerAttributeRow::LayerId() const
+int LayerValueRow::LayerId() const
 {
     return m_combo && m_combo->currentIndex() >= 0 ? m_combo->currentData().toInt() : 0;
 }
 
-HeightAttributeRow::HeightAttributeRow(QWidget* parent, bool showIcon) : QWidget(parent)
+HeightValueRow::HeightValueRow(QWidget* parent, bool showIcon) : QWidget(parent)
 {
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -157,7 +157,7 @@ HeightAttributeRow::HeightAttributeRow(QWidget* parent, bool showIcon) : QWidget
     });
 }
 
-void HeightAttributeRow::Refresh(int value, int maximum)
+void HeightValueRow::Refresh(int value, int maximum)
 {
     m_refreshing = true;
     m_spin->setMaximum(qMax(maximum, value));
@@ -165,13 +165,13 @@ void HeightAttributeRow::Refresh(int value, int maximum)
     m_refreshing = false;
 }
 
-int HeightAttributeRow::Value() const
+int HeightValueRow::Value() const
 {
     return m_spin ? m_spin->value() : 0;
 }
 
-NumberAttributeRow::NumberAttributeRow(IconId icon, bool showIcon, int decimals, qreal minimum, qreal maximum,
-                                       const QString& suffix, const QString& objectName, QWidget* parent)
+NumberValueRow::NumberValueRow(IconId icon, bool showIcon, int decimals, qreal minimum, qreal maximum,
+                               const QString& suffix, const QString& objectName, QWidget* parent)
     : QWidget(parent)
 {
     RowMetrics::ApplyRow(this);
@@ -193,41 +193,41 @@ NumberAttributeRow::NumberAttributeRow(IconId icon, bool showIcon, int decimals,
     });
 }
 
-NumberAttributeRow::NumberAttributeRow(IconId icon, bool showIcon, ItemProperty property, const QString& objectName,
-                                       QWidget* parent)
-    : NumberAttributeRow(icon, showIcon, DescriptorOf(property).decimals, DescriptorOf(property).minimum,
-                         DescriptorOf(property).maximum, DescriptorOf(property).suffix, objectName, parent)
+NumberValueRow::NumberValueRow(IconId icon, bool showIcon, ItemProperty property, const QString& objectName,
+                               QWidget* parent)
+    : NumberValueRow(icon, showIcon, DescriptorOf(property).decimals, DescriptorOf(property).minimum,
+                     DescriptorOf(property).maximum, DescriptorOf(property).suffix, objectName, parent)
 {
     SetSingleStep(DescriptorOf(property).step);
 }
 
-void NumberAttributeRow::SetIconToolTip(const QString& toolTip)
+void NumberValueRow::SetIconToolTip(const QString& toolTip)
 {
     if (m_icon) {
         m_icon->setToolTip(toolTip);
     }
 }
 
-void NumberAttributeRow::Refresh(qreal value)
+void NumberValueRow::Refresh(qreal value)
 {
     m_refreshing = true;
     m_spin->setValue(value);
     m_refreshing = false;
 }
 
-qreal NumberAttributeRow::Value() const
+qreal NumberValueRow::Value() const
 {
     return m_spin ? m_spin->value() : 0.0;
 }
 
-void NumberAttributeRow::SetSingleStep(qreal step)
+void NumberValueRow::SetSingleStep(qreal step)
 {
     m_spin->setSingleStep(step);
 }
 
-PairAttributeRow::PairAttributeRow(IconId icon, bool showIcon, const QString& firstName, const QString& secondName,
-                                   int decimals, qreal minimum, qreal maximum, const QString& suffix,
-                                   const QString& separator, QWidget* parent)
+PairValueRow::PairValueRow(IconId icon, bool showIcon, const QString& firstName, const QString& secondName,
+                           int decimals, qreal minimum, qreal maximum, const QString& suffix, const QString& separator,
+                           QWidget* parent)
     : QWidget(parent)
 {
     RowMetrics::ApplyRow(this);
@@ -258,22 +258,22 @@ PairAttributeRow::PairAttributeRow(IconId icon, bool showIcon, const QString& fi
     }
 }
 
-PairAttributeRow::PairAttributeRow(IconId icon, bool showIcon, const QString& firstName, const QString& secondName,
-                                   ItemProperty property, const QString& separator, QWidget* parent)
-    : PairAttributeRow(icon, showIcon, firstName, secondName, DescriptorOf(property).decimals,
-                       DescriptorOf(property).minimum, DescriptorOf(property).maximum, DescriptorOf(property).suffix,
-                       separator, parent)
+PairValueRow::PairValueRow(IconId icon, bool showIcon, const QString& firstName, const QString& secondName,
+                           ItemProperty property, const QString& separator, QWidget* parent)
+    : PairValueRow(icon, showIcon, firstName, secondName, DescriptorOf(property).decimals,
+                   DescriptorOf(property).minimum, DescriptorOf(property).maximum, DescriptorOf(property).suffix,
+                   separator, parent)
 {
 }
 
-void PairAttributeRow::SetIconToolTip(const QString& toolTip)
+void PairValueRow::SetIconToolTip(const QString& toolTip)
 {
     if (m_icon) {
         m_icon->setToolTip(toolTip);
     }
 }
 
-void PairAttributeRow::Refresh(qreal first, qreal second)
+void PairValueRow::Refresh(qreal first, qreal second)
 {
     m_refreshing = true;
     m_first->setValue(first);
@@ -281,12 +281,12 @@ void PairAttributeRow::Refresh(qreal first, qreal second)
     m_refreshing = false;
 }
 
-qreal PairAttributeRow::First() const
+qreal PairValueRow::First() const
 {
     return m_first ? m_first->value() : 0.0;
 }
 
-qreal PairAttributeRow::Second() const
+qreal PairValueRow::Second() const
 {
     return m_second ? m_second->value() : 0.0;
 }

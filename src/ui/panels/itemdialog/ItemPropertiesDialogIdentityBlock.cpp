@@ -16,12 +16,12 @@ ItemPropertiesDialogIdentityBlock::ItemPropertiesDialogIdentityBlock(CanvasScene
     : QWidget(parent), m_scene(scene)
 {
     // 名称 / 图层 / 高度与编辑面板共用同一批 PropertyRowWidgets，属性窗不需要行首图标。
-    m_nameRow = new TextAttributeRow(QString(), this);
+    m_nameRow = new TextValueRow(QString(), this);
     m_nameRow->setObjectName(QStringLiteral("ItemPropertiesNameRow"));
     m_nameEdit = m_nameRow->Edit();
     m_nameEdit->setObjectName(QStringLiteral("ItemPropertiesNameValue"));
 
-    m_layerRow = new LayerAttributeRow(this, false);
+    m_layerRow = new LayerValueRow(this, false);
     m_layerRow->setObjectName(QStringLiteral("ItemPropertiesLayerRow"));
     m_layerCombo = m_layerRow->Combo();
     m_layerCombo->setObjectName(QStringLiteral("ItemPropertiesLayerValue"));
@@ -34,7 +34,7 @@ ItemPropertiesDialogIdentityBlock::ItemPropertiesDialogIdentityBlock(CanvasScene
         emit layerChanged();
     });
 
-    m_heightRow = new HeightAttributeRow(this, false);
+    m_heightRow = new HeightValueRow(this, false);
     m_heightRow->setObjectName(QStringLiteral("ItemPropertiesHeightRow"));
     m_heightSpin = m_heightRow->Spin();
     m_heightSpin->setObjectName(QStringLiteral("ItemPropertiesHeightValue"));

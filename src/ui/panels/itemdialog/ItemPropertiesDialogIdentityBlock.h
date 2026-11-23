@@ -10,9 +10,9 @@ class QComboBox;
 class QFormLayout;
 class QLineEdit;
 class QSpinBox;
-class TextAttributeRow;
-class LayerAttributeRow;
-class HeightAttributeRow;
+class TextValueRow;
+class LayerValueRow;
+class HeightValueRow;
 class PropertyRowRegistry;
 
 // 属性窗的名称 / 图层 / 层内高度区块：名称可编辑，图层下拉按画布图层填充，
@@ -44,9 +44,9 @@ class ItemPropertiesDialogIdentityBlock : public QWidget {
     CanvasScene* m_scene = nullptr;
     QPointer<CanvasItem> m_item;
     QFormLayout* m_form = nullptr;
-    TextAttributeRow* m_nameRow = nullptr;
-    LayerAttributeRow* m_layerRow = nullptr;
-    HeightAttributeRow* m_heightRow = nullptr;
+    TextValueRow* m_nameRow = nullptr;
+    LayerValueRow* m_layerRow = nullptr;
+    HeightValueRow* m_heightRow = nullptr;
     QLineEdit* m_nameEdit = nullptr;
     QComboBox* m_layerCombo = nullptr;
     QSpinBox* m_heightSpin = nullptr;

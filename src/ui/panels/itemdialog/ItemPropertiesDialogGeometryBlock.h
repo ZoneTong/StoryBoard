@@ -10,8 +10,8 @@
 class QDoubleSpinBox;
 class QFormLayout;
 class QLabel;
-class NumberAttributeRow;
-class PairAttributeRow;
+class NumberValueRow;
+class PairValueRow;
 class PropertyRowRegistry;
 
 // 属性窗的几何区块：长短半轴 → 旋转 → 位置 → 图元尺寸 → 中心点（§4.1 第 23~28 行）。
@@ -53,12 +53,12 @@ class ItemPropertiesDialogGeometryBlock : public QWidget {
     void ApplyAxesToSize(bool majorChanged);
 
     QFormLayout* m_form = nullptr;
-    PairAttributeRow* m_positionRow = nullptr;
-    PairAttributeRow* m_sizeRow = nullptr;
-    NumberAttributeRow* m_rotationRow = nullptr;
-    NumberAttributeRow* m_majorAxisRow = nullptr;
-    NumberAttributeRow* m_minorAxisRow = nullptr;
-    PairAttributeRow* m_centerRow = nullptr;
+    PairValueRow* m_positionRow = nullptr;
+    PairValueRow* m_sizeRow = nullptr;
+    NumberValueRow* m_rotationRow = nullptr;
+    NumberValueRow* m_majorAxisRow = nullptr;
+    NumberValueRow* m_minorAxisRow = nullptr;
+    PairValueRow* m_centerRow = nullptr;
     QLabel* m_centerLabel = nullptr;
     QDoubleSpinBox* m_positionXSpin = nullptr;
     QDoubleSpinBox* m_positionYSpin = nullptr;
