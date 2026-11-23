@@ -20,6 +20,7 @@
 #include "ui/panels/properties/PropertiesPanelIdentityCard.h"
 #include "ui/panels/properties/PropertiesPanelSelectionCard.h"
 #include "ui/panels/properties/PropertiesPanelValueCard.h"
+#include "ui/panels/properties/PropertyRowSpec.h"
 #include "ui/widgets/AttributeRowWidgets.h"
 
 #include <QComboBox>
@@ -297,13 +298,20 @@ void PropertiesPanel::Refresh()
         const ItemPropertySet properties = items.at(index)->Properties();
         common = index == 0 ? properties : common.Intersected(properties);
     }
+    // 行显隐统一走行描述的可接受集合：内角行同时接受三角形底角与平行四边形内角，
+    // 箭头行同时接受起止箭头，避免面板再按单个枚举值各写一份判断。
+    auto rowVisible = [&common](ItemProperty property) {
+        const PropertyRowSpec* spec = PropertyRowSpecs::For(property);
+        return spec && spec->Matches(common);
+    };
 
-    m_valueCard->SetCornerVisible(common.Contains(ItemProperty::CORNER_RADIUS));
-    m_valueCard->SetArcRadiusVisible(common.Contains(ItemProperty::START_ANGLE));
-    m_valueCard->SetSineVisible(common.Contains(ItemProperty::SINE_CYCLES));
+    m_valueCard->SetCornerVisible(rowVisible(ItemProperty::CORNER_RADIUS));
+    m_valueCard->SetArcRadiusVisible(rowVisible(ItemProperty::START_ANGLE));
+    m_valueCard->SetSineVisible(rowVisible(ItemProperty::SINE_CYCLES));
+    // 三角形参数区只对底角 A/B 开放；平行四边形内角走几何区那一行，不能误开这里。
     m_valueCard->SetTriangleVisible(common.Contains(ItemProperty::BOTTOM_ANGLE1));
-    m_valueCard->SetArrowVisible(common.Contains(ItemProperty::ARROW_START));
-    m_fillImageRow->setVisible(common.Contains(ItemProperty::FILL_IMAGE));
+    m_valueCard->SetArrowVisible(rowVisible(ItemProperty::ARROW_START));
+    m_fillImageRow->setVisible(rowVisible(ItemProperty::FILL_IMAGE));
     m_fillImageRow->SetTargets(fillTargets);
 
     // 身份行（名称 / 图层 / 高度）只在单选时开放：把多个图元改成同一个名称或
@@ -318,15 +326,15 @@ void PropertiesPanel::Refresh()
 
     // 长短半轴 / 内角 / 中心点行按属性交集显隐：多选时也开放，写入侧只对
     // 上报了该属性的成员生效（§4.3，不再要求 singleItem）。
-    m_geometryCard->SetAxisVisible(common.Contains(ItemProperty::MAJOR_AXIS));
-    m_geometryCard->SetInteriorAngleVisible(common.Contains(ItemProperty::PARALLELOGRAM_ANGLE));
-    m_geometryCard->SetCenterVisible(common.Contains(ItemProperty::CENTER));
+    m_geometryCard->SetAxisVisible(rowVisible(ItemProperty::MAJOR_AXIS));
+    m_geometryCard->SetInteriorAngleVisible(rowVisible(ItemProperty::BOTTOM_ANGLE1));
+    m_geometryCard->SetCenterVisible(rowVisible(ItemProperty::CENTER));
 
-    m_fillBorderCard->FillStyleRow()->setVisible(common.Contains(ItemProperty::FILL_STYLE));
-    m_colorsCard->FillColorRow()->setVisible(common.Contains(ItemProperty::FILL_COLOR));
-    m_fillBorderCard->BorderStyleRow()->setVisible(common.Contains(ItemProperty::STROKE_STYLE));
-    m_colorsCard->BorderColorRow()->setVisible(common.Contains(ItemProperty::STROKE_COLOR));
-    m_fillBorderCard->BorderWidthRow()->setVisible(common.Contains(ItemProperty::STROKE_WIDTH));
+    m_fillBorderCard->FillStyleRow()->setVisible(rowVisible(ItemProperty::FILL_STYLE));
+    m_colorsCard->FillColorRow()->setVisible(rowVisible(ItemProperty::FILL_COLOR));
+    m_fillBorderCard->BorderStyleRow()->setVisible(rowVisible(ItemProperty::STROKE_STYLE));
+    m_colorsCard->BorderColorRow()->setVisible(rowVisible(ItemProperty::STROKE_COLOR));
+    m_fillBorderCard->BorderWidthRow()->setVisible(rowVisible(ItemProperty::STROKE_WIDTH));
 
     m_contentCard->setVisible(hasSelection);
     m_colorsCard->setVisible(hasSelection);
