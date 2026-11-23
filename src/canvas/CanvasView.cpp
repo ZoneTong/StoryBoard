@@ -392,7 +392,7 @@ void CanvasView::mouseMoveEvent(QMouseEvent* event)
     }
 
     if (m_groupBox->IsDragging()) {
-        m_groupBox->UpdateDrag(position);
+        m_groupBox->UpdateDrag(position, event->modifiers());
         event->accept();
         return;
     }

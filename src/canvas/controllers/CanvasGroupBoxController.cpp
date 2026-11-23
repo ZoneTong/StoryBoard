@@ -1,6 +1,7 @@
 #include "canvas/controllers/CanvasGroupBoxController.h"
 
 #include "canvas/CanvasView.h"
+#include "canvas/SelectionOverlayStyle.h"
 #include "items/CanvasItem.h"
 #include "scene/CanvasScene.h"
 
@@ -14,8 +15,19 @@ namespace {
 
 constexpr int RESIZE_HANDLES_BEGIN = static_cast<int>(GroupBoxHandle::NW);
 constexpr int RESIZE_HANDLES_END = static_cast<int>(GroupBoxHandle::W);
-constexpr qreal HANDLE_SIZE = 9.0;
 constexpr qreal HANDLE_PADDING = 10.0;
+
+bool IsEdgeHandle(int handle)
+{
+    return handle == static_cast<int>(GroupBoxHandle::N) || handle == static_cast<int>(GroupBoxHandle::E) ||
+           handle == static_cast<int>(GroupBoxHandle::S) || handle == static_cast<int>(GroupBoxHandle::W);
+}
+
+bool IsCornerHandle(int handle)
+{
+    return handle == static_cast<int>(GroupBoxHandle::NW) || handle == static_cast<int>(GroupBoxHandle::NE) ||
+           handle == static_cast<int>(GroupBoxHandle::SE) || handle == static_cast<int>(GroupBoxHandle::SW);
+}
 
 } // namespace
 
@@ -94,40 +106,75 @@ QPointF CanvasGroupBoxController::HandleCenter(int handle, const QRectF& rect) c
     case static_cast<int>(GroupBoxHandle::W):
         return QPointF(rect.left(), rect.center().y());
     case static_cast<int>(GroupBoxHandle::ROTATE):
-        return QPointF(rect.center().x(), rect.top() - (HANDLE_SIZE + 16.0));
+        // 视口坐标里缩放恒为 1，和单图元取同一份手柄尺寸与间隙。
+        return SelectionOverlayStyle::RotationKnobCenter(rect, 1.0);
     default:
         return rect.center();
     }
 }
 
-QRectF CanvasGroupBoxController::ResizeRect(int handle, const QRectF& startRect, const QPointF& scenePos) const
+bool CanvasGroupBoxController::HasRotatedMember() const
+{
+    for (CanvasItem* item : Members()) {
+        if (item && !qFuzzyIsNull(item->RotationAngle())) {
+            return true;
+        }
+    }
+    return false;
+}
+
+QRectF CanvasGroupBoxController::ResizeRect(int handle, const QRectF& startRect, const QPointF& scenePos,
+                                            bool equalize) const
 {
     QRectF result = startRect;
+    const bool corner = IsCornerHandle(handle);
+    qreal scaleX = 1.0;
+    qreal scaleY = 1.0;
+    if (corner && startRect.width() > 0.0 && startRect.height() > 0.0) {
+        const qreal rawX = (scenePos.x() - startRect.left()) / startRect.width();
+        const qreal rawY = (scenePos.y() - startRect.top()) / startRect.height();
+        scaleX = handle == static_cast<int>(GroupBoxHandle::NW) || handle == static_cast<int>(GroupBoxHandle::SW)
+                     ? 1.0 - rawX
+                     : rawX;
+        scaleY = handle == static_cast<int>(GroupBoxHandle::NW) || handle == static_cast<int>(GroupBoxHandle::NE)
+                     ? 1.0 - rawY
+                     : rawY;
+        if (equalize) {
+            // 两轴取同一个倍率，符号各自保留以支持翻转。
+            const qreal magnitude = qMax(std::fabs(scaleX), std::fabs(scaleY));
+            scaleX = scaleX < 0.0 ? -magnitude : magnitude;
+            scaleY = scaleY < 0.0 ? -magnitude : magnitude;
+        }
+    }
+    if (equalize && !corner) {
+        return startRect;
+    }
+
     switch (handle) {
     case static_cast<int>(GroupBoxHandle::NW):
-        result.setLeft(scenePos.x());
-        result.setTop(scenePos.y());
+        result.setLeft(startRect.left() + startRect.width() * (1.0 - scaleX));
+        result.setTop(startRect.top() + startRect.height() * (1.0 - scaleY));
         break;
     case static_cast<int>(GroupBoxHandle::N):
         result.setTop(scenePos.y());
         break;
     case static_cast<int>(GroupBoxHandle::NE):
-        result.setRight(scenePos.x());
-        result.setTop(scenePos.y());
+        result.setRight(startRect.left() + startRect.width() * scaleX);
+        result.setTop(startRect.top() + startRect.height() * (1.0 - scaleY));
         break;
     case static_cast<int>(GroupBoxHandle::E):
         result.setRight(scenePos.x());
         break;
     case static_cast<int>(GroupBoxHandle::SE):
-        result.setRight(scenePos.x());
-        result.setBottom(scenePos.y());
+        result.setRight(startRect.left() + startRect.width() * scaleX);
+        result.setBottom(startRect.top() + startRect.height() * scaleY);
         break;
     case static_cast<int>(GroupBoxHandle::S):
         result.setBottom(scenePos.y());
         break;
     case static_cast<int>(GroupBoxHandle::SW):
-        result.setLeft(scenePos.x());
-        result.setBottom(scenePos.y());
+        result.setLeft(startRect.left() + startRect.width() * (1.0 - scaleX));
+        result.setBottom(startRect.top() + startRect.height() * scaleY);
         break;
     case static_cast<int>(GroupBoxHandle::W):
         result.setLeft(scenePos.x());
@@ -164,16 +211,21 @@ int CanvasGroupBoxController::HitTest(const QPoint& viewportPos) const
     if (rect.isNull()) {
         return static_cast<int>(GroupBoxHandle::NONE);
     }
+    const qreal knob = SelectionOverlayStyle::KnobSize(1.0);
 
-    const QRectF rotateKnob(HandleCenter(static_cast<int>(GroupBoxHandle::ROTATE), rect),
-                            QSizeF(HANDLE_SIZE, HANDLE_SIZE));
+    const QRectF rotateKnob =
+        SelectionOverlayStyle::KnobRect(HandleCenter(static_cast<int>(GroupBoxHandle::ROTATE), rect), knob);
     if (rotateKnob.adjusted(-HANDLE_PADDING, -HANDLE_PADDING, HANDLE_PADDING, HANDLE_PADDING).contains(viewportPos)) {
         return static_cast<int>(GroupBoxHandle::ROTATE);
     }
 
+    const bool hideEdges = HasRotatedMember();
     for (int handle = RESIZE_HANDLES_BEGIN; handle <= RESIZE_HANDLES_END; ++handle) {
-        const QRectF knob(HandleCenter(handle, rect), QSizeF(HANDLE_SIZE, HANDLE_SIZE));
-        if (knob.adjusted(-HANDLE_PADDING, -HANDLE_PADDING, HANDLE_PADDING, HANDLE_PADDING).contains(viewportPos)) {
+        if (hideEdges && IsEdgeHandle(handle)) {
+            continue;
+        }
+        const QRectF hit = SelectionOverlayStyle::KnobRect(HandleCenter(handle, rect), knob);
+        if (hit.adjusted(-HANDLE_PADDING, -HANDLE_PADDING, HANDLE_PADDING, HANDLE_PADDING).contains(viewportPos)) {
             return handle;
         }
     }
@@ -201,7 +253,7 @@ void CanvasGroupBoxController::BeginDrag(const QPoint& viewportPos, int handle)
     }
 }
 
-void CanvasGroupBoxController::UpdateDrag(const QPoint& viewportPos)
+void CanvasGroupBoxController::UpdateDrag(const QPoint& viewportPos, Qt::KeyboardModifiers modifiers)
 {
     if (!m_dragging || !m_view) {
         return;
@@ -215,13 +267,19 @@ void CanvasGroupBoxController::UpdateDrag(const QPoint& viewportPos)
             if (!entry.item) {
                 continue;
             }
-            entry.item->setPos(RotateAround(entry.oldPos, m_rotateCenter, angle));
+            // 刚体变换：绕组中心转的是成员几何中心，不是左上角。
+            // 图元自身绕自己的中心转，二者叠加后成员之间的相对位置才不变。
+            const QPointF center = entry.oldPos + QPointF(entry.oldSize.width() / 2.0, entry.oldSize.height() / 2.0);
+            const QPointF rotated = RotateAround(center, m_rotateCenter, angle);
+            entry.item->setPos(rotated - QPointF(entry.oldSize.width() / 2.0, entry.oldSize.height() / 2.0));
             entry.item->SetRotationAngle(CanvasItem::NormalizeRotation(entry.oldRotation + angle));
         }
         return;
     }
 
-    const QRectF newRect = ResizeRect(m_handle, m_startRect, scenePos);
+    // 含旋转成员时轴向缩放会剪切，只能等比；其余情况 Shift 才是等比。
+    const bool equalize = modifiers.testFlag(Qt::ShiftModifier) || HasRotatedMember();
+    const QRectF newRect = ResizeRect(m_handle, m_startRect, scenePos, equalize);
     const qreal scaleX = m_startRect.width() > 0.0 ? newRect.width() / m_startRect.width() : 1.0;
     const qreal scaleY = m_startRect.height() > 0.0 ? newRect.height() / m_startRect.height() : 1.0;
     const QSizeF minimum = CanvasItem::MinimumSize();
@@ -293,29 +351,24 @@ void CanvasGroupBoxController::DrawOverlay(QPainter* painter) const
         return;
     }
 
-    QPen borderPen(QColor(79, 124, 255));
-    borderPen.setWidthF(1.3);
-    borderPen.setCosmetic(true);
-    borderPen.setStyle(Qt::DashLine);
-    borderPen.setDashPattern({5.0, 4.0});
-    painter->setPen(borderPen);
+    painter->setPen(SelectionOverlayStyle::BorderPen());
     painter->setBrush(Qt::NoBrush);
     painter->drawRect(rect);
 
-    QPen handlePen(QColor(79, 124, 255));
-    handlePen.setWidthF(1.4);
-    handlePen.setCosmetic(true);
-    painter->setPen(handlePen);
+    const qreal knob = SelectionOverlayStyle::KnobSize(1.0);
+    painter->setPen(SelectionOverlayStyle::KnobPen());
     painter->setBrush(Qt::white);
+    const bool hideEdges = HasRotatedMember();
     for (int handle = RESIZE_HANDLES_BEGIN; handle <= RESIZE_HANDLES_END; ++handle) {
-        const QRectF knob(HandleCenter(handle, rect), QSizeF(HANDLE_SIZE, HANDLE_SIZE));
-        painter->drawRect(knob);
+        if (hideEdges && IsEdgeHandle(handle)) {
+            continue;
+        }
+        painter->drawRect(SelectionOverlayStyle::KnobRect(HandleCenter(handle, rect), knob));
     }
 
     const QPointF topCenter(rect.center().x(), rect.top());
     const QPointF rotationCenter = HandleCenter(static_cast<int>(GroupBoxHandle::ROTATE), rect);
     painter->drawLine(topCenter, rotationCenter);
-    painter->setBrush(QColor(79, 124, 255));
-    const QRectF rotationKnob(rotationCenter, QSizeF(HANDLE_SIZE, HANDLE_SIZE));
-    painter->drawEllipse(rotationKnob.adjusted(1.0, 1.0, -1.0, -1.0));
+    painter->setBrush(SelectionOverlayStyle::HandleColor());
+    painter->drawEllipse(SelectionOverlayStyle::KnobRect(rotationCenter, knob).adjusted(1.0, 1.0, -1.0, -1.0));
 }

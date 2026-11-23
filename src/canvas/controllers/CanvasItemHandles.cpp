@@ -1,21 +1,19 @@
 #include "canvas/controllers/CanvasItemHandles.h"
 
+#include "canvas/SelectionOverlayStyle.h"
 #include "items/CanvasItem.h"
 
 #include <QPainter>
 #include <QPainterPath>
 
 namespace {
-constexpr qreal KNOB_STROKE = 1.4;
-const QColor HANDLE_COLOR(79, 124, 255);
-
 // 内角旋钮：白底小方块里画一个水平双箭头，暗示“左右拖，内角连续变”。
 // 三角形顶点手柄与平行四边形倾斜旋钮共用这一份样式（P2 用户口径）。
 void DrawAngleKnob(QPainter* painter, const QRectF& knob)
 {
     painter->setBrush(Qt::white);
     painter->drawRect(knob);
-    painter->setBrush(HANDLE_COLOR);
+    painter->setBrush(SelectionOverlayStyle::HandleColor());
     const QPointF center = knob.center();
     const qreal halfLength = knob.width() * 0.26;
     const qreal head = knob.width() * 0.14;
@@ -56,14 +54,13 @@ bool CanvasItemHandles::SpecAt(int handle, HandleSpec* spec) const
 
 qreal CanvasItemHandles::Size() const
 {
-    return qBound<qreal>(6.0, 9.0 / m_item->ViewScale(), 40.0);
+    return SelectionOverlayStyle::KnobSize(m_item->ViewScale());
 }
 
 qreal CanvasItemHandles::RotationOffset() const
 {
-    // Keep the rotation handle one handle-size plus a small gap above the frame,
-    // so it stays visually separate from the Top resize handle at any zoom.
-    return Size() + 16.0 / m_item->ViewScale();
+    // 与组框同一份口径：一个手柄再加一点间隙，任何缩放下都不会和顶边手柄挤在一起。
+    return SelectionOverlayStyle::RotationOffset(m_item->ViewScale());
 }
 
 QPointF CanvasItemHandles::Center(int handle) const
@@ -91,7 +88,7 @@ QPointF CanvasItemHandles::Center(int handle) const
     case CanvasItem::LEFT:
         return QPointF(rect.left(), rect.center().y());
     case CanvasItem::ROTATION:
-        return QPointF(rect.center().x(), rect.top() - RotationOffset());
+        return SelectionOverlayStyle::RotationKnobCenter(rect, m_item->ViewScale());
     case CanvasItem::CUSTOM_0:
     case CanvasItem::CUSTOM_1:
     case CanvasItem::NO_HANDLE:
@@ -105,8 +102,7 @@ QRectF CanvasItemHandles::Rect(int handle) const
     HandleSpec spec;
     const bool custom = SpecAt(handle, &spec);
     const qreal handleSize = Size() * (custom ? qMax<qreal>(0.6, spec.sizeScale) : 1.0);
-    const QPointF handleCenter = Center(handle);
-    return QRectF(handleCenter.x() - handleSize / 2.0, handleCenter.y() - handleSize / 2.0, handleSize, handleSize);
+    return SelectionOverlayStyle::KnobRect(Center(handle), handleSize);
 }
 
 qreal CanvasItemHandles::HitReach() const
@@ -192,12 +188,7 @@ QPainterPath CanvasItemHandles::SelectionShape() const
 
 void CanvasItemHandles::DrawOverlay(QPainter* painter) const
 {
-    QPen borderPen(HANDLE_COLOR);
-    borderPen.setWidthF(1.3);
-    borderPen.setCosmetic(true);
-    borderPen.setStyle(Qt::DashLine);
-    borderPen.setDashPattern({5.0, 4.0});
-    painter->setPen(borderPen);
+    painter->setPen(SelectionOverlayStyle::BorderPen());
     painter->setBrush(Qt::NoBrush);
     painter->drawRect(m_item->FrameRect());
 
@@ -205,10 +196,7 @@ void CanvasItemHandles::DrawOverlay(QPainter* painter) const
         return;
     }
 
-    QPen handlePen(HANDLE_COLOR);
-    handlePen.setWidthF(KNOB_STROKE);
-    handlePen.setCosmetic(true);
-    painter->setPen(handlePen);
+    painter->setPen(SelectionOverlayStyle::KnobPen());
     painter->setBrush(Qt::white);
     const HandleSpecList specs = ActiveSpecs();
     bool hidesTop = false;
@@ -237,7 +225,7 @@ void CanvasItemHandles::DrawOverlay(QPainter* painter) const
     const QPointF topCenter(Center(CanvasItem::TOP).x(), m_item->FrameRect().top());
     const QPointF rotationCenter = Center(CanvasItem::ROTATION);
     painter->drawLine(topCenter, rotationCenter);
-    painter->setBrush(HANDLE_COLOR);
+    painter->setBrush(SelectionOverlayStyle::HandleColor());
     painter->drawEllipse(Rect(CanvasItem::ROTATION).adjusted(1.0, 1.0, -1.0, -1.0));
 }
 

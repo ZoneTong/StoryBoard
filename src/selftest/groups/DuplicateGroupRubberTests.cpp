@@ -1,6 +1,7 @@
 #include "app/I18n.h"
 #include "app/Settings.h"
 #include "canvas/CanvasView.h"
+#include "canvas/controllers/CanvasGroupBoxController.h"
 #include "io/CustomShapeTemplates.h"
 #include "items/CanvasTypes.h"
 #include "items/lines/CurveItem.h"
@@ -80,6 +81,7 @@
 #include <QWidget>
 #include <QWidgetAction>
 #include <QtMath>
+#include <cmath>
 #include <cstdlib>
 
 
@@ -374,6 +376,108 @@ void selftest::RunRubberBandTests(Context& ctx)
         ctx.Check(target->isSelected(), QStringLiteral("框线紧贴图形（一两个像素余量）时也能框选选中"));
 
         rubberView.close();
+        QApplication::processEvents();
+    }
+
+    // D1：组框手柄居中、Shift 等比缩放、组旋转刚体化。
+    {
+        CanvasScene boxScene;
+        QUndoStack boxUndo;
+        boxScene.SetUndoStack(&boxUndo);
+        boxScene.ApplyCanvasSize(QSizeF(900.0, 700.0));
+        boxScene.SetMode(ToolMode::EDIT);
+
+        auto* boxLeft = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        boxLeft->SetContentSize(QSizeF(100.0, 60.0));
+        boxLeft->setPos(QPointF(60.0, 70.0));
+        auto* boxRight = ShapeRegistry::Create(ShapeType::ELLIPSE);
+        boxRight->SetContentSize(QSizeF(80.0, 90.0));
+        boxRight->setPos(QPointF(260.0, 210.0));
+        boxScene.AddItemsWithUndo({boxLeft, boxRight}, QStringLiteral("Add box items"));
+        boxLeft->setSelected(true);
+        boxRight->setSelected(true);
+        const int boxGroup = boxScene.GroupSelectedItems();
+        ctx.Check(boxGroup > 0, QStringLiteral("D1 构造：两个图元成组"));
+
+        CanvasView boxView(&boxScene);
+        boxView.resize(800, 600);
+        boxView.show();
+        boxView.SetMode(ToolMode::EDIT);
+        boxView.FitAll();
+        QApplication::processEvents();
+
+        CanvasGroupBoxController box(&boxView, &boxScene);
+        ctx.Check(box.Active(), QStringLiteral("选中整组时组框生效"));
+        const QRectF frame = box.GroupRect();
+        ctx.Check(!frame.isNull(), QStringLiteral("组框取成员外框并集"));
+
+        // 手柄以中心对齐：角上按中心点命中，左上一旦按左上角对齐就会偏移半个手柄。
+        const struct {
+            QPointF center;
+            int handle;
+        } cornerProbes[] = {
+            {frame.topLeft(), 1}, {frame.topRight(), 3}, {frame.bottomRight(), 5}, {frame.bottomLeft(), 7}};
+        int cornerHits = 0;
+        for (const auto& probe : cornerProbes) {
+            if (box.HitTest(boxView.mapFromScene(probe.center)) == probe.handle) {
+                ++cornerHits;
+            }
+        }
+        ctx.Check(cornerHits == 4, QStringLiteral("组框四角手柄按中心对齐命中"),
+                  QStringLiteral("hits=%1/4").arg(cornerHits));
+
+        // Shift 拖右下角：横竖两轴必须同一个倍率。
+        box.BeginDrag(boxView.mapFromScene(frame.bottomRight()), 5);
+        const QPoint shiftEnd =
+            boxView.mapFromScene(QPointF(frame.right() + frame.width() * 0.5, frame.bottom() + frame.height() * 0.2));
+        box.UpdateDrag(shiftEnd, Qt::ShiftModifier);
+        box.EndDrag();
+        const QRectF shifted = box.GroupRect();
+        const qreal ratioX = shifted.width() / frame.width();
+        const qreal ratioY = shifted.height() / frame.height();
+        ctx.Check(qAbs(ratioX - ratioY) < 0.01, QStringLiteral("Shift 拖角两手缩放比一致"),
+                  QStringLiteral("sx=%1 sy=%2").arg(ratioX).arg(ratioY));
+        boxUndo.undo();
+
+        // 组旋转：成员中心间距与连线不变，各自角度 +θ。
+        const QPointF leftCenterBefore =
+            boxLeft->pos() + QPointF(boxLeft->ContentSize().width() / 2.0, boxLeft->ContentSize().height() / 2.0);
+        const QPointF rightCenterBefore =
+            boxRight->pos() + QPointF(boxRight->ContentSize().width() / 2.0, boxRight->ContentSize().height() / 2.0);
+        const qreal distanceBefore = QLineF(leftCenterBefore, rightCenterBefore).length();
+        const QRectF rotateFrame = box.GroupRect();
+        const QPointF pivot = rotateFrame.center();
+        const qreal radius = 120.0;
+        const QPoint rotateStart = boxView.mapFromScene(pivot + QPointF(0.0, -radius));
+        const qreal turn = 30.0;
+        const qreal radians = qDegreesToRadians(turn);
+        const QPoint rotateEnd =
+            boxView.mapFromScene(pivot + QPointF(radius * std::sin(radians), -radius * std::cos(radians)));
+        box.BeginDrag(rotateStart, 9);
+        box.UpdateDrag(rotateEnd);
+        box.EndDrag();
+
+        const QPointF leftCenterAfter =
+            boxLeft->pos() + QPointF(boxLeft->ContentSize().width() / 2.0, boxLeft->ContentSize().height() / 2.0);
+        const QPointF rightCenterAfter =
+            boxRight->pos() + QPointF(boxRight->ContentSize().width() / 2.0, boxRight->ContentSize().height() / 2.0);
+        const qreal distanceAfter = QLineF(leftCenterAfter, rightCenterAfter).length();
+        const qreal angleBefore = QLineF(leftCenterBefore, rightCenterBefore).angle();
+        const qreal angleAfter = QLineF(leftCenterAfter, rightCenterAfter).angle();
+        const qreal angleDrift = qAbs(angleAfter - angleBefore) > 180.0 ? 360.0 - qAbs(angleAfter - angleBefore)
+                                                                        : qAbs(angleAfter - angleBefore);
+        ctx.Check(qAbs(distanceAfter - distanceBefore) < 0.5, QStringLiteral("组旋转后成员中心间距不变"),
+                  QStringLiteral("before=%1 after=%2").arg(distanceBefore).arg(distanceAfter));
+        ctx.Check(qAbs(angleDrift - turn) < 0.5, QStringLiteral("组旋转后成员连线夹角按同一角度转过"),
+                  QStringLiteral("before=%1 after=%2 drift=%3").arg(angleBefore).arg(angleAfter).arg(angleDrift));
+        // RotationAngle 以弧度返回，和拖拽角度同一单位。
+        const qreal leftTurn = qRadiansToDegrees(boxLeft->RotationAngle());
+        const qreal rightTurn = qRadiansToDegrees(boxRight->RotationAngle());
+        ctx.Check(qAbs(qAbs(leftTurn) - turn) < 0.5 && qAbs(leftTurn - rightTurn) < 0.5,
+                  QStringLiteral("组旋转给每个成员加上同一个角度"),
+                  QStringLiteral("left=%1 right=%2").arg(leftTurn).arg(rightTurn));
+
+        boxView.close();
         QApplication::processEvents();
     }
 }

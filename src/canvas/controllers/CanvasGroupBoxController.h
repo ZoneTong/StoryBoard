@@ -5,6 +5,7 @@
 #include <QPointF>
 #include <QRectF>
 #include <QSizeF>
+#include <Qt>
 
 class CanvasScene;
 class CanvasView;
@@ -38,7 +39,7 @@ class CanvasGroupBoxController {
 
     int HitTest(const QPoint& viewportPos) const;
     void BeginDrag(const QPoint& viewportPos, int handle);
-    void UpdateDrag(const QPoint& viewportPos);
+    void UpdateDrag(const QPoint& viewportPos, Qt::KeyboardModifiers modifiers = Qt::NoModifier);
     void EndDrag();
     bool IsDragging() const { return m_dragging; }
 
@@ -54,7 +55,9 @@ class CanvasGroupBoxController {
 
     QList<CanvasItem*> Members() const;
     QList<MemberSnapshot> Snapshot() const;
-    QRectF ResizeRect(int handle, const QRectF& startRect, const QPointF& scenePos) const;
+    // 组内存在旋转成员时，轴向量缩放会产生剪切 → 只保留角手柄（等比）。
+    bool HasRotatedMember() const;
+    QRectF ResizeRect(int handle, const QRectF& startRect, const QPointF& scenePos, bool equalize) const;
     QPointF HandleCenter(int handle, const QRectF& rect) const;
     QRectF ViewportRect() const;
     static QPointF RotateAround(const QPointF& point, const QPointF& center, qreal angle);
