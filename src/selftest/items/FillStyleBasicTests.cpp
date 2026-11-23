@@ -43,7 +43,7 @@ void selftest::RunFillStyleBasicTests(Context& ctx)
         reqScene.SetUndoStack(&reqUndo);
 
         // 需求 11：只保留椭圆，插入即标准圆形，可拉伸。
-        ctx.Check(ShapeTypeName(ShapeType::ELLIPSE) == QStringLiteral("椭圆"), QStringLiteral("图形名称统一为椭圆"));
+        ctx.Check(ShapeTypes::Name(ShapeType::ELLIPSE) == QStringLiteral("椭圆"), QStringLiteral("图形名称统一为椭圆"));
         const QSizeF ellipseDefault = DefaultShapeSize(ShapeType::ELLIPSE);
         ctx.Check(qFuzzyCompare(ellipseDefault.width(), ellipseDefault.height()),
                   QStringLiteral("椭圆默认插入为标准圆形"));
@@ -54,8 +54,8 @@ void selftest::RunFillStyleBasicTests(Context& ctx)
         delete circleItem;
 
         // 需求 14：填充样式（无/纯色/斜线/交叉线）。
-        ctx.Check(FillStyleName(FillStyle::NONE) == QStringLiteral("无填充") &&
-                      FillStyleName(FillStyle::HACHURE) == QStringLiteral("斜线"),
+        ctx.Check(FillStyles::Name(FillStyle::NONE) == QStringLiteral("无填充") &&
+                      FillStyles::Name(FillStyle::HACHURE) == QStringLiteral("斜线"),
                   QStringLiteral("填充样式名称齐全"));
         ctx.Check(FillStyleFromString(QStringLiteral("cross_hatch")) == FillStyle::CROSS_HATCH,
                   QStringLiteral("交叉线填充样式可反序列化"));

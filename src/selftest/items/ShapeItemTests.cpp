@@ -119,8 +119,8 @@ void selftest::RunShapeItemTests(Context& ctx)
         ctx.Check(ShapeTypeToString(ShapeType::HEXAGON) == QStringLiteral("hexagon") &&
                       ShapeTypeFromString(QStringLiteral("hexagon")) == ShapeType::HEXAGON,
                   QStringLiteral("正六边形的枚举串为 hexagon"));
-        ctx.Check(ShapeTypeName(ShapeType::HEXAGON) != QStringLiteral("Honeycomb"),
-                  QStringLiteral("正六边形源码串避开填充纹理 Honeycomb"), ShapeTypeName(ShapeType::HEXAGON));
+        ctx.Check(ShapeTypes::Name(ShapeType::HEXAGON) != QStringLiteral("Honeycomb"),
+                  QStringLiteral("正六边形源码串避开填充纹理 Honeycomb"), ShapeTypes::Name(ShapeType::HEXAGON));
         const QList<ShapeType> order = ShapeMeta::AllTypes();
         const int diamond = order.indexOf(ShapeType::DIAMOND);
         const int hexagon = order.indexOf(ShapeType::HEXAGON);
@@ -463,7 +463,7 @@ void selftest::RunShapeItemTests(Context& ctx)
         if (MakeShapeIcon(type, QColor(58, 64, 80), 18).isNull()) {
             shapeIconsOk = false;
         }
-        if (ShapeTypeName(type).isEmpty()) {
+        if (ShapeTypes::Name(type).isEmpty()) {
             shapePathsOk = false;
         }
     }
@@ -1337,12 +1337,12 @@ void selftest::RunShapeItemTests(Context& ctx)
         item->setPos(cell + QPointF((220.0 - size.width()) / 2.0, (220.0 - size.height()) / 2.0));
         item->SetContentSize(size);
         item->SetStyle(shapeStroke, ShapeTypeIsFilled(type) ? shapeFill : QColor(Qt::transparent), 4.0);
-        shapeScene.AddItemsWithUndo({item}, QStringLiteral("插入%1").arg(ShapeTypeName(type)));
+        shapeScene.AddItemsWithUndo({item}, QStringLiteral("插入%1").arg(ShapeTypes::Name(type)));
         shapeItems.append(item);
 
         ctx.Check(item->Kind() == QStringLiteral("shape") && item->shapeType() == type &&
                       item->LayerId() == shapeScene.ActiveLayerId() && item->ZOrder() == i + 1,
-                  QStringLiteral("图形图元 %1 进入当前图层且高度唯一").arg(ShapeTypeName(type)),
+                  QStringLiteral("图形图元 %1 进入当前图层且高度唯一").arg(ShapeTypes::Name(type)),
                   QStringLiteral("layer=%1 height=%2").arg(item->LayerId()).arg(item->ZOrder()));
     }
     ctx.Check(shapeScene.CanvasItemCount() == shapeTypes.size(), QStringLiteral("所有常见图形加入场景"));
@@ -1364,7 +1364,7 @@ void selftest::RunShapeItemTests(Context& ctx)
         }
         if (inkPixels < 20) {
             everyShapeVisible = false;
-            invisibleShape = ShapeTypeName(item->shapeType());
+            invisibleShape = ShapeTypes::Name(item->shapeType());
             break;
         }
     }

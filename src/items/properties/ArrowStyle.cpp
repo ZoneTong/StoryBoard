@@ -37,7 +37,9 @@ QList<ArrowStyle> AllArrowStyles()
             ArrowStyle::BAR};
 }
 
-QString ArrowStyleName(ArrowStyle style)
+namespace ArrowStyles {
+
+QString Name(ArrowStyle style)
 {
     auto translate = [](const char* text) { return QCoreApplication::translate("ArrowStyle", text); };
     switch (style) {
@@ -56,6 +58,9 @@ QString ArrowStyleName(ArrowStyle style)
     }
     return translate("None");
 }
+
+} // namespace ArrowStyles
+
 
 QString ArrowStyleToString(ArrowStyle style)
 {

@@ -147,7 +147,7 @@ void MainWindowInsertController::InsertShape(ShapeType type, qreal triangleAngle
     }
 
     m_window->m_scene->clearSelection();
-    m_window->m_scene->AddItemsWithUndo({item}, MainWindow::tr("Insert %1").arg(ShapeTypeName(type)));
+    m_window->m_scene->AddItemsWithUndo({item}, MainWindow::tr("Insert %1").arg(ShapeTypes::Name(type)));
     item->setSelected(true);
     m_window->m_view->setFocus();
     if (type == ShapeType::ELLIPSE) {
@@ -156,7 +156,7 @@ void MainWindowInsertController::InsertShape(ShapeType type, qreal triangleAngle
     } else {
         m_window->statusBar()->showMessage(
             MainWindow::tr("Inserted %1; drag to move, drag handles to resize, color follows the current brush")
-                .arg(ShapeTypeName(type)),
+                .arg(ShapeTypes::Name(type)),
             5000);
     }
 }
@@ -318,14 +318,15 @@ void MainWindowInsertController::InsertCompositeShape(ShapeType type)
     }
 
     m_window->m_scene->clearSelection();
-    m_window->m_scene->AddItemsWithUndo(faces, MainWindow::tr("Insert %1").arg(ShapeTypeName(type)));
+    m_window->m_scene->AddItemsWithUndo(faces, MainWindow::tr("Insert %1").arg(ShapeTypes::Name(type)));
     m_window->m_scene->AssignNewGroup(faces);
     for (CanvasItem* face : faces) {
         face->setSelected(true);
     }
     m_window->m_view->setFocus();
     m_window->statusBar()->showMessage(
-        MainWindow::tr("Inserted %1 as a grouped set of faces; drag to move the whole shape").arg(ShapeTypeName(type)),
+        MainWindow::tr("Inserted %1 as a grouped set of faces; drag to move the whole shape")
+            .arg(ShapeTypes::Name(type)),
         5000);
 }
 

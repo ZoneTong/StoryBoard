@@ -45,7 +45,11 @@ enum class ShapeType {
 };
 
 QList<ShapeType> AllShapeTypes();
-QString ShapeTypeName(ShapeType type);
+namespace ShapeTypes {
+
+QString Name(ShapeType type);
+
+} // namespace ShapeTypes
 QString ShapeTypeToString(ShapeType type);
 ShapeType ShapeTypeFromString(const QString& value);
 QSizeF DefaultShapeSize(ShapeType type);
@@ -57,7 +61,11 @@ QIcon MakeShapeIcon(ShapeType type, const QColor& color = QColor(58, 64, 80), in
 QIcon MakeShapePresetIcon(const QString& preset, const QColor& color = QColor(58, 64, 80), int logicalSize = 22);
 
 QList<FillStyle> AllFillStyles();
-QString FillStyleName(FillStyle style);
+namespace FillStyles {
+
+QString Name(FillStyle style);
+
+} // namespace FillStyles
 // 填充纹理的中心线几何，编辑面板的工具按钮缩略图与图元绘制共用这一份。
 QPainterPath FillPatternCenterLines(FillStyle style, const QRectF& rect);
 

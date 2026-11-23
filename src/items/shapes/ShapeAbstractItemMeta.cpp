@@ -20,7 +20,9 @@ QList<ShapeType> AllShapeTypes()
     return ShapeMeta::AllTypes();
 }
 
-QString ShapeTypeName(ShapeType type)
+namespace ShapeTypes {
+
+QString Name(ShapeType type)
 {
     switch (type) {
     case ShapeType::RECTANGLE:
@@ -69,6 +71,9 @@ QString ShapeTypeName(ShapeType type)
     return ShapeAbstractItem::tr("Rectangle");
 }
 
+} // namespace ShapeTypes
+
+
 QString ShapeTypeToString(ShapeType type)
 {
     return ShapeMeta::TypeToString(type);
@@ -100,7 +105,9 @@ QList<FillStyle> AllFillStyles()
     return ShapeMeta::AllStyles();
 }
 
-QString FillStyleName(FillStyle style)
+namespace FillStyles {
+
+QString Name(FillStyle style)
 {
     switch (style) {
     case FillStyle::NONE:
@@ -128,6 +135,9 @@ QString FillStyleName(FillStyle style)
     }
     return ShapeAbstractItem::tr("Solid");
 }
+
+} // namespace FillStyles
+
 
 QString FillStyleToString(FillStyle style)
 {

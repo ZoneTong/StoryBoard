@@ -35,10 +35,10 @@ void UiMenuBuilder::BuildShapeMenu()
 
     for (ShapeType type : AllShapeTypes()) {
         QAction* action =
-            m_window->m_shapeMenu->addAction(MakeShapeIcon(type, QColor(58, 64, 80), 18), ShapeTypeName(type));
+            m_window->m_shapeMenu->addAction(MakeShapeIcon(type, QColor(58, 64, 80), 18), ShapeTypes::Name(type));
         action->setObjectName(QStringLiteral("ShapeAction_%1").arg(ShapeTypeToString(type)));
         action->setData(static_cast<int>(type));
-        action->setToolTip(MainWindow::tr("Insert %1 (uses the current brush color)").arg(ShapeTypeName(type)));
+        action->setToolTip(MainWindow::tr("Insert %1 (uses the current brush color)").arg(ShapeTypes::Name(type)));
         QObject::connect(action, &QAction::triggered, m_window, [this, type]() { m_window->InsertShape(type); });
 
         // 需求 5：圆角矩形已并入矩形，菜单保留两个入口——矩形（直角）与紧跟其后的

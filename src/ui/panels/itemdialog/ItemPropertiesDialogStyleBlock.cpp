@@ -146,7 +146,7 @@ void ItemPropertiesDialogStyleBlock::BuildTypeRows()
     m_endArrowCombo->setToolTip(ItemPropertiesDialog::tr("End arrow"));
     for (QComboBox* combo : {m_startArrowCombo, m_endArrowCombo}) {
         for (ArrowStyle arrowStyle : AllArrowStyles()) {
-            combo->addItem(ArrowStyleName(arrowStyle), static_cast<int>(arrowStyle));
+            combo->addItem(ArrowStyles::Name(arrowStyle), static_cast<int>(arrowStyle));
         }
     }
     arrowLayout->addWidget(m_startArrowCombo, 1);

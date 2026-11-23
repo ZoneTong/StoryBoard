@@ -259,7 +259,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
         combo->setObjectName(QStringLiteral("ItemArrowCombo"));
         combo->setToolTip(tooltip);
         for (ArrowStyle style : AllArrowStyles()) {
-            combo->addItem(ArrowStyleName(style), static_cast<int>(style));
+            combo->addItem(ArrowStyles::Name(style), static_cast<int>(style));
         }
         connect(combo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, combo, signal](int) {
             if (!m_refreshing) {

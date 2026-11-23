@@ -102,7 +102,7 @@ FillStyleRow::FillStyleRow(QWidget* parent) : QWidget(parent)
         button->setIcon(ItemStyleVisuals::FillStyleIcon(style, fillStyleGlyph));
         button->setIconSize(QSize(fillStyleGlyph, fillStyleGlyph));
         button->setFixedSize(fillStyleWidth, RowMetrics::RowHeight());
-        button->setToolTip(FillStyleName(style));
+        button->setToolTip(FillStyles::Name(style));
         button->setProperty("fillStyle", static_cast<int>(style));
         connect(button, &QToolButton::clicked, this, [this, style]() {
             if (!m_refreshing) {

@@ -132,7 +132,7 @@ QString ShapeAbstractItem::DisplayName() const
     if (!m_customName.isEmpty()) {
         return m_customName;
     }
-    return ShapeTypeName(shapeType());
+    return ShapeTypes::Name(shapeType());
 }
 
 QPointF ShapeAbstractItem::triangleVertex(TriangleVertex vertex) const

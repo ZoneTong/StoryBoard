@@ -257,7 +257,7 @@ void StyleController::ApplyFillToSelection()
         } else {
             m_window->statusBar()->showMessage(
                 MainWindow::tr("Fill set to \"%1\"; it will be used for newly inserted shapes")
-                    .arg(FillStyleName(m_window->m_fillStyle)),
+                    .arg(FillStyles::Name(m_window->m_fillStyle)),
                 4000);
         }
         return;
@@ -296,9 +296,10 @@ void StyleController::ApplyFillToSelection()
     }
     m_window->m_undo->push(
         new ItemPropertyCommand(m_window->m_scene, items, before, after, MainWindow::tr("Change fill style")));
-    m_window->statusBar()->showMessage(
-        MainWindow::tr("Applied \"%2\" to %1 shape(s)").arg(targets.size()).arg(FillStyleName(m_window->m_fillStyle)),
-        4000);
+    m_window->statusBar()->showMessage(MainWindow::tr("Applied \"%2\" to %1 shape(s)")
+                                           .arg(targets.size())
+                                           .arg(FillStyles::Name(m_window->m_fillStyle)),
+                                       4000);
 }
 
 void StyleController::UpdateFillActions()
@@ -381,7 +382,7 @@ void StyleController::UpdateFillActions()
     const QString colorText = m_window->m_fillColor.isValid() ? m_window->m_fillColor.name(QColor::HexArgb).toUpper()
                                                               : MainWindow::tr("Follow brush color");
     m_window->m_fillButton->setToolTip(
-        MainWindow::tr("Fill: %1 · %2 (click to choose)").arg(FillStyleName(m_window->m_fillStyle), colorText));
+        MainWindow::tr("Fill: %1 · %2 (click to choose)").arg(FillStyles::Name(m_window->m_fillStyle), colorText));
     if (m_window->m_fillColorAct) {
         m_window->m_fillColorAct->setIcon(FillColorIcon(swatch, 16));
     }

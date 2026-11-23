@@ -31,8 +31,8 @@ void MainWindowAppController::ApplyUiLanguage()
     if (m_window->m_shapeMenu) {
         for (QAction* action : m_window->m_shapeMenu->actions()) {
             const ShapeType type = static_cast<ShapeType>(action->data().toInt());
-            action->setText(ShapeTypeName(type));
-            action->setToolTip(MainWindow::tr("Insert %1 (uses the current brush color)").arg(ShapeTypeName(type)));
+            action->setText(ShapeTypes::Name(type));
+            action->setToolTip(MainWindow::tr("Insert %1 (uses the current brush color)").arg(ShapeTypes::Name(type)));
         }
     }
 

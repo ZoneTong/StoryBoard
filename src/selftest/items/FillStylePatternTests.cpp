@@ -51,13 +51,13 @@ void selftest::RunFillStylePatternTests(Context& ctx)
               QStringLiteral("topRight=%1 bottomLeft=%2").arg(hatchTopRight).arg(hatchBottomLeft));
 
     // 填充样式扩展：反斜线、十字线、六边形、水平线、竖线、砖纹、点阵。
-    ctx.Check(FillStyleName(FillStyle::REVERSE_HACHURE) == QStringLiteral("反斜线") &&
-                  FillStyleName(FillStyle::GRID_HATCH) == QStringLiteral("十字线") &&
-                  FillStyleName(FillStyle::HONEYCOMB) == QStringLiteral("六边形") &&
-                  FillStyleName(FillStyle::HORIZONTAL_HATCH) == QStringLiteral("水平线") &&
-                  FillStyleName(FillStyle::VERTICAL_HATCH) == QStringLiteral("竖线") &&
-                  FillStyleName(FillStyle::BRICK) == QStringLiteral("砖纹") &&
-                  FillStyleName(FillStyle::DOTS) == QStringLiteral("点阵"),
+    ctx.Check(FillStyles::Name(FillStyle::REVERSE_HACHURE) == QStringLiteral("反斜线") &&
+                  FillStyles::Name(FillStyle::GRID_HATCH) == QStringLiteral("十字线") &&
+                  FillStyles::Name(FillStyle::HONEYCOMB) == QStringLiteral("六边形") &&
+                  FillStyles::Name(FillStyle::HORIZONTAL_HATCH) == QStringLiteral("水平线") &&
+                  FillStyles::Name(FillStyle::VERTICAL_HATCH) == QStringLiteral("竖线") &&
+                  FillStyles::Name(FillStyle::BRICK) == QStringLiteral("砖纹") &&
+                  FillStyles::Name(FillStyle::DOTS) == QStringLiteral("点阵"),
               QStringLiteral("新增填充样式名称齐全"));
     ctx.Check(AllFillStyles().size() == 11 && AllFillStyles().at(0) == FillStyle::NONE &&
                   AllFillStyles().at(1) == FillStyle::SOLID && AllFillStyles().at(2) == FillStyle::HACHURE &&

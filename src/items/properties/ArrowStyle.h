@@ -13,7 +13,11 @@ class QPainter;
 enum class ArrowStyle { NONE = 0, TRIANGLE_FILLED, TRIANGLE_HOLLOW, OPEN_ARROW, DOT, BAR };
 
 QList<ArrowStyle> AllArrowStyles();
-QString ArrowStyleName(ArrowStyle style);
+namespace ArrowStyles {
+
+QString Name(ArrowStyle style);
+
+} // namespace ArrowStyles
 QString ArrowStyleToString(ArrowStyle style);
 ArrowStyle ArrowStyleFromString(const QString& value);
 bool ArrowStyleIsHead(ArrowStyle style);
