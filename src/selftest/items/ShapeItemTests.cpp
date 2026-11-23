@@ -587,10 +587,8 @@ void selftest::RunShapeItemTests(Context& ctx)
         const bool changed = curve.SimplifyCurve(6.0);
         const QSizeF sizeAfter = curve.ContentSize();
         ctx.Check(changed && sizeAfter.width() < sizeBefore.width() * 0.45 &&
-                      sizeAfter.height() < sizeBefore.height() * 0.45 &&
-                      qAbs(curve.pos().x() - posBefore.x()) < 40.0 &&
-                      qAbs(curve.pos().y() - posBefore.y()) < 40.0 &&
-                      curve.StrokePoints().size() < knotsBefore.size(),
+                      sizeAfter.height() < sizeBefore.height() * 0.45 && qAbs(curve.pos().x() - posBefore.x()) < 40.0 &&
+                      qAbs(curve.pos().y() - posBefore.y()) < 40.0 && curve.StrokePoints().size() < knotsBefore.size(),
                   QStringLiteral("简化曲线按缩放后的结果抽点并保留用户尺寸"),
                   QStringLiteral("changed=%1 size=%2x%3 before=%4x%5 knots=%6→%7 pos=%8,%9→%10,%11")
                       .arg(changed)
@@ -1267,6 +1265,29 @@ void selftest::RunShapeItemTests(Context& ctx)
         ctx.Check(hasInk(sineCycles) && hasInk(sineAmplitude) && sineCycles != sineAmplitude && sineCycles != rotate &&
                       sineAmplitude != rotate,
                   QStringLiteral("正弦周期 / 振幅使用独立波形箭头图标"));
+        // D7：编辑面板的角度与几何行图标各用专图，不再借 ROTATE_CCW / SHAPES / FIT。
+        const IconId rowIcons[] = {IconId::ANGLE_START, IconId::ANGLE_SWEEP, IconId::ROTATE_OBJECT, IconId::CENTER,
+                                   IconId::SIZE};
+        QList<QImage> rowImages;
+        bool allPainted = true;
+        for (const IconId id : rowIcons) {
+            const QImage image = iconImage(id);
+            allPainted = allPainted && hasInk(image);
+            rowImages.append(image);
+        }
+        bool allDistinct = true;
+        for (int i = 0; i < rowImages.size(); ++i) {
+            for (int j = i + 1; j < rowImages.size(); ++j) {
+                if (rowImages.at(i) == rowImages.at(j)) {
+                    allDistinct = false;
+                }
+            }
+        }
+        ctx.Check(allPainted && allDistinct, QStringLiteral("角度/旋转/中心/尺寸行图标各为独立字形且非空白"));
+        // 半轴图标从中心出发，长短半轴必须不同，且都不再是同一张焦点图。
+        ctx.Check(iconImage(IconId::AXIS_MAJOR) != iconImage(IconId::AXIS_MINOR) &&
+                      hasInk(iconImage(IconId::AXIS_MAJOR)) && hasInk(iconImage(IconId::AXIS_MINOR)),
+                  QStringLiteral("长/短半轴图标从中心量起且互不相同"));
         // 双向箭头：周期图标的箭杆两端（左右下角）都有墨迹，振幅图标的箭杆两端
         // （右上与右下）都有墨迹。
         const auto hasInkIn = [](const QImage& image, const QRect& region) {
@@ -1282,18 +1303,17 @@ void selftest::RunShapeItemTests(Context& ctx)
         ctx.Check(hasInkIn(sineCycles, QRect(0, 30, 12, 14)) && hasInkIn(sineCycles, QRect(32, 30, 12, 14)) &&
                       hasInkIn(sineAmplitude, QRect(30, 0, 14, 12)) && hasInkIn(sineAmplitude, QRect(30, 32, 14, 12)),
                   QStringLiteral("周期图标为左右双向箭头、振幅图标为上下双向箭头"));
-        // 椭圆长 / 短半轴图标：椭圆轮廓 + 左焦点 + 半轴线；两者互不相同，
+        // 椭圆长 / 短半轴图标：椭圆轮廓 + 中心点 + 半轴线；两者互不相同，
         // 也不再复用通用的图形集合图标。
         const QImage axisMajor = iconImage(IconId::AXIS_MAJOR);
         const QImage axisMinor = iconImage(IconId::AXIS_MINOR);
         const QImage shapesIcon = iconImage(IconId::SHAPES);
         ctx.Check(hasInk(axisMajor) && hasInk(axisMinor) && axisMajor != axisMinor && axisMajor != shapesIcon &&
                       axisMinor != shapesIcon,
-                  QStringLiteral("长 / 短半轴使用独立的焦点半轴图标"));
-        // 长半轴图标在左焦点右侧的横线上有墨迹，短半轴图标在右焦点与右顶点
-        // 之间的横线上有墨迹（x=40 逻辑 20，既不在焦点圆点也不在椭圆轮廓上）。
-        ctx.Check(hasInkIn(axisMajor, QRect(24, 18, 18, 10)) && hasInkIn(axisMinor, QRect(40, 23, 1, 3)),
-                  QStringLiteral("长 / 短半轴图标分别为左、右焦点横线到右顶点"));
+                  QStringLiteral("长 / 短半轴使用独立的半轴图标"));
+        // 长半轴是从中心沿长轴量到右顶点的横线，短半轴是从中心竖直量到上顶点的竖线。
+        ctx.Check(hasInkIn(axisMajor, QRect(26, 20, 12, 4)) && hasInkIn(axisMinor, QRect(22, 12, 4, 8)),
+                  QStringLiteral("长半轴沿长轴、短半轴沿短轴，均从椭圆中心量起"));
     }
 
     QList<ShapeAbstractItem*> shapeItems;

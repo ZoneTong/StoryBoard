@@ -186,23 +186,23 @@ void DrawSineAmplitude(QPainter& painter, IconId)
 
 namespace {
 
-// 椭圆半轴两行的公共轮廓：中心 (12,12)、半长轴 9、半短轴 6，
-// 焦距 = √(9²−6²) ≈ 6.7，左焦点 (5.3,12)、右焦点 (18.7,12)。
-constexpr qreal AXIS_ELLIPSE_C = 6.7082039324993694;
-constexpr QPointF AXIS_LEFT_FOCUS(12.0 - AXIS_ELLIPSE_C, 12.0);
-constexpr QPointF AXIS_RIGHT_FOCUS(12.0 + AXIS_ELLIPSE_C, 12.0);
+// 椭圆半轴两行的公共轮廓：中心 (12,12)、半长轴 9、半短轴 6。
+// 半轴是从中心量到轮廓的量，所以线段从中心出发，不是从焦点出发（焦半径语义不同）。
+constexpr QPointF AXIS_CENTER(12.0, 12.0);
 
 void DrawAxisEllipse(QPainter& painter)
 {
     painter.drawEllipse(QRectF(3.0, 6.0, 18.0, 12.0));
 }
 
-void DrawAxisFocusDot(QPainter& painter, const QPointF& focus)
+void DrawAxisCenterDot(QPainter& painter, const QPointF& center)
 {
+    // 先取颜色再换成 NoPen：换成 NoPen 之后 pen().color() 已经不是图标色了。
+    const QColor color = painter.pen().color();
     painter.save();
     painter.setPen(Qt::NoPen);
-    painter.setBrush(painter.pen().color());
-    painter.drawEllipse(focus, 1.1, 1.1);
+    painter.setBrush(color);
+    painter.drawEllipse(center, 1.1, 1.1);
     painter.restore();
 }
 
@@ -210,18 +210,18 @@ void DrawAxisFocusDot(QPainter& painter, const QPointF& focus)
 
 void DrawAxisMajor(QPainter& painter, IconId)
 {
-    // 长半轴：椭圆 + 左焦点实心点 + 从左焦点沿长轴画到右顶点的横线。
+    // 长半轴：椭圆 + 中心点 + 从中心沿长轴量到右顶点的横线。
     DrawAxisEllipse(painter);
-    DrawAxisFocusDot(painter, AXIS_LEFT_FOCUS);
-    painter.drawLine(AXIS_LEFT_FOCUS, QPointF(21.0, 12.0));
+    DrawAxisCenterDot(painter, AXIS_CENTER);
+    painter.drawLine(AXIS_CENTER, QPointF(21.0, 12.0));
 }
 
 void DrawAxisMinor(QPainter& painter, IconId)
 {
-    // 短半轴：椭圆 + 右焦点实心点 + 从右焦点沿长轴画到右顶点的横线（比长半轴线段短）。
+    // 短半轴：椭圆 + 中心点 + 从中心竖直量到上顶点的短线。
     DrawAxisEllipse(painter);
-    DrawAxisFocusDot(painter, AXIS_RIGHT_FOCUS);
-    painter.drawLine(AXIS_RIGHT_FOCUS, QPointF(21.0, 12.0));
+    DrawAxisCenterDot(painter, AXIS_CENTER);
+    painter.drawLine(AXIS_CENTER, QPointF(12.0, 6.0));
 }
 
 constexpr struct IconEntry {

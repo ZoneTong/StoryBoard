@@ -197,6 +197,80 @@ void DrawMorph(QPainter& painter, IconId)
 }
 
 
+// 角度行：两根射线从一个顶点张开，起始角只画靠顶点的一小段弧，
+// 扫过角把弧画满并带箭头，一眼能分出“从哪开始”和“扫多少”。
+void DrawAngleRow(QPainter& painter, IconId id)
+{
+    const QPointF vertex(4.5, 19.5);
+    painter.drawLine(vertex, QPointF(20.0, 19.5));
+    painter.drawLine(vertex, QPointF(17.5, 5.5));
+
+    if (id == IconId::ANGLE_START) {
+        painter.drawArc(QRectF(vertex.x() - 4.5, vertex.y() - 4.5, 9.0, 9.0), 0 * 16, -46 * 16);
+        painter.save();
+        painter.setBrush(painter.pen().color());
+        painter.drawEllipse(QPointF(9.3, 19.5), 1.1, 1.1);
+        painter.restore();
+        return;
+    }
+    painter.drawArc(QRectF(vertex.x() - 9.5, vertex.y() - 9.5, 19.0, 19.0), 0 * 16, -46 * 16);
+    painter.save();
+    painter.setBrush(painter.pen().color());
+    QPainterPath arrow;
+    const QPointF tip(vertex.x() + 13.2, vertex.y() - 9.0);
+    arrow.moveTo(tip);
+    arrow.lineTo(tip + QPointF(-3.2, 2.6));
+    arrow.lineTo(tip + QPointF(1.4, 3.4));
+    arrow.closeSubpath();
+    painter.drawPath(arrow);
+    painter.restore();
+}
+
+void DrawCenter(QPainter& painter, IconId)
+{
+    painter.drawEllipse(QPointF(12.0, 12.0), 3.4, 3.4);
+    const qreal inner = 5.6;
+    const qreal outer = 8.6;
+    painter.drawLine(QPointF(12.0 - outer, 12.0), QPointF(12.0 - inner, 12.0));
+    painter.drawLine(QPointF(12.0 + inner, 12.0), QPointF(12.0 + outer, 12.0));
+    painter.drawLine(QPointF(12.0, 12.0 - outer), QPointF(12.0, 12.0 - inner));
+    painter.drawLine(QPointF(12.0, 12.0 + inner), QPointF(12.0, 12.0 + outer));
+}
+
+void DrawSize(QPainter& painter, IconId)
+{
+    painter.drawRect(QRectF(3.5, 6.5, 14.0, 11.0));
+    // 斜向双向箭头表示“宽 × 高”。
+    painter.drawLine(QPointF(7.0, 16.0), QPointF(17.0, 8.0));
+    painter.drawLine(QPointF(17.0, 8.0), QPointF(13.6, 8.4));
+    painter.drawLine(QPointF(17.0, 8.0), QPointF(16.6, 11.4));
+    painter.drawLine(QPointF(7.0, 16.0), QPointF(10.4, 15.6));
+    painter.drawLine(QPointF(7.0, 16.0), QPointF(7.4, 12.6));
+}
+
+// 对象旋转：虚线框 + 框外的弧形箭头，区别于工具栏里单纯的方向圆圈。
+void DrawRotateObject(QPainter& painter, IconId)
+{
+    painter.save();
+    QPen dashed = painter.pen();
+    dashed.setStyle(Qt::DashLine);
+    dashed.setDashPattern({3.0, 2.5});
+    painter.setPen(dashed);
+    painter.drawRect(QRectF(3.5, 9.0, 17.0, 11.5));
+    painter.restore();
+
+    painter.drawArc(QRectF(3.0, 2.0, 18.0, 14.0), 20 * 16, 140 * 16);
+    painter.save();
+    painter.setBrush(painter.pen().color());
+    QPainterPath arrow;
+    arrow.moveTo(8.6, 2.2);
+    arrow.lineTo(4.4, 5.9);
+    arrow.lineTo(9.6, 6.4);
+    arrow.closeSubpath();
+    painter.drawPath(arrow);
+    painter.restore();
+}
+
 constexpr struct IconEntry {
     IconId id;
     void (*draw)(QPainter&, IconId);
@@ -205,6 +279,11 @@ constexpr struct IconEntry {
     {IconId::ROTATE_CW, DrawRotate},
     {IconId::POSITION, DrawPosition},
     {IconId::FIT, DrawFit},
+    {IconId::ANGLE_START, DrawAngleRow},
+    {IconId::ANGLE_SWEEP, DrawAngleRow},
+    {IconId::CENTER, DrawCenter},
+    {IconId::SIZE, DrawSize},
+    {IconId::ROTATE_OBJECT, DrawRotateObject},
     {IconId::ZOOM_IN, DrawZoom},
     {IconId::ZOOM_OUT, DrawZoom},
     {IconId::ALIGN, DrawAlign},

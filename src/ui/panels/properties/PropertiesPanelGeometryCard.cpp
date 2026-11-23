@@ -32,7 +32,7 @@ PropertiesPanelGeometryCard::PropertiesPanelGeometryCard(QWidget* parent) : QWid
     layout->addWidget(m_minorAxisRow);
 
     // 行序与属性窗几何区一致：长短半轴 → 旋转 → 位置 → 尺寸。
-    m_rotationRow = new NumberAttributeRow(IconId::ROTATE_CCW, true, ItemProperty::ROTATION,
+    m_rotationRow = new NumberAttributeRow(IconId::ROTATE_OBJECT, true, ItemProperty::ROTATION,
                                            QStringLiteral("ItemRotationSpin"), this);
     m_rotationRow->Spin()->setToolTip(PropertiesPanel::tr("Rotation"));
     m_rotationRow->SetIconToolTip(PropertiesPanel::tr("Rotation"));
@@ -47,7 +47,7 @@ PropertiesPanelGeometryCard::PropertiesPanelGeometryCard(QWidget* parent) : QWid
     layout->addWidget(m_positionRow);
 
     m_sizeRow =
-        new PairAttributeRow(IconId::SHAPES, true, QStringLiteral("ItemSizeWidthSpin"),
+        new PairAttributeRow(IconId::SIZE, true, QStringLiteral("ItemSizeWidthSpin"),
                              QStringLiteral("ItemSizeHeightSpin"), ItemProperty::SIZE, QStringLiteral("×"), this);
     m_sizeRow->FirstSpin()->setToolTip(PropertiesPanel::tr("Item size"));
     m_sizeRow->SecondSpin()->setToolTip(PropertiesPanel::tr("Item size"));
@@ -63,7 +63,7 @@ PropertiesPanelGeometryCard::PropertiesPanelGeometryCard(QWidget* parent) : QWid
 
     // §3.4 中心点：派生属性，行放在几何区最后；多选时绝对对齐到同一中心。
     m_centerRow =
-        new PairAttributeRow(IconId::FIT, true, QStringLiteral("ItemCenterXSpin"), QStringLiteral("ItemCenterYSpin"),
+        new PairAttributeRow(IconId::CENTER, true, QStringLiteral("ItemCenterXSpin"), QStringLiteral("ItemCenterYSpin"),
                              ItemProperty::CENTER, QStringLiteral(","), this);
     m_centerRow->FirstSpin()->setToolTip(PropertiesPanel::tr("Center point"));
     m_centerRow->SecondSpin()->setToolTip(PropertiesPanel::tr("Center point"));

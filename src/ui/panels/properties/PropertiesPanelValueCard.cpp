@@ -93,7 +93,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     auto* startLayout = new QHBoxLayout(m_startAngleSection);
     startLayout->setContentsMargins(0, 0, 0, 0);
     startLayout->setSpacing(4);
-    QToolButton* startIcon = MakeRowIcon(IconId::ROTATE_CCW, m_startAngleSection);
+    QToolButton* startIcon = MakeRowIcon(IconId::ANGLE_START, m_startAngleSection);
     startIcon->setToolTip(PropertiesPanel::tr("Start angle"));
     startLayout->addWidget(startIcon);
     m_startAngleSpin = new QSpinBox(m_startAngleSection);
@@ -115,7 +115,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     angleLayout->setContentsMargins(0, 0, 0, 0);
     angleLayout->setSpacing(4);
 
-    QToolButton* angleIcon = MakeRowIcon(IconId::ROTATE_CCW, m_angleSection);
+    QToolButton* angleIcon = MakeRowIcon(IconId::ANGLE_SWEEP, m_angleSection);
     angleIcon->setToolTip(PropertiesPanel::tr("Sweep angle"));
     angleLayout->addWidget(angleIcon);
 

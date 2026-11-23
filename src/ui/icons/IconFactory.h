@@ -48,6 +48,13 @@ enum class IconId {
     // 正弦波形两行：周期数是波峰下带左右双向箭头（沿轴往复推进），振幅是波峰右侧带上下双向箭头（波高）。
     SINE_CYCLES,
     SINE_AMPLITUDE,
+    // 角度三行各用专图（起始角 / 扫过角 / 对象旋转），不再全借工具栏的顺逆时针图标。
+    ANGLE_START,
+    ANGLE_SWEEP,
+    // 几何两行：中心点画十字靶心，尺寸画带双向箭头的矩形，避免继续借 FIT / SHAPES。
+    CENTER,
+    SIZE,
+    ROTATE_OBJECT,
     // 椭圆半轴两行：椭圆轮廓加从左焦点出发的半轴线；长半轴沿长轴到右顶点，短半轴垂直向上到椭圆。
     AXIS_MAJOR,
     AXIS_MINOR,
