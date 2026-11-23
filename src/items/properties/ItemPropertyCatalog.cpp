@@ -1,5 +1,7 @@
 #include "items/properties/ItemPropertyCatalog.h"
 
+#include "items/CanvasItem.h"
+
 #include <QCoreApplication>
 #include <utility>
 
@@ -91,6 +93,46 @@ const QList<ItemPropertyDescriptor*>& ItemPropertyCatalog::All()
                                    ItemPropertyGroup::GEOMETRY, ItemPropertyKind::REAL, -1000000.0, 1000000.0, 1.0, 1,
                                    QString(), true},
     };
+    // 公共身份 / 几何属性先走描述符读写回调，属性键通道不再进入 CanvasItem 的 switch。
+    static const bool CALLBACKS_ATTACHED = []() {
+        for (ItemPropertyDescriptor* descriptor : DESCRIPTORS) {
+            if (descriptor->key == ItemProperty::NAME) {
+                descriptor->reader = [](const CanvasItem* item) { return item->Name(); };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) { item->SetName(value.toString()); };
+            } else if (descriptor->key == ItemProperty::LAYER) {
+                descriptor->reader = [](const CanvasItem* item) { return item->LayerId(); };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) { item->SetLayerId(value.toInt()); };
+            } else if (descriptor->key == ItemProperty::HEIGHT) {
+                descriptor->reader = [](const CanvasItem* item) { return item->ZOrder(); };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) { item->SetZOrder(value.toInt()); };
+            } else if (descriptor->key == ItemProperty::POSITION) {
+                descriptor->reader = [](const CanvasItem* item) { return item->pos(); };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) { item->setPos(value.toPointF()); };
+            } else if (descriptor->key == ItemProperty::SIZE) {
+                descriptor->reader = [](const CanvasItem* item) { return item->ContentSize(); };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    item->SetContentSize(value.toSizeF());
+                };
+            } else if (descriptor->key == ItemProperty::ROTATION) {
+                descriptor->reader = [](const CanvasItem* item) { return item->RotationAngle(); };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    item->SetRotationAngle(value.toDouble());
+                };
+            } else if (descriptor->key == ItemProperty::CENTER) {
+                descriptor->reader = [](const CanvasItem* item) { return item->CenterScenePoint(); };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    item->setPos(item->pos() + value.toPointF() - item->CenterScenePoint());
+                };
+            } else if (descriptor->key == ItemProperty::OPACITY) {
+                descriptor->reader = [](const CanvasItem* item) { return item->ItemOpacity(); };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    item->SetItemOpacity(value.toDouble());
+                };
+            }
+        }
+        return true;
+    }();
+    Q_UNUSED(CALLBACKS_ATTACHED)
     return DESCRIPTORS;
 }
 
