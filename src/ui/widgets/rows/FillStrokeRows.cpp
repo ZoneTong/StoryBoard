@@ -34,7 +34,7 @@ QToolButton* MakeSwatch(const QColor& color, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemColorSwatch"));
-    button->setFixedSize(RowMetrics::IconButtonSize());
+    button->setFixedSize(RowMetrics::SwatchSize(), RowMetrics::SwatchSize());
     button->setCheckable(true);
     button->setToolTip(color.name(QColor::HexRgb).toUpper());
     button->setStyleSheet(QStringLiteral("QToolButton { border: 1px solid #CBD5E1; border-radius: 3px; "
@@ -75,10 +75,10 @@ FillStyleRow::FillStyleRow(QWidget* parent) : QWidget(parent)
     icon->setToolTip(RowText("Fill style"));
     layout->addWidget(icon, 0, Qt::AlignVCenter);
 
-    // 11 个按钮排一行：按钮最大 21×21、字形 15，行宽 = 图标 + 11×21 = 255，比填充颜色行（265）窄。
+    // 11 个按钮排一行：按钮最大 23×23、字形 17，行宽 = 图标 + 11×23，控制在编辑面板宽度内。
     // 面板更窄时按可用宽度等比收小（不小于 16），始终排在一行、且不超过其它属性行的宽度。
-    const int fillStyleButton = 21;
-    const int fillStyleGlyph = 15;
+    const int fillStyleButton = 23;
+    const int fillStyleGlyph = 17;
     m_buttonEdge = fillStyleButton;
     for (const FillStyle style : AllFillStyles()) {
         auto* button = new QToolButton(this);
@@ -103,9 +103,9 @@ FillStyleRow::FillStyleRow(QWidget* parent) : QWidget(parent)
 
 QSize FillStyleRow::minimumSizeHint() const
 {
-    // 按钮边长最小 16（见 resizeEvent），这里按最小边长报下界：面板拉窄/拉宽都不会把行顶出面板右边界。
+    // 按钮边长最小 18（见 resizeEvent），这里按最小边长报下界：面板拉窄/拉宽都不会把行顶出面板右边界。
     const int iconWidth = RowMetrics::IconButtonSize().width();
-    return QSize(iconWidth + m_buttons.size() * 16, RowMetrics::RowHeight());
+    return QSize(iconWidth + m_buttons.size() * 18, RowMetrics::RowHeight());
 }
 
 void FillStyleRow::resizeEvent(QResizeEvent* event)
@@ -119,8 +119,8 @@ void FillStyleRow::resizeEvent(QResizeEvent* event)
     if (available <= 0) {
         return;
     }
-    const int edge = qBound(16, available / m_buttons.size(), 21);
-    ApplyButtonSize(edge, qBound(12, edge - 6, 15));
+    const int edge = qBound(18, available / m_buttons.size(), 23);
+    ApplyButtonSize(edge, qBound(12, edge - 6, 17));
 }
 
 void FillStyleRow::ApplyButtonSize(int edge, int glyph)
@@ -179,7 +179,7 @@ FillColorRow::FillColorRow(QWidget* parent) : QWidget(parent)
 
     m_customButton = new QToolButton(this);
     m_customButton->setObjectName(QStringLiteral("ItemColorButton"));
-    m_customButton->setFixedWidth(RowMetrics::RowHeight());
+    m_customButton->setFixedWidth(RowMetrics::SwatchSize());
     m_customButton->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
     m_customButton->setToolTip(RowText("Fill color"));
     connect(m_customButton, &QToolButton::clicked, this, [this]() {
@@ -312,7 +312,7 @@ StrokeStyleRow::StrokeStyleRow(QWidget* parent) : QWidget(parent)
         button->setAutoRaise(true);
         button->setIcon(ItemStyleVisuals::BorderStyleIcon(style, RowMetrics::GlyphSize()));
         button->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
-        button->setFixedSize(RowMetrics::IconButtonSize());
+        button->setFixedSize(RowMetrics::SwatchSize(), RowMetrics::SwatchSize());
         button->setToolTip(ItemStyleVisuals::BorderStyleName(style));
         button->setProperty("penStyle", static_cast<int>(style));
         connect(button, &QToolButton::clicked, this, [this, style]() {
@@ -368,7 +368,7 @@ StrokeColorRow::StrokeColorRow(QWidget* parent) : QWidget(parent)
 
     m_customButton = new QToolButton(this);
     m_customButton->setObjectName(QStringLiteral("ItemColorButton"));
-    m_customButton->setFixedWidth(RowMetrics::RowHeight());
+    m_customButton->setFixedWidth(RowMetrics::SwatchSize());
     m_customButton->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
     m_customButton->setToolTip(RowText("Border color"));
     connect(m_customButton, &QToolButton::clicked, this, [this]() {

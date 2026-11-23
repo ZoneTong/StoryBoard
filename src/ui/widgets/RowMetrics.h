@@ -20,6 +20,9 @@ int GlyphSize();
 // 行图标按钮的边长：与输入框等高，所以永远不会比属性窗里的输入框高。
 QSize IconButtonSize();
 
+// 色块按钮的边长：单独固定，不随字段高变化（色块放大反而晃眼）。
+int SwatchSize();
+
 // 把行控件套到统一行高，并固定纵向策略（避免卡片布局把它压扁）。
 void ApplyRow(QWidget* row);
 

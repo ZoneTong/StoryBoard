@@ -20,7 +20,7 @@
 
 void selftest::RunFillStyleBasicTests(Context& ctx)
 {
-    // 需求 7：11 个填充样式按钮收紧后，整行不超过填充颜色行。
+    // 需求 7：11 个填充样式按钮收紧后，整行与填充颜色行都要收进编辑面板的宽度上限（320，扣除两侧留白与滚动条约 30）。
     {
         FillStyleRow styleRow;
         FillColorRow colorRow;
@@ -28,9 +28,10 @@ void selftest::RunFillStyleBasicTests(Context& ctx)
         colorRow.show();
         styleRow.adjustSize();
         colorRow.adjustSize();
+        const int kPanelContentWidth = 290;
         ctx.Check(
-            styleRow.sizeHint().width() <= colorRow.sizeHint().width(),
-            QStringLiteral("填充样式行宽度不超过填充颜色行"),
+            styleRow.sizeHint().width() <= kPanelContentWidth && colorRow.sizeHint().width() <= kPanelContentWidth,
+            QStringLiteral("填充样式行与填充颜色行都不超过编辑面板宽度上限"),
             QStringLiteral("style=%1 color=%2").arg(styleRow.sizeHint().width()).arg(colorRow.sizeHint().width()));
     }
 

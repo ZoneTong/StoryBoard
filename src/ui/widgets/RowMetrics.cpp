@@ -46,6 +46,11 @@ QSize IconButtonSize()
     return QSize(side, side);
 }
 
+int SwatchSize()
+{
+    return 24;
+}
+
 void ApplyRow(QWidget* row)
 {
     if (!row) {
