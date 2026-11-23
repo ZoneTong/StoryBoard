@@ -47,10 +47,12 @@ ShapeAbstractItem* AddImageRect(CanvasScene& scene, int layerId, const QPixmap& 
 } // namespace
 using namespace selftest;
 
-bool RenderDemoCanvas(const QString& outputPath)
+namespace Demo {
+
+bool Render(const QString& outputPath)
 {
     CanvasScene scene;
-    PopulateDemoScene(scene);
+    Demo::Populate(scene);
 
     const QImage image = scene.RenderImage(scene.CanvasRect(), 1.0);
     if (image.isNull()) {
@@ -59,10 +61,10 @@ bool RenderDemoCanvas(const QString& outputPath)
     return image.save(outputPath);
 }
 
-bool WriteDemoCanvas(const QString& outputPath)
+bool Write(const QString& outputPath)
 {
     CanvasScene scene;
-    PopulateDemoScene(scene);
+    Demo::Populate(scene);
 
     QDir().mkpath(QFileInfo(outputPath).absolutePath());
     QFile file(outputPath);
@@ -79,7 +81,7 @@ bool WriteDemoCanvas(const QString& outputPath)
     return file.error() == QFileDevice::NoError;
 }
 
-void PopulateDemoScene(CanvasScene& scene)
+void Populate(CanvasScene& scene)
 {
     scene.ApplyCanvasSize(QSizeF(1600, 1000));
 
@@ -214,3 +216,5 @@ void PopulateDemoScene(CanvasScene& scene)
         MakeTextImage(QStringLiteral("KEEP THE MOMENT"), QColor(QStringLiteral("#9A3412")), noteFont, 330, 40);
     AddImageRect(scene, inkLayer, note, QSizeF(300, 36), QPointF(1098, 920));
 }
+
+} // namespace Demo

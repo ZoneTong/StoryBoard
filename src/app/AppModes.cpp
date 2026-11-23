@@ -47,12 +47,12 @@ int RunSelfTest(QApplication& app, const CommandLineOptions& options)
     return RunSelfTest(options.selfTestPath);
 }
 
-int RunRenderDemo(const CommandLineOptions& options)
+int RunRenderDemoCanvas(const CommandLineOptions& options)
 {
     if (options.renderDemoPath.isEmpty()) {
         return 2;
     }
-    return RenderDemoCanvas(options.renderDemoPath) ? 0 : 1;
+    return Demo::Render(options.renderDemoPath) ? 0 : 1;
 }
 
 int RunDemoCanvas(const CommandLineOptions& options)
@@ -60,7 +60,7 @@ int RunDemoCanvas(const CommandLineOptions& options)
     if (options.demoCanvasPath.isEmpty()) {
         return 2;
     }
-    return WriteDemoCanvas(options.demoCanvasPath) ? 0 : 1;
+    return Demo::Write(options.demoCanvasPath) ? 0 : 1;
 }
 
 int RunUiScreenshot(const CommandLineOptions& options)
@@ -73,7 +73,7 @@ int RunUiScreenshot(const CommandLineOptions& options)
     QApplication::processEvents();
 
     CanvasScene demoScene;
-    PopulateDemoScene(demoScene);
+    Demo::Populate(demoScene);
     window.Scene()->FromJson(demoScene.ToJson());
     window.View()->FitAll();
     QApplication::processEvents();
@@ -215,7 +215,7 @@ int RunItemPropertiesScreenshot(const CommandLineOptions& options)
     const QString& outputPath = options.itemPropertiesScreenshotPath;
 
     CanvasScene demoScene;
-    PopulateDemoScene(demoScene);
+    Demo::Populate(demoScene);
     demoScene.AssignAutoItemNames();
     demoScene.SetMode(ToolMode::EDIT);
     CanvasItem* target = nullptr;
@@ -263,7 +263,7 @@ int RunExportScreenshot(const CommandLineOptions& options)
     const QString& outputPath = options.exportScreenshotPath;
 
     CanvasScene demoScene;
-    PopulateDemoScene(demoScene);
+    Demo::Populate(demoScene);
     ExportDialog dialog(&demoScene, QStandardPaths::writableLocation(QStandardPaths::PicturesLocation));
     dialog.show();
     QApplication::processEvents();
@@ -423,7 +423,7 @@ int Run(QApplication& app, const CommandLineOptions& options)
         return RunSelfTest(app, options);
     }
     if (options.renderDemo) {
-        return RunRenderDemo(options);
+        return RunRenderDemoCanvas(options);
     }
     if (options.demoCanvas) {
         return RunDemoCanvas(options);

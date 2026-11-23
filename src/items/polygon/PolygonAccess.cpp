@@ -17,7 +17,9 @@ class PolygonFinder final : public CanvasItemVisitor {
 
 } // namespace
 
-PolygonItem* AsPolygon(CanvasItem* item)
+namespace PolygonAccess {
+
+PolygonItem* As(CanvasItem* item)
 {
     if (!item) {
         return nullptr;
@@ -27,7 +29,9 @@ PolygonItem* AsPolygon(CanvasItem* item)
     return finder.Polygon();
 }
 
-bool IsPolygonShape(CanvasItem* item)
+bool Is(CanvasItem* item)
 {
-    return AsPolygon(item) != nullptr;
+    return PolygonAccess::As(item) != nullptr;
 }
+
+} // namespace PolygonAccess

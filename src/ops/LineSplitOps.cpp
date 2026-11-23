@@ -30,7 +30,7 @@ struct Knife {
 // 按内部图层取几何只存在于多边形叶子类：统一走 PolygonAccess 的访问者入口（D16）。
 bool IsFillTarget(CanvasItem* item)
 {
-    if (PolygonItem* polygon = AsPolygon(item)) {
+    if (PolygonItem* polygon = PolygonAccess::As(item)) {
         return polygon->HasFillAreaLayer();
     }
     return dynamic_cast<ShapeAbstractItem*>(item) != nullptr;
@@ -84,7 +84,7 @@ bool CollectKnife(CanvasItem* item, Knife* out, QPainterPath* trajectoryPath)
     }
     if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
         // 多边形按内部图层切开（见下方分支），普通闭合图形的轮廓整体当刀线。
-        if (AsPolygon(item)) {
+        if (PolygonAccess::As(item)) {
             return false;
         }
         const QPainterPath scenePath = shape->mapToScene(shape->OutlineShape());
@@ -208,7 +208,7 @@ QList<QPainterPath> CanvasHalfRegions(const QRectF& canvas, const Knife& knife)
 // 被切图元的填充轮廓（场景坐标）。
 QPainterPath FillPathOf(CanvasItem* item)
 {
-    if (PolygonItem* polygon = AsPolygon(item)) {
+    if (PolygonItem* polygon = PolygonAccess::As(item)) {
         QPainterPath fill;
         for (const PolygonItem::Layer& layer : polygon->Layers()) {
             if (layer.role != PolygonItem::LayerRole::FILLED_AREA || layer.path.isEmpty()) {

@@ -51,7 +51,7 @@ bool IsLineClassItem(CanvasItem* item)
         return true;
     }
     // 零面积图元已全部并入曲线族，普通形状类恒有填充面积；多边形要看图层。
-    if (PolygonItem* polygon = AsPolygon(item)) {
+    if (PolygonItem* polygon = PolygonAccess::As(item)) {
         return !polygon->HasFillAreaLayer();
     }
     return false;
@@ -62,7 +62,7 @@ bool IsLineClassItem(CanvasItem* item)
 // 图形仍按完整轮廓参与布尔运算，也应优先决定合并结果的样式。
 bool HasFillSpace(CanvasItem* item)
 {
-    if (PolygonItem* polygon = AsPolygon(item)) {
+    if (PolygonItem* polygon = PolygonAccess::As(item)) {
         return polygon->HasFillAreaLayer();
     }
     return !dynamic_cast<LineAbstractItem*>(item) && item->Category() != ItemCategory::TEXT;
@@ -162,7 +162,7 @@ bool AppendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
             Q_UNUSED(curve)
             memberPath = vectorMember->mapToScene(vectorMember->PaintedShape());
             strokePart = memberPath;
-        } else if (PolygonItem* polygon = AsPolygon(vectorMember)) {
+        } else if (PolygonItem* polygon = PolygonAccess::As(vectorMember)) {
             for (const PolygonItem::Layer& layer : polygon->Layers()) {
                 if (layer.path.isEmpty()) {
                     continue;
@@ -221,7 +221,7 @@ bool AppendParticipant(CanvasScene* scene, const QList<CanvasItem*>& members, bo
         participant.strokeWidth = shape->StrokeWidth();
         participant.fillStyle = shape->fillStyle();
         participant.strokeStyle = shape->StrokeStyle();
-        participant.filled = AsPolygon(styleItem) || shape->fillStyle() != FillStyle::NONE;
+        participant.filled = PolygonAccess::As(styleItem) || shape->fillStyle() != FillStyle::NONE;
     } else if (auto* stroke = dynamic_cast<LineAbstractItem*>(styleItem)) {
         participant.fill = stroke->StrokeColor();
         participant.stroke = stroke->StrokeColor();

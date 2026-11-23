@@ -422,10 +422,10 @@ void selftest::RunShapeItemTests(Context& ctx)
     {
         PolygonItem polygon;
         CanvasItem* asItem = &polygon;
-        ctx.Check(AsPolygon(asItem) == &polygon && IsPolygonShape(asItem),
+        ctx.Check(PolygonAccess::As(asItem) == &polygon && PolygonAccess::Is(asItem),
                   QStringLiteral("多边形经 VisitPolygon 可被识别"));
         RectangleItem rectangle;
-        ctx.Check(AsPolygon(&rectangle) == nullptr && !IsPolygonShape(&rectangle),
+        ctx.Check(PolygonAccess::As(&rectangle) == nullptr && !PolygonAccess::Is(&rectangle),
                   QStringLiteral("普通图形不会被误判成多边形"));
     }
 

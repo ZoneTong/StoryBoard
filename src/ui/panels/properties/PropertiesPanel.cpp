@@ -208,7 +208,7 @@ QList<ShapeAbstractItem*> PropertiesPanel::SelectedShapes() const
     QList<ShapeAbstractItem*> shapes;
     for (CanvasItem* item : SelectedItems()) {
         // 多边形派生自 ShapeAbstractItem，但它没有形状类型语义：圆角 / 角度等行只对普通图形开放。
-        if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item); shape && !IsPolygonShape(shape)) {
+        if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item); shape && !PolygonAccess::Is(shape)) {
             shapes.append(shape);
         }
     }
