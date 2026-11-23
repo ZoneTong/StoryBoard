@@ -5,6 +5,7 @@
 
 class MainWindow;
 class CanvasItem;
+class QMimeData;
 
 // 图元属性与编辑动作：属性窗打开 / 关闭、选中图元旋转，多图元对齐与合并形状。
 // 变更本身落回 CanvasScene 的撤销记录；本类只编排对话框、状态提示与命令转发。
@@ -25,6 +26,8 @@ class MainWindowEditActionsController {
     void CopySelectedItems();
     void CutSelectedItems();
     void PasteItems();
+    // 编辑动作与剪贴板状态共用这一判定：自定义 MIME 或 Excalidraw 剪贴板。
+    static bool CanPaste(const QMimeData* mime);
 
   private:
     MainWindow* m_window = nullptr;

@@ -188,6 +188,22 @@ void MainWindowEditActionsController::CutSelectedItems()
     }
 }
 
+bool MainWindowEditActionsController::CanPaste(const QMimeData* mime)
+{
+    if (!mime) {
+        return false;
+    }
+    if (mime->hasFormat(QLatin1String(CLIPBOARD_MIME_TYPE))) {
+        return true;
+    }
+    QByteArray data = mime->data(QStringLiteral("application/vnd.excalidraw+json"));
+    if (data.isEmpty()) {
+        data = mime->data(QStringLiteral("text/plain"));
+    }
+    const QJsonDocument document = QJsonDocument::fromJson(data);
+    return document.isObject() && Excalidraw::IsClipboard(document.object());
+}
+
 void MainWindowEditActionsController::PasteItems()
 {
     if (!m_window->m_scene) {
@@ -200,11 +216,17 @@ void MainWindowEditActionsController::PasteItems()
     }
     // 需求 9：从 excalidraw.com 复制的 JSON 也能直接粘到画板里。
     if (!mime->hasFormat(QLatin1String(CLIPBOARD_MIME_TYPE))) {
-        const QJsonDocument external = QJsonDocument::fromJson(mime->data(QStringLiteral("text/plain")));
+        QByteArray externalData = mime->data(QStringLiteral("application/vnd.excalidraw+json"));
+        if (externalData.isEmpty()) {
+            externalData = mime->data(QStringLiteral("text/plain"));
+        }
+        const QJsonDocument external = QJsonDocument::fromJson(externalData);
         if (external.isObject() && Excalidraw::IsClipboard(external.object())) {
             QStringList notes;
+            const QJsonObject scene = external.object();
             const QJsonArray items =
-                Excalidraw::ElementsToItems(external.object().value(QStringLiteral("elements")).toArray(), &notes);
+                Excalidraw::ElementsToItems(scene.value(QStringLiteral("elements")).toArray(), &notes, nullptr,
+                                            scene.value(QStringLiteral("files")).toObject());
             const int pastedCount = m_window->m_scene->PasteClipboardItems(items);
             if (pastedCount == 0) {
                 m_window->statusBar()->showMessage(MainWindow::tr("Nothing to paste"), 3000);

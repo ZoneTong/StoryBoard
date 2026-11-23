@@ -19,7 +19,11 @@
 #include <QUndoStack>
 #include <QtMath>
 
-ViewStatusController::ViewStatusController(MainWindow* window) : m_window(window) {}
+ViewStatusController::ViewStatusController(MainWindow* window) : m_window(window)
+{
+    // 外部应用复制后不会触发画布事件；剪贴板变化时主动刷新粘贴动作。
+    QObject::connect(QApplication::clipboard(), &QClipboard::dataChanged, m_window, [this]() { UpdateActions(); });
+}
 
 void ViewStatusController::SetToolMode(ToolMode mode)
 {
@@ -87,8 +91,7 @@ void ViewStatusController::UpdateActions()
     m_window->m_copyAct->setEnabled(editing && hasSelection);
     m_window->m_cutAct->setEnabled(editing && hasSelection);
     const QMimeData* mime = QApplication::clipboard()->mimeData();
-    m_window->m_pasteAct->setEnabled(
-        editing && mime && mime->hasFormat(QLatin1String(MainWindowEditActionsController::CLIPBOARD_MIME_TYPE)));
+    m_window->m_pasteAct->setEnabled(editing && MainWindowEditActionsController::CanPaste(mime));
     m_window->m_duplicateAct->setEnabled(editing && hasSelection);
     m_window->m_groupAct->setEnabled(editing && m_window->m_scene->CanGroupSelectedItems());
     m_window->m_ungroupAct->setEnabled(editing && m_window->m_scene->CanUngroupSelectedItems());

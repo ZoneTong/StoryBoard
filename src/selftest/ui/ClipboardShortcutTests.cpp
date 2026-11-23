@@ -4,13 +4,16 @@
 #include "selftest/core/SelfTestContext.h"
 #include "selftest/core/SelftestEntries.h"
 #include "ui/mainwindow/MainWindow.h"
+#include "ui/mainwindow/MainWindowEditActionsController.h"
 
 #include <QAction>
 #include <QApplication>
+#include <QClipboard>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QKeySequence>
 #include <QList>
+#include <QMimeData>
 #include <QPointF>
 #include <QSizeF>
 #include <QUndoStack>
@@ -93,6 +96,41 @@ void selftest::RunClipboardShortcutTests(Context& ctx)
             QApplication::processEvents();
             ctx.Check(copy->pos() == before, QStringLiteral("撤销微调恢复图元位置"));
         }
+    }
+
+    // Excalidraw 剪贴板：text/plain 与专用 MIME 都要能被粘贴动作识别。
+    {
+        const QByteArray excalidrawJson =
+            R"({"type":"excalidraw/clipboard","elements":[{"id":"r1","type":"rectangle","x":0,"y":0,"width":80,"height":40}]})";
+        QMimeData textMime;
+        textMime.setText(QString::fromUtf8(excalidrawJson));
+        QMimeData excalidrawMime;
+        excalidrawMime.setData(QStringLiteral("application/vnd.excalidraw+json"), excalidrawJson);
+        QMimeData plainMime;
+        plainMime.setText(QStringLiteral("not excalidraw"));
+        ctx.Check(MainWindowEditActionsController::CanPaste(&textMime) &&
+                      MainWindowEditActionsController::CanPaste(&excalidrawMime) &&
+                      !MainWindowEditActionsController::CanPaste(&plainMime),
+                  QStringLiteral("粘贴识别 text/plain 与 Excalidraw MIME"));
+
+        MainWindow clipboardWindow;
+        clipboardWindow.View()->SetMode(ToolMode::EDIT);
+        auto* clipboardMime = new QMimeData;
+        clipboardMime->setText(QString::fromUtf8(excalidrawJson));
+        QApplication::clipboard()->setMimeData(clipboardMime);
+        QApplication::processEvents();
+        QAction* pasteAction = FindActionByObjectName(&clipboardWindow, QStringLiteral("PasteItemsAction"));
+        ctx.Check(pasteAction && pasteAction->isEnabled(), QStringLiteral("外部复制 Excalidraw 后粘贴动作自动启用"));
+        CanvasScene* scene = clipboardWindow.findChild<CanvasScene*>();
+        const int beforePaste = scene ? scene->CanvasItemCount() : -1;
+        if (pasteAction) {
+            pasteAction->trigger();
+            QApplication::processEvents();
+        }
+        ctx.Check(scene && scene->CanvasItemCount() == beforePaste + 1,
+                  QStringLiteral("粘贴动作把 Excalidraw 元素落到画布"),
+                  QStringLiteral("before=%1 after=%2").arg(beforePaste).arg(scene ? scene->CanvasItemCount() : -1));
+        QApplication::clipboard()->clear();
     }
 
     // 默认键位映射：按通用软件标准或直觉核对每个动作唯一的那个键。
