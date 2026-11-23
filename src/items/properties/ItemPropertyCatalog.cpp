@@ -1,6 +1,7 @@
 #include "items/properties/ItemPropertyCatalog.h"
 
 #include <QCoreApplication>
+#include <utility>
 
 namespace {
 QList<ItemPropertyDescriptor*>& DynamicDescriptors()
@@ -119,19 +120,29 @@ const ItemPropertyDescriptor* ItemPropertyCatalog::Find(PropertyKey property)
     return nullptr;
 }
 
-const ItemPropertyDescriptor* ItemPropertyCatalog::RegisterDynamic(PropertyKey property, const QString& label,
-                                                                   ItemPropertyGroup group, ItemPropertyKind kind,
-                                                                   double minimum, double maximum, double step,
-                                                                   int decimals, const QString& suffix)
+const ItemPropertyDescriptor*
+ItemPropertyCatalog::RegisterDynamic(PropertyKey property, const QString& label, ItemPropertyGroup group,
+                                     ItemPropertyKind kind, double minimum, double maximum, double step, int decimals,
+                                     const QString& suffix, std::function<QVariant(const CanvasItem*)> reader,
+                                     std::function<void(CanvasItem*, const QVariant&)> writer)
 {
     if (!property.IsValid() || property.IsCommon()) {
         return nullptr;
     }
     if (const ItemPropertyDescriptor* existing = Find(property)) {
+        // 已注册的描述保留首次回调；后续调用只补空字段，不覆盖已有读写。
+        auto* mutableDescriptor = const_cast<ItemPropertyDescriptor*>(existing);
+        if (mutableDescriptor->reader == nullptr && reader) {
+            mutableDescriptor->reader = std::move(reader);
+        }
+        if (mutableDescriptor->writer == nullptr && writer) {
+            mutableDescriptor->writer = std::move(writer);
+        }
         return existing;
     }
     auto* descriptor = new ItemPropertyDescriptor{
-        property, property.StorageKey(), label, group, kind, minimum, maximum, step, decimals, suffix, false};
+        property, property.StorageKey(), label, group, kind, minimum, maximum, step, decimals, suffix, false, reader,
+        writer};
     DynamicDescriptors().append(descriptor);
     return descriptor;
 }

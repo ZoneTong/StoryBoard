@@ -4,6 +4,7 @@
 #include "canvas/controllers/CanvasItemHandles.h"
 #include "canvas/controllers/CanvasItemInteraction.h"
 #include "items/CanvasItemGeometry.h"
+#include "items/properties/ItemPropertyCatalog.h"
 #include "scene/CanvasScene.h"
 
 #include <QFontMetricsF>
@@ -477,6 +478,10 @@ QVariant CanvasItem::PropertyValueByKey(PropertyKey property) const
     if (property.IsCommon()) {
         return PropertyValue(property.CommonProperty());
     }
+    if (const ItemPropertyDescriptor* descriptor = ItemPropertyCatalog::Find(property);
+        descriptor && descriptor->reader) {
+        return descriptor->reader(this);
+    }
     const auto it = m_dynamicProperties.constFind(property);
     return it != m_dynamicProperties.constEnd() ? it.value() : QVariant();
 }
@@ -488,6 +493,11 @@ void CanvasItem::SetPropertyValueByKey(PropertyKey property, const QVariant& val
     }
     if (property.IsCommon()) {
         SetPropertyValue(property.CommonProperty(), value);
+        return;
+    }
+    if (const ItemPropertyDescriptor* descriptor = ItemPropertyCatalog::Find(property);
+        descriptor && descriptor->writer) {
+        descriptor->writer(this, value);
         return;
     }
     const auto it = m_dynamicProperties.find(property);

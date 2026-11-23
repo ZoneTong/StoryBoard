@@ -4,6 +4,7 @@
 #include "items/CanvasItem.h"
 #include "items/geometry/TriangleGeometry.h"
 #include "items/lines/LineAbstractItem.h"
+#include "items/properties/ItemPropertyCatalog.h"
 #include "items/shapes/ShapeAbstractItem.h"
 #include "items/text/TextItem.h"
 #include "scene/CanvasScene.h"
@@ -200,6 +201,16 @@ ItemPropertiesDialog::ItemPropertiesDialog(CanvasScene* scene, CanvasItem* item,
     root->addLayout(form);
     m_form = form;
 
+    m_dynamicHost = new QWidget(this);
+    m_dynamicHost->setObjectName(QStringLiteral("ItemPropertiesDynamicHost"));
+    m_dynamicForm = new QFormLayout(m_dynamicHost);
+    m_dynamicForm->setContentsMargins(0, 0, 0, 0);
+    m_dynamicForm->setHorizontalSpacing(form->horizontalSpacing());
+    m_dynamicForm->setVerticalSpacing(form->verticalSpacing());
+    m_dynamicForm->setLabelAlignment(form->labelAlignment());
+    m_dynamicHost->setVisible(false);
+    root->addWidget(m_dynamicHost);
+
     m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     connect(m_buttons, &QDialogButtonBox::accepted, this, &ItemPropertiesDialog::accept);
     connect(m_buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -264,6 +275,7 @@ void ItemPropertiesDialog::SetItem(CanvasScene* scene, CanvasItem* item, bool ed
     }
     // 行显隐只看图元上报的属性集合（§4.3）：换绑图元时整表重算一次。
     m_rows.Apply(m_form, item ? item->Properties() : ItemPropertySet());
+    RefreshDynamicRows(item);
 
     ApplyEditableState();
 
@@ -382,6 +394,7 @@ void ItemPropertiesDialog::ApplyEditableState()
                 << m_geometryBlock->HeightSizeSpin() << m_geometryBlock->MajorAxisSpin()
                 << m_geometryBlock->MinorAxisSpin() << m_geometryBlock->RotationSpin();
     }
+    widgets << m_dynamicEditors.values();
     for (QWidget* widget : widgets) {
         if (widget) {
             widget->setEnabled(false);
@@ -425,6 +438,81 @@ void ItemPropertiesDialog::SyncTextNaturalSize()
 bool ItemPropertiesDialog::IsItemInScene() const
 {
     return m_scene && m_item && m_item->scene() == m_scene;
+}
+
+void ItemPropertiesDialog::RefreshDynamicRows(CanvasItem* item)
+{
+    if (!m_dynamicForm || !m_dynamicHost) {
+        return;
+    }
+    while (m_dynamicForm->rowCount() > 0) {
+        auto row = m_dynamicForm->takeRow(0);
+        delete row.labelItem;
+        if (row.fieldItem) {
+            delete row.fieldItem->widget();
+            delete row.fieldItem;
+        }
+    }
+    m_dynamicEditors.clear();
+    if (!item) {
+        m_dynamicHost->setVisible(false);
+        return;
+    }
+
+    for (PropertyKey property : item->Properties().Keys()) {
+        if (property.IsCommon()) {
+            continue;
+        }
+        const ItemPropertyDescriptor* descriptor = ItemPropertyCatalog::Find(property);
+        if (!descriptor) {
+            continue;
+        }
+        const QVariant current = item->PropertyValueByKey(property);
+        QWidget* editor = nullptr;
+        if (descriptor->kind == ItemPropertyKind::TEXT) {
+            auto* line = new QLineEdit(m_dynamicHost);
+            line->setText(current.toString());
+            editor = line;
+        } else if (descriptor->kind == ItemPropertyKind::INTEGER) {
+            auto* spin = new QSpinBox(m_dynamicHost);
+            spin->setRange(qRound(descriptor->minimum), qRound(descriptor->maximum));
+            spin->setSingleStep(qMax(1, qRound(descriptor->step)));
+            spin->setSuffix(descriptor->suffix);
+            spin->setValue(current.toInt());
+            editor = spin;
+        } else if (descriptor->kind == ItemPropertyKind::REAL) {
+            auto* spin = new QDoubleSpinBox(m_dynamicHost);
+            spin->setRange(descriptor->minimum, descriptor->maximum);
+            spin->setSingleStep(descriptor->step);
+            spin->setDecimals(descriptor->decimals);
+            spin->setSuffix(descriptor->suffix);
+            spin->setValue(current.toDouble());
+            editor = spin;
+        } else {
+            editor = new QLabel(current.toString(), m_dynamicHost);
+        }
+        m_dynamicEditors.insert(property.Id(), editor);
+        m_dynamicForm->addRow(ItemPropertyCatalog::Label(property), editor);
+    }
+    m_dynamicHost->setVisible(!m_dynamicEditors.isEmpty());
+}
+
+QVariant ItemPropertiesDialog::ReadDynamicValue(PropertyKey property) const
+{
+    QWidget* editor = m_dynamicEditors.value(property.Id(), nullptr);
+    if (auto* line = qobject_cast<QLineEdit*>(editor)) {
+        return line->text();
+    }
+    if (auto* spin = qobject_cast<QSpinBox*>(editor)) {
+        return spin->value();
+    }
+    if (auto* spin = qobject_cast<QDoubleSpinBox*>(editor)) {
+        return spin->value();
+    }
+    if (auto* label = qobject_cast<QLabel*>(editor)) {
+        return label->text();
+    }
+    return QVariant();
 }
 
 void ItemPropertiesDialog::ApplyChanges()
@@ -500,6 +588,10 @@ void ItemPropertiesDialog::ApplyChanges()
     after.insert(ItemProperty::POSITION, afterPos);
     after.insert(ItemProperty::SIZE, afterSize);
     after.insert(ItemProperty::ROTATION, afterRotation);
+    for (auto it = m_dynamicEditors.constBegin(); it != m_dynamicEditors.constEnd(); ++it) {
+        const PropertyKey property(it.key());
+        after.insert(property, ReadDynamicValue(property));
+    }
 
     if (auto* shape = dynamic_cast<ShapeAbstractItem*>(m_item.data())) {
         if (style) {
