@@ -7,6 +7,7 @@
 #include <QWidget>
 
 class QComboBox;
+class QResizeEvent;
 class QSpinBox;
 class QToolButton;
 
@@ -25,10 +26,16 @@ class FillStyleRow : public QWidget {
   signals:
     void fillStyleChosen(FillStyle style);
 
+  protected:
+    void resizeEvent(QResizeEvent* event) override;
+
   private:
+    void ApplyButtonSize(int edge, int glyph);
+
     QList<FillAttributes*> m_targets;
     QList<QToolButton*> m_buttons;
     bool m_refreshing = false;
+    int m_buttonEdge = 0;
 };
 
 class FillColorRow : public QWidget {
@@ -128,4 +135,3 @@ class StrokeWidthRow : public QWidget {
     QSpinBox* m_widthSpin = nullptr;
     bool m_refreshing = false;
 };
-

@@ -107,7 +107,7 @@ QLabel#ItemColorLabel { color: #6B7280; font-size: 9pt; }
 QLabel#ItemColorHint { color: #8A909C; font-size: 9pt; }
 QToolButton#ItemColorSwatch { border: 1px solid #CBD5E1; border-radius: 4px; }
 QToolButton#ItemColorButton { border: 1px solid #DDE2EA; border-radius: 4px; background: #FFFFFF; color: #4B5563; }
-QToolButton#ItemFillImageButton { border: 1px solid #DDE2EA; border-radius: 6px; background: #FFFFFF; color: #4B5563; padding: 4px 8px; min-height: 30px; text-align: left; }
+QToolButton#ItemFillImageButton, QToolButton#ItemClearFillImageButton { border: 1px solid #DDE2EA; border-radius: 6px; background: #FFFFFF; color: #4B5563; padding: 5px 8px; text-align: left; }
 QToolButton#ItemFillImageButton:hover { background: #F3F5F9; }
 QToolButton#ItemFillStyleButton, QToolButton#ItemBorderStyleButton { border: 1px solid transparent; border-radius: 5px; background: #F8F9FC; padding: 2px; }
 QToolButton#ItemFillStyleButton:hover, QToolButton#ItemBorderStyleButton:hover { background: #EEF2F9; }

@@ -8,8 +8,8 @@
 #include <QColorDialog>
 #include <QComboBox>
 #include <QCoreApplication>
-#include <QGridLayout>
 #include <QHBoxLayout>
+#include <QResizeEvent>
 #include <QSpinBox>
 #include <QToolButton>
 #include <QVBoxLayout>
@@ -75,16 +75,11 @@ FillStyleRow::FillStyleRow(QWidget* parent) : QWidget(parent)
     icon->setToolTip(RowText("Fill style"));
     layout->addWidget(icon, 0, Qt::AlignVCenter);
 
-    // 11 个样式按钮排成 6 + 5 两行：单行要塞进图元尺寸行（≈227）就只有 18px 宽，
-    // 按钮太小点不准；两行后每颗 28×28（字形 20），行宽 25 + 6×28 + 5×2 = 203，仍在限内。
+    // 11 个按钮排一行：按钮最大 28×28、字形 20，行宽 = 图标 25 + 11×28 = 333。
+    // 面板更窄时按可用宽度等比收小（不小于 20），始终排在一行、且不超过其它属性行的宽度。
     const int fillStyleButton = 28;
     const int fillStyleGlyph = 20;
-    const int fillStyleColumns = 6;
-
-    auto* grid = new QGridLayout;
-    grid->setContentsMargins(0, 0, 0, 0);
-    grid->setSpacing(2);
-    int index = 0;
+    m_buttonEdge = fillStyleButton;
     for (const FillStyle style : AllFillStyles()) {
         auto* button = new QToolButton(this);
         button->setObjectName(QStringLiteral("ItemFillStyleButton"));
@@ -101,11 +96,38 @@ FillStyleRow::FillStyleRow(QWidget* parent) : QWidget(parent)
             }
         });
         m_buttons.append(button);
-        grid->addWidget(button, index / fillStyleColumns, index % fillStyleColumns, Qt::AlignLeft | Qt::AlignVCenter);
-        ++index;
+        layout->addWidget(button, 0, Qt::AlignVCenter);
     }
-    layout->addLayout(grid);
     layout->addStretch(1);
+}
+
+void FillStyleRow::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    if (m_buttons.isEmpty()) {
+        return;
+    }
+    const int iconWidth = RowMetrics::IconButtonSize().width();
+    const int available = width() - iconWidth;
+    if (available <= 0) {
+        return;
+    }
+    const int edge = qBound(20, available / m_buttons.size(), 28);
+    ApplyButtonSize(edge, qBound(14, edge - 8, 20));
+}
+
+void FillStyleRow::ApplyButtonSize(int edge, int glyph)
+{
+    if (edge <= 0 || glyph <= 0 || edge == m_buttonEdge) {
+        return;
+    }
+    m_buttonEdge = edge;
+    for (QToolButton* button : m_buttons) {
+        const FillStyle style = static_cast<FillStyle>(button->property("fillStyle").toInt());
+        button->setIcon(ItemStyleVisuals::FillStyleIcon(style, glyph));
+        button->setIconSize(QSize(glyph, glyph));
+        button->setFixedSize(edge, edge);
+    }
 }
 
 void FillStyleRow::SetTargets(const QList<FillAttributes*>& targets)
@@ -194,11 +216,25 @@ FillImageRow::FillImageRow(QWidget* parent) : QWidget(parent)
     RowMetrics::ApplyRow(this);
     auto* layout = MakeRowLayout(this);
 
-    const int fieldHeight = RowMetrics::FieldHeight();
-
     QToolButton* icon = MakeRowIcon(IconId::IMAGE, this);
     icon->setToolTip(RowText("Fill image"));
     layout->addWidget(icon, 0, Qt::AlignVCenter);
+
+    // §D24：样式表会给按钮和下拉框各自的 min-height，只按 RowMetrics 钉高度仍会差一截。
+    // 这里三者都建好、polish 完，再取「三者的 sizeHint + 输入框高」的最大值统一定高。
+    m_modeCombo = new QComboBox(this);
+    m_modeCombo->setObjectName(QStringLiteral("ItemFillImageMode"));
+    m_modeCombo->addItem(RowText("Stretch"), static_cast<int>(ImageFill::Mode::STRETCH));
+    m_modeCombo->addItem(RowText("Fit"), static_cast<int>(ImageFill::Mode::FIT));
+    m_modeCombo->addItem(RowText("Tile"), static_cast<int>(ImageFill::Mode::TILE));
+    m_modeCombo->setToolTip(RowText("Fill image mode"));
+    connect(m_modeCombo, &QComboBox::currentIndexChanged, this, [this](int index) {
+        if (m_refreshing || index < 0) {
+            return;
+        }
+        emit fillImageModeChosen(m_modeCombo->itemData(index).toInt());
+    });
+    layout->addWidget(m_modeCombo, 0);
 
     m_chooseButton = new QToolButton(this);
     m_chooseButton->setObjectName(QStringLiteral("ItemFillImageButton"));
@@ -207,25 +243,8 @@ FillImageRow::FillImageRow(QWidget* parent) : QWidget(parent)
     m_chooseButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     m_chooseButton->setText(RowText("Choose fill image"));
     m_chooseButton->setToolTip(RowText("Choose an image to fill the selected items"));
-    // §D24：三个控件统一到输入框高，按钮才不会比旁边的“拉伸”下拉框高一截。
-    m_chooseButton->setFixedHeight(fieldHeight);
     connect(m_chooseButton, &QToolButton::clicked, this, &FillImageRow::chooseFillImageClicked);
-    layout->addWidget(m_chooseButton, 0, Qt::AlignVCenter);
-
-    m_modeCombo = new QComboBox(this);
-    m_modeCombo->setObjectName(QStringLiteral("ItemFillImageMode"));
-    m_modeCombo->addItem(RowText("Stretch"), static_cast<int>(ImageFill::Mode::STRETCH));
-    m_modeCombo->addItem(RowText("Fit"), static_cast<int>(ImageFill::Mode::FIT));
-    m_modeCombo->addItem(RowText("Tile"), static_cast<int>(ImageFill::Mode::TILE));
-    m_modeCombo->setFixedHeight(fieldHeight);
-    m_modeCombo->setToolTip(RowText("Fill image mode"));
-    connect(m_modeCombo, &QComboBox::currentIndexChanged, this, [this](int index) {
-        if (m_refreshing || index < 0) {
-            return;
-        }
-        emit fillImageModeChosen(m_modeCombo->itemData(index).toInt());
-    });
-    layout->addWidget(m_modeCombo, 0, Qt::AlignVCenter);
+    layout->insertWidget(1, m_chooseButton, 0, Qt::AlignVCenter);
 
     m_clearButton = new QToolButton(this);
     m_clearButton->setObjectName(QStringLiteral("ItemClearFillImageButton"));
@@ -233,11 +252,23 @@ FillImageRow::FillImageRow(QWidget* parent) : QWidget(parent)
     m_clearButton->setIconSize(QSize(16, 16));
     m_clearButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     m_clearButton->setText(RowText("Clear"));
-    m_clearButton->setFixedHeight(fieldHeight);
     m_clearButton->setToolTip(RowText("Clear fill image"));
     connect(m_clearButton, &QToolButton::clicked, this, &FillImageRow::clearFillImageClicked);
     layout->addWidget(m_clearButton, 0, Qt::AlignVCenter);
     layout->addStretch(1);
+
+    const QList<QWidget*> fillImageFields{m_chooseButton, m_modeCombo, m_clearButton};
+
+    for (QWidget* widget : fillImageFields) {
+        widget->ensurePolished();
+    }
+    const int fieldHeight = qMax(RowMetrics::FieldHeight(),
+                                 qMax(m_modeCombo->sizeHint().height(),
+                                      qMax(m_chooseButton->sizeHint().height(), m_clearButton->sizeHint().height())));
+
+    for (QWidget* widget : fillImageFields) {
+        widget->setFixedHeight(fieldHeight);
+    }
 }
 
 void FillImageRow::SetTargets(const QList<FillAttributes*>& targets)
