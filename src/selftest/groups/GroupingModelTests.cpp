@@ -3,6 +3,7 @@
 #include "items/shapes/ShapeAbstractItem.h"
 #include "items/shapes/ShapeRegistry.h"
 #include "scene/CanvasScene.h"
+#include "scene/Commands.h"
 #include "selftest/core/SelfTestContext.h"
 #include "selftest/core/SelftestEntries.h"
 
@@ -272,5 +273,50 @@ void selftest::RunGroupingModelTests(Context& ctx)
         first->setSelected(true);
         second->setSelected(true);
         ctx.Check(scene.CanMoveItemToLayer(first, targetLayer), QStringLiteral("整组一起换层放行"));
+    }
+
+    // 删除嵌套组的子组后撤销：组名、成员归属与父组关系必须整体恢复。
+    {
+        CanvasScene scene;
+        QUndoStack undo;
+        scene.SetUndoStack(&undo);
+        scene.ApplyCanvasSize(QSizeF(900.0, 700.0));
+        scene.SetMode(ToolMode::EDIT);
+
+        auto* first = AddTestRect(scene, QPointF(60.0, 80.0), QSizeF(80.0, 60.0));
+        auto* second = AddTestRect(scene, QPointF(220.0, 80.0), QSizeF(80.0, 60.0));
+        auto* third = AddTestRect(scene, QPointF(380.0, 80.0), QSizeF(80.0, 60.0));
+        auto* fourth = AddTestRect(scene, QPointF(540.0, 80.0), QSizeF(80.0, 60.0));
+
+        first->setSelected(true);
+        second->setSelected(true);
+        scene.GroupSelectedItems();
+        const int childGroup = first->GroupId();
+        const QString childGroupName = scene.GroupName(childGroup);
+        scene.clearSelection();
+        third->setSelected(true);
+        fourth->setSelected(true);
+        scene.GroupSelectedItems();
+        const int otherGroup = third->GroupId();
+
+        scene.clearSelection();
+        first->setSelected(true);
+        third->setSelected(true);
+        scene.GroupSelectedItems();
+        const int outerGroup = scene.ParentGroup(childGroup);
+        const QString outerGroupName = scene.GroupName(outerGroup);
+        ctx.Check(outerGroup > 0 && scene.ParentGroup(otherGroup) == outerGroup,
+                  QStringLiteral("嵌套分组记录父子关系"));
+
+        undo.push(new RemoveItemsCommand(&scene, {first, second}, QStringLiteral("Remove nested group")));
+        ctx.Check(scene.GroupName(childGroup).isEmpty() && scene.GroupParents().value(childGroup) == 0,
+                  QStringLiteral("删除子组全部成员后清理空组与父关系"));
+
+        undo.undo();
+        ctx.Check(scene.GroupName(childGroup) == childGroupName && scene.GroupName(outerGroup) == outerGroupName,
+                  QStringLiteral("撤销删除恢复子组名与父组名"));
+        ctx.Check(first->GroupId() == childGroup && second->GroupId() == childGroup,
+                  QStringLiteral("撤销删除恢复成员归属"));
+        ctx.Check(scene.ParentGroup(childGroup) == outerGroup, QStringLiteral("撤销删除恢复子组父关系"));
     }
 }

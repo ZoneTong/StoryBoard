@@ -102,12 +102,17 @@ void CanvasScene::ApplyGroupNames(const QHash<int, QString>& names)
     }
 }
 
-void CanvasScene::ApplyGroupRecords(const QHash<int, QString>& names, const QHash<int, int>& parents)
+void CanvasScene::ApplyGroupRecords(const GroupState& groups)
 {
-    ApplyGroupNames(names);
-    ApplyGroupParents(parents);
+    ApplyGroupNames(groups.names);
+    ApplyGroupParents(groups.parents);
     update();
     emit contentChanged();
+}
+
+void CanvasScene::ApplyGroupRecords(const QHash<int, QString>& names, const QHash<int, int>& parents)
+{
+    ApplyGroupRecords(GroupState{names, parents});
 }
 
 // ---- 组名（§7.3）----
@@ -460,10 +465,9 @@ int CanvasScene::AssignNewGroupWithUndo(const QList<CanvasItem*>& items, GroupFa
 
     const int groupId = m_nextGroupId++;
     const QString groupName = SuggestGroupName(nameBase);
-    const QHash<int, QString> namesBefore = m_groupNames;
-    const QHash<int, int> parentsBefore = m_groupParents;
-    QHash<int, QString> namesAfter = namesBefore;
-    namesAfter.insert(groupId, groupName);
+    const GroupState groupsBefore = GroupSnapshot();
+    GroupState groupsAfter = groupsBefore;
+    groupsAfter.names.insert(groupId, groupName);
 
     QList<int> before;
     QList<int> after;
@@ -475,11 +479,10 @@ int CanvasScene::AssignNewGroupWithUndo(const QList<CanvasItem*>& items, GroupFa
     }
 
     if (m_undoStack) {
-        m_undoStack->push(
-            new GroupCommand(this, items, before, after, text, parentsBefore, parentsBefore, namesBefore, namesAfter));
+        m_undoStack->push(new GroupCommand(this, items, before, after, text, groupsBefore, groupsAfter));
     } else {
         ApplyGroupIds(items, after);
-        ApplyGroupRecords(namesAfter, parentsBefore);
+        ApplyGroupRecords(groupsAfter);
     }
     WriteReason(reason, GroupFailureReason::NONE);
     return groupId;
@@ -498,11 +501,9 @@ int CanvasScene::GroupSelectedItems(GroupFailureReason* reason)
     const int groupId = m_nextGroupId++;
     const QString groupName = SuggestGroupName(QString());
 
-    const QHash<int, QString> namesBefore = m_groupNames;
-    const QHash<int, int> parentsBefore = m_groupParents;
-    QHash<int, QString> namesAfter = namesBefore;
-    QHash<int, int> parentsAfter = parentsBefore;
-    namesAfter.insert(groupId, groupName);
+    const GroupState groupsBefore = GroupSnapshot();
+    GroupState groupsAfter = groupsBefore;
+    groupsAfter.names.insert(groupId, groupName);
 
     QList<int> before;
     QList<int> after;
@@ -513,7 +514,7 @@ int CanvasScene::GroupSelectedItems(GroupFailureReason* reason)
         if (item->GroupId() > 0) {
             // 选中项已经在某个组里：保留它的内层归属，把那个组整体并入新组，
             // 这样旧组变成新组的子组，选中行为才按“最外层组”展开。
-            parentsAfter.insert(OutermostGroup(item->GroupId()), groupId);
+            groupsAfter.parents.insert(OutermostGroup(item->GroupId()), groupId);
             after.append(item->GroupId());
         } else {
             after.append(groupId);
@@ -521,11 +522,11 @@ int CanvasScene::GroupSelectedItems(GroupFailureReason* reason)
     }
 
     if (m_undoStack) {
-        m_undoStack->push(new GroupCommand(this, items, before, after, tr("Group selected items"), parentsBefore,
-                                           parentsAfter, namesBefore, namesAfter));
+        m_undoStack->push(
+            new GroupCommand(this, items, before, after, tr("Group selected items"), groupsBefore, groupsAfter));
     } else {
         ApplyGroupIds(items, after);
-        ApplyGroupRecords(namesAfter, parentsAfter);
+        ApplyGroupRecords(groupsAfter);
     }
     return items.size();
 }
@@ -583,7 +584,7 @@ int CanvasScene::UngroupSelectedItems()
             groupIds.insert(OutermostGroup(selected->GroupId()));
         }
     }
-    QHash<int, int> parentsAfter = m_groupParents;
+    GroupState groupsAfter = GroupSnapshot();
     for (int groupId : std::as_const(groupIds)) {
         for (CanvasItem* member : ItemsInGroupTree(groupId)) {
             if (!seen.contains(member)) {
@@ -591,11 +592,11 @@ int CanvasScene::UngroupSelectedItems()
                 items.append(member);
             }
         }
-        parentsAfter.remove(groupId);
+        groupsAfter.parents.remove(groupId);
         // 子组随父组一起解散，父子关系全部清掉，避免留下悬空的父指针。
-        for (auto it = parentsAfter.begin(); it != parentsAfter.end();) {
+        for (auto it = groupsAfter.parents.begin(); it != groupsAfter.parents.end();) {
             if (it.value() == groupId) {
-                it = parentsAfter.erase(it);
+                it = groupsAfter.parents.erase(it);
             } else {
                 ++it;
             }
@@ -605,10 +606,9 @@ int CanvasScene::UngroupSelectedItems()
         return 0;
     }
 
-    const QHash<int, QString> namesBefore = m_groupNames;
-    QHash<int, QString> namesAfter = namesBefore;
+    const GroupState groupsBefore = GroupSnapshot();
     for (int groupId : std::as_const(groupIds)) {
-        namesAfter.remove(groupId);
+        groupsAfter.names.remove(groupId);
     }
 
     QList<int> before;
@@ -621,11 +621,11 @@ int CanvasScene::UngroupSelectedItems()
     }
 
     if (m_undoStack) {
-        m_undoStack->push(new GroupCommand(this, items, before, after, tr("Ungroup selected items"), m_groupParents,
-                                           parentsAfter, namesBefore, namesAfter));
+        m_undoStack->push(
+            new GroupCommand(this, items, before, after, tr("Ungroup selected items"), groupsBefore, groupsAfter));
     } else {
         ApplyGroupIds(items, after);
-        ApplyGroupRecords(namesAfter, parentsAfter);
+        ApplyGroupRecords(groupsAfter);
     }
     return items.size();
 }

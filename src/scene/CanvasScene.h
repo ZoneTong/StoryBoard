@@ -2,6 +2,7 @@
 
 #include "items/CanvasTypes.h"
 #include "items/ItemGeometry.h"
+#include "scene/GroupState.h"
 
 #include <QGraphicsScene>
 #include <QHash>
@@ -143,7 +144,10 @@ class CanvasScene : public QGraphicsScene {
     void SelectGroupById(int groupId);
     // 组名 / 父子关系快照：供删除命令与分组命令在撤销 / 重做时整体恢复。
     QHash<int, QString> GroupNames() const { return m_groupNames; }
+    GroupState GroupSnapshot() const { return GroupState{m_groupNames, m_groupParents}; }
     void ApplyGroupNames(const QHash<int, QString>& names);
+    void ApplyGroupRecords(const GroupState& groups);
+    // 旧签名保留为薄转发，调用方逐步改用 GroupState。
     void ApplyGroupRecords(const QHash<int, QString>& names, const QHash<int, int>& parents);
     // 供组选框控制器判断：选中集合是否恰好是一个完整的最外层组。
     bool SelectionIsCompleteGroup(int* outGroupId = nullptr) const;

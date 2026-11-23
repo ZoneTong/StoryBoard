@@ -95,10 +95,8 @@ RemoveItemsCommand::RemoveItemsCommand(CanvasScene* scene, const QList<CanvasIte
         m_items.append(QPointer<CanvasItem>(item));
     }
     if (m_scene) {
-        m_namesBefore = m_scene->GroupNames();
-        m_parentsBefore = m_scene->GroupParents();
-        m_namesAfter = m_namesBefore;
-        m_parentsAfter = m_parentsBefore;
+        m_groupsBefore = m_scene->GroupSnapshot();
+        m_groupsAfter = m_groupsBefore;
     }
 }
 
@@ -118,7 +116,7 @@ void RemoveItemsCommand::undo()
         }
     }
     // 撤销删除时把组名 / 父子关系与空组状态一并恢复（§7.4、D17）。
-    m_scene->ApplyGroupRecords(m_namesBefore, m_parentsBefore);
+    m_scene->ApplyGroupRecords(m_groupsBefore);
 }
 
 void RemoveItemsCommand::redo()
@@ -201,11 +199,9 @@ void GeometryCommand::Apply(const ItemGeometryList& geometry)
 }
 
 GroupCommand::GroupCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<int>& before,
-                           const QList<int>& after, const QString& text, const QHash<int, int>& parentsBefore,
-                           const QHash<int, int>& parentsAfter, const QHash<int, QString>& namesBefore,
-                           const QHash<int, QString>& namesAfter)
-    : m_scene(scene), m_before(before), m_after(after), m_parentsBefore(parentsBefore), m_parentsAfter(parentsAfter),
-      m_namesBefore(namesBefore), m_namesAfter(namesAfter)
+                           const QList<int>& after, const QString& text, const GroupState& groupsBefore,
+                           const GroupState& groupsAfter)
+    : m_scene(scene), m_before(before), m_after(after), m_groupsBefore(groupsBefore), m_groupsAfter(groupsAfter)
 {
     setText(text);
     for (CanvasItem* item : items) {
@@ -215,15 +211,15 @@ GroupCommand::GroupCommand(CanvasScene* scene, const QList<CanvasItem*>& items, 
 
 void GroupCommand::undo()
 {
-    Apply(m_before, m_parentsBefore, m_namesBefore);
+    Apply(m_before, m_groupsBefore);
 }
 
 void GroupCommand::redo()
 {
-    Apply(m_after, m_parentsAfter, m_namesAfter);
+    Apply(m_after, m_groupsAfter);
 }
 
-void GroupCommand::Apply(const QList<int>& groupIds, const QHash<int, int>& parents, const QHash<int, QString>& names)
+void GroupCommand::Apply(const QList<int>& groupIds, const GroupState& groups)
 {
     if (!m_scene) {
         return;
@@ -236,7 +232,7 @@ void GroupCommand::Apply(const QList<int>& groupIds, const QHash<int, int>& pare
         }
     }
     m_scene->ApplyGroupIds(items, groupIds);
-    m_scene->ApplyGroupRecords(names, parents);
+    m_scene->ApplyGroupRecords(groups);
 }
 
 GroupRenameCommand::GroupRenameCommand(CanvasScene* scene, int groupId, const QString& before, const QString& after,

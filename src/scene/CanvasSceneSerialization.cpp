@@ -347,7 +347,7 @@ bool CanvasScene::FromJson(const QJsonObject& root, QString* errorMessage)
             }
         }
     }
-    ApplyGroupRecords(names, parents);
+    ApplyGroupRecords(GroupState{names, parents});
 
     // 旧文件无组名时按组 ID 顺序补“组 N”；重名由 UniqueGroupName 自动补后缀。
     QList<int> sortedGroupIds = GroupIds();

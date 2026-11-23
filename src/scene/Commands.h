@@ -6,6 +6,7 @@
 #include "items/properties/ItemProperties.h"
 #include "items/shapes/ShapeAbstractItem.h"
 #include "items/text/TextItem.h"
+#include "scene/GroupState.h"
 
 #include <QColor>
 #include <QHash>
@@ -38,15 +39,11 @@ class RemoveItemsCommand : public QUndoCommand {
     void redo() override;
 
   private:
-    // 删除前后的组名 / 父子关系快照：撤销删除时连同空组状态一起恢复（§7.4）。
-    void ApplyGroupRecords();
-
     CanvasScene* m_scene = nullptr;
     QList<QPointer<CanvasItem>> m_items;
-    QHash<int, QString> m_namesBefore;
-    QHash<int, QString> m_namesAfter;
-    QHash<int, int> m_parentsBefore;
-    QHash<int, int> m_parentsAfter;
+    // 删除前的组记录快照：撤销时连同空组状态一起恢复（§7.4）。
+    GroupState m_groupsBefore;
+    GroupState m_groupsAfter;
 };
 
 // 连续方向键微调共用这个命令 id：QUndoStack 只对 id 相同且非 -1 的命令尝试
@@ -78,24 +75,20 @@ class GroupCommand : public QUndoCommand {
   public:
     // 分组有层级后，撤销不仅要还原成员归属，还要还原组与组的父子关系与组名快照。
     GroupCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<int>& before, const QList<int>& after,
-                 const QString& text, const QHash<int, int>& parentsBefore = QHash<int, int>(),
-                 const QHash<int, int>& parentsAfter = QHash<int, int>(),
-                 const QHash<int, QString>& namesBefore = QHash<int, QString>(),
-                 const QHash<int, QString>& namesAfter = QHash<int, QString>());
+                 const QString& text, const GroupState& groupsBefore = GroupState(),
+                 const GroupState& groupsAfter = GroupState());
     void undo() override;
     void redo() override;
 
   private:
-    void Apply(const QList<int>& groupIds, const QHash<int, int>& parents, const QHash<int, QString>& names);
+    void Apply(const QList<int>& groupIds, const GroupState& groups);
 
     CanvasScene* m_scene = nullptr;
     QList<QPointer<CanvasItem>> m_items;
     QList<int> m_before;
     QList<int> m_after;
-    QHash<int, int> m_parentsBefore;
-    QHash<int, int> m_parentsAfter;
-    QHash<int, QString> m_namesBefore;
-    QHash<int, QString> m_namesAfter;
+    GroupState m_groupsBefore;
+    GroupState m_groupsAfter;
 };
 
 // 组重命名：只改组名，成员归属与父子关系不动。
