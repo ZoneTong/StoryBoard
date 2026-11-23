@@ -428,6 +428,9 @@ StrokeWidthRow::StrokeWidthRow(QWidget* parent) : QWidget(parent)
         }
     });
     layout->addWidget(m_widthSpin, 0, Qt::AlignVCenter);
+    // 与其它属性行同高：样式表原先给这个 spin 的 min-height / padding 更小，会矮一截，这里统一钉到输入框高。
+    m_widthSpin->ensurePolished();
+    m_widthSpin->setFixedHeight(RowMetrics::FieldHeight());
     layout->addStretch(1);
 }
 
