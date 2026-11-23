@@ -3,6 +3,8 @@
 #include <QPainter>
 #include <QPainterPath>
 
+namespace IconPainting {
+
 namespace {
 
 void DrawView(QPainter& painter, IconId)
@@ -114,7 +116,7 @@ constexpr struct IconEntry {
 
 } // namespace
 
-bool PaintIconLayerView(QPainter& painter, IconId id)
+bool PaintLayerView(QPainter& painter, IconId id)
 {
     for (const IconEntry& entry : ENTRIES) {
         if (entry.id == id) {
@@ -124,3 +126,5 @@ bool PaintIconLayerView(QPainter& painter, IconId id)
     }
     return false;
 }
+
+} // namespace IconPainting

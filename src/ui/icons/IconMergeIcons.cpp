@@ -3,6 +3,8 @@
 #include <QPainter>
 #include <QPainterPath>
 
+namespace IconPainting {
+
 namespace {
 
 void DrawMerge(QPainter& painter, IconId id)
@@ -75,7 +77,7 @@ constexpr struct IconEntry {
 
 } // namespace
 
-bool PaintIconMerge(QPainter& painter, IconId id)
+bool PaintMerge(QPainter& painter, IconId id)
 {
     for (const IconEntry& entry : ENTRIES) {
         if (entry.id == id) {
@@ -85,3 +87,5 @@ bool PaintIconMerge(QPainter& painter, IconId id)
     }
     return false;
 }
+
+} // namespace IconPainting

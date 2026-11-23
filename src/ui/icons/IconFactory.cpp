@@ -14,19 +14,19 @@ namespace {
 
 void DrawIconShape(QPainter& painter, IconId id)
 {
-    if (PaintIconFileEdit(painter, id)) {
+    if (IconPainting::PaintFileEdit(painter, id)) {
         return;
     }
-    if (PaintIconShapeGraphic(painter, id)) {
+    if (IconPainting::PaintShapeGraphic(painter, id)) {
         return;
     }
-    if (PaintIconTransformAlign(painter, id)) {
+    if (IconPainting::PaintTransformAlign(painter, id)) {
         return;
     }
-    if (PaintIconLayerView(painter, id)) {
+    if (IconPainting::PaintLayerView(painter, id)) {
         return;
     }
-    if (PaintIconMerge(painter, id)) {
+    if (IconPainting::PaintMerge(painter, id)) {
         return;
     }
 }

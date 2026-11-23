@@ -3,6 +3,8 @@
 #include <QPainter>
 #include <QPainterPath>
 
+namespace IconPainting {
+
 namespace {
 
 void DrawShapes(QPainter& painter, IconId)
@@ -249,7 +251,7 @@ constexpr struct IconEntry {
 
 } // namespace
 
-bool PaintIconShapeGraphic(QPainter& painter, IconId id)
+bool PaintShapeGraphic(QPainter& painter, IconId id)
 {
     for (const IconEntry& entry : ENTRIES) {
         if (entry.id == id) {
@@ -259,3 +261,5 @@ bool PaintIconShapeGraphic(QPainter& painter, IconId id)
     }
     return false;
 }
+
+} // namespace IconPainting

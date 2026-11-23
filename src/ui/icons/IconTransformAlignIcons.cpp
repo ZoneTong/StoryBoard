@@ -3,6 +3,8 @@
 #include <QPainter>
 #include <QPainterPath>
 
+namespace IconPainting {
+
 namespace {
 
 void DrawRotate(QPainter& painter, IconId id)
@@ -303,7 +305,7 @@ constexpr struct IconEntry {
 
 } // namespace
 
-bool PaintIconTransformAlign(QPainter& painter, IconId id)
+bool PaintTransformAlign(QPainter& painter, IconId id)
 {
     for (const IconEntry& entry : ENTRIES) {
         if (entry.id == id) {
@@ -313,3 +315,5 @@ bool PaintIconTransformAlign(QPainter& painter, IconId id)
     }
     return false;
 }
+
+} // namespace IconPainting

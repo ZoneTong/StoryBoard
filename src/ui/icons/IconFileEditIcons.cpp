@@ -3,6 +3,8 @@
 #include <QPainter>
 #include <QPainterPath>
 
+namespace IconPainting {
+
 namespace {
 
 void DrawNew(QPainter& painter, IconId)
@@ -183,7 +185,7 @@ constexpr struct IconEntry {
 
 } // namespace
 
-bool PaintIconFileEdit(QPainter& painter, IconId id)
+bool PaintFileEdit(QPainter& painter, IconId id)
 {
     for (const IconEntry& entry : ENTRIES) {
         if (entry.id == id) {
@@ -193,3 +195,5 @@ bool PaintIconFileEdit(QPainter& painter, IconId id)
     }
     return false;
 }
+
+} // namespace IconPainting
