@@ -35,7 +35,7 @@ QList<CanvasItem*> CanvasScene::ItemsInGroup(int groupId) const
 
 int CanvasScene::ParentGroup(int groupId) const
 {
-    return m_groupParents.value(groupId, 0);
+    return m_groups.Parent(groupId);
 }
 
 int CanvasScene::OutermostGroup(int groupId) const
@@ -86,26 +86,17 @@ bool CanvasScene::SelectGroupOfItem(CanvasItem* item)
 
 void CanvasScene::ApplyGroupParents(const QHash<int, int>& parents)
 {
-    m_groupParents = parents;
-    for (auto it = m_groupParents.constBegin(); it != m_groupParents.constEnd(); ++it) {
-        m_nextGroupId = qMax(m_nextGroupId, qMax(it.key(), it.value()) + 1);
-    }
+    m_groups.ApplyParents(parents);
 }
 
 void CanvasScene::ApplyGroupNames(const QHash<int, QString>& names)
 {
-    m_groupNames.clear();
-    for (auto it = names.constBegin(); it != names.constEnd(); ++it) {
-        if (it.key() > 0 && !it.value().trimmed().isEmpty()) {
-            m_groupNames.insert(it.key(), it.value().trimmed());
-        }
-    }
+    m_groups.ApplyNames(names);
 }
 
 void CanvasScene::ApplyGroupRecords(const GroupState& groups)
 {
-    ApplyGroupNames(groups.names);
-    ApplyGroupParents(groups.parents);
+    m_groups.ApplyRecords(groups);
     update();
     emit contentChanged();
 }
@@ -119,56 +110,17 @@ void CanvasScene::ApplyGroupRecords(const QHash<int, QString>& names, const QHas
 
 QString CanvasScene::GroupName(int groupId) const
 {
-    return m_groupNames.value(groupId, QString());
+    return m_groups.Name(groupId);
 }
 
 bool CanvasScene::IsGroupNameAvailable(const QString& name, int exceptGroupId) const
 {
-    const QString candidate = name.trimmed();
-    if (candidate.isEmpty()) {
-        return false;
-    }
-    for (auto it = m_groupNames.constBegin(); it != m_groupNames.constEnd(); ++it) {
-        if (it.key() == exceptGroupId) {
-            continue;
-        }
-        if (it.value().compare(candidate, Qt::CaseInsensitive) == 0) {
-            return false;
-        }
-    }
-    return true;
+    return m_groups.IsNameAvailable(name, exceptGroupId);
 }
 
 QString CanvasScene::UniqueGroupName(const QString& base) const
 {
-    const QString trimmed = base.trimmed();
-    if (trimmed.isEmpty()) {
-        return QString();
-    }
-    if (IsGroupNameAvailable(trimmed)) {
-        return trimmed;
-    }
-
-    // “组” → 组 1、组 2；“Hero panel” → Hero panel 2、Hero panel 3。
-    const QString prefix = trimmed + QLatin1Char(' ');
-    int maxSuffix = 0;
-    bool exactBase = false;
-    for (const QString& existing : std::as_const(m_groupNames)) {
-        const QString name = existing.trimmed();
-        if (name.compare(trimmed, Qt::CaseInsensitive) == 0) {
-            exactBase = true;
-        }
-        if (!name.startsWith(prefix, Qt::CaseInsensitive)) {
-            continue;
-        }
-        bool ok = false;
-        const int value = name.mid(prefix.size()).toInt(&ok);
-        if (ok && value > 0) {
-            maxSuffix = qMax(maxSuffix, value);
-        }
-    }
-    const int next = qMax(maxSuffix + 1, exactBase ? 2 : 1);
-    return prefix + QString::number(next);
+    return m_groups.UniqueName(base);
 }
 
 QString CanvasScene::SuggestGroupName(const QString& base) const
@@ -190,18 +142,8 @@ QString CanvasScene::SuggestGroupName(const QString& base) const
 QList<int> CanvasScene::GroupIds() const
 {
     QSet<int> ids;
-    for (auto it = m_groupNames.constBegin(); it != m_groupNames.constEnd(); ++it) {
-        if (it.key() > 0) {
-            ids.insert(it.key());
-        }
-    }
-    for (auto it = m_groupParents.constBegin(); it != m_groupParents.constEnd(); ++it) {
-        if (it.key() > 0) {
-            ids.insert(it.key());
-        }
-        if (it.value() > 0) {
-            ids.insert(it.value());
-        }
+    for (int groupId : m_groups.RecordedIds()) {
+        ids.insert(groupId);
     }
     for (CanvasItem* item : CanvasItems()) {
         if (item->GroupId() > 0) {
@@ -213,13 +155,7 @@ QList<int> CanvasScene::GroupIds() const
 
 QList<int> CanvasScene::ChildGroups(int groupId) const
 {
-    QList<int> result;
-    for (auto it = m_groupParents.constBegin(); it != m_groupParents.constEnd(); ++it) {
-        if (it.value() == groupId) {
-            result.append(it.key());
-        }
-    }
-    return result;
+    return m_groups.ChildGroups(groupId);
 }
 
 QList<CanvasItem*> CanvasScene::DirectMembers(int groupId) const
@@ -348,18 +284,10 @@ void CanvasScene::PruneEmptyGroups()
     while (changed) {
         changed = false;
         for (int groupId : std::as_const(empty)) {
-            if (!m_groupNames.contains(groupId) && !m_groupParents.contains(groupId)) {
+            if (!m_groups.HasRecord(groupId)) {
                 continue;
             }
-            m_groupNames.remove(groupId);
-            m_groupParents.remove(groupId);
-            for (auto it = m_groupParents.begin(); it != m_groupParents.end();) {
-                if (it.value() == groupId) {
-                    it = m_groupParents.erase(it);
-                } else {
-                    ++it;
-                }
-            }
+            m_groups.RemoveRecord(groupId);
             changed = true;
         }
         for (int groupId : GroupIds()) {
@@ -463,7 +391,7 @@ int CanvasScene::AssignNewGroupWithUndo(const QList<CanvasItem*>& items, GroupFa
         }
     }
 
-    const int groupId = m_nextGroupId++;
+    const int groupId = m_groups.NextId();
     const QString groupName = SuggestGroupName(nameBase);
     const GroupState groupsBefore = GroupSnapshot();
     GroupState groupsAfter = groupsBefore;
@@ -498,7 +426,7 @@ int CanvasScene::GroupSelectedItems(GroupFailureReason* reason)
     }
 
     const QList<CanvasItem*> items = SelectedCanvasItems();
-    const int groupId = m_nextGroupId++;
+    const int groupId = m_groups.NextId();
     const QString groupName = SuggestGroupName(QString());
 
     const GroupState groupsBefore = GroupSnapshot();
@@ -558,9 +486,9 @@ int CanvasScene::AssignNewGroup(const QList<CanvasItem*>& items, GroupFailureRea
         }
     }
 
-    const int groupId = m_nextGroupId++;
+    const int groupId = m_groups.NextId();
     const QString groupName = SuggestGroupName(nameBase);
-    QHash<int, QString> namesAfter = m_groupNames;
+    QHash<int, QString> namesAfter = m_groups.Names();
     namesAfter.insert(groupId, groupName);
 
     QList<int> groupIds(items.size(), groupId);
@@ -661,7 +589,7 @@ bool CanvasScene::RenameGroupWithUndo(int groupId, const QString& name)
     if (m_undoStack) {
         m_undoStack->push(new GroupRenameCommand(this, groupId, before, trimmed, tr("Rename group")));
     } else {
-        QHash<int, QString> names = m_groupNames;
+        QHash<int, QString> names = m_groups.Names();
         names.insert(groupId, trimmed);
         ApplyGroupNames(names);
     }

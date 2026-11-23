@@ -76,7 +76,8 @@ QJsonObject CanvasScene::ToJson() const
 
     // 组的父子关系：{"子组 id": "父组 id"}，用于还原嵌套分组的选择行为。
     QJsonObject groupParents;
-    for (auto it = m_groupParents.constBegin(); it != m_groupParents.constEnd(); ++it) {
+    const QHash<int, int> parentRecords = m_groups.Parents();
+    for (auto it = parentRecords.constBegin(); it != parentRecords.constEnd(); ++it) {
         if (it.key() > 0 && it.value() > 0) {
             groupParents.insert(QString::number(it.key()), it.value());
         }
@@ -87,7 +88,8 @@ QJsonObject CanvasScene::ToJson() const
 
     // 组名：{"组 id": "组名"}；旧文件没有这个字段时按组编号补“组 N”。
     QJsonObject groupNames;
-    for (auto it = m_groupNames.constBegin(); it != m_groupNames.constEnd(); ++it) {
+    const QHash<int, QString> nameRecords = m_groups.Names();
+    for (auto it = nameRecords.constBegin(); it != nameRecords.constEnd(); ++it) {
         if (it.key() > 0 && !it.value().trimmed().isEmpty()) {
             groupNames.insert(QString::number(it.key()), it.value());
         }
@@ -281,9 +283,9 @@ bool CanvasScene::FromJson(const QJsonObject& root, QString* errorMessage)
         addItem(item);
     }
 
-    m_nextGroupId = 1;
+    m_groups.Reset();
     for (CanvasItem* item : CanvasItems()) {
-        m_nextGroupId = qMax(m_nextGroupId, item->GroupId() + 1);
+        m_groups.ObserveId(item->GroupId());
     }
     // 还原嵌套分组的父子关系（旧文件没有这个字段，按平铺分组处理）。
     QHash<int, int> parents;
@@ -348,13 +350,17 @@ bool CanvasScene::FromJson(const QJsonObject& root, QString* errorMessage)
         }
     }
     ApplyGroupRecords(GroupState{names, parents});
+    // 记录恢复会清空并重建组域，图元上仍保留的组号要重新抬高分配计数器。
+    for (CanvasItem* item : CanvasItems()) {
+        m_groups.ObserveId(item->GroupId());
+    }
 
     // 旧文件无组名时按组 ID 顺序补“组 N”；重名由 UniqueGroupName 自动补后缀。
     QList<int> sortedGroupIds = GroupIds();
     std::sort(sortedGroupIds.begin(), sortedGroupIds.end());
     for (int groupId : std::as_const(sortedGroupIds)) {
         if (GroupName(groupId).isEmpty()) {
-            m_groupNames.insert(groupId, SuggestGroupName(QString()));
+            m_groups.SetName(groupId, SuggestGroupName(QString()));
         }
     }
     PruneEmptyGroups();

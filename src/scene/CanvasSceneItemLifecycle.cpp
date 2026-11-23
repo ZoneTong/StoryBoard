@@ -138,7 +138,7 @@ int CanvasScene::DuplicateSelectedItems()
         if (sourceGroupId > 0 && selectedGroupCounts.value(sourceGroupId) == groupMembers.value(sourceGroupId).size() &&
             groupMembers.value(sourceGroupId).size() >= 2) {
             if (!copyGroupIds.contains(sourceGroupId)) {
-                copyGroupIds.insert(sourceGroupId, m_nextGroupId++);
+                copyGroupIds.insert(sourceGroupId, m_groups.NextId());
             }
             copy->SetGroupId(copyGroupIds.value(sourceGroupId));
         }
@@ -218,7 +218,7 @@ void CanvasScene::AddItemsWithUndo(const QList<CanvasItem*>& items, const QStrin
         item->SetZOrder(qBound(0, height, scene_constants::MAX_ITEM_HEIGHT));
         used.insert(item->ZOrder());
         if (item->GroupId() > 0) {
-            m_nextGroupId = qMax(m_nextGroupId, item->GroupId() + 1);
+            m_groups.ObserveId(item->GroupId());
         }
         ApplyItemStacking(item);
     }

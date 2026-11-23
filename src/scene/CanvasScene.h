@@ -2,6 +2,7 @@
 
 #include "items/CanvasTypes.h"
 #include "items/ItemGeometry.h"
+#include "scene/GroupDomain.h"
 #include "scene/GroupState.h"
 
 #include <QGraphicsScene>
@@ -104,7 +105,7 @@ class CanvasScene : public QGraphicsScene {
     void NotifyGroupLayerBlocked();
     // 单击组内任意图元时选中整棵组树；返回 true 表示该图元属于某个组。
     bool SelectGroupOfItem(CanvasItem* item);
-    QHash<int, int> GroupParents() const { return m_groupParents; }
+    QHash<int, int> GroupParents() const { return m_groups.Parents(); }
     void ApplyGroupParents(const QHash<int, int>& parents);
     void ApplyGroupIds(const QList<CanvasItem*>& items, const QList<int>& groupIds);
     // 插入即成组（立方体 / 圆柱体的面图元）：给 items 分配新组号并落组，
@@ -143,8 +144,8 @@ class CanvasScene : public QGraphicsScene {
     // 选中该组树下全部可编辑叶子图元，不改变当前活动图层。
     void SelectGroupById(int groupId);
     // 组名 / 父子关系快照：供删除命令与分组命令在撤销 / 重做时整体恢复。
-    QHash<int, QString> GroupNames() const { return m_groupNames; }
-    GroupState GroupSnapshot() const { return GroupState{m_groupNames, m_groupParents}; }
+    QHash<int, QString> GroupNames() const { return m_groups.Names(); }
+    GroupState GroupSnapshot() const { return m_groups.Snapshot(); }
     void ApplyGroupNames(const QHash<int, QString>& names);
     void ApplyGroupRecords(const GroupState& groups);
     // 旧签名保留为薄转发，调用方逐步改用 GroupState。
@@ -302,11 +303,7 @@ class CanvasScene : public QGraphicsScene {
     QList<CanvasLayer> m_layers;
     int m_activeLayerId = 1;
     int m_nextLayerId = 2;
-    int m_nextGroupId = 1;
-    // 组 → 父组。组本身可以被更外层的组包住，成员通过 groupId 指到自己所在的那一层组。
-    QHash<int, int> m_groupParents;
-    // 组 → 组名；未命名的旧组在载入时按编号补“组 N”。
-    QHash<int, QString> m_groupNames;
+    GroupDomain m_groups;
     QList<QPointer<CanvasItem>> m_selectionOrder;
     QList<int> m_preferredLayerIds;
     QList<CanvasItem*> m_orphans;

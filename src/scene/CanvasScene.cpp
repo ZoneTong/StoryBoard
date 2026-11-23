@@ -112,8 +112,7 @@ void CanvasScene::ResetDocument()
                 {scene_constants::FIRST_USER_LAYER_ID, QStringLiteral("图层 1"), true, false}};
     m_activeLayerId = scene_constants::FIRST_USER_LAYER_ID;
     m_nextLayerId = scene_constants::FIRST_USER_LAYER_ID + 1;
-    m_nextGroupId = 1;
-    m_groupParents.clear();
+    m_groups.Reset();
     m_canvasOrigin = QPointF(0.0, 0.0);
     m_exporting = false;
     UpdateSceneExtent();
