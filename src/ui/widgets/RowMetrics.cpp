@@ -29,7 +29,7 @@ int FieldHeight()
 
 int RowHeight()
 {
-    return FieldHeight() + 6;
+    return FieldHeight() + 7;
 }
 
 int GlyphSize()
