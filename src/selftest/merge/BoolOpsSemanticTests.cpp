@@ -1,6 +1,6 @@
 #include "canvas/CanvasView.h"
 #include "items/polygon/PolygonItem.h"
-#include "items/shapes/ShapeRegistry.h"
+#include "items/shapes/ShapeFactory.h"
 #include "ops/BoolOps.h"
 #include "ops/MergeRegions.h"
 #include "ops/PathRegions.h"
@@ -28,7 +28,7 @@ void selftest::RunBoolOpsSemanticTests(Context& ctx)
             scene.SetMode(ToolMode::EDIT);
             scene.ApplyCanvasSize(QSizeF(400.0, 300.0));
             auto makeRect = [&scene](qreal x, const QColor& color) {
-                auto* item = ShapeRegistry::Create(ShapeType::RECTANGLE);
+                auto* item = ShapeFactory::Create(ShapeType::RECTANGLE);
                 item->setPos(QPointF(x, 40.0));
                 item->SetContentSize(QSizeF(60.0, 60.0));
                 item->SetStyle(color, color.lighter(160), 1.0);
@@ -85,7 +85,7 @@ void selftest::RunBoolOpsSemanticTests(Context& ctx)
         const QColor upperFill(40, 90, 200);
         const QColor upperStroke(40, 90, 200);
         auto makeRect = [&unionScene](qreal x, const QColor& fill, const QColor& stroke) {
-            auto* item = ShapeRegistry::Create(ShapeType::RECTANGLE);
+            auto* item = ShapeFactory::Create(ShapeType::RECTANGLE);
             item->setPos(QPointF(x, 60.0));
             item->SetContentSize(QSizeF(80.0, 80.0));
             item->SetStyle(stroke, fill, 6.0);
@@ -162,7 +162,7 @@ void selftest::RunBoolOpsSemanticTests(Context& ctx)
             scene.SetCanvasBackground(background);
 
             auto makeShape = [&scene](ShapeType type, QPointF pos, const QColor& fill, bool filled) {
-                auto* shape = ShapeRegistry::Create(type);
+                auto* shape = ShapeFactory::Create(type);
                 shape->setPos(pos);
                 shape->SetContentSize(QSizeF(180.0, 180.0));
                 shape->SetStyle(QColor(20, 20, 20), filled ? fill : QColor(Qt::transparent), 8.0);
@@ -278,7 +278,7 @@ void selftest::RunBoolOpsSemanticTests(Context& ctx)
         compositeScene.SetCanvasBackground(compositeBackground);
 
         auto makeShape = [&compositeScene](ShapeType type, QPointF pos, QColor fill) {
-            auto* shape = ShapeRegistry::Create(type);
+            auto* shape = ShapeFactory::Create(type);
             shape->setPos(pos);
             shape->SetContentSize(QSizeF(140.0, 140.0));
             shape->SetStyle(fill, fill, 4.0);
@@ -328,7 +328,7 @@ void selftest::RunBoolOpsSemanticTests(Context& ctx)
         const QColor upperFill(40, 90, 200);
         const QColor upperStroke(220, 40, 40);
         auto makeRect = [&fallbackScene](qreal x, const QColor& fill, const QColor& stroke, qreal width) {
-            auto* item = ShapeRegistry::Create(ShapeType::RECTANGLE);
+            auto* item = ShapeFactory::Create(ShapeType::RECTANGLE);
             item->setPos(QPointF(x, 60.0));
             item->SetContentSize(QSizeF(80.0, 80.0));
             item->SetStyle(stroke, fill, width);
@@ -362,7 +362,7 @@ void selftest::RunBoolOpsSemanticTests(Context& ctx)
         groupBoolScene.SetMode(ToolMode::EDIT);
         groupBoolScene.ApplyCanvasSize(QSizeF(300.0, 200.0));
         auto makeRect = [&groupBoolScene](qreal x, const QColor& color) {
-            auto* item = ShapeRegistry::Create(ShapeType::RECTANGLE);
+            auto* item = ShapeFactory::Create(ShapeType::RECTANGLE);
             item->setPos(QPointF(x, 100.0));
             item->SetContentSize(QSizeF(40.0, 40.0));
             item->SetStyle(color, color, 2.0);
@@ -454,7 +454,7 @@ void selftest::RunBoolOpsSemanticTests(Context& ctx)
             scene->SetMode(ToolMode::EDIT);
             scene->ApplyCanvasSize(QSizeF(300.0, 200.0));
             auto makeRect = [scene](qreal x, const QColor& fill, const QColor& stroke) {
-                auto* item = ShapeRegistry::Create(ShapeType::RECTANGLE);
+                auto* item = ShapeFactory::Create(ShapeType::RECTANGLE);
                 item->setPos(QPointF(x, 40.0));
                 item->SetContentSize(QSizeF(60.0, 60.0));
                 item->SetStyle(stroke, fill, 2.0);

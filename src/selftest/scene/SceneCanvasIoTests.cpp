@@ -7,7 +7,7 @@
 #include "items/lines/LineAbstractItem.h"
 #include "items/polygon/PolygonItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
-#include "items/shapes/ShapeRegistry.h"
+#include "items/shapes/ShapeFactory.h"
 #include "items/text/TextItem.h"
 #include "lineart/LineArtConverter.h"
 #include "lineart/LineArtDialog.h"
@@ -157,7 +157,7 @@ void selftest::RunSceneCanvasIoTests(Context& ctx)
 
     const QPixmap shot = MakeShotImage(320, 200, QStringLiteral("SHOT 01"), QColor(QStringLiteral("#60A5FA")),
                                        QColor(QStringLiteral("#1D4ED8")));
-    auto* imageItem = ShapeRegistry::Create(ShapeType::RECTANGLE);
+    auto* imageItem = ShapeFactory::Create(ShapeType::RECTANGLE);
     imageItem->SetStyle(QColor(Qt::transparent), QColor(Qt::transparent), 1.0);
     imageItem->SetFillStyle(FillStyle::NONE);
     imageItem->SetFillImage(shot, ImageFill::Mode::STRETCH);

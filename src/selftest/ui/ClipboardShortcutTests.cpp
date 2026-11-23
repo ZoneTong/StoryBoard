@@ -1,6 +1,6 @@
 #include "items/CanvasItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
-#include "items/shapes/ShapeRegistry.h"
+#include "items/shapes/ShapeFactory.h"
 #include "scene/CanvasScene.h"
 #include "selftest/core/SelfTestContext.h"
 #include "selftest/core/SelftestEntries.h"
@@ -50,7 +50,7 @@ void selftest::RunClipboardShortcutTests(Context& ctx)
         QUndoStack sourceUndo;
         sourceScene.SetUndoStack(&sourceUndo);
 
-        auto* source = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* source = ShapeFactory::Create(ShapeType::RECTANGLE);
         source->SetContentSize(QSizeF(120.0, 80.0));
         source->setPos(QPointF(40.0, 50.0));
         sourceScene.AddItemsWithUndo({source}, QStringLiteral("Add clipboard source"));

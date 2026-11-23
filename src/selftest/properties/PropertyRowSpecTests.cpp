@@ -1,4 +1,4 @@
-#include "items/shapes/ShapeRegistry.h"
+#include "items/shapes/ShapeFactory.h"
 #include "scene/CanvasScene.h"
 #include "scene/Commands.h"
 #include "selftest/core/SelfTestContext.h"
@@ -34,7 +34,7 @@ void selftest::RunPropertyRowSpecTests(Context& ctx)
     scene.ApplyCanvasSize(QSizeF(800.0, 600.0));
     scene.SetMode(ToolMode::EDIT);
 
-    auto* rect = ShapeRegistry::Create(ShapeType::RECTANGLE);
+    auto* rect = ShapeFactory::Create(ShapeType::RECTANGLE);
     rect->SetContentSize(QSizeF(90.0, 70.0));
     rect->setPos(QPointF(80.0, 90.0));
     scene.AddItemsWithUndo({rect}, QStringLiteral("Add test rect"));

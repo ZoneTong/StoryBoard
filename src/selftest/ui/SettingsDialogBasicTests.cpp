@@ -2,7 +2,7 @@
 #include "app/Settings.h"
 #include "items/CanvasTypes.h"
 #include "items/shapes/ShapeAbstractItem.h"
-#include "items/shapes/ShapeRegistry.h"
+#include "items/shapes/ShapeFactory.h"
 #include "lineart/LineArtConverter.h"
 #include "lineart/LineArtDialog.h"
 #include "scene/CanvasScene.h"
@@ -30,7 +30,7 @@ void selftest::RunSettingsDialogBasicTests(Context& ctx)
         QUndoStack handleUndo;
         handleScene.SetUndoStack(&handleUndo);
 
-        auto* handleEllipse = ShapeRegistry::Create(ShapeType::ELLIPSE);
+        auto* handleEllipse = ShapeFactory::Create(ShapeType::ELLIPSE);
         handleEllipse->SetStyle(QColor(QStringLiteral("#0F172A")), QColor(Qt::transparent), 4.0);
         handleEllipse->SetContentSize(QSizeF(200, 120));
         handleEllipse->setPos(QPointF(60, 40));
@@ -46,7 +46,7 @@ void selftest::RunSettingsDialogBasicTests(Context& ctx)
         handleEllipse->setSelected(false);
         ctx.Check(!handleEllipse->shape().contains(QPointF(-3.0, -3.0)), QStringLiteral("未选中时控制点不参与命中"));
 
-        auto* thickRect = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* thickRect = ShapeFactory::Create(ShapeType::RECTANGLE);
         thickRect->SetStyle(QColor(QStringLiteral("#1D4ED8")), QColor(29, 78, 216, 40), 40.0);
         thickRect->SetContentSize(QSizeF(200, 120));
         thickRect->setPos(QPointF(400, 40));

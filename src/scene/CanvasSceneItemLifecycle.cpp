@@ -6,7 +6,7 @@
 #include "items/lines/StraightLineItem.h"
 #include "items/polygon/PolygonItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
-#include "items/shapes/ShapeRegistry.h"
+#include "items/shapes/ShapeFactory.h"
 #include "items/text/TextItem.h"
 #include "scene/CanvasScene.h"
 #include "scene/Commands.h"
@@ -268,7 +268,7 @@ CanvasItem* CanvasScene::CreateItem(const QString& kind, const QString& shapeTyp
         return new TextItem();
     }
     if (kind == QStringLiteral("shape")) {
-        return ShapeRegistry::Create(ShapeTypeFromString(shapeType));
+        return ShapeFactory::Create(ShapeTypeFromString(shapeType));
     }
     if (kind == QStringLiteral("polygon")) {
         return new PolygonItem();

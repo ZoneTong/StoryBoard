@@ -1,7 +1,7 @@
 #include "app/I18n.h"
 #include "items/lines/CurveItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
-#include "items/shapes/ShapeRegistry.h"
+#include "items/shapes/ShapeFactory.h"
 #include "items/text/TextItem.h"
 #include "scene/CanvasScene.h"
 #include "selftest/core/SelfTestContext.h"
@@ -185,7 +185,7 @@ void selftest::RunPropertyDialogTextNamingTests(Context& ctx)
     CanvasScene ellipseScene;
     QUndoStack ellipseUndo;
     ellipseScene.SetUndoStack(&ellipseUndo);
-    auto* ellipse = ShapeRegistry::Create(ShapeType::ELLIPSE);
+    auto* ellipse = ShapeFactory::Create(ShapeType::ELLIPSE);
     ellipse->SetContentSize(QSizeF(300.0, 100.0));
     ellipse->setPos(QPointF(100.0, 100.0));
     ellipseScene.AddItemsWithUndo({ellipse}, QStringLiteral("Add ellipse"));
@@ -225,7 +225,7 @@ void selftest::RunPropertyDialogTextNamingTests(Context& ctx)
     CanvasScene arcScene;
     QUndoStack arcUndo;
     arcScene.SetUndoStack(&arcUndo);
-    auto* sector = ShapeRegistry::Create(ShapeType::SECTOR);
+    auto* sector = ShapeFactory::Create(ShapeType::SECTOR);
     sector->SetContentSize(QSizeF(200.0, 200.0));
     arcScene.AddItemsWithUndo({sector}, QStringLiteral("Add sector"));
     {

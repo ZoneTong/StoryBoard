@@ -1,6 +1,6 @@
 #include "items/CanvasTypes.h"
 #include "items/shapes/ShapeAbstractItem.h"
-#include "items/shapes/ShapeRegistry.h"
+#include "items/shapes/ShapeFactory.h"
 #include "scene/CanvasScene.h"
 #include "scene/Commands.h"
 #include "selftest/core/SelfTestContext.h"
@@ -47,7 +47,7 @@ void selftest::RunFillStyleBasicTests(Context& ctx)
         const QSizeF ellipseDefault = DefaultShapeSize(ShapeType::ELLIPSE);
         ctx.Check(qFuzzyCompare(ellipseDefault.width(), ellipseDefault.height()),
                   QStringLiteral("椭圆默认插入为标准圆形"));
-        auto* circleItem = ShapeRegistry::Create(ShapeType::ELLIPSE);
+        auto* circleItem = ShapeFactory::Create(ShapeType::ELLIPSE);
         circleItem->SetContentSize(QSizeF(200, 200));
         circleItem->SetContentSize(QSizeF(260, 140));
         ctx.Check(circleItem->ContentSize() == QSizeF(260, 140), QStringLiteral("圆形可在编辑模式拉伸成椭圆"));
@@ -60,7 +60,7 @@ void selftest::RunFillStyleBasicTests(Context& ctx)
         ctx.Check(FillStyleFromString(QStringLiteral("cross_hatch")) == FillStyle::CROSS_HATCH,
                   QStringLiteral("交叉线填充样式可反序列化"));
 
-        auto* filledShape = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* filledShape = ShapeFactory::Create(ShapeType::RECTANGLE);
         filledShape->SetContentSize(QSizeF(120, 80));
         filledShape->setPos(QPointF(30, 30));
         filledShape->SetFill(QColor(59, 130, 246, 160), FillStyle::HACHURE);
@@ -76,7 +76,7 @@ void selftest::RunFillStyleBasicTests(Context& ctx)
         CanvasScene arrowScene;
         arrowScene.ApplyCanvasSize(QSizeF(400, 200));
         arrowScene.SetShowGrid(false);
-        auto* hollowArrow = ShapeRegistry::Create(ShapeType::ARROW);
+        auto* hollowArrow = ShapeFactory::Create(ShapeType::ARROW);
         hollowArrow->setPos(QPointF(40, 50));
         hollowArrow->SetContentSize(QSizeF(240, 100));
         hollowArrow->SetStyle(QColor(QStringLiteral("#DC2626")), QColor(Qt::transparent), 6.0);
@@ -125,7 +125,7 @@ void selftest::RunFillStyleBasicTests(Context& ctx)
         QUndoStack styleUndo;
         CanvasScene styleScene;
         styleScene.SetUndoStack(&styleUndo);
-        auto* styleShape = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* styleShape = ShapeFactory::Create(ShapeType::RECTANGLE);
         styleShape->SetContentSize(QSizeF(100, 60));
         styleScene.AttachItem(styleShape);
         const FillStyle styleBefore = styleShape->fillStyle();

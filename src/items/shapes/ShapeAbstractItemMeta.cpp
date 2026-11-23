@@ -2,7 +2,7 @@
 #include "items/geometry/ShapePainter.h"
 #include "items/geometry/ShapePathBuilder.h"
 #include "items/shapes/ShapeAbstractItem.h"
-#include "items/shapes/ShapeRegistry.h"
+#include "items/shapes/ShapeFactory.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -88,7 +88,7 @@ QSizeF DefaultShapeSize(ShapeType type)
 {
     // 单一来源在子类 DefaultContentSize()：按需构造原型图元取默认尺寸，
     // 构造函数走 SetContentSize(DefaultContentSize())，不会递归。
-    ShapeAbstractItem* prototype = ShapeRegistry::Create(type);
+    ShapeAbstractItem* prototype = ShapeFactory::Create(type);
     const QSizeF size = prototype->DefaultContentSize();
     delete prototype;
     return size;

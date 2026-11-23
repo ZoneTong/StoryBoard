@@ -7,7 +7,7 @@
 #include "items/lines/CurveItem.h"
 #include "items/polygon/PolygonItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
-#include "items/shapes/ShapeRegistry.h"
+#include "items/shapes/ShapeFactory.h"
 #include "items/text/TextItem.h"
 #include "lineart/LineArtConverter.h"
 #include "lineart/LineArtDialog.h"
@@ -95,7 +95,7 @@ void selftest::RunDuplicateItemTests(Context& ctx)
         QUndoStack duplicateUndo;
         duplicateScene.SetUndoStack(&duplicateUndo);
 
-        auto* source = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* source = ShapeFactory::Create(ShapeType::RECTANGLE);
         source->SetContentSize(QSizeF(120.0, 80.0));
         source->setPos(QPointF(40.0, 50.0));
         duplicateScene.AddItemsWithUndo({source}, QStringLiteral("Add duplicate source"));
@@ -142,12 +142,12 @@ void selftest::RunDuplicateItemTests(Context& ctx)
         QUndoStack customNameUndo;
         customNameScene.SetUndoStack(&customNameUndo);
 
-        auto* first = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* first = ShapeFactory::Create(ShapeType::RECTANGLE);
         first->SetContentSize(QSizeF(100.0, 60.0));
         customNameScene.AddItemsWithUndo({first}, QStringLiteral("Add first custom item"));
         first->SetName(QStringLiteral("Hero panel"));
 
-        auto* second = ShapeRegistry::Create(ShapeType::ELLIPSE);
+        auto* second = ShapeFactory::Create(ShapeType::ELLIPSE);
         second->SetContentSize(QSizeF(90.0, 90.0));
         customNameScene.AddItemsWithUndo({second}, QStringLiteral("Add second custom item"));
         second->SetName(QStringLiteral("Hero panel 2"));
@@ -166,10 +166,10 @@ void selftest::RunDuplicateItemTests(Context& ctx)
     // 载入或旧文件里已有的重名，在补名时一并修复。
     {
         CanvasScene repairScene;
-        auto* first = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* first = ShapeFactory::Create(ShapeType::RECTANGLE);
         first->SetContentSize(QSizeF(80.0, 60.0));
         repairScene.AddItemsWithUndo({first}, QStringLiteral("Add repair item"));
-        auto* second = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* second = ShapeFactory::Create(ShapeType::RECTANGLE);
         second->SetContentSize(QSizeF(70.0, 50.0));
         repairScene.AddItemsWithUndo({second}, QStringLiteral("Add repair item"));
         first->SetName(QStringLiteral("Same name"));
@@ -195,10 +195,10 @@ void selftest::RunGroupTests(Context& ctx)
         groupScene.ApplyCanvasSize(QSizeF(800.0, 600.0));
         groupScene.SetMode(ToolMode::EDIT);
 
-        auto* first = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* first = ShapeFactory::Create(ShapeType::RECTANGLE);
         first->SetContentSize(QSizeF(90.0, 70.0));
         first->setPos(QPointF(80.0, 90.0));
-        auto* second = ShapeRegistry::Create(ShapeType::ELLIPSE);
+        auto* second = ShapeFactory::Create(ShapeType::ELLIPSE);
         second->SetContentSize(QSizeF(90.0, 70.0));
         second->setPos(QPointF(320.0, 260.0));
         groupScene.AddItemsWithUndo({first, second}, QStringLiteral("Add grouped sources"));
@@ -323,7 +323,7 @@ void selftest::RunRubberBandTests(Context& ctx)
         CanvasScene rubberScene;
         rubberScene.ApplyCanvasSize(QSizeF(800.0, 600.0));
         rubberScene.SetMode(ToolMode::EDIT);
-        auto* target = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* target = ShapeFactory::Create(ShapeType::RECTANGLE);
         target->SetContentSize(QSizeF(120.0, 80.0));
         target->setPos(QPointF(300.0, 250.0));
         rubberScene.AddItemsWithUndo({target}, QStringLiteral("Add rubber-band target"));
@@ -387,10 +387,10 @@ void selftest::RunRubberBandTests(Context& ctx)
         boxScene.ApplyCanvasSize(QSizeF(900.0, 700.0));
         boxScene.SetMode(ToolMode::EDIT);
 
-        auto* boxLeft = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* boxLeft = ShapeFactory::Create(ShapeType::RECTANGLE);
         boxLeft->SetContentSize(QSizeF(100.0, 60.0));
         boxLeft->setPos(QPointF(60.0, 70.0));
-        auto* boxRight = ShapeRegistry::Create(ShapeType::ELLIPSE);
+        auto* boxRight = ShapeFactory::Create(ShapeType::ELLIPSE);
         boxRight->SetContentSize(QSizeF(80.0, 90.0));
         boxRight->setPos(QPointF(260.0, 210.0));
         boxScene.AddItemsWithUndo({boxLeft, boxRight}, QStringLiteral("Add box items"));

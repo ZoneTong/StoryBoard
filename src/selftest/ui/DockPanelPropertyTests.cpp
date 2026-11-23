@@ -10,7 +10,7 @@
 #include "items/properties/ItemStyleVisuals.h"
 #include "items/shapes/AllShapes.h"
 #include "items/shapes/ShapeAbstractItem.h"
-#include "items/shapes/ShapeRegistry.h"
+#include "items/shapes/ShapeFactory.h"
 #include "items/text/TextItem.h"
 #include "lineart/LineArtConverter.h"
 #include "lineart/LineArtDialog.h"
@@ -107,7 +107,7 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
         dockView->SetMode(ToolMode::EDIT);
     }
     QApplication::processEvents();
-    auto* insertedShape = ShapeRegistry::Create(ShapeType::RECTANGLE);
+    auto* insertedShape = ShapeFactory::Create(ShapeType::RECTANGLE);
     insertedShape->setPos(QPointF(160.0, 140.0));
     insertedShape->SetContentSize(QSizeF(140.0, 100.0));
     dockScene->AddItemsWithUndo({insertedShape}, QStringLiteral("Add rectangle"));
@@ -226,7 +226,7 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
                   QStringLiteral("撤销旋转恢复图元原角度"));
 
         // 平行四边形内角与椭圆长短半轴：属性窗里的专属几何字段，面板同样提供。
-        auto* panelParallelogram = ShapeRegistry::Create(ShapeType::PARALLELOGRAM);
+        auto* panelParallelogram = ShapeFactory::Create(ShapeType::PARALLELOGRAM);
         panelParallelogram->setPos(QPointF(620.0, 150.0));
         dockScene->AddItemsWithUndo({panelParallelogram}, QStringLiteral("Add panel parallelogram"));
         dockScene->clearSelection();
@@ -246,7 +246,7 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
         dockScene->UndoStack()->undo();
         QApplication::processEvents();
 
-        auto* panelEllipse = ShapeRegistry::Create(ShapeType::ELLIPSE);
+        auto* panelEllipse = ShapeFactory::Create(ShapeType::ELLIPSE);
         panelEllipse->setPos(QPointF(620.0, 320.0));
         panelEllipse->SetContentSize(QSizeF(140.0, 100.0));
         dockScene->AddItemsWithUndo({panelEllipse}, QStringLiteral("Add panel ellipse"));
@@ -303,7 +303,7 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
 
         // 需求 2：多选也开放旋转 / 位置 / 尺寸行，行序对齐属性窗；
         // 位置与尺寸按首个图元回显，改动以增量套到其余图元，不会把选中项叠在一起。
-        auto* secondGeometryShape = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* secondGeometryShape = ShapeFactory::Create(ShapeType::RECTANGLE);
         secondGeometryShape->setPos(QPointF(420.0, 260.0));
         secondGeometryShape->SetContentSize(QSizeF(100.0, 80.0));
         dockScene->AddItemsWithUndo({secondGeometryShape}, QStringLiteral("Add second geometry shape"));
@@ -647,7 +647,7 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
         ctx.Check(cardText->TextColor() == QColor(QStringLiteral("#1E293B")), QStringLiteral("撤销文字颜色恢复原色"),
                   cardText->TextColor().name());
 
-        auto* cardImage = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* cardImage = ShapeFactory::Create(ShapeType::RECTANGLE);
         QPixmap imagePixmap(32, 24);
         imagePixmap.fill(QColor(QStringLiteral("#2563EB")));
         cardImage->SetFillImage(imagePixmap, ImageFill::Mode::STRETCH);

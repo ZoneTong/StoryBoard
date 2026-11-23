@@ -1,6 +1,6 @@
 #include "items/CanvasTypes.h"
 #include "items/shapes/ShapeAbstractItem.h"
-#include "items/shapes/ShapeRegistry.h"
+#include "items/shapes/ShapeFactory.h"
 #include "scene/CanvasScene.h"
 #include "selftest/core/SelfTestContext.h"
 #include "selftest/core/SelftestEntries.h"
@@ -19,7 +19,7 @@ void selftest::RunFillStylePatternTests(Context& ctx)
     // 交叉线填充必须铺满整个图形：两个方向的斜线在左下角与右上角密度相当。
     CanvasScene hatchScene;
     hatchScene.ApplyCanvasSize(QSizeF(400, 300));
-    auto* crossShape = ShapeRegistry::Create(ShapeType::RECTANGLE);
+    auto* crossShape = ShapeFactory::Create(ShapeType::RECTANGLE);
     crossShape->setPos(QPointF(50, 45));
     crossShape->SetContentSize(QSizeF(300, 200));
     crossShape->SetStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 2.0);
@@ -84,7 +84,7 @@ void selftest::RunFillStylePatternTests(Context& ctx)
     auto renderPatternFill = [](FillStyle style, QImage& image) {
         CanvasScene scene;
         scene.ApplyCanvasSize(QSizeF(400, 300));
-        auto* shape = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* shape = ShapeFactory::Create(ShapeType::RECTANGLE);
         shape->setPos(QPointF(50, 45));
         shape->SetContentSize(QSizeF(300, 200));
         shape->SetStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 2.0);

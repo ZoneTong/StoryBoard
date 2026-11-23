@@ -1,7 +1,7 @@
 #include "items/properties/ItemProperties.h"
 #include "items/properties/ItemPropertyCatalog.h"
 #include "items/shapes/ShapeAbstractItem.h"
-#include "items/shapes/ShapeRegistry.h"
+#include "items/shapes/ShapeFactory.h"
 #include "scene/CanvasScene.h"
 #include "selftest/core/SelfTestContext.h"
 #include "selftest/core/SelftestEntries.h"
@@ -41,7 +41,7 @@ void selftest::RunPropertyKeyTests(Context& ctx)
                   bulk.Contains(PropertyKey::FromStorageKey(QStringLiteral("test.bulk.69"))),
               QStringLiteral("属性集合不再受 64 位上限约束"), QString::number(bulk.Size()));
 
-    ShapeAbstractItem* triangle = ShapeRegistry::Create(ShapeType::TRIANGLE);
+    ShapeAbstractItem* triangle = ShapeFactory::Create(ShapeType::TRIANGLE);
     static qreal callbackValue = 5.0;
     const PropertyKey callbackKey = PropertyKey::FromStorageKey(QStringLiteral("triangle.test.callback"));
     ItemPropertyCatalog::RegisterDynamic(

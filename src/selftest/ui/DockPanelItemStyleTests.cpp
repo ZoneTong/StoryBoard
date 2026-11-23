@@ -9,7 +9,7 @@
 #include "items/properties/ItemStyleVisuals.h"
 #include "items/shapes/AllShapes.h"
 #include "items/shapes/ShapeAbstractItem.h"
-#include "items/shapes/ShapeRegistry.h"
+#include "items/shapes/ShapeFactory.h"
 #include "items/text/TextItem.h"
 #include "lineart/LineArtConverter.h"
 #include "lineart/LineArtDialog.h"
@@ -105,7 +105,7 @@ void selftest::RunDockPanelItemStyleTests(Context& ctx)
         dockView->SetMode(ToolMode::EDIT);
     }
     QApplication::processEvents();
-    auto* insertedShape = ShapeRegistry::Create(ShapeType::RECTANGLE);
+    auto* insertedShape = ShapeFactory::Create(ShapeType::RECTANGLE);
     insertedShape->setPos(QPointF(160.0, 140.0));
     insertedShape->SetContentSize(QSizeF(140.0, 100.0));
     dockScene->AddItemsWithUndo({insertedShape}, QStringLiteral("Add rectangle"));
@@ -300,7 +300,7 @@ void selftest::RunDockPanelItemStyleTests(Context& ctx)
         }
 
         // 多选时卡片把对齐 8 项与合并图元 6 项直接展开成图标按钮行，并复用菜单栏同一批动作。
-        auto* secondShape = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* secondShape = ShapeFactory::Create(ShapeType::RECTANGLE);
         secondShape->setPos(QPointF(420.0, 240.0));
         secondShape->SetContentSize(QSizeF(120.0, 90.0));
         secondShape->SetStyle(QColor(QStringLiteral("#1D4ED8")), QColor(29, 78, 216, 40), 3.0);
@@ -382,7 +382,7 @@ void selftest::RunDockPanelItemStyleTests(Context& ctx)
                   QStringLiteral("选中整组时只显示解散分组"));
 
         // 组 + 组外图元混合选中：再套一层组合与取消组合同时可用（分组支持多层）。
-        auto* thirdShape = ShapeRegistry::Create(ShapeType::ELLIPSE);
+        auto* thirdShape = ShapeFactory::Create(ShapeType::ELLIPSE);
         thirdShape->setPos(QPointF(560.0, 320.0));
         thirdShape->SetContentSize(QSizeF(100.0, 80.0));
         dockScene->AddItemsWithUndo({thirdShape}, QStringLiteral("Add third shape"));
@@ -396,7 +396,7 @@ void selftest::RunDockPanelItemStyleTests(Context& ctx)
                   QStringLiteral("组与普通图元混合选中时图元分组和解散分组都显示"));
 
         // 删除按钮单独用一个临时图元验证，避免删掉后面还要复用的图元。
-        auto* deleteProbe = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* deleteProbe = ShapeFactory::Create(ShapeType::RECTANGLE);
         deleteProbe->setPos(QPointF(640.0, 360.0));
         deleteProbe->SetContentSize(QSizeF(80.0, 60.0));
         dockScene->AddItemsWithUndo({deleteProbe}, QStringLiteral("Add delete probe"));

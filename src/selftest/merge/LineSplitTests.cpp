@@ -8,7 +8,7 @@
 #include "items/lines/StraightLineItem.h"
 #include "items/polygon/PolygonItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
-#include "items/shapes/ShapeRegistry.h"
+#include "items/shapes/ShapeFactory.h"
 #include "ops/LineSplitOps.h"
 #include "ops/MergeRegions.h"
 #include "ops/PathRegions.h"
@@ -50,7 +50,7 @@ void selftest::RunLineSplitTests(Context& ctx)
         QUndoStack undo;
         scene.SetUndoStack(&undo);
 
-        auto* rect = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* rect = ShapeFactory::Create(ShapeType::RECTANGLE);
         rect->SetContentSize(QSizeF(180.0, 120.0));
         scene.AddItemsWithUndo({rect}, QStringLiteral("Add rect"));
 
@@ -68,7 +68,7 @@ void selftest::RunLineSplitTests(Context& ctx)
         knife->setSelected(true);
         ctx.Check(LineSplitOps::Supports(&scene), QStringLiteral("填充图元加一条直线切刀时可用"));
 
-        auto* secondRect = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* secondRect = ShapeFactory::Create(ShapeType::RECTANGLE);
         secondRect->SetContentSize(QSizeF(80.0, 80.0));
         scene.AddItemsWithUndo({secondRect}, QStringLiteral("Add second rect"));
         scene.clearSelection();
@@ -86,7 +86,7 @@ void selftest::RunLineSplitTests(Context& ctx)
         QUndoStack undo;
         scene.SetUndoStack(&undo);
 
-        auto* rect = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* rect = ShapeFactory::Create(ShapeType::RECTANGLE);
         rect->SetContentSize(QSizeF(180.0, 120.0));
         rect->setPos(QPointF(110.0, 150.0));
         rect->SetFill(QColor(QStringLiteral("#2563EB")), FillStyle::SOLID);
@@ -269,7 +269,7 @@ void selftest::RunLineSplitTests(Context& ctx)
         QUndoStack undo;
         scene.SetUndoStack(&undo);
 
-        auto* ellipse = ShapeRegistry::Create(ShapeType::ELLIPSE);
+        auto* ellipse = ShapeFactory::Create(ShapeType::ELLIPSE);
         ellipse->SetContentSize(QSizeF(160.0, 120.0));
         ellipse->setPos(QPointF(120.0, 180.0));
         scene.AddItemsWithUndo({ellipse}, QStringLiteral("Add ellipse"));
@@ -300,7 +300,7 @@ void selftest::RunLineSplitTests(Context& ctx)
         QUndoStack undo;
         scene.SetUndoStack(&undo);
 
-        auto* rect = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* rect = ShapeFactory::Create(ShapeType::RECTANGLE);
         rect->SetContentSize(QSizeF(200.0, 200.0));
         rect->setPos(QPointF(110.0, 150.0));
         scene.AddItemsWithUndo({rect}, QStringLiteral("Add rect"));
@@ -344,7 +344,7 @@ void selftest::RunLineSplitTests(Context& ctx)
         QUndoStack undo;
         scene.SetUndoStack(&undo);
 
-        auto* rect = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* rect = ShapeFactory::Create(ShapeType::RECTANGLE);
         rect->SetContentSize(QSizeF(128.0, 128.0));
         rect->setPos(QPointF(500.0, 500.0));
         scene.AddItemsWithUndo({rect}, QStringLiteral("Add rect"));
@@ -381,7 +381,7 @@ void selftest::RunLineSplitTests(Context& ctx)
         sine->SetWaveGeometry(QPointF(300.0, 200.0), QSizeF(128.0, 40.0), QColor(QStringLiteral("#111827")), 4.0);
         scene.AddItemsWithUndo({sine}, QStringLiteral("Add sine"));
 
-        auto* rect = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* rect = ShapeFactory::Create(ShapeType::RECTANGLE);
         rect->SetContentSize(QSizeF(80.0, 60.0));
         rect->setPos(QPointF(320.0, 190.0));
         scene.AddItemsWithUndo({rect}, QStringLiteral("Add rect"));
@@ -399,7 +399,7 @@ void selftest::RunLineSplitTests(Context& ctx)
         QUndoStack undo;
         scene.SetUndoStack(&undo);
 
-        auto* rect = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* rect = ShapeFactory::Create(ShapeType::RECTANGLE);
         rect->SetContentSize(QSizeF(200.0, 200.0));
         rect->setPos(QPointF(110.0, 150.0));
         scene.AddItemsWithUndo({rect}, QStringLiteral("Add rect"));
@@ -429,7 +429,7 @@ void selftest::RunLineSplitTests(Context& ctx)
         QUndoStack undo;
         scene.SetUndoStack(&undo);
 
-        auto* rect = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* rect = ShapeFactory::Create(ShapeType::RECTANGLE);
         rect->SetContentSize(QSizeF(120.0, 90.0));
         rect->setPos(QPointF(110.0, 150.0));
         scene.AddItemsWithUndo({rect}, QStringLiteral("Add rect"));
@@ -466,7 +466,7 @@ void selftest::RunLineSplitTests(Context& ctx)
         QUndoStack undo;
         scene.SetUndoStack(&undo);
 
-        auto* flag = ShapeRegistry::Create(ShapeType::FLAG_WAVE);
+        auto* flag = ShapeFactory::Create(ShapeType::FLAG_WAVE);
         flag->SetContentSize(arrangement.flagRect.size());
         flag->setPos(arrangement.flagRect.topLeft());
         scene.AddItemsWithUndo({flag}, QStringLiteral("Add flag"));

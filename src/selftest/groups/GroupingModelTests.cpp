@@ -1,7 +1,7 @@
 #include "items/CanvasItem.h"
 #include "items/CanvasTypes.h"
 #include "items/shapes/ShapeAbstractItem.h"
-#include "items/shapes/ShapeRegistry.h"
+#include "items/shapes/ShapeFactory.h"
 #include "scene/CanvasScene.h"
 #include "scene/Commands.h"
 #include "selftest/core/SelfTestContext.h"
@@ -16,7 +16,7 @@ namespace {
 
 CanvasItem* AddTestRect(CanvasScene& scene, const QPointF& pos, const QSizeF& size, int layerId = -1)
 {
-    auto* item = ShapeRegistry::Create(ShapeType::RECTANGLE);
+    auto* item = ShapeFactory::Create(ShapeType::RECTANGLE);
     item->SetContentSize(size);
     item->setPos(pos);
     if (layerId >= 0) {

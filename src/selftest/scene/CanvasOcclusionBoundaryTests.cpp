@@ -1,7 +1,7 @@
 #include "canvas/CanvasView.h"
 #include "items/CanvasTypes.h"
 #include "items/shapes/ShapeAbstractItem.h"
-#include "items/shapes/ShapeRegistry.h"
+#include "items/shapes/ShapeFactory.h"
 #include "items/text/TextItem.h"
 #include "scene/CanvasScene.h"
 #include "selftest/core/SelfTestContext.h"
@@ -33,14 +33,14 @@ void selftest::RunCanvasOcclusionBoundaryTests(Context& ctx)
     blendBackground.type = BackgroundType::COLOR;
     blendBackground.color = QColor(Qt::white);
     blendScene.SetCanvasBackground(blendBackground);
-    auto* lowerBand = ShapeRegistry::Create(ShapeType::RECTANGLE);
+    auto* lowerBand = ShapeFactory::Create(ShapeType::RECTANGLE);
     lowerBand->setPos(QPointF(20, 20));
     lowerBand->SetContentSize(QSizeF(160, 120));
     lowerBand->SetStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 1.0);
     lowerBand->SetFill(QColor(255, 0, 0, 255), FillStyle::SOLID);
     blendScene.AttachItem(lowerBand);
 
-    auto* upperBand = ShapeRegistry::Create(ShapeType::RECTANGLE);
+    auto* upperBand = ShapeFactory::Create(ShapeType::RECTANGLE);
     upperBand->setPos(QPointF(100, 50));
     upperBand->SetContentSize(QSizeF(160, 120));
     upperBand->SetStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 1.0);
@@ -75,7 +75,7 @@ void selftest::RunCanvasOcclusionBoundaryTests(Context& ctx)
         textBackground.color = QColor(Qt::white);
         textScene.SetCanvasBackground(textBackground);
 
-        auto* rectangle = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* rectangle = ShapeFactory::Create(ShapeType::RECTANGLE);
         rectangle->setPos(QPointF(30, 30));
         rectangle->SetContentSize(QSizeF(200, 150));
         rectangle->SetStyle(QColor(QStringLiteral("#1E293B")), QColor(QStringLiteral("#1E293B")), 2.0);
@@ -157,14 +157,14 @@ void selftest::RunCanvasOcclusionBoundaryTests(Context& ctx)
         CanvasScene hollowScene;
         hollowScene.ApplyCanvasSize(QSizeF(300, 200));
         hollowScene.SetShowGrid(false);
-        auto* lower = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* lower = ShapeFactory::Create(ShapeType::RECTANGLE);
         lower->setPos(QPointF(40, 40));
         lower->SetContentSize(QSizeF(220, 120));
         lower->SetStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 1.0);
         lower->SetFill(QColor(239, 68, 68), FillStyle::SOLID);
         hollowScene.AttachItem(lower);
 
-        auto* hollow = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* hollow = ShapeFactory::Create(ShapeType::RECTANGLE);
         hollow->setPos(QPointF(80, 60));
         hollow->SetContentSize(QSizeF(140, 100));
         hollow->SetStyle(QColor(37, 99, 235), QColor(Qt::transparent), 2.0);
@@ -182,7 +182,7 @@ void selftest::RunCanvasOcclusionBoundaryTests(Context& ctx)
             QStringLiteral("无填充图形的内部不遮挡下层，下层颜色照常可见"),
             QStringLiteral("pixel=%1,%2,%3").arg(hollowPixel.red()).arg(hollowPixel.green()).arg(hollowPixel.blue()));
 
-        auto* pattern = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* pattern = ShapeFactory::Create(ShapeType::RECTANGLE);
         pattern->setPos(QPointF(80, 60));
         pattern->SetContentSize(QSizeF(140, 100));
         pattern->SetStyle(QColor(37, 99, 235), QColor(37, 99, 235, 200), 2.0);
@@ -191,7 +191,7 @@ void selftest::RunCanvasOcclusionBoundaryTests(Context& ctx)
         CanvasScene patternScene;
         patternScene.ApplyCanvasSize(QSizeF(300, 200));
         patternScene.SetShowGrid(false);
-        auto* patternLower = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* patternLower = ShapeFactory::Create(ShapeType::RECTANGLE);
         patternLower->setPos(QPointF(40, 40));
         patternLower->SetContentSize(QSizeF(220, 120));
         patternLower->SetStyle(QColor(QStringLiteral("#94A3B8")), QColor(QStringLiteral("#94A3B8")), 1.0);
@@ -225,14 +225,14 @@ void selftest::RunCanvasOcclusionBoundaryTests(Context& ctx)
         CanvasScene solidOverTexture;
         solidOverTexture.ApplyCanvasSize(QSizeF(300, 200));
         solidOverTexture.SetShowGrid(false);
-        auto* texturedLower = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* texturedLower = ShapeFactory::Create(ShapeType::RECTANGLE);
         texturedLower->setPos(QPointF(40, 40));
         texturedLower->SetContentSize(QSizeF(220, 120));
         texturedLower->SetStyle(QColor(239, 68, 68), QColor(239, 68, 68, 200), 1.0);
         texturedLower->SetFill(QColor(239, 68, 68, 200), FillStyle::HONEYCOMB);
         solidOverTexture.AttachItem(texturedLower);
 
-        auto* solidCover = ShapeRegistry::Create(ShapeType::RECTANGLE);
+        auto* solidCover = ShapeFactory::Create(ShapeType::RECTANGLE);
         solidCover->setPos(QPointF(80, 60));
         solidCover->SetContentSize(QSizeF(140, 100));
         solidCover->SetStyle(QColor(37, 99, 235), QColor(37, 99, 235, 128), 2.0);

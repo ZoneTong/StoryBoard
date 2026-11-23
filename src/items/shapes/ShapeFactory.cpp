@@ -1,4 +1,4 @@
-#include "items/shapes/ShapeRegistry.h"
+#include "items/shapes/ShapeFactory.h"
 
 #include "items/shapes/ArrowItem.h"
 #include "items/shapes/CalloutItem.h"
@@ -21,7 +21,10 @@
 
 // 描述器与创建器同表：JSON 字符串、兼容别名、面积 / 中心点能力、菜单顺序都只有这一份。
 // menuOrder 即「常见图形」的默认顺序（需求 7）；-1 表示该图形不进工具栏顺位。
-const QList<ShapeRegistry::Entry>& ShapeRegistry::Entries()
+
+namespace ShapeFactory {
+
+const QList<Entry>& Entries()
 {
     static const QList<Entry> ENTRIES{
         {{ShapeType::RECTANGLE, "rectangle", "rect rounded_rectangle roundedrect roundrect", true, true, 0},
@@ -60,7 +63,7 @@ const QList<ShapeRegistry::Entry>& ShapeRegistry::Entries()
     return ENTRIES;
 }
 
-const ShapeRegistry::Descriptor* ShapeRegistry::Find(ShapeType type)
+const Descriptor* Find(ShapeType type)
 {
     for (const Entry& entry : Entries()) {
         if (entry.descriptor.type == type) {
@@ -70,7 +73,7 @@ const ShapeRegistry::Descriptor* ShapeRegistry::Find(ShapeType type)
     return nullptr;
 }
 
-ShapeAbstractItem* ShapeRegistry::Create(ShapeType type)
+ShapeAbstractItem* Create(ShapeType type)
 {
     for (const Entry& entry : Entries()) {
         if (entry.descriptor.type == type && entry.create) {
@@ -80,3 +83,5 @@ ShapeAbstractItem* ShapeRegistry::Create(ShapeType type)
     // 未知类型（POLYGON 占位或旧文件）退回矩形。
     return new RectangleItem();
 }
+
+} // namespace ShapeFactory

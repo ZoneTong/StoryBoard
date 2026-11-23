@@ -1,6 +1,6 @@
 #include "items/geometry/ShapeMeta.h"
 
-#include "items/shapes/ShapeRegistry.h"
+#include "items/shapes/ShapeFactory.h"
 
 #include <algorithm>
 
@@ -22,28 +22,28 @@ QList<ShapeType> ShapeMeta::AllTypes()
 {
     // 需求 7：菜单与工具栏「常见图形」的顺位来自描述器 menuOrder（唯一顺序源）。
     QList<ShapeType> types;
-    for (const ShapeRegistry::Entry& entry : ShapeRegistry::Entries()) {
+    for (const ShapeFactory::Entry& entry : ShapeFactory::Entries()) {
         if (entry.descriptor.menuOrder >= 0) {
             types.append(entry.descriptor.type);
         }
     }
     std::sort(types.begin(), types.end(), [](ShapeType a, ShapeType b) {
-        return ShapeRegistry::Find(a)->menuOrder < ShapeRegistry::Find(b)->menuOrder;
+        return ShapeFactory::Find(a)->menuOrder < ShapeFactory::Find(b)->menuOrder;
     });
     return types;
 }
 
 QString ShapeMeta::TypeToString(ShapeType type)
 {
-    const ShapeRegistry::Descriptor* descriptor = ShapeRegistry::Find(type);
+    const ShapeFactory::Descriptor* descriptor = ShapeFactory::Find(type);
     return descriptor ? QString::fromLatin1(descriptor->json) : QStringLiteral("rectangle");
 }
 
 ShapeType ShapeMeta::TypeFromString(const QString& value)
 {
     const QString normalized = value.trimmed().toLower();
-    for (const ShapeRegistry::Entry& entry : ShapeRegistry::Entries()) {
-        const ShapeRegistry::Descriptor& descriptor = entry.descriptor;
+    for (const ShapeFactory::Entry& entry : ShapeFactory::Entries()) {
+        const ShapeFactory::Descriptor& descriptor = entry.descriptor;
         if (normalized == QString::fromLatin1(descriptor.json) || MatchesAliases(descriptor.aliases, normalized)) {
             return descriptor.type;
         }
@@ -53,14 +53,14 @@ ShapeType ShapeMeta::TypeFromString(const QString& value)
 
 bool ShapeMeta::IsFilled(ShapeType type)
 {
-    const ShapeRegistry::Descriptor* descriptor = ShapeRegistry::Find(type);
+    const ShapeFactory::Descriptor* descriptor = ShapeFactory::Find(type);
     return descriptor && descriptor->filled;
 }
 
 bool ShapeMeta::SupportsCenter(ShapeType type)
 {
     // §3.4 中心点：描述器里显式标记的对称图形才上报这一行。
-    const ShapeRegistry::Descriptor* descriptor = ShapeRegistry::Find(type);
+    const ShapeFactory::Descriptor* descriptor = ShapeFactory::Find(type);
     return descriptor && descriptor->supportsCenter;
 }
 
