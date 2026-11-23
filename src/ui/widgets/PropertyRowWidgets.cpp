@@ -195,8 +195,7 @@ NumberAttributeRow::NumberAttributeRow(IconId icon, bool showIcon, int decimals,
 NumberAttributeRow::NumberAttributeRow(IconId icon, bool showIcon, ItemProperty property, const QString& objectName,
                                        QWidget* parent)
     : NumberAttributeRow(icon, showIcon, DescriptorOf(property).decimals, DescriptorOf(property).minimum,
-                         DescriptorOf(property).maximum, QString::fromUtf8(DescriptorOf(property).suffix), objectName,
-                         parent)
+                         DescriptorOf(property).maximum, DescriptorOf(property).suffix, objectName, parent)
 {
     SetSingleStep(DescriptorOf(property).step);
 }
@@ -260,8 +259,8 @@ PairAttributeRow::PairAttributeRow(IconId icon, bool showIcon, const QString& fi
 PairAttributeRow::PairAttributeRow(IconId icon, bool showIcon, const QString& firstName, const QString& secondName,
                                    ItemProperty property, const QString& separator, QWidget* parent)
     : PairAttributeRow(icon, showIcon, firstName, secondName, DescriptorOf(property).decimals,
-                       DescriptorOf(property).minimum, DescriptorOf(property).maximum,
-                       QString::fromUtf8(DescriptorOf(property).suffix), separator, parent)
+                       DescriptorOf(property).minimum, DescriptorOf(property).maximum, DescriptorOf(property).suffix,
+                       separator, parent)
 {
 }
 
@@ -298,5 +297,5 @@ void ApplyItemPropertyRange(QSpinBox* spin, ItemProperty property)
     const ItemPropertyDescriptor& descriptor = DescriptorOf(property);
     spin->setRange(qRound(descriptor.minimum), qRound(descriptor.maximum));
     spin->setSingleStep(qMax(1, qRound(descriptor.step)));
-    spin->setSuffix(QString::fromUtf8(descriptor.suffix));
+    spin->setSuffix(descriptor.suffix);
 }

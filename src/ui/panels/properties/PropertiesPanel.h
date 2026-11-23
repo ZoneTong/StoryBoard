@@ -26,6 +26,7 @@ class QToolButton;
 class QLabel;
 class QWidget;
 class QLayout;
+class QFormLayout;
 
 class PropertiesPanelSelectionCard;
 class PropertiesPanelColorsCard;
@@ -85,7 +86,7 @@ class PropertiesPanel : public QWidget {
     // 图片填充方式（拉伸 / 适应 / 平铺）与图元属性窗一致，多选批量写回。
     void ApplyFillImageMode(int mode);
     // 属性表通道：同一组属性值写回所有目标图元，只占一条撤销记录。
-    void ApplyPropertyValues(const QMap<ItemProperty, QVariant>& values, const QString& text,
+    void ApplyPropertyValues(const QMap<PropertyKey, QVariant>& values, const QString& text,
                              const QList<CanvasItem*>& targets = QList<CanvasItem*>());
     // 按属性基类批量修改：选中集合里能解析出填充 / 描线基类的图元统一套用一次，
     // 具体叶子类的特殊语义（多边形按图层取色）由基类虚函数分派。
@@ -125,6 +126,9 @@ class PropertiesPanel : public QWidget {
     void ApplyItemStack(int layerId, int height, const QString& text);
     void AdjustLayer(int delta);
     void AdjustHeight(int delta);
+    // 动态参数：按选中集合共有的 PropertyKey 现建通用编辑行，不追加图元类型分支。
+    void RefreshDynamicRows(const ItemPropertySet& common, const QList<CanvasItem*>& items);
+    void ApplyDynamicProperty(PropertyKey property, const QVariant& value);
 
     CanvasScene* m_scene = nullptr;
     QLabel* m_titleLabel = nullptr;
@@ -141,6 +145,8 @@ class PropertiesPanel : public QWidget {
     PropertiesPanelArrangeCard* m_arrangeCard = nullptr;
     PropertiesPanelIdentityCard* m_identityCard = nullptr;
     PropertiesPanelGeometryCard* m_geometryCard = nullptr;
+    QWidget* m_dynamicCard = nullptr;
+    QFormLayout* m_dynamicForm = nullptr;
 
     bool m_refreshing = false;
     bool m_refreshPending = false;

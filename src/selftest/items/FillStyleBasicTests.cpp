@@ -131,10 +131,10 @@ void selftest::RunFillStyleBasicTests(Context& ctx)
         const FillStyle styleBefore = styleShape->fillStyle();
         const QColor styleBeforeColor = styleShape->FillColor();
         styleShape->SetFill(QColor(239, 68, 68, 120), FillStyle::CROSS_HATCH);
-        QMap<ItemProperty, QVariant> beforeValues;
+        QMap<PropertyKey, QVariant> beforeValues;
         beforeValues.insert(ItemProperty::FILL_COLOR, styleBeforeColor);
         beforeValues.insert(ItemProperty::FILL_STYLE, static_cast<int>(styleBefore));
-        QMap<ItemProperty, QVariant> afterValues;
+        QMap<PropertyKey, QVariant> afterValues;
         afterValues.insert(ItemProperty::FILL_COLOR, QColor(239, 68, 68, 120));
         afterValues.insert(ItemProperty::FILL_STYLE, static_cast<int>(FillStyle::CROSS_HATCH));
         QList<CanvasItem*> styleItems{styleShape};

@@ -394,8 +394,8 @@ void LayerStateCommand::redo()
 // 属性表命令：一次编辑把同一组属性值写回所有目标图元，只占一条撤销记录。
 // 替代原先按图元类型分拆的样式命令，读写都走 Properties()/PropertyValue()/SetPropertyValue()。
 ItemPropertyCommand::ItemPropertyCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
-                                         const QList<QMap<ItemProperty, QVariant>>& before,
-                                         const QList<QMap<ItemProperty, QVariant>>& after, const QString& text)
+                                         const QList<QMap<PropertyKey, QVariant>>& before,
+                                         const QList<QMap<PropertyKey, QVariant>>& after, const QString& text)
     : m_scene(scene), m_before(before), m_after(after)
 {
     setText(text);
@@ -414,11 +414,11 @@ void ItemPropertyCommand::redo()
     Apply(m_after);
 }
 
-void ItemPropertyCommand::Apply(const QList<QMap<ItemProperty, QVariant>>& states)
+void ItemPropertyCommand::Apply(const QList<QMap<PropertyKey, QVariant>>& states)
 {
     // 先换层、再定层内高度，最后写位置/尺寸与其余属性；避免换层时先按旧层归一化高度。
     // 文字正文会重算自然尺寸，先写正文/字体，再回放位置与尺寸。
-    static const QList<ItemProperty> ORDER = {
+    static const QList<PropertyKey> ORDER = {
         ItemProperty::LAYER,      ItemProperty::HEIGHT,   ItemProperty::TEXT_CONTENT, ItemProperty::TEXT_FONT,
         ItemProperty::TEXT_COLOR, ItemProperty::POSITION, ItemProperty::SIZE,         ItemProperty::ROTATION};
     ItemStackList stack;
@@ -427,16 +427,16 @@ void ItemPropertyCommand::Apply(const QList<QMap<ItemProperty, QVariant>>& state
         if (!item) {
             continue;
         }
-        const QMap<ItemProperty, QVariant>& values = states.at(index);
-        for (ItemProperty property : ORDER) {
+        const QMap<PropertyKey, QVariant>& values = states.at(index);
+        for (const PropertyKey& property : ORDER) {
             const auto it = values.constFind(property);
             if (it != values.constEnd()) {
-                item->SetPropertyValue(property, it.value());
+                item->SetPropertyValueByKey(property, it.value());
             }
         }
         for (auto it = values.constBegin(); it != values.constEnd(); ++it) {
             if (!ORDER.contains(it.key())) {
-                item->SetPropertyValue(it.key(), it.value());
+                item->SetPropertyValueByKey(it.key(), it.value());
             }
         }
         if (values.contains(ItemProperty::LAYER) && values.contains(ItemProperty::HEIGHT)) {

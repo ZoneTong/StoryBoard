@@ -62,6 +62,9 @@ class ItemPropertiesDialog : public QDialog {
     void ApplyChanges();
     void SyncTextNaturalSize();
     void ApplyEditableState();
+    // 图元专属参数：按属性键现建通用行，不按图元类型追加分支。
+    void RefreshDynamicRows(CanvasItem* item);
+    QVariant ReadDynamicValue(PropertyKey property) const;
 
     CanvasScene* m_scene = nullptr;
     QPointer<CanvasItem> m_item;
@@ -78,6 +81,9 @@ class ItemPropertiesDialog : public QDialog {
     ItemPropertiesDialogStyleBlock* m_styleBlock = nullptr;
     ItemPropertiesDialogTextBlock* m_textBlock = nullptr;
     ItemPropertiesDialogGeometryBlock* m_geometryBlock = nullptr;
+    QWidget* m_dynamicHost = nullptr;
+    QFormLayout* m_dynamicForm = nullptr;
+    QMap<int, QWidget*> m_dynamicEditors;
     qreal m_initialStrokeWidth = 4.0;
     bool m_hasFill = false;
     bool m_textFocusApplied = false;

@@ -73,8 +73,13 @@ class CanvasItem : public QGraphicsObject {
     virtual ItemPropertySet Properties() const;
     virtual QVariant PropertyValue(ItemProperty property) const;
     virtual void SetPropertyValue(ItemProperty property, const QVariant& value);
-    // 多属性原子提交：默认逐项委托给 SetPropertyValue，子类需要保证组合一致时可整体覆写。
-    virtual void SetPropertyValues(const QMap<ItemProperty, QVariant>& values);
+    // 按属性键存取：公共属性转回枚举，动态属性读写本图元注册过的扩展值。
+    QVariant PropertyValueByKey(PropertyKey property) const;
+    void SetPropertyValueByKey(PropertyKey property, const QVariant& value);
+    // 图元专属参数的注册入口；注册后自动进入 Properties()，无需改枚举或面板分支。
+    void RegisterDynamicProperty(PropertyKey property, const QVariant& value);
+    // 多属性原子提交：默认逐项委托给属性键写回，子类需要保证组合一致时可整体覆写。
+    virtual void SetPropertyValues(const QMap<PropertyKey, QVariant>& values);
     // 自定义句柄协议：默认没有额外句柄，需要时由叶子给出位置与行为策略。
     virtual HandleSpecList CustomHandles() const;
     // 自定义句柄的拖拽语义由图元实现（句柄命中 / 绘制 / 光标已由 HandleSpec 决定）：
@@ -203,6 +208,7 @@ class CanvasItem : public QGraphicsObject {
     qreal m_rotation = 0.0;
     qreal m_itemOpacity = 1.0;
     QString m_name;
+    QMap<PropertyKey, QVariant> m_dynamicProperties;
     DragKind m_drag = DragKind::NONE;
     Handle m_resizeHandle = NO_HANDLE;
     QPointF m_dragStartScene;

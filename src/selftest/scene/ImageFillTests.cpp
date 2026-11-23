@@ -260,11 +260,11 @@ void selftest::RunImageFillTests(Context& ctx)
         shape->SetContentSize(QSizeF(120, 80));
         undoScene.AttachItem(shape);
 
-        QMap<ItemProperty, QVariant> before;
+        QMap<PropertyKey, QVariant> before;
         for (ItemProperty property : shape->Properties().Values()) {
             before.insert(property, shape->PropertyValue(property));
         }
-        QMap<ItemProperty, QVariant> afterSet = before;
+        QMap<PropertyKey, QVariant> afterSet = before;
         afterSet.insert(ItemProperty::FILL_IMAGE, QVariant::fromValue(SolidImage(GREEN, 16)));
         afterSet.insert(ItemProperty::FILL_IMAGE_MODE, static_cast<int>(ImageFill::Mode::STRETCH));
         undo.push(new ItemPropertyCommand(&undoScene, {shape}, {before}, {afterSet}, QStringLiteral("设图片填充")));
@@ -276,7 +276,7 @@ void selftest::RunImageFillTests(Context& ctx)
         undo.redo();
         ctx.Check(shape->HasFillImage(), QStringLiteral("重做后图片填充恢复"));
 
-        QMap<ItemProperty, QVariant> afterMode = afterSet;
+        QMap<PropertyKey, QVariant> afterMode = afterSet;
         afterMode.insert(ItemProperty::FILL_IMAGE_MODE, static_cast<int>(ImageFill::Mode::TILE));
         undo.push(new ItemPropertyCommand(&undoScene, {shape}, {afterSet}, {afterMode}, QStringLiteral("换档")));
         ctx.Check(undo.index() == 2 && shape->FillImageMode() == ImageFill::Mode::TILE,
@@ -286,7 +286,7 @@ void selftest::RunImageFillTests(Context& ctx)
                   QStringLiteral("撤销换档回到 Stretch 且图片还在"));
         undo.redo();
 
-        QMap<ItemProperty, QVariant> afterClear = afterMode;
+        QMap<PropertyKey, QVariant> afterClear = afterMode;
         afterClear.insert(ItemProperty::FILL_IMAGE, QVariant::fromValue(QPixmap()));
         undo.push(new ItemPropertyCommand(&undoScene, {shape}, {afterMode}, {afterClear}, QStringLiteral("清除")));
         undo.undo();

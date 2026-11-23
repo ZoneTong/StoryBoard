@@ -37,9 +37,9 @@ class CanvasItemInteraction {
   private:
     // 自定义句柄拖拽只改角度 / 端点这类派生属性，GeometryCommand 回放不了，
     // 因此按属性快照把真正变过的项推成一条 ItemPropertyCommand。
-    void PushCustomHandleChange(const QMap<ItemProperty, QVariant>& before);
+    void PushCustomHandleChange(const QMap<PropertyKey, QVariant>& before);
 
     CanvasItem* m_item = nullptr;
     bool m_customDrag = false;
-    QMap<ItemProperty, QVariant> m_customDragBefore;
+    QMap<PropertyKey, QVariant> m_customDragBefore;
 };

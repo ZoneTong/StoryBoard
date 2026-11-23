@@ -1,97 +1,174 @@
 #include "items/properties/ItemPropertyCatalog.h"
 
 #include <QCoreApplication>
+#include <utility>
 
-const QList<ItemPropertyDescriptor>& ItemPropertyCatalog::All()
+namespace {
+QList<ItemPropertyDescriptor*>& DynamicDescriptors()
+{
+    static QList<ItemPropertyDescriptor*> descriptors;
+    return descriptors;
+}
+} // namespace
+
+const QList<ItemPropertyDescriptor*>& ItemPropertyCatalog::All()
 {
     // 顺序与 ItemProperty 枚举一致：编辑面板与属性窗都按此顺序建行。
-    static const QList<ItemPropertyDescriptor> DESCRIPTORS = {
-        {ItemProperty::TEXT_CONTENT, "textContent", "Text content", ItemPropertyGroup::TEXT, ItemPropertyKind::TEXT,
-         0.0, 0.0, 1.0, 0, "", false},
-        {ItemProperty::TEXT_COLOR, "textColor", "Text color", ItemPropertyGroup::TEXT, ItemPropertyKind::COLOR, 0.0,
-         0.0, 1.0, 0, "", false},
-        {ItemProperty::TEXT_FONT, "textFont", "Font", ItemPropertyGroup::TEXT, ItemPropertyKind::ENUM, 0.0, 0.0, 1.0, 0,
-         "", false},
-        {ItemProperty::FILL_STYLE, "fillStyle", "Fill style", ItemPropertyGroup::FILL, ItemPropertyKind::ENUM, 0.0, 0.0,
-         1.0, 0, "", false},
-        {ItemProperty::FILL_COLOR, "fillColor", "Fill color", ItemPropertyGroup::FILL, ItemPropertyKind::COLOR, 0.0,
-         0.0, 1.0, 0, "", false},
-        {ItemProperty::FILL_IMAGE, "fillImage", "Fill image", ItemPropertyGroup::FILL, ItemPropertyKind::TEXT, 0.0, 0.0,
-         1.0, 0, "", false},
-        {ItemProperty::FILL_IMAGE_MODE, "fillImageMode", "Fill image mode", ItemPropertyGroup::FILL,
-         ItemPropertyKind::ENUM, 0.0, 2.0, 1.0, 0, "", false},
-        {ItemProperty::STROKE_STYLE, "strokeStyle", "Border style", ItemPropertyGroup::STROKE, ItemPropertyKind::ENUM,
-         0.0, 0.0, 1.0, 0, "", false},
-        {ItemProperty::STROKE_COLOR, "strokeColor", "Border color", ItemPropertyGroup::STROKE, ItemPropertyKind::COLOR,
-         0.0, 0.0, 1.0, 0, "", false},
-        {ItemProperty::STROKE_WIDTH, "strokeWidth", "Border width", ItemPropertyGroup::STROKE, ItemPropertyKind::REAL,
-         1.0, 64.0, 1.0, 1, " px", false},
-        {ItemProperty::OPACITY, "opacity", "Opacity", ItemPropertyGroup::VALUE, ItemPropertyKind::INTEGER, 0.0, 100.0,
-         1.0, 0, " %", false},
-        {ItemProperty::CORNER_RADIUS, "cornerRadius", "Corner radius", ItemPropertyGroup::VALUE,
-         ItemPropertyKind::INTEGER, 0.0, 500000.0, 1.0, 0, " px", false},
-        {ItemProperty::START_ANGLE, "startAngle", "Start angle", ItemPropertyGroup::VALUE, ItemPropertyKind::INTEGER,
-         -360.0, 360.0, 5.0, 0, "°", false},
-        {ItemProperty::SWEEP_ANGLE, "sweepAngle", "Sweep angle", ItemPropertyGroup::VALUE, ItemPropertyKind::INTEGER,
-         -360.0, 360.0, 5.0, 0, "°", false},
-        {ItemProperty::MAJOR_AXIS, "majorAxis", "Semi-major axis", ItemPropertyGroup::GEOMETRY, ItemPropertyKind::REAL,
-         0.5, 500000.0, 1.0, 1, " px", true},
-        {ItemProperty::MINOR_AXIS, "minorAxis", "Semi-minor axis", ItemPropertyGroup::GEOMETRY, ItemPropertyKind::REAL,
-         0.5, 500000.0, 1.0, 1, " px", true},
-        {ItemProperty::SINE_CYCLES, "sineCycles", "Sine cycles", ItemPropertyGroup::VALUE, ItemPropertyKind::INTEGER,
-         1.0, 12.0, 1.0, 0, "", false},
-        {ItemProperty::SINE_AMPLITUDE, "sineAmplitude", "Sine amplitude", ItemPropertyGroup::VALUE,
-         ItemPropertyKind::INTEGER, 1.0, 200.0, 1.0, 0, " px", false},
-        {ItemProperty::BOTTOM_ANGLE1, "bottomAngle1", "Interior angle A", ItemPropertyGroup::VALUE,
-         ItemPropertyKind::INTEGER, 5.0, 175.0, 1.0, 0, "°", false},
-        {ItemProperty::BOTTOM_ANGLE2, "bottomAngle2", "Interior angle B", ItemPropertyGroup::VALUE,
-         ItemPropertyKind::INTEGER, 5.0, 170.0, 1.0, 0, "°", false},
-        {ItemProperty::PARALLELOGRAM_ANGLE, "parallelogramAngle", "Interior angle A", ItemPropertyGroup::VALUE,
-         ItemPropertyKind::INTEGER, 5.0, 175.0, 1.0, 0, "°", false},
-        {ItemProperty::ARROW_START, "arrowStart", "Arrow heads", ItemPropertyGroup::VALUE, ItemPropertyKind::ENUM, 0.0,
-         0.0, 1.0, 0, "", false},
-        {ItemProperty::ARROW_END, "arrowEnd", "Arrow heads", ItemPropertyGroup::VALUE, ItemPropertyKind::ENUM, 0.0, 0.0,
-         1.0, 0, "", false},
-        {ItemProperty::NAME, "name", "Item name", ItemPropertyGroup::IDENTITY, ItemPropertyKind::TEXT, 0.0, 0.0, 1.0, 0,
-         "", false},
-        {ItemProperty::LAYER, "layer", "Layer", ItemPropertyGroup::IDENTITY, ItemPropertyKind::INTEGER, 0.0, 999.0, 1.0,
-         0, "", false},
-        {ItemProperty::HEIGHT, "height", "Height", ItemPropertyGroup::IDENTITY, ItemPropertyKind::INTEGER, 0.0,
-         999999.0, 1.0, 0, "", false},
-        {ItemProperty::POSITION, "position", "Position", ItemPropertyGroup::GEOMETRY, ItemPropertyKind::REAL,
-         -1000000.0, 1000000.0, 1.0, 1, "", false},
-        {ItemProperty::SIZE, "size", "Item size", ItemPropertyGroup::GEOMETRY, ItemPropertyKind::REAL, 1.0, 1000000.0,
-         1.0, 1, "", false},
-        {ItemProperty::ROTATION, "rotation", "Rotation", ItemPropertyGroup::GEOMETRY, ItemPropertyKind::REAL, -360.0,
-         360.0, 5.0, 1, "°", false},
-        {ItemProperty::CENTER, "center", "Center point", ItemPropertyGroup::GEOMETRY, ItemPropertyKind::REAL,
-         -1000000.0, 1000000.0, 1.0, 1, "", true},
+    static const QList<ItemPropertyDescriptor*> DESCRIPTORS = {
+        new ItemPropertyDescriptor{ItemProperty::TEXT_CONTENT, QStringLiteral("textContent"),
+                                   QStringLiteral("Text content"), ItemPropertyGroup::TEXT, ItemPropertyKind::TEXT},
+        new ItemPropertyDescriptor{ItemProperty::TEXT_COLOR, QStringLiteral("textColor"), QStringLiteral("Text color"),
+                                   ItemPropertyGroup::TEXT, ItemPropertyKind::COLOR},
+        new ItemPropertyDescriptor{ItemProperty::TEXT_FONT, QStringLiteral("textFont"), QStringLiteral("Font"),
+                                   ItemPropertyGroup::TEXT, ItemPropertyKind::ENUM},
+        new ItemPropertyDescriptor{ItemProperty::FILL_STYLE, QStringLiteral("fillStyle"), QStringLiteral("Fill style"),
+                                   ItemPropertyGroup::FILL, ItemPropertyKind::ENUM},
+        new ItemPropertyDescriptor{ItemProperty::FILL_COLOR, QStringLiteral("fillColor"), QStringLiteral("Fill color"),
+                                   ItemPropertyGroup::FILL, ItemPropertyKind::COLOR},
+        new ItemPropertyDescriptor{ItemProperty::FILL_IMAGE, QStringLiteral("fillImage"), QStringLiteral("Fill image"),
+                                   ItemPropertyGroup::FILL, ItemPropertyKind::TEXT},
+        new ItemPropertyDescriptor{ItemProperty::FILL_IMAGE_MODE, QStringLiteral("fillImageMode"),
+                                   QStringLiteral("Fill image mode"), ItemPropertyGroup::FILL, ItemPropertyKind::ENUM,
+                                   0.0, 2.0},
+        new ItemPropertyDescriptor{ItemProperty::STROKE_STYLE, QStringLiteral("strokeStyle"),
+                                   QStringLiteral("Border style"), ItemPropertyGroup::STROKE, ItemPropertyKind::ENUM},
+        new ItemPropertyDescriptor{ItemProperty::STROKE_COLOR, QStringLiteral("strokeColor"),
+                                   QStringLiteral("Border color"), ItemPropertyGroup::STROKE, ItemPropertyKind::COLOR},
+        new ItemPropertyDescriptor{ItemProperty::STROKE_WIDTH, QStringLiteral("strokeWidth"),
+                                   QStringLiteral("Border width"), ItemPropertyGroup::STROKE, ItemPropertyKind::REAL,
+                                   1.0, 64.0, 1.0, 1, QStringLiteral(" px")},
+        new ItemPropertyDescriptor{ItemProperty::OPACITY, QStringLiteral("opacity"), QStringLiteral("Opacity"),
+                                   ItemPropertyGroup::VALUE, ItemPropertyKind::INTEGER, 0.0, 100.0, 1.0, 0,
+                                   QStringLiteral(" %")},
+        new ItemPropertyDescriptor{ItemProperty::CORNER_RADIUS, QStringLiteral("cornerRadius"),
+                                   QStringLiteral("Corner radius"), ItemPropertyGroup::VALUE, ItemPropertyKind::INTEGER,
+                                   0.0, 500000.0, 1.0, 0, QStringLiteral(" px")},
+        new ItemPropertyDescriptor{ItemProperty::START_ANGLE, QStringLiteral("startAngle"),
+                                   QStringLiteral("Start angle"), ItemPropertyGroup::VALUE, ItemPropertyKind::INTEGER,
+                                   -360.0, 360.0, 5.0, 0, QStringLiteral("°")},
+        new ItemPropertyDescriptor{ItemProperty::SWEEP_ANGLE, QStringLiteral("sweepAngle"),
+                                   QStringLiteral("Sweep angle"), ItemPropertyGroup::VALUE, ItemPropertyKind::INTEGER,
+                                   -360.0, 360.0, 5.0, 0, QStringLiteral("°")},
+        new ItemPropertyDescriptor{ItemProperty::MAJOR_AXIS, QStringLiteral("majorAxis"),
+                                   QStringLiteral("Semi-major axis"), ItemPropertyGroup::GEOMETRY,
+                                   ItemPropertyKind::REAL, 0.5, 500000.0, 1.0, 1, QStringLiteral(" px"), true},
+        new ItemPropertyDescriptor{ItemProperty::MINOR_AXIS, QStringLiteral("minorAxis"),
+                                   QStringLiteral("Semi-minor axis"), ItemPropertyGroup::GEOMETRY,
+                                   ItemPropertyKind::REAL, 0.5, 500000.0, 1.0, 1, QStringLiteral(" px"), true},
+        new ItemPropertyDescriptor{ItemProperty::SINE_CYCLES, QStringLiteral("sineCycles"),
+                                   QStringLiteral("Sine cycles"), ItemPropertyGroup::VALUE, ItemPropertyKind::INTEGER,
+                                   1.0, 12.0},
+        new ItemPropertyDescriptor{ItemProperty::SINE_AMPLITUDE, QStringLiteral("sineAmplitude"),
+                                   QStringLiteral("Sine amplitude"), ItemPropertyGroup::VALUE,
+                                   ItemPropertyKind::INTEGER, 1.0, 200.0, 1.0, 0, QStringLiteral(" px")},
+        new ItemPropertyDescriptor{ItemProperty::BOTTOM_ANGLE1, QStringLiteral("bottomAngle1"),
+                                   QStringLiteral("Interior angle A"), ItemPropertyGroup::VALUE,
+                                   ItemPropertyKind::INTEGER, 5.0, 175.0, 1.0, 0, QStringLiteral("°")},
+        new ItemPropertyDescriptor{ItemProperty::BOTTOM_ANGLE2, QStringLiteral("bottomAngle2"),
+                                   QStringLiteral("Interior angle B"), ItemPropertyGroup::VALUE,
+                                   ItemPropertyKind::INTEGER, 5.0, 170.0, 1.0, 0, QStringLiteral("°")},
+        new ItemPropertyDescriptor{ItemProperty::PARALLELOGRAM_ANGLE, QStringLiteral("parallelogramAngle"),
+                                   QStringLiteral("Interior angle A"), ItemPropertyGroup::VALUE,
+                                   ItemPropertyKind::INTEGER, 5.0, 175.0, 1.0, 0, QStringLiteral("°")},
+        new ItemPropertyDescriptor{ItemProperty::ARROW_START, QStringLiteral("arrowStart"),
+                                   QStringLiteral("Arrow heads"), ItemPropertyGroup::VALUE, ItemPropertyKind::ENUM},
+        new ItemPropertyDescriptor{ItemProperty::ARROW_END, QStringLiteral("arrowEnd"), QStringLiteral("Arrow heads"),
+                                   ItemPropertyGroup::VALUE, ItemPropertyKind::ENUM},
+        new ItemPropertyDescriptor{ItemProperty::NAME, QStringLiteral("name"), QStringLiteral("Item name"),
+                                   ItemPropertyGroup::IDENTITY, ItemPropertyKind::TEXT},
+        new ItemPropertyDescriptor{ItemProperty::LAYER, QStringLiteral("layer"), QStringLiteral("Layer"),
+                                   ItemPropertyGroup::IDENTITY, ItemPropertyKind::INTEGER, 0.0, 999.0},
+        new ItemPropertyDescriptor{ItemProperty::HEIGHT, QStringLiteral("height"), QStringLiteral("Height"),
+                                   ItemPropertyGroup::IDENTITY, ItemPropertyKind::INTEGER, 0.0, 999999.0},
+        new ItemPropertyDescriptor{ItemProperty::POSITION, QStringLiteral("position"), QStringLiteral("Position"),
+                                   ItemPropertyGroup::GEOMETRY, ItemPropertyKind::REAL, -1000000.0, 1000000.0, 1.0, 1},
+        new ItemPropertyDescriptor{ItemProperty::SIZE, QStringLiteral("size"), QStringLiteral("Item size"),
+                                   ItemPropertyGroup::GEOMETRY, ItemPropertyKind::REAL, 1.0, 1000000.0, 1.0, 1},
+        new ItemPropertyDescriptor{ItemProperty::ROTATION, QStringLiteral("rotation"), QStringLiteral("Rotation"),
+                                   ItemPropertyGroup::GEOMETRY, ItemPropertyKind::REAL, -360.0, 360.0, 5.0, 1,
+                                   QStringLiteral("°")},
+        new ItemPropertyDescriptor{ItemProperty::CENTER, QStringLiteral("center"), QStringLiteral("Center point"),
+                                   ItemPropertyGroup::GEOMETRY, ItemPropertyKind::REAL, -1000000.0, 1000000.0, 1.0, 1,
+                                   QString(), true},
     };
     return DESCRIPTORS;
 }
 
 const ItemPropertyDescriptor* ItemPropertyCatalog::Find(ItemProperty property)
 {
-    for (const ItemPropertyDescriptor& descriptor : All()) {
-        if (descriptor.property == property) {
-            return &descriptor;
+    return Find(PropertyKey(property));
+}
+
+const ItemPropertyDescriptor* ItemPropertyCatalog::Find(PropertyKey property)
+{
+    if (!property.IsValid()) {
+        return nullptr;
+    }
+    if (property.IsCommon()) {
+        for (const ItemPropertyDescriptor* descriptor : All()) {
+            if (descriptor->key == property) {
+                return descriptor;
+            }
+        }
+        return nullptr;
+    }
+    for (const ItemPropertyDescriptor* descriptor : DynamicDescriptors()) {
+        if (descriptor->key == property) {
+            return descriptor;
         }
     }
     return nullptr;
 }
 
+const ItemPropertyDescriptor*
+ItemPropertyCatalog::RegisterDynamic(PropertyKey property, const QString& label, ItemPropertyGroup group,
+                                     ItemPropertyKind kind, double minimum, double maximum, double step, int decimals,
+                                     const QString& suffix, std::function<QVariant(const CanvasItem*)> reader,
+                                     std::function<void(CanvasItem*, const QVariant&)> writer)
+{
+    if (!property.IsValid() || property.IsCommon()) {
+        return nullptr;
+    }
+    if (const ItemPropertyDescriptor* existing = Find(property)) {
+        // 已注册的描述保留首次回调；后续调用只补空字段，不覆盖已有读写。
+        auto* mutableDescriptor = const_cast<ItemPropertyDescriptor*>(existing);
+        if (mutableDescriptor->reader == nullptr && reader) {
+            mutableDescriptor->reader = std::move(reader);
+        }
+        if (mutableDescriptor->writer == nullptr && writer) {
+            mutableDescriptor->writer = std::move(writer);
+        }
+        return existing;
+    }
+    auto* descriptor = new ItemPropertyDescriptor{
+        property, property.StorageKey(), label, group, kind, minimum, maximum, step, decimals, suffix, false, reader,
+        writer};
+    DynamicDescriptors().append(descriptor);
+    return descriptor;
+}
+
 QString ItemPropertyCatalog::Label(ItemProperty property)
+{
+    return Label(PropertyKey(property));
+}
+
+QString ItemPropertyCatalog::Label(PropertyKey property)
 {
     const ItemPropertyDescriptor* descriptor = Find(property);
     if (!descriptor) {
         return QString();
     }
     // 标签统一走属性窗上下文：手工维护的 storyboard_zh.ts 已按该上下文收录这些条目。
-    return QCoreApplication::translate("ItemPropertiesDialog", descriptor->label);
+    return QCoreApplication::translate("ItemPropertiesDialog", descriptor->label.toUtf8().constData());
 }
 
 QString ItemPropertyCatalog::Key(ItemProperty property)
 {
+    return Key(PropertyKey(property));
+}
+
+QString ItemPropertyCatalog::Key(PropertyKey property)
+{
     const ItemPropertyDescriptor* descriptor = Find(property);
-    return descriptor ? QString::fromLatin1(descriptor->key) : QString();
+    return descriptor ? descriptor->storageKey : QString();
 }

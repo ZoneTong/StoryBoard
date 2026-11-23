@@ -4,6 +4,7 @@
 #include "canvas/controllers/CanvasItemHandles.h"
 #include "canvas/controllers/CanvasItemInteraction.h"
 #include "items/CanvasItemGeometry.h"
+#include "items/properties/ItemPropertyCatalog.h"
 #include "scene/CanvasScene.h"
 
 #include <QFontMetricsF>
@@ -401,8 +402,13 @@ QVariant CanvasItem::itemChange(GraphicsItemChange change, const QVariant& value
 ItemPropertySet CanvasItem::Properties() const
 {
     // 所有图元共有的属性：名称 / 图层 / 层内叠放 / 位置 / 尺寸 / 旋转 / 不透明度。
-    return ItemPropertySet{ItemProperty::NAME, ItemProperty::LAYER,    ItemProperty::HEIGHT, ItemProperty::POSITION,
-                           ItemProperty::SIZE, ItemProperty::ROTATION, ItemProperty::OPACITY};
+    ItemPropertySet properties =
+        ItemPropertySet{ItemProperty::NAME, ItemProperty::LAYER,    ItemProperty::HEIGHT, ItemProperty::POSITION,
+                        ItemProperty::SIZE, ItemProperty::ROTATION, ItemProperty::OPACITY};
+    for (auto it = m_dynamicProperties.constBegin(); it != m_dynamicProperties.constEnd(); ++it) {
+        properties.Insert(it.key());
+    }
+    return properties;
 }
 
 QVariant CanvasItem::PropertyValue(ItemProperty property) const
@@ -464,10 +470,53 @@ void CanvasItem::SetPropertyValue(ItemProperty property, const QVariant& value)
     }
 }
 
-void CanvasItem::SetPropertyValues(const QMap<ItemProperty, QVariant>& values)
+QVariant CanvasItem::PropertyValueByKey(PropertyKey property) const
+{
+    if (!property.IsValid()) {
+        return QVariant();
+    }
+    if (property.IsCommon()) {
+        return PropertyValue(property.CommonProperty());
+    }
+    if (const ItemPropertyDescriptor* descriptor = ItemPropertyCatalog::Find(property);
+        descriptor && descriptor->reader) {
+        return descriptor->reader(this);
+    }
+    const auto it = m_dynamicProperties.constFind(property);
+    return it != m_dynamicProperties.constEnd() ? it.value() : QVariant();
+}
+
+void CanvasItem::SetPropertyValueByKey(PropertyKey property, const QVariant& value)
+{
+    if (!property.IsValid()) {
+        return;
+    }
+    if (property.IsCommon()) {
+        SetPropertyValue(property.CommonProperty(), value);
+        return;
+    }
+    if (const ItemPropertyDescriptor* descriptor = ItemPropertyCatalog::Find(property);
+        descriptor && descriptor->writer) {
+        descriptor->writer(this, value);
+        return;
+    }
+    const auto it = m_dynamicProperties.find(property);
+    if (it != m_dynamicProperties.end()) {
+        it.value() = value;
+    }
+}
+
+void CanvasItem::RegisterDynamicProperty(PropertyKey property, const QVariant& value)
+{
+    if (property.IsValid() && !property.IsCommon()) {
+        m_dynamicProperties.insert(property, value);
+    }
+}
+
+void CanvasItem::SetPropertyValues(const QMap<PropertyKey, QVariant>& values)
 {
     for (auto it = values.constBegin(); it != values.constEnd(); ++it) {
-        SetPropertyValue(it.key(), it.value());
+        SetPropertyValueByKey(it.key(), it.value());
     }
 }
 

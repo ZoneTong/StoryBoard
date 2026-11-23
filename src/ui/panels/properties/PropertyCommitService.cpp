@@ -7,21 +7,21 @@
 #include <QUndoStack>
 #include <utility>
 
-QMap<ItemProperty, QVariant> PropertyCommitService::Snapshot(const CanvasItem* item)
+QMap<PropertyKey, QVariant> PropertyCommitService::Snapshot(const CanvasItem* item)
 {
-    QMap<ItemProperty, QVariant> values;
+    QMap<PropertyKey, QVariant> values;
     if (!item) {
         return values;
     }
-    for (ItemProperty property : item->Properties().Values()) {
-        values.insert(property, item->PropertyValue(property));
+    for (PropertyKey property : item->Properties().Keys()) {
+        values.insert(property, item->PropertyValueByKey(property));
     }
     return values;
 }
 
 void PropertyCommitService::Push(CanvasScene* scene, const QList<CanvasItem*>& targets,
-                                 const QList<QMap<ItemProperty, QVariant>>& before,
-                                 const QList<QMap<ItemProperty, QVariant>>& after, const QString& text)
+                                 const QList<QMap<PropertyKey, QVariant>>& before,
+                                 const QList<QMap<PropertyKey, QVariant>>& after, const QString& text)
 {
     if (!scene || targets.isEmpty() || targets.size() != before.size() || targets.size() != after.size()) {
         return;
@@ -48,12 +48,12 @@ void PropertyCommitService::Push(CanvasScene* scene, const QList<CanvasItem*>& t
 }
 
 void PropertyCommitService::PushAfter(CanvasScene* scene, const QList<CanvasItem*>& targets,
-                                      const QList<QMap<ItemProperty, QVariant>>& after, const QString& text)
+                                      const QList<QMap<PropertyKey, QVariant>>& after, const QString& text)
 {
     if (!scene || targets.size() != after.size()) {
         return;
     }
-    QList<QMap<ItemProperty, QVariant>> before;
+    QList<QMap<PropertyKey, QVariant>> before;
     before.reserve(targets.size());
     for (CanvasItem* target : targets) {
         before.append(Snapshot(target));

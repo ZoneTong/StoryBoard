@@ -16,8 +16,8 @@ void selftest::RunPropertyRowSpecTests(Context& ctx)
     ctx.Check(specs.size() == 30, QStringLiteral("行描述覆盖全部属性"), QString::number(specs.size()));
 
     bool everyPropertyResolvable = true;
-    for (const ItemPropertyDescriptor& descriptor : ItemPropertyCatalog::All()) {
-        if (!PropertyRowSpecs::For(descriptor.property)) {
+    for (const ItemPropertyDescriptor* descriptor : ItemPropertyCatalog::All()) {
+        if (!PropertyRowSpecs::For(descriptor->key)) {
             everyPropertyResolvable = false;
         }
     }
@@ -40,8 +40,8 @@ void selftest::RunPropertyRowSpecTests(Context& ctx)
     scene.AddItemsWithUndo({rect}, QStringLiteral("Add test rect"));
 
     const qreal originalOpacity = rect->ItemOpacity();
-    QMap<ItemProperty, QVariant> before = PropertyCommitService::Snapshot(rect);
-    QMap<ItemProperty, QVariant> after = before;
+    QMap<PropertyKey, QVariant> before = PropertyCommitService::Snapshot(rect);
+    QMap<PropertyKey, QVariant> after = before;
     after.insert(ItemProperty::OPACITY, 0.35);
     PropertyCommitService::Push(&scene, {rect}, {before}, {after}, QStringLiteral("Change opacity"));
 
