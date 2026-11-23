@@ -152,7 +152,15 @@ bool CurveItem::SimplifyCurve(qreal tolerance)
         return false;
     }
 
-    QVector<QPointF> points = CurveGeometry::Flatten(m_path);
+    // §D10：容差是“用户看到的像素”，不是基准坐标里的单位。先按当前内容尺寸把路径缩放到
+    // 显示空间再做 RDP，否则缩到 25% 时 2 单位容差只有 0.5 像素，几乎等于没简化。
+    const QSizeF base = m_baseSize;
+    const QSizeF content = ContentSize();
+    const qreal scaleX = base.width() > 0.0 ? content.width() / base.width() : 1.0;
+    const qreal scaleY = base.height() > 0.0 ? content.height() / base.height() : 1.0;
+    const QTransform toDisplay = QTransform::fromScale(scaleX, scaleY);
+
+    QVector<QPointF> points = CurveGeometry::Flatten(m_path, toDisplay);
     if (points.size() < 3) {
         return false;
     }
@@ -161,14 +169,29 @@ bool CurveItem::SimplifyCurve(qreal tolerance)
         return false;
     }
 
+    // 折线回到基准坐标后再拟合，控制点与 m_baseSize 始终同一空间。
+    const qreal invScaleX = qAbs(scaleX) > 1e-9 ? 1.0 / scaleX : 1.0;
+    const qreal invScaleY = qAbs(scaleY) > 1e-9 ? 1.0 / scaleY : 1.0;
+    for (QPointF& point : points) {
+        point = QPointF(point.x() * invScaleX, point.y() * invScaleY);
+    }
+
     QVector<CurveSegment> simplified = CurveGeometry::FitSegments(points, 0.0, m_polyline);
     if (simplified == m_segments) {
         return false;
     }
 
+    const QPointF oldPos = pos();
     m_segments = simplified;
     NormalizeGeometry();
     RebuildPath();
+
+    // NormalizeGeometry 会把内容尺寸重置成新的 baseSize（即 1:1），把用户调过的尺寸和
+    // 位置补回去，否则“简化一下曲线就跳回原始大小”。归一化把笔迹挪了 shift、把 pos 减了
+    // shift，在缩放 s 下视觉偏移是 shift*(1-s)，按轴向补回来。
+    const QPointF shift = oldPos - pos();
+    SetContentSize(QSizeF(m_baseSize.width() * scaleX, m_baseSize.height() * scaleY));
+    setPos(pos() + QPointF(shift.x() * (1.0 - scaleX), shift.y() * (1.0 - scaleY)));
     update();
     return true;
 }

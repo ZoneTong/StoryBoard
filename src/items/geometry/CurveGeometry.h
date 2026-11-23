@@ -2,6 +2,7 @@
 
 #include <QPainterPath>
 #include <QPointF>
+#include <QTransform>
 #include <QVector>
 
 // 曲线图元的最小几何单元：一段三次贝塞尔。
@@ -28,7 +29,8 @@ QPainterPath BuildDotPath(const QPointF& center, qreal radius);
 // 贝塞尔段的端点序列（首段起点 + 每段终点），用于撤销比较与外部只读访问。
 QVector<QPointF> Knots(const QVector<CurveSegment>& segments);
 
-// 把已有路径拍平成折线，供“简化曲线”重新拟合。
-QVector<QPointF> Flatten(const QPainterPath& path);
+// 把已有路径拍平成折线，供“简化曲线”重新拟合。toDisplay 为基准坐标 → 显示坐标的缩放，
+// 传了就先变换再拍平（§D10）：容差与采样都按用户实际看到的尺寸算。
+QVector<QPointF> Flatten(const QPainterPath& path, const QTransform& toDisplay = QTransform());
 
 } // namespace CurveGeometry

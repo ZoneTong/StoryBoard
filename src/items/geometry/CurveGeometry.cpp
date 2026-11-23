@@ -99,10 +99,12 @@ QVector<QPointF> Knots(const QVector<CurveSegment>& segments)
     return result;
 }
 
-QVector<QPointF> Flatten(const QPainterPath& path)
+QVector<QPointF> Flatten(const QPainterPath& path, const QTransform& toDisplay)
 {
     QVector<QPointF> result;
-    const QList<QPolygonF> polygons = path.toSubpathPolygons();
+    // 有缩放时先变换再拍平：默认平坦度是按未缩放的基准坐标估的，放大后会欠采样。
+    const QList<QPolygonF> polygons =
+        toDisplay.isIdentity() ? path.toSubpathPolygons() : path.toSubpathPolygons(toDisplay);
     for (const QPolygonF& polygon : polygons) {
         for (const QPointF& point : polygon) {
             if (result.isEmpty() || QLineF(result.constLast(), point).length() > 0.01) {
