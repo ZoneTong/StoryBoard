@@ -133,6 +133,19 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
             ctx.Check(!lineIcon.isNull() && !arrowIcon.isNull() && lineIcon != arrowIcon,
                       QStringLiteral("直线箭头使用独立开口箭头图标"),
                       QStringLiteral("same=%1").arg(lineIcon == arrowIcon));
+            // 需求 13：48px 渲染时中心水平线必须从箭杆左端连续到箭尖前，不能停在翼线根部。
+            const QImage arrow48 = lineArrowPreset->icon().pixmap(48, 48).toImage();
+            int longestGap = 0;
+            int gap = 0;
+            const qreal scale = arrow48.isNull() ? 1.0 : arrow48.width() / 24.0;
+            const int centerY = qRound(12.0 * scale);
+            for (int x = qRound(4.0 * scale); x <= qRound(18.0 * scale) && !arrow48.isNull(); ++x) {
+                const int alpha = arrow48.pixelColor(x, centerY).alpha();
+                gap = alpha < 20 ? gap + 1 : 0;
+                longestGap = qMax(longestGap, gap);
+            }
+            ctx.Check(!arrow48.isNull() && longestGap <= 2, QStringLiteral("直线箭头图标中心线连续到箭尖"),
+                      QStringLiteral("gap=%1 size=%2").arg(longestGap).arg(arrow48.width()));
         }
 
         QMenu* customShapeMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("CustomShapeMenu"));

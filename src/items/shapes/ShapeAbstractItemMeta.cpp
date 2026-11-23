@@ -195,12 +195,12 @@ QIcon MakeShapePresetIcon(const QString& preset, const QColor& color, int logica
             painter.drawPath(brace);
         }
     } else if (preset == QStringLiteral("lineArrow")) {
-        // 开口箭头图标：箭杆只画到箭头根部，两条 45° 翼线在箭尖汇合，
-        // 与插入时的 OPEN_ARROW 一致，也不会被箭杆穿过而糊成一团。
+        // 开口箭头图标：箭杆画到箭尖，两条 45° 翼线从箭杆根部上下方汇于箭尖，
+        // 三者只在 tip 同点相接，保持开口轮廓且中心线连续。
         const qreal y = box.center().y();
         const qreal tip = box.right() - 1.0;
         const qreal base = tip - 5.5;
-        painter.drawLine(QPointF(box.left(), y), QPointF(base, y));
+        painter.drawLine(QPointF(box.left(), y), QPointF(tip, y));
         painter.drawLine(QPointF(base, y - 5.5), QPointF(tip, y));
         painter.drawLine(QPointF(base, y + 5.5), QPointF(tip, y));
     }
