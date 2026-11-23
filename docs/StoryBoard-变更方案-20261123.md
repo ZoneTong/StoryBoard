@@ -1,0 +1,370 @@
+# StoryBoard 变更方案
+
+修改时间：2026-11-23 11:23（UTC+08:00）
+代码基线：`origin/main @ a52de37`（2026-11-23 02:06，v0.1.6）
+适用仓库：`https://github.com/ZoneTong/StoryBoard.git`
+
+## 1. 目标与范围
+
+本轮变更分两条线：
+
+- **B 线：功能修复与体验补齐**，对应需求编号 1–7、9–13。
+- **C 线：架构收敛**，对应六条设计模式优化建议。
+
+两条线分开提交、分开验收。B 线优先恢复可见行为；C 线在 B 线稳定后按依赖推进，不与功能修复混成一个不可回退的大提交。
+
+## 2. 总原则
+
+1. 每个批次只做一个可描述、可回滚的主题，单独 `clang-format`、构建、自检。
+2. 先补现有行为的证据和测试，再改实现；不把“计划测试”写成“已通过”。
+3. 新 `.cpp` 默认不超过 500 行；界面/控件类放宽到 800 行。存量超限文件不借本轮继续膨胀。
+4. `translations/storyboard_zh.ts` 手工维护，禁止直接跑 `lupdate`；新增/改文案必须按 `StoryBoard` 上下文手工补条目，跑完 `lrelease` 校验无 `Duplicate`。
+5. 工作树成果用 `--no-ff` 合并回 `main`，每次合并后编译自检修复，全部通过再部署；单任务仍在主干直接开发。
+6. 跨平台构建基线必须可用。Linux 下只编译与平台无关的代码，Windows 外壳相关实现用 `Q_OS_WIN` 完整包住。
+
+## 3. 批次总览
+
+| 批次 | 主题 | 对应项 | 主要落点 |
+| --- | --- | --- | --- |
+| B0 | 编译基线 | 10 + 构建 | `ShapeAbstractItemMeta.cpp`、`Settings.cpp` |
+| B1 | 角度读数、命中与手势 | 1、2 | `ShapeAbstractItem.*`、`CanvasItemHandles.*`、`TriangleItem.*`、`GeneralParallelogramItem.*` |
+| B2 | 角度 1° 量化与弧线/扇形读数 | 3、11 | `ArcAngleAttributes.*`、`ArcItem.*`、`SectorItem.*`、`CanvasItem.*` |
+| B3 | 中心点与图标 | 4、5、6 | `ArcItem.*`、`ItemPropertiesDialogGeometryBlock.*`、`PropertiesPanelGeometryCard.*`、`IconFactory.*` |
+| B4 | 填充样式控件收紧 | 7 | `AttributeRowWidgets.*`、`PropertiesPanelFillBorderCard.*` |
+| B5 | Excalidraw 粘贴修复 | 9 | `CanvasSceneClipboard.*`、`ViewStatusController.*`、`MainWindowEditActionsController.*` |
+| B6 | 合并菜单英文切换 | 12 | `I18n.cpp`、`UiMenuBuilder.cpp`、`UiRetranslateWidgetTree` |
+| B7 | 直线箭头图标 | 13 | `ShapeAbstractItemMeta.cpp` |
+| B8 | 形状工厂/注册表收敛 | 架构建议前置 | `ShapeFactory.*`、`ShapeRegistry.*`、`ShapeAbstractItem.h` |
+| C1 | 属性撤销单轨 + CanvasView 窄接口 | 建议 2、4 | `ItemPropertiesDialog.*`、`Commands.*`、`CanvasView.*`、`CanvasContextMenuController.*` |
+| C2 | 分组状态值对象 + 取数协议审计 | 建议 6 | `Commands.*`、`CanvasSceneGroups.cpp`、`CanvasItem.h` |
+| C3 | 属性描述符注册表 | 建议 1 | `ItemProperties.*`、`PropertiesPanel*`、`ItemPropertiesDialog*` |
+| C4 | 属性 UI 单引擎 | 建议 3 | `PropertyRowRegistry.*`、`PropertiesPanel*`、`ItemPropertiesDialog*` |
+| C5 | 场景状态分域 | 建议 5 | `CanvasScene.*`、`CanvasSceneGroups.cpp`、`CanvasSceneLayers.cpp` |
+
+执行顺序：B0 → B1 → B2 → B3 → B4 → B5 → B6 → B7 → B8 → C1 → C2 → C3 → C4 → C5。
+
+C1 与 C2 可并行；C3 依赖 C1；C4 依赖 C3；C5 依赖 C2。C3 的属性 key 去枚举化、C5 的场景分域必须使用独立工作树，避免与功能修复相互污染。
+
+## 4. B 线详细方案
+
+### B0 编译基线
+
+目标：
+
+1. 消除 `ShapeAbstractItemMeta.cpp:25:12: warning: enumeration value 'POLYGON' not handled in switch` 告警。
+2. 恢复 Linux 构建基线，避免 Windows 外壳函数在非 Windows 平台裸编译。
+
+落点：
+
+- `ShapeTypeName(ShapeType)` 增加 `case ShapeType::POLYGON: return ShapeAbstractItem::tr("Polygon");`。`Polygon` 在 `storyboard_zh.ts` 已有中文条目，不新增英文 key。
+- `Settings.cpp` 的 `OpenFolderViaShellAutomation`、`OpenFolderViaShellItem`、`ProcessIntegrityLevel`、`ShellChannelResult` 全部放入 `#ifdef Q_OS_WIN`，非 Windows 只保留通用打开目录路径。
+
+验收：
+
+- Linux 构建无 `POLYGON` 告警。
+- `--self-test` 全量通过。
+- 保存/载入含 `POLYGON` 的文档不崩溃，显示名为“多边形”。
+
+### B1 角度读数、命中与手势
+
+对应需求 1、2。
+
+设计：
+
+- `ShapeAbstractItem` 增加共享读数量盒 `BottomReadoutRect(...)`：
+  - `gap = HandleSize() / 2 + 4 / scale`；
+  - `y = ContentRect().bottom() + gap`；
+  - 左右对齐由参数决定。
+- 新增 `ReadoutOverflow()` 计算读数的包围盒溢出，`FramePadding()` 在读数可见时并入。
+- 平行四边形只在 `shapeType() == ShapeType::PARALLELOGRAM` 使用底部边外读数；菱形保持旧布局。用户已明确否决“菱形左顶点左侧外侧”方案。
+- 三角形 A、B 角读数移到基边下方：A 左对齐、B 右对齐；统一整数度。
+- 角度读数显示前调用 `prepareGeometryChange()`，避免边界缓存不刷新。
+
+命中与手势：
+
+- `HandleSpec` 增加 `qreal hitPadding = 0.0`。
+- `CanvasItemHandles` 增加 `HitRect` / `HitReach`。
+- `HitAt` 与 `SelectionShape` 统一用 `HitRect`；删除 `HANDLE_HIT_PADDING` 与 `qMin(10 / scale, 14)` 的分散算法。
+- 平行四边形 `CUSTOM_1`、三角形 `CUSTOM_0` 设 `hitPadding = 14.0`，命中区约 37px，视觉手柄仍约 9px。
+- `CanvasItem::boundingRect()` 用 `qMax(FramePadding(), HitReach())`。
+- 三角形顶点 C 光标从 `SizeAllCursor` 改为 `SizeHorCursor`；拖拽算法不变，仍只水平改变底边。
+- 平行四边形角度旋钮手势保持水平拖动，与三角形 C 顶点统一为水平双箭头。
+
+测试：
+
+- 读数 top 大于 `ContentRect().bottom()`。
+- 100% 缩放旋钮中心外 16px 可命中。
+- 25% 缩放中心外 44 局部像素可命中且 `shape()` 覆盖。
+- 顶边仍命中 `TOP`。
+- 三角形 C 顶点 cursor 为水平双箭头。
+- 三档缩放 `boundingRect` 包含 `shape()`。
+
+### B2 角度 1° 量化与弧线/扇形读数
+
+对应需求 3、11。
+
+设计：
+
+- 角度读数状态收口到 `CanvasItem`，新增 `DrawAngleReadout` 钩子与 `FormatAngle`。
+- `BeginCustomHandleDrag` 时显示读数，拖拽结束或失焦隐藏。
+- 平行四边形角度旋钮与菱形非四角边缩放路径的角度统一 `qRound` 到 1°；四角缩放保持自由，不量化。
+- 弧线/扇形端点拖拽 `DragArcEndpoint` 对 `theta`、`newStart`、`newSweep` 做 `qRound`，最小 1°。
+- 弧线/扇形读数画在弧中点沿径向向外的椭圆点，显示 `SweepAngle` 整数度；读数量盒纳入 `boundingRect`，避免被边或视口裁掉。
+
+测试：
+
+- 连续拖拽 10 次，角度值均为整数且相邻变化至少 1°。
+- 25%、100%、200% 缩放下弧线读数完整落在 `shape()`/`boundingRect()` 内。
+- 菱形四角缩放仍可得到非整数角度；非四角路径得到整数角度。
+
+### B3 中心点与图标
+
+对应需求 4、5、6。
+
+设计：
+
+- `ArcItem::CenterScenePoint()` 改为 `mapToScene(LocalEllipseFrame().center())`。当前 `EllipseShape::m_frame` 是场景坐标，`mapToScene(EllipseShape::Center())` 会重复叠加 `pos()`。
+- 椭圆、扇形、弧线的属性行统一显示“中心点”，复用 `ItemProperty::CENTER`；鼠标悬浮提示保留“椭圆中心点”。
+- `IsEllipseFamily` 保留 D16 白名单内的 `ArcItem` 判定，不改协议。
+- 新增 `IconId::POSITION`；`DrawFit` 画四角框和中心点，`DrawPosition` 只画四角框/位置标记，不画中心点。Position 行改用 `POSITION`，Center 行保持 `FIT`。
+
+测试：
+
+- 弧线旋转、移动后中心点与真实椭圆中心一致；非零 `pos()` 下不漂移。
+- 椭圆/扇形/弧线属性行标签为“中心点”，tooltip 为“椭圆中心点”。
+- Position 图标中心像素透明，Center 图标中心像素非透明。
+
+### B4 填充样式控件收紧
+
+对应需求 7。
+
+设计：
+
+- `AttributeRowWidgets` 的填充样式按钮从 30px 降到 22px，图标从 20px 降到 18px，按钮间距从 2 降到 0。
+- 目标：填充样式属性行宽度不超过填充颜色属性行；填充颜色行保持 26px 色块与自定义按钮。
+- 不改变填充样式枚举、按钮顺序和图标语义。
+
+测试：
+
+- 100% 缩放下两行 `sizeHint().width()` 比较，填充样式不大于填充颜色。
+- 11 个样式按钮仍全部可点击，选中态边框不被裁切。
+
+### B5 Excalidraw 粘贴修复
+
+对应需求 9。
+
+现状：
+
+- 文件导入/导出已存在：`DocumentController` 过滤器含 `.excalidraw`，`ExportExcalidraw()` 已实现。
+- 当前粘贴失败根因：`ViewStatusController::UpdateActions` 只用自定义 MIME `application/x-storyboard-items` 判定 `m_pasteAct`；`PasteItems` 已能解析 `text/plain` 的 Excalidraw clipboard，但 QAction 被禁用，Ctrl+V 不触发。
+- `ViewStatusController` 未连接 `QClipboard::dataChanged`，外部复制后动作状态不刷新。
+
+设计：
+
+- `CanPaste(QMimeData*)` 支持：
+  - `application/x-storyboard-items`；
+  - `application/vnd.excalidraw+json`；
+  - `text/plain`，解析后 `Excalidraw::IsClipboard`。
+- `PasteItems` 与 `CanPaste` 共用同一解析入口，并把 clipboard `files` 传给 `ElementsToItems`。
+- `ViewStatusController` 连接 `QClipboard::dataChanged` 到 `UpdateActions`。
+- 不重写文件导入/导出；不实现画布 → Excalidraw 复制。
+
+测试：
+
+- 从 Excalidraw 复制含矩形/文字/图片的 JSON，粘贴到画布生成对应图元。
+- 自定义 MIME 粘贴仍正常。
+- 外部复制后不点击画布，Ctrl+V 动作已启用。
+- 空文本、非法 JSON 不启用粘贴。
+
+### B6 合并菜单英文切换
+
+对应需求 12。
+
+根因：
+
+- `UiMenuBuilder` 的标题和子项是 `tr("Merge items") + " (Ctrl+M)"`、`tr("Union") + " (U)"`。
+- `UiTranslateEitherWay` 只按整串查反向表，`"合并图元 (Ctrl+M)"`、`"联合 (U)"` 查不到，所以切英文后仍显示中文。
+- `storyboard_zh.ts` 里基础词条已存在，不需要新增整串带快捷键的条目。
+
+设计：
+
+- `UiTranslateEitherWay` 增加尾缀感知：整串未命中时，拆出 `" ("` 后缀和末尾 `)`，只翻译前缀，命中后拼回后缀。
+- 中→英、英→中两个方向共用。
+- `UiRetranslateWidgetTree` 对 `QAbstractButton` 的 `toolTip` 也调用同一函数，修编辑面板合并按钮提示。
+
+测试：
+
+- 中文下 `BoolMenu` 标题为“合并图元 (Ctrl+M)”，子项为“联合 (U) / 异或 (X) / 相交 (I) / 剪除 (S) / 拆分 (F) / 分割 (L)”。
+- 切英文后为 `Merge items (Ctrl+M)` 与 `Union (U) / Xor (X) / Intersect (I) / Subtract (S) / Fragment (F) / Split along line (L)`。
+- 编辑面板 `ItemMorphButton` tooltip 同步变英文。
+
+### B7 直线箭头图标
+
+对应需求 13。
+
+现状：`MakeShapePresetIcon("lineArrow")` 箭杆画到 `base`，翼线从 `(base, y±5.5)` 到 `tip`，三者不汇合。
+
+设计：
+
+- 箭杆画到 `tip`；
+- 两条翼线仍从 `base` 的上下方到 `tip`；
+- 三者只在箭尖 `tip` 同点相接，保持开口箭头，不改成实心。
+
+测试：
+
+- 48px 渲染后中心水平线从箭杆左端到箭尖前 1–2px 连续可见；修复前 `base` 到 `tip` 中心线为空。
+- 直线箭头图标仍明显区别于普通直线。
+
+### B8 形状工厂/注册表收敛
+
+现状：
+
+- `ShapeFactory.cpp` 仅 `return ShapeRegistry::Create(type);`。
+- `CreateShapeItem` 重复声明在 `ShapeFactory.h` 与 `ShapeAbstractItem.h`。
+- `ShapeRegistry` 已覆盖创建、JSON/别名、filled、supportsCenter、menuOrder；显示名仍在 `ShapeTypeName` switch，路径仍在 `ShapePathBuilder::PathFor` switch。
+
+设计：
+
+- 删除 `ShapeFactory.h/.cpp`，统一调用 `ShapeRegistry::Create`。
+- 去掉重复声明，替换生产 4 处与自检约 80 处调用。
+- 修正 `ShapeRegistry.h` 注释：注册表负责“创建 + 序列化字符串 + 能力标记”，不是“新增图形只要加一行”。
+- 不把真实 `ShapePath()` / `DefaultContentSize()` 搬进注册表；显示名迁移需要手工 ts，本轮不做。
+
+验收：
+
+- 全仓库无 `ShapeFactory` 引用。
+- 新增形状仍按现有注册表流程工作；未知类型回退矩形行为不变。
+
+## 5. C 线详细方案
+
+### C1 属性撤销单轨 + CanvasView 窄接口
+
+对应建议 2、4。
+
+属性撤销：
+
+- 编辑面板已基本走 `ItemPropertyCommand`；属性窗仍构造 `ItemPropertiesState` 并压 `ItemPropertiesCommand`。
+- 改法：属性窗 `ApplyChanges` 生成 `QList<QMap<ItemProperty, QVariant>>`，压 `ItemPropertyCommand`，退役 `ItemPropertiesState` 与 `ItemPropertiesCommand`。
+- 明确写入顺序：图层 → 层内高度 → 位置/尺寸 → 其余属性；避免换层时先归一化高度再改高度。
+- 保留 `TextItemCommand` 用于画布上文字编辑，不并入属性窗撤销。
+
+CanvasView：
+
+- 六个 `friend class` 实际只用 `m_hits`、`UpdateCursor()`、`BaseContextMenuEvent()`。
+- 增加三个显式入口：`RefreshCursor()`、`HitTester()`、`ShowDefaultContextMenu()`。
+- 删除六个 friend 声明；其他控制器继续使用 `QGraphicsView` 公共接口。
+
+验收：
+
+- 属性窗一次修改名称、图层/高度、几何、填充、描线、文字、弧线角度，只产生一条撤销记录；撤销恢复交换的 peer 与空组状态。
+- 全仓库无 `friend class Canvas*Controller`。
+- 右键菜单和光标刷新行为不变。
+
+### C2 分组状态值对象 + 取数协议审计
+
+对应建议 6。
+
+现状：
+
+- D16 白名单内只有三处叶子强转：`PolygonItem` 经 `PolygonAccess`、`TextItem`、`ArcItem`。
+- 生产代码的多边形取数已走 `VisitPolygon`，`BoolOps`、`LineSplitOps` 已使用。
+- 面板里的 `ShapeAbstractItem` / `FillAttributes` / `StrokeAttributes` 强转属于基类协议查询，不在叶子预算内。
+
+设计：
+
+- 新增 `GroupState { QHash<int, QString> names; QHash<int, int> parents; }`。
+- `RemoveItemsCommand`、`GroupCommand`、`UngroupCommand`、载入恢复统一使用 before/after 两份 `GroupState`。
+- `CanvasScene::ApplyGroupRecords` 保留薄转发；外部 API 不变。
+- 不重写属性协议；只补 `GroupState` 和审计测试。
+
+验收：
+
+- 删除含嵌套组图元后撤销，组名、父子关系、空组清理与删除前一致。
+- 分组/解散各占一条撤销记录。
+- 生产代码叶子强转仍只有 D16 三处。
+
+### C3 属性描述符注册表
+
+对应建议 1。
+
+现状：
+
+- `ItemProperty` 29 个值、22 个 `switch (property)`、83 处 `ItemPropertySet`。
+- `ItemPropertySet` 底层是 `quint64` 位集，注释限定不足 64 个。
+- 属性标签、范围、步长、行序、按类型显隐分散在编辑面板与属性窗。
+
+分两步：
+
+1. **C3a 元数据描述符**：`ItemPropertyDescriptor` 描述稳定 key、显示名、翻译上下文、编辑器类型、步长/范围/单位、行分组/行序、多选显示策略。先收掉标签、tooltip、范围与按类型显隐。
+2. **C3b 属性 key 去枚举化**：公共属性保留固定 ID；图元专属参数由注册表分配 `PropertyKey`；`ItemPropertySet` 改为可扩容集合；命令快照与 `ShapeItemState.propertyExtras` 改按 `PropertyKey` 存取；22 个 switch 逐步改描述符读写回调。
+
+C3b 必须独立工作树、独立分支。验收标准：
+
+- 新增一个测试用三角形参数，不改 `ItemProperty` 枚举、不加面板类型分支。
+- 旧文件读写不变，所有现有属性往返一致。
+- `ItemPropertySet` 不再受 64 位上限约束。
+
+### C4 属性 UI 单引擎
+
+对应建议 3。
+
+现状：`PropertyRowRegistry` 已存在，但只在属性窗四个 Block 中使用；编辑面板仍由各 Card 自行装配行与提交。
+
+设计：
+
+- `PropertyRowSpec`：一行需要哪些属性、控件类型、标签/提示、范围、步长、只读策略。
+- `PropertyCommitService`：统一做支持性过滤、before/after 快照、`ItemPropertyCommand` 入栈。
+- 编辑面板和属性窗共用行构建与提交，只保留各自宿主布局、多选/单选差异。
+- 文字、图片填充等特殊行保留专用控件，不强行塞进通用行模型。
+
+验收：
+
+- 同一图元、同一属性集合，在编辑面板和属性窗得到相同行序、标签、范围、禁用状态。
+- 同一修改产生相同的一条撤销记录。
+- 属性窗打开即确定不产生修改。
+
+### C5 场景状态分域
+
+对应建议 5。
+
+现状：
+
+- `CanvasScene.h` 同时持有图层、分组、命名、选择、叠放与撤销协调。
+- `CanvasSceneGroups.cpp` 已约 682 行。
+
+设计：
+
+- `LayerDomain`：`m_layers`、`m_activeLayerId`、`m_nextLayerId`，负责图层增删改、排序、可见/锁定。
+- `GroupDomain`：`m_groupParents`、`m_groupNames`、`m_nextGroupId`，负责组名唯一、父子关系、空组清理。
+- `ItemNameService`：图元名称唯一性与自动命名，只扫描/登记图元名称，不持有图元生命周期。
+- `CanvasScene` 保留现有公共方法作为 facade，先搬实现再删旧字段；不同时改调用方。
+- 撤销快照从领域对象取 `LayerState` / `GroupState`。
+
+验收：
+
+- `GroupingModelTests`、图层测试、序列化测试全过。
+- `CanvasScene` 外部 API 不变。
+- `m_groupParents` / `m_groupNames` 只出现在 `GroupDomain`。
+
+## 6. 验证与回滚
+
+每批统一验证：
+
+```bash
+cmake -S . -B /home/user/work/build-storyboard -G Ninja \
+  -DCMAKE_PREFIX_PATH=/home/user/Qt/6.8.3/gcc_64 \
+  -DCMAKE_BUILD_TYPE=Debug
+ninja -C /home/user/work/build-storyboard
+QT_QPA_PLATFORM=offscreen /home/user/work/build-storyboard/bin/StoryBoard --self-test /tmp/storyboard-selftest.txt
+```
+
+回滚：
+
+- B 线每批独立提交，失败直接 revert 该批；不触碰其他批次。
+- C3b/C5 在独立工作树，失败不合并，主干保留旧结构。
+- 涉及撤销栈的批次必须验证“操作成功 → 撤销 → 重做 → 再撤销”的完整循环，不能只验证正向效果。
+
+## 7. 当前进度
+
+- 2026-11-23 11:23：方案落地，尚未改仓库代码。
+- 下一步：B0 编译基线。
