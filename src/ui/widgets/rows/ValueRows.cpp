@@ -50,6 +50,7 @@ QDoubleSpinBox* MakeSpin(QWidget* parent, const QString& objectName, int decimal
     spin->setKeyboardTracking(false);
     spin->setMinimumWidth(0);
     spin->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    RowMetrics::ApplyFieldHeight(spin);
     return spin;
 }
 
@@ -65,6 +66,7 @@ TextValueRow::TextValueRow(const QString& placeholder, QWidget* parent) : QWidge
     m_edit->setObjectName(QStringLiteral("ItemNameEdit"));
     m_edit->setPlaceholderText(placeholder);
     m_edit->setClearButtonEnabled(true);
+    RowMetrics::ApplyFieldHeight(m_edit);
     layout->addWidget(m_edit, 1);
 
     connect(m_edit, &QLineEdit::editingFinished, this, [this]() {
@@ -102,6 +104,7 @@ LayerValueRow::LayerValueRow(QWidget* parent, bool showIcon) : QWidget(parent)
     m_combo->setObjectName(QStringLiteral("ItemLayerCombo"));
     m_combo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     m_combo->setMinimumWidth(0);
+    RowMetrics::ApplyFieldHeight(m_combo);
     layout->addWidget(m_combo, 1);
 
     connect(m_combo, &QComboBox::currentIndexChanged, this, [this](int) {
@@ -148,6 +151,7 @@ HeightValueRow::HeightValueRow(QWidget* parent, bool showIcon) : QWidget(parent)
     m_spin->setKeyboardTracking(false);
     m_spin->setMinimumWidth(0);
     m_spin->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    RowMetrics::ApplyFieldHeight(m_spin);
     layout->addWidget(m_spin, 1);
 
     connect(m_spin, &QSpinBox::valueChanged, this, [this](int value) {

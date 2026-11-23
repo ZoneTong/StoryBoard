@@ -260,14 +260,7 @@ FillImageRow::FillImageRow(QWidget* parent) : QWidget(parent)
     const QList<QWidget*> fillImageFields{m_chooseButton, m_modeCombo, m_clearButton};
 
     for (QWidget* widget : fillImageFields) {
-        widget->ensurePolished();
-    }
-    const int fieldHeight = qMax(RowMetrics::FieldHeight(),
-                                 qMax(m_modeCombo->sizeHint().height(),
-                                      qMax(m_chooseButton->sizeHint().height(), m_clearButton->sizeHint().height())));
-
-    for (QWidget* widget : fillImageFields) {
-        widget->setFixedHeight(fieldHeight);
+        RowMetrics::ApplyFieldHeight(widget);
     }
 }
 
@@ -428,9 +421,8 @@ StrokeWidthRow::StrokeWidthRow(QWidget* parent) : QWidget(parent)
         }
     });
     layout->addWidget(m_widthSpin, 0, Qt::AlignVCenter);
-    // 与其它属性行同高：样式表原先给这个 spin 的 min-height / padding 更小，会矮一截，这里统一钉到输入框高。
-    m_widthSpin->ensurePolished();
-    m_widthSpin->setFixedHeight(RowMetrics::FieldHeight());
+    // 与其它属性行同高：样式表给这个 spin 的 min-height / padding 原先更小，会矮一截。
+    RowMetrics::ApplyFieldHeight(m_widthSpin);
     layout->addStretch(1);
 }
 

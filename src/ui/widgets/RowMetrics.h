@@ -23,4 +23,8 @@ QSize IconButtonSize();
 // 把行控件套到统一行高，并固定纵向策略（避免卡片布局把它压扁）。
 void ApplyRow(QWidget* row);
 
+// 把行内某个输入控件钉到统一字段高：数值框直接取字段高（它的 sizeHint 会被上下按钮撑高），
+// 输入框 / 下拉框 / 工具按钮取“字段高”与自身 sizeHint 的较大值。避免被布局拉伸或被样式表压矮。
+void ApplyFieldHeight(QWidget* widget);
+
 } // namespace RowMetrics
