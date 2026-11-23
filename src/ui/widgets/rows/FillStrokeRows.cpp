@@ -3,6 +3,7 @@
 #include "items/properties/ItemStyleVisuals.h"
 #include "ui/icons/IconFactory.h"
 #include "ui/widgets/RowMetrics.h"
+#include "ui/widgets/RowText.h"
 
 #include <QColorDialog>
 #include <QComboBox>
@@ -61,23 +62,6 @@ QHBoxLayout* MakeRowLayout(QWidget* row)
 
 } // namespace
 
-QString AttributeRowText(const char* source)
-{
-    // 编辑面板与属性窗共用同一批行控件，译文沿用 PropertiesPanel 上下文。
-    return QCoreApplication::translate("PropertiesPanel", source);
-}
-
-void SetRowIconVisible(QWidget* row, bool visible)
-{
-    if (!row) {
-        return;
-    }
-    for (const char* name : {"ItemRowIcon", "ItemBorderWidthIcon"}) {
-        for (QToolButton* icon : row->findChildren<QToolButton*>(QString::fromLatin1(name))) {
-            icon->setVisible(visible);
-        }
-    }
-}
 
 FillStyleRow::FillStyleRow(QWidget* parent) : QWidget(parent)
 {
@@ -87,7 +71,7 @@ FillStyleRow::FillStyleRow(QWidget* parent) : QWidget(parent)
     layout->setSpacing(0);
 
     QToolButton* icon = MakeRowIcon(IconId::PALETTE, this);
-    icon->setToolTip(AttributeRowText("Fill style"));
+    icon->setToolTip(RowText("Fill style"));
     layout->addWidget(icon, 0, Qt::AlignVCenter);
 
     // 11 个按钮：宽度收到 18，行总宽 = 图标 25 + 11×18 = 223，不超过图元尺寸行（≈227）；
@@ -140,7 +124,7 @@ FillColorRow::FillColorRow(QWidget* parent) : QWidget(parent)
     auto* layout = MakeRowLayout(this);
 
     QToolButton* icon = MakeRowIcon(IconId::PALETTE, this);
-    icon->setToolTip(AttributeRowText("Fill"));
+    icon->setToolTip(RowText("Fill"));
     layout->addWidget(icon, 0, Qt::AlignVCenter);
 
     for (const QString& hex : PresetColors()) {
@@ -159,10 +143,10 @@ FillColorRow::FillColorRow(QWidget* parent) : QWidget(parent)
     m_customButton->setObjectName(QStringLiteral("ItemColorButton"));
     m_customButton->setFixedWidth(RowMetrics::RowHeight());
     m_customButton->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
-    m_customButton->setToolTip(AttributeRowText("Fill color"));
+    m_customButton->setToolTip(RowText("Fill color"));
     connect(m_customButton, &QToolButton::clicked, this, [this]() {
         const QColor chosen =
-            QColorDialog::getColor(m_fallback, this, AttributeRowText("Fill color"), QColorDialog::ShowAlphaChannel);
+            QColorDialog::getColor(m_fallback, this, RowText("Fill color"), QColorDialog::ShowAlphaChannel);
         if (chosen.isValid()) {
             emit fillColorChosen(chosen);
         }
@@ -204,7 +188,7 @@ FillImageRow::FillImageRow(QWidget* parent) : QWidget(parent)
     const int fieldHeight = RowMetrics::FieldHeight();
 
     QToolButton* icon = MakeRowIcon(IconId::IMAGE, this);
-    icon->setToolTip(AttributeRowText("Fill image"));
+    icon->setToolTip(RowText("Fill image"));
     layout->addWidget(icon, 0, Qt::AlignVCenter);
 
     m_chooseButton = new QToolButton(this);
@@ -212,8 +196,8 @@ FillImageRow::FillImageRow(QWidget* parent) : QWidget(parent)
     m_chooseButton->setIcon(IconFactory::Make(IconId::IMAGE, QColor(58, 64, 80), 16));
     m_chooseButton->setIconSize(QSize(16, 16));
     m_chooseButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    m_chooseButton->setText(AttributeRowText("Choose fill image"));
-    m_chooseButton->setToolTip(AttributeRowText("Choose an image to fill the selected items"));
+    m_chooseButton->setText(RowText("Choose fill image"));
+    m_chooseButton->setToolTip(RowText("Choose an image to fill the selected items"));
     // §D24：三个控件统一到输入框高，按钮才不会比旁边的“拉伸”下拉框高一截。
     m_chooseButton->setFixedHeight(fieldHeight);
     connect(m_chooseButton, &QToolButton::clicked, this, &FillImageRow::chooseFillImageClicked);
@@ -221,11 +205,11 @@ FillImageRow::FillImageRow(QWidget* parent) : QWidget(parent)
 
     m_modeCombo = new QComboBox(this);
     m_modeCombo->setObjectName(QStringLiteral("ItemFillImageMode"));
-    m_modeCombo->addItem(AttributeRowText("Stretch"), static_cast<int>(ImageFill::Mode::STRETCH));
-    m_modeCombo->addItem(AttributeRowText("Fit"), static_cast<int>(ImageFill::Mode::FIT));
-    m_modeCombo->addItem(AttributeRowText("Tile"), static_cast<int>(ImageFill::Mode::TILE));
+    m_modeCombo->addItem(RowText("Stretch"), static_cast<int>(ImageFill::Mode::STRETCH));
+    m_modeCombo->addItem(RowText("Fit"), static_cast<int>(ImageFill::Mode::FIT));
+    m_modeCombo->addItem(RowText("Tile"), static_cast<int>(ImageFill::Mode::TILE));
     m_modeCombo->setFixedHeight(fieldHeight);
-    m_modeCombo->setToolTip(AttributeRowText("Fill image mode"));
+    m_modeCombo->setToolTip(RowText("Fill image mode"));
     connect(m_modeCombo, &QComboBox::currentIndexChanged, this, [this](int index) {
         if (m_refreshing || index < 0) {
             return;
@@ -239,9 +223,9 @@ FillImageRow::FillImageRow(QWidget* parent) : QWidget(parent)
     m_clearButton->setIcon(IconFactory::Make(IconId::DELETE, QColor(58, 64, 80), 16));
     m_clearButton->setIconSize(QSize(16, 16));
     m_clearButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    m_clearButton->setText(AttributeRowText("Clear"));
+    m_clearButton->setText(RowText("Clear"));
     m_clearButton->setFixedHeight(fieldHeight);
-    m_clearButton->setToolTip(AttributeRowText("Clear fill image"));
+    m_clearButton->setToolTip(RowText("Clear fill image"));
     connect(m_clearButton, &QToolButton::clicked, this, &FillImageRow::clearFillImageClicked);
     layout->addWidget(m_clearButton, 0, Qt::AlignVCenter);
     layout->addStretch(1);
@@ -259,7 +243,7 @@ void FillImageRow::Refresh()
     const bool hasTargets = !m_targets.isEmpty();
     const bool hasImage = hasTargets && m_targets.first()->HasFillImage();
     m_chooseButton->setEnabled(hasTargets);
-    m_chooseButton->setText(AttributeRowText(hasImage ? "Change fill image" : "Choose fill image"));
+    m_chooseButton->setText(RowText(hasImage ? "Change fill image" : "Choose fill image"));
     m_modeCombo->setEnabled(hasImage);
     m_clearButton->setEnabled(hasImage);
     const ImageFill::Mode mode = hasTargets ? m_targets.first()->FillImageMode() : ImageFill::Mode::STRETCH;
@@ -275,7 +259,7 @@ StrokeStyleRow::StrokeStyleRow(QWidget* parent) : QWidget(parent)
     auto* layout = MakeRowLayout(this);
 
     QToolButton* icon = MakeRowIcon(IconId::BRUSH, this);
-    icon->setToolTip(AttributeRowText("Border style"));
+    icon->setToolTip(RowText("Border style"));
     layout->addWidget(icon, 0, Qt::AlignVCenter);
 
     const QList<Qt::PenStyle> styles = ItemStyleVisuals::BorderStyles();
@@ -325,7 +309,7 @@ StrokeColorRow::StrokeColorRow(QWidget* parent) : QWidget(parent)
     auto* layout = MakeRowLayout(this);
 
     QToolButton* icon = MakeRowIcon(IconId::BRUSH, this);
-    icon->setToolTip(AttributeRowText("Border"));
+    icon->setToolTip(RowText("Border"));
     layout->addWidget(icon, 0, Qt::AlignVCenter);
 
     for (const QString& hex : PresetColors()) {
@@ -344,10 +328,10 @@ StrokeColorRow::StrokeColorRow(QWidget* parent) : QWidget(parent)
     m_customButton->setObjectName(QStringLiteral("ItemColorButton"));
     m_customButton->setFixedWidth(RowMetrics::RowHeight());
     m_customButton->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
-    m_customButton->setToolTip(AttributeRowText("Border color"));
+    m_customButton->setToolTip(RowText("Border color"));
     connect(m_customButton, &QToolButton::clicked, this, [this]() {
         const QColor chosen =
-            QColorDialog::getColor(m_fallback, this, AttributeRowText("Border color"), QColorDialog::ShowAlphaChannel);
+            QColorDialog::getColor(m_fallback, this, RowText("Border color"), QColorDialog::ShowAlphaChannel);
         if (chosen.isValid()) {
             emit strokeColorChosen(chosen);
         }
@@ -388,7 +372,7 @@ StrokeWidthRow::StrokeWidthRow(QWidget* parent) : QWidget(parent)
 
     QToolButton* icon = MakeRowIcon(IconId::BRUSH, this);
     icon->setObjectName(QStringLiteral("ItemBorderWidthIcon"));
-    icon->setToolTip(AttributeRowText("Border width"));
+    icon->setToolTip(RowText("Border width"));
     layout->addWidget(icon, 0, Qt::AlignVCenter);
 
     m_widthSpin = new QSpinBox(this);
@@ -396,7 +380,7 @@ StrokeWidthRow::StrokeWidthRow(QWidget* parent) : QWidget(parent)
     m_widthSpin->setRange(1, 64);
     m_widthSpin->setSingleStep(1);
     m_widthSpin->setSuffix(QStringLiteral(" px"));
-    m_widthSpin->setToolTip(AttributeRowText("Border width"));
+    m_widthSpin->setToolTip(RowText("Border width"));
     m_widthSpin->setKeyboardTracking(false);
     connect(m_widthSpin, &QSpinBox::valueChanged, this, [this](int value) {
         if (!m_refreshing) {

@@ -129,8 +129,3 @@ class StrokeWidthRow : public QWidget {
     bool m_refreshing = false;
 };
 
-QString AttributeRowText(const char* source);
-
-// 行首图标显隐：编辑面板显示图标，属性窗（行标题已说明属性名）统一隐藏。
-// StrokeWidthRow 的图标 objectName 被单独覆盖，这里一并兼容。
-void SetRowIconVisible(QWidget* row, bool visible);

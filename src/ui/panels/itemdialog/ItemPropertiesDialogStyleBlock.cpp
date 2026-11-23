@@ -9,6 +9,7 @@
 #include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/properties/PropertyRowRegistry.h"
 #include "ui/panels/properties/PropertyRowSpec.h"
+#include "ui/widgets/RowText.h"
 #include "ui/widgets/rows/FillStrokeRows.h"
 #include "ui/widgets/rows/ValueRows.h"
 
