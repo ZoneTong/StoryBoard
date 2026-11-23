@@ -76,6 +76,7 @@ int RunSelfTest(const QString& reportPath)
     selftest::RunPropertyDialogFieldGeometryTests(ctx);
     selftest::RunPropertyDialogTextNamingTests(ctx);
     selftest::RunItemPropertyCatalogTests(ctx);
+    selftest::RunPropertyKeyTests(ctx);
     selftest::RunPropertyRowSpecTests(ctx);
     selftest::RunDuplicateItemTests(ctx);
     selftest::RunGroupTests(ctx);

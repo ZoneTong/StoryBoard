@@ -205,18 +205,18 @@ class StrokeSmoothCommand : public QUndoCommand {
 class ItemPropertyCommand : public QUndoCommand {
   public:
     ItemPropertyCommand(CanvasScene* scene, const QList<CanvasItem*>& items,
-                        const QList<QMap<ItemProperty, QVariant>>& before,
-                        const QList<QMap<ItemProperty, QVariant>>& after, const QString& text);
+                        const QList<QMap<PropertyKey, QVariant>>& before,
+                        const QList<QMap<PropertyKey, QVariant>>& after, const QString& text);
     void undo() override;
     void redo() override;
 
   private:
-    void Apply(const QList<QMap<ItemProperty, QVariant>>& states);
+    void Apply(const QList<QMap<PropertyKey, QVariant>>& states);
 
     CanvasScene* m_scene = nullptr;
     QList<QPointer<CanvasItem>> m_items;
-    QList<QMap<ItemProperty, QVariant>> m_before;
-    QList<QMap<ItemProperty, QVariant>> m_after;
+    QList<QMap<PropertyKey, QVariant>> m_before;
+    QList<QMap<PropertyKey, QVariant>> m_after;
 };
 
 class LayerStateCommand : public QUndoCommand {

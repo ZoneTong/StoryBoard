@@ -488,12 +488,12 @@ void ItemPropertiesDialog::ApplyChanges()
         (m_initialItemName.isEmpty() && typedName == m_initialDisplayName) ? QString() : effectiveName;
 
     // 属性表命令直接携带 before/after 两个属性映射；CENTER 是派生属性，不写回以免重复平移。
-    QMap<ItemProperty, QVariant> before;
-    for (ItemProperty property : m_item->Properties().Values()) {
-        before.insert(property, m_item->PropertyValue(property));
+    QMap<PropertyKey, QVariant> before;
+    for (PropertyKey property : m_item->Properties().Keys()) {
+        before.insert(property, m_item->PropertyValueByKey(property));
     }
     before.remove(ItemProperty::CENTER);
-    QMap<ItemProperty, QVariant> after = before;
+    QMap<PropertyKey, QVariant> after = before;
     after.insert(ItemProperty::NAME, afterName);
     after.insert(ItemProperty::LAYER, targetLayer);
     after.insert(ItemProperty::HEIGHT, targetHeight);
@@ -663,13 +663,13 @@ void ItemPropertiesDialog::ApplyChanges()
     }
 
     QList<CanvasItem*> targets{m_item};
-    QList<QMap<ItemProperty, QVariant>> valuesBefore{before};
-    QList<QMap<ItemProperty, QVariant>> valuesAfter{after};
+    QList<QMap<PropertyKey, QVariant>> valuesBefore{before};
+    QList<QMap<PropertyKey, QVariant>> valuesAfter{after};
     for (CanvasItem* peer : std::as_const(swapped)) {
-        QMap<ItemProperty, QVariant> peerBefore;
+        QMap<PropertyKey, QVariant> peerBefore;
         peerBefore.insert(ItemProperty::LAYER, peer->LayerId());
         peerBefore.insert(ItemProperty::HEIGHT, peer->ZOrder());
-        QMap<ItemProperty, QVariant> peerAfter;
+        QMap<PropertyKey, QVariant> peerAfter;
         peerAfter.insert(ItemProperty::LAYER, oldLayer);
         peerAfter.insert(ItemProperty::HEIGHT, oldHeight);
         targets.append(peer);

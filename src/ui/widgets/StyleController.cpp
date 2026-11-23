@@ -113,16 +113,16 @@ int StyleController::ApplyPenStyleToSelection(Qt::PenStyle style, const QString&
     }
 
     QList<CanvasItem*> items;
-    QList<QMap<ItemProperty, QVariant>> before;
-    QList<QMap<ItemProperty, QVariant>> after;
+    QList<QMap<PropertyKey, QVariant>> before;
+    QList<QMap<PropertyKey, QVariant>> after;
     const QList<CanvasItem*> selected = m_window->m_scene->SelectedCanvasItems();
     for (CanvasItem* item : selected) {
         if (!item->Properties().Contains(ItemProperty::STROKE_STYLE)) {
             continue;
         }
-        QMap<ItemProperty, QVariant> beforeValues;
+        QMap<PropertyKey, QVariant> beforeValues;
         beforeValues.insert(ItemProperty::STROKE_STYLE, item->PropertyValue(ItemProperty::STROKE_STYLE));
-        QMap<ItemProperty, QVariant> afterValues = beforeValues;
+        QMap<PropertyKey, QVariant> afterValues = beforeValues;
         afterValues.insert(ItemProperty::STROKE_STYLE, static_cast<int>(style));
         items.append(item);
         before.append(beforeValues);
@@ -192,15 +192,15 @@ int StyleController::ApplyStrokeStyleToSelection(const QColor& color, qreal widt
         return 0;
     }
 
-    QList<QMap<ItemProperty, QVariant>> before;
-    QList<QMap<ItemProperty, QVariant>> after;
+    QList<QMap<PropertyKey, QVariant>> before;
+    QList<QMap<PropertyKey, QVariant>> after;
     before.reserve(items.size());
     after.reserve(items.size());
     for (CanvasItem* item : items) {
-        QMap<ItemProperty, QVariant> beforeValues;
+        QMap<PropertyKey, QVariant> beforeValues;
         beforeValues.insert(ItemProperty::STROKE_COLOR, item->PropertyValue(ItemProperty::STROKE_COLOR));
         beforeValues.insert(ItemProperty::STROKE_WIDTH, item->PropertyValue(ItemProperty::STROKE_WIDTH));
-        QMap<ItemProperty, QVariant> afterValues = beforeValues;
+        QMap<PropertyKey, QVariant> afterValues = beforeValues;
         if (changeColor) {
             afterValues.insert(ItemProperty::STROKE_COLOR, color);
         }
@@ -218,7 +218,7 @@ int StyleController::ApplyStrokeStyleToSelection(const QColor& color, qreal widt
 
     for (int index = 0; index < items.size(); ++index) {
         for (auto it = after.at(index).constBegin(); it != after.at(index).constEnd(); ++it) {
-            items.at(index)->SetPropertyValue(it.key(), it.value());
+            items.at(index)->SetPropertyValueByKey(it.key(), it.value());
         }
     }
     m_window->m_undo->push(new ItemPropertyCommand(m_window->m_scene, items, before, after, text));
@@ -262,19 +262,19 @@ void StyleController::ApplyFillToSelection()
     }
 
     QList<CanvasItem*> items;
-    QList<QMap<ItemProperty, QVariant>> before;
-    QList<QMap<ItemProperty, QVariant>> after;
+    QList<QMap<PropertyKey, QVariant>> before;
+    QList<QMap<PropertyKey, QVariant>> after;
     before.reserve(targets.size());
     after.reserve(targets.size());
     for (ShapeAbstractItem* shape : targets) {
-        QMap<ItemProperty, QVariant> beforeValues;
+        QMap<PropertyKey, QVariant> beforeValues;
         beforeValues.insert(ItemProperty::FILL_COLOR, shape->PropertyValue(ItemProperty::FILL_COLOR));
         beforeValues.insert(ItemProperty::FILL_STYLE, shape->PropertyValue(ItemProperty::FILL_STYLE));
         QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : shape->FillColor();
         if (fill.alpha() == 0) {
             fill = shape->StrokeColor();
         }
-        QMap<ItemProperty, QVariant> afterValues = beforeValues;
+        QMap<PropertyKey, QVariant> afterValues = beforeValues;
         afterValues.insert(ItemProperty::FILL_COLOR, fill);
         afterValues.insert(ItemProperty::FILL_STYLE, static_cast<int>(m_window->m_fillStyle));
         items.append(shape);
@@ -289,7 +289,7 @@ void StyleController::ApplyFillToSelection()
 
     for (int index = 0; index < items.size(); ++index) {
         for (auto it = after.at(index).constBegin(); it != after.at(index).constEnd(); ++it) {
-            items.at(index)->SetPropertyValue(it.key(), it.value());
+            items.at(index)->SetPropertyValueByKey(it.key(), it.value());
         }
     }
     m_window->m_undo->push(

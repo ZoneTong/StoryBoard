@@ -70,7 +70,7 @@ struct ShapeItemState {
     QSizeF size;
     // 类型专属标量（圆角 / 三角形底角 / 平行四边形内角等）一律放这里，
     // 按 ItemProperty 键回放；公共快照不再为每个叶子加扁平字段。
-    QMap<ItemProperty, QVariant> propertyExtras;
+    QMap<PropertyKey, QVariant> propertyExtras;
 
     bool operator==(const ShapeItemState& other) const
     {

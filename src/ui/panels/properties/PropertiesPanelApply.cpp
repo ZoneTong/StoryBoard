@@ -45,14 +45,14 @@ void PropertiesPanel::ChangeSelectedShapes(const QString& text, const std::funct
     // 按各图形上报的属性全集做快照：角度 / 底边等编辑会连带派生尺寸，
     // 全量快照保证撤销 / 重做与原整份状态命令等价。
     QList<CanvasItem*> items;
-    QList<QMap<ItemProperty, QVariant>> before;
-    QList<QMap<ItemProperty, QVariant>> after;
+    QList<QMap<PropertyKey, QVariant>> before;
+    QList<QMap<PropertyKey, QVariant>> after;
     before.reserve(shapes.size());
     after.reserve(shapes.size());
     for (ShapeAbstractItem* shape : shapes) {
-        QMap<ItemProperty, QVariant> beforeValues;
-        for (ItemProperty property : shape->Properties().Values()) {
-            beforeValues.insert(property, shape->PropertyValue(property));
+        QMap<PropertyKey, QVariant> beforeValues;
+        for (PropertyKey property : shape->Properties().Keys()) {
+            beforeValues.insert(property, shape->PropertyValueByKey(property));
         }
         items.append(shape);
         before.append(beforeValues);
@@ -63,9 +63,9 @@ void PropertiesPanel::ChangeSelectedShapes(const QString& text, const std::funct
     }
     m_refreshing = false;
     for (ShapeAbstractItem* shape : shapes) {
-        QMap<ItemProperty, QVariant> afterValues;
-        for (ItemProperty property : shape->Properties().Values()) {
-            afterValues.insert(property, shape->PropertyValue(property));
+        QMap<PropertyKey, QVariant> afterValues;
+        for (PropertyKey property : shape->Properties().Keys()) {
+            afterValues.insert(property, shape->PropertyValueByKey(property));
         }
         after.append(afterValues);
     }
@@ -74,7 +74,7 @@ void PropertiesPanel::ChangeSelectedShapes(const QString& text, const std::funct
     Refresh();
 }
 
-void PropertiesPanel::ApplyPropertyValues(const QMap<ItemProperty, QVariant>& values, const QString& text,
+void PropertiesPanel::ApplyPropertyValues(const QMap<PropertyKey, QVariant>& values, const QString& text,
                                           const QList<CanvasItem*>& targets)
 {
     if (!m_scene || !m_scene->UndoStack()) {
@@ -83,18 +83,18 @@ void PropertiesPanel::ApplyPropertyValues(const QMap<ItemProperty, QVariant>& va
     const QList<CanvasItem*> items = targets.isEmpty() ? SelectedItems() : targets;
 
     QList<CanvasItem*> applyItems;
-    QList<QMap<ItemProperty, QVariant>> before;
-    QList<QMap<ItemProperty, QVariant>> after;
+    QList<QMap<PropertyKey, QVariant>> before;
+    QList<QMap<PropertyKey, QVariant>> after;
     m_refreshing = true;
     for (CanvasItem* item : items) {
         const ItemPropertySet properties = item->Properties();
-        QMap<ItemProperty, QVariant> beforeValues;
-        QMap<ItemProperty, QVariant> afterValues;
+        QMap<PropertyKey, QVariant> beforeValues;
+        QMap<PropertyKey, QVariant> afterValues;
         for (auto it = values.constBegin(); it != values.constEnd(); ++it) {
             if (!properties.Contains(it.key())) {
                 continue;
             }
-            beforeValues.insert(it.key(), item->PropertyValue(it.key()));
+            beforeValues.insert(it.key(), item->PropertyValueByKey(it.key()));
             afterValues.insert(it.key(), it.value());
         }
         if (afterValues.isEmpty()) {
@@ -104,7 +104,7 @@ void PropertiesPanel::ApplyPropertyValues(const QMap<ItemProperty, QVariant>& va
         const QSizeF sizeBefore = item->ContentSize();
         // 先写值，命令随后 push 时的 redo 幂等执行；撤销 / 重做都按快照回放。
         for (auto it = afterValues.constBegin(); it != afterValues.constEnd(); ++it) {
-            item->SetPropertyValue(it.key(), it.value());
+            item->SetPropertyValueByKey(it.key(), it.value());
         }
         // 参数 / 描线宽度这类写入会重建几何并挪动位置或内容框：把真实变化一并入快照，
         // 否则撤销只回滚属性、几何留在改动后的位置。位置与尺寸排在属性之后回放。
@@ -149,12 +149,12 @@ void PropertiesPanel::ApplyFillMutation(const QString& text, const std::function
     }
 
     // 填充属性的撤销快照仍然走属性表，回放时 SetPropertyValue 会分派回这些基类虚函数。
-    QList<QMap<ItemProperty, QVariant>> before;
-    QList<QMap<ItemProperty, QVariant>> after;
+    QList<QMap<PropertyKey, QVariant>> before;
+    QList<QMap<PropertyKey, QVariant>> after;
     m_refreshing = true;
     for (CanvasItem* item : items) {
         const ItemPropertySet properties = item->Properties();
-        QMap<ItemProperty, QVariant> values;
+        QMap<PropertyKey, QVariant> values;
         for (ItemProperty property : {ItemProperty::FILL_STYLE, ItemProperty::FILL_COLOR, ItemProperty::FILL_IMAGE,
                                       ItemProperty::FILL_IMAGE_MODE}) {
             if (properties.Contains(property)) {
@@ -168,7 +168,7 @@ void PropertiesPanel::ApplyFillMutation(const QString& text, const std::function
     }
     for (CanvasItem* item : items) {
         const ItemPropertySet properties = item->Properties();
-        QMap<ItemProperty, QVariant> values;
+        QMap<PropertyKey, QVariant> values;
         for (ItemProperty property : {ItemProperty::FILL_STYLE, ItemProperty::FILL_COLOR, ItemProperty::FILL_IMAGE,
                                       ItemProperty::FILL_IMAGE_MODE}) {
             if (properties.Contains(property)) {
@@ -203,12 +203,12 @@ void PropertiesPanel::ApplyStrokeMutation(const QString& text, const std::functi
         return;
     }
 
-    QList<QMap<ItemProperty, QVariant>> before;
-    QList<QMap<ItemProperty, QVariant>> after;
+    QList<QMap<PropertyKey, QVariant>> before;
+    QList<QMap<PropertyKey, QVariant>> after;
     m_refreshing = true;
     for (CanvasItem* item : items) {
         const ItemPropertySet properties = item->Properties();
-        QMap<ItemProperty, QVariant> values;
+        QMap<PropertyKey, QVariant> values;
         for (ItemProperty property :
              {ItemProperty::STROKE_STYLE, ItemProperty::STROKE_COLOR, ItemProperty::STROKE_WIDTH}) {
             if (properties.Contains(property)) {
@@ -222,7 +222,7 @@ void PropertiesPanel::ApplyStrokeMutation(const QString& text, const std::functi
     }
     for (CanvasItem* item : items) {
         const ItemPropertySet properties = item->Properties();
-        QMap<ItemProperty, QVariant> values;
+        QMap<PropertyKey, QVariant> values;
         for (ItemProperty property :
              {ItemProperty::STROKE_STYLE, ItemProperty::STROKE_COLOR, ItemProperty::STROKE_WIDTH}) {
             if (properties.Contains(property)) {
@@ -413,7 +413,7 @@ void PropertiesPanel::ApplyStartAngle(int angle)
     for (LineAbstractItem* stroke : strokes) {
         targets.append(stroke);
     }
-    ApplyPropertyValues(QMap<ItemProperty, QVariant>{{ItemProperty::START_ANGLE, angle}}, tr("Change start angle"),
+    ApplyPropertyValues(QMap<PropertyKey, QVariant>{{ItemProperty::START_ANGLE, angle}}, tr("Change start angle"),
                         targets);
 }
 
@@ -428,7 +428,7 @@ void PropertiesPanel::ApplySweepAngle(int angle)
     for (LineAbstractItem* stroke : strokes) {
         targets.append(stroke);
     }
-    ApplyPropertyValues(QMap<ItemProperty, QVariant>{{ItemProperty::SWEEP_ANGLE, angle}}, tr("Change arc sweep angle"),
+    ApplyPropertyValues(QMap<PropertyKey, QVariant>{{ItemProperty::SWEEP_ANGLE, angle}}, tr("Change arc sweep angle"),
                         targets);
 }
 
@@ -441,7 +441,7 @@ void PropertiesPanel::ApplySineCycles(int cycles)
     for (LineAbstractItem* stroke : strokes) {
         targets.append(stroke);
     }
-    ApplyPropertyValues(QMap<ItemProperty, QVariant>{{ItemProperty::SINE_CYCLES, bounded}}, tr("Change sine cycles"),
+    ApplyPropertyValues(QMap<PropertyKey, QVariant>{{ItemProperty::SINE_CYCLES, bounded}}, tr("Change sine cycles"),
                         targets);
 }
 
@@ -454,7 +454,7 @@ void PropertiesPanel::ApplySineAmplitude(int pixels)
     for (LineAbstractItem* stroke : strokes) {
         targets.append(stroke);
     }
-    ApplyPropertyValues(QMap<ItemProperty, QVariant>{{ItemProperty::SINE_AMPLITUDE, amplitude}},
+    ApplyPropertyValues(QMap<PropertyKey, QVariant>{{ItemProperty::SINE_AMPLITUDE, amplitude}},
                         tr("Change sine amplitude"), targets);
 }
 
@@ -483,16 +483,16 @@ void PropertiesPanel::ApplyArrowStart(int style)
     // 需求 9b/9d：直线与曲线共用一条箭头撤销记录，只改箭头样式。
     const QList<LineAbstractItem*> curves = SelectedStrokes();
     QList<CanvasItem*> targets;
-    QList<QMap<ItemProperty, QVariant>> before;
-    QList<QMap<ItemProperty, QVariant>> after;
+    QList<QMap<PropertyKey, QVariant>> before;
+    QList<QMap<PropertyKey, QVariant>> after;
     for (LineAbstractItem* curve : curves) {
         if (!curve || !curve->Properties().Contains(ItemProperty::ARROW_START)) {
             continue;
         }
-        QMap<ItemProperty, QVariant> beforeValues;
+        QMap<PropertyKey, QVariant> beforeValues;
         beforeValues.insert(ItemProperty::ARROW_START, curve->PropertyValue(ItemProperty::ARROW_START));
         beforeValues.insert(ItemProperty::ARROW_END, curve->PropertyValue(ItemProperty::ARROW_END));
-        QMap<ItemProperty, QVariant> afterValues = beforeValues;
+        QMap<PropertyKey, QVariant> afterValues = beforeValues;
         afterValues.insert(ItemProperty::ARROW_START, style);
         targets.append(curve);
         before.append(beforeValues);
@@ -512,16 +512,16 @@ void PropertiesPanel::ApplyArrowEnd(int style)
 {
     const QList<LineAbstractItem*> curves = SelectedStrokes();
     QList<CanvasItem*> targets;
-    QList<QMap<ItemProperty, QVariant>> before;
-    QList<QMap<ItemProperty, QVariant>> after;
+    QList<QMap<PropertyKey, QVariant>> before;
+    QList<QMap<PropertyKey, QVariant>> after;
     for (LineAbstractItem* curve : curves) {
         if (!curve || !curve->Properties().Contains(ItemProperty::ARROW_END)) {
             continue;
         }
-        QMap<ItemProperty, QVariant> beforeValues;
+        QMap<PropertyKey, QVariant> beforeValues;
         beforeValues.insert(ItemProperty::ARROW_START, curve->PropertyValue(ItemProperty::ARROW_START));
         beforeValues.insert(ItemProperty::ARROW_END, curve->PropertyValue(ItemProperty::ARROW_END));
-        QMap<ItemProperty, QVariant> afterValues = beforeValues;
+        QMap<PropertyKey, QVariant> afterValues = beforeValues;
         afterValues.insert(ItemProperty::ARROW_END, style);
         targets.append(curve);
         before.append(beforeValues);
@@ -647,13 +647,13 @@ void PropertiesPanel::ApplyItemGeometry(const QPointF& position, const QSizeF& s
 
     const QSizeF minimumSize = CanvasItem::MinimumSize();
     QList<CanvasItem*> applyItems;
-    QList<QMap<ItemProperty, QVariant>> before;
-    QList<QMap<ItemProperty, QVariant>> after;
+    QList<QMap<PropertyKey, QVariant>> before;
+    QList<QMap<PropertyKey, QVariant>> after;
     m_refreshing = true;
     for (CanvasItem* item : items) {
         const ItemPropertySet properties = item->Properties();
-        QMap<ItemProperty, QVariant> beforeValues;
-        QMap<ItemProperty, QVariant> afterValues;
+        QMap<PropertyKey, QVariant> beforeValues;
+        QMap<PropertyKey, QVariant> afterValues;
 
         if (properties.Contains(ItemProperty::POSITION)) {
             const QPointF currentPosition = item->pos();

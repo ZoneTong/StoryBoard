@@ -130,8 +130,8 @@ void CanvasItemInteraction::BeginResize(int handle, const QPointF& scenePos)
     }
     // 角度 / 端点这类属性不在 GeometryCommand 的回放范围里，改为逐属性快照，
     // 拖拽结束时只把真正变过的项推成一条 ItemPropertyCommand。
-    for (ItemProperty property : m_item->Properties().Values()) {
-        m_customDragBefore.insert(property, m_item->PropertyValue(property));
+    for (PropertyKey property : m_item->Properties().Keys()) {
+        m_customDragBefore.insert(property, m_item->PropertyValueByKey(property));
     }
 }
 
@@ -237,7 +237,7 @@ void CanvasItemInteraction::FinishInteraction()
     const bool wasResize = m_item->m_drag == CanvasItem::DragKind::RESIZE;
     const bool wasRotate = m_item->m_drag == CanvasItem::DragKind::ROTATE;
     const bool wasCustomDrag = wasResize && m_customDrag;
-    const QMap<ItemProperty, QVariant> customBefore = m_customDragBefore;
+    const QMap<PropertyKey, QVariant> customBefore = m_customDragBefore;
     m_item->m_drag = CanvasItem::DragKind::NONE;
     m_item->m_resizeHandle = CanvasItem::NO_HANDLE;
     m_customDrag = false;
@@ -265,16 +265,16 @@ void CanvasItemInteraction::FinishInteraction()
     m_item->m_before.clear();
 }
 
-void CanvasItemInteraction::PushCustomHandleChange(const QMap<ItemProperty, QVariant>& before)
+void CanvasItemInteraction::PushCustomHandleChange(const QMap<PropertyKey, QVariant>& before)
 {
     CanvasScene* canvas = m_item->canvasScene();
     if (!canvas || !canvas->UndoStack()) {
         return;
     }
-    QMap<ItemProperty, QVariant> beforeChanged;
-    QMap<ItemProperty, QVariant> afterChanged;
+    QMap<PropertyKey, QVariant> beforeChanged;
+    QMap<PropertyKey, QVariant> afterChanged;
     for (auto it = before.constBegin(); it != before.constEnd(); ++it) {
-        const QVariant now = m_item->PropertyValue(it.key());
+        const QVariant now = m_item->PropertyValueByKey(it.key());
         if (now == it.value()) {
             continue;
         }
