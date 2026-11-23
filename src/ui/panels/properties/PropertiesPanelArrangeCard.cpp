@@ -2,23 +2,20 @@
 
 #include "ui/icons/IconFactory.h"
 #include "ui/panels/properties/PropertiesPanel.h"
+#include "ui/widgets/RowMetrics.h"
 
 #include <QHBoxLayout>
 #include <QToolButton>
 
 namespace {
 
-constexpr int ICON_SIZE = 20;
-constexpr int SMALL_ICON_SIZE = 20;
-constexpr int BUTTON_SIZE = 32;
-
 QToolButton* MakeRowIcon(IconId id, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
-    button->setIcon(MakeIcon(id, QColor(139, 144, 156), SMALL_ICON_SIZE));
-    button->setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE));
-    button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
+    button->setIcon(MakeIcon(id, QColor(139, 144, 156), RowMetrics::GlyphSize()));
+    button->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
+    button->setFixedSize(RowMetrics::IconButtonSize());
     button->setAutoRaise(true);
     button->setFocusPolicy(Qt::NoFocus);
     return button;
@@ -57,9 +54,9 @@ QToolButton* PropertiesPanelArrangeCard::MakeButton(IconId id, const QString& to
 {
     auto* button = new QToolButton(this);
     button->setObjectName(objectName);
-    button->setIcon(MakeIcon(id, QColor(75, 85, 99), ICON_SIZE));
-    button->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
-    button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
+    button->setIcon(MakeIcon(id, QColor(75, 85, 99), RowMetrics::GlyphSize()));
+    button->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
+    button->setFixedSize(RowMetrics::IconButtonSize());
     button->setToolTip(toolTip);
     button->setAutoRaise(true);
     connect(button, &QToolButton::clicked, this, [this, delta, height]() {

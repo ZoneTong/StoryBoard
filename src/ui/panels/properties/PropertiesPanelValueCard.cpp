@@ -8,6 +8,7 @@
 #include "items/shapes/ShapeAbstractItem.h"
 #include "ui/icons/IconFactory.h"
 #include "ui/panels/properties/PropertiesPanel.h"
+#include "ui/widgets/RowMetrics.h"
 
 #include <QComboBox>
 #include <QHBoxLayout>
@@ -17,16 +18,14 @@
 
 namespace {
 
-constexpr int SMALL_ICON_SIZE = 20;
-constexpr int BUTTON_SIZE = 32;
 
 QToolButton* MakeRowIcon(IconId id, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
-    button->setIcon(MakeIcon(id, QColor(139, 144, 156), SMALL_ICON_SIZE));
-    button->setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE));
-    button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
+    button->setIcon(MakeIcon(id, QColor(139, 144, 156), RowMetrics::GlyphSize()));
+    button->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
+    button->setFixedSize(RowMetrics::IconButtonSize());
     button->setAutoRaise(true);
     button->setFocusPolicy(Qt::NoFocus);
     return button;
@@ -41,6 +40,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     outer->setSpacing(2);
 
     auto* opacityRow = new QWidget(this);
+    RowMetrics::ApplyRow(opacityRow);
     auto* opacityLayout = new QHBoxLayout(opacityRow);
     opacityLayout->setContentsMargins(0, 0, 0, 0);
     opacityLayout->setSpacing(4);
@@ -140,6 +140,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     sineOuter->setSpacing(2);
 
     auto* cyclesRow = new QWidget(m_sineSection);
+    RowMetrics::ApplyRow(cyclesRow);
     auto* cyclesLayout = new QHBoxLayout(cyclesRow);
     cyclesLayout->setContentsMargins(0, 0, 0, 0);
     cyclesLayout->setSpacing(4);
@@ -160,6 +161,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     sineOuter->addWidget(cyclesRow);
 
     auto* amplitudeRow = new QWidget(m_sineSection);
+    RowMetrics::ApplyRow(amplitudeRow);
     auto* amplitudeLayout = new QHBoxLayout(amplitudeRow);
     amplitudeLayout->setContentsMargins(0, 0, 0, 0);
     amplitudeLayout->setSpacing(4);
@@ -190,6 +192,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     triangleOuter->setSpacing(2);
 
     auto* angle1Row = new QWidget(m_triangleSection);
+    RowMetrics::ApplyRow(angle1Row);
     auto* angle1Layout = new QHBoxLayout(angle1Row);
     angle1Layout->setContentsMargins(0, 0, 0, 0);
     angle1Layout->setSpacing(4);
@@ -211,6 +214,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     triangleOuter->addWidget(angle1Row);
 
     auto* angle2Row = new QWidget(m_triangleSection);
+    RowMetrics::ApplyRow(angle2Row);
     auto* angle2Layout = new QHBoxLayout(angle2Row);
     angle2Layout->setContentsMargins(0, 0, 0, 0);
     angle2Layout->setSpacing(4);
@@ -236,6 +240,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
 
     // 需求 6：直线两端箭头样式，两行下拉（起始 / 末端）。
     m_arrowSection = new QWidget(this);
+    RowMetrics::ApplyRow(m_arrowSection);
     auto* arrowOuter = new QVBoxLayout(m_arrowSection);
     arrowOuter->setContentsMargins(0, 0, 0, 0);
     arrowOuter->setSpacing(2);
@@ -243,6 +248,7 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     auto makeArrowRow = [this, arrowOuter](IconId iconId, const QString& tooltip, QComboBox** target,
                                            void (PropertiesPanelValueCard::*signal)(int)) {
         auto* row = new QWidget(m_arrowSection);
+        RowMetrics::ApplyRow(row);
         auto* rowLayout = new QHBoxLayout(row);
         rowLayout->setContentsMargins(0, 0, 0, 0);
         rowLayout->setSpacing(4);

@@ -1,5 +1,7 @@
 #include "ui/panels/properties/PropertiesPanelSelectionCard.h"
 
+#include "ui/widgets/RowMetrics.h"
+
 #include <QAction>
 #include <QHBoxLayout>
 #include <QToolButton>
@@ -8,8 +10,6 @@
 
 namespace {
 
-constexpr int BUTTON_SIZE = 32;
-constexpr int ICON_SIZE = 20;
 constexpr int ALIGN_BUTTON_COUNT = 8;
 constexpr int BOOL_BUTTON_COUNT = 6;
 
@@ -17,6 +17,7 @@ constexpr int BOOL_BUTTON_COUNT = 6;
 QWidget* MakeRow(QWidget* parent, QHBoxLayout** layout)
 {
     auto* row = new QWidget(parent);
+    RowMetrics::ApplyRow(row);
     auto* rowLayout = new QHBoxLayout(row);
     rowLayout->setContentsMargins(0, 0, 0, 0);
     rowLayout->setSpacing(2);
@@ -87,8 +88,8 @@ QToolButton* PropertiesPanelSelectionCard::MakeButton(const QString& objectName)
 {
     auto* button = new QToolButton(this);
     button->setObjectName(objectName);
-    button->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
-    button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
+    button->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
+    button->setFixedSize(RowMetrics::IconButtonSize());
     button->setToolButtonStyle(Qt::ToolButtonIconOnly);
     button->hide();
     return button;

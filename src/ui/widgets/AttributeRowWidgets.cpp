@@ -2,6 +2,7 @@
 
 #include "items/properties/ItemStyleVisuals.h"
 #include "ui/icons/IconFactory.h"
+#include "ui/widgets/RowMetrics.h"
 
 #include <QColorDialog>
 #include <QComboBox>
@@ -13,20 +14,15 @@
 
 namespace {
 
-constexpr int ICON_SIZE = 20;
-constexpr int BUTTON_SIZE = 30;
-constexpr int SWATCH_SIZE = 26;
-// 填充样式有 11 个按钮，单独收紧，避免属性行比填充颜色行更宽。
-constexpr int FILL_STYLE_ICON_SIZE = 18;
-constexpr int FILL_STYLE_BUTTON_SIZE = 22;
-
 QToolButton* MakeRowIcon(IconId id, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
-    button->setIcon(MakeIcon(id, QColor(139, 144, 156), ICON_SIZE));
-    button->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
-    button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
+    const int glyph = RowMetrics::GlyphSize();
+    button->setIcon(MakeIcon(id, QColor(139, 144, 156), glyph));
+    button->setIconSize(QSize(glyph, glyph));
+    // 边长跟输入框等高：既不把行撑高，也不会比属性窗里的输入框高（§D13）。
+    button->setFixedSize(RowMetrics::IconButtonSize());
     button->setAutoRaise(true);
     button->setFocusPolicy(Qt::NoFocus);
     return button;
@@ -36,7 +32,7 @@ QToolButton* MakeSwatch(const QColor& color, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemColorSwatch"));
-    button->setFixedSize(SWATCH_SIZE, SWATCH_SIZE);
+    button->setFixedSize(RowMetrics::IconButtonSize());
     button->setCheckable(true);
     button->setToolTip(color.name(QColor::HexRgb).toUpper());
     button->setStyleSheet(QStringLiteral("QToolButton { border: 1px solid #CBD5E1; border-radius: 3px; "
@@ -86,6 +82,7 @@ void SetRowIconVisible(QWidget* row, bool visible)
 FillStyleRow::FillStyleRow(QWidget* parent) : QWidget(parent)
 {
     setObjectName(QStringLiteral("ItemFillStyleRow"));
+    RowMetrics::ApplyRow(this);
     auto* layout = MakeRowLayout(this);
     layout->setSpacing(0);
 
@@ -93,14 +90,18 @@ FillStyleRow::FillStyleRow(QWidget* parent) : QWidget(parent)
     icon->setToolTip(AttributeRowText("Fill style"));
     layout->addWidget(icon, 0, Qt::AlignVCenter);
 
+    // 11 个按钮：宽度收到 18，行总宽 = 图标 25 + 11×18 = 223，不超过图元尺寸行（≈227）；
+    // 高度取统一行高，所以是窄长条而不是小方块（§D25）。
+    const int fillStyleWidth = 18;
+    const int fillStyleGlyph = 16;
     for (const FillStyle style : AllFillStyles()) {
         auto* button = new QToolButton(this);
         button->setObjectName(QStringLiteral("ItemFillStyleButton"));
         button->setCheckable(true);
         button->setAutoRaise(true);
-        button->setIcon(ItemStyleVisuals::FillStyleIcon(style, FILL_STYLE_ICON_SIZE));
-        button->setIconSize(QSize(FILL_STYLE_ICON_SIZE, FILL_STYLE_ICON_SIZE));
-        button->setFixedSize(FILL_STYLE_BUTTON_SIZE, FILL_STYLE_BUTTON_SIZE);
+        button->setIcon(ItemStyleVisuals::FillStyleIcon(style, fillStyleGlyph));
+        button->setIconSize(QSize(fillStyleGlyph, fillStyleGlyph));
+        button->setFixedSize(fillStyleWidth, RowMetrics::RowHeight());
         button->setToolTip(FillStyleName(style));
         button->setProperty("fillStyle", static_cast<int>(style));
         connect(button, &QToolButton::clicked, this, [this, style]() {
@@ -135,6 +136,7 @@ void FillStyleRow::Refresh()
 FillColorRow::FillColorRow(QWidget* parent) : QWidget(parent)
 {
     setObjectName(QStringLiteral("ItemFillColorRow"));
+    RowMetrics::ApplyRow(this);
     auto* layout = MakeRowLayout(this);
 
     QToolButton* icon = MakeRowIcon(IconId::PALETTE, this);
@@ -155,8 +157,8 @@ FillColorRow::FillColorRow(QWidget* parent) : QWidget(parent)
 
     m_customButton = new QToolButton(this);
     m_customButton->setObjectName(QStringLiteral("ItemColorButton"));
-    m_customButton->setFixedSize(SWATCH_SIZE, SWATCH_SIZE);
-    m_customButton->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
+    m_customButton->setFixedWidth(RowMetrics::RowHeight());
+    m_customButton->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
     m_customButton->setToolTip(AttributeRowText("Fill color"));
     connect(m_customButton, &QToolButton::clicked, this, [this]() {
         const QColor chosen =
@@ -187,7 +189,7 @@ void FillColorRow::Refresh()
     }
     if (m_customButton) {
         m_customButton->setEnabled(hasTargets);
-        m_customButton->setIcon(ItemStyleVisuals::FillColorIcon(m_fallback, ICON_SIZE));
+        m_customButton->setIcon(ItemStyleVisuals::FillColorIcon(m_fallback, RowMetrics::GlyphSize()));
         m_customButton->setToolTip(m_fallback.name(QColor::HexRgb).toUpper());
     }
     m_refreshing = false;
@@ -196,7 +198,10 @@ void FillColorRow::Refresh()
 FillImageRow::FillImageRow(QWidget* parent) : QWidget(parent)
 {
     setObjectName(QStringLiteral("ItemFillImageRow"));
+    RowMetrics::ApplyRow(this);
     auto* layout = MakeRowLayout(this);
+
+    const int fieldHeight = RowMetrics::FieldHeight();
 
     QToolButton* icon = MakeRowIcon(IconId::IMAGE, this);
     icon->setToolTip(AttributeRowText("Fill image"));
@@ -209,7 +214,8 @@ FillImageRow::FillImageRow(QWidget* parent) : QWidget(parent)
     m_chooseButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     m_chooseButton->setText(AttributeRowText("Choose fill image"));
     m_chooseButton->setToolTip(AttributeRowText("Choose an image to fill the selected items"));
-    m_chooseButton->setMinimumHeight(30);
+    // §D24：三个控件统一到输入框高，按钮才不会比旁边的“拉伸”下拉框高一截。
+    m_chooseButton->setFixedHeight(fieldHeight);
     connect(m_chooseButton, &QToolButton::clicked, this, &FillImageRow::chooseFillImageClicked);
     layout->addWidget(m_chooseButton, 0, Qt::AlignVCenter);
 
@@ -218,7 +224,7 @@ FillImageRow::FillImageRow(QWidget* parent) : QWidget(parent)
     m_modeCombo->addItem(AttributeRowText("Stretch"), static_cast<int>(ImageFill::Mode::STRETCH));
     m_modeCombo->addItem(AttributeRowText("Fit"), static_cast<int>(ImageFill::Mode::FIT));
     m_modeCombo->addItem(AttributeRowText("Tile"), static_cast<int>(ImageFill::Mode::TILE));
-    m_modeCombo->setMinimumHeight(30);
+    m_modeCombo->setFixedHeight(fieldHeight);
     m_modeCombo->setToolTip(AttributeRowText("Fill image mode"));
     connect(m_modeCombo, &QComboBox::currentIndexChanged, this, [this](int index) {
         if (m_refreshing || index < 0) {
@@ -234,7 +240,7 @@ FillImageRow::FillImageRow(QWidget* parent) : QWidget(parent)
     m_clearButton->setIconSize(QSize(16, 16));
     m_clearButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     m_clearButton->setText(AttributeRowText("Clear"));
-    m_clearButton->setMinimumHeight(30);
+    m_clearButton->setFixedHeight(fieldHeight);
     m_clearButton->setToolTip(AttributeRowText("Clear fill image"));
     connect(m_clearButton, &QToolButton::clicked, this, &FillImageRow::clearFillImageClicked);
     layout->addWidget(m_clearButton, 0, Qt::AlignVCenter);
@@ -265,6 +271,7 @@ void FillImageRow::Refresh()
 StrokeStyleRow::StrokeStyleRow(QWidget* parent) : QWidget(parent)
 {
     setObjectName(QStringLiteral("ItemBorderStyleRow"));
+    RowMetrics::ApplyRow(this);
     auto* layout = MakeRowLayout(this);
 
     QToolButton* icon = MakeRowIcon(IconId::BRUSH, this);
@@ -277,9 +284,9 @@ StrokeStyleRow::StrokeStyleRow(QWidget* parent) : QWidget(parent)
         button->setObjectName(QStringLiteral("ItemBorderStyleButton"));
         button->setCheckable(true);
         button->setAutoRaise(true);
-        button->setIcon(ItemStyleVisuals::BorderStyleIcon(style, ICON_SIZE));
-        button->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
-        button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
+        button->setIcon(ItemStyleVisuals::BorderStyleIcon(style, RowMetrics::GlyphSize()));
+        button->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
+        button->setFixedSize(RowMetrics::IconButtonSize());
         button->setToolTip(ItemStyleVisuals::BorderStyleName(style));
         button->setProperty("penStyle", static_cast<int>(style));
         connect(button, &QToolButton::clicked, this, [this, style]() {
@@ -314,6 +321,7 @@ void StrokeStyleRow::Refresh()
 StrokeColorRow::StrokeColorRow(QWidget* parent) : QWidget(parent)
 {
     setObjectName(QStringLiteral("ItemBorderColorRow"));
+    RowMetrics::ApplyRow(this);
     auto* layout = MakeRowLayout(this);
 
     QToolButton* icon = MakeRowIcon(IconId::BRUSH, this);
@@ -334,8 +342,8 @@ StrokeColorRow::StrokeColorRow(QWidget* parent) : QWidget(parent)
 
     m_customButton = new QToolButton(this);
     m_customButton->setObjectName(QStringLiteral("ItemColorButton"));
-    m_customButton->setFixedSize(SWATCH_SIZE, SWATCH_SIZE);
-    m_customButton->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
+    m_customButton->setFixedWidth(RowMetrics::RowHeight());
+    m_customButton->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
     m_customButton->setToolTip(AttributeRowText("Border color"));
     connect(m_customButton, &QToolButton::clicked, this, [this]() {
         const QColor chosen =
@@ -366,7 +374,7 @@ void StrokeColorRow::Refresh()
     }
     if (m_customButton) {
         m_customButton->setEnabled(hasTargets);
-        m_customButton->setIcon(ItemStyleVisuals::BorderColorIcon(m_fallback, ICON_SIZE));
+        m_customButton->setIcon(ItemStyleVisuals::BorderColorIcon(m_fallback, RowMetrics::GlyphSize()));
         m_customButton->setToolTip(m_fallback.name(QColor::HexRgb).toUpper());
     }
     m_refreshing = false;

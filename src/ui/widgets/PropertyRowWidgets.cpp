@@ -3,6 +3,7 @@
 #include "items/properties/ItemPropertyCatalog.h"
 #include "scene/CanvasScene.h"
 #include "ui/panels/itemdialog/ItemPropertiesDialog.h"
+#include "ui/widgets/RowMetrics.h"
 
 #include <QComboBox>
 #include <QDoubleSpinBox>
@@ -15,9 +16,6 @@
 
 namespace {
 
-constexpr int ICON_SIZE = 20;
-constexpr int BUTTON_SIZE = 32;
-
 const ItemPropertyDescriptor& DescriptorOf(ItemProperty property)
 {
     const ItemPropertyDescriptor* descriptor = ItemPropertyCatalog::Find(property);
@@ -29,9 +27,11 @@ QToolButton* AddRowIcon(QHBoxLayout* layout, IconId id, QWidget* parent, const Q
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
-    button->setIcon(MakeIcon(id, QColor(139, 144, 156), ICON_SIZE));
-    button->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
-    button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
+    const int glyph = RowMetrics::GlyphSize();
+    button->setIcon(MakeIcon(id, QColor(139, 144, 156), glyph));
+    button->setIconSize(QSize(glyph, glyph));
+    // 与输入框等高：属性窗没有图标，这里一旦比输入框高，就会把整行撑起来。
+    button->setFixedSize(RowMetrics::IconButtonSize());
     button->setAutoRaise(true);
     button->setFocusPolicy(Qt::NoFocus);
     button->setToolTip(toolTip);
@@ -174,6 +174,7 @@ NumberAttributeRow::NumberAttributeRow(IconId icon, bool showIcon, int decimals,
                                        const QString& suffix, const QString& objectName, QWidget* parent)
     : QWidget(parent)
 {
+    RowMetrics::ApplyRow(this);
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(4);
@@ -229,6 +230,7 @@ PairAttributeRow::PairAttributeRow(IconId icon, bool showIcon, const QString& fi
                                    const QString& separator, QWidget* parent)
     : QWidget(parent)
 {
+    RowMetrics::ApplyRow(this);
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(4);

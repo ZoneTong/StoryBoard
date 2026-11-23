@@ -5,6 +5,7 @@
 #include "items/text/TextItem.h"
 #include "ui/icons/IconFactory.h"
 #include "ui/panels/properties/PropertiesPanel.h"
+#include "ui/widgets/RowMetrics.h"
 
 #include <QColorDialog>
 #include <QFontComboBox>
@@ -17,17 +18,14 @@
 
 namespace {
 
-constexpr int SMALL_ICON_SIZE = 20;
-constexpr int BUTTON_SIZE = 32;
-constexpr int SWATCH_SIZE = 26;
 
 QToolButton* MakeRowIcon(IconId id, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemRowIcon"));
-    button->setIcon(MakeIcon(id, QColor(139, 144, 156), SMALL_ICON_SIZE));
-    button->setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE));
-    button->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
+    button->setIcon(MakeIcon(id, QColor(139, 144, 156), RowMetrics::GlyphSize()));
+    button->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
+    button->setFixedSize(RowMetrics::IconButtonSize());
     button->setAutoRaise(true);
     button->setFocusPolicy(Qt::NoFocus);
     return button;
@@ -37,7 +35,7 @@ QToolButton* MakeSwatch(const QColor& color, QWidget* parent)
 {
     auto* button = new QToolButton(parent);
     button->setObjectName(QStringLiteral("ItemTextColorSwatch"));
-    button->setFixedSize(SWATCH_SIZE, SWATCH_SIZE);
+    button->setFixedSize(RowMetrics::IconButtonSize());
     button->setCheckable(true);
     button->setToolTip(color.name(QColor::HexRgb).toUpper());
     button->setStyleSheet(QStringLiteral("QToolButton { border: 1px solid #CBD5E1; border-radius: 3px; "
@@ -57,6 +55,7 @@ PropertiesPanelContentCard::PropertiesPanelContentCard(QWidget* parent) : QWidge
     outer->setSpacing(2);
 
     m_textContentRow = new QWidget(this);
+    RowMetrics::ApplyRow(m_textContentRow);
     m_textContentRow->setObjectName(QStringLiteral("ItemTextContentRow"));
     auto* contentLayout = new QHBoxLayout(m_textContentRow);
     contentLayout->setContentsMargins(0, 0, 0, 0);
@@ -77,6 +76,7 @@ PropertiesPanelContentCard::PropertiesPanelContentCard(QWidget* parent) : QWidge
     outer->addWidget(m_textContentRow);
 
     m_textFontRow = new QWidget(this);
+    RowMetrics::ApplyRow(m_textFontRow);
     m_textFontRow->setObjectName(QStringLiteral("ItemTextFontRow"));
     auto* fontLayout = new QHBoxLayout(m_textFontRow);
     fontLayout->setContentsMargins(0, 0, 0, 0);
@@ -100,7 +100,7 @@ PropertiesPanelContentCard::PropertiesPanelContentCard(QWidget* parent) : QWidge
     m_boldButton->setObjectName(QStringLiteral("ItemTextBoldButton"));
     m_boldButton->setText(QStringLiteral("B"));
     m_boldButton->setCheckable(true);
-    m_boldButton->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
+    m_boldButton->setFixedSize(RowMetrics::IconButtonSize());
     m_boldButton->setToolTip(PropertiesPanel::tr("Bold"));
     QFont boldFont = m_boldButton->font();
     boldFont.setBold(true);
@@ -110,7 +110,7 @@ PropertiesPanelContentCard::PropertiesPanelContentCard(QWidget* parent) : QWidge
     m_italicButton->setObjectName(QStringLiteral("ItemTextItalicButton"));
     m_italicButton->setText(QStringLiteral("I"));
     m_italicButton->setCheckable(true);
-    m_italicButton->setFixedSize(BUTTON_SIZE, BUTTON_SIZE);
+    m_italicButton->setFixedSize(RowMetrics::IconButtonSize());
     m_italicButton->setToolTip(PropertiesPanel::tr("Italic"));
     QFont italicFont = m_italicButton->font();
     italicFont.setItalic(true);
@@ -131,6 +131,7 @@ PropertiesPanelContentCard::PropertiesPanelContentCard(QWidget* parent) : QWidge
 QWidget* PropertiesPanelContentCard::MakeTextColorRow()
 {
     auto* row = new QWidget(this);
+    RowMetrics::ApplyRow(row);
     row->setObjectName(QStringLiteral("ItemTextColorRow"));
     auto* layout = new QHBoxLayout(row);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -157,9 +158,9 @@ QWidget* PropertiesPanelContentCard::MakeTextColorRow()
 
     m_textColorButton = new QToolButton(row);
     m_textColorButton->setObjectName(QStringLiteral("ItemTextColorButton"));
-    m_textColorButton->setFixedSize(SWATCH_SIZE, SWATCH_SIZE);
-    m_textColorButton->setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE));
-    m_textColorButton->setIcon(ItemStyleVisuals::FillColorIcon(m_textColorFallback, SMALL_ICON_SIZE));
+    m_textColorButton->setFixedSize(RowMetrics::IconButtonSize());
+    m_textColorButton->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
+    m_textColorButton->setIcon(ItemStyleVisuals::FillColorIcon(m_textColorFallback, RowMetrics::GlyphSize()));
     m_textColorButton->setToolTip(PropertiesPanel::tr("Text color"));
     connect(m_textColorButton, &QToolButton::clicked, this, [this]() {
         const QColor chosen = QColorDialog::getColor(m_textColorFallback, this, PropertiesPanel::tr("Text color"),
@@ -197,7 +198,7 @@ void PropertiesPanelContentCard::Refresh(const QList<TextItem*>& texts)
             swatch->setChecked(color.rgb() == m_textColorFallback.rgb());
         }
         if (m_textColorButton) {
-            m_textColorButton->setIcon(ItemStyleVisuals::FillColorIcon(m_textColorFallback, SMALL_ICON_SIZE));
+            m_textColorButton->setIcon(ItemStyleVisuals::FillColorIcon(m_textColorFallback, RowMetrics::GlyphSize()));
             m_textColorButton->setToolTip(m_textColorFallback.name(QColor::HexRgb).toUpper());
         }
     }
