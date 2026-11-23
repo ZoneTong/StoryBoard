@@ -188,6 +188,21 @@ APP=$(basename "$PWD")
 
 `translations/*.ts` 由构建时的 `lrelease` 生成 `.qm`，产物在构建目录并随资源编进可执行文件；源码目录只保留 `.ts`。也可以用 Qt Creator 打开根目录 `CMakeLists.txt`，选择本机 Qt 6 kit。
 
+文案分层（本节 2026-11-24 02:11 更新）：
+
+文案按下面三层落地，不要随手混用：
+
+| 场景 | 用法 |
+| --- | --- |
+| 有类的界面文案（动作名、按钮、标签） | 该类自己的 `tr()` |
+| 数据层 / 没有类上下文（状态栏、命令名、载入提示） | `UiText()`（固定 `StoryBoard` 上下文） |
+| 属性行标签与提示 | `PropertiesPanel` / `ItemPropertiesDialog` 的 `tr()` |
+| 计数文案 | `tr("%n Item(s)", nullptr, n)` + ts 里 `numerus="yes"` 的 `<numerusform>` |
+
+`ts` 手工维护，不跑 `lupdate`。双语文案（切语言后要能被改回来）靠 ts 生成的正反两张表，所以同一源串出现多种译文时会跳过，不要为了省事复制条目。
+
+`scripts/check-translations.py` 只读对账三件事：源码里的串在 ts 里能否找到（HARD）、是否落在调用点应有的上下文（SOFT）、带 `%n` 的串是否配了 numerus 条目（PLURAL）。提交前跑一遍，HARD 与 PLURAL 必须为 0。
+
 ## 并行开发与打包
 
 只有一个任务时直接在主干目录开发，不必建工作树；同时在跑两件以上需求时，一个需求一棵工作树：从当前 `main` 的 HEAD 拉 `feature/<需求名>` 临时分支，放在仓库旁的 `StoryBoard-worktrees/<需求名>` 独立开发。

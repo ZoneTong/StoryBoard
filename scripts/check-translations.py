@@ -83,18 +83,23 @@ def dominant_context(path: Path, source: str) -> str | None:
     return best[0]
 
 
-def parse_ts() -> set[tuple[str, str]]:
+def parse_ts() -> tuple[set[tuple[str, str]], set[tuple[str, str]]]:
+    """返回 (全部条目, 复数条目)。复数条目的 numerus 标在 <message> 上。"""
     raw = TS.read_text(encoding="utf-8")
     pairs: set[tuple[str, str]] = set()
+    numerus_pairs: set[tuple[str, str]] = set()
     for context_block in re.findall(r"<context>(.*?)</context>", raw, re.S):
         name_match = re.search(r"<name>(.*?)</name>", context_block, re.S)
         context = name_match.group(1).strip() if name_match else ""
-        for message in re.findall(r"<message>(.*?)</message>", context_block, re.S):
+        for message_open, message in re.findall(r"(<message(?:\s[^>]*)?>)(.*?)</message>", context_block, re.S):
             source_match = re.search(r"<source>(.*?)</source>", message, re.S)
             if not source_match:
                 continue
-            pairs.add((context, ts_source(unescape(source_match.group(1)))))
-    return pairs
+            source = ts_source(unescape(source_match.group(1)))
+            pairs.add((context, source))
+            if 'numerus="yes"' in message_open:
+                numerus_pairs.add((context, source))
+    return pairs, numerus_pairs
 
 
 def code_calls() -> list[tuple[str, int, str, str]]:
@@ -115,17 +120,21 @@ def code_calls() -> list[tuple[str, int, str, str]]:
                 if len(literals) < 2:
                     continue
                 context = unescape(literals[0])
-                source = unescape("".join(literals[1:]))
+                candidates = [unescape("".join(literals[1:]))]
             else:
-                source = unescape("".join(literals))
                 if qualifier:
                     context = qualifier
                 elif kind == "uiText":
                     context = "StoryBoard"
                 else:
                     context = fallback or "?"
+                # 三元里的两个串是两个条目，不是拼接："cond ? \"A\" : \"B\""。
+                candidates = (
+                    [unescape(literal) for literal in literals] if "?" in args else [unescape("".join(literals))]
+                )
             line = text.count("\n", 0, match.start()) + 1
-            calls.append((str(path.relative_to(ROOT)), line, context, source))
+            for source in candidates:
+                calls.append((str(path.relative_to(ROOT)), line, context, source))
     return calls
 
 
@@ -140,7 +149,7 @@ def main() -> int:
         SRC = ROOT / "src"
         TS = ROOT / "translations" / "storyboard_zh.ts"
 
-    known = parse_ts()
+    known, numerus_known = parse_ts()
     sources_by_context: dict[str, set[str]] = defaultdict(set)
     all_sources: set[str] = set()
     for context, source in known:
@@ -150,8 +159,13 @@ def main() -> int:
     calls = code_calls()
     hard: list[tuple[str, int, str, str]] = []
     soft: list[tuple[str, int, str, str]] = []
+    plural: list[tuple[str, int, str, str]] = []
     for call in calls:
         context, source = call[2], call[3]
+        # 带 %n 的串必须配 numerus 条目，否则 Qt 会按普通条目替换、复数永远出不来。
+        if "%n" in source and (context, source) not in numerus_known:
+            plural.append(call)
+            continue
         if (context, source) in known:
             continue
         if source not in all_sources:
@@ -160,7 +174,7 @@ def main() -> int:
             soft.append(call)
 
     unique_hard = sorted({(call[2], call[3]) for call in hard})
-    print(f"ts 条目: {len(known)}  (上下文 {len(sources_by_context)})")
+    print(f"ts 条目: {len(known)}  (上下文 {len(sources_by_context)}，复数 {len(numerus_known)})")
     print(f"源码调用: {len(calls)}  唯一串: {len({(c[2], c[3]) for c in calls})}")
     print(f"HARD 缺失(全表找不到): {len(unique_hard)}")
     if hard and not args.quiet:
@@ -170,7 +184,11 @@ def main() -> int:
     if soft and not args.quiet:
         for path, line, context, source in soft:
             print(f"  {path}:{line}  [{context}] {source!r}")
-    return 1 if unique_hard else 0
+    print(f"PLURAL 未配 numerus: {len({(c[2], c[3]) for c in plural})}")
+    if plural and not args.quiet:
+        for path, line, context, source in plural:
+            print(f"  {path}:{line}  [{context}] {source!r}")
+    return 1 if unique_hard or plural else 0
 
 
 if __name__ == "__main__":
