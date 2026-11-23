@@ -12,24 +12,32 @@ enum class ItemPropertyGroup { IDENTITY, TEXT, FILL, STROKE, VALUE, GEOMETRY };
 enum class ItemPropertyKind { TEXT, COLOR, ENUM, INTEGER, REAL };
 
 struct ItemPropertyDescriptor {
-    ItemProperty property = ItemProperty::NAME;
-    const char* key = "";
-    const char* label = "";
+    PropertyKey key;
+    QString storageKey;
+    QString label;
     ItemPropertyGroup group = ItemPropertyGroup::IDENTITY;
     ItemPropertyKind kind = ItemPropertyKind::TEXT;
     double minimum = 0.0;
     double maximum = 0.0;
     double step = 1.0;
     int decimals = 0;
-    const char* suffix = "";
+    QString suffix;
     // 派生属性不落盘，读写只折算到其它存储字段；序列化与属性 key 迁移要跳过。
     bool derived = false;
 };
 
 class ItemPropertyCatalog {
   public:
-    static const QList<ItemPropertyDescriptor>& All();
+    static const QList<ItemPropertyDescriptor*>& All();
     static const ItemPropertyDescriptor* Find(ItemProperty property);
+    static const ItemPropertyDescriptor* Find(PropertyKey property);
+    // 图元专属参数：按稳定字符串注册一条描述，测试与后续叶子图形共用同一入口。
+    static const ItemPropertyDescriptor* RegisterDynamic(PropertyKey property, const QString& label,
+                                                         ItemPropertyGroup group, ItemPropertyKind kind,
+                                                         double minimum = 0.0, double maximum = 0.0, double step = 1.0,
+                                                         int decimals = 0, const QString& suffix = QString());
     static QString Label(ItemProperty property);
+    static QString Label(PropertyKey property);
     static QString Key(ItemProperty property);
+    static QString Key(PropertyKey property);
 };

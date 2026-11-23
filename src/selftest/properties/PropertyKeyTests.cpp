@@ -1,9 +1,11 @@
 #include "items/properties/ItemProperties.h"
+#include "items/properties/ItemPropertyCatalog.h"
 #include "items/shapes/ShapeAbstractItem.h"
 #include "items/shapes/ShapeRegistry.h"
 #include "selftest/core/SelfTestContext.h"
 #include "selftest/core/SelftestEntries.h"
 #include "ui/panels/properties/PropertyCommitService.h"
+#include "ui/panels/properties/PropertyRowSpec.h"
 
 #include <QSet>
 
@@ -17,6 +19,14 @@ void selftest::RunPropertyKeyTests(Context& ctx)
     const PropertyKey second = PropertyKey::FromStorageKey(QStringLiteral("triangle.test.apexOffset"));
     ctx.Check(first == second && !first.IsCommon() && first.Id() >= 256,
               QStringLiteral("动态属性键按稳定字符串分配且可复取"), QString::number(first.Id()));
+
+    const ItemPropertyDescriptor* descriptor =
+        ItemPropertyCatalog::RegisterDynamic(first, QStringLiteral("测试顶点偏移"), ItemPropertyGroup::VALUE,
+                                             ItemPropertyKind::REAL, 0.0, 100.0, 1.0, 1, QStringLiteral(" px"));
+    const PropertyRowSpec* dynamicRow = PropertyRowSpecs::For(first);
+    ctx.Check(descriptor && descriptor->key == first && dynamicRow && dynamicRow->Matches(ItemPropertySet{first}) &&
+                  dynamicRow->Label() == QStringLiteral("测试顶点偏移"),
+              QStringLiteral("动态属性可注册描述并自动取得行描述"));
 
     ItemPropertySet bulk;
     for (int index = 0; index < 70; ++index) {

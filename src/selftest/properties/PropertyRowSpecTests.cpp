@@ -16,8 +16,8 @@ void selftest::RunPropertyRowSpecTests(Context& ctx)
     ctx.Check(specs.size() == 30, QStringLiteral("行描述覆盖全部属性"), QString::number(specs.size()));
 
     bool everyPropertyResolvable = true;
-    for (const ItemPropertyDescriptor& descriptor : ItemPropertyCatalog::All()) {
-        if (!PropertyRowSpecs::For(descriptor.property)) {
+    for (const ItemPropertyDescriptor* descriptor : ItemPropertyCatalog::All()) {
+        if (!PropertyRowSpecs::For(descriptor->key)) {
             everyPropertyResolvable = false;
         }
     }
