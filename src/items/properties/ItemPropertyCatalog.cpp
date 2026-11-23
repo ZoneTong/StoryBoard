@@ -1,7 +1,9 @@
 #include "items/properties/ItemPropertyCatalog.h"
 
 #include "items/CanvasItem.h"
+#include "items/geometry/EllipseAxis.h"
 #include "items/lines/ArcAngleAttributes.h"
+#include "items/lines/ArcItem.h"
 #include "items/lines/LineAbstractItem.h"
 #include "items/lines/SineItem.h"
 #include "items/properties/FillAttributes.h"
@@ -239,6 +241,42 @@ const QList<ItemPropertyDescriptor*>& ItemPropertyCatalog::All()
                 descriptor->writer = [](CanvasItem* item, const QVariant& value) {
                     if (auto* stroke = dynamic_cast<StrokeAttributes*>(item)) {
                         stroke->SetStrokeWidth(value.toDouble());
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::MAJOR_AXIS) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    if (const auto* arc = dynamic_cast<const ArcItem*>(item)) {
+                        return EllipseAxis::Major(arc->EllipseSize());
+                    }
+                    const auto* shape = dynamic_cast<const ShapeAbstractItem*>(item);
+                    return shape ? EllipseAxis::Major(shape->ContentSize()) : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* arc = dynamic_cast<ArcItem*>(item)) {
+                        arc->SetArcAxes(value.toDouble(), EllipseAxis::Minor(arc->EllipseSize()));
+                    } else if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
+                        const EllipseAxis::ResizeResult resize =
+                            EllipseAxis::Apply(true, value.toDouble(), shape->pos(), shape->ContentSize());
+                        shape->setPos(resize.pos);
+                        shape->SetContentSize(resize.size);
+                    }
+                };
+            } else if (descriptor->key == ItemProperty::MINOR_AXIS) {
+                descriptor->reader = [](const CanvasItem* item) -> QVariant {
+                    if (const auto* arc = dynamic_cast<const ArcItem*>(item)) {
+                        return EllipseAxis::Minor(arc->EllipseSize());
+                    }
+                    const auto* shape = dynamic_cast<const ShapeAbstractItem*>(item);
+                    return shape ? EllipseAxis::Minor(shape->ContentSize()) : QVariant();
+                };
+                descriptor->writer = [](CanvasItem* item, const QVariant& value) {
+                    if (auto* arc = dynamic_cast<ArcItem*>(item)) {
+                        arc->SetArcAxes(EllipseAxis::Major(arc->EllipseSize()), value.toDouble());
+                    } else if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
+                        const EllipseAxis::ResizeResult resize =
+                            EllipseAxis::Apply(false, value.toDouble(), shape->pos(), shape->ContentSize());
+                        shape->setPos(resize.pos);
+                        shape->SetContentSize(resize.size);
                     }
                 };
             } else if (descriptor->key == ItemProperty::CORNER_RADIUS) {
