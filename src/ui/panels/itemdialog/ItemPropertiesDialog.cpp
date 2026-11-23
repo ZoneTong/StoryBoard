@@ -12,6 +12,7 @@
 #include "ui/panels/itemdialog/ItemPropertiesDialogIdentityBlock.h"
 #include "ui/panels/itemdialog/ItemPropertiesDialogStyleBlock.h"
 #include "ui/panels/itemdialog/ItemPropertiesDialogTextBlock.h"
+#include "ui/panels/properties/PropertyCommitService.h"
 
 #include <QApplication>
 #include <QComboBox>
@@ -602,7 +603,7 @@ void ItemPropertiesDialog::ApplyChanges()
             after.insert(ItemProperty::OPACITY,
                          percent == style->InitialOpacityPercent() ? style->InitialOpacity() : percent / 100.0);
         }
-    } else if (auto* stroke = dynamic_cast<LineAbstractItem*>(m_item.data())) {
+    } else if (dynamic_cast<LineAbstractItem*>(m_item.data())) {
         const StrokeAttributesState beforeStroke{
             before.value(ItemProperty::STROKE_COLOR).value<QColor>(),
             before.value(ItemProperty::STROKE_WIDTH).toDouble(),
@@ -676,13 +677,7 @@ void ItemPropertiesDialog::ApplyChanges()
         valuesAfter.append(peerAfter);
     }
 
-    auto* command = new ItemPropertyCommand(m_scene, targets, valuesBefore, valuesAfter, tr("Edit item properties"));
-    if (auto* undo = m_scene->UndoStack()) {
-        undo->push(command);
-    } else {
-        command->redo();
-        delete command;
-    }
+    PropertyCommitService::Push(m_scene, targets, valuesBefore, valuesAfter, tr("Edit item properties"));
 }
 
 QString ItemPropertiesDialog::LayerDescription(const CanvasScene* scene, int layerId)

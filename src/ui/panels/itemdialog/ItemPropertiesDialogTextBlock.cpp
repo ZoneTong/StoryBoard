@@ -5,6 +5,7 @@
 #include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/itemdialog/ItemPropertiesDialogFields.h"
 #include "ui/panels/properties/PropertyRowRegistry.h"
+#include "ui/panels/properties/PropertyRowSpec.h"
 
 #include <QFontDialog>
 #include <QFormLayout>
@@ -36,9 +37,14 @@ void ItemPropertiesDialogTextBlock::AddRows(QFormLayout* form, PropertyRowRegist
     form->addRow(ItemPropertyCatalog::Label(ItemProperty::TEXT_COLOR), m_textColorButton);
     form->addRow(ItemPropertyCatalog::Label(ItemProperty::TEXT_FONT), m_fontButton);
     if (rows) {
-        rows->Register(ItemProperty::TEXT_CONTENT, m_textEdit);
-        rows->Register(ItemProperty::TEXT_COLOR, m_textColorButton);
-        rows->Register(ItemProperty::TEXT_FONT, m_fontButton);
+        auto registerRow = [rows](ItemProperty property, QWidget* field) {
+            if (const PropertyRowSpec* spec = PropertyRowSpecs::For(property)) {
+                rows->Register(*spec, field);
+            }
+        };
+        registerRow(ItemProperty::TEXT_CONTENT, m_textEdit);
+        registerRow(ItemProperty::TEXT_COLOR, m_textColorButton);
+        registerRow(ItemProperty::TEXT_FONT, m_fontButton);
     }
 }
 

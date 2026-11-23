@@ -6,6 +6,7 @@
 #include "items/shapes/ShapeAbstractItem.h"
 #include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/properties/PropertyRowRegistry.h"
+#include "ui/panels/properties/PropertyRowSpec.h"
 #include "ui/widgets/PropertyRowWidgets.h"
 
 #include <QDoubleSpinBox>
@@ -78,12 +79,17 @@ void ItemPropertiesDialogGeometryBlock::AddRows(QFormLayout* form, PropertyRowRe
     form->addRow(m_centerLabel, m_centerRow);
 
     if (rows) {
-        rows->Register(ItemProperty::MAJOR_AXIS, m_majorAxisRow);
-        rows->Register(ItemProperty::MINOR_AXIS, m_minorAxisRow);
-        rows->Register(ItemProperty::ROTATION, m_rotationRow);
-        rows->Register(ItemProperty::POSITION, m_positionRow);
-        rows->Register(ItemProperty::SIZE, m_sizeRow);
-        rows->Register(ItemProperty::CENTER, m_centerRow);
+        auto registerRow = [rows](ItemProperty property, QWidget* field) {
+            if (const PropertyRowSpec* spec = PropertyRowSpecs::For(property)) {
+                rows->Register(*spec, field);
+            }
+        };
+        registerRow(ItemProperty::MAJOR_AXIS, m_majorAxisRow);
+        registerRow(ItemProperty::MINOR_AXIS, m_minorAxisRow);
+        registerRow(ItemProperty::ROTATION, m_rotationRow);
+        registerRow(ItemProperty::POSITION, m_positionRow);
+        registerRow(ItemProperty::SIZE, m_sizeRow);
+        registerRow(ItemProperty::CENTER, m_centerRow);
     }
 }
 

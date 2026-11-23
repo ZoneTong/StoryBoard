@@ -8,6 +8,7 @@
 #include "items/shapes/ShapeAbstractItem.h"
 #include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/properties/PropertyRowRegistry.h"
+#include "ui/panels/properties/PropertyRowSpec.h"
 #include "ui/widgets/AttributeRowWidgets.h"
 #include "ui/widgets/PropertyRowWidgets.h"
 
@@ -198,23 +199,27 @@ void ItemPropertiesDialogStyleBlock::AddRows(QFormLayout* form, PropertyRowRegis
     form->addRow(ItemPropertyCatalog::Label(ItemProperty::SINE_AMPLITUDE), m_sineAmplitudeSpin);
 
     if (rows) {
-        rows->Register(ItemProperty::FILL_STYLE, m_fillStyleRow);
-        rows->Register(ItemProperty::FILL_COLOR, m_fillColorRow);
-        rows->Register(ItemProperty::FILL_IMAGE, m_fillImageRow);
-        rows->Register(ItemProperty::STROKE_STYLE, m_borderStyleRow);
-        rows->Register(ItemProperty::STROKE_COLOR, m_strokeColorRow);
-        rows->Register(ItemProperty::STROKE_WIDTH, m_borderWidthRow);
-        rows->Register(ItemProperty::OPACITY, m_opacitySpin);
-        rows->Register(ItemProperty::CORNER_RADIUS, m_cornerRadiusSpin);
-        // 内角 A 接受三角形底角 A 与平行四边形内角，两者互斥。
-        rows->Register(ItemPropertySet{ItemProperty::BOTTOM_ANGLE1, ItemProperty::PARALLELOGRAM_ANGLE},
-                       m_interiorAngleASpin);
-        rows->Register(ItemProperty::BOTTOM_ANGLE2, m_interiorAngleBSpin);
-        rows->Register(ItemProperty::ARROW_START, m_arrowRow);
-        rows->Register(ItemProperty::START_ANGLE, m_startAngleSpin);
-        rows->Register(ItemProperty::SWEEP_ANGLE, m_sweepAngleSpin);
-        rows->Register(ItemProperty::SINE_CYCLES, m_sineCyclesSpin);
-        rows->Register(ItemProperty::SINE_AMPLITUDE, m_sineAmplitudeSpin);
+        auto registerRow = [rows](ItemProperty property, QWidget* field) {
+            if (const PropertyRowSpec* spec = PropertyRowSpecs::For(property)) {
+                rows->Register(*spec, field);
+            }
+        };
+        registerRow(ItemProperty::FILL_STYLE, m_fillStyleRow);
+        registerRow(ItemProperty::FILL_COLOR, m_fillColorRow);
+        registerRow(ItemProperty::FILL_IMAGE, m_fillImageRow);
+        registerRow(ItemProperty::STROKE_STYLE, m_borderStyleRow);
+        registerRow(ItemProperty::STROKE_COLOR, m_strokeColorRow);
+        registerRow(ItemProperty::STROKE_WIDTH, m_borderWidthRow);
+        registerRow(ItemProperty::OPACITY, m_opacitySpin);
+        registerRow(ItemProperty::CORNER_RADIUS, m_cornerRadiusSpin);
+        // 内角 A 的行描述已同时接受三角形底角 A 与平行四边形内角，两者互斥。
+        registerRow(ItemProperty::BOTTOM_ANGLE1, m_interiorAngleASpin);
+        registerRow(ItemProperty::BOTTOM_ANGLE2, m_interiorAngleBSpin);
+        registerRow(ItemProperty::ARROW_START, m_arrowRow);
+        registerRow(ItemProperty::START_ANGLE, m_startAngleSpin);
+        registerRow(ItemProperty::SWEEP_ANGLE, m_sweepAngleSpin);
+        registerRow(ItemProperty::SINE_CYCLES, m_sineCyclesSpin);
+        registerRow(ItemProperty::SINE_AMPLITUDE, m_sineAmplitudeSpin);
     }
 }
 

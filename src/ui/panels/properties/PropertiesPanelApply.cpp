@@ -19,6 +19,7 @@
 #include "ui/panels/properties/PropertiesPanelFillBorderCard.h"
 #include "ui/panels/properties/PropertiesPanelSelectionCard.h"
 #include "ui/panels/properties/PropertiesPanelValueCard.h"
+#include "ui/panels/properties/PropertyCommitService.h"
 
 #include <QFileDialog>
 #include <QFileInfo>
@@ -69,7 +70,7 @@ void PropertiesPanel::ChangeSelectedShapes(const QString& text, const std::funct
         after.append(afterValues);
     }
 
-    m_scene->UndoStack()->push(new ItemPropertyCommand(m_scene, items, before, after, text));
+    PropertyCommitService::Push(m_scene, items, before, after, text);
     Refresh();
 }
 
@@ -126,7 +127,7 @@ void PropertiesPanel::ApplyPropertyValues(const QMap<ItemProperty, QVariant>& va
     if (applyItems.isEmpty()) {
         return;
     }
-    m_scene->UndoStack()->push(new ItemPropertyCommand(m_scene, applyItems, before, after, text));
+    PropertyCommitService::Push(m_scene, applyItems, before, after, text);
     Refresh();
 }
 
@@ -181,7 +182,7 @@ void PropertiesPanel::ApplyFillMutation(const QString& text, const std::function
     if (before == after) {
         return;
     }
-    m_scene->UndoStack()->push(new ItemPropertyCommand(m_scene, items, before, after, text));
+    PropertyCommitService::Push(m_scene, items, before, after, text);
     Refresh();
 }
 
@@ -235,7 +236,7 @@ void PropertiesPanel::ApplyStrokeMutation(const QString& text, const std::functi
     if (before == after) {
         return;
     }
-    m_scene->UndoStack()->push(new ItemPropertyCommand(m_scene, items, before, after, text));
+    PropertyCommitService::Push(m_scene, items, before, after, text);
     Refresh();
 }
 
@@ -503,7 +504,7 @@ void PropertiesPanel::ApplyArrowStart(int style)
     for (CanvasItem* target : targets) {
         target->SetPropertyValue(ItemProperty::ARROW_START, style);
     }
-    m_scene->UndoStack()->push(new ItemPropertyCommand(m_scene, targets, before, after, tr("Change line start arrow")));
+    PropertyCommitService::Push(m_scene, targets, before, after, tr("Change line start arrow"));
     Refresh();
 }
 
@@ -532,7 +533,7 @@ void PropertiesPanel::ApplyArrowEnd(int style)
     for (CanvasItem* target : targets) {
         target->SetPropertyValue(ItemProperty::ARROW_END, style);
     }
-    m_scene->UndoStack()->push(new ItemPropertyCommand(m_scene, targets, before, after, tr("Change line end arrow")));
+    PropertyCommitService::Push(m_scene, targets, before, after, tr("Change line end arrow"));
     Refresh();
 }
 
@@ -682,7 +683,7 @@ void PropertiesPanel::ApplyItemGeometry(const QPointF& position, const QSizeF& s
     if (applyItems.isEmpty()) {
         return;
     }
-    m_scene->UndoStack()->push(new ItemPropertyCommand(m_scene, applyItems, before, after, tr("Change item geometry")));
+    PropertyCommitService::Push(m_scene, applyItems, before, after, tr("Change item geometry"));
     Refresh();
 }
 

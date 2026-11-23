@@ -4,6 +4,7 @@
 #include "scene/CanvasScene.h"
 #include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/properties/PropertyRowRegistry.h"
+#include "ui/panels/properties/PropertyRowSpec.h"
 #include "ui/widgets/PropertyRowWidgets.h"
 
 #include <QComboBox>
@@ -47,9 +48,14 @@ void ItemPropertiesDialogIdentityBlock::AddRows(QFormLayout* form, PropertyRowRe
     form->addRow(ItemPropertyCatalog::Label(ItemProperty::LAYER), m_layerRow);
     form->addRow(ItemPropertyCatalog::Label(ItemProperty::HEIGHT), m_heightRow);
     if (rows) {
-        rows->Register(ItemProperty::NAME, m_nameRow);
-        rows->Register(ItemProperty::LAYER, m_layerRow);
-        rows->Register(ItemProperty::HEIGHT, m_heightRow);
+        auto registerRow = [rows](ItemProperty property, QWidget* field) {
+            if (const PropertyRowSpec* spec = PropertyRowSpecs::For(property)) {
+                rows->Register(*spec, field);
+            }
+        };
+        registerRow(ItemProperty::NAME, m_nameRow);
+        registerRow(ItemProperty::LAYER, m_layerRow);
+        registerRow(ItemProperty::HEIGHT, m_heightRow);
     }
 }
 

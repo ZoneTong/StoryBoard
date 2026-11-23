@@ -1,5 +1,7 @@
 #include "ui/panels/properties/PropertyRowRegistry.h"
 
+#include "ui/panels/properties/PropertyRowSpec.h"
+
 #include <QFormLayout>
 #include <utility>
 
@@ -14,6 +16,11 @@ void PropertyRowRegistry::Register(const ItemPropertySet& accepted, QWidget* fie
         return;
     }
     m_rows.append(Row{accepted, field});
+}
+
+void PropertyRowRegistry::Register(const PropertyRowSpec& spec, QWidget* field)
+{
+    Register(spec.accepted, field);
 }
 
 void PropertyRowRegistry::Apply(QFormLayout* form, const ItemPropertySet& properties)
