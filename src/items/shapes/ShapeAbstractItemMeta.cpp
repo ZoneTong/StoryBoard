@@ -63,6 +63,8 @@ QString ShapeTypeName(ShapeType type)
         return ShapeAbstractItem::tr("Parallelogram");
     case ShapeType::DIAMOND:
         return ShapeAbstractItem::tr("Diamond");
+    case ShapeType::POLYGON:
+        return ShapeAbstractItem::tr("Polygon");
     }
     return ShapeAbstractItem::tr("Rectangle");
 }

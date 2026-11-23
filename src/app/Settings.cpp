@@ -27,6 +27,7 @@
 
 namespace {
 
+#ifdef Q_OS_WIN
 // 诊断：当前进程的完整性级别（0x1000 低 / 0x2000 中 / 0x3000 高）。外壳"open"通道
 // 被 UIPI 挡住时，先看这个数就知道是不是级别不匹配，而不是把每种拒绝都当成权限问题。
 int ProcessIntegrityLevel()
@@ -120,6 +121,8 @@ ShellChannelResult OpenFolderViaShellItem(const QString& directory)
     }
     return result;
 }
+
+#endif // Q_OS_WIN
 
 constexpr int MIN_CANVAS_SIDE = 200;
 constexpr int MAX_CANVAS_SIDE = 12000;

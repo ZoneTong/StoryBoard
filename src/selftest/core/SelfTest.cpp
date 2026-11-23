@@ -15,6 +15,10 @@
 #include <QTimer>
 #include <cstdlib>
 
+#ifdef Q_OS_UNIX
+#include <unistd.h>
+#endif
+
 int RunSelfTest(const QString& reportPath)
 {
     // 自检里的界面文案断言都按中文原文写，固定成中文，避免受机器语言影响。
