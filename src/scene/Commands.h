@@ -199,56 +199,6 @@ class StrokeSmoothCommand : public QUndoCommand {
     QList<LineAbstractItem::GeometryState> m_after;
 };
 
-// 属性弹窗一次修改可能同时涉及层/高度、几何、填充、描边、文字或图片名，
-// 用同一个快照命令承载，保证一次编辑只占一条撤销记录。
-struct ItemPropertiesState {
-    ItemStackList stack;
-    QPointF pos;
-    QSizeF size;
-    qreal rotation = 0.0;
-    // 透明度是所有图元共有的属性，属性窗统一按这个字段提交。
-    qreal opacity = 1.0;
-    QString itemName;
-    // 多边形也是 ShapeAbstractItem，填充、描线与图片填充都走这一份快照。
-    bool hasShapeState = false;
-    ShapeItemState shapeState;
-    // 文字的正文 / 字体 / 颜色按属性键提交；尺寸与位置由同一份快照回放，
-    // 保证“改完正文回到自然尺寸”与属性写入仍是同一条撤销记录。
-    QMap<ItemProperty, QVariant> textParams;
-    bool hasStrokeStyle = false;
-    QColor strokeColor;
-    qreal strokeWidth = 4.0;
-    Qt::PenStyle strokeStyle = Qt::SolidLine;
-    // 需求 27：曲线两端箭头与直线同一套属性窗提交流程（箭头对全部曲线子型开放）。
-    ArrowStyle curveStartArrow = ArrowStyle::NONE;
-    ArrowStyle curveEndArrow = ArrowStyle::NONE;
-    // 弧线角度 / 正弦周期与振幅：走属性协议，按 ItemProperty 键提交，不再有叶子类型快照。
-    QMap<ItemProperty, QVariant> curveParams;
-    // 弧线长短半轴：写入按真实椭圆外接框换算，未改动时与 before 相等即跳过。
-    bool hasArcAxes = false;
-    qreal arcMajor = 0.0;
-    qreal arcMinor = 0.0;
-
-    bool operator==(const ItemPropertiesState& other) const;
-    bool operator!=(const ItemPropertiesState& other) const { return !(*this == other); }
-};
-
-class ItemPropertiesCommand : public QUndoCommand {
-  public:
-    ItemPropertiesCommand(CanvasScene* scene, CanvasItem* item, const ItemPropertiesState& before,
-                          const ItemPropertiesState& after, const QString& text);
-    void undo() override;
-    void redo() override;
-
-  private:
-    void Apply(const ItemPropertiesState& state);
-
-    CanvasScene* m_scene = nullptr;
-    QPointer<CanvasItem> m_item;
-    ItemPropertiesState m_before;
-    ItemPropertiesState m_after;
-};
-
 // 透明度对图形、笔画、文字、图片等所有图元都生效。
 // 属性表命令：一次编辑把同一组属性值写回所有目标图元，只占一条撤销记录。
 // 替代原先按图元类型分拆的样式命令，读写都走 Properties()/PropertyValue()/SetPropertyValue()。

@@ -19,7 +19,7 @@ void CanvasPanController::EndPan()
 {
     m_panning = false;
     m_panMoved = false;
-    m_view->UpdateCursor();
+    m_view->RefreshCursor();
 }
 
 bool CanvasPanController::MovePan(const QPoint& position)

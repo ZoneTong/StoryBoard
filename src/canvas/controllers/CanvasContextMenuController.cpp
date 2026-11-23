@@ -36,19 +36,19 @@ void CanvasContextMenuController::AddGroup(const QString& title, const QList<QAc
 void CanvasContextMenuController::ShowMenu(QContextMenuEvent* event)
 {
     if (m_view->mode() != ToolMode::EDIT) {
-        m_view->BaseContextMenuEvent(event);
+        m_view->ShowDefaultContextMenu(event);
         return;
     }
 
-    CanvasItem* item = m_view->m_hits->EditableItemAt(event->pos());
+    CanvasItem* item = m_view->HitTester()->EditableItemAt(event->pos());
     if (!item) {
-        if (m_view->m_hits->TopItemAt(event->pos())) {
+        if (m_view->HitTester()->TopItemAt(event->pos())) {
             emit m_view->statusMessage(TrView("The layer containing this item is locked or hidden; editing is "
                                               "unavailable. Unlock or show that layer in the layer panel first."));
             event->accept();
             return;
         }
-        m_view->BaseContextMenuEvent(event);
+        m_view->ShowDefaultContextMenu(event);
         return;
     }
 

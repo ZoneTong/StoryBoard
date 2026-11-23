@@ -8,23 +8,6 @@
 #include <QGraphicsScene>
 #include <utility>
 
-namespace {
-
-bool SameStack(const ItemStackList& first, const ItemStackList& second)
-{
-    if (first.size() != second.size()) {
-        return false;
-    }
-    for (int i = 0; i < first.size(); ++i) {
-        if (first.at(i).item != second.at(i).item || first.at(i).layerId != second.at(i).layerId ||
-            first.at(i).height != second.at(i).height) {
-            return false;
-        }
-    }
-    return true;
-}
-
-} // namespace
 
 RotationCommand::RotationCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<qreal>& before,
                                  const QList<qreal>& after, const QString& text, const ItemGeometryList& geometryBefore,
@@ -433,116 +416,39 @@ void ItemPropertyCommand::redo()
 
 void ItemPropertyCommand::Apply(const QList<QMap<ItemProperty, QVariant>>& states)
 {
+    // 先换层、再定层内高度，最后写位置/尺寸与其余属性；避免换层时先按旧层归一化高度。
+    // 文字正文会重算自然尺寸，先写正文/字体，再回放位置与尺寸。
+    static const QList<ItemProperty> ORDER = {
+        ItemProperty::LAYER,      ItemProperty::HEIGHT,   ItemProperty::TEXT_CONTENT, ItemProperty::TEXT_FONT,
+        ItemProperty::TEXT_COLOR, ItemProperty::POSITION, ItemProperty::SIZE,         ItemProperty::ROTATION};
+    ItemStackList stack;
     for (int index = 0; index < m_items.size() && index < states.size(); ++index) {
         CanvasItem* item = m_items.at(index);
         if (!item) {
             continue;
         }
         const QMap<ItemProperty, QVariant>& values = states.at(index);
+        for (ItemProperty property : ORDER) {
+            const auto it = values.constFind(property);
+            if (it != values.constEnd()) {
+                item->SetPropertyValue(property, it.value());
+            }
+        }
         for (auto it = values.constBegin(); it != values.constEnd(); ++it) {
-            item->SetPropertyValue(it.key(), it.value());
+            if (!ORDER.contains(it.key())) {
+                item->SetPropertyValue(it.key(), it.value());
+            }
+        }
+        if (values.contains(ItemProperty::LAYER) && values.contains(ItemProperty::HEIGHT)) {
+            stack.append({item, item->LayerId(), item->ZOrder()});
         }
     }
-    if (m_scene) {
-        m_scene->update();
-    }
-}
-
-
-bool ItemPropertiesState::operator==(const ItemPropertiesState& other) const
-{
-    if (!SameStack(stack, other.stack) || pos != other.pos || size != other.size ||
-        !qFuzzyCompare(rotation, other.rotation) || !qFuzzyCompare(1.0 + opacity, 1.0 + other.opacity) ||
-        itemName != other.itemName || hasShapeState != other.hasShapeState || hasStrokeStyle != other.hasStrokeStyle ||
-        textParams != other.textParams) {
-        return false;
-    }
-    if (hasShapeState && shapeState != other.shapeState) {
-        return false;
-    }
-    if (hasStrokeStyle && (strokeColor != other.strokeColor || !qFuzzyCompare(strokeWidth, other.strokeWidth) ||
-                           strokeStyle != other.strokeStyle || curveStartArrow != other.curveStartArrow ||
-                           curveEndArrow != other.curveEndArrow)) {
-        return false;
-    }
-    if (hasArcAxes != other.hasArcAxes || curveParams != other.curveParams) {
-        return false;
-    }
-    if (hasArcAxes && (!qFuzzyCompare(arcMajor, other.arcMajor) || !qFuzzyCompare(arcMinor, other.arcMinor))) {
-        return false;
-    }
-    return true;
-}
-
-ItemPropertiesCommand::ItemPropertiesCommand(CanvasScene* scene, CanvasItem* item, const ItemPropertiesState& before,
-                                             const ItemPropertiesState& after, const QString& text)
-    : m_scene(scene), m_item(item), m_before(before), m_after(after)
-{
-    setText(text);
-}
-
-void ItemPropertiesCommand::undo()
-{
-    Apply(m_before);
-}
-
-void ItemPropertiesCommand::redo()
-{
-    Apply(m_after);
-}
-
-void ItemPropertiesCommand::Apply(const ItemPropertiesState& state)
-{
-    if (!m_item) {
+    if (!m_scene) {
         return;
     }
-
-    m_item->SetName(state.itemName);
-
-    if (state.hasShapeState) {
-        if (auto* shape = dynamic_cast<ShapeAbstractItem*>(m_item.data())) {
-            shape->ApplyState(state.shapeState);
-        }
-    } else if (!state.textParams.isEmpty()) {
-        // 文字属性走属性协议：正文 / 字体会重算自然尺寸，之后再按快照恢复位置与尺寸。
-        for (auto it = state.textParams.constBegin(); it != state.textParams.constEnd(); ++it) {
-            m_item->SetPropertyValue(it.key(), it.value());
-        }
-        m_item->setPos(state.pos);
-        m_item->SetContentSize(state.size);
-    } else {
-        m_item->setPos(state.pos);
-        m_item->SetContentSize(state.size);
-    }
-
-    // Rotation is a generic CanvasItem property for every item kind.
-    m_item->SetRotationAngle(state.rotation);
-    m_item->SetItemOpacity(state.opacity);
-
-    if (state.hasStrokeStyle) {
-        if (auto* stroke = dynamic_cast<LineAbstractItem*>(m_item.data())) {
-            stroke->SetStrokeColor(state.strokeColor);
-            stroke->SetStrokeWidth(state.strokeWidth);
-            stroke->SetStrokePattern(state.strokeStyle);
-            // 需求 27：曲线两端箭头随同一条撤销记录一起应用。
-            stroke->SetArrowStyles(state.curveStartArrow, state.curveEndArrow);
-            // 弧线角度 / 正弦周期振幅：按属性键回放，与面板 / 拖拽共用同一套属性写入。
-            for (auto it = state.curveParams.constBegin(); it != state.curveParams.constEnd(); ++it) {
-                m_item->SetPropertyValue(it.key(), it.value());
-            }
-            // 弧线长短半轴：走通用属性写入，保持椭圆中心重采样。
-            if (state.hasArcAxes) {
-                m_item->SetPropertyValue(ItemProperty::MAJOR_AXIS, state.arcMajor);
-                m_item->SetPropertyValue(ItemProperty::MINOR_AXIS, state.arcMinor);
-            }
-        }
-    }
-
-    if (m_scene && !state.stack.isEmpty()) {
-        m_scene->ApplyItemStack(state.stack);
-    }
-    if (m_scene) {
-        m_scene->UpdateSceneExtent();
+    if (stack.isEmpty()) {
         m_scene->update();
+    } else {
+        m_scene->ApplyItemStack(stack);
     }
 }

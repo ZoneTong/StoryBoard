@@ -169,7 +169,7 @@ void CanvasResizeController::EndResize()
     const QSizeF size = m_scene->CanvasSize();
     emit m_view->statusMessage(
         TrView("Canvas size: %1 × %2 (undoable)").arg(qRound(size.width())).arg(qRound(size.height())));
-    m_view->UpdateCursor();
+    m_view->RefreshCursor();
 }
 
 void CanvasResizeController::UpdateHoverCursor(const QPoint& viewportPos, bool panActive, bool strokeActive)
@@ -184,7 +184,7 @@ void CanvasResizeController::UpdateHoverCursor(const QPoint& viewportPos, bool p
     }
     m_hoverHandle = handle;
     if (handle == Handle::NONE) {
-        m_view->UpdateCursor();
+        m_view->RefreshCursor();
     } else {
         m_view->viewport()->setCursor(HandleCursor(handle));
     }
@@ -194,7 +194,7 @@ void CanvasResizeController::ResetHoverOnLeave()
 {
     if (!m_resizingCanvas) {
         m_hoverHandle = Handle::NONE;
-        m_view->UpdateCursor();
+        m_view->RefreshCursor();
     }
 }
 

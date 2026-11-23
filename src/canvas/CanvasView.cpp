@@ -191,6 +191,21 @@ void CanvasView::UpdateCursor()
     m_cursor->Refresh(m_mode, m_pan->IsPanning());
 }
 
+void CanvasView::RefreshCursor()
+{
+    UpdateCursor();
+}
+
+void CanvasView::ShowDefaultContextMenu(QContextMenuEvent* event)
+{
+    BaseContextMenuEvent(event);
+}
+
+void CanvasView::ForwardWheelEvent(QWheelEvent* event)
+{
+    QGraphicsView::wheelEvent(event);
+}
+
 void CanvasView::wheelEvent(QWheelEvent* event)
 {
     m_zoom->HandleWheel(event);

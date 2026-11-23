@@ -31,6 +31,12 @@ class CanvasView : public QGraphicsView {
     void SetMode(ToolMode mode);
 
     qreal Zoom() const;
+    // 控制器使用的显式入口：不再靠 friend 直接访问私有成员。
+    CanvasViewHitTester* HitTester() { return m_hits.get(); }
+    void RefreshCursor();
+    void ShowDefaultContextMenu(QContextMenuEvent* event);
+    // 缩放控制器需要把未消费的滚轮事件交回 QGraphicsView 的默认实现。
+    void ForwardWheelEvent(QWheelEvent* event);
     void FitAll();
     void ZoomIn();
     void ZoomOut();
@@ -78,13 +84,6 @@ class CanvasView : public QGraphicsView {
     void contextMenuEvent(QContextMenuEvent* event) override;
 
   private:
-    friend class CanvasZoomController;
-    friend class CanvasPanController;
-    friend class CanvasResizeController;
-    friend class CanvasStrokeController;
-    friend class CanvasContextMenuController;
-    friend class CanvasGroupBoxController;
-
     void UpdateCursor();
     // 框选补判定：把整框落在选区内的图元选上（判定用图元实际外框，不含描边外扩）。
     void SelectItemsInsideBand(const QPoint& from, const QPoint& to);

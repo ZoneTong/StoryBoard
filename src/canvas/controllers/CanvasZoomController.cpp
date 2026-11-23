@@ -102,7 +102,7 @@ void CanvasZoomController::HandleWheel(QWheelEvent* event)
 {
     const int delta = event->angleDelta().y();
     if (delta == 0) {
-        m_view->QGraphicsView::wheelEvent(event);
+        m_view->ForwardWheelEvent(event);
         return;
     }
 

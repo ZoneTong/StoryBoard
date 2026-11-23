@@ -111,7 +111,7 @@ void CanvasStrokeController::FinishStroke()
     if (stroke->IsEmpty()) {
         m_scene->removeItem(stroke);
         delete stroke;
-        m_view->UpdateCursor();
+        m_view->RefreshCursor();
         return;
     }
 
@@ -129,12 +129,12 @@ void CanvasStrokeController::FinishStroke()
         m_scene->removeItem(stroke);
         delete stroke;
         m_scene->CommitNewItem(line, TrView("Add stroke"));
-        m_view->UpdateCursor();
+        m_view->RefreshCursor();
         return;
     }
 
     m_scene->CommitNewItem(stroke, TrView("Add stroke"));
-    m_view->UpdateCursor();
+    m_view->RefreshCursor();
 }
 
 void CanvasStrokeController::CancelStroke()
@@ -147,5 +147,5 @@ void CanvasStrokeController::CancelStroke()
     m_activeStroke = nullptr;
     m_scene->removeItem(stroke);
     delete stroke;
-    m_view->UpdateCursor();
+    m_view->RefreshCursor();
 }
