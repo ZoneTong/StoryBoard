@@ -196,14 +196,18 @@ void selftest::RunLineSplitTests(Context& ctx)
         const QRectF rectBounds = window.Scene()->CanvasItems().constFirst()->SceneContentRect();
         const QPointF crossStart = rectBounds.center() + QPointF(-rectBounds.width(), 0.0);
         view->SetMode(ToolMode::BRUSH);
+        // 拖拽点按场景坐标换算：窗口适配缩放很小（约 0.22），直接用视图像素偏移会
+        // 把抖动放大成几十个场景单位，曲线跑到矩形上沿去，后面的点选必然被它抢走。
         const QPoint brushStart = view->mapFromScene(crossStart);
         SendMouseEvent(view->viewport(), QEvent::MouseButtonPress, brushStart, Qt::LeftButton, Qt::LeftButton);
         for (int i = 1; i <= 8; ++i) {
-            const QPoint point(brushStart.x() + i * (rectBounds.width() / 4.0),
-                               brushStart.y() + (i % 2 == 0 ? 12 : -10));
-            SendMouseEvent(view->viewport(), QEvent::MouseMove, point, Qt::NoButton, Qt::LeftButton);
+            const QPointF scenePoint(crossStart.x() + i * (rectBounds.width() / 4.0),
+                                     crossStart.y() + (i % 2 == 0 ? 12.0 : -10.0));
+            SendMouseEvent(view->viewport(), QEvent::MouseMove, view->mapFromScene(scenePoint), Qt::NoButton,
+                           Qt::LeftButton);
         }
-        const QPoint brushEnd(brushStart.x() + int(rectBounds.width() * 2.0), brushStart.y() + 6);
+        const QPoint brushEnd =
+            view->mapFromScene(QPointF(crossStart.x() + rectBounds.width() * 2.0, crossStart.y() + 6.0));
         SendMouseEvent(view->viewport(), QEvent::MouseButtonRelease, brushEnd, Qt::LeftButton, Qt::NoButton);
         QApplication::processEvents();
         view->SetMode(ToolMode::EDIT);
@@ -223,7 +227,18 @@ void selftest::RunLineSplitTests(Context& ctx)
             ctx.Check(selected.size() == 1 && dynamic_cast<ShapeAbstractItem*>(selected.value(0)) != nullptr,
                       QStringLiteral("点选矩形内部仅选中矩形"), QStringLiteral("size=%1").arg(selected.size()));
         }
-        const QPointF curveScenePos = QPointF(crossStart.x() + rectBounds.width() / 2.0, crossStart.y() - 10.0);
+        // Ctrl+点选落在曲线自己的采样点上：缩放很小，按几何估算的点容易偏出命中带。
+        CurveItem* curveItem = nullptr;
+        for (CanvasItem* item : mainScene->CanvasItems()) {
+            if (auto* curve = dynamic_cast<CurveItem*>(item)) {
+                curveItem = curve;
+            }
+        }
+        const QVector<QPointF> strokePoints = curveItem ? curveItem->StrokePoints() : QVector<QPointF>();
+        // StrokePoints 是图元本地坐标，必须经 mapToScene 折算，否则会偏出图元本体。
+        const QPointF curveScenePos = strokePoints.isEmpty()
+                                          ? crossStart
+                                          : curveItem->mapToScene(strokePoints.at(strokePoints.size() / 2));
         const QPoint curveClick = view->mapFromScene(curveScenePos);
         SendMouseEvent(view->viewport(), QEvent::MouseButtonPress, curveClick, Qt::LeftButton, Qt::LeftButton,
                        Qt::ControlModifier);
