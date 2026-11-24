@@ -19,17 +19,27 @@ const QList<PropertyRowSpec>& PropertyRowSpecs::All()
         for (const ItemPropertyDescriptor* descriptor : ItemPropertyCatalog::All()) {
             rows.append(PropertyRowSpec{descriptor->key, ItemPropertySet{descriptor->key}, descriptor});
         }
-        // 共用行的可接受集合：内角 A 同时承接三角形底角 A 与平行四边形内角，
-        // 箭头行同时承接起止箭头，填充图片行同时承接图片与摆放方式。
+        // 共用行的可接受集合：成对属性合并到同一行，避免面板只查主属性而漏掉副属性。
         for (PropertyRowSpec& row : rows) {
             if (row.primary == ItemProperty::BOTTOM_ANGLE1) {
                 row.accepted.Insert(ItemProperty::PARALLELOGRAM_ANGLE);
+                row.accepted.Insert(ItemProperty::BOTTOM_ANGLE2);
+            } else if (row.primary == ItemProperty::BOTTOM_ANGLE2) {
+                row.accepted.Insert(ItemProperty::BOTTOM_ANGLE1);
             } else if (row.primary == ItemProperty::ARROW_START) {
                 row.accepted.Insert(ItemProperty::ARROW_END);
             } else if (row.primary == ItemProperty::ARROW_END) {
                 row.accepted.Insert(ItemProperty::ARROW_START);
             } else if (row.primary == ItemProperty::FILL_IMAGE) {
                 row.accepted.Insert(ItemProperty::FILL_IMAGE_MODE);
+            } else if (row.primary == ItemProperty::MAJOR_AXIS) {
+                row.accepted.Insert(ItemProperty::MINOR_AXIS);
+            } else if (row.primary == ItemProperty::MINOR_AXIS) {
+                row.accepted.Insert(ItemProperty::MAJOR_AXIS);
+            } else if (row.primary == ItemProperty::START_ANGLE) {
+                row.accepted.Insert(ItemProperty::SWEEP_ANGLE);
+            } else if (row.primary == ItemProperty::SWEEP_ANGLE) {
+                row.accepted.Insert(ItemProperty::START_ANGLE);
             }
         }
         return rows;
