@@ -413,60 +413,17 @@ ItemPropertySet CanvasItem::Properties() const
 
 QVariant CanvasItem::PropertyValue(ItemProperty property) const
 {
-    switch (property) {
-    case ItemProperty::NAME:
-        return Name();
-    case ItemProperty::LAYER:
-        return LayerId();
-    case ItemProperty::HEIGHT:
-        return ZOrder();
-    case ItemProperty::POSITION:
-        return pos();
-    case ItemProperty::SIZE:
-        return ContentSize();
-    case ItemProperty::ROTATION:
-        return RotationAngle();
-    case ItemProperty::CENTER:
-        return CenterScenePoint();
-    case ItemProperty::OPACITY:
-        return ItemOpacity();
-    default:
-        return QVariant();
-    }
+    // 属性读写统一走描述符回调：目录里 30 条描述已覆盖全部 ItemProperty，
+    // 各图元类不再各自维护 switch 分派。
+    const ItemPropertyDescriptor* descriptor = ItemPropertyCatalog::Find(property);
+    return descriptor && descriptor->reader ? descriptor->reader(this) : QVariant();
 }
 
 void CanvasItem::SetPropertyValue(ItemProperty property, const QVariant& value)
 {
-    switch (property) {
-    case ItemProperty::NAME:
-        SetName(value.toString());
-        break;
-    case ItemProperty::LAYER:
-        SetLayerId(value.toInt());
-        break;
-    case ItemProperty::HEIGHT:
-        SetZOrder(value.toInt());
-        break;
-    case ItemProperty::POSITION:
-        setPos(value.toPointF());
-        break;
-    case ItemProperty::SIZE:
-        SetContentSize(value.toSizeF());
-        break;
-    case ItemProperty::ROTATION:
-        SetRotationAngle(value.toDouble());
-        break;
-    case ItemProperty::CENTER: {
-        // 只平移：中心点对齐不改变尺寸与旋转。
-        const QPointF delta = value.toPointF() - CenterScenePoint();
-        setPos(pos() + delta);
-        break;
-    }
-    case ItemProperty::OPACITY:
-        SetItemOpacity(value.toDouble());
-        break;
-    default:
-        break;
+    const ItemPropertyDescriptor* descriptor = ItemPropertyCatalog::Find(property);
+    if (descriptor && descriptor->writer) {
+        descriptor->writer(this, value);
     }
 }
 
