@@ -52,13 +52,14 @@ class CanvasGroupBoxController {
         QPointF oldPos;
         QSizeF oldSize;
         qreal oldRotation = 0.0;
+        // 起手时的场景几何中心：组旋转每帧都从它重算目标位置，避免把上一帧的结果再转一次。
+        QPointF oldCenter;
     };
 
     QList<CanvasItem*> Members() const;
     QList<MemberSnapshot> Snapshot() const;
-    // 组内存在旋转成员时，轴向量缩放会产生剪切 → 只保留角手柄（等比）。
-    bool HasRotatedMember() const;
-    QRectF ResizeRect(int handle, const QRectF& startRect, const QPointF& scenePos, bool equalize) const;
+    // 组框只做等比缩放：角手柄两轴同倍率，没有边手柄。
+    QRectF ResizeRect(int handle, const QRectF& startRect, const QPointF& scenePos) const;
     QPointF HandleCenter(int handle, const QRectF& rect) const;
     QRectF ViewportRect() const;
     // 旋转拖动期间把组框连同手柄绕组中心转起来（仿照单图元的旋转手柄）；

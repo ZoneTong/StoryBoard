@@ -422,16 +422,29 @@ void selftest::RunRubberBandTests(Context& ctx)
         ctx.Check(cornerHits == 4, QStringLiteral("组框四角手柄按中心对齐命中"),
                   QStringLiteral("hits=%1/4").arg(cornerHits));
 
-        // Shift 拖右下角：横竖两轴必须同一个倍率。
+        // 组框只做等比缩放：四条边手柄既不画也不参与命中。
+        int edgeHits = 0;
+        for (const QPointF& edgeCenter :
+             {QPointF(frame.center().x(), frame.top()), QPointF(frame.right(), frame.center().y()),
+              QPointF(frame.center().x(), frame.bottom()), QPointF(frame.left(), frame.center().y())}) {
+            const int hit = box.HitTest(boxView.mapFromScene(edgeCenter));
+            if (hit == 2 || hit == 4 || hit == 6 || hit == 8) {
+                ++edgeHits;
+            }
+        }
+        ctx.Check(edgeHits == 0, QStringLiteral("组框没有边手柄（只留四角 + 旋转）"),
+                  QStringLiteral("edgeHits=%1/4").arg(edgeHits));
+
+        // 拖右下角：不按 Shift 也必须是两轴同一个倍率。
         box.BeginDrag(boxView.mapFromScene(frame.bottomRight()), 5);
-        const QPoint shiftEnd =
+        const QPoint proportionalEnd =
             boxView.mapFromScene(QPointF(frame.right() + frame.width() * 0.5, frame.bottom() + frame.height() * 0.2));
-        box.UpdateDrag(shiftEnd, Qt::ShiftModifier);
+        box.UpdateDrag(proportionalEnd);
         box.EndDrag();
-        const QRectF shifted = box.GroupRect();
-        const qreal ratioX = shifted.width() / frame.width();
-        const qreal ratioY = shifted.height() / frame.height();
-        ctx.Check(qAbs(ratioX - ratioY) < 0.01, QStringLiteral("Shift 拖角两手缩放比一致"),
+        const QRectF scaled = box.GroupRect();
+        const qreal ratioX = scaled.width() / frame.width();
+        const qreal ratioY = scaled.height() / frame.height();
+        ctx.Check(qAbs(ratioX - ratioY) < 0.01, QStringLiteral("组框拖角默认等比（不需要 Shift）"),
                   QStringLiteral("sx=%1 sy=%2").arg(ratioX).arg(ratioY));
         boxUndo.undo();
 
@@ -446,11 +459,14 @@ void selftest::RunRubberBandTests(Context& ctx)
         const qreal radius = 120.0;
         const QPoint rotateStart = boxView.mapFromScene(pivot + QPointF(0.0, -radius));
         const qreal turn = 30.0;
-        const qreal radians = qDegreesToRadians(turn);
-        const QPoint rotateEnd =
-            boxView.mapFromScene(pivot + QPointF(radius * std::sin(radians), -radius * std::cos(radians)));
         box.BeginDrag(rotateStart, 9);
-        box.UpdateDrag(rotateEnd);
+        // 真实拖动是一串 mousemove：连续多帧推进，最后一帧才到 30°。
+        // 每帧都必须从起手快照重算，否则累计角会被重复套用、成员圆心各自漂移。
+        for (const qreal step : {4.0, 11.0, 22.0, turn}) {
+            const qreal stepRadians = qDegreesToRadians(step);
+            box.UpdateDrag(
+                boxView.mapFromScene(pivot + QPointF(radius * std::sin(stepRadians), -radius * std::cos(stepRadians))));
+        }
         box.EndDrag();
 
         const QPointF leftCenterAfter =
