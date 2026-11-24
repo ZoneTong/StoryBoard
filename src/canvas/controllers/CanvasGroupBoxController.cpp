@@ -144,41 +144,72 @@ QPointF CanvasGroupBoxController::HandleCenter(int handle, const QRectF& rect) c
     }
 }
 
-QRectF CanvasGroupBoxController::ResizeRect(int handle, const QRectF& startRect, const QPointF& scenePos) const
+bool CanvasGroupBoxController::HasRotatedMember() const
 {
-    // 组框只做等比缩放：只有角手柄，两轴取同一个倍率（符号各自保留以支持翻转）。
-    if (!IsCornerHandle(handle) || startRect.width() <= 0.0 || startRect.height() <= 0.0) {
+    for (CanvasItem* item : Members()) {
+        if (item && !qFuzzyIsNull(item->RotationAngle())) {
+            return true;
+        }
+    }
+    return false;
+}
+
+QRectF CanvasGroupBoxController::ResizeRect(int handle, const QRectF& startRect, const QPointF& scenePos,
+                                            bool equalize) const
+{
+    // 跟单图元一致：角手柄默认两轴各自跟随，边手柄只动一个轴；Shift（或组内有旋转成员）时等比。
+    QRectF result = startRect;
+    const bool corner = IsCornerHandle(handle);
+    qreal scaleX = 1.0;
+    qreal scaleY = 1.0;
+    if (corner && startRect.width() > 0.0 && startRect.height() > 0.0) {
+        const qreal rawX = (scenePos.x() - startRect.left()) / startRect.width();
+        const qreal rawY = (scenePos.y() - startRect.top()) / startRect.height();
+        scaleX = handle == static_cast<int>(GroupBoxHandle::NW) || handle == static_cast<int>(GroupBoxHandle::SW)
+                     ? 1.0 - rawX
+                     : rawX;
+        scaleY = handle == static_cast<int>(GroupBoxHandle::NW) || handle == static_cast<int>(GroupBoxHandle::NE)
+                     ? 1.0 - rawY
+                     : rawY;
+        if (equalize) {
+            // 两轴取同一个倍率，符号各自保留以支持翻转。
+            const qreal magnitude = qMax(std::fabs(scaleX), std::fabs(scaleY));
+            scaleX = scaleX < 0.0 ? -magnitude : magnitude;
+            scaleY = scaleY < 0.0 ? -magnitude : magnitude;
+        }
+    }
+    if (equalize && !corner) {
         return startRect;
     }
-    const qreal rawX = (scenePos.x() - startRect.left()) / startRect.width();
-    const qreal rawY = (scenePos.y() - startRect.top()) / startRect.height();
-    qreal scaleX = handle == static_cast<int>(GroupBoxHandle::NW) || handle == static_cast<int>(GroupBoxHandle::SW)
-                       ? 1.0 - rawX
-                       : rawX;
-    qreal scaleY = handle == static_cast<int>(GroupBoxHandle::NW) || handle == static_cast<int>(GroupBoxHandle::NE)
-                       ? 1.0 - rawY
-                       : rawY;
-    const qreal magnitude = qMax(std::fabs(scaleX), std::fabs(scaleY));
-    scaleX = scaleX < 0.0 ? -magnitude : magnitude;
-    scaleY = scaleY < 0.0 ? -magnitude : magnitude;
 
-    QRectF result = startRect;
     switch (handle) {
     case static_cast<int>(GroupBoxHandle::NW):
         result.setLeft(startRect.left() + startRect.width() * (1.0 - scaleX));
         result.setTop(startRect.top() + startRect.height() * (1.0 - scaleY));
         break;
+    case static_cast<int>(GroupBoxHandle::N):
+        result.setTop(scenePos.y());
+        break;
     case static_cast<int>(GroupBoxHandle::NE):
         result.setRight(startRect.left() + startRect.width() * scaleX);
         result.setTop(startRect.top() + startRect.height() * (1.0 - scaleY));
+        break;
+    case static_cast<int>(GroupBoxHandle::E):
+        result.setRight(scenePos.x());
         break;
     case static_cast<int>(GroupBoxHandle::SE):
         result.setRight(startRect.left() + startRect.width() * scaleX);
         result.setBottom(startRect.top() + startRect.height() * scaleY);
         break;
+    case static_cast<int>(GroupBoxHandle::S):
+        result.setBottom(scenePos.y());
+        break;
     case static_cast<int>(GroupBoxHandle::SW):
         result.setLeft(startRect.left() + startRect.width() * (1.0 - scaleX));
         result.setBottom(startRect.top() + startRect.height() * scaleY);
+        break;
+    case static_cast<int>(GroupBoxHandle::W):
+        result.setLeft(scenePos.x());
         break;
     default:
         break;
@@ -222,9 +253,9 @@ int CanvasGroupBoxController::HitTest(const QPoint& viewportPos) const
         return static_cast<int>(GroupBoxHandle::ROTATE);
     }
 
-    // 组框只做等比缩放：只保留四角手柄，边手柄既不画也不参与命中。
+    const bool hideEdges = HasRotatedMember();
     for (int handle = RESIZE_HANDLES_BEGIN; handle <= RESIZE_HANDLES_END; ++handle) {
-        if (IsEdgeHandle(handle)) {
+        if (hideEdges && IsEdgeHandle(handle)) {
             continue;
         }
         const QRectF hit = SelectionOverlayStyle::KnobRect(HandleCenter(handle, rect), knob);
@@ -294,9 +325,9 @@ void CanvasGroupBoxController::UpdateDrag(const QPoint& viewportPos, Qt::Keyboar
         return;
     }
 
-    // 组框只做等比缩放：角手柄恒按两轴同倍率走，Shift 不再改变行为。
-    Q_UNUSED(modifiers)
-    const QRectF newRect = ResizeRect(m_handle, m_startRect, scenePos);
+    // 跟单图元一致：任意缩放；Shift 或组内含旋转成员时才等比。
+    const bool equalize = modifiers.testFlag(Qt::ShiftModifier) || HasRotatedMember();
+    const QRectF newRect = ResizeRect(m_handle, m_startRect, scenePos, equalize);
     const qreal scaleX = m_startRect.width() > 0.0 ? newRect.width() / m_startRect.width() : 1.0;
     const qreal scaleY = m_startRect.height() > 0.0 ? newRect.height() / m_startRect.height() : 1.0;
     const QSizeF minimum = CanvasItem::MinimumSize();
@@ -380,8 +411,9 @@ void CanvasGroupBoxController::DrawOverlay(QPainter* painter) const
     const qreal knob = SelectionOverlayStyle::KnobSize(1.0);
     painter->setPen(SelectionOverlayStyle::KnobPen());
     painter->setBrush(Qt::white);
+    const bool hideEdges = HasRotatedMember();
     for (int handle = RESIZE_HANDLES_BEGIN; handle <= RESIZE_HANDLES_END; ++handle) {
-        if (IsEdgeHandle(handle)) {
+        if (hideEdges && IsEdgeHandle(handle)) {
             continue;
         }
         painter->drawRect(SelectionOverlayStyle::KnobRect(HandleCenter(handle, rect), knob));

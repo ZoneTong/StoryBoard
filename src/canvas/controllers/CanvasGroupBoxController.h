@@ -58,8 +58,10 @@ class CanvasGroupBoxController {
 
     QList<CanvasItem*> Members() const;
     QList<MemberSnapshot> Snapshot() const;
-    // 组框只做等比缩放：角手柄两轴同倍率，没有边手柄。
-    QRectF ResizeRect(int handle, const QRectF& startRect, const QPointF& scenePos) const;
+    // 组内存在旋转成员时，沿世界轴的拉伸会剪切图形 → 这时只留角手柄并强制等比。
+    bool HasRotatedMember() const;
+    // 普通情形跟单图元一样任意缩放：角手柄两轴各自跟随，边手柄只动一个轴；Shift 才是等比。
+    QRectF ResizeRect(int handle, const QRectF& startRect, const QPointF& scenePos, bool equalize) const;
     QPointF HandleCenter(int handle, const QRectF& rect) const;
     QRectF ViewportRect() const;
     bool Rotating() const;

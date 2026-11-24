@@ -422,7 +422,7 @@ void selftest::RunRubberBandTests(Context& ctx)
         ctx.Check(cornerHits == 4, QStringLiteral("组框四角手柄按中心对齐命中"),
                   QStringLiteral("hits=%1/4").arg(cornerHits));
 
-        // 组框只做等比缩放：四条边手柄既不画也不参与命中。
+        // 组框跟普通图元一样任意缩放：四条边手柄都在。
         int edgeHits = 0;
         for (const QPointF& edgeCenter :
              {QPointF(frame.center().x(), frame.top()), QPointF(frame.right(), frame.center().y()),
@@ -432,20 +432,49 @@ void selftest::RunRubberBandTests(Context& ctx)
                 ++edgeHits;
             }
         }
-        ctx.Check(edgeHits == 0, QStringLiteral("组框没有边手柄（只留四角 + 旋转）"),
+        ctx.Check(edgeHits == 4, QStringLiteral("组框四条边手柄都在（可任意缩放）"),
                   QStringLiteral("edgeHits=%1/4").arg(edgeHits));
 
-        // 拖右下角：不按 Shift 也必须是两轴同一个倍率。
-        box.BeginDrag(boxView.mapFromScene(frame.bottomRight()), 5);
-        const QPoint proportionalEnd =
-            boxView.mapFromScene(QPointF(frame.right() + frame.width() * 0.5, frame.bottom() + frame.height() * 0.2));
-        box.UpdateDrag(proportionalEnd);
+        // 拖右边手柄：只改宽，不改高。
+        box.BeginDrag(boxView.mapFromScene(QPointF(frame.right(), frame.center().y())), 4);
+        box.UpdateDrag(boxView.mapFromScene(QPointF(frame.right() + frame.width() * 0.4, frame.center().y())));
         box.EndDrag();
-        const QRectF scaled = box.GroupRect();
-        const qreal ratioX = scaled.width() / frame.width();
-        const qreal ratioY = scaled.height() / frame.height();
-        ctx.Check(qAbs(ratioX - ratioY) < 0.01, QStringLiteral("组框拖角默认等比（不需要 Shift）"),
-                  QStringLiteral("sx=%1 sy=%2").arg(ratioX).arg(ratioY));
+        const QRectF stretched = box.GroupRect();
+        ctx.Check(qAbs(stretched.height() - frame.height()) < 0.5 && stretched.width() > frame.width() + 1.0,
+                  QStringLiteral("拖边手柄只动一个轴"),
+                  QStringLiteral("w=%1->%2 h=%3->%4")
+                      .arg(frame.width())
+                      .arg(stretched.width())
+                      .arg(frame.height())
+                      .arg(stretched.height()));
+        boxUndo.undo();
+
+        // 拖右下角不按 Shift：两轴各自跟随（跟单图元一致，允许非等比）。
+        box.BeginDrag(boxView.mapFromScene(frame.bottomRight()), 5);
+        const QPoint freeEnd =
+            boxView.mapFromScene(QPointF(frame.right() + frame.width() * 0.5, frame.bottom() + frame.height() * 0.2));
+        box.UpdateDrag(freeEnd);
+        box.EndDrag();
+        const QRectF freeScaled = box.GroupRect();
+        ctx.Check(qAbs(freeScaled.width() / frame.width() - freeScaled.height() / frame.height()) > 0.05,
+                  QStringLiteral("不按 Shift 拖角是非等比（两轴各自跟随）"),
+                  QStringLiteral("sx=%1 sy=%2")
+                      .arg(freeScaled.width() / frame.width())
+                      .arg(freeScaled.height() / frame.height()));
+        boxUndo.undo();
+
+        // 按 Shift 拖右下角：两轴同一个倍率。
+        box.BeginDrag(boxView.mapFromScene(frame.bottomRight()), 5);
+        box.UpdateDrag(
+            boxView.mapFromScene(QPointF(frame.right() + frame.width() * 0.5, frame.bottom() + frame.height() * 0.2)),
+            Qt::ShiftModifier);
+        box.EndDrag();
+        const QRectF shiftScaled = box.GroupRect();
+        ctx.Check(qAbs(shiftScaled.width() / frame.width() - shiftScaled.height() / frame.height()) < 0.01,
+                  QStringLiteral("Shift 拖角两手缩放比一致"),
+                  QStringLiteral("sx=%1 sy=%2")
+                      .arg(shiftScaled.width() / frame.width())
+                      .arg(shiftScaled.height() / frame.height()));
         boxUndo.undo();
 
         // 组旋转：成员中心间距与连线不变，各自角度 +θ。
