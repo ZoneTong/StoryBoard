@@ -23,9 +23,9 @@ struct ShapeBinding {
 };
 
 const ShapeBinding SHAPE_BINDINGS[] = {
-    {"0", "ShapeAction_ellipse"},     {"1", "ShapeAction_line"},        {"2", "ShapePreset_lineArrow"},
-    {"3", "ShapeAction_triangle"},    {"4", "ShapePreset_roundedRect"}, {"5", "ShapeAction_star"},
-    {"6", "ShapeAction_diamond"},     {"7", "ShapeAction_heart"},       {"8", "ShapePreset_braceLeft"},
+    {"0", "ShapeAction_ellipse"},  {"1", "ShapeAction_line"},        {"2", "ShapePreset_lineArrow"},
+    {"3", "ShapeAction_triangle"}, {"4", "ShapePreset_roundedRect"}, {"5", "ShapeAction_star"},
+    {"6", "ShapeAction_diamond"},  {"7", "ShapeAction_heart"},       {"8", "ShapePreset_braceLeft"},
 };
 
 } // namespace
@@ -143,8 +143,8 @@ QToolButton* FullScreenBar::AddStyleButton(const QString& objectName)
 {
     auto* button = new QToolButton(this);
     button->setObjectName(objectName);
-    button->setIconSize(QSize(LayoutMetrics::FULLSCREEN_BAR_STYLE_ICON_SIZE,
-                              LayoutMetrics::FULLSCREEN_BAR_STYLE_ICON_SIZE));
+    button->setIconSize(
+        QSize(LayoutMetrics::FULLSCREEN_BAR_STYLE_ICON_SIZE, LayoutMetrics::FULLSCREEN_BAR_STYLE_ICON_SIZE));
     button->setFixedSize(LayoutMetrics::FULLSCREEN_BAR_STYLE_BUTTON_WIDTH, LayoutMetrics::TOOL_BAR_CONTROL_HEIGHT);
     button->setAutoRaise(true);
     return button;
@@ -158,7 +158,8 @@ void FullScreenBar::SyncFromWindow()
     }
     if (m_fillColorButton) {
         m_fillColorButton->setIcon(IconFactory::MakeColor(m_window->m_fillColor, 20));
-        m_fillColorButton->setToolTip(MainWindow::tr("Fill color: %1 (click to choose)").arg(m_window->m_fillColor.name()));
+        m_fillColorButton->setToolTip(
+            MainWindow::tr("Fill color: %1 (click to choose)").arg(m_window->m_fillColor.name()));
     }
     if (m_window->m_strokeStyleButton && m_strokeStyleButton) {
         m_strokeStyleButton->setIcon(m_window->m_strokeStyleButton->icon());

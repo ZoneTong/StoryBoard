@@ -6,8 +6,8 @@
 #include "ui/mainwindow/MainWindow.h"
 #include "ui/widgets/StyleController.h"
 
-#include <QColor>
 #include <QActionGroup>
+#include <QColor>
 #include <QDoubleSpinBox>
 #include <QList>
 #include <QMenu>

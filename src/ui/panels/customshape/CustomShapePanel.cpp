@@ -31,13 +31,12 @@ const QString ORDER_FILE = QStringLiteral("顺序.txt");
 using CachedTemplate = CustomShapePanel::CachedTemplate;
 
 // 模板解析按 mtime + size 缓存，面板每次展开只重解析真正改动过的文件。
-bool LoadTemplateCached(QHash<QString, CachedTemplate>& cache, const QFileInfo& info,
-                        CustomShapeTemplate* entry, QString* error)
+bool LoadTemplateCached(QHash<QString, CachedTemplate>& cache, const QFileInfo& info, CustomShapeTemplate* entry,
+                        QString* error)
 {
     const QString path = info.absoluteFilePath();
     const auto it = cache.constFind(path);
-    if (it != cache.constEnd() && it->modified == info.lastModified().toMSecsSinceEpoch() &&
-        it->size == info.size()) {
+    if (it != cache.constEnd() && it->modified == info.lastModified().toMSecsSinceEpoch() && it->size == info.size()) {
         *entry = it->entry;
         return true;
     }
@@ -191,8 +190,7 @@ QList<CustomShapePanel::Folder> CustomShapePanel::ScanFolders()
 
         for (const QString& name : orderedExisting) {
             QStringList errors;
-            const QList<CustomShapeTemplate> items =
-                ScanDirectory(root.filePath(name), &errors, m_templateCache);
+            const QList<CustomShapeTemplate> items = ScanDirectory(root.filePath(name), &errors, m_templateCache);
             // 空目录不出页；有坏文件时保留页，在页底以灰字提示。
             if (items.isEmpty() && errors.isEmpty()) {
                 continue;

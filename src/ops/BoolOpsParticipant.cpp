@@ -262,11 +262,12 @@ QList<BoolOpsParticipant> CollectParticipants(CanvasScene* scene)
 
     // 优先级排序只决定 donor：先比有无填充空间，同类内按叠放序号（stackRank
     // 已随参与者记录，排序后仍然有效）。
-    std::sort(participants.begin(), participants.end(), [](const BoolOpsParticipant& left, const BoolOpsParticipant& right) {
-        if (left.fillSpace != right.fillSpace) {
-            return !left.fillSpace;
-        }
-        return left.stackRank < right.stackRank;
-    });
+    std::sort(participants.begin(), participants.end(),
+              [](const BoolOpsParticipant& left, const BoolOpsParticipant& right) {
+                  if (left.fillSpace != right.fillSpace) {
+                      return !left.fillSpace;
+                  }
+                  return left.stackRank < right.stackRank;
+              });
     return participants;
 }

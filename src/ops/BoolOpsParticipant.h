@@ -27,8 +27,8 @@ struct BoolOpsParticipant {
     FillStyle fillStyle = FillStyle::SOLID;
     Qt::PenStyle strokeStyle = Qt::SolidLine;
     bool filled = true;
-    bool fillSpace = false;        // 代表图元是否有填充空间（闭合图形 / 含面积层的多边形）
-    qreal originalFillArea = 0.0;  // 合并前自身填充面积（D2 豁免判定用）
+    bool fillSpace = false;       // 代表图元是否有填充空间（闭合图形 / 含面积层的多边形）
+    qreal originalFillArea = 0.0; // 合并前自身填充面积（D2 豁免判定用）
     int layerIndex = 0;
     int height = -1;
     CanvasItem* stackItem = nullptr; // 叠放位置最高（后画）的成员，用于保持遮挡关系

@@ -302,8 +302,7 @@ void PropertiesPanel::ApplyArcAngles(qreal startAngle, qreal sweepAngle)
     if (qAbs(sweep) < 1.0) {
         sweep = sweepAngle < 0.0 ? -1.0 : 1.0;
     }
-    const QMap<PropertyKey, QVariant> values{{ItemProperty::START_ANGLE, start},
-                                             {ItemProperty::SWEEP_ANGLE, sweep}};
+    const QMap<PropertyKey, QVariant> values{{ItemProperty::START_ANGLE, start}, {ItemProperty::SWEEP_ANGLE, sweep}};
     ChangeSelectedShapes(tr("Change arc angles"), [start, sweep](ShapeAbstractItem* shape) {
         shape->SetPropertyValue(ItemProperty::START_ANGLE, start);
         shape->SetPropertyValue(ItemProperty::SWEEP_ANGLE, sweep);
@@ -511,4 +510,3 @@ void PropertiesPanel::ApplyItemCenter(const QPointF& center)
     // 中心点写回只平移位置：多选时把所有成员绝对对齐到同一中心，一条撤销记录。
     ApplyPropertyValues({{ItemProperty::CENTER, center}}, tr("Align item centers"));
 }
-
