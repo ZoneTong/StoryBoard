@@ -233,20 +233,20 @@ QPointF PolarPoint(const QPointF& center, qreal radius, qreal degrees)
     return QPointF(center.x() + radius * qCos(radians), center.y() - radius * qSin(radians));
 }
 
-// 弧线末端的切向箭头：尖端落在弧上，箭身沿弧的切线方向，双翼沿半径方向张开。
-// sweepSign=+1 表示指向角度增大的一侧，-1 表示反向。
+// 弧线末端的切向箭头：箭底落在弧上，尖端沿弧的切线方向伸出去（像弧线自己拐出一个箭头），
+// 双翼沿半径方向张开。sweepSign=+1 表示指向角度增大的一侧，-1 表示反向。
 void DrawTangentArrow(QPainter& painter, const QPointF& center, qreal radius, qreal degrees, qreal length,
                       qreal sweepSign)
 {
     const qreal radians = qDegreesToRadians(degrees);
-    const QPointF tip = PolarPoint(center, radius, degrees);
+    const QPointF base = PolarPoint(center, radius, degrees);
     const QPointF radial(qCos(radians), -qSin(radians));
     const QPointF tangent = sweepSign * QPointF(-qSin(radians), -qCos(radians));
-    const QPointF base = tip - tangent * length;
+    const QPointF tip = base + tangent * length;
     QPainterPath head;
     head.moveTo(tip);
-    head.lineTo(base + radial * (length * 0.40));
-    head.lineTo(base - radial * (length * 0.40));
+    head.lineTo(base + radial * (length * 0.55));
+    head.lineTo(base - radial * (length * 0.55));
     head.closeSubpath();
     painter.save();
     painter.setBrush(painter.pen().color());
@@ -285,7 +285,8 @@ void DrawSector(QPainter& painter, IconId)
     arc.arcTo(arcBox, arcStart, arcEnd - arcStart);
     painter.drawPath(arc);
 
-    DrawTangentArrow(painter, center, arcRadius, arcEnd, 3.6, 1.0);
+    DrawTangentArrow(painter, center, arcRadius, arcStart, 3.0, -1.0);
+    DrawTangentArrow(painter, center, arcRadius, arcEnd, 3.0, 1.0);
 }
 constexpr struct IconEntry {
     IconId id;
