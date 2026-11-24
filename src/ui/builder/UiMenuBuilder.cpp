@@ -178,10 +178,10 @@ void UiMenuBuilder::BuildMenus()
     // 需求：“视图”一级菜单紧跟“文件”，放在“编辑”之前。
     QMenu* viewMenu = m_window->menuBar()->addMenu(MainWindow::tr("&View"));
     viewMenu->setObjectName(QStringLiteral("ViewMenu"));
-    viewMenu->addAction(m_window->m_viewModeAct);
-    viewMenu->addAction(m_window->m_editModeAct);
-    viewMenu->addAction(m_window->m_brushModeAct);
-    viewMenu->addAction(m_window->m_textModeAct);
+    // 模式动作顺序以动作组注册顺序为准，与工具栏模式条共用同一份清单。
+    for (QAction* action : m_window->m_modeGroup->actions()) {
+        viewMenu->addAction(action);
+    }
     viewMenu->addSeparator();
     viewMenu->addAction(m_window->m_fitAct);
     viewMenu->addAction(m_window->m_zoomInAct);
@@ -358,15 +358,10 @@ void UiMenuBuilder::BuildMenus()
     fillStyleMenu->setObjectName(QStringLiteral("FillStyleMenu"));
     fillStyleMenu->setIcon(m_window->m_style->FillStyleIcon(
         m_window->m_fillStyle, m_window->m_fillColor.isValid() ? m_window->m_fillColor : m_window->m_brushColor, 16));
-    fillStyleMenu->addAction(m_window->m_fillNoneAct);
-    fillStyleMenu->addAction(m_window->m_fillSolidAct);
-    fillStyleMenu->addAction(m_window->m_fillHachureAct);
-    fillStyleMenu->addAction(m_window->m_fillReverseAct);
-    fillStyleMenu->addAction(m_window->m_fillCrossAct);
-    fillStyleMenu->addAction(m_window->m_fillGridAct);
-    fillStyleMenu->addAction(m_window->m_fillHoneycombAct);
-    fillStyleMenu->addAction(m_window->m_fillBrickAct);
-    fillStyleMenu->addAction(m_window->m_fillDotsAct);
+    // 顺序以动作组注册顺序为准，与工具栏填充菜单共用同一份清单。
+    for (QAction* action : m_window->m_fillStyleGroup->actions()) {
+        fillStyleMenu->addAction(action);
+    }
 
     // 需求 29：颜色从填充样式里分离出来，放在填充样式之后。
     insertMenu->addAction(m_window->m_fillColorAct);
@@ -394,9 +389,10 @@ void UiMenuBuilder::BuildMenus()
     insertMenu->addAction(m_window->m_clearBgAct);
     QMenu* fillMenu = insertMenu->addMenu(MainWindow::tr("Background fill mode"));
     fillMenu->setIcon(IconFactory::Make(IconId::BACKGROUND, QColor(58, 64, 80), MainWindow::TOOL_BAR_ICON_SIZE));
-    fillMenu->addAction(m_window->m_bgStretchAct);
-    fillMenu->addAction(m_window->m_bgFitAct);
-    fillMenu->addAction(m_window->m_bgTileAct);
+    // 背景填充模式顺序以动作组注册顺序为准。
+    for (QAction* action : m_window->m_backgroundModeGroup->actions()) {
+        fillMenu->addAction(action);
+    }
 
     insertMenu->addSeparator();
     insertMenu->addAction(m_window->m_importAct);

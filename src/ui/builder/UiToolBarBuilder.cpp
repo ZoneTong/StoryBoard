@@ -7,6 +7,7 @@
 #include "ui/widgets/StyleController.h"
 
 #include <QColor>
+#include <QActionGroup>
 #include <QDoubleSpinBox>
 #include <QList>
 #include <QMenu>
@@ -68,10 +69,10 @@ void UiToolBarBuilder::BuildToolBars()
     modeBar->setContextMenuPolicy(Qt::PreventContextMenu);
     modeBar->setMinimumWidth(80);
     m_window->addToolBar(Qt::LeftToolBarArea, modeBar);
-    modeBar->addAction(m_window->m_viewModeAct);
-    modeBar->addAction(m_window->m_editModeAct);
-    modeBar->addAction(m_window->m_brushModeAct);
-    modeBar->addAction(m_window->m_textModeAct);
+    // 模式动作顺序以动作组注册顺序为准，与视图菜单共用同一份清单。
+    for (QAction* action : m_window->m_modeGroup->actions()) {
+        modeBar->addAction(action);
+    }
 }
 
 void UiToolBarBuilder::CreateSmoothingToolbar(QToolBar* mainBar)
@@ -168,15 +169,10 @@ void UiToolBarBuilder::CreateShapeToolbar(QToolBar* mainBar)
     m_window->m_fillButton->setIconSize(QSize(MainWindow::TOOL_BAR_ICON_SIZE, MainWindow::TOOL_BAR_ICON_SIZE));
     m_window->m_fillButton->setPopupMode(QToolButton::InstantPopup);
     auto* fillMenu = new QMenu(m_window->m_fillButton);
-    fillMenu->addAction(m_window->m_fillNoneAct);
-    fillMenu->addAction(m_window->m_fillSolidAct);
-    fillMenu->addAction(m_window->m_fillHachureAct);
-    fillMenu->addAction(m_window->m_fillReverseAct);
-    fillMenu->addAction(m_window->m_fillCrossAct);
-    fillMenu->addAction(m_window->m_fillGridAct);
-    fillMenu->addAction(m_window->m_fillHoneycombAct);
-    fillMenu->addAction(m_window->m_fillBrickAct);
-    fillMenu->addAction(m_window->m_fillDotsAct);
+    // 顺序以动作组注册顺序为准（UiActionFactory 按 FillStyleMeta 注册表建组），菜单不再手抄清单。
+    for (QAction* action : m_window->m_fillStyleGroup->actions()) {
+        fillMenu->addAction(action);
+    }
     m_window->m_fillButton->setMenu(fillMenu);
     m_window->UpdateFillActions();
 
