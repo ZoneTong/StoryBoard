@@ -21,16 +21,15 @@ PropertiesPanelGeometryCard::PropertiesPanelGeometryCard(QWidget* parent) : QWid
     m_rotationRow->SetIconToolTip(PropertiesPanel::tr("Rotation"));
     layout->addWidget(m_rotationRow);
 
-    m_positionRow =
-        new PairValueRow(IconId::POSITION, true, QStringLiteral("ItemPositionXSpin"),
-                         QStringLiteral("ItemPositionYSpin"), ItemProperty::POSITION, QStringLiteral(","), this);
+    m_positionRow = new PairValueRow(IconId::POSITION, true, QStringLiteral("ItemPositionXSpin"),
+                                     QStringLiteral("ItemPositionYSpin"), ItemProperty::POSITION, this);
     m_positionRow->FirstSpin()->setToolTip(PropertiesPanel::tr("Position"));
     m_positionRow->SecondSpin()->setToolTip(PropertiesPanel::tr("Position"));
     m_positionRow->SetIconToolTip(PropertiesPanel::tr("Position"));
     layout->addWidget(m_positionRow);
 
     m_sizeRow = new PairValueRow(IconId::SIZE, true, QStringLiteral("ItemSizeWidthSpin"),
-                                 QStringLiteral("ItemSizeHeightSpin"), ItemProperty::SIZE, QStringLiteral("×"), this);
+                                 QStringLiteral("ItemSizeHeightSpin"), ItemProperty::SIZE, this);
     m_sizeRow->FirstSpin()->setToolTip(PropertiesPanel::tr("Item size"));
     m_sizeRow->SecondSpin()->setToolTip(PropertiesPanel::tr("Item size"));
     m_sizeRow->SetIconToolTip(PropertiesPanel::tr("Item size"));
@@ -38,7 +37,7 @@ PropertiesPanelGeometryCard::PropertiesPanelGeometryCard(QWidget* parent) : QWid
 
     // §3.4 中心点：派生属性，行放在几何区最后；多选时绝对对齐到同一中心。
     m_centerRow = new PairValueRow(IconId::CENTER, true, QStringLiteral("ItemCenterXSpin"),
-                                   QStringLiteral("ItemCenterYSpin"), ItemProperty::CENTER, QStringLiteral(","), this);
+                                   QStringLiteral("ItemCenterYSpin"), ItemProperty::CENTER, this);
     m_centerRow->FirstSpin()->setToolTip(PropertiesPanel::tr("Center point"));
     m_centerRow->SecondSpin()->setToolTip(PropertiesPanel::tr("Center point"));
     m_centerRow->SetIconToolTip(PropertiesPanel::tr("Center point"));

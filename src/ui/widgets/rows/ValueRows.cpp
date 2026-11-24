@@ -8,7 +8,6 @@
 #include <QCoreApplication>
 #include <QDoubleSpinBox>
 #include <QHBoxLayout>
-#include <QLabel>
 #include <QLineEdit>
 #include <QSignalBlocker>
 #include <QSpinBox>
@@ -245,8 +244,7 @@ void NumberValueRow::SetSingleStep(qreal step)
 }
 
 PairValueRow::PairValueRow(IconId icon, bool showIcon, const QString& firstName, const QString& secondName,
-                           int decimals, qreal minimum, qreal maximum, const QString& suffix, const QString& separator,
-                           QWidget* parent)
+                           int decimals, qreal minimum, qreal maximum, const QString& suffix, QWidget* parent)
     : QWidget(parent)
 {
     RowMetrics::ApplyRow(this);
@@ -261,11 +259,6 @@ PairValueRow::PairValueRow(IconId icon, bool showIcon, const QString& firstName,
     m_first = MakeSpin(this, firstName, decimals, minimum, maximum, suffix);
     m_second = MakeSpin(this, secondName, decimals, minimum, maximum, suffix);
     layout->addWidget(m_first, 1);
-
-    auto* label = new QLabel(separator, this);
-    label->setAlignment(Qt::AlignCenter);
-    layout->addWidget(label);
-
     layout->addWidget(m_second, 1);
 
     for (QDoubleSpinBox* spin : {m_first, m_second}) {
@@ -278,10 +271,10 @@ PairValueRow::PairValueRow(IconId icon, bool showIcon, const QString& firstName,
 }
 
 PairValueRow::PairValueRow(IconId icon, bool showIcon, const QString& firstName, const QString& secondName,
-                           ItemProperty property, const QString& separator, QWidget* parent)
+                           ItemProperty property, QWidget* parent)
     : PairValueRow(icon, showIcon, firstName, secondName, DescriptorOf(property).decimals,
                    DescriptorOf(property).minimum, DescriptorOf(property).maximum, DescriptorOf(property).suffix,
-                   separator, parent)
+                   parent)
 {
 }
 

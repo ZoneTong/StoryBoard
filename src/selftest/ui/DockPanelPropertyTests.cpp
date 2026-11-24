@@ -151,6 +151,30 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
                       rotationIcon ? rotationIcon->toolTip() : QStringLiteral("(null)"));
         }
 
+        // 一行两个数值框的成对行不再插字符分隔符（原先位置 / 中心用 ","、尺寸用 "×"）。
+        if (positionXSpin && sizeWidthSpin) {
+            for (QDoubleSpinBox* spin : {positionXSpin, sizeWidthSpin}) {
+                QWidget* row = spin->parentWidget();
+                const int spinCount = row ? static_cast<int>(row->findChildren<QDoubleSpinBox*>().size()) : 0;
+                const int labelCount = row ? static_cast<int>(row->findChildren<QLabel*>().size()) : 0;
+                ctx.Check(
+                    row && spinCount == 2 && labelCount == 0, QStringLiteral("成对数值行两个框紧邻、没有字符分隔符"),
+                    QStringLiteral("%1 spins=%2 labels=%3").arg(spin->objectName()).arg(spinCount).arg(labelCount));
+            }
+        }
+
+        // 箭头行只保留行首一枚图标，两个下拉各自带工具提示说明起止箭头。
+        QWidget* arrowRow = dockPanel->findChild<QWidget*>(QStringLiteral("ItemArrowRow"));
+        if (arrowRow) {
+            const int arrowIconCount =
+                static_cast<int>(arrowRow->findChildren<QToolButton*>(QStringLiteral("ItemRowIcon")).size());
+            const int arrowComboCount =
+                static_cast<int>(arrowRow->findChildren<QComboBox*>(QStringLiteral("ItemArrowCombo")).size());
+            ctx.Check(arrowIconCount == 1 && arrowComboCount == 2,
+                      QStringLiteral("箭头行只有一枚行图标、两个起止箭头下拉"),
+                      QStringLiteral("icons=%1 combos=%2").arg(arrowIconCount).arg(arrowComboCount));
+        }
+
         const QString nameBeforeEdit = selectedShape->Name();
         if (itemNameEdit) {
             itemNameEdit->setText(QStringLiteral("面板改名"));
@@ -256,10 +280,9 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
             parallelogramAngleBSpin->setValue(110);
             QApplication::processEvents();
         }
-        const qreal panelAngleFromB =
-            panelParallelogram->PropertyValue(ItemProperty::PARALLELOGRAM_ANGLE).toDouble();
-        ctx.Check(qAbs(panelAngleFromB - 70.0) < 0.01,
-                  QStringLiteral("编辑面板改内角 B 按补角换算内角 A"), QString::number(panelAngleFromB));
+        const qreal panelAngleFromB = panelParallelogram->PropertyValue(ItemProperty::PARALLELOGRAM_ANGLE).toDouble();
+        ctx.Check(qAbs(panelAngleFromB - 70.0) < 0.01, QStringLiteral("编辑面板改内角 B 按补角换算内角 A"),
+                  QString::number(panelAngleFromB));
         dockScene->UndoStack()->undo();
         QApplication::processEvents();
 

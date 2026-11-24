@@ -88,16 +88,15 @@ class NumberValueRow : public QWidget {
     bool m_refreshing = false;
 };
 
-// 一行两个数值框：位置 X/Y、图元尺寸 W×H 共用。
+// 一行两个数值框：位置 X/Y、图元尺寸 W×H 共用，两个框之间不放分隔符。
 class PairValueRow : public QWidget {
     Q_OBJECT
 
   public:
     PairValueRow(IconId icon, bool showIcon, const QString& firstName, const QString& secondName, int decimals,
-                 qreal minimum, qreal maximum, const QString& suffix, const QString& separator,
-                 QWidget* parent = nullptr);
+                 qreal minimum, qreal maximum, const QString& suffix, QWidget* parent = nullptr);
     PairValueRow(IconId icon, bool showIcon, const QString& firstName, const QString& secondName, ItemProperty property,
-                 const QString& separator, QWidget* parent = nullptr);
+                 QWidget* parent = nullptr);
 
     void Refresh(qreal first, qreal second);
     qreal First() const;
