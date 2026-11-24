@@ -55,7 +55,7 @@ void DockPanelController::CreateLayerDock()
     m_layerDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable |
                              QDockWidget::DockWidgetClosable);
 
-    m_layerPanel = new LayerPanel(m_window->m_scene, m_layerDock);
+    m_layerPanel = new LayerPanel(m_window->Scene(), m_layerDock);
     m_layerDock->setWidget(m_layerPanel);
     m_window->addDockWidget(Qt::RightDockWidgetArea, m_layerDock);
     // 图层卡放在右侧顶部，吃掉右侧剩余高度（不设上限），模式卡压在其下。
@@ -73,7 +73,7 @@ void DockPanelController::CreatePropertiesPanelDock()
     m_propertiesDock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable |
                                   QDockWidget::DockWidgetClosable);
 
-    m_propertiesPanel = new PropertiesPanel(m_window->m_scene, m_propertiesDock);
+    m_propertiesPanel = new PropertiesPanel(m_window->Scene(), m_propertiesDock);
     m_propertiesDock->setWidget(m_propertiesPanel);
     m_window->addDockWidget(Qt::LeftDockWidgetArea, m_propertiesDock);
     // 编辑面板固定在左侧，默认跟着主窗口可用高度伸展；只有窗口高度不足、
@@ -111,7 +111,7 @@ void DockPanelController::CreatePropertiesPanelDock()
 void DockPanelController::CreateViewModeDock()
 {
     // 卡片标题在构造时取当前模式，之后随模式切换刷新，不再固定写死「查看模式」。
-    const ToolMode initialMode = m_window->m_view ? m_window->m_view->mode() : ToolMode::VIEW;
+    const ToolMode initialMode = m_window->View() ? m_window->View()->mode() : ToolMode::VIEW;
     m_viewModeDock = new QDockWidget(ToolModeName(initialMode), m_window);
     m_viewModeDock->setObjectName(QStringLiteral("ViewModeDock"));
     m_viewModeDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
@@ -120,8 +120,8 @@ void DockPanelController::CreateViewModeDock()
     m_window->addDockWidget(Qt::RightDockWidgetArea, m_viewModeDock);
     m_viewModeDock->setMinimumHeight(90);
     m_viewModeDock->setMaximumHeight(130);
-    if (m_window->m_view) {
-        QObject::connect(m_window->m_view, &CanvasView::modeChanged, m_window, [this](ToolMode mode) {
+    if (m_window->View()) {
+        QObject::connect(m_window->View(), &CanvasView::modeChanged, m_window, [this](ToolMode mode) {
             if (m_viewModeDock) {
                 m_viewModeDock->setWindowTitle(ToolModeName(mode));
             }
@@ -180,7 +180,7 @@ void DockPanelController::ApplyDockLayout()
 
     // 默认图层卡在上、视图模式卡在下；用户拖拽调整过则按设置文件恢复右侧顺序。
     QStringList order;
-    for (const QString& name : m_window->m_settings.dockOrder) {
+    for (const QString& name : m_window->Settings().dockOrder) {
         if ((name == QStringLiteral("ViewModeDock") || name == QStringLiteral("LayerDock")) && !order.contains(name)) {
             order.append(name);
         }
@@ -194,7 +194,7 @@ void DockPanelController::ApplyDockLayout()
         order = {QStringLiteral("LayerDock"), QStringLiteral("ViewModeDock")};
     }
     m_dockOrder = order;
-    m_window->m_settings.dockOrder = order;
+    m_window->Settings().dockOrder = order;
 
     QDockWidget* first = order.first() == QStringLiteral("ViewModeDock") ? m_viewModeDock : m_layerDock;
     QDockWidget* second = first == m_viewModeDock ? m_layerDock : m_viewModeDock;
@@ -255,8 +255,8 @@ void DockPanelController::ApplyPropertiesPanelDockWidth(int width, bool resizeNo
         return;
     }
     // 宽度只在启动时按内容确定一次；之后保留用户手动拖拽的结果，只约束上下限。
-    const int bounded = qBound(LayoutMetrics::PROPERTIES_DOCK_MIN_WIDTH, width,
-                               LayoutMetrics::PROPERTIES_DOCK_MAX_WIDTH);
+    const int bounded =
+        qBound(LayoutMetrics::PROPERTIES_DOCK_MIN_WIDTH, width, LayoutMetrics::PROPERTIES_DOCK_MAX_WIDTH);
     m_propertiesDock->setMinimumWidth(LayoutMetrics::PROPERTIES_DOCK_MIN_WIDTH);
     m_propertiesDock->setMaximumWidth(LayoutMetrics::PROPERTIES_DOCK_MAX_WIDTH);
     if (!resizeNow) {
@@ -278,7 +278,7 @@ void DockPanelController::RestorePropertiesPanelDockState()
     if (!m_propertiesDock) {
         return;
     }
-    const AppSettings& settings = m_window->m_settings;
+    const AppSettings& settings = m_window->Settings();
     const bool saved = settings.propertiesDockStateSaved;
     const bool floating = saved && settings.propertiesDockFloating;
     const Qt::DockWidgetArea area = saved && settings.propertiesDockArea == QLatin1String("right")
@@ -326,7 +326,7 @@ void DockPanelController::RememberPropertiesPanelDockState()
     if (!m_propertiesDock || m_applyingDockLayout || m_fullScreenLayout) {
         return;
     }
-    AppSettings& settings = m_window->m_settings;
+    AppSettings& settings = m_window->Settings();
     settings.propertiesDockStateSaved = true;
     settings.propertiesDockFloating = m_propertiesDock->isFloating();
     settings.propertiesDockArea = m_window->dockWidgetArea(m_propertiesDock) == Qt::RightDockWidgetArea
@@ -354,8 +354,8 @@ void DockPanelController::RememberDockOrder()
         return;
     }
     m_dockOrder = order;
-    m_window->m_settings.dockOrder = order;
-    m_window->m_settings.Save();
+    m_window->Settings().dockOrder = order;
+    m_window->Settings().Save();
 }
 
 void DockPanelController::HandleMoveEvent(QObject* watched, QEvent* event)
@@ -376,7 +376,7 @@ void DockPanelController::HandleMoveEvent(QObject* watched, QEvent* event)
 
 void DockPanelController::UpdatePropertiesPanelDockVisibility()
 {
-    if (!m_propertiesDock || !m_window->m_scene || !m_window->m_view) {
+    if (!m_propertiesDock || !m_window->Scene() || !m_window->View()) {
         return;
     }
     // 停靠在主窗口里时卡片常驻，选中状态变化不动整张卡片；
@@ -384,7 +384,7 @@ void DockPanelController::UpdatePropertiesPanelDockVisibility()
     if (!m_propertiesDock->isFloating()) {
         return;
     }
-    const bool hasSelection = !m_window->m_scene->SelectedCanvasItems().isEmpty();
+    const bool hasSelection = !m_window->Scene()->SelectedCanvasItems().isEmpty();
     if (m_propertiesDock->isVisible() != hasSelection) {
         m_propertiesDock->setVisible(hasSelection);
     }

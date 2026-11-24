@@ -133,6 +133,9 @@ class MainWindow : public QMainWindow {
   public:
     // 需求 7：展开自定义图形浮动面板（按目录分标签页）；anchor 为空时沿用上次位置。
     void OpenCustomShapePanel(QWidget* anchor);
+    // 画笔颜色 / 宽度的全局状态入口：面板、工具栏、全屏栏与自检都经此设置。
+    void SetBrushColor(const QColor& color, bool remember);
+    void SetBrushWidthUi(int width);
     // 插入常见图形；自检需要直接驱动插入流程（含立方体 / 圆柱体的组合面插入）。
     void InsertShape(ShapeType type, qreal triangleAngle1 = -1.0, qreal triangleAngle2 = -1.0, qreal cornerRatio = 0.0);
     // 线条插入入口：直线 / 弧线 / 正弦都不是形状类型，按形态分派。
@@ -168,8 +171,6 @@ class MainWindow : public QMainWindow {
     // 菜单“描线宽度”普通项触发后聚焦工具栏宽度输入框末尾（需求 1）。
     void FocusStrokeWidthSpin();
     void UpdateFillActions();
-    void SetBrushColor(const QColor& color, bool remember);
-    void SetBrushWidthUi(int width);
     void ApplyBrushWidth(int width);
     void SetStrokeSmoothingUi(qreal tolerance);
     void UpdateCanvasesMenu();
@@ -178,7 +179,6 @@ class MainWindow : public QMainWindow {
 
   private:
     friend class CanvasBackgroundController;
-    friend class DockPanelController;
     friend class DocumentController;
     friend class ImportExportController;
     friend class StyleController;
