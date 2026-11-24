@@ -245,48 +245,71 @@ void DrawTangentArrow(QPainter& painter, const QPointF& center, qreal radius, qr
     const QPointF tip = base + tangent * length;
     QPainterPath head;
     head.moveTo(tip);
-    head.lineTo(base + radial * (length * 0.55));
-    head.lineTo(base - radial * (length * 0.55));
+    head.lineTo(base + radial * (length * 0.40));
+    head.lineTo(base - radial * (length * 0.40));
     head.closeSubpath();
     painter.save();
     painter.setBrush(painter.pen().color());
     painter.drawPath(head);
     painter.restore();
 }
+// 弧线的一段虚线段：沿圆周按等分切段，保证小尺寸下也能数出断口，而不是糊成实线。
+void DrawArcDash(QPainter& painter, const QPointF& center, qreal radius, qreal fromDegrees, qreal toDegrees,
+                 int segments)
+{
+    const QRectF box(center.x() - radius, center.y() - radius, radius * 2.0, radius * 2.0);
+    const qreal span = fromDegrees - toDegrees;
+    const qreal tick = span / (segments * 2.0 - 1.0);
+    for (int index = 0; index < segments; ++index) {
+        const qreal start = fromDegrees - index * 2.0 * tick;
+        QPainterPath segment;
+        segment.arcMoveTo(box, start);
+        segment.arcTo(box, start, -tick);
+        painter.drawPath(segment);
+    }
+}
+
 void DrawSector(QPainter& painter, IconId)
 {
-    // 三层含义拼在一枚图标里：内层浅色扇形（扇形角）、外层更长的弧线（弧线角）、
-    // 弧线末端一枚切向箭头（角度由起点扫到终点，箭头切于弧线而不是沿半径朝外）。
-    // 扇形半径刻意小于弧线半径：两者之间留出背景，小尺寸下才不会糊成一团。
-    const QPointF center(12.0, 15.6);
-    const qreal wedgeRadius = 7.6;
-    const qreal arcRadius = 9.6;
-    const qreal wedgeStart = 30.0;
-    const qreal wedgeEnd = 150.0;
-    const qreal arcStart = 22.0;
-    const qreal arcEnd = 158.0;
+    // 参照手绘稿：上方一道拱形粗弧（两端各一枚切向箭头，表示扫过角的方向），
+    // 两条实线半径夹出起始角/扫过角，右下再接一段虚线，表示角度还可以继续扫过去。
+    const QPointF center(12.0, 16.6);
+    const qreal radius = 9.2;
+    const qreal solidStart = 33.0;
+    const qreal solidEnd = 147.0;
+    const qreal dashEnd = -6.0;
 
-    const QRectF wedgeBox(center.x() - wedgeRadius, center.y() - wedgeRadius, wedgeRadius * 2.0, wedgeRadius * 2.0);
-    QPainterPath wedge;
-    wedge.moveTo(center);
-    wedge.arcTo(wedgeBox, wedgeStart, wedgeEnd - wedgeStart);
-    wedge.closeSubpath();
+    const QColor ink = painter.pen().color();
+
+    // 虚线部分先画，避免压住实线轮廓
     painter.save();
-    QColor fill = painter.pen().color();
-    fill.setAlpha(58);
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(fill);
-    painter.drawPath(wedge);
+    painter.setPen(QPen(ink, 1.4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    DrawArcDash(painter, center, radius, solidStart - 2.5, dashEnd, 2);
+    const QPointF dashDirection = PolarPoint(center, 1.0, dashEnd) - center;
+    const qreal innerRadius = radius * 0.55;
+    const qreal step = (radius - innerRadius) / 5.0;
+    for (int index = 0; index < 3; ++index) {
+        painter.drawLine(center + dashDirection * (innerRadius + index * 2.0 * step),
+                         center + dashDirection * (innerRadius + (index * 2.0 + 1.0) * step));
+    }
     painter.restore();
 
-    const QRectF arcBox(center.x() - arcRadius, center.y() - arcRadius, arcRadius * 2.0, arcRadius * 2.0);
+    painter.save();
+    painter.setPen(QPen(ink, 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter.drawLine(center, PolarPoint(center, radius, solidStart));
+    painter.drawLine(center, PolarPoint(center, radius, solidEnd));
+
+    painter.setPen(QPen(ink, 2.3, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    const QRectF arcBox(center.x() - radius, center.y() - radius, radius * 2.0, radius * 2.0);
     QPainterPath arc;
-    arc.arcMoveTo(arcBox, arcStart);
-    arc.arcTo(arcBox, arcStart, arcEnd - arcStart);
+    arc.arcMoveTo(arcBox, solidStart);
+    arc.arcTo(arcBox, solidStart, solidEnd - solidStart);
     painter.drawPath(arc);
 
-    DrawTangentArrow(painter, center, arcRadius, arcStart, 3.0, -1.0);
-    DrawTangentArrow(painter, center, arcRadius, arcEnd, 3.0, 1.0);
+    painter.setPen(QPen(ink, 1.9, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    DrawTangentArrow(painter, center, radius, solidStart, 2.2, -1.0);
+    DrawTangentArrow(painter, center, radius, solidEnd, 2.2, 1.0);
+    painter.restore();
 }
 constexpr struct IconEntry {
     IconId id;
