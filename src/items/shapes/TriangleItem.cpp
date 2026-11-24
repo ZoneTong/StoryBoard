@@ -3,8 +3,8 @@
 #include "items/CanvasItem.h"
 #include "items/geometry/ShapePathBuilder.h"
 #include "items/geometry/TriangleGeometry.h"
+#include "items/geometry/VertexAngleKnob.h"
 
-#include <QFontMetricsF>
 #include <QPainter>
 #include <QtMath>
 #include <cmath>
@@ -38,17 +38,17 @@ HandleSpecList TriangleItem::CustomHandles() const
     if (IsCustomShape()) {
         return specs;
     }
-    // 顶点 C 的手柄向下偏移，让开底角 90° 时与角顶点重合的角落手柄；
-    // 形很矮时收在内框里。位置随视图缩放换算，保证屏幕上尺寸稳定。
-    const qreal scale = qMax<qreal>(ViewScale(), 0.001);
-    const qreal inset = qMin<qreal>(18.0 / scale, qMax<qreal>(0.0, ContentRect().height() - 7.0 / scale));
+    // 与平行四边形 / 菱形同一口径：旋钮贴在要改的那个角（底角 A）的顶点内侧平分线上，
+    // 绕顶点拖动改 A。旋钮不再压在半高处，Top 缩放句柄保留。
+    const QRectF rect = ContentRect();
+    const QPointF vertexA = triangleVertex(TriangleVertex::A);
     HandleSpec apex;
     apex.id = CanvasItem::CUSTOM_0;
-    apex.position = triangleVertex(TriangleVertex::C) + QPointF(0.0, inset);
+    apex.position = VertexAngleKnob::Position(vertexA, triangleVertex(TriangleVertex::B),
+                                              triangleVertex(TriangleVertex::C), ViewScale(), rect);
     apex.behavior = HandleBehavior::ANGLE;
     apex.cursor = Qt::SizeHorCursor;
-    apex.replacesTopHandle = true;
-    apex.hitPadding = 14.0;
+    apex.hitPadding = 16.0;
     specs.append(apex);
     return specs;
 }
@@ -120,14 +120,15 @@ void TriangleItem::ApplyStateContentSize(const QSizeF& requested)
 
 bool TriangleItem::BeginCustomHandleDrag(int handle, const QPointF& scenePos)
 {
-    Q_UNUSED(scenePos);
-    // 顶点 C 的内角手柄只属于三角形；自定义轮廓没有角度语义，不提供专用拖拽。
+    // 底角 A 旋钮只属于三角形；自定义轮廓没有角度语义，不提供专用拖拽。
     if (handle != CanvasItem::CUSTOM_0 || IsCustomShape()) {
         return false;
     }
     m_apexDragBaseA = mapToScene(triangleVertex(TriangleVertex::A));
     m_apexDragBaseB = mapToScene(triangleVertex(TriangleVertex::B));
     m_apexDragHeight = qMax<qreal>(1.0, ContentSize().height());
+    m_apexDragStartAngle = m_bottomAngle1;
+    m_apexDragStartPointer = VertexAngleKnob::PointerAngleDegrees(m_apexDragBaseA, scenePos, RotationAngle());
     SetAngleReadoutVisible(true);
     return true;
 }
@@ -137,13 +138,12 @@ bool TriangleItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos)
     if (handle != CanvasItem::CUSTOM_0 || IsCustomShape()) {
         return false;
     }
-    // §3.1：拖顶点只改内角 A。AB 边上的垂直高度保持拖拽开始时的值，B 由底边长度
-    // 与高度反算（cotB = base/h − cotA）；A 的钝角分支跟指针方向一致（D12），按 1° 取整。
+    // §3.1：指针绕左下顶点 A 转多少度，底角 A 就变多少度；AB 边上的垂直高度保持
+    // 拖拽开始时的值，B 由底边长度与高度反算（cotB = base/h − cotA），按 1° 取整。
     const QPointF base = m_apexDragBaseB - m_apexDragBaseA;
     const qreal baseLength = qMax<qreal>(1.0, std::hypot(base.x(), base.y()));
-    const QPointF along = base / baseLength;
-    const qreal fromA = QPointF::dotProduct(scenePos - m_apexDragBaseA, along);
-    const qreal angleA = qRound(qRadiansToDegrees(qAtan2(m_apexDragHeight, fromA)));
+    const qreal pointer = VertexAngleKnob::PointerAngleDegrees(m_apexDragBaseA, scenePos, RotationAngle());
+    const qreal angleA = qRound(m_apexDragStartAngle + (pointer - m_apexDragStartPointer));
     const qreal cotA = 1.0 / qTan(qDegreesToRadians(angleA));
     const qreal cotB = baseLength / m_apexDragHeight - cotA;
     const qreal angleB = qRadiansToDegrees(qAtan2(1.0, cotB));
@@ -222,15 +222,18 @@ void TriangleItem::DrawSelectionOverlay(QPainter* painter)
     if (IsCustomShape() || !isSelected() || !IsEditable() || !HasSingleSelection()) {
         return;
     }
-    if (AngleReadoutVisible()) {
-        painter->setFont(ReadoutFont(painter->font()));
-        painter->setPen(QColor(37, 99, 235));
-        const QString textA = QStringLiteral("%1°").arg(qRound(m_bottomAngle1));
-        const QString textB = QStringLiteral("%1°").arg(qRound(m_bottomAngle2));
-        painter->drawText(BottomReadoutRect(textA, Qt::AlignLeft), Qt::AlignLeft | Qt::AlignVCenter, textA);
-        painter->drawText(BottomReadoutRect(textB, Qt::AlignRight), Qt::AlignRight | Qt::AlignVCenter, textB);
+    if (!AngleReadoutVisible()) {
+        return;
     }
-    painter->restore();
+    // 两个底角各挂一张读数底片（白底圆角 + 蓝字），贴着各自的顶点，
+    // 与平行四边形 / 菱形的角度读数同一份口径。
+    const QList<QRectF> chips = AngleReadoutRects();
+    const QString textA = QStringLiteral("%1°").arg(qRound(m_bottomAngle1));
+    const QString textB = QStringLiteral("%1°").arg(qRound(m_bottomAngle2));
+    if (chips.size() == 2) {
+        DrawReadoutChip(painter, chips.constFirst(), textA);
+        DrawReadoutChip(painter, chips.constLast(), textB);
+    }
 }
 
 QList<QRectF> TriangleItem::AngleReadoutRects() const
@@ -240,5 +243,7 @@ QList<QRectF> TriangleItem::AngleReadoutRects() const
     }
     const QString textA = QStringLiteral("%1°").arg(qRound(m_bottomAngle1));
     const QString textB = QStringLiteral("%1°").arg(qRound(m_bottomAngle2));
-    return {BottomReadoutRect(textA, Qt::AlignLeft), BottomReadoutRect(textB, Qt::AlignRight)};
+    // A 在左下顶点往角内侧展开，B 在右下顶点反向展开。
+    return {ReadoutChipRect(triangleVertex(TriangleVertex::A), textA, true),
+            ReadoutChipRect(triangleVertex(TriangleVertex::B), textB, false)};
 }

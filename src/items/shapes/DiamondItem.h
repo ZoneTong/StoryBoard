@@ -15,9 +15,13 @@ class DiamondItem : public ParallelogramAbstractItem {
     qreal ParallelogramAngle() const override;
     // 写入侧按 h = w·tan(A/2) 由宽反算高，中心不动。
     void SetParallelogramAngle(qreal angle) override;
+    // 左顶点 A 处的旋转钮：与平行四边形 / 三角形同一口径，绕顶点拖动改 A。
+    HandleSpecList CustomHandles() const override;
+    bool BeginCustomHandleDrag(int handle, const QPointF& scenePos) override;
+    bool ApplyCustomHandleDrag(int handle, const QPointF& scenePos) override;
 
   protected:
-    // 角度浮层贴左顶点：拖外接框 / 边时显示，不新增角度句柄。
+    // 角度浮层贴左顶点：拖外接框 / 边或旋钮时显示。
     QPointF AngleReadoutAnchor() const override;
     void ContentResized() override;
     void ApplyStateContentSize(const QSizeF& requested) override;
@@ -26,4 +30,8 @@ class DiamondItem : public ParallelogramAbstractItem {
   private:
     // 非四角边拖动把派生内角吸附到 1°；四角拖动与状态回放不吸附。
     bool m_syncingDiamond = false;
+    // 拖角度旋钮期间的左顶点（场景坐标）与起手角度 / 指针朝向。
+    QPointF m_angleDragPivot;
+    qreal m_angleDragStartAngle = 0.0;
+    qreal m_angleDragStartPointer = 0.0;
 };

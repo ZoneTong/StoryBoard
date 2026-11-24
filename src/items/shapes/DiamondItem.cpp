@@ -1,6 +1,7 @@
 #include "items/shapes/DiamondItem.h"
 
 #include "items/geometry/ShapePathBuilder.h"
+#include "items/geometry/VertexAngleKnob.h"
 
 #include <QtMath>
 
@@ -50,6 +51,52 @@ void DiamondItem::SetParallelogramAngle(qreal angle)
     m_syncingDiamond = false;
     const QPointF newCenterScene = mapToScene(ContentRect().center());
     setPos(pos() + (centerScene - newCenterScene));
+}
+
+HandleSpecList DiamondItem::CustomHandles() const
+{
+    HandleSpecList specs;
+    if (IsCustomShape()) {
+        return specs;
+    }
+    // 与平行四边形 / 三角形同一口径：旋钮贴在要改的那个角（左顶点 A）的内侧平分线上，
+    // 绕顶点拖动改 A；菱形的宽不动、高由 A 反算，左顶点天然固定。
+    const QRectF rect = ContentRect();
+    const QPointF leftVertex(rect.left(), rect.center().y());
+    const QPointF topVertex(rect.center().x(), rect.top());
+    const QPointF bottomVertex(rect.center().x(), rect.bottom());
+    HandleSpec knob;
+    knob.id = CanvasItem::CUSTOM_1;
+    knob.position = VertexAngleKnob::Position(leftVertex, topVertex, bottomVertex, ViewScale(), rect);
+    knob.behavior = HandleBehavior::SKEW;
+    knob.cursor = Qt::SizeHorCursor;
+    knob.hitPadding = 16.0;
+    specs.append(knob);
+    return specs;
+}
+
+bool DiamondItem::BeginCustomHandleDrag(int handle, const QPointF& scenePos)
+{
+    if (handle != CanvasItem::CUSTOM_1 || IsCustomShape()) {
+        return false;
+    }
+    const QRectF rect = ContentRect();
+    m_angleDragPivot = mapToScene(QPointF(rect.left(), rect.center().y()));
+    m_angleDragStartAngle = ParallelogramAngle();
+    m_angleDragStartPointer = VertexAngleKnob::PointerAngleDegrees(m_angleDragPivot, scenePos, RotationAngle());
+    return true;
+}
+
+bool DiamondItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos)
+{
+    if (handle != CanvasItem::CUSTOM_1 || IsCustomShape()) {
+        return false;
+    }
+    // 指针绕左顶点转多少度，内角就变多少度（按 1° 量化）；宽与中心不动，只反算高。
+    const qreal pointer = VertexAngleKnob::PointerAngleDegrees(m_angleDragPivot, scenePos, RotationAngle());
+    SetParallelogramAngle(qRound(m_angleDragStartAngle + (pointer - m_angleDragStartPointer)));
+    SetAngleReadoutVisible(true);
+    return true;
 }
 
 void DiamondItem::ContentResized()

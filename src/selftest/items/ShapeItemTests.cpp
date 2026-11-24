@@ -8,6 +8,7 @@
 #include "items/geometry/EllipseShape.h"
 #include "items/geometry/ShapeMeta.h"
 #include "items/geometry/ShapePathBuilder.h"
+#include "items/geometry/VertexAngleKnob.h"
 #include "items/lines/ArcItem.h"
 #include "items/lines/BraceItem.h"
 #include "items/lines/CurveItem.h"
@@ -243,13 +244,13 @@ void selftest::RunShapeItemTests(Context& ctx)
         ctx.Check(qAbs(paraStateAngle - 170.0) < 0.01, QStringLiteral("平行四边形内角进入状态快照"),
                   QStringLiteral("angle=%1").arg(paraStateAngle));
     }
-    // 需求：内角旋钮绕左下顶点拖动，底边长度全程不变；锐角在右、钝角在左，可连续跨过 90°。
-    // 旋钮下移到框内 22px，90° 时不再与任何角手柄重合。
+    // 需求：内角旋钮贴着左下内角顶点（三种图元同一口径），绕顶点拖动改 A；
+    // 底边长度全程不变，锐角 / 钝角连续，拖过 90° 时旋钮跟着顶点走。
     {
         GeneralParallelogramItem para;
-        auto knobInScene = [&para]() {
+        auto knobLocal = [&para]() {
             const HandleSpecList specs = para.CustomHandles();
-            return specs.isEmpty() ? QPointF() : para.mapToScene(specs.constFirst().position);
+            return specs.isEmpty() ? QPointF() : specs.constFirst().position;
         };
         auto hasSkewKnob = [&para]() {
             const HandleSpecList specs = para.CustomHandles();
@@ -261,26 +262,35 @@ void selftest::RunShapeItemTests(Context& ctx)
             return QLineF(path.elementAt(0), path.elementAt(1)).length();
         };
         para.SetParallelogramAngle(60.0);
+        const QPointF pivot60 = para.BottomLeftVertex();
+        const QRectF acuteRect = para.ContentRect();
+        const QPainterPath acutePath = para.CurrentPath(acuteRect);
         const qreal baseLength = bottomLength();
-        const QPointF acuteKnob = knobInScene();
+        const QPointF acuteKnob = knobLocal();
         para.SetParallelogramAngle(90.0);
+        const QPointF pivot90 = para.BottomLeftVertex();
         const qreal rightBase = bottomLength();
-        const qreal rightCenterX = para.ContentSize().width() / 2.0;
-        const QPointF rightKnob = knobInScene();
+        const QPointF rightKnob = knobLocal();
         para.SetParallelogramAngle(120.0);
+        const QPointF pivot120 = para.BottomLeftVertex();
         const qreal obtuseBase = bottomLength();
-        const QPointF obtuseKnob = knobInScene();
-        ctx.Check(
-            hasSkewKnob() && acuteKnob.x() > rightKnob.x() && rightKnob.x() > obtuseKnob.x() &&
-                qAbs(rightKnob.x() - rightCenterX) < 0.01,
-            QStringLiteral("平行四边形内角旋钮连续跨越锐角与钝角"),
-            QStringLiteral("acute=%1 right=%2 obtuse=%3").arg(acuteKnob.x()).arg(rightKnob.x()).arg(obtuseKnob.x()));
+        const QPointF obtuseKnob = knobLocal();
+        const qreal gap = VertexAngleKnob::GapPixels();
+        ctx.Check(hasSkewKnob() && qAbs(QLineF(pivot60, acuteKnob).length() - gap) < 0.5 &&
+                      qAbs(QLineF(pivot90, rightKnob).length() - gap) < 0.5 &&
+                      qAbs(QLineF(pivot120, obtuseKnob).length() - gap) < 0.5,
+                  QStringLiteral("平行四边形内角旋钮贴在左下顶点、离开顶点一段固定距离"),
+                  QStringLiteral("gap=%1/%2/%3")
+                      .arg(QLineF(pivot60, acuteKnob).length())
+                      .arg(QLineF(pivot90, rightKnob).length())
+                      .arg(QLineF(pivot120, obtuseKnob).length()));
         ctx.Check(qAbs(baseLength - rightBase) < 0.01 && qAbs(baseLength - obtuseBase) < 0.01,
                   QStringLiteral("改变左下内角时底边长度保持不变"),
                   QStringLiteral("60=%1 90=%2 120=%3").arg(baseLength).arg(rightBase).arg(obtuseBase));
-        ctx.Check(acuteKnob.y() > para.ContentRect().top() + 12.0 && rightKnob.y() > para.ContentRect().top() + 12.0,
-                  QStringLiteral("内角旋钮下移，不在顶边/角手柄处"),
-                  QStringLiteral("y=%1/%2").arg(acuteKnob.y()).arg(rightKnob.y()));
+        ctx.Check(acutePath.contains(acuteKnob) && acuteKnob.y() > acuteRect.top() + 12.0 &&
+                      acuteKnob.x() > acuteRect.left() + 12.0,
+                  QStringLiteral("内角旋钮落在内角内侧，不再压在顶边中点"),
+                  QStringLiteral("knob=%1,%2").arg(acuteKnob.x()).arg(acuteKnob.y()));
         // 角度是真相：89°/91° 都落在同一内容框宽度内，说明 90° 前后没有断档或跳变。
         para.SetParallelogramAngle(89.0);
         const QPainterPath steepPath = para.CurrentPath(para.ContentRect());
@@ -291,6 +301,115 @@ void selftest::RunShapeItemTests(Context& ctx)
                 qAbs(bluntPath.boundingRect().width() - para.ContentSize().width()) < 1.0,
             QStringLiteral("90° 前后的平行四边形轮廓都不越出内容框"),
             QStringLiteral("89=%1 91=%2").arg(steepPath.boundingRect().width()).arg(bluntPath.boundingRect().width()));
+    }
+    {
+        // 命中与拖拽手感：指针压在旋钮上归旋钮、压在角手柄上仍是缩放，25% 缩放不丢命中；
+        // 按下不动不跳角，绕顶点再转 30° 时 A 恰好 +30°；读数底片挂在顶点下方。
+        CanvasScene scene;
+        scene.SetMode(ToolMode::EDIT);
+        CanvasView view(&scene);
+        view.resize(480, 360);
+        GeneralParallelogramItem para;
+        scene.AttachItem(&para);
+        para.setSelected(true);
+        CanvasItemHandles handles(&para);
+        CanvasItemInteraction drag(&para);
+        const HandleSpecList specs = para.CustomHandles();
+        const QPointF knob = specs.isEmpty() ? QPointF() : specs.constFirst().position;
+        const QPointF pivot = para.BottomLeftVertex();
+        const int hitCenter = handles.HitAt(knob);
+        const int hitNear = handles.HitAt(knob + QPointF(10.0, 5.0));
+        const int hitCorner = handles.HitAt(pivot);
+        const qreal angleBefore = para.ParallelogramAngle();
+        drag.BeginResize(CanvasItem::CUSTOM_1, para.mapToScene(knob));
+        drag.ApplyResize(para.mapToScene(knob), Qt::NoModifier);
+        const qreal angleStill = para.ParallelogramAngle();
+        const QPointF pivotScene = para.mapToScene(pivot);
+        const qreal radius = QLineF(pivotScene, para.mapToScene(knob)).length();
+        const qreal pointerStart = qRadiansToDegrees(
+            qAtan2(pivotScene.y() - para.mapToScene(knob).y(), para.mapToScene(knob).x() - pivotScene.x()));
+        const qreal pointerTarget = pointerStart + 30.0;
+        drag.ApplyResize(pivotScene + QPointF(radius * qCos(qDegreesToRadians(pointerTarget)),
+                                              -radius * qSin(qDegreesToRadians(pointerTarget))),
+                         Qt::NoModifier);
+        const qreal angleRotated = para.ParallelogramAngle();
+        view.setTransform(QTransform::fromScale(0.25, 0.25));
+        const HandleSpecList scaledSpecs = para.CustomHandles();
+        const int hitZoomed =
+            scaledSpecs.isEmpty() ? CanvasItem::NO_HANDLE : handles.HitAt(scaledSpecs.constFirst().position);
+        para.SetAngleReadoutVisible(true);
+        const QRectF content = para.ContentRect();
+        const QRectF bounds = para.boundingRect();
+        ctx.Check(hitCenter == CanvasItem::CUSTOM_1 && hitNear == CanvasItem::CUSTOM_1 &&
+                      hitCorner == CanvasItem::BOTTOM_LEFT && hitZoomed == CanvasItem::CUSTOM_1,
+                  QStringLiteral("内角旋钮命中稳定：旋钮中心 / 近旁归旋钮，角手柄仍可缩放，25% 缩放不丢命中"),
+                  QStringLiteral("center=%1 near=%2 corner=%3 zoomed=%4")
+                      .arg(hitCenter)
+                      .arg(hitNear)
+                      .arg(hitCorner)
+                      .arg(hitZoomed));
+        ctx.Check(qAbs(angleStill - angleBefore) < 0.01 && qAbs(angleRotated - (angleBefore + 30.0)) < 1.0,
+                  QStringLiteral("内角旋钮按下不跳角、绕顶点转 30° 内角就变 30°"),
+                  QStringLiteral("before=%1 still=%2 rotated=%3").arg(angleBefore).arg(angleStill).arg(angleRotated));
+        ctx.Check(bounds.bottom() > content.bottom() + 18.0, QStringLiteral("平行四边形角度读数底片挂在左下顶点下方"),
+                  QStringLiteral("contentBottom=%1 boundsBottom=%2").arg(content.bottom()).arg(bounds.bottom()));
+        para.SetAngleReadoutVisible(false);
+        drag.FinishInteraction();
+    }
+    {
+        // 菱形与平行四边形 / 三角形同一口径：左顶点 A 处也有旋转钮，绕顶点拖动改 A；
+        // 宽与中心不动，只由 A 反算高，命中也不抢左中点的缩放手柄。
+        CanvasScene scene;
+        scene.SetMode(ToolMode::EDIT);
+        CanvasView view(&scene);
+        view.resize(480, 360);
+        DiamondItem diamond;
+        scene.AttachItem(&diamond);
+        diamond.setSelected(true);
+        CanvasItemHandles handles(&diamond);
+        CanvasItemInteraction drag(&diamond);
+        const HandleSpecList specs = diamond.CustomHandles();
+        const QPointF leftVertex(diamond.ContentRect().left(), diamond.ContentRect().center().y());
+        const bool specOk =
+            specs.size() == 1 && specs.constFirst().id == CanvasItem::CUSTOM_1 &&
+            specs.constFirst().behavior == HandleBehavior::SKEW &&
+            qAbs(QLineF(leftVertex, specs.constFirst().position).length() - VertexAngleKnob::GapPixels()) < 0.5;
+        const QPointF knob = specs.constFirst().position;
+        const int hitKnob = handles.HitAt(knob);
+        const int hitSide = handles.HitAt(leftVertex);
+        const qreal angleBefore = diamond.ParallelogramAngle();
+        const qreal widthBefore = diamond.ContentSize().width();
+        const QPointF centerBefore = diamond.mapToScene(diamond.ContentRect().center());
+        drag.BeginResize(CanvasItem::CUSTOM_1, diamond.mapToScene(knob));
+        const QPointF pivotScene = diamond.mapToScene(leftVertex);
+        const QPointF knobScene = diamond.mapToScene(knob);
+        const qreal radius = QLineF(pivotScene, knobScene).length();
+        const qreal pointerStart =
+            qRadiansToDegrees(qAtan2(pivotScene.y() - knobScene.y(), knobScene.x() - pivotScene.x()));
+        const qreal pointerTarget = pointerStart + 20.0;
+        drag.ApplyResize(pivotScene + QPointF(radius * qCos(qDegreesToRadians(pointerTarget)),
+                                              -radius * qSin(qDegreesToRadians(pointerTarget))),
+                         Qt::NoModifier);
+        const qreal angleAfter = diamond.ParallelogramAngle();
+        const QPointF centerAfter = diamond.mapToScene(diamond.ContentRect().center());
+        ctx.Check(specOk && hitKnob == CanvasItem::CUSTOM_1 && hitSide == CanvasItem::LEFT &&
+                      qAbs(angleAfter - (angleBefore + 20.0)) < 1.0 &&
+                      qAbs(diamond.ContentSize().width() - widthBefore) < 0.01 &&
+                      QLineF(centerBefore, centerAfter).length() < 0.5,
+                  QStringLiteral("菱形左顶点内角旋钮：绕顶点转 20° 内角就变 20°，宽与中心不动、左边手柄仍可缩放"),
+                  QStringLiteral("gap=%1 hit=%2/%3 angle=%4->%5 width=%6->%7 center=%8,%9->%10,%11")
+                      .arg(QLineF(leftVertex, knob).length())
+                      .arg(hitKnob)
+                      .arg(hitSide)
+                      .arg(angleBefore)
+                      .arg(angleAfter)
+                      .arg(widthBefore)
+                      .arg(diamond.ContentSize().width())
+                      .arg(centerBefore.x())
+                      .arg(centerBefore.y())
+                      .arg(centerAfter.x())
+                      .arg(centerAfter.y()));
+        drag.FinishInteraction();
     }
     // 矩形锁 90°，不能继承平行四边形的内角旋钮：那个旋钮在矩形里落在中心，
     // 拖动只会调用锁 90° 的写入，视觉上是一个没有用途的图标。
@@ -965,26 +1084,28 @@ void selftest::RunShapeItemTests(Context& ctx)
             QStringLiteral("angles=%1/%2").arg(clampedTriangle.BottomAngle1()).arg(clampedTriangle.BottomAngle2()));
     }
     {
-        // 底角拖到 90° 时顶点 C 与角顶点横向重合：APEX 手柄必须下移避开角落手柄，
-        // 否则把手柄顶在顶点上，用户点中的是 TOP_LEFT / TOP_RIGHT 缩放手柄。
+        // 三角形与平行四边形 / 菱形同一口径：旋钮贴着底角 A 的顶点在内侧平分线上，
+        // 不再顶在顶点 C 处，也不再和角落缩放手柄抢位置。
         TriangleItem rightTriangle;
         rightTriangle.SetTriangleAngles(90.0, 45.0);
         const HandleSpecList apexSpecs = rightTriangle.CustomHandles();
         const bool apexOk = apexSpecs.size() == 1 && apexSpecs.constFirst().id == CanvasItem::CUSTOM_0 &&
                             apexSpecs.constFirst().behavior == HandleBehavior::ANGLE;
         const QPointF apexCenter = apexOk ? apexSpecs.constFirst().position : QPointF();
-        const QPointF vertex = rightTriangle.triangleVertex(ShapeAbstractItem::TriangleVertex::C);
-        ctx.Check(apexOk && apexCenter.y() > rightTriangle.ContentRect().top() + 12.0 &&
-                      qAbs(apexCenter.x() - vertex.x()) < 0.01 && apexCenter.y() < rightTriangle.ContentRect().bottom(),
-                  QStringLiteral("三角形顶点手柄下移避开角落手柄"),
-                  QStringLiteral("apex=%1,%2 vertex=%3,%4")
+        const QPointF vertexA = rightTriangle.triangleVertex(ShapeAbstractItem::TriangleVertex::A);
+        ctx.Check(apexOk && qAbs(QLineF(vertexA, apexCenter).length() - VertexAngleKnob::GapPixels()) < 0.5 &&
+                      apexCenter.x() > rightTriangle.ContentRect().left() + 12.0 &&
+                      apexCenter.y() < rightTriangle.ContentRect().bottom() - 12.0,
+                  QStringLiteral("三角形底角 A 旋钮贴在左下顶点，离开角手柄一段固定距离"),
+                  QStringLiteral("knob=%1,%2 vertexA=%3,%4 gap=%5")
                       .arg(apexCenter.x())
                       .arg(apexCenter.y())
-                      .arg(vertex.x())
-                      .arg(vertex.y()));
+                      .arg(vertexA.x())
+                      .arg(vertexA.y())
+                      .arg(QLineF(vertexA, apexCenter).length()));
     }
     {
-        // B1：角度读数移到基边外，命中区按屏幕尺寸保持稳定，三角形 C 顶点用水平双箭头。
+        // B1：读数底片吊在底角顶点下方，命中区按屏幕尺寸保持稳定，三角形 A 角用水平双箭头。
         CanvasScene scene;
         scene.SetMode(ToolMode::EDIT);
         CanvasView view(&scene);
@@ -996,22 +1117,24 @@ void selftest::RunShapeItemTests(Context& ctx)
         CanvasItemHandles handles(&triangle);
         const HandleSpecList specs = triangle.CustomHandles();
         const bool apexSpecOk = specs.size() == 1 && specs.constFirst().cursor == Qt::SizeHorCursor &&
-                                qFuzzyCompare(specs.constFirst().hitPadding + 1.0, 15.0);
+                                qFuzzyCompare(specs.constFirst().hitPadding + 1.0, 17.0);
         const QPointF apex = apexSpecOk ? specs.constFirst().position : QPointF();
-        const int hitAt100 = handles.HitAt(apex + QPointF(0.0, 16.0));
+        const int hitAt100 = handles.HitAt(apex);
+        const int hitCorner = handles.HitAt(triangle.triangleVertex(ShapeAbstractItem::TriangleVertex::A));
         view.setTransform(QTransform::fromScale(0.25, 0.25));
         const HandleSpecList scaledSpecs = triangle.CustomHandles();
         const QPointF scaledApex = scaledSpecs.isEmpty() ? QPointF() : scaledSpecs.constFirst().position;
         const int hitAt25 = handles.HitAt(scaledApex);
         const bool expandedAt25 = handles.HitRect(CanvasItem::CUSTOM_0).contains(scaledApex + QPointF(0.0, 44.0));
-        ctx.Check(apexSpecOk && hitAt100 == CanvasItem::CUSTOM_0 && hitAt25 == CanvasItem::CUSTOM_0 && expandedAt25,
-                  QStringLiteral("三角形顶点手柄为水平双箭头且 100% / 25% 缩放下命中区稳定"),
-                  QStringLiteral(
-                      "cursor=%1 padding=%2 hit100=%3 hit25=%4 scale=%5 apex=%6,%7 editable=%8 selected=%9 rect=%10,"
-                      "%11,%12,%13")
+        ctx.Check(apexSpecOk && hitAt100 == CanvasItem::CUSTOM_0 && hitCorner == CanvasItem::BOTTOM_LEFT &&
+                      hitAt25 == CanvasItem::CUSTOM_0 && expandedAt25,
+                  QStringLiteral("三角形底角旋钮为水平双箭头，100% / 25% 缩放下命中区稳定且角手柄仍可缩放"),
+                  QStringLiteral("cursor=%1 padding=%2 hit100=%3 hitCorner=%4 hit25=%5 scale=%6 apex=%7,%8 editable=%9 "
+                                 "selected=%10 rect=%11,%12,%13,%14")
                       .arg(static_cast<int>(specs.isEmpty() ? Qt::ArrowCursor : specs.constFirst().cursor))
                       .arg(specs.isEmpty() ? -1.0 : specs.constFirst().hitPadding)
                       .arg(hitAt100)
+                      .arg(hitCorner)
                       .arg(hitAt25)
                       .arg(view.transform().m11())
                       .arg(scaledApex.x())
@@ -1030,6 +1153,47 @@ void selftest::RunShapeItemTests(Context& ctx)
                   QStringLiteral("25% 缩放下三角形底角读数落在包围盒内且不被基边裁掉"),
                   QStringLiteral("contentBottom=%1 boundsBottom=%2").arg(content.bottom()).arg(bounds.bottom()));
         triangle.SetAngleReadoutVisible(false);
+    }
+    {
+        // 三角形与平行四边形同一套拖拽：绕左下顶点把指针抬起 15°，A 就变 15°；
+        // 底边与 A 点不动（B 由底边 / 高度反算），读数底片挂在 A、B 顶点下方。
+        TriangleItem triangle;
+        triangle.setPos(QPointF(20.0, 30.0));
+        CanvasItemInteraction drag(&triangle);
+        const HandleSpecList specs = triangle.CustomHandles();
+        const QPointF knobScene = triangle.mapToScene(specs.constFirst().position);
+        const QPointF pivot = triangle.mapToScene(triangle.triangleVertex(ShapeAbstractItem::TriangleVertex::A));
+        const QPointF bBefore = triangle.mapToScene(triangle.triangleVertex(ShapeAbstractItem::TriangleVertex::B));
+        const qreal radius = QLineF(pivot, knobScene).length();
+        const qreal pointerStart = qRadiansToDegrees(qAtan2(pivot.y() - knobScene.y(), knobScene.x() - pivot.x()));
+        const qreal pointerTarget = pointerStart + 15.0;
+        drag.BeginResize(CanvasItem::CUSTOM_0, knobScene);
+        drag.ApplyResize(pivot + QPointF(radius * qCos(qDegreesToRadians(pointerTarget)),
+                                         -radius * qSin(qDegreesToRadians(pointerTarget))),
+                         Qt::NoModifier);
+        const QPointF aAfter = triangle.mapToScene(triangle.triangleVertex(ShapeAbstractItem::TriangleVertex::A));
+        const QPointF bAfter = triangle.mapToScene(triangle.triangleVertex(ShapeAbstractItem::TriangleVertex::B));
+        const QRectF content = triangle.ContentRect();
+        const QRectF bounds = triangle.boundingRect();
+        ctx.Check(qAbs(triangle.BottomAngle1() - 75.0) < 1.0 && qAbs(triangle.BottomAngle2() - 48.5) < 2.0 &&
+                      QLineF(aAfter, pivot).length() < 0.5 && QLineF(bAfter, bBefore).length() < 0.5 &&
+                      triangle.AngleReadoutVisible() && bounds.bottom() > content.bottom() + 20.0,
+                  QStringLiteral("三角形 A 角旋钮绕顶点转 15° 时 A 变 15°、底边不动，读数底片挂在底角顶点下方"),
+                  QStringLiteral("angles=%1/%2 A=%3,%4->%5,%6 B=%7,%8->%9,%10 bottom=%11->%12")
+                      .arg(triangle.BottomAngle1())
+                      .arg(triangle.BottomAngle2())
+                      .arg(pivot.x())
+                      .arg(pivot.y())
+                      .arg(aAfter.x())
+                      .arg(aAfter.y())
+                      .arg(bBefore.x())
+                      .arg(bBefore.y())
+                      .arg(bAfter.x())
+                      .arg(bAfter.y())
+                      .arg(content.bottom())
+                      .arg(bounds.bottom()));
+        drag.FinishInteraction();
+        ctx.Check(!triangle.AngleReadoutVisible(), QStringLiteral("松开三角形 A 角旋钮后隐藏读数"));
     }
     {
         // B2：平行四边形角度旋钮与弧线/扇形端点拖拽都按 1° 量化，弧线/扇形拖拽时显示读数。

@@ -146,9 +146,11 @@ int CanvasItemHandles::HitAt(const QPointF& pos) const
         return IsAngleKnob(spec) ? HitAngleKnob(spec, pos) : HitRect(spec.id).contains(pos);
     };
 
-    // 角度旋钮（三角形顶点 C / 平行四边形倾斜旋钮）按到中心的距离取最近的一个。
+    // 角度旋钮（三角形 / 平行四边形 / 菱形的内角）按到中心的距离取最近的一个；
+    // onRect 单独记“指针正压在旋钮方块上”，用来和角上的缩放手柄分胜负。
     int knobHit = CanvasItem::NO_HANDLE;
     qreal knobDistance = 0.0;
+    bool knobOnRect = false;
     for (const HandleSpec& spec : specs) {
         if (!IsAngleKnob(spec) || !hitSpec(spec)) {
             continue;
@@ -158,17 +160,20 @@ int CanvasItemHandles::HitAt(const QPointF& pos) const
             knobHit = spec.id;
             knobDistance = distance;
         }
+        knobOnRect = knobOnRect || Rect(spec.id).contains(pos);
     }
 
     // 选择框上的手柄同样取最近的一个（重合时中心距离才是可比较的判据）。
     int handleHit = CanvasItem::NO_HANDLE;
     qreal handleDistance = 0.0;
-    auto considerHandle = [this, &pos, &handleHit, &handleDistance](int handle) {
+    bool handleOnRect = false;
+    auto considerHandle = [this, &pos, &handleHit, &handleDistance, &handleOnRect](int handle) {
         const qreal distance = QLineF(Center(handle), pos).length();
         if (handleHit == CanvasItem::NO_HANDLE || distance < handleDistance) {
             handleHit = handle;
             handleDistance = distance;
         }
+        handleOnRect = handleOnRect || Rect(handle).contains(pos);
     };
     bool hidesTop = false;
     for (const HandleSpec& spec : specs) {
@@ -187,12 +192,16 @@ int CanvasItemHandles::HitAt(const QPointF& pos) const
         }
     }
 
-    // 填充区域内部优先旋钮；选择框边上按到各自中心的距离定胜负——点在手柄中心归手柄，
-    // 点在旋钮中心归旋钮。小图元上两个命中区重叠时也不会再互相抢占。
-    const bool insideFill = m_item->PaintedShape().contains(m_item->mapFromScene(pos));
-    if (knobHit != CanvasItem::NO_HANDLE &&
-        (insideFill || handleHit == CanvasItem::NO_HANDLE || knobDistance <= handleDistance)) {
-        return knobHit;
+    // 内角旋钮就贴在角的顶点内侧，和角上的缩放手柄只隔几像素：指针压在哪一个的方块上，
+    // 就归哪一方；只有都落在对方外扩的命中区里时，才回到“到各自中心的距离”比远近。
+    // 这样既不丢缩放手柄，也不会让用户“明明点在旋钮上却拖成了缩放”。
+    if (knobHit != CanvasItem::NO_HANDLE) {
+        if (knobOnRect != handleOnRect) {
+            return knobOnRect ? knobHit : handleHit;
+        }
+        if (handleHit == CanvasItem::NO_HANDLE || knobDistance <= handleDistance) {
+            return knobHit;
+        }
     }
     return handleHit;
 }

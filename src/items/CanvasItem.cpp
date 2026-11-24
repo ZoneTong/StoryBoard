@@ -79,6 +79,34 @@ QRectF CanvasItem::ReadoutRectAt(const QPointF& anchor, const QString& text) con
     return QRectF(anchor.x() - width / 2.0, anchor.y() - height / 2.0, width, height);
 }
 
+QRectF CanvasItem::ReadoutChipRect(const QPointF& vertex, const QString& text, bool extendsRight) const
+{
+    const QFontMetricsF metrics(ReadoutFont(QFont()));
+    const qreal scale = qMax<qreal>(ViewScale(), 0.001);
+    const qreal width = metrics.horizontalAdvance(text);
+    const qreal height = metrics.height();
+    // 底片吊在顶点外下方：上沿让开角上的缩放手柄（半个方块再加一点缝），
+    // 横向往角的内侧展开，读数始终贴着它描述的那个角。
+    const qreal gap = 10.0 / scale;
+    const qreal side = 8.0 / scale;
+    const qreal left = extendsRight ? vertex.x() + side : vertex.x() - side - width;
+    const QRectF textRect(left, vertex.y() + gap, width, height);
+    return textRect.adjusted(-4.0 / scale, -3.0 / scale, 4.0 / scale, 3.0 / scale);
+}
+
+void CanvasItem::DrawReadoutChip(QPainter* painter, const QRectF& chip, const QString& text) const
+{
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->setPen(QPen(QColor(37, 99, 235, 160), 1.0));
+    painter->setBrush(QColor(255, 255, 255, 235));
+    painter->drawRoundedRect(chip, 3.0, 3.0);
+    painter->setPen(QColor(37, 99, 235));
+    painter->setFont(ReadoutFont(painter->font()));
+    painter->drawText(chip, Qt::AlignCenter, text);
+    painter->restore();
+}
+
 qreal CanvasItem::ReadoutPadding() const
 {
     qreal padding = 0.0;

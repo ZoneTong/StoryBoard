@@ -1,8 +1,8 @@
 #include "items/shapes/GeneralParallelogramItem.h"
 
 #include "items/geometry/ShapePathBuilder.h"
+#include "items/geometry/VertexAngleKnob.h"
 
-#include <QTransform>
 #include <QtMath>
 
 namespace {
@@ -47,41 +47,36 @@ HandleSpecList GeneralParallelogramItem::CustomHandles() const
     if (IsCustomShape()) {
         return specs;
     }
-    // 上边中点相对内容框中心的水平偏移正好是有符号偏移的一半：上边偏移 = 高 × cot(角度)，
-    // 锐角为正（上边右移）、钝角为负（上边左移），旋钮因此能连续跨过 90°（交界落在框中心）。
+    // 旋钮绕左下内角转：位置放在“左下顶点 + 内角平分线”上（三种图元同一口径）。
+    // 上边偏移 = 高 × cot(内角)：锐角为正（上边右移）、钝角为负（上边左移），
+    // 拖过 90° 时旋钮跟着顶点走，不再跑到顶边中点去和 Top 缩放句柄抢命中。
     const QRectF rect = ContentRect();
-    const qreal scale = qMax<qreal>(ViewScale(), 0.001);
     const qreal cotValue = 1.0 / qTan(qDegreesToRadians(ParallelogramAngle()));
-    qreal shift = qAbs(rect.height() * cotValue);
-    shift = qMin(shift, qMax<qreal>(0.0, rect.width() - 1.0));
-    const qreal signedShift = cotValue >= 0.0 ? shift : -shift;
-    // 往下让开顶边中点（Top 缩放句柄），并保证内角调到 90° 时旋钮也不与顶点 / 角手柄
-    // 重合；形很矮时收在内框里。
-    const qreal inset = qMin<qreal>(22.0 / scale, qMax<qreal>(0.0, rect.height() - 7.0 / scale));
+    qreal shift = qMin(qAbs(rect.height() * cotValue), qMax<qreal>(0.0, rect.width() - 1.0));
+    const QPointF pivot = BottomLeftVertex();
+    const QPointF upperVertex = pivot + QPointF(cotValue >= 0.0 ? shift : -shift, -rect.height());
+    const QPointF baseEnd(pivot.x() + qMax<qreal>(1.0, rect.width() - shift), rect.bottom());
     HandleSpec knob;
     knob.id = CanvasItem::CUSTOM_1;
-    knob.position = QPointF(rect.center().x() + signedShift / 2.0, rect.top() + inset);
+    knob.position = VertexAngleKnob::Position(pivot, upperVertex, baseEnd, ViewScale(), rect);
     knob.behavior = HandleBehavior::SKEW;
     knob.cursor = Qt::SizeHorCursor;
-    knob.hitPadding = 14.0;
+    knob.hitPadding = 16.0;
     specs.append(knob);
     return specs;
 }
 
 bool GeneralParallelogramItem::BeginCustomHandleDrag(int handle, const QPointF& scenePos)
 {
-    Q_UNUSED(scenePos);
     if (handle != CanvasItem::CUSTOM_1 || IsCustomShape()) {
         return false;
     }
-    // 内角旋钮绕左下顶点旋转上边：先记住底边的场景锚点与长度。
-    // 拖动中包围框会随上边偏移量增减，不能再用固定的拖拽起点推算。
-    const QRectF rect = ContentRect();
-    const qreal cotValue = 1.0 / qTan(qDegreesToRadians(ParallelogramAngle()));
-    const qreal shift = qMin(qAbs(rect.height() * cotValue), qMax<qreal>(0.0, rect.width() - 1.0));
-    m_skewDragBaseLength = qMax<qreal>(1.0, rect.width() - shift);
-    const qreal bottomLeftX = cotValue >= 0.0 ? rect.left() : rect.left() + shift;
-    m_skewDragBottomLeft = mapToScene(QPointF(bottomLeftX, rect.bottom()));
+    // 旋钮贴着左下顶点：按下时记住顶点（场景坐标）与指针绕它的起始角度，
+    // 拖动按角度增量改内角，起手不会跳角。包围框随偏移量增减，顶点由
+    // SetParallelogramAngle 固定在场景里，全程可复算。
+    m_skewDragPivot = mapToScene(BottomLeftVertex());
+    m_skewDragStartAngle = ParallelogramAngle();
+    m_skewDragStartPointer = VertexAngleKnob::PointerAngleDegrees(m_skewDragPivot, scenePos, RotationAngle());
     return true;
 }
 
@@ -90,19 +85,10 @@ bool GeneralParallelogramItem::ApplyCustomHandleDrag(int handle, const QPointF& 
     if (handle != CanvasItem::CUSTOM_1 || IsCustomShape()) {
         return false;
     }
-    // 旋钮位于“底边中点 + 上边偏移”，以固定左下顶点为原点量横向距离：
-    // 上边偏移 = 指针到底边中点的距离 − 底边半长。上边向左右移动即改变左下内角，
-    // 底边长度全程保持不动。
-    const qreal startHeight = ContentSize().height();
-    QPointF along(1.0, 0.0);
-    const qreal rotation = RotationAngle();
-    if (!qFuzzyIsNull(rotation)) {
-        QTransform transform;
-        transform.rotate(rotation);
-        along = transform.map(along);
-    }
-    const qreal signedShift = QPointF::dotProduct(scenePos - m_skewDragBottomLeft, along) - m_skewDragBaseLength / 2.0;
-    SetParallelogramAngle(qRound(qRadiansToDegrees(qAtan2(startHeight, signedShift))));
+    // 指针绕左下顶点转多少度，内角就变多少度：底边长度全程不变，
+    // 锐角 / 钝角连续（90° 处没有断档），按 1° 量化。
+    const qreal pointer = VertexAngleKnob::PointerAngleDegrees(m_skewDragPivot, scenePos, RotationAngle());
+    SetParallelogramAngle(qRound(m_skewDragStartAngle + (pointer - m_skewDragStartPointer)));
     SetAngleReadoutVisible(true);
     return true;
 }

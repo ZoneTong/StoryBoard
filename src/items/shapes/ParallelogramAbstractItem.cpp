@@ -81,16 +81,9 @@ QPointF ParallelogramAbstractItem::AngleReadoutAnchor() const
 QRectF ParallelogramAbstractItem::AngleReadoutRect() const
 {
     const QString text = QStringLiteral("%1°").arg(qRound(ParallelogramAngle()));
-    const QFontMetricsF metrics(ReadoutFont(QFont()));
-    const qreal scale = qMax<qreal>(ViewScale(), 0.001);
-    const QPointF vertex = AngleReadoutAnchor();
-    // 读数贴住左下内角：文字左下角落在顶点右上方（角的内侧），锐角 / 钝角都随顶点走。
-    // 底片把角边压在下面，边再粗也不会盖住数字。
-    const qreal padX = 4.0 / scale;
-    const qreal padY = 3.0 / scale;
-    const QRectF textRect(vertex.x() + 10.0 / scale, vertex.y() - 5.0 / scale - metrics.height(),
-                          metrics.horizontalAdvance(text), metrics.height());
-    return textRect.adjusted(-padX, -padY, padX, padY);
+    // 读数吊在内角顶点下方（角的内侧展开），与三角形 / 菱形同一份底片口径：
+    // 白底圆角 + 蓝字，锐角 / 钝角都跟着顶点走，不被描边压住。
+    return ReadoutChipRect(AngleReadoutAnchor(), text, true);
 }
 
 void ParallelogramAbstractItem::DrawSelectionOverlay(QPainter* painter)
@@ -99,19 +92,8 @@ void ParallelogramAbstractItem::DrawSelectionOverlay(QPainter* painter)
     if (!AngleReadoutVisible() || !isSelected() || IsCustomShape()) {
         return;
     }
-    // 内角读数固定在左下内角处（平行四边形与菱形同一份口径），白色底片压住角边，
-    // 描边宽度变化时数字仍然清晰可读。
-    painter->save();
-    const QRectF chip = AngleReadoutRect();
-    painter->setRenderHint(QPainter::Antialiasing, true);
-    painter->setPen(QPen(QColor(37, 99, 235, 160), 1.0));
-    painter->setBrush(QColor(255, 255, 255, 235));
-    painter->drawRoundedRect(chip, 3.0, 3.0);
-    painter->setPen(QColor(37, 99, 235));
-    painter->setFont(ReadoutFont(painter->font()));
     const QString text = QStringLiteral("%1°").arg(qRound(ParallelogramAngle()));
-    painter->drawText(chip, Qt::AlignCenter, text);
-    painter->restore();
+    DrawReadoutChip(painter, AngleReadoutRect(), text);
 }
 
 QList<QRectF> ParallelogramAbstractItem::AngleReadoutRects() const

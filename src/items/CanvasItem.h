@@ -186,6 +186,10 @@ class CanvasItem : public QGraphicsObject {
 
     QFont ReadoutFont(const QFont& base) const;
     QRectF ReadoutRectAt(const QPointF& anchor, const QString& text) const;
+    // 角度读数底片：吊在角顶点正下方、向角内侧展开，白色圆角底 + 蓝字，三种图元共用。
+    // extendsRight 为 false 时底片向顶点左侧展开（右下角顶点用）。
+    QRectF ReadoutChipRect(const QPointF& vertex, const QString& text, bool extendsRight) const;
+    void DrawReadoutChip(QPainter* painter, const QRectF& chip, const QString& text) const;
     qreal ReadoutPadding() const;
     virtual QList<QRectF> AngleReadoutRects() const { return {}; }
     Handle HandleAt(const QPointF& pos) const;
