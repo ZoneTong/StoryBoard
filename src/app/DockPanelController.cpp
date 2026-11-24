@@ -14,6 +14,30 @@
 #include <QTimer>
 #include <QToolBar>
 
+namespace {
+
+// 全屏期两张悬浮卡与窗口边缘的距离，以及编辑面板顶部让开悬浮工具栏的留白
+// （工具栏高 58、离顶至少 32，加 6 的间隙）。
+constexpr int FULLSCREEN_MARGIN = 16;
+constexpr int FULLSCREEN_TOP_INSET = 96;
+constexpr int FULLSCREEN_LAYER_WIDTH = 280;
+constexpr int FULLSCREEN_LAYER_HEIGHT = 260;
+
+// 悬浮卡是独立顶层窗口，move 设置的是客户区原点，这里按帧几何的差值挪两次收敛，
+// 免得标题栏与边框宽高在不同平台下算法不同。
+void AlignDockFrame(QDockWidget* dock, QPoint target)
+{
+    for (int pass = 0; pass < 2; ++pass) {
+        const QPoint delta = target - dock->frameGeometry().topLeft();
+        if (delta.isNull()) {
+            break;
+        }
+        dock->move(dock->pos() + delta);
+    }
+}
+
+} // namespace
+
 DockPanelController::DockPanelController(MainWindow* window) : m_window(window)
 {
     m_propertiesDockStateTimer = new QTimer(window);
@@ -176,9 +200,7 @@ void DockPanelController::ApplyDockLayout()
     m_window->removeDockWidget(m_layerDock);
     m_window->addDockWidget(Qt::RightDockWidgetArea, first);
     m_window->addDockWidget(Qt::RightDockWidgetArea, second);
-    m_window->splitDockWidget(first, second, Qt::Vertical);
-    // 右上模式卡保持紧凑，右下图层卡吃掉剩余高度，落在右下角。
-    m_window->resizeDocks({m_viewModeDock, m_layerDock}, {100, 1000}, Qt::Vertical);
+    SplitRightDocks(order);
     QTimer::singleShot(0, m_window, [this]() {
         // 窗口显示后再定一次初始高度：构造阶段窗口还没有实际尺寸，切分比例会失真。
         m_window->resizeDocks({m_viewModeDock, m_layerDock}, {100, 1000}, Qt::Vertical);
@@ -202,6 +224,23 @@ void DockPanelController::ApplyDockLayout()
     RestorePropertiesPanelDockState();
 
     m_applyingDockLayout = false;
+}
+
+void DockPanelController::SplitRightDocks(const QStringList& order)
+{
+    if (!m_window || !m_viewModeDock || !m_layerDock) {
+        return;
+    }
+    QStringList resolved = order;
+    if (resolved.size() != 2 || !resolved.contains(QStringLiteral("ViewModeDock")) ||
+        !resolved.contains(QStringLiteral("LayerDock"))) {
+        resolved = {QStringLiteral("ViewModeDock"), QStringLiteral("LayerDock")};
+    }
+    QDockWidget* first = resolved.first() == QStringLiteral("ViewModeDock") ? m_viewModeDock : m_layerDock;
+    QDockWidget* second = first == m_viewModeDock ? m_layerDock : m_viewModeDock;
+    m_window->splitDockWidget(first, second, Qt::Vertical);
+    // 右上模式卡保持紧凑，右下图层卡吃掉剩余高度，落在右下角。
+    m_window->resizeDocks({m_viewModeDock, m_layerDock}, {100, 1000}, Qt::Vertical);
 }
 
 void DockPanelController::ApplyPropertiesPanelDockWidth(int width, bool resizeNow)
@@ -273,7 +312,7 @@ void DockPanelController::RestorePropertiesPanelDockState()
 
 void DockPanelController::RememberPropertiesPanelDockState()
 {
-    if (!m_propertiesDock || m_applyingDockLayout) {
+    if (!m_propertiesDock || m_applyingDockLayout || m_fullScreenLayout) {
         return;
     }
     AppSettings& settings = m_window->m_settings;
@@ -288,7 +327,7 @@ void DockPanelController::RememberPropertiesPanelDockState()
 
 void DockPanelController::SchedulePropertiesPanelDockStateSave()
 {
-    if (!m_propertiesDockStateTimer || m_applyingDockLayout) {
+    if (!m_propertiesDockStateTimer || m_applyingDockLayout || m_fullScreenLayout) {
         return;
     }
     m_propertiesDockStateTimer->start();
@@ -296,7 +335,7 @@ void DockPanelController::SchedulePropertiesPanelDockStateSave()
 
 void DockPanelController::RememberDockOrder()
 {
-    if (m_applyingDockLayout || !m_layerDock || !m_propertiesDock) {
+    if (m_applyingDockLayout || m_fullScreenLayout || !m_layerDock || !m_propertiesDock) {
         return;
     }
     const QStringList order = CurrentDockOrder();
@@ -310,6 +349,10 @@ void DockPanelController::RememberDockOrder()
 
 void DockPanelController::HandleMoveEvent(QObject* watched, QEvent* event)
 {
+    if (m_fullScreenLayout) {
+        // 全屏期两张卡是临时悬浮窗，拖动 / 缩放都不该改写用户的停靠设置。
+        return;
+    }
     if ((watched == m_viewModeDock || watched == m_layerDock) && event->type() == QEvent::Move) {
         // 卡片被拖到新位置后，等布局稳定再读上下关系并落盘。
         QTimer::singleShot(0, m_window, [this]() { RememberDockOrder(); });
@@ -334,4 +377,102 @@ void DockPanelController::UpdatePropertiesPanelDockVisibility()
     if (m_propertiesDock->isVisible() != hasSelection) {
         m_propertiesDock->setVisible(hasSelection);
     }
+}
+
+void DockPanelController::EnterFullScreenLayout()
+{
+    if (m_fullScreenLayout || !m_propertiesDock || !m_layerDock) {
+        return;
+    }
+    m_fullScreenLayout = true;
+    // 摘卡过程中会连续触发移动 / 停靠信号；整段布局不落盘，否则全屏几何会被当成
+    // 用户布局写进设置文件，退出后反而按错误位置还原。
+    m_applyingDockLayout = true;
+
+    m_propertiesFloatingBefore = m_propertiesDock->isFloating();
+    m_propertiesAreaBefore = m_window->dockWidgetArea(m_propertiesDock);
+    m_propertiesGeometryBefore = m_propertiesDock->isFloating() ? m_propertiesDock->saveGeometry() : QByteArray();
+    m_propertiesVisibleBefore = m_propertiesDock->isVisible();
+    m_layerFloatingBefore = m_layerDock->isFloating();
+    m_layerAreaBefore = m_window->dockWidgetArea(m_layerDock);
+    m_layerGeometryBefore = m_layerDock->isFloating() ? m_layerDock->saveGeometry() : QByteArray();
+    m_layerVisibleBefore = m_layerDock->isVisible();
+
+    m_propertiesDock->setFloating(true);
+    m_layerDock->setFloating(true);
+    PlaceFullScreenPanels();
+    m_layerDock->setVisible(m_layerVisibleBefore);
+    m_propertiesDock->setVisible(m_propertiesVisibleBefore);
+    // 编辑面板在全屏里跟随选中显隐；图层卡常驻右下角。
+    UpdatePropertiesPanelDockVisibility();
+    if (m_layerDock->isVisible()) {
+        m_layerDock->raise();
+    }
+    if (m_propertiesDock->isVisible()) {
+        m_propertiesDock->raise();
+    }
+}
+
+void DockPanelController::PlaceFullScreenPanels()
+{
+    if (!m_fullScreenLayout || !m_window || !m_propertiesDock || !m_layerDock) {
+        return;
+    }
+    const QRect frame = m_window->frameGeometry();
+    if (!frame.isValid() || frame.width() < 320 || frame.height() < 320) {
+        return;
+    }
+    const int margin = FULLSCREEN_MARGIN;
+
+    // 编辑面板贴左侧、顶部让开悬浮工具栏，高度吃到窗口底部留白之前。
+    const int propertiesWidth =
+        qBound(260, m_propertiesPanel ? m_propertiesPanel->PreferredWidth() : m_propertiesDock->width(), 360);
+    const int propertiesTop = frame.top() + FULLSCREEN_TOP_INSET;
+    const int propertiesHeight = qMax(320, frame.bottom() - margin - propertiesTop);
+    m_propertiesDock->resize(propertiesWidth, propertiesHeight);
+    AlignDockFrame(m_propertiesDock, QPoint(frame.left() + margin, propertiesTop));
+
+    // 图层卡贴右下角并压矮，不挡住画布中下部。
+    m_layerDock->resize(qMax(FULLSCREEN_LAYER_WIDTH, m_layerDock->minimumWidth()), FULLSCREEN_LAYER_HEIGHT);
+    const QSize layerFrame = m_layerDock->frameGeometry().size();
+    AlignDockFrame(m_layerDock, QPoint(frame.right() - margin - layerFrame.width() + 1,
+                                       frame.bottom() - margin - layerFrame.height() + 1));
+}
+
+void DockPanelController::ExitFullScreenLayout()
+{
+    if (!m_fullScreenLayout || !m_propertiesDock || !m_layerDock) {
+        return;
+    }
+    m_fullScreenLayout = false;
+
+    // 先回停靠形态，再按进入前的快照恢复悬浮几何与可见性。
+    m_propertiesDock->setFloating(false);
+    m_window->addDockWidget(m_propertiesAreaBefore, m_propertiesDock);
+    m_layerDock->setFloating(false);
+    m_window->addDockWidget(m_layerAreaBefore, m_layerDock);
+    SplitRightDocks(m_dockOrder);
+
+    if (m_propertiesFloatingBefore) {
+        m_propertiesDock->setFloating(true);
+        if (!m_propertiesGeometryBefore.isEmpty()) {
+            m_propertiesDock->restoreGeometry(m_propertiesGeometryBefore);
+        }
+    }
+    if (m_layerFloatingBefore) {
+        m_layerDock->setFloating(true);
+        if (!m_layerGeometryBefore.isEmpty()) {
+            m_layerDock->restoreGeometry(m_layerGeometryBefore);
+        }
+    }
+    m_layerDock->setVisible(m_layerVisibleBefore);
+    m_propertiesDock->setVisible(m_propertiesVisibleBefore);
+    ApplyPropertiesPanelDockWidth(m_propertiesPanel ? m_propertiesPanel->PreferredWidth() : m_propertiesDock->width(),
+                                  false);
+
+    // 布局稳定后再解除抑制：期间的移动 / 停靠信号都不该写进设置文件。
+    m_propertiesGeometryBefore.clear();
+    m_layerGeometryBefore.clear();
+    m_applyingDockLayout = false;
+    UpdatePropertiesPanelDockVisibility();
 }

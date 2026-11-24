@@ -39,6 +39,8 @@ class FullScreenController {
     QToolBar* MainToolBar() const;
     QDockWidget* ViewModeDock() const;
     void PlaceBar();
+    // 全屏期把数字键 0–9 交给悬浮工具栏的图形按钮。
+    void HandleKeyPress(class QKeyEvent* event);
 
     MainWindow* m_window = nullptr;
     bool m_active = false;

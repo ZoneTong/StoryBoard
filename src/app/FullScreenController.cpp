@@ -7,15 +7,23 @@
 
 #include <QAction>
 #include <QActionGroup>
+#include <QAbstractSpinBox>
 #include <QApplication>
+#include <QComboBox>
 #include <QDockWidget>
 #include <QEvent>
+#include <QKeyEvent>
+#include <QLineEdit>
 #include <QMenu>
 #include <QMenuBar>
+#include <QPlainTextEdit>
 #include <QSet>
 #include <QStatusBar>
 #include <QStyle>
+#include <QTextEdit>
+#include <QTimer>
 #include <QToolBar>
+#include <QWidget>
 
 #include <utility>
 
@@ -98,6 +106,18 @@ void FullScreenController::Enter()
     PlaceBar();
     m_bar->show();
     m_bar->raise();
+    // 面板摘成悬浮卡要等窗口真正是全屏几何之后再摆位，否则按旧尺寸算出错误位置。
+    if (m_window->m_docks) {
+        m_window->m_docks->EnterFullScreenLayout();
+    }
+    QTimer::singleShot(0, m_window, [this]() {
+        if (m_active) {
+            PlaceBar();
+            if (m_window->m_docks) {
+                m_window->m_docks->PlaceFullScreenPanels();
+            }
+        }
+    });
     if (m_window->m_fullScreenAct) {
         m_window->m_fullScreenAct->setChecked(true);
     }
@@ -113,6 +133,9 @@ void FullScreenController::Exit()
     UnregisterActionShortcuts();
     if (m_bar) {
         m_bar->hide();
+    }
+    if (m_window->m_docks) {
+        m_window->m_docks->ExitFullScreenLayout();
     }
     RestoreChrome(true);
     if (m_window->m_fullScreenAct) {
@@ -130,6 +153,9 @@ void FullScreenController::HandleWindowStateChange()
     UnregisterActionShortcuts();
     if (m_bar) {
         m_bar->hide();
+    }
+    if (m_window->m_docks) {
+        m_window->m_docks->ExitFullScreenLayout();
     }
     RestoreChrome(false);
     if (m_window->m_fullScreenAct) {
@@ -193,9 +219,42 @@ void FullScreenController::HandleWindowEvent(QObject* watched, QEvent* event)
     }
     if (event->type() == QEvent::Resize) {
         PlaceBar();
+        if (m_window->m_docks) {
+            m_window->m_docks->PlaceFullScreenPanels();
+        }
         if (m_bar) {
             m_bar->raise();
         }
+        return;
+    }
+    // 数字键 0–9 只在全屏期落到悬浮工具栏的图形按钮上；输入框聚焦时让位给输入。
+    if (event->type() == QEvent::KeyPress) {
+        HandleKeyPress(static_cast<QKeyEvent*>(event));
+    }
+}
+
+void FullScreenController::HandleKeyPress(QKeyEvent* event)
+{
+    if (!event || !m_bar || !m_bar->isVisible() || event->modifiers() != Qt::NoModifier) {
+        return;
+    }
+    const int key = event->key();
+    if (key < Qt::Key_0 || key > Qt::Key_9) {
+        return;
+    }
+    // 正在输入内容（描线宽度等输入框）时数字键属于输入，不能抢去切图形。
+    // 全屏窗口不一定处于激活态，先看窗口自己的焦点链，再退回应用级焦点。
+    QWidget* focus = m_window ? m_window->focusWidget() : nullptr;
+    if (!focus) {
+        focus = QApplication::focusWidget();
+    }
+    if (qobject_cast<QAbstractSpinBox*>(focus) || qobject_cast<QLineEdit*>(focus) ||
+        qobject_cast<QTextEdit*>(focus) || qobject_cast<QPlainTextEdit*>(focus) ||
+        qobject_cast<QComboBox*>(focus)) {
+        return;
+    }
+    if (m_bar->TriggerDigit(key - Qt::Key_0)) {
+        event->accept();
     }
 }
 

@@ -42,8 +42,10 @@ FullScreenBar::FullScreenBar(MainWindow* window) : QWidget(window), m_window(win
     layout->setSpacing(4);
 
     for (const ShapeBinding& binding : SHAPE_BINDINGS) {
-        layout->addWidget(AddShapeButton(QString::fromLatin1(binding.actionName),
-                                         QString::fromLatin1(binding.keyText)));
+        QToolButton* button =
+            AddShapeButton(QString::fromLatin1(binding.actionName), QString::fromLatin1(binding.keyText));
+        m_digitButtons.append(button);
+        layout->addWidget(button);
     }
 
     // 自定义图形：菜单即入口，点一下展开模板列表。
@@ -60,6 +62,7 @@ FullScreenBar::FullScreenBar(MainWindow* window) : QWidget(window), m_window(win
         m_customShapeButton->setMenu(m_window->m_customShapeMenu);
     }
     layout->addWidget(m_customShapeButton);
+    m_digitButtons.append(m_customShapeButton);
 
     layout->addSpacing(6);
     m_fillStyleButton = AddStyleButton(QStringLiteral("FullScreenFillStyleButton"));
@@ -196,4 +199,18 @@ void FullScreenBar::PlaceAt(int centerX, int topInset)
 {
     const int width = sizeHint().width();
     setGeometry(centerX - width / 2, topInset, width, BAR_HEIGHT);
+}
+
+bool FullScreenBar::TriggerDigit(int digit)
+{
+    if (digit < 0 || digit >= m_digitButtons.size()) {
+        return false;
+    }
+    QToolButton* button = m_digitButtons.at(digit);
+    if (!button) {
+        return false;
+    }
+    // 自定义图形按钮是 InstantPopup，click() 直接展开模板菜单；其余按钮触发对应动作。
+    button->click();
+    return true;
 }

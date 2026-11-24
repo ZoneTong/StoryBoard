@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QVector>
 #include <QWidget>
 
 class MainWindow;
@@ -17,6 +18,8 @@ class FullScreenBar : public QWidget {
     void SyncFromWindow();
     // 底部居中放置：中心点与顶部留白都由调用方算好。
     void PlaceAt(int centerX, int topInset);
+    // 数字键 0–9 触发对应图形按钮（9 是自定义图形菜单）；返回是否确有对应按钮。
+    bool TriggerDigit(int digit);
 
     static constexpr int BAR_HEIGHT = 58;
     static constexpr int BAR_ICON_SIZE = 26;
@@ -29,6 +32,8 @@ class FullScreenBar : public QWidget {
     MainWindow* m_window = nullptr;
     QWidget* m_shapeGroup = nullptr;
     QWidget* m_styleGroup = nullptr;
+    // 键位 0–9 对应的按钮，索引即键位字符（9 是自定义图形）。
+    QVector<QToolButton*> m_digitButtons;
     QToolButton* m_customShapeButton = nullptr;
     QToolButton* m_fillStyleButton = nullptr;
     QToolButton* m_fillColorButton = nullptr;

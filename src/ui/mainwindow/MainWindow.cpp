@@ -88,6 +88,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     // 全屏控制器最后建：它要在菜单、工具栏、停靠区都存在之后才能快照界面状态。
     m_fullScreen = std::make_unique<FullScreenController>(this);
     m_shortcuts->ApplyShortcutOverrides();
+    // 键盘事件在焦点控件未消费时会上冒到窗口，这里挂自己才能在冒泡阶段收到数字键。
+    installEventFilter(this);
 
     if (!m_settings.windowGeometry.isEmpty()) {
         restoreGeometry(m_settings.windowGeometry);
