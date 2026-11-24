@@ -233,18 +233,20 @@ QPointF PolarPoint(const QPointF& center, qreal radius, qreal degrees)
     return QPointF(center.x() + radius * qCos(radians), center.y() - radius * qSin(radians));
 }
 
-// 半径末端的小箭头：尖端落在半径末梢，双翼沿切向张开，指向角度张开的方向。
-void DrawRadialArrow(QPainter& painter, const QPointF& center, qreal radius, qreal degrees, qreal length)
+// 弧线末端的切向箭头：尖端落在弧上，箭身沿弧的切线方向，双翼沿半径方向张开。
+// sweepSign=+1 表示指向角度增大的一侧，-1 表示反向。
+void DrawTangentArrow(QPainter& painter, const QPointF& center, qreal radius, qreal degrees, qreal length,
+                      qreal sweepSign)
 {
     const qreal radians = qDegreesToRadians(degrees);
     const QPointF tip = PolarPoint(center, radius, degrees);
     const QPointF radial(qCos(radians), -qSin(radians));
-    const QPointF tangent(-qSin(radians), -qCos(radians));
-    const QPointF base = tip - radial * length;
+    const QPointF tangent = sweepSign * QPointF(-qSin(radians), -qCos(radians));
+    const QPointF base = tip - tangent * length;
     QPainterPath head;
     head.moveTo(tip);
-    head.lineTo(base + tangent * (length * 0.55));
-    head.lineTo(base - tangent * (length * 0.55));
+    head.lineTo(base + radial * (length * 0.40));
+    head.lineTo(base - radial * (length * 0.40));
     head.closeSubpath();
     painter.save();
     painter.setBrush(painter.pen().color());
@@ -253,15 +255,21 @@ void DrawRadialArrow(QPainter& painter, const QPointF& center, qreal radius, qre
 }
 void DrawSector(QPainter& painter, IconId)
 {
-    // 打底是一块浅色扇形；两条边界半径各画成带箭头的射线，末端箭头指向角度张开的方向。
-    const QPointF center(12.0, 12.0);
-    const qreal radius = 9.2;
-    const qreal sweepDegrees = 72.0;
+    // 三层含义拼在一枚图标里：内层浅色扇形（扇形角）、外层更长的弧线（弧线角）、
+    // 弧线末端一枚切向箭头（角度由起点扫到终点，箭头切于弧线而不是沿半径朝外）。
+    // 扇形半径刻意小于弧线半径：两者之间留出背景，小尺寸下才不会糊成一团。
+    const QPointF center(12.0, 15.6);
+    const qreal wedgeRadius = 7.6;
+    const qreal arcRadius = 9.6;
+    const qreal wedgeStart = 30.0;
+    const qreal wedgeEnd = 150.0;
+    const qreal arcStart = 22.0;
+    const qreal arcEnd = 158.0;
 
-    const QRectF box(center.x() - radius, center.y() - radius, radius * 2.0, radius * 2.0);
+    const QRectF wedgeBox(center.x() - wedgeRadius, center.y() - wedgeRadius, wedgeRadius * 2.0, wedgeRadius * 2.0);
     QPainterPath wedge;
     wedge.moveTo(center);
-    wedge.arcTo(box, 0.0, sweepDegrees);
+    wedge.arcTo(wedgeBox, wedgeStart, wedgeEnd - wedgeStart);
     wedge.closeSubpath();
     painter.save();
     QColor fill = painter.pen().color();
@@ -271,11 +279,13 @@ void DrawSector(QPainter& painter, IconId)
     painter.drawPath(wedge);
     painter.restore();
 
-    for (const qreal degrees : {0.0, sweepDegrees}) {
-        const QPointF tip = PolarPoint(center, radius, degrees);
-        painter.drawLine(center, tip);
-        DrawRadialArrow(painter, center, radius, degrees, 3.0);
-    }
+    const QRectF arcBox(center.x() - arcRadius, center.y() - arcRadius, arcRadius * 2.0, arcRadius * 2.0);
+    QPainterPath arc;
+    arc.arcMoveTo(arcBox, arcStart);
+    arc.arcTo(arcBox, arcStart, arcEnd - arcStart);
+    painter.drawPath(arc);
+
+    DrawTangentArrow(painter, center, arcRadius, arcEnd, 3.6, 1.0);
 }
 constexpr struct IconEntry {
     IconId id;
