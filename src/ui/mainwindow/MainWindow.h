@@ -256,15 +256,6 @@ class MainWindow : public QMainWindow {
     QAction* m_bgFitAct = nullptr;
     QAction* m_bgTileAct = nullptr;
     QAction* m_settingsAct = nullptr;
-    QAction* m_fillNoneAct = nullptr;
-    QAction* m_fillSolidAct = nullptr;
-    QAction* m_fillHachureAct = nullptr;
-    QAction* m_fillReverseAct = nullptr;
-    QAction* m_fillCrossAct = nullptr;
-    QAction* m_fillGridAct = nullptr;
-    QAction* m_fillHoneycombAct = nullptr;
-    QAction* m_fillBrickAct = nullptr;
-    QAction* m_fillDotsAct = nullptr;
     QAction* m_fillColorAct = nullptr;
     QAction* m_strokeColorAct = nullptr;
 
@@ -280,7 +271,6 @@ class MainWindow : public QMainWindow {
 
     QActionGroup* m_modeGroup = nullptr;
     QActionGroup* m_backgroundModeGroup = nullptr;
-    QActionGroup* m_fillStyleGroup = nullptr;
     QMenu* m_fileMenu = nullptr;
     // 插入菜单里的“描线样式”子菜单：样式变化时同步它的图标。
     QMenu* m_strokeStyleMenu = nullptr;
@@ -300,6 +290,9 @@ class MainWindow : public QMainWindow {
     // 描线样式动作与分组（需求 1/15）：卡片、菜单、工具栏、属性窗共用同一候选表。
     QList<QAction*> m_strokeStyleActions;
     QActionGroup* m_strokeStyleGroup = nullptr;
+    // 填充样式动作与分组：顺序与 FillStyleMeta 注册表一致。
+    QList<QAction*> m_fillStyleActions;
+    QActionGroup* m_fillStyleGroup = nullptr;
     QDoubleSpinBox* m_smoothingSpin = nullptr;
     std::unique_ptr<CanvasBackgroundController> m_background;
     std::unique_ptr<DockPanelController> m_docks;

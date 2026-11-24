@@ -1,6 +1,7 @@
 #include "ui/builder/UiActionFactory.h"
 
 #include "canvas/CanvasView.h"
+#include "items/properties/FillStyleMeta.h"
 #include "items/properties/ItemStyleVisuals.h"
 #include "scene/CanvasScene.h"
 #include "ui/icons/IconFactory.h"
@@ -84,11 +85,10 @@ void UiActionFactory::Build()
     m_window->m_exportExcalidrawAct =
         MakeAction(m_window, IconId::EXPORT, MainWindow::tr("Export Excalidraw…"), QKeySequence(),
                    MainWindow::tr("Save this canvas as an .excalidraw scene that excalidraw.com can open"));
-    m_window->m_exportCustomShapeAct =
-        MakeAction(m_window, IconId::SHAPES, MainWindow::tr("Export custom shape…"),
-                   QKeySequence(QStringLiteral("Ctrl+Shift+E")),
-                   MainWindow::tr("Save the selected items into the shapes folder as a reusable template "
-                                  "(Ctrl+Shift+E, also works in full screen)"));
+    m_window->m_exportCustomShapeAct = MakeAction(
+        m_window, IconId::SHAPES, MainWindow::tr("Export custom shape…"), QKeySequence(QStringLiteral("Ctrl+Shift+E")),
+        MainWindow::tr("Save the selected items into the shapes folder as a reusable template "
+                       "(Ctrl+Shift+E, also works in full screen)"));
     // 主键取 Windows 关闭标准 Alt+F4；副键 Ctrl+Q 是 Linux / macOS 级的退出标准。
     m_window->m_quitAct = new QAction(MainWindow::tr("Quit"), m_window);
     m_window->m_quitAct->setShortcuts({QKeySequence(Qt::ALT | Qt::Key_F4), QKeySequence(QStringLiteral("Ctrl+Q"))});
@@ -243,7 +243,8 @@ void UiActionFactory::Build()
     m_window->m_gridAct =
         MakeAction(m_window, IconId::GRID, MainWindow::tr("Helper grid"), QKeySequence(QStringLiteral("Ctrl+'")),
                    MainWindow::tr("Show or hide the helper grid on the canvas"));
-    m_window->m_gridAct->setObjectName(QStringLiteral("GridToggleAction"));    m_window->m_gridAct->setCheckable(true);
+    m_window->m_gridAct->setObjectName(QStringLiteral("GridToggleAction"));
+    m_window->m_gridAct->setCheckable(true);
     m_window->m_gridAct->setChecked(m_window->m_settings.showGrid);
     QObject::connect(m_window->m_gridAct, &QAction::toggled, m_window, [this](bool visible) {
         m_window->m_scene->SetShowGrid(visible);
@@ -332,51 +333,18 @@ void UiActionFactory::Build()
     QObject::connect(m_window->m_clearBgAct, &QAction::triggered, m_window, &MainWindow::ClearBackground);
     QObject::connect(m_window->m_settingsAct, &QAction::triggered, m_window, &MainWindow::ShowSettings);
 
-    m_window->m_fillNoneAct = new QAction(MainWindow::tr("No fill"), m_window);
-    m_window->m_fillSolidAct = new QAction(MainWindow::tr("Solid fill"), m_window);
-    m_window->m_fillHachureAct = new QAction(MainWindow::tr("Hatch fill"), m_window);
-    m_window->m_fillReverseAct = new QAction(MainWindow::tr("Reverse hatch fill"), m_window);
-    m_window->m_fillCrossAct = new QAction(MainWindow::tr("Cross hatch fill"), m_window);
-    m_window->m_fillGridAct = new QAction(MainWindow::tr("Grid hatch fill"), m_window);
-    m_window->m_fillHoneycombAct = new QAction(MainWindow::tr("Hexagon fill"), m_window);
-    m_window->m_fillBrickAct = new QAction(MainWindow::tr("Brick fill"), m_window);
-    m_window->m_fillDotsAct = new QAction(MainWindow::tr("Dots fill"), m_window);
-    for (QAction* action : {m_window->m_fillNoneAct, m_window->m_fillSolidAct, m_window->m_fillHachureAct,
-                            m_window->m_fillReverseAct, m_window->m_fillCrossAct, m_window->m_fillGridAct,
-                            m_window->m_fillHoneycombAct, m_window->m_fillBrickAct, m_window->m_fillDotsAct}) {
-        action->setCheckable(true);
-    }
     m_window->m_fillStyleGroup = new QActionGroup(m_window);
     m_window->m_fillStyleGroup->setExclusive(true);
-    m_window->m_fillStyleGroup->addAction(m_window->m_fillNoneAct);
-    m_window->m_fillStyleGroup->addAction(m_window->m_fillSolidAct);
-    m_window->m_fillStyleGroup->addAction(m_window->m_fillHachureAct);
-    m_window->m_fillStyleGroup->addAction(m_window->m_fillReverseAct);
-    m_window->m_fillStyleGroup->addAction(m_window->m_fillCrossAct);
-    m_window->m_fillStyleGroup->addAction(m_window->m_fillGridAct);
-    m_window->m_fillStyleGroup->addAction(m_window->m_fillHoneycombAct);
-    m_window->m_fillStyleGroup->addAction(m_window->m_fillBrickAct);
-    m_window->m_fillStyleGroup->addAction(m_window->m_fillDotsAct);
+    for (const FillStyleMeta::Entry& entry : FillStyleMeta::Registry()) {
+        auto* action = new QAction(MainWindow::tr(entry.actionSource.toLatin1().constData()), m_window);
+        action->setCheckable(true);
+        m_window->m_fillStyleActions.append(action);
+        m_window->m_fillStyleGroup->addAction(action);
+        QObject::connect(action, &QAction::triggered, m_window,
+                         [this, style = entry.style]() { m_window->SetFillStyle(style); });
+    }
     // 需求 16：默认“无填充”，勾选状态必须按当前全局状态刷新，不能写死纯色。
     m_window->UpdateFillActions();
-    QObject::connect(m_window->m_fillNoneAct, &QAction::triggered, m_window,
-                     [this]() { m_window->SetFillStyle(FillStyle::NONE); });
-    QObject::connect(m_window->m_fillSolidAct, &QAction::triggered, m_window,
-                     [this]() { m_window->SetFillStyle(FillStyle::SOLID); });
-    QObject::connect(m_window->m_fillHachureAct, &QAction::triggered, m_window,
-                     [this]() { m_window->SetFillStyle(FillStyle::HACHURE); });
-    QObject::connect(m_window->m_fillReverseAct, &QAction::triggered, m_window,
-                     [this]() { m_window->SetFillStyle(FillStyle::REVERSE_HACHURE); });
-    QObject::connect(m_window->m_fillCrossAct, &QAction::triggered, m_window,
-                     [this]() { m_window->SetFillStyle(FillStyle::CROSS_HATCH); });
-    QObject::connect(m_window->m_fillGridAct, &QAction::triggered, m_window,
-                     [this]() { m_window->SetFillStyle(FillStyle::GRID_HATCH); });
-    QObject::connect(m_window->m_fillHoneycombAct, &QAction::triggered, m_window,
-                     [this]() { m_window->SetFillStyle(FillStyle::HONEYCOMB); });
-    QObject::connect(m_window->m_fillBrickAct, &QAction::triggered, m_window,
-                     [this]() { m_window->SetFillStyle(FillStyle::BRICK); });
-    QObject::connect(m_window->m_fillDotsAct, &QAction::triggered, m_window,
-                     [this]() { m_window->SetFillStyle(FillStyle::DOTS); });
     m_window->m_fillColorAct = new QAction(MainWindow::tr("Fill color…"), m_window);
     m_window->m_fillColorAct->setObjectName(QStringLiteral("FillColorAction"));
     m_window->m_fillColorAct->setIcon(m_window->m_style->FillColorIcon(

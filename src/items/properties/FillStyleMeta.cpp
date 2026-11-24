@@ -7,24 +7,60 @@ namespace {
 const QList<Entry>& BuildRegistry()
 {
     static const QList<Entry> REGISTRY = {
-        {FillStyle::NONE, QStringLiteral("none"), QStringLiteral("No fill"), false,
+        {FillStyle::NONE,
+         QStringLiteral("none"),
+         QStringLiteral("No fill"),
+         QStringLiteral("No fill"),
+         false,
          {QStringLiteral("transparent")}},
-        {FillStyle::SOLID, QStringLiteral("solid"), QStringLiteral("Solid"), false,
+        {FillStyle::SOLID,
+         QStringLiteral("solid"),
+         QStringLiteral("Solid"),
+         QStringLiteral("Solid fill"),
+         false,
          {QStringLiteral("color")}},
-        {FillStyle::HACHURE, QStringLiteral("hachure"), QStringLiteral("Hatch"), true,
+        {FillStyle::HACHURE,
+         QStringLiteral("hachure"),
+         QStringLiteral("Hatch"),
+         QStringLiteral("Hatch fill"),
+         true,
          {QStringLiteral("hatch"), QStringLiteral("diagonal"), QStringLiteral("horizontal_lines"),
           QStringLiteral("horizontal"), QStringLiteral("vertical_lines"), QStringLiteral("vertical")}},
-        {FillStyle::REVERSE_HACHURE, QStringLiteral("reverse_hatch"), QStringLiteral("Reverse hatch"), true,
+        {FillStyle::REVERSE_HACHURE,
+         QStringLiteral("reverse_hatch"),
+         QStringLiteral("Reverse hatch"),
+         QStringLiteral("Reverse hatch fill"),
+         true,
          {QStringLiteral("reverse_hachure"), QStringLiteral("reverse"), QStringLiteral("backslash")}},
-        {FillStyle::CROSS_HATCH, QStringLiteral("cross_hatch"), QStringLiteral("Cross hatch"), true,
+        {FillStyle::CROSS_HATCH,
+         QStringLiteral("cross_hatch"),
+         QStringLiteral("Cross hatch"),
+         QStringLiteral("Cross hatch fill"),
+         true,
          {QStringLiteral("crosshatch"), QStringLiteral("cross"), QStringLiteral("zigzag")}},
-        {FillStyle::GRID_HATCH, QStringLiteral("grid_hatch"), QStringLiteral("Grid hatch"), true,
+        {FillStyle::GRID_HATCH,
+         QStringLiteral("grid_hatch"),
+         QStringLiteral("Grid hatch"),
+         QStringLiteral("Grid hatch fill"),
+         true,
          {QStringLiteral("grid"), QStringLiteral("cross_grid"), QStringLiteral("orthogonal")}},
-        {FillStyle::HONEYCOMB, QStringLiteral("honeycomb"), QStringLiteral("Hexagon"), true,
+        {FillStyle::HONEYCOMB,
+         QStringLiteral("honeycomb"),
+         QStringLiteral("Hexagon"),
+         QStringLiteral("Hexagon fill"),
+         true,
          {QStringLiteral("hexagon"), QStringLiteral("hex")}},
-        {FillStyle::BRICK, QStringLiteral("brick"), QStringLiteral("Brick"), true,
+        {FillStyle::BRICK,
+         QStringLiteral("brick"),
+         QStringLiteral("Brick"),
+         QStringLiteral("Brick fill"),
+         true,
          {QStringLiteral("brickwall")}},
-        {FillStyle::DOTS, QStringLiteral("dots"), QStringLiteral("Dots"), true,
+        {FillStyle::DOTS,
+         QStringLiteral("dots"),
+         QStringLiteral("Dots"),
+         QStringLiteral("Dots fill"),
+         true,
          {QStringLiteral("dot"), QStringLiteral("point")}},
     };
     return REGISTRY;
@@ -83,6 +119,12 @@ QString NameSource(FillStyle style)
 {
     const Entry* entry = FindByStyle(style);
     return entry ? entry->nameSource : QStringLiteral("Solid");
+}
+
+QString ActionSource(FillStyle style)
+{
+    const Entry* entry = FindByStyle(style);
+    return entry ? entry->actionSource : QStringLiteral("Solid fill");
 }
 
 } // namespace FillStyleMeta

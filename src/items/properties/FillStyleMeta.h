@@ -16,6 +16,8 @@ struct Entry {
     QString key;
     // 界面英文源文案；翻译仍走 ShapeAbstractItem 上下文，调用方负责 tr。
     QString nameSource;
+    // 主窗口菜单 / 工具栏动作的英文源文案（带 “ fill” 后缀，MainWindow 上下文）。
+    QString actionSource;
     // 除纯色 / 无填充外，其余都是带线条或点阵的图案填充。
     bool isPattern;
     QStringList aliases;
@@ -27,5 +29,6 @@ QString ToString(FillStyle style);
 FillStyle FromString(const QString& value);
 bool IsPattern(FillStyle style);
 QString NameSource(FillStyle style);
+QString ActionSource(FillStyle style);
 
 } // namespace FillStyleMeta

@@ -6,6 +6,7 @@
 #include "items/lines/LineAbstractItem.h"
 #include "items/polygon/PolygonAccess.h"
 #include "items/polygon/PolygonItem.h"
+#include "items/properties/FillStyleMeta.h"
 #include "items/properties/ItemStyleVisuals.h"
 #include "items/shapes/ShapeAbstractItem.h"
 #include "scene/CanvasScene.h"
@@ -308,63 +309,16 @@ void StyleController::UpdateFillActions()
         return;
     }
 
-    if (m_window->m_fillNoneAct) {
-        m_window->m_fillNoneAct->setChecked(m_window->m_fillStyle == FillStyle::NONE);
-    }
-    if (m_window->m_fillSolidAct) {
-        m_window->m_fillSolidAct->setChecked(m_window->m_fillStyle == FillStyle::SOLID);
-    }
-    if (m_window->m_fillHachureAct) {
-        m_window->m_fillHachureAct->setChecked(m_window->m_fillStyle == FillStyle::HACHURE);
-    }
-    if (m_window->m_fillReverseAct) {
-        m_window->m_fillReverseAct->setChecked(m_window->m_fillStyle == FillStyle::REVERSE_HACHURE);
-    }
-    if (m_window->m_fillCrossAct) {
-        m_window->m_fillCrossAct->setChecked(m_window->m_fillStyle == FillStyle::CROSS_HATCH);
-    }
-    if (m_window->m_fillGridAct) {
-        m_window->m_fillGridAct->setChecked(m_window->m_fillStyle == FillStyle::GRID_HATCH);
-    }
-    if (m_window->m_fillHoneycombAct) {
-        m_window->m_fillHoneycombAct->setChecked(m_window->m_fillStyle == FillStyle::HONEYCOMB);
-    }
-    if (m_window->m_fillBrickAct) {
-        m_window->m_fillBrickAct->setChecked(m_window->m_fillStyle == FillStyle::BRICK);
-    }
-    if (m_window->m_fillDotsAct) {
-        m_window->m_fillDotsAct->setChecked(m_window->m_fillStyle == FillStyle::DOTS);
+    const QList<FillStyle> fillStyles = FillStyleMeta::Styles();
+    for (int i = 0; i < fillStyles.size() && i < m_window->m_fillStyleActions.size(); ++i) {
+        m_window->m_fillStyleActions.at(i)->setChecked(m_window->m_fillStyle == fillStyles.at(i));
     }
 
     const QColor swatch = m_window->m_fillColor.isValid() ? m_window->m_fillColor : m_window->m_brushColor;
     m_window->m_fillButton->setIcon(
         ItemStyleVisuals::FillStyleIcon(m_window->m_fillStyle, swatch, MainWindow::TOOL_BAR_ICON_SIZE));
-    if (m_window->m_fillNoneAct) {
-        m_window->m_fillNoneAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::NONE, swatch, 16));
-    }
-    if (m_window->m_fillSolidAct) {
-        m_window->m_fillSolidAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::SOLID, swatch, 16));
-    }
-    if (m_window->m_fillHachureAct) {
-        m_window->m_fillHachureAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::HACHURE, swatch, 16));
-    }
-    if (m_window->m_fillReverseAct) {
-        m_window->m_fillReverseAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::REVERSE_HACHURE, swatch, 16));
-    }
-    if (m_window->m_fillCrossAct) {
-        m_window->m_fillCrossAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::CROSS_HATCH, swatch, 16));
-    }
-    if (m_window->m_fillGridAct) {
-        m_window->m_fillGridAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::GRID_HATCH, swatch, 16));
-    }
-    if (m_window->m_fillHoneycombAct) {
-        m_window->m_fillHoneycombAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::HONEYCOMB, swatch, 16));
-    }
-    if (m_window->m_fillBrickAct) {
-        m_window->m_fillBrickAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::BRICK, swatch, 16));
-    }
-    if (m_window->m_fillDotsAct) {
-        m_window->m_fillDotsAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::DOTS, swatch, 16));
+    for (int i = 0; i < fillStyles.size() && i < m_window->m_fillStyleActions.size(); ++i) {
+        m_window->m_fillStyleActions.at(i)->setIcon(ItemStyleVisuals::FillStyleIcon(fillStyles.at(i), swatch, 16));
     }
     const QString colorText = m_window->m_fillColor.isValid() ? m_window->m_fillColor.name(QColor::HexArgb).toUpper()
                                                               : MainWindow::tr("Follow brush color");
