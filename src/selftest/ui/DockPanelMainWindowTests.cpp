@@ -412,12 +412,17 @@ void selftest::RunDockPanelMainWindowTests(Context& ctx)
                       dockWindow.dockWidgetArea(layerDock) == Qt::RightDockWidgetArea,
                   QStringLiteral("视图模式卡与图层卡默认停靠右侧"));
         ctx.Check(viewModeDock && layerDock &&
-                      viewModeDock->mapTo(&dockWindow, QPoint(0, 0)).y() <
-                          layerDock->mapTo(&dockWindow, QPoint(0, 0)).y(),
-                  QStringLiteral("视图模式卡在右上角、图层卡在右下角"));
-        ctx.Check(viewModeDock && layerDock && viewModeDock->height() < dockWindow.height() - 100 &&
-                      layerDock->height() < dockWindow.height() - 100,
-                  QStringLiteral("右侧两张卡片默认高度不占满窗口"));
+                      layerDock->mapTo(&dockWindow, QPoint(0, 0)).y() <
+                          viewModeDock->mapTo(&dockWindow, QPoint(0, 0)).y(),
+                  QStringLiteral("图层卡在右上角、视图模式卡压在它下面"));
+        ctx.Check(viewModeDock && layerDock && layerDock->height() > dockWindow.height() - 200 &&
+                      viewModeDock->height() < 200,
+                  QStringLiteral("图层卡吃掉右侧剩余高度、模式卡保持紧凑"),
+                  layerDock ? QStringLiteral("layer=%1 view=%2 window=%3")
+                                  .arg(layerDock->height())
+                                  .arg(viewModeDock ? viewModeDock->height() : -1)
+                                  .arg(dockWindow.height())
+                            : QString());
         for (const QString& stale : QDir(dockShapesDir).entryList({QStringLiteral("*.sbcanvas")}, QDir::Files)) {
             QFile::remove(QDir(dockShapesDir).filePath(stale));
         }

@@ -22,7 +22,6 @@
 #include <QTimer>
 #include <QToolButton>
 #include <QVBoxLayout>
-#include <algorithm>
 
 namespace {
 
@@ -103,6 +102,12 @@ LayerPanel::LayerPanel(CanvasScene* scene, QWidget* parent) : QWidget(parent), m
     buttonRow->addWidget(m_downButton);
     layout->addLayout(buttonRow);
 
+    // 按组显示：默认关，图层下平铺整层图元（按层内高度降序）；勾选后才出组行。
+    m_groupByGroupBox = new QCheckBox(tr("Show by group"), this);
+    m_groupByGroupBox->setObjectName(QStringLiteral("LayerGroupModeBox"));
+    m_groupByGroupBox->setToolTip(tr("Show group names first, then ungrouped items"));
+    layout->addWidget(m_groupByGroupBox);
+
     m_summaryLabel = new QLabel(this);
     m_summaryLabel->setObjectName(QStringLiteral("LayerHint"));
     m_summaryLabel->setWordWrap(true);
@@ -113,7 +118,10 @@ LayerPanel::LayerPanel(CanvasScene* scene, QWidget* parent) : QWidget(parent), m
 
     connect(m_list, &QListWidget::itemSelectionChanged, this, &LayerPanel::ActivateCurrentLayer);
     connect(m_list, &QListWidget::itemSelectionChanged, this, [this]() { m_view->RefreshRowStyles(); });
+    // 放在 ActivateCurrentLayer 之后：图元行点击时前者只会清 preferred，最终口径由这里统一落。
+    connect(m_list, &QListWidget::itemSelectionChanged, this, &LayerPanel::OnSelectionChanged);
     connect(m_list, &QListWidget::itemClicked, this, &LayerPanel::OnRowClicked);
+    connect(m_groupByGroupBox, &QCheckBox::toggled, this, &LayerPanel::ScheduleRefresh);
     connect(m_allVisibleBox, &QCheckBox::clicked, this, [this]() {
         bool allVisible = true;
         const QList<CanvasLayer> layers = m_scene->Layers();
@@ -135,6 +143,8 @@ LayerPanel::LayerPanel(CanvasScene* scene, QWidget* parent) : QWidget(parent), m
     connect(m_scene, &CanvasScene::layersChanged, this, &LayerPanel::ScheduleRefresh);
     connect(m_scene, &CanvasScene::contentChanged, this, &LayerPanel::ScheduleRefresh);
     connect(m_scene, &CanvasScene::activeLayerChanged, this, &LayerPanel::SyncActiveLayer);
+    // 模式决定图元行能否选中（只有编辑模式），切换后重建行标志。
+    connect(m_scene, &CanvasScene::modeChanged, this, &LayerPanel::ScheduleRefresh);
     connect(m_scene, &QGraphicsScene::selectionChanged, this, &LayerPanel::SyncSceneSelection);
 
     Refresh();
@@ -157,24 +167,51 @@ LayerRow* LayerPanel::CreateRow(const CanvasLayer& layer, int index, int itemCou
     return row;
 }
 
-QListWidgetItem* LayerPanel::CreateGroupRow(int groupId)
+QListWidgetItem* LayerPanel::CreateGroupRow(const LayerTreeRow& spec)
 {
+    const int groupId = spec.groupId;
     const QString name = m_scene->GroupName(groupId);
-    const int count = m_scene->MemberCount(groupId);
-    int depth = 0;
-    for (int parent = m_scene->ParentGroup(groupId); parent > 0 && depth < 32; ++depth) {
-        parent = m_scene->ParentGroup(parent);
-    }
     auto* row = new QListWidgetItem(m_list);
     row->setData(Qt::UserRole, groupId);
     row->setData(ROLE_ROW_TYPE, ROW_GROUP);
     row->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
     row->setSizeHint(QSize(0, 28));
-    row->setToolTip(tr("Group “%1” · %2 items").arg(name).arg(count));
+    row->setToolTip(tr("Group “%1” · %2 items").arg(name).arg(spec.memberCount));
 
-    auto* groupRow = new LayerGroupRow(groupId, name, count, depth);
+    auto* groupRow = new LayerGroupRow(groupId, name, spec.memberCount, spec.depth);
     connect(groupRow, &LayerGroupRow::renameRequested, this, [this](int id) { RenameGroup(id); });
     m_list->setItemWidget(row, groupRow);
+    return row;
+}
+
+QListWidgetItem* LayerPanel::CreateItemRow(const LayerTreeRow& spec)
+{
+    CanvasItem* item = spec.item;
+    if (!item) {
+        return nullptr;
+    }
+
+    auto* row = new QListWidgetItem(m_list);
+    // 图元行不占 UserRole 的 id 空间：测试与面板都靠 “ROLE_ROW_TYPE + -1” 区分图层 / 组行。
+    row->setData(Qt::UserRole, -1);
+    row->setData(ROLE_ROW_TYPE, ROW_ITEM);
+    const CanvasLayer layer = m_scene->layer(item->LayerId());
+    const bool layerReady = layer.visible && !layer.locked;
+    Qt::ItemFlags flags = Qt::ItemIsEnabled;
+    if (!layerReady) {
+        // 隐藏 / 锁定图层里的图元不可编辑，按禁用行显示（QSS 的 item:disabled 灰）。
+        flags = Qt::ItemFlags();
+    } else if (m_scene->mode() == ToolMode::EDIT) {
+        flags |= Qt::ItemIsSelectable;
+    }
+    row->setFlags(flags);
+    row->setSizeHint(QSize(0, 24));
+    row->setText(LayerTreeModel::IndentText(spec.depth) + item->Name());
+    row->setToolTip(tr("%1 · height %2").arg(item->Name()).arg(item->ZOrder()));
+
+    m_itemRows.insert(row, QPointer<CanvasItem>(item));
+    // 名称 / 图层 / 高度改写不走 contentChanged，直接按图元信号合并刷新。
+    connect(item, &CanvasItem::PresentationChanged, this, &LayerPanel::ScheduleRefresh, Qt::UniqueConnection);
     return row;
 }
 
@@ -317,13 +354,22 @@ void LayerPanel::Refresh()
     const int activeId = m_scene->ActiveLayerId();
     const int previousCurrent = m_view->CurrentLayerId();
 
+    m_itemRows.clear();
     m_list->clear();
 
     // 列表顶部是最高层；背景固定在最后一行且不可选中。
+    const bool grouped = m_groupByGroupBox && m_groupByGroupBox->isChecked();
+    const QHash<int, QList<LayerTreeRow>> rowsByLayer = LayerTreeModel::BuildAll(m_scene, grouped);
     const QList<CanvasLayer> layers = m_scene->Layers();
     for (int i = layers.size() - 1; i >= 1; --i) {
         const CanvasLayer layer = layers.at(i);
-        const int count = m_scene->LayerItemCount(layer.id);
+        const QList<LayerTreeRow> rows = rowsByLayer.value(layer.id);
+        int count = 0;
+        for (const LayerTreeRow& entry : rows) {
+            if (entry.kind == LayerTreeRow::ITEM) {
+                ++count;
+            }
+        }
         auto* row = new QListWidgetItem(m_list);
         row->setData(Qt::UserRole, layer.id);
         row->setData(ROLE_ROW_TYPE, ROW_LAYER);
@@ -336,29 +382,13 @@ void LayerPanel::Refresh()
                 .arg(layer.visible ? tr("Visible") : tr("Hidden"), layer.locked ? tr(" · Locked") : QString()));
         m_list->setItemWidget(row, CreateRow(layer, i, count));
 
-        // 组行紧跟所属图层行；先按嵌套层级、再按组名排序；背景层不出组行（§7.9）。
-        QList<int> groupIds;
-        for (int groupId : m_scene->GroupIds()) {
-            if (m_scene->GroupLayerId(groupId) == layer.id) {
-                groupIds.append(groupId);
+        // 行序由 LayerTreeModel 给出：默认整层图元按 height 平铺；按组显示时组行在前、组内递归。
+        for (const LayerTreeRow& entry : rows) {
+            if (entry.kind == LayerTreeRow::GROUP) {
+                CreateGroupRow(entry);
+            } else {
+                CreateItemRow(entry);
             }
-        }
-        std::sort(groupIds.begin(), groupIds.end(), [this](int left, int right) {
-            int leftDepth = 0;
-            for (int parent = m_scene->ParentGroup(left); parent > 0 && leftDepth < 32; ++leftDepth) {
-                parent = m_scene->ParentGroup(parent);
-            }
-            int rightDepth = 0;
-            for (int parent = m_scene->ParentGroup(right); parent > 0 && rightDepth < 32; ++rightDepth) {
-                parent = m_scene->ParentGroup(parent);
-            }
-            if (leftDepth != rightDepth) {
-                return leftDepth < rightDepth;
-            }
-            return m_scene->GroupName(left).compare(m_scene->GroupName(right), Qt::CaseInsensitive) < 0;
-        });
-        for (int groupId : std::as_const(groupIds)) {
-            CreateGroupRow(groupId);
         }
     }
 
@@ -403,7 +433,21 @@ void LayerPanel::Refresh()
     m_list->verticalScrollBar()->setValue(scroll);
     m_refreshing = false;
 
-    m_scene->SetPreferredLayerIds(SelectedLayerIds());
+    m_scene->SetPreferredLayerIds(PreferredLayerIdsFromSelection());
+    // 重建后按场景选择重新标记图元行 / 组行，画布选择在此期间没被清过。
+    MirrorItemRowsFromScene();
+    // 整组选中时面板焦点应停在组行，别被上面的“恢复当前行”带回图层行。
+    int completeGroup = 0;
+    if (m_scene->SelectionIsCompleteGroup(&completeGroup)) {
+        for (int row = 0; row < m_list->count(); ++row) {
+            QListWidgetItem* entry = m_list->item(row);
+            if (entry && entry->data(ROLE_ROW_TYPE).toInt() == ROW_GROUP &&
+                entry->data(Qt::UserRole).toInt() == completeGroup) {
+                m_list->setCurrentRow(row, QItemSelectionModel::NoUpdate);
+                break;
+            }
+        }
+    }
     m_view->RefreshRowStyles();
     m_view->RefreshSummary();
     m_view->RefreshButtons();
@@ -419,7 +463,7 @@ void LayerPanel::ActivateCurrentLayer()
     if (id > CanvasScene::BackgroundLayerId && m_scene->HasLayer(id)) {
         m_scene->SetActiveLayer(id);
     }
-    m_scene->SetPreferredLayerIds(SelectedLayerIds());
+    m_scene->SetPreferredLayerIds(PreferredLayerIdsFromSelection());
     m_view->RefreshButtons();
     m_view->RefreshSummary();
 }
@@ -441,79 +485,6 @@ void LayerPanel::SyncActiveLayer()
     m_refreshing = false;
     m_view->RefreshSummary();
     m_view->RefreshButtons();
-}
-
-void LayerPanel::SyncSceneSelection()
-{
-    if (!m_scene || m_refreshing || m_syncingScene) {
-        return;
-    }
-
-    const QList<CanvasItem*> items = m_scene->SelectedCanvasItems();
-    if (items.isEmpty()) {
-        return; // 清空选择时保持图层面板的选择，不做反向同步。
-    }
-
-    // 选中恰好是一个完整组时：只选中对应组行，不切换当前图层；混合选择不强制组行。
-    int completeGroup = 0;
-    if (m_scene->SelectionIsCompleteGroup(&completeGroup)) {
-        m_syncingScene = true;
-        const QSignalBlocker blocker(m_list);
-        m_list->clearSelection();
-        for (int row = 0; row < m_list->count(); ++row) {
-            QListWidgetItem* entry = m_list->item(row);
-            if (entry->data(ROLE_ROW_TYPE).toInt() == ROW_GROUP && entry->data(Qt::UserRole).toInt() == completeGroup) {
-                entry->setSelected(true);
-                m_list->setCurrentRow(row, QItemSelectionModel::NoUpdate);
-            }
-        }
-        m_syncingScene = false;
-        m_view->RefreshRowStyles();
-        return;
-    }
-
-    QList<int> ids;
-    for (CanvasItem* item : items) {
-        if (!ids.contains(item->LayerId())) {
-            ids.append(item->LayerId());
-        }
-    }
-    std::sort(ids.begin(), ids.end());
-    const int topId = ids.last();
-
-    m_syncingScene = true;
-    if (m_scene->HasLayer(topId) && topId != CanvasScene::BackgroundLayerId && topId != m_scene->ActiveLayerId()) {
-        // 选中图元时自动把它的图层设为当前图层。
-        m_scene->SetActiveLayer(topId);
-    }
-
-    m_refreshing = true;
-    const QSignalBlocker blocker(m_list);
-    int currentRow = -1;
-    for (int row = 0; row < m_list->count(); ++row) {
-        const int id = m_list->item(row)->data(Qt::UserRole).toInt();
-        if (id == topId) {
-            currentRow = row;
-        }
-    }
-    if (currentRow >= 0) {
-        m_list->setCurrentRow(currentRow, QItemSelectionModel::NoUpdate);
-    }
-
-    m_list->clearSelection();
-    for (int row = 0; row < m_list->count(); ++row) {
-        const int id = m_list->item(row)->data(Qt::UserRole).toInt();
-        if (ids.contains(id)) {
-            m_list->item(row)->setSelected(true);
-        }
-    }
-    m_refreshing = false;
-    m_syncingScene = false;
-
-    m_scene->SetPreferredLayerIds(ids);
-    m_view->RefreshRowStyles();
-    m_view->RefreshButtons();
-    m_view->RefreshSummary();
 }
 
 void LayerPanel::RemoveSelectedLayers()

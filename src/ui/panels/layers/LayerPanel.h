@@ -1,11 +1,15 @@
 #pragma once
 
 #include "items/CanvasTypes.h"
+#include "ui/panels/layers/LayerTreeModel.h"
 
+#include <QHash>
 #include <QList>
 #include <QListWidget>
+#include <QPointer>
 #include <QWidget>
 
+class CanvasItem;
 class CanvasScene;
 class LayerActions;
 class LayerPanelView;
@@ -22,9 +26,9 @@ class LayerPanel : public QWidget {
 
     QList<int> SelectedLayerIds() const;
 
-    // 行数据角色：UserRole 存图层 / 组 id，ROLE_ROW_TYPE 区分图层行与组行。
+    // 行数据角色：UserRole 存图层 / 组 id（图元行固定 -1），ROLE_ROW_TYPE 区分三种行。
     static constexpr int ROLE_ROW_TYPE = Qt::UserRole + 1;
-    enum RowType { ROW_LAYER = 0, ROW_GROUP = 1 };
+    enum RowType { ROW_LAYER = 0, ROW_GROUP = 1, ROW_ITEM = 2 };
 
   public slots:
     void Refresh();
@@ -34,11 +38,19 @@ class LayerPanel : public QWidget {
 
   private:
     LayerRow* CreateRow(const CanvasLayer& layer, int index, int itemCount);
-    QListWidgetItem* CreateGroupRow(int groupId);
+    QListWidgetItem* CreateGroupRow(const LayerTreeRow& spec);
+    QListWidgetItem* CreateItemRow(const LayerTreeRow& spec);
     void ScheduleRefresh();
     void ActivateCurrentLayer();
     void SyncActiveLayer();
     void SyncSceneSelection();
+    void OnSelectionChanged();
+    void ApplyPanelSelectionToScene(const QList<CanvasItem*>& items);
+    void MirrorItemRowsFromScene();
+    void ClearItemRowSelection();
+    void RevealSelectedItemRow();
+    QList<CanvasItem*> SelectedRowItems() const;
+    QList<int> PreferredLayerIdsFromSelection() const;
     void RemoveSelectedLayers();
     void OnRowClicked(QListWidgetItem* item);
     void RenameGroup(int groupId);
@@ -53,11 +65,14 @@ class LayerPanel : public QWidget {
     LayerPanelView* m_view = nullptr;
     QListWidget* m_list = nullptr;
     QCheckBox* m_allVisibleBox = nullptr;
+    QCheckBox* m_groupByGroupBox = nullptr;
     QToolButton* m_addButton = nullptr;
     QToolButton* m_removeButton = nullptr;
     QToolButton* m_upButton = nullptr;
     QToolButton* m_downButton = nullptr;
     QLabel* m_summaryLabel = nullptr;
+    // 图元行 → 图元。QPointer 在行存活期内自动置空，图元被删时不会留下悬垂指针。
+    QHash<QListWidgetItem*, QPointer<CanvasItem>> m_itemRows;
     bool m_refreshing = false;
     bool m_syncingScene = false;
     bool m_refreshPending = false;

@@ -165,6 +165,12 @@
         <translation>组内图元不能单独换层，请先解除分组</translation>
     </message></context>
 <context>
+    <name>CanvasTextEditor</name><message>
+        <location filename="../src/canvas/controllers/CanvasTextEditor.cpp" line="78"/>
+        <source>Edit text</source>
+        <translation>编辑文字</translation>
+    </message></context>
+<context>
     <name>CanvasView</name><message>
         <source>The current layer is locked or hidden; drawing is unavailable. Unlock or switch layers in the layer panel first.</source>
         <translation>当前图层已锁定或已隐藏，无法在该图层绘制。请先在右侧图层面板解锁或切换图层。</translation>
@@ -280,7 +286,11 @@
     </message><message>
         <source>其它</source>
         <translation>其它</translation>
-    </message></context>
+    </message><message>
+        <source>%1 shape file(s) could not be read</source>
+        <translation>有 %1 个图形文件无法读取</translation>
+    </message>
+</context>
 <context>
     <name>ExportDialog</name><message>
         <location filename="../src/ui/dialogs/ExportDialog.cpp" line="29"/>
@@ -891,6 +901,9 @@
     </message><message>
         <source>Another item already uses this name.</source>
         <translation>已有其他图元使用该名称。</translation>
+    </message><message>
+        <source>Arrow heads</source>
+        <translation>箭头样式</translation>
     </message></context>
 <context>
     <name>ItemPropertiesDialog</name><message>
@@ -1157,6 +1170,15 @@
         <location filename="../src/ui/panels/layers/LayerPanel.cpp" line="48"/>
         <source>Top layer first · multi-select</source>
         <translation>上层在前 · 可多选</translation>
+    </message><message>
+        <source>Show by group</source>
+        <translation>按组显示</translation>
+    </message><message>
+        <source>Show group names first, then ungrouped items</source>
+        <translation>先显示组名，再显示未分组图元</translation>
+    </message><message>
+        <source>%1 · height %2</source>
+        <translation>%1 · 高度 %2</translation>
     </message><message>
         <location filename="../src/ui/panels/layers/LayerPanel.cpp" line="62"/>
         <source>Show or hide all layers</source>
@@ -1684,9 +1706,9 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Export as PNG / JPEG / PDF (Ctrl+E)</source>
         <translation>导出为 PNG / JPEG / PDF (Ctrl+E)</translation>
     </message><message>
-        <location filename="../src/ui/builder/UiActionFactory.cpp" line="87"/>
-        <source>Save the selected items into the shapes folder as a reusable template</source>
-        <translation>把选中图元保存为可复用模板到 shapes 目录</translation>
+        <location filename="../src/ui/builder/UiActionFactory.cpp" line="90"/>
+        <source>Save the selected items into the shapes folder as a reusable template (Ctrl+Shift+E, also works in full screen)</source>
+        <translation>把选中图元保存为可复用模板到 shapes 目录（Ctrl+Shift+E，全屏可用）</translation>
     </message><message>
         <location filename="../src/ui/builder/UiActionFactory.cpp" line="89"/>
         <source>Quit</source>
@@ -3240,6 +3262,14 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>%1 — click to switch mode</source>
         <translation>%1 — 点击切换模式</translation>
     </message>
+    <message>
+        <source>Arc</source>
+        <translation>弧线</translation>
+    </message>
+    <message>
+        <source>Sine wave</source>
+        <translation>正弦波</translation>
+    </message>
 </context>
 <context>
     <name>QCoreApplication</name><message>
@@ -3637,7 +3667,11 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <location filename="../src/ShapeItem.cpp" line="82"/>
         <source>Arc</source>
         <translation>弧线</translation>
-    </message></context>
+    </message><message>
+        <source>Polygon</source>
+        <translation>多边形</translation>
+    </message>
+</context>
 <context>
     <name>StoryBoard</name><message>
         <source>Polygon</source>
@@ -5432,5 +5466,9 @@ Use the checkbox to show or hide it.</source>
         <source>Choose image</source>
         <translation>选择图片</translation>
     </message>
-  </context>
+    <message>
+        <source>Images (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;All files (*)</source>
+        <translation>图片 (*.png *.jpg *.jpeg *.bmp *.gif *.webp);;所有文件 (*)</translation>
+    </message>
+</context>
 </TS>

@@ -15,7 +15,12 @@ CanvasScene::CanvasScene(QObject* parent) : QGraphicsScene(parent)
     setBackgroundBrush(Qt::NoBrush);
     setItemIndexMethod(QGraphicsScene::BspTreeIndex);
     setStickyFocus(true);
-    connect(this, &QGraphicsScene::selectionChanged, this, [this]() { RefreshSelectionOrder(); });
+    // 选择变化会改写选中黄色轮廓的范围；整场景重绘一次，避免 cosmetic 笔宽
+    // 超出图元自身 update 区域留下残影。
+    connect(this, &QGraphicsScene::selectionChanged, this, [this]() {
+        RefreshSelectionOrder();
+        update();
+    });
     UpdateSceneExtent();
 }
 

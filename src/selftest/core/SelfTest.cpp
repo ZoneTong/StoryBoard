@@ -64,6 +64,7 @@ int RunSelfTest(const QString& reportPath)
     };
 
     // 各功能段按历史断言顺序依次执行；段间共享状态放在 selftest::Context 里。
+    selftest::RunTranslationAuditTests(ctx);
     selftest::RunSceneCanvasIoTests(ctx);
     selftest::RunLayerModelTests(ctx);
     selftest::RunStackingPriorityTests(ctx);
@@ -71,6 +72,7 @@ int RunSelfTest(const QString& reportPath)
     selftest::RunTextItemTests(ctx);
     selftest::RunShapeItemTests(ctx);
     selftest::RunLayerPanelTests(ctx);
+    selftest::RunLayerTreePanelTests(ctx);
     selftest::RunPaintOrderTests(ctx);
     selftest::RunViewInteractionTests(ctx);
     selftest::RunItemPropertyCatalogTests(ctx);
@@ -82,6 +84,7 @@ int RunSelfTest(const QString& reportPath)
     selftest::RunRubberBandTests(ctx);
     selftest::RunLockedLayerTests(ctx);
     selftest::RunMainWindowFlowTests(ctx);
+    selftest::RunDocumentModeTests(ctx);
     selftest::RunFullScreenTests(ctx);
     selftest::RunMainWindowShapeMenuTests(ctx);
     selftest::RunSettingsDialogBasicTests(ctx);

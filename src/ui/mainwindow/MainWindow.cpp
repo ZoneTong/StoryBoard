@@ -124,6 +124,12 @@ MainWindow::~MainWindow()
     for (QObject* child : children) {
         QObject::disconnect(child, nullptr, this, nullptr);
     }
+    // 场景析构还要 clear()，期间仍会发 selectionChanged / layersChanged 等信号；
+    // 面板类子对象若还连着这些信号，就会在窗口析构体跑完后操作正在销毁的行控件。
+    // 统一掐掉场景作为发送方的所有连接，让销毁期不再回调任何界面对象。
+    if (m_scene) {
+        QObject::disconnect(m_scene, nullptr, nullptr, nullptr);
+    }
 
     // QObject deletes the scene child before the undo stack in some orders.
     // Clear commands while the scene is still alive, and make sure the view

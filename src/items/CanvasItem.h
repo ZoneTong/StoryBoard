@@ -163,6 +163,11 @@ class CanvasItem : public QGraphicsObject {
     QPointF HandleCenter(Handle handle) const;
     qreal RotationHandleOffset() const;
 
+  signals:
+    // 名称 / 所属图层 / 层内高度改变：这三类改写直接走 setter，不经过 contentChanged，
+    // 图层面板与属性面板据此重建行、刷新文本。
+    void PresentationChanged();
+
   protected:
     virtual void PaintContent(QPainter* painter) = 0;
     virtual void ContentResized() {}

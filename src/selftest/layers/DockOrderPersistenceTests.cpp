@@ -90,7 +90,7 @@ void selftest::RunDockOrderPersistenceTests(Context& ctx)
         QFile::remove(orderConfig);
         qputenv("STORYBOARD_CONFIG", orderConfig.toLocal8Bit());
         AppSettings seededOrder;
-        seededOrder.dockOrder = QStringList{QStringLiteral("ViewModeDock"), QStringLiteral("LayerDock")};
+        seededOrder.dockOrder = QStringList{QStringLiteral("LayerDock"), QStringLiteral("ViewModeDock")};
         const bool orderSaved = seededOrder.Save();
         AppSettings reloadedOrder;
         reloadedOrder.Load();
@@ -105,8 +105,8 @@ void selftest::RunDockOrderPersistenceTests(Context& ctx)
         QDockWidget* orderViewMode = orderWindow.findChild<QDockWidget*>(QStringLiteral("ViewModeDock"));
         QApplication::processEvents();
         ctx.Check(orderLayer && orderViewMode &&
-                      orderViewMode->mapTo(&orderWindow, QPoint(0, 0)).y() <
-                          orderLayer->mapTo(&orderWindow, QPoint(0, 0)).y(),
+                      orderLayer->mapTo(&orderWindow, QPoint(0, 0)).y() <
+                          orderViewMode->mapTo(&orderWindow, QPoint(0, 0)).y(),
                   QStringLiteral("启动时按设置文件恢复右侧卡片顺序"));
         const bool orderWindowClosed = orderWindow.close();
         QApplication::processEvents();

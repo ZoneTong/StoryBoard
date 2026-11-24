@@ -1,11 +1,10 @@
-#include "selftest/core/SelftestEntries.h"
-
 #include "canvas/CanvasView.h"
 #include "items/CanvasTypes.h"
 #include "items/shapes/ShapeFactory.h"
 #include "scene/CanvasScene.h"
 #include "selftest/core/SelfTest.h"
 #include "selftest/core/SelfTestContext.h"
+#include "selftest/core/SelftestEntries.h"
 #include "ui/mainwindow/MainWindow.h"
 
 #include <QAction>
@@ -71,9 +70,9 @@ void selftest::RunFullScreenTests(Context& ctx)
     QWidget* bar = window.findChild<QWidget*>(QStringLiteral("FullScreenBar"));
     ctx.Check(bar && bar->isVisible(), QStringLiteral("全屏显示悬浮工具栏"));
     if (bar) {
-        ctx.Check(bar->y() >= 32, QStringLiteral("悬浮工具栏离顶边至少一个标题栏"), QStringLiteral("y=%1").arg(bar->y()));
-        ctx.Check(qAbs(bar->x() + bar->width() / 2 - window.width() / 2) <= 2,
-                  QStringLiteral("悬浮工具栏水平居中"));
+        ctx.Check(bar->y() >= 32, QStringLiteral("悬浮工具栏离顶边至少一个标题栏"),
+                  QStringLiteral("y=%1").arg(bar->y()));
+        ctx.Check(qAbs(bar->x() + bar->width() / 2 - window.width() / 2) <= 2, QStringLiteral("悬浮工具栏水平居中"));
         int keyedButtons = 0;
         for (QToolButton* button : bar->findChildren<QToolButton*>()) {
             if (button->objectName().startsWith(QStringLiteral("FullScreenShapeButton"))) {
@@ -83,10 +82,9 @@ void selftest::RunFullScreenTests(Context& ctx)
         ctx.Check(keyedButtons == 9, QStringLiteral("悬浮工具栏只放需求列出的 9 个图形"),
                   QStringLiteral("count=%1").arg(keyedButtons));
         int styleButtons = 0;
-        for (const QString& name : {QStringLiteral("FullScreenFillStyleButton"),
-                                    QStringLiteral("FullScreenFillColorButton"),
-                                    QStringLiteral("FullScreenStrokeStyleButton"),
-                                    QStringLiteral("FullScreenStrokeColorButton")}) {
+        for (const QString& name :
+             {QStringLiteral("FullScreenFillStyleButton"), QStringLiteral("FullScreenFillColorButton"),
+              QStringLiteral("FullScreenStrokeStyleButton"), QStringLiteral("FullScreenStrokeColorButton")}) {
             if (QToolButton* button = bar->findChild<QToolButton*>(name)) {
                 if (button->isVisible()) {
                     ++styleButtons;
@@ -95,8 +93,7 @@ void selftest::RunFullScreenTests(Context& ctx)
         }
         ctx.Check(styleButtons == 4, QStringLiteral("全屏工具栏保留填充 / 描线样式与颜色按钮"),
                   QStringLiteral("visible=%1").arg(styleButtons));
-        QToolButton* customShapeButton =
-            bar->findChild<QToolButton*>(QStringLiteral("FullScreenCustomShapeButton"));
+        QToolButton* customShapeButton = bar->findChild<QToolButton*>(QStringLiteral("FullScreenCustomShapeButton"));
         ctx.Check(customShapeButton && customShapeButton->menu() == nullptr && !customShapeButton->icon().isNull(),
                   QStringLiteral("自定义图形按钮有图标且直接开面板，不再挂子菜单"),
                   QStringLiteral("button=%1 menu=%2 icon=%3")
@@ -118,14 +115,15 @@ void selftest::RunFullScreenTests(Context& ctx)
         ctx.Check(propertiesDock->frameGeometry().top() - windowFrame.top() >= 58,
                   QStringLiteral("悬浮编辑面板让开顶部工具栏"),
                   QStringLiteral("dy=%1").arg(propertiesDock->frameGeometry().top() - windowFrame.top()));
-        ctx.Check(layerDock->frameGeometry().height() >= 500 && layerDock->frameGeometry().height() <= 640,
-                  QStringLiteral("全屏期图层卡多留 10 行冗余"),
-                  QStringLiteral("h=%1").arg(layerDock->frameGeometry().height()));
-        ctx.Check(qAbs(layerDock->frameGeometry().bottom() - windowFrame.bottom()) <= 40 &&
-                      qAbs(layerDock->frameGeometry().right() - windowFrame.right()) <= 40,
-                  QStringLiteral("全屏期图层卡贴右下角"),
-                  QStringLiteral("right=%1 bottom=%2").arg(layerDock->frameGeometry().right() - windowFrame.right())
-                      .arg(layerDock->frameGeometry().bottom() - windowFrame.bottom()));
+        ctx.Check(layerDock->frameGeometry().height() > windowFrame.height() - 260,
+                  QStringLiteral("全屏期图层卡吃到窗口底部（不再限高）"),
+                  QStringLiteral("h=%1 window=%2").arg(layerDock->frameGeometry().height()).arg(windowFrame.height()));
+        ctx.Check(qAbs(layerDock->frameGeometry().right() - windowFrame.right()) <= 40 &&
+                      layerDock->frameGeometry().top() - windowFrame.top() >= 58,
+                  QStringLiteral("全屏期图层卡贴右上角"),
+                  QStringLiteral("right=%1 top=%2")
+                      .arg(layerDock->frameGeometry().right() - windowFrame.right())
+                      .arg(layerDock->frameGeometry().top() - windowFrame.top()));
 
         // 编辑面板跟随选中显隐：有选中显示、清空选中隐藏。
         window.View()->SetMode(ToolMode::EDIT);
@@ -142,12 +140,12 @@ void selftest::RunFullScreenTests(Context& ctx)
     }
 
     // 需求 15-4：数字键 0–9 只在全屏期落到悬浮工具栏的按钮上。
-    const QStringList digitActionNames = {QStringLiteral("ShapeAction_ellipse"), QStringLiteral("ShapeAction_line"),
-                                          QStringLiteral("ShapePreset_lineArrow"),
-                                          QStringLiteral("ShapeAction_triangle"),
-                                          QStringLiteral("ShapePreset_roundedRect"), QStringLiteral("ShapeAction_star"),
-                                          QStringLiteral("ShapeAction_diamond"), QStringLiteral("ShapeAction_heart"),
-                                          QStringLiteral("ShapePreset_braceLeft")};
+    const QStringList digitActionNames = {
+        QStringLiteral("ShapeAction_ellipse"),     QStringLiteral("ShapeAction_line"),
+        QStringLiteral("ShapePreset_lineArrow"),   QStringLiteral("ShapeAction_triangle"),
+        QStringLiteral("ShapePreset_roundedRect"), QStringLiteral("ShapeAction_star"),
+        QStringLiteral("ShapeAction_diamond"),     QStringLiteral("ShapeAction_heart"),
+        QStringLiteral("ShapePreset_braceLeft")};
     for (const QString& name : digitActionNames) {
         if (QAction* action = window.findChild<QAction*>(name)) {
             QObject::connect(action, &QAction::triggered, &window, [name]() { CountTriggered(name); });
@@ -163,8 +161,7 @@ void selftest::RunFullScreenTests(Context& ctx)
         widthSpin->setFocus();
         QApplication::processEvents();
         SendKey(&window, Qt::Key_2);
-        ctx.Check(HitCount(QStringLiteral("ShapePreset_lineArrow")) == 0,
-                  QStringLiteral("输入框聚焦时数字键让位"));
+        ctx.Check(HitCount(QStringLiteral("ShapePreset_lineArrow")) == 0, QStringLiteral("输入框聚焦时数字键让位"));
         window.View()->setFocus();
     }
 

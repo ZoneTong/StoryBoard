@@ -275,6 +275,8 @@ class CanvasScene : public QGraphicsScene {
     void ClearOrphans();
     // 维护选择顺序：新增的选中项追加到末尾，撤销选中或删除的被移除。
     void RefreshSelectionOrder();
+    // 选中高亮：直接从场景当前选择集绘制，不再另存一份图元快照（销毁期不重入）。
+    void DrawSelectionHighlight(QPainter* painter, const QRectF& rect) const;
 
     void EnsureLayerState();
     LayerStackState SanitizedLayerState(const LayerStackState& state) const;

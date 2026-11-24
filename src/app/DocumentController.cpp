@@ -166,11 +166,9 @@ void DocumentController::NewCanvas()
     m_window->m_undo->clear();
     m_window->m_undo->setClean();
 
-    if (m_window->m_view->mode() != ToolMode::VIEW) {
-        m_window->m_view->SetMode(ToolMode::VIEW);
-    } else {
-        m_window->m_view->FitAll();
-    }
+    // 新建一律回到查看模式：先看全貌，再按需切到编辑。
+    m_window->m_view->SetMode(ToolMode::VIEW);
+    m_window->m_view->FitAll();
 
     m_window->UpdateModeUi();
     m_window->UpdateTitle();
@@ -274,11 +272,9 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors)
     // 导入的 Excalidraw 场景作为一份新文档，原 .excalidraw 文件仍可再导入一次。
     m_window->m_filePath = importedExcalidraw ? QString() : QFileInfo(path).absoluteFilePath();
     m_window->m_undo->setClean();
-    if (m_window->m_view->mode() != ToolMode::VIEW) {
-        m_window->m_view->SetMode(ToolMode::VIEW);
-    } else {
-        m_window->m_view->FitAll();
-    }
+    // 打开 / 导入后同样回到查看模式并整幅适配。
+    m_window->m_view->SetMode(ToolMode::VIEW);
+    m_window->m_view->FitAll();
 
     if (!importedExcalidraw) {
         m_window->m_settings.lastCanvasPath = m_window->m_filePath;

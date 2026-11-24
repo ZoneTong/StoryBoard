@@ -20,7 +20,7 @@ namespace {
 constexpr int FULLSCREEN_MARGIN = 16;
 constexpr int FULLSCREEN_TOP_INSET = 104;
 constexpr int FULLSCREEN_LAYER_WIDTH = 280;
-constexpr int FULLSCREEN_LAYER_HEIGHT = 560;
+// 小屏兜底：可用高度再矮也给图层卡留一点；正常屏幕直接吃到窗口底部，不再设上限。
 constexpr int FULLSCREEN_LAYER_MIN_HEIGHT = 260;
 
 // 悬浮卡是独立顶层窗口，move 设置的是客户区原点，这里按帧几何的差值挪两次收敛，
@@ -58,7 +58,7 @@ void DockPanelController::CreateLayerDock()
     m_layerPanel = new LayerPanel(m_window->m_scene, m_layerDock);
     m_layerDock->setWidget(m_layerPanel);
     m_window->addDockWidget(Qt::RightDockWidgetArea, m_layerDock);
-    // 卡片不铺满右侧：给出最小高度，实际高度由上方模式卡之外的剩余空间决定。
+    // 图层卡放在右侧顶部，吃掉右侧剩余高度（不设上限），模式卡压在其下。
     m_layerDock->setMinimumHeight(200);
 
     QObject::connect(m_layerPanel, &LayerPanel::statusMessage, m_window,
@@ -178,15 +178,20 @@ void DockPanelController::ApplyDockLayout()
     }
     m_applyingDockLayout = true;
 
-    // 默认视图模式卡在上、图层卡在下；用户拖拽调整过则按设置文件恢复右侧顺序。
+    // 默认图层卡在上、视图模式卡在下；用户拖拽调整过则按设置文件恢复右侧顺序。
     QStringList order;
     for (const QString& name : m_window->m_settings.dockOrder) {
         if ((name == QStringLiteral("ViewModeDock") || name == QStringLiteral("LayerDock")) && !order.contains(name)) {
             order.append(name);
         }
     }
+    // 图层卡固定在右上，模式卡压在它下面。老默认顺序（模式卡在上）视为未设置，
+    // 直接迁到新顺序，否则旧设置会让用户永远看不到这次调整。
+    if (order == QStringList{QStringLiteral("ViewModeDock"), QStringLiteral("LayerDock")}) {
+        order = {QStringLiteral("LayerDock"), QStringLiteral("ViewModeDock")};
+    }
     if (order.size() != 2) {
-        order = {QStringLiteral("ViewModeDock"), QStringLiteral("LayerDock")};
+        order = {QStringLiteral("LayerDock"), QStringLiteral("ViewModeDock")};
     }
     m_dockOrder = order;
     m_window->m_settings.dockOrder = order;
@@ -203,7 +208,8 @@ void DockPanelController::ApplyDockLayout()
     SplitRightDocks(order);
     QTimer::singleShot(0, m_window, [this]() {
         // 窗口显示后再定一次初始高度：构造阶段窗口还没有实际尺寸，切分比例会失真。
-        m_window->resizeDocks({m_viewModeDock, m_layerDock}, {100, 1000}, Qt::Vertical);
+        // 图层卡在右上吃掉剩余高度，模式卡在下面保持紧凑。
+        m_window->resizeDocks({m_layerDock, m_viewModeDock}, {1000, 100}, Qt::Vertical);
     });
 
     // 拖动标题栏调整右侧卡片相对顺序时记录新顺序（同一区域内换位不会有位置信号，
@@ -234,13 +240,13 @@ void DockPanelController::SplitRightDocks(const QStringList& order)
     QStringList resolved = order;
     if (resolved.size() != 2 || !resolved.contains(QStringLiteral("ViewModeDock")) ||
         !resolved.contains(QStringLiteral("LayerDock"))) {
-        resolved = {QStringLiteral("ViewModeDock"), QStringLiteral("LayerDock")};
+        resolved = {QStringLiteral("LayerDock"), QStringLiteral("ViewModeDock")};
     }
     QDockWidget* first = resolved.first() == QStringLiteral("ViewModeDock") ? m_viewModeDock : m_layerDock;
     QDockWidget* second = first == m_viewModeDock ? m_layerDock : m_viewModeDock;
     m_window->splitDockWidget(first, second, Qt::Vertical);
-    // 右上模式卡保持紧凑，右下图层卡吃掉剩余高度，落在右下角。
-    m_window->resizeDocks({m_viewModeDock, m_layerDock}, {100, 1000}, Qt::Vertical);
+    // 右上图层卡吃掉剩余高度（不再限高），其下模式卡保持紧凑。
+    m_window->resizeDocks({m_layerDock, m_viewModeDock}, {1000, 100}, Qt::Vertical);
 }
 
 void DockPanelController::ApplyPropertiesPanelDockWidth(int width, bool resizeNow)
@@ -403,7 +409,7 @@ void DockPanelController::EnterFullScreenLayout()
     PlaceFullScreenPanels();
     m_layerDock->setVisible(m_layerVisibleBefore);
     m_propertiesDock->setVisible(m_propertiesVisibleBefore);
-    // 编辑面板在全屏里跟随选中显隐；图层卡常驻右下角。
+    // 编辑面板在全屏里跟随选中显隐；图层卡常驻右上角。
     UpdatePropertiesPanelDockVisibility();
     if (m_layerDock->isVisible()) {
         m_layerDock->raise();
@@ -432,13 +438,13 @@ void DockPanelController::PlaceFullScreenPanels()
     m_propertiesDock->resize(propertiesWidth, propertiesHeight);
     AlignDockFrame(m_propertiesDock, QPoint(frame.left() + margin, propertiesTop));
 
-    // 图层卡贴右下角并压矮，不挡住画布中下部；小屏上按可用高度收口，避免顶穿画布。
-    const int layerHeight =
-        qMin(FULLSCREEN_LAYER_HEIGHT, qMax(260, frame.height() - FULLSCREEN_TOP_INSET - margin));
-    m_layerDock->resize(qMax(FULLSCREEN_LAYER_WIDTH, m_layerDock->minimumWidth()), layerHeight);
+    // 图层卡贴右上角，与编辑面板同一顶线并吃到窗口底部留白之前；不再压矮。
+    const int layerTop = propertiesTop;
+    const int layerHeight = qMax(FULLSCREEN_LAYER_MIN_HEIGHT, frame.bottom() - margin - layerTop + 1);
+    const int layerWidth = qMax(FULLSCREEN_LAYER_WIDTH, m_layerDock->minimumWidth());
+    m_layerDock->resize(layerWidth, layerHeight);
     const QSize layerFrame = m_layerDock->frameGeometry().size();
-    AlignDockFrame(m_layerDock, QPoint(frame.right() - margin - layerFrame.width() + 1,
-                                       frame.bottom() - margin - layerFrame.height() + 1));
+    AlignDockFrame(m_layerDock, QPoint(frame.right() - margin - layerFrame.width() + 1, layerTop));
 }
 
 void DockPanelController::ExitFullScreenLayout()

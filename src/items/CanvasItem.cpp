@@ -159,6 +159,7 @@ void CanvasItem::SetName(const QString& name)
         return;
     }
     m_name = trimmed;
+    emit PresentationChanged();
 }
 
 QSizeF CanvasItem::MinimumSize()
@@ -215,12 +216,22 @@ void CanvasItem::SetItemOpacity(qreal opacity)
 
 void CanvasItem::SetLayerId(int layerId)
 {
-    m_layerId = qMax(0, layerId);
+    const int clamped = qMax(0, layerId);
+    if (m_layerId == clamped) {
+        return;
+    }
+    m_layerId = clamped;
+    emit PresentationChanged();
 }
 
 void CanvasItem::SetZOrder(int height)
 {
-    m_zOrder = qMax(0, height);
+    const int clamped = qMax(0, height);
+    if (m_zOrder == clamped) {
+        return;
+    }
+    m_zOrder = clamped;
+    emit PresentationChanged();
 }
 
 void CanvasItem::SetRotationAngle(qreal angle)

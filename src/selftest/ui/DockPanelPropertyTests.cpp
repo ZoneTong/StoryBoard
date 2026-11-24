@@ -781,8 +781,14 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
         dockScene->clearSelection();
         QApplication::processEvents();
         ctx.Check(propertiesDock->isVisible(), QStringLiteral("停靠时清空选中不隐藏编辑面板"));
-        ctx.Check(layerDock && layerDock->height() < dockWindow.height() - 100,
-                  QStringLiteral("编辑面板停靠时图层卡不撑满窗口高度"));
+        ctx.Check(layerDock && layerDock->mapTo(&dockWindow, QPoint(0, 0)).y() < 200 &&
+                      layerDock->height() > dockWindow.height() - 220,
+                  QStringLiteral("编辑面板停靠时图层卡在右上并吃掉右侧剩余高度"),
+                  layerDock ? QStringLiteral("top=%1 height=%2 window=%3")
+                                  .arg(layerDock->mapTo(&dockWindow, QPoint(0, 0)).y())
+                                  .arg(layerDock->height())
+                                  .arg(dockWindow.height())
+                            : QString());
     }
     qunsetenv("STORYBOARD_CONFIG");
 }

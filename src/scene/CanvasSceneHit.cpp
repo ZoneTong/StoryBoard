@@ -11,6 +11,7 @@
 #include <QVector>
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 QList<CanvasItem*> CanvasScene::ObscuredItems(const QRectF& area) const
 {
@@ -62,6 +63,53 @@ void CanvasScene::drawForeground(QPainter* painter, const QRectF& rect)
         }
         painter->restore();
     }
+
+    // 选中图元再叠一层半透明黄色轮廓：即使被上层图元完全盖住，也能看出它被选中。
+    DrawSelectionHighlight(painter, rect);
+}
+
+void CanvasScene::DrawSelectionHighlight(QPainter* painter, const QRectF& rect) const
+{
+    if (!painter || m_mode != ToolMode::EDIT || m_exporting) {
+        return;
+    }
+
+    painter->save();
+    painter->setClipRect(rect);
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->setBrush(Qt::NoBrush);
+
+    QPen haloPen(QColor(250, 204, 21, 60));
+    haloPen.setWidthF(6.0);
+    haloPen.setCosmetic(true);
+    haloPen.setStyle(Qt::SolidLine);
+    haloPen.setJoinStyle(Qt::RoundJoin);
+
+    QPen corePen(QColor(250, 204, 21, 150));
+    corePen.setWidthF(2.0);
+    corePen.setCosmetic(true);
+    corePen.setStyle(Qt::SolidLine);
+    corePen.setJoinStyle(Qt::RoundJoin);
+
+    for (QGraphicsItem* graphicsItem : selectedItems()) {
+        CanvasItem* item = qgraphicsitem_cast<CanvasItem*>(graphicsItem);
+        if (!item) {
+            continue;
+        }
+        // 隐藏图层里的图元本身不绘制，轮廓也不画，避免“凭空出现一圈黄”。
+        if (!layer(item->LayerId()).visible) {
+            continue;
+        }
+        const QPainterPath path = item->sceneTransform().map(item->OutlineShape());
+        if (path.isEmpty()) {
+            continue;
+        }
+        painter->setPen(haloPen);
+        painter->drawPath(path);
+        painter->setPen(corePen);
+        painter->drawPath(path);
+    }
+    painter->restore();
 }
 
 void CanvasScene::drawItems(QPainter* painter, int numItems, QGraphicsItem* items[],

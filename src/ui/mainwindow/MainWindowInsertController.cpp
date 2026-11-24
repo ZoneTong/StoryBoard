@@ -118,16 +118,17 @@ void MainWindowInsertController::InsertTextAt(const QPointF& scenePos)
 void MainWindowInsertController::InsertShape(ShapeType type, qreal triangleAngle1, qreal triangleAngle2,
                                              qreal cornerRatio)
 {
-    if (m_window->m_view->mode() != ToolMode::EDIT) {
-        m_window->SetToolMode(ToolMode::EDIT);
-    }
-
     if (!m_window->m_scene->IsActiveLayerWritable()) {
         m_window->statusBar()->showMessage(
             MainWindow::tr("The current layer is locked or hidden; shapes cannot be "
                            "inserted. Unlock or switch layers in the layer panel first."),
             5000);
         return;
+    }
+
+    // 插入成功才切到编辑模式：图层不可写时不白白把用户从查看模式拽出来。
+    if (m_window->m_view->mode() != ToolMode::EDIT) {
+        m_window->SetToolMode(ToolMode::EDIT);
     }
 
     // 需求 4/5：立方体与圆柱体插入即分组，走组合面图元的专用通道。
@@ -196,6 +197,10 @@ void MainWindow::InsertCurve(LineGlyph glyph, ArrowStyle startArrow, ArrowStyle 
 {
     if (!m_view || !m_scene) {
         return;
+    }
+    // 线条族同样按“插入即进编辑模式”处理，插入后可以直接拖动/改手柄。
+    if (m_view->mode() != ToolMode::EDIT) {
+        SetToolMode(ToolMode::EDIT);
     }
     // 弧线默认外接框与椭圆 / 扇形一致（128×128，半轴 64/64）；直线 / 正弦保持扁长比例。
     const QSizeF size = glyph == LineGlyph::STRAIGHT ? QSizeF(128.0, 64.0)
