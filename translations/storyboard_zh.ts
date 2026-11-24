@@ -864,6 +864,10 @@
         <source>Change interior angle</source>
         <translation>修改内角</translation>
     </message><message>
+        <location filename="../src/ui/panels/properties/PropertiesPanelApply.cpp"/>
+        <source>Change interior angle B</source>
+        <translation>修改内角 B</translation>
+    </message><message>
         <source>Align item centers</source>
         <translation>对齐图元中心</translation>
     </message><message>
@@ -3029,9 +3033,6 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Show or hide the selected item panel (it appears automatically when an item is selected)</source>
         <translation>显示或隐藏编辑面板（选中图元时自动出现）</translation>
     </message><message>
-        <source>Don&amp;apos;t save</source>
-        <translation>不保存</translation>
-    </message><message>
         <location filename="../src/ui/mainwindow/MainWindowInsertController.cpp" line="325"/>
         <source>Custom shape</source>
         <translation>自定义图形</translation>
@@ -3218,7 +3219,28 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message><message>
         <source>Line Arrow</source>
         <translation>直线箭头</translation>
-    </message></context>
+    </message><message>
+        <location filename="../src/app/FullScreenBar.cpp" line="58"/>
+        <source>Custom shapes (9)</source>
+        <translation>自定义图形（9）</translation>
+    </message><message>
+        <location filename="../src/app/FullScreenBar.cpp" line="95"/>
+        <source>Stroke width</source>
+        <translation>描线宽度</translation>
+    </message><message>
+        <location filename="../src/app/FullScreenBar.cpp" line="132"/>
+        <source>%1 (key %2)</source>
+        <translation>%1（快捷键 %2）</translation>
+    </message><message>
+        <location filename="../src/app/FullScreenBar.cpp" line="165"/>
+        <source>Stroke color: %1</source>
+        <translation>描线颜色：%1</translation>
+    </message><message>
+        <location filename="../src/app/FullScreenBar.cpp" line="191"/>
+        <source>%1 — click to switch mode</source>
+        <translation>%1 — 点击切换模式</translation>
+    </message>
+</context>
 <context>
     <name>QCoreApplication</name><message>
         <location filename="../src/items/CanvasTypes.h" line="75"/>
@@ -5206,9 +5228,6 @@ Use the checkbox to show or hide it.</source>
     </message><message>
         <source>Show or hide the selected item panel (it appears automatically when an item is selected)</source>
         <translation>显示或隐藏编辑面板（选中图元时自动出现）</translation>
-    </message><message>
-        <source>Don&amp;apos;t save</source>
-        <translation>不保存</translation>
     </message><message>
         <source>Custom shape</source>
         <translation>自定义图形</translation>
