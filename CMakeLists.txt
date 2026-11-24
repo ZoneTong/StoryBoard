@@ -106,7 +106,6 @@ set(STORYBOARD_SOURCE_FOLDERS
     src/ui/icons
     src/ui/mainwindow
     src/ui/panels/customshape
-    src/ui/panels/itemdialog
     src/ui/panels/layers
     src/ui/panels/properties
     src/ui/settings

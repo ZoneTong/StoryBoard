@@ -36,39 +36,27 @@ class TextValueRow : public QWidget {
     QLineEdit* m_edit = nullptr;
 };
 
-class LayerValueRow : public QWidget {
+// 图层与层内高度合成一行：左边选目标图层，右边填该层内的叠放高度，
+// 两者同属“图元在哪个层面”这一件事，分两行会把面板拉长。
+class LayerHeightRow : public QWidget {
     Q_OBJECT
 
   public:
-    explicit LayerValueRow(QWidget* parent = nullptr, bool showIcon = true);
+    explicit LayerHeightRow(QWidget* parent = nullptr, bool showIcon = true);
 
-    // 按画布的图层列表重建下拉；layerId 不在列表里时保留原选中项。
-    void Refresh(CanvasScene* scene, int layerId);
+    // 按画布的图层列表重建下拉，同时回显层内高度与其上限。
+    void Refresh(CanvasScene* scene, int layerId, int height, int maximum);
     int LayerId() const;
+    int Height() const;
     QComboBox* Combo() const { return m_combo; }
-
-  signals:
-    void layerChosen(int layerId);
-
-  private:
-    QComboBox* m_combo = nullptr;
-    bool m_refreshing = false;
-};
-
-class HeightValueRow : public QWidget {
-    Q_OBJECT
-
-  public:
-    explicit HeightValueRow(QWidget* parent = nullptr, bool showIcon = true);
-
-    void Refresh(int value, int maximum);
-    int Value() const;
     QSpinBox* Spin() const { return m_spin; }
 
   signals:
+    void layerChosen(int layerId);
     void heightChosen(int height);
 
   private:
+    QComboBox* m_combo = nullptr;
     QSpinBox* m_spin = nullptr;
     bool m_refreshing = false;
 };

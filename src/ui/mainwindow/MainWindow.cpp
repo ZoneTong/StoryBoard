@@ -13,7 +13,6 @@
 #include "ui/mainwindow/MainWindowEditActionsController.h"
 #include "ui/mainwindow/MainWindowInsertController.h"
 #include "ui/panels/customshape/CustomShapePanel.h"
-#include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/widgets/StyleController.h"
 #include "ui/widgets/ViewStatusController.h"
 
@@ -213,13 +212,8 @@ void MainWindow::ConnectSignals()
     connect(m_view, &CanvasView::statusMessage, this,
             [this](const QString& message) { statusBar()->showMessage(message, 4000); });
     connect(m_view, &CanvasView::textPlacementRequested, this, &MainWindow::InsertTextAt);
-    connect(m_view, &CanvasView::itemPropertiesRequested, this, &MainWindow::ShowItemProperties);
 
     connect(m_scene, &CanvasScene::contentChanged, this, [this]() {
-        if (m_itemPropertiesDialog &&
-            (!m_itemPropertiesDialog->Item() || m_itemPropertiesDialog->Item()->scene() != m_scene)) {
-            CloseItemProperties();
-        }
         UpdateActions();
         UpdateStatusBar();
     });
@@ -415,21 +409,6 @@ void MainWindow::UpdateFillActions()
 void MainWindow::InsertTextAt(const QPointF& scenePos)
 {
     m_insert->InsertTextAt(scenePos);
-}
-
-void MainWindow::ShowSelectedItemProperties()
-{
-    m_editActions->ShowSelectedItemProperties();
-}
-
-void MainWindow::ShowItemProperties(CanvasItem* item)
-{
-    m_editActions->ShowItemProperties(item);
-}
-
-void MainWindow::CloseItemProperties()
-{
-    m_editActions->CloseItemProperties();
 }
 
 void MainWindow::RotateSelected(qreal degrees)

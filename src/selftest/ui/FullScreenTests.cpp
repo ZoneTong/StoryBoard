@@ -82,6 +82,27 @@ void selftest::RunFullScreenTests(Context& ctx)
         }
         ctx.Check(keyedButtons == 9, QStringLiteral("悬浮工具栏只放需求列出的 9 个图形"),
                   QStringLiteral("count=%1").arg(keyedButtons));
+        int styleButtons = 0;
+        for (const QString& name : {QStringLiteral("FullScreenFillStyleButton"),
+                                    QStringLiteral("FullScreenFillColorButton"),
+                                    QStringLiteral("FullScreenStrokeStyleButton"),
+                                    QStringLiteral("FullScreenStrokeColorButton")}) {
+            if (QToolButton* button = bar->findChild<QToolButton*>(name)) {
+                if (button->isVisible()) {
+                    ++styleButtons;
+                }
+            }
+        }
+        ctx.Check(styleButtons == 4, QStringLiteral("全屏工具栏保留填充 / 描线样式与颜色按钮"),
+                  QStringLiteral("visible=%1").arg(styleButtons));
+        QToolButton* customShapeButton =
+            bar->findChild<QToolButton*>(QStringLiteral("FullScreenCustomShapeButton"));
+        ctx.Check(customShapeButton && customShapeButton->menu() == nullptr && !customShapeButton->icon().isNull(),
+                  QStringLiteral("自定义图形按钮有图标且直接开面板，不再挂子菜单"),
+                  QStringLiteral("button=%1 menu=%2 icon=%3")
+                      .arg(customShapeButton ? 1 : 0)
+                      .arg(customShapeButton && customShapeButton->menu() ? 1 : 0)
+                      .arg(customShapeButton && !customShapeButton->icon().isNull() ? 1 : 0));
     }
 
     // 需求 15-3：编辑面板改左侧悬浮，图层面板右下贴底并压矮。
@@ -97,7 +118,8 @@ void selftest::RunFullScreenTests(Context& ctx)
         ctx.Check(propertiesDock->frameGeometry().top() - windowFrame.top() >= 58,
                   QStringLiteral("悬浮编辑面板让开顶部工具栏"),
                   QStringLiteral("dy=%1").arg(propertiesDock->frameGeometry().top() - windowFrame.top()));
-        ctx.Check(layerDock->frameGeometry().height() <= 320, QStringLiteral("全屏期图层卡被压矮"),
+        ctx.Check(layerDock->frameGeometry().height() >= 500 && layerDock->frameGeometry().height() <= 640,
+                  QStringLiteral("全屏期图层卡多留 10 行冗余"),
                   QStringLiteral("h=%1").arg(layerDock->frameGeometry().height()));
         ctx.Check(qAbs(layerDock->frameGeometry().bottom() - windowFrame.bottom()) <= 40 &&
                       qAbs(layerDock->frameGeometry().right() - windowFrame.right()) <= 40,

@@ -175,8 +175,6 @@ void UiToolBarBuilder::CreateShapeToolbar(QToolBar* mainBar)
     fillMenu->addAction(m_window->m_fillCrossAct);
     fillMenu->addAction(m_window->m_fillGridAct);
     fillMenu->addAction(m_window->m_fillHoneycombAct);
-    fillMenu->addAction(m_window->m_fillHorizontalAct);
-    fillMenu->addAction(m_window->m_fillVerticalAct);
     fillMenu->addAction(m_window->m_fillBrickAct);
     fillMenu->addAction(m_window->m_fillDotsAct);
     m_window->m_fillButton->setMenu(fillMenu);

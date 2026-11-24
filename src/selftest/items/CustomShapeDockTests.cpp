@@ -24,7 +24,6 @@
 #include "ui/dialogs/ExportDialog.h"
 #include "ui/mainwindow/MainWindow.h"
 #include "ui/panels/customshape/CustomShapePanel.h"
-#include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/layers/LayerPanel.h"
 #include "ui/panels/properties/PropertiesPanel.h"
 #include "ui/settings/SettingsDialog.h"
@@ -295,7 +294,7 @@ void selftest::RunCustomShapeDockTests(Context& ctx)
                       panel.findChildren<QToolButton*>(QStringLiteral("ItemCustomShapeButton")).isEmpty(),
                   QStringLiteral("编辑面板已移除常见图形展开行"));
         ctx.Check(panel.findChildren<QToolButton*>(QStringLiteral("ItemColorSwatch")).size() >= 16 &&
-                      panel.findChildren<QToolButton*>(QStringLiteral("ItemFillStyleButton")).size() == 11 &&
+                      panel.findChildren<QToolButton*>(QStringLiteral("ItemFillStyleButton")).size() == 9 &&
                       panel.findChildren<QToolButton*>(QStringLiteral("ItemBorderStyleButton")).size() == 5,
                   QStringLiteral("编辑面板平铺颜色 / 填充 / 边框等工具"),
                   QStringLiteral("colors=%1 fills=%2 borders=%3")

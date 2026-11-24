@@ -7,10 +7,12 @@
 #include "canvas/controllers/CanvasPanController.h"
 #include "canvas/controllers/CanvasResizeController.h"
 #include "canvas/controllers/CanvasStrokeController.h"
+#include "canvas/controllers/CanvasTextEditor.h"
 #include "canvas/controllers/CanvasZoomController.h"
 #include "items/CanvasItem.h"
 #include "items/lines/LineAbstractItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
+#include "items/text/TextItem.h"
 #include "scene/CanvasScene.h"
 
 #include <QAction>
@@ -83,6 +85,7 @@ CanvasView::CanvasView(CanvasScene* scene, QWidget* parent) : QGraphicsView(scen
     m_cursor = std::make_unique<CanvasViewCursor>(this);
     m_menu = std::make_unique<CanvasContextMenuController>(this, scene);
     m_groupBox = std::make_unique<CanvasGroupBoxController>(this, scene);
+    m_textEditor = std::make_unique<CanvasTextEditor>(this, scene);
 
     // 分组失败原因由场景写出，视图层转成状态栏文案（§7.8）。
     connect(scene, &CanvasScene::groupOperationFailed, this,
@@ -98,6 +101,23 @@ qreal CanvasView::Zoom() const
     return m_zoom->Zoom();
 }
 
+bool CanvasView::BeginTextEdit(TextItem* item)
+{
+    return m_textEditor && m_textEditor->BeginEdit(item);
+}
+
+void CanvasView::EndTextEdit()
+{
+    if (m_textEditor) {
+        m_textEditor->Commit();
+    }
+}
+
+bool CanvasView::IsTextEditing() const
+{
+    return m_textEditor && m_textEditor->IsEditing();
+}
+
 void CanvasView::SetMode(ToolMode mode)
 {
     if (m_mode == mode) {
@@ -105,6 +125,7 @@ void CanvasView::SetMode(ToolMode mode)
     }
 
     FinishCurrentStroke();
+    EndTextEdit();
     m_mode = mode;
     m_scene->SetMode(mode);
 
@@ -622,3 +643,5 @@ void CanvasView::leaveEvent(QEvent* event)
     m_resize->ResetHoverOnLeave();
     QGraphicsView::leaveEvent(event);
 }
+
+CanvasView::~CanvasView() = default;

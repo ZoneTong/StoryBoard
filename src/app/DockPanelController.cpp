@@ -16,12 +16,12 @@
 
 namespace {
 
-// 全屏期两张悬浮卡与窗口边缘的距离，以及编辑面板顶部让开悬浮工具栏的留白
-// （工具栏高 58、离顶至少 32，加 6 的间隙）。
+// 全屏期两张悬浮卡与窗口边缘的距离，以及编辑面板顶部让开悬浮工具栏的留白。
 constexpr int FULLSCREEN_MARGIN = 16;
-constexpr int FULLSCREEN_TOP_INSET = 96;
+constexpr int FULLSCREEN_TOP_INSET = 104;
 constexpr int FULLSCREEN_LAYER_WIDTH = 280;
-constexpr int FULLSCREEN_LAYER_HEIGHT = 260;
+constexpr int FULLSCREEN_LAYER_HEIGHT = 560;
+constexpr int FULLSCREEN_LAYER_MIN_HEIGHT = 260;
 
 // 悬浮卡是独立顶层窗口，move 设置的是客户区原点，这里按帧几何的差值挪两次收敛，
 // 免得标题栏与边框宽高在不同平台下算法不同。
@@ -432,8 +432,10 @@ void DockPanelController::PlaceFullScreenPanels()
     m_propertiesDock->resize(propertiesWidth, propertiesHeight);
     AlignDockFrame(m_propertiesDock, QPoint(frame.left() + margin, propertiesTop));
 
-    // 图层卡贴右下角并压矮，不挡住画布中下部。
-    m_layerDock->resize(qMax(FULLSCREEN_LAYER_WIDTH, m_layerDock->minimumWidth()), FULLSCREEN_LAYER_HEIGHT);
+    // 图层卡贴右下角并压矮，不挡住画布中下部；小屏上按可用高度收口，避免顶穿画布。
+    const int layerHeight =
+        qMin(FULLSCREEN_LAYER_HEIGHT, qMax(260, frame.height() - FULLSCREEN_TOP_INSET - margin));
+    m_layerDock->resize(qMax(FULLSCREEN_LAYER_WIDTH, m_layerDock->minimumWidth()), layerHeight);
     const QSize layerFrame = m_layerDock->frameGeometry().size();
     AlignDockFrame(m_layerDock, QPoint(frame.right() - margin - layerFrame.width() + 1,
                                        frame.bottom() - margin - layerFrame.height() + 1));

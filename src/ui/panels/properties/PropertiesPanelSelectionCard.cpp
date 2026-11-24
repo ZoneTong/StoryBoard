@@ -42,8 +42,6 @@ PropertiesPanelSelectionCard::PropertiesPanelSelectionCard(QWidget* parent) : QW
     QHBoxLayout* groupLayout = nullptr;
     m_groupRow = MakeRow(this, &groupLayout);
 
-    m_propertiesButton = MakeButton(QStringLiteral("ItemPropertiesButton"));
-    basicLayout->addWidget(m_propertiesButton);
     m_copyButton = MakeButton(QStringLiteral("ItemCopyButton"));
     basicLayout->addWidget(m_copyButton);
     m_deleteButton = MakeButton(QStringLiteral("ItemDeleteButton"));
@@ -133,9 +131,6 @@ QAction* PropertiesPanelSelectionCard::ActionForButton(QToolButton* button) cons
     if (button == m_smoothButton) {
         return m_smoothAction;
     }
-    if (button == m_propertiesButton) {
-        return m_propertiesAction;
-    }
     if (button == m_groupButton) {
         return m_groupAction;
     }
@@ -184,12 +179,10 @@ void PropertiesPanelSelectionCard::SetSelectionActions(const QList<QAction*>& al
     RefreshVisibility();
 }
 
-void PropertiesPanelSelectionCard::SetItemActions(QAction* smoothAction, QAction* propertiesAction)
+void PropertiesPanelSelectionCard::SetItemActions(QAction* smoothAction)
 {
     m_smoothAction = smoothAction;
-    m_propertiesAction = propertiesAction;
     BindAction(m_smoothButton, smoothAction);
-    BindAction(m_propertiesButton, propertiesAction);
     RefreshVisibility();
 }
 
@@ -212,7 +205,6 @@ void PropertiesPanelSelectionCard::RefreshVisibility()
     };
 
     bool anyBasic = false;
-    anyBasic = usable(m_propertiesButton) || anyBasic;
     anyBasic = usable(m_copyButton) || anyBasic;
     anyBasic = usable(m_deleteButton) || anyBasic;
     anyBasic = usable(m_rotateCwButton) || anyBasic;

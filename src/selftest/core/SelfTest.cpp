@@ -73,8 +73,6 @@ int RunSelfTest(const QString& reportPath)
     selftest::RunLayerPanelTests(ctx);
     selftest::RunPaintOrderTests(ctx);
     selftest::RunViewInteractionTests(ctx);
-    selftest::RunPropertyDialogFieldGeometryTests(ctx);
-    selftest::RunPropertyDialogTextNamingTests(ctx);
     selftest::RunItemPropertyCatalogTests(ctx);
     selftest::RunPropertyKeyTests(ctx);
     selftest::RunPropertyRowSpecTests(ctx);

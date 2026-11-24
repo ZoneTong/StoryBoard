@@ -2,6 +2,7 @@
 
 #include <QPainter>
 #include <QPainterPath>
+#include <QtMath>
 
 namespace IconPainting {
 
@@ -226,6 +227,56 @@ void DrawAxisMinor(QPainter& painter, IconId)
     painter.drawLine(AXIS_CENTER, QPointF(12.0, 6.0));
 }
 
+QPointF PolarPoint(const QPointF& center, qreal radius, qreal degrees)
+{
+    const qreal radians = qDegreesToRadians(degrees);
+    return QPointF(center.x() + radius * qCos(radians), center.y() - radius * qSin(radians));
+}
+
+// 半径末端的小箭头：尖端落在半径末梢，双翼沿切向张开，指向角度张开的方向。
+void DrawRadialArrow(QPainter& painter, const QPointF& center, qreal radius, qreal degrees, qreal length)
+{
+    const qreal radians = qDegreesToRadians(degrees);
+    const QPointF tip = PolarPoint(center, radius, degrees);
+    const QPointF radial(qCos(radians), -qSin(radians));
+    const QPointF tangent(-qSin(radians), -qCos(radians));
+    const QPointF base = tip - radial * length;
+    QPainterPath head;
+    head.moveTo(tip);
+    head.lineTo(base + tangent * (length * 0.55));
+    head.lineTo(base - tangent * (length * 0.55));
+    head.closeSubpath();
+    painter.save();
+    painter.setBrush(painter.pen().color());
+    painter.drawPath(head);
+    painter.restore();
+}
+void DrawSector(QPainter& painter, IconId)
+{
+    // 打底是一块浅色扇形；两条边界半径各画成带箭头的射线，末端箭头指向角度张开的方向。
+    const QPointF center(12.0, 12.0);
+    const qreal radius = 9.2;
+    const qreal sweepDegrees = 72.0;
+
+    const QRectF box(center.x() - radius, center.y() - radius, radius * 2.0, radius * 2.0);
+    QPainterPath wedge;
+    wedge.moveTo(center);
+    wedge.arcTo(box, 0.0, sweepDegrees);
+    wedge.closeSubpath();
+    painter.save();
+    QColor fill = painter.pen().color();
+    fill.setAlpha(58);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(fill);
+    painter.drawPath(wedge);
+    painter.restore();
+
+    for (const qreal degrees : {0.0, sweepDegrees}) {
+        const QPointF tip = PolarPoint(center, radius, degrees);
+        painter.drawLine(center, tip);
+        DrawRadialArrow(painter, center, radius, degrees, 3.0);
+    }
+}
 constexpr struct IconEntry {
     IconId id;
     void (*draw)(QPainter&, IconId);
@@ -247,6 +298,7 @@ constexpr struct IconEntry {
     {IconId::SINE_AMPLITUDE, DrawSineAmplitude},
     {IconId::AXIS_MAJOR, DrawAxisMajor},
     {IconId::AXIS_MINOR, DrawAxisMinor},
+    {IconId::SECTOR, DrawSector},
 };
 
 } // namespace

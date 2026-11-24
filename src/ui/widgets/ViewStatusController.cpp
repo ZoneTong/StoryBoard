@@ -58,11 +58,11 @@ void ViewStatusController::UpdateModeUi()
                 MainWindow::tr("Brush mode: left button to draw · wheel to zoom · Space / middle button to pan"));
             break;
         case ToolMode::EDIT:
-            // 需求 1：只讲“哪些图元可编辑 + 双击精确单选 + 属性窗入口 + 唯一一条反直觉视图操作”，
+            // 需求 1：只讲“哪些图元可编辑 + 双击精确单选 + 属性在编辑面板里改 + 唯一一条反直觉视图操作”，
             // 不再枚举拖动、缩放、滚轮、Delete 这类一看就会的操作，也不提 Ctrl（已改多选）。
             m_window->m_hintLabel->setText(MainWindow::tr("Edit mode: items on visible, unlocked layers are editable · "
                                                           "double-click to select only that item · "
-                                                          "item properties open from the menu, panel or context menu · "
+                                                          "all item properties live in the edit panel · "
                                                           "Space / middle button to pan the view"));
             break;
         case ToolMode::TEXT:
@@ -98,7 +98,6 @@ void ViewStatusController::UpdateActions()
     m_window->m_ungroupAct->setEnabled(editing && m_window->m_scene->CanUngroupSelectedItems());
     m_window->m_smoothAct->setEnabled(editing && m_window->m_scene->CanSmoothSelectedStrokes());
     m_window->m_selectAllAct->setEnabled(editing && m_window->m_scene->CanvasItemCount() > 0);
-    m_window->m_itemPropsAct->setEnabled(m_window->m_scene->SelectedCanvasItems().size() == 1);
     m_window->m_rotateCwAct->setEnabled(editing && !m_window->m_scene->SelectedCanvasItems().isEmpty());
     m_window->m_rotateCcwAct->setEnabled(editing && !m_window->m_scene->SelectedCanvasItems().isEmpty());
 

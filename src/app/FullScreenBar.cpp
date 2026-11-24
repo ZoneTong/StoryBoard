@@ -48,27 +48,31 @@ FullScreenBar::FullScreenBar(MainWindow* window) : QWidget(window), m_window(win
         layout->addWidget(button);
     }
 
-    // 自定义图形：菜单即入口，点一下展开模板列表。
+    // 自定义图形：点按钮 / 按数字键 9 直接打开自定义图形面板，不再展开模板子菜单。
     m_customShapeButton = new QToolButton(this);
     m_customShapeButton->setObjectName(QStringLiteral("FullScreenCustomShapeButton"));
     m_customShapeButton->setIconSize(QSize(BAR_ICON_SIZE, BAR_ICON_SIZE));
     m_customShapeButton->setFixedSize(46, BAR_HEIGHT - 8);
     m_customShapeButton->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     m_customShapeButton->setText(QStringLiteral("9"));
-    m_customShapeButton->setPopupMode(QToolButton::InstantPopup);
     m_customShapeButton->setToolTip(MainWindow::tr("Custom shapes (9)"));
-    if (m_window->m_customShapeMenu) {
-        m_customShapeButton->setIcon(m_window->m_customShapeMenu->icon());
-        m_customShapeButton->setMenu(m_window->m_customShapeMenu);
-    }
+    m_customShapeButton->setIcon(IconFactory::Make(IconId::SHAPES, QColor(58, 64, 80), BAR_ICON_SIZE));
+    QObject::connect(m_customShapeButton, &QToolButton::clicked, m_window,
+                     [this]() { m_window->OpenCustomShapePanel(m_customShapeButton); });
     layout->addWidget(m_customShapeButton);
     m_digitButtons.append(m_customShapeButton);
 
+    // 行序与主工具栏一致：填充样式 → 填充颜色 → 描线样式 → 描线颜色 → 描线宽度，
+    // 描线颜色紧贴宽度输入框，全屏下改描线不用跨过别的按钮。
     layout->addSpacing(6);
     m_fillStyleButton = AddStyleButton(QStringLiteral("FullScreenFillStyleButton"));
+    layout->addWidget(m_fillStyleButton);
     m_fillColorButton = AddStyleButton(QStringLiteral("FullScreenFillColorButton"));
+    layout->addWidget(m_fillColorButton);
     m_strokeStyleButton = AddStyleButton(QStringLiteral("FullScreenStrokeStyleButton"));
+    layout->addWidget(m_strokeStyleButton);
     m_strokeColorButton = AddStyleButton(QStringLiteral("FullScreenStrokeColorButton"));
+    layout->addWidget(m_strokeColorButton);
 
     // 样式按钮复用主工具栏的同一批菜单与动作，全屏里改的就是主工具栏那份状态。
     auto* fillMenu = new QMenu(m_fillStyleButton);
@@ -125,7 +129,7 @@ QToolButton* FullScreenBar::AddShapeButton(const QString& actionName, const QStr
     QAction* action = m_window->m_shapeMenu ? m_window->m_shapeMenu->findChild<QAction*>(actionName) : nullptr;
     if (action) {
         button->setIcon(action->icon());
-        button->setToolTip(action->text());
+        button->setToolTip(MainWindow::tr("%1 (key %2)").arg(action->text(), keyText));
         // 不挂 setDefaultAction：action 的 16px 图标会覆盖这里的 26px。
         QObject::connect(button, &QToolButton::clicked, action, [action]() { action->trigger(); });
     }
@@ -210,7 +214,7 @@ bool FullScreenBar::TriggerDigit(int digit)
     if (!button) {
         return false;
     }
-    // 自定义图形按钮是 InstantPopup，click() 直接展开模板菜单；其余按钮触发对应动作。
+    // 自定义图形按钮点击即打开面板；其余按钮触发对应动作。
     button->click();
     return true;
 }

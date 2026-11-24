@@ -63,6 +63,21 @@ QRectF CanvasGroupBoxController::ViewportRect() const
     return m_view->mapFromScene(GroupRect()).boundingRect();
 }
 
+QTransform CanvasGroupBoxController::OverlayRotation() const
+{
+    // 只有“正在拖旋转钮”才让选框跟着转：起转前与缩放拖动时都是恒等变换，
+    // 命中 / 光标沿用轴对齐的组框。
+    if (!m_dragging || m_handle != static_cast<int>(GroupBoxHandle::ROTATE) || qFuzzyIsNull(m_dragAngle)) {
+        return QTransform();
+    }
+    const QPointF center = ViewportRect().center();
+    QTransform transform;
+    transform.translate(center.x(), center.y());
+    transform.rotateRadians(m_dragAngle);
+    transform.translate(-center.x(), -center.y());
+    return transform;
+}
+
 QList<CanvasItem*> CanvasGroupBoxController::Members() const
 {
     const int groupId = GroupId();
@@ -211,11 +226,13 @@ int CanvasGroupBoxController::HitTest(const QPoint& viewportPos) const
     if (rect.isNull()) {
         return static_cast<int>(GroupBoxHandle::NONE);
     }
+    // 旋转拖动中选框已经转了角度：先把鼠标点反向转回轴对齐坐标再判命中。
+    const QPointF point = OverlayRotation().inverted().map(QPointF(viewportPos));
     const qreal knob = SelectionOverlayStyle::KnobSize(1.0);
 
     const QRectF rotateKnob =
         SelectionOverlayStyle::KnobRect(HandleCenter(static_cast<int>(GroupBoxHandle::ROTATE), rect), knob);
-    if (rotateKnob.adjusted(-HANDLE_PADDING, -HANDLE_PADDING, HANDLE_PADDING, HANDLE_PADDING).contains(viewportPos)) {
+    if (rotateKnob.adjusted(-HANDLE_PADDING, -HANDLE_PADDING, HANDLE_PADDING, HANDLE_PADDING).contains(point)) {
         return static_cast<int>(GroupBoxHandle::ROTATE);
     }
 
@@ -225,12 +242,12 @@ int CanvasGroupBoxController::HitTest(const QPoint& viewportPos) const
             continue;
         }
         const QRectF hit = SelectionOverlayStyle::KnobRect(HandleCenter(handle, rect), knob);
-        if (hit.adjusted(-HANDLE_PADDING, -HANDLE_PADDING, HANDLE_PADDING, HANDLE_PADDING).contains(viewportPos)) {
+        if (hit.adjusted(-HANDLE_PADDING, -HANDLE_PADDING, HANDLE_PADDING, HANDLE_PADDING).contains(point)) {
             return handle;
         }
     }
 
-    if (rect.contains(viewportPos)) {
+    if (rect.contains(point)) {
         return static_cast<int>(GroupBoxHandle::BODY);
     }
     return static_cast<int>(GroupBoxHandle::NONE);
@@ -245,6 +262,7 @@ void CanvasGroupBoxController::BeginDrag(const QPoint& viewportPos, int handle)
     m_snapshot = Snapshot();
     m_handle = handle;
     m_dragging = true;
+    m_dragAngle = 0.0;
 
     if (handle == static_cast<int>(GroupBoxHandle::ROTATE)) {
         m_rotateCenter = m_startRect.center();
@@ -263,16 +281,25 @@ void CanvasGroupBoxController::UpdateDrag(const QPoint& viewportPos, Qt::Keyboar
     if (m_handle == static_cast<int>(GroupBoxHandle::ROTATE)) {
         const qreal angle =
             std::atan2(scenePos.y() - m_rotateCenter.y(), scenePos.x() - m_rotateCenter.x()) - m_startAngle;
+        m_dragAngle = angle;
         for (const MemberSnapshot& entry : std::as_const(m_snapshot)) {
             if (!entry.item) {
                 continue;
             }
-            // 刚体变换：绕组中心转的是成员几何中心，不是左上角。
-            // 图元自身绕自己的中心转，二者叠加后成员之间的相对位置才不变。
-            const QPointF center = entry.oldPos + QPointF(entry.oldSize.width() / 2.0, entry.oldSize.height() / 2.0);
-            const QPointF rotated = RotateAround(center, m_rotateCenter, angle);
-            entry.item->setPos(rotated - QPointF(entry.oldSize.width() / 2.0, entry.oldSize.height() / 2.0));
+            // 刚体变换：成员几何中心（mapToScene 取真实中心，弧线等旋转原点不在内容中心的
+            // 图元也不会漂移）绕组中心转，再按同一角度自转；成员之间相对位置保持不变。
+            const QPointF localCenter = entry.item->ContentRect().center();
+            const QPointF center = entry.item->mapToScene(localCenter);
+            const QPointF target = RotateAround(center, m_rotateCenter, angle);
+            // RotationAngle 与 SetRotationAngle 都以弧度为单位（QGraphicsItem::setRotation 口径）。
             entry.item->SetRotationAngle(CanvasItem::NormalizeRotation(entry.oldRotation + angle));
+            // 自转本身可能挪动中心（旋转原点与内容中心不一致时），按差值把中心搬回目标点。
+            const QPointF moved = entry.item->mapToScene(localCenter);
+            entry.item->setPos(entry.item->pos() + (target - moved));
+        }
+        // 选框与旋转手柄也要绕组中心转起来，跟单图元一致。
+        if (m_view) {
+            m_view->viewport()->update();
         }
         return;
     }
@@ -304,6 +331,7 @@ void CanvasGroupBoxController::EndDrag()
         return;
     }
     m_dragging = false;
+    m_dragAngle = 0.0;
     if (m_snapshot.isEmpty() || !m_scene) {
         return;
     }
@@ -351,6 +379,10 @@ void CanvasGroupBoxController::DrawOverlay(QPainter* painter) const
         return;
     }
 
+    // 旋转拖动期间选框、手柄与旋转钮一起绕组中心转，行为跟单图元一致。
+    painter->save();
+    painter->setTransform(OverlayRotation(), true);
+
     painter->setPen(SelectionOverlayStyle::BorderPen());
     painter->setBrush(Qt::NoBrush);
     painter->drawRect(rect);
@@ -371,4 +403,5 @@ void CanvasGroupBoxController::DrawOverlay(QPainter* painter) const
     painter->drawLine(topCenter, rotationCenter);
     painter->setBrush(SelectionOverlayStyle::HandleColor());
     painter->drawEllipse(SelectionOverlayStyle::KnobRect(rotationCenter, knob).adjusted(1.0, 1.0, -1.0, -1.0));
+    painter->restore();
 }

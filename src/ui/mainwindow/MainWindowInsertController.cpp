@@ -20,6 +20,7 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QCursor>
 #include <QDir>
 #include <QFileInfo>
 #include <QMenu>
@@ -53,6 +54,43 @@ void ReportWarning(QWidget* parent, const QString& title, const QString& text)
 
 MainWindowInsertController::MainWindowInsertController(MainWindow* window) : m_window(window) {}
 
+QPointF MainWindowInsertController::PlacementCenter(const QSizeF& itemSize) const
+{
+    const QRectF canvas = m_window->m_scene->CanvasRect();
+    const QWidget* viewport = m_window->m_view->viewport();
+    const QRect viewportRect = viewport->rect();
+    QPointF center;
+    bool atCursor = false;
+    // 键盘入口才按鼠标位置落点；鼠标停在按钮或菜单上时仍落回视口中心。
+    if (m_cursorPlacement) {
+        const QPoint local = viewport->mapFromGlobal(QCursor::pos());
+        if (viewportRect.contains(local)) {
+            const QPointF scenePos = m_window->m_view->mapToScene(local);
+            if (canvas.contains(scenePos)) {
+                center = scenePos;
+                atCursor = true;
+            }
+        }
+    }
+    if (!atCursor) {
+        center = m_window->m_view->mapToScene(viewportRect.center());
+        if (!canvas.contains(center)) {
+            center = canvas.center();
+        }
+        const qreal cascade = (m_window->m_scene->CanvasItemCount() % 5) * 18.0;
+        center += QPointF(cascade, cascade);
+    }
+    const qreal halfWidth = itemSize.width() / 2.0;
+    const qreal halfHeight = itemSize.height() / 2.0;
+    const qreal minX = canvas.left() + halfWidth;
+    const qreal maxX = qMax(minX, canvas.right() - halfWidth);
+    const qreal minY = canvas.top() + halfHeight;
+    const qreal maxY = qMax(minY, canvas.bottom() - halfHeight);
+    center.setX(qBound(minX, center.x(), maxX));
+    center.setY(qBound(minY, center.y(), maxY));
+    return center;
+}
+
 void MainWindowInsertController::InsertTextAt(const QPointF& scenePos)
 {
     auto* item = new TextItem();
@@ -69,12 +107,12 @@ void MainWindowInsertController::InsertTextAt(const QPointF& scenePos)
     m_window->SetToolMode(ToolMode::EDIT);
     m_window->m_scene->AddItemsWithUndo({item}, MainWindow::tr("Add text"));
     item->setSelected(true);
-    m_window->m_view->setFocus();
+    // 新建文字直接在图元上编辑，光标落在正文末尾，不用再去编辑面板里点输入框。
+    const bool editing = m_window->m_view->BeginTextEdit(item);
+    if (!editing) {
+        m_window->m_view->setFocus();
+    }
     m_window->statusBar()->showMessage(MainWindow::tr("Text item added"), 4000);
-
-    // 文字正文现在由属性窗直接编辑；添加后立即打开属性窗，避免再维护独立
-    // 的文字输入对话框。
-    m_window->ShowItemProperties(item);
 }
 
 void MainWindowInsertController::InsertShape(ShapeType type, qreal triangleAngle1, qreal triangleAngle2,
@@ -115,14 +153,7 @@ void MainWindowInsertController::InsertShape(ShapeType type, qreal triangleAngle
                                                  canvas.height() * 0.72 / qMax<qreal>(1.0, size.height())));
     size *= fitScale;
 
-    QPointF center = m_window->m_view->mapToScene(m_window->m_view->viewport()->rect().center());
-    if (!canvas.contains(center)) {
-        center = canvas.center();
-    }
-    const qreal cascade = (m_window->m_scene->CanvasItemCount() % 5) * 18.0;
-    center += QPointF(cascade, cascade);
-    center.setX(qBound(canvas.left() + size.width() / 2.0, center.x(), canvas.right() - size.width() / 2.0));
-    center.setY(qBound(canvas.top() + size.height() / 2.0, center.y(), canvas.bottom() - size.height() / 2.0));
+    const QPointF center = PlacementCenter(size);
     const QPointF topLeft = center - QPointF(size.width() / 2.0, size.height() / 2.0);
 
     CanvasItem* item = nullptr;
@@ -170,15 +201,7 @@ void MainWindow::InsertCurve(LineGlyph glyph, ArrowStyle startArrow, ArrowStyle 
     const QSizeF size = glyph == LineGlyph::STRAIGHT ? QSizeF(128.0, 64.0)
                         : glyph == LineGlyph::ARC    ? QSizeF(128.0, 128.0)
                                                      : QSizeF(128.0, 40.0);
-    const QRectF canvas = m_scene->CanvasRect();
-    QPointF center = m_view->mapToScene(m_view->viewport()->rect().center());
-    if (!canvas.contains(center)) {
-        center = canvas.center();
-    }
-    const qreal cascade = (m_scene->CanvasItemCount() % 5) * 18.0;
-    center += QPointF(cascade, cascade);
-    center.setX(qBound(canvas.left() + size.width() / 2.0, center.x(), canvas.right() - size.width() / 2.0));
-    center.setY(qBound(canvas.top() + size.height() / 2.0, center.y(), canvas.bottom() - size.height() / 2.0));
+    const QPointF center = m_insert->PlacementCenter(size);
     const QPointF topLeft = center - QPointF(size.width() / 2.0, size.height() / 2.0);
 
     const QColor stroke = m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_brushColor;
@@ -247,14 +270,7 @@ void MainWindowInsertController::InsertCompositeShape(ShapeType type)
                                                  canvas.height() * 0.72 / qMax<qreal>(1.0, size.height())));
     size *= fitScale;
 
-    QPointF center = m_window->m_view->mapToScene(m_window->m_view->viewport()->rect().center());
-    if (!canvas.contains(center)) {
-        center = canvas.center();
-    }
-    const qreal cascade = (m_window->m_scene->CanvasItemCount() % 5) * 18.0;
-    center += QPointF(cascade, cascade);
-    center.setX(qBound(canvas.left() + size.width() / 2.0, center.x(), canvas.right() - size.width() / 2.0));
-    center.setY(qBound(canvas.top() + size.height() / 2.0, center.y(), canvas.bottom() - size.height() / 2.0));
+    const QPointF center = PlacementCenter(size);
     const QPointF topLeft = center - QPointF(size.width() / 2.0, size.height() / 2.0);
 
     QList<CanvasItem*> faces;
@@ -355,14 +371,7 @@ void MainWindowInsertController::InsertBrace(bool left)
                                                  canvas.height() * 0.72 / qMax<qreal>(1.0, size.height())));
     size *= fitScale;
 
-    QPointF center = m_window->m_view->mapToScene(m_window->m_view->viewport()->rect().center());
-    if (!canvas.contains(center)) {
-        center = canvas.center();
-    }
-    const qreal cascade = (m_window->m_scene->CanvasItemCount() % 5) * 18.0;
-    center += QPointF(cascade, cascade);
-    center.setX(qBound(canvas.left() + size.width() / 2.0, center.x(), canvas.right() - size.width() / 2.0));
-    center.setY(qBound(canvas.top() + size.height() / 2.0, center.y(), canvas.bottom() - size.height() / 2.0));
+    QPointF center = PlacementCenter(size);
 
     const QPointF topLeft = center - QPointF(size.width() / 2.0, size.height() / 2.0);
     auto* item = new BraceItem();
@@ -424,14 +433,7 @@ void MainWindowInsertController::InsertCustomShape(const QString& filePath)
     size.setWidth(qMax<qreal>(16.0, size.width()));
     size.setHeight(qMax<qreal>(16.0, size.height()));
 
-    QPointF center = m_window->m_view->mapToScene(m_window->m_view->viewport()->rect().center());
-    if (!canvas.contains(center)) {
-        center = canvas.center();
-    }
-    const qreal cascade = (m_window->m_scene->CanvasItemCount() % 5) * 18.0;
-    center += QPointF(cascade, cascade);
-    center.setX(qBound(canvas.left() + size.width() / 2.0, center.x(), canvas.right() - size.width() / 2.0));
-    center.setY(qBound(canvas.top() + size.height() / 2.0, center.y(), canvas.bottom() - size.height() / 2.0));
+    const QPointF center = PlacementCenter(size);
     const QRectF targetRect(center - QPointF(size.width() / 2.0, size.height() / 2.0), size);
 
     // §6：模板按子路径拆分——闭合部分成多边形（单层 FILLED_AREA），开放部分成曲线。

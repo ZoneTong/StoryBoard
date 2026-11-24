@@ -53,6 +53,8 @@ enum class IconId {
     // 角度三行各用专图（起始角 / 扫过角 / 对象旋转），不再全借工具栏的顺逆时针图标。
     ANGLE_START,
     ANGLE_SWEEP,
+    // 扇形：起始角与扫过角合一行后的行图标，圆形轮廓里画一块实心扇形。
+    SECTOR,
     // 几何两行：中心点画十字靶心，尺寸画带双向箭头的矩形，避免继续借 FIT / SHAPES。
     CENTER,
     SIZE,

@@ -13,7 +13,6 @@
 #include "selftest/core/SelfTest.h"
 #include "ui/dialogs/ExportDialog.h"
 #include "ui/mainwindow/MainWindow.h"
-#include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/settings/SettingsDialog.h"
 
 #include <QAction>
@@ -208,36 +207,6 @@ int RunAboutScreenshot(const CommandLineOptions& options)
     });
     QMetaObject::invokeMethod(&window, "showAbout", Qt::DirectConnection);
     return saved ? 0 : 1;
-}
-
-int RunItemPropertiesScreenshot(const CommandLineOptions& options)
-{
-    const QString& outputPath = options.itemPropertiesScreenshotPath;
-
-    CanvasScene demoScene;
-    Demo::Populate(demoScene);
-    demoScene.AssignAutoItemNames();
-    demoScene.SetMode(ToolMode::EDIT);
-    CanvasItem* target = nullptr;
-    for (CanvasItem* item : demoScene.CanvasItems()) {
-        if (dynamic_cast<ShapeAbstractItem*>(item)) {
-            target = item;
-            break;
-        }
-    }
-    if (!target && demoScene.CanvasItemCount() > 0) {
-        target = demoScene.CanvasItems().constFirst();
-    }
-    if (!target) {
-        return 3;
-    }
-    demoScene.SetActiveLayer(target->LayerId());
-    target->setSelected(true);
-
-    ItemPropertiesDialog dialog(&demoScene, target);
-    dialog.show();
-    QApplication::processEvents();
-    return dialog.grab().save(outputPath) ? 0 : 1;
 }
 
 int GrabMenu(const QString& menuName, const QPoint& popupPoint, const QString& outputPath)
@@ -448,9 +417,6 @@ int Run(QApplication& app, const CommandLineOptions& options)
     }
     if (options.aboutScreenshot) {
         return RunAboutScreenshot(options);
-    }
-    if (options.itemPropertiesScreenshot) {
-        return RunItemPropertiesScreenshot(options);
     }
     if (options.shapeMenuScreenshot) {
         return GrabMenu(QStringLiteral("ShapeMenu"), QPoint(420, 80), options.shapeMenuScreenshotPath);

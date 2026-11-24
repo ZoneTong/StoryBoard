@@ -402,10 +402,19 @@ void PropertiesPanel::ApplyCornerRadius(int radius)
                          [radius](ShapeAbstractItem* shape) { shape->SetCornerRadius(radius); });
 }
 
-void PropertiesPanel::ApplyStartAngle(int angle)
+void PropertiesPanel::ApplyArcAngles(qreal startAngle, qreal sweepAngle)
 {
-    ChangeSelectedShapes(tr("Change start angle"), [angle](ShapeAbstractItem* shape) {
-        shape->SetPropertyValue(ItemProperty::START_ANGLE, angle);
+    // 显示与落盘同为「起始角 + 扫过角」，这里只做范围收敛；扫过角为 0 时按 1° 兜底保形。
+    const qreal start = qBound<qreal>(-360.0, startAngle, 360.0);
+    qreal sweep = qBound<qreal>(-360.0, sweepAngle, 360.0);
+    if (qAbs(sweep) < 1.0) {
+        sweep = sweepAngle < 0.0 ? -1.0 : 1.0;
+    }
+    const QMap<PropertyKey, QVariant> values{{ItemProperty::START_ANGLE, start},
+                                             {ItemProperty::SWEEP_ANGLE, sweep}};
+    ChangeSelectedShapes(tr("Change arc angles"), [start, sweep](ShapeAbstractItem* shape) {
+        shape->SetPropertyValue(ItemProperty::START_ANGLE, start);
+        shape->SetPropertyValue(ItemProperty::SWEEP_ANGLE, sweep);
     });
     const QList<LineAbstractItem*> strokes = SelectedStrokes();
     QList<CanvasItem*> targets;
@@ -413,23 +422,7 @@ void PropertiesPanel::ApplyStartAngle(int angle)
     for (LineAbstractItem* stroke : strokes) {
         targets.append(stroke);
     }
-    ApplyPropertyValues(QMap<PropertyKey, QVariant>{{ItemProperty::START_ANGLE, angle}}, tr("Change start angle"),
-                        targets);
-}
-
-void PropertiesPanel::ApplySweepAngle(int angle)
-{
-    ChangeSelectedShapes(tr("Change sector angle"), [angle](ShapeAbstractItem* shape) {
-        shape->SetPropertyValue(ItemProperty::SWEEP_ANGLE, angle);
-    });
-    const QList<LineAbstractItem*> strokes = SelectedStrokes();
-    QList<CanvasItem*> targets;
-    targets.reserve(strokes.size());
-    for (LineAbstractItem* stroke : strokes) {
-        targets.append(stroke);
-    }
-    ApplyPropertyValues(QMap<PropertyKey, QVariant>{{ItemProperty::SWEEP_ANGLE, angle}}, tr("Change arc sweep angle"),
-                        targets);
+    ApplyPropertyValues(values, tr("Change arc angles"), targets);
 }
 
 void PropertiesPanel::ApplySineCycles(int cycles)
@@ -458,24 +451,13 @@ void PropertiesPanel::ApplySineAmplitude(int pixels)
                         tr("Change sine amplitude"), targets);
 }
 
-void PropertiesPanel::ApplyTriangleAngle1(int degrees)
+void PropertiesPanel::ApplyInteriorAngleB(qreal angle)
 {
-    ChangeSelectedShapes(tr("Change triangle base angle"), [degrees](ShapeAbstractItem* shape) {
-        if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->IsCustomShape()) {
-            return;
-        }
-        shape->SetTriangleAngles(degrees, shape->BottomAngle2());
-    });
-}
-
-void PropertiesPanel::ApplyTriangleAngle2(int degrees)
-{
-    ChangeSelectedShapes(tr("Change triangle base angle"), [degrees](ShapeAbstractItem* shape) {
-        if (!shape || shape->shapeType() != ShapeType::TRIANGLE || shape->IsCustomShape()) {
-            return;
-        }
-        shape->SetTriangleAngles(shape->BottomAngle1(), degrees);
-    });
+    if (SelectedItems().isEmpty()) {
+        return;
+    }
+    // 内角 B 只有三角形上报；字段名与内角 A 同族，写入仍走属性表。
+    ApplyPropertyValues({{ItemProperty::BOTTOM_ANGLE2, angle}}, tr("Change interior angle B"));
 }
 
 void PropertiesPanel::ApplyArrowStart(int style)
@@ -700,8 +682,10 @@ void PropertiesPanel::ApplyInteriorAngle(qreal angle)
     if (SelectedItems().isEmpty()) {
         return;
     }
-    // 内角 A 对选中集合里所有上报该属性的图元生效（普通平行四边形为真值，菱形按宽反算高）。
-    ApplyPropertyValues({{ItemProperty::PARALLELOGRAM_ANGLE, angle}}, tr("Change interior angle"));
+    // 内角 A 对选中集合里所有上报该属性的图元生效：平行四边形走 PARALLELOGRAM_ANGLE，
+    // 三角形走共用的 BOTTOM_ANGLE1；两个键同时给出，属性过滤只落到各自支持的那一个。
+    ApplyPropertyValues({{ItemProperty::PARALLELOGRAM_ANGLE, angle}, {ItemProperty::BOTTOM_ANGLE1, angle}},
+                        tr("Change interior angle"));
 }
 
 void PropertiesPanel::ApplyItemCenter(const QPointF& center)

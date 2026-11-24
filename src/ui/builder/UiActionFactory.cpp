@@ -85,8 +85,10 @@ void UiActionFactory::Build()
         MakeAction(m_window, IconId::EXPORT, MainWindow::tr("Export Excalidraw…"), QKeySequence(),
                    MainWindow::tr("Save this canvas as an .excalidraw scene that excalidraw.com can open"));
     m_window->m_exportCustomShapeAct =
-        MakeAction(m_window, IconId::SHAPES, MainWindow::tr("Export custom shape…"), QKeySequence(),
-                   MainWindow::tr("Save the selected items into the shapes folder as a reusable template"));
+        MakeAction(m_window, IconId::SHAPES, MainWindow::tr("Export custom shape…"),
+                   QKeySequence(QStringLiteral("Ctrl+Shift+E")),
+                   MainWindow::tr("Save the selected items into the shapes folder as a reusable template "
+                                  "(Ctrl+Shift+E, also works in full screen)"));
     // 主键取 Windows 关闭标准 Alt+F4；副键 Ctrl+Q 是 Linux / macOS 级的退出标准。
     m_window->m_quitAct = new QAction(MainWindow::tr("Quit"), m_window);
     m_window->m_quitAct->setShortcuts({QKeySequence(Qt::ALT | Qt::Key_F4), QKeySequence(QStringLiteral("Ctrl+Q"))});
@@ -186,8 +188,6 @@ void UiActionFactory::Build()
     m_window->m_selectAllAct = new QAction(MainWindow::tr("Select all items"), m_window);
     m_window->m_selectAllAct->setShortcut(QKeySequence::SelectAll);
     m_window->m_selectAllAct->setStatusTip(MainWindow::tr("Select all items (Ctrl+A)"));
-    m_window->m_itemPropsAct = MakeAction(m_window, IconId::SETTINGS, MainWindow::tr("Item properties…"),
-                                          QKeySequence(), MainWindow::tr("Show the selected item's properties"));
     m_window->m_rotateCwAct = MakeAction(m_window, IconId::ROTATE_CW, MainWindow::tr("Rotate 45° clockwise"),
                                          QKeySequence(QStringLiteral("Ctrl+R")),
                                          MainWindow::tr("Rotate selected items 45° clockwise (Ctrl+R)"));
@@ -205,7 +205,7 @@ void UiActionFactory::Build()
         MakeAction(m_window, IconId::EDIT, MainWindow::tr("Edit mode"), QKeySequence(QStringLiteral("V")),
                    MainWindow::tr("Edit mode: items on visible, unlocked layers are editable · "
                                   "double-click to select only that item · "
-                                  "item properties open from the menu, panel or context menu · "
+                                  "all item properties live in the edit panel · "
                                   "Space / middle button to pan the view (V)"));
     m_window->m_textModeAct =
         MakeAction(m_window, IconId::TEXT, MainWindow::tr("Text mode"), QKeySequence(QStringLiteral("T")),
@@ -314,7 +314,6 @@ void UiActionFactory::Build()
     QObject::connect(m_window->m_pasteAct, &QAction::triggered, m_window,
                      [this]() { m_window->m_editActions->PasteItems(); });
     QObject::connect(m_window->m_selectAllAct, &QAction::triggered, m_window->m_scene, &CanvasScene::SelectAllItems);
-    QObject::connect(m_window->m_itemPropsAct, &QAction::triggered, m_window, &MainWindow::ShowSelectedItemProperties);
     QObject::connect(m_window->m_rotateCwAct, &QAction::triggered, m_window,
                      [this]() { m_window->RotateSelected(45.0); });
     QObject::connect(m_window->m_rotateCcwAct, &QAction::triggered, m_window,
@@ -340,14 +339,11 @@ void UiActionFactory::Build()
     m_window->m_fillCrossAct = new QAction(MainWindow::tr("Cross hatch fill"), m_window);
     m_window->m_fillGridAct = new QAction(MainWindow::tr("Grid hatch fill"), m_window);
     m_window->m_fillHoneycombAct = new QAction(MainWindow::tr("Hexagon fill"), m_window);
-    m_window->m_fillHorizontalAct = new QAction(MainWindow::tr("Horizontal lines fill"), m_window);
-    m_window->m_fillVerticalAct = new QAction(MainWindow::tr("Vertical lines fill"), m_window);
     m_window->m_fillBrickAct = new QAction(MainWindow::tr("Brick fill"), m_window);
     m_window->m_fillDotsAct = new QAction(MainWindow::tr("Dots fill"), m_window);
     for (QAction* action : {m_window->m_fillNoneAct, m_window->m_fillSolidAct, m_window->m_fillHachureAct,
                             m_window->m_fillReverseAct, m_window->m_fillCrossAct, m_window->m_fillGridAct,
-                            m_window->m_fillHoneycombAct, m_window->m_fillHorizontalAct, m_window->m_fillVerticalAct,
-                            m_window->m_fillBrickAct, m_window->m_fillDotsAct}) {
+                            m_window->m_fillHoneycombAct, m_window->m_fillBrickAct, m_window->m_fillDotsAct}) {
         action->setCheckable(true);
     }
     m_window->m_fillStyleGroup = new QActionGroup(m_window);
@@ -359,8 +355,6 @@ void UiActionFactory::Build()
     m_window->m_fillStyleGroup->addAction(m_window->m_fillCrossAct);
     m_window->m_fillStyleGroup->addAction(m_window->m_fillGridAct);
     m_window->m_fillStyleGroup->addAction(m_window->m_fillHoneycombAct);
-    m_window->m_fillStyleGroup->addAction(m_window->m_fillHorizontalAct);
-    m_window->m_fillStyleGroup->addAction(m_window->m_fillVerticalAct);
     m_window->m_fillStyleGroup->addAction(m_window->m_fillBrickAct);
     m_window->m_fillStyleGroup->addAction(m_window->m_fillDotsAct);
     // 需求 16：默认“无填充”，勾选状态必须按当前全局状态刷新，不能写死纯色。
@@ -379,10 +373,6 @@ void UiActionFactory::Build()
                      [this]() { m_window->SetFillStyle(FillStyle::GRID_HATCH); });
     QObject::connect(m_window->m_fillHoneycombAct, &QAction::triggered, m_window,
                      [this]() { m_window->SetFillStyle(FillStyle::HONEYCOMB); });
-    QObject::connect(m_window->m_fillHorizontalAct, &QAction::triggered, m_window,
-                     [this]() { m_window->SetFillStyle(FillStyle::HORIZONTAL_HATCH); });
-    QObject::connect(m_window->m_fillVerticalAct, &QAction::triggered, m_window,
-                     [this]() { m_window->SetFillStyle(FillStyle::VERTICAL_HATCH); });
     QObject::connect(m_window->m_fillBrickAct, &QAction::triggered, m_window,
                      [this]() { m_window->SetFillStyle(FillStyle::BRICK); });
     QObject::connect(m_window->m_fillDotsAct, &QAction::triggered, m_window,

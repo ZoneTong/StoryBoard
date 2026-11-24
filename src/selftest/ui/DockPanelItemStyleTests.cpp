@@ -24,7 +24,6 @@
 #include "ui/dialogs/ExportDialog.h"
 #include "ui/mainwindow/MainWindow.h"
 #include "ui/panels/customshape/CustomShapePanel.h"
-#include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/layers/LayerPanel.h"
 #include "ui/panels/properties/PropertiesPanel.h"
 #include "ui/settings/SettingsDialog.h"

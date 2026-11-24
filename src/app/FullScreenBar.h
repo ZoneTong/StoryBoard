@@ -18,10 +18,11 @@ class FullScreenBar : public QWidget {
     void SyncFromWindow();
     // 底部居中放置：中心点与顶部留白都由调用方算好。
     void PlaceAt(int centerX, int topInset);
-    // 数字键 0–9 触发对应图形按钮（9 是自定义图形菜单）；返回是否确有对应按钮。
+    // 数字键 0–9 触发对应图形按钮（9 直接打开自定义图形面板）；返回是否确有对应按钮。
     bool TriggerDigit(int digit);
 
-    static constexpr int BAR_HEIGHT = 58;
+    // 栏高 66px，图标边长 26px；按钮高度 = 栏高 − 8，保证键位字符不被下沿切掉。
+    static constexpr int BAR_HEIGHT = 66;
     static constexpr int BAR_ICON_SIZE = 26;
 
   private:

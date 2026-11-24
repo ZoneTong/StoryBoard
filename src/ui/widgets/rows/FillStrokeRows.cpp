@@ -75,10 +75,10 @@ FillStyleRow::FillStyleRow(QWidget* parent) : QWidget(parent)
     icon->setToolTip(RowText("Fill style"));
     layout->addWidget(icon, 0, Qt::AlignVCenter);
 
-    // 11 个按钮排一行：按钮最大 23×23、字形 17，行宽 = 图标 + 11×23，控制在编辑面板宽度内。
+    // 9 个按钮排一行：按钮最大 26×26、字形 19（横竖线两式删除后每格可以再放大一档）。
     // 面板更窄时按可用宽度等比收小（不小于 16），始终排在一行、且不超过其它属性行的宽度。
-    const int fillStyleButton = 23;
-    const int fillStyleGlyph = 17;
+    const int fillStyleButton = 26;
+    const int fillStyleGlyph = 19;
     m_buttonEdge = fillStyleButton;
     for (const FillStyle style : AllFillStyles()) {
         auto* button = new QToolButton(this);
@@ -119,8 +119,8 @@ void FillStyleRow::resizeEvent(QResizeEvent* event)
     if (available <= 0) {
         return;
     }
-    const int edge = qBound(18, available / m_buttons.size(), 23);
-    ApplyButtonSize(edge, qBound(12, edge - 6, 17));
+    const int edge = qBound(18, available / m_buttons.size(), 26);
+    ApplyButtonSize(edge, qBound(12, edge - 7, 19));
 }
 
 void FillStyleRow::ApplyButtonSize(int edge, int glyph)

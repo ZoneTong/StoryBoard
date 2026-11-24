@@ -329,12 +329,6 @@ void StyleController::UpdateFillActions()
     if (m_window->m_fillHoneycombAct) {
         m_window->m_fillHoneycombAct->setChecked(m_window->m_fillStyle == FillStyle::HONEYCOMB);
     }
-    if (m_window->m_fillHorizontalAct) {
-        m_window->m_fillHorizontalAct->setChecked(m_window->m_fillStyle == FillStyle::HORIZONTAL_HATCH);
-    }
-    if (m_window->m_fillVerticalAct) {
-        m_window->m_fillVerticalAct->setChecked(m_window->m_fillStyle == FillStyle::VERTICAL_HATCH);
-    }
     if (m_window->m_fillBrickAct) {
         m_window->m_fillBrickAct->setChecked(m_window->m_fillStyle == FillStyle::BRICK);
     }
@@ -365,13 +359,6 @@ void StyleController::UpdateFillActions()
     }
     if (m_window->m_fillHoneycombAct) {
         m_window->m_fillHoneycombAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::HONEYCOMB, swatch, 16));
-    }
-    if (m_window->m_fillHorizontalAct) {
-        m_window->m_fillHorizontalAct->setIcon(
-            ItemStyleVisuals::FillStyleIcon(FillStyle::HORIZONTAL_HATCH, swatch, 16));
-    }
-    if (m_window->m_fillVerticalAct) {
-        m_window->m_fillVerticalAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::VERTICAL_HATCH, swatch, 16));
     }
     if (m_window->m_fillBrickAct) {
         m_window->m_fillBrickAct->setIcon(ItemStyleVisuals::FillStyleIcon(FillStyle::BRICK, swatch, 16));

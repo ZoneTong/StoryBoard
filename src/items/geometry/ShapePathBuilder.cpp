@@ -476,8 +476,10 @@ QPainterPath ShapePathBuilder::PathFor(ShapeType type, const QRectF& rect, qreal
         return ParallelogramPath(rect, 60.0);
     case ShapeType::DIAMOND:
         return DiamondPath(rect);
+    case ShapeType::POLYGON:
+        // 多边形（合并产物）没有内置轮廓，由 PolygonItem 自己按图层提供路径。
+        break;
     }
-    // 多边形（合并产物）没有内置轮廓。
     return QPainterPath();
 }
 QPainterPath ShapePathBuilder::TrianglePath(const QRectF& rect, qreal bottomAngle1, qreal bottomAngle2)

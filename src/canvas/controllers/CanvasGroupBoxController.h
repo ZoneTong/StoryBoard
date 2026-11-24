@@ -5,6 +5,7 @@
 #include <QPointF>
 #include <QRectF>
 #include <QSizeF>
+#include <QTransform>
 #include <Qt>
 
 class CanvasScene;
@@ -60,6 +61,9 @@ class CanvasGroupBoxController {
     QRectF ResizeRect(int handle, const QRectF& startRect, const QPointF& scenePos, bool equalize) const;
     QPointF HandleCenter(int handle, const QRectF& rect) const;
     QRectF ViewportRect() const;
+    // 旋转拖动期间把组框连同手柄绕组中心转起来（仿照单图元的旋转手柄）；
+    // 非旋转拖动时是单位变换。
+    QTransform OverlayRotation() const;
     static QPointF RotateAround(const QPointF& point, const QPointF& center, qreal angle);
 
     CanvasView* m_view = nullptr;
@@ -69,5 +73,7 @@ class CanvasGroupBoxController {
     QRectF m_startRect;
     QPointF m_rotateCenter;
     qreal m_startAngle = 0.0;
+    // 本次旋转拖动累计角度（弧度），只驱动选框绘制，不落盘。
+    qreal m_dragAngle = 0.0;
     QList<MemberSnapshot> m_snapshot;
 };

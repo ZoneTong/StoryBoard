@@ -24,6 +24,8 @@ class ParallelogramAbstractItem : public ShapeAbstractItem {
     void ApplyState(const ShapeItemState& state) override;
     // 角度浮层锚点：默认贴左下顶点（§3.2 不再贴旋钮），菱形覆写为左顶点。
     virtual QPointF AngleReadoutAnchor() const;
+    // 读数框：左下内角处，随顶点移动（锐角 / 钝角都贴住真正的角）。
+    QRectF AngleReadoutRect() const;
     // 状态 / JSON 回放用：只写字段，不带叶子副作用（改尺寸、保锚点由叶子负责）。
     void ApplyParallelogramAngleRaw(qreal angle) { m_parallelogramAngle = angle; }
     void DrawSelectionOverlay(QPainter* painter) override;

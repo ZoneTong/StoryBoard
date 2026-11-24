@@ -4,6 +4,7 @@
 #include "app/FullScreenBar.h"
 #include "canvas/CanvasView.h"
 #include "ui/mainwindow/MainWindow.h"
+#include "ui/mainwindow/MainWindowInsertController.h"
 
 #include <QAction>
 #include <QActionGroup>
@@ -253,7 +254,15 @@ void FullScreenController::HandleKeyPress(QKeyEvent* event)
         qobject_cast<QComboBox*>(focus)) {
         return;
     }
-    if (m_bar->TriggerDigit(key - Qt::Key_0)) {
+    // 数字键是键盘入口：新图元跟着鼠标落点，不再固定落在视口中心。
+    if (m_window->m_insert) {
+        m_window->m_insert->SetCursorPlacement(true);
+    }
+    const bool handled = m_bar->TriggerDigit(key - Qt::Key_0);
+    if (m_window->m_insert) {
+        m_window->m_insert->SetCursorPlacement(false);
+    }
+    if (handled) {
         event->accept();
     }
 }

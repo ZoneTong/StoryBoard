@@ -124,10 +124,6 @@ QString Name(FillStyle style)
         return ShapeAbstractItem::tr("Grid hatch");
     case FillStyle::HONEYCOMB:
         return ShapeAbstractItem::tr("Hexagon");
-    case FillStyle::HORIZONTAL_HATCH:
-        return ShapeAbstractItem::tr("Horizontal lines");
-    case FillStyle::VERTICAL_HATCH:
-        return ShapeAbstractItem::tr("Vertical lines");
     case FillStyle::BRICK:
         return ShapeAbstractItem::tr("Brick");
     case FillStyle::DOTS:

@@ -706,6 +706,9 @@
         <source>Sine amplitude</source>
         <translation>正弦振幅</translation>
     </message><message>
+        <source>Sine wave</source>
+        <translation>正弦波</translation>
+    </message><message>
         <source>Shape radius</source>
         <translation>图形半径</translation>
     </message><message>
@@ -833,6 +836,18 @@
     </message><message>
         <source>Semi-minor axis</source>
         <translation>短半轴</translation>
+    </message><message>
+        <source>Semi-axes</source>
+        <translation>半轴</translation>
+    </message><message>
+        <source>Sector / arc angles</source>
+        <translation>扇形 / 弧线角度</translation>
+    </message><message>
+        <source>Interior angle</source>
+        <translation>内角</translation>
+    </message><message>
+        <source>Change arc angles</source>
+        <translation>修改弧线起止角</translation>
     </message><message>
         <source>Parallelogram bottom-left angle</source>
         <translation>平行四边形左下角</translation>
@@ -1942,8 +1957,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <translation>只留画布与悬浮工具栏（F11）</translation>
     </message><message>
         <location filename="../src/ui/builder/UiActionFactory.cpp" line="206"/>
-        <source>Edit mode: items on visible, unlocked layers are editable · double-click to select only that item · item properties open from the menu, panel or context menu · Space / middle button to pan the view (V)</source>
-        <translation>编辑模式：可见且未锁定图层上的图元可编辑 · 双击只单选该图元 · 属性窗从菜单、编辑面板或右键菜单打开 · 空格 / 中键平移视图 (V)</translation>
+        <source>Edit mode: items on visible, unlocked layers are editable · double-click to select only that item · all item properties live in the edit panel · Space / middle button to pan the view (V)</source>
+        <translation>编辑模式：可见且未锁定图层上的图元可编辑 · 双击只单选该图元 · 图元属性统一在编辑面板里修改 · 空格 / 中键平移视图 (V)</translation>
     </message><message>
         <location filename="../src/ui/builder/UiActionFactory.cpp" line="257"/>
         <source>Restore a transparent background</source>
@@ -2205,8 +2220,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <translation>画笔模式：左键自由绘制 · 滚轮缩放 · 空格 / 中键平移</translation>
     </message><message>
         <location filename="../src/ui/widgets/ViewStatusController.cpp" line="63"/>
-        <source>Edit mode: items on visible, unlocked layers are editable · double-click to select only that item · item properties open from the menu, panel or context menu · Space / middle button to pan the view</source>
-        <translation>编辑模式：可见且未锁定图层上的图元可编辑 · 双击只单选该图元 · 属性窗从菜单、编辑面板或右键菜单打开 · 空格 / 中键平移视图</translation>
+        <source>Edit mode: items on visible, unlocked layers are editable · double-click to select only that item · all item properties live in the edit panel · Space / middle button to pan the view</source>
+        <translation>编辑模式：可见且未锁定图层上的图元可编辑 · 双击只单选该图元 · 图元属性统一在编辑面板里修改 · 空格 / 中键平移视图</translation>
     </message><message>
         <source>Edit mode: items on visible, unlocked layers can be edited · drag or box-select · resize with handles · hold Ctrl to drag / wheel zoom the whole view · drag canvas edges to resize the canvas · Delete to remove</source>
         <translation>编辑模式：可见且未锁定图层的图元均可编辑 · 双击打开图元属性窗修改图元 · 空格/中键平移视图</translation>

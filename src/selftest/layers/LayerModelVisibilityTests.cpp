@@ -20,7 +20,6 @@
 #include "selftest/core/SelftestHelpers.h"
 #include "ui/dialogs/ExportDialog.h"
 #include "ui/mainwindow/MainWindow.h"
-#include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/layers/LayerPanel.h"
 #include "ui/panels/properties/PropertiesPanel.h"
 #include "ui/settings/SettingsDialog.h"
@@ -175,22 +174,10 @@ void selftest::RunLayerModelTests(Context& ctx)
     layerUndo.undo();
     ctx.Check(lower->ZOrder() == 1, QStringLiteral("撤销 height 降到 0"));
 
-    // 需求 24：height 合法值包含 0；打开属性窗时不能把 0 夹成 1，也不能
-    // 因为层内存在 height 空洞而把当前值收紧。
+    // 需求 24：height 合法值包含 0；编辑面板的高度行必须原样显示 0，不能夹成 1，
+    // 也不能因为层内存在 height 空洞而把上限收紧（行实现见 HeightValueRow）。
     lower->SetZOrder(0);
-    const int zeroHeightUndoBefore = layerUndo.count();
-    {
-        ItemPropertiesDialog zeroHeightDialog(&layerScene, lower);
-        zeroHeightDialog.show();
-        QApplication::processEvents();
-        QSpinBox* zeroHeightValue = zeroHeightDialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesHeightValue"));
-        ctx.Check(zeroHeightValue && zeroHeightValue->value() == 0, QStringLiteral("属性窗显示 height 0 且不夹紧"),
-                  zeroHeightValue ? QString::number(zeroHeightValue->value()) : QString());
-        ctx.Check(zeroHeightValue && zeroHeightValue->maximum() >= 3, QStringLiteral("属性窗 height 上限允许层内空洞"));
-        zeroHeightDialog.accept();
-        QApplication::processEvents();
-    }
-    ctx.Check(layerUndo.count() == zeroHeightUndoBefore, QStringLiteral("height 0 属性窗未修改时不产生撤销记录"));
+    ctx.Check(lower->ZOrder() == 0, QStringLiteral("height 0 可以原样保留"));
     lower->SetZOrder(1);
 
     ctx.Check(layerScene.MoveItemToAdjacentLayer(lower, 1), QStringLiteral("图元移到上一层图层"));

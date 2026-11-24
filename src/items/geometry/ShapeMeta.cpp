@@ -66,9 +66,9 @@ bool ShapeMeta::SupportsCenter(ShapeType type)
 
 QList<FillStyle> ShapeMeta::AllStyles()
 {
-    return {FillStyle::NONE,           FillStyle::SOLID,      FillStyle::HACHURE,   FillStyle::REVERSE_HACHURE,
-            FillStyle::CROSS_HATCH,    FillStyle::GRID_HATCH, FillStyle::HONEYCOMB, FillStyle::HORIZONTAL_HATCH,
-            FillStyle::VERTICAL_HATCH, FillStyle::BRICK,      FillStyle::DOTS};
+    return {FillStyle::NONE,       FillStyle::SOLID, FillStyle::HACHURE,          FillStyle::REVERSE_HACHURE,
+            FillStyle::CROSS_HATCH, FillStyle::GRID_HATCH, FillStyle::HONEYCOMB,    FillStyle::BRICK,
+            FillStyle::DOTS};
 }
 
 QString ShapeMeta::StyleToString(FillStyle style)
@@ -88,10 +88,6 @@ QString ShapeMeta::StyleToString(FillStyle style)
         return QStringLiteral("grid_hatch");
     case FillStyle::HONEYCOMB:
         return QStringLiteral("honeycomb");
-    case FillStyle::HORIZONTAL_HATCH:
-        return QStringLiteral("horizontal_lines");
-    case FillStyle::VERTICAL_HATCH:
-        return QStringLiteral("vertical_lines");
     case FillStyle::BRICK:
         return QStringLiteral("brick");
     case FillStyle::DOTS:
@@ -126,11 +122,10 @@ FillStyle ShapeMeta::StyleFromString(const QString& value)
         normalized == QStringLiteral("hex")) {
         return FillStyle::HONEYCOMB;
     }
-    if (normalized == QStringLiteral("horizontal_lines") || normalized == QStringLiteral("horizontal")) {
-        return FillStyle::HORIZONTAL_HATCH;
-    }
-    if (normalized == QStringLiteral("vertical_lines") || normalized == QStringLiteral("vertical")) {
-        return FillStyle::VERTICAL_HATCH;
+    // 横线 / 竖线两式已删除：旧画布里的 style 串按斜线填充读回，不至于丢成纯色。
+    if (normalized == QStringLiteral("horizontal_lines") || normalized == QStringLiteral("horizontal") ||
+        normalized == QStringLiteral("vertical_lines") || normalized == QStringLiteral("vertical")) {
+        return FillStyle::HACHURE;
     }
     if (normalized == QStringLiteral("brick") || normalized == QStringLiteral("brickwall")) {
         return FillStyle::BRICK;

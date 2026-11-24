@@ -147,12 +147,13 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     connect(m_contentCard, &PropertiesPanelContentCard::textColorChosen, this, &PropertiesPanel::ApplyTextColor);
     connect(m_valueCard, &PropertiesPanelValueCard::opacityChosen, this, &PropertiesPanel::ApplyOpacity);
     connect(m_valueCard, &PropertiesPanelValueCard::cornerRadiusChosen, this, &PropertiesPanel::ApplyCornerRadius);
-    connect(m_valueCard, &PropertiesPanelValueCard::startAngleChosen, this, &PropertiesPanel::ApplyStartAngle);
-    connect(m_valueCard, &PropertiesPanelValueCard::sweepAngleChosen, this, &PropertiesPanel::ApplySweepAngle);
+    connect(m_valueCard, &PropertiesPanelValueCard::arcAnglesChosen, this, &PropertiesPanel::ApplyArcAngles);
+    connect(m_valueCard, &PropertiesPanelValueCard::axesChosen, this, &PropertiesPanel::ApplyItemAxes);
+    connect(m_valueCard, &PropertiesPanelValueCard::interiorAngleChosen, this, &PropertiesPanel::ApplyInteriorAngle);
+    connect(m_valueCard, &PropertiesPanelValueCard::interiorAngleBChosen, this,
+            &PropertiesPanel::ApplyInteriorAngleB);
     connect(m_valueCard, &PropertiesPanelValueCard::sineCyclesChosen, this, &PropertiesPanel::ApplySineCycles);
     connect(m_valueCard, &PropertiesPanelValueCard::sineAmplitudeChosen, this, &PropertiesPanel::ApplySineAmplitude);
-    connect(m_valueCard, &PropertiesPanelValueCard::triangleAngle1Chosen, this, &PropertiesPanel::ApplyTriangleAngle1);
-    connect(m_valueCard, &PropertiesPanelValueCard::triangleAngle2Chosen, this, &PropertiesPanel::ApplyTriangleAngle2);
     connect(m_valueCard, &PropertiesPanelValueCard::arrowStartChosen, this, &PropertiesPanel::ApplyArrowStart);
     connect(m_valueCard, &PropertiesPanelValueCard::arrowEndChosen, this, &PropertiesPanel::ApplyArrowEnd);
     connect(m_arrangeCard, &PropertiesPanelArrangeCard::layerAdjusted, this, &PropertiesPanel::AdjustLayer);
@@ -162,9 +163,6 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     connect(m_identityCard, &PropertiesPanelIdentityCard::heightChosen, this, &PropertiesPanel::ApplyItemHeight);
     connect(m_geometryCard, &PropertiesPanelGeometryCard::geometryChosen, this, &PropertiesPanel::ApplyItemPlacement);
     connect(m_geometryCard, &PropertiesPanelGeometryCard::rotationChosen, this, &PropertiesPanel::ApplyItemRotation);
-    connect(m_geometryCard, &PropertiesPanelGeometryCard::axesChosen, this, &PropertiesPanel::ApplyItemAxes);
-    connect(m_geometryCard, &PropertiesPanelGeometryCard::interiorAngleChosen, this,
-            &PropertiesPanel::ApplyInteriorAngle);
     connect(m_geometryCard, &PropertiesPanelGeometryCard::centerChosen, this, &PropertiesPanel::ApplyItemCenter);
 
     if (m_scene) {
@@ -191,10 +189,10 @@ void PropertiesPanel::SetSelectionActions(const QList<QAction*>& alignActions, c
     }
 }
 
-void PropertiesPanel::SetItemActions(QAction* smoothAction, QAction* propertiesAction)
+void PropertiesPanel::SetItemActions(QAction* smoothAction)
 {
     if (m_selectionCard) {
-        m_selectionCard->SetItemActions(smoothAction, propertiesAction);
+        m_selectionCard->SetItemActions(smoothAction);
     }
 }
 
@@ -317,11 +315,13 @@ void PropertiesPanel::Refresh()
         return spec && spec->Matches(common);
     };
 
+    // 形状成对属性行统一在数值卡片里，行序：半轴 → 起止角 → 内角 → 圆角。
+    m_valueCard->SetAxisVisible(rowVisible(ItemProperty::MAJOR_AXIS));
+    m_valueCard->SetArcVisible(rowVisible(ItemProperty::START_ANGLE));
+    // 内角行同时接受三角形底角与平行四边形内角（行描述里两个键已合并）。
+    m_valueCard->SetInteriorAngleVisible(rowVisible(ItemProperty::BOTTOM_ANGLE1));
     m_valueCard->SetCornerVisible(rowVisible(ItemProperty::CORNER_RADIUS));
-    m_valueCard->SetArcRadiusVisible(rowVisible(ItemProperty::START_ANGLE));
     m_valueCard->SetSineVisible(rowVisible(ItemProperty::SINE_CYCLES));
-    // 三角形参数区只对底角 A/B 开放；平行四边形内角走几何区那一行，不能误开这里。
-    m_valueCard->SetTriangleVisible(common.Contains(ItemProperty::BOTTOM_ANGLE1));
     m_valueCard->SetArrowVisible(rowVisible(ItemProperty::ARROW_START));
     m_fillImageRow->setVisible(rowVisible(ItemProperty::FILL_IMAGE));
     m_fillImageRow->SetTargets(fillTargets);
@@ -336,10 +336,7 @@ void PropertiesPanel::Refresh()
     m_identityCard->Refresh(m_scene, singleItem ? items.first() : nullptr);
     m_geometryCard->Refresh(hasSelection ? items.first() : nullptr);
 
-    // 长短半轴 / 内角 / 中心点行按属性交集显隐：多选时也开放，写入侧只对
-    // 上报了该属性的成员生效（§4.3，不再要求 singleItem）。
-    m_geometryCard->SetAxisVisible(rowVisible(ItemProperty::MAJOR_AXIS));
-    m_geometryCard->SetInteriorAngleVisible(rowVisible(ItemProperty::BOTTOM_ANGLE1));
+    // 中心点行按属性交集显隐：多选时也开放，写入侧只对上报了该属性的成员生效。
     m_geometryCard->SetCenterVisible(rowVisible(ItemProperty::CENTER));
     RefreshDynamicRows(common, items);
 

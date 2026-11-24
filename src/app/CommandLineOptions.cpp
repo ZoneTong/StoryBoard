@@ -16,7 +16,6 @@ const QString SET_LANGUAGE = QStringLiteral("--set-language");
 const QString SETTINGS_PROBE = QStringLiteral("--settings-probe");
 const QString OPEN_SHAPES_PROBE = QStringLiteral("--open-shapes-probe");
 const QString ABOUT_SCREENSHOT = QStringLiteral("--about-screenshot");
-const QString ITEM_PROPERTIES_SCREENSHOT = QStringLiteral("--item-properties-screenshot");
 const QString SHAPE_MENU_SCREENSHOT = QStringLiteral("--shape-menu-screenshot");
 const QString BRUSH_STYLE_MENU_SCREENSHOT = QStringLiteral("--brush-style-menu-screenshot");
 const QString BRUSH_WIDTH_MENU_SCREENSHOT = QStringLiteral("--brush-width-menu-screenshot");
@@ -55,7 +54,6 @@ CommandLineOptions CommandLineOptions::Parse(const QStringList& arguments)
     options.settingsProbe = arguments.contains(SETTINGS_PROBE);
     options.openShapesProbe = arguments.contains(OPEN_SHAPES_PROBE);
     options.aboutScreenshot = arguments.contains(ABOUT_SCREENSHOT);
-    options.itemPropertiesScreenshot = arguments.contains(ITEM_PROPERTIES_SCREENSHOT);
     options.shapeMenuScreenshot = arguments.contains(SHAPE_MENU_SCREENSHOT);
     options.brushStyleMenuScreenshot = arguments.contains(BRUSH_STYLE_MENU_SCREENSHOT);
     options.brushWidthMenuScreenshot = arguments.contains(BRUSH_WIDTH_MENU_SCREENSHOT);
@@ -73,7 +71,6 @@ CommandLineOptions CommandLineOptions::Parse(const QStringList& arguments)
     options.settingsProbePath = TakeOptionPath(arguments, SETTINGS_PROBE);
     options.openShapesProbePath = TakeOptionPath(arguments, OPEN_SHAPES_PROBE);
     options.aboutScreenshotPath = TakeOptionPath(arguments, ABOUT_SCREENSHOT);
-    options.itemPropertiesScreenshotPath = TakeOptionPath(arguments, ITEM_PROPERTIES_SCREENSHOT);
     options.shapeMenuScreenshotPath = TakeOptionPath(arguments, SHAPE_MENU_SCREENSHOT);
     options.brushStyleMenuScreenshotPath = TakeOptionPath(arguments, BRUSH_STYLE_MENU_SCREENSHOT);
     options.brushWidthMenuScreenshotPath = TakeOptionPath(arguments, BRUSH_WIDTH_MENU_SCREENSHOT);

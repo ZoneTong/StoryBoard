@@ -134,9 +134,8 @@ QPushButton:default:hover { background: #4E78FF; }
 QDialogButtonBox QPushButton { min-width: 82px; }
 QLabel#DialogTitle { font-size: 17px; font-weight: 700; color: #1F2937; }
 /* 次级标题与表格标题共用 15px/600，提示文字统一走正文 9pt，字号只留三档。 */
-QLabel#ItemPropertiesHeading { font-size: 15px; font-weight: 600; }
 QLabel#LayerNameHeader, QLabel#LayerLockHeader { color: #8A909C; font-size: 9pt; font-weight: 600; }
-QLabel#DialogHint, QLabel#ItemPropertiesReadOnlyHint { color: #6B7280; }
+QLabel#DialogHint { color: #6B7280; }
 /* 设置页整页可滚动，滚动区本身不画底，避免和对话框背景割裂。 */
 QScrollArea#SettingsScroll { background: transparent; border: none; }
 QScrollArea#SettingsScroll > QWidget { background: transparent; }

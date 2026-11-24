@@ -9,6 +9,7 @@
 #include "ui/icons/IconFactory.h"
 #include "ui/panels/properties/PropertiesPanel.h"
 #include "ui/widgets/RowMetrics.h"
+#include "ui/widgets/rows/ValueRows.h"
 
 #include <QComboBox>
 #include <QHBoxLayout>
@@ -39,6 +40,44 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     outer->setContentsMargins(0, 0, 0, 0);
     outer->setSpacing(2);
 
+    // 需求 6：直线两端箭头样式合成一行（起点箭头, 终点箭头两个下拉）。
+    // 本卡片紧跟描线宽度行排入面板，所以箭头行放在卡片最前。
+    m_arrowSection = new QWidget(this);
+    RowMetrics::ApplyRow(m_arrowSection);
+    m_arrowSection->setToolTip(PropertiesPanel::tr("Arrow heads"));
+    auto* arrowLayout = new QHBoxLayout(m_arrowSection);
+    arrowLayout->setContentsMargins(0, 0, 0, 0);
+    arrowLayout->setSpacing(4);
+    QToolButton* arrowIcon = MakeRowIcon(IconId::ARROW_START, m_arrowSection);
+    arrowIcon->setToolTip(PropertiesPanel::tr("Arrow heads"));
+    arrowLayout->addWidget(arrowIcon);
+
+    auto makeArrowCombo = [this, arrowLayout](IconId iconId, const QString& tooltip, QComboBox** target,
+                                              void (PropertiesPanelValueCard::*signal)(int)) {
+        QToolButton* icon = MakeRowIcon(iconId, m_arrowSection);
+        icon->setToolTip(tooltip);
+        arrowLayout->addWidget(icon);
+        QComboBox* combo = new QComboBox(m_arrowSection);
+        combo->setObjectName(QStringLiteral("ItemArrowCombo"));
+        combo->setToolTip(tooltip);
+        for (ArrowStyle style : AllArrowStyles()) {
+            combo->addItem(ArrowStyles::Name(style), static_cast<int>(style));
+        }
+        connect(combo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, combo, signal](int) {
+            if (!m_refreshing) {
+                (this->*signal)(combo->currentData().toInt());
+            }
+        });
+        arrowLayout->addWidget(combo, 1);
+        *target = combo;
+    };
+    makeArrowCombo(IconId::ARROW_START, PropertiesPanel::tr("Start arrow"), &m_startArrowCombo,
+                   static_cast<void (PropertiesPanelValueCard::*)(int)>(&PropertiesPanelValueCard::arrowStartChosen));
+    makeArrowCombo(IconId::ARROW_END, PropertiesPanel::tr("End arrow"), &m_endArrowCombo,
+                   static_cast<void (PropertiesPanelValueCard::*)(int)>(&PropertiesPanelValueCard::arrowEndChosen));
+    m_arrowSection->setVisible(false);
+    outer->addWidget(m_arrowSection);
+
     auto* opacityRow = new QWidget(this);
     RowMetrics::ApplyRow(opacityRow);
     auto* opacityLayout = new QHBoxLayout(opacityRow);
@@ -65,6 +104,84 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     opacityLayout->addWidget(m_opacitySpin, 1);
     outer->addWidget(opacityRow);
 
+    // 半轴合成一行（长半轴, 短半轴）：只对椭圆 / 扇形 / 弧线开放。
+    m_axisRow = new PairValueRow(IconId::AXIS_MAJOR, true, QStringLiteral("ItemMajorAxisSpin"),
+                                 QStringLiteral("ItemMinorAxisSpin"), ItemProperty::MAJOR_AXIS, QStringLiteral(","),
+                                 this);
+    m_axisRow->FirstSpin()->setToolTip(PropertiesPanel::tr("Semi-major axis"));
+    m_axisRow->SecondSpin()->setToolTip(PropertiesPanel::tr("Semi-minor axis"));
+    m_axisRow->SetIconToolTip(PropertiesPanel::tr("Semi-axes"));
+    connect(m_axisRow, &PairValueRow::valuesChosen, this, [this](qreal major, qreal minor) {
+        if (!m_refreshing) {
+            ApplyAxes(major, minor);
+        }
+    });
+    m_axisRow->setVisible(false);
+    outer->addWidget(m_axisRow);
+
+    // 起止角合成一行（起始角, 扫过角），图标用扇形：显示口径回到扫过角，
+    // 与数据层的「起始角 + 扫过角」一致，写入时不需要再换算终止角。
+    m_arcSection = new QWidget(this);
+    RowMetrics::ApplyRow(m_arcSection);
+    m_arcSection->setToolTip(PropertiesPanel::tr("Sector / arc angles"));
+    auto* arcLayout = new QHBoxLayout(m_arcSection);
+    arcLayout->setContentsMargins(0, 0, 0, 0);
+    arcLayout->setSpacing(4);
+    QToolButton* arcIcon = MakeRowIcon(IconId::SECTOR, m_arcSection);
+    arcIcon->setToolTip(PropertiesPanel::tr("Sector / arc angles"));
+    arcLayout->addWidget(arcIcon);
+
+    m_arcStartSpin = new QSpinBox(m_arcSection);
+    m_arcStartSpin->setObjectName(QStringLiteral("ItemArcStartSpin"));
+    m_arcStartSpin->setRange(-360, 360);
+    m_arcStartSpin->setSuffix(QStringLiteral("°"));
+    m_arcStartSpin->setToolTip(PropertiesPanel::tr("Start angle"));
+    m_arcStartSpin->setKeyboardTracking(false);
+    arcLayout->addWidget(m_arcStartSpin, 1);
+
+    m_arcSweepSpin = new QSpinBox(m_arcSection);
+    m_arcSweepSpin->setObjectName(QStringLiteral("ItemArcSweepSpin"));
+    m_arcSweepSpin->setRange(-360, 360);
+    m_arcSweepSpin->setSuffix(QStringLiteral("°"));
+    m_arcSweepSpin->setToolTip(PropertiesPanel::tr("Sweep angle"));
+    m_arcSweepSpin->setKeyboardTracking(false);
+    arcLayout->addWidget(m_arcSweepSpin, 1);
+
+    // 任一格改动都把当前两格整体交给面板，写入侧按属性表落到图形 / 线条。
+    auto emitArcAngles = [this]() {
+        if (!m_refreshing) {
+            emit arcAnglesChosen(m_arcStartSpin->value(), m_arcSweepSpin->value());
+        }
+    };
+    connect(m_arcStartSpin, &QSpinBox::valueChanged, this, emitArcAngles);
+    connect(m_arcSweepSpin, &QSpinBox::valueChanged, this, emitArcAngles);
+    m_arcSection->setVisible(false);
+    outer->addWidget(m_arcSection);
+
+    // 内角合成一行（内角 A, 内角 B）：三角形是两个底角，平行四边形 B 为 A 的补角。
+    m_interiorAngleRow = new PairValueRow(IconId::ANGLE_RIGHT, true, QStringLiteral("ItemInteriorAngleSpin"),
+                                          QStringLiteral("ItemInteriorAngleBSpin"), ItemProperty::BOTTOM_ANGLE1,
+                                          QStringLiteral(","), this);
+    m_interiorAngleRow->FirstSpin()->setToolTip(PropertiesPanel::tr("Interior angle A"));
+    m_interiorAngleRow->SecondSpin()->setToolTip(PropertiesPanel::tr("Interior angle B"));
+    m_interiorAngleRow->SecondSpin()->setRange(5.0, 175.0);
+    m_interiorAngleRow->SetIconToolTip(PropertiesPanel::tr("Interior angle"));
+    connect(m_interiorAngleRow, &PairValueRow::valuesChosen, this, [this](qreal angleA, qreal angleB) {
+        if (m_refreshing) {
+            return;
+        }
+        // 只可能有一个框被改：靠刷新基准判断改的是 A 还是 B。
+        const bool bChanged = !qFuzzyCompare(angleB + 2.0, m_interiorAngleB + 2.0);
+        const qreal resolvedA = (m_interiorSupplement && bChanged) ? 180.0 - angleB : angleA;
+        emit interiorAngleChosen(resolvedA);
+        if (!m_interiorSupplement) {
+            emit interiorAngleBChosen(angleB);
+        }
+    });
+    m_interiorAngleRow->setVisible(false);
+    outer->addWidget(m_interiorAngleRow);
+
+    // 圆角行排在四组形状属性之后：半轴 → 起止角 → 内角 → 圆角。
     m_cornerSection = new QWidget(this);
     auto* cornerLayout = new QHBoxLayout(m_cornerSection);
     cornerLayout->setContentsMargins(0, 0, 0, 0);
@@ -88,66 +205,19 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     cornerLayout->addWidget(m_cornerSpin, 1);
     outer->addWidget(m_cornerSection);
 
-    // 需求 9b/9c：起始角在上、扫过角在下，与属性窗的相对次序一致。
-    m_startAngleSection = new QWidget(this);
-    auto* startLayout = new QHBoxLayout(m_startAngleSection);
-    startLayout->setContentsMargins(0, 0, 0, 0);
-    startLayout->setSpacing(4);
-    QToolButton* startIcon = MakeRowIcon(IconId::ANGLE_START, m_startAngleSection);
-    startIcon->setToolTip(PropertiesPanel::tr("Start angle"));
-    startLayout->addWidget(startIcon);
-    m_startAngleSpin = new QSpinBox(m_startAngleSection);
-    m_startAngleSpin->setObjectName(QStringLiteral("ItemValueSpin"));
-    m_startAngleSpin->setRange(-360, 360);
-    m_startAngleSpin->setSuffix(QStringLiteral("°"));
-    m_startAngleSpin->setToolTip(PropertiesPanel::tr("Start angle"));
-    m_startAngleSpin->setKeyboardTracking(false);
-    connect(m_startAngleSpin, &QSpinBox::valueChanged, this, [this](int value) {
-        if (!m_refreshing) {
-            emit startAngleChosen(value);
-        }
-    });
-    startLayout->addWidget(m_startAngleSpin, 1);
-    outer->addWidget(m_startAngleSection);
-
-    m_angleSection = new QWidget(this);
-    auto* angleLayout = new QHBoxLayout(m_angleSection);
-    angleLayout->setContentsMargins(0, 0, 0, 0);
-    angleLayout->setSpacing(4);
-
-    QToolButton* angleIcon = MakeRowIcon(IconId::ANGLE_SWEEP, m_angleSection);
-    angleIcon->setToolTip(PropertiesPanel::tr("Sweep angle"));
-    angleLayout->addWidget(angleIcon);
-
-    m_angleSpin = new QSpinBox(m_angleSection);
-    m_angleSpin->setObjectName(QStringLiteral("ItemValueSpin"));
-    m_angleSpin->setRange(1, 359);
-    m_angleSpin->setSuffix(QStringLiteral("°"));
-    m_angleSpin->setToolTip(PropertiesPanel::tr("Sweep angle"));
-    m_angleSpin->setKeyboardTracking(false);
-    connect(m_angleSpin, &QSpinBox::valueChanged, this, [this](int value) {
-        if (!m_refreshing) {
-            emit sweepAngleChosen(value);
-        }
-    });
-    angleLayout->addWidget(m_angleSpin, 1);
-    outer->addWidget(m_angleSection);
-
     // 正弦波形：周期数与振幅是几何真相，改参数即按新参数重采样（拉伸不改参数）。
+    // 两行合成一行：周期数（1–12）, 振幅（相对中心线的像素高度，1–200）。
     m_sineSection = new QWidget(this);
-    auto* sineOuter = new QVBoxLayout(m_sineSection);
-    sineOuter->setContentsMargins(0, 0, 0, 0);
-    sineOuter->setSpacing(2);
+    RowMetrics::ApplyRow(m_sineSection);
+    m_sineSection->setToolTip(PropertiesPanel::tr("Sine wave"));
+    auto* sineLayout = new QHBoxLayout(m_sineSection);
+    sineLayout->setContentsMargins(0, 0, 0, 0);
+    sineLayout->setSpacing(4);
+    QToolButton* sineIcon = MakeRowIcon(IconId::SINE_CYCLES, m_sineSection);
+    sineIcon->setToolTip(PropertiesPanel::tr("Sine wave"));
+    sineLayout->addWidget(sineIcon);
 
-    auto* cyclesRow = new QWidget(m_sineSection);
-    RowMetrics::ApplyRow(cyclesRow);
-    auto* cyclesLayout = new QHBoxLayout(cyclesRow);
-    cyclesLayout->setContentsMargins(0, 0, 0, 0);
-    cyclesLayout->setSpacing(4);
-    QToolButton* cyclesIcon = MakeRowIcon(IconId::SINE_CYCLES, cyclesRow);
-    cyclesIcon->setToolTip(PropertiesPanel::tr("Sine cycles"));
-    cyclesLayout->addWidget(cyclesIcon);
-    m_sineCyclesSpin = new QSpinBox(cyclesRow);
+    m_sineCyclesSpin = new QSpinBox(m_sineSection);
     m_sineCyclesSpin->setObjectName(QStringLiteral("ItemValueSpin"));
     m_sineCyclesSpin->setRange(1, 12);
     m_sineCyclesSpin->setToolTip(PropertiesPanel::tr("Sine cycles"));
@@ -157,18 +227,9 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
             emit sineCyclesChosen(value);
         }
     });
-    cyclesLayout->addWidget(m_sineCyclesSpin, 1);
-    sineOuter->addWidget(cyclesRow);
+    sineLayout->addWidget(m_sineCyclesSpin, 1);
 
-    auto* amplitudeRow = new QWidget(m_sineSection);
-    RowMetrics::ApplyRow(amplitudeRow);
-    auto* amplitudeLayout = new QHBoxLayout(amplitudeRow);
-    amplitudeLayout->setContentsMargins(0, 0, 0, 0);
-    amplitudeLayout->setSpacing(4);
-    QToolButton* amplitudeIcon = MakeRowIcon(IconId::SINE_AMPLITUDE, amplitudeRow);
-    amplitudeIcon->setToolTip(PropertiesPanel::tr("Sine amplitude"));
-    amplitudeLayout->addWidget(amplitudeIcon);
-    m_sineAmplitudeSpin = new QSpinBox(amplitudeRow);
+    m_sineAmplitudeSpin = new QSpinBox(m_sineSection);
     m_sineAmplitudeSpin->setObjectName(QStringLiteral("ItemValueSpin"));
     // 振幅是相对中心线的像素高度：1–200，与波高（2 倍振幅）一一对应。
     m_sineAmplitudeSpin->setRange(1, 200);
@@ -180,102 +241,9 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
             emit sineAmplitudeChosen(value);
         }
     });
-    amplitudeLayout->addWidget(m_sineAmplitudeSpin, 1);
-    sineOuter->addWidget(amplitudeRow);
+    sineLayout->addWidget(m_sineAmplitudeSpin, 1);
     outer->addWidget(m_sineSection);
 
-    // 需求 1：三角形以角度为真相——角 A、角 B 两行直接决定当前几何，
-    // 高度由底边与两个底角派生（拖底边等价于等比改高度）；底边长度不再单独成属性。
-    m_triangleSection = new QWidget(this);
-    auto* triangleOuter = new QVBoxLayout(m_triangleSection);
-    triangleOuter->setContentsMargins(0, 0, 0, 0);
-    triangleOuter->setSpacing(2);
-
-    auto* angle1Row = new QWidget(m_triangleSection);
-    RowMetrics::ApplyRow(angle1Row);
-    auto* angle1Layout = new QHBoxLayout(angle1Row);
-    angle1Layout->setContentsMargins(0, 0, 0, 0);
-    angle1Layout->setSpacing(4);
-    QToolButton* angle1Icon = MakeRowIcon(IconId::ANGLE_RIGHT, angle1Row);
-    angle1Icon->setToolTip(PropertiesPanel::tr("Interior angle A"));
-    angle1Layout->addWidget(angle1Icon);
-    m_triangleAngle1Spin = new QSpinBox(angle1Row);
-    m_triangleAngle1Spin->setObjectName(QStringLiteral("ItemValueSpin"));
-    m_triangleAngle1Spin->setRange(5, 170);
-    m_triangleAngle1Spin->setSuffix(QStringLiteral("°"));
-    m_triangleAngle1Spin->setToolTip(PropertiesPanel::tr("Interior angle A"));
-    m_triangleAngle1Spin->setKeyboardTracking(false);
-    connect(m_triangleAngle1Spin, &QSpinBox::valueChanged, this, [this](int value) {
-        if (!m_refreshing) {
-            emit triangleAngle1Chosen(value);
-        }
-    });
-    angle1Layout->addWidget(m_triangleAngle1Spin, 1);
-    triangleOuter->addWidget(angle1Row);
-
-    auto* angle2Row = new QWidget(m_triangleSection);
-    RowMetrics::ApplyRow(angle2Row);
-    auto* angle2Layout = new QHBoxLayout(angle2Row);
-    angle2Layout->setContentsMargins(0, 0, 0, 0);
-    angle2Layout->setSpacing(4);
-    QToolButton* angle2Icon = MakeRowIcon(IconId::ANGLE_LEFT, angle2Row);
-    angle2Icon->setToolTip(PropertiesPanel::tr("Interior angle B"));
-    angle2Layout->addWidget(angle2Icon);
-    m_triangleAngle2Spin = new QSpinBox(angle2Row);
-    m_triangleAngle2Spin->setObjectName(QStringLiteral("ItemValueSpin"));
-    m_triangleAngle2Spin->setRange(5, 170);
-    m_triangleAngle2Spin->setSuffix(QStringLiteral("°"));
-    m_triangleAngle2Spin->setToolTip(PropertiesPanel::tr("Interior angle B"));
-    m_triangleAngle2Spin->setKeyboardTracking(false);
-    connect(m_triangleAngle2Spin, &QSpinBox::valueChanged, this, [this](int value) {
-        if (!m_refreshing) {
-            emit triangleAngle2Chosen(value);
-        }
-    });
-    angle2Layout->addWidget(m_triangleAngle2Spin, 1);
-    triangleOuter->addWidget(angle2Row);
-
-    m_triangleSection->setVisible(false);
-    outer->addWidget(m_triangleSection);
-
-    // 需求 6：直线两端箭头样式，两行下拉（起始 / 末端）。
-    m_arrowSection = new QWidget(this);
-    RowMetrics::ApplyRow(m_arrowSection);
-    auto* arrowOuter = new QVBoxLayout(m_arrowSection);
-    arrowOuter->setContentsMargins(0, 0, 0, 0);
-    arrowOuter->setSpacing(2);
-
-    auto makeArrowRow = [this, arrowOuter](IconId iconId, const QString& tooltip, QComboBox** target,
-                                           void (PropertiesPanelValueCard::*signal)(int)) {
-        auto* row = new QWidget(m_arrowSection);
-        RowMetrics::ApplyRow(row);
-        auto* rowLayout = new QHBoxLayout(row);
-        rowLayout->setContentsMargins(0, 0, 0, 0);
-        rowLayout->setSpacing(4);
-        QToolButton* icon = MakeRowIcon(iconId, row);
-        icon->setToolTip(tooltip);
-        rowLayout->addWidget(icon);
-        QComboBox* combo = new QComboBox(row);
-        combo->setObjectName(QStringLiteral("ItemArrowCombo"));
-        combo->setToolTip(tooltip);
-        for (ArrowStyle style : AllArrowStyles()) {
-            combo->addItem(ArrowStyles::Name(style), static_cast<int>(style));
-        }
-        connect(combo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, combo, signal](int) {
-            if (!m_refreshing) {
-                (this->*signal)(combo->currentData().toInt());
-            }
-        });
-        rowLayout->addWidget(combo, 1);
-        arrowOuter->addWidget(row);
-        *target = combo;
-    };
-    makeArrowRow(IconId::ARROW_START, PropertiesPanel::tr("Start arrow"), &m_startArrowCombo,
-                 static_cast<void (PropertiesPanelValueCard::*)(int)>(&PropertiesPanelValueCard::arrowStartChosen));
-    makeArrowRow(IconId::ARROW_END, PropertiesPanel::tr("End arrow"), &m_endArrowCombo,
-                 static_cast<void (PropertiesPanelValueCard::*)(int)>(&PropertiesPanelValueCard::arrowEndChosen));
-    m_arrowSection->setVisible(false);
-    outer->addWidget(m_arrowSection);
 }
 
 void PropertiesPanelValueCard::Refresh(const QList<ShapeAbstractItem*>& shapes, const QList<LineAbstractItem*>& strokes,
@@ -321,21 +289,46 @@ void PropertiesPanelValueCard::Refresh(const QList<ShapeAbstractItem*>& shapes, 
             break;
         }
     }
-    if (m_startAngleSpin) {
-        const bool on = arcCurve || arcShape;
-        m_startAngleSpin->setEnabled(on);
-        const qreal start = arcCurve
-                                ? arcCurve->PropertyValue(ItemProperty::START_ANGLE).toDouble()
-                                : (arcShape ? arcShape->PropertyValue(ItemProperty::START_ANGLE).toDouble() : 30.0);
-        m_startAngleSpin->setValue(qRound(start));
+    if (m_arcStartSpin && m_arcSweepSpin) {
+        const bool on = arcCurve != nullptr || arcShape != nullptr;
+        m_arcStartSpin->setEnabled(on);
+        m_arcSweepSpin->setEnabled(on);
+        const CanvasItem* arc = arcCurve ? static_cast<const CanvasItem*>(arcCurve)
+                                         : static_cast<const CanvasItem*>(arcShape);
+        const qreal start = arc ? arc->PropertyValue(ItemProperty::START_ANGLE).toDouble() : 30.0;
+        const qreal sweep = arc ? arc->PropertyValue(ItemProperty::SWEEP_ANGLE).toDouble() : 120.0;
+        m_arcStartSpin->setValue(qBound(-360, qRound(start), 360));
+        m_arcSweepSpin->setValue(qBound(-360, qRound(sweep), 360));
     }
-    if (m_angleSpin) {
-        const bool on = arcCurve || arcShape;
-        m_angleSpin->setEnabled(on);
-        const qreal sweep = arcCurve
-                                ? arcCurve->PropertyValue(ItemProperty::SWEEP_ANGLE).toDouble()
-                                : (arcShape ? arcShape->PropertyValue(ItemProperty::SWEEP_ANGLE).toDouble() : 120.0);
-        m_angleSpin->setValue(qMax(1, qRound(sweep)));
+    if (m_axisRow) {
+        // 半轴与起止角同源：弧线优先，其次扇形等形状；能不能编辑由属性表决定。
+        const CanvasItem* axisSource = arcCurve ? static_cast<const CanvasItem*>(arcCurve)
+                                                : (arcShape ? static_cast<const CanvasItem*>(arcShape)
+                                                            : (shapes.isEmpty() ? nullptr : shapes.first()));
+        const bool on = axisSource && axisSource->Properties().Contains(ItemProperty::MAJOR_AXIS);
+        m_axisRow->setEnabled(on);
+        const qreal major = on ? axisSource->PropertyValue(ItemProperty::MAJOR_AXIS).toDouble() : 100.0;
+        const qreal minor = on ? axisSource->PropertyValue(ItemProperty::MINOR_AXIS).toDouble() : 60.0;
+        m_axisRow->Refresh(major, minor);
+    }
+    if (m_interiorAngleRow) {
+        // 内角 A 由属性表回显（三角形底角与平行四边形内角同名）；平行四边形第二格是补角。
+        m_interiorAngleA = 60.0;
+        m_interiorAngleB = 60.0;
+        m_interiorSupplement = false;
+        if (!shapes.isEmpty() && shapes.first()) {
+            ShapeAbstractItem* shape = shapes.first();
+            const ItemPropertySet properties = shape->Properties();
+            if (properties.Contains(ItemProperty::PARALLELOGRAM_ANGLE)) {
+                m_interiorAngleA = shape->PropertyValue(ItemProperty::PARALLELOGRAM_ANGLE).toDouble();
+                m_interiorAngleB = 180.0 - m_interiorAngleA;
+                m_interiorSupplement = true;
+            } else if (properties.Contains(ItemProperty::BOTTOM_ANGLE1)) {
+                m_interiorAngleA = shape->PropertyValue(ItemProperty::BOTTOM_ANGLE1).toDouble();
+                m_interiorAngleB = shape->PropertyValue(ItemProperty::BOTTOM_ANGLE2).toDouble();
+            }
+        }
+        m_interiorAngleRow->Refresh(qRound(m_interiorAngleA), qRound(m_interiorAngleB));
     }
     if (m_sineCyclesSpin && m_sineAmplitudeSpin) {
         const bool on = sineCurve != nullptr;
@@ -346,23 +339,6 @@ void PropertiesPanelValueCard::Refresh(const QList<ShapeAbstractItem*>& shapes, 
         m_sineCyclesSpin->setValue(qBound(1, cycles, 12));
         m_sineAmplitudeSpin->setValue(qBound(1, qRound(amplitude), 200));
     }
-
-    ShapeAbstractItem* triangle = nullptr;
-    for (ShapeAbstractItem* shape : shapes) {
-        if (shape && shape->shapeType() == ShapeType::TRIANGLE && !shape->IsCustomShape()) {
-            triangle = shape;
-            break;
-        }
-    }
-    if (m_triangleAngle1Spin && m_triangleAngle2Spin) {
-        const bool triangleOn = triangle != nullptr;
-        m_triangleAngle1Spin->setEnabled(triangleOn);
-        m_triangleAngle2Spin->setEnabled(triangleOn);
-        // 角度直接回显当前值，未选中三角形时给默认 60° / 60°。
-        m_triangleAngle1Spin->setValue(triangleOn ? qRound(triangle->BottomAngle1()) : 60);
-        m_triangleAngle2Spin->setValue(triangleOn ? qRound(triangle->BottomAngle2()) : 60);
-    }
-
     if (m_startArrowCombo && m_endArrowCombo) {
         // 图形族不再有箭头，只有线条族（直线 / 弧线 / 正弦 / 手绘 / 花括号）显示这两行。
         LineAbstractItem* line = strokes.isEmpty() ? nullptr : strokes.first();
@@ -374,22 +350,7 @@ void PropertiesPanelValueCard::Refresh(const QList<ShapeAbstractItem*>& shapes, 
         m_startArrowCombo->setCurrentIndex(qMax(0, m_startArrowCombo->findData(static_cast<int>(startStyle))));
         m_endArrowCombo->setCurrentIndex(qMax(0, m_endArrowCombo->findData(static_cast<int>(endStyle))));
     }
-
     m_refreshing = false;
-}
-
-void PropertiesPanelValueCard::SetArrowVisible(bool visible)
-{
-    if (m_arrowSection) {
-        m_arrowSection->setVisible(visible);
-    }
-}
-
-void PropertiesPanelValueCard::SetTriangleVisible(bool visible)
-{
-    if (m_triangleSection) {
-        m_triangleSection->setVisible(visible);
-    }
 }
 
 void PropertiesPanelValueCard::SetCornerVisible(bool visible)
@@ -406,12 +367,42 @@ void PropertiesPanelValueCard::SetSineVisible(bool visible)
     }
 }
 
-void PropertiesPanelValueCard::SetArcRadiusVisible(bool visible)
+void PropertiesPanelValueCard::SetAxisVisible(bool visible)
 {
-    if (m_startAngleSection) {
-        m_startAngleSection->setVisible(visible);
+    if (m_axisRow) {
+        m_axisRow->setVisible(visible);
     }
-    if (m_angleSection) {
-        m_angleSection->setVisible(visible);
+}
+
+void PropertiesPanelValueCard::SetArcVisible(bool visible)
+{
+    if (m_arcSection) {
+        m_arcSection->setVisible(visible);
     }
+}
+
+void PropertiesPanelValueCard::SetInteriorAngleVisible(bool visible)
+{
+    if (m_interiorAngleRow) {
+        m_interiorAngleRow->setVisible(visible);
+    }
+}
+
+void PropertiesPanelValueCard::SetArrowVisible(bool visible)
+{
+    if (m_arrowSection) {
+        m_arrowSection->setVisible(visible);
+    }
+}
+
+void PropertiesPanelValueCard::ApplyAxes(qreal majorAxis, qreal minorAxis)
+{
+    // 长半轴不得小于短半轴：改哪根就把另一根钳到同值并回显。
+    m_refreshing = true;
+    if (majorAxis < minorAxis) {
+        minorAxis = majorAxis;
+        m_axisRow->Refresh(majorAxis, minorAxis);
+    }
+    m_refreshing = false;
+    emit axesChosen(majorAxis, minorAxis);
 }

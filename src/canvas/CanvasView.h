@@ -18,14 +18,17 @@
 
 class CanvasItem;
 class CanvasScene;
+class CanvasTextEditor;
 class QAction;
 class QContextMenuEvent;
 class QFocusEvent;
+class TextItem;
 
 class CanvasView : public QGraphicsView {
     Q_OBJECT
   public:
     explicit CanvasView(CanvasScene* scene, QWidget* parent = nullptr);
+    ~CanvasView() override;
 
     ToolMode mode() const { return m_mode; }
     void SetMode(ToolMode mode);
@@ -54,6 +57,11 @@ class CanvasView : public QGraphicsView {
     void CancelCurrentStroke();
     void FinishCurrentStroke();
 
+    // 文字图元的内联编辑：新建文字后直接在图元上输入，焦点落在正文末尾。
+    bool BeginTextEdit(TextItem* item);
+    void EndTextEdit();
+    bool IsTextEditing() const;
+
     // 画板边缘拖动：扩大或裁剪画板。返回当前是否正在拖动边缘。
     bool IsResizingCanvas() const { return m_resize->IsResizing(); }
 
@@ -67,7 +75,6 @@ class CanvasView : public QGraphicsView {
     void modeChanged(ToolMode mode);
     void statusMessage(const QString& message);
     void textPlacementRequested(const QPointF& scenePos);
-    void itemPropertiesRequested(CanvasItem* item);
 
   protected:
     void paintEvent(QPaintEvent* event) override;
@@ -106,4 +113,5 @@ class CanvasView : public QGraphicsView {
     std::unique_ptr<CanvasViewCursor> m_cursor;
     std::unique_ptr<CanvasContextMenuController> m_menu;
     std::unique_ptr<CanvasGroupBoxController> m_groupBox;
+    std::unique_ptr<CanvasTextEditor> m_textEditor;
 };

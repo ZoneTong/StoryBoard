@@ -80,22 +80,6 @@ QPainterPath ShapePainter::CenterLines(FillStyle style, const QRectF& rect)
         return path;
     }
 
-    if (style == FillStyle::HORIZONTAL_HATCH) {
-        for (qreal y = rect.top() - spacing; y < rect.bottom() + spacing; y += spacing) {
-            path.moveTo(rect.left() - spacing, y);
-            path.lineTo(rect.right() + spacing, y);
-        }
-        return path;
-    }
-
-    if (style == FillStyle::VERTICAL_HATCH) {
-        for (qreal x = rect.left() - spacing; x < rect.right() + spacing; x += spacing) {
-            path.moveTo(x, rect.top() - spacing);
-            path.lineTo(x, rect.bottom() + spacing);
-        }
-        return path;
-    }
-
     if (style == FillStyle::BRICK) {
         // 砖纹：逐行横线，竖缝只在行与行之间出现，奇偶行错开半块砖。
         const qreal brickWidth = spacing * 2.0;
@@ -146,8 +130,8 @@ QPainterPath ShapePainter::CenterLines(FillStyle style, const QRectF& rect)
 bool ShapePainter::IsPatternFill(FillStyle style)
 {
     return style == FillStyle::HACHURE || style == FillStyle::REVERSE_HACHURE || style == FillStyle::CROSS_HATCH ||
-           style == FillStyle::GRID_HATCH || style == FillStyle::HONEYCOMB || style == FillStyle::HORIZONTAL_HATCH ||
-           style == FillStyle::VERTICAL_HATCH || style == FillStyle::BRICK || style == FillStyle::DOTS;
+           style == FillStyle::GRID_HATCH || style == FillStyle::HONEYCOMB || style == FillStyle::BRICK ||
+           style == FillStyle::DOTS;
 }
 
 void ShapePainter::PaintPatternFill(QPainter* painter, const QPainterPath& clip, const QRectF& rect,

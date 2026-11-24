@@ -20,7 +20,6 @@
 #include "selftest/core/SelftestHelpers.h"
 #include "ui/dialogs/ExportDialog.h"
 #include "ui/mainwindow/MainWindow.h"
-#include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/layers/LayerPanel.h"
 #include "ui/panels/properties/PropertiesPanel.h"
 #include "ui/settings/SettingsDialog.h"
@@ -490,20 +489,18 @@ void selftest::RunViewInteractionTests(Context& ctx)
     viewScene.AddItemsWithUndo({doubleClickText}, QStringLiteral("添加文字"));
     view.FitAll();
     QApplication::processEvents();
-    const int requestsBase = ctx.itemPropertyRequests;
-    QObject::connect(&view, &CanvasView::itemPropertiesRequested, &view,
-                     [&ctx](CanvasItem*) { ++ctx.itemPropertyRequests; });
     const QPoint doubleClickPoint = view.mapFromScene(doubleClickText->SceneContentRect().center());
     QMouseEvent doubleClickEvent(QEvent::MouseButtonDblClick, QPointF(doubleClickPoint),
                                  QPointF(view.viewport()->mapToGlobal(doubleClickPoint)), Qt::LeftButton,
                                  Qt::LeftButton, Qt::NoModifier);
     QApplication::sendEvent(view.viewport(), &doubleClickEvent);
     QApplication::processEvents();
-    ctx.Check(ctx.itemPropertyRequests == requestsBase, QStringLiteral("双击文字不再请求属性弹窗"));
+    ctx.Check(QApplication::activeModalWidget() == nullptr,
+              QStringLiteral("双击文字不弹窗"));
     ctx.Check(doubleClickText->isSelected() && viewScene.selectedItems().size() == 1,
               QStringLiteral("双击文字只单选该图元"));
 
-    // 双击不带回旧需求 42：查看模式下双击不发属性请求，也不再开只读属性窗。
+    // 查看模式下双击同样只变换选择，不弹任何窗。
     view.SetMode(ToolMode::VIEW);
     view.FitAll();
     QApplication::processEvents();
@@ -513,43 +510,8 @@ void selftest::RunViewInteractionTests(Context& ctx)
                                      Qt::LeftButton, Qt::NoModifier);
     QApplication::sendEvent(view.viewport(), &viewDoubleClickEvent);
     QApplication::processEvents();
-    ctx.Check(ctx.itemPropertyRequests == requestsBase, QStringLiteral("查看模式双击不再请求属性弹窗"));
+    ctx.Check(QApplication::activeModalWidget() == nullptr, QStringLiteral("查看模式双击不打开任何对话框"));
     view.SetMode(ToolMode::EDIT);
-
-    {
-        ItemPropertiesDialog dialog(&viewScene, doubleClickText, &view);
-        dialog.show();
-        QApplication::processEvents();
-        bool hasEditText = false;
-        for (QPushButton* button : dialog.findChildren<QPushButton*>()) {
-            if (button->text() == UiText(QStringLiteral("Edit text…"))) {
-                hasEditText = true;
-                break;
-            }
-        }
-        ctx.Check(!hasEditText, QStringLiteral("文字属性窗不再提供编辑文字按钮"));
-        QPlainTextEdit* inlineText = dialog.findChild<QPlainTextEdit*>(QStringLiteral("ItemPropertiesTextValue"));
-        ctx.Check(inlineText && inlineText->isEnabled(), QStringLiteral("文字属性窗保留直接编辑正文"));
-        QToolButton* textColorValue = dialog.findChild<QToolButton*>(QStringLiteral("ItemPropertiesTextColorValue"));
-        QPushButton* fontValue = dialog.findChild<QPushButton*>(QStringLiteral("ItemPropertiesFontValue"));
-        ctx.Check(textColorValue && textColorValue->isEnabled(), QStringLiteral("文字属性窗文字颜色可编辑"));
-        ctx.Check(fontValue && fontValue->isEnabled(), QStringLiteral("文字属性窗字体可编辑"));
-        dialog.close();
-        QApplication::processEvents();
-    }
-
-    {
-        ItemPropertiesDialog readOnlyDialog(&viewScene, doubleClickText, &view, false);
-        readOnlyDialog.show();
-        QApplication::processEvents();
-        ctx.Check(!readOnlyDialog.findChild<QCheckBox*>(QStringLiteral("ItemPropertiesBoldValue")) &&
-                      !readOnlyDialog.findChild<QCheckBox*>(QStringLiteral("ItemPropertiesItalicValue")) &&
-                      !readOnlyDialog.findChild<QCheckBox*>(QStringLiteral("ItemPropertiesUnderlineValue")) &&
-                      !readOnlyDialog.findChild<QCheckBox*>(QStringLiteral("ItemPropertiesStrikeOutValue")),
-                  QStringLiteral("只读文字属性窗不显示文字样式选项"));
-        readOnlyDialog.close();
-        QApplication::processEvents();
-    }
 
     ctx.doubleClickText = doubleClickText;
 }

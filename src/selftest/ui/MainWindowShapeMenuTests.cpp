@@ -19,7 +19,6 @@
 #include "selftest/core/SelftestHelpers.h"
 #include "ui/dialogs/ExportDialog.h"
 #include "ui/mainwindow/MainWindow.h"
-#include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/layers/LayerPanel.h"
 #include "ui/panels/properties/PropertiesPanel.h"
 #include "ui/settings/SettingsDialog.h"
@@ -373,14 +372,12 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
                 }
             }
         }
-        ctx.Check(fillActionTexts.size() == 11 && fillActionTexts.contains(QStringLiteral("反斜线填充")) &&
+        ctx.Check(fillActionTexts.size() == 9 && fillActionTexts.contains(QStringLiteral("反斜线填充")) &&
                       fillActionTexts.contains(QStringLiteral("十字线填充")) &&
                       fillActionTexts.contains(QStringLiteral("六边形填充")) &&
-                      fillActionTexts.contains(QStringLiteral("水平线填充")) &&
-                      fillActionTexts.contains(QStringLiteral("竖线填充")) &&
                       fillActionTexts.contains(QStringLiteral("砖纹填充")) &&
                       fillActionTexts.contains(QStringLiteral("点阵填充")),
-                  QStringLiteral("填充菜单只保留填充样式"), fillActionTexts.join(QStringLiteral("|")));
+                  QStringLiteral("填充菜单只保留 9 种填充样式"), fillActionTexts.join(QStringLiteral("|")));
 
         QDoubleSpinBox* toolbarSmoothing = shapeWindow.findChild<QDoubleSpinBox*>(QStringLiteral("BrushSmoothingSpin"));
         CanvasView* canvasView = shapeWindow.findChild<CanvasView*>();
@@ -515,8 +512,8 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
                 fillHasColor = true;
             }
         }
-        ctx.Check(fillStyleMenu && fillMenuItemCount == 11 && !fillHasColor,
-                  QStringLiteral("填充样式子菜单只保留填充样式"), QStringLiteral("actions=%1").arg(fillMenuItemCount));
+        ctx.Check(fillStyleMenu && fillMenuItemCount == 9 && !fillHasColor,
+                  QStringLiteral("填充样式子菜单只保留 9 种填充样式"), QStringLiteral("actions=%1").arg(fillMenuItemCount));
 
         QMenu* insertMenu = nullptr;
         for (QAction* action : shapeWindow.menuBar()->actions()) {

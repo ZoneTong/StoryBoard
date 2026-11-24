@@ -177,7 +177,7 @@ void selftest::RunSettingsDialogBasicTests(Context& ctx)
     }
 
     {
-        // 属性窗的行标签用 ItemPropertiesDialog::tr 建好，换语言时只剩反向表可查；
+        // 属性行标签以 ItemPropertiesDialog 这个 i18n 上下文翻译，换语言时只剩反向表可查；
         // 这里校验 ts 全上下文的正续表能把英文源串送回中文，且冲突串不来回抖。
         const UiLanguage previous = UiEffectiveLanguage();
         UiOverrideLanguage(UiLanguage::ENGLISH);

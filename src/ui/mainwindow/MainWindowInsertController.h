@@ -3,6 +3,7 @@
 #include "items/properties/ArrowStyle.h"
 
 #include <QPointF>
+#include <QSizeF>
 #include <QString>
 
 class QAction;
@@ -22,6 +23,10 @@ class MainWindowInsertController {
     void InsertCustomShape(const QString& filePath);
     void OpenShapesFolder();
     void UpdateCustomShapeMenu();
+    // 新图元落点：置为 true 时（全屏数字键等键盘入口）取鼠标处，否则取视口中心并按图元数量
+    // 做 18px 级联；两种落点都夹回画布可用范围。鼠标点在菜单上时不会误落到菜单下方。
+    QPointF PlacementCenter(const QSizeF& itemSize) const;
+    void SetCursorPlacement(bool enabled) { m_cursorPlacement = enabled; }
 
   private:
     MainWindow* m_window = nullptr;
@@ -30,4 +35,6 @@ class MainWindowInsertController {
     // 「自定义图形…」这一项同时挂在常见图形菜单末尾与工具栏下拉里，
     // 每次重建前先删掉上一份，避免重复出现。
     QAction* m_customShapeTrigger = nullptr;
+    // 只有键盘入口（全屏数字键）才把落点挪到鼠标处；按钮 / 菜单点击仍落视口中心。
+    bool m_cursorPlacement = false;
 };

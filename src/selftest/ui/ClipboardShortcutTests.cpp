@@ -192,8 +192,5 @@ void selftest::RunClipboardShortcutTests(Context& ctx)
         QAction* gridAction = FindActionByText(&shortcutWindow, QStringLiteral("辅助网格"));
         ctx.Check(gridAction && gridAction->shortcut() == QKeySequence(QStringLiteral("Ctrl+'")),
                   QStringLiteral("网格开关绑定 Ctrl+'"));
-
-        QAction* propsAction = FindActionByText(&shortcutWindow, QStringLiteral("图元属性…"));
-        ctx.Check(propsAction && propsAction->shortcut().isEmpty(), QStringLiteral("图元属性动作不绑定单字母快捷键"));
     }
 }

@@ -44,7 +44,7 @@ bool g_gQtTranslationAvailable = false;
 bool g_gQtTranslatorInstalled = false;
 QHash<QString, QString> g_gReverseTranslations;
 // 英文源串 → 中文：按 ts 全上下文收集，不只 StoryBoard 一个上下文。
-// 属性窗的行标签是用 ItemPropertiesDialog::tr 建的，只查 StoryBoard 会漏，必须走这张表。
+// 属性行标签是用 ItemPropertiesDialog 这个 i18n 上下文建的，只查 StoryBoard 会漏，必须走这张表。
 QHash<QString, QString> g_gForwardTranslations;
 // 同一源串出现多种译文的，记下来不再参与正向查询（否则第三条又会填回去）。
 QSet<QString> g_gForwardConflicts;

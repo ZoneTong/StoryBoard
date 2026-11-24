@@ -24,12 +24,12 @@ struct ItemPropertyDescriptor {
     double maximum = 0.0;
     double step = 1.0;
     int decimals = 0;
-    QString suffix;
+    QString suffix = QString();
     // 派生属性不落盘，读写只折算到其它存储字段；序列化与属性 key 迁移要跳过。
     bool derived = false;
     // 描述符可自带读写回调；逐步把 switch (property) 的分派收进配置表。
-    std::function<QVariant(const CanvasItem*)> reader;
-    std::function<void(CanvasItem*, const QVariant&)> writer;
+    std::function<QVariant(const CanvasItem*)> reader = {};
+    std::function<void(CanvasItem*, const QVariant&)> writer = {};
 };
 
 class ItemPropertyCatalog {

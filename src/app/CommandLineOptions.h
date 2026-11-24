@@ -20,7 +20,6 @@ class CommandLineOptions {
     // 诊断：调用一次 AppSettings::openShapesFolder 并把结果写到指定文件。
     bool openShapesProbe = false;
     bool aboutScreenshot = false;
-    bool itemPropertiesScreenshot = false;
     bool shapeMenuScreenshot = false;
     bool brushStyleMenuScreenshot = false;
     bool brushWidthMenuScreenshot = false;
@@ -39,7 +38,6 @@ class CommandLineOptions {
     QString settingsProbePath;
     QString openShapesProbePath;
     QString aboutScreenshotPath;
-    QString itemPropertiesScreenshotPath;
     QString shapeMenuScreenshotPath;
     QString brushStyleMenuScreenshotPath;
     QString brushWidthMenuScreenshotPath;

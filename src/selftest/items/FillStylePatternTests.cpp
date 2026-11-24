@@ -50,36 +50,33 @@ void selftest::RunFillStylePatternTests(Context& ctx)
               QStringLiteral("交叉线填充均匀铺满整个图形，不只出现在右上角"),
               QStringLiteral("topRight=%1 bottomLeft=%2").arg(hatchTopRight).arg(hatchBottomLeft));
 
-    // 填充样式扩展：反斜线、十字线、六边形、水平线、竖线、砖纹、点阵。
+    // 填充样式扩展：反斜线、十字线、六边形、砖纹、点阵（横线 / 竖线两式已按需求删除）。
     ctx.Check(FillStyles::Name(FillStyle::REVERSE_HACHURE) == QStringLiteral("反斜线") &&
                   FillStyles::Name(FillStyle::GRID_HATCH) == QStringLiteral("十字线") &&
                   FillStyles::Name(FillStyle::HONEYCOMB) == QStringLiteral("六边形") &&
-                  FillStyles::Name(FillStyle::HORIZONTAL_HATCH) == QStringLiteral("水平线") &&
-                  FillStyles::Name(FillStyle::VERTICAL_HATCH) == QStringLiteral("竖线") &&
                   FillStyles::Name(FillStyle::BRICK) == QStringLiteral("砖纹") &&
                   FillStyles::Name(FillStyle::DOTS) == QStringLiteral("点阵"),
-              QStringLiteral("新增填充样式名称齐全"));
-    ctx.Check(AllFillStyles().size() == 11 && AllFillStyles().at(0) == FillStyle::NONE &&
+              QStringLiteral("填充样式名称齐全"));
+    ctx.Check(AllFillStyles().size() == 9 && AllFillStyles().at(0) == FillStyle::NONE &&
                   AllFillStyles().at(1) == FillStyle::SOLID && AllFillStyles().at(2) == FillStyle::HACHURE &&
                   AllFillStyles().at(3) == FillStyle::REVERSE_HACHURE &&
                   AllFillStyles().at(4) == FillStyle::CROSS_HATCH && AllFillStyles().at(5) == FillStyle::GRID_HATCH &&
-                  AllFillStyles().at(6) == FillStyle::HONEYCOMB &&
-                  AllFillStyles().at(7) == FillStyle::HORIZONTAL_HATCH &&
-                  AllFillStyles().at(8) == FillStyle::VERTICAL_HATCH && AllFillStyles().at(9) == FillStyle::BRICK &&
-                  AllFillStyles().at(10) == FillStyle::DOTS,
-              QStringLiteral("填充样式列表包含全部 11 种且顺序稳定"));
+                  AllFillStyles().at(6) == FillStyle::HONEYCOMB && AllFillStyles().at(7) == FillStyle::BRICK &&
+                  AllFillStyles().at(8) == FillStyle::DOTS,
+              QStringLiteral("填充样式列表只剩 9 种且顺序稳定"),
+              QStringLiteral("size=%1").arg(AllFillStyles().size()));
     ctx.Check(FillStyleFromString(FillStyleToString(FillStyle::REVERSE_HACHURE)) == FillStyle::REVERSE_HACHURE &&
                   FillStyleFromString(FillStyleToString(FillStyle::GRID_HATCH)) == FillStyle::GRID_HATCH &&
                   FillStyleFromString(FillStyleToString(FillStyle::HONEYCOMB)) == FillStyle::HONEYCOMB &&
-                  FillStyleFromString(FillStyleToString(FillStyle::HORIZONTAL_HATCH)) == FillStyle::HORIZONTAL_HATCH &&
-                  FillStyleFromString(FillStyleToString(FillStyle::VERTICAL_HATCH)) == FillStyle::VERTICAL_HATCH &&
                   FillStyleFromString(FillStyleToString(FillStyle::BRICK)) == FillStyle::BRICK &&
                   FillStyleFromString(FillStyleToString(FillStyle::DOTS)) == FillStyle::DOTS &&
-                  FillStyleFromString(QStringLiteral("horizontal")) == FillStyle::HORIZONTAL_HATCH &&
-                  FillStyleFromString(QStringLiteral("vertical")) == FillStyle::VERTICAL_HATCH &&
                   FillStyleFromString(QStringLiteral("brickwall")) == FillStyle::BRICK &&
                   FillStyleFromString(QStringLiteral("dot")) == FillStyle::DOTS,
-              QStringLiteral("新增填充样式可序列化往返"));
+              QStringLiteral("填充样式可序列化往返"));
+    // 旧画布里的横线 / 竖线串仍要能读，退化成斜线填充而不是掉回纯色。
+    ctx.Check(FillStyleFromString(QStringLiteral("horizontal_lines")) == FillStyle::HACHURE &&
+                  FillStyleFromString(QStringLiteral("vertical")) == FillStyle::HACHURE,
+              QStringLiteral("已删除的横竖线样式按斜线填充读回"));
 
     auto renderPatternFill = [](FillStyle style, QImage& image) {
         CanvasScene scene;
@@ -178,62 +175,6 @@ void selftest::RunFillStylePatternTests(Context& ctx)
                   .arg(honeycombCellEmpty ? 1 : 0)
                   .arg(honeycombEdgeDrawn ? 1 : 0)
                   .arg(honeycombRatio, 0, 'f', 3));
-
-    // 需求 14：水平线 / 竖线 / 砖纹 / 点阵四种新图案。
-    // 水平线：存在整行被红像素贯穿的扫描行（纹线行），且没有竖线方向的整列贯穿。
-    QImage horizontalImage;
-    renderPatternFill(FillStyle::HORIZONTAL_HATCH, horizontalImage);
-    int horizontalBestRow = 0;
-    int horizontalBestColumn = 0;
-    for (int y = 55; y < 240; ++y) {
-        int run = 0;
-        for (int x = 60; x < 340; ++x) {
-            if (patternLinePixel(horizontalImage, x, y)) {
-                ++run;
-            }
-        }
-        horizontalBestRow = qMax(horizontalBestRow, run);
-    }
-    for (int x = 60; x < 340; ++x) {
-        int run = 0;
-        for (int y = 55; y < 240; ++y) {
-            if (patternLinePixel(horizontalImage, x, y)) {
-                ++run;
-            }
-        }
-        horizontalBestColumn = qMax(horizontalBestColumn, run);
-    }
-    ctx.Check(horizontalBestRow >= 150 && horizontalBestColumn < horizontalBestRow / 3,
-              QStringLiteral("水平线填充沿水平方向铺满"),
-              QStringLiteral("row=%1 column=%2").arg(horizontalBestRow).arg(horizontalBestColumn));
-
-    // 竖线：存在整列被红像素贯穿的扫描列，且没有水平方向的整行贯穿。
-    QImage verticalImage;
-    renderPatternFill(FillStyle::VERTICAL_HATCH, verticalImage);
-    int verticalBestRow = 0;
-    int verticalBestColumn = 0;
-    for (int y = 55; y < 240; ++y) {
-        int run = 0;
-        for (int x = 60; x < 340; ++x) {
-            if (patternLinePixel(verticalImage, x, y)) {
-                ++run;
-            }
-        }
-        verticalBestRow = qMax(verticalBestRow, run);
-    }
-    for (int x = 60; x < 340; ++x) {
-        int run = 0;
-        for (int y = 55; y < 240; ++y) {
-            if (patternLinePixel(verticalImage, x, y)) {
-                ++run;
-            }
-        }
-        verticalBestColumn = qMax(verticalBestColumn, run);
-    }
-    // 竖线：存在整列被红像素贯穿的扫描列；扫描行只会"穿过"竖线，
-    // 累计长度约为线条数 × 线宽（~60px），远小于整列贯穿。
-    ctx.Check(verticalBestColumn >= 110 && verticalBestRow < 100, QStringLiteral("竖线填充沿竖直方向铺满"),
-              QStringLiteral("row=%1 column=%2").arg(verticalBestRow).arg(verticalBestColumn));
 
     // 砖纹：有横线也有竖缝，竖缝在行间出现（比纯水平线多出竖直方向像素）。
     QImage brickImage;

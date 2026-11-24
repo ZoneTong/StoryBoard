@@ -2,10 +2,10 @@
 
 #include "items/properties/ItemPropertyCatalog.h"
 #include "scene/CanvasScene.h"
-#include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/widgets/RowMetrics.h"
 
 #include <QComboBox>
+#include <QCoreApplication>
 #include <QDoubleSpinBox>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -15,6 +15,34 @@
 #include <QToolButton>
 
 namespace {
+
+// 行标签与图层描述沿用属性 i18n 上下文（手工维护的 storyboard_zh.ts 已按该上下文收录）。
+QString TrRow(const char* text)
+{
+    return QCoreApplication::translate("ItemPropertiesDialog", text);
+}
+
+QString LayerDescriptionText(const CanvasScene* scene, int layerId)
+{
+    if (layerId == CanvasScene::BackgroundLayerId) {
+        return TrRow("Background layer");
+    }
+    const int index = scene ? scene->LayerIndex(layerId) : layerId;
+    QString layerName;
+    if (scene) {
+        for (const CanvasLayer& layer : scene->Layers()) {
+            if (layer.id == layerId) {
+                layerName = layer.name;
+                break;
+            }
+        }
+    }
+    const QString defaultName = TrRow("Layer %1").arg(index);
+    if (layerName.isEmpty() || layerName == defaultName) {
+        return defaultName;
+    }
+    return TrRow("Layer %1 · %2").arg(index).arg(layerName);
+}
 
 const ItemPropertyDescriptor& DescriptorOf(ItemProperty property)
 {
@@ -90,70 +118,41 @@ QString TextValueRow::Text() const
     return m_edit ? m_edit->text() : QString();
 }
 
-LayerValueRow::LayerValueRow(QWidget* parent, bool showIcon) : QWidget(parent)
+LayerHeightRow::LayerHeightRow(QWidget* parent, bool showIcon) : QWidget(parent)
 {
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(4);
 
     if (showIcon) {
-        AddRowIcon(layout, IconId::LAYER_UP, this, ItemPropertiesDialog::tr("Layer"));
+        AddRowIcon(layout, IconId::LAYER_UP, this, TrRow("Layer") + QStringLiteral(" / ") + TrRow("Height"));
     }
 
     m_combo = new QComboBox(this);
     m_combo->setObjectName(QStringLiteral("ItemLayerCombo"));
     m_combo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     m_combo->setMinimumWidth(0);
+    m_combo->setToolTip(TrRow("Layer"));
     RowMetrics::ApplyFieldHeight(m_combo);
     layout->addWidget(m_combo, 1);
+
+    m_spin = new QSpinBox(this);
+    m_spin->setObjectName(QStringLiteral("ItemHeightSpin"));
+    m_spin->setRange(0, 999999);
+    m_spin->setKeyboardTracking(false);
+    // 图层下拉吃掉剩余宽度，高度框只占一格数字：同一行的两个语义不互相挤压。
+    m_spin->setFixedWidth(RowMetrics::IconButtonSize().width() * 2);
+    m_spin->setToolTip(TrRow("Height"));
+    RowMetrics::ApplyFieldHeight(m_spin);
+    layout->addWidget(m_spin, 0);
+
+    setToolTip(TrRow("Layer") + QStringLiteral(" / ") + TrRow("Height"));
 
     connect(m_combo, &QComboBox::currentIndexChanged, this, [this](int) {
         if (!m_refreshing) {
             emit layerChosen(LayerId());
         }
     });
-}
-
-void LayerValueRow::Refresh(CanvasScene* scene, int layerId)
-{
-    m_refreshing = true;
-    m_combo->clear();
-    if (scene) {
-        for (const CanvasLayer& layer : scene->UserLayers()) {
-            m_combo->addItem(ItemPropertiesDialog::LayerDescription(scene, layer.id), layer.id);
-        }
-    }
-    const int index = m_combo->findData(layerId);
-    if (index >= 0) {
-        m_combo->setCurrentIndex(index);
-    }
-    m_refreshing = false;
-}
-
-int LayerValueRow::LayerId() const
-{
-    return m_combo && m_combo->currentIndex() >= 0 ? m_combo->currentData().toInt() : 0;
-}
-
-HeightValueRow::HeightValueRow(QWidget* parent, bool showIcon) : QWidget(parent)
-{
-    auto* layout = new QHBoxLayout(this);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(4);
-
-    if (showIcon) {
-        AddRowIcon(layout, IconId::ORDER_UP, this, ItemPropertiesDialog::tr("Height"));
-    }
-
-    m_spin = new QSpinBox(this);
-    m_spin->setObjectName(QStringLiteral("ItemHeightSpin"));
-    m_spin->setRange(0, 999999);
-    m_spin->setKeyboardTracking(false);
-    m_spin->setMinimumWidth(0);
-    m_spin->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    RowMetrics::ApplyFieldHeight(m_spin);
-    layout->addWidget(m_spin, 1);
-
     connect(m_spin, &QSpinBox::valueChanged, this, [this](int value) {
         if (!m_refreshing) {
             emit heightChosen(value);
@@ -161,15 +160,31 @@ HeightValueRow::HeightValueRow(QWidget* parent, bool showIcon) : QWidget(parent)
     });
 }
 
-void HeightValueRow::Refresh(int value, int maximum)
+void LayerHeightRow::Refresh(CanvasScene* scene, int layerId, int height, int maximum)
 {
     m_refreshing = true;
-    m_spin->setMaximum(qMax(maximum, value));
-    m_spin->setValue(value);
+    m_combo->clear();
+    if (scene) {
+        for (const CanvasLayer& layer : scene->UserLayers()) {
+            m_combo->addItem(LayerDescriptionText(scene, layer.id), layer.id);
+        }
+    }
+    const int index = m_combo->findData(layerId);
+    if (index >= 0) {
+        m_combo->setCurrentIndex(index);
+    }
+    // 上限只往上留，不改当前值：允许保留下来的空洞。
+    m_spin->setMaximum(qMax(maximum, height));
+    m_spin->setValue(height);
     m_refreshing = false;
 }
 
-int HeightValueRow::Value() const
+int LayerHeightRow::LayerId() const
+{
+    return m_combo && m_combo->currentIndex() >= 0 ? m_combo->currentData().toInt() : 0;
+}
+
+int LayerHeightRow::Height() const
 {
     return m_spin ? m_spin->value() : 0;
 }

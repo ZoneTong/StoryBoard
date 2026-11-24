@@ -25,7 +25,6 @@
 #include "ui/dialogs/ExportDialog.h"
 #include "ui/mainwindow/MainWindow.h"
 #include "ui/panels/customshape/CustomShapePanel.h"
-#include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/layers/LayerPanel.h"
 #include "ui/panels/properties/PropertiesPanel.h"
 #include "ui/settings/SettingsDialog.h"
@@ -246,6 +245,24 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
         dockScene->UndoStack()->undo();
         QApplication::processEvents();
 
+        // 内角 B 与 A 合成同一行：平行四边形把 B 当补角，改 B 要回算 A。
+        QDoubleSpinBox* parallelogramAngleBSpin =
+            dockPanel->findChild<QDoubleSpinBox*>(QStringLiteral("ItemInteriorAngleBSpin"));
+        ctx.Check(parallelogramAngleBSpin && parallelogramAngleBSpin->isVisible() &&
+                      qAbs(parallelogramAngleBSpin->value() - 120.0) < 0.01,
+                  QStringLiteral("平行四边形内角行第二格回显补角"),
+                  parallelogramAngleBSpin ? QString::number(parallelogramAngleBSpin->value()) : QStringLiteral("-"));
+        if (parallelogramAngleBSpin) {
+            parallelogramAngleBSpin->setValue(110);
+            QApplication::processEvents();
+        }
+        const qreal panelAngleFromB =
+            panelParallelogram->PropertyValue(ItemProperty::PARALLELOGRAM_ANGLE).toDouble();
+        ctx.Check(qAbs(panelAngleFromB - 70.0) < 0.01,
+                  QStringLiteral("编辑面板改内角 B 按补角换算内角 A"), QString::number(panelAngleFromB));
+        dockScene->UndoStack()->undo();
+        QApplication::processEvents();
+
         auto* panelEllipse = ShapeFactory::Create(ShapeType::ELLIPSE);
         panelEllipse->setPos(QPointF(620.0, 320.0));
         panelEllipse->SetContentSize(QSizeF(140.0, 100.0));
@@ -300,6 +317,34 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
         ctx.Check(qAbs(panelArc->EllipseSize().width() - 200.0) < 0.01 &&
                       qAbs(panelArc->EllipseSize().height() - 100.0) < 0.01,
                   QStringLiteral("撤销弧线长半轴修改恢复椭圆框"));
+
+        // 起止角一行：两个框分别是起始角与扫过角，落盘字段与显示口径一致。
+        QSpinBox* arcStartSpin = dockPanel->findChild<QSpinBox*>(QStringLiteral("ItemArcStartSpin"));
+        QSpinBox* arcSweepSpin = dockPanel->findChild<QSpinBox*>(QStringLiteral("ItemArcSweepSpin"));
+        ctx.Check(arcStartSpin && arcStartSpin->isVisible() && arcSweepSpin && arcSweepSpin->isVisible() &&
+                      arcStartSpin->value() == 15 && arcSweepSpin->value() == 140,
+                  QStringLiteral("选中弧线时起止角行回显起始角与扫过角"),
+                  QStringLiteral("start=%1 sweep=%2")
+                      .arg(arcStartSpin ? arcStartSpin->value() : -999)
+                      .arg(arcSweepSpin ? arcSweepSpin->value() : -999));
+        if (arcSweepSpin) {
+            arcSweepSpin->setValue(190);
+            QApplication::processEvents();
+        }
+        ctx.Check(qAbs(panelArc->StartAngle() - 15.0) < 0.01 && qAbs(panelArc->SweepAngle() - 190.0) < 0.01,
+                  QStringLiteral("改扫过角只改扫过角、起始角不动"),
+                  QStringLiteral("start=%1 sweep=%2").arg(panelArc->StartAngle()).arg(panelArc->SweepAngle()));
+        dockScene->UndoStack()->undo();
+        QApplication::processEvents();
+        if (arcStartSpin) {
+            arcStartSpin->setValue(40);
+            QApplication::processEvents();
+        }
+        ctx.Check(qAbs(panelArc->StartAngle() - 40.0) < 0.01 && qAbs(panelArc->SweepAngle() - 140.0) < 0.01,
+                  QStringLiteral("改起始角保持扫过角不动"),
+                  QStringLiteral("start=%1 sweep=%2").arg(panelArc->StartAngle()).arg(panelArc->SweepAngle()));
+        dockScene->UndoStack()->undo();
+        QApplication::processEvents();
 
         // 需求 2：多选也开放旋转 / 位置 / 尺寸行，行序对齐属性窗；
         // 位置与尺寸按首个图元回显，改动以增量套到其余图元，不会把选中项叠在一起。
@@ -503,35 +548,6 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
         ctx.Check(qAbs(polygon->StrokeWidth() - polygonWidthBefore) < 0.01,
                   QStringLiteral("撤销描线宽度恢复多边形原宽度"), QString::number(polygon->StrokeWidth()));
 
-        // 属性窗同样识别多边形的填充 / 描线字段，确认后只占一条撤销记录。
-        ItemPropertiesDialog polygonDialog(dockScene, polygon);
-        QWidget* dialogFillStyleRow = polygonDialog.findChild<QWidget*>(QStringLiteral("ItemFillStyleRow"));
-        QSpinBox* dialogStrokeWidth = polygonDialog.findChild<QSpinBox*>(QStringLiteral("ItemBorderWidthSpin"));
-        const FillStyle dialogFillBefore = polygon->fillStyle();
-        const qreal dialogWidthBefore = polygon->StrokeWidth();
-        if (dialogFillStyleRow) {
-            for (QToolButton* button :
-                 dialogFillStyleRow->findChildren<QToolButton*>(QStringLiteral("ItemFillStyleButton"))) {
-                if (button->property("fillStyle").toInt() == static_cast<int>(FillStyle::HACHURE)) {
-                    button->click();
-                    break;
-                }
-            }
-        }
-        if (dialogStrokeWidth) {
-            dialogStrokeWidth->setValue(12);
-        }
-        polygonDialog.accept();
-        QApplication::processEvents();
-        ctx.Check(
-            polygon->fillStyle() == FillStyle::HACHURE && qAbs(polygon->StrokeWidth() - 12.0) < 0.01,
-            QStringLiteral("属性窗填充样式与描线宽度作用到多边形"),
-            QStringLiteral("fill=%1 width=%2").arg(static_cast<int>(polygon->fillStyle())).arg(polygon->StrokeWidth()));
-        dockScene->UndoStack()->undo();
-        QApplication::processEvents();
-        ctx.Check(polygon->fillStyle() == dialogFillBefore && qAbs(polygon->StrokeWidth() - dialogWidthBefore) < 0.01,
-                  QStringLiteral("撤销属性窗修改同时恢复多边形填充与描线"));
-
         // 图形与多边形混合选中时，一次填充色修改只占一条撤销记录。
         dockScene->clearSelection();
         selectedShape->setSelected(true);
@@ -575,28 +591,12 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
         QWidget* textFontRow = propertiesDock->findChild<QWidget*>(QStringLiteral("ItemTextFontRow"));
         QWidget* textColorRow = propertiesDock->findChild<QWidget*>(QStringLiteral("ItemTextColorRow"));
         QWidget* fillImageRow = propertiesDock->findChild<QWidget*>(QStringLiteral("ItemFillImageRow"));
-        QToolButton* propertiesButton = propertiesDock->findChild<QToolButton*>(QStringLiteral("ItemPropertiesButton"));
         QToolButton* smoothButton = propertiesDock->findChild<QToolButton*>(QStringLiteral("ItemSmoothButton"));
         ctx.Check(textContentRow && textContentRow->isVisible() && textFontRow && textFontRow->isVisible() &&
                       textColorRow && textColorRow->isVisible(),
                   QStringLiteral("选中文字时显示正文 / 字体 / 颜色行"));
         ctx.Check(fillImageRow && !fillImageRow->isVisible(), QStringLiteral("选中文字时隐藏背景图片行"));
-        ctx.Check(propertiesButton && propertiesButton->isVisible(), QStringLiteral("选中文字时显示图元属性按钮"));
         ctx.Check(smoothButton && !smoothButton->isVisible(), QStringLiteral("选中文字时隐藏简化曲线按钮"));
-
-        // 图元属性按钮不是摆设：点击后打开属性窗，测试中立即关闭。
-        bool propertyDialogOpened = false;
-        QTimer::singleShot(0, [&propertyDialogOpened]() {
-            if (auto* dialog = qobject_cast<ItemPropertiesDialog*>(QApplication::activeModalWidget())) {
-                propertyDialogOpened = true;
-                dialog->reject();
-            }
-        });
-        if (propertiesButton) {
-            propertiesButton->click();
-            QApplication::processEvents();
-        }
-        ctx.Check(propertyDialogOpened, QStringLiteral("卡片图元属性按钮真正打开属性窗"));
 
         // 透明度不仅作用于图形和曲线，文字等所有图元都走同一属性。
         if (opacitySpin) {

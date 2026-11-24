@@ -1,0 +1,126 @@
+#include "canvas/controllers/CanvasTextEditor.h"
+
+#include "canvas/CanvasView.h"
+#include "items/text/TextItem.h"
+#include "scene/CanvasScene.h"
+#include "scene/Commands.h"
+
+#include <QEvent>
+#include <QFont>
+#include <QKeyEvent>
+#include <QLineEdit>
+#include <QUndoStack>
+
+namespace {
+
+// 输入框比图元外框稍大一圈，边框不至于把文字压住。
+constexpr int EDITOR_MARGIN = 4;
+
+} // namespace
+
+CanvasTextEditor::CanvasTextEditor(CanvasView* view, CanvasScene* scene) : QObject(view), m_view(view), m_scene(scene) {}
+
+bool CanvasTextEditor::BeginEdit(TextItem* item)
+{
+    Commit();
+    if (!item || !m_view || !m_scene) {
+        return false;
+    }
+    m_item = item;
+    m_edit = new QLineEdit(m_view->viewport());
+    m_edit->setObjectName(QStringLiteral("CanvasTextEditor"));
+    m_edit->setFrame(false);
+    m_edit->setStyleSheet(QStringLiteral("QLineEdit { background: #FFFFFF; border: 1px solid #2563EB;"
+                                         " border-radius: 2px; padding: 0 2px; }"));
+
+    // 字体按图元字号 × 当前缩放换算成屏幕像素，看到的字与画布上的字一样大。
+    QFont font = item->TextFont();
+    const qreal zoom = m_view->Zoom();
+    const int pixel = qMax(8, qRound(qMax<qreal>(1.0, font.pointSizeF()) * zoom));
+    font.setPixelSize(pixel);
+    m_edit->setFont(font);
+    m_edit->setText(item->TextContent());
+
+    QRect box = m_view->mapFromScene(item->mapRectToScene(item->ContentRect())).boundingRect();
+    box = box.adjusted(-EDITOR_MARGIN, -EDITOR_MARGIN, EDITOR_MARGIN, EDITOR_MARGIN);
+    box.setWidth(qMax(box.width(), m_edit->sizeHint().width() + 2 * EDITOR_MARGIN));
+    box.setHeight(qMax(box.height(), pixel + 2 * EDITOR_MARGIN + 4));
+    m_edit->setGeometry(box);
+    m_edit->show();
+    m_edit->raise();
+    m_edit->installEventFilter(this);
+    QObject::connect(m_edit, &QLineEdit::editingFinished, this, [this]() { Commit(); });
+    // 焦点与光标都落到正文末尾：新建文字图元后可以直接接着打字。
+    m_edit->setFocus(Qt::OtherFocusReason);
+    m_edit->setCursorPosition(m_edit->text().size());
+    return true;
+}
+
+void CanvasTextEditor::Commit()
+{
+    if (!m_edit || !m_item || m_closing) {
+        return;
+    }
+    m_closing = true;
+    const QString text = m_edit->text();
+    TextItem* item = m_item.data();
+    CloseEditor();
+    if (!item) {
+        m_closing = false;
+        return;
+    }
+    if (text != item->TextContent() && m_scene && m_scene->UndoStack()) {
+        TextItemState before = item->State();
+        TextItemState after = before;
+        after.text = text;
+        after.baseSize = TextItem::Measure(text, after.font);
+        after.size = after.baseSize;
+        m_scene->UndoStack()->push(new TextItemCommand(m_scene, item, before, after, tr("Edit text")));
+    }
+    if (m_view) {
+        m_view->setFocus();
+    }
+    m_closing = false;
+}
+
+void CanvasTextEditor::Cancel()
+{
+    if (m_closing) {
+        return;
+    }
+    m_closing = true;
+    CloseEditor();
+    if (m_view) {
+        m_view->setFocus();
+    }
+    m_closing = false;
+}
+
+void CanvasTextEditor::CloseEditor()
+{
+    if (!m_edit) {
+        return;
+    }
+    QLineEdit* edit = m_edit;
+    m_edit = nullptr;
+    m_item = nullptr;
+    edit->removeEventFilter(this);
+    edit->hide();
+    edit->deleteLater();
+}
+
+bool CanvasTextEditor::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == m_edit && event->type() == QEvent::KeyPress) {
+        QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+        if (keyEvent->key() == Qt::Key_Escape) {
+            Cancel();
+            return true;
+        }
+        if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {
+            Commit();
+            return true;
+        }
+    }
+    return QObject::eventFilter(watched, event);
+}

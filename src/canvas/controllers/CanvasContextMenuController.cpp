@@ -71,8 +71,7 @@ void CanvasContextMenuController::ShowMenu(QContextMenuEvent* event)
     title->setEnabled(false);
     menu.addSeparator();
 
-    // 属性窗入口：双击已改为只单选，右键菜单是画布侧唯一的打开方式。
-    QAction* properties = menu.addAction(TrView("Item properties…"));
+    // 图元属性统一在编辑面板里改，画布侧不再单独开属性窗。
     QAction* duplicate = menu.addAction(TrView("Duplicate item"));
     duplicate->setEnabled(item->isSelected());
     QAction* smooth = menu.addAction(TrView("Simplify curve"));
@@ -118,9 +117,7 @@ void CanvasContextMenuController::ShowMenu(QContextMenuEvent* event)
         return;
     }
 
-    if (chosen == properties) {
-        emit m_view->itemPropertiesRequested(item);
-    } else if (chosen == duplicate) {
+    if (chosen == duplicate) {
         const int duplicated = m_scene->DuplicateSelectedItems();
         if (duplicated > 0) {
             emit m_view->statusMessage(TrView("Duplicated %n Item(s)", duplicated));

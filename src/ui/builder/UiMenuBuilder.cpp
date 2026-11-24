@@ -222,8 +222,6 @@ void UiMenuBuilder::BuildMenus()
     // 需求：平滑笔画移到“笔画”菜单下，不再留在编辑菜单。
     editMenu->addAction(m_window->m_selectAllAct);
     editMenu->addSeparator();
-    editMenu->addAction(m_window->m_itemPropsAct);
-    editMenu->addSeparator();
 
     auto applySelectedHeight = [this](int delta) {
         if (m_window->m_view->mode() != ToolMode::EDIT) {
@@ -344,7 +342,7 @@ void UiMenuBuilder::BuildMenus()
         m_window->m_docks->propertiesPanel()->SetSelectionActions(
             m_window->m_alignActions, m_window->m_boolActions, m_window->m_duplicateAct, m_window->m_deleteAct,
             m_window->m_rotateCwAct, m_window->m_rotateCcwAct, m_window->m_groupAct, m_window->m_ungroupAct);
-        m_window->m_docks->propertiesPanel()->SetItemActions(m_window->m_smoothAct, m_window->m_itemPropsAct);
+        m_window->m_docks->propertiesPanel()->SetItemActions(m_window->m_smoothAct);
         m_window->m_docks->propertiesPanel()->Refresh();
     }
 
@@ -367,8 +365,6 @@ void UiMenuBuilder::BuildMenus()
     fillStyleMenu->addAction(m_window->m_fillCrossAct);
     fillStyleMenu->addAction(m_window->m_fillGridAct);
     fillStyleMenu->addAction(m_window->m_fillHoneycombAct);
-    fillStyleMenu->addAction(m_window->m_fillHorizontalAct);
-    fillStyleMenu->addAction(m_window->m_fillVerticalAct);
     fillStyleMenu->addAction(m_window->m_fillBrickAct);
     fillStyleMenu->addAction(m_window->m_fillDotsAct);
 

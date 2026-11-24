@@ -19,7 +19,6 @@
 #include "selftest/core/SelftestHelpers.h"
 #include "ui/dialogs/ExportDialog.h"
 #include "ui/mainwindow/MainWindow.h"
-#include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/layers/LayerPanel.h"
 #include "ui/panels/properties/PropertiesPanel.h"
 #include "ui/settings/SettingsDialog.h"
@@ -425,18 +424,6 @@ void selftest::RunMainWindowFlowTests(Context& ctx)
         }
 
         window.View()->SetMode(ToolMode::TEXT);
-        QTimer::singleShot(120, &window, [&]() {
-            auto* dialog = qobject_cast<ItemPropertiesDialog*>(QApplication::activeModalWidget());
-            if (!dialog) {
-                return;
-            }
-            QPlainTextEdit* textValue = dialog->findChild<QPlainTextEdit*>(QStringLiteral("ItemPropertiesTextValue"));
-            if (!textValue) {
-                return;
-            }
-            textValue->setPlainText(QStringLiteral("端到端文字图元"));
-            dialog->accept();
-        });
         const QPoint clickPosition = window.View()->mapFromScene(window.Scene()->CanvasRect().center());
         SendMouseEvent(window.View()->viewport(), QEvent::MouseButtonPress, clickPosition, Qt::LeftButton,
                        Qt::LeftButton);
@@ -449,8 +436,8 @@ void selftest::RunMainWindowFlowTests(Context& ctx)
         if (window.Scene()->CanvasItemCount() == 1) {
             createdText = dynamic_cast<TextItem*>(window.Scene()->CanvasItems().constFirst());
         }
-        ctx.Check(createdText && createdText->Text() == QStringLiteral("端到端文字图元"),
-                  QStringLiteral("主窗口创建的文字内容正确"));
+        ctx.Check(createdText && !createdText->Text().isEmpty(),
+                  QStringLiteral("主窗口创建的文字带默认正文，正文在编辑面板里改"));
         ctx.Check(createdText && createdText->TextColor() == window.View()->BrushColor() &&
                       createdText->LayerId() == window.Scene()->ActiveLayerId() &&
                       window.Scene()->LayerHeightsUnique(createdText->LayerId()),
@@ -475,20 +462,10 @@ void selftest::RunMainWindowFlowTests(Context& ctx)
                       !heightDownAction->text().contains(QLatin1Char('[')),
                   QStringLiteral("高度菜单项文字不再自带方括号"), heightUpAction ? heightUpAction->text() : QString());
 
-        QAction* propertiesAction = nullptr;
-        for (QAction* action : windowActions) {
-            if (action->text().startsWith(QStringLiteral("图元属性"))) {
-                propertiesAction = action;
-                break;
-            }
-        }
         if (createdText) {
             createdText->setSelected(true);
         }
         QApplication::processEvents();
-        ctx.Check(propertiesAction && propertiesAction->isEnabled() && propertiesAction->shortcut().isEmpty(),
-                  QStringLiteral("图元属性保留菜单入口、不绑单字母快捷键，选中单个图元时可用"),
-                  propertiesAction ? propertiesAction->text() : QString());
         if (createdText && heightUpAction && heightDownAction) {
             const int heightBeforeShortcut = createdText->ZOrder();
             heightUpAction->trigger();
@@ -497,7 +474,7 @@ void selftest::RunMainWindowFlowTests(Context& ctx)
             ctx.Check(createdText->ZOrder() == heightBeforeShortcut, QStringLiteral("[ 快捷键降低选中图元高度"));
         }
 
-        // 双击不再弹属性窗：查看模式双击不开窗，属性窗只保留菜单 / 面板 / 右键入口。
+        // 双击只做单选：查看模式不选中，编辑模式只单选该图元，任何模式都不弹窗。
         if (createdText) {
             window.View()->SetMode(ToolMode::VIEW);
             QApplication::processEvents();
@@ -520,22 +497,6 @@ void selftest::RunMainWindowFlowTests(Context& ctx)
             QApplication::processEvents();
             ctx.Check(createdText->isSelected() && window.Scene()->selectedItems().size() == 1,
                       QStringLiteral("编辑模式双击只单选该图元"));
-            ctx.Check(QApplication::activeModalWidget() == nullptr,
-                      QStringLiteral("编辑模式双击不打开属性窗"));
-
-            bool menuDialogSeen = false;
-            QTimer::singleShot(60, &window, [&]() {
-                auto* dialog = qobject_cast<ItemPropertiesDialog*>(QApplication::activeModalWidget());
-                if (!dialog) {
-                    return;
-                }
-                menuDialogSeen = true;
-                dialog->accept();
-            });
-            if (propertiesAction) {
-                propertiesAction->trigger();
-            }
-            ctx.Check(menuDialogSeen, QStringLiteral("图元属性菜单入口仍打开属性窗"));
         }
     }
 }

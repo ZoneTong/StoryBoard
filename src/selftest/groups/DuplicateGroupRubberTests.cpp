@@ -21,7 +21,6 @@
 #include "selftest/core/SelftestHelpers.h"
 #include "ui/dialogs/ExportDialog.h"
 #include "ui/mainwindow/MainWindow.h"
-#include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/layers/LayerPanel.h"
 #include "ui/panels/properties/PropertiesPanel.h"
 #include "ui/settings/SettingsDialog.h"
@@ -217,14 +216,11 @@ void selftest::RunGroupTests(Context& ctx)
         groupUndo.redo();
         ctx.Check(first->GroupId() == groupId && second->GroupId() == groupId, QStringLiteral("重做组合恢复组标记"));
 
-        // 单个组员仍可成为唯一选中项，属性窗保持可编辑。
+        // 单个组员仍可成为唯一选中项，编辑面板仍可编辑。
         groupScene.clearSelection();
         first->setSelected(true);
         ctx.Check(groupScene.SelectedCanvasItems().size() == 1 && first->IsEditable(),
                   QStringLiteral("组合后单个图元仍可单独选中"));
-        ItemPropertiesDialog propertiesDialog(&groupScene, first, nullptr);
-        QLineEdit* nameEdit = propertiesDialog.findChild<QLineEdit*>(QStringLiteral("ItemPropertiesNameValue"));
-        ctx.Check(nameEdit != nullptr && !nameEdit->isReadOnly(), QStringLiteral("组合后单个图元属性窗仍可编辑"));
 
         CanvasView groupView(&groupScene);
         groupView.resize(900, 700);

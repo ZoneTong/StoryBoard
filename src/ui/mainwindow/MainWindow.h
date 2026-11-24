@@ -31,7 +31,6 @@ void RunFillStyleBasicTests(Context& ctx);
 void RunMainWindowShapeMenuTests(Context& ctx);
 void RunDockPanelMainWindowTests(Context& ctx);
 } // namespace selftest
-class ItemPropertiesDialog;
 class PropertiesPanel;
 class LayerPanel;
 class CanvasBackgroundController;
@@ -170,10 +169,7 @@ class MainWindow : public QMainWindow {
     void SetStrokeSmoothingUi(qreal tolerance);
     void UpdateCanvasesMenu();
     void UpdateBackgroundModeActions();
-    void ShowSelectedItemProperties();
-    void ShowItemProperties(CanvasItem* item);
     void RotateSelected(qreal degrees);
-    void CloseItemProperties();
 
   private:
     friend class CanvasBackgroundController;
@@ -234,7 +230,6 @@ class MainWindow : public QMainWindow {
     QAction* m_ungroupAct = nullptr;
     QAction* m_smoothAct = nullptr;
     QAction* m_selectAllAct = nullptr;
-    QAction* m_itemPropsAct = nullptr;
     QAction* m_rotateCwAct = nullptr;
     QAction* m_rotateCcwAct = nullptr;
 
@@ -265,8 +260,6 @@ class MainWindow : public QMainWindow {
     QAction* m_fillCrossAct = nullptr;
     QAction* m_fillGridAct = nullptr;
     QAction* m_fillHoneycombAct = nullptr;
-    QAction* m_fillHorizontalAct = nullptr;
-    QAction* m_fillVerticalAct = nullptr;
     QAction* m_fillBrickAct = nullptr;
     QAction* m_fillDotsAct = nullptr;
     QAction* m_fillColorAct = nullptr;
@@ -305,9 +298,6 @@ class MainWindow : public QMainWindow {
     QList<QAction*> m_strokeStyleActions;
     QActionGroup* m_strokeStyleGroup = nullptr;
     QDoubleSpinBox* m_smoothingSpin = nullptr;
-    // 属性窗常驻复用：首次打开时创建（父为主窗口，随窗销毁），之后所有图元
-    // 类型共用同一实例，按需 SetItem 换绑与显隐。
-    QPointer<ItemPropertiesDialog> m_itemPropertiesDialog;
     std::unique_ptr<CanvasBackgroundController> m_background;
     std::unique_ptr<DockPanelController> m_docks;
     std::unique_ptr<ShortcutController> m_shortcuts;

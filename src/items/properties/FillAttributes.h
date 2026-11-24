@@ -18,8 +18,6 @@ enum class FillStyle {
     CROSS_HATCH,
     GRID_HATCH,
     HONEYCOMB,
-    HORIZONTAL_HATCH,
-    VERTICAL_HATCH,
     BRICK,
     DOTS
 };

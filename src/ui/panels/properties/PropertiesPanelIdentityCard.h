@@ -5,11 +5,10 @@
 
 class CanvasItem;
 class CanvasScene;
-class HeightValueRow;
-class LayerValueRow;
+class LayerHeightRow;
 class TextValueRow;
 
-// 编辑面板的名称 / 图层 / 层内高度三行：与属性窗的身份区同源，
+// 编辑面板的名称 / 图层与层内高度两行：与属性窗的身份区同源，
 // 直接给出目标值而不只是 ±1 微调；多选时整块隐藏，避免一次把多个图元改成同一位置。
 class PropertiesPanelIdentityCard : public QWidget {
     Q_OBJECT
@@ -26,8 +25,7 @@ class PropertiesPanelIdentityCard : public QWidget {
 
   private:
     TextValueRow* m_nameRow = nullptr;
-    LayerValueRow* m_layerRow = nullptr;
-    HeightValueRow* m_heightRow = nullptr;
+    LayerHeightRow* m_layerRow = nullptr;
     CanvasScene* m_scene = nullptr;
     QPointer<CanvasItem> m_item;
     bool m_refreshing = false;

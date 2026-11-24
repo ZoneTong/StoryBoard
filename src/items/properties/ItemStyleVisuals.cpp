@@ -272,20 +272,6 @@ QIcon FillStyleIcon(FillStyle style, const QColor& color, int logicalSize)
         }
         break;
     }
-    case FillStyle::HORIZONTAL_HATCH: {
-        painter.setPen(QPen(ink, 1.4));
-        for (qreal y = box.top() + 4.0; y < box.bottom(); y += 4.5) {
-            painter.drawLine(QPointF(box.left(), y), QPointF(box.right(), y));
-        }
-        break;
-    }
-    case FillStyle::VERTICAL_HATCH: {
-        painter.setPen(QPen(ink, 1.4));
-        for (qreal x = box.left() + 4.0; x < box.right(); x += 4.5) {
-            painter.drawLine(QPointF(x, box.top()), QPointF(x, box.bottom()));
-        }
-        break;
-    }
     case FillStyle::BRICK: {
         // 砖纹：三行横线，竖缝在行间交错。
         painter.setPen(QPen(ink, 1.4));

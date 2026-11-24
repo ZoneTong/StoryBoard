@@ -53,8 +53,8 @@ class PropertiesPanel : public QWidget {
     void SetSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions,
                              QAction* copyAction, QAction* removeAction, QAction* rotateCwAction,
                              QAction* rotateCcwAction, QAction* groupAction, QAction* ungroupAction);
-    // 笔画平滑与图元属性窗也是选中项可用的操作，卡片沿用主窗口同一批 QAction。
-    void SetItemActions(QAction* smoothAction, QAction* propertiesAction);
+    // 笔画平滑也是选中项可用的操作，卡片沿用主窗口同一个 QAction。
+    void SetItemActions(QAction* smoothAction);
     // 替换当前唯一选中的图片，保留原位置与图元名称；图片本体、尺寸和名称一起进入撤销记录。
 
   signals:
@@ -99,14 +99,13 @@ class PropertiesPanel : public QWidget {
     void ApplyBorderWidth(qreal width);
     void ApplyOpacity(int percent);
     void ApplyCornerRadius(int radius);
-    void ApplyStartAngle(int angle);
-    void ApplySweepAngle(int angle);
+    // 起止角：写入侧按“终止角 − 起始角”还原扫过角。
+    void ApplyArcAngles(qreal startAngle, qreal endAngle);
     // 正弦波形：周期数（1–12）与振幅（相对中心线的像素高度，1–200）。
     void ApplySineCycles(int cycles);
     void ApplySineAmplitude(int percent);
-    // 三角形：两个底角；角度优先，高度随底边派生。
-    void ApplyTriangleAngle1(int degrees);
-    void ApplyTriangleAngle2(int degrees);
+    // 内角 B：只有三角形需要第二个内角才能定形状。
+    void ApplyInteriorAngleB(qreal angle);
     // 直线两端箭头样式（ArrowStyle 整数值）。
     void ApplyArrowStart(int style);
     void ApplyArrowEnd(int style);

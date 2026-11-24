@@ -34,7 +34,6 @@
 #include "ui/dialogs/ExportDialog.h"
 #include "ui/icons/IconFactory.h"
 #include "ui/mainwindow/MainWindow.h"
-#include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 #include "ui/panels/layers/LayerPanel.h"
 #include "ui/panels/properties/PropertiesPanel.h"
 #include "ui/settings/SettingsDialog.h"
@@ -1126,117 +1125,6 @@ void selftest::RunShapeItemTests(Context& ctx)
         ctx.Check(qAbs(low - 5.0) < 0.01 && qAbs(high - 175.0) < 0.01, QStringLiteral("平行四边形内角可到 5° / 175°"),
                   QStringLiteral("%1/%2").arg(low).arg(high));
         delete parallelogram;
-    }
-    {
-        // 弧线属性窗按真实椭圆外接框显示长短半轴（不是弧线笔迹的包围盒），且可直接编辑：
-        // 写入保持椭圆中心不动，并入属性窗的同一份撤销记录。
-        ArcItem* arc = new ArcItem;
-        arc->SetArcGeometry(QPointF(10.0, 20.0), QSizeF(200.0, 100.0), 15.0, 140.0, QColor(Qt::black), 2.0);
-        const QSizeF ellipseSize = arc->EllipseSize();
-        CanvasScene arcScene;
-        QUndoStack arcUndo;
-        arcScene.SetUndoStack(&arcUndo);
-        arcScene.AddItemsWithUndo({arc}, QStringLiteral("Add arc"));
-        ItemPropertiesDialog dialog(&arcScene, arc);
-        dialog.show();
-        QApplication::processEvents();
-        QDoubleSpinBox* majorAxisValue =
-            dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesMajorAxisValue"));
-        QDoubleSpinBox* minorAxisValue =
-            dialog.findChild<QDoubleSpinBox*>(QStringLiteral("ItemPropertiesMinorAxisValue"));
-        ctx.Check(qAbs(ellipseSize.width() - 200.0) < 0.01 && qAbs(ellipseSize.height() - 100.0) < 0.01 &&
-                      majorAxisValue && minorAxisValue && !majorAxisValue->isReadOnly() &&
-                      !minorAxisValue->isReadOnly() && qAbs(majorAxisValue->value() - 100.0) < 0.01 &&
-                      qAbs(minorAxisValue->value() - 50.0) < 0.01,
-                  QStringLiteral("弧线属性窗显示椭圆长半轴 / 短半轴且可编辑"),
-                  QStringLiteral("ellipse=%1x%2 major=%3 minor=%4")
-                      .arg(ellipseSize.width())
-                      .arg(ellipseSize.height())
-                      .arg(majorAxisValue ? majorAxisValue->value() : -999.0)
-                      .arg(minorAxisValue ? minorAxisValue->value() : -999.0));
-        if (majorAxisValue) {
-            majorAxisValue->setValue(120.0);
-            dialog.accept();
-            QApplication::processEvents();
-            const QSizeF newEllipse = arc->EllipseSize();
-            ctx.Check(qAbs(newEllipse.width() - 240.0) < 0.01 && qAbs(newEllipse.height() - 100.0) < 0.01 &&
-                          arcUndo.count() == 2,
-                      QStringLiteral("弧线长半轴编辑并入属性窗撤销记录"),
-                      QStringLiteral("ellipse=%1x%2 undo=%3")
-                          .arg(newEllipse.width())
-                          .arg(newEllipse.height())
-                          .arg(arcUndo.count()));
-            arcUndo.undo();
-            QApplication::processEvents();
-            const QSizeF restored = arc->EllipseSize();
-            ctx.Check(qAbs(restored.width() - 200.0) < 0.01 && qAbs(restored.height() - 100.0) < 0.01,
-                      QStringLiteral("撤销恢复弧线椭圆外接框"),
-                      QStringLiteral("ellipse=%1x%2").arg(restored.width()).arg(restored.height()));
-        }
-    }
-    {
-        // 属性窗为弧线补起始角 / 扫过角行：确认后走同一条撤销记录，可整体回退。
-        ArcItem* arc = new ArcItem;
-        arc->SetArcGeometry(QPointF(10.0, 20.0), QSizeF(200.0, 100.0), 15.0, 140.0, QColor(Qt::black), 2.0);
-        CanvasScene arcScene;
-        QUndoStack arcUndo;
-        arcScene.SetUndoStack(&arcUndo);
-        arcScene.AddItemsWithUndo({arc}, QStringLiteral("Add arc"));
-        ItemPropertiesDialog dialog(&arcScene, arc);
-        dialog.show();
-        QApplication::processEvents();
-        QSpinBox* startSpin = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesStartAngleValue"));
-        QSpinBox* sweepSpin = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesSweepAngleValue"));
-        ctx.Check(startSpin && sweepSpin && startSpin->value() == 15 && sweepSpin->value() == 140,
-                  QStringLiteral("弧线属性窗显示起始角 / 扫过角"),
-                  QStringLiteral("start=%1 sweep=%2")
-                      .arg(startSpin ? startSpin->value() : -1)
-                      .arg(sweepSpin ? sweepSpin->value() : -1));
-        startSpin->setValue(30);
-        sweepSpin->setValue(180);
-        dialog.accept();
-        QApplication::processEvents();
-        ctx.Check(qAbs(arc->StartAngle() - 30.0) < 0.01 && qAbs(arc->SweepAngle() - 180.0) < 0.01 &&
-                      arcUndo.count() == 2,
-                  QStringLiteral("弧线角度改动并入属性窗撤销记录"),
-                  QStringLiteral("start=%1 sweep=%2 undo=%3")
-                      .arg(arc->StartAngle())
-                      .arg(arc->SweepAngle())
-                      .arg(arcUndo.count()));
-        arcUndo.undo();
-        ctx.Check(qAbs(arc->StartAngle() - 15.0) < 0.01 && qAbs(arc->SweepAngle() - 140.0) < 0.01,
-                  QStringLiteral("撤销后弧线角度还原"),
-                  QStringLiteral("start=%1 sweep=%2").arg(arc->StartAngle()).arg(arc->SweepAngle()));
-    }
-    {
-        // 属性窗为正弦波补周期 / 振幅行：确认后波形重建且可撤销。
-        SineItem* wave = new SineItem;
-        wave->SetWaveGeometry(QPointF(10.0, 20.0), QSizeF(200.0, 100.0), QColor(Qt::black), 2.0);
-        CanvasScene waveScene;
-        QUndoStack waveUndo;
-        waveScene.SetUndoStack(&waveUndo);
-        waveScene.AddItemsWithUndo({wave}, QStringLiteral("Add wave"));
-        ItemPropertiesDialog dialog(&waveScene, wave);
-        dialog.show();
-        QApplication::processEvents();
-        QSpinBox* cyclesSpin = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesSineCyclesValue"));
-        QSpinBox* amplitudeSpin = dialog.findChild<QSpinBox*>(QStringLiteral("ItemPropertiesSineAmplitudeValue"));
-        ctx.Check(cyclesSpin && amplitudeSpin && cyclesSpin->value() == wave->params().cycles &&
-                      amplitudeSpin->value() == qRound(wave->params().amplitude),
-                  QStringLiteral("正弦属性窗显示周期 / 振幅"),
-                  QStringLiteral("cycles=%1 amplitude=%2")
-                      .arg(cyclesSpin ? cyclesSpin->value() : -1)
-                      .arg(amplitudeSpin ? amplitudeSpin->value() : -1));
-        cyclesSpin->setValue(6);
-        amplitudeSpin->setValue(120);
-        dialog.accept();
-        QApplication::processEvents();
-        ctx.Check(wave->params().cycles == 6 && qAbs(wave->params().amplitude - 120.0) < 0.01 && waveUndo.count() == 2,
-                  QStringLiteral("正弦参数改动并入属性窗撤销记录"),
-                  QStringLiteral("cycles=%1 amplitude=%2 undo=%3")
-                      .arg(wave->params().cycles)
-                      .arg(wave->params().amplitude)
-                      .arg(waveUndo.count()));
     }
     {
         // 底角 A / B 的图标：开口方向不同（A 朝右、B 朝左），且都不是空白图标。

@@ -5,7 +5,6 @@
 #include "items/CanvasItem.h"
 #include "scene/CanvasScene.h"
 #include "ui/mainwindow/MainWindow.h"
-#include "ui/panels/itemdialog/ItemPropertiesDialog.h"
 
 #include <QApplication>
 #include <QClipboard>
@@ -18,48 +17,6 @@
 #include <QtMath>
 
 MainWindowEditActionsController::MainWindowEditActionsController(MainWindow* window) : m_window(window) {}
-
-void MainWindowEditActionsController::ShowSelectedItemProperties()
-{
-    const QList<CanvasItem*> items = m_window->m_scene->SelectedCanvasItems();
-    if (items.size() != 1) {
-        m_window->statusBar()->showMessage(MainWindow::tr("Select a single item to show its properties"), 3000);
-        return;
-    }
-    ShowItemProperties(items.constFirst());
-}
-
-void MainWindowEditActionsController::ShowItemProperties(CanvasItem* item)
-{
-    if (!item || item->scene() != m_window->m_scene) {
-        return;
-    }
-
-    // 需求 42：属性窗在任何模式都能打开，但只有编辑模式下且图层可见未锁定
-    // 时才允许修改；查看/画笔/文字模式一律以只读方式展示。
-    const bool editable = m_window->m_view->mode() == ToolMode::EDIT && m_window->m_scene->IsItemEditable(item);
-
-    // 所有图元类型复用同一个属性窗实例：行控件一次建齐、顺序固定，
-    // 每次打开只换绑图元并按属性显隐，不再按类型重建对话框。
-    ItemPropertiesDialog* dialog = m_window->m_itemPropertiesDialog;
-    if (!dialog) {
-        dialog = new ItemPropertiesDialog(nullptr, nullptr, m_window, true);
-        m_window->m_itemPropertiesDialog = dialog;
-    }
-    dialog->SetItem(m_window->m_scene, item, editable);
-    dialog->exec();
-}
-
-void MainWindowEditActionsController::CloseItemProperties()
-{
-    if (!m_window->m_itemPropertiesDialog) {
-        return;
-    }
-    // 实例常驻复用：这里只负责关闭（取消未确认修改），不销毁。
-    if (m_window->m_itemPropertiesDialog->isVisible()) {
-        m_window->m_itemPropertiesDialog->close();
-    }
-}
 
 void MainWindowEditActionsController::RotateSelected(qreal degrees)
 {

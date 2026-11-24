@@ -3,6 +3,7 @@
 #include "canvas/SelectionOverlayStyle.h"
 #include "items/CanvasItem.h"
 
+#include <QLineF>
 #include <QPainter>
 #include <QPainterPath>
 
@@ -125,19 +126,56 @@ QRectF CanvasItemHandles::HitRect(int handle) const
     return Rect(handle).adjusted(-padding, -padding, padding, padding);
 }
 
+bool CanvasItemHandles::IsAngleKnob(const HandleSpec& spec)
+{
+    return spec.behavior == HandleBehavior::ANGLE || spec.behavior == HandleBehavior::SKEW;
+}
+
+bool CanvasItemHandles::HitAngleKnob(const HandleSpec& spec, const QPointF& pos) const
+{
+    // 角度旋钮按“到旋钮中心的距离”判定：圆心必然命中，缩放到 25% / 400% 时
+    // 方块命中区跟着变大变小，圆心始终在区内，不再出现“点到旋钮中心却拖成缩放”。
+    const qreal radius = HitRect(spec.id).width() / 2.0;
+    return QLineF(spec.position, pos).length() <= radius;
+}
+
 int CanvasItemHandles::HitAt(const QPointF& pos) const
 {
     const HandleSpecList specs = ActiveSpecs();
-    auto hitSpec = [this, &pos](const HandleSpec& spec) { return HitRect(spec.id).contains(pos); };
+    auto hitSpec = [this, &pos](const HandleSpec& spec) {
+        return IsAngleKnob(spec) ? HitAngleKnob(spec, pos) : HitRect(spec.id).contains(pos);
+    };
+
+    // 角度旋钮（三角形顶点 C / 平行四边形倾斜旋钮）按到中心的距离取最近的一个。
+    int knobHit = CanvasItem::NO_HANDLE;
+    qreal knobDistance = 0.0;
+    for (const HandleSpec& spec : specs) {
+        if (!IsAngleKnob(spec) || !hitSpec(spec)) {
+            continue;
+        }
+        const qreal distance = QLineF(spec.position, pos).length();
+        if (knobHit == CanvasItem::NO_HANDLE || distance < knobDistance) {
+            knobHit = spec.id;
+            knobDistance = distance;
+        }
+    }
+
+    // 选择框上的手柄同样取最近的一个（重合时中心距离才是可比较的判据）。
+    int handleHit = CanvasItem::NO_HANDLE;
+    qreal handleDistance = 0.0;
+    auto considerHandle = [this, &pos, &handleHit, &handleDistance](int handle) {
+        const qreal distance = QLineF(Center(handle), pos).length();
+        if (handleHit == CanvasItem::NO_HANDLE || distance < handleDistance) {
+            handleHit = handle;
+            handleDistance = distance;
+        }
+    };
     bool hidesTop = false;
     for (const HandleSpec& spec : specs) {
         if (spec.replacesTopHandle) {
             hidesTop = true;
-            continue;
-        }
-        // 与顶边冲突的自定义句柄（平行四边形旋钮）优先于通用手柄，避免命中区重叠。
-        if (hitSpec(spec)) {
-            return spec.id;
+        } else if (!IsAngleKnob(spec) && hitSpec(spec)) {
+            considerHandle(spec.id);
         }
     }
     for (int handle = CanvasItem::TOP_LEFT; handle <= CanvasItem::ROTATION; ++handle) {
@@ -145,16 +183,18 @@ int CanvasItemHandles::HitAt(const QPointF& pos) const
             continue;
         }
         if (HitRect(handle).contains(pos)) {
-            return handle;
+            considerHandle(handle);
         }
     }
-    // 顶边上的自定义句柄（三角形顶点 C）放在最后，让角落手柄先赢。
-    for (const HandleSpec& spec : specs) {
-        if (spec.replacesTopHandle && hitSpec(spec)) {
-            return spec.id;
-        }
+
+    // 填充区域内部优先旋钮；选择框边上按到各自中心的距离定胜负——点在手柄中心归手柄，
+    // 点在旋钮中心归旋钮。小图元上两个命中区重叠时也不会再互相抢占。
+    const bool insideFill = m_item->PaintedShape().contains(m_item->mapFromScene(pos));
+    if (knobHit != CanvasItem::NO_HANDLE &&
+        (insideFill || handleHit == CanvasItem::NO_HANDLE || knobDistance <= handleDistance)) {
+        return knobHit;
     }
-    return CanvasItem::NO_HANDLE;
+    return handleHit;
 }
 
 QPainterPath CanvasItemHandles::SelectionShape() const

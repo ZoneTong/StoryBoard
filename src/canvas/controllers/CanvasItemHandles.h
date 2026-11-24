@@ -37,6 +37,9 @@ class CanvasItemHandles {
     HandleSpecList ActiveSpecs() const;
     // 按句柄槽位取自定义句柄描述（返回值拷贝，避免悬垂引用）。
     bool SpecAt(int handle, HandleSpec* spec) const;
+    // 角度类旋钮（三角形顶点 C / 平行四边形倾斜旋钮）走圆形命中，见 HitAngleKnob。
+    static bool IsAngleKnob(const HandleSpec& spec);
+    bool HitAngleKnob(const HandleSpec& spec, const QPointF& pos) const;
 
     CanvasItem* m_item = nullptr;
 };
