@@ -63,14 +63,29 @@ QRectF CanvasGroupBoxController::ViewportRect() const
     return m_view->mapFromScene(GroupRect()).boundingRect();
 }
 
+bool CanvasGroupBoxController::Rotating() const
+{
+    return m_dragging && m_handle == static_cast<int>(GroupBoxHandle::ROTATE);
+}
+
+QRectF CanvasGroupBoxController::OverlayRect() const
+{
+    // 旋转期间画的是“起手外框”跟着刚转：成员绕组中心刚体旋转后，
+    // 轴对齐包围盒会跟着变宽变窄，若拿实时包围盒当选框，框会相对成员漂。
+    if (Rotating() && m_view && !m_startRect.isNull()) {
+        return m_view->mapFromScene(m_startRect).boundingRect();
+    }
+    return ViewportRect();
+}
+
 QTransform CanvasGroupBoxController::OverlayRotation() const
 {
     // 只有“正在拖旋转钮”才让选框跟着转：起转前与缩放拖动时都是恒等变换，
     // 命中 / 光标沿用轴对齐的组框。
-    if (!m_dragging || m_handle != static_cast<int>(GroupBoxHandle::ROTATE) || qFuzzyIsNull(m_dragAngle)) {
+    if (!Rotating() || qFuzzyIsNull(m_dragAngle) || !m_view) {
         return QTransform();
     }
-    const QPointF center = ViewportRect().center();
+    const QPointF center = m_view->mapFromScene(m_rotateCenter);
     QTransform transform;
     transform.translate(center.x(), center.y());
     transform.rotateRadians(m_dragAngle);
@@ -193,7 +208,7 @@ int CanvasGroupBoxController::HitTest(const QPoint& viewportPos) const
     if (!Active() || !m_view) {
         return static_cast<int>(GroupBoxHandle::NONE);
     }
-    const QRectF rect = ViewportRect();
+    const QRectF rect = OverlayRect();
     if (rect.isNull()) {
         return static_cast<int>(GroupBoxHandle::NONE);
     }
@@ -349,7 +364,7 @@ void CanvasGroupBoxController::DrawOverlay(QPainter* painter) const
     if (!Active() || !painter) {
         return;
     }
-    const QRectF rect = ViewportRect();
+    const QRectF rect = OverlayRect();
     if (rect.isNull()) {
         return;
     }

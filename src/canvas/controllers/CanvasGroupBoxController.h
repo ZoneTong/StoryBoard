@@ -62,6 +62,9 @@ class CanvasGroupBoxController {
     QRectF ResizeRect(int handle, const QRectF& startRect, const QPointF& scenePos) const;
     QPointF HandleCenter(int handle, const QRectF& rect) const;
     QRectF ViewportRect() const;
+    bool Rotating() const;
+    // 选框用的矩形：旋转期间用“起手外框”，其余时候是实时包围盒。
+    QRectF OverlayRect() const;
     // 旋转拖动期间把组框连同手柄绕组中心转起来（仿照单图元的旋转手柄）；
     // 非旋转拖动时是单位变换。
     QTransform OverlayRotation() const;
