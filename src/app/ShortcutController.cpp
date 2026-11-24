@@ -83,8 +83,8 @@ void ShortcutController::ApplyShortcutOverrides()
             continue;
         }
         const QString id = it.value().constFirst();
-        const auto overrideIt = m_window->m_settings.shortcutOverrides.constFind(id);
-        if (overrideIt != m_window->m_settings.shortcutOverrides.constEnd() && !overrideIt.value().isEmpty()) {
+        const auto overrideIt = m_window->Settings().shortcutOverrides.constFind(id);
+        if (overrideIt != m_window->Settings().shortcutOverrides.constEnd() && !overrideIt.value().isEmpty()) {
             const QKeySequence sequence = QKeySequence::fromString(overrideIt.value(), QKeySequence::PortableText);
             if (!sequence.isEmpty()) {
                 action->setShortcut(sequence);
@@ -160,11 +160,11 @@ bool ShortcutController::ChangeShortcut(QAction* action, const QKeySequence& seq
     }
     action->setShortcut(sequence);
     if (sequence == QKeySequence::fromString(id, QKeySequence::PortableText)) {
-        m_window->m_settings.shortcutOverrides.remove(id);
+        m_window->Settings().shortcutOverrides.remove(id);
     } else {
-        m_window->m_settings.shortcutOverrides.insert(id, sequence.toString(QKeySequence::PortableText));
+        m_window->Settings().shortcutOverrides.insert(id, sequence.toString(QKeySequence::PortableText));
     }
-    m_window->m_settings.Save();
+    m_window->Settings().Save();
     RefreshShortcutTips();
     return true;
 }
@@ -294,8 +294,8 @@ void ShortcutController::ShowShortcuts()
     layout->addLayout(buttonRow);
     QObject::connect(closeButton, &QPushButton::clicked, &dialog, &QDialog::accept);
     QObject::connect(resetButton, &QPushButton::clicked, &dialog, [this, &keyButtons]() {
-        m_window->m_settings.shortcutOverrides.clear();
-        m_window->m_settings.Save();
+        m_window->Settings().shortcutOverrides.clear();
+        m_window->Settings().Save();
         ApplyShortcutOverrides();
         // 恢复默认后键帽也要当场回到默认键。
         for (const auto& item : keyButtons) {

@@ -20,12 +20,12 @@ MainWindowEditActionsController::MainWindowEditActionsController(MainWindow* win
 
 void MainWindowEditActionsController::RotateSelected(qreal degrees)
 {
-    if (m_window->m_view->mode() != ToolMode::EDIT) {
+    if (m_window->View()->mode() != ToolMode::EDIT) {
         m_window->statusBar()->showMessage(MainWindow::tr("Rotation is available in edit mode only"), 3000);
         return;
     }
     const int changed =
-        m_window->m_scene->RotateSelected(degrees, degrees > 0 ? MainWindow::tr("Rotate items clockwise")
+        m_window->Scene()->RotateSelected(degrees, degrees > 0 ? MainWindow::tr("Rotate items clockwise")
                                                                : MainWindow::tr("Rotate items counterclockwise"));
     if (changed == 0) {
         m_window->statusBar()->showMessage(MainWindow::tr("No selected items can be rotated"), 3000);
@@ -37,7 +37,7 @@ void MainWindowEditActionsController::RotateSelected(qreal degrees)
 
 void MainWindowEditActionsController::ApplyAlignment(Alignment::Mode mode)
 {
-    if (m_window->m_view->mode() != ToolMode::EDIT) {
+    if (m_window->View()->mode() != ToolMode::EDIT) {
         m_window->statusBar()->showMessage(MainWindow::tr("Alignment is available in edit mode only"), 3000);
         return;
     }
@@ -68,7 +68,7 @@ void MainWindowEditActionsController::ApplyAlignment(Alignment::Mode mode)
         commandText = MainWindow::tr("Distribute items vertically");
         break;
     }
-    const int moved = Alignment::Apply(m_window->m_scene, mode, commandText);
+    const int moved = Alignment::Apply(m_window->Scene(), mode, commandText);
     if (moved == 0) {
         m_window->statusBar()->showMessage(MainWindow::tr("The selected items are already aligned"), 3000);
         return;
@@ -78,7 +78,7 @@ void MainWindowEditActionsController::ApplyAlignment(Alignment::Mode mode)
 
 void MainWindowEditActionsController::ApplyBoolOperation(BoolOps::Operation operation)
 {
-    if (m_window->m_view->mode() != ToolMode::EDIT) {
+    if (m_window->View()->mode() != ToolMode::EDIT) {
         m_window->statusBar()->showMessage(MainWindow::tr("Merge items is available in edit mode only"), 3000);
         return;
     }
@@ -103,7 +103,7 @@ void MainWindowEditActionsController::ApplyBoolOperation(BoolOps::Operation oper
         commandText = MainWindow::tr("Split along line");
         break;
     }
-    if (!BoolOps::Apply(m_window->m_scene, operation, commandText)) {
+    if (!BoolOps::Apply(m_window->Scene(), operation, commandText)) {
         // 线条分割的常见失败是切刀没碰到填充图形，提示比通用文案更具体。
         if (operation == BoolOps::Operation::LINE_SPLIT) {
             m_window->statusBar()->showMessage(
@@ -123,10 +123,10 @@ void MainWindowEditActionsController::ApplyBoolOperation(BoolOps::Operation oper
 
 void MainWindowEditActionsController::CopySelectedItems()
 {
-    if (!m_window->m_scene) {
+    if (!m_window->Scene()) {
         return;
     }
-    const QJsonArray items = m_window->m_scene->ClipboardItems();
+    const QJsonArray items = m_window->Scene()->ClipboardItems();
     if (items.isEmpty()) {
         m_window->statusBar()->showMessage(MainWindow::tr("Select an item to copy"), 3000);
         return;
@@ -140,8 +140,8 @@ void MainWindowEditActionsController::CopySelectedItems()
 void MainWindowEditActionsController::CutSelectedItems()
 {
     CopySelectedItems();
-    if (m_window->m_scene) {
-        m_window->m_scene->DeleteSelected();
+    if (m_window->Scene()) {
+        m_window->Scene()->DeleteSelected();
     }
 }
 
@@ -163,7 +163,7 @@ bool MainWindowEditActionsController::CanPaste(const QMimeData* mime)
 
 void MainWindowEditActionsController::PasteItems()
 {
-    if (!m_window->m_scene) {
+    if (!m_window->Scene()) {
         return;
     }
     const QMimeData* mime = QApplication::clipboard()->mimeData();
@@ -184,7 +184,7 @@ void MainWindowEditActionsController::PasteItems()
             const QJsonArray items =
                 Excalidraw::ElementsToItems(scene.value(QStringLiteral("elements")).toArray(), &notes, nullptr,
                                             scene.value(QStringLiteral("files")).toObject());
-            const int pastedCount = m_window->m_scene->PasteClipboardItems(items);
+            const int pastedCount = m_window->Scene()->PasteClipboardItems(items);
             if (pastedCount == 0) {
                 m_window->statusBar()->showMessage(MainWindow::tr("Nothing to paste"), 3000);
                 return;
@@ -199,7 +199,7 @@ void MainWindowEditActionsController::PasteItems()
         return;
     }
     const QJsonDocument doc = QJsonDocument::fromJson(mime->data(QLatin1String(CLIPBOARD_MIME_TYPE)));
-    const int pasted = m_window->m_scene->PasteClipboardItems(doc.array());
+    const int pasted = m_window->Scene()->PasteClipboardItems(doc.array());
     if (pasted == 0) {
         m_window->statusBar()->showMessage(MainWindow::tr("Nothing to paste"), 3000);
         return;

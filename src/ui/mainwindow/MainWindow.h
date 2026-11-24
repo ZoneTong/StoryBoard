@@ -84,9 +84,13 @@ class MainWindow : public QMainWindow {
     bool OpenCanvasFile(const QString& path);
     CanvasScene* Scene() const { return m_scene; }
     CanvasView* View() const { return m_view; }
+    // 快捷键 / 导入导出等控制器经此读写配置，不再靠 friend 穿透私有成员。
+    AppSettings& Settings() { return m_settings; }
 
     // 按当前语言刷新整个界面文字（设置里切换语言时调用）。
     void ApplyUiLanguage();
+    // 动作可用态按选择 / 剪贴板 / 撤销栈刷新；编辑控制器与工厂经公开入口触发。
+    void UpdateActions();
 
   protected:
     void closeEvent(QCloseEvent* event) override;
@@ -120,7 +124,6 @@ class MainWindow : public QMainWindow {
     void ShowShortcuts();
     void SetToolMode(ToolMode mode);
     void UpdateTitle();
-    void UpdateActions();
     void UpdateStatusBar();
     void UpdateModeUi();
     void OpenCanvasesFolder();
@@ -176,7 +179,6 @@ class MainWindow : public QMainWindow {
   private:
     friend class CanvasBackgroundController;
     friend class DockPanelController;
-    friend class ShortcutController;
     friend class DocumentController;
     friend class ImportExportController;
     friend class StyleController;
@@ -186,7 +188,6 @@ class MainWindow : public QMainWindow {
     friend class UiMenuBuilder;
     friend class UiToolBarBuilder;
     friend class UiStatusBarBuilder;
-    friend class MainWindowEditActionsController;
     friend class MainWindowInsertController;
     friend class MainWindowAppController;
     friend class FullScreenController;
