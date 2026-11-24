@@ -233,83 +233,115 @@ QPointF PolarPoint(const QPointF& center, qreal radius, qreal degrees)
     return QPointF(center.x() + radius * qCos(radians), center.y() - radius * qSin(radians));
 }
 
-// 弧线末端的切向箭头：箭底落在弧上，尖端沿弧的切线方向伸出去（像弧线自己拐出一个箭头），
-// 双翼沿半径方向张开。sweepSign=+1 表示指向角度增大的一侧，-1 表示反向。
-void DrawTangentArrow(QPainter& painter, const QPointF& center, qreal radius, qreal degrees, qreal length,
-                      qreal sweepSign)
+// 扇形角度行图标（按设计稿 64 格 SVG「扇形角度图标.svg」改写）
+// 起始角 = 0° 基线到 30° 起始边之间的虚线小扇形；扫过角 = 30°~150° 的实线扇形；
+// 两段弧末端各收一枚顺着顺时针张开的开口箭头。设计稿是 64 格细线（线宽 0.4~1.1 格），
+// 直接等比缩到 16px 会整条消失，所以线宽、虚线节奏、箭头翼长按 16px 观感放大，几何比例不动。
+constexpr QPointF SECTOR_CENTER(12.0, 17.2);
+constexpr qreal SECTOR_RADIUS = 10.4;
+constexpr qreal SECTOR_BASE_ANGLE = 0.0;
+constexpr qreal SECTOR_START_EDGE = 30.0;
+constexpr qreal SECTOR_END_EDGE = 150.0;
+constexpr qreal SECTOR_SPOKE_PEN = 1.35;
+constexpr qreal SECTOR_ARC_PEN = 1.9;
+constexpr qreal SECTOR_ARROW_WING = 3.9;
+constexpr qreal SECTOR_ARROW_ANGLE = 26.0;
+constexpr qreal SECTOR_ARROW_PEN = 1.25;
+
+QRectF SectorRing()
 {
-    const qreal radians = qDegreesToRadians(degrees);
-    const QPointF base = PolarPoint(center, radius, degrees);
-    const QPointF radial(qCos(radians), -qSin(radians));
-    const QPointF tangent = sweepSign * QPointF(-qSin(radians), -qCos(radians));
-    const QPointF tip = base + tangent * length;
-    QPainterPath head;
-    head.moveTo(tip);
-    head.lineTo(base + radial * (length * 0.40));
-    head.lineTo(base - radial * (length * 0.40));
-    head.closeSubpath();
+    return QRectF(SECTOR_CENTER.x() - SECTOR_RADIUS, SECTOR_CENTER.y() - SECTOR_RADIUS, SECTOR_RADIUS * 2.0,
+                  SECTOR_RADIUS * 2.0);
+}
+
+// Qt 的 dashPattern 以笔宽为单位，传实长要先除以笔宽。
+QPen SectorDashPen(QPen pen, qreal onLength, qreal offLength)
+{
+    QVector<qreal> pattern;
+    pattern << onLength / pen.widthF() << offLength / pen.widthF();
+    pen.setStyle(Qt::CustomDashLine);
+    pen.setDashPattern(pattern);
+    return pen;
+}
+
+void DrawSectorSpoke(QPainter& painter, qreal degrees, bool dashed)
+{
+    QPen pen(painter.pen().color(), SECTOR_SPOKE_PEN, Qt::SolidLine, Qt::RoundCap);
+    if (dashed) {
+        pen = SectorDashPen(pen, 2.4, 1.7);
+    }
     painter.save();
-    painter.setBrush(painter.pen().color());
-    painter.drawPath(head);
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(pen);
+    painter.drawLine(SECTOR_CENTER, PolarPoint(SECTOR_CENTER, SECTOR_RADIUS, degrees));
     painter.restore();
 }
-// 弧线的一段虚线段：沿圆周按等分切段，保证小尺寸下也能数出断口，而不是糊成实线。
-void DrawArcDash(QPainter& painter, const QPointF& center, qreal radius, qreal fromDegrees, qreal toDegrees,
-                 int segments)
+
+void DrawSectorArc(QPainter& painter, qreal from, qreal to, bool dashed)
 {
-    const QRectF box(center.x() - radius, center.y() - radius, radius * 2.0, radius * 2.0);
-    const qreal span = fromDegrees - toDegrees;
-    const qreal tick = span / (segments * 2.0 - 1.0);
-    for (int index = 0; index < segments; ++index) {
-        const qreal start = fromDegrees - index * 2.0 * tick;
-        QPainterPath segment;
-        segment.arcMoveTo(box, start);
-        segment.arcTo(box, start, -tick);
-        painter.drawPath(segment);
+    QPainterPath arc;
+    arc.arcMoveTo(SectorRing(), from);
+    arc.arcTo(SectorRing(), from, to - from);
+
+    QPen pen(painter.pen().color(), SECTOR_ARC_PEN, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    if (dashed) {
+        pen = SectorDashPen(pen, 2.2, 1.5);
     }
+    painter.save();
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(pen);
+    painter.drawPath(arc);
+    painter.restore();
+}
+
+// 弧线末端的开口箭头：两翼从弧端点沿顺时针切向各张开 SECTOR_ARROW_ANGLE。
+void DrawSectorArrowHead(QPainter& painter, qreal degrees)
+{
+    const QColor ink = painter.pen().color();
+    const qreal radians = qDegreesToRadians(degrees);
+    const QPointF tip = PolarPoint(SECTOR_CENTER, SECTOR_RADIUS, degrees);
+    const qreal tangentAngle = qAtan2(qCos(radians), qSin(radians));
+
+    QPainterPath chevron;
+    for (int i = 0; i < 2; ++i) {
+        const qreal wingAngle = tangentAngle + (i == 0 ? 1.0 : -1.0) * qDegreesToRadians(SECTOR_ARROW_ANGLE);
+        chevron.moveTo(tip);
+        chevron.lineTo(tip + QPointF(qCos(wingAngle), qSin(wingAngle)) * SECTOR_ARROW_WING);
+    }
+    painter.save();
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(QPen(ink, SECTOR_ARROW_PEN, Qt::SolidLine, Qt::RoundCap));
+    painter.drawPath(chevron);
+    painter.restore();
+}
+
+void DrawSectorStartWedge(QPainter& painter)
+{
+    DrawSectorSpoke(painter, SECTOR_BASE_ANGLE, true);
+    DrawSectorSpoke(painter, SECTOR_START_EDGE, true);
+    DrawSectorArc(painter, SECTOR_BASE_ANGLE, SECTOR_START_EDGE, true);
+
+    painter.save();
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(painter.pen().color());
+    painter.drawEllipse(PolarPoint(SECTOR_CENTER, SECTOR_RADIUS, SECTOR_BASE_ANGLE), 0.6, 0.6);
+    painter.restore();
+
+    DrawSectorArrowHead(painter, SECTOR_START_EDGE);
+}
+
+void DrawSectorSweepWedge(QPainter& painter)
+{
+    DrawSectorSpoke(painter, SECTOR_START_EDGE, false);
+    DrawSectorSpoke(painter, SECTOR_END_EDGE, false);
+    DrawSectorArc(painter, SECTOR_START_EDGE, SECTOR_END_EDGE, false);
+    DrawSectorArrowHead(painter, SECTOR_END_EDGE);
 }
 
 void DrawSector(QPainter& painter, IconId)
 {
-    // 参照手绘稿：上方一道拱形粗弧（两端各一枚切向箭头，表示扫过角的方向），
-    // 两条实线半径夹出起始角/扫过角，右下再接一段虚线，表示角度还可以继续扫过去。
-    const QPointF center(12.0, 16.6);
-    const qreal radius = 9.2;
-    const qreal solidStart = 33.0;
-    const qreal solidEnd = 147.0;
-    const qreal dashEnd = -6.0;
-
-    const QColor ink = painter.pen().color();
-
-    // 虚线部分先画，避免压住实线轮廓
-    painter.save();
-    painter.setPen(QPen(ink, 1.4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    DrawArcDash(painter, center, radius, solidStart - 2.5, dashEnd, 2);
-    const QPointF dashDirection = PolarPoint(center, 1.0, dashEnd) - center;
-    const qreal innerRadius = radius * 0.55;
-    const qreal step = (radius - innerRadius) / 5.0;
-    for (int index = 0; index < 3; ++index) {
-        painter.drawLine(center + dashDirection * (innerRadius + index * 2.0 * step),
-                         center + dashDirection * (innerRadius + (index * 2.0 + 1.0) * step));
-    }
-    painter.restore();
-
-    painter.save();
-    painter.setPen(QPen(ink, 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    painter.drawLine(center, PolarPoint(center, radius, solidStart));
-    painter.drawLine(center, PolarPoint(center, radius, solidEnd));
-
-    painter.setPen(QPen(ink, 2.3, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    const QRectF arcBox(center.x() - radius, center.y() - radius, radius * 2.0, radius * 2.0);
-    QPainterPath arc;
-    arc.arcMoveTo(arcBox, solidStart);
-    arc.arcTo(arcBox, solidStart, solidEnd - solidStart);
-    painter.drawPath(arc);
-
-    painter.setPen(QPen(ink, 1.9, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    DrawTangentArrow(painter, center, radius, solidStart, 2.2, -1.0);
-    DrawTangentArrow(painter, center, radius, solidEnd, 2.2, 1.0);
-    painter.restore();
+    DrawSectorStartWedge(painter);
+    DrawSectorSweepWedge(painter);
 }
 constexpr struct IconEntry {
     IconId id;

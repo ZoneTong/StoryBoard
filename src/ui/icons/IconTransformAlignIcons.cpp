@@ -262,27 +262,51 @@ void DrawSize(QPainter& painter, IconId)
     painter.drawLine(QPointF(7.5, 14.5), QPointF(8.1, 11.1));
 }
 
-// 对象旋转：倾斜 16° 的小方块 + 右侧半环箭头，区别于工具栏里单纯的方向圆圈。
+// 弧线上的一枚实心箭头：箭底落在弧上，尖端沿切线伸出，双翼沿半径方向张开。
+// 20px 下三角头必须比线条明显宽出来，否则会被 2px 的线宽吃掉。
+void DrawRingArrowHead(QPainter& painter, const QPointF& center, qreal radius, qreal degrees, qreal length,
+                       qreal halfWidth, qreal sweepSign)
+{
+    const qreal radians = qDegreesToRadians(degrees);
+    const QPointF base(center.x() + radius * qCos(radians), center.y() - radius * qSin(radians));
+    const QPointF radial(qCos(radians), -qSin(radians));
+    const QPointF tangent = sweepSign * QPointF(-qSin(radians), -qCos(radians));
+    const QColor ink = painter.pen().color();
+    QPainterPath head;
+    head.moveTo(base + tangent * length);
+    head.lineTo(base + radial * halfWidth);
+    head.lineTo(base - radial * halfWidth);
+    head.closeSubpath();
+    painter.save();
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(ink);
+    painter.drawPath(head);
+    painter.restore();
+}
+
+// 对象旋转：倾斜小方块在左下、弧线从上方绕到右侧、箭头落在方块右下外侧。
+// 行图标实测只有 16px（RowMetrics::GlyphSize 下限 16、行内实测 16），线宽必须按 16px 调：
+// 方块放大到 9 格、描边 2.4，弧线外扩到 11.6 格、描边 2.8，箭头半宽 3.4 明显宽出弧线，
+// 方块右缘和弧线起点之间留出约 4 格空隙，小尺寸下才读得出“方块 + 弧形箭头”。
 void DrawRotateObject(QPainter& painter, IconId)
 {
+    const QColor ink = painter.pen().color();
+    const QPointF center(8.8, 13.2);
     painter.save();
-    painter.translate(12.0, 12.0);
-    painter.rotate(16.0);
-    painter.drawRect(QRectF(-5.0, -5.0, 10.0, 10.0));
+    painter.translate(center);
+    painter.rotate(10.0);
+    painter.setPen(QPen(ink, 2.4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRect(QRectF(-4.5, -4.5, 9.0, 9.0));
     painter.restore();
 
-    // 右侧半环：从右上绕到右下，末端带箭头。
-    const QRectF ring(5.0, 4.5, 14.0, 15.0);
-    painter.drawArc(ring, -78 * 16, 156 * 16);
+    const qreal radius = 11.6;
     painter.save();
-    painter.setBrush(painter.pen().color());
-    QPainterPath arrow;
-    arrow.moveTo(9.2, 19.6);
-    arrow.lineTo(13.4, 17.4);
-    arrow.lineTo(9.0, 15.0);
-    arrow.closeSubpath();
-    painter.drawPath(arrow);
+    painter.setPen(QPen(ink, 2.8, Qt::SolidLine, Qt::RoundCap));
+    painter.drawArc(QRectF(center.x() - radius, center.y() - radius, radius * 2.0, radius * 2.0), 100 * 16,
+                    -92 * 16);
     painter.restore();
+    DrawRingArrowHead(painter, center, radius, 8.0, 6.2, 3.4, -1.0);
 }
 
 constexpr struct IconEntry {
