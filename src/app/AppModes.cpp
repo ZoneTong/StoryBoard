@@ -3,6 +3,7 @@
 #include "app/CommandLineOptions.h"
 #include "app/I18n.h"
 #include "app/Settings.h"
+#include "app/TestMode.h"
 #include "canvas/CanvasView.h"
 #include "items/CanvasItem.h"
 #include "items/lines/CurveItem.h"
@@ -42,7 +43,7 @@ int RunSelfTest(QApplication& app, const CommandLineOptions& options)
 {
     // 自检跑在离屏平台上，任何模态弹窗都会永久阻塞进程；打上标记后
     // MainWindow 的报错路径改为只写状态栏 / stderr。
-    app.setProperty("storyboardSelfTest", true);
+    app.setProperty(TestMode::SELF_TEST_PROPERTY, true);
     return RunSelfTest(options.selfTestPath);
 }
 

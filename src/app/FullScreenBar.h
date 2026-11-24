@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ui/widgets/LayoutMetrics.h"
+
 #include <QVector>
 #include <QWidget>
 
@@ -22,8 +24,9 @@ class FullScreenBar : public QWidget {
     bool TriggerDigit(int digit);
 
     // 栏高 66px，图标边长 26px；按钮高度 = 栏高 − 8，保证键位字符不被下沿切掉。
-    static constexpr int BAR_HEIGHT = 66;
-    static constexpr int BAR_ICON_SIZE = 26;
+    // 取值在 LayoutMetrics 统一维护；这里保留 FullScreenBar:: 别名供既有调用点使用。
+    static constexpr int BAR_HEIGHT = LayoutMetrics::FULLSCREEN_BAR_HEIGHT;
+    static constexpr int BAR_ICON_SIZE = LayoutMetrics::FULLSCREEN_BAR_ICON_SIZE;
 
   private:
     QToolButton* AddShapeButton(const QString& actionName, const QString& keyText);

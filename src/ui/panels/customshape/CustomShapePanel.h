@@ -1,14 +1,17 @@
 #pragma once
 
+#include "io/CustomShapeTemplates.h"
+
+#include <QHash>
 #include <QList>
 #include <QPair>
 #include <QString>
 #include <QWidget>
 
+class QFileInfo;
 class QLabel;
 class QTabWidget;
 class MainWindow;
-struct CustomShapeTemplate;
 
 // 需求 7：自定义图形按 shapes 目录下的文件夹自动分组，展开为独立浮动面板，
 // 每个文件夹一个标签页；工具栏按钮与菜单项都只是触发这个面板。
@@ -25,6 +28,13 @@ class CustomShapePanel : public QWidget {
     // 当前选中标签页对应的文件夹名（根目录散文件为「其它」）。
     QString CurrentFolder() const;
 
+    // 模板解析按 mtime + size 缓存；随面板生命周期存在，不再用文件域全局表。
+    struct CachedTemplate {
+        qint64 modified = 0;
+        qint64 size = 0;
+        CustomShapeTemplate entry;
+    };
+
   protected:
     void keyPressEvent(QKeyEvent* event) override;
     void closeEvent(QCloseEvent* event) override;
@@ -37,7 +47,7 @@ class CustomShapePanel : public QWidget {
         QStringList errors;
     };
 
-    QList<Folder> ScanFolders() const;
+    QList<Folder> ScanFolders();
     void Rebuild(const QList<Folder>& folders);
     void InsertTemplate(const QString& filePath);
     // 方向键在模板按钮间移动焦点（左右 ±1，上下 ±列数），回车插入焦点所在模板。
@@ -50,4 +60,5 @@ class CustomShapePanel : public QWidget {
     QLabel* m_status = nullptr;
     QString m_currentKey;
     bool m_rebuilding = false;
+    QHash<QString, CachedTemplate> m_templateCache;
 };

@@ -1,6 +1,7 @@
 #include "ui/mainwindow/MainWindowInsertController.h"
 
 #include "app/Settings.h"
+#include "app/TestMode.h"
 #include "canvas/CanvasView.h"
 #include "io/CustomShapeTemplates.h"
 #include "items/CanvasItem.h"
@@ -35,15 +36,10 @@
 
 namespace {
 
-bool SelfTestMode()
-{
-    return qApp && qApp->property("storyboardSelfTest").toBool();
-}
-
 // 与 MainWindow 相同的报错出口：自检（离屏）时不许弹模态框。
 void ReportWarning(QWidget* parent, const QString& title, const QString& text)
 {
-    if (SelfTestMode()) {
+    if (TestMode::IsSelfTestMode()) {
         qWarning("self-test suppressed dialog [%s]: %s", qUtf8Printable(title), qUtf8Printable(text));
         return;
     }

@@ -3,6 +3,7 @@
 #include "canvas/CanvasView.h"
 #include "ui/icons/IconFactory.h"
 #include "ui/mainwindow/MainWindow.h"
+#include "ui/widgets/LayoutMetrics.h"
 
 #include <QAction>
 #include <QActionGroup>
@@ -52,7 +53,8 @@ FullScreenBar::FullScreenBar(MainWindow* window) : QWidget(window), m_window(win
     m_customShapeButton = new QToolButton(this);
     m_customShapeButton->setObjectName(QStringLiteral("FullScreenCustomShapeButton"));
     m_customShapeButton->setIconSize(QSize(BAR_ICON_SIZE, BAR_ICON_SIZE));
-    m_customShapeButton->setFixedSize(46, BAR_HEIGHT - 8);
+    m_customShapeButton->setFixedSize(LayoutMetrics::FULLSCREEN_BAR_BUTTON_WIDTH,
+                                      BAR_HEIGHT - LayoutMetrics::FULLSCREEN_BAR_BUTTON_HEIGHT_PAD);
     m_customShapeButton->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     m_customShapeButton->setText(QStringLiteral("9"));
     m_customShapeButton->setToolTip(MainWindow::tr("Custom shapes (9)"));
@@ -91,13 +93,13 @@ FullScreenBar::FullScreenBar(MainWindow* window) : QWidget(window), m_window(win
     m_widthSpin = new QSpinBox(this);
     m_widthSpin->setObjectName(QStringLiteral("FullScreenStrokeWidthSpin"));
     m_widthSpin->setRange(1, 64);
-    m_widthSpin->setFixedSize(74, 30);
+    m_widthSpin->setFixedSize(LayoutMetrics::FULLSCREEN_BAR_SPIN_WIDTH, LayoutMetrics::TOOL_BAR_CONTROL_HEIGHT);
     m_widthSpin->setToolTip(MainWindow::tr("Stroke width"));
     layout->addWidget(m_widthSpin);
 
     layout->addSpacing(6);
     m_modeBadge = AddStyleButton(QStringLiteral("FullScreenModeBadge"));
-    m_modeBadge->setFixedSize(34, 30);
+    m_modeBadge->setFixedSize(LayoutMetrics::FULLSCREEN_BAR_STYLE_BUTTON_WIDTH, LayoutMetrics::TOOL_BAR_CONTROL_HEIGHT);
     layout->addWidget(m_modeBadge);
 
     adjustSize();
@@ -121,7 +123,8 @@ QToolButton* FullScreenBar::AddShapeButton(const QString& actionName, const QStr
     auto* button = new QToolButton(this);
     button->setObjectName(QStringLiteral("FullScreenShapeButton") + keyText);
     button->setIconSize(QSize(BAR_ICON_SIZE, BAR_ICON_SIZE));
-    button->setFixedSize(46, BAR_HEIGHT - 8);
+    button->setFixedSize(LayoutMetrics::FULLSCREEN_BAR_BUTTON_WIDTH,
+                         BAR_HEIGHT - LayoutMetrics::FULLSCREEN_BAR_BUTTON_HEIGHT_PAD);
     // 文本画在图标下方：全屏栏里只放键位字符，动作名走悬停提示。
     button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     button->setText(keyText);
@@ -140,8 +143,9 @@ QToolButton* FullScreenBar::AddStyleButton(const QString& objectName)
 {
     auto* button = new QToolButton(this);
     button->setObjectName(objectName);
-    button->setIconSize(QSize(20, 20));
-    button->setFixedSize(34, 30);
+    button->setIconSize(QSize(LayoutMetrics::FULLSCREEN_BAR_STYLE_ICON_SIZE,
+                              LayoutMetrics::FULLSCREEN_BAR_STYLE_ICON_SIZE));
+    button->setFixedSize(LayoutMetrics::FULLSCREEN_BAR_STYLE_BUTTON_WIDTH, LayoutMetrics::TOOL_BAR_CONTROL_HEIGHT);
     button->setAutoRaise(true);
     return button;
 }

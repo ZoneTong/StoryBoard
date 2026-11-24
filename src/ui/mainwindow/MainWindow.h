@@ -7,6 +7,7 @@
 #include "lineart/LineArtConverter.h"
 #include "ops/Alignment.h"
 #include "ops/BoolOps.h"
+#include "ui/widgets/LayoutMetrics.h"
 
 #include <QColor>
 #include <QHash>
@@ -72,12 +73,13 @@ class MainWindow : public QMainWindow {
 
     // 工具栏的统一尺寸：图标 20px，图标按钮 30×30，下拉框/数字框高 30px，
     // 三者对齐同一条 30px 基线。自检按这些值校验，QSS 与代码的尺寸偏差会直接失败。
-    static constexpr int TOOL_BAR_ICON_SIZE = 20;
-    static constexpr int TOOL_BAR_BUTTON_SIZE = 30;
-    static constexpr int TOOL_BAR_CONTROL_HEIGHT = 30;
+    // 取值在 LayoutMetrics 统一维护；这里保留 MainWindow:: 别名供既有调用点使用。
+    static constexpr int TOOL_BAR_ICON_SIZE = LayoutMetrics::TOOL_BAR_ICON_SIZE;
+    static constexpr int TOOL_BAR_BUTTON_SIZE = LayoutMetrics::TOOL_BAR_BUTTON_SIZE;
+    static constexpr int TOOL_BAR_CONTROL_HEIGHT = LayoutMetrics::TOOL_BAR_CONTROL_HEIGHT;
     // 画笔颜色是带下拉的分裂按钮（点色块直接调色、点箭头选预设），比纯图标按钮
     // 宽出一条箭头区，高度保持一致。
-    static constexpr int TOOL_BAR_SPLIT_BUTTON_WIDTH = 34;
+    static constexpr int TOOL_BAR_SPLIT_BUTTON_WIDTH = LayoutMetrics::TOOL_BAR_SPLIT_BUTTON_WIDTH;
 
     bool OpenCanvasFile(const QString& path);
     CanvasScene* Scene() const { return m_scene; }

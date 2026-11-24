@@ -28,34 +28,29 @@ constexpr int ICON_SIZE = 40;
 const QString OTHER_TITLE = QStringLiteral("其它");
 const QString ORDER_FILE = QStringLiteral("顺序.txt");
 
-struct CachedTemplate {
-    qint64 modified = 0;
-    qint64 size = 0;
-    CustomShapeTemplate entry;
-};
+using CachedTemplate = CustomShapePanel::CachedTemplate;
 
 // 模板解析按 mtime + size 缓存，面板每次展开只重解析真正改动过的文件。
-QHash<QString, CachedTemplate> g_templateCache;
-
-bool LoadTemplateCached(const QFileInfo& info, CustomShapeTemplate* entry, QString* error)
+bool LoadTemplateCached(QHash<QString, CachedTemplate>& cache, const QFileInfo& info,
+                        CustomShapeTemplate* entry, QString* error)
 {
     const QString path = info.absoluteFilePath();
-    const auto it = g_templateCache.constFind(path);
-    if (it != g_templateCache.constEnd() && it->modified == info.lastModified().toMSecsSinceEpoch() &&
+    const auto it = cache.constFind(path);
+    if (it != cache.constEnd() && it->modified == info.lastModified().toMSecsSinceEpoch() &&
         it->size == info.size()) {
         *entry = it->entry;
         return true;
     }
     CustomShapeTemplate loaded;
     if (!LoadCustomShapeTemplate(path, &loaded, error)) {
-        g_templateCache.remove(path);
+        cache.remove(path);
         return false;
     }
     CachedTemplate fresh;
     fresh.modified = info.lastModified().toMSecsSinceEpoch();
     fresh.size = info.size();
     fresh.entry = loaded;
-    g_templateCache.insert(path, fresh);
+    cache.insert(path, fresh);
     *entry = loaded;
     return true;
 }
@@ -80,7 +75,8 @@ QStringList ReadOrderFile(const QString& rootPath)
 }
 
 // 单个目录扫描：同一目录内的模板按文件名排序，解析失败的记入 errors。
-QList<CustomShapeTemplate> ScanDirectory(const QString& path, QStringList* errors)
+QList<CustomShapeTemplate> ScanDirectory(const QString& path, QStringList* errors,
+                                         QHash<QString, CachedTemplate>& cache)
 {
     QList<CustomShapeTemplate> items;
     QDir dir(path);
@@ -91,7 +87,7 @@ QList<CustomShapeTemplate> ScanDirectory(const QString& path, QStringList* error
     for (const QFileInfo& info : files) {
         CustomShapeTemplate entry;
         QString error;
-        if (LoadTemplateCached(info, &entry, &error)) {
+        if (LoadTemplateCached(cache, info, &entry, &error)) {
             items.append(entry);
         } else if (errors) {
             errors->append(QStringLiteral("%1: %2").arg(info.fileName(), error));
@@ -159,7 +155,7 @@ QString CustomShapePanel::CurrentFolder() const
     return m_tabs->tabText(m_tabs->currentIndex());
 }
 
-QList<CustomShapePanel::Folder> CustomShapePanel::ScanFolders() const
+QList<CustomShapePanel::Folder> CustomShapePanel::ScanFolders()
 {
     QList<Folder> folders;
     QList<CustomShapeTemplate> looseItems;
@@ -195,7 +191,8 @@ QList<CustomShapePanel::Folder> CustomShapePanel::ScanFolders() const
 
         for (const QString& name : orderedExisting) {
             QStringList errors;
-            const QList<CustomShapeTemplate> items = ScanDirectory(root.filePath(name), &errors);
+            const QList<CustomShapeTemplate> items =
+                ScanDirectory(root.filePath(name), &errors, m_templateCache);
             // 空目录不出页；有坏文件时保留页，在页底以灰字提示。
             if (items.isEmpty() && errors.isEmpty()) {
                 continue;
@@ -217,7 +214,7 @@ QList<CustomShapePanel::Folder> CustomShapePanel::ScanFolders() const
         }
 
         QStringList errors;
-        const QList<CustomShapeTemplate> rootItems = ScanDirectory(rootPath, &errors);
+        const QList<CustomShapeTemplate> rootItems = ScanDirectory(rootPath, &errors, m_templateCache);
         looseItems.append(rootItems);
         looseErrors.append(errors);
     }

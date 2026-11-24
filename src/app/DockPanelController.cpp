@@ -6,6 +6,7 @@
 #include "ui/mainwindow/MainWindow.h"
 #include "ui/panels/layers/LayerPanel.h"
 #include "ui/panels/properties/PropertiesPanel.h"
+#include "ui/widgets/LayoutMetrics.h"
 
 #include <QColor>
 #include <QDockWidget>
@@ -16,12 +17,11 @@
 
 namespace {
 
-// 全屏期两张悬浮卡与窗口边缘的距离，以及编辑面板顶部让开悬浮工具栏的留白。
-constexpr int FULLSCREEN_MARGIN = 16;
-constexpr int FULLSCREEN_TOP_INSET = 104;
-constexpr int FULLSCREEN_LAYER_WIDTH = 280;
-// 小屏兜底：可用高度再矮也给图层卡留一点；正常屏幕直接吃到窗口底部，不再设上限。
-constexpr int FULLSCREEN_LAYER_MIN_HEIGHT = 260;
+// 全屏期两张悬浮卡与窗口边缘的距离、编辑面板顶部留白等度量统一在 LayoutMetrics 维护。
+using LayoutMetrics::FULLSCREEN_LAYER_MIN_HEIGHT;
+using LayoutMetrics::FULLSCREEN_LAYER_WIDTH;
+using LayoutMetrics::FULLSCREEN_MARGIN;
+using LayoutMetrics::FULLSCREEN_TOP_INSET;
 
 // 悬浮卡是独立顶层窗口，move 设置的是客户区原点，这里按帧几何的差值挪两次收敛，
 // 免得标题栏与边框宽高在不同平台下算法不同。
@@ -59,7 +59,7 @@ void DockPanelController::CreateLayerDock()
     m_layerDock->setWidget(m_layerPanel);
     m_window->addDockWidget(Qt::RightDockWidgetArea, m_layerDock);
     // 图层卡放在右侧顶部，吃掉右侧剩余高度（不设上限），模式卡压在其下。
-    m_layerDock->setMinimumHeight(200);
+    m_layerDock->setMinimumHeight(LayoutMetrics::LAYER_DOCK_MIN_HEIGHT);
 
     QObject::connect(m_layerPanel, &LayerPanel::statusMessage, m_window,
                      [this](const QString& message) { m_window->statusBar()->showMessage(message, 3000); });
@@ -255,9 +255,10 @@ void DockPanelController::ApplyPropertiesPanelDockWidth(int width, bool resizeNo
         return;
     }
     // 宽度只在启动时按内容确定一次；之后保留用户手动拖拽的结果，只约束上下限。
-    const int bounded = qBound(260, width, 360);
-    m_propertiesDock->setMinimumWidth(260);
-    m_propertiesDock->setMaximumWidth(360);
+    const int bounded = qBound(LayoutMetrics::PROPERTIES_DOCK_MIN_WIDTH, width,
+                               LayoutMetrics::PROPERTIES_DOCK_MAX_WIDTH);
+    m_propertiesDock->setMinimumWidth(LayoutMetrics::PROPERTIES_DOCK_MIN_WIDTH);
+    m_propertiesDock->setMaximumWidth(LayoutMetrics::PROPERTIES_DOCK_MAX_WIDTH);
     if (!resizeNow) {
         return;
     }
@@ -307,10 +308,14 @@ void DockPanelController::RestorePropertiesPanelDockState()
         }
         // 没有可用的悬浮几何时落在画布左上角，尺寸限制在卡片自身区间。
         const QRect frame = m_window->frameGeometry();
-        const int width = qBound(260, frame.width() / 4, 360);
-        const int height = qBound(320, frame.height() - 200, 560);
+        const int width = qBound(LayoutMetrics::PROPERTIES_DOCK_MIN_WIDTH, frame.width() / 4,
+                                 LayoutMetrics::PROPERTIES_DOCK_MAX_WIDTH);
+        const int height = qBound(LayoutMetrics::PROPERTIES_DOCK_MIN_HEIGHT,
+                                  frame.height() - LayoutMetrics::PROPERTIES_DOCK_HEIGHT_CLEARANCE,
+                                  LayoutMetrics::PROPERTIES_DOCK_MAX_HEIGHT);
         m_propertiesDock->resize(width, height);
-        m_propertiesDock->move(frame.left() + 24, frame.top() + 88);
+        m_propertiesDock->move(frame.left() + LayoutMetrics::PROPERTIES_DOCK_OFFSET_X,
+                               frame.top() + LayoutMetrics::PROPERTIES_DOCK_OFFSET_Y);
     });
     m_propertiesDock->setVisible(true);
     UpdatePropertiesPanelDockVisibility();
@@ -425,16 +430,20 @@ void DockPanelController::PlaceFullScreenPanels()
         return;
     }
     const QRect frame = m_window->frameGeometry();
-    if (!frame.isValid() || frame.width() < 320 || frame.height() < 320) {
+    if (!frame.isValid() || frame.width() < LayoutMetrics::DOCK_MIN_FRAME_DIMENSION ||
+        frame.height() < LayoutMetrics::DOCK_MIN_FRAME_DIMENSION) {
         return;
     }
     const int margin = FULLSCREEN_MARGIN;
 
     // 编辑面板贴左侧、顶部让开悬浮工具栏，高度吃到窗口底部留白之前。
     const int propertiesWidth =
-        qBound(260, m_propertiesPanel ? m_propertiesPanel->PreferredWidth() : m_propertiesDock->width(), 360);
+        qBound(LayoutMetrics::PROPERTIES_DOCK_MIN_WIDTH,
+               m_propertiesPanel ? m_propertiesPanel->PreferredWidth() : m_propertiesDock->width(),
+               LayoutMetrics::PROPERTIES_DOCK_MAX_WIDTH);
     const int propertiesTop = frame.top() + FULLSCREEN_TOP_INSET;
-    const int propertiesHeight = qMax(320, frame.bottom() - margin - propertiesTop);
+    const int propertiesHeight =
+        qMax(LayoutMetrics::PROPERTIES_DOCK_MIN_HEIGHT, frame.bottom() - margin - propertiesTop);
     m_propertiesDock->resize(propertiesWidth, propertiesHeight);
     AlignDockFrame(m_propertiesDock, QPoint(frame.left() + margin, propertiesTop));
 
