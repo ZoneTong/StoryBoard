@@ -466,12 +466,33 @@ void selftest::RunRubberBandTests(Context& ctx)
                   QStringLiteral("before=%1 after=%2").arg(distanceBefore).arg(distanceAfter));
         ctx.Check(qAbs(angleDrift - turn) < 0.5, QStringLiteral("组旋转后成员连线夹角按同一角度转过"),
                   QStringLiteral("before=%1 after=%2 drift=%3").arg(angleBefore).arg(angleAfter).arg(angleDrift));
-        // RotationAngle 以弧度返回，和拖拽角度同一单位。
-        const qreal leftTurn = qRadiansToDegrees(boxLeft->RotationAngle());
-        const qreal rightTurn = qRadiansToDegrees(boxRight->RotationAngle());
-        ctx.Check(qAbs(qAbs(leftTurn) - turn) < 0.5 && qAbs(leftTurn - rightTurn) < 0.5,
-                  QStringLiteral("组旋转给每个成员加上同一个角度"),
+        // RotationAngle / SetRotationAngle 是角度制（与单图元旋转手柄同一口径），
+        // 组旋转必须给成员加上与指针同一角度的度数，而不是把弧度塞进去。
+        const qreal leftTurn = boxLeft->RotationAngle();
+        const qreal rightTurn = boxRight->RotationAngle();
+        ctx.Check(qAbs(leftTurn - turn) < 0.5 && qAbs(leftTurn - rightTurn) < 0.5,
+                  QStringLiteral("组旋转给每个成员加上同一个角度（角度制）"),
                   QStringLiteral("left=%1 right=%2").arg(leftTurn).arg(rightTurn));
+
+        // 再转 15°：角度累加到 45°，成员间距仍不变（刚体性不随多次拖动退化）。
+        const QPointF pivot2 = box.GroupRect().center();
+        const QPoint rotateStart2 = boxView.mapFromScene(pivot2 + QPointF(0.0, -radius));
+        const QPoint rotateEnd2 = boxView.mapFromScene(
+            pivot2 + QPointF(radius * std::sin(qDegreesToRadians(15.0)), -radius * std::cos(qDegreesToRadians(15.0))));
+        box.BeginDrag(rotateStart2, 9);
+        box.UpdateDrag(rotateEnd2);
+        box.EndDrag();
+        const QPointF leftCenterFinal =
+            boxLeft->pos() + QPointF(boxLeft->ContentSize().width() / 2.0, boxLeft->ContentSize().height() / 2.0);
+        const QPointF rightCenterFinal =
+            boxRight->pos() + QPointF(boxRight->ContentSize().width() / 2.0, boxRight->ContentSize().height() / 2.0);
+        ctx.Check(qAbs(boxLeft->RotationAngle() - (turn + 15.0)) < 1.0 &&
+                      qAbs(QLineF(leftCenterFinal, rightCenterFinal).length() - distanceBefore) < 0.5,
+                  QStringLiteral("组旋转二次拖动角度累加、成员间距保持"),
+                  QStringLiteral("angle=%1 distance=%2 expected=%3")
+                      .arg(boxLeft->RotationAngle())
+                      .arg(QLineF(leftCenterFinal, rightCenterFinal).length())
+                      .arg(distanceBefore));
 
         boxView.close();
         QApplication::processEvents();

@@ -282,6 +282,9 @@ void CanvasGroupBoxController::UpdateDrag(const QPoint& viewportPos, Qt::Keyboar
         const qreal angle =
             std::atan2(scenePos.y() - m_rotateCenter.y(), scenePos.x() - m_rotateCenter.x()) - m_startAngle;
         m_dragAngle = angle;
+        // m_dragAngle 只管选框叠层（QTransform::rotateRadians）；成员角度走 SetRotationAngle，
+        // 那一侧是角度制（与单图元旋转手柄一致），这里必须换算，否则成员只挪中心不自转。
+        const qreal angleDegrees = qRadiansToDegrees(angle);
         for (const MemberSnapshot& entry : std::as_const(m_snapshot)) {
             if (!entry.item) {
                 continue;
@@ -291,8 +294,7 @@ void CanvasGroupBoxController::UpdateDrag(const QPoint& viewportPos, Qt::Keyboar
             const QPointF localCenter = entry.item->ContentRect().center();
             const QPointF center = entry.item->mapToScene(localCenter);
             const QPointF target = RotateAround(center, m_rotateCenter, angle);
-            // RotationAngle 与 SetRotationAngle 都以弧度为单位（QGraphicsItem::setRotation 口径）。
-            entry.item->SetRotationAngle(CanvasItem::NormalizeRotation(entry.oldRotation + angle));
+            entry.item->SetRotationAngle(CanvasItem::NormalizeRotation(entry.oldRotation + angleDegrees));
             // 自转本身可能挪动中心（旋转原点与内容中心不一致时），按差值把中心搬回目标点。
             const QPointF moved = entry.item->mapToScene(localCenter);
             entry.item->setPos(entry.item->pos() + (target - moved));
