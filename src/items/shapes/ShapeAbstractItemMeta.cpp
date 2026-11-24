@@ -1,6 +1,7 @@
 #include "items/geometry/ShapeMeta.h"
 #include "items/geometry/ShapePainter.h"
 #include "items/geometry/ShapePathBuilder.h"
+#include "items/properties/FillStyleMeta.h"
 #include "items/shapes/ShapeAbstractItem.h"
 #include "items/shapes/ShapeFactory.h"
 
@@ -109,27 +110,8 @@ namespace FillStyles {
 
 QString Name(FillStyle style)
 {
-    switch (style) {
-    case FillStyle::NONE:
-        return ShapeAbstractItem::tr("No fill");
-    case FillStyle::SOLID:
-        return ShapeAbstractItem::tr("Solid");
-    case FillStyle::HACHURE:
-        return ShapeAbstractItem::tr("Hatch");
-    case FillStyle::REVERSE_HACHURE:
-        return ShapeAbstractItem::tr("Reverse hatch");
-    case FillStyle::CROSS_HATCH:
-        return ShapeAbstractItem::tr("Cross hatch");
-    case FillStyle::GRID_HATCH:
-        return ShapeAbstractItem::tr("Grid hatch");
-    case FillStyle::HONEYCOMB:
-        return ShapeAbstractItem::tr("Hexagon");
-    case FillStyle::BRICK:
-        return ShapeAbstractItem::tr("Brick");
-    case FillStyle::DOTS:
-        return ShapeAbstractItem::tr("Dots");
-    }
-    return ShapeAbstractItem::tr("Solid");
+    // 源文案取自注册表，翻译上下文仍保留 ShapeAbstractItem，与既有 .ts 条目一致。
+    return ShapeAbstractItem::tr(FillStyleMeta::NameSource(style).toUtf8().constData());
 }
 
 } // namespace FillStyles

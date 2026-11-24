@@ -1,6 +1,7 @@
 #include "items/geometry/ShapePainter.h"
 
 #include "items/geometry/EllipseShape.h"
+#include "items/properties/FillStyleMeta.h"
 
 #include <QPixmap>
 #include <QtMath>
@@ -129,9 +130,7 @@ QPainterPath ShapePainter::CenterLines(FillStyle style, const QRectF& rect)
 
 bool ShapePainter::IsPatternFill(FillStyle style)
 {
-    return style == FillStyle::HACHURE || style == FillStyle::REVERSE_HACHURE || style == FillStyle::CROSS_HATCH ||
-           style == FillStyle::GRID_HATCH || style == FillStyle::HONEYCOMB || style == FillStyle::BRICK ||
-           style == FillStyle::DOTS;
+    return FillStyleMeta::IsPattern(style);
 }
 
 void ShapePainter::PaintPatternFill(QPainter* painter, const QPainterPath& clip, const QRectF& rect,

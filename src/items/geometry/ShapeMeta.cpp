@@ -1,5 +1,6 @@
 #include "items/geometry/ShapeMeta.h"
 
+#include "items/properties/FillStyleMeta.h"
 #include "items/shapes/ShapeFactory.h"
 
 #include <algorithm>
@@ -66,76 +67,15 @@ bool ShapeMeta::SupportsCenter(ShapeType type)
 
 QList<FillStyle> ShapeMeta::AllStyles()
 {
-    return {FillStyle::NONE,       FillStyle::SOLID, FillStyle::HACHURE,          FillStyle::REVERSE_HACHURE,
-            FillStyle::CROSS_HATCH, FillStyle::GRID_HATCH, FillStyle::HONEYCOMB,    FillStyle::BRICK,
-            FillStyle::DOTS};
+    return FillStyleMeta::Styles();
 }
 
 QString ShapeMeta::StyleToString(FillStyle style)
 {
-    switch (style) {
-    case FillStyle::NONE:
-        return QStringLiteral("none");
-    case FillStyle::SOLID:
-        return QStringLiteral("solid");
-    case FillStyle::HACHURE:
-        return QStringLiteral("hachure");
-    case FillStyle::REVERSE_HACHURE:
-        return QStringLiteral("reverse_hatch");
-    case FillStyle::CROSS_HATCH:
-        return QStringLiteral("cross_hatch");
-    case FillStyle::GRID_HATCH:
-        return QStringLiteral("grid_hatch");
-    case FillStyle::HONEYCOMB:
-        return QStringLiteral("honeycomb");
-    case FillStyle::BRICK:
-        return QStringLiteral("brick");
-    case FillStyle::DOTS:
-        return QStringLiteral("dots");
-    }
-    return QStringLiteral("solid");
+    return FillStyleMeta::ToString(style);
 }
 
 FillStyle ShapeMeta::StyleFromString(const QString& value)
 {
-    const QString normalized = value.trimmed().toLower();
-    if (normalized == QStringLiteral("none") || normalized == QStringLiteral("transparent")) {
-        return FillStyle::NONE;
-    }
-    if (normalized == QStringLiteral("hachure") || normalized == QStringLiteral("hatch") ||
-        normalized == QStringLiteral("diagonal")) {
-        return FillStyle::HACHURE;
-    }
-    if (normalized == QStringLiteral("reverse_hatch") || normalized == QStringLiteral("reverse_hachure") ||
-        normalized == QStringLiteral("reverse") || normalized == QStringLiteral("backslash")) {
-        return FillStyle::REVERSE_HACHURE;
-    }
-    if (normalized == QStringLiteral("cross_hatch") || normalized == QStringLiteral("crosshatch") ||
-        normalized == QStringLiteral("cross") || normalized == QStringLiteral("zigzag")) {
-        return FillStyle::CROSS_HATCH;
-    }
-    if (normalized == QStringLiteral("grid_hatch") || normalized == QStringLiteral("grid") ||
-        normalized == QStringLiteral("cross_grid") || normalized == QStringLiteral("orthogonal")) {
-        return FillStyle::GRID_HATCH;
-    }
-    if (normalized == QStringLiteral("honeycomb") || normalized == QStringLiteral("hexagon") ||
-        normalized == QStringLiteral("hex")) {
-        return FillStyle::HONEYCOMB;
-    }
-    // 横线 / 竖线两式已删除：旧画布里的 style 串按斜线填充读回，不至于丢成纯色。
-    if (normalized == QStringLiteral("horizontal_lines") || normalized == QStringLiteral("horizontal") ||
-        normalized == QStringLiteral("vertical_lines") || normalized == QStringLiteral("vertical")) {
-        return FillStyle::HACHURE;
-    }
-    if (normalized == QStringLiteral("brick") || normalized == QStringLiteral("brickwall")) {
-        return FillStyle::BRICK;
-    }
-    if (normalized == QStringLiteral("dots") || normalized == QStringLiteral("dot") ||
-        normalized == QStringLiteral("point")) {
-        return FillStyle::DOTS;
-    }
-    if (normalized == QStringLiteral("solid") || normalized == QStringLiteral("color")) {
-        return FillStyle::SOLID;
-    }
-    return FillStyle::SOLID;
+    return FillStyleMeta::FromString(value);
 }
