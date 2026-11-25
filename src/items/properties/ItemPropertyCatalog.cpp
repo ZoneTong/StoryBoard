@@ -3,6 +3,7 @@
 #include "items/CanvasItem.h"
 #include "items/SectorBase.h"
 #include "items/geometry/EllipseAxis.h"
+#include "items/lines/AngleItem.h"
 #include "items/lines/ArcItem.h"
 #include "items/lines/LineAbstractItem.h"
 #include "items/lines/SineItem.h"
@@ -248,12 +249,18 @@ const QList<ItemPropertyDescriptor*>& ItemPropertyCatalog::All()
                     if (const auto* arc = dynamic_cast<const ArcItem*>(item)) {
                         return EllipseAxis::Major(arc->EllipseSize());
                     }
+                    // 角度线与弧线同源：两条射线挂在椭圆半轴上，面板的半轴行要能回显。
+                    if (const auto* angle = dynamic_cast<const AngleItem*>(item)) {
+                        return EllipseAxis::Major(angle->EllipseSize());
+                    }
                     const auto* shape = dynamic_cast<const ShapeAbstractItem*>(item);
                     return shape ? EllipseAxis::Major(shape->ContentSize()) : QVariant();
                 };
                 descriptor->writer = [](CanvasItem* item, const QVariant& value) {
                     if (auto* arc = dynamic_cast<ArcItem*>(item)) {
                         arc->SetArcAxes(value.toDouble(), EllipseAxis::Minor(arc->EllipseSize()));
+                    } else if (auto* angle = dynamic_cast<AngleItem*>(item)) {
+                        angle->SetArcAxes(value.toDouble(), EllipseAxis::Minor(angle->EllipseSize()));
                     } else if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
                         const EllipseAxis::ResizeResult resize =
                             EllipseAxis::Apply(true, value.toDouble(), shape->pos(), shape->ContentSize());
@@ -266,12 +273,17 @@ const QList<ItemPropertyDescriptor*>& ItemPropertyCatalog::All()
                     if (const auto* arc = dynamic_cast<const ArcItem*>(item)) {
                         return EllipseAxis::Minor(arc->EllipseSize());
                     }
+                    if (const auto* angle = dynamic_cast<const AngleItem*>(item)) {
+                        return EllipseAxis::Minor(angle->EllipseSize());
+                    }
                     const auto* shape = dynamic_cast<const ShapeAbstractItem*>(item);
                     return shape ? EllipseAxis::Minor(shape->ContentSize()) : QVariant();
                 };
                 descriptor->writer = [](CanvasItem* item, const QVariant& value) {
                     if (auto* arc = dynamic_cast<ArcItem*>(item)) {
                         arc->SetArcAxes(EllipseAxis::Major(arc->EllipseSize()), value.toDouble());
+                    } else if (auto* angle = dynamic_cast<AngleItem*>(item)) {
+                        angle->SetArcAxes(EllipseAxis::Major(angle->EllipseSize()), value.toDouble());
                     } else if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
                         const EllipseAxis::ResizeResult resize =
                             EllipseAxis::Apply(false, value.toDouble(), shape->pos(), shape->ContentSize());

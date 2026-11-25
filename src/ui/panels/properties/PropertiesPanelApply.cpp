@@ -413,7 +413,7 @@ void PropertiesPanel::ApplyArrowEnd(int style)
 void PropertiesPanel::ApplyItemAxes(qreal majorAxis, qreal minorAxis)
 {
     // 长短半轴与位置尺寸共用属性表路径：只有上报了 MAJOR_AXIS 的图元
-    // （椭圆 / 扇形 / 弧线）会真正写入，其余选中项自动跳过。
+    // （椭圆 / 扇形 / 弧线 / 角度线）会真正写入，其余选中项自动跳过。
     ApplyPropertyValues({{ItemProperty::MAJOR_AXIS, majorAxis}, {ItemProperty::MINOR_AXIS, minorAxis}},
                         tr("Edit semi-axes"));
 }

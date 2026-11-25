@@ -11,6 +11,7 @@ void RunStackingPriorityTests(Context& ctx);
 void RunLayerVisibilityLockTests(Context& ctx);
 void RunTextItemTests(Context& ctx);
 void RunShapeItemTests(Context& ctx);
+void RunAngleAxisTests(Context& ctx);
 void RunLayerPanelTests(Context& ctx);
 void RunLayerTreePanelTests(Context& ctx);
 void RunPaintOrderTests(Context& ctx);

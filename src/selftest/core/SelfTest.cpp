@@ -71,6 +71,7 @@ int RunSelfTest(const QString& reportPath)
     selftest::RunLayerVisibilityLockTests(ctx);
     selftest::RunTextItemTests(ctx);
     selftest::RunShapeItemTests(ctx);
+    selftest::RunAngleAxisTests(ctx);
     selftest::RunLayerPanelTests(ctx);
     selftest::RunLayerTreePanelTests(ctx);
     selftest::RunPaintOrderTests(ctx);
