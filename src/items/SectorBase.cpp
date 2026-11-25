@@ -1,4 +1,4 @@
-#include "items/EllipseBase.h"
+#include "items/SectorBase.h"
 
 #include "items/CanvasItem.h"
 
@@ -28,7 +28,7 @@ qreal UnwrapNear(qreal value, qreal reference)
 
 } // namespace
 
-void EllipseBase::SetArcAngles(qreal startAngle, qreal sweepAngle)
+void SectorBase::SetArcAngles(qreal startAngle, qreal sweepAngle)
 {
     const qreal start = qBound<qreal>(-360.0, startAngle, 360.0);
     const qreal sweep = qBound<qreal>(-360.0, sweepAngle, 360.0);
@@ -40,24 +40,24 @@ void EllipseBase::SetArcAngles(qreal startAngle, qreal sweepAngle)
     ArcAnglesChanged();
 }
 
-QRectF EllipseBase::EllipseFrameLocal(const QSizeF& contentSize) const
+QRectF SectorBase::EllipseFrameLocal(const QSizeF& contentSize) const
 {
     return QRectF(m_refFrame.x() * contentSize.width(), m_refFrame.y() * contentSize.height(),
                   m_refFrame.width() * contentSize.width(), m_refFrame.height() * contentSize.height());
 }
 
-QRectF EllipseBase::EllipseFrameScene(const QSizeF& contentSize, const QPointF& pos) const
+QRectF SectorBase::EllipseFrameScene(const QSizeF& contentSize, const QPointF& pos) const
 {
     return EllipseFrameLocal(contentSize).translated(pos);
 }
 
-QSizeF EllipseBase::EllipseSizeFor(const QSizeF& contentSize) const
+QSizeF SectorBase::EllipseSizeFor(const QSizeF& contentSize) const
 {
     return QSizeF(qMax<qreal>(0.0, m_refFrame.width() * contentSize.width()),
                   qMax<qreal>(0.0, m_refFrame.height() * contentSize.height()));
 }
 
-void EllipseBase::SetEllipseFrameScene(const QRectF& frameScene, const QSizeF& contentSize, const QPointF& pos)
+void SectorBase::SetEllipseFrameScene(const QRectF& frameScene, const QSizeF& contentSize, const QPointF& pos)
 {
     const QRectF frame = frameScene.normalized();
     SetFrame(frame);
@@ -70,12 +70,12 @@ void EllipseBase::SetEllipseFrameScene(const QRectF& frameScene, const QSizeF& c
     m_refFrame = QRectF(0.0, 0.0, 1.0, 1.0);
 }
 
-void EllipseBase::SyncEllipseFrameFromRatio(const QSizeF& contentSize)
+void SectorBase::SyncEllipseFrameFromRatio(const QSizeF& contentSize)
 {
     SetFrame(EllipseFrameLocal(contentSize));
 }
 
-HandleSpecList EllipseBase::ArcHandleSpecs(const QRectF& frameLocal) const
+HandleSpecList SectorBase::ArcHandleSpecs(const QRectF& frameLocal) const
 {
     HandleSpecList specs;
     if (frameLocal.width() <= 0.0 || frameLocal.height() <= 0.0) {
@@ -96,7 +96,7 @@ HandleSpecList EllipseBase::ArcHandleSpecs(const QRectF& frameLocal) const
     return specs;
 }
 
-void EllipseBase::DragArcEndpoint(const QRectF& frameLocal, const QPointF& localPoint, bool startEndpoint)
+void SectorBase::DragArcEndpoint(const QRectF& frameLocal, const QPointF& localPoint, bool startEndpoint)
 {
     const QRectF frame = frameLocal.normalized();
     const qreal rx = frame.width() / 2.0;
@@ -128,7 +128,7 @@ void EllipseBase::DragArcEndpoint(const QRectF& frameLocal, const QPointF& local
     SetArcAngles(newStart, newSweep);
 }
 
-QPointF EllipseBase::ArcReadoutAnchor(const QRectF& frameLocal, qreal viewScale) const
+QPointF SectorBase::ArcReadoutAnchor(const QRectF& frameLocal, qreal viewScale) const
 {
     const QRectF frame = frameLocal.normalized();
     const QPointF point = PointOnFrame(frame, StartAngle() + SweepAngle() / 2.0);
@@ -139,49 +139,49 @@ QPointF EllipseBase::ArcReadoutAnchor(const QRectF& frameLocal, qreal viewScale)
     return point + radial * offset;
 }
 
-QString EllipseBase::ArcReadoutText() const
+QString SectorBase::ArcReadoutText() const
 {
     return QStringLiteral("%1°").arg(qRound(SweepAngle()));
 }
 
-QColor EllipseBase::ArcReadoutColor()
+QColor SectorBase::ArcReadoutColor()
 {
     return QColor(37, 99, 235);
 }
 
-ItemPropertySet EllipseBase::ArcAngleProperties()
+ItemPropertySet SectorBase::ArcAngleProperties()
 {
     return ItemPropertySet{ItemProperty::START_ANGLE, ItemProperty::SWEEP_ANGLE};
 }
 
-ItemPropertySet EllipseBase::ArcAxisProperties()
+ItemPropertySet SectorBase::ArcAxisProperties()
 {
     return ItemPropertySet{ItemProperty::MAJOR_AXIS, ItemProperty::MINOR_AXIS};
 }
 
-EllipseArcState EllipseBase::ArcState() const
+EllipseArcState SectorBase::ArcState() const
 {
     return EllipseArcState{m_startAngle, m_sweepAngle};
 }
 
-void EllipseBase::ApplyArcState(const EllipseArcState& state)
+void SectorBase::ApplyArcState(const EllipseArcState& state)
 {
     SetArcAngles(state.startAngle, state.sweepAngle);
 }
 
-void EllipseBase::WriteArcAngleJson(QJsonObject& json) const
+void SectorBase::WriteArcAngleJson(QJsonObject& json) const
 {
     json.insert(QStringLiteral("startAngle"), m_startAngle);
     json.insert(QStringLiteral("sweepAngle"), m_sweepAngle);
 }
 
-void EllipseBase::ReadArcAngleJson(const QJsonObject& json)
+void SectorBase::ReadArcAngleJson(const QJsonObject& json)
 {
     SetArcAngles(json.value(QStringLiteral("startAngle")).toDouble(30.0),
                  json.value(QStringLiteral("sweepAngle")).toDouble(120.0));
 }
 
-void EllipseBase::WriteArcFrameJson(QJsonObject& json) const
+void SectorBase::WriteArcFrameJson(QJsonObject& json) const
 {
     QJsonArray array;
     array.append(m_refFrame.x());
@@ -191,7 +191,7 @@ void EllipseBase::WriteArcFrameJson(QJsonObject& json) const
     json.insert(QStringLiteral("arcFrame"), array);
 }
 
-void EllipseBase::ReadArcFrameJson(const QJsonObject& json)
+void SectorBase::ReadArcFrameJson(const QJsonObject& json)
 {
     const QJsonArray array = json.value(QStringLiteral("arcFrame")).toArray();
     if (array.size() < 4) {

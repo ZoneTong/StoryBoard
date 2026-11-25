@@ -614,8 +614,8 @@ void selftest::RunShapeItemTests(Context& ctx)
         ctx.Check(copy.shapeType() == ShapeType::SECTOR && qFuzzyCompare(copy.SweepAngle() + 2.0, 92.0),
                   QStringLiteral("扇形角度随画布保存和恢复，半径字段已移除"));
 
-        // 需求 6 扩展：扇形、弧线、角度线共用 EllipseBase，角度语义只有一份。
-        EllipseBase* sectorAngles = dynamic_cast<EllipseBase*>(&sector);
+        // 需求 6 扩展：扇形、弧线、角度线共用 SectorBase，角度语义只有一份。
+        SectorBase* sectorAngles = dynamic_cast<SectorBase*>(&sector);
         sectorAngles->SetStartAngle(45.0);
         ctx.Check(sectorAngles && qFuzzyCompare(sector.StartAngle() + 2.0, 47.0) &&
                       qFuzzyCompare(sector.SweepAngle() + 2.0, 92.0),

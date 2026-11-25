@@ -2,7 +2,7 @@
 
 #include "app/I18n.h"
 #include "items/CanvasItem.h"
-#include "items/EllipseBase.h"
+#include "items/SectorBase.h"
 #include "items/lines/AngleItem.h"
 #include "items/lines/ArcItem.h"
 #include "items/lines/LineAbstractItem.h"
@@ -33,7 +33,7 @@ struct CommonGeometry {
 
 bool ReadCommon(const CanvasItem* item, CommonGeometry* common)
 {
-    const auto* ellipse = dynamic_cast<const EllipseBase*>(item);
+    const auto* ellipse = dynamic_cast<const SectorBase*>(item);
     if (!ellipse) {
         return false;
     }

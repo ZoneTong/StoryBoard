@@ -37,8 +37,8 @@ QPointF AngleItem::RotationOrigin() const
 ItemPropertySet AngleItem::Properties() const
 {
     return LineAbstractItem::Properties()
-        .United(EllipseBase::ArcAngleProperties())
-        .United(EllipseBase::ArcAxisProperties())
+        .United(SectorBase::ArcAngleProperties())
+        .United(SectorBase::ArcAxisProperties())
         .United(ItemPropertySet{ItemProperty::ARROW_START, ItemProperty::ARROW_END, ItemProperty::CENTER});
 }
 
@@ -91,7 +91,7 @@ void AngleItem::SetPropertyValue(ItemProperty property, const QVariant& value)
 
 void AngleItem::SetAngles(qreal startDeg, qreal sweepDeg)
 {
-    EllipseBase::SetArcAngles(startDeg, sweepDeg);
+    SectorBase::SetArcAngles(startDeg, sweepDeg);
 }
 
 void AngleItem::SetArcAngles(qreal startDeg, qreal sweepDeg)

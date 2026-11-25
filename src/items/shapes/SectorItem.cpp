@@ -21,9 +21,9 @@ void SectorItem::ContentResized()
 ItemPropertySet SectorItem::Properties() const
 {
     // 扇形同时拥有弧角与椭圆半轴；自定义轮廓不再按椭圆外接框换算。
-    ItemPropertySet properties = ShapeAbstractItem::Properties().United(EllipseBase::ArcAngleProperties());
+    ItemPropertySet properties = ShapeAbstractItem::Properties().United(SectorBase::ArcAngleProperties());
     if (!IsCustomShape()) {
-        properties = properties.United(EllipseBase::ArcAxisProperties());
+        properties = properties.United(SectorBase::ArcAxisProperties());
     }
     return properties;
 }

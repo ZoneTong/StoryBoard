@@ -1,14 +1,14 @@
 #pragma once
 
 #include "app/I18n.h"
-#include "items/EllipseBase.h"
+#include "items/SectorBase.h"
 #include "items/lines/LineAbstractItem.h"
 
 #include <QRectF>
 
 // 弧线图元：派生自描线图元（零面积描线）与椭圆截段基类（起止角、外接框、端点手柄、读数）。
 // 椭圆外接框即插入时给出的矩形；角度是几何真相，改角度按上次相对框重新采样。
-class ArcItem : public LineAbstractItem, public EllipseBase {
+class ArcItem : public LineAbstractItem, public SectorBase {
     Q_OBJECT
   public:
     explicit ArcItem(QGraphicsItem* parent = nullptr);

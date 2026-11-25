@@ -233,8 +233,8 @@ void CanvasItemInteraction::ApplyRotate(const QPointF& scenePos)
     const QPointF center = m_item->mapToScene(m_item->RotationOrigin());
     const qreal angle = qRadiansToDegrees(qAtan2(scenePos.y() - center.y(), scenePos.x() - center.x()));
     const qreal target = m_item->m_dragStartRotation + (angle - m_item->m_rotateStartAngle);
-    // 角度调整不设步长：旋转手柄跟指针连续变化，需要整数角度时在编辑面板里键入。
-    m_item->SetRotationAngle(target);
+    // 旋转手柄按 1° 步长吸附：连续拖动也只落在整度上，与编辑面板的 1° 步长一致。
+    m_item->SetRotationAngle(CanvasItem::SnapRotation(target, 1.0));
 }
 
 void CanvasItemInteraction::FinishInteraction()

@@ -1,11 +1,11 @@
 #pragma once
 
-#include "items/EllipseBase.h"
+#include "items/SectorBase.h"
 #include "items/shapes/ShapeAbstractItem.h"
 
 // 扇形：椭圆外接框即内容矩形，起止角可编辑；选中框贴在轮廓的最小覆盖矩形上。
-// 起止角、外接框、端点手柄与读数来自 EllipseBase；轮廓只由 EllipseGeometry::Sector() 出。
-class SectorItem : public ShapeAbstractItem, public EllipseBase {
+// 起止角、外接框、端点手柄与读数来自 SectorBase；轮廓只由 EllipseGeometry::Sector() 出。
+class SectorItem : public ShapeAbstractItem, public SectorBase {
   public:
     SectorItem();
     ShapeType shapeType() const override { return ShapeType::SECTOR; }

@@ -5,7 +5,7 @@
 
 class CanvasItem;
 
-// 扇形 / 弧线 / 角度线三者互换：它们都派生自 EllipseBase，起止角与椭圆框是同一套语义，
+// 扇形 / 弧线 / 角度线三者互换：它们都派生自 SectorBase，起止角与椭圆框是同一套语义，
 // 互换时把这部分几何与描线样式原样搬过去，只允许“进扇形丢箭头、进线型丢填充”这一处有损。
 // 椭圆（EllipseItem）不在这套互换里：它没有起止角、端点手柄与读数。
 namespace ItemTypeConversion {

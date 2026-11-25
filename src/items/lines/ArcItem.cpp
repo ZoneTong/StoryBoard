@@ -15,8 +15,8 @@ ItemPropertySet ArcItem::Properties() const
 {
     // 箭头行与其它描线子型一致地开放（弧线可设两端箭头）；长短半轴按真实椭圆外接框读写。
     return LineAbstractItem::Properties()
-        .United(EllipseBase::ArcAngleProperties())
-        .United(EllipseBase::ArcAxisProperties())
+        .United(SectorBase::ArcAngleProperties())
+        .United(SectorBase::ArcAxisProperties())
         .United(ItemPropertySet{ItemProperty::ARROW_START, ItemProperty::ARROW_END, ItemProperty::CENTER});
 }
 
@@ -92,7 +92,7 @@ QPointF ArcItem::RotationOrigin() const
 
 void ArcItem::SetAngles(qreal startDeg, qreal sweepDeg)
 {
-    EllipseBase::SetArcAngles(startDeg, EllipseGeometry::ClampedSweep(sweepDeg));
+    SectorBase::SetArcAngles(startDeg, EllipseGeometry::ClampedSweep(sweepDeg));
 }
 
 void ArcItem::SetArcAngles(qreal startDeg, qreal sweepDeg)

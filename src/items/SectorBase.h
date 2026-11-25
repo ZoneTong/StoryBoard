@@ -27,10 +27,10 @@ struct EllipseArcState {
     bool operator!=(const EllipseArcState& other) const { return !(*this == other); }
 };
 
-class EllipseBase : public EllipseGeometry {
+class SectorBase : public EllipseGeometry {
   public:
-    EllipseBase() = default;
-    ~EllipseBase() = default;
+    SectorBase() = default;
+    ~SectorBase() = default;
 
     qreal StartAngle() const { return m_startAngle; }
     qreal SweepAngle() const { return m_sweepAngle; }

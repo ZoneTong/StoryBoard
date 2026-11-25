@@ -1,7 +1,7 @@
 #pragma once
 
 #include "app/I18n.h"
-#include "items/EllipseBase.h"
+#include "items/SectorBase.h"
 #include "items/lines/LineAbstractItem.h"
 
 #include <QRectF>
@@ -10,7 +10,7 @@
 // 角度线图元：一段“两射线 + 共用顶点”的角标注。派生于描线图元与椭圆截段基类：
 // 起止角决定两条射线方向，两条半轴决定射线长度，顶点是椭圆中心。
 // 箭头复用描线基类的首尾两枚箭头字段（落在两条射线的外端，顶点不带箭头）。
-class AngleItem : public LineAbstractItem, public EllipseBase {
+class AngleItem : public LineAbstractItem, public SectorBase {
     Q_OBJECT
   public:
     explicit AngleItem(QGraphicsItem* parent = nullptr);
