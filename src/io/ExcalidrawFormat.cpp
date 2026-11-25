@@ -103,7 +103,8 @@ QString TextFontFamilyFromExcalidraw(const QJsonValue& value)
     if (id == 3) {
         return QStringLiteral("Cascadia Code");
     }
-    return QStringLiteral("Helvetica");
+    // 1 号是 Excalidraw 的默认无衬线字体，画板这边落到默认中文字体，避免中文回退成方框。
+    return QStringLiteral("Microsoft YaHei UI");
 }
 
 int ExcalidrawFontFamily(const QString& family)
