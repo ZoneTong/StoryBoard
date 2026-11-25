@@ -48,8 +48,8 @@ QSize IconButtonSize()
 
 int SwatchSize()
 {
-    // 与其它行控件同步放大：色块 28px，比字段高（30）略小，整行仍放得下 8 个预设色。
-    return 28;
+    // 色块比字段高（30）小一档：一排 8 个预设色时不会把整行撑得比其它行宽，也不显笨重。
+    return 20;
 }
 
 void ApplyRow(QWidget* row)
