@@ -391,6 +391,17 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
             typeCombo->setCurrentIndex(typeCombo->findData(QStringLiteral("sector")));
             QApplication::processEvents();
         }
+        // 类型名走 StoryBoard 上下文的 UiText：缺条目时中文界面会漏出英文 Sector，
+        // 这里按同一上下文取译文比对，英文界面下则两边都是英文。
+        if (typeCombo) {
+            const int sectorIndex = typeCombo->findData(QStringLiteral("sector"));
+            ctx.Check(sectorIndex >= 0 &&
+                          typeCombo->itemText(sectorIndex) ==
+                              QCoreApplication::translate("StoryBoard", "Sector"),
+                      QStringLiteral("图元类型行的扇形选项有译文"),
+                      QStringLiteral("text=%1")
+                          .arg(sectorIndex >= 0 ? typeCombo->itemText(sectorIndex) : QString()));
+        }
         SectorItem* convertedSector = nullptr;
         for (CanvasItem* item : dockScene->CanvasItems()) {
             if (auto* sector = dynamic_cast<SectorItem*>(item)) {

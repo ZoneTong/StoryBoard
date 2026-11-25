@@ -3737,6 +3737,9 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Arc</source>
         <translation>弧线</translation>
     </message><message>
+        <source>Sector</source>
+        <translation>扇形</translation>
+    </message><message>
         <source>  · Hidden</source>
         <translation>  · 隐藏</translation>
     </message><message>
