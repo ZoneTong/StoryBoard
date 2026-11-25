@@ -48,7 +48,8 @@ QSize IconButtonSize()
 
 int SwatchSize()
 {
-    return 24;
+    // 从 24 收到 20：一行要放下 8 个预设色 + 取色按钮，24px 时整行比背景图片行宽一大截。
+    return 20;
 }
 
 void ApplyRow(QWidget* row)

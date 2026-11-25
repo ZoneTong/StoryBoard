@@ -66,10 +66,23 @@ QToolButton* AddRowIcon(QHBoxLayout* layout, IconId id, QWidget* parent, const Q
     return button;
 }
 
+class CompactSpin : public QDoubleSpinBox
+{
+public:
+    using QDoubleSpinBox::QDoubleSpinBox;
+
+    // QAbstractSpinBox 的最小宽度按最长数字加后缀算，位置 / 尺寸 / 中心三行各放两个，
+    // 一撑就是 460px。这里只报一个够显示两位整数加后缀的下界，余量交给 Expanding。
+    QSize minimumSizeHint() const override
+    {
+        return QSize(RowMetrics::GlyphSize() * 5, sizeHint().height());
+    }
+};
+
 QDoubleSpinBox* MakeSpin(QWidget* parent, const QString& objectName, int decimals, qreal minimum, qreal maximum,
                          const QString& suffix)
 {
-    auto* spin = new QDoubleSpinBox(parent);
+    auto* spin = new CompactSpin(parent);
     spin->setObjectName(objectName);
     spin->setDecimals(decimals);
     spin->setRange(minimum, maximum);

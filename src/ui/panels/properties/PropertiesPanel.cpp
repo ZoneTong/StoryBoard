@@ -63,6 +63,8 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     scroll->setFrameShape(QFrame::NoFrame);
     // 面板本身跟着主窗口高度伸展；只有窗口矮到内容放不下时才出现竖向卷动轴。
     scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    // 面板宽度按背景图片行收口后，行内控件已经全部缩进视口；横向不再卷动，避免底部多一条横轴。
+    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     auto* content = new QWidget(scroll);
     content->setObjectName(QStringLiteral("PropertiesPanelContent"));
     m_contentWidget = content;
@@ -253,9 +255,10 @@ int PropertiesPanel::PreferredWidth() const
     }
 
     int widestRow = 0;
+    int widestMinimum = 0;
     // 按卡片里所有行（包括当前隐藏的对齐 / 合并行）计算一次宽度：
     // 卡片宽度在启动时固定，不随选中项增减而跳动，也不会在多选时挤掉按钮。
-    auto scanRows = [&widestRow](QLayout* layout) {
+    auto scanRows = [&widestRow, &widestMinimum](QLayout* layout) {
         if (!layout) {
             return;
         }
@@ -263,6 +266,7 @@ int PropertiesPanel::PreferredWidth() const
             const QWidget* row = layout->itemAt(index)->widget();
             if (row) {
                 widestRow = qMax(widestRow, row->sizeHint().width());
+                widestMinimum = qMax(widestMinimum, row->minimumSizeHint().width());
             }
         }
     };
@@ -271,9 +275,16 @@ int PropertiesPanel::PreferredWidth() const
         scanRows(m_selectionCard->layout());
     }
 
-    // 两侧外边距 + 垂直滚动条；宽度贴合内容，上限 320px 避免右侧留白过多。
+    // 基准取背景图片行：它是满行里最窄的一行（图标 + 三个图标按钮，下拉不带文字），
+    // 面板按它的自然宽度收口，其余行不再把面板撑宽。
+    const int fillImageWidth = m_fillImageRow ? m_fillImageRow->sizeHint().width() : 0;
+    const int baseline = fillImageWidth > 0 ? qMin(fillImageWidth, widestRow) : widestRow;
+    // 下限 260 是面板的可读宽度；但行控件自己的最小宽度不能压，否则会被裁成半截，
+    // 所以把各行的 minimumSizeHint 也抬进基准。
+    const int target = qMax(baseline, widestMinimum);
+    // 两侧外边距 + 垂直滚动条；上限 320px 避免右侧留白过多。
     const int chrome = 12 + style()->pixelMetric(QStyle::PM_ScrollBarExtent) + 2;
-    return qBound(260, widestRow + chrome, 320);
+    return qBound(260, target + chrome, 320);
 }
 
 void PropertiesPanel::Refresh()

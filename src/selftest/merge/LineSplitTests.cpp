@@ -200,9 +200,12 @@ void selftest::RunLineSplitTests(Context& ctx)
         // 把抖动放大成几十个场景单位，曲线跑到矩形上沿去，后面的点选必然被它抢走。
         const QPoint brushStart = view->mapFromScene(crossStart);
         SendMouseEvent(view->viewport(), QEvent::MouseButtonPress, brushStart, Qt::LeftButton, Qt::LeftButton);
+        // 折线/曲线的判定看屏幕像素上的起伏，抖动幅度必须按场景尺寸给足，
+        // 否则面板缩窄导致适配缩放变化时，同一段抖动会被判成直线而不是画笔曲线。
+        const qreal jitter = qMax(20.0, rectBounds.height() * 0.3);
         for (int i = 1; i <= 8; ++i) {
             const QPointF scenePoint(crossStart.x() + i * (rectBounds.width() / 4.0),
-                                     crossStart.y() + (i % 2 == 0 ? 12.0 : -10.0));
+                                     crossStart.y() + (i % 2 == 0 ? jitter : -jitter));
             SendMouseEvent(view->viewport(), QEvent::MouseMove, view->mapFromScene(scenePoint), Qt::NoButton,
                            Qt::LeftButton);
         }
@@ -259,8 +262,12 @@ void selftest::RunLineSplitTests(Context& ctx)
             const bool hasCurve = std::any_of(selected.cbegin(), selected.cend(), [](CanvasItem* item) {
                 return dynamic_cast<CurveItem*>(item) != nullptr;
             });
+            QString detail = QStringLiteral("size=%1 types=").arg(selected.size());
+            for (CanvasItem* item : selected) {
+                detail += QString::fromLatin1(item->metaObject()->className()) + QLatin1Char(' ');
+            }
             ctx.Check(selected.size() == 2 && hasShape && hasCurve, QStringLiteral("松开后矩形与画笔曲线同时选中"),
-                      QStringLiteral("size=%1").arg(selected.size()));
+                      detail);
         }
         ctx.Check(LineSplitOps::Supports(mainScene), QStringLiteral("矩形加画笔曲线双选时分割判定可用"),
                   QStringLiteral("items=%1").arg(mainScene->CanvasItemCount()));

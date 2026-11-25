@@ -736,7 +736,9 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
         };
         ctx.Check(fillImageModeCombo && fillImageModeCombo->count() == 3 && fillImageModeCombo->isEnabled() &&
                       clearFillImageButton && clearFillImageButton->isEnabled() &&
-                      clearFillImageButton->text() == QCoreApplication::translate("PropertiesPanel", "Clear"),
+                      clearFillImageButton->toolButtonStyle() == Qt::ToolButtonIconOnly &&
+                      clearFillImageButton->toolTip() ==
+                          QCoreApplication::translate("PropertiesPanel", "Clear fill image"),
                   QStringLiteral("背景图片行提供填充方式与清除按钮"),
                   QStringLiteral("combo=%1 count=%2 clear=%3")
                       .arg(fillImageModeCombo ? 1 : 0)
@@ -746,6 +748,31 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
         ctx.Check(rowIconX(fillImageRow) >= 0 && rowIconX(fillImageRow) == rowIconX(fillStyleRowForImage),
                   QStringLiteral("背景图片行图标与上方各行左对齐"),
                   QStringLiteral("image=%1 fill=%2").arg(rowIconX(fillImageRow)).arg(rowIconX(fillStyleRowForImage)));
+        // 面板宽度以背景图片行为基准：其余行不得比它宽，也不得窄过自己的最小宽度而被裁掉。
+        if (fillImageRow) {
+            QWidget* panelContent = propertiesDock->findChild<QWidget*>(QStringLiteral("PropertiesPanelContent"));
+            int widest = 0;
+            int clipped = 0;
+            QString detail = QStringLiteral("fill=%1").arg(fillImageRow->width());
+            if (panelContent && panelContent->layout()) {
+                for (int index = 0; index < panelContent->layout()->count(); ++index) {
+                    QWidget* row = panelContent->layout()->itemAt(index)->widget();
+                    if (!row || !row->isVisible()) {
+                        continue;
+                    }
+                    widest = qMax(widest, row->width());
+                    if (row->minimumSizeHint().width() > row->width()) {
+                        ++clipped;
+                        detail += QStringLiteral(" %1:%2>%3")
+                                      .arg(row->objectName())
+                                      .arg(row->minimumSizeHint().width())
+                                      .arg(row->width());
+                    }
+                }
+            }
+            ctx.Check(clipped == 0 && widest <= fillImageRow->width() + 1,
+                      QStringLiteral("编辑面板各行宽度不超过背景图片行"), detail);
+        }
         if (fillImageModeCombo) {
             const int tileIndex = fillImageModeCombo->findData(static_cast<int>(ImageFill::Mode::TILE));
             if (tileIndex >= 0) {

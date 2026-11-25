@@ -57,7 +57,7 @@ QHBoxLayout* MakeRowLayout(QWidget* row)
 {
     auto* layout = new QHBoxLayout(row);
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(2);
+    layout->setSpacing(1);
     return layout;
 }
 
@@ -245,12 +245,12 @@ FillImageRow::FillImageRow(QWidget* parent) : QWidget(parent)
     });
     layout->addWidget(m_modeCombo, 0);
 
+    // 两个按钮只留图标：带「选图 / 清除」文字时这一行比颜色行宽 40px，会把整张卡片撑宽。
     m_chooseButton = new QToolButton(this);
     m_chooseButton->setObjectName(QStringLiteral("ItemFillImageButton"));
     m_chooseButton->setIcon(IconFactory::Make(IconId::IMAGE, QColor(58, 64, 80), 14));
     m_chooseButton->setIconSize(QSize(14, 14));
-    m_chooseButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    m_chooseButton->setText(RowText("Choose fill image"));
+    m_chooseButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
     m_chooseButton->setToolTip(RowText("Choose an image to fill the selected items"));
     connect(m_chooseButton, &QToolButton::clicked, this, &FillImageRow::chooseFillImageClicked);
     layout->insertWidget(1, m_chooseButton, 0, Qt::AlignVCenter);
@@ -259,8 +259,7 @@ FillImageRow::FillImageRow(QWidget* parent) : QWidget(parent)
     m_clearButton->setObjectName(QStringLiteral("ItemClearFillImageButton"));
     m_clearButton->setIcon(IconFactory::Make(IconId::DELETE, QColor(58, 64, 80), 14));
     m_clearButton->setIconSize(QSize(14, 14));
-    m_clearButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    m_clearButton->setText(RowText("Clear"));
+    m_clearButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
     m_clearButton->setToolTip(RowText("Clear fill image"));
     connect(m_clearButton, &QToolButton::clicked, this, &FillImageRow::clearFillImageClicked);
     layout->addWidget(m_clearButton, 0, Qt::AlignVCenter);
@@ -285,7 +284,7 @@ void FillImageRow::Refresh()
     const bool hasTargets = !m_targets.isEmpty();
     const bool hasImage = hasTargets && m_targets.first()->HasFillImage();
     m_chooseButton->setEnabled(hasTargets);
-    m_chooseButton->setText(RowText(hasImage ? "Change fill image" : "Choose fill image"));
+    m_chooseButton->setToolTip(RowText(hasImage ? "Change fill image" : "Choose an image to fill the selected items"));
     m_modeCombo->setEnabled(hasImage);
     m_clearButton->setEnabled(hasImage);
     const ImageFill::Mode mode = hasTargets ? m_targets.first()->FillImageMode() : ImageFill::Mode::STRETCH;

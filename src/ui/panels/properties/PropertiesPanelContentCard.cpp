@@ -87,7 +87,12 @@ PropertiesPanelContentCard::PropertiesPanelContentCard(QWidget* parent) : QWidge
     m_fontCombo = new QFontComboBox(m_textFontRow);
     m_fontCombo->setObjectName(QStringLiteral("ItemTextFontCombo"));
     m_fontCombo->setToolTip(PropertiesPanel::tr("Font"));
+    // 字体下拉的自然宽度按最长字体名算，会把这一行撑到比背景图片行宽一倍；
+    // 改按最小内容长度估算，长字体名省略显示，完整名字留在提示里。
+    m_fontCombo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    m_fontCombo->setMinimumContentsLength(6);
     m_fontCombo->setMinimumWidth(88);
+    m_fontCombo->setMaximumWidth(132);
     fontLayout->addWidget(m_fontCombo, 1);
     m_fontSizeSpin = new QSpinBox(m_textFontRow);
     m_fontSizeSpin->setObjectName(QStringLiteral("ItemTextFontSizeSpin"));
@@ -135,12 +140,13 @@ QWidget* PropertiesPanelContentCard::MakeTextColorRow()
     row->setObjectName(QStringLiteral("ItemTextColorRow"));
     auto* layout = new QHBoxLayout(row);
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(2);
+    layout->setSpacing(1);
 
     QToolButton* icon = MakeRowIcon(IconId::PALETTE, row);
     icon->setToolTip(PropertiesPanel::tr("Text color"));
     layout->addWidget(icon);
 
+    // 色块 20px 后 8 个预设也放得下，与填充 / 描边颜色行取同一组颜色。
     const QStringList presets = {QStringLiteral("#1E293B"), QStringLiteral("#EF4444"), QStringLiteral("#F97316"),
                                  QStringLiteral("#EAB308"), QStringLiteral("#22C55E"), QStringLiteral("#14B8A6"),
                                  QStringLiteral("#3B82F6"), QStringLiteral("#8B5CF6")};
@@ -189,6 +195,8 @@ void PropertiesPanelContentCard::Refresh(const QList<TextItem*>& texts)
             m_textEdit->setText(first->TextContent());
         }
         m_fontCombo->setCurrentFont(m_textFont);
+        // 下拉被收窄后长字体名会被省略，完整族名放到提示里，仍能看清当前字体。
+        m_fontCombo->setToolTip(m_textFont.family());
         m_fontSizeSpin->setValue(qMax(1, qRound(m_textFont.pointSizeF())));
         m_boldButton->setChecked(m_textFont.bold());
         m_italicButton->setChecked(m_textFont.italic());
