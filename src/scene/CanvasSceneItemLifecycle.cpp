@@ -3,6 +3,7 @@
 #include "items/lines/ArcItem.h"
 #include "items/lines/BraceItem.h"
 #include "items/lines/CurveItem.h"
+#include "items/lines/LineAbstractItem.h"
 #include "items/lines/SineItem.h"
 #include "items/lines/StraightLineItem.h"
 #include "items/polygon/PolygonItem.h"
@@ -14,10 +15,59 @@
 #include "scene/SceneConstants.h"
 
 #include <QHash>
+#include <QJsonObject>
+#include <QPointer>
 #include <QSet>
 #include <QUndoStack>
 #include <algorithm>
 #include <utility>
+
+namespace {
+
+// 删除图形时把指向它的箭头绑定清空；和删除命令放在同一条宏里，撤销能一起恢复。
+class ClearArrowBindingsCommand : public QUndoCommand {
+  public:
+    ClearArrowBindingsCommand(CanvasScene* scene, const QList<LineAbstractItem*>& lines, const QString& text)
+        : QUndoCommand(text), m_scene(scene)
+    {
+        for (LineAbstractItem* line : lines) {
+            m_lines.append(line);
+            m_before.append({line->StartBinding(), line->EndBinding()});
+            m_after.append({QJsonObject(), QJsonObject()});
+        }
+    }
+
+    void undo() override { Apply(m_before); }
+    void redo() override { Apply(m_after); }
+
+  private:
+    struct Bindings {
+        QJsonObject start;
+        QJsonObject end;
+    };
+
+    void Apply(const QList<Bindings>& bindings)
+    {
+        for (int i = 0; i < m_lines.size() && i < bindings.size(); ++i) {
+            if (!m_lines.at(i)) {
+                continue;
+            }
+            m_lines.at(i)->SetStartBinding(bindings.at(i).start);
+            m_lines.at(i)->SetEndBinding(bindings.at(i).end);
+            m_lines.at(i)->update();
+        }
+        if (m_scene) {
+            m_scene->update();
+        }
+    }
+
+    CanvasScene* m_scene = nullptr;
+    QList<QPointer<LineAbstractItem>> m_lines;
+    QList<Bindings> m_before;
+    QList<Bindings> m_after;
+};
+
+} // namespace
 
 void CanvasScene::AttachItem(CanvasItem* item)
 {
@@ -101,8 +151,31 @@ void CanvasScene::DeleteSelected()
         }
     }
 
+    // 指向被删图形的箭头：清空绑定但保留箭头本身，和删除动作放在同一条撤销宏里。
+    QList<LineAbstractItem*> boundArrows;
+    if (!containerUids.isEmpty()) {
+        for (CanvasItem* item : CanvasItems()) {
+            LineAbstractItem* line = dynamic_cast<LineAbstractItem*>(item);
+            if (!line || selected.contains(static_cast<CanvasItem*>(line))) {
+                continue;
+            }
+            const QString startTarget = line->StartBinding().value(QStringLiteral("elementId")).toString();
+            const QString endTarget = line->EndBinding().value(QStringLiteral("elementId")).toString();
+            if (containerUids.contains(startTarget) || containerUids.contains(endTarget)) {
+                boundArrows.append(line);
+            }
+        }
+    }
+
     if (m_undoStack) {
-        m_undoStack->push(new RemoveItemsCommand(this, selected, tr("Delete item")));
+        if (boundArrows.isEmpty()) {
+            m_undoStack->push(new RemoveItemsCommand(this, selected, tr("Delete item")));
+        } else {
+            m_undoStack->beginMacro(tr("Delete item"));
+            m_undoStack->push(new RemoveItemsCommand(this, selected, tr("Delete item")));
+            m_undoStack->push(new ClearArrowBindingsCommand(this, boundArrows, tr("Unbind arrow")));
+            m_undoStack->endMacro();
+        }
     } else {
         for (CanvasItem* item : selected) {
             DetachItem(item);

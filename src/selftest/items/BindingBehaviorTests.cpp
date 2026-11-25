@@ -55,6 +55,21 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
                   QStringLiteral("inside/outside"));
         ctx.Check(scene.BindableShapeAt(QPointF(150.0, 210.0), 12.0) == nullptr,
                   QStringLiteral("离边缘超过 12px 不吸附"), QStringLiteral("far"));
+
+        scene.clearSelection();
+        rect->setSelected(true);
+        scene.DeleteSelected();
+        ctx.Check(scene.CanvasItemCount() == 1 && line->StartBinding().isEmpty(),
+                  QStringLiteral("删除目标图形时清空箭头绑定并保留箭头"),
+                  QStringLiteral("count=%1 binding=%2")
+                      .arg(scene.CanvasItemCount())
+                      .arg(line->StartBinding().isEmpty() ? QStringLiteral("empty") : QStringLiteral("set")));
+        undo.undo();
+        ctx.Check(scene.CanvasItemCount() == 2 && !line->StartBinding().isEmpty(),
+                  QStringLiteral("撤销删除后图形与绑定一起恢复"),
+                  QStringLiteral("count=%1 binding=%2")
+                      .arg(scene.CanvasItemCount())
+                      .arg(line->StartBinding().isEmpty() ? QStringLiteral("empty") : QStringLiteral("set")));
     }
 
     // 容器文字：容器移动 / 缩放后文字回到容器中心。
