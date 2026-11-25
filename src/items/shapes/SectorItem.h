@@ -1,12 +1,11 @@
 #pragma once
 
-#include "items/geometry/EllipseShape.h"
-#include "items/lines/ArcAngleAttributes.h"
+#include "items/SectorBase.h"
 #include "items/shapes/ShapeAbstractItem.h"
 
 // 扇形：椭圆外接框即内容矩形，起止角可编辑；选中框贴在轮廓的最小覆盖矩形上。
-// 弧度参数属于本类自己：基类完全不再持有弧角字段，椭圆几何仍由 EllipseShape 提供。
-class SectorItem : public ShapeAbstractItem, public EllipseShape, public ArcAngleAttributes {
+// 起止角、外接框、端点手柄与读数来自 SectorBase；轮廓只由 EllipseGeometry::Sector() 出。
+class SectorItem : public ShapeAbstractItem, public SectorBase {
   public:
     SectorItem();
     ShapeType shapeType() const override { return ShapeType::SECTOR; }
