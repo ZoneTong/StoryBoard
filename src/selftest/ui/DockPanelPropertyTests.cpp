@@ -378,6 +378,15 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
                   QStringLiteral("visible=%1 kind=%2")
                       .arg(typeCombo && typeCombo->isVisible() ? 1 : 0)
                       .arg(typeCombo ? typeCombo->currentData().toString() : QString()));
+        QWidget* nameEditor = dockPanel->findChild<QWidget*>(QStringLiteral("ItemNameEdit"));
+        QWidget* typeRowWidget = dockPanel->findChild<QWidget*>(QStringLiteral("ItemTypeRow"));
+        ctx.Check(nameEditor && typeRowWidget &&
+                      typeRowWidget->mapTo(dockPanel, QPoint(0, 0)).y() >
+                          nameEditor->mapTo(dockPanel, QPoint(0, 0)).y(),
+                  QStringLiteral("类型行排在图元名称行之后"),
+                  QStringLiteral("name=%1 type=%2")
+                      .arg(nameEditor ? nameEditor->mapTo(dockPanel, QPoint(0, 0)).y() : -1)
+                      .arg(typeRowWidget ? typeRowWidget->mapTo(dockPanel, QPoint(0, 0)).y() : -1));
         if (typeCombo) {
             typeCombo->setCurrentIndex(typeCombo->findData(QStringLiteral("sector")));
             QApplication::processEvents();

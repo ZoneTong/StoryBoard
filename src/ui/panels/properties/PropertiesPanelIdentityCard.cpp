@@ -32,6 +32,11 @@ PropertiesPanelIdentityCard::PropertiesPanelIdentityCard(QWidget* parent) : QWid
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(2);
 
+    // 名称行在最上，三型互换的类型行紧跟其后：先确认是哪个图元，再决定要不要改类型。
+    m_nameRow = new TextValueRow(PropertiesPanel::tr("Item name"), this);
+    m_nameRow->Edit()->setToolTip(PropertiesPanel::tr("Item name"));
+    layout->addWidget(m_nameRow);
+
     // 类型行：扇形 / 弧线 / 角度线三者等价的几何，靠下拉直接换类，改动进撤销记录。
     m_typeRow = new QWidget(this);
     m_typeRow->setObjectName(QStringLiteral("ItemTypeRow"));
@@ -63,10 +68,6 @@ PropertiesPanelIdentityCard::PropertiesPanelIdentityCard(QWidget* parent) : QWid
     typeLayout->addWidget(m_typeCombo, 1);
     m_typeRow->setVisible(false);
     layout->addWidget(m_typeRow);
-
-    m_nameRow = new TextValueRow(PropertiesPanel::tr("Item name"), this);
-    m_nameRow->Edit()->setToolTip(PropertiesPanel::tr("Item name"));
-    layout->addWidget(m_nameRow);
 
     m_layerRow = new LayerHeightRow(this);
     layout->addWidget(m_layerRow);
