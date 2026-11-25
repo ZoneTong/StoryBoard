@@ -141,10 +141,11 @@ void CanvasStrokeController::FinishStroke()
         if (startTarget == endTarget) {
             endTarget = nullptr;
         }
-        auto bindingFor = [](const CanvasItem* target) {
+        auto bindingFor = [](const CanvasItem* target, const QPointF& attached) {
             QJsonObject binding;
             binding.insert(QStringLiteral("elementId"), target->Uid());
-            binding.insert(QStringLiteral("focus"), 0.0);
+            binding.insert(QStringLiteral("focus"),
+                          CanvasScene::FocusForPoint(target->mapRectToScene(target->ContentRect()), attached));
             binding.insert(QStringLiteral("gap"), 4.0);
             return binding;
         };
@@ -157,11 +158,11 @@ void CanvasStrokeController::FinishStroke()
             start = CanvasScene::AttachmentPoint(startTarget, end, 4.0);
         }
         if (startTarget) {
-            line->SetStartBinding(bindingFor(startTarget));
+            line->SetStartBinding(bindingFor(startTarget, start));
             line->MoveEndpoint(true, start);
         }
         if (endTarget) {
-            line->SetEndBinding(bindingFor(endTarget));
+            line->SetEndBinding(bindingFor(endTarget, end));
             line->MoveEndpoint(false, end);
         }
         m_startTargetUid.clear();

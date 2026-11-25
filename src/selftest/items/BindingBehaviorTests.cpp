@@ -7,6 +7,7 @@
 
 #include <QColor>
 #include <QJsonObject>
+#include <QLineF>
 #include <QPointF>
 #include <QStringList>
 #include <QUndoStack>
@@ -31,7 +32,6 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
         line->SetEndpoints(QPointF(0.0, 210.0), QPointF(180.0, 210.0), QColor(QStringLiteral("#1E293B")), 2.0);
         QJsonObject binding;
         binding.insert(QStringLiteral("elementId"), rect->Uid());
-        binding.insert(QStringLiteral("focus"), 0.0);
         binding.insert(QStringLiteral("gap"), 4.0);
         line->SetStartBinding(binding);
         scene.AddItemsWithUndo({line}, QStringLiteral("Add arrow"));
@@ -55,6 +55,19 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
                   QStringLiteral("inside/outside"));
         ctx.Check(scene.BindableShapeAt(QPointF(150.0, 210.0), 12.0) == nullptr,
                   QStringLiteral("离边缘超过 12px 不吸附"), QStringLiteral("far"));
+
+        const QRectF targetRect = rect->mapRectToScene(rect->ContentRect());
+        const QPointF edgePoint(targetRect.left(), 210.0);
+        const qreal focus = CanvasScene::FocusForPoint(targetRect, edgePoint);
+        const QPointF restored = CanvasScene::PointForFocus(targetRect, focus);
+        ctx.Check(QLineF(restored, edgePoint).length() < 1.0 &&
+                      CanvasScene::AttachmentPoint(rect, QPointF(500.0, 210.0), 4.0, focus).x() <
+                          targetRect.left(),
+                  QStringLiteral("轮廓 focus 与场景点可互算并用于绑定落点"),
+                  QStringLiteral("focus=%1 point=(%2,%3)")
+                      .arg(focus)
+                      .arg(restored.x())
+                      .arg(restored.y()));
 
         scene.clearSelection();
         rect->setSelected(true);
@@ -89,7 +102,6 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
         line->SetEndpoints(QPointF(0.0, 210.0), QPointF(280.0, 210.0), QColor(QStringLiteral("#1E293B")), 2.0);
         QJsonObject binding;
         binding.insert(QStringLiteral("elementId"), rect->Uid());
-        binding.insert(QStringLiteral("focus"), 0.0);
         binding.insert(QStringLiteral("gap"), 4.0);
         line->SetStartBinding(binding);
         scene.AddItemsWithUndo({line}, QStringLiteral("Add arrow"));

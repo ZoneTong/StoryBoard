@@ -71,7 +71,12 @@ class CanvasScene : public QGraphicsScene {
     void SyncContainerTexts();
     CanvasItem* ItemByUid(const QString& uid) const;
     // 绑定落点：从 from 朝目标图形中心，取图形边缘上的点，再沿外法线让开 gap。
-    static QPointF AttachmentPoint(const CanvasItem* target, const QPointF& from, qreal gap);
+    // focus >= 0 时按 Excalidraw 的归一化轮廓位置取点，保证缩放 / 移动后端点停在同一边。
+    static QPointF AttachmentPoint(const CanvasItem* target, const QPointF& from, qreal gap,
+                                   qreal focus = -1.0);
+    // 轮廓参数：0 在左上角，顺时针绕一圈回到 1；用于 focus 与场景点互算。
+    static qreal FocusForPoint(const QRectF& rect, const QPointF& point);
+    static QPointF PointForFocus(const QRectF& rect, qreal focus);
     // 可绑定的图形：点落在图形内，或离内容框边缘不超过 maxDistance；按叠放自上而下取第一个。
     CanvasItem* BindableShapeAt(const QPointF& scenePos, qreal maxDistance) const;
     // 需求 32：给所有还没有自定义名称的图元补上“类型 1 / 类型 2 …”自动名称。

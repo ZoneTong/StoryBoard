@@ -5,6 +5,7 @@
 #include "items/text/TextItem.h"
 
 #include <QHash>
+#include <QLineF>
 #include <QPointF>
 #include <QRectF>
 #include <QtMath>
@@ -68,12 +69,82 @@ CanvasItem* CanvasScene::ItemByUid(const QString& uid) const
     return nullptr;
 }
 
-QPointF CanvasScene::AttachmentPoint(const CanvasItem* target, const QPointF& from, qreal gap)
+QPointF CanvasScene::AttachmentPoint(const CanvasItem* target, const QPointF& from, qreal gap, qreal focus)
 {
     if (!target) {
         return from;
     }
-    return BoundaryPoint(target->mapRectToScene(target->ContentRect()), from, gap);
+    const QRectF rect = target->mapRectToScene(target->ContentRect());
+    QPointF point = focus >= 0.0 ? PointForFocus(rect, focus) : BoundaryPoint(rect, from, 0.0);
+    QPointF outward = point - rect.center();
+    const qreal length = qSqrt(outward.x() * outward.x() + outward.y() * outward.y());
+    if (length > 0.0 && gap > 0.0) {
+        point += outward / length * gap;
+    }
+    return point;
+}
+
+qreal CanvasScene::FocusForPoint(const QRectF& rect, const QPointF& point)
+{
+    if (rect.width() <= 0.0 || rect.height() <= 0.0) {
+        return 0.0;
+    }
+    const qreal total = 2.0 * (rect.width() + rect.height());
+    qreal bestDistance = -1.0;
+    qreal focus = 0.0;
+    auto consider = [&](const QPointF& start, const QPointF& end, qreal base) {
+        const QPointF edge = end - start;
+        const qreal length = QLineF(start, end).length();
+        if (length <= 0.0) {
+            return;
+        }
+        const qreal along =
+            qBound<qreal>(0.0, ((point.x() - start.x()) * edge.x() + (point.y() - start.y()) * edge.y()) /
+                                   (length * length),
+                          1.0);
+        const QPointF projected = start + edge * along;
+        const qreal distance = QLineF(projected, point).length();
+        if (bestDistance < 0.0 || distance < bestDistance) {
+            bestDistance = distance;
+            focus = (base + along * length) / total;
+        }
+    };
+    const QPointF topLeft = rect.topLeft();
+    const QPointF topRight = rect.topRight();
+    const QPointF bottomRight = rect.bottomRight();
+    const QPointF bottomLeft = rect.bottomLeft();
+    consider(topLeft, topRight, 0.0);
+    consider(topRight, bottomRight, rect.width());
+    consider(bottomRight, bottomLeft, rect.width() + rect.height());
+    consider(bottomLeft, topLeft, 2.0 * rect.width() + rect.height());
+    return qBound<qreal>(0.0, focus, 1.0);
+}
+
+QPointF CanvasScene::PointForFocus(const QRectF& rect, qreal focus)
+{
+    if (rect.width() <= 0.0 || rect.height() <= 0.0) {
+        return rect.center();
+    }
+    if (focus < 0.0) {
+        focus = 0.0;
+    }
+    focus -= qFloor(focus);
+    const qreal w = rect.width();
+    const qreal h = rect.height();
+    qreal distance = focus * 2.0 * (w + h);
+    if (distance <= w) {
+        return QPointF(rect.left() + distance, rect.top());
+    }
+    distance -= w;
+    if (distance <= h) {
+        return QPointF(rect.right(), rect.top() + distance);
+    }
+    distance -= h;
+    if (distance <= w) {
+        return QPointF(rect.right() - distance, rect.bottom());
+    }
+    distance -= w;
+    return QPointF(rect.left(), rect.bottom() - qMin(distance, h));
 }
 
 CanvasItem* CanvasScene::BindableShapeAt(const QPointF& scenePos, qreal maxDistance) const
@@ -119,23 +190,25 @@ void CanvasScene::SyncArrowBindings()
             continue;
         }
         if (!line->StartBinding().isEmpty()) {
-            CanvasItem* target =
-                byUid.value(line->StartBinding().value(QStringLiteral("elementId")).toString(), nullptr);
+            const QJsonObject binding = line->StartBinding();
+            CanvasItem* target = byUid.value(binding.value(QStringLiteral("elementId")).toString(), nullptr);
             if (target && target->Category() == ItemCategory::SHAPE) {
                 const QPointF other = line->mapToScene(knots.at(1));
-                const QRectF rect = target->mapRectToScene(target->ContentRect());
-                line->MoveEndpoint(true, BoundaryPoint(rect, other, BindingGap(line->StartBinding())));
+                const qreal focus =
+                    binding.contains(QStringLiteral("focus")) ? binding.value(QStringLiteral("focus")).toDouble() : -1.0;
+                line->MoveEndpoint(true, AttachmentPoint(target, other, BindingGap(binding), focus));
             }
         }
         if (!line->EndBinding().isEmpty()) {
-            CanvasItem* target =
-                byUid.value(line->EndBinding().value(QStringLiteral("elementId")).toString(), nullptr);
+            const QJsonObject binding = line->EndBinding();
+            CanvasItem* target = byUid.value(binding.value(QStringLiteral("elementId")).toString(), nullptr);
             if (target && target->Category() == ItemCategory::SHAPE) {
                 // 起点可能刚被移动过，终点参考点要用最新的节点。
                 const QVector<QPointF> current = line->StrokePoints();
                 const QPointF other = line->mapToScene(current.at(current.size() - 2));
-                const QRectF rect = target->mapRectToScene(target->ContentRect());
-                line->MoveEndpoint(false, BoundaryPoint(rect, other, BindingGap(line->EndBinding())));
+                const qreal focus =
+                    binding.contains(QStringLiteral("focus")) ? binding.value(QStringLiteral("focus")).toDouble() : -1.0;
+                line->MoveEndpoint(false, AttachmentPoint(target, other, BindingGap(binding), focus));
             }
         }
     }
