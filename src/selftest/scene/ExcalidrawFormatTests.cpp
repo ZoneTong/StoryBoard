@@ -369,6 +369,8 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
         fadedText.insert(QStringLiteral("opacity"), 35);
         fadedText.insert(QStringLiteral("text"), QStringLiteral("淡"));
         fadedText.insert(QStringLiteral("fontSize"), 20.0);
+        fadedText.insert(QStringLiteral("fontFamily"), 3);
+        fadedText.insert(QStringLiteral("textAlign"), QStringLiteral("center"));
         const QJsonObject imported = Excalidraw::SceneToStoryBoard(Scene(QJsonArray{dashedLine, fadedText}), nullptr);
         const QJsonObject lineItem = imported.value(QStringLiteral("items")).toArray().at(0).toObject();
         const QJsonObject textItem = imported.value(QStringLiteral("items")).toArray().at(1).toObject();
@@ -382,6 +384,12 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
                       textItem.value(QStringLiteral("opacity")).toDouble() < 0.4,
                   QStringLiteral("导入文字透明度"),
                   QStringLiteral("opacity=%1").arg(textItem.value(QStringLiteral("opacity")).toDouble()));
+        ctx.Check(textItem.value(QStringLiteral("fontFamily")).toString().contains(QStringLiteral("Cascadia")) &&
+                      textItem.value(QStringLiteral("x")).toDouble() > 0.0,
+                  QStringLiteral("导入文字字体编号与居中对齐位移"),
+                  QStringLiteral("family=%1 x=%2")
+                      .arg(textItem.value(QStringLiteral("fontFamily")).toString())
+                      .arg(textItem.value(QStringLiteral("x")).toDouble()));
 
         QJsonObject styledShape;
         styledShape.insert(QStringLiteral("kind"), QStringLiteral("shape"));
@@ -406,6 +414,23 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
                   QStringLiteral("style=%1 roundness=%2")
                       .arg(element.value(QStringLiteral("strokeStyle")).toString())
                       .arg(roundness.value(QStringLiteral("value")).toDouble()));
+
+        QJsonObject textDoc;
+        QJsonObject exportTextItem;
+        exportTextItem.insert(QStringLiteral("kind"), QStringLiteral("text"));
+        exportTextItem.insert(QStringLiteral("text"), QStringLiteral("字"));
+        exportTextItem.insert(QStringLiteral("fontFamily"), QStringLiteral("Virgil"));
+        exportTextItem.insert(QStringLiteral("fontSize"), 12.0);
+        textDoc.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
+        textDoc.insert(QStringLiteral("items"), QJsonArray{exportTextItem});
+        const QJsonObject textElement = Excalidraw::StoryBoardToScene(textDoc, nullptr)
+                                            .value(QStringLiteral("elements"))
+                                            .toArray()
+                                            .at(0)
+                                            .toObject();
+        ctx.Check(textElement.value(QStringLiteral("fontFamily")).toInt() == 2,
+                  QStringLiteral("导出文字字体编号"),
+                  QStringLiteral("fontFamily=%1").arg(textElement.value(QStringLiteral("fontFamily")).toInt()));
     }
 
     // 分组：画板组号与 groupParents 的嵌套链<->Excalidraw groupIds（内层在前）。

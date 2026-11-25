@@ -93,6 +93,32 @@ QString ExcalidrawFillStyle(const QString& style)
     return QStringLiteral("solid");
 }
 
+// 文字字体：Excalidraw 用 1/2/3 三个字体编号，画板按字体族名存，导出时按族名反查。
+QString TextFontFamilyFromExcalidraw(const QJsonValue& value)
+{
+    const int id = value.toInt(1);
+    if (id == 2) {
+        return QStringLiteral("Virgil");
+    }
+    if (id == 3) {
+        return QStringLiteral("Cascadia Code");
+    }
+    return QStringLiteral("Helvetica");
+}
+
+int ExcalidrawFontFamily(const QString& family)
+{
+    const QString name = family.toLower();
+    if (name.contains(QStringLiteral("virgil")) || name.contains(QStringLiteral("comic"))) {
+        return 2;
+    }
+    if (name.contains(QStringLiteral("cascadia")) || name.contains(QStringLiteral("mono")) ||
+        name.contains(QStringLiteral("consolas"))) {
+        return 3;
+    }
+    return 1;
+}
+
 // 需求 9：Excalidraw 的 head 样式映射到画板箭头；空心三角画板有，直接保留。
 QString HeadStyle(const QJsonValue& value)
 {
@@ -328,11 +354,28 @@ QJsonObject ElementToItem(const QJsonObject& element, int z, int layer, QStringL
         // Excalidraw 的文字框不含画板的 12px 内边距，字号也来自另一套字体；
         // 直接照抄外框会让首行基线落在框外、下半截被裁剪。这里按画板字体重新量自然尺寸。
         const QSizeF natural = TextAttributes::Measure(content, TextAttributes::DefaultFont(pointSize));
-        QJsonObject item = ItemBase(QStringLiteral("text"), QRectF(bounds.topLeft(), natural), z, layer);
+        // 对齐方式画板不支持，改成按 Excalidraw 的对齐位置平移，保证导入后的视觉位置一致。
+        qreal shiftX = 0.0;
+        qreal shiftY = 0.0;
+        const QString textAlign = element.value(QStringLiteral("textAlign")).toString();
+        if (textAlign == QStringLiteral("center")) {
+            shiftX = (bounds.width() - natural.width()) / 2.0;
+        } else if (textAlign == QStringLiteral("right")) {
+            shiftX = bounds.width() - natural.width();
+        }
+        const QString verticalAlign = element.value(QStringLiteral("verticalAlign")).toString();
+        if (verticalAlign == QStringLiteral("middle")) {
+            shiftY = (bounds.height() - natural.height()) / 2.0;
+        } else if (verticalAlign == QStringLiteral("bottom")) {
+            shiftY = bounds.height() - natural.height();
+        }
+        QJsonObject item = ItemBase(QStringLiteral("text"), QRectF(bounds.topLeft() + QPointF(shiftX, shiftY), natural), z,
+                                    layer);
         item.insert(QStringLiteral("text"), content);
         item.insert(QStringLiteral("color"),
                     ColorOr(element, QStringLiteral("strokeColor"), QColor(30, 41, 59)).name(QColor::HexArgb));
         item.insert(QStringLiteral("fontSize"), pointSize);
+        item.insert(QStringLiteral("fontFamily"), TextFontFamilyFromExcalidraw(element.value(QStringLiteral("fontFamily"))));
         item.insert(QStringLiteral("baseWidth"), natural.width());
         item.insert(QStringLiteral("baseHeight"), natural.height());
         item.insert(QStringLiteral("opacity"), NumberOr(element, QStringLiteral("opacity"), 100.0) / 100.0);
@@ -789,7 +832,8 @@ QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings
             element.insert(QStringLiteral("fillStyle"), QStringLiteral("solid"));
             element.insert(QStringLiteral("strokeWidth"), 1);
             element.insert(QStringLiteral("fontSize"), NumberOr(item, QStringLiteral("fontSize"), 15.0) * 1.333);
-            element.insert(QStringLiteral("fontFamily"), 1);
+            element.insert(QStringLiteral("fontFamily"),
+                           ExcalidrawFontFamily(item.value(QStringLiteral("fontFamily")).toString()));
             element.insert(QStringLiteral("textAlign"), QStringLiteral("left"));
             element.insert(QStringLiteral("verticalAlign"), QStringLiteral("top"));
             element.insert(QStringLiteral("containerId"), QJsonValue::Null);
