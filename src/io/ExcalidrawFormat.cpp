@@ -120,16 +120,23 @@ int ExcalidrawFontFamily(const QString& family)
 }
 
 // 需求 9：Excalidraw 的 head 样式映射到画板箭头；空心三角画板有，直接保留。
+// Excalidraw 的 head 取值比画板多：circle 画实心圆点、diamond 最近似实心三角，
+// triangle_outline 落空心三角；cardinal / plus 画板没有，按无箭头处理。
 QString HeadStyle(const QJsonValue& value)
 {
     const QString type = value.isString() ? value.toString() : QString();
     if (type == QStringLiteral("bar")) {
         return QStringLiteral("bar");
     }
-    if (type == QStringLiteral("dot")) {
+    if (type == QStringLiteral("dot") || type == QStringLiteral("circle") ||
+        type == QStringLiteral("circle_outline")) {
         return QStringLiteral("dot");
     }
-    if (type == QStringLiteral("triangle")) {
+    if (type == QStringLiteral("triangle_outline")) {
+        return QStringLiteral("hollow-triangle");
+    }
+    if (type == QStringLiteral("triangle") || type == QStringLiteral("diamond") ||
+        type == QStringLiteral("diamond_outline")) {
         return QStringLiteral("triangle");
     }
     if (type == QStringLiteral("arrow")) {

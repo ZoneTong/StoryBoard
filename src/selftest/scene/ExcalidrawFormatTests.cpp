@@ -529,6 +529,23 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
                       .arg(reverseStyle, gridStyle, brickStyle, reverseCustom));
     }
 
+    // 箭头头补齐：Excalidraw 的 circle / triangle_outline 落到画板的圆点 / 空心三角。
+    {
+        QJsonObject circleArrow = Element(QStringLiteral("arrow"), 0, 0, 80, 0);
+        circleArrow.insert(QStringLiteral("points"), QJsonArray{QJsonArray{0.0, 0.0}, QJsonArray{80.0, 0.0}});
+        circleArrow.insert(QStringLiteral("startArrowhead"), QStringLiteral("circle"));
+        circleArrow.insert(QStringLiteral("endArrowhead"), QStringLiteral("triangle_outline"));
+        const QJsonObject imported =
+            Excalidraw::SceneToStoryBoard(Scene(QJsonArray{circleArrow}), nullptr);
+        const QJsonObject lineItem = imported.value(QStringLiteral("items")).toArray().at(0).toObject();
+        ctx.Check(lineItem.value(QStringLiteral("startArrow")).toString() == QStringLiteral("dot") &&
+                      lineItem.value(QStringLiteral("endArrow")).toString() == QStringLiteral("hollow-triangle"),
+                  QStringLiteral("导入 circle 与 triangle_outline 箭头头"),
+                  QStringLiteral("start=%1 end=%2")
+                      .arg(lineItem.value(QStringLiteral("startArrow")).toString(),
+                           lineItem.value(QStringLiteral("endArrow")).toString()));
+    }
+
     // 位图往返：默认跳过 image 并留 warning；勾选后落成“矩形 + 图片填充”，
     // 再导出仍是 image 元素 + files 表，数据不丢。
     {
