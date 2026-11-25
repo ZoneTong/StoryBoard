@@ -13,6 +13,7 @@
 #include "items/lines/SineItem.h"
 #include "items/lines/StraightLineItem.h"
 #include "items/polygon/PolygonItem.h"
+#include "items/shapes/ParallelogramAbstractItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
 #include "items/shapes/ShapeFactory.h"
 #include "items/text/TextItem.h"
@@ -256,7 +257,8 @@ void MainWindowInsertController::InsertCompositeShape(ShapeType type)
     // 需求 9：立方体的三个面都是平行四边形图元本体（默认 60° 内角），
     // 靠各自的旋转角摆放成等轴测，不再用自定义轮廓冒充斜置的菱形。
     auto makeFace = [&stroke, &fill, fillStyle, width, this](const QString& name, const QPointF& center,
-                                                             const QSizeF& faceSize, qreal rotation) {
+                                                             const QSizeF& faceSize, qreal rotation,
+                                                             qreal interiorAngle = 60.0) {
         auto* face = ShapeFactory::Create(ShapeType::PARALLELOGRAM);
         // 名字走图元名：customName 只留给真正的自定义轮廓，类型仍显示「平行四边形」。
         face->SetName(name);
@@ -264,6 +266,11 @@ void MainWindowInsertController::InsertCompositeShape(ShapeType type)
         face->SetFillStyle(fillStyle);
         // 需求 1：组内各面同样沿用工具栏描线样式。
         face->SetStrokeStyle(m_window->m_strokeStyle);
+        // 先定内角再定内容框：SetParallelogramAngle 会按“底边长度不变”重算框宽，
+        // 反过来会把三面共享的边长改掉、缝隙随之裂开。
+        if (auto* parallelogram = dynamic_cast<ParallelogramAbstractItem*>(face)) {
+            parallelogram->SetParallelogramAngle(interiorAngle);
+        }
         face->SetContentSize(faceSize);
         face->setPos(center - QPointF(faceSize.width() / 2.0, faceSize.height() / 2.0));
         face->SetRotationAngle(rotation);
@@ -281,8 +288,9 @@ void MainWindowInsertController::InsertCompositeShape(ShapeType type)
 
     QList<CanvasItem*> faces;
     if (type == ShapeType::CUBE) {
-        // 需求 9：等轴测立方体 = 三个平行四边形图元的组。每个面都是 60° 平行四边形本体，
-        // 顶面旋转 30°、左面 90°、右面 -30°，三个面的中心落在外轮廓的 0.25/0.5/0.75 处。
+        // 需求 9：等轴测立方体 = 三个平行四边形图元的组，每个面都是平行四边形本体本身：
+        // 顶面 60° / 旋转 30°，左面 60° / 旋转 90°，右面 120° / 旋转 90°（右面是 60° 面的镜像，
+        // 用 120° 内角 + 90° 旋转表示，与左面同角度、顶点完全共享）。
         // 单一边长 s 生成共享顶点：内容框 W = 1.732s、H = 2s（默认 128 框 → s = 64），
         // 三个面是与中心 O 相连的三个菱形，尺寸 (1.5s, 0.866s)、内角 60°，拉伸后仍无缝。
         const qreal s = size.height() / 2.0;
@@ -295,7 +303,7 @@ void MainWindowInsertController::InsertCompositeShape(ShapeType type)
         faces.append(makeFace(MainWindow::tr("Cube top"), QPointF(cx, cy - 0.5 * s), faceSize, 30.0));
         faces.append(makeFace(MainWindow::tr("Cube left"), QPointF(cx - 0.4330127 * s, cy + 0.25 * s), faceSize, 90.0));
         faces.append(
-            makeFace(MainWindow::tr("Cube right"), QPointF(cx + 0.4330127 * s, cy + 0.25 * s), faceSize, -30.0));
+            makeFace(MainWindow::tr("Cube right"), QPointF(cx + 0.4330127 * s, cy + 0.25 * s), faceSize, 90.0, 120.0));
     } else {
         // 需求 30：圆柱体 = 一个有面积的多边形柱身 + 顶椭圆；先加柱身再加椭圆，
         // 层内高度递增，椭圆因此叠在多边形之上。

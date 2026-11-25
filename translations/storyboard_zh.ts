@@ -3642,7 +3642,7 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message><message>
         <location filename="../src/ShapeItem.cpp" line="96"/>
         <source>Cube</source>
-        <translation>正方体</translation>
+        <translation>立方体</translation>
     </message><message>
         <location filename="../src/ShapeItem.cpp" line="98"/>
         <source>Cylinder</source>
@@ -4902,7 +4902,7 @@ Second line caption</source>
         <translation>卷轴</translation>
     </message><message>
         <source>Cube</source>
-        <translation>正方体</translation>
+        <translation>立方体</translation>
     </message><message>
         <source>Cylinder</source>
         <translation>圆柱体</translation>
