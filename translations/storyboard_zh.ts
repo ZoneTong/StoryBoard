@@ -871,8 +871,8 @@
         <source>Semi-axes</source>
         <translation>半轴</translation>
     </message><message>
-        <source>Sector / arc angles</source>
-        <translation>扇形 / 弧线角度</translation>
+        <source>Sector start / sweep angles</source>
+        <translation>扇形起始角/扫过角</translation>
     </message><message>
         <source>Interior angle</source>
         <translation>内角</translation>

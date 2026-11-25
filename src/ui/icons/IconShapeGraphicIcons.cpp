@@ -343,6 +343,106 @@ void DrawSector(QPainter& painter, IconId)
     DrawSectorStartWedge(painter);
     DrawSectorSweepWedge(painter);
 }
+
+// 扇形起始角 / 扫过角行图标（按设计稿重绘）：半圆量角器，左半直径与起始边为实线，
+// 右半基线与剩余弧为虚线；左端标起始角小弧，起始边端点带一枚切向箭头。
+constexpr QPointF SECTOR_ANGLE_CENTER(12.0, 17.0);
+constexpr qreal SECTOR_ANGLE_RADIUS = 10.0;
+constexpr qreal SECTOR_ANGLE_EDGE = 60.0;
+constexpr qreal SECTOR_ANGLE_PEN = 1.6;
+constexpr qreal SECTOR_ANGLE_ARROW_WING = 3.0;
+constexpr qreal SECTOR_ANGLE_ARROW_ANGLE = 24.0;
+
+QRectF SectorAngleRing()
+{
+    return QRectF(SECTOR_ANGLE_CENTER.x() - SECTOR_ANGLE_RADIUS,
+                  SECTOR_ANGLE_CENTER.y() - SECTOR_ANGLE_RADIUS, SECTOR_ANGLE_RADIUS * 2.0,
+                  SECTOR_ANGLE_RADIUS * 2.0);
+}
+
+void DrawSectorAngleSpoke(QPainter& painter, qreal degrees, bool dashed)
+{
+    QPen pen(painter.pen().color(), SECTOR_ANGLE_PEN, Qt::SolidLine, Qt::RoundCap);
+    if (dashed) {
+        pen = SectorDashPen(pen, 2.2, 1.6);
+    }
+    painter.save();
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(pen);
+    painter.drawLine(SECTOR_ANGLE_CENTER, PolarPoint(SECTOR_ANGLE_CENTER, SECTOR_ANGLE_RADIUS, degrees));
+    painter.restore();
+}
+
+void DrawSectorAngleArc(QPainter& painter, qreal from, qreal to, bool dashed)
+{
+    QPainterPath arc;
+    arc.arcMoveTo(SectorAngleRing(), from);
+    arc.arcTo(SectorAngleRing(), from, to - from);
+
+    QPen pen(painter.pen().color(), SECTOR_ANGLE_PEN, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+    if (dashed) {
+        pen = SectorDashPen(pen, 2.0, 1.5);
+    }
+    painter.save();
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(pen);
+    painter.drawPath(arc);
+    painter.restore();
+}
+
+// 起始边端点的开口箭头：两翼从弧端点沿切线两侧张开。
+void DrawSectorAngleArrow(QPainter& painter, qreal degrees)
+{
+    const QColor ink = painter.pen().color();
+    const qreal radians = qDegreesToRadians(degrees);
+    const QPointF tip = PolarPoint(SECTOR_ANGLE_CENTER, SECTOR_ANGLE_RADIUS, degrees);
+    const qreal tangentAngle = qAtan2(qCos(radians), qSin(radians));
+
+    QPainterPath chevron;
+    for (int i = 0; i < 2; ++i) {
+        const qreal wingAngle = tangentAngle + (i == 0 ? 1.0 : -1.0) * qDegreesToRadians(SECTOR_ANGLE_ARROW_ANGLE);
+        chevron.moveTo(tip);
+        chevron.lineTo(tip + QPointF(qCos(wingAngle), qSin(wingAngle)) * SECTOR_ANGLE_ARROW_WING);
+    }
+    painter.save();
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(QPen(ink, 1.3, Qt::SolidLine, Qt::RoundCap));
+    painter.drawPath(chevron);
+    painter.restore();
+}
+
+void DrawSectorAngle(QPainter& painter, IconId)
+{
+    // 实线：扫过弧（180°→起始边）、左半直径、起始边半径。
+    DrawSectorAngleArc(painter, 180.0, SECTOR_ANGLE_EDGE, false);
+    DrawSectorAngleSpoke(painter, 180.0, false);
+    DrawSectorAngleSpoke(painter, SECTOR_ANGLE_EDGE, false);
+    // 虚线：剩余弧（起始边→0°）、右半基线直径、右端直角标记。
+    DrawSectorAngleArc(painter, SECTOR_ANGLE_EDGE, 0.0, true);
+    DrawSectorAngleSpoke(painter, 0.0, true);
+
+    const QPointF right = PolarPoint(SECTOR_ANGLE_CENTER, SECTOR_ANGLE_RADIUS, 0.0);
+    painter.save();
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(SectorDashPen(QPen(painter.pen().color(), SECTOR_ANGLE_PEN, Qt::SolidLine, Qt::RoundCap), 2.0, 1.5));
+    painter.drawLine(right, QPointF(right.x(), right.y() + 3.2));
+    painter.restore();
+
+    // 左端起始角小弧与射线。
+    const QPointF left = PolarPoint(SECTOR_ANGLE_CENTER, SECTOR_ANGLE_RADIUS, 180.0);
+    painter.save();
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(QPen(painter.pen().color(), SECTOR_ANGLE_PEN, Qt::SolidLine, Qt::RoundCap));
+    painter.drawLine(left, left + QPointF(-1.7, -1.4));
+    QPainterPath corner;
+    corner.arcMoveTo(QRectF(left.x() - 3.0, left.y() - 3.0, 6.0, 6.0), 180.0);
+    corner.arcTo(QRectF(left.x() - 3.0, left.y() - 3.0, 6.0, 6.0), 180.0, -40.0);
+    painter.drawPath(corner);
+    painter.restore();
+
+    DrawSectorAngleArrow(painter, SECTOR_ANGLE_EDGE);
+}
+
 constexpr struct IconEntry {
     IconId id;
     void (*draw)(QPainter&, IconId);
@@ -365,6 +465,7 @@ constexpr struct IconEntry {
     {IconId::AXIS_MAJOR, DrawAxisMajor},
     {IconId::AXIS_MINOR, DrawAxisMinor},
     {IconId::SECTOR, DrawSector},
+    {IconId::SECTOR_ANGLE, DrawSectorAngle},
 };
 
 } // namespace

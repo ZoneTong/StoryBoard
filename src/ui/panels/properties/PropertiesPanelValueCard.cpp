@@ -117,16 +117,16 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     m_axisRow->setVisible(false);
     outer->addWidget(m_axisRow);
 
-    // 起止角合成一行（起始角, 扫过角），图标用扇形：显示口径回到扫过角，
+    // 起止角合成一行（起始角, 扫过角），行图标是半圆量角器：显示口径回到扫过角，
     // 与数据层的「起始角 + 扫过角」一致，写入时不需要再换算终止角。
     m_arcSection = new QWidget(this);
     RowMetrics::ApplyRow(m_arcSection);
-    m_arcSection->setToolTip(PropertiesPanel::tr("Sector / arc angles"));
+    m_arcSection->setToolTip(PropertiesPanel::tr("Sector start / sweep angles"));
     auto* arcLayout = new QHBoxLayout(m_arcSection);
     arcLayout->setContentsMargins(0, 0, 0, 0);
     arcLayout->setSpacing(4);
-    QToolButton* arcIcon = MakeRowIcon(IconId::SECTOR, m_arcSection);
-    arcIcon->setToolTip(PropertiesPanel::tr("Sector / arc angles"));
+    QToolButton* arcIcon = MakeRowIcon(IconId::SECTOR_ANGLE, m_arcSection);
+    arcIcon->setToolTip(PropertiesPanel::tr("Sector start / sweep angles"));
     arcLayout->addWidget(arcIcon);
 
     m_arcStartSpin = new QSpinBox(m_arcSection);
