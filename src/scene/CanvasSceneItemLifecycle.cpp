@@ -84,6 +84,23 @@ void CanvasScene::DeleteSelected()
         return;
     }
 
+    // 容器文字跟着容器一起删：只选中容器时把归属它的文字补进同一条撤销记录，
+    // 避免留下指向已删除容器的孤立文字。
+    QSet<QString> containerUids;
+    for (CanvasItem* item : std::as_const(selected)) {
+        if (item->Category() == ItemCategory::SHAPE) {
+            containerUids.insert(item->Uid());
+        }
+    }
+    if (!containerUids.isEmpty()) {
+        for (CanvasItem* item : CanvasItems()) {
+            TextItem* text = dynamic_cast<TextItem*>(item);
+            if (text && !text->isSelected() && containerUids.contains(text->ContainerUid())) {
+                selected.append(text);
+            }
+        }
+    }
+
     if (m_undoStack) {
         m_undoStack->push(new RemoveItemsCommand(this, selected, tr("Delete item")));
     } else {

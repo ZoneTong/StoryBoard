@@ -92,5 +92,11 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
                       .arg(movedCenter.y())
                       .arg(resized.center().x())
                       .arg(resized.center().y()));
+
+        scene.clearSelection();
+        rect->setSelected(true);
+        scene.DeleteSelected();
+        ctx.Check(scene.CanvasItemCount() == 0, QStringLiteral("删除容器时一起删掉容器文字"),
+                  QStringLiteral("count=%1").arg(scene.CanvasItemCount()));
     }
 }

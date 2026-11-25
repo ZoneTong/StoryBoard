@@ -97,7 +97,9 @@ void CanvasScene::SyncArrowBindings()
         if (!line->EndBinding().isEmpty()) {
             CanvasItem* target = ItemByUid(line->EndBinding().value(QStringLiteral("elementId")).toString());
             if (target && target->Category() == ItemCategory::SHAPE) {
-                const QPointF other = line->mapToScene(knots.at(knots.size() - 2));
+                // 起点可能刚被移动过，终点参考点要用最新的节点。
+                const QVector<QPointF> current = line->StrokePoints();
+                const QPointF other = line->mapToScene(current.at(current.size() - 2));
                 const QRectF rect = target->mapRectToScene(target->ContentRect());
                 line->MoveEndpoint(false, BoundaryPoint(rect, other, BindingGap(line->EndBinding())));
             }
