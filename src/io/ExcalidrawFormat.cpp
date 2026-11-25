@@ -132,6 +132,14 @@ QJsonArray ElementsToItems(const QJsonArray& elements, QStringList* warnings, QJ
         if (item.isEmpty()) {
             continue;
         }
+        // Excalidraw 元素级附加信息原样留在 native JSON；frameId 已经换算成 layer。
+        const QString link = element.value(QStringLiteral("link")).toString().trimmed();
+        if (!link.isEmpty()) {
+            item.insert(QStringLiteral("link"), link);
+        }
+        if (element.value(QStringLiteral("locked")).toBool(false)) {
+            item.insert(QStringLiteral("locked"), true);
+        }
         // 图元身份沿用 Excalidraw 的元素 id，后续绑定/容器关系才能指回同一个对象。
         const QString sourceUid = element.value(QStringLiteral("id")).toString().trimmed();
         if (!sourceUid.isEmpty() && !usedUids.contains(sourceUid)) {

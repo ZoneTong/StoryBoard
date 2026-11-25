@@ -177,6 +177,16 @@ void CanvasItem::AssignNewUid()
     m_uid = QUuid::createUuid().toString(QUuid::WithoutBraces).remove(QLatin1Char('-')).left(12);
 }
 
+void CanvasItem::SetLink(const QString& link)
+{
+    m_link = link.trimmed();
+}
+
+void CanvasItem::SetLocked(bool locked)
+{
+    m_locked = locked;
+}
+
 QSizeF CanvasItem::MinimumSize()
 {
     return QSizeF(MINIMUM_SIDE, MINIMUM_SIDE);
@@ -603,6 +613,12 @@ QJsonObject CanvasItem::BaseJson() const
         json.insert(QStringLiteral("name"), m_name);
     }
     json.insert(QStringLiteral("uid"), m_uid);
+    if (!m_link.isEmpty()) {
+        json.insert(QStringLiteral("link"), m_link);
+    }
+    if (m_locked) {
+        json.insert(QStringLiteral("locked"), true);
+    }
     // 绘制顺序由 layer + height 决定，不再写冗余的 z 键。
     return json;
 }
@@ -620,5 +636,7 @@ void CanvasItem::ApplyBaseJson(const QJsonObject& json)
     m_flipX = json.value(QStringLiteral("flipX")).toBool(false);
     m_flipY = json.value(QStringLiteral("flipY")).toBool(false);
     m_name = json.value(QStringLiteral("name")).toString().trimmed();
+    SetLink(json.value(QStringLiteral("link")).toString());
+    SetLocked(json.value(QStringLiteral("locked")).toBool(false));
     SetUid(json.value(QStringLiteral("uid")).toString());
 }

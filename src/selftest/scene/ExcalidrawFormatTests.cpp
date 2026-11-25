@@ -241,6 +241,9 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
         text.insert(QStringLiteral("text"), QStringLiteral("导出"));
         text.insert(QStringLiteral("fontSize"), 15.0);
         text.insert(QStringLiteral("color"), QStringLiteral("#ff1e293b"));
+        // 元素级超链接与锁定只做格式往返，不参与画板交互。
+        item.insert(QStringLiteral("link"), QStringLiteral("https://example.com/storyboard"));
+        item.insert(QStringLiteral("locked"), true);
 
         QJsonObject document;
         document.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
@@ -285,6 +288,16 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
         ctx.Check(exportedElements.at(0).toObject().value(QStringLiteral("type")).toString() ==
                       QStringLiteral("rectangle"),
                   QStringLiteral("矩形导出为 rectangle"), QStringLiteral("ok"));
+        const QJsonObject exportedShape = exportedElements.at(0).toObject();
+        ctx.Check(exportedShape.value(QStringLiteral("link")).toString() ==
+                          QStringLiteral("https://example.com/storyboard") &&
+                      exportedShape.value(QStringLiteral("locked")).toBool(true) &&
+                      exportedLine.value(QStringLiteral("link")).isNull() &&
+                      !exportedLine.value(QStringLiteral("locked")).toBool(),
+                  QStringLiteral("link / locked 导出为元素级字段，未设置时保持 null/false"),
+                  QStringLiteral("link=%1 locked=%2")
+                      .arg(exportedShape.value(QStringLiteral("link")).toString())
+                      .arg(exportedShape.value(QStringLiteral("locked")).toBool()));
 
         // 往返：导出的场景能再导入回画板文档。
         const QJsonObject roundTrip = Excalidraw::SceneToStoryBoard(exported, nullptr);
@@ -292,6 +305,14 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
                       roundTrip.value(QStringLiteral("items")).toArray().size() == 3,
                   QStringLiteral("导出结果可再次导入（往返 3 个图元）"),
                   QStringLiteral("items=%1").arg(roundTrip.value(QStringLiteral("items")).toArray().size()));
+        const QJsonObject roundTripShape = roundTrip.value(QStringLiteral("items")).toArray().at(0).toObject();
+        ctx.Check(roundTripShape.value(QStringLiteral("link")).toString() ==
+                          QStringLiteral("https://example.com/storyboard") &&
+                      roundTripShape.value(QStringLiteral("locked")).toBool(true),
+                  QStringLiteral("link / locked 经导出再导入仍保留"),
+                  QStringLiteral("link=%1 locked=%2")
+                      .arg(roundTripShape.value(QStringLiteral("link")).toString())
+                      .arg(roundTripShape.value(QStringLiteral("locked")).toBool()));
     }
 
     // frame 变成图层：frameId 命中的元素归该层，层名取 frame name。

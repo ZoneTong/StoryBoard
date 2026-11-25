@@ -335,8 +335,9 @@ QJsonObject BaseElement(const QJsonObject& item, const QString& id)
     element.insert(QStringLiteral("groupIds"), QJsonArray{});
     element.insert(QStringLiteral("boundElements"), QJsonArray{});
     element.insert(QStringLiteral("updated"), 1);
-    element.insert(QStringLiteral("link"), QJsonValue::Null);
-    element.insert(QStringLiteral("locked"), false);
+    const QString link = item.value(QStringLiteral("link")).toString().trimmed();
+    element.insert(QStringLiteral("link"), link.isEmpty() ? QJsonValue(QJsonValue::Null) : QJsonValue(link));
+    element.insert(QStringLiteral("locked"), item.value(QStringLiteral("locked")).toBool(false));
     element.insert(QStringLiteral("frameId"), QJsonValue::Null);
     return element;
 }

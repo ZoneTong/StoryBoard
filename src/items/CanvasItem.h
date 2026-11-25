@@ -103,6 +103,11 @@ class CanvasItem : public QGraphicsObject {
     QString Uid() const { return m_uid; }
     void SetUid(const QString& uid);
     void AssignNewUid();
+    // Excalidraw 元素级附加信息：超链接与锁定只做格式往返，当前不改变画板交互。
+    QString Link() const { return m_link; }
+    void SetLink(const QString& link);
+    bool IsLocked() const { return m_locked; }
+    void SetLocked(bool locked);
 
     QRectF ContentRect() const;
     // 选中框与缩放手柄的锚定矩形。默认就是内容矩形；弧线这类只在椭圆上截一段轮廓的
@@ -234,6 +239,8 @@ class CanvasItem : public QGraphicsObject {
     qreal m_itemOpacity = 1.0;
     QString m_name;
     QString m_uid;
+    QString m_link;
+    bool m_locked = false;
     QMap<PropertyKey, QVariant> m_dynamicProperties;
     DragKind m_drag = DragKind::NONE;
     Handle m_resizeHandle = NO_HANDLE;
