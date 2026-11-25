@@ -26,8 +26,8 @@
 namespace {
 
 
-UiLanguage g_gOverride = UiLanguage::SYSTEM;
-bool g_gOverrideActive = false;
+UiLanguage g_override = UiLanguage::SYSTEM;
+bool g_overrideActive = false;
 
 const char* const TRANSLATION_CONTEXT = "StoryBoard";
 // 源语言是英文；中文等其它语种放在各自的 .ts/.qm 里。
@@ -36,22 +36,22 @@ const char* const TRANSLATION_SOURCE_RESOURCE = ":/i18n/storyboard_zh.ts";
 // Qt 6 内置控件（QFontDialog、QMessageBox 等）的标准标签由 qtbase 翻译提供。
 const char* const QT_TRANSLATION_RESOURCE = ":/i18n/qtbase_zh_CN.qm";
 
-QTranslator g_gTranslator;
-bool g_gTranslatorLoaded = false;
-bool g_gTranslatorInstalled = false;
-QTranslator g_gQtTranslator;
-bool g_gQtTranslationAvailable = false;
-bool g_gQtTranslatorInstalled = false;
-QHash<QString, QString> g_gReverseTranslations;
+QTranslator g_translator;
+bool g_translatorLoaded = false;
+bool g_translatorInstalled = false;
+QTranslator g_qtTranslator;
+bool g_qtTranslationAvailable = false;
+bool g_qtTranslatorInstalled = false;
+QHash<QString, QString> g_reverseTranslations;
 // 英文源串 → 中文：按 ts 全上下文收集，不只 StoryBoard 一个上下文。
 // 属性行标签是用 ItemPropertiesDialog 这个 i18n 上下文建的，只查 StoryBoard 会漏，必须走这张表。
-QHash<QString, QString> g_gForwardTranslations;
+QHash<QString, QString> g_forwardTranslations;
 // 同一源串出现多种译文的，记下来不再参与正向查询（否则第三条又会填回去）。
-QSet<QString> g_gForwardConflicts;
+QSet<QString> g_forwardConflicts;
 
 void LoadReverseTranslations()
 {
-    if (!g_gReverseTranslations.isEmpty()) {
+    if (!g_reverseTranslations.isEmpty()) {
         return;
     }
 
@@ -86,18 +86,18 @@ void LoadReverseTranslations()
             const QString translated = xml.readElementText();
             if (!source.isEmpty() && !translated.isEmpty()) {
                 // 同源多译文（不同上下文各译一份）无法决定方向，跳过以免来回翻抖动。
-                if (!g_gForwardConflicts.contains(source)) {
-                    const auto forward = g_gForwardTranslations.constFind(source);
-                    if (forward == g_gForwardTranslations.constEnd()) {
-                        g_gForwardTranslations.insert(source, translated);
+                if (!g_forwardConflicts.contains(source)) {
+                    const auto forward = g_forwardTranslations.constFind(source);
+                    if (forward == g_forwardTranslations.constEnd()) {
+                        g_forwardTranslations.insert(source, translated);
                     } else if (forward.value() != translated) {
-                        g_gForwardTranslations.remove(source);
-                        g_gForwardConflicts.insert(source);
+                        g_forwardTranslations.remove(source);
+                        g_forwardConflicts.insert(source);
                     }
                 }
                 // 同译文多源（Selected item / Stroke / Solid 等）反向也只能跳过。
-                if (!g_gReverseTranslations.contains(translated)) {
-                    g_gReverseTranslations.insert(translated, source);
+                if (!g_reverseTranslations.contains(translated)) {
+                    g_reverseTranslations.insert(translated, source);
                 }
             }
             source.clear();
@@ -107,13 +107,13 @@ void LoadReverseTranslations()
 
 void EnsureTranslatorLoaded()
 {
-    if (g_gTranslatorLoaded) {
+    if (g_translatorLoaded) {
         return;
     }
-    g_gTranslatorLoaded = true;
+    g_translatorLoaded = true;
     LoadReverseTranslations();
-    (void)g_gTranslator.load(QString::fromLatin1(TRANSLATION_RESOURCE));
-    g_gQtTranslationAvailable = g_gQtTranslator.load(QString::fromLatin1(QT_TRANSLATION_RESOURCE));
+    (void)g_translator.load(QString::fromLatin1(TRANSLATION_RESOURCE));
+    g_qtTranslationAvailable = g_qtTranslator.load(QString::fromLatin1(QT_TRANSLATION_RESOURCE));
 }
 
 void InstallChineseTranslator(bool chinese)
@@ -124,24 +124,24 @@ void InstallChineseTranslator(bool chinese)
         return;
     }
     if (chinese) {
-        if (!g_gTranslatorInstalled) {
-            app->installTranslator(&g_gTranslator);
-            g_gTranslatorInstalled = true;
+        if (!g_translatorInstalled) {
+            app->installTranslator(&g_translator);
+            g_translatorInstalled = true;
         }
         // qtbase 翻译放在最后安装：Qt 内置控件优先查到它，应用自己的
-        // StoryBoard 上下文仍由 gTranslator 提供。
-        if (g_gQtTranslationAvailable && !g_gQtTranslatorInstalled) {
-            app->installTranslator(&g_gQtTranslator);
-            g_gQtTranslatorInstalled = true;
+        // StoryBoard 上下文仍由 g_translator 提供。
+        if (g_qtTranslationAvailable && !g_qtTranslatorInstalled) {
+            app->installTranslator(&g_qtTranslator);
+            g_qtTranslatorInstalled = true;
         }
     } else {
-        if (g_gQtTranslatorInstalled) {
-            app->removeTranslator(&g_gQtTranslator);
-            g_gQtTranslatorInstalled = false;
+        if (g_qtTranslatorInstalled) {
+            app->removeTranslator(&g_qtTranslator);
+            g_qtTranslatorInstalled = false;
         }
-        if (g_gTranslatorInstalled) {
-            app->removeTranslator(&g_gTranslator);
-            g_gTranslatorInstalled = false;
+        if (g_translatorInstalled) {
+            app->removeTranslator(&g_translator);
+            g_translatorInstalled = false;
         }
     }
 }
@@ -151,8 +151,8 @@ QString TranslateToCurrent(const QString& source)
     return QCoreApplication::translate(TRANSLATION_CONTEXT, source.toUtf8().constData());
 }
 
-UiLanguage g_gExplicitLanguage = UiLanguage::SYSTEM;
-bool g_gExplicitActive = false;
+UiLanguage g_explicitLanguage = UiLanguage::SYSTEM;
+bool g_explicitActive = false;
 
 // 旧版本把语言单独存在 StoryBoard-language.txt（注册表写不进去时的退路）。
 // 这些文件只用于一次性迁移，读到旧值就并入 StoryBoard.ini 再删除，避免两处配置打架。
@@ -253,8 +253,8 @@ UiLanguage LanguageFromStored(const QString& stored)
 
 UiLanguage UiLanguageSetting()
 {
-    if (g_gExplicitActive) {
-        return g_gExplicitLanguage;
+    if (g_explicitActive) {
+        return g_explicitLanguage;
     }
     return LanguageFromStored(StoredLanguageCache());
 }
@@ -267,11 +267,11 @@ void SetUiLanguageSetting(UiLanguage language)
 
     // 先记住本次运行的选择：即使磁盘/注册表写失败，当前窗口也能立即切换。
     if (language == UiLanguage::SYSTEM) {
-        g_gExplicitActive = false;
-        g_gExplicitLanguage = UiLanguage::SYSTEM;
+        g_explicitActive = false;
+        g_explicitLanguage = UiLanguage::SYSTEM;
     } else {
-        g_gExplicitActive = true;
-        g_gExplicitLanguage = language;
+        g_explicitActive = true;
+        g_explicitLanguage = language;
     }
 
     if (PersistLanguage(stored)) {
@@ -283,15 +283,15 @@ void SetUiLanguageSetting(UiLanguage language)
 
 void UiOverrideLanguage(UiLanguage language)
 {
-    g_gOverrideActive = language != UiLanguage::SYSTEM;
-    g_gOverride = language;
+    g_overrideActive = language != UiLanguage::SYSTEM;
+    g_override = language;
     InstallChineseTranslator(UiEffectiveLanguage() == UiLanguage::CHINESE);
 }
 
 UiLanguage UiEffectiveLanguage()
 {
-    if (g_gOverrideActive) {
-        return g_gOverride;
+    if (g_overrideActive) {
+        return g_override;
     }
     const QString fromEnv = qEnvironmentVariable("STORYBOARD_LANG").trimmed().toLower();
     if (fromEnv == QLatin1String("zh")) {
@@ -335,8 +335,8 @@ QString TranslateWithSuffix(const QString& text)
     const QString prefix = text.left(suffixStart);
     const QString suffix = text.mid(suffixStart);
     if (UiIsEnglish()) {
-        const auto it = g_gReverseTranslations.constFind(prefix);
-        return it == g_gReverseTranslations.constEnd() ? text : it.value() + suffix;
+        const auto it = g_reverseTranslations.constFind(prefix);
+        return it == g_reverseTranslations.constEnd() ? text : it.value() + suffix;
     }
     const QString translated = TranslateToCurrent(prefix);
     return translated == prefix ? text : translated + suffix;
@@ -350,16 +350,16 @@ QString UiTranslateEitherWay(const QString& text)
     }
     if (UiIsEnglish()) {
         // 源语言是英文；只有已经显示成中文的文本需要查反向表。
-        const auto it = g_gReverseTranslations.constFind(text);
-        if (it != g_gReverseTranslations.constEnd()) {
+        const auto it = g_reverseTranslations.constFind(text);
+        if (it != g_reverseTranslations.constEnd()) {
             return it.value();
         }
         return TranslateWithSuffix(text);
     }
     // 中文方向：先查跨上下文正续表（属性窗的行标签不在 StoryBoard 上下文里），
     // 再退回 StoryBoard 上下文翻译器，最后试快捷键后缀。
-    const auto forward = g_gForwardTranslations.constFind(text);
-    if (forward != g_gForwardTranslations.constEnd()) {
+    const auto forward = g_forwardTranslations.constFind(text);
+    if (forward != g_forwardTranslations.constEnd()) {
         return forward.value();
     }
     const QString translated = TranslateToCurrent(text);
