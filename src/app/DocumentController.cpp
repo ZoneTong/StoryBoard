@@ -60,17 +60,19 @@ bool SceneHasImages(const QJsonObject& scene)
     return false;
 }
 
-// 导入含图片的 Excalidraw 场景时给一次选择：默认跳过图片，勾选后按 dataURL 保留成位图图元。
+// 导入含图片的 Excalidraw 场景时给一次选择：默认保留图片（矩形 + 图片填充），
+// 取消勾选才跳过。
 bool AskKeepImagesAsBitmap(QWidget* parent)
 {
     if (TestMode::IsSelfTestMode()) {
-        return false;
+        return true;
     }
     QDialog dialog(parent);
     dialog.setWindowTitle(MainWindow::tr("Import Excalidraw"));
     auto* layout = new QVBoxLayout(&dialog);
     auto* text = new QLabel(MainWindow::tr("This scene contains images. Keep them as bitmaps?"), &dialog);
     auto* keep = new QCheckBox(MainWindow::tr("Keep images as bitmaps"), &dialog);
+    keep->setChecked(true);
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
     layout->addWidget(text);
     layout->addWidget(keep);
