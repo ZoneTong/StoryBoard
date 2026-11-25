@@ -345,13 +345,18 @@ void DrawSector(QPainter& painter, IconId)
 }
 
 // 扇形起始角 / 扫过角行图标（按设计稿重绘）：半圆量角器，左半直径与起始边为实线，
-// 右半基线与剩余弧为虚线；左端标起始角小弧，起始边端点带一枚切向箭头。
+// 右半基线与剩余弧为虚线；左端起始射线与起始边端点各带一枚箭头。
 constexpr QPointF SECTOR_ANGLE_CENTER(12.0, 17.0);
 constexpr qreal SECTOR_ANGLE_RADIUS = 10.0;
 constexpr qreal SECTOR_ANGLE_EDGE = 60.0;
 constexpr qreal SECTOR_ANGLE_PEN = 1.6;
-constexpr qreal SECTOR_ANGLE_ARROW_WING = 3.0;
-constexpr qreal SECTOR_ANGLE_ARROW_ANGLE = 24.0;
+constexpr qreal SECTOR_ANGLE_ARROW_WING = 3.7;
+constexpr qreal SECTOR_ANGLE_ARROW_ANGLE = 26.0;
+constexpr qreal SECTOR_ANGLE_ARROW_PEN = 1.7;
+constexpr qreal SECTOR_ANGLE_ARROW_OUTSET = 0.7;
+constexpr qreal SECTOR_ANGLE_RAY_ANGLE = 140.0;
+constexpr qreal SECTOR_ANGLE_RAY_LEN = 2.6;
+constexpr qreal SECTOR_ANGLE_RAY_WING = 2.7;
 
 QRectF SectorAngleRing()
 {
@@ -390,12 +395,13 @@ void DrawSectorAngleArc(QPainter& painter, qreal from, qreal to, bool dashed)
     painter.restore();
 }
 
-// 起始边端点的开口箭头：两翼从弧端点沿切线两侧张开。
+// 起始边端点的开口箭头：尖端沿半径探出轮廓，两翼沿切线两侧张开。
 void DrawSectorAngleArrow(QPainter& painter, qreal degrees)
 {
     const QColor ink = painter.pen().color();
     const qreal radians = qDegreesToRadians(degrees);
-    const QPointF tip = PolarPoint(SECTOR_ANGLE_CENTER, SECTOR_ANGLE_RADIUS, degrees);
+    const QPointF tip =
+        PolarPoint(SECTOR_ANGLE_CENTER, SECTOR_ANGLE_RADIUS + SECTOR_ANGLE_ARROW_OUTSET, degrees);
     const qreal tangentAngle = qAtan2(qCos(radians), qSin(radians));
 
     QPainterPath chevron;
@@ -406,7 +412,30 @@ void DrawSectorAngleArrow(QPainter& painter, qreal degrees)
     }
     painter.save();
     painter.setBrush(Qt::NoBrush);
-    painter.setPen(QPen(ink, 1.3, Qt::SolidLine, Qt::RoundCap));
+    painter.setPen(QPen(ink, SECTOR_ANGLE_ARROW_PEN, Qt::SolidLine, Qt::RoundCap));
+    painter.drawPath(chevron);
+    painter.restore();
+}
+
+// 左端起始射线端点的线性箭头：杆沿射线方向伸出，尖端两翼往回张开。
+void DrawSectorAngleRayArrow(QPainter& painter, const QPointF& origin)
+{
+    const QColor ink = painter.pen().color();
+    const qreal radians = qDegreesToRadians(SECTOR_ANGLE_RAY_ANGLE);
+    const QPointF dir(qCos(radians), -qSin(radians));
+    const QPointF tip = origin + dir * SECTOR_ANGLE_RAY_LEN;
+
+    QPainterPath chevron;
+    for (int i = 0; i < 2; ++i) {
+        const qreal wingAngle = qDegreesToRadians(SECTOR_ANGLE_RAY_ANGLE + 180.0) +
+                                (i == 0 ? 1.0 : -1.0) * qDegreesToRadians(30.0);
+        chevron.moveTo(tip);
+        chevron.lineTo(tip + QPointF(qCos(wingAngle), qSin(wingAngle)) * SECTOR_ANGLE_RAY_WING);
+    }
+    painter.save();
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(QPen(ink, SECTOR_ANGLE_ARROW_PEN, Qt::SolidLine, Qt::RoundCap));
+    painter.drawLine(origin, tip - dir * 0.6);
     painter.drawPath(chevron);
     painter.restore();
 }
@@ -428,17 +457,17 @@ void DrawSectorAngle(QPainter& painter, IconId)
     painter.drawLine(right, QPointF(right.x(), right.y() + 3.2));
     painter.restore();
 
-    // 左端起始角小弧与射线。
+    // 左端起始角小弧，与射线端点的线性箭头。
     const QPointF left = PolarPoint(SECTOR_ANGLE_CENTER, SECTOR_ANGLE_RADIUS, 180.0);
     painter.save();
     painter.setBrush(Qt::NoBrush);
     painter.setPen(QPen(painter.pen().color(), SECTOR_ANGLE_PEN, Qt::SolidLine, Qt::RoundCap));
-    painter.drawLine(left, left + QPointF(-1.7, -1.4));
     QPainterPath corner;
-    corner.arcMoveTo(QRectF(left.x() - 3.0, left.y() - 3.0, 6.0, 6.0), 180.0);
-    corner.arcTo(QRectF(left.x() - 3.0, left.y() - 3.0, 6.0, 6.0), 180.0, -40.0);
+    corner.arcMoveTo(QRectF(left.x() - 3.2, left.y() - 3.2, 6.4, 6.4), 180.0);
+    corner.arcTo(QRectF(left.x() - 3.2, left.y() - 3.2, 6.4, 6.4), 180.0, -40.0);
     painter.drawPath(corner);
     painter.restore();
+    DrawSectorAngleRayArrow(painter, left);
 
     DrawSectorAngleArrow(painter, SECTOR_ANGLE_EDGE);
 }
