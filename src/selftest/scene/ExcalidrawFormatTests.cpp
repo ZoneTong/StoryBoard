@@ -782,6 +782,39 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
                       .arg(boundList.join(QLatin1Char('|'))));
     }
 
+    // 悬空绑定：目标图元已删除时，导出不写一个指向不存在 id 的 binding。
+    {
+        QJsonObject dangling;
+        dangling.insert(QStringLiteral("kind"), QStringLiteral("straightline"));
+        dangling.insert(QStringLiteral("uid"), QStringLiteral("arrow-2"));
+        dangling.insert(QStringLiteral("x"), 0.0);
+        dangling.insert(QStringLiteral("y"), 0.0);
+        dangling.insert(QStringLiteral("w"), 100.0);
+        dangling.insert(QStringLiteral("h"), 0.0);
+        dangling.insert(QStringLiteral("baseWidth"), 100.0);
+        dangling.insert(QStringLiteral("baseHeight"), 0.0);
+        dangling.insert(QStringLiteral("layer"), 1);
+        QJsonObject danglingBinding;
+        danglingBinding.insert(QStringLiteral("elementId"), QStringLiteral("missing-shape"));
+        danglingBinding.insert(QStringLiteral("focus"), 0.0);
+        danglingBinding.insert(QStringLiteral("gap"), 4.0);
+        dangling.insert(QStringLiteral("startBinding"), danglingBinding);
+        QJsonArray danglingSegments;
+        danglingSegments.append(QJsonArray{0.0, 0.0, 33.0, 0.0, 67.0, 0.0, 100.0, 0.0});
+        dangling.insert(QStringLiteral("segments"), danglingSegments);
+
+        QJsonObject document;
+        document.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
+        document.insert(QStringLiteral("items"), QJsonArray{dangling});
+        const QJsonObject scene = Excalidraw::StoryBoardToScene(document, nullptr);
+        const QJsonObject element = scene.value(QStringLiteral("elements")).toArray().at(0).toObject();
+        ctx.Check(element.value(QStringLiteral("startBinding")).isNull(),
+                  QStringLiteral("目标已删除时不导出悬空绑定"),
+                  QStringLiteral("binding=%1")
+                      .arg(QString::fromUtf8(QJsonDocument(element.value(QStringLiteral("startBinding")).toObject())
+                                                 .toJson(QJsonDocument::Compact))));
+    }
+
     // 位图往返：默认跳过 image 并留 warning；勾选后落成“矩形 + 图片填充”，
     // 再导出仍是 image 元素 + files 表，数据不丢。
     {

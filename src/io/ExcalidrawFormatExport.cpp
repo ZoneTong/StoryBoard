@@ -259,10 +259,15 @@ QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings
                            endHead.isEmpty() ? QJsonValue(QJsonValue::Null) : QJsonValue(endHead));
             const QJsonObject startBinding = item.value(QStringLiteral("startBinding")).toObject();
             const QJsonObject endBinding = item.value(QStringLiteral("endBinding")).toObject();
+            // 目标已删除时不要把悬空绑定写进 Excalidraw，导出侧要求 elementId 必须存在。
+            const auto bindingValid = [&itemsByUid](const QJsonObject& binding) {
+                return !binding.isEmpty() &&
+                       itemsByUid.contains(binding.value(QStringLiteral("elementId")).toString());
+            };
             element.insert(QStringLiteral("startBinding"),
-                           startBinding.isEmpty() ? QJsonValue(QJsonValue::Null) : QJsonValue(startBinding));
+                           bindingValid(startBinding) ? QJsonValue(startBinding) : QJsonValue(QJsonValue::Null));
             element.insert(QStringLiteral("endBinding"),
-                           endBinding.isEmpty() ? QJsonValue(QJsonValue::Null) : QJsonValue(endBinding));
+                           bindingValid(endBinding) ? QJsonValue(endBinding) : QJsonValue(QJsonValue::Null));
             element.insert(QStringLiteral("lastCommittedPoint"), QJsonValue::Null);
             element.insert(QStringLiteral("points"), RelativePoints(item.value(QStringLiteral("segments")).toArray(),
                                                                     NumberOr(item, QStringLiteral("x"), 0.0),
