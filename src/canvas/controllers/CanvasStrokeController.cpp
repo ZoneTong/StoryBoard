@@ -89,11 +89,9 @@ bool CanvasStrokeController::BeginStroke(const QPoint& viewportPos)
     m_activeStroke = stroke;
     m_startTargetUid.clear();
     m_lastViewportPos = viewportPos;
-    // 起笔落在图形上：记下目标 uid，收笔成直线时把这一端绑上去。
-    if (CanvasItem* target = m_view->HitTester()->TopItemAt(viewportPos)) {
-        if (target->Category() == ItemCategory::SHAPE) {
-            m_startTargetUid = target->Uid();
-        }
+    // 起笔落在图形上或紧贴图形边缘：记下目标 uid，收笔成直线时把这一端绑上去。
+    if (CanvasItem* target = m_scene->BindableShapeAt(m_view->mapToScene(viewportPos), 12.0)) {
+        m_startTargetUid = target->Uid();
     }
     m_scene->clearSelection();
     return true;
@@ -137,15 +135,9 @@ void CanvasStrokeController::FinishStroke()
         auto* line = new StraightLineItem();
         line->SetEndpoints(a, b, stroke->StrokeColor(), stroke->StrokeWidth());
         line->SetStrokePattern(stroke->strokePattern());
-        // 两端各自落在图形上时建立绑定；起止落在同一个图形里不当连接，避免零长度箭头。
+        // 两端各自落在图形内或贴边 12px 内时建立绑定；起止落在同一个图形里不当连接。
         CanvasItem* startTarget = m_scene->ItemByUid(m_startTargetUid);
-        // 进行中的笔画压在最上层，命中会先撞到自己；临时隐藏再查落点下方的图形。
-        stroke->setVisible(false);
-        CanvasItem* endTarget = m_view->HitTester()->TopItemAt(m_lastViewportPos);
-        stroke->setVisible(true);
-        if (endTarget && endTarget->Category() != ItemCategory::SHAPE) {
-            endTarget = nullptr;
-        }
+        CanvasItem* endTarget = m_scene->BindableShapeAt(m_view->mapToScene(m_lastViewportPos), 12.0);
         if (startTarget == endTarget) {
             endTarget = nullptr;
         }

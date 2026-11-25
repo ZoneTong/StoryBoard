@@ -17,6 +17,7 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QColor>
 #include <QContextMenuEvent>
 #include <QCursor>
 #include <QFocusEvent>
@@ -25,7 +26,10 @@
 #include <QMouseEvent>
 #include <QPaintEvent>
 #include <QPainter>
+#include <QPointF>
+#include <QRectF>
 #include <QScrollBar>
+#include <QSizeF>
 #include <QTimer>
 #include <QWheelEvent>
 #include <QtMath>
@@ -518,6 +522,45 @@ void CanvasView::mouseDoubleClickEvent(QMouseEvent* event)
                 return;
             }
             QGraphicsView::mouseDoubleClickEvent(event);
+            return;
+        }
+        // 与 Excalidraw 一致：双击图形进入容器文字编辑，没有容器文字就新建一段并绑定。
+        if (canvasItem->Category() == ItemCategory::SHAPE && !canvasItem->Uid().isEmpty()) {
+            TextItem* containerText = nullptr;
+            for (CanvasItem* item : m_scene->CanvasItems()) {
+                TextItem* text = qobject_cast<TextItem*>(item);
+                if (text && text->ContainerUid() == canvasItem->Uid()) {
+                    containerText = text;
+                    break;
+                }
+            }
+            if (!containerText) {
+                if (!m_scene->IsActiveLayerWritable()) {
+                    emit statusMessage(tr("The current layer is locked or hidden; text cannot be added."));
+                    event->accept();
+                    return;
+                }
+                containerText = new TextItem();
+                containerText->SetTextFormat(tr("Text"), TextItem::DefaultFont(), QColor(30, 41, 59));
+                containerText->SetContainerUid(canvasItem->Uid());
+                const QRectF container = canvasItem->mapRectToScene(canvasItem->ContentRect());
+                const QSizeF size = containerText->NaturalSize();
+                containerText->setPos(container.center() - QPointF(size.width() / 2.0, size.height() / 2.0));
+                m_scene->AddItemsWithUndo({containerText}, tr("Add text"));
+            }
+            m_scene->clearSelection();
+            containerText->setSelected(true);
+            if (!BeginTextEdit(containerText)) {
+                setFocus();
+            }
+            event->accept();
+            return;
+        }
+        if (canvasItem->Category() == ItemCategory::TEXT) {
+            m_scene->clearSelection();
+            canvasItem->setSelected(true);
+            BeginTextEdit(static_cast<TextItem*>(canvasItem));
+            event->accept();
             return;
         }
         if (m_scene->selectedItems().size() != 1 || !canvasItem->isSelected()) {

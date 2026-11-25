@@ -47,6 +47,13 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
         ctx.Check(qAbs(start.x() - 296.0) < 1.0 && qAbs(start.y() - 210.0) < 1.0,
                   QStringLiteral("目标移动后绑定箭头端点跟随"),
                   QStringLiteral("start=(%1,%2)").arg(start.x()).arg(start.y()));
+
+        ctx.Check(scene.BindableShapeAt(QPointF(350.0, 210.0), 12.0) == rect &&
+                      scene.BindableShapeAt(QPointF(290.0, 210.0), 12.0) == rect,
+                  QStringLiteral("图形内与 12px 贴边内都可吸附"),
+                  QStringLiteral("inside/outside"));
+        ctx.Check(scene.BindableShapeAt(QPointF(150.0, 210.0), 12.0) == nullptr,
+                  QStringLiteral("离边缘超过 12px 不吸附"), QStringLiteral("far"));
     }
 
     // 容器文字：容器移动 / 缩放后文字回到容器中心。

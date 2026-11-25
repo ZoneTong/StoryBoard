@@ -72,6 +72,8 @@ class CanvasScene : public QGraphicsScene {
     CanvasItem* ItemByUid(const QString& uid) const;
     // 绑定落点：从 from 朝目标图形中心，取图形边缘上的点，再沿外法线让开 gap。
     static QPointF AttachmentPoint(const CanvasItem* target, const QPointF& from, qreal gap);
+    // 可绑定的图形：点落在图形内，或离内容框边缘不超过 maxDistance；按叠放自上而下取第一个。
+    CanvasItem* BindableShapeAt(const QPointF& scenePos, qreal maxDistance) const;
     // 需求 32：给所有还没有自定义名称的图元补上“类型 1 / 类型 2 …”自动名称。
     // 同时修复载入文件里已有的重名条目，保证画布内名称唯一。
     void AssignAutoItemNames();

@@ -75,6 +75,28 @@ QPointF CanvasScene::AttachmentPoint(const CanvasItem* target, const QPointF& fr
     return BoundaryPoint(target->mapRectToScene(target->ContentRect()), from, gap);
 }
 
+CanvasItem* CanvasScene::BindableShapeAt(const QPointF& scenePos, qreal maxDistance) const
+{
+    const QList<CanvasItem*> items = CanvasItems();
+    // 叠放靠后的在上层，吸附优先命中最上面那个。
+    for (int i = items.size() - 1; i >= 0; --i) {
+        CanvasItem* item = items.at(i);
+        if (!item || item->Category() != ItemCategory::SHAPE || item->Uid().isEmpty() || !item->isVisible()) {
+            continue;
+        }
+        const QRectF rect = item->mapRectToScene(item->ContentRect());
+        if (rect.contains(scenePos)) {
+            return item;
+        }
+        const qreal dx = qMax<qreal>(qMax(rect.left() - scenePos.x(), 0.0), scenePos.x() - rect.right());
+        const qreal dy = qMax<qreal>(qMax(rect.top() - scenePos.y(), 0.0), scenePos.y() - rect.bottom());
+        if (dx * dx + dy * dy <= maxDistance * maxDistance) {
+            return item;
+        }
+    }
+    return nullptr;
+}
+
 void CanvasScene::SyncArrowBindings()
 {
     for (CanvasItem* canvasItem : CanvasItems()) {
