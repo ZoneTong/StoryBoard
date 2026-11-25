@@ -11,6 +11,7 @@
 
 #include <QColor>
 #include <QHash>
+#include <QJsonObject>
 #include <QList>
 #include <QMap>
 #include <QPair>
@@ -238,6 +239,29 @@ class StrokeSmoothCommand : public QUndoCommand {
     QList<QPointer<LineAbstractItem>> m_items;
     QList<LineAbstractItem::GeometryState> m_before;
     QList<LineAbstractItem::GeometryState> m_after;
+};
+
+// 箭头两端绑定的一份快照，端点拖拽 / 删除目标时用它做可撤销的解除与恢复。
+struct ArrowBindingState {
+    QJsonObject start;
+    QJsonObject end;
+};
+
+class ArrowBindingCommand : public QUndoCommand {
+  public:
+    ArrowBindingCommand(CanvasScene* scene, const QList<LineAbstractItem*>& items,
+                        const QList<ArrowBindingState>& before, const QList<ArrowBindingState>& after,
+                        const QString& text);
+    void undo() override;
+    void redo() override;
+
+  private:
+    void Apply(const QList<ArrowBindingState>& states);
+
+    CanvasScene* m_scene = nullptr;
+    QList<QPointer<LineAbstractItem>> m_items;
+    QList<ArrowBindingState> m_before;
+    QList<ArrowBindingState> m_after;
 };
 
 // 透明度对图形、笔画、文字、图片等所有图元都生效。

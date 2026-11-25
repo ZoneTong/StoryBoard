@@ -1,5 +1,9 @@
 #include "items/lines/StraightLineItem.h"
 
+#include "items/CanvasItem.h"
+#include "scene/CanvasScene.h"
+
+#include <QJsonObject>
 #include <QVector>
 
 namespace {
@@ -71,4 +75,71 @@ void StraightLineItem::SetEndpoints(const QPointF& startScene, const QPointF& en
                                     qreal width)
 {
     SetStrokePoints(QVector<QPointF>{startScene, endScene}, color, width, 0.0, true);
+}
+
+HandleSpecList StraightLineItem::CustomHandles() const
+{
+    HandleSpecList specs;
+    const QVector<QPointF> knots = StrokePoints();
+    if (knots.size() < 2) {
+        return specs;
+    }
+    HandleSpec start;
+    start.id = CanvasItem::CUSTOM_0;
+    start.position = knots.constFirst();
+    start.behavior = HandleBehavior::ARC_ENDPOINT;
+    start.cursor = Qt::SizeAllCursor;
+    start.sizeScale = 0.9;
+    specs.append(start);
+    HandleSpec end;
+    end.id = CanvasItem::CUSTOM_1;
+    end.position = knots.constLast();
+    end.behavior = HandleBehavior::ARC_ENDPOINT;
+    end.cursor = Qt::SizeAllCursor;
+    end.sizeScale = 0.9;
+    specs.append(end);
+    return specs;
+}
+
+bool StraightLineItem::BeginCustomHandleDrag(int handle, const QPointF& scenePos)
+{
+    Q_UNUSED(scenePos);
+    return handle == CanvasItem::CUSTOM_0 || handle == CanvasItem::CUSTOM_1;
+}
+
+bool StraightLineItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos)
+{
+    if (handle != CanvasItem::CUSTOM_0 && handle != CanvasItem::CUSTOM_1) {
+        return false;
+    }
+    const bool start = handle == CanvasItem::CUSTOM_0;
+    MoveEndpoint(start, scenePos);
+
+    CanvasScene* canvas = canvasScene();
+    if (!canvas) {
+        return true;
+    }
+    // Excalidraw 口径：拖动端点靠近 / 落进图形就绑上，拖离超过 12px 就解绑。
+    CanvasItem* target = canvas->BindableShapeAt(scenePos, 12.0);
+    if (target && target->Category() == ItemCategory::SHAPE && target->Uid() != Uid()) {
+        QJsonObject binding;
+        binding.insert(QStringLiteral("elementId"), target->Uid());
+        binding.insert(QStringLiteral("focus"), 0.0);
+        binding.insert(QStringLiteral("gap"), 4.0);
+        const QVector<QPointF> knots = StrokePoints();
+        const QPointF other = mapToScene(start ? knots.at(1) : knots.at(qMax(1, knots.size() - 2)));
+        MoveEndpoint(start, CanvasScene::AttachmentPoint(target, other, 4.0));
+        if (start) {
+            SetStartBinding(binding);
+        } else {
+            SetEndBinding(binding);
+        }
+    } else {
+        if (start) {
+            SetStartBinding(QJsonObject());
+        } else {
+            SetEndBinding(QJsonObject());
+        }
+    }
+    return true;
 }

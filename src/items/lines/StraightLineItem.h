@@ -16,6 +16,10 @@ class StraightLineItem : public LineAbstractItem {
     QString TypeDisplayName() const override { return UiText(QStringLiteral("Straight Line")); }
     // 贴近细线的内容框抓不住，选框至少 12×12（只影响选框与手柄，不改几何与命中）。
     QRectF FrameRect() const override;
+    // 两端端点句柄：拖动时直接改端点，并按 12px 口径重新绑定 / 解除绑定。
+    HandleSpecList CustomHandles() const override;
+    bool BeginCustomHandleDrag(int handle, const QPointF& scenePos) override;
+    bool ApplyCustomHandleDrag(int handle, const QPointF& scenePos) override;
 
     // 端点用场景坐标给出；插入与「手绘近直线转生」共用这一入口。
     void SetEndpoints(const QPointF& startScene, const QPointF& endScene, const QColor& color, qreal width);

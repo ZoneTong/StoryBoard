@@ -72,6 +72,45 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
                       .arg(line->StartBinding().isEmpty() ? QStringLiteral("empty") : QStringLiteral("set")));
     }
 
+    // 端点句柄：拖离目标超过 12px 解绑，拖回目标边缘重新绑定。
+    {
+        CanvasScene scene;
+        scene.ApplyCanvasSize(QSizeF(800.0, 600.0));
+        scene.SetMode(ToolMode::EDIT);
+        QUndoStack undo;
+        scene.SetUndoStack(&undo);
+
+        auto* rect = ShapeFactory::Create(ShapeType::RECTANGLE);
+        rect->SetContentSize(QSizeF(160.0, 120.0));
+        rect->setPos(QPointF(300.0, 150.0));
+        scene.AddItemsWithUndo({rect}, QStringLiteral("Add rect"));
+
+        auto* line = new StraightLineItem();
+        line->SetEndpoints(QPointF(0.0, 210.0), QPointF(280.0, 210.0), QColor(QStringLiteral("#1E293B")), 2.0);
+        QJsonObject binding;
+        binding.insert(QStringLiteral("elementId"), rect->Uid());
+        binding.insert(QStringLiteral("focus"), 0.0);
+        binding.insert(QStringLiteral("gap"), 4.0);
+        line->SetStartBinding(binding);
+        scene.AddItemsWithUndo({line}, QStringLiteral("Add arrow"));
+
+        ctx.Check(line->CustomHandles().size() == 2, QStringLiteral("直线提供两个端点句柄"),
+                  QStringLiteral("count=%1").arg(line->CustomHandles().size()));
+        line->BeginCustomHandleDrag(CanvasItem::CUSTOM_0, QPointF(100.0, 100.0));
+        line->ApplyCustomHandleDrag(CanvasItem::CUSTOM_0, QPointF(100.0, 100.0));
+        ctx.Check(line->StartBinding().isEmpty(), QStringLiteral("端点拖离图形后解除绑定"),
+                  QStringLiteral("binding=%1").arg(line->StartBinding().isEmpty() ? QStringLiteral("empty")
+                                                                                : QStringLiteral("set")));
+
+        line->ApplyCustomHandleDrag(CanvasItem::CUSTOM_0, QPointF(290.0, 210.0));
+        const QPointF attached = line->mapToScene(line->StrokePoints().first());
+        ctx.Check(!line->StartBinding().isEmpty() && qAbs(attached.x() - 296.0) < 1.0,
+                  QStringLiteral("端点拖回图形边缘重新绑定并贴边"),
+                  QStringLiteral("x=%1 binding=%2")
+                      .arg(attached.x())
+                      .arg(line->StartBinding().isEmpty() ? QStringLiteral("empty") : QStringLiteral("set")));
+    }
+
     // 容器文字：容器移动 / 缩放后文字回到容器中心。
     {
         CanvasScene scene;

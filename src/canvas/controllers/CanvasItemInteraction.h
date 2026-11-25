@@ -1,7 +1,9 @@
 #pragma once
 
+#include "items/lines/LineAbstractItem.h"
 #include "items/properties/ItemProperties.h"
 
+#include <QJsonObject>
 #include <QMap>
 #include <QPointF>
 #include <QSizeF>
@@ -42,4 +44,10 @@ class CanvasItemInteraction {
     CanvasItem* m_item = nullptr;
     bool m_customDrag = false;
     QMap<PropertyKey, QVariant> m_customDragBefore;
+    // 直线 / 曲线端点句柄改的是几何节点，属性快照回放不了，单独存一份 GeometryState。
+    LineAbstractItem* m_lineCustomDrag = nullptr;
+    LineAbstractItem::GeometryState m_lineGeometryBefore;
+    bool m_hasBindingSnapshot = false;
+    QJsonObject m_startBindingBefore;
+    QJsonObject m_endBindingBefore;
 };

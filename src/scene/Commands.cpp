@@ -348,6 +348,46 @@ void StrokeSmoothCommand::Apply(const QList<LineAbstractItem::GeometryState>& st
     }
 }
 
+ArrowBindingCommand::ArrowBindingCommand(CanvasScene* scene, const QList<LineAbstractItem*>& items,
+                                         const QList<ArrowBindingState>& before,
+                                         const QList<ArrowBindingState>& after, const QString& text)
+    : m_scene(scene), m_before(before), m_after(after)
+{
+    setText(text);
+    for (LineAbstractItem* item : items) {
+        m_items.append(QPointer<LineAbstractItem>(item));
+    }
+}
+
+void ArrowBindingCommand::undo()
+{
+    Apply(m_before);
+}
+
+void ArrowBindingCommand::redo()
+{
+    Apply(m_after);
+}
+
+void ArrowBindingCommand::Apply(const QList<ArrowBindingState>& states)
+{
+    if (states.size() != m_items.size()) {
+        return;
+    }
+    for (int i = 0; i < m_items.size(); ++i) {
+        LineAbstractItem* item = m_items.at(i);
+        if (!item) {
+            continue;
+        }
+        item->SetStartBinding(states.at(i).start);
+        item->SetEndBinding(states.at(i).end);
+        item->update();
+    }
+    if (m_scene) {
+        m_scene->update();
+    }
+}
+
 BackgroundCommand::BackgroundCommand(CanvasScene* scene, const CanvasBackground& before, const CanvasBackground& after,
                                      const QString& text)
     : m_scene(scene), m_before(before), m_after(after)
