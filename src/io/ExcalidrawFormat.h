@@ -16,9 +16,10 @@ bool IsClipboard(const QJsonObject& root);
 
 // 元素数组 -> StoryBoard items 数组（粘贴用）。不支持的元素跳过并写 warning。
 // layers 非空时回填每个 frame 对应的一层；files 提供 image 元素的 dataURL；
-// keepImages 决定 image 元素是转成位图图元还是跳过。
+// keepImages 决定 image 元素是转成位图图元还是跳过；groupParents 非空时回填组嵌套关系。
 QJsonArray ElementsToItems(const QJsonArray& elements, QStringList* warnings = nullptr, QJsonArray* layers = nullptr,
-                           const QJsonObject& files = QJsonObject(), bool keepImages = false);
+                           const QJsonObject& files = QJsonObject(), bool keepImages = false,
+                           QJsonObject* groupParents = nullptr);
 
 // .excalidraw 场景 -> StoryBoard 画板根 JSON（导入用）。
 QJsonObject SceneToStoryBoard(const QJsonObject& scene, QStringList* warnings = nullptr, bool keepImages = false);

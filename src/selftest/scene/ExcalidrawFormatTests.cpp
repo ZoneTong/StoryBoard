@@ -408,6 +408,41 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
                       .arg(roundness.value(QStringLiteral("value")).toDouble()));
     }
 
+    // 分组：画板组号与 groupParents 的嵌套链<->Excalidraw groupIds（内层在前）。
+    {
+        QJsonObject groupedShape;
+        groupedShape.insert(QStringLiteral("kind"), QStringLiteral("shape"));
+        groupedShape.insert(QStringLiteral("shapeType"), QStringLiteral("rectangle"));
+        groupedShape.insert(QStringLiteral("x"), 0.0);
+        groupedShape.insert(QStringLiteral("y"), 0.0);
+        groupedShape.insert(QStringLiteral("w"), 50.0);
+        groupedShape.insert(QStringLiteral("h"), 50.0);
+        groupedShape.insert(QStringLiteral("group"), 5);
+        QJsonObject parents;
+        parents.insert(QStringLiteral("5"), 6);
+        QJsonObject document;
+        document.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
+        document.insert(QStringLiteral("items"), QJsonArray{groupedShape});
+        document.insert(QStringLiteral("groupParents"), parents);
+        const QJsonObject exported = Excalidraw::StoryBoardToScene(document, nullptr);
+        const QJsonArray exportedGroupIds =
+            exported.value(QStringLiteral("elements")).toArray().at(0).toObject().value(QStringLiteral("groupIds")).toArray();
+        QJsonObject importedParents;
+        const QJsonObject imported = Excalidraw::SceneToStoryBoard(exported, nullptr);
+        const QJsonArray importedItems = imported.value(QStringLiteral("items")).toArray();
+        const bool importedGroupOk = importedItems.size() == 1 &&
+                                     importedItems.at(0).toObject().value(QStringLiteral("group")).toInt() > 0;
+        const QJsonObject importedParentsJson = imported.value(QStringLiteral("groupParents")).toObject();
+        ctx.Check(exportedGroupIds.size() == 2 && exportedGroupIds.at(0).toString() == QStringLiteral("5") &&
+                      exportedGroupIds.at(1).toString() == QStringLiteral("6") && importedGroupOk &&
+                      !importedParentsJson.isEmpty(),
+                  QStringLiteral("分组按内层在前的 groupIds 导出并可导回组链"),
+                  QStringLiteral("ids=%1 importedGroup=%2 parents=%3")
+                      .arg(exportedGroupIds.size())
+                      .arg(importedGroupOk ? QStringLiteral("yes") : QStringLiteral("no"))
+                      .arg(importedParentsJson.size()));
+    }
+
     // 位图选项：默认跳过 image 并留 warning，勾选后按 dataURL 落成图片图元。
     {
         QJsonObject imageElement = Element(QStringLiteral("image"), 0, 0, 40, 40);

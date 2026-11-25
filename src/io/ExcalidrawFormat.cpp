@@ -457,7 +457,7 @@ bool IsClipboard(const QJsonObject& root)
 }
 
 QJsonArray ElementsToItems(const QJsonArray& elements, QStringList* warnings, QJsonArray* layers,
-                           const QJsonObject& files, bool keepImages)
+                           const QJsonObject& files, bool keepImages, QJsonObject* groupParents)
 {
     QJsonArray items;
     int z = 1000001;
@@ -499,6 +499,12 @@ QJsonArray ElementsToItems(const QJsonArray& elements, QStringList* warnings, QJ
         ++nextLayer;
     }
 
+    // groupIds -> 画板组号：Excalidraw 的 groupIds 从内到外排列，内层给 item 的 group，
+    // 其余写进 groupParents 组成嵌套链，还原画板的组层级。
+    QHash<QString, int> groupIdNumbers;
+    int nextGroup = 1;
+    QJsonObject parentRecords;
+
     for (const QJsonValue& value : elements) {
         if (items.size() >= MAX_ELEMENTS) {
             break;
@@ -511,13 +517,38 @@ QJsonArray ElementsToItems(const QJsonArray& elements, QStringList* warnings, QJ
             // frame 本身只是分组容器，已经变成图层，不再生成图元。
             continue;
         }
+        const QJsonArray groupChain = element.value(QStringLiteral("groupIds")).toArray();
+        QList<int> chain;
+        for (const QJsonValue& groupValue : groupChain) {
+            const QString groupId = groupValue.toString();
+            if (groupId.isEmpty()) {
+                continue;
+            }
+            if (!groupIdNumbers.contains(groupId)) {
+                groupIdNumbers.insert(groupId, nextGroup);
+                ++nextGroup;
+            }
+            chain.append(groupIdNumbers.value(groupId));
+        }
+        for (int index = 0; index + 1 < chain.size(); ++index) {
+            if (chain.at(index) > 0 && chain.at(index + 1) > 0) {
+                parentRecords.insert(QString::number(chain.at(index)), chain.at(index + 1));
+            }
+        }
         const int layer = frameLayer.value(element.value(QStringLiteral("frameId")).toString(), 1);
-        const QJsonObject item = ElementToItem(element, z, layer, warnings, files, keepImages);
+        QJsonObject item = ElementToItem(element, z, layer, warnings, files, keepImages);
         if (item.isEmpty()) {
             continue;
         }
+        if (!chain.isEmpty()) {
+            item.insert(QStringLiteral("group"), chain.constFirst());
+        }
         items.append(item);
         ++z;
+    }
+
+    if (groupParents) {
+        *groupParents = parentRecords;
     }
 
     if (layers) {
@@ -539,8 +570,9 @@ QJsonArray ElementsToItems(const QJsonArray& elements, QStringList* warnings, QJ
 QJsonObject SceneToStoryBoard(const QJsonObject& scene, QStringList* warnings, bool keepImages)
 {
     QJsonArray layers;
+    QJsonObject groupParents;
     const QJsonArray items = ElementsToItems(scene.value(QStringLiteral("elements")).toArray(), warnings, &layers,
-                                             scene.value(QStringLiteral("files")).toObject(), keepImages);
+                                             scene.value(QStringLiteral("files")).toObject(), keepImages, &groupParents);
     if (items.isEmpty()) {
         return {};
     }
@@ -577,6 +609,9 @@ QJsonObject SceneToStoryBoard(const QJsonObject& scene, QStringList* warnings, b
     document.insert(QStringLiteral("background"), backgroundObject);
 
     document.insert(QStringLiteral("layers"), layers);
+    if (!groupParents.isEmpty()) {
+        document.insert(QStringLiteral("groupParents"), groupParents);
+    }
     document.insert(QStringLiteral("activeLayer"), 1);
     document.insert(QStringLiteral("items"), items);
     return document;
@@ -587,6 +622,12 @@ QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings
     const QJsonArray items = document.value(QStringLiteral("items")).toArray();
     QJsonArray elements;
     int index = 0;
+    // 组的嵌套链：item.group 是内层，沿 groupParents 一路往上写进 groupIds。
+    QHash<int, int> groupParents;
+    const QJsonObject parentsJson = document.value(QStringLiteral("groupParents")).toObject();
+    for (auto it = parentsJson.constBegin(); it != parentsJson.constEnd(); ++it) {
+        groupParents.insert(it.key().toInt(), it.value().toInt());
+    }
     // 需求 15：Excalidraw 表达不了图片填充，含 fillImage 的图元按纯色导出并汇总一条提示。
     int fillImageCount = 0;
     for (const QJsonValue& value : items) {
@@ -689,6 +730,15 @@ QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings
         }
         if (!degrade.isEmpty() && warnings) {
             warnings->append(degrade);
+        }
+        QJsonArray groupIds;
+        int group = item.value(QStringLiteral("group")).toInt(0);
+        for (int depth = 0; group > 0 && depth < 64; ++depth) {
+            groupIds.append(QString::number(group));
+            group = groupParents.value(group, 0);
+        }
+        if (!groupIds.isEmpty()) {
+            element.insert(QStringLiteral("groupIds"), groupIds);
         }
         elements.append(element);
         ++index;
