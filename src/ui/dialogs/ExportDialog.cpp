@@ -99,11 +99,11 @@ ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QW
     sizeLayout->setSpacing(10);
     m_sizeLabel = new QLabel(sizeRow);
     m_sizeLabel->setObjectName(QStringLiteral("DialogHint"));
-    m_fitViewCheck = new QCheckBox(tr("Fit to view size"), sizeRow);
+    m_fitViewCheck = new QCheckBox(tr("Fit to content size"), sizeRow);
     m_fitViewCheck->setObjectName(QStringLiteral("ExportFitViewCheck"));
-    m_fitViewCheck->setToolTip(tr("Match the output pixels to the overview view shown on screen"));
+    m_fitViewCheck->setToolTip(tr("Match the output size to the bounding box of the visible items"));
     m_fitViewCheck->setChecked(m_view != nullptr && fitViewSize);
-    // 没有视图（例如示例画布）时不给这个勾选项，避免勾了却算不出尺寸。
+    // 没有视图（例如示例画布）时不给这个勾选项：那条路径没有选中/视图语境，按默认范围出图。
     m_fitViewCheck->setEnabled(m_view != nullptr);
     sizeLayout->addWidget(m_sizeLabel, 1);
     sizeLayout->addWidget(m_fitViewCheck);
@@ -153,7 +153,7 @@ ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QW
 
 void ExportDialog::ApplyFitViewState()
 {
-    // 勾上后范围与比例都由视图接管，这两个控件留在原位但不再起作用。
+    // 勾上后范围与比例都由画布内容接管，这两个控件留在原位但不再起作用。
     const bool fitView = FitViewSelected();
     m_scopeCombo->setEnabled(!fitView);
     m_scaleSpin->setEnabled(!fitView);
@@ -182,13 +182,18 @@ QRectF ExportDialog::ExportArea() const
     if (!FitViewSelected()) {
         return SelectedArea();
     }
-    // 可见场景区域 = 视口四角反映射，再乘回当前缩放就是屏幕上的像素尺寸。
-    return m_view->mapToScene(m_view->viewport()->rect()).boundingRect();
+    // 自适应尺寸取图层上可见图元并集的最小包围框（不含留白边），空画布才回退到画布矩形。
+    if (!m_scene) {
+        return QRectF();
+    }
+    const QRectF content = m_scene->ContentRect();
+    return content.isEmpty() ? m_scene->CanvasRect() : content;
 }
 
 qreal ExportDialog::ExportScale() const
 {
-    return FitViewSelected() ? m_view->transform().m11() : m_scaleSpin->value();
+    // 包围框按场景单位取，比例固定 1：输出像素数就等于包围框的宽高。
+    return FitViewSelected() ? 1.0 : m_scaleSpin->value();
 }
 
 QString ExportDialog::SelectedFormat() const
@@ -288,6 +293,20 @@ ExportDialog::Options ExportDialog::options() const
 
 void ExportDialog::UpdateEstimatedSize()
 {
+    if (FitViewSelected() && SeparateLayersSelected()) {
+        // 逐层 + 自适应：每张图尺寸不同，这里不给单一像素数，只说明口径。
+        QString perLayer = tr("Fit to each layer size");
+        int count = 0;
+        if (m_scene) {
+            for (const CanvasLayer& layer : m_scene->Layers()) {
+                if (layer.visible) {
+                    ++count;
+                }
+            }
+        }
+        m_sizeLabel->setText(perLayer + tr(" · %1 files").arg(count));
+        return;
+    }
     const QRectF area = ExportArea();
     const qreal scale = ExportScale();
     int width = qMax(1, qCeil(area.width() * scale));

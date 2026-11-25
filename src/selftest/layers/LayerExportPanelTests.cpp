@@ -199,6 +199,22 @@ void selftest::RunLayerExportPanelTests(Context& ctx)
         ctx.Check(blueOnly.pixelColor(110, 110) == QColor(QStringLiteral("#2563EB")) &&
                       blueOnly.pixelColor(20, 20) == QColor(Qt::white),
                   QStringLiteral("逐层导出只渲染指定图层（蓝层）"));
+        // 自适应尺寸的包围框按图层算：单层只框本层图元，合并模式才是全部可见图元的并集。
+        const QRectF redLayerRect = layerExportScene.LayerContentRect(redLayer);
+        const QRectF blueLayerRect = layerExportScene.LayerContentRect(blueLayer);
+        const QRectF allRect = layerExportScene.ContentRect();
+        ctx.Check(!redLayerRect.isEmpty() && !blueLayerRect.isEmpty() &&
+                      redLayerRect.left() < blueLayerRect.left() &&
+                      qAbs(redLayerRect.united(blueLayerRect).width() - allRect.width()) < 0.5 &&
+                      redLayerRect.width() < allRect.width(),
+                  QStringLiteral("图层包围框按本层图元取值，并集等于全部可见图元包围框"),
+                  QStringLiteral("red=%1x%2 blue=%3x%4 all=%5x%6")
+                      .arg(redLayerRect.width())
+                      .arg(redLayerRect.height())
+                      .arg(blueLayerRect.width())
+                      .arg(blueLayerRect.height())
+                      .arg(allRect.width())
+                      .arg(allRect.height()));
 
         ExportDialog exportDialog(&layerExportScene, QDir::tempPath());
         auto* modeCombo = exportDialog.findChild<QComboBox*>(QStringLiteral("ExportLayerModeCombo"));
@@ -228,8 +244,8 @@ void selftest::RunLayerExportPanelTests(Context& ctx)
         ctx.Check(namesLookRight, QStringLiteral("逐层模式为每个可见图层生成独立文件"),
                   QStringLiteral("files=%1 visible=%2").arg(layerOptions.filePaths.size()).arg(visibleLayers));
 
-        // 自适应尺寸：默认不勾，范围与比例仍按下拉；勾上后改由视图接管，
-        // 输出像素恰好等于全景视图在屏幕上的尺寸，两个旧控件同时失效。
+        // 自适应尺寸：默认不勾，范围与比例仍按下拉；勾上后改由画布内容接管，
+        // 输出尺寸恰好等于可见图元并集的最小包围框（比例 1），两个旧控件同时失效。
         CanvasView fitView(&layerExportScene);
         fitView.resize(900, 620);
         fitView.show();
@@ -246,18 +262,21 @@ void selftest::RunLayerExportPanelTests(Context& ctx)
         }
         QApplication::processEvents();
         const ExportDialog::Options fitOptions = fitDialog.options();
-        const QRect viewportRect = fitView.viewport()->rect();
+        const QRectF contentRect = layerExportScene.ContentRect();
         const int fitWidth = qCeil(fitOptions.area.width() * fitOptions.scale);
         const int fitHeight = qCeil(fitOptions.area.height() * fitOptions.scale);
         ctx.Check(fitCheck && fitCheck->isChecked() && fitOptions.area != plainOptions.area &&
-                      fitOptions.scale != plainOptions.scale && fitScope && !fitScope->isEnabled() &&
-                      qAbs(fitWidth - viewportRect.width()) <= 1 && qAbs(fitHeight - viewportRect.height()) <= 1,
-                  QStringLiteral("勾选自适应尺寸后输出像素等于全景视图尺寸"),
-                  QStringLiteral("fit=%1x%2 view=%3x%4")
+                      qAbs(fitOptions.scale - 1.0) < 0.001 && fitScope && !fitScope->isEnabled() &&
+                      qAbs(fitOptions.area.left() - contentRect.left()) < 0.5 &&
+                      qAbs(fitOptions.area.top() - contentRect.top()) < 0.5 &&
+                      qAbs(fitWidth - qCeil(contentRect.width())) <= 1 &&
+                      qAbs(fitHeight - qCeil(contentRect.height())) <= 1,
+                  QStringLiteral("勾选自适应尺寸后输出尺寸等于可见图元并集的包围框"),
+                  QStringLiteral("fit=%1x%2 content=%3x%4")
                       .arg(fitWidth)
                       .arg(fitHeight)
-                      .arg(viewportRect.width())
-                      .arg(viewportRect.height()));
+                      .arg(contentRect.width())
+                      .arg(contentRect.height()));
 
         // 上次勾过就记住：构造时直接带回来，范围与比例控件一开始就是关的。
         ExportDialog rememberedDialog(&layerExportScene, QDir::tempPath(), nullptr, &fitView, true);

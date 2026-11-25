@@ -113,7 +113,16 @@ void ImportExportController::ExportCanvas()
         QStringList exported;
         for (int i = 0; i < paths.size(); ++i) {
             const int layerId = i < options.layerIds.size() ? options.layerIds.at(i) : -1;
-            if (!ExportToFile(paths.at(i), options.area, options.scale, options.format, false, layerId)) {
+            // 自适应尺寸 + 逐层导出：每张图只取本图层可见图元的包围框，不是全部图层的并集。
+            QRectF area = options.area;
+            if (options.fitViewSize && layerId >= 0) {
+                const QRectF layerRect = m_window->m_scene->LayerContentRect(layerId);
+                if (layerRect.isEmpty()) {
+                    continue;
+                }
+                area = layerRect;
+            }
+            if (!ExportToFile(paths.at(i), area, options.scale, options.format, false, layerId)) {
                 return;
             }
             exported.append(paths.at(i));

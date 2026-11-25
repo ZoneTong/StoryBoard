@@ -115,6 +115,24 @@ QRectF CanvasScene::ContentRect() const
     return hasItem ? rect : QRectF();
 }
 
+QRectF CanvasScene::LayerContentRect(int layerId) const
+{
+    QRectF rect;
+    bool hasItem = false;
+    for (CanvasItem* item : CanvasItems()) {
+        if (item->LayerId() != layerId || !item->isVisible()) {
+            continue;
+        }
+        const QRectF itemRect = item->SceneContentRect();
+        if (itemRect.isEmpty()) {
+            continue;
+        }
+        rect = hasItem ? rect.united(itemRect) : itemRect;
+        hasItem = true;
+    }
+    return hasItem ? rect : QRectF();
+}
+
 void CanvasScene::UpdateSceneExtent()
 {
     QRectF extent = CanvasRect();

@@ -57,6 +57,8 @@ class CanvasScene : public QGraphicsScene {
     void SetShowGrid(bool enabled);
 
     QRectF ContentRect() const;
+    // 单个图层上可见图元并集的最小包围框；图层不存在或没有图元时返回空矩形。
+    QRectF LayerContentRect(int layerId) const;
     void UpdateSceneExtent();
     // 视图缩放后刷新图元的 boundingRect（旋转手柄等屏幕尺寸相关几何）。
     void RefreshViewDependentGeometry();

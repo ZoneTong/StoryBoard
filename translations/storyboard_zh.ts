@@ -380,12 +380,16 @@
         <translation>输出尺寸</translation>
     </message><message>
         <location filename="../src/ui/dialogs/ExportDialog.cpp" line="98"/>
-        <source>Fit to view size</source>
+        <source>Fit to content size</source>
         <translation>自适应尺寸</translation>
     </message><message>
         <location filename="../src/ui/dialogs/ExportDialog.cpp" line="99"/>
-        <source>Match the output pixels to the overview view shown on screen</source>
-        <translation>输出像素与屏幕上的全景视图保持一致</translation>
+        <source>Match the output size to the bounding box of the visible items</source>
+        <translation>输出尺寸取可见图元并集的最小包围框</translation>
+    </message><message>
+        <location filename="../src/ui/dialogs/ExportDialog.cpp" line="99"/>
+        <source>Fit to each layer size</source>
+        <translation>每层按本层图元包围框</translation>
     </message><message>
         <location filename="../src/ui/dialogs/ExportDialog.cpp" line="97"/>
         <source>Export</source>

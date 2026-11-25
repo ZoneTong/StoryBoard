@@ -36,8 +36,8 @@ class ExportDialog : public QDialog {
 
   private:
     QRectF SelectedArea() const;
-    // 勾选「自适应尺寸」时按视图出图：范围取当前可见的场景区域，比例取当前缩放，
-    // 于是输出像素恰好等于全景视图在屏幕上的尺寸；没拿到视图时回退到下拉选的范围。
+    // 勾选「自适应尺寸」时按画布内容出图：范围取可见图元并集的最小包围框，比例取 1，
+    // 于是输出像素恰好等于包围框的场景尺寸；没拿到场景时回退到下拉选的范围。
     QRectF ExportArea() const;
     qreal ExportScale() const;
     bool FitViewSelected() const;
