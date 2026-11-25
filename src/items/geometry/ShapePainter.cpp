@@ -1,6 +1,7 @@
 #include "items/geometry/ShapePainter.h"
 
 #include "items/geometry/EllipseGeometry.h"
+#include "items/geometry/ShapePathBuilder.h"
 #include "items/properties/FillStyleMeta.h"
 
 #include <QPixmap>
@@ -193,6 +194,12 @@ QIcon ShapePainter::MakeIcon(ShapeType type, const QColor& color, int logicalSiz
         rect = QRectF(4.0, 4.0, 16.0, 16.0);
     } else if (type == ShapeType::ARROW || type == ShapeType::DOUBLE_ARROW) {
         rect = QRectF(2.0, 7.0, 20.0, 10.0);
+    } else if (type == ShapeType::PARALLELOGRAM) {
+        // 与插入后的默认形态同比例（底边 128、高 128、默认内角 60°，宽 = 高 × (1 + cotθ)），
+        // 原来的 18×16 显得太瘦；横向撑满 21，纵向按比例收，四边形的两个锐角才看得出来。
+        const qreal ratio = 1.0 + 1.0 / std::tan(qDegreesToRadians(ShapePathBuilder::PARALLELOGRAM_DEFAULT_ANGLE));
+        const qreal height = 21.0 / ratio;
+        rect = QRectF(1.5, 12.0 - height / 2.0, 21.0, height);
     } else if (type == ShapeType::SECTOR) {
         // 扇形 / 弧线的图标必须与插入后的默认形态同一套角度（30° 起、120° 扫过），
         // 否则“点图标得到另一个形状”。只把椭圆放大到整格，避免在这排里显得过小。

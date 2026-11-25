@@ -472,8 +472,8 @@ QPainterPath ShapePathBuilder::PathFor(ShapeType type, const QRectF& rect, qreal
     case ShapeType::CYLINDER:
         return CylinderPath(rect);
     case ShapeType::PARALLELOGRAM:
-        // 默认按 60° 生成；具体图元用带角度参数的重载。
-        return ParallelogramPath(rect, 60.0);
+        // 默认按共享常量生成；具体图元用带角度参数的重载。
+        return ParallelogramPath(rect, PARALLELOGRAM_DEFAULT_ANGLE);
     case ShapeType::DIAMOND:
         return DiamondPath(rect);
     case ShapeType::POLYGON:

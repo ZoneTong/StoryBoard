@@ -10,6 +10,8 @@
 // 自定义模板路径的单位坐标铺开也在这里。
 class ShapePathBuilder {
   public:
+    // 平行四边形默认左下内角：插入形态、图标、PathFor 的缺省三处共用，避免“点图标得到另一个形状”。
+    static constexpr qreal PARALLELOGRAM_DEFAULT_ANGLE = 60.0;
     // 图元类已各自持有几何（shapePath 直调对应方法）；pathFor 仅保留给
     // 图标绘制与测试这类“只知道 ShapeType”的场景。
     static QPainterPath PathFor(ShapeType type, const QRectF& rect, qreal cornerRadius);

@@ -21,10 +21,10 @@ GeneralParallelogramItem::GeneralParallelogramItem()
 QSizeF GeneralParallelogramItem::DefaultContentSize() const
 {
     // 底边固定为 2 格棋盘格（需求 16 起 1 格 = 64px，2 格 = 128px），高也取 2 格；
-    // 60° 时上边右移 128·cot60，内容框宽度 = 底边 + 上边偏移。
+    // 默认内角时上边右移 128·cotθ，内容框宽度 = 底边 + 上边偏移。
     constexpr qreal BASE_LENGTH = 128.0;
     constexpr qreal HEIGHT = 128.0;
-    const qreal shift = BASE_LENGTH / qTan(qDegreesToRadians(60.0));
+    const qreal shift = BASE_LENGTH / qTan(qDegreesToRadians(ShapePathBuilder::PARALLELOGRAM_DEFAULT_ANGLE));
     return QSizeF(BASE_LENGTH + shift, HEIGHT);
 }
 
