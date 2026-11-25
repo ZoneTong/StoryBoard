@@ -108,23 +108,21 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
                 }
             }
         }
-        // 需求 1/6：预置项（45°/60° 直角三角、直线箭头）紧随其基础图形之后，且不计入内建图形数量。
+        // 需求 1/6：预置项（45° 直角三角、直线箭头）紧随其基础图形之后，且不计入内建图形数量。
+        // 60° 直角三角与「箭头」已从菜单移除，预置项只剩 45° 三角。
         QAction* lineAction = shapeWindow.findChild<QAction*>(QStringLiteral("ShapeAction_line"));
         QAction* triangleAction = shapeWindow.findChild<QAction*>(QStringLiteral("ShapeAction_triangle"));
         QAction* lineArrowPreset = shapeWindow.findChild<QAction*>(QStringLiteral("ShapePreset_lineArrow"));
         QAction* triangle45Preset = shapeWindow.findChild<QAction*>(QStringLiteral("ShapePreset_triangle45"));
-        QAction* triangle60Preset = shapeWindow.findChild<QAction*>(QStringLiteral("ShapePreset_triangle60"));
-        bool presetOrderOk =
-            shapeMenu && lineAction && triangleAction && lineArrowPreset && triangle45Preset && triangle60Preset;
+        bool presetOrderOk = shapeMenu && lineAction && triangleAction && lineArrowPreset && triangle45Preset;
         if (presetOrderOk) {
             const QList<QAction*> menuActions = shapeMenu->actions();
             const int lineIndex = menuActions.indexOf(lineAction);
             const int triangleIndex = menuActions.indexOf(triangleAction);
             presetOrderOk = menuActions.indexOf(lineArrowPreset) == lineIndex + 1 &&
-                            menuActions.indexOf(triangle45Preset) == triangleIndex + 1 &&
-                            menuActions.indexOf(triangle60Preset) == triangleIndex + 2;
+                            menuActions.indexOf(triangle45Preset) == triangleIndex + 1;
         }
-        ctx.Check(presetOrderOk, QStringLiteral("图形菜单内预置项紧跟基础图形（三角形 45°/60°、直线箭头）"));
+        ctx.Check(presetOrderOk, QStringLiteral("图形菜单内预置项紧跟基础图形（45° 三角、直线箭头）"));
         if (presetOrderOk) {
             // 直线箭头必须用独立的开口箭头图标，不能与普通直线共用一条直线图标。
             const QImage lineIcon = lineAction->icon().pixmap(18, 18).toImage();
@@ -160,9 +158,9 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
                       .arg(builtInShapeActions)
                       .arg(customTrigger ? 1 : 0));
         // 工具栏在原「图形」入口处把常见图形与预置项直接平铺成一排，复用菜单里的同一批动作。
-        // 预置项：圆角矩形、直线箭头、45°/60° 三角、左花括号（右括号已从菜单移除）。
-        // 菱形已是独立图形，预置项由 7 枚减为 5 枚。
-        const int toolbarExpected = builtInShapeActions + 5;
+        // 预置项：圆角矩形、直线箭头、45° 三角、左花括号（60° 三角与右括号已从菜单移除）。
+        // 菱形已是独立图形，预置项由 7 枚减为 4 枚。
+        const int toolbarExpected = builtInShapeActions + 4;
         QToolButton* shapeButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("ShapeButton"));
         QList<QToolButton*> toolbarShapeButtons =
             shapeWindow.findChildren<QToolButton*>(QStringLiteral("ToolBarShapeButton"));
@@ -179,22 +177,22 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
                   QStringLiteral("buttons=%1 expected=%2").arg(toolbarShapeButtons.size()).arg(toolbarExpected));
 
         // 需求 7：工具栏顺序直接来自单一顺序源（常用顺序表），预置项紧随其主体图形，
-        // 直线箭头跟在直线后、45°/60° 直角三角跟在三角形后，左花括号收尾。
+        // 直线箭头跟在直线后、45° 直角三角跟在三角形后，正弦波与左花括号接在角度线后，
+        // 立方体与圆柱体收在常见图形末尾（自定义图形之前）。
         const QStringList expectedToolBarOrder = {
-            QStringLiteral("ShapeAction_rectangle"),    QStringLiteral("ShapePreset_roundedRect"),
-            QStringLiteral("ShapeAction_ellipse"),      QStringLiteral("ShapeAction_line"),
-            QStringLiteral("ShapePreset_lineArrow"),    QStringLiteral("ShapeAction_arrow"),
-            QStringLiteral("ShapeAction_double_arrow"), QStringLiteral("ShapeAction_triangle"),
-            QStringLiteral("ShapePreset_triangle45"),   QStringLiteral("ShapePreset_triangle60"),
-            QStringLiteral("ShapeAction_callout"),      QStringLiteral("ShapeAction_parallelogram"),
-            QStringLiteral("ShapeAction_diamond"),      QStringLiteral("ShapeAction_hexagon"),
-            QStringLiteral("ShapeAction_sector"),       QStringLiteral("ShapeAction_arc"),
-            QStringLiteral("ShapeAction_angle"),        QStringLiteral("ShapeAction_cube"),
-            QStringLiteral("ShapeAction_cylinder"),     QStringLiteral("ShapeAction_star4"),
-            QStringLiteral("ShapeAction_star"),         QStringLiteral("ShapeAction_hexagram"),
-            QStringLiteral("ShapeAction_heart"),        QStringLiteral("ShapeAction_sine_wave"),
-            QStringLiteral("ShapeAction_flag_wave"),    QStringLiteral("ShapeAction_scroll"),
-            QStringLiteral("ShapePreset_braceLeft"),
+            QStringLiteral("ShapeAction_rectangle"), QStringLiteral("ShapePreset_roundedRect"),
+            QStringLiteral("ShapeAction_ellipse"),   QStringLiteral("ShapeAction_line"),
+            QStringLiteral("ShapePreset_lineArrow"), QStringLiteral("ShapeAction_double_arrow"),
+            QStringLiteral("ShapeAction_triangle"),  QStringLiteral("ShapePreset_triangle45"),
+            QStringLiteral("ShapeAction_callout"),   QStringLiteral("ShapeAction_parallelogram"),
+            QStringLiteral("ShapeAction_diamond"),   QStringLiteral("ShapeAction_hexagon"),
+            QStringLiteral("ShapeAction_sector"),    QStringLiteral("ShapeAction_arc"),
+            QStringLiteral("ShapeAction_angle"),     QStringLiteral("ShapeAction_sine_wave"),
+            QStringLiteral("ShapePreset_braceLeft"), QStringLiteral("ShapeAction_star4"),
+            QStringLiteral("ShapeAction_star"),      QStringLiteral("ShapeAction_hexagram"),
+            QStringLiteral("ShapeAction_heart"),     QStringLiteral("ShapeAction_flag_wave"),
+            QStringLiteral("ShapeAction_scroll"),    QStringLiteral("ShapeAction_cube"),
+            QStringLiteral("ShapeAction_cylinder"),
         };
         QStringList actualToolBarOrder;
         for (QToolButton* button : std::as_const(toolbarShapeButtons)) {
@@ -599,30 +597,27 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
                                : QString());
         }
 
-        QAction* arrowInsertAction =
-            shapeMenu ? shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_arrow")) : nullptr;
-        if (arrowInsertAction) {
-            arrowInsertAction->trigger();
-            QApplication::processEvents();
-            ShapeAbstractItem* insertedArrow = nullptr;
-            for (CanvasItem* item : shapeWindow.Scene()->CanvasItems()) {
-                if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
-                    if (shape->shapeType() == ShapeType::ARROW) {
-                        insertedArrow = shape;
-                    }
+        // 「箭头」已从菜单撤掉，这里改为直接调插入接口，保留「新插入箭头按工具栏默认样式」这条覆盖。
+        shapeWindow.InsertShape(ShapeType::ARROW);
+        QApplication::processEvents();
+        ShapeAbstractItem* insertedArrow = nullptr;
+        for (CanvasItem* item : shapeWindow.Scene()->CanvasItems()) {
+            if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
+                if (shape->shapeType() == ShapeType::ARROW) {
+                    insertedArrow = shape;
                 }
             }
-            ctx.Check(insertedArrow != nullptr, QStringLiteral("快速插入的图元类型为箭头"));
-            // 需求 16：箭头同样按工具栏默认样式生成（无填充、黑色描线）。
-            ctx.Check(insertedArrow && insertedArrow->fillStyle() == FillStyle::NONE &&
-                          insertedArrow->StrokeColor() == QColor(Qt::black),
-                      QStringLiteral("新插入箭头按工具栏默认样式生成"),
-                      insertedArrow ? QStringLiteral("fill=%1/%2 stroke=%3")
-                                          .arg(static_cast<int>(insertedArrow->fillStyle()))
-                                          .arg(insertedArrow->FillColor().name())
-                                          .arg(insertedArrow->StrokeColor().name())
-                                    : QString());
         }
+        ctx.Check(insertedArrow != nullptr, QStringLiteral("快速插入的图元类型为箭头"));
+        // 需求 16：箭头同样按工具栏默认样式生成（无填充、黑色描线）。
+        ctx.Check(insertedArrow && insertedArrow->fillStyle() == FillStyle::NONE &&
+                      insertedArrow->StrokeColor() == QColor(Qt::black),
+                  QStringLiteral("新插入箭头按工具栏默认样式生成"),
+                  insertedArrow ? QStringLiteral("fill=%1/%2 stroke=%3")
+                                      .arg(static_cast<int>(insertedArrow->fillStyle()))
+                                      .arg(insertedArrow->FillColor().name())
+                                      .arg(insertedArrow->StrokeColor().name())
+                                : QString());
     }
 
     {

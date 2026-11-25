@@ -114,9 +114,10 @@ void UiMenuBuilder::BuildShapeMenu()
             QObject::connect(braceLeft, &QAction::triggered, m_window, [this]() { m_window->InsertBrace(true); });
         }
 
-        // 需求 1：三角形后追加 45° / 60° 直角三角形预置项。短边沿水平方向，
-        // 即底边（水平边）两侧的内角为 90° 与 45° / 60°；底边可调，角度锁定。
+        // 需求 1：三角形后追加 45° 直角三角形预置项。短边沿水平方向，
+        // 即底边（水平边）两侧的内角为 90° 与 45°；底边可调，角度锁定。
         // 预置项用 ShapePreset_ 前缀，工具栏那一排按钮只认 ShapeAction_，不会多出按钮。
+        // 60° 直角三角与「箭头」一起从菜单撤掉，减少与工具栏常用项的重复。
         if (type == ShapeType::TRIANGLE) {
             QAction* preset45 = m_window->m_shapeMenu->addAction(
                 ShapeIcons::MakePreset(QStringLiteral("triangle45"), QColor(58, 64, 80), 18),
@@ -127,16 +128,6 @@ void UiMenuBuilder::BuildShapeMenu()
                                                 "angles locked at 90° / 45°"));
             QObject::connect(preset45, &QAction::triggered, m_window,
                              [this]() { m_window->InsertShape(ShapeType::TRIANGLE, 90.0, 45.0); });
-
-            QAction* preset60 = m_window->m_shapeMenu->addAction(
-                ShapeIcons::MakePreset(QStringLiteral("triangle60"), QColor(58, 64, 80), 18),
-                MainWindow::tr("Right triangle 60°"));
-            preset60->setObjectName(QStringLiteral("ShapePreset_triangle60"));
-            preset60->setData(static_cast<int>(type));
-            preset60->setToolTip(MainWindow::tr("Right triangle 60°: short side horizontal, base adjustable, "
-                                                "angles locked at 90° / 60°"));
-            QObject::connect(preset60, &QAction::triggered, m_window,
-                             [this]() { m_window->InsertShape(ShapeType::TRIANGLE, 90.0, 60.0); });
         }
 
         // 菱形已是独立类型（DiamondItem），直接由上面的常见图形循环生成菜单项，

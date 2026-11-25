@@ -111,7 +111,8 @@ void selftest::RunShapeItemTests(Context& ctx)
 
     const QList<ShapeType> shapeTypes = AllShapeTypes();
     // 菱形已是独立类型（DiamondItem，派生自平行四边形）；正六边形由 HexagonItem 提供。
-    ctx.Check(shapeTypes.size() == 18, QStringLiteral("提供 18 种有面积图形（直线/弧线/正弦已并入曲线族）"),
+    // 空心箭头（arrow）已从常见图形撤掉，类型本身仍可读写，故这里是 17 种。
+    ctx.Check(shapeTypes.size() == 17, QStringLiteral("提供 17 种有面积图形（直线/弧线/正弦已并入曲线族）"),
               QStringLiteral("count=%1").arg(shapeTypes.size()));
 
     // §3.5：正六边形按语义插在三角形之后、显示顺序放在菱形之后扇形之前。
@@ -521,9 +522,15 @@ void selftest::RunShapeItemTests(Context& ctx)
             const ShapeFactory::Descriptor* current = ShapeFactory::Find(order.at(i));
             ordered = ordered && previous && current && previous->menuOrder < current->menuOrder;
         }
-        ctx.Check(ordered && order.size() == ShapeFactory::Entries().size(),
-                  QStringLiteral("常见图形顺序表与描述器一一对应"),
-                  QStringLiteral("types=%1 entries=%2").arg(order.size()).arg(ShapeFactory::Entries().size()));
+        // menuOrder < 0 的类型（如已从菜单撤掉的空心箭头）仍在描述器表里，只是不进顺序表。
+        int menuEntries = 0;
+        for (const ShapeFactory::Entry& entry : ShapeFactory::Entries()) {
+            if (entry.descriptor.menuOrder >= 0) {
+                ++menuEntries;
+            }
+        }
+        ctx.Check(ordered && order.size() == menuEntries, QStringLiteral("常见图形顺序表与描述器一一对应"),
+                  QStringLiteral("types=%1 menuEntries=%2").arg(order.size()).arg(menuEntries));
         bool roundTrip = true;
         for (const ShapeFactory::Entry& entry : ShapeFactory::Entries()) {
             roundTrip =

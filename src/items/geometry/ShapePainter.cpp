@@ -200,6 +200,11 @@ QIcon ShapePainter::MakeIcon(ShapeType type, const QColor& color, int logicalSiz
         const qreal ratio = 1.0 + 1.0 / std::tan(qDegreesToRadians(ShapePathBuilder::PARALLELOGRAM_DEFAULT_ANGLE));
         const qreal height = 21.0 / ratio;
         rect = QRectF(1.5, 12.0 - height / 2.0, 21.0, height);
+    } else if (type == ShapeType::CYLINDER) {
+        // 与插入后的默认形态同比例：默认框 104×128（宽:高 = 0.8125，纵向偏瘦），
+        // 原来的 18×16 横向比实际图形胖，圆柱看起来像个扁罐子。这里保持 16 高、
+        // 宽收到 13，顶/底椭圆的 ry 比例（0.16×高）也就与插入结果一致。
+        rect = QRectF(5.5, 4.0, 13.0, 16.0);
     } else if (type == ShapeType::SECTOR) {
         // 扇形 / 弧线的图标必须与插入后的默认形态同一套角度（30° 起、120° 扫过），
         // 否则“点图标得到另一个形状”。只把椭圆放大到整格，避免在这排里显得过小。

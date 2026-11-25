@@ -160,21 +160,17 @@ void UiToolBarBuilder::CreateShapeToolbar(QToolBar* mainBar)
             }
             addShapeButton(action);
         }
-        // 曲线族三个入口不是 ShapeType（data 为 -1），按各自在图元顺序里的归属位置
-        // 显式补：直线与直线箭头跟在椭圆后、弧线跟在扇形后、正弦跟在心形后。
+        // 曲线族入口不是 ShapeType（data 为 -1），按各自归属位置显式补：
+        // 直线与直线箭头跟在椭圆后；弧线、角度线、正弦波、左花括号连成一串跟在扇形后。
         if (type == ShapeType::ELLIPSE) {
             addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_line")));
             addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(QStringLiteral("ShapePreset_lineArrow")));
         } else if (type == ShapeType::SECTOR) {
             addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_arc")));
             addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_angle")));
-        } else if (type == ShapeType::HEART) {
             addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_sine_wave")));
+            addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(QStringLiteral("ShapePreset_braceLeft")));
         }
-    }
-    // 花括号预置动作没有 ShapeType（data 为 -1），按 objectName 显式补在直线之后。
-    for (const QString& braceAction : {QStringLiteral("ShapePreset_braceLeft")}) {
-        addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(braceAction));
     }
 
     // 常见图形之后追加自定义图形下拉，和「插入 → 常见图形」里的同一份目录菜单。

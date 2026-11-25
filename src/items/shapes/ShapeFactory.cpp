@@ -31,7 +31,9 @@ const QList<Entry>& Entries()
          []() -> ShapeAbstractItem* { return new RectangleItem(); }},
         {{ShapeType::ELLIPSE, "ellipse", "circle oval", true, true, 1},
          []() -> ShapeAbstractItem* { return new EllipseItem(); }},
-        {{ShapeType::ARROW, "arrow", nullptr, true, false, 2}, []() -> ShapeAbstractItem* { return new ArrowItem(); }},
+        // 需求：空心箭头不再进「常见图形」，箭头改由直线箭头预置项承担；
+        // 类型本身保留，旧画布里的 arrow 仍能读回、也能互相转换。
+        {{ShapeType::ARROW, "arrow", nullptr, true, false, -1}, []() -> ShapeAbstractItem* { return new ArrowItem(); }},
         {{ShapeType::DOUBLE_ARROW, "double_arrow", "doublearrow bidirectional", true, true, 3},
          []() -> ShapeAbstractItem* { return new DoubleArrowItem(); }},
         {{ShapeType::TRIANGLE, "triangle", nullptr, true, false, 4},
@@ -45,8 +47,8 @@ const QList<Entry>& Entries()
         {{ShapeType::HEXAGON, "hexagon", "regular_hexagon", true, true, 8},
          []() -> ShapeAbstractItem* { return new HexagonItem(); }},
         {{ShapeType::SECTOR, "sector", "pie", true, true, 9}, []() -> ShapeAbstractItem* { return new SectorItem(); }},
-        {{ShapeType::CUBE, "cube", nullptr, true, false, 10}, []() -> ShapeAbstractItem* { return new CubeItem(); }},
-        {{ShapeType::CYLINDER, "cylinder", nullptr, true, false, 11},
+        {{ShapeType::CUBE, "cube", nullptr, true, false, 18}, []() -> ShapeAbstractItem* { return new CubeItem(); }},
+        {{ShapeType::CYLINDER, "cylinder", nullptr, true, false, 19},
          []() -> ShapeAbstractItem* { return new CylinderItem(); }},
         {{ShapeType::STAR4, "star4", "four_point_star fourpointstar", true, true, 12},
          []() -> ShapeAbstractItem* { return new Star4Item(); }},
