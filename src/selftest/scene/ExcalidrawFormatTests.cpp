@@ -443,7 +443,8 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
                       .arg(importedParentsJson.size()));
     }
 
-    // 位图选项：默认跳过 image 并留 warning，勾选后按 dataURL 落成图片图元。
+    // 位图往返：默认跳过 image 并留 warning；勾选后落成“矩形 + 图片填充”，
+    // 再导出仍是 image 元素 + files 表，数据不丢。
     {
         QJsonObject imageElement = Element(QStringLiteral("image"), 0, 0, 40, 40);
         imageElement.insert(QStringLiteral("fileId"), QStringLiteral("img1"));
@@ -457,13 +458,33 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
         const QJsonObject skipped = Excalidraw::SceneToStoryBoard(withImage, &skippedWarnings, false);
         const QJsonObject kept = Excalidraw::SceneToStoryBoard(withImage, nullptr, true);
         const QJsonObject keptItem = kept.value(QStringLiteral("items")).toArray().at(0).toObject();
+        const QJsonObject keptFill = keptItem.value(QStringLiteral("fillImage")).toObject();
         ctx.Check(skipped.isEmpty() && !skippedWarnings.isEmpty() &&
-                      keptItem.value(QStringLiteral("kind")).toString() == QStringLiteral("image") &&
-                      keptItem.value(QStringLiteral("image")).toString() == QStringLiteral("QUJD"),
-                  QStringLiteral("位图保留选项：不勾选跳过并提示，勾选后按 dataURL 保真"),
-                  QStringLiteral("skipped=%1 keptType=%2 payload=%3")
+                      keptItem.value(QStringLiteral("kind")).toString() == QStringLiteral("shape") &&
+                      keptItem.value(QStringLiteral("shapeType")).toString() == QStringLiteral("rectangle") &&
+                      keptFill.value(QStringLiteral("data")).toString() == QStringLiteral("QUJD"),
+                  QStringLiteral("位图保留选项：不勾选跳过并提示，勾选后落成矩形图片填充"),
+                  QStringLiteral("skipped=%1 kind=%2 data=%3")
                       .arg(skipped.isEmpty() ? QStringLiteral("empty") : QStringLiteral("value"))
                       .arg(keptItem.value(QStringLiteral("kind")).toString())
-                      .arg(keptItem.value(QStringLiteral("image")).toString()));
+                      .arg(keptFill.value(QStringLiteral("data")).toString()));
+
+        QStringList exportWarnings;
+        const QJsonObject exported = Excalidraw::StoryBoardToScene(kept, &exportWarnings);
+        const QJsonObject exportedImage = exported.value(QStringLiteral("elements")).toArray().at(0).toObject();
+        const QString fileId = exportedImage.value(QStringLiteral("fileId")).toString();
+        const QJsonObject exportedFile = exported.value(QStringLiteral("files")).toObject().value(fileId).toObject();
+        const QJsonObject reimported = Excalidraw::SceneToStoryBoard(exported, nullptr, true);
+        const QJsonObject reimportedItem = reimported.value(QStringLiteral("items")).toArray().at(0).toObject();
+        ctx.Check(exportedImage.value(QStringLiteral("type")).toString() == QStringLiteral("image") &&
+                      !fileId.isEmpty() &&
+                      exportedFile.value(QStringLiteral("dataURL")).toString() ==
+                          QStringLiteral("data:image/png;base64,QUJD") &&
+                      reimportedItem.value(QStringLiteral("fillImage")).toObject().value(QStringLiteral("data")).toString() ==
+                          QStringLiteral("QUJD"),
+                  QStringLiteral("图片导出为 image 元素 + files 并往返保真"),
+                  QStringLiteral("fileId=%1 type=%2")
+                      .arg(fileId)
+                      .arg(exportedImage.value(QStringLiteral("type")).toString()));
     }
 }

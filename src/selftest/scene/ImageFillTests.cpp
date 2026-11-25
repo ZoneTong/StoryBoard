@@ -326,7 +326,7 @@ void selftest::RunImageFillTests(Context& ctx)
         delete plainLoaded;
     }
 
-    // 8) Excalidraw 导出：图片填充降级为纯色 fillColor，并给出一次降级提示。
+    // 8) Excalidraw 导出：矩形的图片填充还原成 image 元素，数据进 files 表。
     {
         auto* exportShape = MakePlainShape(ShapeType::RECTANGLE, QSizeF(120, 80), YELLOW);
         exportShape->SetStyle(QColor(20, 20, 20), YELLOW, 2.0);
@@ -340,13 +340,16 @@ void selftest::RunImageFillTests(Context& ctx)
         const QJsonObject scene = Excalidraw::StoryBoardToScene(document, &warnings);
         const QJsonArray elements = scene.value(QStringLiteral("elements")).toArray();
         const QJsonObject element = elements.isEmpty() ? QJsonObject() : elements.at(0).toObject();
-        const bool backgroundColorIsPlain =
-            element.value(QStringLiteral("backgroundColor")).toString() == YELLOW.name(QColor::HexRgb);
-        const bool hasNote = warnings.join(QLatin1Char('\n')).contains(QStringLiteral("图片填充导出为纯色"));
-        ctx.Check(
-            backgroundColorIsPlain && hasNote, QStringLiteral("Excalidraw 导出把图片填充降级为纯色并提示"),
-            QStringLiteral("background=%1 note=%2")
-                .arg(element.value(QStringLiteral("backgroundColor")).toString(), warnings.join(QLatin1Char('|'))));
+        const QString fileId = element.value(QStringLiteral("fileId")).toString();
+        const QString dataUrl =
+            scene.value(QStringLiteral("files")).toObject().value(fileId).toObject().value(QStringLiteral("dataURL")).toString();
+        const bool asImage = element.value(QStringLiteral("type")).toString() == QStringLiteral("image") &&
+                             !fileId.isEmpty() &&
+                             dataUrl.startsWith(QStringLiteral("data:image/png;base64,"));
+        ctx.Check(asImage && warnings.isEmpty(), QStringLiteral("Excalidraw 导出把矩形图片填充还原成 image 元素"),
+                  QStringLiteral("type=%1 fileId=%2 dataURL=%3 note=%4")
+                      .arg(element.value(QStringLiteral("type")).toString(), fileId, dataUrl.left(24),
+                           warnings.join(QLatin1Char('|'))));
         delete exportShape;
     }
 

@@ -213,9 +213,22 @@ QJsonObject ElementToItem(const QJsonObject& element, int z, int layer, QStringL
             }
             return {};
         }
-        QJsonObject item = ItemBase(QStringLiteral("image"), bounds, z, layer);
+        // 画板没有独立的位图图元，落到“矩形 + 图片填充”：Excalidraw 的 image 本身就是
+        // 一个矩形框，这样导入后能直接看见、移动缩放，再导出也还是 image 元素。
+        QJsonObject item = ItemBase(QStringLiteral("shape"), bounds, z, layer);
+        item.insert(QStringLiteral("shapeType"), QStringLiteral("rectangle"));
+        item.insert(QStringLiteral("strokeColor"), QStringLiteral("#00000000"));
+        item.insert(QStringLiteral("fillColor"), QStringLiteral("#00000000"));
+        item.insert(QStringLiteral("fillStyle"), QStringLiteral("none"));
+        item.insert(QStringLiteral("strokeWidth"), 1.0);
         item.insert(QStringLiteral("name"), element.value(QStringLiteral("id")).toString());
-        item.insert(QStringLiteral("image"), dataUrl.mid(comma + 1));
+        const QString data = dataUrl.mid(comma + 1);
+        QJsonObject fillImage;
+        fillImage.insert(QStringLiteral("data"), data);
+        fillImage.insert(QStringLiteral("mode"), QStringLiteral("stretch"));
+        item.insert(QStringLiteral("fillImage"), fillImage);
+        item.insert(QStringLiteral("opacity"), NumberOr(element, QStringLiteral("opacity"), 100.0) / 100.0);
+        item.insert(QStringLiteral("rotation"), qRadiansToDegrees(NumberOr(element, QStringLiteral("angle"), 0.0)));
         return item;
     }
 
@@ -628,24 +641,71 @@ QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings
     for (auto it = parentsJson.constBegin(); it != parentsJson.constEnd(); ++it) {
         groupParents.insert(it.key().toInt(), it.value().toInt());
     }
+    // 图片填充：矩形可以直接还原成 Excalidraw 的 image 元素（图片本身就是矩形框），
+    // 其它形状保留原有的“降级为纯色”提示。图片数据可能内联在 item，也可能在根 images 表。
+    const QJsonObject imageEntries = document.value(QStringLiteral("images")).toObject();
+    auto ImageDataFor = [&imageEntries](const QJsonObject& item) -> QString {
+        const QJsonObject inlineFill = item.value(QStringLiteral("fillImage")).toObject();
+        if (!inlineFill.isEmpty()) {
+            return inlineFill.value(QStringLiteral("data")).toString();
+        }
+        const QString id = item.value(QStringLiteral("fillImageId")).toString();
+        if (!id.isEmpty()) {
+            return imageEntries.value(id).toObject().value(QStringLiteral("data")).toString();
+        }
+        return QString();
+    };
+    QJsonObject filesTable;
+    int imageFileIndex = 0;
     // 需求 15：Excalidraw 表达不了图片填充，含 fillImage 的图元按纯色导出并汇总一条提示。
     int fillImageCount = 0;
     for (const QJsonValue& value : items) {
         const QJsonObject item = value.toObject();
         const QString kind = item.value(QStringLiteral("kind")).toString();
-        if (item.value(QStringLiteral("fillImage")).isObject()) {
+        const QString imageData = kind == QStringLiteral("shape") ? ImageDataFor(item) : QString();
+        const bool asImageElement = !imageData.isEmpty() &&
+                                    item.value(QStringLiteral("shapeType")).toString() == QStringLiteral("rectangle");
+        if (!asImageElement && item.value(QStringLiteral("fillImage")).isObject()) {
             ++fillImageCount;
         }
         QString degrade;
         QJsonObject element;
         if (kind == QStringLiteral("shape")) {
             const QString shapeType = item.value(QStringLiteral("shapeType")).toString();
+            if (asImageElement) {
+                // 图片图元：fileId 指向 files 表，元素自身保持矩形框（可旋转、可缩放）。
+                element = BaseElement(item, QStringLiteral("sb%1").arg(index, 6, 10, QLatin1Char('0')));
+                element.insert(QStringLiteral("type"), QStringLiteral("image"));
+                const QString fileId = QStringLiteral("sbimg%1").arg(imageFileIndex, 6, 10, QLatin1Char('0'));
+                ++imageFileIndex;
+                element.insert(QStringLiteral("fileId"), fileId);
+                element.insert(QStringLiteral("status"), QStringLiteral("saved"));
+                QJsonArray scale;
+                scale.append(1.0);
+                scale.append(1.0);
+                element.insert(QStringLiteral("scale"), scale);
+                element.insert(QStringLiteral("crop"), QJsonValue::Null);
+                element.insert(QStringLiteral("strokeColor"), QStringLiteral("transparent"));
+                element.insert(QStringLiteral("backgroundColor"), QStringLiteral("transparent"));
+                element.insert(QStringLiteral("fillStyle"), QStringLiteral("solid"));
+                element.insert(QStringLiteral("strokeWidth"), 1);
+                element.insert(QStringLiteral("roundness"), QJsonValue::Null);
+                QJsonObject file;
+                file.insert(QStringLiteral("id"), fileId);
+                file.insert(QStringLiteral("mimeType"), QStringLiteral("image/png"));
+                file.insert(QStringLiteral("dataURL"), QStringLiteral("data:image/png;base64,") + imageData);
+                file.insert(QStringLiteral("created"), 1);
+                file.insert(QStringLiteral("lastRetrieved"), 1);
+                filesTable.insert(fileId, file);
+            }
             // 菱形已是独立类型，外接框即两条对角线，直接导出 Excalidraw 原生 diamond；
             // 旧的“90° 平行四边形 + 45° 旋转”预置仍按原换算兜底。
             const bool isDiamondPreset =
                 shapeType == QStringLiteral("parallelogram") &&
                 qFuzzyCompare(item.value(QStringLiteral("parallelogramAngle")).toDouble(60.0), 90.0);
-            if (shapeType == QStringLiteral("rectangle") || shapeType == QStringLiteral("ellipse") ||
+            if (asImageElement) {
+                // 已按 image 元素处理，不再走图形分支。
+            } else if (shapeType == QStringLiteral("rectangle") || shapeType == QStringLiteral("ellipse") ||
                 shapeType == QStringLiteral("diamond") || isDiamondPreset) {
                 element = StoryBoardShape(item);
                 const QJsonObject base = BaseElement(item, QStringLiteral("sb%1").arg(index, 6, 10, QLatin1Char('0')));
@@ -752,7 +812,7 @@ QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings
     scene.insert(QStringLiteral("version"), 2);
     scene.insert(QStringLiteral("source"), QStringLiteral("https://storyboard.local"));
     scene.insert(QStringLiteral("elements"), elements);
-    scene.insert(QStringLiteral("files"), QJsonObject{});
+    scene.insert(QStringLiteral("files"), filesTable);
 
     const QJsonObject canvas = document.value(QStringLiteral("canvas")).toObject();
     QJsonObject appState;
