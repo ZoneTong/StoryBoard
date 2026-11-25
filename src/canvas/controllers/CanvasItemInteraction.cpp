@@ -253,6 +253,9 @@ void CanvasItemInteraction::FinishInteraction()
 
     // 收起拖动中的临时状态（角度读数等），由各图元自己决定要不要处理。
     m_item->EndHandleDrag();
+    if (CanvasScene* canvas = m_item->canvasScene()) {
+        canvas->SetBindingHighlight(nullptr);
+    }
 
     const bool wasResize = m_item->m_drag == CanvasItem::DragKind::RESIZE;
     const bool wasRotate = m_item->m_drag == CanvasItem::DragKind::ROTATE;

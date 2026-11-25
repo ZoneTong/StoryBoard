@@ -84,7 +84,18 @@ CanvasScene::~CanvasScene()
 
 void CanvasScene::SetUndoStack(QUndoStack* stack)
 {
+    if (m_undoStack) {
+        disconnect(m_undoStack, nullptr, this, nullptr);
+    }
     m_undoStack = stack;
+    if (m_undoStack) {
+        // 撤销/重做只恢复被编辑的图元；绑定箭头与容器文字是派生位置，
+        // 每次栈位置变化后按当前几何重算，避免停在旧位置。
+        connect(m_undoStack, &QUndoStack::indexChanged, this, [this] {
+            SyncArrowBindings();
+            SyncContainerTexts();
+        });
+    }
 }
 
 void CanvasScene::SetMode(ToolMode mode)

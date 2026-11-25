@@ -121,6 +121,7 @@ bool StraightLineItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos
     }
     // Excalidraw 口径：拖动端点靠近 / 落进图形就绑上，拖离超过 12px 就解绑。
     CanvasItem* target = canvas->BindableShapeAt(scenePos, 12.0);
+    canvas->SetBindingHighlight(target);
     if (target && target->Category() == ItemCategory::SHAPE && target->Uid() != Uid()) {
         const QVector<QPointF> knots = StrokePoints();
         const QPointF other = mapToScene(start ? knots.at(1) : knots.at(qMax(1, knots.size() - 2)));

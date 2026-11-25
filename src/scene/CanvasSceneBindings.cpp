@@ -69,6 +69,15 @@ CanvasItem* CanvasScene::ItemByUid(const QString& uid) const
     return nullptr;
 }
 
+void CanvasScene::SetBindingHighlight(CanvasItem* item)
+{
+    if (m_bindingHighlight == item) {
+        return;
+    }
+    m_bindingHighlight = item;
+    emit bindingHighlightChanged();
+}
+
 QPointF CanvasScene::AttachmentPoint(const CanvasItem* target, const QPointF& from, qreal gap, qreal focus)
 {
     if (!target) {

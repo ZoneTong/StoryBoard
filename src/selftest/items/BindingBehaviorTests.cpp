@@ -2,6 +2,7 @@
 #include "items/shapes/ShapeFactory.h"
 #include "items/text/TextItem.h"
 #include "scene/CanvasScene.h"
+#include "scene/Commands.h"
 #include "selftest/core/SelfTestContext.h"
 #include "selftest/core/SelftestEntries.h"
 
@@ -83,6 +84,51 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
                   QStringLiteral("count=%1 binding=%2")
                       .arg(scene.CanvasItemCount())
                       .arg(line->StartBinding().isEmpty() ? QStringLiteral("empty") : QStringLiteral("set")));
+    }
+
+    // 撤销 / 重做目标移动后，绑定箭头由场景在栈位置变化时重算，不会停在旧位置。
+    {
+        CanvasScene scene;
+        scene.ApplyCanvasSize(QSizeF(800.0, 600.0));
+        scene.SetMode(ToolMode::EDIT);
+        QUndoStack undo;
+        scene.SetUndoStack(&undo);
+
+        auto* rect = ShapeFactory::Create(ShapeType::RECTANGLE);
+        rect->SetContentSize(QSizeF(160.0, 120.0));
+        rect->setPos(QPointF(200.0, 150.0));
+        scene.AddItemsWithUndo({rect}, QStringLiteral("Add rect"));
+
+        auto* line = new StraightLineItem();
+        line->SetEndpoints(QPointF(0.0, 210.0), QPointF(180.0, 210.0), QColor(QStringLiteral("#1E293B")), 2.0);
+        QJsonObject binding;
+        binding.insert(QStringLiteral("elementId"), rect->Uid());
+        binding.insert(QStringLiteral("gap"), 4.0);
+        line->SetStartBinding(binding);
+        scene.AddItemsWithUndo({line}, QStringLiteral("Add arrow"));
+        scene.SyncArrowBindings();
+
+        const QSizeF size = rect->ContentRect().size();
+        ItemPlacementList before;
+        before.append(ItemPlacement{rect, QPointF(200.0, 150.0), size});
+        rect->setPos(QPointF(300.0, 150.0));
+        ItemPlacementList after;
+        after.append(ItemPlacement{rect, QPointF(300.0, 150.0), size});
+        undo.push(new GeometryCommand(&scene, before, after, QStringLiteral("Move rect")));
+
+        const QPointF moved = line->mapToScene(line->StrokePoints().first());
+        ctx.Check(qAbs(moved.x() - 296.0) < 1.0, QStringLiteral("移动目标后箭头贴住新位置"),
+                  QStringLiteral("startX=%1").arg(moved.x()));
+
+        undo.undo();
+        const QPointF restored = line->mapToScene(line->StrokePoints().first());
+        ctx.Check(qAbs(restored.x() - 196.0) < 1.0, QStringLiteral("撤销移动后箭头重新贴合旧位置"),
+                  QStringLiteral("startX=%1").arg(restored.x()));
+
+        undo.redo();
+        const QPointF redone = line->mapToScene(line->StrokePoints().first());
+        ctx.Check(qAbs(redone.x() - 296.0) < 1.0, QStringLiteral("重做移动后箭头再次跟随"),
+                  QStringLiteral("startX=%1").arg(redone.x()));
     }
 
     // 端点句柄：拖离目标超过 12px 解绑，拖回目标边缘重新绑定。

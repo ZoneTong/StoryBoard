@@ -26,6 +26,7 @@
 #include <QMouseEvent>
 #include <QPaintEvent>
 #include <QPainter>
+#include <QPen>
 #include <QPointF>
 #include <QRectF>
 #include <QScrollBar>
@@ -96,6 +97,7 @@ CanvasView::CanvasView(CanvasScene* scene, QWidget* parent) : QGraphicsView(scen
             [this](GroupFailureReason reason) { emit statusMessage(GroupFailureReasonText(reason)); });
     // 场景层的规则拒绝（组内成员单独换层）走同一路状态栏文案，由 MainWindow 统一限时显示。
     connect(scene, &CanvasScene::statusMessage, this, [this](const QString& message) { emit statusMessage(message); });
+    connect(scene, &CanvasScene::bindingHighlightChanged, this, [this] { viewport()->update(); });
 
     UpdateCursor();
 }
@@ -418,6 +420,8 @@ void CanvasView::mouseMoveEvent(QMouseEvent* event)
 
     if (m_groupBox->IsDragging()) {
         m_groupBox->UpdateDrag(position, event->modifiers());
+        m_scene->SyncArrowBindings();
+        m_scene->SyncContainerTexts();
         event->accept();
         return;
     }
@@ -435,6 +439,11 @@ void CanvasView::mouseMoveEvent(QMouseEvent* event)
     }
 
     QGraphicsView::mouseMoveEvent(event);
+    // 拖动 / 缩放 / 旋转过程中就让绑定箭头和容器文字跟住目标，松手后再由交互层提交撤销。
+    if ((event->buttons() & Qt::LeftButton) && !m_scene->selectedItems().isEmpty()) {
+        m_scene->SyncArrowBindings();
+        m_scene->SyncContainerTexts();
+    }
     m_resize->UpdateHoverCursor(position, m_pan->IsPanning(), m_stroke->HasActiveStroke());
 }
 
@@ -685,6 +694,15 @@ void CanvasView::paintEvent(QPaintEvent* event)
         return;
     }
     QPainter painter(viewport());
+    if (CanvasItem* target = m_scene->BindingHighlight()) {
+        const QRectF box = mapFromScene(target->mapRectToScene(target->ContentRect())).boundingRect();
+        painter.save();
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.setPen(QPen(QColor(59, 130, 246), 2.0));
+        painter.setBrush(QColor(59, 130, 246, 36));
+        painter.drawRoundedRect(box.adjusted(-2.0, -2.0, 2.0, 2.0), 6.0, 6.0);
+        painter.restore();
+    }
     m_resize->DrawHandles(&painter);
     m_groupBox->DrawOverlay(&painter);
 }

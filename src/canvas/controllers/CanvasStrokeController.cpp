@@ -92,6 +92,9 @@ bool CanvasStrokeController::BeginStroke(const QPoint& viewportPos)
     // 起笔落在图形上或紧贴图形边缘：记下目标 uid，收笔成直线时把这一端绑上去。
     if (CanvasItem* target = m_scene->BindableShapeAt(m_view->mapToScene(viewportPos), 12.0)) {
         m_startTargetUid = target->Uid();
+        m_scene->SetBindingHighlight(target);
+    } else {
+        m_scene->SetBindingHighlight(nullptr);
     }
     m_scene->clearSelection();
     return true;
@@ -104,6 +107,7 @@ void CanvasStrokeController::AppendPoint(const QPoint& viewportPos)
     }
     m_activeStroke->AppendScenePoint(m_view->mapToScene(viewportPos));
     m_lastViewportPos = viewportPos;
+    m_scene->SetBindingHighlight(m_scene->BindableShapeAt(m_view->mapToScene(viewportPos), 12.0));
     m_view->viewport()->update();
 }
 
@@ -113,6 +117,7 @@ void CanvasStrokeController::FinishStroke()
         return;
     }
 
+    m_scene->SetBindingHighlight(nullptr);
     CurveItem* stroke = m_activeStroke;
     m_activeStroke = nullptr;
     stroke->EndStroke(m_strokeSmoothing);
@@ -187,5 +192,6 @@ void CanvasStrokeController::CancelStroke()
     m_activeStroke = nullptr;
     m_scene->removeItem(stroke);
     delete stroke;
+    m_scene->SetBindingHighlight(nullptr);
     m_view->RefreshCursor();
 }

@@ -70,6 +70,9 @@ class CanvasScene : public QGraphicsScene {
     void SyncArrowBindings();
     void SyncContainerTexts();
     CanvasItem* ItemByUid(const QString& uid) const;
+    // 画箭头 / 拖端点时的吸附候选，只影响视图高亮，不写进文档。
+    void SetBindingHighlight(CanvasItem* item);
+    CanvasItem* BindingHighlight() const { return m_bindingHighlight; }
     // 绑定落点：从 from 朝目标图形中心，取图形边缘上的点，再沿外法线让开 gap。
     // focus >= 0 时按 Excalidraw 的归一化轮廓位置取点，保证缩放 / 移动后端点停在同一边。
     static QPointF AttachmentPoint(const CanvasItem* target, const QPointF& from, qreal gap,
@@ -273,6 +276,8 @@ class CanvasScene : public QGraphicsScene {
     void groupOperationFailed(GroupFailureReason reason);
     // 被规则拒绝的编辑操作（目前是组内成员单独换层）的提示文案。
     void statusMessage(const QString& message);
+    // 吸附候选变化：视图据此重画高亮框。
+    void bindingHighlightChanged();
 
   protected:
     void drawBackground(QPainter* painter, const QRectF& rect) override;
@@ -314,6 +319,8 @@ class CanvasScene : public QGraphicsScene {
     ItemStackList ItemStackSnapshot(const QList<CanvasItem*>& items) const;
 
     QUndoStack* m_undoStack = nullptr;
+    // 只在画箭头 / 拖端点的过程里活着，结束即清空，不跨事件循环持有。
+    CanvasItem* m_bindingHighlight = nullptr;
     ToolMode m_mode = ToolMode::VIEW;
     QSizeF m_canvasSize{1536.0, 1024.0};
     QPointF m_canvasOrigin{0.0, 0.0};
