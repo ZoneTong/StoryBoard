@@ -194,6 +194,15 @@ void UiActionFactory::Build()
     m_window->m_rotateCcwAct = MakeAction(m_window, IconId::ROTATE_CCW, MainWindow::tr("Rotate 45° counterclockwise"),
                                           QKeySequence(QStringLiteral("Ctrl+Shift+R")),
                                           MainWindow::tr("Rotate selected items 45° counterclockwise (Ctrl+Shift+R)"));
+    // 镜像翻转：PPT 的 flipH / flipV 语义，绕选区并集框中线翻转，参数值不变。
+    m_window->m_mirrorHorizontalAct = new QAction(MainWindow::tr("Mirror horizontally"), m_window);
+    m_window->m_mirrorHorizontalAct->setObjectName(QStringLiteral("MirrorHorizontalAction"));
+    m_window->m_mirrorHorizontalAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+Alt+H")));
+    m_window->m_mirrorHorizontalAct->setStatusTip(MainWindow::tr("Mirror selected items left↔right (Ctrl+Alt+H)"));
+    m_window->m_mirrorVerticalAct = new QAction(MainWindow::tr("Mirror vertically"), m_window);
+    m_window->m_mirrorVerticalAct->setObjectName(QStringLiteral("MirrorVerticalAction"));
+    m_window->m_mirrorVerticalAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+Alt+V")));
+    m_window->m_mirrorVerticalAct->setStatusTip(MainWindow::tr("Mirror selected items top↕bottom (Ctrl+Alt+V)"));
 
     m_window->m_viewModeAct =
         MakeAction(m_window, IconId::VIEW, MainWindow::tr("View mode"), QKeySequence(QStringLiteral("H")),
@@ -307,6 +316,10 @@ void UiActionFactory::Build()
 
     QObject::connect(m_window->m_undoAct, &QAction::triggered, m_window->m_undo, &QUndoStack::undo);
     QObject::connect(m_window->m_redoAct, &QAction::triggered, m_window->m_undo, &QUndoStack::redo);
+    QObject::connect(m_window->m_mirrorHorizontalAct, &QAction::triggered, m_window,
+                     [this]() { m_window->m_scene->MirrorSelected(true); });
+    QObject::connect(m_window->m_mirrorVerticalAct, &QAction::triggered, m_window,
+                     [this]() { m_window->m_scene->MirrorSelected(false); });
     QObject::connect(m_window->m_deleteAct, &QAction::triggered, m_window->m_scene, &CanvasScene::DeleteSelected);
     QObject::connect(m_window->m_copyAct, &QAction::triggered, m_window,
                      [this]() { m_window->m_editActions->CopySelectedItems(); });

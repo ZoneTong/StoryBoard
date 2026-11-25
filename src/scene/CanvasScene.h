@@ -226,6 +226,11 @@ class CanvasScene : public QGraphicsScene {
                            const QList<qreal>& anglesAfter, const ItemPlacementList& geometryBefore,
                            const ItemPlacementList& geometryAfter, const QString& text);
     int RotateSelected(qreal degrees, const QString& commandText = QString());
+    // 左右（horizontal=true）/ 上下镜像选中的图元：绕选区并集框的中线翻转，
+    // 位置沿轴镜像、旋转角取反、对应翻转位取反，一条撤销记录。
+    int MirrorSelected(bool horizontal, const QString& commandText = QString());
+    // 扇形 / 弧线 / 角度线三型互换：返回新图元（已挂进场景并选中），失败返回 nullptr。
+    CanvasItem* ConvertItemType(CanvasItem* item, const QString& targetKind);
 
     void ResetDocument();
     QJsonObject ToJson() const;

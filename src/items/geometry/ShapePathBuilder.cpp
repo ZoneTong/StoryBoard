@@ -1,6 +1,6 @@
 #include "items/geometry/ShapePathBuilder.h"
 
-#include "items/geometry/EllipseShape.h"
+#include "items/geometry/EllipseGeometry.h"
 #include "items/geometry/TriangleGeometry.h"
 
 #include <QTransform>
@@ -366,8 +366,8 @@ QPainterPath ShapePathBuilder::EllipsePath(const QRectF& rect)
     if (r.width() <= 0.0 || r.height() <= 0.0) {
         return QPainterPath();
     }
-    // 椭圆 / 扇形 / 弧线共用 EllipseShape，角度语义与扫过角兜底只有一份实现。
-    const EllipseShape ellipseShape(r);
+    // 椭圆 / 扇形 / 弧线共用 EllipseGeometry，角度语义与扫过角兜底只有一份实现。
+    const EllipseGeometry ellipseShape(r);
     return ellipseShape.Ellipse();
 }
 
@@ -377,7 +377,7 @@ QPainterPath ShapePathBuilder::SectorPath(const QRectF& rect, qreal startAngle, 
     if (r.width() <= 0.0 || r.height() <= 0.0) {
         return QPainterPath();
     }
-    const EllipseShape ellipseShape(r);
+    const EllipseGeometry ellipseShape(r);
     return ellipseShape.Sector(startAngle, sweepAngle);
 }
 

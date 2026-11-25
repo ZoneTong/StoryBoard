@@ -68,6 +68,10 @@ QPointF CanvasItemHandles::Center(int handle) const
 {
     HandleSpec spec;
     if (SpecAt(handle, &spec)) {
+        // 镜像只改显示矩阵，自定义手柄的本地位置要同步过一遍镜像，才落在看得见的端点上。
+        if (m_item->FlipX() || m_item->FlipY()) {
+            return m_item->MirrorTransform().map(spec.position);
+        }
         return spec.position;
     }
     const QRectF rect = m_item->FrameRect();

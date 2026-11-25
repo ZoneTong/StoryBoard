@@ -5,7 +5,7 @@
 #include "canvas/controllers/CanvasItemInteraction.h"
 #include "io/CustomShapeTemplates.h"
 #include "items/CanvasTypes.h"
-#include "items/geometry/EllipseShape.h"
+#include "items/geometry/EllipseGeometry.h"
 #include "items/geometry/ShapeMeta.h"
 #include "items/geometry/ShapePathBuilder.h"
 #include "items/geometry/VertexAngleKnob.h"
@@ -601,12 +601,12 @@ void selftest::RunShapeItemTests(Context& ctx)
         sector.SetContentSize(QSizeF(200.0, 200.0));
         sector.SetArcAngles(0.0, 90.0);
         const QPainterPath sectorPath = sector.CurrentPath(sector.ContentRect());
-        // 弧线几何与椭圆共用 EllipseShape，纯几何可直接验证角度采样。
-        const QPainterPath arcPath = EllipseShape(QRectF(0.0, 0.0, 200.0, 200.0)).Arc(15.0, 140.0);
+        // 弧线几何与椭圆共用 EllipseGeometry，纯几何可直接验证角度采样。
+        const QPainterPath arcPath = EllipseGeometry(QRectF(0.0, 0.0, 200.0, 200.0)).Arc(15.0, 140.0);
         ctx.Check(!sectorPath.isEmpty() && !arcPath.isEmpty() && sectorPath.boundingRect().width() <= 202.0 &&
                       arcPath.boundingRect().width() <= 202.0,
                   QStringLiteral("扇形与弧线按角度生成路径，外接框由内容矩形决定"));
-        const QRectF ovalBounds = EllipseShape(QRectF(0.0, 0.0, 240.0, 120.0)).Arc(0.0, 90.0).boundingRect();
+        const QRectF ovalBounds = EllipseGeometry(QRectF(0.0, 0.0, 240.0, 120.0)).Arc(0.0, 90.0).boundingRect();
         ctx.Check(qAbs(ovalBounds.width() - 120.0) < 2.0 && qAbs(ovalBounds.height() - 60.0) < 2.0,
                   QStringLiteral("扇形与弧线由椭圆派生并跟随图元拉伸"));
         SectorItem copy;
@@ -614,8 +614,8 @@ void selftest::RunShapeItemTests(Context& ctx)
         ctx.Check(copy.shapeType() == ShapeType::SECTOR && qFuzzyCompare(copy.SweepAngle() + 2.0, 92.0),
                   QStringLiteral("扇形角度随画布保存和恢复，半径字段已移除"));
 
-        // 需求 6 扩展：扇形与弧线共用 ArcAngleAttributes，角度语义只有一份。
-        ArcAngleAttributes* sectorAngles = dynamic_cast<ArcAngleAttributes*>(&sector);
+        // 需求 6 扩展：扇形、弧线、角度线共用 EllipseBase，角度语义只有一份。
+        EllipseBase* sectorAngles = dynamic_cast<EllipseBase*>(&sector);
         sectorAngles->SetStartAngle(45.0);
         ctx.Check(sectorAngles && qFuzzyCompare(sector.StartAngle() + 2.0, 47.0) &&
                       qFuzzyCompare(sector.SweepAngle() + 2.0, 92.0),
@@ -766,7 +766,7 @@ void selftest::RunShapeItemTests(Context& ctx)
                                    sectorSpecs.at(0).behavior == HandleBehavior::ARC_ENDPOINT &&
                                    sectorSpecs.at(1).behavior == HandleBehavior::ARC_ENDPOINT;
         const QPointF startHandle = sectorSpecs.isEmpty() ? QPointF() : sectorSpecs.constFirst().position;
-        const QPointF expectedStart = EllipseShape::PointOnFrame(frameBefore, 0.0);
+        const QPointF expectedStart = EllipseGeometry::PointOnFrame(frameBefore, 0.0);
         ctx.Check(sectorSpecsOk && QLineF(startHandle, expectedStart).length() < 0.01,
                   QStringLiteral("扇形提供起始端 / 结束端两个弧端点手柄"),
                   QStringLiteral("count=%1 start=%2,%3 expected=%4,%5")
@@ -778,8 +778,8 @@ void selftest::RunShapeItemTests(Context& ctx)
 
         // 拖结束端 90°→45°：起始端仍钉在 0°，扫过角收窄到 45°。
         CanvasItemInteraction endDrag(sector);
-        const QPointF endTarget = sector->mapToScene(EllipseShape::PointOnFrame(frameBefore, 45.0));
-        endDrag.BeginResize(CanvasItem::CUSTOM_1, sector->mapToScene(EllipseShape::PointOnFrame(frameBefore, 90.0)));
+        const QPointF endTarget = sector->mapToScene(EllipseGeometry::PointOnFrame(frameBefore, 45.0));
+        endDrag.BeginResize(CanvasItem::CUSTOM_1, sector->mapToScene(EllipseGeometry::PointOnFrame(frameBefore, 90.0)));
         endDrag.ApplyResize(endTarget, Qt::NoModifier);
         endDrag.FinishInteraction();
         const QRectF frameAfterEnd = sector->Frame();
@@ -797,8 +797,9 @@ void selftest::RunShapeItemTests(Context& ctx)
 
         // 拖起始端 0°→-45°：结束端仍钉在 45°，扫过角重新张开。
         CanvasItemInteraction startDrag(sector);
-        startDrag.BeginResize(CanvasItem::CUSTOM_0, sector->mapToScene(EllipseShape::PointOnFrame(frameAfterEnd, 0.0)));
-        startDrag.ApplyResize(sector->mapToScene(EllipseShape::PointOnFrame(frameAfterEnd, -45.0)), Qt::NoModifier);
+        startDrag.BeginResize(CanvasItem::CUSTOM_0,
+                              sector->mapToScene(EllipseGeometry::PointOnFrame(frameAfterEnd, 0.0)));
+        startDrag.ApplyResize(sector->mapToScene(EllipseGeometry::PointOnFrame(frameAfterEnd, -45.0)), Qt::NoModifier);
         ctx.Check(qAbs(sector->StartAngle() + 45.0) < 0.5 &&
                       qAbs(sector->StartAngle() + sector->SweepAngle() - 45.0) < 0.5,
                   QStringLiteral("拖扇形起始端固定结束端"),
@@ -815,8 +816,9 @@ void selftest::RunShapeItemTests(Context& ctx)
         // 端点拖到与另一端重合：至少留 1°，不能出现 0° 的“空扇形”。
         CanvasItemInteraction overlapDrag(sector);
         overlapDrag.BeginResize(CanvasItem::CUSTOM_1,
-                                sector->mapToScene(EllipseShape::PointOnFrame(sector->Frame(), 45.0)));
-        overlapDrag.ApplyResize(sector->mapToScene(EllipseShape::PointOnFrame(sector->Frame(), 0.0)), Qt::NoModifier);
+                                sector->mapToScene(EllipseGeometry::PointOnFrame(sector->Frame(), 45.0)));
+        overlapDrag.ApplyResize(sector->mapToScene(EllipseGeometry::PointOnFrame(sector->Frame(), 0.0)),
+                                Qt::NoModifier);
         ctx.Check(qAbs(sector->SweepAngle() - 1.0) < 0.5, QStringLiteral("弧端点重合时扫过角保底 1°"),
                   QStringLiteral("sweep=%1").arg(sector->SweepAngle()));
         overlapDrag.FinishInteraction();
@@ -837,7 +839,7 @@ void selftest::RunShapeItemTests(Context& ctx)
         arcDrag.BeginResize(CanvasItem::CUSTOM_1,
                             arc.mapToScene(arcSpecs.isEmpty() ? QPointF() : arcSpecs.at(1).position));
         // 结束端从 155° 拖到 100°：起始角 15° 钉住，扫过角变 85°。
-        const QPointF arcTarget = EllipseShape::PointOnFrame(arcFrame, 100.0);
+        const QPointF arcTarget = EllipseGeometry::PointOnFrame(arcFrame, 100.0);
         arcDrag.ApplyResize(arcTarget, Qt::NoModifier);
         const QSizeF ellipseAfter = arc.EllipseSize();
         ctx.Check(qAbs(arc.StartAngle() - 15.0) < 0.5 && qAbs(arc.SweepAngle() - 85.0) < 0.5 &&
@@ -1239,7 +1241,7 @@ void selftest::RunShapeItemTests(Context& ctx)
         // B3：弧线中心点按真实椭圆框计算，不能再叠一次 pos()。
         ArcItem centerArc;
         centerArc.SetArcGeometry(QPointF(40.0, 30.0), QSizeF(120.0, 80.0), 30.0, 120.0, QColor(Qt::black), 2.0);
-        const QPointF ellipseCenter = centerArc.EllipseShape::Center();
+        const QPointF ellipseCenter = centerArc.EllipseGeometry::Center();
         const QPointF arcCenter = centerArc.CenterScenePoint();
         ctx.Check(QLineF(arcCenter, ellipseCenter).length() < 0.01, QStringLiteral("弧线中心点等于真实椭圆中心"),
                   QStringLiteral("arc=%1,%2 ellipse=%3,%4")

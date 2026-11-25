@@ -5,6 +5,7 @@
 #include "scene/CanvasScene.h"
 #include "scene/Commands.h"
 #include "scene/ItemNameService.h"
+#include "scene/ItemTypeConversion.h"
 #include "scene/SceneConstants.h"
 
 #include <QSet>
@@ -313,4 +314,100 @@ int CanvasScene::RotateSelected(qreal degrees, const QString& commandText)
     UpdateSceneExtent();
     update();
     return changed.size();
+}
+
+int CanvasScene::MirrorSelected(bool horizontal, const QString& commandText)
+{
+    const QList<CanvasItem*> items = SelectedCanvasItems();
+    QRectF box;
+    for (const CanvasItem* item : items) {
+        if (!item || !IsItemEditable(item)) {
+            continue;
+        }
+        const QRectF bounds = item->mapToScene(item->ContentRect()).boundingRect();
+        box = box.isNull() ? bounds : box.united(bounds);
+    }
+    if (box.isNull()) {
+        return 0;
+    }
+
+    QList<MirrorItemState> before;
+    QList<MirrorItemState> after;
+    for (CanvasItem* item : items) {
+        if (!item || !IsItemEditable(item)) {
+            continue;
+        }
+        const QPointF origin = item->RotationOrigin();
+        QPointF pos = item->pos();
+        if (horizontal) {
+            // 世界框心 = pos + origin；镜像后新 pos 再减回同一个本地原点。
+            pos.setX(2.0 * box.center().x() - pos.x() - 2.0 * origin.x());
+        } else {
+            pos.setY(2.0 * box.center().y() - pos.y() - 2.0 * origin.y());
+        }
+        MirrorItemState start;
+        start.item = QPointer<CanvasItem>(item);
+        start.pos = item->pos();
+        start.rotation = item->RotationAngle();
+        start.flipX = item->FlipX();
+        start.flipY = item->FlipY();
+        before.append(start);
+
+        MirrorItemState target = start;
+        target.pos = pos;
+        // 镜像与旋转的交换律：S∘R(θ) = R(-θ)∘S，所以角度取反、翻转位取反即可等价。
+        target.rotation = CanvasItem::NormalizeRotation(-start.rotation);
+        if (horizontal) {
+            target.flipX = !start.flipX;
+        } else {
+            target.flipY = !start.flipY;
+        }
+        after.append(target);
+    }
+    if (after.isEmpty()) {
+        return 0;
+    }
+
+    const QString text = commandText.isEmpty() ? tr("Mirror items") : commandText;
+    if (m_undoStack) {
+        m_undoStack->push(new MirrorCommand(this, before, after, text));
+    } else {
+        for (const MirrorItemState& state : std::as_const(after)) {
+            if (state.item) {
+                state.item->setPos(state.pos);
+                state.item->SetRotationAngle(state.rotation);
+                state.item->SetFlips(state.flipX, state.flipY);
+            }
+        }
+    }
+    UpdateSceneExtent();
+    update();
+    return after.size();
+}
+
+CanvasItem* CanvasScene::ConvertItemType(CanvasItem* item, const QString& targetKind)
+{
+    if (!item || !IsItemEditable(item)) {
+        return nullptr;
+    }
+    const QString type = ItemTypeConversion::TypeOf(item);
+    if (type.isEmpty() || type == targetKind) {
+        return nullptr;
+    }
+    CanvasItem* converted = ItemTypeConversion::CreateConverted(item, targetKind);
+    if (!converted) {
+        return nullptr;
+    }
+    const QString text = tr("Convert to %1").arg(ItemTypeConversion::DisplayNameOf(targetKind));
+    if (m_undoStack) {
+        // 先 DetachItem 再 AttachItem：AddItemsWithUndo 会重新规划层内高度，互换不该改叠放。
+        m_undoStack->push(new ConvertItemCommand(this, item, converted, text));
+    } else {
+        DetachItem(item);
+        AttachItem(converted);
+        converted->setSelected(true);
+    }
+    UpdateSceneExtent();
+    update();
+    return converted;
 }

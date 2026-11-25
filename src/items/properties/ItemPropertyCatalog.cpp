@@ -1,8 +1,8 @@
 #include "items/properties/ItemPropertyCatalog.h"
 
 #include "items/CanvasItem.h"
+#include "items/EllipseBase.h"
 #include "items/geometry/EllipseAxis.h"
-#include "items/lines/ArcAngleAttributes.h"
 #include "items/lines/ArcItem.h"
 #include "items/lines/LineAbstractItem.h"
 #include "items/lines/SineItem.h"
@@ -291,21 +291,21 @@ const QList<ItemPropertyDescriptor*>& ItemPropertyCatalog::All()
                 };
             } else if (descriptor->key == ItemProperty::START_ANGLE) {
                 descriptor->reader = [](const CanvasItem* item) -> QVariant {
-                    const auto* arc = dynamic_cast<const ArcAngleAttributes*>(item);
+                    const auto* arc = dynamic_cast<const EllipseBase*>(item);
                     return arc ? arc->StartAngle() : QVariant();
                 };
                 descriptor->writer = [](CanvasItem* item, const QVariant& value) {
-                    if (auto* arc = dynamic_cast<ArcAngleAttributes*>(item)) {
+                    if (auto* arc = dynamic_cast<EllipseBase*>(item)) {
                         arc->SetStartAngle(value.toDouble());
                     }
                 };
             } else if (descriptor->key == ItemProperty::SWEEP_ANGLE) {
                 descriptor->reader = [](const CanvasItem* item) -> QVariant {
-                    const auto* arc = dynamic_cast<const ArcAngleAttributes*>(item);
+                    const auto* arc = dynamic_cast<const EllipseBase*>(item);
                     return arc ? arc->SweepAngle() : QVariant();
                 };
                 descriptor->writer = [](CanvasItem* item, const QVariant& value) {
-                    if (auto* arc = dynamic_cast<ArcAngleAttributes*>(item)) {
+                    if (auto* arc = dynamic_cast<EllipseBase*>(item)) {
                         arc->SetSweepAngle(value.toDouble());
                     }
                 };

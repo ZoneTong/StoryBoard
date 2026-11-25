@@ -40,8 +40,8 @@ class LineAbstractItem : public CanvasItem, public StrokeAttributes {
     QVariant PropertyValue(ItemProperty property) const override;
     void SetPropertyValue(ItemProperty property, const QVariant& value) override;
     QPainterPath shape() const override;
-    QPainterPath OutlineShape() const override;
-    QPainterPath PaintedShape() const override;
+    QPainterPath GeometryOutline() const override;
+    QPainterPath GeometryPaintedShape() const override;
 
     QColor StrokeColor() const { return StrokeAttributes::StrokeColor(); }
     qreal StrokeWidth() const { return StrokeAttributes::StrokeWidth(); }

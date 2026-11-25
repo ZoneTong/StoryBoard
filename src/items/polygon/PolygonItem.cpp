@@ -234,7 +234,7 @@ QPainterPath PolygonItem::MapLayerPath(const QPainterPath& localPath) const
     return LayerTransform().map(localPath);
 }
 
-QPainterPath PolygonItem::PaintedShape() const
+QPainterPath PolygonItem::GeometryPaintedShape() const
 {
     QPainterPath shape;
     for (const Layer& layer : m_layers) {
@@ -245,7 +245,7 @@ QPainterPath PolygonItem::PaintedShape() const
     return LayerTransform().map(shape);
 }
 
-QPainterPath PolygonItem::OutlineShape() const
+QPainterPath PolygonItem::GeometryOutline() const
 {
     QPainterPath shape;
     for (const Layer& layer : m_layers) {

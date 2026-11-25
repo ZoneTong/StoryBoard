@@ -1,17 +1,17 @@
-#include "items/geometry/EllipseShape.h"
+#include "items/geometry/EllipseGeometry.h"
 
 #include <QtMath>
 
-EllipseShape::EllipseShape(const QRectF& frame) : m_frame(frame.normalized()) {}
+EllipseGeometry::EllipseGeometry(const QRectF& frame) : m_frame(frame.normalized()) {}
 
-qreal EllipseShape::ClampedSweep(qreal sweepDeg)
+qreal EllipseGeometry::ClampedSweep(qreal sweepDeg)
 {
     const qreal sweep = qBound<qreal>(-360.0, sweepDeg, 360.0);
     // 扫过角为 0 时画不出可见图形，退回默认 120°，避免插入后“什么都没有”。
     return qFuzzyIsNull(sweep) ? 120.0 : sweep;
 }
 
-QPainterPath EllipseShape::Ellipse() const
+QPainterPath EllipseGeometry::Ellipse() const
 {
     QPainterPath path;
     if (m_frame.width() <= 0.0 || m_frame.height() <= 0.0) {
@@ -21,7 +21,7 @@ QPainterPath EllipseShape::Ellipse() const
     return path;
 }
 
-QPainterPath EllipseShape::Arc(qreal startDeg, qreal sweepDeg) const
+QPainterPath EllipseGeometry::Arc(qreal startDeg, qreal sweepDeg) const
 {
     QPainterPath path;
     if (m_frame.width() <= 0.0 || m_frame.height() <= 0.0) {
@@ -32,7 +32,7 @@ QPainterPath EllipseShape::Arc(qreal startDeg, qreal sweepDeg) const
     return path;
 }
 
-QPainterPath EllipseShape::Sector(qreal startDeg, qreal sweepDeg) const
+QPainterPath EllipseGeometry::Sector(qreal startDeg, qreal sweepDeg) const
 {
     QPainterPath path;
     if (m_frame.width() <= 0.0 || m_frame.height() <= 0.0) {
@@ -45,17 +45,17 @@ QPainterPath EllipseShape::Sector(qreal startDeg, qreal sweepDeg) const
     return path;
 }
 
-QRectF EllipseShape::ArcBounds(qreal startDeg, qreal sweepDeg) const
+QRectF EllipseGeometry::ArcBounds(qreal startDeg, qreal sweepDeg) const
 {
     return Arc(startDeg, sweepDeg).boundingRect();
 }
 
-QRectF EllipseShape::SectorBounds(qreal startDeg, qreal sweepDeg) const
+QRectF EllipseGeometry::SectorBounds(qreal startDeg, qreal sweepDeg) const
 {
     return Sector(startDeg, sweepDeg).boundingRect();
 }
 
-QPointF EllipseShape::PointOnFrame(const QRectF& frame, qreal deg)
+QPointF EllipseGeometry::PointOnFrame(const QRectF& frame, qreal deg)
 {
     const QRectF normalized = frame.normalized();
     const qreal rad = qDegreesToRadians(deg);
@@ -64,7 +64,7 @@ QPointF EllipseShape::PointOnFrame(const QRectF& frame, qreal deg)
                    normalized.center().y() - normalized.height() / 2.0 * qSin(rad));
 }
 
-QVector<QPointF> EllipseShape::Sample(qreal startDeg, qreal sweepDeg, int count) const
+QVector<QPointF> EllipseGeometry::Sample(qreal startDeg, qreal sweepDeg, int count) const
 {
     QVector<QPointF> points;
     if (m_frame.width() <= 0.0 || m_frame.height() <= 0.0 || count < 1) {

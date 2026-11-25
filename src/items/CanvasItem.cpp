@@ -290,17 +290,56 @@ QPainterPath CanvasItem::shape() const
     return path;
 }
 
-QPainterPath CanvasItem::OutlineShape() const
+QPainterPath CanvasItem::GeometryOutline() const
 {
     QPainterPath path;
     path.addRect(ContentRect());
     return path;
 }
 
-QPainterPath CanvasItem::PaintedShape() const
+QPainterPath CanvasItem::GeometryPaintedShape() const
 {
     // 基类按内容矩形整体涂满处理：图片与文字等子类会覆写这里。
-    return OutlineShape();
+    return GeometryOutline();
+}
+
+void CanvasItem::SetFlips(bool flipX, bool flipY)
+{
+    if (m_flipX == flipX && m_flipY == flipY) {
+        return;
+    }
+    m_flipX = flipX;
+    m_flipY = flipY;
+    update();
+}
+
+QTransform CanvasItem::MirrorTransform() const
+{
+    // 绕内容框中线镜像：翻完之后图元位置、内容尺寸、旋转角都不必改。
+    const QPointF center = ContentRect().center();
+    QTransform transform;
+    transform.translate(center.x(), center.y());
+    transform.scale(m_flipX ? -1.0 : 1.0, m_flipY ? -1.0 : 1.0);
+    transform.translate(-center.x(), -center.y());
+    return transform;
+}
+
+QPainterPath CanvasItem::OutlineShape() const
+{
+    const QPainterPath path = GeometryOutline();
+    if (!m_flipX && !m_flipY) {
+        return path;
+    }
+    return MirrorTransform().map(path);
+}
+
+QPainterPath CanvasItem::PaintedShape() const
+{
+    const QPainterPath path = GeometryPaintedShape();
+    if (!m_flipX && !m_flipY) {
+        return path;
+    }
+    return MirrorTransform().map(path);
 }
 
 QPainterPath CanvasItem::ClippingShape() const
@@ -328,6 +367,9 @@ void CanvasItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option
     painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
     // 透明度只作用于内容，选中框与手柄在恢复后按不透明绘制。
     painter->setOpacity(painter->opacity() * m_itemOpacity);
+    if (m_flipX || m_flipY) {
+        painter->setTransform(MirrorTransform(), true);
+    }
     PaintContent(painter);
     painter->restore();
 
@@ -536,6 +578,12 @@ QJsonObject CanvasItem::BaseJson() const
     if (!qFuzzyCompare(m_itemOpacity, 1.0)) {
         json.insert(QStringLiteral("opacity"), m_itemOpacity);
     }
+    if (m_flipX) {
+        json.insert(QStringLiteral("flipX"), true);
+    }
+    if (m_flipY) {
+        json.insert(QStringLiteral("flipY"), true);
+    }
     if (!m_name.isEmpty()) {
         json.insert(QStringLiteral("name"), m_name);
     }
@@ -553,5 +601,7 @@ void CanvasItem::ApplyBaseJson(const QJsonObject& json)
     m_zOrder = json.contains(QStringLiteral("zOrder")) ? qMax(0, json.value(QStringLiteral("height")).toInt(0)) : -1;
     SetRotationAngle(json.value(QStringLiteral("rotation")).toDouble(0.0));
     SetItemOpacity(json.value(QStringLiteral("opacity")).toDouble(1.0));
+    m_flipX = json.value(QStringLiteral("flipX")).toBool(false);
+    m_flipY = json.value(QStringLiteral("flipY")).toBool(false);
     m_name = json.value(QStringLiteral("name")).toString().trimmed();
 }

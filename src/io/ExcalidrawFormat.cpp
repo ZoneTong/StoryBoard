@@ -49,11 +49,11 @@ QString HeadStyle(const QJsonValue& value)
     return QStringLiteral("none");
 }
 
-// 线条族的五个 kind：直线 / 弧线 / 正弦 / 手绘曲线 / 花括号。
+// 线条族的六个 kind：直线 / 弧线 / 角度线 / 正弦 / 手绘曲线 / 花括号。
 bool IsLineKind(const QString& kind)
 {
-    return kind == QStringLiteral("straightline") || kind == QStringLiteral("arc") || kind == QStringLiteral("sine") ||
-           kind == QStringLiteral("freehand") || kind == QStringLiteral("brace");
+    return kind == QStringLiteral("straightline") || kind == QStringLiteral("arc") || kind == QStringLiteral("angle") ||
+           kind == QStringLiteral("sine") || kind == QStringLiteral("freehand") || kind == QStringLiteral("brace");
 }
 
 QJsonObject ItemBase(const QString& kind, const QRectF& bounds, int z, int layer)

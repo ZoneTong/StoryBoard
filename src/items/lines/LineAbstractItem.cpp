@@ -240,18 +240,18 @@ void LineAbstractItem::PaintContent(QPainter* painter)
     painter->restore();
 }
 
-QPainterPath LineAbstractItem::OutlineShape() const
+QPainterPath LineAbstractItem::GeometryOutline() const
 {
     return StrokeGeometry::Outline(m_path, m_baseSize, ContentSize());
 }
 
-QPainterPath LineAbstractItem::PaintedShape() const
+QPainterPath LineAbstractItem::GeometryPaintedShape() const
 {
     // 完全透明的描线画不出东西，也就不该算作遮挡。
     if (m_strokeColor.alpha() == 0) {
         return QPainterPath();
     }
-    const QPainterPath centerLine = OutlineShape();
+    const QPainterPath centerLine = GeometryOutline();
     return StrokeGeometry::Painted(centerLine, m_baseSize, ContentSize(), m_strokeWidth);
 }
 

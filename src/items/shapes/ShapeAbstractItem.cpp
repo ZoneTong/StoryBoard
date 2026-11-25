@@ -276,13 +276,13 @@ QPainterPath ShapeAbstractItem::shape() const
     return ShapeHitGeometry::HitShape(CurrentPath(ContentRect()), shapeType(), m_strokeWidth, SelectionHandleShape());
 }
 
-QPainterPath ShapeAbstractItem::OutlineShape() const
+QPainterPath ShapeAbstractItem::GeometryOutline() const
 {
     const QPainterPath path = CurrentPath(ContentRect());
-    return path.isEmpty() ? CanvasItem::OutlineShape() : path;
+    return path.isEmpty() ? CanvasItem::GeometryOutline() : path;
 }
 
-QPainterPath ShapeAbstractItem::PaintedShape() const
+QPainterPath ShapeAbstractItem::GeometryPaintedShape() const
 {
     return ShapeHitGeometry::PaintedShape(CurrentPath(ContentRect()), shapeType(), m_fillStyle, m_fillColor,
                                           m_strokeWidth, m_strokeStyle);

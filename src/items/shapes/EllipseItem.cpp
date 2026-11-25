@@ -51,7 +51,7 @@ void EllipseItem::SetPropertyValue(ItemProperty property, const QVariant& value)
 void EllipseItem::ContentResized()
 {
     ShapeAbstractItem::ContentResized();
-    // 外接框与内容矩形保持一致，轮廓只由 EllipseShape::Ellipse() 出。
+    // 外接框与内容矩形保持一致，轮廓只由 EllipseGeometry::Ellipse() 出。
     SetFrame(ContentRect());
 }
 

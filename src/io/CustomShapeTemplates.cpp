@@ -1,5 +1,6 @@
 #include "io/CustomShapeTemplates.h"
 
+#include "items/lines/AngleItem.h"
 #include "items/lines/ArcItem.h"
 #include "items/lines/BraceItem.h"
 #include "items/lines/CurveItem.h"
@@ -117,6 +118,9 @@ CanvasItem* CreateTemplateItem(const QJsonObject& object)
     }
     if (kind == QStringLiteral("arc")) {
         return new ArcItem();
+    }
+    if (kind == QStringLiteral("angle")) {
+        return new AngleItem();
     }
     if (kind == QStringLiteral("sine")) {
         return new SineItem();

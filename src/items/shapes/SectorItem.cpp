@@ -4,28 +4,26 @@
 
 #include <QJsonObject>
 #include <QPainter>
-#include <cmath>
 
 SectorItem::SectorItem()
 {
     SetContentSize(DefaultContentSize());
-    SetFrame(ContentRect());
+    SyncEllipseFrameFromRatio(ContentSize());
 }
 
 void SectorItem::ContentResized()
 {
     ShapeAbstractItem::ContentResized();
-    // 外接框与内容矩形保持一致，扇形只由 EllipseShape::Sector() 出。
-    SetFrame(ContentRect());
+    // 外接框与内容矩形保持一致，扇形只由 EllipseGeometry::Sector() 出。
+    SyncEllipseFrameFromRatio(ContentSize());
 }
 
 ItemPropertySet SectorItem::Properties() const
 {
     // 扇形同时拥有弧角与椭圆半轴；自定义轮廓不再按椭圆外接框换算。
-    ItemPropertySet properties = ShapeAbstractItem::Properties().United(ArcAngleAttributes::ArcAngleProperties());
+    ItemPropertySet properties = ShapeAbstractItem::Properties().United(EllipseBase::ArcAngleProperties());
     if (!IsCustomShape()) {
-        properties.Insert(ItemProperty::MAJOR_AXIS);
-        properties.Insert(ItemProperty::MINOR_AXIS);
+        properties = properties.United(EllipseBase::ArcAxisProperties());
     }
     return properties;
 }
@@ -94,16 +92,6 @@ void SectorItem::ArcAnglesChanged()
     update();
 }
 
-void SectorItem::WriteJsonExtra(QJsonObject& json) const
-{
-    WriteArcAngleJson(json);
-}
-
-void SectorItem::ReadJsonExtra(const QJsonObject& json)
-{
-    ReadArcAngleJson(json);
-}
-
 QPainterPath SectorItem::ShapePath(const QRectF& rect) const
 {
     Q_UNUSED(rect)
@@ -112,25 +100,11 @@ QPainterPath SectorItem::ShapePath(const QRectF& rect) const
 
 HandleSpecList SectorItem::CustomHandles() const
 {
-    HandleSpecList specs;
     // 自定义轮廓没有弧角语义：不提供端点手柄。
     if (IsCustomShape()) {
-        return specs;
+        return {};
     }
-    const QRectF frame = Frame();
-    HandleSpec start;
-    start.id = CanvasItem::CUSTOM_0;
-    start.position = EllipseShape::PointOnFrame(frame, StartAngle());
-    start.behavior = HandleBehavior::ARC_ENDPOINT;
-    start.cursor = Qt::SizeAllCursor;
-    specs.append(start);
-    HandleSpec end;
-    end.id = CanvasItem::CUSTOM_1;
-    end.position = EllipseShape::PointOnFrame(frame, StartAngle() + SweepAngle());
-    end.behavior = HandleBehavior::ARC_ENDPOINT;
-    end.cursor = Qt::SizeAllCursor;
-    specs.append(end);
-    return specs;
+    return ArcHandleSpecs(EllipseFrameLocal(ContentSize()));
 }
 
 bool SectorItem::BeginCustomHandleDrag(int handle, const QPointF& scenePos)
@@ -148,7 +122,7 @@ bool SectorItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos)
     if (IsCustomShape() || (handle != CanvasItem::CUSTOM_0 && handle != CanvasItem::CUSTOM_1)) {
         return false;
     }
-    DragArcEndpoint(Frame(), mapFromScene(scenePos), handle == CanvasItem::CUSTOM_0);
+    DragArcEndpoint(EllipseFrameLocal(ContentSize()), mapFromScene(scenePos), handle == CanvasItem::CUSTOM_0);
     SetAngleReadoutVisible(true);
     return true;
 }
@@ -164,18 +138,12 @@ void SectorItem::DrawSelectionOverlay(QPainter* painter)
     if (!AngleReadoutVisible()) {
         return;
     }
-    const QRectF frame = Frame();
-    const QPointF point = EllipseShape::PointOnFrame(frame, StartAngle() + SweepAngle() / 2.0);
-    QPointF radial = point - frame.center();
-    const qreal length = std::hypot(radial.x(), radial.y());
-    radial = length > 0.001 ? radial / length : QPointF(0.0, -1.0);
-    const qreal offset = 18.0 / qMax<qreal>(ViewScale(), 0.001);
-    const QPointF anchor = point + radial * offset;
-    const QString text = QStringLiteral("%1°").arg(qRound(SweepAngle()));
+    const QRectF frame = EllipseFrameLocal(ContentSize());
+    const QString text = ArcReadoutText();
     painter->save();
     painter->setFont(ReadoutFont(painter->font()));
-    painter->setPen(QColor(37, 99, 235));
-    painter->drawText(ReadoutRectAt(anchor, text), Qt::AlignCenter, text);
+    painter->setPen(ArcReadoutColor());
+    painter->drawText(ReadoutRectAt(ArcReadoutAnchor(frame, ViewScale()), text), Qt::AlignCenter, text);
     painter->restore();
 }
 
@@ -184,11 +152,16 @@ QList<QRectF> SectorItem::AngleReadoutRects() const
     if (!AngleReadoutVisible()) {
         return {};
     }
-    const QRectF frame = Frame();
-    const QPointF point = EllipseShape::PointOnFrame(frame, StartAngle() + SweepAngle() / 2.0);
-    QPointF radial = point - frame.center();
-    const qreal length = std::hypot(radial.x(), radial.y());
-    radial = length > 0.001 ? radial / length : QPointF(0.0, -1.0);
-    const qreal offset = 18.0 / qMax<qreal>(ViewScale(), 0.001);
-    return {ReadoutRectAt(point + radial * offset, QStringLiteral("%1°").arg(qRound(SweepAngle())))};
+    const QRectF frame = EllipseFrameLocal(ContentSize());
+    return {ReadoutRectAt(ArcReadoutAnchor(frame, ViewScale()), ArcReadoutText())};
+}
+
+void SectorItem::WriteJsonExtra(QJsonObject& json) const
+{
+    WriteArcAngleJson(json);
+}
+
+void SectorItem::ReadJsonExtra(const QJsonObject& json)
+{
+    ReadArcAngleJson(json);
 }

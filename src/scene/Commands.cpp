@@ -10,8 +10,8 @@
 
 
 RotationCommand::RotationCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<qreal>& before,
-                                 const QList<qreal>& after, const QString& text, const ItemPlacementList& geometryBefore,
-                                 const ItemPlacementList& geometryAfter)
+                                 const QList<qreal>& after, const QString& text,
+                                 const ItemPlacementList& geometryBefore, const ItemPlacementList& geometryAfter)
     : m_scene(scene), m_before(before), m_after(after), m_geometryBefore(geometryBefore), m_geometryAfter(geometryAfter)
 {
     setText(text);
@@ -44,6 +44,68 @@ void RotationCommand::Apply(const QList<qreal>& angles, const ItemPlacementList&
         if (m_items.at(i)) {
             m_items.at(i)->SetRotationAngle(angles.at(i));
         }
+    }
+    if (m_scene) {
+        m_scene->UpdateSceneExtent();
+        m_scene->update();
+    }
+}
+
+ConvertItemCommand::ConvertItemCommand(CanvasScene* scene, CanvasItem* before, CanvasItem* after, const QString& text)
+    : m_scene(scene), m_before(before), m_after(after)
+{
+    setText(text);
+}
+
+void ConvertItemCommand::undo()
+{
+    Swap(m_after, m_before);
+}
+
+void ConvertItemCommand::redo()
+{
+    Swap(m_before, m_after);
+}
+
+void ConvertItemCommand::Swap(CanvasItem* detach, CanvasItem* attach)
+{
+    if (!m_scene || !attach) {
+        return;
+    }
+    if (detach) {
+        m_scene->DetachItem(detach);
+    }
+    m_scene->AttachItem(attach);
+    attach->setSelected(true);
+    m_scene->update();
+}
+
+MirrorCommand::MirrorCommand(CanvasScene* scene, const QList<MirrorItemState>& before,
+                             const QList<MirrorItemState>& after, const QString& text)
+    : m_scene(scene), m_before(before), m_after(after)
+{
+    setText(text);
+}
+
+void MirrorCommand::undo()
+{
+    Apply(m_before);
+}
+
+void MirrorCommand::redo()
+{
+    Apply(m_after);
+}
+
+void MirrorCommand::Apply(const QList<MirrorItemState>& states)
+{
+    for (const MirrorItemState& state : states) {
+        if (!state.item) {
+            continue;
+        }
+        state.item->setPos(state.pos);
+        state.item->SetRotationAngle(state.rotation);
+        state.item->SetFlips(state.flipX, state.flipY);
     }
     if (m_scene) {
         m_scene->UpdateSceneExtent();

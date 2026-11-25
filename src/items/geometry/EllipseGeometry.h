@@ -8,10 +8,10 @@
 // 椭圆 / 扇形 / 弧线共用的纯几何单元：非 QObject，不持有图元状态，可被组合（椭圆、扇形）
 // 也可被继承（弧线图元），保证三种形态只有一份角度语义与扫过角兜底。
 // 角度沿用 Qt 语义：0° 在三点钟方向、逆时针为正；外接框即内容矩形，长短半轴 = 宽高一半。
-class EllipseShape {
+class EllipseGeometry {
   public:
-    EllipseShape() = default; // 供同时继承曲线与椭圆的图元先默认构造、再由 setFrame 定位
-    explicit EllipseShape(const QRectF& frame);
+    EllipseGeometry() = default; // 供同时继承曲线与椭圆的图元先默认构造、再由 setFrame 定位
+    explicit EllipseGeometry(const QRectF& frame);
 
     QRectF Frame() const { return m_frame; }
     void SetFrame(const QRectF& frame) { m_frame = frame.normalized(); }

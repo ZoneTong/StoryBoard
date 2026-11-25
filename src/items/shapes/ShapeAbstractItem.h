@@ -116,8 +116,8 @@ class ShapeAbstractItem : public CanvasItem, public FillAttributes, public Strok
     QJsonObject ToJson() const override;
     void FromJson(const QJsonObject& json) override;
     QPainterPath shape() const override;
-    QPainterPath OutlineShape() const override;
-    QPainterPath PaintedShape() const override;
+    QPainterPath GeometryOutline() const override;
+    QPainterPath GeometryPaintedShape() const override;
     QRectF FrameRect() const override;
 
     // 填充 / 描线的读写接口由两个属性基类提供；多边形按内部图层覆写其中若干条。

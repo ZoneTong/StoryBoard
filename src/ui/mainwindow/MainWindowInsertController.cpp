@@ -6,6 +6,7 @@
 #include "io/CustomShapeTemplates.h"
 #include "items/CanvasItem.h"
 #include "items/geometry/ShapePathBuilder.h"
+#include "items/lines/AngleItem.h"
 #include "items/lines/ArcItem.h"
 #include "items/lines/BraceItem.h"
 #include "items/lines/CurveItem.h"
@@ -199,9 +200,9 @@ void MainWindow::InsertCurve(LineGlyph glyph, ArrowStyle startArrow, ArrowStyle 
         SetToolMode(ToolMode::EDIT);
     }
     // 弧线默认外接框与椭圆 / 扇形一致（128×128，半轴 64/64）；直线 / 正弦保持扁长比例。
-    const QSizeF size = glyph == LineGlyph::STRAIGHT ? QSizeF(128.0, 64.0)
-                        : glyph == LineGlyph::ARC    ? QSizeF(128.0, 128.0)
-                                                     : QSizeF(128.0, 40.0);
+    const QSizeF size = glyph == LineGlyph::STRAIGHT                             ? QSizeF(128.0, 64.0)
+                        : (glyph == LineGlyph::ARC || glyph == LineGlyph::ANGLE) ? QSizeF(128.0, 128.0)
+                                                                                 : QSizeF(128.0, 40.0);
     const QPointF center = m_insert->PlacementCenter(size);
     const QPointF topLeft = center - QPointF(size.width() / 2.0, size.height() / 2.0);
 
@@ -219,6 +220,10 @@ void MainWindow::InsertCurve(LineGlyph glyph, ArrowStyle startArrow, ArrowStyle 
         auto* arc = new ArcItem();
         arc->SetArcGeometry(topLeft, size, 30.0, 120.0, stroke, width);
         curve = arc;
+    } else if (glyph == LineGlyph::ANGLE) {
+        auto* angle = new AngleItem();
+        angle->SetAngleGeometry(topLeft, size, 30.0, 120.0, stroke, width);
+        curve = angle;
     } else if (glyph == LineGlyph::SINE) {
         auto* sine = new SineItem();
         sine->SetWaveGeometry(topLeft, size, stroke, width);

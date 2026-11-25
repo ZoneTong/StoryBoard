@@ -45,8 +45,8 @@ class PolygonItem : public ShapeAbstractItem {
     // 命中与轮廓取所有图层并集（ShapeAbstractItem 按单一 ShapeType 生成路径，不能沿用）。
     QPainterPath shape() const override;
     QPainterPath CurrentPath(const QRectF& rect) const override;
-    QPainterPath PaintedShape() const override;
-    QPainterPath OutlineShape() const override;
+    QPainterPath GeometryPaintedShape() const override;
+    QPainterPath GeometryOutline() const override;
 
     int LayerCount() const { return m_layers.size(); }
     const QList<Layer>& Layers() const { return m_layers; }

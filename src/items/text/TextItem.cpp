@@ -139,14 +139,14 @@ void TextItem::PaintContent(QPainter* painter)
     painter->restore();
 }
 
-QPainterPath TextItem::OutlineShape() const
+QPainterPath TextItem::GeometryOutline() const
 {
     QPainterPath path;
     path.addRect(ContentRect());
     return path;
 }
 
-QPainterPath TextItem::PaintedShape() const
+QPainterPath TextItem::GeometryPaintedShape() const
 {
     const QString text = TextContent();
     const QFont font = TextFont();
@@ -174,7 +174,7 @@ QPainterPath TextItem::PaintedShape() const
     }
 
     if (path.isEmpty()) {
-        return CanvasItem::PaintedShape();
+        return CanvasItem::GeometryPaintedShape();
     }
 
     QTransform transform;

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "items/geometry/EllipseShape.h"
+#include "items/geometry/EllipseGeometry.h"
 #include "items/shapes/ShapeAbstractItem.h"
 
-// 椭圆：第二基类 EllipseShape 提供几何（外接框即内容矩形），没有额外参数。
-class EllipseItem : public ShapeAbstractItem, public EllipseShape {
+// 椭圆：第二基类 EllipseGeometry 提供几何（外接框即内容矩形），没有额外参数。
+class EllipseItem : public ShapeAbstractItem, public EllipseGeometry {
   public:
     EllipseItem();
     ShapeType shapeType() const override { return ShapeType::ELLIPSE; }

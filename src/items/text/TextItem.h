@@ -24,8 +24,8 @@ class TextItem : public CanvasItem, public TextAttributes {
     ItemPropertySet Properties() const override;
     QVariant PropertyValue(ItemProperty property) const override;
     void SetPropertyValue(ItemProperty property, const QVariant& value) override;
-    QPainterPath OutlineShape() const override;
-    QPainterPath PaintedShape() const override;
+    QPainterPath GeometryOutline() const override;
+    QPainterPath GeometryPaintedShape() const override;
     QPainterPath ClippingShape() const override;
 
     QSizeF NaturalSize() const { return TextNaturalSize(); }

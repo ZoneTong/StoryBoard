@@ -150,8 +150,8 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
         QMenu* customShapeMenu = shapeWindow.findChild<QMenu*>(QStringLiteral("CustomShapeMenu"));
         QAction* customTrigger = shapeWindow.findChild<QAction*>(QStringLiteral("CustomShapePanelTrigger"));
         // 自定义图形不再是二级子菜单：入口直接平铺在「常见图形」末尾。
-        // 内建图形动作 = 17 种有面积图形 + 曲线族三入口（直线 / 弧线 / 正弦）。
-        ctx.Check(shapeMenu && builtInShapeActions == shapeTypes.size() + 3 && customShapeMenu && customTrigger &&
+        // 内建图形动作 = 17 种有面积图形 + 曲线族四入口（直线 / 弧线 / 角度线 / 正弦）。
+        ctx.Check(shapeMenu && builtInShapeActions == shapeTypes.size() + 4 && customShapeMenu && customTrigger &&
                       shapeMenu->actions().contains(customTrigger) &&
                       !shapeMenu->actions().contains(customShapeMenu->menuAction()),
                   QStringLiteral("图形菜单包含全部图形，自定义图形入口与常见图形同层"),
@@ -160,9 +160,9 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
                       .arg(builtInShapeActions)
                       .arg(customTrigger ? 1 : 0));
         // 工具栏在原「图形」入口处把常见图形与预置项直接平铺成一排，复用菜单里的同一批动作。
-        // 预置项：圆角矩形、直线箭头、45°/60° 三角、左右花括号（需求 13 花括号改曲线后仍是 2 枚按钮）。
-        // 菱形已是独立图形，预置项由 7 枚减为 6 枚。
-        const int toolbarExpected = builtInShapeActions + 6;
+        // 预置项：圆角矩形、直线箭头、45°/60° 三角、左花括号（右括号已从菜单移除）。
+        // 菱形已是独立图形，预置项由 7 枚减为 5 枚。
+        const int toolbarExpected = builtInShapeActions + 5;
         QToolButton* shapeButton = shapeWindow.findChild<QToolButton*>(QStringLiteral("ShapeButton"));
         QList<QToolButton*> toolbarShapeButtons =
             shapeWindow.findChildren<QToolButton*>(QStringLiteral("ToolBarShapeButton"));
@@ -179,7 +179,7 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
                   QStringLiteral("buttons=%1 expected=%2").arg(toolbarShapeButtons.size()).arg(toolbarExpected));
 
         // 需求 7：工具栏顺序直接来自单一顺序源（常用顺序表），预置项紧随其主体图形，
-        // 直线箭头跟在直线后、45°/60° 直角三角跟在三角形后，两枚花括号收尾。
+        // 直线箭头跟在直线后、45°/60° 直角三角跟在三角形后，左花括号收尾。
         const QStringList expectedToolBarOrder = {
             QStringLiteral("ShapeAction_rectangle"),    QStringLiteral("ShapePreset_roundedRect"),
             QStringLiteral("ShapeAction_ellipse"),      QStringLiteral("ShapeAction_line"),
@@ -189,12 +189,12 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
             QStringLiteral("ShapeAction_callout"),      QStringLiteral("ShapeAction_parallelogram"),
             QStringLiteral("ShapeAction_diamond"),      QStringLiteral("ShapeAction_hexagon"),
             QStringLiteral("ShapeAction_sector"),       QStringLiteral("ShapeAction_arc"),
-            QStringLiteral("ShapeAction_cube"),         QStringLiteral("ShapeAction_cylinder"),
-            QStringLiteral("ShapeAction_star4"),        QStringLiteral("ShapeAction_star"),
-            QStringLiteral("ShapeAction_hexagram"),     QStringLiteral("ShapeAction_heart"),
-            QStringLiteral("ShapeAction_sine_wave"),    QStringLiteral("ShapeAction_flag_wave"),
-            QStringLiteral("ShapeAction_scroll"),       QStringLiteral("ShapePreset_braceLeft"),
-            QStringLiteral("ShapePreset_braceRight"),
+            QStringLiteral("ShapeAction_angle"),        QStringLiteral("ShapeAction_cube"),
+            QStringLiteral("ShapeAction_cylinder"),     QStringLiteral("ShapeAction_star4"),
+            QStringLiteral("ShapeAction_star"),         QStringLiteral("ShapeAction_hexagram"),
+            QStringLiteral("ShapeAction_heart"),        QStringLiteral("ShapeAction_sine_wave"),
+            QStringLiteral("ShapeAction_flag_wave"),    QStringLiteral("ShapeAction_scroll"),
+            QStringLiteral("ShapePreset_braceLeft"),
         };
         QStringList actualToolBarOrder;
         for (QToolButton* button : std::as_const(toolbarShapeButtons)) {
@@ -513,7 +513,8 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
             }
         }
         ctx.Check(fillStyleMenu && fillMenuItemCount == 9 && !fillHasColor,
-                  QStringLiteral("填充样式子菜单只保留 9 种填充样式"), QStringLiteral("actions=%1").arg(fillMenuItemCount));
+                  QStringLiteral("填充样式子菜单只保留 9 种填充样式"),
+                  QStringLiteral("actions=%1").arg(fillMenuItemCount));
 
         QMenu* insertMenu = nullptr;
         for (QAction* action : shapeWindow.menuBar()->actions()) {

@@ -126,9 +126,10 @@ bool ValidateCanvasRoot(const QJsonObject& root, QString* error)
         // 需求 14：图片类型图元已并入矩形（图片只作背景），"image" 不再是合法类型。
         // 线条族的五个形态各有自己的 kind，不再共用族级 "curve"。
         const bool known = kind == QStringLiteral("straightline") || kind == QStringLiteral("arc") ||
-                           kind == QStringLiteral("sine") || kind == QStringLiteral("freehand") ||
-                           kind == QStringLiteral("brace") || kind == QStringLiteral("text") ||
-                           kind == QStringLiteral("shape") || kind == QStringLiteral("polygon");
+                           kind == QStringLiteral("angle") || kind == QStringLiteral("sine") ||
+                           kind == QStringLiteral("freehand") || kind == QStringLiteral("brace") ||
+                           kind == QStringLiteral("text") || kind == QStringLiteral("shape") ||
+                           kind == QStringLiteral("polygon");
         if (!known) {
             if (kind == QStringLiteral("stroke")) {
                 // 旧笔画图元不做兼容：加载时整体跳过，由加载流程统一提示。

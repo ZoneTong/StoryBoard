@@ -1,6 +1,6 @@
 #include "items/geometry/ShapePainter.h"
 
-#include "items/geometry/EllipseShape.h"
+#include "items/geometry/EllipseGeometry.h"
 #include "items/properties/FillStyleMeta.h"
 
 #include <QPixmap>
@@ -231,7 +231,20 @@ QIcon ShapePainter::MakeCurveIcon(LineGlyph glyph, const QColor& color, int logi
     // 24px 栅格里的一笔开放描线：与插入后的默认形态同一套角度 / 周期。
     QPainterPath path;
     if (glyph == LineGlyph::ARC) {
-        path = EllipseShape(QRectF(1.5, 1.5, 21.0, 21.0)).Arc(30.0, 120.0);
+        path = EllipseGeometry(QRectF(1.5, 1.5, 21.0, 21.0)).Arc(30.0, 120.0);
+    } else if (glyph == LineGlyph::ANGLE) {
+        // 角度线：顶点在中心，两条射线分别落在 30° / 150° 方向。
+        const QRectF frame(1.5, 1.5, 21.0, 21.0);
+        const QPointF center = frame.center();
+        const qreal rx = frame.width() / 2.0;
+        const qreal ry = frame.height() / 2.0;
+        const auto tip = [&](qreal degrees) {
+            const qreal radians = qDegreesToRadians(degrees);
+            return QPointF(center.x() + rx * std::cos(radians), center.y() - ry * std::sin(radians));
+        };
+        path.moveTo(tip(30.0));
+        path.lineTo(center);
+        path.lineTo(tip(150.0));
     } else if (glyph == LineGlyph::SINE) {
         constexpr int STEPS = 64;
         for (int i = 0; i <= STEPS; ++i) {

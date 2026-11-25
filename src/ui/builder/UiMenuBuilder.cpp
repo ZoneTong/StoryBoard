@@ -79,29 +79,22 @@ void UiMenuBuilder::BuildShapeMenu()
                 m_window->InsertCurve(LineGlyph::STRAIGHT, ArrowStyle::NONE, ArrowStyle::OPEN_ARROW);
             });
 
-            // 需求 13：左右花括号是独立的花括号图元（右括号 = 左括号旋转 180°）。
-            QAction* braceLeft = m_window->m_shapeMenu->addAction(
-                ShapeIcons::MakePreset(QStringLiteral("braceLeft"), QColor(58, 64, 80), 18),
-                MainWindow::tr("Left brace"));
-            braceLeft->setObjectName(QStringLiteral("ShapePreset_braceLeft"));
-            braceLeft->setData(-1);
-            braceLeft->setToolTip(MainWindow::tr("Insert a left brace (draggable and resizable)"));
-            QObject::connect(braceLeft, &QAction::triggered, m_window, [this]() { m_window->InsertBrace(true); });
-
-            QAction* braceRight = m_window->m_shapeMenu->addAction(
-                ShapeIcons::MakePreset(QStringLiteral("braceRight"), QColor(58, 64, 80), 18),
-                MainWindow::tr("Right brace"));
-            braceRight->setObjectName(QStringLiteral("ShapePreset_braceRight"));
-            braceRight->setData(-1);
-            braceRight->setToolTip(MainWindow::tr("Insert a right brace (left brace rotated 180°)"));
-            QObject::connect(braceRight, &QAction::triggered, m_window, [this]() { m_window->InsertBrace(false); });
-
             QAction* arc = m_window->m_shapeMenu->addAction(
                 ShapePainter::MakeCurveIcon(LineGlyph::ARC, QColor(58, 64, 80), 18), MainWindow::tr("Arc"));
             arc->setObjectName(QStringLiteral("ShapeAction_arc"));
             arc->setData(-1);
             arc->setToolTip(MainWindow::tr("Insert an arc (start angle and sweep are editable in the Edit panel)"));
             QObject::connect(arc, &QAction::triggered, m_window, [this]() { m_window->InsertCurve(LineGlyph::ARC); });
+
+            // 需求 5：角度线紧跟弧线，默认 30° 起始、120° 扫过，角度行与弧线 / 扇形共用。
+            QAction* angle = m_window->m_shapeMenu->addAction(
+                ShapePainter::MakeCurveIcon(LineGlyph::ANGLE, QColor(58, 64, 80), 18), MainWindow::tr("Angle line"));
+            angle->setObjectName(QStringLiteral("ShapeAction_angle"));
+            angle->setData(-1);
+            angle->setToolTip(
+                MainWindow::tr("Insert an angle line (start angle and sweep are editable in the Edit panel)"));
+            QObject::connect(angle, &QAction::triggered, m_window,
+                             [this]() { m_window->InsertCurve(LineGlyph::ANGLE); });
 
             QAction* sine = m_window->m_shapeMenu->addAction(
                 ShapePainter::MakeCurveIcon(LineGlyph::SINE, QColor(58, 64, 80), 18), MainWindow::tr("Sine wave"));
@@ -110,6 +103,15 @@ void UiMenuBuilder::BuildShapeMenu()
             sine->setToolTip(
                 MainWindow::tr("Insert a sine wave (cycles and amplitude are editable in the Edit panel)"));
             QObject::connect(sine, &QAction::triggered, m_window, [this]() { m_window->InsertCurve(LineGlyph::SINE); });
+
+            // 需求 13：左花括号移到正弦波之后；右括号（左括号旋转 180°）已从菜单移除。
+            QAction* braceLeft = m_window->m_shapeMenu->addAction(
+                ShapeIcons::MakePreset(QStringLiteral("braceLeft"), QColor(58, 64, 80), 18),
+                MainWindow::tr("Left brace"));
+            braceLeft->setObjectName(QStringLiteral("ShapePreset_braceLeft"));
+            braceLeft->setData(-1);
+            braceLeft->setToolTip(MainWindow::tr("Insert a left brace (draggable and resizable)"));
+            QObject::connect(braceLeft, &QAction::triggered, m_window, [this]() { m_window->InsertBrace(true); });
         }
 
         // 需求 1：三角形后追加 45° / 60° 直角三角形预置项。短边沿水平方向，
@@ -260,6 +262,9 @@ void UiMenuBuilder::BuildMenus()
     editMenu->addSeparator();
     editMenu->addAction(m_window->m_rotateCwAct);
     editMenu->addAction(m_window->m_rotateCcwAct);
+    // 镜像翻转紧跟旋转：左右 Ctrl+Alt+H、上下 Ctrl+Alt+V。
+    editMenu->addAction(m_window->m_mirrorHorizontalAct);
+    editMenu->addAction(m_window->m_mirrorVerticalAct);
 
     // 多图元对齐：编辑菜单里做成下拉子菜单，工具栏上再给一个下拉按钮，共用同一组动作。
     QMenu* alignMenu = editMenu->addMenu(MainWindow::tr("Align"));

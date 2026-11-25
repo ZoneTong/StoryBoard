@@ -2,6 +2,7 @@
 
 #include "canvas/CanvasView.h"
 #include "items/geometry/ShapeMeta.h"
+#include "scene/CanvasScene.h"
 #include "ui/icons/IconFactory.h"
 #include "ui/mainwindow/MainWindow.h"
 #include "ui/widgets/StyleController.h"
@@ -48,6 +49,32 @@ void UiToolBarBuilder::BuildToolBars()
     // 布尔运算的右键菜单入口照旧保留，只是不再作为工具栏下拉按钮。
     if (m_window->m_view) {
         m_window->m_view->AddContextMenuGroup(MainWindow::tr("Merge items"), m_window->m_boolActions);
+        // 扇形 / 弧线 / 角度线三型互换：右键菜单里给三项入口，不适用时点按无动作。
+        QAction* toArc = new QAction(MainWindow::tr("Convert to arc"), m_window);
+        toArc->setObjectName(QStringLiteral("ConvertToArcAction"));
+        QObject::connect(toArc, &QAction::triggered, m_window, [this]() {
+            if (m_window->m_scene) {
+                m_window->m_scene->ConvertItemType(m_window->m_scene->SelectedCanvasItems().value(0),
+                                                   QStringLiteral("arc"));
+            }
+        });
+        QAction* toAngle = new QAction(MainWindow::tr("Convert to angle line"), m_window);
+        toAngle->setObjectName(QStringLiteral("ConvertToAngleAction"));
+        QObject::connect(toAngle, &QAction::triggered, m_window, [this]() {
+            if (m_window->m_scene) {
+                m_window->m_scene->ConvertItemType(m_window->m_scene->SelectedCanvasItems().value(0),
+                                                   QStringLiteral("angle"));
+            }
+        });
+        QAction* toSector = new QAction(MainWindow::tr("Convert to sector"), m_window);
+        toSector->setObjectName(QStringLiteral("ConvertToSectorAction"));
+        QObject::connect(toSector, &QAction::triggered, m_window, [this]() {
+            if (m_window->m_scene) {
+                m_window->m_scene->ConvertItemType(m_window->m_scene->SelectedCanvasItems().value(0),
+                                                   QStringLiteral("sector"));
+            }
+        });
+        m_window->m_view->AddContextMenuGroup(MainWindow::tr("Convert to"), {toArc, toAngle, toSector});
     }
 
     // 统一主工具栏里所有纯图标按钮的尺寸：QToolBar 为 action 自动创建的按钮、
@@ -140,13 +167,13 @@ void UiToolBarBuilder::CreateShapeToolbar(QToolBar* mainBar)
             addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(QStringLiteral("ShapePreset_lineArrow")));
         } else if (type == ShapeType::SECTOR) {
             addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_arc")));
+            addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_angle")));
         } else if (type == ShapeType::HEART) {
             addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(QStringLiteral("ShapeAction_sine_wave")));
         }
     }
     // 花括号预置动作没有 ShapeType（data 为 -1），按 objectName 显式补在直线之后。
-    for (const QString& braceAction :
-         {QStringLiteral("ShapePreset_braceLeft"), QStringLiteral("ShapePreset_braceRight")}) {
+    for (const QString& braceAction : {QStringLiteral("ShapePreset_braceLeft")}) {
         addShapeButton(m_window->m_shapeMenu->findChild<QAction*>(braceAction));
     }
 

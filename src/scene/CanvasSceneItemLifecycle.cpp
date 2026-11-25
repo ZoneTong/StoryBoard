@@ -1,4 +1,5 @@
 #include "items/CanvasItem.h"
+#include "items/lines/AngleItem.h"
 #include "items/lines/ArcItem.h"
 #include "items/lines/BraceItem.h"
 #include "items/lines/CurveItem.h"
@@ -254,6 +255,9 @@ CanvasItem* CanvasScene::CreateItem(const QString& kind, const QString& shapeTyp
     }
     if (kind == QStringLiteral("arc")) {
         return new ArcItem();
+    }
+    if (kind == QStringLiteral("angle")) {
+        return new AngleItem();
     }
     if (kind == QStringLiteral("sine")) {
         return new SineItem();

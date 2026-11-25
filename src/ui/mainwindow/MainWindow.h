@@ -235,6 +235,8 @@ class MainWindow : public QMainWindow {
     QAction* m_selectAllAct = nullptr;
     QAction* m_rotateCwAct = nullptr;
     QAction* m_rotateCcwAct = nullptr;
+    QAction* m_mirrorHorizontalAct = nullptr;
+    QAction* m_mirrorVerticalAct = nullptr;
 
     QAction* m_viewModeAct = nullptr;
     QAction* m_brushModeAct = nullptr;

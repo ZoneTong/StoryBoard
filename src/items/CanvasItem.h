@@ -137,13 +137,22 @@ class CanvasItem : public QGraphicsObject {
 
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
+    // 显示级镜像（PPT 的 flipH / flipV 语义）：内容绕内容中心翻转，几何参数本身不变。
+    // 只作用在两张总口——paint() 的绘制矩阵，以及 OutlineShape() / PaintedShape() 的外包。
+    bool FlipX() const { return m_flipX; }
+    bool FlipY() const { return m_flipY; }
+    void SetFlips(bool flipX, bool flipY);
+    QTransform MirrorTransform() const;
+    // 本地坐标下、已叠加镜像的轮廓 / 涂满区域；命中、布尔、导出、手柄定位都读这两个口。
+    QPainterPath OutlineShape() const;
+    QPainterPath PaintedShape() const;
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override;
 
     // 图元的可见轮廓（不含选中控制点），非查看模式下用于提示被遮盖的图元。
-    virtual QPainterPath OutlineShape() const;
+    virtual QPainterPath GeometryOutline() const;
     // 图元真正涂满画布、能够遮挡下方图元的区域：无填充图形只算描边，
     // 描边类图元只算笔迹本身。既用于判断自己被遮住多少，也用于遮挡别人。
-    virtual QPainterPath PaintedShape() const;
+    virtual QPainterPath GeometryPaintedShape() const;
     // 绘制时从下层图元可见区域中减去的形状。默认与 PaintedShape() 相同；
     // 文字只画字形，不能按字形裁剪下层，否则低缩放时字边会露出背景形成重影。
     virtual QPainterPath ClippingShape() const;
@@ -212,6 +221,8 @@ class CanvasItem : public QGraphicsObject {
     enum class DragKind { NONE, MOVE, RESIZE, ROTATE };
 
     QSizeF m_size{120.0, 90.0};
+    bool m_flipX = false;
+    bool m_flipY = false;
     int m_layerId = 0;
     int m_groupId = 0;
     int m_zOrder = -1;

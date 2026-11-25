@@ -182,6 +182,46 @@ class RotationCommand : public QUndoCommand {
     ItemPlacementList m_geometryAfter;
 };
 
+// 三型互换：撤销时换回旧对象，重做时换回新对象；两个对象都由命令持有。
+class ConvertItemCommand : public QUndoCommand {
+  public:
+    ConvertItemCommand(CanvasScene* scene, CanvasItem* before, CanvasItem* after, const QString& text);
+    void undo() override;
+    void redo() override;
+
+  private:
+    void Swap(CanvasItem* detach, CanvasItem* attach);
+
+    CanvasScene* m_scene = nullptr;
+    QPointer<CanvasItem> m_before;
+    QPointer<CanvasItem> m_after;
+};
+
+// 镜像翻转的一次提交：每个图元的原位 / 原旋转角 / 原翻转位与镜像后的对应值。
+struct MirrorItemState {
+    QPointer<CanvasItem> item;
+    QPointF pos;
+    qreal rotation = 0.0;
+    bool flipX = false;
+    bool flipY = false;
+};
+
+// 左右 / 上下镜像共用这条命令；翻转位是显示级状态，位置与旋转角才是几何改动。
+class MirrorCommand : public QUndoCommand {
+  public:
+    MirrorCommand(CanvasScene* scene, const QList<MirrorItemState>& before, const QList<MirrorItemState>& after,
+                  const QString& text);
+    void undo() override;
+    void redo() override;
+
+  private:
+    void Apply(const QList<MirrorItemState>& states);
+
+    CanvasScene* m_scene = nullptr;
+    QList<MirrorItemState> m_before;
+    QList<MirrorItemState> m_after;
+};
+
 // 手动平滑一次可能同时作用于多条选中笔画，整体只占一条撤销记录。
 class StrokeSmoothCommand : public QUndoCommand {
   public:
