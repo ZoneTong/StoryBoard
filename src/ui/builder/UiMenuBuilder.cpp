@@ -332,12 +332,13 @@ void UiMenuBuilder::BuildMenus()
                          [this, operation = boolEntries.at(i).first]() { m_window->ApplyBoolOperation(operation); });
         m_window->m_boolActions.append(action);
     }
-    // 多选时编辑面板直接复用同一批对齐 / 合并图元 / 复制 / 删除 / 旋转 / 组合动作，
+    // 多选时编辑面板直接复用同一批对齐 / 合并图元 / 复制 / 删除 / 旋转 / 镜像 / 组合动作，
     // 快捷键与启用状态不用再维护一份。
     if (m_window->m_docks && m_window->m_docks->propertiesPanel()) {
         m_window->m_docks->propertiesPanel()->SetSelectionActions(
             m_window->m_alignActions, m_window->m_boolActions, m_window->m_duplicateAct, m_window->m_deleteAct,
-            m_window->m_rotateCwAct, m_window->m_rotateCcwAct, m_window->m_groupAct, m_window->m_ungroupAct);
+            m_window->m_rotateCwAct, m_window->m_rotateCcwAct, m_window->m_mirrorHorizontalAct,
+            m_window->m_mirrorVerticalAct, m_window->m_groupAct, m_window->m_ungroupAct);
         m_window->m_docks->propertiesPanel()->SetItemActions(m_window->m_smoothAct);
         m_window->m_docks->propertiesPanel()->Refresh();
     }

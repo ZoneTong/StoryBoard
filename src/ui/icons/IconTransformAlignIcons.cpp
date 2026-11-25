@@ -303,10 +303,50 @@ void DrawRotateObject(QPainter& painter, IconId)
     const qreal radius = 11.6;
     painter.save();
     painter.setPen(QPen(ink, 2.8, Qt::SolidLine, Qt::RoundCap));
-    painter.drawArc(QRectF(center.x() - radius, center.y() - radius, radius * 2.0, radius * 2.0), 100 * 16,
-                    -92 * 16);
+    painter.drawArc(QRectF(center.x() - radius, center.y() - radius, radius * 2.0, radius * 2.0), 100 * 16, -92 * 16);
     painter.restore();
     DrawRingArrowHead(painter, center, radius, 8.0, 6.2, 3.4, -1.0);
+}
+
+// 镜像翻转：虚线轴居中，两侧各一个实心三角对顶指向轴，表示“照着轴翻过去”。
+// 16px 行图标下三角必须够胖（底边 15、尖端离轴 2.5 格），虚线轴用 1.3 细线免得糊成实线。
+void DrawMirror(QPainter& painter, IconId id)
+{
+    const QColor ink = painter.pen().color();
+    const bool horizontal = id == IconId::MIRROR_H;
+
+    painter.save();
+    painter.setPen(QPen(ink, 1.3, Qt::DashLine, Qt::FlatCap));
+    if (horizontal) {
+        painter.drawLine(QPointF(12.0, 2.5), QPointF(12.0, 21.5));
+    } else {
+        painter.drawLine(QPointF(2.5, 12.0), QPointF(21.5, 12.0));
+    }
+    painter.restore();
+
+    painter.save();
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(ink);
+    QPainterPath firstPath;
+    QPainterPath secondPath;
+    if (horizontal) {
+        firstPath.moveTo(3.0, 4.5);
+        firstPath.lineTo(3.0, 19.5);
+        firstPath.lineTo(9.5, 12.0);
+        secondPath.moveTo(21.0, 4.5);
+        secondPath.lineTo(21.0, 19.5);
+        secondPath.lineTo(14.5, 12.0);
+    } else {
+        firstPath.moveTo(4.5, 3.0);
+        firstPath.lineTo(19.5, 3.0);
+        firstPath.lineTo(12.0, 9.5);
+        secondPath.moveTo(4.5, 21.0);
+        secondPath.lineTo(19.5, 21.0);
+        secondPath.lineTo(12.0, 14.5);
+    }
+    painter.drawPath(firstPath);
+    painter.drawPath(secondPath);
+    painter.restore();
 }
 
 constexpr struct IconEntry {
@@ -337,6 +377,8 @@ constexpr struct IconEntry {
     {IconId::GROUP, DrawGroup},
     {IconId::UNGROUP, DrawGroup},
     {IconId::MORPH, DrawMorph},
+    {IconId::MIRROR_H, DrawMirror},
+    {IconId::MIRROR_V, DrawMirror},
 };
 
 } // namespace

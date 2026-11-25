@@ -50,6 +50,10 @@ PropertiesPanelSelectionCard::PropertiesPanelSelectionCard(QWidget* parent) : QW
     basicLayout->addWidget(m_rotateCwButton);
     m_rotateCcwButton = MakeButton(QStringLiteral("ItemRotateCcwButton"));
     basicLayout->addWidget(m_rotateCcwButton);
+    m_mirrorHorizontalButton = MakeButton(QStringLiteral("ItemMirrorHorizontalButton"));
+    basicLayout->addWidget(m_mirrorHorizontalButton);
+    m_mirrorVerticalButton = MakeButton(QStringLiteral("ItemMirrorVerticalButton"));
+    basicLayout->addWidget(m_mirrorVerticalButton);
     m_smoothButton = MakeButton(QStringLiteral("ItemSmoothButton"));
     basicLayout->addWidget(m_smoothButton);
     basicLayout->addStretch(1);
@@ -128,6 +132,12 @@ QAction* PropertiesPanelSelectionCard::ActionForButton(QToolButton* button) cons
     if (button == m_rotateCcwButton) {
         return m_rotateCcwAction;
     }
+    if (button == m_mirrorHorizontalButton) {
+        return m_mirrorHorizontalAction;
+    }
+    if (button == m_mirrorVerticalButton) {
+        return m_mirrorVerticalAction;
+    }
     if (button == m_smoothButton) {
         return m_smoothAction;
     }
@@ -151,7 +161,8 @@ QAction* PropertiesPanelSelectionCard::ActionForButton(QToolButton* button) cons
 void PropertiesPanelSelectionCard::SetSelectionActions(const QList<QAction*>& alignActions,
                                                        const QList<QAction*>& boolActions, QAction* copyAction,
                                                        QAction* removeAction, QAction* rotateCwAction,
-                                                       QAction* rotateCcwAction, QAction* groupAction,
+                                                       QAction* rotateCcwAction, QAction* mirrorHorizontalAction,
+                                                       QAction* mirrorVerticalAction, QAction* groupAction,
                                                        QAction* ungroupAction)
 {
     m_alignActions = alignActions;
@@ -167,12 +178,16 @@ void PropertiesPanelSelectionCard::SetSelectionActions(const QList<QAction*>& al
     m_deleteAction = removeAction;
     m_rotateCwAction = rotateCwAction;
     m_rotateCcwAction = rotateCcwAction;
+    m_mirrorHorizontalAction = mirrorHorizontalAction;
+    m_mirrorVerticalAction = mirrorVerticalAction;
     m_groupAction = groupAction;
     m_ungroupAction = ungroupAction;
     BindAction(m_copyButton, copyAction);
     BindAction(m_deleteButton, removeAction);
     BindAction(m_rotateCwButton, rotateCwAction);
     BindAction(m_rotateCcwButton, rotateCcwAction);
+    BindAction(m_mirrorHorizontalButton, mirrorHorizontalAction);
+    BindAction(m_mirrorVerticalButton, mirrorVerticalAction);
     BindAction(m_groupButton, groupAction);
     BindAction(m_ungroupButton, ungroupAction);
 
@@ -209,6 +224,8 @@ void PropertiesPanelSelectionCard::RefreshVisibility()
     anyBasic = usable(m_deleteButton) || anyBasic;
     anyBasic = usable(m_rotateCwButton) || anyBasic;
     anyBasic = usable(m_rotateCcwButton) || anyBasic;
+    anyBasic = usable(m_mirrorHorizontalButton) || anyBasic;
+    anyBasic = usable(m_mirrorVerticalButton) || anyBasic;
     anyBasic = usable(m_smoothButton) || anyBasic;
 
     bool anyAlign = false;

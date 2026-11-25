@@ -181,11 +181,13 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
 
 void PropertiesPanel::SetSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions,
                                           QAction* copyAction, QAction* removeAction, QAction* rotateCwAction,
-                                          QAction* rotateCcwAction, QAction* groupAction, QAction* ungroupAction)
+                                          QAction* rotateCcwAction, QAction* mirrorHorizontalAction,
+                                          QAction* mirrorVerticalAction, QAction* groupAction, QAction* ungroupAction)
 {
     if (m_selectionCard) {
         m_selectionCard->SetSelectionActions(alignActions, boolActions, copyAction, removeAction, rotateCwAction,
-                                             rotateCcwAction, groupAction, ungroupAction);
+                                             rotateCcwAction, mirrorHorizontalAction, mirrorVerticalAction, groupAction,
+                                             ungroupAction);
     }
 }
 

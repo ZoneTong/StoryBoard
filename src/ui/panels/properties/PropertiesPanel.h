@@ -49,10 +49,11 @@ class PropertiesPanel : public QWidget {
     void Refresh();
     // 按卡片内最宽的一行（包括当前隐藏的行）计算启动宽度；之后不再随选中变化。
     int PreferredWidth() const;
-    // 多选时复用主窗口的对齐 / 合并图元 / 复制 / 删除 / 旋转 / 组合动作，保证菜单、工具栏与卡片行为一致。
+    // 多选时复用主窗口的对齐 / 合并图元 / 复制 / 删除 / 旋转 / 镜像 / 组合动作，保证菜单、工具栏与卡片行为一致。
     void SetSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions,
                              QAction* copyAction, QAction* removeAction, QAction* rotateCwAction,
-                             QAction* rotateCcwAction, QAction* groupAction, QAction* ungroupAction);
+                             QAction* rotateCcwAction, QAction* mirrorHorizontalAction, QAction* mirrorVerticalAction,
+                             QAction* groupAction, QAction* ungroupAction);
     // 笔画平滑也是选中项可用的操作，卡片沿用主窗口同一个 QAction。
     void SetItemActions(QAction* smoothAction);
     // 替换当前唯一选中的图片，保留原位置与图元名称；图片本体、尺寸和名称一起进入撤销记录。

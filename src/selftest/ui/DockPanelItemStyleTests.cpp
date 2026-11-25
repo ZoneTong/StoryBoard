@@ -136,6 +136,10 @@ void selftest::RunDockPanelItemStyleTests(Context& ctx)
         QToolButton* deleteButton = dockPanel->findChild<QToolButton*>(QStringLiteral("ItemDeleteButton"));
         QToolButton* rotateCwButton = dockPanel->findChild<QToolButton*>(QStringLiteral("ItemRotateCwButton"));
         QToolButton* rotateCcwButton = dockPanel->findChild<QToolButton*>(QStringLiteral("ItemRotateCcwButton"));
+        QToolButton* mirrorHorizontalButton =
+            dockPanel->findChild<QToolButton*>(QStringLiteral("ItemMirrorHorizontalButton"));
+        QToolButton* mirrorVerticalButton =
+            dockPanel->findChild<QToolButton*>(QStringLiteral("ItemMirrorVerticalButton"));
         QToolButton* groupButton = dockPanel->findChild<QToolButton*>(QStringLiteral("ItemGroupButton"));
         QToolButton* ungroupButton = dockPanel->findChild<QToolButton*>(QStringLiteral("ItemUngroupButton"));
         const QList<QToolButton*> alignRowButtons =
@@ -220,9 +224,11 @@ void selftest::RunDockPanelItemStyleTests(Context& ctx)
                       .arg(selectedShape->StrokeColor().name())
                       .arg(dockView ? dockView->BrushColor().name() : QStringLiteral("-")));
 
-        ctx.Check(copyButton && deleteButton && rotateCwButton && rotateCcwButton && copyButton->isVisible() &&
-                      deleteButton->isVisible() && rotateCwButton->isVisible() && rotateCcwButton->isVisible(),
-                  QStringLiteral("单选时编辑面板列出复制 / 删除 / 旋转按钮"));
+        ctx.Check(copyButton && deleteButton && rotateCwButton && rotateCcwButton && mirrorHorizontalButton &&
+                      mirrorVerticalButton && copyButton->isVisible() && deleteButton->isVisible() &&
+                      rotateCwButton->isVisible() && rotateCcwButton->isVisible() &&
+                      mirrorHorizontalButton->isVisible() && mirrorVerticalButton->isVisible(),
+                  QStringLiteral("单选时编辑面板列出复制 / 删除 / 旋转 / 镜像按钮"));
         ctx.Check(alignRowButtons.size() == 8 && morphButtons.size() == 6 && groupButton && ungroupButton &&
                       !alignRowButtons.first()->isVisible() && !morphButtons.first()->isVisible() &&
                       !groupButton->isVisible() && !ungroupButton->isVisible(),
@@ -230,10 +236,16 @@ void selftest::RunDockPanelItemStyleTests(Context& ctx)
 
         // 卡片里每颗可见按钮都必须绑定具体动作，不能只显示图标。
         const QStringList cardButtonNames = {
-            QStringLiteral("ItemCopyButton"),     QStringLiteral("ItemDeleteButton"),
-            QStringLiteral("ItemRotateCwButton"), QStringLiteral("ItemRotateCcwButton"),
-            QStringLiteral("ItemAlignRowButton"), QStringLiteral("ItemMorphButton"),
-            QStringLiteral("ItemGroupButton"),    QStringLiteral("ItemUngroupButton"),
+            QStringLiteral("ItemCopyButton"),
+            QStringLiteral("ItemDeleteButton"),
+            QStringLiteral("ItemRotateCwButton"),
+            QStringLiteral("ItemRotateCcwButton"),
+            QStringLiteral("ItemMirrorHorizontalButton"),
+            QStringLiteral("ItemMirrorVerticalButton"),
+            QStringLiteral("ItemAlignRowButton"),
+            QStringLiteral("ItemMorphButton"),
+            QStringLiteral("ItemGroupButton"),
+            QStringLiteral("ItemUngroupButton"),
         };
         int visibleCardButtons = 0;
         int unboundCardButtons = 0;
@@ -263,6 +275,20 @@ void selftest::RunDockPanelItemStyleTests(Context& ctx)
                     qAbs(selectedShape->rotation() - rotationBefore) < 0.01,
                 QStringLiteral("卡片旋转按钮真正旋转图元且可撤销"),
                 QStringLiteral("%1->%2->%3").arg(rotationBefore).arg(rotationAfter).arg(selectedShape->rotation()));
+            selectedShape->setSelected(true);
+            QApplication::processEvents();
+        }
+        // 镜像按钮只是转发主窗口动作：左右翻只动 FlipX、上下翻只动 FlipY，撤销清零。
+        if (mirrorHorizontalButton) {
+            const bool flipXBefore = selectedShape->FlipX();
+            mirrorHorizontalButton->click();
+            QApplication::processEvents();
+            const bool flipXAfter = selectedShape->FlipX();
+            dockScene->UndoStack()->undo();
+            QApplication::processEvents();
+            ctx.Check(flipXAfter != flipXBefore && selectedShape->FlipX() == flipXBefore && !selectedShape->FlipY(),
+                      QStringLiteral("卡片左右镜像按钮翻转图元且可撤销"),
+                      QStringLiteral("%1->%2->%3").arg(flipXBefore).arg(flipXAfter).arg(selectedShape->FlipX()));
             selectedShape->setSelected(true);
             QApplication::processEvents();
         }

@@ -195,14 +195,14 @@ void UiActionFactory::Build()
                                           QKeySequence(QStringLiteral("Ctrl+Shift+R")),
                                           MainWindow::tr("Rotate selected items 45° counterclockwise (Ctrl+Shift+R)"));
     // 镜像翻转：PPT 的 flipH / flipV 语义，绕选区并集框中线翻转，参数值不变。
-    m_window->m_mirrorHorizontalAct = new QAction(MainWindow::tr("Mirror horizontally"), m_window);
+    m_window->m_mirrorHorizontalAct = MakeAction(m_window, IconId::MIRROR_H, MainWindow::tr("Mirror horizontally"),
+                                                 QKeySequence(QStringLiteral("Ctrl+Alt+H")),
+                                                 MainWindow::tr("Mirror selected items left↔right (Ctrl+Alt+H)"));
     m_window->m_mirrorHorizontalAct->setObjectName(QStringLiteral("MirrorHorizontalAction"));
-    m_window->m_mirrorHorizontalAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+Alt+H")));
-    m_window->m_mirrorHorizontalAct->setStatusTip(MainWindow::tr("Mirror selected items left↔right (Ctrl+Alt+H)"));
-    m_window->m_mirrorVerticalAct = new QAction(MainWindow::tr("Mirror vertically"), m_window);
+    m_window->m_mirrorVerticalAct = MakeAction(m_window, IconId::MIRROR_V, MainWindow::tr("Mirror vertically"),
+                                               QKeySequence(QStringLiteral("Ctrl+Alt+V")),
+                                               MainWindow::tr("Mirror selected items top↕bottom (Ctrl+Alt+V)"));
     m_window->m_mirrorVerticalAct->setObjectName(QStringLiteral("MirrorVerticalAction"));
-    m_window->m_mirrorVerticalAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+Alt+V")));
-    m_window->m_mirrorVerticalAct->setStatusTip(MainWindow::tr("Mirror selected items top↕bottom (Ctrl+Alt+V)"));
 
     m_window->m_viewModeAct =
         MakeAction(m_window, IconId::VIEW, MainWindow::tr("View mode"), QKeySequence(QStringLiteral("H")),

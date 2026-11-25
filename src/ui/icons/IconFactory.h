@@ -85,7 +85,10 @@ enum class IconId {
     COPY,
     GROUP,
     UNGROUP,
-    MORPH
+    MORPH,
+    // 镜像翻转：绕竖轴左右翻（H）与绕横轴上下翻（V），虚线轴加一对对顶三角。
+    MIRROR_H,
+    MIRROR_V
 };
 
 namespace IconFactory {
