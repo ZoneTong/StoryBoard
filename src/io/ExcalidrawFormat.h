@@ -26,6 +26,9 @@ QJsonObject SceneToStoryBoard(const QJsonObject& scene, QStringList* warnings = 
 
 // StoryBoard 画板根 JSON -> .excalidraw 场景（导出用）。
 QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings = nullptr);
+
+// StoryBoard 画板根 JSON -> Excalidraw 剪贴板 JSON（复制到 excalidraw.com 用）。
+QJsonObject StoryBoardToClipboard(const QJsonObject& document, QStringList* warnings = nullptr);
 } // namespace Excalidraw
 
 #endif // EXCALIDRAWFORMAT_H

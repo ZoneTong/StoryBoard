@@ -529,6 +529,28 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
                       .arg(reverseStyle, gridStyle, brickStyle, reverseCustom));
     }
 
+    // 复制到 Excalidraw：画板图元同时产出 excalidraw/clipboard JSON。
+    {
+        QJsonObject shape;
+        shape.insert(QStringLiteral("kind"), QStringLiteral("shape"));
+        shape.insert(QStringLiteral("shapeType"), QStringLiteral("rectangle"));
+        shape.insert(QStringLiteral("x"), 10.0);
+        shape.insert(QStringLiteral("y"), 20.0);
+        shape.insert(QStringLiteral("w"), 60.0);
+        shape.insert(QStringLiteral("h"), 40.0);
+        QJsonObject document;
+        document.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
+        document.insert(QStringLiteral("items"), QJsonArray{shape});
+        const QJsonObject clipboard = Excalidraw::StoryBoardToClipboard(document);
+        const QJsonObject element = clipboard.value(QStringLiteral("elements")).toArray().at(0).toObject();
+        ctx.Check(Excalidraw::IsClipboard(clipboard) &&
+                      element.value(QStringLiteral("type")).toString() == QStringLiteral("rectangle"),
+                  QStringLiteral("复制产出 Excalidraw 剪贴板 JSON"),
+                  QStringLiteral("type=%1 elementType=%2")
+                      .arg(clipboard.value(QStringLiteral("type")).toString(),
+                           element.value(QStringLiteral("type")).toString()));
+    }
+
     // 箭头头补齐：Excalidraw 的 circle / triangle_outline 落到画板的圆点 / 空心三角。
     {
         QJsonObject circleArrow = Element(QStringLiteral("arrow"), 0, 0, 80, 0);

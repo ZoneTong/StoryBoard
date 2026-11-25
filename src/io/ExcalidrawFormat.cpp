@@ -920,4 +920,14 @@ QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings
     return scene;
 }
 
+QJsonObject StoryBoardToClipboard(const QJsonObject& document, QStringList* warnings)
+{
+    const QJsonObject scene = StoryBoardToScene(document, warnings);
+    QJsonObject clipboard;
+    clipboard.insert(QStringLiteral("type"), QString::fromLatin1(CLIPBOARD_TYPE));
+    clipboard.insert(QStringLiteral("elements"), scene.value(QStringLiteral("elements")));
+    clipboard.insert(QStringLiteral("files"), scene.value(QStringLiteral("files")));
+    return clipboard;
+}
+
 } // namespace Excalidraw

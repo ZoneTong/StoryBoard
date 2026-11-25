@@ -133,6 +133,16 @@ void MainWindowEditActionsController::CopySelectedItems()
     }
     auto* mime = new QMimeData;
     mime->setData(QLatin1String(CLIPBOARD_MIME_TYPE), QJsonDocument(items).toJson(QJsonDocument::Compact));
+    // 同时写一份 Excalidraw 剪贴板 JSON，复制后可直接粘到 excalidraw.com；
+    // text/plain 兜底给只读纯文本的浏览器/终端。
+    QJsonObject document;
+    document.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
+    document.insert(QStringLiteral("items"), items);
+    QStringList warnings;
+    const QJsonObject excalidrawClipboard = Excalidraw::StoryBoardToClipboard(document, &warnings);
+    const QByteArray excalidrawJson = QJsonDocument(excalidrawClipboard).toJson(QJsonDocument::Compact);
+    mime->setData(QStringLiteral("application/vnd.excalidraw+json"), excalidrawJson);
+    mime->setText(QString::fromUtf8(excalidrawJson));
     QApplication::clipboard()->setMimeData(mime);
     m_window->statusBar()->showMessage(MainWindow::tr("Copied %n Item(s)", nullptr, items.size()), 3000);
 }
@@ -183,7 +193,7 @@ void MainWindowEditActionsController::PasteItems()
             const QJsonObject scene = external.object();
             const QJsonArray items =
                 Excalidraw::ElementsToItems(scene.value(QStringLiteral("elements")).toArray(), &notes, nullptr,
-                                            scene.value(QStringLiteral("files")).toObject());
+                                            scene.value(QStringLiteral("files")).toObject(), true);
             const int pastedCount = m_window->Scene()->PasteClipboardItems(items);
             if (pastedCount == 0) {
                 m_window->statusBar()->showMessage(MainWindow::tr("Nothing to paste"), 3000);
