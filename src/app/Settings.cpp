@@ -281,6 +281,8 @@ void MergeSettings(SettingsMap& values, const AppSettings& settings)
     values.insert(QStringLiteral("view/canvasColor"), settings.canvasColor.name(QColor::HexArgb));
 
     values.insert(QStringLiteral("paths/export"), settings.lastExportDir);
+    values.insert(QStringLiteral("export/fitViewSize"),
+                  settings.exportFitViewSize ? QStringLiteral("true") : QStringLiteral("false"));
     values.insert(QStringLiteral("paths/image"), settings.lastImageDir);
     values.insert(QStringLiteral("paths/canvas"), settings.lastCanvasPath);
     values.insert(QStringLiteral("paths/canvasesDirectory"), settings.canvasesDirectory);
@@ -373,6 +375,7 @@ void AppSettings::Load()
     canvasColor = ColorFromMap(values, QStringLiteral("view/canvasColor"), canvasColor);
 
     lastExportDir = values.value(QStringLiteral("paths/export"), lastExportDir);
+    exportFitViewSize = BoolFromMap(values, QStringLiteral("export/fitViewSize"), exportFitViewSize);
     lastImageDir = values.value(QStringLiteral("paths/image"), lastImageDir);
     lastCanvasPath = values.value(QStringLiteral("paths/canvas"), lastCanvasPath);
     canvasesDirectory = values.value(QStringLiteral("paths/canvasesDirectory"), canvasesDirectory);

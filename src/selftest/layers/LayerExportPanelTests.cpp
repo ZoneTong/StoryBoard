@@ -258,6 +258,18 @@ void selftest::RunLayerExportPanelTests(Context& ctx)
                       .arg(fitHeight)
                       .arg(viewportRect.width())
                       .arg(viewportRect.height()));
+
+        // 上次勾过就记住：构造时直接带回来，范围与比例控件一开始就是关的。
+        ExportDialog rememberedDialog(&layerExportScene, QDir::tempPath(), nullptr, &fitView, true);
+        QCheckBox* rememberedCheck = rememberedDialog.findChild<QCheckBox*>(QStringLiteral("ExportFitViewCheck"));
+        auto* rememberedScope = rememberedDialog.findChild<QComboBox*>(QStringLiteral("ExportScopeCombo"));
+        const ExportDialog::Options rememberedOptions = rememberedDialog.options();
+        ctx.Check(rememberedCheck && rememberedCheck->isChecked() && rememberedOptions.fitViewSize && rememberedScope &&
+                      !rememberedScope->isEnabled(),
+                  QStringLiteral("上次勾选的自适应尺寸会被记住并回填"),
+                  QStringLiteral("checked=%1 scopeEnabled=%2")
+                      .arg(rememberedCheck && rememberedCheck->isChecked() ? 1 : 0)
+                      .arg(rememberedScope && rememberedScope->isEnabled() ? 1 : 0));
     }
 
     {

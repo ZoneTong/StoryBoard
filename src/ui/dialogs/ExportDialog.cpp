@@ -25,7 +25,8 @@
 #include <QVBoxLayout>
 #include <QtMath>
 
-ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QWidget* parent, CanvasView* view)
+ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QWidget* parent, CanvasView* view,
+                           bool fitViewSize)
     : QDialog(parent), m_scene(scene), m_view(view)
 {
     setWindowTitle(tr("Export image"));
@@ -101,7 +102,7 @@ ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QW
     m_fitViewCheck = new QCheckBox(tr("Fit to view size"), sizeRow);
     m_fitViewCheck->setObjectName(QStringLiteral("ExportFitViewCheck"));
     m_fitViewCheck->setToolTip(tr("Match the output pixels to the overview view shown on screen"));
-    m_fitViewCheck->setChecked(false);
+    m_fitViewCheck->setChecked(m_view != nullptr && fitViewSize);
     // 没有视图（例如示例画布）时不给这个勾选项，避免勾了却算不出尺寸。
     m_fitViewCheck->setEnabled(m_view != nullptr);
     sizeLayout->addWidget(m_sizeLabel, 1);
@@ -138,13 +139,7 @@ ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QW
         UpdateEstimatedSize();
     });
     connect(m_scaleSpin, &QDoubleSpinBox::valueChanged, this, [this]() { UpdateEstimatedSize(); });
-    connect(m_fitViewCheck, &QCheckBox::toggled, this, [this](bool) {
-        // 勾上后范围与比例都由视图接管，这两个控件留在原位但不再起作用。
-        const bool fitView = FitViewSelected();
-        m_scopeCombo->setEnabled(!fitView);
-        m_scaleSpin->setEnabled(!fitView);
-        UpdateEstimatedSize();
-    });
+    connect(m_fitViewCheck, &QCheckBox::toggled, this, [this](bool) { ApplyFitViewState(); });
     connect(m_formatCombo, &QComboBox::currentIndexChanged, this, [this]() {
         UpdatePathExtension();
         UpdateEstimatedSize();
@@ -153,6 +148,15 @@ ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QW
     connect(buttons, &QDialogButtonBox::accepted, this, &ExportDialog::ValidateAndAccept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
+    ApplyFitViewState();
+}
+
+void ExportDialog::ApplyFitViewState()
+{
+    // 勾上后范围与比例都由视图接管，这两个控件留在原位但不再起作用。
+    const bool fitView = FitViewSelected();
+    m_scopeCombo->setEnabled(!fitView);
+    m_scaleSpin->setEnabled(!fitView);
     UpdateEstimatedSize();
 }
 
@@ -269,6 +273,7 @@ ExportDialog::Options ExportDialog::options() const
     result.scale = ExportScale();
     result.format = SelectedFormat();
     result.separateLayers = SeparateLayersSelected();
+    result.fitViewSize = FitViewSelected();
     result.filePath = m_pathEdit->text().trimmed();
     result.filePaths = OutputFilePaths();
     if (result.separateLayers && m_scene) {

@@ -86,12 +86,20 @@ void ImportExportController::ExportCanvas()
         startDirectory = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
     }
 
-    ExportDialog dialog(m_window->m_scene, startDirectory, m_window, m_window->m_view);
-    if (dialog.exec() != QDialog::Accepted) {
+    ExportDialog dialog(m_window->m_scene, startDirectory, m_window, m_window->m_view,
+                        m_window->m_settings.exportFitViewSize);
+    const int dialogResult = dialog.exec();
+
+    const ExportDialog::Options options = dialog.options();
+    // 「自适应尺寸」是纯偏好，取消导出也应该记住，所以先落盘再判断是否继续导出。
+    if (m_window->m_settings.exportFitViewSize != options.fitViewSize) {
+        m_window->m_settings.exportFitViewSize = options.fitViewSize;
+        m_window->m_settings.Save();
+    }
+    if (dialogResult != QDialog::Accepted) {
         return;
     }
 
-    const ExportDialog::Options options = dialog.options();
     m_window->m_settings.lastExportDir = QFileInfo(options.filePath).absolutePath();
     m_window->m_settings.Save();
 

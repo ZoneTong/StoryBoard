@@ -23,12 +23,14 @@ class ExportDialog : public QDialog {
         QString format;
         QString filePath;
         bool separateLayers = false;
+        // 勾选过「自适应尺寸」时记下来，调用方写回设置，下次打开弹窗保持同一状态。
+        bool fitViewSize = false;
         QStringList filePaths;
         QList<int> layerIds;
     };
 
     explicit ExportDialog(CanvasScene* scene, const QString& startDirectory, QWidget* parent = nullptr,
-                          CanvasView* view = nullptr);
+                          CanvasView* view = nullptr, bool fitViewSize = false);
 
     Options options() const;
 
@@ -39,6 +41,8 @@ class ExportDialog : public QDialog {
     QRectF ExportArea() const;
     qreal ExportScale() const;
     bool FitViewSelected() const;
+    // 勾选状态变化后同步两个被接管的控件与尺寸标签。
+    void ApplyFitViewState();
     QString SelectedFormat() const;
     QString FileFilter() const;
     bool SeparateLayersSelected() const;

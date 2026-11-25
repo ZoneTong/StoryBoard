@@ -20,6 +20,8 @@ class AppSettings {
     bool showGrid = false;
     QColor canvasColor = QColor(43, 47, 54);
     QString lastExportDir;
+    // 导出弹窗里「自适应尺寸」的上次勾选状态；跨会话记忆，默认不勾。
+    bool exportFitViewSize = false;
     QString lastImageDir;
     QString lastCanvasPath;
     QString canvasesDirectory;
