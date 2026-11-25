@@ -86,7 +86,7 @@ void ImportExportController::ExportCanvas()
         startDirectory = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
     }
 
-    ExportDialog dialog(m_window->m_scene, startDirectory, m_window);
+    ExportDialog dialog(m_window->m_scene, startDirectory, m_window, m_window->m_view);
     if (dialog.exec() != QDialog::Accepted) {
         return;
     }
@@ -98,7 +98,7 @@ void ImportExportController::ExportCanvas()
     if (options.separateLayers) {
         const QStringList paths = options.filePaths;
         if (paths.isEmpty()) {
-            ReportWarning(m_window, MainWindow::tr("Export canvas"), MainWindow::tr("No visible layers to export."));
+            ReportWarning(m_window, MainWindow::tr("Export image"), MainWindow::tr("No visible layers to export."));
             return;
         }
 
@@ -141,7 +141,7 @@ bool ImportExportController::ExportToFile(const QString& path, const QRectF& are
     QApplication::restoreOverrideCursor();
 
     if (rawImage.isNull()) {
-        ReportWarning(m_window, MainWindow::tr("Export canvas"),
+        ReportWarning(m_window, MainWindow::tr("Export image"),
                       MainWindow::tr("Rendering the canvas failed: nothing to export."));
         return false;
     }

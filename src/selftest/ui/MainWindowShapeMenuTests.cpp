@@ -205,7 +205,7 @@ void selftest::RunMainWindowShapeMenuTests(Context& ctx)
         QToolBar* mainToolBar = shapeWindow.findChild<QToolBar*>(QStringLiteral("MainToolBar"));
         QAction* exportAction = nullptr;
         for (QAction* action : shapeWindow.findChildren<QAction*>()) {
-            if (action->text() == QStringLiteral("导出画布…")) {
+            if (action->text() == QStringLiteral("导出图片…")) {
                 exportAction = action;
                 break;
             }

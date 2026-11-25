@@ -304,8 +304,8 @@
         <location filename="../src/ui/dialogs/ExportDialog.cpp" line="319"/>
         <location filename="../src/ui/dialogs/ExportDialog.cpp" line="343"/>
         <location filename="../src/ui/dialogs/ExportDialog.cpp" line="351"/>
-        <source>Export canvas</source>
-        <translation>导出画布</translation>
+        <source>Export image</source>
+        <translation>导出图片</translation>
     </message><message>
         <location filename="../src/ui/dialogs/ExportDialog.cpp" line="38"/>
         <source>Export the current canvas</source>
@@ -378,6 +378,14 @@
         <location filename="../src/ui/dialogs/ExportDialog.cpp" line="92"/>
         <source>Output size</source>
         <translation>输出尺寸</translation>
+    </message><message>
+        <location filename="../src/ui/dialogs/ExportDialog.cpp" line="98"/>
+        <source>Fit to view size</source>
+        <translation>自适应尺寸</translation>
+    </message><message>
+        <location filename="../src/ui/dialogs/ExportDialog.cpp" line="99"/>
+        <source>Match the output pixels to the overview view shown on screen</source>
+        <translation>输出像素与屏幕上的全景视图保持一致</translation>
     </message><message>
         <location filename="../src/ui/dialogs/ExportDialog.cpp" line="97"/>
         <source>Export</source>
@@ -1738,8 +1746,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <translation>将图片插入为可移动、可缩放的图元 (Ctrl+I)</translation>
     </message><message>
         <location filename="../src/ui/builder/UiActionFactory.cpp" line="80"/>
-        <source>Export canvas…</source>
-        <translation>导出画布…</translation>
+        <source>Export image…</source>
+        <translation>导出图片…</translation>
     </message><message>
         <location filename="../src/ui/builder/UiActionFactory.cpp" line="81"/>
         <source>Export as PNG / JPEG / PDF (Ctrl+E)</source>
@@ -2412,8 +2420,8 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     </message><message>
         <location filename="../src/io/ImportExportController.cpp" line="103"/>
         <location filename="../src/io/ImportExportController.cpp" line="146"/>
-        <source>Export canvas</source>
-        <translation>导出画布</translation>
+        <source>Export image</source>
+        <translation>导出图片</translation>
     </message><message>
         <location filename="../src/io/ImportExportController.cpp" line="103"/>
         <source>No visible layers to export.</source>
@@ -4160,11 +4168,11 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Export as PNG / JPEG / PDF (Ctrl+E)</source>
         <translation>导出为 PNG / JPEG / PDF (Ctrl+E)</translation>
     </message><message>
-        <source>Export canvas</source>
-        <translation>导出画布</translation>
+        <source>Export image</source>
+        <translation>导出图片</translation>
     </message><message>
-        <source>Export canvas…</source>
-        <translation>导出画布…</translation>
+        <source>Export image…</source>
+        <translation>导出图片…</translation>
     </message><message>
         <source>Export complete</source>
         <translation>导出完成</translation>
@@ -5514,3 +5522,4 @@ Use the checkbox to show or hide it.</source>
     </message>
 </context>
 </TS>
+

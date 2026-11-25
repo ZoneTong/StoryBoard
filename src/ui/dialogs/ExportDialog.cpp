@@ -1,9 +1,11 @@
 #include "ui/dialogs/ExportDialog.h"
 
 #include "app/I18n.h"
+#include "canvas/CanvasView.h"
 #include "scene/CanvasScene.h"
 #include "ui/icons/IconFactory.h"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QDateTime>
 #include <QDialogButtonBox>
@@ -23,10 +25,10 @@
 #include <QVBoxLayout>
 #include <QtMath>
 
-ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QWidget* parent)
-    : QDialog(parent), m_scene(scene)
+ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QWidget* parent, CanvasView* view)
+    : QDialog(parent), m_scene(scene), m_view(view)
 {
-    setWindowTitle(tr("Export canvas"));
+    setWindowTitle(tr("Export image"));
     setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));
     setModal(true);
     setMinimumWidth(580);
@@ -53,6 +55,7 @@ ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QW
     form->setLabelAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
     m_scopeCombo = new QComboBox(group);
+    m_scopeCombo->setObjectName(QStringLiteral("ExportScopeCombo"));
     m_scopeCombo->addItem(tr("Canvas area"));
     m_scopeCombo->addItem(tr("All items"));
     form->addRow(tr("Export area"), m_scopeCombo);
@@ -87,9 +90,23 @@ ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QW
     fileRow->addWidget(browseButton);
     form->addRow(tr("Output file"), fileRow);
 
-    m_sizeLabel = new QLabel(group);
+    // 输出尺寸与它的“自适应尺寸”勾选项同一行：勾上后范围与比例改由当前视图决定，
+    // 输出像素正好等于全景视图在屏幕上的像素尺寸。
+    auto* sizeRow = new QWidget(group);
+    auto* sizeLayout = new QHBoxLayout(sizeRow);
+    sizeLayout->setContentsMargins(0, 0, 0, 0);
+    sizeLayout->setSpacing(10);
+    m_sizeLabel = new QLabel(sizeRow);
     m_sizeLabel->setObjectName(QStringLiteral("DialogHint"));
-    form->addRow(tr("Output size"), m_sizeLabel);
+    m_fitViewCheck = new QCheckBox(tr("Fit to view size"), sizeRow);
+    m_fitViewCheck->setObjectName(QStringLiteral("ExportFitViewCheck"));
+    m_fitViewCheck->setToolTip(tr("Match the output pixels to the overview view shown on screen"));
+    m_fitViewCheck->setChecked(false);
+    // 没有视图（例如示例画布）时不给这个勾选项，避免勾了却算不出尺寸。
+    m_fitViewCheck->setEnabled(m_view != nullptr);
+    sizeLayout->addWidget(m_sizeLabel, 1);
+    sizeLayout->addWidget(m_fitViewCheck);
+    form->addRow(tr("Output size"), sizeRow);
 
     rootLayout->addWidget(group);
 
@@ -121,6 +138,13 @@ ExportDialog::ExportDialog(CanvasScene* scene, const QString& startDirectory, QW
         UpdateEstimatedSize();
     });
     connect(m_scaleSpin, &QDoubleSpinBox::valueChanged, this, [this]() { UpdateEstimatedSize(); });
+    connect(m_fitViewCheck, &QCheckBox::toggled, this, [this](bool) {
+        // 勾上后范围与比例都由视图接管，这两个控件留在原位但不再起作用。
+        const bool fitView = FitViewSelected();
+        m_scopeCombo->setEnabled(!fitView);
+        m_scaleSpin->setEnabled(!fitView);
+        UpdateEstimatedSize();
+    });
     connect(m_formatCombo, &QComboBox::currentIndexChanged, this, [this]() {
         UpdatePathExtension();
         UpdateEstimatedSize();
@@ -142,6 +166,25 @@ QRectF ExportDialog::SelectedArea() const
         return content.adjusted(-24.0, -24.0, 24.0, 24.0);
     }
     return m_scene->CanvasRect();
+}
+
+bool ExportDialog::FitViewSelected() const
+{
+    return m_view != nullptr && m_fitViewCheck && m_fitViewCheck->isChecked();
+}
+
+QRectF ExportDialog::ExportArea() const
+{
+    if (!FitViewSelected()) {
+        return SelectedArea();
+    }
+    // 可见场景区域 = 视口四角反映射，再乘回当前缩放就是屏幕上的像素尺寸。
+    return m_view->mapToScene(m_view->viewport()->rect()).boundingRect();
+}
+
+qreal ExportDialog::ExportScale() const
+{
+    return FitViewSelected() ? m_view->transform().m11() : m_scaleSpin->value();
 }
 
 QString ExportDialog::SelectedFormat() const
@@ -222,8 +265,8 @@ QStringList ExportDialog::OutputFilePaths() const
 ExportDialog::Options ExportDialog::options() const
 {
     Options result;
-    result.area = SelectedArea();
-    result.scale = m_scaleSpin->value();
+    result.area = ExportArea();
+    result.scale = ExportScale();
     result.format = SelectedFormat();
     result.separateLayers = SeparateLayersSelected();
     result.filePath = m_pathEdit->text().trimmed();
@@ -240,8 +283,8 @@ ExportDialog::Options ExportDialog::options() const
 
 void ExportDialog::UpdateEstimatedSize()
 {
-    const QRectF area = SelectedArea();
-    const qreal scale = m_scaleSpin->value();
+    const QRectF area = ExportArea();
+    const qreal scale = ExportScale();
     int width = qMax(1, qCeil(area.width() * scale));
     int height = qMax(1, qCeil(area.height() * scale));
     constexpr int MAX_SIDE = 12000;
@@ -297,7 +340,7 @@ void ExportDialog::BrowseForFile()
 {
     const QString current = m_pathEdit->text().trimmed();
     const QString directory = current.isEmpty() ? QString() : QFileInfo(current).absolutePath();
-    QString path = QFileDialog::getSaveFileName(this, tr("Export canvas"), directory, FileFilter());
+    QString path = QFileDialog::getSaveFileName(this, tr("Export image"), directory, FileFilter());
     if (path.isEmpty()) {
         return;
     }
@@ -316,7 +359,7 @@ void ExportDialog::ValidateAndAccept()
 {
     QString path = m_pathEdit->text().trimmed();
     if (path.isEmpty()) {
-        QMessageBox::warning(this, tr("Export canvas"), tr("Choose an export path first."));
+        QMessageBox::warning(this, tr("Export image"), tr("Choose an export path first."));
         return;
     }
 
@@ -340,7 +383,7 @@ void ExportDialog::ValidateAndAccept()
     }
 
     if (!QDir().mkpath(info.absolutePath())) {
-        QMessageBox::warning(this, tr("Export canvas"),
+        QMessageBox::warning(this, tr("Export image"),
                              tr("Could not create the output folder:\n%1").arg(info.absolutePath()));
         return;
     }
@@ -348,7 +391,7 @@ void ExportDialog::ValidateAndAccept()
     if (SeparateLayersSelected()) {
         const QStringList paths = OutputFilePaths();
         if (paths.isEmpty()) {
-            QMessageBox::warning(this, tr("Export canvas"), tr("No visible layers to export."));
+            QMessageBox::warning(this, tr("Export image"), tr("No visible layers to export."));
             return;
         }
 

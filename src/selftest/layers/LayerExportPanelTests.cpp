@@ -227,6 +227,37 @@ void selftest::RunLayerExportPanelTests(Context& ctx)
         }
         ctx.Check(namesLookRight, QStringLiteral("逐层模式为每个可见图层生成独立文件"),
                   QStringLiteral("files=%1 visible=%2").arg(layerOptions.filePaths.size()).arg(visibleLayers));
+
+        // 自适应尺寸：默认不勾，范围与比例仍按下拉；勾上后改由视图接管，
+        // 输出像素恰好等于全景视图在屏幕上的尺寸，两个旧控件同时失效。
+        CanvasView fitView(&layerExportScene);
+        fitView.resize(900, 620);
+        fitView.show();
+        QApplication::processEvents();
+        fitView.FitAll();
+        ExportDialog fitDialog(&layerExportScene, QDir::tempPath(), nullptr, &fitView);
+        QCheckBox* fitCheck = fitDialog.findChild<QCheckBox*>(QStringLiteral("ExportFitViewCheck"));
+        auto* fitScope = fitDialog.findChild<QComboBox*>(QStringLiteral("ExportScopeCombo"));
+        ctx.Check(fitCheck && fitCheck->isEnabled() && !fitCheck->isChecked(),
+                  QStringLiteral("导出弹窗的“自适应尺寸”默认不勾选"));
+        const ExportDialog::Options plainOptions = fitDialog.options();
+        if (fitCheck) {
+            fitCheck->setChecked(true);
+        }
+        QApplication::processEvents();
+        const ExportDialog::Options fitOptions = fitDialog.options();
+        const QRect viewportRect = fitView.viewport()->rect();
+        const int fitWidth = qCeil(fitOptions.area.width() * fitOptions.scale);
+        const int fitHeight = qCeil(fitOptions.area.height() * fitOptions.scale);
+        ctx.Check(fitCheck && fitCheck->isChecked() && fitOptions.area != plainOptions.area &&
+                      fitOptions.scale != plainOptions.scale && fitScope && !fitScope->isEnabled() &&
+                      qAbs(fitWidth - viewportRect.width()) <= 1 && qAbs(fitHeight - viewportRect.height()) <= 1,
+                  QStringLiteral("勾选自适应尺寸后输出像素等于全景视图尺寸"),
+                  QStringLiteral("fit=%1x%2 view=%3x%4")
+                      .arg(fitWidth)
+                      .arg(fitHeight)
+                      .arg(viewportRect.width())
+                      .arg(viewportRect.height()));
     }
 
     {

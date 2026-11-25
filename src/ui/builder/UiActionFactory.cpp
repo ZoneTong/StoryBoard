@@ -80,7 +80,7 @@ void UiActionFactory::Build()
             "Trace an image's color-block outlines into strokes (line width 1); a parameter dialog opens first and "
             "only Save to configuration file writes StoryBoard.ini (Ctrl+L)"));
     m_window->m_exportAct =
-        MakeAction(m_window, IconId::EXPORT, MainWindow::tr("Export canvas…"), QKeySequence(QStringLiteral("Ctrl+E")),
+        MakeAction(m_window, IconId::EXPORT, MainWindow::tr("Export image…"), QKeySequence(QStringLiteral("Ctrl+E")),
                    MainWindow::tr("Export as PNG / JPEG / PDF (Ctrl+E)"));
     m_window->m_exportExcalidrawAct =
         MakeAction(m_window, IconId::EXPORT, MainWindow::tr("Export Excalidraw…"), QKeySequence(),

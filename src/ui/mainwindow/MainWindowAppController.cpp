@@ -143,7 +143,7 @@ void MainWindowAppController::ShowAbout()
         QStringLiteral("Mouse: wheel zooms, Space / middle button pans in any mode; in edit mode holding Ctrl "
                        "and dragging also pans the whole view"),
         QStringLiteral("Ctrl+0 returns to the overview, Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z undo / redo"),
-        QStringLiteral("Ctrl+I / Ctrl+L / Ctrl+E insert image / import outline image / export canvas; "
+        QStringLiteral("Ctrl+I / Ctrl+L / Ctrl+E insert image / import outline image / export image; "
                        "Ctrl+Shift+B simplifies the selected curve (Brush); Ctrl+Q or Alt+F4 quits"),
     };
     for (const QString& operation : operations) {
