@@ -7,6 +7,7 @@
 #include <QJsonArray>
 #include <QLineF>
 #include <QPainter>
+#include <QPainterPathStroker>
 #include <QTransform>
 #include <QtMath>
 
@@ -268,10 +269,16 @@ QRectF LineAbstractItem::ArrowSceneBounds() const
     if (head.isEmpty()) {
         return QRectF();
     }
-    const QRectF rect = sceneTransform().map(head).boundingRect();
-    // 描边以箭头轮廓为中心外扩半宽；线宽随同一套缩放走，取两轴较大的比例。
-    const qreal half = m_strokeWidth * 0.5 * qMax(qAbs(scaleX), qAbs(scaleY));
-    return rect.adjusted(-half, -half, half, half);
+    // 箭头是「几何轮廓 + 同色描边」：实心三角的尖角带 MiterJoin，描边会沿角分线
+    // 再伸出一段（最多约一个线宽），只按半线宽外扩会少算，导出时尖角被切。
+    // 这里用与 PaintArrowHead 相同的笔参数做一次描边，取几何轮廓与描边轮廓的并集。
+    QPainterPathStroker stroker;
+    stroker.setWidth(qMax<qreal>(1.0, m_strokeWidth));
+    stroker.setJoinStyle(Qt::MiterJoin);
+    stroker.setCapStyle(Qt::FlatCap);
+    stroker.setMiterLimit(2.0);
+    head = head.united(stroker.createStroke(head));
+    return sceneTransform().map(head).boundingRect();
 }
 
 QPainterPath LineAbstractItem::GeometryOutline() const

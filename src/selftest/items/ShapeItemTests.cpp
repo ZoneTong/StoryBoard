@@ -29,6 +29,7 @@
 #include "ops/BoolOps.h"
 #include "scene/CanvasScene.h"
 #include "scene/Commands.h"
+#include "scene/SceneConstants.h"
 #include "selftest/core/SelfTestContext.h"
 #include "selftest/core/SelftestEntries.h"
 #include "selftest/core/SelftestHelpers.h"
@@ -502,6 +503,39 @@ void selftest::RunShapeItemTests(Context& ctx)
                           .arg(plain.width())
                           .arg(plain.height()));
         }
+    }
+    // 箭头包围：实心三角的尖角描边是 Miter，外沿比几何轮廓多出一段；
+    // 导出包围框必须算进去，否则自适应导出的图会在尖角处缺一角。
+    {
+        CanvasScene arrowScene;
+        arrowScene.ApplyCanvasSize(QSizeF(400.0, 300.0));
+        arrowScene.SetMode(ToolMode::EDIT);
+        QUndoStack arrowUndo;
+        arrowScene.SetUndoStack(&arrowUndo);
+        auto* arc = new ArcItem;
+        arc->SetArcGeometry(QPointF(200.0, 150.0), QSizeF(120.0, 80.0), 0.0, 180.0, QColor(20, 20, 20), 12.0);
+        arc->SetArrowStyles(ArrowStyle::NONE, ArrowStyle::TRIANGLE_FILLED);
+        arrowScene.AddItemsWithUndo({arc}, QStringLiteral("添加带箭头弧线"));
+
+        const qreal pad = scene_constants::EXPORT_FIT_PADDING;
+        const QRectF area = arrowScene.ContentRect().adjusted(-pad, -pad, pad, pad);
+        const QImage image = arrowScene.RenderImage(area, 1.0);
+        bool borderEmpty = !image.isNull();
+        if (borderEmpty) {
+            for (int x = 0; x < image.width() && borderEmpty; ++x) {
+                borderEmpty = image.pixelColor(x, 0).alpha() == 0 &&
+                              image.pixelColor(x, image.height() - 1).alpha() == 0;
+            }
+            for (int y = 0; y < image.height() && borderEmpty; ++y) {
+                borderEmpty = image.pixelColor(0, y).alpha() == 0 &&
+                              image.pixelColor(image.width() - 1, y).alpha() == 0;
+            }
+        }
+        ctx.Check(borderEmpty, QStringLiteral("实心箭头尖角计入导出包围框且四边留白完整"),
+                  QStringLiteral("size=%1x%2 pad=%3")
+                      .arg(image.width())
+                      .arg(image.height())
+                      .arg(pad));
     }
     ctx.Check(ShapeTypeFromString(QStringLiteral("circle")) == ShapeType::ELLIPSE &&
                   ShapeTypeFromString(QStringLiteral("roundrect")) == ShapeType::RECTANGLE &&
