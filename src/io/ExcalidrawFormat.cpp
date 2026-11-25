@@ -57,6 +57,42 @@ QString ExcalidrawStrokeStyle(int penStyle)
     return QStringLiteral("solid");
 }
 
+// 填充样式双向映射：Excalidraw 有 solid / hachure / cross-hatch / zigzag / dots / dashed，
+// 画板另有反向斜纹、网格、蜂窝、砖墙四档，导出时落到最接近的原生样式并在 customData
+// 里留下原值，再导入即可还原（customData 缺失时按最接近的画板样式落位）。
+QString FillStyleFromExcalidraw(const QString& style)
+{
+    if (style == QStringLiteral("hachure") || style == QStringLiteral("dashed")) {
+        return QStringLiteral("hachure");
+    }
+    if (style == QStringLiteral("cross-hatch") || style == QStringLiteral("zigzag") ||
+        style == QStringLiteral("zigzag-line")) {
+        return QStringLiteral("cross_hatch");
+    }
+    if (style == QStringLiteral("dots")) {
+        return QStringLiteral("dots");
+    }
+    return QStringLiteral("solid");
+}
+
+QString ExcalidrawFillStyle(const QString& style)
+{
+    if (style == QStringLiteral("hachure") || style == QStringLiteral("reverse_hatch")) {
+        return QStringLiteral("hachure");
+    }
+    if (style == QStringLiteral("dots")) {
+        return QStringLiteral("dots");
+    }
+    if (style == QStringLiteral("brick")) {
+        return QStringLiteral("zigzag");
+    }
+    if (style == QStringLiteral("cross_hatch") || style == QStringLiteral("grid_hatch") ||
+        style == QStringLiteral("honeycomb")) {
+        return QStringLiteral("cross-hatch");
+    }
+    return QStringLiteral("solid");
+}
+
 // 需求 9：Excalidraw 的 head 样式映射到画板箭头；空心三角画板有，直接保留。
 QString HeadStyle(const QJsonValue& value)
 {
@@ -248,15 +284,18 @@ QJsonObject ElementToItem(const QJsonObject& element, int z, int layer, QStringL
         QColor fill = ColorOr(element, QStringLiteral("backgroundColor"), QColor(Qt::transparent));
         QString fillStyle = QStringLiteral("none");
         if (fill.alpha() > 0) {
-            // 原填充样式（斜纹 / 网格 / 蜂窝等）在 customData 里，取不到才降级为实心。
+            // 原填充样式（斜纹 / 网格 / 蜂窝等）在 customData 里，取不到就按最接近的样式落位。
             const QString restoredStyle = CustomText(element, QStringLiteral("fillStyle"));
             if (!restoredStyle.isEmpty()) {
                 fillStyle = restoredStyle;
             } else {
                 const QString sourceStyle = element.value(QStringLiteral("fillStyle")).toString();
-                fillStyle = QStringLiteral("solid");
-                if (!sourceStyle.isEmpty() && sourceStyle != QStringLiteral("solid") && warnings) {
-                    warnings->append(QStringLiteral("fillStyle %1 降级为实心填充").arg(sourceStyle));
+                fillStyle = FillStyleFromExcalidraw(sourceStyle);
+                if (!sourceStyle.isEmpty() && sourceStyle != QStringLiteral("solid") &&
+                    sourceStyle != QStringLiteral("hachure") && sourceStyle != QStringLiteral("cross-hatch") &&
+                    sourceStyle != QStringLiteral("zigzag") && sourceStyle != QStringLiteral("zigzag-line") &&
+                    sourceStyle != QStringLiteral("dots") && sourceStyle != QStringLiteral("dashed") && warnings) {
+                    warnings->append(QStringLiteral("fillStyle %1 不支持，按实心填充").arg(sourceStyle));
                 }
             }
         }
@@ -347,9 +386,7 @@ QJsonObject StoryBoardShape(const QJsonObject& item)
     element.insert(QStringLiteral("backgroundColor"),
                    fill.alpha() == 0 ? QStringLiteral("transparent") : fill.name(QColor::HexRgb));
     element.insert(QStringLiteral("fillStyle"),
-                   item.value(QStringLiteral("fillStyle")).toString() == QStringLiteral("solid")
-                       ? QStringLiteral("solid")
-                       : QStringLiteral("hachure"));
+                   ExcalidrawFillStyle(item.value(QStringLiteral("fillStyle")).toString()));
     element.insert(QStringLiteral("strokeWidth"), NumberOr(item, QStringLiteral("strokeWidth"), 2.0));
     // 圆角：Excalidraw 的合法值是 null 或 {type:3,value}，空对象属于无效值。
     const qreal corner = NumberOr(item, QStringLiteral("cornerRadius"), 0.0);

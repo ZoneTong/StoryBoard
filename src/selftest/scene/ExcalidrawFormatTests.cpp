@@ -443,6 +443,67 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
                       .arg(importedParentsJson.size()));
     }
 
+    // 填充样式：Excalidraw 原生四档与画板九档的近似映射，customData 保住原值。
+    {
+        QJsonObject hachure = Element(QStringLiteral("rectangle"), 0, 0, 50, 50);
+        hachure.insert(QStringLiteral("backgroundColor"), QStringLiteral("#ff0000"));
+        hachure.insert(QStringLiteral("fillStyle"), QStringLiteral("hachure"));
+        QJsonObject crossHatch = Element(QStringLiteral("rectangle"), 60, 0, 50, 50);
+        crossHatch.insert(QStringLiteral("backgroundColor"), QStringLiteral("#ff0000"));
+        crossHatch.insert(QStringLiteral("fillStyle"), QStringLiteral("cross-hatch"));
+        QJsonObject dots = Element(QStringLiteral("rectangle"), 120, 0, 50, 50);
+        dots.insert(QStringLiteral("backgroundColor"), QStringLiteral("#ff0000"));
+        dots.insert(QStringLiteral("fillStyle"), QStringLiteral("dots"));
+        const QJsonObject imported = Excalidraw::SceneToStoryBoard(Scene(QJsonArray{hachure, crossHatch, dots}), nullptr);
+        const QJsonArray importedItems = imported.value(QStringLiteral("items")).toArray();
+        ctx.Check(importedItems.at(0).toObject().value(QStringLiteral("fillStyle")).toString() ==
+                          QStringLiteral("hachure") &&
+                      importedItems.at(1).toObject().value(QStringLiteral("fillStyle")).toString() ==
+                          QStringLiteral("cross_hatch") &&
+                      importedItems.at(2).toObject().value(QStringLiteral("fillStyle")).toString() ==
+                          QStringLiteral("dots"),
+                  QStringLiteral("导入 Excalidraw 填充样式按最接近档落位"),
+                  QStringLiteral("styles=%1/%2/%3")
+                      .arg(importedItems.at(0).toObject().value(QStringLiteral("fillStyle")).toString(),
+                           importedItems.at(1).toObject().value(QStringLiteral("fillStyle")).toString(),
+                           importedItems.at(2).toObject().value(QStringLiteral("fillStyle")).toString()));
+
+        QJsonArray exportItems;
+        for (const QString& style : {QStringLiteral("reverse_hatch"), QStringLiteral("grid_hatch"),
+                                     QStringLiteral("brick")}) {
+            QJsonObject shape;
+            shape.insert(QStringLiteral("kind"), QStringLiteral("shape"));
+            shape.insert(QStringLiteral("shapeType"), QStringLiteral("rectangle"));
+            shape.insert(QStringLiteral("x"), 0.0);
+            shape.insert(QStringLiteral("y"), 0.0);
+            shape.insert(QStringLiteral("w"), 40.0);
+            shape.insert(QStringLiteral("h"), 40.0);
+            shape.insert(QStringLiteral("fillColor"), QStringLiteral("#ff0000"));
+            shape.insert(QStringLiteral("fillStyle"), style);
+            exportItems.append(shape);
+        }
+        QJsonObject document;
+        document.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
+        document.insert(QStringLiteral("items"), exportItems);
+        const QJsonArray elements = Excalidraw::StoryBoardToScene(document, nullptr)
+                                        .value(QStringLiteral("elements"))
+                                        .toArray();
+        const QString reverseStyle = elements.at(0).toObject().value(QStringLiteral("fillStyle")).toString();
+        const QString gridStyle = elements.at(1).toObject().value(QStringLiteral("fillStyle")).toString();
+        const QString brickStyle = elements.at(2).toObject().value(QStringLiteral("fillStyle")).toString();
+        const QString reverseCustom = elements.at(0)
+                                          .toObject()
+                                          .value(QStringLiteral("customData"))
+                                          .toObject()
+                                          .value(QStringLiteral("fillStyle"))
+                                          .toString();
+        ctx.Check(reverseStyle == QStringLiteral("hachure") && gridStyle == QStringLiteral("cross-hatch") &&
+                      brickStyle == QStringLiteral("zigzag") && reverseCustom == QStringLiteral("reverse_hatch"),
+                  QStringLiteral("导出画板专属填充样式并保留原值"),
+                  QStringLiteral("styles=%1/%2/%3 custom=%4")
+                      .arg(reverseStyle, gridStyle, brickStyle, reverseCustom));
+    }
+
     // 位图往返：默认跳过 image 并留 warning；勾选后落成“矩形 + 图片填充”，
     // 再导出仍是 image 元素 + files 表，数据不丢。
     {
