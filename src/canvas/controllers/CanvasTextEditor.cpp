@@ -33,6 +33,8 @@ bool CanvasTextEditor::BeginEdit(TextItem* item)
         return false;
     }
     m_item = item;
+    m_originalState = item->State();
+    m_hasOriginalState = true;
     m_edit = new QTextEdit(m_view->viewport());
     m_edit->setObjectName(QStringLiteral("CanvasTextEditor"));
     m_edit->setFrameStyle(QFrame::NoFrame);
@@ -58,6 +60,7 @@ bool CanvasTextEditor::BeginEdit(TextItem* item)
     m_edit->show();
     m_edit->raise();
     m_edit->installEventFilter(this);
+    QObject::connect(m_edit, &QTextEdit::textChanged, this, [this]() { ApplyPreview(); });
     // 焦点与光标都落到正文末尾：新建文字图元后可以直接接着打字。
     m_edit->setFocus(Qt::OtherFocusReason);
     QTextCursor cursor = m_edit->textCursor();
@@ -74,14 +77,16 @@ void CanvasTextEditor::Commit()
     m_closing = true;
     const QString text = m_edit->toPlainText();
     TextItem* item = m_item.data();
+    const TextItemState before = m_hasOriginalState ? m_originalState : (item ? item->State() : TextItemState());
     CloseEditor();
+    m_hasOriginalState = false;
     if (!item) {
         m_closing = false;
         return;
     }
-    if (text != item->TextContent() && m_scene && m_scene->UndoStack()) {
-        TextItemState before = item->State();
-        TextItemState after = before;
+    // 预览已经把正文写回图元，撤销记录的起点必须用打开编辑前的快照。
+    if (text != before.text && m_scene && m_scene->UndoStack()) {
+        TextItemState after = item->State();
         after.text = text;
         after.baseSize = TextItem::Measure(text, after.font);
         after.size = after.baseSize;
@@ -110,11 +115,34 @@ void CanvasTextEditor::Cancel()
         return;
     }
     m_closing = true;
+    // 预览已写回图元，Esc 要退回打开编辑前的正文与尺寸。
+    if (m_item && m_hasOriginalState) {
+        m_item->ApplyState(m_originalState);
+    }
+    m_hasOriginalState = false;
     CloseEditor();
     if (m_view) {
         m_view->setFocus();
     }
     m_closing = false;
+}
+
+void CanvasTextEditor::ApplyPreview()
+{
+    if (!m_item || !m_edit) {
+        return;
+    }
+    TextItem* item = m_item.data();
+    item->SetTextFormat(m_edit->toPlainText(), item->TextFont(), item->TextColor());
+    if (!item->ContainerUid().isEmpty() && m_scene) {
+        CanvasItem* container = m_scene->ItemByUid(item->ContainerUid());
+        if (container) {
+            const QRectF rect = container->mapRectToScene(container->ContentRect());
+            const QSizeF size = item->ContainerLayoutSize(rect.width());
+            item->SetContentSize(size);
+            item->setPos(QPointF(rect.left(), rect.center().y() - size.height() / 2.0));
+        }
+    }
 }
 
 void CanvasTextEditor::CloseEditor()

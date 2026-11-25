@@ -72,6 +72,7 @@
 #include <QSpinBox>
 #include <QStandardPaths>
 #include <QStringConverter>
+#include <QTextEdit>
 #include <QTextStream>
 #include <QTimer>
 #include <QToolBar>
@@ -500,6 +501,20 @@ void selftest::RunViewInteractionTests(Context& ctx)
               QStringLiteral("双击文字不弹窗"));
     ctx.Check(doubleClickText->isSelected() && viewScene.selectedItems().size() == 1,
               QStringLiteral("双击文字只单选该图元"));
+
+    // 输入过程实时写回图元；提交后一次撤销回到打开编辑前的正文。
+    if (QTextEdit* inlineEditor = view.viewport()->findChild<QTextEdit*>(QStringLiteral("CanvasTextEditor"))) {
+        inlineEditor->setPlainText(QStringLiteral("实时预览文字"));
+        QApplication::processEvents();
+        ctx.Check(doubleClickText->TextContent() == QStringLiteral("实时预览文字"),
+                  QStringLiteral("文字编辑实时写回图元"), doubleClickText->TextContent());
+        view.EndTextEdit();
+        QApplication::processEvents();
+        viewUndo.undo();
+        QApplication::processEvents();
+        ctx.Check(doubleClickText->TextContent() == QStringLiteral("双击编辑"),
+                  QStringLiteral("文字编辑提交后可一次撤销回原文"), doubleClickText->TextContent());
+    }
 
     // Excalidraw 口径：双击图形直接进入容器文字编辑，没有容器文字就新建一段并绑定。
     {

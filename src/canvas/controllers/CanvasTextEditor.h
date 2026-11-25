@@ -1,5 +1,7 @@
 #pragma once
 
+#include "items/text/TextItem.h"
+
 #include <QObject>
 #include <QPointer>
 
@@ -25,10 +27,14 @@ class CanvasTextEditor : public QObject {
 
   private:
     void CloseEditor();
+    // 输入过程中把正文实时写回图元，提交时撤销记录仍以打开编辑前的状态为基准。
+    void ApplyPreview();
 
     CanvasView* m_view = nullptr;
     CanvasScene* m_scene = nullptr;
     QPointer<TextItem> m_item;
     QTextEdit* m_edit = nullptr;
+    TextItemState m_originalState;
+    bool m_hasOriginalState = false;
     bool m_closing = false;
 };
