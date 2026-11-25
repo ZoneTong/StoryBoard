@@ -529,6 +529,43 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
                       .arg(reverseStyle, gridStyle, brickStyle, reverseCustom));
     }
 
+    // 图层 <-> frame：非默认层导出成 frame，层内图元写 frameId，再导入还原图层。
+    {
+        QJsonObject layeredShape;
+        layeredShape.insert(QStringLiteral("kind"), QStringLiteral("shape"));
+        layeredShape.insert(QStringLiteral("shapeType"), QStringLiteral("rectangle"));
+        layeredShape.insert(QStringLiteral("x"), 20.0);
+        layeredShape.insert(QStringLiteral("y"), 30.0);
+        layeredShape.insert(QStringLiteral("w"), 60.0);
+        layeredShape.insert(QStringLiteral("h"), 40.0);
+        layeredShape.insert(QStringLiteral("layer"), 2);
+        QJsonObject layer;
+        layer.insert(QStringLiteral("id"), 2);
+        layer.insert(QStringLiteral("name"), QStringLiteral("第二层"));
+        layer.insert(QStringLiteral("visible"), true);
+        layer.insert(QStringLiteral("locked"), false);
+        QJsonObject document;
+        document.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
+        document.insert(QStringLiteral("items"), QJsonArray{layeredShape});
+        document.insert(QStringLiteral("layers"), QJsonArray{layer});
+        const QJsonObject scene = Excalidraw::StoryBoardToScene(document, nullptr);
+        const QJsonArray elements = scene.value(QStringLiteral("elements")).toArray();
+        const QJsonObject shapeElement = elements.at(0).toObject();
+        const QJsonObject frameElement = elements.at(1).toObject();
+        const QJsonObject reimported = Excalidraw::SceneToStoryBoard(scene, nullptr);
+        const QJsonObject reimportedItem = reimported.value(QStringLiteral("items")).toArray().at(0).toObject();
+        ctx.Check(shapeElement.value(QStringLiteral("frameId")).toString() ==
+                          frameElement.value(QStringLiteral("id")).toString() &&
+                      frameElement.value(QStringLiteral("type")).toString() == QStringLiteral("frame") &&
+                      frameElement.value(QStringLiteral("name")).toString() == QStringLiteral("第二层") &&
+                      reimportedItem.value(QStringLiteral("layer")).toInt() == 2,
+                  QStringLiteral("图层导出为 frame 并可导回"),
+                  QStringLiteral("frameId=%1 name=%2 layer=%3")
+                      .arg(shapeElement.value(QStringLiteral("frameId")).toString(),
+                           frameElement.value(QStringLiteral("name")).toString())
+                      .arg(reimportedItem.value(QStringLiteral("layer")).toInt()));
+    }
+
     // 复制到 Excalidraw：画板图元同时产出 excalidraw/clipboard JSON。
     {
         QJsonObject shape;

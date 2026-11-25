@@ -744,6 +744,64 @@ QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings
     };
     QJsonObject filesTable;
     int imageFileIndex = 0;
+    // 图层 -> Excalidraw frame：每个非默认层生成一个 frame，层内图元写 frameId，
+    // frame 外框取该层图元包围盒外扩 10px；再导入时 frame 又还原成图层。
+    QHash<int, QString> frameIds;
+    QJsonArray frameElements;
+    {
+        const QJsonArray layersJson = document.value(QStringLiteral("layers")).toArray();
+        for (const QJsonValue& layerValue : layersJson) {
+            const QJsonObject layer = layerValue.toObject();
+            const int layerId = layer.value(QStringLiteral("id")).toInt(0);
+            if (layerId <= 1) {
+                continue;
+            }
+            QRectF bounds;
+            bool first = true;
+            for (const QJsonValue& itemValue : items) {
+                const QJsonObject item = itemValue.toObject();
+                if (item.value(QStringLiteral("layer")).toInt(0) != layerId) {
+                    continue;
+                }
+                const QRectF itemRect(NumberOr(item, QStringLiteral("x"), 0.0), NumberOr(item, QStringLiteral("y"), 0.0),
+                                      NumberOr(item, QStringLiteral("w"), 0.0), NumberOr(item, QStringLiteral("h"), 0.0));
+                bounds = first ? itemRect : bounds.united(itemRect);
+                first = false;
+            }
+            if (first) {
+                continue;
+            }
+            bounds = bounds.adjusted(-10.0, -10.0, 10.0, 10.0);
+            const QString frameId = QStringLiteral("sbframe%1").arg(layerId, 4, 10, QLatin1Char('0'));
+            QJsonObject frame;
+            frame.insert(QStringLiteral("type"), QStringLiteral("frame"));
+            frame.insert(QStringLiteral("id"), frameId);
+            frame.insert(QStringLiteral("name"), layer.value(QStringLiteral("name")).toString());
+            frame.insert(QStringLiteral("x"), bounds.x());
+            frame.insert(QStringLiteral("y"), bounds.y());
+            frame.insert(QStringLiteral("width"), bounds.width());
+            frame.insert(QStringLiteral("height"), bounds.height());
+            frame.insert(QStringLiteral("angle"), 0.0);
+            frame.insert(QStringLiteral("strokeColor"), QStringLiteral("#000000"));
+            frame.insert(QStringLiteral("backgroundColor"), QStringLiteral("transparent"));
+            frame.insert(QStringLiteral("fillStyle"), QStringLiteral("solid"));
+            frame.insert(QStringLiteral("strokeWidth"), 1);
+            frame.insert(QStringLiteral("strokeStyle"), QStringLiteral("solid"));
+            frame.insert(QStringLiteral("roughness"), 1);
+            frame.insert(QStringLiteral("opacity"), 100.0);
+            frame.insert(QStringLiteral("groupIds"), QJsonArray());
+            frame.insert(QStringLiteral("frameId"), QJsonValue::Null);
+            frame.insert(QStringLiteral("roundness"), QJsonValue::Null);
+            frame.insert(QStringLiteral("boundElements"), QJsonArray());
+            frame.insert(QStringLiteral("version"), 1);
+            frame.insert(QStringLiteral("versionNonce"), 1);
+            frame.insert(QStringLiteral("isDeleted"), false);
+            frame.insert(QStringLiteral("link"), QJsonValue::Null);
+            frame.insert(QStringLiteral("locked"), false);
+            frameElements.append(frame);
+            frameIds.insert(layerId, frameId);
+        }
+    }
     // 需求 15：Excalidraw 表达不了图片填充，含 fillImage 的图元按纯色导出并汇总一条提示。
     int fillImageCount = 0;
     for (const QJsonValue& value : items) {
@@ -888,8 +946,15 @@ QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings
         if (!groupIds.isEmpty()) {
             element.insert(QStringLiteral("groupIds"), groupIds);
         }
+        const QString frameId = frameIds.value(item.value(QStringLiteral("layer")).toInt(0));
+        if (!frameId.isEmpty()) {
+            element.insert(QStringLiteral("frameId"), frameId);
+        }
         elements.append(element);
         ++index;
+    }
+    for (const QJsonValue& frame : frameElements) {
+        elements.append(frame);
     }
     if (fillImageCount > 0 && warnings) {
         warnings->append(QStringLiteral("%1 个图元的图片填充导出为纯色").arg(fillImageCount));
