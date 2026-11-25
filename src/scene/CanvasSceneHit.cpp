@@ -64,7 +64,7 @@ void CanvasScene::drawForeground(QPainter* painter, const QRectF& rect)
         painter->restore();
     }
 
-    // 选中图元再叠一层半透明黄色虚线轮廓：即使被上层图元完全盖住，也能看出它被选中。
+    // 选中图元再叠一层亮青蓝虚线轮廓：即使被上层图元完全盖住，也能看出它被选中。
     DrawSelectionHighlight(painter, rect);
 }
 
@@ -79,27 +79,20 @@ void CanvasScene::DrawSelectionHighlight(QPainter* painter, const QRectF& rect) 
     painter->setRenderHint(QPainter::Antialiasing, true);
     painter->setBrush(Qt::NoBrush);
 
-    // 透明黄色虚线：外圈宽虚线做柔光、内圈细虚线压强度，实线会盖住图元本身的描边。
-    QPen haloPen(QColor(250, 204, 21, 70));
-    haloPen.setWidthF(6.0);
-    haloPen.setCosmetic(true);
-    haloPen.setStyle(Qt::DashLine);
-    haloPen.setDashPattern({7.0, 5.0});
-    haloPen.setJoinStyle(Qt::RoundJoin);
-
-    QPen corePen(QColor(250, 204, 21, 160));
-    corePen.setWidthF(2.0);
-    corePen.setCosmetic(true);
-    corePen.setStyle(Qt::DashLine);
-    corePen.setDashPattern({5.0, 4.0});
-    corePen.setJoinStyle(Qt::RoundJoin);
+    // 选中高亮：亮青蓝 #00B4FF 的 2px 虚线，cosmetic 笔保证缩放后线宽与虚线疏密不变。
+    QPen highlightPen(QColor(0, 180, 255));
+    highlightPen.setWidthF(2.0);
+    highlightPen.setCosmetic(true);
+    highlightPen.setStyle(Qt::DashLine);
+    highlightPen.setDashPattern({5.0, 4.0});
+    highlightPen.setJoinStyle(Qt::RoundJoin);
 
     for (QGraphicsItem* graphicsItem : selectedItems()) {
         CanvasItem* item = qgraphicsitem_cast<CanvasItem*>(graphicsItem);
         if (!item) {
             continue;
         }
-        // 隐藏图层里的图元本身不绘制，轮廓也不画，避免“凭空出现一圈黄”。
+        // 隐藏图层里的图元本身不绘制，轮廓也不画，避免“凭空出现一圈青蓝”。
         if (!layer(item->LayerId()).visible) {
             continue;
         }
@@ -107,9 +100,7 @@ void CanvasScene::DrawSelectionHighlight(QPainter* painter, const QRectF& rect) 
         if (path.isEmpty()) {
             continue;
         }
-        painter->setPen(haloPen);
-        painter->drawPath(path);
-        painter->setPen(corePen);
+        painter->setPen(highlightPen);
         painter->drawPath(path);
     }
     painter->restore();

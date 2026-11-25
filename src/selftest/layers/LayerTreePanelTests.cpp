@@ -72,13 +72,14 @@ QList<QListWidgetItem*> RowsOfType(QListWidget* list, int type, int layerId)
     return rows;
 }
 
-int CountYellowPixels(const QImage& image)
+int CountHighlightPixels(const QImage& image)
 {
     int count = 0;
     for (int y = 0; y < image.height(); ++y) {
         for (int x = 0; x < image.width(); ++x) {
             const QColor color = image.pixelColor(x, y);
-            if (color.red() > 200 && color.green() > 150 && color.blue() < 120) {
+            // 亮青蓝 #00B4FF：红分量很低、绿与蓝都高。
+            if (color.red() < 90 && color.green() > 140 && color.blue() > 200) {
                 ++count;
             }
         }
@@ -213,7 +214,7 @@ void selftest::RunLayerTreePanelTests(Context& ctx)
                                  FindItemRow(list, high) && FindItemRow(list, high)->isSelected();
     ctx.Check(membersStillLit, QStringLiteral("取消勾选后整组成员仍保持图元行高亮"));
 
-    // 选中黄色轮廓：编辑模式画、查看模式不画。
+    // 选中亮青蓝虚线轮廓：编辑模式画、查看模式不画。
     groupBox->setChecked(true);
     scene.clearSelection();
     low->setSelected(true);
@@ -227,14 +228,14 @@ void selftest::RunLayerTreePanelTests(Context& ctx)
         painter.end();
         return image;
     };
-    const int editYellow = CountYellowPixels(renderSelection());
+    const int editHighlight = CountHighlightPixels(renderSelection());
     scene.SetMode(ToolMode::VIEW);
     low->setSelected(true);
     QApplication::processEvents();
-    const int viewYellow = CountYellowPixels(renderSelection());
+    const int viewHighlight = CountHighlightPixels(renderSelection());
     scene.SetMode(ToolMode::EDIT);
-    ctx.Check(editYellow > 0, QStringLiteral("编辑模式选中图元叠加透明黄色轮廓"),
-              QStringLiteral("yellow=%1").arg(editYellow));
-    ctx.Check(viewYellow == 0, QStringLiteral("查看模式不绘制选中黄色轮廓"),
-              QStringLiteral("yellow=%1").arg(viewYellow));
+    ctx.Check(editHighlight > 0, QStringLiteral("编辑模式选中图元叠加亮青蓝虚线轮廓"),
+              QStringLiteral("highlight=%1").arg(editHighlight));
+    ctx.Check(viewHighlight == 0, QStringLiteral("查看模式不绘制选中轮廓"),
+              QStringLiteral("highlight=%1").arg(viewHighlight));
 }
