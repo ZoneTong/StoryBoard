@@ -32,6 +32,31 @@ QColor ColorOr(const QJsonObject& object, const QString& key, const QColor& fall
     return color.isValid() ? color : fallback;
 }
 
+// 线型双向往返：Excalidraw 只有 solid / dashed / dotted 三档，画板的点划线往返后退化成 dashed。
+int PenStyleFromExcalidraw(const QJsonValue& value)
+{
+    const QString style = value.toString();
+    if (style == QStringLiteral("dashed")) {
+        return static_cast<int>(Qt::DashLine);
+    }
+    if (style == QStringLiteral("dotted")) {
+        return static_cast<int>(Qt::DotLine);
+    }
+    return static_cast<int>(Qt::SolidLine);
+}
+
+QString ExcalidrawStrokeStyle(int penStyle)
+{
+    if (penStyle == static_cast<int>(Qt::DotLine)) {
+        return QStringLiteral("dotted");
+    }
+    if (penStyle == static_cast<int>(Qt::DashLine) || penStyle == static_cast<int>(Qt::DashDotLine) ||
+        penStyle == static_cast<int>(Qt::DashDotDotLine)) {
+        return QStringLiteral("dashed");
+    }
+    return QStringLiteral("solid");
+}
+
 // 需求 9：Excalidraw 的 head 样式映射到画板箭头；空心三角画板有，直接保留。
 QString HeadStyle(const QJsonValue& value)
 {
@@ -234,7 +259,8 @@ QJsonObject ElementToItem(const QJsonObject& element, int z, int layer, QStringL
         item.insert(QStringLiteral("fillStyle"), fillStyle);
         item.insert(QStringLiteral("strokeWidth"),
                     qMax<qreal>(0.5, NumberOr(element, QStringLiteral("strokeWidth"), 2.0)));
-        item.insert(QStringLiteral("strokeStyle"), 1);
+        item.insert(QStringLiteral("strokeStyle"),
+                    PenStyleFromExcalidraw(element.value(QStringLiteral("strokeStyle"))));
         item.insert(QStringLiteral("opacity"), NumberOr(element, QStringLiteral("opacity"), 100.0) / 100.0);
         item.insert(QStringLiteral("cornerRadius"),
                     qMax<qreal>(0.0, NumberOr(element.value(QStringLiteral("roundness")).toObject(),
@@ -257,6 +283,7 @@ QJsonObject ElementToItem(const QJsonObject& element, int z, int layer, QStringL
         item.insert(QStringLiteral("fontSize"), pointSize);
         item.insert(QStringLiteral("baseWidth"), natural.width());
         item.insert(QStringLiteral("baseHeight"), natural.height());
+        item.insert(QStringLiteral("opacity"), NumberOr(element, QStringLiteral("opacity"), 100.0) / 100.0);
         item.insert(QStringLiteral("rotation"), qRadiansToDegrees(NumberOr(element, QStringLiteral("angle"), 0.0)));
         return item;
     }
@@ -274,7 +301,9 @@ QJsonObject ElementToItem(const QJsonObject& element, int z, int layer, QStringL
         item.insert(QStringLiteral("color"),
                     ColorOr(element, QStringLiteral("strokeColor"), QColor(30, 41, 59)).name(QColor::HexArgb));
         item.insert(QStringLiteral("width"), qMax<qreal>(0.5, NumberOr(element, QStringLiteral("strokeWidth"), 2.0)));
-        item.insert(QStringLiteral("strokeStyle"), 1);
+        item.insert(QStringLiteral("strokeStyle"),
+                    PenStyleFromExcalidraw(element.value(QStringLiteral("strokeStyle"))));
+        item.insert(QStringLiteral("opacity"), NumberOr(element, QStringLiteral("opacity"), 100.0) / 100.0);
         item.insert(QStringLiteral("baseWidth"), lineBounds.width());
         item.insert(QStringLiteral("baseHeight"), lineBounds.height());
         item.insert(QStringLiteral("dot"), false);
@@ -309,7 +338,16 @@ QJsonObject StoryBoardShape(const QJsonObject& item)
                        ? QStringLiteral("solid")
                        : QStringLiteral("hachure"));
     element.insert(QStringLiteral("strokeWidth"), NumberOr(item, QStringLiteral("strokeWidth"), 2.0));
-    element.insert(QStringLiteral("roundness"), QJsonObject{});
+    // 圆角：Excalidraw 的合法值是 null 或 {type:3,value}，空对象属于无效值。
+    const qreal corner = NumberOr(item, QStringLiteral("cornerRadius"), 0.0);
+    if (corner > 0.0) {
+        QJsonObject roundness;
+        roundness.insert(QStringLiteral("type"), 3);
+        roundness.insert(QStringLiteral("value"), corner);
+        element.insert(QStringLiteral("roundness"), roundness);
+    } else {
+        element.insert(QStringLiteral("roundness"), QJsonValue::Null);
+    }
     return element;
 }
 
@@ -323,7 +361,8 @@ QJsonObject BaseElement(const QJsonObject& item, const QString& id)
     element.insert(QStringLiteral("height"), NumberOr(item, QStringLiteral("h"), 0.0));
     element.insert(QStringLiteral("angle"), qDegreesToRadians(NumberOr(item, QStringLiteral("rotation"), 0.0)));
     element.insert(QStringLiteral("opacity"), NumberOr(item, QStringLiteral("opacity"), 1.0) * 100.0);
-    element.insert(QStringLiteral("strokeStyle"), QStringLiteral("solid"));
+    element.insert(QStringLiteral("strokeStyle"),
+                   ExcalidrawStrokeStyle(static_cast<int>(NumberOr(item, QStringLiteral("strokeStyle"), 1.0))));
     element.insert(QStringLiteral("roughness"), 0);
     element.insert(QStringLiteral("seed"), static_cast<int>(id.right(4).toInt(nullptr, 16)));
     element.insert(QStringLiteral("version"), 1);

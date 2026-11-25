@@ -357,6 +357,57 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
                       .arg(reimportedStroke.alpha()));
     }
 
+    // 线型 / 透明度 / 圆角：Excalidraw 的 dashed / dotted 落到画板笔型，
+    // line/text 的 opacity 不再丢，圆角导出为合法的 roundness 对象。
+    {
+        QJsonObject dashedLine = Element(QStringLiteral("line"), 0, 0, 100, 0);
+        dashedLine.insert(QStringLiteral("strokeStyle"), QStringLiteral("dashed"));
+        dashedLine.insert(QStringLiteral("opacity"), 40);
+        dashedLine.insert(QStringLiteral("points"), QJsonArray{QJsonArray{0.0, 0.0}, QJsonArray{100.0, 0.0}});
+        QJsonObject fadedText = Element(QStringLiteral("text"), 0, 100, 80, 30);
+        fadedText.insert(QStringLiteral("strokeStyle"), QStringLiteral("dotted"));
+        fadedText.insert(QStringLiteral("opacity"), 35);
+        fadedText.insert(QStringLiteral("text"), QStringLiteral("淡"));
+        fadedText.insert(QStringLiteral("fontSize"), 20.0);
+        const QJsonObject imported = Excalidraw::SceneToStoryBoard(Scene(QJsonArray{dashedLine, fadedText}), nullptr);
+        const QJsonObject lineItem = imported.value(QStringLiteral("items")).toArray().at(0).toObject();
+        const QJsonObject textItem = imported.value(QStringLiteral("items")).toArray().at(1).toObject();
+        ctx.Check(lineItem.value(QStringLiteral("strokeStyle")).toInt() == 2 &&
+                      qAbs(lineItem.value(QStringLiteral("opacity")).toDouble() - 0.4) < 0.01,
+                  QStringLiteral("导入 dashed 线与 40% 透明度"),
+                  QStringLiteral("style=%1 opacity=%2")
+                      .arg(lineItem.value(QStringLiteral("strokeStyle")).toInt())
+                      .arg(lineItem.value(QStringLiteral("opacity")).toDouble()));
+        ctx.Check(textItem.value(QStringLiteral("opacity")).toDouble() > 0.3 &&
+                      textItem.value(QStringLiteral("opacity")).toDouble() < 0.4,
+                  QStringLiteral("导入文字透明度"),
+                  QStringLiteral("opacity=%1").arg(textItem.value(QStringLiteral("opacity")).toDouble()));
+
+        QJsonObject styledShape;
+        styledShape.insert(QStringLiteral("kind"), QStringLiteral("shape"));
+        styledShape.insert(QStringLiteral("shapeType"), QStringLiteral("rectangle"));
+        styledShape.insert(QStringLiteral("x"), 0.0);
+        styledShape.insert(QStringLiteral("y"), 0.0);
+        styledShape.insert(QStringLiteral("w"), 80.0);
+        styledShape.insert(QStringLiteral("h"), 50.0);
+        styledShape.insert(QStringLiteral("strokeWidth"), 2.0);
+        styledShape.insert(QStringLiteral("strokeStyle"), 2);
+        styledShape.insert(QStringLiteral("cornerRadius"), 12.0);
+        QJsonObject document;
+        document.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
+        document.insert(QStringLiteral("items"), QJsonArray{styledShape});
+        const QJsonObject exported = Excalidraw::StoryBoardToScene(document, nullptr);
+        const QJsonObject element = exported.value(QStringLiteral("elements")).toArray().at(0).toObject();
+        const QJsonObject roundness = element.value(QStringLiteral("roundness")).toObject();
+        ctx.Check(element.value(QStringLiteral("strokeStyle")).toString() == QStringLiteral("dashed") &&
+                      roundness.value(QStringLiteral("type")).toInt() == 3 &&
+                      qAbs(roundness.value(QStringLiteral("value")).toDouble() - 12.0) < 0.01,
+                  QStringLiteral("导出虚线笔型与合法圆形圆角"),
+                  QStringLiteral("style=%1 roundness=%2")
+                      .arg(element.value(QStringLiteral("strokeStyle")).toString())
+                      .arg(roundness.value(QStringLiteral("value")).toDouble()));
+    }
+
     // 位图选项：默认跳过 image 并留 warning，勾选后按 dataURL 落成图片图元。
     {
         QJsonObject imageElement = Element(QStringLiteral("image"), 0, 0, 40, 40);
