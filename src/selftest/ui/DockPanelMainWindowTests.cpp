@@ -268,7 +268,7 @@ void selftest::RunDockPanelMainWindowTests(Context& ctx)
                 return added;
             };
 
-            // 两个互不相连的矩形 → 两个闭合子路径 → 两个多边形图元，应落到同一个新组。
+            // 两个互不相连的矩形 → 模板里两条原始图元 → 两个矩形图元，应落到同一个新组。
             const QString twoPartPath = writeTemplate(QStringLiteral("双块探针"),
                                                       QJsonArray{rectJson(QPointF(20.0, 20.0), QSizeF(60.0, 60.0)),
                                                                  rectJson(QPointF(140.0, 20.0), QSizeF(60.0, 60.0))});
@@ -343,6 +343,52 @@ void selftest::RunDockPanelMainWindowTests(Context& ctx)
             if (!singlePath.isEmpty()) {
                 QFile::remove(singlePath);
             }
+        }
+        // 导出 / 导入自定义图形按图元类型保存：椭圆模板插入后仍是椭圆，
+        // 不再被拆成多边形或曲线；几何按目标框等比缩放。
+        {
+            CanvasScene* typedScene = dockWindow.Scene();
+            const QString shapesDir = AppSettings::ShapesDir();
+            EllipseItem ellipseProbe;
+            ellipseProbe.setPos(QPointF(10.0, 12.0));
+            ellipseProbe.SetContentSize(QSizeF(120.0, 80.0));
+            QJsonObject root;
+            root.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
+            root.insert(QStringLiteral("items"), QJsonArray{ellipseProbe.ToJson()});
+            const QString typedPath = QDir(shapesDir).filePath(QStringLiteral("类型探针.sbcanvas"));
+            QFile typedFile(typedPath);
+            const bool typedWritten = typedFile.open(QIODevice::WriteOnly);
+            if (typedWritten) {
+                typedFile.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
+                typedFile.close();
+            }
+            QSet<CanvasItem*> beforeTyped;
+            for (CanvasItem* item : typedScene->CanvasItems()) {
+                beforeTyped.insert(item);
+            }
+            dockWindow.InsertCustomShape(typedPath);
+            QApplication::processEvents();
+            QList<CanvasItem*> typedAdded;
+            for (CanvasItem* item : typedScene->CanvasItems()) {
+                if (!beforeTyped.contains(item)) {
+                    typedAdded.append(item);
+                }
+            }
+            ShapeAbstractItem* typedShape =
+                typedAdded.size() == 1 ? dynamic_cast<ShapeAbstractItem*>(typedAdded.constFirst()) : nullptr;
+            ctx.Check(typedShape && typedShape->shapeType() == ShapeType::ELLIPSE &&
+                          dynamic_cast<PolygonItem*>(typedAdded.constFirst()) == nullptr &&
+                          typedShape->ContentSize().width() > 100.0,
+                      QStringLiteral("自定义图形按模板里的图元类型重建（椭圆仍是椭圆）"),
+                      QStringLiteral("added=%1 kind=%2 w=%3")
+                          .arg(typedAdded.size())
+                          .arg(typedShape ? static_cast<int>(typedShape->shapeType()) : -1)
+                          .arg(typedShape ? typedShape->ContentSize().width() : 0.0));
+            if (typedScene->UndoStack()->canUndo()) {
+                typedScene->UndoStack()->undo();
+                QApplication::processEvents();
+            }
+            QFile::remove(typedPath);
         }
         ctx.Check(dockWindow.findChild<QAction*>(QStringLiteral("PropertiesPanelToggleAction")) != nullptr,
                   QStringLiteral("视图菜单提供编辑面板开关"));

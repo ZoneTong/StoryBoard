@@ -172,6 +172,8 @@ bool LoadCustomShapeTemplate(const QString& filePath, CustomShapeTemplate* resul
     }
 
     QPainterPath combined;
+    QJsonArray typedItems;
+    QRectF typedRect;
     const QJsonArray items = root.value(QStringLiteral("items")).toArray();
     for (const QJsonValue& value : items) {
         const QJsonObject object = value.toObject();
@@ -181,6 +183,11 @@ bool LoadCustomShapeTemplate(const QString& filePath, CustomShapeTemplate* resul
         }
         item->FromJson(object);
         combined.addPath(ItemOutlinePath(item.get()));
+        // 原样留一份 JSON：插入时按 kind / shapeType 重建同类图元，而不是拆成
+        // 多边形与曲线。矩形取图元自己的内容框，缩放口径与组缩放一致。
+        typedItems.append(object);
+        const QRectF itemRect(item->pos(), item->ContentSize());
+        typedRect = typedRect.isValid() ? typedRect.united(itemRect) : itemRect;
     }
 
     if (combined.isEmpty()) {
@@ -220,7 +227,42 @@ bool LoadCustomShapeTemplate(const QString& filePath, CustomShapeTemplate* resul
     result->unitPath = normalize.map(combined);
     result->aspectRatio = bounds.width() / bounds.height();
     result->parts = SplitTemplateParts(combined, normalize);
+    result->items = typedItems;
+    result->itemsRect = typedRect;
     return true;
+}
+
+QList<CanvasItem*> CreateTemplateItems(const CustomShapeTemplate& shape, const QRectF& targetRect)
+{
+    QList<CanvasItem*> created;
+    if (shape.items.isEmpty() || !shape.itemsRect.isValid() || targetRect.width() <= 0.0 ||
+        targetRect.height() <= 0.0) {
+        return created;
+    }
+
+    // 与组缩放同一套口径：位置按相对包围盒原点缩放，内容框同比缩放，
+    // 描线宽度与旋转保持原样，图元的类型与样式全部沿用模板。
+    const qreal scaleX = shape.itemsRect.width() > 0.0 ? targetRect.width() / shape.itemsRect.width() : 1.0;
+    const qreal scaleY = shape.itemsRect.height() > 0.0 ? targetRect.height() / shape.itemsRect.height() : 1.0;
+    const QSizeF minimum = CanvasItem::MinimumSize();
+    for (const QJsonValue& value : shape.items) {
+        const QJsonObject object = value.toObject();
+        std::unique_ptr<CanvasItem> item(CreateTemplateItem(object));
+        if (!item) {
+            continue;
+        }
+        item->FromJson(object);
+        const QPointF position = item->pos();
+        const QSizeF size = item->ContentSize();
+        item->setPos(QPointF(targetRect.left() + (position.x() - shape.itemsRect.left()) * scaleX,
+                             targetRect.top() + (position.y() - shape.itemsRect.top()) * scaleY));
+        QSizeF scaled(size.width() * scaleX, size.height() * scaleY);
+        scaled.setWidth(qMax(minimum.width(), scaled.width()));
+        scaled.setHeight(qMax(minimum.height(), scaled.height()));
+        item->SetContentSize(scaled);
+        created.append(item.release());
+    }
+    return created;
 }
 
 QList<CustomShapeTemplate> LoadCustomShapeTemplates(const QString& directory, QStringList* errors)

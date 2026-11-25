@@ -450,9 +450,10 @@ void MainWindowInsertController::InsertCustomShape(const QString& filePath)
     const QPointF center = PlacementCenter(size);
     const QRectF targetRect(center - QPointF(size.width() / 2.0, size.height() / 2.0), size);
 
-    // §6：模板按子路径拆分——闭合部分成多边形（单层 FILLED_AREA），开放部分成曲线。
-    QList<CanvasItem*> items;
-    if (customShape.parts.isEmpty()) {
+    // 优先按模板里记下的图元类型重建同类图元（椭圆还是椭圆、圆角矩形还是圆角矩形，
+    // 样式也随模板）；旧模板没有可用的原始条目时，才退回轮廓拆分。
+    QList<CanvasItem*> items = CreateTemplateItems(customShape, targetRect);
+    if (items.isEmpty() && customShape.parts.isEmpty()) {
         // 旧解析或退化轮廓：退回单图元自定义轮廓，保持兼容。
         auto* item = ShapeFactory::Create(ShapeType::RECTANGLE);
         item->SetCustomShape(customShape.name, customShape.unitPath);
@@ -462,7 +463,7 @@ void MainWindowInsertController::InsertCustomShape(const QString& filePath)
         item->setPos(targetRect.topLeft());
         item->SetContentSize(size);
         items.append(item);
-    } else {
+    } else if (items.isEmpty()) {
         QTransform unitToTarget;
         unitToTarget.translate(targetRect.left(), targetRect.top());
         unitToTarget.scale(targetRect.width(), targetRect.height());
