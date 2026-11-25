@@ -1,4 +1,6 @@
+#include "io/ExcalidrawFormat.h"
 #include "items/CanvasItem.h"
+#include "items/lines/LineAbstractItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
 #include "items/shapes/ShapeFactory.h"
 #include "scene/CanvasScene.h"
@@ -11,6 +13,7 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QJsonArray>
+#include <QJsonDocument>
 #include <QJsonObject>
 #include <QKeySequence>
 #include <QList>
@@ -132,6 +135,38 @@ void selftest::RunClipboardShortcutTests(Context& ctx)
                   QStringLiteral("粘贴动作把 Excalidraw 元素落到画布"),
                   QStringLiteral("before=%1 after=%2").arg(beforePaste).arg(scene ? scene->CanvasItemCount() : -1));
         QApplication::clipboard()->clear();
+    }
+
+    // 倾斜直线：Excalidraw 的 points 是世界坐标，画板 segments 是图元本地坐标；
+    // 两者混用时选中框还在画布上，笔迹却被平移一次画到框外（看起来“有名字没线”）。
+    {
+        const QByteArray diagonal = R"({"type":"excalidraw/clipboard","elements":[{"id":"l1","type":"line",
+            "x":420,"y":360,"width":180,"height":90,"points":[[0,0],[180,90]],
+            "strokeColor":"#1e293b","strokeWidth":2}]})";
+        const QJsonObject clipboard = QJsonDocument::fromJson(diagonal).object();
+        const QJsonArray items =
+            Excalidraw::ElementsToItems(clipboard.value(QStringLiteral("elements")).toArray(), nullptr);
+        CanvasScene scene;
+        scene.ApplyCanvasSize(QSizeF(800.0, 600.0));
+        scene.SetMode(ToolMode::EDIT);
+        QUndoStack undo;
+        scene.SetUndoStack(&undo);
+        scene.PasteClipboardItems(items);
+
+        CanvasItem* pasted = nullptr;
+        for (CanvasItem* item : scene.CanvasItems()) {
+            pasted = item;
+        }
+        auto* line = dynamic_cast<LineAbstractItem*>(pasted);
+        const QVector<QPointF> knots = line ? line->StrokePoints() : QVector<QPointF>();
+        qreal maxAbs = 0.0;
+        for (const QPointF& knot : knots) {
+            maxAbs = qMax(maxAbs, qMax(qAbs(knot.x()), qAbs(knot.y())));
+        }
+        const qreal span = pasted ? qMax(pasted->ContentSize().width(), pasted->ContentSize().height()) + 2.0 : 0.0;
+        ctx.Check(line && knots.size() == 2 && maxAbs <= span,
+                  QStringLiteral("粘贴倾斜直线后笔迹与图元框重合（不会画到框外）"),
+                  QStringLiteral("knots=%1 maxAbs=%2 span=%3").arg(knots.size()).arg(maxAbs).arg(span));
     }
 
     // 默认键位映射：按通用软件标准或直觉核对每个动作唯一的那个键。
