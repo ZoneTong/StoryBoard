@@ -414,6 +414,11 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
                   QStringLiteral("style=%1 roundness=%2")
                       .arg(element.value(QStringLiteral("strokeStyle")).toString())
                       .arg(roundness.value(QStringLiteral("value")).toDouble()));
+        ctx.Check(element.contains(QStringLiteral("index")) && element.value(QStringLiteral("created")).toInt() > 0,
+                  QStringLiteral("导出补齐 index / created 规范字段"),
+                  QStringLiteral("index=%1 created=%2")
+                      .arg(element.value(QStringLiteral("index")).toString())
+                      .arg(element.value(QStringLiteral("created")).toInt()));
 
         QJsonObject textDoc;
         QJsonObject exportTextItem;
@@ -603,6 +608,91 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
                   QStringLiteral("start=%1 end=%2")
                       .arg(lineItem.value(QStringLiteral("startArrow")).toString(),
                            lineItem.value(QStringLiteral("endArrow")).toString()));
+    }
+
+    // 端到端自检：图片 / 分组 / 虚线 / 圆角 / 图层混合导出后再导入，逐项核对。
+    {
+        QJsonObject rect;
+        rect.insert(QStringLiteral("kind"), QStringLiteral("shape"));
+        rect.insert(QStringLiteral("shapeType"), QStringLiteral("rectangle"));
+        rect.insert(QStringLiteral("x"), 0.0);
+        rect.insert(QStringLiteral("y"), 0.0);
+        rect.insert(QStringLiteral("w"), 120.0);
+        rect.insert(QStringLiteral("h"), 80.0);
+        rect.insert(QStringLiteral("strokeStyle"), 2);
+        rect.insert(QStringLiteral("cornerRadius"), 16.0);
+        rect.insert(QStringLiteral("group"), 5);
+        rect.insert(QStringLiteral("fillStyle"), QStringLiteral("dots"));
+        rect.insert(QStringLiteral("fillColor"), QStringLiteral("#ff0000"));
+        rect.insert(QStringLiteral("layer"), 2);
+        QJsonObject picture = rect;
+        picture.insert(QStringLiteral("x"), 200.0);
+        picture.insert(QStringLiteral("strokeStyle"), 1);
+        picture.insert(QStringLiteral("cornerRadius"), 0.0);
+        picture.remove(QStringLiteral("group"));
+        QJsonObject fillImage;
+        fillImage.insert(QStringLiteral("data"), QStringLiteral("QUJD"));
+        fillImage.insert(QStringLiteral("mode"), QStringLiteral("stretch"));
+        picture.insert(QStringLiteral("fillImage"), fillImage);
+        QJsonObject line;
+        line.insert(QStringLiteral("kind"), QStringLiteral("straightline"));
+        line.insert(QStringLiteral("x"), 0.0);
+        line.insert(QStringLiteral("y"), 200.0);
+        line.insert(QStringLiteral("w"), 100.0);
+        line.insert(QStringLiteral("h"), 0.0);
+        line.insert(QStringLiteral("strokeStyle"), 2);
+        line.insert(QStringLiteral("endArrow"), QStringLiteral("hollow-triangle"));
+        line.insert(QStringLiteral("baseWidth"), 100.0);
+        line.insert(QStringLiteral("baseHeight"), 0.0);
+        line.insert(QStringLiteral("layer"), 2);
+        QJsonArray segments;
+        segments.append(QJsonArray{0.0, 0.0, 33.0, 0.0, 67.0, 0.0, 100.0, 0.0});
+        line.insert(QStringLiteral("segments"), segments);
+
+        QJsonObject document;
+        document.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
+        document.insert(QStringLiteral("items"), QJsonArray{rect, picture, line});
+        QJsonObject parents;
+        parents.insert(QStringLiteral("5"), 6);
+        document.insert(QStringLiteral("groupParents"), parents);
+        QJsonObject layer;
+        layer.insert(QStringLiteral("id"), 2);
+        layer.insert(QStringLiteral("name"), QStringLiteral("上层"));
+        document.insert(QStringLiteral("layers"), QJsonArray{layer});
+
+        const QJsonObject scene = Excalidraw::StoryBoardToScene(document, nullptr);
+        const QJsonObject reimported = Excalidraw::SceneToStoryBoard(scene, nullptr, true);
+        const QJsonArray items = reimported.value(QStringLiteral("items")).toArray();
+        const QJsonObject backRect = items.at(0).toObject();
+        const QJsonObject backPicture = items.at(1).toObject();
+        const QJsonObject backLine = items.at(2).toObject();
+        ctx.Check(items.size() == 3 && backRect.value(QStringLiteral("strokeStyle")).toInt() == 2 &&
+                      qAbs(backRect.value(QStringLiteral("cornerRadius")).toDouble() - 16.0) < 0.01 &&
+                      backRect.value(QStringLiteral("group")).toInt() == 5 &&
+                      backRect.value(QStringLiteral("fillStyle")).toString() == QStringLiteral("dots"),
+                  QStringLiteral("端到端：虚线/圆角/分组/填充样式往返"),
+                  QStringLiteral("count=%1 group=%2 fill=%3")
+                      .arg(items.size())
+                      .arg(backRect.value(QStringLiteral("group")).toInt())
+                      .arg(backRect.value(QStringLiteral("fillStyle")).toString()));
+        ctx.Check(backPicture.value(QStringLiteral("shapeType")).toString() == QStringLiteral("rectangle") &&
+                      backPicture.value(QStringLiteral("fillImage")).toObject().value(QStringLiteral("data")).toString() ==
+                          QStringLiteral("QUJD"),
+                  QStringLiteral("端到端：图片往返"),
+                  QStringLiteral("shape=%1").arg(backPicture.value(QStringLiteral("shapeType")).toString()));
+        ctx.Check(backLine.value(QStringLiteral("endArrow")).toString() == QStringLiteral("hollow-triangle") &&
+                      backLine.value(QStringLiteral("strokeStyle")).toInt() == 2,
+                  QStringLiteral("端到端：箭头头与虚线往返"),
+                  QStringLiteral("end=%1 style=%2")
+                      .arg(backLine.value(QStringLiteral("endArrow")).toString())
+                      .arg(backLine.value(QStringLiteral("strokeStyle")).toInt()));
+        const QJsonArray layers = reimported.value(QStringLiteral("layers")).toArray();
+        QStringList layerNames;
+        for (const QJsonValue& layerValue : layers) {
+            layerNames.append(layerValue.toObject().value(QStringLiteral("name")).toString());
+        }
+        ctx.Check(layerNames.contains(QStringLiteral("上层")), QStringLiteral("端到端：图层名往返"),
+                  layerNames.join(QLatin1Char('|')));
     }
 
     // 位图往返：默认跳过 image 并留 warning；勾选后落成“矩形 + 图片填充”，

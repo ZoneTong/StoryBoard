@@ -603,6 +603,7 @@ QJsonArray ElementsToItems(const QJsonArray& elements, QStringList* warnings, QJ
     // 其余写进 groupParents 组成嵌套链，还原画板的组层级。
     QHash<QString, int> groupIdNumbers;
     int nextGroup = 1;
+    QHash<int, bool> usedGroupNumbers;
     QJsonObject parentRecords;
 
     for (const QJsonValue& value : elements) {
@@ -625,8 +626,22 @@ QJsonArray ElementsToItems(const QJsonArray& elements, QStringList* warnings, QJ
                 continue;
             }
             if (!groupIdNumbers.contains(groupId)) {
-                groupIdNumbers.insert(groupId, nextGroup);
-                ++nextGroup;
+                // 画板自己导出的组 id 就是数字串，直接沿用让组号往返不变；
+                // 外部 Excalidraw 的随机 id 才自增分配，并避开已占用的数字。
+                bool numeric = false;
+                const int wanted = groupId.toInt(&numeric);
+                int number = 0;
+                if (numeric && wanted > 0 && !usedGroupNumbers.contains(wanted)) {
+                    number = wanted;
+                } else {
+                    while (usedGroupNumbers.contains(nextGroup)) {
+                        ++nextGroup;
+                    }
+                    number = nextGroup;
+                    ++nextGroup;
+                }
+                usedGroupNumbers.insert(number, true);
+                groupIdNumbers.insert(groupId, number);
             }
             chain.append(groupIdNumbers.value(groupId));
         }
@@ -950,6 +965,9 @@ QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings
         if (!frameId.isEmpty()) {
             element.insert(QStringLiteral("frameId"), frameId);
         }
+        // 规范字段：index 决定同层级叠放次序，用补零的字母串保证字典序与数值序一致。
+        element.insert(QStringLiteral("created"), 1);
+        element.insert(QStringLiteral("index"), QStringLiteral("a%1").arg(index, 6, 10, QLatin1Char('0')));
         elements.append(element);
         ++index;
     }
