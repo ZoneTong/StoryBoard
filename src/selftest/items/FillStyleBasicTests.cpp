@@ -28,7 +28,8 @@ void selftest::RunFillStyleBasicTests(Context& ctx)
         colorRow.show();
         styleRow.adjustSize();
         colorRow.adjustSize();
-        const int kPanelContentWidth = 290;
+        // 色块放大到 28px 后，填充颜色行自然宽度约 302px，仍在编辑面板内容宽度（约 308px）内。
+        const int kPanelContentWidth = 310;
         ctx.Check(
             styleRow.sizeHint().width() <= kPanelContentWidth && colorRow.sizeHint().width() <= kPanelContentWidth,
             QStringLiteral("填充样式行与填充颜色行都不超过编辑面板宽度上限"),

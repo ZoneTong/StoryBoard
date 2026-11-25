@@ -1,4 +1,5 @@
 #include "items/CanvasItem.h"
+#include "items/properties/StrokeAttributes.h"
 #include "scene/CanvasScene.h"
 #include "scene/Commands.h"
 #include "scene/SceneConstants.h"
@@ -92,6 +93,25 @@ void CanvasScene::SetShowGrid(bool enabled)
     update();
 }
 
+namespace {
+
+// 导出包围框要含描线：ContentRect 只到路径本身，描线以路径为中心向外各占半个线宽，
+// 直接按内容框裁图会把边缘线切掉。
+QRectF PaintBoundsOf(CanvasItem* item)
+{
+    QRectF rect = item->SceneContentRect();
+    if (rect.isEmpty()) {
+        return rect;
+    }
+    if (auto* stroke = dynamic_cast<StrokeAttributes*>(item)) {
+        const qreal half = qMax<qreal>(0.0, stroke->StrokeWidth() * 0.5);
+        rect = rect.adjusted(-half, -half, half, half);
+    }
+    return rect;
+}
+
+} // namespace
+
 QRectF CanvasScene::ContentRect() const
 {
     QRectF rect;
@@ -101,7 +121,7 @@ QRectF CanvasScene::ContentRect() const
         if (!item->isVisible()) {
             continue;
         }
-        const QRectF itemRect = item->SceneContentRect();
+        const QRectF itemRect = PaintBoundsOf(item);
         if (itemRect.isEmpty()) {
             continue;
         }
@@ -123,7 +143,7 @@ QRectF CanvasScene::LayerContentRect(int layerId) const
         if (item->LayerId() != layerId || !item->isVisible()) {
             continue;
         }
-        const QRectF itemRect = item->SceneContentRect();
+        const QRectF itemRect = PaintBoundsOf(item);
         if (itemRect.isEmpty()) {
             continue;
         }

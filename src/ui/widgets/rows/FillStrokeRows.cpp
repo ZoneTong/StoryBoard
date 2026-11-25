@@ -179,7 +179,7 @@ FillColorRow::FillColorRow(QWidget* parent) : QWidget(parent)
 
     m_customButton = new QToolButton(this);
     m_customButton->setObjectName(QStringLiteral("ItemColorButton"));
-    m_customButton->setFixedWidth(RowMetrics::SwatchSize());
+    m_customButton->setFixedSize(RowMetrics::IconButtonSize());
     m_customButton->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
     m_customButton->setToolTip(RowText("Fill color"));
     connect(m_customButton, &QToolButton::clicked, this, [this]() {
@@ -368,7 +368,7 @@ StrokeColorRow::StrokeColorRow(QWidget* parent) : QWidget(parent)
 
     m_customButton = new QToolButton(this);
     m_customButton->setObjectName(QStringLiteral("ItemColorButton"));
-    m_customButton->setFixedWidth(RowMetrics::SwatchSize());
+    m_customButton->setFixedSize(RowMetrics::IconButtonSize());
     m_customButton->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
     m_customButton->setToolTip(RowText("Border color"));
     connect(m_customButton, &QToolButton::clicked, this, [this]() {

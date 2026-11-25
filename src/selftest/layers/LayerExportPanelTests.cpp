@@ -174,7 +174,7 @@ void selftest::RunLayerExportPanelTests(Context& ctx)
         const int redLayer = layerExportScene.CreateLayer(QStringLiteral("红色层"));
         auto* red = ShapeFactory::Create(ShapeType::RECTANGLE);
         red->SetLayerId(redLayer);
-        red->SetStyle(QColor(QStringLiteral("#DC2626")), QColor(QStringLiteral("#DC2626")), 1.0);
+        red->SetStyle(QColor(QStringLiteral("#DC2626")), QColor(QStringLiteral("#DC2626")), 8.0);
         red->setPos(QPointF(10, 10));
         red->SetContentSize(QSizeF(40, 40));
         layerExportScene.AttachItem(red);
@@ -215,6 +215,10 @@ void selftest::RunLayerExportPanelTests(Context& ctx)
                       .arg(blueLayerRect.height())
                       .arg(allRect.width())
                       .arg(allRect.height()));
+        // 描线以路径为中心向外各占半宽，包围框必须把它算进去，否则导出图边缘会被切掉。
+        ctx.Check(qAbs(redLayerRect.left() - 6.0) < 0.6 && qAbs(redLayerRect.width() - 48.0) < 0.6,
+                  QStringLiteral("图层包围框包含描线半宽"),
+                  QStringLiteral("left=%1 width=%2").arg(redLayerRect.left()).arg(redLayerRect.width()));
 
         ExportDialog exportDialog(&layerExportScene, QDir::tempPath());
         auto* modeCombo = exportDialog.findChild<QComboBox*>(QStringLiteral("ExportLayerModeCombo"));
