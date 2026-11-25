@@ -810,6 +810,10 @@ QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings
             frame.insert(QStringLiteral("boundElements"), QJsonArray());
             frame.insert(QStringLiteral("version"), 1);
             frame.insert(QStringLiteral("versionNonce"), 1);
+            frame.insert(QStringLiteral("created"), 1);
+            frame.insert(QStringLiteral("updated"), 1);
+            frame.insert(QStringLiteral("seed"), layerId);
+            frame.insert(QStringLiteral("index"), QStringLiteral("a%1").arg(900000 + layerId, 6, 10, QLatin1Char('0')));
             frame.insert(QStringLiteral("isDeleted"), false);
             frame.insert(QStringLiteral("link"), QJsonValue::Null);
             frame.insert(QStringLiteral("locked"), false);
