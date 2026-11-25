@@ -4,6 +4,7 @@
 #include "items/lines/LineAbstractItem.h"
 #include "items/text/TextItem.h"
 
+#include <QHash>
 #include <QPointF>
 #include <QRectF>
 #include <QtMath>
@@ -99,7 +100,16 @@ CanvasItem* CanvasScene::BindableShapeAt(const QPointF& scenePos, qreal maxDista
 
 void CanvasScene::SyncArrowBindings()
 {
-    for (CanvasItem* canvasItem : CanvasItems()) {
+    const QList<CanvasItem*> items = CanvasItems();
+    // 每次交互提交只建一次 uid 索引，避免逐条绑定再全表扫一遍。
+    QHash<QString, CanvasItem*> byUid;
+    byUid.reserve(items.size());
+    for (CanvasItem* item : items) {
+        if (item && !item->Uid().isEmpty()) {
+            byUid.insert(item->Uid(), item);
+        }
+    }
+    for (CanvasItem* canvasItem : items) {
         LineAbstractItem* line = dynamic_cast<LineAbstractItem*>(canvasItem);
         if (!line) {
             continue;
@@ -109,7 +119,8 @@ void CanvasScene::SyncArrowBindings()
             continue;
         }
         if (!line->StartBinding().isEmpty()) {
-            CanvasItem* target = ItemByUid(line->StartBinding().value(QStringLiteral("elementId")).toString());
+            CanvasItem* target =
+                byUid.value(line->StartBinding().value(QStringLiteral("elementId")).toString(), nullptr);
             if (target && target->Category() == ItemCategory::SHAPE) {
                 const QPointF other = line->mapToScene(knots.at(1));
                 const QRectF rect = target->mapRectToScene(target->ContentRect());
@@ -117,7 +128,8 @@ void CanvasScene::SyncArrowBindings()
             }
         }
         if (!line->EndBinding().isEmpty()) {
-            CanvasItem* target = ItemByUid(line->EndBinding().value(QStringLiteral("elementId")).toString());
+            CanvasItem* target =
+                byUid.value(line->EndBinding().value(QStringLiteral("elementId")).toString(), nullptr);
             if (target && target->Category() == ItemCategory::SHAPE) {
                 // 起点可能刚被移动过，终点参考点要用最新的节点。
                 const QVector<QPointF> current = line->StrokePoints();
@@ -131,12 +143,20 @@ void CanvasScene::SyncArrowBindings()
 
 void CanvasScene::SyncContainerTexts()
 {
-    for (CanvasItem* canvasItem : CanvasItems()) {
+    const QList<CanvasItem*> items = CanvasItems();
+    QHash<QString, CanvasItem*> byUid;
+    byUid.reserve(items.size());
+    for (CanvasItem* item : items) {
+        if (item && !item->Uid().isEmpty()) {
+            byUid.insert(item->Uid(), item);
+        }
+    }
+    for (CanvasItem* canvasItem : items) {
         TextItem* text = dynamic_cast<TextItem*>(canvasItem);
         if (!text || text->ContainerUid().isEmpty()) {
             continue;
         }
-        CanvasItem* container = ItemByUid(text->ContainerUid());
+        CanvasItem* container = byUid.value(text->ContainerUid(), nullptr);
         if (!container || container->Category() != ItemCategory::SHAPE) {
             continue;
         }
