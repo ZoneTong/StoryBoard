@@ -9,6 +9,7 @@
 #include "items/polygon/PolygonItem.h"
 #include "items/properties/ItemStyleVisuals.h"
 #include "items/shapes/AllShapes.h"
+#include "items/shapes/SectorItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
 #include "items/shapes/ShapeFactory.h"
 #include "items/text/TextItem.h"
@@ -368,6 +369,41 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
                   QStringLiteral("start=%1 sweep=%2").arg(panelArc->StartAngle()).arg(panelArc->SweepAngle()));
         dockScene->UndoStack()->undo();
         QApplication::processEvents();
+
+        // 类型行：扇形 / 弧线 / 角度线三型互换。下拉回显当前类型，切换即换类，
+        // 几何、起止角与描线样式沿用原图元，撤销换回旧图元。
+        QComboBox* typeCombo = dockPanel->findChild<QComboBox*>(QStringLiteral("ItemTypeCombo"));
+        ctx.Check(typeCombo && typeCombo->isVisible() && typeCombo->currentData().toString() == QStringLiteral("arc"),
+                  QStringLiteral("选中弧线时编辑面板出现类型行并回显弧线"),
+                  QStringLiteral("visible=%1 kind=%2")
+                      .arg(typeCombo && typeCombo->isVisible() ? 1 : 0)
+                      .arg(typeCombo ? typeCombo->currentData().toString() : QString()));
+        if (typeCombo) {
+            typeCombo->setCurrentIndex(typeCombo->findData(QStringLiteral("sector")));
+            QApplication::processEvents();
+        }
+        SectorItem* convertedSector = nullptr;
+        for (CanvasItem* item : dockScene->CanvasItems()) {
+            if (auto* sector = dynamic_cast<SectorItem*>(item)) {
+                convertedSector = sector;
+            }
+        }
+        ctx.Check(convertedSector != nullptr && convertedSector->isSelected(),
+                  QStringLiteral("类型行切到扇形后画布上是选中的扇形图元"));
+        // 上一段把起始角改成 40 后又撤销回 15，这里按撤销后的当前值比对。
+        ctx.Check(convertedSector && qAbs(convertedSector->StartAngle() - 15.0) < 0.01 &&
+                      qAbs(convertedSector->SweepAngle() - 140.0) < 0.01,
+                  QStringLiteral("三型互换保留起止角"),
+                  convertedSector ? QStringLiteral("start=%1 sweep=%2")
+                                        .arg(convertedSector->StartAngle())
+                                        .arg(convertedSector->SweepAngle())
+                                  : QString());
+        dockScene->UndoStack()->undo();
+        QApplication::processEvents();
+        ctx.Check(dockScene->selectedItems().size() == 1 &&
+                      dynamic_cast<ArcItem*>(dockScene->selectedItems().first()) != nullptr,
+                  QStringLiteral("撤销类型切换恢复弧线并重新选中"));
+
 
         // 需求 2：多选也开放旋转 / 位置 / 尺寸行，行序对齐属性窗；
         // 位置与尺寸按首个图元回显，改动以增量套到其余图元，不会把选中项叠在一起。

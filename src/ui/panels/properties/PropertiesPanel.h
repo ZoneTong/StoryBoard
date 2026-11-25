@@ -112,6 +112,8 @@ class PropertiesPanel : public QWidget {
     // 属性窗里可直接编辑的身份 / 几何字段，在编辑面板里同样可改：
     // 名称、目标图层、层内高度、位置与尺寸、旋转、平行四边形内角。
     void ApplyItemName(const QString& name);
+    // 类型行：扇形 / 弧线 / 角度线三型互换，复用右键「转换为」同一条撤销命令。
+    void ApplyItemType(const QString& kind);
     void ApplyItemLayer(int layerId);
     void ApplyItemHeight(int height);
     void ApplyItemPlacement(const QPointF& position, const QSizeF& size);

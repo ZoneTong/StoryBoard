@@ -444,6 +444,9 @@
 
 <context>
     <name>PropertiesPanel</name><message>
+        <source>Item type</source>
+        <translation>图元类型</translation>
+    </message><message>
         <source>Edit semi-axes</source>
         <translation>编辑长短半轴</translation>
     </message><message>

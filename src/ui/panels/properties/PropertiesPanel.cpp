@@ -150,14 +150,14 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     connect(m_valueCard, &PropertiesPanelValueCard::arcAnglesChosen, this, &PropertiesPanel::ApplyArcAngles);
     connect(m_valueCard, &PropertiesPanelValueCard::axesChosen, this, &PropertiesPanel::ApplyItemAxes);
     connect(m_valueCard, &PropertiesPanelValueCard::interiorAngleChosen, this, &PropertiesPanel::ApplyInteriorAngle);
-    connect(m_valueCard, &PropertiesPanelValueCard::interiorAngleBChosen, this,
-            &PropertiesPanel::ApplyInteriorAngleB);
+    connect(m_valueCard, &PropertiesPanelValueCard::interiorAngleBChosen, this, &PropertiesPanel::ApplyInteriorAngleB);
     connect(m_valueCard, &PropertiesPanelValueCard::sineCyclesChosen, this, &PropertiesPanel::ApplySineCycles);
     connect(m_valueCard, &PropertiesPanelValueCard::sineAmplitudeChosen, this, &PropertiesPanel::ApplySineAmplitude);
     connect(m_valueCard, &PropertiesPanelValueCard::arrowStartChosen, this, &PropertiesPanel::ApplyArrowStart);
     connect(m_valueCard, &PropertiesPanelValueCard::arrowEndChosen, this, &PropertiesPanel::ApplyArrowEnd);
     connect(m_arrangeCard, &PropertiesPanelArrangeCard::layerAdjusted, this, &PropertiesPanel::AdjustLayer);
     connect(m_arrangeCard, &PropertiesPanelArrangeCard::heightAdjusted, this, &PropertiesPanel::AdjustHeight);
+    connect(m_identityCard, &PropertiesPanelIdentityCard::TypeChosen, this, &PropertiesPanel::ApplyItemType);
     connect(m_identityCard, &PropertiesPanelIdentityCard::nameChosen, this, &PropertiesPanel::ApplyItemName);
     connect(m_identityCard, &PropertiesPanelIdentityCard::layerChosen, this, &PropertiesPanel::ApplyItemLayer);
     connect(m_identityCard, &PropertiesPanelIdentityCard::heightChosen, this, &PropertiesPanel::ApplyItemHeight);

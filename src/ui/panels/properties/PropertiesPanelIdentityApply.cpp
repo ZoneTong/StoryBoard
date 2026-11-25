@@ -5,7 +5,27 @@
 #include "items/ItemStack.h"
 #include "scene/CanvasScene.h"
 #include "scene/Commands.h"
+#include "scene/ItemTypeConversion.h"
 #include "ui/panels/properties/PropertiesPanel.h"
+
+void PropertiesPanel::ApplyItemType(const QString& kind)
+{
+    const QList<CanvasItem*> items = SelectedItems();
+    if (items.size() != 1 || !m_scene) {
+        return;
+    }
+    CanvasItem* item = items.first();
+    if (ItemTypeConversion::TypeOf(item) == kind) {
+        return;
+    }
+    // 换算与右键「转换为」共用 ConvertItemType：几何、起止角、描线样式原样搬过去，
+    // 新图元挂在原叠放位置并接管选中，撤销时换回旧图元。
+    if (!m_scene->ConvertItemType(item, kind)) {
+        Refresh();
+        return;
+    }
+    Refresh();
+}
 
 void PropertiesPanel::ApplyItemName(const QString& name)
 {
