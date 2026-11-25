@@ -1,6 +1,7 @@
 #include "canvas/controllers/CanvasTextEditor.h"
 
 #include "canvas/CanvasView.h"
+#include "items/CanvasItem.h"
 #include "items/text/TextItem.h"
 #include "scene/CanvasScene.h"
 #include "scene/Commands.h"
@@ -9,6 +10,8 @@
 #include <QFont>
 #include <QKeyEvent>
 #include <QLineEdit>
+#include <QPointF>
+#include <QRectF>
 #include <QUndoStack>
 
 namespace {
@@ -75,6 +78,17 @@ void CanvasTextEditor::Commit()
         after.text = text;
         after.baseSize = TextItem::Measure(text, after.font);
         after.size = after.baseSize;
+        // 容器文字按容器宽度重新折行，撤销/重做也恢复同一份排版尺寸。
+        if (!item->ContainerUid().isEmpty()) {
+            CanvasItem* container = m_scene->ItemByUid(item->ContainerUid());
+            if (container) {
+                const QRectF rect = container->mapRectToScene(container->ContentRect());
+                TextItem probe;
+                probe.SetTextFormat(text, after.font, after.color);
+                after.size = probe.ContainerLayoutSize(rect.width());
+                after.pos = QPointF(rect.left(), rect.center().y() - after.size.height() / 2.0);
+            }
+        }
         m_scene->UndoStack()->push(new TextItemCommand(m_scene, item, before, after, tr("Edit text")));
     }
     if (m_view) {

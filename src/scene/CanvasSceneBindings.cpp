@@ -141,8 +141,9 @@ void CanvasScene::SyncContainerTexts()
             continue;
         }
         const QRectF rect = container->mapRectToScene(container->ContentRect());
-        const QSizeF size = text->NaturalSize();
-        text->setPos(rect.center() - QPointF(size.width() / 2.0, size.height() / 2.0));
+        const QSizeF size = text->ContainerLayoutSize(rect.width());
+        text->SetContentSize(size);
+        text->setPos(QPointF(rect.left(), rect.center().y() - size.height() / 2.0));
     }
 }
 

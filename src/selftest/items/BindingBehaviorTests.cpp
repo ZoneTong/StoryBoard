@@ -8,6 +8,7 @@
 #include <QColor>
 #include <QJsonObject>
 #include <QPointF>
+#include <QStringList>
 #include <QUndoStack>
 #include <QVariant>
 
@@ -70,12 +71,17 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
         scene.AddItemsWithUndo({rect}, QStringLiteral("Add container"));
 
         auto* text = new TextItem();
-        text->SetTextFormat(QStringLiteral("容器文字"), text->TextFont(), QColor(QStringLiteral("#1E293B")));
+        text->SetTextFormat(QStringLiteral("容器文字换行测试：这是一段需要按容器宽度折行的长文字。"),
+                            text->TextFont(), QColor(QStringLiteral("#1E293B")));
         text->SetContainerUid(rect->Uid());
         text->setPos(QPointF(0.0, 0.0));
         scene.AddItemsWithUndo({text}, QStringLiteral("Add text"));
 
         scene.SyncContainerTexts();
+        const QStringList wrapped = text->WrappedLines(text->ContentSize().width());
+        ctx.Check(wrapped.size() > 1 && qAbs(text->ContentSize().width() - 200.0) < 1.0,
+                  QStringLiteral("容器文字按容器宽度折行"),
+                  QStringLiteral("lines=%1 width=%2").arg(wrapped.size()).arg(text->ContentSize().width()));
         const QPointF textCenter = text->mapToScene(text->ContentRect().center());
         const QRectF container = rect->mapRectToScene(rect->ContentRect());
         ctx.Check(qAbs(textCenter.x() - container.center().x()) < 1.0 &&

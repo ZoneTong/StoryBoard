@@ -1,16 +1,19 @@
 #include "io/ExcalidrawFormat.h"
 
 #include "io/ExcalidrawFormatInternal.h"
+#include "items/text/TextItem.h"
 
 #include <QColor>
 #include <QHash>
 #include <QJsonDocument>
 #include <QRectF>
 #include <QSet>
+#include <QSizeF>
 #include <QString>
 #include <QStringList>
 #include <QtGlobal>
 #include <QtMath>
+#include <utility>
 
 using namespace ExcalidrawFormatDetail;
 
@@ -166,10 +169,41 @@ QJsonObject SceneToStoryBoard(const QJsonObject& scene, QStringList* warnings, b
 {
     QJsonArray layers;
     QJsonObject groupParents;
-    const QJsonArray items = ElementsToItems(scene.value(QStringLiteral("elements")).toArray(), warnings, &layers,
-                                             scene.value(QStringLiteral("files")).toObject(), keepImages, &groupParents);
+    QJsonArray items = ElementsToItems(scene.value(QStringLiteral("elements")).toArray(), warnings, &layers,
+                                       scene.value(QStringLiteral("files")).toObject(), keepImages, &groupParents);
     if (items.isEmpty()) {
         return {};
+    }
+
+    // 容器文字：导入时按容器宽度重新折行并回到容器中心，避免沿 Excalidraw 的单行宽度截断。
+    {
+        QHash<QString, QJsonObject> byUid;
+        for (const QJsonValue& value : std::as_const(items)) {
+            const QJsonObject item = value.toObject();
+            const QString uid = item.value(QStringLiteral("uid")).toString();
+            if (!uid.isEmpty()) {
+                byUid.insert(uid, item);
+            }
+        }
+        for (int i = 0; i < items.size(); ++i) {
+            QJsonObject item = items.at(i).toObject();
+            const QString containerId = item.value(QStringLiteral("containerId")).toString();
+            const QJsonObject container = byUid.value(containerId);
+            if (containerId.isEmpty() || container.isEmpty()) {
+                continue;
+            }
+            TextItem probe;
+            probe.FromJson(item);
+            const QSizeF size = probe.ContainerLayoutSize(container.value(QStringLiteral("w")).toDouble());
+            item.insert(QStringLiteral("x"), container.value(QStringLiteral("x")).toDouble());
+            item.insert(QStringLiteral("y"), container.value(QStringLiteral("y")).toDouble() +
+                                                 (container.value(QStringLiteral("h")).toDouble() -
+                                                  size.height()) /
+                                                     2.0);
+            item.insert(QStringLiteral("w"), size.width());
+            item.insert(QStringLiteral("h"), size.height());
+            items.replace(i, item);
+        }
     }
 
     // 画布尺寸取所有元素的包围盒并留边，Excalidraw 场景本身没有画布尺寸。

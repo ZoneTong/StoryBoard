@@ -414,6 +414,8 @@ bool CanvasScene::FromJson(const QJsonObject& root, QString* errorMessage)
 
     m_restoringDocument = false;
     EnsureLayerState();
+    // 容器文字按容器当前尺寸重新折行，旧文件里存的排版尺寸不一定与容器一致。
+    SyncContainerTexts();
     ApplyAllItemStacking();
     UpdateItemFlags();
     UpdateSceneExtent();

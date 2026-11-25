@@ -77,6 +77,47 @@ QSizeF TextItem::Measure(const QString& text, const QFont& font)
     return TextAttributes::Measure(text, font);
 }
 
+QStringList TextItem::WrappedLines(qreal width) const
+{
+    const QFontMetricsF metrics(TextFont());
+    const qreal available = qMax<qreal>(1.0, width - 2.0 * TEXT_PADDING);
+    QStringList lines;
+    const QStringList paragraphs = TextContent().split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+    for (const QString& paragraph : paragraphs) {
+        if (paragraph.isEmpty()) {
+            lines.append(QString());
+            continue;
+        }
+        QString line;
+        for (const QChar character : paragraph) {
+            const QString candidate = line + character;
+            if (line.isEmpty() || metrics.horizontalAdvance(candidate) <= available) {
+                line = candidate;
+                continue;
+            }
+            // 优先在空格处断行；中文没有空格就按字符断。
+            const int breakAt = line.lastIndexOf(QLatin1Char(' '));
+            if (breakAt > 0) {
+                lines.append(line.left(breakAt));
+                line = line.mid(breakAt + 1) + character;
+            } else {
+                lines.append(line);
+                line = QString(character);
+            }
+        }
+        lines.append(line);
+    }
+    return lines;
+}
+
+QSizeF TextItem::ContainerLayoutSize(qreal width) const
+{
+    const QFontMetricsF metrics(TextFont());
+    const int lineCount = qMax(1, WrappedLines(width).size());
+    const qreal height = metrics.lineSpacing() * lineCount + 2.0 * TEXT_PADDING;
+    return QSizeF(qMax<qreal>(1.0, width), qMax<qreal>(2.0 * TEXT_PADDING + metrics.height(), height));
+}
+
 TextItemState TextItem::State() const
 {
     TextItemState result;
@@ -100,7 +141,10 @@ void TextItem::ApplyState(const TextItemState& state)
 
 void TextItem::TextChanged()
 {
-    SetContentSize(TextNaturalSize());
+    // 容器文字的高度由容器宽度和换行结果决定，不能回退到单行自然尺寸。
+    if (m_containerUid.isEmpty()) {
+        SetContentSize(TextNaturalSize());
+    }
     update();
 }
 
@@ -116,12 +160,17 @@ void TextItem::PaintContent(QPainter* painter)
     const qreal scaleX = ContentSize().width() / baseSize.width();
     const qreal scaleY = ContentSize().height() / baseSize.height();
     const QFontMetricsF metrics(font);
-    const QStringList lines = text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+    const bool containerText = !m_containerUid.isEmpty();
+    const QStringList lines =
+        containerText ? WrappedLines(ContentSize().width())
+                      : text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
 
     painter->save();
     // IntersectClip：保留 DrawItems() 设置的“被遮挡裁剪”区域，不能整个替换。
     painter->setClipRect(ContentRect(), Qt::IntersectClip);
-    painter->scale(scaleX, scaleY);
+    if (!containerText) {
+        painter->scale(scaleX, scaleY);
+    }
     painter->translate(TEXT_PADDING, TEXT_PADDING);
     painter->setFont(font);
     painter->setPen(TextColor());
@@ -130,9 +179,11 @@ void TextItem::PaintContent(QPainter* painter)
         painter->setPen(QColor(148, 163, 184));
         painter->drawText(QPointF(0.0, metrics.ascent()), tr("Empty text"));
     } else {
+        const qreal available = ContentSize().width() - 2.0 * TEXT_PADDING;
         qreal baseline = metrics.ascent();
         for (const QString& line : lines) {
-            painter->drawText(QPointF(0.0, baseline), line);
+            const qreal x = containerText ? qMax<qreal>(0.0, (available - metrics.horizontalAdvance(line)) / 2.0) : 0.0;
+            painter->drawText(QPointF(x, baseline), line);
             baseline += metrics.lineSpacing();
         }
     }
@@ -158,16 +209,23 @@ QPainterPath TextItem::GeometryPaintedShape() const
     const qreal scaleX = ContentSize().width() / base.width();
     const qreal scaleY = ContentSize().height() / base.height();
     const QFontMetricsF metrics(font);
-    const QStringList lines = text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+    const bool containerText = !m_containerUid.isEmpty();
+    const QStringList lines =
+        containerText ? WrappedLines(ContentSize().width())
+                      : text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
 
     // 文字没有底色，只有字形占住画布：用字形轮廓（而不是整块行高矩形）作为
     // “涂满区域”，这样文字既能遮挡下层，字缝之间又不会挡住下层颜色。
     QPainterPath path;
+    const qreal available = ContentSize().width() - 2.0 * TEXT_PADDING;
     qreal baseline = metrics.ascent();
     for (const QString& line : lines) {
         if (!line.isEmpty()) {
+            const qreal x =
+                containerText ? TEXT_PADDING + qMax<qreal>(0.0, (available - metrics.horizontalAdvance(line)) / 2.0)
+                              : TEXT_PADDING;
             QPainterPath linePath;
-            linePath.addText(TEXT_PADDING, baseline, font, line);
+            linePath.addText(x, baseline, font, line);
             path = path.united(linePath);
         }
         baseline += metrics.lineSpacing();
@@ -178,7 +236,9 @@ QPainterPath TextItem::GeometryPaintedShape() const
     }
 
     QTransform transform;
-    transform.scale(scaleX, scaleY);
+    if (!containerText) {
+        transform.scale(scaleX, scaleY);
+    }
     QPainterPath scaled = transform.map(path);
 
     QPainterPath contentPath;

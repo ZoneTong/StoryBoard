@@ -770,6 +770,7 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
                            4.0) < 0.01 &&
                       backText.value(QStringLiteral("containerId")).toString() == QStringLiteral("box-1") &&
                       backText.value(QStringLiteral("autoResize")).toBool(true) == false &&
+                      qAbs(backText.value(QStringLiteral("width")).toDouble() - 100.0) < 0.01 &&
                       boundList.contains(QStringLiteral("arrow-1")) &&
                       boundList.contains(QStringLiteral("text-1")),
                   QStringLiteral("导出写回端点绑定、容器关系与 boundElements"),

@@ -544,8 +544,9 @@ void CanvasView::mouseDoubleClickEvent(QMouseEvent* event)
                 containerText->SetTextFormat(tr("Text"), TextItem::DefaultFont(), QColor(30, 41, 59));
                 containerText->SetContainerUid(canvasItem->Uid());
                 const QRectF container = canvasItem->mapRectToScene(canvasItem->ContentRect());
-                const QSizeF size = containerText->NaturalSize();
-                containerText->setPos(container.center() - QPointF(size.width() / 2.0, size.height() / 2.0));
+                const QSizeF size = containerText->ContainerLayoutSize(container.width());
+                containerText->SetContentSize(size);
+                containerText->setPos(QPointF(container.left(), container.center().y() - size.height() / 2.0));
                 m_scene->AddItemsWithUndo({containerText}, tr("Add text"));
             }
             m_scene->clearSelection();
