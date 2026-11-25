@@ -6,12 +6,22 @@
 #include <QHash>
 #include <QJsonDocument>
 #include <QRectF>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 #include <QtGlobal>
 #include <QtMath>
 
 using namespace ExcalidrawFormatDetail;
+
+namespace {
+// 元素 id 优先沿用图元的稳定 uid，导入→导出才能指回同一个对象；旧文档没有 uid 时按序生成。
+QString ElementId(const QJsonObject& item, int index)
+{
+    const QString uid = item.value(QStringLiteral("uid")).toString();
+    return uid.isEmpty() ? QStringLiteral("sb%1").arg(index, 6, 10, QLatin1Char('0')) : uid;
+}
+} // namespace
 
 namespace Excalidraw {
 
@@ -75,6 +85,7 @@ QJsonArray ElementsToItems(const QJsonArray& elements, QStringList* warnings, QJ
     QHash<QString, int> groupIdNumbers;
     int nextGroup = 1;
     QHash<int, bool> usedGroupNumbers;
+    QSet<QString> usedUids;
     QJsonObject parentRecords;
 
     for (const QJsonValue& value : elements) {
@@ -125,6 +136,12 @@ QJsonArray ElementsToItems(const QJsonArray& elements, QStringList* warnings, QJ
         QJsonObject item = ElementToItem(element, z, layer, warnings, files, keepImages);
         if (item.isEmpty()) {
             continue;
+        }
+        // 图元身份沿用 Excalidraw 的元素 id，后续绑定/容器关系才能指回同一个对象。
+        const QString sourceUid = element.value(QStringLiteral("id")).toString().trimmed();
+        if (!sourceUid.isEmpty() && !usedUids.contains(sourceUid)) {
+            item.insert(QStringLiteral("uid"), sourceUid);
+            usedUids.insert(sourceUid);
         }
         if (!chain.isEmpty()) {
             item.insert(QStringLiteral("group"), chain.constFirst());
@@ -309,7 +326,7 @@ QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings
             const QString shapeType = item.value(QStringLiteral("shapeType")).toString();
             if (asImageElement) {
                 // 图片图元：fileId 指向 files 表，元素自身保持矩形框（可旋转、可缩放）。
-                element = BaseElement(item, QStringLiteral("sb%1").arg(index, 6, 10, QLatin1Char('0')));
+                element = BaseElement(item, ElementId(item, index));
                 element.insert(QStringLiteral("type"), QStringLiteral("image"));
                 const QString fileId = QStringLiteral("sbimg%1").arg(imageFileIndex, 6, 10, QLatin1Char('0'));
                 ++imageFileIndex;
@@ -343,7 +360,7 @@ QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings
             } else if (shapeType == QStringLiteral("rectangle") || shapeType == QStringLiteral("ellipse") ||
                 shapeType == QStringLiteral("diamond") || isDiamondPreset) {
                 element = StoryBoardShape(item);
-                const QJsonObject base = BaseElement(item, QStringLiteral("sb%1").arg(index, 6, 10, QLatin1Char('0')));
+                const QJsonObject base = BaseElement(item, ElementId(item, index));
                 for (auto it = base.constBegin(); it != base.constEnd(); ++it) {
                     if (!element.contains(it.key())) {
                         element.insert(it.key(), it.value());
@@ -365,7 +382,7 @@ QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings
             } else {
                 // 三角形/星形/多边形/自定义形状在 Excalidraw 里没有原生类型，落成矩形并记原类型。
                 element = StoryBoardShape(item);
-                const QJsonObject base = BaseElement(item, QStringLiteral("sb%1").arg(index, 6, 10, QLatin1Char('0')));
+                const QJsonObject base = BaseElement(item, ElementId(item, index));
                 for (auto it = base.constBegin(); it != base.constEnd(); ++it) {
                     if (!element.contains(it.key())) {
                         element.insert(it.key(), it.value());
@@ -378,7 +395,7 @@ QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings
                 degrade = QStringLiteral("%1 导出为矩形").arg(shapeType);
             }
         } else if (kind == QStringLiteral("text")) {
-            element = BaseElement(item, QStringLiteral("sb%1").arg(index, 6, 10, QLatin1Char('0')));
+            element = BaseElement(item, ElementId(item, index));
             element.insert(QStringLiteral("type"), QStringLiteral("text"));
             element.insert(QStringLiteral("text"), item.value(QStringLiteral("text")).toString());
             element.insert(QStringLiteral("strokeColor"),
@@ -396,7 +413,7 @@ QJsonObject StoryBoardToScene(const QJsonObject& document, QStringList* warnings
             element.insert(QStringLiteral("lineHeight"), 1.25);
             element.insert(QStringLiteral("autoResize"), true);
         } else if (IsLineKind(kind)) {
-            element = BaseElement(item, QStringLiteral("sb%1").arg(index, 6, 10, QLatin1Char('0')));
+            element = BaseElement(item, ElementId(item, index));
             const QString startHead = HeadValue(item, QStringLiteral("startArrow"));
             const QString endHead = HeadValue(item, QStringLiteral("endArrow"));
             element.insert(QStringLiteral("type"), (startHead.isEmpty() && endHead.isEmpty())

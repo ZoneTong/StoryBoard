@@ -695,6 +695,22 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
                   layerNames.join(QLatin1Char('|')));
     }
 
+    // 图元身份：导入沿用 Excalidraw 元素 id，导出写回同一个 id，绑定关系才能往返。
+    {
+        QJsonObject source = Element(QStringLiteral("rectangle"), 0, 0, 40, 40);
+        source.insert(QStringLiteral("id"), QStringLiteral("shape-1"));
+        QJsonObject storyboard = Excalidraw::SceneToStoryBoard(Scene(QJsonArray{source}), nullptr);
+        const QJsonObject item = storyboard.value(QStringLiteral("items")).toArray().at(0).toObject();
+        const QJsonObject scene = Excalidraw::StoryBoardToScene(storyboard, nullptr);
+        const QJsonObject element = scene.value(QStringLiteral("elements")).toArray().at(0).toObject();
+        ctx.Check(item.value(QStringLiteral("uid")).toString() == QStringLiteral("shape-1") &&
+                      element.value(QStringLiteral("id")).toString() == QStringLiteral("shape-1"),
+                  QStringLiteral("Excalidraw 元素 id 与图元 uid 双向沿用"),
+                  QStringLiteral("uid=%1 id=%2")
+                      .arg(item.value(QStringLiteral("uid")).toString(),
+                           element.value(QStringLiteral("id")).toString()));
+    }
+
     // 位图往返：默认跳过 image 并留 warning；勾选后落成“矩形 + 图片填充”，
     // 再导出仍是 image 元素 + files 表，数据不丢。
     {

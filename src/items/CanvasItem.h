@@ -99,6 +99,10 @@ class CanvasItem : public QGraphicsObject {
     QString CustomName() const { return m_name; }
     bool HasCustomName() const { return !m_name.isEmpty(); }
     void SetName(const QString& name);
+    // 图元身份：跨保存、导入导出保持不变的短 id，供箭头绑定与容器文字引用。
+    QString Uid() const { return m_uid; }
+    void SetUid(const QString& uid);
+    void AssignNewUid();
 
     QRectF ContentRect() const;
     // 选中框与缩放手柄的锚定矩形。默认就是内容矩形；弧线这类只在椭圆上截一段轮廓的
@@ -229,6 +233,7 @@ class CanvasItem : public QGraphicsObject {
     qreal m_rotation = 0.0;
     qreal m_itemOpacity = 1.0;
     QString m_name;
+    QString m_uid;
     QMap<PropertyKey, QVariant> m_dynamicProperties;
     DragKind m_drag = DragKind::NONE;
     Handle m_resizeHandle = NO_HANDLE;

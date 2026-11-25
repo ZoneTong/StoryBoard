@@ -42,6 +42,8 @@ int CanvasScene::PasteClipboardItems(const QJsonArray& items)
             continue;
         }
         copy->FromJson(json);
+        // 身份必须换新：原 id 仍指向来源画布里的图元，绑定关系不能跟着复制。
+        copy->AssignNewUid();
         copy->SetItemOpacity(json.value(QStringLiteral("opacity")).toDouble(1.0));
         // 跨文档粘贴时不带原分组关系，避免副本和来源画布的组联动。
         copy->SetGroupId(0);

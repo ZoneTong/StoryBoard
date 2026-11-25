@@ -85,6 +85,8 @@ void selftest::RunClipboardShortcutTests(Context& ctx)
         ctx.Check(copy && insideCanvas && movedAwayFromSource, QStringLiteral("粘贴副本落在画布内并离开源图元位置"),
                   QStringLiteral("%1,%2").arg(pastedCenter.x()).arg(pastedCenter.y()));
         ctx.Check(copy && copy->GroupId() == 0, QStringLiteral("粘贴副本不带原分组关系"));
+        ctx.Check(copy && copy->Uid() != source->Uid() && !copy->Uid().isEmpty(),
+                  QStringLiteral("粘贴副本重新签发图元身份"));
         ctx.Check(pasteUndo.count() == 1, QStringLiteral("粘贴只产生一条撤销记录"));
 
         // 方向键微调：编辑模式按偏移移动选中图元，撤销可还原。

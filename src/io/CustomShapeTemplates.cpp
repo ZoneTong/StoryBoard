@@ -252,6 +252,8 @@ QList<CanvasItem*> CreateTemplateItems(const CustomShapeTemplate& shape, const Q
             continue;
         }
         item->FromJson(object);
+        // 模板里的 uid 属于模板本身，每次实例化都要换新身份。
+        item->AssignNewUid();
         const QPointF position = item->pos();
         const QSizeF size = item->ContentSize();
         item->setPos(QPointF(targetRect.left() + (position.x() - shape.itemsRect.left()) * scaleX,

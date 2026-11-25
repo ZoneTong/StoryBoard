@@ -16,6 +16,7 @@
 #include <QPainter>
 #include <QSet>
 #include <QStyleOptionGraphicsItem>
+#include <QUuid>
 #include <QtMath>
 #include <utility>
 
@@ -122,6 +123,7 @@ qreal CanvasItem::ReadoutPadding() const
 
 CanvasItem::CanvasItem(QGraphicsItem* parent) : QGraphicsObject(parent)
 {
+    AssignNewUid();
     setFlag(QGraphicsItem::ItemIsSelectable, false);
     setFlag(QGraphicsItem::ItemIsFocusable, false);
     setAcceptHoverEvents(false);
@@ -160,6 +162,19 @@ void CanvasItem::SetName(const QString& name)
     }
     m_name = trimmed;
     emit PresentationChanged();
+}
+
+void CanvasItem::SetUid(const QString& uid)
+{
+    const QString trimmed = uid.trimmed();
+    if (!trimmed.isEmpty()) {
+        m_uid = trimmed;
+    }
+}
+
+void CanvasItem::AssignNewUid()
+{
+    m_uid = QUuid::createUuid().toString(QUuid::WithoutBraces).remove(QLatin1Char('-')).left(12);
 }
 
 QSizeF CanvasItem::MinimumSize()
@@ -587,6 +602,7 @@ QJsonObject CanvasItem::BaseJson() const
     if (!m_name.isEmpty()) {
         json.insert(QStringLiteral("name"), m_name);
     }
+    json.insert(QStringLiteral("uid"), m_uid);
     // 绘制顺序由 layer + height 决定，不再写冗余的 z 键。
     return json;
 }
@@ -604,4 +620,5 @@ void CanvasItem::ApplyBaseJson(const QJsonObject& json)
     m_flipX = json.value(QStringLiteral("flipX")).toBool(false);
     m_flipY = json.value(QStringLiteral("flipY")).toBool(false);
     m_name = json.value(QStringLiteral("name")).toString().trimmed();
+    SetUid(json.value(QStringLiteral("uid")).toString());
 }

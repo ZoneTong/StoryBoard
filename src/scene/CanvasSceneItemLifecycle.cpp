@@ -133,6 +133,7 @@ int CanvasScene::DuplicateSelectedItems()
             continue;
         }
         copy->FromJson(source->ToJson());
+        copy->AssignNewUid();
         copy->SetGroupId(0);
 
         const int sourceGroupId = source->GroupId();
