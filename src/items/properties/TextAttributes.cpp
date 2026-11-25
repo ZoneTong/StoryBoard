@@ -26,10 +26,17 @@ QColor NormalizedColor(const QColor& color)
 
 } // namespace
 
+QFont TextAttributes::DefaultFont(qreal pointSize)
+{
+    QFont font;
+    font.setFamily(QStringLiteral("Microsoft YaHei UI"));
+    font.setPointSizeF(pointSize > 0.0 ? pointSize : DEFAULT_POINT_SIZE);
+    return font;
+}
+
 TextAttributes::TextAttributes()
 {
-    m_font.setFamily(QStringLiteral("Microsoft YaHei UI"));
-    m_font.setPointSizeF(DEFAULT_POINT_SIZE);
+    m_font = DefaultFont();
     m_baseSize = Measure(QString(), m_font);
 }
 

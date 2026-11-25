@@ -65,6 +65,8 @@ class TextAttributes {
     void ReadTextJson(const QJsonObject& json);
 
     static QSizeF Measure(const QString& text, const QFont& font);
+    // 画板文字的默认字族（新建、导入同源），保留字族便于按指定字号量自然尺寸。
+    static QFont DefaultFont(qreal pointSize = 32.0);
 
   protected:
     // 文字内容或字体变化后的钩子：文字图元据此重算自然尺寸并刷新。

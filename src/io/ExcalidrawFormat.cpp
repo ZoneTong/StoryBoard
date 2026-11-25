@@ -1,5 +1,7 @@
 #include "io/ExcalidrawFormat.h"
 
+#include "items/properties/TextAttributes.h"
+
 #include <QColor>
 #include <QHash>
 #include <QJsonDocument>
@@ -242,15 +244,19 @@ QJsonObject ElementToItem(const QJsonObject& element, int z, int layer, QStringL
     }
 
     if (type == QStringLiteral("text")) {
-        QJsonObject item = ItemBase(QStringLiteral("text"), bounds, z, layer);
-        item.insert(QStringLiteral("text"), element.value(QStringLiteral("text")).toString());
+        const QString content = element.value(QStringLiteral("text")).toString();
+        // 需求 9：Excalidraw 字体用 px，画板用 pt，约 1.333 倍换算。
+        const qreal pointSize = qMax<qreal>(6.0, NumberOr(element, QStringLiteral("fontSize"), 20.0) / 1.333);
+        // Excalidraw 的文字框不含画板的 12px 内边距，字号也来自另一套字体；
+        // 直接照抄外框会让首行基线落在框外、下半截被裁剪。这里按画板字体重新量自然尺寸。
+        const QSizeF natural = TextAttributes::Measure(content, TextAttributes::DefaultFont(pointSize));
+        QJsonObject item = ItemBase(QStringLiteral("text"), QRectF(bounds.topLeft(), natural), z, layer);
+        item.insert(QStringLiteral("text"), content);
         item.insert(QStringLiteral("color"),
                     ColorOr(element, QStringLiteral("strokeColor"), QColor(30, 41, 59)).name(QColor::HexArgb));
-        // 需求 9：Excalidraw 字体用 px，画板用 pt，约 1.333 倍换算。
-        item.insert(QStringLiteral("fontSize"),
-                    qMax<qreal>(6.0, NumberOr(element, QStringLiteral("fontSize"), 20.0) / 1.333));
-        item.insert(QStringLiteral("baseWidth"), bounds.width());
-        item.insert(QStringLiteral("baseHeight"), bounds.height());
+        item.insert(QStringLiteral("fontSize"), pointSize);
+        item.insert(QStringLiteral("baseWidth"), natural.width());
+        item.insert(QStringLiteral("baseHeight"), natural.height());
         item.insert(QStringLiteral("rotation"), qRadiansToDegrees(NumberOr(element, QStringLiteral("angle"), 0.0)));
         return item;
     }

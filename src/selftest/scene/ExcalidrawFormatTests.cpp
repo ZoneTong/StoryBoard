@@ -1,9 +1,11 @@
 #include "io/ExcalidrawFormat.h"
+#include "items/properties/TextAttributes.h"
 #include "selftest/core/SelfTestContext.h"
 #include "selftest/core/SelftestEntries.h"
 #include "selftest/core/SelftestHelpers.h"
 
 #include <QColor>
+#include <QFontMetricsF>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -123,6 +125,20 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
               QStringLiteral("文字字号按 pt≈px/1.333 换算"),
               QStringLiteral("fontSize=%1").arg(items.at(3).toObject().value(QStringLiteral("fontSize")).toDouble()));
 
+    // 文字框必须容得下首行基线与最后一行字形：Excalidraw 的外框没有画板内边距，
+    // 直接照抄会把下半截裁掉（旧版“打开 .excalidraw 只显示上半部分”）。
+    {
+        const QJsonObject text = items.at(3).toObject();
+        const QFont font = TextAttributes::DefaultFont(text.value(QStringLiteral("fontSize")).toDouble(32.0));
+        const QFontMetricsF metrics(font);
+        const QString content = text.value(QStringLiteral("text")).toString();
+        const int lines = content.split(QLatin1Char('\n'), Qt::KeepEmptyParts).size();
+        const qreal needed = 12.0 + metrics.ascent() + (lines - 1) * metrics.lineSpacing() + metrics.descent();
+        const qreal stored =
+            qMax(text.value(QStringLiteral("h")).toDouble(), text.value(QStringLiteral("baseHeight")).toDouble());
+        ctx.Check(stored >= needed - 0.5, QStringLiteral("导入的文字框容得下整行字形（不会被裁掉下半截）"),
+                  QStringLiteral("stored=%1 needed=%2").arg(stored).arg(needed));
+    }
     // 两点箭头 → 直线图元（kind=straightline）+ 末端实心三角；起点无箭头。
     {
         const QJsonObject line = items.at(4).toObject();
