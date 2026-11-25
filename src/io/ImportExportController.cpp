@@ -12,6 +12,7 @@
 #include "items/shapes/ShapeFactory.h"
 #include "lineart/LineArtDialog.h"
 #include "scene/CanvasScene.h"
+#include "scene/SceneConstants.h"
 #include "ui/dialogs/ExportDialog.h"
 #include "ui/mainwindow/MainWindow.h"
 
@@ -113,14 +114,16 @@ void ImportExportController::ExportCanvas()
         QStringList exported;
         for (int i = 0; i < paths.size(); ++i) {
             const int layerId = i < options.layerIds.size() ? options.layerIds.at(i) : -1;
-            // 自适应尺寸 + 逐层导出：每张图只取本图层可见图元的包围框，不是全部图层的并集。
+            // 自适应尺寸 + 逐层导出：每张图只取本图层可见图元的包围框，不是全部图层的并集；
+            // 与合并模式一致外留 2px，避免贴边像素被抗锯齿削掉一丝。
             QRectF area = options.area;
             if (options.fitViewSize && layerId >= 0) {
                 const QRectF layerRect = m_window->m_scene->LayerContentRect(layerId);
                 if (layerRect.isEmpty()) {
                     continue;
                 }
-                area = layerRect;
+                const qreal pad = scene_constants::EXPORT_FIT_PADDING;
+                area = layerRect.adjusted(-pad, -pad, pad, pad);
             }
             if (!ExportToFile(paths.at(i), area, options.scale, options.format, false, layerId)) {
                 return;

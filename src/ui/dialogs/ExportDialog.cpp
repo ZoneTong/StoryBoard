@@ -3,6 +3,7 @@
 #include "app/I18n.h"
 #include "canvas/CanvasView.h"
 #include "scene/CanvasScene.h"
+#include "scene/SceneConstants.h"
 #include "ui/icons/IconFactory.h"
 
 #include <QCheckBox>
@@ -182,12 +183,17 @@ QRectF ExportDialog::ExportArea() const
     if (!FitViewSelected()) {
         return SelectedArea();
     }
-    // 自适应尺寸取图层上可见图元并集的最小包围框（不含留白边），空画布才回退到画布矩形。
+    // 自适应尺寸取图层上可见图元并集的最小包围框，外留 2px 余量（贴边会被抗锯齿削掉一丝），
+    // 空画布才回退到画布矩形。
     if (!m_scene) {
         return QRectF();
     }
     const QRectF content = m_scene->ContentRect();
-    return content.isEmpty() ? m_scene->CanvasRect() : content;
+    if (content.isEmpty()) {
+        return m_scene->CanvasRect();
+    }
+    const qreal pad = scene_constants::EXPORT_FIT_PADDING;
+    return content.adjusted(-pad, -pad, pad, pad);
 }
 
 qreal ExportDialog::ExportScale() const

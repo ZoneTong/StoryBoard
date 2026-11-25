@@ -17,6 +17,7 @@
 #include "ops/Alignment.h"
 #include "ops/BoolOps.h"
 #include "scene/CanvasScene.h"
+#include "scene/SceneConstants.h"
 #include "scene/Commands.h"
 #include "selftest/core/SelfTestContext.h"
 #include "selftest/core/SelftestEntries.h"
@@ -343,20 +344,22 @@ void selftest::RunLayerExportPanelTests(Context& ctx)
         QApplication::processEvents();
         const ExportDialog::Options fitOptions = fitDialog.options();
         const QRectF contentRect = layerExportScene.ContentRect();
+        const qreal fitPad = scene_constants::EXPORT_FIT_PADDING;
         const int fitWidth = qCeil(fitOptions.area.width() * fitOptions.scale);
         const int fitHeight = qCeil(fitOptions.area.height() * fitOptions.scale);
         ctx.Check(fitCheck && fitCheck->isChecked() && fitOptions.area != plainOptions.area &&
                       qAbs(fitOptions.scale - 1.0) < 0.001 && fitScope && !fitScope->isEnabled() &&
-                      qAbs(fitOptions.area.left() - contentRect.left()) < 0.5 &&
-                      qAbs(fitOptions.area.top() - contentRect.top()) < 0.5 &&
-                      qAbs(fitWidth - qCeil(contentRect.width())) <= 1 &&
-                      qAbs(fitHeight - qCeil(contentRect.height())) <= 1,
-                  QStringLiteral("勾选自适应尺寸后输出尺寸等于可见图元并集的包围框"),
-                  QStringLiteral("fit=%1x%2 content=%3x%4")
+                      qAbs(fitOptions.area.left() - (contentRect.left() - fitPad)) < 0.5 &&
+                      qAbs(fitOptions.area.top() - (contentRect.top() - fitPad)) < 0.5 &&
+                      qAbs(fitWidth - qCeil(contentRect.width() + 2.0 * fitPad)) <= 1 &&
+                      qAbs(fitHeight - qCeil(contentRect.height() + 2.0 * fitPad)) <= 1,
+                  QStringLiteral("勾选自适应尺寸后输出尺寸等于可见图元包围框加 2px 余量"),
+                  QStringLiteral("fit=%1x%2 content=%3x%4 pad=%5")
                       .arg(fitWidth)
                       .arg(fitHeight)
                       .arg(contentRect.width())
-                      .arg(contentRect.height()));
+                      .arg(contentRect.height())
+                      .arg(fitPad));
 
         // 上次勾过就记住：构造时直接带回来，范围与比例控件一开始就是关的。
         ExportDialog rememberedDialog(&layerExportScene, QDir::tempPath(), nullptr, &fitView, true);
