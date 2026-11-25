@@ -63,6 +63,10 @@ class LineAbstractItem : public CanvasItem, public StrokeAttributes {
     ArrowStyle EndArrow() const { return m_endArrow; }
     void SetArrowStyles(ArrowStyle start, ArrowStyle end);
 
+    // 两端箭头在场景里的实际绘制范围（含描边余量）。导出包围框要把它算进去：
+    // 箭头头长是线宽的 4 倍，只按半个线宽外扩会把翅膀切掉一半。
+    QRectF ArrowSceneBounds() const;
+
     virtual GeometryState geometryState() const;
     virtual void ApplyGeometryState(const GeometryState& state);
 

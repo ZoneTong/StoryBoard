@@ -2,7 +2,10 @@
 #include "app/Settings.h"
 #include "canvas/CanvasView.h"
 #include "io/CustomShapeTemplates.h"
+#include "items/CanvasItem.h"
 #include "items/CanvasTypes.h"
+#include "items/lines/ArcItem.h"
+#include "items/properties/ArrowStyle.h"
 #include "items/lines/CurveItem.h"
 #include "items/polygon/PolygonItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
@@ -219,6 +222,79 @@ void selftest::RunLayerExportPanelTests(Context& ctx)
         ctx.Check(qAbs(redLayerRect.left() - 6.0) < 0.6 && qAbs(redLayerRect.width() - 48.0) < 0.6,
                   QStringLiteral("图层包围框包含描线半宽"),
                   QStringLiteral("left=%1 width=%2").arg(redLayerRect.left()).arg(redLayerRect.width()));
+
+        // 箭头头长是线宽的 4 倍，翅膀比描线宽得多：0°→180° 的半圆弧线两端箭头
+        // 横向各外伸一个头长，包围框不把箭头算进去就会切掉半边。
+        CanvasScene arrowScene;
+        arrowScene.ApplyCanvasSize(QSizeF(600, 400));
+        arrowScene.SetShowGrid(false);
+        auto* arrowArc = new ArcItem();
+        arrowArc->SetArcGeometry(QPointF(50, 50), QSizeF(200, 200), 0.0, 180.0,
+                                 QColor(QStringLiteral("#1E293B")), 10.0);
+        arrowScene.AttachItem(arrowArc);
+        const QRectF plainRect = arrowScene.ContentRect();
+        arrowArc->SetArrowStyles(ArrowStyle::TRIANGLE_FILLED, ArrowStyle::TRIANGLE_FILLED);
+        const QRectF arrowRect = arrowScene.ContentRect();
+        const qreal headLength = 40.0; // 4 × 线宽 10
+        ctx.Check(arrowRect.width() > plainRect.width() + headLength * 1.5 &&
+                      arrowRect.height() >= plainRect.height(),
+                  QStringLiteral("导出包围框把两端箭头算进去"),
+                  QStringLiteral("plain=%1x%2 arrow=%3x%4")
+                      .arg(plainRect.width())
+                      .arg(plainRect.height())
+                      .arg(arrowRect.width())
+                      .arg(arrowRect.height()));
+        arrowArc->SetArrowStyles(ArrowStyle::NONE, ArrowStyle::NONE);
+        ctx.Check(qAbs(arrowScene.ContentRect().width() - plainRect.width()) < 0.5,
+                  QStringLiteral("去掉箭头后包围框回到描线半宽"),
+                  QStringLiteral("width=%1 plain=%2").arg(arrowScene.ContentRect().width()).arg(plainRect.width()));
+
+        // 自适应尺寸对所有图元类型都得成立：这里混放“旋转粗描边矩形 + 文字 + 带箭头弧线”，
+        // 逐个核对图元实际绘制轮廓都落在包围框里（描边、圆角连接、字形、箭头都不能出框）。
+        CanvasScene mixedScene;
+        mixedScene.ApplyCanvasSize(QSizeF(800, 600));
+        mixedScene.SetShowGrid(false);
+        auto* mixedRect = ShapeFactory::Create(ShapeType::RECTANGLE);
+        mixedRect->setPos(QPointF(120, 90));
+        mixedRect->SetContentSize(QSizeF(120, 80));
+        mixedRect->SetStyle(QColor(QStringLiteral("#1E293B")), QColor(QStringLiteral("#1E293B")), 12.0);
+        mixedRect->SetRotationAngle(25.0);
+        mixedScene.AttachItem(mixedRect);
+        auto* mixedText = new TextItem();
+        mixedText->SetTextFormat(QStringLiteral("Output size"), QFont(QStringLiteral("Microsoft YaHei"), 22),
+                                 QColor(QStringLiteral("#DC2626")));
+        mixedText->setPos(QPointF(330, 120));
+        mixedScene.AttachItem(mixedText);
+        auto* mixedArc = new ArcItem();
+        mixedArc->SetArcGeometry(QPointF(420, 260), QSizeF(180, 180), 0.0, 180.0,
+                                 QColor(QStringLiteral("#2563EB")), 10.0);
+        mixedArc->SetArrowStyles(ArrowStyle::TRIANGLE_FILLED, ArrowStyle::TRIANGLE_FILLED);
+        mixedScene.AttachItem(mixedArc);
+        const QRectF mixedRectBox = mixedScene.ContentRect();
+        bool mixedCovered = true;
+        QString mixedDetail;
+        for (CanvasItem* item : mixedScene.CanvasItems()) {
+            const QRectF painted = item->sceneTransform().map(item->PaintedShape()).boundingRect();
+            if (painted.isEmpty()) {
+                continue;
+            }
+            const QRectF padded = mixedRectBox.adjusted(-0.5, -0.5, 0.5, 0.5);
+            if (!padded.contains(painted)) {
+                mixedCovered = false;
+                mixedDetail = QStringLiteral("item=%1 painted=%2,%3 %4x%5 box=%6,%7 %8x%9")
+                                  .arg(item->Kind())
+                                  .arg(painted.left())
+                                  .arg(painted.top())
+                                  .arg(painted.width())
+                                  .arg(painted.height())
+                                  .arg(mixedRectBox.left())
+                                  .arg(mixedRectBox.top())
+                                  .arg(mixedRectBox.width())
+                                  .arg(mixedRectBox.height());
+                break;
+            }
+        }
+        ctx.Check(mixedCovered, QStringLiteral("自适应尺寸覆盖图形、文字与箭头弧线的绘制轮廓"), mixedDetail);
 
         ExportDialog exportDialog(&layerExportScene, QDir::tempPath());
         auto* modeCombo = exportDialog.findChild<QComboBox*>(QStringLiteral("ExportLayerModeCombo"));

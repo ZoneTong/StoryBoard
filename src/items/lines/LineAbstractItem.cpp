@@ -7,6 +7,7 @@
 #include <QJsonArray>
 #include <QLineF>
 #include <QPainter>
+#include <QTransform>
 #include <QtMath>
 
 LineAbstractItem::LineAbstractItem(QGraphicsItem* parent) : CanvasItem(parent)
@@ -238,6 +239,39 @@ void LineAbstractItem::PaintContent(QPainter* painter)
     PaintArrowHead(painter, knots.constFirst(), knots.at(1), m_strokeWidth, m_strokeColor, m_startArrow);
     PaintArrowHead(painter, knots.constLast(), knots.at(knots.size() - 2), m_strokeWidth, m_strokeColor, m_endArrow);
     painter->restore();
+}
+
+QRectF LineAbstractItem::ArrowSceneBounds() const
+{
+    if (!ArrowsAvailable() || (!ArrowStyleIsHead(m_startArrow) && !ArrowStyleIsHead(m_endArrow)) ||
+        m_segments.isEmpty() || m_baseSize.width() <= 0.0 || m_baseSize.height() <= 0.0) {
+        return QRectF();
+    }
+    const QVector<QPointF> knots = CurveGeometry::Knots(m_segments);
+    if (knots.size() < 2) {
+        return QRectF();
+    }
+    // 箭头在基坐标里按内容尺寸缩放后再画，与 PaintContent 用同一套比例。
+    const qreal scaleX = ContentSize().width() / m_baseSize.width();
+    const qreal scaleY = ContentSize().height() / m_baseSize.height();
+    QTransform scale;
+    scale.scale(scaleX, scaleY);
+
+    QPainterPath head;
+    if (ArrowStyleIsHead(m_startArrow)) {
+        head.addPath(scale.map(ArrowHeadPath(knots.constFirst(), knots.at(1), m_strokeWidth, m_startArrow)));
+    }
+    if (ArrowStyleIsHead(m_endArrow)) {
+        head.addPath(
+            scale.map(ArrowHeadPath(knots.constLast(), knots.at(knots.size() - 2), m_strokeWidth, m_endArrow)));
+    }
+    if (head.isEmpty()) {
+        return QRectF();
+    }
+    const QRectF rect = sceneTransform().map(head).boundingRect();
+    // 描边以箭头轮廓为中心外扩半宽；线宽随同一套缩放走，取两轴较大的比例。
+    const qreal half = m_strokeWidth * 0.5 * qMax(qAbs(scaleX), qAbs(scaleY));
+    return rect.adjusted(-half, -half, half, half);
 }
 
 QPainterPath LineAbstractItem::GeometryOutline() const

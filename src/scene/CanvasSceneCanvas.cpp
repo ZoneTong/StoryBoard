@@ -1,4 +1,6 @@
 #include "items/CanvasItem.h"
+#include "items/lines/LineAbstractItem.h"
+#include "items/polygon/PolygonItem.h"
 #include "items/properties/StrokeAttributes.h"
 #include "scene/CanvasScene.h"
 #include "scene/Commands.h"
@@ -95,17 +97,30 @@ void CanvasScene::SetShowGrid(bool enabled)
 
 namespace {
 
-// 导出包围框要含描线：ContentRect 只到路径本身，描线以路径为中心向外各占半个线宽，
-// 直接按内容框裁图会把边缘线切掉。
+// 导出包围框要覆盖“画出来的每一个像素”，而不是几何框：描线以路径为中心向外占半个线宽，
+// 图形还要算上描边与圆角连接，文字按字形，线条两端箭头比线宽宽得多（头长 4 倍线宽）。
+// 统一走 PaintedShape（各类图元自己知道画到哪），再补箭头这一块，避免逐类型手写外扩。
 QRectF PaintBoundsOf(CanvasItem* item)
 {
     QRectF rect = item->SceneContentRect();
     if (rect.isEmpty()) {
         return rect;
     }
-    if (auto* stroke = dynamic_cast<StrokeAttributes*>(item)) {
-        const qreal half = qMax<qreal>(0.0, stroke->StrokeWidth() * 0.5);
-        rect = rect.adjusted(-half, -half, half, half);
+    const QPainterPath painted = item->PaintedShape();
+    if (!painted.isEmpty()) {
+        rect = rect.united(item->sceneTransform().map(painted).boundingRect());
+    }
+    if (auto* line = dynamic_cast<LineAbstractItem*>(item)) {
+        const QRectF arrowRect = line->ArrowSceneBounds();
+        if (!arrowRect.isEmpty()) {
+            rect = rect.united(arrowRect);
+        }
+    }
+    // 多边形只把“有面积的填充层”报给 PaintedShape，描边是另画的斜接（Miter）描边：
+    // 尖角外伸最多一个线宽，按线宽外扩兜住尖角，避免导出时尖角被削。
+    if (auto* polygon = dynamic_cast<PolygonItem*>(item)) {
+        const qreal width = qMax<qreal>(0.0, polygon->StrokeWidth());
+        rect = rect.adjusted(-width, -width, width, width);
     }
     return rect;
 }
