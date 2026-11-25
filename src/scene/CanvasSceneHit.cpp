@@ -64,7 +64,7 @@ void CanvasScene::drawForeground(QPainter* painter, const QRectF& rect)
         painter->restore();
     }
 
-    // 选中图元再叠一层半透明黄色轮廓：即使被上层图元完全盖住，也能看出它被选中。
+    // 选中图元再叠一层半透明黄色虚线轮廓：即使被上层图元完全盖住，也能看出它被选中。
     DrawSelectionHighlight(painter, rect);
 }
 
@@ -79,16 +79,19 @@ void CanvasScene::DrawSelectionHighlight(QPainter* painter, const QRectF& rect) 
     painter->setRenderHint(QPainter::Antialiasing, true);
     painter->setBrush(Qt::NoBrush);
 
-    QPen haloPen(QColor(250, 204, 21, 60));
+    // 透明黄色虚线：外圈宽虚线做柔光、内圈细虚线压强度，实线会盖住图元本身的描边。
+    QPen haloPen(QColor(250, 204, 21, 70));
     haloPen.setWidthF(6.0);
     haloPen.setCosmetic(true);
-    haloPen.setStyle(Qt::SolidLine);
+    haloPen.setStyle(Qt::DashLine);
+    haloPen.setDashPattern({7.0, 5.0});
     haloPen.setJoinStyle(Qt::RoundJoin);
 
-    QPen corePen(QColor(250, 204, 21, 150));
+    QPen corePen(QColor(250, 204, 21, 160));
     corePen.setWidthF(2.0);
     corePen.setCosmetic(true);
-    corePen.setStyle(Qt::SolidLine);
+    corePen.setStyle(Qt::DashLine);
+    corePen.setDashPattern({5.0, 4.0});
     corePen.setJoinStyle(Qt::RoundJoin);
 
     for (QGraphicsItem* graphicsItem : selectedItems()) {
