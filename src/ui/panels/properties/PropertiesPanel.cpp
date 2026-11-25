@@ -275,16 +275,33 @@ int PropertiesPanel::PreferredWidth() const
         scanRows(m_selectionCard->layout());
     }
 
-    // 基准取背景图片行：它是满行里最窄的一行（图标 + 三个图标按钮，下拉不带文字），
-    // 面板按它的自然宽度收口，其余行不再把面板撑宽。
+    // 基准取背景图片行（选图按钮带文字，是满行里最宽的一行）：其余行都不该比它宽，
+    // 面板宽度按它的自然宽度给出，其它行在同一宽度里收窄。
     const int fillImageWidth = m_fillImageRow ? m_fillImageRow->sizeHint().width() : 0;
-    const int baseline = fillImageWidth > 0 ? qMin(fillImageWidth, widestRow) : widestRow;
-    // 下限 260 是面板的可读宽度；但行控件自己的最小宽度不能压，否则会被裁成半截，
-    // 所以把各行的 minimumSizeHint 也抬进基准。
+    const int baseline = fillImageWidth > 0 ? fillImageWidth : widestRow;
+    // 下限 260 是面板的可读宽度；行控件自己的最小宽度不能压，否则会被裁成半截，
+    // 所以把各行的 minimumSizeHint 也抬进基准；上限 400 防止异常字体/译文把面板撑爆。
     const int target = qMax(baseline, widestMinimum);
-    // 两侧外边距 + 垂直滚动条；上限 320px 避免右侧留白过多。
+    // 两侧外边距 + 垂直滚动条。
     const int chrome = 12 + style()->pixelMetric(QStyle::PM_ScrollBarExtent) + 2;
-    return qBound(260, target + chrome, 320);
+    const int panelWidth = qBound(260, target + chrome, 400);
+    const int contentWidth = panelWidth - chrome;
+    // 同一宽度里收窄：不让任何一行比背景图片行更宽，超出部分由行内控件自己伸缩。
+    auto capRows = [contentWidth](QLayout* layout) {
+        if (!layout) {
+            return;
+        }
+        for (int index = 0; index < layout->count(); ++index) {
+            if (QWidget* row = layout->itemAt(index)->widget()) {
+                row->setMaximumWidth(contentWidth);
+            }
+        }
+    };
+    capRows(m_contentWidget->layout());
+    if (m_selectionCard && !m_selectionCard->isHidden()) {
+        capRows(m_selectionCard->layout());
+    }
+    return panelWidth;
 }
 
 void PropertiesPanel::Refresh()

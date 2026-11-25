@@ -148,9 +148,9 @@ void selftest::RunDockPanelMainWindowTests(Context& ctx)
         // 宽度既要覆盖内容，也不能明显宽于内容，否则右侧会留下空白。
         const bool dockWidthFits =
             actualCardWidth >= preferredCardWidth - 2 && actualCardWidth <= preferredCardWidth + 2;
-        ctx.Check(propertiesDock && dockPanel && preferredCardWidth >= 260 && preferredCardWidth <= 320 &&
+        ctx.Check(propertiesDock && dockPanel && preferredCardWidth >= 260 && preferredCardWidth <= 400 &&
                       dockWidthFits,
-                  QStringLiteral("编辑面板宽度贴合内容且不超出 320px"),
+                  QStringLiteral("编辑面板宽度贴合内容且不超过 400px"),
                   QStringLiteral("preferred=%1 actual=%2").arg(preferredCardWidth).arg(actualCardWidth));
         // 需求 7：自定义图形改为浮动面板，模板以按钮形式出现在标签页里；菜单只留触发器。
         dockWindow.OpenCustomShapePanel(nullptr);

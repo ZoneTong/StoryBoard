@@ -736,9 +736,8 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
         };
         ctx.Check(fillImageModeCombo && fillImageModeCombo->count() == 3 && fillImageModeCombo->isEnabled() &&
                       clearFillImageButton && clearFillImageButton->isEnabled() &&
-                      clearFillImageButton->toolButtonStyle() == Qt::ToolButtonIconOnly &&
-                      clearFillImageButton->toolTip() ==
-                          QCoreApplication::translate("PropertiesPanel", "Clear fill image"),
+                      clearFillImageButton->toolButtonStyle() == Qt::ToolButtonTextBesideIcon &&
+                      clearFillImageButton->text() == QCoreApplication::translate("PropertiesPanel", "Clear"),
                   QStringLiteral("背景图片行提供填充方式与清除按钮"),
                   QStringLiteral("combo=%1 count=%2 clear=%3")
                       .arg(fillImageModeCombo ? 1 : 0)
