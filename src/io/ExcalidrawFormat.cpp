@@ -73,13 +73,15 @@ QJsonObject ItemBase(const QString& kind, const QRectF& bounds, int z, int layer
 // 单条折线最多保留的点数：再多对画板没有意义，只会把曲线图元撑爆。
 constexpr int MAX_POINTS = 10000;
 
-QJsonArray PolylineSegments(const QList<QPointF>& points)
+// segments 在画板里是“相对图元原点”的本地坐标，而 Excalidraw 的点是世界坐标；
+// origin 传包围盒左上角（= 图元 x/y），否则整条线会再平移一次、落到画布外。
+QJsonArray PolylineSegments(const QList<QPointF>& points, const QPointF& origin = QPointF())
 {
     QJsonArray segments;
     const int last = qMin(points.size() - 1, MAX_POINTS - 1);
     for (int i = 1; i <= last; ++i) {
-        const QPointF p0 = points.at(i - 1);
-        const QPointF p1 = points.at(i);
+        const QPointF p0 = points.at(i - 1) - origin;
+        const QPointF p1 = points.at(i) - origin;
         QJsonArray values;
         values.append(p0.x());
         values.append(p0.y());
@@ -116,13 +118,24 @@ QList<QPointF> AbsolutePoints(const QJsonObject& element, QStringList* warnings)
     return points;
 }
 
+// 水平/垂直直线（或全等点）的包围盒高或宽为 0，不能用 QRectF::isNull() 当“首个点”哨兵，
+// 否则整条线会退化到末点、宽高归零，粘贴后在图层里能看到名字却画不出来。
 QRectF BoundsOf(const QList<QPointF>& points)
 {
-    QRectF bounds;
-    for (const QPointF& point : points) {
-        bounds = bounds.isNull() ? QRectF(point, QSizeF(0, 0)) : bounds.united(QRectF(point, QSizeF(0, 0)));
+    if (points.isEmpty()) {
+        return QRectF();
     }
-    return bounds;
+    qreal minX = points.constFirst().x();
+    qreal maxX = minX;
+    qreal minY = points.constFirst().y();
+    qreal maxY = minY;
+    for (const QPointF& point : points) {
+        minX = qMin(minX, point.x());
+        maxX = qMax(maxX, point.x());
+        minY = qMin(minY, point.y());
+        maxY = qMax(maxY, point.y());
+    }
+    return QRectF(minX, minY, maxX - minX, maxY - minY);
 }
 
 // 导出时写进 customData 的原样式字段；导入先读这里，读不到再按 Excalidraw 语义近似。
@@ -263,7 +276,7 @@ QJsonObject ElementToItem(const QJsonObject& element, int z, int layer, QStringL
         // 类型标识只写一次：手绘笔迹为 freehand，其余折线为 straightline。
         item.insert(QStringLiteral("startArrow"), ImportHeadStyle(element, QStringLiteral("startArrow")));
         item.insert(QStringLiteral("endArrow"), ImportHeadStyle(element, QStringLiteral("endArrow")));
-        item.insert(QStringLiteral("segments"), PolylineSegments(points));
+        item.insert(QStringLiteral("segments"), PolylineSegments(points, lineBounds.topLeft()));
         return item;
     }
 

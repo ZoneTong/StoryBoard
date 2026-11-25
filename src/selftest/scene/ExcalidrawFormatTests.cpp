@@ -134,6 +134,25 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
             QStringLiteral("kind=%1 end=%2")
                 .arg(line.value(QStringLiteral("kind")).toString(), line.value(QStringLiteral("endArrow")).toString()));
     }
+    // 粘贴后必须落在画布内：segments 是图元本地坐标，不能把 Excalidraw 的世界坐标原样带走。
+    {
+        const QJsonObject line = items.at(4).toObject();
+        const QJsonArray segments = line.value(QStringLiteral("segments")).toArray();
+        qreal maxAbs = 0.0;
+        for (const QJsonValue& segment : segments) {
+            for (const QJsonValue& value : segment.toArray()) {
+                maxAbs = qMax(maxAbs, qAbs(value.toDouble()));
+            }
+        }
+        const qreal span =
+            qMax(line.value(QStringLiteral("w")).toDouble(), line.value(QStringLiteral("h")).toDouble()) + 2.0;
+        ctx.Check(!segments.isEmpty() && maxAbs <= span, QStringLiteral("直线段保存为图元本地坐标，粘贴后不会飞出画布"),
+                  QStringLiteral("maxAbs=%1 span=%2 w=%3 h=%4")
+                      .arg(maxAbs)
+                      .arg(span)
+                      .arg(line.value(QStringLiteral("w")).toDouble())
+                      .arg(line.value(QStringLiteral("h")).toDouble()));
+    }
     // 多段箭头 → 直线图元 + 折线段。
     {
         const QJsonObject curve = items.at(5).toObject();
