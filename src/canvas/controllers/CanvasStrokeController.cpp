@@ -1,12 +1,14 @@
 #include "canvas/controllers/CanvasStrokeController.h"
 
 #include "canvas/CanvasView.h"
+#include "items/CanvasItem.h"
 #include "items/lines/CurveItem.h"
 #include "items/lines/StraightLineItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
 #include "scene/CanvasScene.h"
 
 #include <QCoreApplication>
+#include <QJsonObject>
 #include <QLineF>
 #include <QVector>
 #include <QtMath>
@@ -85,6 +87,14 @@ bool CanvasStrokeController::BeginStroke(const QPoint& viewportPos)
     stroke->BeginStroke(m_view->mapToScene(viewportPos), m_brushColor, m_brushWidth);
     m_scene->addItem(stroke);
     m_activeStroke = stroke;
+    m_startTargetUid.clear();
+    m_lastViewportPos = viewportPos;
+    // 起笔落在图形上：记下目标 uid，收笔成直线时把这一端绑上去。
+    if (CanvasItem* target = m_view->HitTester()->TopItemAt(viewportPos)) {
+        if (target->Category() == ItemCategory::SHAPE) {
+            m_startTargetUid = target->Uid();
+        }
+    }
     m_scene->clearSelection();
     return true;
 }
@@ -95,6 +105,7 @@ void CanvasStrokeController::AppendPoint(const QPoint& viewportPos)
         return;
     }
     m_activeStroke->AppendScenePoint(m_view->mapToScene(viewportPos));
+    m_lastViewportPos = viewportPos;
     m_view->viewport()->update();
 }
 
@@ -126,6 +137,42 @@ void CanvasStrokeController::FinishStroke()
         auto* line = new StraightLineItem();
         line->SetEndpoints(a, b, stroke->StrokeColor(), stroke->StrokeWidth());
         line->SetStrokePattern(stroke->strokePattern());
+        // 两端各自落在图形上时建立绑定；起止落在同一个图形里不当连接，避免零长度箭头。
+        CanvasItem* startTarget = m_scene->ItemByUid(m_startTargetUid);
+        // 进行中的笔画压在最上层，命中会先撞到自己；临时隐藏再查落点下方的图形。
+        stroke->setVisible(false);
+        CanvasItem* endTarget = m_view->HitTester()->TopItemAt(m_lastViewportPos);
+        stroke->setVisible(true);
+        if (endTarget && endTarget->Category() != ItemCategory::SHAPE) {
+            endTarget = nullptr;
+        }
+        if (startTarget == endTarget) {
+            endTarget = nullptr;
+        }
+        auto bindingFor = [](const CanvasItem* target) {
+            QJsonObject binding;
+            binding.insert(QStringLiteral("elementId"), target->Uid());
+            binding.insert(QStringLiteral("focus"), 0.0);
+            binding.insert(QStringLiteral("gap"), 4.0);
+            return binding;
+        };
+        QPointF start = a;
+        QPointF end = b;
+        if (endTarget) {
+            end = CanvasScene::AttachmentPoint(endTarget, start, 4.0);
+        }
+        if (startTarget) {
+            start = CanvasScene::AttachmentPoint(startTarget, end, 4.0);
+        }
+        if (startTarget) {
+            line->SetStartBinding(bindingFor(startTarget));
+            line->MoveEndpoint(true, start);
+        }
+        if (endTarget) {
+            line->SetEndBinding(bindingFor(endTarget));
+            line->MoveEndpoint(false, end);
+        }
+        m_startTargetUid.clear();
         m_scene->removeItem(stroke);
         delete stroke;
         m_scene->CommitNewItem(line, TrView("Add stroke"));

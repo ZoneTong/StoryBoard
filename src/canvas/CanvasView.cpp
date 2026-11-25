@@ -444,12 +444,16 @@ void CanvasView::mouseReleaseEvent(QMouseEvent* event)
 
     if (m_groupBox->IsDragging() && event->button() == Qt::LeftButton) {
         m_groupBox->EndDrag();
+        m_scene->SyncArrowBindings();
+        m_scene->SyncContainerTexts();
         event->accept();
         return;
     }
 
     if (m_resize->IsResizing() && event->button() == Qt::LeftButton) {
         m_resize->EndResize();
+        m_scene->SyncArrowBindings();
+        m_scene->SyncContainerTexts();
         event->accept();
         return;
     }
@@ -471,6 +475,9 @@ void CanvasView::mouseReleaseEvent(QMouseEvent* event)
     if (applyBandFix) {
         SelectItemsInsideBand(m_bandOrigin, bandEnd);
     }
+    // 拖动 / 缩放提交后，绑定的箭头端点与容器文字重新贴合目标。
+    m_scene->SyncArrowBindings();
+    m_scene->SyncContainerTexts();
 }
 
 void CanvasView::SelectItemsInsideBand(const QPoint& from, const QPoint& to)

@@ -65,6 +65,13 @@ class CanvasScene : public QGraphicsScene {
 
     QList<CanvasItem*> CanvasItems() const;
     int CanvasItemCount() const;
+    // 绑定跟随：箭头端点在目标图形移动 / 缩放后重新贴回目标边缘，容器文字回到容器中心。
+    // 只在交互提交后调用，不参与逐帧重绘，避免递归改几何。
+    void SyncArrowBindings();
+    void SyncContainerTexts();
+    CanvasItem* ItemByUid(const QString& uid) const;
+    // 绑定落点：从 from 朝目标图形中心，取图形边缘上的点，再沿外法线让开 gap。
+    static QPointF AttachmentPoint(const CanvasItem* target, const QPointF& from, qreal gap);
     // 需求 32：给所有还没有自定义名称的图元补上“类型 1 / 类型 2 …”自动名称。
     // 同时修复载入文件里已有的重名条目，保证画布内名称唯一。
     void AssignAutoItemNames();

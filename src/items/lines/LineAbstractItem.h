@@ -69,6 +69,9 @@ class LineAbstractItem : public CanvasItem, public StrokeAttributes {
     void SetStartBinding(const QJsonObject& binding) { m_startBinding = binding; }
     void SetEndBinding(const QJsonObject& binding) { m_endBinding = binding; }
 
+    // 端点绑定跟随：把某一端拖到指定场景坐标，只动这一端与控制柄，其余节点保持。
+    bool MoveEndpoint(bool start, const QPointF& scenePoint);
+
     // 两端箭头在场景里的实际绘制范围（含描边余量）。导出包围框要把它算进去：
     // 箭头头长是线宽的 4 倍，只按半个线宽外扩会把翅膀切掉一半。
     QRectF ArrowSceneBounds() const;

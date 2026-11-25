@@ -2,6 +2,7 @@
 
 #include <QColor>
 #include <QPoint>
+#include <QString>
 #include <QtGlobal>
 
 class CanvasScene;
@@ -33,6 +34,8 @@ class CanvasStrokeController {
     CanvasView* m_view = nullptr;
     CanvasScene* m_scene = nullptr;
     CurveItem* m_activeStroke = nullptr;
+    QString m_startTargetUid;
+    QPoint m_lastViewportPos;
     QColor m_brushColor = QColor(30, 41, 59);
     qreal m_brushWidth = 4.0;
     qreal m_strokeSmoothing = 2.0;

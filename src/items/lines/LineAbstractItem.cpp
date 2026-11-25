@@ -151,6 +151,28 @@ QVector<QPointF> LineAbstractItem::StrokePoints() const
     return CurveGeometry::Knots(m_segments);
 }
 
+bool LineAbstractItem::MoveEndpoint(bool start, const QPointF& scenePoint)
+{
+    if (m_segments.isEmpty()) {
+        return false;
+    }
+    CurveSegment& segment = start ? m_segments.first() : m_segments.last();
+    const QPointF local = mapFromScene(scenePoint);
+    if (start) {
+        const QPointF delta = local - segment.p0;
+        segment.p0 = local;
+        segment.c1 += delta;
+    } else {
+        const QPointF delta = local - segment.p1;
+        segment.p1 = local;
+        segment.c2 += delta;
+    }
+    NormalizeGeometry();
+    RebuildPath();
+    update();
+    return true;
+}
+
 QRectF LineAbstractItem::SegmentBounds() const
 {
     qreal minX = 0.0;
