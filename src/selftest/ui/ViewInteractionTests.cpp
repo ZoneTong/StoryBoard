@@ -7,6 +7,7 @@
 #include "items/lines/StraightLineItem.h"
 #include "items/polygon/PolygonItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
+#include "items/shapes/ShapeFactory.h"
 #include "items/text/TextItem.h"
 #include "lineart/LineArtConverter.h"
 #include "lineart/LineArtDialog.h"
@@ -499,6 +500,35 @@ void selftest::RunViewInteractionTests(Context& ctx)
               QStringLiteral("双击文字不弹窗"));
     ctx.Check(doubleClickText->isSelected() && viewScene.selectedItems().size() == 1,
               QStringLiteral("双击文字只单选该图元"));
+
+    // Excalidraw 口径：双击图形直接进入容器文字编辑，没有容器文字就新建一段并绑定。
+    {
+        auto* containerShape = ShapeFactory::Create(ShapeType::RECTANGLE);
+        containerShape->SetContentSize(QSizeF(160.0, 100.0));
+        containerShape->setPos(QPointF(420.0, 600.0));
+        viewScene.AddItemsWithUndo({containerShape}, QStringLiteral("添加容器图形"));
+        view.FitAll();
+        QApplication::processEvents();
+        const QPoint shapePoint = view.mapFromScene(containerShape->SceneContentRect().center());
+        QMouseEvent shapeDoubleClick(QEvent::MouseButtonDblClick, QPointF(shapePoint),
+                                    QPointF(view.viewport()->mapToGlobal(shapePoint)), Qt::LeftButton,
+                                    Qt::LeftButton, Qt::NoModifier);
+        QApplication::sendEvent(view.viewport(), &shapeDoubleClick);
+        QApplication::processEvents();
+        TextItem* boundText = nullptr;
+        for (CanvasItem* item : viewScene.CanvasItems()) {
+            TextItem* candidate = dynamic_cast<TextItem*>(item);
+            if (candidate && candidate->ContainerUid() == containerShape->Uid()) {
+                boundText = candidate;
+                break;
+            }
+        }
+        ctx.Check(boundText != nullptr && view.IsTextEditing(),
+                  QStringLiteral("双击图形新建并编辑容器文字"),
+                  QStringLiteral("bound=%1 editing=%2")
+                      .arg(boundText ? QStringLiteral("yes") : QStringLiteral("no"))
+                      .arg(view.IsTextEditing() ? QStringLiteral("yes") : QStringLiteral("no")));
+    }
 
     // 查看模式下双击同样只变换选择，不弹任何窗。
     view.SetMode(ToolMode::VIEW);
