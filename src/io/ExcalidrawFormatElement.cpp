@@ -237,6 +237,11 @@ QJsonObject ElementToItem(const QJsonObject& element, int z, int layer, QStringL
         item.insert(QStringLiteral("baseHeight"), natural.height());
         item.insert(QStringLiteral("opacity"), NumberOr(element, QStringLiteral("opacity"), 100.0) / 100.0);
         item.insert(QStringLiteral("rotation"), qRadiansToDegrees(NumberOr(element, QStringLiteral("angle"), 0.0)));
+        // 容器文字：记下容器 uid，布局与导出仍按容器关系走。
+        const QString containerId = element.value(QStringLiteral("containerId")).toString().trimmed();
+        if (!containerId.isEmpty()) {
+            item.insert(QStringLiteral("containerId"), containerId);
+        }
         return item;
     }
 
@@ -263,6 +268,15 @@ QJsonObject ElementToItem(const QJsonObject& element, int z, int layer, QStringL
         // 类型标识只写一次：手绘笔迹为 freehand，其余折线为 straightline。
         item.insert(QStringLiteral("startArrow"), ImportHeadStyle(element, QStringLiteral("startArrow")));
         item.insert(QStringLiteral("endArrow"), ImportHeadStyle(element, QStringLiteral("endArrow")));
+        // 端点绑定原样保留：{elementId, focus, gap}，导出时再写回。
+        const QJsonObject startBinding = element.value(QStringLiteral("startBinding")).toObject();
+        if (!startBinding.isEmpty()) {
+            item.insert(QStringLiteral("startBinding"), startBinding);
+        }
+        const QJsonObject endBinding = element.value(QStringLiteral("endBinding")).toObject();
+        if (!endBinding.isEmpty()) {
+            item.insert(QStringLiteral("endBinding"), endBinding);
+        }
         item.insert(QStringLiteral("segments"), PolylineSegments(points, lineBounds.topLeft()));
         return item;
     }

@@ -31,6 +31,9 @@ class TextItem : public CanvasItem, public TextAttributes {
     QSizeF NaturalSize() const { return TextNaturalSize(); }
     QString Text() const { return TextContent(); }
     static QSizeF Measure(const QString& text, const QFont& font);
+    // 容器文字：非空时表示这段文字归属该 uid 的图形，位置与换行由容器决定。
+    QString ContainerUid() const { return m_containerUid; }
+    void SetContainerUid(const QString& uid) { m_containerUid = uid.trimmed(); }
 
     // TextItemState 是文字专用的 Memento：正文 / 字体 / 颜色 / 自然尺寸一次快照恢复，
     // 不拆成逐属性命令（§3.6）。基类 CanvasItem 不再持有文字 facet。
@@ -41,4 +44,7 @@ class TextItem : public CanvasItem, public TextAttributes {
     void PaintContent(QPainter* painter) override;
     qreal FramePadding() const override { return 20.0; }
     void TextChanged() override;
+
+  private:
+    QString m_containerUid;
 };

@@ -711,6 +711,76 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
                            element.value(QStringLiteral("id")).toString()));
     }
 
+    // 绑定与容器：箭头端点、容器文字的字段往返，以及图形 boundElements 的反向关系。
+    {
+        QJsonObject box = Element(QStringLiteral("rectangle"), 0, 0, 100, 100);
+        box.insert(QStringLiteral("id"), QStringLiteral("box-1"));
+        QJsonObject arrow = Element(QStringLiteral("arrow"), 0, 50, 100, 0);
+        arrow.insert(QStringLiteral("id"), QStringLiteral("arrow-1"));
+        arrow.insert(QStringLiteral("points"), QJsonArray{QJsonArray{0, 0}, QJsonArray{100, 0}});
+        QJsonObject binding;
+        binding.insert(QStringLiteral("elementId"), QStringLiteral("box-1"));
+        binding.insert(QStringLiteral("focus"), 0.5);
+        binding.insert(QStringLiteral("gap"), 4);
+        arrow.insert(QStringLiteral("startBinding"), binding);
+        arrow.insert(QStringLiteral("endBinding"), QJsonValue::Null);
+        QJsonObject text = Element(QStringLiteral("text"), 0, 0, 100, 100);
+        text.insert(QStringLiteral("id"), QStringLiteral("text-1"));
+        text.insert(QStringLiteral("text"), QStringLiteral("框内文字"));
+        text.insert(QStringLiteral("fontSize"), 20);
+        text.insert(QStringLiteral("containerId"), QStringLiteral("box-1"));
+        text.insert(QStringLiteral("textAlign"), QStringLiteral("center"));
+        text.insert(QStringLiteral("verticalAlign"), QStringLiteral("middle"));
+        text.insert(QStringLiteral("autoResize"), false);
+
+        const QJsonObject storyboard = Excalidraw::SceneToStoryBoard(Scene(QJsonArray{box, arrow, text}), nullptr);
+        const QJsonArray items = storyboard.value(QStringLiteral("items")).toArray();
+        const QJsonObject lineItem = items.at(1).toObject();
+        const QJsonObject textItem = items.at(2).toObject();
+        ctx.Check(lineItem.value(QStringLiteral("startBinding"))
+                          .toObject()
+                          .value(QStringLiteral("elementId"))
+                          .toString() == QStringLiteral("box-1") &&
+                      textItem.value(QStringLiteral("containerId")).toString() == QStringLiteral("box-1"),
+                  QStringLiteral("导入保留箭头端点绑定与文字容器"),
+                  QStringLiteral("binding=%1 container=%2")
+                      .arg(lineItem.value(QStringLiteral("startBinding"))
+                               .toObject()
+                               .value(QStringLiteral("elementId"))
+                               .toString(),
+                           textItem.value(QStringLiteral("containerId")).toString()));
+
+        const QJsonObject scene = Excalidraw::StoryBoardToScene(storyboard, nullptr);
+        const QJsonArray elements = scene.value(QStringLiteral("elements")).toArray();
+        const QJsonObject backArrow = elements.at(1).toObject();
+        const QJsonObject backText = elements.at(2).toObject();
+        const QJsonObject backBox = elements.at(0).toObject();
+        QStringList boundList;
+        for (const QJsonValue& bound : backBox.value(QStringLiteral("boundElements")).toArray()) {
+            boundList.append(bound.toObject().value(QStringLiteral("id")).toString());
+        }
+        ctx.Check(backArrow.value(QStringLiteral("startBinding"))
+                          .toObject()
+                          .value(QStringLiteral("elementId"))
+                          .toString() == QStringLiteral("box-1") &&
+                      qAbs(backArrow.value(QStringLiteral("startBinding"))
+                               .toObject()
+                               .value(QStringLiteral("gap"))
+                               .toDouble() -
+                           4.0) < 0.01 &&
+                      backText.value(QStringLiteral("containerId")).toString() == QStringLiteral("box-1") &&
+                      backText.value(QStringLiteral("autoResize")).toBool(true) == false &&
+                      boundList.contains(QStringLiteral("arrow-1")) &&
+                      boundList.contains(QStringLiteral("text-1")),
+                  QStringLiteral("导出写回端点绑定、容器关系与 boundElements"),
+                  QStringLiteral("gap=%1 bound=%2")
+                      .arg(backArrow.value(QStringLiteral("startBinding"))
+                               .toObject()
+                               .value(QStringLiteral("gap"))
+                               .toDouble())
+                      .arg(boundList.join(QLatin1Char('|'))));
+    }
+
     // 位图往返：默认跳过 image 并留 warning；勾选后落成“矩形 + 图片填充”，
     // 再导出仍是 image 元素 + files 表，数据不丢。
     {

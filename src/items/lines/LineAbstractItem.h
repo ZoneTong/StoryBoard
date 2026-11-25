@@ -6,6 +6,7 @@
 #include "items/properties/StrokeAttributes.h"
 
 #include <QColor>
+#include <QJsonObject>
 #include <QPainterPath>
 #include <QSizeF>
 #include <QVector>
@@ -62,6 +63,11 @@ class LineAbstractItem : public CanvasItem, public StrokeAttributes {
     ArrowStyle StartArrow() const { return m_startArrow; }
     ArrowStyle EndArrow() const { return m_endArrow; }
     void SetArrowStyles(ArrowStyle start, ArrowStyle end);
+    // 端点绑定（Excalidraw 语义）：{elementId, focus, gap}，空对象表示自由端点。
+    QJsonObject StartBinding() const { return m_startBinding; }
+    QJsonObject EndBinding() const { return m_endBinding; }
+    void SetStartBinding(const QJsonObject& binding) { m_startBinding = binding; }
+    void SetEndBinding(const QJsonObject& binding) { m_endBinding = binding; }
 
     // 两端箭头在场景里的实际绘制范围（含描边余量）。导出包围框要把它算进去：
     // 箭头头长是线宽的 4 倍，只按半个线宽外扩会把翅膀切掉一半。
@@ -91,6 +97,8 @@ class LineAbstractItem : public CanvasItem, public StrokeAttributes {
 
     ArrowStyle m_startArrow = ArrowStyle::NONE;
     ArrowStyle m_endArrow = ArrowStyle::NONE;
+    QJsonObject m_startBinding;
+    QJsonObject m_endBinding;
     QVector<CurveSegment> m_segments;
     QPainterPath m_path;
     QSizeF m_baseSize{1.0, 1.0};

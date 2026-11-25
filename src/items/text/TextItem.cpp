@@ -197,6 +197,9 @@ QJsonObject TextItem::ToJson() const
 {
     QJsonObject json = BaseJson();
     WriteTextJson(json);
+    if (!m_containerUid.isEmpty()) {
+        json.insert(QStringLiteral("containerId"), m_containerUid);
+    }
     return json;
 }
 
@@ -207,4 +210,5 @@ void TextItem::FromJson(const QJsonObject& json)
     if (ContentSize().isEmpty()) {
         SetContentSize(TextNaturalSize());
     }
+    SetContainerUid(json.value(QStringLiteral("containerId")).toString());
 }

@@ -331,6 +331,12 @@ QJsonObject LineAbstractItem::ToJson() const
     json.insert(QStringLiteral("baseHeight"), m_baseSize.height());
     json.insert(QStringLiteral("startArrow"), ArrowStyleToString(m_startArrow));
     json.insert(QStringLiteral("endArrow"), ArrowStyleToString(m_endArrow));
+    if (!m_startBinding.isEmpty()) {
+        json.insert(QStringLiteral("startBinding"), m_startBinding);
+    }
+    if (!m_endBinding.isEmpty()) {
+        json.insert(QStringLiteral("endBinding"), m_endBinding);
+    }
     if (m_polyline) {
         json.insert(QStringLiteral("polyline"), true);
     }
@@ -363,6 +369,8 @@ void LineAbstractItem::FromJson(const QJsonObject& json)
     m_strokePadding = m_strokeWidth / 2.0 + 2.0;
     m_startArrow = ArrowStyleFromString(json.value(QStringLiteral("startArrow")).toString());
     m_endArrow = ArrowStyleFromString(json.value(QStringLiteral("endArrow")).toString());
+    m_startBinding = json.value(QStringLiteral("startBinding")).toObject();
+    m_endBinding = json.value(QStringLiteral("endBinding")).toObject();
     m_polyline = json.value(QStringLiteral("polyline")).toBool(false);
 
     m_segments.clear();
