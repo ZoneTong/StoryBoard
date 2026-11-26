@@ -880,4 +880,75 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
                       .arg(fileId)
                       .arg(exportedImage.value(QStringLiteral("type")).toString()));
     }
+
+    // 圆角算法：type 2 的 value 是“最大边百分比”，type 3 才是像素，不能一律当像素。
+    {
+        QJsonObject proportional = Element(QStringLiteral("rectangle"), 0, 0, 200, 100);
+        QJsonObject proportionalRoundness;
+        proportionalRoundness.insert(QStringLiteral("type"), 2);
+        proportionalRoundness.insert(QStringLiteral("value"), 0.25);
+        proportional.insert(QStringLiteral("roundness"), proportionalRoundness);
+        QJsonObject pixel = Element(QStringLiteral("rectangle"), 0, 0, 120, 60);
+        QJsonObject pixelRoundness;
+        pixelRoundness.insert(QStringLiteral("type"), 3);
+        pixelRoundness.insert(QStringLiteral("value"), 12.0);
+        pixel.insert(QStringLiteral("roundness"), pixelRoundness);
+
+        const QJsonArray roundItems = Excalidraw::ElementsToItems(QJsonArray{proportional, pixel});
+        const qreal proportionalCorner =
+            roundItems.at(0).toObject().value(QStringLiteral("cornerRadius")).toDouble();
+        const qreal pixelCorner = roundItems.at(1).toObject().value(QStringLiteral("cornerRadius")).toDouble();
+        ctx.Check(qAbs(proportionalCorner - 50.0) < 0.01 && qAbs(pixelCorner - 12.0) < 0.01,
+                  QStringLiteral("roundness type2 按最大边百分比换算、type3 按像素"),
+                  QStringLiteral("proportional=%1 pixel=%2").arg(proportionalCorner).arg(pixelCorner));
+    }
+
+    // 负坐标元素：画布原点往负方向挪，元素整体仍在画布内。
+    {
+        QJsonObject negative = Element(QStringLiteral("rectangle"), -200, -120, 120, 80);
+        const QJsonObject document = Excalidraw::SceneToStoryBoard(Scene(QJsonArray{negative}), nullptr);
+        const QJsonObject canvas = document.value(QStringLiteral("canvas")).toObject();
+        const qreal originX = canvas.value(QStringLiteral("x")).toDouble();
+        const qreal originY = canvas.value(QStringLiteral("y")).toDouble();
+        const qreal width = canvas.value(QStringLiteral("width")).toDouble();
+        const qreal height = canvas.value(QStringLiteral("height")).toDouble();
+        ctx.Check(originX <= -260.0 && originY <= -180.0 && originX + width >= -80.0 && originY + height >= -40.0,
+                  QStringLiteral("导入负坐标元素时画布原点跟着挪，元素不会落在画布外"),
+                  QStringLiteral("origin=(%1,%2) size=(%3,%4)").arg(originX).arg(originY).arg(width).arg(height));
+    }
+
+    // 旋转的箭头：Excalidraw 的 angle 必须带到图元 rotation，否则整条线被摆回水平。
+    {
+        QJsonObject arrow = Element(QStringLiteral("arrow"), 10, 10, 100, 0);
+        arrow.insert(QStringLiteral("angle"), 0.5235987756);
+        arrow.insert(QStringLiteral("points"), QJsonArray{QJsonArray{0.0, 0.0}, QJsonArray{100.0, 0.0}});
+        const QJsonArray arrowItems = Excalidraw::ElementsToItems(QJsonArray{arrow});
+        const qreal rotation = arrowItems.at(0).toObject().value(QStringLiteral("rotation")).toDouble();
+        ctx.Check(qAbs(rotation - 30.0) < 0.1, QStringLiteral("旋转箭头导入时保留 angle"),
+                  QStringLiteral("rotation=%1").arg(rotation));
+    }
+
+    // 容器文字：粘贴走 ElementsToItems，不再经过 SceneToStoryBoard，折行必须在这里完成。
+    {
+        QJsonObject box = Element(QStringLiteral("rectangle"), 0, 0, 120, 80);
+        box.insert(QStringLiteral("id"), QStringLiteral("box-2"));
+        QJsonObject text = Element(QStringLiteral("text"), 0, 0, 320, 24);
+        text.insert(QStringLiteral("id"), QStringLiteral("text-2"));
+        text.insert(QStringLiteral("text"),
+                    QStringLiteral("这一段很长的容器文字需要在导入与粘贴时按容器宽度重新折行，不能按 Excalidraw 的单行宽度截断"));
+        text.insert(QStringLiteral("fontSize"), 20.0);
+        text.insert(QStringLiteral("containerId"), QStringLiteral("box-2"));
+        text.insert(QStringLiteral("textAlign"), QStringLiteral("center"));
+        text.insert(QStringLiteral("verticalAlign"), QStringLiteral("middle"));
+        text.insert(QStringLiteral("autoResize"), false);
+        const QJsonArray containerItems = Excalidraw::ElementsToItems(QJsonArray{box, text});
+        const QJsonObject textItem = containerItems.at(1).toObject();
+        const qreal textWidth = textItem.value(QStringLiteral("w")).toDouble();
+        const qreal textX = textItem.value(QStringLiteral("x")).toDouble();
+        const qreal textY = textItem.value(QStringLiteral("y")).toDouble();
+        const qreal textHeight = textItem.value(QStringLiteral("h")).toDouble();
+        ctx.Check(textWidth <= 120.0 && qAbs(textX) < 0.01 && qAbs((textY + textHeight / 2.0) - 40.0) < 1.0,
+                  QStringLiteral("容器文字在 ElementsToItems 阶段按容器宽度折行并居中"),
+                  QStringLiteral("w=%1 x=%2 y=%3 h=%4").arg(textWidth).arg(textX).arg(textY).arg(textHeight));
+    }
 }

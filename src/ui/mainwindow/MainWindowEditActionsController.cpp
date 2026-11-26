@@ -191,16 +191,27 @@ void MainWindowEditActionsController::PasteItems()
         if (external.isObject() && Excalidraw::IsClipboard(external.object())) {
             QStringList notes;
             const QJsonObject scene = external.object();
-            const QJsonArray items =
+            QJsonArray items =
                 Excalidraw::ElementsToItems(scene.value(QStringLiteral("elements")).toArray(), &notes, nullptr,
                                             scene.value(QStringLiteral("files")).toObject(), true);
+            // 外部场景的 frame 层号只是 Excalidraw 内部的编号，直接落到目标画布会撞上
+            // 同号图层或落进别的层；粘贴统一并入当前活动层，顺序由层内高度保持。
+            const int activeLayer = m_window->Scene()->ActiveLayerId();
+            for (int index = 0; index < items.size(); ++index) {
+                QJsonObject item = items.at(index).toObject();
+                item.insert(QStringLiteral("layer"), activeLayer);
+                items.replace(index, item);
+            }
             const int pastedCount = m_window->Scene()->PasteClipboardItems(items);
             if (pastedCount == 0) {
                 m_window->statusBar()->showMessage(MainWindow::tr("Nothing to paste"), 3000);
                 return;
             }
-            m_window->statusBar()->showMessage(MainWindow::tr("Pasted %n Excalidraw Item(s)", nullptr, pastedCount),
-                                               3000);
+            QString message = MainWindow::tr("Pasted %n Excalidraw Item(s)", nullptr, pastedCount);
+            if (!notes.isEmpty()) {
+                message += QStringLiteral(" (") + notes.join(QStringLiteral("; ")) + QStringLiteral(")");
+            }
+            m_window->statusBar()->showMessage(message, 6000);
             return;
         }
     }

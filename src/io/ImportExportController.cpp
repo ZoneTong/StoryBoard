@@ -75,6 +75,13 @@ bool HasImageSuffix(const QString& path)
     return SUFFIXES.contains(QFileInfo(path).suffix().toLower());
 }
 
+// 画布 / Excalidraw 场景都按“打开文档”处理：拖 .excalidraw 与拖 .sbcanvas 同一条路径。
+bool IsCanvasDropPath(const QString& path)
+{
+    return path.endsWith(QStringLiteral(".sbcanvas"), Qt::CaseInsensitive) ||
+           path.endsWith(QStringLiteral(".excalidraw"), Qt::CaseInsensitive);
+}
+
 } // namespace
 
 ImportExportController::ImportExportController(MainWindow* window) : m_window(window) {}
@@ -470,7 +477,7 @@ bool ImportExportController::AcceptsDropUrls(const QMimeData* mimeData) const
             continue;
         }
         const QString path = url.toLocalFile();
-        if (HasImageSuffix(path) || path.endsWith(QStringLiteral(".sbcanvas"), Qt::CaseInsensitive)) {
+        if (HasImageSuffix(path) || IsCanvasDropPath(path)) {
             return true;
         }
     }
@@ -487,7 +494,7 @@ void ImportExportController::HandleDrop(QDropEvent* event)
             continue;
         }
         const QString path = url.toLocalFile();
-        if (path.endsWith(QStringLiteral(".sbcanvas"), Qt::CaseInsensitive)) {
+        if (IsCanvasDropPath(path)) {
             canvasPath = path;
         } else if (HasImageSuffix(path)) {
             images.append(path);

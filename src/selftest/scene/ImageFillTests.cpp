@@ -10,6 +10,8 @@
 #include "selftest/core/SelfTestContext.h"
 #include "selftest/core/SelftestEntries.h"
 
+#include <QBuffer>
+#include <QByteArray>
 #include <QColor>
 #include <QImage>
 #include <QJsonArray>
@@ -375,5 +377,38 @@ void selftest::RunImageFillTests(Context& ctx)
                       .arg(merged ? 1 : 0)
                       .arg(composite ? 1 : 0)
                       .arg(composite && composite->HasFillImage() ? 1 : 0));
+    }
+
+    // 10) 图片填充解码不再强按 PNG：Excalidraw 的 JPEG 位图也能解出来，不会只剩空框。
+    {
+        QImage source(16, 16, QImage::Format_ARGB32_Premultiplied);
+        source.fill(GREEN);
+        bool jpegSaved = false;
+        QByteArray jpegBytes;
+        {
+            QBuffer buffer(&jpegBytes);
+            buffer.open(QIODevice::WriteOnly);
+            jpegSaved = source.save(&buffer, "JPG");
+        }
+        QJsonObject jpegJson;
+        jpegJson.insert(QStringLiteral("data"), QString::fromLatin1(jpegBytes.toBase64()));
+        jpegJson.insert(QStringLiteral("mode"), QStringLiteral("stretch"));
+        const QPixmap jpegPixmap = ImageFill::PixmapFromJson(jpegJson, nullptr);
+
+        QByteArray bmpBytes;
+        {
+            QBuffer buffer(&bmpBytes);
+            buffer.open(QIODevice::WriteOnly);
+            source.save(&buffer, "BMP");
+        }
+        QJsonObject bmpJson;
+        bmpJson.insert(QStringLiteral("data"), QString::fromLatin1(bmpBytes.toBase64()));
+        const QPixmap bmpPixmap = ImageFill::PixmapFromJson(bmpJson, nullptr);
+        ctx.Check((!jpegSaved || !jpegPixmap.isNull()) && !bmpPixmap.isNull(),
+                  QStringLiteral("图片填充按数据头解码，JPEG / BMP 不再被当成 PNG 丢图"),
+                  QStringLiteral("jpegSaved=%1 jpegNull=%2 bmpNull=%3")
+                      .arg(jpegSaved ? 1 : 0)
+                      .arg(jpegPixmap.isNull() ? 1 : 0)
+                      .arg(bmpPixmap.isNull() ? 1 : 0));
     }
 }

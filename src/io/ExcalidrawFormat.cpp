@@ -157,6 +157,37 @@ QJsonArray ElementsToItems(const QJsonArray& elements, QStringList* warnings, QJ
         *groupParents = parentRecords;
     }
 
+    // 容器文字：导入与粘贴都按容器宽度重新折行并回到容器中心，避免沿 Excalidraw
+    // 的单行宽度截断。粘贴走 ElementsToItems，因此这段必须放在这里而不是场景导入。
+    {
+        QHash<QString, QJsonObject> byUid;
+        for (const QJsonValue& value : std::as_const(items)) {
+            const QJsonObject item = value.toObject();
+            const QString uid = item.value(QStringLiteral("uid")).toString();
+            if (!uid.isEmpty()) {
+                byUid.insert(uid, item);
+            }
+        }
+        for (int i = 0; i < items.size(); ++i) {
+            QJsonObject item = items.at(i).toObject();
+            const QString containerId = item.value(QStringLiteral("containerId")).toString();
+            const QJsonObject container = byUid.value(containerId);
+            if (containerId.isEmpty() || container.isEmpty()) {
+                continue;
+            }
+            TextItem probe;
+            probe.FromJson(item);
+            const QSizeF size = probe.ContainerLayoutSize(container.value(QStringLiteral("w")).toDouble());
+            item.insert(QStringLiteral("x"), container.value(QStringLiteral("x")).toDouble());
+            item.insert(QStringLiteral("y"),
+                        container.value(QStringLiteral("y")).toDouble() +
+                            (container.value(QStringLiteral("h")).toDouble() - size.height()) / 2.0);
+            item.insert(QStringLiteral("w"), size.width());
+            item.insert(QStringLiteral("h"), size.height());
+            items.replace(i, item);
+        }
+    }
+
     if (layers) {
         QJsonObject base;
         base.insert(QStringLiteral("id"), 1);
@@ -183,55 +214,34 @@ QJsonObject SceneToStoryBoard(const QJsonObject& scene, QStringList* warnings, b
         return {};
     }
 
-    // 容器文字：导入时按容器宽度重新折行并回到容器中心，避免沿 Excalidraw 的单行宽度截断。
-    {
-        QHash<QString, QJsonObject> byUid;
-        for (const QJsonValue& value : std::as_const(items)) {
-            const QJsonObject item = value.toObject();
-            const QString uid = item.value(QStringLiteral("uid")).toString();
-            if (!uid.isEmpty()) {
-                byUid.insert(uid, item);
-            }
-        }
-        for (int i = 0; i < items.size(); ++i) {
-            QJsonObject item = items.at(i).toObject();
-            const QString containerId = item.value(QStringLiteral("containerId")).toString();
-            const QJsonObject container = byUid.value(containerId);
-            if (containerId.isEmpty() || container.isEmpty()) {
-                continue;
-            }
-            TextItem probe;
-            probe.FromJson(item);
-            const QSizeF size = probe.ContainerLayoutSize(container.value(QStringLiteral("w")).toDouble());
-            item.insert(QStringLiteral("x"), container.value(QStringLiteral("x")).toDouble());
-            item.insert(QStringLiteral("y"), container.value(QStringLiteral("y")).toDouble() +
-                                                 (container.value(QStringLiteral("h")).toDouble() -
-                                                  size.height()) /
-                                                     2.0);
-            item.insert(QStringLiteral("w"), size.width());
-            item.insert(QStringLiteral("h"), size.height());
-            items.replace(i, item);
-        }
-    }
-
-    // 画布尺寸取所有元素的包围盒并留边，Excalidraw 场景本身没有画布尺寸。
+    // 画布取所有元素的包围盒并留边；负坐标元素不能落在画布外，原点跟着往负方向挪。
+    qreal left = 0.0;
+    qreal top = 0.0;
     qreal right = 0.0;
     qreal bottom = 0.0;
     for (const QJsonValue& value : items) {
         const QJsonObject item = value.toObject();
-        right = qMax(right, item.value(QStringLiteral("x")).toDouble() + item.value(QStringLiteral("w")).toDouble());
-        bottom = qMax(bottom, item.value(QStringLiteral("y")).toDouble() + item.value(QStringLiteral("h")).toDouble());
+        const qreal x = item.value(QStringLiteral("x")).toDouble();
+        const qreal y = item.value(QStringLiteral("y")).toDouble();
+        const qreal w = item.value(QStringLiteral("w")).toDouble();
+        const qreal h = item.value(QStringLiteral("h")).toDouble();
+        left = qMin(left, x);
+        top = qMin(top, y);
+        right = qMax(right, x + w);
+        bottom = qMax(bottom, y + h);
     }
 
     QJsonObject document;
     document.insert(QStringLiteral("format"), QStringLiteral("StoryBoardCanvas"));
     document.insert(QStringLiteral("version"), 2);
     document.insert(QStringLiteral("generator"), QStringLiteral("StoryBoard Excalidraw import"));
+    const qreal originX = left < 0.0 ? left - 64.0 : 0.0;
+    const qreal originY = top < 0.0 ? top - 64.0 : 0.0;
     QJsonObject canvas;
-    canvas.insert(QStringLiteral("x"), 0);
-    canvas.insert(QStringLiteral("y"), 0);
-    canvas.insert(QStringLiteral("width"), qMax<qreal>(512.0, right + 64.0));
-    canvas.insert(QStringLiteral("height"), qMax<qreal>(512.0, bottom + 64.0));
+    canvas.insert(QStringLiteral("x"), originX);
+    canvas.insert(QStringLiteral("y"), originY);
+    canvas.insert(QStringLiteral("width"), qMax<qreal>(512.0, right - originX + 64.0));
+    canvas.insert(QStringLiteral("height"), qMax<qreal>(512.0, bottom - originY + 64.0));
     document.insert(QStringLiteral("canvas"), canvas);
 
     const QString background =
@@ -255,4 +265,3 @@ QJsonObject SceneToStoryBoard(const QJsonObject& scene, QStringList* warnings, b
 }
 
 } // namespace Excalidraw
-

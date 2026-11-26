@@ -34,7 +34,9 @@ QPixmap DecodePixmap(const QString& base64)
     const QByteArray bytes = QByteArray::fromBase64(base64.toLatin1());
     QPixmap pixmap;
     if (!bytes.isEmpty()) {
-        pixmap.loadFromData(bytes, "PNG");
+        // 按字节头识别格式：图片填充可能来自 Excalidraw 的 JPEG / WebP dataURL，
+        // 只认 PNG 会把它们解成空图（矩形变成空框）。
+        pixmap.loadFromData(bytes);
     }
     return pixmap;
 }

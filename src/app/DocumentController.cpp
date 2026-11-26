@@ -60,12 +60,14 @@ bool SceneHasImages(const QJsonObject& scene)
     return false;
 }
 
-// 导入含图片的 Excalidraw 场景时给一次选择：默认保留图片（矩形 + 图片填充），
-// 取消勾选才跳过。
-bool AskKeepImagesAsBitmap(QWidget* parent)
+// 导入含图片的 Excalidraw 场景时给一次选择：三态，取消表示“这次不导入”，
+// 与“取消勾选跳过图片”区分开，避免点了取消还继续加载文档。
+enum class KeepImagesChoice { KEEP, SKIP, CANCEL };
+
+KeepImagesChoice AskKeepImagesAsBitmap(QWidget* parent)
 {
     if (TestMode::IsSelfTestMode()) {
-        return true;
+        return KeepImagesChoice::KEEP;
     }
     QDialog dialog(parent);
     dialog.setWindowTitle(MainWindow::tr("Import Excalidraw"));
@@ -79,7 +81,10 @@ bool AskKeepImagesAsBitmap(QWidget* parent)
     layout->addWidget(buttons);
     QObject::connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
     QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
-    return dialog.exec() == QDialog::Accepted && keep->isChecked();
+    if (dialog.exec() != QDialog::Accepted) {
+        return KeepImagesChoice::CANCEL;
+    }
+    return keep->isChecked() ? KeepImagesChoice::KEEP : KeepImagesChoice::SKIP;
 }
 
 bool ValidateCanvasRoot(const QJsonObject& root, QString* error)
@@ -227,8 +232,15 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors)
     QJsonObject usableRoot = root;
     QStringList excalidrawNotes;
     if (Excalidraw::IsScene(root)) {
-        // 含图片的场景先问一次是否保留位图，默认按老行为跳过图片。
-        const bool keepImages = SceneHasImages(root) && AskKeepImagesAsBitmap(m_window);
+        // 含图片的场景先问一次是否保留位图；点取消表示放弃本次导入，不再往下改文档。
+        bool keepImages = false;
+        if (SceneHasImages(root)) {
+            const KeepImagesChoice choice = AskKeepImagesAsBitmap(m_window);
+            if (choice == KeepImagesChoice::CANCEL) {
+                return false;
+            }
+            keepImages = choice == KeepImagesChoice::KEEP;
+        }
         usableRoot = Excalidraw::SceneToStoryBoard(root, &excalidrawNotes, keepImages);
         if (usableRoot.isEmpty()) {
             if (showErrors) {

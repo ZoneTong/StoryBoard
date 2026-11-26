@@ -1,4 +1,5 @@
 #include "io/ExcalidrawFormat.h"
+#include "io/ImportExportController.h"
 #include "items/CanvasItem.h"
 #include "items/lines/LineAbstractItem.h"
 #include "items/properties/FillAttributes.h"
@@ -24,6 +25,7 @@
 #include <QPointF>
 #include <QSizeF>
 #include <QUndoStack>
+#include <QUrl>
 #include <QWidget>
 
 namespace {
@@ -199,6 +201,75 @@ void selftest::RunClipboardShortcutTests(Context& ctx)
                   QStringLiteral("粘贴后容器文字改写到粘贴图元的新 uid"),
                   QStringLiteral("container=%1 solidUid=%2").arg(textContainer, solidUid));
         QApplication::clipboard()->clear();
+    }
+
+    // 粘贴 Excalidraw 的 frame 内容：帧号不能直接当图层号落到目标画布（会撞上同号层），
+    // 统一并入当前活动层；容器文字在 ElementsToItems 阶段完成折行。
+    {
+        const QByteArray frameJson = R"({"type":"excalidraw/clipboard","elements":[
+            {"id":"frame-1","type":"frame","x":0,"y":0,"width":320,"height":200,"name":"框 A","frameId":null},
+            {"id":"in-frame","type":"rectangle","x":10,"y":10,"width":120,"height":80,"frameId":"frame-1",
+             "backgroundColor":"#a5d8ff","fillStyle":"solid","strokeColor":"#1e1e1e","strokeWidth":2},
+            {"id":"frame-text","type":"text","x":20,"y":20,"width":200,"height":30,
+             "text":"容器里一段很长的文字，粘贴后必须按容器宽度重新折行",
+             "originalText":"容器里一段很长的文字，粘贴后必须按容器宽度重新折行","fontSize":20,"fontFamily":2,
+             "textAlign":"center","verticalAlign":"middle","containerId":"in-frame",
+             "strokeColor":"#1e1e1e","backgroundColor":"transparent","fillStyle":"solid"}]})";
+
+        MainWindow frameWindow;
+        frameWindow.View()->SetMode(ToolMode::EDIT);
+        CanvasScene* frameScene = frameWindow.findChild<CanvasScene*>();
+        const int activeLayer = frameScene ? frameScene->ActiveLayerId() : -1;
+        auto* frameMime = new QMimeData;
+        frameMime->setText(QString::fromUtf8(frameJson));
+        QApplication::clipboard()->setMimeData(frameMime);
+        QApplication::processEvents();
+        QAction* framePaste = FindActionByObjectName(&frameWindow, QStringLiteral("PasteItemsAction"));
+        if (framePaste) {
+            framePaste->trigger();
+            QApplication::processEvents();
+        }
+
+        bool layersOk = frameScene && frameScene->CanvasItemCount() == 2;
+        QString containerUid;
+        QSizeF textSize;
+        qreal boxWidth = 0.0;
+        if (frameScene) {
+            for (CanvasItem* item : frameScene->CanvasItems()) {
+                layersOk = layersOk && item->LayerId() == activeLayer;
+                if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
+                    boxWidth = shape->ContentSize().width();
+                } else if (auto* text = dynamic_cast<TextItem*>(item)) {
+                    containerUid = text->ContainerUid();
+                    textSize = text->ContentSize();
+                }
+            }
+        }
+        ctx.Check(
+            layersOk, QStringLiteral("粘贴 Excalidraw frame 内容并入当前活动层，不撞同号图层"),
+            QStringLiteral("active=%1 count=%2").arg(activeLayer).arg(frameScene ? frameScene->CanvasItemCount() : -1));
+        ctx.Check(
+            !containerUid.isEmpty() && boxWidth > 0.0 && textSize.width() <= boxWidth + 0.5,
+            QStringLiteral("粘贴后的容器文字按容器宽度重新折行"),
+            QStringLiteral("container=%1 textW=%2 boxW=%3").arg(containerUid).arg(textSize.width()).arg(boxWidth));
+        QApplication::clipboard()->clear();
+    }
+
+    // 拖放：.excalidraw 与 .sbcanvas 走同一条“打开文档”入口。
+    {
+        MainWindow dropWindow;
+        ImportExportController io(&dropWindow);
+        QMimeData canvasMime;
+        canvasMime.setUrls({QUrl::fromLocalFile(QStringLiteral("C:/tmp/demo.sbcanvas"))});
+        QMimeData excalidrawMime;
+        excalidrawMime.setUrls({QUrl::fromLocalFile(QStringLiteral("C:/tmp/demo.excalidraw"))});
+        QMimeData imageMime;
+        imageMime.setUrls({QUrl::fromLocalFile(QStringLiteral("C:/tmp/demo.png"))});
+        QMimeData otherMime;
+        otherMime.setUrls({QUrl::fromLocalFile(QStringLiteral("C:/tmp/demo.txt"))});
+        ctx.Check(io.AcceptsDropUrls(&canvasMime) && io.AcceptsDropUrls(&excalidrawMime) &&
+                      io.AcceptsDropUrls(&imageMime) && !io.AcceptsDropUrls(&otherMime),
+                  QStringLiteral("拖放接受 .excalidraw / .sbcanvas / 图片，拒绝其他文件"));
     }
 
     // 画板自身纯色 / 斜线填充导出到 Excalidraw：元素要带对 fillStyle 与背景色。

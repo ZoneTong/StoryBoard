@@ -56,7 +56,9 @@ QPixmap PixmapFromJson(const QJsonObject& json, Mode* mode)
     const QByteArray bytes = QByteArray::fromBase64(json.value(QStringLiteral("data")).toString().toLatin1());
     QPixmap pixmap;
     if (!bytes.isEmpty()) {
-        pixmap.loadFromData(bytes, "PNG");
+        // 不指定解码格式：Excalidraw 的 dataURL 可能是 JPEG / WebP / GIF，
+        // 按 PNG 强解会把这类图片整块丢掉，矩形只剩空框。
+        pixmap.loadFromData(bytes);
     }
     return pixmap;
 }

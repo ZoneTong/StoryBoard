@@ -197,9 +197,20 @@ QJsonObject ElementToItem(const QJsonObject& element, int z, int layer, QStringL
         item.insert(QStringLiteral("strokeStyle"),
                     PenStyleFromExcalidraw(element.value(QStringLiteral("strokeStyle"))));
         item.insert(QStringLiteral("opacity"), NumberOr(element, QStringLiteral("opacity"), 100.0) / 100.0);
-        item.insert(QStringLiteral("cornerRadius"),
-                    qMax<qreal>(0.0, NumberOr(element.value(QStringLiteral("roundness")).toObject(),
-                                              QStringLiteral("value"), 0.0)));
+        // 圆角按 roundness 的算法换算：type 3（自适应）value 是像素，缺省 32；
+        // type 2（按比例）value 是“最大边百分比”，缺省 0.25，必须乘上边长才不是 0.25px。
+        const QJsonObject roundness = element.value(QStringLiteral("roundness")).toObject();
+        qreal corner = 0.0;
+        if (!roundness.isEmpty()) {
+            const int roundnessType = roundness.value(QStringLiteral("type")).toInt(3);
+            const qreal largestSide = qMax(bounds.width(), bounds.height());
+            if (roundnessType == 1 || roundnessType == 2) {
+                corner = roundness.value(QStringLiteral("value")).toDouble(0.25) * largestSide;
+            } else {
+                corner = roundness.value(QStringLiteral("value")).toDouble(32.0);
+            }
+        }
+        item.insert(QStringLiteral("cornerRadius"), qMax<qreal>(0.0, corner));
         item.insert(QStringLiteral("rotation"), qRadiansToDegrees(NumberOr(element, QStringLiteral("angle"), 0.0)));
         return item;
     }
@@ -265,6 +276,8 @@ QJsonObject ElementToItem(const QJsonObject& element, int z, int layer, QStringL
         item.insert(QStringLiteral("baseHeight"), lineBounds.height());
         item.insert(QStringLiteral("dot"), false);
         item.insert(QStringLiteral("linear"), true);
+        // 旋转过的箭头 / 折线在 Excalidraw 里靠 angle 摆放，漏掉会把整条线摆回水平。
+        item.insert(QStringLiteral("rotation"), qRadiansToDegrees(NumberOr(element, QStringLiteral("angle"), 0.0)));
         // 类型标识只写一次：手绘笔迹为 freehand，其余折线为 straightline。
         item.insert(QStringLiteral("startArrow"), ImportHeadStyle(element, QStringLiteral("startArrow")));
         item.insert(QStringLiteral("endArrow"), ImportHeadStyle(element, QStringLiteral("endArrow")));
