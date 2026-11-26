@@ -90,7 +90,9 @@ enum class IconId {
     MORPH,
     // 镜像翻转：绕竖轴左右翻（H）与绕横轴上下翻（V），虚线轴加一对对顶三角。
     MIRROR_H,
-    MIRROR_V
+    MIRROR_V,
+    // 走线方式：横纵轴折线，两端各一枚连接点。
+    ROUTE
 };
 
 namespace IconFactory {

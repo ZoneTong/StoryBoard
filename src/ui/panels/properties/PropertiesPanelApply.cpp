@@ -4,6 +4,7 @@
 #include "items/lines/ArcItem.h"
 #include "items/lines/LineAbstractItem.h"
 #include "items/lines/SineItem.h"
+#include "items/lines/StraightLineItem.h"
 #include "items/polygon/PolygonItem.h"
 #include "items/properties/FillAttributes.h"
 #include "items/properties/StrokeAttributes.h"
@@ -407,6 +408,21 @@ void PropertiesPanel::ApplyArrowEnd(int style)
         target->SetPropertyValue(ItemProperty::ARROW_END, style);
     }
     PropertyCommitService::Push(m_scene, targets, before, after, tr("Change line end arrow"));
+    Refresh();
+}
+
+void PropertiesPanel::ApplyLineRoute(int route)
+{
+    const QList<CanvasItem*> items = SelectedItems();
+    if (items.size() != 1 || !m_scene) {
+        return;
+    }
+    StraightLineItem* line = dynamic_cast<StraightLineItem*>(items.first());
+    if (!line) {
+        return;
+    }
+    // 没两端绑定图形时场景侧会拒绝，形态保持直连。
+    m_scene->SetStraightLineRoute(line, route, tr("Change line route"));
     Refresh();
 }
 

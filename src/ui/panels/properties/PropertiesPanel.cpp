@@ -5,6 +5,7 @@
 #include "items/lines/ArcItem.h"
 #include "items/lines/LineAbstractItem.h"
 #include "items/lines/SineItem.h"
+#include "items/lines/StraightLineItem.h"
 #include "items/polygon/PolygonAccess.h"
 #include "items/polygon/PolygonItem.h"
 #include "items/shapes/ShapeAbstractItem.h"
@@ -157,6 +158,7 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     connect(m_valueCard, &PropertiesPanelValueCard::sineAmplitudeChosen, this, &PropertiesPanel::ApplySineAmplitude);
     connect(m_valueCard, &PropertiesPanelValueCard::arrowStartChosen, this, &PropertiesPanel::ApplyArrowStart);
     connect(m_valueCard, &PropertiesPanelValueCard::arrowEndChosen, this, &PropertiesPanel::ApplyArrowEnd);
+    connect(m_valueCard, &PropertiesPanelValueCard::routeModeChosen, this, &PropertiesPanel::ApplyLineRoute);
     connect(m_arrangeCard, &PropertiesPanelArrangeCard::layerAdjusted, this, &PropertiesPanel::AdjustLayer);
     connect(m_arrangeCard, &PropertiesPanelArrangeCard::heightAdjusted, this, &PropertiesPanel::AdjustHeight);
     connect(m_identityCard, &PropertiesPanelIdentityCard::TypeChosen, this, &PropertiesPanel::ApplyItemType);
@@ -363,6 +365,11 @@ void PropertiesPanel::Refresh()
     // 图元回显，改动按增量套到其余图元，避免所有图元被叠到同一坐标。
     const bool singleItem = items.size() == 1;
     const bool hasSelection = !items.isEmpty();
+    // 走线形态只对“单条直线且两端都绑定图形”开放：一端自由时任何形态都退化回直连。
+    StraightLineItem* routeLine = singleItem ? dynamic_cast<StraightLineItem*>(items.first()) : nullptr;
+    const bool routeVisible = routeLine && !routeLine->StartBinding().isEmpty() && !routeLine->EndBinding().isEmpty();
+    m_valueCard->SetRouteVisible(routeVisible);
+    m_valueCard->SetLineRoute(routeVisible ? static_cast<int>(routeLine->LineRoute()) : 0);
     m_identityCard->setVisible(singleItem);
     m_geometryCard->setVisible(hasSelection);
     m_identityCard->Refresh(m_scene, singleItem ? items.first() : nullptr);

@@ -2,6 +2,7 @@
 
 #include "items/CanvasItem.h"
 #include "items/lines/LineAbstractItem.h"
+#include "items/lines/StraightLineItem.h"
 #include "items/polygon/PolygonItem.h"
 #include "scene/CanvasScene.h"
 
@@ -90,6 +91,37 @@ void ConvertItemCommand::Swap(CanvasItem* detach, CanvasItem* attach)
     }
     attach->setSelected(true);
     m_scene->update();
+}
+
+LineRouteCommand::LineRouteCommand(CanvasScene* scene, StraightLineItem* line, int beforeRoute,
+                                   const LineAbstractItem::GeometryState& beforeGeometry, int afterRoute,
+                                   const LineAbstractItem::GeometryState& afterGeometry, const QString& text)
+    : m_scene(scene), m_line(line), m_beforeRoute(beforeRoute), m_afterRoute(afterRoute),
+      m_beforeGeometry(beforeGeometry), m_afterGeometry(afterGeometry)
+{
+    setText(text);
+}
+
+void LineRouteCommand::undo()
+{
+    Apply(m_beforeRoute, m_beforeGeometry);
+}
+
+void LineRouteCommand::redo()
+{
+    Apply(m_afterRoute, m_afterGeometry);
+}
+
+void LineRouteCommand::Apply(int route, const LineAbstractItem::GeometryState& geometry)
+{
+    if (!m_scene || !m_line) {
+        return;
+    }
+    if (auto* line = dynamic_cast<StraightLineItem*>(m_line.data())) {
+        line->SetLineRoute(static_cast<StraightLineItem::RouteMode>(route));
+        line->ApplyGeometryState(geometry);
+        m_scene->update();
+    }
 }
 
 TextContainerCommand::TextContainerCommand(CanvasScene* scene, TextItem* text, const QString& beforeUid,

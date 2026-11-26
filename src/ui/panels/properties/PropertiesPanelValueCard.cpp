@@ -77,6 +77,31 @@ PropertiesPanelValueCard::PropertiesPanelValueCard(QWidget* parent) : QWidget(pa
     m_arrowSection->setVisible(false);
     outer->addWidget(m_arrowSection);
 
+    // 两端都绑定图形的直线：走线形态（直连 / 折线）。只在可调时出现，避免自由端点误改。
+    m_routeSection = new QWidget(this);
+    m_routeSection->setObjectName(QStringLiteral("ItemRouteRow"));
+    RowMetrics::ApplyRow(m_routeSection);
+    m_routeSection->setToolTip(PropertiesPanel::tr("Line route"));
+    auto* routeLayout = new QHBoxLayout(m_routeSection);
+    routeLayout->setContentsMargins(0, 0, 0, 0);
+    routeLayout->setSpacing(4);
+    QToolButton* routeIcon = MakeRowIcon(IconId::ROUTE, m_routeSection);
+    routeIcon->setToolTip(PropertiesPanel::tr("Line route"));
+    routeLayout->addWidget(routeIcon);
+    m_routeCombo = new QComboBox(m_routeSection);
+    m_routeCombo->setObjectName(QStringLiteral("ItemRouteCombo"));
+    m_routeCombo->setToolTip(PropertiesPanel::tr("Line route"));
+    m_routeCombo->addItem(PropertiesPanel::tr("Direct"), 0);
+    m_routeCombo->addItem(PropertiesPanel::tr("Polyline"), 1);
+    connect(m_routeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+        if (!m_refreshing && m_routeCombo) {
+            emit routeModeChosen(m_routeCombo->itemData(index).toInt());
+        }
+    });
+    routeLayout->addWidget(m_routeCombo, 1);
+    m_routeSection->setVisible(false);
+    outer->addWidget(m_routeSection);
+
     auto* opacityRow = new QWidget(this);
     RowMetrics::ApplyRow(opacityRow);
     auto* opacityLayout = new QHBoxLayout(opacityRow);
@@ -389,6 +414,26 @@ void PropertiesPanelValueCard::SetArrowVisible(bool visible)
     if (m_arrowSection) {
         m_arrowSection->setVisible(visible);
     }
+}
+
+void PropertiesPanelValueCard::SetRouteVisible(bool visible)
+{
+    if (m_routeSection) {
+        m_routeSection->setVisible(visible);
+    }
+}
+
+void PropertiesPanelValueCard::SetLineRoute(int route)
+{
+    if (!m_routeCombo) {
+        return;
+    }
+    m_refreshing = true;
+    const int index = m_routeCombo->findData(route);
+    if (index >= 0) {
+        m_routeCombo->setCurrentIndex(index);
+    }
+    m_refreshing = false;
 }
 
 void PropertiesPanelValueCard::ApplyAxes(qreal majorAxis, qreal minorAxis)

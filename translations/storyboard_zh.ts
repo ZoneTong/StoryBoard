@@ -536,6 +536,24 @@
         <source>Change line end arrow</source>
         <translation>修改直线端点箭头</translation>
     </message><message>
+        <location filename="../src/ui/panels/properties/PropertiesPanelApply.cpp" line="425"/>
+        <source>Change line route</source>
+        <translation>切换走线</translation>
+    </message><message>
+        <location filename="../src/ui/panels/properties/PropertiesPanelValueCard.cpp" line="84"/>
+        <location filename="../src/ui/panels/properties/PropertiesPanelValueCard.cpp" line="89"/>
+        <location filename="../src/ui/panels/properties/PropertiesPanelValueCard.cpp" line="93"/>
+        <source>Line route</source>
+        <translation>走线</translation>
+    </message><message>
+        <location filename="../src/ui/panels/properties/PropertiesPanelValueCard.cpp" line="94"/>
+        <source>Direct</source>
+        <translation>直连</translation>
+    </message><message>
+        <location filename="../src/ui/panels/properties/PropertiesPanelValueCard.cpp" line="95"/>
+        <source>Polyline</source>
+        <translation>折线</translation>
+    </message><message>
         <location filename="../src/ui/panels/properties/PropertiesPanelValueCard.cpp" line="145"/>
         <location filename="../src/ui/panels/properties/PropertiesPanelValueCard.cpp" line="151"/>
         <source>Triangle base length</source>

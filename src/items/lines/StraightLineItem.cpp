@@ -108,6 +108,42 @@ void StraightLineItem::SetEndpoints(const QPointF& startScene, const QPointF& en
     SetStrokePoints(QVector<QPointF>{startScene, endScene}, color, width, 0.0, true);
 }
 
+void StraightLineItem::SetLineRoute(RouteMode route)
+{
+    if (m_route == route) {
+        return;
+    }
+    m_route = route;
+    update();
+}
+
+void StraightLineItem::ApplyRouteGeometry(const QVector<QPointF>& scenePoints)
+{
+    if (scenePoints.size() < 2) {
+        return;
+    }
+    // 折线按场景横纵轴排布，不叠加图元自身的旋转；否则水平/垂直段会被转成斜线。
+    if (!qFuzzyIsNull(RotationAngle())) {
+        SetRotationAngle(0.0);
+    }
+    SetStrokePoints(scenePoints, StrokeColor(), StrokeWidth(), 0.0, true);
+}
+
+QJsonObject StraightLineItem::ToJson() const
+{
+    QJsonObject json = LineAbstractItem::ToJson();
+    json.insert(QStringLiteral("route"),
+                m_route == RouteMode::ORTHOGONAL ? QStringLiteral("orthogonal") : QStringLiteral("direct"));
+    return json;
+}
+
+void StraightLineItem::FromJson(const QJsonObject& json)
+{
+    LineAbstractItem::FromJson(json);
+    m_route = json.value(QStringLiteral("route")).toString() == QStringLiteral("orthogonal") ? RouteMode::ORTHOGONAL
+                                                                                             : RouteMode::DIRECT;
+}
+
 HandleSpecList StraightLineItem::CustomHandles() const
 {
     HandleSpecList specs;

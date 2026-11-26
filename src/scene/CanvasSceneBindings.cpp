@@ -2,6 +2,7 @@
 
 #include "items/CanvasItem.h"
 #include "items/lines/LineAbstractItem.h"
+#include "items/lines/StraightLineItem.h"
 #include "items/text/TextItem.h"
 #include "scene/Commands.h"
 
@@ -92,6 +93,81 @@ qreal BindingGap(const QJsonObject& binding)
 {
     const qreal gap = binding.value(QStringLiteral("gap")).toDouble(4.0);
     return gap >= 0.0 ? gap : 0.0;
+}
+
+qreal BindingFocus(const QJsonObject& binding)
+{
+    return binding.contains(QStringLiteral("focus")) ? binding.value(QStringLiteral("focus")).toDouble() : -1.0;
+}
+
+// 绑定端点落在矩形哪条边：按到四条边的距离取最近的一条。
+enum class EdgeSide { LEFT, RIGHT, TOP, BOTTOM };
+
+EdgeSide SideOfBoundary(const QRectF& rect, const QPointF& point)
+{
+    EdgeSide side = EdgeSide::LEFT;
+    qreal best = qAbs(point.x() - rect.left());
+    const qreal right = qAbs(point.x() - rect.right());
+    if (right < best) {
+        best = right;
+        side = EdgeSide::RIGHT;
+    }
+    const qreal top = qAbs(point.y() - rect.top());
+    if (top < best) {
+        best = top;
+        side = EdgeSide::TOP;
+    }
+    const qreal bottom = qAbs(point.y() - rect.bottom());
+    if (bottom < best) {
+        side = EdgeSide::BOTTOM;
+    }
+    return side;
+}
+
+// 折线走线：末端沿目标边法线进入，只产生一个拐角，两段分别平行横轴与纵轴。
+QVector<QPointF> OrthogonalRoute(const QRectF& endRect, const QPointF& start, const QPointF& end)
+{
+    const EdgeSide endSide = SideOfBoundary(endRect, end);
+    const QPointF bend = (endSide == EdgeSide::LEFT || endSide == EdgeSide::RIGHT) ? QPointF(start.x(), end.y())
+                                                                                   : QPointF(end.x(), start.y());
+    QVector<QPointF> points;
+    points.append(start);
+    if (QLineF(start, bend).length() > 1e-3 && QLineF(bend, end).length() > 1e-3) {
+        points.append(bend);
+    }
+    points.append(end);
+    return points;
+}
+
+// 两端都绑定图形时的走线点：直连两点；折线按末端边的进入方向排成横纵轴折线。
+QVector<QPointF> BoundLineRoute(CanvasScene* scene, StraightLineItem* line, StraightLineItem::RouteMode route)
+{
+    if (!scene || !line) {
+        return {};
+    }
+    const QJsonObject startBinding = line->StartBinding();
+    const QJsonObject endBinding = line->EndBinding();
+    if (startBinding.isEmpty() || endBinding.isEmpty()) {
+        return {};
+    }
+    CanvasItem* startTarget = scene->ItemByUid(startBinding.value(QStringLiteral("elementId")).toString());
+    CanvasItem* endTarget = scene->ItemByUid(endBinding.value(QStringLiteral("elementId")).toString());
+    if (!startTarget || !endTarget || startTarget->Category() != ItemCategory::SHAPE ||
+        endTarget->Category() != ItemCategory::SHAPE) {
+        return {};
+    }
+    const QVector<QPointF> knots = line->StrokePoints();
+    if (knots.size() < 2) {
+        return {};
+    }
+    const QPointF start = CanvasScene::AttachmentPoint(startTarget, line->mapToScene(knots.at(1)),
+                                                       BindingGap(startBinding), BindingFocus(startBinding));
+    const QPointF end = CanvasScene::AttachmentPoint(endTarget, line->mapToScene(knots.constLast()),
+                                                     BindingGap(endBinding), BindingFocus(endBinding));
+    if (route == StraightLineItem::RouteMode::ORTHOGONAL) {
+        return OrthogonalRoute(endTarget->mapRectToScene(endTarget->ContentRect()), start, end);
+    }
+    return QVector<QPointF>{start, end};
 }
 
 } // namespace
@@ -240,6 +316,15 @@ void CanvasScene::SyncArrowBindings()
         if (knots.size() < 2) {
             continue;
         }
+        // 两端都绑定的直线箭头若选了折线，按两个连接点整体重排折线，不再逐端挪点。
+        if (auto* straight = dynamic_cast<StraightLineItem*>(line);
+            straight && straight->LineRoute() == StraightLineItem::RouteMode::ORTHOGONAL) {
+            const QVector<QPointF> routed = BoundLineRoute(this, straight, straight->LineRoute());
+            if (!routed.isEmpty()) {
+                straight->ApplyRouteGeometry(routed);
+                continue;
+            }
+        }
         if (!line->StartBinding().isEmpty()) {
             const QJsonObject binding = line->StartBinding();
             CanvasItem* target = byUid.value(binding.value(QStringLiteral("elementId")).toString(), nullptr);
@@ -263,6 +348,32 @@ void CanvasScene::SyncArrowBindings()
             }
         }
     }
+}
+
+bool CanvasScene::SetStraightLineRoute(StraightLineItem* line, int route, const QString& text)
+{
+    if (!line) {
+        return false;
+    }
+    const StraightLineItem::RouteMode mode = static_cast<StraightLineItem::RouteMode>(route);
+    if (line->LineRoute() == mode) {
+        return false;
+    }
+    const QVector<QPointF> points = BoundLineRoute(this, line, mode);
+    if (points.isEmpty()) {
+        // 只有两端都绑在图形上才有“走线形态”可调。
+        return false;
+    }
+    const int beforeRoute = static_cast<int>(line->LineRoute());
+    const LineAbstractItem::GeometryState before = line->geometryState();
+    line->SetLineRoute(mode);
+    line->ApplyRouteGeometry(points);
+    const LineAbstractItem::GeometryState after = line->geometryState();
+    if (m_undoStack) {
+        m_undoStack->push(new LineRouteCommand(this, line, beforeRoute, before, route, after, text));
+    }
+    update();
+    return true;
 }
 
 void CanvasScene::SyncContainerText(TextItem* text)

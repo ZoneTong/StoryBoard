@@ -22,6 +22,7 @@
 class CanvasItem;
 class CanvasScene;
 class PolygonItem;
+class StraightLineItem;
 
 class AddItemCommand : public QUndoCommand {
   public:
@@ -219,6 +220,26 @@ class ConvertItemCommand : public QUndoCommand {
     QPointer<CanvasItem> m_before;
     QPointer<CanvasItem> m_after;
     QList<QPointer<TextItem>> m_containerTexts;
+};
+
+// 两端绑定直线的走线形态切换：直连 / 折线，形态标记与重排后的几何同进同退。
+class LineRouteCommand : public QUndoCommand {
+  public:
+    LineRouteCommand(CanvasScene* scene, StraightLineItem* line, int beforeRoute,
+                     const LineAbstractItem::GeometryState& beforeGeometry, int afterRoute,
+                     const LineAbstractItem::GeometryState& afterGeometry, const QString& text);
+    void undo() override;
+    void redo() override;
+
+  private:
+    void Apply(int route, const LineAbstractItem::GeometryState& geometry);
+
+    CanvasScene* m_scene = nullptr;
+    QPointer<LineAbstractItem> m_line;
+    int m_beforeRoute = 0;
+    int m_afterRoute = 0;
+    LineAbstractItem::GeometryState m_beforeGeometry;
+    LineAbstractItem::GeometryState m_afterGeometry;
 };
 
 // 镜像翻转的一次提交：每个图元的原位 / 原旋转角 / 原翻转位与镜像后的对应值。

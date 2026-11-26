@@ -114,6 +114,20 @@ void DrawSmooth(QPainter& painter, IconId)
     painter.setBrush(Qt::NoBrush);
 }
 
+void DrawRoute(QPainter& painter, IconId)
+{
+    // 横纵轴折线：左下起、竖直上行后横折到右上，两端点各一枚连接点。
+    QPainterPath elbow;
+    elbow.moveTo(3.5, 18.0);
+    elbow.lineTo(3.5, 7.0);
+    elbow.lineTo(18.5, 7.0);
+    painter.drawPath(elbow);
+    painter.setBrush(painter.pen().color());
+    painter.drawEllipse(QPointF(3.5, 18.0), 1.5, 1.5);
+    painter.drawEllipse(QPointF(18.5, 7.0), 1.5, 1.5);
+    painter.setBrush(Qt::NoBrush);
+}
+
 void DrawOpacity(QPainter& painter, IconId)
 {
     // 左实右虚的圆，表达“不透明度”。
@@ -484,6 +498,7 @@ constexpr struct IconEntry {
     {IconId::PALETTE, DrawPalette},
     {IconId::CORNER, DrawCorner},
     {IconId::SMOOTH, DrawSmooth},
+    {IconId::ROUTE, DrawRoute},
     {IconId::OPACITY, DrawOpacity},
     {IconId::ANGLE_RIGHT, DrawAngleRight},
     {IconId::ANGLE_LEFT, DrawAngleLeft},

@@ -8,6 +8,9 @@
 class StraightLineItem : public LineAbstractItem {
     Q_OBJECT
   public:
+    // 两端都绑定图形时的走线形态：直连是两点斜线；折线只允许横纵轴走向的折线段。
+    enum class RouteMode { DIRECT = 0, ORTHOGONAL = 1 };
+
     explicit StraightLineItem(QGraphicsItem* parent = nullptr);
 
     QString Kind() const override { return QStringLiteral("straightline"); }
@@ -29,7 +32,19 @@ class StraightLineItem : public LineAbstractItem {
     // 端点用场景坐标给出；插入与「手绘近直线转生」共用这一入口。
     void SetEndpoints(const QPointF& startScene, const QPointF& endScene, const QColor& color, qreal width);
 
+    RouteMode LineRoute() const { return m_route; }
+    // 只切换形态标记；真正的几何重排由画布按绑定目标算好后经 ApplyRouteGeometry 写回。
+    void SetLineRoute(RouteMode route);
+    // 走线重排：按场景坐标重建线性折线（横纵轴走向），保留描线样式、箭头与绑定。
+    void ApplyRouteGeometry(const QVector<QPointF>& scenePoints);
+
+    QJsonObject ToJson() const override;
+    void FromJson(const QJsonObject& json) override;
+
     ItemPropertySet Properties() const override;
     QVariant PropertyValue(ItemProperty property) const override;
     void SetPropertyValue(ItemProperty property, const QVariant& value) override;
+
+  private:
+    RouteMode m_route = RouteMode::DIRECT;
 };

@@ -576,4 +576,74 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
         ctx.Check(straight, QStringLiteral("图形移动后直线箭头笔迹不弯曲"),
                   QStringLiteral("segments=%1").arg(segments.size()));
     }
+
+    // 两端都绑定的直线：走线可切直连 / 折线；折线只沿横纵轴，移动图形后仍然成立。
+    {
+        CanvasScene scene;
+        scene.ApplyCanvasSize(QSizeF(1000.0, 800.0));
+        scene.SetMode(ToolMode::EDIT);
+        QUndoStack undo;
+        scene.SetUndoStack(&undo);
+
+        auto* rectA = ShapeFactory::Create(ShapeType::RECTANGLE);
+        rectA->SetContentSize(QSizeF(120.0, 100.0));
+        rectA->setPos(QPointF(100.0, 100.0));
+        auto* rectB = ShapeFactory::Create(ShapeType::RECTANGLE);
+        rectB->SetContentSize(QSizeF(120.0, 100.0));
+        rectB->setPos(QPointF(600.0, 400.0));
+        auto* line = new StraightLineItem();
+        line->SetEndpoints(QPointF(230.0, 160.0), QPointF(580.0, 430.0), QColor(QStringLiteral("#334155")), 3.0);
+        line->SetArrowStyles(ArrowStyle::NONE, ArrowStyle::OPEN_ARROW);
+        scene.AddItemsWithUndo({rectA, rectB, line}, QStringLiteral("Add two-end bound line"));
+
+        line->DragEndpointWithBinding(true, QPointF(230.0, 160.0));
+        line->DragEndpointWithBinding(false, QPointF(595.0, 430.0));
+        const bool bothBound = !line->StartBinding().isEmpty() && !line->EndBinding().isEmpty();
+        QVector<QPointF> points = line->StrokePoints();
+        const bool diagonal = points.size() == 2 && qAbs(points.at(1).x() - points.at(0).x()) > 1.0 &&
+                              qAbs(points.at(1).y() - points.at(0).y()) > 1.0;
+        ctx.Check(bothBound && line->LineRoute() == StraightLineItem::RouteMode::DIRECT && diagonal,
+                  QStringLiteral("两端绑定的直线默认直连：两点斜线相连"),
+                  QStringLiteral("bound=%1 points=%2").arg(bothBound).arg(points.size()));
+
+        ctx.Check(scene.SetStraightLineRoute(line, 1, QStringLiteral("route")), QStringLiteral("两端绑定时可切到折线"),
+                  QStringLiteral("route=1"));
+        points = line->StrokePoints();
+        bool orthogonal = points.size() >= 2;
+        for (int i = 1; orthogonal && i < points.size(); ++i) {
+            const QPointF delta = points.at(i) - points.at(i - 1);
+            orthogonal = qAbs(delta.x()) < 0.01 || qAbs(delta.y()) < 0.01;
+        }
+        const QRectF rectBScene = rectB->mapRectToScene(rectB->ContentRect());
+        const bool landsOnB = line->mapToScene(points.constLast()).x() < rectBScene.left() &&
+                              line->mapToScene(points.constLast()).x() > rectBScene.left() - 12.0;
+        ctx.Check(orthogonal && landsOnB, QStringLiteral("折线只走横纵轴且终点贴在目标边缘"),
+                  QStringLiteral("points=%1 last=(%2,%3)")
+                      .arg(points.size())
+                      .arg(line->mapToScene(points.constLast()).x())
+                      .arg(line->mapToScene(points.constLast()).y()));
+
+        undo.undo();
+        ctx.Check(line->LineRoute() == StraightLineItem::RouteMode::DIRECT && line->StrokePoints().size() == 2,
+                  QStringLiteral("撤销回到直连两点"), QStringLiteral("points=%1").arg(line->StrokePoints().size()));
+        undo.redo();
+        ctx.Check(line->LineRoute() == StraightLineItem::RouteMode::ORTHOGONAL && line->StrokePoints().size() >= 2,
+                  QStringLiteral("重做回到折线"), QStringLiteral("points=%1").arg(line->StrokePoints().size()));
+
+        rectB->setPos(QPointF(600.0, 520.0));
+        scene.SyncArrowBindings();
+        points = line->StrokePoints();
+        bool stillOrthogonal = points.size() >= 2;
+        for (int i = 1; stillOrthogonal && i < points.size(); ++i) {
+            const QPointF delta = points.at(i) - points.at(i - 1);
+            stillOrthogonal = qAbs(delta.x()) < 0.01 || qAbs(delta.y()) < 0.01;
+        }
+        ctx.Check(stillOrthogonal && line->LineRoute() == StraightLineItem::RouteMode::ORTHOGONAL,
+                  QStringLiteral("移动绑定图形后折线仍只走横纵轴"), QStringLiteral("points=%1").arg(points.size()));
+
+        ctx.Check(scene.SetStraightLineRoute(line, 0, QStringLiteral("route")), QStringLiteral("可切回直连"),
+                  QStringLiteral("route=0"));
+        ctx.Check(line->LineRoute() == StraightLineItem::RouteMode::DIRECT && line->StrokePoints().size() == 2,
+                  QStringLiteral("切回直连只剩两个端点"), QStringLiteral("points=%1").arg(line->StrokePoints().size()));
+    }
 }

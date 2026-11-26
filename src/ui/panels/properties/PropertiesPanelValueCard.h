@@ -35,6 +35,9 @@ class PropertiesPanelValueCard : public QWidget {
     void SetSineVisible(bool visible);
     // 直线（含直线箭头）的两端箭头行是否可见。
     void SetArrowVisible(bool visible);
+    // 两端都绑定图形的直线：走线形态行是否可见，并回显当前形态（0 直连 / 1 折线）。
+    void SetRouteVisible(bool visible);
+    void SetLineRoute(int route);
 
   signals:
     void opacityChosen(int percent);
@@ -52,6 +55,8 @@ class PropertiesPanelValueCard : public QWidget {
     // 直线两端箭头样式（ArrowStyle 的整数值）。
     void arrowStartChosen(int style);
     void arrowEndChosen(int style);
+    // 绑定直线的走线形态（0 直连 / 1 折线）。
+    void routeModeChosen(int route);
 
   private:
     // 半轴一行里改任一根：另一根跟着钳到同值并回显，再交给面板写撤销命令。
@@ -76,4 +81,6 @@ class PropertiesPanelValueCard : public QWidget {
     QWidget* m_arrowSection = nullptr;
     QComboBox* m_startArrowCombo = nullptr;
     QComboBox* m_endArrowCombo = nullptr;
+    QWidget* m_routeSection = nullptr;
+    QComboBox* m_routeCombo = nullptr;
 };

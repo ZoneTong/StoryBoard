@@ -21,6 +21,7 @@
 class QUndoStack;
 class CanvasItem;
 class TextItem;
+class StraightLineItem;
 class QFont;
 class QPainter;
 class QStyleOptionGraphicsItem;
@@ -78,6 +79,8 @@ class CanvasScene : public QGraphicsScene {
     // 拖拽提交用：显式给出拖拽前的 uid 与文字快照，撤销回到拖拽前的位置与归属。
     bool SetTextContainer(TextItem* text, const QString& containerUid, const QString& beforeUid,
                           const TextItemState& beforeState, const QString& label);
+    // 两端都绑定图形的直线切换走线形态（0 直连 / 1 折线），形态与几何一条撤销记录。
+    bool SetStraightLineRoute(StraightLineItem* line, int route, const QString& text);
     CanvasItem* ItemByUid(const QString& uid) const;
     // 画箭头 / 拖端点时的吸附候选，只影响视图高亮，不写进文档。
     void SetBindingHighlight(CanvasItem* item);

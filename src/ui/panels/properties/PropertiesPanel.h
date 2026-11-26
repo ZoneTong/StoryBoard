@@ -110,6 +110,8 @@ class PropertiesPanel : public QWidget {
     // 直线两端箭头样式（ArrowStyle 整数值）。
     void ApplyArrowStart(int style);
     void ApplyArrowEnd(int style);
+    // 两端绑定直线的走线形态：0 直连 / 1 折线，形态与几何一条撤销记录。
+    void ApplyLineRoute(int route);
     // 属性窗里可直接编辑的身份 / 几何字段，在编辑面板里同样可改：
     // 名称、目标图层、层内高度、位置与尺寸、旋转、平行四边形内角。
     void ApplyItemName(const QString& name);
