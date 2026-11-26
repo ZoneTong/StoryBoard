@@ -500,6 +500,13 @@ void MainWindowInsertController::InsertCustomShape(const QString& filePath)
         return;
     }
 
+    // 插入自定义图形总是落到当前活动图层：模板文件里记录的 layer 是导出时刻的
+    // 文档状态，不代表插入意图；AddItemsWithUndo 只兜底缺失层与背景层。
+    const int activeLayerId = m_window->m_scene->ActiveLayerId();
+    for (CanvasItem* item : std::as_const(items)) {
+        item->SetLayerId(activeLayerId);
+    }
+
     m_window->m_scene->clearSelection();
     const QString insertText = MainWindow::tr("Insert custom shape “%1”").arg(customShape.name);
     // 导入（插入）自定义图形即一次操作：多图元自动成组与插入合并成一条撤销记录，

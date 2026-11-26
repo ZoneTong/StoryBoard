@@ -630,7 +630,14 @@ void CanvasItem::ApplyBaseJson(const QJsonObject& json)
                           json.value(QStringLiteral("h")).toDouble(m_size.height())));
     m_layerId = qMax(0, json.value(QStringLiteral("layer")).toInt(0));
     m_groupId = qMax(0, json.value(QStringLiteral("group")).toInt(0));
-    m_zOrder = json.contains(QStringLiteral("zOrder")) ? qMax(0, json.value(QStringLiteral("height")).toInt(0)) : -1;
+    // 保存键是 zOrder；旧格式曾把层高写在 height，读回时兜底兼容。
+    if (json.contains(QStringLiteral("zOrder"))) {
+        m_zOrder = qMax(0, json.value(QStringLiteral("zOrder")).toInt(0));
+    } else if (json.contains(QStringLiteral("height"))) {
+        m_zOrder = qMax(0, json.value(QStringLiteral("height")).toInt(0));
+    } else {
+        m_zOrder = -1;
+    }
     SetRotationAngle(json.value(QStringLiteral("rotation")).toDouble(0.0));
     SetItemOpacity(json.value(QStringLiteral("opacity")).toDouble(1.0));
     m_flipX = json.value(QStringLiteral("flipX")).toBool(false);
