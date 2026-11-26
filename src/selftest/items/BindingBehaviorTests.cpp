@@ -76,21 +76,76 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
                       .arg(restored.x())
                       .arg(restored.y()));
 
-        // 右下方 / 左下方斜向靠近：先命中哪条边就贴到该边中点，落点不能跑到矩形外面。
-        const QPointF bottomRight = CanvasScene::AttachmentPoint(rect, QPointF(500.0, 320.0), 4.0);
-        const QPointF bottomLeft = CanvasScene::AttachmentPoint(rect, QPointF(200.0, 320.0), 4.0);
-        const qreal midX = targetRect.center().x();
-        const qreal midY = targetRect.center().y();
-        ctx.Check(qAbs(bottomRight.x() - midX) < 1.0 && qAbs(bottomRight.y() - targetRect.bottom() - 4.0) < 1.0 &&
-                      qAbs(bottomLeft.x() - targetRect.left() + 4.0) < 1.0 && qAbs(bottomLeft.y() - midY) < 1.0,
-                  QStringLiteral("斜向右下 / 左下靠近时端点吸附到所命中的边中点"),
-                  QStringLiteral("br=(%1,%2) bl=(%3,%4) mid=(%5,%6)")
+        // 右下方 / 左下方斜向靠近：贴到真实轮廓上离落点最近的角点，落点不能跑到矩形外面。
+        const QPointF bottomRight = CanvasScene::AttachmentPoint(rect, QPointF(500.0, 320.0), 4.0, -1.0, true);
+        const QPointF bottomLeft = CanvasScene::AttachmentPoint(rect, QPointF(200.0, 320.0), 4.0, -1.0, true);
+        const QPointF outBottomRight = targetRect.bottomRight() + QPointF(0.8, 0.6) * 4.0;
+        const QPointF outBottomLeft = targetRect.bottomLeft() + QPointF(-0.8, 0.6) * 4.0;
+        ctx.Check(QLineF(bottomRight, outBottomRight).length() < 1.0 &&
+                      QLineF(bottomLeft, outBottomLeft).length() < 1.0,
+                  QStringLiteral("斜向靠近矩形时端点吸附到四角"),
+                  QStringLiteral("br=(%1,%2) bl=(%3,%4)")
                       .arg(bottomRight.x())
                       .arg(bottomRight.y())
                       .arg(bottomLeft.x())
-                      .arg(bottomLeft.y())
-                      .arg(midX)
-                      .arg(midY));
+                      .arg(bottomLeft.y()));
+
+        // 其他图形按真实轮廓吸附：菱形顶点、椭圆弧上的点都不再用外接矩形边中点。
+        auto* diamond = ShapeFactory::Create(ShapeType::DIAMOND);
+        diamond->SetContentSize(QSizeF(160.0, 120.0));
+        diamond->setPos(QPointF(560.0, 150.0));
+        const QPointF diamondCorner = CanvasScene::AttachmentPoint(diamond, QPointF(750.0, 210.0), 4.0, -1.0, true);
+        const QRectF diamondRect = diamond->mapRectToScene(diamond->ContentRect());
+        ctx.Check(qAbs(diamondCorner.x() - (diamondRect.right() + 4.0)) < 1.0 &&
+                      qAbs(diamondCorner.y() - diamondRect.center().y()) < 1.0,
+                  QStringLiteral("菱形吸附到侧向顶点而不是外接矩形边中点"),
+                  QStringLiteral("corner=(%1,%2) right=%3")
+                      .arg(diamondCorner.x())
+                      .arg(diamondCorner.y())
+                      .arg(diamondRect.right()));
+
+        auto* ellipse = ShapeFactory::Create(ShapeType::ELLIPSE);
+        ellipse->SetContentSize(QSizeF(160.0, 120.0));
+        ellipse->setPos(QPointF(560.0, 330.0));
+        const QPointF ellipseEdge = CanvasScene::AttachmentPoint(ellipse, QPointF(760.0, 390.0), 4.0, -1.0, true);
+        const QRectF ellipseRect = ellipse->mapRectToScene(ellipse->ContentRect());
+        ctx.Check(
+            qAbs(ellipseEdge.x() - (ellipseRect.right() + 4.0)) < 1.0 &&
+                qAbs(ellipseEdge.y() - ellipseRect.center().y()) < 1.0,
+            QStringLiteral("椭圆吸附到弧线轮廓最右点"),
+            QStringLiteral("edge=(%1,%2) right=%3").arg(ellipseEdge.x()).arg(ellipseEdge.y()).arg(ellipseRect.right()));
+
+        // 特征点附近自动校准：矩形边中点 8px 内吸到中点；偏离中点的普通边位置保持原投影；
+        // 靠近角点的边位置校准到角点。
+        const QPointF nearMiddle = CanvasScene::AttachmentPoint(rect, QPointF(388.0, 330.0), 4.0, -1.0, true);
+        const QPointF plainEdge = CanvasScene::AttachmentPoint(rect, QPointF(410.0, 330.0), 4.0, -1.0, true);
+        const QPointF plainBase(410.0, targetRect.bottom());
+        const QPointF plainOutward = plainBase - targetRect.center();
+        const QPointF plainExpected =
+            plainBase +
+            plainOutward / qSqrt(plainOutward.x() * plainOutward.x() + plainOutward.y() * plainOutward.y()) * 4.0;
+        const QPointF nearCorner = CanvasScene::AttachmentPoint(rect, QPointF(452.0, 330.0), 4.0, -1.0, true);
+        const QPointF bottomMiddle(targetRect.center().x(), targetRect.bottom() + 4.0);
+        ctx.Check(QLineF(nearMiddle, bottomMiddle).length() < 1.0 && QLineF(plainEdge, plainExpected).length() < 1.0 &&
+                      QLineF(nearCorner, outBottomRight).length() < 1.0,
+                  QStringLiteral("边中点附近校准中点、普通边位置保持、角点附近校准角点"),
+                  QStringLiteral("nearMiddle=(%1,%2) plain=(%3,%4) corner=(%5,%6)")
+                      .arg(nearMiddle.x())
+                      .arg(nearMiddle.y())
+                      .arg(plainEdge.x())
+                      .arg(plainEdge.y())
+                      .arg(nearCorner.x())
+                      .arg(nearCorner.y()));
+        const QPointF ellipsePlain = CanvasScene::AttachmentPoint(ellipse, QPointF(755.0, 335.0), 4.0, -1.0, true);
+        ctx.Check(qAbs(ellipsePlain.y() - ellipseRect.center().y()) > 5.0 && ellipsePlain.x() < ellipseRect.right() &&
+                      ellipsePlain.x() > ellipseRect.center().x(),
+                  QStringLiteral("椭圆远离极点时吸附任意弧线位置"),
+                  QStringLiteral("plain=(%1,%2) centerY=%3")
+                      .arg(ellipsePlain.x())
+                      .arg(ellipsePlain.y())
+                      .arg(ellipseRect.center().y()));
+        delete diamond;
+        delete ellipse;
 
         scene.clearSelection();
         rect->setSelected(true);
@@ -191,6 +246,101 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
                       .arg(line->StartBinding().isEmpty() ? QStringLiteral("empty") : QStringLiteral("set")));
     }
 
+    // 直线非端点部分命中时只整体移动，不出现缩放手柄，也不会改两端间距。
+    {
+        CanvasScene scene;
+        scene.ApplyCanvasSize(QSizeF(800.0, 600.0));
+        scene.SetMode(ToolMode::EDIT);
+        QUndoStack undo;
+        scene.SetUndoStack(&undo);
+
+        auto* line = new StraightLineItem();
+        line->SetEndpoints(QPointF(100.0, 100.0), QPointF(300.0, 100.0), QColor(QStringLiteral("#1E293B")), 2.0);
+        scene.AddItemsWithUndo({line}, QStringLiteral("Add line"));
+        line->setSelected(true);
+
+        const QPointF middle(200.0, 100.0);
+        const QPointF posBefore = line->pos();
+        const qreal lengthBefore =
+            QLineF(line->mapToScene(line->StrokePoints().first()), line->mapToScene(line->StrokePoints().constLast()))
+                .length();
+        bool endpointOnly = true;
+        for (const HandleSpec& spec : line->CustomHandles()) {
+            endpointOnly = endpointOnly && QLineF(spec.position, middle).length() > 1.0;
+        }
+        ctx.Check(endpointOnly && !line->HasSelectionFrame(), QStringLiteral("直线中段没有可拖句柄也不显示外接框"),
+                  QStringLiteral("endpointOnly=%1 framed=%2").arg(endpointOnly).arg(line->HasSelectionFrame()));
+
+        CanvasItemInteraction drag(line);
+        drag.BeginMove(middle);
+        drag.ApplyMove(middle + QPointF(40.0, 30.0));
+        drag.FinishInteraction();
+        const qreal lengthAfter =
+            QLineF(line->mapToScene(line->StrokePoints().first()), line->mapToScene(line->StrokePoints().constLast()))
+                .length();
+        ctx.Check(qAbs(lengthAfter - lengthBefore) < 0.5 && qAbs(line->pos().x() - posBefore.x() - 40.0) < 0.5 &&
+                      qAbs(line->pos().y() - posBefore.y() - 30.0) < 0.5,
+                  QStringLiteral("拖直线中段只整体移动、长度不变"),
+                  QStringLiteral("length=%1->%2 pos=(%3,%4)->(%5,%6)")
+                      .arg(lengthBefore)
+                      .arg(lengthAfter)
+                      .arg(posBefore.x())
+                      .arg(posBefore.y())
+                      .arg(line->pos().x())
+                      .arg(line->pos().y()));
+    }
+
+    // 曲线非端点、非拐点部分命中时只整体移动，不拉伸曲线长度。
+    {
+        CanvasScene scene;
+        scene.ApplyCanvasSize(QSizeF(800.0, 600.0));
+        scene.SetMode(ToolMode::EDIT);
+        QUndoStack undo;
+        scene.SetUndoStack(&undo);
+
+        auto* curve = new CurveItem();
+        curve->SetStrokePoints(
+            {QPointF(40.0, 320.0), QPointF(150.0, 270.0), QPointF(260.0, 340.0), QPointF(340.0, 300.0)},
+            QColor(QStringLiteral("#1E293B")), 2.0);
+        scene.AddItemsWithUndo({curve}, QStringLiteral("Add curve"));
+        curve->setSelected(true);
+
+        const QPointF middle =
+            (curve->mapToScene(curve->StrokePoints().at(1)) + curve->mapToScene(curve->StrokePoints().at(2))) / 2.0;
+        const QPointF posBefore = curve->pos();
+        auto polylineLength = [&curve]() {
+            const QVector<QPointF> points = curve->StrokePoints();
+            qreal length = 0.0;
+            for (int i = 1; i < points.size(); ++i) {
+                length += QLineF(curve->mapToScene(points.at(i - 1)), curve->mapToScene(points.at(i))).length();
+            }
+            return length;
+        };
+        const qreal lengthBefore = polylineLength();
+        bool knotFree = true;
+        for (const HandleSpec& spec : curve->CustomHandles()) {
+            knotFree = knotFree && QLineF(spec.position, curve->mapFromScene(middle)).length() > 1.0;
+        }
+        ctx.Check(knotFree && !curve->HasSelectionFrame(), QStringLiteral("曲线非端点、非拐点部分没有可拖句柄"),
+                  QStringLiteral("knotFree=%1 framed=%2").arg(knotFree).arg(curve->HasSelectionFrame()));
+
+        CanvasItemInteraction drag(curve);
+        drag.BeginMove(middle);
+        drag.ApplyMove(middle + QPointF(40.0, 30.0));
+        drag.FinishInteraction();
+        const qreal lengthAfter = polylineLength();
+        ctx.Check(qAbs(lengthAfter - lengthBefore) < 0.5 && qAbs(curve->pos().x() - posBefore.x() - 40.0) < 0.5 &&
+                      qAbs(curve->pos().y() - posBefore.y() - 30.0) < 0.5,
+                  QStringLiteral("拖曲线非端点、非拐点部分只整体移动、长度不变"),
+                  QStringLiteral("length=%1->%2 pos=(%3,%4)->(%5,%6)")
+                      .arg(lengthBefore)
+                      .arg(lengthAfter)
+                      .arg(posBefore.x())
+                      .arg(posBefore.y())
+                      .arg(curve->pos().x())
+                      .arg(curve->pos().y()));
+    }
+
     // 曲线两端：首尾句柄拖到图形边缘就吸附并绑定，目标移动后端点跟随，拖离则解绑。
     // 绑定只对图形生效：文字不参与吸附。
     {
@@ -243,6 +393,37 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
         const QPointF followed = curve->mapToScene(curve->StrokePoints().constLast());
         ctx.Check(qAbs(followed.x() - 396.0) < 1.0, QStringLiteral("目标移动后曲线端点跟随"),
                   QStringLiteral("x=%1").arg(followed.x()));
+
+        // 已绑定的曲线：拖中段不能让端点被拉回而中间控制点继续平移，长度保持不变。
+        curve->setSelected(true);
+        const QVector<QPointF> beforePoints = curve->StrokePoints();
+        qreal boundLengthBefore = 0.0;
+        for (int i = 1; i < beforePoints.size(); ++i) {
+            boundLengthBefore +=
+                QLineF(curve->mapToScene(beforePoints.at(i - 1)), curve->mapToScene(beforePoints.at(i))).length();
+        }
+        const QPointF bodyMiddle = (curve->mapToScene(beforePoints.at(1)) + curve->mapToScene(beforePoints.at(2))) / 2.0;
+        const QPointF boundPosBefore = curve->pos();
+        CanvasItemInteraction bodyDrag(curve);
+        bodyDrag.BeginMove(bodyMiddle);
+        bodyDrag.ApplyMove(bodyMiddle + QPointF(50.0, 35.0));
+        bodyDrag.FinishInteraction();
+        scene.SyncArrowBindings();
+        const QVector<QPointF> afterPoints = curve->StrokePoints();
+        qreal boundLengthAfter = 0.0;
+        for (int i = 1; i < afterPoints.size(); ++i) {
+            boundLengthAfter +=
+                QLineF(curve->mapToScene(afterPoints.at(i - 1)), curve->mapToScene(afterPoints.at(i))).length();
+        }
+        ctx.Check(qAbs(boundLengthAfter - boundLengthBefore) < 0.5 && curve->pos() == boundPosBefore,
+                  QStringLiteral("拖已绑定曲线中段不拉伸长度"),
+                  QStringLiteral("length=%1->%2 pos=(%3,%4)->(%5,%6)")
+                      .arg(boundLengthBefore)
+                      .arg(boundLengthAfter)
+                      .arg(boundPosBefore.x())
+                      .arg(boundPosBefore.y())
+                      .arg(curve->pos().x())
+                      .arg(curve->pos().y()));
 
         curve->ApplyCustomHandleDrag(CanvasItem::CUSTOM_1, QPointF(120.0, 420.0));
         ctx.Check(curve->EndBinding().isEmpty(), QStringLiteral("曲线端点拖离图形后解除绑定"),

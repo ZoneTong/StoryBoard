@@ -109,6 +109,12 @@ void CanvasItemInteraction::BeginMove(const QPointF& scenePos)
 
 void CanvasItemInteraction::ApplyMove(const QPointF& scenePos)
 {
+    // 两端有绑定的直线 / 曲线端点钉在图形轮廓上，拖中段整体平移会让端点被拉回、
+    // 剩下的控制点却留在平移后的位置，长度会被明显改变；这种图元只允许拖端点或拐点。
+    if (auto* line = dynamic_cast<LineAbstractItem*>(m_item);
+        line && (!line->StartBinding().isEmpty() || !line->EndBinding().isEmpty())) {
+        return;
+    }
     const QPointF delta = scenePos - m_item->m_dragStartScene;
     for (const ItemPlacement& geometry : std::as_const(m_item->m_before)) {
         if (geometry.item) {

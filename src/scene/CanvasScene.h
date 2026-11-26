@@ -86,9 +86,12 @@ class CanvasScene : public QGraphicsScene {
     void SetBindingHighlight(CanvasItem* item);
     CanvasItem* BindingHighlight() const { return m_bindingHighlight; }
     // 绑定落点：从 from 朝目标图形中心，取图形边缘上的点，再沿外法线让开 gap。
-    // focus >= 0 时按 Excalidraw 的归一化轮廓位置取点，保证缩放 / 移动后端点停在同一边。
-    static QPointF AttachmentPoint(const CanvasItem* target, const QPointF& from, qreal gap,
-                                   qreal focus = -1.0);
+    // outlineFocus 时按图元真实轮廓的归一化弧长取点（矩形四角、椭圆弧、多边形边均可）；
+    // 否则沿用外接矩形周长语义，兼容旧文档与旧绑定。
+    static QPointF AttachmentPoint(const CanvasItem* target, const QPointF& from, qreal gap, qreal focus = -1.0,
+                                   bool outlineFocus = false);
+    // 场景点投影到图元真实轮廓后的归一化弧长参数；无轮廓时退回外接矩形周长。
+    static qreal OutlineFocusForPoint(const CanvasItem* target, const QPointF& point);
     // 轮廓参数：0 在左上角，顺时针绕一圈回到 1；用于 focus 与场景点互算。
     static qreal FocusForPoint(const QRectF& rect, const QPointF& point);
     static QPointF PointForFocus(const QRectF& rect, qreal focus);
