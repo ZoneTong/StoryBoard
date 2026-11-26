@@ -158,6 +158,18 @@ HandleSpecList StraightLineItem::CustomHandles() const
     start.cursor = Qt::SizeAllCursor;
     start.sizeScale = 0.9;
     specs.append(start);
+    // 转折走线的每个拐点都可拖：拖动时只改转折轴上的位置，另一轴由首尾吸附点决定。
+    if (m_route == RouteMode::ORTHOGONAL) {
+        for (int i = 1; i < knots.size() - 1; ++i) {
+            HandleSpec bend;
+            bend.id = CanvasItem::CUSTOM_1 + i;
+            bend.position = knots.at(i);
+            bend.behavior = HandleBehavior::STATIC;
+            bend.cursor = Qt::SizeAllCursor;
+            bend.sizeScale = 0.8;
+            specs.append(bend);
+        }
+    }
     HandleSpec end;
     end.id = CanvasItem::CUSTOM_1;
     end.position = knots.constLast();
@@ -171,14 +183,45 @@ HandleSpecList StraightLineItem::CustomHandles() const
 bool StraightLineItem::BeginCustomHandleDrag(int handle, const QPointF& scenePos)
 {
     Q_UNUSED(scenePos);
-    return handle == CanvasItem::CUSTOM_0 || handle == CanvasItem::CUSTOM_1;
+    if (handle == CanvasItem::CUSTOM_0 || handle == CanvasItem::CUSTOM_1) {
+        return true;
+    }
+    return m_route == RouteMode::ORTHOGONAL && handle > CanvasItem::CUSTOM_1 &&
+           handle - CanvasItem::CUSTOM_1 < StrokePoints().size() - 1;
 }
 
 bool StraightLineItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos)
 {
-    if (handle != CanvasItem::CUSTOM_0 && handle != CanvasItem::CUSTOM_1) {
+    if (handle == CanvasItem::CUSTOM_0 || handle == CanvasItem::CUSTOM_1) {
+        // 吸附 / 解绑口径与曲线共用：落点交给 LineAbstractItem 统一处理。
+        return DragEndpointWithBinding(handle == CanvasItem::CUSTOM_0, scenePos);
+    }
+    if (m_route != RouteMode::ORTHOGONAL || handle <= CanvasItem::CUSTOM_1) {
         return false;
     }
-    // 吸附 / 解绑口径与曲线共用：落点交给 LineAbstractItem 统一处理。
-    return DragEndpointWithBinding(handle == CanvasItem::CUSTOM_0, scenePos);
+    const int index = handle - CanvasItem::CUSTOM_1;
+    const QVector<QPointF> knots = StrokePoints();
+    if (index <= 0 || index >= knots.size() - 1) {
+        return false;
+    }
+    const QPointF start = mapToScene(knots.constFirst());
+    const QPointF end = mapToScene(knots.constLast());
+    QVector<QPointF> points;
+    // 末段是横向时转折轴为 x（拐点只能左右滑），纵向同理只能上下滑。
+    const QPointF lastDelta = knots.constLast() - knots.at(knots.size() - 2);
+    if (qAbs(lastDelta.x()) >= qAbs(lastDelta.y())) {
+        const qreal bendX = scenePos.x();
+        points = {start, QPointF(bendX, start.y()), QPointF(bendX, end.y()), end};
+    } else {
+        const qreal bendY = scenePos.y();
+        points = {start, QPointF(start.x(), bendY), QPointF(end.x(), bendY), end};
+    }
+    QVector<QPointF> cleaned;
+    for (const QPointF& point : points) {
+        if (cleaned.isEmpty() || QLineF(cleaned.constLast(), point).length() > 1e-3) {
+            cleaned.append(point);
+        }
+    }
+    ApplyRouteGeometry(cleaned);
+    return true;
 }

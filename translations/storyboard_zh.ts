@@ -552,7 +552,7 @@
     </message><message>
         <location filename="../src/ui/panels/properties/PropertiesPanelValueCard.cpp" line="95"/>
         <source>Polyline</source>
-        <translation>折线</translation>
+        <translation>转折</translation>
     </message><message>
         <location filename="../src/ui/panels/properties/PropertiesPanelValueCard.cpp" line="145"/>
         <location filename="../src/ui/panels/properties/PropertiesPanelValueCard.cpp" line="151"/>

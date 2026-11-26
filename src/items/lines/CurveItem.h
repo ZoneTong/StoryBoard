@@ -35,6 +35,8 @@ class CurveItem : public LineAbstractItem {
 
     GeometryState geometryState() const override;
     void ApplyGeometryState(const GeometryState& state) override;
+    // 曲线不画外接框与四角缩放手柄，只在首尾端点与各拐点显示调整方块；单点笔迹除外。
+    bool HasSelectionFrame() const override;
     // 曲线两端同样是可拖端点：落到其他形状内外 12px 吸附边缘并绑定，拖离则解绑。
     HandleSpecList CustomHandles() const override;
     bool BeginCustomHandleDrag(int handle, const QPointF& scenePos) override;
@@ -44,6 +46,8 @@ class CurveItem : public LineAbstractItem {
     bool SimplifyCurve(qreal tolerance);
     // 是否值得简化：单点笔迹与不足三个节点的几何直接跳过。
     bool CanSimplify() const;
+    // 拖动第 index 个拐点：只改相邻两段的端点与控制柄，首尾节点仍走绑定逻辑。
+    bool MoveKnot(int index, const QPointF& scenePoint);
     void Accept(CanvasItemVisitor& visitor) override;
 
     QJsonObject ToJson() const override;

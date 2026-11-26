@@ -8,7 +8,7 @@
 class StraightLineItem : public LineAbstractItem {
     Q_OBJECT
   public:
-    // 两端都绑定图形时的走线形态：直连是两点斜线；折线只允许横纵轴走向的折线段。
+    // 两端都绑定图形时的走线形态：直连是两点斜线；转折只允许横纵轴走向。
     enum class RouteMode { DIRECT = 0, ORTHOGONAL = 1 };
 
     explicit StraightLineItem(QGraphicsItem* parent = nullptr);
@@ -24,7 +24,7 @@ class StraightLineItem : public LineAbstractItem {
     // 编辑面板的角度就是直线走向：斜了自动跟随，写入时按绝对角度旋转。
     qreal DisplayRotationAngle() const override;
     void SetDisplayRotationAngle(qreal angle) override;
-    // 两端端点句柄：拖动时直接改端点，并按 12px 口径重新绑定 / 解除绑定。
+    // 两端端点句柄；转折走线时再给每个拐点一枚方块，拖动只沿横轴或纵轴移动转折位置。
     HandleSpecList CustomHandles() const override;
     bool BeginCustomHandleDrag(int handle, const QPointF& scenePos) override;
     bool ApplyCustomHandleDrag(int handle, const QPointF& scenePos) override;

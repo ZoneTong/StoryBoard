@@ -219,6 +219,12 @@ void CurveItem::ApplyGeometryState(const GeometryState& state)
     update();
 }
 
+bool CurveItem::HasSelectionFrame() const
+{
+    // 单点笔迹没有可拖端点，保留外接框作为选中反馈；其余曲线只用节点方块。
+    return IsSinglePointGeometry();
+}
+
 HandleSpecList CurveItem::CustomHandles() const
 {
     HandleSpecList specs;
@@ -226,7 +232,7 @@ HandleSpecList CurveItem::CustomHandles() const
     if (knots.size() < 2) {
         return specs;
     }
-    // 只暴露首尾两个端点：中间节点是拟合结果，不给拖拽入口。
+    // 首尾是绑定端点；中间各节点是拟合接缝，也给方块让用户能改曲线形状。
     HandleSpec start;
     start.id = CanvasItem::CUSTOM_0;
     start.position = knots.constFirst();
@@ -234,6 +240,15 @@ HandleSpecList CurveItem::CustomHandles() const
     start.cursor = Qt::SizeAllCursor;
     start.sizeScale = 0.9;
     specs.append(start);
+    for (int i = 1; i < knots.size() - 1; ++i) {
+        HandleSpec knot;
+        knot.id = CanvasItem::CUSTOM_1 + i;
+        knot.position = knots.at(i);
+        knot.behavior = HandleBehavior::STATIC;
+        knot.cursor = Qt::SizeAllCursor;
+        knot.sizeScale = 0.8;
+        specs.append(knot);
+    }
     HandleSpec end;
     end.id = CanvasItem::CUSTOM_1;
     end.position = knots.constLast();
@@ -247,16 +262,37 @@ HandleSpecList CurveItem::CustomHandles() const
 bool CurveItem::BeginCustomHandleDrag(int handle, const QPointF& scenePos)
 {
     Q_UNUSED(scenePos);
-    return handle == CanvasItem::CUSTOM_0 || handle == CanvasItem::CUSTOM_1;
+    if (handle == CanvasItem::CUSTOM_0 || handle == CanvasItem::CUSTOM_1) {
+        return true;
+    }
+    // CUSTOM_1 之后依次是中间拐点：槽位 11 对应第 1 个拐点。
+    return handle > CanvasItem::CUSTOM_1 && handle - CanvasItem::CUSTOM_1 < StrokePoints().size() - 1;
 }
 
 bool CurveItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos)
 {
-    if (handle != CanvasItem::CUSTOM_0 && handle != CanvasItem::CUSTOM_1) {
+    if (handle == CanvasItem::CUSTOM_0 || handle == CanvasItem::CUSTOM_1) {
+        // 与直线同一份吸附 / 解绑口径，避免两处分别维护绑定语义。
+        return DragEndpointWithBinding(handle == CanvasItem::CUSTOM_0, scenePos);
+    }
+    return MoveKnot(handle - CanvasItem::CUSTOM_1, scenePos);
+}
+
+bool CurveItem::MoveKnot(int index, const QPointF& scenePoint)
+{
+    const QVector<QPointF> knots = StrokePoints();
+    if (index <= 0 || index >= knots.size() - 1 || index - 1 >= m_segments.size() || index >= m_segments.size()) {
         return false;
     }
-    // 与直线同一份吸附 / 解绑口径，避免两处分别维护绑定语义。
-    return DragEndpointWithBinding(handle == CanvasItem::CUSTOM_0, scenePos);
+    const QPointF delta = mapFromScene(scenePoint) - knots.at(index);
+    // 接缝两侧各有一组控制柄：一起平移，曲率形状不变，只把拐点搬到新位置。
+    m_segments[index - 1].p1 += delta;
+    m_segments[index - 1].c2 += delta;
+    m_segments[index].p0 += delta;
+    m_segments[index].c1 += delta;
+    NormalizeGeometry();
+    update();
+    return true;
 }
 
 void CurveItem::NormalizeGeometry()

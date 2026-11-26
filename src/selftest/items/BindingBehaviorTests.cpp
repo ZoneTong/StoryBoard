@@ -211,8 +211,22 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
             QColor(QStringLiteral("#1E293B")), 2.0);
         scene.AddItemsWithUndo({curve}, QStringLiteral("Add curve"));
 
-        ctx.Check(curve->CustomHandles().size() == 2, QStringLiteral("曲线提供首尾两个端点句柄"),
-                  QStringLiteral("count=%1").arg(curve->CustomHandles().size()));
+        const int knotCount = curve->StrokePoints().size();
+        ctx.Check(curve->CustomHandles().size() == knotCount && !curve->HasSelectionFrame(),
+                  QStringLiteral("曲线不画选中框，端点与拐点各有一个调整方块"),
+                  QStringLiteral("count=%1 knots=%2").arg(curve->CustomHandles().size()).arg(knotCount));
+
+        const QPointF middleKnot = curve->mapToScene(curve->StrokePoints().at(1));
+        const QPointF movedKnot = middleKnot + QPointF(30.0, -20.0);
+        curve->BeginCustomHandleDrag(CanvasItem::CUSTOM_1 + 1, middleKnot);
+        curve->ApplyCustomHandleDrag(CanvasItem::CUSTOM_1 + 1, movedKnot);
+        const QPointF knotAfter = curve->mapToScene(curve->StrokePoints().at(1));
+        ctx.Check(curve->StrokePoints().size() == knotCount && QLineF(knotAfter, movedKnot).length() < 1.0,
+                  QStringLiteral("拖动中间拐点只改形状、不改节点数量"),
+                  QStringLiteral("count=%1 knot=(%2,%3)")
+                      .arg(curve->StrokePoints().size())
+                      .arg(knotAfter.x())
+                      .arg(knotAfter.y()));
 
         curve->BeginCustomHandleDrag(CanvasItem::CUSTOM_1, QPointF(280.0, 300.0));
         curve->ApplyCustomHandleDrag(CanvasItem::CUSTOM_1, QPointF(300.0, 210.0));
@@ -639,7 +653,24 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
             stillOrthogonal = qAbs(delta.x()) < 0.01 || qAbs(delta.y()) < 0.01;
         }
         ctx.Check(stillOrthogonal && line->LineRoute() == StraightLineItem::RouteMode::ORTHOGONAL,
-                  QStringLiteral("移动绑定图形后折线仍只走横纵轴"), QStringLiteral("points=%1").arg(points.size()));
+                  QStringLiteral("移动绑定图形后转折仍只走横纵轴"), QStringLiteral("points=%1").arg(points.size()));
+
+        // 拐点手柄：横向拖动只改转折轴的 x，纵坐标仍由首尾吸附点决定。
+        const QPointF bendBefore = line->mapToScene(line->StrokePoints().at(1));
+        const QPointF bendTarget = bendBefore + QPointF(40.0, 25.0);
+        line->BeginCustomHandleDrag(CanvasItem::CUSTOM_1 + 1, bendBefore);
+        line->ApplyCustomHandleDrag(CanvasItem::CUSTOM_1 + 1, bendTarget);
+        points = line->StrokePoints();
+        bool axisAligned = points.size() >= 2;
+        bool bendFollowed = false;
+        for (int i = 1; axisAligned && i < points.size(); ++i) {
+            const QPointF delta = points.at(i) - points.at(i - 1);
+            axisAligned = qAbs(delta.x()) < 0.01 || qAbs(delta.y()) < 0.01;
+            bendFollowed = bendFollowed || qAbs(line->mapToScene(points.at(i)).x() - bendTarget.x()) < 1.0;
+        }
+        ctx.Check(axisAligned && bendFollowed && points.size() >= 3,
+                  QStringLiteral("拖动转折拐点只沿横轴移动且保持横纵轴"),
+                  QStringLiteral("points=%1").arg(points.size()));
 
         ctx.Check(scene.SetStraightLineRoute(line, 0, QStringLiteral("route")), QStringLiteral("可切回直连"),
                   QStringLiteral("route=0"));

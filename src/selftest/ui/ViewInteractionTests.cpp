@@ -434,22 +434,35 @@ void selftest::RunViewInteractionTests(Context& ctx)
                   QStringLiteral("编辑模式 Ctrl 滚轮缩放不修改图元尺寸"));
     }
 
-    if (drawnStroke) {
-        const QSizeF sizeBeforeResize = drawnStroke->ContentSize();
-        const QPoint handleScreen = view.mapFromScene(drawnStroke->mapToScene(QPointF(0.0, 0.0)));
+    if (drawnStroke && drawnStroke->StrokePoints().size() >= 3) {
+        // 曲线不再有外接框：选中后拖中间拐点调整形状，撤销 / 重做回到拖前几何。
+        viewScene.clearSelection();
+        drawnStroke->setSelected(true);
+        QApplication::processEvents();
+        const int curveKnotCount = drawnStroke->StrokePoints().size();
+        const QPointF knotBefore = drawnStroke->mapToScene(drawnStroke->StrokePoints().at(1));
+        const QPoint handleScreen = view.mapFromScene(knotBefore);
         SendMouseEvent(view.viewport(), QEvent::MouseButtonPress, handleScreen, Qt::LeftButton, Qt::LeftButton);
-        SendMouseEvent(view.viewport(), QEvent::MouseMove, handleScreen + QPoint(45, 35), Qt::NoButton, Qt::LeftButton);
+        SendMouseEvent(view.viewport(), QEvent::MouseMove, handleScreen + QPoint(45, 35), Qt::NoButton,
+                       Qt::LeftButton);
         SendMouseEvent(view.viewport(), QEvent::MouseButtonRelease, handleScreen + QPoint(45, 35), Qt::LeftButton,
                        Qt::NoButton);
         QApplication::processEvents();
-        ctx.Check(drawnStroke->ContentSize().width() < sizeBeforeResize.width() &&
-                      drawnStroke->ContentSize().height() < sizeBeforeResize.height(),
-                  QStringLiteral("编辑模式拖动控制点缩放图元"),
-                  GeometryText(drawnStroke->pos(), drawnStroke->ContentSize()));
+        const QPointF knotAfter = drawnStroke->mapToScene(drawnStroke->StrokePoints().at(1));
+        ctx.Check(QLineF(knotBefore, knotAfter).length() > 1.0 &&
+                      drawnStroke->StrokePoints().size() == curveKnotCount,
+                  QStringLiteral("编辑模式拖动曲线拐点调整形状"),
+                  QStringLiteral("before=(%1,%2) after=(%3,%4)")
+                      .arg(knotBefore.x())
+                      .arg(knotBefore.y())
+                      .arg(knotAfter.x())
+                      .arg(knotAfter.y()));
         viewUndo.undo();
-        ctx.Check(drawnStroke->ContentSize() == sizeBeforeResize, QStringLiteral("撤销缩放图元（鼠标交互）"));
+        ctx.Check(QLineF(drawnStroke->mapToScene(drawnStroke->StrokePoints().at(1)), knotBefore).length() < 1.0,
+                  QStringLiteral("撤销曲线拐点拖动"));
         viewUndo.redo();
-        ctx.Check(drawnStroke->ContentSize() != sizeBeforeResize, QStringLiteral("重做缩放图元（鼠标交互）"));
+        ctx.Check(QLineF(drawnStroke->mapToScene(drawnStroke->StrokePoints().at(1)), knotBefore).length() > 1.0,
+                  QStringLiteral("重做曲线拐点拖动"));
 
         auto* secondStroke = new CurveItem();
         secondStroke->BeginStroke(QPointF(900, 160), QColor(QStringLiteral("#0F766E")), 5.0);

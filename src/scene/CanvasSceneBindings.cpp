@@ -124,19 +124,28 @@ EdgeSide SideOfBoundary(const QRectF& rect, const QPointF& point)
     return side;
 }
 
-// 折线走线：末端沿目标边法线进入，只产生一个拐角，两段分别平行横轴与纵轴。
-QVector<QPointF> OrthogonalRoute(const QRectF& endRect, const QPointF& start, const QPointF& end)
+// 转折走线：首段沿一个轴走到转折位置，再沿另一个轴进入目标边；bend 是转折轴上的坐标。
+// bend 取首点坐标时退化成单拐角折线（与旧行为一致），用户拖动拐点后多出一段平行段。
+QVector<QPointF> OrthogonalRoute(const QRectF& endRect, const QPointF& start, const QPointF& end, qreal bend)
 {
     const EdgeSide endSide = SideOfBoundary(endRect, end);
-    const QPointF bend = (endSide == EdgeSide::LEFT || endSide == EdgeSide::RIGHT) ? QPointF(start.x(), end.y())
-                                                                                   : QPointF(end.x(), start.y());
     QVector<QPointF> points;
     points.append(start);
-    if (QLineF(start, bend).length() > 1e-3 && QLineF(bend, end).length() > 1e-3) {
-        points.append(bend);
+    if (endSide == EdgeSide::LEFT || endSide == EdgeSide::RIGHT) {
+        points.append(QPointF(bend, start.y()));
+        points.append(QPointF(bend, end.y()));
+    } else {
+        points.append(QPointF(start.x(), bend));
+        points.append(QPointF(end.x(), bend));
     }
     points.append(end);
-    return points;
+    QVector<QPointF> cleaned;
+    for (const QPointF& point : points) {
+        if (cleaned.isEmpty() || QLineF(cleaned.constLast(), point).length() > 1e-3) {
+            cleaned.append(point);
+        }
+    }
+    return cleaned;
 }
 
 // 两端都绑定图形时的走线点：直连两点；折线按末端边的进入方向排成横纵轴折线。
@@ -165,7 +174,16 @@ QVector<QPointF> BoundLineRoute(CanvasScene* scene, StraightLineItem* line, Stra
     const QPointF end = CanvasScene::AttachmentPoint(endTarget, line->mapToScene(knots.constLast()),
                                                      BindingGap(endBinding), BindingFocus(endBinding));
     if (route == StraightLineItem::RouteMode::ORTHOGONAL) {
-        return OrthogonalRoute(endTarget->mapRectToScene(endTarget->ContentRect()), start, end);
+        const QRectF endRect = endTarget->mapRectToScene(endTarget->ContentRect());
+        const EdgeSide endSide = SideOfBoundary(endRect, end);
+        // 沿用当前转折位置：图形移动后转折不会跳回默认；首次重排仍从单拐角开始。
+        const bool horizontalEntry = endSide == EdgeSide::LEFT || endSide == EdgeSide::RIGHT;
+        qreal bend = horizontalEntry ? start.x() : start.y();
+        if (knots.size() >= 3) {
+            const QPointF corner = line->mapToScene(knots.at(1));
+            bend = horizontalEntry ? corner.x() : corner.y();
+        }
+        return OrthogonalRoute(endRect, start, end, bend);
     }
     return QVector<QPointF>{start, end};
 }
