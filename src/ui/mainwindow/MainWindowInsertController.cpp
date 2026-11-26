@@ -428,7 +428,8 @@ void MainWindowInsertController::InsertCustomShape(const QString& filePath)
         return;
     }
 
-    // 需求 16：与常见图形一致，按工具栏当前选择取样式（填充未选色跟随画笔色）。
+    // 样式裁决：模板条目路径的填充与描线一律沿用模板自带样式（模板样式优先）；
+    // 下面这组工具栏样式只服务旧格式 / 退化轮廓的回退路径。
     const QColor stroke =
         m_window->m_brushColor.alpha() < 8 ? QColor(QStringLiteral("#1E293B")) : m_window->m_brushColor;
     const QColor fill = m_window->m_fillColor.isValid() ? m_window->m_fillColor : stroke;

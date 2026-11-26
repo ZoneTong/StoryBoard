@@ -6,22 +6,6 @@
 #include <QSet>
 #include <QUndoStack>
 
-int CanvasScene::CreateLayer(const QString& name)
-{
-    const int id = m_layerDomain.NextId();
-    CanvasLayer entry;
-    entry.id = id;
-    entry.name = name.trimmed().isEmpty() ? QStringLiteral("图层 %1").arg(id) : name.trimmed();
-    m_layerDomain.Layers().append(entry);
-    m_layerDomain.SetActiveLayerId(id);
-    ApplyAllItemStacking();
-    update();
-    emit layersChanged();
-    emit activeLayerChanged(m_layerDomain.ActiveLayerId());
-    emit contentChanged();
-    return id;
-}
-
 bool CanvasScene::AddLayerWithUndo(const QString& name)
 {
     const LayerStackState before = LayerState();

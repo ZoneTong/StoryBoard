@@ -90,9 +90,12 @@ void Populate(CanvasScene& scene)
     background.color = QColor(QStringLiteral("#F7F3EA"));
     scene.SetCanvasBackground(background);
 
-    const int frameLayer = scene.CreateLayer(QStringLiteral("分镜框"));
-    const int shotLayer = scene.CreateLayer(QStringLiteral("镜头画面"));
-    const int inkLayer = scene.CreateLayer(QStringLiteral("注释与标题"));
+    scene.AddLayerWithUndo(QStringLiteral("分镜框"));
+    const int frameLayer = scene.ActiveLayerId();
+    scene.AddLayerWithUndo(QStringLiteral("镜头画面"));
+    const int shotLayer = scene.ActiveLayerId();
+    scene.AddLayerWithUndo(QStringLiteral("注释与标题"));
+    const int inkLayer = scene.ActiveLayerId();
     scene.RemoveLayerWithUndo(CanvasScene::BackgroundLayerId + 1);
     scene.SetActiveLayer(inkLayer);
 

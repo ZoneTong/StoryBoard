@@ -5,9 +5,9 @@
 #include "items/CanvasItem.h"
 #include "items/CanvasTypes.h"
 #include "items/lines/ArcItem.h"
-#include "items/properties/ArrowStyle.h"
 #include "items/lines/CurveItem.h"
 #include "items/polygon/PolygonItem.h"
+#include "items/properties/ArrowStyle.h"
 #include "items/shapes/ShapeAbstractItem.h"
 #include "items/shapes/ShapeFactory.h"
 #include "items/text/TextItem.h"
@@ -17,8 +17,8 @@
 #include "ops/Alignment.h"
 #include "ops/BoolOps.h"
 #include "scene/CanvasScene.h"
-#include "scene/SceneConstants.h"
 #include "scene/Commands.h"
+#include "scene/SceneConstants.h"
 #include "selftest/core/SelfTestContext.h"
 #include "selftest/core/SelftestEntries.h"
 #include "selftest/core/SelftestHelpers.h"
@@ -110,7 +110,8 @@ void selftest::RunLayerExportPanelTests(Context& ctx)
 
         CanvasScene overlapScene;
         overlapScene.SetMode(ToolMode::EDIT);
-        const int upperLayerId = overlapScene.CreateLayer(QStringLiteral("上层"));
+        overlapScene.AddLayerWithUndo(QStringLiteral("上层"));
+        const int upperLayerId = overlapScene.ActiveLayerId();
         auto* lowerItem = ShapeFactory::Create(ShapeType::RECTANGLE);
         lowerItem->SetLayerId(CanvasScene::BackgroundLayerId + 1);
         lowerItem->SetStyle(QColor(QStringLiteral("#2563EB")), QColor(Qt::transparent), 4.0);
@@ -175,7 +176,8 @@ void selftest::RunLayerExportPanelTests(Context& ctx)
         exportBackground.color = QColor(Qt::white);
         layerExportScene.SetCanvasBackground(exportBackground);
 
-        const int redLayer = layerExportScene.CreateLayer(QStringLiteral("红色层"));
+        layerExportScene.AddLayerWithUndo(QStringLiteral("红色层"));
+        const int redLayer = layerExportScene.ActiveLayerId();
         auto* red = ShapeFactory::Create(ShapeType::RECTANGLE);
         red->SetLayerId(redLayer);
         red->SetStyle(QColor(QStringLiteral("#DC2626")), QColor(QStringLiteral("#DC2626")), 8.0);
@@ -183,7 +185,8 @@ void selftest::RunLayerExportPanelTests(Context& ctx)
         red->SetContentSize(QSizeF(40, 40));
         layerExportScene.AttachItem(red);
 
-        const int blueLayer = layerExportScene.CreateLayer(QStringLiteral("蓝色层"));
+        layerExportScene.AddLayerWithUndo(QStringLiteral("蓝色层"));
+        const int blueLayer = layerExportScene.ActiveLayerId();
         auto* blue = ShapeFactory::Create(ShapeType::RECTANGLE);
         blue->SetLayerId(blueLayer);
         blue->SetStyle(QColor(QStringLiteral("#2563EB")), QColor(QStringLiteral("#2563EB")), 1.0);
@@ -207,8 +210,7 @@ void selftest::RunLayerExportPanelTests(Context& ctx)
         const QRectF redLayerRect = layerExportScene.LayerContentRect(redLayer);
         const QRectF blueLayerRect = layerExportScene.LayerContentRect(blueLayer);
         const QRectF allRect = layerExportScene.ContentRect();
-        ctx.Check(!redLayerRect.isEmpty() && !blueLayerRect.isEmpty() &&
-                      redLayerRect.left() < blueLayerRect.left() &&
+        ctx.Check(!redLayerRect.isEmpty() && !blueLayerRect.isEmpty() && redLayerRect.left() < blueLayerRect.left() &&
                       qAbs(redLayerRect.united(blueLayerRect).width() - allRect.width()) < 0.5 &&
                       redLayerRect.width() < allRect.width(),
                   QStringLiteral("图层包围框按本层图元取值，并集等于全部可见图元包围框"),
@@ -230,15 +232,14 @@ void selftest::RunLayerExportPanelTests(Context& ctx)
         arrowScene.ApplyCanvasSize(QSizeF(600, 400));
         arrowScene.SetShowGrid(false);
         auto* arrowArc = new ArcItem();
-        arrowArc->SetArcGeometry(QPointF(50, 50), QSizeF(200, 200), 0.0, 180.0,
-                                 QColor(QStringLiteral("#1E293B")), 10.0);
+        arrowArc->SetArcGeometry(QPointF(50, 50), QSizeF(200, 200), 0.0, 180.0, QColor(QStringLiteral("#1E293B")),
+                                 10.0);
         arrowScene.AttachItem(arrowArc);
         const QRectF plainRect = arrowScene.ContentRect();
         arrowArc->SetArrowStyles(ArrowStyle::TRIANGLE_FILLED, ArrowStyle::TRIANGLE_FILLED);
         const QRectF arrowRect = arrowScene.ContentRect();
         const qreal headLength = 40.0; // 4 × 线宽 10
-        ctx.Check(arrowRect.width() > plainRect.width() + headLength * 1.5 &&
-                      arrowRect.height() >= plainRect.height(),
+        ctx.Check(arrowRect.width() > plainRect.width() + headLength * 1.5 && arrowRect.height() >= plainRect.height(),
                   QStringLiteral("导出包围框把两端箭头算进去"),
                   QStringLiteral("plain=%1x%2 arrow=%3x%4")
                       .arg(plainRect.width())
@@ -267,8 +268,8 @@ void selftest::RunLayerExportPanelTests(Context& ctx)
         mixedText->setPos(QPointF(330, 120));
         mixedScene.AttachItem(mixedText);
         auto* mixedArc = new ArcItem();
-        mixedArc->SetArcGeometry(QPointF(420, 260), QSizeF(180, 180), 0.0, 180.0,
-                                 QColor(QStringLiteral("#2563EB")), 10.0);
+        mixedArc->SetArcGeometry(QPointF(420, 260), QSizeF(180, 180), 0.0, 180.0, QColor(QStringLiteral("#2563EB")),
+                                 10.0);
         mixedArc->SetArrowStyles(ArrowStyle::TRIANGLE_FILLED, ArrowStyle::TRIANGLE_FILLED);
         mixedScene.AttachItem(mixedArc);
         const QRectF mixedRectBox = mixedScene.ContentRect();
@@ -380,7 +381,10 @@ void selftest::RunLayerExportPanelTests(Context& ctx)
         QUndoStack renameUndo;
         renameUndo.setUndoLimit(30);
         renameScene.SetUndoStack(&renameUndo);
-        const int renameLayerId = renameScene.CreateLayer(QStringLiteral("初版分镜"));
+        renameScene.AddLayerWithUndo(QStringLiteral("初版分镜"));
+        const int renameLayerId = renameScene.ActiveLayerId();
+        // 建层也进了撤销栈；本段只验证重命名自己的撤销记录，先把栈清干净。
+        renameUndo.clear();
         const QString beforeName = renameScene.layer(renameLayerId).name;
         ctx.Check(renameScene.RenameLayerWithUndo(renameLayerId, QStringLiteral("终版分镜")),
                   QStringLiteral("图层重命名成功"));

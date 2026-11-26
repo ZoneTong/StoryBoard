@@ -213,7 +213,6 @@ class CanvasScene : public QGraphicsScene {
     int ActiveLayerId() const { return m_layerDomain.ActiveLayerId(); }
     void SetActiveLayer(int layerId);
 
-    int CreateLayer(const QString& name = QString());
     bool AddLayerWithUndo(const QString& name = QString());
     bool RemoveLayerWithUndo(int layerId, QString* errorMessage = nullptr);
     bool MoveLayerWithUndo(int layerId, int delta);

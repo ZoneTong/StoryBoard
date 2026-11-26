@@ -146,6 +146,13 @@ int CanvasScene::PasteClipboardItems(const QJsonArray& items)
         copy->setPos(copy->pos() + delta);
     }
 
+    // 粘贴总是落到当前活动图层：副本的 layer 记录的是来源画布的状态，
+    // 不代表粘贴意图；同文档跨层复制也不例外。
+    const int pasteLayerId = ActiveLayerId();
+    for (CanvasItem* copy : std::as_const(copies)) {
+        copy->SetLayerId(pasteLayerId);
+    }
+
     AddItemsWithUndo(copies, tr("Paste items"));
     clearSelection();
     for (CanvasItem* copy : copies) {
