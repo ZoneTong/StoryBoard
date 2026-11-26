@@ -110,6 +110,7 @@ class MainWindow : public QMainWindow {
     bool SaveCanvas();
     bool SaveCanvasAs();
     void ExportCanvas();
+    void ExportExcalidraw();
     void ExportCustomShape();
     void ImportImagesDialog();
     void ImportOutlineImageDialog();
@@ -217,6 +218,7 @@ class MainWindow : public QMainWindow {
     QAction* m_importAct = nullptr;
     QAction* m_lineArtAct = nullptr;
     QAction* m_exportAct = nullptr;
+    QAction* m_exportExcalidrawAct = nullptr;
     QAction* m_exportCustomShapeAct = nullptr;
     QAction* m_quitAct = nullptr;
 

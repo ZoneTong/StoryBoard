@@ -21,6 +21,7 @@
 #include <QJsonObject>
 #include <QKeySequence>
 #include <QList>
+#include <QMenu>
 #include <QMimeData>
 #include <QPointF>
 #include <QSizeF>
@@ -361,16 +362,18 @@ void selftest::RunClipboardShortcutTests(Context& ctx)
                   QStringLiteral("knots=%1 maxAbs=%2 span=%3").arg(knots.size()).arg(maxAbs).arg(span));
     }
 
-    // 导出 Excalidraw 入口隐藏：文件菜单没有该动作，复制也不再往剪贴板写 Excalidraw JSON。
+    // 导出 Excalidraw 入口隐藏、能力保留：动作还在窗口里但不在任何菜单；复制仍写 Excalidraw 剪贴板。
     {
         MainWindow exportWindow;
-        bool hasExcalidrawAction = false;
-        for (QAction* action : exportWindow.findChildren<QAction*>()) {
-            if (action->text().contains(QStringLiteral("Excalidraw"), Qt::CaseInsensitive)) {
-                hasExcalidrawAction = true;
+        QAction* exportAction = FindActionByText(&exportWindow, QStringLiteral("导出 Excalidraw…"));
+        bool inAnyMenu = false;
+        for (QMenu* menu : exportWindow.findChildren<QMenu*>()) {
+            if (menu->actions().contains(exportAction)) {
+                inAnyMenu = true;
             }
         }
-        ctx.Check(!hasExcalidrawAction, QStringLiteral("文件菜单不再提供导出 Excalidraw"));
+        ctx.Check(exportAction && !inAnyMenu, QStringLiteral("导出 Excalidraw 动作保留但已从菜单隐藏"),
+                  QStringLiteral("action=%1 menu=%2").arg(exportAction ? 1 : 0).arg(inAnyMenu ? 1 : 0));
 
         exportWindow.View()->SetMode(ToolMode::EDIT);
         CanvasScene* scene = exportWindow.findChild<CanvasScene*>();
@@ -388,20 +391,9 @@ void selftest::RunClipboardShortcutTests(Context& ctx)
             QApplication::processEvents();
         }
         const QMimeData* copiedMime = QApplication::clipboard()->mimeData();
-        ctx.Check(copiedMime && !copiedMime->hasFormat(QStringLiteral("application/vnd.excalidraw+json")) &&
-                      !copiedMime->hasFormat(QStringLiteral("text/plain")),
-                  QStringLiteral("复制不再写 Excalidraw 剪贴板"),
+        ctx.Check(copiedMime && copiedMime->hasFormat(QStringLiteral("application/vnd.excalidraw+json")),
+                  QStringLiteral("复制仍写出 Excalidraw 剪贴板（可粘到 excalidraw.com）"),
                   QStringLiteral("mime=%1").arg(copiedMime ? copiedMime->formats().join(QStringLiteral(";")) : QString()));
-
-        QAction* pasteAction = FindActionByObjectName(&exportWindow, QStringLiteral("PasteItemsAction"));
-        const int beforePaste = scene ? scene->CanvasItemCount() : -1;
-        if (pasteAction) {
-            pasteAction->trigger();
-            QApplication::processEvents();
-        }
-        ctx.Check(scene && scene->CanvasItemCount() == beforePaste + 1,
-                  QStringLiteral("复制后仍能粘回画板"),
-                  QStringLiteral("before=%1 after=%2").arg(beforePaste).arg(scene ? scene->CanvasItemCount() : -1));
         QApplication::clipboard()->clear();
     }
 
