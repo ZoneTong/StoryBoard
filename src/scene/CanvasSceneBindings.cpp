@@ -3,6 +3,7 @@
 #include "items/CanvasItem.h"
 #include "items/lines/LineAbstractItem.h"
 #include "items/text/TextItem.h"
+#include "scene/Commands.h"
 
 #include <QHash>
 #include <QLineF>
@@ -264,28 +265,93 @@ void CanvasScene::SyncArrowBindings()
     }
 }
 
+void CanvasScene::SyncContainerText(TextItem* text)
+{
+    if (!text) {
+        return;
+    }
+    const QString uid = text->ContainerUid();
+    if (uid.isEmpty()) {
+        return;
+    }
+    CanvasItem* container = ItemByUid(uid);
+    if (!container || container->Category() != ItemCategory::SHAPE) {
+        return;
+    }
+    const QRectF rect = container->mapRectToScene(container->ContentRect());
+    const QSizeF size = text->ContainerLayoutSize(rect.width());
+    text->SetContentSize(size);
+    text->setPos(QPointF(rect.left(), rect.center().y() - size.height() / 2.0));
+}
+
 void CanvasScene::SyncContainerTexts()
 {
+    for (CanvasItem* canvasItem : CanvasItems()) {
+        if (auto* text = dynamic_cast<TextItem*>(canvasItem)) {
+            SyncContainerText(text);
+        }
+    }
+}
+
+CanvasItem* CanvasScene::ContainerShapeForText(const TextItem* text) const
+{
+    if (!text) {
+        return nullptr;
+    }
+    const QPointF center = text->mapToScene(text->ContentRect().center());
     const QList<CanvasItem*> items = CanvasItems();
-    QHash<QString, CanvasItem*> byUid;
-    byUid.reserve(items.size());
-    for (CanvasItem* item : items) {
-        if (item && !item->Uid().isEmpty()) {
-            byUid.insert(item->Uid(), item);
-        }
-    }
-    for (CanvasItem* canvasItem : items) {
-        TextItem* text = dynamic_cast<TextItem*>(canvasItem);
-        if (!text || text->ContainerUid().isEmpty()) {
+    // 叠放靠后的在上层：文字中心同时落在多个图形里时取最上面那个。
+    for (int i = items.size() - 1; i >= 0; --i) {
+        CanvasItem* item = items.at(i);
+        if (!item || item == text || item->Category() != ItemCategory::SHAPE) {
             continue;
         }
-        CanvasItem* container = byUid.value(text->ContainerUid(), nullptr);
-        if (!container || container->Category() != ItemCategory::SHAPE) {
+        if (item->Uid().isEmpty() || !item->isVisible() || !IsItemEditable(item)) {
             continue;
         }
-        const QRectF rect = container->mapRectToScene(container->ContentRect());
-        const QSizeF size = text->ContainerLayoutSize(rect.width());
-        text->SetContentSize(size);
-        text->setPos(QPointF(rect.left(), rect.center().y() - size.height() / 2.0));
+        if (item->mapRectToScene(item->ContentRect()).contains(center)) {
+            return item;
+        }
     }
+    return nullptr;
+}
+
+bool CanvasScene::SetTextContainer(TextItem* text, const QString& containerUid, const QString& label)
+{
+    if (!text) {
+        return false;
+    }
+    const TextItemState before = text->State();
+    return SetTextContainer(text, containerUid, text->ContainerUid(), before, label);
+}
+
+bool CanvasScene::SetTextContainer(TextItem* text, const QString& containerUid, const QString& beforeUid,
+                                   const TextItemState& beforeState, const QString& label)
+{
+    if (!text) {
+        return false;
+    }
+    const QString afterUid = containerUid.trimmed();
+    if (afterUid == text->ContainerUid()) {
+        return false;
+    }
+    // 绑定：按目标容器算折行与居中；解绑：保留文字自己在画布上的位置与尺寸。
+    TextItemState after = text->State();
+    if (!afterUid.isEmpty()) {
+        CanvasItem* container = ItemByUid(afterUid);
+        if (container && container->Category() == ItemCategory::SHAPE) {
+            const QRectF rect = container->mapRectToScene(container->ContentRect());
+            after.size = text->ContainerLayoutSize(rect.width());
+            after.pos = QPointF(rect.left(), rect.center().y() - after.size.height() / 2.0);
+        }
+    }
+    if (m_undoStack) {
+        m_undoStack->push(new TextContainerCommand(this, text, beforeUid, beforeState, afterUid, after, label));
+    } else {
+        text->SetContainerUid(afterUid);
+        text->ApplyState(after);
+        SyncContainerText(text);
+    }
+    update();
+    return true;
 }

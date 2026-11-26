@@ -2,6 +2,7 @@
 #include "items/CanvasItemVisitor.h"
 #include "items/lines/CurveItem.h"
 #include "items/lines/LineAbstractItem.h"
+#include "items/text/TextItem.h"
 #include "scene/CanvasScene.h"
 #include "scene/Commands.h"
 #include "scene/ItemNameService.h"
@@ -398,13 +399,27 @@ CanvasItem* CanvasScene::ConvertItemType(CanvasItem* item, const QString& target
     if (!converted) {
         return nullptr;
     }
+    // 原图元带容器文字：转换是新建对象、uid 变了，文字必须一起改指到新 uid，
+    // 否则会留下指向不存在图元的孤儿文字。
+    QList<TextItem*> containerTexts;
+    for (CanvasItem* canvasItem : CanvasItems()) {
+        if (auto* text = dynamic_cast<TextItem*>(canvasItem)) {
+            if (text->ContainerUid() == item->Uid()) {
+                containerTexts.append(text);
+            }
+        }
+    }
     const QString text = tr("Convert to %1").arg(ItemTypeConversion::DisplayNameOf(targetKind));
     if (m_undoStack) {
         // 先 DetachItem 再 AttachItem：AddItemsWithUndo 会重新规划层内高度，互换不该改叠放。
-        m_undoStack->push(new ConvertItemCommand(this, item, converted, text));
+        m_undoStack->push(new ConvertItemCommand(this, item, converted, containerTexts, text));
     } else {
         DetachItem(item);
         AttachItem(converted);
+        for (TextItem* containerText : std::as_const(containerTexts)) {
+            containerText->SetContainerUid(converted->Uid());
+            SyncContainerText(containerText);
+        }
         converted->setSelected(true);
     }
     UpdateSceneExtent();

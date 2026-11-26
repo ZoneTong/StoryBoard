@@ -1,6 +1,7 @@
 #include "ui/panels/properties/PropertiesPanelIdentityCard.h"
 
 #include "items/CanvasItem.h"
+#include "items/text/TextItem.h"
 #include "scene/CanvasScene.h"
 #include "scene/ItemTypeConversion.h"
 #include "ui/icons/IconFactory.h"
@@ -10,6 +11,7 @@
 
 #include <QComboBox>
 #include <QHBoxLayout>
+#include <QLabel>
 #include <QLineEdit>
 #include <QToolButton>
 #include <QVBoxLayout>
@@ -69,6 +71,41 @@ PropertiesPanelIdentityCard::PropertiesPanelIdentityCard(QWidget* parent) : QWid
     m_typeRow->setVisible(false);
     layout->addWidget(m_typeRow);
 
+    // 所属图形行：文字绑定在图形内时出现，右侧的“解绑”按钮把文字放回画布自由摆放。
+    m_containerRow = new QWidget(this);
+    m_containerRow->setObjectName(QStringLiteral("ItemContainerRow"));
+    RowMetrics::ApplyRow(m_containerRow);
+    m_containerRow->setToolTip(PropertiesPanel::tr("Attached shape"));
+    auto* containerLayout = new QHBoxLayout(m_containerRow);
+    containerLayout->setContentsMargins(0, 0, 0, 0);
+    containerLayout->setSpacing(4);
+    auto* containerIcon = new QToolButton(m_containerRow);
+    containerIcon->setObjectName(QStringLiteral("ItemRowIcon"));
+    containerIcon->setIcon(IconFactory::Make(IconId::TEXT, QColor(139, 144, 156), RowMetrics::GlyphSize()));
+    containerIcon->setIconSize(QSize(RowMetrics::GlyphSize(), RowMetrics::GlyphSize()));
+    containerIcon->setFixedSize(RowMetrics::IconButtonSize());
+    containerIcon->setAutoRaise(true);
+    containerIcon->setFocusPolicy(Qt::NoFocus);
+    containerIcon->setToolTip(PropertiesPanel::tr("Attached shape"));
+    containerLayout->addWidget(containerIcon);
+    m_containerLabel = new QLabel(m_containerRow);
+    m_containerLabel->setObjectName(QStringLiteral("ItemContainerLabel"));
+    m_containerLabel->setTextFormat(Qt::PlainText);
+    containerLayout->addWidget(m_containerLabel, 1);
+    m_containerUnbind = new QToolButton(m_containerRow);
+    m_containerUnbind->setObjectName(QStringLiteral("ItemContainerUnbind"));
+    m_containerUnbind->setText(PropertiesPanel::tr("Unbind"));
+    m_containerUnbind->setToolTip(PropertiesPanel::tr("Attached shape"));
+    m_containerUnbind->setAutoRaise(true);
+    containerLayout->addWidget(m_containerUnbind);
+    connect(m_containerUnbind, &QToolButton::clicked, this, [this]() {
+        if (!m_refreshing && m_item) {
+            emit containerUnbindChosen();
+        }
+    });
+    m_containerRow->setVisible(false);
+    layout->addWidget(m_containerRow);
+
     m_layerRow = new LayerHeightRow(this);
     layout->addWidget(m_layerRow);
 
@@ -102,8 +139,14 @@ void PropertiesPanelIdentityCard::Refresh(CanvasScene* scene, CanvasItem* item)
     const bool convertible = enabled && !kind.isEmpty();
     m_typeRow->setVisible(convertible);
 
+    // 所属图形行只对已绑定容器的文字出现；容器被删掉时仍显示原 uid，便于看出是孤儿。
+    TextItem* text = dynamic_cast<TextItem*>(item);
+    const bool hasContainer = enabled && text && !text->ContainerUid().isEmpty();
+    m_containerRow->setVisible(hasContainer);
+
     if (!enabled) {
         m_refreshing = true;
+        m_containerLabel->clear();
         m_nameRow->Refresh(QString());
         m_layerRow->Refresh(nullptr, 0, 0, 0);
         m_refreshing = false;
@@ -111,6 +154,12 @@ void PropertiesPanelIdentityCard::Refresh(CanvasScene* scene, CanvasItem* item)
     }
 
     m_refreshing = true;
+    if (hasContainer) {
+        CanvasItem* container = scene->ItemByUid(text->ContainerUid());
+        m_containerLabel->setText(container ? container->Name() : text->ContainerUid());
+    } else {
+        m_containerLabel->clear();
+    }
     if (convertible) {
         const int index = m_typeCombo->findData(kind);
         if (index >= 0) {

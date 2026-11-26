@@ -163,6 +163,8 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     connect(m_identityCard, &PropertiesPanelIdentityCard::nameChosen, this, &PropertiesPanel::ApplyItemName);
     connect(m_identityCard, &PropertiesPanelIdentityCard::layerChosen, this, &PropertiesPanel::ApplyItemLayer);
     connect(m_identityCard, &PropertiesPanelIdentityCard::heightChosen, this, &PropertiesPanel::ApplyItemHeight);
+    connect(m_identityCard, &PropertiesPanelIdentityCard::containerUnbindChosen, this,
+            &PropertiesPanel::ApplyTextContainerUnbind);
     connect(m_geometryCard, &PropertiesPanelGeometryCard::geometryChosen, this, &PropertiesPanel::ApplyItemPlacement);
     connect(m_geometryCard, &PropertiesPanelGeometryCard::rotationChosen, this, &PropertiesPanel::ApplyItemRotation);
     connect(m_geometryCard, &PropertiesPanelGeometryCard::centerChosen, this, &PropertiesPanel::ApplyItemCenter);

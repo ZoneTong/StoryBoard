@@ -69,6 +69,15 @@ class CanvasScene : public QGraphicsScene {
     // 只在交互提交后调用，不参与逐帧重绘，避免递归改几何。
     void SyncArrowBindings();
     void SyncContainerTexts();
+    // 单段容器文字：按容器当前位置与宽度重排；没有容器时什么都不做。
+    void SyncContainerText(TextItem* text);
+    // 文字中心落在哪个图形上（自上而下取第一个可编辑图形），用于拖拽落入时自动绑定。
+    CanvasItem* ContainerShapeForText(const TextItem* text) const;
+    // 绑定 / 解绑容器文字，整体一条撤销记录。解绑保留文字当前位置与尺寸。
+    bool SetTextContainer(TextItem* text, const QString& containerUid, const QString& label);
+    // 拖拽提交用：显式给出拖拽前的 uid 与文字快照，撤销回到拖拽前的位置与归属。
+    bool SetTextContainer(TextItem* text, const QString& containerUid, const QString& beforeUid,
+                          const TextItemState& beforeState, const QString& label);
     CanvasItem* ItemByUid(const QString& uid) const;
     // 画箭头 / 拖端点时的吸附候选，只影响视图高亮，不写进文档。
     void SetBindingHighlight(CanvasItem* item);

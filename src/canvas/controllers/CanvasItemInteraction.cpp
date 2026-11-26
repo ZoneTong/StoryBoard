@@ -1,6 +1,7 @@
 #include "canvas/controllers/CanvasItemInteraction.h"
 
 #include "items/CanvasItem.h"
+#include "items/text/TextItem.h"
 #include "scene/CanvasScene.h"
 #include "scene/Commands.h"
 
@@ -96,6 +97,13 @@ void CanvasItemInteraction::BeginMove(const QPointF& scenePos)
     }
     if (m_item->m_before.isEmpty()) {
         m_item->m_before.append({m_item, m_item->pos(), m_item->m_size});
+    }
+    // 文字拖动结束时可能改归属：先把拖动前的完整文字状态留下来。
+    m_hasTextSnapshot = false;
+    if (auto* text = dynamic_cast<TextItem*>(m_item)) {
+        m_hasTextSnapshot = true;
+        m_textBefore = text->State();
+        m_textContainerBefore = text->ContainerUid();
     }
 }
 
@@ -266,12 +274,16 @@ void CanvasItemInteraction::FinishInteraction()
     const bool hasBindingSnapshot = m_hasBindingSnapshot;
     const QJsonObject startBindingBefore = m_startBindingBefore;
     const QJsonObject endBindingBefore = m_endBindingBefore;
+    const bool hasTextSnapshot = m_hasTextSnapshot;
+    const TextItemState textBefore = m_textBefore;
+    const QString textContainerBefore = m_textContainerBefore;
     m_item->m_drag = CanvasItem::DragKind::NONE;
     m_item->m_resizeHandle = CanvasItem::NO_HANDLE;
     m_customDrag = false;
     m_customDragBefore.clear();
     m_lineCustomDrag = nullptr;
     m_hasBindingSnapshot = false;
+    m_hasTextSnapshot = false;
 
     if (wasRotate) {
         if (CanvasScene* canvas = m_item->canvasScene()) {
@@ -310,6 +322,27 @@ void CanvasItemInteraction::FinishInteraction()
             PushCustomHandleChange(customBefore);
         }
     } else if (!m_item->m_before.isEmpty()) {
+        CanvasScene* canvas = m_item->canvasScene();
+        // 文字松手：落在图形里就绑定，原本绑着又被拖到图形外就解绑；
+        // 拖回原容器不算位移，交给 SyncContainerTexts 拉回容器中心。
+        if (TextItem* text = dynamic_cast<TextItem*>(m_item); text && hasTextSnapshot && canvas) {
+            const QString currentUid = text->ContainerUid();
+            CanvasItem* target = canvas->ContainerShapeForText(text);
+            const QString targetUid = target ? target->Uid() : QString();
+            if (!currentUid.isEmpty() || !targetUid.isEmpty()) {
+                if (targetUid != currentUid) {
+                    QString label = m_item->tr("Bind text");
+                    if (!currentUid.isEmpty() && targetUid.isEmpty()) {
+                        label = m_item->tr("Detach text");
+                    } else if (!currentUid.isEmpty()) {
+                        label = m_item->tr("Rebind text");
+                    }
+                    canvas->SetTextContainer(text, targetUid, textContainerBefore, textBefore, label);
+                }
+                m_item->m_before.clear();
+                return;
+            }
+        }
         ItemPlacementList after;
         after.reserve(m_item->m_before.size());
         for (const ItemPlacement& geometry : std::as_const(m_item->m_before)) {

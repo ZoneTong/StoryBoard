@@ -2,11 +2,13 @@
 
 #include "items/lines/LineAbstractItem.h"
 #include "items/properties/ItemProperties.h"
+#include "items/properties/TextAttributes.h"
 
 #include <QJsonObject>
 #include <QMap>
 #include <QPointF>
 #include <QSizeF>
+#include <QString>
 #include <QVariant>
 #include <Qt>
 
@@ -50,4 +52,8 @@ class CanvasItemInteraction {
     bool m_hasBindingSnapshot = false;
     QJsonObject m_startBindingBefore;
     QJsonObject m_endBindingBefore;
+    // 文字拖动：松手时按落点决定绑定哪个图形，撤销要回到拖动前的完整文字状态。
+    bool m_hasTextSnapshot = false;
+    TextItemState m_textBefore;
+    QString m_textContainerBefore;
 };

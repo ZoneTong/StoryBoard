@@ -3,6 +3,7 @@
 // 按职责拆到本翻译单元，控制单文件行数。
 #include "items/CanvasItem.h"
 #include "items/ItemStack.h"
+#include "items/text/TextItem.h"
 #include "scene/CanvasScene.h"
 #include "scene/Commands.h"
 #include "scene/ItemTypeConversion.h"
@@ -25,6 +26,18 @@ void PropertiesPanel::ApplyItemType(const QString& kind)
         return;
     }
     Refresh();
+}
+
+void PropertiesPanel::ApplyTextContainerUnbind()
+{
+    const QList<TextItem*> texts = SelectedTexts();
+    if (texts.size() != 1 || !m_scene) {
+        return;
+    }
+    // 解绑只改归属：文字留在当前位置与尺寸，撤销回到容器内的排版。
+    if (m_scene->SetTextContainer(texts.first(), QString(), tr("Unbind text"))) {
+        Refresh();
+    }
 }
 
 void PropertiesPanel::ApplyItemName(const QString& name)

@@ -51,9 +51,13 @@ void RotationCommand::Apply(const QList<qreal>& angles, const ItemPlacementList&
     }
 }
 
-ConvertItemCommand::ConvertItemCommand(CanvasScene* scene, CanvasItem* before, CanvasItem* after, const QString& text)
+ConvertItemCommand::ConvertItemCommand(CanvasScene* scene, CanvasItem* before, CanvasItem* after,
+                                       const QList<TextItem*>& containerTexts, const QString& text)
     : m_scene(scene), m_before(before), m_after(after)
 {
+    for (TextItem* item : containerTexts) {
+        m_containerTexts.append(item);
+    }
     setText(text);
 }
 
@@ -76,7 +80,48 @@ void ConvertItemCommand::Swap(CanvasItem* detach, CanvasItem* attach)
         m_scene->DetachItem(detach);
     }
     m_scene->AttachItem(attach);
+    // 容器文字跟着新图元的 uid 走：换类型新建了对象，旧 uid 不复活会留下指向不存在图元的文字。
+    for (const QPointer<TextItem>& text : std::as_const(m_containerTexts)) {
+        if (!text) {
+            continue;
+        }
+        text->SetContainerUid(attach->Uid());
+        m_scene->SyncContainerText(text);
+    }
     attach->setSelected(true);
+    m_scene->update();
+}
+
+TextContainerCommand::TextContainerCommand(CanvasScene* scene, TextItem* text, const QString& beforeUid,
+                                           const TextItemState& beforeState, const QString& afterUid,
+                                           const TextItemState& afterState, const QString& label)
+    : m_scene(scene), m_text(text), m_beforeUid(beforeUid), m_beforeState(beforeState), m_afterUid(afterUid),
+      m_afterState(afterState)
+{
+    setText(label);
+}
+
+void TextContainerCommand::undo()
+{
+    Apply(m_beforeUid, m_beforeState);
+}
+
+void TextContainerCommand::redo()
+{
+    Apply(m_afterUid, m_afterState);
+}
+
+void TextContainerCommand::Apply(const QString& uid, const TextItemState& state)
+{
+    if (!m_scene || !m_text) {
+        return;
+    }
+    m_text->SetContainerUid(uid);
+    m_text->ApplyState(state);
+    // 仍归属图形时按容器当前位置重排一次：撤销 / 重做期间容器可能已经被移动或缩放。
+    if (!uid.isEmpty()) {
+        m_scene->SyncContainerText(m_text);
+    }
     m_scene->update();
 }
 

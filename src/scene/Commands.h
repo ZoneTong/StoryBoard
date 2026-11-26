@@ -162,6 +162,26 @@ class TextItemCommand : public QUndoCommand {
     TextItemState m_after;
 };
 
+// 文字归属图形：绑定 / 解绑都走这一条命令。containerId、文字位置与折行尺寸一起改，
+// 解绑时保留文字当前所在位置，撤销回到绑定前的完整文字状态。
+class TextContainerCommand : public QUndoCommand {
+  public:
+    TextContainerCommand(CanvasScene* scene, TextItem* text, const QString& beforeUid, const TextItemState& beforeState,
+                         const QString& afterUid, const TextItemState& afterState, const QString& label);
+    void undo() override;
+    void redo() override;
+
+  private:
+    void Apply(const QString& uid, const TextItemState& state);
+
+    CanvasScene* m_scene = nullptr;
+    QPointer<TextItem> m_text;
+    QString m_beforeUid;
+    TextItemState m_beforeState;
+    QString m_afterUid;
+    TextItemState m_afterState;
+};
+
 // 需求 35：旋转手柄与快捷键共用这一条命令，支持一次旋转多个选中图元。
 class RotationCommand : public QUndoCommand {
   public:
@@ -184,9 +204,11 @@ class RotationCommand : public QUndoCommand {
 };
 
 // 三型互换：撤销时换回旧对象，重做时换回新对象；两个对象都由命令持有。
+// 原图元带容器文字时，文字归属跟着换到新 uid，撤销再指回旧 uid，避免留下孤儿文字。
 class ConvertItemCommand : public QUndoCommand {
   public:
-    ConvertItemCommand(CanvasScene* scene, CanvasItem* before, CanvasItem* after, const QString& text);
+    ConvertItemCommand(CanvasScene* scene, CanvasItem* before, CanvasItem* after,
+                       const QList<TextItem*>& containerTexts, const QString& text);
     void undo() override;
     void redo() override;
 
@@ -196,6 +218,7 @@ class ConvertItemCommand : public QUndoCommand {
     CanvasScene* m_scene = nullptr;
     QPointer<CanvasItem> m_before;
     QPointer<CanvasItem> m_after;
+    QList<QPointer<TextItem>> m_containerTexts;
 };
 
 // 镜像翻转的一次提交：每个图元的原位 / 原旋转角 / 原翻转位与镜像后的对应值。

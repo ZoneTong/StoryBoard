@@ -115,6 +115,8 @@ class PropertiesPanel : public QWidget {
     void ApplyItemName(const QString& name);
     // 类型行：扇形 / 弧线 / 角度线三型互换，走 ConvertItemType 的撤销命令。
     void ApplyItemType(const QString& kind);
+    // 文字解绑：清空 containerId，文字保留当前位置与尺寸，撤销可回到容器内。
+    void ApplyTextContainerUnbind();
     void ApplyItemLayer(int layerId);
     void ApplyItemHeight(int height);
     void ApplyItemPlacement(const QPointF& position, const QSizeF& size);

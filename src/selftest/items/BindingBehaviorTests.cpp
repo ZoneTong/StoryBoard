@@ -302,4 +302,105 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
         ctx.Check(scene.CanvasItemCount() == 0, QStringLiteral("删除容器时一起删掉容器文字"),
                   QStringLiteral("count=%1").arg(scene.CanvasItemCount()));
     }
+
+    // 文字归属：解绑保留当前位置与尺寸，撤销回到容器内的排版。
+    {
+        CanvasScene scene;
+        scene.ApplyCanvasSize(QSizeF(800.0, 600.0));
+        scene.SetMode(ToolMode::EDIT);
+        QUndoStack undo;
+        scene.SetUndoStack(&undo);
+
+        auto* rect = ShapeFactory::Create(ShapeType::RECTANGLE);
+        rect->SetContentSize(QSizeF(200.0, 120.0));
+        rect->setPos(QPointF(100.0, 80.0));
+        auto* text = new TextItem();
+        text->SetTextFormat(QStringLiteral("Attached text"), text->TextFont(), QColor(QStringLiteral("#1E293B")));
+        text->SetContainerUid(rect->Uid());
+        scene.AddItemsWithUndo({rect, text}, QStringLiteral("Add container and text"));
+        scene.SyncContainerTexts();
+
+        const QString boundUid = text->ContainerUid();
+        const QPointF boundPos = text->pos();
+        const QSizeF boundSize = text->ContentSize();
+        ctx.Check(scene.SetTextContainer(text, QString(), QStringLiteral("Unbind text")) &&
+                      text->ContainerUid().isEmpty(),
+                  QStringLiteral("解绑文字清空 containerId"), QStringLiteral("uid=%1").arg(text->ContainerUid()));
+        ctx.Check(text->pos() == boundPos && text->ContentSize() == boundSize,
+                  QStringLiteral("解绑保留文字当前位置与尺寸"),
+                  QStringLiteral("pos=(%1,%2) size=(%3,%4)")
+                      .arg(text->pos().x())
+                      .arg(text->pos().y())
+                      .arg(text->ContentSize().width())
+                      .arg(text->ContentSize().height()));
+        undo.undo();
+        ctx.Check(text->ContainerUid() == boundUid, QStringLiteral("撤销解绑恢复文字归属"),
+                  QStringLiteral("uid=%1").arg(text->ContainerUid()));
+    }
+
+    // 拖进图形：文字中心命中矩形时绑定并按容器宽度折行，撤销回到自由文字的位置。
+    {
+        CanvasScene scene;
+        scene.ApplyCanvasSize(QSizeF(800.0, 600.0));
+        scene.SetMode(ToolMode::EDIT);
+        QUndoStack undo;
+        scene.SetUndoStack(&undo);
+
+        auto* rect = ShapeFactory::Create(ShapeType::RECTANGLE);
+        rect->SetContentSize(QSizeF(200.0, 120.0));
+        rect->setPos(QPointF(100.0, 80.0));
+        auto* text = new TextItem();
+        text->SetTextFormat(QStringLiteral("Free text"), text->TextFont(), QColor(QStringLiteral("#1E293B")));
+        scene.AddItemsWithUndo({rect, text}, QStringLiteral("Add rect and free text"));
+
+        // 把文字中心对准矩形中心，模拟拖拽落入图形内部。
+        const QPointF rectCenter = rect->mapRectToScene(rect->ContentRect()).center();
+        const QSizeF textSize = text->ContentSize();
+        text->setPos(rectCenter - QPointF(textSize.width() / 2.0, textSize.height() / 2.0));
+        ctx.Check(scene.ContainerShapeForText(text) == rect, QStringLiteral("文字中心落在图形内时识别到容器"));
+        const TextItemState beforeState = text->State();
+        const QString rectUid = rect->Uid();
+        ctx.Check(scene.SetTextContainer(text, rectUid, QString(), beforeState, QStringLiteral("Bind text")) &&
+                      text->ContainerUid() == rectUid,
+                  QStringLiteral("拖动文字落入图形后绑定"), QStringLiteral("uid=%1").arg(text->ContainerUid()));
+        const QRectF containerRect = rect->mapRectToScene(rect->ContentRect());
+        ctx.Check(qAbs(text->ContentSize().width() - containerRect.width()) < 1.0,
+                  QStringLiteral("绑定后文字按容器宽度折行"),
+                  QStringLiteral("w=%1 container=%2").arg(text->ContentSize().width()).arg(containerRect.width()));
+        undo.undo();
+        ctx.Check(text->ContainerUid().isEmpty() && text->pos() == beforeState.pos,
+                  QStringLiteral("撤销绑定回到自由文字的位置与尺寸"),
+                  QStringLiteral("uid=%1 pos=(%2,%3)")
+                      .arg(text->ContainerUid())
+                      .arg(text->pos().x())
+                      .arg(text->pos().y()));
+    }
+
+    // 换类型：原图元带容器文字时，文字要跟着新图元的 uid，撤销再指回旧 uid。
+    {
+        CanvasScene scene;
+        scene.ApplyCanvasSize(QSizeF(800.0, 600.0));
+        scene.SetMode(ToolMode::EDIT);
+        QUndoStack undo;
+        scene.SetUndoStack(&undo);
+
+        auto* sector = ShapeFactory::Create(ShapeType::SECTOR);
+        sector->SetContentSize(QSizeF(180.0, 180.0));
+        sector->setPos(QPointF(100.0, 100.0));
+        auto* text = new TextItem();
+        text->SetTextFormat(QStringLiteral("Sector text"), text->TextFont(), QColor(QStringLiteral("#1E293B")));
+        text->SetContainerUid(sector->Uid());
+        scene.AddItemsWithUndo({sector, text}, QStringLiteral("Add sector and text"));
+        scene.SyncContainerTexts();
+
+        const QString oldUid = sector->Uid();
+        CanvasItem* arc = scene.ConvertItemType(sector, QStringLiteral("arc"));
+        const QString newUid = arc ? arc->Uid() : QString();
+        ctx.Check(arc && !newUid.isEmpty() && newUid != oldUid && text->ContainerUid() == newUid,
+                  QStringLiteral("换类型后容器文字改指新图元"),
+                  QStringLiteral("old=%1 new=%2 text=%3").arg(oldUid, newUid, text->ContainerUid()));
+        undo.undo();
+        ctx.Check(text->ContainerUid() == oldUid, QStringLiteral("撤销换类型后文字指回旧图元"),
+                  QStringLiteral("text=%1 old=%2").arg(text->ContainerUid(), oldUid));
+    }
 }

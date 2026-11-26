@@ -845,6 +845,42 @@ void selftest::RunDockPanelPropertyTests(Context& ctx)
                   QStringLiteral("卡片简化曲线按钮真正执行简化且可撤销"),
                   QStringLiteral("index=%1->%2").arg(undoIndexBeforeSmooth).arg(dockScene->UndoStack()->index()));
 
+        // 容器文字：编辑面板出现所属图形行，点解绑按钮清空归属且可撤销。
+        auto* containerShape = ShapeFactory::Create(ShapeType::RECTANGLE);
+        containerShape->setPos(QPointF(760.0, 300.0));
+        containerShape->SetContentSize(QSizeF(180.0, 110.0));
+        auto* containerText = new TextItem();
+        containerText->SetTextFormat(QStringLiteral("Container label"), containerText->TextFont(),
+                                     QColor(QStringLiteral("#1E293B")));
+        containerText->SetContainerUid(containerShape->Uid());
+        dockScene->AddItemsWithUndo({containerShape, containerText}, QStringLiteral("Add container text case"));
+        dockScene->clearSelection();
+        containerText->setSelected(true);
+        QApplication::processEvents();
+        QWidget* containerRow = propertiesDock->findChild<QWidget*>(QStringLiteral("ItemContainerRow"));
+        QToolButton* containerUnbind = propertiesDock->findChild<QToolButton*>(QStringLiteral("ItemContainerUnbind"));
+        ctx.Check(containerRow && containerRow->isVisible() && containerUnbind && containerUnbind->isVisible(),
+                  QStringLiteral("选中容器文字时出现所属图形行与解绑按钮"));
+        ctx.Check(containerRow && nameEditor &&
+                      containerRow->mapTo(propertiesDock, QPoint(0, 0)).y() >
+                          nameEditor->mapTo(propertiesDock, QPoint(0, 0)).y(),
+                  QStringLiteral("所属图形行排在名称行之后"),
+                  QStringLiteral("nameY=%1 rowY=%2")
+                      .arg(nameEditor ? nameEditor->mapTo(propertiesDock, QPoint(0, 0)).y() : -1)
+                      .arg(containerRow ? containerRow->mapTo(propertiesDock, QPoint(0, 0)).y() : -1));
+        const QString containerUidBeforeUnbind = containerText->ContainerUid();
+        if (containerUnbind) {
+            containerUnbind->click();
+            QApplication::processEvents();
+        }
+        ctx.Check(containerText->ContainerUid().isEmpty() && containerRow && containerRow->isHidden(),
+                  QStringLiteral("点解绑按钮解除文字归属并隐藏所属图形行"),
+                  QStringLiteral("uid=%1").arg(containerText->ContainerUid()));
+        dockScene->UndoStack()->undo();
+        QApplication::processEvents();
+        ctx.Check(containerText->ContainerUid() == containerUidBeforeUnbind && containerRow && containerRow->isVisible(),
+                  QStringLiteral("撤销解绑恢复容器文字与所属图形行"));
+
         // 悬浮卡片跟随选中状态：清空选中后隐藏，重新选中再出现。
         propertiesDock->setFloating(true);
         QApplication::processEvents();

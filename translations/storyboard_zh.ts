@@ -31,6 +31,15 @@
     </message><message>
         <source>Move item</source>
         <translation>移动图元</translation>
+    </message><message>
+        <source>Bind text</source>
+        <translation>绑定文字</translation>
+    </message><message>
+        <source>Detach text</source>
+        <translation>解绑文字</translation>
+    </message><message>
+        <source>Rebind text</source>
+        <translation>换绑文字</translation>
     </message></context>
 <context>
     <name>CanvasScene</name><message>
@@ -458,6 +467,15 @@
     <name>PropertiesPanel</name><message>
         <source>Item type</source>
         <translation>图元类型</translation>
+    </message><message>
+        <source>Attached shape</source>
+        <translation>所属图形</translation>
+    </message><message>
+        <source>Unbind</source>
+        <translation>解绑</translation>
+    </message><message>
+        <source>Unbind text</source>
+        <translation>解绑文字</translation>
     </message><message>
         <source>Edit semi-axes</source>
         <translation>编辑长短半轴</translation>
