@@ -536,4 +536,44 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
                       .arg(text->ContentSize().width())
                       .arg(containerRect.width()));
     }
+
+    // 直线箭头绑定图形后，图形移动时端点跟随，笔迹仍保持笔直（控制柄按新弦重排）。
+    {
+        CanvasScene scene;
+        scene.ApplyCanvasSize(QSizeF(900.0, 700.0));
+        scene.SetMode(ToolMode::EDIT);
+        QUndoStack undo;
+        scene.SetUndoStack(&undo);
+
+        auto* rect = ShapeFactory::Create(ShapeType::RECTANGLE);
+        rect->SetContentSize(QSizeF(120.0, 100.0));
+        rect->setPos(QPointF(300.0, 100.0));
+        auto* line = new StraightLineItem();
+        line->SetEndpoints(QPointF(100.0, 150.0), QPointF(420.0, 150.0), QColor(QStringLiteral("#334155")), 3.0);
+        line->SetArrowStyles(ArrowStyle::NONE, ArrowStyle::OPEN_ARROW);
+        scene.AddItemsWithUndo({rect, line}, QStringLiteral("Add bound line arrow"));
+        line->DragEndpointWithBinding(false, QPointF(420.0, 150.0));
+        ctx.Check(line->EndBinding().value(QStringLiteral("elementId")).toString() == rect->Uid(),
+                  QStringLiteral("直线箭头尾端绑定到矩形"));
+
+        rect->setPos(QPointF(520.0, 320.0));
+        scene.SyncArrowBindings();
+        const QVector<CurveSegment> segments = line->geometryState().segments;
+        bool straight = segments.size() == 1;
+        if (straight) {
+            const CurveSegment& segment = segments.constFirst();
+            const QPointF chord = segment.p1 - segment.p0;
+            const qreal length = qSqrt(chord.x() * chord.x() + chord.y() * chord.y());
+            auto deviation = [&](const QPointF& point) {
+                return qAbs((point.x() - segment.p0.x()) * chord.y() -
+                            (point.y() - segment.p0.y()) * chord.x()) /
+                       qMax<qreal>(1.0, length);
+            };
+            const QPointF mid = (segment.p0 + 3.0 * segment.c1 + 3.0 * segment.c2 + segment.p1) / 8.0;
+            straight = length > 0.0 && deviation(segment.c1) < 0.01 && deviation(segment.c2) < 0.01 &&
+                       deviation(mid) < 0.01;
+        }
+        ctx.Check(straight, QStringLiteral("图形移动后直线箭头笔迹不弯曲"),
+                  QStringLiteral("segments=%1").arg(segments.size()));
+    }
 }

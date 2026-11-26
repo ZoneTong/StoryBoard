@@ -159,6 +159,18 @@ bool LineAbstractItem::MoveEndpoint(bool start, const QPointF& scenePoint)
         return false;
     }
     CurveSegment& segment = start ? m_segments.first() : m_segments.last();
+    // 控制柄落在弦上的段是纯直线（直线图元每段都是三等分弦）：端点移动后要按新弦重排
+    // 控制柄，否则只挪一端的控制柄会把直线掰弯，箭头尖端也会偏离笔迹方向。
+    const QPointF chord = segment.p1 - segment.p0;
+    const qreal chordLength = qSqrt(chord.x() * chord.x() + chord.y() * chord.y());
+    bool straight = chordLength > 0.0;
+    if (straight) {
+        auto offChord = [&](const QPointF& point) {
+            return qAbs((point.x() - segment.p0.x()) * chord.y() - (point.y() - segment.p0.y()) * chord.x()) /
+                   chordLength;
+        };
+        straight = offChord(segment.c1) <= 1e-3 && offChord(segment.c2) <= 1e-3;
+    }
     const QPointF local = mapFromScene(scenePoint);
     if (start) {
         const QPointF delta = local - segment.p0;
@@ -168,6 +180,11 @@ bool LineAbstractItem::MoveEndpoint(bool start, const QPointF& scenePoint)
         const QPointF delta = local - segment.p1;
         segment.p1 = local;
         segment.c2 += delta;
+    }
+    if (straight) {
+        const QPointF newChord = segment.p1 - segment.p0;
+        segment.c1 = segment.p0 + newChord / 3.0;
+        segment.c2 = segment.p0 + newChord * (2.0 / 3.0);
     }
     NormalizeGeometry();
     RebuildPath();
