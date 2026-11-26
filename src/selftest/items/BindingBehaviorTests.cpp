@@ -1,3 +1,4 @@
+#include "items/lines/CurveItem.h"
 #include "items/lines/StraightLineItem.h"
 #include "items/shapes/ShapeFactory.h"
 #include "items/text/TextItem.h"
@@ -168,6 +169,59 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
                   QStringLiteral("x=%1 binding=%2")
                       .arg(attached.x())
                       .arg(line->StartBinding().isEmpty() ? QStringLiteral("empty") : QStringLiteral("set")));
+    }
+
+    // 曲线两端：首尾句柄拖到图形边缘就吸附并绑定，目标移动后端点跟随，拖离则解绑。
+    // 绑定只对图形生效：文字不参与吸附。
+    {
+        CanvasScene scene;
+        scene.ApplyCanvasSize(QSizeF(800.0, 600.0));
+        scene.SetMode(ToolMode::EDIT);
+        QUndoStack undo;
+        scene.SetUndoStack(&undo);
+
+        auto* rect = ShapeFactory::Create(ShapeType::RECTANGLE);
+        rect->SetContentSize(QSizeF(160.0, 120.0));
+        rect->setPos(QPointF(300.0, 150.0));
+        scene.AddItemsWithUndo({rect}, QStringLiteral("Add rect"));
+
+        auto* curve = new CurveItem();
+        curve->SetStrokePoints(
+            {QPointF(20.0, 300.0), QPointF(140.0, 250.0), QPointF(240.0, 330.0), QPointF(280.0, 300.0)},
+            QColor(QStringLiteral("#1E293B")), 2.0);
+        scene.AddItemsWithUndo({curve}, QStringLiteral("Add curve"));
+
+        ctx.Check(curve->CustomHandles().size() == 2, QStringLiteral("曲线提供首尾两个端点句柄"),
+                  QStringLiteral("count=%1").arg(curve->CustomHandles().size()));
+
+        curve->BeginCustomHandleDrag(CanvasItem::CUSTOM_1, QPointF(280.0, 300.0));
+        curve->ApplyCustomHandleDrag(CanvasItem::CUSTOM_1, QPointF(300.0, 210.0));
+        const QPointF attached = curve->mapToScene(curve->StrokePoints().constLast());
+        ctx.Check(curve->EndBinding().value(QStringLiteral("elementId")).toString() == rect->Uid() &&
+                      qAbs(attached.x() - 296.0) < 1.0,
+                  QStringLiteral("曲线端点拖到图形边缘后绑定并贴边"),
+                  QStringLiteral("x=%1 binding=%2")
+                      .arg(attached.x())
+                      .arg(curve->EndBinding().isEmpty() ? QStringLiteral("empty") : QStringLiteral("set")));
+
+        rect->setPos(QPointF(400.0, 150.0));
+        scene.SyncArrowBindings();
+        const QPointF followed = curve->mapToScene(curve->StrokePoints().constLast());
+        ctx.Check(qAbs(followed.x() - 396.0) < 1.0, QStringLiteral("目标移动后曲线端点跟随"),
+                  QStringLiteral("x=%1").arg(followed.x()));
+
+        curve->ApplyCustomHandleDrag(CanvasItem::CUSTOM_1, QPointF(120.0, 420.0));
+        ctx.Check(curve->EndBinding().isEmpty(), QStringLiteral("曲线端点拖离图形后解除绑定"),
+                  QStringLiteral("binding=%1")
+                      .arg(curve->EndBinding().isEmpty() ? QStringLiteral("empty") : QStringLiteral("set")));
+
+        auto* text = new TextItem();
+        text->SetTextFormat(QStringLiteral("Text"), text->TextFont(), QColor(QStringLiteral("#1E293B")));
+        text->setPos(QPointF(60.0, 60.0));
+        scene.AddItemsWithUndo({text}, QStringLiteral("Add text"));
+        const QRectF textRect = text->mapRectToScene(text->ContentRect());
+        ctx.Check(scene.BindableShapeAt(textRect.center(), 12.0) == nullptr, QStringLiteral("文字图元不作为绑定目标"),
+                  QStringLiteral("center=%1,%2").arg(textRect.center().x()).arg(textRect.center().y()));
     }
 
     // 容器文字：容器移动 / 缩放后文字回到容器中心。

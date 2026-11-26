@@ -71,6 +71,9 @@ class LineAbstractItem : public CanvasItem, public StrokeAttributes {
 
     // 端点绑定跟随：把某一端拖到指定场景坐标，只动这一端与控制柄，其余节点保持。
     bool MoveEndpoint(bool start, const QPointF& scenePoint);
+    // 端点句柄拖拽：先移动端点，再按落点决定吸附到形状边缘并写入绑定 / 清空绑定。
+    // 直线与曲线共用这一份口径，目标是图形本体，文字与其他描线不参与吸附。
+    bool DragEndpointWithBinding(bool start, const QPointF& scenePoint);
 
     // 两端箭头在场景里的实际绘制范围（含描边余量）。导出包围框要把它算进去：
     // 箭头头长是线宽的 4 倍，只按半个线宽外扩会把翅膀切掉一半。

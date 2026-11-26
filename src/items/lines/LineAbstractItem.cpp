@@ -3,8 +3,10 @@
 #include "items/CanvasItemVisitor.h"
 #include "items/geometry/StrokeGeometry.h"
 #include "items/geometry/StrokeSmoothing.h"
+#include "scene/CanvasScene.h"
 
 #include <QJsonArray>
+#include <QJsonObject>
 #include <QLineF>
 #include <QPainter>
 #include <QPainterPathStroker>
@@ -170,6 +172,37 @@ bool LineAbstractItem::MoveEndpoint(bool start, const QPointF& scenePoint)
     NormalizeGeometry();
     RebuildPath();
     update();
+    return true;
+}
+
+bool LineAbstractItem::DragEndpointWithBinding(bool start, const QPointF& scenePoint)
+{
+    if (!MoveEndpoint(start, scenePoint)) {
+        return false;
+    }
+    CanvasScene* canvas = canvasScene();
+    if (!canvas) {
+        return true;
+    }
+    // Excalidraw 口径：端点落进图形或贴边 12px 内就吸附到边缘并写入绑定，拖离则清空。
+    CanvasItem* target = canvas->BindableShapeAt(scenePoint, 12.0);
+    canvas->SetBindingHighlight(target);
+    QJsonObject binding;
+    const QVector<QPointF> knots = StrokePoints();
+    if (target && knots.size() >= 2) {
+        const QPointF other = mapToScene(start ? knots.at(1) : knots.at(knots.size() - 2));
+        const QPointF attached = CanvasScene::AttachmentPoint(target, other, 4.0);
+        binding.insert(QStringLiteral("elementId"), target->Uid());
+        binding.insert(QStringLiteral("focus"),
+                       CanvasScene::FocusForPoint(target->mapRectToScene(target->ContentRect()), attached));
+        binding.insert(QStringLiteral("gap"), 4.0);
+        MoveEndpoint(start, attached);
+    }
+    if (start) {
+        SetStartBinding(binding);
+    } else {
+        SetEndBinding(binding);
+    }
     return true;
 }
 

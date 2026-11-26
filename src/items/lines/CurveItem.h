@@ -35,6 +35,10 @@ class CurveItem : public LineAbstractItem {
 
     GeometryState geometryState() const override;
     void ApplyGeometryState(const GeometryState& state) override;
+    // 曲线两端同样是可拖端点：落到其他形状内外 12px 吸附边缘并绑定，拖离则解绑。
+    HandleSpecList CustomHandles() const override;
+    bool BeginCustomHandleDrag(int handle, const QPointF& scenePos) override;
+    bool ApplyCustomHandleDrag(int handle, const QPointF& scenePos) override;
     // 简化曲线：把当前路径拍平后按容差抽点并重新拟合；返回是否改变了几何。
     // 这是曲线独有的操作，不放在描线基类上，场景通过 Visitor 调用。
     bool SimplifyCurve(qreal tolerance);

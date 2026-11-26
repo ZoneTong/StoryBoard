@@ -143,37 +143,6 @@ bool StraightLineItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos
     if (handle != CanvasItem::CUSTOM_0 && handle != CanvasItem::CUSTOM_1) {
         return false;
     }
-    const bool start = handle == CanvasItem::CUSTOM_0;
-    MoveEndpoint(start, scenePos);
-
-    CanvasScene* canvas = canvasScene();
-    if (!canvas) {
-        return true;
-    }
-    // Excalidraw 口径：拖动端点靠近 / 落进图形就绑上，拖离超过 12px 就解绑。
-    CanvasItem* target = canvas->BindableShapeAt(scenePos, 12.0);
-    canvas->SetBindingHighlight(target);
-    if (target && target->Category() == ItemCategory::SHAPE && target->Uid() != Uid()) {
-        const QVector<QPointF> knots = StrokePoints();
-        const QPointF other = mapToScene(start ? knots.at(1) : knots.at(qMax(1, knots.size() - 2)));
-        const QRectF rect = target->mapRectToScene(target->ContentRect());
-        const QPointF attached = CanvasScene::AttachmentPoint(target, other, 4.0);
-        QJsonObject binding;
-        binding.insert(QStringLiteral("elementId"), target->Uid());
-        binding.insert(QStringLiteral("focus"), CanvasScene::FocusForPoint(rect, attached));
-        binding.insert(QStringLiteral("gap"), 4.0);
-        MoveEndpoint(start, attached);
-        if (start) {
-            SetStartBinding(binding);
-        } else {
-            SetEndBinding(binding);
-        }
-    } else {
-        if (start) {
-            SetStartBinding(QJsonObject());
-        } else {
-            SetEndBinding(QJsonObject());
-        }
-    }
-    return true;
+    // 吸附 / 解绑口径与曲线共用：落点交给 LineAbstractItem 统一处理。
+    return DragEndpointWithBinding(handle == CanvasItem::CUSTOM_0, scenePos);
 }

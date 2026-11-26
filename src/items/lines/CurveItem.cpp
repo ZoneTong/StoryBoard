@@ -219,6 +219,46 @@ void CurveItem::ApplyGeometryState(const GeometryState& state)
     update();
 }
 
+HandleSpecList CurveItem::CustomHandles() const
+{
+    HandleSpecList specs;
+    const QVector<QPointF> knots = StrokePoints();
+    if (knots.size() < 2) {
+        return specs;
+    }
+    // 只暴露首尾两个端点：中间节点是拟合结果，不给拖拽入口。
+    HandleSpec start;
+    start.id = CanvasItem::CUSTOM_0;
+    start.position = knots.constFirst();
+    start.behavior = HandleBehavior::ARC_ENDPOINT;
+    start.cursor = Qt::SizeAllCursor;
+    start.sizeScale = 0.9;
+    specs.append(start);
+    HandleSpec end;
+    end.id = CanvasItem::CUSTOM_1;
+    end.position = knots.constLast();
+    end.behavior = HandleBehavior::ARC_ENDPOINT;
+    end.cursor = Qt::SizeAllCursor;
+    end.sizeScale = 0.9;
+    specs.append(end);
+    return specs;
+}
+
+bool CurveItem::BeginCustomHandleDrag(int handle, const QPointF& scenePos)
+{
+    Q_UNUSED(scenePos);
+    return handle == CanvasItem::CUSTOM_0 || handle == CanvasItem::CUSTOM_1;
+}
+
+bool CurveItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos)
+{
+    if (handle != CanvasItem::CUSTOM_0 && handle != CanvasItem::CUSTOM_1) {
+        return false;
+    }
+    // 与直线同一份吸附 / 解绑口径，避免两处分别维护绑定语义。
+    return DragEndpointWithBinding(handle == CanvasItem::CUSTOM_0, scenePos);
+}
+
 void CurveItem::NormalizeGeometry()
 {
     // 绘制期直接用采样点，收笔后才按拟合段计算；两套几何互斥，避免回读空集合。

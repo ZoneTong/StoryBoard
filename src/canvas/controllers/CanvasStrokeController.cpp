@@ -129,6 +129,39 @@ void CanvasStrokeController::FinishStroke()
         return;
     }
 
+    // 起笔 / 收笔各自落在图形内或贴边 12px 内时建立绑定；起止落在同一个图形里不当连接。
+    CanvasItem* startTarget = m_scene->ItemByUid(m_startTargetUid);
+    CanvasItem* endTarget = m_scene->BindableShapeAt(m_view->mapToScene(m_lastViewportPos), 12.0);
+    if (startTarget == endTarget) {
+        endTarget = nullptr;
+    }
+    m_startTargetUid.clear();
+    auto bindingFor = [](const CanvasItem* target, const QPointF& attached) {
+        QJsonObject binding;
+        binding.insert(QStringLiteral("elementId"), target->Uid());
+        binding.insert(QStringLiteral("focus"),
+                       CanvasScene::FocusForPoint(target->mapRectToScene(target->ContentRect()), attached));
+        binding.insert(QStringLiteral("gap"), 4.0);
+        return binding;
+    };
+    // 把两端吸附到目标边缘并写入绑定；直线与曲线共用这段口径，两端都不靠图形时不动。
+    auto attachEnds = [&](LineAbstractItem* line, QPointF start, QPointF end) {
+        if (endTarget) {
+            end = CanvasScene::AttachmentPoint(endTarget, start, 4.0);
+        }
+        if (startTarget) {
+            start = CanvasScene::AttachmentPoint(startTarget, end, 4.0);
+        }
+        if (startTarget) {
+            line->MoveEndpoint(true, start);
+            line->SetStartBinding(bindingFor(startTarget, start));
+        }
+        if (endTarget) {
+            line->MoveEndpoint(false, end);
+            line->SetEndBinding(bindingFor(endTarget, end));
+        }
+    };
+
     // 需求 8：画笔模式画出的近似直线的笔画直接落成直线类型图元。
     // 需求 20：笔画收尾后节点已被平移到图元局部坐标，必须经 mapToScene
     // 换回场景坐标再落位，否则直线会跑到画布原点附近"消失"。
@@ -140,37 +173,7 @@ void CanvasStrokeController::FinishStroke()
         auto* line = new StraightLineItem();
         line->SetEndpoints(a, b, stroke->StrokeColor(), stroke->StrokeWidth());
         line->SetStrokePattern(stroke->strokePattern());
-        // 两端各自落在图形内或贴边 12px 内时建立绑定；起止落在同一个图形里不当连接。
-        CanvasItem* startTarget = m_scene->ItemByUid(m_startTargetUid);
-        CanvasItem* endTarget = m_scene->BindableShapeAt(m_view->mapToScene(m_lastViewportPos), 12.0);
-        if (startTarget == endTarget) {
-            endTarget = nullptr;
-        }
-        auto bindingFor = [](const CanvasItem* target, const QPointF& attached) {
-            QJsonObject binding;
-            binding.insert(QStringLiteral("elementId"), target->Uid());
-            binding.insert(QStringLiteral("focus"),
-                          CanvasScene::FocusForPoint(target->mapRectToScene(target->ContentRect()), attached));
-            binding.insert(QStringLiteral("gap"), 4.0);
-            return binding;
-        };
-        QPointF start = a;
-        QPointF end = b;
-        if (endTarget) {
-            end = CanvasScene::AttachmentPoint(endTarget, start, 4.0);
-        }
-        if (startTarget) {
-            start = CanvasScene::AttachmentPoint(startTarget, end, 4.0);
-        }
-        if (startTarget) {
-            line->SetStartBinding(bindingFor(startTarget, start));
-            line->MoveEndpoint(true, start);
-        }
-        if (endTarget) {
-            line->SetEndBinding(bindingFor(endTarget, end));
-            line->MoveEndpoint(false, end);
-        }
-        m_startTargetUid.clear();
+        attachEnds(line, a, b);
         m_scene->removeItem(stroke);
         delete stroke;
         m_scene->CommitNewItem(line, TrView("Add stroke"));
@@ -178,6 +181,11 @@ void CanvasStrokeController::FinishStroke()
         return;
     }
 
+    // 曲线同样只绑两端：起笔与收笔靠图形时贴到边缘，中间节点不受影响。
+    const QVector<QPointF> knots = stroke->StrokePoints();
+    if (knots.size() >= 2) {
+        attachEnds(stroke, stroke->mapToScene(knots.constFirst()), stroke->mapToScene(knots.constLast()));
+    }
     m_scene->CommitNewItem(stroke, TrView("Add stroke"));
     m_view->RefreshCursor();
 }
