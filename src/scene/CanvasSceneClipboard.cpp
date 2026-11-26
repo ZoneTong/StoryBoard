@@ -1,8 +1,11 @@
 #include "items/CanvasItem.h"
 #include "items/ItemSnapshot.h"
+#include "items/lines/LineAbstractItem.h"
+#include "items/text/TextItem.h"
 #include "scene/CanvasScene.h"
 
 #include <QGraphicsView>
+#include <QHash>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QPointF>
@@ -35,6 +38,7 @@ int CanvasScene::PasteClipboardItems(const QJsonArray& items)
 
     QList<CanvasItem*> copies;
     QSet<QString> reservedNames;
+    QHash<QString, QString> uidRemap;
     for (const QJsonValue& value : items) {
         const QJsonObject json = value.toObject();
         CanvasItem* copy = CreateItemForJson(json);
@@ -43,7 +47,12 @@ int CanvasScene::PasteClipboardItems(const QJsonArray& items)
         }
         copy->FromJson(json);
         // 身份必须换新：原 id 仍指向来源画布里的图元，绑定关系不能跟着复制。
+        // 旧 uid 先登记下来，粘贴完成后按这张表把绑定 / 容器引用改到副本上。
+        const QString sourceUid = json.value(QStringLiteral("uid")).toString();
         copy->AssignNewUid();
+        if (!sourceUid.isEmpty()) {
+            uidRemap.insert(sourceUid, copy->Uid());
+        }
         copy->SetItemOpacity(json.value(QStringLiteral("opacity")).toDouble(1.0));
         // 跨文档粘贴时不带原分组关系，避免副本和来源画布的组联动。
         copy->SetGroupId(0);
@@ -61,6 +70,46 @@ int CanvasScene::PasteClipboardItems(const QJsonArray& items)
     }
     if (copies.isEmpty()) {
         return 0;
+    }
+
+    // 箭头端点绑定与容器文字引用都按 uid 查表：复制侧已经换新 uid，这里必须把
+    // 旧 uid 改写成副本的新 uid；既不在副本里、也不在目标画布里的目标视为悬空，
+    // 直接清掉引用，避免留下永远匹配不上的关系。
+    const auto remapBinding = [this, &uidRemap](const QJsonObject& binding) {
+        if (binding.isEmpty()) {
+            return binding;
+        }
+        const QString target = binding.value(QStringLiteral("elementId")).toString();
+        if (target.isEmpty()) {
+            return binding;
+        }
+        QJsonObject result = binding;
+        const QString mapped = uidRemap.value(target);
+        if (!mapped.isEmpty()) {
+            result.insert(QStringLiteral("elementId"), mapped);
+            return result;
+        }
+        if (ItemByUid(target)) {
+            return result;
+        }
+        return QJsonObject();
+    };
+    for (CanvasItem* copy : std::as_const(copies)) {
+        if (auto* line = dynamic_cast<LineAbstractItem*>(copy)) {
+            line->SetStartBinding(remapBinding(line->StartBinding()));
+            line->SetEndBinding(remapBinding(line->EndBinding()));
+        } else if (auto* text = dynamic_cast<TextItem*>(copy)) {
+            const QString containerUid = text->ContainerUid();
+            if (containerUid.isEmpty()) {
+                continue;
+            }
+            const QString mapped = uidRemap.value(containerUid);
+            if (!mapped.isEmpty()) {
+                text->SetContainerUid(mapped);
+            } else if (!ItemByUid(containerUid)) {
+                text->SetContainerUid(QString());
+            }
+        }
     }
 
     // 需求 2：粘贴落点是视口中心；整块内容超过画布 72% 时先等比缩到 72%，再夹回画布内。

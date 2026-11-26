@@ -1,8 +1,10 @@
 #include "io/ExcalidrawFormat.h"
 #include "items/CanvasItem.h"
 #include "items/lines/LineAbstractItem.h"
+#include "items/properties/FillAttributes.h"
 #include "items/shapes/ShapeAbstractItem.h"
 #include "items/shapes/ShapeFactory.h"
+#include "items/text/TextItem.h"
 #include "scene/CanvasScene.h"
 #include "selftest/core/SelfTestContext.h"
 #include "selftest/core/SelftestEntries.h"
@@ -12,6 +14,7 @@
 #include <QAction>
 #include <QApplication>
 #include <QClipboard>
+#include <QColor>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -137,6 +140,122 @@ void selftest::RunClipboardShortcutTests(Context& ctx)
                   QStringLiteral("粘贴动作把 Excalidraw 元素落到画布"),
                   QStringLiteral("before=%1 after=%2").arg(beforePaste).arg(scene ? scene->CanvasItemCount() : -1));
         QApplication::clipboard()->clear();
+    }
+
+    // Excalidraw 粘贴的还原度：纯色 / 斜线填充样式要落进图元，箭头绑定要指向粘贴后的新 uid。
+    {
+        const QByteArray sceneJson = R"({"type":"excalidraw/clipboard","elements":[
+            {"id":"paste-solid","type":"rectangle","x":0,"y":0,"width":100,"height":60,
+             "backgroundColor":"#a5d8ff","fillStyle":"solid","strokeColor":"#1e1e1e","strokeWidth":2},
+            {"id":"paste-hachure","type":"rectangle","x":140,"y":0,"width":100,"height":60,
+             "backgroundColor":"#fab005","fillStyle":"hachure","strokeColor":"#1e1e1e","strokeWidth":2},
+            {"id":"paste-arrow","type":"arrow","x":10,"y":90,"width":90,"height":30,
+             "points":[[0,0],[90,30]],"strokeColor":"#1e1e1e","strokeWidth":2,
+             "startBinding":{"elementId":"paste-solid","focus":0,"gap":4},"endBinding":null,
+             "startArrowhead":null,"endArrowhead":"arrow"},
+            {"id":"paste-text","type":"text","x":30,"y":15,"width":40,"height":30,"text":"Hi",
+             "originalText":"Hi","fontSize":20,"fontFamily":2,"textAlign":"center","verticalAlign":"middle",
+             "containerId":"paste-solid","strokeColor":"#1e1e1e","backgroundColor":"transparent",
+             "fillStyle":"solid"}]})";
+
+        MainWindow pasteWindow;
+        pasteWindow.View()->SetMode(ToolMode::EDIT);
+        auto* pasteMime = new QMimeData;
+        pasteMime->setText(QString::fromUtf8(sceneJson));
+        QApplication::clipboard()->setMimeData(pasteMime);
+        QApplication::processEvents();
+        QAction* pasteAction = FindActionByObjectName(&pasteWindow, QStringLiteral("PasteItemsAction"));
+        if (pasteAction) {
+            pasteAction->trigger();
+            QApplication::processEvents();
+        }
+
+        CanvasScene* scene = pasteWindow.findChild<CanvasScene*>();
+        QStringList fillStyles;
+        QString solidUid;
+        QString arrowTarget;
+        QString textContainer;
+        if (scene) {
+            for (CanvasItem* item : scene->CanvasItems()) {
+                if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
+                    fillStyles.append(FillStyleToString(shape->fillStyle()));
+                    if (shape->FillColor().name() == QStringLiteral("#a5d8ff")) {
+                        solidUid = shape->Uid();
+                    }
+                } else if (auto* line = dynamic_cast<LineAbstractItem*>(item)) {
+                    arrowTarget = line->StartBinding().value(QStringLiteral("elementId")).toString();
+                } else if (auto* text = dynamic_cast<TextItem*>(item)) {
+                    textContainer = text->ContainerUid();
+                }
+            }
+        }
+        ctx.Check(scene && fillStyles.count(QStringLiteral("solid")) == 1 &&
+                      fillStyles.count(QStringLiteral("hachure")) == 1,
+                  QStringLiteral("粘贴保留 Excalidraw 矩形的纯色与斜线填充"), fillStyles.join(QLatin1Char(',')));
+        ctx.Check(!solidUid.isEmpty() && arrowTarget == solidUid,
+                  QStringLiteral("粘贴后箭头绑定改写为粘贴图元的新 uid"),
+                  QStringLiteral("target=%1 solidUid=%2").arg(arrowTarget, solidUid));
+        ctx.Check(!solidUid.isEmpty() && textContainer == solidUid,
+                  QStringLiteral("粘贴后容器文字改写到粘贴图元的新 uid"),
+                  QStringLiteral("container=%1 solidUid=%2").arg(textContainer, solidUid));
+        QApplication::clipboard()->clear();
+    }
+
+    // 画板自身纯色 / 斜线填充导出到 Excalidraw：元素要带对 fillStyle 与背景色。
+    {
+        MainWindow sourceWindow;
+        sourceWindow.View()->SetMode(ToolMode::EDIT);
+        CanvasScene* sourceScene = sourceWindow.findChild<CanvasScene*>();
+        auto* solidRect = ShapeFactory::Create(ShapeType::RECTANGLE);
+        solidRect->SetFill(QColor(QStringLiteral("#a5d8ff")), FillStyle::SOLID);
+        solidRect->SetContentSize(QSizeF(100.0, 60.0));
+        solidRect->setPos(QPointF(0.0, 0.0));
+        auto* hachureRect = ShapeFactory::Create(ShapeType::RECTANGLE);
+        hachureRect->SetFill(QColor(QStringLiteral("#fab005")), FillStyle::HACHURE);
+        hachureRect->SetContentSize(QSizeF(100.0, 60.0));
+        hachureRect->setPos(QPointF(140.0, 0.0));
+        if (sourceScene) {
+            sourceScene->AddItemsWithUndo({solidRect, hachureRect}, QStringLiteral("Add fill probe"));
+        }
+        QStringList exported;
+        if (sourceScene) {
+            const QJsonObject clipboard = Excalidraw::StoryBoardToClipboard(sourceScene->ToJson());
+            for (const QJsonValue& value : clipboard.value(QStringLiteral("elements")).toArray()) {
+                const QJsonObject element = value.toObject();
+                exported.append(QStringLiteral("%1/%2/%3")
+                                    .arg(element.value(QStringLiteral("type")).toString(),
+                                         element.value(QStringLiteral("fillStyle")).toString(),
+                                         element.value(QStringLiteral("backgroundColor")).toString()));
+            }
+        }
+        ctx.Check(exported.size() == 2 && exported.at(0).contains(QStringLiteral("solid")) &&
+                      exported.at(1).contains(QStringLiteral("hachure")),
+                  QStringLiteral("画板填充导出写进 Excalidraw 元素"), exported.join(QLatin1String(" | ")));
+    }
+
+    // .excalidraw 场景导入（不是剪贴板）也要保留纯色 / 斜线填充。
+    {
+        const QByteArray sceneText = R"({"type":"excalidraw","version":2,"elements":[
+            {"id":"file-solid","type":"rectangle","x":0,"y":0,"width":100,"height":60,
+             "backgroundColor":"#a5d8ff","fillStyle":"solid","strokeColor":"#1e1e1e","strokeWidth":2},
+            {"id":"file-hachure","type":"rectangle","x":140,"y":0,"width":100,"height":60,
+             "backgroundColor":"#fab005","fillStyle":"hachure","strokeColor":"#1e1e1e","strokeWidth":2}]})";
+        const QJsonObject scene = QJsonDocument::fromJson(sceneText).object();
+        QStringList warnings;
+        QJsonObject document = Excalidraw::SceneToStoryBoard(scene, &warnings, true);
+        CanvasScene importedScene;
+        QString error;
+        importedScene.FromJson(document, &error);
+        QStringList importedStyles;
+        for (CanvasItem* item : importedScene.CanvasItems()) {
+            if (auto* shape = dynamic_cast<ShapeAbstractItem*>(item)) {
+                importedStyles.append(FillStyleToString(shape->fillStyle()));
+            }
+        }
+        ctx.Check(importedStyles.count(QStringLiteral("solid")) == 1 &&
+                      importedStyles.count(QStringLiteral("hachure")) == 1,
+                  QStringLiteral("导入 .excalidraw 场景保留纯色 / 斜线填充"),
+                  importedStyles.join(QLatin1Char(',')) + QLatin1Char('|') + warnings.join(QLatin1String(" / ")));
     }
 
     // 倾斜直线：Excalidraw 的 points 是世界坐标，画板 segments 是图元本地坐标；
