@@ -85,16 +85,12 @@ class CanvasScene : public QGraphicsScene {
     // 画箭头 / 拖端点时的吸附候选，只影响视图高亮，不写进文档。
     void SetBindingHighlight(CanvasItem* item);
     CanvasItem* BindingHighlight() const { return m_bindingHighlight; }
-    // 绑定落点：从 from 朝目标图形中心，取图形边缘上的点，再沿外法线让开 gap。
-    // outlineFocus 时按图元真实轮廓的归一化弧长取点（矩形四角、椭圆弧、多边形边均可）；
-    // 否则沿用外接矩形周长语义，兼容旧文档与旧绑定。
-    static QPointF AttachmentPoint(const CanvasItem* target, const QPointF& from, qreal gap, qreal focus = -1.0,
-                                   bool outlineFocus = false);
-    // 场景点投影到图元真实轮廓后的归一化弧长参数；无轮廓时退回外接矩形周长。
+    // 绑定落点：沿目标图形真实轮廓取点，再沿图形中心到该点的方向让开 gap。
+    // focus 是轮廓弧长的归一化参数；-1 表示按 from 取最近轮廓点（特征点附近会校准）。
+    // 不再保留旧版外接矩形周长 focus 的兼容逻辑。
+    static QPointF AttachmentPoint(const CanvasItem* target, const QPointF& from, qreal gap, qreal focus = -1.0);
+    // 场景点投影到图元真实轮廓后的归一化弧长参数；无轮廓返回 0。
     static qreal OutlineFocusForPoint(const CanvasItem* target, const QPointF& point);
-    // 轮廓参数：0 在左上角，顺时针绕一圈回到 1；用于 focus 与场景点互算。
-    static qreal FocusForPoint(const QRectF& rect, const QPointF& point);
-    static QPointF PointForFocus(const QRectF& rect, qreal focus);
     // 可绑定的图形：点落在图形内，或离内容框边缘不超过 maxDistance；按叠放自上而下取第一个。
     CanvasItem* BindableShapeAt(const QPointF& scenePos, qreal maxDistance) const;
     // 需求 32：给所有还没有自定义名称的图元补上“类型 1 / 类型 2 …”自动名称。

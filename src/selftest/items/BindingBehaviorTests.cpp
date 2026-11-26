@@ -65,11 +65,10 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
 
         const QRectF targetRect = rect->mapRectToScene(rect->ContentRect());
         const QPointF edgePoint(targetRect.left(), 210.0);
-        const qreal focus = CanvasScene::FocusForPoint(targetRect, edgePoint);
-        const QPointF restored = CanvasScene::PointForFocus(targetRect, focus);
-        ctx.Check(QLineF(restored, edgePoint).length() < 1.0 &&
-                      CanvasScene::AttachmentPoint(rect, QPointF(500.0, 210.0), 4.0, focus).x() <
-                          targetRect.left(),
+        const QPointF edgeAttached = CanvasScene::AttachmentPoint(rect, edgePoint, 4.0);
+        const qreal focus = CanvasScene::OutlineFocusForPoint(rect, edgeAttached);
+        const QPointF restored = CanvasScene::AttachmentPoint(rect, QPointF(500.0, 210.0), 4.0, focus);
+        ctx.Check(QLineF(restored, edgeAttached).length() < 1.0 && edgeAttached.x() < targetRect.left(),
                   QStringLiteral("轮廓 focus 与场景点可互算并用于绑定落点"),
                   QStringLiteral("focus=%1 point=(%2,%3)")
                       .arg(focus)
@@ -77,8 +76,8 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
                       .arg(restored.y()));
 
         // 右下方 / 左下方斜向靠近：贴到真实轮廓上离落点最近的角点，落点不能跑到矩形外面。
-        const QPointF bottomRight = CanvasScene::AttachmentPoint(rect, QPointF(500.0, 320.0), 4.0, -1.0, true);
-        const QPointF bottomLeft = CanvasScene::AttachmentPoint(rect, QPointF(200.0, 320.0), 4.0, -1.0, true);
+        const QPointF bottomRight = CanvasScene::AttachmentPoint(rect, QPointF(500.0, 320.0), 4.0);
+        const QPointF bottomLeft = CanvasScene::AttachmentPoint(rect, QPointF(200.0, 320.0), 4.0);
         const QPointF outBottomRight = targetRect.bottomRight() + QPointF(0.8, 0.6) * 4.0;
         const QPointF outBottomLeft = targetRect.bottomLeft() + QPointF(-0.8, 0.6) * 4.0;
         ctx.Check(QLineF(bottomRight, outBottomRight).length() < 1.0 &&
@@ -94,7 +93,7 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
         auto* diamond = ShapeFactory::Create(ShapeType::DIAMOND);
         diamond->SetContentSize(QSizeF(160.0, 120.0));
         diamond->setPos(QPointF(560.0, 150.0));
-        const QPointF diamondCorner = CanvasScene::AttachmentPoint(diamond, QPointF(750.0, 210.0), 4.0, -1.0, true);
+        const QPointF diamondCorner = CanvasScene::AttachmentPoint(diamond, QPointF(750.0, 210.0), 4.0);
         const QRectF diamondRect = diamond->mapRectToScene(diamond->ContentRect());
         ctx.Check(qAbs(diamondCorner.x() - (diamondRect.right() + 4.0)) < 1.0 &&
                       qAbs(diamondCorner.y() - diamondRect.center().y()) < 1.0,
@@ -107,7 +106,7 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
         auto* ellipse = ShapeFactory::Create(ShapeType::ELLIPSE);
         ellipse->SetContentSize(QSizeF(160.0, 120.0));
         ellipse->setPos(QPointF(560.0, 330.0));
-        const QPointF ellipseEdge = CanvasScene::AttachmentPoint(ellipse, QPointF(760.0, 390.0), 4.0, -1.0, true);
+        const QPointF ellipseEdge = CanvasScene::AttachmentPoint(ellipse, QPointF(760.0, 390.0), 4.0);
         const QRectF ellipseRect = ellipse->mapRectToScene(ellipse->ContentRect());
         ctx.Check(
             qAbs(ellipseEdge.x() - (ellipseRect.right() + 4.0)) < 1.0 &&
@@ -117,14 +116,14 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
 
         // 特征点附近自动校准：矩形边中点 8px 内吸到中点；偏离中点的普通边位置保持原投影；
         // 靠近角点的边位置校准到角点。
-        const QPointF nearMiddle = CanvasScene::AttachmentPoint(rect, QPointF(388.0, 330.0), 4.0, -1.0, true);
-        const QPointF plainEdge = CanvasScene::AttachmentPoint(rect, QPointF(410.0, 330.0), 4.0, -1.0, true);
+        const QPointF nearMiddle = CanvasScene::AttachmentPoint(rect, QPointF(388.0, 330.0), 4.0);
+        const QPointF plainEdge = CanvasScene::AttachmentPoint(rect, QPointF(410.0, 330.0), 4.0);
         const QPointF plainBase(410.0, targetRect.bottom());
         const QPointF plainOutward = plainBase - targetRect.center();
         const QPointF plainExpected =
             plainBase +
             plainOutward / qSqrt(plainOutward.x() * plainOutward.x() + plainOutward.y() * plainOutward.y()) * 4.0;
-        const QPointF nearCorner = CanvasScene::AttachmentPoint(rect, QPointF(452.0, 330.0), 4.0, -1.0, true);
+        const QPointF nearCorner = CanvasScene::AttachmentPoint(rect, QPointF(452.0, 330.0), 4.0);
         const QPointF bottomMiddle(targetRect.center().x(), targetRect.bottom() + 4.0);
         ctx.Check(QLineF(nearMiddle, bottomMiddle).length() < 1.0 && QLineF(plainEdge, plainExpected).length() < 1.0 &&
                       QLineF(nearCorner, outBottomRight).length() < 1.0,
@@ -136,7 +135,7 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
                       .arg(plainEdge.y())
                       .arg(nearCorner.x())
                       .arg(nearCorner.y()));
-        const QPointF ellipsePlain = CanvasScene::AttachmentPoint(ellipse, QPointF(755.0, 335.0), 4.0, -1.0, true);
+        const QPointF ellipsePlain = CanvasScene::AttachmentPoint(ellipse, QPointF(755.0, 335.0), 4.0);
         ctx.Check(qAbs(ellipsePlain.y() - ellipseRect.center().y()) > 5.0 && ellipsePlain.x() < ellipseRect.right() &&
                       ellipsePlain.x() > ellipseRect.center().x(),
                   QStringLiteral("椭圆远离极点时吸附任意弧线位置"),
@@ -300,10 +299,13 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
 
         auto* curve = new CurveItem();
         curve->SetStrokePoints(
-            {QPointF(40.0, 320.0), QPointF(150.0, 270.0), QPointF(260.0, 340.0), QPointF(340.0, 300.0)},
+            {QPointF(40.0, 320.0), QPointF(150.0, 300.0), QPointF(260.0, 320.0), QPointF(340.0, 360.0)},
             QColor(QStringLiteral("#1E293B")), 2.0);
         scene.AddItemsWithUndo({curve}, QStringLiteral("Add curve"));
         curve->setSelected(true);
+        ctx.Check(
+            curve->CustomHandles().size() == 2, QStringLiteral("平滑曲线只保留首尾端点手柄"),
+            QStringLiteral("handles=%1 knots=%2").arg(curve->CustomHandles().size()).arg(curve->StrokePoints().size()));
 
         const QPointF middle =
             (curve->mapToScene(curve->StrokePoints().at(1)) + curve->mapToScene(curve->StrokePoints().at(2))) / 2.0;
@@ -402,7 +404,8 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
             boundLengthBefore +=
                 QLineF(curve->mapToScene(beforePoints.at(i - 1)), curve->mapToScene(beforePoints.at(i))).length();
         }
-        const QPointF bodyMiddle = (curve->mapToScene(beforePoints.at(1)) + curve->mapToScene(beforePoints.at(2))) / 2.0;
+        const QPointF bodyMiddle =
+            (curve->mapToScene(beforePoints.at(1)) + curve->mapToScene(beforePoints.at(2))) / 2.0;
         const QPointF boundPosBefore = curve->pos();
         CanvasItemInteraction bodyDrag(curve);
         bodyDrag.BeginMove(bodyMiddle);

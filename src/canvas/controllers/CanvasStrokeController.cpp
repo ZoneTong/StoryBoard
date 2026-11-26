@@ -141,19 +141,18 @@ void CanvasStrokeController::FinishStroke()
         binding.insert(QStringLiteral("elementId"), target->Uid());
         binding.insert(QStringLiteral("focus"), CanvasScene::OutlineFocusForPoint(target, attached));
         binding.insert(QStringLiteral("gap"), 4.0);
-        binding.insert(QStringLiteral("outline"), true);
         return binding;
     };
     // 把两端吸附到目标真实轮廓并写入绑定；每端按自己的落点找最近的轮廓点，
     // 矩形四角、椭圆弧和多边形边都能吸，两端都不靠图形时不动。
     auto attachEnds = [&](LineAbstractItem* line, QPointF start, QPointF end) {
         if (startTarget) {
-            start = CanvasScene::AttachmentPoint(startTarget, start, 4.0, -1.0, true);
+            start = CanvasScene::AttachmentPoint(startTarget, start, 4.0);
             line->MoveEndpoint(true, start);
             line->SetStartBinding(bindingFor(startTarget, start));
         }
         if (endTarget) {
-            end = CanvasScene::AttachmentPoint(endTarget, end, 4.0, -1.0, true);
+            end = CanvasScene::AttachmentPoint(endTarget, end, 4.0);
             line->MoveEndpoint(false, end);
             line->SetEndBinding(bindingFor(endTarget, end));
         }

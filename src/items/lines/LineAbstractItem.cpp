@@ -208,11 +208,10 @@ bool LineAbstractItem::DragEndpointWithBinding(bool start, const QPointF& sceneP
     if (target) {
         // 以这一端自己的落点找边：吸到离拖动位置最近的真实轮廓点（矩形角、椭圆弧、
         // 多边形边都能吸），不沿用另一端方向，否则拖到右下角时会被拉去另一端朝向的那条边。
-        const QPointF attached = CanvasScene::AttachmentPoint(target, scenePoint, 4.0, -1.0, true);
+        const QPointF attached = CanvasScene::AttachmentPoint(target, scenePoint, 4.0);
         binding.insert(QStringLiteral("elementId"), target->Uid());
         binding.insert(QStringLiteral("focus"), CanvasScene::OutlineFocusForPoint(target, attached));
         binding.insert(QStringLiteral("gap"), 4.0);
-        binding.insert(QStringLiteral("outline"), true);
         MoveEndpoint(start, attached);
     }
     if (start) {

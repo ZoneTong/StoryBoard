@@ -232,7 +232,8 @@ HandleSpecList CurveItem::CustomHandles() const
     if (knots.size() < 2) {
         return specs;
     }
-    // 首尾是绑定端点；中间各节点是拟合接缝，也给方块让用户能改曲线形状。
+    // 首尾是绑定端点；中间只在转角明显的拐点处给方块，避免平滑采样点铺满整条曲线，
+    // 拖中段时随手命中节点手柄而把曲线拉长。
     HandleSpec start;
     start.id = CanvasItem::CUSTOM_0;
     start.position = knots.constFirst();
@@ -241,6 +242,9 @@ HandleSpecList CurveItem::CustomHandles() const
     start.sizeScale = 0.9;
     specs.append(start);
     for (int i = 1; i < knots.size() - 1; ++i) {
+        if (CurveGeometry::TurnDegrees(knots.at(i - 1), knots.at(i), knots.at(i + 1)) < 30.0) {
+            continue;
+        }
         HandleSpec knot;
         knot.id = CanvasItem::CUSTOM_1 + i;
         knot.position = knots.at(i);

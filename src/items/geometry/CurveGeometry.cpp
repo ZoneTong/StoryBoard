@@ -4,7 +4,9 @@
 
 #include <QLineF>
 #include <QPolygonF>
+#include <QtMath>
 #include <algorithm>
+#include <cmath>
 
 namespace CurveGeometry {
 
@@ -97,6 +99,18 @@ QVector<QPointF> Knots(const QVector<CurveSegment>& segments)
         result.append(segment.p1);
     }
     return result;
+}
+
+qreal TurnDegrees(const QPointF& previous, const QPointF& current, const QPointF& next)
+{
+    const QPointF incoming = current - previous;
+    const QPointF outgoing = next - current;
+    const qreal cross = incoming.x() * outgoing.y() - incoming.y() * outgoing.x();
+    const qreal dot = incoming.x() * outgoing.x() + incoming.y() * outgoing.y();
+    if (qFuzzyIsNull(cross) && qFuzzyIsNull(dot)) {
+        return 0.0;
+    }
+    return qAbs(qRadiansToDegrees(std::atan2(cross, dot)));
 }
 
 QVector<QPointF> Flatten(const QPainterPath& path, const QTransform& toDisplay)

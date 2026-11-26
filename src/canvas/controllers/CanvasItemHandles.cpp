@@ -27,6 +27,16 @@ void DrawAngleKnob(QPainter* painter, const QRectF& knob)
     painter->drawLine(right, right - QPointF(head, -head * 0.8));
     painter->drawLine(right, right - QPointF(head, head * 0.8));
 }
+
+// 自定义句柄的命中留白：曲线接缝 / 折线拐点这类静态节点只按看得见的方块附近命中，
+// 避免曲线中段随手一点就落到某个节点上；角度旋钮等显式指定 hitPadding 的仍放宽。
+qreal CustomHitPadding(const HandleSpec& spec, qreal viewScale)
+{
+    if (spec.behavior == HandleBehavior::STATIC && qFuzzyIsNull(spec.hitPadding)) {
+        return qMin<qreal>(3.0 / viewScale, 6.0);
+    }
+    return qMax(qMin<qreal>(10.0 / viewScale, 14.0), spec.hitPadding / viewScale);
+}
 } // namespace
 
 CanvasItemHandles::CanvasItemHandles(CanvasItem* item) : m_item(item) {}
@@ -114,7 +124,7 @@ qreal CanvasItemHandles::HitReach() const
 {
     qreal padding = qMin<qreal>(10.0 / m_item->ViewScale(), 14.0);
     for (const HandleSpec& spec : ActiveSpecs()) {
-        padding = qMax(padding, spec.hitPadding / m_item->ViewScale());
+        padding = qMax(padding, CustomHitPadding(spec, m_item->ViewScale()));
     }
     return Size() / 2.0 + padding;
 }
@@ -123,10 +133,8 @@ QRectF CanvasItemHandles::HitRect(int handle) const
 {
     HandleSpec spec;
     const bool custom = SpecAt(handle, &spec);
-    qreal padding = qMin<qreal>(10.0 / m_item->ViewScale(), 14.0);
-    if (custom) {
-        padding = qMax(padding, spec.hitPadding / m_item->ViewScale());
-    }
+    const qreal padding =
+        custom ? CustomHitPadding(spec, m_item->ViewScale()) : qMin<qreal>(10.0 / m_item->ViewScale(), 14.0);
     return Rect(handle).adjusted(-padding, -padding, padding, padding);
 }
 

@@ -1,6 +1,7 @@
 #include "scene/CanvasScene.h"
 
 #include "items/CanvasItem.h"
+#include "items/geometry/CurveGeometry.h"
 #include "items/lines/LineAbstractItem.h"
 #include "items/lines/StraightLineItem.h"
 #include "items/text/TextItem.h"
@@ -12,82 +13,8 @@
 #include <QRectF>
 #include <QtMath>
 #include <cmath>
-#include <limits>
 
 namespace {
-
-// 从 from 朝 target 的矩形中心射出，取矩形边界上的落点；端点落在图形内部时也按最近边贴出。
-QPointF BoundaryPoint(const QRectF& rect, const QPointF& from, qreal gap)
-{
-    if (rect.isEmpty()) {
-        return from;
-    }
-    QPointF direction = rect.center() - from;
-    if (qFuzzyIsNull(direction.x()) && qFuzzyIsNull(direction.y())) {
-        direction = QPointF(1.0, 0.0);
-    }
-    // 射线与矩形按 slab 求交：进入参数 tEnter 与离开参数 tExit 各自取两轴极值。
-    // 逐轴挑“最小正比例”会在斜向靠近时选中延长线上的假交点（比如从右下角靠近，
-    // 右边界比例比下边界小，但那个点在矩形下方），端点就贴不到边。
-    qreal tEnter = -std::numeric_limits<qreal>::infinity();
-    qreal tExit = std::numeric_limits<qreal>::infinity();
-    auto clipAxis = [&](qreal origin, qreal dir, qreal low, qreal high) {
-        const qreal t0 = (low - origin) / dir;
-        const qreal t1 = (high - origin) / dir;
-        tEnter = qMax(tEnter, qMin(t0, t1));
-        tExit = qMin(tExit, qMax(t0, t1));
-    };
-    if (!qFuzzyIsNull(direction.x())) {
-        clipAxis(from.x(), direction.x(), rect.left(), rect.right());
-    }
-    if (!qFuzzyIsNull(direction.y())) {
-        clipAxis(from.y(), direction.y(), rect.top(), rect.bottom());
-    }
-    // 外侧取进入参数，内侧（进入参数为负）取离开参数，一种写法覆盖两种情形。
-    qreal best = tEnter >= 0.0 ? tEnter : tExit;
-    if (!std::isfinite(best) || best < 0.0) {
-        return rect.center();
-    }
-    QPointF point = from + direction * best;
-    // gap 是端点与图形边缘的留白，沿“中心 → 落点”方向再往外推。
-    QPointF outward = point - rect.center();
-    const qreal length = qSqrt(outward.x() * outward.x() + outward.y() * outward.y());
-    if (length > 0.0 && gap > 0.0) {
-        point += outward / length * gap;
-    }
-    return point;
-}
-
-// 落在哪条边上就贴到哪条边的中点：矩形四边各有一个固定连接点，
-// 箭头不会停在斜向的任意位置。按坐标判断命中的边，兜底取最近的中点。
-QPointF EdgeMidpoint(const QRectF& rect, const QPointF& boundary)
-{
-    const qreal tolerance = 0.01;
-    if (qAbs(boundary.y() - rect.top()) <= tolerance) {
-        return QPointF(rect.center().x(), rect.top());
-    }
-    if (qAbs(boundary.y() - rect.bottom()) <= tolerance) {
-        return QPointF(rect.center().x(), rect.bottom());
-    }
-    if (qAbs(boundary.x() - rect.left()) <= tolerance) {
-        return QPointF(rect.left(), rect.center().y());
-    }
-    if (qAbs(boundary.x() - rect.right()) <= tolerance) {
-        return QPointF(rect.right(), rect.center().y());
-    }
-    const QPointF midpoints[4]{QPointF(rect.center().x(), rect.top()), QPointF(rect.right(), rect.center().y()),
-                               QPointF(rect.center().x(), rect.bottom()), QPointF(rect.left(), rect.center().y())};
-    qreal best = -1.0;
-    QPointF chosen = rect.center();
-    for (const QPointF& midpoint : midpoints) {
-        const qreal distance = QLineF(midpoint, boundary).length();
-        if (best < 0.0 || distance < best) {
-            best = distance;
-            chosen = midpoint;
-        }
-    }
-    return chosen;
-}
 
 qreal BindingGap(const QJsonObject& binding)
 {
@@ -98,11 +25,6 @@ qreal BindingGap(const QJsonObject& binding)
 qreal BindingFocus(const QJsonObject& binding)
 {
     return binding.contains(QStringLiteral("focus")) ? binding.value(QStringLiteral("focus")).toDouble() : -1.0;
-}
-
-bool BindingOutline(const QJsonObject& binding)
-{
-    return binding.value(QStringLiteral("outline")).toBool(false);
 }
 
 // 目标图元真实轮廓（场景坐标）拆成若干闭合折线；椭圆等曲线由 Qt 采样为折线。
@@ -225,19 +147,6 @@ QPointF PointOnRing(const QPolygonF& ring, qreal distance)
     return ring.constFirst();
 }
 
-// 相邻两边在顶点处的转角；平滑采样得到的曲线转角很小，不会被当成顶点。
-qreal VertexTurnDegrees(const QPointF& previous, const QPointF& current, const QPointF& next)
-{
-    const QPointF incoming = current - previous;
-    const QPointF outgoing = next - current;
-    const qreal cross = incoming.x() * outgoing.y() - incoming.y() * outgoing.x();
-    const qreal dot = incoming.x() * outgoing.x() + incoming.y() * outgoing.y();
-    if (qFuzzyIsNull(cross) && qFuzzyIsNull(dot)) {
-        return 0.0;
-    }
-    return qAbs(qRadiansToDegrees(std::atan2(cross, dot)));
-}
-
 QVector<OutlineFeature> OutlineFeatures(const QVector<QPolygonF>& rings)
 {
     const qreal total = OutlineLength(rings);
@@ -261,7 +170,8 @@ QVector<OutlineFeature> OutlineFeatures(const QVector<QPolygonF>& rings)
         }
         QVector<int> corners;
         for (int i = 0; i < count; ++i) {
-            if (VertexTurnDegrees(ring.at((i + count - 1) % count), ring.at(i), ring.at((i + 1) % count)) > 20.0) {
+            if (CurveGeometry::TurnDegrees(ring.at((i + count - 1) % count), ring.at(i), ring.at((i + 1) % count)) >
+                20.0) {
                 corners.append(i);
             }
         }
@@ -341,6 +251,18 @@ QPointF SnapToOutlineFeature(const QVector<QPolygonF>& rings, const QPointF& nea
     return best;
 }
 
+// 取离 from 最近的轮廓点；命中特征点范围时校准到特征点并返回对应 focus。
+QPointF NearestOutlineAnchor(const QVector<QPolygonF>& rings, const QPointF& from, qreal* focus)
+{
+    qreal nearestFocus = 0.0;
+    QPointF point = NearestOutlinePoint(rings, from, &nearestFocus);
+    point = SnapToOutlineFeature(rings, point, &nearestFocus);
+    if (focus) {
+        *focus = nearestFocus;
+    }
+    return point;
+}
+
 // 绑定端点落在矩形哪条边：按到四条边的距离取最近的一条。
 enum class EdgeSide { LEFT, RIGHT, TOP, BOTTOM };
 
@@ -410,12 +332,10 @@ QVector<QPointF> BoundLineRoute(CanvasScene* scene, StraightLineItem* line, Stra
     if (knots.size() < 2) {
         return {};
     }
-    const QPointF start =
-        CanvasScene::AttachmentPoint(startTarget, line->mapToScene(knots.at(1)), BindingGap(startBinding),
-                                     BindingFocus(startBinding), BindingOutline(startBinding));
-    const QPointF end =
-        CanvasScene::AttachmentPoint(endTarget, line->mapToScene(knots.constLast()), BindingGap(endBinding),
-                                     BindingFocus(endBinding), BindingOutline(endBinding));
+    const QPointF start = CanvasScene::AttachmentPoint(startTarget, line->mapToScene(knots.at(1)),
+                                                       BindingGap(startBinding), BindingFocus(startBinding));
+    const QPointF end = CanvasScene::AttachmentPoint(endTarget, line->mapToScene(knots.constLast()),
+                                                     BindingGap(endBinding), BindingFocus(endBinding));
     if (route == StraightLineItem::RouteMode::ORTHOGONAL) {
         const QRectF endRect = endTarget->mapRectToScene(endTarget->ContentRect());
         const EdgeSide endSide = SideOfBoundary(endRect, end);
@@ -455,32 +375,21 @@ void CanvasScene::SetBindingHighlight(CanvasItem* item)
     emit bindingHighlightChanged();
 }
 
-QPointF CanvasScene::AttachmentPoint(const CanvasItem* target, const QPointF& from, qreal gap, qreal focus,
-                                     bool outlineFocus)
+QPointF CanvasScene::AttachmentPoint(const CanvasItem* target, const QPointF& from, qreal gap, qreal focus)
 {
     if (!target) {
         return from;
     }
     const QRectF rect = target->mapRectToScene(target->ContentRect());
-    QPointF point;
-    bool resolved = false;
-    if (outlineFocus) {
-        const QVector<QPolygonF> rings = SceneOutlineRings(target);
-        if (!rings.isEmpty()) {
-            if (focus >= 0.0) {
-                point = OutlinePointAt(rings, focus);
-            } else {
-                qreal nearestFocus = 0.0;
-                point = NearestOutlinePoint(rings, from, &nearestFocus);
-                point = SnapToOutlineFeature(rings, point, &nearestFocus);
-            }
-            resolved = true;
-        }
+    const QVector<QPolygonF> rings = SceneOutlineRings(target);
+    if (rings.isEmpty()) {
+        return from;
     }
-    if (!resolved) {
-        // 旧绑定或轮廓不可用时，按外接矩形取边：已有 focus 按 focus 复位，
-        // 新绑定先算子向交点，再贴到该边中点。
-        point = focus >= 0.0 ? PointForFocus(rect, focus) : EdgeMidpoint(rect, BoundaryPoint(rect, from, 0.0));
+    QPointF point;
+    if (focus >= 0.0) {
+        point = OutlinePointAt(rings, focus);
+    } else {
+        point = NearestOutlineAnchor(rings, from, nullptr);
     }
     QPointF outward = point - rect.center();
     const qreal length = qSqrt(outward.x() * outward.x() + outward.y() * outward.y());
@@ -497,75 +406,11 @@ qreal CanvasScene::OutlineFocusForPoint(const CanvasItem* target, const QPointF&
     }
     const QVector<QPolygonF> rings = SceneOutlineRings(target);
     if (rings.isEmpty()) {
-        return FocusForPoint(target->mapRectToScene(target->ContentRect()), point);
-    }
-    qreal focus = 0.0;
-    const QPointF nearest = NearestOutlinePoint(rings, point, &focus);
-    SnapToOutlineFeature(rings, nearest, &focus);
-    return focus;
-}
-
-qreal CanvasScene::FocusForPoint(const QRectF& rect, const QPointF& point)
-{
-    if (rect.width() <= 0.0 || rect.height() <= 0.0) {
         return 0.0;
     }
-    const qreal total = 2.0 * (rect.width() + rect.height());
-    qreal bestDistance = -1.0;
     qreal focus = 0.0;
-    auto consider = [&](const QPointF& start, const QPointF& end, qreal base) {
-        const QPointF edge = end - start;
-        const qreal length = QLineF(start, end).length();
-        if (length <= 0.0) {
-            return;
-        }
-        const qreal along =
-            qBound<qreal>(0.0, ((point.x() - start.x()) * edge.x() + (point.y() - start.y()) * edge.y()) /
-                                   (length * length),
-                          1.0);
-        const QPointF projected = start + edge * along;
-        const qreal distance = QLineF(projected, point).length();
-        if (bestDistance < 0.0 || distance < bestDistance) {
-            bestDistance = distance;
-            focus = (base + along * length) / total;
-        }
-    };
-    const QPointF topLeft = rect.topLeft();
-    const QPointF topRight = rect.topRight();
-    const QPointF bottomRight = rect.bottomRight();
-    const QPointF bottomLeft = rect.bottomLeft();
-    consider(topLeft, topRight, 0.0);
-    consider(topRight, bottomRight, rect.width());
-    consider(bottomRight, bottomLeft, rect.width() + rect.height());
-    consider(bottomLeft, topLeft, 2.0 * rect.width() + rect.height());
-    return qBound<qreal>(0.0, focus, 1.0);
-}
-
-QPointF CanvasScene::PointForFocus(const QRectF& rect, qreal focus)
-{
-    if (rect.width() <= 0.0 || rect.height() <= 0.0) {
-        return rect.center();
-    }
-    if (focus < 0.0) {
-        focus = 0.0;
-    }
-    focus -= qFloor(focus);
-    const qreal w = rect.width();
-    const qreal h = rect.height();
-    qreal distance = focus * 2.0 * (w + h);
-    if (distance <= w) {
-        return QPointF(rect.left() + distance, rect.top());
-    }
-    distance -= w;
-    if (distance <= h) {
-        return QPointF(rect.right(), rect.top() + distance);
-    }
-    distance -= h;
-    if (distance <= w) {
-        return QPointF(rect.right() - distance, rect.bottom());
-    }
-    distance -= w;
-    return QPointF(rect.left(), rect.bottom() - qMin(distance, h));
+    NearestOutlineAnchor(rings, point, &focus);
+    return focus;
 }
 
 CanvasItem* CanvasScene::BindableShapeAt(const QPointF& scenePos, qreal maxDistance) const
@@ -624,8 +469,7 @@ void CanvasScene::SyncArrowBindings()
             CanvasItem* target = byUid.value(binding.value(QStringLiteral("elementId")).toString(), nullptr);
             if (target && target->Category() == ItemCategory::SHAPE) {
                 const QPointF other = line->mapToScene(knots.at(1));
-                line->MoveEndpoint(true, AttachmentPoint(target, other, BindingGap(binding), BindingFocus(binding),
-                                                         BindingOutline(binding)));
+                line->MoveEndpoint(true, AttachmentPoint(target, other, BindingGap(binding), BindingFocus(binding)));
             }
         }
         if (!line->EndBinding().isEmpty()) {
@@ -635,8 +479,7 @@ void CanvasScene::SyncArrowBindings()
                 // 起点可能刚被移动过，终点参考点要用最新的节点。
                 const QVector<QPointF> current = line->StrokePoints();
                 const QPointF other = line->mapToScene(current.at(current.size() - 2));
-                line->MoveEndpoint(false, AttachmentPoint(target, other, BindingGap(binding), BindingFocus(binding),
-                                                          BindingOutline(binding)));
+                line->MoveEndpoint(false, AttachmentPoint(target, other, BindingGap(binding), BindingFocus(binding)));
             }
         }
     }
