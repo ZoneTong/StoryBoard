@@ -1,3 +1,5 @@
+
+#include "canvas/controllers/CanvasItemInteraction.h"
 #include "items/lines/CurveItem.h"
 #include "items/lines/StraightLineItem.h"
 #include "items/shapes/ShapeFactory.h"
@@ -7,8 +9,10 @@
 #include "selftest/core/SelfTestContext.h"
 #include "selftest/core/SelftestEntries.h"
 
+#include <QApplication>
 #include <QColor>
 #include <QFontMetricsF>
+#include <QGraphicsSceneMouseEvent>
 #include <QJsonObject>
 #include <QLineF>
 #include <QPointF>
@@ -402,5 +406,134 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
         undo.undo();
         ctx.Check(text->ContainerUid() == oldUid, QStringLiteral("撤销换类型后文字指回旧图元"),
                   QStringLiteral("text=%1 old=%2").arg(text->ContainerUid(), oldUid));
+    }
+
+    // 已绑定的文字拖回原容器内：松手立刻拉回容器中心，不产生位移撤销记录。
+    {
+        CanvasScene scene;
+        scene.ApplyCanvasSize(QSizeF(800.0, 600.0));
+        scene.SetMode(ToolMode::EDIT);
+        QUndoStack undo;
+        scene.SetUndoStack(&undo);
+
+        auto* rect = ShapeFactory::Create(ShapeType::RECTANGLE);
+        rect->SetContentSize(QSizeF(200.0, 120.0));
+        rect->setPos(QPointF(100.0, 80.0));
+        auto* text = new TextItem();
+        text->SetTextFormat(QStringLiteral("Container text"), text->TextFont(), QColor(QStringLiteral("#1E293B")));
+        text->SetContainerUid(rect->Uid());
+        scene.AddItemsWithUndo({rect, text}, QStringLiteral("Add container and text"));
+        scene.SyncContainerTexts();
+
+        CanvasView view(&scene);
+        text->setSelected(true);
+        CanvasItemInteraction drag(text);
+        const QPointF startCenter = text->mapToScene(text->ContentRect().center());
+        const int indexBefore = undo.index();
+        drag.BeginMove(startCenter);
+        drag.ApplyMove(startCenter + QPointF(26.0, 18.0));
+        drag.FinishInteraction();
+        const QRectF containerRect = rect->mapRectToScene(rect->ContentRect());
+        const QPointF endCenter = text->mapToScene(text->ContentRect().center());
+        ctx.Check(qAbs(endCenter.x() - containerRect.center().x()) < 1.0 &&
+                      qAbs(endCenter.y() - containerRect.center().y()) < 1.0,
+                  QStringLiteral("拖回原容器松手拉回容器中心"),
+                  QStringLiteral("center=(%1,%2) expected=(%3,%4)")
+                      .arg(endCenter.x())
+                      .arg(endCenter.y())
+                      .arg(containerRect.center().x())
+                      .arg(containerRect.center().y()));
+        ctx.Check(undo.index() == indexBefore, QStringLiteral("拖回原容器不留位移撤销记录"),
+                  QStringLiteral("index=%1->%2").arg(indexBefore).arg(undo.index()));
+    }
+
+    // 交互路径：拖住容器文字往外拖时，移动中的容器同步不再把它拉回，松手后解绑。
+    {
+        CanvasScene scene;
+        scene.ApplyCanvasSize(QSizeF(800.0, 600.0));
+        scene.SetMode(ToolMode::EDIT);
+        QUndoStack undo;
+        scene.SetUndoStack(&undo);
+
+        auto* rect = ShapeFactory::Create(ShapeType::RECTANGLE);
+        rect->SetContentSize(QSizeF(200.0, 120.0));
+        rect->setPos(QPointF(100.0, 80.0));
+        auto* text = new TextItem();
+        text->SetTextFormat(QStringLiteral("Drag me"), text->TextFont(), QColor(QStringLiteral("#1E293B")));
+        text->SetContainerUid(rect->Uid());
+        scene.AddItemsWithUndo({rect, text}, QStringLiteral("Add container and text"));
+        scene.SyncContainerTexts();
+
+        const QPointF pressScene = text->mapToScene(text->ContentRect().center());
+        QGraphicsSceneMouseEvent press(QEvent::GraphicsSceneMousePress);
+        press.setScenePos(pressScene);
+        press.setButton(Qt::LeftButton);
+        press.setButtons(Qt::LeftButton);
+        QApplication::sendEvent(&scene, &press);
+        ctx.Check(scene.mouseGrabberItem() == text, QStringLiteral("按下容器文字后由文字接收拖动"));
+
+        const QPointF dragScene = pressScene + QPointF(0.0, 260.0);
+        QGraphicsSceneMouseEvent move(QEvent::GraphicsSceneMouseMove);
+        move.setScenePos(dragScene);
+        move.setButtons(Qt::LeftButton);
+        QApplication::sendEvent(&scene, &move);
+        // 视图在拖动过程中每帧都会同步容器文字，这里模拟同一步。
+        scene.SyncContainerTexts();
+        const QPointF centerDuringDrag = text->mapToScene(text->ContentRect().center());
+        ctx.Check(centerDuringDrag.y() > 200.0, QStringLiteral("拖动容器文字时不被拉回容器"),
+                  QStringLiteral("centerY=%1").arg(centerDuringDrag.y()));
+
+        QGraphicsSceneMouseEvent release(QEvent::GraphicsSceneMouseRelease);
+        release.setScenePos(dragScene);
+        release.setButton(Qt::LeftButton);
+        QApplication::sendEvent(&scene, &release);
+        ctx.Check(text->ContainerUid().isEmpty(), QStringLiteral("拖出容器松手后自动解绑"),
+                  QStringLiteral("uid=%1").arg(text->ContainerUid()));
+    }
+
+    // 交互路径：自由文字拖进图形内部松手后绑定，并按容器宽度折行。
+    {
+        CanvasScene scene;
+        scene.ApplyCanvasSize(QSizeF(800.0, 600.0));
+        scene.SetMode(ToolMode::EDIT);
+        QUndoStack undo;
+        scene.SetUndoStack(&undo);
+
+        auto* rect = ShapeFactory::Create(ShapeType::RECTANGLE);
+        rect->SetContentSize(QSizeF(200.0, 120.0));
+        rect->setPos(QPointF(100.0, 80.0));
+        auto* text = new TextItem();
+        text->SetTextFormat(QStringLiteral("Loose text"), text->TextFont(), QColor(QStringLiteral("#1E293B")));
+        text->setPos(QPointF(480.0, 380.0));
+        scene.AddItemsWithUndo({rect, text}, QStringLiteral("Add rect and loose text"));
+
+        const QPointF pressScene = text->mapToScene(text->ContentRect().center());
+        QGraphicsSceneMouseEvent press(QEvent::GraphicsSceneMousePress);
+        press.setScenePos(pressScene);
+        press.setButton(Qt::LeftButton);
+        press.setButtons(Qt::LeftButton);
+        QApplication::sendEvent(&scene, &press);
+
+        const QPointF dropScene = rect->mapRectToScene(rect->ContentRect()).center();
+        QGraphicsSceneMouseEvent move(QEvent::GraphicsSceneMouseMove);
+        move.setScenePos(dropScene);
+        move.setButtons(Qt::LeftButton);
+        QApplication::sendEvent(&scene, &move);
+        QGraphicsSceneMouseEvent release(QEvent::GraphicsSceneMouseRelease);
+        release.setScenePos(dropScene);
+        release.setButton(Qt::LeftButton);
+        QApplication::sendEvent(&scene, &release);
+
+        ctx.Check(text->ContainerUid() == rect->Uid(), QStringLiteral("自由文字拖进图形松手后绑定"),
+                  QStringLiteral("uid=%1 rect=%2").arg(text->ContainerUid(), rect->Uid()));
+        const QRectF containerRect = rect->mapRectToScene(rect->ContentRect());
+        const QPointF endCenter = text->mapToScene(text->ContentRect().center());
+        ctx.Check(qAbs(endCenter.x() - containerRect.center().x()) < 1.0 &&
+                      qAbs(text->ContentSize().width() - containerRect.width()) < 1.0,
+                  QStringLiteral("绑定后文字居中并按容器宽度折行"),
+                  QStringLiteral("centerX=%1 w=%2 containerW=%3")
+                      .arg(endCenter.x())
+                      .arg(text->ContentSize().width())
+                      .arg(containerRect.width()));
     }
 }

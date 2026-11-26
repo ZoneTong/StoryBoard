@@ -286,9 +286,13 @@ void CanvasScene::SyncContainerText(TextItem* text)
 
 void CanvasScene::SyncContainerTexts()
 {
+    // 正在被拖动的容器文字先不动：用户可能正把它拖出图形来解绑，松手后再由交互层定归属。
+    const QGraphicsItem* grabbed = mouseGrabberItem();
     for (CanvasItem* canvasItem : CanvasItems()) {
         if (auto* text = dynamic_cast<TextItem*>(canvasItem)) {
-            SyncContainerText(text);
+            if (text != grabbed) {
+                SyncContainerText(text);
+            }
         }
     }
 }

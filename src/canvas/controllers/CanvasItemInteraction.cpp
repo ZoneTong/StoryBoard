@@ -338,6 +338,9 @@ void CanvasItemInteraction::FinishInteraction()
                         label = m_item->tr("Rebind text");
                     }
                     canvas->SetTextContainer(text, targetUid, textContainerBefore, textBefore, label);
+                } else {
+                    // 拖回原容器：位置由容器决定，松手就拉回中心，也不留空位移记录。
+                    canvas->SyncContainerText(text);
                 }
                 m_item->m_before.clear();
                 return;
