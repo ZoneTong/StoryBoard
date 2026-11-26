@@ -14,3 +14,6 @@ StoryBoard-*-portable.zip
 StoryBoard-*-portable/
 StoryBoard-*-portable.tar.gz
 storyboard-selftest-work/
+
+# 本地留档文档，不入库
+docs/StoryBoard-需求总结-*.md
