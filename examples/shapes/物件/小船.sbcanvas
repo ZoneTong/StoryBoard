@@ -1,7 +1,8 @@
 {
   "format": "StoryBoardCanvas",
   "version": 2,
-  "generator": "StoryBoard 1.0",
+  "generator": "StoryBoard 0.2.1",
+  "name": "小船",
   "canvas": {
     "x": 0,
     "y": 0,
@@ -22,52 +23,170 @@
   "activeLayer": 1,
   "items": [
     {
-      "type": "shape",
+      "kind": "shape",
+      "shapeType": "ellipse",
+      "uid": "4cea939ee5775af0846bb4f4b0134dd7",
+      "x": 8,
+      "y": 108,
+      "w": 52,
+      "h": 10,
+      "layer": 1,
+      "zOrder": 1,
+      "strokeColor": "#ff24324a",
+      "strokeWidth": 1.6,
+      "strokeStyle": 1,
+      "fillColor": "#ffbfe3f5",
+      "fillStyle": "solid"
+    },
+    {
+      "kind": "shape",
+      "shapeType": "ellipse",
+      "uid": "90a220df8c3f539cbd02a62bf3261a2e",
+      "x": 72,
+      "y": 114,
+      "w": 52,
+      "h": 10,
+      "layer": 1,
+      "zOrder": 2,
+      "strokeColor": "#ff24324a",
+      "strokeWidth": 1.6,
+      "strokeStyle": 1,
+      "fillColor": "#ffbfe3f5",
+      "fillStyle": "solid"
+    },
+    {
+      "kind": "shape",
       "shapeType": "rectangle",
-      "x": 0.0,
-      "y": 101.3333,
-      "w": 128.0,
-      "h": 26.6667,
+      "uid": "a12c477975975befbd3c36b0cd229ef2",
+      "x": 72,
+      "y": 22,
+      "w": 4,
+      "h": 62,
       "layer": 1,
-      "height": 1,
-      "strokeColor": "#ff1f2937",
-      "fillColor": "#00000000",
-      "fillStyle": "none",
-      "strokeWidth": 6.4,
-      "opacity": 1,
-      "z": 1000001
+      "zOrder": 3,
+      "strokeColor": "#ff24324a",
+      "strokeWidth": 3.2,
+      "strokeStyle": 1,
+      "fillColor": "#ffc99a6b",
+      "fillStyle": "solid"
     },
     {
-      "type": "shape",
+      "kind": "shape",
       "shapeType": "triangle",
-      "x": 26.6667,
-      "y": 0.0,
-      "w": 69.3333,
-      "h": 101.3333,
+      "uid": "fd480090810f5e12ac82a63368d9fcbf",
+      "x": 72,
+      "y": 26,
+      "w": 44,
+      "h": 54,
       "layer": 1,
-      "height": 1,
-      "strokeColor": "#ff1f2937",
-      "fillColor": "#00000000",
-      "fillStyle": "none",
-      "strokeWidth": 6.4,
-      "opacity": 1,
-      "z": 1000002
+      "zOrder": 4,
+      "strokeColor": "#ff24324a",
+      "strokeWidth": 3.2,
+      "strokeStyle": 1,
+      "fillColor": "#ffffffff",
+      "fillStyle": "solid",
+      "rotation": 90
     },
     {
-      "type": "shape",
-      "shapeType": "line",
-      "x": 58.6667,
-      "y": 0.0,
-      "w": 8.5333,
-      "h": 101.3333,
+      "kind": "shape",
+      "shapeType": "triangle",
+      "uid": "a94e6150b6225ef18867eaebc1122c08",
+      "x": 75,
+      "y": 20,
+      "w": 20,
+      "h": 12,
       "layer": 1,
-      "height": 1,
-      "strokeColor": "#ff1f2937",
-      "fillColor": "#00000000",
-      "fillStyle": "none",
-      "strokeWidth": 6.4,
-      "opacity": 1,
-      "z": 1000003
+      "zOrder": 5,
+      "strokeColor": "#ff24324a",
+      "strokeWidth": 2.2,
+      "strokeStyle": 1,
+      "fillColor": "#ffff6b6b",
+      "fillStyle": "solid",
+      "rotation": 90
+    },
+    {
+      "kind": "polygon",
+      "uid": "e6432e64a22f5d4ab26a88ea5dc28857",
+      "x": 7,
+      "y": 82,
+      "w": 114,
+      "h": 30,
+      "layer": 1,
+      "zOrder": 6,
+      "layers": [
+        {
+          "path": [
+            {
+              "t": "m",
+              "x": 0,
+              "y": 0
+            },
+            {
+              "t": "l",
+              "x": 114,
+              "y": 0
+            },
+            {
+              "t": "l",
+              "x": 99,
+              "y": 30
+            },
+            {
+              "t": "l",
+              "x": 15,
+              "y": 30
+            },
+            {
+              "t": "l",
+              "x": 0,
+              "y": 0
+            }
+          ],
+          "fill": "#ffc99a6b",
+          "stroke": "#ff24324a",
+          "width": 3.2,
+          "filled": true,
+          "role": 0
+        }
+      ],
+      "fillStyle": 1,
+      "strokeStyle": 1,
+      "designWidth": 114,
+      "designHeight": 30
+    },
+    {
+      "kind": "shape",
+      "shapeType": "rectangle",
+      "uid": "a2733541407758a181cf725c319de8c2",
+      "x": 16,
+      "y": 86,
+      "w": 96,
+      "h": 6,
+      "layer": 1,
+      "zOrder": 7,
+      "strokeColor": "#00000000",
+      "strokeWidth": 0.5,
+      "strokeStyle": 1,
+      "fillColor": "#fffff3d6",
+      "fillStyle": "solid",
+      "cornerRadius": 3
+    },
+    {
+      "kind": "shape",
+      "shapeType": "rectangle",
+      "uid": "f5afd485350557449606c17d1fd76bbf",
+      "x": 40,
+      "y": 94,
+      "w": 48,
+      "h": 3,
+      "layer": 1,
+      "zOrder": 8,
+      "strokeColor": "#00000000",
+      "strokeWidth": 0.5,
+      "strokeStyle": 1,
+      "fillColor": "#ff8d6548",
+      "fillStyle": "solid",
+      "cornerRadius": 1.5
     }
   ]
 }
