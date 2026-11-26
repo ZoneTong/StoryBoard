@@ -140,6 +140,12 @@ class CanvasItem : public QGraphicsObject {
     // 需求 24：图元可以绕内容中心旋转；旋转角随画布 JSON 保存并参与撤销。
     qreal RotationAngle() const { return m_rotation; }
     void SetRotationAngle(qreal angle);
+    // 编辑面板「角度」行的读写口：默认就是旋转角。直线这类几何完全由端点决定的
+    // 图元覆写成走向角，端点一斜面板就跟上，改角度也能反过来摆正直线。
+    virtual qreal DisplayRotationAngle() const { return RotationAngle(); }
+    virtual void SetDisplayRotationAngle(qreal angle) { SetRotationAngle(angle); }
+    // 选中时是否画外接框、八个缩放手柄与旋转手柄；直线只保留两端点方块。
+    virtual bool HasSelectionFrame() const { return true; }
     // 旋转手柄与快捷键使用：角度落在 [-180, 180)。
     static qreal NormalizeRotation(qreal angle);
     static qreal SnapRotation(qreal angle, qreal step = 5.0);

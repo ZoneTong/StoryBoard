@@ -933,6 +933,59 @@ void selftest::RunShapeItemTests(Context& ctx)
                       .arg(smoothUndo.count()));
     }
     {
+        // 直线选中只留两端点方块：外接框、八个缩放手柄与旋转手柄都不画，也不参与命中。
+        CanvasScene handleScene;
+        handleScene.SetMode(ToolMode::EDIT);
+        auto* handleLine = new StraightLineItem;
+        handleLine->SetEndpoints(QPointF(10.0, 10.0), QPointF(90.0, 60.0), QColor(Qt::black), 3.0);
+        handleScene.AttachItem(handleLine);
+        handleLine->setSelected(true);
+        CanvasItemHandles handles(handleLine);
+        const QRectF handleFrame = handleLine->FrameRect();
+        const QPointF frameCorner(handleFrame.right(), handleFrame.top());
+        const bool frameGone = !handleLine->HasSelectionFrame() &&
+                               handles.HitAt(frameCorner) == CanvasItem::NO_HANDLE &&
+                               handles.HitAt(handles.Center(CanvasItem::ROTATION)) == CanvasItem::NO_HANDLE;
+        const QPointF startCenter = handles.Center(CanvasItem::CUSTOM_0);
+        const QPointF endCenter = handles.Center(CanvasItem::CUSTOM_1);
+        const bool endpointsKept =
+            handles.HitAt(startCenter) == CanvasItem::CUSTOM_0 && handles.HitAt(endCenter) == CanvasItem::CUSTOM_1;
+        ctx.Check(frameGone && endpointsKept, QStringLiteral("选中直线只有两端点方块，外接框与旋转手柄不参与命中"),
+                  QStringLiteral("frame=%1 corner=%2 rotation=%3 start=%4 end=%5")
+                      .arg(frameGone)
+                      .arg(handles.HitAt(frameCorner))
+                      .arg(handles.HitAt(handles.Center(CanvasItem::ROTATION)))
+                      .arg(handles.HitAt(startCenter))
+                      .arg(handles.HitAt(endCenter)));
+
+        // 面板角度就是直线走向：斜线读出角度，按绝对角度写回后端点跟着转正 / 转斜。
+        StraightLineItem angleLine;
+        angleLine.SetEndpoints(QPointF(0.0, 0.0), QPointF(80.0, 50.0), QColor(Qt::black), 2.0);
+        const qreal slanted = angleLine.DisplayRotationAngle();
+        const qreal slantedProperty = angleLine.PropertyValue(ItemProperty::ROTATION).toDouble();
+        angleLine.SetPropertyValue(ItemProperty::ROTATION, 0.0);
+        const QVector<QPointF> levelKnots = angleLine.StrokePoints();
+        const QPointF levelStart = angleLine.mapToScene(levelKnots.constFirst());
+        const QPointF levelEnd = angleLine.mapToScene(levelKnots.constLast());
+        const bool leveled =
+            qAbs(angleLine.DisplayRotationAngle()) < 0.02 && qAbs(levelStart.y() - levelEnd.y()) < 0.02;
+        angleLine.SetPropertyValue(ItemProperty::ROTATION, 45.0);
+        const QVector<QPointF> tiltedKnots = angleLine.StrokePoints();
+        const QPointF tiltedStart = angleLine.mapToScene(tiltedKnots.constFirst());
+        const QPointF tiltedEnd = angleLine.mapToScene(tiltedKnots.constLast());
+        const qreal tiltedDirection =
+            qRadiansToDegrees(qAtan2(tiltedEnd.y() - tiltedStart.y(), tiltedEnd.x() - tiltedStart.x()));
+        const bool tilted = qAbs(angleLine.DisplayRotationAngle() - 45.0) < 0.02 && qAbs(tiltedDirection - 45.0) < 0.02;
+        ctx.Check(qAbs(slanted - 32.0) < 0.5 && qAbs(slantedProperty - slanted) < 0.01 && leveled && tilted,
+                  QStringLiteral("直线倾斜后面板角度跟随走向，改角度可按绝对角度旋转"),
+                  QStringLiteral("slanted=%1 property=%2 leveled=%3 tilted=%4 direction=%5")
+                      .arg(slanted)
+                      .arg(slantedProperty)
+                      .arg(leveled)
+                      .arg(tilted)
+                      .arg(tiltedDirection));
+    }
+    {
         // P4：文字属性只按属性表暴露（TEXT_CONTENT / TEXT_COLOR / TEXT_FONT），
         // 非文字图元不带这些行；写入正文后自然尺寸随之重算。
         TextItem text;

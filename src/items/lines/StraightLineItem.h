@@ -16,6 +16,11 @@ class StraightLineItem : public LineAbstractItem {
     QString TypeDisplayName() const override { return UiText(QStringLiteral("Straight Line")); }
     // 贴近细线的内容框抓不住，选框至少 12×12（只影响选框与手柄，不改几何与命中）。
     QRectF FrameRect() const override;
+    // 直线只由两个端点定位：选中时不画外接框、缩放手柄与旋转手柄，只留端点方块。
+    bool HasSelectionFrame() const override { return false; }
+    // 编辑面板的角度就是直线走向：斜了自动跟随，写入时按绝对角度旋转。
+    qreal DisplayRotationAngle() const override;
+    void SetDisplayRotationAngle(qreal angle) override;
     // 两端端点句柄：拖动时直接改端点，并按 12px 口径重新绑定 / 解除绑定。
     HandleSpecList CustomHandles() const override;
     bool BeginCustomHandleDrag(int handle, const QPointF& scenePos) override;

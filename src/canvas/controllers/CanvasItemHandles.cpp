@@ -187,12 +187,15 @@ int CanvasItemHandles::HitAt(const QPointF& pos) const
             considerHandle(spec.id);
         }
     }
-    for (int handle = CanvasItem::TOP_LEFT; handle <= CanvasItem::ROTATION; ++handle) {
-        if (handle == CanvasItem::TOP && hidesTop) {
-            continue;
-        }
-        if (HitRect(handle).contains(pos)) {
-            considerHandle(handle);
+    // 直线这类没有外接框的图元不参与八个缩放手柄与旋转手柄的命中，只留两端点。
+    if (m_item->HasSelectionFrame()) {
+        for (int handle = CanvasItem::TOP_LEFT; handle <= CanvasItem::ROTATION; ++handle) {
+            if (handle == CanvasItem::TOP && hidesTop) {
+                continue;
+            }
+            if (HitRect(handle).contains(pos)) {
+                considerHandle(handle);
+            }
         }
     }
 
@@ -227,11 +230,13 @@ QPainterPath CanvasItemHandles::SelectionShape() const
     for (const HandleSpec& spec : specs) {
         hidesTop = hidesTop || spec.replacesTopHandle;
     }
-    for (int handle = CanvasItem::TOP_LEFT; handle <= CanvasItem::ROTATION; ++handle) {
-        if (handle == CanvasItem::TOP && hidesTop) {
-            continue;
+    if (m_item->HasSelectionFrame()) {
+        for (int handle = CanvasItem::TOP_LEFT; handle <= CanvasItem::ROTATION; ++handle) {
+            if (handle == CanvasItem::TOP && hidesTop) {
+                continue;
+            }
+            path.addRect(HitRect(handle));
         }
-        path.addRect(HitRect(handle));
     }
     for (const HandleSpec& spec : specs) {
         path.addRect(HitRect(spec.id));
@@ -241,9 +246,12 @@ QPainterPath CanvasItemHandles::SelectionShape() const
 
 void CanvasItemHandles::DrawOverlay(QPainter* painter) const
 {
-    painter->setPen(SelectionOverlayStyle::BorderPen());
-    painter->setBrush(Qt::NoBrush);
-    painter->drawRect(m_item->FrameRect());
+    const bool framed = m_item->HasSelectionFrame();
+    if (framed) {
+        painter->setPen(SelectionOverlayStyle::BorderPen());
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRect(m_item->FrameRect());
+    }
 
     if (!m_item->IsEditable() || !m_item->HasSingleSelection()) {
         return;
@@ -256,11 +264,14 @@ void CanvasItemHandles::DrawOverlay(QPainter* painter) const
     for (const HandleSpec& spec : specs) {
         hidesTop = hidesTop || spec.replacesTopHandle;
     }
-    for (int handle = CanvasItem::TOP_LEFT; handle <= CanvasItem::LEFT; ++handle) {
-        if (handle == CanvasItem::TOP && hidesTop) {
-            continue;
+    // 没有外接框的图元（直线）只画自定义句柄，缩放手柄与旋转手柄都不出现。
+    if (framed) {
+        for (int handle = CanvasItem::TOP_LEFT; handle <= CanvasItem::LEFT; ++handle) {
+            if (handle == CanvasItem::TOP && hidesTop) {
+                continue;
+            }
+            painter->drawRect(Rect(handle));
         }
-        painter->drawRect(Rect(handle));
     }
     // 自定义句柄：调角度的两类（三角顶点 C、平行四边形旋钮）共用双箭头旋钮样式，
     // 其余（弧线 / 扇形端点）画成普通白底方块。
@@ -274,6 +285,9 @@ void CanvasItemHandles::DrawOverlay(QPainter* painter) const
         }
     }
 
+    if (!framed) {
+        return;
+    }
     // Rotation handle: a circular knob above the frame, connected by a thin line.
     const QPointF topCenter(Center(CanvasItem::TOP).x(), m_item->FrameRect().top());
     const QPointF rotationCenter = Center(CanvasItem::ROTATION);

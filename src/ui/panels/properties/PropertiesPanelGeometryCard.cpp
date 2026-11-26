@@ -77,7 +77,8 @@ void PropertiesPanelGeometryCard::Refresh(CanvasItem* item)
     m_refreshing = true;
     m_positionRow->Refresh(item->pos().x(), item->pos().y());
     m_sizeRow->Refresh(item->ContentSize().width(), item->ContentSize().height());
-    m_rotationRow->Refresh(item->RotationAngle());
+    // 角度行读的是「面板角度」：多数图元等于旋转角，直线等于走向角。
+    m_rotationRow->Refresh(item->DisplayRotationAngle());
 
     // 中心点是派生属性：按图元几何回显，写入侧只平移位置；提示文案与属性窗一致。
     const QPointF center = item->PropertyValue(ItemProperty::CENTER).toPointF();

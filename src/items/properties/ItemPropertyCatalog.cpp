@@ -125,9 +125,9 @@ const QList<ItemPropertyDescriptor*>& ItemPropertyCatalog::All()
                     item->SetContentSize(value.toSizeF());
                 };
             } else if (descriptor->key == ItemProperty::ROTATION) {
-                descriptor->reader = [](const CanvasItem* item) { return item->RotationAngle(); };
+                descriptor->reader = [](const CanvasItem* item) { return item->DisplayRotationAngle(); };
                 descriptor->writer = [](CanvasItem* item, const QVariant& value) {
-                    item->SetRotationAngle(value.toDouble());
+                    item->SetDisplayRotationAngle(value.toDouble());
                 };
             } else if (descriptor->key == ItemProperty::CENTER) {
                 descriptor->reader = [](const CanvasItem* item) { return item->CenterScenePoint(); };

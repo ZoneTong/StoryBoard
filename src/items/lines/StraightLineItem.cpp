@@ -4,7 +4,9 @@
 #include "scene/CanvasScene.h"
 
 #include <QJsonObject>
+#include <QTransform>
 #include <QVector>
+#include <QtMath>
 
 namespace {
 
@@ -69,6 +71,35 @@ QString StraightLineItem::DisplayName() const
 QRectF StraightLineItem::FrameRect() const
 {
     return PaddedToMinimum(CanvasItem::FrameRect());
+}
+
+qreal StraightLineItem::DisplayRotationAngle() const
+{
+    const QVector<QPointF> knots = StrokePoints();
+    if (knots.size() < 2) {
+        return RotationAngle();
+    }
+    // 直线几何只由端点决定，旋转角只是叠加在绘制矩阵上的偏移；两者相加才是
+    // 用户在画布上看到的走向。镜像只改显示矩阵，这里同样先把端点过一遍。
+    QPointF start = knots.constFirst();
+    QPointF end = knots.constLast();
+    if (FlipX() || FlipY()) {
+        const QTransform mirror = MirrorTransform();
+        start = mirror.map(start);
+        end = mirror.map(end);
+    }
+    const qreal direction = qRadiansToDegrees(qAtan2(end.y() - start.y(), end.x() - start.x()));
+    return CanvasItem::NormalizeRotation(RotationAngle() + direction);
+}
+
+void StraightLineItem::SetDisplayRotationAngle(qreal angle)
+{
+    // 端点几何不动，只补足旋转角的差值：面板填 45° 时，直线正好转到 45°。
+    const qreal delta = CanvasItem::NormalizeRotation(angle - DisplayRotationAngle());
+    if (qAbs(delta) < 1e-6) {
+        return;
+    }
+    SetRotationAngle(CanvasItem::NormalizeRotation(RotationAngle() + delta));
 }
 
 void StraightLineItem::SetEndpoints(const QPointF& startScene, const QPointF& endScene, const QColor& color,
