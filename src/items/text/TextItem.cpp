@@ -10,7 +10,9 @@
 #include <QtMath>
 
 namespace {
+// 普通文字沿用画板自己的 12px 内边距；容器文字与 Excalidraw 的 bound text 对齐，取 5px。
 constexpr qreal TEXT_PADDING = 12.0;
+constexpr qreal CONTAINER_TEXT_PADDING = 5.0;
 }
 
 TextItem::TextItem(QGraphicsItem* parent) : CanvasItem(parent) {}
@@ -80,7 +82,7 @@ QSizeF TextItem::Measure(const QString& text, const QFont& font)
 QStringList TextItem::WrappedLines(qreal width) const
 {
     const QFontMetricsF metrics(TextFont());
-    const qreal available = qMax<qreal>(1.0, width - 2.0 * TEXT_PADDING);
+    const qreal available = qMax<qreal>(1.0, width - 2.0 * CONTAINER_TEXT_PADDING);
     QStringList lines;
     const QStringList paragraphs = TextContent().split(QLatin1Char('\n'), Qt::KeepEmptyParts);
     for (const QString& paragraph : paragraphs) {
@@ -114,8 +116,9 @@ QSizeF TextItem::ContainerLayoutSize(qreal width) const
 {
     const QFontMetricsF metrics(TextFont());
     const int lineCount = qMax(1, WrappedLines(width).size());
-    const qreal height = metrics.lineSpacing() * lineCount + 2.0 * TEXT_PADDING;
-    return QSizeF(qMax<qreal>(1.0, width), qMax<qreal>(2.0 * TEXT_PADDING + metrics.height(), height));
+    const qreal height = metrics.lineSpacing() * lineCount + 2.0 * CONTAINER_TEXT_PADDING;
+    return QSizeF(qMax<qreal>(1.0, width),
+                  qMax<qreal>(2.0 * CONTAINER_TEXT_PADDING + metrics.height(), height));
 }
 
 TextItemState TextItem::State() const
@@ -161,6 +164,7 @@ void TextItem::PaintContent(QPainter* painter)
     const qreal scaleY = ContentSize().height() / baseSize.height();
     const QFontMetricsF metrics(font);
     const bool containerText = !m_containerUid.isEmpty();
+    const qreal padding = containerText ? CONTAINER_TEXT_PADDING : TEXT_PADDING;
     const QStringList lines =
         containerText ? WrappedLines(ContentSize().width())
                       : text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
@@ -171,7 +175,7 @@ void TextItem::PaintContent(QPainter* painter)
     if (!containerText) {
         painter->scale(scaleX, scaleY);
     }
-    painter->translate(TEXT_PADDING, TEXT_PADDING);
+    painter->translate(padding, padding);
     painter->setFont(font);
     painter->setPen(TextColor());
 
@@ -179,7 +183,7 @@ void TextItem::PaintContent(QPainter* painter)
         painter->setPen(QColor(148, 163, 184));
         painter->drawText(QPointF(0.0, metrics.ascent()), tr("Empty text"));
     } else {
-        const qreal available = ContentSize().width() - 2.0 * TEXT_PADDING;
+        const qreal available = ContentSize().width() - 2.0 * padding;
         qreal baseline = metrics.ascent();
         for (const QString& line : lines) {
             const qreal x = containerText ? qMax<qreal>(0.0, (available - metrics.horizontalAdvance(line)) / 2.0) : 0.0;
@@ -210,6 +214,7 @@ QPainterPath TextItem::GeometryPaintedShape() const
     const qreal scaleY = ContentSize().height() / base.height();
     const QFontMetricsF metrics(font);
     const bool containerText = !m_containerUid.isEmpty();
+    const qreal padding = containerText ? CONTAINER_TEXT_PADDING : TEXT_PADDING;
     const QStringList lines =
         containerText ? WrappedLines(ContentSize().width())
                       : text.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
@@ -217,13 +222,13 @@ QPainterPath TextItem::GeometryPaintedShape() const
     // 文字没有底色，只有字形占住画布：用字形轮廓（而不是整块行高矩形）作为
     // “涂满区域”，这样文字既能遮挡下层，字缝之间又不会挡住下层颜色。
     QPainterPath path;
-    const qreal available = ContentSize().width() - 2.0 * TEXT_PADDING;
-    qreal baseline = metrics.ascent();
+    const qreal available = ContentSize().width() - 2.0 * padding;
+    qreal baseline = padding + metrics.ascent();
     for (const QString& line : lines) {
         if (!line.isEmpty()) {
-            const qreal x =
-                containerText ? TEXT_PADDING + qMax<qreal>(0.0, (available - metrics.horizontalAdvance(line)) / 2.0)
-                              : TEXT_PADDING;
+            const qreal x = containerText
+                                ? padding + qMax<qreal>(0.0, (available - metrics.horizontalAdvance(line)) / 2.0)
+                                : padding;
             QPainterPath linePath;
             linePath.addText(x, baseline, font, line);
             path = path.united(linePath);

@@ -7,6 +7,7 @@
 #include "selftest/core/SelftestEntries.h"
 
 #include <QColor>
+#include <QFontMetricsF>
 #include <QJsonObject>
 #include <QLineF>
 #include <QPointF>
@@ -194,6 +195,13 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
         ctx.Check(wrapped.size() > 1 && qAbs(text->ContentSize().width() - 200.0) < 1.0,
                   QStringLiteral("容器文字按容器宽度折行"),
                   QStringLiteral("lines=%1 width=%2").arg(wrapped.size()).arg(text->ContentSize().width()));
+        const QFontMetricsF metrics(text->TextFont());
+        const qreal expectedHeight = metrics.lineSpacing() * wrapped.size() + 10.0;
+        ctx.Check(qAbs(text->ContentSize().height() - expectedHeight) < 0.5,
+                  QStringLiteral("容器文字上下内边距为 Excalidraw 的 5px"),
+                  QStringLiteral("height=%1 expected=%2")
+                      .arg(text->ContentSize().height())
+                      .arg(expectedHeight));
         const QPointF textCenter = text->mapToScene(text->ContentRect().center());
         const QRectF container = rect->mapRectToScene(rect->ContentRect());
         ctx.Check(qAbs(textCenter.x() - container.center().x()) < 1.0 &&
