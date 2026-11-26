@@ -18,7 +18,7 @@ void PropertiesPanel::ApplyItemType(const QString& kind)
     if (ItemTypeConversion::TypeOf(item) == kind) {
         return;
     }
-    // 换算与右键「转换为」共用 ConvertItemType：几何、起止角、描线样式原样搬过去，
+    // 类型换算走 ConvertItemType：几何、起止角、描线样式原样搬过去，
     // 新图元挂在原叠放位置并接管选中，撤销时换回旧图元。
     if (!m_scene->ConvertItemType(item, kind)) {
         Refresh();

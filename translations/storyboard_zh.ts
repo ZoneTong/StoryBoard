@@ -1559,18 +1559,6 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Mirror selected items top↕bottom (Ctrl+Alt+V)</source>
         <translation>上下镜像翻转选中图元（Ctrl+Alt+V）</translation>
     </message><message>
-        <source>Convert to</source>
-        <translation>转换为</translation>
-    </message><message>
-        <source>Convert to arc</source>
-        <translation>转换为弧线</translation>
-    </message><message>
-        <source>Convert to angle line</source>
-        <translation>转换为角度线</translation>
-    </message><message>
-        <source>Convert to sector</source>
-        <translation>转换为扇形</translation>
-    </message><message>
         <location filename="../src/ui/mainwindow/MainWindowInsertController.cpp" line="397"/>
         <source>Custom shapes…</source>
         <translation>自定义图形…</translation>
