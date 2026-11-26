@@ -188,10 +188,10 @@ bool LineAbstractItem::DragEndpointWithBinding(bool start, const QPointF& sceneP
     CanvasItem* target = canvas->BindableShapeAt(scenePoint, 12.0);
     canvas->SetBindingHighlight(target);
     QJsonObject binding;
-    const QVector<QPointF> knots = StrokePoints();
-    if (target && knots.size() >= 2) {
-        const QPointF other = mapToScene(start ? knots.at(1) : knots.at(knots.size() - 2));
-        const QPointF attached = CanvasScene::AttachmentPoint(target, other, 4.0);
+    if (target) {
+        // 以这一端自己的落点找边：吸到离拖动位置最近那条边的中点，
+        // 不沿用另一端方向，否则拖到右下角时会被拉去另一端朝向的那条边。
+        const QPointF attached = CanvasScene::AttachmentPoint(target, scenePoint, 4.0);
         binding.insert(QStringLiteral("elementId"), target->Uid());
         binding.insert(QStringLiteral("focus"),
                        CanvasScene::FocusForPoint(target->mapRectToScene(target->ContentRect()), attached));

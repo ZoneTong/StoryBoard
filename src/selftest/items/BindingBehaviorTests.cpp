@@ -72,6 +72,22 @@ void selftest::RunBindingBehaviorTests(Context& ctx)
                       .arg(restored.x())
                       .arg(restored.y()));
 
+        // 右下方 / 左下方斜向靠近：先命中哪条边就贴到该边中点，落点不能跑到矩形外面。
+        const QPointF bottomRight = CanvasScene::AttachmentPoint(rect, QPointF(500.0, 320.0), 4.0);
+        const QPointF bottomLeft = CanvasScene::AttachmentPoint(rect, QPointF(200.0, 320.0), 4.0);
+        const qreal midX = targetRect.center().x();
+        const qreal midY = targetRect.center().y();
+        ctx.Check(qAbs(bottomRight.x() - midX) < 1.0 && qAbs(bottomRight.y() - targetRect.bottom() - 4.0) < 1.0 &&
+                      qAbs(bottomLeft.x() - targetRect.left() + 4.0) < 1.0 && qAbs(bottomLeft.y() - midY) < 1.0,
+                  QStringLiteral("斜向右下 / 左下靠近时端点吸附到所命中的边中点"),
+                  QStringLiteral("br=(%1,%2) bl=(%3,%4) mid=(%5,%6)")
+                      .arg(bottomRight.x())
+                      .arg(bottomRight.y())
+                      .arg(bottomLeft.x())
+                      .arg(bottomLeft.y())
+                      .arg(midX)
+                      .arg(midY));
+
         scene.clearSelection();
         rect->setSelected(true);
         scene.DeleteSelected();

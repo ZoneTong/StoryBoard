@@ -144,19 +144,16 @@ void CanvasStrokeController::FinishStroke()
         binding.insert(QStringLiteral("gap"), 4.0);
         return binding;
     };
-    // 把两端吸附到目标边缘并写入绑定；直线与曲线共用这段口径，两端都不靠图形时不动。
+    // 把两端吸附到目标边缘并写入绑定；每端按自己的落点找边（贴到该边中点），
+    // 两端都不靠图形时不动。
     auto attachEnds = [&](LineAbstractItem* line, QPointF start, QPointF end) {
-        if (endTarget) {
-            end = CanvasScene::AttachmentPoint(endTarget, start, 4.0);
-        }
         if (startTarget) {
-            start = CanvasScene::AttachmentPoint(startTarget, end, 4.0);
-        }
-        if (startTarget) {
+            start = CanvasScene::AttachmentPoint(startTarget, start, 4.0);
             line->MoveEndpoint(true, start);
             line->SetStartBinding(bindingFor(startTarget, start));
         }
         if (endTarget) {
+            end = CanvasScene::AttachmentPoint(endTarget, end, 4.0);
             line->MoveEndpoint(false, end);
             line->SetEndBinding(bindingFor(endTarget, end));
         }
