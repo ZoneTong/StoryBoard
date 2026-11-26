@@ -361,6 +361,50 @@ void selftest::RunClipboardShortcutTests(Context& ctx)
                   QStringLiteral("knots=%1 maxAbs=%2 span=%3").arg(knots.size()).arg(maxAbs).arg(span));
     }
 
+    // 导出 Excalidraw 入口隐藏：文件菜单没有该动作，复制也不再往剪贴板写 Excalidraw JSON。
+    {
+        MainWindow exportWindow;
+        bool hasExcalidrawAction = false;
+        for (QAction* action : exportWindow.findChildren<QAction*>()) {
+            if (action->text().contains(QStringLiteral("Excalidraw"), Qt::CaseInsensitive)) {
+                hasExcalidrawAction = true;
+            }
+        }
+        ctx.Check(!hasExcalidrawAction, QStringLiteral("文件菜单不再提供导出 Excalidraw"));
+
+        exportWindow.View()->SetMode(ToolMode::EDIT);
+        CanvasScene* scene = exportWindow.findChild<CanvasScene*>();
+        auto* copiedShape = ShapeFactory::Create(ShapeType::RECTANGLE);
+        copiedShape->SetContentSize(QSizeF(100.0, 70.0));
+        copiedShape->setPos(QPointF(60.0, 60.0));
+        if (scene) {
+            scene->AddItemsWithUndo({copiedShape}, QStringLiteral("Add copy source"));
+            copiedShape->setSelected(true);
+        }
+        QApplication::processEvents();
+        QAction* copyAction = FindActionByObjectName(&exportWindow, QStringLiteral("CopyItemsAction"));
+        if (copyAction) {
+            copyAction->trigger();
+            QApplication::processEvents();
+        }
+        const QMimeData* copiedMime = QApplication::clipboard()->mimeData();
+        ctx.Check(copiedMime && !copiedMime->hasFormat(QStringLiteral("application/vnd.excalidraw+json")) &&
+                      !copiedMime->hasFormat(QStringLiteral("text/plain")),
+                  QStringLiteral("复制不再写 Excalidraw 剪贴板"),
+                  QStringLiteral("mime=%1").arg(copiedMime ? copiedMime->formats().join(QStringLiteral(";")) : QString()));
+
+        QAction* pasteAction = FindActionByObjectName(&exportWindow, QStringLiteral("PasteItemsAction"));
+        const int beforePaste = scene ? scene->CanvasItemCount() : -1;
+        if (pasteAction) {
+            pasteAction->trigger();
+            QApplication::processEvents();
+        }
+        ctx.Check(scene && scene->CanvasItemCount() == beforePaste + 1,
+                  QStringLiteral("复制后仍能粘回画板"),
+                  QStringLiteral("before=%1 after=%2").arg(beforePaste).arg(scene ? scene->CanvasItemCount() : -1));
+        QApplication::clipboard()->clear();
+    }
+
     // 默认键位映射：按通用软件标准或直觉核对每个动作唯一的那个键。
     {
         MainWindow shortcutWindow;

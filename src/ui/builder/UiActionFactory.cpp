@@ -82,9 +82,6 @@ void UiActionFactory::Build()
     m_window->m_exportAct =
         MakeAction(m_window, IconId::EXPORT, MainWindow::tr("Export image…"), QKeySequence(QStringLiteral("Ctrl+E")),
                    MainWindow::tr("Export as PNG / JPEG / PDF (Ctrl+E)"));
-    m_window->m_exportExcalidrawAct =
-        MakeAction(m_window, IconId::EXPORT, MainWindow::tr("Export Excalidraw…"), QKeySequence(),
-                   MainWindow::tr("Save this canvas as an .excalidraw scene that excalidraw.com can open"));
     m_window->m_exportCustomShapeAct = MakeAction(
         m_window, IconId::SHAPES, MainWindow::tr("Export custom shape…"), QKeySequence(QStringLiteral("Ctrl+Shift+E")),
         MainWindow::tr("Save the selected items into the shapes folder as a reusable template "
@@ -310,7 +307,6 @@ void UiActionFactory::Build()
     QObject::connect(m_window->m_importAct, &QAction::triggered, m_window, &MainWindow::ImportImagesDialog);
     QObject::connect(m_window->m_lineArtAct, &QAction::triggered, m_window, &MainWindow::ImportOutlineImageDialog);
     QObject::connect(m_window->m_exportAct, &QAction::triggered, m_window, &MainWindow::ExportCanvas);
-    QObject::connect(m_window->m_exportExcalidrawAct, &QAction::triggered, m_window, &MainWindow::ExportExcalidraw);
     QObject::connect(m_window->m_exportCustomShapeAct, &QAction::triggered, m_window, &MainWindow::ExportCustomShape);
     QObject::connect(m_window->m_quitAct, &QAction::triggered, m_window, &QWidget::close);
 

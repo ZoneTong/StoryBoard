@@ -3198,14 +3198,6 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <source>Merge items is available in edit mode only</source>
         <translation>合并图元只在编辑模式可用</translation>
     </message><message>
-        <location filename="../src/ui/builder/UiActionFactory.cpp" line="83"/>
-        <source>Export Excalidraw…</source>
-        <translation>导出 Excalidraw…</translation>
-    </message><message>
-        <location filename="../src/ui/builder/UiActionFactory.cpp" line="84"/>
-        <source>Save this canvas as an .excalidraw scene that excalidraw.com can open</source>
-        <translation>把当前画板存成 excalidraw.com 能打开的 .excalidraw 场景</translation>
-    </message><message>
         <location filename="../src/app/DocumentController.cpp" line="448"/>
         <source>Excalidraw scenes (*.excalidraw)</source>
         <translation>Excalidraw 场景 (*.excalidraw)</translation>
@@ -3230,16 +3222,6 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <location filename="../src/app/DocumentController.cpp" line="277"/>
         <source>Imported an Excalidraw scene as a new canvas</source>
         <translation>已把 Excalidraw 场景导入为新画板</translation>
-    </message><message>
-        <location filename="../src/app/DocumentController.cpp" line="447"/>
-        <location filename="../src/app/DocumentController.cpp" line="460"/>
-        <location filename="../src/app/DocumentController.cpp" line="466"/>
-        <source>Export Excalidraw</source>
-        <translation>导出 Excalidraw</translation>
-    </message><message>
-        <location filename="../src/app/DocumentController.cpp" line="471"/>
-        <source>Excalidraw scene exported: %1</source>
-        <translation>Excalidraw 场景已导出：%1</translation>
     </message><message>
         <location filename="../src/app/DocumentController.cpp" line="429"/>
         <location filename="../src/app/DocumentController.cpp" line="467"/>

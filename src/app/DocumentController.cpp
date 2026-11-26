@@ -454,48 +454,6 @@ void DocumentController::ExportCustomShape()
     m_window->statusBar()->showMessage(MainWindow::tr("Custom shape saved: %1").arg(QFileInfo(path).fileName()), 4000);
 }
 
-void DocumentController::ExportExcalidraw()
-{
-    m_window->m_view->FinishCurrentStroke();
-    QString suggestion = m_window->m_filePath;
-    if (suggestion.isEmpty()) {
-        suggestion = QDir(AppSettings::CanvasesDir()).filePath(DocumentName() + QStringLiteral(".excalidraw"));
-    } else {
-        suggestion = QFileInfo(suggestion).absolutePath() + QStringLiteral("/") +
-                     QFileInfo(suggestion).completeBaseName() + QStringLiteral(".excalidraw");
-    }
-
-    QString path = QFileDialog::getSaveFileName(m_window, MainWindow::tr("Export Excalidraw"), suggestion,
-                                                MainWindow::tr("Excalidraw scenes (*.excalidraw)"));
-    if (path.isEmpty()) {
-        return;
-    }
-    if (!path.endsWith(QStringLiteral(".excalidraw"), Qt::CaseInsensitive)) {
-        path += QStringLiteral(".excalidraw");
-    }
-
-    QStringList notes;
-    const QJsonObject scene = Excalidraw::StoryBoardToScene(m_window->m_scene->ToJson(), &notes);
-    QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly)) {
-        ReportWarning(m_window, MainWindow::tr("Export Excalidraw"),
-                      MainWindow::tr("Could not write the file:\n%1").arg(QDir::toNativeSeparators(path)));
-        return;
-    }
-    file.write(QJsonDocument(scene).toJson(QJsonDocument::Indented));
-    if (!file.commit()) {
-        ReportWarning(m_window, MainWindow::tr("Export Excalidraw"),
-                      MainWindow::tr("Failed to save the file:\n%1").arg(QDir::toNativeSeparators(path)));
-        return;
-    }
-
-    QString message = MainWindow::tr("Excalidraw scene exported: %1").arg(QFileInfo(path).fileName());
-    if (!notes.isEmpty()) {
-        message += QStringLiteral(" (") + notes.join(QStringLiteral("; ")) + QStringLiteral(")");
-    }
-    m_window->statusBar()->showMessage(message, 5000);
-}
-
 bool DocumentController::MaybeSave()
 {
     if (!m_window->m_undo || m_window->m_undo->isClean()) {

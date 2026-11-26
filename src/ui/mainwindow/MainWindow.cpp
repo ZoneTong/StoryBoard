@@ -347,11 +347,6 @@ void MainWindow::ExportCanvas()
     m_io->ExportCanvas();
 }
 
-void MainWindow::ExportExcalidraw()
-{
-    m_document->ExportExcalidraw();
-}
-
 void MainWindow::ExportCustomShape()
 {
     m_document->ExportCustomShape();

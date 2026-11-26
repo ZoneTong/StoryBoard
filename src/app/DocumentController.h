@@ -16,7 +16,6 @@ class DocumentController {
     bool LoadCanvasFile(const QString& path, bool showErrors);
     bool SaveCanvas();
     bool SaveCanvasAs();
-    void ExportExcalidraw();
     void ExportCustomShape();
     bool SaveToFile(const QString& path);
     bool MaybeSave();
