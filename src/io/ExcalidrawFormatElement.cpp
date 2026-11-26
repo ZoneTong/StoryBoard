@@ -1,5 +1,5 @@
 #include "io/ExcalidrawFormatInternal.h"
-
+#include "items/properties/FillAttributes.h"
 #include "items/properties/TextAttributes.h"
 
 #include <QColor>
@@ -263,6 +263,50 @@ QJsonObject ElementToItem(const QJsonObject& element, int z, int layer, QStringL
         }
         // 多点折线：保留拐点与两端箭头，落到直线图元（自由笔画落到曲线图元）。
         const QRectF lineBounds = BoundsOf(points);
+        // Excalidraw 的 line 勾选 polygon 后是一个可填充的闭合面（还可能是圆角轮廓）。
+        // 直线图元没有填充能力，落到自由多边形，否则线条 / 交叉线条 / 实心三种底色都会丢。
+        QColor lineFill = ColorOr(element, QStringLiteral("backgroundColor"), QColor(Qt::transparent));
+        if (type == QStringLiteral("line") && element.value(QStringLiteral("polygon")).toBool(false) &&
+            lineFill.alpha() > 0 && points.size() >= 3) {
+            QJsonObject polygon = ItemBase(QStringLiteral("polygon"), lineBounds, z, layer);
+            QJsonArray path;
+            const QPointF origin = lineBounds.topLeft();
+            for (int i = 0; i < points.size(); ++i) {
+                const QPointF local = points.at(i) - origin;
+                QJsonObject entry;
+                entry.insert(QStringLiteral("t"), i == 0 ? QStringLiteral("m") : QStringLiteral("l"));
+                entry.insert(QStringLiteral("x"), local.x());
+                entry.insert(QStringLiteral("y"), local.y());
+                path.append(entry);
+            }
+            const QString restoredFill = CustomText(element, QStringLiteral("fillStyle"));
+            const QString fillStyle =
+                restoredFill.isEmpty() ? FillStyleFromExcalidraw(element.value(QStringLiteral("fillStyle")).toString())
+                                       : restoredFill;
+            QColor stroke = ColorOr(element, QStringLiteral("strokeColor"), QColor(Qt::transparent));
+            const qreal fillAlpha = CustomNumber(element, QStringLiteral("fillAlpha"), lineFill.alpha());
+            const qreal strokeAlpha = CustomNumber(element, QStringLiteral("strokeAlpha"), stroke.alpha());
+            lineFill.setAlpha(static_cast<int>(qBound<qreal>(0.0, fillAlpha, 255.0)));
+            stroke.setAlpha(static_cast<int>(qBound<qreal>(0.0, strokeAlpha, 255.0)));
+            QJsonObject polygonLayer;
+            polygonLayer.insert(QStringLiteral("path"), path);
+            polygonLayer.insert(QStringLiteral("fill"), lineFill.name(QColor::HexArgb));
+            polygonLayer.insert(QStringLiteral("stroke"), stroke.name(QColor::HexArgb));
+            polygonLayer.insert(QStringLiteral("width"),
+                                qMax<qreal>(0.5, NumberOr(element, QStringLiteral("strokeWidth"), 2.0)));
+            polygonLayer.insert(QStringLiteral("filled"), true);
+            polygonLayer.insert(QStringLiteral("role"), static_cast<int>(0));
+            polygon.insert(QStringLiteral("layers"), QJsonArray{polygonLayer});
+            polygon.insert(QStringLiteral("fillStyle"), static_cast<int>(FillStyleFromString(fillStyle)));
+            polygon.insert(QStringLiteral("strokeStyle"),
+                           static_cast<int>(PenStyleFromExcalidraw(element.value(QStringLiteral("strokeStyle")))));
+            polygon.insert(QStringLiteral("designWidth"), qMax<qreal>(1.0, lineBounds.width()));
+            polygon.insert(QStringLiteral("designHeight"), qMax<qreal>(1.0, lineBounds.height()));
+            polygon.insert(QStringLiteral("rotation"),
+                           qRadiansToDegrees(NumberOr(element, QStringLiteral("angle"), 0.0)));
+            polygon.insert(QStringLiteral("opacity"), NumberOr(element, QStringLiteral("opacity"), 100.0) / 100.0);
+            return polygon;
+        }
         const QString lineKind =
             type == QStringLiteral("freedraw") ? QStringLiteral("freehand") : QStringLiteral("straightline");
         QJsonObject item = ItemBase(lineKind, lineBounds, z, layer);

@@ -1,4 +1,5 @@
 #include "io/ExcalidrawFormat.h"
+#include "items/properties/FillAttributes.h"
 #include "items/properties/TextAttributes.h"
 #include "selftest/core/SelfTestContext.h"
 #include "selftest/core/SelftestEntries.h"
@@ -553,6 +554,60 @@ void selftest::RunExcalidrawFormatTests(Context& ctx)
                   QStringLiteral("导出画板专属填充样式并保留原值"),
                   QStringLiteral("styles=%1/%2/%3 custom=%4")
                       .arg(reverseStyle, gridStyle, brickStyle, reverseCustom));
+    }
+
+    // Excalidraw 的 line + polygon 是可填充闭合面，必须落到多边形并保住底色与填充样式。
+    {
+        QJsonArray polygons;
+        const QStringList styles = {QStringLiteral("cross-hatch"), QStringLiteral("hachure"),
+                                    QStringLiteral("solid")};
+        for (int index = 0; index < styles.size(); ++index) {
+            QJsonObject line = Element(QStringLiteral("line"), 100.0 + index * 120.0, 100.0, 100.0, 60.0);
+            line.insert(QStringLiteral("polygon"), true);
+            line.insert(QStringLiteral("strokeColor"), QStringLiteral("transparent"));
+            line.insert(QStringLiteral("backgroundColor"), QStringLiteral("#ffc9c9"));
+            line.insert(QStringLiteral("fillStyle"), styles.at(index));
+            QJsonArray points;
+            for (const QPointF& point : {QPointF(0, 0), QPointF(100, 0), QPointF(100, 60), QPointF(0, 60),
+                                         QPointF(0, 0)}) {
+                QJsonArray pair;
+                pair.append(point.x());
+                pair.append(point.y());
+                points.append(pair);
+            }
+            line.insert(QStringLiteral("points"), points);
+            polygons.append(line);
+        }
+        const QJsonObject imported = Excalidraw::SceneToStoryBoard(Scene(polygons), nullptr);
+        const QJsonArray importedItems = imported.value(QStringLiteral("items")).toArray();
+        const bool kindsOk = importedItems.size() == 3 &&
+                             importedItems.at(0).toObject().value(QStringLiteral("kind")).toString() ==
+                                 QStringLiteral("polygon") &&
+                             importedItems.at(1).toObject().value(QStringLiteral("kind")).toString() ==
+                                 QStringLiteral("polygon") &&
+                             importedItems.at(2).toObject().value(QStringLiteral("kind")).toString() ==
+                                 QStringLiteral("polygon");
+        const int crossHatch = importedItems.at(0).toObject().value(QStringLiteral("fillStyle")).toInt(-1);
+        const int hachure = importedItems.at(1).toObject().value(QStringLiteral("fillStyle")).toInt(-1);
+        const int solid = importedItems.at(2).toObject().value(QStringLiteral("fillStyle")).toInt(-1);
+        const QString layerFill = importedItems.at(0)
+                                      .toObject()
+                                      .value(QStringLiteral("layers"))
+                                      .toArray()
+                                      .at(0)
+                                      .toObject()
+                                      .value(QStringLiteral("fill"))
+                                      .toString();
+        ctx.Check(kindsOk && crossHatch == static_cast<int>(FillStyle::CROSS_HATCH) &&
+                      hachure == static_cast<int>(FillStyle::HACHURE) &&
+                      solid == static_cast<int>(FillStyle::SOLID) && layerFill.contains(QStringLiteral("ffc9c9")),
+                  QStringLiteral("可填充折线按闭合多边形导入并还原填充样式"),
+                  QStringLiteral("kinds=%1 styles=%2/%3/%4 fill=%5")
+                      .arg(kindsOk ? QStringLiteral("ok") : QStringLiteral("bad"))
+                      .arg(crossHatch)
+                      .arg(hachure)
+                      .arg(solid)
+                      .arg(layerFill));
     }
 
     // 图层 <-> frame：非默认层导出成 frame，层内图元写 frameId，再导入还原图层。
