@@ -3,6 +3,7 @@
 #include "app/AutoSaveService.h"
 #include "app/CanvasSession.h"
 #include "app/CanvasTabsController.h"
+#include "app/LifecycleLog.h"
 #include "app/Settings.h"
 #include "app/TestMode.h"
 #include "canvas/CanvasView.h"
@@ -338,6 +339,10 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors, QS
     }
 
     target->View()->FinishCurrentStroke();
+    if (target->Scene()) {
+        target->Scene()->SetLogLabel(importedExcalidraw ? QStringLiteral("导入画布")
+                                                        : QFileInfo(path).completeBaseName());
+    }
     QString loadError;
     if (!target->Scene()->FromJson(usableRoot, &loadError)) {
         if (!reused) {
@@ -366,6 +371,8 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors, QS
         m_window->m_settings.lastCanvasPath = absolutePath;
     }
     m_window->m_tabs->UpdateTabLabel(target);
+    LifecycleLog::LogCanvas(target->DisplayName(), importedExcalidraw ? QStringLiteral("导入") : QStringLiteral("打开"),
+                            QDir::toNativeSeparators(absolutePath));
     if (importedExcalidraw) {
         QString message = MainWindow::tr("Imported an Excalidraw scene as a new canvas");
         if (!excalidrawNotes.isEmpty()) {
@@ -436,6 +443,8 @@ bool DocumentController::SaveToFile(const QString& path)
         CanvasSession* session = m_window->m_tabs->Current();
         session->SetFilePath(m_window->m_filePath);
         m_window->m_tabs->UpdateTabLabel(session);
+        LifecycleLog::LogCanvas(session->DisplayName(), QStringLiteral("保存"),
+                                QDir::toNativeSeparators(m_window->m_filePath));
     }
     m_window->m_settings.lastCanvasPath = m_window->m_filePath;
     m_window->m_settings.Save();

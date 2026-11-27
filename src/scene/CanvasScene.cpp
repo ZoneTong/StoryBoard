@@ -1,8 +1,10 @@
 #include "scene/CanvasScene.h"
 
+#include "app/LifecycleLog.h"
 #include "items/CanvasItem.h"
 #include "scene/SceneConstants.h"
 
+#include <QStringList>
 #include <QUndoStack>
 
 CanvasScene::CanvasScene(QObject* parent) : QGraphicsScene(parent)
@@ -91,11 +93,33 @@ void CanvasScene::SetUndoStack(QUndoStack* stack)
     if (m_undoStack) {
         // 撤销/重做只恢复被编辑的图元；绑定箭头与容器文字是派生位置，
         // 每次栈位置变化后按当前几何重算，避免停在旧位置。
-        connect(m_undoStack, &QUndoStack::indexChanged, this, [this] {
+        connect(m_undoStack, &QUndoStack::indexChanged, this, [this](int index) {
             SyncArrowBindings();
             SyncContainerTexts();
+            const int previous = m_lastUndoIndex;
+            m_lastUndoIndex = index;
+            if (index == previous || !m_undoStack) {
+                return;
+            }
+            const QString command = index > previous ? m_undoStack->text(index - 1) : m_undoStack->text(index);
+            QString detail = command;
+            const QList<CanvasItem*> selected = SelectedCanvasItems();
+            if (!selected.isEmpty()) {
+                QStringList names;
+                for (int i = 0; i < selected.size() && i < 3; ++i) {
+                    names.append(
+                        QStringLiteral("%1「%2」").arg(selected.at(i)->TypeDisplayName(), selected.at(i)->Name()));
+                }
+                if (selected.size() > 3) {
+                    names.append(QStringLiteral("等 %1 个").arg(selected.size()));
+                }
+                detail += QStringLiteral("；对象：%1").arg(names.join(QStringLiteral("、")));
+            }
+            LifecycleLog::LogEdit(m_logLabel, index > previous ? QStringLiteral("编辑") : QStringLiteral("撤销"),
+                                  detail);
         });
     }
+    m_lastUndoIndex = m_undoStack ? m_undoStack->index() : 0;
 }
 
 void CanvasScene::SetMode(ToolMode mode)

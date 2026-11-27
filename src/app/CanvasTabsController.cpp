@@ -1,8 +1,10 @@
 #include "app/CanvasTabsController.h"
 
 #include "app/CanvasSession.h"
+#include "app/LifecycleLog.h"
 #include "app/Settings.h"
 #include "canvas/CanvasView.h"
+#include "items/CanvasItem.h"
 #include "scene/CanvasScene.h"
 #include "ui/mainwindow/MainWindow.h"
 
@@ -77,6 +79,7 @@ CanvasSession* CanvasTabsController::CreateSession(bool activate)
     CanvasSession* session = new CanvasSession(m_window, scene, view, undo, ++m_untitledCount);
     AdoptSession(session);
     UpdateTabLabel(session);
+    LifecycleLog::LogCanvas(session->DisplayName(), QStringLiteral("新建"));
     if (activate) {
         m_tabs->setCurrentWidget(view);
     }
@@ -134,6 +137,7 @@ void CanvasTabsController::ActivateIndex(int index)
     if (m_window) {
         m_window->ActivateSession(session);
     }
+    LifecycleLog::LogCanvas(session->DisplayName(), QStringLiteral("切换"));
     m_switching = false;
 }
 
@@ -189,6 +193,12 @@ void CanvasTabsController::RemoveSession(CanvasSession* session)
     if (session == m_current) {
         m_current = nullptr;
     }
+    LifecycleLog::LogCanvas(session->DisplayName(), QStringLiteral("关闭"), session->FilePath());
+    if (session->Scene()) {
+        for (CanvasItem* item : session->Scene()->CanvasItems()) {
+            LifecycleLog::LogItem(session->DisplayName(), QStringLiteral("销毁"), *item);
+        }
+    }
     delete session;
 
     if (m_sessions.isEmpty()) {
@@ -231,6 +241,9 @@ void CanvasTabsController::UpdateTabLabel(CanvasSession* session)
         return;
     }
     QString label = session->DisplayName();
+    if (session->Scene()) {
+        session->Scene()->SetLogLabel(label);
+    }
     if (session->HasUnsavedChanges()) {
         label.prepend(QStringLiteral("• "));
     }

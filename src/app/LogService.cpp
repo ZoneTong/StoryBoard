@@ -85,7 +85,7 @@ void MessageHandler(QtMsgType type, const QMessageLogContext& context, const QSt
     QString line = QStringLiteral("%1 [%2] %3: %4")
                        .arg(stamp, QString::fromLatin1(LevelName(type)),
                             QString::fromUtf8(context.category ? context.category : "default"), message);
-    if (context.file && type >= QtWarningMsg) {
+    if (context.file && (type == QtWarningMsg || type == QtCriticalMsg || type == QtFatalMsg)) {
         line += QStringLiteral(" (%1:%2)").arg(QString::fromUtf8(context.file)).arg(context.line);
     }
     line += QLatin1Char('\n');

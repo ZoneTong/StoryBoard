@@ -265,6 +265,9 @@ class CanvasScene : public QGraphicsScene {
     CanvasItem* ConvertItemType(CanvasItem* item, const QString& targetKind);
 
     void ResetDocument();
+    // 生命周期日志用的画布显示名，由标签页在改名 / 打开 / 保存后同步。
+    void SetLogLabel(const QString& label) { m_logLabel = label; }
+    QString LogLabel() const { return m_logLabel; }
     QJsonObject ToJson() const;
     bool FromJson(const QJsonObject& root, QString* errorMessage = nullptr);
 
@@ -332,6 +335,8 @@ class CanvasScene : public QGraphicsScene {
     ItemStackList ItemStackSnapshot(const QList<CanvasItem*>& items) const;
 
     QUndoStack* m_undoStack = nullptr;
+    QString m_logLabel;
+    int m_lastUndoIndex = 0;
     // 只在画箭头 / 拖端点的过程里活着，结束即清空，不跨事件循环持有。
     CanvasItem* m_bindingHighlight = nullptr;
     ToolMode m_mode = ToolMode::VIEW;

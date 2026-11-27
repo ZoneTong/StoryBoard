@@ -2,6 +2,7 @@
 
 #include "app/CommandLineOptions.h"
 #include "app/I18n.h"
+#include "app/LifecycleLog.h"
 #include "app/LogService.h"
 
 #include <QApplication>
@@ -186,6 +187,7 @@ void Initialize(QApplication& app)
     QCoreApplication::setApplicationVersion(QString::fromLatin1(STORYBOARD_VERSION));
     // 先接管日志再初始化界面：启动期的警告也进 logs/，并按 14 天保留清理。
     LogService::Install();
+    LifecycleLog::TrackInputSources();
     UiInitializeLanguage();
     app.setApplicationDisplayName(QCoreApplication::tr("StoryBoard Canvas"));
     app.setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));

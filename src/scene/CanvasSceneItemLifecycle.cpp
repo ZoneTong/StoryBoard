@@ -1,3 +1,4 @@
+#include "app/LifecycleLog.h"
 #include "items/CanvasItem.h"
 #include "items/lines/AngleItem.h"
 #include "items/lines/ArcItem.h"
@@ -76,7 +77,8 @@ void CanvasScene::AttachItem(CanvasItem* item)
     }
 
     m_orphans.removeAll(item);
-    if (item->scene() != this) {
+    const bool newlyAttached = item->scene() != this;
+    if (newlyAttached) {
         addItem(item);
     }
 
@@ -96,6 +98,9 @@ void CanvasScene::AttachItem(CanvasItem* item)
     }
     ApplyItemStacking(item);
     ApplyItemInteraction(item);
+    if (newlyAttached) {
+        LifecycleLog::LogItem(m_logLabel, QStringLiteral("创建"), *item);
+    }
 
     UpdateSceneExtent();
     update();
@@ -110,6 +115,7 @@ void CanvasScene::DetachItem(CanvasItem* item)
 
     if (item->scene() == this) {
         removeItem(item);
+        LifecycleLog::LogItem(m_logLabel, QStringLiteral("销毁"), *item);
     }
     if (!m_orphans.contains(item)) {
         m_orphans.append(item);
