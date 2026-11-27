@@ -6,6 +6,7 @@
 #include "items/CanvasItemGeometry.h"
 #include "items/lines/LineAbstractItem.h"
 #include "items/properties/ItemPropertyCatalog.h"
+#include "items/shapes/ShapeAbstractItem.h"
 #include "scene/CanvasScene.h"
 
 #include <QFontMetricsF>
@@ -24,6 +25,35 @@
 
 namespace {
 constexpr qreal MINIMUM_SIDE = 8.0;
+
+QString ColorForLog(const QColor& color)
+{
+    if (!color.isValid()) {
+        return QStringLiteral("透明");
+    }
+    return color.name(color.alpha() == 255 ? QColor::HexRgb : QColor::HexArgb);
+}
+
+QString StrokeStyleForLog(int style)
+{
+    switch (static_cast<Qt::PenStyle>(style)) {
+    case Qt::NoPen:
+        return QStringLiteral("无描边");
+    case Qt::SolidLine:
+        return QStringLiteral("实线");
+    case Qt::DashLine:
+        return QStringLiteral("虚线");
+    case Qt::DotLine:
+        return QStringLiteral("点线");
+    case Qt::DashDotLine:
+        return QStringLiteral("点划线");
+    case Qt::DashDotDotLine:
+        return QStringLiteral("双点划线");
+    case Qt::CustomDashLine:
+        return QStringLiteral("自定义虚线");
+    }
+    return QString::number(style);
+}
 } // namespace
 
 void CanvasItem::Accept(CanvasItemVisitor& visitor)
@@ -232,10 +262,19 @@ QString CanvasItem::LogStateSummary() const
     appendAngle(ItemProperty::START_ANGLE, QStringLiteral("起角"));
     appendAngle(ItemProperty::SWEEP_ANGLE, QStringLiteral("扫角"));
     if (properties.Contains(ItemProperty::FILL_COLOR)) {
-        summary += QStringLiteral(" 填充=%1").arg(PropertyValue(ItemProperty::FILL_COLOR).value<QColor>().name());
+        summary += QStringLiteral(" 填充=%1").arg(ColorForLog(PropertyValue(ItemProperty::FILL_COLOR).value<QColor>()));
+    }
+    if (properties.Contains(ItemProperty::FILL_STYLE)) {
+        summary += QStringLiteral(" 填充样式=%1")
+                       .arg(FillStyles::Name(static_cast<FillStyle>(PropertyValue(ItemProperty::FILL_STYLE).toInt())));
     }
     if (properties.Contains(ItemProperty::STROKE_COLOR)) {
-        summary += QStringLiteral(" 描边=%1").arg(PropertyValue(ItemProperty::STROKE_COLOR).value<QColor>().name());
+        summary +=
+            QStringLiteral(" 描边=%1").arg(ColorForLog(PropertyValue(ItemProperty::STROKE_COLOR).value<QColor>()));
+    }
+    if (properties.Contains(ItemProperty::STROKE_STYLE)) {
+        summary +=
+            QStringLiteral(" 描边样式=%1").arg(StrokeStyleForLog(PropertyValue(ItemProperty::STROKE_STYLE).toInt()));
     }
     if (properties.Contains(ItemProperty::STROKE_WIDTH)) {
         summary += QStringLiteral(" 线宽=%1").arg(LogNumber(PropertyValue(ItemProperty::STROKE_WIDTH).toDouble()));

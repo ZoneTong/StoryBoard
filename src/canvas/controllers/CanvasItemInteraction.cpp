@@ -135,7 +135,7 @@ void CanvasItemInteraction::BeginResize(int handle, const QPointF& scenePos)
     m_customDrag = false;
     m_customDragBefore.clear();
     m_lineCustomDrag = nullptr;
-    m_hasLineEndpoints = false;
+    m_hasLineKnots = false;
 
     if (handle < CanvasItem::CUSTOM_0) {
         return;
@@ -149,10 +149,12 @@ void CanvasItemInteraction::BeginResize(int handle, const QPointF& scenePos)
         m_lineCustomDrag = line;
         m_lineGeometryBefore = line->geometryState();
         const QVector<QPointF> knots = line->StrokePoints();
-        m_hasLineEndpoints = knots.size() >= 2;
-        if (m_hasLineEndpoints) {
-            m_lineStartSceneBefore = line->mapToScene(knots.constFirst());
-            m_lineEndSceneBefore = line->mapToScene(knots.constLast());
+        m_hasLineKnots = knots.size() >= 2;
+        if (m_hasLineKnots) {
+            m_lineKnotsSceneBefore.clear();
+            for (const QPointF& knot : knots) {
+                m_lineKnotsSceneBefore.append(line->mapToScene(knot));
+            }
         }
         m_hasBindingSnapshot = true;
         m_startBindingBefore = line->StartBinding();
@@ -286,9 +288,8 @@ void CanvasItemInteraction::FinishInteraction()
     const QMap<PropertyKey, QVariant> customBefore = m_customDragBefore;
     LineAbstractItem* lineCustomDrag = m_lineCustomDrag;
     const LineAbstractItem::GeometryState lineGeometryBefore = m_lineGeometryBefore;
-    const QPointF lineStartSceneBefore = m_lineStartSceneBefore;
-    const QPointF lineEndSceneBefore = m_lineEndSceneBefore;
-    const bool hasLineEndpoints = m_hasLineEndpoints;
+    const QList<QPointF> lineKnotsSceneBefore = m_lineKnotsSceneBefore;
+    const bool hasLineKnots = m_hasLineKnots;
     const bool hasBindingSnapshot = m_hasBindingSnapshot;
     const QJsonObject startBindingBefore = m_startBindingBefore;
     const QJsonObject endBindingBefore = m_endBindingBefore;
@@ -300,7 +301,7 @@ void CanvasItemInteraction::FinishInteraction()
     m_customDrag = false;
     m_customDragBefore.clear();
     m_lineCustomDrag = nullptr;
-    m_hasLineEndpoints = false;
+    m_hasLineKnots = false;
     m_hasBindingSnapshot = false;
     m_hasTextSnapshot = false;
 
@@ -327,14 +328,15 @@ void CanvasItemInteraction::FinishInteraction()
                 propertiesAfter.insert(it.key(), now);
             }
             const bool propertiesChanged = !propertiesBefore.isEmpty();
-            QList<QPointF> beforeEndpoints;
-            QList<QPointF> afterEndpoints;
-            if (hasLineEndpoints) {
-                const QVector<QPointF> afterKnots = lineCustomDrag->StrokePoints();
-                if (afterKnots.size() >= 2) {
-                    beforeEndpoints = {lineStartSceneBefore, lineEndSceneBefore};
-                    afterEndpoints = {lineCustomDrag->mapToScene(afterKnots.constFirst()),
-                                      lineCustomDrag->mapToScene(afterKnots.constLast())};
+            QList<QPointF> beforeKnots;
+            QList<QPointF> afterKnots;
+            if (hasLineKnots) {
+                const QVector<QPointF> afterKnotsLocal = lineCustomDrag->StrokePoints();
+                if (afterKnotsLocal.size() == lineKnotsSceneBefore.size()) {
+                    beforeKnots = lineKnotsSceneBefore;
+                    for (const QPointF& knot : afterKnotsLocal) {
+                        afterKnots.append(lineCustomDrag->mapToScene(knot));
+                    }
                 }
             }
             if (CanvasScene* canvas = m_item->canvasScene();
@@ -347,7 +349,7 @@ void CanvasItemInteraction::FinishInteraction()
                 }
                 if (geometryChanged) {
                     canvas->UndoStack()->push(new StrokeSmoothCommand(canvas, {lineCustomDrag}, {lineGeometryBefore},
-                                                                      {after}, text, beforeEndpoints, afterEndpoints));
+                                                                      {after}, text, beforeKnots, afterKnots));
                 }
                 if (propertiesChanged) {
                     canvas->UndoStack()->push(new ItemPropertyCommand(canvas, {m_item}, {propertiesBefore},

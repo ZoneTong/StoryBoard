@@ -49,10 +49,9 @@ class CanvasItemInteraction {
     // 直线 / 曲线端点句柄改的是几何节点，属性快照回放不了，单独存一份 GeometryState。
     LineAbstractItem* m_lineCustomDrag = nullptr;
     LineAbstractItem::GeometryState m_lineGeometryBefore;
-    // 端点拖拽前的场景坐标，用于日志记录“从哪个位置移到哪个位置”。
-    QPointF m_lineStartSceneBefore;
-    QPointF m_lineEndSceneBefore;
-    bool m_hasLineEndpoints = false;
+    // 端点 / 拐点拖拽前的真实场景坐标，用于日志记录“从哪个位置移到哪个位置”。
+    QList<QPointF> m_lineKnotsSceneBefore;
+    bool m_hasLineKnots = false;
     bool m_hasBindingSnapshot = false;
     QJsonObject m_startBindingBefore;
     QJsonObject m_endBindingBefore;

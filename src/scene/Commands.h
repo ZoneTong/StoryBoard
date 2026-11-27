@@ -286,7 +286,7 @@ class StrokeSmoothCommand : public QUndoCommand {
     StrokeSmoothCommand(CanvasScene* scene, const QList<LineAbstractItem*>& items,
                         const QList<LineAbstractItem::GeometryState>& before,
                         const QList<LineAbstractItem::GeometryState>& after, const QString& text,
-                        const QList<QPointF>& beforeEndpoints = {}, const QList<QPointF>& afterEndpoints = {});
+                        const QList<QPointF>& beforeKnots = {}, const QList<QPointF>& afterKnots = {});
     void undo() override;
     void redo() override;
     QString LogDetail(bool reverse) const;
@@ -298,9 +298,8 @@ class StrokeSmoothCommand : public QUndoCommand {
     QList<QPointer<LineAbstractItem>> m_items;
     QList<LineAbstractItem::GeometryState> m_before;
     QList<LineAbstractItem::GeometryState> m_after;
-    // 端点拖拽前后的真实场景坐标（起点 / 终点各一个），日志按它给出移动前后位置。
-    QList<QPointF> m_beforeEndpoints;
-    QList<QPointF> m_afterEndpoints;
+    QList<QPointF> m_beforeKnots;
+    QList<QPointF> m_afterKnots;
 };
 
 // 箭头两端绑定的一份快照，端点拖拽 / 删除目标时用它做可撤销的解除与恢复。

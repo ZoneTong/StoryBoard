@@ -94,6 +94,54 @@ QString PropertyLabel(PropertyKey key)
     return key.StorageKey();
 }
 
+QString LogColor(const QColor& color)
+{
+    if (!color.isValid()) {
+        return QStringLiteral("透明");
+    }
+    return color.name(color.alpha() == 255 ? QColor::HexRgb : QColor::HexArgb);
+}
+
+QString LogStrokeStyle(int style)
+{
+    switch (static_cast<Qt::PenStyle>(style)) {
+    case Qt::NoPen:
+        return QStringLiteral("无描边");
+    case Qt::SolidLine:
+        return QStringLiteral("实线");
+    case Qt::DashLine:
+        return QStringLiteral("虚线");
+    case Qt::DotLine:
+        return QStringLiteral("点线");
+    case Qt::DashDotLine:
+        return QStringLiteral("点划线");
+    case Qt::DashDotDotLine:
+        return QStringLiteral("双点划线");
+    case Qt::CustomDashLine:
+        return QStringLiteral("自定义虚线");
+    }
+    return QStringLiteral("线型 %1").arg(style);
+}
+
+QString LogFillStyle(int style)
+{
+    const FillStyle fillStyle = static_cast<FillStyle>(style);
+    return FillStyles::Name(fillStyle);
+}
+
+QString LogImageMode(int mode)
+{
+    switch (static_cast<ImageFill::Mode>(mode)) {
+    case ImageFill::Mode::FIT:
+        return QStringLiteral("适应");
+    case ImageFill::Mode::TILE:
+        return QStringLiteral("平铺");
+    case ImageFill::Mode::STRETCH:
+        return QStringLiteral("拉伸");
+    }
+    return QStringLiteral("模式 %1").arg(mode);
+}
+
 bool SamePropertyValue(const QVariant& oldValue, const QVariant& newValue)
 {
     const int oldType = oldValue.metaType().id();
@@ -114,7 +162,21 @@ QString LogPropertyValue(PropertyKey key, const QVariant& value)
     }
     const int typeId = value.metaType().id();
     if (typeId == QMetaType::QColor) {
-        return value.value<QColor>().name();
+        return LogColor(value.value<QColor>());
+    }
+    if (key.IsCommon()) {
+        switch (key.CommonProperty()) {
+        case ItemProperty::FILL_STYLE:
+            return LogFillStyle(value.toInt());
+        case ItemProperty::STROKE_STYLE:
+            return LogStrokeStyle(value.toInt());
+        case ItemProperty::FILL_IMAGE_MODE:
+            return LogImageMode(value.toInt());
+        case ItemProperty::OPACITY:
+            return QStringLiteral("%1%").arg(qRound(value.toDouble() * 100.0));
+        default:
+            break;
+        }
     }
     if (typeId == QMetaType::QPointF) {
         const QPointF point = value.toPointF();
@@ -590,9 +652,8 @@ void GroupRenameCommand::Apply(const QString& name)
 StrokeSmoothCommand::StrokeSmoothCommand(CanvasScene* scene, const QList<LineAbstractItem*>& items,
                                          const QList<LineAbstractItem::GeometryState>& before,
                                          const QList<LineAbstractItem::GeometryState>& after, const QString& text,
-                                         const QList<QPointF>& beforeEndpoints, const QList<QPointF>& afterEndpoints)
-    : m_scene(scene), m_before(before), m_after(after), m_beforeEndpoints(beforeEndpoints),
-      m_afterEndpoints(afterEndpoints)
+                                         const QList<QPointF>& beforeKnots, const QList<QPointF>& afterKnots)
+    : m_scene(scene), m_before(before), m_after(after), m_beforeKnots(beforeKnots), m_afterKnots(afterKnots)
 {
     setText(text);
     for (LineAbstractItem* item : items) {
@@ -936,7 +997,7 @@ QString DescribeTextStateChange(const TextItemState& before, const TextItemState
         parts.append(QStringLiteral("字体 %1→%2").arg(fontText(before.font), fontText(after.font)));
     }
     if (before.color != after.color) {
-        parts.append(QStringLiteral("文字色 %1→%2").arg(before.color.name(), after.color.name()));
+        parts.append(QStringLiteral("文字色 %1→%2").arg(LogColor(before.color), LogColor(after.color)));
     }
     if (before.pos != after.pos) {
         parts.append(QStringLiteral("位置 (%1,%2)→(%3,%4)")
@@ -1057,7 +1118,7 @@ QString BackgroundCommand::LogDetail(bool reverse) const
             QStringLiteral("背景类型 %1→%2").arg(BackgroundTypeLabel(before.type), BackgroundTypeLabel(after.type)));
     }
     if (before.color != after.color) {
-        parts.append(QStringLiteral("背景色 %1→%2").arg(before.color.name(), after.color.name()));
+        parts.append(QStringLiteral("背景色 %1→%2").arg(LogColor(before.color), LogColor(after.color)));
     }
     if (before.mode != after.mode) {
         parts.append(QStringLiteral("背景模式 %1→%2")
@@ -1210,27 +1271,34 @@ QString StrokeSmoothCommand::LogDetail(bool reverse) const
         return {};
     }
     QString detail = DescribeLineGeometryChange(before.constFirst(), after.constFirst());
-    const QList<QPointF>& oldEndpoints = reverse ? m_afterEndpoints : m_beforeEndpoints;
-    const QList<QPointF>& newEndpoints = reverse ? m_beforeEndpoints : m_afterEndpoints;
-    if (oldEndpoints.size() == 2 && newEndpoints.size() == 2) {
-        const QPointF oldStart = oldEndpoints.constFirst();
-        const QPointF oldEnd = oldEndpoints.constLast();
-        const QPointF newStart = newEndpoints.constFirst();
-        const QPointF newEnd = newEndpoints.constLast();
-        if (oldStart != newStart && oldEnd == newEnd) {
+    const QList<QPointF>& oldKnots = reverse ? m_afterKnots : m_beforeKnots;
+    const QList<QPointF>& newKnots = reverse ? m_beforeKnots : m_afterKnots;
+    if (oldKnots.size() == newKnots.size() && oldKnots.size() >= 2) {
+        int changed = 0;
+        QStringList positions;
+        for (int i = 0; i < oldKnots.size(); ++i) {
+            if (oldKnots.at(i) == newKnots.at(i)) {
+                continue;
+            }
+            ++changed;
+            if (changed > 3) {
+                continue;
+            }
+            const QString label =
+                i == 0 ? QStringLiteral("起点")
+                       : (i == oldKnots.size() - 1 ? QStringLiteral("终点") : QStringLiteral("拐点 #%1").arg(i + 1));
+            positions.append(QStringLiteral("%1 (%2,%3)→(%4,%5)")
+                                 .arg(label, LogNumber(oldKnots.at(i).x()), LogNumber(oldKnots.at(i).y()),
+                                      LogNumber(newKnots.at(i).x()), LogNumber(newKnots.at(i).y())));
+        }
+        if (changed > 3) {
+            positions.append(QStringLiteral("等 %1 个节点位置变化").arg(changed));
+        }
+        if (!positions.isEmpty()) {
             if (!detail.isEmpty()) {
                 detail += QStringLiteral("，");
             }
-            detail += QStringLiteral("起点 (%1,%2)→(%3,%4)")
-                          .arg(LogNumber(oldStart.x()), LogNumber(oldStart.y()), LogNumber(newStart.x()),
-                               LogNumber(newStart.y()));
-        } else if (oldEnd != newEnd && oldStart == newStart) {
-            if (!detail.isEmpty()) {
-                detail += QStringLiteral("，");
-            }
-            detail +=
-                QStringLiteral("终点 (%1,%2)→(%3,%4)")
-                    .arg(LogNumber(oldEnd.x()), LogNumber(oldEnd.y()), LogNumber(newEnd.x()), LogNumber(newEnd.y()));
+            detail += positions.join(QStringLiteral("，"));
         }
     }
     if (before.size() > 1) {
