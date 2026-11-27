@@ -8,6 +8,7 @@
 #include "lineart/LineArtConverter.h"
 #include "lineart/LineArtDialog.h"
 #include "scene/CanvasScene.h"
+#include "scene/Commands.h"
 #include "selftest/core/SelfTestContext.h"
 #include "selftest/core/SelftestEntries.h"
 #include "ui/settings/SettingsDialog.h"
@@ -20,6 +21,7 @@
 #include <QDoubleSpinBox>
 #include <QFile>
 #include <QFileInfo>
+#include <QMap>
 #include <QPixmap>
 #include <QPointF>
 #include <QPushButton>
@@ -186,6 +188,24 @@ void selftest::RunSettingsDialogBasicTests(Context& ctx)
                   QStringLiteral("图元生命周期日志固定英文并带类型与坐标"), text);
         QFile::remove(path);
         LogService::SetLevel(LogLevel::LOG_WARNING);
+        delete item;
+    }
+
+    {
+        // 属性快照里 int 64 与 double 64.0 是同一个值，不能因为 QVariant 类型不同就写出「64.0->64.0」。
+        CanvasScene scene;
+        CanvasItem* item = ShapeFactory::Create(ShapeType::RECTANGLE);
+        QMap<PropertyKey, QVariant> before;
+        QMap<PropertyKey, QVariant> after;
+        before.insert(PropertyKey(ItemProperty::MAJOR_AXIS), QVariant(64));
+        after.insert(PropertyKey(ItemProperty::MAJOR_AXIS), QVariant(64.0));
+        before.insert(PropertyKey(ItemProperty::SWEEP_ANGLE), QVariant(30.0));
+        after.insert(PropertyKey(ItemProperty::SWEEP_ANGLE), QVariant(90.0));
+        ItemPropertyCommand command(&scene, {item}, {before}, {after}, QStringLiteral("test"));
+        const QString detail = command.LogDetail(false);
+        ctx.Check(!detail.contains(QStringLiteral("major axis")) &&
+                      detail.contains(QStringLiteral("sweep angle 30.0deg->90.0deg")),
+                  QStringLiteral("属性日志只保留真正变化的属性值"), detail);
         delete item;
     }
 

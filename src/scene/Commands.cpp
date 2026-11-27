@@ -119,6 +119,8 @@ QString LogStrokeStyle(int style)
         return QStringLiteral("dash-dot-dot");
     case Qt::CustomDashLine:
         return QStringLiteral("custom dash");
+    default:
+        break;
     }
     return QStringLiteral("style %1").arg(style);
 }
@@ -142,6 +144,26 @@ QString LogImageMode(int mode)
     return QStringLiteral("mode %1").arg(mode);
 }
 
+bool IsNumericMetaType(int typeId)
+{
+    switch (static_cast<QMetaType::Type>(typeId)) {
+    case QMetaType::Int:
+    case QMetaType::UInt:
+    case QMetaType::LongLong:
+    case QMetaType::ULongLong:
+    case QMetaType::Double:
+    case QMetaType::Float:
+    case QMetaType::Short:
+    case QMetaType::UShort:
+    case QMetaType::Char:
+    case QMetaType::SChar:
+    case QMetaType::UChar:
+        return true;
+    default:
+        return false;
+    }
+}
+
 bool SamePropertyValue(const QVariant& oldValue, const QVariant& newValue)
 {
     const int oldType = oldValue.metaType().id();
@@ -151,6 +173,11 @@ bool SamePropertyValue(const QVariant& oldValue, const QVariant& newValue)
     }
     if (oldType == QMetaType::QImage && newType == QMetaType::QImage) {
         return oldValue.value<QImage>() == newValue.value<QImage>();
+    }
+    // 同一个属性在两次快照里可能一边是 int、一边是 double；按数值比较，
+    // 避免 64 与 64.0 被当成变化而写出「64.0->64.0」。
+    if (IsNumericMetaType(oldType) && IsNumericMetaType(newType)) {
+        return qFuzzyCompare(oldValue.toDouble() + 1.0, newValue.toDouble() + 1.0);
     }
     return oldValue == newValue;
 }

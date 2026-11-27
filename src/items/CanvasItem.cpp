@@ -51,6 +51,8 @@ QString StrokeStyleForLog(int style)
         return QStringLiteral("dash-dot-dot");
     case Qt::CustomDashLine:
         return QStringLiteral("custom dash");
+    default:
+        break;
     }
     return QStringLiteral("style %1").arg(style);
 }
