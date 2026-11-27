@@ -20,6 +20,28 @@ QFile g_file;
 QDate g_fileDate;
 QString g_directory;
 int g_retentionDays = 14;
+LogLevel g_level = LogLevel::LOG_WARNING;
+
+LogLevel QtMessageLevel(QtMsgType type)
+{
+    switch (type) {
+    case QtDebugMsg:
+        return LogLevel::LOG_DEBUG;
+    case QtInfoMsg:
+        return LogLevel::LOG_INFO;
+    case QtWarningMsg:
+        return LogLevel::LOG_WARNING;
+    case QtCriticalMsg:
+    case QtFatalMsg:
+        return LogLevel::LOG_ERROR;
+    }
+    return LogLevel::LOG_INFO;
+}
+
+bool ShouldLogValue(LogLevel level)
+{
+    return static_cast<int>(level) <= static_cast<int>(g_level);
+}
 
 const char* LevelName(QtMsgType type)
 {
@@ -86,7 +108,11 @@ void MessageHandler(QtMsgType type, const QMessageLogContext& context, const QSt
     if (IsOffscreenPlatformNoise(message)) {
         return;
     }
+    const LogLevel level = QtMessageLevel(type);
     QMutexLocker locker(&g_mutex);
+    if (!ShouldLogValue(level)) {
+        return;
+    }
     const QDateTime now = QDateTime::currentDateTime();
     EnsureFileOpen(now.date());
     if (!g_file.isOpen()) {
@@ -116,6 +142,24 @@ void LogService::SetRetentionDaysForTest(int days)
 {
     QMutexLocker locker(&g_mutex);
     g_retentionDays = qMax(1, days);
+}
+
+void LogService::SetLevel(LogLevel level)
+{
+    QMutexLocker locker(&g_mutex);
+    g_level = level;
+}
+
+LogLevel LogService::Level()
+{
+    QMutexLocker locker(&g_mutex);
+    return g_level;
+}
+
+bool LogService::ShouldLog(LogLevel level)
+{
+    QMutexLocker locker(&g_mutex);
+    return ShouldLogValue(level);
 }
 
 int LogService::PruneOldLogs()

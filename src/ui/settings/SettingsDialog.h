@@ -10,6 +10,7 @@ class QShowEvent;
 class SettingsDialogBrushPage;
 class SettingsDialogCanvasPage;
 class SettingsDialogLineArtPage;
+class SettingsDialogLoggingPage;
 
 // 画板默认设置对话框。外壳只负责标题、语言选择、整体滚动布局与确定 / 取消 /
 // 恢复默认；画笔默认值、画布、图片线稿化参数分别由对应页面类构建与收集。
@@ -38,5 +39,6 @@ class SettingsDialog : public QDialog {
     SettingsDialogBrushPage* m_brushPage = nullptr;
     SettingsDialogCanvasPage* m_canvasPage = nullptr;
     SettingsDialogLineArtPage* m_lineArtPage = nullptr;
+    SettingsDialogLoggingPage* m_loggingPage = nullptr;
     bool m_heightFitted = false;
 };

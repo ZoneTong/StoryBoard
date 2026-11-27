@@ -68,8 +68,11 @@ QString SourceSuffix()
                                                                     : QStringLiteral("（来源：%1）").arg(g_source);
 }
 
-void Write(const QString& canvasUid, const QString& line)
+void Write(LogLevel level, const QString& canvasUid, const QString& line)
 {
+    if (!LogService::ShouldLog(level)) {
+        return;
+    }
     QMutexLocker locker(&g_canvasLogMutex);
     const QString dirPath = CanvasLogDirectory();
     QDir().mkpath(dirPath);
@@ -163,17 +166,18 @@ void LifecycleLog::LogCanvas(const QString& canvasUid, const QString& canvasName
     if (!detail.isEmpty()) {
         line += QStringLiteral("：%1").arg(detail);
     }
-    Write(canvasUid, line);
+    Write(LogLevel::LOG_INFO, canvasUid, line);
 }
 
 void LifecycleLog::LogItem(const QString& canvasUid, const QString& canvasName, const QString& action,
                            const CanvasItem& item)
 {
-    Write(canvasUid, QStringLiteral("画布「%1」图元 uid=%2 %3：%4「%5」 图层=%6 高度=%7 %8%9")
-                         .arg(CanvasName(canvasName), item.Uid(), action, item.TypeDisplayName(), item.Name())
-                         .arg(item.LayerId())
-                         .arg(item.ZOrder())
-                         .arg(item.LogStateSummary(), SourceSuffix()));
+    Write(LogLevel::LOG_EVENT, canvasUid,
+          QStringLiteral("画布「%1」图元 uid=%2 %3：%4「%5」 图层=%6 高度=%7 %8%9")
+              .arg(CanvasName(canvasName), item.Uid(), action, item.TypeDisplayName(), item.Name())
+              .arg(item.LayerId())
+              .arg(item.ZOrder())
+              .arg(item.LogStateSummary(), SourceSuffix()));
 }
 
 void LifecycleLog::LogEdit(const QString& canvasUid, const QString& canvasName, const QString& action,
@@ -182,5 +186,6 @@ void LifecycleLog::LogEdit(const QString& canvasUid, const QString& canvasName, 
     if (detail.isEmpty()) {
         return;
     }
-    Write(canvasUid, QStringLiteral("画布「%1」%2：%3%4").arg(CanvasName(canvasName), action, detail, SourceSuffix()));
+    Write(LogLevel::LOG_EVENT, canvasUid,
+          QStringLiteral("画布「%1」%2：%3%4").arg(CanvasName(canvasName), action, detail, SourceSuffix()));
 }

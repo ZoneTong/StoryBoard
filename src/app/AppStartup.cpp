@@ -4,6 +4,7 @@
 #include "app/I18n.h"
 #include "app/LifecycleLog.h"
 #include "app/LogService.h"
+#include "app/Settings.h"
 
 #include <QApplication>
 #include <QCoreApplication>
@@ -185,6 +186,10 @@ void Initialize(QApplication& app)
     QCoreApplication::setOrganizationDomain(QStringLiteral("zonetong.github.io"));
     QCoreApplication::setApplicationName(QStringLiteral("StoryBoard"));
     QCoreApplication::setApplicationVersion(QString::fromLatin1(STORYBOARD_VERSION));
+    // 先按用户设置决定日志详细程度，再接管日志：默认只落错误与告警。
+    AppSettings startupSettings;
+    startupSettings.Load();
+    LogService::SetLevel(startupSettings.logLevel);
     // 先接管日志再初始化界面：启动期的警告也进 logs/，并按 14 天保留清理。
     LogService::Install();
     LifecycleLog::TrackInputSources();

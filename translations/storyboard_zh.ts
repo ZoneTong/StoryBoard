@@ -3668,6 +3668,48 @@ In edit mode, items on visible, unlocked layers can be edited</source>
         <location filename="../src/ui/settings/SettingsDialogLineArtPage.cpp" line="201"/>
         <source>How to tune</source>
         <translation>怎么调</translation>
+    </message><message>
+        <source>Logging</source>
+        <translation>日志</translation>
+    </message><message>
+        <source>Log detail level</source>
+        <translation>日志详细程度</translation>
+    </message><message>
+        <source>Errors only</source>
+        <translation>仅错误</translation>
+    </message><message>
+        <source>Errors and warnings</source>
+        <translation>错误与告警</translation>
+    </message><message>
+        <source>Events and above</source>
+        <translation>事件及以上</translation>
+    </message><message>
+        <source>Informational and above</source>
+        <translation>信息及以上</translation>
+    </message><message>
+        <source>Debug (verbose)</source>
+        <translation>调试（详细）</translation>
+    </message><message>
+        <source>Only software errors are written.</source>
+        <translation>只记录软件错误。</translation>
+    </message><message>
+        <source>Errors plus warnings. Successful canvas operations and item events stay hidden.</source>
+        <translation>记录错误与告警；成功的画布操作和图元事件不记录。</translation>
+    </message><message>
+        <source>Adds item creation, deletion and property changes.</source>
+        <translation>额外记录图元的创建、销毁与属性变化。</translation>
+    </message><message>
+        <source>Adds successful canvas actions: new, open, save, switch and close.</source>
+        <translation>额外记录成功的画布操作：新建、打开、保存、切换、关闭。</translation>
+    </message><message>
+        <source>Adds low-level debug output for troubleshooting.</source>
+        <translation>额外记录用于排查问题的底层调试输出。</translation>
+    </message><message>
+        <source>Item property changes are events. Successful canvas operations are informational.</source>
+        <translation>图元属性变化属于事件；成功的画布操作属于信息。</translation>
+    </message><message>
+        <source>Log folder</source>
+        <translation>日志目录</translation>
     </message></context>
 <context>
     <name>ShapeAbstractItem</name><message>

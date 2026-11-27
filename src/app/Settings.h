@@ -1,5 +1,7 @@
 #pragma once
 
+#include "app/LogLevel.h"
+
 #include <QByteArray>
 #include <QColor>
 #include <QMap>
@@ -38,6 +40,9 @@ class AppSettings {
     // 自定义快捷键：键是动作的默认组合键（便携文本），值是新组合键；
     // 没有条目就用代码里的默认值。
     QMap<QString, QString> shortcutOverrides;
+
+    // 日志详细程度：默认只落错误与告警，成功的画布操作与图元事件默认不打印。
+    LogLevel logLevel = LogLevel::LOG_WARNING;
 
     // 图片线稿化参数，见 LineArtConverter::Options。用户可在设置里调整。
     int lineArtColorLevels = 6;

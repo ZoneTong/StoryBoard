@@ -313,6 +313,8 @@ void MergeSettings(SettingsMap& values, const AppSettings& settings)
     // 这样「恢复默认」删掉的条目才会真的从文件里消失。
     MergeShortcutSettings(values, settings);
 
+    values.insert(QStringLiteral("log/level"), QString::number(static_cast<int>(settings.logLevel)));
+
     MergeLineArtSettings(values, settings);
 }
 
@@ -402,6 +404,11 @@ void AppSettings::Load()
         }
         shortcutOverrides.insert(it.key().mid(shortcutPrefix.size()), it.value());
     }
+
+    const int savedLogLevel =
+        BoundedFromMap(values, QStringLiteral("log/level"), static_cast<int>(logLevel),
+                       static_cast<int>(LogLevel::LOG_ERROR), static_cast<int>(LogLevel::LOG_DEBUG));
+    logLevel = static_cast<LogLevel>(savedLogLevel);
 
     lineArtColorLevels = BoundedFromMap(values, QStringLiteral("lineArt/colorLevels"), lineArtColorLevels, 2, 12);
     lineArtPaletteMerge = BoundedFromMap(values, QStringLiteral("lineArt/paletteMerge"), lineArtPaletteMerge, 0, 160);

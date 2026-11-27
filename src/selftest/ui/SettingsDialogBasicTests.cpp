@@ -1,4 +1,6 @@
 #include "app/I18n.h"
+#include "app/LifecycleLog.h"
+#include "app/LogService.h"
 #include "app/Settings.h"
 #include "items/CanvasTypes.h"
 #include "items/shapes/ShapeAbstractItem.h"
@@ -11,8 +13,12 @@
 #include "ui/settings/SettingsDialog.h"
 
 #include <QColor>
+#include <QComboBox>
 #include <QDialogButtonBox>
+#include <QDir>
 #include <QDoubleSpinBox>
+#include <QFile>
+#include <QFileInfo>
 #include <QPixmap>
 #include <QPointF>
 #include <QPushButton>
@@ -78,6 +84,79 @@ void selftest::RunSettingsDialogBasicTests(Context& ctx)
         dedupeScene.ReplaceCanvasBackground(secondState);
         ctx.Check(dedupeUndo.count() == stepsAfterFirst, QStringLiteral("重复应用同一背景图片不增加撤销步骤"),
                   QString::number(dedupeUndo.count()));
+    }
+
+    {
+        // 日志默认只落错误与告警；事件级别才记录图元属性变化。
+        const AppSettings defaults;
+        ctx.Check(defaults.logLevel == LogLevel::LOG_WARNING, QStringLiteral("日志默认级别为错误与告警"));
+
+        SettingsDialog dialog(defaults);
+        auto* levelCombo = dialog.findChild<QComboBox*>(QStringLiteral("LogLevelCombo"));
+        ctx.Check(levelCombo && levelCombo->currentData().toInt() == static_cast<int>(LogLevel::LOG_WARNING),
+                  QStringLiteral("设置对话框显示默认日志级别"),
+                  levelCombo ? QString::number(levelCombo->currentData().toInt()) : QStringLiteral("-1"));
+        if (levelCombo) {
+            const int eventIndex = levelCombo->findData(static_cast<int>(LogLevel::LOG_EVENT));
+            if (eventIndex >= 0) {
+                levelCombo->setCurrentIndex(eventIndex);
+            }
+        }
+        if (auto* buttons = dialog.findChild<QDialogButtonBox*>()) {
+            if (QPushButton* ok = buttons->button(QDialogButtonBox::Ok)) {
+                ok->click();
+            } else {
+                dialog.accept();
+            }
+        } else {
+            dialog.accept();
+        }
+        ctx.Check(dialog.Settings().logLevel == LogLevel::LOG_EVENT, QStringLiteral("设置对话框可切换到事件级别"),
+                  QString::number(static_cast<int>(dialog.Settings().logLevel)));
+    }
+
+    {
+        // 持久化：重新打开应用时仍按上次选的详细程度过滤。
+        AppSettings persisted;
+        persisted.Load();
+        const LogLevel previous = persisted.logLevel;
+        persisted.logLevel = LogLevel::LOG_EVENT;
+        persisted.Save();
+        AppSettings reloaded;
+        reloaded.Load();
+        ctx.Check(reloaded.logLevel == LogLevel::LOG_EVENT, QStringLiteral("日志级别写入配置文件并可重新读取"),
+                  QString::number(static_cast<int>(reloaded.logLevel)));
+        reloaded.logLevel = previous;
+        reloaded.Save();
+    }
+
+    {
+        LogService::SetLevel(LogLevel::LOG_WARNING);
+        ctx.Check(!LogService::ShouldLog(LogLevel::LOG_EVENT) && LogService::ShouldLog(LogLevel::LOG_WARNING),
+                  QStringLiteral("默认级别过滤图元事件但保留告警"));
+        LogService::SetLevel(LogLevel::LOG_EVENT);
+        ctx.Check(LogService::ShouldLog(LogLevel::LOG_EVENT) && !LogService::ShouldLog(LogLevel::LOG_INFO),
+                  QStringLiteral("事件级别记录属性变化但仍过滤画布信息"));
+        LogService::SetLevel(LogLevel::LOG_WARNING);
+    }
+
+    {
+        // 真正落盘检查：默认不进文件，事件级别才出现图元变化。
+        const QString uid = QStringLiteral("selftest-log-filter");
+        const QString path =
+            QDir(LogService::LogDirectory()).filePath(QStringLiteral("canvases/canvas-%1.log").arg(uid));
+        QFile::remove(path);
+        LifecycleLog::LogEdit(uid, QStringLiteral("#自检"), QStringLiteral("编辑"), QStringLiteral("测试事件"));
+        ctx.Check(!QFileInfo::exists(path), QStringLiteral("默认级别不把图元事件写进文件"));
+        LogService::SetLevel(LogLevel::LOG_EVENT);
+        LifecycleLog::LogEdit(uid, QStringLiteral("#自检"), QStringLiteral("编辑"), QStringLiteral("测试事件"));
+        QFile file(path);
+        const bool opened = file.open(QIODevice::ReadOnly | QIODevice::Text);
+        const QString text = opened ? QString::fromUtf8(file.readAll()) : QString();
+        ctx.Check(opened && text.contains(QStringLiteral("测试事件")),
+                  QStringLiteral("事件级别把图元属性变化写进画布日志"));
+        QFile::remove(path);
+        LogService::SetLevel(LogLevel::LOG_WARNING);
     }
 
     {

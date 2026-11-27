@@ -4,6 +4,7 @@
 #include "ui/settings/SettingsDialogBrushPage.h"
 #include "ui/settings/SettingsDialogCanvasPage.h"
 #include "ui/settings/SettingsDialogLineArtPage.h"
+#include "ui/settings/SettingsDialogLoggingPage.h"
 
 #include <QComboBox>
 #include <QDesktopServices>
@@ -60,6 +61,7 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     m_brushPage = new SettingsDialogBrushPage(m_settings, this);
     m_canvasPage = new SettingsDialogCanvasPage(m_settings, this);
     m_lineArtPage = new SettingsDialogLineArtPage(m_settings, this);
+    m_loggingPage = new SettingsDialogLoggingPage(m_settings, this);
 
     // 设置项变多后单列会超出屏幕：整页放进滚动区，宽屏时每行最多两列并排。
     // 线稿化那组字段最多、标签最长，单独占满一整行，避免被两列挤压导致右侧文字截断。
@@ -74,13 +76,14 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     grid->setContentsMargins(0, 0, 8, 0);
     grid->setHorizontalSpacing(12);
     grid->setVerticalSpacing(10);
-    // 第一行「画笔默认值 | 画布（含存储目录）」，线稿化整组占满下一行。
+    // 第一行「画笔默认值 | 画布（含存储目录）」，第二行日志，线稿化整组占满下一行。
     grid->addWidget(m_brushPage->Group(), 0, 0, Qt::AlignTop);
     grid->addWidget(m_canvasPage->Group(), 0, 1, Qt::AlignTop);
-    grid->addWidget(m_lineArtPage->Group(), 1, 0, 1, 2);
+    grid->addWidget(m_loggingPage->Group(), 1, 0, 1, 2);
+    grid->addWidget(m_lineArtPage->Group(), 2, 0, 1, 2);
     grid->setColumnStretch(0, 1);
     grid->setColumnStretch(1, 1);
-    grid->setRowStretch(2, 1);
+    grid->setRowStretch(3, 1);
     scroll->setWidget(content);
     rootLayout->addWidget(scroll);
 
@@ -106,6 +109,7 @@ SettingsDialog::SettingsDialog(const AppSettings& settings, QWidget* parent) : Q
     connect(buttons, &QDialogButtonBox::accepted, this, [this]() {
         m_brushPage->WriteTo(m_settings);
         m_canvasPage->WriteTo(m_settings);
+        m_loggingPage->WriteTo(m_settings);
         m_lineArtPage->WriteTo(m_settings);
         accept();
     });
@@ -166,6 +170,7 @@ void SettingsDialog::ResetToDefaults()
     }
     m_brushPage->Reset(defaults);
     m_canvasPage->Reset(defaults);
+    m_loggingPage->Reset(defaults);
     m_lineArtPage->Reset(defaults);
     m_settings.brushColor = defaults.brushColor;
     m_settings.canvasColor = defaults.canvasColor;

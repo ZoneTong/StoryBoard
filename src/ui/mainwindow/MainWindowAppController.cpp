@@ -2,6 +2,7 @@
 
 #include "app/DockPanelController.h"
 #include "app/I18n.h"
+#include "app/LogService.h"
 #include "app/Settings.h"
 #include "canvas/CanvasView.h"
 #include "items/shapes/ShapeAbstractItem.h"
@@ -72,6 +73,7 @@ void MainWindowAppController::ShowSettings()
     // 对话框里的设置是主窗口设置的一份完整副本：语言另存，其余整份拷回，
     // 避免新增参数（例如线稿化档位）漏在“改完却记不住”的队伍里。
     m_window->m_settings = updated;
+    LogService::SetLevel(m_window->m_settings.logLevel);
     // 设置窗里的线稿化参数已经随整份保存落盘，进程内副本跟着刷新。
     m_window->m_lineArtSettings.CopyLineArtFrom(m_window->m_settings);
 
