@@ -160,9 +160,9 @@ if [ -n "$EXPECTED_PASSED" ]; then
         ''|*[!0-9]*) die "--expected-passed must be a number" ;;
     esac
 elif [ "$PLATFORM" = windows ]; then
-    # 自检条数随功能增加而变，这里跟随当前的实测值（1081）；新增/删除自检时同批更新，
+    # 自检条数随功能增加而变，这里跟随当前的实测值（1400）；新增/删除自检时同批更新，
     # 也可以显式传 --expected-passed <n> 覆盖，或传 0 表示只要求「全是 0 failed」。
-    EXPECTED_PASSED=1081
+    EXPECTED_PASSED=1400
 else
     EXPECTED_PASSED=0
 fi
@@ -536,8 +536,8 @@ case "$PLATFORM" in
     macos) bundle_macos ;;
 esac
 
-# 许可证要求分发时随附条款与第三方声明，便携包固定带上仓库根目录的这三份文件。
-for doc in LICENSE LICENSE-LGPL-3.0 THIRD-PARTY-NOTICES.md; do
+# 许可证要求分发时随附条款与第三方声明；README.md 按需求随包分发，方便包内用户查阅。
+for doc in LICENSE LICENSE-LGPL-3.0 THIRD-PARTY-NOTICES.md README.md; do
     if [ -f "$ROOT/$doc" ]; then
         cp "$ROOT/$doc" "$PACKAGE_DIR/$doc"
     fi
