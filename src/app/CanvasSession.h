@@ -38,6 +38,8 @@ class CanvasSession {
     QString DisplayName() const;
     // 生命周期日志用的画布标签：带本次运行内唯一的画布序号，同名画布也能区分。
     QString LogLabel(const QString& displayName = QString()) const;
+    // 画布日志文件身份：来自 .sbcanvas 的持久 uid，重命名后保持不变。
+    QString LogUid() const;
     bool HasUnsavedChanges() const;
     // 干净、无图元、单图层、无背景、无文件路径：可以拿来装载用户要打开的文件。
     bool IsPristine() const;

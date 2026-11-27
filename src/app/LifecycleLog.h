@@ -13,9 +13,10 @@ void TrackInputSources();
 void SetSource(const QString& source);
 QString Source();
 
-void LogCanvas(const QString& canvasName, const QString& action, const QString& detail = QString());
-void LogItem(const QString& canvasName, const QString& action, const CanvasItem& item);
-void LogEdit(const QString& canvasName, const QString& action, const QString& detail);
+void LogCanvas(const QString& canvasUid, const QString& canvasName, const QString& action,
+               const QString& detail = QString());
+void LogItem(const QString& canvasUid, const QString& canvasName, const QString& action, const CanvasItem& item);
+void LogEdit(const QString& canvasUid, const QString& canvasName, const QString& action, const QString& detail);
 
 // 临时覆盖操作来源（如粘贴），析构后恢复原来源。
 class EditSourceScope {

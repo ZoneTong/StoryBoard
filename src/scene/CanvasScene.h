@@ -265,9 +265,14 @@ class CanvasScene : public QGraphicsScene {
     CanvasItem* ConvertItemType(CanvasItem* item, const QString& targetKind);
 
     void ResetDocument();
-    // 生命周期日志用的画布显示名，由标签页在改名 / 打开 / 保存后同步。
+    // 生命周期日志用的画布显示名与持久 UID，由标签页在改名 / 打开 / 保存后同步。
     void SetLogLabel(const QString& label) { m_logLabel = label; }
     QString LogLabel() const { return m_logLabel; }
+    void SetLogUid(const QString& uid) { m_logUid = uid; }
+    QString LogUid() const { return m_logUid.isEmpty() ? m_canvasUid : m_logUid; }
+    // 画布持久 UID：写进 .sbcanvas，重命名 / 重新打开后日志文件仍用同一个身份。
+    QString CanvasUid() const { return m_canvasUid; }
+    void SetCanvasUid(const QString& uid);
     // 保存成功后把各图元当前状态记为「已落盘」，关闭画布时据此跳过已存图元的销毁日志。
     void MarkSavedItemStates();
     bool IsItemSavedState(const CanvasItem* item) const;
@@ -339,6 +344,8 @@ class CanvasScene : public QGraphicsScene {
 
     QUndoStack* m_undoStack = nullptr;
     QString m_logLabel;
+    QString m_logUid;
+    QString m_canvasUid;
     QHash<QString, QByteArray> m_savedItemStates;
     int m_lastUndoIndex = 0;
     // 只在画箭头 / 拖端点的过程里活着，结束即清空，不跨事件循环持有。

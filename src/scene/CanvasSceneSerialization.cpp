@@ -81,6 +81,7 @@ QJsonObject CanvasScene::ToJson() const
                 QStringLiteral("StoryBoard %1").arg(QString::fromLatin1(STORYBOARD_VERSION)));
 
     QJsonObject canvas;
+    canvas.insert(QStringLiteral("uid"), m_canvasUid);
     canvas.insert(QStringLiteral("x"), m_canvasOrigin.x());
     canvas.insert(QStringLiteral("y"), m_canvasOrigin.y());
     canvas.insert(QStringLiteral("width"), m_canvasSize.width());
@@ -238,6 +239,8 @@ bool CanvasScene::FromJson(const QJsonObject& root, QString* errorMessage)
     // ---- 校验全部通过，从这里开始才清空重建 ----
     m_restoringDocument = true;
     ResetDocument();
+    // 旧文件没有 uid：生成新身份；有则沿用，重命名 / 重新打开后仍是同一画布日志。
+    SetCanvasUid(canvas.value(QStringLiteral("uid")).toString());
 
     // 画布尺寸按文件原值恢复，不做 200–12000 钳位：钳位只应发生在编辑操作里，
     // 否则超出范围的旧文件一打开、再保存就被静默改写。

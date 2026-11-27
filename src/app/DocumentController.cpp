@@ -376,7 +376,8 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors, QS
         m_window->m_settings.lastCanvasPath = absolutePath;
     }
     m_window->m_tabs->UpdateTabLabel(target);
-    LifecycleLog::LogCanvas(logLabel, importedExcalidraw ? QStringLiteral("导入") : QStringLiteral("打开"),
+    LifecycleLog::LogCanvas(target->LogUid(), logLabel,
+                            importedExcalidraw ? QStringLiteral("导入") : QStringLiteral("打开"),
                             QDir::toNativeSeparators(absolutePath));
     if (importedExcalidraw) {
         QString message = MainWindow::tr("Imported an Excalidraw scene as a new canvas");
@@ -448,7 +449,7 @@ bool DocumentController::SaveToFile(const QString& path)
         CanvasSession* session = m_window->m_tabs->Current();
         session->SetFilePath(m_window->m_filePath);
         m_window->m_tabs->UpdateTabLabel(session);
-        LifecycleLog::LogCanvas(session->LogLabel(), QStringLiteral("保存"),
+        LifecycleLog::LogCanvas(session->LogUid(), session->LogLabel(), QStringLiteral("保存"),
                                 QDir::toNativeSeparators(m_window->m_filePath));
     }
     m_window->m_settings.lastCanvasPath = m_window->m_filePath;

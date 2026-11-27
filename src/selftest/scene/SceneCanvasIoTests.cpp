@@ -174,6 +174,10 @@ void selftest::RunSceneCanvasIoTests(Context& ctx)
     ctx.Check(jsonBytes.contains("StoryBoard") && jsonBytes.contains("\"freehand\"") &&
                   jsonBytes.contains("\"shape\"") && jsonBytes.contains("\"images\""),
               QStringLiteral("画布序列化为 JSON"));
+    ctx.Check(!scene.CanvasUid().isEmpty() &&
+                  root.value(QStringLiteral("canvas")).toObject().value(QStringLiteral("uid")).toString() ==
+                      scene.CanvasUid(),
+              QStringLiteral("画布写入持久 uid"));
 
     CanvasScene loaded;
     QUndoStack loadedUndo;
@@ -181,6 +185,7 @@ void selftest::RunSceneCanvasIoTests(Context& ctx)
     QString loadError;
     ctx.Check(loaded.FromJson(root, &loadError), QStringLiteral("反序列化画布"), loadError);
     ctx.Check(loaded.CanvasItemCount() == 2, QStringLiteral("画布图元数量一致"));
+    ctx.Check(loaded.CanvasUid() == scene.CanvasUid(), QStringLiteral("画布 uid 重载后保持不变，重命名后日志仍可续接"));
     ctx.Check(loaded.canvasBackground().type == BackgroundType::COLOR &&
                   loaded.canvasBackground().color == background.color,
               QStringLiteral("画布背景恢复"));

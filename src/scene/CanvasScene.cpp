@@ -7,6 +7,7 @@
 
 #include <QStringList>
 #include <QUndoStack>
+#include <QUuid>
 
 namespace {
 // 新建 / 删除命令已经由 AttachItem / DetachItem 写过图元生命周期，不再重复一条“编辑”。
@@ -110,6 +111,7 @@ QString CommandLogDetail(const QUndoCommand* command, bool reverse)
 
 CanvasScene::CanvasScene(QObject* parent) : QGraphicsScene(parent)
 {
+    m_canvasUid = QUuid::createUuid().toString(QUuid::WithoutBraces);
     m_layerDomain.Reset();
     m_layerDomain.SetLayers({{BackgroundLayerId, scene_constants::BACKGROUND_LAYER_NAME, true, true},
                              {scene_constants::FIRST_USER_LAYER_ID, QStringLiteral("图层 1"), true, false}});
@@ -125,6 +127,12 @@ CanvasScene::CanvasScene(QObject* parent) : QGraphicsScene(parent)
         update();
     });
     UpdateSceneExtent();
+}
+
+void CanvasScene::SetCanvasUid(const QString& uid)
+{
+    const QString trimmed = uid.trimmed();
+    m_canvasUid = trimmed.isEmpty() ? QUuid::createUuid().toString(QUuid::WithoutBraces) : trimmed;
 }
 
 QList<CanvasItem*> CanvasScene::SelectionOrder() const
@@ -227,7 +235,8 @@ void CanvasScene::SetUndoStack(QUndoStack* stack)
                 }
                 detail += QStringLiteral("；对象：%1").arg(names.join(QStringLiteral("、")));
             }
-            LifecycleLog::LogEdit(m_logLabel, undoing ? QStringLiteral("撤销") : QStringLiteral("编辑"), detail);
+            LifecycleLog::LogEdit(LogUid(), m_logLabel, undoing ? QStringLiteral("撤销") : QStringLiteral("编辑"),
+                                  detail);
         });
     }
     m_lastUndoIndex = m_undoStack ? m_undoStack->index() : 0;

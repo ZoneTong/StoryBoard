@@ -84,6 +84,11 @@ QString CanvasSession::LogLabel(const QString& displayName) const
     return QStringLiteral("#%1 %2").arg(m_canvasNo).arg(name);
 }
 
+QString CanvasSession::LogUid() const
+{
+    return m_scene ? m_scene->CanvasUid() : QString();
+}
+
 bool CanvasSession::HasUnsavedChanges() const
 {
     return m_undo && !m_undo->isClean();
