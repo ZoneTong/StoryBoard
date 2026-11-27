@@ -50,6 +50,12 @@ bool CanvasItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos)
     return false;
 }
 
+QString CanvasItem::CustomHandleActionText(int handle) const
+{
+    Q_UNUSED(handle);
+    return tr("Adjust control point");
+}
+
 void CanvasItem::EndHandleDrag() {}
 
 void CanvasItem::FrameResizeDragged() {}
@@ -175,6 +181,51 @@ void CanvasItem::SetUid(const QString& uid)
 void CanvasItem::AssignNewUid()
 {
     m_uid = QUuid::createUuid().toString(QUuid::WithoutBraces).remove(QLatin1Char('-')).left(12);
+}
+
+namespace {
+QString LogNumber(qreal value)
+{
+    return QString::number(value, 'f', 1);
+}
+} // namespace
+
+QString CanvasItem::LogStateSummary() const
+{
+    const QSizeF size = ContentSize();
+    QString summary = QStringLiteral("位置=(%1,%2) 尺寸=%3×%4 旋转=%5°")
+                          .arg(LogNumber(pos().x()), LogNumber(pos().y()))
+                          .arg(LogNumber(size.width()), LogNumber(size.height()), LogNumber(RotationAngle()));
+    const ItemPropertySet properties = Properties();
+    auto appendAngle = [this, &summary, &properties](ItemProperty property, const QString& label) {
+        if (properties.Contains(property)) {
+            summary += QStringLiteral(" %1=%2°").arg(label, LogNumber(PropertyValue(property).toDouble()));
+        }
+    };
+    appendAngle(ItemProperty::PARALLELOGRAM_ANGLE, QStringLiteral("内角A"));
+    appendAngle(ItemProperty::BOTTOM_ANGLE1, QStringLiteral("底角A"));
+    appendAngle(ItemProperty::BOTTOM_ANGLE2, QStringLiteral("底角B"));
+    appendAngle(ItemProperty::START_ANGLE, QStringLiteral("起角"));
+    appendAngle(ItemProperty::SWEEP_ANGLE, QStringLiteral("扫角"));
+    if (properties.Contains(ItemProperty::FILL_COLOR)) {
+        summary += QStringLiteral(" 填充=%1").arg(PropertyValue(ItemProperty::FILL_COLOR).value<QColor>().name());
+    }
+    if (properties.Contains(ItemProperty::STROKE_COLOR)) {
+        summary += QStringLiteral(" 描边=%1").arg(PropertyValue(ItemProperty::STROKE_COLOR).value<QColor>().name());
+    }
+    if (properties.Contains(ItemProperty::STROKE_WIDTH)) {
+        summary += QStringLiteral(" 线宽=%1").arg(LogNumber(PropertyValue(ItemProperty::STROKE_WIDTH).toDouble()));
+    }
+    if (properties.Contains(ItemProperty::TEXT_CONTENT)) {
+        QString text = PropertyValue(ItemProperty::TEXT_CONTENT).toString().simplified();
+        if (text.size() > 20) {
+            text = text.left(20) + QStringLiteral("…");
+        }
+        if (!text.isEmpty()) {
+            summary += QStringLiteral(" 文字=\"%1\"").arg(text.replace(QLatin1Char('"'), QLatin1Char('\'')));
+        }
+    }
+    return summary;
 }
 
 void CanvasItem::SetLink(const QString& link)

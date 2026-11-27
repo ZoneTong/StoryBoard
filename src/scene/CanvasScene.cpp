@@ -2,10 +2,30 @@
 
 #include "app/LifecycleLog.h"
 #include "items/CanvasItem.h"
+#include "scene/Commands.h"
 #include "scene/SceneConstants.h"
 
 #include <QStringList>
 #include <QUndoStack>
+
+namespace {
+// 新建 / 删除命令已经由 AttachItem / DetachItem 写过图元生命周期，不再重复一条“编辑”。
+bool IsLifecycleOnlyCommand(const QUndoCommand* command)
+{
+    if (dynamic_cast<const AddItemCommand*>(command) || dynamic_cast<const RemoveItemsCommand*>(command)) {
+        return true;
+    }
+    if (!command || command->childCount() == 0) {
+        return false;
+    }
+    for (int i = 0; i < command->childCount(); ++i) {
+        if (!IsLifecycleOnlyCommand(command->child(i))) {
+            return false;
+        }
+    }
+    return true;
+}
+} // namespace
 
 CanvasScene::CanvasScene(QObject* parent) : QGraphicsScene(parent)
 {
@@ -102,14 +122,19 @@ void CanvasScene::SetUndoStack(QUndoStack* stack)
                 return;
             }
             const QString command = index > previous ? m_undoStack->text(index - 1) : m_undoStack->text(index);
+            const QUndoCommand* commandObject =
+                index > previous ? m_undoStack->command(index - 1) : m_undoStack->command(index);
+            if (IsLifecycleOnlyCommand(commandObject)) {
+                return;
+            }
             QString detail = command;
             const QList<CanvasItem*> selected = SelectedCanvasItems();
             if (!selected.isEmpty()) {
                 QStringList names;
                 for (int i = 0; i < selected.size() && i < 3; ++i) {
-                    names.append(QStringLiteral("uid=%1 %2「%3」")
-                                     .arg(selected.at(i)->Uid())
-                                     .arg(selected.at(i)->TypeDisplayName(), selected.at(i)->Name()));
+                    names.append(QStringLiteral("uid=%1 %2「%3」 %4")
+                                     .arg(selected.at(i)->Uid(), selected.at(i)->TypeDisplayName(),
+                                          selected.at(i)->Name(), selected.at(i)->LogStateSummary()));
                 }
                 if (selected.size() > 3) {
                     names.append(QStringLiteral("等 %1 个").arg(selected.size()));

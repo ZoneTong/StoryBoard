@@ -133,6 +133,12 @@ bool TriangleItem::BeginCustomHandleDrag(int handle, const QPointF& scenePos)
     return true;
 }
 
+QString TriangleItem::CustomHandleActionText(int handle) const
+{
+    Q_UNUSED(handle);
+    return CanvasItem::tr("Adjust inner angle");
+}
+
 bool TriangleItem::ApplyCustomHandleDrag(int handle, const QPointF& scenePos)
 {
     if (handle != CanvasItem::CUSTOM_0 || IsCustomShape()) {

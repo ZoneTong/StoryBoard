@@ -29,6 +29,12 @@
         <source>Resize item</source>
         <translation>缩放图元</translation>
     </message><message>
+        <source>Adjust inner angle</source>
+        <translation>调整内角</translation>
+    </message><message>
+        <source>Adjust control point</source>
+        <translation>调整控制点</translation>
+    </message><message>
         <source>Move item</source>
         <translation>移动图元</translation>
     </message><message>

@@ -53,6 +53,12 @@ void ParallelogramAbstractItem::FrameResizeDragged()
     }
 }
 
+QString ParallelogramAbstractItem::CustomHandleActionText(int handle) const
+{
+    Q_UNUSED(handle);
+    return CanvasItem::tr("Adjust inner angle");
+}
+
 void ParallelogramAbstractItem::WriteState(ShapeItemState& state) const
 {
     // 先让基类按属性表写公共标量（圆角等），再补本族的内角；

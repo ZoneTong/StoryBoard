@@ -84,6 +84,8 @@ class CanvasItem : public QGraphicsObject {
     // 返回 false 表示该句柄没有专用拖拽行为，交给通用缩放路径。
     virtual bool BeginCustomHandleDrag(int handle, const QPointF& scenePos);
     virtual bool ApplyCustomHandleDrag(int handle, const QPointF& scenePos);
+    // 自定义句柄提交到撤销栈时用的动作文本：内角旋钮与端点拖拽要能在日志里区分。
+    virtual QString CustomHandleActionText(int handle) const;
     // 一次拖拽（含通用外接框缩放）结束时的回调：收起拖动中的角度读数等临时状态。
     virtual void EndHandleDrag();
     // 拖外接框 / 边缩放期间的逐帧回调：三角形与菱形在这里点亮派生角度读数。
@@ -101,6 +103,8 @@ class CanvasItem : public QGraphicsObject {
     void SetName(const QString& name);
     // 图元身份：跨保存、导入导出保持不变的短 id，供箭头绑定与容器文字引用。
     QString Uid() const { return m_uid; }
+    // 日志用的一行主要状态：坐标、尺寸、旋转，以及该图元真正拥有的角度 / 颜色等属性。
+    QString LogStateSummary() const;
     void SetUid(const QString& uid);
     void AssignNewUid();
     // Excalidraw 元素级附加信息：超链接与锁定只做格式往返，当前不改变画板交互。

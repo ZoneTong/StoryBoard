@@ -274,6 +274,8 @@ void CanvasItemInteraction::FinishInteraction()
     const bool wasResize = m_item->m_drag == CanvasItem::DragKind::RESIZE;
     const bool wasRotate = m_item->m_drag == CanvasItem::DragKind::ROTATE;
     const bool wasCustomDrag = wasResize && m_customDrag;
+    // 句柄号要在下面清空 m_resizeHandle 之前留下，提交时用它区分内角 / 端点动作。
+    const int customHandle = m_item->m_resizeHandle;
     const QMap<PropertyKey, QVariant> customBefore = m_customDragBefore;
     LineAbstractItem* lineCustomDrag = m_lineCustomDrag;
     const LineAbstractItem::GeometryState lineGeometryBefore = m_lineGeometryBefore;
@@ -299,33 +301,30 @@ void CanvasItemInteraction::FinishInteraction()
         if (lineCustomDrag) {
             const LineAbstractItem::GeometryState after = lineCustomDrag->geometryState();
             const bool geometryChanged = after != lineGeometryBefore;
-            const bool bindingChanged =
-                hasBindingSnapshot && (startBindingBefore != lineCustomDrag->StartBinding() ||
-                                       endBindingBefore != lineCustomDrag->EndBinding());
-            if (CanvasScene* canvas = m_item->canvasScene(); canvas && canvas->UndoStack() &&
-                                                              (geometryChanged || bindingChanged)) {
+            const bool bindingChanged = hasBindingSnapshot && (startBindingBefore != lineCustomDrag->StartBinding() ||
+                                                               endBindingBefore != lineCustomDrag->EndBinding());
+            if (CanvasScene* canvas = m_item->canvasScene();
+                canvas && canvas->UndoStack() && (geometryChanged || bindingChanged)) {
                 const QString text = m_item->tr("Move endpoint");
                 if (geometryChanged && bindingChanged) {
                     canvas->UndoStack()->beginMacro(text);
                 }
                 if (geometryChanged) {
-                    canvas->UndoStack()->push(new StrokeSmoothCommand(canvas, {lineCustomDrag},
-                                                                      {lineGeometryBefore}, {after}, text));
+                    canvas->UndoStack()->push(
+                        new StrokeSmoothCommand(canvas, {lineCustomDrag}, {lineGeometryBefore}, {after}, text));
                 }
                 if (bindingChanged) {
-                    canvas->UndoStack()->push(
-                        new ArrowBindingCommand(canvas, {lineCustomDrag},
-                                                {ArrowBindingState{startBindingBefore, endBindingBefore}},
-                                                {ArrowBindingState{lineCustomDrag->StartBinding(),
-                                                                   lineCustomDrag->EndBinding()}},
-                                                m_item->tr("Rebind arrow")));
+                    canvas->UndoStack()->push(new ArrowBindingCommand(
+                        canvas, {lineCustomDrag}, {ArrowBindingState{startBindingBefore, endBindingBefore}},
+                        {ArrowBindingState{lineCustomDrag->StartBinding(), lineCustomDrag->EndBinding()}},
+                        m_item->tr("Rebind arrow")));
                 }
                 if (geometryChanged && bindingChanged) {
                     canvas->UndoStack()->endMacro();
                 }
             }
         } else {
-            PushCustomHandleChange(customBefore);
+            PushCustomHandleChange(customBefore, customHandle);
         }
     } else if (!m_item->m_before.isEmpty()) {
         CanvasScene* canvas = m_item->canvasScene();
@@ -367,7 +366,7 @@ void CanvasItemInteraction::FinishInteraction()
     m_item->m_before.clear();
 }
 
-void CanvasItemInteraction::PushCustomHandleChange(const QMap<PropertyKey, QVariant>& before)
+void CanvasItemInteraction::PushCustomHandleChange(const QMap<PropertyKey, QVariant>& before, int handle)
 {
     CanvasScene* canvas = m_item->canvasScene();
     if (!canvas || !canvas->UndoStack()) {
@@ -386,8 +385,8 @@ void CanvasItemInteraction::PushCustomHandleChange(const QMap<PropertyKey, QVari
     if (beforeChanged.isEmpty()) {
         return;
     }
-    canvas->UndoStack()->push(
-        new ItemPropertyCommand(canvas, {m_item}, {beforeChanged}, {afterChanged}, m_item->tr("Resize item")));
+    canvas->UndoStack()->push(new ItemPropertyCommand(canvas, {m_item}, {beforeChanged}, {afterChanged},
+                                                      m_item->CustomHandleActionText(handle)));
 }
 
 void CanvasItemInteraction::OnHoverMove(QGraphicsSceneHoverEvent* event)

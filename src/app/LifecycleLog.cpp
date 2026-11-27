@@ -107,11 +107,11 @@ void LifecycleLog::LogCanvas(const QString& canvasName, const QString& action, c
 
 void LifecycleLog::LogItem(const QString& canvasName, const QString& action, const CanvasItem& item)
 {
-    Write(QStringLiteral("画布「%1」图元 uid=%2 %3：%4「%5」 图层=%6 高度=%7%8")
+    Write(QStringLiteral("画布「%1」图元 uid=%2 %3：%4「%5」 图层=%6 高度=%7 %8%9")
               .arg(CanvasName(canvasName), item.Uid(), action, item.TypeDisplayName(), item.Name())
               .arg(item.LayerId())
               .arg(item.ZOrder())
-              .arg(SourceSuffix()));
+              .arg(item.LogStateSummary(), SourceSuffix()));
 }
 
 void LifecycleLog::LogEdit(const QString& canvasName, const QString& action, const QString& detail)

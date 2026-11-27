@@ -12,6 +12,8 @@ class TriangleItem : public ShapeAbstractItem {
     ItemPropertySet Properties() const override;
     // 底角 A 处的内角旋钮：贴着左下顶点绕它拖，只改底角 A（§3.1）。
     HandleSpecList CustomHandles() const override;
+    // 底角 A 旋钮的动作文本：日志里记「调整内角」。
+    QString CustomHandleActionText(int handle) const override;
 
     qreal BottomAngle1() const override { return m_bottomAngle1; }
     qreal BottomAngle2() const override { return m_bottomAngle2; }

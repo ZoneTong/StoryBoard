@@ -19,6 +19,8 @@ class ParallelogramAbstractItem : public ShapeAbstractItem {
     void WriteState(ShapeItemState& state) const override;
     // §3.2：菱形拖外接框 / 边时点亮派生内角读数（尺寸是真相，角度随宽高连续变化）。
     void FrameResizeDragged() override;
+    // 内角旋钮的动作文本：日志里记「调整内角」，不要落成通用缩放。
+    QString CustomHandleActionText(int handle) const override;
 
   protected:
     void ApplyState(const ShapeItemState& state) override;
