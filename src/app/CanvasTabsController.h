@@ -53,6 +53,7 @@ class CanvasTabsController {
     QList<CanvasSession*> m_sessions;
     CanvasSession* m_current = nullptr;
     int m_untitledCount = 0;
+    int m_canvasCount = 0;
     // 切换会话时的重入保护：QTabWidget::currentChanged 会回调到这里。
     bool m_switching = false;
 };

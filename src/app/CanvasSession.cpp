@@ -11,9 +11,10 @@
 #include <QUndoStack>
 #include <QUuid>
 
-CanvasSession::CanvasSession(MainWindow* window, CanvasScene* scene, CanvasView* view, QUndoStack* undo, int untitledNo)
+CanvasSession::CanvasSession(MainWindow* window, CanvasScene* scene, CanvasView* view, QUndoStack* undo, int untitledNo,
+                             int canvasNo)
     : m_window(window), m_scene(scene), m_view(view), m_undo(undo),
-      m_recoveryId(QUuid::createUuid().toString(QUuid::WithoutBraces)), m_untitledNo(untitledNo)
+      m_recoveryId(QUuid::createUuid().toString(QUuid::WithoutBraces)), m_untitledNo(untitledNo), m_canvasNo(canvasNo)
 {
     // 场景挂到窗口名下：既跟随窗口生命周期兜底，也保持「window.findChild<CanvasScene*>()」
     // 这一既有取用方式对自检与插件继续成立（会话析构时会先于窗口删除它）。
@@ -67,6 +68,15 @@ QString CanvasSession::DisplayName() const
         }
     }
     return MainWindow::tr("Untitled canvas %1").arg(m_untitledNo);
+}
+
+QString CanvasSession::LogLabel(const QString& displayName) const
+{
+    const QString name = displayName.isEmpty() ? DisplayName() : displayName;
+    if (m_canvasNo <= 0) {
+        return name;
+    }
+    return QStringLiteral("#%1 %2").arg(m_canvasNo).arg(name);
 }
 
 bool CanvasSession::HasUnsavedChanges() const

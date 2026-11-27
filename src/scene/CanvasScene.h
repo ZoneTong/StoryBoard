@@ -268,6 +268,9 @@ class CanvasScene : public QGraphicsScene {
     // 生命周期日志用的画布显示名，由标签页在改名 / 打开 / 保存后同步。
     void SetLogLabel(const QString& label) { m_logLabel = label; }
     QString LogLabel() const { return m_logLabel; }
+    // 保存成功后把各图元当前状态记为「已落盘」，关闭画布时据此跳过已存图元的销毁日志。
+    void MarkSavedItemStates();
+    bool IsItemSavedState(const CanvasItem* item) const;
     QJsonObject ToJson() const;
     bool FromJson(const QJsonObject& root, QString* errorMessage = nullptr);
 
@@ -336,6 +339,7 @@ class CanvasScene : public QGraphicsScene {
 
     QUndoStack* m_undoStack = nullptr;
     QString m_logLabel;
+    QHash<QString, QByteArray> m_savedItemStates;
     int m_lastUndoIndex = 0;
     // 只在画箭头 / 拖端点的过程里活着，结束即清空，不跨事件循环持有。
     CanvasItem* m_bindingHighlight = nullptr;

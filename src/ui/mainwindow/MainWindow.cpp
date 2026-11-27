@@ -67,7 +67,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 
     m_tabs = std::make_unique<CanvasTabsController>(this);
     m_autoSave = std::make_unique<AutoSaveService>(this);
-    m_tabs->AdoptSession(new CanvasSession(this, m_scene, m_view, m_undo, 1));
+    m_tabs->AdoptSession(new CanvasSession(this, m_scene, m_view, m_undo, 1, 1));
     setCentralWidget(m_tabs->Tabs());
 
     m_background = std::make_unique<CanvasBackgroundController>(this);

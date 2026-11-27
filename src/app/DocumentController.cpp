@@ -339,9 +339,10 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors, QS
     }
 
     target->View()->FinishCurrentStroke();
+    const QString logLabel =
+        target->LogLabel(importedExcalidraw ? QStringLiteral("导入画布") : QFileInfo(path).completeBaseName());
     if (target->Scene()) {
-        target->Scene()->SetLogLabel(importedExcalidraw ? QStringLiteral("导入画布")
-                                                        : QFileInfo(path).completeBaseName());
+        target->Scene()->SetLogLabel(logLabel);
     }
     QString loadError;
     if (!target->Scene()->FromJson(usableRoot, &loadError)) {
@@ -360,6 +361,10 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors, QS
     // 导入的 Excalidraw 场景作为一份新文档，原 .excalidraw 文件仍可再导入一次。
     target->SetFilePath(importedExcalidraw ? QString() : absolutePath);
     target->Undo()->setClean();
+    // 只有从真实文件读入的图元才算「已落盘」；Excalidraw 导入还没有目标文件。
+    if (!importedExcalidraw && target->Scene()) {
+        target->Scene()->MarkSavedItemStates();
+    }
     m_window->m_tabs->SetCurrent(target);
     m_window->ActivateSession(target);
     // 打开 / 导入后同样回到查看模式并整幅适配。
@@ -371,7 +376,7 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors, QS
         m_window->m_settings.lastCanvasPath = absolutePath;
     }
     m_window->m_tabs->UpdateTabLabel(target);
-    LifecycleLog::LogCanvas(target->DisplayName(), importedExcalidraw ? QStringLiteral("导入") : QStringLiteral("打开"),
+    LifecycleLog::LogCanvas(logLabel, importedExcalidraw ? QStringLiteral("导入") : QStringLiteral("打开"),
                             QDir::toNativeSeparators(absolutePath));
     if (importedExcalidraw) {
         QString message = MainWindow::tr("Imported an Excalidraw scene as a new canvas");
@@ -443,12 +448,15 @@ bool DocumentController::SaveToFile(const QString& path)
         CanvasSession* session = m_window->m_tabs->Current();
         session->SetFilePath(m_window->m_filePath);
         m_window->m_tabs->UpdateTabLabel(session);
-        LifecycleLog::LogCanvas(session->DisplayName(), QStringLiteral("保存"),
+        LifecycleLog::LogCanvas(session->LogLabel(), QStringLiteral("保存"),
                                 QDir::toNativeSeparators(m_window->m_filePath));
     }
     m_window->m_settings.lastCanvasPath = m_window->m_filePath;
     m_window->m_settings.Save();
     m_window->m_undo->setClean();
+    if (m_window->m_scene) {
+        m_window->m_scene->MarkSavedItemStates();
+    }
     if (m_window->AutoSave()) {
         m_window->AutoSave()->MarkSaved(m_window->m_tabs ? m_window->m_tabs->Current() : nullptr);
     }

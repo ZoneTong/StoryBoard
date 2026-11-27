@@ -1,10 +1,9 @@
-#include "scene/CanvasScene.h"
-
 #include "items/CanvasItem.h"
 #include "items/geometry/CurveGeometry.h"
 #include "items/lines/LineAbstractItem.h"
 #include "items/lines/StraightLineItem.h"
 #include "items/text/TextItem.h"
+#include "scene/CanvasScene.h"
 #include "scene/Commands.h"
 
 #include <QHash>

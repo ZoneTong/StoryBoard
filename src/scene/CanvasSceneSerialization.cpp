@@ -8,8 +8,10 @@
 
 #include <QBuffer>
 #include <QByteArray>
+#include <QCryptographicHash>
 #include <QHash>
 #include <QJsonArray>
+#include <QJsonDocument>
 #include <QJsonObject>
 #include <QPixmap>
 #include <QSet>
@@ -41,7 +43,33 @@ QPixmap DecodePixmap(const QString& base64)
     return pixmap;
 }
 
+QByteArray ItemStateDigest(const CanvasItem* item)
+{
+    if (!item) {
+        return {};
+    }
+    return QCryptographicHash::hash(QJsonDocument(item->ToJson()).toJson(QJsonDocument::Compact),
+                                    QCryptographicHash::Sha1);
+}
+
 } // namespace
+
+void CanvasScene::MarkSavedItemStates()
+{
+    m_savedItemStates.clear();
+    for (CanvasItem* item : CanvasItems()) {
+        m_savedItemStates.insert(item->Uid(), ItemStateDigest(item));
+    }
+}
+
+bool CanvasScene::IsItemSavedState(const CanvasItem* item) const
+{
+    if (!item) {
+        return true;
+    }
+    const auto it = m_savedItemStates.constFind(item->Uid());
+    return it != m_savedItemStates.constEnd() && it.value() == ItemStateDigest(item);
+}
 
 QJsonObject CanvasScene::ToJson() const
 {

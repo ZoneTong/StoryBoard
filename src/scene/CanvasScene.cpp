@@ -107,8 +107,9 @@ void CanvasScene::SetUndoStack(QUndoStack* stack)
             if (!selected.isEmpty()) {
                 QStringList names;
                 for (int i = 0; i < selected.size() && i < 3; ++i) {
-                    names.append(
-                        QStringLiteral("%1「%2」").arg(selected.at(i)->TypeDisplayName(), selected.at(i)->Name()));
+                    names.append(QStringLiteral("uid=%1 %2「%3」")
+                                     .arg(selected.at(i)->Uid())
+                                     .arg(selected.at(i)->TypeDisplayName(), selected.at(i)->Name()));
                 }
                 if (selected.size() > 3) {
                     names.append(QStringLiteral("等 %1 个").arg(selected.size()));

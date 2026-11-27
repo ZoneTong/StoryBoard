@@ -45,6 +45,7 @@ void CanvasTabsController::AdoptSession(CanvasSession* session)
     }
     m_sessions.append(session);
     m_untitledCount = qMax(m_untitledCount, session->UntitledNo());
+    m_canvasCount = qMax(m_canvasCount, session->CanvasNo());
     if (m_current == nullptr) {
         m_current = session;
     }
@@ -76,10 +77,10 @@ CanvasSession* CanvasTabsController::CreateSession(bool activate)
     view->SetCanvasColor(m_window->Settings().canvasColor);
     view->SetMode(ToolMode::VIEW);
 
-    CanvasSession* session = new CanvasSession(m_window, scene, view, undo, ++m_untitledCount);
+    CanvasSession* session = new CanvasSession(m_window, scene, view, undo, ++m_untitledCount, ++m_canvasCount);
     AdoptSession(session);
     UpdateTabLabel(session);
-    LifecycleLog::LogCanvas(session->DisplayName(), QStringLiteral("新建"));
+    LifecycleLog::LogCanvas(session->LogLabel(), QStringLiteral("新建"));
     if (activate) {
         m_tabs->setCurrentWidget(view);
     }
@@ -137,7 +138,7 @@ void CanvasTabsController::ActivateIndex(int index)
     if (m_window) {
         m_window->ActivateSession(session);
     }
-    LifecycleLog::LogCanvas(session->DisplayName(), QStringLiteral("切换"));
+    LifecycleLog::LogCanvas(session->LogLabel(), QStringLiteral("切换"));
     m_switching = false;
 }
 
@@ -193,10 +194,15 @@ void CanvasTabsController::RemoveSession(CanvasSession* session)
     if (session == m_current) {
         m_current = nullptr;
     }
-    LifecycleLog::LogCanvas(session->DisplayName(), QStringLiteral("关闭"), session->FilePath());
+    const QString logLabel = session->LogLabel();
+    LifecycleLog::LogCanvas(logLabel, QStringLiteral("关闭"), session->FilePath());
     if (session->Scene()) {
+        // 关闭时只为「当前状态还没进文件」的图元记销毁：已保存图元的销毁属于
+        // 正常卸载，写进日志只会淹没真正需要复现的未落盘改动。
         for (CanvasItem* item : session->Scene()->CanvasItems()) {
-            LifecycleLog::LogItem(session->DisplayName(), QStringLiteral("销毁"), *item);
+            if (!session->Scene()->IsItemSavedState(item)) {
+                LifecycleLog::LogItem(logLabel, QStringLiteral("销毁（未保存）"), *item);
+            }
         }
     }
     delete session;
@@ -224,6 +230,16 @@ void CanvasTabsController::ClearAll()
         if (index >= 0) {
             m_tabs->removeTab(index);
         }
+        // 窗口关闭也会销毁全部会话：同样只为未落盘的图元留失效记录。
+        const QString logLabel = session->LogLabel();
+        LifecycleLog::LogCanvas(logLabel, QStringLiteral("关闭"), session->FilePath());
+        if (session->Scene()) {
+            for (CanvasItem* item : session->Scene()->CanvasItems()) {
+                if (!session->Scene()->IsItemSavedState(item)) {
+                    LifecycleLog::LogItem(logLabel, QStringLiteral("销毁（未保存）"), *item);
+                }
+            }
+        }
         delete session;
     }
     m_sessions.clear();
@@ -242,7 +258,7 @@ void CanvasTabsController::UpdateTabLabel(CanvasSession* session)
     }
     QString label = session->DisplayName();
     if (session->Scene()) {
-        session->Scene()->SetLogLabel(label);
+        session->Scene()->SetLogLabel(session->LogLabel());
     }
     if (session->HasUnsavedChanges()) {
         label.prepend(QStringLiteral("• "));
