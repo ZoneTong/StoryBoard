@@ -61,6 +61,15 @@ QString CommandLogAction(const QUndoCommand* command)
     if (dynamic_cast<const LayerStateCommand*>(command)) {
         return QStringLiteral("Edit layers");
     }
+    if (command && command->childCount() > 0) {
+        // 宏命令取第一个有明确动作的子命令，避免一律写成 "Edit"。
+        for (int i = 0; i < command->childCount(); ++i) {
+            const QString action = CommandLogAction(command->child(i));
+            if (action != QStringLiteral("Edit")) {
+                return action;
+            }
+        }
+    }
     return QStringLiteral("Edit");
 }
 
@@ -276,9 +285,9 @@ void CanvasScene::SetUndoStack(QUndoStack* stack)
                 QStringList names;
                 for (int i = 0; i < selected.size() && i < 3; ++i) {
                     const CanvasItem* item = selected.at(i);
-                    QString name = QStringLiteral("uid=%1 type=%2").arg(item->Uid(), item->LogTypeName());
+                    QString name = item->Uid();
                     if (item->HasCustomName()) {
-                        name += QStringLiteral(" name=\"%1\"").arg(item->Name());
+                        name += QStringLiteral(" \"%1\"").arg(item->Name());
                     }
                     names.append(name);
                 }
@@ -288,7 +297,8 @@ void CanvasScene::SetUndoStack(QUndoStack* stack)
                 if (!change.isEmpty()) {
                     detail += QStringLiteral("; ");
                 }
-                detail += QStringLiteral("objects: %1").arg(names.join(QStringLiteral(", ")));
+                detail += selected.size() == 1 ? QStringLiteral("item=%1").arg(names.constFirst())
+                                               : QStringLiteral("items: %1").arg(names.join(QStringLiteral(", ")));
             }
             LifecycleLog::LogEdit(LogUid(), m_logLabel,
                                   undoing ? QStringLiteral("Undo") : CommandLogAction(commandObject), detail);

@@ -220,7 +220,14 @@ void CanvasItem::AssignNewUid()
 namespace {
 QString LogNumber(qreal value)
 {
-    return QString::number(value, 'f', 1);
+    if (qFuzzyIsNull(value)) {
+        return QStringLiteral("0");
+    }
+    QString text = QString::number(value, 'f', 1);
+    if (text.endsWith(QStringLiteral(".0"))) {
+        text.chop(2);
+    }
+    return text;
 }
 } // namespace
 
@@ -244,29 +251,46 @@ QString CanvasItem::LogTypeName() const
 
 QString CanvasItem::LogStateSummary() const
 {
-    const QSizeF size = ContentSize();
-    QString summary = QStringLiteral("position=(%1,%2) size=%3x%4 rotation=%5deg")
-                          .arg(LogNumber(pos().x()), LogNumber(pos().y()))
-                          .arg(LogNumber(size.width()), LogNumber(size.height()), LogNumber(RotationAngle()));
+    const QString kind = Kind();
+    QString summary;
     if (const auto* line = dynamic_cast<const LineAbstractItem*>(this)) {
         const QVector<QPointF> knots = line->StrokePoints();
-        qreal length = 0.0;
-        for (int i = 1; i < knots.size(); ++i) {
-            length += QLineF(knots.at(i - 1), knots.at(i)).length();
-        }
-        summary += QStringLiteral(" nodes=%1 length=%2").arg(knots.size()).arg(LogNumber(length));
         if (knots.size() >= 2) {
             const QPointF start = knots.constFirst();
             const QPointF end = knots.constLast();
-            summary += QStringLiteral(" heading=%1deg")
-                           .arg(LogNumber(qRadiansToDegrees(qAtan2(end.y() - start.y(), end.x() - start.x()))));
+            summary = QStringLiteral("start=(%1,%2) end=(%3,%4)")
+                          .arg(LogNumber(start.x()), LogNumber(start.y()), LogNumber(end.x()), LogNumber(end.y()));
+            qreal length = 0.0;
+            for (int i = 1; i < knots.size(); ++i) {
+                length += QLineF(knots.at(i - 1), knots.at(i)).length();
+            }
+            summary += QStringLiteral(" length=%1").arg(LogNumber(length));
+            if (kind == QStringLiteral("freehand")) {
+                summary += QStringLiteral(" knots=%1").arg(knots.size());
+            }
+            if (kind == QStringLiteral("straightline") || kind == QStringLiteral("freehand")) {
+                summary += QStringLiteral(" heading=%1deg")
+                               .arg(LogNumber(qRadiansToDegrees(qAtan2(end.y() - start.y(), end.x() - start.x()))));
+            }
+        }
+    }
+    if (summary.isEmpty()) {
+        const QSizeF size = ContentSize();
+        summary = QStringLiteral("position=(%1,%2) size=%3x%4")
+                      .arg(LogNumber(pos().x()), LogNumber(pos().y()))
+                      .arg(LogNumber(size.width()), LogNumber(size.height()));
+        if (!qFuzzyIsNull(RotationAngle())) {
+            summary += QStringLiteral(" rotation=%1deg").arg(LogNumber(RotationAngle()));
         }
     }
     const ItemPropertySet properties = Properties();
     auto appendArrow = [this, &summary, &properties](ItemProperty property, const QString& label) {
-        if (properties.Contains(property)) {
-            summary += QStringLiteral(" %1=%2").arg(
-                label, ArrowStyles::LogName(static_cast<ArrowStyle>(PropertyValue(property).toInt())));
+        if (!properties.Contains(property)) {
+            return;
+        }
+        const ArrowStyle style = static_cast<ArrowStyle>(PropertyValue(property).toInt());
+        if (style != ArrowStyle::NONE) {
+            summary += QStringLiteral(" %1=%2").arg(label, ArrowStyles::LogName(style));
         }
     };
     appendArrow(ItemProperty::ARROW_START, QStringLiteral("start arrow"));
@@ -281,24 +305,26 @@ QString CanvasItem::LogStateSummary() const
     appendAngle(ItemProperty::BOTTOM_ANGLE2, QStringLiteral("base angle B"));
     appendAngle(ItemProperty::START_ANGLE, QStringLiteral("start angle"));
     appendAngle(ItemProperty::SWEEP_ANGLE, QStringLiteral("sweep angle"));
-    if (properties.Contains(ItemProperty::FILL_COLOR)) {
-        summary += QStringLiteral(" fill=%1").arg(ColorForLog(PropertyValue(ItemProperty::FILL_COLOR).value<QColor>()));
-    }
     if (properties.Contains(ItemProperty::FILL_STYLE)) {
-        summary +=
-            QStringLiteral(" fill style=%1")
-                .arg(FillStyles::LogName(static_cast<FillStyle>(PropertyValue(ItemProperty::FILL_STYLE).toInt())));
+        const FillStyle fillStyle = static_cast<FillStyle>(PropertyValue(ItemProperty::FILL_STYLE).toInt());
+        if (fillStyle != FillStyle::NONE) {
+            const QColor fillColor = PropertyValue(ItemProperty::FILL_COLOR).value<QColor>();
+            if (fillColor.isValid() && fillColor.alpha() != 0) {
+                summary += QStringLiteral(" fill=%1").arg(ColorForLog(fillColor));
+            }
+            summary += QStringLiteral(" fill style=%1").arg(FillStyles::LogName(fillStyle));
+        }
     }
-    if (properties.Contains(ItemProperty::STROKE_COLOR)) {
-        summary +=
-            QStringLiteral(" stroke=%1").arg(ColorForLog(PropertyValue(ItemProperty::STROKE_COLOR).value<QColor>()));
-    }
-    if (properties.Contains(ItemProperty::STROKE_STYLE)) {
-        summary += QStringLiteral(" stroke style=%1")
-                       .arg(StrokeStyleForLog(PropertyValue(ItemProperty::STROKE_STYLE).toInt()));
-    }
-    if (properties.Contains(ItemProperty::STROKE_WIDTH)) {
-        summary += QStringLiteral(" width=%1").arg(LogNumber(PropertyValue(ItemProperty::STROKE_WIDTH).toDouble()));
+    if (properties.Contains(ItemProperty::STROKE_COLOR) && properties.Contains(ItemProperty::STROKE_STYLE)) {
+        const QColor strokeColor = PropertyValue(ItemProperty::STROKE_COLOR).value<QColor>();
+        const Qt::PenStyle strokeStyle = static_cast<Qt::PenStyle>(PropertyValue(ItemProperty::STROKE_STYLE).toInt());
+        if (strokeStyle == Qt::NoPen) {
+            summary += QStringLiteral(" stroke=none");
+        } else {
+            summary += QStringLiteral(" stroke=%1 %2 %3")
+                           .arg(ColorForLog(strokeColor), StrokeStyleForLog(static_cast<int>(strokeStyle)),
+                                LogNumber(PropertyValue(ItemProperty::STROKE_WIDTH).toDouble()));
+        }
     }
     if (properties.Contains(ItemProperty::TEXT_CONTENT)) {
         QString text = PropertyValue(ItemProperty::TEXT_CONTENT).toString().simplified();

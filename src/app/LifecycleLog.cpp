@@ -19,7 +19,7 @@
 
 namespace {
 
-QString g_source = QStringLiteral("Interface");
+QString g_source = QStringLiteral("interface");
 QMutex g_canvasLogMutex;
 QDate g_lastPruneDate;
 QHash<QString, QDate> g_lastTrimDates;
@@ -122,18 +122,24 @@ void EnsureCanvasLogTrimmed(const QString& path, const QDateTime& now)
 
 QString CanvasName(const QString& name)
 {
-    const QString trimmed = name.trimmed();
+    QString trimmed = name.trimmed();
+    trimmed.replace(QLatin1Char('\n'), QLatin1Char(' '));
+    trimmed.replace(QLatin1Char('\r'), QLatin1Char(' '));
     return trimmed.isEmpty() ? QStringLiteral("Untitled canvas") : trimmed;
 }
 
 QString SourceSuffix()
 {
-    return g_source.isEmpty() || g_source == QStringLiteral("Interface")
-               ? QString()
-               : QStringLiteral(" (source: %1)").arg(g_source);
+    return g_source.isEmpty() || g_source == QStringLiteral("interface") ? QString()
+                                                                         : QStringLiteral(" (%1)").arg(g_source);
 }
 
-void Write(LogLevel level, const QString& canvasUid, const QString& line)
+QString HeaderCanvasName(const QString& name)
+{
+    return CanvasName(name).replace(QLatin1Char('"'), QLatin1Char('\''));
+}
+
+void Write(LogLevel level, const QString& canvasUid, const QString& canvasName, const QString& line)
 {
     if (!LogService::ShouldLog(level)) {
         return;
@@ -153,13 +159,15 @@ void Write(LogLevel level, const QString& canvasUid, const QString& line)
     }
     if (file.size() == 0) {
         const QString header = QStringLiteral("# StoryBoard canvas lifecycle log\n"
-                                              "# canvas uid=%1\n")
-                                   .arg(SafeCanvasUid(canvasUid));
+                                              "# canvas uid=%1\n"
+                                              "# canvas name=\"%2\"\n")
+                                   .arg(SafeCanvasUid(canvasUid), HeaderCanvasName(canvasName));
         file.write(header.toUtf8());
     }
     const QString stamp = now.toString(QStringLiteral("yyyy-MM-dd HH:mm:ss")) + QLatin1Char('.') +
                           QString::number(now.time().msec()).rightJustified(3, QLatin1Char('0'));
-    file.write(QStringLiteral("%1 [INFO ] storyboard.lifecycle: %2\n").arg(stamp, line).toUtf8());
+    const QString tag = level == LogLevel::LOG_EVENT ? QStringLiteral("[EVENT]") : QStringLiteral("[INFO]");
+    file.write(QStringLiteral("%1 %2 %3\n").arg(stamp, tag, line).toUtf8());
 }
 
 // 应用级事件过滤器：先于控件记录输入方式，后续命令落日志时按“最近一次输入”归类。
@@ -176,17 +184,17 @@ class InputSourceFilter : public QObject {
             const bool shortcut = key->modifiers().testFlag(Qt::ControlModifier) ||
                                   key->modifiers().testFlag(Qt::AltModifier) ||
                                   key->modifiers().testFlag(Qt::MetaModifier);
-            LifecycleLog::SetSource(shortcut ? QStringLiteral("Shortcut") : QStringLiteral("Keyboard"));
+            LifecycleLog::SetSource(shortcut ? QStringLiteral("shortcut") : QStringLiteral("keyboard"));
             break;
         }
         case QEvent::Shortcut:
-            LifecycleLog::SetSource(QStringLiteral("Shortcut"));
+            LifecycleLog::SetSource(QStringLiteral("shortcut"));
             break;
         case QEvent::MouseButtonPress:
         case QEvent::MouseButtonDblClick:
         case QEvent::Wheel:
         case QEvent::ContextMenu:
-            LifecycleLog::SetSource(QStringLiteral("Mouse"));
+            LifecycleLog::SetSource(QStringLiteral("mouse"));
             break;
         default:
             break;
@@ -235,7 +243,7 @@ void LifecycleLog::LogCanvas(const QString& canvasUid, const QString& canvasName
     if (!detail.isEmpty()) {
         line += QStringLiteral(": %1").arg(detail);
     }
-    Write(LogLevel::LOG_INFO, canvasUid, line);
+    Write(LogLevel::LOG_INFO, canvasUid, canvasName, line);
 }
 
 void LifecycleLog::LogItem(const QString& canvasUid, const QString& canvasName, const QString& action,
@@ -245,9 +253,15 @@ void LifecycleLog::LogItem(const QString& canvasUid, const QString& canvasName, 
     if (item.HasCustomName()) {
         label += QStringLiteral(" name=\"%1\"").arg(item.Name());
     }
-    Write(LogLevel::LOG_EVENT, canvasUid,
-          QStringLiteral("Canvas \"%1\" item uid=%2 %3 type=%4 layer=%5 z=%6 %7%8")
-              .arg(CanvasName(canvasName), item.Uid(), action, label)
+    if (action.startsWith(QStringLiteral("Destroy"))) {
+        // 销毁只留身份，不再重复创建时已经写过的完整状态。
+        Write(LogLevel::LOG_EVENT, canvasUid, canvasName,
+              QStringLiteral("item uid=%1 %2 type=%3").arg(item.Uid(), action, label));
+        return;
+    }
+    Write(LogLevel::LOG_EVENT, canvasUid, canvasName,
+          QStringLiteral("item uid=%1 %2 type=%3 layer=%4 z=%5 %6%7")
+              .arg(item.Uid(), action, label)
               .arg(item.LayerId())
               .arg(item.ZOrder())
               .arg(item.LogStateSummary(), SourceSuffix()));
@@ -259,6 +273,5 @@ void LifecycleLog::LogEdit(const QString& canvasUid, const QString& canvasName, 
     if (detail.isEmpty()) {
         return;
     }
-    Write(LogLevel::LOG_EVENT, canvasUid,
-          QStringLiteral("Canvas \"%1\" %2: %3%4").arg(CanvasName(canvasName), action, detail, SourceSuffix()));
+    Write(LogLevel::LOG_EVENT, canvasUid, canvasName, QStringLiteral("%1: %2%3").arg(action, detail, SourceSuffix()));
 }

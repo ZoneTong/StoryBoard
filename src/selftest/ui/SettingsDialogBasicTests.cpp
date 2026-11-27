@@ -184,7 +184,7 @@ void selftest::RunSettingsDialogBasicTests(Context& ctx)
             }
         }
         ctx.Check(asciiOnly && text.contains(QStringLiteral("Create type=rectangle")) &&
-                      text.contains(QStringLiteral("position=(24.0,40.0)")),
+                      text.contains(QStringLiteral("position=(24,40)")),
                   QStringLiteral("图元生命周期日志固定英文并带类型与坐标"), text);
         QFile::remove(path);
         LogService::SetLevel(LogLevel::LOG_WARNING);
@@ -204,7 +204,7 @@ void selftest::RunSettingsDialogBasicTests(Context& ctx)
         ItemPropertyCommand command(&scene, {item}, {before}, {after}, QStringLiteral("test"));
         const QString detail = command.LogDetail(false);
         ctx.Check(!detail.contains(QStringLiteral("major axis")) &&
-                      detail.contains(QStringLiteral("sweep angle 30.0deg->90.0deg")),
+                      detail.contains(QStringLiteral("sweep angle 30deg->90deg")),
                   QStringLiteral("属性日志只保留真正变化的属性值"), detail);
         delete item;
     }
@@ -223,7 +223,7 @@ void selftest::RunSettingsDialogBasicTests(Context& ctx)
         if (seed.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
             seed.write(QStringLiteral("# StoryBoard canvas lifecycle log\n"
                                       "# canvas uid=%1\n"
-                                      "%2 [INFO ] storyboard.lifecycle: old event\n")
+                                      "%2 [INFO] old event\n")
                            .arg(uid, oldStamp)
                            .toUtf8());
             seed.close();

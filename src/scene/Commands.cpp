@@ -21,7 +21,14 @@ namespace {
 
 QString LogNumber(qreal value)
 {
-    return QString::number(value, 'f', 1);
+    if (qFuzzyIsNull(value)) {
+        return QStringLiteral("0");
+    }
+    QString text = QString::number(value, 'f', 1);
+    if (text.endsWith(QStringLiteral(".0"))) {
+        text.chop(2);
+    }
+    return text;
 }
 
 QString PropertyLabel(PropertyKey key)
@@ -888,6 +895,13 @@ QString ItemPropertyCommand::LogDetail(bool reverse) const
         return {};
     }
     QStringList parts;
+    bool lineOnly = !m_items.isEmpty();
+    for (const QPointer<CanvasItem>& item : m_items) {
+        if (!item || !dynamic_cast<const LineAbstractItem*>(item.data())) {
+            lineOnly = false;
+            break;
+        }
+    }
     const int count = qMin(m_before.size(), m_after.size());
     for (int index = 0; index < count; ++index) {
         const QMap<PropertyKey, QVariant>& oldValues = reverse ? m_after.at(index) : m_before.at(index);
@@ -897,6 +911,15 @@ QString ItemPropertyCommand::LogDetail(bool reverse) const
             const QVariant oldValue = oldIt == oldValues.constEnd() ? QVariant() : oldIt.value();
             if (oldIt != oldValues.constEnd() && SamePropertyValue(oldValue, it.value())) {
                 continue;
+            }
+            if (lineOnly && it.key().IsCommon()) {
+                const ItemProperty property = it.key().CommonProperty();
+                // 线条的主状态是端点 / 长度 / 角度；包围盒位置、尺寸与旋转是派生值，
+                // 再由属性命令写一遍只会和端点位移重复。
+                if (property == ItemProperty::POSITION || property == ItemProperty::SIZE ||
+                    property == ItemProperty::ROTATION) {
+                    continue;
+                }
             }
             const QString part = QStringLiteral("%1 %2->%3")
                                      .arg(PropertyLabel(it.key()), LogPropertyValue(it.key(), oldValue),
