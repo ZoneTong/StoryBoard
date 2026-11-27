@@ -11,6 +11,59 @@
 
 namespace {
 // 新建 / 删除命令已经由 AttachItem / DetachItem 写过图元生命周期，不再重复一条“编辑”。
+QString CommandLogAction(const QUndoCommand* command)
+{
+    if (dynamic_cast<const GeometryCommand*>(command)) {
+        return QStringLiteral("Move or resize");
+    }
+    if (dynamic_cast<const RotationCommand*>(command)) {
+        return QStringLiteral("Rotate");
+    }
+    if (dynamic_cast<const TextItemCommand*>(command)) {
+        return QStringLiteral("Edit text");
+    }
+    if (dynamic_cast<const TextContainerCommand*>(command)) {
+        return QStringLiteral("Edit text container");
+    }
+    if (dynamic_cast<const StrokeSmoothCommand*>(command)) {
+        return QStringLiteral("Edit line");
+    }
+    if (dynamic_cast<const LineRouteCommand*>(command)) {
+        return QStringLiteral("Change line route");
+    }
+    if (dynamic_cast<const ItemPropertyCommand*>(command)) {
+        return QStringLiteral("Change property");
+    }
+    if (dynamic_cast<const ArrowBindingCommand*>(command)) {
+        return QStringLiteral("Change arrow binding");
+    }
+    if (dynamic_cast<const MirrorCommand*>(command)) {
+        return QStringLiteral("Flip");
+    }
+    if (dynamic_cast<const ConvertItemCommand*>(command)) {
+        return QStringLiteral("Convert item");
+    }
+    if (dynamic_cast<const GroupCommand*>(command)) {
+        return QStringLiteral("Group items");
+    }
+    if (dynamic_cast<const GroupRenameCommand*>(command)) {
+        return QStringLiteral("Rename group");
+    }
+    if (dynamic_cast<const BackgroundCommand*>(command)) {
+        return QStringLiteral("Change background");
+    }
+    if (dynamic_cast<const CanvasSizeCommand*>(command)) {
+        return QStringLiteral("Resize canvas");
+    }
+    if (dynamic_cast<const ItemStackCommand*>(command)) {
+        return QStringLiteral("Change stacking");
+    }
+    if (dynamic_cast<const LayerStateCommand*>(command)) {
+        return QStringLiteral("Edit layers");
+    }
+    return QStringLiteral("Edit");
+}
+
 bool IsLifecycleOnlyCommand(const QUndoCommand* command)
 {
     if (dynamic_cast<const AddItemCommand*>(command) || dynamic_cast<const RemoveItemsCommand*>(command)) {
@@ -105,7 +158,7 @@ QString CommandLogDetail(const QUndoCommand* command, bool reverse)
             parts.append(detail);
         }
     }
-    return parts.join(QStringLiteral("，"));
+    return parts.join(QStringLiteral(", "));
 }
 } // namespace
 
@@ -210,33 +263,35 @@ void CanvasScene::SetUndoStack(QUndoStack* stack)
             if (index == previous || !m_undoStack) {
                 return;
             }
-            const QString command = index > previous ? m_undoStack->text(index - 1) : m_undoStack->text(index);
             const QUndoCommand* commandObject =
                 index > previous ? m_undoStack->command(index - 1) : m_undoStack->command(index);
             if (IsLifecycleOnlyCommand(commandObject)) {
                 return;
             }
             const bool undoing = index < previous;
-            QString detail = command;
             const QString change = CommandLogDetail(commandObject, undoing);
-            if (!change.isEmpty()) {
-                detail += QStringLiteral("；变更：%1").arg(change);
-            }
+            QString detail = change;
             const QList<CanvasItem*> selected = SelectedCanvasItems();
             if (!selected.isEmpty()) {
                 QStringList names;
                 for (int i = 0; i < selected.size() && i < 3; ++i) {
-                    names.append(QStringLiteral("uid=%1 %2「%3」")
-                                     .arg(selected.at(i)->Uid())
-                                     .arg(selected.at(i)->TypeDisplayName(), selected.at(i)->Name()));
+                    const CanvasItem* item = selected.at(i);
+                    QString name = QStringLiteral("uid=%1 type=%2").arg(item->Uid(), item->LogTypeName());
+                    if (item->HasCustomName()) {
+                        name += QStringLiteral(" name=\"%1\"").arg(item->Name());
+                    }
+                    names.append(name);
                 }
                 if (selected.size() > 3) {
-                    names.append(QStringLiteral("等 %1 个").arg(selected.size()));
+                    names.append(QStringLiteral("+%1 more").arg(selected.size() - 3));
                 }
-                detail += QStringLiteral("；对象：%1").arg(names.join(QStringLiteral("、")));
+                if (!change.isEmpty()) {
+                    detail += QStringLiteral("; ");
+                }
+                detail += QStringLiteral("objects: %1").arg(names.join(QStringLiteral(", ")));
             }
-            LifecycleLog::LogEdit(LogUid(), m_logLabel, undoing ? QStringLiteral("撤销") : QStringLiteral("编辑"),
-                                  detail);
+            LifecycleLog::LogEdit(LogUid(), m_logLabel,
+                                  undoing ? QStringLiteral("Undo") : CommandLogAction(commandObject), detail);
         });
     }
     m_lastUndoIndex = m_undoStack ? m_undoStack->index() : 0;

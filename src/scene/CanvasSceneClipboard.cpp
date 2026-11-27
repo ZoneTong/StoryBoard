@@ -65,7 +65,7 @@ int CanvasScene::PasteClipboardItems(const QJsonArray& items, const QJsonObject&
         return 0;
     }
     // 粘贴期间创建 / 编辑的图元统一标成“粘贴”，便于和鼠标、快捷键操作区分。
-    LifecycleLog::EditSourceScope sourceScope(QStringLiteral("粘贴"));
+    LifecycleLog::EditSourceScope sourceScope(QStringLiteral("Paste"));
 
     QList<CanvasItem*> copies;
     QSet<QString> reservedNames;

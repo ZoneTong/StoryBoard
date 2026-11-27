@@ -16,6 +16,7 @@ QList<ArrowStyle> AllArrowStyles();
 namespace ArrowStyles {
 
 QString Name(ArrowStyle style);
+QString LogName(ArrowStyle style);
 
 } // namespace ArrowStyles
 QString ArrowStyleToString(ArrowStyle style);

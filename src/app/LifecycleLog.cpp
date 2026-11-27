@@ -19,7 +19,7 @@
 
 namespace {
 
-QString g_source = QStringLiteral("界面");
+QString g_source = QStringLiteral("Interface");
 QMutex g_canvasLogMutex;
 QDate g_lastPruneDate;
 QHash<QString, QDate> g_lastTrimDates;
@@ -123,13 +123,14 @@ void EnsureCanvasLogTrimmed(const QString& path, const QDateTime& now)
 QString CanvasName(const QString& name)
 {
     const QString trimmed = name.trimmed();
-    return trimmed.isEmpty() ? QStringLiteral("未命名画布") : trimmed;
+    return trimmed.isEmpty() ? QStringLiteral("Untitled canvas") : trimmed;
 }
 
 QString SourceSuffix()
 {
-    return g_source.isEmpty() || g_source == QStringLiteral("界面") ? QString()
-                                                                    : QStringLiteral("（来源：%1）").arg(g_source);
+    return g_source.isEmpty() || g_source == QStringLiteral("Interface")
+               ? QString()
+               : QStringLiteral(" (source: %1)").arg(g_source);
 }
 
 void Write(LogLevel level, const QString& canvasUid, const QString& line)
@@ -175,17 +176,17 @@ class InputSourceFilter : public QObject {
             const bool shortcut = key->modifiers().testFlag(Qt::ControlModifier) ||
                                   key->modifiers().testFlag(Qt::AltModifier) ||
                                   key->modifiers().testFlag(Qt::MetaModifier);
-            LifecycleLog::SetSource(shortcut ? QStringLiteral("快捷键") : QStringLiteral("键盘"));
+            LifecycleLog::SetSource(shortcut ? QStringLiteral("Shortcut") : QStringLiteral("Keyboard"));
             break;
         }
         case QEvent::Shortcut:
-            LifecycleLog::SetSource(QStringLiteral("快捷键"));
+            LifecycleLog::SetSource(QStringLiteral("Shortcut"));
             break;
         case QEvent::MouseButtonPress:
         case QEvent::MouseButtonDblClick:
         case QEvent::Wheel:
         case QEvent::ContextMenu:
-            LifecycleLog::SetSource(QStringLiteral("鼠标"));
+            LifecycleLog::SetSource(QStringLiteral("Mouse"));
             break;
         default:
             break;
@@ -230,9 +231,9 @@ LifecycleLog::EditSourceScope::~EditSourceScope()
 void LifecycleLog::LogCanvas(const QString& canvasUid, const QString& canvasName, const QString& action,
                              const QString& detail)
 {
-    QString line = QStringLiteral("画布「%1」%2").arg(CanvasName(canvasName), action);
+    QString line = QStringLiteral("Canvas \"%1\" %2").arg(CanvasName(canvasName), action);
     if (!detail.isEmpty()) {
-        line += QStringLiteral("：%1").arg(detail);
+        line += QStringLiteral(": %1").arg(detail);
     }
     Write(LogLevel::LOG_INFO, canvasUid, line);
 }
@@ -240,9 +241,13 @@ void LifecycleLog::LogCanvas(const QString& canvasUid, const QString& canvasName
 void LifecycleLog::LogItem(const QString& canvasUid, const QString& canvasName, const QString& action,
                            const CanvasItem& item)
 {
+    QString label = item.LogTypeName();
+    if (item.HasCustomName()) {
+        label += QStringLiteral(" name=\"%1\"").arg(item.Name());
+    }
     Write(LogLevel::LOG_EVENT, canvasUid,
-          QStringLiteral("画布「%1」图元 uid=%2 %3：%4「%5」 图层=%6 高度=%7 %8%9")
-              .arg(CanvasName(canvasName), item.Uid(), action, item.TypeDisplayName(), item.Name())
+          QStringLiteral("Canvas \"%1\" item uid=%2 %3 type=%4 layer=%5 z=%6 %7%8")
+              .arg(CanvasName(canvasName), item.Uid(), action, label)
               .arg(item.LayerId())
               .arg(item.ZOrder())
               .arg(item.LogStateSummary(), SourceSuffix()));
@@ -255,5 +260,5 @@ void LifecycleLog::LogEdit(const QString& canvasUid, const QString& canvasName, 
         return;
     }
     Write(LogLevel::LOG_EVENT, canvasUid,
-          QStringLiteral("画布「%1」%2：%3%4").arg(CanvasName(canvasName), action, detail, SourceSuffix()));
+          QStringLiteral("Canvas \"%1\" %2: %3%4").arg(CanvasName(canvasName), action, detail, SourceSuffix()));
 }

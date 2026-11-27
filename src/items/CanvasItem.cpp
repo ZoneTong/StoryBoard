@@ -29,7 +29,7 @@ constexpr qreal MINIMUM_SIDE = 8.0;
 QString ColorForLog(const QColor& color)
 {
     if (!color.isValid()) {
-        return QStringLiteral("透明");
+        return QStringLiteral("transparent");
     }
     return color.name(color.alpha() == 255 ? QColor::HexRgb : QColor::HexArgb);
 }
@@ -38,21 +38,21 @@ QString StrokeStyleForLog(int style)
 {
     switch (static_cast<Qt::PenStyle>(style)) {
     case Qt::NoPen:
-        return QStringLiteral("无描边");
+        return QStringLiteral("no stroke");
     case Qt::SolidLine:
-        return QStringLiteral("实线");
+        return QStringLiteral("solid");
     case Qt::DashLine:
-        return QStringLiteral("虚线");
+        return QStringLiteral("dashed");
     case Qt::DotLine:
-        return QStringLiteral("点线");
+        return QStringLiteral("dotted");
     case Qt::DashDotLine:
-        return QStringLiteral("点划线");
+        return QStringLiteral("dash-dot");
     case Qt::DashDotDotLine:
-        return QStringLiteral("双点划线");
+        return QStringLiteral("dash-dot-dot");
     case Qt::CustomDashLine:
-        return QStringLiteral("自定义虚线");
+        return QStringLiteral("custom dash");
     }
-    return QString::number(style);
+    return QStringLiteral("style %1").arg(style);
 }
 } // namespace
 
@@ -222,10 +222,28 @@ QString LogNumber(qreal value)
 }
 } // namespace
 
+QString CanvasItem::LogTypeName() const
+{
+    if (const auto* shape = dynamic_cast<const ShapeAbstractItem*>(this)) {
+        return ShapeTypeToString(shape->shapeType());
+    }
+    const QString kind = Kind();
+    if (kind == QStringLiteral("freehand")) {
+        return QStringLiteral("curve");
+    }
+    if (kind == QStringLiteral("straightline")) {
+        return QStringLiteral("line");
+    }
+    if (kind == QStringLiteral("angle")) {
+        return QStringLiteral("angle line");
+    }
+    return kind;
+}
+
 QString CanvasItem::LogStateSummary() const
 {
     const QSizeF size = ContentSize();
-    QString summary = QStringLiteral("位置=(%1,%2) 尺寸=%3×%4 旋转=%5°")
+    QString summary = QStringLiteral("position=(%1,%2) size=%3x%4 rotation=%5deg")
                           .arg(LogNumber(pos().x()), LogNumber(pos().y()))
                           .arg(LogNumber(size.width()), LogNumber(size.height()), LogNumber(RotationAngle()));
     if (const auto* line = dynamic_cast<const LineAbstractItem*>(this)) {
@@ -234,11 +252,11 @@ QString CanvasItem::LogStateSummary() const
         for (int i = 1; i < knots.size(); ++i) {
             length += QLineF(knots.at(i - 1), knots.at(i)).length();
         }
-        summary += QStringLiteral(" 节点=%1 长度=%2").arg(knots.size()).arg(LogNumber(length));
+        summary += QStringLiteral(" nodes=%1 length=%2").arg(knots.size()).arg(LogNumber(length));
         if (knots.size() >= 2) {
             const QPointF start = knots.constFirst();
             const QPointF end = knots.constLast();
-            summary += QStringLiteral(" 走向=%1°")
+            summary += QStringLiteral(" heading=%1deg")
                            .arg(LogNumber(qRadiansToDegrees(qAtan2(end.y() - start.y(), end.x() - start.x()))));
         }
     }
@@ -246,46 +264,47 @@ QString CanvasItem::LogStateSummary() const
     auto appendArrow = [this, &summary, &properties](ItemProperty property, const QString& label) {
         if (properties.Contains(property)) {
             summary += QStringLiteral(" %1=%2").arg(
-                label, ArrowStyles::Name(static_cast<ArrowStyle>(PropertyValue(property).toInt())));
+                label, ArrowStyles::LogName(static_cast<ArrowStyle>(PropertyValue(property).toInt())));
         }
     };
-    appendArrow(ItemProperty::ARROW_START, QStringLiteral("起点箭头"));
-    appendArrow(ItemProperty::ARROW_END, QStringLiteral("终点箭头"));
+    appendArrow(ItemProperty::ARROW_START, QStringLiteral("start arrow"));
+    appendArrow(ItemProperty::ARROW_END, QStringLiteral("end arrow"));
     auto appendAngle = [this, &summary, &properties](ItemProperty property, const QString& label) {
         if (properties.Contains(property)) {
-            summary += QStringLiteral(" %1=%2°").arg(label, LogNumber(PropertyValue(property).toDouble()));
+            summary += QStringLiteral(" %1=%2deg").arg(label, LogNumber(PropertyValue(property).toDouble()));
         }
     };
-    appendAngle(ItemProperty::PARALLELOGRAM_ANGLE, QStringLiteral("内角A"));
-    appendAngle(ItemProperty::BOTTOM_ANGLE1, QStringLiteral("底角A"));
-    appendAngle(ItemProperty::BOTTOM_ANGLE2, QStringLiteral("底角B"));
-    appendAngle(ItemProperty::START_ANGLE, QStringLiteral("起角"));
-    appendAngle(ItemProperty::SWEEP_ANGLE, QStringLiteral("扫角"));
+    appendAngle(ItemProperty::PARALLELOGRAM_ANGLE, QStringLiteral("inner angle A"));
+    appendAngle(ItemProperty::BOTTOM_ANGLE1, QStringLiteral("base angle A"));
+    appendAngle(ItemProperty::BOTTOM_ANGLE2, QStringLiteral("base angle B"));
+    appendAngle(ItemProperty::START_ANGLE, QStringLiteral("start angle"));
+    appendAngle(ItemProperty::SWEEP_ANGLE, QStringLiteral("sweep angle"));
     if (properties.Contains(ItemProperty::FILL_COLOR)) {
-        summary += QStringLiteral(" 填充=%1").arg(ColorForLog(PropertyValue(ItemProperty::FILL_COLOR).value<QColor>()));
+        summary += QStringLiteral(" fill=%1").arg(ColorForLog(PropertyValue(ItemProperty::FILL_COLOR).value<QColor>()));
     }
     if (properties.Contains(ItemProperty::FILL_STYLE)) {
-        summary += QStringLiteral(" 填充样式=%1")
-                       .arg(FillStyles::Name(static_cast<FillStyle>(PropertyValue(ItemProperty::FILL_STYLE).toInt())));
+        summary +=
+            QStringLiteral(" fill style=%1")
+                .arg(FillStyles::LogName(static_cast<FillStyle>(PropertyValue(ItemProperty::FILL_STYLE).toInt())));
     }
     if (properties.Contains(ItemProperty::STROKE_COLOR)) {
         summary +=
-            QStringLiteral(" 描边=%1").arg(ColorForLog(PropertyValue(ItemProperty::STROKE_COLOR).value<QColor>()));
+            QStringLiteral(" stroke=%1").arg(ColorForLog(PropertyValue(ItemProperty::STROKE_COLOR).value<QColor>()));
     }
     if (properties.Contains(ItemProperty::STROKE_STYLE)) {
-        summary +=
-            QStringLiteral(" 描边样式=%1").arg(StrokeStyleForLog(PropertyValue(ItemProperty::STROKE_STYLE).toInt()));
+        summary += QStringLiteral(" stroke style=%1")
+                       .arg(StrokeStyleForLog(PropertyValue(ItemProperty::STROKE_STYLE).toInt()));
     }
     if (properties.Contains(ItemProperty::STROKE_WIDTH)) {
-        summary += QStringLiteral(" 线宽=%1").arg(LogNumber(PropertyValue(ItemProperty::STROKE_WIDTH).toDouble()));
+        summary += QStringLiteral(" width=%1").arg(LogNumber(PropertyValue(ItemProperty::STROKE_WIDTH).toDouble()));
     }
     if (properties.Contains(ItemProperty::TEXT_CONTENT)) {
         QString text = PropertyValue(ItemProperty::TEXT_CONTENT).toString().simplified();
         if (text.size() > 20) {
-            text = text.left(20) + QStringLiteral("…");
+            text = text.left(20) + QStringLiteral("...");
         }
         if (!text.isEmpty()) {
-            summary += QStringLiteral(" 文字=\"%1\"").arg(text.replace(QLatin1Char('"'), QLatin1Char('\'')));
+            summary += QStringLiteral(" text=\"%1\"").arg(text.replace(QLatin1Char('"'), QLatin1Char('\'')));
         }
     }
     return summary;

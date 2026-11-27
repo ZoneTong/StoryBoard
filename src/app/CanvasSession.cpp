@@ -77,7 +77,17 @@ QString CanvasSession::DisplayName() const
 
 QString CanvasSession::LogLabel(const QString& displayName) const
 {
-    const QString name = displayName.isEmpty() ? DisplayName() : displayName;
+    QString name = displayName;
+    if (name.isEmpty()) {
+        name = m_displayNameOverride;
+    }
+    if (name.isEmpty() && !m_filePath.isEmpty()) {
+        name = QFileInfo(m_filePath).completeBaseName();
+    }
+    if (name.isEmpty()) {
+        // 日志固定英文，不取界面翻译，避免中文界面下写出「未命名画布」。
+        name = QStringLiteral("Untitled canvas %1").arg(m_untitledNo);
+    }
     if (m_canvasNo <= 0) {
         return name;
     }

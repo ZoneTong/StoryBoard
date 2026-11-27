@@ -114,6 +114,12 @@ QString Name(FillStyle style)
     return ShapeAbstractItem::tr(FillStyleMeta::NameSource(style).toUtf8().constData());
 }
 
+QString LogName(FillStyle style)
+{
+    // 日志固定英文，不经过 tr()，中文界面也保持同一套文案。
+    return FillStyleMeta::NameSource(style);
+}
+
 } // namespace FillStyles
 
 

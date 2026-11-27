@@ -105,6 +105,7 @@ class CanvasItem : public QGraphicsObject {
     QString Uid() const { return m_uid; }
     // 日志用的一行主要状态：坐标、尺寸、旋转，以及该图元真正拥有的角度 / 颜色等属性。
     QString LogStateSummary() const;
+    QString LogTypeName() const;
     void SetUid(const QString& uid);
     void AssignNewUid();
     // Excalidraw 元素级附加信息：超链接与锁定只做格式往返，当前不改变画板交互。

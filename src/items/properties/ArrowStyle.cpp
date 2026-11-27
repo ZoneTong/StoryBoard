@@ -59,6 +59,25 @@ QString Name(ArrowStyle style)
     return translate("None");
 }
 
+QString LogName(ArrowStyle style)
+{
+    switch (style) {
+    case ArrowStyle::NONE:
+        return QStringLiteral("None");
+    case ArrowStyle::TRIANGLE_FILLED:
+        return QStringLiteral("Filled triangle");
+    case ArrowStyle::TRIANGLE_HOLLOW:
+        return QStringLiteral("Hollow triangle");
+    case ArrowStyle::OPEN_ARROW:
+        return QStringLiteral("Open arrow");
+    case ArrowStyle::DOT:
+        return QStringLiteral("Dot");
+    case ArrowStyle::BAR:
+        return QStringLiteral("Bar");
+    }
+    return QStringLiteral("None");
+}
+
 } // namespace ArrowStyles
 
 

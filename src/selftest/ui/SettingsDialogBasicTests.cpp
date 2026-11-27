@@ -147,17 +147,46 @@ void selftest::RunSettingsDialogBasicTests(Context& ctx)
         const QString path =
             QDir(LogService::LogDirectory()).filePath(QStringLiteral("canvases/canvas-%1.log").arg(uid));
         QFile::remove(path);
-        LifecycleLog::LogEdit(uid, QStringLiteral("#自检"), QStringLiteral("编辑"), QStringLiteral("测试事件"));
+        LifecycleLog::LogEdit(uid, QStringLiteral("#selftest"), QStringLiteral("Edit"), QStringLiteral("test event"));
         ctx.Check(!QFileInfo::exists(path), QStringLiteral("默认级别不把图元事件写进文件"));
         LogService::SetLevel(LogLevel::LOG_EVENT);
-        LifecycleLog::LogEdit(uid, QStringLiteral("#自检"), QStringLiteral("编辑"), QStringLiteral("测试事件"));
+        LifecycleLog::LogEdit(uid, QStringLiteral("#selftest"), QStringLiteral("Edit"), QStringLiteral("test event"));
         QFile file(path);
         const bool opened = file.open(QIODevice::ReadOnly | QIODevice::Text);
         const QString text = opened ? QString::fromUtf8(file.readAll()) : QString();
-        ctx.Check(opened && text.contains(QStringLiteral("测试事件")),
+        ctx.Check(opened && text.contains(QStringLiteral("test event")),
                   QStringLiteral("事件级别把图元属性变化写进画布日志"));
         QFile::remove(path);
         LogService::SetLevel(LogLevel::LOG_WARNING);
+    }
+
+    {
+        // 日志固定英文：图元生命周期不取界面翻译，不随中文界面变成中文。
+        const QString uid = QStringLiteral("selftest-log-english-%1").arg(QDateTime::currentMSecsSinceEpoch());
+        const QString path =
+            QDir(LogService::LogDirectory()).filePath(QStringLiteral("canvases/canvas-%1.log").arg(uid));
+        QFile::remove(path);
+        CanvasItem* item = ShapeFactory::Create(ShapeType::RECTANGLE);
+        item->SetContentSize(QSizeF(120.0, 80.0));
+        item->setPos(QPointF(24.0, 40.0));
+        LogService::SetLevel(LogLevel::LOG_EVENT);
+        LifecycleLog::LogItem(uid, QStringLiteral("#selftest"), QStringLiteral("Create"), *item);
+        QFile file(path);
+        const bool opened = file.open(QIODevice::ReadOnly | QIODevice::Text);
+        const QString text = opened ? QString::fromUtf8(file.readAll()) : QString();
+        bool asciiOnly = !text.isEmpty();
+        for (const QChar ch : text) {
+            if (ch.unicode() > 0x7f) {
+                asciiOnly = false;
+                break;
+            }
+        }
+        ctx.Check(asciiOnly && text.contains(QStringLiteral("Create type=rectangle")) &&
+                      text.contains(QStringLiteral("position=(24.0,40.0)")),
+                  QStringLiteral("图元生命周期日志固定英文并带类型与坐标"), text);
+        QFile::remove(path);
+        LogService::SetLevel(LogLevel::LOG_WARNING);
+        delete item;
     }
 
     {
@@ -174,19 +203,19 @@ void selftest::RunSettingsDialogBasicTests(Context& ctx)
         if (seed.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
             seed.write(QStringLiteral("# StoryBoard canvas lifecycle log\n"
                                       "# canvas uid=%1\n"
-                                      "%2 [INFO ] storyboard.lifecycle: 二十天前事件\n")
+                                      "%2 [INFO ] storyboard.lifecycle: old event\n")
                            .arg(uid, oldStamp)
                            .toUtf8());
             seed.close();
         }
         LogService::SetLevel(LogLevel::LOG_EVENT);
-        LifecycleLog::LogEdit(uid, QStringLiteral("#自检"), QStringLiteral("编辑"), QStringLiteral("十四天内新事件"));
+        LifecycleLog::LogEdit(uid, QStringLiteral("#selftest"), QStringLiteral("Edit"), QStringLiteral("recent event"));
         QFile file(path);
         const bool opened = file.open(QIODevice::ReadOnly | QIODevice::Text);
         const QString text = opened ? QString::fromUtf8(file.readAll()) : QString();
-        ctx.Check(!text.contains(QStringLiteral("二十天前事件")), QStringLiteral("画布日志裁掉 14 天以前的条目"));
+        ctx.Check(!text.contains(QStringLiteral("old event")), QStringLiteral("画布日志裁掉 14 天以前的条目"));
         ctx.Check(text.contains(QStringLiteral("# StoryBoard canvas lifecycle log")) &&
-                      text.contains(QStringLiteral("十四天内新事件")),
+                      text.contains(QStringLiteral("recent event")),
                   QStringLiteral("裁剪后保留文件头并继续追加新日志"));
         QFile::remove(path);
         LogService::SetLevel(LogLevel::LOG_WARNING);

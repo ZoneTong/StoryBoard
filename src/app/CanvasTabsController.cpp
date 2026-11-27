@@ -80,7 +80,7 @@ CanvasSession* CanvasTabsController::CreateSession(bool activate)
     CanvasSession* session = new CanvasSession(m_window, scene, view, undo, ++m_untitledCount, ++m_canvasCount);
     AdoptSession(session);
     UpdateTabLabel(session);
-    LifecycleLog::LogCanvas(session->LogUid(), session->LogLabel(), QStringLiteral("新建"));
+    LifecycleLog::LogCanvas(session->LogUid(), session->LogLabel(), QStringLiteral("New"));
     if (activate) {
         m_tabs->setCurrentWidget(view);
     }
@@ -138,7 +138,7 @@ void CanvasTabsController::ActivateIndex(int index)
     if (m_window) {
         m_window->ActivateSession(session);
     }
-    LifecycleLog::LogCanvas(session->LogUid(), session->LogLabel(), QStringLiteral("切换"));
+    LifecycleLog::LogCanvas(session->LogUid(), session->LogLabel(), QStringLiteral("Switch"));
     m_switching = false;
 }
 
@@ -196,13 +196,13 @@ void CanvasTabsController::RemoveSession(CanvasSession* session)
     }
     const QString logLabel = session->LogLabel();
     const QString logUid = session->LogUid();
-    LifecycleLog::LogCanvas(logUid, logLabel, QStringLiteral("关闭"), session->FilePath());
+    LifecycleLog::LogCanvas(logUid, logLabel, QStringLiteral("Close"), session->FilePath());
     if (session->Scene()) {
         // 关闭时只为「当前状态还没进文件」的图元记销毁：已保存图元的销毁属于
         // 正常卸载，写进日志只会淹没真正需要复现的未落盘改动。
         for (CanvasItem* item : session->Scene()->CanvasItems()) {
             if (!session->Scene()->IsItemSavedState(item)) {
-                LifecycleLog::LogItem(logUid, logLabel, QStringLiteral("销毁（未保存）"), *item);
+                LifecycleLog::LogItem(logUid, logLabel, QStringLiteral("Destroy (unsaved)"), *item);
             }
         }
     }
@@ -234,11 +234,11 @@ void CanvasTabsController::ClearAll()
         // 窗口关闭也会销毁全部会话：同样只为未落盘的图元留失效记录。
         const QString logLabel = session->LogLabel();
         const QString logUid = session->LogUid();
-        LifecycleLog::LogCanvas(logUid, logLabel, QStringLiteral("关闭"), session->FilePath());
+        LifecycleLog::LogCanvas(logUid, logLabel, QStringLiteral("Close"), session->FilePath());
         if (session->Scene()) {
             for (CanvasItem* item : session->Scene()->CanvasItems()) {
                 if (!session->Scene()->IsItemSavedState(item)) {
-                    LifecycleLog::LogItem(logUid, logLabel, QStringLiteral("销毁（未保存）"), *item);
+                    LifecycleLog::LogItem(logUid, logLabel, QStringLiteral("Destroy (unsaved)"), *item);
                 }
             }
         }

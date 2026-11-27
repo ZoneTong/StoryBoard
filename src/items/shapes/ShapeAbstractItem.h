@@ -69,6 +69,7 @@ QList<FillStyle> AllFillStyles();
 namespace FillStyles {
 
 QString Name(FillStyle style);
+QString LogName(FillStyle style);
 
 } // namespace FillStyles
 // 填充纹理的中心线几何，编辑面板的工具按钮缩略图与图元绘制共用这一份。

@@ -99,7 +99,7 @@ void CanvasScene::AttachItem(CanvasItem* item)
     ApplyItemStacking(item);
     ApplyItemInteraction(item);
     if (newlyAttached) {
-        LifecycleLog::LogItem(LogUid(), m_logLabel, QStringLiteral("创建"), *item);
+        LifecycleLog::LogItem(LogUid(), m_logLabel, QStringLiteral("Create"), *item);
     }
 
     UpdateSceneExtent();
@@ -115,7 +115,7 @@ void CanvasScene::DetachItem(CanvasItem* item)
 
     if (item->scene() == this) {
         removeItem(item);
-        LifecycleLog::LogItem(LogUid(), m_logLabel, QStringLiteral("销毁"), *item);
+        LifecycleLog::LogItem(LogUid(), m_logLabel, QStringLiteral("Destroy"), *item);
     }
     if (!m_orphans.contains(item)) {
         m_orphans.append(item);
@@ -349,7 +349,7 @@ void CanvasScene::CommitNewItem(CanvasItem* item, const QString& text)
     const bool alreadyAttached = item->scene() == this;
     AddItemsWithUndo({item}, text);
     if (alreadyAttached) {
-        LifecycleLog::LogItem(LogUid(), m_logLabel, QStringLiteral("创建"), *item);
+        LifecycleLog::LogItem(LogUid(), m_logLabel, QStringLiteral("Create"), *item);
     }
 }
 
