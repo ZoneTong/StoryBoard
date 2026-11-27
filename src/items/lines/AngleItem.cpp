@@ -185,6 +185,12 @@ void AngleItem::EndHandleDrag()
     SetAngleReadoutVisible(false);
 }
 
+QString AngleItem::CustomHandleActionText(int handle) const
+{
+    Q_UNUSED(handle);
+    return tr("Adjust angle");
+}
+
 void AngleItem::DrawSelectionOverlay(QPainter* painter)
 {
     LineAbstractItem::DrawSelectionOverlay(painter);

@@ -341,7 +341,16 @@ void CanvasScene::AddItemsWithUndo(const QList<CanvasItem*>& items, const QStrin
 
 void CanvasScene::CommitNewItem(CanvasItem* item, const QString& text)
 {
+    if (!item) {
+        return;
+    }
+    // 手绘曲线在起笔时已经 addItem 进场景，收笔提交时 AttachItem 看不到
+    // “新挂载”，创建日志会丢；这里补记一次，撤销 / 重做仍由 AttachItem 负责。
+    const bool alreadyAttached = item->scene() == this;
     AddItemsWithUndo({item}, text);
+    if (alreadyAttached) {
+        LifecycleLog::LogItem(m_logLabel, QStringLiteral("创建"), *item);
+    }
 }
 
 CanvasItem* CanvasScene::CreateItem(const QString& kind, const QString& shapeType) const

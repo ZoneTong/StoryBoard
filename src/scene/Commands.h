@@ -84,6 +84,7 @@ class GroupCommand : public QUndoCommand {
                  const GroupState& groupsAfter = GroupState());
     void undo() override;
     void redo() override;
+    QString LogDetail(bool reverse) const;
 
   private:
     void Apply(const QList<int>& groupIds, const GroupState& groups);
@@ -103,6 +104,7 @@ class GroupRenameCommand : public QUndoCommand {
                        const QString& text);
     void undo() override;
     void redo() override;
+    QString LogDetail(bool reverse) const;
 
   private:
     void Apply(const QString& name);
@@ -119,6 +121,7 @@ class BackgroundCommand : public QUndoCommand {
                       const QString& text);
     void undo() override;
     void redo() override;
+    QString LogDetail(bool reverse) const;
 
   private:
     CanvasScene* m_scene = nullptr;
@@ -131,6 +134,7 @@ class CanvasSizeCommand : public QUndoCommand {
     CanvasSizeCommand(CanvasScene* scene, const QRectF& before, const QRectF& after, const QString& text);
     void undo() override;
     void redo() override;
+    QString LogDetail(bool reverse) const;
 
   private:
     CanvasScene* m_scene = nullptr;
@@ -143,6 +147,7 @@ class ItemStackCommand : public QUndoCommand {
     ItemStackCommand(CanvasScene* scene, const ItemStackList& before, const ItemStackList& after, const QString& text);
     void undo() override;
     void redo() override;
+    QString LogDetail(bool reverse) const;
 
   private:
     CanvasScene* m_scene = nullptr;
@@ -157,6 +162,7 @@ class TextItemCommand : public QUndoCommand {
                     const QString& text);
     void undo() override;
     void redo() override;
+    QString LogDetail(bool reverse) const;
 
   private:
     CanvasScene* m_scene = nullptr;
@@ -173,6 +179,7 @@ class TextContainerCommand : public QUndoCommand {
                          const QString& afterUid, const TextItemState& afterState, const QString& label);
     void undo() override;
     void redo() override;
+    QString LogDetail(bool reverse) const;
 
   private:
     void Apply(const QString& uid, const TextItemState& state);
@@ -215,6 +222,7 @@ class ConvertItemCommand : public QUndoCommand {
                        const QList<TextItem*>& containerTexts, const QString& text);
     void undo() override;
     void redo() override;
+    QString LogDetail(bool reverse) const;
 
   private:
     void Swap(CanvasItem* detach, CanvasItem* attach);
@@ -233,6 +241,7 @@ class LineRouteCommand : public QUndoCommand {
                      const LineAbstractItem::GeometryState& afterGeometry, const QString& text);
     void undo() override;
     void redo() override;
+    QString LogDetail(bool reverse) const;
 
   private:
     void Apply(int route, const LineAbstractItem::GeometryState& geometry);
@@ -261,6 +270,7 @@ class MirrorCommand : public QUndoCommand {
                   const QString& text);
     void undo() override;
     void redo() override;
+    QString LogDetail(bool reverse) const;
 
   private:
     void Apply(const QList<MirrorItemState>& states);
@@ -275,9 +285,11 @@ class StrokeSmoothCommand : public QUndoCommand {
   public:
     StrokeSmoothCommand(CanvasScene* scene, const QList<LineAbstractItem*>& items,
                         const QList<LineAbstractItem::GeometryState>& before,
-                        const QList<LineAbstractItem::GeometryState>& after, const QString& text);
+                        const QList<LineAbstractItem::GeometryState>& after, const QString& text,
+                        const QList<QPointF>& beforeEndpoints = {}, const QList<QPointF>& afterEndpoints = {});
     void undo() override;
     void redo() override;
+    QString LogDetail(bool reverse) const;
 
   private:
     void Apply(const QList<LineAbstractItem::GeometryState>& states);
@@ -286,6 +298,9 @@ class StrokeSmoothCommand : public QUndoCommand {
     QList<QPointer<LineAbstractItem>> m_items;
     QList<LineAbstractItem::GeometryState> m_before;
     QList<LineAbstractItem::GeometryState> m_after;
+    // 端点拖拽前后的真实场景坐标（起点 / 终点各一个），日志按它给出移动前后位置。
+    QList<QPointF> m_beforeEndpoints;
+    QList<QPointF> m_afterEndpoints;
 };
 
 // 箭头两端绑定的一份快照，端点拖拽 / 删除目标时用它做可撤销的解除与恢复。
@@ -301,6 +316,7 @@ class ArrowBindingCommand : public QUndoCommand {
                         const QString& text);
     void undo() override;
     void redo() override;
+    QString LogDetail(bool reverse) const;
 
   private:
     void Apply(const QList<ArrowBindingState>& states);
@@ -338,6 +354,7 @@ class LayerStateCommand : public QUndoCommand {
                       const QString& text);
     void undo() override;
     void redo() override;
+    QString LogDetail(bool reverse) const;
 
   private:
     CanvasScene* m_scene = nullptr;

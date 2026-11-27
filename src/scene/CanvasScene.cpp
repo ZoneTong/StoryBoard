@@ -18,6 +18,23 @@ bool IsLifecycleOnlyCommand(const QUndoCommand* command)
     if (!command || command->childCount() == 0) {
         return false;
     }
+    // 删除带绑定箭头的图形时，宏里会多一条“解除绑定”；它仍属于删除生命周期，
+    // 不应再产生一条独立的编辑日志。
+    bool hasRemove = false;
+    for (int i = 0; i < command->childCount(); ++i) {
+        const QUndoCommand* child = command->child(i);
+        if (dynamic_cast<const RemoveItemsCommand*>(child)) {
+            hasRemove = true;
+            continue;
+        }
+        if (!dynamic_cast<const ArrowBindingCommand*>(child)) {
+            hasRemove = false;
+            break;
+        }
+    }
+    if (hasRemove) {
+        return true;
+    }
     for (int i = 0; i < command->childCount(); ++i) {
         if (!IsLifecycleOnlyCommand(command->child(i))) {
             return false;
@@ -40,6 +57,45 @@ QString CommandLogDetail(const QUndoCommand* command, bool reverse)
     }
     if (const auto* property = dynamic_cast<const ItemPropertyCommand*>(command)) {
         return property->LogDetail(reverse);
+    }
+    if (const auto* text = dynamic_cast<const TextItemCommand*>(command)) {
+        return text->LogDetail(reverse);
+    }
+    if (const auto* container = dynamic_cast<const TextContainerCommand*>(command)) {
+        return container->LogDetail(reverse);
+    }
+    if (const auto* route = dynamic_cast<const LineRouteCommand*>(command)) {
+        return route->LogDetail(reverse);
+    }
+    if (const auto* smooth = dynamic_cast<const StrokeSmoothCommand*>(command)) {
+        return smooth->LogDetail(reverse);
+    }
+    if (const auto* binding = dynamic_cast<const ArrowBindingCommand*>(command)) {
+        return binding->LogDetail(reverse);
+    }
+    if (const auto* mirror = dynamic_cast<const MirrorCommand*>(command)) {
+        return mirror->LogDetail(reverse);
+    }
+    if (const auto* convert = dynamic_cast<const ConvertItemCommand*>(command)) {
+        return convert->LogDetail(reverse);
+    }
+    if (const auto* group = dynamic_cast<const GroupCommand*>(command)) {
+        return group->LogDetail(reverse);
+    }
+    if (const auto* rename = dynamic_cast<const GroupRenameCommand*>(command)) {
+        return rename->LogDetail(reverse);
+    }
+    if (const auto* background = dynamic_cast<const BackgroundCommand*>(command)) {
+        return background->LogDetail(reverse);
+    }
+    if (const auto* canvasSize = dynamic_cast<const CanvasSizeCommand*>(command)) {
+        return canvasSize->LogDetail(reverse);
+    }
+    if (const auto* stack = dynamic_cast<const ItemStackCommand*>(command)) {
+        return stack->LogDetail(reverse);
+    }
+    if (const auto* layers = dynamic_cast<const LayerStateCommand*>(command)) {
+        return layers->LogDetail(reverse);
     }
     QStringList parts;
     for (int i = 0; i < command->childCount(); ++i) {

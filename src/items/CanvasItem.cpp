@@ -4,6 +4,7 @@
 #include "canvas/controllers/CanvasItemHandles.h"
 #include "canvas/controllers/CanvasItemInteraction.h"
 #include "items/CanvasItemGeometry.h"
+#include "items/lines/LineAbstractItem.h"
 #include "items/properties/ItemPropertyCatalog.h"
 #include "scene/CanvasScene.h"
 
@@ -13,6 +14,7 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsView>
 #include <QJsonArray>
+#include <QLineF>
 #include <QPainter>
 #include <QSet>
 #include <QStyleOptionGraphicsItem>
@@ -196,7 +198,29 @@ QString CanvasItem::LogStateSummary() const
     QString summary = QStringLiteral("位置=(%1,%2) 尺寸=%3×%4 旋转=%5°")
                           .arg(LogNumber(pos().x()), LogNumber(pos().y()))
                           .arg(LogNumber(size.width()), LogNumber(size.height()), LogNumber(RotationAngle()));
+    if (const auto* line = dynamic_cast<const LineAbstractItem*>(this)) {
+        const QVector<QPointF> knots = line->StrokePoints();
+        qreal length = 0.0;
+        for (int i = 1; i < knots.size(); ++i) {
+            length += QLineF(knots.at(i - 1), knots.at(i)).length();
+        }
+        summary += QStringLiteral(" 节点=%1 长度=%2").arg(knots.size()).arg(LogNumber(length));
+        if (knots.size() >= 2) {
+            const QPointF start = knots.constFirst();
+            const QPointF end = knots.constLast();
+            summary += QStringLiteral(" 走向=%1°")
+                           .arg(LogNumber(qRadiansToDegrees(qAtan2(end.y() - start.y(), end.x() - start.x()))));
+        }
+    }
     const ItemPropertySet properties = Properties();
+    auto appendArrow = [this, &summary, &properties](ItemProperty property, const QString& label) {
+        if (properties.Contains(property)) {
+            summary += QStringLiteral(" %1=%2").arg(
+                label, ArrowStyles::Name(static_cast<ArrowStyle>(PropertyValue(property).toInt())));
+        }
+    };
+    appendArrow(ItemProperty::ARROW_START, QStringLiteral("起点箭头"));
+    appendArrow(ItemProperty::ARROW_END, QStringLiteral("终点箭头"));
     auto appendAngle = [this, &summary, &properties](ItemProperty property, const QString& label) {
         if (properties.Contains(property)) {
             summary += QStringLiteral(" %1=%2°").arg(label, LogNumber(PropertyValue(property).toDouble()));

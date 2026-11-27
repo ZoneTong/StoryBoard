@@ -135,6 +135,7 @@ void CanvasItemInteraction::BeginResize(int handle, const QPointF& scenePos)
     m_customDrag = false;
     m_customDragBefore.clear();
     m_lineCustomDrag = nullptr;
+    m_hasLineEndpoints = false;
 
     if (handle < CanvasItem::CUSTOM_0) {
         return;
@@ -147,6 +148,12 @@ void CanvasItemInteraction::BeginResize(int handle, const QPointF& scenePos)
     if (auto* line = dynamic_cast<LineAbstractItem*>(m_item)) {
         m_lineCustomDrag = line;
         m_lineGeometryBefore = line->geometryState();
+        const QVector<QPointF> knots = line->StrokePoints();
+        m_hasLineEndpoints = knots.size() >= 2;
+        if (m_hasLineEndpoints) {
+            m_lineStartSceneBefore = line->mapToScene(knots.constFirst());
+            m_lineEndSceneBefore = line->mapToScene(knots.constLast());
+        }
         m_hasBindingSnapshot = true;
         m_startBindingBefore = line->StartBinding();
         m_endBindingBefore = line->EndBinding();
@@ -279,6 +286,9 @@ void CanvasItemInteraction::FinishInteraction()
     const QMap<PropertyKey, QVariant> customBefore = m_customDragBefore;
     LineAbstractItem* lineCustomDrag = m_lineCustomDrag;
     const LineAbstractItem::GeometryState lineGeometryBefore = m_lineGeometryBefore;
+    const QPointF lineStartSceneBefore = m_lineStartSceneBefore;
+    const QPointF lineEndSceneBefore = m_lineEndSceneBefore;
+    const bool hasLineEndpoints = m_hasLineEndpoints;
     const bool hasBindingSnapshot = m_hasBindingSnapshot;
     const QJsonObject startBindingBefore = m_startBindingBefore;
     const QJsonObject endBindingBefore = m_endBindingBefore;
@@ -290,6 +300,7 @@ void CanvasItemInteraction::FinishInteraction()
     m_customDrag = false;
     m_customDragBefore.clear();
     m_lineCustomDrag = nullptr;
+    m_hasLineEndpoints = false;
     m_hasBindingSnapshot = false;
     m_hasTextSnapshot = false;
 
@@ -303,15 +314,45 @@ void CanvasItemInteraction::FinishInteraction()
             const bool geometryChanged = after != lineGeometryBefore;
             const bool bindingChanged = hasBindingSnapshot && (startBindingBefore != lineCustomDrag->StartBinding() ||
                                                                endBindingBefore != lineCustomDrag->EndBinding());
+            // 角度线 / 弧线的端点拖拽改的是起角、扫角这类属性，几何状态看不出
+            // 具体属性名；按属性快照补一条差异，避免日志只有“Move endpoint”。
+            QMap<PropertyKey, QVariant> propertiesBefore;
+            QMap<PropertyKey, QVariant> propertiesAfter;
+            for (auto it = customBefore.constBegin(); it != customBefore.constEnd(); ++it) {
+                const QVariant now = m_item->PropertyValueByKey(it.key());
+                if (now == it.value()) {
+                    continue;
+                }
+                propertiesBefore.insert(it.key(), it.value());
+                propertiesAfter.insert(it.key(), now);
+            }
+            const bool propertiesChanged = !propertiesBefore.isEmpty();
+            QList<QPointF> beforeEndpoints;
+            QList<QPointF> afterEndpoints;
+            if (hasLineEndpoints) {
+                const QVector<QPointF> afterKnots = lineCustomDrag->StrokePoints();
+                if (afterKnots.size() >= 2) {
+                    beforeEndpoints = {lineStartSceneBefore, lineEndSceneBefore};
+                    afterEndpoints = {lineCustomDrag->mapToScene(afterKnots.constFirst()),
+                                      lineCustomDrag->mapToScene(afterKnots.constLast())};
+                }
+            }
             if (CanvasScene* canvas = m_item->canvasScene();
-                canvas && canvas->UndoStack() && (geometryChanged || bindingChanged)) {
+                canvas && canvas->UndoStack() && (geometryChanged || bindingChanged || propertiesChanged)) {
                 const QString text = m_item->tr("Move endpoint");
-                if (geometryChanged && bindingChanged) {
+                const int commandCount =
+                    (geometryChanged ? 1 : 0) + (bindingChanged ? 1 : 0) + (propertiesChanged ? 1 : 0);
+                if (commandCount > 1) {
                     canvas->UndoStack()->beginMacro(text);
                 }
                 if (geometryChanged) {
-                    canvas->UndoStack()->push(
-                        new StrokeSmoothCommand(canvas, {lineCustomDrag}, {lineGeometryBefore}, {after}, text));
+                    canvas->UndoStack()->push(new StrokeSmoothCommand(canvas, {lineCustomDrag}, {lineGeometryBefore},
+                                                                      {after}, text, beforeEndpoints, afterEndpoints));
+                }
+                if (propertiesChanged) {
+                    canvas->UndoStack()->push(new ItemPropertyCommand(canvas, {m_item}, {propertiesBefore},
+                                                                      {propertiesAfter},
+                                                                      m_item->CustomHandleActionText(customHandle)));
                 }
                 if (bindingChanged) {
                     canvas->UndoStack()->push(new ArrowBindingCommand(
@@ -319,7 +360,7 @@ void CanvasItemInteraction::FinishInteraction()
                         {ArrowBindingState{lineCustomDrag->StartBinding(), lineCustomDrag->EndBinding()}},
                         m_item->tr("Rebind arrow")));
                 }
-                if (geometryChanged && bindingChanged) {
+                if (commandCount > 1) {
                     canvas->UndoStack()->endMacro();
                 }
             }

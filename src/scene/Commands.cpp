@@ -7,10 +7,14 @@
 #include "scene/CanvasScene.h"
 
 #include <QColor>
+#include <QFont>
 #include <QGraphicsScene>
 #include <QImage>
+#include <QLineF>
+#include <QSet>
 #include <QStringList>
 #include <QtMath>
+#include <algorithm>
 #include <utility>
 
 namespace {
@@ -132,6 +136,10 @@ QString LogPropertyValue(PropertyKey key, const QVariant& value)
         (key.CommonProperty() == ItemProperty::START_ANGLE || key.CommonProperty() == ItemProperty::SWEEP_ANGLE ||
          key.CommonProperty() == ItemProperty::BOTTOM_ANGLE1 || key.CommonProperty() == ItemProperty::BOTTOM_ANGLE2 ||
          key.CommonProperty() == ItemProperty::PARALLELOGRAM_ANGLE || key.CommonProperty() == ItemProperty::ROTATION);
+    if (key.IsCommon() &&
+        (key.CommonProperty() == ItemProperty::ARROW_START || key.CommonProperty() == ItemProperty::ARROW_END)) {
+        return ArrowStyles::Name(static_cast<ArrowStyle>(value.toInt()));
+    }
     if (typeId == QMetaType::Double || typeId == QMetaType::Float) {
         return angle ? LogNumber(value.toDouble()) + QStringLiteral("°") : LogNumber(value.toDouble());
     }
@@ -581,8 +589,10 @@ void GroupRenameCommand::Apply(const QString& name)
 
 StrokeSmoothCommand::StrokeSmoothCommand(CanvasScene* scene, const QList<LineAbstractItem*>& items,
                                          const QList<LineAbstractItem::GeometryState>& before,
-                                         const QList<LineAbstractItem::GeometryState>& after, const QString& text)
-    : m_scene(scene), m_before(before), m_after(after)
+                                         const QList<LineAbstractItem::GeometryState>& after, const QString& text,
+                                         const QList<QPointF>& beforeEndpoints, const QList<QPointF>& afterEndpoints)
+    : m_scene(scene), m_before(before), m_after(after), m_beforeEndpoints(beforeEndpoints),
+      m_afterEndpoints(afterEndpoints)
 {
     setText(text);
     for (LineAbstractItem* item : items) {
@@ -789,18 +799,24 @@ QString ItemPropertyCommand::LogDetail(bool reverse) const
     if (m_before.isEmpty() || m_after.isEmpty()) {
         return {};
     }
-    const QMap<PropertyKey, QVariant>& oldValues = reverse ? m_after.constFirst() : m_before.constFirst();
-    const QMap<PropertyKey, QVariant>& newValues = reverse ? m_before.constFirst() : m_after.constFirst();
     QStringList parts;
-    for (auto it = newValues.constBegin(); it != newValues.constEnd(); ++it) {
-        const auto oldIt = oldValues.constFind(it.key());
-        const QVariant oldValue = oldIt == oldValues.constEnd() ? QVariant() : oldIt.value();
-        if (oldIt != oldValues.constEnd() && SamePropertyValue(oldValue, it.value())) {
-            continue;
+    const int count = qMin(m_before.size(), m_after.size());
+    for (int index = 0; index < count; ++index) {
+        const QMap<PropertyKey, QVariant>& oldValues = reverse ? m_after.at(index) : m_before.at(index);
+        const QMap<PropertyKey, QVariant>& newValues = reverse ? m_before.at(index) : m_after.at(index);
+        for (auto it = newValues.constBegin(); it != newValues.constEnd(); ++it) {
+            const auto oldIt = oldValues.constFind(it.key());
+            const QVariant oldValue = oldIt == oldValues.constEnd() ? QVariant() : oldIt.value();
+            if (oldIt != oldValues.constEnd() && SamePropertyValue(oldValue, it.value())) {
+                continue;
+            }
+            const QString part = QStringLiteral("%1 %2→%3")
+                                     .arg(PropertyLabel(it.key()), LogPropertyValue(it.key(), oldValue),
+                                          LogPropertyValue(it.key(), it.value()));
+            if (!parts.contains(part)) {
+                parts.append(part);
+            }
         }
-        parts.append(QStringLiteral("%1 %2→%3")
-                         .arg(PropertyLabel(it.key()), LogPropertyValue(it.key(), oldValue),
-                              LogPropertyValue(it.key(), it.value())));
     }
     if (m_items.size() > 1) {
         parts.append(QStringLiteral("等 %1 个图元").arg(m_items.size()));
@@ -845,4 +861,417 @@ void ItemPropertyCommand::Apply(const QList<QMap<PropertyKey, QVariant>>& states
     } else {
         m_scene->ApplyItemStack(stack);
     }
+}
+namespace {
+
+QString LogText(const QString& text, int limit = 24)
+{
+    QString value = text.simplified();
+    if (value.size() > limit) {
+        value = value.left(limit) + QStringLiteral("…");
+    }
+    return value.isEmpty() ? QStringLiteral("空") : value;
+}
+
+QVector<QPointF> GeometryKnots(const LineAbstractItem::GeometryState& state)
+{
+    if (state.hasDot) {
+        return {state.dotCenter};
+    }
+    return CurveGeometry::Knots(state.segments);
+}
+
+qreal PolylineLength(const QVector<QPointF>& knots)
+{
+    qreal length = 0.0;
+    for (int i = 1; i < knots.size(); ++i) {
+        length += QLineF(knots.at(i - 1), knots.at(i)).length();
+    }
+    return length;
+}
+
+QString DescribeLineGeometryChange(const LineAbstractItem::GeometryState& before,
+                                   const LineAbstractItem::GeometryState& after)
+{
+    const QVector<QPointF> oldKnots = GeometryKnots(before);
+    const QVector<QPointF> newKnots = GeometryKnots(after);
+    if (oldKnots.isEmpty() || newKnots.isEmpty()) {
+        return {};
+    }
+    QStringList parts;
+    if (oldKnots.size() != newKnots.size()) {
+        parts.append(QStringLiteral("节点 %1→%2").arg(oldKnots.size()).arg(newKnots.size()));
+    }
+    if (oldKnots.size() >= 2 && newKnots.size() >= 2) {
+        const qreal oldLength = PolylineLength(oldKnots);
+        const qreal newLength = PolylineLength(newKnots);
+        if (!qFuzzyCompare(oldLength + 1.0, newLength + 1.0)) {
+            parts.append(QStringLiteral("长度 %1→%2").arg(LogNumber(oldLength), LogNumber(newLength)));
+        }
+        const QPointF oldLocalStart = oldKnots.constFirst();
+        const QPointF oldLocalEnd = oldKnots.constLast();
+        const QPointF newLocalStart = newKnots.constFirst();
+        const QPointF newLocalEnd = newKnots.constLast();
+        const qreal oldAngle =
+            qRadiansToDegrees(qAtan2(oldLocalEnd.y() - oldLocalStart.y(), oldLocalEnd.x() - oldLocalStart.x()));
+        const qreal newAngle =
+            qRadiansToDegrees(qAtan2(newLocalEnd.y() - newLocalStart.y(), newLocalEnd.x() - newLocalStart.x()));
+        if (!qFuzzyCompare(oldAngle + 1.0, newAngle + 1.0)) {
+            parts.append(QStringLiteral("角度 %1°→%2°").arg(LogNumber(oldAngle), LogNumber(newAngle)));
+        }
+    }
+    return parts.join(QStringLiteral("，"));
+}
+
+QString DescribeTextStateChange(const TextItemState& before, const TextItemState& after)
+{
+    QStringList parts;
+    if (before.text != after.text) {
+        parts.append(QStringLiteral("文字 \"%1\"→\"%2\"").arg(LogText(before.text), LogText(after.text)));
+    }
+    if (before.font != after.font) {
+        const auto fontText = [](const QFont& font) {
+            return QStringLiteral("%1 %2pt").arg(font.family()).arg(LogNumber(font.pointSizeF()));
+        };
+        parts.append(QStringLiteral("字体 %1→%2").arg(fontText(before.font), fontText(after.font)));
+    }
+    if (before.color != after.color) {
+        parts.append(QStringLiteral("文字色 %1→%2").arg(before.color.name(), after.color.name()));
+    }
+    if (before.pos != after.pos) {
+        parts.append(QStringLiteral("位置 (%1,%2)→(%3,%4)")
+                         .arg(LogNumber(before.pos.x()), LogNumber(before.pos.y()), LogNumber(after.pos.x()),
+                              LogNumber(after.pos.y())));
+    }
+    if (before.size != after.size) {
+        parts.append(QStringLiteral("尺寸 %1×%2→%3×%4")
+                         .arg(LogNumber(before.size.width()), LogNumber(before.size.height()),
+                              LogNumber(after.size.width()), LogNumber(after.size.height())));
+    }
+    return parts.join(QStringLiteral("，"));
+}
+
+QString BackgroundTypeLabel(BackgroundType type)
+{
+    switch (type) {
+    case BackgroundType::NONE:
+        return QStringLiteral("无");
+    case BackgroundType::COLOR:
+        return QStringLiteral("颜色");
+    case BackgroundType::IMAGE:
+        return QStringLiteral("图片");
+    }
+    return QStringLiteral("未知");
+}
+
+QString DescribeLayerStackChange(const LayerStackState& before, const LayerStackState& after)
+{
+    QStringList parts;
+    QSet<int> ids;
+    for (const CanvasLayer& layer : before.layers) {
+        ids.insert(layer.id);
+    }
+    for (const CanvasLayer& layer : after.layers) {
+        ids.insert(layer.id);
+    }
+    for (int id : ids) {
+        const auto oldIt = std::find_if(before.layers.cbegin(), before.layers.cend(),
+                                        [id](const CanvasLayer& layer) { return layer.id == id; });
+        const auto newIt = std::find_if(after.layers.cbegin(), after.layers.cend(),
+                                        [id](const CanvasLayer& layer) { return layer.id == id; });
+        if (oldIt == before.layers.cend()) {
+            parts.append(QStringLiteral("新增图层「%1」").arg(newIt->name));
+        } else if (newIt == after.layers.cend()) {
+            parts.append(QStringLiteral("删除图层「%1」").arg(oldIt->name));
+        } else {
+            if (oldIt->name != newIt->name) {
+                parts.append(QStringLiteral("图层名 \"%1\"→\"%2\"").arg(oldIt->name, newIt->name));
+            }
+            if (oldIt->visible != newIt->visible) {
+                parts.append(QStringLiteral("图层「%1」可见 %2→%3")
+                                 .arg(newIt->name, oldIt->visible ? QStringLiteral("是") : QStringLiteral("否"),
+                                      newIt->visible ? QStringLiteral("是") : QStringLiteral("否")));
+            }
+            if (oldIt->locked != newIt->locked) {
+                parts.append(QStringLiteral("图层「%1」锁定 %2→%3")
+                                 .arg(newIt->name, oldIt->locked ? QStringLiteral("是") : QStringLiteral("否"),
+                                      newIt->locked ? QStringLiteral("是") : QStringLiteral("否")));
+            }
+        }
+    }
+    if (before.activeLayerId != after.activeLayerId) {
+        parts.append(QStringLiteral("活动图层 %1→%2").arg(before.activeLayerId).arg(after.activeLayerId));
+    }
+    return parts.join(QStringLiteral("，"));
+}
+
+} // namespace
+
+QString GroupCommand::LogDetail(bool reverse) const
+{
+    const QList<int>& oldIds = reverse ? m_after : m_before;
+    const QList<int>& newIds = reverse ? m_before : m_after;
+    const QHash<int, QString>& oldNames = reverse ? m_groupsAfter.names : m_groupsBefore.names;
+    const QHash<int, QString>& newNames = reverse ? m_groupsBefore.names : m_groupsAfter.names;
+    if (oldIds.isEmpty() || newIds.isEmpty()) {
+        return {};
+    }
+    QStringList parts;
+    for (int i = 0; i < oldIds.size() && i < newIds.size(); ++i) {
+        if (oldIds.at(i) == newIds.at(i)) {
+            continue;
+        }
+        const QString oldGroup =
+            oldIds.at(i) == 0 ? QStringLiteral("无") : QStringLiteral("「%1」").arg(oldNames.value(oldIds.at(i)));
+        const QString newGroup =
+            newIds.at(i) == 0 ? QStringLiteral("无") : QStringLiteral("「%1」").arg(newNames.value(newIds.at(i)));
+        parts.append(QStringLiteral("分组 %1→%2").arg(oldGroup, newGroup));
+        break;
+    }
+    if (parts.isEmpty()) {
+        return {};
+    }
+    if (m_items.size() > 1) {
+        parts.append(QStringLiteral("等 %1 个图元").arg(m_items.size()));
+    }
+    return parts.join(QStringLiteral("，"));
+}
+
+QString GroupRenameCommand::LogDetail(bool reverse) const
+{
+    const QString oldName = reverse ? m_after : m_before;
+    const QString newName = reverse ? m_before : m_after;
+    return oldName == newName ? QString() : QStringLiteral("组名 \"%1\"→\"%2\"").arg(oldName, newName);
+}
+
+QString BackgroundCommand::LogDetail(bool reverse) const
+{
+    const CanvasBackground& before = reverse ? m_after : m_before;
+    const CanvasBackground& after = reverse ? m_before : m_after;
+    if (before == after) {
+        return {};
+    }
+    QStringList parts;
+    if (before.type != after.type) {
+        parts.append(
+            QStringLiteral("背景类型 %1→%2").arg(BackgroundTypeLabel(before.type), BackgroundTypeLabel(after.type)));
+    }
+    if (before.color != after.color) {
+        parts.append(QStringLiteral("背景色 %1→%2").arg(before.color.name(), after.color.name()));
+    }
+    if (before.mode != after.mode) {
+        parts.append(QStringLiteral("背景模式 %1→%2")
+                         .arg(BackgroundModeToString(before.mode), BackgroundModeToString(after.mode)));
+    }
+    if (before.image.isNull() != after.image.isNull() ||
+        (!before.image.isNull() && before.image.toImage() != after.image.toImage())) {
+        parts.append(QStringLiteral("背景图 %1→%2")
+                         .arg(before.image.isNull()
+                                  ? QStringLiteral("无")
+                                  : QStringLiteral("%1×%2").arg(before.image.width()).arg(before.image.height()),
+                              after.image.isNull()
+                                  ? QStringLiteral("无")
+                                  : QStringLiteral("%1×%2").arg(after.image.width()).arg(after.image.height())));
+    }
+    return parts.join(QStringLiteral("，"));
+}
+
+QString CanvasSizeCommand::LogDetail(bool reverse) const
+{
+    const QRectF before = reverse ? m_after : m_before;
+    const QRectF after = reverse ? m_before : m_after;
+    if (qFuzzyCompare(before.width() + 1.0, after.width() + 1.0) &&
+        qFuzzyCompare(before.height() + 1.0, after.height() + 1.0)) {
+        return {};
+    }
+    return QStringLiteral("画布尺寸 %1×%2→%3×%4")
+        .arg(LogNumber(before.width()), LogNumber(before.height()), LogNumber(after.width()),
+             LogNumber(after.height()));
+}
+
+QString ItemStackCommand::LogDetail(bool reverse) const
+{
+    const ItemStackList& before = reverse ? m_after : m_before;
+    const ItemStackList& after = reverse ? m_before : m_after;
+    QStringList parts;
+    for (int i = 0; i < before.size() && i < after.size(); ++i) {
+        if (!before.at(i).item || !after.at(i).item || before.at(i).item != after.at(i).item) {
+            continue;
+        }
+        if (before.at(i).layerId != after.at(i).layerId) {
+            parts.append(QStringLiteral("图层 %1→%2").arg(before.at(i).layerId).arg(after.at(i).layerId));
+        }
+        if (before.at(i).height != after.at(i).height) {
+            parts.append(QStringLiteral("层内高度 %1→%2").arg(before.at(i).height).arg(after.at(i).height));
+        }
+    }
+    if (parts.isEmpty()) {
+        return {};
+    }
+    if (before.size() > 1) {
+        parts.append(QStringLiteral("等 %1 个图元").arg(before.size()));
+    }
+    return parts.join(QStringLiteral("，"));
+}
+
+QString TextItemCommand::LogDetail(bool reverse) const
+{
+    return DescribeTextStateChange(reverse ? m_after : m_before, reverse ? m_before : m_after);
+}
+
+QString TextContainerCommand::LogDetail(bool reverse) const
+{
+    const QString oldUid = reverse ? m_afterUid : m_beforeUid;
+    const QString newUid = reverse ? m_beforeUid : m_afterUid;
+    QStringList parts;
+    if (oldUid != newUid) {
+        parts.append(QStringLiteral("容器 %1→%2")
+                         .arg(oldUid.isEmpty() ? QStringLiteral("无") : oldUid,
+                              newUid.isEmpty() ? QStringLiteral("无") : newUid));
+    }
+    const QString stateChange =
+        DescribeTextStateChange(reverse ? m_afterState : m_beforeState, reverse ? m_beforeState : m_afterState);
+    if (!stateChange.isEmpty()) {
+        parts.append(stateChange);
+    }
+    return parts.join(QStringLiteral("，"));
+}
+
+QString ConvertItemCommand::LogDetail(bool reverse) const
+{
+    const CanvasItem* before = reverse ? m_after : m_before;
+    const CanvasItem* after = reverse ? m_before : m_after;
+    if (!before || !after || before->Kind() == after->Kind()) {
+        return {};
+    }
+    return QStringLiteral("类型 %1→%2").arg(before->TypeDisplayName(), after->TypeDisplayName());
+}
+
+QString LineRouteCommand::LogDetail(bool reverse) const
+{
+    const int beforeRoute = reverse ? m_afterRoute : m_beforeRoute;
+    const int afterRoute = reverse ? m_beforeRoute : m_afterRoute;
+    const auto routeName = [](int route) {
+        return route == static_cast<int>(StraightLineItem::RouteMode::ORTHOGONAL) ? QStringLiteral("折线")
+                                                                                  : QStringLiteral("直连");
+    };
+    QStringList parts;
+    if (beforeRoute != afterRoute) {
+        parts.append(QStringLiteral("走线 %1→%2").arg(routeName(beforeRoute), routeName(afterRoute)));
+    }
+    const QString geometry = DescribeLineGeometryChange(reverse ? m_afterGeometry : m_beforeGeometry,
+                                                        reverse ? m_beforeGeometry : m_afterGeometry);
+    if (!geometry.isEmpty()) {
+        parts.append(geometry);
+    }
+    return parts.join(QStringLiteral("，"));
+}
+
+QString MirrorCommand::LogDetail(bool reverse) const
+{
+    const QList<MirrorItemState>& before = reverse ? m_after : m_before;
+    const QList<MirrorItemState>& after = reverse ? m_before : m_after;
+    QStringList parts;
+    for (int i = 0; i < before.size() && i < after.size(); ++i) {
+        if (!before.at(i).item || before.at(i).item != after.at(i).item) {
+            continue;
+        }
+        if (before.at(i).flipX != after.at(i).flipX) {
+            parts.append(QStringLiteral("水平翻转 %1→%2")
+                             .arg(before.at(i).flipX ? QStringLiteral("开") : QStringLiteral("关"),
+                                  after.at(i).flipX ? QStringLiteral("开") : QStringLiteral("关")));
+        }
+        if (before.at(i).flipY != after.at(i).flipY) {
+            parts.append(QStringLiteral("垂直翻转 %1→%2")
+                             .arg(before.at(i).flipY ? QStringLiteral("开") : QStringLiteral("关"),
+                                  after.at(i).flipY ? QStringLiteral("开") : QStringLiteral("关")));
+        }
+        if (before.at(i).pos != after.at(i).pos) {
+            parts.append(QStringLiteral("位置 (%1,%2)→(%3,%4)")
+                             .arg(LogNumber(before.at(i).pos.x()), LogNumber(before.at(i).pos.y()),
+                                  LogNumber(after.at(i).pos.x()), LogNumber(after.at(i).pos.y())));
+        }
+        if (before.at(i).rotation != after.at(i).rotation) {
+            parts.append(
+                QStringLiteral("旋转 %1°→%2°").arg(LogNumber(before.at(i).rotation), LogNumber(after.at(i).rotation)));
+        }
+        if (!parts.isEmpty()) {
+            break;
+        }
+    }
+    return parts.join(QStringLiteral("，"));
+}
+
+QString StrokeSmoothCommand::LogDetail(bool reverse) const
+{
+    const QList<LineAbstractItem::GeometryState>& before = reverse ? m_after : m_before;
+    const QList<LineAbstractItem::GeometryState>& after = reverse ? m_before : m_after;
+    if (before.isEmpty() || after.isEmpty()) {
+        return {};
+    }
+    QString detail = DescribeLineGeometryChange(before.constFirst(), after.constFirst());
+    const QList<QPointF>& oldEndpoints = reverse ? m_afterEndpoints : m_beforeEndpoints;
+    const QList<QPointF>& newEndpoints = reverse ? m_beforeEndpoints : m_afterEndpoints;
+    if (oldEndpoints.size() == 2 && newEndpoints.size() == 2) {
+        const QPointF oldStart = oldEndpoints.constFirst();
+        const QPointF oldEnd = oldEndpoints.constLast();
+        const QPointF newStart = newEndpoints.constFirst();
+        const QPointF newEnd = newEndpoints.constLast();
+        if (oldStart != newStart && oldEnd == newEnd) {
+            if (!detail.isEmpty()) {
+                detail += QStringLiteral("，");
+            }
+            detail += QStringLiteral("起点 (%1,%2)→(%3,%4)")
+                          .arg(LogNumber(oldStart.x()), LogNumber(oldStart.y()), LogNumber(newStart.x()),
+                               LogNumber(newStart.y()));
+        } else if (oldEnd != newEnd && oldStart == newStart) {
+            if (!detail.isEmpty()) {
+                detail += QStringLiteral("，");
+            }
+            detail +=
+                QStringLiteral("终点 (%1,%2)→(%3,%4)")
+                    .arg(LogNumber(oldEnd.x()), LogNumber(oldEnd.y()), LogNumber(newEnd.x()), LogNumber(newEnd.y()));
+        }
+    }
+    if (before.size() > 1) {
+        if (!detail.isEmpty()) {
+            detail += QStringLiteral("，");
+        }
+        detail += QStringLiteral("等 %1 条线").arg(before.size());
+    }
+    return detail;
+}
+
+QString ArrowBindingCommand::LogDetail(bool reverse) const
+{
+    const QList<ArrowBindingState>& before = reverse ? m_after : m_before;
+    const QList<ArrowBindingState>& after = reverse ? m_before : m_after;
+    if (before.isEmpty() || after.isEmpty()) {
+        return {};
+    }
+    const auto target = [](const QJsonObject& binding) {
+        const QString uid = binding.value(QStringLiteral("elementId")).toString();
+        return uid.isEmpty() ? QStringLiteral("无") : uid;
+    };
+    QStringList parts;
+    if (target(before.constFirst().start) != target(after.constFirst().start)) {
+        parts.append(
+            QStringLiteral("起点绑定 %1→%2").arg(target(before.constFirst().start), target(after.constFirst().start)));
+    }
+    if (target(before.constFirst().end) != target(after.constFirst().end)) {
+        parts.append(
+            QStringLiteral("终点绑定 %1→%2").arg(target(before.constFirst().end), target(after.constFirst().end)));
+    }
+    if (parts.isEmpty()) {
+        return {};
+    }
+    if (before.size() > 1) {
+        parts.append(QStringLiteral("等 %1 条线").arg(before.size()));
+    }
+    return parts.join(QStringLiteral("，"));
+}
+
+QString LayerStateCommand::LogDetail(bool reverse) const
+{
+    return DescribeLayerStackChange(reverse ? m_after : m_before, reverse ? m_before : m_after);
 }

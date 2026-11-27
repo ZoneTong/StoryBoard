@@ -39,6 +39,7 @@ class AngleItem : public LineAbstractItem, public SectorBase {
     bool BeginCustomHandleDrag(int handle, const QPointF& scenePos) override;
     bool ApplyCustomHandleDrag(int handle, const QPointF& scenePos) override;
     void EndHandleDrag() override;
+    QString CustomHandleActionText(int handle) const override;
 
     QJsonObject ToJson() const override;
     void FromJson(const QJsonObject& json) override;
