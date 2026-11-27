@@ -481,6 +481,20 @@ void AppSettings::EnsureCanvasesDir()
     QDir().mkpath(CanvasesDir());
 }
 
+QString AppSettings::RecoveryDir()
+{
+    const QString base = UserConfigDirectory();
+    if (base.isEmpty()) {
+        return QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("recovery"));
+    }
+    return QDir(base).filePath(QStringLiteral("recovery"));
+}
+
+void AppSettings::EnsureRecoveryDir()
+{
+    QDir().mkpath(RecoveryDir());
+}
+
 QString AppSettings::ShapesDir()
 {
     // 与配置文件同级：便携版里配了 STORYBOARD_CONFIG 就是 exe 旁的 shapes 目录。

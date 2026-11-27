@@ -1,5 +1,6 @@
 #include "app/AppModes.h"
 
+#include "app/AutoSaveService.h"
 #include "app/CommandLineOptions.h"
 #include "app/I18n.h"
 #include "app/Settings.h"
@@ -373,6 +374,10 @@ int RunLineArt(const CommandLineOptions& options)
 int RunNormalLaunch(QApplication& app, const CommandLineOptions& options)
 {
     MainWindow window;
+    // 上次异常退出留下的未保存画布：清理过期残留，其余询问用户是否恢复。
+    if (window.AutoSave()) {
+        window.AutoSave()->ScanOnStartup();
+    }
     window.show();
 
     if (!options.canvasPath.isEmpty()) {

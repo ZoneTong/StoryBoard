@@ -1,5 +1,7 @@
 #include "ui/builder/UiActionFactory.h"
 
+#include "app/CanvasSession.h"
+#include "app/CanvasTabsController.h"
 #include "canvas/CanvasView.h"
 #include "items/properties/FillStyleMeta.h"
 #include "items/properties/ItemStyleVisuals.h"
@@ -61,6 +63,7 @@ void UiActionFactory::Build()
     m_window->m_newAct =
         MakeAction(m_window, IconId::NEW, MainWindow::tr("New canvas"), QKeySequence(QStringLiteral("Ctrl+N")),
                    MainWindow::tr("Create an empty canvas (Ctrl+N)"));
+    m_window->m_newAct->setObjectName(QStringLiteral("NewCanvasAction"));
     m_window->m_openAct =
         MakeAction(m_window, IconId::OPEN, MainWindow::tr("Open canvas…"), QKeySequence(QStringLiteral("Ctrl+O")),
                    MainWindow::tr("Open a StoryBoard canvas (Ctrl+O)"));
@@ -236,6 +239,44 @@ void UiActionFactory::Build()
     m_window->m_editModeAct->setData(static_cast<int>(ToolMode::EDIT));
     m_window->m_textModeAct->setData(static_cast<int>(ToolMode::TEXT));
 
+    // 画布标签：Ctrl+Tab / Ctrl+Shift+Tab 前后切换，Ctrl+PageDown / Up 同义，Ctrl+F4 关闭当前画布。
+    // Ctrl+1 已被“实际尺寸”占用，直跳改用 Ctrl+Shift+1..9。
+    m_window->m_nextCanvasAct = new QAction(MainWindow::tr("Next canvas"), m_window);
+    m_window->m_nextCanvasAct->setObjectName(QStringLiteral("NextCanvasAction"));
+    m_window->m_nextCanvasAct->setShortcuts(
+        {QKeySequence(QStringLiteral("Ctrl+Tab")), QKeySequence(QStringLiteral("Ctrl+PageDown"))});
+    m_window->m_nextCanvasAct->setStatusTip(MainWindow::tr("Switch to the next canvas tab (Ctrl+Tab)"));
+    QObject::connect(m_window->m_nextCanvasAct, &QAction::triggered, m_window,
+                     [this]() { m_window->SwitchCanvasNext(); });
+
+    m_window->m_prevCanvasAct = new QAction(MainWindow::tr("Previous canvas"), m_window);
+    m_window->m_prevCanvasAct->setObjectName(QStringLiteral("PreviousCanvasAction"));
+    m_window->m_prevCanvasAct->setShortcuts(
+        {QKeySequence(QStringLiteral("Ctrl+Shift+Tab")), QKeySequence(QStringLiteral("Ctrl+PageUp"))});
+    m_window->m_prevCanvasAct->setStatusTip(MainWindow::tr("Switch to the previous canvas tab (Ctrl+Shift+Tab)"));
+    QObject::connect(m_window->m_prevCanvasAct, &QAction::triggered, m_window,
+                     [this]() { m_window->SwitchCanvasPrevious(); });
+
+    m_window->m_closeCanvasAct = new QAction(MainWindow::tr("Close canvas"), m_window);
+    m_window->m_closeCanvasAct->setObjectName(QStringLiteral("CloseCanvasAction"));
+    m_window->m_closeCanvasAct->setShortcut(QKeySequence(QStringLiteral("Ctrl+F4")));
+    m_window->m_closeCanvasAct->setStatusTip(MainWindow::tr("Close the current canvas tab (Ctrl+F4)"));
+    QObject::connect(m_window->m_closeCanvasAct, &QAction::triggered, m_window, [this]() {
+        if (m_window->m_tabs && m_window->m_tabs->Current()) {
+            m_window->CloseCanvasSession(m_window->m_tabs->Current());
+        }
+    });
+
+    for (int i = 1; i <= 9; ++i) {
+        QAction* action = new QAction(MainWindow::tr("Switch to canvas %1").arg(i), m_window);
+        action->setObjectName(QStringLiteral("CanvasNumberAction%1").arg(i));
+        action->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+%1").arg(i)));
+        action->setData(i);
+        QObject::connect(action, &QAction::triggered, m_window, [this, i]() { m_window->SwitchCanvasNumber(i); });
+        m_window->addAction(action);
+        m_window->m_canvasNumberActs.append(action);
+    }
+
     m_window->m_fitAct = MakeAction(m_window, IconId::FIT, MainWindow::tr("Back to overview"),
                                     QKeySequence(QStringLiteral("Ctrl+0")), MainWindow::tr("Fit all items (Ctrl+0)"));
     m_window->m_zoomInAct = MakeAction(m_window, IconId::ZOOM_IN, MainWindow::tr("Zoom in"),
@@ -256,7 +297,12 @@ void UiActionFactory::Build()
     m_window->m_gridAct->setCheckable(true);
     m_window->m_gridAct->setChecked(m_window->m_settings.showGrid);
     QObject::connect(m_window->m_gridAct, &QAction::toggled, m_window, [this](bool visible) {
-        m_window->m_scene->SetShowGrid(visible);
+        // 辅助网格是显示偏好：对所有打开的画布一起开关。
+        m_window->ForEachScene([visible](CanvasScene* scene) {
+            if (scene) {
+                scene->SetShowGrid(visible);
+            }
+        });
         m_window->m_settings.showGrid = visible;
         m_window->m_settings.Save();
         m_window->statusBar()->showMessage(
@@ -335,10 +381,27 @@ void UiActionFactory::Build()
 
     QObject::connect(m_window->m_modeGroup, &QActionGroup::triggered, m_window,
                      [this](QAction* action) { m_window->SetToolMode(static_cast<ToolMode>(action->data().toInt())); });
-    QObject::connect(m_window->m_fitAct, &QAction::triggered, m_window->m_view, &CanvasView::FitAll);
-    QObject::connect(m_window->m_zoomInAct, &QAction::triggered, m_window->m_view, &CanvasView::ZoomIn);
-    QObject::connect(m_window->m_zoomOutAct, &QAction::triggered, m_window->m_view, &CanvasView::ZoomOut);
-    QObject::connect(m_window->m_actualSizeAct, &QAction::triggered, m_window->m_view, &CanvasView::ActualSize);
+    // 全屏 / 多标签下当前视图会变，动作不能直连构造期的那一个视图。
+    QObject::connect(m_window->m_fitAct, &QAction::triggered, m_window, [this]() {
+        if (m_window->View()) {
+            m_window->View()->FitAll();
+        }
+    });
+    QObject::connect(m_window->m_zoomInAct, &QAction::triggered, m_window, [this]() {
+        if (m_window->View()) {
+            m_window->View()->ZoomIn();
+        }
+    });
+    QObject::connect(m_window->m_zoomOutAct, &QAction::triggered, m_window, [this]() {
+        if (m_window->View()) {
+            m_window->View()->ZoomOut();
+        }
+    });
+    QObject::connect(m_window->m_actualSizeAct, &QAction::triggered, m_window, [this]() {
+        if (m_window->View()) {
+            m_window->View()->ActualSize();
+        }
+    });
 
     QObject::connect(m_window->m_replaceBgAct, &QAction::triggered, m_window,
                      &MainWindow::ReplaceCanvasBackgroundImage);

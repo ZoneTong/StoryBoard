@@ -45,6 +45,8 @@ class PropertiesPanel : public QWidget {
 
   public:
     explicit PropertiesPanel(CanvasScene* scene, QWidget* parent = nullptr);
+    // 多画布切换：重连场景与撤销栈信号，并按新场景刷新整张卡片。
+    void SetScene(CanvasScene* scene);
 
     void Refresh();
     // 按卡片内最宽的一行（包括当前隐藏的行）计算启动宽度；之后不再随选中变化。
@@ -66,6 +68,8 @@ class PropertiesPanel : public QWidget {
 
   private:
     void ScheduleRefresh();
+    // 构造与 SetScene 共用；连接场景选择 / 内容 / 模式与撤销栈。
+    void ConnectScene();
     void UpdateSummary();
     // 选中的是否还值得再套一层组合：正好选中的是一整棵组树时返回 false。
     bool SelectionGroupUseful(const QList<CanvasItem*>& items) const;

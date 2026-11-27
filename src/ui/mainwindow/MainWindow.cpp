@@ -1,5 +1,8 @@
 #include "ui/mainwindow/MainWindow.h"
 
+#include "app/AutoSaveService.h"
+#include "app/CanvasSession.h"
+#include "app/CanvasTabsController.h"
 #include "app/DockPanelController.h"
 #include "app/DocumentController.h"
 #include "app/FullScreenController.h"
@@ -46,20 +49,26 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     // 需求 16：填充色默认取中灰（填充样式默认“无填充”，切到纯色时才可见）。
     m_fillColor = QColor(0x9C, 0xA3, 0xAF);
 
-    m_scene = new CanvasScene(this);
+    // 首份文档由 CanvasSession 持有（场景 / 视图 / 撤销栈都不挂窗口 parent），
+    // 中央区换成一个 QTabWidget，第一页就是这份文档的视图。
+    m_scene = new CanvasScene;
     m_scene->ApplyCanvasSize(m_settings.canvasSize);
     m_scene->SetShowGrid(m_settings.showGrid);
 
-    m_undo = new QUndoStack(this);
+    m_undo = new QUndoStack;
     m_undo->setUndoLimit(300);
     m_scene->SetUndoStack(m_undo);
 
-    m_view = new CanvasView(m_scene, this);
+    m_view = new CanvasView(m_scene);
     m_view->SetBrushColor(m_brushColor);
     m_view->SetBrushWidth(m_brushWidth);
     m_view->SetStrokeSmoothing(m_settings.strokeSmoothing);
     m_view->SetCanvasColor(m_settings.canvasColor);
-    setCentralWidget(m_view);
+
+    m_tabs = std::make_unique<CanvasTabsController>(this);
+    m_autoSave = std::make_unique<AutoSaveService>(this);
+    m_tabs->AdoptSession(new CanvasSession(this, m_scene, m_view, m_undo, 1));
+    setCentralWidget(m_tabs->Tabs());
 
     m_background = std::make_unique<CanvasBackgroundController>(this);
     m_docks = std::make_unique<DockPanelController>(this);
@@ -96,10 +105,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
         resize(1440, 900);
     }
 
-    UpdateModeUi();
-    UpdateTitle();
-    UpdateStatusBar();
-    UpdateActions();
+    if (m_tabs && m_tabs->Current()) {
+        ActivateSession(m_tabs->Current());
+    }
     UpdateBackgroundModeActions();
 
     QTimer::singleShot(0, this, [this]() {
@@ -131,19 +139,49 @@ MainWindow::~MainWindow()
         QObject::disconnect(m_scene, nullptr, nullptr, nullptr);
     }
 
-    // QObject deletes the scene child before the undo stack in some orders.
-    // Clear commands while the scene is still alive, and make sure the view
-    // no longer points at the scene during teardown.
-    if (m_undo) {
-        QObject::disconnect(m_undo, nullptr, this, nullptr);
-        m_undo->clear();
+    // 逐份会话做同样的清理（画布 / 撤销栈都在会话里，由它负责按顺序析构）。
+    if (m_tabs) {
+        for (CanvasSession* session : m_tabs->Sessions()) {
+            if (session->Scene()) {
+                QObject::disconnect(session->Scene(), nullptr, nullptr, nullptr);
+            }
+            if (session->Undo()) {
+                QObject::disconnect(session->Undo(), nullptr, this, nullptr);
+            }
+        }
     }
-    if (m_view) {
-        m_view->setScene(nullptr);
+    // 先拆掉缓存了场景 / 视图指针的控制器，再删会话。面板、文档控制器、
+    // 全屏栏都持有当前场景或视图指针，倒序析构时会回调到已释放的场景上。
+    if (m_docks) {
+        m_docks->SetScene(nullptr);
     }
-    if (m_scene) {
-        m_scene->SetUndoStack(nullptr);
+    m_viewStatus.reset();
+    m_style.reset();
+    m_editActions.reset();
+    m_insert.reset();
+    m_app.reset();
+    m_fullScreen.reset();
+    m_document.reset();
+    m_shortcuts.reset();
+    m_io.reset();
+    m_ui.reset();
+    m_docks.reset();
+    m_background.reset();
+    if (m_autoSave) {
+        m_autoSave->ForgetAll();
+        m_autoSave.reset();
     }
+    if (m_tabs) {
+        m_tabs->ClearAll();
+    }
+    // QMainWindow 的布局仍记着中央控件；直接删会留下悬空项，先摘下来。
+    if (QWidget* central = takeCentralWidget()) {
+        central->setParent(nullptr);
+    }
+    m_tabs.reset();
+    m_scene = nullptr;
+    m_view = nullptr;
+    m_undo = nullptr;
 }
 
 void MainWindow::CreateActions()
@@ -199,44 +237,227 @@ void MainWindow::CreateStatusBar()
 
 void MainWindow::ConnectSignals()
 {
-    connect(m_undo, &QUndoStack::canUndoChanged, this, &MainWindow::UpdateActions);
-    connect(m_undo, &QUndoStack::canRedoChanged, this, &MainWindow::UpdateActions);
-    connect(m_undo, &QUndoStack::cleanChanged, this, &MainWindow::UpdateTitle);
-    connect(m_undo, &QUndoStack::undoTextChanged, this, [this](const QString& text) {
-        m_undoAct->setToolTip(text.isEmpty() ? tr("Undo") : tr("Undo: %1").arg(text));
-    });
-    connect(m_undo, &QUndoStack::redoTextChanged, this, [this](const QString& text) {
-        m_redoAct->setToolTip(text.isEmpty() ? tr("Redo") : tr("Redo: %1").arg(text));
-    });
-
-    connect(m_view, &CanvasView::zoomChanged, this, [this](qreal zoom) {
-        if (m_zoomBadge) {
-            m_zoomBadge->setText(QStringLiteral("%1%").arg(qRound(zoom * 100.0)));
-        }
-    });
-    connect(m_view, &CanvasView::modeChanged, this, [this](ToolMode) { UpdateModeUi(); });
-    connect(m_view, &CanvasView::statusMessage, this,
-            [this](const QString& message) { statusBar()->showMessage(message, 4000); });
-    connect(m_view, &CanvasView::textPlacementRequested, this, &MainWindow::InsertTextAt);
-
-    connect(m_scene, &CanvasScene::contentChanged, this, [this]() {
-        UpdateActions();
-        UpdateStatusBar();
-    });
-    connect(m_scene, &CanvasScene::layersChanged, this, &MainWindow::UpdateStatusBar);
-    connect(m_scene, &CanvasScene::activeLayerChanged, this, [this](int) { UpdateStatusBar(); });
-    connect(m_scene, &CanvasScene::selectionChanged, this, &MainWindow::UpdateActions);
-    connect(m_scene, &CanvasScene::selectionChanged, this, &MainWindow::UpdatePropertiesPanelDockVisibility);
     connect(QApplication::clipboard(), &QClipboard::dataChanged, this, &MainWindow::UpdateActions);
-    connect(m_scene, &CanvasScene::backgroundChanged, this, [this]() {
-        UpdateBackgroundModeActions();
-        UpdateActions();
-    });
-    connect(m_scene, &CanvasScene::canvasSizeChanged, this, [this](const QSizeF&) {
-        if (m_view->mode() == ToolMode::VIEW) {
-            m_view->FitAll();
+}
+
+void MainWindow::AttachSession(CanvasSession* session)
+{
+    if (!session) {
+        return;
+    }
+    CanvasScene* scene = session->Scene();
+    CanvasView* view = session->View();
+    QUndoStack* undo = session->Undo();
+    auto isCurrent = [this, session]() { return m_tabs && m_tabs->Current() == session; };
+
+    if (undo) {
+        connect(undo, &QUndoStack::canUndoChanged, this, [this, isCurrent]() {
+            if (isCurrent()) {
+                UpdateActions();
+            }
+        });
+        connect(undo, &QUndoStack::canRedoChanged, this, [this, isCurrent]() {
+            if (isCurrent()) {
+                UpdateActions();
+            }
+        });
+        connect(undo, &QUndoStack::cleanChanged, this, [this, session, isCurrent](bool) {
+            if (m_tabs) {
+                m_tabs->UpdateTabLabel(session);
+            }
+            if (isCurrent()) {
+                UpdateTitle();
+            }
+        });
+        connect(undo, &QUndoStack::undoTextChanged, this, [this, isCurrent](const QString& text) {
+            if (isCurrent() && m_undoAct) {
+                m_undoAct->setToolTip(text.isEmpty() ? tr("Undo") : tr("Undo: %1").arg(text));
+            }
+        });
+        connect(undo, &QUndoStack::redoTextChanged, this, [this, isCurrent](const QString& text) {
+            if (isCurrent() && m_redoAct) {
+                m_redoAct->setToolTip(text.isEmpty() ? tr("Redo") : tr("Redo: %1").arg(text));
+            }
+        });
+    }
+
+    if (view) {
+        // 首份会话构造时工具栏动作还没建出来，等 BuildToolBars 之后统一挂。
+        if (!m_boolActions.isEmpty()) {
+            ApplyViewContextMenus(view);
         }
-    });
+        connect(view, &CanvasView::zoomChanged, this, [this, isCurrent](qreal zoom) {
+            if (isCurrent() && m_zoomBadge) {
+                m_zoomBadge->setText(QStringLiteral("%1%").arg(qRound(zoom * 100.0)));
+            }
+        });
+        connect(view, &CanvasView::modeChanged, this, [this, isCurrent](ToolMode) {
+            if (isCurrent()) {
+                UpdateModeUi();
+            }
+        });
+        connect(view, &CanvasView::statusMessage, this, [this, isCurrent](const QString& message) {
+            if (isCurrent()) {
+                statusBar()->showMessage(message, 4000);
+            }
+        });
+        connect(view, &CanvasView::textPlacementRequested, this, [this, isCurrent](const QPointF& scenePos) {
+            if (isCurrent()) {
+                InsertTextAt(scenePos);
+            }
+        });
+    }
+
+    if (scene) {
+        connect(scene, &CanvasScene::contentChanged, this, [this, isCurrent]() {
+            if (isCurrent()) {
+                UpdateActions();
+                UpdateStatusBar();
+            }
+        });
+        connect(scene, &CanvasScene::layersChanged, this, [this, isCurrent]() {
+            if (isCurrent()) {
+                UpdateStatusBar();
+            }
+        });
+        connect(scene, &CanvasScene::activeLayerChanged, this, [this, isCurrent](int) {
+            if (isCurrent()) {
+                UpdateStatusBar();
+            }
+        });
+        connect(scene, &CanvasScene::selectionChanged, this, [this, isCurrent]() {
+            if (isCurrent()) {
+                UpdateActions();
+                UpdatePropertiesPanelDockVisibility();
+            }
+        });
+        connect(scene, &CanvasScene::backgroundChanged, this, [this, isCurrent]() {
+            if (isCurrent()) {
+                UpdateBackgroundModeActions();
+                UpdateActions();
+            }
+        });
+        connect(scene, &CanvasScene::canvasSizeChanged, this, [this, isCurrent, view](const QSizeF&) {
+            if (isCurrent() && view && view->mode() == ToolMode::VIEW) {
+                view->FitAll();
+            }
+        });
+    }
+}
+
+QString MainWindow::CurrentCanvasName() const
+{
+    if (m_tabs && m_tabs->Current()) {
+        return m_tabs->Current()->DisplayName();
+    }
+    return m_document ? m_document->DocumentName() : QString();
+}
+
+bool MainWindow::CurrentCanvasDirty() const
+{
+    return m_tabs && m_tabs->Current() && m_tabs->Current()->HasUnsavedChanges();
+}
+
+void MainWindow::ActivateSession(CanvasSession* session)
+{
+    if (!session) {
+        return;
+    }
+    if (m_view && m_view != session->View()) {
+        m_view->FinishCurrentStroke();
+        m_view->EndTextEdit();
+    }
+    m_scene = session->Scene();
+    m_view = session->View();
+    m_undo = session->Undo();
+    m_filePath = session->FilePath();
+    if (m_autoSave) {
+        m_autoSave->Watch(session);
+    }
+    if (m_docks) {
+        m_docks->SetScene(m_scene);
+    }
+    UpdateModeUi();
+    UpdateActions();
+    UpdateStatusBar();
+    UpdateTitle();
+    UpdateBackgroundModeActions();
+    UpdatePropertiesPanelDockVisibility();
+    if (m_view) {
+        m_view->setFocus();
+    }
+    if (m_fullScreen) {
+        m_fullScreen->RefreshCanvasName();
+    }
+}
+
+int MainWindow::OpenCanvasFiles(const QStringList& paths)
+{
+    return m_document ? m_document->OpenCanvasFiles(paths) : 0;
+}
+
+DocumentController* MainWindow::Document() const
+{
+    return m_document.get();
+}
+
+bool MainWindow::CloseCanvasSession(CanvasSession* session)
+{
+    return m_document && m_document->CloseCanvasSession(session);
+}
+
+void MainWindow::ForEachView(const std::function<void(CanvasView*)>& apply)
+{
+    if (!m_tabs) {
+        return;
+    }
+    for (CanvasSession* session : m_tabs->Sessions()) {
+        if (session && session->View()) {
+            apply(session->View());
+        }
+    }
+}
+
+void MainWindow::ForEachScene(const std::function<void(CanvasScene*)>& apply)
+{
+    if (!m_tabs) {
+        return;
+    }
+    for (CanvasSession* session : m_tabs->Sessions()) {
+        if (session && session->Scene()) {
+            apply(session->Scene());
+        }
+    }
+}
+
+void MainWindow::ApplyViewContextMenus(CanvasView* view)
+{
+    if (!view || m_boolActions.isEmpty() || view->property("StoryBoardContextMenus").toBool()) {
+        return;
+    }
+    view->setProperty("StoryBoardContextMenus", true);
+    view->AddContextMenuGroup(tr("Merge items"), m_boolActions);
+}
+
+void MainWindow::SwitchCanvasNext()
+{
+    if (m_tabs) {
+        m_tabs->Next();
+    }
+}
+
+void MainWindow::SwitchCanvasPrevious()
+{
+    if (m_tabs) {
+        m_tabs->Previous();
+    }
+}
+
+void MainWindow::SwitchCanvasNumber(int oneBasedNumber)
+{
+    if (m_tabs) {
+        m_tabs->SwitchToNumber(oneBasedNumber);
+    }
 }
 
 void MainWindow::SetToolMode(ToolMode mode)
@@ -540,8 +761,11 @@ void MainWindow::changeEvent(QEvent* event)
 
 void MainWindow::closeEvent(QCloseEvent* event)
 {
-    m_view->FinishCurrentStroke();
-    if (!m_document->MaybeSave()) {
+    if (m_view) {
+        m_view->FinishCurrentStroke();
+    }
+    // 多画布：逐页确认未保存改动，任一取消就放弃整个关闭。
+    if (!m_document->CloseAllCanvases()) {
         event->ignore();
         return;
     }

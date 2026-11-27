@@ -3344,8 +3344,57 @@ In edit mode, items on visible, unlocked layers can be edited</source>
     <message>
         <source>Sine wave</source>
         <translation>正弦波</translation>
-    </message>
-</context>
+    </message><message>
+        <source>Next canvas</source>
+        <translation>下一个画布</translation>
+    </message><message>
+        <source>Previous canvas</source>
+        <translation>上一个画布</translation>
+    </message><message>
+        <source>Close canvas</source>
+        <translation>关闭画布</translation>
+    </message><message>
+        <source>Switch to canvas %1</source>
+        <translation>切换到画布 %1</translation>
+    </message><message>
+        <source>Untitled canvas %1</source>
+        <translation>未命名画布 %1</translation>
+    </message><message>
+        <source>Canvas is already open: %1</source>
+        <translation>该画布已打开：%1</translation>
+    </message><message numerus="yes">
+        <source>Opened %n canvas(es)</source>
+        <translation>
+            <numerusform>已打开 %n 个画布</numerusform>
+        </translation>
+    </message><message>
+        <source>Opened %1, skipped %2</source>
+        <translation>已打开 %1 个，跳过 %2 个</translation>
+    </message><message>
+        <source>Some canvases could not be opened:\n%1</source>
+        <translation>部分画布无法打开：\n%1</translation>
+    </message><message>
+        <source>Could not create a new canvas tab</source>
+        <translation>无法新建画布标签</translation>
+    </message><message>
+        <source>%1 *</source>
+        <translation>%1 *</translation>
+    </message><message>
+        <source>Unsaved canvases found</source>
+        <translation>发现未保存的画布</translation>
+    </message><message>
+        <source>Found %1 unsaved canvas(es) from a previous session:\n%2\n\nRecover them now?</source>
+        <translation>上次会话发现 %1 份未保存画布：\n%2\n\n现在恢复吗？</translation>
+    </message><message>
+        <source>%1 — saved %2</source>
+        <translation>%1 — 保存于 %2</translation>
+    </message><message>
+        <source>%1 (recovered)</source>
+        <translation>%1（恢复）</translation>
+    </message><message>
+        <source>Clipboard content comes from a newer StoryBoard version; pasted the known fields</source>
+        <translation>剪贴板内容来自更新的 StoryBoard 版本，已粘贴可识别的字段</translation>
+    </message></context>
 <context>
     <name>QCoreApplication</name><message>
         <location filename="../src/items/CanvasTypes.h" line="75"/>

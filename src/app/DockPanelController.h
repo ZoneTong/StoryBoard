@@ -4,6 +4,7 @@
 #include <QDockWidget>
 #include <QStringList>
 
+class CanvasScene;
 class MainWindow;
 class LayerPanel;
 class PropertiesPanel;
@@ -20,6 +21,8 @@ class DockPanelController {
     void CreateLayerDock();
     void CreatePropertiesPanelDock();
     void CreateViewModeDock();
+    // 会话切换：把图层卡与编辑面板重绑到新的场景。
+    void SetScene(CanvasScene* scene);
     // 把左侧工具条里的模式栏摘下，挂进右上角的视图模式卡片。
     void AttachViewModeToolBar();
     // 按设置恢复右侧卡片顺序和编辑面板位置；首次启动编辑面板默认停靠左侧。

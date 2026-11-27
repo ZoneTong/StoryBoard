@@ -23,6 +23,8 @@ class LayerPanel : public QWidget {
     Q_OBJECT
   public:
     explicit LayerPanel(CanvasScene* scene, QWidget* parent = nullptr);
+    // 多画布切换：重连场景信号并整表刷新。
+    void SetScene(CanvasScene* scene);
 
     QList<int> SelectedLayerIds() const;
 
@@ -41,6 +43,8 @@ class LayerPanel : public QWidget {
     QListWidgetItem* CreateGroupRow(const LayerTreeRow& spec);
     QListWidgetItem* CreateItemRow(const LayerTreeRow& spec);
     void ScheduleRefresh();
+    // 构造函数与 SetScene 共用同一套场景连接，避免两处漏项。
+    void ConnectScene();
     void ActivateCurrentLayer();
     void SyncActiveLayer();
     void SyncSceneSelection();

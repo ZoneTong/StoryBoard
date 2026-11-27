@@ -13,6 +13,7 @@ class LayerActions : public QObject {
     Q_OBJECT
   public:
     explicit LayerActions(CanvasScene* scene, QObject* parent = nullptr);
+    void SetScene(CanvasScene* scene) { m_scene = scene; }
 
     void SetLayerVisible(int layerId, bool visible);
     void SetAllLayersVisible(bool visible);

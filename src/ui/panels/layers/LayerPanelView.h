@@ -15,6 +15,7 @@ class LayerPanelView {
     LayerPanelView(CanvasScene* scene, QListWidget* list, QCheckBox* allVisibleBox, QToolButton* addButton,
                    QToolButton* removeButton, QToolButton* upButton, QToolButton* downButton, QLabel* summaryLabel);
 
+    void SetScene(CanvasScene* scene) { m_scene = scene; }
     int CurrentLayerId() const;
     QList<int> SelectedLayerIds() const;
 

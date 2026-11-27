@@ -9,6 +9,7 @@
 #include <QActionGroup>
 #include <QHBoxLayout>
 #include <QKeySequence>
+#include <QLabel>
 #include <QMenu>
 #include <QSignalBlocker>
 #include <QSpinBox>
@@ -37,6 +38,15 @@ FullScreenBar::FullScreenBar(MainWindow* window) : QWidget(window), m_window(win
     setStyleSheet(QStringLiteral("#FullScreenBar { background: rgba(255, 255, 255, 235);"
                                  " border: 1px solid rgba(15, 23, 42, 40); border-radius: 10px; }"));
     setFixedHeight(BAR_HEIGHT);
+
+    // 画布名标签独立挂到窗口上（不是本栏子控件），才能在栏上方留 4px 空隙。
+    m_nameLabel = new QLabel(m_window);
+    m_nameLabel->setObjectName(QStringLiteral("FullScreenCanvasName"));
+    m_nameLabel->setAlignment(Qt::AlignCenter);
+    m_nameLabel->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+    m_nameLabel->setStyleSheet(QStringLiteral("background: transparent; color: rgba(148, 163, 184, 216);"
+                                              " font-size: 11px;"));
+    m_nameLabel->hide();
 
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(8, 4, 8, 4);
@@ -174,6 +184,10 @@ void FullScreenBar::SyncFromWindow()
         m_widthSpin->setValue(m_window->m_brushWidth);
     }
     UpdateModeBadge();
+    SyncCanvasName();
+    if (m_nameLabel) {
+        m_nameLabel->show();
+    }
     adjustSize();
 }
 
@@ -204,10 +218,43 @@ void FullScreenBar::UpdateModeBadge()
     }
 }
 
+void FullScreenBar::hideEvent(QHideEvent* event)
+{
+    if (m_nameLabel) {
+        m_nameLabel->hide();
+    }
+    QWidget::hideEvent(event);
+}
+
+void FullScreenBar::showEvent(QShowEvent* event)
+{
+    QWidget::showEvent(event);
+    SyncCanvasName();
+    if (m_nameLabel) {
+        m_nameLabel->show();
+        m_nameLabel->raise();
+    }
+}
+
+void FullScreenBar::SyncCanvasName()
+{
+    if (!m_nameLabel || !m_window) {
+        return;
+    }
+    const QString name = m_window->CurrentCanvasName();
+    const bool dirty = m_window->CurrentCanvasDirty();
+    m_nameLabel->setText(dirty ? MainWindow::tr("%1 *").arg(name) : name);
+}
+
 void FullScreenBar::PlaceAt(int centerX, int topInset)
 {
     const int width = sizeHint().width();
     setGeometry(centerX - width / 2, topInset, width, BAR_HEIGHT);
+    if (m_nameLabel && m_nameLabel->isVisible()) {
+        const int labelHeight = m_nameLabel->sizeHint().height();
+        m_nameLabel->setGeometry(centerX - width / 2, topInset - labelHeight - 4, width, labelHeight);
+        m_nameLabel->raise();
+    }
 }
 
 bool FullScreenBar::TriggerDigit(int digit)

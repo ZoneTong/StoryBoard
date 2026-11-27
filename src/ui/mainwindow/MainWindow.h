@@ -18,9 +18,14 @@
 #include <QPointer>
 #include <QString>
 #include <QStringList>
+#include <functional>
 #include <memory>
 
 class CanvasScene;
+class CanvasSession;
+class CanvasTabsController;
+class AutoSaveService;
+class AutoSaveService;
 class CanvasView;
 class CanvasItem;
 class CustomShapePanel;
@@ -82,8 +87,29 @@ class MainWindow : public QMainWindow {
     static constexpr int TOOL_BAR_SPLIT_BUTTON_WIDTH = LayoutMetrics::TOOL_BAR_SPLIT_BUTTON_WIDTH;
 
     bool OpenCanvasFile(const QString& path);
+    // 批量打开：对话框多选 / 多文件拖放共用；返回实际打开（含已打开切页）的数量。
+    int OpenCanvasFiles(const QStringList& paths);
+    class DocumentController* Document() const;
     CanvasScene* Scene() const { return m_scene; }
     CanvasView* View() const { return m_view; }
+    // 全屏 HUD 与窗口标题共用：当前标签页的显示名与未保存状态。
+    QString CurrentCanvasName() const;
+    bool CurrentCanvasDirty() const;
+    CanvasTabsController* Tabs() const { return m_tabs.get(); }
+    AutoSaveService* AutoSave() const { return m_autoSave.get(); }
+
+    // 多画布：会话切换时把四件套重绑到新会话，并刷新依赖当前文档的界面。
+    void AttachSession(CanvasSession* session);
+    void ActivateSession(CanvasSession* session);
+    // 关页 / 关窗的未保存询问与收尾都交给 DocumentController。
+    bool CloseCanvasSession(CanvasSession* session);
+    // 全局工具状态（画笔色 / 宽度 / 平滑 / 底色 / 网格）要对所有会话生效。
+    void ForEachView(const std::function<void(CanvasView*)>& apply);
+    void ForEachScene(const std::function<void(CanvasScene*)>& apply);
+    // 右键菜单里的「合并图元」「转换为」两组动作：每个新视图都要挂一次。
+    void ApplyViewContextMenus(CanvasView* view);
+    QColor BrushColor() const { return m_brushColor; }
+    int BrushWidth() const { return m_brushWidth; }
     // 快捷键 / 导入导出等控制器经此读写配置，不再靠 friend 穿透私有成员。
     AppSettings& Settings() { return m_settings; }
 
@@ -175,6 +201,9 @@ class MainWindow : public QMainWindow {
     void SetStrokeSmoothingUi(qreal tolerance);
     void UpdateCanvasesMenu();
     void UpdateBackgroundModeActions();
+    void SwitchCanvasNext();
+    void SwitchCanvasPrevious();
+    void SwitchCanvasNumber(int oneBasedNumber);
     void RotateSelected(qreal degrees);
 
   private:
@@ -192,6 +221,8 @@ class MainWindow : public QMainWindow {
     friend class MainWindowAppController;
     friend class FullScreenController;
     friend class FullScreenBar;
+    friend class CanvasTabsController;
+    friend class CanvasSession;
 
     CanvasScene* m_scene = nullptr;
     CanvasView* m_view = nullptr;
@@ -250,6 +281,11 @@ class MainWindow : public QMainWindow {
     QAction* m_gridAct = nullptr;
     // F11 全屏开关：勾选态跟随实际窗口状态。
     QAction* m_fullScreenAct = nullptr;
+    // 画布标签切换：视图菜单里的前后切换 / 关闭，以及 Ctrl+Shift+1..9 直跳。
+    QAction* m_nextCanvasAct = nullptr;
+    QAction* m_prevCanvasAct = nullptr;
+    QAction* m_closeCanvasAct = nullptr;
+    QList<QAction*> m_canvasNumberActs;
 
     QAction* m_replaceBgAct = nullptr;
     QAction* m_bgColorAct = nullptr;
@@ -269,6 +305,7 @@ class MainWindow : public QMainWindow {
     QToolButton* m_alignButton = nullptr;
     // 布尔运算动作（联合 / 组合 / 拆分 / 相交 / 相减）。
     QList<QAction*> m_boolActions;
+    // 右键菜单「转换为」三项：扇形 / 弧线 / 角度线互换。
     QToolButton* m_boolButton = nullptr;
 
     QActionGroup* m_modeGroup = nullptr;
@@ -308,6 +345,8 @@ class MainWindow : public QMainWindow {
     std::unique_ptr<MainWindowInsertController> m_insert;
     std::unique_ptr<MainWindowAppController> m_app;
     std::unique_ptr<FullScreenController> m_fullScreen;
+    std::unique_ptr<CanvasTabsController> m_tabs;
+    std::unique_ptr<AutoSaveService> m_autoSave;
 
     QLabel* m_hintLabel = nullptr;
     QLabel* m_modeBadge = nullptr;

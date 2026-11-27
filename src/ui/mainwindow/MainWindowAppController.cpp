@@ -78,12 +78,15 @@ void MainWindowAppController::ShowSettings()
     m_window->SetBrushColor(m_window->m_settings.brushColor, false);
     m_window->SetBrushWidthUi(m_window->m_settings.brushWidth);
     m_window->SetStrokeSmoothingUi(m_window->m_settings.strokeSmoothing);
-    m_window->m_view->SetCanvasColor(m_window->m_settings.canvasColor);
-    m_window->m_scene->SetShowGrid(m_window->m_settings.showGrid);
+    // 画笔 / 平滑 / 底色 / 网格是全局显示偏好：对所有已开画布生效。
+    const QColor canvasColor = m_window->m_settings.canvasColor;
+    const bool showGrid = m_window->m_settings.showGrid;
+    m_window->ForEachView([canvasColor](CanvasView* view) { view->SetCanvasColor(canvasColor); });
+    m_window->ForEachScene([showGrid](CanvasScene* scene) { scene->SetShowGrid(showGrid); });
     // 设置里改过辅助网格时，视图菜单的勾选状态跟着走（屏蔽信号，避免回写一遍配置）。
     if (m_window->m_gridAct) {
         const QSignalBlocker blocker(m_window->m_gridAct);
-        m_window->m_gridAct->setChecked(m_window->m_settings.showGrid);
+        m_window->m_gridAct->setChecked(showGrid);
     }
     m_window->m_scene->SetCanvasSizeWithUndo(m_window->m_settings.canvasSize);
 

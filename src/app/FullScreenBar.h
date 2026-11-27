@@ -7,6 +7,9 @@
 
 class MainWindow;
 class QActionGroup;
+class QHideEvent;
+class QShowEvent;
+class QLabel;
 class QToolButton;
 class QSpinBox;
 
@@ -18,8 +21,10 @@ class FullScreenBar : public QWidget {
 
     // 按主窗口当前状态刷新图标、描线宽度与模式徽标（进入全屏时调一次即可）。
     void SyncFromWindow();
-    // 底部居中放置：中心点与顶部留白都由调用方算好。
+    // 底部居中放置：中心点与顶部留白都由调用方算好；画布名标签贴在栏上方。
     void PlaceAt(int centerX, int topInset);
+    // 全屏期显示器上方的淡色小字：当前画布名，未保存时带 ✳。
+    void SyncCanvasName();
     // 数字键 0–9 触发对应图形按钮（9 直接打开自定义图形面板）；返回是否确有对应按钮。
     bool TriggerDigit(int digit);
 
@@ -27,6 +32,10 @@ class FullScreenBar : public QWidget {
     // 取值在 LayoutMetrics 统一维护；这里保留 FullScreenBar:: 别名供既有调用点使用。
     static constexpr int BAR_HEIGHT = LayoutMetrics::FULLSCREEN_BAR_HEIGHT;
     static constexpr int BAR_ICON_SIZE = LayoutMetrics::FULLSCREEN_BAR_ICON_SIZE;
+
+  protected:
+    void hideEvent(QHideEvent* event) override;
+    void showEvent(QShowEvent* event) override;
 
   private:
     QToolButton* AddShapeButton(const QString& actionName, const QString& keyText);
@@ -43,6 +52,7 @@ class FullScreenBar : public QWidget {
     QToolButton* m_fillColorButton = nullptr;
     QToolButton* m_strokeStyleButton = nullptr;
     QToolButton* m_strokeColorButton = nullptr;
+    QLabel* m_nameLabel = nullptr;
     QToolButton* m_modeBadge = nullptr;
     QSpinBox* m_widthSpin = nullptr;
 };

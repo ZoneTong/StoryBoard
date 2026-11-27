@@ -341,7 +341,12 @@ void StyleController::SetBrushColor(const QColor& color, bool remember)
     }
 
     m_window->m_brushColor = color;
-    m_window->m_view->SetBrushColor(color);
+    // 画笔颜色是全局工具状态：切到别的标签时视图也得是同一个颜色。
+    m_window->ForEachView([color](CanvasView* view) {
+        if (view) {
+            view->SetBrushColor(color);
+        }
+    });
     if (m_window->m_strokeColorAct) {
         m_window->m_strokeColorAct->setIcon(StrokeColorIcon(color, 16));
     }
@@ -363,9 +368,11 @@ void StyleController::SetBrushWidthUi(int width)
 {
     width = qBound(1, width, 64);
     m_window->m_brushWidth = width;
-    if (m_window->m_view) {
-        m_window->m_view->SetBrushWidth(width);
-    }
+    m_window->ForEachView([width](CanvasView* view) {
+        if (view) {
+            view->SetBrushWidth(width);
+        }
+    });
     for (QSpinBox* spin : {m_window->m_widthSpin}) {
         if (spin) {
             const QSignalBlocker blocker(spin);
@@ -378,9 +385,11 @@ void StyleController::SetStrokeSmoothingUi(qreal tolerance)
 {
     tolerance = qBound<qreal>(0.0, tolerance, 20.0);
     m_window->m_settings.strokeSmoothing = tolerance;
-    if (m_window->m_view) {
-        m_window->m_view->SetStrokeSmoothing(tolerance);
-    }
+    m_window->ForEachView([tolerance](CanvasView* view) {
+        if (view) {
+            view->SetStrokeSmoothing(tolerance);
+        }
+    });
     if (m_window->m_smoothingSpin) {
         const QSignalBlocker blocker(m_window->m_smoothingSpin);
         m_window->m_smoothingSpin->setValue(tolerance);

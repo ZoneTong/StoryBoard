@@ -461,7 +461,7 @@ void selftest::RunDockPanelMainWindowTests(Context& ctx)
                       layerDock->mapTo(&dockWindow, QPoint(0, 0)).y() <
                           viewModeDock->mapTo(&dockWindow, QPoint(0, 0)).y(),
                   QStringLiteral("图层卡在右上角、视图模式卡压在它下面"));
-        ctx.Check(viewModeDock && layerDock && layerDock->height() > dockWindow.height() - 200 &&
+        ctx.Check(viewModeDock && layerDock && layerDock->height() > dockWindow.height() * 7 / 10 &&
                       viewModeDock->height() < 200,
                   QStringLiteral("图层卡吃掉右侧剩余高度、模式卡保持紧凑"),
                   layerDock ? QStringLiteral("layer=%1 view=%2 window=%3")

@@ -126,13 +126,15 @@ void MainWindowEditActionsController::CopySelectedItems()
     if (!m_window->Scene()) {
         return;
     }
-    const QJsonArray items = m_window->Scene()->ClipboardItems();
+    const QJsonObject payload = m_window->Scene()->ClipboardPayload();
+    const QJsonArray items = payload.value(QStringLiteral("items")).toArray();
     if (items.isEmpty()) {
         m_window->statusBar()->showMessage(MainWindow::tr("Select an item to copy"), 3000);
         return;
     }
     auto* mime = new QMimeData;
-    mime->setData(QLatin1String(CLIPBOARD_MIME_TYPE), QJsonDocument(items).toJson(QJsonDocument::Compact));
+    // 信封对象（items + images）：自定义 MIME 带图片表，跨标签 / 跨实例粘贴不丢像素。
+    mime->setData(QLatin1String(CLIPBOARD_MIME_TYPE), QJsonDocument(payload).toJson(QJsonDocument::Compact));
     // 同时写一份 Excalidraw 剪贴板 JSON，复制后可直接粘到 excalidraw.com；
     // text/plain 兜底给只读纯文本的浏览器/终端。
     QJsonObject document;
@@ -220,7 +222,19 @@ void MainWindowEditActionsController::PasteItems()
         return;
     }
     const QJsonDocument doc = QJsonDocument::fromJson(mime->data(QLatin1String(CLIPBOARD_MIME_TYPE)));
-    const int pasted = m_window->Scene()->PasteClipboardItems(doc.array());
+    // 新格式是信封对象，旧格式是裸数组；两种都接受，旧格式没有图片表。
+    QJsonArray items;
+    QJsonObject images;
+    if (doc.isObject()) {
+        const QJsonObject envelope = doc.object();
+        if (envelope.value(QStringLiteral("format")).toString() == QStringLiteral("StoryBoardItems")) {
+            items = envelope.value(QStringLiteral("items")).toArray();
+            images = envelope.value(QStringLiteral("images")).toObject();
+        }
+    } else {
+        items = doc.array();
+    }
+    const int pasted = m_window->Scene()->PasteClipboardItems(items, images);
     if (pasted == 0) {
         m_window->statusBar()->showMessage(MainWindow::tr("Nothing to paste"), 3000);
         return;

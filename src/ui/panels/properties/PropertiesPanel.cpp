@@ -171,18 +171,39 @@ PropertiesPanel::PropertiesPanel(CanvasScene* scene, QWidget* parent) : QWidget(
     connect(m_geometryCard, &PropertiesPanelGeometryCard::rotationChosen, this, &PropertiesPanel::ApplyItemRotation);
     connect(m_geometryCard, &PropertiesPanelGeometryCard::centerChosen, this, &PropertiesPanel::ApplyItemCenter);
 
+    ConnectScene();
+    Refresh();
+}
+
+void PropertiesPanel::SetScene(CanvasScene* scene)
+{
+    if (scene == m_scene) {
+        return;
+    }
     if (m_scene) {
-        connect(m_scene, &QGraphicsScene::selectionChanged, this, &PropertiesPanel::ScheduleRefresh);
-        connect(m_scene, &CanvasScene::contentChanged, this, &PropertiesPanel::ScheduleRefresh);
-        // 模式切换会改写一批动作的可用状态，操作栏要跟着重算显隐。
-        connect(m_scene, &CanvasScene::modeChanged, this, &PropertiesPanel::ScheduleRefresh);
+        disconnect(m_scene, nullptr, this, nullptr);
         if (m_scene->UndoStack()) {
-            // 撤销 / 重做后卡片里的数值也要回到图元的真实状态。
-            connect(m_scene->UndoStack(), &QUndoStack::indexChanged, this, &PropertiesPanel::ScheduleRefresh);
+            disconnect(m_scene->UndoStack(), nullptr, this, nullptr);
         }
     }
-
+    m_scene = scene;
+    ConnectScene();
     Refresh();
+}
+
+void PropertiesPanel::ConnectScene()
+{
+    if (!m_scene) {
+        return;
+    }
+    connect(m_scene, &QGraphicsScene::selectionChanged, this, &PropertiesPanel::ScheduleRefresh);
+    connect(m_scene, &CanvasScene::contentChanged, this, &PropertiesPanel::ScheduleRefresh);
+    // 模式切换会改写一批动作的可用状态，操作栏要跟着重算显隐。
+    connect(m_scene, &CanvasScene::modeChanged, this, &PropertiesPanel::ScheduleRefresh);
+    if (m_scene->UndoStack()) {
+        // 撤销 / 重做后卡片里的数值也要回到图元的真实状态。
+        connect(m_scene->UndoStack(), &QUndoStack::indexChanged, this, &PropertiesPanel::ScheduleRefresh);
+    }
 }
 
 void PropertiesPanel::SetSelectionActions(const QList<QAction*>& alignActions, const QList<QAction*>& boolActions,

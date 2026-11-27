@@ -24,6 +24,8 @@ class FullScreenController {
     bool IsActive() const { return m_active; }
     // 窗口被窗口管理器踢出全屏时兜底：只还原界面，不再重复 showNormal。
     void HandleWindowStateChange();
+    // 切页 / 存盘后刷新全屏上方的画布名小字（不在全屏时什么也不做）。
+    void RefreshCanvasName();
     // 主窗口尺寸变化时把悬浮工具栏重新摆到顶部居中。
     void HandleWindowEvent(class QObject* watched, class QEvent* event);
 

@@ -114,7 +114,10 @@ class CanvasScene : public QGraphicsScene {
 
     // 剪贴板：把选中的可编辑图元序列化成 JSON 数组；粘贴时按数组重建并偏移选中。
     QJsonArray ClipboardItems() const;
-    int PasteClipboardItems(const QJsonArray& items);
+    // 剪贴板信封：{format, version, items, images}。图片只收被选中图元实际引用的条目，
+    // 跨标签 / 跨实例粘贴时按 id 回填像素，不丢图片填充。
+    QJsonObject ClipboardPayload() const;
+    int PasteClipboardItems(const QJsonArray& items, const QJsonObject& images = QJsonObject());
     // 方向键微调：按 delta 移动选中的可编辑图元，整体一条撤销记录，返回移动数量。
     int NudgeSelected(const QPointF& delta);
 

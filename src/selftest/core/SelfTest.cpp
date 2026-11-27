@@ -112,6 +112,7 @@ int RunSelfTest(const QString& reportPath)
     selftest::RunLineSplitTests(ctx);
     selftest::RunShapesClusterTests(ctx);
     selftest::RunImageFillTests(ctx);
+    selftest::RunMultiCanvasTests(ctx);
 
     int passCount = 0;
     for (const QString& line : ctx.lines) {

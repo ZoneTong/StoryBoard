@@ -1,5 +1,8 @@
 #include "app/DocumentController.h"
 
+#include "app/AutoSaveService.h"
+#include "app/CanvasSession.h"
+#include "app/CanvasTabsController.h"
 #include "app/Settings.h"
 #include "app/TestMode.h"
 #include "canvas/CanvasView.h"
@@ -27,6 +30,7 @@
 #include <QPushButton>
 #include <QSaveFile>
 #include <QStatusBar>
+#include <QTimer>
 #include <QUndoStack>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -157,37 +161,63 @@ DocumentController::DocumentController(MainWindow* window) : m_window(window) {}
 
 void DocumentController::NewCanvas()
 {
-    if (!MaybeSave()) {
+    // 多画布后「新建」不再重置当前页，而是新开一个标签，原有画布保持原样。
+    if (!m_window->m_tabs) {
         return;
     }
-
-    m_window->m_view->CancelCurrentStroke();
-    m_window->m_scene->ResetDocument();
-    m_window->m_scene->ApplyCanvasSize(m_window->m_settings.canvasSize);
-    m_window->m_scene->SetShowGrid(m_window->m_settings.showGrid);
-    m_window->m_scene->SetCanvasBackground(CanvasBackground());
-    m_window->m_filePath.clear();
-    m_window->m_undo->clear();
-    m_window->m_undo->setClean();
-
-    // 新建一律回到查看模式：先看全貌，再按需切到编辑。
-    m_window->m_view->SetMode(ToolMode::VIEW);
-    m_window->m_view->FitAll();
-
-    m_window->UpdateModeUi();
-    m_window->UpdateTitle();
-    m_window->UpdateStatusBar();
-    m_window->UpdateActions();
+    CanvasSession* session = m_window->m_tabs->CreateSession(true);
+    if (session && session->View()) {
+        session->View()->SetMode(ToolMode::VIEW);
+        CanvasView* view = session->View();
+        QTimer::singleShot(0, view, [view]() { view->FitAll(); });
+    }
     m_window->statusBar()->showMessage(MainWindow::tr("New empty canvas created"), 3000);
 }
 
 void DocumentController::OpenCanvasDialog()
 {
-    const QString path = QFileDialog::getOpenFileName(m_window, MainWindow::tr("Open canvas"),
-                                                      AppSettings::CanvasesDir(), CanvasFilter());
-    if (!path.isEmpty()) {
-        LoadCanvasFile(path, true);
+    const QStringList paths = QFileDialog::getOpenFileNames(m_window, MainWindow::tr("Open canvas"),
+                                                            AppSettings::CanvasesDir(), CanvasFilter());
+    if (!paths.isEmpty()) {
+        OpenCanvasFiles(paths);
     }
+}
+
+int DocumentController::OpenCanvasFiles(const QStringList& paths)
+{
+    if (paths.isEmpty()) {
+        return 0;
+    }
+    int opened = 0;
+    QStringList failures;
+    for (const QString& path : paths) {
+        // 同一批次里的重复路径只处理一次；已在标签打开的直接切过去，不算新开。
+        const QString absolutePath = QFileInfo(path).absoluteFilePath();
+        if (m_window->m_tabs) {
+            if (CanvasSession* existing = m_window->m_tabs->FindByPath(absolutePath)) {
+                m_window->m_tabs->SetCurrent(existing);
+                continue;
+            }
+        }
+        QString error;
+        if (LoadCanvasFile(path, false, &error)) {
+            ++opened;
+        } else {
+            failures.append(QStringLiteral("%1: %2").arg(QFileInfo(path).fileName(), error));
+        }
+    }
+    if (!failures.isEmpty() && !TestMode::IsSelfTestMode()) {
+        QMessageBox::warning(
+            m_window, MainWindow::tr("Open canvas"),
+            MainWindow::tr("Some canvases could not be opened:\n%1").arg(failures.join(QStringLiteral("\n"))));
+    }
+    if (opened > 0) {
+        m_window->statusBar()->showMessage(
+            failures.isEmpty() ? MainWindow::tr("Opened %n canvas(es)", nullptr, opened)
+                               : MainWindow::tr("Opened %1, skipped %2").arg(opened).arg(failures.size()),
+            4000);
+    }
+    return opened;
 }
 
 bool DocumentController::OpenCanvasFile(const QString& path)
@@ -195,11 +225,14 @@ bool DocumentController::OpenCanvasFile(const QString& path)
     return LoadCanvasFile(path, true);
 }
 
-bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors)
+bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors, QString* errorOut)
 {
     // 需求 2：文件体积闸门，20MB 以上的场景不读进内存，避免崩溃或长时间假死。
     constexpr qint64 MAX_SCENE_BYTES = 20LL * 1024 * 1024;
     if (QFileInfo(path).size() > MAX_SCENE_BYTES) {
+        if (errorOut) {
+            *errorOut = MainWindow::tr("This file is larger than 20MB");
+        }
         if (showErrors) {
             ReportWarning(m_window, MainWindow::tr("Open canvas"),
                           MainWindow::tr("This file is larger than 20MB and was not opened:\n%1")
@@ -209,6 +242,9 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors)
     }
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
+        if (errorOut) {
+            *errorOut = MainWindow::tr("Could not read the file");
+        }
         if (showErrors) {
             ReportWarning(m_window, MainWindow::tr("Open canvas"),
                           MainWindow::tr("Could not read the file:\n%1").arg(QDir::toNativeSeparators(path)));
@@ -219,6 +255,9 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors)
     QJsonParseError parseError;
     const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &parseError);
     if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
+        if (errorOut) {
+            *errorOut = MainWindow::tr("Failed to parse the canvas file: %1").arg(parseError.errorString());
+        }
         if (showErrors) {
             ReportWarning(m_window, MainWindow::tr("Open canvas"),
                           MainWindow::tr("Failed to parse the canvas file:\n%1").arg(parseError.errorString()));
@@ -243,6 +282,9 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors)
         }
         usableRoot = Excalidraw::SceneToStoryBoard(root, &excalidrawNotes, keepImages);
         if (usableRoot.isEmpty()) {
+            if (errorOut) {
+                *errorOut = MainWindow::tr("This Excalidraw scene has no supported elements.");
+            }
             if (showErrors) {
                 ReportWarning(m_window, MainWindow::tr("Import Excalidraw"),
                               MainWindow::tr("This Excalidraw scene has no supported elements."));
@@ -254,6 +296,9 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors)
 
     QString validationError;
     if (!ValidateCanvasRoot(usableRoot, &validationError)) {
+        if (errorOut) {
+            *errorOut = validationError;
+        }
         if (showErrors) {
             ReportWarning(m_window, MainWindow::tr("Open canvas"), validationError);
         }
@@ -267,13 +312,40 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors)
         }
     }
 
-    if (!MaybeSave()) {
+    // 同一文件已经在某个标签里打开时直接切过去，避免两份互写。
+    const QString absolutePath = QFileInfo(path).absoluteFilePath();
+    if (!importedExcalidraw && m_window->m_tabs) {
+        if (CanvasSession* existing = m_window->m_tabs->FindByPath(absolutePath)) {
+            m_window->m_tabs->SetCurrent(existing);
+            m_window->statusBar()->showMessage(
+                MainWindow::tr("Canvas is already open: %1").arg(QFileInfo(path).fileName()), 3000);
+            return true;
+        }
+    }
+
+    // 当前页是干净的空画布就复用它，否则新开一个标签；打开不再是破坏性操作，
+    // 不再对当前脏页弹保存提示。
+    CanvasSession* target = m_window->m_tabs ? m_window->m_tabs->Current() : nullptr;
+    const bool reused = target && target->IsPristine();
+    if (!target || !target->IsPristine()) {
+        target = m_window->m_tabs->CreateSession(false);
+    }
+    if (!target) {
+        if (errorOut) {
+            *errorOut = MainWindow::tr("Could not create a new canvas tab");
+        }
         return false;
     }
 
-    m_window->m_view->FinishCurrentStroke();
+    target->View()->FinishCurrentStroke();
     QString loadError;
-    if (!m_window->m_scene->FromJson(usableRoot, &loadError)) {
+    if (!target->Scene()->FromJson(usableRoot, &loadError)) {
+        if (!reused) {
+            m_window->m_tabs->RemoveSession(target);
+        }
+        if (errorOut) {
+            *errorOut = loadError;
+        }
         if (showErrors) {
             ReportWarning(m_window, MainWindow::tr("Open canvas"), loadError);
         }
@@ -281,19 +353,19 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors)
     }
 
     // 导入的 Excalidraw 场景作为一份新文档，原 .excalidraw 文件仍可再导入一次。
-    m_window->m_filePath = importedExcalidraw ? QString() : QFileInfo(path).absoluteFilePath();
-    m_window->m_undo->setClean();
+    target->SetFilePath(importedExcalidraw ? QString() : absolutePath);
+    target->Undo()->setClean();
+    m_window->m_tabs->SetCurrent(target);
+    m_window->ActivateSession(target);
     // 打开 / 导入后同样回到查看模式并整幅适配。
-    m_window->m_view->SetMode(ToolMode::VIEW);
-    m_window->m_view->FitAll();
+    CanvasView* targetView = target->View();
+    targetView->SetMode(ToolMode::VIEW);
+    QTimer::singleShot(0, targetView, [targetView]() { targetView->FitAll(); });
 
     if (!importedExcalidraw) {
-        m_window->m_settings.lastCanvasPath = m_window->m_filePath;
+        m_window->m_settings.lastCanvasPath = absolutePath;
     }
-    m_window->UpdateModeUi();
-    m_window->UpdateTitle();
-    m_window->UpdateStatusBar();
-    m_window->UpdateActions();
+    m_window->m_tabs->UpdateTabLabel(target);
     if (importedExcalidraw) {
         QString message = MainWindow::tr("Imported an Excalidraw scene as a new canvas");
         if (!excalidrawNotes.isEmpty()) {
@@ -302,7 +374,7 @@ bool DocumentController::LoadCanvasFile(const QString& path, bool showErrors)
         m_window->statusBar()->showMessage(message, 6000);
     } else {
         m_window->statusBar()->showMessage(
-            MainWindow::tr("Canvas opened: %1").arg(QFileInfo(m_window->m_filePath).fileName()), 4000);
+            MainWindow::tr("Canvas opened: %1").arg(QFileInfo(target->FilePath()).fileName()), 4000);
     }
     if (legacyStrokes > 0) {
         m_window->statusBar()->showMessage(
@@ -360,9 +432,17 @@ bool DocumentController::SaveToFile(const QString& path)
     }
 
     m_window->m_filePath = QFileInfo(path).absoluteFilePath();
+    if (m_window->m_tabs && m_window->m_tabs->Current()) {
+        CanvasSession* session = m_window->m_tabs->Current();
+        session->SetFilePath(m_window->m_filePath);
+        m_window->m_tabs->UpdateTabLabel(session);
+    }
     m_window->m_settings.lastCanvasPath = m_window->m_filePath;
     m_window->m_settings.Save();
     m_window->m_undo->setClean();
+    if (m_window->AutoSave()) {
+        m_window->AutoSave()->MarkSaved(m_window->m_tabs ? m_window->m_tabs->Current() : nullptr);
+    }
     m_window->UpdateTitle();
     m_window->UpdateActions();
     m_window->statusBar()->showMessage(
@@ -498,14 +578,23 @@ void DocumentController::ExportExcalidraw()
 
 bool DocumentController::MaybeSave()
 {
-    if (!m_window->m_undo || m_window->m_undo->isClean()) {
+    return MaybeSaveSession(m_window->m_tabs ? m_window->m_tabs->Current() : nullptr);
+}
+
+bool DocumentController::MaybeSaveSession(CanvasSession* session)
+{
+    if (!session || !session->HasUnsavedChanges()) {
         return true;
+    }
+    // 询问前先切到该会话：保存动作永远作用在当前会话上。
+    if (m_window->m_tabs) {
+        m_window->m_tabs->SetCurrent(session);
     }
 
     QMessageBox box(m_window);
     box.setIcon(QMessageBox::Question);
     box.setWindowTitle(MainWindow::tr("Unsaved changes"));
-    box.setText(MainWindow::tr("The current canvas has unsaved changes."));
+    box.setText(MainWindow::tr("\"%1\" has unsaved changes.").arg(session->DisplayName()));
     box.setInformativeText(MainWindow::tr("Save this canvas first?"));
     QPushButton* saveButton = box.addButton(MainWindow::tr("Save canvas"), QMessageBox::AcceptRole);
     QPushButton* discardButton = box.addButton(MainWindow::tr("Don't save"), QMessageBox::DestructiveRole);
@@ -520,6 +609,36 @@ bool DocumentController::MaybeSave()
         return true;
     }
     return false;
+}
+
+bool DocumentController::CloseCanvasSession(CanvasSession* session)
+{
+    if (!session) {
+        return false;
+    }
+    if (!MaybeSaveSession(session)) {
+        return false;
+    }
+    if (m_window->m_tabs) {
+        m_window->m_tabs->RemoveSession(session);
+    }
+    m_window->UpdateCanvasesMenu();
+    return true;
+}
+
+bool DocumentController::CloseAllCanvases()
+{
+    if (!m_window->m_tabs) {
+        return true;
+    }
+    // 按标签顺序逐页确认；已经确认过的脏页在保存后自然变干净，不会重复询问。
+    const QList<CanvasSession*> sessions = m_window->m_tabs->Sessions();
+    for (CanvasSession* session : sessions) {
+        if (!MaybeSaveSession(session)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void DocumentController::UpdateCanvasesMenu()
@@ -603,18 +722,24 @@ void DocumentController::OpenCanvasesFolder()
 
 QString DocumentController::DocumentName() const
 {
-    if (m_window->m_filePath.isEmpty()) {
-        return MainWindow::tr("Untitled canvas");
+    if (m_window->m_tabs && m_window->m_tabs->Current()) {
+        return m_window->m_tabs->Current()->DisplayName();
     }
-    const QString name = QFileInfo(m_window->m_filePath).completeBaseName();
-    return name.isEmpty() ? MainWindow::tr("Untitled canvas") : name;
+    return MainWindow::tr("Untitled canvas 1");
 }
 
 void DocumentController::UpdateTitle()
 {
+    CanvasSession* session = m_window->m_tabs ? m_window->m_tabs->Current() : nullptr;
+    if (session && m_window->m_tabs) {
+        m_window->m_tabs->UpdateTabLabel(session);
+    }
     m_window->setWindowTitle(MainWindow::tr("%1[*] - StoryBoard").arg(DocumentName()));
-    m_window->setWindowModified(m_window->m_undo && !m_window->m_undo->isClean());
-    if (!m_window->m_filePath.isEmpty()) {
-        m_window->setWindowFilePath(m_window->m_filePath);
+    m_window->setWindowModified(session ? session->HasUnsavedChanges()
+                                        : (m_window->m_undo && !m_window->m_undo->isClean()));
+    if (session && !session->FilePath().isEmpty()) {
+        m_window->setWindowFilePath(session->FilePath());
+    } else {
+        m_window->setWindowFilePath(QString());
     }
 }

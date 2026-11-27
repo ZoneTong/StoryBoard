@@ -138,6 +138,36 @@ LayerPanel::LayerPanel(CanvasScene* scene, QWidget* parent) : QWidget(parent), m
     connect(m_upButton, &QToolButton::clicked, this, [this]() { m_actions->MoveLayer(1); });
     connect(m_downButton, &QToolButton::clicked, this, [this]() { m_actions->MoveLayer(-1); });
 
+    ConnectScene();
+    Refresh();
+}
+
+void LayerPanel::SetScene(CanvasScene* scene)
+{
+    if (scene == m_scene) {
+        return;
+    }
+    if (m_scene) {
+        disconnect(m_scene, nullptr, this, nullptr);
+    }
+    m_scene = scene;
+    if (m_actions) {
+        m_actions->SetScene(scene);
+    }
+    if (m_view) {
+        m_view->SetScene(scene);
+    }
+    ConnectScene();
+    Refresh();
+    SyncActiveLayer();
+    SyncSceneSelection();
+}
+
+void LayerPanel::ConnectScene()
+{
+    if (!m_scene) {
+        return;
+    }
     // 场景信号可能来自行内控件自己的信号栈（勾选框、锁定按钮），直接 refresh
     // 会在 emit 者还被使用时销毁它，所以统一延后到下一个事件循环。
     connect(m_scene, &CanvasScene::layersChanged, this, &LayerPanel::ScheduleRefresh);
@@ -146,8 +176,6 @@ LayerPanel::LayerPanel(CanvasScene* scene, QWidget* parent) : QWidget(parent), m
     // 模式决定图元行能否选中（只有编辑模式），切换后重建行标志。
     connect(m_scene, &CanvasScene::modeChanged, this, &LayerPanel::ScheduleRefresh);
     connect(m_scene, &QGraphicsScene::selectionChanged, this, &LayerPanel::SyncSceneSelection);
-
-    Refresh();
 }
 
 LayerRow* LayerPanel::CreateRow(const CanvasLayer& layer, int index, int itemCount)

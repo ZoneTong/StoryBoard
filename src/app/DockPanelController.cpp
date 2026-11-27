@@ -108,6 +108,16 @@ void DockPanelController::CreatePropertiesPanelDock()
                      [this](Qt::DockWidgetArea) { SchedulePropertiesPanelDockStateSave(); });
 }
 
+void DockPanelController::SetScene(CanvasScene* scene)
+{
+    if (m_layerPanel) {
+        m_layerPanel->SetScene(scene);
+    }
+    if (m_propertiesPanel) {
+        m_propertiesPanel->SetScene(scene);
+    }
+}
+
 void DockPanelController::CreateViewModeDock()
 {
     // 卡片标题在构造时取当前模式，之后随模式切换刷新，不再固定写死「查看模式」。

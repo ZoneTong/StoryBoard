@@ -67,6 +67,9 @@ class AppSettings {
     static QString CanvasesDir();
     static void EnsureCanvasesDir();
     // 自定义图形模板目录：与 StoryBoard.ini 同级，固定叫 shapes。
+    // 未保存改动临时备份目录：配置目录同级的 recovery/（便携版跟着配置走）。
+    static QString RecoveryDir();
+    static void EnsureRecoveryDir();
     static QString ShapesDir();
     // 程序部署目录（可执行文件所在目录）下的 shapes 子目录，便携版可直接往里放模板。
     static QString BundledShapesDir();

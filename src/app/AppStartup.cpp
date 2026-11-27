@@ -2,6 +2,7 @@
 
 #include "app/CommandLineOptions.h"
 #include "app/I18n.h"
+#include "app/LogService.h"
 
 #include <QApplication>
 #include <QCoreApplication>
@@ -60,6 +61,14 @@ QLabel#StatusHint { color: #6B7280; padding-left: 8px; }
 QStatusBar { background: #FFFFFF; border-top: 1px solid #E3E7EE; min-height: 28px; }
 QStatusBar QLabel { color: #5B6472; }
 QStatusBar::item { border: none; }
+/* 多画布标签：贴着中央区的一行浅色页签，选中项用蓝色下划线，未保存靠标签文字前的圆点区分。 */
+QTabWidget#CanvasTabs::pane { border: none; background: transparent; }
+QTabBar#CanvasTabBar { background: #FFFFFF; border-bottom: 1px solid #E3E7EE; }
+QTabBar#CanvasTabBar::tab { background: transparent; color: #5B6472; padding: 5px 14px; margin: 0px; border: none;
+                            border-bottom: 2px solid transparent; min-width: 72px; }
+QTabBar#CanvasTabBar::tab:hover { color: #1F2937; background: #F1F4F9; }
+QTabBar#CanvasTabBar::tab:selected { color: #1F2937; background: #FFFFFF; border-bottom-color: #2563EB; }
+QTabBar#CanvasTabBar::tab:disabled { color: #A8AFBB; }
 QSpinBox, QDoubleSpinBox { background: #FFFFFF; border: 1px solid #DDE2EA; border-radius: 6px; padding: 4px 24px 4px 8px; min-height: 20px; color: #2B2F36; }
 QSpinBox:focus, QDoubleSpinBox:focus { border-color: #7C9BFF; }
 QSpinBox::up-button, QDoubleSpinBox::up-button { subcontrol-origin: border; subcontrol-position: top right; width: 22px; height: 15px; border: none; background: transparent; }
@@ -175,6 +184,8 @@ void Initialize(QApplication& app)
     QCoreApplication::setOrganizationDomain(QStringLiteral("zonetong.github.io"));
     QCoreApplication::setApplicationName(QStringLiteral("StoryBoard"));
     QCoreApplication::setApplicationVersion(QString::fromLatin1(STORYBOARD_VERSION));
+    // 先接管日志再初始化界面：启动期的警告也进 logs/，并按 14 天保留清理。
+    LogService::Install();
     UiInitializeLanguage();
     app.setApplicationDisplayName(QCoreApplication::tr("StoryBoard Canvas"));
     app.setWindowIcon(QIcon(QStringLiteral(":/icons/app.png")));

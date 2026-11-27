@@ -171,6 +171,12 @@ void UiMenuBuilder::BuildMenus()
     // 需求：“视图”一级菜单紧跟“文件”，放在“编辑”之前。
     QMenu* viewMenu = m_window->menuBar()->addMenu(MainWindow::tr("&View"));
     viewMenu->setObjectName(QStringLiteral("ViewMenu"));
+    // 画布标签分节：前后切换与关闭当前画布放在视图菜单最上面，
+    // 全屏期 RegisterActionShortcuts 会从这里收集，隐藏标签栏后键位仍有效。
+    viewMenu->addAction(m_window->m_nextCanvasAct);
+    viewMenu->addAction(m_window->m_prevCanvasAct);
+    viewMenu->addAction(m_window->m_closeCanvasAct);
+    viewMenu->addSeparator();
     // 模式动作顺序以动作组注册顺序为准，与工具栏模式条共用同一份清单。
     for (QAction* action : m_window->m_modeGroup->actions()) {
         viewMenu->addAction(action);

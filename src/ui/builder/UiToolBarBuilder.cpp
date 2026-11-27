@@ -47,9 +47,7 @@ void UiToolBarBuilder::BuildToolBars()
     // 画笔区只保留拟合容差输入；画笔颜色 / 粗细由图形描线区统一设置。
     CreateSmoothingToolbar(mainBar);
     // 布尔运算的右键菜单入口照旧保留，只是不再作为工具栏下拉按钮。
-    if (m_window->m_view) {
-        m_window->m_view->AddContextMenuGroup(MainWindow::tr("Merge items"), m_window->m_boolActions);
-    }
+    m_window->ForEachView([this](CanvasView* view) { m_window->ApplyViewContextMenus(view); });
 
     // 统一主工具栏里所有纯图标按钮的尺寸：QToolBar 为 action 自动创建的按钮、
     // 以及 addWidget 加入的色板/填充按钮，都钉成同一个正方形，避免按各自
@@ -91,7 +89,11 @@ void UiToolBarBuilder::CreateSmoothingToolbar(QToolBar* mainBar)
         MainWindow::tr("Brush fit tolerance in pixels (0–20, 0.1 px steps); 0 disables curve fitting"));
     QObject::connect(m_window->m_smoothingSpin, &QDoubleSpinBox::valueChanged, m_window, [this](qreal value) {
         m_window->m_settings.strokeSmoothing = value;
-        m_window->m_view->SetStrokeSmoothing(value);
+        m_window->ForEachView([value](CanvasView* view) {
+            if (view) {
+                view->SetStrokeSmoothing(value);
+            }
+        });
         m_window->m_settings.Save();
     });
     mainBar->addWidget(m_window->m_smoothingSpin);

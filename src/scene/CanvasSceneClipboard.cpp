@@ -1,6 +1,8 @@
+#include "io/ImageStore.h"
 #include "items/CanvasItem.h"
 #include "items/ItemSnapshot.h"
 #include "items/lines/LineAbstractItem.h"
+#include "items/shapes/ShapeAbstractItem.h"
 #include "items/text/TextItem.h"
 #include "scene/CanvasScene.h"
 
@@ -30,7 +32,33 @@ QJsonArray CanvasScene::ClipboardItems() const
     return array;
 }
 
-int CanvasScene::PasteClipboardItems(const QJsonArray& items)
+QJsonObject CanvasScene::ClipboardPayload() const
+{
+    QJsonObject payload;
+    payload.insert(QStringLiteral("format"), QStringLiteral("StoryBoardItems"));
+    payload.insert(QStringLiteral("version"), 2);
+    const QJsonArray items = ClipboardItems();
+    payload.insert(QStringLiteral("items"), items);
+
+    QJsonObject images;
+    QSet<QString> usedIds;
+    for (CanvasItem* item : SelectedCanvasItems()) {
+        auto* shape = dynamic_cast<ShapeAbstractItem*>(item);
+        if (!shape || !shape->HasFillImage()) {
+            continue;
+        }
+        const QString id = ImageStore::Store(&images, shape->FillImage());
+        if (!id.isEmpty()) {
+            usedIds.insert(id);
+        }
+    }
+    if (!usedIds.isEmpty()) {
+        payload.insert(QStringLiteral("images"), ImageStore::Compact(images, usedIds));
+    }
+    return payload;
+}
+
+int CanvasScene::PasteClipboardItems(const QJsonArray& items, const QJsonObject& images)
 {
     if (items.isEmpty()) {
         return 0;
@@ -54,6 +82,14 @@ int CanvasScene::PasteClipboardItems(const QJsonArray& items)
             uidRemap.insert(sourceUid, copy->Uid());
         }
         copy->SetItemOpacity(json.value(QStringLiteral("opacity")).toDouble(1.0));
+        // 信封里带图片表时，按 fillImageId 回填像素；裸数组旧格式没有表就按无图处理。
+        if (auto* shape = dynamic_cast<ShapeAbstractItem*>(copy); shape && !shape->FillImageId().isEmpty()) {
+            const QPixmap pixmap = ImageStore::PixmapFromEntry(images.value(shape->FillImageId()).toObject());
+            if (!pixmap.isNull()) {
+                shape->SetFillImage(pixmap, shape->FillImageMode());
+                shape->SetFillImageId(json.value(QStringLiteral("fillImageId")).toString());
+            }
+        }
         // 跨文档粘贴时不带原分组关系，避免副本和来源画布的组联动。
         copy->SetGroupId(0);
         copy->setPos(copy->pos() + QPointF(20.0, 20.0));

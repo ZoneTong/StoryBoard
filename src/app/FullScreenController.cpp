@@ -1,14 +1,15 @@
 #include "app/FullScreenController.h"
 
+#include "app/CanvasTabsController.h"
 #include "app/DockPanelController.h"
 #include "app/FullScreenBar.h"
 #include "canvas/CanvasView.h"
 #include "ui/mainwindow/MainWindow.h"
 #include "ui/mainwindow/MainWindowInsertController.h"
 
+#include <QAbstractSpinBox>
 #include <QAction>
 #include <QActionGroup>
-#include <QAbstractSpinBox>
 #include <QApplication>
 #include <QComboBox>
 #include <QDockWidget>
@@ -25,7 +26,6 @@
 #include <QTimer>
 #include <QToolBar>
 #include <QWidget>
-
 #include <utility>
 
 namespace {
@@ -99,6 +99,10 @@ void FullScreenController::Enter()
         modeDock->hide();
     }
     RegisterActionShortcuts();
+    // 全屏只留当前画布：标签栏收起，但页面栈与快捷键仍可切页。
+    if (m_window->m_tabs) {
+        m_window->m_tabs->SetTabBarVisible(false);
+    }
     m_window->showFullScreen();
     if (!m_bar) {
         m_bar = std::make_unique<FullScreenBar>(m_window);
@@ -135,12 +139,23 @@ void FullScreenController::Exit()
     if (m_bar) {
         m_bar->hide();
     }
+    if (m_window->m_tabs) {
+        m_window->m_tabs->SetTabBarVisible(true);
+    }
     if (m_window->m_docks) {
         m_window->m_docks->ExitFullScreenLayout();
     }
     RestoreChrome(true);
     if (m_window->m_fullScreenAct) {
         m_window->m_fullScreenAct->setChecked(false);
+    }
+}
+
+void FullScreenController::RefreshCanvasName()
+{
+    if (m_active && m_bar) {
+        m_bar->SyncCanvasName();
+        PlaceBar();
     }
 }
 
@@ -154,6 +169,9 @@ void FullScreenController::HandleWindowStateChange()
     UnregisterActionShortcuts();
     if (m_bar) {
         m_bar->hide();
+    }
+    if (m_window->m_tabs) {
+        m_window->m_tabs->SetTabBarVisible(true);
     }
     if (m_window->m_docks) {
         m_window->m_docks->ExitFullScreenLayout();
@@ -249,9 +267,8 @@ void FullScreenController::HandleKeyPress(QKeyEvent* event)
     if (!focus) {
         focus = QApplication::focusWidget();
     }
-    if (qobject_cast<QAbstractSpinBox*>(focus) || qobject_cast<QLineEdit*>(focus) ||
-        qobject_cast<QTextEdit*>(focus) || qobject_cast<QPlainTextEdit*>(focus) ||
-        qobject_cast<QComboBox*>(focus)) {
+    if (qobject_cast<QAbstractSpinBox*>(focus) || qobject_cast<QLineEdit*>(focus) || qobject_cast<QTextEdit*>(focus) ||
+        qobject_cast<QPlainTextEdit*>(focus) || qobject_cast<QComboBox*>(focus)) {
         return;
     }
     // 数字键是键盘入口：新图元跟着鼠标落点，不再固定落在视口中心。

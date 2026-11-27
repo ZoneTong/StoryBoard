@@ -29,6 +29,7 @@ void RunMainWindowFlowTests(Context& ctx);
 void RunDocumentModeTests(Context& ctx);
 void RunTranslationAuditTests(Context& ctx);
 void RunFullScreenTests(Context& ctx);
+void RunMultiCanvasTests(Context& ctx);
 void RunMainWindowShapeMenuTests(Context& ctx);
 void RunSettingsDialogBasicTests(Context& ctx);
 void RunLineArtDialogParameterTests(Context& ctx);
