@@ -59,6 +59,8 @@ class GeometryCommand : public QUndoCommand {
                     const QString& text);
     void undo() override;
     void redo() override;
+    // 日志只写这一次真正变了的属性；reverse=true 时按撤销方向给出旧值→新值。
+    QString LogDetail(bool reverse) const;
     // 标记为可合并的连续操作（目前只有 nudge）：同一批图元的相邻两次调用
     // 由 mergeWith 叠加成一条撤销记录，方向键按住不放不再刷爆撤销栈。
     void SetMergeId(const QString& id);
@@ -192,6 +194,7 @@ class RotationCommand : public QUndoCommand {
                     const ItemPlacementList& geometryAfter = ItemPlacementList());
     void undo() override;
     void redo() override;
+    QString LogDetail(bool reverse) const;
 
   private:
     void Apply(const QList<qreal>& angles, const ItemPlacementList& geometry);
@@ -318,6 +321,7 @@ class ItemPropertyCommand : public QUndoCommand {
                         const QList<QMap<PropertyKey, QVariant>>& after, const QString& text);
     void undo() override;
     void redo() override;
+    QString LogDetail(bool reverse) const;
 
   private:
     void Apply(const QList<QMap<PropertyKey, QVariant>>& states);

@@ -6,9 +6,178 @@
 #include "items/polygon/PolygonItem.h"
 #include "scene/CanvasScene.h"
 
+#include <QColor>
 #include <QGraphicsScene>
+#include <QImage>
+#include <QStringList>
+#include <QtMath>
 #include <utility>
 
+namespace {
+
+QString LogNumber(qreal value)
+{
+    return QString::number(value, 'f', 1);
+}
+
+QString PropertyLabel(PropertyKey key)
+{
+    if (!key.IsCommon()) {
+        return key.StorageKey();
+    }
+    switch (key.CommonProperty()) {
+    case ItemProperty::TEXT_CONTENT:
+        return QStringLiteral("文字");
+    case ItemProperty::TEXT_COLOR:
+        return QStringLiteral("文字色");
+    case ItemProperty::TEXT_FONT:
+        return QStringLiteral("字体");
+    case ItemProperty::FILL_STYLE:
+        return QStringLiteral("填充样式");
+    case ItemProperty::FILL_COLOR:
+        return QStringLiteral("填充色");
+    case ItemProperty::FILL_IMAGE:
+        return QStringLiteral("填充图");
+    case ItemProperty::FILL_IMAGE_MODE:
+        return QStringLiteral("图片模式");
+    case ItemProperty::STROKE_STYLE:
+        return QStringLiteral("描边样式");
+    case ItemProperty::STROKE_COLOR:
+        return QStringLiteral("描边色");
+    case ItemProperty::STROKE_WIDTH:
+        return QStringLiteral("线宽");
+    case ItemProperty::OPACITY:
+        return QStringLiteral("不透明度");
+    case ItemProperty::CORNER_RADIUS:
+        return QStringLiteral("圆角");
+    case ItemProperty::START_ANGLE:
+        return QStringLiteral("起角");
+    case ItemProperty::SWEEP_ANGLE:
+        return QStringLiteral("扫角");
+    case ItemProperty::MAJOR_AXIS:
+        return QStringLiteral("长轴");
+    case ItemProperty::MINOR_AXIS:
+        return QStringLiteral("短轴");
+    case ItemProperty::SINE_CYCLES:
+        return QStringLiteral("波数");
+    case ItemProperty::SINE_AMPLITUDE:
+        return QStringLiteral("振幅");
+    case ItemProperty::BOTTOM_ANGLE1:
+        return QStringLiteral("底角A");
+    case ItemProperty::BOTTOM_ANGLE2:
+        return QStringLiteral("底角B");
+    case ItemProperty::PARALLELOGRAM_ANGLE:
+        return QStringLiteral("内角A");
+    case ItemProperty::ARROW_START:
+        return QStringLiteral("起点箭头");
+    case ItemProperty::ARROW_END:
+        return QStringLiteral("终点箭头");
+    case ItemProperty::NAME:
+        return QStringLiteral("名称");
+    case ItemProperty::LAYER:
+        return QStringLiteral("图层");
+    case ItemProperty::HEIGHT:
+        return QStringLiteral("层内高度");
+    case ItemProperty::POSITION:
+        return QStringLiteral("位置");
+    case ItemProperty::SIZE:
+        return QStringLiteral("尺寸");
+    case ItemProperty::ROTATION:
+        return QStringLiteral("旋转");
+    case ItemProperty::CENTER:
+        return QStringLiteral("中心");
+    }
+    return key.StorageKey();
+}
+
+bool SamePropertyValue(const QVariant& oldValue, const QVariant& newValue)
+{
+    const int oldType = oldValue.metaType().id();
+    const int newType = newValue.metaType().id();
+    if (oldType == QMetaType::QPixmap && newType == QMetaType::QPixmap) {
+        return oldValue.value<QPixmap>().toImage() == newValue.value<QPixmap>().toImage();
+    }
+    if (oldType == QMetaType::QImage && newType == QMetaType::QImage) {
+        return oldValue.value<QImage>() == newValue.value<QImage>();
+    }
+    return oldValue == newValue;
+}
+
+QString LogPropertyValue(PropertyKey key, const QVariant& value)
+{
+    if (!value.isValid()) {
+        return QStringLiteral("无");
+    }
+    const int typeId = value.metaType().id();
+    if (typeId == QMetaType::QColor) {
+        return value.value<QColor>().name();
+    }
+    if (typeId == QMetaType::QPointF) {
+        const QPointF point = value.toPointF();
+        return QStringLiteral("(%1,%2)").arg(LogNumber(point.x()), LogNumber(point.y()));
+    }
+    if (typeId == QMetaType::QSizeF) {
+        const QSizeF size = value.toSizeF();
+        return QStringLiteral("%1×%2").arg(LogNumber(size.width()), LogNumber(size.height()));
+    }
+    if (typeId == QMetaType::QPixmap || typeId == QMetaType::QImage) {
+        const QImage image = typeId == QMetaType::QPixmap ? value.value<QPixmap>().toImage() : value.value<QImage>();
+        if (image.isNull()) {
+            return QStringLiteral("无图");
+        }
+        return QStringLiteral("图 %1×%2").arg(image.width()).arg(image.height());
+    }
+    const bool angle =
+        key.IsCommon() &&
+        (key.CommonProperty() == ItemProperty::START_ANGLE || key.CommonProperty() == ItemProperty::SWEEP_ANGLE ||
+         key.CommonProperty() == ItemProperty::BOTTOM_ANGLE1 || key.CommonProperty() == ItemProperty::BOTTOM_ANGLE2 ||
+         key.CommonProperty() == ItemProperty::PARALLELOGRAM_ANGLE || key.CommonProperty() == ItemProperty::ROTATION);
+    if (typeId == QMetaType::Double || typeId == QMetaType::Float) {
+        return angle ? LogNumber(value.toDouble()) + QStringLiteral("°") : LogNumber(value.toDouble());
+    }
+    QString text = value.toString().simplified();
+    if (text.size() > 24) {
+        text = text.left(24) + QStringLiteral("…");
+    }
+    return text.isEmpty() ? QStringLiteral("空") : text;
+}
+
+QString DescribeGeometryChange(const ItemPlacementList& before, const ItemPlacementList& after)
+{
+    QStringList parts;
+    int changed = 0;
+    for (int i = 0; i < before.size() && i < after.size(); ++i) {
+        const ItemPlacement& oldPlacement = before.at(i);
+        const ItemPlacement& newPlacement = after.at(i);
+        if (!oldPlacement.item || !newPlacement.item || oldPlacement.item != newPlacement.item) {
+            continue;
+        }
+        QStringList itemParts;
+        if (oldPlacement.pos != newPlacement.pos) {
+            itemParts.append(QStringLiteral("位置 (%1,%2)→(%3,%4)")
+                                 .arg(LogNumber(oldPlacement.pos.x()), LogNumber(oldPlacement.pos.y()),
+                                      LogNumber(newPlacement.pos.x()), LogNumber(newPlacement.pos.y())));
+        }
+        if (oldPlacement.size != newPlacement.size) {
+            itemParts.append(QStringLiteral("尺寸 %1×%2→%3×%4")
+                                 .arg(LogNumber(oldPlacement.size.width()), LogNumber(oldPlacement.size.height()),
+                                      LogNumber(newPlacement.size.width()), LogNumber(newPlacement.size.height())));
+        }
+        if (itemParts.isEmpty()) {
+            continue;
+        }
+        ++changed;
+        if (changed == 1) {
+            parts = itemParts;
+        }
+    }
+    if (changed > 1) {
+        parts.append(QStringLiteral("等 %1 个图元").arg(changed));
+    }
+    return parts.join(QStringLiteral("，"));
+}
+
+} // namespace
 
 RotationCommand::RotationCommand(CanvasScene* scene, const QList<CanvasItem*>& items, const QList<qreal>& before,
                                  const QList<qreal>& after, const QString& text,
@@ -29,6 +198,21 @@ void RotationCommand::undo()
 void RotationCommand::redo()
 {
     Apply(m_after, m_geometryAfter);
+}
+
+QString RotationCommand::LogDetail(bool reverse) const
+{
+    const QList<qreal>& oldAngles = reverse ? m_after : m_before;
+    const QList<qreal>& newAngles = reverse ? m_before : m_after;
+    if (oldAngles.isEmpty() || newAngles.isEmpty()) {
+        return {};
+    }
+    QString detail =
+        QStringLiteral("旋转 %1°→%2°").arg(LogNumber(oldAngles.constFirst()), LogNumber(newAngles.constFirst()));
+    if (qMax(m_items.size(), oldAngles.size()) > 1) {
+        detail += QStringLiteral("（%1 个图元）").arg(qMax(m_items.size(), oldAngles.size()));
+    }
+    return detail;
 }
 
 void RotationCommand::Apply(const QList<qreal>& angles, const ItemPlacementList& geometry)
@@ -273,6 +457,13 @@ void GeometryCommand::redo()
     Apply(m_after);
 }
 
+QString GeometryCommand::LogDetail(bool reverse) const
+{
+    const ItemPlacementList& oldPlacements = reverse ? m_after : m_before;
+    const ItemPlacementList& newPlacements = reverse ? m_before : m_after;
+    return DescribeGeometryChange(oldPlacements, newPlacements);
+}
+
 void GeometryCommand::SetMergeId(const QString& id)
 {
     m_mergeId = id;
@@ -426,8 +617,8 @@ void StrokeSmoothCommand::Apply(const QList<LineAbstractItem::GeometryState>& st
 }
 
 ArrowBindingCommand::ArrowBindingCommand(CanvasScene* scene, const QList<LineAbstractItem*>& items,
-                                         const QList<ArrowBindingState>& before,
-                                         const QList<ArrowBindingState>& after, const QString& text)
+                                         const QList<ArrowBindingState>& before, const QList<ArrowBindingState>& after,
+                                         const QString& text)
     : m_scene(scene), m_before(before), m_after(after)
 {
     setText(text);
@@ -591,6 +782,30 @@ void ItemPropertyCommand::undo()
 void ItemPropertyCommand::redo()
 {
     Apply(m_after);
+}
+
+QString ItemPropertyCommand::LogDetail(bool reverse) const
+{
+    if (m_before.isEmpty() || m_after.isEmpty()) {
+        return {};
+    }
+    const QMap<PropertyKey, QVariant>& oldValues = reverse ? m_after.constFirst() : m_before.constFirst();
+    const QMap<PropertyKey, QVariant>& newValues = reverse ? m_before.constFirst() : m_after.constFirst();
+    QStringList parts;
+    for (auto it = newValues.constBegin(); it != newValues.constEnd(); ++it) {
+        const auto oldIt = oldValues.constFind(it.key());
+        const QVariant oldValue = oldIt == oldValues.constEnd() ? QVariant() : oldIt.value();
+        if (oldIt != oldValues.constEnd() && SamePropertyValue(oldValue, it.value())) {
+            continue;
+        }
+        parts.append(QStringLiteral("%1 %2→%3")
+                         .arg(PropertyLabel(it.key()), LogPropertyValue(it.key(), oldValue),
+                              LogPropertyValue(it.key(), it.value())));
+    }
+    if (m_items.size() > 1) {
+        parts.append(QStringLiteral("等 %1 个图元").arg(m_items.size()));
+    }
+    return parts.join(QStringLiteral("，"));
 }
 
 void ItemPropertyCommand::Apply(const QList<QMap<PropertyKey, QVariant>>& states)

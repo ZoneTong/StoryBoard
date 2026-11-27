@@ -25,6 +25,31 @@ bool IsLifecycleOnlyCommand(const QUndoCommand* command)
     }
     return true;
 }
+
+// 只从命令自带的 before/after 快照里取真正变化的属性；宏命令把子命令的变更拼起来。
+QString CommandLogDetail(const QUndoCommand* command, bool reverse)
+{
+    if (!command) {
+        return {};
+    }
+    if (const auto* geometry = dynamic_cast<const GeometryCommand*>(command)) {
+        return geometry->LogDetail(reverse);
+    }
+    if (const auto* rotation = dynamic_cast<const RotationCommand*>(command)) {
+        return rotation->LogDetail(reverse);
+    }
+    if (const auto* property = dynamic_cast<const ItemPropertyCommand*>(command)) {
+        return property->LogDetail(reverse);
+    }
+    QStringList parts;
+    for (int i = 0; i < command->childCount(); ++i) {
+        const QString detail = CommandLogDetail(command->child(i), reverse);
+        if (!detail.isEmpty() && !parts.contains(detail)) {
+            parts.append(detail);
+        }
+    }
+    return parts.join(QStringLiteral("，"));
+}
 } // namespace
 
 CanvasScene::CanvasScene(QObject* parent) : QGraphicsScene(parent)
@@ -127,22 +152,26 @@ void CanvasScene::SetUndoStack(QUndoStack* stack)
             if (IsLifecycleOnlyCommand(commandObject)) {
                 return;
             }
+            const bool undoing = index < previous;
             QString detail = command;
+            const QString change = CommandLogDetail(commandObject, undoing);
+            if (!change.isEmpty()) {
+                detail += QStringLiteral("；变更：%1").arg(change);
+            }
             const QList<CanvasItem*> selected = SelectedCanvasItems();
             if (!selected.isEmpty()) {
                 QStringList names;
                 for (int i = 0; i < selected.size() && i < 3; ++i) {
-                    names.append(QStringLiteral("uid=%1 %2「%3」 %4")
-                                     .arg(selected.at(i)->Uid(), selected.at(i)->TypeDisplayName(),
-                                          selected.at(i)->Name(), selected.at(i)->LogStateSummary()));
+                    names.append(QStringLiteral("uid=%1 %2「%3」")
+                                     .arg(selected.at(i)->Uid())
+                                     .arg(selected.at(i)->TypeDisplayName(), selected.at(i)->Name()));
                 }
                 if (selected.size() > 3) {
                     names.append(QStringLiteral("等 %1 个").arg(selected.size()));
                 }
                 detail += QStringLiteral("；对象：%1").arg(names.join(QStringLiteral("、")));
             }
-            LifecycleLog::LogEdit(m_logLabel, index > previous ? QStringLiteral("编辑") : QStringLiteral("撤销"),
-                                  detail);
+            LifecycleLog::LogEdit(m_logLabel, undoing ? QStringLiteral("撤销") : QStringLiteral("编辑"), detail);
         });
     }
     m_lastUndoIndex = m_undoStack ? m_undoStack->index() : 0;
