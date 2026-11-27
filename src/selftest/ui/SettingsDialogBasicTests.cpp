@@ -14,6 +14,7 @@
 
 #include <QColor>
 #include <QComboBox>
+#include <QDateTime>
 #include <QDialogButtonBox>
 #include <QDir>
 #include <QDoubleSpinBox>
@@ -155,6 +156,38 @@ void selftest::RunSettingsDialogBasicTests(Context& ctx)
         const QString text = opened ? QString::fromUtf8(file.readAll()) : QString();
         ctx.Check(opened && text.contains(QStringLiteral("测试事件")),
                   QStringLiteral("事件级别把图元属性变化写进画布日志"));
+        QFile::remove(path);
+        LogService::SetLevel(LogLevel::LOG_WARNING);
+    }
+
+    {
+        // 同一份画布日志追加超过 14 天后，旧条目要在下一次写入时裁掉，文件头保留。
+        const QString uid = QStringLiteral("selftest-log-retention-%1").arg(QDateTime::currentMSecsSinceEpoch());
+        const QString path =
+            QDir(LogService::LogDirectory()).filePath(QStringLiteral("canvases/canvas-%1.log").arg(uid));
+        QDir().mkpath(QFileInfo(path).absolutePath());
+        QFile::remove(path);
+        const QDateTime now = QDateTime::currentDateTime();
+        const QString oldStamp =
+            now.addDays(-20).toString(QStringLiteral("yyyy-MM-dd HH:mm:ss")) + QStringLiteral(".000");
+        QFile seed(path);
+        if (seed.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+            seed.write(QStringLiteral("# StoryBoard canvas lifecycle log\n"
+                                      "# canvas uid=%1\n"
+                                      "%2 [INFO ] storyboard.lifecycle: 二十天前事件\n")
+                           .arg(uid, oldStamp)
+                           .toUtf8());
+            seed.close();
+        }
+        LogService::SetLevel(LogLevel::LOG_EVENT);
+        LifecycleLog::LogEdit(uid, QStringLiteral("#自检"), QStringLiteral("编辑"), QStringLiteral("十四天内新事件"));
+        QFile file(path);
+        const bool opened = file.open(QIODevice::ReadOnly | QIODevice::Text);
+        const QString text = opened ? QString::fromUtf8(file.readAll()) : QString();
+        ctx.Check(!text.contains(QStringLiteral("二十天前事件")), QStringLiteral("画布日志裁掉 14 天以前的条目"));
+        ctx.Check(text.contains(QStringLiteral("# StoryBoard canvas lifecycle log")) &&
+                      text.contains(QStringLiteral("十四天内新事件")),
+                  QStringLiteral("裁剪后保留文件头并继续追加新日志"));
         QFile::remove(path);
         LogService::SetLevel(LogLevel::LOG_WARNING);
     }

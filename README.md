@@ -101,7 +101,7 @@ StoryBoard.exe --lineart input.png --lineart-min-area 40 --lineart-max-regions 8
 
 ## 构建与运行
 
-要求 Qt 6.5+、C++17、CMake 3.21+、GCC 15（Windows / Linux）或 Qt 官方 AppleClang（macOS）。项目名自动取仓库根目录名，`project()`、可执行目标、Windows 版本资源与便携包目录都从它派生；版本只在 `CMakeLists.txt` 的 `project(... VERSION ...)` 维护，当前 **0.3.1**。
+要求 Qt 6.5+、C++17、CMake 3.21+、GCC 15（Windows / Linux）或 Qt 官方 AppleClang（macOS）。项目名自动取仓库根目录名，`project()`、可执行目标、Windows 版本资源与便携包目录都从它派生；版本只在 `CMakeLists.txt` 的 `project(... VERSION ...)` 维护，当前 **0.3.2**。
 
 源文件按文件夹收集：目录清单在 `CMakeLists.txt` 的 `STORYBOARD_SOURCE_FOLDERS`，目录内增删文件由 `CONFIGURE_DEPENDS` 自动同步；新增子目录时在清单里加一行。
 
@@ -227,5 +227,5 @@ StoryBoard/
 
 Copyright (C) 2026 ZoneTong
 
-最后更新：2026-11-28 01:27
+最后更新：2026-11-28 01:46
 

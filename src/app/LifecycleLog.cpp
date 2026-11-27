@@ -10,15 +10,19 @@
 #include <QEvent>
 #include <QFile>
 #include <QFileInfo>
+#include <QHash>
 #include <QKeyEvent>
 #include <QMutex>
 #include <QMutexLocker>
 #include <QObject>
+#include <QSaveFile>
 
 namespace {
 
 QString g_source = QStringLiteral("界面");
 QMutex g_canvasLogMutex;
+QDate g_lastPruneDate;
+QHash<QString, QDate> g_lastTrimDates;
 
 QString SafeCanvasUid(const QString& uid)
 {
@@ -41,19 +45,79 @@ QString CanvasLogPath(const QString& uid)
     return QDir(CanvasLogDirectory()).filePath(QStringLiteral("canvas-%1.log").arg(SafeCanvasUid(uid)));
 }
 
-void PruneOldCanvasLogs()
+// 单份画布日志可能持续追加很多天：按时间戳保留最近 14 天，文件头的 uid 不参与裁剪。
+bool TrimCanvasLog(const QString& path, const QDateTime& now)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return false;
+    }
+    const QStringList lines = QString::fromUtf8(file.readAll()).split(QLatin1Char('\n'));
+    file.close();
+
+    // 时间戳固定为 yyyy-MM-dd HH:mm:ss.zzz，可直接按字符串先后比较，不必逐行解析。
+    const QString cutoff = now.addDays(-14).toString(QStringLiteral("yyyy-MM-dd HH:mm:ss.zzz"));
+    QStringList kept;
+    bool removed = false;
+    for (const QString& line : lines) {
+        if (line.isEmpty() || line.startsWith(QLatin1Char('#'))) {
+            if (!line.isEmpty()) {
+                kept.append(line);
+            }
+            continue;
+        }
+        if (line.size() >= cutoff.size() && line.left(cutoff.size()) >= cutoff) {
+            kept.append(line);
+        } else {
+            removed = true;
+        }
+    }
+    if (!removed) {
+        return false;
+    }
+
+    QString data = kept.join(QLatin1Char('\n'));
+    if (!data.isEmpty()) {
+        data += QLatin1Char('\n');
+    }
+    QSaveFile rewritten(path);
+    if (!rewritten.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        return false;
+    }
+    rewritten.write(data.toUtf8());
+    return rewritten.commit();
+}
+
+void PruneOldCanvasLogs(const QDateTime& now)
 {
     const QDir dir(CanvasLogDirectory());
     if (!dir.exists()) {
+        g_lastPruneDate = now.date();
         return;
     }
-    const QDate today = QDate::currentDate();
+    const QDate today = now.date();
+    const QDateTime cutoff = now.addDays(-14);
     const QFileInfoList files = dir.entryInfoList({QStringLiteral("canvas-*.log")}, QDir::Files);
     for (const QFileInfo& info : files) {
-        if (info.lastModified().date().daysTo(today) > 14) {
+        if (info.lastModified() < cutoff) {
             QFile::remove(info.absoluteFilePath());
+            continue;
         }
+        const QString path = info.absoluteFilePath();
+        TrimCanvasLog(path, now);
+        g_lastTrimDates.insert(path, today);
     }
+    g_lastPruneDate = today;
+}
+
+void EnsureCanvasLogTrimmed(const QString& path, const QDateTime& now)
+{
+    const QDate today = now.date();
+    if (g_lastTrimDates.value(path) == today) {
+        return;
+    }
+    TrimCanvasLog(path, now);
+    g_lastTrimDates.insert(path, today);
 }
 
 QString CanvasName(const QString& name)
@@ -74,9 +138,14 @@ void Write(LogLevel level, const QString& canvasUid, const QString& line)
         return;
     }
     QMutexLocker locker(&g_canvasLogMutex);
+    const QDateTime now = QDateTime::currentDateTime();
+    if (g_lastPruneDate != now.date()) {
+        PruneOldCanvasLogs(now);
+    }
     const QString dirPath = CanvasLogDirectory();
     QDir().mkpath(dirPath);
     const QString path = CanvasLogPath(canvasUid);
+    EnsureCanvasLogTrimmed(path, now);
     QFile file(path);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
         return;
@@ -87,7 +156,6 @@ void Write(LogLevel level, const QString& canvasUid, const QString& line)
                                    .arg(SafeCanvasUid(canvasUid));
         file.write(header.toUtf8());
     }
-    const QDateTime now = QDateTime::currentDateTime();
     const QString stamp = now.toString(QStringLiteral("yyyy-MM-dd HH:mm:ss")) + QLatin1Char('.') +
                           QString::number(now.time().msec()).rightJustified(3, QLatin1Char('0'));
     file.write(QStringLiteral("%1 [INFO ] storyboard.lifecycle: %2\n").arg(stamp, line).toUtf8());
@@ -135,7 +203,7 @@ void LifecycleLog::TrackInputSources()
         return;
     }
     installed = true;
-    PruneOldCanvasLogs();
+    PruneOldCanvasLogs(QDateTime::currentDateTime());
     qApp->installEventFilter(new InputSourceFilter(qApp));
 }
 
