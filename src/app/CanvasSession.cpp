@@ -32,7 +32,12 @@ CanvasSession::~CanvasSession()
     // 先断开所有可能回到窗口的连接，再按「视图 → 撤销栈 → 场景」的顺序析构：
     // 场景析构会 clear() 并发出信号，此时面板与窗口都不该再收到回调。
     if (m_view) {
-        QObject::disconnect(m_view, nullptr, nullptr, nullptr);
+        // 只掐视图对外的四个业务信号；用 (sender, nullptr, nullptr, nullptr) 通配会连带
+        // 断开 Qt 内部的 destroyed 连接，运行时刷出 “wildcard call disconnects…” 告警。
+        QObject::disconnect(m_view, &CanvasView::zoomChanged, nullptr, nullptr);
+        QObject::disconnect(m_view, &CanvasView::modeChanged, nullptr, nullptr);
+        QObject::disconnect(m_view, &CanvasView::statusMessage, nullptr, nullptr);
+        QObject::disconnect(m_view, &CanvasView::textPlacementRequested, nullptr, nullptr);
         m_view->setScene(nullptr);
     }
     if (m_undo) {

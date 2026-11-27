@@ -6,6 +6,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QMessageLogContext>
 #include <QMutex>
 #include <QMutexLocker>
@@ -72,8 +73,19 @@ void EnsureFileOpen(const QDate& date)
     g_fileDate = date;
 }
 
+// offscreen 是自检专用的无窗口平台，Qt 会反复提示 raise / propagateSizeHints
+// 这类“插件不支持”的能力缺失；它们不是应用缺陷，也不该淹没日志里的真实告警。
+bool IsOffscreenPlatformNoise(const QString& message)
+{
+    static const bool offscreen = QGuiApplication::platformName() == QLatin1String("offscreen");
+    return offscreen && message.startsWith(QStringLiteral("This plugin does not support"));
+}
+
 void MessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& message)
 {
+    if (IsOffscreenPlatformNoise(message)) {
+        return;
+    }
     QMutexLocker locker(&g_mutex);
     const QDateTime now = QDateTime::currentDateTime();
     EnsureFileOpen(now.date());
